@@ -149,6 +149,8 @@
 	(_X->node_state & NODE_STATE_MAINT)
 #define IS_NODE_REBOOT(_X)		\
 	(_X->node_state & NODE_STATE_REBOOT)
+#define IS_NODE_RUNNING_JOB(_X)		\
+	(_X->comp_job_cnt || _X->run_job_cnt || _X->sus_job_cnt)
 
 #define THIS_FILE ((strrchr(__FILE__, '/') ?: __FILE__ - 1) + 1)
 #define INFO_LINE(fmt, ...) \

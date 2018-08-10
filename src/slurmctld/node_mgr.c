@@ -1691,6 +1691,17 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 				state_val = base_state;
 				bit_clear(avail_node_bitmap, node_inx);
+			} else if (state_val == NODE_STATE_CANCEL_REBOOT) {
+				if (IS_NODE_RUNNING_JOB(node_ptr)) {
+					node_ptr->node_state &=
+						(~NODE_STATE_REBOOT);
+					state_val = base_state;
+				} else {
+					info("REBOOT on node %s already in progress -- unable to cancel",
+					     this_node_name);
+					err_code = error_code =
+						ESLURM_REBOOT_IN_PROGRESS;
+				}
 			} else {
 				info("Invalid node state specified %u",
 				     state_val);
@@ -2281,6 +2292,11 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 			    (node_flags & NODE_STATE_DRAIN)   ||
 			    (node_flags & NODE_STATE_FAIL)    ||
 			    (node_flags & NODE_STATE_REBOOT))
+				return true;
+			break;
+
+		case NODE_STATE_CANCEL_REBOOT:
+			if (node_flags & NODE_STATE_REBOOT)
 				return true;
 			break;
 

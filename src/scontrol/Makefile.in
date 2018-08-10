@@ -153,10 +153,11 @@ PROGRAMS = $(bin_PROGRAMS)
 am_scontrol_OBJECTS = create_res.$(OBJEXT) info_burst_buffer.$(OBJEXT) \
 	info_assoc_mgr.$(OBJEXT) info_fed.$(OBJEXT) info_job.$(OBJEXT) \
 	info_layout.$(OBJEXT) info_lics.$(OBJEXT) info_node.$(OBJEXT) \
-	info_part.$(OBJEXT) info_res.$(OBJEXT) scontrol.$(OBJEXT) \
-	update_job.$(OBJEXT) update_layout.$(OBJEXT) \
-	update_node.$(OBJEXT) update_part.$(OBJEXT) \
-	update_step.$(OBJEXT) update_powercap.$(OBJEXT)
+	info_part.$(OBJEXT) info_res.$(OBJEXT) reboot_node.$(OBJEXT) \
+	scontrol.$(OBJEXT) update_job.$(OBJEXT) \
+	update_layout.$(OBJEXT) update_node.$(OBJEXT) \
+	update_part.$(OBJEXT) update_step.$(OBJEXT) \
+	update_powercap.$(OBJEXT)
 scontrol_OBJECTS = $(am_scontrol_OBJECTS)
 am__DEPENDENCIES_1 =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -497,6 +498,7 @@ scontrol_SOURCES = \
 	info_node.c	\
 	info_part.c	\
 	info_res.c	\
+	reboot_node.c	\
 	scontrol.c	\
 	scontrol.h	\
 	update_job.c	\
@@ -612,6 +614,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_part.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/info_res.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reboot_node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scontrol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_job.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/update_layout.Po@am__quote@

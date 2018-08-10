@@ -363,6 +363,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job can not start due to maintenance reservation."	},
 	{ ESLURM_INVALID_GRES_TYPE,
 	  "Invalid GRES specification (with and without type identification)" },
+	{ ESLURM_REBOOT_IN_PROGRESS,
+	  "Reboot already in progress" },
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,

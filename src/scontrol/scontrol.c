@@ -669,47 +669,6 @@ _print_aliases (char* node_hostname)
 
 }
 
-/*
- * _reboot_nodes - issue RPC to have computing nodes reboot when idle
- * RET 0 or a slurm error code
- */
-static int _reboot_nodes(char *node_list, bool asap, uint32_t next_state,
-			 char *reason)
-{
-	slurm_ctl_conf_t *conf;
-	int rc;
-	slurm_msg_t msg;
-	reboot_msg_t req;
-
-	conf = slurm_conf_lock();
-	if (conf->reboot_program == NULL) {
-		error("RebootProgram isn't defined");
-		slurm_conf_unlock();
-		slurm_seterrno(SLURM_ERROR);
-		return SLURM_ERROR;
-	}
-	slurm_conf_unlock();
-
-	slurm_msg_t_init(&msg);
-
-	slurm_init_reboot_msg(&req, true);
-	req.next_state = next_state;
-	req.node_list = node_list;
-	req.reason    = reason;
-	if (asap)
-		req.flags |= REBOOT_FLAGS_ASAP;
-	msg.msg_type = REQUEST_REBOOT_NODES;
-	msg.data = &req;
-
-	if (slurm_send_recv_controller_rc_msg(&msg, &rc, working_cluster_rec)<0)
-		return SLURM_ERROR;
-
-	if (rc)
-		slurm_seterrno_ret(rc);
-
-	return rc;
-}
-
 void _process_reboot_command(const char *tag, int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
@@ -778,10 +737,11 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 			 "too many arguments for keyword:%s\n",
 			 tag);
 	} else if ((argc - argc_offset) < 1) {
-		error_code = _reboot_nodes("ALL", asap, next_state, reason);
+		error_code = scontrol_reboot_nodes("ALL", asap, next_state,
+						   reason);
 	} else {
-		error_code = _reboot_nodes(argv[argc_offset], asap, next_state,
-					   reason);
+		error_code = scontrol_reboot_nodes(argv[argc_offset], asap,
+						   next_state, reason);
 	}
 
 	xfree(reason);
@@ -835,14 +795,28 @@ static int _process_command (int argc, char **argv)
 	}
 	else if (xstrncasecmp(tag, "all", MAX(tag_len, 2)) == 0)
 		all_flag = 1;
+	else if (xstrncasecmp(tag, "cancel_reboot", MAX(tag_len, 3)) == 0) {
+		if (argc > 2) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n",
+				 tag);
+		} else if (argc < 2) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "missing argument for keyword:%s\n",
+				 tag);
+		} else
+			scontrol_cancel_reboot(argv[1]);
+	}
 	else if (xstrncasecmp(tag, "completing", MAX(tag_len, 2)) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n",
 				 tag);
-		}
-		scontrol_print_completing();
+		} else
+			scontrol_print_completing();
 	}
 	else if (xstrncasecmp(tag, "cluster", MAX(tag_len, 2)) == 0) {
 		if (clusters) {
@@ -1503,7 +1477,7 @@ static int _process_command (int argc, char **argv)
 			slurm_perror("job notify failure");
 		}
 	}
-	else if (xstrncasecmp(tag, "callerid", MAX(tag_len, 2)) == 0) {
+	else if (xstrncasecmp(tag, "callerid", MAX(tag_len, 3)) == 0) {
 		if (argc < 5) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -1908,6 +1882,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      generating a core file.                      \n\
      all                      display information about all partitions,    \n\
 			      including hidden partitions.                 \n\
+     cancel_reboot <nodelist> Cancel pending reboot on nodes.              \n\
      cluster                  cluster to issue commands to.  Default is    \n\
 			      current cluster.  cluster with no name will  \n\
 			      reset to default.                            \n\
