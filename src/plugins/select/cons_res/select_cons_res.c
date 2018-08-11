@@ -823,13 +823,12 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	bitstr_t *core_bitmap;
 
 	if (!job || !job->core_bitmap) {
-		error("%s: job %u has no job_resrcs info",
-		      __func__, job_ptr->job_id);
+		error("%s: %pJ has no job_resrcs info",
+		      __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 
-	debug3("cons_res: _add_job_to_res: job %u act %d ", job_ptr->job_id,
-	       action);
+	debug3("%s: %s: %pJ act %d", plugin_type, __func__, job_ptr, action);
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
@@ -867,11 +866,10 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 				job->memory_allocated[n];
 			if ((select_node_usage[i].alloc_memory >
 			     select_node_record[i].real_memory)) {
-				error("cons_res: node %s memory is "
-				      "overallocated (%"PRIu64") for job %u",
-				      node_ptr->name,
+				error("%s: node %s memory is overallocated (%"PRIu64") for %pJ",
+				      plugin_type, node_ptr->name,
 				      select_node_usage[i].alloc_memory,
-				      job_ptr->job_id);
+				      job_ptr);
 			}
 		}
 		if ((powercap_get_cluster_current_cap() != 0) &&
@@ -912,8 +910,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (!_can_job_fit_in_row(job, &(p_ptr->row[i])))
 				continue;
-			debug3("cons_res: adding job %u to part %s row %u",
-			       job_ptr->job_id, p_ptr->part_ptr->name, i);
+			debug3("%s: adding %pJ to part %s row %u",
+			       plugin_type, job_ptr, p_ptr->part_ptr->name, i);
 			_add_job_to_row(job, &(p_ptr->row[i]));
 			break;
 		}
@@ -921,9 +919,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			/* Job started or resumed and it's allocated resources
 			 * are already in use by some other job. Typically due
 			 * to manually resuming a job. */
-			error("cons_res: job overflow: "
-			      "could not find idle resources for job %u",
-			      job_ptr->job_id);
+			error("%s: job overflow: could not find idle resources for %pJ",
+			      plugin_type, job_ptr);
 			/* No row available to record this job */
 		}
 		/* update the node state */
@@ -978,8 +975,8 @@ static int _job_expand(struct job_record *from_job_ptr,
 	xassert(to_job_ptr->details);
 
 	if (from_job_ptr->job_id == to_job_ptr->job_id) {
-		error("select/cons_res: attempt to merge job %u with self",
-		      from_job_ptr->job_id);
+		error("%s: attempt to merge %pJ with self",
+		      plugin_type, from_job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -988,8 +985,8 @@ static int _job_expand(struct job_record *from_job_ptr,
 	    (from_job_resrcs_ptr->cpus == NULL) ||
 	    (from_job_resrcs_ptr->core_bitmap == NULL) ||
 	    (from_job_resrcs_ptr->node_bitmap == NULL)) {
-		error("select/cons_res: job %u lacks a job_resources struct",
-		      from_job_ptr->job_id);
+		error("%s: %pJ lacks a job_resources struct",
+		      plugin_type, from_job_ptr);
 		return SLURM_ERROR;
 	}
 	to_job_resrcs_ptr = to_job_ptr->job_resrcs;
@@ -997,8 +994,8 @@ static int _job_expand(struct job_record *from_job_ptr,
 	    (to_job_resrcs_ptr->cpus == NULL) ||
 	    (to_job_resrcs_ptr->core_bitmap == NULL) ||
 	    (to_job_resrcs_ptr->node_bitmap == NULL)) {
-		error("select/cons_res: job %u lacks a job_resources struct",
-		      to_job_ptr->job_id);
+		error("%s: %pJ lacks a job_resources struct",
+		      plugin_type, to_job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -1193,13 +1190,12 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 	if (!job || !job->core_bitmap) {
 		if (job_ptr->details && (job_ptr->details->min_nodes == 0))
 			return SLURM_SUCCESS;
-		error("%s: job %u has no job_resrcs info",
-		      __func__, job_ptr->job_id);
+		error("%s: %pJ has no job_resrcs info", __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 
-	debug3("cons_res: %s: job %u action %d", __func__, job_ptr->job_id,
-	       action);
+	debug3("%s: %s: %pJ action %d",
+	       plugin_type, __func__, job_ptr, action);
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
 
@@ -1230,13 +1226,11 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		if (action != 2) {
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {
-				error("cons_res: node %s memory is "
-				      "under-allocated (%"PRIu64"-%"PRIu64") "
-				      "for job %u",
-				      node_ptr->name,
+				error("%s: node %s memory is under-allocated (%"PRIu64"-%"PRIu64") for %pJ",
+				      plugin_type, node_ptr->name,
 				      node_usage[i].alloc_memory,
 				      job->memory_allocated[n],
-				      job_ptr->job_id);
+				      job_ptr);
 				node_usage[i].alloc_memory = 0;
 			} else
 				node_usage[i].alloc_memory -=
@@ -1255,9 +1249,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		struct part_res_record *p_ptr;
 
 		if (!job_ptr->part_ptr) {
-			error("cons_res: removed job %u does not have a "
-			      "partition assigned",
-			      job_ptr->job_id);
+			error("%s: removed %pJ does not have a partition assigned",
+			      plugin_type, job_ptr);
 			return SLURM_ERROR;
 		}
 
@@ -1266,8 +1259,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				break;
 		}
 		if (!p_ptr) {
-			error("cons_res: removed job %u could not find part %s",
-			      job_ptr->job_id, job_ptr->part_ptr->name);
+			error("%s: removed %pJ could not find part %s",
+			      plugin_type, job_ptr, job_ptr->part_ptr->name);
 			return SLURM_ERROR;
 		}
 
@@ -1281,9 +1274,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 				if (p_ptr->row[i].job_list[j] != job)
 					continue;
-				debug3("cons_res: removed job %u from "
-				       "part %s row %u",
-				       job_ptr->job_id,
+				debug3("%s: removed %pJ from part %s row %u",
+				       plugin_type, job_ptr,
 				       p_ptr->part_ptr->name, i);
 				for (; j < p_ptr->row[i].num_jobs-1; j++) {
 					p_ptr->row[i].job_list[j] =
@@ -1316,11 +1308,9 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 						job->node_req;
 				} else {
 					node_ptr = node_record_table_ptr + i;
-					error("cons_res:_rm_job_from_res: "
-					      "node_state mis-count (job:%u "
-					      "job_cnt:%u node:%s node_cnt:%u)",
-					      job_ptr->job_id, job->node_req,
-					      node_ptr->name,
+					error("%s: %s: node_state mis-count (%pJ job_cnt:%u node:%s node_cnt:%u)",
+					      plugin_type, __func__, job_ptr,
+					      job->node_req, node_ptr->name,
 					      node_usage[i].node_state);
 					node_usage[i].node_state =
 						NODE_CR_AVAILABLE;
@@ -1344,13 +1334,13 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	List gres_list;
 
 	if (!job || !job->core_bitmap) {
-		error("%s: select/cons_res: job %u has no job_resrcs info",
-		      __func__, job_ptr->job_id);
+		error("%s: %s: %pJ has no job_resrcs info",
+		      plugin_type, __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 
-	debug3("cons_res: _rm_job_from_one_node: job %u node %s",
-	       job_ptr->job_id, node_ptr->name);
+	debug3("%s: %s: %pJ node %s",
+	       plugin_type, __func__, job_ptr, node_ptr->name);
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
 
@@ -1367,8 +1357,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		}
 
 		if (job->cpus[n] == 0) {
-			info("attempt to remove node %s from job %u again",
-			     node_ptr->name, job_ptr->job_id);
+			info("attempt to remove node %s from %pJ again",
+			     node_ptr->name, job_ptr);
 			return SLURM_SUCCESS;
 		}
 
@@ -1381,10 +1371,10 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
-			error("cons_res: node %s memory is underallocated "
-			      "(%"PRIu64"-%"PRIu64") for job %u",
-			      node_ptr->name, node_usage[i].alloc_memory,
-			      job->memory_allocated[n], job_ptr->job_id);
+			error("%s: node %s memory is underallocated (%"PRIu64"-%"PRIu64") for %pJ",
+			      plugin_type, node_ptr->name,
+			      node_usage[i].alloc_memory,
+			      job->memory_allocated[n], job_ptr);
 			node_usage[i].alloc_memory = 0;
 		} else
 			node_usage[i].alloc_memory -= job->memory_allocated[n];
@@ -1399,8 +1389,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 
 	/* subtract cores, reconstruct rows with remaining jobs */
 	if (!job_ptr->part_ptr) {
-		error("cons_res: removed job %u does not have a partition "
-		      "assigned", job_ptr->job_id);
+		error("%s: removed %pJ does not have a partition assigned",
+		      plugin_type, job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -1409,8 +1399,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 			break;
 	}
 	if (!p_ptr) {
-		error("cons_res: removed job %u could not find part %s",
-		      job_ptr->job_id, job_ptr->part_ptr->name);
+		error("%s: removed %pJ could not find part %s",
+		      plugin_type, job_ptr, job_ptr->part_ptr->name);
 		return SLURM_ERROR;
 	}
 
@@ -1424,8 +1414,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 			if (p_ptr->row[i].job_list[j] != job)
 				continue;
-			debug3("cons_res: found job %u in part %s row %u",
-			       job_ptr->job_id, p_ptr->part_ptr->name, i);
+			debug3("%s: found %pJ in part %s row %u",
+			       plugin_type, job_ptr, p_ptr->part_ptr->name, i);
 			/* found job - we're done, don't actually remove */
 			n = 1;
 			i = p_ptr->num_rows;
@@ -1433,8 +1423,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		}
 	}
 	if (n == 0) {
-		error("cons_res: could not find job %u in partition %s",
-		      job_ptr->job_id, p_ptr->part_ptr->name);
+		error("%s: could not find %pJ in partition %s",
+		      plugin_type, job_ptr, p_ptr->part_ptr->name);
 		return SLURM_ERROR;
 	}
 
@@ -1862,8 +1852,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
 			if (!cleaning) {
-				error("%s: Active job %u has zero end_time",
-				      __func__, tmp_job_ptr->job_id);
+				error("%s: Active %pJ has zero end_time",
+				      __func__, tmp_job_ptr);
 			}
 			continue;
 		}
@@ -1873,8 +1863,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			 * while NHC was running
 			 */
 			if (!cleaning) {
-				error("%s: Job %u has NULL node_bitmap",
-				      __func__, tmp_job_ptr->job_id);
+				error("%s: %pJ has NULL node_bitmap",
+				      __func__, tmp_job_ptr);
 			}
 			continue;
 		}
@@ -1942,8 +1932,9 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 						      tmp_job_ptr->node_bitmap);
 				if (overlap == 0)  /* job has no usable nodes */
 					continue;  /* skip it */
-				debug2("cons_res: _will_run_test, job %u: overlap=%d",
-				       tmp_job_ptr->job_id, overlap);
+				debug2("%s: %s, %pJ: overlap=%d",
+				       plugin_type, __func__, tmp_job_ptr,
+				       overlap);
 				if (!first_job_ptr)
 					first_job_ptr = tmp_job_ptr;
 				last_job_ptr = tmp_job_ptr;
@@ -2294,7 +2285,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	xassert(bitmap);
 
-	debug2("select_p_job_test for job %u", job_ptr->job_id);
+	debug2("%s for %pJ", __func__, job_ptr);
 	if (!debug_check) {
 		debug_check = true;
 		if (slurm_get_debug_flags() & DEBUG_FLAG_SELECT_TYPE)
@@ -2308,8 +2299,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		job_ptr->details->core_spec = NO_VAL16;
 	if ((job_ptr->details->core_spec != NO_VAL16) &&
 	    (job_ptr->details->whole_node != 1)) {
-		info("Setting Exclusive mode for job %u with CoreSpec=%u",
-		      job_ptr->job_id, job_ptr->details->core_spec);
+		info("Setting Exclusive mode for %pJ with CoreSpec=%u",
+		      job_ptr, job_ptr->details->core_spec);
 		job_ptr->details->whole_node = 1;
 	}
 
@@ -2318,11 +2309,11 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	job_node_req = _get_job_node_req(job_ptr);
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("cons_res: select_p_job_test: job %u node_req %u mode %d",
-		     job_ptr->job_id, job_node_req, mode);
-		info("cons_res: select_p_job_test: min_n %u max_n %u req_n %u "
-		     "avail_n %u",
-	 	     min_nodes, max_nodes, req_nodes, bit_set_count(bitmap));
+		info("%s: %s: %pJ node_req %u mode %d",
+		     plugin_type, __func__, job_ptr, job_node_req, mode);
+		info("%s: %s: min_n %u max_n %u req_n %u avail_n %u",
+		     plugin_type, __func__, min_nodes, max_nodes, req_nodes,
+		     bit_set_count(bitmap));
 		_dump_state(select_part_record);
 	}
 	if (mode == SELECT_MODE_WILL_RUN) {
@@ -2345,8 +2336,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		if (job_ptr->job_resrcs)
 			log_job_resources(job_ptr);
 		else {
-			info("no job_resources info for job %u rc=%d",
-			     job_ptr->job_id, rc);
+			info("no job_resources info for %pJ rc=%d",
+			     job_ptr, rc);
 		}
 	} else if (debug_cpu_bind && job_ptr->job_resrcs) {
 		log_job_resources(job_ptr);
@@ -2935,9 +2926,8 @@ extern int select_p_reconfigure(void)
 			cleaning_job_cnt++;
 			run_time = (int) difftime(now, job_ptr->end_time);
 			if (run_time >= 300) {
-				info("Job %u NHC hung for %d secs, releasing "
-				     "resources now, may underflow later)",
-				     job_ptr->job_id, run_time);
+				info("%pJ NHC hung for %d secs, releasing resources now, may underflow later",
+				     job_ptr, run_time);
 				/* If/when NHC completes, it will release
 				 * resources that are not marked as allocated
 				 * to this job without line below. */

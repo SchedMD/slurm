@@ -41,7 +41,6 @@
 #include "select_cons_res.h"
 #include "dist_tasks.h"
 
-
 /* Max boards supported for best-fit across boards */
 /* Larger board configurations may require new algorithm */
 /* for acceptable performance */
@@ -152,8 +151,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	bool log_over_subscribe = true;
 
 	if (!job_res || !job_res->cpus || !job_res->nhosts) {
-		error("cons_res: _compute_c_b_task_dist invalid allocation "
-		      "for job %u", job_ptr->job_id);
+		error("cons_res: %s invalid allocation for %pJ",
+		      __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -192,8 +191,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available cpus
 			 */
-			error("cons_res: _compute_c_b_task_dist "
-			      "oversubscribe for job %u", job_ptr->job_id);
+			error("cons_res: %s oversubscribe for %pJ",
+			      __func__, job_ptr);
 			log_over_subscribe = false	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
@@ -227,8 +226,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	bool log_over_subscribe = true;
 
 	if (!job_res || !job_res->cpus || !job_res->nhosts) {
-		error("cons_res: _compute_plane_dist invalid allocation "
-		      "for job %u", job_ptr->job_id);
+		error("cons_res: %s invalid allocation for %pJ",
+		      __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -257,8 +256,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available cpus
 			 */
-			error("cons_res: _compute_plane_dist oversubscribe "
-			      "for job %u", job_ptr->job_id);
+			error("cons_res: %s oversubscribe for %pJ",
+			      __func__, job_ptr);
 			log_over_subscribe = false	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
@@ -355,13 +354,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	if (!job_res)
 		return;
 	if (!job_res->core_bitmap) {
-		error("%s: core_bitmap for job %u is NULL",
-		      __func__, job_ptr->job_id);
+		error("%s: core_bitmap for %pJ is NULL",
+		      __func__, job_ptr);
 		return;
 	}
 	if (bit_ffs(job_res->core_bitmap) == -1) {
-		error("%s: core_bitmap for job %u has no bits set",
-		      __func__, job_ptr->job_id);
+		error("%s: core_bitmap for job %pJ has no bits set",
+		      __func__, job_ptr);
 		return;
 	}
 
@@ -442,9 +441,8 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		if (nsockets_nb >= nboards_nb) {
 			sock_per_brd = nsockets_nb / nboards_nb;
 		} else {
-			error("Node socket count lower than board count "
-			      "(%u < %u), job %u node %s",
-			      nsockets_nb, nboards_nb, job_ptr->job_id,
+			error("Node socket count lower than board count (%u < %u), %pJ node %s",
+			      nsockets_nb, nboards_nb, job_ptr,
 			      node_record_table_ptr[n].name);
 			sock_per_brd = 1;
 		}
@@ -761,9 +759,8 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		vpus    = cr_cpus_per_core(job_ptr->details, n);
 
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			info("DEBUG: job %u node %s vpus %u cpus %u",
-			     job_ptr->job_id,
-			     select_node_record[n].node_ptr->name,
+			info("DEBUG: %pJ node %s vpus %u cpus %u",
+			     job_ptr, select_node_record[n].node_ptr->name,
 			     vpus, job_res->cpus[i]);
 		}
 
@@ -894,10 +891,10 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				/* we're stuck! */
 				job_ptr->priority = 0;
 				job_ptr->state_reason = WAIT_HELD;
-				error("%s: sync loop not progressing on node %s, holding job %u",
+				error("%s: sync loop not progressing on node %s, holding %pJ",
 				      __func__,
 				      select_node_record[n].node_ptr->name,
-				      job_ptr->job_id);
+				      job_ptr);
 			}
 			error_code = SLURM_ERROR;
 			goto fini;
