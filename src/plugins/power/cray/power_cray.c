@@ -1400,9 +1400,8 @@ static void _level_power_by_job(void)
 			continue;
 		ave_watts = total_watts / total_nodes;
 		if (debug_flag & DEBUG_FLAG_POWER) {
-			debug("%s: leveling power caps for job %u "
-			      "(node_cnt:%u min:%u max:%u ave:%u)",
-			      __func__, job_ptr->job_id, total_nodes,
+			debug("%s: leveling power caps for %pJ (node_cnt:%u min:%u max:%u ave:%u)",
+			      __func__, job_ptr, total_nodes,
 			      min_watts, max_watts, ave_watts);
 		}
 		for (i = i_first; i <= i_last; i++) {

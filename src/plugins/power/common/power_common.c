@@ -126,7 +126,6 @@ extern List get_job_power(List job_list,
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	power_by_job_t *power_ptr;
-	char jobid_buf[64] = "";
 	int i, i_first, i_last;
 	uint64_t debug_flag = slurm_get_debug_flags();
 	List job_power_list = list_create(_job_power_del);
@@ -141,8 +140,8 @@ extern List get_job_power(List job_list,
 		power_ptr->start_time = job_ptr->start_time;
 		list_append(job_power_list, power_ptr);
 		if (!job_ptr->node_bitmap) {
-			error("%s: %s node_bitmap is NULL", __func__,
-			      jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)));
+			error("%s: %pJ node_bitmap is NULL",
+			      __func__, job_ptr);
 			continue;
 		}
 		i_first = bit_ffs(job_ptr->node_bitmap);
@@ -163,9 +162,8 @@ extern List get_job_power(List job_list,
 			}
 		}
 		if (debug_flag & DEBUG_FLAG_POWER) {
-			info("%s: %s Age=%ld(sec) AllocWatts=%u UsedWatts=%u",
-			     __func__,
-			     jobid2fmt(job_ptr, jobid_buf, sizeof(jobid_buf)),
+			info("%s: %pJ Age=%ld(sec) AllocWatts=%u UsedWatts=%u",
+			     __func__, job_ptr,
 			     (long int) difftime(now, power_ptr->start_time),
 			     power_ptr->alloc_watts, power_ptr->used_watts);
 		}
