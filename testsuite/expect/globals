@@ -4216,6 +4216,55 @@ proc check_job_state { job state } {
 
 ################################################################
 #
+# Proc: get_craynetwork_count
+#
+# Returns number of craynetwork GRES in the default partition
+#
+################################################################
+proc get_craynetwork_count {} {
+	global number sbatch scancel
+	set count 0
+	set fini 0
+	log_user 0
+	for {set inx 1} {$fini == 0} {set inx [expr $inx * 2]} {
+		set job_id 0
+		if {$inx > 32} {
+			set count -1
+			break
+		}
+		spawn $sbatch --gres=craynetwork:$inx --output=/dev/null --wrap "exit 0"
+		expect {
+			-re "Invalid generic resource" {
+				set fini 1
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				set fini 1
+				exp_continue
+			}
+			-re "Submitted batch job ($number)" {
+				set job_id $expect_out(1,string)
+				set count $inx
+				exp_continue
+			}
+			timeout {
+				send_user "\nFAILURE: sbatch not responding\n"
+				set fini 1
+			}
+			eof {
+				wait
+			}
+		}
+		if {$job_id != 0} {
+			exec $scancel -Q $job_id
+		}
+	}
+	log_user 1
+	return $count
+}
+
+################################################################
+#
 # Proc: get_gpu_count
 #
 # Returns number of GPUs in the default partition

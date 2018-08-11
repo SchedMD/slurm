@@ -1,0 +1,148 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test --tres-per-job option with GRES of craynetwork (no topology)
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "39.11"
+set exit_code   0
+set file_in     "test$test_id.input"
+set number_commas  "\[0-9_,\]+"
+
+print_header $test_id
+
+set select_type [test_select_type]
+if {![string compare $select_type "cons_tres"] ||
+    (![string compare $select_type "cray"] && [test_select_type_params "other_cons_tres"])} {
+        send_user "\nValid configuration, using select/cons_tres\n"
+} else {
+        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
+        exit 0
+}
+
+set craynetwork_count [get_craynetwork_count]
+if {$craynetwork_count < 0} {
+	send_user "\nFAILURE: Error getting craynetwork GRES count\n"
+	exit 1
+}
+if {$craynetwork_count < 1} {
+	send_user "\nWARNING: This test requires 1 or more craynetwork GRES in the default partition\n"
+	exit 0
+}
+send_user "\ncraynetwork count is $craynetwork_count\n"
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+
+#
+# Build input script file
+#
+make_bash_script $file_in "if \[ \$SLURM_PROCID -eq 0 \]; then
+$scontrol -dd show job \$SLURM_JOB_ID
+fi
+exit 0"
+
+#
+# Test --gres options using a subset of craynetwork GRES available on the node
+#
+send_user "\n\nTEST: --gres=craynetwork:# option\n"
+set match 0
+set timeout $max_job_delay
+if {$craynetwork_count > 1} {
+	set gres_target [expr $craynetwork_count - 1]
+} else {
+	set gres_target $craynetwork_count
+}
+set srun_pid [spawn $srun --gres=craynetwork:$gres_target -t1 -J "test$test_id" -l ./$file_in]
+expect {
+	-re "craynetwork.CNT:($number)" {
+		incr match $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != $gres_target} {
+	send_user "\nFAILURE: srun --gres failure ($match != $gres_target)\n"
+	set exit_code 1
+}
+
+#
+# Test --tres-per-job options using multiple nodes
+#
+send_user "\n\nTEST: --tres-per-job=craynetwork:# option\n"
+set match 0
+set node_cnt 0
+set timeout $max_job_delay
+if {$craynetwork_count > 1 || $nb_nodes > 1} {
+	set gres_target [expr $craynetwork_count * 2 - 1]
+	set node_target 2
+} else {
+	set gres_target $craynetwork_count
+	set node_target 1
+}
+set srun_pid [spawn $srun --tres-per-job=craynetwork:$gres_target -N $node_target -t1 -J "test$test_id" -l ./$file_in]
+expect {
+	-re "NumNodes=($number)" {
+		set node_cnt $expect_out(1,string)
+		exp_continue
+	}
+	-re "craynetwork.CNT:($number)" {
+		incr match $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$node_cnt != $node_target} {
+	send_user "\nFAILURE: srun node count failure ($node_cnt != $node_target)\n"
+	set exit_code 1
+}
+if {$match != $gres_target} {
+	send_user "\nFAILURE: srun --gres-per-job failure ($match != $gres_target)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

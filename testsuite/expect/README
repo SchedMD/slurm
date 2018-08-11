@@ -810,8 +810,8 @@ test38.15  Test for proper handling of different rank end times
 test38.16  Test environment variables needed by MPI
 test38.17  Test for multiple, out of order srun --pack-group options
 
-test39.#   Test of job --gpu options.
-=====================================
+test39.#   Test of job select/cons_tres and --gpu options.
+==========================================================
 test39.1   Test full set of sbatch --gpu options and scontrol show job
 test39.2   Test full set of salloc --gpu options and scontrol show job
 test39.3   Test full set of srun --gpu options and scontrol show step
@@ -822,3 +822,4 @@ test39.7   Test --cpus-per-gpu option
 test39.8   Test --gpu-bind options
 test39.9   Test --gpu-freq options
 test39.10  Test --mem-per-gpu option
+test39.11  Test --tres-per-job option with GRES of craynetwork (no topology)
