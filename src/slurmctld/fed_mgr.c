@@ -1705,7 +1705,7 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 
 	lock_slurmctld(job_write_lock);
 	if (!(job_ptr = find_job_record(job_update_info->job_id))) {
-		error("%s: failed to find job_record for fed JobID=%u",
+		error("%s: failed to find job_record for fed JobId=%u",
 		      __func__, job_update_info->job_id);
 		unlock_slurmctld(job_write_lock);
 		return;
@@ -1738,7 +1738,7 @@ _handle_fed_job_remove_active_sib_bit(fed_job_update_info_t *job_update_info)
 
 	lock_slurmctld(job_write_lock);
 	if (!(job_ptr = find_job_record(job_update_info->job_id))) {
-		error("%s: failed to find job_record for fed JobID=%u",
+		error("%s: failed to find job_record for fed JobId=%u",
 		      __func__, job_update_info->job_id);
 		unlock_slurmctld(job_write_lock);
 		return;
@@ -1750,7 +1750,7 @@ _handle_fed_job_remove_active_sib_bit(fed_job_update_info_t *job_update_info)
 
 	slurm_mutex_lock(&fed_job_list_mutex);
 	if (!(job_info = _find_fed_job_info(job_update_info->job_id))) {
-		error("%s: failed to find fed job info for fed JobID=%u",
+		error("%s: failed to find fed job info for fed JobId=%u",
 		      __func__, job_update_info->job_id);
 		slurm_mutex_unlock(&fed_job_list_mutex);
 		unlock_slurmctld(job_write_lock);
@@ -1779,7 +1779,7 @@ static void _handle_fed_job_requeue(fed_job_update_info_t *job_update_info)
 	lock_slurmctld(job_write_lock);
 	if ((rc = job_requeue(job_update_info->uid, job_update_info->job_id,
 			      NULL, false, job_update_info->state)))
-		error("failed to requeue fed JobID=%u - rc:%d",
+		error("failed to requeue fed JobId=%u - rc:%d",
 		      job_update_info->job_id, rc);
 	unlock_slurmctld(job_write_lock);
 }
@@ -1833,7 +1833,7 @@ static void _handle_fed_job_start(fed_job_update_info_t *job_update_info)
 
 	lock_slurmctld(job_write_lock);
 	if (!(job_ptr = find_job_record(job_update_info->job_id))) {
-		error("%s: failed to find job_record for fed JobID=%u",
+		error("%s: failed to find job_record for fed JobId=%u",
 		      __func__, job_update_info->job_id);
 		unlock_slurmctld(job_write_lock);
 		return;
@@ -1846,7 +1846,7 @@ static void _handle_fed_job_start(fed_job_update_info_t *job_update_info)
 	slurm_mutex_lock(&fed_job_list_mutex);
 	if (!(job_info =
 	      _find_fed_job_info(job_update_info->job_id))) {
-		error("%s: failed to find fed job info for fed JobID=%u",
+		error("%s: failed to find fed job info for fed JobId=%u",
 		      __func__, job_update_info->job_id);
 		slurm_mutex_unlock(&fed_job_list_mutex);
 		unlock_slurmctld(job_write_lock);
@@ -1891,7 +1891,7 @@ static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("%s: submitting %s sibling JobID=%u from %s",
+		info("%s: submitting %s sibling JobId=%u from %s",
 		     __func__, (interactive_job) ? "interactive" : "batch",
 		     job_update_info->submit_desc->job_id,
 		     job_update_info->submit_cluster);
@@ -1948,13 +1948,13 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 		unlock_slurmctld(job_write_lock);
 
 		if (i >= db_inx_max_cnt) {
-			info("%s: can't update fed job, waited %d seconds for JobID=%u to get a db_index, but it hasn't happened yet. Giving up and letting the user know.",
+			info("%s: can't update fed job, waited %d seconds for JobId=%u to get a db_index, but it hasn't happened yet. Giving up and letting the user know.",
 			     __func__, db_inx_max_cnt,
 			     job_update_info->job_id);
 			break;
 		}
 		i++;
-		debug("%s: We cannot update JobID=%u at the moment, we are setting the db index, waiting",
+		debug("%s: We cannot update JobId=%u at the moment, we are setting the db index, waiting",
 		      __func__, job_update_info->job_id);
 		sleep(1);
 	}
@@ -1980,7 +1980,7 @@ _handle_fed_job_update_response(fed_job_update_info_t *job_update_info)
 
 	slurm_mutex_lock(&fed_job_list_mutex);
 	if (!(job_info = _find_fed_job_info(job_update_info->job_id))) {
-		error("%s: failed to find fed job info for fed JobID=%u",
+		error("%s: failed to find fed job info for fed JobId=%u",
 		      __func__, job_update_info->job_id);
 		slurm_mutex_unlock(&fed_job_list_mutex);
 		return;
@@ -2097,7 +2097,7 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	}
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("%s: JobID=%u type:%s",
+		info("%s: JobId=%u type:%s",
 		     __func__, job_update_info->job_id,
 		     _job_update_type_str(job_update_info->type));
 
@@ -2134,7 +2134,7 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 		_handle_fed_send_job_sync(job_update_info);
 		break;
 	default:
-		error("Invalid fed_job type: %d JobID=%u",
+		error("Invalid fed_job type: %d JobId=%u",
 		      job_update_info->type, job_update_info->job_id);
 	}
 
@@ -2234,7 +2234,7 @@ static void *_agent_thread(void *arg)
 					    rpc_rec->buffer);
 				rpc_rec->last_try = now;
 				if (rpc_rec->last_defer == 128) {
-					info("%s: %s JobID=%u request to cluster %s is repeatedly failing",
+					info("%s: %s JobId=%u request to cluster %s is repeatedly failing",
 					     __func__,
 					     rpc_num2string(rpc_rec->msg_type),
 					     rpc_rec->job_id, cluster->name);
@@ -2336,7 +2336,7 @@ static void *_agent_thread(void *arg)
 
 		rpc_iter = list_iterator_create(cluster->send_rpc);
 		while ((rpc_rec = list_next(rpc_iter))) {
-			info("%s: %s JobID=%u request to cluster %s aborted",
+			info("%s: %s JobId=%u request to cluster %s aborted",
 			     __func__, rpc_num2string(rpc_rec->msg_type),
 			     rpc_rec->job_id, cluster->name);
 			list_delete_item(rpc_iter);
@@ -3030,7 +3030,7 @@ extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
 
 	slurm_mutex_lock(&fed_job_list_mutex);
 	if (!(job_info = _find_fed_job_info(job_id))) {
-		error("Didn't find JobID=%u in fed_job_list", job_id);
+		error("Didn't find JobId=%u in fed_job_list", job_id);
 		slurm_mutex_unlock(&fed_job_list_mutex);
 		return SLURM_ERROR;
 	}
@@ -3348,13 +3348,13 @@ static bool _job_has_pending_updates(fed_job_info_t *job_info)
 		if (job_info->updating_sibs[i]) {
 		    if (job_info->updating_time[i] > (now - UPDATE_DELAY)) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-				info("JobID=%u is waiting for %d update responses from cluster id %d",
+				info("JobId=%u is waiting for %d update responses from cluster id %d",
 				     job_info->job_id,
 				     job_info->updating_sibs[i], i);
 			return true;
 		    } else {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-				info("JobID=%u is had pending updates (%d) for cluster id %d, but haven't heard back from it for %ld seconds. Clearing the cluster's updating state",
+				info("JobId=%u is had pending updates (%d) for cluster id %d, but haven't heard back from it for %ld seconds. Clearing the cluster's updating state",
 				     job_info->job_id,
 				     job_info->updating_sibs[i],
 				     i,
@@ -3485,7 +3485,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	xassert(err_msg);
 
 	if (job_desc->job_id != NO_VAL) {
-		error("attempt by uid %u to set JobID=%u. "
+		error("attempt by uid %u to set JobId=%u. "
 		      "specifying a job_id is not allowed when in a federation",
 		      uid, job_desc->job_id);
 		*alloc_code = ESLURM_INVALID_JOB_ID;
@@ -3806,26 +3806,26 @@ extern int fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id)
 	slurm_mutex_lock(&fed_job_list_mutex);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("%s: attempting to set fed JobID=%u lock to %u",
+		info("%s: attempting to set fed JobId=%u lock to %u",
 		     __func__, job_id, cluster_id);
 
 	if (!(job_info = _find_fed_job_info(job_id))) {
-		error("Didn't find JobID=%u in fed_job_list", job_id);
+		error("Didn't find JobId=%u in fed_job_list", job_id);
 		rc = SLURM_ERROR;
 	} else if (_job_has_pending_updates(job_info)) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("%s: cluster %u can't get cluster lock for JobID=%u because it has pending updates",
+			info("%s: cluster %u can't get cluster lock for JobId=%u because it has pending updates",
 			     __func__, cluster_id, job_id);
 		rc = SLURM_ERROR;
 	} else if (job_info->cluster_lock &&
 		   job_info->cluster_lock != cluster_id) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("%s: fed JobID=%u already locked by cluster %d",
+			info("%s: fed JobId=%u already locked by cluster %d",
 			     __func__, job_id, job_info->cluster_lock);
 		rc = SLURM_ERROR;
 	} else {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("%s: fed JobID=%u locked by %u",
+			info("%s: fed JobId=%u locked by %u",
 			     __func__, job_id, cluster_id);
 
 		job_info->cluster_lock = cluster_id;
@@ -3877,20 +3877,20 @@ extern int fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id)
 	slurm_mutex_lock(&fed_job_list_mutex);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-		info("%s: attempting to unlock fed JobID=%u by cluster %u",
+		info("%s: attempting to unlock fed JobId=%u by cluster %u",
 		     __func__, job_id, cluster_id);
 
 	if (!(job_info = _find_fed_job_info(job_id))) {
-		error("Didn't find JobID=%u in fed_job_list", job_id);
+		error("Didn't find JobId=%u in fed_job_list", job_id);
 		rc = SLURM_ERROR;
 	} else if (job_info->cluster_lock &&
 		   job_info->cluster_lock != cluster_id) {
-		error("attempt to unlock sib JobID=%u by cluster %d which doesn't have job lock",
+		error("attempt to unlock sib JobId=%u by cluster %d which doesn't have job lock",
 		      job_id, cluster_id);
 		rc = SLURM_ERROR;
 	} else {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("%s: fed JobID=%u unlocked by %u",
+			info("%s: fed JobId=%u unlocked by %u",
 			     __func__, job_id, cluster_id);
 		job_info->cluster_lock = 0;
 	}
@@ -4026,12 +4026,12 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, time_t start_time)
 		error("Didn't find %pJ in fed_job_list", job_ptr);
 		rc = SLURM_ERROR;
 	} else if (!job_info->cluster_lock) {
-		error("attempt to start sib JobID=%u by cluster %u, but it's not locked",
+		error("attempt to start sib JobId=%u by cluster %u, but it's not locked",
 		      job_info->job_id, cluster_id);
 		rc = SLURM_ERROR;
 	} else if (job_info->cluster_lock &&
 		   (job_info->cluster_lock != cluster_id)) {
-		error("attempt to start sib JobID=%u by cluster %u, which doesn't have job lock",
+		error("attempt to start sib JobId=%u by cluster %u, which doesn't have job lock",
 		     job_info->job_id, cluster_id);
 		rc = SLURM_ERROR;
 	}
@@ -4948,7 +4948,7 @@ static int _q_sib_submit_response(slurm_msg_t *msg)
 	/* if failure then remove from active siblings */
 	if (sib_msg && sib_msg->return_code) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
-			info("%s: cluster %s failed to submit sibling JobID=%u. Removing from active_sibs. (error:%d)",
+			info("%s: cluster %s failed to submit sibling JobId=%u. Removing from active_sibs. (error:%d)",
 			     __func__, msg->conn->cluster_name,
 			     sib_msg->job_id,
 			     sib_msg->return_code);
