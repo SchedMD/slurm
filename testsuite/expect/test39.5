@@ -36,7 +36,7 @@ set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 
 proc get_node_config {} {
-	global cpus_per_socket sockets_per_node
+	global cpus_per_socket sockets_per_node test_id
 	global exit_code file_in max_job_delay number srun scontrol
 
 	set cpus_tot 1
@@ -45,7 +45,7 @@ proc get_node_config {} {
 	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
 	set timeout $max_job_delay
 	log_user 0
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 $file_in]
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 -J "test$test_id" $file_in]
 	expect {
 		-re "CPUTot=($number)" {
 			set cpus_tot $expect_out(1,string)
@@ -113,7 +113,6 @@ set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
 #
 # Build input script file
 #
-exec $bin_rm -f $file_in
 make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 exit 0"
 
@@ -128,7 +127,7 @@ if {$tot_gpus > 1} {
 } else {
 	set use_gpus_per_job $tot_gpus
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -l ./$file_in]
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
@@ -153,7 +152,7 @@ if {$use_gpus_per_job > 2} {
 	send_user "\n\nTEST: --gpus option, part 2\n"
 	set match 0
 	incr use_gpus_per_job -2
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -l ./$file_in]
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr match [cuda_count $expect_out(1,string)]
@@ -185,7 +184,7 @@ if {$gpus_per_node > 1} {
 } else {
 	set use_gpus_per_node $gpus_per_node
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -l ./$file_in]
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
@@ -211,7 +210,7 @@ if {$match != $expected_gpus} {
 #
 send_user "\n\nTEST: --gpus-per-socket option\n"
 set match 0
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=$sockets_per_node --ntasks-per-socket=1 --nodes=$nb_nodes -t1 -l ./$file_in]
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=$sockets_per_node --ntasks-per-socket=1 --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
@@ -242,7 +241,7 @@ if {$gpu_cnt > 1} {
 } else {
 	set use_gpus_per_node $gpu_cnt
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -l ./$file_in]
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -J "test$test_id" -l ./$file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
