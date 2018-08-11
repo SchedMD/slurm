@@ -891,8 +891,7 @@ static int _test_pack_used(void *x, void *arg)
 	if (job_ptr->bit_flags & JOB_PACK_FLAG)
 		return 0;
 
-	error("Incomplete pack job being aborted %u+%u (%u)",
-	      job_ptr->pack_job_id, job_ptr->pack_job_offset, job_ptr->job_id);
+	error("Incomplete hetjob being aborted %pJ", job_ptr);
 	_abort_job(job_ptr, JOB_FAILED, FAIL_SYSTEM, "incomplete pack_job");
 
 	return 0;
@@ -925,8 +924,8 @@ static void _validate_pack_jobs(void)
 		hs = hostset_create(job_id_str);
 		xfree(job_id_str);
 		if (!hs) {
-			error("Job %u has invalid pack_job_id_set(%s)",
-			      job_ptr->job_id, job_ptr->pack_job_id_set);
+			error("%pJ has invalid pack_job_id_set(%s)",
+			      job_ptr, job_ptr->pack_job_id_set);
 			_abort_job(job_ptr, JOB_FAILED, FAIL_SYSTEM,
 				   "invalid pack_job_id_set");
 			continue;
@@ -937,12 +936,12 @@ static void _validate_pack_jobs(void)
 			job_id = (uint32_t) strtoll(job_id_str, NULL, 10);
 			pack_job_ptr = find_job_record(job_id);
 			if (!pack_job_ptr) {
-				error("Could not find job %u, part of pack job %u",
+				error("Could not find JobId=%u, part of pack JobId=%u",
 				      job_id, job_ptr->job_id);
 				pack_job_valid = false;
 			} else if (pack_job_ptr->pack_job_id !=
 				   job_ptr->job_id) {
-				error("Invalid state of job %u, part of pack job %u",
+				error("Invalid state of JobId=%u, part of pack JobId=%u",
 				      job_id, job_ptr->job_id);
 				pack_job_valid = false;
 			} else {
@@ -2458,8 +2457,7 @@ static int _sync_nodes_to_comp_job(void)
 				continue;
 
 			update_cnt++;
-			info("%s: Job %u in completing state",
-			     __func__, job_ptr->job_id);
+			info("%s: %pJ in completing state", __func__, job_ptr);
 			if (!job_ptr->node_bitmap_cg)
 				build_cg_bitmap(job_ptr);
 
@@ -2531,8 +2529,8 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			/* This should only happen if a job was running
 			 * on a node that was newly configured DOWN */
 			int save_accounting_enforce;
-			info("Removing failed node %s from job_id %u",
-			     node_ptr->name, job_ptr->job_id);
+			info("Removing failed node %s from %pJ",
+			     node_ptr->name, job_ptr);
 			/* Disable accounting here. Accounting reset for all
 			 * jobs in _restore_job_dependencies() */
 			save_accounting_enforce = accounting_enforce;
@@ -2544,8 +2542,8 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			job_post_resize_acctg(job_ptr);
 			accounting_enforce = save_accounting_enforce;
 		} else if (IS_NODE_DOWN(node_ptr) && IS_JOB_RUNNING(job_ptr)) {
-			info("Killing job %u on DOWN node %s",
-			     job_ptr->job_id, node_ptr->name);
+			info("Killing %pJ on DOWN node %s",
+			     job_ptr, node_ptr->name);
 			_abort_job(job_ptr, JOB_NODE_FAIL, FAIL_DOWN_NODE,
 				   NULL);
 			cnt++;
@@ -2634,8 +2632,8 @@ static int _restore_job_dependencies(void)
 		job_ptr->details->dependency = NULL;
 		rc = update_job_dependency(job_ptr, new_depend);
 		if (rc != SLURM_SUCCESS) {
-			error("Invalid dependencies discarded for job %u: %s",
-				job_ptr->job_id, new_depend);
+			error("Invalid dependencies discarded for %pJ: %s",
+				job_ptr, new_depend);
 			error_code = rc;
 		}
 		xfree(new_depend);

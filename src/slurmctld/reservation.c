@@ -2878,9 +2878,8 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 		if (job_ptr->resv_ptr != resv_ptr)
 			continue;
 		if (!IS_JOB_FINISHED(job_ptr)) {
-			info("Job %u linked to defunct reservation %s, "
-			     "clearing that reservation",
-			     job_ptr->job_id, job_ptr->resv_name);
+			info("%pJ linked to defunct reservation %s, clearing that reservation",
+			     job_ptr, job_ptr->resv_name);
 		}
 		job_ptr->resv_id = 0;
 		job_ptr->resv_ptr = NULL;
@@ -3337,8 +3336,8 @@ static void _validate_all_reservations(void)
 							job_ptr->resv_name);
 		}
 		if (!job_ptr->resv_ptr) {
-			error("JobId %u linked to defunct reservation %s",
-			       job_ptr->job_id, job_ptr->resv_name);
+			error("%pJ linked to defunct reservation %s",
+			       job_ptr, job_ptr->resv_name);
 			job_ptr->resv_id = 0;
 			xfree(job_ptr->resv_name);
 		}
@@ -4072,10 +4071,9 @@ static void _check_job_compatibility(struct job_record *job_ptr,
 {
 	char str[200];
 	bit_fmt(str, sizeof(str), job_res->core_bitmap);
-	info("Checking %d nodes (of %d) for job %u, "
-	     "core_bitmap:%s core_bitmap_size:%d",
+	info("Checking %d nodes (of %d) for %pJ, core_bitmap:%s core_bitmap_size:%d",
 	     total_nodes, bit_size(job_res->node_bitmap),
-	     job_ptr->job_id, str, bit_size(job_res->core_bitmap));
+	     job_ptr, str, bit_size(job_res->core_bitmap));
 }
 #endif
 
@@ -4279,8 +4277,8 @@ static int _valid_job_access_resv(struct job_record *job_ptr,
 	}
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
-		verbose("Job %u attempting to use reservation %s with floating "
-			"start time", job_ptr->job_id, resv_ptr->name);
+		verbose("%pJ attempting to use reservation %s with floating start time",
+			job_ptr, resv_ptr->name);
 		return ESLURM_RESERVATION_ACCESS;
 	}
 
@@ -4761,8 +4759,8 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 	}
 	list_iterator_destroy(iter);
 
-	/* info("job %u blocked from %d licenses of type %s",
-	     job_ptr->job_id, resv_cnt, lic_name); */
+	/* info("%pJ blocked from %d licenses of type %s",
+	     job_ptr, resv_cnt, lic_name); */
 	return resv_cnt;
 }
 
@@ -5130,8 +5128,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
 			char *nodes = bitmap2node_name(*node_bitmap);
-			info("%s: job:%u reservation:%s nodes:%s", __func__,
-			     job_ptr->job_id, job_ptr->resv_name, nodes);
+			info("%s: %pJ reservation:%s nodes:%s",
+			     __func__, job_ptr, job_ptr->resv_name, nodes);
 			xfree(nodes);
 		}
 
@@ -5228,9 +5226,8 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			if ((resv_ptr->full_nodes) ||
 			    (job_ptr->details->whole_node == 1)) {
 #if _DEBUG
-				info("reservation %s uses full nodes or job %u "
-				     "will not share nodes",
-				     resv_ptr->name, job_ptr->job_id);
+				info("reservation %s uses full nodes or %pJ will not share nodes",
+				     resv_ptr->name, job_ptr);
 #endif
 				bit_and_not(*node_bitmap, resv_ptr->node_bitmap);
 			} else {
@@ -5348,9 +5345,9 @@ static int _set_job_resvid(void *object, void *arg)
 		return SLURM_SUCCESS;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_RESERVATION)
-		info("updating job %u to correct resv_id (%u->%u) of reoccurring reservation '%s'",
-		     job_ptr->job_id, job_ptr->resv_id,
-		     resv_ptr->resv_id, resv_ptr->name);
+		info("updating %pJ to correct resv_id (%u->%u) of reoccurring reservation '%s'",
+		     job_ptr, job_ptr->resv_id, resv_ptr->resv_id,
+		     resv_ptr->name);
 	job_ptr->resv_id = resv_ptr->resv_id;
 	/* Update the database */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);

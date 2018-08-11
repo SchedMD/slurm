@@ -3520,7 +3520,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	/* find the job, step, and validate input */
 	job_ptr = find_job_record (req->job_id);
 	if (job_ptr == NULL) {
-		info("step_partial_comp: JobID=%u invalid", req->job_id);
+		info("%s: JobId=%u invalid", __func__, req->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -3529,7 +3529,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	 * which won't see the completing flag.
 	 */
 	if (job_ptr->job_state == JOB_PENDING) {
-		info("step_partial_comp: JobID=%u pending", req->job_id);
+		info("%s: JobId=%u pending", __func__, req->job_id);
 		return ESLURM_JOB_PENDING;
 	}
 
