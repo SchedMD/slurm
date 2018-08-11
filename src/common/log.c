@@ -689,7 +689,7 @@ set_idbuf(char *idbuf)
 }
 
 /*
- * jobid2fmt() - print a job ID as "JobID=..." including, as applicable,
+ * jobid2fmt() - print a job ID as "JobId=..." including, as applicable,
  * the job array or hetjob component information with the raw jobid in
  * parenthesis.
  */
@@ -702,19 +702,19 @@ static char *_jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
 	 * to handle the va_list this will effectively skip this argument.
 	 */
 	if (job_ptr == NULL)
-		return "%.0sJobID=Invalid";
+		return "%.0sJobId=Invalid";
 
 	if (job_ptr->pack_job_id) {
-		snprintf(buf, buf_size, "%%.0sJobID=%u+%u(%u)",
+		snprintf(buf, buf_size, "%%.0sJobId=%u+%u(%u)",
 			 job_ptr->pack_job_id, job_ptr->pack_job_offset,
 			 job_ptr->job_id);
 	} else if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL)) {
-		snprintf(buf, buf_size, "%%.0sJobID=%u_*",
+		snprintf(buf, buf_size, "%%.0sJobId=%u_*",
 			 job_ptr->array_job_id);
 	} else if (job_ptr->array_task_id == NO_VAL) {
-		snprintf(buf, buf_size, "%%.0sJobID=%u", job_ptr->job_id);
+		snprintf(buf, buf_size, "%%.0sJobId=%u", job_ptr->job_id);
 	} else {
-		snprintf(buf, buf_size, "%%.0sJobID=%u_%u(%u)",
+		snprintf(buf, buf_size, "%%.0sJobId=%u_%u(%u)",
 			 job_ptr->array_job_id, job_ptr->array_task_id,
 			 job_ptr->job_id);
 	}
@@ -809,7 +809,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 'p':
 				fmt++;
 				switch (*fmt) {
-				case 'J':	/* "%pJ" => "JobID=..." */
+				case 'J':	/* "%pJ" => "JobId=..." */
 				{
 					int i;
 					void *ptr = NULL;
