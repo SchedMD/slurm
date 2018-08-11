@@ -85,7 +85,8 @@ static void _preempt_signal(struct job_record *job_ptr, uint32_t grace_time)
 	job_signal(job_ptr->job_id, SIGTERM, 0, 0, 0);
 }
 
-extern int slurm_job_check_grace(struct job_record *job_ptr, uint32_t preemptor)
+extern int slurm_job_check_grace(struct job_record *job_ptr,
+				 struct job_record *preemptor_ptr)
 {
 	/* Preempt modes: -1 (unset), 0 (none), 1 (partition), 2 (QOS) */
 	static int preempt_mode = 0;
@@ -123,8 +124,8 @@ extern int slurm_job_check_grace(struct job_record *job_ptr, uint32_t preemptor)
 	}
 
 	if (grace_time) {
-		debug("setting %u sec preemption grace time for %pJ to reclaim resources for JobId=%u",
-		      grace_time, job_ptr, preemptor);
+		debug("setting %u sec preemption grace time for %pJ to reclaim resources for %pJ",
+		      grace_time, job_ptr, preemptor_ptr);
 		_preempt_signal(job_ptr, grace_time);
 	} else
 		rc = SLURM_ERROR;

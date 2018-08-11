@@ -92,6 +92,6 @@ extern bool slurm_job_preempt_check(job_queue_rec_t *preemptor,
 
 /* Returns a Slurm errno if preempt grace isn't allowed */
 extern int slurm_job_check_grace(struct job_record *job_ptr,
-				 uint32_t preemptor);
+				 struct job_record *preemptor_ptr);
 
 #endif /*__SLURM_CONTROLLER_PREEMPT_H__*/
