@@ -546,8 +546,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 	}
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("select/serial: evaluating job %u on %u nodes",
-		     job_ptr->job_id, bit_set_count(bitmap));
+		info("select/serial: evaluating %pJ on %u nodes",
+		     job_ptr, bit_set_count(bitmap));
 	}
 
 	orig_map = bit_copy(bitmap);
@@ -676,8 +676,8 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *bitmap, int mode,
 			break;
 	}
 	if (!jp_ptr) {
-		fatal("select/serial: could not find partition for job %u",
-		      job_ptr->job_id);
+		fatal("select/serial: could not find partition for %pJ",
+		      job_ptr);
 		return SLURM_ERROR;	/* Fix CLANG false positive */
 	}
 
@@ -882,8 +882,8 @@ alloc_job:
 	}
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("select/serial: cr_job_test: distributing job %u",
-		     job_ptr->job_id);
+		info("select/serial: cr_job_test: distributing %pJ",
+		     job_ptr);
 	}
 
 	/** create the struct_job_res  **/
@@ -938,9 +938,8 @@ alloc_job:
 	}
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("select/serial: cr_job_test: job %u ncpus %u cbits %u/%d "
-		     "nbits %u", job_ptr->job_id,
-		     job_res->ncpus, bit_set_count(free_cores), 1,
+		info("select/serial: cr_job_test: %pJ ncpus %u cbits %u/%d nbits %u",
+		     job_ptr, job_res->ncpus, bit_set_count(free_cores), 1,
 		     job_res->nhosts);
 	}
 	FREE_NULL_BITMAP(free_cores);
