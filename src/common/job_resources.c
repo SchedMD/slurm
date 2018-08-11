@@ -434,7 +434,7 @@ extern void log_job_resources(uint32_t job_id,
 	int sock_inx = 0, sock_reps = 0;
 
 	if (job_resrcs_ptr == NULL) {
-		error("log_job_resources: job_resrcs_ptr is NULL");
+		error("%s: job_resrcs_ptr is NULL", __func__);
 		return;
 	}
 
@@ -444,25 +444,25 @@ extern void log_job_resources(uint32_t job_id,
 	     job_resrcs_ptr->node_req, job_resrcs_ptr->nodes);
 
 	if (job_resrcs_ptr->cpus == NULL) {
-		error("log_job_resources: cpus array is NULL");
+		error("%s: cpus array is NULL", __func__);
 		return;
 	}
 	if (job_resrcs_ptr->memory_allocated == NULL) {
-		error("log_job_resources: memory array is NULL");
+		error("%s: memory array is NULL", __func__);
 		return;
 	}
 	if ((job_resrcs_ptr->cores_per_socket == NULL) ||
 	    (job_resrcs_ptr->sockets_per_node == NULL) ||
 	    (job_resrcs_ptr->sock_core_rep_count == NULL)) {
-		error("log_job_resources: socket/core array is NULL");
+		error("%s: socket/core array is NULL", __func__);
 		return;
 	}
 	if (job_resrcs_ptr->core_bitmap == NULL) {
-		error("log_job_resources: core_bitmap is NULL");
+		error("%s: core_bitmap is NULL", __func__);
 		return;
 	}
 	if (job_resrcs_ptr->core_bitmap_used == NULL) {
-		error("log_job_resources: core_bitmap_used is NULL");
+		error("%s: core_bitmap_used is NULL", __func__);
 		return;
 	}
 	array_size = bit_size(job_resrcs_ptr->core_bitmap);
@@ -500,7 +500,7 @@ extern void log_job_resources(uint32_t job_id,
 			job_resrcs_ptr->cores_per_socket[sock_inx];
 		for (i=0; i<bit_reps; i++) {
 			if (bit_inx >= array_size) {
-				error("log_job_resources: array size wrong");
+				error("%s: array size wrong", __func__);
 				break;
 			}
 			if (bit_test(job_resrcs_ptr->core_bitmap,
