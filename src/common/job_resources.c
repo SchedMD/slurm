@@ -425,10 +425,17 @@ extern void free_job_resources(job_resources_t **job_resrcs_pptr)
 	}
 }
 
-/* Log the contents of a job_resources data structure using info() */
-extern void log_job_resources(uint32_t job_id,
-			      job_resources_t *job_resrcs_ptr)
+/*
+ * Log the contents of a job_resources data structure using info()
+ *
+ * Function argument is void * to avoid a circular dependency between
+ * job_resources.h and slurmctld.h. Cast inside the function here to
+ * resolve that problem for now.
+ */
+extern void log_job_resources(void *void_job_ptr)
 {
+	struct job_record *job_ptr = (struct job_record *) void_job_ptr;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int bit_inx = 0, bit_reps, i;
 	int array_size, node_inx;
 	int sock_inx = 0, sock_reps = 0;
@@ -439,8 +446,8 @@ extern void log_job_resources(uint32_t job_id,
 	}
 
 	info("====================");
-	info("job_id:%u nhosts:%u ncpus:%u node_req:%u nodes=%s",
-	     job_id, job_resrcs_ptr->nhosts, job_resrcs_ptr->ncpus,
+	info("%pJ nhosts:%u ncpus:%u node_req:%u nodes=%s",
+	     job_ptr, job_resrcs_ptr->nhosts, job_resrcs_ptr->ncpus,
 	     job_resrcs_ptr->node_req, job_resrcs_ptr->nodes);
 
 	if (job_resrcs_ptr->cpus == NULL) {

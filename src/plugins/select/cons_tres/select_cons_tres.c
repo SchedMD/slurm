@@ -205,7 +205,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 	       action);
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		log_job_resources(job_ptr->job_id, job);
+		log_job_resources(job_ptr);
 
 	i_first = bit_ffs(job->node_bitmap);
 	if (i_first == -1)
@@ -1259,7 +1259,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 				info("cons_tres: %s: error:%s", __func__,
 				     slurm_strerror(rc));
 			}
-			log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
+			log_job_resources(job_ptr);
 			gres_plugin_job_state_log(job_ptr->gres_list,
 						  job_ptr->job_id);
 		} else {

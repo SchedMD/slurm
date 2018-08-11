@@ -438,7 +438,7 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("cons_tres: %s: job %u action %d", __func__,
 		     job_ptr->job_id, action);
-		log_job_resources(job_ptr->job_id, job);
+		log_job_resources(job_ptr);
 		log_tres_state(node_usage, part_record_ptr);
 	}
 	debug3("cons_tres: %s: job %u action %d", __func__, job_ptr->job_id,
@@ -1905,7 +1905,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 	debug3("cons_tres: %s: job %u action %d", __func__, job_ptr->job_id,
 	       action);
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		log_job_resources(job_ptr->job_id, job);
+		log_job_resources(job_ptr);
 
 	first_bit = bit_ffs(job->node_bitmap);
 	if (first_bit == -1)

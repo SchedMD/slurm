@@ -1689,13 +1689,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (job_ptr->job_resrcs)
-			log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
+			log_job_resources(job_ptr);
 		else {
 			info("no job_resources info for job %u",
 			     job_ptr->job_id);
 		}
 	} else if (debug_cpu_bind && job_ptr->job_resrcs) {
-		log_job_resources(job_ptr->job_id, job_ptr->job_resrcs);
+		log_job_resources(job_ptr);
 	}
 
 	return rc;

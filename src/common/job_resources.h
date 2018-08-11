@@ -191,8 +191,7 @@ extern job_resources_t *copy_job_resources(job_resources_t *job_resrcs_ptr);
 extern void free_job_resources(job_resources_t **job_resrcs_pptr);
 
 /* Log the contents of a job_resources data structure using info() */
-extern void log_job_resources(uint32_t job_id,
-			      job_resources_t *job_resrcs_ptr);
+extern void log_job_resources(void *job_ptr);
 
 /* Un/pack full job_resources data structure */
 extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
