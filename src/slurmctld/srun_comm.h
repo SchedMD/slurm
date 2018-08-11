@@ -47,13 +47,13 @@
 
 /*
  * srun_allocate - notify srun of a resource allocation
- * IN job_id - id of the job allocated resource
+ * IN job_ptr - job allocated resources
  */
-extern void srun_allocate (uint32_t job_id);
+extern void srun_allocate(struct job_record *job_ptr);
 
 /*
  * srun_allocate_abort - notify srun of a resource allocation failure
- * IN job_id - id of the job allocated resource
+ * IN job_ptr - job allocated resources
  */
 extern void srun_allocate_abort(struct job_record *job_ptr);
 

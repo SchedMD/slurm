@@ -2512,7 +2512,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 		     job_ptr, job_ptr->part_ptr->name, job_ptr->nodes);
 		power_g_job_start(job_ptr);
 		if (job_ptr->batch_flag == 0)
-			srun_allocate(job_ptr->job_id);
+			srun_allocate(job_ptr);
 		else if (!IS_JOB_CONFIGURING(job_ptr))
 			launch_job(job_ptr);
 		slurmctld_diag_stats.backfilled_jobs++;

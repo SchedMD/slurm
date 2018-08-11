@@ -1957,7 +1957,7 @@ skip_start:
 				   job_ptr->nodes, job_ptr->total_cpus,
 				   job_ptr->part_ptr->name);
 			if (job_ptr->batch_flag == 0)
-				srun_allocate(job_ptr->job_id);
+				srun_allocate(job_ptr);
 			else if (!IS_JOB_CONFIGURING(job_ptr))
 				launch_job(job_ptr);
 			rebuild_job_part_list(job_ptr);

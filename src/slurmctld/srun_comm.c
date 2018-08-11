@@ -121,11 +121,10 @@ static void _free_srun_alloc(void *x)
 
 /*
  * srun_allocate - notify srun of a resource allocation
- * IN job_id - id of the job allocated resource
+ * IN job_ptr - job allocated resources
  */
-extern void srun_allocate (uint32_t job_id)
+extern void srun_allocate(struct job_record *job_ptr)
 {
-	struct job_record *job_ptr = find_job_record(job_id);
 	struct job_record *pack_job, *pack_leader;
 	resource_allocation_response_msg_t *msg_arg = NULL;
 	slurm_addr_t *addr;
@@ -157,8 +156,8 @@ extern void srun_allocate (uint32_t job_id)
 		iter = list_iterator_create(pack_leader->pack_job_list);
 		while ((pack_job = (struct job_record *) list_next(iter))) {
 			if (pack_leader->pack_job_id != pack_job->pack_job_id) {
-				error("%s: Bad pack_job_list for job %u",
-				      __func__, pack_leader->pack_job_id);
+				error("%s: Bad pack_job_list for %pJ",
+				      __func__, pack_leader);
 				continue;
 			}
 			msg_arg = build_alloc_msg(pack_job, SLURM_SUCCESS,
@@ -171,14 +170,14 @@ extern void srun_allocate (uint32_t job_id)
 				   RESPONSE_JOB_PACK_ALLOCATION, job_resp_list,
 				   job_ptr->start_protocol_ver);
 	} else {
-		error("%s: Can not find pack job leader %u",
-		      __func__, job_ptr->pack_job_id);
+		error("%s: Can not find pack job leader %pJ",
+		      __func__, job_ptr);
 	}
 }
 
 /*
  * srun_allocate_abort - notify srun of a resource allocation failure
- * IN job_id - id of the job allocated resource
+ * IN job_ptr - job allocated resources
  */
 extern void srun_allocate_abort(struct job_record *job_ptr)
 {
