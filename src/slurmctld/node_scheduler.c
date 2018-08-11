@@ -130,7 +130,8 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 char **err_msg);
 
 static bool _first_array_task(struct job_record *job_ptr);
-static void _log_node_set(uint32_t job_id, struct node_set *node_set_ptr,
+static void _log_node_set(struct job_record *job_ptr,
+			  struct node_set *node_set_ptr,
 			  int node_set_size);
 static int _match_feature(List feature_list, bitstr_t **inactive_bitmap);
 static int _nodes_in_sets(bitstr_t *req_bitmap,
@@ -2638,7 +2639,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		_set_sched_weight(node_set_ptr + i);
 	qsort(node_set_ptr, node_set_size, sizeof(struct node_set),
 	      _sort_node_set);
-	_log_node_set(job_ptr->job_id, node_set_ptr, node_set_size);
+	_log_node_set(job_ptr, node_set_ptr, node_set_size);
 
 	/* ensure that selected nodes are in these node sets */
 	if (job_ptr->details->req_node_bitmap) {
@@ -4048,7 +4049,8 @@ static int _sort_node_set(const void *x, const void *y)
 	return 0;
 }
 
-static void _log_node_set(uint32_t job_id, struct node_set *node_set_ptr,
+static void _log_node_set(struct job_record *job_ptr,
+			  struct node_set *node_set_ptr,
 			  int node_set_size)
 {
 /* Used for debugging purposes only */
@@ -4056,7 +4058,7 @@ static void _log_node_set(uint32_t job_id, struct node_set *node_set_ptr,
 	char *node_list;
 	int i;
 
-	info("NodeSet for job %u", job_id);
+	info("NodeSet for %pJ", job_ptr);
 	for (i = 0; i < node_set_size; i++) {
 		node_list = bitmap2node_name(node_set_ptr[i].my_bitmap);
 		info("NodeSet[%d] Nodes:%s NodeWeight:%u Flags:%u SchedWeight:%"PRIu64,
