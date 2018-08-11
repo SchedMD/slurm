@@ -231,10 +231,6 @@ extern slurmdb_cluster_rec_t *response_cluster_rec;
 extern bool   test_config;
 extern int    test_config_rc;
 
-/* Buffer size use to print the jobid2str()
- * jobid, taskid and state.
- */
-#define JBUFSIZ 256
 /*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h
 \*****************************************************************************/
@@ -2583,17 +2579,6 @@ extern bool validate_operator(uid_t uid);
  * comes last.
  */
 extern void cleanup_completing(struct job_record *);
-
-/*
- * jobid2fmt() - print a job ID including pack job and job array information.
- */
-extern char *jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size);
-
-/*
- * jobid2str() - print all the parts that uniquely identify a job.
- */
-extern char *jobid2str(struct job_record *job_ptr, char *buf, int buf_size);
-
 
 /* trace_job() - print the job details if
  *               the DEBUG_FLAG_TRACE_JOBS is set
