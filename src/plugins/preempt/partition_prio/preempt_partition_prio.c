@@ -88,13 +88,11 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		return preemptee_job_list;
 	}
 	if (!IS_JOB_PENDING(job_ptr)) {
-		error("find_preemptable_jobs: job %u not pending",
-		      job_ptr->job_id);
+		error("%s: %pJ not pending", __func__, job_ptr);
 		return preemptee_job_list;
 	}
 	if (job_ptr->part_ptr == NULL) {
-		error("find_preemptable_jobs: job %u has NULL partition ptr",
-		      job_ptr->job_id);
+		error("%s: %pJ has NULL partition ptr", __func__, job_ptr);
 		return preemptee_job_list;
 	}
 	if (job_ptr->part_ptr->node_bitmap == NULL) {

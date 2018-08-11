@@ -115,26 +115,24 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 	preemptor_qos = preemptor_job_ptr->qos_ptr;
 	if (!preemptor_qos) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO)
-			info("%s: Preemptor JobID:%u QOS pointer is NULL",
-			     plugin_type, preemptor_job_ptr->job_id);
+			info("%s: Preemptor %pJ QOS pointer is NULL",
+			     plugin_type, preemptor_job_ptr);
 		return false;
 
 	}
 	preemptee_qos = preemptee_job_ptr->qos_ptr;
 	if (!preemptee_qos) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO)
-			info("%s: Preemptee JobID:%u QOS pointer is NULL",
-			     plugin_type, preemptee_job_ptr->job_id);
+			info("%s: Preemptee %pJ QOS pointer is NULL",
+			     plugin_type, preemptee_job_ptr);
 		return false;
 	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("%s: Preemptor JobID:%u Account:%s QOS:%s  "
-		    "Preemptee JobID:%u Account:%s QOS:%s",
-		    plugin_type, preemptor_job_ptr->job_id,
-		    preemptor_assoc->acct, preemptor_qos->name,
-		    preemptee_job_ptr->job_id, preemptee_assoc->acct,
-		    preemptee_job_ptr->name);
+		info("%s: Preemptor %pJ Account:%s QOS:%s Preemptee %pJ Account:%s QOS:%s",
+		     plugin_type, preemptor_job_ptr, preemptor_assoc->acct,
+		     preemptor_qos->name, preemptee_job_ptr,
+		     preemptee_assoc->acct, preemptee_qos->name);
 	}
 
 	if (!xstrcmp(preemptor_assoc->acct, preemptee_assoc->acct)) {
@@ -145,15 +143,11 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 
 		if (preemptor_qos->priority <= preemptee_qos->priority) {
 			if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-				info("%s: Preemptor(%u, %s, QoS(%s)=%u) and "
-				     "preemptee(%u, %s, QOS(%s)=%u) share "
-				     "share account, but QOS1 <= QOS2",
-				     plugin_type, preemptor_job_ptr->job_id,
-				     preemptor_job_ptr->name,
+				info("%s: Preemptor(%pJ, QoS(%s)=%u) and preemptee(%pJ, QOS(%s)=%u) share share account, but QOS1 <= QOS2",
+				     plugin_type, preemptor_job_ptr,
 				     preemptor_qos->name,
 				     preemptor_qos->priority,
-				     preemptee_job_ptr->job_id,
-				     preemptee_job_ptr->name,
+				     preemptee_job_ptr,
 				     preemptee_qos->name,
 				     preemptee_qos->priority);
 			}
@@ -182,9 +176,8 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 	 * its share. If the account is using more than its share, then this
 	 * job is a candidate. If not, it is NOT a candidate. */
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("%s: Preemptor(%u) UsedCPUs:%"PRIu64
-		     " Shares: %f Tot_CPU %u TOT: %f",
-		     plugin_type, preemptor_job_ptr->job_id,
+		info("%s: Preemptor(%pJ) UsedCPUs:%"PRIu64" Shares: %f Tot_CPU %u TOT: %f",
+		     plugin_type, preemptor_job_ptr,
 		     preemptee_assoc->usage->grp_used_tres[TRES_ARRAY_CPU],
 		     preemptee_assoc->usage->shares_norm,
 		     preemptor_job_ptr->part_ptr->total_cpus,
@@ -196,15 +189,15 @@ static bool _account_preemptable(struct job_record *preemptor_job_ptr,
 	     preemptee_assoc->usage->shares_norm *
 	     preemptee_job_ptr->part_ptr->total_cpus) || is_from_same_account) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-			info("%s: Preemptee(%u) acccount %s already "
-			     "overallocated", plugin_type,
-			     preemptee_job_ptr->job_id, preemptee_assoc->acct);
+			info("%s: Preemptee(%pJ) acccount %s already overallocated",
+			     plugin_type, preemptee_job_ptr,
+			     preemptee_assoc->acct);
 		}
 	} else {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-			info("%s: Preemptee(%u) acccount %s not overallocated, "
-			     "skip", plugin_type,
-			     preemptee_job_ptr->job_id, preemptee_assoc->acct);
+			info("%s: Preemptee(%pJ) acccount %s not overallocated, skip",
+			     plugin_type, preemptee_job_ptr,
+			     preemptee_assoc->acct);
 		}
 		return false;
 	}
@@ -270,15 +263,15 @@ static bool _is_job_runtime_greater(struct job_record *job_ptr1,
 
 	if (timediff_job1_job2 > 0) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-			info("%s: Runtime of JobId %u > JobId %u (%u > %u)",
-			     plugin_type, job_ptr1->job_id, job_ptr2->job_id,
+			info("%s: Runtime of %pJ > %pJ (%u > %u)",
+			     plugin_type, job_ptr1, job_ptr2,
 			     (uint32_t) runtime_job1, (uint32_t) runtime_job2);
 		}
 		return true;
 	} else {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-			info("%s: Runtime of JobId %u <= JobId %u (%u <= %u)",
-			     plugin_type, job_ptr1->job_id, job_ptr2->job_id,
+			info("%s: Runtime of %pJ <= %pJ (%u <= %u)",
+			     plugin_type, job_ptr1, job_ptr2,
 			     (uint32_t) runtime_job1, (uint32_t) runtime_job2);
 		}
 		return false;
@@ -325,16 +318,14 @@ static int _get_nb_cpus(struct job_record *job_ptr)
 		 * the job might have been requeued afterward. */
 		cpu_cnt = job_ptr->total_cpus;
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-			info("%s: JobId=%u (%s) total_cpus=%u",
-			     plugin_type, job_ptr->job_id, job_ptr->name,
-			     cpu_cnt);
+			info("%s: %pJ total_cpus=%u",
+			     plugin_type, job_ptr, cpu_cnt);
 		}
 	} else {
 		cpu_cnt = req_nodes * cpus_per_node;
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-			info("%s: JobId=%u (%s) req_cpus=%u",
-			     plugin_type, job_ptr->job_id, job_ptr->name,
-			     cpu_cnt);
+			info("%s: %pJ req_cpus=%u",
+			     plugin_type, job_ptr, cpu_cnt);
 		}
 	}
 
@@ -348,9 +339,8 @@ static slurmdb_assoc_rec_t *_get_job_fs_ass(char *job_type,
 	slurmdb_assoc_rec_t *temp_fs_ass = job_ptr->assoc_ptr;
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("%s: Pre %s JobID:%u ParentAcct:%s MyAcct:%s "
-		     "UsageParent:%s",
-		     plugin_type, job_type,job_ptr->job_id,
+		info("%s: Pre %s %pJ ParentAcct:%s MyAcct:%s UsageParent:%s",
+		     plugin_type, job_type,job_ptr,
 		     temp_fs_ass->parent_acct, temp_fs_ass->acct,
 		     ((slurmdb_assoc_rec_t*)
 		      temp_fs_ass->usage->parent_assoc_ptr)->acct);
@@ -362,9 +352,8 @@ static slurmdb_assoc_rec_t *_get_job_fs_ass(char *job_type,
 	       (temp_fs_ass->usage->parent_assoc_ptr) &&
 	       (temp_fs_ass != assoc_mgr_root_assoc)) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO)
-			info("%s: In %s JobID:%u ParentAcct:%s MyAcct:%s "
-			     "UsageParent:%s",
-			     plugin_type, job_type, job_ptr->job_id,
+			info("%s: In %s %pJ ParentAcct:%s MyAcct:%s UsageParent:%s",
+			     plugin_type, job_type, job_ptr,
 			     temp_fs_ass->parent_acct,
 			     temp_fs_ass->acct,
 			     ((slurmdb_assoc_rec_t*)
@@ -373,9 +362,8 @@ static slurmdb_assoc_rec_t *_get_job_fs_ass(char *job_type,
 	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("%s: Pre %s JobID:%u ParentAcct:%s MyAcct:%s "
-		     "UsageParent:%s",
-		     plugin_type, job_type, job_ptr->job_id,
+		info("%s: Pre %s %pJ ParentAcct:%s MyAcct:%s UsageParent:%s",
+		     plugin_type, job_type, job_ptr,
 		     temp_fs_ass->parent_acct, temp_fs_ass->acct,
 		     ((slurmdb_assoc_rec_t*)temp_fs_ass->
 		      usage->parent_assoc_ptr)->acct);
@@ -411,8 +399,8 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 
 	it = list_iterator_create(preemptee_job_list);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("%s: Preemptee list for job (%u) %s ", plugin_type,
-		     preemptor_job_ptr->job_id, preemptor_job_ptr->name);
+		info("%s: Preemptee list for %pJ",
+		     plugin_type, preemptor_job_ptr);
 	}
 
 	while ((preemptee_job_ptr = (struct job_record *) list_next(it))) {
@@ -427,12 +415,12 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 					 grp_used_tres[TRES_ARRAY_CPU];
 		preemptee_cpu_cnt = _get_nb_cpus(preemptee_job_ptr);
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-			info("%s: Preemptee (%u %s) grp_used_cpu:%u",
-			     plugin_type, preemptee_job_ptr->job_id,
-			     preemptee_job_ptr->name, preemptee_grp_used_cpu);
-			info("%s: Preemptor (%u %s) grp_used_cpu:%u",
-			     plugin_type, preemptor_job_ptr->job_id,
-			     preemptor_job_ptr->name, preemptor_grp_used_cpu);
+			info("%s: Preemptee (%pJ) grp_used_cpu:%u",
+			     plugin_type, preemptee_job_ptr,
+			     preemptee_grp_used_cpu);
+			info("%s: Preemptor (%pJ) grp_used_cpu:%u",
+			     plugin_type, preemptor_job_ptr,
+			     preemptor_grp_used_cpu);
 		}
 		found_acct_usage_ptr = list_find_first(acct_usage_list,
 					(ListFindF) _find_acct_usage_list_entry,
@@ -485,9 +473,8 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 				(((double)preemptor_cpu_cnt) /
 				 preemptor_job_ptr->part_ptr->total_cpus) ;
 			if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-				info("%s: (1)Preemptor (%i %s) new usage = %lf",
-				     plugin_type, preemptor_job_ptr->job_id,
-				     preemptor_job_ptr->name,
+				info("%s: (1)Preemptor (%pJ) new usage = %lf",
+				     plugin_type, preemptor_job_ptr,
 				     preemptor_new_usage);
 			}
 		} else {
@@ -497,11 +484,9 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 				  (double)preemptor_job_ptr->part_ptr->total_cpus)
 				 - preemptor_assoc->usage->shares_norm;
 			if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-				info("%s: (2)Preemptor (%i %s) new usage "
-				     "( ((%u + %u) / %u) - %lf ) = %lf "
-				     "(account = %s parent = %s)",
-				     plugin_type, preemptor_job_ptr->job_id,
-				     preemptor_job_ptr->name, preemptor_cpu_cnt,
+				info("%s: (2)Preemptor (%pJ) new usage ( ((%u + %u) / %u) - %lf ) = %lf (account = %s parent = %s)",
+				     plugin_type, preemptor_job_ptr,
+				     preemptor_cpu_cnt,
 				     preemptor_grp_used_cpu,
 				     preemptor_job_ptr->part_ptr->total_cpus,
 				     preemptor_assoc->usage->shares_norm,
@@ -520,16 +505,10 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 		     preemptee_acct_usage_ptr->current_cpu_count <= 0)) &&
 		    (preemptee_acct_usage_ptr->current_usage > 0)) {
 			if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-				info("%s: Removing job (%u) %s (share = %lf) "
-				     "from the list due to possible "
-				      "overallocation of %s with job %i "
-				      "(preemptshare = %lf) (%ld vs %ld) "
-				      "(account = %s parent = %s)",
-				      plugin_type, preemptee_job_ptr->job_id,
-				      preemptee_job_ptr->name,
+				info("%s: Removing %pJ (share = %lf) from the list due to possible overallocation with %pJ (preemptshare = %lf) (%ld vs %ld) (account = %s parent = %s)",
+				      plugin_type, preemptee_job_ptr,
 				      preemptee_acct_usage_ptr->current_usage,
-				      preemptor_job_ptr->name,
-				      preemptor_job_ptr->job_id,
+				      preemptor_job_ptr,
 				      preemptor_new_usage,
 				      preemptee_current_usage,
 				      preemptor_new_usage_long,
@@ -542,14 +521,10 @@ static void _account_under_alloc(struct job_record *preemptor_job_ptr,
 				((double)preemptee_job_ptr->part_ptr->total_cpus);
 			list_remove(it);
 		} else if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-			info("%s: Keeping job (%u) %s (share = %lf) on the "
-			     "list safe from overallocation of %s with job %u "
-			     "preemptshare = %lf)",
-			     plugin_type, preemptee_job_ptr->job_id,
-			     preemptee_job_ptr->name,
+			info("%s: Keeping %pJ (share = %lf) on the list safe from overallocation with %pJ (preemptshare = %lf)",
+			     plugin_type, preemptee_job_ptr,
 			     preemptee_acct_usage_ptr->current_usage,
-			     preemptor_job_ptr->name, preemptor_job_ptr->job_id,
-			     preemptor_new_usage);
+			     preemptor_job_ptr, preemptor_new_usage);
 		}
 	}
 	list_iterator_destroy(it);
@@ -634,11 +609,9 @@ static int _overalloc_test(struct job_record *preemptor,
 	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("%s: Preemptor(%u, %s) acccount %s have %s "
-		     "fairshare than preemptee(%u, %s) account %s  %f vs. %f",
-		     plugin_type, preemptor->job_id, preemptor->name,
-		     assoc_preemptor->acct, relation, preemptee->job_id,
-		     preemptee->name, assoc_preemptee->acct,
+		info("%s: Preemptor(%pJ) acccount %s have %s fairshare than preemptee(%pJ) account %s %f vs. %f",
+		     plugin_type, preemptor, assoc_preemptor->acct,
+		     relation, preemptee, assoc_preemptee->acct,
 		     new_fairshare_preemptor, new_fairshare_preemptor);
 		info("%s:   CPUs Needed: %u and %u  Used CPUS: %"PRIu64
 		     " and %"PRIu64" Shares: %f and %f  CPUsTotal: %u and %u",
@@ -673,15 +646,15 @@ static bool _job_prio_preemptable(struct job_record *preemptor,
 
 	if (job_prio1 > job_prio2) {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-    			info("%s: Priority of JobId %u > JobId %u (%u > %u)",
-			     plugin_type, preemptor->job_id, preemptee->job_id,
+			info("%s: Priority of %pJ > %pJ (%u > %u)",
+			     plugin_type, preemptor, preemptee,
 			     job_prio1, job_prio2);
 		}
 		return true;	/* Preemptor can preempt */
 	} else {
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-    			info("%s: Priority of JobId %u <= JobId %u (%u <= %u)",
-			     plugin_type, preemptor->job_id, preemptee->job_id,
+			info("%s: Priority of %pJ <= %pJ (%u <= %u)",
+			     plugin_type, preemptor, preemptee,
 			     job_prio1, job_prio2);
 		}
 		return false;	/* Preemptor can not preempt */
@@ -742,13 +715,13 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		return preemptee_job_list;
 	}
 	if (!IS_JOB_PENDING(preemptor_job_ptr)) {
-		error("%s: JobId %u not pending",
-		      plugin_type, preemptor_job_ptr->job_id);
+		error("%s: %pJ not pending",
+		      plugin_type, preemptor_job_ptr);
 		return preemptee_job_list;
 	}
 	if (preemptor_job_ptr->part_ptr == NULL) {
-		error("%s: JobId %u has NULL partition ptr",
-		      plugin_type, preemptor_job_ptr->job_id);
+		error("%s: %pJ has NULL partition ptr",
+		      plugin_type, preemptor_job_ptr);
 		return preemptee_job_list;
 	}
 	if (preemptor_job_ptr->part_ptr->node_bitmap == NULL) {
@@ -768,20 +741,20 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 		if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
 			wait_time = now-preemptor_job_ptr->details->submit_time;
 			remaining_time = preemptor_grace_time - wait_time;
-			info("%s: JobId %u will reach grace time of %u in %u secs",
-			     plugin_type, preemptor_job_ptr->job_id,
+			info("%s: %pJ will reach grace time of %u in %u secs",
+			     plugin_type, preemptor_job_ptr,
 			     preemptor_grace_time, remaining_time);
 		}
 		return preemptee_job_list;
 	} else if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("%s: JobId %u has reached grace time of %u secs",
-		     plugin_type, preemptor_job_ptr->job_id,
+		info("%s: %pJ has reached grace time of %u secs",
+		     plugin_type, preemptor_job_ptr,
 		     preemptor_grace_time);
 	}
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-		info("%s: Looking for jobs to preempt for JobId %u",
-		     plugin_type, preemptor_job_ptr->job_id);
+		info("%s: Looking for jobs to preempt for %pJ",
+		     plugin_type, preemptor_job_ptr);
 	}
 
 	/* Build an array of pointers to preemption candidates */
@@ -824,9 +797,8 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 					     preemptee_job_list);
 		}
 	} else if (slurm_get_debug_flags() & DEBUG_FLAG_PRIO) {
-    		info("%s: NULL preemptee list for job (%u) %s",
-		     plugin_type, preemptor_job_ptr->job_id,
-		     preemptor_job_ptr->name);
+		info("%s: NULL preemptee list for %pJ",
+		     plugin_type, preemptor_job_ptr);
 	}
 
 	return preemptee_job_list;
