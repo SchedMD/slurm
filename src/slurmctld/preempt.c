@@ -116,16 +116,15 @@ extern int slurm_job_check_grace(struct job_record *job_ptr, uint32_t preemptor)
 		grace_time = job_ptr->part_ptr->grace_time;
 	else if (preempt_mode == 2) {
 		if (!job_ptr->qos_ptr)
-			error("%s: Job %u has no QOS ptr!  This should never happen",
-			      __func__, job_ptr->job_id);
+			error("%s: %pJ has no QOS ptr!  This should never happen",
+			      __func__, job_ptr);
 		else
 			grace_time = job_ptr->qos_ptr->grace_time;
 	}
 
 	if (grace_time) {
-		debug("setting %u sec preemption grace time for job %u to "
-		      "reclaim resources for job %u",
-		      grace_time, job_ptr->job_id, preemptor);
+		debug("setting %u sec preemption grace time for %pJ to reclaim resources for JobId=%u",
+		      grace_time, job_ptr, preemptor);
 		_preempt_signal(job_ptr, grace_time);
 	} else
 		rc = SLURM_ERROR;
