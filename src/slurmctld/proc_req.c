@@ -1118,11 +1118,9 @@ static int _make_step_cred(struct step_record *step_ptr,
 static int _pack_job_cancel(void *x, void *arg)
 {
 	struct job_record *job_ptr = (struct job_record *) x;
-	char job_id_str[BUFSIZ];
 	time_t now = time(NULL);
 
-	(void) jobid2fmt(job_ptr, job_id_str, sizeof(job_id_str));
-	info("Cancelling aborted pack job submit: %s", job_id_str);
+	info("Cancelling aborted pack job submit: %pJ", job_ptr);
 	job_ptr->job_state	= JOB_CANCELLED;
 	job_ptr->start_time	= now;
 	job_ptr->end_time	= now;
@@ -1493,9 +1491,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 					    job_submit_user_msg[inx++]));
 			if (slurmctld_conf.debug_flags &
 			    DEBUG_FLAG_HETERO_JOBS) {
-				char buf[BUFSIZ];
-				info("Submit %s",
-				     jobid2fmt(job_ptr, buf, sizeof(buf)));
+				info("Submit %pJ", job_ptr);
 			}
 		}
 		list_iterator_destroy(iter);
@@ -1674,9 +1670,8 @@ send_msg:
 
 	if (!reject_job) {
 		xassert(job_ptr);
-		sched_info("%s JobId=%u NodeList=%s %s",
-			   __func__, job_ptr->job_id,
-			   job_ptr->nodes, TIME_STR);
+		sched_info("%s %pJ NodeList=%s %s",
+			   __func__, job_ptr, job_ptr->nodes, TIME_STR);
 
 		alloc_msg = build_alloc_msg(job_ptr, error_code,
 					    job_submit_user_msg);
@@ -2000,7 +1995,7 @@ static void _slurm_rpc_end_time(slurm_msg_t * msg)
 		response_msg.data     = &timeout_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
-	debug2("_slurm_rpc_end_time jobid=%u %s",
+	debug2("_slurm_rpc_end_time JobId=%u %s",
 	       time_req_msg->job_id, TIME_STR);
 }
 
@@ -2271,7 +2266,6 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 	epilog_complete_msg_t *epilog_msg =
 		(epilog_complete_msg_t *) msg->data;
 	struct job_record  *job_ptr;
-	char jbuf[JBUFSIZ];
 
 	START_TIMER;
 	debug2("Processing RPC: MESSAGE_EPILOG_COMPLETE uid=%d", uid);
@@ -2298,7 +2292,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_ROUTE)
 		info("_slurm_rpc_epilog_complete: "
-		     "node_name = %s, job_id = %u", epilog_msg->node_name,
+		     "node_name = %s, JobId=%u", epilog_msg->node_name,
 		     epilog_msg->job_id);
 
 	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
@@ -2308,14 +2302,12 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 	job_ptr = find_job_record(epilog_msg->job_id);
 
 	if (epilog_msg->return_code)
-		error("%s: epilog error %s Node=%s Err=%s %s",
-		      __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-		      epilog_msg->node_name,
+		error("%s: epilog error %pJ Node=%s Err=%s %s",
+		      __func__, job_ptr, epilog_msg->node_name,
 		      slurm_strerror(epilog_msg->return_code), TIME_STR);
 	else
-		debug2("%s: %s Node=%s %s",
-		       __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-		       epilog_msg->node_name, TIME_STR);
+		debug2("%s: %pJ Node=%s %s",
+		       __func__, job_ptr, epilog_msg->node_name, TIME_STR);
 
 	if (!running_composite) {
 		unlock_slurmctld(job_write_lock);
@@ -2381,7 +2373,6 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 	struct job_record *job_ptr;
-	char jbuf[JBUFSIZ];
 
 	/* init */
 	START_TIMER;
@@ -2398,13 +2389,10 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	error_code = job_complete(comp_msg->job_id, uid,
 				  false, false, comp_msg->job_rc);
 	if (error_code) {
-		info("%s: %s error %s ",
-		     __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-		     slurm_strerror(error_code));
+		info("%s: %pJ error %s",
+		     __func__, job_ptr, slurm_strerror(error_code));
 	} else {
-		debug2("%s: %s %s", __func__,
-		       jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-		       TIME_STR);
+		debug2("%s: %pJ %s", __func__, job_ptr, TIME_STR);
 	}
 
 	unlock_slurmctld(job_write_lock);
@@ -2494,7 +2482,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 	       uid, comp_msg->job_id);
 
 	if (!validate_slurm_user(uid)) {
-		error("A non superuser %u tried to complete batch job %u",
+		error("A non superuser %u tried to complete batch JobId=%u",
 		      uid, comp_msg->job_id);
 		/* Only the slurmstepd can complete a batch script */
 		END_TIMER2("_slurm_rpc_complete_batch_script");
@@ -2514,9 +2502,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		 * failing, but the slurmstepd continuing to run. Then the
 		 * batch job is requeued and started on a different node.
 		 * The end result is one batch complete RPC from each node. */
-		error("Batch completion for job %u sent from wrong node "
-		      "(%s rather than %s). "
-		      "Was the job requeued due to node failure?",
+		error("Batch completion for JobId=%u sent from wrong node (%s rather than %s). Was the job requeued due to node failure?",
 		      comp_msg->job_id,
 		      comp_msg->node_name, job_ptr->batch_host);
 		if (!running_composite) {
@@ -2562,8 +2548,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		batch_step.tres_per_node = nodes;
 		if (node_name2bitmap(nodes, false,
 				     &batch_step.step_node_bitmap) != 0) {
-			error("%s: job %u has invalid node list (%s)",
-			      __func__, job_ptr->job_id, nodes);
+			error("%s: %pJ has invalid node list (%s)",
+			      __func__, job_ptr, nodes);
 		}
 		batch_step.requid = -1;
 		batch_step.start_time = job_ptr->start_time;
@@ -2603,7 +2589,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		 * This is non-fatal, it may be a transient error (e.g. ALPS
 		 * temporary unavailable). Give job one more chance to run.
 		 */
-		error("ALPS reservation for JobId %u failed: %s",
+		error("ALPS reservation for JobId=%u failed: %s",
 			comp_msg->job_id, slurm_strerror(comp_msg->slurm_rc));
 		dump_job = job_requeue = true;
 #endif
@@ -2708,7 +2694,7 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 					 slurmctld_config.auth_info);
 
 	START_TIMER;
-	debug3("Processing RPC: REQUEST_BATCH_SCRIPT from uid=%d for job=%u",
+	debug3("Processing RPC: REQUEST_BATCH_SCRIPT from uid=%d for JobId=%u",
 	       uid, job_id_msg->job_id);
 	lock_slurmctld(job_read_lock);
 
@@ -2819,12 +2805,12 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
 			if ((error_code == ESLURM_PROLOG_RUNNING) ||
 			    (error_code == ESLURM_DISABLED)) { /*job suspended*/
-				debug("%s for suspended job %u: %s",
+				debug("%s for suspended JobId=%u: %s",
 				      __func__,
 				      req_step_msg->job_id,
 				      slurm_strerror(error_code));
 			} else {
-				info("%s for job %u: %s",
+				info("%s for JobId=%u: %s",
 				     __func__,
 				     req_step_msg->job_id,
 				     slurm_strerror(error_code));
@@ -3318,8 +3304,8 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 		iter = list_iterator_create(job_ptr->pack_job_list);
 		while ((pack_job = (struct job_record *) list_next(iter))) {
 			if (job_ptr->pack_job_id != pack_job->pack_job_id) {
-				error("%s: Bad pack_job_list for job %u",
-				      __func__, job_ptr->pack_job_id);
+				error("%s: Bad pack_job_list for %pJ",
+				      __func__, job_ptr);
 				continue;
 			}
 			if (pack_job->job_id != job_info_msg->job_id)
@@ -3361,7 +3347,7 @@ static slurm_addr_t *_build_node_addr(char *node_list, uint32_t node_cnt,
 	int error_code = SLURM_SUCCESS, node_inx = 0;
 
 	if ((host_list = hostlist_create(node_list)) == NULL) {
-		error("%s hostlist_create error for pack job %u (%s): %m",
+		error("%s hostlist_create error for pack JobId=%u (%s): %m",
 		      __func__, pack_job_id, node_list);
 		return NULL;
 	}
@@ -3374,7 +3360,7 @@ static slurm_addr_t *_build_node_addr(char *node_list, uint32_t node_cnt,
 			       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
 			node_inx++;
 		} else {
-			error("%s: Invalid node %s in pack job %u",
+			error("%s: Invalid node %s in pack JobId=%u",
 			      __func__, this_node_name, pack_job_id);
 			error_code = SLURM_ERROR;
 		}
@@ -3440,8 +3426,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 				if (error_code)
 					break;
 				if (!job_pack_ptr->node_bitmap) {
-					debug("%s: Job %u lacks node bitmap",
-					      __func__, job_pack_ptr->job_id);
+					debug("%s: %pJ lacks node bitmap",
+					      __func__, job_pack_ptr);
 				} else if (!node_bitmap) {
 					node_bitmap = bit_copy(
 						     job_pack_ptr->node_bitmap);
@@ -3564,8 +3550,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 				       &sbcast_arg,
 				       msg->protocol_version)) == NULL) {
 		unlock_slurmctld(job_read_lock);
-		error("_slurm_rpc_job_sbcast_cred JobId=%u cred create error",
-		      job_info_msg->job_id);
+		error("_slurm_rpc_job_sbcast_cred %pJ cred create error",
+		      job_ptr);
 		slurm_send_rc_msg(msg, SLURM_ERROR);
 	} else {
 		if (job_ptr && (job_info_msg->step_id != NO_VAL)) {
@@ -4345,7 +4331,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	if (!reject_job &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    !acct_policy_validate_pack(submit_job_list)) {
-		info("Pack job %u exceeded association/QOS limit for user %u",
+		info("Pack JobId=%u exceeded association/QOS limit for user %u",
 		     pack_job_id, job_uid);
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		reject_job = true;
@@ -4368,9 +4354,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			job_ptr->pack_job_id_set = xstrdup(tmp_offset);
 			if (slurmctld_conf.debug_flags &
 			    DEBUG_FLAG_HETERO_JOBS) {
-				char buf[JBUFSIZ];
-				info("Submit %s",
-				     jobid2fmt(job_ptr, buf, sizeof(buf)));
+				info("Submit %pJ", job_ptr);
 			}
 		}
 		list_iterator_destroy(iter);
@@ -4483,11 +4467,11 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 			if (error_code == ESLURM_JOB_SETTING_DB_INX) {
 				if (i >= db_inx_max_cnt) {
 					if (job_desc_msg->job_id_str) {
-						info("%s: can't update job, waited %d seconds for job %s to get a db_index, but it hasn't happened yet.  Giving up and informing the user",
+						info("%s: can't update job, waited %d seconds for JobId=%s to get a db_index, but it hasn't happened yet. Giving up and informing the user",
 						      __func__, db_inx_max_cnt,
 						      job_desc_msg->job_id_str);
 					} else {
-						info("%s: can't update job, waited %d seconds for job %u to get a db_index, but it hasn't happened yet.  Giving up and informing the user",
+						info("%s: can't update job, waited %d seconds for JobId=%u to get a db_index, but it hasn't happened yet. Giving up and informing the user",
 						      __func__, db_inx_max_cnt,
 						      job_desc_msg->job_id);
 					}
@@ -4496,11 +4480,11 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 				}
 				i++;
 				if (job_desc_msg->job_id_str) {
-					debug("%s: We cannot update job %s at the moment, we are setting the db index, waiting",
+					debug("%s: We cannot update JobId=%s at the moment, we are setting the db index, waiting",
 					      __func__,
 					      job_desc_msg->job_id_str);
 				} else {
-					debug("%s: We cannot update job %u at the moment, we are setting the db index, waiting",
+					debug("%s: We cannot update JobId=%u at the moment, we are setting the db index, waiting",
 					      __func__, job_desc_msg->job_id);
 				}
 				sleep(1);
@@ -5283,9 +5267,9 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 					job_ptr->fed_details->cluster_lock);
 		if (dst) {
 			slurm_send_reroute_msg(msg, dst);
-			info("%s: %s job %d uid %d routed to %s",
+			info("%s: %s %pJ uid %d routed to %s",
 			     __func__, rpc_num2string(msg->msg_type),
-			     job_ptr->job_id, uid, dst->name);
+			     job_ptr, uid, dst->name);
 
 			unlock_slurmctld(job_write_lock);
 			END_TIMER2("_slurm_rpc_suspend");
@@ -5781,9 +5765,9 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 					job_ptr->fed_details->cluster_lock);
 		if (dst) {
 			slurm_send_reroute_msg(msg, dst);
-			info("%s: %s job %d uid %d routed to %s",
+			info("%s: %s %pJ uid %d routed to %s",
 			     __func__, rpc_num2string(msg->msg_type),
-			     job_ptr->job_id, uid, dst->name);
+			     job_ptr, uid, dst->name);
 
 			unlock_slurmctld(job_read_lock);
 			END_TIMER2("_slurm_rpc_job_notify");
@@ -5799,8 +5783,8 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 	else {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, REQUEST_JOB_NOTIFY RPC "
-		      "from uid=%d for jobid %u owner %d",
-		      uid, notify_msg->job_id, job_ptr->user_id);
+		      "from uid=%d for %pJ owner %d",
+		      uid, job_ptr, job_ptr->user_id);
 	}
 	unlock_slurmctld(job_read_lock);
 
@@ -6513,7 +6497,7 @@ _slurm_rpc_kill_job(slurm_msg_t *msg)
 				slurm_send_rc_msg(msg, SLURM_ERROR);
 			} else {
 				slurm_send_reroute_msg(msg, dst);
-				info("%s: REQUEST_KILL_JOB job %s uid %d routed to %s",
+				info("%s: REQUEST_KILL_JOB JobId=%s uid %d routed to %s",
 				     __func__, kill->sjob_id, uid, dst->name);
 			}
 
@@ -6524,7 +6508,7 @@ _slurm_rpc_kill_job(slurm_msg_t *msg)
 	unlock_slurmctld(fed_job_read_lock);
 
 	START_TIMER;
-	info("%s: REQUEST_KILL_JOB job %s uid %d",
+	info("%s: REQUEST_KILL_JOB JobId=%s uid %d",
 	     __func__, kill->sjob_id, uid);
 
 	_throttle_start(&active_rpc_cnt);
@@ -6543,11 +6527,11 @@ _slurm_rpc_kill_job(slurm_msg_t *msg)
 	_throttle_fini(&active_rpc_cnt);
 
 	if (cc == ESLURM_ALREADY_DONE) {
-		debug2("%s: job_str_signal() job %s sig %d returned %s",
+		debug2("%s: job_str_signal() JobId=%s sig %d returned %s",
 		       __func__, kill->sjob_id,
 		       kill->signal, slurm_strerror(cc));
 	} else if (cc != SLURM_SUCCESS) {
-		info("%s: job_str_signal() job %s sig %d returned %s",
+		info("%s: job_str_signal() JobId=%s sig %d returned %s",
 		     __func__, kill->sjob_id,
 		     kill->signal, slurm_strerror(cc));
 	} else {
@@ -7110,7 +7094,7 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 				slurm_send_rc_msg(msg, SLURM_ERROR);
 			} else {
 				slurm_send_reroute_msg(msg, dst);
-				info("%s: %s job %d uid %d routed to %s",
+				info("%s: %s JobId=%u uid %d routed to %s",
 				     __func__, rpc_num2string(msg->msg_type),
 				     job_id, uid, dst->name);
 			}
