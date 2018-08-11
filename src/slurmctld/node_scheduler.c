@@ -210,9 +210,8 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 				prefix = ",";
 
 			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
-				debug("(%s:%d) job id: %u -- gres_alloc "
-				      "substring=(%s)", THIS_FILE,
-				      __LINE__, job_ptr->job_id, buf);
+				debug("%s: %pJ -- gres_alloc substring=(%s)",
+				      __func__, job_ptr, buf);
 			}
 		}
 	}
@@ -249,9 +248,8 @@ static int _get_gres_config(struct job_record *job_ptr)
 		i_last  = bit_fls(node_bitmap);
 	} else {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
-			debug("(%s:%d) job id: %u -- No nodes in bitmap of "
-			      "job_record!",
-			      THIS_FILE, __LINE__, job_ptr->job_id);
+			debug("%s: %pJ -- No nodes in bitmap of job_record!",
+			      __func__, job_ptr);
 		return rv;
 	}
 	if (i_first == -1)      /* job has no nodes */
@@ -276,9 +274,8 @@ static int _get_gres_config(struct job_record *job_ptr)
 			count = 0;
 
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
-			debug("(%s:%d) job id: %u -- Count of "
-			      "GRES types in the gres_list is: %d",
-			      THIS_FILE, __LINE__, job_ptr->job_id, count);
+			debug("%s %pJ -- Count of GRES types in the gres_list is: %d",
+			      __func__, job_ptr, count);
 
 		/*
 		 * Only reallocate when there is an increase in size of the
@@ -286,10 +283,8 @@ static int _get_gres_config(struct job_record *job_ptr)
 		 */
 		if (count > oldcount) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES)
-				debug("(%s:%d) job id: %u -- Old GRES "
-				      "count: %d New GRES count: %d",
-				      THIS_FILE, __LINE__, job_ptr->job_id,
-				      oldcount, count);
+				debug("%s %pJ -- Old GRES count: %d New GRES count: %d",
+				      __func__, job_ptr, oldcount, count);
 
 			/*
 			 * Allocate arrays to hold each GRES type and its
@@ -367,8 +362,8 @@ static int _get_gres_config(struct job_record *job_ptr)
 			prefix = ",";
 
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
-			debug("(%s:%d) job id: %u -- gres_alloc substring=(%s)",
-			      THIS_FILE, __LINE__, job_ptr->job_id, buf);
+			debug("%s %pJ -- gres_alloc substring=(%s)",
+			      __func__, job_ptr, buf);
 		}
 	}
 	xfree(gres_count_ids);
@@ -510,7 +505,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 	acct_policy_job_fini(job_ptr);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
-		error("select_g_job_fini(%u): %m", job_ptr->job_id);
+		error("select_g_job_fini(%pJ): %m", job_ptr);
 	epilog_slurmctld(job_ptr);
 
 	agent_args = xmalloc(sizeof(agent_arg_t));
@@ -637,8 +632,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	if (agent_args->node_count == 0) {
 		if ((job_ptr->details->expanding_jobid == 0) &&
 		    (select_serial == 0)) {
-			error("%s: job %u allocated no nodes to be killed on",
-			      __func__, job_ptr->job_id);
+			error("%s: %pJ allocated no nodes to be killed on",
+			      __func__, job_ptr);
 		}
 		slurm_free_kill_job_msg(kill_job);
 		hostlist_destroy(agent_args->hostlist);
@@ -1152,9 +1147,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			avail_node_bitmap = resv_bitmap;
 			cnt_out = bit_set_count(avail_node_bitmap);
 			if (cnt_in != cnt_out) {
-				debug2("Advanced reservation removed %d nodes "
-				       "from consideration for job %u",
-				       (cnt_in - cnt_out), job_ptr->job_id);
+				debug2("Advanced reservation removed %d nodes from consideration for %pJ",
+				       (cnt_in - cnt_out), job_ptr);
 			}
 			resv_bitmap = NULL;
 		} else {
@@ -1221,9 +1215,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			if (last_paren_cnt < feat_ptr->paren) {
 				/* Start of expression in parenthesis */
 				if (paren_bitmap) {
-					error("%s@%d: Job %u has bad feature expression: %s",
-					      __func__, __LINE__,
-					      job_ptr->job_id,
+					error("%s@%d: %pJ has bad feature expression: %s",
+					      __func__, __LINE__, job_ptr,
 					      job_ptr->details->features);
 					bit_free(paren_bitmap);
 				}
@@ -1380,10 +1373,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 #if 0
 {
 			char *tmp_str = bitmap2node_name(feature_bitmap);
-			info("job %u needs %u nodes with feature %s, "
-			     "using %s, error_code=%d",
-			     job_ptr->job_id, feat_ptr->count,
-			     feat_ptr->name, tmp_str, error_code);
+			info("%pJ needs %u nodes with feature %s, using %s, error_code=%d",
+			     job_ptr, feat_ptr->count, feat_ptr->name,
+			     tmp_str, error_code);
 			xfree(tmp_str);
 }
 #endif
@@ -1423,8 +1415,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		}
 		list_iterator_destroy(feat_iter);
 		if (paren_bitmap) {
-			error("%s@%d: Job %u has bad feature expression: %s",
-			      __func__, __LINE__, job_ptr->job_id,
+			error("%s@%d: %pJ has bad feature expression: %s",
+			      __func__, __LINE__, job_ptr,
 			      job_ptr->details->features);
 			bit_free(paren_bitmap);
 		}
@@ -1461,9 +1453,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 #if 0
 {
 	char *tmp_str = bitmap2node_name(job_ptr->details->req_node_bitmap);
-	info("job %u requires %d:%d:%d req_nodes:%s err:%u",
-	     job_ptr->job_id, min_nodes, req_nodes, max_nodes,
-	     tmp_str, error_code);
+	info("%pJ requires %d:%d:%d req_nodes:%s err:%u",
+	     job_ptr, min_nodes, req_nodes, max_nodes, tmp_str, error_code);
 	xfree(tmp_str);
 }
 #endif
@@ -1482,8 +1473,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 #if 0
 {
 	char *tmp_str = bitmap2node_name(*select_bitmap);
-	info("job %u allocated nodes:%s err:%u",
-		job_ptr->job_id, tmp_str, error_code);
+	info("%pJ allocated nodes:%s err:%u", job_ptr, tmp_str, error_code);
 	xfree(tmp_str);
 }
 #endif
@@ -1499,16 +1489,16 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	 *                           reservations are blocking
 	 */
 	if (error_code != SLURM_SUCCESS) {
-		debug5("powercapping: checking job %u : skipped, not eligible",
-		       job_ptr->job_id);
+		debug5("powercapping: checking %pJ : skipped, not eligible",
+		       job_ptr);
 	} else if ((powercap = powercap_get_cluster_current_cap()) == 0) {
-		debug5("powercapping: checking job %u : skipped, capping "
-		       "disabled", job_ptr->job_id);
+		debug5("powercapping: checking %pJ : skipped, capping disabled",
+		       job_ptr);
 	} else if ((layout_power = which_power_layout()) == 0) {
 		debug5("powercapping disabled %d", which_power_layout());
 	} else if (!power_layout_ready()){
-		debug3("powercapping: checking job %u : skipped, problems with "
-		       "layouts, capping disabled", job_ptr->job_id);
+		debug3("powercapping: checking job %pJ : skipped, problems with layouts, capping disabled",
+		       job_ptr);
 	} else {
 		uint32_t min_watts, max_watts, job_cap, tmp_pcap_cpu_freq = 0;
 		uint32_t cur_max_watts, tmp_max_watts = 0;
@@ -1559,8 +1549,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 						(allowed_freqs[0]+1));
 			}
 			if (job_ptr->details->min_nodes == 0) {
-				error("%s: Job %u min_nodes is zero",
-				      __func__, job_ptr->job_id);
+				error("%s: %pJ min_nodes is zero",
+				      __func__, job_ptr);
 				job_ptr->details->min_nodes = 1;
 			}
 			cpus_per_node = job_ptr->details->min_cpus /
@@ -1658,10 +1648,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		xfree(allowed_freqs);
 		xfree(tmp_max_watts_dvfs);
 
-		debug2("powercapping: checking job %u : min=%u cur=%u "
-		       "[new=%u] [resv_cap=%u] [cap=%u] max=%u : %s",
-		       job_ptr->job_id, min_watts, cur_max_watts,
-		       tmp_max_watts, job_cap, powercap, max_watts,
+		debug2("powercapping: checking %pJ : min=%u cur=%u [new=%u] [resv_cap=%u] [cap=%u] max=%u : %s",
+		       job_ptr, min_watts, cur_max_watts, tmp_max_watts,
+		       job_cap, powercap, max_watts,
 		       slurm_strerror(error_code));
 	}
 
@@ -1879,12 +1868,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			}
 			if ((i >= 0) && (job_ptr->details->core_spec >= j)) {
 				if (part_ptr->name) {
-					info("%s: job %u never runnable in partition %s",
-					     __func__, job_ptr->job_id,
+					info("%s: %pJ never runnable in partition %s",
+					     __func__, job_ptr,
 					     part_ptr->name);
 				} else {
-					info("%s: job %u never runnable",
-					     __func__, job_ptr->job_id);
+					info("%s: %pJ never runnable",
+					     __func__, job_ptr);
 				}
 				return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 			}
@@ -1918,8 +1907,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			max_feature = j;
 	}
 
-	debug3("%s: job %u idle_nodes %u share_nodes %u", __func__,
-		job_ptr->job_id, bit_set_count(idle_node_bitmap),
+	debug3("%s: %pJ idle_nodes %u share_nodes %u",
+	       __func__, job_ptr, bit_set_count(idle_node_bitmap),
 		bit_set_count(share_node_bitmap));
 
 	if (single_select_job_test)
@@ -2114,11 +2103,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 {
 			char *tmp_str1 = bitmap2node_name(backup_bitmap);
 			char *tmp_str2 = bitmap2node_name(avail_bitmap);
-			info("pick job:%u err:%d nodes:%u:%u:%u mode:%u "
-			     "select %s of %s",
-			     job_ptr->job_id, pick_code,
-			     min_nodes, req_nodes, max_nodes, select_mode,
-			     tmp_str2, tmp_str1);
+			info("pick %pJ err:%d nodes:%u:%u:%u mode:%u select %s of %s",
+			     job_ptr, pick_code, min_nodes, req_nodes,
+			     max_nodes, select_mode, tmp_str2, tmp_str1);
 			xfree(tmp_str1);
 			xfree(tmp_str2);
 }
@@ -2270,11 +2257,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	}
 	if (!runable_ever) {
 		if (part_ptr->name) {
-			info("%s: job %u never runnable in partition %s",
-			     __func__, job_ptr->job_id, part_ptr->name);
+			info("%s: %pJ never runnable in partition %s",
+			     __func__, job_ptr, part_ptr->name);
 		} else {
-			info("%s: job %u never runnable",
-			     __func__, job_ptr->job_id);
+			info("%s: job %pJ never runnable",
+			     __func__, job_ptr);
 		}
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	} else if (!runable_avail && !nodes_busy) {
@@ -2414,8 +2401,8 @@ static bool _first_array_task(struct job_record *job_ptr)
 
 	meta_job_ptr = find_job_record(job_ptr->array_job_id);
 	if (!meta_job_ptr || !meta_job_ptr->array_recs) {
-		error("%s: Could not find meta job record for job %u",
-		      __func__, job_ptr->array_job_id);
+		error("%s: Could not find meta job record for %pJ",
+		      __func__, job_ptr);
 		return true;
 	}
 	if ((meta_job_ptr->array_recs->tot_run_tasks == 1) &&	/* This task */
@@ -2471,7 +2458,7 @@ static void _end_null_job(struct job_record *job_ptr)
 	job_completion_logger(job_ptr, false);
 	acct_policy_job_fini(job_ptr);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
-		error("select_g_job_fini(%u): %m", job_ptr->job_id);
+		error("select_g_job_fini(%pJ): %m", job_ptr);
 	epilog_slurmctld(job_ptr);
 }
 
@@ -2567,8 +2554,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		part_ptr = find_part_record(job_ptr->partition);
 		xassert(part_ptr);
 		job_ptr->part_ptr = part_ptr;
-		error("partition pointer reset for job %u, part %s",
-		      job_ptr->job_id, job_ptr->partition);
+		error("partition pointer reset for %pJ, part %s",
+		      job_ptr, job_ptr->partition);
 	}
 
 	/* Quick check to see if this QOS is allowed on this partition. */
@@ -2646,9 +2633,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error_code = _nodes_in_sets(job_ptr->details->req_node_bitmap,
 					    node_set_ptr, node_set_size);
 		if (error_code) {
-			info("No nodes satisfy requirements for JobId=%u "
-			     "in partition %s",
-			     job_ptr->job_id, job_ptr->part_ptr->name);
+			info("No nodes satisfy requirements for %pJ in partition %s",
+			     job_ptr, job_ptr->part_ptr->name);
 			goto cleanup;
 		}
 	}
@@ -2717,9 +2703,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		 * backfilling we don't reserve resources if we don't have to.
 		 */
 		if (error_code != SLURM_SUCCESS)
-			debug2("Replacing scheduling error code for job %u from '%s' to 'Accounting policy'",
-			       job_ptr->job_id,
-			       slurm_strerror(error_code));
+			debug2("Replacing scheduling error code for %pJ from '%s' to 'Accounting policy'",
+			       job_ptr, slurm_strerror(error_code));
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		goto cleanup;
 	}
@@ -2756,8 +2741,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		/* Fatal errors for job here */
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			/* Too many nodes requested */
-			debug3("JobId=%u not runnable with present config",
-			       job_ptr->job_id);
+			debug3("%s: %pJ not runnable with present config",
+			       __func__, job_ptr);
 			job_ptr->state_reason = WAIT_PART_NODE_LIMIT;
 			xfree(job_ptr->state_desc);
 			last_job_update = now;
@@ -2767,8 +2752,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			/* Required nodes are down or drained */
 			char *node_str = NULL, *unavail_node = NULL;
 			bitstr_t *unavail_bitmap;
-			debug3("JobId=%u required nodes not avail",
-			       job_ptr->job_id);
+			debug3("%s: %pJ required nodes not avail",
+			       __func__, job_ptr);
 			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
 			xfree(job_ptr->state_desc);
 			unavail_bitmap = bit_copy(avail_node_bitmap);
@@ -2872,8 +2857,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (bb_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error_code = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-		error("bb_g_job_begin(%u): %s", job_ptr->job_id,
-		      slurm_strerror(error_code));
+		error("bb_g_job_begin(%pJ): %s",
+		      job_ptr, slurm_strerror(error_code));
 		job_ptr->start_time = 0;
 		job_ptr->time_last_active = 0;
 		job_ptr->end_time = 0;
@@ -2884,7 +2869,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
-		error("select_g_job_begin(%u): %m", job_ptr->job_id);
+		error("select_g_job_begin(%pJ): %m", job_ptr);
 
 		/* Cancel previously started job */
 		(void) bb_g_job_revoke_alloc(job_ptr);
@@ -2927,7 +2912,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	job_ptr->job_state = JOB_RUNNING;
 
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
-		error("select_g_select_nodeinfo_set(%u): %m", job_ptr->job_id);
+		error("select_g_select_nodeinfo_set(%pJ): %m", job_ptr);
 		if (!job_ptr->job_resrcs) {
 			/* If we don't exit earlier the empty job_resrcs might
 			 * be dereferenced later */
@@ -2974,9 +2959,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	_fill_in_gres_fields(job_ptr);
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
 		char *tmp = _build_tres_str(job_ptr);
-		info("(%s:%d) job:%u gres:%s gres_alloc:%s",
-		     THIS_FILE, __LINE__, job_ptr->job_id, tmp,
-		     job_ptr->gres_alloc);
+		info("%s: %pJ gres:%s gres_alloc:%s",
+		     __func__, job_ptr, tmp, job_ptr->gres_alloc);
 		xfree(tmp);
 	}
 
@@ -3079,9 +3063,8 @@ extern int get_node_cnts(struct job_record *job_ptr,
 	if (job_ptr->details->req_node_bitmap && job_ptr->details->max_nodes) {
 		i = bit_set_count(job_ptr->details->req_node_bitmap);
 		if (i > job_ptr->details->max_nodes) {
-			info("Job %u required node list has more node than "
-			     "the job can use (%d > %u)",
-			     job_ptr->job_id, i, job_ptr->details->max_nodes);
+			info("%pJ required node list has more nodes than the job can use (%d > %u)",
+			     job_ptr, i, job_ptr->details->max_nodes);
 			error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 			goto end_it;
 		}
@@ -3268,8 +3251,8 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 	/* First build the GRES requested field. */
 	if (!job_ptr->gres_list || (list_count(job_ptr->gres_list) == 0)) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
-			debug("(%s:%d) job:%u GRES list is empty or NULL; this is OK if no GRES  requested",
-			      THIS_FILE, __LINE__, job_ptr->job_id);
+			debug("%s: %pJ GRES list is empty or NULL; this is OK if no GRES requested",
+			      __func__, job_ptr);
 		}
 		if (job_ptr->gres_req == NULL)
 			xstrcat(job_ptr->gres_req, "");
@@ -3283,9 +3266,8 @@ static int _fill_in_gres_fields(struct job_record *job_ptr)
 		rv = _build_gres_alloc_string(job_ptr);
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
 			char *tmp = _build_tres_str(job_ptr);
-			info("(%s:%d) job:%u gres_req:%s gres_alloc:%s",
-			     THIS_FILE, __LINE__, job_ptr->job_id,
-			     tmp, job_ptr->gres_alloc);
+			info("%s %pJ gres_req:%s gres_alloc:%s",
+			     __func__, job_ptr, tmp, job_ptr->gres_alloc);
 			xfree(tmp);
 		}
 	}
@@ -3354,8 +3336,8 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 			last_op = FEATURE_OP_AND;
 			if (paren_bitmap) {
 				if (job_ptr->job_id) {
-					error("%s: Job %u has bad feature expression: %s",
-					      __func__, job_ptr->job_id,
+					error("%s: %pJ has bad feature expression: %s",
+					      __func__, job_ptr,
 					      detail_ptr->features);
 				} else {
 					error("%s: Reservation has bad feature expression: %s",
@@ -3440,8 +3422,8 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 	bool has_xor = false;
 
 	if (detail_ptr == NULL) {
-		error("job_req_node_filter: job %u has no details",
-		      job_ptr->job_id);
+		error("%s: %pJ has no details",
+		      __func__, job_ptr);
 		return EINVAL;
 	}
 
@@ -3660,8 +3642,8 @@ static int _build_node_list(struct job_record *job_ptr,
 	}
 
 	if (!valid_feature_counts(job_ptr, false, usable_node_mask, &has_xor)) {
-		info("Job %u feature requirements can not be satisfied",
-		     job_ptr->job_id);
+		info("%pJ feature requirements can not be satisfied",
+		     job_ptr);
 		FREE_NULL_BITMAP(usable_node_mask);
 		if (err_msg) {
 			xfree(*err_msg);
@@ -3947,8 +3929,8 @@ end_node_set:
 
 	if (node_set_inx == 0) {
 		rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
-		info("%s: No nodes satisfy job %u requirements in partition %s",
-		     __func__, job_ptr->job_id, job_ptr->part_ptr->name);
+		info("%s: No nodes satisfy %pJ requirements in partition %s",
+		     __func__, job_ptr, job_ptr->part_ptr->name);
 		xfree(node_set_ptr);
 		xfree(job_ptr->state_desc);
 		if (job_ptr->resv_name) {
@@ -4262,8 +4244,8 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
 			memcpy(&job_ptr->node_addr[node_inx++],
 			       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
 		} else {
-			error("Invalid node %s in JobId=%u",
-			      this_node_name, job_ptr->job_id);
+			error("Invalid node %s in %pJ",
+			      this_node_name, job_ptr);
 		}
 		if (!job_ptr->batch_host && !job_ptr->batch_features) {
 			/*
@@ -4277,8 +4259,8 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
 	}
 	hostlist_destroy(host_list);
 	if (job_ptr->node_cnt != node_inx) {
-		error("Node count mismatch for JobId=%u (%u,%u)",
-		      job_ptr->job_id, job_ptr->node_cnt, node_inx);
+		error("Node count mismatch for %pJ (%u,%u)",
+		      job_ptr, job_ptr->node_cnt, node_inx);
 	}
 }
 
@@ -4304,15 +4286,13 @@ extern int pick_batch_host(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	if (!job_ptr->node_bitmap) {
-		error("%s: Job %u lacks a node_bitmap", __func__,
-		      job_ptr->job_id);
+		error("%s: %pJ lacks a node_bitmap", __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 
 	i_first = bit_ffs(job_ptr->node_bitmap);
 	if (i_first < 0) {
-		error("%s: Job %u allocated no nodes", __func__,
-		      job_ptr->job_id);
+		error("%s: %pJ allocated no nodes", __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 	if (!job_ptr->batch_features) {
@@ -4430,8 +4410,8 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 					bit_or(paren_node_bitmap,
 					       job_feat_ptr->node_bitmap_active);
 				} else {
-					error("%s: Bad feature expression for job %u: %s",
-					      __func__, job_ptr->job_id,
+					error("%s: Bad feature expression for %pJ: %s",
+					      __func__, job_ptr,
 					      details_ptr->features);
 					break;
 				}
@@ -4447,8 +4427,8 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 		}
 
 		if (!job_feat_ptr) {
-			error("%s: Bad feature expression for job %u: %s",
-			      __func__, job_ptr->job_id, details_ptr->features);
+			error("%s: Bad feature expression for %pJ: %s",
+			      __func__, job_ptr, details_ptr->features);
 		}
 		if ((job_feat_ptr->op_code == FEATURE_OP_XAND) ||
 		    (job_feat_ptr->op_code == FEATURE_OP_XOR)  ||
@@ -4613,11 +4593,11 @@ extern void re_kill_job(struct job_record *job_ptr)
 	hostlist_uniq(kill_hostlist);
 	host_str = hostlist_ranged_string_xmalloc(kill_hostlist);
 	if (job_ptr->job_id != last_job_id) {
-		info("Resending TERMINATE_JOB request JobId=%u Nodelist=%s",
-		     job_ptr->job_id, host_str);
+		info("Resending TERMINATE_JOB request %pJ Nodelist=%s",
+		     job_ptr, host_str);
 	} else {
-		debug("Resending TERMINATE_JOB request JobId=%u Nodelist=%s",
-		      job_ptr->job_id, host_str);
+		debug("Resending TERMINATE_JOB request %pJ Nodelist=%s",
+		      job_ptr, host_str);
 	}
 
 	xfree(host_str);
