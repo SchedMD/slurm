@@ -203,7 +203,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
  * This is needed after a restart/reconfiguration since nodes can
  * be added or removed from the system resulting in changing in
  * the bitmap size or bit positions */
-extern int reset_node_bitmap(job_resources_t *job_resrcs_ptr, uint32_t job_id);
+extern int reset_node_bitmap(void *job_ptr);
 
 /* For a given node_id, socket_id and core_id, get it's offset within
  * the core bitmap */

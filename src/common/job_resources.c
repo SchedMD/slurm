@@ -219,8 +219,10 @@ extern int build_job_resources_cpus_array(job_resources_t *job_resrcs_ptr)
  * This is needed after a restart/reconfiguration since nodes can
  * be added or removed from the system resulting in changing in
  * the bitmap size or bit positions */
-extern int reset_node_bitmap(job_resources_t *job_resrcs_ptr, uint32_t job_id)
+extern int reset_node_bitmap(void *void_job_ptr)
 {
+	struct job_record *job_ptr = (struct job_record *) void_job_ptr;
+	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int i;
 
 	if (!job_resrcs_ptr)
@@ -231,8 +233,8 @@ extern int reset_node_bitmap(job_resources_t *job_resrcs_ptr, uint32_t job_id)
 	if (job_resrcs_ptr->nodes &&
 	    (node_name2bitmap(job_resrcs_ptr->nodes, false,
 			      &job_resrcs_ptr->node_bitmap))) {
-		error("Invalid nodes (%s) for job_id %u",
-		      job_resrcs_ptr->nodes, job_id);
+		error("Invalid nodes (%s) for %pJ",
+		      job_resrcs_ptr->nodes, job_ptr);
 		return SLURM_ERROR;
 	} else if (job_resrcs_ptr->nodes == NULL) {
 		job_resrcs_ptr->node_bitmap = bit_alloc(node_record_count);
@@ -240,8 +242,8 @@ extern int reset_node_bitmap(job_resources_t *job_resrcs_ptr, uint32_t job_id)
 
 	i = bit_set_count(job_resrcs_ptr->node_bitmap);
 	if (job_resrcs_ptr->nhosts != i) {
-		error("Invalid change in resource allocation node count for "
-		      "job %u, %u to %d", job_id, job_resrcs_ptr->nhosts, i);
+		error("Invalid change in resource allocation node count for %pJ, %u to %d",
+		      job_ptr, job_resrcs_ptr->nhosts, i);
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;

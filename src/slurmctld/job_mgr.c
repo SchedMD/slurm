@@ -10889,7 +10889,7 @@ void reset_job_bitmaps(void)
 			      job_ptr->nodes, job_ptr->job_id);
 			job_fail = true;
 		}
-		if (reset_node_bitmap(job_ptr->job_resrcs, job_ptr->job_id))
+		if (reset_node_bitmap(job_ptr))
 			job_fail = true;
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) &&
 		    job_ptr->job_resrcs && (cr_flag || gang_flag) &&
