@@ -83,20 +83,20 @@ static bool _pending_pack_jobs(struct job_record *job_ptr)
 
 	pack_leader = find_job_record(job_ptr->pack_job_id);
 	if (!pack_leader) {
-		error("Job pack leader %u not found", job_ptr->pack_job_id);
+		error("Job pack leader %pJ not found", job_ptr);
 		return false;
 	}
 	if (!pack_leader->pack_job_list) {
-		error("Job pack leader %u lacks pack_job_list",
-		      job_ptr->pack_job_id);
+		error("Job pack leader %pJ lacks pack_job_list",
+		      job_ptr);
 		return false;
 	}
 
 	iter = list_iterator_create(pack_leader->pack_job_list);
 	while ((pack_job = (struct job_record *) list_next(iter))) {
 		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
-			error("%s: Bad pack_job_list for job %u",
-			      __func__, pack_leader->pack_job_id);
+			error("%s: Bad pack_job_list for %pJ",
+			      __func__, pack_leader);
 			continue;
 		}
 		if (IS_JOB_PENDING(pack_job)) {
