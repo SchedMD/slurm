@@ -1485,9 +1485,8 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 
 		i = bit_set_count(req_nodes_bitmap);
 		if (i > (int)max_nodes) {
-			info("job %u requires more nodes than currently "
-			     "available (%d>%u)",
-			     job_ptr->job_id, i, max_nodes);
+			info("%pJ requires more nodes than currently available (%d>%u)",
+			     job_ptr, i, max_nodes);
 			FREE_NULL_BITMAP(req_nodes_bitmap);
 			FREE_NULL_BITMAP(avail_bitmap);
 			xfree(req_squared_sums);
@@ -1618,8 +1617,8 @@ fini:
 	} else { 
 		rc = EINVAL;
 		if (alloc_nodes > max_nodes) {
-			info("job %u requires more nodes than allowed",
-			     job_ptr->job_id);
+			info("%pJ requires more nodes than allowed",
+			     job_ptr);
 		}
 	}
 
@@ -1660,8 +1659,8 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (job_ptr->req_switch > 1) {
 		/* Maximum leaf switch count >1 probably makes no sense */
-		info("%s: Resetting job %u leaf switch count from %u to 0",
-		     __func__, job_ptr->job_id, job_ptr->req_switch);
+		info("%s: Resetting %pJ leaf switch count from %u to 0",
+		     __func__, job_ptr, job_ptr->req_switch);
 		job_ptr->req_switch = 0;
 	}
 	if (job_ptr->req_switch) {
@@ -1688,9 +1687,8 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 		req_nodes_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
 		i = bit_set_count(req_nodes_bitmap);
 		if (i > (int)max_nodes) {
-			info("job %u requires more nodes than currently "
-			     "available (%u>%u)",
-			     job_ptr->job_id, i, max_nodes);
+			info("%pJ requires more nodes than currently available (%u>%u)",
+			     job_ptr, i, max_nodes);
 			rc = EINVAL;
 			goto fini;
 		}
@@ -1728,8 +1726,8 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* check if requested nodes are available */
 	if (!sufficient) {
-		info("job %u requires nodes not available on any switch",
-		     job_ptr->job_id);
+		info("%pJ requires nodes not available on any switch",
+		     job_ptr);
 		rc = EINVAL;
 		goto fini;
 	}
@@ -1764,8 +1762,8 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 			best_fit_inx = j;
 	}
 	if (best_fit_inx == -1) {
-		debug("%s: could not find resources for job %u",
-		      __func__, job_ptr->job_id);
+		debug("%s: could not find resources for %pJ",
+		      __func__, job_ptr);
 		rc = EINVAL;
 		goto fini;
 	}
@@ -1891,16 +1889,15 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (job_ptr->req_switch > 0) {
 			if (time_waiting >= job_ptr->wait4switch) {
 				job_ptr->best_switch = true;
-				debug3("Job=%u Waited %ld sec for switches use=%d",
-					job_ptr->job_id, time_waiting,
+				debug3("%pJ Waited %ld sec for switches use=%d",
+					job_ptr, time_waiting,
 					leaf_switch_count);
 			} else if (leaf_switch_count > job_ptr->req_switch) {
 				/* Allocation is for more than requested number
 				 * of switches */
 				job_ptr->best_switch = false;
-				debug3("Job=%u waited %ld sec for switches=%u "
-					"found=%d wait %u",
-					job_ptr->job_id, time_waiting,
+				debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
+					job_ptr, time_waiting,
 					job_ptr->req_switch,
 					leaf_switch_count,
 					job_ptr->wait4switch);
@@ -1919,8 +1916,8 @@ fini:	if (rc == SLURM_SUCCESS) {
 		/* Job's total_cpus is needed for SELECT_MODE_WILL_RUN */
 		job_ptr->total_cpus = total_cpus;
 	} else if (alloc_nodes > max_nodes)
-		info("job %u requires more nodes than allowed",
-		     job_ptr->job_id);
+		info("%pJ requires more nodes than allowed",
+		     job_ptr);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
 	for (i = 0; i < switch_record_cnt; i++)
 		FREE_NULL_BITMAP(switches_bitmap[i]);
@@ -1983,9 +1980,8 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		req_nodes_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
 		i = bit_set_count(req_nodes_bitmap);
 		if (i > (int)max_nodes) {
-			info("job %u requires more nodes than currently "
-			     "available (%u>%u)",
-			     job_ptr->job_id, i, max_nodes);
+			info("%pJ requires more nodes than currently available (%u>%u)",
+			     job_ptr, i, max_nodes);
 			rc = EINVAL;
 			goto fini;
 		}
@@ -2023,8 +2019,8 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* check if requested nodes are available */
 	if (!sufficient) {
-		info("job %u requires nodes not available on any switch",
-		     job_ptr->job_id);
+		info("%pJ requires nodes not available on any switch",
+		     job_ptr);
 		rc = EINVAL;
 		goto fini;
 	}
@@ -2059,8 +2055,8 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 			best_fit_inx = j;
 	}
 	if (best_fit_inx == -1) {
-		debug("%s: could not find resources for job %u",
-		      __func__, job_ptr->job_id);
+		debug("%s: could not find resources for %pJ",
+		      __func__, job_ptr);
 		rc = EINVAL;
 		goto fini;
 	}
@@ -2224,16 +2220,15 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (job_ptr->req_switch > 0) {
 			if (time_waiting >= job_ptr->wait4switch) {
 				job_ptr->best_switch = true;
-				debug3("Job=%u Waited %ld sec for switches use=%d",
-					job_ptr->job_id, time_waiting,
+				debug3("%pJ Waited %ld sec for switches use=%d",
+					job_ptr, time_waiting,
 					leaf_switch_count);
 			} else if (leaf_switch_count > job_ptr->req_switch) {
 				/* Allocation is for more than requested number
 				 * of switches */
 				job_ptr->best_switch = false;
-				debug3("Job=%u waited %ld sec for switches=%u "
-					"found=%d wait %u",
-					job_ptr->job_id, time_waiting,
+				debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
+					job_ptr, time_waiting,
 					job_ptr->req_switch,
 					leaf_switch_count,
 					job_ptr->wait4switch);
@@ -2252,8 +2247,7 @@ fini:	if (rc == SLURM_SUCCESS) {
 		/* Job's total_cpus is needed for SELECT_MODE_WILL_RUN */
 		job_ptr->total_cpus = total_cpus;
 	} else if (alloc_nodes > max_nodes)
-		info("job %u requires more nodes than allowed",
-		     job_ptr->job_id);
+		info("%pJ requires more nodes than allowed", job_ptr);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
 	for (i=0; i<switch_record_cnt; i++)
 		FREE_NULL_BITMAP(switches_bitmap[i]);
@@ -2291,8 +2285,8 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 	}
 
 	if (_rem_tot_job(cr_ptr, job_ptr->job_id) == 0) {
-		info("select/linear: job %u has no resources allocated",
-		     job_ptr->job_id);
+		info("%s: %pJ has no resources allocated",
+		     plugin_type, job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -2306,7 +2300,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 	}
 
 	if ((job_resrcs_ptr = job_ptr->job_resrcs) == NULL) {
-		error("job %u lacks a job_resources struct", job_ptr->job_id);
+		error("%pJ lacks a job_resources struct", job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -2408,14 +2402,12 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			if (job_ptr->part_nodes_missing) {
 				;
 			} else if (job_ptr->part_ptr) {
-				info("%s: job %u and its partition %s "
-				     "no longer contain node %s",
-				     pre_err, job_ptr->job_id,
+				info("%s: %pJ and its partition %s no longer contain node %s",
+				     pre_err, job_ptr,
 				     job_ptr->partition, node_ptr->name);
 			} else {
-				info("%s: job %u has no pointer to partition "
-				     "%s and node %s",
-				     pre_err, job_ptr->job_id,
+				info("%s: %pJ has no pointer to partition %s and node %s",
+				     pre_err, job_ptr,
 				     job_ptr->partition, node_ptr->name);
 			}
 			job_ptr->part_nodes_missing = true;
@@ -2442,23 +2434,23 @@ static int _job_expand(struct job_record *from_job_ptr,
 	xassert(from_job_ptr);
 	xassert(to_job_ptr);
 	if (cr_ptr == NULL) {
-		error("select/linear: cr_ptr not initialized");
+		error("%s: cr_ptr not initialized", plugin_type);
 		return SLURM_ERROR;
 	}
 
 	if (from_job_ptr->job_id == to_job_ptr->job_id) {
-		error("select/linear: attempt to merge job %u with self",
-		      from_job_ptr->job_id);
+		error("%s: attempt to merge %pJ with self",
+		      plugin_type, from_job_ptr);
 		return SLURM_ERROR;
 	}
 	if (_test_tot_job(cr_ptr, from_job_ptr->job_id) == 0) {
-		info("select/linear: job %u has no resources allocated",
-		     from_job_ptr->job_id);
+		info("%s: %pJ has no resources allocated",
+		     plugin_type, from_job_ptr);
 		return SLURM_ERROR;
 	}
 	if (_test_tot_job(cr_ptr, to_job_ptr->job_id) == 0) {
-		info("select/linear: job %u has no resources allocated",
-		     to_job_ptr->job_id);
+		info("%s: %pJ has no resources allocated",
+		     plugin_type, to_job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -2466,16 +2458,16 @@ static int _job_expand(struct job_record *from_job_ptr,
 	if ((from_job_resrcs_ptr == NULL) ||
 	    (from_job_resrcs_ptr->cpus == NULL) ||
 	    (from_job_resrcs_ptr->node_bitmap == NULL)) {
-		error("select/linear: job %u lacks a job_resources struct",
-		      from_job_ptr->job_id);
+		error("%s: %pJ lacks a job_resources struct",
+		      plugin_type, from_job_ptr);
 		return SLURM_ERROR;
 	}
 	to_job_resrcs_ptr = to_job_ptr->job_resrcs;
 	if ((to_job_resrcs_ptr == NULL) ||
 	    (to_job_resrcs_ptr->cpus == NULL) ||
 	    (to_job_resrcs_ptr->node_bitmap == NULL)) {
-		error("select/linear: job %u lacks a job_resources struct",
-		      to_job_ptr->job_id);
+		error("%s: %pJ lacks a job_resources struct",
+		      plugin_type, to_job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -2674,8 +2666,8 @@ static int _decr_node_job_cnt(int node_inx, struct job_record *job_ptr,
 		error("%s: Could not find partition %s for node %s",
 		      pre_err, job_ptr->part_ptr->name, node_ptr->name);
 	} else {
-		error("%s: no partition ptr given for job %u and node %s",
-		      pre_err, job_ptr->job_id, node_ptr->name);
+		error("%s: no partition ptr given for %pJ and node %s",
+		      pre_err, job_ptr, node_ptr->name);
 	}
 	return SLURM_ERROR;
 }
@@ -2699,8 +2691,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	}
 
 	if (_test_tot_job(cr_ptr, job_ptr->job_id) == 0) {
-		info("select/linear: job %u has no resources allocated",
-		     job_ptr->job_id);
+		info("%s: %pJ has no resources allocated",
+		     plugin_type, job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -2714,15 +2706,14 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	}
 	if ((job_ptr->job_resrcs == NULL) ||
 	    (job_ptr->job_resrcs->cpus == NULL)) {
-		error("job %u lacks a job_resources struct", job_ptr->job_id);
+		error("%pJ lacks a job_resources struct", job_ptr);
 		return SLURM_ERROR;
 	}
 	job_resrcs_ptr = job_ptr->job_resrcs;
 	node_inx = node_ptr - node_record_table_ptr;
 	if (!bit_test(job_resrcs_ptr->node_bitmap, node_inx)) {
-		error("job %u allocated nodes (%s) which have been removed "
-		      "from slurm.conf",
-		      job_ptr->job_id, node_ptr->name);
+		error("%pJ allocated nodes (%s) which have been removed from slurm.conf",
+		      job_ptr, node_ptr->name);
 		return SLURM_ERROR;
 	}
 	first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
@@ -2733,8 +2724,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		node_offset++;
 	}
 	if (job_resrcs_ptr->cpus[node_offset] == 0) {
-		error("duplicate relinquish of node %s by job %u",
-		      node_ptr->name, job_ptr->job_id);
+		error("duplicate relinquish of node %s by %pJ",
+		      node_ptr->name, job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -2800,7 +2791,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 			job_memory_node = job_ptr->details->pn_min_memory;
 	}
 	if ((job_resrcs_ptr = job_ptr->job_resrcs) == NULL) {
-		error("job %u lacks a job_resources struct", job_ptr->job_id);
+		error("%pJ lacks a job_resources struct", job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -2861,9 +2852,8 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 			break;
 		}
 		if (part_cr_ptr == NULL) {
-			info("%s: job %u could not find partition %s for "
-			     "node %s",
-			     pre_err, job_ptr->job_id, job_ptr->partition,
+			info("%s: %pJ could not find partition %s for node %s",
+			     pre_err, job_ptr, job_ptr->partition,
 			     node_ptr->name);
 			job_ptr->part_nodes_missing = true;
 			rc = SLURM_ERROR;
@@ -2914,11 +2904,11 @@ static void _dump_node_cr(struct cr_record *cr_ptr)
 
 	for (i = 0; i < cr_ptr->run_job_len; i++) {
 		if (cr_ptr->run_job_ids[i])
-			info("Running job:%u", cr_ptr->run_job_ids[i]);
+			info("Running JobId=%u", cr_ptr->run_job_ids[i]);
 	}
 	for (i = 0; i < cr_ptr->tot_job_len; i++) {
 		if (cr_ptr->tot_job_ids[i])
-			info("Alloc job:%u", cr_ptr->tot_job_ids[i]);
+			info("Alloc JobId=%u", cr_ptr->tot_job_ids[i]);
 	}
 
 	for (i = 0; i < select_node_cnt; i++) {
@@ -3047,8 +3037,8 @@ static void _init_node_cr(void)
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
 		if ((job_resrcs_ptr = job_ptr->job_resrcs) == NULL) {
-			error("job %u lacks a job_resources struct",
-			      job_ptr->job_id);
+			error("%pJ lacks a job_resources struct",
+			      job_ptr);
 			continue;
 		}
 		if (IS_JOB_RUNNING(job_ptr) ||
@@ -3135,9 +3125,8 @@ static void _init_node_cr(void)
 				break;
 			}
 			if (part_cr_ptr == NULL) {
-				info("_init_node_cr: job %u could not find "
-				     "partition %s for node %s",
-				     job_ptr->job_id, job_ptr->partition,
+				info("%s: %pJ could not find partition %s for node %s",
+				     __func__, job_ptr, job_ptr->partition,
 				     node_ptr->name);
 				job_ptr->part_nodes_missing = true;
 			}
@@ -3241,8 +3230,8 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 #if SELECT_DEBUG
 			{
 				char *node_list = bitmap2node_name(bitmap);
-				info("_run_job %u iter:%d cnt:%d nodes:%s",
-				     job_ptr->job_id, max_run_job, j,
+				info("%s: %pJ iter:%d cnt:%d nodes:%s",
+				     __func__, job_ptr, max_run_job, j,
 				     node_list);
 				xfree(node_list);
 			}
@@ -3426,8 +3415,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
 			if (!cleaning) {
-				error("%s: Active job %u has zero end_time",
-				      __func__, tmp_job_ptr->job_id);
+				error("%s: Active %pJ has zero end_time",
+				      __func__, tmp_job_ptr);
 			}
 			continue;
 		}
@@ -3437,8 +3426,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			 * while NHC was running
 			 */
 			if (!cleaning) {
-				error("%s: Job %u has NULL node_bitmap",
-				      __func__, tmp_job_ptr->job_id);
+				error("%s: %pJ has NULL node_bitmap",
+				      __func__, tmp_job_ptr);
 			}
 			continue;
 		}
@@ -3700,8 +3689,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	if (job_ptr->details->core_spec != NO_VAL16) {
-		verbose("select/linear: job %u core_spec(%u) not supported",
-			job_ptr->job_id, job_ptr->details->core_spec);
+		verbose("%s: %pJ core_spec(%u) not supported",
+			plugin_type, job_ptr, job_ptr->details->core_spec);
 		job_ptr->details->core_spec = NO_VAL16;
 	}
 

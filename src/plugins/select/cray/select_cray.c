@@ -733,8 +733,8 @@ static void _update_app(struct step_record *step_ptr,
 	// If there are no nodes, set_application_info will fail
 	if ((app.nodes == NULL) || (app.num_nodes == 0) ||
 	    (app.app_name == NULL) || ((app.app_name)[0] == '\0')) {
-		debug("Job %"PRIu32".%"PRIu32" has no nodes or app name, "
-		      "skipping", job_ptr->job_id, step_ptr->step_id);
+		debug("%pJ StepId=%u has no nodes or app name, skipping",
+		      job_ptr, step_ptr->step_id);
 		_free_event(&app);
 		return;
 	}
@@ -1110,12 +1110,12 @@ static void *_step_fini(void *args)
 	nhc_info.jobid = step_ptr->job_ptr->job_id;
 	jobinfo = step_ptr->select_jobinfo->data;
 	if (IS_CLEANING_COMPLETE(jobinfo)) {
-		debug("%s: NHC previously run for step %u.%u",
-		      __func__, step_ptr->job_ptr->job_id, step_ptr->step_id);
+		debug("%s: NHC previously run for %pJ StepId=%u",
+		      __func__, step_ptr->job_ptr, step_ptr->step_id);
 		unlock_slurmctld(job_read_lock);
 	} else if (step_ptr->step_id == SLURM_EXTERN_CONT) {
-		debug2("%s: Job %u external container complete, no NHC",
-		       __func__, step_ptr->job_ptr->job_id);
+		debug2("%s: %pJ external container complete, no NHC",
+		       __func__, step_ptr->job_ptr);
 		unlock_slurmctld(job_read_lock);
 	} else {
 		/* Run application NHC */
@@ -1642,8 +1642,8 @@ extern int select_p_job_init(List job_list)
 				if ((job_ptr->details) &&
 				    ((job_ptr->details->prolog_running) ||
 				     IS_JOB_CONFIGURING(job_ptr))) {
-					debug("CCM job %u recovery rerun "
-					      "prologue", job_ptr->job_id);
+					debug("CCM %pJ recovery rerun prologue",
+					      job_ptr);
 					job_ptr->job_state |= JOB_CONFIGURING;
 					slurm_thread_create_detached(NULL,
 								     ccm_begin,
@@ -1889,7 +1889,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* char *tmp = bitmap2node_name(bitmap); */
 	/* char *tmp3 = bitmap2node_name(blade_nodes_running_npc); */
 
-	/* info("trying %u on %s '%s'", job_ptr->job_id, tmp, tmp3); */
+	/* info("trying %pJ on %s '%s'", job_ptr, tmp, tmp3); */
 	/* xfree(tmp); */
 	/* xfree(tmp3); */
 	slurm_mutex_unlock(&blade_mutex);
@@ -1923,7 +1923,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 
 	/* char *tmp3 = bitmap2node_name(blade_nodes_running_npc); */
 
-	/* info("adding %u '%s'", job_ptr->job_id, tmp3); */
+	/* info("adding %pJ '%s'", job_ptr, tmp3); */
 	/* xfree(tmp3); */
 	slurm_mutex_unlock(&blade_mutex);
 
@@ -1936,21 +1936,21 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 		if (ccm_check_partitions(job_ptr)) {
 			if (job_ptr->details == NULL) {
 				/* This info is required; abort the launch */
-				CRAY_ERR("CCM prolog missing job details, "
-					"job %u killed", job_ptr->job_id);
+				CRAY_ERR("CCM prolog missing job details, %pJ killed",
+					 job_ptr);
 				srun_user_message(job_ptr,
 				      "CCM prolog missing job details, killed");
 				(void) job_signal(job_ptr->job_id, SIGKILL, 0,
 					0, false);
 			} else {
 				/* Delay job launch until CCM prolog is done */
-				debug("CCM job %u increment prolog_running, "
-					"current %d", job_ptr->job_id,
-					job_ptr->details->prolog_running);
+				debug("CCM %pJ increment prolog_running, current %d",
+				      job_ptr,
+				      job_ptr->details->prolog_running);
 				job_ptr->details->prolog_running++;
 				/* Cleared in prolog_running_decr() */
-				debug("CCM job %u setting JOB_CONFIGURING",
-					job_ptr->job_id);
+				debug("CCM %pJ setting JOB_CONFIGURING",
+				      job_ptr);
 				job_ptr->job_state |= JOB_CONFIGURING;
 				slurm_thread_create_detached(NULL, ccm_begin,
 							     job_ptr);
@@ -1968,8 +1968,8 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	if (ccm_check_partitions(job_ptr)) {
 		/* Delay CCM job launch until CCM prolog is done */
 		if (IS_JOB_CONFIGURING(job_ptr)) {
-			debug("CCM job %u job configuring set; job not ready",
-				job_ptr->job_id);
+			debug("CCM %pJ job configuring set; job not ready",
+			      job_ptr);
 			return READY_JOB_ERROR;
 		}
 	}
@@ -2027,17 +2027,17 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	}
 
 	if (IS_CLEANING_STARTED(jobinfo)) {
-		error("%s: Cleaning flag already set for job %u, "
-		      "this should never happen", __func__, job_ptr->job_id);
+		error("%s: Cleaning flag already set for %pJ, this should never happen",
+		      __func__, job_ptr);
 	} else if (IS_CLEANING_COMPLETE(jobinfo)) {
-		error("%s: Cleaned flag already set for job %u, "
-		      "this should never happen", __func__, job_ptr->job_id);
+		error("%s: Cleaned flag already set for %pJ, this should never happen",
+		      __func__, job_ptr);
 	} else if (!job_ptr->nodes) {
 		/*
 		 * Job with no compute resource allocation,
 		 * only burst buffer operations
 		 */
-		debug3("No blade allocation for job %u", job_ptr->job_id);
+		debug3("No blade allocation for %pJ", job_ptr);
 		other_job_fini(job_ptr);
 	} else {
 		jobinfo->cleaning |= CLEANING_STARTED;
