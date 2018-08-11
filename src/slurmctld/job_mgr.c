@@ -3547,7 +3547,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 			    (job_ptr->details->requeue > 0)) {
 				char requeue_msg[128];
 
-				srun_node_fail(job_ptr->job_id, node_name);
+				srun_node_fail(job_ptr, node_name);
 				info("requeue %pJ due to failure of node %s",
 				     job_ptr, node_name);
 				set_job_prio(job_ptr);
@@ -3615,7 +3615,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 			} else {
 				info("Killing %pJ on failed node %s",
 				     job_ptr, node_name);
-				srun_node_fail(job_ptr->job_id, node_name);
+				srun_node_fail(job_ptr, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
 				build_cg_bitmap(job_ptr);
@@ -3841,7 +3841,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 			    (job_ptr->node_cnt > 1) &&
 			    !IS_JOB_CONFIGURING(job_ptr)) {
 				/* keep job running on remaining nodes */
-				srun_node_fail(job_ptr->job_id, node_name);
+				srun_node_fail(job_ptr, node_name);
 				error("Removing failed node %s from %pJ",
 				      node_name, job_ptr);
 				job_pre_resize_acctg(job_ptr);
@@ -3856,7 +3856,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				   job_ptr->details->requeue) {
 				char requeue_msg[128];
 
-				srun_node_fail(job_ptr->job_id, node_name);
+				srun_node_fail(job_ptr, node_name);
 				info("requeue job %pJ due to failure of node %s",
 				     job_ptr, node_name);
 				snprintf(requeue_msg, sizeof(requeue_msg),
@@ -3925,7 +3925,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 			} else {
 				info("Killing %pJ on failed node %s",
 				     job_ptr, node_name);
-				srun_node_fail(job_ptr->job_id, node_name);
+				srun_node_fail(job_ptr, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
 				build_cg_bitmap(job_ptr);

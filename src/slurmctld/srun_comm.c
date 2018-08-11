@@ -201,15 +201,14 @@ extern void srun_allocate_abort(struct job_record *job_ptr)
 
 /*
  * srun_node_fail - notify srun of a node's failure
- * IN job_id    - id of job to notify
+ * IN job_ptr - job to notify
  * IN node_name - name of failed node
  */
-extern void srun_node_fail (uint32_t job_id, char *node_name)
+extern void srun_node_fail(struct job_record *job_ptr, char *node_name)
 {
 #ifndef HAVE_FRONT_END
 	struct node_record *node_ptr;
 #endif
-	struct job_record *job_ptr = find_job_record (job_id);
 	int bit_position = -1;
 	slurm_addr_t * addr;
 	srun_node_fail_msg_t *msg_arg;
@@ -256,7 +255,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
-		msg_arg->job_id   = job_id;
+		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;
 		msg_arg->nodelist = xstrdup(node_name);
 		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_NODE_FAIL,
