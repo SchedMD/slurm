@@ -3081,25 +3081,24 @@ static void *_assoc_cache_mgr(void *no_data)
 			       sizeof(slurmdb_assoc_rec_t));
 			assoc_rec.id = job_ptr->assoc_id;
 
-			debug("assoc is %zx (%d) for job %u",
+			debug("assoc is %zx (%d) for %pJ",
 			      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
-			      job_ptr->job_id);
+			      job_ptr);
 
 			if (assoc_mgr_fill_in_assoc(
 				    acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    (slurmdb_assoc_rec_t **)
 				    &job_ptr->assoc_ptr, true)) {
-				verbose("Invalid association id %u "
-					"for job id %u",
-					job_ptr->assoc_id, job_ptr->job_id);
+				verbose("Invalid association id %u for %pJ",
+					job_ptr->assoc_id, job_ptr);
 				/* not a fatal error, association could have
 				 * been removed */
 			}
 
-			debug("now assoc is %zx (%d) for job %u",
+			debug("now assoc is %zx (%d) for %pJ",
 			      (size_t)job_ptr->assoc_ptr, job_ptr->assoc_id,
-			      job_ptr->job_id);
+			      job_ptr);
 		}
 		if (job_ptr->qos_id) {
 			memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
@@ -3110,8 +3109,8 @@ static void *_assoc_cache_mgr(void *no_data)
 				    (slurmdb_qos_rec_t **)&job_ptr->qos_ptr,
 				    true))
 			   != SLURM_SUCCESS) {
-				verbose("Invalid qos (%u) for job_id %u",
-					job_ptr->qos_id, job_ptr->job_id);
+				verbose("Invalid qos (%u) for %pJ",
+					job_ptr->qos_id, job_ptr);
 				/* not a fatal error, qos could have
 				 * been removed */
 			}
@@ -3423,7 +3422,7 @@ static void *_purge_files_thread(void *no_data)
 		 * to be freed.
 		 */
 		while ((job_id = list_dequeue(purge_files_list))) {
-			debug2("%s: purging files from job %d",
+			debug2("%s: purging files from JobId=%u",
 			       __func__, *job_id);
 			delete_job_desc_files(*job_id);
 			xfree(job_id);

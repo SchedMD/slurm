@@ -1027,7 +1027,7 @@ static void *_thread_per_group_rpc(void *args)
 			batch_job_launch_msg_t *launch_msg_ptr =
 				task_ptr->msg_args_ptr;
 			job_id = launch_msg_ptr->job_id;
-			info("Killing non-startable batch job %u: %s",
+			info("Killing non-startable batch JobId=%u: %s",
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
@@ -1044,7 +1044,7 @@ static void *_thread_per_group_rpc(void *args)
 			resource_allocation_response_msg_t *msg_ptr =
 				task_ptr->msg_args_ptr;
 			job_id = msg_ptr->job_id;
-			info("Killing interactive job %u: %s",
+			info("Killing interactive JobId=%u: %s",
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
@@ -1064,7 +1064,7 @@ static void *_thread_per_group_rpc(void *args)
 				continue;
 			msg_ptr = list_peek(pack_alloc_list);
 			job_id = msg_ptr->job_id;
-			info("Killing interactive job %u: %s",
+			info("Killing interactive JobId=%u: %s",
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
@@ -1085,8 +1085,8 @@ static void *_thread_per_group_rpc(void *args)
 				lock_slurmctld(job_write_lock);
 				job_ptr = find_job_record(job_id);
 				if (job_ptr == NULL) {
-					info("%s: invalid JobId=%u", __func__,
-					     job_id);
+					info("%s: invalid JobId=%u",
+					     __func__, job_id);
 				} else if (rc == SLURM_SUCCESS) {
 					if (msg_ptr->signal == SIGSTOP) {
 						job_ptr->job_state |=
@@ -2052,8 +2052,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	job_ptr = find_job_record(launch_msg_ptr->job_id);
 	if ((job_ptr == NULL) ||
 	    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
-		info("agent(batch_launch): removed pending request for "
-		     "cancelled job %u",
+		info("agent(batch_launch): removed pending request for cancelled JobId=%u",
 		     launch_msg_ptr->job_id);
 		return -1;	/* job cancelled while waiting */
 	}
@@ -2085,8 +2084,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 					agent_arg_ptr->hostlist);
 		node_ptr = find_node_record(hostname);
 		if (node_ptr == NULL) {
-			error("agent(batch_launch) removed pending request for "
-			      "job %u, missing node %s",
+			error("agent(batch_launch) removed pending request for JobId=%u, missing node %s",
 			      launch_msg_ptr->job_id, hostname);
 			xfree(hostname);
 			return -1;	/* invalid request?? */
@@ -2112,7 +2110,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	} else if (difftime(now, queued_req_ptr->first_attempt) >=
 				 slurm_get_resume_timeout()) {
 		/* Nodes will get marked DOWN and job requeued, if possible */
-		error("agent waited too long for nodes to respond, abort launch of job %u",
+		error("agent waited too long for nodes to respond, abort launch of JobId=%u",
 		      job_ptr->job_id);
 		return -1;
 	}
@@ -2142,7 +2140,7 @@ static int _signal_defer(queued_request_t *queued_req_ptr)
 	job_ptr = find_job_record(signal_msg_ptr->job_id);
 
 	if (job_ptr == NULL) {
-		info("agent(signal_task): removed pending request for cancelled job %u",
+		info("agent(signal_task): removed pending request for cancelled JobId=%u",
 		     signal_msg_ptr->job_id);
 		return -1;	/* job cancelled while waiting */
 	}
@@ -2154,7 +2152,7 @@ static int _signal_defer(queued_request_t *queued_req_ptr)
 		queued_req_ptr->first_attempt = now;
 	} else if (difftime(now, queued_req_ptr->first_attempt) >=
 				 2 * slurm_get_batch_start_timeout()) {
-		error("agent waited too long for nodes to respond, abort signal of job %u",
+		error("agent waited too long for nodes to respond, abort signal of JobId=%u",
 		      job_ptr->job_id);
 		return -1;
 	}

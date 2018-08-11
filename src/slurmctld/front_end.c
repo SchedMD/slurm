@@ -206,8 +206,8 @@ extern front_end_record_t *assign_front_end(struct job_record *job_ptr)
 		    _front_end_access(front_end_ptr, job_ptr)) {
 			best_front_end = front_end_ptr;
 		} else {
-			info("%s: front-end node %s not available for job %u",
-			     __func__, job_ptr->alloc_node, job_ptr->job_id);
+			info("%s: front-end node %s not available for %pJ",
+			     __func__, job_ptr->alloc_node, job_ptr);
 			return NULL;
 		}
 	} else {
@@ -954,9 +954,8 @@ extern void sync_front_end_state(void)
 				find_front_end_record(job_ptr->batch_host);
 			if ((job_ptr->front_end_ptr == NULL) &&
 			    IS_JOB_RUNNING(job_ptr)) {
-				error("front end node %s has vanished, "
-				      "killing job %u",
-				      job_ptr->batch_host, job_ptr->job_id);
+				error("front end node %s has vanished, killing %pJ",
+				      job_ptr->batch_host, job_ptr);
 				job_ptr->job_state = JOB_NODE_FAIL |
 						     JOB_COMPLETING;
 			} else if (job_ptr->front_end_ptr == NULL) {

@@ -3069,14 +3069,14 @@ extern int validate_nodes_via_front_end(
 					  job_ptr, front_end_ptr->name);
 			continue;
 		} else if (job_ptr->batch_host == NULL) {
-			error("Resetting NULL batch_host of job %u to %s",
+			error("Resetting NULL batch_host of JobId=%u to %s",
 			      reg_msg->job_id[i], front_end_ptr->name);
 			job_ptr->batch_host = xstrdup(front_end_ptr->name);
 		}
 
 
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
-			debug3("Registered job %s on %s",
+			debug3("Registered JobId=%s on %s",
 			      _build_step_id(step_str, sizeof(step_str),
 					     reg_msg->job_id[i],
 					     reg_msg->step_id[i]),
@@ -3109,7 +3109,7 @@ extern int validate_nodes_via_front_end(
 
 		else if (difftime(now, job_ptr->end_time) <
 			 slurm_get_msg_timeout()) {	/* Race condition */
-			debug("Registered newly completed job %s on %s",
+			debug("Registered newly completed JobId=%s on %s",
 			      _build_step_id(step_str, sizeof(step_str),
 					     reg_msg->job_id[i],
 					     reg_msg->step_id[i]),
@@ -3117,7 +3117,7 @@ extern int validate_nodes_via_front_end(
 		}
 
 		else {		/* else job is supposed to be done */
-			error("Registered job %s in state %s on %s",
+			error("Registered JobId=%s in state %s on %s",
 			      _build_step_id(step_str, sizeof(step_str),
 					     reg_msg->job_id[i],
 					     reg_msg->step_id[i]),
@@ -3139,7 +3139,7 @@ extern int validate_nodes_via_front_end(
 			continue;
 		if (difftime(now, job_ptr->time_last_active) <= 5)
 			continue;
-		info("Killing orphan batch job %u", job_ptr->job_id);
+		info("Killing orphan batch %pJ", job_ptr);
 		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
 			     false, false, 0);
 	}
@@ -3882,7 +3882,6 @@ void make_node_idle(struct node_record *node_ptr,
 	uint32_t node_flags;
 	time_t now = time(NULL);
 	bitstr_t *node_bitmap = NULL;
-	char jbuf[JBUFSIZ];
 
 	if (job_ptr) {
 		if (job_ptr->node_bitmap_cg)
@@ -3913,8 +3912,7 @@ void make_node_idle(struct node_record *node_ptr,
 				&& job_ptr->epilog_running == false)
 				cleanup_completing(job_ptr);
 		} else {
-			error("%s: %s node_cnt underflow",
-			      __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)));
+			error("%s: %pJ node_cnt underflow", __func__, job_ptr);
 		}
 
 		if (IS_JOB_SUSPENDED(job_ptr)) {
@@ -3922,19 +3920,15 @@ void make_node_idle(struct node_record *node_ptr,
 			if (node_ptr->sus_job_cnt)
 				(node_ptr->sus_job_cnt)--;
 			else
-				error("%s: %s node %s sus_job_cnt underflow",
-				      __func__, jobid2str(job_ptr, jbuf,
-							  sizeof(jbuf)),
-				      node_ptr->name);
+				error("%s: %pJ node %s sus_job_cnt underflow",
+				      __func__, job_ptr, node_ptr->name);
 		} else if (IS_JOB_RUNNING(job_ptr)) {
 			/* Remove node from running job */
 			if (node_ptr->run_job_cnt)
 				(node_ptr->run_job_cnt)--;
 			else
-				error("%s: %s node %s run_job_cnt underflow",
-				      __func__, jobid2str(job_ptr, jbuf,
-							  sizeof(jbuf)),
-				      node_ptr->name);
+				error("%s: %pJ node %s run_job_cnt underflow",
+				      __func__, job_ptr, node_ptr->name);
 		} else {
 			if (node_ptr->comp_job_cnt) {
 				(node_ptr->comp_job_cnt)--;
@@ -3942,10 +3936,8 @@ void make_node_idle(struct node_record *node_ptr,
 				/* We were not expecting this response,
 				 * ignore it */
 			} else {
-				error("%s: %s node %s comp_job_cnt underflow",
-				      __func__, jobid2str(job_ptr, jbuf,
-							  sizeof(jbuf)),
-				      node_ptr->name);
+				error("%s: %pJ node %s comp_job_cnt underflow",
+				      __func__, job_ptr, node_ptr->name);
 			}
 			if (node_ptr->comp_job_cnt > 0)
 				goto fini;	/* More jobs completing */
@@ -3963,9 +3955,8 @@ void make_node_idle(struct node_record *node_ptr,
 
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_DOWN(node_ptr)) {
-		debug3("%s: %s node %s being left DOWN",
-		       __func__, jobid2str(job_ptr, jbuf,
-					   sizeof(jbuf)), node_ptr->name);
+		debug3("%s: %pJ node %s being left DOWN",
+		       __func__, job_ptr, node_ptr->name);
 		goto fini;
 	}
 	bit_set(up_node_bitmap, inx);
@@ -3980,9 +3971,8 @@ void make_node_idle(struct node_record *node_ptr,
 	    (node_ptr->run_job_cnt == 0) && (node_ptr->comp_job_cnt == 0)) {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		bit_set(idle_node_bitmap, inx);
-		debug3("%s: %s node %s is DRAINED",
-		       __func__, jobid2str(job_ptr, jbuf, sizeof(jbuf)),
-		       node_ptr->name);
+		debug3("%s: %pJ node %s is DRAINED",
+		       __func__, job_ptr, node_ptr->name);
 		node_ptr->last_idle = now;
 		trigger_node_drained(node_ptr);
 		clusteracct_storage_g_node_down(acct_db_conn,
