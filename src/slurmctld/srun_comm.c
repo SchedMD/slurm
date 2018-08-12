@@ -584,8 +584,8 @@ extern void srun_exec(struct step_record *step_ptr, char **argv)
 		_srun_agent_launch(addr, step_ptr->host, SRUN_EXEC,
 				   msg_arg, step_ptr->start_protocol_ver);
 	} else {
-		error("srun_exec %u.%u lacks communication channel",
-			step_ptr->job_ptr->job_id, step_ptr->step_id);
+		error("srun_exec %pS lacks communication channel",
+		      step_ptr);
 	}
 }
 

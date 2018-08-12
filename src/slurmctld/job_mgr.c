@@ -3284,7 +3284,7 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		/* return result */
 		if (error_code) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("Signal %u of StepId=%u.%u by UID=%u: %s",
+				info("Signal %u of JobId=%u StepId=%u by UID=%u: %s",
 				     job_step_kill_msg->signal,
 				     job_step_kill_msg->job_id,
 				     job_step_kill_msg->job_step_id, uid,
@@ -3293,16 +3293,15 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 			if (job_step_kill_msg->signal == SIGKILL) {
 				if (slurmctld_conf.debug_flags &
 						DEBUG_FLAG_STEPS)
-					info("%s: Cancel of StepId=%u.%u by "
-					     "UID=%u %s", __func__,
+					info("%s: Cancel of JobId=%u StepId=%u by UID=%u %s",
+					     __func__,
 					     job_step_kill_msg->job_id,
 					     job_step_kill_msg->job_step_id,
 					     uid, TIME_STR);
 			} else {
 				if (slurmctld_conf.debug_flags &
 						DEBUG_FLAG_STEPS)
-					info("%s: Signal %u of StepId=%u.%u "
-					     "by UID=%u %s",
+					info("%s: Signal %u of JobId=%u StepId=%u by UID=%u %s",
 					     __func__,
 					     job_step_kill_msg->signal,
 					     job_step_kill_msg->job_id,
@@ -10948,16 +10947,14 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 		    step_ptr->step_layout->node_list &&
 		    (node_name2bitmap(step_ptr->step_layout->node_list, false,
 				      &step_ptr->step_node_bitmap))) {
-			error("Invalid step_node_list (%s) for step_id %u.%u",
-			      step_ptr->step_layout->node_list,
-			      job_ptr->job_id, step_ptr->step_id);
+			error("Invalid step_node_list (%s) for %pS",
+			      step_ptr->step_layout->node_list, step_ptr);
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}
 		if ((step_ptr->step_node_bitmap == NULL) &&
 		    (step_ptr->step_id != SLURM_EXTERN_CONT) &&
 		    (step_ptr->batch_step == 0)) {
-			error("Missing node_list for step_id %u.%u",
-			      job_ptr->job_id, step_ptr->step_id);
+			error("Missing node_list for %pS", step_ptr);
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}
 	}

@@ -2345,7 +2345,7 @@ static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 		(job_step_kill_msg_t *) msg->data;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
-		info("Processing RPC: REQUEST_CANCEL_JOB_STEP %u.%u uid=%u",
+		info("Processing RPC: REQUEST_CANCEL_JOB_STEP JobId=%u StepId=%u uid=%u",
 		     job_step_kill_msg->job_id, job_step_kill_msg->job_step_id,
 		     uid);
 	}
@@ -2821,9 +2821,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		slurm_step_layout_t *layout = step_rec->step_layout;
 
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-			sched_info("%s: StepId=%u.%u %s %s",
-				   __func__, step_rec->job_ptr->job_id,
-				   step_rec->step_id, req_step_msg->node_list,
+			sched_info("%s: %pS %s %s",
+				   __func__, step_rec, req_step_msg->node_list,
 				   TIME_STR);
 
 		job_step_resp.job_step_id = step_rec->step_id;
@@ -3488,9 +3487,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 					       &node_ptr->slurm_addr,
 					       sizeof(slurm_addr_t));
 				} else {
-					error("Invalid node %s in Step=%u.%u",
-					      this_node_name, job_ptr->job_id,
-					      step_ptr->step_id);
+					error("Invalid node %s in %pS",
+					      this_node_name, step_ptr);
 				}
 				free(this_node_name);
 			}
@@ -3555,13 +3553,12 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_ERROR);
 	} else {
 		if (job_ptr && (job_info_msg->step_id != NO_VAL)) {
-			info("_slurm_rpc_job_sbcast_cred Job=%u NodeList=%s %s",
-			     job_info_msg->job_id, node_list, TIME_STR);
+			info("_slurm_rpc_job_sbcast_cred %pJ NodeList=%s %s",
+			     job_ptr, node_list, TIME_STR);
 		} else {
-			info("_slurm_rpc_job_sbcast_cred Step=%u.%u "
-			     "NodeList=%s %s",
-			     job_info_msg->job_id, job_info_msg->step_id,
-			     node_list, TIME_STR);
+			info("_slurm_rpc_job_sbcast_cred %pJ Step=%u NodeList=%s %s",
+			     job_ptr, job_info_msg->step_id, node_list,
+			     TIME_STR);
 		}
 
 		job_info_resp_msg.job_id         = job_ptr->job_id;
@@ -3815,8 +3812,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 	/* init */
 	START_TIMER;
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-		info("Processing RPC: REQUEST_STEP_COMPLETE for %u.%u "
-		     "nodes %u-%u rc=%u uid=%d",
+		info("Processing RPC: REQUEST_STEP_COMPLETE for JobId=%u StepId=%u nodes %u-%u rc=%u uid=%d",
 		     req->job_id, req->job_step_id, req->range_first,
 		     req->range_last, req->step_rc, uid);
 
@@ -3874,14 +3870,15 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		/* return result */
 		if (error_code) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("%s 1 StepId=%u.%u %s", __func__,
-				     req->job_id, req->job_step_id,
+				info("%s 1 JobId=%u StepId=%u %s",
+				     __func__, req->job_id, req->job_step_id,
 				     slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				sched_info("%s StepId=%u.%u %s", __func__,
-					   req->job_id, req->job_step_id,
+				sched_info("%s JobId=%u StepId=%u %s",
+					   __func__, req->job_id,
+					   req->job_step_id,
 					   TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			dump_job = true;
@@ -3935,8 +3932,8 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	if (!step_ptr) {
 		unlock_slurmctld(job_read_lock);
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-			info("%s: JobId=%u.%u Not Found", __func__,
-			     req->job_id, req->step_id);
+			info("%s: %pJ StepId=%u Not Found",
+			     __func__, job_ptr, req->step_id);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
 		return;
 	}
@@ -5448,17 +5445,17 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 			info("_slurm_rpc_checkpoint %s %u: %s", op,
 			     ckpt_ptr->job_id, slurm_strerror(error_code));
 		} else {
-			info("_slurm_rpc_checkpoint %s %u.%u: %s", op,
-			     ckpt_ptr->job_id, ckpt_ptr->step_id,
+			info("_slurm_rpc_checkpoint %s JobId=%u StepId=%u: %s",
+			     op, ckpt_ptr->job_id, ckpt_ptr->step_id,
 			     slurm_strerror(error_code));
 		}
 	} else {
 		if (ckpt_ptr->step_id == SLURM_BATCH_SCRIPT) {
-			info("_slurm_rpc_checkpoint %s for %u %s", op,
-			     ckpt_ptr->job_id, TIME_STR);
+			info("_slurm_rpc_checkpoint %s for JobId=%u %s",
+			     op, ckpt_ptr->job_id, TIME_STR);
 		} else {
-			info("_slurm_rpc_checkpoint %s for %u.%u %s", op,
-			     ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
+			info("_slurm_rpc_checkpoint %s for JobId=%u StepId=%u %s",
+			     op, ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
 		}
 		if ((ckpt_ptr->op != CHECK_ABLE) &&
 		    (ckpt_ptr->op != CHECK_ERROR)) {
@@ -5491,11 +5488,11 @@ inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_checkpoint_comp");
 
 	if (error_code) {
-		info("_slurm_rpc_checkpoint_comp %u.%u: %s",
+		info("_slurm_rpc_checkpoint_comp JobId=%u StepId=%u: %s",
 		     ckpt_ptr->job_id, ckpt_ptr->step_id,
 		     slurm_strerror(error_code));
 	} else {
-		info("_slurm_rpc_checkpoint_comp %u.%u %s",
+		info("_slurm_rpc_checkpoint_comp JobId=%u StepId=%u %s",
 		     ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
 	}
 }
@@ -5523,11 +5520,11 @@ inline static void  _slurm_rpc_checkpoint_task_comp(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_checkpoint_task_comp");
 
 	if (error_code) {
-		info("_slurm_rpc_checkpoint_task_comp %u.%u: %s",
+		info("_slurm_rpc_checkpoint_task_comp JobId=%u StepId=%u: %s",
 		     ckpt_ptr->job_id, ckpt_ptr->step_id,
 		     slurm_strerror(error_code));
 	} else {
-		info("_slurm_rpc_checkpoint_task_comp %u.%u %s",
+		info("_slurm_rpc_checkpoint_task_comp JobId=%u StepId=%u %s",
 		     ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
 	}
 }
