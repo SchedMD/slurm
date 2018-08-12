@@ -719,7 +719,31 @@ static char *_jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
 			 job_ptr->job_id);
 	}
 
-       return buf;
+	return buf;
+}
+
+/*
+ * stepid2fmt() - print a step ID as " StepId=...", with Batch and Extern
+ * used as appropriate.
+ * Note that the "%.0s" trick is already included by jobid2fmt above, and
+ * should not be repeated here.
+ */
+static char *_stepid2fmt(struct step_record *step_ptr, char *buf, int buf_size)
+{
+	if (step_ptr == NULL)
+		return " StepId=Invalid";
+
+	if (step_ptr->step_id == SLURM_EXTERN_CONT) {
+		return " StepId=Extern";
+	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
+		return " StepId=Batch";
+	} else if (step_ptr->step_id == SLURM_PENDING_STEP) {
+		return " StepId=Pending";
+	} else {
+		snprintf(buf, buf_size, " StepId=%u", step_ptr->step_id);
+	}
+
+	return buf;
 }
 
 /*
@@ -731,6 +755,7 @@ static char *_jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
  * - %M expand to time stamp, format is configuration dependent
  * - %pJ expands to "JobId=XXXX" for the given job_ptr, with the appropriate
  *       format for job arrays and hetjob components.
+ * - %pS expands to "JobId=XXXX StepId=YYYY" for a given step_ptr.
  * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
  * - %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  *
@@ -773,6 +798,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 'p':
 				switch (*(p + 2)) {
 				case 'J':
+				case 'S':
 					is_our_format = true;
 					break;
 				default:
@@ -824,6 +850,36 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 						xstrcat(intermediate_fmt,
 							_jobid2fmt(
 								job_ptr,
+								substitute_on_stack,
+								sizeof(substitute_on_stack)));
+					}
+					va_end(ap_copy);
+					break;
+				}
+				/* "%pS" => "JobId=... StepId=..." */
+				case 'S':
+				{
+					int i;
+					void *ptr = NULL;
+					struct step_record *step_ptr = NULL;
+					struct job_record *job_ptr = NULL;
+					va_list	ap_copy;
+
+					va_copy(ap_copy, ap);
+					for (i = 0; i < cnt; i++ )
+						ptr = va_arg(ap_copy, void *);
+					if (ptr) {
+						step_ptr = ptr;
+						if (step_ptr)
+							job_ptr = step_ptr->job_ptr;
+						xstrcat(intermediate_fmt,
+							_jobid2fmt(
+								job_ptr,
+								substitute_on_stack,
+								sizeof(substitute_on_stack)));
+						xstrcat(intermediate_fmt,
+							_stepid2fmt(
+								step_ptr,
 								substitute_on_stack,
 								sizeof(substitute_on_stack)));
 					}
