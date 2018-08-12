@@ -704,6 +704,10 @@ static char *_jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
 	if (job_ptr == NULL)
 		return "%.0sJobId=Invalid";
 
+	xassert(job_ptr->magic == JOB_MAGIC);
+	if (job_ptr->magic != JOB_MAGIC)
+		return "%.0sJobId=CORRUPT";
+
 	if (job_ptr->pack_job_id) {
 		snprintf(buf, buf_size, "%%.0sJobId=%u+%u(%u)",
 			 job_ptr->pack_job_id, job_ptr->pack_job_offset,
@@ -732,6 +736,10 @@ static char *_stepid2fmt(struct step_record *step_ptr, char *buf, int buf_size)
 {
 	if (step_ptr == NULL)
 		return " StepId=Invalid";
+
+	xassert(step_ptr->magic == STEP_MAGIC);
+	if (step_ptr->magic != STEP_MAGIC)
+		return " StepId=CORRUPT";
 
 	if (step_ptr->step_id == SLURM_EXTERN_CONT) {
 		return " StepId=Extern";
@@ -871,7 +879,8 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 						ptr = va_arg(ap_copy, void *);
 					if (ptr) {
 						step_ptr = ptr;
-						if (step_ptr)
+						if (step_ptr &&
+						    (step_ptr->magic == STEP_MAGIC))
 							job_ptr = step_ptr->job_ptr;
 						xstrcat(intermediate_fmt,
 							_jobid2fmt(
