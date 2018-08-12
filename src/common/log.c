@@ -800,6 +800,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				case 'J':
 				case 'S':
 					is_our_format = true;
+					found_other_formats = true;
 					break;
 				default:
 					found_other_formats = true;
