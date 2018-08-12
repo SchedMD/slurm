@@ -733,8 +733,7 @@ static void _update_app(struct step_record *step_ptr,
 	// If there are no nodes, set_application_info will fail
 	if ((app.nodes == NULL) || (app.num_nodes == 0) ||
 	    (app.app_name == NULL) || ((app.app_name)[0] == '\0')) {
-		debug("%pJ StepId=%u has no nodes or app name, skipping",
-		      job_ptr, step_ptr->step_id);
+		debug("%pS has no nodes or app name, skipping", step_ptr);
 		_free_event(&app);
 		return;
 	}
@@ -1110,12 +1109,11 @@ static void *_step_fini(void *args)
 	nhc_info.jobid = step_ptr->job_ptr->job_id;
 	jobinfo = step_ptr->select_jobinfo->data;
 	if (IS_CLEANING_COMPLETE(jobinfo)) {
-		debug("%s: NHC previously run for %pJ StepId=%u",
-		      __func__, step_ptr->job_ptr, step_ptr->step_id);
+		debug("%s: NHC previously run for %pS",
+		      __func__, step_ptr);
 		unlock_slurmctld(job_read_lock);
 	} else if (step_ptr->step_id == SLURM_EXTERN_CONT) {
-		debug2("%s: %pJ external container complete, no NHC",
-		       __func__, step_ptr->job_ptr);
+		debug2("%s: %pS complete, no NHC", __func__, step_ptr);
 		unlock_slurmctld(job_read_lock);
 	} else {
 		/* Run application NHC */
@@ -2224,9 +2222,8 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 	 * needed.  If it ever changes just use this below code. */
 	else if (IS_JOB_COMPLETING(step_ptr->job_ptr) ||
 		 IS_JOB_FINISHED(step_ptr->job_ptr)) {
-		debug3("step completion %u.%u was received after job "
-		      "allocation is already completing, no extra NHC needed.",
-		      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		debug3("step completion %pS was received after job allocation is already completing, no extra NHC needed.",
+		      step_ptr);
 		other_step_finish(step_ptr, killing_step);
 		/* free resources on the job */
 		post_job_step(step_ptr);
@@ -2236,14 +2233,13 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 
 	jobinfo = step_ptr->select_jobinfo->data;
 	if (!jobinfo) {
-		error("%s: job step %u.%u lacks jobinfo",
-		      __func__, step_ptr->job_ptr->job_id, step_ptr->step_id);
+		error("%s: %pS lacks jobinfo", __func__, step_ptr);
 	} else if (IS_CLEANING_STARTED(jobinfo)) {
-		verbose("%s: Cleaning flag already set for step %u.%u",
-			__func__, step_ptr->job_ptr->job_id, step_ptr->step_id);
+		verbose("%s: Cleaning flag already set for %pS",
+			__func__, step_ptr);
 	} else if (IS_CLEANING_COMPLETE(jobinfo)) {
-		verbose("%s: Cleaned flag already set for step %u.%u",
-			__func__, step_ptr->job_ptr->job_id, step_ptr->step_id);
+		verbose("%s: Cleaned flag already set for %pS",
+			__func__, step_ptr);
 	} else {
 		jobinfo->killing = killing_step;
 		jobinfo->cleaning |= CLEANING_STARTED;
