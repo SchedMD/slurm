@@ -280,6 +280,8 @@ extern bitstr_t *rs_node_bitmap;	/* next_state=resume nodes */
 #define FRONT_END_MAGIC 0xfe9b82fe
 
 typedef struct front_end_record {
+	uint32_t magic;			/* magic cookie to test data integrity */
+					/* DO NOT ALPHABETIZE */
 	gid_t *allow_gids;		/* zero terminated list of allowed groups */
 	char *allow_groups;		/* allowed group string */
 	uid_t *allow_uids;		/* zero terminated list of allowed users */
@@ -294,7 +296,6 @@ typedef struct front_end_record {
 	uint32_t job_cnt_comp;		/* count of completing jobs on node */
 	uint16_t job_cnt_run;		/* count of running or suspended jobs */
 	time_t last_response;		/* Time of last communication */
-	uint32_t magic;			/* magic cookie to test data integrity */
 	char *name;			/* frontend node name */
 	uint32_t node_state;		/* enum node_states, ORed with
 					 * NODE_STATE_NO_RESPOND if not
@@ -323,6 +324,8 @@ extern time_t last_front_end_update;	/* time of last front_end update */
 #define PART_MAGIC 0xaefe8495
 
 struct part_record {
+	uint32_t magic;		/* magic cookie to test data integrity */
+				/* DO NOT ALPHABETIZE */
 	char *allow_accounts;	/* comma delimited list of accounts,
 				 * NULL indicates all */
 	char **allow_account_array; /* NULL terminated list of allowed
@@ -351,7 +354,6 @@ struct part_record {
 	uint16_t flags;		/* see PART_FLAG_* in slurm.h */
 	uint32_t grace_time;	/* default preempt grace time in seconds */
 	List job_defaults_list;	/* List of job_defaults_t elements */
-	uint32_t magic;		/* magic cookie to test data integrity */
 	uint32_t max_cpus_per_node; /* maximum allocated CPUs per node */
 	uint64_t max_mem_per_cpu; /* maximum MB memory per allocated CPU */
 	uint32_t max_nodes;	/* per job or INFINITE */
@@ -396,6 +398,8 @@ extern uint16_t part_max_priority;      /* max priority_job_factor in all parts 
 \*****************************************************************************/
 
 typedef struct slurmctld_resv {
+	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
+				/* DO NOT ALPHABETIZE			*/
 	char *accounts;		/* names of accounts permitted to use	*/
 	int account_cnt;	/* count of accounts permitted to use	*/
 	char **account_list;	/* list of accounts permitted to use	*/
@@ -416,7 +420,6 @@ typedef struct slurmctld_resv {
 	uint32_t job_run_cnt;	/* number of running jobs		*/
 	List license_list;	/* structure with license info		*/
 	char *licenses;		/* required system licenses		*/
-	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
 	bool flags_set_node;	/* flags (i.e. NODE_STATE_MAINT |
 				 * NODE_STATE_RES) set for nodes	*/
 	char *name;		/* name of reservation			*/
@@ -478,6 +481,8 @@ typedef struct job_feature {
 /* job_details - specification of a job's constraints,
  * can be purged after initiation */
 struct job_details {
+	uint32_t magic;			/* magic cookie for data integrity */
+					/* DO NOT ALPHABETIZE */
 	char *acctg_freq;		/* accounting polling interval */
 	time_t accrue_time;             /* Time when we start accruing time for
 					 * priority, */
@@ -515,7 +520,6 @@ struct job_details {
 	char *extra;			/* extra field, unused */
 	List feature_list;		/* required features with node counts */
 	char *features;			/* required features */
-	uint32_t magic;			/* magic cookie for data integrity */
 	uint32_t max_cpus;		/* maximum number of cpus */
 	uint32_t orig_max_cpus;		/* requested value of max_cpus */
 	uint32_t max_nodes;		/* maximum number of nodes */
@@ -611,6 +615,8 @@ typedef struct {
  * be sure to sync with job_array_split.
  */
 struct job_record {
+	uint32_t magic;			/* magic cookie for data integrity */
+					/* DO NOT ALPHABETIZE */
 	char    *account;		/* account number to charge */
 	char    *admin_comment;		/* administrator's arbitrary comment */
 	char	*alias_list;		/* node name to address aliases */
@@ -707,7 +713,6 @@ struct job_record {
 					    * limit was set from admin */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
-	uint32_t magic;			/* magic cookie for data integrity */
 	char *mem_per_tres;		/* semicolon delimited list of TRES=# values */
 	char *mcs_label;		/* mcs_label if mcs plugin in use */
 	char *name;			/* name of the job */
