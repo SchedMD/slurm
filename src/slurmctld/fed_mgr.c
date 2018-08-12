@@ -4608,8 +4608,7 @@ static int _reconcile_fed_job(struct job_record *job_ptr,
 			info("%s: origin %pJ is missing (or completed) from origin %s. Killing this copy of the job",
 			     __func__, job_ptr, sibling_name);
 			job_ptr->bit_flags |= SIB_JOB_FLUSH;
-			job_signal(job_ptr->job_id, SIGKILL, KILL_NO_SIBS, 0,
-				   false);
+			job_signal(job_ptr, SIGKILL, KILL_NO_SIBS, 0, false);
 		} else {
 			info("%s: origin %s still has %pJ",
 			     __func__, sibling_name, job_ptr);

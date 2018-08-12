@@ -1474,7 +1474,19 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 		       int conn_fd, uint16_t protocol_version);
 
 /*
- * job_signal - signal the specified job
+ * job_signal - signal the specified job, access checks already done
+ * IN job_ptr - job to be signaled
+ * IN signal - signal to send, SIGKILL == cancel the job
+ * IN flags  - see KILL_JOB_* flags in slurm.h
+ * IN uid - uid of requesting user
+ * IN preempt - true if job being preempted
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_signal(struct job_record *job_ptr, uint16_t signal,
+		      uint16_t flags, uid_t uid, bool preempt);
+
+/*
+ * job_signal_id - signal the specified job
  * IN job_id - id of the job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
@@ -1482,8 +1494,8 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
-		      uid_t uid, bool preempt);
+extern int job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
+			 uid_t uid, bool preempt);
 /*
  * pack_job_signal - signal all components of a pack job
  * IN pack_leader - job record of job pack leader

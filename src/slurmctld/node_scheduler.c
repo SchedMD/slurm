@@ -2323,7 +2323,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			if (slurm_job_check_grace(job_ptr, preemptor_ptr)
 			    == SLURM_SUCCESS)
 				continue;
-			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
+			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted %pJ has been killed to reclaim resources for %pJ",
 				     job_ptr, preemptor_ptr);
@@ -2373,7 +2373,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 				== SLURM_SUCCESS))
 				continue;
 
-			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
+			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("%s: preempted %pJ had to be killed",
 				     __func__, job_ptr);

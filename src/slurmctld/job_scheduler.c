@@ -4424,7 +4424,7 @@ static void *_run_prolog(void *arg)
 				(void) pack_job_signal(job_ptr, SIGKILL, 0, 0,
 						       false);
 			} else {
-				(void) job_signal(job_id, SIGKILL, 0, 0, false);
+				job_signal(job_ptr, SIGKILL, 0, 0, false);
 			}
 		}
 

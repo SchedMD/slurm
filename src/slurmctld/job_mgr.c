@@ -3240,10 +3240,10 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	/* do RPC call */
 	if (job_step_kill_msg->job_step_id == SLURM_BATCH_SCRIPT) {
 		/* NOTE: SLURM_BATCH_SCRIPT == NO_VAL */
-		error_code = job_signal(job_step_kill_msg->job_id,
-					job_step_kill_msg->signal,
-					job_step_kill_msg->flags, uid,
-					false);
+		error_code = job_signal_id(job_step_kill_msg->job_id,
+					   job_step_kill_msg->signal,
+					   job_step_kill_msg->flags, uid,
+					   false);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2(__func__);
 
@@ -5083,8 +5083,8 @@ extern int job_fail(uint32_t job_id, uint32_t job_state)
  * Signal a job based upon job pointer.
  * Authentication and authorization checks must be performed before calling.
  */
-static int _job_signal(struct job_record *job_ptr, uint16_t signal,
-		       uint16_t flags, uid_t uid, bool preempt)
+extern int job_signal(struct job_record *job_ptr, uint16_t signal,
+		      uint16_t flags, uid_t uid, bool preempt)
 {
 	uint16_t job_term_state;
 	time_t now = time(NULL);
@@ -5266,7 +5266,7 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
 }
 
 /*
- * job_signal - signal the specified job
+ * job_signal_id - signal the specified job
  * IN job_id - id of the job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
@@ -5274,8 +5274,8 @@ static int _job_signal(struct job_record *job_ptr, uint16_t signal,
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
-		      uid_t uid, bool preempt)
+extern int job_signal_id(uint32_t job_id, uint16_t signal, uint16_t flags,
+			 uid_t uid, bool preempt)
 {
 	struct job_record *job_ptr;
 
@@ -5293,7 +5293,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t flags,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	return _job_signal(job_ptr, signal, flags, uid, preempt);
+	return job_signal(job_ptr, signal, flags, uid, preempt);
 }
 
 /* Signal all components of a pack job */
@@ -5311,7 +5311,7 @@ extern int pack_job_signal(struct job_record *pack_leader, uint16_t signal,
 			      __func__, pack_leader);
 			continue;
 		}
-		rc1 = _job_signal(pack_job, signal, flags, uid, preempt);
+		rc1 = job_signal(pack_job, signal, flags, uid, preempt);
 		if (rc1 != SLURM_SUCCESS)
 			rc = rc1;
 	}
@@ -5399,7 +5399,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		}
 		if (IS_JOB_PENDING(job_ptr))
 			return ESLURM_NOT_PACK_WHOLE;
-		return _job_signal(job_ptr, signal, flags, uid,preempt);
+		return job_signal(job_ptr, signal, flags, uid,preempt);
 	}
 
 	last_job_update = now;
@@ -5435,7 +5435,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
 		    (job_ptr->array_recs == NULL)) {
 			/* This is a regular job, not a job array */
-			return job_signal(job_id, signal, flags, uid, preempt);
+			return job_signal_id(job_id, signal, flags, uid, preempt);
 		}
 
 		/*
@@ -5447,7 +5447,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
-			rc = _job_signal(job_ptr, signal, flags, uid, preempt);
+			rc = job_signal(job_ptr, signal, flags, uid, preempt);
 			if (rc == ESLURM_ACCESS_DENIED)
 				return rc;
 			jobs_signaled++;
@@ -5471,8 +5471,8 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = _job_signal(job_ptr, signal, flags, uid,
-						  preempt);
+				rc2 = job_signal(job_ptr, signal, flags, uid,
+						 preempt);
 				jobs_signaled++;
 				if (rc2 == ESLURM_ALREADY_DONE) {
 					jobs_done++;
@@ -5608,7 +5608,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			continue;
 		}
 
-		rc2 = _job_signal(job_ptr, signal, flags, uid, preempt);
+		rc2 = job_signal(job_ptr, signal, flags, uid, preempt);
 		rc = MAX(rc, rc2);
 	}
 endit:
@@ -8501,10 +8501,8 @@ void job_time_limit(void)
 			     job_ptr->end_time)) {
 				debug("%s: preempt warning signal %u to %pJ",
 				      __func__, job_ptr->warn_signal, job_ptr);
-				(void) job_signal(job_ptr->job_id,
-						  job_ptr->warn_signal,
-						  job_ptr->warn_flags, 0,
-						  false);
+				job_signal(job_ptr, job_ptr->warn_signal,
+					   job_ptr->warn_flags, 0, false);
 
 				/* mark job as signaled */
 				job_ptr->warn_flags |= WARN_SENT;
@@ -8550,10 +8548,8 @@ void job_time_limit(void)
 				debug("%s: warning signal %u to %pJ",
 				      __func__, job_ptr->warn_signal, job_ptr);
 
-				(void) job_signal(job_ptr->job_id,
-						  job_ptr->warn_signal,
-						  job_ptr->warn_flags, 0,
-						  false);
+				job_signal(job_ptr, job_ptr->warn_signal,
+					   job_ptr->warn_flags, 0, false);
 
 				/* mark job as signaled */
 				job_ptr->warn_flags |= WARN_SENT;
@@ -8869,7 +8865,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, true, false, false);
 	} else
-		job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
+		job_signal(job_ptr, SIGKILL, 0, 0, false);
 	return;
 }
 

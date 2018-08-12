@@ -108,8 +108,7 @@ static void _job_fail_del(void *x)
 	if (job_fail_ptr->pending_job_id) {
 		job_ptr = find_job_record(job_fail_ptr->pending_job_id);
 		if (job_ptr && (job_ptr->user_id == job_fail_ptr->user_id)) {
-			(void) job_signal(job_fail_ptr->pending_job_id,
-					  SIGKILL, 0, 0, false);
+			(void) job_signal(job_ptr, SIGKILL, 0, 0, false);
 		}
 	}
 	xfree(job_fail_ptr->fail_node_cpus);
@@ -789,7 +788,7 @@ static void _kill_job(uint32_t job_id, uid_t cmd_uid)
 {
 	int rc;
 
-	rc = job_signal(job_id, SIGKILL, 0, cmd_uid, false);
+	rc = job_signal_id(job_id, SIGKILL, 0, cmd_uid, false);
 	if (rc) {
 		info("slurmctld/nonstop: can not kill job %u: %s",
 		     job_id, slurm_strerror(rc));

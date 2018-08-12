@@ -646,7 +646,7 @@ extern void *ccm_begin(void *args)
 		snprintf(srun_msg_buf, sizeof(srun_msg_buf),
 			 "CCM %s, job %u killed", err_str_buf, ccm_info.job_id);
 		srun_user_message(job_ptr, srun_msg_buf);
-		(void) job_signal(job_ptr->job_id, SIGKILL, 0, 0, false);
+		(void) job_signal(job_ptr, SIGKILL, 0, 0, false);
 	}
 	unlock_slurmctld(job_write_lock);
 	/* Free the malloc'd fields within this structure */

@@ -642,7 +642,7 @@ static void _preempt_job_dequeue(void)
 			if ((rc = _suspend_job(job_ptr)) == ESLURM_DISABLED)
 				rc = SLURM_SUCCESS;
 		} else if (preempt_mode == PREEMPT_MODE_CANCEL) {
-			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
+			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted %pJ has been killed", job_ptr);
 			}
@@ -681,7 +681,7 @@ static void _preempt_job_dequeue(void)
 		}
 
 		if (rc != SLURM_SUCCESS) {
-			rc = job_signal(job_ptr->job_id, SIGKILL, 0, 0, true);
+			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS)
 				info("%s: preempted %pJ had to be killed",
 				     __func__,job_ptr);
