@@ -13764,13 +13764,12 @@ extern void job_post_resize_acctg(struct job_record *job_ptr)
 	job_ptr->end_time_exp = job_ptr->end_time;
 }
 
-static char *_build_step_id(char *buf, int buf_len,
-			    uint32_t job_id, uint32_t step_id)
+static char *_build_step_id(char *buf, int buf_len, uint32_t step_id)
 {
 	if (step_id == SLURM_BATCH_SCRIPT)
-		snprintf(buf, buf_len, "%u.batch", job_id);
+		snprintf(buf, buf_len, "StepId=Batch");
 	else
-		snprintf(buf, buf_len, "%u.%u", job_id, step_id);
+		snprintf(buf, buf_len, "StepId=%u", step_id);
 	return buf;
 }
 
@@ -13826,9 +13825,9 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	for (i = 0; i < reg_msg->job_count; i++) {
 		if ( (reg_msg->job_id[i] >= MIN_NOALLOC_JOBID) &&
 		     (reg_msg->job_id[i] <= MAX_NOALLOC_JOBID) ) {
-			info("NoAllocate JobId=%s reported on node %s",
+			info("NoAllocate JobId=%u %s reported on node %s",
+			     reg_msg->job_id[i],
 			     _build_step_id(step_str, sizeof(step_str),
-					    reg_msg->job_id[i],
 					    reg_msg->step_id[i]),
 			     reg_msg->node_name);
 			continue;
@@ -13836,9 +13835,9 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 
 		job_ptr = find_job_record(reg_msg->job_id[i]);
 		if (job_ptr == NULL) {
-			error("Orphan JobId=%s reported on node %s",
+			error("Orphan JobId=%u %s reported on node %s",
+			      reg_msg->job_id[i],
 			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->job_id[i],
 					     reg_msg->step_id[i]),
 			      reg_msg->node_name);
 			abort_job_on_node(reg_msg->job_id[i],
@@ -13848,12 +13847,6 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		else if (IS_JOB_RUNNING(job_ptr) ||
 			 IS_JOB_SUSPENDED(job_ptr)) {
 			if (bit_test(job_ptr->node_bitmap, node_inx)) {
-				debug3("Registered JobId=%s on node %s",
-				       _build_step_id(step_str,
-						      sizeof(step_str),
-						      reg_msg->job_id[i],
-						      reg_msg->step_id[i]),
-				       reg_msg->node_name);
 				if ((job_ptr->batch_flag) &&
 				    (node_inx == bit_ffs(
 						job_ptr->node_bitmap))) {
@@ -13866,14 +13859,16 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 							    step_id[i]);
 				if (step_ptr)
 					step_ptr->time_last_active = now;
+				debug3("Registered %pS on node %s",
+				       step_ptr, reg_msg->node_name);
 			} else {
 				/* Typically indicates a job requeue and
 				 * restart on another nodes. A node from the
 				 * original allocation just responded here. */
-				error("Registered JobId=%s on wrong node %s",
+				error("Registered %pJ %s on wrong node %s",
+				      job_ptr,
 				       _build_step_id(step_str,
 						      sizeof(step_str),
-						      reg_msg->job_id[i],
 						      reg_msg->step_id[i]),
 				      reg_msg->node_name);
 				info("%s: job nodes %s count %d inx %d",
@@ -13896,9 +13891,9 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		else if (IS_JOB_PENDING(job_ptr)) {
 			/* Typically indicates a job requeue and the hung
 			 * slurmd that went DOWN is now responding */
-			error("Registered PENDING JobId=%s on node %s",
+			error("Registered PENDING %pJ %s on node %s",
+			      job_ptr,
 			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->job_id[i],
 					     reg_msg->step_id[i]),
 			      reg_msg->node_name);
 			abort_job_on_node(reg_msg->job_id[i],
@@ -13907,17 +13902,17 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 
 		else if (difftime(now, job_ptr->end_time) <
 			 slurm_get_msg_timeout()) {	/* Race condition */
-			debug("Registered newly completed JobId=%s on %s",
+			debug("Registered newly completed %pJ %s on %s",
+			      job_ptr,
 			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->job_id[i],
 					     reg_msg->step_id[i]),
 			      node_ptr->name);
 		}
 
 		else {		/* else job is supposed to be done */
-			error("Registered JobId=%s in state %s on node %s",
+			error("Registered %pJ %s in state %s on node %s",
+			      job_ptr,
 			      _build_step_id(step_str, sizeof(step_str),
-					     reg_msg->job_id[i],
 					     reg_msg->step_id[i]),
 			      job_state_string(job_ptr->job_state),
 			      reg_msg->node_name);
