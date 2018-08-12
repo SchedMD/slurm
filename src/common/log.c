@@ -746,7 +746,7 @@ static char *_stepid2fmt(struct step_record *step_ptr, char *buf, int buf_size)
 	} else if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
 		return " StepId=Batch";
 	} else if (step_ptr->step_id == SLURM_PENDING_STEP) {
-		return " StepId=Pending";
+		return " StepId=TBD";
 	} else {
 		snprintf(buf, buf_size, " StepId=%u", step_ptr->step_id);
 	}
