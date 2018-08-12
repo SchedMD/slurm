@@ -1938,8 +1938,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 					 job_ptr);
 				srun_user_message(job_ptr,
 				      "CCM prolog missing job details, killed");
-				(void) job_signal(job_ptr->job_id, SIGKILL, 0,
-					0, false);
+				job_signal(job_ptr, SIGKILL, 0, 0, false);
 			} else {
 				/* Delay job launch until CCM prolog is done */
 				debug("CCM %pJ increment prolog_running, current %d",
