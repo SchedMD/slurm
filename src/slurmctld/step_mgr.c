@@ -481,7 +481,7 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		     step_spec->cpu_freq_gov, step_spec->cpu_freq_max,
 		     step_spec->cpu_freq_min);
 	}
-	debug3("StepDesc: user_id=%u JobId=%u step_id=%u node_count=%u-%u cpu_count=%u num_tasks=%u",
+	debug3("StepDesc: user_id=%u JobId=%u StepId=%u node_count=%u-%u cpu_count=%u num_tasks=%u",
 	       step_spec->user_id, step_spec->job_id, step_spec->step_id,
 	       step_spec->min_nodes, step_spec->max_nodes,
 	       step_spec->cpu_count, step_spec->num_tasks);
@@ -596,8 +596,8 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		if (signal != SIG_NODE_FAIL)
 			return rc;
 	} else if (!IS_JOB_RUNNING(job_ptr)) {
-		verbose("job_step_signal: step %u.%u can not be sent signal "
-			"%u from state=%s", job_id, step_id, signal,
+		verbose("job_step_signal: %pJ StepId=%u can not be sent signal %u from state=%s",
+			job_ptr, step_id, signal,
 			job_state_string(job_ptr->job_state));
 		if (signal != SIG_NODE_FAIL)
 			return ESLURM_TRANSITION_STATE_NO_UPDATE;
@@ -606,8 +606,8 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL) {
 		if (signal != SIG_NODE_FAIL) {
-			info("job_step_signal step %u.%u not found",
-			     job_id, step_id);
+			info("job_step_signal %pJ StepId=%u not found",
+			     job_ptr, step_id);
 			return ESLURM_INVALID_JOB_ID;
 		}
 		if (job_ptr->node_bitmap == NULL) {
@@ -620,9 +620,8 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		}
 		/* If we get a node fail signal, down the cnodes to avoid
 		 * allocating them to another job. */
-		debug("job_step_signal step %u.%u not found, but got "
-		      "SIG_NODE_FAIL, so failing all nodes in allocation.",
-		      job_id, step_id);
+		debug("job_step_signal %pJ StepId=%u not found, but got SIG_NODE_FAIL, so failing all nodes in allocation.",
+		      job_ptr, step_id);
 		memset(&step_rec, 0, sizeof(struct step_record));
 		step_rec.step_id = NO_VAL;
 		step_rec.job_ptr = job_ptr;
@@ -871,9 +870,8 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 				    SELECT_JOBDATA_CLEANING,
 				    &cleaning);
 	if (cleaning) {	/* Step hasn't finished cleanup yet. */
-		debug("%s: Cleaning flag already set for "
-		      "job step %u.%u, no reason to cleanup again.",
-		      __func__, job_ptr->job_id, step_ptr->step_id);
+		debug("%s: Cleaning flag already set for %pS, no reason to cleanup again.",
+		      __func__, step_ptr);
 		return SLURM_SUCCESS;
 	}
 
@@ -1021,7 +1019,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	int cpu_cnt, i, task_cnt;
 	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
 	ListIterator step_iterator;
-	struct step_record *step_p;
+	struct step_record *step_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
 
@@ -1531,17 +1529,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	} else {
 		nodes_idle = bit_alloc (bit_size (nodes_avail) );
 		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_p = (struct step_record *)
+		while ((step_ptr = (struct step_record *)
 			list_next(step_iterator))) {
-			if (step_p->state < JOB_RUNNING)
+			if (step_ptr->state < JOB_RUNNING)
 				continue;
-			bit_or(nodes_idle, step_p->step_node_bitmap);
+			bit_or(nodes_idle, step_ptr->step_node_bitmap);
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
 				char *temp;
-				temp = bitmap2node_name(step_p->
+				temp = bitmap2node_name(step_ptr->
 							step_node_bitmap);
-				info("step %u.%u has nodes %s",
-				     job_ptr->job_id, step_p->step_id, temp);
+				info("%pS has nodes %s", step_ptr, temp);
 				xfree(temp);
 			}
 		}
@@ -2049,7 +2046,7 @@ static void _dump_step_layout(struct step_record *step_ptr)
 		return;
 
 	info("====================");
-	info("step_id:%u.%u", job_ptr->job_id, step_ptr->step_id);
+	info("%pS", step_ptr);
 	for (i=0, bit_inx=0, node_inx=0; node_inx<job_resrcs_ptr->nhosts; i++) {
 		for (rep=0; rep<job_resrcs_ptr->sock_core_rep_count[i]; rep++) {
 			for (sock_inx=0;
@@ -2126,8 +2123,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc) {
 			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
 		} else {
-			error("%s: CPU underflow for %u.%u (%u<%u on job node %d)",
-			      __func__, job_ptr->job_id, step_ptr->step_id,
+			error("%s: CPU underflow for %pS (%u<%u on job node %d)",
+			      __func__, step_ptr,
 			      job_resrcs_ptr->cpus_used[job_node_inx],
 			      cpus_alloc, job_node_inx);
 			job_resrcs_ptr->cpus_used[job_node_inx] = 0;
@@ -2150,9 +2147,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 				job_resrcs_ptr->memory_used[job_node_inx] -=
 						mem_use;
 			} else {
-				error("_step_dealloc_lps: "
-				      "mem underflow for %u.%u",
-				      job_ptr->job_id, step_ptr->step_id);
+				error("%s: mem underflow for %pS",
+				      __func__, step_ptr);
 				job_resrcs_ptr->memory_used[job_node_inx] = 0;
 			}
 		}
@@ -2174,9 +2170,9 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		job_core_size  = bit_size(job_resrcs_ptr->core_bitmap_used);
 		step_core_size = bit_size(step_ptr->core_bitmap_job);
 		if (job_core_size != step_core_size) {
-			error("%s: %u.%u core_bitmap size mismatch (%d != %d)",
-			      __func__, job_ptr->job_id, step_ptr->step_id,
-			      job_core_size, step_core_size);
+			error("%s: %pS core_bitmap size mismatch (%d != %d)",
+			      __func__, step_ptr, job_core_size,
+			      step_core_size);
 		} else {
 			bit_and_not(job_resrcs_ptr->core_bitmap_used,
 				    step_ptr->core_bitmap_job);
@@ -2378,8 +2374,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 
 	if (batch_step) {
-		info("user %u attempting to run batch script within existing JobId=%u",
-		     step_specs->user_id, step_specs->job_id);
+		info("user %u attempting to run batch script within existing %pJ",
+		     step_specs->user_id, job_ptr);
 		/* This seems hazardous to allow, but LSF seems to
 		 * work this way, so don't treat it as an error. */
 	}
@@ -2658,8 +2654,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 		/* enforce partition limits if necessary */
 		if ((step_specs->time_limit > job_ptr->part_ptr->max_time) &&
 		    slurmctld_conf.enforce_part_limits) {
-			info("_step_create: step time greater than partition's "
-			     "(%u > %u)", step_specs->time_limit,
+			info("%s: %pS time greater than partition's (%u > %u)",
+			     __func__, step_ptr, step_specs->time_limit,
 			     job_ptr->part_ptr->max_time);
 			delete_step_record(job_ptr, step_ptr->step_id);
 			xfree(step_node_list);
@@ -3289,8 +3285,7 @@ extern int kill_step_on_node(struct job_record  *job_ptr,
 			continue;
 		if (node_fail && !step_ptr->no_kill)
 			srun_step_complete(step_ptr);
-		info("killing step %u.%u on node %s",
-		     job_ptr->job_id, step_ptr->step_id, node_ptr->name);
+		info("killing %pS on node %s", step_ptr, node_ptr->name);
 		signal_step_tasks_on_node(node_ptr->name, step_ptr, SIGKILL,
 					  REQUEST_TERMINATE_TASKS);
 		found++;
@@ -3538,8 +3533,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	step_ptr = find_step_record(job_ptr, req->job_step_id);
 
 	if (step_ptr == NULL) {
-		info("step_partial_comp: StepID=%u.%u invalid",
-		     req->job_id, req->job_step_id);
+		info("step_partial_comp: %pJ StepID=%u invalid",
+		     job_ptr, req->job_step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 	if (step_ptr->batch_step) {
@@ -3556,9 +3551,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		return SLURM_SUCCESS;
 	}
 	if (req->range_last < req->range_first) {
-		error("step_partial_comp: StepID=%u.%u range=%u-%u",
-		      req->job_id, req->job_step_id, req->range_first,
-		      req->range_last);
+		error("%s: %pS range=%u-%u",
+		      __func__, step_ptr, req->range_first, req->range_last);
 		return EINVAL;
 	}
 
@@ -3597,9 +3591,9 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	if ((req->range_first >= nodes) || (req->range_last >= nodes) ||
 	    (req->range_first > req->range_last)) {
 		/* range is zero origin */
-		error("step_partial_comp: StepID=%u.%u range=%u-%u nodes=%d",
-		      req->job_id, req->job_step_id, req->range_first,
-		      req->range_last, nodes);
+		error("%s: %pS range=%u-%u nodes=%d",
+		      __func__, step_ptr, req->range_first, req->range_last,
+		      nodes);
 		return EINVAL;
 	}
 
@@ -3611,10 +3605,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	if (rem_nodes == 0) {
 		/* release all switch windows */
 		if (step_ptr->switch_job) {
-			debug2("full switch release for step %u.%u, "
-			       "nodes %s", req->job_id,
-			       req->job_step_id,
-			       step_ptr->step_layout->node_list);
+			debug2("full switch release for %pS, nodes %s",
+			       step_ptr, step_ptr->step_layout->node_list);
 			switch_g_job_step_complete(
 				step_ptr->switch_job,
 				step_ptr->step_layout->node_list);
@@ -3630,9 +3622,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		hl = _step_range_to_hostlist(step_ptr,
 			req->range_first, req->range_last);
 		node_list = hostlist_ranged_string_xmalloc(hl);
-		debug2("partitial switch release for step %u.%u, "
-			"nodes %s", req->job_id,
-			req->job_step_id, node_list);
+		debug2("partitial switch release for %pS, nodes %s",
+			step_ptr, node_list);
 		switch_g_job_step_part_comp(
 			step_ptr->switch_job, node_list);
 		hostlist_destroy(hl);
@@ -3799,9 +3790,8 @@ extern int step_epilog_complete(struct job_record  *job_ptr,
 				step_offset);
 		}
 		rc++;
-		debug2("partitial switch release for step %u.%u, "
-			"epilog on %s", job_ptr->job_id,
-			step_ptr->step_id, node_name);
+		debug2("partitial switch release for %pS, epilog on %s",
+			step_ptr, node_name);
 		switch_g_job_step_part_comp(
 			step_ptr->switch_job, node_name);
 	}
@@ -4129,13 +4119,13 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 
 	/* validity test as possible */
 	if (cyclic_alloc > 1) {
-		error("Invalid data for job %u.%u: cyclic_alloc=%u",
-		      job_ptr->job_id, step_id, cyclic_alloc);
+		error("Invalid data for %pJ StepId=%u: cyclic_alloc=%u",
+		      job_ptr, step_id, cyclic_alloc);
 		goto unpack_error;
 	}
 	if (no_kill > 1) {
-		error("Invalid data for job %u.%u: no_kill=%u",
-		      job_ptr->job_id, step_id, no_kill);
+		error("Invalid data for %pJ StepId=%u: no_kill=%u",
+		      job_ptr, step_id, no_kill);
 		goto unpack_error;
 	}
 
@@ -4244,7 +4234,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer,
 		switch_g_job_step_allocated(switch_tmp,
 					    step_ptr->step_layout->node_list);
 
-	info("recovered job step %u.%u", job_ptr->job_id, step_id);
+	info("recovered %pS", step_ptr);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -4474,10 +4464,8 @@ check_job_step_time_limit (struct job_record *job_ptr, time_t now)
 				step_ptr->tot_sus_time) / 60);
 		if (job_run_mins >= step_ptr->time_limit) {
 			/* this step has timed out */
-			info("check_job_step_time_limit: %pJ step %u "
-				"has timed out (%u)",
-				job_ptr, step_ptr->step_id,
-				step_ptr->time_limit);
+			info("%s: %pS has timed out (%u)",
+			     __func__, step_ptr, step_ptr->time_limit);
 			_signal_step_timelimit(job_ptr, step_ptr, now);
 		}
 	}
@@ -4578,8 +4566,8 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 				continue;
 			step2_ptr->time_limit = req->time_limit;
 			mod_cnt++;
-			info("Updating step %u.%u time limit to %u",
-			     req->job_id, step2_ptr->step_id, req->time_limit);
+			info("Updating %pS time limit to %u",
+			     step2_ptr, req->time_limit);
 		}
 		list_iterator_destroy (step_iterator);
 	} else {
@@ -4611,13 +4599,12 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 			jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
 			mod_cnt++;
-			info("Updating step %u.%u jobacct info",
-			     req->job_id, req->step_id);
+			info("Updating %pS jobacct info", step_ptr);
 		} else {
 			step_ptr->time_limit = req->time_limit;
 			mod_cnt++;
-			info("Updating step %u.%u time limit to %u",
-			     req->job_id, req->step_id, req->time_limit);
+			info("Updating %pS time limit to %u",
+			     step_ptr, req->time_limit);
 		}
 	}
 	if (mod_cnt)
@@ -4736,8 +4723,7 @@ extern int post_job_step(struct step_record *step_ptr)
 
 	error_code = delete_step_record(job_ptr, step_ptr->step_id);
 	if (error_code == ENOENT) {
-		info("remove_job_step step %u.%u not found", job_ptr->job_id,
-		     step_ptr->step_id);
+		info("remove_job_step %pS not found", step_ptr);
 		return ESLURM_ALREADY_DONE;
 	}
 	_wake_pending_steps(job_ptr);
