@@ -2258,7 +2258,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_sufficient, best_fit_index = 0;
 	bool new_best;
-	uint64_t best_weight;
+	uint64_t best_weight = 0;
 	int avail_cpus = 0;
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	bool gres_per_job, required_node;
