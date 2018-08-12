@@ -191,6 +191,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr,
 	else
 		step_ptr->start_protocol_ver = job_ptr->start_protocol_ver;
 
+	step_ptr->magic = STEP_MAGIC;
 	(void) list_append (job_ptr->step_list, step_ptr);
 
 	return step_ptr;
@@ -373,6 +374,8 @@ extern void step_list_purge(struct job_record *job_ptr)
 /* _free_step_rec - delete a step record's data structures */
 static void _free_step_rec(struct step_record *step_ptr)
 {
+	xassert(step_ptr);
+	xassert(step_ptr->magic == STEP_MAGIC);
 /*
  * FIXME: If job step record is preserved after completion,
  * the switch_g_job_step_complete() must be called upon completion

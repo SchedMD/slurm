@@ -875,8 +875,11 @@ struct	depend_spec {
 };
 
 #define STEP_FLAG 0xbbbb
+#define STEP_MAGIC 0xcafecafe
 
 struct 	step_record {
+	uint32_t magic;			/* magic cookie to test data integrity */
+					/* DO NOT ALPHABETIZE */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
