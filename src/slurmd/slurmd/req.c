@@ -2988,12 +2988,17 @@ _enforce_job_mem_limit(void)
 			     stepd->jobid, stepd->stepid,
 			     step_rss, step_vsize);
 #endif
-			step_rss /= 1048576;	/* B to MB */
-			step_rss = MAX(step_rss, 1);
-			job_mem_info_ptr[job_inx].mem_used += step_rss;
-			step_vsize /= 1048576;	/* B to MB */
-			step_vsize = MAX(step_vsize, 1);
-			job_mem_info_ptr[job_inx].vsize_used += step_vsize;
+			if (step_rss != INFINITE64) {
+				step_rss /= 1048576;	/* B to MB */
+				step_rss = MAX(step_rss, 1);
+				job_mem_info_ptr[job_inx].mem_used += step_rss;
+			}
+			if (step_vsize != INFINITE64) {
+				step_vsize /= 1048576;	/* B to MB */
+				step_vsize = MAX(step_vsize, 1);
+				job_mem_info_ptr[job_inx].vsize_used +=
+					step_vsize;
+			}
 		}
 		slurm_free_job_step_stat(resp);
 		close(fd);
