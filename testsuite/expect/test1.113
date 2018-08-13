@@ -73,7 +73,7 @@ if {$matches < $needed_nodes} {
 
 set nodes 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
+set srun_pid [spawn $srun -t1 -p $partition -N1-2 --use-min-nodes -n$ncpus $bin_printenv SLURM_NNODES]
 expect {
 	-re "srun: job $number queued and waiting for resources" {
 		exp_continue
@@ -87,6 +87,7 @@ expect {
 			send_user "\nFAILURE: expected 1 allocated node\n"
 			set exit_code 1
 		}
+		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
