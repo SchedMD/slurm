@@ -1022,7 +1022,7 @@ _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 	srun_info_t *srun;
 	int rc = SLURM_SUCCESS;
 	uint32_t *gtids = NULL, *pids = NULL;
-	int len, i, protocol_version;
+	int len, i;
 
 	debug("_handle_attach for job %u.%u", job->jobid, job->stepid);
 
@@ -1034,12 +1034,11 @@ _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid)
 	safe_read(fd, &srun->ioaddr, sizeof(slurm_addr_t));
 	safe_read(fd, &srun->resp_addr, sizeof(slurm_addr_t));
 	safe_read(fd, srun->key, SLURM_IO_KEY_SIZE);
-	safe_read(fd, &protocol_version, sizeof(int));
+	safe_read(fd, &srun->protocol_version, sizeof(uint16_t));
 
-	if (!protocol_version)
+	if (!srun->protocol_version)
 		srun->protocol_version = NO_VAL16;
-	else
-		srun->protocol_version = protocol_version;
+
 	/*
 	 * Check if jobstep is actually running.
 	 */
