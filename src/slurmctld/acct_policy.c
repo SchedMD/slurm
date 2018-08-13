@@ -1574,7 +1574,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		}
 
 		if ((qos_out_ptr->max_wall_pj == INFINITE) &&
-		    (qos_ptr->max_wall_pj != INFINITE)) {
+		    (qos_ptr->max_wall_pj != INFINITE) &&
+		    (!update_call || (job_desc->time_limit != NO_VAL))) {
 			_set_time_limit(&job_desc->time_limit,
 					part_ptr->max_time,
 					qos_ptr->max_wall_pj,
@@ -1597,7 +1598,8 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 		}
 
 		if ((qos_out_ptr->grp_wall == INFINITE) &&
-		    (qos_ptr->grp_wall != INFINITE)) {
+		    (qos_ptr->grp_wall != INFINITE) &&
+		    (!update_call || (job_desc->time_limit != NO_VAL))) {
 			_set_time_limit(&job_desc->time_limit,
 					part_ptr->max_time,
 					qos_ptr->grp_wall,

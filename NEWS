@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     directly to the priority plugin where that function isn't defined.
  -- Fix invalid protocol_version manipulation causes big endian platforms to
     not work when trying use sattach.
+ -- Fix issue where job time limits can increase to max walltime when updating
+    a job with scontrol.
 
 * Changes in Slurm 17.11.9-2
 ============================
