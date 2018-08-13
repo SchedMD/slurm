@@ -4592,7 +4592,7 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 	int best_rc = -1, part_limits_rc = WAIT_NO_REASON;
 
 	if (job_ptr->part_ptr_list) {
-		list_sort(job_ptr->part_ptr_list, sort_part_tier);
+		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
 		iter = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = list_next(iter))) {
 			job_ptr->part_ptr = part_ptr;

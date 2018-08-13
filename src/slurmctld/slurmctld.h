@@ -2616,11 +2616,6 @@ waitpid_timeout(const char *, pid_t, int *, int);
 extern void set_partition_tres();
 
 /*
- * Sort partitions on Priority Tier.
- */
-extern int sort_part_tier(void *x, void *y);
-
-/*
  * Update job's federated siblings strings.
  *
  * IN job_ptr - job_ptr to update

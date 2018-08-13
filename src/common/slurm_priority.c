@@ -70,6 +70,19 @@ static plugin_context_t *g_priority_context = NULL;
 static pthread_mutex_t g_priority_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
+extern int priority_sort_part_tier(void *x, void *y)
+{
+	struct part_record *parta = *(struct part_record **) x;
+	struct part_record *partb = *(struct part_record **) y;
+
+	if (parta->priority_tier > partb->priority_tier)
+		return -1;
+	if (parta->priority_tier < partb->priority_tier)
+		return 1;
+
+	return 0;
+}
+
 /*
  * Initialize context for priority plugin
  */
