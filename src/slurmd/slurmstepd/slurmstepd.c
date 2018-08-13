@@ -465,7 +465,8 @@ _init_from_slurmd(int sock, char **argv,
 	char *incoming_buffer = NULL;
 	Buf buffer;
 	int step_type;
-	int len, proto;
+	int len;
+	uint16_t proto;
 	slurm_addr_t *cli = NULL;
 	slurm_addr_t *self = NULL;
 	slurm_msg_t *msg = NULL;

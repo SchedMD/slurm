@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Move priority_sort_part_tier from slurmctld to libslurm to make it possible
     to run the regression tests 24.* without changing that code since it links
     directly to the priority plugin where that function isn't defined.
+ -- Fix invalid protocol_version manipulation causes big endian platforms to
+    not work when trying use sattach.
 
 * Changes in Slurm 17.11.9-2
 ============================
