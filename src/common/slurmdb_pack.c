@@ -110,82 +110,152 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 			return;
 		}
 
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_VMEM);
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max, TRES_VMEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack64(tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_MEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max, TRES_MEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack64(tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_PAGES);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max, TRES_PAGES))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack64(tmp_uint64, buffer);
+
 		pack64(stats->consumed_energy, buffer);
 
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_min, TRES_CPU);
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_min, TRES_CPU))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
 
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_VMEM);
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_VMEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_MEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_MEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_PAGES);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_PAGES))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_CPU);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_CPU))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
+
 		packdouble(stats->act_cpufreq, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_FS_DISK);
-		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_FS_DISK);
-		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_out_max, TRES_FS_DISK);
-		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_out_ave, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
 
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_VMEM);
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
+		packdouble((double)tmp_uint64, buffer);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_out_max, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
+		packdouble((double)tmp_uint64, buffer);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_out_ave, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
+		packdouble((double)tmp_uint64, buffer);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_nodeid, TRES_VMEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_VMEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_taskid, TRES_VMEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_MEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_nodeid, TRES_MEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_MEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_taskid, TRES_MEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_PAGES);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_nodeid, TRES_PAGES))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_PAGES);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_taskid, TRES_PAGES))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_min_nodeid, TRES_CPU);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_min_nodeid, TRES_CPU))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_min_taskid, TRES_CPU);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_min_taskid, TRES_CPU))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_nodeid, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_taskid, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_out_max_nodeid, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_out_max_nodeid, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_out_max_taskid, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_out_max_taskid, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint64_t tmp_uint64;
@@ -204,81 +274,151 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 			return;
 		}
 
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_VMEM);
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max, TRES_VMEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack64(tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_MEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max, TRES_MEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack64(tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_PAGES);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max, TRES_PAGES))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack64(tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_min, TRES_CPU);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_min, TRES_CPU))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
 
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_VMEM);
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_VMEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_MEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_MEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_PAGES);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_PAGES))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_CPU);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_CPU))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
+
 		packdouble(stats->act_cpufreq, buffer);
 		packdouble((double)stats->consumed_energy, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max, TRES_FS_DISK);
-		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_ave, TRES_FS_DISK);
-		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_out_max, TRES_FS_DISK);
-		packdouble((double)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_out_ave, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		packdouble((double)tmp_uint64, buffer);
 
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_VMEM);
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_ave, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
+		packdouble((double)tmp_uint64, buffer);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_out_max, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
+		packdouble((double)tmp_uint64, buffer);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_out_ave, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
+		packdouble((double)tmp_uint64, buffer);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_nodeid, TRES_VMEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_VMEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_taskid, TRES_VMEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_MEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_nodeid, TRES_MEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_MEM);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_taskid, TRES_MEM))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_PAGES);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_nodeid, TRES_PAGES))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_PAGES);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_taskid, TRES_PAGES))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_min_nodeid, TRES_CPU);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_min_nodeid, TRES_CPU))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_min_taskid, TRES_CPU);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_min_taskid, TRES_CPU))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_nodeid, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_nodeid, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_in_max_taskid, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_in_max_taskid, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_out_max_nodeid, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_out_max_nodeid, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
-		tmp_uint64 = slurmdb_find_tres_count_in_string(
-			stats->tres_usage_out_max_taskid, TRES_FS_DISK);
+
+		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
+				stats->tres_usage_out_max_taskid, TRES_FS_DISK))
+		    == INFINITE64)
+			tmp_uint64 = NO_VAL64;
 		pack32((uint32_t)tmp_uint64, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
