@@ -5542,6 +5542,26 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 	return rc;
 }
 
+/* Order GRES scheduling. Schedule GRES requiring specific sockets first */
+static int _sock_gres_sort(void *x, void *y)
+{
+	sock_gres_t *sock_gres1 = *(sock_gres_t **) x;
+	sock_gres_t *sock_gres2 = *(sock_gres_t **) y;
+	int weight1 = 0, weight2 = 0;
+
+	if (sock_gres1->node_specs && !sock_gres1->node_specs->topo_cnt)
+		weight1 += 0x02;
+	if (sock_gres1->job_specs && !sock_gres1->job_specs->gres_per_socket)
+		weight1 += 0x01;
+
+	if (sock_gres2->node_specs && !sock_gres2->node_specs->topo_cnt)
+		weight2 += 0x02;
+	if (sock_gres2->job_specs && !sock_gres2->job_specs->gres_per_socket)
+		weight2 += 0x01;
+
+	return weight1 - weight2;
+}
+
 /*
  * Determine how many tasks can be started on a given node and which
  *	sockets/cores are required
@@ -5583,7 +5603,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	uint32_t task_cnt_incr;
 	bool *req_sock = NULL;	/* Required socket */
 	uint16_t *avail_cores_per_sock, cpus_per_gres;
-	uint16_t avail_cores_req = 0, avail_cores_tot = 0;
+	uint16_t avail_cores_req = 0, avail_cores_tot;
 
 	if (*max_tasks_this_node == 0)
 		return;
@@ -5592,12 +5612,13 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	avail_cores_per_sock = xmalloc(sizeof(uint16_t) * sockets);
 	task_cnt_incr = *min_tasks_this_node;
 	req_sock = xmalloc(sizeof(bool) * sockets);
+
+	list_sort(sock_gres_list, _sock_gres_sort);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
 		job_specs = sock_gres->job_specs;
 		if (!job_specs)
 			continue;
-
 		if (job_specs->gres_per_job) {
 			if (job_specs->total_gres >= job_specs->gres_per_job) {
 				/* Already reached gres_per_job limit */
@@ -5644,6 +5665,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		}
 
 		/* Filter out unusable GRES by socket */
+		avail_cores_tot = 0;
 		cnt_avail_total = sock_gres->cnt_any_sock;
 		for (s = 0; s < sockets; s++) {
 			/* Test for sufficient gres_per_socket */
@@ -8457,6 +8479,10 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 	if (!sep) {
 		/* No type or explicit count. Count is 1 by default */
 		*cnt = 1;
+		if (comma)
+			prev_save_ptr += (comma + 1) - name;
+		else
+			prev_save_ptr += strlen(name);
 	} else if ((sep[0] >= '0') && (sep[0] <= '9')) {
 		value = strtoull(sep, &end_ptr, 10);
 		if (value == ULLONG_MAX) {
