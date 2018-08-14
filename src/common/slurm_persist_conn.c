@@ -1100,7 +1100,7 @@ extern int slurm_persist_unpack_rc_msg(
 		safe_unpack16(&msg_ptr->flags, buffer);
 		safe_unpack32(&msg_ptr->rc, buffer);
 		safe_unpack16(&msg_ptr->ret_info, buffer);
-	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->rc, buffer);
 		safe_unpack16(&msg_ptr->ret_info, buffer);
