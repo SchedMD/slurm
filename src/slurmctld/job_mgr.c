@@ -1016,8 +1016,6 @@ extern int load_last_job_id( void )
 	uint16_t protocol_version = NO_VAL16;
 
 	/* read the file */
-	state_file = xstrdup_printf("%s/job_state",
-				    slurmctld_conf.state_save_location);
 	lock_state_files();
 	if (!(buffer = _open_job_state_file(&state_file))) {
 		debug("No job state file (%s) to recover", state_file);
