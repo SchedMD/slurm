@@ -6400,7 +6400,9 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 		for (g = 0; g < gres_cnt; g++) {
 			if (total_gres_cnt >= total_gres_goal)
 				break;
-			if (!bit_test(sock_gres->bits_by_sock[s], g))
+			if (sock_gres->bits_by_sock &&
+			    sock_gres->bits_by_sock[s] &&
+			    !bit_test(sock_gres->bits_by_sock[s], g))
 				continue;   /* GRES not on this socket */
 			if (bit_test(node_specs->gres_bit_alloc, g) ||
 			    bit_test(job_specs->gres_bit_select[node_inx], g))
@@ -6482,7 +6484,7 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		} else
 			cpus_per_core = 1;
 		for (s = 0; s < sock_cnt; s++) {
-			int tasks_per_socket = 0, skip_cores = 0;
+			int tasks_per_socket = 0, tpc, skip_cores = 0;
 			for (c = 0; c < cores_per_socket_cnt; c++) {
 				j = (s * cores_per_socket_cnt) + c;
 				j += core_offset;
@@ -6493,13 +6495,9 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 					continue;
 				}
 				if (tres_mc_ptr->ntasks_per_core) {
-					int tpc = tres_mc_ptr->ntasks_per_core;
-					tasks_per_node_socket[i][s] += tpc;
-					tasks_per_node += tpc;
-					tasks_per_socket += tpc;
-					rem_tasks -= tpc;
+					tpc = tres_mc_ptr->ntasks_per_core;
 				} else {
-					int tpc = cpus_per_core / cpus_per_task;
+					tpc = cpus_per_core / cpus_per_task;
 					if (tpc < 1) {
 						tpc = 1;
 						skip_cores = cpus_per_task /
@@ -6507,11 +6505,11 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 						skip_cores--;	/* This core */
 					}
 					/* Start with 1 task per core */
-					tasks_per_node_socket[i][s]++;
-					tasks_per_node++;
-					tasks_per_socket++;
-					rem_tasks--;
 				}
+				tasks_per_node_socket[i][s] += tpc;
+				tasks_per_node += tpc;
+				tasks_per_socket += tpc;
+				rem_tasks -= tpc;
 				if (task_per_node_limit) {
 					if (tasks_per_node >
 					    task_per_node_limit) {
