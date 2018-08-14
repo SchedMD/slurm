@@ -56,8 +56,12 @@ static char *_average_tres_usage(uint32_t *tres_ids, uint64_t *tres_cnts,
 	char *ret_str = NULL;
 	int i;
 
+	/*
+	 * Don't return NULL here, we need a blank string or we will print
+	 * '(null)' in the database which really isn't what we want.
+	 */
 	if (!tasks)
-		return ret_str;
+		return xstrdup("");
 
 	for (i = 0; i < tres_cnt; i++) {
 		if (tres_cnts[i] == INFINITE64)
@@ -67,6 +71,8 @@ static char *_average_tres_usage(uint32_t *tres_ids, uint64_t *tres_cnts,
 			   tres_ids[i], tres_cnts[i] / (uint64_t)tasks);
 	}
 
+	if (!ret_str)
+		ret_str = xstrdup("");
 	return ret_str;
 }
 

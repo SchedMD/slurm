@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
     Parameters=PreserveCaseUser in the slurmdbd.conf.
  -- Improve scheduling when dealing with node_features that could have a
     boot delay.
+ -- Fix issue if a step launch fails we don't get a bunch of '(null)' strings
+    in the step record for usage.
 
 * Changes in Slurm 18.08.0pre2
 ==============================
