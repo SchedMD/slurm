@@ -206,6 +206,7 @@ documents those changes that are of interest to users and administrators.
     a job with scontrol.
  -- Fix invalid protocol_version manipulation on big endian platforms causing
     srun and sattach to fail.
+ -- Fix for QOS, Reservation and Alias env variables in srun.
 
 * Changes in Slurm 17.11.9-2
 ============================

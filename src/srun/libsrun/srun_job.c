@@ -1878,7 +1878,7 @@ static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 	if (resp->qos) {
 		key = _build_key("SLURM_JOB_QOS", pack_offset);
 		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%u", resp->qos) < 0)) {
+		    (setenvf(NULL, key, "%s", resp->qos) < 0)) {
 			error("unable to set %s in environment", key);
 		}
 		xfree(key);
@@ -1887,7 +1887,7 @@ static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 	if (resp->resv_name) {
 		key = _build_key("SLURM_JOB_RESERVATION", pack_offset);
 		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%u", resp->resv_name) < 0)) {
+		    (setenvf(NULL, key, "%s", resp->resv_name) < 0)) {
 			error("unable to set %s in environment", key);
 		}
 		xfree(key);
@@ -1896,7 +1896,7 @@ static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 	if (resp->alias_list) {
 		key = _build_key("SLURM_NODE_ALIASES", pack_offset);
 		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%u", resp->alias_list) < 0)) {
+		    (setenvf(NULL, key, "%s", resp->alias_list) < 0)) {
 			error("unable to set %s in environment", key);
 		}
 		xfree(key);
