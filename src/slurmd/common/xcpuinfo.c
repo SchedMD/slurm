@@ -506,8 +506,7 @@ extern int xcpuinfo_hwloc_topo_get(
 	uint16_t *p_cpus, uint16_t *p_boards,
 	uint16_t *p_sockets, uint16_t *p_cores, uint16_t *p_threads,
 	uint16_t *p_block_map_size,
-	uint16_t **p_block_map, uint16_t **p_block_map_inv,
-	char *topo_file, bool full)
+	uint16_t **p_block_map, uint16_t **p_block_map_inv)
 {
 	int retval;
 
@@ -727,7 +726,7 @@ extern int xcpuinfo_hwloc_topo_get(
 }
 
 extern int xcpuinfo_hwloc_topo_load(
-	void *topology_in, char *topo_file, bool write, bool full)
+	void *topology_in, char *topo_file, bool full)
 {
 	return SLURM_SUCCESS;
 }
