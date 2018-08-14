@@ -690,9 +690,11 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 					exit_code = 1;
 					if (!quiet_flag)
 						fprintf(stderr, "missing reason\n");
+					xfree(reason);
 					return;
 				}
 
+				xfree(reason);
 				reason = xstrdup(tmp_ptr+1);
 				argc_offset++;
 			} else if (!xstrncasecmp(argv[i], "nextstate=",
@@ -704,6 +706,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 					exit_code = 1;
 					if (!quiet_flag)
 						fprintf(stderr, "missing state\n");
+					xfree(reason);
 					return;
 				}
 
@@ -724,6 +727,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 							state_str);
 						fprintf(stderr, "Valid states: DOWN, RESUME\n");
 					}
+					xfree(reason);
 					xfree(state_str);
 					return;
 				}
