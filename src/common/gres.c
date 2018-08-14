@@ -6621,7 +6621,6 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 	int node_cnt, rem_node_cnt;
 	int job_fini = -1;	/* -1: not applicable, 0: more work, 1: fini */
 	uint32_t **tasks_per_node_socket = NULL;
-	uint64_t save_gres_cnt;
 
 	if (!job_res || !job_res->node_bitmap)
 		return SLURM_ERROR;
@@ -6693,7 +6692,6 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 				job_specs->gres_bit_select =
 					xmalloc(sizeof(bitstr_t *) * node_cnt);
 			}
-
 			gres_cnt = _get_gres_node_cnt(node_specs, node_inx);
 			job_specs->gres_bit_select[i] = bit_alloc(gres_cnt);
 
@@ -6741,14 +6739,9 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 				node_specs = sock_gres->node_specs;
 				if (!job_specs || !node_specs)
 					continue;
-				save_gres_cnt =
-					job_specs->gres_cnt_node_select[i];
 				job_fini = _set_job_bits2(job_res, i, node_inx,
 							  sock_gres, job_id,
 							  tres_mc_ptr);
-				job_specs->total_gres +=
-					(job_specs->gres_cnt_node_select[i] -
-					 save_gres_cnt);
 				if (job_fini == 1)
 					break;
 			}
