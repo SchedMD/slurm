@@ -825,6 +825,9 @@ static Buf _open_job_state_file(char **state_file)
 {
 	Buf buf;
 
+	xassert(state_file);
+	xassert(!*state_file);
+
 	*state_file = xstrdup_printf("%s/job_state",
 				     slurmctld_conf.state_save_location);
 
@@ -893,7 +896,7 @@ extern void backup_slurmctld_restart(void)
 static time_t _get_last_job_state_write_time(void)
 {
 	int error_code = SLURM_SUCCESS;
-	char *state_file;
+	char *state_file = NULL;
 	Buf buffer;
 	time_t buf_time = (time_t) 0;
 	char *ver_str = NULL;
@@ -930,7 +933,7 @@ extern int load_all_job_state(void)
 {
 	int error_code = SLURM_SUCCESS;
 	int job_cnt = 0;
-	char *state_file;
+	char *state_file = NULL;
 	Buf buffer;
 	time_t buf_time;
 	uint32_t saved_job_id;
@@ -1008,7 +1011,7 @@ unpack_error:
  */
 extern int load_last_job_id( void )
 {
-	char *state_file;
+	char *state_file = NULL;
 	Buf buffer;
 	time_t buf_time;
 	char *ver_str = NULL;
