@@ -1076,7 +1076,7 @@ extern void slurm_persist_pack_rc_msg(
 		pack16(msg->flags, buffer);
 		pack32(msg->rc, buffer);
 		pack16(msg->ret_info, buffer);
-	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->comment, buffer);
 		pack32(msg->rc, buffer);
 		pack16(msg->ret_info, buffer);
