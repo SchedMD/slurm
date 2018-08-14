@@ -1162,58 +1162,6 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 	}
 }
 
-
-/*
- * set_slurmd_addr - establish the slurm_addr_t for the slurmd on each node
- *	Uses common data structures.
- */
-void set_slurmd_addr (void)
-{
-#ifndef HAVE_FRONT_END
-	int i;
-	struct node_record *node_ptr = node_record_table_ptr;
-	DEF_TIMERS;
-
-	xassert(verify_lock(CONF_LOCK, READ_LOCK));
-
-	START_TIMER;
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if ((node_ptr->name == NULL) ||
-		    (node_ptr->name[0] == '\0'))
-			continue;
-		if (IS_NODE_FUTURE(node_ptr))
-			continue;
-		if (IS_NODE_CLOUD(node_ptr)) {
-                    if (slurmctld_conf.suspend_time < 1 ||
-                        slurmctld_conf.resume_program == NULL ||
-                        slurmctld_conf.suspend_program == NULL)
-                            error("%s: Node %s configured with CLOUD state but "
-                                  "missing any of SuspendTime, SuspendProgram "
-                                  "or ResumeProgram options",__func__,
-				  node_ptr->name);
-		    if (IS_NODE_POWER_SAVE(node_ptr))
-			continue;
-		}
-		if (node_ptr->port == 0)
-			node_ptr->port = slurmctld_conf.slurmd_port;
-		slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
-			       node_ptr->comm_name);
-		if (node_ptr->slurm_addr.sin_port)
-			continue;
-		error("slurm_set_addr failure on %s", node_ptr->comm_name);
-		node_ptr->node_state = NODE_STATE_FUTURE;
-		bit_set(future_node_bitmap, i);
-		node_ptr->port = 0;
-		xfree(node_ptr->reason);
-		node_ptr->reason = xstrdup("NO NETWORK ADDRESS FOUND");
-		node_ptr->reason_time = time(NULL);
-		node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
-	}
-
-	END_TIMER2("set_slurmd_addr");
-#endif
-}
-
 /* Return "true" if a node's state is already "new_state". This is more
  * complex than simply comparing the state values due to flags (e.g.
  * A node might be DOWN + NO_RESPOND or IDLE + DRAIN) */

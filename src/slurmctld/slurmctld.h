@@ -2274,10 +2274,6 @@ void set_node_down_ptr (struct node_record *node_ptr, char *reason);
  */
 extern void set_slurmctld_state_loc(void);
 
-/* set_slurmd_addr - establish the slurm_addr_t for the slurmd on each node
- *	Uses common data structures. */
-extern void set_slurmd_addr (void);
-
 /*
  * signal_step_tasks - send specific signal to specific job step
  * IN step_ptr - step record pointer
