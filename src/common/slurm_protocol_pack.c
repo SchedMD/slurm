@@ -446,7 +446,7 @@ static void _pack_job_info_list_msg(List job_resp_list, Buf buffer,
 static int _unpack_job_info_list_msg(List *job_resp_list, Buf buffer,
 				     uint16_t protocol_version);
 
-static void _pack_job_script_msg(char *msg, Buf buffer,
+static void _pack_job_script_msg(Buf msg, Buf buffer,
 				 uint16_t protocol_version);
 static int _unpack_job_script_msg(char **msg, Buf buffer,
 				  uint16_t protocol_version);
@@ -941,7 +941,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_job_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	case RESPONSE_BATCH_SCRIPT:
-		_pack_job_script_msg((char *) msg->data, buffer,
+		_pack_job_script_msg((Buf) msg->data, buffer,
 				     msg->protocol_version);
 		break;
 	case RESPONSE_PARTITION_INFO:
@@ -5904,10 +5904,10 @@ _pack_buffer_msg(slurm_msg_t * msg, Buf buffer)
 	packmem_array(msg->data, msg->data_size, buffer);
 }
 
-static void _pack_job_script_msg(char *msg, Buf buffer,
+static void _pack_job_script_msg(Buf msg, Buf buffer,
 				 uint16_t protocol_version)
 {
-	packstr(msg, buffer);
+	packstr(msg->head, buffer);
 }
 
 static int _unpack_job_script_msg(char **msg, Buf buffer,
