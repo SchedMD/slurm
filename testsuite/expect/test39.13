@@ -32,22 +32,23 @@ source ./globals
 
 set test_id        "39.13"
 set exit_code      0
-set file_in        "test$test_id.input"
+set file_in1       "test$test_id.input1"
+set file_in2       "test$test_id.input2"
 set file_out       "test$test_id.output"
 set number_commas  "\[0-9_,\]+"
 
 proc get_node_config {} {
 	global cpus_per_socket sockets_per_node test_id
-	global exit_code file_in max_job_delay number srun scontrol
+	global exit_code file_in1 max_job_delay number srun scontrol
 	global hostname alpha_numeric_nodelist
 
 	set cpus_tot 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
-	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	make_bash_script $file_in1 "$scontrol show node \$SLURMD_NODENAME"
 	set timeout $max_job_delay
 	log_user 1
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 -J "test$test_id" $file_in]
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 -J "test$test_id" $file_in1]
 	expect {
 		-re "NodeName=($alpha_numeric_nodelist)" {
 			set hostname $expect_out(1,string)
@@ -114,11 +115,12 @@ if {$tot_gpus > 32} {
 #
 # Build input script file
 #
-make_bash_script $file_in "echo \$SLURM_NNODES
-$srun -l -N \$SLURM_NNODES -n \$SLURM_NNODES echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+make_bash_script $file_in1 "$srun -l -N \$SLURM_NNODES -n \$SLURM_NNODES $file_in2
 $scontrol -dd show job \$SLURM_JOB_ID | grep gpu
 sleep 5
 exit 0"
+
+make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES"
 
 #
 # Submit job with various --gpus counters, up to 2 full nodes or 32 GPUs
@@ -127,7 +129,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set job_id 0
 	set ofile ${file_out}.${inx}
 	exec $bin_rm -f $ofile
-	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $hostname -J "test$test_id" --output=$ofile ./$file_in
+	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $hostname -J "test$test_id" --output=$ofile ./$file_in1
 	expect {
 		-re "Submitted batch job ($number)" {
 		        set job_id $expect_out(1,string)
@@ -183,7 +185,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 exec $scancel -n "test$test_id"
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
+	exec $bin_rm -f $file_in1 $file_in2
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
