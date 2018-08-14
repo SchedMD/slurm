@@ -212,17 +212,17 @@ handle_write:
 	       hwloc_topology_ignore_type (*topology, HWLOC_OBJ_CACHE);
 	       hwloc_topology_ignore_type (*topology, HWLOC_OBJ_MISC);
 #else
-	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L1CACHE,
+	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L1CACHE,
 					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L2CACHE,
+	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L2CACHE,
 					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L3CACHE,
+	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L3CACHE,
 					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L4CACHE,
+	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L4CACHE,
 					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_L5CACHE,
+	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L5CACHE,
 					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(topology, HWLOC_OBJ_MISC,
+	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_MISC,
 					      HWLOC_TYPE_FILTER_KEEP_NONE);
 #endif
        }
