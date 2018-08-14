@@ -354,7 +354,6 @@ static void _set_slurmd_addr(void)
 			continue;
 		error("%s: failure on %s", __func__, node_ptr->comm_name);
 		node_ptr->node_state = NODE_STATE_FUTURE;
-		bit_set(future_node_bitmap, i);
 		node_ptr->port = 0;
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup("NO NETWORK ADDRESS FOUND");
