@@ -1085,7 +1085,7 @@ extern char *find_hostname(uint32_t pos, char *hosts)
 	hostlist_t hostlist = NULL;
 	char *temp = NULL, *host = NULL;
 
-	if (!hosts || (pos == NO_VAL))
+	if (!hosts || (pos == NO_VAL) || (pos == INFINITE))
 		return NULL;
 
 	hostlist = hostlist_create(hosts);
