@@ -1577,11 +1577,14 @@ Repeat the reservation at the same time every day.
 .TP
 \fIFLEX\fR
 Permit jobs requesting the reservation to begin prior to the reservation's
-start time, end after the reservation's end time, and use resources inside
-and/or outside of the reservation. A typical
-use case is to prevent jobs not explicitly requesting the reservation from using
-those reserved resources rather than forcing jobs requesting the reservation to
-use those resources in the time frame reserved.
+start time, end after the reservation's end time, and use any resources inside
+and/or outside of the reservation regardless of any constraints possibly set in
+the reservation. A typical use case is to prevent jobs not explicitly
+requesting the reservation from using those reserved resources rather than
+forcing jobs requesting the reservation to use those resources in the time
+frame reserved. Another use case could be to always have a particular number of
+nodes with a specific feature reserved for a specific account so users in this
+account may use this nodes plus possibly other nodes without this feature.
 .TP
 \fIFIRST_CORES\fR
 Use the lowest numbered cores on a node only.
