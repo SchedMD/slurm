@@ -341,6 +341,7 @@ static int _build_bitmaps(void)
 	FREE_NULL_BITMAP(power_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
+	FREE_NULL_BITMAP(rs_node_bitmap);
 	avail_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	booting_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	cg_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
