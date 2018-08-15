@@ -208,6 +208,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix invalid protocol_version manipulation on big endian platforms causing
     srun and sattach to fail.
  -- Fix for QOS, Reservation and Alias env variables in srun.
+ -- mpi/pmi2 - Backport 6a702158b49c4 from 18.08 to avoid dangerous detached
+    thread.
+ -- When allowing heterogeneous steps make sure we copy all the options to
+    avoid copying strings that may be overwritten.
 
 * Changes in Slurm 17.11.9-2
 ============================
