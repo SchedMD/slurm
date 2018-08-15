@@ -206,8 +206,8 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 extern void add_job_res(job_resources_t *job_resrcs_ptr,
 			bitstr_t ***sys_resrcs_ptr)
 {
-//FIXME: Add other resources than CPUs (e.g. GPUs), lower priority work
-//FIXME: Change argument to job pointer? Enhance contents of job_resources_t?, lower priority work
+//FIXME: Add other resources than CPUs (e.g. GPUs) for backfill, lower priority work
+//Change argument to job pointer? Enhance contents of job_resources_t?, lower priority work
 	int i, i_first, i_last;
 	int c, c_job, c_off = 0, c_max;
 	int rep_inx = 0, rep_offset = -1;
@@ -357,13 +357,13 @@ extern void log_tres_state(struct node_use_record *node_usage,
 		     _node_state_str(node_usage[i].node_state),
 		     node_usage[i].alloc_memory,
 		     select_node_record[i].real_memory);
-//FIXME: Add GRES/TRES info, lower priority work
+//FIXME: Add GRES/TRES info for backfill, lower priority work
 	}
 
 	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
 		info("Part:%s Rows:%u", p_ptr->part_ptr->name, p_ptr->num_rows);
 		row = p_ptr->row;
-//FIXME: What is wrong here? Appears to be fixed
+//FIXME: Appears to be fixed, Enable _DEBUG to test
 if (!row) {error("ROW IS NULL"); continue; }
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			core_str = _build_core_str(row[i].row_bitmap);
@@ -433,7 +433,7 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 	List gres_list;
 	bool old_job = false;
 
-//FIXME: Need to add support for additional resources, lower priority work
+//FIXME: Need to add support for additional resources for backfill, lower priority work
 //FIXME: Sync with recent changes to cons_res plugin, lower priority work
 	if (select_state_initializing) {
 		/*
@@ -1718,7 +1718,6 @@ alloc_job:
 		error("%s: problem building cpu_count array (%d != %d)",
 		      __func__, j, n);
 	}
-//FIXME: REVIEWED TO HERE
 
 	job_res                   = create_job_resources();
 	job_res->node_bitmap      = bit_copy(node_bitmap);
