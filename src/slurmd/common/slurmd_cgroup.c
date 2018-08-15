@@ -472,7 +472,8 @@ extern bool check_memspec_cgroup_job_confinement(void)
 	if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
 		return false;
 	task_plugin_type = slurm_get_task_plugin();
-	if (slurm_cgroup_conf.constrain_ram_space &&
+	if ((slurm_cgroup_conf.constrain_ram_space ||
+	     slurm_cgroup_conf.constrain_swap_space) &&
 	    strstr(task_plugin_type, "cgroup"))
 		status = true;
 	xfree(task_plugin_type);

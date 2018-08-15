@@ -65,6 +65,15 @@ NOTE: srun will now only read in the environment variables SLURM_JOB_NODES and
 NOTE: squeue will now print "UID" as the header for the User ID field;
       corresponding to the %U type specification.
 
+NOTE: slurmd will now fatal if two or more mechanisms for enforcing memory
+      limits are set. This makes incompatible the use of task/cgroup memory
+      limit enforcing (Constrain[RAM|Swap]Space=yes) with MemLimitEnforce=yes
+      or with JobAcctGatherParams=OverMemoryKill, which could cause problems
+      when a task is killed by one of them while the other is at the same time
+      managing that task. The NoOverMemoryKill setting has been deprecated in
+      favour of OverMemoryKill, since now the default is *NOT* to have any
+      memory enforcement mechanism.
+
 HIGHLIGHTS
 ==========
  -- Add support for parenthesis in an advanced reservation or job constraint

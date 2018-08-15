@@ -3018,7 +3018,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->max_step_cnt		= NO_VAL;
 	xfree(ctl_conf_ptr->mcs_plugin);
 	xfree(ctl_conf_ptr->mcs_plugin_params);
-	ctl_conf_ptr->mem_limit_enforce         = true;
+	ctl_conf_ptr->mem_limit_enforce         = false;
 	ctl_conf_ptr->min_job_age = NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
@@ -4934,8 +4934,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 * slurmd.
 	 */
 	if (s_p_get_string(&temp_str, "MemLimitEnforce", hashtbl)) {
-		if (xstrncasecmp(temp_str, "no", 2) == 0)
-			conf->mem_limit_enforce = false;
+		if (xstrncasecmp(temp_str, "yes", 2) == 0)
+			conf->mem_limit_enforce = true;
 		xfree(temp_str);
 	}
 

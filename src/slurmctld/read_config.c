@@ -1049,6 +1049,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
 	char *mpi_params;
 	uint16_t old_select_type_p = slurmctld_conf.select_type_param;
+	char *tok, *save_ptr = NULL;
+	bool over_memory_kill = false;
 
 	/* initialization */
 	START_TIMER;
@@ -1091,6 +1093,24 @@ int read_slurm_conf(int recover, bool reconfig)
 		part_list = old_part_list;
 		default_part_name = old_def_part_name;
 		return error_code;
+	}
+
+	if (slurmctld_conf.job_acct_gather_params) {
+		tok = strtok_r(slurmctld_conf.job_acct_gather_params,
+			       ",", &save_ptr);
+		while(tok) {
+			if (xstrcasecmp(tok, "OverMemoryKill") == 0) {
+				over_memory_kill = true;
+				break;
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+	}
+
+	if (slurmctld_conf.mem_limit_enforce || over_memory_kill) {
+		info("The JobAcctGather's memory enforcing mechanism is"
+		     "configured, task/cgroup is recommended where available "
+		     "instead.");
 	}
 
 	if (layouts_init() != SLURM_SUCCESS) {
