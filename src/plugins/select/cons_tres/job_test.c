@@ -1076,11 +1076,14 @@ extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec)
 	int i, i_first, i_last;
 	int c, s;
 	int core_inx, rem_core_spec, sock_per_node;
+	int node_core_spec, thread_spec = 0;
 	struct node_record *node_ptr;
 
 	if ((core_spec != NO_VAL16) &&
-	    (core_spec & CORE_SPEC_THREAD))	/* Reserving threads */
+	    (core_spec & CORE_SPEC_THREAD)) {	/* Reserving threads */
+		thread_spec = core_spec & (~CORE_SPEC_THREAD);
 		core_spec = NO_VAL16;		/* Don't remove cores */
+	}
 
 	avail_cores = build_core_array();
 	i_first = bit_ffs(node_bitmap);
@@ -1093,8 +1096,16 @@ extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec)
 			continue;
 		avail_cores[i] = bit_alloc(select_node_record[i].tot_cores);
 		bit_set_all(avail_cores[i]);
-		if (core_spec == 0)	/* Job can over-ride system defaults */
+		if (core_spec == 0)    /* Job can't over-ride system defaults */
 			continue;
+
+		if (thread_spec &&
+		    (select_node_record[i].cpus ==
+		     select_node_record[i].tot_cores)) {
+			/* Each core has one thead, reserve cores here */
+			node_core_spec = thread_spec;
+		} else
+			node_core_spec = core_spec;
 
 		/*
 		 * remove node's specialized cores accounting toward the
@@ -1107,19 +1118,20 @@ extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec)
 				if (!bit_test(node_ptr->node_spec_bitmap, c)) {
 					bit_clear(avail_cores[i], c);
 					node_spec_core_cnt++;
-					if ((core_spec != NO_VAL16) ||
-					    (node_spec_core_cnt >= core_spec))
+					if ((node_core_spec != NO_VAL16) ||
+					    (node_spec_core_cnt >=
+					     node_core_spec))
 						break;
 				}
 			}
-			if ((core_spec == NO_VAL16) ||
-			    (node_spec_core_cnt >= core_spec))
+			if ((node_core_spec == NO_VAL16) ||
+			    (node_spec_core_cnt >= node_core_spec))
 				continue;
-			rem_core_spec = core_spec - node_spec_core_cnt;
+			rem_core_spec = node_core_spec - node_spec_core_cnt;
 		} else {
-			if (core_spec == NO_VAL16)
+			if (node_core_spec == NO_VAL16)
 				continue;
-			rem_core_spec = core_spec;
+			rem_core_spec = node_core_spec;
 		}
 
 		/*
