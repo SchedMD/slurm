@@ -562,9 +562,9 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		tres_array_min[TRES_ARRAY_CPU] = tmp_uint32;
 
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_ave[TRES_ARRAY_VMEM] = tmp_double * 1024;
+		tres_array_ave[TRES_ARRAY_VMEM] = tmp_double * KB_ADJ;
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_ave[TRES_ARRAY_MEM] = tmp_double * 1024;
+		tres_array_ave[TRES_ARRAY_MEM] = tmp_double * KB_ADJ;
 		safe_unpackdouble(&tmp_double, buffer);
 		tres_array_ave[TRES_ARRAY_PAGES] = tmp_double;
 		safe_unpackdouble(&tmp_double, buffer);
@@ -573,9 +573,9 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		safe_unpackdouble(&stats->act_cpufreq, buffer);
 
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * MB_ADJ;
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * MB_ADJ;
 
 		stats->tres_usage_in_min = _make_tres_str(tres_array_min);
 
@@ -593,9 +593,9 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 			tres_array_ave[i] = INFINITE64;
 
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * MB_ADJ;
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * MB_ADJ;
 
 		stats->tres_usage_out_max = _make_tres_str(tres_array_max);
 		stats->tres_usage_out_ave = _make_tres_str(tres_array_ave);
@@ -681,9 +681,9 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		tres_array_min[TRES_ARRAY_CPU] = tmp_uint32;
 
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_ave[TRES_ARRAY_VMEM] = tmp_double * 1024;
+		tres_array_ave[TRES_ARRAY_VMEM] = tmp_double * KB_ADJ;
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_ave[TRES_ARRAY_MEM] = tmp_double * 1024;
+		tres_array_ave[TRES_ARRAY_MEM] = tmp_double * KB_ADJ;
 		safe_unpackdouble(&tmp_double, buffer);
 		tres_array_ave[TRES_ARRAY_PAGES] = tmp_double;
 		safe_unpackdouble(&tmp_double, buffer);
@@ -695,9 +695,9 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 		stats->consumed_energy = (uint64_t)consumed_energy;
 
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * MB_ADJ;
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * MB_ADJ;
 
 		stats->tres_usage_in_min = _make_tres_str(tres_array_min);
 
@@ -715,9 +715,9 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 			tres_array_ave[i] = INFINITE64;
 
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		tres_array_max[TRES_ARRAY_FS_DISK] = tmp_double * MB_ADJ;
 		safe_unpackdouble(&tmp_double, buffer);
-		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * 1024 * 1024;
+		tres_array_ave[TRES_ARRAY_FS_DISK] = tmp_double * MB_ADJ;
 
 		stats->tres_usage_out_max = _make_tres_str(tres_array_max);
 		stats->tres_usage_out_ave = _make_tres_str(tres_array_ave);
