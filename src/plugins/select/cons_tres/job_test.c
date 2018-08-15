@@ -363,8 +363,8 @@ extern void log_tres_state(struct node_use_record *node_usage,
 	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
 		info("Part:%s Rows:%u", p_ptr->part_ptr->name, p_ptr->num_rows);
 		row = p_ptr->row;
-//FIXME: Appears to be fixed, Enable _DEBUG to test
-if (!row) {error("ROW IS NULL"); continue; }
+		if (!(row = p_ptr->row))	/* initial/unused state */
+			continue;
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			core_str = _build_core_str(row[i].row_bitmap);
 			info("  Row:%d Jobs:%u Cores:%s",
