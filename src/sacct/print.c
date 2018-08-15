@@ -1228,7 +1228,7 @@ extern void print_fields(type_t type, void *object)
 			if (tmp_uint64 != NO_VAL64)
 				convert_num_unit((double)tmp_uint64,
 						 outbuf, sizeof(outbuf),
-						 UNIT_KILO, params.units,
+						 UNIT_NONE, params.units,
 						 params.convert_flags);
 
 			field->print_routine(field,
