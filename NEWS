@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     avoid copying strings that may be overwritten.
  -- Print correctly when sh5util finds and empty file.
  -- Fix sh5util to not seg fault on exit.
+ -- Fix sh5util to check correctly for H5free_memory.
 
 * Changes in Slurm 17.11.9-2
 ============================
