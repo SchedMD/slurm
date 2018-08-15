@@ -302,10 +302,12 @@ static void _remove_empty_output(void)
 	 * the program failed somewhere along the
 	 * way and the file is just left hanging...
 	 */
-	info("Output file generated is empty, removing it: %s", params.output);
-	if ((sb.st_size == 0) &&
-	    (remove(params.output) == -1))
-		error("%s: remove(%s): %m", __func__, params.output);
+	if ((sb.st_size == 0)) {
+		info("Output file generated is empty, removing it: %s",
+		     params.output);
+		if (remove(params.output) == -1)
+			error("%s: remove(%s): %m", __func__, params.output);
+	}
 }
 
 static void _init_opts(void)
@@ -730,6 +732,10 @@ endit:
 
 	if (jgid_steps != -1)
 		H5Gclose(jgid_steps);
+	if (jgid_step != -1)
+		H5Gclose(jgid_step);
+	if (jgid_nodes != -1)
+		H5Gclose(jgid_nodes);
 	if (fid_job != -1)
 		H5Fclose(fid_job);
 
