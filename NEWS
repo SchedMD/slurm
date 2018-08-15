@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
     thread.
  -- When allowing heterogeneous steps make sure we copy all the options to
     avoid copying strings that may be overwritten.
+ -- Print correctly when sh5util finds and empty file.
 
 * Changes in Slurm 17.11.9-2
 ============================
