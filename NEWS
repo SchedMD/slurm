@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue if a step launch fails we don't get a bunch of '(null)' strings
     in the step record for usage.
  -- Changed the default AuthType for slurmdbd to auth/munge.
+ -- Make it so libpmi.so doesn't link to libslurm.so.$apiversion.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

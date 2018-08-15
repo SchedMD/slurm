@@ -28,7 +28,7 @@ BUILT_SOURCES = $(PMI_VERSION_SCRIPT)
 lib_LTLIBRARIES = libpmi.la
 
 libpmi_la_SOURCES = pmi.c
-libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
+libpmi_la_LIBADD = $(DL_LIBS) $(LIB_SLURM)
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         -version-info $(libpmi_current):$(libpmi_rev):$(libpmi_age) \
         $(PMI_OTHER_FLAGS)
