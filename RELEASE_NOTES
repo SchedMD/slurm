@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 18.08
-9 July 2018
+15 August 2018
 
 IMPORTANT NOTES:
 THE MAXJOBID IS NOW 67,108,863. ANY PRE-EXISTING JOBS WILL CONTINUE TO RUN BUT
@@ -155,6 +155,7 @@ HIGHLIGHTS
  -- Append ", with requeued tasks" to job array "end" emails if any tasks in the
     array were requeued. This is a hint to use "sacct --duplicates" to see the
     whole picture of the array job.
+ -- The default AuthType for slurmdbd is not "auth/munge".
 
 RPMBUILD CHANGES
 ================

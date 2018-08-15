@@ -46,7 +46,7 @@
 
 #include "src/common/list.h"
 
-#define DEFAULT_SLURMDBD_AUTHTYPE	"auth/none"
+#define DEFAULT_SLURMDBD_AUTHTYPE	"auth/munge"
 //#define DEFAULT_SLURMDBD_JOB_PURGE	12
 #define DEFAULT_SLURMDBD_PIDFILE	"/var/run/slurmdbd.pid"
 #define DEFAULT_SLURMDBD_ARCHIVE_DIR	"/tmp"

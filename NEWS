@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     boot delay.
  -- Fix issue if a step launch fails we don't get a bunch of '(null)' strings
     in the step record for usage.
+ -- Changed the default AuthType for slurmdbd to auth/munge.
 
 * Changes in Slurm 18.08.0pre2
 ==============================
