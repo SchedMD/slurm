@@ -103,7 +103,8 @@
 
 // Data types supported by all HDF5 plugins of this type
 
-#ifndef H5free_memory
+/* H5free_memory was introduced in 1.8.13, before it just needed to be 'free' */
+#if H5_VERSION_LE(1,8,13)
 #define H5free_memory free
 #endif
 
