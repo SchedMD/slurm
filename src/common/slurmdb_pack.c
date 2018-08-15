@@ -41,8 +41,12 @@
 #include "slurmdb_pack.h"
 #include "slurmdbd_defs.h"
 #include "slurm_protocol_defs.h"
+#include "slurm_jobacct_gather.h"
 #include "list.h"
 #include "pack.h"
+
+#define KB_ADJ 1024
+#define MB_ADJ 1048576
 
 static uint32_t _list_count_null(List l)
 {
@@ -57,6 +61,7 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				uint16_t protocol_version, Buf buffer)
 {
 	int i=0;
+	double tmp_dbl;
 
 	xassert(buffer);
 
@@ -114,12 +119,16 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				stats->tres_usage_in_max, TRES_VMEM))
 		    == INFINITE64)
 			tmp_uint64 = NO_VAL64;
+		else
+			tmp_uint64 /= KB_ADJ;
 		pack64(tmp_uint64, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_max, TRES_MEM))
 		    == INFINITE64)
 			tmp_uint64 = NO_VAL64;
+		else
+			tmp_uint64 /= KB_ADJ;
 		pack64(tmp_uint64, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
@@ -134,19 +143,25 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				stats->tres_usage_in_min, TRES_CPU))
 		    == INFINITE64)
 			tmp_uint64 = NO_VAL64;
+		else
+			tmp_uint64 /= CPU_TIME_ADJ;
 		pack32((uint32_t)tmp_uint64, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_VMEM))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / KB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_MEM))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / KB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_PAGES))
@@ -157,34 +172,44 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_CPU))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / CPU_TIME_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		packdouble(stats->act_cpufreq, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_max, TRES_FS_DISK))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_FS_DISK))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_out_max, TRES_FS_DISK))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_out_ave, TRES_FS_DISK))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_max_nodeid, TRES_VMEM))
@@ -278,12 +303,16 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				stats->tres_usage_in_max, TRES_VMEM))
 		    == INFINITE64)
 			tmp_uint64 = NO_VAL64;
+		else
+			tmp_uint64 /= KB_ADJ;
 		pack64(tmp_uint64, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_max, TRES_MEM))
 		    == INFINITE64)
 			tmp_uint64 = NO_VAL64;
+		else
+			tmp_uint64 /= KB_ADJ;
 		pack64(tmp_uint64, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
@@ -296,19 +325,25 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				stats->tres_usage_in_min, TRES_CPU))
 		    == INFINITE64)
 			tmp_uint64 = NO_VAL64;
+		else
+			tmp_uint64 /= CPU_TIME_ADJ;
 		pack32((uint32_t)tmp_uint64, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_VMEM))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / KB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_MEM))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / KB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_PAGES))
@@ -319,8 +354,10 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_CPU))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / CPU_TIME_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		packdouble(stats->act_cpufreq, buffer);
 		packdouble((double)stats->consumed_energy, buffer);
@@ -328,26 +365,34 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_max, TRES_FS_DISK))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_ave, TRES_FS_DISK))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_out_max, TRES_FS_DISK))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_out_ave, TRES_FS_DISK))
 		    == INFINITE64)
-			tmp_uint64 = NO_VAL64;
-		packdouble((double)tmp_uint64, buffer);
+			tmp_dbl = (double)NO_VAL64;
+		else
+			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
+		packdouble(tmp_dbl, buffer);
 
 		if ((tmp_uint64 = slurmdb_find_tres_count_in_string(
 				stats->tres_usage_in_max_nodeid, TRES_VMEM))
