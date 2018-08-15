@@ -733,6 +733,10 @@ endit:
 
 	if (jgid_steps != -1)
 		H5Gclose(jgid_steps);
+	if (jgid_step != -1)
+		H5Gclose(jgid_step);
+	if (jgid_nodes != -1)
+		H5Gclose(jgid_nodes);
 	if (fid_job != -1)
 		H5Fclose(fid_job);
 
