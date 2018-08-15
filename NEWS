@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
     by integers.
  -- Fix correct job CPU count allocated.
  -- Fix sacctmgr setting GrpJobs limit when setting GrpJobsAccrue limit.
+ -- Change the defaults to MemLimitEnforce=no and NoOverMemoryKill
+    (See RELEASE_NOTES).
 
 * Changes in Slurm 18.08.0
 ==========================

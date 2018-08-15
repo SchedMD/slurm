@@ -70,6 +70,7 @@
 #include "src/common/strnatcmp.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+#include "src/common/xcgroup_read_config.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/burst_buffer.h"
@@ -1051,6 +1052,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	uint16_t old_select_type_p = slurmctld_conf.select_type_param;
 	char *tok, *save_ptr = NULL;
 	bool over_memory_kill = false;
+	bool cgroup_mem_confinement= false;
+	char *task_plugin_type = NULL;
+	slurm_cgroup_conf_t slurm_cgroup_conf;
 
 	/* initialization */
 	START_TIMER;
@@ -1107,10 +1111,27 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 	}
 
+	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
+	if (!read_slurm_cgroup_conf(&slurm_cgroup_conf)) {
+		task_plugin_type = slurm_get_task_plugin();
+
+		if ((slurm_cgroup_conf.constrain_ram_space ||
+		     slurm_cgroup_conf.constrain_swap_space) &&
+		    strstr(task_plugin_type, "cgroup"))
+			cgroup_mem_confinement = true;
+
+		xfree(task_plugin_type);
+		free_slurm_cgroup_conf(&slurm_cgroup_conf);
+	}
+
 	if (slurmctld_conf.mem_limit_enforce || over_memory_kill) {
-		info("The JobAcctGather's memory enforcing mechanism is"
-		     "configured, task/cgroup is recommended where available "
-		     "instead.");
+		if (cgroup_mem_confinement)
+			fatal("Incompatible memory enforcement mechanisms task/cgroup and JobAcctGather are set. You must disable one of them.");
+		else
+			info("Memory enforcing by using JobAcctGather's mechanism is discouraged, task/cgroup is recommended where available.");
+	} else {
+		if (!cgroup_mem_confinement)
+			info("No memory enforcing mechanism configured.");
 	}
 
 	if (layouts_init() != SLURM_SUCCESS) {
