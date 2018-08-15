@@ -586,6 +586,14 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		 * assoc_mgr_post_tres_list is requesting as those lists
 		 * don't exist here.
 		 */
+
+		/*
+		 * We only needed the resp to get the tres the first time,
+		 * Set it so we don't request it again.
+		 */
+		if (get_reg_resp)
+			get_reg_resp = false;
+
 		assoc_mgr_lock(&locks);
 		assoc_mgr_post_tres_list(resp->tres_list);
 		debug2("%s: slurmctld sent back %u TRES.",
@@ -605,10 +613,8 @@ send_registration_msg(uint32_t status, bool startup)
 
 	if (startup)
 		msg->flags |= SLURMD_REG_FLAG_STARTUP;
-	if (get_reg_resp) {
+	if (get_reg_resp)
 		msg->flags |= SLURMD_REG_FLAG_RESP;
-		get_reg_resp = false;
-	}
 
 	_fill_registration_msg(msg);
 	msg->status  = status;
