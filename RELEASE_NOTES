@@ -156,6 +156,7 @@ HIGHLIGHTS
     array were requeued. This is a hint to use "sacct --duplicates" to see the
     whole picture of the array job.
  -- The default AuthType for slurmdbd is not "auth/munge".
+ -- Changed slurmd.service file to include remote-fs.target in After option.
 
 RPMBUILD CHANGES
 ================

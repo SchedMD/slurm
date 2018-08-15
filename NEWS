@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
     in the step record for usage.
  -- Changed the default AuthType for slurmdbd to auth/munge.
  -- Make it so libpmi.so doesn't link to libslurm.so.$apiversion.
+ -- Added 'remote-fs.target' to After directive of slurmd.service file.
 
 * Changes in Slurm 18.08.0pre2
 ==============================
