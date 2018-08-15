@@ -357,7 +357,7 @@ void print_fields(slurmdb_step_rec_t *step)
 			tmp_char = find_hostname(
 				slurmdb_find_tres_count_in_string(
 					step->stats.
-					tres_usage_out_max_nodeid,
+					tres_usage_in_max_nodeid,
 					TRES_PAGES),
 				step->nodes);
 
