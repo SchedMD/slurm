@@ -1076,6 +1076,7 @@ extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec)
 	int i, i_first, i_last;
 	int c, s;
 	int core_inx, rem_core_spec, sock_per_node;
+	struct node_record *node_ptr;
 
 	if ((core_spec != NO_VAL16) &&
 	    (core_spec & CORE_SPEC_THREAD))	/* Reserving threads */
@@ -1092,27 +1093,50 @@ extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec)
 			continue;
 		avail_cores[i] = bit_alloc(select_node_record[i].tot_cores);
 		bit_set_all(avail_cores[i]);
+		if (core_spec == 0)	/* Job can over-ride system defaults */
+			continue;
 
-		if (core_spec != NO_VAL16) {
-			/*
-			 * Clear core bitmap for specified core count
-			 * Start with highest socket and core, then
-			 * work down to lower sockets
-			 */
+		/*
+		 * remove node's specialized cores accounting toward the
+		 * requested limit if allowed by configuration
+		 */
+		node_ptr = select_node_record[i].node_ptr;
+		if (node_ptr->node_spec_bitmap) {
+			int node_spec_core_cnt = 0;
+			for (c = 0; c < select_node_record[i].tot_cores; c++) {
+				if (!bit_test(node_ptr->node_spec_bitmap, c)) {
+					bit_clear(avail_cores[i], c);
+					node_spec_core_cnt++;
+					if ((core_spec != NO_VAL16) ||
+					    (node_spec_core_cnt >= core_spec))
+						break;
+				}
+			}
+			if ((core_spec == NO_VAL16) ||
+			    (node_spec_core_cnt >= core_spec))
+				continue;
+			rem_core_spec = core_spec - node_spec_core_cnt;
+		} else {
+			if (core_spec == NO_VAL16)
+				continue;
 			rem_core_spec = core_spec;
-			sock_per_node = select_node_record[i].tot_sockets;
+		}
+
+		/*
+		 * Clear core bitmap for specified core count. Start with
+		 * highest socket and core, then work down to lower sockets
+		 */
+		sock_per_node = select_node_record[i].tot_sockets;
+		for (c = select_node_record[i].cores - 1;
+		     (c >= 0) && (rem_core_spec > 0); c--) {
 			for (s = sock_per_node - 1;
 			     (s >= 0) && (rem_core_spec > 0); s--) {
-				for (c = select_node_record[i].cores - 1;
-				     (c >= 0) && (rem_core_spec > 0); c--) {
-					core_inx = c + s *
-						   select_node_record[i].cores;
-					if (!bit_test(avail_cores[i],
-						      core_inx))
-						continue;
-					bit_clear(avail_cores[i], core_inx);
-					rem_core_spec--;
-				}
+
+				core_inx = c + s * select_node_record[i].cores;
+				if (!bit_test(avail_cores[i], core_inx))
+					continue;
+				bit_clear(avail_cores[i], core_inx);
+				rem_core_spec--;
 			}
 		}
 	}
