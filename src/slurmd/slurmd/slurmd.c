@@ -580,12 +580,12 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 
 
 	if (resp) {
-		assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 		/*
 		 * We don't care about the assoc/qos locks
 		 * assoc_mgr_post_tres_list is requesting as those lists
 		 * don't exist here.
 		 */
+		assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 
 		/*
 		 * We only needed the resp to get the tres the first time,
