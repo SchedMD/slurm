@@ -527,15 +527,82 @@ extern int get_max_pack_group(void)
 	return max_pack_offset;
 }
 
+/*
+ * Copy the last option record:
+ * Copy strings if the original values will be preserved and
+ *   reused for additional heterogeneous job/steps
+ * Otherwise clear/NULL the pointer so it does not get re-used
+ *   and freed, which will render the copied pointer bad
+ */
 static slurm_opt_t *_opt_copy(void)
 {
 	slurm_opt_t *opt_dup;
+	int i;
 
 	opt_dup = xmalloc(sizeof(slurm_opt_t));
 	memcpy(opt_dup, &opt, sizeof(slurm_opt_t));
 	opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
 	memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
+
+	opt_dup->account = xstrdup(opt.account);
+	opt_dup->acctg_freq = xstrdup(opt.acctg_freq);
+	sropt.alloc_nodelist = NULL;	/* Moved by memcpy */
+	opt_dup->srun_opt->argv = xmalloc(sizeof(char *) * sropt.argc);
+	for (i = 0; i < sropt.argc; i++)
+		opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
+	sropt.bcast_file = NULL;	/* Moved by memcpy */
+	opt.blrtsimage = NULL;		/* Moved by memcpy */
+	sropt.burst_buffer = NULL;	/* Moved by memcpy */
+	opt_dup->c_constraints = xstrdup(opt.c_constraints);
+	opt_dup->srun_opt->ckpt_dir = xstrdup(sropt.ckpt_dir);
+	opt_dup->srun_opt->ckpt_interval_str =
+		xstrdup(sropt.ckpt_interval_str);
+	opt_dup->clusters = xstrdup(opt.clusters);
 	opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
+	opt_dup->comment = xstrdup(opt.comment);
+	opt.constraints = NULL;		/* Moved by memcpy */
+	opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
+	opt_dup->cwd = xstrdup(opt.cwd);
+	opt_dup->dependency = xstrdup(opt.dependency);
+	opt_dup->srun_opt->efname = xstrdup(sropt.efname);
+	opt_dup->srun_opt->epilog = xstrdup(sropt.epilog);
+	opt_dup->exc_nodes = xstrdup(opt.exc_nodes);
+	opt_dup->srun_opt->export_env = xstrdup(sropt.export_env);
+	opt_dup->extra = xstrdup(opt.extra);
+	opt.gres = NULL;		/* Moved by memcpy */
+	opt.hint_env = NULL;		/* Moved by memcpy */
+	sropt.hostfile = NULL;		/* Moved by memcpy */
+	opt_dup->srun_opt->ifname = xstrdup(sropt.ifname);
+	opt_dup->job_name = xstrdup(opt.job_name);
+	opt_dup->srun_opt->ofname = xstrdup(sropt.ofname);
+	opt_dup->srun_opt->launcher_opts = xstrdup(sropt.launcher_opts);
+	sropt.launcher_opts = NULL;	/* Moved by memcpy */
+	opt.licenses = NULL;		/* Moved by memcpy */
+	opt.linuximage = NULL;		/* Moved by memcpy */
+	opt.mail_user = NULL;		/* Moved by memcpy */
+	opt_dup->mcs_label = xstrdup(opt.mcs_label);
+	opt.mem_bind = NULL;		/* Moved by memcpy */
+	opt.mloaderimage = NULL;	/* Moved by memcpy */
+	opt_dup->mpi_type = xstrdup(opt.mpi_type);
+	opt.network = NULL;		/* Moved by memcpy */
+	opt.nodelist = NULL;		/* Moved by memcpy */
+	sropt.pack_group = NULL;	/* Moved by memcpy */
+	sropt.pack_grp_bits = NULL;	/* Moved by memcpy */
+	opt.partition = NULL;		/* Moved by memcpy */
+	/* NOTE: Do NOT copy "progname", shared by all job components */
+	opt_dup->srun_opt->prolog = xstrdup(sropt.prolog);
+	opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
+	opt_dup->qos = xstrdup(opt.qos);
+	opt.ramdiskimage = NULL;	/* Moved by memcpy */
+	opt_dup->reservation = xstrdup(opt.reservation);
+	sropt.restart_dir = NULL;	/* Moved by memcpy */
+	opt.spank_job_env = NULL;	/* Moved by memcpy */
+	opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
+	opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
+	opt_dup->time_limit_str = xstrdup(opt.time_limit_str);
+	opt_dup->time_min_str = xstrdup(opt.time_min_str);
+	opt_dup->user = xstrdup(opt.user);
+	opt_dup->wckey = xstrdup(opt.wckey);
 
 	return opt_dup;
 }
@@ -622,61 +689,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	bit_free(pack_grp_bits);
 
 	if (opt_list && pending_append) {		/* Last record */
-		/*
-		 * Copy the last option record:
-		 * Copy strings if the original values will be preserved and
-		 *   reused for additional heterogeneous job/steps
-		 * Otherwise clear/NULL the pointer so it does not get re-used
-		 *   and freed, which will render the copied pointer bad
-		 */
-		slurm_opt_t *opt_dup;
-		opt_dup = xmalloc(sizeof(slurm_opt_t));
-		memcpy(opt_dup, &opt, sizeof(slurm_opt_t));
-		opt_dup->srun_opt = xmalloc(sizeof(srun_opt_t));
-		memcpy(opt_dup->srun_opt, &sropt, sizeof(srun_opt_t));
-		sropt.alloc_nodelist = NULL;	/* Moved by memcpy */
-		opt_dup->srun_opt->argv = xmalloc(sizeof(char *) * sropt.argc);
-		for (i = 0; i < sropt.argc; i++)
-			opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
-		sropt.bcast_file = NULL;	/* Moved by memcpy */
-		opt.blrtsimage = NULL;	/* Moved by memcpy */
-		sropt.burst_buffer = NULL;	/* Moved by memcpy */
-		opt_dup->srun_opt->ckpt_dir = xstrdup(sropt.ckpt_dir);
-		opt_dup->srun_opt->ckpt_interval_str =
-			xstrdup(sropt.ckpt_interval_str);
-		opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
-		opt.constraints = NULL;		/* Moved by memcpy */
-		sropt.cpu_bind = NULL;		/* Moved by memcpy */
-		opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
-		opt_dup->srun_opt->efname = xstrdup(sropt.efname);
-		opt_dup->srun_opt->epilog = xstrdup(sropt.epilog);
-		opt_dup->srun_opt->export_env = xstrdup(sropt.export_env);
-		opt.gres = NULL;		/* Moved by memcpy */
-		opt.hint_env = NULL;		/* Moved by memcpy */
-		sropt.hostfile = NULL;		/* Moved by memcpy */
-		opt_dup->srun_opt->ifname = xstrdup(sropt.ifname);
-		opt_dup->srun_opt->ofname = xstrdup(sropt.ofname);
-		opt_dup->srun_opt->launcher_opts = xstrdup(sropt.launcher_opts);
-		sropt.launcher_opts = NULL;	/* Moved by memcpy */
-		opt.licenses = NULL;		/* Moved by memcpy */
-		opt.linuximage = NULL;		/* Moved by memcpy */
-		opt.mail_user = NULL;		/* Moved by memcpy */
-		opt.mem_bind = NULL;		/* Moved by memcpy */
-		opt.mloaderimage = NULL;	/* Moved by memcpy */
-		opt.network = NULL;		/* Moved by memcpy */
-		opt.nodelist = NULL;		/* Moved by memcpy */
-		sropt.pack_group = NULL;	/* Moved by memcpy */
-		sropt.pack_grp_bits = NULL;	/* Moved by memcpy */
-		opt.partition = NULL;		/* Moved by memcpy */
-		opt_dup->srun_opt->prolog = xstrdup(sropt.prolog);
-		opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
-		opt.ramdiskimage = NULL;	/* Moved by memcpy */
-		sropt.restart_dir = NULL;	/* Moved by memcpy */
-		opt.spank_job_env = NULL;	/* Moved by memcpy */
-		opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
-		opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
-
-		list_append(opt_list, opt_dup);
+		list_append(opt_list, _opt_copy());
 		pending_append = false;
 	}
 
