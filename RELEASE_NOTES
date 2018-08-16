@@ -1,11 +1,7 @@
 RELEASE NOTES FOR SLURM VERSION 18.08
-15 August 2018
+16 August 2018
 
 IMPORTANT NOTES:
-THE MAXJOBID IS NOW 67,108,863. ANY PRE-EXISTING JOBS WILL CONTINUE TO RUN BUT
-NEW JOB IDS WILL BE WITHIN THE NEW MAXJOBID RANGE. Adjust your configured
-MaxJobID value as needed to eliminate any confusion.
-
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 
 NOTE: If using a backup DBD you must start the primary first to do any
@@ -14,17 +10,7 @@ database conversion, the backup will not start until this has happened.
 The 18.08 slurmdbd will work with Slurm daemons of version 17.02 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
-any other clusters making use of it.  No real harm will come from updating
-your systems before the slurmdbd, but they will not talk to each other
-until you do.  Also at least the first time running the slurmdbd you need to
-make sure your my.cnf file has innodb_buffer_pool_size equal to at least 64M.
-You can accomplish this by adding the line
-
-innodb_buffer_pool_size=64M
-
-under the [mysqld] reference in the my.cnf file and restarting the mysqld. The
-buffer pool size must be smaller than the size of the MySQL tmpdir. This is
-needed when converting large tables over to the new database schema.
+any other clusters making use of it.
 
 Slurm can be upgraded from version 17.02 or 17.11 to version 18.08 without loss
 of jobs or other state information. Upgrading directly from an earlier version
@@ -34,48 +20,9 @@ If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
 NOTE FOR THOSE UPGRADING SLURMDBD: The database conversion process from
-      SlurmDBD 16.05 or 17.02 may not work properly with MySQL 5.1 (as was the
-      default version for RHEL 6).  Upgrading to a newer version of MariaDB or
-      MySQL is strongly encouraged to prevent this problem.
-
-NOTE FOR THOSE RUNNING 17.11.[0|1]: It was found a seeded MySQL auto_increment
-      value would be lost eventually if used.  This was found in the tres_table
-      which tracks static TRES under 1001.  This was fixed in MariaDB >=10.2.4,
-      but at the time of writing this was still around in MySQL.  Regardless if
-      you are tracking licenses or GRES in the database
-      (i.e. AccountingStorageTRES=gres/gpu) you might have this this issue.
-      This would mean the id for gres/gpu could have been issued 5 instead of
-      1001.  This is fine uptil 17.11 where a new static TRES was added taking
-      up the id of 5.  If you are already running 17.11 you can easily check to
-      see if you hit this problem by running 'sacctmgr list tres'.  If you see
-      any entry in the Name column for the Type 'billing' TRES (id=5) you are
-      unfortunately hit with the bug. The fix for this issue requires manual
-      intervention with the database.  Most likely if you started a slurmctld
-      up against the slurmdbd the overwritten TRES is now at a different id.
-      You can fix the double issue by altering all the tables with the new TRES
-      id back to 5, remove that entry in the tres_table, and then change the
-      Type of billing back to the original Type and restart the slurmdbd which
-      should finish the conversion.  SchedMD can assist with this. Supported
-      sites please open a ticket at https://bugs.schedmd.com/.  Non-supported
-      sites please contact SchedMD at sales@schedmd.com if you would like to
-      discuss commercial support options.
-
-NOTE: The slurm.spec file used to build RPM packages has been aggressively
-      refactored, and some package names may now be different. Notably,
-      the three daemons (slurmctld, slurmd/slurmstepd, slurmdbd) each
-      have their own separate package with the binary and the appropriate
-      systemd service file, which will be installed automatically (but
-      not enabled).
-      The slurm-plugins, slurm-munge, and slurm-lua package has been removed,
-      and the contents moved in to the main slurm package.
-      The slurm-sql package has been removed, and merged in with the slurm
-      (job_comp_mysql.so) and slurm-slurmdbd (accounting_storage_mysql)
-      packages.
-      The example configuration files have been moved to slurm-example-configs.
-
-NOTE: The refactored slurm.spec file now requires systemd to build. When
-      building on older distributions, you must use the older variant which
-      has been preserved as contribs/slurm.spec-legacy.
+      SlurmDBD 16.05 or 17.02 may not work properly with MySQL 5.1 or 5.5
+      (as was the default version for RHEL 6). Upgrading to a newer version of
+      MariaDB or MySQL is strongly encouraged to prevent this problem.
 
 NOTE: The slurmctld is now set to fatal if there are any problems with
       any state files.  To avoid this use the new '-i' flag.
@@ -86,10 +33,6 @@ NOTE: systemd services files are installed automatically, but not enabled.
       - Database: systemctl enable slurmdbd
       - Compute Nodes: systemctl enable slurmd
 
-NOTE: If you are not using Munge, but are using the "service" scripts to
-      start Slurm daemons, then you will need to remove this check from the
-      etc/slurm*service scripts.
-
 NOTE: If you are upgrading with any jobs from 14.03 or earlier
       (i.e. quick upgrade from 14.03 -> 15.08 -> 17.02) you will need
       to wait until after those jobs are gone before you upgrade to 17.02
@@ -99,32 +42,20 @@ NOTE: If you interact with any memory values in a job_submit plugin, you will
       need to test against NO_VAL64 instead of NO_VAL, and change your printf
       format as well.
 
-NOTE: The SLURM_ID_HASH used for Cray systems has changed to fully use the
-      entire 64 bits of the hash.  Previously the stepid was multiplied by
-      10,000,000,000 to make it easy to read both the jobid as well as the
-      stepid in the hash separated by at least a couple of zeros, but this
-      lead to overflow on the hash with steps like the batch and extern step
-      where they used all 32 bits to represent the step.  While the new method
-      ruins the easy readability it fixes the more important overflow issue.
-      This most likely will go unnoticed by most, just a note of the change.
-
-NOTE: Starting in 17.11 the slurm commands and daemons dynamically link to
-      libslurmfull.so instead of statically linking.  This dramatically reduces
-      the footprint of Slurm.  If for some reason this creates issues with
-      your build you can configure slurm with --without-shared-libslurm.
-
-NOTE: Spank options handled in local and allocator contexts should be able to
+NOTE: SPANK options handled in local and allocator contexts should be able to
       handle being called multiple times. An option could be set multiple times
       through environment variables and command line options. Environment
       variables are processed first.
 
-NOTE: IBM BlueGene/Q and Cray/ALPS modes are deprecated and will be removed
-      in an upcoming release. You must add the --enable-deprecated option to
-      configure to build these targets.
+NOTE: IBM BlueGene/Q support has been removed.
+
+NOTE: Cray/ALPS is deprecated and will be removed in the 19.05 release.
+      You must add the --enable-deprecated option to configure to build
+      for this target.
 
 NOTE: Built-in BLCR support is deprecated, no longer built automatically, and
-      will be removed in an upcoming release. You must add --with-blcr and
-      --enable-deprecated options to configure to build this plugin.
+      will be removed in 19.05. You must add --with-blcr and --enable-deprecated
+      options to configure to build this plugin.
 
 NOTE: srun will now only read in the environment variables SLURM_JOB_NODES and
       SLURM_JOB_NODELIST instead of SLURM_NNODES and SLURM_NODELIST.  These
