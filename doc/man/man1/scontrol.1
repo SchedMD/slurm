@@ -600,6 +600,14 @@ Set the job's requirement for contiguous (consecutive) nodes to be allocated.
 Possible values are "YES" and "NO".
 Only the Slurm administrator or root can change this parameter.
 .TP
+\fICoreSpec\fP=<count>
+Number of cores to reserve per node for system use.
+The job will be charged for these cores, but be unable to use them.
+Will be reported as "*" if not constrained.
+.TP
+\fICPUsPerTask\fP=<count>
+Change the CPUsPerTask job's value.
+.TP
 \fIDeadline\fP=<time_spec>
 It accepts times of the form \fIHH:MM:SS\fR to specify a deadline to a job at
 a specific time of day (seconds are optional).
@@ -616,6 +624,11 @@ and you can tell Slurm to put a deadline for tomorrow with the keyword
 The specified deadline must be later than the current time.
 Only pending jobs can have the deadline updated.
 Only the Slurm administrator or root can change this parameter.
+.TP
+\fBDelayBoot\fP=<time_spec>
+Change the time to decide wether to reboot nodes in order to satisfy job's
+feature specification if the job has been eligible to run for less than this
+time period. See salloc/sbatch man pages option \-\-delay\-boot.
 .TP
 \fIDependency\fP=<dependency_list>
 Defer job's initiation until specified job dependency specification
@@ -650,6 +663,11 @@ sharing the same job name and user have terminated.
 .TP
 \fIEligibleTime\fP=<time_spec>
 See \fIStartTime\fP.
+.TP
+\fIEndTime\fP
+The time the job is expected to terminate based on the job's time
+limit.  When the job ends sooner, this field will be updated with the
+actual end time.
 .TP
 \fIExcNodeList\fP=<nodes>
 Set the job's list of excluded node. Multiple node names may be
@@ -722,12 +740,18 @@ Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 Set the job's minimum temporary disk space required per node to the specified value.
 Only the Slurm administrator or root can change this parameter.
 .TP
+\fTimeMin\fP=<timespec>
+Change TimeMin value which specifies the minimum time limit minutes of the job.
+.TP
 \fIJobName\fP=<name>
 Identify the name of jobs to be modified or set the job's name to the
 specified value.
 When used to identify jobs to be modified, all jobs belonging to all users
 are modified unless the \fIUserID\fP option is used to identify a specific user.
 Either \fIJobId\fP or \fIJobName\fP is required.
+.TP
+\fIName\fP[=<name>]
+See JobName.
 .TP
 \fINice\fP[=<adjustment>]
 Update the job with an adjusted scheduling priority within Slurm. With no
@@ -752,10 +776,12 @@ If the job is already running, use this to specify a node count less than
 currently allocated and resources previously allocated to the job will be
 relinquished. After a job's allocation is reduced, subsequent \fBsrun\fR
 commands must explicitly specify node and task counts which are valid for the
-new allocation. Also see the \fINodeList\fP parameter above.
+new allocation. Also see the \fINodeList\fP parameter above. This is the same
+than ReqNodes.
 .TP
 \fINumTasks\fP=<count>
-Set the job's count of required tasks to the specified value.
+Set the job's count of required tasks to the specified value. This is the same
+than ReqProcs.
 .TP
 \fIOverSubscribe\fP=<yes|no>
 Set the job's ability to share compute resources (i.e. individual CPUs)
@@ -780,10 +806,30 @@ Only the Slurm administrator or root can increase job's priority.
 Set the job's QOS (Quality Of Service) to the specified value.
 Value may be cleared with blank data value, "QOS=".
 .TP
+\fBReboot\fP=<yes|no>
+Set the job's flag that specifies wether to force the allocated nodes to reboot
+before starting the job. This is only supported with some system configurations
+and therefore it could be silently ignored.
+.TP
+\fIReqCores\fP=<count>
+Change the job's requested Cores count.
+.TP
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using
 simple node range expressions (e.g. "lx[10\-20]").
 Value may be cleared with blank data value, "ReqNodeList=".
+.TP
+\fIReqNodes\fP=<min_count>[\-<max_count>]
+See NumNodes.
+.TP
+\fIReqProcs\fP=<count>
+See NumTasks.
+.TP
+\fIReqSockets\fP=<count>
+Change the job's requested socket count.
+.TP
+\fIReqThreads\fP=<count>
+Change the job's requested threads count.
 .TP
 \fIRequeue\fP=<0|1>
 Stipulates whether a job should be requeued after a node failure: 0
@@ -792,6 +838,9 @@ for no, 1 for yes.
 \fIReservationName\fP=<name>
 Set the job's reservation to the specified value.
 Value may be cleared with blank data value, "ReservationName=".
+.TP
+\fIStdOut\fP=<filepath>
+Set the batch job's stdout file path.
 .TP
 \fIShared\fP=<yes|no>
 See \fIOverSubscribe\fP option above.
@@ -840,6 +889,20 @@ the \fBSchedulerParameters\fR configuration parameter with the
 Also see \fIwait\-for\-switch\fP.
 
 .TP
+\fIwait\-for\-switch\fP=<seconds>
+Change max time to wait for a switch <seconds> secs.
+
+.TP
+\fITasksPerNode\fP=<count>
+Change the job's requested TasksPerNode.
+
+.TP
+\fIThreadSpec\fP=<count>
+Number of threads to reserve per node for system use.
+The job will be charged for these threads, but be unable to use them.
+Will be reported as "*" if not constrained.
+
+.TP
 \fITimeLimit\fP=<time>
 The job's time limit.
 Output format is [days\-]hours:minutes:seconds or "UNLIMITED".
@@ -865,7 +928,10 @@ Either a user name or numeric ID (UID), may be specified.
 Set the job's workload characterization key to the specified value.
 
 .TP
-NOTE: The "show" command, when used with the "job" or "job <jobid>"
+\fBSPECIFICATIONS FOR SHOW COMMAND, JOBS\fR
+\.LP
+
+The "show" command, when used with the "job" or "job <jobid>"
 entity displays detailed information about a job or jobs.  Much of
 this information may be modified using the "update job" command as
 described above.  However, the following fields displayed by the show
@@ -879,16 +945,6 @@ Local node and system id making the resource allocation.
 Jobs submitted using the sbatch command have BatchFlag set to 1.
 Jobs submitted using other commands have BatchFlag set to 0.
 .TP
-\fICoreSpec\fP=<count>
-Number of cores to reserve per node for system use.
-The job will be charged for these cores, but be unable to use them.
-Will be reported as "*" if not constrained.
-.TP
-\fIEndTime\fP
-The time the job is expected to terminate based on the job's time
-limit.  When the job ends sooner, this field will be updated with the
-actual end time.
-.TP
 \fIExitCode\fP=<exit>:<sig>
 Exit status reported for the job by the wait() function.
 The first number is the exit code, typically as set by the exit() function.
@@ -900,9 +956,6 @@ The group under which the job was submitted.
 .TP
 \fIJobState\fP
 The current state of the job.
-.TP
-\fINodeList\fP
-The list of nodes allocated to the job.
 .TP
 \fINodeListIndices\fP
 The NodeIndices expose the internal indices into the node table
@@ -954,9 +1007,6 @@ duplicate entries for a job.
 .TP
 \fISuspendTime\fP
 Time the job was last suspended or resumed.
-.TP
-\fIUserId\fP
-The user under which the job was submitted.
 .TP
 NOTE on information displayed for various job states:
 When you submit a request for the "show job" function the scontrol
@@ -1158,6 +1208,82 @@ of the slurmctld daemon with the \fI\-R\fR option and state files
 preserved or slurmctld's receipt of a SIGHUP.
 Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
+
+.TP
+\fBSPECIFICATIONS FOR SHOW COMMAND, NODES\fR
+.TP
+The meaning of the energy information is as follows:
+
+.TP
+\fICurrentWatts\fP
+The instantaneous power consumption of the node at the time of the last node
+energy accounting sample, in watts.
+
+.TP
+\fILowestJoules\fP
+The energy consumed by the node between the last time it was powered on and
+the last time it was registered by slurmd, in joules.
+
+.TP
+\fIConsumedJoules\fP
+The energy consumed by the node between the last time it was registered by
+the slurmd daemon and the last node energy accounting sample, in joules.
+
+.PP
+If the reported value is "n/s" (not supported), the node does not support the
+configured \fBAcctGatherEnergyType\fR plugin. If the reported value is zero, energy
+accounting for nodes is disabled.
+
+.TP
+The meaning of the external sensors information is as follows:
+
+.TP
+\fIExtSensorsJoules\fP
+The energy consumed by the node between the last time it was powered on
+and the last external sensors plugin node sample, in joules.
+
+
+.TP
+\fIExtSensorsWatts\fP
+The instantaneous power consumption of the node at the time of the last
+external sensors plugin node sample, in watts.
+
+.TP
+\fIExtSensorsTemp\fP
+The temperature of the node at the time of the last external sensors plugin
+node sample, in celsius.
+
+.PP
+If the reported value is "n/s" (not supported), the node does not support the
+configured \fBExtSensorsType\fR plugin.
+
+.TP
+The meaning of the resource specialization information is as follows:
+
+.TP
+\fICPUSpecList\fP
+The list of Slurm abstract CPU IDs on this node reserved for
+exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
+
+.TP
+\fIMemSpecLimit\fP
+The combined memory limit, in megabytes, on this node for the Slurm compute
+node daemons (slurmd, slurmstepd).
+
+.TP
+The meaning of the memory information is as follows:
+
+.TP
+\fIRealMemory\fP
+The total memory, in MB, on the node.
+
+.TP
+\fIAllocMem\fP
+The total memory, in MB, currently allocated by jobs on the node.
+
+.TP
+\fIFreeMem\fP
+The total memory, in MB, currently free on the node as reported by the OS.
 
 .TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, FRONTEND\fR
@@ -1741,82 +1867,6 @@ Type of entities to show, default is not used.
 \fInolayout\fP
 If not used, only entities with defining the tree are shown.
 With the option, only leaves are shown.
-
-.TP
-\fBDESCRIPTION FOR SHOW COMMAND, NODES\fR
-.TP
-The meaning of the energy information is as follows:
-
-.TP
-\fICurrentWatts\fP
-The instantaneous power consumption of the node at the time of the last node
-energy accounting sample, in watts.
-
-.TP
-\fILowestJoules\fP
-The energy consumed by the node between the last time it was powered on and
-the last time it was registered by slurmd, in joules.
-
-.TP
-\fIConsumedJoules\fP
-The energy consumed by the node between the last time it was registered by
-the slurmd daemon and the last node energy accounting sample, in joules.
-
-.PP
-If the reported value is "n/s" (not supported), the node does not support the
-configured \fBAcctGatherEnergyType\fR plugin. If the reported value is zero, energy
-accounting for nodes is disabled.
-
-.TP
-The meaning of the external sensors information is as follows:
-
-.TP
-\fIExtSensorsJoules\fP
-The energy consumed by the node between the last time it was powered on
-and the last external sensors plugin node sample, in joules.
-
-
-.TP
-\fIExtSensorsWatts\fP
-The instantaneous power consumption of the node at the time of the last
-external sensors plugin node sample, in watts.
-
-.TP
-\fIExtSensorsTemp\fP
-The temperature of the node at the time of the last external sensors plugin
-node sample, in celsius.
-
-.PP
-If the reported value is "n/s" (not supported), the node does not support the
-configured \fBExtSensorsType\fR plugin.
-
-.TP
-The meaning of the resource specialization information is as follows:
-
-.TP
-\fICPUSpecList\fP
-The list of Slurm abstract CPU IDs on this node reserved for
-exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
-
-.TP
-\fIMemSpecLimit\fP
-The combined memory limit, in megabytes, on this node for the Slurm compute
-node daemons (slurmd, slurmstepd).
-
-.TP
-The meaning of the memory information is as follows:
-
-.TP
-\fIRealMemory\fP
-The total memory, in MB, on the node.
-
-.TP
-\fIAllocMem\fP
-The total memory, in MB, currently allocated by jobs on the node.
-
-.TP
-\fIFreeMem\fP
-The total memory, in MB, currently free on the node as reported by the OS.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
