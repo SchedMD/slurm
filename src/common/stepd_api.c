@@ -283,15 +283,6 @@ stepd_connect(const char *directory, const char *nodename,
 		goto rwfail;
 	} else if (rc) {
 		*protocol_version = rc;
-	} else {
-		/* 0n older versions of Slurm < 14.11 SLURM_SUCCESS
-		 * was returned here instead of the protocol version.
-		 * This can be removed when we are 2 versions past
-		 * 14.11.
-		 */
-		slurmstepd_info_t *stepd_info = stepd_get_info(fd);
-		*protocol_version = stepd_info->protocol_version;
-		xfree(stepd_info);
 	}
 
 	free_buf(buffer);
