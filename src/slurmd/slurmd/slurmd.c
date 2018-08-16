@@ -1507,7 +1507,8 @@ _slurmd_init(void)
 	}
 
 	/* Set up the hwloc whole system xml file */
-	xcpuinfo_init();
+	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
+		return SLURM_FAILURE;
 
 	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
