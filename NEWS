@@ -219,6 +219,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix sh5util to check correctly for H5free_memory.
  -- Adjust OOM monitoring function in task/cgroup to prevent problems in
     regression suite from leaked file descriptors.
+ -- Fix issue with gres when defined with a type and no count
+    (i.e. gres=gpu/tesla) it would get a count of 0.
 
 * Changes in Slurm 17.11.9-2
 ============================

@@ -1456,6 +1456,14 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 				error("Bad GRES configuration: %s", tok);
 				break;
 			}
+
+			/*
+			 * If we have a GRES that has a type but not a count we
+			 * will have 0 here, so set it correctly.
+			 */
+			if (!tmp_gres_cnt)
+				tmp_gres_cnt = 1;
+
 			gres_config_cnt += tmp_gres_cnt;
 			num[0] = '\0';
 

@@ -73,16 +73,6 @@ expect {
 		set invalid 1
 		exp_continue
 	}
-	-re "pmi2" {
-		send_user "\nWARNING: test incompatible with mpi/pmi2\n"
-		set invalid 1
-		exp_continue
-	}
-	-re "pmix" {
-		send_user "\nWARNING: test incompatible with mpi/pmix\n"
-		set invalid 1
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
@@ -110,7 +100,7 @@ make_bash_script $file_in "
   $bin_echo ' '
   $bin_echo 'testing $iterations sets of spawned tasks'
   for ((i=0; i<$iterations; i++)) ; do
-    $srun ./$file_prog
+    $srun --mpi=none ./$file_prog
   done
   $bin_echo 'fini'
 "
