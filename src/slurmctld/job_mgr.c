@@ -5495,6 +5495,13 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 		suspended = true;
 	}
 
+	if (job_comp_flag && (job_ptr->node_cnt == 0)) {
+		/*
+		 * Job has no resources left (used to expand another job).
+		 * Avoid duplicate run of epilog and underflow in CPU count.
+		 */
+		job_comp_flag = 0;
+	}
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {
 		/* We want this job to look like it
 		 * was terminated in the accounting logs.
