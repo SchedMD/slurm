@@ -808,6 +808,11 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				case 'J':
 				case 'S':
 					is_our_format = true;
+					/*
+					 * Need to set found_other_formats to
+					 * still consume the %.0s if not other
+					 * format strings are included.
+					 */
 					found_other_formats = true;
 					break;
 				default:
