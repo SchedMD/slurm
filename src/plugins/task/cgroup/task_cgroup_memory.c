@@ -34,7 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE		/* For POLLRDHUP */
+#define _GNU_SOURCE		/* For POLLRDHUP, O_CLOEXEC on older glibc */
 #include <limits.h>
 #include <poll.h>
 #include <signal.h>
@@ -572,7 +572,7 @@ static int _register_oom_notifications(char * cgpath)
 		goto fini;
 	}
 
-	if ((cfd = open(control_file, O_RDONLY)) == -1) {
+	if ((cfd = open(control_file, O_RDONLY | O_CLOEXEC)) == -1) {
 		error("%s: Cannot open %s: %m", __func__, control_file);
 		rc = SLURM_ERROR;
 		goto fini;
@@ -586,13 +586,13 @@ static int _register_oom_notifications(char * cgpath)
 		goto fini;
 	}
 
-	if ((efd = open(event_file, O_WRONLY)) == -1) {
+	if ((efd = open(event_file, O_WRONLY | O_CLOEXEC)) == -1) {
 		error("%s: Cannot open %s: %m", __func__, event_file);
 		rc = SLURM_ERROR;
 		goto fini;
 	}
 
-	if ((event_fd = eventfd(0, 0)) == -1) {
+	if ((event_fd = eventfd(0, EFD_CLOEXEC)) == -1) {
 		error("%s: eventfd: %m", __func__);
 		rc = SLURM_ERROR;
 		goto fini;
@@ -614,7 +614,7 @@ static int _register_oom_notifications(char * cgpath)
 		goto fini;
 	}
 
-	if (pipe(oom_pipe) == -1) {
+	if (pipe2(oom_pipe, O_CLOEXEC) == -1) {
 		error("%s: pipe(): %m", __func__);
 		rc = SLURM_ERROR;
 		goto fini;
