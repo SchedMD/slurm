@@ -1305,13 +1305,148 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	return READY_NODE_STATE;
 }
 
+static void _dump_job_res(struct job_resources *job)
+{
+	char str[64];
+
+	if (job->core_bitmap)
+		bit_fmt(str, sizeof(str), job->core_bitmap);
+	else
+		sprintf(str, "[no core_bitmap]");
+	info("DEBUG: Dump job_resources: nhosts %u core_bitmap %s",
+	     job->nhosts, str);
+}
+
 extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
 {
+	struct part_res_record *part_record_ptr = select_part_record;
+	struct node_use_record *node_usage = select_node_usage;
+	struct job_resources *job = job_ptr->job_resrcs;
+	struct part_res_record *p_ptr;
+	int i, i_first, i_last, node_inx, n;
+	List gres_list;
+	bool old_job = false;
+
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
+	if (!job || !job->core_bitmap) {
+		error("select/cons_tres: %s: job %u has no job_resrcs info",
+		      __func__, job_ptr->job_id);
+		return SLURM_ERROR;
+	}
 
-//FIXME: Job resize logic, lower priority work
+	debug3("select/cons_tres: %s: job %u node %s",
+	       __func__, job_ptr->job_id, node_ptr->name);
+	if (job_ptr->start_time < slurmctld_config.boot_time)
+		old_job = true;
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		_dump_job_res(job);
+
+	/* subtract memory */
+	node_inx  = node_ptr - node_record_table_ptr;
+	i_first = bit_ffs(job->node_bitmap);
+	if (i_first >= 0)
+		i_last  = bit_fls(job->node_bitmap);
+	else
+		i_last = i_first - 1;
+	for (i = i_first, n = 0; i <= i_last; i++) {
+		if (!bit_test(job->node_bitmap, i))
+			continue;
+		if (i != node_inx) {
+			n++;
+			continue;
+		}
+
+		if (job->cpus[n] == 0) {
+			info("select/cons_tres: %s: attempt to remove node %s from job %u again",
+			     __func__, node_ptr->name, job_ptr->job_id);
+			return SLURM_SUCCESS;
+		}
+
+		if (node_usage[i].gres_list)
+			gres_list = node_usage[i].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n,
+					job_ptr->job_id, node_ptr->name,
+					old_job);
+		gres_plugin_node_state_log(gres_list, node_ptr->name);
+
+		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
+			error("select/cons_tres: %s: node %s memory is underallocated "
+			      "(%"PRIu64"-%"PRIu64") for job %u", __func__,
+			      node_ptr->name, node_usage[i].alloc_memory,
+			      job->memory_allocated[n], job_ptr->job_id);
+			node_usage[i].alloc_memory = 0;
+		} else
+			node_usage[i].alloc_memory -= job->memory_allocated[n];
+
+		extract_job_resources_node(job, n);
+
+		break;
+	}
+
+	if (IS_JOB_SUSPENDED(job_ptr))
+		return SLURM_SUCCESS;	/* No cores allocated to the job now */
+
+	/* subtract cores, reconstruct rows with remaining jobs */
+	if (!job_ptr->part_ptr) {
+		error("select/cons_tres: %s: removed job %u does not have a partition assigned",
+		      __func__, job_ptr->job_id);
+		return SLURM_ERROR;
+	}
+
+	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
+		if (p_ptr->part_ptr == job_ptr->part_ptr)
+			break;
+	}
+	if (!p_ptr) {
+		error("select/cons_tres: %s: removed job %u could not find part %s",
+		      __func__, job_ptr->job_id, job_ptr->part_ptr->name);
+		return SLURM_ERROR;
+	}
+
+	if (!p_ptr->row)
+		return SLURM_SUCCESS;
+
+	/* look for the job in the partition's job_list */
+	n = 0;
+	for (i = 0; i < p_ptr->num_rows; i++) {
+		uint32_t j;
+		for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
+			if (p_ptr->row[i].job_list[j] != job)
+				continue;
+			debug3("select/cons_tres: %s: found job %u in part %s row %u",
+			       __func__, job_ptr->job_id,
+			       p_ptr->part_ptr->name, i);
+			/* found job - we're done, don't actually remove */
+			n = 1;
+			i = p_ptr->num_rows;
+			break;
+		}
+	}
+	if (n == 0) {
+		error("select/cons_tres: %s: could not find job %u in partition %s",
+		      __func__, job_ptr->job_id, p_ptr->part_ptr->name);
+		return SLURM_ERROR;
+	}
+
+
+	/* some node of job removed from core-bitmap, so rebuild core bitmaps */
+	build_row_bitmaps(p_ptr, NULL);
+
+	/*
+	 * Adjust the node_state of the node removed from this job.
+	 * If all cores are now available, set node_state = NODE_CR_AVAILABLE
+	 */
+	if (node_usage[node_inx].node_state >= job->node_req) {
+		node_usage[node_inx].node_state -= job->node_req;
+	} else {
+		error("select/cons_tres: %s: node_state miscount", __func__);
+		node_usage[node_inx].node_state = NODE_CR_AVAILABLE;
+	}
+
 	return SLURM_SUCCESS;
 }
 

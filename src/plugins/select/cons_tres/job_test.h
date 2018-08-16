@@ -61,6 +61,18 @@ extern void add_job_to_row(struct job_resources *job,
  */
 extern bitstr_t **build_core_array(void);
 
+/*
+ * build_row_bitmaps: A job has been removed from the given partition,
+ *                    so the row_bitmap(s) need to be reconstructed.
+ *                    Optimize the jobs into the least number of rows,
+ *                    and make the lower rows as dense as possible.
+ *
+ * IN p_ptr - the partition that has jobs to be optimized
+ * IN job_ptr - pointer to single job removed, pass NULL to completely rebuild
+ */
+extern void build_row_bitmaps(struct part_res_record *p_ptr,
+			      struct job_record *job_ptr);
+
 /* test for conflicting core bitmap elements */
 extern int can_job_fit_in_row(struct job_resources *job,
 			      struct part_row_data *r_ptr);

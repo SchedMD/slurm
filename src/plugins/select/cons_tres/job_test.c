@@ -76,8 +76,6 @@ struct sort_support {
 static void _block_whole_nodes(bitstr_t *node_bitmap,
 			       bitstr_t **orig_core_bitmap,
 			       bitstr_t **new_core_bitmap);
-static void _build_row_bitmaps(struct part_res_record *p_ptr,
-			       struct job_record *job_ptr);
 static gres_mc_data_t *_build_gres_mc_data(struct job_record *job_ptr);
 static int  _compare_support(const void *v, const void *v1);
 static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
@@ -557,7 +555,7 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 		}
 		if (n) {
 			/* job was found and removed, so refresh the bitmaps */
-			_build_row_bitmaps(p_ptr, job_ptr);
+			build_row_bitmaps(p_ptr, job_ptr);
 			/*
 			 * Adjust the node_state of all nodes affected by
 			 * the removal of this job. If all cores are now
@@ -596,15 +594,16 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 }
 
 /*
- * _build_row_bitmaps: A job has been removed from the given partition,
- *                     so the row_bitmap(s) need to be reconstructed.
- *                     Optimize the jobs into the least number of rows,
- *                     and make the lower rows as dense as possible.
+ * build_row_bitmaps: A job has been removed from the given partition,
+ *                    so the row_bitmap(s) need to be reconstructed.
+ *                    Optimize the jobs into the least number of rows,
+ *                    and make the lower rows as dense as possible.
  *
- * IN/OUT: p_ptr   - the partition that has jobs to be optimized
+ * IN p_ptr - the partition that has jobs to be optimized
+ * IN job_ptr - pointer to single job removed, pass NULL to completely rebuild
  */
-static void _build_row_bitmaps(struct part_res_record *p_ptr,
-			       struct job_record *job_ptr)
+extern void build_row_bitmaps(struct part_res_record *p_ptr,
+			      struct job_record *job_ptr)
 {
 	uint32_t i, j, num_jobs;
 	int x;
@@ -2108,7 +2107,7 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 		}
 		if (n) {
 			/* job was found and removed, so refresh the bitmaps */
-			_build_row_bitmaps(p_ptr, job_ptr);
+			build_row_bitmaps(p_ptr, job_ptr);
 
 			/*
 			 * Adjust the node_state of all nodes affected by
