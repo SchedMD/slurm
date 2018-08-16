@@ -321,14 +321,12 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
+			memset(tmp64_array, 0, sizeof(tmp64_array));
 			if (assoc_rec->usage->usage_tres_raw)
 				for (i=0; i<tres_cnt; i++)
 					tmp64_array[i] = (uint64_t)
 						assoc_rec->usage->
 						usage_tres_raw[i];
-			else
-				memset(tmp64_array, 0, sizeof(tmp64_array));
-
 			_print_tres_line("GrpTRESMins",
 					 assoc_rec->grp_tres_mins_ctld,
 					 tmp64_array, 60);
@@ -475,13 +473,12 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			/* NEW LINE */
 			printf("%s", new_line_char);
 
+			memset(tmp64_array, 0, sizeof(tmp64_array));
 			if (qos_rec->usage->usage_tres_raw)
 				for (i=0; i<tres_cnt; i++)
 					tmp64_array[i] = (uint64_t)
 						qos_rec->usage->
 						usage_tres_raw[i];
-			else
-				memset(tmp64_array, 0, sizeof(tmp64_array));
 			_print_tres_line("GrpTRESMins",
 					 qos_rec->grp_tres_mins_ctld,
 					 tmp64_array, 60);
