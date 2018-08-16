@@ -103,6 +103,18 @@
 
 // Data types supported by all HDF5 plugins of this type
 
+/*
+ * H5_VERSION_LE (lifted from 1.10.1 H5public.h) was not added until 1.8.7
+ * (centos 6 has 1.8.5 by default)
+ */
+#ifndef H5_VERSION_LE
+#define H5_VERSION_LE(Maj,Min,Rel) \
+	(((H5_VERS_MAJOR==Maj) && (H5_VERS_MINOR==Min) &&		\
+	  (H5_VERS_RELEASE<=Rel)) ||					\
+	 ((H5_VERS_MAJOR==Maj) && (H5_VERS_MINOR<Min)) ||		\
+	 (H5_VERS_MAJOR<Maj))
+#endif
+
 /* H5free_memory was introduced in 1.8.13, before it just needed to be 'free' */
 #if H5_VERSION_LE(1,8,13)
 #define H5free_memory free
