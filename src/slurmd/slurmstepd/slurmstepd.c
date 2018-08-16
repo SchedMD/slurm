@@ -194,7 +194,9 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	mpi_fini();	/* Remove stale PMI2 sockets */
 
 	if (conf->hwloc_xml)
-		remove(conf->hwloc_xml);
+		if (remove(conf->hwloc_xml))
+			error("%s: remove %s failed: %m",
+			      __func__, conf->hwloc_xml);
 
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();

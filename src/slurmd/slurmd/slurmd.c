@@ -1249,7 +1249,9 @@ _destroy_conf(void)
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
 		if (conf->hwloc_xml) {
-			remove(conf->hwloc_xml);
+			if (remove(conf->hwloc_xml))
+				error("%s: remove %s failed: %m",
+				      __func__, conf->hwloc_xml);
 			xfree(conf->hwloc_xml);
 		}
 		xfree(conf->job_acct_gather_freq);
