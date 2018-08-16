@@ -1127,7 +1127,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	debug3("_slurmctld_rpc_mgr pid = %u", getpid());
 
 	/* set node_addr to bind to (NULL means any) */
-	if (((i = _backup_index() != -1)) &&
+	if (((i = _backup_index()) != -1) &&
 	    xstrcmp(slurmctld_conf.control_machine[i],
 		    slurmctld_conf.control_addr[i])) {
 		node_addr = slurmctld_conf.control_addr[i];
