@@ -1610,8 +1610,10 @@ extern void remove_job_from_cores(job_resources_t *job_resrcs_ptr,
 	}
 }
 
-/* Given a job pointer and a global node index, return the index of that
- * node in the job_resrcs_ptr->cpus. Return -1 if invalid */
+/*
+ * Given a job pointer and a global node index, return the index of that
+ * node in the job_resrcs_ptr->cpus. Return -1 if invalid
+ */
 extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 					     int node_inx)
 {
@@ -1619,18 +1621,18 @@ extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 
 	/* Test for error cases */
 	if (!job_resrcs_ptr || !job_resrcs_ptr->node_bitmap) {
-		error("job_resources_node_inx_to_cpu_inx: "
-		      "no job_resrcs or node_bitmap");
+		error("%s: no job_resrcs or node_bitmap", __func__);
 		return -1;
 	}
 	if (!bit_test(job_resrcs_ptr->node_bitmap, node_inx)) {
-		error("job_resources_node_inx_to_cpu_inx: "
-		      "Invalid node_inx");
+		char node_str[128];
+		bit_fmt(node_str, sizeof(node_str),job_resrcs_ptr->node_bitmap);
+		error("%s: Invalid node_inx:%d node_bitmap:%s", __func__,
+		      node_inx, node_str);
 		return -1;
 	}
 	if (job_resrcs_ptr->cpu_array_cnt == 0) {
-		error("job_resources_node_inx_to_cpu_inx: "
-		      "Invalid cpu_array_cnt");
+		error("%s: Invalid cpu_array_cnt", __func__);
 		return -1;
 	}
 
@@ -1640,14 +1642,13 @@ extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 
 	/* Scan bitmap, convert node_inx to node_cnt within job's allocation */
 	first_inx = bit_ffs(job_resrcs_ptr->node_bitmap);
-	for (i=first_inx, node_offset=-1; i<=node_inx; i++) {
+	for (i = first_inx, node_offset = -1; i <= node_inx; i++) {
 		if (bit_test(job_resrcs_ptr->node_bitmap, i))
 			node_offset++;
 	}
 
 	if (node_offset >= job_resrcs_ptr->nhosts) {
-		error("job_resources_node_inx_to_cpu_inx: "
-		      "Found %d of %d nodes",
+		error("%s: Found %d of %d nodes", __func__,
 		      job_resrcs_ptr->nhosts, node_offset);
 		return -1;
 	}

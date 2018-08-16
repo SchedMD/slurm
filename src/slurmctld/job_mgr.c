@@ -5485,7 +5485,8 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 
 	if (IS_JOB_SUSPENDED(job_ptr)) {
 		uint32_t suspend_job_state = job_ptr->job_state;
-		/* we can't have it as suspended when we call the
+		/*
+		 * we can't have it as suspended when we call the
 		 * accounting stuff.
 		 */
 		job_ptr->job_state = JOB_CANCELLED;
@@ -5502,16 +5503,20 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 		 */
 		job_comp_flag = 0;
 	}
+
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {
-		/* We want this job to look like it
-		 * was terminated in the accounting logs.
-		 * Set a new submit time so the restarted
-		 * job looks like a new job. */
+		/*
+		 * We want this job to look like it was terminated in the
+		 * accounting logs. Set a new submit time so the restarted
+		 * job looks like a new job.
+		 */
 		job_ptr->end_time = now;
 		job_ptr->job_state  = JOB_NODE_FAIL;
 		job_completion_logger(job_ptr, true);
-		/* do this after the epilog complete, setting it here
-		 * is too early */
+		/*
+		 * Do this after the epilog complete.
+		 * Setting it here is too early.
+		 */
 		//job_ptr->db_index = 0;
 		//job_ptr->details->submit_time = now + 1;
 		if (job_ptr->node_bitmap) {
@@ -5530,8 +5535,10 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 		job_ptr->warn_flags &= ~WARN_SENT;
 
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
-		/* Since the job completion logger removes the job submit
-		 * information, we need to add it again. */
+		/*
+		 * Since the job completion logger removes the job submit
+		 * information, we need to add it again.
+		 */
 		acct_policy_add_job_submit(job_ptr);
 		if (node_fail) {
 			info("%s: requeue %pJ due to node failure",
@@ -5540,7 +5547,8 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 			info("%s: requeue %pJ per user/system request",
 			     __func__, job_ptr);
 		}
-		/* We have reached the maximum number of requeue
+		/*
+		 * We have reached the maximum number of requeue
 		 * attempts hold the job with HoldMaxRequeue reason.
 		 */
 		if (job_ptr->batch_flag > MAX_BATCH_REQUEUE) {
@@ -5551,11 +5559,13 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 		}
 	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->details &&
 		   job_ptr->batch_flag) {
-		/* Possible failure mode with DOWN node and job requeue.
+		/*
+		 * Possible failure mode with DOWN node and job requeue.
 		 * The DOWN node might actually respond to the cancel and
-		 * take us here.  Don't run job_completion_logger
-		 * here since this is here to catch duplicate cancels
-		 * from slow responding slurmds */
+		 * take us here.  Don't run job_completion_logger here since
+		 * this is here to catch duplicate cancels from slowly
+		 * responding slurmds
+		 */
 		return SLURM_SUCCESS;
 	} else {
 		if (job_ptr->part_ptr &&
@@ -5589,7 +5599,8 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 		} else if (job_comp_flag
 			   && ((job_ptr->end_time
 				+ over_time_limit * 60) < now)) {
-			/* Test if the job has finished before its allowed
+			/*
+			 * Test if the job has finished before its allowed
 			 * over time has expired.
 			 */
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
@@ -8547,6 +8558,13 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 	return;
 }
 
+/*
+ * job_update_tres_cnt - when job is completing remove allocated tres
+ *                      from count.
+ * IN/OUT job_ptr - job structure to be updated
+ * IN node_inx    - node bit that is finished with job.
+ * RET SLURM_SUCCES on success SLURM_ERROR on cpu_cnt underflow
+ */
 extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 {
 	int cpu_cnt, offset = -1, rc = SLURM_SUCCESS;
@@ -8554,7 +8572,8 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 	xassert(job_ptr);
 
 	if (job_ptr->details->whole_node == 1) {
-		/* Since we are allocating whole nodes don't rely on
+		/*
+		 * Since we are allocating whole nodes don't rely on
 		 * the job_resrcs since it could be less because the
 		 * node could of only used 1 thread per core.
 		 */
@@ -8566,7 +8585,7 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 			cpu_cnt = node_ptr->cpus;
 	} else {
 		if ((offset = job_resources_node_inx_to_cpu_inx(
-			     job_ptr->job_resrcs, node_inx)) < 0) {
+				job_ptr->job_resrcs, node_inx)) < 0) {
 			error("%s: problem getting offset of %pJ",
 			      __func__, job_ptr);
 			job_ptr->cpu_cnt = 0;
@@ -8576,8 +8595,8 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 		cpu_cnt = job_ptr->job_resrcs->cpus[offset];
 	}
 	if (cpu_cnt > job_ptr->cpu_cnt) {
-		error("job_update_tres_cnt: cpu_cnt underflow on %pJ",
-		      job_ptr);
+		error("job_update_tres_cnt: cpu_cnt underflow (%d > %u)on %pJ",
+		      cpu_cnt, job_ptr->cpu_cnt, job_ptr);
 		job_ptr->cpu_cnt = 0;
 		rc = SLURM_ERROR;
 	} else
@@ -8585,8 +8604,8 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 
 	if (IS_JOB_RESIZING(job_ptr)) {
 		if (cpu_cnt > job_ptr->total_cpus) {
-			error("job_update_tres_cnt: total_cpus underflow on %pJ",
-			      job_ptr);
+			error("%s: total_cpus underflow on %pJ",
+			       __func__, job_ptr);
 			job_ptr->total_cpus = 0;
 			rc = SLURM_ERROR;
 		} else
@@ -12314,8 +12333,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			bit_free(orig_job_node_bitmap);
 			job_post_resize_acctg(job_ptr);
 			job_post_resize_acctg(expand_job_ptr);
-			/* Since job_post_resize_acctg will restart things,
-			 * don't do it again. */
+			/*
+			 * Since job_post_resize_acctg will restart things,
+			 * don't do it again.
+			 */
 			update_accounting = false;
 			if (error_code)
 				goto fini;
@@ -13914,13 +13935,14 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 
 	trace_job(job_ptr, __func__, "enter");
 
-	/* There is a potential race condition this handles.
-	 * If slurmctld cold-starts while slurmd keeps running,
-	 * slurmd could notify slurmctld of a job epilog completion
-	 * before getting synced up with slurmctld state. If
-	 * a new job arrives and the job_id is reused, we
-	 * could try to note the termination of a job that
-	 * hasn't really started. Very rare obviously. */
+	/*
+	 * There is a potential race condition this handles.
+	 * If slurmctld cold-starts while slurmd keeps running, slurmd could
+	 * notify slurmctld of a job epilog completion before getting synced
+	 * up with slurmctld state. If a new job arrives and the job_id is
+	 * reused, we could try to note the termination of a job that hasn't
+	 * really started. Very rare obviously.
+	 */
 	if ((IS_JOB_PENDING(job_ptr) && (!IS_JOB_COMPLETING(job_ptr))) ||
 	    (job_ptr->node_bitmap == NULL)) {
 #ifndef HAVE_FRONT_END
@@ -13932,8 +13954,10 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			debug("%s: %pJ complete response from DOWN node %s",
 			      __func__, job_ptr, node_name);
 		} else if (job_ptr->restart_cnt) {
-			/* Duplicate epilog complete can be due to race
-			 * condition, especially with select/serial */
+			/*
+			 * Duplicate epilog complete can be due to race
+			 * condition, especially with select/serial
+			 */
 			debug("%s: %pJ duplicate epilog complete response",
 			      __func__, job_ptr);
 		} else {
@@ -13967,8 +13991,10 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	}
 
 	if ((job_ptr->total_nodes == 0) && IS_JOB_COMPLETING(job_ptr)) {
-		/* Job resources moved into another job and
-		 *  tasks already killed */
+		/*
+		 * Job resources moved into another job and
+		 * tasks already killed
+		 */
 		front_end_record_t *front_end_ptr = job_ptr->front_end_ptr;
 		if (front_end_ptr)
 			front_end_ptr->node_state &= (~NODE_STATE_COMPLETING);
