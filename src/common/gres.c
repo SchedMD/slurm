@@ -1868,6 +1868,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			if (gres_slurmd_conf->plugin_id !=
 			    context_ptr->plugin_id)
 				continue;
+			if (gres_data->gres_bit_alloc)
+				gres_data->topo_gres_cnt_alloc[i] = 0;
 			gres_data->topo_gres_cnt_avail[i] =
 					gres_slurmd_conf->count;
 			if (gres_slurmd_conf->cpus) {
@@ -1914,7 +1916,14 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
 			for (j = 0; j < gres_slurmd_conf->count; j++) {
 				bit_set(gres_data->topo_gres_bitmap[i],
-					gres_inx++);
+					gres_inx);
+				if (gres_data->gres_bit_alloc &&
+				    bit_test(gres_data->gres_bit_alloc,
+					     gres_inx)) {
+					/* Set by recovered job */
+					gres_data->topo_gres_cnt_alloc[i]++;
+				}
+				gres_inx++;
 			}
 			gres_data->topo_type_id[i] =
 				_build_id(gres_slurmd_conf->type_name);
