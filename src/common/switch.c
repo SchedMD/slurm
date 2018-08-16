@@ -411,10 +411,8 @@ extern int switch_g_pack_jobinfo(dynamic_plugin_data_t *jobinfo, Buf buffer,
 	} else
 		plugin_id = switch_context_default;
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id), buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		/* no op, plugin id was not packed before */
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -435,7 +433,7 @@ extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo, Buf buffer,
 	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
 	*jobinfo = jobinfo_ptr;
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
@@ -449,9 +447,8 @@ extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo, Buf buffer,
 			error("we don't have switch plugin type %u", plugin_id);
 			goto unpack_error;
 		}
-	} else {
-		jobinfo_ptr->plugin_id = switch_context_default;
-	}
+	} else
+		goto unpack_error;
 
 	if  ((*(ops[jobinfo_ptr->plugin_id].unpack_jobinfo))
 	     ((switch_jobinfo_t **)&jobinfo_ptr->data, buffer,

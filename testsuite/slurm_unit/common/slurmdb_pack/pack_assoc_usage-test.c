@@ -56,12 +56,12 @@ START_TEST(pack_1702_assoc_usage)
 	pack_au->level_fs               = 3333;
 	pack_au->valid_qos              = NULL;
 
-	slurmdb_pack_assoc_usage(pack_au, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_assoc_usage(pack_au, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_assoc_usage_t *unpack_au;
-	rc = slurmdb_unpack_assoc_usage((void **)&unpack_au, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_assoc_usage((void **)&unpack_au, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                              == SLURM_SUCCESS);
 	ck_assert(pack_au->children_list          == unpack_au->children_list);
 	ck_assert(pack_au->grp_used_tres          == unpack_au->grp_used_tres);

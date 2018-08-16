@@ -43,7 +43,7 @@ START_TEST(pack_1702_req_null_ptrs)
 	pack_req.job_id = 12345;
 
 	msg.msg_type         = REQUEST_JOB_ALLOCATION_INFO;
-	msg.protocol_version = SLURM_17_02_PROTOCOL_VERSION;
+	msg.protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	msg.data             = &pack_req;
 
 	rc = pack_msg(&msg, buf);
@@ -78,7 +78,7 @@ START_TEST(pack_1702_req)
 	pack_req.req_cluster = xstrdup("blah");
 
 	msg.msg_type         = REQUEST_JOB_ALLOCATION_INFO;
-	msg.protocol_version = SLURM_17_02_PROTOCOL_VERSION;
+	msg.protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	msg.data             = &pack_req;
 
 	rc = pack_msg(&msg, buf);
@@ -113,7 +113,7 @@ START_TEST(pack_1711_req_null_ptrs)
 	pack_req.job_id = 12345;
 
 	msg.msg_type         = REQUEST_JOB_ALLOCATION_INFO;
-	msg.protocol_version = SLURM_17_11_PROTOCOL_VERSION;
+	msg.protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
 	msg.data             = &pack_req;
 
 	rc = pack_msg(&msg, buf);
@@ -147,7 +147,7 @@ START_TEST(pack_1711_req)
 	pack_req.req_cluster = xstrdup("blah");
 
 	msg.msg_type         = REQUEST_JOB_ALLOCATION_INFO;
-	msg.protocol_version = SLURM_17_11_PROTOCOL_VERSION;
+	msg.protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
 	msg.data             = &pack_req;
 
 	rc = pack_msg(&msg, buf);

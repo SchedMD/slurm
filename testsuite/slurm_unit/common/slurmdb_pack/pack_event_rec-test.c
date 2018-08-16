@@ -51,12 +51,12 @@ START_TEST(pack_1702_null_event_rec)
 	Buf buf = init_buf(1024);
 	slurmdb_event_rec_t pack_er = {0};
 
-	slurmdb_pack_event_rec(NULL, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_event_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_event_rec_t *unpack_er;
-	rc = slurmdb_unpack_event_rec((void **)&unpack_er, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_event_rec((void **)&unpack_er, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                    == SLURM_SUCCESS);
 	ck_assert(pack_er.cluster       == unpack_er->cluster);
 	ck_assert(pack_er.cluster_nodes == unpack_er->cluster_nodes);
@@ -91,12 +91,12 @@ START_TEST(pack_1702_event_rec)
 	pack_er->tres_str            = xstrdup("Karl Marx");
 
 	Buf buf = init_buf(1024);
-	slurmdb_pack_event_rec(pack_er, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_event_rec(pack_er, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_event_rec_t *unpack_er;
-	rc = slurmdb_unpack_event_rec((void **)&unpack_er, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_event_rec((void **)&unpack_er, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                          == SLURM_SUCCESS);
 	ck_assert_str_eq(pack_er->cluster,       unpack_er->cluster);
 	ck_assert_str_eq(pack_er->cluster_nodes, unpack_er->cluster_nodes);

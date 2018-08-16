@@ -40,12 +40,12 @@ START_TEST(pack_1702_null_clus_res_rec)
 	Buf buf = init_buf(1024);
 	slurmdb_clus_res_rec_t pack_crr = {0};
 
-	slurmdb_pack_clus_res_rec(NULL, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_clus_res_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_clus_res_rec_t *unpack_crr;
-	rc = slurmdb_unpack_clus_res_rec((void **)&unpack_crr, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_clus_res_rec((void **)&unpack_crr, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc               == SLURM_SUCCESS);
 	ck_assert(pack_crr.cluster == unpack_crr->cluster);
 
@@ -67,12 +67,12 @@ START_TEST(pack_1702_clus_res_rec)
 	pack_crr->cluster         = xstrdup("Diogenes");
 
 	Buf buf = init_buf(1024);
-	slurmdb_pack_clus_res_rec(pack_crr, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_clus_res_rec(pack_crr, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_clus_res_rec_t *unpack_crr;
-	rc = slurmdb_unpack_clus_res_rec((void **)&unpack_crr, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_clus_res_rec((void **)&unpack_crr, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                        == SLURM_SUCCESS);
 	ck_assert(pack_crr->percent_allowed == unpack_crr->percent_allowed);
 	ck_assert_str_eq(pack_crr->cluster, unpack_crr->cluster);

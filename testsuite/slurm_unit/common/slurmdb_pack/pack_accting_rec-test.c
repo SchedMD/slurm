@@ -39,12 +39,12 @@ START_TEST(pack_1702_null_accounting_rec)
 	Buf buf = init_buf(1024);
 	slurmdb_accounting_rec_t pack_ar = {0};
 
-	slurmdb_pack_accounting_rec(NULL, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_accounting_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_accounting_rec_t *unpack_ar;
-	rc = slurmdb_unpack_accounting_rec((void **)&unpack_ar, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_accounting_rec((void **)&unpack_ar, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                     == SLURM_SUCCESS);
 	ck_assert(pack_ar.alloc_secs     == unpack_ar->alloc_secs);
 	ck_assert(pack_ar.id             == unpack_ar->id);
@@ -67,12 +67,12 @@ START_TEST(pack_1702_accounting_rec)
 	pack_ar->tres_rec.count = 53;
 
 	Buf buf = init_buf(1024);
-	slurmdb_pack_accounting_rec(pack_ar, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_accounting_rec(pack_ar, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_accounting_rec_t *unpack_ar;
-	rc = slurmdb_unpack_accounting_rec((void **)&unpack_ar, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_accounting_rec((void **)&unpack_ar, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                      == SLURM_SUCCESS);
 	ck_assert(pack_ar->alloc_secs     == unpack_ar->alloc_secs);
 	ck_assert(pack_ar->id             == unpack_ar->id);

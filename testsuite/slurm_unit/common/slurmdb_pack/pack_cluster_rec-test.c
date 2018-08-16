@@ -32,11 +32,11 @@ START_TEST(pack_1702_null_rec)
 	pack_rec.dimensions       = 1;
 	pack_rec.plugin_id_select = NO_VAL;
 
-	slurmdb_pack_cluster_rec(NULL, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
-	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(pack_rec.accounting_list == unpack_rec->accounting_list);
 	ck_assert(pack_rec.control_host    == unpack_rec->control_host);
@@ -99,11 +99,11 @@ START_TEST(pack_1702_rec)
 	pack_rec.fed.send         = &p_send;
 
 
-	slurmdb_pack_cluster_rec(&pack_rec, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_rec(&pack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
-	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert_uint_eq(list_count(pack_rec.accounting_list), list_count(unpack_rec->accounting_list));
 	ck_assert_uint_eq(pack_rec.classification, unpack_rec->classification);
@@ -160,12 +160,12 @@ START_TEST(pack_1702_rec_null_ptrs)
 	pack_rec.fed.recv         = NULL;
 	pack_rec.fed.send         = NULL;
 
-	slurmdb_pack_cluster_rec(&pack_rec, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_rec(&pack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_cluster_rec_t *unpack_rec;
-	int rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_17_02_PROTOCOL_VERSION, buf);
+	int rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(pack_rec.accounting_list  == unpack_rec->accounting_list);
@@ -205,11 +205,11 @@ START_TEST(pack_1711_null_rec)
 	pack_rec.dimensions       = 1;
 	pack_rec.plugin_id_select = NO_VAL;
 
-	slurmdb_pack_cluster_rec(NULL, SLURM_17_11_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_rec(NULL, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
-	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_17_11_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(pack_rec.accounting_list == unpack_rec->accounting_list);
 	ck_assert(pack_rec.control_host    == unpack_rec->control_host);
@@ -275,11 +275,11 @@ START_TEST(pack_1711_rec)
 	pack_rec.fed.send         = &p_send;
 
 
-	slurmdb_pack_cluster_rec(&pack_rec, SLURM_17_11_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_rec(&pack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
-	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_17_11_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert_uint_eq(list_count(pack_rec.accounting_list), list_count(unpack_rec->accounting_list));
 	ck_assert_uint_eq(pack_rec.classification, unpack_rec->classification);
@@ -342,12 +342,12 @@ START_TEST(pack_1711_rec_null_ptrs)
 	pack_rec.fed.recv         = NULL;
 	pack_rec.fed.send         = NULL;
 
-	slurmdb_pack_cluster_rec(&pack_rec, SLURM_17_11_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_rec(&pack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_cluster_rec_t *unpack_rec;
-	int rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_17_11_PROTOCOL_VERSION, buf);
+	int rc = slurmdb_unpack_cluster_rec((void **)&unpack_rec, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(pack_rec.accounting_list  == unpack_rec->accounting_list);

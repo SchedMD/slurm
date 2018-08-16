@@ -1632,10 +1632,7 @@ extern int as_mysql_cluster_tres(mysql_conn_t *mysql_conn,
 		 * Request them again with ACCOUNTING_NODES_CHANGE_DB
 		 */
 
-		/* 2 version after 17.02 this first if can go away */
-		if (rpc_version <= SLURM_17_02_PROTOCOL_VERSION)
-			response = ACCOUNTING_FIRST_REG;
-		else if (xstrcmp(cluster_nodes, row[1])) {
+		if (xstrcmp(cluster_nodes, row[1])) {
 			if (debug_flags & DEBUG_FLAG_DB_EVENT)
 				DB_DEBUG(mysql_conn->conn,
 					 "Nodes on the cluster have changed.");

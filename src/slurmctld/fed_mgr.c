@@ -2586,7 +2586,7 @@ static void _pack_fed_job_info(fed_job_info_t *job_info, Buf buffer,
 			       uint16_t protocol_version)
 {
 	int i;
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_info->cluster_lock, buffer);
 		pack32(job_info->job_id, buffer);
 		pack64(job_info->siblings_active, buffer);
@@ -2610,7 +2610,7 @@ static int _unpack_fed_job_info(fed_job_info_t **job_info_pptr, Buf buffer,
 
 	*job_info_pptr = job_info;
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_info->cluster_lock, buffer);
 		safe_unpack32(&job_info->job_id, buffer);
 		safe_unpack64(&job_info->siblings_active, buffer);
@@ -2639,7 +2639,7 @@ static void _dump_fed_job_list(Buf buffer, uint16_t protocol_version)
 	uint32_t count = NO_VAL;
 	fed_job_info_t *fed_job_info;
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/*
 		 * Need to be in the lock to prevent the window between getting
 		 * the count and actually looping on the list.
@@ -2673,7 +2673,7 @@ static List _load_fed_job_list(Buf buffer, uint16_t protocol_version)
 	fed_job_info_t *tmp_job_info = NULL;
 	List tmp_list = NULL;
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
 			goto unpack_error;

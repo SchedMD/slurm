@@ -139,10 +139,10 @@ START_TEST(pack_1702_assoc_rec)
 	list_append(pack_arwu->qos_list       , (void *)qos);
 
 
-	slurmdb_pack_assoc_rec_with_usage(pack_arwu, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_assoc_rec_with_usage(pack_arwu, SLURM_MIN_PROTOCOL_VERSION, buf);
 	set_buf_offset(buf, 0);
 	slurmdb_assoc_rec_t *unpack_arwu;
-	rc = slurmdb_unpack_assoc_rec_with_usage((void **)&unpack_arwu, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_assoc_rec_with_usage((void **)&unpack_arwu, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                    	       == SLURM_SUCCESS);
 	ck_assert_str_eq(pack_arwu->acct,                 unpack_arwu->acct);
 	ck_assert(NULL                   	       == unpack_arwu->assoc_next);

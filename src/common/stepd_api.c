@@ -418,13 +418,13 @@ stepd_signal_container(int fd, uint16_t protocol_version, int signal, int flags,
 		safe_write(fd, &signal, sizeof(int));
 		safe_write(fd, &flags, sizeof(int));
 		safe_write(fd, &req_uid, sizeof(uid_t));
-	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &signal, sizeof(int));
 		safe_write(fd, &flags, sizeof(int));
 	} else {
-		int tmp_signal = (uint32_t)signal | (uint32_t)(flags << 24);
-		safe_write(fd, &tmp_signal, sizeof(int));
-
+		error("%s: invalid protocol_version %u",
+		      __func__, protocol_version);
+		goto rwfail;
 	}
 
 	/* Receive the return code and errno */

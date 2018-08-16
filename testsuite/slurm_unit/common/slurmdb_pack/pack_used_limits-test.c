@@ -25,12 +25,12 @@ START_TEST(pack_1702_null_used_limits)
 	Buf buf = init_buf(1024);
 	slurmdb_used_limits_t pack_ul = {0};
 
-	slurmdb_pack_used_limits(NULL, 0, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_used_limits(NULL, 0, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_used_limits_t *unpack_ul;
-	rc = slurmdb_unpack_used_limits((void **)&unpack_ul, 0, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_used_limits((void **)&unpack_ul, 0, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                    == SLURM_SUCCESS);
 	ck_assert(pack_ul.acct          == unpack_ul->acct);
 	ck_assert(pack_ul.jobs          == unpack_ul->jobs);
@@ -64,12 +64,12 @@ START_TEST(pack_1702_used_limits)
 	}
 
 	Buf buf = init_buf(1024);
-	slurmdb_pack_used_limits(pack_ul, tres_cnt, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_used_limits(pack_ul, tres_cnt, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_used_limits_t *unpack_ul;
-	rc = slurmdb_unpack_used_limits((void **)&unpack_ul, tres_cnt, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_used_limits((void **)&unpack_ul, tres_cnt, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc == SLURM_SUCCESS);
 	ck_assert_str_eq(pack_ul->acct, unpack_ul->acct);
 	ck_assert(pack_ul->jobs        == unpack_ul->jobs);
@@ -98,12 +98,12 @@ START_TEST(pack_1702_used_limits_null_ptrs)
 	pack_ul->uid         = 11123;
 
 	Buf buf = init_buf(1024);
-	slurmdb_pack_used_limits(pack_ul, tres_cnt, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_used_limits(pack_ul, tres_cnt, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_used_limits_t *unpack_ul;
-	rc = slurmdb_unpack_used_limits((void **)&unpack_ul, tres_cnt, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_used_limits((void **)&unpack_ul, tres_cnt, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc == SLURM_SUCCESS);
 	ck_assert(pack_ul->acct          == unpack_ul->acct);
 	ck_assert(pack_ul->jobs          == unpack_ul->jobs);

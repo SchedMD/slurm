@@ -37,12 +37,12 @@ START_TEST(pack_1702_null_cluster_accounting_rec)
 	Buf buf = init_buf(1024);
 	slurmdb_cluster_accounting_rec_t pack_car = {0};
 
-	slurmdb_pack_cluster_accounting_rec(NULL, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_cluster_accounting_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_cluster_accounting_rec_t *unpack_car;
-	rc = slurmdb_unpack_cluster_accounting_rec((void **)&unpack_car, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_cluster_accounting_rec((void **)&unpack_car, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                    == SLURM_SUCCESS);
 	slurmdb_tres_rec_t *btr = &pack_car.tres_rec;
 	slurmdb_tres_rec_t *atr = &unpack_car->tres_rec;

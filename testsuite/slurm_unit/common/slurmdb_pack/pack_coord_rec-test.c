@@ -39,12 +39,12 @@ START_TEST(pack_1702_null_coord_rec)
 	Buf buf = init_buf(1024);
 	slurmdb_coord_rec_t pack_cr = {0};
 
-	slurmdb_pack_coord_rec(NULL, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_coord_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_coord_rec_t *unpack_cr;
-	rc = slurmdb_unpack_coord_rec((void **)&unpack_cr, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_coord_rec((void **)&unpack_cr, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                    == SLURM_SUCCESS);
 	ck_assert(pack_cr.name          == unpack_cr->name);
 	ck_assert(pack_cr.direct        == unpack_cr->direct);
@@ -63,12 +63,12 @@ START_TEST(pack_1702_coord_rec)
 	pack_cr->name                  = xstrdup("Gottlob Frege");
 
 	Buf buf = init_buf(1024);
-	slurmdb_pack_coord_rec(pack_cr, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_coord_rec(pack_cr, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_coord_rec_t *unpack_cr;
-	rc = slurmdb_unpack_coord_rec((void **)&unpack_cr, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_coord_rec((void **)&unpack_cr, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                        == SLURM_SUCCESS);
 	ck_assert_str_eq(pack_cr->name,        unpack_cr->name);
 	ck_assert(pack_cr->direct           == unpack_cr->direct);

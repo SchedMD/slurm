@@ -28,12 +28,12 @@ START_TEST(pack_1702_null_account_rec)
 	Buf buf = init_buf(1024);
 	slurmdb_account_rec_t pack_ar = {0};
 
-	slurmdb_pack_account_rec(NULL, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_account_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_account_rec_t *unpack_ar;
-	rc = slurmdb_unpack_account_rec((void **)&unpack_ar, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_account_rec((void **)&unpack_ar, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                    == SLURM_SUCCESS);
 	ck_assert(pack_ar.assoc_list    == unpack_ar->assoc_list);
 	ck_assert(pack_ar.coordinators  == unpack_ar->coordinators);
@@ -67,12 +67,12 @@ START_TEST(pack_1702_account_rec)
 	list_append(pack_ar->assoc_list,   (void *)k);
 
 	Buf buf = init_buf(1024);
-	slurmdb_pack_account_rec(pack_ar, SLURM_17_02_PROTOCOL_VERSION, buf);
+	slurmdb_pack_account_rec(pack_ar, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
 
 	slurmdb_account_rec_t *unpack_ar;
-	rc = slurmdb_unpack_account_rec((void **)&unpack_ar, SLURM_17_02_PROTOCOL_VERSION, buf);
+	rc = slurmdb_unpack_account_rec((void **)&unpack_ar, SLURM_MIN_PROTOCOL_VERSION, buf);
 	ck_assert(rc                              == SLURM_SUCCESS);
 	ck_assert_str_eq(pack_ar->description ,      unpack_ar->description);
 	ck_assert_str_eq(pack_ar->name        ,      unpack_ar->name);
