@@ -1863,28 +1863,6 @@ static void _queue_reboot_msg(void)
 }
 
 /*
- * Return TRUE if BackupController configured and that is not is (i.e. we are
- * ControlMachine/primary)
- */
-static bool _is_primary_ctld(void)
-{
-	bool is_primary = true;
-	int i;
-
-	for (i = 1; i < slurmctld_conf.control_cnt; i++) {
-		if (!xstrcmp(node_name_short,
-			     slurmctld_conf.control_machine[i]) ||
-		    !xstrcmp(node_name_long,
-			     slurmctld_conf.control_machine[i])) {
-			is_primary = false;
-			break;
-		}
-	}
-
-	return is_primary;
-}
-
-/*
  * _slurmctld_background - process slurmctld background activities
  *	purge defunct job records, save state, schedule jobs, and
  *	ping other nodes
@@ -2232,10 +2210,9 @@ static void *_slurmctld_background(void *no_data)
 		 * while the real primary controller is running.
 		 */
 		lock_slurmctld(config_read_lock);
-		if (slurmctld_conf.slurmctld_timeout   &&
+		if (slurmctld_primary && slurmctld_conf.slurmctld_timeout &&
 		    (difftime(now, last_assert_primary_time) >=
-		     slurmctld_conf.slurmctld_timeout) &&
-		    _is_primary_ctld()) {
+		     slurmctld_conf.slurmctld_timeout)) {
 			now = time(NULL);
 			last_assert_primary_time = now;
 			(void) _shutdown_backup_controller();
