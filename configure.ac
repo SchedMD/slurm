@@ -538,7 +538,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_submit/require_timelimit/Makefile
 		 src/plugins/job_submit/throttle/Makefile
 		 src/plugins/launch/Makefile
-		 src/plugins/launch/aprun/Makefile
 		 src/plugins/launch/poe/Makefile
 		 src/plugins/launch/slurm/Makefile
 		 src/plugins/mcs/Makefile
@@ -576,9 +575,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/builtin/Makefile
 		 src/plugins/sched/hold/Makefile
 		 src/plugins/select/Makefile
-		 src/plugins/select/alps/Makefile
-		 src/plugins/select/alps/libalps/Makefile
-		 src/plugins/select/alps/libemulate/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cons_tres/Makefile
 		 src/plugins/select/cray/Makefile
