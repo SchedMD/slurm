@@ -201,8 +201,6 @@ static int      job_sched_cnt = 0;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
-static char	node_name_short[MAX_SLURM_NAME];
-static char	node_name_long[MAX_SLURM_NAME];
 static pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static int	recover   = DEFAULT_RECOVER;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -442,10 +440,12 @@ int main(int argc, char **argv)
 	if (!test_config)
 		info("%s version %s started on cluster %s", slurm_prog_name,
 		     SLURM_VERSION_STRING, slurmctld_conf.cluster_name);
-	if ((error_code = gethostname_short(node_name_short, MAX_SLURM_NAME)) &&
+	if ((error_code = gethostname_short(slurmctld_config.node_name_short,
+					    MAX_SLURM_NAME)) &&
 	    !test_config)
 		fatal("getnodename_short error %s", slurm_strerror(error_code));
-	if ((error_code = gethostname(node_name_long, MAX_SLURM_NAME)) &&
+	if ((error_code = gethostname(slurmctld_config.node_name_long,
+				      MAX_SLURM_NAME)) &&
 	    !test_config)
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
@@ -476,7 +476,8 @@ int main(int argc, char **argv)
 	backup_inx = _controller_index();
 	if (backup_inx == -1) {
 		error("This host (%s/%s) not a valid controller",
-		      node_name_short, node_name_long);
+		      slurmctld_config.node_name_short,
+		      slurmctld_config.node_name_long);
 		exit(1);
 	}
 
@@ -3198,9 +3199,9 @@ static int _controller_index(void)
 	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
 		if (slurmctld_conf.control_machine[i] &&
 		    slurmctld_conf.control_addr[i]    &&
-		    (!xstrcmp(node_name_short,
+		    (!xstrcmp(slurmctld_config.node_name_short,
 			      slurmctld_conf.control_machine[i])  ||
-		     !xstrcmp(node_name_long,
+		     !xstrcmp(slurmctld_config.node_name_long,
 			      slurmctld_conf.control_machine[i]))) {
 			return i;
 		}
@@ -3219,8 +3220,8 @@ static int _controller_index(void)
 
 		token = strtok_r(tmp_name, ",", &last);
 		while (token) {
-			if ((xstrcmp(node_name_short, token) == 0) ||
-			    (xstrcmp(node_name_long, token) == 0)) {
+			if (!xstrcmp(slurmctld_config.node_name_short, token) ||
+			    !xstrcmp(slurmctld_config.node_name_long, token)) {
 				xfree(tmp_name);
 				return 0;
 			}

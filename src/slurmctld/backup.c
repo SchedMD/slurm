@@ -95,8 +95,6 @@ typedef struct {
 static ctld_ping_t *	ctld_ping = NULL;
 static bool		dump_core = false;
 static time_t		last_controller_response;
-static char		node_name_short[MAX_SLURM_NAME];
-static char		node_name_long[MAX_SLURM_NAME];
 static pthread_cond_t	ping_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t	ping_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int		ping_thread_cnt = 0;
@@ -123,7 +121,7 @@ static int backup_sigarray[] = {
  */
 void run_backup(slurm_trigger_callbacks_t *callbacks)
 {
-	int error_code, i;
+	int i;
 	time_t last_ping = 0;
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -133,11 +131,6 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	info("slurmctld running in background mode");
 	takeover = false;
 	last_controller_response = time(NULL);
-
-	if ((error_code = gethostname_short(node_name_short, MAX_SLURM_NAME)))
-		error("getnodename_short error %s", slurm_strerror(error_code));
-	if ((error_code = gethostname(node_name_long, MAX_SLURM_NAME)))
-		error("getnodename error %s", slurm_strerror(error_code));
 
 	/* default: don't resume if shutdown */
 	slurmctld_config.resume_backup = false;
@@ -238,7 +231,8 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 
 	lock_slurmctld(config_read_lock);
 	error("ControlMachine %s not responding, BackupController%d %s taking over",
-	      slurmctld_conf.control_machine[0], backup_inx, node_name_short);
+	      slurmctld_conf.control_machine[0], backup_inx,
+	      slurmctld_config.node_name_short);
 	unlock_slurmctld(config_read_lock);
 
 	backup_slurmctld_restart();
@@ -682,10 +676,7 @@ static int _shutdown_primary_controller(int wait_time)
 
 	shutdown_rc = SLURM_SUCCESS;
 	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
-		if (!xstrcmp(node_name_short,
-			     slurmctld_conf.control_machine[i]) ||
-		    !xstrcmp(node_name_long,
-			     slurmctld_conf.control_machine[i]))
+		if (i == backup_inx)
 			continue;	/* No message to self */
 
 		arg = xmalloc(sizeof(int));
