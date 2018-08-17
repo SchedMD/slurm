@@ -473,16 +473,13 @@ int main(int argc, char **argv)
 		slurmctld_config.send_groups_in_cred = false;
 
 	/* Must set before plugins are loaded. */
-	backup_inx = 0;
-	for (i = 1; i < slurmctld_conf.control_cnt; i++) {
-		if (!xstrcmp(node_name_short,
-			     slurmctld_conf.control_machine[i]) ||
-		    !xstrcmp(node_name_long,
-			     slurmctld_conf.control_machine[i])) {
-			backup_inx = i;
-			break;
-		}
+	backup_inx = _controller_index();
+	if (backup_inx == -1) {
+		error("This host (%s/%s) not a valid controller",
+		      node_name_short, node_name_long);
+		exit(1);
 	}
+
 	if (test_config) {
 		slurmctld_primary = 1;
 	} else if (backup_inx > 0) {
@@ -612,7 +609,7 @@ int main(int argc, char **argv)
 			(void) _shutdown_backup_controller();
 			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS)
 				fatal("failed to initialize accounting_storage plugin");
-		} else if (test_config || _controller_index() == 0) {
+		} else if (test_config || slurmctld_primary) {
 			if (!test_config) {
 				(void) _shutdown_backup_controller();
 				trigger_primary_ctld_res_ctrl();
@@ -675,10 +672,6 @@ int main(int argc, char **argv)
 				slurmctld_init_db = 1;
 				_accounting_mark_all_nodes_down("cold-start");
 			}
-		} else {
-			error("this host (%s/%s) not a valid controller",
-			      node_name_short, node_name_long);
-			exit(0);
 		}
 
 		if (!acct_db_conn) {
@@ -1126,10 +1119,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	debug3("%s pid = %u", __func__, getpid());
 
 	/* set node_addr to bind to (NULL means any) */
-	if (((i = _controller_index()) != -1) &&
-	    xstrcmp(slurmctld_conf.control_machine[i],
-		    slurmctld_conf.control_addr[i])) {
-		node_addr = slurmctld_conf.control_addr[i];
+	if (xstrcmp(slurmctld_conf.control_machine[backup_inx],
+		    slurmctld_conf.control_addr[backup_inx])) {
+		node_addr = slurmctld_conf.control_addr[backup_inx];
 	}
 
 	/* initialize ports for RPCs */
