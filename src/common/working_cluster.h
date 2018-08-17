@@ -49,11 +49,8 @@ extern int * slurmdb_setup_cluster_dim_size(void);
  * in the current working cluster */
 extern uint16_t slurmdb_setup_cluster_name_dims(void);
 
-/* Return true if the working cluster is a Cray system (ALPS or Native) */
+/* Return true if the working cluster is a Cray system */
 extern bool is_cray_system(void);
-
-/* Return true if the working cluster is a ALPS Cray system */
-extern bool is_alps_cray_system(void);
 
 /* Return the architecture flags in the current working cluster */
 extern uint32_t slurmdb_setup_cluster_flags(void);

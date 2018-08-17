@@ -214,7 +214,6 @@
 extern char **environ;
 
 /*---- global variables, defined in opt.h ----*/
-resource_allocation_response_msg_t *global_resp = NULL;
 int	error_exit = 1;
 int	immediate_exit = 1;
 char *	mpi_type = NULL;

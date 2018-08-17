@@ -1650,41 +1650,6 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-#if defined(HAVE_ALPS_CRAY)
-	if (getenv("BASIL_RESERVATION_ID") != NULL) {
-		error("BASIL_RESERVATION_ID already set - running salloc "
-		      "within salloc?");
-		return false;
-	}
-	if (saopt.no_shell) {
-		/*
-		 * As long as we are not using srun instead of aprun, this flag
-		 * makes no difference for the operational behaviour of aprun.
-		 */
-		error("--no-shell mode is not supported on Cray (due to srun)");
-		return false;
-	}
-	if (opt.shared && opt.shared != NO_VAL16) {
-		info("Oversubscribing resources is not supported on Cray/ALPS systems");
-		opt.shared = false;
-	}
-	if (opt.overcommit) {
-		info("Oversubscribing is not supported on Cray.");
-		opt.overcommit = false;
-	}
-	if (!saopt.wait_all_nodes)
-		info("Cray needs --wait-all-nodes to wait on ALPS reservation");
-	saopt.wait_all_nodes = 1;
-	if (saopt.kill_command_signal_set) {
-		/*
-		 * Disabled to avoid that the user supplies a weaker signal that
-		 * could cause the child processes not to terminate.
-		 */
-		info("The --kill-command is not supported on Cray.");
-		saopt.kill_command_signal_set = false;
-	}
-#endif
-
 	if ((opt.pn_min_memory > -1) && (opt.mem_per_cpu > -1)) {
 		if (opt.pn_min_memory < opt.mem_per_cpu) {
 			info("mem < mem-per-cpu - resizing mem to be equal "

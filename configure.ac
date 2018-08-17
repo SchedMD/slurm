@@ -247,7 +247,6 @@ fi
 
 AM_CONDITIONAL(BUILD_SVIEW, [test "x$ac_glib_test" = "xyes"] && [test "x$ac_gtk_test" = "xyes"])
 
-dnl Cray ALPS/Basil support depends on mySQL
 X_AC_CRAY
 
 dnl checks for system services.

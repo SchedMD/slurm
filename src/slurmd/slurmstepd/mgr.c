@@ -338,56 +338,6 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 	return step_rc;
 }
 
-#ifdef HAVE_ALPS_CRAY
-/*
- * Kludge to better inter-operate with ALPS layer:
- * - CONFIRM method requires the SID of the shell executing the job script,
- * - RELEASE method is more robustly called from stepdmgr.
- *
- * To avoid calling the same select/cray plugin function also in slurmctld,
- * we use the following convention:
- * - only job_id, job_state, alloc_sid, and select_jobinfo set to non-NULL,
- * - batch_flag is 0 (corresponding call in slurmctld uses batch_flag = 1),
- * - job_state set to the unlikely value of 'NO_VAL'.
- */
-static int _call_select_plugin_from_stepd(stepd_step_rec_t *job,
-					  uint64_t pagg_id,
-					  int (*select_fn)(struct job_record *))
-{
-	struct job_record fake_job_record = {0};
-	int rc;
-
-	fake_job_record.job_id		= job->jobid;
-	fake_job_record.job_state	= NO_VAL;
-	fake_job_record.select_jobinfo	= select_g_select_jobinfo_alloc();
-	select_g_select_jobinfo_set(fake_job_record.select_jobinfo,
-				    SELECT_JOBDATA_RESV_ID, &job->resv_id);
-	if (pagg_id)
-		select_g_select_jobinfo_set(fake_job_record.select_jobinfo,
-					    SELECT_JOBDATA_PAGG_ID, &pagg_id);
-	rc = (*select_fn)(&fake_job_record);
-	select_g_select_jobinfo_free(fake_job_record.select_jobinfo);
-	return rc;
-}
-
-static int _select_cray_plugin_job_ready(stepd_step_rec_t *job)
-{
-	uint64_t pagg_id = proctrack_g_find(job->jmgr_pid);
-
-	if (pagg_id == 0) {
-		error("no PAGG ID: job service disabled on this host?");
-		/*
-		 * If this process is not attached to a container, there is no
-		 * sense in trying to use the SID as fallback, since the call to
-		 * proctrack_g_add() in _fork_all_tasks() will fail later.
-		 * Hence drain the node until sgi_job returns proper PAGG IDs.
-		 */
-		return READY_JOB_FATAL;
-	}
-	return _call_select_plugin_from_stepd(job, pagg_id, select_g_job_ready);
-}
-#endif
-
 /*
  * Send batch exit code to slurmctld. Non-zero rc will DRAIN the node.
  */
@@ -398,10 +348,6 @@ batch_finish(stepd_step_rec_t *job, int rc)
 
 	if (job->argv[0] && (unlink(job->argv[0]) < 0))
 		error("unlink(%s): %m", job->argv[0]);
-
-#ifdef HAVE_ALPS_CRAY
-	_call_select_plugin_from_stepd(job, 0, select_g_job_fini);
-#endif
 
 	if (job->aborted) {
 		if ((job->stepid == NO_VAL) ||
@@ -1288,39 +1234,6 @@ job_manager(stepd_step_rec_t *job)
 		(void) gres_plugin_node_config_load(conf->cpus, conf->node_name,
 						    (void *)&xcpuinfo_abs_to_mac);
 	}
-
-#ifdef HAVE_ALPS_CRAY
-	/*
-	 * Note that the previously called proctrack_g_create function is
-	 * mandatory since the select/cray plugin needs the job container
-	 * ID in order to CONFIRM the ALPS reservation.
-	 * It is not a good idea to perform this setup in _fork_all_tasks(),
-	 * since any transient failure of ALPS (which can happen in practice)
-	 * will then set the frontend node to DRAIN.
-	 *
-	 * ALso note that we do not check the reservation for batch jobs with
-	 * a reservation ID of zero and no CPUs. These are Slurm job
-	 * allocations containing no compute nodes and thus have no ALPS
-	 * reservation.
-	 */
-	if (!job->batch || job->resv_id || job->cpus) {
-		rc = _select_cray_plugin_job_ready(job);
-		if (rc != SLURM_SUCCESS) {
-			/*
-			 * Transient error: slurmctld knows this condition to
-			 * mean that the ALPS (not the Slurm) reservation
-			 * failed and tries again.
-			 */
-			if (rc == READY_JOB_ERROR)
-				rc = ESLURM_RESERVATION_NOT_USABLE;
-			else
-				rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
-			error("could not confirm ALPS reservation #%u",
-			      job->resv_id);
-			goto fail1;
-		}
-	}
-#endif
 
 	debug2("Before call to spank_init()");
 	if (spank_init (job) < 0) {

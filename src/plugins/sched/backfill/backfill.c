@@ -1142,27 +1142,6 @@ static int _attempt_backfill(void)
 		return SLURM_SUCCESS;
 	}
 
-#ifdef HAVE_ALPS_CRAY
-	/*
-	 * Run a Basil Inventory immediately before setting up the schedule
-	 * plan, to avoid race conditions caused by ALPS node state change.
-	 * Needs to be done with the node-state lock taken.
-	 */
-	START_TIMER;
-	if (select_g_update_basil()) {
-		debug4("backfill: not scheduling due to ALPS");
-		return SLURM_SUCCESS;
-	}
-	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_BACKFILL)
-		info("backfill: ALPS inventory completed, %s", TIME_STR);
-
-	/* The Basil inventory can take a long time to complete. Process
-	 * pending RPCs before starting the backfill scheduling logic */
-	_yield_locks(1000000);
-	if (stop_backfill)
-		return SLURM_SUCCESS;
-#endif
 	(void) bb_g_load_state(false);
 
 	START_TIMER;

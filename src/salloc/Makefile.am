@@ -15,12 +15,6 @@ salloc_DEPENDENCIES = $(LIB_SLURM_BUILD)
 salloc_LDADD = \
 	$(convenience_libs)
 
-if HAVE_ALPS_CRAY
-if HAVE_REAL_CRAY
-  salloc_LDADD += -ljob
-endif
-endif
-
 salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:

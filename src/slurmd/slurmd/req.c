@@ -2205,10 +2205,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
 		job_env.user_name = req->user_name;
-#if defined(HAVE_ALPS_CRAY)
-		job_env.resv_id = select_g_select_jobinfo_xstrdup(
-			req->select_jobinfo, SELECT_PRINT_RESV_ID);
-#endif
 		if ((rc = container_g_create(req->job_id)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
@@ -2387,10 +2383,6 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		/*
 	 	 * Run job prolog on this node
 	 	 */
-#if defined(HAVE_ALPS_CRAY)
-		job_env.resv_id = select_g_select_jobinfo_xstrdup(
-			req->select_jobinfo, SELECT_PRINT_RESV_ID);
-#endif
 		if ((rc = container_g_create(req->job_id)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
@@ -5126,11 +5118,6 @@ _rpc_abort_job(slurm_msg_t *msg)
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.uid = req->job_uid;
 
-#if defined(HAVE_ALPS_CRAY)
-	job_env.resv_id = select_g_select_jobinfo_xstrdup(req->select_jobinfo,
-							  SELECT_PRINT_RESV_ID);
-#endif
-
 	_run_epilog(&job_env);
 
 	if (container_g_delete(req->job_id))
@@ -5569,10 +5556,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.uid = req->job_uid;
 
-#if defined(HAVE_ALPS_CRAY)
-	job_env.resv_id = select_g_select_jobinfo_xstrdup(
-		req->select_jobinfo, SELECT_PRINT_RESV_ID);
-#endif
 	rc = _run_epilog(&job_env);
 	xfree(job_env.resv_id);
 
@@ -5867,11 +5850,6 @@ _build_env(job_env_t *job_env)
 	if (job_env->partition)
 		setenvf(&env, "SLURM_JOB_PARTITION", "%s", job_env->partition);
 
-	if (job_env->resv_id) {
-#if defined(HAVE_ALPS_CRAY)
-		setenvf(&env, "BASIL_RESERVATION_ID", "%s", job_env->resv_id);
-#endif
-	}
 	return env;
 }
 

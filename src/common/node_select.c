@@ -175,21 +175,6 @@ extern int slurm_select_init(bool only_default)
 	if (working_cluster_rec) {
 		/* just ignore warnings here */
 	} else {
-#ifdef HAVE_ALPS_CRAY
-		if (xstrcasecmp(select_type, "select/alps")) {
-			error("%s is incompatible with Cray system "
-			      "running alps", select_type);
-			fatal("Use SelectType=select/alps");
-		}
-#else
-		if (!xstrcasecmp(select_type, "select/alps")) {
-			fatal("Requested SelectType=select/alps "
-			      "in slurm.conf, but not running on a ALPS Cray "
-			      "system.  If looking to emulate a Alps Cray "
-			      "system use --enable-alps-cray-emulation.");
-		}
-#endif
-
 #ifdef HAVE_NATIVE_CRAY
 		if (xstrcasecmp(select_type, "select/cray")) {
 			error("%s is incompatible with a native Cray system.",

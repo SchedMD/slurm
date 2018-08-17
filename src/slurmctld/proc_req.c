@@ -1394,20 +1394,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		if (error_code)
 			break;
 
-#if HAVE_ALPS_CRAY
-		/*
-		 * Catch attempts to nest salloc sessions. It is not possible to
-		 * use an ALPS session which has the same alloc_sid, it fails
-		 * even if PAGG container IDs are used.
-		 */
-		if (allocated_session_in_use(job_desc_msg)) {
-			error_code = ESLURM_RESERVATION_BUSY;
-			error("attempt to nest ALPS allocation on %s:%d by uid=%d",
-			      job_desc_msg->alloc_node, job_desc_msg->alloc_sid,
-			      uid);
-			break;
-		}
-#endif
 		dump_job_desc(job_desc_msg);
 
 		job_ptr = NULL;
@@ -1605,18 +1591,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	if (err_msg)
 		job_submit_user_msg = xstrdup(err_msg);
 
-#if HAVE_ALPS_CRAY
-	/*
-	 * Catch attempts to nest salloc sessions. It is not possible to use an
-	 * ALPS session which has the same alloc_sid, it fails even if PAGG
-	 * container IDs are used.
-	 */
-	if (allocated_session_in_use(job_desc_msg)) {
-		error_code = ESLURM_RESERVATION_BUSY;
-		error("attempt to nest ALPS allocation on %s:%d by uid=%d",
-			job_desc_msg->alloc_node, job_desc_msg->alloc_sid, uid);
-	}
-#endif
 	if (error_code) {
 		reject_job = true;
 	} else if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
@@ -2581,24 +2555,12 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		     msg_title, nodes,
 		     slurm_strerror(comp_msg->slurm_rc));
 		comp_msg->slurm_rc = SLURM_SUCCESS;
-#ifdef HAVE_ALPS_CRAY
-	} else if (comp_msg->slurm_rc == ESLURM_RESERVATION_NOT_USABLE) {
-		/*
-		 * Confirmation of ALPS reservation failed.
-		 *
-		 * This is non-fatal, it may be a transient error (e.g. ALPS
-		 * temporary unavailable). Give job one more chance to run.
-		 */
-		error("ALPS reservation for JobId=%u failed: %s",
-			comp_msg->job_id, slurm_strerror(comp_msg->slurm_rc));
-		dump_job = job_requeue = true;
-#endif
-	/* Handle non-fatal errors here. All others drain the node. */
 	} else if ((comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
 		   (comp_msg->slurm_rc == ESLURM_USER_ID_MISSING) ||
 		   (comp_msg->slurm_rc == ESLURMD_UID_NOT_FOUND)  ||
 		   (comp_msg->slurm_rc == ESLURMD_GID_NOT_FOUND)  ||
 		   (comp_msg->slurm_rc == ESLURMD_INVALID_ACCT_FREQ)) {
+		/* Handle non-fatal errors here. All others drain the node. */
 		error("Slurmd error running JobId=%u on %s=%s: %s",
 		      comp_msg->job_id, msg_title, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
@@ -2762,7 +2724,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		return;
 	}
 
-#if defined HAVE_FRONT_END && !defined HAVE_ALPS_CRAY
+#if defined HAVE_FRONT_END
 	/* Limited job step support */
 	/* Non-super users not permitted to run job steps on front-end.
 	 * A single slurmd can not handle a heavy load. */

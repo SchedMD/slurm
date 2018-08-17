@@ -108,7 +108,6 @@ enum {
 	SORTID_ACTION,
 	SORTID_ALLOC,
 	SORTID_ALLOC_NODE,
-	SORTID_ALPS_RESV_ID,
 	SORTID_ARRAY_JOB_ID,
 	SORTID_ARRAY_TASK_ID,
 	SORTID_BATCH,
@@ -213,8 +212,7 @@ enum {
  * take place.  If you choose EDIT_MODEL (means only display a set of
  * known options) create it in function create_model_*.
  */
-static char *_initial_page_opts = ("JobID,Partition,BG_Block,"
-				   "ALPS_Resv_ID,UserID,Name,"
+static char *_initial_page_opts = ("JobID,Partition,UserID,Name,"
 				   "State,Time_Running,Node_Count,NodeList");
 
 static display_data_t display_data_job[] = {
@@ -242,13 +240,6 @@ static display_data_t display_data_job[] = {
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_PACK_JOB_OFFSET, "Pack Job Offset", false,
 	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
-#ifdef HAVE_ALPS_CRAY
-	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, "ALPS Resv ID", false, EDIT_NONE,
-	 refresh_job, create_model_job, admin_edit_job},
-#else
-	{G_TYPE_STRING, SORTID_ALPS_RESV_ID, NULL, true, EDIT_NONE,
-	 refresh_job, create_model_job, admin_edit_job},
-#endif
 	{G_TYPE_STRING, SORTID_USER_ID, "UserID", false, EDIT_NONE,
 	 refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_GROUP_ID, "GroupID", false, EDIT_NONE,
@@ -1264,16 +1255,6 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_ALLOC_NODE),
 				   tmp_char);
-
-	if (cluster_flags & CLUSTER_FLAG_CRAY_A)
-		add_display_treestore_line(update, treestore, &iter,
-					   find_col_name(display_data_job,
-							 SORTID_ALPS_RESV_ID),
-					   select_g_select_jobinfo_sprint(
-						   job_ptr->select_jobinfo,
-						   tmp_char,
-						   sizeof(tmp_char),
-						   SELECT_PRINT_DATA));
 
 	if (job_ptr->array_task_str ||
 	    (job_ptr->array_task_id != NO_VAL)) {
@@ -2369,18 +2350,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_NETWORK, job_ptr->network, -1);
-
-	if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
-		char tmp_resv_id[40];
-
-		select_g_select_jobinfo_sprint(job_ptr->select_jobinfo,
-					       tmp_resv_id, sizeof(tmp_resv_id),
-					       SELECT_PRINT_DATA);
-
-		gtk_tree_store_set(treestore, iter,
-				   SORTID_ALPS_RESV_ID,  tmp_resv_id,
-				   -1);
-	}
 
 	if (check_task &&
 	    (job_ptr->array_task_str ||
@@ -4826,20 +4795,6 @@ extern void cluster_change_job(void)
 	while (display_data++) {
 		if (display_data->id == -1)
 			break;
-
-		if (cluster_flags & CLUSTER_FLAG_CRAY_A) {
-			switch(display_data->id) {
-			case SORTID_ALPS_RESV_ID:
-				display_data->name = "ALPS";
-				break;
-			}
-		} else {
-			switch(display_data->id) {
-			case SORTID_ALPS_RESV_ID:
-				display_data->name = NULL;
-				break;
-			}
-		}
 
 		if (cluster_flags & CLUSTER_FLAG_FED) {
 			switch(display_data->id) {

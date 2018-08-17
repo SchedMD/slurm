@@ -143,11 +143,7 @@ static int sched_pend_thread = 0;
 static bool sched_running = false;
 static struct timeval sched_last = {0, 0};
 static uint32_t max_array_size = NO_VAL;
-#ifdef HAVE_ALPS_CRAY
-static int sched_min_interval = 1000000;
-#else
 static int sched_min_interval = 2;
-#endif
 
 static int bb_array_stage_cnt = 10;
 extern diag_stats_t slurmctld_diag_stats;
@@ -1432,21 +1428,6 @@ static int _schedule(uint32_t job_limit)
 		sched_debug("schedule() returning, some job is still completing");
 		goto out;
 	}
-
-
-#ifdef HAVE_ALPS_CRAY
-	/*
-	 * Run a Basil Inventory immediately before scheduling, to avoid
-	 * race conditions caused by ALPS node state change (caused e.g.
-	 * by the node health checker).
-	 * This relies on the above write lock for the node state.
-	 */
-	if (select_g_update_basil()) {
-		unlock_slurmctld(job_write_lock);
-		sched_debug3("not scheduling due to ALPS");
-		goto out;
-	}
-#endif
 
 	part_cnt = list_count(part_list);
 	failed_parts = xmalloc(sizeof(struct part_record *) * part_cnt);
@@ -3815,12 +3796,6 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 				(const char **) job_ptr->spank_job_env);
 	}
 
-#if defined HAVE_ALPS_CRAY
-	name = select_g_select_jobinfo_xstrdup(job_ptr->select_jobinfo,
-						SELECT_PRINT_RESV_ID);
-	setenvf(&my_env, "BASIL_RESERVATION_ID", "%s", name);
-	xfree(name);
-#endif
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
 	if (job_ptr->details) {
 		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS",

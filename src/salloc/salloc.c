@@ -74,19 +74,6 @@
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 
-#if defined(HAVE_ALPS_CRAY)
-#include "src/common/node_select.h"
-
-#ifdef HAVE_REAL_CRAY
-/*
- * On Cray installations, the libjob headers are not automatically installed
- * by default, while libjob.so always is, and kernels are > 2.6. Hence it is
- * simpler to just duplicate the single declaration here.
- */
-extern uint64_t job_getjid(pid_t pid);
-#endif
-#endif
-
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getpgid(pid_t pid);
 #endif
@@ -311,14 +298,10 @@ int main(int argc, char **argv)
 		 * after first making sure stdin is not redirected.
 		 */
 	} else if ((tpgid = tcgetpgrp(STDIN_FILENO)) < 0) {
-#ifdef HAVE_ALPS_CRAY
-		verbose("no controlling terminal");
-#else
 		if (!saopt.no_shell) {
 			error("no controlling terminal: please set --no-shell");
 			exit(error_exit);
 		}
-#endif
 #ifdef SALLOC_RUN_FOREGROUND
 	} else if ((!saopt.no_shell) && (pid == getpgrp())) {
 		if (tpgid == pid)
@@ -758,25 +741,6 @@ static void _set_submit_dir_env(void)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
-#if defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
-	uint64_t pagg_id = job_getjid(getpid());
-	/*
-	 * Interactive sessions require pam_job.so in /etc/pam.d/common-session
-	 * since creating sgi_job containers requires root permissions. This is
-	 * the only exception where we allow the fallback of using the SID to
-	 * confirm the reservation (caught later, in do_basil_confirm).
-	 */
-	if (pagg_id == (uint64_t)-1) {
-		error("No SGI job container ID detected - please enable the "
-		      "Cray job service via /etc/init.d/job");
-	} else {
-		if (!desc->select_jobinfo)
-			desc->select_jobinfo = select_g_select_jobinfo_alloc();
-
-		select_g_select_jobinfo_set(desc->select_jobinfo,
-					    SELECT_JOBDATA_PAGG_ID, &pagg_id);
-	}
-#endif
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	if (opt.core_spec != NO_VAL16)
 		desc->core_spec = opt.core_spec;

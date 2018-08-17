@@ -573,8 +573,8 @@ enum select_plugin_type {
 	SELECT_PLUGIN_CONS_RES       = 101, /* Cons Res on a normal system */
 	SELECT_PLUGIN_LINEAR         = 102, /* Linear on a normal system */
 	/* 103 unused (originally used for BGQ) */
-	SELECT_PLUGIN_ALPS           = 104, /* Alps using Linear (only option) */
-	/* 105 unused (originally was for ALPS cons_res which won't happen) */
+	/* 104 unused (originally used for Cray/ALPS with select/linear) */
+	/* 105 unused (originally used for Cray/ALPS with select/cons_res) */
 	SELECT_PLUGIN_SERIAL         = 106, /* Serial */
 	SELECT_PLUGIN_CRAY_LINEAR    = 107, /* Linear on a Native Cray */
 	SELECT_PLUGIN_CRAY_CONS_RES  = 108, /* Cons Res on a Native Cray */
@@ -591,12 +591,10 @@ enum switch_plugin_type {
 };
 
 enum select_jobdata_type {
-	SELECT_JOBDATA_RESV_ID	= 13,	/* data-> uint32_t reservation_id */
 	SELECT_JOBDATA_PAGG_ID	= 14,	/* data-> uint64_t job container ID */
 	SELECT_JOBDATA_PTR	= 15,	/* data-> select_jobinfo_t *jobinfo */
 	SELECT_JOBDATA_BLOCK_PTR = 16,	/* data-> bg_record_t *bg_record */
 	SELECT_JOBDATA_DIM_CNT	= 17,	/* data-> uint16_t dim_cnt */
-	SELECT_JOBDATA_CONFIRMED = 21,	/* data-> uint8_t ALPS reservation confirmed */
 	SELECT_JOBDATA_CLEANING	= 22,	/* data-> uint16_t if the job is in
 					 * cleaning state or not. */
 	SELECT_JOBDATA_NETWORK	= 23,	/* data-> char * network info */

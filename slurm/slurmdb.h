@@ -214,8 +214,9 @@ enum cluster_fed_states {
 				       /* Removed v17.02 */
 #define CLUSTER_FLAG_MULTSD 0x00000080 /* This cluster is multiple slurmd */
 #define CLUSTER_FLAG_CRAYXT 0x00000100 /* This cluster is a ALPS cray
-					* (deprecated) Same as CRAY_A */
-#define CLUSTER_FLAG_CRAY_A 0x00000100 /* This cluster is a ALPS cray */
+					* Removed v19.05 */
+#define CLUSTER_FLAG_CRAY_A 0x00000100 /* This cluster is a ALPS cray
+					* Removed v19.05 */
 #define CLUSTER_FLAG_FE     0x00000200 /* This cluster is a front end system */
 #define CLUSTER_FLAG_CRAY_N 0x00000400 /* This cluster is a Native cray */
 #define CLUSTER_FLAG_FED    0x00000800 /* This cluster is in a federation. */

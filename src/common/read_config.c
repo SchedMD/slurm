@@ -4336,12 +4336,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		}
 		if (conf->prolog_flags & PROLOG_FLAG_NOHOLD) {
 			conf->prolog_flags |= PROLOG_FLAG_ALLOC;
-#ifdef HAVE_ALPS_CRAY
-			error("PrologFlags=NoHold is not compatible when "
-			      "running on ALPS/Cray systems");
-			conf->prolog_flags &= (~PROLOG_FLAG_NOHOLD);
-			return SLURM_ERROR;
-#endif
 		}
 		xfree(temp_str);
 	} else { /* Default: no Prolog Flags are set */
@@ -4389,12 +4383,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;
-#ifdef HAVE_ALPS_CRAY
-	if (conf->ret2service > 1) {
-		error("ReturnToService > 1 is not supported on ALPS Cray");
-		return SLURM_ERROR;
-	}
-#endif
 
 	(void) s_p_get_string(&conf->resv_epilog, "ResvEpilog", hashtbl);
 	(void) s_p_get_uint16(&conf->resv_over_run, "ResvOverRun", hashtbl);
@@ -4472,11 +4460,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 #ifdef HAVE_REAL_CRAY
 	/*
-	 * This requirement derives from Cray ALPS:
-	 * - ALPS reservations can only be created by the job owner or root
-	 *   (confirmation may be done by other non-privileged users);
-	 * - freeing a reservation always requires root privileges.
-	 * Even when running on Native Cray the SlurmUser must be root
+	 * When running on Native Cray the SlurmUser must be root
 	 * to access the needed libraries.
 	 */
 	if (conf->slurm_user_id != 0) {

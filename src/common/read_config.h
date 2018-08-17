@@ -116,8 +116,6 @@ extern uint16_t drop_priv_flag;
 
 #if defined HAVE_LIBNRT
 #  define DEFAULT_LAUNCH_TYPE         "launch/poe"
-#elif defined HAVE_ALPS_CRAY && defined HAVE_REAL_CRAY
-#  define DEFAULT_LAUNCH_TYPE         "launch/aprun"
 #else
 #  define DEFAULT_LAUNCH_TYPE         "launch/slurm"
 #endif
@@ -138,11 +136,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_MSG_TIMEOUT         10
 #define DEFAULT_POWER_PLUGIN        ""
 #define DEFAULT_CHECKPOINT_TYPE     "checkpoint/none"
-#if defined HAVE_REAL_CRAY/* ALPS requires cluster-unique job container IDs */
-#  define DEFAULT_PROCTRACK_TYPE    "proctrack/sgi_job"
-#else
-#  define DEFAULT_PROCTRACK_TYPE    "proctrack/cgroup"
-#endif
+#define DEFAULT_PROCTRACK_TYPE      "proctrack/cgroup"
 #define DEFAULT_PREEMPT_TYPE        "preempt/none"
 #define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
 #define DEFAULT_PRIORITY_CALC_PERIOD 300 /* in seconds */
@@ -156,9 +150,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_SCHED_LOG_LEVEL     0
 #define DEFAULT_SCHED_TIME_SLICE    30
 #define DEFAULT_SCHEDTYPE           "sched/backfill"
-#if defined HAVE_ALPS_CRAY
-#  define DEFAULT_SELECT_TYPE       "select/alps"
-#elif defined HAVE_NATIVE_CRAY
+#if defined HAVE_NATIVE_CRAY
 #  define DEFAULT_SELECT_TYPE       "select/cray"
 #else
 #  define DEFAULT_SELECT_TYPE       "select/linear"
@@ -184,7 +176,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TCP_TIMEOUT         2
 #define DEFAULT_TMP_FS              "/tmp"
-#if defined HAVE_3D && !defined HAVE_ALPS_CRAY
+#if defined HAVE_3D
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/3d_torus"
 #else
 #  define DEFAULT_TOPOLOGY_PLUGIN     "topology/none"

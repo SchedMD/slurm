@@ -72,20 +72,12 @@ extern bool is_cray_system(void)
 {
 	if (working_cluster_rec)
 		return working_cluster_rec->flags & CLUSTER_FLAG_CRAY;
-#if defined HAVE_ALPS_CRAY || defined HAVE_NATIVE_CRAY
-	return true;
-#endif
-	return false;
-}
 
-extern bool is_alps_cray_system(void)
-{
-	if (working_cluster_rec)
-		return working_cluster_rec->flags & CLUSTER_FLAG_CRAY_A;
-#ifdef HAVE_ALPS_CRAY
+#ifdef HAVE_NATIVE_CRAY
 	return true;
-#endif
+#else
 	return false;
+#endif
 }
 
 extern uint16_t slurmdb_setup_cluster_name_dims(void)
@@ -108,9 +100,6 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 	cluster_flags = 0;
 #ifdef MULTIPLE_SLURMD
 	cluster_flags |= CLUSTER_FLAG_MULTSD;
-#endif
-#ifdef HAVE_ALPS_CRAY
-	cluster_flags |= CLUSTER_FLAG_CRAY_A;
 #endif
 #ifdef HAVE_FRONT_END
 	cluster_flags |= CLUSTER_FLAG_FE;

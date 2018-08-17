@@ -489,13 +489,9 @@ int main(int argc, char **argv)
 	} else if (backup_inx > 0) {
 		slurmctld_primary = 0;
 
-#ifdef HAVE_ALPS_CRAY
-		slurmctld_config.scheduling_disabled = true;
-#else
 		if (xstrcasestr(slurmctld_conf.sched_params,
 				"no_backup_scheduling"))
 			slurmctld_config.scheduling_disabled = true;
-#endif
 	}
 
 	/*

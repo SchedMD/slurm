@@ -11321,15 +11321,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		/* Used by scontrol just to get current configuration info */
 		job_specs->min_nodes = NO_VAL;
 	}
-#if defined(HAVE_ALPS_CRAY)
-	if ((job_specs->min_nodes != NO_VAL) &&
-	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
-#else
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (job_specs->min_nodes > job_ptr->node_cnt) &&
 	    !select_g_job_expand_allow() &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
-#endif
 		info("Change of size for %pJ not supported", job_ptr);
 		error_code = ESLURM_NOT_SUPPORTED;
 		goto fini;

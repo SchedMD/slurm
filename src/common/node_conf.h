@@ -151,11 +151,6 @@ struct node_record {
 					 * or other sequence number used to
 					 * order nodes by location,
 					 * no need to save/restore */
-#ifdef HAVE_ALPS_CRAY
-	uint32_t basil_node_id;		/* Cray-XT BASIL node ID,
-					 * no need to save/restore */
-	time_t down_time;		/* When first set to DOWN state */
-#endif	/* HAVE_ALPS_CRAY */
 	acct_gather_energy_t *energy;	/* power consumption data */
 	ext_sensors_data_t *ext_sensors; /* external sensor data */
 	power_mgmt_data_t *power;	/* power management data */

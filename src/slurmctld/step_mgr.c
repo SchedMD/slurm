@@ -1917,20 +1917,6 @@ static void _pick_step_cores(struct step_record *step_ptr,
 	}
 }
 
-#ifdef HAVE_ALPS_CRAY
-/* Return the total cpu count on a given node index */
-static int _get_node_cpus(int node_inx)
-{
-	struct node_record *node_ptr;
-
-	node_ptr = node_record_table_ptr + node_inx;
-	if (slurmctld_conf.fast_schedule)
-		return node_ptr->config_ptr->cpus;
-
-	return node_ptr->cpus;
-}
-#endif
-
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 extern void step_alloc_lps(struct step_record *step_ptr)
 {
@@ -1984,17 +1970,11 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("step_alloc_lps: node index bad");
-#ifdef HAVE_ALPS_CRAY
-		/* Since with alps cray you can only run 1 job per node
-		   return all CPUs as being allocated.
-		*/
-		cpus_alloc = _get_node_cpus(step_node_inx);
-#else
+
 		/* NOTE: The --overcommit option can result in
 		 * cpus_used[] having a higher value than cpus[] */
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
-#endif
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
 				       job_node_inx, job_ptr->job_id,
@@ -2111,15 +2091,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("_step_dealloc_lps: node index bad");
-#ifdef HAVE_ALPS_CRAY
-		/* Since with alps cray you can only run 1 job per node
-		   return all CPUs as being allocated.
-		*/
-		cpus_alloc = _get_node_cpus(step_node_inx);
-#else
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
-#endif
 		if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc) {
 			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
 		} else {
@@ -2339,12 +2312,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	List step_gres_list = (List) NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	uint32_t task_dist;
-
-#ifdef HAVE_ALPS_CRAY
-	uint32_t resv_id = 0;
-#else
 	uint32_t max_tasks;
-#endif
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
 	if (job_ptr == NULL)
@@ -2444,11 +2412,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr->next_step_id >= slurmctld_conf.max_step_cnt)
 		return ESLURM_STEP_LIMIT;
 
-#ifdef HAVE_ALPS_CRAY
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_RESV_ID, &resv_id);
-#endif
-
 	/* if the overcommit flag is checked, we 0 set cpu_count=0
 	 * which makes it so we don't check to see the available cpus
 	 */
@@ -2508,10 +2471,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 	_set_def_cpu_bind(job_ptr);
 
-#ifdef HAVE_ALPS_CRAY
-	select_g_select_jobinfo_set(select_jobinfo,
-				    SELECT_JOBDATA_RESV_ID, &resv_id);
-#endif
 	node_count = bit_set_count(nodeset);
 	if (step_specs->num_tasks == NO_VAL) {
 		if (step_specs->cpu_count != NO_VAL)
@@ -2520,7 +2479,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_specs->num_tasks = node_count;
 	}
 
-#if (!defined HAVE_ALPS_CRAY)
 	max_tasks = node_count * slurmctld_conf.max_tasks_per_node;
 	if (step_specs->num_tasks > max_tasks) {
 		error("step has invalid task count: %u max is %u",
@@ -2530,7 +2488,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		select_g_select_jobinfo_free(select_jobinfo);
 		return ESLURM_BAD_TASK_COUNT;
 	}
-#endif
+
 	step_ptr = _create_step_record(job_ptr, protocol_version);
 	if (step_ptr == NULL) {
 		FREE_NULL_LIST(step_gres_list);
@@ -2998,7 +2956,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
 	time_t begin_time, run_time;
 	bitstr_t *pack_bitstr;
 
-#if defined HAVE_FRONT_END && (!defined HAVE_ALPS_CRAY)
+#if defined HAVE_FRONT_END
 	/* On front-end systems, the steps only execute on one node.
 	 * We need to make them appear like they are running on the job's
 	 * entire allocation (which they really are). */
@@ -3519,22 +3477,10 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 	if (!step_ptr->exit_node_bitmap) {
 		/* initialize the node bitmap for exited nodes */
 		nodes = bit_set_count(step_ptr->step_node_bitmap);
-#if defined HAVE_ALPS_CRAY
-		/* For BGQ we only have 1 real task, so if it exits,
-		   the whole step is ending as well.
-		*/
-		req->range_last = nodes - 1;
-#endif
 		step_ptr->exit_node_bitmap = bit_alloc(nodes);
 		step_ptr->exit_code = req->step_rc;
 	} else {
 		nodes = bit_size(step_ptr->exit_node_bitmap);
-#if defined HAVE_ALPS_CRAY
-		/* For BGQ we only have 1 real task, so if it exits,
-		   the whole step is ending as well.
-		*/
-		req->range_last = nodes - 1;
-#endif
 		if ((req->step_rc == SIG_OOM) ||
 		    (req->step_rc > step_ptr->exit_code))
 			step_ptr->exit_code = req->step_rc;

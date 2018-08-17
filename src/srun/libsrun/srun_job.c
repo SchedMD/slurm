@@ -1244,8 +1244,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 				opt_local = list_next(opt_iter);
 				if (!opt_local)
 					break;
-				if (!global_resp)	/* Used by Cray/ALPS */
-					global_resp = resp;
 				_print_job_information(resp);
 				_set_env_vars(resp, ++pack_offset);
 				_set_env_vars2(resp, pack_offset);
@@ -1264,7 +1262,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		} else {
 			if (!(resp = allocate_nodes(handle_signals, &opt)))
 				exit(error_exit);
-			global_resp = resp;
 			*got_alloc = true;
 			my_job_id = resp->job_id;
 			_print_job_information(resp);
@@ -1294,7 +1291,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}
 		xfree(pack_nodelist);
 
-		global_resp = NULL;
 		if (opt_list) {
 			resp_iter = list_iterator_create(job_resp_list);
 			while ((resp = (resource_allocation_response_msg_t *)
@@ -1482,7 +1478,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
  	job->pack_offset = NO_VAL;
 	job->pack_task_offset = NO_VAL;
 
-#if defined HAVE_FRONT_END && !defined HAVE_ALPS_CRAY
+#if defined HAVE_FRONT_END
 	/* Limited job step support */
 	opt_local->overcommit = true;
 	job->nhosts = 1;
