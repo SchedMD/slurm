@@ -95,9 +95,7 @@ typedef struct {
 static ctld_ping_t *	ctld_ping = NULL;
 static bool		dump_core = false;
 static time_t		last_controller_response;
-static pthread_cond_t	ping_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t	ping_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int		ping_thread_cnt = 0;
 static volatile bool	takeover = false;
 static pthread_cond_t	shutdown_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t	shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -524,8 +522,6 @@ static void *_ping_ctld_thread(void *arg)
 								ping->now);
 		ctld_ping[ping->backup_inx].response_time = response_time;
 	}
-	ping_thread_cnt--;
-	slurm_cond_signal(&ping_cond);
 	slurm_mutex_unlock(&ping_mutex);
 
 	xfree(ping->control_addr);
@@ -543,6 +539,7 @@ static int _ping_controller(void)
 {
 	int i;
 	ping_struct_t *ping;
+	pthread_t ping_tids[backup_inx];
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -562,19 +559,12 @@ static int _ping_controller(void)
 		ping->control_machine = xstrdup(slurmctld_conf.control_machine[i]);
 		ping->now             = now;
 		ping->slurmctld_port  = slurmctld_conf.slurmctld_port;
-		slurm_thread_create_detached(NULL, _ping_ctld_thread,
-					     (void *) ping);
-		slurm_mutex_lock(&shutdown_mutex);
-		ping_thread_cnt++;
-		slurm_mutex_unlock(&shutdown_mutex);
+		slurm_thread_create(&ping_tids[i], _ping_ctld_thread, ping);
 	}
 	unlock_slurmctld(config_read_lock);
 
-	slurm_mutex_lock(&ping_mutex);
-	while (ping_thread_cnt != 0) {
-		slurm_cond_wait(&ping_cond, &ping_mutex);
-	}
-	slurm_mutex_unlock(&ping_mutex);
+	for (i = 0; i < backup_inx; i++)
+		pthread_join(ping_tids[i], NULL);
 
 	for (i = 0; i < backup_inx; i++) {
 		if (ctld_ping[i].control_time) {
