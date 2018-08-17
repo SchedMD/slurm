@@ -1,6 +1,7 @@
 # Makefile for node selection plugins
 
-SUBDIRS = cons_res cons_tres cray linear other serial
+# NOTE: other must be in the list before cray lest the build break
+SUBDIRS = other cons_res cons_tres cray linear serial
 
 # Each plugin here needs a plugin_id, here are the currect plug_ids
 # for each plugin.
