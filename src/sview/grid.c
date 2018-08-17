@@ -1361,8 +1361,6 @@ extern int get_system_stats(GtkTable *table)
 	} else if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	select_g_ba_init(node_info_ptr, 0);
-
 	node_list = create_node_info_list(node_info_ptr, false);
 	if (grid_button_list) {
 		rc = update_grid_table(main_grid_table, grid_button_list,

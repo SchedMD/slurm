@@ -2611,11 +2611,6 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	return buf;
 }
 
-extern int select_p_update_basil(void)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
 					 struct job_record *job_ptr,
 					 void *data)
@@ -2646,14 +2641,4 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 {
 	return other_resv_test(resv_desc_ptr, node_cnt,
 			       avail_bitmap, core_bitmap);
-}
-
-extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
-{
-	other_ba_init(node_info_ptr, sanity_check);
-}
-
-extern int *select_p_ba_get_dims(void)
-{
-	return NULL;
 }

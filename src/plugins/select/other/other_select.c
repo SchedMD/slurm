@@ -98,14 +98,11 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_unpack",
 	"select_p_select_jobinfo_sprint",
 	"select_p_select_jobinfo_xstrdup",
-	"select_p_update_basil",
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
 	"select_p_update_node_state",
 	"select_p_reconfigure",
 	"select_p_resv_test",
-	"select_p_ba_init",
-	"select_p_ba_get_dims",
 };
 
 static slurm_select_ops_t ops;
@@ -710,20 +707,4 @@ extern bitstr_t * other_resv_test(resv_desc_msg_t *resv_desc_ptr,
 
 	return (*(ops.resv_test))(resv_desc_ptr, node_cnt,
 				  avail_bitmap, core_bitmap);
-}
-
-extern void other_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
-{
-	if (other_select_init() < 0)
-		return;
-
-	(*(ops.ba_init))(node_info_ptr, sanity_check);
-}
-
-extern int *other_ba_get_dims(void)
-{
-	if (other_select_init() < 0)
-		return NULL;
-
-	return (*(ops.ba_get_dims))();
 }

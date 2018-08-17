@@ -2822,11 +2822,6 @@ extern char *select_p_select_jobinfo_xstrdup(
 	return NULL;
 }
 
-extern int select_p_update_basil(void)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 					 struct job_record *job_ptr,
 					 void *data)
@@ -3624,16 +3619,6 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 	}
 
 	return avail_nodes_bitmap;
-}
-
-extern void select_p_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check)
-{
-	return;
-}
-
-extern int *select_p_ba_get_dims(void)
-{
-	return NULL;
 }
 
 extern int cr_cpus_per_core(struct job_details *details, int node_inx)

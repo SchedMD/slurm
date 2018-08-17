@@ -146,7 +146,6 @@ typedef struct slurm_select_ops {
 						 int mode);
 	char *		(*jobinfo_xstrdup)	(select_jobinfo_t *jobinfo,
 						 int mode);
-	int		(*update_basil)		(void);
 	int		(*get_info_from_plugin)	(enum
 						 select_plugindata_info dinfo,
 						 struct job_record *job_ptr,
@@ -158,9 +157,6 @@ typedef struct slurm_select_ops {
 						 uint32_t node_cnt,
 						 bitstr_t *avail_bitmap,
 						 bitstr_t **core_bitmap);
-	void            (*ba_init)              (node_info_msg_t *node_info_ptr,
-						 bool sanity_check);
-	int *           (*ba_get_dims)          (void);
 } slurm_select_ops_t;
 
 /*
@@ -320,15 +316,6 @@ extern bool select_g_node_ranking(struct node_record *node_ptr, int node_cnt);
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
 extern int select_g_update_node_state (struct node_record *node_ptr);
-
-/***************************\
- * ALPS SPECIFIC FUNCTIONS *
-\***************************/
-
-/*
- * Update basil inventory for select/alps
- */
-extern int select_g_update_basil(void);
 
 /******************************************************\
  * JOB SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
@@ -638,15 +625,5 @@ extern bitstr_t * select_g_resv_test(resv_desc_msg_t *resv_desc_ptr,
 extern int select_g_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data);
-
-/* Get the number of elements in each dimension of a system
- * RET - An array of element counts, one element per dimension */
-extern int *select_g_ba_get_dims(void);
-
-/* Construct an internal block allocation table
- * IN node_info_ptr - Node state information read from slurmctld daemon
- * IN sanity_check - If set, then verify each node's suffix contains values
- *                   within the system dimension limits */
-extern void select_g_ba_init(node_info_msg_t *node_info_ptr, bool sanity_check);
 
 #endif /*__SELECT_PLUGIN_API_H__*/

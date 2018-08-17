@@ -4198,11 +4198,6 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	return NULL;
 }
 
-extern int select_p_update_basil(void)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
 					  struct job_record *job_ptr,
 					  void *data)
@@ -4375,14 +4370,4 @@ fini:	for (i=0; i<switch_record_cnt; i++)
 	xfree(switches_required);
 
 	return avail_nodes_bitmap;
-}
-
-extern void select_p_ba_init(void)
-{
-	return;
-}
-
-extern int *select_p_ba_get_dims(void)
-{
-	return NULL;
 }

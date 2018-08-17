@@ -65,7 +65,7 @@ extern int *slurmdb_setup_cluster_dim_size(void)
 	if (working_cluster_rec)
 		return working_cluster_rec->dim_size;
 
-	return select_g_ba_get_dims();
+	return NULL;
 }
 
 extern bool is_cray_system(void)
