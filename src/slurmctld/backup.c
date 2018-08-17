@@ -352,11 +352,10 @@ static void _sig_handler(int signal)
  */
 static void *_background_rpc_mgr(void *no_data)
 {
-	int i, newsockfd, sockfd;
+	int newsockfd, sockfd;
 	slurm_addr_t cli_addr;
 	slurm_msg_t msg;
 	int error_code;
-	char* node_addr = NULL;
 
 	/* Read configuration only */
 	slurmctld_lock_t config_read_lock = {
@@ -370,19 +369,9 @@ static void *_background_rpc_mgr(void *no_data)
 	/* initialize port for RPCs */
 	lock_slurmctld(config_read_lock);
 
-	/* set node_addr to bind to (NULL means any) */
-	for (i = 1; i < slurmctld_conf.control_cnt; i++) {
-		if (!xstrcmp(node_name_short,
-			     slurmctld_conf.control_machine[i]) ||
-		    !xstrcmp(node_name_long,
-			     slurmctld_conf.control_machine[i])) {  /* Self */
-			node_addr = slurmctld_conf.control_addr[i];
-			break;
-		}
-	}
-
 	if ((sockfd =
-	     slurm_init_msg_engine_addrname_port(node_addr,
+	     slurm_init_msg_engine_addrname_port(slurmctld_conf.
+						 control_machine[backup_inx],
 						 slurmctld_conf.
 						 slurmctld_port))
 	    == SLURM_SOCKET_ERROR)
