@@ -1888,7 +1888,7 @@ static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 		true : false;
 
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
 		info("%s: submitting %s sibling JobId=%u from %s",
