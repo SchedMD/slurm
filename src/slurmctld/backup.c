@@ -507,7 +507,6 @@ static int _background_process_msg(slurm_msg_t *msg)
 static void *_ping_ctld_thread(void *arg)
 {
 	ping_struct_t *ping = (ping_struct_t *) arg;
-	uint32_t rc;
 	slurm_msg_t req, resp;
 	control_status_msg_t *control_msg;
 	time_t control_time = (time_t) 0, response_time = (time_t) 0;
@@ -517,18 +516,6 @@ static void *_ping_ctld_thread(void *arg)
 	req.msg_type = REQUEST_CONTROL_STATUS;
 	if (slurm_send_recv_node_msg(&req, &resp, 0) == SLURM_SUCCESS) {
 		switch (resp.msg_type) {
-		case RESPONSE_SLURM_RC:
-			rc = ((return_code_msg_t *)resp.data)->return_code;
-			if (rc == EINVAL) {	/* Old slurmctld version */
-				if (ping->backup_inx < backup_inx)
-					control_time = ping->now;
-				response_time = ping->now;
-			} else {
-				error("%s:, Unexpected return code (%s) from host %s",
-				      __func__, slurm_strerror(rc),
-				      ping->control_machine);
-			}
-			break;
 		case RESPONSE_CONTROL_STATUS:
 			control_msg = (control_status_msg_t *) resp.data;
 			if (ping->backup_inx != control_msg->backup_inx) {
