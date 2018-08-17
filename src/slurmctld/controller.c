@@ -1123,7 +1123,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-	debug3("_slurmctld_rpc_mgr pid = %u", getpid());
+	debug3("%s pid = %u", __func__, getpid());
 
 	/* set node_addr to bind to (NULL means any) */
 	if (((i = _controller_index()) != -1) &&
@@ -1228,7 +1228,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		}
 	}
 
-	debug3("_slurmctld_rpc_mgr shutting down");
+	debug3("%s shutting down", __func__);
 	for (i = 0; i < nports; i++)
 		close(sockfd[i]);
 	xfree(sockfd);
@@ -2533,7 +2533,7 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 }
 
 /*
- * slurmctld_shutdown - wake up slurm_rpc_mgr thread via signal
+ * slurmctld_shutdown - wake up _slurm_rpc_mgr thread via signal
  * RET 0 or error code
  */
 int slurmctld_shutdown(void)
