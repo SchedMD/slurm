@@ -227,7 +227,7 @@ typedef struct primary_thread_arg {
 static int          _accounting_cluster_ready();
 static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
-static int          _backup_index(void);
+static int          _controller_index(void);
 static void         _become_slurm_user(void);
 static void         _create_clustername_file(void);
 static void         _default_sigaction(int sig);
@@ -256,7 +256,6 @@ static void         _update_cluster_tres(void);
 static void         _update_nice(void);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
 inline static void  _usage(char *prog_name);
-static bool         _valid_controller(void);
 static bool         _verify_clustername(void);
 static bool         _wait_for_server_thread(void);
 static void *       _wait_primary_prog(void *arg);
@@ -613,7 +612,7 @@ int main(int argc, char **argv)
 			(void) _shutdown_backup_controller();
 			if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS)
 				fatal("failed to initialize accounting_storage plugin");
-		} else if (test_config || _valid_controller()) {
+		} else if (test_config || _controller_index() == 0) {
 			if (!test_config) {
 				(void) _shutdown_backup_controller();
 				trigger_primary_ctld_res_ctrl();
@@ -1127,14 +1126,10 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	debug3("_slurmctld_rpc_mgr pid = %u", getpid());
 
 	/* set node_addr to bind to (NULL means any) */
-	if (((i = _backup_index()) != -1) &&
+	if (((i = _controller_index()) != -1) &&
 	    xstrcmp(slurmctld_conf.control_machine[i],
 		    slurmctld_conf.control_addr[i])) {
 		node_addr = slurmctld_conf.control_addr[i];
-	} else if (_valid_controller() &&
-		 xstrcmp(slurmctld_conf.control_machine[0],
-			 slurmctld_conf.control_addr[0])) {
-		node_addr = slurmctld_conf.control_addr[0];
 	}
 
 	/* initialize ports for RPCs */
@@ -3196,13 +3191,19 @@ static void _become_slurm_user(void)
 	}
 }
 
-/* If this computer is a backup slurmctld, return it's index in the controller
- * table. Otherwise return -1; */
-static int _backup_index(void)
+/*
+ * Find this host in the controller index, or return -1 on error.
+ */
+static int _controller_index(void)
 {
 	int i;
 
-	for (i = 1; i < slurmctld_conf.control_cnt; i++) {
+	/*
+	 * Slurm internal HA mode (or no HA).
+	 * Each controller is separately defined, and a single hostname is in
+	 * each control_machine entry.
+	 */
+	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
 		if (slurmctld_conf.control_machine[i] &&
 		    slurmctld_conf.control_addr[i]    &&
 		    (!xstrcmp(node_name_short,
@@ -3212,23 +3213,15 @@ static int _backup_index(void)
 			return i;
 		}
 	}
-	return -1;
-}
 
-/*
- * Return true if node_name (a global) is a valid controller host name
- */
-static bool  _valid_controller(void)
-{
-	bool match = false;
-
-	if (slurmctld_conf.control_machine[0] == NULL)
-		return match;
-
-	if (!xstrcmp(node_name_short,slurmctld_conf.control_machine[0]) ||
-	    !xstrcmp(node_name_long, slurmctld_conf.control_machine[0])) {
-		match = true;
-	} else if (strchr(slurmctld_conf.control_machine[0], ',')) {
+	/*
+	 * External HA mode. Here a single control_addr has been defined,
+	 * but multiple hostnames are in control_machine[0] with comma
+	 * separation. If our hostname matches any of those, we are considered
+	 * to be a valid controller, and which is active much be managed by
+	 * an external HA solution.
+	 */
+	if (strchr(slurmctld_conf.control_machine[0], ',')) {
 		char *token, *last = NULL;
 		char *tmp_name = xstrdup(slurmctld_conf.control_machine[0]);
 
@@ -3236,16 +3229,17 @@ static bool  _valid_controller(void)
 		while (token) {
 			if ((xstrcmp(node_name_short, token) == 0) ||
 			    (xstrcmp(node_name_long, token) == 0)) {
-				match = true;
-				break;
+				xfree(tmp_name);
+				return 0;
 			}
 			token = strtok_r(NULL, ",", &last);
 		}
 		xfree(tmp_name);
 	}
 
-	return match;
+	return -1;
 }
+
 
 static void _test_thread_limit(void)
 {
