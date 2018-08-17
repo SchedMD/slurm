@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with gres when defined with a type and no count
     (i.e. gres=gpu/tesla) it would get a count of 0.
  -- Allow sstat to talk to slurmd's that are new in protocol version.
+ -- Permit database names over 33 characters in accounting_storage/mysql.
 
 * Changes in Slurm 17.11.9-2
 ============================
