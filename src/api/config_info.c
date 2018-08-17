@@ -1454,13 +1454,9 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 
 
 	for (i = 0; i < slurm_ctl_conf_ptr->control_cnt; i++) {
-		if (!slurm_ctl_conf_ptr->control_machine[i])
-			break;
-
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		xstrfmtcat(key_pair->name, "SlurmctldHost[%d]", i);
-		if (slurm_ctl_conf_ptr->control_addr[i] &&
-		    xstrcmp(slurm_ctl_conf_ptr->control_machine[i],
+		if (xstrcmp(slurm_ctl_conf_ptr->control_machine[i],
 			    slurm_ctl_conf_ptr->control_addr[i])) {
 			xstrfmtcat(key_pair->value, "%s(%s)",
 				   slurm_ctl_conf_ptr->control_machine[i],

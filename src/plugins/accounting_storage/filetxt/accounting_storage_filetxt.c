@@ -837,6 +837,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	uint32_t ave_cpu2 = 0;
 	char *account, *step_name;
 	uint32_t exit_code;
+	bool null_jobacct = false;
 
 	if (!storage_init) {
 		debug("jobacct init was not called or it failed");
@@ -849,6 +850,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		/* JobAcctGather=slurmdb_gather/none, no data to process */
 		memset(&dummy_jobacct, 0, sizeof(dummy_jobacct));
 		jobacct = &dummy_jobacct;
+		null_jobacct = true;
 	}
 
 	if ((elapsed=now-step_ptr->start_time)<0)
@@ -876,20 +878,23 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 			 step_ptr->step_layout->node_list);
 	}
 
-	/* figure out the ave of the totals sent */
-	if (cpus > 0) {
-		ave_vsize = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
-		ave_vsize /= cpus;
-		ave_rss = jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
-		ave_rss /= cpus;
-		ave_pages = jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES];
-		ave_pages /= cpus;
-		ave_cpu = jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
-		ave_cpu /= cpus;
-	}
+	if (!null_jobacct) {
+		/* figure out the ave of the totals sent */
+		if (cpus > 0) {
+			ave_vsize = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+			ave_vsize /= cpus;
+			ave_rss = jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
+			ave_rss /= cpus;
+			ave_pages = jobacct->tres_usage_in_tot[
+				TRES_ARRAY_PAGES];
+			ave_pages /= cpus;
+			ave_cpu = jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
+			ave_cpu /= cpus;
+		}
 
-	if (jobacct->tres_usage_in_max[TRES_ARRAY_CPU] != INFINITE64)
-		ave_cpu2 = jobacct->tres_usage_in_max[TRES_ARRAY_CPU];
+		if (jobacct->tres_usage_in_max[TRES_ARRAY_CPU] != INFINITE64)
+			ave_cpu2 = jobacct->tres_usage_in_max[TRES_ARRAY_CPU];
+	}
 
 	account   = _safe_dup(step_ptr->job_ptr->account);
 	step_name = _safe_dup(step_ptr->name);
@@ -926,24 +931,33 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 		 0,	/* total nsignals */
 		 0,	/* total nvcsw */
 		 0,	/* total nivcsw */
-		 jobacct->tres_usage_in_max[TRES_ARRAY_VMEM],
-		 jobacct->tres_usage_in_max_taskid[TRES_ARRAY_VMEM],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max[TRES_ARRAY_VMEM],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max_taskid[
+			 TRES_ARRAY_VMEM],
 		 ave_vsize,	/* ave vsize */
-		 jobacct->tres_usage_in_max[TRES_ARRAY_MEM],
-		 jobacct->tres_usage_in_max_taskid[TRES_ARRAY_MEM],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max[TRES_ARRAY_MEM],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max_taskid[
+			 TRES_ARRAY_MEM],
 		 ave_rss,	/* ave rss */
-		 jobacct->tres_usage_in_max[TRES_ARRAY_PAGES],
-		 jobacct->tres_usage_in_max_taskid[TRES_ARRAY_PAGES],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max[
+			 TRES_ARRAY_PAGES],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max_taskid[
+			 TRES_ARRAY_PAGES],
 		 ave_pages,	/* ave pages */
 		 ave_cpu2,	/* min cpu */
-		 jobacct->tres_usage_in_max_taskid[TRES_ARRAY_CPU],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max_taskid[
+			 TRES_ARRAY_CPU],
 		 ave_cpu,	/* ave cpu */
 		 step_name,	/* step exe name */
 		 node_list, /* name of nodes step running on */
-		 jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_VMEM],
-		 jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_MEM],
-		 jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_PAGES],
-		 jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_CPU],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max_nodeid[
+			 TRES_ARRAY_VMEM],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max_nodeid[
+			 TRES_ARRAY_MEM],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max_nodeid[
+			 TRES_ARRAY_PAGES],
+		 null_jobacct ? 0 : jobacct->tres_usage_in_max_nodeid[
+			 TRES_ARRAY_CPU],
 		 account,
 		 step_ptr->job_ptr->requid); /* requester user id */
 

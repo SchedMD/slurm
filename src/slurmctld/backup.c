@@ -95,11 +95,7 @@ typedef struct {
 static ctld_ping_t *	ctld_ping = NULL;
 static bool		dump_core = false;
 static time_t		last_controller_response;
-static char		node_name_short[MAX_SLURM_NAME];
-static char		node_name_long[MAX_SLURM_NAME];
-static pthread_cond_t	ping_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t	ping_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int		ping_thread_cnt = 0;
 static volatile bool	takeover = false;
 static pthread_cond_t	shutdown_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t	shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -123,7 +119,7 @@ static int backup_sigarray[] = {
  */
 void run_backup(slurm_trigger_callbacks_t *callbacks)
 {
-	int error_code, i;
+	int i;
 	time_t last_ping = 0;
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -133,11 +129,6 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	info("slurmctld running in background mode");
 	takeover = false;
 	last_controller_response = time(NULL);
-
-	if ((error_code = gethostname_short(node_name_short, MAX_SLURM_NAME)))
-		error("getnodename_short error %s", slurm_strerror(error_code));
-	if ((error_code = gethostname(node_name_long, MAX_SLURM_NAME)))
-		error("getnodename error %s", slurm_strerror(error_code));
 
 	/* default: don't resume if shutdown */
 	slurmctld_config.resume_backup = false;
@@ -169,7 +160,7 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	}
 
 	/* repeatedly ping ControlMachine */
-	ctld_ping = xmalloc(sizeof(ctld_ping_t) * slurmctld_conf.control_cnt);
+	ctld_ping = xmalloc(sizeof(ctld_ping_t) * backup_inx);
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 		/* Lock of slurmctld_conf below not important */
@@ -238,7 +229,8 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 
 	lock_slurmctld(config_read_lock);
 	error("ControlMachine %s not responding, BackupController%d %s taking over",
-	      slurmctld_conf.control_machine[0], backup_inx, node_name_short);
+	      slurmctld_conf.control_machine[0], backup_inx,
+	      slurmctld_config.node_name_short);
 	unlock_slurmctld(config_read_lock);
 
 	backup_slurmctld_restart();
@@ -352,11 +344,10 @@ static void _sig_handler(int signal)
  */
 static void *_background_rpc_mgr(void *no_data)
 {
-	int i, newsockfd, sockfd;
+	int newsockfd, sockfd;
 	slurm_addr_t cli_addr;
 	slurm_msg_t msg;
 	int error_code;
-	char* node_addr = NULL;
 
 	/* Read configuration only */
 	slurmctld_lock_t config_read_lock = {
@@ -370,19 +361,9 @@ static void *_background_rpc_mgr(void *no_data)
 	/* initialize port for RPCs */
 	lock_slurmctld(config_read_lock);
 
-	/* set node_addr to bind to (NULL means any) */
-	for (i = 1; i < slurmctld_conf.control_cnt; i++) {
-		if (!xstrcmp(node_name_short,
-			     slurmctld_conf.control_machine[i]) ||
-		    !xstrcmp(node_name_long,
-			     slurmctld_conf.control_machine[i])) {  /* Self */
-			node_addr = slurmctld_conf.control_addr[i];
-			break;
-		}
-	}
-
 	if ((sockfd =
-	     slurm_init_msg_engine_addrname_port(node_addr,
+	     slurm_init_msg_engine_addrname_port(slurmctld_conf.
+						 control_machine[backup_inx],
 						 slurmctld_conf.
 						 slurmctld_port))
 	    == SLURM_SOCKET_ERROR)
@@ -507,7 +488,6 @@ static int _background_process_msg(slurm_msg_t *msg)
 static void *_ping_ctld_thread(void *arg)
 {
 	ping_struct_t *ping = (ping_struct_t *) arg;
-	uint32_t rc;
 	slurm_msg_t req, resp;
 	control_status_msg_t *control_msg;
 	time_t control_time = (time_t) 0, response_time = (time_t) 0;
@@ -517,18 +497,6 @@ static void *_ping_ctld_thread(void *arg)
 	req.msg_type = REQUEST_CONTROL_STATUS;
 	if (slurm_send_recv_node_msg(&req, &resp, 0) == SLURM_SUCCESS) {
 		switch (resp.msg_type) {
-		case RESPONSE_SLURM_RC:
-			rc = ((return_code_msg_t *)resp.data)->return_code;
-			if (rc == EINVAL) {	/* Old slurmctld version */
-				if (ping->backup_inx < backup_inx)
-					control_time = ping->now;
-				response_time = ping->now;
-			} else {
-				error("%s:, Unexpected return code (%s) from host %s",
-				      __func__, slurm_strerror(rc),
-				      ping->control_machine);
-			}
-			break;
 		case RESPONSE_CONTROL_STATUS:
 			control_msg = (control_status_msg_t *) resp.data;
 			if (ping->backup_inx != control_msg->backup_inx) {
@@ -554,8 +522,6 @@ static void *_ping_ctld_thread(void *arg)
 								ping->now);
 		ctld_ping[ping->backup_inx].response_time = response_time;
 	}
-	ping_thread_cnt--;
-	slurm_cond_signal(&ping_cond);
 	slurm_mutex_unlock(&ping_mutex);
 
 	xfree(ping->control_addr);
@@ -566,77 +532,55 @@ static void *_ping_ctld_thread(void *arg)
 }
 
 /*
- * Ping ControlMachine and all BackupController nodes
+ * Ping all higher-priority control nodes.
  * RET SLURM_SUCCESS if a currently active controller is found
  */
 static int _ping_controller(void)
 {
 	int i;
 	ping_struct_t *ping;
+	pthread_t ping_tids[backup_inx];
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	time_t now = time(NULL);
 	bool active_ctld = false, avail_ctld = false;
 
-	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
+	for (i = 0; i < backup_inx; i++) {
 		ctld_ping[i].control_time  = (time_t) 0;
 		ctld_ping[i].response_time = (time_t) 0;
 	}
 
 	lock_slurmctld(config_read_lock);
-	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
-		if (i == backup_inx)
-			break;	/* Self */
-
+	for (i = 0; i < backup_inx; i++) {
 		ping = xmalloc(sizeof(ping_struct_t));
 		ping->backup_inx      = i;
 		ping->control_addr    = xstrdup(slurmctld_conf.control_addr[i]);
 		ping->control_machine = xstrdup(slurmctld_conf.control_machine[i]);
 		ping->now             = now;
 		ping->slurmctld_port  = slurmctld_conf.slurmctld_port;
-		slurm_thread_create_detached(NULL, _ping_ctld_thread,
-					     (void *) ping);
-		slurm_mutex_lock(&shutdown_mutex);
-		ping_thread_cnt++;
-		slurm_mutex_unlock(&shutdown_mutex);
+		slurm_thread_create(&ping_tids[i], _ping_ctld_thread, ping);
 	}
 	unlock_slurmctld(config_read_lock);
 
-	slurm_mutex_lock(&ping_mutex);
-	while (ping_thread_cnt != 0) {
-		slurm_cond_wait(&ping_cond, &ping_mutex);
-	}
-	slurm_mutex_unlock(&ping_mutex);
+	for (i = 0; i < backup_inx; i++)
+		pthread_join(ping_tids[i], NULL);
 
-	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
-		if (i < backup_inx) {
-			if (ctld_ping[i].control_time) {
-				/*
-				 * Higher priority slurmctld is already in
-				 * primary mode
-				 */
-				active_ctld = true;
-			}
-			if (ctld_ping[i].response_time == now) {
-				/*
-				 * Higher priority slurmctld is available to
-				 * enter primary mode
-				 */
-				avail_ctld = true;
-			}
+	for (i = 0; i < backup_inx; i++) {
+		if (ctld_ping[i].control_time) {
+			/*
+			 * Higher priority slurmctld is already in
+			 * primary mode
+			 */
+			active_ctld = true;
 		}
-#if _DEBUG
-		if (i == backup_inx) {
-			info("Controller[%d] Host:%s (Self)",
-			     i, slurmctld_conf.control_machine[i]);
-		} else {
-			info("Controller[%d] Host:%s LastResp:%"PRIu64" ControlTime:%"PRIu64,
-			     i, slurmctld_conf.control_machine[i],
-			     ctld_ping[i].response_time,
-			     ctld_ping[i].control_time);
+		if (ctld_ping[i].response_time == now) {
+			/*
+			 * Higher priority slurmctld is available to
+			 * enter primary mode
+			 */
+			avail_ctld = true;
 		}
-#endif
 	}
 
 	if (active_ctld || avail_ctld)
@@ -722,10 +666,7 @@ static int _shutdown_primary_controller(int wait_time)
 
 	shutdown_rc = SLURM_SUCCESS;
 	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
-		if (!xstrcmp(node_name_short,
-			     slurmctld_conf.control_machine[i]) ||
-		    !xstrcmp(node_name_long,
-			     slurmctld_conf.control_machine[i]))
+		if (i == backup_inx)
 			continue;	/* No message to self */
 
 		arg = xmalloc(sizeof(int));

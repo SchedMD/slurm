@@ -100,8 +100,6 @@ static void *_heartbeat_thread(void *no_data)
 					  slurmctld_conf.state_save_location);
 		new_file = xstrdup_printf("%s.new", reg_file);
 
-		nl = HTON_uint64((uint64_t) now);
-
 		fd = open(new_file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, 0600);
 		if (fd < 0) {
 			error("%s: heartbeat file creation failed to %s.",
@@ -109,6 +107,7 @@ static void *_heartbeat_thread(void *no_data)
 			goto delay;
 		}
 
+		nl = HTON_uint64((uint64_t) now);
 		if (write(fd, &nl, sizeof(uint64_t)) != sizeof(uint64_t)) {
 			error("%s: heartbeat write failed to %s.",
 			      __func__, new_file);
@@ -116,7 +115,9 @@ static void *_heartbeat_thread(void *no_data)
 			(void) unlink(new_file);
 			goto delay;
 		}
-		if (write(fd, &backup_inx, sizeof(int)) != sizeof(int)) {
+
+		nl = HTON_uint64((uint64_t) backup_inx);
+		if (write(fd, &nl, sizeof(uint64_t)) != sizeof(uint64_t)) {
 			error("%s: heartbeat write failed to %s.",
 			      __func__, new_file);
 			close(fd);
@@ -148,8 +149,8 @@ delay:
 
 void heartbeat_start(void)
 {
-	if (!slurmctld_conf.control_addr[1]) {
-		debug("No BackupController, not launching heartbeat.");
+	if (slurmctld_conf.control_cnt < 2) {
+		debug("No backup controllers, not launching heartbeat.");
 		return;
 	}
 
@@ -174,8 +175,9 @@ void heartbeat_stop(void)
 time_t get_last_heartbeat(int *server_inx)
 {
 	char *file;
-	int fd = -1, i, inx = 0;
+	int fd = -1, i;
 	uint64_t value;
+	uint64_t inx;
 
 	file = xstrdup_printf("%s/heartbeat",
 			      slurmctld_conf.state_save_location);
@@ -206,12 +208,12 @@ time_t get_last_heartbeat(int *server_inx)
 		      __func__, file);
 		value = 0;
 	}
-	if (read(fd, &inx, sizeof(int)) != sizeof(int)) {
+	if (read(fd, &inx, sizeof(uint64_t)) != sizeof(uint64_t)) {
 		/* Information not available before Slurm version 18.08 */
 		debug("%s: heartbeat read failed from %s.",
 		      __func__, file);
 	} else if (server_inx) {
-		*server_inx = inx;
+		*server_inx = NTOH_uint64(inx);
 	}
 
 	close(fd);
