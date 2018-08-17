@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 	while ((selected_step = list_next(itr))) {
 		char *nodelist = NULL;
 		bool free_nodelist = false;
-		uint16_t use_protocol_ver = NO_VAL16;
+		uint16_t use_protocol_ver = SLURM_PROTOCOL_VERSION;
 		if (selected_step->stepid == SSTAT_BATCH_STEP) {
 			/* get the batch step info */
 			job_info_msg_t *job_ptr = NULL;
@@ -295,8 +295,8 @@ int main(int argc, char **argv)
 				continue;
 			}
 
-			use_protocol_ver =
-				job_ptr->job_array[0].start_protocol_ver;
+			use_protocol_ver = MIN(SLURM_PROTOCOL_VERSION,
+				job_ptr->job_array[0].start_protocol_ver);
 			stepid = SLURM_BATCH_SCRIPT;
 			hl = hostlist_create(job_ptr->job_array[0].nodes);
 			nodelist = hostlist_shift(hl);
@@ -313,8 +313,8 @@ int main(int argc, char **argv)
 				      selected_step->jobid);
 				continue;
 			}
-			use_protocol_ver =
-				job_ptr->job_array[0].start_protocol_ver;
+			use_protocol_ver = MIN(SLURM_PROTOCOL_VERSION,
+				job_ptr->job_array[0].start_protocol_ver);
 			stepid = SLURM_EXTERN_CONT;
 			nodelist = job_ptr->job_array[0].nodes;
 			slurm_free_job_info_msg(job_ptr);
@@ -375,7 +375,8 @@ int main(int argc, char **argv)
 			req_cpufreq_min = step_info->cpu_freq_min;
 			req_cpufreq_max = step_info->cpu_freq_max;
 			req_cpufreq_gov = step_info->cpu_freq_gov;
-			use_protocol_ver = step_info->start_protocol_ver;
+			use_protocol_ver = MIN(SLURM_PROTOCOL_VERSION,
+					       step_info->start_protocol_ver);
 		}
 		_do_stat(selected_step->jobid, stepid, nodelist,
 			 req_cpufreq_min, req_cpufreq_max, req_cpufreq_gov,
