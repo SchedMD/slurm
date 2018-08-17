@@ -1931,7 +1931,7 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 	slurmdb_cluster_rec_t *sibling;
 
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
