@@ -169,7 +169,7 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	}
 
 	/* repeatedly ping ControlMachine */
-	ctld_ping = xmalloc(sizeof(ctld_ping_t) * slurmctld_conf.control_cnt);
+	ctld_ping = xmalloc(sizeof(ctld_ping_t) * backup_inx);
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 		/* Lock of slurmctld_conf below not important */
@@ -566,7 +566,7 @@ static void *_ping_ctld_thread(void *arg)
 }
 
 /*
- * Ping ControlMachine and all BackupController nodes
+ * Ping all higher-priority control nodes.
  * RET SLURM_SUCCESS if a currently active controller is found
  */
 static int _ping_controller(void)
@@ -579,16 +579,13 @@ static int _ping_controller(void)
 	time_t now = time(NULL);
 	bool active_ctld = false, avail_ctld = false;
 
-	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
+	for (i = 0; i < backup_inx; i++) {
 		ctld_ping[i].control_time  = (time_t) 0;
 		ctld_ping[i].response_time = (time_t) 0;
 	}
 
 	lock_slurmctld(config_read_lock);
-	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
-		if (i == backup_inx)
-			break;	/* Self */
-
+	for (i = 0; i < backup_inx; i++) {
 		ping = xmalloc(sizeof(ping_struct_t));
 		ping->backup_inx      = i;
 		ping->control_addr    = xstrdup(slurmctld_conf.control_addr[i]);
@@ -609,34 +606,21 @@ static int _ping_controller(void)
 	}
 	slurm_mutex_unlock(&ping_mutex);
 
-	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
-		if (i < backup_inx) {
-			if (ctld_ping[i].control_time) {
-				/*
-				 * Higher priority slurmctld is already in
-				 * primary mode
-				 */
-				active_ctld = true;
-			}
-			if (ctld_ping[i].response_time == now) {
-				/*
-				 * Higher priority slurmctld is available to
-				 * enter primary mode
-				 */
-				avail_ctld = true;
-			}
+	for (i = 0; i < backup_inx; i++) {
+		if (ctld_ping[i].control_time) {
+			/*
+			 * Higher priority slurmctld is already in
+			 * primary mode
+			 */
+			active_ctld = true;
 		}
-#if _DEBUG
-		if (i == backup_inx) {
-			info("Controller[%d] Host:%s (Self)",
-			     i, slurmctld_conf.control_machine[i]);
-		} else {
-			info("Controller[%d] Host:%s LastResp:%"PRIu64" ControlTime:%"PRIu64,
-			     i, slurmctld_conf.control_machine[i],
-			     ctld_ping[i].response_time,
-			     ctld_ping[i].control_time);
+		if (ctld_ping[i].response_time == now) {
+			/*
+			 * Higher priority slurmctld is available to
+			 * enter primary mode
+			 */
+			avail_ctld = true;
 		}
-#endif
 	}
 
 	if (active_ctld || avail_ctld)
