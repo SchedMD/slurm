@@ -117,9 +117,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		     bool qos_preemptor, bool preempt_mode);
 static inline void _log_select_maps(char *loc, bitstr_t *node_map,
 				    bitstr_t **core_map);
-static int _rm_job_from_res(struct part_res_record *part_record_ptr,
-			    struct node_use_record *node_usage,
-			    struct job_record *job_ptr, int action);
 static void _rm_job_res(job_resources_t *job_resrcs_ptr,
 			bitstr_t ***sys_resrcs_ptr);
 static avail_res_t **_select_nodes(struct job_record *job_ptr,
@@ -410,13 +407,15 @@ extern bool job_cleaning(struct job_record *job_ptr)
 }
 
 /*
- * deallocate resources previously allocated to the given job
+ * Deallocate resources previously allocated to the given job
  * - subtract 'struct job_resources' resources from 'struct part_res_record'
  * - subtract job's memory requirements from 'struct node_res_record'
  *
  * if action = 0 then subtract cores, memory + GRES (running job was terminated)
  * if action = 1 then subtract memory + GRES (suspended job was terminated)
  * if action = 2 then only subtract cores (job is suspended)
+ *
+ * RET SLURM_SUCCESS or error code
  *
  * See also: _add_job_to_res() in select_cons_tres.c
  */
@@ -454,9 +453,10 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 		     job_ptr->job_id, action);
 		log_job_resources(job_ptr);
 		log_tres_state(node_usage, part_record_ptr);
+	} else {
+		debug3("cons_tres: %s: job %u action %d", __func__,
+		       job_ptr->job_id, action);
 	}
-	debug3("cons_tres: %s: job %u action %d", __func__, job_ptr->job_id,
-	       action);
 	if (job_ptr->start_time < slurmctld_config.boot_time)
 		old_job = true;
 	i_first = bit_ffs(job->node_bitmap);
@@ -494,9 +494,10 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 				      job->memory_allocated[n],
 				      job_ptr->job_id);
 				node_usage[i].alloc_memory = 0;
-			} else
+			} else {
 				node_usage[i].alloc_memory -=
 					job->memory_allocated[n];
+			}
 		}
 		if ((powercap_get_cluster_current_cap() != 0) &&
 		    (which_power_layout() == 2)) {
@@ -523,7 +524,8 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 		}
 		if (!p_ptr) {
 			error("cons_tres: %s: removed job %u could not find part %s",
-			      __func__, job_ptr->job_id, job_ptr->part_ptr->name);
+			      __func__, job_ptr->job_id,
+			      job_ptr->part_ptr->name);
 			return SLURM_ERROR;
 		}
 
@@ -541,7 +543,7 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 				       "part %s row %u",
 				       __func__, job_ptr->job_id,
 				       p_ptr->part_ptr->name, i);
-				for (; j < p_ptr->row[i].num_jobs-1; j++) {
+				for ( ; j < p_ptr->row[i].num_jobs-1; j++) {
 					p_ptr->row[i].job_list[j] =
 						p_ptr->row[i].job_list[j+1];
 				}
@@ -1968,177 +1970,6 @@ alloc_job:
 	}
 
 	return error_code;
-}
-
-/*
- * Deallocate resources previously allocated to the given job
- * - subtract 'struct job_resources' resources from 'struct part_res_record'
- * - subtract job's memory requirements from 'struct node_res_record'
- *
- * if action = 0 then subtract cores, memory + TRES (running job was terminated)
- * if action = 1 then subtract memory + TRES (suspended job was terminated)
- * if action = 2 then only subtract cores (job is suspended)
- */
-static int _rm_job_from_res(struct part_res_record *part_record_ptr,
-			    struct node_use_record *node_usage,
-			    struct job_record *job_ptr, int action)
-{
-	struct job_resources *job = job_ptr->job_resrcs;
-	struct node_record *node_ptr;
-	int first_bit, last_bit;
-	int i, n;
-	List gres_list;
-	bool old_job = false;
-
-	if (select_state_initializing) {
-		/*
-		 * Ignore job removal until select/cons_tres data structures
-		 * values are set by select_p_reconfigure()
-		 */
-		return SLURM_SUCCESS;
-	}
-	if (!job || !job->core_bitmap) {
-		if (job_ptr->details && (job_ptr->details->min_nodes == 0))
-			return SLURM_SUCCESS;
-		error("%s: job %u has no job_resrcs info",
-		      __func__, job_ptr->job_id);
-		return SLURM_ERROR;
-	}
-
-	debug3("cons_tres: %s: job %u action %d", __func__, job_ptr->job_id,
-	       action);
-	if (job_ptr->start_time < slurmctld_config.boot_time)
-		old_job = true;
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		log_job_resources(job_ptr);
-
-	first_bit = bit_ffs(job->node_bitmap);
-	if (first_bit == -1)
-		last_bit = -2;
-	else
-		last_bit =  bit_fls(job->node_bitmap);
-	for (i = first_bit, n = -1; i <= last_bit; i++) {
-		if (!bit_test(job->node_bitmap, i))
-			continue;
-		n++;
-		if (job->cpus[n] == 0)
-			continue;  /* node lost by job resize */
-
-		node_ptr = node_record_table_ptr + i;
-		if (action != 2) {
-			if (node_usage[i].gres_list)
-				gres_list = node_usage[i].gres_list;
-			else
-				gres_list = node_ptr->gres_list;
-			gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
-						n, job_ptr->job_id,
-						node_ptr->name, old_job);
-			gres_plugin_node_state_log(gres_list, node_ptr->name);
-		}
-
-		if (action != 2) {
-			if (node_usage[i].alloc_memory <
-			    job->memory_allocated[n]) {
-				error("cons_tres: node %s memory is under-allocated "
-				      "(%"PRIu64"-%"PRIu64") for job %u",
-				      node_ptr->name,
-				      node_usage[i].alloc_memory,
-				      job->memory_allocated[n],
-				      job_ptr->job_id);
-				node_usage[i].alloc_memory = 0;
-			} else
-				node_usage[i].alloc_memory -=
-					job->memory_allocated[n];
-		}
-		if ((powercap_get_cluster_current_cap() != 0) &&
-		    (which_power_layout() == 2)) {
-			adapt_layouts(job, job_ptr->details->cpu_freq_max, n,
-				      node_ptr->name, false);
-		}
-	}
-
-	/* subtract cores */
-	if (action != 1) {
-		/* reconstruct rows with remaining jobs */
-		struct part_res_record *p_ptr;
-
-		if (!job_ptr->part_ptr) {
-			error("cons_tres: removed job %u does not have a "
-			      "partition assigned",
-			      job_ptr->job_id);
-			return SLURM_ERROR;
-		}
-
-		for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
-			if (p_ptr->part_ptr == job_ptr->part_ptr)
-				break;
-		}
-		if (!p_ptr) {
-			error("cons_tres: removed job %u could not find part %s",
-			      job_ptr->job_id, job_ptr->part_ptr->name);
-			return SLURM_ERROR;
-		}
-
-		if (!p_ptr->row)
-			return SLURM_SUCCESS;
-
-		/* remove the job from the job_list */
-		n = 0;
-		for (i = 0; i < p_ptr->num_rows; i++) {
-			uint32_t j;
-			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
-				if (p_ptr->row[i].job_list[j] != job)
-					continue;
-				debug3("cons_tres: removed job %u from "
-				       "part %s row %u",
-				       job_ptr->job_id,
-				       p_ptr->part_ptr->name, i);
-				for (; j < p_ptr->row[i].num_jobs-1; j++) {
-					p_ptr->row[i].job_list[j] =
-						p_ptr->row[i].job_list[j+1];
-				}
-				p_ptr->row[i].job_list[j] = NULL;
-				p_ptr->row[i].num_jobs--;
-				/* found job - we're done */
-				n = 1;
-				i = p_ptr->num_rows;
-				break;
-			}
-		}
-		if (n) {
-			/* job was found and removed, so refresh the bitmaps */
-			build_row_bitmaps(p_ptr, job_ptr);
-
-			/*
-			 * Adjust the node_state of all nodes affected by
-			 * the removal of this job. If all cores are now
-			 * available, set node_state = NODE_CR_AVAILABLE
-			 */
-			for (i = first_bit, n = -1; i <= last_bit; i++) {
-				if (bit_test(job->node_bitmap, i) == 0)
-					continue;
-				n++;
-				if (job->cpus[n] == 0)
-					continue;  /* node lost by job resize */
-				if (node_usage[i].node_state >=
-				    job->node_req) {
-					node_usage[i].node_state -=
-						job->node_req;
-				} else {
-					node_ptr = node_record_table_ptr + i;
-					error("cons_tres: %s: node_state mis-count "
-					      "(job:%u job_cnt:%u node:%s node_cnt:%u)",
-					      __func__, job_ptr->job_id,
-					      job->node_req, node_ptr->name,
-					      node_usage[i].node_state);
-					node_usage[i].node_state =
-						NODE_CR_AVAILABLE;
-				}
-			}
-		}
-	}
-
-	return SLURM_SUCCESS;
 }
 
 /* Enable detailed logging of cr_dist() node and per-node core bitmaps */
@@ -4293,8 +4124,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 			    (mode != PREEMPT_MODE_CANCEL))
 				continue;	/* can't remove job */
 			/* Remove preemptable job now */
-			_rm_job_from_res(future_part, future_usage,
-					 tmp_job_ptr, 0);
+			(void) rm_job_res(future_part, future_usage,
+					  tmp_job_ptr, 0);
 			bit_or(node_bitmap, orig_node_map);
 			rc = _job_test(job_ptr, node_bitmap, min_nodes,
 				       max_nodes, req_nodes,
@@ -4573,8 +4404,8 @@ extern int will_run_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			} else
 				action = 0;	/* remove cores and memory */
 			/* Remove preemptable job now */
-			_rm_job_from_res(future_part, future_usage,
-					 tmp_job_ptr, action);
+			(void) rm_job_res(future_part, future_usage,
+					  tmp_job_ptr, action);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -4631,8 +4462,8 @@ extern int will_run_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 				if (!first_job_ptr)
 					first_job_ptr = tmp_job_ptr;
 				last_job_ptr = tmp_job_ptr;
-				_rm_job_from_res(future_part, future_usage,
-						 tmp_job_ptr, 0);
+				(void) rm_job_res(future_part, future_usage,
+						  tmp_job_ptr, 0);
 				if (rm_job_cnt++ > 200)
 					break;
 				next_job_ptr = list_peek_next(job_iterator);
