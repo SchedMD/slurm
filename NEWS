@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Added 'remote-fs.target' to After directive of slurmd.service file.
  -- Fix filetxt plugin to handle it when you aren't running a jobacct_gather
     plugin.
+ -- Remove drain on node when reboot nextstate used.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

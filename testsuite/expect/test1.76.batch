@@ -11,7 +11,7 @@
 cd $3
 echo "Starting values"
 $4 $3/test1.76.bash $1
-echo "srun --cpu-freq=$2 test1.76.bash $1"
+echo "srun --cpu-freq=$2 $3/test1.76.bash $1"
 $4 --cpu-freq=$2 $3/test1.76.bash $1
 echo "Ending values"
 $4 $3/test1.76.bash $1

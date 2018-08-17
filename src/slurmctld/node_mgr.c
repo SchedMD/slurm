@@ -2764,6 +2764,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				}
 				node_flags &= (~NODE_STATE_DRAIN);
 			}
+			if (node_ptr->next_state != NO_VAL)
+				node_flags &= (~NODE_STATE_DRAIN);
+
 			if (node_ptr->next_state == NODE_STATE_DOWN) {
 				node_ptr->node_state = node_ptr->next_state |
 						       node_flags;
