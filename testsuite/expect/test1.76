@@ -185,10 +185,21 @@ proc test_case {opt expmin expcur expmax expgov} {
 		log_user 1
 		return 1
 	}
+
 	if {$expcur !=0 && [expr abs($tcur - $expcur)] > 10000} {
-		send_user "\nERROR: --cpu-freq=$opt -- test cur $tcur not expected ($expcur)\n"
-		log_user 1
-		return 1
+		set real_error 1
+		if {![string compare $opt "High"]} {
+			if {$tcur > $expcur} {
+				send_user "WARNING: --cpu-freq=$opt -- test cur $tcur higher than ($expcur).  This is expected on overclocked systems.\n\n"
+				set real_error 0
+			}
+		}
+
+		if {$real_error} {
+			send_user "\nERROR: --cpu-freq=$opt -- test cur $tcur not expected ($expcur)\n"
+			log_user 1
+			return 1
+		}
 	}
 	if {[string compare $expmax 0] !=0 
 	    && [string compare $tmax $expmax] != 0} {
