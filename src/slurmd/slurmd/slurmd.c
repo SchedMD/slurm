@@ -1249,7 +1249,9 @@ _destroy_conf(void)
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
 		if (conf->hwloc_xml) {
-			remove(conf->hwloc_xml);
+			if (remove(conf->hwloc_xml))
+				error("%s: remove %s failed: %m",
+				      __func__, conf->hwloc_xml);
 			xfree(conf->hwloc_xml);
 		}
 		xfree(conf->job_acct_gather_freq);
@@ -1505,7 +1507,8 @@ _slurmd_init(void)
 	}
 
 	/* Set up the hwloc whole system xml file */
-	xcpuinfo_init();
+	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
+		return SLURM_FAILURE;
 
 	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);

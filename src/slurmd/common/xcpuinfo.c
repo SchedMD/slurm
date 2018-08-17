@@ -970,7 +970,9 @@ xcpuinfo_fini(void)
 	xfree(block_map_inv);
 #ifdef HAVE_HWLOC
 	if (hwloc_xml_whole) {
-		remove(hwloc_xml_whole);
+		if (remove(hwloc_xml_whole))
+			error("%s: remove %s failed: %m",
+			      __func__, hwloc_xml_whole);
 		xfree(hwloc_xml_whole);
 	}
 #endif

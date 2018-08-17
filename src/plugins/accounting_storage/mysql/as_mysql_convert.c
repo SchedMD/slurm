@@ -537,7 +537,9 @@ static int _convert_step_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 			tmp32 = slurm_atoul(row[STEP_REQ_MIN_CPU]);
 			if (tmp32 != NO_VAL) {
 				jobacct->tres_usage_in_min[TRES_ARRAY_CPU] =
-					(uint64_t)(tmp32 * CPU_TIME_ADJ);
+					tmp32;
+				jobacct->tres_usage_in_min[TRES_ARRAY_CPU] *=
+					CPU_TIME_ADJ;
 				jobacct->tres_usage_in_min_nodeid[
 					TRES_ARRAY_CPU] =
 					slurm_atoull(
