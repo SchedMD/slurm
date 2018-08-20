@@ -728,6 +728,10 @@ static void _record_profile(struct jobacctinfo *jobacct)
 	} else {
 		data[FIELD_CPUTIME].d =
 			jobacct->tot_cpu - jobacct->last_total_cputime;
+
+		if (data[FIELD_CPUTIME].d < 0)
+			data[FIELD_CPUTIME].d = jobacct->tot_cpu;
+
 		et = (jobacct->cur_time - jobacct->last_time);
 		if (!et)
 			data[FIELD_CPUUTIL].d = 0.0;
@@ -739,8 +743,14 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_READ].d = jobacct->tot_disk_read -
 			jobacct->last_tot_disk_read;
 
+		if (data[FIELD_READ].d < 0)
+			data[FIELD_READ].d = jobacct->tot_disk_read;
+
 		data[FIELD_WRITE].d = jobacct->tot_disk_write -
 			jobacct->last_tot_disk_write;
+
+		if (data[FIELD_WRITE].d < 0)
+			data[FIELD_WRITE].d = jobacct->tot_disk_write;
 	}
 
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
