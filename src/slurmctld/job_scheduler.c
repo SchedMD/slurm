@@ -4743,7 +4743,7 @@ static int _valid_feature_list(struct job_record *job_ptr, bool can_reboot)
 	List feature_list = job_ptr->details->feature_list;
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
-	char *buf = NULL, tmp[16];
+	char *buf = NULL;
 	int bracket = 0, paren = 0;
 	int rc = SLURM_SUCCESS;
 
@@ -4774,10 +4774,8 @@ static int _valid_feature_list(struct job_record *job_ptr, bool can_reboot)
 		}
 		if (rc == SLURM_SUCCESS)
 			rc = _valid_node_feature(feat_ptr->name, can_reboot);
-		if (feat_ptr->count) {
-			snprintf(tmp, sizeof(tmp), "*%u", feat_ptr->count);
-			xstrcat(buf, tmp);
-		}
+		if (feat_ptr->count)
+			xstrfmtcat(buf, "*%u", feat_ptr->count);
 		if (bracket &&
 		    ((feat_ptr->op_code != FEATURE_OP_XOR) &&
 		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
