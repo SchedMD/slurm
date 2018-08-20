@@ -168,7 +168,6 @@ static int _check_lustre_fs(void)
 static int _read_lustre_counters(void)
 {
 	char lustre_dir[PATH_MAX];
-	char path_stats[PATH_MAX];
 	DIR *proc_dir;
 	struct dirent *entry;
 	FILE *fff;
@@ -184,6 +183,7 @@ static int _read_lustre_counters(void)
 	}
 
 	while ((entry = readdir(proc_dir))) {
+		char *path_stats = NULL;
 		bool bread;
 		bool bwrote;
 
@@ -191,15 +191,17 @@ static int _read_lustre_counters(void)
 		    || xstrcmp(entry->d_name, "..") == 0)
 			continue;
 
-		snprintf(path_stats, PATH_MAX, "%s/%s/stats", lustre_dir,
-			 entry->d_name);
+		xstrfmtcat(path_stats, "%s/%s/stats",
+			   lustre_dir, entry->d_name);
 		debug3("%s: Found file %s", __func__, path_stats);
 
 		fff = fopen(path_stats, "r");
 		if (fff == NULL) {
 			error("%s: Cannot open %s %m", __func__, path_stats);
+			xfree(path_stats);
 			continue;
 		}
+		xfree(path_stats);
 
 		bread = bwrote = false;
 		while (fgets(buffer, BUFSIZ, fff)) {
