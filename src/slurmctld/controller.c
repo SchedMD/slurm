@@ -3272,8 +3272,7 @@ static int _ping_backup_controller(void)
 	unlock_slurmctld(config_read_lock);
 
 	for (i = 0; i < control_cnt; i++) {
-		/* don't bother to ping ourselves */
-		if (i == backup_inx)
+		if (!control_addr[i])
 			continue;
 
 		slurm_msg_t_init(&req);
