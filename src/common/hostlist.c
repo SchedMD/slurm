@@ -1793,7 +1793,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 {
 	int i, k, nr, rc = 0, rc1;
 	char *p, *q;
-	char new_prefix[1024];
+	char *new_prefix = NULL;
 
 	if (((p = strrchr(prefix, '[')) != NULL) &&
 	    ((q = strrchr(p, ']')) != NULL)) {
@@ -1822,9 +1822,8 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 				return -1;
 			}
 			for (j = pre_range->lo; j <= pre_range->hi; j++) {
-				snprintf(new_prefix, sizeof(new_prefix),
-					 "%s%0*lu%s", prefix,
-					 pre_range->width, j, q);
+				xstrfmtcat(new_prefix, "%s%0*lu%s",
+					   prefix, pre_range->width, j, q);
 				if (recurse) {
 					rc1 = _push_range_list(hl, new_prefix,
 							       saved_range,
@@ -1840,6 +1839,7 @@ _push_range_list(hostlist_t hl, char *prefix, struct _range *range,
 						range++;
 					}
 				}
+				xfree(new_prefix);
 			}
 			pre_range++;
 		}
