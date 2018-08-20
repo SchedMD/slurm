@@ -177,7 +177,6 @@ static uint16_t _get_ntasks_per_core(struct job_details *details) {
  */
 static int _get_gres_alloc(struct job_record *job_ptr)
 {
-	char                buf[128], *prefix="";
 	char                gres_name[64];
 	int                 i, rv;
 	int                 node_cnt;
@@ -196,6 +195,7 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 	rv = gres_plugin_job_count(job_ptr->gres_list, gres_type_count,
 				   gres_count_ids, gres_count_vals);
 	if (rv == SLURM_SUCCESS) {
+		char *sep = "";
 		for (i = 0; i < gres_type_count; i++) {
 			if (!gres_count_ids[i])
 				break;
@@ -203,16 +203,9 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 			/* Map the GRES type ID back to a GRES type name. */
 			gres_gresid_to_gresname(gres_count_ids[i], gres_name,
 						sizeof(gres_name));
-			sprintf(buf,"%s%s:%"PRIu64, prefix, gres_name,
-				gres_count_vals[i]);
-			xstrcat(job_ptr->gres_alloc, buf);
-			if (prefix[0] == '\0')
-				prefix = ",";
-
-			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
-				debug("%s: %pJ -- gres_alloc substring=(%s)",
-				      __func__, job_ptr, buf);
-			}
+			xstrfmtcat(job_ptr->gres_alloc, "%s%s:%"PRIu64,
+				   sep, gres_name, gres_count_vals[i]);
+			sep = ",";
 		}
 	}
 	xfree(gres_count_ids);
