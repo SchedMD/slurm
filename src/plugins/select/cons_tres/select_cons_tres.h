@@ -119,6 +119,7 @@ extern uint64_t def_mem_per_gpu;
 extern int	gang_mode;
 extern bool	have_dragonfly;
 extern bool	pack_serial_at_end;
+extern const char *plugin_type;
 extern int	preempt_reorder_cnt;
 extern bool	preempt_strict_order;
 extern bool	preempt_by_part;

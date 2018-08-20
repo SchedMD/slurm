@@ -1346,15 +1346,10 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 		return SLURM_ERROR;
 	}
 
-<<<<<<< HEAD
 	debug3("%s: %s: %pJ node %s",
 	       plugin_type, __func__, job_ptr, node_ptr->name);
-=======
-	debug3("cons_res: _rm_job_from_one_node: job %u node %s",
-	       job_ptr->job_id, node_ptr->name);
 	if (job_ptr->start_time < slurmctld_config.boot_time)
 		old_job = true;
->>>>>>> gres underflow error fix
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		_dump_job_res(job);
 

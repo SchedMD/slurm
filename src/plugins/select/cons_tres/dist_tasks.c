@@ -126,13 +126,13 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	if (!job_res)
 		return;
 	if (!job_res->core_bitmap) {
-		error("cons_tres: %s: core_bitmap for job %u is NULL",
-		      __func__, job_ptr->job_id);
+		error("%s: %s: core_bitmap for %pJ is NULL",
+		      plugin_type, __func__, job_ptr);
 		return;
 	}
 	if (bit_ffs(job_res->core_bitmap) == -1) {
-		error("cons_tres: %s: core_bitmap for job %u has no bits set",
-		      __func__, job_ptr->job_id);
+		error("%s: %s: core_bitmap for %pJ has no bits set",
+		      plugin_type, __func__, job_ptr);
 		return;
 	}
 
@@ -170,7 +170,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		num_bits =  nsockets_nb * ncores_nb;
 
 		if ((c + num_bits) > csize) {
-			error("cons_tres: %s index error", __func__);
+			error("%s: %s index error", plugin_type, __func__);
 			break;
 		}
 
@@ -195,9 +195,9 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		}
 
 		if (nboards_nb > MAX_BOARDS) {
-			debug3("cons_tres: %s: node[%u]: exceeds max boards; "
+			debug3("%s: %s: node[%u]: exceeds max boards; "
 			       "doing best-fit across sockets only",
-			       __func__, n);
+			       plugin_type, __func__, n);
 			nboards_nb = 1;
 		}
 
@@ -217,10 +217,10 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 		if (nsockets_nb >= nboards_nb) {
 			sock_per_brd = nsockets_nb / nboards_nb;
 		} else {
-			error("cons_tres: %s: Node socket count lower than board count "
-			      "(%u < %u), job %u node %s",
-			      __func__, nsockets_nb, nboards_nb,
-			      job_ptr->job_id, node_record_table_ptr[n].name);
+			error("%s: %s: Node socket count lower than board count "
+			      "(%u < %u), %pJ node %s",
+			      plugin_type, __func__, nsockets_nb, nboards_nb,
+			      job_ptr, node_record_table_ptr[n].name);
 			sock_per_brd = 1;
 		}
 		for (b = 0; b < nboards_nb; b++) {
@@ -347,10 +347,10 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			}
 		}
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			info("cons_tres: %s: node[%u]: required CPUs:%u min req boards:%u,",
-			     __func__, n, cpus, b_min);
-			info("cons_tres: %s: node[%u]: min req sockets:%u min avail cores:%u",
-			     __func__, n, s_min, core_min);
+			info("%s: %s: node[%u]: required CPUs:%u min req boards:%u,",
+			     plugin_type, __func__, n, cpus, b_min);
+			info("%s: %s: node[%u]: min req sockets:%u min avail cores:%u",
+			     plugin_type, __func__, n, s_min, core_min);
 		}
 		/*
 		 * Re-sort socket list for best-fit board combination in
@@ -396,9 +396,10 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			if (sock_per_brd)
 				j /= sock_per_brd;
 			if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-				info("cons_tres: %s: using node[%u]: "
+				info("%s: %s: using node[%u]: "
 				     "board[%u]: socket[%u]: %u cores available",
-				     __func__, n, j, best_fit_location,
+				     plugin_type, __func__, n, j,
+				     best_fit_location,
 				     sockets_core_cnt[best_fit_location]);
 			}
 
@@ -473,8 +474,8 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			 * CPUs count should NEVER be greater than the number
 			 * of set bits in the core bitmap for a given node
 			 */
-			error("cons_tres: %s: CPUs computation error",
-			      __func__);
+			error("%s: %s: CPUs computation error",
+			     plugin_type,  __func__);
 			break;
 		}
 
@@ -581,8 +582,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	bool log_over_subscribe = true;
 
 	if (!job_res || !job_res->cpus || !job_res->nhosts) {
-		error("cons_tres: %s: invalid allocation for job %u",
-		      __func__, job_ptr->job_id);
+		error("%s: %s: invalid allocation for %pJ",
+		      plugin_type, __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -606,8 +607,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	 * cpus than cpus_per_task or didn't specify the number.
 	 */
 	if (!maxtasks) {
-		error("cons_tres: %s: changing task count from 0 to 1 for job %u",
-		      __func__, job_ptr->job_id);
+		error("%s: %s: changing task count from 0 to 1 for %pJ",
+		      plugin_type, __func__, job_ptr);
 		maxtasks = 1;
 	}
 	if (job_ptr->details->cpus_per_task == 0)
@@ -624,8 +625,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available CPUs
 			 */
-			error("cons_tres: %s: oversubscribe for job %u",
-			      __func__, job_ptr->job_id);
+			error("%s: %s: oversubscribe for %pJ",
+			      plugin_type, __func__, job_ptr);
 			log_over_subscribe = false;	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
@@ -658,8 +659,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	bool log_over_subscribe = true;
 
 	if (!job_res || !job_res->cpus || !job_res->nhosts) {
-		error("cons_tres: %s: invalid allocation for job %u",
-		      __func__, job_ptr->job_id);
+		error("%s: %s: invalid allocation for %pJ",
+		      plugin_type, __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -673,7 +674,7 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
 
 	if (plane_size <= 0) {
-		error("cons_tres: %s: invalid plane_size", __func__);
+		error("%s: %s: invalid plane_size", plugin_type, __func__);
 		return SLURM_ERROR;
 	}
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
@@ -688,8 +689,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available CPUs
 			 */
-			error("cons_tres: %s: oversubscribe for job %u",
-			      __func__, job_ptr->job_id);
+			error("%s: %s: oversubscribe for %pJ",
+			      plugin_type, __func__, job_ptr);
 			log_over_subscribe = false;	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
@@ -774,14 +775,14 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 		vpus    = vpus_per_core(job_ptr->details, n);
 
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			info("cons_tres: %s: job %u node %s vpus %u cpus %u",
-			     __func__, job_ptr->job_id,
+			info("%s: %s: %pJ node %s vpus %u cpus %u",
+			     plugin_type, __func__, job_ptr,
 			     select_node_record[n].node_ptr->name,
 			     vpus, job_res->cpus[i]);
 		}
 
 		if ((c + (sockets * cps)) > csize) {
-			error("cons_tres: %s: index error", __func__);
+			error("%s: %s: index error", plugin_type, __func__);
 			break;
 		}
 
@@ -908,10 +909,10 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				/* we're stuck! */
 				job_ptr->priority = 0;
 				job_ptr->state_reason = WAIT_HELD;
-				error("cons_tres: %s: sync loop not progressing on node %s, "
-				      "holding job %u", __func__,
+				error("%s: %s: sync loop not progressing on node %s, holding %pJ",
+				      plugin_type, __func__,
 				      select_node_record[n].node_ptr->name,
-				      job_ptr->job_id);
+				      job_ptr);
 			}
 			error_code = SLURM_ERROR;
 			goto fini;
@@ -1079,16 +1080,16 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		/* Perform plane distribution on the job_resources_t struct */
 		error_code = _compute_plane_dist(job_ptr);
 		if (error_code != SLURM_SUCCESS) {
-			error("cons_tres: %s: Error in _compute_plane_dist",
-			      __func__);
+			error("%s: %s: Error in _compute_plane_dist",
+			      plugin_type, __func__);
 			return error_code;
 		}
 	} else {
 		/* Perform cyclic distribution on the job_resources_t struct */
 		error_code = _compute_c_b_task_dist(job_ptr);
 		if (error_code != SLURM_SUCCESS) {
-			error("cons_tres: %s: Error in _compute_c_b_task_dist",
-			      __func__);
+			error("%s: %s: Error in _compute_c_b_task_dist",
+			      plugin_type, __func__);
 			return error_code;
 		}
 	}
@@ -1143,8 +1144,8 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 						      preempt_mode);
 		break;
 	default:
-		error("select/cons_tres: %s: invalid task_dist entry",
-		      __func__);
+		error("%s: %s: invalid task_dist entry",
+		      plugin_type, __func__);
 		return SLURM_ERROR;
 	}
 
