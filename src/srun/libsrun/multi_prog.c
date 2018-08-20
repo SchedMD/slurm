@@ -93,7 +93,7 @@ _build_path(const char * cwd, char* fname)
 	xstrfmtcat(file_path, "%s/%s", cwd, file_name);
 	if ((stat(file_path, &buf) == 0)
 	    && (! S_ISDIR(buf.st_mode))) {
-		xfree(file_path);
+		xfree(file_name);
 		return file_path;
 	}
 	xfree(file_path);
