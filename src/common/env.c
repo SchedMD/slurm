@@ -1941,7 +1941,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	char cmdstr[256], *env_loc = NULL;
-	char stepd_path[MAXPATHLEN];
+	char *stepd_path;
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
 	pid_t child;
@@ -1954,8 +1954,6 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		return NULL;
 	}
 
-	snprintf(stepd_path, sizeof(stepd_path), "%s/sbin/slurmstepd",
-		 SLURM_PREFIX);
 	config_timeout = slurm_get_env_timeout();
 
 	if (config_timeout == 0)	/* just read directly from cache */
@@ -1965,9 +1963,10 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		fatal("Could not locate command: "SUCMD);
 	if (stat("/bin/echo", &buf))
 		fatal("Could not locate command: /bin/echo");
+	xstrfmtcat(stepd_path, "%s/sbin/slurmstepd", SLURM_PREFIX);
 	if (stat(stepd_path, &buf) == 0) {
-		snprintf(name, sizeof(name), "%s getenv", stepd_path);
-		env_loc = name;
+		xstrfmtcat(stepd_path, "%s getenv", stepd_path);
+		env_loc = stepd_path;
 	} else if (stat("/bin/env", &buf) == 0)
 		env_loc = "/bin/env";
 	else if (stat("/usr/bin/env", &buf) == 0)
@@ -1978,6 +1977,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		 "/bin/echo; /bin/echo; /bin/echo; "
 		 "/bin/echo %s; %s; /bin/echo %s",
 		 starttoken, env_loc, stoptoken);
+	xfree(stepd_path);
 
 	if (pipe(fildes) < 0) {
 		fatal("pipe: %m");

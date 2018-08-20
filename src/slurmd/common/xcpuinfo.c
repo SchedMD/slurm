@@ -1197,7 +1197,6 @@ _map_to_range(uint16_t *map,uint16_t map_size,char** prange)
 	int num_fl=0;
 	int con_fl=0;
 
-	char id[12];
 	char *str;
 
 	uint16_t start=0,end=0,i;
@@ -1215,24 +1214,20 @@ _map_to_range(uint16_t *map,uint16_t map_size,char** prange)
 		}
 		else if ( num_fl ) {
 			if ( start < end ) {
-				sprintf(id,"%u-%u,",start,end);
-				xstrcat(str,id);
+				xstrfmtcat(str, "%u-%u,", start, end);
 			}
 			else {
-				sprintf(id,"%u,",start);
-				xstrcat(str,id);
+				xstrfmtcat(str, "%u,", start);
 			}
 			con_fl = num_fl = 0;
 		}
 	}
 	if ( num_fl ) {
 		if ( start < end ) {
-			sprintf(id,"%u-%u,",start,end);
-			xstrcat(str,id);
+			xstrfmtcat(str, "%u-%u,", start, end);
 		}
 		else {
-			sprintf(id,"%u,",start);
-			xstrcat(str,id);
+			xstrfmtcat(str, "%u,", start);
 		}
 	}
 

@@ -213,7 +213,7 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 	DIR *dirp;
 	struct dirent *entryp;
 	char dirpath[1024];
-	char fdpath[1024];
+	char fdpath[2048];
 	int rc = SLURM_FAILURE;
 	struct stat statbuf;
 
@@ -230,7 +230,7 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 			continue;
 
 		/* This is a symlink. Follow it to get destination's inode. */
-		snprintf(fdpath, 1024, "%s/%s", dirpath, entryp->d_name);
+		snprintf(fdpath, sizeof(fdpath), "%s/%s", dirpath, entryp->d_name);
 		if (stat(fdpath, &statbuf) != 0)
 			continue;
 		if (statbuf.st_ino == inode) {

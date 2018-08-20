@@ -71,12 +71,12 @@ _build_path(const char * cwd, char* fname)
 {
 	int i;
 	char *path_env = NULL, *dir = NULL, *ptrptr = NULL;
-	static char file_name[256], file_path[256];	/* return values */
+	char *file_name = NULL, *file_path = NULL;
 	struct stat buf;
 
 	/* make copy of file name (end at white space) */
-	snprintf(file_name, sizeof(file_name), "%s", fname);
-	for (i=0; i<sizeof(file_name); i++) {
+	file_name = xstrdup(fname);
+	for (i = 0; i < strlen(file_name); i++) {
 		if (file_name[i] == '\0')
 			break;
 		if (!isspace(file_name[i]))
@@ -90,31 +90,39 @@ _build_path(const char * cwd, char* fname)
 		return file_name;
 
 	/* search for the file using cwd*/
-	snprintf(file_path, sizeof(file_path), "%s/%s", cwd, file_name);
+	xstrfmtcat(file_path, "%s/%s", cwd, file_name);
 	if ((stat(file_path, &buf) == 0)
-	    && (! S_ISDIR(buf.st_mode)))
+	    && (! S_ISDIR(buf.st_mode))) {
+		xfree(file_path);
 		return file_path;
+	}
+	xfree(file_path);
 
 	/* search for the file using PATH environment variable */
 	dir = getenv("PATH");
 	if (!dir) {
 		error("No PATH environment variable");
+		xfree(file_name);
 		return NULL;
 	}
 	path_env = xstrdup(dir);
+	/* FIXME: this walks PATH backwards which isn't the normal behavior */
 	dir = strtok_r(path_env, ":", &ptrptr);
 	while (dir) {
-		snprintf(file_path, sizeof(file_path), "%s/%s", dir, file_name);
+		xstrfmtcat(file_path, "%s/%s", dir, file_name);
 		if ((stat(file_path, &buf) == 0)
 		    && (! S_ISDIR(buf.st_mode)))
 			break;
 		dir = strtok_r(NULL, ":", &ptrptr);
+		xfree(file_path);
 	}
 	if (dir == NULL) {	/* not found */
 		error("Could not find executable %s", file_name);
-		snprintf(file_path, sizeof(file_path), "%s", file_name);
+		file_path = file_name;
+		file_name = NULL;
 	}
 	xfree(path_env);
+	xfree(file_name);
 	return file_path;
 }
 
@@ -146,6 +154,7 @@ _set_exec_names(char *ranks, const char *cwd, char *exec_name, int ntasks)
 		low_num = 0;
 		high_num = ntasks - 1;
 		_set_range(low_num, high_num, exec_path, true);
+		xfree(exec_path);
 		return;
 	}
 
@@ -173,10 +182,12 @@ _set_exec_names(char *ranks, const char *cwd, char *exec_name, int ntasks)
 			break;
 		ptrptr++;
 	}
+	xfree(exec_path);
 	return;
 
   invalid:
 	error ("Invalid task range specification (%s) ignored.", ranks);
+	xfree(exec_path);
 	return;
 }
 
