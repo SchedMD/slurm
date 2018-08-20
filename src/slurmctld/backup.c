@@ -539,7 +539,7 @@ static int _ping_controller(void)
 {
 	int i;
 	ping_struct_t *ping;
-	pthread_t ping_tids[backup_inx] = {0};
+	pthread_t ping_tids[backup_inx];
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
