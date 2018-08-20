@@ -7193,7 +7193,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		}
 	} else if (job_gres_ptr->total_node_cnt &&
 		   job_gres_ptr->gres_bit_select &&
-		   job_gres_ptr->gres_bit_select[node_index]) {
+		   job_gres_ptr->gres_bit_select[node_index] &&
+		   job_gres_ptr->gres_cnt_node_select) {
 		/* Specific GRES already selected, update the node record */
 		bool job_mod = false;
 		sz1 = bit_size(job_gres_ptr->gres_bit_select[node_index]);
