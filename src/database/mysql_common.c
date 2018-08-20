@@ -542,7 +542,6 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 /* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static int _create_db(char *db_name, mysql_db_info_t *db_info)
 {
-	char create_line[50];
 	MYSQL *mysql_db = NULL;
 	int rc = SLURM_ERROR;
 
@@ -573,13 +572,14 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 		}
 
 		if (db_ptr) {
-			snprintf(create_line, sizeof(create_line),
-				 "create database %s", db_name);
+			char *create_line = NULL;
+			xstrfmtcat(create_line, "create database %s", db_name);
 			if (mysql_query(mysql_db, create_line)) {
-				fatal("mysql_real_query failed: %d %s\n%s",
+				fatal("mysql_query failed: %d %s\n%s",
 				      mysql_errno(mysql_db),
 				      mysql_error(mysql_db), create_line);
 			}
+			xfree(create_line);
 			if (mysql_thread_safe())
 				mysql_thread_end();
 			mysql_close(mysql_db);

@@ -143,7 +143,7 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 		goto cleanup;
 	}
 	if (conf->control_cnt == 0) {
-		error("No slurmctld servers cvonfigured");
+		error("No slurmctld servers configured");
 		goto cleanup;
 	}
 

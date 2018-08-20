@@ -2553,7 +2553,7 @@ static void _parse_commandline(int argc, char **argv)
 	char *tmp_char;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "cdDf:hiL:n:rRtvV")) != -1) {
+	while ((c = getopt(argc, argv, "cdDf:hiL:n:rRvV")) != -1) {
 		switch (c) {
 		case 'c':
 			recover = 0;
@@ -2592,9 +2592,6 @@ static void _parse_commandline(int argc, char **argv)
 			break;
 		case 'R':
 			recover = 2;
-			break;
-		case 't':
-			test_config = true;
 			break;
 		case 'v':
 			debug_level++;
