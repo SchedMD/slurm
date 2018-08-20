@@ -1857,10 +1857,8 @@ extern char *get_reason(void)
 		user_name = getlogin();
 		if (user_name)
 			xstrcat(reason_str, user_name);
-		else {
-			sprintf(time_buf, "%d", getuid());
-			xstrcat(reason_str, time_buf);
-		}
+		else
+			xstrfmtcat(reason_str, "%d", getuid());
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 		snprintf(time_buf, sizeof(time_buf), "@%s]", time_str);
 		xstrcat(reason_str, time_buf);
