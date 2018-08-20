@@ -223,7 +223,6 @@ static int _get_gres_alloc(struct job_record *job_ptr)
  */
 static int _get_gres_config(struct job_record *job_ptr)
 {
-	char                buf[128], *prefix="";
 	List                gres_list;
 	bitstr_t *	    node_bitmap = job_ptr->node_bitmap;
 	struct node_record* node_ptr;
@@ -234,6 +233,7 @@ static int _get_gres_config(struct job_record *job_ptr)
 	int                 count    = 0;
 	int                 gres_type_count = 4; /* Guess number GRES types */
 	int                 oldcount = 0;
+	char *sep = "";
 
 	xstrcat(job_ptr->gres_alloc, "");
 	if (node_bitmap) {
@@ -349,15 +349,9 @@ static int _get_gres_config(struct job_record *job_ptr)
 		gres_gresid_to_gresname(gres_count_ids[jx], gres_name,
 					sizeof(gres_name));
 
-		sprintf(buf,"%s%s:%d", prefix, gres_name, gres_count_vals[jx]);
-		xstrcat(job_ptr->gres_alloc, buf);
-		if (prefix[0] == '\0')
-			prefix = ",";
-
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GRES) {
-			debug("%s %pJ -- gres_alloc substring=(%s)",
-			      __func__, job_ptr, buf);
-		}
+		xstrfmtcat(job_ptr->gres_alloc, "%s%s:%d",
+			   sep, gres_name, gres_count_vals[jx]);
+		sep = ",";
 	}
 	xfree(gres_count_ids);
 	xfree(gres_count_vals);
