@@ -126,18 +126,20 @@ jobacct_gather_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	 */
 	for (cc = 0; cc <= max_task_id; cc++) {
 		xcgroup_t cgroup;
-		char buf[PATH_MAX];
+		char *buf = NULL;
 
 		/* rmdir all tasks this running slurmstepd
 		 * was responsible for.
 		 */
-		sprintf(buf, "%s%s/task_%d",
-			memory_ns.mnt_point, jobstep_cgroup_path, cc);
+		xstrfmtcat(buf, "%s%s/task_%d",
+			   memory_ns.mnt_point, jobstep_cgroup_path, cc);
 		cgroup.path = buf;
 
 		if (xcgroup_delete(&cgroup) != XCGROUP_SUCCESS) {
 			debug2("%s: failed to delete %s %m", __func__, buf);
 		}
+
+		xfree(buf);
 	}
 
 	/* Clean the rest of the hierarchy.
