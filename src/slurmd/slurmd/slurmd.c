@@ -1350,7 +1350,6 @@ _create_msg_socket(void)
 static void
 _stepd_cleanup_batch_dirs(const char *directory, const char *nodename)
 {
-	char dir_path[MAXPATHLEN], file_path[MAXPATHLEN];
 	DIR *dp;
 	struct dirent *ent;
 	struct stat stat_buf;
@@ -1374,14 +1373,15 @@ _stepd_cleanup_batch_dirs(const char *directory, const char *nodename)
 	while ((ent = readdir(dp)) != NULL) {
 		if (!xstrncmp(ent->d_name, "job", 3) &&
 		    (ent->d_name[3] >= '0') && (ent->d_name[3] <= '9')) {
-			snprintf(dir_path, sizeof(dir_path),
-				 "%s/%s", directory, ent->d_name);
-			snprintf(file_path, sizeof(file_path),
-				 "%s/slurm_script", dir_path);
+			char *dir_path = NULL, *file_path = NULL;
+			xstrfmtcat(dir_path, "%s/%s", directory, ent->d_name);
+			xstrfmtcat(file_path, "%s/slurm_script", dir_path);
 			info("%s: Purging vestigial job script %s",
 			     __func__, file_path);
 			(void) unlink(file_path);
 			(void) rmdir(dir_path);
+			xfree(dir_path);
+			xfree(file_path);
 		}
 	}
 	closedir(dp);
