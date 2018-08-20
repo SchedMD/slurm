@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix filetxt plugin to handle it when you aren't running a jobacct_gather
     plugin.
  -- Remove drain on node when reboot nextstate used.
+ -- Speed up pack of job's qos.
+ -- Fix race condition when trying to update reservation in the database.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

@@ -3207,7 +3207,7 @@ static int _controller_index(void)
 	 * to be a valid controller, and which is active much be managed by
 	 * an external HA solution.
 	 */
-	if (strchr(slurmctld_conf.control_machine[0], ',')) {
+	if (xstrchr(slurmctld_conf.control_machine[0], ',')) {
 		char *token, *last = NULL;
 		char *tmp_name = xstrdup(slurmctld_conf.control_machine[0]);
 
@@ -3268,7 +3268,8 @@ static int _ping_backup_controller(void)
 	unlock_slurmctld(config_read_lock);
 
 	for (i = 0; i < control_cnt; i++) {
-		if (!control_addr[i])
+		/* don't bother to ping ourselves */
+		if (i == backup_inx)
 			continue;
 
 		slurm_msg_t_init(&req);

@@ -3096,16 +3096,14 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 		/* This means the addr wasn't set up already */
 		if (!(proto_conf = _slurm_api_get_comm_config()))
 			return SLURM_FAILURE;
-		if (proto_conf->control_cnt) {
-			proto_conf->controller_addr[0].sin_port =
+
+		for (i = 0; i < proto_conf->control_cnt; i++) {
+			proto_conf->controller_addr[i].sin_port =
 					htons(slurmctld_conf.slurmctld_port +
 					(((time(NULL) + getpid()) %
 					slurmctld_conf.slurmctld_port_count)));
 		}
-		for (i = 1; i < proto_conf->control_cnt; i++) {
-			proto_conf->controller_addr[i].sin_port =
-					proto_conf->controller_addr[0].sin_port;
-		}
+
 		if (proto_conf->vip_addr_set) {
 			proto_conf->vip_addr.sin_port =
 					htons(slurmctld_conf.slurmctld_port +
