@@ -183,7 +183,7 @@ static List _build_license_list(char *licenses, bool *valid)
  * (e.g. "tux*2,tux*3" gets changed to "tux*5"). */
 static char * _build_license_string(List license_list)
 {
-	char buf[128], *sep;
+	char *sep = "";
 	char *licenses = NULL;
 	ListIterator iter;
 	licenses_t *license_entry;
@@ -193,13 +193,9 @@ static char * _build_license_string(List license_list)
 
 	iter = list_iterator_create(license_list);
 	while ((license_entry = (licenses_t *) list_next(iter))) {
-		if (licenses)
-			sep = ",";
-		else
-			sep = "";
-		snprintf(buf, sizeof(buf), "%s%s*%u", sep, license_entry->name,
-			 license_entry->total);
-		xstrcat(licenses, buf);
+		xstrfmtcat(licenses, "%s%s*%u",
+			   sep, license_entry->name, license_entry->total);
+		sep = ",";
 	}
 	list_iterator_destroy(iter);
 
