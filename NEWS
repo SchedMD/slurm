@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition when trying to update reservation in the database.
  -- For the PrologFlags slurm.conf option, make NoHold mutually exclusive with
     Contain and/or X11 options.
+ -- Revise the handling of SlurmctldSyslogLevel and SlurmdSyslogLevel options
+    in slurm.conf and DebugLevelSyslog in slurmdbd.conf.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

@@ -2773,27 +2773,27 @@ void update_logging(void)
 		log_opts.logfile_level = LOG_LEVEL_QUIET;
 		log_opts.syslog_level  = LOG_LEVEL_QUIET;
 	} else if (slurmctld_conf.slurmctld_debug != NO_VAL16) {
-		log_opts.stderr_level  = slurmctld_conf.slurmctld_debug;
 		log_opts.logfile_level = slurmctld_conf.slurmctld_debug;
-		log_opts.syslog_level  = slurmctld_conf.slurmctld_debug;
 	}
 	if (debug_logfile) {
 		xfree(slurmctld_conf.slurmctld_logfile);
 		slurmctld_conf.slurmctld_logfile = xstrdup(debug_logfile);
 	}
 
-	if (daemonize) {
+	if (daemonize)
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (!slurmctld_conf.slurmctld_logfile &&
-		    (slurmctld_conf.slurmctld_syslog_debug == LOG_LEVEL_QUIET)){
-			/* Ensure fatal errors get logged somewhere */
-			log_opts.syslog_level = LOG_LEVEL_FATAL;
-		} else {
-			log_opts.syslog_level =
-				slurmctld_conf.slurmctld_syslog_debug;
-		}
-	} else
+	else
+		log_opts.stderr_level = slurmctld_conf.slurmctld_debug;
+
+	if (slurmctld_conf.slurmctld_syslog_debug != LOG_LEVEL_END) {
+		log_opts.syslog_level = slurmctld_conf.slurmctld_syslog_debug;
+	} else if (!daemonize) {
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
+	} else if ((slurmctld_conf.slurmctld_debug > LOG_LEVEL_QUIET)
+		   && !slurmctld_conf.slurmctld_logfile) {
+		log_opts.syslog_level = slurmctld_conf.slurmctld_debug;
+	} else
+		log_opts.syslog_level = LOG_LEVEL_FATAL;
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
 		  slurmctld_conf.slurmctld_logfile);
