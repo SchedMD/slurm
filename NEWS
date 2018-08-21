@@ -8,6 +8,9 @@ documents those changes that are of interest to users and administrators.
  -- Remove the development snapshot of select/cons_tres plugin.
  -- Fix slurmd -C to not print benign error from xcpuinfo.
  -- Fix potential double locks in the assoc_mgr.
+ -- Fix sacct truncate flag behavior Truncated pending jobs will always
+    return a start and end time set to the window end time, so elapsed
+    time is 0.
 
 * Changes in Slurm 18.08.0rc1
 ==============================

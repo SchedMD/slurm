@@ -175,8 +175,8 @@ The section titled "Job Accounting Fields" describes these fields.
 .TP
 \f3\-E \fP\f2end_time\fP\fP\f3,\fP \f3\-\-endtime\fP\f3=\fP\f2end_time\fP
 .IP
-Select jobs in any state before the specified time.  If states are given with the \-s
-option return jobs in this state before this period.
+Select eligible jobs in any state before the specified time.  If states are
+given with the \-s option return jobs in this state before this period.
 
 Valid time formats are...
 .sp
@@ -357,7 +357,8 @@ starttime is 'now'.
 
 .TP
 \f3\-S\fP\f3,\fP \f3\-\-starttime\fP
-Select jobs in any state after the specified time. Default is 00:00:00 of the
+Select eligible jobs in any state after the specified time. Default is 00:00:00
+of the
 current day, unless the '\-s' or '\-j' options are used. If the '\-s' option is
 used, then the default is 'now'. If states are given with the '\-s' option then
 only jobs in this state at this time will be returned. If the '\-j' option is
