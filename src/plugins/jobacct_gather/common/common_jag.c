@@ -794,6 +794,12 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_CPUTIME].d =
 			((double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] -
 			 jobacct->last_total_cputime) / CPU_TIME_ADJ;
+
+		if (data[FIELD_CPUTIME].d < 0)
+			data[FIELD_CPUTIME].d =
+				jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] /
+				CPU_TIME_ADJ;
+
 		et = (jobacct->cur_time - jobacct->last_time);
 		if (!et)
 			data[FIELD_CPUUTIL].d = 0.0;
@@ -805,9 +811,19 @@ static void _record_profile(struct jobacctinfo *jobacct)
 		data[FIELD_READ].d = (double) jobacct->
 			tres_usage_in_tot[TRES_ARRAY_FS_DISK] -
 			jobacct->last_tres_usage_in_tot;
+
+		if (data[FIELD_READ].d < 0)
+			data[FIELD_READ].d =
+				jobacct->tres_usage_in_tot[TRES_ARRAY_FS_DISK];
+
 		data[FIELD_WRITE].d = (double) jobacct->
 			tres_usage_out_tot[TRES_ARRAY_FS_DISK] -
 			jobacct->last_tres_usage_out_tot;
+
+		if (data[FIELD_WRITE].d < 0)
+			data[FIELD_WRITE].d =
+				jobacct->tres_usage_out_tot[TRES_ARRAY_FS_DISK];
+
 		/* Profile disk as MB */
 		data[FIELD_READ].d /= 1048576.0;
 		data[FIELD_WRITE].d /= 1048576.0;

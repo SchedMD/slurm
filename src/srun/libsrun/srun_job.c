@@ -1345,6 +1345,8 @@ extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
 		slurm_step_launch_abort(job->step_ctx);
 		exit(error_exit);
 	}
+
+	env_array_merge(&job->env, (const char **)__environ);
 }
 
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
