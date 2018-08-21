@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Revise the handling of SlurmctldSyslogLevel and SlurmdSyslogLevel options
     in slurm.conf and DebugLevelSyslog in slurmdbd.conf.
  -- Gate reading the cgroup.conf file.
+ -- Gate reading the acct_gather_* plugins.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

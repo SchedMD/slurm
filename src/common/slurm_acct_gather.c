@@ -46,6 +46,7 @@
 
 static bool acct_gather_suspended = false;
 static pthread_mutex_t suspended_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool inited = 0;
 
@@ -122,6 +123,7 @@ extern int acct_gather_conf_init(void)
 	xfree(conf_path);
 
 	/* handle acct_gather.conf in each plugin */
+	slurm_mutex_lock(&conf_mutex);
 	rc += acct_gather_energy_g_conf_set(tbl);
 	rc += acct_gather_profile_g_conf_set(tbl);
 	rc += acct_gather_interconnect_g_conf_set(tbl);
@@ -129,6 +131,7 @@ extern int acct_gather_conf_init(void)
 	/*********************************************************************/
 	/* ADD MORE HERE AND FREE MEMORY IN acct_gather_conf_destroy() BELOW */
 	/*********************************************************************/
+	slurm_mutex_unlock(&conf_mutex);
 
 	s_p_hashtbl_destroy(tbl);
 
@@ -151,6 +154,7 @@ extern int acct_gather_conf_destroy(void)
 	rc2 = acct_gather_profile_fini();
 	rc = MAX(rc, rc2);
 
+	slurm_mutex_destroy(&conf_mutex);
 	return rc;
 }
 
@@ -159,11 +163,13 @@ extern List acct_gather_conf_values(void)
 	List acct_list = list_create(destroy_config_key_pair);
 
 	/* get acct_gather.conf in each plugin */
+	slurm_mutex_lock(&conf_mutex);
 	acct_gather_profile_g_conf_values(&acct_list);
 	acct_gather_interconnect_g_conf_values(&acct_list);
 	acct_gather_energy_g_conf_values(&acct_list);
 	acct_gather_filesystem_g_conf_values(&acct_list);
 	/* ADD MORE HERE */
+	slurm_mutex_unlock(&conf_mutex);
 	/******************************************/
 
 	list_sort(acct_list, (ListCmpF) sort_key_pairs);
