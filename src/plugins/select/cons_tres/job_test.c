@@ -365,7 +365,7 @@ extern void log_tres_state(struct node_use_record *node_usage,
 			     i, row[i].num_jobs, core_str);
 			xfree(core_str);
 		}
-	}	
+	}
 #endif
 }
 
