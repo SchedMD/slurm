@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "June 2018" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "August 2018" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2099,7 +2099,8 @@ If set, the Alloc flag should also be set.  This will allow for salloc to not
 block until the prolog is finished on each node.  The blocking will happen when
 steps reach the slurmd and before any execution has happened in the step.
 This is a much faster way to work and if using srun to launch your tasks you
-should use this flag.
+should use this flag. This flag cannot be combined with the Contain or X11
+flags.
 .TP
 \fBSerial\fR
 By default, the Prolog and Epilog scripts run concurrently on each node.
@@ -3366,14 +3367,12 @@ See also the related "SlurmctldPrimaryOffProg" parameter.
 .TP
 \fBSlurmctldSyslogDebug\fR
 The slurmctld daemon will log events to the syslog file at the specified
-level of detail (the \fBSlurmctldLogFile\fR file will include log messages
-at the level of details specified by the \fBSlurmctldDebug\fR configuration
-parameter). If the slurmctld daemon is run in the foreground (started with the
-\fB\-D\fR command line option) the \fBSlurmctldSyslogDebug\fR configuration
-parameter will be ignored.
-The default value is \fBquiet\fR unless there is no configured
-\fBSlurmctldLogFile\fR, in which case the default value will be \fBfatal\fR so
-that fatal errors are logged somewhere.
+level of detail. If not set, the slurmctld daemon will log to syslog at
+level \fBfatal\fR, unless there is no \fBSlurmctldLogFile\fR and it is running
+in the background, in which case it will log to syslog at the level specified
+by \fBSlurmctldDebug\fR (at \fBfatal\fR in the case that \fBSlurmctldDebug\fR
+is set to \fBquiet\fR) or it is run in the foreground, when it will be set to
+quiet.
 
 .RS
 .TP 10
@@ -3504,14 +3503,12 @@ Any "%n" within the name is replaced with the Slurm node name on which the
 .TP
 \fBSlurmdSyslogDebug\fR
 The slurmd daemon will log events to the syslog file at the specified
-level of detail (the \fBSlurmdLogFile\fR file will include log messages
-at the level of details specified by the \fBSlurmdDebug\fR configuration
-parameter). If the slurmd daemon is run in the foreground (started with the
-\fB\-D\fR command line option) the \fBSlurmdSyslogDebug\fR configuration
-parameter will be ignored.
-The default value is \fBquiet\fR unless there is no configured
-\fBSlurmdLogFile\fR, in which case the default value will be \fBfatal\fR so
-that fatal errors are logged somewhere.
+level of detail. If not set, the slurmd daemon will log to syslog at
+level \fBfatal\fR, unless there is no \fBSlurmdLogFile\fR and it is running
+in the background, in which case it will log to syslog at the level specified
+by \fBSlurmdDebug\fR  (at \fBfatal\fR in the case that \fBSlurmdDebug\fR
+is set to \fBquiet\fR) or it is run in the foreground, when it will be set to
+quiet.
 
 .RS
 .TP 10

@@ -96,10 +96,10 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->dbd_host);
 		slurmdbd_conf->dbd_port = 0;
 		slurmdbd_conf->debug_flags = 0;
-		slurmdbd_conf->debug_level = LOG_LEVEL_QUIET;
+		slurmdbd_conf->debug_level = LOG_LEVEL_INFO;
 		xfree(slurmdbd_conf->default_qos);
 		xfree(slurmdbd_conf->log_file);
-		slurmdbd_conf->syslog_debug = LOG_LEVEL_QUIET;
+		slurmdbd_conf->syslog_debug = LOG_LEVEL_END;
 		xfree(slurmdbd_conf->parameters);
 		xfree(slurmdbd_conf->pid_file);
 		xfree(slurmdbd_conf->plugindir);
@@ -200,7 +200,6 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf = xmalloc(sizeof(slurm_dbd_conf_t));
 		boot_time = time(NULL);
 	}
-	slurmdbd_conf->debug_level = LOG_LEVEL_INFO;
 	_clear_slurmdbd_conf();
 
 	/* Get the slurmdbd.conf path and validate the file */

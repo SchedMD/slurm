@@ -4405,6 +4405,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (conf->prolog_flags == NO_VAL16) {
 			fatal("PrologFlags invalid: %s", temp_str);
 		}
+
+		if ((conf->prolog_flags & PROLOG_FLAG_NOHOLD) &&
+		    (conf->prolog_flags & PROLOG_FLAG_CONTAIN)) {
+			fatal("PrologFlags invalid combination: NoHold cannot be combined with Contain and/or X11");
+		}
 		if (conf->prolog_flags & PROLOG_FLAG_NOHOLD) {
 			conf->prolog_flags |= PROLOG_FLAG_ALLOC;
 		}
@@ -4589,7 +4594,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 		_normalize_debug_level(&conf->slurmctld_syslog_debug);
 	} else
-		conf->slurmctld_syslog_debug = LOG_LEVEL_QUIET;
+		conf->slurmctld_syslog_debug = LOG_LEVEL_END;
 
 	if (s_p_get_string(&temp_str, "SlurmctldPort", hashtbl)) {
 		char *end_ptr = NULL;
@@ -4693,7 +4698,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(temp_str);
 		_normalize_debug_level(&conf->slurmd_syslog_debug);
 	} else
-		conf->slurmd_syslog_debug = LOG_LEVEL_QUIET;
+		conf->slurmd_syslog_debug = LOG_LEVEL_END;
 
 	if (!s_p_get_uint16(&conf->slurmd_timeout, "SlurmdTimeout", hashtbl))
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;

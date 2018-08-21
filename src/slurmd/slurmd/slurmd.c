@@ -1926,28 +1926,22 @@ static void _update_logging(void)
 	conf->log_fmt = cf->log_fmt;
 	slurm_conf_unlock();
 
-	o->stderr_level  = conf->debug_level;
 	o->logfile_level = conf->debug_level;
-	o->syslog_level  = conf->debug_level;
 
-	/*
-	 * If daemonizing, turn off stderr logging -- also, if
-	 * logging to a file, turn off syslog.
-	 *
-	 * Otherwise, if remaining in foreground, turn off logging
-	 * to syslog (but keep logfile level)
-	 */
-	if (conf->daemonize) {
+	if (conf->daemonize)
 		o->stderr_level = LOG_LEVEL_QUIET;
-		if (!conf->logfile &&
-		    (conf->syslog_debug == LOG_LEVEL_QUIET)) {
-			/* Ensure fatal errors get logged somewhere */
- 			o->syslog_level = LOG_LEVEL_FATAL;
-		} else {
-			o->syslog_level = conf->syslog_debug;
-		}
+	else
+		o->stderr_level = conf->debug_level;
+
+	if (conf->syslog_debug != LOG_LEVEL_END) {
+		o->syslog_level = conf->syslog_debug;
+	} else if (!conf->daemonize) {
+		o->syslog_level = LOG_LEVEL_QUIET;
+	} else if ((conf->debug_level > LOG_LEVEL_QUIET) && !conf->logfile) {
+		o->syslog_level = conf->debug_level;
 	} else
-		o->syslog_level  = LOG_LEVEL_QUIET;
+		o->syslog_level = LOG_LEVEL_FATAL;
+
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 	log_set_timefmt(conf->log_fmt);
 
