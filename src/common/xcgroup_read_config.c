@@ -57,7 +57,7 @@
 
 #define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
 
-slurm_cgroup_conf_t *slurm_cgroup_conf = NULL;
+static pthread_mutex_t cgroup_config_read_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Local functions */
 static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf);
@@ -132,7 +132,7 @@ static void conf_get_float (s_p_hashtbl_t *t, char *name, float *fp)
  *	cgroup.conf file.
  * RET SLURM_SUCCESS if no error, otherwise an error code
  */
-extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
+static int _read_slurm_cgroup_conf_int(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	s_p_options_t options[] = {
 		{"CgroupAutomount", S_P_BOOLEAN},
@@ -446,4 +446,15 @@ extern List get_slurm_cgroup_conf(void)
 	free_slurm_cgroup_conf(&cg_conf);
 
 	return cgroup_conf_l;
+}
+
+extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
+{
+	int rc;
+
+	slurm_mutex_lock(&cgroup_config_read_mutex);
+	rc = _read_slurm_cgroup_conf_int(slurm_cgroup_conf);
+	slurm_mutex_unlock(&cgroup_config_read_mutex);
+
+	return rc;
 }

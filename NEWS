@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
     Contain and/or X11 options.
  -- Revise the handling of SlurmctldSyslogLevel and SlurmdSyslogLevel options
     in slurm.conf and DebugLevelSyslog in slurmdbd.conf.
+ -- Gate reading the cgroup.conf file.
+ -- Gate reading the acct_gather_* plugins.
 
 * Changes in Slurm 18.08.0pre2
 ==============================
@@ -235,6 +237,7 @@ documents those changes that are of interest to users and administrators.
     (i.e. gres=gpu/tesla) it would get a count of 0.
  -- Allow sstat to talk to slurmd's that are new in protocol version.
  -- Permit database names over 33 characters in accounting_storage/mysql.
+ -- Fix negative values when profiling.
 
 * Changes in Slurm 17.11.9-2
 ============================
