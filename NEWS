@@ -238,6 +238,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow sstat to talk to slurmd's that are new in protocol version.
  -- Permit database names over 33 characters in accounting_storage/mysql.
  -- Fix negative values when profiling.
+ -- Fix srun segfault caused by invalid memory reads on the env.
 
 * Changes in Slurm 17.11.9-2
 ============================

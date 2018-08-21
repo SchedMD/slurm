@@ -109,6 +109,8 @@ static void _init_opts(void)
 	opts.disable_x11 = false;
 }
 
+static slurm_cgroup_conf_t *slurm_cgroup_conf = NULL;
+
 /* Adopts a process into the given step. Returns SLURM_SUCCESS if
  * opts.action_adopt_failure == CALLERID_ACTION_ALLOW or if the process was
  * successfully adopted.
