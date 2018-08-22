@@ -108,8 +108,6 @@ static void _init_opts(void)
 	opts.disable_x11 = false;
 }
 
-static slurm_cgroup_conf_t *slurm_cgroup_conf = NULL;
-
 /* Adopts a process into the given step. Returns SLURM_SUCCESS if
  * opts.action_adopt_failure == CALLERID_ACTION_ALLOW or if the process was
  * successfully adopted.
@@ -226,6 +224,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	time_t most_recent = 0, cgroup_time = 0;
 	char uidcg[PATH_MAX];
 	char *cgroup_suffix = "";
+	slurm_cgroup_conf_t *cg_conf;
 
 	if (opts.action_unknown == CALLERID_ACTION_DENY) {
 		debug("Denying due to action_unknown=deny");
@@ -239,11 +238,15 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	if (opts.node_name)
 		cgroup_suffix = xstrdup_printf("_%s", opts.node_name);
 
+	/* read cgroup configuration */
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = xcgroup_get_slurm_cgroup_conf();
+
 	if (snprintf(uidcg, PATH_MAX, "%s/memory/slurm%s/uid_%u",
-		     slurm_cgroup_conf->cgroup_mountpoint, cgroup_suffix, uid)
+		     cg_conf->cgroup_mountpoint, cgroup_suffix, uid)
 	    >= PATH_MAX) {
 		info("snprintf: '%s/memory/slurm%s/uid_%u' longer than PATH_MAX of %d",
-		     slurm_cgroup_conf->cgroup_mountpoint, cgroup_suffix,
+		     cg_conf->cgroup_mountpoint, cgroup_suffix,
 		     uid, PATH_MAX);
 		/* Make the uidcg an empty string. This will effectively switch
 		 * to a (somewhat) random selection of job rather than picking
@@ -251,6 +254,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 		 */
 		uidcg[0] = '\0';
 	}
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	if (opts.node_name)
 		xfree(cgroup_suffix);
@@ -575,18 +579,6 @@ static void _log_init(log_level_t level)
 	log_init(PAM_MODULE_NAME, logopts, LOG_AUTHPRIV, NULL);
 }
 
-static int _load_cgroup_config()
-{
-	slurm_cgroup_conf = xmalloc(sizeof(slurm_cgroup_conf_t));
-	memset(slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
-	if (read_slurm_cgroup_conf(slurm_cgroup_conf) != SLURM_SUCCESS) {
-		info("read_slurm_cgroup_conf failed");
-		return SLURM_FAILURE;
-	}
-	return SLURM_SUCCESS;
-}
-
-
 /* Parse arguments, etc then get my socket address/port information. Attempt to
  * adopt this process into a job in the following order:
  * 	1) If the user has only one job on the node, pick that one
@@ -678,9 +670,6 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 		return PAM_SESSION_ERR;
 	}
 
-	if (_load_cgroup_config() != SLURM_SUCCESS)
-		return rc;
-
 	/* Check if there are any steps on the node from any user. A failure here
 	 * likely means failures everywhere so exit on failure or if no local jobs
 	 * exist. */
@@ -741,8 +730,8 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 cleanup:
 	FREE_NULL_LIST(steps);
 	xfree(buf);
-	xfree(slurm_cgroup_conf);
 	xfree(opts.node_name);
+	xcgroup_fini_slurm_cgroup_conf();
 	return rc;
 }
 

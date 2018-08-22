@@ -714,7 +714,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	if (strstr(conf->job_acct_gather_type, "cgroup") ||
 	    strstr(conf->proctrack_type, "cgroup") ||
 	    strstr(conf->task_plugin, "cgroup"))
-		conf_ptr->cgroup_conf = get_slurm_cgroup_conf();
+		conf_ptr->cgroup_conf = xcgroup_get_conf_list();
 
 	conf_ptr->checkpoint_type     = xstrdup(conf->checkpoint_type);
 	conf_ptr->cluster_name        = xstrdup(conf->cluster_name);
@@ -3601,6 +3601,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		in_progress = false;
 		gs_reconfig();
 		unlock_slurmctld(config_write_lock);
+		xcgroup_reconfig_slurm_cgroup_conf();
 		assoc_mgr_set_missing_uids();
 		start_power_mgr(&slurmctld_config.thread_id_power);
 		trigger_reconfig();

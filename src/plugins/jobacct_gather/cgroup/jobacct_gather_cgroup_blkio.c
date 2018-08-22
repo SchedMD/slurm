@@ -62,8 +62,7 @@
 /* xcgroup_t task_blkio_cg; */
 
 
-/* extern int jobacct_gather_cgroup_blkio_init( */
-/* 	slurm_cgroup_conf_t *slurm_cgroup_conf) */
+/* extern int jobacct_gather_cgroup_blkio_init(void) */
 /* { */
 /* 	/\* initialize user/job/jobstep cgroup relative paths *\/ */
 /* 	user_cgroup_path[0]='\0'; */
@@ -71,7 +70,7 @@
 /* 	jobstep_cgroup_path[0]='\0'; */
 
 /* 	/\* initialize blkio cgroup namespace *\/ */
-/* 	if (xcgroup_ns_create(slurm_cgroup_conf, &blkio_ns, "", "blkio") */
+/* 	if (xcgroup_ns_create(&blkio_ns, "", "blkio") */
 /* 	    != XCGROUP_SUCCESS) { */
 /* 		error("jobacct_gather/cgroup: unable to create blkio " */
 /* 		      "namespace"); */
@@ -80,8 +79,7 @@
 /* 	return SLURM_SUCCESS; */
 /* } */
 
-/* extern int jobacct_gather_cgroup_blkio_fini( */
-/* 	slurm_cgroup_conf_t *slurm_cgroup_conf) */
+/* extern int jobacct_gather_cgroup_blkio_fini(void) */
 /* { */
 /* 	if (user_cgroup_path[0] == '\0' || */
 /* 	    job_cgroup_path[0] == '\0' || */

@@ -62,7 +62,7 @@ xcgroup_t task_memory_cg;
 static uint32_t max_task_id;
 
 extern int
-jobacct_gather_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
+jobacct_gather_cgroup_memory_init(void)
 {
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
@@ -71,7 +71,7 @@ jobacct_gather_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	task_cgroup_path[0] = 0;
 
 	/* initialize memory cgroup namespace */
-	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "", "memory")
+	if (xcgroup_ns_create(&memory_ns, "", "memory")
 	    != XCGROUP_SUCCESS) {
 		error("jobacct_gather/cgroup: unable to create memory "
 		      "namespace");
@@ -82,7 +82,7 @@ jobacct_gather_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 }
 
 extern int
-jobacct_gather_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
+jobacct_gather_cgroup_memory_fini(void)
 {
 	xcgroup_t memory_cg;
 	bool lock_ok;

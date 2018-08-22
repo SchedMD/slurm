@@ -40,10 +40,10 @@
 #include "src/common/xcgroup_read_config.h"
 
 /* initialize cpuset subsystem of task/cgroup */
-extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf);
+extern int task_cgroup_cpuset_init(void);
 
 /* release cpuset subsystem resources */
-extern int task_cgroup_cpuset_fini(slurm_cgroup_conf_t *slurm_cgroup_conf);
+extern int task_cgroup_cpuset_fini(void);
 
 /* create user/job/jobstep cpuset cgroups */
 extern int task_cgroup_cpuset_create(stepd_step_rec_t *job);

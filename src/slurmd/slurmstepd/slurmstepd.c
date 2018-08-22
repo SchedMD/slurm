@@ -203,6 +203,8 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 
 	fini_setproctitle();
 
+	xcgroup_fini_slurm_cgroup_conf();
+
 	xfree(cli);
 	xfree(self);
 	xfree(conf->block_map);

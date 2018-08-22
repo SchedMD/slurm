@@ -112,7 +112,7 @@ extern int common_node_config_load(List gres_conf_list,
 
 extern bool common_use_local_device_index(void)
 {
-	slurm_cgroup_conf_t slurm_cgroup_conf;
+	slurm_cgroup_conf_t *cg_conf;
 	char *task_plugin;
 	bool use_cgroup = false;
 	static bool use_local_index = false;
@@ -132,13 +132,12 @@ extern bool common_use_local_device_index(void)
 	if (!use_cgroup)
 		return use_local_index;
 
-	/* Read and parse cgroup.conf */
-	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
-	if (read_slurm_cgroup_conf(&slurm_cgroup_conf) != SLURM_SUCCESS)
-		return use_local_index;
-	if (slurm_cgroup_conf.constrain_devices)
+	/* read cgroup configuration */
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	if (cg_conf->constrain_devices)
 		use_local_index = true;
-	free_slurm_cgroup_conf(&slurm_cgroup_conf);
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	return use_local_index;
 }

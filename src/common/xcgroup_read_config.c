@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
+ *  Copyright (C) 2018 SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -57,20 +58,12 @@
 
 #define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
 
-static pthread_mutex_t cgroup_config_read_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t xcgroup_config_read_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static slurm_cgroup_conf_t slurm_cgroup_conf;
+static bool slurm_cgroup_conf_inited = false;
 
 /* Local functions */
-static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf);
-
-/*
- * free_slurm_cgroup_conf - free storage associated with the global variable
- *	slurm_cgroup_conf
- */
-extern void free_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
-{
-	_clear_slurm_cgroup_conf(slurm_cgroup_conf);
-}
-
 static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
 {
 	if (slurm_cgroup_conf) {
@@ -130,9 +123,8 @@ static void conf_get_float (s_p_hashtbl_t *t, char *name, float *fp)
 /*
  * read_slurm_cgroup_conf - load the Slurm cgroup configuration from the
  *	cgroup.conf file.
- * RET SLURM_SUCCESS if no error, otherwise an error code
  */
-static int _read_slurm_cgroup_conf_int(slurm_cgroup_conf_t *slurm_cgroup_conf)
+static void _read_slurm_cgroup_conf_int(void)
 {
 	s_p_options_t options[] = {
 		{"CgroupAutomount", S_P_BOOLEAN},
@@ -161,11 +153,7 @@ static int _read_slurm_cgroup_conf_int(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	char *conf_path = NULL, *tmp_str;
 	struct stat buf;
 
-	/* Set initial values */
-	if (slurm_cgroup_conf == NULL) {
-		return SLURM_ERROR;
-	}
-	_clear_slurm_cgroup_conf(slurm_cgroup_conf);
+	_clear_slurm_cgroup_conf(&slurm_cgroup_conf);
 
 	/* Get the cgroup.conf path and validate the file */
 	conf_path = get_extra_conf_path("cgroup.conf");
@@ -182,13 +170,13 @@ static int _read_slurm_cgroup_conf_int(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		}
 
 		/* cgroup initialisation parameters */
-		if (!s_p_get_boolean(&slurm_cgroup_conf->cgroup_automount,
+		if (!s_p_get_boolean(&slurm_cgroup_conf.cgroup_automount,
 				     "CgroupAutomount", tbl))
-			slurm_cgroup_conf->cgroup_automount = false;
+			slurm_cgroup_conf.cgroup_automount = false;
 
-		if (!s_p_get_string(&slurm_cgroup_conf->cgroup_mountpoint,
+		if (!s_p_get_string(&slurm_cgroup_conf.cgroup_mountpoint,
 				    "CgroupMountpoint", tbl))
-			slurm_cgroup_conf->cgroup_mountpoint =
+			slurm_cgroup_conf.cgroup_mountpoint =
 				xstrdup(DEFAULT_CGROUP_BASEDIR);
 
 		if (s_p_get_string(&tmp_str, "CgroupReleaseAgentDir", tbl)) {
@@ -198,35 +186,35 @@ static int _read_slurm_cgroup_conf_int(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 		/* cgroup prepend directory */
 #ifndef MULTIPLE_SLURMD
-		slurm_cgroup_conf->cgroup_prepend = xstrdup("/slurm");
+		slurm_cgroup_conf.cgroup_prepend = xstrdup("/slurm");
 #else
-		slurm_cgroup_conf->cgroup_prepend = xstrdup("/slurm_%n");
+		slurm_cgroup_conf.cgroup_prepend = xstrdup("/slurm_%n");
 #endif
 
 		/* Cores constraints related conf items */
-		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_cores,
+		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_cores,
 				     "ConstrainCores", tbl))
-			slurm_cgroup_conf->constrain_cores = false;
-		if (!s_p_get_boolean(&slurm_cgroup_conf->task_affinity,
+			slurm_cgroup_conf.constrain_cores = false;
+		if (!s_p_get_boolean(&slurm_cgroup_conf.task_affinity,
 				     "TaskAffinity", tbl))
-			slurm_cgroup_conf->task_affinity = false;
+			slurm_cgroup_conf.task_affinity = false;
 
 		/* RAM and Swap constraints related conf items */
-		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_ram_space,
+		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_ram_space,
 				     "ConstrainRAMSpace", tbl))
-			slurm_cgroup_conf->constrain_ram_space = false;
+			slurm_cgroup_conf.constrain_ram_space = false;
 
 		conf_get_float (tbl,
 				"AllowedRAMSpace",
-				&slurm_cgroup_conf->allowed_ram_space);
+				&slurm_cgroup_conf.allowed_ram_space);
 
 		conf_get_float (tbl,
 				"MaxRAMPercent",
-				&slurm_cgroup_conf->max_ram_percent);
+				&slurm_cgroup_conf.max_ram_percent);
 
-		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_swap_space,
+		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_swap_space,
 				     "ConstrainSwapSpace", tbl))
-			slurm_cgroup_conf->constrain_swap_space = false;
+			slurm_cgroup_conf.constrain_swap_space = false;
 
 		/*
 		 * Disable constrain_kmem_space by default because of a known
@@ -235,59 +223,59 @@ static int _read_slurm_cgroup_conf_int(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		 * caches, eventually causing the machine to be unable to create
 		 * new cgroups.
 		 */
-		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_kmem_space,
+		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_kmem_space,
 				     "ConstrainKmemSpace", tbl))
-			slurm_cgroup_conf->constrain_kmem_space = false;
+			slurm_cgroup_conf.constrain_kmem_space = false;
 
 		conf_get_float (tbl,
 				"AllowedKmemSpace",
-				&slurm_cgroup_conf->allowed_kmem_space);
+				&slurm_cgroup_conf.allowed_kmem_space);
 
 		conf_get_float (tbl,
 				"MaxKmemPercent",
-				&slurm_cgroup_conf->max_kmem_percent);
+				&slurm_cgroup_conf.max_kmem_percent);
 
-		(void) s_p_get_uint64 (&slurm_cgroup_conf->min_kmem_space,
+		(void) s_p_get_uint64 (&slurm_cgroup_conf.min_kmem_space,
 				       "MinKmemSpace", tbl);
 
 		conf_get_float (tbl,
 				"AllowedSwapSpace",
-				&slurm_cgroup_conf->allowed_swap_space);
+				&slurm_cgroup_conf.allowed_swap_space);
 
 		conf_get_float (tbl,
 				"MaxSwapPercent",
-				&slurm_cgroup_conf->max_swap_percent);
+				&slurm_cgroup_conf.max_swap_percent);
 
-		(void) s_p_get_uint64 (&slurm_cgroup_conf->min_ram_space,
+		(void) s_p_get_uint64 (&slurm_cgroup_conf.min_ram_space,
 				      "MinRAMSpace", tbl);
 
-		if (s_p_get_uint64(&slurm_cgroup_conf->memory_swappiness,
+		if (s_p_get_uint64(&slurm_cgroup_conf.memory_swappiness,
 				     "MemorySwappiness", tbl)) {
-			if (slurm_cgroup_conf->memory_swappiness > 100) {
+			if (slurm_cgroup_conf.memory_swappiness > 100) {
 				error("Value for MemorySwappiness is too high,"
 				      " rounding down to 100.");
-				slurm_cgroup_conf->memory_swappiness = 100;
+				slurm_cgroup_conf.memory_swappiness = 100;
 			}
 		}
 
 		/* Memory limits */
-		if (!s_p_get_boolean(&slurm_cgroup_conf->memlimit_enforcement,
+		if (!s_p_get_boolean(&slurm_cgroup_conf.memlimit_enforcement,
 				     "MemoryLimitEnforcement", tbl))
-			slurm_cgroup_conf->memlimit_enforcement = false;
+			slurm_cgroup_conf.memlimit_enforcement = false;
 
 		conf_get_float (tbl,
 				"MemoryLimitThreshold",
-				&slurm_cgroup_conf->memlimit_threshold);
+				&slurm_cgroup_conf.memlimit_threshold);
 
 		/* Devices constraint related conf items */
-		if (!s_p_get_boolean(&slurm_cgroup_conf->constrain_devices,
+		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_devices,
 				     "ConstrainDevices", tbl))
-			slurm_cgroup_conf->constrain_devices = false;
+			slurm_cgroup_conf.constrain_devices = false;
 
-		s_p_get_string(&slurm_cgroup_conf->allowed_devices_file,
+		s_p_get_string(&slurm_cgroup_conf.allowed_devices_file,
                                "AllowedDevicesFile", tbl);
-                if (! slurm_cgroup_conf->allowed_devices_file)
-                        slurm_cgroup_conf->allowed_devices_file =
+                if (! slurm_cgroup_conf.allowed_devices_file)
+                        slurm_cgroup_conf.allowed_devices_file =
 				get_extra_conf_path(
 					"cgroup_allowed_devices_file.conf");
 
@@ -296,165 +284,181 @@ static int _read_slurm_cgroup_conf_int(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	xfree(conf_path);
 
-	return SLURM_SUCCESS;
+	return;
 }
+
+extern slurm_cgroup_conf_t *xcgroup_get_slurm_cgroup_conf(void)
+{
+	if (!slurm_cgroup_conf_inited) {
+		memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
+		_read_slurm_cgroup_conf_int();
+		slurm_cgroup_conf_inited = true;
+	}
+
+	return &slurm_cgroup_conf;
+}
+
 
 /*
  * get_slurm_cgroup_conf - load the Slurm cgroup configuration from the
  *      cgroup.conf  file and return a key pair <name,value> ordered list.
  * RET List with cgroup.conf <name,value> pairs if no error, NULL otherwise.
  */
-extern List get_slurm_cgroup_conf(void)
+extern List xcgroup_get_conf_list(void)
 {
-	slurm_cgroup_conf_t cg_conf;
+	slurm_cgroup_conf_t *cg_conf;
 	config_key_pair_t *key_pair;
-	char *conf_path = NULL;
-	struct stat buf;
 	List cgroup_conf_l;
 
-	/* Check for cgroup.conf access */
-	conf_path = get_extra_conf_path("cgroup.conf");
-	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
-		xfree(conf_path);
-		return NULL;
-	}
-	xfree(conf_path);
-
-	/* Read and parse cgroup.conf */
-	memset(&cg_conf, 0, sizeof(slurm_cgroup_conf_t));
-
-	if (read_slurm_cgroup_conf(&cg_conf) != SLURM_SUCCESS)
-		return NULL;
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = xcgroup_get_slurm_cgroup_conf();
 
 	/* Fill list with cgroup config key pairs */
 	cgroup_conf_l = list_create(destroy_config_key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CgroupAutomount");
-	key_pair->value = xstrdup_printf("%s", cg_conf.cgroup_automount ?
+	key_pair->value = xstrdup_printf("%s", cg_conf->cgroup_automount ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CgroupMountpoint");
-	key_pair->value = xstrdup(cg_conf.cgroup_mountpoint);
+	key_pair->value = xstrdup(cg_conf->cgroup_mountpoint);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ConstrainCores");
-	key_pair->value = xstrdup_printf("%s", cg_conf.constrain_cores ?
+	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_cores ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TaskAffinity");
-	key_pair->value = xstrdup_printf("%s", cg_conf.task_affinity ?
+	key_pair->value = xstrdup_printf("%s", cg_conf->task_affinity ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ConstrainRAMSpace");
-	key_pair->value = xstrdup_printf("%s", cg_conf.constrain_ram_space ?
+	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_ram_space ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowedRAMSpace");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf.allowed_ram_space);
+	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->allowed_ram_space);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MaxRAMPercent");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf.max_ram_percent);
+	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->max_ram_percent);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MinRAMSpace");
-	key_pair->value = xstrdup_printf("%"PRIu64" MB", cg_conf.min_ram_space);
+	key_pair->value = xstrdup_printf("%"PRIu64" MB",
+					 cg_conf->min_ram_space);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ConstrainSwapSpace");
-	key_pair->value = xstrdup_printf("%s", cg_conf.constrain_swap_space ?
+	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_swap_space ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ConstrainKmemSpace");
-	key_pair->value = xstrdup_printf("%s", cg_conf.constrain_kmem_space ?
+	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_kmem_space ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowedKmemSpace");
-	if (cg_conf.allowed_kmem_space >= 0)
+	if (cg_conf->allowed_kmem_space >= 0)
 		key_pair->value = xstrdup_printf("%.0f Bytes",
-						 cg_conf.allowed_kmem_space);
+						 cg_conf->allowed_kmem_space);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MaxKmemPercent");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf.max_kmem_percent);
+	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->max_kmem_percent);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MinKmemSpace");
 	key_pair->value = xstrdup_printf("%"PRIu64" MB",
-					 cg_conf.min_kmem_space);
+					 cg_conf->min_kmem_space);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowedSwapSpace");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf.allowed_swap_space);
+	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->allowed_swap_space);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MaxSwapPercent");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf.max_swap_percent);
+	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->max_swap_percent);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MemoryLimitEnforcement");
-	key_pair->value = xstrdup_printf("%s", cg_conf.memlimit_enforcement ?
+	key_pair->value = xstrdup_printf("%s", cg_conf->memlimit_enforcement ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MemLimitThreshold");
-	key_pair->value = xstrdup_printf("%.1f%%", cg_conf.memlimit_threshold);
+	key_pair->value = xstrdup_printf("%.1f%%", cg_conf->memlimit_threshold);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ConstrainDevices");
-	key_pair->value = xstrdup_printf("%s", cg_conf.constrain_devices ?
+	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_devices ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AllowedDevicesFile");
-	key_pair->value = xstrdup(cg_conf.allowed_devices_file);
+	key_pair->value = xstrdup(cg_conf->allowed_devices_file);
 	list_append(cgroup_conf_l, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("MemorySwappiness");
-	if (cg_conf.memory_swappiness != NO_VAL64)
+	if (cg_conf->memory_swappiness != NO_VAL64)
 		key_pair->value = xstrdup_printf("%"PRIu64,
-						 cg_conf.memory_swappiness);
+						 cg_conf->memory_swappiness);
 	list_append(cgroup_conf_l, key_pair);
 
 	list_sort(cgroup_conf_l, (ListCmpF) sort_key_pairs);
-	free_slurm_cgroup_conf(&cg_conf);
+
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	return cgroup_conf_l;
 }
 
-extern int read_slurm_cgroup_conf(slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern void xcgroup_reconfig_slurm_cgroup_conf(void)
 {
-	int rc;
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
 
-	slurm_mutex_lock(&cgroup_config_read_mutex);
-	rc = _read_slurm_cgroup_conf_int(slurm_cgroup_conf);
-	slurm_mutex_unlock(&cgroup_config_read_mutex);
+	if (slurm_cgroup_conf_inited) {
+		_clear_slurm_cgroup_conf(&slurm_cgroup_conf);
+		slurm_cgroup_conf_inited = false;
+	}
+	(void)xcgroup_get_slurm_cgroup_conf();
 
-	return rc;
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+
+}
+
+extern void xcgroup_fini_slurm_cgroup_conf(void)
+{
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+
+	if (slurm_cgroup_conf_inited) {
+		_clear_slurm_cgroup_conf(&slurm_cgroup_conf);
+		slurm_cgroup_conf_inited = false;
+	}
+
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 }

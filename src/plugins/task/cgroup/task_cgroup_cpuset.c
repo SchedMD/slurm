@@ -976,7 +976,7 @@ static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
 
 #endif
 
-extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern int task_cgroup_cpuset_init(void)
 {
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
@@ -984,7 +984,7 @@ extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	jobstep_cgroup_path[0]='\0';
 
 	/* initialize cpuset cgroup namespace */
-	if (xcgroup_ns_create(slurm_cgroup_conf, &cpuset_ns, "", "cpuset")
+	if (xcgroup_ns_create(&cpuset_ns, "", "cpuset")
 	    != XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to create cpuset namespace");
 		return SLURM_ERROR;
@@ -993,7 +993,7 @@ extern int task_cgroup_cpuset_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_cpuset_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern int task_cgroup_cpuset_fini(void)
 {
 	xcgroup_t cpuset_cg;
 

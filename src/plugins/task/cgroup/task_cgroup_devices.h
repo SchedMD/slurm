@@ -40,10 +40,10 @@
 #include "src/common/xcgroup_read_config.h"
 
 /* initialize devices subsystem of task/cgroup */
-extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf);
+extern int task_cgroup_devices_init(void);
 
 /* release devices subsystem resources */
-extern int task_cgroup_devices_fini(slurm_cgroup_conf_t *slurm_cgroup_conf);
+extern int task_cgroup_devices_fini(void);
 
 /* create user/job/jobstep devices cgroups */
 extern int task_cgroup_devices_create(stepd_step_rec_t *job);

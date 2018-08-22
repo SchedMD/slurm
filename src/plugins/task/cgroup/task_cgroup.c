@@ -88,46 +88,50 @@ static bool use_cpuset  = false;
 static bool use_memory  = false;
 static bool use_devices = false;
 
-static slurm_cgroup_conf_t slurm_cgroup_conf;
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  *	are called.  Put global initialization here.
  */
 extern int init (void)
 {
+	slurm_cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
-	if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
-		return SLURM_ERROR;
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	/* enable subsystems based on conf */
+	if (cg_conf->constrain_cores)
+		use_cpuset = true;
+	if (cg_conf->constrain_ram_space ||
+	    cg_conf->constrain_swap_space)
+		use_memory = true;
+	if (cg_conf->constrain_devices)
+		use_devices = true;
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	/* enable subsystems based on conf */
-	if (slurm_cgroup_conf.constrain_cores) {
+	if (use_cpuset) {
 		use_cpuset = true;
-		if (task_cgroup_cpuset_init(&slurm_cgroup_conf) !=
-		    SLURM_SUCCESS) {
-			free_slurm_cgroup_conf(&slurm_cgroup_conf);
+		if (task_cgroup_cpuset_init() != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
 		debug("%s: now constraining jobs allocated cores",
 		      plugin_type);
 	}
 
-	if (slurm_cgroup_conf.constrain_ram_space ||
-	    slurm_cgroup_conf.constrain_swap_space) {
+	if (use_memory) {
 		use_memory = true;
-		if (task_cgroup_memory_init(&slurm_cgroup_conf) !=
-		    SLURM_SUCCESS) {
-			free_slurm_cgroup_conf(&slurm_cgroup_conf);
+		if (task_cgroup_memory_init() != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
 		debug("%s: now constraining jobs allocated memory",
 		      plugin_type);
 	}
 
-	if (slurm_cgroup_conf.constrain_devices) {
-		use_devices = true;
-		task_cgroup_devices_init(&slurm_cgroup_conf);
+	if (use_devices) {
+		if (task_cgroup_devices_init() != SLURM_SUCCESS) {
+			return SLURM_ERROR;
+		}
 		debug("%s: now constraining jobs allocated devices",
 		      plugin_type);
 	}
@@ -144,17 +148,14 @@ extern int fini (void)
 {
 
 	if (use_cpuset) {
-		task_cgroup_cpuset_fini(&slurm_cgroup_conf);
+		task_cgroup_cpuset_fini();
 	}
 	if (use_memory) {
-		task_cgroup_memory_fini(&slurm_cgroup_conf);
+		task_cgroup_memory_fini();
 	}
 	if (use_devices) {
-		task_cgroup_devices_fini(&slurm_cgroup_conf);
+		task_cgroup_devices_fini();
 	}
-
-	/* unload configuration */
-	free_slurm_cgroup_conf(&slurm_cgroup_conf);
 
 	return SLURM_SUCCESS;
 }
@@ -269,9 +270,17 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 {
 
 	if (use_cpuset) {
+		slurm_cgroup_conf_t *cg_conf;
+
+		/* read cgroup configuration */
+		slurm_mutex_lock(&xcgroup_config_read_mutex);
+		cg_conf = xcgroup_get_slurm_cgroup_conf();
+
 		/* set affinity if requested */
-		if (slurm_cgroup_conf.task_affinity)
+		if (cg_conf->task_affinity)
 			task_cgroup_cpuset_set_task_affinity(job);
+
+		slurm_mutex_unlock(&xcgroup_config_read_mutex);
 	}
 
 	return SLURM_SUCCESS;
@@ -312,7 +321,17 @@ extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
 	/* we do it here as we do not have access to the conf structure */
 	/* in libslurm (src/common/xcgroup.c) */
 	xcgroup_t slurm_cg;
-	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
+	char *pre;
+	slurm_cgroup_conf_t *cg_conf;
+
+	/* read cgroup configuration */
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = xcgroup_get_slurm_cgroup_conf();
+
+	pre = xstrdup(cg_conf->cgroup_prepend);
+
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+
 #ifdef MULTIPLE_SLURMD
 	if ( conf->node_name != NULL )
 		xstrsubstitute(pre,"%n", conf->node_name);

@@ -117,10 +117,11 @@ static uint64_t percent_in_bytes (uint64_t mb, float percent)
 	return ((mb * 1024 * 1024) * (percent / 100.0));
 }
 
-extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern int task_cgroup_memory_init(void)
 {
 	xcgroup_t memory_cg;
 	bool set_swappiness;
+	slurm_cgroup_conf_t *slurm_cgroup_conf;
 
 	/* initialize user/job/jobstep cgroup relative paths */
 	user_cgroup_path[0]='\0';
@@ -128,8 +129,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	jobstep_cgroup_path[0]='\0';
 
 	/* initialize memory cgroup namespace */
-	if (xcgroup_ns_create(slurm_cgroup_conf, &memory_ns, "", "memory")
-	    != XCGROUP_SUCCESS) {
+	if (xcgroup_ns_create(&memory_ns, "", "memory") != XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to create memory namespace. "
 			"You may need to set the Linux kernel option "
 			"cgroup_enable=memory (and reboot), or disable "
@@ -145,6 +145,10 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		return SLURM_ERROR;
 	}
 	xcgroup_set_param(&memory_cg, "memory.use_hierarchy","1");
+
+	/* read cgroup configuration */
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	slurm_cgroup_conf = xcgroup_get_slurm_cgroup_conf();
 
 	set_swappiness = (slurm_cgroup_conf->memory_swappiness != NO_VAL64);
 	if (set_swappiness)
@@ -222,6 +226,7 @@ extern int task_cgroup_memory_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
          *  in /etc/sysconfig/slurm would be the same
          */
         setenv("SLURMSTEPD_OOM_ADJ", "-1000", 0);
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	return SLURM_SUCCESS;
 }

@@ -88,6 +88,7 @@
 #include "src/common/switch.h"
 #include "src/common/timers.h"
 #include "src/common/uid.h"
+#include "src/common/xcgroup_read_config.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
@@ -998,6 +999,7 @@ static void _reconfigure_slurm(void)
 
 	gs_reconfig();
 	unlock_slurmctld(config_write_lock);
+	xcgroup_reconfig_slurm_cgroup_conf();
 	assoc_mgr_set_missing_uids();
 	acct_storage_g_reconfig(acct_db_conn, 0);
 	start_power_mgr(&slurmctld_config.thread_id_power);

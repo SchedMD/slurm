@@ -96,9 +96,6 @@ const char plugin_name[] = "Job accounting gather cgroup plugin";
 const char plugin_type[] = "jobacct_gather/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-/* Other useful declarations */
-static slurm_cgroup_conf_t slurm_cgroup_conf;
-
 static void _prec_extra(jag_prec_t *prec)
 {
 	unsigned long utime, stime, total_rss, total_pgpgin;
@@ -213,29 +210,20 @@ extern int init (void)
 	if (_run_in_daemon()) {
 		jag_common_init(0);
 
-		/* read cgroup configuration */
-		if (read_slurm_cgroup_conf(&slurm_cgroup_conf))
-			return SLURM_ERROR;
-
 		/* initialize cpuinfo internal data */
 		if (xcpuinfo_init() != XCPUINFO_SUCCESS) {
-			free_slurm_cgroup_conf(&slurm_cgroup_conf);
 			return SLURM_ERROR;
 		}
 
 		/* enable cpuacct cgroup subsystem */
-		if (jobacct_gather_cgroup_cpuacct_init(&slurm_cgroup_conf) !=
-		    SLURM_SUCCESS) {
+		if (jobacct_gather_cgroup_cpuacct_init() != SLURM_SUCCESS) {
 			xcpuinfo_fini();
-			free_slurm_cgroup_conf(&slurm_cgroup_conf);
 			return SLURM_ERROR;
 		}
 
 		/* enable memory cgroup subsystem */
-		if (jobacct_gather_cgroup_memory_init(&slurm_cgroup_conf) !=
-		    SLURM_SUCCESS) {
+		if (jobacct_gather_cgroup_memory_init() != SLURM_SUCCESS) {
 			xcpuinfo_fini();
-			free_slurm_cgroup_conf(&slurm_cgroup_conf);
 			return SLURM_ERROR;
 		}
 
@@ -243,10 +231,9 @@ extern int init (void)
 		 *
 		 * Enable blkio subsystem.
 		 */
-		/* if (jobacct_gather_cgroup_blkio_init(&slurm_cgroup_conf) */
+		/* if (jobacct_gather_cgroup_blkio_init() */
 		/*     != SLURM_SUCCESS) { */
 		/* 	xcpuinfo_fini(); */
-		/* 	free_slurm_cgroup_conf(&slurm_cgroup_conf); */
 		/* 	return SLURM_ERROR; */
 		/* } */
 	}
@@ -258,13 +245,10 @@ extern int init (void)
 extern int fini (void)
 {
 	if (_run_in_daemon()) {
-		jobacct_gather_cgroup_cpuacct_fini(&slurm_cgroup_conf);
-		jobacct_gather_cgroup_memory_fini(&slurm_cgroup_conf);
-		/* jobacct_gather_cgroup_blkio_fini(&slurm_cgroup_conf); */
+		jobacct_gather_cgroup_cpuacct_fini();
+		jobacct_gather_cgroup_memory_fini();
+		/* jobacct_gather_cgroup_blkio_fini(); */
 		acct_gather_energy_fini();
-
-		/* unload configuration */
-		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 	}
 	return SLURM_SUCCESS;
 }
@@ -333,7 +317,16 @@ extern char* jobacct_cgroup_create_slurm_cg(xcgroup_ns_t* ns)
 	/* we do it here as we do not have access to the conf structure */
 	/* in libslurm (src/common/xcgroup.c) */
 	xcgroup_t slurm_cg;
-	char* pre = (char*) xstrdup(slurm_cgroup_conf.cgroup_prepend);
+	char *pre;
+	slurm_cgroup_conf_t *cg_conf;
+
+	/* read cgroup configuration */
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = xcgroup_get_slurm_cgroup_conf();
+
+	pre = xstrdup(cg_conf->cgroup_prepend);
+
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 #ifdef MULTIPLE_SLURMD
 	if (conf->node_name != NULL) {

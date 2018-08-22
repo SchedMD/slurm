@@ -98,6 +98,7 @@
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
 #include "src/slurmd/common/task_plugin.h"
+#include "src/common/xcgroup_read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
@@ -1080,6 +1081,8 @@ _reconfigure(void)
 	_reconfig = 0;
 	slurm_conf_reinit(conf->conffile);
 	_read_config();
+
+	xcgroup_reconfig_slurm_cgroup_conf();
 
 	/*
 	 * Rebuild topology information and refresh slurmd topo infos

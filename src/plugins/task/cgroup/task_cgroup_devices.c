@@ -79,10 +79,11 @@ static void _calc_device_major(char *dev_path[PATH_MAX],
 
 static int _read_allowed_devices_file(char *allowed_devices[PATH_MAX]);
 
-extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern int task_cgroup_devices_init(void)
 {
 	uint16_t cpunum;
 	FILE *file = NULL;
+	slurm_cgroup_conf_t *cg_conf;
 
 	/* initialize cpuinfo internal data */
 	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
@@ -100,14 +101,19 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 		goto error;
 	}
 
-	if ((strlen(slurm_cgroup_conf->allowed_devices_file) + 1) >= PATH_MAX) {
+	/* read cgroup configuration */
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = xcgroup_get_slurm_cgroup_conf();
+
+	if ((strlen(cg_conf->allowed_devices_file) + 1) >= PATH_MAX) {
 		error("task/cgroup: device file path length exceeds limit: %s",
-		      slurm_cgroup_conf->allowed_devices_file);
+		      cg_conf->allowed_devices_file);
+		slurm_mutex_unlock(&xcgroup_config_read_mutex);
 		goto error;
 	}
-	strcpy(cgroup_allowed_devices_file,
-	       slurm_cgroup_conf->allowed_devices_file);
-	if (xcgroup_ns_create(slurm_cgroup_conf, &devices_ns, "", "devices")
+	strcpy(cgroup_allowed_devices_file, cg_conf->allowed_devices_file);
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	if (xcgroup_ns_create(&devices_ns, "", "devices")
 	    != XCGROUP_SUCCESS ) {
 		error("task/cgroup: unable to create devices namespace");
 		goto error;
@@ -130,7 +136,7 @@ error:
 	return SLURM_ERROR;
 }
 
-extern int task_cgroup_devices_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern int task_cgroup_devices_fini(void)
 {
 	xcgroup_t devices_cg;
 
