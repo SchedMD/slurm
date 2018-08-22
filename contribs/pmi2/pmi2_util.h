@@ -41,8 +41,8 @@
 } while (0)
 
 #define PMI2U_ERR_SETANDJUMP(err, class, x...) do { \
-    char errstr[1024]; \
-    snprintf(errstr, 1024, x); \
+    char errstr[PMI2_MAXLINE * 3]; \
+    snprintf(errstr, sizeof(errstr), x);	\
     PMI2U_printf("err. %s", errstr);\
     pmi2_errno = class; \
     goto fn_fail; \
