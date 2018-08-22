@@ -78,7 +78,7 @@ make_bash_script $file_in "
 #
 # Run job to determine what nodes are available
 #
-spawn $sbatch -N$node_cnt -t1 --output=$file_out $file_in
+spawn $sbatch -N$node_cnt -J "test$test_id" -t1 --output=$file_out $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

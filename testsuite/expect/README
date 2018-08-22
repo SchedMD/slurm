@@ -825,3 +825,4 @@ test39.10  Test --mem-per-gpu option
 test39.11  Test --tres-per-job option with GRES of craynetwork (no topology)
 test39.12  Test some valid combintations of srun --gpu and non-GPU GRES options
 test39.13  Validate proper GRES operation under heavy load (many jobs)
+test39.14  Increase size of job with allocated GPUs
