@@ -7090,12 +7090,14 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			      gres_name, job_id);
 			xfree(job_gres_ptr->gres_bit_alloc);
 		}
-		job_gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
-						       node_cnt);
-		if (!job_gres_ptr->gres_cnt_node_alloc) {
-			job_gres_ptr->gres_cnt_node_alloc =
-				xmalloc(sizeof(uint64_t) * node_cnt);
-		}
+	}
+	if (!job_gres_ptr->gres_bit_alloc) {
+		job_gres_ptr->gres_bit_alloc =
+			xmalloc(sizeof(bitstr_t *) * node_cnt);
+	}
+	if (!job_gres_ptr->gres_cnt_node_alloc) {
+		job_gres_ptr->gres_cnt_node_alloc =
+			xmalloc(sizeof(uint64_t) * node_cnt);
 	}
 	/*
 	 * These next 2 checks were added long before job resizing was allowed.
@@ -7124,12 +7126,10 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	     job_gres_ptr->gres_bit_select	||
 	     job_gres_ptr->gres_cnt_node_select)) {
 		/* Resuming job */
-		if (job_gres_ptr->gres_cnt_node_alloc &&
-		    job_gres_ptr->gres_cnt_node_alloc[node_offset]) {
+		if (job_gres_ptr->gres_cnt_node_alloc[node_offset]) {
 			gres_cnt = job_gres_ptr->
 				   gres_cnt_node_alloc[node_offset];
-		} else if (job_gres_ptr->gres_bit_alloc &&
-			   job_gres_ptr->gres_bit_alloc[node_offset]) {
+		} else if (job_gres_ptr->gres_bit_alloc[node_offset]) {
 			gres_cnt = bit_set_count(
 				    job_gres_ptr->gres_bit_alloc[node_offset]);
 		/* Using pre-selected GRES */
@@ -7305,8 +7305,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		node_gres_ptr->gres_cnt_alloc += gres_cnt;
 	}
 
-	if (job_gres_ptr->gres_bit_alloc &&
-	    job_gres_ptr->gres_bit_alloc[node_offset] &&
+	if (job_gres_ptr->gres_bit_alloc[node_offset] &&
 	    node_gres_ptr->topo_gres_bitmap &&
 	    node_gres_ptr->topo_gres_cnt_alloc) {
 		for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
