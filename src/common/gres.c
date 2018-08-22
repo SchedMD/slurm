@@ -7788,7 +7788,7 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 		if (select_type &&
 		    (strstr(select_type, "cons_tres") ||
 		     (strstr(select_type, "cray") &&
-		      (slurm_get_select_type_param() && CR_OTHER_CONS_TRES)))) {
+		      (slurm_get_select_type_param() & CR_OTHER_CONS_TRES)))) {
 			select_hetero = 1;
 		} else
 			select_hetero = 0;
