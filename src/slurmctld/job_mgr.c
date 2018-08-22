@@ -4430,6 +4430,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->tres_fmt_req_str = xstrdup(job_ptr->tres_fmt_req_str);
 	job_ptr_pend->tres_alloc_str = NULL;
 	job_ptr_pend->tres_fmt_alloc_str = NULL;
+	job_ptr_pend->tres_alloc_cnt = NULL;
 
 	job_ptr_pend->cpus_per_tres = xstrdup(job_ptr->cpus_per_tres);
 	job_ptr_pend->mem_per_tres = xstrdup(job_ptr->mem_per_tres);

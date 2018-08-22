@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.0
 ==========================
+ -- Fix segfault on job arrays when starting controller without dbd up.
+ -- Fix pmi2 to build with gcc 8.0+.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
@@ -239,6 +241,8 @@ documents those changes that are of interest to users and administrators.
  -- Permit database names over 33 characters in accounting_storage/mysql.
  -- Fix negative values when profiling.
  -- Fix srun segfault caused by invalid memory reads on the env.
+ -- Fix segfault on job arrays when starting controller without dbd up.
+ -- Fix pmi2 to build with gcc 8.0+.
 
 * Changes in Slurm 17.11.9-2
 ============================
