@@ -3679,7 +3679,8 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 }
 
 
-/* make_node_alloc - flag specified node as allocated to a job
+/*
+ * make_node_alloc - flag specified node as allocated to a job
  * IN node_ptr - pointer to node being allocated
  * IN job_ptr  - pointer to job that is starting
  */
@@ -3715,7 +3716,7 @@ extern void make_node_alloc(struct node_record *node_ptr,
 	node_ptr->reason_time = 0;
 	node_ptr->reason_uid = NO_VAL;
 
-	last_node_update = time (NULL);
+	last_node_update = time(NULL);
 }
 
 /* make_node_comp - flag specified node as completing a job
@@ -3732,24 +3733,26 @@ extern void make_node_comp(struct node_record *node_ptr,
 
 	xassert(node_ptr);
 	if (suspended) {
-		if (node_ptr->sus_job_cnt)
+		if (node_ptr->sus_job_cnt) {
 			(node_ptr->sus_job_cnt)--;
-		else
-			error("Node %s sus_job_cnt underflow in "
-				"make_node_comp", node_ptr->name);
+		} else {
+			error("%s: %pJ node %s sus_job_cnt underflow", __func__,
+			      job_ptr, node_ptr->name);
+		}
 	} else {
-		if (node_ptr->run_job_cnt)
+		if (node_ptr->run_job_cnt) {
 			(node_ptr->run_job_cnt)--;
-		else
-			error("Node %s run_job_cnt underflow in "
-				"make_node_comp", node_ptr->name);
-
+		} else {
+			error("%s: %pJ node %s run_job_cnt underflow", __func__,
+			      job_ptr, node_ptr->name);
+		}
 		if (job_ptr->details && (job_ptr->details->share_res == 0)) {
-			if (node_ptr->no_share_job_cnt)
+			if (node_ptr->no_share_job_cnt) {
 				(node_ptr->no_share_job_cnt)--;
-			else
-				error("Node %s no_share_job_cnt underflow in "
-					"make_node_comp", node_ptr->name);
+			} else {
+				error("%s: %pJ node %s no_share_job_cnt underflow",
+				      __func__, job_ptr, node_ptr->name);
+			}
 			if (node_ptr->no_share_job_cnt == 0)
 				bit_set(share_node_bitmap, inx);
 		}
@@ -3776,8 +3779,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 	}
 
 	if (IS_NODE_DOWN(node_ptr)) {
-		debug3("make_node_comp: Node %s being left DOWN",
-		       node_ptr->name);
+		debug3("%s: Node %s being left DOWN", __func__, node_ptr->name);
 	} else if (node_ptr->run_job_cnt)
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	else {
@@ -3843,16 +3845,20 @@ void make_node_idle(struct node_record *node_ptr,
 		job_update_tres_cnt(job_ptr, inx);
 
 		if (job_ptr->node_cnt) {
-			/* Clean up the JOB_COMPLETING flag
+			/*
+			 * Clean up the JOB_COMPLETING flag
 			 * only if there is not the slurmctld
 			 * epilog running, otherwise wait
 			 * when it terminates then this
 			 * function will be invoked.
 			 */
 			job_ptr->node_cnt--;
-			if (job_ptr->node_cnt == 0
-				&& job_ptr->epilog_running == false)
+			if ((job_ptr->node_cnt == 0) &&
+			    !job_ptr->epilog_running)
 				cleanup_completing(job_ptr);
+		} else if ((job_ptr->total_cpus == 0) &&
+			   (job_ptr->total_nodes == 0)) {
+			/* Job resized to zero nodes (expanded another job) */
 		} else {
 			error("%s: %pJ node_cnt underflow", __func__, job_ptr);
 		}

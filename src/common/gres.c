@@ -7119,9 +7119,21 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	 * the data structures to reflect the selected GRES.
 	 */
 	if (job_gres_ptr->total_node_cnt &&
-	    (job_gres_ptr->gres_bit_select ||
+	    (job_gres_ptr->gres_cnt_node_alloc	||
+	     job_gres_ptr->gres_bit_alloc	||
+	     job_gres_ptr->gres_bit_select	||
 	     job_gres_ptr->gres_cnt_node_select)) {
-		if (job_gres_ptr->gres_cnt_node_select &&
+		/* Resuming job */
+		if (job_gres_ptr->gres_cnt_node_alloc &&
+		    job_gres_ptr->gres_cnt_node_alloc[node_offset]) {
+			gres_cnt = job_gres_ptr->
+				   gres_cnt_node_alloc[node_offset];
+		} else if (job_gres_ptr->gres_bit_alloc &&
+			   job_gres_ptr->gres_bit_alloc[node_offset]) {
+			gres_cnt = bit_set_count(
+				    job_gres_ptr->gres_bit_alloc[node_offset]);
+		/* Using pre-selected GRES */
+		} else if (job_gres_ptr->gres_cnt_node_select &&
 		    job_gres_ptr->gres_cnt_node_select[node_index]) {
 			gres_cnt = job_gres_ptr->
 				   gres_cnt_node_select[node_index];
@@ -7757,6 +7769,7 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 				  List to_job_gres_list,
 				  bitstr_t *to_job_node_bitmap)
 {
+	static int select_hetero = -1;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr, *gres_ptr2;
 	gres_job_state_t *gres_job_ptr, *gres_job_ptr2;
@@ -7765,6 +7778,22 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 	int from_inx, to_inx, new_inx;
 	bitstr_t **new_gres_bit_alloc, **new_gres_bit_step_alloc;
 	uint64_t *new_gres_cnt_step_alloc, *new_gres_cnt_node_alloc;
+
+	if (select_hetero == -1) {
+		/*
+		 * Determine if the select plugin supports heterogenous
+		 * GRES allocations (count differ by node): 1=yes, 0=no
+		 */
+		char *select_type = slurm_get_select_type();
+		if (select_type &&
+		    (strstr(select_type, "cons_tres") ||
+		     (strstr(select_type, "cray") &&
+		      (slurm_get_select_type_param() && CR_OTHER_CONS_TRES)))) {
+			select_hetero = 1;
+		} else
+			select_hetero = 0;
+		xfree(select_type);
+	}
 
 	(void) gres_plugin_init();
 	new_node_cnt = bit_set_count(from_job_node_bitmap) +
@@ -7776,7 +7805,7 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 	i_last  = MAX(bit_fls(from_job_node_bitmap),
 		      bit_fls(to_job_node_bitmap));
 	if (i_last == -1) {
-		error("gres_plugin_job_merge: node_bitmaps are empty");
+		error("%s: node_bitmaps are empty", __func__);
 		return;
 	}
 
@@ -7845,8 +7874,10 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 	}
 	list_iterator_destroy(gres_iter);
 
-	/* Step two - Merge the gres information from the "from" job into the
-	 * existing gres information for the "to" job */
+	/*
+	 * Step two - Merge the gres information from the "from" job into the
+	 * existing gres information for the "to" job
+	 */
 step2:	if (!from_job_gres_list)
 		goto step3;
 	if (!to_job_gres_list) {
@@ -7905,18 +7936,20 @@ step2:	if (!from_job_gres_list)
 			if (from_match) {
 				if (!gres_job_ptr->gres_bit_alloc) {
 					;
-				} else if (gres_job_ptr2->
+				} else if (select_hetero &&
+					   gres_job_ptr2->
+					   gres_bit_alloc[new_inx] &&
+					   gres_job_ptr->gres_bit_alloc &&
+					   gres_job_ptr->
 					   gres_bit_alloc[new_inx]) {
-					/*
-					 * Do not merge GRES allocations on
-					 * a node, just keep original job's
-					 */
-#if 0
+					/* Merge job's GRES bitmaps */
 					bit_or(gres_job_ptr2->
 					       gres_bit_alloc[new_inx],
 					       gres_job_ptr->
 					       gres_bit_alloc[from_inx]);
-#endif
+				} else if (gres_job_ptr2->
+					   gres_bit_alloc[new_inx]) {
+					/* Keep original job's GRES bitmap */
 				} else {
 					gres_job_ptr2->gres_bit_alloc[new_inx] =
 						gres_job_ptr->
@@ -7927,18 +7960,19 @@ step2:	if (!from_job_gres_list)
 				}
 				if (!gres_job_ptr->gres_bit_alloc) {
 					;
-				} else if (gres_job_ptr2->
+				} else if (select_hetero &&
+					   gres_job_ptr2->
+					   gres_cnt_node_alloc[new_inx] &&
+					   gres_job_ptr->gres_cnt_node_alloc &&
+					   gres_job_ptr->
 					   gres_cnt_node_alloc[new_inx]) {
-					/*
-					 * Do not merge GRES allocations on
-					 * a node, just keep original job's
-					 */
-#if 0
 					gres_job_ptr2->
 						gres_cnt_node_alloc[new_inx] +=
 						gres_job_ptr->
 						gres_cnt_node_alloc[from_inx];
-#endif
+				} else if (gres_job_ptr2->
+					   gres_cnt_node_alloc[new_inx]) {
+					/* Keep original job's GRES bitmap */
 				} else {
 					gres_job_ptr2->
 						gres_cnt_node_alloc[new_inx] =
@@ -8076,6 +8110,10 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 		info("  gres_bit_step_alloc:NULL");
 	if (gres_ptr->gres_cnt_step_alloc == NULL)
 		info("  gres_cnt_step_alloc:NULL");
+	if (gres_ptr->gres_bit_select == NULL)
+		info("  gres_bit_select:NULL");
+	if (gres_ptr->gres_cnt_node_select == NULL)
+		info("  gres_cnt_node_select:NULL");
 
 	for (i = 0; i < gres_ptr->node_cnt; i++) {
 		if (gres_ptr->gres_cnt_node_alloc &&
@@ -8104,6 +8142,24 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 			info("  gres_cnt_step_alloc[%d]:%"PRIu64"", i,
 			     gres_ptr->gres_cnt_step_alloc[i]);
 		}
+	}
+
+	info("  total_node_cnt:%u", gres_ptr->total_node_cnt);
+	for (i = 0; i < gres_ptr->total_node_cnt; i++) {
+		if (gres_ptr->gres_cnt_node_select &&
+		    gres_ptr->gres_cnt_node_select[i]) {
+			info("  gres_cnt_node_select[%d]:%"PRIu64,
+			     i, gres_ptr->gres_cnt_node_select[i]);
+		} else if (gres_ptr->gres_cnt_node_select)
+			info("  gres_cnt_node_select[%d]:NULL", i);
+
+		if (gres_ptr->gres_bit_select &&
+		    gres_ptr->gres_bit_select[i]) {
+			bit_fmt(tmp_str, sizeof(tmp_str),
+				gres_ptr->gres_bit_select[i]);
+			info("  gres_bit_select[%d]:%s", i, tmp_str);
+		} else if (gres_ptr->gres_bit_select)
+			info("  gres_bit_select[%d]:NULL", i);
 	}
 }
 

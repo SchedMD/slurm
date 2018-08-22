@@ -3702,7 +3702,7 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
 	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
-	for (i=bit_ffs(orig_bitmap); i<node_record_count; i++) {
+	for (i = bit_ffs(orig_bitmap); i < node_record_count; i++) {
 		if (!bit_test(orig_bitmap,i))
 			continue;
 		orig_pos++;
@@ -3713,9 +3713,11 @@ extern void excise_node_from_job(struct job_record *job_ptr,
 			continue;
 		memcpy(&job_ptr->node_addr[new_pos],
 		       &job_ptr->node_addr[orig_pos], sizeof(slurm_addr_t));
-		/* NOTE: The job's allocation in the job_ptr->job_resrcs
+		/*
+		 * NOTE: The job's allocation in the job_ptr->job_resrcs
 		 * data structure is unchanged  even after a node allocated
-		 * to the job goes DOWN. */
+		 * to the job goes DOWN.
+		 */
 	}
 
 	job_ptr->total_nodes = job_ptr->node_cnt = new_pos + 1;
@@ -14673,7 +14675,7 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
  */
 static int _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp)
 {
-	int i, rc = SLURM_SUCCESS;
+	int i, i_first, i_last, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint32_t node_flags;
 	time_t now = time(NULL);
@@ -14681,23 +14683,28 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp)
 	if ((rc = select_g_job_suspend(job_ptr, indf_susp)) != SLURM_SUCCESS)
 		return rc;
 
-	for (i=0; i<node_record_count; i++, node_ptr++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+	i_first = bit_ffs(job_ptr->node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(job_ptr->node_bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++, node_ptr++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 
 		node_ptr->sus_job_cnt++;
 		if (node_ptr->run_job_cnt)
 			(node_ptr->run_job_cnt)--;
 		else {
-			error("Node %s run_job_cnt underflow",
-				node_ptr->name);
+			error("%s: %pJ node %s run_job_cnt underflow",
+			      __func__, job_ptr, node_ptr->name);
 		}
 		if (job_ptr->details && (job_ptr->details->share_res == 0)) {
 			if (node_ptr->no_share_job_cnt)
 				(node_ptr->no_share_job_cnt)--;
 			else {
-				error("Node %s no_share_job_cnt "
-					"underflow", node_ptr->name);
+				error("%s: %pJ node %s no_share_job_cnt underflow",
+				      __func__, job_ptr, node_ptr->name);
 			}
 			if (node_ptr->no_share_job_cnt == 0)
 				bit_set(share_node_bitmap, i);
@@ -14708,8 +14715,8 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp)
 			bit_set(idle_node_bitmap, i);
 		}
 		if (IS_NODE_DOWN(node_ptr)) {
-			debug3("_suspend_job_nodes: Node %s left DOWN",
-				node_ptr->name);
+			debug3("%s: %pJ node %s left DOWN",
+			       __func__, job_ptr, node_ptr->name);
 		} else if (node_ptr->run_job_cnt) {
 			node_ptr->node_state = NODE_STATE_ALLOCATED |
 					       node_flags;

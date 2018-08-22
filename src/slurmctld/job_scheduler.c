@@ -3103,6 +3103,24 @@ static char *_xlate_array_dep(char *new_depend)
 	return new_array_dep;
 }
 
+/* Copy dependent job's TRES options into another job's options  */
+static void _copy_tres_opts(struct job_record *job_ptr,
+			    struct job_record *dep_job_ptr)
+{
+	xfree(job_ptr->cpus_per_tres);
+	job_ptr->cpus_per_tres = xstrdup(dep_job_ptr->cpus_per_tres);
+	xfree(job_ptr->tres_per_job);
+	job_ptr->tres_per_job = xstrdup(dep_job_ptr->tres_per_job);
+	xfree(job_ptr->tres_per_node);
+	job_ptr->tres_per_node = xstrdup(dep_job_ptr->tres_per_node);
+	xfree(job_ptr->tres_per_socket);
+	job_ptr->tres_per_socket = xstrdup(dep_job_ptr->tres_per_socket);
+	xfree(job_ptr->tres_per_task);
+	job_ptr->tres_per_task = xstrdup(dep_job_ptr->tres_per_task);
+	xfree(job_ptr->mem_per_tres);
+	job_ptr->mem_per_tres = xstrdup(dep_job_ptr->mem_per_tres);
+}
+
 /*
  * Parse a job dependency string and use it to establish a "depend_spec"
  * list of dependencies. We accept both old format (a single job ID) and
@@ -3113,6 +3131,7 @@ static char *_xlate_array_dep(char *new_depend)
  */
 extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 {
+	static int select_hetero = -1;
 	int rc = SLURM_SUCCESS;
 	uint16_t depend_type = 0;
 	uint32_t job_id = 0;
@@ -3126,6 +3145,22 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 
 	if (job_ptr->details == NULL)
 		return EINVAL;
+
+	if (select_hetero == -1) {
+		/*
+		 * Determine if the select plugin supports heterogenous
+		 * GRES allocations (count differ by node): 1=yes, 0=no
+		 */
+		char *select_type = slurm_get_select_type();
+		if (select_type &&
+		    (strstr(select_type, "cons_tres") ||
+		     (strstr(select_type, "cray") &&
+		      (slurm_get_select_type_param() && CR_OTHER_CONS_TRES)))) {
+			select_hetero = 1;
+		} else
+			select_hetero = 0;
+		xfree(select_type);
+	}
 
 	/* Clear dependencies on NULL, "0", or empty dependency input */
 	job_ptr->details->expanding_jobid = 0;
@@ -3288,8 +3323,10 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			     (dep_job_ptr->part_ptr == NULL)             ||
 			     (job_ptr->part_ptr     == NULL)             ||
 			     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
-				/* Expand only jobs in the same QOS and
-				 * and partition */
+				/*
+				 * Expand only jobs in the same QOS and
+				 * and partition
+				 */
 				rc = ESLURM_DEPENDENCY;
 				break;
 			}
@@ -3303,28 +3340,14 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 						mc_ptr->sockets_per_node;
 				}
 				job_ptr->details->expanding_jobid = job_id;
-				/*
-				 * GRES configuration of this job must match
-				 * the job being expanded
-				 */
-				xfree(job_ptr->cpus_per_tres);
-				job_ptr->cpus_per_tres =
-					xstrdup(dep_job_ptr->cpus_per_tres);
-				xfree(job_ptr->tres_per_job);
-				job_ptr->tres_per_job =
-					xstrdup(dep_job_ptr->tres_per_job);
-				xfree(job_ptr->tres_per_node);
-				job_ptr->tres_per_node =
-					xstrdup(dep_job_ptr->tres_per_node);
-				xfree(job_ptr->tres_per_socket);
-				job_ptr->tres_per_socket =
-					xstrdup(dep_job_ptr->tres_per_socket);
-				xfree(job_ptr->tres_per_task);
-				job_ptr->tres_per_task =
-					xstrdup(dep_job_ptr->tres_per_task);
-				xfree(job_ptr->mem_per_tres);
-				job_ptr->mem_per_tres =
-					xstrdup(dep_job_ptr->mem_per_tres);
+				if (select_hetero == 0) {
+					/*
+					 * GRES per node of this job must match
+					 * the job being expanded. Other options
+					 * are ignored.
+					 */
+					_copy_tres_opts(job_ptr, dep_job_ptr);
+				}
 				FREE_NULL_LIST(job_ptr->gres_list);
 				(void) gres_plugin_job_state_validate(
 						job_ptr->cpus_per_tres,

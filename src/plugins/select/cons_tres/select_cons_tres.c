@@ -1457,10 +1457,233 @@ extern bool select_p_job_expand_allow(void)
 	return true;
 }
 
+static job_resources_t *_create_job_resources(int node_cnt)
+{
+	job_resources_t *job_resrcs_ptr;
+
+	job_resrcs_ptr = create_job_resources();
+	job_resrcs_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t) * node_cnt);
+	job_resrcs_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * node_cnt);
+	job_resrcs_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
+	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
+	job_resrcs_ptr->memory_allocated = xmalloc(sizeof(uint64_t) * node_cnt);
+	job_resrcs_ptr->memory_used = xmalloc(sizeof(uint64_t) * node_cnt);
+	job_resrcs_ptr->nhosts = node_cnt;
+	return job_resrcs_ptr;
+}
+
 extern int select_p_job_expand(struct job_record *from_job_ptr,
 			       struct job_record *to_job_ptr)
 {
-//FIXME: Job resize logic, lower priority work
+	job_resources_t *from_job_resrcs_ptr, *to_job_resrcs_ptr,
+		        *new_job_resrcs_ptr;
+	struct node_record *node_ptr;
+	int first_bit, last_bit, i, i_first, i_last, node_cnt;
+	bool from_node_used, to_node_used;
+	int from_node_offset, to_node_offset, new_node_offset;
+	bitstr_t *tmp_bitmap, *tmp_bitmap2;
+
+	xassert(from_job_ptr);
+	xassert(from_job_ptr->details);
+	xassert(to_job_ptr);
+	xassert(to_job_ptr->details);
+
+	if (from_job_ptr->job_id == to_job_ptr->job_id) {
+		error("%s: %s: attempt to merge %pJ with self",
+		      plugin_type, __func__, from_job_ptr);
+		return SLURM_ERROR;
+	}
+
+	from_job_resrcs_ptr = from_job_ptr->job_resrcs;
+	if ((from_job_resrcs_ptr == NULL) ||
+	    (from_job_resrcs_ptr->cpus == NULL) ||
+	    (from_job_resrcs_ptr->core_bitmap == NULL) ||
+	    (from_job_resrcs_ptr->node_bitmap == NULL)) {
+		error("%s: %s: %pJ lacks a job_resources struct",
+		      plugin_type, __func__, from_job_ptr);
+		return SLURM_ERROR;
+	}
+	to_job_resrcs_ptr = to_job_ptr->job_resrcs;
+	if ((to_job_resrcs_ptr == NULL) ||
+	    (to_job_resrcs_ptr->cpus == NULL) ||
+	    (to_job_resrcs_ptr->core_bitmap == NULL) ||
+	    (to_job_resrcs_ptr->node_bitmap == NULL)) {
+		error("%s: %s: %pJ lacks a job_resources struct",
+		      plugin_type, __func__, to_job_ptr);
+		return SLURM_ERROR;
+	}
+
+	(void) rm_job_res(select_part_record, select_node_usage, from_job_ptr,
+			  0);
+	(void) rm_job_res(select_part_record, select_node_usage, to_job_ptr, 0);
+
+	if (to_job_resrcs_ptr->core_bitmap_used) {
+		i = bit_size(to_job_resrcs_ptr->core_bitmap_used);
+		bit_nclear(to_job_resrcs_ptr->core_bitmap_used, 0, i-1);
+	}
+
+	tmp_bitmap = bit_copy(to_job_resrcs_ptr->node_bitmap);
+	bit_or(tmp_bitmap, from_job_resrcs_ptr->node_bitmap);
+	tmp_bitmap2 = bit_copy(to_job_ptr->node_bitmap);
+	bit_or(tmp_bitmap2, from_job_ptr->node_bitmap);
+	bit_and(tmp_bitmap, tmp_bitmap2);
+	bit_free(tmp_bitmap2);
+	node_cnt = bit_set_count(tmp_bitmap);
+
+	new_job_resrcs_ptr = _create_job_resources(node_cnt);
+	new_job_resrcs_ptr->ncpus = from_job_resrcs_ptr->ncpus +
+				    to_job_resrcs_ptr->ncpus;
+	new_job_resrcs_ptr->node_req = to_job_resrcs_ptr->node_req;
+	new_job_resrcs_ptr->node_bitmap = tmp_bitmap;
+	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
+						     node_bitmap);
+	new_job_resrcs_ptr->whole_node = to_job_resrcs_ptr->whole_node;
+	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr,
+			    select_fast_schedule);
+	xfree(to_job_ptr->node_addr);
+	to_job_ptr->node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
+	to_job_ptr->total_cpus = 0;
+
+	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),
+			bit_ffs(to_job_resrcs_ptr->node_bitmap));
+	last_bit =  MAX(bit_fls(from_job_resrcs_ptr->node_bitmap),
+			bit_fls(to_job_resrcs_ptr->node_bitmap));
+	from_node_offset = to_node_offset = new_node_offset = -1;
+	for (i = first_bit; i <= last_bit; i++) {
+		from_node_used = to_node_used = false;
+		if (bit_test(from_job_resrcs_ptr->node_bitmap, i)) {
+			from_node_used = bit_test(from_job_ptr->node_bitmap,i);
+			from_node_offset++;
+		}
+		if (bit_test(to_job_resrcs_ptr->node_bitmap, i)) {
+			to_node_used = bit_test(to_job_ptr->node_bitmap, i);
+			to_node_offset++;
+		}
+		if (!from_node_used && !to_node_used)
+			continue;
+		new_node_offset++;
+		node_ptr = node_record_table_ptr + i;
+		memcpy(&to_job_ptr->node_addr[new_node_offset],
+                       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
+		if (from_node_used) {
+			/*
+			 * Merge alloc info from both "from" and "to" jobs,
+			 * leave "from" job with no allocated CPUs or memory
+			 *
+			 * The following fields should be zero:
+			 * from_job_resrcs_ptr->cpus_used[from_node_offset]
+			 * from_job_resrcs_ptr->memory_used[from_node_offset];
+			 */
+			new_job_resrcs_ptr->cpus[new_node_offset] =
+				from_job_resrcs_ptr->cpus[from_node_offset];
+			from_job_resrcs_ptr->cpus[from_node_offset] = 0;
+			new_job_resrcs_ptr->memory_allocated[new_node_offset] =
+				from_job_resrcs_ptr->
+				memory_allocated[from_node_offset];
+			job_resources_bits_copy(new_job_resrcs_ptr,
+						new_node_offset,
+						from_job_resrcs_ptr,
+						from_node_offset);
+		}
+		if (to_node_used) {
+			/*
+			 * Merge alloc info from both "from" and "to" jobs
+			 *
+			 * DO NOT double count the allocated CPUs in partition
+			 * with Shared nodes
+			 */
+			new_job_resrcs_ptr->cpus[new_node_offset] +=
+				to_job_resrcs_ptr->cpus[to_node_offset];
+			new_job_resrcs_ptr->cpus_used[new_node_offset] +=
+				to_job_resrcs_ptr->cpus_used[to_node_offset];
+			new_job_resrcs_ptr->memory_allocated[new_node_offset]+=
+				to_job_resrcs_ptr->
+				memory_allocated[to_node_offset];
+			new_job_resrcs_ptr->memory_used[new_node_offset] +=
+				to_job_resrcs_ptr->memory_used[to_node_offset];
+			job_resources_bits_copy(new_job_resrcs_ptr,
+						new_node_offset,
+						to_job_resrcs_ptr,
+						to_node_offset);
+			if (from_node_used) {
+				/* Adjust CPU count for shared CPUs */
+				int from_core_cnt, to_core_cnt, new_core_cnt;
+				from_core_cnt = count_job_resources_node(
+							from_job_resrcs_ptr,
+							from_node_offset);
+				to_core_cnt = count_job_resources_node(
+							to_job_resrcs_ptr,
+							to_node_offset);
+				new_core_cnt = count_job_resources_node(
+							new_job_resrcs_ptr,
+							new_node_offset);
+				if ((from_core_cnt + to_core_cnt) !=
+				    new_core_cnt) {
+					new_job_resrcs_ptr->
+						cpus[new_node_offset] *=
+						new_core_cnt;
+					new_job_resrcs_ptr->
+						cpus[new_node_offset] /=
+						(from_core_cnt + to_core_cnt);
+				}
+			}
+		}
+		if (to_job_ptr->details->whole_node == 1) {
+			to_job_ptr->total_cpus += select_node_record[i].cpus;
+		} else {
+			to_job_ptr->total_cpus += new_job_resrcs_ptr->
+						  cpus[new_node_offset];
+		}
+	}
+	build_job_resources_cpu_array(new_job_resrcs_ptr);
+	gres_plugin_job_merge(from_job_ptr->gres_list,
+			      from_job_resrcs_ptr->node_bitmap,
+			      to_job_ptr->gres_list,
+			      to_job_resrcs_ptr->node_bitmap);
+
+	/* Now swap data: "new" -> "to" and clear "from" */
+	free_job_resources(&to_job_ptr->job_resrcs);
+	to_job_ptr->job_resrcs = new_job_resrcs_ptr;
+
+	to_job_ptr->cpu_cnt = to_job_ptr->total_cpus;
+	to_job_ptr->details->min_cpus = to_job_ptr->total_cpus;
+	to_job_ptr->details->max_cpus = to_job_ptr->total_cpus;
+	from_job_ptr->total_cpus   = 0;
+	from_job_resrcs_ptr->ncpus = 0;
+	from_job_ptr->details->min_cpus = 0;
+	from_job_ptr->details->max_cpus = 0;
+
+	from_job_ptr->total_nodes   = 0;
+	from_job_resrcs_ptr->nhosts = 0;
+	from_job_ptr->node_cnt      = 0;
+	from_job_ptr->details->min_nodes = 0;
+	to_job_ptr->total_nodes     = new_job_resrcs_ptr->nhosts;
+	to_job_ptr->node_cnt        = new_job_resrcs_ptr->nhosts;
+
+	i_first = bit_ffs(from_job_ptr->node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(from_job_ptr->node_bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(from_job_ptr->node_bitmap, i))
+			continue;
+		make_node_alloc(select_node_record[i].node_ptr, to_job_ptr);
+	}
+	bit_or(to_job_ptr->node_bitmap, from_job_ptr->node_bitmap);
+	bit_nclear(from_job_ptr->node_bitmap, 0, (node_record_count - 1));
+	bit_nclear(from_job_resrcs_ptr->node_bitmap, 0,
+		   (node_record_count - 1));
+
+	xfree(to_job_ptr->nodes);
+	to_job_ptr->nodes = xstrdup(new_job_resrcs_ptr->nodes);
+	xfree(from_job_ptr->nodes);
+	from_job_ptr->nodes = xstrdup("");
+	xfree(from_job_resrcs_ptr->nodes);
+	from_job_resrcs_ptr->nodes = xstrdup("");
+
+	(void) _add_job_to_res(to_job_ptr, 0);
+
 	return SLURM_SUCCESS;
 }
 
