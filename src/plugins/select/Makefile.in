@@ -484,7 +484,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = other alps cons_res cons_tres cray linear serial
+SUBDIRS = other alps cons_res cray linear serial
 all: all-recursive
 
 .SUFFIXES:

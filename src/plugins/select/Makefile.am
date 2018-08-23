@@ -1,6 +1,6 @@
 # Makefile for node selection plugins
 
-SUBDIRS = other alps cons_res cons_tres cray linear serial
+SUBDIRS = other alps cons_res cray linear serial
 
 # Each plugin here needs a plugin_id, here are the currect plug_ids
 # for each plugin.
