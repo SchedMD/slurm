@@ -1,5 +1,5 @@
 Name:		slurm
-Version:	15.05.0
+Version:	19.05.0
 %define rel	0pre0
 Release:	%{rel}%{?dist}
 Summary:	Slurm Workload Manager
