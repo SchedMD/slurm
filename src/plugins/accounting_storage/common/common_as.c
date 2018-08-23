@@ -598,7 +598,8 @@ extern bool is_user_coord(slurmdb_user_rec_t *user, char *account)
 extern bool is_user_any_coord(void *db_conn, slurmdb_user_rec_t *user)
 {
 	xassert(user);
-	if (assoc_mgr_fill_in_user(db_conn, user, 1, NULL) != SLURM_SUCCESS) {
+	if (assoc_mgr_fill_in_user(db_conn, user, 1, NULL, false)
+	    != SLURM_SUCCESS) {
 		error("couldn't get information for this user %s(%d)",
 		      user->name, user->uid);
 		return 0;

@@ -1344,7 +1344,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_fed_details_t *job_fed_details = NULL;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK,
 				   .qos = READ_LOCK,
-				   .tres = READ_LOCK };
+				   .tres = READ_LOCK,
+				   .user = READ_LOCK };
 
 	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
 	limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
@@ -7732,7 +7733,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			memset(&user_rec, 0, sizeof(slurmdb_user_rec_t));
 			user_rec.uid = job_desc->user_id;
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
-					       accounting_enforce, NULL);
+					       accounting_enforce, NULL, false);
 			if (user_rec.default_wckey)
 				job_desc->wckey = xstrdup_printf(
 					"*%s", user_rec.default_wckey);
@@ -7753,7 +7754,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 			if (assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
 						    accounting_enforce,
-						    &wckey_ptr)) {
+						    &wckey_ptr, false)) {
 				if (accounting_enforce &
 				    ACCOUNTING_ENFORCE_WCKEYS) {
 					error("%s: invalid wckey '%s' for "
@@ -16604,7 +16605,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 	wckey_rec.uid       = job_ptr->user_id;
 	wckey_rec.name      = new_wckey;
 	if (assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
-				    accounting_enforce, &wckey_ptr)) {
+				    accounting_enforce, &wckey_ptr, false)) {
 		info("%s: invalid wckey %s for %pJ",
 		     module, new_wckey, job_ptr);
 		return ESLURM_INVALID_WCKEY;
@@ -16617,7 +16618,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 		*/
 		wckey_rec.name = NULL;
 		assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
-					accounting_enforce, &wckey_ptr);
+					accounting_enforce, &wckey_ptr, false);
 		if (!wckey_ptr) {
 			debug("%s: we didn't have a wckey record for wckey "
 			      "'%s' and user '%u', and we can't seem to find "

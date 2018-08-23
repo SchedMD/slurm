@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix pmi2 to build with gcc 8.0+.
  -- Remove the development snapshot of select/cons_tres plugin.
  -- Fix slurmd -C to not print benign error from xcpuinfo.
+ -- Fix potential double locks in the assoc_mgr.
 
 * Changes in Slurm 18.08.0rc1
 ==============================

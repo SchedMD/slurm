@@ -239,7 +239,7 @@ static char *_get_default_account(uint32_t user_id)
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = user_id;
 	if (assoc_mgr_fill_in_user(acct_db_conn, &user, accounting_enforce,
-				   NULL) != SLURM_ERROR) {
+				   NULL, false) != SLURM_ERROR) {
 		return user.default_acct;
 	} else {
 		return NULL;

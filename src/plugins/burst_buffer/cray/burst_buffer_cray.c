@@ -1148,8 +1148,9 @@ static void _load_state(bool init_config)
 	char *end_ptr = NULL;
 	time_t now = time(NULL);
 	uint32_t timeout;
-	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-					 NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t assoc_locks = { .assoc = READ_LOCK,
+					 .qos = READ_LOCK,
+					 .user = READ_LOCK };
 	bool found_pool;
 	bitstr_t *pools_bitmap;
 

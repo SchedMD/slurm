@@ -3366,7 +3366,7 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 			   _cluster_get_assocs.
 			*/
 			assoc_mgr_fill_in_user(
-				mysql_conn, &user, 1, NULL);
+				mysql_conn, &user, 1, NULL, false);
 		}
 		if (!is_admin && !user.name) {
 			debug("User %u has no associations, and is not admin, "

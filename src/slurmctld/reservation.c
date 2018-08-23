@@ -656,7 +656,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 	int rc = SLURM_SUCCESS, i = 0, j = 0;
 	List assoc_list_allow = NULL, assoc_list_deny = NULL, assoc_list;
 	slurmdb_assoc_rec_t assoc, *assoc_ptr = NULL;
-	assoc_mgr_lock_t locks = { .assoc = READ_LOCK };
+	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .user = READ_LOCK };
 
 
 	/* no need to do this if we can't ;) */

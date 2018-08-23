@@ -864,7 +864,7 @@ static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn,
 		memset(&user, 0, sizeof(slurmdb_user_rec_t));
 		user.uid = *uid;
 		if (assoc_mgr_fill_in_user(
-			    slurmdbd_conn->db_conn, &user, 1, NULL)
+			    slurmdbd_conn->db_conn, &user, 1, NULL, false)
 		    != SLURM_SUCCESS) {
 			comment = "Your user has not been added to the accounting system yet.";
 			error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
