@@ -86,17 +86,17 @@ make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
 	$srun ./$file_in3
 	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.csh
-	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh"
+	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh
+	exit 0"
 
 make_bash_script $file_in2 "
 	$scontrol -dd show job \${SLURM_JOBID}
-	$srun ./$file_in3
-	sleep 5		# Wait for epilog completion
 	$scontrol update JobId=\${SLURM_JOBID} NumNodes=0
 	. slurm_job_\${SLURM_JOBID}_resize.sh
-	$scontrol -dd show job \${SLURM_JOBID}
+	# JOB GETS CANCELLED HERE AS BATCH HOST GETS REMOVED FROM JOB ALLOCATION
 	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.csh
-	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh"
+	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh
+	exit 0"
 
 make_bash_script $file_in3 "
 echo 'HOST:'\$SLURMD_NODENAME 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES"
@@ -190,6 +190,7 @@ if {$match != 3} {
 
 #
 # Parse the output files from job 2
+# Not currently looking for anything, but do log it's contents before purge
 #
 send_user "\n\nParse job 2 output\n"
 if {[wait_for_file $file_out2] != 0} {
@@ -199,21 +200,15 @@ if {[wait_for_file $file_out2] != 0} {
 set match 0
 spawn $bin_cat $file_out2
 expect {
-	-re "CUDA_VISIBLE_DEVICES" {
-		incr match
-		exp_continue
-	}
 	eof {
 		wait
 	}
 }
-if {$match != 1} {
-	send_user "\nFAILURE: bad CUDA information about job 2 ($match != 1)\n"
-	set exit_code 1
-}
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2 $file_in3 $file_out1 $file_out2
+	exec $bin_rm -f slurm_job_${job_id2}_resize.csh
+	exec $bin_rm -f slurm_job_${job_id2}_resize.sh
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
