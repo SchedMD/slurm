@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix segfault on job arrays when starting controller without dbd up.
  -- Fix pmi2 to build with gcc 8.0+.
+ -- Remove the development snapshot of select/cons_tres plugin.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
