@@ -136,6 +136,7 @@ typedef struct slurmd_config {
 	uint64_t      debug_flags;	/* DebugFlags configured           */
 	int	      boot_time:1;      /* Report node boot time now (-b)  */
 	int           daemonize:1;	/* daemonize flag (-D)		   */
+	bool          def_config;       /* We haven't read in the config yet */
 	int	      cleanstart:1;     /* clean start requested (-c)      */
 	int           mlock_pages:1;	/* mlock() slurmd  */
 
