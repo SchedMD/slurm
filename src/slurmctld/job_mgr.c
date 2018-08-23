@@ -10800,6 +10800,31 @@ static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
 	return assoc_ptr;
 }
 
+/* Allocate nodes to new job. Old job info will be cleared at epilog complete */
+static void _realloc_nodes(struct job_record *job_ptr,
+			   bitstr_t *orig_node_bitmap)
+{
+	int i, i_first, i_last;
+	struct node_record *node_ptr;
+
+	xassert(job_ptr);
+	xassert(orig_node_bitmap);
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap)
+		return;
+	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
+	else
+		i_last = -1;
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i) ||
+		    bit_test(orig_node_bitmap, i))
+			continue;
+		node_ptr = node_record_table_ptr + i;
+		make_node_alloc(node_ptr, job_ptr);
+	}
+}
+
 static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		       uid_t uid)
 {
@@ -12337,6 +12362,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 							 expand_job_ptr);
 			if (error_code == SLURM_SUCCESS) {
 				_merge_job_licenses(job_ptr, expand_job_ptr);
+				_realloc_nodes(expand_job_ptr,
+					       orig_job_node_bitmap);
 				rebuild_step_bitmaps(expand_job_ptr,
 						     orig_job_node_bitmap);
 				(void) gs_job_fini(job_ptr);
