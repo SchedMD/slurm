@@ -1478,7 +1478,7 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 	job_resources_t *from_job_resrcs_ptr, *to_job_resrcs_ptr,
 		        *new_job_resrcs_ptr;
 	struct node_record *node_ptr;
-	int first_bit, last_bit, i, i_first, i_last, node_cnt;
+	int first_bit, last_bit, i, node_cnt;
 	bool from_node_used, to_node_used;
 	int from_node_offset, to_node_offset, new_node_offset;
 	bitstr_t *tmp_bitmap, *tmp_bitmap2;
@@ -1660,16 +1660,6 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 	to_job_ptr->total_nodes     = new_job_resrcs_ptr->nhosts;
 	to_job_ptr->node_cnt        = new_job_resrcs_ptr->nhosts;
 
-	i_first = bit_ffs(from_job_ptr->node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(from_job_ptr->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(from_job_ptr->node_bitmap, i))
-			continue;
-		make_node_alloc(select_node_record[i].node_ptr, to_job_ptr);
-	}
 	bit_or(to_job_ptr->node_bitmap, from_job_ptr->node_bitmap);
 	bit_nclear(from_job_ptr->node_bitmap, 0, (node_record_count - 1));
 	bit_nclear(from_job_resrcs_ptr->node_bitmap, 0,
