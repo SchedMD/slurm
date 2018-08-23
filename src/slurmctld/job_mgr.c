@@ -12323,7 +12323,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if ((job_specs->min_nodes == 0) && (job_ptr->node_cnt > 0) &&
 		    job_ptr->details && job_ptr->details->expanding_jobid) {
 			struct job_record *expand_job_ptr;
-			bitstr_t *orig_job_node_bitmap;
+			bitstr_t *orig_job_node_bitmap, *orig_jobx_node_bitmap;
 
 			expand_job_ptr = find_job_record(job_ptr->details->
 							 expanding_jobid);
@@ -12356,21 +12356,31 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 			xassert(job_ptr->job_resrcs);
 			xassert(job_ptr->job_resrcs->node_bitmap);
-			orig_job_node_bitmap = bit_copy(expand_job_ptr->
-							job_resrcs->
-							node_bitmap);
+			xassert(expand_job_ptr->job_resrcs->node_bitmap);
+			orig_job_node_bitmap = bit_copy(job_ptr->node_bitmap);
+			orig_jobx_node_bitmap = bit_copy(expand_job_ptr->
+							 job_resrcs->
+							 node_bitmap);
 			error_code = select_g_job_expand(job_ptr,
 							 expand_job_ptr);
 			if (error_code == SLURM_SUCCESS) {
 				_merge_job_licenses(job_ptr, expand_job_ptr);
+				FREE_NULL_BITMAP(job_ptr->node_bitmap);
+				job_ptr->node_bitmap = orig_job_node_bitmap;
+				orig_job_node_bitmap = NULL;
+				deallocate_nodes(job_ptr, false, false, false);
+				bit_clear_all(job_ptr->node_bitmap);
+				job_ptr->job_state &= JOB_STATE_FLAGS;
+				job_ptr->job_state |= JOB_COMPLETE;
 				_realloc_nodes(expand_job_ptr,
-					       orig_job_node_bitmap);
+					       orig_jobx_node_bitmap);
 				rebuild_step_bitmaps(expand_job_ptr,
-						     orig_job_node_bitmap);
+						     orig_jobx_node_bitmap);
 				(void) gs_job_fini(job_ptr);
 				(void) gs_job_start(expand_job_ptr);
 			}
-			bit_free(orig_job_node_bitmap);
+			FREE_NULL_BITMAP(orig_job_node_bitmap);
+			FREE_NULL_BITMAP(orig_jobx_node_bitmap);
 			job_post_resize_acctg(job_ptr);
 			job_post_resize_acctg(expand_job_ptr);
 			/*

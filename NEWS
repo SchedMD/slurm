@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
+ -- Run epilog and clean up allocation when a job is resized to zero and its
+    resources transferred to another job (--depend=expand).
 
 * Changes in Slurm 18.08.0
 ==========================
