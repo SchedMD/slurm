@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Use previous SlurmdTimeout in the slurmctld after a reconfigure to
     determine the time a node has been down.
  -- Fix multi-cluster srun between clusters with different SelectType plugins.
+ -- Fix removing job licenses on reconfig/restart when configured license
+    counts are 0.
 
 * Changes in Slurm 18.08.1
 ==========================
