@@ -2984,7 +2984,8 @@ static void *_assoc_cache_mgr(void *no_data)
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	assoc_mgr_lock_t locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = WRITE_LOCK };
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = WRITE_LOCK,
+		  .user = READ_LOCK };
 
 	while (running_cache == 1) {
 		slurm_mutex_lock(&assoc_cache_mutex);

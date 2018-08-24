@@ -187,7 +187,7 @@ extern int assoc_mgr_fill_in_tres(void *db_conn,
  *                      DO NOT FREE.
  * IN: locked - If you plan on using assoc_pptr after this function
  *              you need to have an assoc_mgr_lock_t READ_LOCK for
- *              associations while you use it before and after the
+ *              associations and users while you use it before and after the
  *              return.  This is not required if using the assoc for
  *              non-pointer portions.
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
@@ -206,11 +206,16 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
  * IN/OUT: user_pptr - if non-NULL then return a pointer to the
  *		       slurmdb_user record in cache on success
  *                     DO NOT FREE.
+ * IN: locked - If you plan on using user_pptr outside
+ *              this function you need to have an assoc_mgr_lock_t
+ *              READ_LOCK for User while you use it before and after the
+ *              return.  This is not required if using the assoc for
+ *              non-pointer portions.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 				  int enforce,
-				  slurmdb_user_rec_t **user_pptr);
+				  slurmdb_user_rec_t **user_pptr, bool locked);
 
 /*
  * get info from the storage
@@ -236,12 +241,18 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
  * IN: enforce - return an error if no such wckey exists
  * IN/OUT: wckey_pptr - if non-NULL then return a pointer to the
  *			slurmdb_wckey record in cache on success
+ * IN: locked - If you plan on using wckey_pptr outside
+ *              this function you need to have an assoc_mgr_lock_t
+ *              READ_LOCK for WCKey and Users while you use it before and after
+ *              the return.  This is not required if using the assoc for
+ *              non-pointer portions.
  * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
 extern int assoc_mgr_fill_in_wckey(void *db_conn,
 				   slurmdb_wckey_rec_t *wckey,
 				   int enforce,
-				   slurmdb_wckey_rec_t **wckey_pptr);
+				   slurmdb_wckey_rec_t **wckey_pptr,
+				   bool locked);
 
 /*
  * get admin_level of uid

@@ -104,8 +104,7 @@ extern int slurm_job_check_grace(struct job_record *job_ptr,
 		char *preempt_type = slurm_get_preempt_type();
 		if (!xstrcmp(preempt_type, "preempt/partition_prio"))
 			preempt_mode = 1;
-		else if (!xstrcmp(preempt_type, "preempt/qos") ||
-			 !xstrcmp(preempt_type, "preempt/job_prio"))
+		else if (!xstrcmp(preempt_type, "preempt/qos"))
 			preempt_mode = 2;
 		else
 			preempt_mode = 0;

@@ -2279,6 +2279,8 @@ extern int assoc_mgr_fill_in_tres(void *db_conn,
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
+	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+
 	itr = list_iterator_create(assoc_mgr_tres_list);
 	while ((found_tres = list_next(itr))) {
 		if (tres->id) {
@@ -2379,7 +2381,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 			memset(&user, 0, sizeof(slurmdb_user_rec_t));
 			user.uid = assoc->uid;
 			if (assoc_mgr_fill_in_user(db_conn, &user,
-						   enforce, NULL)
+						   enforce, NULL, locked)
 			    == SLURM_ERROR) {
 				if (enforce & ACCOUNTING_ENFORCE_ASSOCS) {
 					error("User %d not found", assoc->uid);
@@ -2416,6 +2418,9 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 /* 	     assoc->cluster, assoc->partition); */
 	if (!locked)
 		assoc_mgr_lock(&locks);
+
+	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
+
 
 	/* First look for the assoc with a partition and then check
 	 * for the non-partition association if we don't find one.
@@ -2536,7 +2541,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 
 extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 				  int enforce,
-				  slurmdb_user_rec_t **user_pptr)
+				  slurmdb_user_rec_t **user_pptr,
+				  bool locked)
 {
 	ListIterator itr = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
@@ -2548,10 +2554,15 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 		if (_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	assoc_mgr_lock(&locks);
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	xassert(verify_assoc_lock(USER_LOCK, READ_LOCK));
+
 	if ((!assoc_mgr_user_list || !list_count(assoc_mgr_user_list))
 	    && !(enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
-		assoc_mgr_unlock(&locks);
+		if (!locked)
+			assoc_mgr_unlock(&locks);
 		return SLURM_SUCCESS;
 	}
 
@@ -2567,7 +2578,8 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 	list_iterator_destroy(itr);
 
 	if (!found_user) {
-		assoc_mgr_unlock(&locks);
+		if (!locked)
+			assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			return SLURM_ERROR;
 		else
@@ -2598,7 +2610,8 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 	if (!user->wckey_list)
 		user->wckey_list = found_user->wckey_list;
 
-	assoc_mgr_unlock(&locks);
+	if (!locked)
+		assoc_mgr_unlock(&locks);
 	return SLURM_SUCCESS;
 
 }
@@ -2616,6 +2629,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
+
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
 
 	/* Since we might be locked we can't come in here and try to
 	 * get the list since we would need the WRITE_LOCK to do that,
@@ -2750,7 +2765,8 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 
 extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 				   int enforce,
-				   slurmdb_wckey_rec_t **wckey_pptr)
+				   slurmdb_wckey_rec_t **wckey_pptr,
+				   bool locked)
 {
 	ListIterator itr = NULL;
 	slurmdb_wckey_rec_t * found_wckey = NULL;
@@ -2785,7 +2801,7 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 			user.uid = wckey->uid;
 			user.name = wckey->user;
 			if (assoc_mgr_fill_in_user(db_conn, &user,
-						   enforce, NULL)
+						   enforce, NULL, locked)
 			    == SLURM_ERROR) {
 				if (enforce & ACCOUNTING_ENFORCE_WCKEYS) {
 					error("User %d not found", wckey->uid);
@@ -2832,7 +2848,11 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 /* 	     "cluster=%s", */
 /* 	     wckey->user, wckey->uid, wckey->name, */
 /* 	     wckey->cluster); */
-	assoc_mgr_lock(&locks);
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	xassert(verify_assoc_lock(WCKEY_LOCK, READ_LOCK));
+
 	itr = list_iterator_create(assoc_mgr_wckey_list);
 	while ((found_wckey = list_next(itr))) {
 		if (wckey->id) {
@@ -2884,7 +2904,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 	list_iterator_destroy(itr);
 
 	if (!ret_wckey) {
-		assoc_mgr_unlock(&locks);
+		if (!locked)
+			assoc_mgr_unlock(&locks);
 		if (enforce & ACCOUNTING_ENFORCE_WCKEYS)
 			return SLURM_ERROR;
 		else
@@ -2908,7 +2929,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 
 	wckey->is_def = ret_wckey->is_def;
 
-	assoc_mgr_unlock(&locks);
+	if (!locked)
+		assoc_mgr_unlock(&locks);
 
 	return SLURM_SUCCESS;
 }
@@ -3037,7 +3059,7 @@ extern void assoc_mgr_get_shares(void *db_conn,
 		else {
 			if (assoc_mgr_fill_in_user(
 				    db_conn, &user,
-				    ACCOUNTING_ENFORCE_ASSOCS, NULL)
+				    ACCOUNTING_ENFORCE_ASSOCS, NULL, false)
 			    == SLURM_ERROR) {
 				debug3("User %d not found", user.uid);
 				goto end_it;
@@ -3241,7 +3263,7 @@ extern void assoc_mgr_info_get_pack_msg(
 		else {
 			if (assoc_mgr_fill_in_user(
 				    db_conn, &user,
-				    ACCOUNTING_ENFORCE_ASSOCS, NULL)
+				    ACCOUNTING_ENFORCE_ASSOCS, NULL, false)
 			    == SLURM_ERROR) {
 				debug3("User %d not found", user.uid);
 				goto end_it;

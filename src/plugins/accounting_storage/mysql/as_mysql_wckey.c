@@ -813,7 +813,7 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			assoc_mgr_fill_in_user(
-				mysql_conn, &user, 1, NULL);
+				mysql_conn, &user, 1, NULL, false);
 		}
 		if (!is_admin && !user.name) {
 			debug("User %u has no associations, and is not admin, "

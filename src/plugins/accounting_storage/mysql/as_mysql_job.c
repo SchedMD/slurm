@@ -179,7 +179,8 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			user_rec.uid = NO_VAL;
 			user_rec.name = user;
 			if (assoc_mgr_fill_in_user(mysql_conn, &user_rec,
-						   1, NULL) != SLURM_SUCCESS) {
+						   1, NULL, false)
+			    != SLURM_SUCCESS) {
 				error("No user by name of %s assoc %u",
 				      user, associd);
 				xfree(user);
@@ -200,7 +201,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 		wckey_rec.cluster = cluster;
 		if (assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
 					    ACCOUNTING_ENFORCE_WCKEYS,
-					    NULL) != SLURM_SUCCESS) {
+					    NULL, false) != SLURM_SUCCESS) {
 			List wckey_list = NULL;
 			slurmdb_wckey_rec_t *wckey_ptr = NULL;
 			/* we have already checked to make
@@ -224,7 +225,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 				if (assoc_mgr_fill_in_wckey(
 					    mysql_conn, &wckey_rec,
 					    ACCOUNTING_ENFORCE_WCKEYS,
-					    NULL) != SLURM_SUCCESS) {
+					    NULL, false) != SLURM_SUCCESS) {
 					wckey_ptr = xmalloc(
 						sizeof(slurmdb_wckey_rec_t));
 					wckey_ptr->name =
@@ -249,7 +250,7 @@ static uint32_t _get_wckeyid(mysql_conn_t *mysql_conn, char **name,
 			/* If that worked lets get it */
 			assoc_mgr_fill_in_wckey(mysql_conn, &wckey_rec,
 						ACCOUNTING_ENFORCE_WCKEYS,
-						NULL);
+						NULL, false);
 
 			FREE_NULL_LIST(wckey_list);
 		}
