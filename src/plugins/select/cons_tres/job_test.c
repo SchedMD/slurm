@@ -1216,7 +1216,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		}
 	}
 
-	/* This is the case if -O/--overcommit  is true */
+	/* This is the case if -O/--overcommit is true */
 	if (details_ptr->min_cpus == details_ptr->min_nodes) {
 		struct multi_core_data *mc_ptr = details_ptr->mc_ptr;
 
