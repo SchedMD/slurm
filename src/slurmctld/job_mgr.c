@@ -7961,16 +7961,13 @@ extern bool valid_tres_cnt(char *tres)
 				rc = false;
 				break;
 			}
-		} else {
-			colon = strchr(sep, ':');
-			if (colon) {	/* Includes TRES type specification */
-				if ((sep[0] >= '0') && (sep[0] <= '9')) {
-					rc = false;
-					break;
-				}
-				sep = colon + 1;
+		} else if ((colon = strchr(sep, ':'))) {
+			/* Includes explicit "name:type:count" */
+			if ((sep[0] >= '0') && (sep[0] <= '9')) {
+				rc = false;
+				break;
 			}
-
+			sep = colon + 1;
 			val = strtoll(sep, &end_ptr, 10);
 			if (((end_ptr[0] != '\0') || (val < 0) ||
 			    (val == LLONG_MAX)) ||

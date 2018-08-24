@@ -3301,8 +3301,7 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 			offset = sep2 - type + 1;
 			sep += offset;
 		} else {
-			my_rc = ESLURM_INVALID_GRES;
-			goto fini;
+			sep = NULL;
 		}
 	} else {
 		/* Count in this field, no type */
@@ -8530,8 +8529,7 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 			offset = sep2 - type + 1;
 			sep += offset;
 		} else {
-			my_rc = ESLURM_INVALID_GRES;
-			goto fini;
+			sep = NULL;
 		}
 	} else {
 		/* Count in this field, no type */
