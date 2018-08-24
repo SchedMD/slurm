@@ -88,14 +88,14 @@ of each specific resource on each node. Otherwise Slurm will only track a
 count of allocated resources rather than the state of each individual device
 file.
 
-.\ .TP
-.\ \fBLinks\fR
-.\ If multiple devices should be co-scheduled whenever possible, then specify a
-.\ link number on both devices that have the same value.
-.\ Devices may have multiple links and those numberic values should be
-.\ identified in a comma separated list.
-.\ A typical use case would be to identify GPUs having LNLink connectivity.
-.\ This is an optional value.
+.TP
+\fBLinks\fR
+If multiple devices should be co-scheduled whenever possible, then specify a
+link number on both devices that have the same value.
+Devices may have multiple links and those numberic values should be
+identified in a comma separated list.
+A typical use case would be to identify GPUs having LNLink connectivity.
+This is an optional value.
 .\
 .TP
 \fBName\fR
@@ -164,9 +164,9 @@ Name=bandwidth Count=20M
 \. .br
 \. Name=gpu Type=tesla File=/dev/nvidia1 COREs=0,1 Links=0
 \. .br
-.\ Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Links=1
-.\ .br
-.\ Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3 Links=1
+Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Links=1
+.br
+Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3 Links=1
 \. 
 .LP
 .br
