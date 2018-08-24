@@ -2712,8 +2712,13 @@ static int _restore_job_dependencies(void)
 		license_list = license_validate(job_ptr->licenses, false, false,
 						job_ptr->tres_req_cnt, &valid);
 		FREE_NULL_LIST(job_ptr->license_list);
-		if (valid)
+		if (valid) {
 			job_ptr->license_list = license_list;
+			xfree(job_ptr->licenses);
+			job_ptr->licenses =
+				license_list_to_string(license_list);
+		}
+
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 			license_job_get(job_ptr);
 

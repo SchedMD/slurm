@@ -135,6 +135,18 @@ extern List license_validate(char *licenses, bool validate_configured,
  */
 extern bool license_list_overlap(List list_1, List list_2);
 
+/*
+ * Given a list of license_t records, return a license string.
+ *
+ * This can be combined with _build_license_list() to eliminate duplicates
+ * (e.g. "tux*2,tux*3" gets changed to "tux*5").
+ *
+ * IN license_list - list of license_t records
+ *
+ * RET string represenation of licenses. Must be destroyed by caller.
+ */
+extern char *license_list_to_string(List license_list);
+
 /* pack_all_licenses()
  *
  * Get the licenses and the usage counters in the io buffer
