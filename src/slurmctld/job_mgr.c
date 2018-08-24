@@ -6767,7 +6767,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 					job_desc->tres_req_cnt[TRES_ARRAY_CPU],
 					job_desc->min_nodes);
 
-	license_list = license_validate(job_desc->licenses, true,
+	license_list = license_validate(job_desc->licenses, true, true,
 					job_desc->tres_req_cnt, &valid);
 	if (!valid) {
 		info("Job's requested licenses are invalid: %s",
@@ -11882,7 +11882,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			    job_ptr->licenses);
 	} else if (job_specs->licenses) {
 		bool valid, pending = IS_JOB_PENDING(job_ptr);
-		license_list = license_validate(job_specs->licenses, true,
+		license_list = license_validate(job_specs->licenses, true, true,
 						pending ?
 						job_specs->tres_req_cnt : NULL,
 						&valid);

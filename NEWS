@@ -16,6 +16,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix multi-cluster srun between clusters with different SelectType plugins.
  -- Fix removing job licenses on reconfig/restart when configured license
     counts are 0.
+ -- If a job requested multiple licenses and one license was removed then on
+    a reconfigure/restart all of the licenses -- including the valid ones
+    would be removed.
 
 * Changes in Slurm 18.08.1
 ==========================
