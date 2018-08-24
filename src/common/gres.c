@@ -5979,7 +5979,9 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 			if (used_sock[s])
 				continue;
 			for (g = 0; g < gres_cnt; g++) {
-				if (!bit_test(sock_gres->bits_by_sock[s], g))
+				if (sock_gres->bits_by_sock    &&
+				    sock_gres->bits_by_sock[s] &&
+				    !bit_test(sock_gres->bits_by_sock[s], g))
 					continue;   /* GRES not on this socket */
 				if (bit_test(node_specs->gres_bit_alloc, g) ||
 				    bit_test(job_specs->
@@ -6334,7 +6336,9 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 			continue;
 		i = 0;
 		for (g = 0; g < gres_cnt; g++) {
-			if (!bit_test(sock_gres->bits_by_sock[s], g))
+			if (sock_gres->bits_by_sock    &&
+			    sock_gres->bits_by_sock[s] &&
+			    !bit_test(sock_gres->bits_by_sock[s], g))
 				continue;   /* GRES not on this socket */
 			if (bit_test(node_specs->gres_bit_alloc, g))
 				continue;   /* Already allocated GRES */
