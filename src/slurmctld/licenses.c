@@ -514,6 +514,8 @@ extern void license_free(void)
 /*
  * license_validate - Test if the required licenses are valid
  * IN licenses - required licenses
+ * IN validate_configured - if true, validate that there are enough configured
+ *                          licenses for the requested amount.
  * OUT tres_req_cnt - appropriate counts for each requested gres,
  *                    since this only matters on pending jobs you can
  *                    send in NULL otherwise
@@ -521,7 +523,7 @@ extern void license_free(void)
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
  */
-extern List license_validate(char *licenses,
+extern List license_validate(char *licenses, bool validate_configured,
 			     uint64_t *tres_req_cnt, bool *valid)
 {
 	ListIterator iter;
@@ -557,7 +559,8 @@ extern List license_validate(char *licenses,
 			      license_entry->name);
 			*valid = false;
 			break;
-		} else if (license_entry->total > match->total) {
+		} else if (validate_configured &&
+			   (license_entry->total > match->total)) {
 			debug("Licenses count requested higher than configured "
 			      "(%s: %u > %u)",
 			      match->name, license_entry->total, match->total);

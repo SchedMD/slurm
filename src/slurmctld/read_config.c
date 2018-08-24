@@ -2709,7 +2709,7 @@ static int _restore_job_dependencies(void)
 				acct_policy_add_accrue_time(job_ptr, true);
 		}
 
-		license_list = license_validate(job_ptr->licenses,
+		license_list = license_validate(job_ptr->licenses, false,
 						job_ptr->tres_req_cnt, &valid);
 		FREE_NULL_LIST(job_ptr->license_list);
 		if (valid)
