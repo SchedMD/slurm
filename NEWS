@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- If a job requested multiple licenses and one license was removed then on
     a reconfigure/restart all of the licenses -- including the valid ones
     would be removed.
+ -- Fix issue where job's license string wasn't updated after a restart when
+    licenses were removed or added.
 
 * Changes in Slurm 18.08.1
 ==========================
