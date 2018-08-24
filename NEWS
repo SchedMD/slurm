@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
     would be removed.
  -- Fix issue where job's license string wasn't updated after a restart when
     licenses were removed or added.
+ -- Add allow_zero_lic to SchedulerParameters.
 
 * Changes in Slurm 18.08.1
 ==========================
