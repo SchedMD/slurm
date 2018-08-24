@@ -516,6 +516,8 @@ extern void license_free(void)
  * IN licenses - required licenses
  * IN validate_configured - if true, validate that there are enough configured
  *                          licenses for the requested amount.
+ * IN validate_existing - if true, validate that licenses exist, otherwise don't
+ *                        return them in the final list.
  * OUT tres_req_cnt - appropriate counts for each requested gres,
  *                    since this only matters on pending jobs you can
  *                    send in NULL otherwise
@@ -524,6 +526,7 @@ extern void license_free(void)
  * RET license_list, must be destroyed by caller
  */
 extern List license_validate(char *licenses, bool validate_configured,
+			     bool validate_existing,
 			     uint64_t *tres_req_cnt, bool *valid)
 {
 	ListIterator iter;
@@ -557,6 +560,10 @@ extern List license_validate(char *licenses, bool validate_configured,
 		if (!match) {
 			debug("License name requested (%s) does not exist",
 			      license_entry->name);
+			if (!validate_existing) {
+				list_remove(iter);
+				continue;
+			}
 			*valid = false;
 			break;
 		} else if (validate_configured &&
