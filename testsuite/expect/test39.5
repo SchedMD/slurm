@@ -79,7 +79,12 @@ if {![string compare $select_type "cons_tres"] ||
         exit 0
 }
 
-set gpu_cnt [get_gpu_count]
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes > 1} {
+	set nb_nodes 2
+}
+set gpu_cnt [get_gpu_count $nb_nodes]
 if {$gpu_cnt < 0} {
 	send_user "\nFAILURE: Error getting GPU count\n"
 	exit 1
@@ -93,12 +98,8 @@ send_user "\nGPU count is $gpu_cnt\n"
 send_user "Sockets per node is $sockets_per_node\n"
 send_user "CPUs per socket is $cpus_per_socket\n"
 
-set def_part_name [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part_name]
-
 set tot_gpus $gpu_cnt
 if {$nb_nodes > 1} {
-	set nb_nodes 2
 	incr tot_gpus $gpu_cnt
 }
 set gpus_per_node $gpu_cnt

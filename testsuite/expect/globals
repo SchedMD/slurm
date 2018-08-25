@@ -4267,48 +4267,57 @@ proc get_craynetwork_count {} {
 #
 # Proc: get_gpu_count
 #
-# Returns number of GPUs in the default partition
+# For a given node count, returns number of GPUs per node on
+# those "node_count" nodes with the highest GPU counts
+# For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
+# [get_gpu_count 1] returns 3 (i.e. 1 node 3 GPUs)
+# [get_gpu_count 2] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
+# [get_gpu_count 3] returns 1 (i.e. 3 nodes have at least 1 GPU each)
 #
 ################################################################
-proc get_gpu_count {} {
-	global number sbatch scancel
-	set count 0
+proc get_gpu_count { node_count } {
+	global number sinfo alpha_numeric_colon
 	set fini 0
+	set node_inx 0
+	set def_part [default_partition]
+
+	if {$node_count <= 0} {
+		return 0
+	}
+
 	log_user 0
-	for {set inx 1} {$fini == 0} {set inx [expr $inx * 2]} {
-		set job_id 0
-		if {$inx > 32} {
-			set count -1
-			break
+	spawn $sinfo -N -p$def_part -oGRES=%G -h
+	expect {
+		-re "GRES=($alpha_numeric_colon)" {
+			set count 0
+			set parts [split $expect_out(1,string) ",/"]
+			while 1 {
+				set gpu_found [lsearch $parts "gpu*"]
+				if { $gpu_found == -1 } break
+
+				set parts2 [split [lindex $parts $gpu_found] ":/"]
+				set col [lsearch -regexp $parts2 ^$number$]
+				if { $col == -1 } {
+					incr count
+				} else {
+					set count [expr $count + [lindex $parts2 $col]]
+				}
+				incr node_inx
+				lappend gpu_count $count
+				set parts [lreplace $parts $gpu_found $gpu_found]
+			}
+			exp_continue
 		}
-		spawn $sbatch --cpus-per-gpu=1 --gres=gpu:$inx --output=/dev/null --wrap "exit 0"
-		expect {
-			-re "Invalid generic resource" {
-				set fini 1
-				exp_continue
-			}
-			-re "Requested node configuration is not available" {
-				set fini 1
-				exp_continue
-			}
-			-re "Submitted batch job ($number)" {
-				set job_id $expect_out(1,string)
-				set count $inx
-				exp_continue
-			}
-			timeout {
-				send_user "\nFAILURE: sbatch not responding\n"
-				set fini 1
-			}
-			eof {
-				wait
-			}
-		}
-		if {$job_id != 0} {
-			exec $scancel -Q $job_id
+		eof {
+			wait
 		}
 	}
 	log_user 1
+
+	if {$node_inx < $node_count} {
+		return 0
+	}
+	set count [lindex [lsort -decreasing -integer $gpu_count] [expr $node_count - 1]]
 	return $count
 }
 

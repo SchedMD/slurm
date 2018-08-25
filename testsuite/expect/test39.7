@@ -157,7 +157,7 @@ if {![string compare $select_type "cons_tres"] ||
         exit 0
 }
 
-set gpu_cnt [get_gpu_count]
+set gpu_cnt [get_gpu_count 1]
 if {$gpu_cnt < 0} {
 	send_user "\nFAILURE: Error getting GPU count\n"
 	exit 1
