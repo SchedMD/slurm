@@ -32,20 +32,21 @@ source ./globals
 
 set test_id     "39.5"
 set exit_code   0
-set file_in     "test$test_id.input"
+set file_in1     "test$test_id.input1"
+set file_in2     "test$test_id.input2"
 set number_commas  "\[0-9_,\]+"
 
 proc get_node_config {} {
 	global cpus_per_socket sockets_per_node test_id
-	global exit_code file_in max_job_delay number srun scontrol
+	global exit_code file_in1 max_job_delay number srun scontrol
 
 	set cpus_tot 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
-	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	make_bash_script $file_in1 "$scontrol show node \$SLURMD_NODENAME"
 	set timeout $max_job_delay
 	log_user 0
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 -J "test$test_id" $file_in]
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 -J "test$test_id" $file_in1]
 	expect {
 		-re "CPUTot=($number)" {
 			set cpus_tot $expect_out(1,string)
@@ -66,6 +67,52 @@ proc get_node_config {} {
 	}
 	log_user 1
 	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+}
+
+proc multi_socket_gres { gres_string } {
+	set multi_found 0
+	set gres_char "x"
+
+	set start [string first "gpu" $gres_string]
+	if {$start == -1} {
+		return 0
+	}
+	set len [string length $gres_string]
+	for {set char_inx [expr $start + 3]} {$char_inx < $len} {incr char_inx} {
+		set gres_char [string index $gres_string $char_inx]
+		if {[string match "," $gres_char]} {
+			return 0
+		}
+		if {![string match "(" $gres_char]} {
+			continue
+		}
+		incr char_inx
+		if {$char_inx >= $len} {
+			break
+		}
+		set gres_char [string index $gres_string $char_inx]
+		if {![string match "S" $gres_char]} {
+			break
+		}
+		incr char_inx
+		if {$char_inx >= $len} {
+			break
+		}
+		set gres_char [string index $gres_string $char_inx]
+		if {![string match ":" $gres_char]} {
+			break
+		}
+		for {incr char_inx} {$char_inx < $len} {incr char_inx} {
+			set gres_char [string index $gres_string $char_inx]
+			if {[string match "-" $gres_char] || [string match ";" $gres_char]} {
+				return 1
+			}
+			if {[string match "," $gres_char]} {
+				return 0
+			}
+		}
+	}
+	return 0
 }
 
 print_header $test_id
@@ -112,9 +159,12 @@ if {$gpus_per_node > 1 && $sockets_per_node > 1} {
 set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
 
 #
-# Build input script file
+# Build input script files
 #
-make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+make_bash_script $file_in1 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+exit 0"
+make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+$scontrol show node \$SLURMD_NODENAME | grep Gres
 exit 0"
 
 #
@@ -128,7 +178,7 @@ if {$tot_gpus > 1} {
 } else {
 	set use_gpus_per_job $tot_gpus
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
@@ -152,8 +202,10 @@ if {$match != $expected_gpus} {
 if {$use_gpus_per_job > 2} {
 	send_user "\n\nTEST: --gpus option, part 2\n"
 	set match 0
-	incr use_gpus_per_job -2
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
+	if {$use_gpus_per_job > $nb_nodes} {
+		incr use_gpus_per_job -1
+	}
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
 	expect {
 		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 			incr match [cuda_count $expect_out(1,string)]
@@ -185,10 +237,15 @@ if {$gpus_per_node > 1} {
 } else {
 	set use_gpus_per_node $gpus_per_node
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
+set multi_socket 0
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in2]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	-re "Gres=(.*)" {
+		set multi_socket [multi_socket_gres $expect_out(1,string)]
 		exp_continue
 	}
 	timeout {
@@ -210,8 +267,11 @@ if {$match != $expected_gpus} {
 # Test --gpus-per-socket options using a subset of GPUs actually available on the node
 #
 send_user "\n\nTEST: --gpus-per-socket option\n"
+if {$multi_socket == 0} {
+set sockets_per_node 1
+}
 set match 0
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=$sockets_per_node --ntasks-per-socket=1 --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=$sockets_per_node --ntasks-per-socket=1 --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
@@ -242,7 +302,7 @@ if {$gpu_cnt > 1} {
 } else {
 	set use_gpus_per_node $gpu_cnt
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -J "test$test_id" -l ./$file_in]
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -J "test$test_id" -l ./$file_in1]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
@@ -264,7 +324,7 @@ if {$match != $expected_gpus} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
+	exec $bin_rm -f $file_in1 $file_in2
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
