@@ -168,7 +168,6 @@ expect {
 	}
 	-re "Gres=(.*)" {
 		set multi_socket [multi_socket_gres $expect_out(1,string)]
-send_user "\nMULTI:$multi_socket\n"
 		exp_continue
 	}
 	-re "CPU_IDs=($controlmachine_regex)" {
