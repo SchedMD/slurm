@@ -5772,6 +5772,7 @@ _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 			count++;
 		} else if (count == 3) {
 			usleep(500000);
+			count++;
 			sec = 1;
 		} else {
 			sleep(pause);
