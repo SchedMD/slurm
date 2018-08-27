@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix pmi2 to build with gcc 8.0+.
  -- Fix proper alignment of clauses when determining if more nodes are needed
     for an allocation.
+ -- Fix race condition when canceling a federation job that just started
+    running.
 
 * Changes in Slurm 17.11.9-2
 ============================
