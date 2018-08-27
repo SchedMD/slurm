@@ -364,6 +364,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name);
  * IN/OUT gres_list - List of Gres records for this node to track usage
  * IN cpu_cnt - Count of CPUs (threads) on this node
  * IN core_cnt - Count of cores on this node
+ * IN sock_cnt - Count of sockets on this node
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
  *		      2: Don't validate hardware, use slurm.conf configuration
@@ -374,6 +375,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    char **new_config,
 					    List *gres_list,
 					    int cpu_cnt, int core_cnt,
+					    int sock_cnt,
 					    uint16_t fast_schedule,
 					    char **reason_down);
 

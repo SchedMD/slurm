@@ -2466,7 +2466,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	} else if (gres_plugin_node_config_validate(
 			   node_ptr->name, config_ptr->gres,
 			   &node_ptr->gres, &node_ptr->gres_list, threads1,
-			   cores1, slurmctld_conf.fast_schedule, &reason_down)
+			   cores1, sockets1, slurmctld_conf.fast_schedule,
+			   &reason_down)
 		   != SLURM_SUCCESS) {
 		error_code = EINVAL;
 		/* reason_down set in function above */
@@ -3106,6 +3107,7 @@ extern int validate_nodes_via_front_end(
 						&node_ptr->gres,
 						&node_ptr->gres_list,
 						thread_cnt, core_cnt,
+						socket_cnt,
 						slurmctld_conf.fast_schedule,
 						&reason_down);
 		if (rc) {

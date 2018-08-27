@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "June 2018" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "August 2018" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1131,6 +1131,11 @@ Specifications for multiple generic resources should be comma separated.
 Each resource specification consists of a name followed by an optional
 colon with a numeric value (default value is one)
 (e.g. "Gres=bandwidth:10000,gpus").
+If GRES as associated with specific sockets, that information will be reported
+For example if all 4 GPUs on a node are all associated with socket zero, then
+"Gres=gpu:4(S:0)". If associated with sockets 0 and 1 then "Gres=gpu:4(S:0-1)".
+The information of which specific GPUs are associated with specific GPUs is not
+reported, but only available by parsing the gres.conf file.
 Generic resources assigned via \fBscontrol\fR will only persist across the
 restart of the slurmctld daemon with the \fI\-R\fR option and state files
 preserved or slurmctld's receipt of a SIGHUP.
