@@ -160,6 +160,7 @@ static int _q_send_job_sync(char *sib_name);
 static slurmdb_federation_rec_t *_state_load(char *state_save_location);
 static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
 		      time_t sync_time);
+static int _q_sib_job_cancel(slurm_msg_t *msg, uint32_t uid);
 
 static char *_job_update_type_str(enum fed_job_update_type type)
 {
@@ -1132,7 +1133,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	memset(&kill_req, 0, sizeof(job_step_kill_msg_t));
 	kill_req.job_id      = job_id;
 	kill_req.sjob_id     = NULL;
-	kill_req.job_step_id = NO_VAL;
+	kill_req.job_step_id = SLURM_BATCH_SCRIPT;
 	kill_req.signal      = signal;
 	kill_req.flags       = flags;
 
@@ -1707,16 +1708,39 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 	if (!(job_ptr = find_job_record(job_update_info->job_id))) {
 		error("%s: failed to find job_record for fed JobId=%u",
 		      __func__, job_update_info->job_id);
-		unlock_slurmctld(job_write_lock);
-		return;
 	} else if (!job_ptr->fed_details) {
 		debug2("%s: %pJ not federated anymore", __func__, job_ptr);
-		unlock_slurmctld(job_write_lock);
-		return;
-	}
+	} else if (IS_JOB_RUNNING(job_ptr)) {
+		/*
+		 * The job could have started between the time that the origin
+		 * sent the complete message and now.
+		 */
+		slurm_msg_t msg;
+		sib_msg_t sib_msg = {0};
+		job_step_kill_msg_t *kill_req;
 
-	_do_fed_job_complete(job_ptr, job_update_info->return_code,
-			     job_update_info->start_time);
+		/* Build and pack a kill_req msg to put in a sib_msg */
+		kill_req = xmalloc(sizeof(job_step_kill_msg_t));
+		kill_req->job_id      = job_update_info->job_id;
+		kill_req->sjob_id     = NULL;
+		kill_req->job_step_id = SLURM_BATCH_SCRIPT;
+		kill_req->signal      = SIGKILL;
+		kill_req->flags       = 0;
+
+		sib_msg.data = kill_req;
+
+		slurm_msg_t_init(&msg);
+		msg.data = &sib_msg;
+
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+			info("%s: %pJ running now, just going to cancel it.",
+			     __func__, job_ptr);
+
+		_q_sib_job_cancel(&msg, job_update_info->uid);
+	} else {
+		_do_fed_job_complete(job_ptr, job_update_info->return_code,
+				     job_update_info->start_time);
+	}
 
 	unlock_slurmctld(job_write_lock);
 }
@@ -4985,7 +5009,7 @@ static int _q_sib_job_update(slurm_msg_t *msg, uint32_t uid)
 	return SLURM_SUCCESS;
 }
 
-extern int _q_sib_job_cancel(slurm_msg_t *msg, uint32_t uid)
+static int _q_sib_job_cancel(slurm_msg_t *msg, uint32_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t req_uid;
