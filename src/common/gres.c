@@ -3292,6 +3292,14 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			return -1;
 	}
 
+	/* Insure tres_per_job >= node count */
+	if (job_gres_data->gres_per_job) {
+		if (job_gres_data->gres_per_job < *min_nodes)
+			return -1;
+		if (job_gres_data->gres_per_job < *max_nodes)
+			*max_nodes = job_gres_data->gres_per_job;
+	}
+
 	return 0;
 }
 
