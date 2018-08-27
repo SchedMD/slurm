@@ -1830,10 +1830,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			bit_and(avail_bitmap, share_node_bitmap);
 
 			avail_nodes = bit_set_count(avail_bitmap);
-			if ((avail_nodes  < min_nodes)	||
-			    ((avail_nodes >= min_nodes)	&&
-			     (avail_nodes < req_nodes)	&&
-			     ((i+1) < node_set_size))) {
+			if (((avail_nodes  < min_nodes)	||
+			     ((avail_nodes >= min_nodes) &&
+			      (avail_nodes < req_nodes))) &&
+			    ((i+1) < node_set_size)) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = backup_bitmap;
 				continue;	/* Keep accumulating nodes */
