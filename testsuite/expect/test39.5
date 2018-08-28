@@ -162,6 +162,9 @@ set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
 # Build input script files
 #
 make_bash_script $file_in1 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+if \[ \$SLURM_PROCID -eq 0 \]; then
+$scontrol -dd show job \$SLURM_JOB_ID | grep \"GRES=\"
+fi
 exit 0"
 make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 $scontrol show node \$SLURMD_NODENAME | grep Gres
