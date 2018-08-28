@@ -5083,10 +5083,12 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 				bool use_total_gres, bitstr_t *core_bitmap,
 				uint16_t sockets, uint16_t cores_per_sock,
 				uint32_t job_id, char *node_name,
-				bool enforce_binding, uint32_t s_p_n)
+				bool enforce_binding, uint32_t s_p_n,
+				bitstr_t **req_sock_map)
 {
 	int i, j, s, c, tot_cores;
 	sock_gres_t *sock_gres;
+	int64_t add_gres;
 	uint64_t avail_gres, min_gres = 1;
 	bool match = false;
 
@@ -5248,6 +5250,26 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 			match = false;
 	}
 
+
+	/*
+	 * Identify sockets required to satisfy gres_per_node specification
+	 * so that allocated tasks can be distributed over multiple sockets
+	 * if necessary
+	 */
+	add_gres = min_gres - sock_gres->cnt_any_sock;
+	if (match && enforce_binding && core_bitmap && (add_gres > 0) &&
+	    job_gres_ptr->gres_per_node) {
+		*req_sock_map = bit_alloc(sockets);
+		for (s = 0; s < sockets; s++) {
+			if (sock_gres->cnt_by_sock[s] == 0)
+				continue;
+			bit_set(*req_sock_map, s);
+			add_gres -= sock_gres->cnt_by_sock[s];
+			if (add_gres <= 0)
+				break;
+		}
+	}
+
 	if (match) {
 		sock_gres->type_id = job_gres_ptr->type_id;
 		sock_gres->type_name = xstrdup(job_gres_ptr->type_name);
@@ -5363,6 +5385,7 @@ static sock_gres_t *_build_sock_gres_basic(gres_job_state_t *job_gres_ptr,
  * IN node_name       - name of the node (for logging)
  * IN enforce_binding - if true then only use GRES with direct access to cores
  * IN s_p_n           - Expected sockets_per_node (NO_VAL if not limited)
+ * OUT req_sock_map   - bitmap of specific requires sockets
  * RET: List of sock_gres_t entries identifying what resources are available on
  *	each core. Returns NULL if none available. Call FREE_NULL_LIST() to
  *	release memory.
@@ -5371,7 +5394,8 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 				  bool use_total_gres, bitstr_t *core_bitmap,
 				  uint16_t sockets, uint16_t cores_per_sock,
 				  uint32_t job_id, char *node_name,
-				  bool enforce_binding, uint32_t s_p_n)
+				  bool enforce_binding, uint32_t s_p_n,
+				  bitstr_t **req_sock_map)
 {
 	List sock_gres_list = NULL;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -5418,7 +5442,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 					node_data_ptr, use_total_gres,
 					core_bitmap, sockets, cores_per_sock,
 					job_id, node_name, enforce_binding,
-					local_s_p_n);
+					local_s_p_n, req_sock_map);
 		} else if (node_data_ptr->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(job_data_ptr,
 					node_data_ptr, use_total_gres,

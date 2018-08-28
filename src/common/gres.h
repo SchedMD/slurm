@@ -696,6 +696,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
  * IN node_name       - name of the node (for logging)
  * IN enforce_binding - if true then only use GRES with direct access to cores
  * IN s_p_n           - Expected sockets_per_node (NO_VAL if not limited)
+ * OUT req_sock_map   - bitmap of specific requires sockets
  * RET: List of sock_gres_t entries identifying what resources are available on
  *	each core. Returns NULL if none available. Call FREE_NULL_LIST() to
  *	release memory.
@@ -704,7 +705,8 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 				  bool use_total_gres, bitstr_t *core_bitmap,
 				  uint16_t sockets, uint16_t cores_per_sock,
 				  uint32_t job_id, char *node_name,
-				  bool enforce_binding, uint32_t s_p_n);
+				  bool enforce_binding, uint32_t s_p_n,
+				  bitstr_t **req_sock_map);
 
 /*
  * Determine which GRES can be used on this node given the available cores.
