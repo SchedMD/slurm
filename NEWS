@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent extra resources from being allocated when combining certain flags.
  -- Fix problem in task/affinity plugin that can lead to slurmd fatal()'ing
     when using --hint=nomultithread.
+ -- Fix left over socket file when step is ending and using pmi2 with
+    %n or %h in the spool dir.
 
 * Changes in Slurm 17.11.9-2
 ============================
