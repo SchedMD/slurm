@@ -65,7 +65,7 @@
 #include "slurm/slurm.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/xcgroup_read_config.c"
+#include "src/common/xcgroup_read_config.h"
 
 /* This definition would probably be good to centralize somewhere */
 #ifndef MAXHOSTNAMELEN
