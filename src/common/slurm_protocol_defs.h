@@ -1030,6 +1030,7 @@ typedef struct batch_job_launch_msg {
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t job_id;
+	uint32_t pack_jobid;
 	uint32_t step_id;
 	uint32_t uid;
 	uint32_t gid;
