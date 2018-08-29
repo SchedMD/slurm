@@ -120,6 +120,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- SchedulerParameters' "whole_pack" option has been renamed to "whole_hetjob",
     although "whole_pack" will still be supported for backward compatibility.
  -- Cray: Add “CheckGhalQuiesce” to "CommunicationParameters" in slurm.conf.
+ -- Remove requirement to have cgroup_allowed_devices_file.conf in order to
+    constrain devices. By default all devices are allowed and GRES, that are
+    associated with a device file, that are not requested are restricted.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

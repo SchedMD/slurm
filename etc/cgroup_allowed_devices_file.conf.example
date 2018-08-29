@@ -1,6 +1,0 @@
-/dev/null
-/dev/urandom
-/dev/zero
-/dev/sda*
-/dev/cpu/*/*
-/dev/pts/*

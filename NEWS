@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
     time is 0.
  -- Fix extern step hanging forever when canceled right after creation.
  -- sdiag - add slurmctld agent count.
+ -- Remove requirement to have cgroup_allowed_devices_file.conf in order to
+    constrain devices. By default all devices are allowed and GRES, that are
+    associated with a device file, that are not requested are restricted.
 
 * Changes in Slurm 18.08.0rc1
 ==============================

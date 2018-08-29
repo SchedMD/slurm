@@ -115,12 +115,10 @@ extern int task_cgroup_devices_init(slurm_cgroup_conf_t *slurm_cgroup_conf)
 
 	file = fopen(cgroup_allowed_devices_file, "r");
 	if (!file) {
-		fatal("task/cgroup: %s doesn't exist, this is needed for proper functionality when Constraining Devices.",
+		debug("task/cgroup: unable to open %s: %m",
 		      cgroup_allowed_devices_file);
-		goto error;
 	} else
 		fclose(file);
-
 
 	return SLURM_SUCCESS;
 
@@ -499,9 +497,6 @@ static int _read_allowed_devices_file(char **allowed_devices)
 		}
 		fclose(file);
 	}
-	else
-		fatal("%s: %s does not exist, please create this file.",
-		      __func__, cgroup_allowed_devices_file);
 
 	return num_lines;
 }
