@@ -5,7 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- Run epilog and clean up allocation when a job is resized to zero and its
     resources transferred to another job (--depend=expand).
- -- If GRES as associated with specific sockets, identify those sockets in the
+ -- If GRES are associated with specific sockets, identify those sockets in the
     output of "scontrol show node". For example if all 4 GPUs on a node are
     all associated with socket zero, then "Gres=gpu:4(S:0)". If associated
     with sockets 0 and 1 then "Gres=gpu:4(S:0-1)". The information of which

@@ -34,15 +34,24 @@ NOTE: Built-in BLCR support has been removed.
 
 HIGHLIGHTS
 ==========
+ -- Add select/cons_tres plugin, which offers similar functionality to cons_res
+    with an entirely new code base and far greater GPU scheduling flexibility.
 
 RPMBUILD CHANGES
 ================
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- Add GPU scheduling options to slurm.conf, available both globally and
+    per-partition: DefCpusPerGPU and DefMemPerGPU.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- Add GPU scheduling options for salloc, sbatch and srun:
+   --cpus-per-gpu, -G/--gpus, --gpu-bind, --gpu-freq, --gpus-per-node,
+   --gpus-per-socket, --gpus-per-task and --mem-per-gpu.
+ -- If GRES are associated with specific sockets, identify those sockets in the
+    output of "scontrol show node" (e.g. "Gres=gpu:4(S:0)").
 
 OTHER CHANGES
 =============
