@@ -67,14 +67,12 @@ NOTE: squeue will now print "UID" as the header for the User ID field;
 
 HIGHLIGHTS
 ==========
- -- Add support for parenthesis in a job's constraint specification to group
-    like options together. For example
+ -- Add support for parenthesis in an advanced reservation or job constraint
+    specification to group like options together. For example:
     --constraint="[(knl&snc4&flat)*4&haswell*1]" might be used to specify that
     four nodes with the features "knl", "snc4" and "flat" plus one node with
-    the feature "haswell" are required.
- -- Enable jobs with zero node count for creation and/or deletion of persistent
-    burst buffers.
- -- Add "scontrol show dwstat" command to display Cray burst buffer status.
+    the feature "haswell" are required. Nodes with those features currently
+    available will be favored.
  -- Heterogeneous job steps allocations supported with
     * Open MPI (with Slurm's PMI2 and PMIx plugins) and
     * Intel MPI (with Slurm's PMI2 plugin)
@@ -82,91 +80,106 @@ HIGHLIGHTS
  -- Disable local PTY output processing when using 'srun --unbuffered'. This
     prevents the PTY subsystem from inserting extraneous \r characters into
     the output stream.
- -- Append ", with requeued tasks" to job array "end" emails if any tasks in the
-    array were requeued. This is a hint to use "sacct --duplicates" to see the
-    whole picture of the array job.
- -- The default AuthType for slurmdbd is not "auth/munge".
- -- Changed slurmd.service file to include remote-fs.target in After option.
+ -- Changed slurmd.service file to include "remote-fs.target" in "After" option.
+ -- The default AuthType for slurmdbd is now "auth/munge".
 
 RPMBUILD CHANGES
 ================
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- Configuration parameters "ControlMachine", "ControlAddr", "BackupController"
-    and "BackupAddr" replaced by an ordered list of "SlurmctldHost" records
-    with the optional address appended to the name enclosed in parenthesis.
-    For example: "SlurmctldHost=head(12.34.56.78)". An arbitrary number of
-    backup servers can be configured.
- -- Add "GetSysStatus" option to burst_buffer.conf file. For burst_buffer/cray
-    this would indicate the location of the "dwstat" command.
- -- Add node and partition configuration options of "CpuBind" to control default
-    task binding. Modify the scontrol to report and modify these parameters.
+ -- Add node and partition configuration options of "CpuBind" in slurm.conf to
+    control default task binding. Modify the scontrol to report and modify
+    these parameters.
  -- Add "NumaCpuBind" option to knl.conf file to automatically change a node's
     CpuBind parameter based upon changes to a node's NUMA mode.
+ -- Add "ValidateMode" configuration parameter to knl.conf for static
+    MCDRAM/NUMA configurations.
+ -- Add “NodeRebootWeight” option to knl.conf file to modiify a node's
+    scheduling weight when rebooting is required to satify a job's constraints.
+ -- Add "GetSysStatus" option to burst_buffer.conf file. For burst_buffer/cray
+    this would indicate the location of the "dwstat" command.
+ -- Add “SetExecHost” flag to burst_buffer.conf to enable access from login node
+    for interactive jobs
+ -- Configuration parameters "ControlMachine", "ControlAddr", "BackupController"
+    and "BackupAddr" in slurm.conf replaced by an ordered list of
+    "SlurmctldHost" records with the optional address appended to the name
+    enclosed in parenthesis. For example: "SlurmctldHost=head(12.34.56.78)".
+    An arbitrary number of backup servers can be configured.
+ -- Add "SlurmctldPrimaryOnProg" and "SlurmctldPrimaryOffProg" options to
+    slurm.conf to run scripts when primary/backup slurmctld server changes.
+ -- Add "ResumeFailProgram" slurm.conf option to specify a program that is
+    called when a node fails to respond by the configured "ResumeTimeout".
  -- Remove support for "ChosLoc" configuration parameter.
  -- Add SlurmctldParameters option allow_user_triggers to enable user-defined
     triggers. User defined triggers are now disabled by default.
- -- Add ResumeFailProgram slurm.conf option to specify a program that is called
-    when a node fails to respond by ResumeTimeout.
  -- ConstrainKmemSpace is now disabled by default. In Linux kernel version 3,
     early versions of kernel version 4, and RedHat/CentOS 6 and 7, using
     memory.kmem.limit_in_bytes leaks slab caches, which eventually causes the
     machine to be unable to create new cgroups.
  -- SchedulerParameters' "whole_pack" option has been renamed to "whole_hetjob",
     although "whole_pack" will still be supported for backward compatibility.
+ -- Cray: Add “CheckGhalQuiesce” to "CommunicationParameters" in slurm.conf.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Add sbatch "--batch" option to identify features required on batch node.
     For example "sbatch --batch=haswell ...".
+ -- sacct can report all information about all components of a heterogeneous
+    job allocation with “--whole-hetjob=yes” option.
  -- Report cgroup and NodeFeatures plugin configuration with scontrol and
     sview commands.
+ -- Add "scontrol show dwstat" command to display Cray burst buffer status.
  -- Remove the "CPUErr" value from the slurm_print_node_table() API call
     ("scontrol show node"). This was always zero for non-BlueGene systems.
+ -- srun command returns the highest signal of any task.
+ -- Add salloc/sbatch/srun option of "--gres-flags=disable-binding" to disable
+    filtering of CPUs with respect to generic resource locality. This option is
+    currently required to use more CPUs than are bound to a GRES (i.e. if a GPU
+    is bound to the CPUs on one socket, but resources on more than one socket
+    are required to run the job).
+ -- Add name of partition used to output of “srun --test-only …”. This is
+    valuable for jobs submitted to multiple partitions.
+ -- Add job reason “ReqNodeNotAvail, reserved for maintenance”.
+ -- “scontrol reboot” enhancements:
+    - Add ability to specify node reason
+    - Add ability to specify node state after reboot completion
+ -- sdiag command enhancements:
+    - Report outgoing message queue contents
+    - Report pending job count
+ -- Add scontrol ability to create/update "TRESBillingWeights".
+ -- Remove “AdminComment +=” syntax from “scontrol update job”.
+ -- New sacctmgr options to prevent/manage job queue stuffing:
+    - GrpJobsAccrue=<max_jobs>
+      Maximum number of pending jobs in aggregate able to accrue age priority
+      for this association and all associations which are children of this
+      association. To clear a previously set value use the modify command with
+      a new value of -1.
+    - MaxJobsAccrue=<max_jobs>
+      Maximum number of pending jobs able to accrue age priority at any given
+      time for the given association. This is overridden if set directly on a
+      user. Default is the cluster's limit. To clear a previously set value use
+      the modify command with a new value of -1.
+    - MinPrioThreshold
+      Minimum priority required to reserve resources when scheduling.
 
 OTHER CHANGES
 =============
-
-API CHANGES
-===========
-
-Changed members of the following structs
-========================================
-
-Added members to the following struct definitions
-=================================================
-
-Added the following struct definitions
-======================================
-
-Removed the following structs
-=============================
- -- Removed block_job_info_t, block_info_t, block_info_msg_t.
-
-Removed members from the following struct definitions
-=====================================================
- -- Removed node_scaling from node_info_msg_t.
- -- Removed from job_desc_msg_t: conn_type, geometry, rotate, blrtsimage,
-    linuximage, mloaderimage, ramdiskimage.
-
-Changed the following enums and #defines
-========================================
-
-Added the following API's
-=========================
-
-Changed the following API's
-============================
- -- Remove node_scaling argument to slurm_print_node_table() and
-    slurm_sprint_node_table().
-
-Removed the following API's
-===========================
- -- Removed slurm_xslurm_strerrorcat() function.
- -- Removed slurm_xstrstrip() function.
- -- Removed slurm_free_block_info_msg(), slurm_init_update_block_msg(),
-    slurm_load_block_info(), slurm_print_block_info(),
-    slurm_print_block_info_msg(), slurm_sprint_block_info(),
-    slurm_update_block().
- -- Removed slurm_get_select_jobinfo().
+ -- Add new job state of SO/STAGE_OUT indicating that burst buffer stage-out
+    operation is in progress.
+ -- Add new burst buffer state of “teardown-fail”.
+ -- Burst buffer errors logged to new job “SystemComment” field.
+ -- Enable jobs with zero node count for creation and/or deletion of persistent
+    burst buffers.
+ -- Avoid terminating other processes in a task group when any task is core
+    dumping to avoid incomplete OpenMP core files.
+ -- Append “, with requeued tasks” to end of job array “end” email when any task
+    is requeued. This is a hint to use “sacct --duplicates” to see all job
+    accounting information.
+ -- Consider nodes in “Resuming” state as available for backfill future
+    scheduling and do not replace in advanced reservations.
+ -- Explicitly shutdown the slurmd daemon when reboot requested.
+ -- Calculate TRES billing values at job submission to enforce QOS DenyOnLimit
+    configuration.
+ -- Add acct_gather_profile/influxdb plugin to store job profiling information
+    to InfluxDB rather than HDF5.
