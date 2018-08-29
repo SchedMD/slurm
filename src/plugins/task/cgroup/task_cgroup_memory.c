@@ -685,7 +685,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	/* build job cgroup relative path if no set (should not be) */
 	if (*job_cgroup_path == '\0') {
 		if (snprintf(job_cgroup_path,PATH_MAX,"%s/job_%u",
-			      user_cgroup_path,jobid) >= PATH_MAX) {
+			      user_cgroup_path, jobid) >= PATH_MAX) {
 			error("task/cgroup: unable to build job %u memory "
 			      "cg relative path : %m", jobid);
 			return SLURM_ERROR;

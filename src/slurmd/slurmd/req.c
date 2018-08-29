@@ -2371,7 +2371,6 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		slurm_mutex_unlock(&prolog_mutex);
 
 		memset(&job_env, 0, sizeof(job_env_t));
-
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
