@@ -86,6 +86,9 @@ void	*xfer_buf_data(Buf my_buf);
 void	pack_time(time_t val, Buf buffer);
 int	unpack_time(time_t *valp, Buf buffer);
 
+void 	packfloat(float val, Buf buffer);
+int	unpackfloat(float *valp, Buf buffer);
+
 void 	packdouble(double val, Buf buffer);
 int	unpackdouble(double *valp, Buf buffer);
 
@@ -142,6 +145,13 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	assert(sizeof(*valp) == sizeof(time_t));	\
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpack_time(valp,buf))			\
+		goto unpack_error;			\
+} while (0)
+
+#define safe_unpackfloat(valp,buf) do {		\
+	assert(sizeof(*valp) == sizeof(float));        \
+	assert(buf->magic == BUF_MAGIC);		\
+        if (unpackfloat(valp,buf))			\
 		goto unpack_error;			\
 } while (0)
 

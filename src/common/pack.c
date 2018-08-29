@@ -78,6 +78,8 @@ strong_alias(init_buf,		slurm_init_buf);
 strong_alias(xfer_buf_data,	slurm_xfer_buf_data);
 strong_alias(pack_time,		slurm_pack_time);
 strong_alias(unpack_time,	slurm_unpack_time);
+strong_alias(packfloat, 	slurm_packfloat);
+strong_alias(unpackfloat,	slurm_unpackfloat);
 strong_alias(packdouble,	slurm_packdouble);
 strong_alias(unpackdouble,	slurm_unpackdouble);
 strong_alias(packlongdouble,	slurm_packlongdouble);
@@ -307,6 +309,51 @@ void 	packdouble(double val, Buf buffer)
 
 	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
 	buffer->processed += sizeof(nl);
+}
+
+/*
+ * Given a buffer containing a network byte order 32-bit integer,
+ * typecast as float, and  divide by FLOAT_MULT
+ * store a host float at 'valp', and adjust buffer counters.
+ * NOTE: There is an IEEE standard format for float.
+ */
+int	unpackfloat(float *valp, Buf buffer)
+{
+	uint32_t nl;
+	union {
+		float f;
+		uint32_t u;
+	} uval;
+
+	if (unpack32(&nl, buffer) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	uval.u = nl;
+	*valp = uval.f / FLOAT_MULT;
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Given a float, multiple by FLOAT_MULT and then
+ * typecast to a uint32_t in host byte order, convert to network byte order
+ * store in buffer, and adjust buffer counters.
+ * NOTE: There is an IEEE standard format for float.
+ */
+void 	packfloat(float val, Buf buffer)
+{
+	union {
+		float f;
+		uint32_t u;
+	} uval;
+
+	/*
+	 * The FLOAT_MULT is here to round off.  We have found on systems going
+	 * out more than 15 decimals will mess things up, but rounding corrects
+	 * it.
+	 */
+	uval.f = (val * FLOAT_MULT);
+	pack32(uval.u, buffer);
 }
 
 /*
