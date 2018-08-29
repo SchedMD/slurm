@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
     when using --hint=nomultithread.
  -- Fix left over socket file when step is ending and using pmi2 with
     %n or %h in the spool dir.
+ -- Don't remove hwloc full system xml file when shutting down the slurmd.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
