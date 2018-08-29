@@ -126,8 +126,10 @@ int _slurm_cgroup_init(void)
 
 int _slurm_cgroup_create(stepd_step_rec_t *job, uint64_t id, uid_t uid, gid_t gid)
 {
-	/* we do it here as we do not have access to the conf structure */
-	/* in libslurm (src/common/xcgroup.c) */
+	/*
+	 * we do it here as we do not have access to the conf structure
+	 * in libslurm (src/common/xcgroup.c)
+	 */
 	char *pre = (char *)xstrdup(slurm_cgroup_conf.cgroup_prepend);
 #ifdef MULTIPLE_SLURMD
 	if ( conf->node_name != NULL )
