@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     return a start and end time set to the window end time, so elapsed
     time is 0.
  -- Fix extern step hanging forever when canceled right after creation.
+ -- sdiag - add slurmctld agent count.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
