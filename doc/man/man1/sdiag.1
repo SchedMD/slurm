@@ -37,6 +37,10 @@ between the slurm daemons and the controller for a best effort. If this values
 is close to MAX_AGENT_CNT there could be some delays affecting jobs management.
 
 .TP
+\fBAgent count\fR
+Number of active agent threads.
+
+.TP
 \fBDBD Agent queue size\fR
 Slurm queues up the messages intended for the SlurmDBD and processes them in a
 separate thread. If the SlurmDBD, or database, is down then this number will

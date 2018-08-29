@@ -118,6 +118,7 @@ static int _print_stats(void)
 
 	printf("Server thread count:  %d\n", buf->server_thread_count);
 	printf("Agent queue size:     %d\n", buf->agent_queue_size);
+	printf("Agent count:          %d\n", buf->agent_count);
 	printf("DBD Agent queue size: %d\n\n", buf->dbd_agent_queue_size);
 
 	printf("Jobs submitted: %d\n", buf->jobs_submitted);
