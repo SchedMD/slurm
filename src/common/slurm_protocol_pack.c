@@ -11402,7 +11402,28 @@ _pack_prolog_launch_msg(
 {
 	xassert(msg != NULL);
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->uid, buffer);
+		pack32(msg->gid, buffer);
+
+		packstr(msg->alias_list, buffer);
+		packstr(msg->nodes, buffer);
+		packstr(msg->partition, buffer);
+		packstr(msg->std_err, buffer);
+		packstr(msg->std_out, buffer);
+		packstr(msg->work_dir, buffer);
+
+		pack16(msg->x11, buffer);
+		packstr(msg->x11_magic_cookie, buffer);
+		packstr(msg->x11_target_host, buffer);
+		pack16(msg->x11_target_port, buffer);
+
+		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
+			      buffer);
+		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		packstr(msg->user_name, buffer);
+	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
@@ -11455,7 +11476,41 @@ _unpack_prolog_launch_msg(
 	launch_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
 	*msg = launch_msg_ptr;
 
-	if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpack32(&launch_msg_ptr->job_id, buffer);
+		safe_unpack32(&launch_msg_ptr->uid, buffer);
+		safe_unpack32(&launch_msg_ptr->gid, buffer);
+
+		safe_unpackstr_xmalloc(&launch_msg_ptr->alias_list, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->nodes, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->partition, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->std_err, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->std_out, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint32_tmp,
+				       buffer);
+
+		safe_unpack16(&launch_msg_ptr->x11, buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_magic_cookie,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_target_host,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&launch_msg_ptr->x11_target_port, buffer);
+
+		safe_unpackstr_array(&launch_msg_ptr->spank_job_env,
+				     &launch_msg_ptr->spank_job_env_size,
+				     buffer);
+		if (!(launch_msg_ptr->cred = slurm_cred_unpack(buffer,
+							protocol_version)))
+			goto unpack_error;
+
+		safe_unpackstr_xmalloc(&launch_msg_ptr->user_name, &uint32_tmp,
+				       buffer);
+	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
