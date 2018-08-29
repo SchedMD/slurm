@@ -65,6 +65,12 @@ static slurm_cgroup_conf_t slurm_cgroup_conf;
 static bool slurm_cgroup_conf_inited = false;
 static bool slurm_cgroup_conf_exist = true;
 
+strong_alias(xcgroup_config_read_mutex, slurm_xcgroup_config_read_mutex);
+strong_alias(xcgroup_get_slurm_cgroup_conf,
+	     slurm_xcgroup_get_slurm_cgroup_conf);
+strong_alias(xcgroup_fini_slurm_cgroup_conf,
+	     slurm_xcgroup_fini_slurm_cgroup_conf);
+
 /* Local functions */
 static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *cg_conf)
 {
