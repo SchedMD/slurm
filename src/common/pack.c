@@ -92,6 +92,8 @@ strong_alias(pack16,		slurm_pack16);
 strong_alias(unpack16,		slurm_unpack16);
 strong_alias(pack8,		slurm_pack8);
 strong_alias(unpack8,		slurm_unpack8);
+strong_alias(packbool,		slurm_packbool);
+strong_alias(unpackbool,	slurm_unpackbool);
 strong_alias(pack16_array,      slurm_pack16_array);
 strong_alias(unpack16_array,    slurm_unpack16_array);
 strong_alias(pack32_array,	slurm_pack32_array);
@@ -772,6 +774,35 @@ int unpack8(uint8_t * valp, Buf buffer)
 
 	memcpy(valp, &buffer->head[buffer->processed], sizeof(uint8_t));
 	buffer->processed += sizeof(uint8_t);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Given a boolean in host byte order, convert to network byte order
+ * store in buffer, and adjust buffer counters.
+ */
+void packbool(bool val, Buf buffer)
+{
+	uint8_t tmp8 = val;
+	pack8(tmp8, buffer);
+}
+
+/*
+ * Given a buffer containing a network byte order 8-bit integer,
+ * store a host integer at 'valp', and adjust buffer counters.
+ */
+int unpackbool(bool * valp, Buf buffer)
+{
+	uint8_t tmp8 = 0;
+
+	if (unpack8(&tmp8, buffer) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if (tmp8)
+		*valp = tmp8;
+	else
+		*valp = 0;
+
 	return SLURM_SUCCESS;
 }
 

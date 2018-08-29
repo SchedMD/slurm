@@ -107,6 +107,9 @@ int	unpack16(uint16_t *valp, Buf buffer);
 void	pack8(uint8_t val, Buf buffer);
 int	unpack8(uint8_t *valp, Buf buffer);
 
+void	packbool(bool val, Buf buffer);
+int	unpackbool(bool *valp, Buf buffer);
+
 void    pack16_array(uint16_t *valp, uint32_t size_val, Buf buffer);
 int     unpack16_array(uint16_t **valp, uint32_t* size_val, Buf buffer);
 
@@ -194,6 +197,13 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	assert(sizeof(*valp) == sizeof(uint8_t)); 	\
 	assert(buf->magic == BUF_MAGIC);		\
         if (unpack8(valp,buf))				\
+		goto unpack_error;			\
+} while (0)
+
+#define safe_unpackbool(valp,buf) do {			\
+	assert(sizeof(*valp) == sizeof(bool)); 	\
+	assert(buf->magic == BUF_MAGIC);		\
+        if (unpackbool(valp,buf))				\
 		goto unpack_error;			\
 } while (0)
 
