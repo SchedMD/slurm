@@ -124,4 +124,4 @@ extern int xcgroup_read_conf(int fd);
  */
 extern void xcgroup_fini_slurm_cgroup_conf(void);
 
-#endif /* !_DBD_READ_CONFIG_H */
+#endif /* !_CGROUP_READ_CONFIG_H */
