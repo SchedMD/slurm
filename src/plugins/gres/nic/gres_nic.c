@@ -52,7 +52,6 @@
 #include "src/common/env.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
-#include "src/common/xcgroup_read_config.c"
 #include "src/common/xstring.h"
 
 #include "../common/gres_common.h"
