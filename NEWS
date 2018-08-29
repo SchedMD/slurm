@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     for an allocation.
  -- Fix race condition when canceling a federation job that just started
     running.
+ -- Prevent extra resources from being allocated when combining certain flags.
 
 * Changes in Slurm 17.11.9-2
 ============================

@@ -3196,8 +3196,12 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		}
 	}
 
-	/* This is the case if -O/--overcommit  is true */
-	if (details_ptr->min_cpus == details_ptr->min_nodes) {
+	/*
+	 * Ensure sufficient resources to satisfy thread/core/socket
+	 * specifications with -O/--overcommit option.
+	 */
+	if (details_ptr->overcommit &&
+	    (details_ptr->min_cpus == details_ptr->min_nodes)) {
 		struct multi_core_data *mc_ptr = details_ptr->mc_ptr;
 
 		if ((mc_ptr->threads_per_core != NO_VAL16) &&
