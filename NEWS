@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition when canceling a federation job that just started
     running.
  -- Prevent extra resources from being allocated when combining certain flags.
+ -- Fix problem in task/affinity plugin that can lead to slurmd fatal()'ing
+    when using --hint=nomultithread.
 
 * Changes in Slurm 17.11.9-2
 ============================

@@ -1131,6 +1131,13 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 
 	size = bit_set_count(avail_map);
+	if ((req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE) &&
+	    (size < (req->cpus_per_task * hw_threads))) {
+		error("task/affinity: only %d bits in avail_map, CPU_BIND_ONE_THREAD_PER_CORE requires %d!",
+		      size, (req->cpus_per_task * hw_threads));
+		FREE_NULL_BITMAP(avail_map);
+		return SLURM_ERROR;
+	}
 	if (size < max_tasks) {
 		error("task/affinity: only %d bits in avail_map for %d tasks!",
 		      size, max_tasks);
