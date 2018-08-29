@@ -3523,6 +3523,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	 */
 	memset(&sbcast_arg, 0, sizeof(sbcast_cred_arg_t));
 	sbcast_arg.job_id = job_ptr->job_id;
+	sbcast_arg.pack_jobid = job_ptr->pack_job_id;
 	sbcast_arg.uid = job_ptr->user_id;
 	sbcast_arg.gid = job_ptr->group_id;
 	if (slurmctld_config.send_groups_in_cred) {
