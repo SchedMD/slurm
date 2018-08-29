@@ -962,6 +962,7 @@ typedef struct kill_job_msg {
 	uint32_t job_state;
 	uint32_t job_uid;
 	char *nodes;
+	uint32_t pack_jobid;
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
