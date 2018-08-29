@@ -5755,6 +5755,7 @@ _pause_for_job_completion (uint32_t job_id, char *nodes, int max_time)
 			count++;
 		} else if (count == 3) {
 			usleep(500000);
+			count++;
 			sec = 1;
 		} else {
 			sleep(pause);
@@ -5856,10 +5857,10 @@ _build_env(job_env_t *job_env)
 static void
 _destroy_env(char **env)
 {
-	int i=0;
+	int i = 0;
 
 	if (env) {
-		for(i=0; env[i]; i++) {
+		for (i = 0; env[i]; i++) {
 			xfree(env[i]);
 		}
 		xfree(env);
