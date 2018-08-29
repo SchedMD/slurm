@@ -4289,6 +4289,7 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	agent_args->hostlist = hostlist_create(NULL);
 	kill_step = xmalloc(sizeof(kill_job_msg_t));
 	kill_step->job_id    = job_ptr->job_id;
+	kill_step->pack_jobid = job_ptr->pack_job_id;
 	kill_step->step_id   = step_ptr->step_id;
 	kill_step->job_state = job_ptr->job_state;
 	kill_step->job_uid   = job_ptr->user_id;

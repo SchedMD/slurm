@@ -192,8 +192,8 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 		return -1;
 	}
 	close(fd);
-	debug("%s: CPU %d owned by job %u as expected",
-	      __func__, cpu_id, job_id);
+	debug2("%s: CPU %d owned by job %u as expected",
+	       __func__, cpu_id, job_id);
 
 	return 0;
 }

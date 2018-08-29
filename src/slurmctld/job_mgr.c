@@ -13142,6 +13142,7 @@ static void _send_job_kill(struct job_record *job_ptr)
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update    = time(NULL);
 	kill_job->job_id    = job_ptr->job_id;
+	kill_job->pack_jobid = job_ptr->pack_job_id;
 	kill_job->step_id   = NO_VAL;
 	kill_job->job_state = job_ptr->job_state;
 	kill_job->job_uid   = job_ptr->user_id;
@@ -13543,6 +13544,11 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
  * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
  * IN node_name - name of the node on which the job resides
  */
+
+/*
+ * FIXME: the job_id here is redundant to the job_ptr sent in.  We should change
+ * the signature.  I couldn't find any place where job_ptr was NULL.
+ */
 extern void
 abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, char *node_name)
 {
@@ -13555,6 +13561,7 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, char *node_name)
 	kill_req->time          = time(NULL);
 	kill_req->nodes		= xstrdup(node_name);
 	if (job_ptr) {  /* NULL if unknown */
+		kill_req->pack_jobid	= job_ptr->pack_job_id;
 		kill_req->start_time = job_ptr->start_time;
 		kill_req->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
@@ -13599,6 +13606,7 @@ extern void kill_job_on_node(struct job_record *job_ptr,
 	kill_job_msg_t *kill_req;
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
+	kill_req->pack_jobid	= job_ptr->pack_job_id;
 	kill_req->job_id	= job_ptr->job_id;
 	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);

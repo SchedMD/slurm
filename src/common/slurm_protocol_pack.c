@@ -4636,6 +4636,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->job_id,  buffer);
+		pack32(msg->pack_jobid,  buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->job_uid, buffer);
 		packstr(msg->nodes, buffer);
@@ -4678,6 +4679,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpack32(&(tmp_ptr->job_id),  buffer);
+		safe_unpack32(&(tmp_ptr->pack_jobid),  buffer);
 		safe_unpack32(&(tmp_ptr->job_state),  buffer);
 		safe_unpack32(&(tmp_ptr->job_uid), buffer);
 		safe_unpackstr_xmalloc(&(tmp_ptr->nodes),
@@ -9623,6 +9625,7 @@ _pack_prolog_launch_msg(
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
+		pack32(msg->pack_job_id, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 
@@ -9680,6 +9683,7 @@ _unpack_prolog_launch_msg(
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
+		safe_unpack32(&launch_msg_ptr->pack_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
 
@@ -9714,6 +9718,7 @@ _unpack_prolog_launch_msg(
 				       buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
+		launch_msg_ptr->pack_job_id = NO_VAL;
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
 
@@ -10627,6 +10632,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
+		pack32(msg->pack_jobid, buffer);
 		pack32(msg->step_id, buffer);
 
 		pack32(msg->uid, buffer);
@@ -10777,6 +10783,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
+		safe_unpack32(&launch_msg_ptr->pack_jobid, buffer);
 		safe_unpack32(&launch_msg_ptr->step_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);

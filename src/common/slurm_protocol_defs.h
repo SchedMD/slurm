@@ -962,6 +962,7 @@ typedef struct kill_job_msg {
 	uint32_t job_state;
 	uint32_t job_uid;
 	char *nodes;
+	uint32_t pack_jobid;
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
@@ -1004,6 +1005,7 @@ typedef struct prolog_launch_msg {
 	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
+	uint32_t pack_job_id;		/* pack job_id or NO_VAL */
 	char *partition;		/* partition the job is running in */
 	dynamic_plugin_data_t *select_jobinfo;	/* opaque data type */
 	char **spank_job_env;		/* SPANK job environment variables */
@@ -1029,6 +1031,7 @@ typedef struct batch_job_launch_msg {
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t job_id;
+	uint32_t pack_jobid;
 	uint32_t step_id;
 	uint32_t uid;
 	uint32_t gid;
