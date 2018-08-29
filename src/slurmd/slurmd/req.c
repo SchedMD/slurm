@@ -2333,6 +2333,8 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 			if (retry_cnt > 50) {
 				rc = ESLURMD_PROLOG_FAILED;
 				slurm_mutex_unlock(&prolog_mutex);
+				error("Waiting for JobId=%u prolog has failed, giving up after 50 sec",
+				      req->job_id);
 				goto done;
 			}
 
