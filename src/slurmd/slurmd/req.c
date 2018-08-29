@@ -90,6 +90,7 @@
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
+#include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
@@ -514,6 +515,10 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		safe_write(fd, &len, sizeof(int));
 	}
 	assoc_mgr_unlock(&locks);
+
+	/* send cgroup conf over to slurmstepd */
+	if (xcgroup_write_conf(fd) < 0)
+		goto rwfail;
 
 	/* send type over to slurmstepd */
 	safe_write(fd, &type, sizeof(int));

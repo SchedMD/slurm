@@ -106,6 +106,18 @@ extern List xcgroup_get_conf_list(void);
 extern void xcgroup_reconfig_slurm_cgroup_conf(void);
 
 /*
+ * Write the cgroup.conf file out to the stepd.
+ *      xcgroup_config_read_mutex must not be locked before calling.
+ */
+extern int xcgroup_write_conf(int fd);
+
+/*
+ * Read in the cgroup.conf file on the slurmstepd from the slurmd.
+ *      xcgroup_config_read_mutex must not be locked before calling.
+ */
+extern int xcgroup_read_conf(int fd);
+
+/*
  * xcgroup_fini_slurm_cgroup_conf - when finished using the cgroup.conf file
  *      free the structure.
  *      xcgroup_config_read_mutex must not be locked before calling.
