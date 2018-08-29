@@ -24,6 +24,9 @@ documents those changes that are of interest to users and administrators.
     time is 0.
  -- Fix extern step hanging forever when canceled right after creation.
  -- sdiag - add slurmctld agent count.
+ -- Remove requirement to have cgroup_allowed_devices_file.conf in order to
+    constrain devices. By default all devices are allowed and GRES, that are
+    associated with a device file, that are not requested are restricted.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
@@ -267,6 +270,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition when canceling a federation job that just started
     running.
  -- Prevent extra resources from being allocated when combining certain flags.
+ -- Fix problem in task/affinity plugin that can lead to slurmd fatal()'ing
+    when using --hint=nomultithread.
 
 * Changes in Slurm 17.11.9-2
 ============================

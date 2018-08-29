@@ -46,33 +46,3 @@ COMMAND CHANGES (see man pages for details)
 
 OTHER CHANGES
 =============
-
-API CHANGES
-===========
-
-Changed members of the following structs
-========================================
-
-Added members to the following struct definitions
-=================================================
-
-Added the following struct definitions
-======================================
-
-Removed the following structs
-=============================
-
-Removed members from the following struct definitions
-=====================================================
-
-Changed the following enums and #defines
-========================================
-
-Added the following API's
-=========================
-
-Changed the following API's
-============================
-
-Removed the following API's
-===========================
