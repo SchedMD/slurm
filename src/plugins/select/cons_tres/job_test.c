@@ -2097,7 +2097,8 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	}
 
 	/* Determine how many tasks can be started on this node */
-	if (mc_ptr->cpus_per_task) {
+	if (mc_ptr->cpus_per_task &&
+	    (!job_ptr->details || !job_ptr->details->overcommit)) {
 		alloc_tasks = avail_res_array[node_inx]->avail_cpus /
 			      mc_ptr->cpus_per_task;
 		if (alloc_tasks < min_tasks_this_node)
