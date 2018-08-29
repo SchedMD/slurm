@@ -5879,10 +5879,10 @@ _build_env(job_env_t *job_env)
 static void
 _destroy_env(char **env)
 {
-	int i=0;
+	int i = 0;
 
 	if (env) {
-		for(i=0; env[i]; i++) {
+		for (i = 0; env[i]; i++) {
 			xfree(env[i]);
 		}
 		xfree(env);
