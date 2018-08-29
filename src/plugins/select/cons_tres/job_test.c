@@ -2406,6 +2406,10 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		consec_end[consec_index++] = i - 1;
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		if (consec_index == 0) {
+			info("%s: %s: consec_index is zero", plugin_type,
+			     __func__);
+		}
 		for (i = 0; i < consec_index; i++) {
 			char *gres_str = NULL, *gres_print = "";
 			if (gres_per_job) {
@@ -2427,8 +2431,8 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	/* Compute CPUs already allocated to required nodes */
 	if ((details_ptr->max_cpus != NO_VAL) &&
 	    (total_cpus > details_ptr->max_cpus)) {
-		info("%pJ can't use required nodes due to max CPU limit",
-		     job_ptr);
+		info("%s: %s: %pJ can't use required nodes due to max CPU limit",
+		     plugin_type, __func__, job_ptr);
 		goto fini;
 	}
 

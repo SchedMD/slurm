@@ -580,10 +580,17 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	uint16_t *avail_cpus;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool log_over_subscribe = true;
+	char *err_msg = NULL;
 
-	if (!job_res || !job_res->cpus || !job_res->nhosts) {
-		error("%s: %s: invalid allocation for %pJ",
-		      plugin_type, __func__, job_ptr);
+	if (!job_res)
+		err_msg = "job_res is NULL";
+	else if (!job_res->cpus)
+		err_msg = "job_res->cpus is zero";
+	else if (!job_res->nhosts)
+		err_msg = "job_res->nhosts is zero";
+	if (err_msg) {
+		error("%s: %s: Invalid allocation for %pJ: %s",
+		      plugin_type, __func__, job_ptr, err_msg);
 		return SLURM_ERROR;
 	}
 
