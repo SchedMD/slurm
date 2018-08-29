@@ -3129,6 +3129,7 @@ extern void launch_prolog(struct job_record *job_ptr)
 		job_ptr->state_reason = WAIT_PROLOG;
 
 	prolog_msg_ptr->job_id = job_ptr->job_id;
+	prolog_msg_ptr->pack_job_id = job_ptr->pack_job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;
 	prolog_msg_ptr->gid = job_ptr->group_id;
 	if (!job_ptr->user_name)

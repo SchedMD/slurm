@@ -11430,6 +11430,7 @@ _pack_prolog_launch_msg(
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
+		pack32(msg->pack_job_id, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 
@@ -11504,6 +11505,7 @@ _unpack_prolog_launch_msg(
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
+		safe_unpack32(&launch_msg_ptr->pack_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
 
@@ -11538,6 +11540,7 @@ _unpack_prolog_launch_msg(
 				       buffer);
 	} else if (protocol_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
+		launch_msg_ptr->pack_job_id = NO_VAL;
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
 
@@ -11574,6 +11577,7 @@ _unpack_prolog_launch_msg(
 		char **pelog_env = NULL;
 		int i, rc;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
+		launch_msg_ptr->pack_job_id = NO_VAL;
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
 		safe_unpack32(&launch_msg_ptr->gid, buffer);
 
