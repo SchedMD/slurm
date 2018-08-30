@@ -2336,7 +2336,11 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			required_node = bit_test(req_map, i);
 		else
 			required_node = false;
-		if (bit_test(node_map, i)) {
+		if (!bit_test(node_map, i)) {
+			node_ptr = NULL;    /* Use as flag, avoid second test */
+		} else if (required_node) {
+			node_ptr = node_record_table_ptr + i;
+		} else {
 			node_ptr = node_record_table_ptr + i;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, rem_nodes,
@@ -2345,8 +2349,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				bit_clear(node_map, i);
 				node_ptr = NULL;
 			}
-		} else
-			node_ptr = NULL;    /* Use as flag, avoid second test */
+		}
 		/*
 		 * If job requested contiguous nodes,
 		 * do not worry about matching node weights
