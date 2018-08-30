@@ -3890,6 +3890,13 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 					      __func__, job_ptr);
 					continue;
 				}
+
+				if (!pack_job->nodes) {
+					debug("%s: %pJ pack_job->nodes == NULL.  Usually this means the job was canceled while it was starting and shouldn't be a real issue.",
+					      __func__, job_ptr);
+                                       continue;
+				}
+
 				if (hs) {
 					(void) hostset_insert(hs,
 							      pack_job->nodes);

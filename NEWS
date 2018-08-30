@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix left over socket file when step is ending and using pmi2 with
     %n or %h in the spool dir.
  -- Don't remove hwloc full system xml file when shutting down the slurmd.
+ -- Fix segfault that could happen with a het job when it was canceled while
+    starting.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
