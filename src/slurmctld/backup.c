@@ -81,13 +81,12 @@ typedef struct ping_struct {
 	int backup_inx;
 	char *control_addr;
 	char *control_machine;
-	time_t now;
 	uint32_t slurmctld_port;
 } ping_struct_t;
 
 typedef struct {
 	time_t control_time;
-	time_t response_time;
+	bool responding;
 } ctld_ping_t;
 
 /* Local variables */
@@ -487,7 +486,8 @@ static void *_ping_ctld_thread(void *arg)
 	ping_struct_t *ping = (ping_struct_t *) arg;
 	slurm_msg_t req, resp;
 	control_status_msg_t *control_msg;
-	time_t control_time = (time_t) 0, response_time = (time_t) 0;
+	time_t control_time = (time_t) 0;
+	bool responding = false;
 
 	slurm_msg_t_init(&req);
 	slurm_set_addr(&req.address, ping->slurmctld_port, ping->control_addr);
@@ -503,7 +503,7 @@ static void *_ping_ctld_thread(void *arg)
 				      ping->control_machine);
 			}
 			control_time  = control_msg->control_time;
-			response_time = ping->now;
+			responding = true;
 			break;
 		default:
 			error("%s:, Unknown response message %u from host %s",
@@ -514,10 +514,9 @@ static void *_ping_ctld_thread(void *arg)
 	}
 
 	slurm_mutex_lock(&ping_mutex);
-	if (response_time) {
-		ctld_ping[ping->backup_inx].control_time  = MIN(control_time,
-								ping->now);
-		ctld_ping[ping->backup_inx].response_time = response_time;
+	if (responding) {
+		ctld_ping[ping->backup_inx].control_time = control_time;
+		ctld_ping[ping->backup_inx].responding = true;
 	}
 	slurm_mutex_unlock(&ping_mutex);
 
@@ -540,7 +539,6 @@ extern int ping_controllers(bool active_controller)
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	time_t now = time(NULL);
 	bool active_ctld = false, avail_ctld = false;
 
 	if (active_controller)
@@ -553,7 +551,7 @@ extern int ping_controllers(bool active_controller)
 
 	for (i = 0; i < ping_target_cnt; i++) {
 		ctld_ping[i].control_time  = (time_t) 0;
-		ctld_ping[i].response_time = (time_t) 0;
+		ctld_ping[i].responding = false;
 	}
 
 	lock_slurmctld(config_read_lock);
@@ -565,7 +563,6 @@ extern int ping_controllers(bool active_controller)
 		ping->backup_inx      = i;
 		ping->control_addr    = xstrdup(slurmctld_conf.control_addr[i]);
 		ping->control_machine = xstrdup(slurmctld_conf.control_machine[i]);
-		ping->now             = now;
 		ping->slurmctld_port  = slurmctld_conf.slurmctld_port;
 		slurm_thread_create(&ping_tids[i], _ping_ctld_thread, ping);
 	}
@@ -588,7 +585,7 @@ extern int ping_controllers(bool active_controller)
 			 */
 			active_ctld = true;
 		}
-		if (ctld_ping[i].response_time == now) {
+		if (ctld_ping[i].responding) {
 			/*
 			 * Higher priority slurmctld is available to
 			 * enter primary mode
