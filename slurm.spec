@@ -356,7 +356,6 @@ install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
 %endif
 
 install -D -m644 etc/cgroup.conf.example %{buildroot}/%{_sysconfdir}/cgroup.conf.example
-install -D -m644 etc/cgroup_allowed_devices_file.conf.example %{buildroot}/%{_sysconfdir}/cgroup_allowed_devices_file.conf.example
 install -D -m644 etc/layouts.d.power.conf.example %{buildroot}/%{_sysconfdir}/layouts.d/power.conf.example
 install -D -m644 etc/layouts.d.power_cpufreq.conf.example %{buildroot}/%{_sysconfdir}/layouts.d/power_cpufreq.conf.example
 install -D -m644 etc/layouts.d.unit.conf.example %{buildroot}/%{_sysconfdir}/layouts.d/unit.conf.example
@@ -497,7 +496,6 @@ rm -rf %{buildroot}
 %config %{_sysconfdir}/slurm.conf.template
 %endif
 %config %{_sysconfdir}/cgroup.conf.example
-%config %{_sysconfdir}/cgroup_allowed_devices_file.conf.example
 %config %{_sysconfdir}/layouts.d/power.conf.example
 %config %{_sysconfdir}/layouts.d/power_cpufreq.conf.example
 %config %{_sysconfdir}/layouts.d/unit.conf.example
