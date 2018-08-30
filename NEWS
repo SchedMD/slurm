@@ -57,6 +57,19 @@ documents those changes that are of interest to users and administrators.
     in slurm.conf and DebugLevelSyslog in slurmdbd.conf.
  -- Gate reading the cgroup.conf file.
  -- Gate reading the acct_gather_* plugins.
+ -- Add sacctmgr options to prevent/manage job queue stuffing:
+    - GrpJobsAccrue=<max_jobs>
+      Maximum number of pending jobs in aggregate able to accrue age priority
+      for this association and all associations which are children of this
+      association. To clear a previously set value use the modify command with
+      a new value of -1.
+    - MaxJobsAccrue=<max_jobs>
+      Maximum number of pending jobs able to accrue age priority at any given
+      time for the given association. This is overridden if set directly on a
+      user. Default is the cluster's limit. To clear a previously set value use
+      the modify command with a new value of -1.
+    - MinPrioThreshold
+      Minimum priority required to reserve resources when scheduling.
 
 * Changes in Slurm 18.08.0pre2
 ==============================

@@ -152,7 +152,7 @@ COMMAND CHANGES (see man pages for details)
     - Report pending job count
  -- Add scontrol ability to create/update "TRESBillingWeights".
  -- Remove “AdminComment +=” syntax from “scontrol update job”.
- -- New sacctmgr options to prevent/manage job queue stuffing:
+ -- Add sacctmgr options to prevent/manage job queue stuffing:
     - GrpJobsAccrue=<max_jobs>
       Maximum number of pending jobs in aggregate able to accrue age priority
       for this association and all associations which are children of this
