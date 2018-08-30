@@ -235,7 +235,6 @@ static void         _init_pidfile(void);
 static int          _init_tres(void);
 static void         _kill_old_slurmctld(void);
 static void         _parse_commandline(int argc, char **argv);
-inline static int   _ping_backup_controller(void);
 static void *       _purge_files_thread(void *no_data);
 static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
@@ -2144,8 +2143,7 @@ static void *_slurmctld_background(void *no_data)
 		if (slurmctld_conf.slurmctld_timeout &&
 		    (difftime(now, last_ctld_bu_ping) >
 		     slurmctld_conf.slurmctld_timeout)) {
-			if (_ping_backup_controller() != SLURM_SUCCESS)
-				trigger_backup_ctld_fail();
+			ping_controllers(true);
 			last_ctld_bu_ping = now;
 		}
 
@@ -3248,59 +3246,6 @@ static void _test_thread_limit(void)
 }
 #endif
 	return;
-}
-
-/* Ping BackupController
- * RET SLURM_SUCCESS or error code */
-static int _ping_backup_controller(void)
-{
-	int i, rc = SLURM_SUCCESS, rc2 = SLURM_SUCCESS;
-	slurm_msg_t req;
-	uint32_t control_cnt;
-	char **control_addr, **control_machine;
-	/* Locks: Read configuration */
-	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
-	lock_slurmctld(config_read_lock);
-	control_cnt = slurmctld_conf.control_cnt;
-	control_addr    = xmalloc(sizeof(char *) * control_cnt);
-	control_machine = xmalloc(sizeof(char *) * control_cnt);
-	for (i = 0; i < slurmctld_conf.control_cnt; i++) {
-		control_addr[i]    = xstrdup(slurmctld_conf.control_addr[i]);
-		control_machine[i] = xstrdup(slurmctld_conf.control_machine[i]);
-	}
-	unlock_slurmctld(config_read_lock);
-
-	for (i = 0; i < control_cnt; i++) {
-		/* don't bother to ping ourselves */
-		if (i == backup_inx)
-			continue;
-
-		slurm_msg_t_init(&req);
-		slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port,
-			       control_addr[i]);
-		req.msg_type = REQUEST_PING;
-
-		if (slurm_send_recv_rc_msg_only_one(&req, &rc2, 0) < 0) {
-			debug2("%s slurm_send_node_msg to %s error: %m",
-			       __func__, control_machine[i]);
-			rc = SLURM_ERROR;
-		} else if (rc2) {
-			debug2("%s to %s, response error %d",
-			       __func__, control_machine[i], rc2);
-			rc = rc2;
-		}
-	}
-
-	for (i = 0; i < control_cnt; i++) {
-		xfree(control_addr[i]);
-		xfree(control_machine[i]);
-	}
-	xfree(control_addr);
-	xfree(control_machine);
-
-	return rc;
 }
 
 static void  _set_work_dir(void)

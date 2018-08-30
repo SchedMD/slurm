@@ -591,6 +591,8 @@ extern int ping_controllers(bool active_controller)
 			 * enter primary mode
 			 */
 			avail_ctld = true;
+		} else if (active_controller) {
+			trigger_backup_ctld_fail();
 		}
 	}
 
