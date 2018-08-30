@@ -73,7 +73,6 @@ static int          _background_process_msg(slurm_msg_t * msg);
 static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
 static void         _backup_reconfig(void);
-static int          _ping_controller(void);
 static int          _shutdown_primary_controller(int wait_time);
 static void *       _trigger_slurmctld_event(void *arg);
 inline static void  _update_cred_key(void);
@@ -171,7 +170,7 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 			continue;
 
 		last_ping = time(NULL);
-		if (_ping_controller() == SLURM_SUCCESS)
+		if (ping_controllers(false) == SLURM_SUCCESS)
 			last_controller_response = time(NULL);
 		else if (takeover) {
 			/*
@@ -535,7 +534,7 @@ static void *_ping_ctld_thread(void *arg)
  * Ping all higher-priority control nodes.
  * RET SLURM_SUCCESS if a currently active controller is found
  */
-static int _ping_controller(void)
+extern int ping_controllers(bool active_controller)
 {
 	int i;
 	ping_struct_t *ping;
