@@ -33,16 +33,16 @@ Comma separated list of user names and/or IDs permitted to use burst buffers.
 The options \fBAllowUsers\fR and \fBDenyUsers\fR can not both be specified.
 By default all users are permitted to use burst buffers.
 
-.\ Possible future enhancement for generic plugin
-.\ .TP
-.\ \fBAltPool\fR
-.\ The AltPool value consists of a comma separated list of alternate pools of
-.\ resources, each of which includes a name separated by a colon and a numeric
-.\ value.
-.\ The numeric value can include a suffix of "k", "m", "g", "t" and "p" which
-.\ multiplies the numeric value by 1,024, 1,048,576, 1,073,741,824 etc.
-.\ The numeric value is a 64-bit value.
-.\ for example, "AltPool=test:20g,small:4g
+.\" Possible future enhancement for generic plugin
+.\" .TP
+.\" \fBAltPool\fR
+.\" The AltPool value consists of a comma separated list of alternate pools of
+.\" resources, each of which includes a name separated by a colon and a numeric
+.\" value.
+.\" The numeric value can include a suffix of "k", "m", "g", "t" and "p" which
+.\" multiplies the numeric value by 1,024, 1,048,576, 1,073,741,824 etc.
+.\" The numeric value is a 64-bit value.
+.\" for example, "AltPool=test:20g,small:4g
 
 .TP
 \fBCreateBuffer\fR
@@ -206,8 +206,8 @@ By default there is a 5 second timeout for the validation operations.
 AllowUsers=alan,brenda
 .br
 PrivateData=true
-.\ .br
-.\ Gres=nodes:10,other:20
+.\" .br
+.\" Gres=nodes:10,other:20
 .br
 #
 .br
