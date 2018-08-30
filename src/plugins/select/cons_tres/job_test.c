@@ -2348,6 +2348,19 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			if (avail_cpus == 0) {
 				bit_clear(node_map, i);
 				node_ptr = NULL;
+				/*
+				 * If first_pass == true then _select_cores()
+				 * enforces GRES binding to cores, even if
+				 * enforce_binding == false. Set avail_res_cnt
+				 * to something we can use to eliminate nodes
+				 * with low resource availability and retry.
+				 */
+				if (first_pass && !enforce_binding &&
+				    job_ptr->gres_list &&
+				    (avail_res_array[i]->avail_res_cnt == 0)) {
+					avail_res_array[i]->avail_res_cnt =
+						avail_res_array[i]->avail_cpus;
+				}
 			}
 		}
 		/*
