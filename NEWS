@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't remove hwloc full system xml file when shutting down the slurmd.
  -- Fix segfault that could happen with a het job when it was canceled while
     starting.
+ -- Fix scan-build false-positive warning about invalid memory access in the
+    _ping_controller() function.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
