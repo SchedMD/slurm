@@ -81,6 +81,8 @@ char tree_sock_addr[128];
 pmi2_job_info_t job_info;
 pmi2_tree_info_t tree_info;
 
+static char *fmt_tree_sock_addr = NULL;
+
 extern bool
 in_stepd(void)
 {
@@ -90,7 +92,10 @@ in_stepd(void)
 static void
 _remove_tree_sock(void)
 {
-	unlink(tree_sock_addr);
+	if (fmt_tree_sock_addr) {
+		unlink(fmt_tree_sock_addr);
+		xfree(fmt_tree_sock_addr);
+	}
 }
 
 static int
@@ -301,6 +306,12 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	xstrsubstitute(spool, "%h", job->node_name);
 	snprintf(sa.sun_path, sizeof(sa.sun_path), PMI2_SOCK_ADDR_FMT,
 		 spool, job_info.jobid, job_info.stepid);
+	/*
+	 * We need to unlink this later so we need a formatted version of the
+	 * string to unlink.
+	 */
+	fmt_tree_sock_addr = xstrdup(sa.sun_path);
+
 	unlink(sa.sun_path);    /* remove possible old socket */
 	xfree(spool);
 

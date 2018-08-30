@@ -27,6 +27,23 @@ documents those changes that are of interest to users and administrators.
  -- Remove requirement to have cgroup_allowed_devices_file.conf in order to
     constrain devices. By default all devices are allowed and GRES, that are
     associated with a device file, that are not requested are restricted.
+ -- Fix proper alignment of clauses when determining if more nodes are needed
+    for an allocation.
+ -- Fix race condition when canceling a federation job that just started
+    running.
+ -- Prevent extra resources from being allocated when combining certain flags.
+ -- Fix problem in task/affinity plugin that can lead to slurmd fatal()'ing
+    when using --hint=nomultithread.
+ -- Fix left over socket file when step is ending and using pmi2 with
+    %n or %h in the spool dir.
+ -- Don't remove hwloc full system xml file when shutting down the slurmd.
+ -- Fix segfault that could happen with a het job when it was canceled while
+    starting.
+ -- Fix scan-build false-positive warning about invalid memory access in the
+    _ping_controller() function.
+ -- Add control_inx value to trigger_info_msg_t to permit future work in the
+    trigger management code to distinguish which of multiple backup controllers
+    has changed state.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
@@ -58,6 +75,19 @@ documents those changes that are of interest to users and administrators.
     in slurm.conf and DebugLevelSyslog in slurmdbd.conf.
  -- Gate reading the cgroup.conf file.
  -- Gate reading the acct_gather_* plugins.
+ -- Add sacctmgr options to prevent/manage job queue stuffing:
+    - GrpJobsAccrue=<max_jobs>
+      Maximum number of pending jobs in aggregate able to accrue age priority
+      for this association and all associations which are children of this
+      association. To clear a previously set value use the modify command with
+      a new value of -1.
+    - MaxJobsAccrue=<max_jobs>
+      Maximum number of pending jobs able to accrue age priority at any given
+      time for the given association. This is overridden if set directly on a
+      user. Default is the cluster's limit. To clear a previously set value use
+      the modify command with a new value of -1.
+    - MinPrioThreshold
+      Minimum priority required to reserve resources when scheduling.
 
 * Changes in Slurm 18.08.0pre2
 ==============================
@@ -272,6 +302,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent extra resources from being allocated when combining certain flags.
  -- Fix problem in task/affinity plugin that can lead to slurmd fatal()'ing
     when using --hint=nomultithread.
+ -- Fix left over socket file when step is ending and using pmi2 with
+    %n or %h in the spool dir.
 
 * Changes in Slurm 17.11.9-2
 ============================

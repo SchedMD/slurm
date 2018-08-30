@@ -11737,7 +11737,20 @@ static void _pack_trigger_msg(trigger_info_msg_t *msg, Buf buffer,
 {
 	int i;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		pack32(msg->record_count, buffer);
+		for (i = 0; i < msg->record_count; i++) {
+			pack16(msg->trigger_array[i].flags, buffer);
+			pack32(msg->trigger_array[i].trig_id, buffer);
+			pack16(msg->trigger_array[i].res_type, buffer);
+			packstr(msg->trigger_array[i].res_id, buffer);
+			pack32(msg->trigger_array[i].trig_type, buffer);
+			pack32(msg->trigger_array[i].control_inx, buffer);
+			pack16(msg->trigger_array[i].offset, buffer);
+			pack32(msg->trigger_array[i].user_id, buffer);
+			packstr(msg->trigger_array[i].program, buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->record_count, buffer);
 		for (i = 0; i < msg->record_count; i++) {
 			pack16 (msg->trigger_array[i].flags,     buffer);
@@ -11762,7 +11775,24 @@ static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , Buf buffer,
 	uint32_t uint32_tmp;
 	trigger_info_msg_t *msg = xmalloc(sizeof(trigger_info_msg_t));
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->record_count, buffer);
+		msg->trigger_array = xmalloc(sizeof(trigger_info_t) *
+					     msg->record_count);
+		for (i = 0; i < msg->record_count; i++) {
+			safe_unpack16(&msg->trigger_array[i].flags, buffer);
+			safe_unpack32(&msg->trigger_array[i].trig_id, buffer);
+			safe_unpack16(&msg->trigger_array[i].res_type, buffer);
+			safe_unpackstr_xmalloc(&msg->trigger_array[i].res_id,
+					       &uint32_tmp, buffer);
+			safe_unpack32(&msg->trigger_array[i].trig_type, buffer);
+			safe_unpack32(&msg->trigger_array[i].control_inx, buffer);
+			safe_unpack16(&msg->trigger_array[i].offset, buffer);
+			safe_unpack32(&msg->trigger_array[i].user_id, buffer);
+			safe_unpackstr_xmalloc(&msg->trigger_array[i].program,
+					       &uint32_tmp, buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32  (&msg->record_count, buffer);
 		msg->trigger_array = xmalloc(sizeof(trigger_info_t) *
 					     msg->record_count);

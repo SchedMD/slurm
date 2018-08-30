@@ -3043,6 +3043,7 @@ typedef struct trigger_info {
 	uint32_t trig_id;	/* trigger ID */
 	uint16_t res_type;	/* TRIGGER_RES_TYPE_* */
 	char *   res_id;	/* resource ID */
+	uint32_t control_inx;	/* controller index */
 	uint32_t trig_type;	/* TRIGGER_TYPE_* */
 	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
 	uint32_t user_id;	/* user requesting trigger */

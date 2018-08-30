@@ -1259,7 +1259,12 @@ _destroy_conf(void)
 		xfree(conf->health_check_program);
 		xfree(conf->hostname);
 		if (conf->hwloc_xml) {
-			(void)remove(conf->hwloc_xml);
+			/*
+			 * When a slurmd is taking over the place of the next
+			 * slurmd it will have already made this file.  So don't
+			 * remove it or it will remove it for the new slurmd.
+			 */
+			/* (void)remove(conf->hwloc_xml); */
 			xfree(conf->hwloc_xml);
 		}
 		xfree(conf->job_acct_gather_freq);

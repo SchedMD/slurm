@@ -539,12 +539,14 @@ static int _ping_controller(void)
 {
 	int i;
 	ping_struct_t *ping;
-	pthread_t ping_tids[backup_inx];
+	pthread_t *ping_tids;
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	time_t now = time(NULL);
 	bool active_ctld = false, avail_ctld = false;
+
+	ping_tids = xmalloc(sizeof(pthread_t) * backup_inx);
 
 	for (i = 0; i < backup_inx; i++) {
 		ctld_ping[i].control_time  = (time_t) 0;
@@ -565,6 +567,7 @@ static int _ping_controller(void)
 
 	for (i = 0; i < backup_inx; i++)
 		pthread_join(ping_tids[i], NULL);
+	xfree(ping_tids);
 
 	for (i = 0; i < backup_inx; i++) {
 		if (ctld_ping[i].control_time) {

@@ -970,7 +970,14 @@ xcpuinfo_fini(void)
 	xfree(block_map_inv);
 #ifdef HAVE_HWLOC
 	if (hwloc_xml_whole) {
-		(void)remove(hwloc_xml_whole);
+		/*
+		 * When a slurmd is taking over the place of the next
+		 * slurmd it will have already made this file.  So don't
+		 * remove it or it will remove it for the new slurmd.
+		 * If this happens on the slurmstepd we don't want to remove it
+		 * to begin with.
+		 */
+		/* (void)remove(hwloc_xml_whole); */
 		xfree(hwloc_xml_whole);
 	}
 #endif

@@ -142,7 +142,11 @@ static List _build_license_list(char *licenses, bool *valid)
 				*valid = false;
 				break;
 			}
-			/* ':' is used as a separator in version 2.5 or later
+			/*
+			 * The '*' was still in use internally until 18.08, so
+			 * the check for '*' must stay until 20.02 at least.
+			 *
+			 * ':' is used as a separator in version 2.5 or later
 			 * '*' is used as a separator in version 2.4 or earlier
 			 */
 			if ((token[i] == ':') || (token[i] == '*')) {
@@ -180,7 +184,7 @@ static List _build_license_list(char *licenses, bool *valid)
 
 /* Given a list of license_t records, return a license string.
  * This can be combined with _build_license_list() to eliminate duplicates
- * (e.g. "tux*2,tux*3" gets changed to "tux*5"). */
+ * (e.g. "tux:2,tux:3" gets changed to "tux:5"). */
 static char * _build_license_string(List license_list)
 {
 	char *sep = "";
@@ -193,7 +197,7 @@ static char * _build_license_string(List license_list)
 
 	iter = list_iterator_create(license_list);
 	while ((license_entry = (licenses_t *) list_next(iter))) {
-		xstrfmtcat(licenses, "%s%s*%u",
+		xstrfmtcat(licenses, "%s%s:%u",
 			   sep, license_entry->name, license_entry->total);
 		sep = ",";
 	}
