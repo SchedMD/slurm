@@ -236,10 +236,10 @@ extern int trigger_pull(trigger_info_msg_t *msg)
 				trigger_primary_ctld_acct_full();
 				break;
 			case TRIGGER_TYPE_BU_CTLD_FAIL:
-				trigger_backup_ctld_fail();
+				trigger_backup_ctld_fail(trig_in->control_inx);
 				break;
 			case TRIGGER_TYPE_BU_CTLD_RES_OP:
-				trigger_backup_ctld_res_op();
+				trigger_backup_ctld_res_op(trig_in->control_inx);
 				break;
 			case TRIGGER_TYPE_BU_CTLD_AS_CTRL:
 				trigger_backup_ctld_as_ctrl();
@@ -641,7 +641,7 @@ extern void trigger_primary_ctld_acct_full(void)
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
-extern void trigger_backup_ctld_fail(void)
+extern void trigger_backup_ctld_fail(int index)
 {
 	slurm_mutex_lock(&trigger_mutex);
 	if (bu_ctld_failure != 1) {
@@ -651,7 +651,7 @@ extern void trigger_backup_ctld_fail(void)
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
-extern void trigger_backup_ctld_res_op(void)
+extern void trigger_backup_ctld_res_op(int index)
 {
 	slurm_mutex_lock(&trigger_mutex);
 	trigger_bu_ctld_res_op = true;

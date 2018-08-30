@@ -592,7 +592,7 @@ extern int ping_controllers(bool active_controller)
 			 */
 			avail_ctld = true;
 		} else if (active_controller) {
-			trigger_backup_ctld_fail();
+			trigger_backup_ctld_fail(i);
 		}
 	}
 
@@ -718,6 +718,7 @@ static void *_trigger_slurmctld_event(void *arg)
 	ti.res_id = "*";
 	ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
 	ti.trig_type = TRIGGER_TYPE_BU_CTLD_RES_OP;
+	ti.control_inx = backup_inx;
 	if (slurm_pull_trigger(&ti)) {
 		error("%s: TRIGGER_TYPE_BU_CTLD_RES_OP send failure: %m",
 		      __func__);
