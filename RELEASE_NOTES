@@ -83,9 +83,6 @@ HIGHLIGHTS
  -- Changed slurmd.service file to include "remote-fs.target" in "After" option.
  -- The default AuthType for slurmdbd is now "auth/munge".
 
-RPMBUILD CHANGES
-================
-
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
  -- Add node and partition configuration options of "CpuBind" in slurm.conf to
