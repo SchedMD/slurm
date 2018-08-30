@@ -159,7 +159,6 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 	}
 
 	/* repeatedly ping ControlMachine */
-	ctld_ping = xmalloc(sizeof(ctld_ping_t) * backup_inx);
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 		/* Lock of slurmctld_conf below not important */
@@ -204,7 +203,6 @@ void run_backup(slurm_trigger_callbacks_t *callbacks)
 				break;
 		}
 	}
-	xfree(ctld_ping);
 
 	if (slurmctld_config.shutdown_time != 0) {
 		/*
@@ -536,7 +534,7 @@ static void *_ping_ctld_thread(void *arg)
  */
 extern int ping_controllers(bool active_controller)
 {
-	int i;
+	int i, ping_target_cnt;
 	ping_struct_t *ping;
 	pthread_t *ping_tids;
 	/* Locks: Read configuration */
@@ -545,15 +543,24 @@ extern int ping_controllers(bool active_controller)
 	time_t now = time(NULL);
 	bool active_ctld = false, avail_ctld = false;
 
-	ping_tids = xmalloc(sizeof(pthread_t) * backup_inx);
+	if (active_controller)
+		ping_target_cnt = slurmctld_conf.control_cnt;
+	else
+		ping_target_cnt = backup_inx;
 
-	for (i = 0; i < backup_inx; i++) {
+	ctld_ping = xmalloc(sizeof(ctld_ping_t) * ping_target_cnt);
+	ping_tids = xmalloc(sizeof(pthread_t) * ping_target_cnt);
+
+	for (i = 0; i < ping_target_cnt; i++) {
 		ctld_ping[i].control_time  = (time_t) 0;
 		ctld_ping[i].response_time = (time_t) 0;
 	}
 
 	lock_slurmctld(config_read_lock);
-	for (i = 0; i < backup_inx; i++) {
+	for (i = 0; i < ping_target_cnt; i++) {
+		if (i == backup_inx)	/* Avoid pinging ourselves */
+			continue;
+
 		ping = xmalloc(sizeof(ping_struct_t));
 		ping->backup_inx      = i;
 		ping->control_addr    = xstrdup(slurmctld_conf.control_addr[i]);
@@ -564,11 +571,16 @@ extern int ping_controllers(bool active_controller)
 	}
 	unlock_slurmctld(config_read_lock);
 
-	for (i = 0; i < backup_inx; i++)
+	for (i = 0; i < ping_target_cnt; i++) {
+		if (i == backup_inx)	/* Avoid pinging ourselves */
+			continue;
 		pthread_join(ping_tids[i], NULL);
+	}
 	xfree(ping_tids);
 
-	for (i = 0; i < backup_inx; i++) {
+	for (i = 0; i < ping_target_cnt; i++) {
+		if (i == backup_inx)	/* Avoid pinging ourselves */
+			continue;
 		if (ctld_ping[i].control_time) {
 			/*
 			 * Higher priority slurmctld is already in
@@ -585,6 +597,7 @@ extern int ping_controllers(bool active_controller)
 		}
 	}
 
+	xfree(ctld_ping);
 	if (active_ctld || avail_ctld)
 		return SLURM_SUCCESS;
 	return SLURM_ERROR;
