@@ -30,6 +30,9 @@ documents those changes that are of interest to users and administrators.
     starting.
  -- Fix scan-build false-positive warning about invalid memory access in the
     _ping_controller() function.
+ -- Add control_inx value to trigger_info_msg_t to permit future work in the
+    trigger management code to distinguish which of multiple backup controllers
+    has changed state.
 
 * Changes in Slurm 18.08.0rc1
 ==============================
