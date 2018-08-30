@@ -12,6 +12,9 @@ documents those changes that are of interest to users and administrators.
     specific GPUs are associated with specific GPUs is not reported, but only
     available by parsing the gres.conf file.
 
+* Changes in Slurm 18.08.1
+==========================
+
 * Changes in Slurm 18.08.0
 ==========================
  -- Fix segfault on job arrays when starting controller without dbd up.
