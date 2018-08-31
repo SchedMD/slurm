@@ -1084,15 +1084,11 @@ done:
 char *print_commandline(const int script_argc, char **script_argv)
 {
 	int i;
-	char tmp[256], *out_buf = NULL, *prefix;
+	char *out_buf = NULL, *prefix = "";
 
 	for (i = 0; i < script_argc; i++) {
-		if (out_buf)
-			prefix = " ";
-		else
-			prefix = "";
-		snprintf(tmp, 256,  "%s%s", prefix, script_argv[i]);
-		xstrcat(out_buf, tmp);
+		xstrfmtcat(out_buf,  "%s%s", prefix, script_argv[i]);
+		prefix = " ";
 	}
 	return out_buf;
 }
