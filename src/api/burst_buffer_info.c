@@ -307,10 +307,10 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 {
 	char f_sz_buf[32], g_sz_buf[32], t_sz_buf[32], u_sz_buf[32];
 	char *out_buf = NULL;
+	char *line_end = (one_liner) ? " " : "\n  ";
 	uint64_t free_space;
 	burst_buffer_resv_t *bb_resv_ptr;
 	burst_buffer_use_t  *bb_use_ptr;
-	bool has_acl = false;
 	int i;
 
 	/****** Line ******/
@@ -326,12 +326,11 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 	xstrfmtcat(out_buf, "Name=%s DefaultPool=%s Granularity=%s TotalSpace=%s FreeSpace=%s UsedSpace=%s",
 		   burst_buffer_ptr->name, burst_buffer_ptr->default_pool,
 		   g_sz_buf, t_sz_buf, f_sz_buf, u_sz_buf);
-	if (!one_liner)
-		xstrcat(out_buf, "\n");
 
 	/****** Line (optional) ******/
 	/* Alternate pool information */
 	for (i = 0; i < burst_buffer_ptr->pool_cnt; i++) {
+		xstrcat(out_buf, line_end);
 		free_space = burst_buffer_ptr->pool_ptr[i].total_space -
 			     burst_buffer_ptr->pool_ptr[i].unfree_space;
 		_get_size_str(f_sz_buf, sizeof(f_sz_buf), free_space);
@@ -341,103 +340,88 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 			      burst_buffer_ptr->pool_ptr[i].total_space);
 		_get_size_str(u_sz_buf, sizeof(u_sz_buf),
 			      burst_buffer_ptr->pool_ptr[i].used_space);
-		xstrfmtcat(out_buf, "  AltPoolName[%d]=%s Granularity=%s TotalSpace=%s FreeSpace=%s UsedSpace=%s",
+		xstrfmtcat(out_buf, "AltPoolName[%d]=%s Granularity=%s TotalSpace=%s FreeSpace=%s UsedSpace=%s",
 			   i, burst_buffer_ptr->pool_ptr[i].name,
 			   g_sz_buf, t_sz_buf, f_sz_buf, u_sz_buf);
-		if (!one_liner)
-			xstrcat(out_buf, "\n");
 	}
 
 	/****** Line ******/
-	xstrfmtcat(out_buf, "  Flags=%s",
+	xstrcat(out_buf, line_end);
+	xstrfmtcat(out_buf, "Flags=%s",
 		   slurm_bb_flags2str(burst_buffer_ptr->flags));
-	if (!one_liner)
-		xstrcat(out_buf, "\n");
 
 	/****** Line ******/
-	xstrfmtcat(out_buf, "  StageInTimeout=%u StageOutTimeout=%u ValidateTimeout=%u OtherTimeout=%u",
+	xstrcat(out_buf, line_end);
+	xstrfmtcat(out_buf, "StageInTimeout=%u StageOutTimeout=%u ValidateTimeout=%u OtherTimeout=%u",
 		   burst_buffer_ptr->stage_in_timeout,
 		   burst_buffer_ptr->stage_out_timeout,
 		   burst_buffer_ptr->validate_timeout,
 		   burst_buffer_ptr->other_timeout);
-	if (!one_liner)
-		xstrcat(out_buf, "\n");
 
 	/****** Line (optional) ******/
 	if (burst_buffer_ptr->allow_users) {
-		xstrfmtcat(out_buf, "  AllowUsers=%s",
+		xstrcat(out_buf, line_end);
+		xstrfmtcat(out_buf, "AllowUsers=%s",
 			   burst_buffer_ptr->allow_users);
-		has_acl = true;
 	} else if (burst_buffer_ptr->deny_users) {
-		xstrfmtcat(out_buf, "  DenyUsers=%s",
+		xstrcat(out_buf, line_end);
+		xstrfmtcat(out_buf, "DenyUsers=%s",
 			   burst_buffer_ptr->deny_users);
-		has_acl = true;
 	}
-	if (has_acl && !one_liner)
-		xstrcat(out_buf, "\n");
 
 	/****** Line (optional) ******/
 	if (burst_buffer_ptr->create_buffer) {
-		xstrfmtcat(out_buf, "  CreateBuffer=%s",
+		xstrcat(out_buf, line_end);
+		xstrfmtcat(out_buf, "CreateBuffer=%s",
 			   burst_buffer_ptr->create_buffer);
-		if (!one_liner)
-			xstrcat(out_buf, "\n");
 	}
 
 	/****** Line (optional) ******/
 	if (burst_buffer_ptr->destroy_buffer) {
-		xstrfmtcat(out_buf, "  DestroyBuffer=%s",
+		xstrcat(out_buf, line_end);
+		xstrfmtcat(out_buf, "DestroyBuffer=%s",
 			   burst_buffer_ptr->destroy_buffer);
-		if (!one_liner)
-			xstrcat(out_buf, "\n");
 	}
 
 	/****** Line ******/
-	xstrfmtcat(out_buf, "  GetSysState=%s",
+	xstrcat(out_buf, line_end);
+	xstrfmtcat(out_buf, "GetSysState=%s",
 		   burst_buffer_ptr->get_sys_state);
-	if (!one_liner)
-		xstrcat(out_buf, "\n");
 
 	/****** Line ******/
-	xstrfmtcat(out_buf, "  GetSysStatus=%s",
+	xstrcat(out_buf, line_end);
+	xstrfmtcat(out_buf, "GetSysStatus=%s",
 		   burst_buffer_ptr->get_sys_status);
-	if (!one_liner)
-		xstrcat(out_buf, "\n");
 
 	/****** Line (optional) ******/
 	if (burst_buffer_ptr->start_stage_in) {
-		xstrfmtcat(out_buf, "  StartStageIn=%s",
+		xstrcat(out_buf, line_end);
+		xstrfmtcat(out_buf, "StartStageIn=%s",
 			   burst_buffer_ptr->start_stage_in);
-		if (!one_liner)
-			xstrcat(out_buf, "\n");
 	}
 
 	/****** Line ******/
 	if (burst_buffer_ptr->start_stage_out) {
-		xstrfmtcat(out_buf, "  StartStageIn=%s",
+		xstrcat(out_buf, line_end);
+		xstrfmtcat(out_buf, "StartStageIn=%s",
 			   burst_buffer_ptr->start_stage_out);
-		if (!one_liner)
-			xstrcat(out_buf, "\n");
 	}
 
 	/****** Line (optional) ******/
 	if (burst_buffer_ptr->stop_stage_in) {
-		xstrfmtcat(out_buf, "  StopStageIn=%s",
+		xstrcat(out_buf, line_end);
+		xstrfmtcat(out_buf, "StopStageIn=%s",
 			   burst_buffer_ptr->stop_stage_in);
-		if (!one_liner)
-			xstrcat(out_buf, "\n");
 	}
 
 	/****** Line (optional) ******/
 	if (burst_buffer_ptr->stop_stage_out) {
-		xstrfmtcat(out_buf, "  StopStageIn=%s",
+		xstrcat(out_buf, line_end);
+		xstrfmtcat(out_buf, "StopStageIn=%s",
 			   burst_buffer_ptr->stop_stage_out);
-		if (!one_liner)
-			xstrcat(out_buf, "\n");
 	}
 
-	if (one_liner)
-		xstrcat(out_buf, "\n");
+	xstrcat(out_buf, "\n");
 	fprintf(out, "%s", out_buf);
 	xfree(out_buf);
 
