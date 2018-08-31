@@ -291,26 +291,26 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 		if (p[i].def_mem_per_cpu & MEM_PER_CPU) {
 		        if (p[i].def_mem_per_cpu != MEM_PER_CPU)
-		                fprintf(fp, "DefMemPerCPU=%"PRIu64"",
+		                fprintf(fp, " DefMemPerCPU=%"PRIu64"",
 		                        p[i].def_mem_per_cpu & (~MEM_PER_CPU));
 		} else if (p[i].def_mem_per_cpu != 0)
-		        fprintf(fp, "DefMemPerNode=%"PRIu64"",
+		        fprintf(fp, " DefMemPerNode=%"PRIu64"",
 		                p[i].def_mem_per_cpu);
 
 		if (!p[i].allow_accounts && p[i].deny_accounts)
-			fprintf(fp, "DenyAccounts=%s", p[i].deny_accounts);
+			fprintf(fp, " DenyAccounts=%s", p[i].deny_accounts);
 
 		if (!p[i].allow_qos && p[i].deny_qos)
-			fprintf(fp, "DenyQos=%s", p[i].deny_qos);
+			fprintf(fp, " DenyQos=%s", p[i].deny_qos);
 
 		if (p[i].default_time != NO_VAL) {
 			if (p[i].default_time == INFINITE)
-				fprintf(fp, "DefaultTime=UNLIMITED");
+				fprintf(fp, " DefaultTime=UNLIMITED");
 			else {
 		                char time_line[32];
 		                secs2time_str(p[i].default_time * 60, time_line,
 					      sizeof(time_line));
-				fprintf(fp, "DefaultTime=%s", time_line);
+				fprintf(fp, " DefaultTime=%s", time_line);
 			}
 		}
 
@@ -352,7 +352,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		                snprintf(tmp1, sizeof(tmp1), "%u",
 					 p[i].max_nodes);
 
-		        fprintf(fp, "MaxNodes=%s", tmp1);
+		        fprintf(fp, " MaxNodes=%s", tmp1);
 		}
 
 		if (p[i].max_time != INFINITE) {
