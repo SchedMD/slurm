@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Remove commented-out parts of man pages related to cons_tres work in 19.05,
     as these were showing up on the web version due to a syntax error.
+ -- Prevent slurmctld performance issues in main background loop if multiple
+    backup controllers are unavailable.
 
 * Changes in Slurm 18.08.0
 ==========================

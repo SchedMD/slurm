@@ -2218,6 +2218,12 @@ extern void resume_job_step(struct job_record *job_ptr);
  *	mode, assuming control when the primary controller stops responding */
 extern void run_backup(slurm_trigger_callbacks_t *callbacks);
 
+/*
+ * ping_controllers - ping other controllers in HA configuration.
+ * IN active_controller - true if active controller, false if backup
+ */
+extern int ping_controllers(bool active_controller);
+
 /* Spawn health check function for every node that is not DOWN */
 extern void run_health_check(void);
 
