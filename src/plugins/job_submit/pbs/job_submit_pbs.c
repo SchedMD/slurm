@@ -108,15 +108,12 @@ static void _add_env(struct job_descriptor *job_desc, char *new_env)
 
 static void _add_env2(struct job_descriptor *job_desc, char *key, char *val)
 {
-	int len;
-	char *new_env;
+	char *new_env = NULL;
 
 	if (!job_desc->environment || !key || !val)
 		return;	/* Nothing we can do for interactive jobs */
 
-	len = strlen(key) + strlen(val) + 2;
-	new_env = xmalloc(len);
-	snprintf(new_env, len, "%s=%s", key, val);
+	xstrfmtcat(new_env, "%s=%s", key, val);
 	_add_env(job_desc, new_env);
 	xfree(new_env);
 }
@@ -334,12 +331,11 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 	}
 	tok = strstr(std_out, "%j");
 	if (tok) {
-		char buf[16], *tok2;
+		char *tok2;
 		char *tmp = xstrdup(std_out);
 		tok2 = strstr(tmp, "%j");
 		tok2[0] = '\0';
-		snprintf(buf, sizeof(buf), "%u", my_job_id);
-		xstrcat(tmp, buf);
+		xstrfmtcat(tmp, "%u", my_job_id);
 		xstrcat(tmp, tok + 2);
 		xstrcat(job_desc->comment, tmp);
 		xfree(tmp);
@@ -373,12 +369,11 @@ extern int job_modify(struct job_descriptor *job_desc,
 		}
 		tok = strstr(job_desc->std_out, "%j");
 		if (tok) {
-			char buf[16], *tok2;
+			char *tok2;
 			char *tmp = xstrdup(job_desc->std_out);
 			tok2 = strstr(tmp, "%j");
 			tok2[0] = '\0';
-			snprintf(buf, sizeof(buf), "%u", job_ptr->job_id);
-			xstrcat(tmp, buf);
+			xstrfmtcat(tmp, "%u", job_ptr->job_id);
 			xstrcat(tmp, tok + 2);
 			xstrcat(job_ptr->comment, tmp);
 			xfree(tmp);
