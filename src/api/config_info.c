@@ -342,7 +342,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 				p[i].max_mem_per_cpu);
 
 		if (p[i].max_nodes != INFINITE)
-		        fprintf(fp, " MaxNodes=%s", p[i].max_nodes);
+		        fprintf(fp, " MaxNodes=%u", p[i].max_nodes);
 
 		if (p[i].max_time != INFINITE) {
 			char time_line[32];
