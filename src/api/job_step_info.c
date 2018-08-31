@@ -174,77 +174,60 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 				limit_str, sizeof(limit_str));
 	if (job_step_ptr->array_job_id) {
 		if (job_step_ptr->step_id == SLURM_PENDING_STEP) {
-			snprintf(tmp_line, sizeof(tmp_line),
-				 "StepId=%u_%u.TBD ",
-				 job_step_ptr->array_job_id,
-				 job_step_ptr->array_task_id);
+			xstrfmtcat(out, "StepId=%u_%u.TBD ",
+				   job_step_ptr->array_job_id,
+				   job_step_ptr->array_task_id);
 		} else if (job_step_ptr->step_id == SLURM_EXTERN_CONT) {
-			snprintf(tmp_line, sizeof(tmp_line),
-				 "StepId=%u_%u.extern ",
-				 job_step_ptr->array_job_id,
-				 job_step_ptr->array_task_id);
+			xstrfmtcat(out, "StepId=%u_%u.extern ",
+				   job_step_ptr->array_job_id,
+				   job_step_ptr->array_task_id);
 		} else {
-			snprintf(tmp_line, sizeof(tmp_line), "StepId=%u_%u.%u ",
-				 job_step_ptr->array_job_id,
-				 job_step_ptr->array_task_id,
-				 job_step_ptr->step_id);
+			xstrfmtcat(out, "StepId=%u_%u.%u ",
+				   job_step_ptr->array_job_id,
+				   job_step_ptr->array_task_id,
+				   job_step_ptr->step_id);
 		}
-		out = xstrdup(tmp_line);
 	} else {
 		if (job_step_ptr->step_id == SLURM_PENDING_STEP) {
-			snprintf(tmp_line, sizeof(tmp_line),
-				 "StepId=%u.TBD ",
-				 job_step_ptr->job_id);
+			xstrfmtcat(out, "StepId=%u.TBD ",
+				   job_step_ptr->job_id);
 		} else if (job_step_ptr->step_id == SLURM_EXTERN_CONT) {
-			snprintf(tmp_line, sizeof(tmp_line),
-				 "StepId=%u.extern ",
-				 job_step_ptr->job_id);
+			xstrfmtcat(out, "StepId=%u.extern ",
+				   job_step_ptr->job_id);
 		} else {
-			snprintf(tmp_line, sizeof(tmp_line), "StepId=%u.%u ",
-				 job_step_ptr->job_id, job_step_ptr->step_id);
+			xstrfmtcat(out, "StepId=%u.%u ",
+				   job_step_ptr->job_id,
+				   job_step_ptr->step_id);
 		}
-		out = xstrdup(tmp_line);
 	}
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "UserId=%u StartTime=%s TimeLimit=%s",
-		 job_step_ptr->user_id, time_str, limit_str);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out, "UserId=%u StartTime=%s TimeLimit=%s",
+		   job_step_ptr->user_id, time_str, limit_str);
 
 	/****** Line 2 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "State=%s ",
-		 job_state_string(job_step_ptr->state));
 	xstrcat(out, line_end);
-	xstrcat(out, tmp_line);
-	snprintf(tmp_line, sizeof(tmp_line),
-		"Partition=%s NodeList=%s",
-		job_step_ptr->partition, job_step_ptr->nodes);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out, "State=%s Partition=%s NodeList=%s",
+		   job_state_string(job_step_ptr->state),
+		   job_step_ptr->partition, job_step_ptr->nodes);
 
 	/****** Line 3 ******/
 	convert_num_unit((float)_nodes_in_list(job_step_ptr->nodes),
 			 tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE,
 			 NO_VAL, CONVERT_NUM_UNIT_EXACT);
-	snprintf(tmp_line, sizeof(tmp_line),
-		"Nodes=%s CPUs=%u Tasks=%u Name=%s Network=%s",
-		 tmp_node_cnt, job_step_ptr->num_cpus, job_step_ptr->num_tasks,
-		 job_step_ptr->name, job_step_ptr->network);
 	xstrcat(out, line_end);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out, "Nodes=%s CPUs=%u Tasks=%u Name=%s Network=%s",
+		   tmp_node_cnt, job_step_ptr->num_cpus,
+		   job_step_ptr->num_tasks, job_step_ptr->name,
+		   job_step_ptr->network);
 
 	/****** Line 4 ******/
-	snprintf(tmp_line, sizeof(tmp_line), "TRES=%s",
-		 job_step_ptr->tres_alloc_str);
 	xstrcat(out, line_end);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out, "TRES=%s", job_step_ptr->tres_alloc_str);
 
 	/****** Line 5 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		"ResvPorts=%s Checkpoint=%u CheckpointDir=%s",
-		 job_step_ptr->resv_ports,
-		 job_step_ptr->ckpt_interval, job_step_ptr->ckpt_dir);
 	xstrcat(out, line_end);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out, "ResvPorts=%s Checkpoint=%u CheckpointDir=%s",
+		   job_step_ptr->resv_ports, job_step_ptr->ckpt_interval,
+		   job_step_ptr->ckpt_dir);
 
 	/****** Line 6 ******/
 	xstrcat(out, line_end);
