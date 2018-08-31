@@ -1100,8 +1100,8 @@ static void _pick_alloc_account(bb_alloc_t *bb_alloc)
 static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
 {
 	/* read locks on assoc */
-	assoc_mgr_lock_t assoc_locks = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-					 NO_LOCK, NO_LOCK, NO_LOCK };
+	assoc_mgr_lock_t assoc_locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .user = READ_LOCK };
 	slurmdb_assoc_rec_t assoc_rec;
 	slurmdb_qos_rec_t qos_rec;
 

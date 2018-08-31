@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     as these were showing up on the web version due to a syntax error.
  -- Prevent slurmctld performance issues in main background loop if multiple
     backup controllers are unavailable.
+ -- Add missing user read association lock in burst_buffer/cray during init().
+ -- Fix incorrect spacing for PartitionName lines in 'scontrol write config'.
 
 * Changes in Slurm 18.08.0
 ==========================
