@@ -5215,7 +5215,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 				if (!bit_test(core_bitmap, i))
 					continue;
 				avail_sock++;
-				avail_sock_flag[s] = true;	
+				avail_sock_flag[s] = true;
 				break;
 			}
 		}
@@ -5252,22 +5252,55 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 
 
 	/*
-	 * Identify sockets required to satisfy gres_per_node specification
+	 * If sockets-per-node (s_p_n) not specified then identify sockets
+	 * which are required to satisfy gres_per_node or task specification
 	 * so that allocated tasks can be distributed over multiple sockets
-	 * if necessary
+	 * if necessary.
 	 */
 	add_gres = min_gres - sock_gres->cnt_any_sock;
-	if (match && enforce_binding && core_bitmap && (add_gres > 0) &&
+	if (match && core_bitmap && (s_p_n == NO_VAL) && (add_gres > 0) &&
 	    job_gres_ptr->gres_per_node) {
-		*req_sock_map = bit_alloc(sockets);
+		int avail_sock = 0, best_sock_inx = -1;
+		bool *avail_sock_flag = xmalloc(sizeof(bool) * sockets);
 		for (s = 0; s < sockets; s++) {
 			if (sock_gres->cnt_by_sock[s] == 0)
 				continue;
-			bit_set(*req_sock_map, s);
-			add_gres -= sock_gres->cnt_by_sock[s];
+			for (c = 0; c < cores_per_sock; c++) {
+				i = (s * cores_per_sock) + c;
+				if (!bit_test(core_bitmap, i))
+					continue;
+				avail_sock++;
+				avail_sock_flag[s] = true;
+				if ((best_sock_inx == -1) ||
+				    (sock_gres->cnt_by_sock[s] >
+				     sock_gres->cnt_by_sock[best_sock_inx])) {
+					best_sock_inx = s;
+				}
+				break;
+			}
+		}
+		while ((best_sock_inx != -1) && (add_gres > 0)) {
+			if (*req_sock_map == NULL)
+				*req_sock_map = bit_alloc(sockets);
+			bit_set(*req_sock_map, best_sock_inx);
+			add_gres -= sock_gres->cnt_by_sock[best_sock_inx];
+			avail_sock_flag[best_sock_inx] = false;
 			if (add_gres <= 0)
 				break;
+			/* Find next best socket */
+			best_sock_inx = -1;
+			for (s = 0; s < sockets; s++) {
+				if ((sock_gres->cnt_by_sock[s] == 0) ||
+				    !avail_sock_flag[s])
+					continue;
+				if ((best_sock_inx == -1) ||
+				    (sock_gres->cnt_by_sock[s] >
+				     sock_gres->cnt_by_sock[best_sock_inx])) {
+					best_sock_inx = s;
+				}
+			}
 		}
+		xfree(avail_sock_flag);
 	}
 
 	if (match) {
