@@ -1093,27 +1093,6 @@ char *print_commandline(const int script_argc, char **script_argv)
 	return out_buf;
 }
 
-char *print_geometry(const uint16_t *geometry)
-{
-	int i;
-	char buf[32], *rc = NULL;
-	int dims = slurmdb_setup_cluster_dims();
-
-	if ((dims == 0) || !geometry[0]
-	    ||  (geometry[0] == NO_VAL16))
-		return NULL;
-
-	for (i=0; i<dims; i++) {
-		if (i > 0)
-			snprintf(buf, sizeof(buf), "x%u", geometry[i]);
-		else
-			snprintf(buf, sizeof(buf), "%u", geometry[i]);
-		xstrcat(rc, buf);
-	}
-
-	return rc;
-}
-
 /* Translate a signal option string "--signal=<int>[@<time>]" into
  * it's warn_signal and warn_time components.
  * RET 0 on success, -1 on failure */

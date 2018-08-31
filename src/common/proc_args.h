@@ -128,9 +128,6 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 /* helper function for printing options */
 char *print_commandline(const int script_argc, char **script_argv);
 
-/* helper function for printing geometry option */
-char *print_geometry(const uint16_t *geometry);
-
 /* Translate a signal option string "--signal=<int>[@<time>]" into
  * it's warn_signal and warn_time components.
  * RET 0 on success, -1 on failure */
