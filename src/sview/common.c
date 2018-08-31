@@ -1826,7 +1826,7 @@ extern char *get_reason(void)
 		NULL);
 	int response = 0;
 	char *user_name = NULL;
-	char time_buf[64], time_str[32];
+	char time_str[32];
 	time_t now = time(NULL);
 
 	gtk_window_set_type_hint(GTK_WINDOW(popup),
@@ -1860,8 +1860,7 @@ extern char *get_reason(void)
 		else
 			xstrfmtcat(reason_str, "%d", getuid());
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
-		snprintf(time_buf, sizeof(time_buf), "@%s]", time_str);
-		xstrcat(reason_str, time_buf);
+		xstrfmtcat(reason_str, "@%s]", time_str);
 	} else
 		reason_str = xstrdup("cancelled");
 end_it:
