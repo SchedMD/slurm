@@ -185,8 +185,8 @@ proc test_case {opt expmin expcur expmax expgov} {
 		log_user 1
 		return 1
 	}
-
-	if {$expcur !=0 && [expr abs($tcur - $expcur)] > 10000} {
+	# Check that actual frequency is within 5 percent of target
+	if {$expcur != 0 && [expr abs($tcur - $expcur) * 100 / $expcur] > 5} {
 		set real_error 1
 		if {![string compare $opt "High"]} {
 			if {$tcur > $expcur} {
