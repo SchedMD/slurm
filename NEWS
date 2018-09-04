@@ -11,7 +11,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect spacing for PartitionName lines in 'scontrol write config'.
  -- Fix creation of step hwloc xml file for after cpuset cgroup has been
     created.
- -- Add userspace as a valid default governor.
 
 * Changes in Slurm 18.08.0
 ==========================
