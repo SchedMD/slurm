@@ -448,9 +448,10 @@ used for all other system types
 
 .TP
 \fBCpuFreqDef\fR
-Default CPU frequency governor to use when running a job step if it
-has not been explicitly set with the \-\-cpu\-freq option.
-Acceptable values at present include:
+Default CPU frequency value or frequency governor to use when running a
+job step if it has not been explicitly set with the \-\-cpu\-freq option.
+Acceptable values at present include a numeric value (frequency in kilohertz)
+or one of the following governors:
 .RS
 .TP 14
 \fBConservative\fR
