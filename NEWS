@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     backup controllers are unavailable.
  -- Add missing user read association lock in burst_buffer/cray during init().
  -- Fix incorrect spacing for PartitionName lines in 'scontrol write config'.
+ -- Fix creation of step hwloc xml file for after cpuset cgroup has been
+    created.
 
 * Changes in Slurm 18.08.0
 ==========================
