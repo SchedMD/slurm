@@ -754,6 +754,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->gres_plugins        = xstrdup(conf->gres_plugins);
 	conf_ptr->group_time          = conf->group_time;
 	conf_ptr->group_force         = conf->group_force;
+	conf_ptr->gpu_freq_def        = xstrdup(conf->gpu_freq_def);
 
 	conf_ptr->inactive_limit      = conf->inactive_limit;
 

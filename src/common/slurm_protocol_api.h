@@ -939,6 +939,13 @@ int16_t slurm_get_srun_eio_timeout(void);
  */
 extern uint16_t slurm_get_prolog_timeout(void);
 
+/*
+ * slurm_get_jobcomp_type
+ * returns the configured GpuFreqDef value
+ * RET char *    - GpuFreqDef value,  MUST be xfreed by caller
+ */
+char *slurm_get_gpu_freq_def(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/

@@ -99,7 +99,7 @@ upon GRES state information in that credential.
 (input) zero origin node index, used to interpret node specific GRES data.<br>
 
 <p class="commandline">
-void step_set_env(char ***job_env_ptr, void *gres_ptr)
+void step_set_env(char ***job_env_ptr, void *gres_ptr, char *tres_freq, int local_proc_id)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the <i>slurmd</i> daemon after the getting a job
 step credential and can be used to set environment variables for the job step
@@ -109,6 +109,10 @@ based upon GRES state information in that credential.
 (input/output) pointer to the job step's environment variable structure.<br>
 <span class="commandline">gres_ptr</span>
 (input) pointer to the step's GRES allocation information.<br>
+<span class="commandline">tres_freq</span>
+(input) pointer to the step's GRES frequency specification.<br>
+<span class="commandline">local_proc_id</span>
+(input) local process ID.<br>
 
 <p class="commandline">
 extern void send_stepd(int fd)
@@ -177,6 +181,6 @@ Data type depends upon the value of gres_step_data_type data_type.<br>
 
 <p class="footer"><a href="#top">top</a>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 4 September 2018</p>
 
 <!--#include virtual="footer.txt"-->

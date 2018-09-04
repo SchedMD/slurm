@@ -169,7 +169,7 @@ main (int argc, char **argv)
 #endif
 	}
 	xfree(launch_params);
-
+//xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);	// BAD HERE TOO
 	/* This does most of the stdio setup, then launches all the tasks,
 	 * and blocks until the step is complete */
 	rc = job_manager(job);
@@ -637,7 +637,7 @@ _init_from_slurmd(int sock, char **argv,
 						 jobid, stepid);
 
 	/* create hwloc xml file here to avoid threading issues late */
-	xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);
+//	xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);			//
 
 	/*
 	 * Swap the field to the srun client version, which will eventually
@@ -696,7 +696,7 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		gres_plugin_job_set_env(&job->env, job->job_gres_list, 0);
 	} else if (msg->msg_type == REQUEST_LAUNCH_TASKS) {
 		gres_plugin_step_set_env(&job->env, job->step_gres_list, 0,
-					 NULL, job->tres_freq, -1);
+					 NULL, NULL, -1);
 	}
 
 	/*

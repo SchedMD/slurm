@@ -876,6 +876,39 @@ A value of zero will prevent periodic updating of group membership information.
 Also see the \fBGroupUpdateForce\fR parameter.
 
 .TP
+\fBGpuFreqDef\fR=[<\fItype\fR]=\fIvalue\fR>[,<\fItype\fR=\fIvalue\fR>]
+Default GPU frequency and voltage to use when running a job step if it
+has not been explicitly set using the \-\-gpu\-freq option.
+This option can be used to independently configure the GPU and its memory
+frequencies.
+In some cases, system power caps may override the requested values.
+The field \fItype\fR can be "memory" or "voltage".
+If \fItype\fR is not specified. the GPU frequency is implied.
+The \fIvalue\fR field can either be "low", "medium", "high", "highm1" or
+a numeric value (megahertz or volts).
+If the specified numeric value is not possible, a value as close as
+possible will be used.
+See below for definition of the values.
+Examples of use include "GpuFreqDef=medium,memory=high,voltage=high" and
+"GpuFreqDef=450".
+
+Supported \fIvalue\fR definitions:
+.RS
+.TP 10
+\fBlow\fR
+the lowest available frequency or voltage
+.TP
+\fBmedium\fR
+attempts to set a frequency  or voltage in the middle of the available range
+.TP
+\fBhigh\fR
+the highest available frequency or voltage
+.TP
+\fBhighm1\fR
+(high minus one) will select the next highest available frequency or voltage
+.RE
+
+.TP
 \fBHealthCheckInterval\fR
 The interval in seconds between executions of \fBHealthCheckProgram\fR.
 The default value is zero, which disables execution.

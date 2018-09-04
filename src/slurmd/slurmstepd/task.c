@@ -451,12 +451,11 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		error("Failed to invoke task plugins: task_p_pre_launch error");
 		exit(1);
 	}
-	if (!job->batch &&
-	    (job->accel_bind_type || job->tres_bind || job->tres_freq)) {
+	if (!job->batch && job->step_gres_list) {
 		/*
-		 * Modify copy of job's environment. Do not alter in place or
-		 * concurrent searches of the environment can generate invalid
-		 * memory references.
+		 * Modify copy of job's environment as neede for GRES. Do not
+		 * alter in place or concurrent searches of the environment can
+		 * generate invalid memory references.
 		 *
 		 * Also sets GRES frequency as needed.
 		 */

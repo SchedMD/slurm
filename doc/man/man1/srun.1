@@ -840,7 +840,7 @@ Not supported unless the entire node is allocated to the job.
 .RE
 
 .TP
-\fB\-\-gpu\-freq\fR=[<\fItype\fR]=\fIvalue\fR>[:<\fItype\fR=\fIvalue\fR>]
+\fB\-\-gpu\-freq\fR=[<\fItype\fR]=\fIvalue\fR>[,<\fItype\fR=\fIvalue\fR>][,verbose]
 Request that GPUs allocated to the job are configured with specific voltage
 and/or frequency values.
 This option can be used to independently configure the GPU and its memory
@@ -852,8 +852,9 @@ The \fIvalue\fR field can either be "low", "medium", "high", "highm1" or
 a numeric value (megahertz or volts).
 If the specified numeric value is not possible, a value as close as
 possible will be used. See below for definition of the values.
-Examples of use include "\-\-gpu\-freq\fR=medium:memory=high:voltage=high" and
-\-\-gpu\-freq\fR=450".
+The \fIverbose\fR option causes current GPU frequency information to be logged.
+Examples of use include "\-\-gpu\-freq=medium,memory=high,voltage=high" and
+\-\-gpu\-freq=450".
 
 Supported \fIvalue\fR definitions:
 .RS

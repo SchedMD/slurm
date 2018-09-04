@@ -62,6 +62,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmd/common/fname.h"
+#include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/multi_prog.h"
@@ -377,7 +378,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	} else {
 		memset(&io_addr, 0, sizeof(slurm_addr_t));
 	}
-
+//xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);	// BAD HERE TOO
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr,
 				protocol_version);
 
@@ -438,7 +439,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 	_job_init_task_info(job, msg->global_task_ids,
 			    msg->ifname, msg->ofname, msg->efname);
-
+//xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);	// BAD HERE TOO
 	return job;
 }
 

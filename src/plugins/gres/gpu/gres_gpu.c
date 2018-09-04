@@ -148,6 +148,100 @@ static int _xlate_freq_code2value(int gpu_mode, int freq_code, int gpu_idx)
 	return value;
 }
 
+static void _parse_gpu_freq2(char *gpu_freq, int *gpu_freq_code,
+			     int *gpu_freq_value, int *mem_freq_code,
+			     int *mem_freq_value, int *voltage_code,
+			     int *voltage_value, bool *verbose_flag)
+{
+	char *tmp, *tok, *sep, *save_ptr = NULL;
+
+	tmp = xstrdup(gpu_freq);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		sep = strchr(tok, '=');
+		if (sep) {
+			sep[0] = '\0';
+			sep++;
+			if (!strcasecmp(tok, "memory")) {
+				if (!(*mem_freq_code = _xlate_freq_code(sep)) &&
+				    !(*mem_freq_value =_xlate_freq_value(sep))){
+					debug("Invalid job GPU memory frequency: %s",
+					      tok);
+				}
+			} else if (!strcasecmp(tok, "voltage")) {
+				if (!(*voltage_code = _xlate_freq_code(sep)) &&
+				    !(*voltage_value = _xlate_freq_value(sep))){
+					debug("Invalid job GPU voltage: %s",
+					      tok);
+				}
+			} else {
+				debug("%s: %s: Invalid job device type (%s)",
+				      plugin_type, __func__, tok);
+			}
+		} else if (!strcasecmp(tok, "verbose")) {
+			*verbose_flag = true;
+		} else {
+			if (!(*gpu_freq_code = _xlate_freq_code(tok)) &&
+			    !(*gpu_freq_value = _xlate_freq_value(tok))) {
+				debug("Invalid job GPU frequency: %s", tok);
+			}
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+}
+
+static void _parse_gpu_freq(char *gpu_freq, int *gpu_freq_code,
+			    int *gpu_freq_value, int *mem_freq_code,
+			    int *mem_freq_value, int *voltage_code,
+			    int *voltage_value, bool *verbose_flag)
+{
+	int def_gpu_freq_code = 0, def_gpu_freq_value = 0;
+	int def_mem_freq_code = 0, def_mem_freq_value = 0;
+	int def_voltage_code  = 0, def_voltage_value = 0;
+	int job_gpu_freq_code = 0, job_gpu_freq_value = 0;
+	int job_mem_freq_code = 0, job_mem_freq_value = 0;
+	int job_voltage_code  = 0, job_voltage_value = 0;
+	char *def_freq;
+
+	_parse_gpu_freq2(gpu_freq, &job_gpu_freq_code, &job_gpu_freq_value,
+			 &job_mem_freq_code, &job_mem_freq_value,
+			 &job_voltage_code, &job_voltage_value, verbose_flag);
+
+	def_freq = slurm_get_gpu_freq_def();
+	_parse_gpu_freq2(def_freq, &def_gpu_freq_code, &def_gpu_freq_value,
+			 &def_mem_freq_code, &def_mem_freq_value,
+			 &def_voltage_code, &def_voltage_value, verbose_flag);
+	xfree(def_freq);
+
+	if (job_gpu_freq_code)
+		*gpu_freq_code = job_gpu_freq_code;
+	else if (job_gpu_freq_value)
+		*gpu_freq_value = job_gpu_freq_value;
+	else if (def_gpu_freq_code)
+		*gpu_freq_code = def_gpu_freq_code;
+	else if (def_gpu_freq_value)
+		*gpu_freq_value = def_gpu_freq_value;
+
+	if (job_mem_freq_code)
+		*mem_freq_code = job_mem_freq_code;
+	else if (job_mem_freq_value)
+		*mem_freq_value = job_mem_freq_value;
+	else if (def_mem_freq_code)
+		*mem_freq_code = def_mem_freq_code;
+	else if (def_gpu_freq_value)
+		*mem_freq_value = def_mem_freq_value;
+
+	if (job_voltage_code)
+		*voltage_code = job_voltage_code;
+	else if (job_voltage_value)
+		*voltage_value = job_voltage_value;
+	else if (def_voltage_code)
+		*voltage_code = def_voltage_code;
+	else if (def_voltage_value)
+		*voltage_value = def_voltage_value;
+}
+
 static void _set_freq(char *gpu_freq, char *global_list, int node_inx)
 {
 	bool verbose_flag = false;
@@ -158,7 +252,6 @@ static void _set_freq(char *gpu_freq, char *global_list, int node_inx)
 	int gpu_freq_num = 0, mem_freq_num = 0, voltage_num = 0;
 	int gpu_freq_code = 0, mem_freq_code = 0, voltage_code = 0;
 	int gpu_freq_value = 0, mem_freq_value = 0, voltage_value = 0;
-	char *gpu_freq_str = NULL, *mem_freq_str = NULL, *voltage_str = NULL;
 
 	/* Parse device ID information */
 	tmp = xstrdup(global_list);
@@ -177,49 +270,11 @@ static void _set_freq(char *gpu_freq, char *global_list, int node_inx)
 	xfree(tmp);
 
 	/*
-	 * Parse frequency/voltage information:
-	 * First just get the string, then translate to code or frequency number
+	 * Parse frequency/voltage information
 	 */
-	tmp = xstrdup(gpu_freq);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		sep = strchr(tok, '=');
-		if (sep) {
-			sep[0] = '\0';
-			sep++;
-			if (!strcasecmp(tok, "memory")) {
-				if ((mem_freq_code = _xlate_freq_code(sep)) ||
-				    (mem_freq_value = _xlate_freq_value(sep))) {
-					mem_freq_str = xstrdup(sep);
-				} else {
-					debug("Invalid job GPU memory frequency: %s",
-					      tok);
-				}
-			} else if (!strcasecmp(tok, "voltage")) {
-				if ((voltage_code = _xlate_freq_code(sep)) ||
-				    (voltage_value = _xlate_freq_value(sep))) {
-					voltage_str = xstrdup(sep);
-				} else {
-					debug("Invalid job GPU voltage: %s",
-					      tok);
-				}
-			} else {
-				debug("%s: %s: Invalid job device type (%s)",
-				      plugin_type, __func__, tok);
-			}
-		} else if (!strcasecmp(tok, "verbose")) {
-			verbose_flag = true;
-		} else {
-			if ((gpu_freq_code = _xlate_freq_code(tok)) ||
-			    (gpu_freq_value = _xlate_freq_value(sep))) {
-				gpu_freq_str = xstrdup(tok);
-			} else {
-				debug("Invalid job GPU frequency: %s", tok);
-			}
-		}
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
+	_parse_gpu_freq(gpu_freq, &gpu_freq_code, &gpu_freq_value,
+			&mem_freq_code, &gpu_freq_value, &voltage_code,
+			&voltage_value, &verbose_flag);
 
 	/*
 	 * Now set the values on the devices, translate codes to numeric values
@@ -227,8 +282,7 @@ static void _set_freq(char *gpu_freq, char *global_list, int node_inx)
 	 */
 	for (i = 0; i < gpu_index_cnt; i++) {
 //FIXME: Flesh out code to set GPU frequncy values, see bug 5520
-		sep = "";
-		if (gpu_freq_str) {
+		if (gpu_freq_code || gpu_freq_value) {
 			if (gpu_freq_code) {
 				gpu_freq_num  = _xlate_freq_code2value(
 							GPU_MODE_FREQ,
@@ -240,7 +294,7 @@ static void _set_freq(char *gpu_freq, char *global_list, int node_inx)
 			xstrfmtcat(tmp, "freq:%d", gpu_freq_num);
 			sep = ",";
 		}
-		if (mem_freq_str) {
+		if (mem_freq_code || gpu_freq_value) {
 			if (mem_freq_code) {
 				mem_freq_num  = _xlate_freq_code2value(
 							GPU_MODE_MEM,
@@ -252,7 +306,7 @@ static void _set_freq(char *gpu_freq, char *global_list, int node_inx)
 			xstrfmtcat(tmp, "%smemory_freq:%d", sep, mem_freq_num);
 			sep = ",";
 		}
-		if (voltage_str) {
+		if (voltage_code || voltage_value) {
 			if (voltage_code) {
 				voltage_num  = _xlate_freq_code2value(
 							GPU_MODE_VOLT,
@@ -270,9 +324,6 @@ static void _set_freq(char *gpu_freq, char *global_list, int node_inx)
 	}
 
 	xfree(gpu_index);
-	xfree(gpu_freq_str);
-	xfree(mem_freq_str);
-	xfree(voltage_str);
 }
 
 static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
@@ -404,16 +455,22 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job step's GRES state.
  */
-extern void step_set_env(char ***step_env_ptr, void *gres_ptr, char *tres_freq)
+extern void step_set_env(char ***step_env_ptr, void *gres_ptr, char *tres_freq,
+			 int local_proc_id)
 {
 	static int local_inx = 0;
 	static bool already_seen = false;
 	char  *tmp, *gpu_freq = NULL;
 
-	if (tres_freq && (tmp = strstr(tres_freq, "gpu:"))) {
-		gpu_freq = xstrdup(tmp + 4);
-		if ((tmp = strchr(gpu_freq, ';')))
-			tmp[0] = '\0';
+	if (local_proc_id == 0) {
+		if (tres_freq && (tmp = strstr(tres_freq, "gpu:"))) {
+			gpu_freq = xstrdup(tmp + 4);
+			if ((tmp = strchr(gpu_freq, ';')))
+				tmp[0] = '\0';
+		} else {
+			/* Make non-NULL to process default: GpuFreqDef */
+			gpu_freq = xstrdup("");
+		}
 	}
 	_set_env(step_env_ptr, gres_ptr, 0, NULL,
 		 &already_seen, &local_inx, false, false, gpu_freq);

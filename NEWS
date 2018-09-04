@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
     with sockets 0 and 1 then "Gres=gpu:4(S:0-1)". The information of which
     specific GPUs are associated with specific GPUs is not reported, but only
     available by parsing the gres.conf file.
+ -- Add configuration parameter "GpuFreqDef" to control a job's default GPU
+    frequency.
 
 * Changes in Slurm 18.08.1
 ==========================

@@ -2237,7 +2237,27 @@ extern uint16_t slurm_get_ext_sensors_freq(void)
 	return freq;
 }
 
-/* slurm_get_jobcomp_type
+/*
+ * slurm_get_jobcomp_type
+ * returns the configured GpuFreqDef value
+ * RET char *    - GpuFreqDef value,  MUST be xfreed by caller
+ */
+char *slurm_get_gpu_freq_def(void)
+{
+	char *gpu_freq_def = NULL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		gpu_freq_def = xstrdup(conf->gpu_freq_def);
+		slurm_conf_unlock();
+	}
+	return gpu_freq_def;
+}
+
+/*
+ * slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller
  */

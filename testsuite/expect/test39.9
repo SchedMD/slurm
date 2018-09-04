@@ -126,7 +126,7 @@ if {$match != 1} {
 }
 
 #
-# Test of --gpu-freq=medium,memory=medium
+# Test of --gpu-freq=medium,memory=medium,verbose
 #
 send_user "\n\nTEST 2\n"
 set match 0
@@ -151,7 +151,7 @@ if {$match != 1} {
 }
 
 #
-# Test of --gpu-freq=highm1
+# Test of --gpu-freq=highm1,verbose
 #
 send_user "\n\nTEST 3\n"
 set match 0
@@ -175,9 +175,8 @@ if {$match != 1} {
 	set exit_code 1
 }
 
-
 #
-# Test of --gpu-freq=high,memory=high,voltage=high
+# Test of --gpu-freq=high,memory=high,voltage=high,verbose
 #
 send_user "\n\nTEST 4\n"
 set match 0
@@ -261,6 +260,32 @@ if {$match != 4} {
 		send_user "\nFAILURE: GPU voltage low > medium or medium > high\n"
 		set exit_code 1
 	}
+}
+
+#
+# Test of --gpu-freq=verbose
+# Frequency will be system default (see "GpuFreqDef" in slurm.conf)
+#
+send_user "\n\nTEST 7\n"
+set match 0
+set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=verbose -J "test$test_id" -t1 ./$file_in]
+expect {
+	-re "GpuFreq=" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	send_user "\nFAILURE: srun '--gpu-freq=verbose' failure ($match != 1)\n"
+	set exit_code 1
 }
 
 if {$exit_code == 0} {

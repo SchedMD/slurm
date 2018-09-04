@@ -6135,6 +6135,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->gres_plugins, buffer);
 		pack16(build_ptr->group_time, buffer);
 		pack16(build_ptr->group_force, buffer);
+		packstr(build_ptr->gpu_freq_def, buffer);
 
 		pack32(build_ptr->hash_val, buffer);
 
@@ -6996,6 +6997,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->group_time, buffer);
 		safe_unpack16(&build_ptr->group_force, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->gpu_freq_def,
+				       &uint32_tmp, buffer);
 
 		safe_unpack32(&build_ptr->hash_val, buffer);
 
