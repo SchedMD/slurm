@@ -248,7 +248,7 @@ static void _set_freq(char *gpu_freq, char *global_list, int node_inx)
 	int len = strlen(global_list);
 	int *gpu_index = xmalloc(sizeof(int) * len);
 	int gpu_index_cnt = 0, i;
-	char *tok, *tmp, *sep, *save_ptr = NULL;
+	char *tok, *tmp, *sep = "", *save_ptr = NULL;
 	int gpu_freq_num = 0, mem_freq_num = 0, voltage_num = 0;
 	int gpu_freq_code = 0, mem_freq_code = 0, voltage_code = 0;
 	int gpu_freq_value = 0, mem_freq_value = 0, voltage_value = 0;
