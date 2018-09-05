@@ -505,7 +505,7 @@ _init_from_slurmd(int sock, char **argv,
 	/* Receive TRES information for slurmd */
 	safe_read(sock, &len, sizeof(int));
 	if (len > 0) {
-		incoming_buffer = xmalloc(sizeof(char) * len);
+		incoming_buffer = xmalloc(len);
 		safe_read(sock, incoming_buffer, len);
 		buffer = create_buf(incoming_buffer, len);
 		slurm_unpack_list(&tmp_list,
@@ -553,7 +553,7 @@ _init_from_slurmd(int sock, char **argv,
 
 	/* receive cli from slurmd */
 	safe_read(sock, &len, sizeof(int));
-	incoming_buffer = xmalloc(sizeof(char) * len);
+	incoming_buffer = xmalloc(len);
 	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);
 	cli = xmalloc(sizeof(slurm_addr_t));
@@ -565,7 +565,7 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &len, sizeof(int));
 	if (len > 0) {
 		/* receive packed self from main slurmd */
-		incoming_buffer = xmalloc(sizeof(char) * len);
+		incoming_buffer = xmalloc(len);
 		safe_read(sock, incoming_buffer, len);
 		buffer = create_buf(incoming_buffer,len);
 		self = xmalloc(sizeof(slurm_addr_t));
@@ -591,7 +591,7 @@ _init_from_slurmd(int sock, char **argv,
 
 	/* receive req from slurmd */
 	safe_read(sock, &len, sizeof(int));
-	incoming_buffer = xmalloc(sizeof(char) * len);
+	incoming_buffer = xmalloc(len);
 	safe_read(sock, incoming_buffer, len);
 	buffer = create_buf(incoming_buffer,len);
 

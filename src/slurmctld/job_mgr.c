@@ -9876,7 +9876,7 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 				}
 				len += i;
 
-				cmd_line = xmalloc(len*sizeof(char));
+				cmd_line = xmalloc(len);
 				tmp = cmd_line;
 				for (i = 0; detail_ptr->argv[i]; i++) {
 					if (i != 0) {

@@ -3765,7 +3765,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 		msg->forward_struct->buf_len = remaining_buf(buffer);
 		msg->forward_struct->buf =
-			xmalloc(sizeof(char) * msg->forward_struct->buf_len);
+			xmalloc(msg->forward_struct->buf_len);
 		memcpy(msg->forward_struct->buf,
 		       &buffer->head[buffer->processed],
 		       msg->forward_struct->buf_len);

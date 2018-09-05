@@ -6838,10 +6838,10 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg, connection_arg_t *arg)
 
 	persist_conn->persist_type = persist_init->persist_type;
 	persist_conn->rem_port = persist_init->port;
-	persist_conn->rem_host = xmalloc_nz(sizeof(char) * 16);
+	persist_conn->rem_host = xmalloc_nz(16);
 
 	slurm_get_ip_str(&arg->cli_addr, &port,
-			 persist_conn->rem_host, sizeof(char) * 16);
+			 persist_conn->rem_host, 16);
 	/* info("got it from %d %s %s(%u)", persist_conn->fd, */
 	/*      persist_conn->cluster_name, */
 	/*      persist_conn->rem_host, persist_conn->rem_port); */

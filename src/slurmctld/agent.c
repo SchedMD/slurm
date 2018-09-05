@@ -1457,8 +1457,7 @@ extern void agent_pack_pending_rpc_stats(Buf buffer)
 		rpc_count = 0;
 		rpc_host_list = xmalloc(sizeof(char *) * DUMP_RPC_COUNT);
 		for (i = 0; i < DUMP_RPC_COUNT; i++) {
-			rpc_host_list[i] = xmalloc(sizeof(char) *
-						   HOSTLIST_MAX_SIZE);
+			rpc_host_list[i] = xmalloc(HOSTLIST_MAX_SIZE);
 		}
 		rpc_type_list = xmalloc(sizeof(uint32_t) * DUMP_RPC_COUNT);
 	}

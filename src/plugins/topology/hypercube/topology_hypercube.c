@@ -993,7 +993,7 @@ static void _build_hypercube_switch_table(int num_curves)
 		hypercube_switch_table[i].switch_index =
 			switch_data_table[i].index;
 		hypercube_switch_table[i].switch_name = xmalloc(
-			sizeof(char) * (strlen(switch_data_table[i].name) + 1));
+			strlen(switch_data_table[i].name) + 1);
 			
 		strcpy(hypercube_switch_table[i].switch_name, 
 			switch_data_table[i].name);

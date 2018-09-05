@@ -319,12 +319,12 @@ extern void common_recv_stepd(int fd, List *gres_devices)
 		safe_read(fd, &gres_device->dev_num, sizeof(int));
 		safe_read(fd, &len, sizeof(int));
 		if (len) {
-			gres_device->major = xmalloc(sizeof(char) * (len + 1));
+			gres_device->major = xmalloc(len + 1);
 			safe_read(fd, gres_device->major, len);
 		}
 		safe_read(fd, &len, sizeof(int));
 		if (len) {
-			gres_device->path = xmalloc(sizeof(char) * (len + 1));
+			gres_device->path = xmalloc(len + 1);
 			safe_read(fd, gres_device->path, len);
 		}
 		/* info("adding %d %s %s", gres_device->dev_num, */

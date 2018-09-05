@@ -70,7 +70,7 @@ extern void forward_init(forward_t *forward, forward_t *from);
 
 forward_struct = xmalloc(sizeof(forward_struct_t));
 forward_struct->buf_len = remaining_buf(buffer);
-forward_struct->buf = xmalloc(sizeof(char) * forward_struct->buf_len);
+forward_struct->buf = xmalloc(forward_struct->buf_len);
 memcpy(forward_struct->buf, &buffer->head[buffer->processed],
        forward_struct->buf_len);
 forward_struct->ret_list = ret_list;

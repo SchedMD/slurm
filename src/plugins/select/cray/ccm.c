@@ -164,8 +164,7 @@ static int _parse_ccm_config(char *entry, char **ccm_partition)
 			token[token_sz - 1] = '\0';
 		}
 		if (strlen(token) > 0) {
-			ccm_partition[i] =
-				xmalloc((token_sz + 1) * sizeof(char));
+			ccm_partition[i] = xmalloc(token_sz + 1);
 			strcpy(ccm_partition[i], token);
 			i++;
 		}

@@ -305,7 +305,7 @@ _remove_path_slashes(char *p)
 	if (p == NULL)
 		return NULL;
 
-	buf = xmalloc((strlen(p) + 1) * sizeof(char));
+	buf = xmalloc(strlen(p) + 1);
 	t = false;
 	i = 0;
 

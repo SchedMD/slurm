@@ -924,7 +924,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		debug("got pe_rm_connect called");
 		launch_common_set_stdio_fds(job, &cio_fds, &opt);
 	} else {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_connect: unknown caller");
 		error("%s", *error_msg);
@@ -939,7 +939,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		if (!name) {
 			if (hl)
 				hostlist_destroy(hl);
-			*error_msg = malloc(sizeof(char) * err_msg_len);
+			*error_msg = malloc(err_msg_len);
 			snprintf(*error_msg, err_msg_len,
 				 "pe_rm_connect: unknown host for ip %s",
 				 connect_param->machine_name[i]);
@@ -959,7 +959,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 	}
 
 	if (!hl) {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_connect: machine_count 0? it came in as "
 			 "%d but we didn't get a hostlist",
@@ -992,7 +992,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 						node_cnt, &task_num)
 	    != SLURM_SUCCESS) {
 		xfree(total_node_list);
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_connect: problem with hack: %s",
 			 slurm_strerror(errno));
@@ -1009,7 +1009,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 
 	if (launch_g_step_launch(job, &cio_fds, &global_rc,
 				 &step_callbacks, &opt)) {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_connect: problem with launch: %s",
 			 slurm_strerror(errno));
@@ -1021,7 +1021,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 				SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
 				&fd_cnt, &ctx_sockfds);
 	if (ctx_sockfds == NULL) {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_connect: Unable to get pmd IO socket array %d",
 			 rc);
@@ -1029,7 +1029,7 @@ extern int pe_rm_connect(rmhandle_t resource_mgr,
 		return -1;
 	}
 	if (fd_cnt != task_num) {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_connect: looking for %d sockets but "
 			 "got back %d",
@@ -1178,7 +1178,7 @@ extern int pe_rm_get_event(rmhandle_t resource_mgr, job_event_t **job_event,
 		debug("pe_rm_get_event called");
 		return 0;
 	} else if (pm_type != PM_POE) {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_get_event: unknown caller");
 		error("%s", *error_msg);
@@ -1252,7 +1252,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 		debug("pe_rm_get_job_info called");
 		return 0;
 	} else if (pm_type != PM_POE) {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_get_job_info: unknown caller");
 		error("%s", *error_msg);
@@ -1282,7 +1282,7 @@ extern int pe_rm_get_job_info(rmhandle_t resource_mgr, job_info_t **job_info,
 
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
 	if (!resp) {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_get_job_info: no step response in step ctx");
 		error("%s", *error_msg);
@@ -1726,7 +1726,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		if ((srun_debug = getenv("SLURM_STEP_ID")))
 			step_id = atoi(srun_debug);
 		if (job_id == -1 || step_id == -1) {
-			*error_msg = malloc(sizeof(char) * err_msg_len);
+			*error_msg = malloc(err_msg_len);
 			snprintf(*error_msg, err_msg_len,
 				 "pe_rm_init: SLURM_JOB_ID or SLURM_STEP_ID "
 				 "not found %d.%d", job_id, step_id);
@@ -1736,7 +1736,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 
 		job = _read_job_srun_agent();
 		if (!job) {
-			*error_msg = malloc(sizeof(char) * err_msg_len);
+			*error_msg = malloc(err_msg_len);
 			snprintf(*error_msg, err_msg_len,
 				 "pe_rm_init: no job created");
 			error("%s", *error_msg);
@@ -1753,7 +1753,7 @@ extern int pe_rm_init(int *rmapi_version, rmhandle_t *resource_mgr, char *rm_id,
 		 * PMD to fanout child processes on other nodes */
 		_spawn_fe_agent();
 	} else {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_init: unknown caller");
 		error("%s", *error_msg);
@@ -1840,7 +1840,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 		if (slurm_cmd_fname)
 			poe_cmd_fname = getenv("MP_CMDFILE");
 	} else {
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_submit_job: unknown caller");
 		error("%s", *error_msg);
@@ -1850,7 +1850,7 @@ int pe_rm_submit_job(rmhandle_t resource_mgr, job_command_t job_cmd,
 	debug("got pe_rm_submit_job called %d", job_cmd.job_format);
 	if (job_cmd.job_format != 1) {
 		/* We don't handle files */
-		*error_msg = malloc(sizeof(char) * err_msg_len);
+		*error_msg = malloc(err_msg_len);
 		snprintf(*error_msg, err_msg_len,
 			 "pe_rm_submit_job: Slurm doesn't handle files "
 			 "to submit_job");

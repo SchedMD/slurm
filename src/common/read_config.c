@@ -480,7 +480,7 @@ static void _set_node_prefix(const char *nodenames)
 	if (nodenames[i] == '\0')
 		conf_ptr->node_prefix = xstrdup(nodenames);
 	else {
-		tmp = xmalloc(sizeof(char)*i+1);
+		tmp = xmalloc(i + 1);
 		snprintf(tmp, i, "%s", nodenames);
 		conf_ptr->node_prefix = tmp;
 		tmp = NULL;

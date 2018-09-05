@@ -63,7 +63,7 @@ _print_data(char *data, int datalen)
 	size_t len = 0;
 	int i;
 
-	for (i = 0; i < datalen; i += sizeof(char))
+	for (i = 0; i < datalen; i++)
 		len += sprintf(buf+len, "%02x", data[i]);
 
 	info("data: %s", buf);

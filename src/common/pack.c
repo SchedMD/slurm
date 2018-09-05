@@ -220,7 +220,7 @@ Buf init_buf(uint32_t size)
 	my_buf->magic = BUF_MAGIC;
 	my_buf->size = size;
 	my_buf->processed = 0;
-	my_buf->head = xmalloc(sizeof(char)*size);
+	my_buf->head = xmalloc(size);
 	my_buf->mmaped = false;
 	return my_buf;
 }

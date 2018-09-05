@@ -915,7 +915,7 @@ int _file_read_uint64s(char* file_path, uint64_t** pvalues, int* pnb)
 	}
 
 	/* read file contents */
-	buf = (char*) xmalloc((fsize+1)*sizeof(char));
+	buf = xmalloc(fsize + 1);
 	do {
 		rc = read(fd, buf, fsize);
 	} while (rc < 0 && errno == EINTR);
@@ -1037,7 +1037,7 @@ int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb)
 	}
 
 	/* read file contents */
-	buf = (char*) xmalloc((fsize+1)*sizeof(char));
+	buf = xmalloc(fsize + 1);
 	do {
 		rc = read(fd, buf, fsize);
 	} while (rc < 0 && errno == EINTR);
@@ -1139,7 +1139,7 @@ int _file_read_content(char* file_path, char** content, size_t *csize)
 	}
 
 	/* read file contents */
-	buf = xmalloc((fsize+1)*sizeof(char));
+	buf = xmalloc(fsize + 1);
 	buf[fsize]='\0';
 	do {
 		rc = read(fd, buf, fsize);

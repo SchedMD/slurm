@@ -1221,7 +1221,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 	}
 
 	/* Buffer needs one extra byte for trailing '\0' */
-	line = xmalloc(sizeof(char) * stat_buf.st_size + 1);
+	line = xmalloc(stat_buf.st_size + 1);
 	line_number = 1;
 	while ((merged_lines = _get_next_line(
 			line, stat_buf.st_size + 1, hash_val, f)) > 0) {

@@ -52,7 +52,7 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 
 		if (strchr(resv->assocs, '-')) {
 			int i = 0, i2 = 0;
-			char * assocs = xmalloc(sizeof(char) * len);
+			char *assocs = xmalloc(len);
 			/* We will remove the negative's here.  This
 			   is here so if we only have negatives in the
 			   reservation we don't want to keep track of

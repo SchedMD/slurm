@@ -728,7 +728,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->ctime  = time(NULL);
 	cred->siglen = SLURM_IO_KEY_SIZE;
 
-	cred->signature = xmalloc(cred->siglen * sizeof(char));
+	cred->signature = xmalloc(cred->siglen);
 
 	if ((fd = open("/dev/urandom", O_RDONLY)) >= 0) {
 		if (read(fd, cred->signature, cred->siglen-1) == -1)
@@ -1583,7 +1583,7 @@ _print_data(char *data, int datalen)
 	size_t len = 0;
 	int i;
 
-	for (i = 0; i < datalen; i += sizeof(char))
+	for (i = 0; i < datalen; i++)
 		len += sprintf(buf+len, "%02x", data[i]);
 }
 #endif

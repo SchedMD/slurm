@@ -600,7 +600,7 @@ static hostname_t hostname_create_dims(const char *hostname, int dims)
 	hn->num = strtoul(hn->suffix, &p, hostlist_base);
 
 	if (*p == '\0') {
-		if (!(hn->prefix = malloc((idx + 2) * sizeof(char)))) {
+		if (!(hn->prefix = malloc((idx + 2)))) {
 			hostname_destroy(hn);
 			out_of_memory("hostname prefix create");
 		}
@@ -896,7 +896,7 @@ static char *hostrange_pop(hostrange_t hr)
 			out_of_memory("hostrange pop");
 	} else if (hostrange_count(hr) > 0) {
 		size = strlen(hr->prefix) + hr->width + 16;
-		if (!(host = (char *) malloc(size * sizeof(char))))
+		if (!(host = malloc(size)))
 			out_of_memory("hostrange pop");
 		if ((dims > 1) && (hr->width == dims)) {
 			int len = 0;
@@ -938,7 +938,7 @@ static char *hostrange_shift(hostrange_t hr, int dims)
 			out_of_memory("hostrange shift");
 	} else if (hostrange_count(hr) > 0) {
 		size = strlen(hr->prefix) + hr->width + 16;
-		if (!(host = (char *) malloc(size * sizeof(char))))
+		if (!(host = malloc(size)))
 			out_of_memory("hostrange shift");
 		if ((dims > 1) && (hr->width == dims)) {
 			int len = 0;
@@ -1520,7 +1520,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op,
 		 * use the previous prefix and fmt
 		 */
 		if ((pos > 0) || (prefix[0] == '\0')) {
-			memcpy(prefix, tok, (size_t) pos * sizeof(char));
+			memcpy(prefix, tok, (size_t) pos);
 			prefix[pos] = '\0';
 
 			/* push pointer past prefix */
