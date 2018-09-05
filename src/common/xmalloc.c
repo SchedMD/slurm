@@ -43,6 +43,7 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,15 +72,30 @@ static void malloc_assert_failed(char *, const char *, int,
  *   clear (IN) initialize to zero
  *   RETURN	pointer to allocate heap space
  */
-void *slurm_xmalloc(size_t size, bool clear,
+void *slurm_xcalloc(size_t count, size_t size, bool clear,
 		    const char *file, int line, const char *func)
 {
-	void *new;
+	size_t total_size;
 	size_t *p;
-	size_t total_size = size + 2 * sizeof(size_t);
 
-	if (size <= 0)
+	if (!size || !count)
 		return NULL;
+
+	/*
+	 * Detect overflow of the size calculation and abort().
+	 * Ensure there is sufficient space for the two header words used to
+	 * store the magic value and the allocation length by dividing by two,
+	 * and because on 32-bit systems, if a 2GB allocation request isn't
+	 * sufficient (which would attempt to allocate 2GB + 8Bytes),
+	 * then we're going to run into other problems anyways.
+	 * (And on 64-bit, if a 2EB + 16Bytes request isn't sufficient...)
+	 */
+	if ((count != 1) && (count > SIZE_MAX / size / 4)) {
+		log_oom(file, line, func);
+		abort();
+	}
+
+	total_size = count * size + 2 * sizeof(size_t);
 
 	if (clear)
 		p = calloc(1, total_size);
@@ -93,8 +109,7 @@ void *slurm_xmalloc(size_t size, bool clear,
 	p[0] = XMALLOC_MAGIC;	/* add "secret" magic cookie */
 	p[1] = size;		/* store size in buffer */
 
-	new = &p[2];
-	return new;
+	return &p[2];
 }
 
 /*
