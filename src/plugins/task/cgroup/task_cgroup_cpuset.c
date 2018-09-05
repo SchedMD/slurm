@@ -1066,7 +1066,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	slurm_cgpath = task_cgroup_create_slurm_cg(&cpuset_ns);
 	if (slurm_cgpath == NULL)
 		return SLURM_ERROR;
-//xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);		// BAD HERE
+
 	/* check that this cgroup has cpus allowed or initialize them */
 	if (xcgroup_load(&cpuset_ns,&slurm_cg,slurm_cgpath) != XCGROUP_SUCCESS){
 		error("task/cgroup: unable to load slurm cpuset xcgroup");
@@ -1181,7 +1181,7 @@ again:
 	      job_alloc_cores);
 	debug("task/cgroup: step physical cores are '%s'",
 	      step_alloc_cores);
-//xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);		// BAD HERE
+
 	/*
 	 * create user cgroup in the cpuset ns (it could already exist)
 	 */
@@ -1215,7 +1215,7 @@ again:
 	}
 	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cores);
 	xfree(cpus);
-//xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);		// BAD HERE
+
 	/*
 	 * create job cgroup in the cpuset ns (it could already exist)
 	 */
@@ -1278,7 +1278,6 @@ again:
 
 	/* attach the slurmstepd to the step cpuset cgroup */
 	pid_t pid = getpid();
-xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);			// FAILS BINDING HERE
 	rc = xcgroup_add_pids(&step_cpuset_cg,&pid,1);
 	if (rc != XCGROUP_SUCCESS) {
 		error("task/cgroup: unable to add slurmstepd to cpuset cg '%s'",
@@ -1286,7 +1285,7 @@ xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);			// FAILS BINDING HERE
 		fstatus = SLURM_ERROR;
 	} else
 		fstatus = SLURM_SUCCESS;
-//xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);		// GOOD BINDING HERE
+
 	/* validate the requested cpu frequency and set it */
 	cpu_freq_cgroup_validate(job, step_alloc_cores);
 error:
