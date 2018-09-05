@@ -107,7 +107,7 @@ static void *_heartbeat_thread(void *no_data)
 			goto delay;
 		}
 
-		nl = HTON_uint64((uint64_t) now);
+		nl = HTON_uint64(((uint64_t) now));
 		if (write(fd, &nl, sizeof(uint64_t)) != sizeof(uint64_t)) {
 			error("%s: heartbeat write failed to %s.",
 			      __func__, new_file);
@@ -116,7 +116,7 @@ static void *_heartbeat_thread(void *no_data)
 			goto delay;
 		}
 
-		nl = HTON_uint64((uint64_t) backup_inx);
+		nl = HTON_uint64(((uint64_t) backup_inx));
 		if (write(fd, &nl, sizeof(uint64_t)) != sizeof(uint64_t)) {
 			error("%s: heartbeat write failed to %s.",
 			      __func__, new_file);
