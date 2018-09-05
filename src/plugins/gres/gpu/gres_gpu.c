@@ -229,7 +229,7 @@ static void _parse_gpu_freq(char *gpu_freq, int *gpu_freq_code,
 		*mem_freq_value = job_mem_freq_value;
 	else if (def_mem_freq_code)
 		*mem_freq_code = def_mem_freq_code;
-	else if (def_gpu_freq_value)
+	else if (def_mem_freq_value)
 		*mem_freq_value = def_mem_freq_value;
 
 	if (job_voltage_code)
