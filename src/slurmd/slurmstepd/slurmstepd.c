@@ -636,9 +636,6 @@ _init_from_slurmd(int sock, char **argv,
 						 conf->spooldir,
 						 jobid, stepid);
 
-	/* create hwloc xml file here to avoid threading issues late */
-	xcpuinfo_hwloc_topo_load(NULL, conf->hwloc_xml, false);
-
 	/*
 	 * Swap the field to the srun client version, which will eventually
 	 * end up stored as protocol_version in srun_info_t. It's a hack to

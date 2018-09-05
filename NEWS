@@ -24,6 +24,11 @@ documents those changes that are of interest to users and administrators.
     backup controllers are unavailable.
  -- Add missing user read association lock in burst_buffer/cray during init().
  -- Fix incorrect spacing for PartitionName lines in 'scontrol write config'.
+ -- Fix creation of step hwloc xml file for after cpuset cgroup has been
+    created.
+ -- Add userspace as a valid default governor.
+ -- Add timers to group_cache_lookup so if going slow advise
+    LaunchParameters=send_gids.
 
 * Changes in Slurm 18.08.0
 ==========================

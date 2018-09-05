@@ -52,6 +52,7 @@
 #include "src/common/group_cache.h"
 #include "src/common/list.h"
 #include "src/common/read_config.h"
+#include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -121,6 +122,8 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 {
 	gids_cache_t *entry;
 	int ngids; /* need a copy to safely return outside the lock */
+	DEF_TIMERS;
+	START_TIMER;
 
 	slurm_mutex_lock(&gids_mutex);
 	if (!gids_cache_list)
@@ -175,6 +178,9 @@ out:
 	*gids = copy_gids(entry->ngids, entry->gids);
 
 	slurm_mutex_unlock(&gids_mutex);
+
+	END_TIMER3("group_cache_lookup(), you might consider enabling LaunchParameters=send_gids",
+		   3000000);
 
 	return ngids;
 }

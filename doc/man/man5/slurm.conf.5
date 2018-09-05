@@ -448,9 +448,10 @@ used for all other system types
 
 .TP
 \fBCpuFreqDef\fR
-Default CPU frequency governor to use when running a job step if it
-has not been explicitly set with the \-\-cpu\-freq option.
-Acceptable values at present include:
+Default CPU frequency value or frequency governor to use when running a
+job step if it has not been explicitly set with the \-\-cpu\-freq option.
+Acceptable values at present include a numeric value (frequency in kilohertz)
+or one of the following governors:
 .RS
 .TP 14
 \fBConservative\fR
@@ -479,18 +480,18 @@ Acceptable values at present include:
 attempts to use the Conservative CPU governor
 .TP
 \fBOnDemand\fR
-attempts to use the OnDemand CPU governor (the default value)
+attempts to use the OnDemand CPU governor (a default value)
 .TP
 \fBPerformance\fR
-attempts to use the Performance CPU governor (the default value)
+attempts to use the Performance CPU governor (a default value)
 .TP
 \fBPowerSave\fR
 attempts to use the PowerSave CPU governor
 .TP
 \fBUserSpace\fR
-attempts to use the UserSpace CPU governor
+attempts to use the UserSpace CPU governor (a default value)
 .RE
-The default is OnDemand, Performance.
+The default is OnDemand, Performance and UserSpace.
 .TP
 \fBCryptoType\fR
 The cryptographic signature tool to be used in the creation of
