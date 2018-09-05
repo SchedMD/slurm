@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
     available by parsing the gres.conf file.
  -- Add configuration parameter "GpuFreqDef" to control a job's default GPU
     frequency.
+ -- Make LaunchParameters=send_gids the default introducing the reverse option
+    "no_send_gids to go back to the original behavior.
 
 * Changes in Slurm 18.08.1
 ==========================
