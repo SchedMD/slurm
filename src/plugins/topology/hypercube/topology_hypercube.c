@@ -1359,7 +1359,8 @@ static char *_create_connection_str(switch_data *switch_ptr)
 		xstrfmtcat(str, "%s-%d,", switch_ptr->sw_conns[i]->name,
 			   switch_ptr->sw_conn_speed[i]);
 	}
-	str[strlen(str)-1] = '\0';
+	if (str)
+		str[strlen(str)-1] = '\0';
 	return str;
 }
 
@@ -1372,7 +1373,8 @@ static char *_create_conn_node_str(switch_data *switch_ptr)
 	for (i = 0; i < switch_ptr->node_conn_cnt; i++) {
 		xstrfmtcat(str, "%s,", switch_ptr->node_conns[i]->name);
 	}
-	str[strlen(str)-1] = '\0';
+	if (str)
+		str[strlen(str)-1] = '\0';
 	return str;
 }
 
