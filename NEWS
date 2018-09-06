@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Add timers to group_cache_lookup so if going slow advise
     LaunchParameters=send_gids.
  -- Fix SLURM_STEP_GRES=none to work correctly.
+ -- Fix potential memory leak when a failure happens unpacking a ctld_multi_msg.
 
 * Changes in Slurm 18.08.0
 ==========================

@@ -15193,6 +15193,7 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 				goto unpack_error;
 			/* Move "data" into "req_buf", NOT a memory leak */
 			req_buf = create_buf(data, buf_size);
+			data = NULL; /* just to be safe */
 			list_append(object_ptr->my_list, req_buf);
 		}
 	} else {
@@ -15203,6 +15204,7 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(data);
 	slurm_free_ctld_multi_msg(object_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
