@@ -882,7 +882,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	p = xmalloc(sizeof(gres_slurmd_conf_t));
 	if (!value) {
 		if (!s_p_get_string(&p->name, "Name", tbl)) {
-			error("Invalid gres data, no type name (%s)", line);
+			error("Invalid GRES data, no type name (%s)", line);
 			xfree(p);
 			s_p_hashtbl_destroy(tbl);
 			return 0;
@@ -895,20 +895,28 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&p->cpus, "Cores", tbl) ||
 	    s_p_get_string(&p->cpus, "CPUs", tbl)) {
 		char *local_cpus = NULL;
-		p->cpus_bitmap = bit_alloc(gres_cpu_cnt);
 		if (xcpuinfo_ops.xcpuinfo_abs_to_mac) {
 			i = (xcpuinfo_ops.xcpuinfo_abs_to_mac)
 				(p->cpus, &local_cpus);
+			/*
+			 * Only executed by slurmstepd and we don't want
+			 * fatal here. Ignore bad Core/CPU configuration.
+			 */
 			if (i != SLURM_SUCCESS) {
-				fatal("Invalid gres data for %s, Cores=%s",
+				error("Invalid GRES data for %s, Cores=%s",
 				      p->name, p->cpus);
 			}
-		} else
+		} else {
 			local_cpus = xstrdup(p->cpus);
-		if ((bit_size(p->cpus_bitmap) == 0) ||
-		    bit_unfmt(p->cpus_bitmap, local_cpus) != 0) {
-			fatal("Invalid gres data for %s, Cores=%s (only %u Cores are available)",
-			      p->name, p->cpus, gres_cpu_cnt);
+			i = SLURM_SUCCESS;
+		}
+		if (i == SLURM_SUCCESS) {
+			p->cpus_bitmap = bit_alloc(gres_cpu_cnt);
+			if ((bit_size(p->cpus_bitmap) == 0) ||
+			    bit_unfmt(p->cpus_bitmap, local_cpus) != 0) {
+				fatal("Invalid GRES data for %s, Cores=%s (only %u Cores are available)",
+				      p->name, p->cpus, gres_cpu_cnt);
+			}
 		}
 		xfree(local_cpus);
 	}
