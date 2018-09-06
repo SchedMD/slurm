@@ -2302,10 +2302,13 @@ static void _set_def_cpu_bind(struct job_record *job_ptr)
 static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
 				   struct job_record  *job_ptr)
 {
-	if (step_specs->tres_per_step	||
-	    step_specs->tres_per_node	||
-	    step_specs->tres_per_socket	||
-	    step_specs->tres_per_task)
+	if (!xstrcasecmp(step_specs->tres_per_node, "NONE")) {
+		xfree(step_specs->tres_per_node);
+		return;
+	} else if (step_specs->tres_per_step	||
+		   step_specs->tres_per_node	||
+		   step_specs->tres_per_socket	||
+		   step_specs->tres_per_task)
 		return;
 	step_specs->tres_per_step	= xstrdup(job_ptr->tres_per_job);
 	step_specs->tres_per_node	= xstrdup(job_ptr->tres_per_node);
@@ -2430,7 +2433,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    tres_bind_verify_cmdline(step_specs->tres_bind) ||
 	    tres_freq_verify_cmdline(step_specs->tres_freq) ||
 	    !valid_tres_cnt(step_specs->tres_per_step)	||
-	    !valid_tres_cnt(step_specs->tres_per_node)	||
+	    (!valid_tres_cnt(step_specs->tres_per_node)	&&
+	     xstrcasecmp(step_specs->tres_per_node, "NONE")) ||
 	    !valid_tres_cnt(step_specs->tres_per_socket)||
 	    !valid_tres_cnt(step_specs->tres_per_task))
 		return ESLURM_INVALID_TRES;
