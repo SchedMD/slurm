@@ -284,11 +284,10 @@ int main(int argc, char **argv)
 	 */
 	_init_config();
 	_parse_commandline(argc, argv);
-	slurm_conf_init(NULL);
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	sched_log_init(argv[0], sched_log_opts, LOG_DAEMON, NULL);
 	slurmctld_pid = getpid();
-	slurm_conf_reinit(slurm_conf_filename);
+	slurm_conf_init(slurm_conf_filename);
 
 	update_logging();
 
