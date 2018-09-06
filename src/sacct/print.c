@@ -1862,9 +1862,16 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV:
+			/*
+			 * If eligible is 0 or -1, then the job was never
+			 * eligible to run, so reserved time is 0.
+			 */
 			switch(type) {
 			case JOB:
-				if (job->start)
+				if (!job->eligible ||
+				    (job->eligible == INFINITE))
+					tmp_int = 0;
+				else if (job->start)
 					tmp_int = job->start - job->eligible;
 				else
 					tmp_int = time(NULL) - job->eligible;
@@ -1883,9 +1890,16 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_CPU:
+			/*
+			 * If eligible is 0 or -1, then the job was never
+			 * eligible to run, so reserved time is 0.
+			 */
 			switch(type) {
 			case JOB:
-				if (job->start)
+				if (!job->eligible ||
+				    (job->eligible == INFINITE))
+					tmp_int = 0;
+				else if (job->start)
 					tmp_int = (job->start - job->eligible)
 						* job->req_cpus;
 				else
@@ -1906,9 +1920,16 @@ extern void print_fields(type_t type, void *object)
 					     (curr_inx == field_count));
 			break;
 		case PRINT_RESV_CPU_RAW:
+			/*
+			 * If eligible is 0 or -1, then the job was never
+			 * eligible to run, so reserved time is 0.
+			 */
 			switch(type) {
 			case JOB:
-				if (job->start)
+				if (!job->eligible ||
+				    (job->eligible == INFINITE))
+					tmp_int = 0;
+				else if (job->start)
 					tmp_int = (job->start - job->eligible)
 						* job->req_cpus;
 				else
