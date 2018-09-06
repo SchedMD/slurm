@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential memory leak when a failure happens unpacking a ctld_multi_msg.
  -- Fix potential double free when a faulure happens when unpacking a
     node_registration_status_msg.
+ -- Fix sacctmgr show runaways.
 
 * Changes in Slurm 18.08.0
 ==========================
