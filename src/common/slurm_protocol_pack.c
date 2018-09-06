@@ -9311,8 +9311,8 @@ _pack_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg,
 
 	xassert(msg != NULL);
 	packstr(msg->node_name,   buffer);
-	pack32((uint32_t)msg->return_code,  buffer);
-	pack32((uint32_t)msg->ntasks,       buffer);
+	pack32(msg->return_code, buffer);
+	pack32(msg->ntasks, buffer);
 	pack32_array(msg->gtids,      msg->ntasks, buffer);
 	pack32_array(msg->local_pids, msg->ntasks, buffer);
 	for (i = 0; i < msg->ntasks; i++) {
