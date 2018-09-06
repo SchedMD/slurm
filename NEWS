@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
     LaunchParameters=send_gids.
  -- Fix SLURM_STEP_GRES=none to work correctly.
  -- Fix potential memory leak when a failure happens unpacking a ctld_multi_msg.
+ -- Fix potential double free when a faulure happens when unpacking a
+    node_registration_status_msg.
 
 * Changes in Slurm 18.08.0
 ==========================

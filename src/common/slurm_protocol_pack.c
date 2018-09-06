@@ -3500,6 +3500,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 				goto unpack_error;
 			node_reg_ptr->gres_info = create_buf(gres_info,
 							     gres_info_size);
+			gres_info = NULL;
 		}
 		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
 					      protocol_version, 1)
