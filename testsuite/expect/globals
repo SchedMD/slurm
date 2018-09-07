@@ -2647,6 +2647,10 @@ proc check_accounting_admin_level { } {
 
 	log_user 0
 
+	if { [test_super_user] } {
+		return "Administrator"
+	}
+
 	set user_name [get_my_user_name]
 
 	if { ![string length $user_name] } {
