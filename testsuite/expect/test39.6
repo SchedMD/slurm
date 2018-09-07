@@ -37,7 +37,7 @@ set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 
 proc get_node_config {} {
-	global cpus_per_socket sockets_per_node
+	global bin_rm cpus_per_socket sockets_per_node
 	global exit_code file_in max_job_delay number srun scontrol
 
 	set cpus_tot 1
@@ -66,6 +66,7 @@ proc get_node_config {} {
 		}
 	}
 	log_user 1
+	exec $bin_rm -f $file_in
 	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
 }
 
