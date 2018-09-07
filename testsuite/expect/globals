@@ -4276,10 +4276,11 @@ proc get_craynetwork_count {} {
 #
 ################################################################
 proc get_gpu_count { node_count } {
-	global number sinfo alpha_numeric_colon
+	global number sinfo
 	set fini 0
 	set node_inx 0
 	set def_part [default_partition]
+	set alpha_numeric_colon_paren "\[a-zA-Z0-9_\\(\\),\:\-\]+"
 
 	if {$node_count <= 0} {
 		return 0
@@ -4288,14 +4289,15 @@ proc get_gpu_count { node_count } {
 	log_user 0
 	spawn $sinfo -N -p$def_part -oGRES=%G -h
 	expect {
-		-re "GRES=($alpha_numeric_colon)" {
+		-re "GRES=($alpha_numeric_colon_paren)" {
 			set count 0
 			set parts [split $expect_out(1,string) ",/"]
 			while 1 {
 				set gpu_found [lsearch $parts "gpu*"]
 				if { $gpu_found == -1 } break
 
-				set parts2 [split [lindex $parts $gpu_found] ":/"]
+				set parts2 [split [lindex $parts $gpu_found] ":(/"]
+
 				set col [lsearch -regexp $parts2 ^$number$]
 				if { $col == -1 } {
 					incr count
