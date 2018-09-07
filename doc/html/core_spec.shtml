@@ -52,15 +52,17 @@ numbered sockets.
 If additional cores are required, they well come from the next highest numbered
 cores on each socket.
 By way of example, consider a node with two sockets, each with four cores.
-The specialized cores will be selected in the following order:<br>
-socket: 1 core: 3<br>
-socket: 0 core: 3<br>
-socket: 1 core: 2<br>
-socket: 0 core: 2<br>
-socket: 1 core: 1<br>
-socket: 0 core: 1<br>
-socket: 1 core: 0<br>
-socket: 0 core: 0</p>
+The specialized cores will be selected in the following order:</p>
+<ol>
+<li>socket: 1 core: 3</li>
+<li>socket: 0 core: 3</li>
+<li>socket: 1 core: 2</li>
+<li>socket: 0 core: 2</li>
+<li>socket: 1 core: 1</li>
+<li>socket: 0 core: 1</li>
+<li>socket: 1 core: 0</li>
+<li>socket: 0 core: 0</li>
+</ol>
 
 <p>Slurm can be configured to specialize the last, rather than the first cores
 by configuring SchedulerParameters=spec_cores_first. In that case,
@@ -102,6 +104,10 @@ If the core count is not configured and the CPUs value is configured to the
 count of hyperthreads, then hyperthreads rather than cores will be reserved for
 system use.</p>
 
-<p style="text-align:center;">Last modified 29 December 2016</p>
+<p>If users are to be granted the right to control the number of specialized
+cores for their job, the configuration parameter <i>AllowSpecResourceUsage</i>
+must be set to a value of <i>1</i>.</p>
+
+<p style="text-align:center;">Last modified 6 September 2018</p>
 
 <!--#include virtual="footer.txt"-->
