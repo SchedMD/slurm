@@ -88,6 +88,11 @@ send_user "\nGPUs per node count is $gpu_cnt\n"
 send_user "Sockets per node is $sockets_per_node\n"
 send_user "CPUs per socket is $cpus_per_socket\n\n"
 
+set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
+if {$gpu_cnt > $cpus_per_node} {
+	set gpu_cnt $cpus_per_node
+}
+
 set cpus_per_gpu 1
 set gpu_bind "closest"
 set gpu_freq "medium"

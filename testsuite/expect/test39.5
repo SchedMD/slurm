@@ -144,6 +144,10 @@ get_node_config
 send_user "\nGPU count is $gpu_cnt\n"
 send_user "Sockets per node is $sockets_per_node\n"
 send_user "CPUs per socket is $cpus_per_socket\n"
+set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
+if {$gpu_cnt > $cpus_per_node} {
+	set gpu_cnt $cpus_per_node
+}
 
 set tot_gpus $gpu_cnt
 if {$nb_nodes > 1} {

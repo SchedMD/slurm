@@ -110,6 +110,11 @@ send_user "Sockets per node is $sockets_per_node\n"
 send_user "CPUs per socket is $cpus_per_socket\n"
 send_user "craynetwork count is $craynetwork_count\n"
 
+set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
+if {$gpu_cnt > $cpus_per_node} {
+	set gpu_cnt $cpus_per_node
+}
+
 set tot_gpus $gpu_cnt
 if {$nb_nodes > 1} {
 	incr tot_gpus $gpu_cnt
