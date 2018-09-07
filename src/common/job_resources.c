@@ -422,6 +422,7 @@ extern void free_job_resources(job_resources_t **job_resrcs_pptr)
 		xfree(job_resrcs_ptr->nodes);
 		xfree(job_resrcs_ptr->sock_core_rep_count);
 		xfree(job_resrcs_ptr->sockets_per_node);
+		xfree(job_resrcs_ptr->tasks_per_node);
 		xfree(job_resrcs_ptr);
 		*job_resrcs_pptr = NULL;
 	}

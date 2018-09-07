@@ -183,6 +183,7 @@ static gres_node_state_t *
 		_build_gres_node_state(void);
 static uint32_t	_build_id(char *name);
 static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
+					    uint8_t overcommit,
 					    gres_mc_data_t *tres_mc_ptr,
 					    struct node_record *node_table_ptr);
 static bitstr_t *_core_bitmap_rebuild(bitstr_t *old_core_bitmap, int new_size);
@@ -6609,6 +6610,7 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 
 /* Build array to identify task count for each node-socket pair */
 static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
+					     uint8_t overcommit,
 					     gres_mc_data_t *tres_mc_ptr,
 					     struct node_record *node_table_ptr)
 {
@@ -6634,8 +6636,7 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 			continue;
 		if (get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 					  &cores_per_socket_cnt)) {
-			error("cons_tres: %s: failed to get socket/core count",
-			      __func__);
+			error("%s: failed to get socket/core count", __func__);
 			/* Set default of 1 task on socket 0 */
 			tasks_per_node_socket[i] = xmalloc(sizeof(uint32_t));
 			tasks_per_node_socket[i][0] = 1;
@@ -6645,16 +6646,24 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 		tasks_per_node_socket[i] = xmalloc(sizeof(uint32_t) * sock_cnt);
 		if (tres_mc_ptr->ntasks_per_node) {
 			task_per_node_limit = tres_mc_ptr->ntasks_per_node;
+		} else if (job_res->tasks_per_node &&
+			   job_res->tasks_per_node[job_node_inx]) {
+			task_per_node_limit =
+				job_res->tasks_per_node[job_node_inx];
 		} else {
 			/*
+			 * NOTE: We should never get here.
 			 * cpus_per_node reports CPUs actually used by this
 			 * job on this node. Divide by cpus_per_task to yield
-			 * valid task count on this node.
+			 * valid task count on this node. This can be bad on
+			 * cores with more than one thread and job fails to
+			 * use all threads.
 			 */
+			error("%s: tasks_per_node not set", __func__);
 			cpus_per_node = get_job_resources_cpus(job_res,
 							       job_node_inx);
 			if (cpus_per_node < 1) {
-				error("cons_tres: %s: failed to get cpus_per_node count",
+				error("%s: failed to get cpus_per_node count",
 				      __func__);
 				/* Set default of 1 task on socket 0 */
 				tasks_per_node_socket[i][0] = 1;
@@ -6734,8 +6743,24 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 			}
 		}
 	}
+	while ((rem_tasks > 0) && overcommit) {
+		for (i = i_first; (rem_tasks > 0) && (i <= i_last); i++) {
+			if (!bit_test(job_res->node_bitmap, i))
+				continue;
+			for (s = 0; (rem_tasks > 0) && (s < sock_cnt); s++) {
+				for (c = 0; c < cores_per_socket_cnt; c++) {
+					j = (s * cores_per_socket_cnt) + c;
+					if (!bit_test(job_res->core_bitmap, j))
+						continue;
+					tasks_per_node_socket[i][s]++;
+					rem_tasks--;
+					break;
+				}
+			}
+		}
+	}
 	if (rem_tasks > 0)	/* This should never happen */
-		error("%s: rem_tasks > 0 (%d)", __func__, rem_tasks);
+		error("%s: rem_tasks not zero (%d > 0)", __func__, rem_tasks);
 
 	return tasks_per_node_socket;
 }
@@ -6815,12 +6840,14 @@ static int _get_gres_node_cnt(gres_node_state_t *node_specs, int node_inx)
  * sock_gres_list IN - per-socket GRES details, one record per allocated node
  * job_id IN - job ID for logging
  * job_res IN - job resource allocation
+ * overcommit IN - job's ability to overcommit resources
  * tres_mc_ptr IN - job's multi-core options
  * node_table_ptr IN - slurmctld's node records
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					struct job_resources *job_res,
+					uint8_t overcommit,
 					gres_mc_data_t *tres_mc_ptr,
 					struct node_record *node_table_ptr)
 {
@@ -6857,6 +6884,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 			    !tasks_per_node_socket) {	/* Not built yet */
 				tasks_per_node_socket =
 					_build_tasks_per_node_sock(job_res,
+								overcommit,
 								tres_mc_ptr,
 								node_table_ptr);
 			}

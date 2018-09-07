@@ -1866,10 +1866,10 @@ alloc_job:
 			j++;
 		}
 		error_code = gres_plugin_job_core_filter4(sock_gres_list,
-							job_ptr->job_id,
-							job_res,
-							tres_mc_ptr,
-							node_record_table_ptr);
+						job_ptr->job_id, job_res,
+						job_ptr->details->overcommit,
+						tres_mc_ptr,
+						node_record_table_ptr);
 		xfree(node_gres_list);
 		xfree(sock_gres_list);
 	}

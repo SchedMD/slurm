@@ -585,7 +585,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	if (!job_res)
 		err_msg = "job_res is NULL";
 	else if (!job_res->cpus)
-		err_msg = "job_res->cpus is zero";
+		err_msg = "job_res->cpus is NULL";
 	else if (!job_res->nhosts)
 		err_msg = "job_res->nhosts is zero";
 	if (err_msg) {
@@ -597,6 +597,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	maxtasks = job_res->ncpus;
 	avail_cpus = job_res->cpus;
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
+	job_res->tasks_per_node = xmalloc(job_res->nhosts * sizeof(uint16_t));
 
 	/* ncpus is already set the number of tasks if overcommit is used */
 	if (!job_ptr->details->overcommit &&
@@ -622,7 +623,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		job_ptr->details->cpus_per_task = 1;
 	if (job_ptr->details->overcommit)
 		log_over_subscribe = false;
-	for (tid = 0, i = job_ptr->details->cpus_per_task ; (tid < maxtasks);
+	for (tid = 0, i = job_ptr->details->cpus_per_task; (tid < maxtasks);
 	     i += job_ptr->details->cpus_per_task) {	/* cycle counter */
 		bool space_remaining = false;
 		if (over_subscribe && log_over_subscribe) {
@@ -639,6 +640,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 			if ((i <= avail_cpus[n]) || over_subscribe) {
 				tid++;
+				job_res->tasks_per_node[n]++;
 				for (l = 0; l < job_ptr->details->cpus_per_task;
 				     l++) {
 					if (job_res->cpus[n] < avail_cpus[n])
@@ -653,6 +655,16 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		}
 	}
 	xfree(avail_cpus);
+
+	if (job_ptr->details->overcommit && job_ptr->tres_per_task)
+		maxtasks = job_ptr->details->num_tasks;
+	while (tid < maxtasks) {
+		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
+			tid++;
+			job_res->tasks_per_node[n]++;
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -685,6 +697,7 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
+	job_res->tasks_per_node = xmalloc(job_res->nhosts * sizeof(uint16_t));
 	if (job_ptr->details->overcommit)
 		log_over_subscribe = false;
 	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
@@ -705,6 +718,7 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 				if ((job_res->cpus[n] < avail_cpus[n]) ||
 				    over_subscribe) {
 					tid++;
+					job_res->tasks_per_node[n]++;
 					for (l = 0;
 					     l <job_ptr->details->cpus_per_task;
 					     l++) {
@@ -1005,6 +1019,129 @@ static void _gen_combs(int *comb_list, int n, int k)
 	xfree(comb);
 }
 
+/* CPUs already selected for jobs, just distribute the tasks */
+static int _set_task_dist(struct job_record *job_ptr)
+{
+	uint32_t n, i, tid = 0, maxtasks;
+	uint16_t *avail_cpus;
+	job_resources_t *job_res = job_ptr->job_resrcs;
+	bool log_over_subscribe = true;
+	char *err_msg = NULL;
+	int plane_size = 1;
+
+	if (!job_ptr->tres_per_task)	/* Task layout for GRES not required */
+		return SLURM_SUCCESS;
+
+	if (!job_res)
+		err_msg = "job_res is NULL";
+	else if (!job_res->cpus)
+		err_msg = "job_res->cpus is NULL";
+	else if (!job_res->nhosts)
+		err_msg = "job_res->nhosts is zero";
+	if (err_msg) {
+		error("%s: %s: Invalid allocation for %pJ: %s",
+		      plugin_type, __func__, job_ptr, err_msg);
+		return SLURM_ERROR;
+	}
+
+	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
+	    SLURM_DIST_PLANE) {
+		if (job_ptr->details->mc_ptr)
+			plane_size = job_ptr->details->mc_ptr->plane_size;
+		if (plane_size <= 0) {
+			error("%s: %s: invalid plane_size", plugin_type, __func__);
+			return SLURM_ERROR;
+		}
+	}
+
+	i = job_res->nhosts * sizeof(uint16_t);
+	avail_cpus = xmalloc(i);
+	memcpy(avail_cpus, job_res->cpus, i);
+	job_res->tasks_per_node = xmalloc(i);
+	maxtasks = job_res->ncpus;
+
+	/* ncpus is already set the number of tasks if overcommit is used */
+	if (!job_ptr->details->overcommit &&
+	    (job_ptr->details->cpus_per_task > 1)) {
+		if (job_ptr->details->ntasks_per_node == 0) {
+			maxtasks = maxtasks / job_ptr->details->cpus_per_task;
+		} else {
+			maxtasks = job_ptr->details->ntasks_per_node *
+				   job_res->nhosts;
+		}
+	}
+
+	/*
+	 * Safe guard if the user didn't specified a lower number of
+	 * cpus than cpus_per_task or didn't specify the number.
+	 */
+	if (!maxtasks) {
+		error("%s: %s: changing task count from 0 to 1 for %pJ",
+		      plugin_type, __func__, job_ptr);
+		maxtasks = 1;
+	}
+	if (job_ptr->details->cpus_per_task == 0)
+		job_ptr->details->cpus_per_task = 1;
+
+	/* First put one task on each node node */
+	for (n = 0; n < job_res->nhosts; n++) {
+		tid++;
+		job_res->tasks_per_node[n] = 1;
+		if (job_ptr->details->cpus_per_task > avail_cpus[n]) {
+			if (!job_ptr->details->overcommit) {
+				error("%s: %s: avail_cpus underflow on node %d for %pJ",
+				      plugin_type, __func__, n, job_ptr);
+			}
+			avail_cpus[n] = 0;
+		} else {
+			avail_cpus[n] -= job_ptr->details->cpus_per_task;
+		}
+	}
+
+	/* Distrubute remaining tasks per plane size */
+	while (maxtasks > tid) {
+		uint32_t last_tid = tid;
+		for (n = 0; n < job_res->nhosts; n++) {
+			if (job_ptr->details->cpus_per_task > avail_cpus[n])
+				continue;
+			i = MAX(job_res->tasks_per_node[n] % plane_size, 1);
+			i = MIN(i,
+				avail_cpus[n] /job_ptr->details->cpus_per_task);
+			i = MIN(i, maxtasks - tid);
+			job_res->tasks_per_node[n] += i;
+			tid += i;
+			avail_cpus[n] -= (i * job_ptr->details->cpus_per_task);
+		}
+		if (last_tid == tid)
+			break;
+	}
+
+	/* If more tasks than resources, distribute them evenly */
+	if (!job_ptr->details->overcommit)
+		log_over_subscribe = true;
+	while (maxtasks > tid) {
+		if (log_over_subscribe) {
+			/*
+			 * 'over_subscribe' is a relief valve that guards
+			 * against an infinite loop, and it *should* never
+			 * come into play because maxtasks should never be
+			 * greater than the total number of available CPUs
+			 */
+			error("%s: %s: oversubscribe for %pJ",
+			      plugin_type, __func__, job_ptr);
+			log_over_subscribe = false;
+		}
+		for (n = 0; n < job_res->nhosts; n++) {
+			i = MIN(plane_size, maxtasks - tid);
+			job_res->tasks_per_node[n] += i;
+			tid += i;
+		}
+	}
+	xfree(avail_cpus);
+
+	return SLURM_SUCCESS;
+}
+
 /* Enable detailed logging of cr_dist() node and core bitmaps */
 static inline void _log_select_maps(char *loc, bitstr_t *node_map,
 				    bitstr_t *core_map)
@@ -1065,7 +1202,13 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 	int error_code;
 
 	if (job_ptr->details->core_spec != NO_VAL16) {
-		/* The job has been allocated all non-specialized cores */
+		/*
+		 * The job has been allocated all non-specialized cores.
+		 * Just set the task distribution for tres_per_task support.
+		 */
+		error_code = _set_task_dist(job_ptr);
+		if (error_code != SLURM_SUCCESS)
+			return error_code;
 		return SLURM_SUCCESS;
 	}
 
@@ -1074,9 +1217,13 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		/*
 		 * The job has been allocated an EXCLUSIVE set of nodes,
 		 * so it gets all of the bits in the core_array except for
-		 * specialized cores
+		 * specialized cores. Set the task distribution for
+		 * tres_per_task support.
 		 */
 		_clear_spec_cores(job_ptr, core_array);
+		error_code = _set_task_dist(job_ptr);
+		if (error_code != SLURM_SUCCESS)
+			return error_code;
 		return SLURM_SUCCESS;
 	}
 
@@ -1086,19 +1233,13 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 	    SLURM_DIST_PLANE) {
 		/* Perform plane distribution on the job_resources_t struct */
 		error_code = _compute_plane_dist(job_ptr);
-		if (error_code != SLURM_SUCCESS) {
-			error("%s: %s: Error in _compute_plane_dist",
-			      plugin_type, __func__);
+		if (error_code != SLURM_SUCCESS)
 			return error_code;
-		}
 	} else {
 		/* Perform cyclic distribution on the job_resources_t struct */
 		error_code = _compute_c_b_task_dist(job_ptr);
-		if (error_code != SLURM_SUCCESS) {
-			error("%s: %s: Error in _compute_c_b_task_dist",
-			      plugin_type, __func__);
+		if (error_code != SLURM_SUCCESS)
 			return error_code;
-		}
 	}
 
 	/*
