@@ -876,6 +876,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	gres_slurmd_conf_t *p;
 	uint64_t tmp_uint64;
 	char *tmp_str, *last;
+	bool cores_flag = false, cpus_flag = false;
+	char *type_str;
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -893,8 +895,14 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	}
 
 	p->cpu_cnt = gres_cpu_cnt;
-	if (s_p_get_string(&p->cpus, "Cores", tbl) ||
-	    s_p_get_string(&p->cpus, "CPUs", tbl)) {
+	if (s_p_get_string(&p->cpus, "Cores", tbl)) {
+		cores_flag = true;
+		type_str = "Cores";
+	} else if (s_p_get_string(&p->cpus, "CPUs", tbl)) {
+		cpus_flag = true;
+		type_str = "CPUs";
+	}
+	if (cores_flag || cpus_flag) {
 		char *local_cpus = NULL;
 		if (xcpuinfo_ops.xcpuinfo_abs_to_mac) {
 			i = (xcpuinfo_ops.xcpuinfo_abs_to_mac)
@@ -904,8 +912,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			 * fatal here. Ignore bad Core/CPU configuration.
 			 */
 			if (i != SLURM_SUCCESS) {
-				error("Invalid GRES data for %s, Cores=%s",
-				      p->name, p->cpus);
+				error("Invalid GRES data for %s, %s=%s",
+				      p->name, type_str, p->cpus);
 			}
 		} else {
 			local_cpus = xstrdup(p->cpus);
@@ -915,8 +923,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			p->cpus_bitmap = bit_alloc(gres_cpu_cnt);
 			if ((bit_size(p->cpus_bitmap) == 0) ||
 			    bit_unfmt(p->cpus_bitmap, local_cpus) != 0) {
-				fatal("Invalid GRES data for %s, Cores=%s (only %u Cores are available)",
-				      p->name, p->cpus, gres_cpu_cnt);
+				fatal("Invalid GRES data for %s, %s=%s (only %u CPUs are available)",
+				      p->name, type_str, p->cpus, gres_cpu_cnt);
 			}
 		}
 		xfree(local_cpus);
@@ -940,7 +948,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
 		tmp_uint64 = strtoll(tmp_str, &last, 10);
 		if ((tmp_uint64 == LONG_MIN) || (tmp_uint64 == LONG_MAX)) {
-			fatal("Invalid gres record for %s, invalid count %s",
+			fatal("Invalid GRES record for %s, invalid count %s",
 			      p->name, tmp_str);
 		}
 		if ((last[0] == 'k') || (last[0] == 'K'))
@@ -955,15 +963,15 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			tmp_uint64 *= ((uint64_t)1024 * 1024 * 1024 * 1024 *
 				       1024);
 		else if (last[0] != '\0') {
-			fatal("Invalid gres record for %s, invalid count %s",
+			fatal("Invalid GRES record for %s, invalid count %s",
 			      p->name, tmp_str);
 		}
 		if (p->count && (p->count != tmp_uint64)) {
-			fatal("Invalid gres record for %s, count does not match File value",
+			fatal("Invalid GRES record for %s, count does not match File value",
 			      p->name);
 		}
 		if (tmp_uint64 >= NO_VAL64) {
-			fatal("Gres %s has invalid count value %"PRIu64,
+			fatal("GRES %s has invalid count value %"PRIu64,
 			      p->name, tmp_uint64);
 		}
 		p->count = tmp_uint64;
