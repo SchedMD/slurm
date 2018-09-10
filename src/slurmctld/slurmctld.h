@@ -798,7 +798,7 @@ struct job_record {
 					 * actual or expected */
 	char *state_desc;		/* optional details for state_reason */
 	uint32_t state_reason;		/* reason job still pending or failed
-					 * see slurm.h:enum job_wait_reason */
+					 * see slurm.h:enum job_state_reason */
 	uint32_t state_reason_prev;	/* Previous state_reason, needed to
 					 * return valid job information during
 					 * scheduling cycle (state_reason is
