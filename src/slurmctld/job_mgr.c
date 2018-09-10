@@ -1168,6 +1168,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->req_switch, buffer);
 	pack32(dump_job_ptr->wait4switch, buffer);
 	pack32(dump_job_ptr->profile, buffer);
+	pack32(dump_job_ptr->db_flags, buffer);
 
 	pack_time(dump_job_ptr->last_sched_eval, buffer);
 	pack_time(dump_job_ptr->preempt_time, buffer);
@@ -1294,7 +1295,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t next_step_id, total_cpus, total_nodes = 0, cpu_cnt;
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	uint32_t array_job_id = 0, req_switch = 0, wait4switch = 0;
-	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
+	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET, db_flags = 0;
 	uint32_t job_state, delay_boot = 0;
 	time_t start_time, end_time, end_time_exp, suspend_time,
 		pre_sus_time, tot_sus_time;
@@ -1413,6 +1414,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack32(&req_switch, buffer);
 		safe_unpack32(&wait4switch, buffer);
 		safe_unpack32(&profile, buffer);
+		safe_unpack32(&db_flags, buffer);
 
 		safe_unpack_time(&last_sched_eval, buffer);
 		safe_unpack_time(&preempt_time, buffer);
@@ -2241,6 +2243,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->req_switch      = req_switch;
 	job_ptr->wait4switch     = wait4switch;
 	job_ptr->profile         = profile;
+	job_ptr->db_flags        = db_flags;
 	/*
 	 * This needs to always to initialized to "true".  The select
 	 * plugin will deal with it every time it goes through the

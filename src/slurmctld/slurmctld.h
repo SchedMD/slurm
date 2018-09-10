@@ -663,6 +663,8 @@ struct job_record {
 					 * linear plugin
 					 * 0 if cr is NOT enabled,
 					 * 1 if cr is enabled */
+	uint32_t db_flags;              /* Flags to send to the database
+					 * record */
 	uint64_t db_index;              /* used only for database plugins */
 	time_t deadline;		/* deadline */
 	uint32_t delay_boot;		/* Delay boot for desired node mode */
