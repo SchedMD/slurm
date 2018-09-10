@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
     %n or %h in the spool dir.
  -- Fix incorrect spacing for PartitionName lines in 'scontrol write config'.
  -- Fix sacct to not print huge reserve times when the job was never eligible.
+ -- burst_buffer/cray - Add missing locks around assoc_mgr when timing out a
+    burstbuffer.
 
 * Changes in Slurm 17.11.9-2
 ============================
