@@ -5791,6 +5791,14 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 
 	xassert(avail_core);
 	avail_cores_per_sock = xmalloc(sizeof(uint16_t) * sockets);
+	for (s = 0; s < sockets; s++) {
+		for (c = 0; c < cores_per_socket; c++) {
+			i = (s * cores_per_socket) + c;
+			if (bit_test(avail_core, i))
+				avail_cores_per_sock[s]++;
+		}
+	}
+
 	task_cnt_incr = *min_tasks_this_node;
 	req_sock = xmalloc(sizeof(bool) * sockets);
 
@@ -5863,12 +5871,6 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					sock_gres->cnt_by_sock[s] = 0;
 				}
 				continue;
-			}
-
-			for (c = 0; c < cores_per_socket; c++) {
-				i = (s * cores_per_socket) + c;
-				if (bit_test(avail_core, i))
-					avail_cores_per_sock[s]++;
 			}
 			avail_cores_tot += avail_cores_per_sock[s];
 			/* Test for available cores on this socket */
