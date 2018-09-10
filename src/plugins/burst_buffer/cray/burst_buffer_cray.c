@@ -2490,6 +2490,13 @@ static void _timeout_bb_rec(void)
 				 */
 			} else if ((bb_alloc->seen_time + TIME_SLOP) <
 				   bb_state.last_load_time) {
+				assoc_mgr_lock_t assoc_locks =
+					{ .assoc = READ_LOCK,
+					  .qos = READ_LOCK };
+				/*
+				 * assoc_mgr needs locking to call
+				 * bb_post_persist_delete
+				 */
 				if (bb_alloc->job_id == 0) {
 					info("%s: Persistent burst buffer %s "
 					     "purged",
@@ -2500,7 +2507,11 @@ static void _timeout_bb_rec(void)
 				}
 				bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
 					     bb_alloc->pool, &bb_state);
+
+				assoc_mgr_lock(&assoc_locks);
 				bb_post_persist_delete(bb_alloc, &bb_state);
+				assoc_mgr_unlock(&assoc_locks);
+
 				*bb_pptr = bb_alloc->next;
 				bb_free_alloc_buf(bb_alloc);
 				break;
@@ -4650,8 +4661,7 @@ static void *_create_persistent(void *x)
 		unlock_slurmctld(job_write_lock);
 	} else if (resp_msg && strstr(resp_msg, "created")) {
 		assoc_mgr_lock_t assoc_locks =
-			{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-			  NO_LOCK, NO_LOCK, NO_LOCK };
+			{ .assoc = READ_LOCK, .qos = READ_LOCK };
 		lock_slurmctld(job_write_lock);
 		job_ptr = find_job_record(create_args->job_id);
 		if (!job_ptr) {
@@ -4792,8 +4802,7 @@ static void *_destroy_persistent(void *x)
 		unlock_slurmctld(job_write_lock);
 	} else {
 		assoc_mgr_lock_t assoc_locks =
-			{ READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
-			  NO_LOCK, NO_LOCK, NO_LOCK };
+			{ .assoc = READ_LOCK, .qos = READ_LOCK };
 		/* assoc_mgr needs locking to call bb_post_persist_delete */
 		if (bb_alloc)
 			assoc_mgr_lock(&assoc_locks);
