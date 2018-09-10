@@ -202,6 +202,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 		req->array_task_pending = job_ptr->array_recs->task_cnt;
 	}
 
+	req->db_flags      = job_ptr->db_flags;
 	req->db_index      = job_ptr->db_index;
 	req->job_state     = job_ptr->job_state;
 	req->name          = xstrdup(job_ptr->name);
