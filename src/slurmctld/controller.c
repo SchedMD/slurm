@@ -1441,6 +1441,8 @@ static void _remove_assoc(slurmdb_assoc_rec_t *rec)
 {
 	int cnt = 0;
 
+	bb_g_reconfig();
+
 	cnt = job_hold_by_assoc_id(rec->id);
 
 	if (cnt) {
@@ -1473,6 +1475,8 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 		list_iterator_destroy(itr);
 	}
 	unlock_slurmctld(part_write_lock);
+
+	bb_g_reconfig();
 
 	cnt = job_hold_by_qos_id(rec->id);
 

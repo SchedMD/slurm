@@ -3393,6 +3393,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 				goto unpack_error;
 			node_reg_ptr->gres_info = create_buf(gres_info,
 							     gres_info_size);
+			gres_info = NULL;
 		}
 		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
 					      protocol_version, 1)
@@ -13761,6 +13762,7 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 				goto unpack_error;
 			/* Move "data" into "req_buf", NOT a memory leak */
 			req_buf = create_buf(data, buf_size);
+			data = NULL; /* just to be safe */
 			list_append(object_ptr->my_list, req_buf);
 		}
 	} else {
@@ -13771,6 +13773,7 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(data);
 	slurm_free_ctld_multi_msg(object_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
