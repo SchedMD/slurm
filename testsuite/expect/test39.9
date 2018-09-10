@@ -243,23 +243,26 @@ if {$match == 2} {
 			wait
 		}
 	}
-}
-if {$match != 4} {
-	send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,voltage=x,verbose' failure ($match != 4)\n"
-	set exit_code 1
+	if {$match != 4} {
+		send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,voltage=x,verbose' failure ($match != 4)\n"
+		set exit_code 1
+	} else {
+		if {$low_freq > $medium_freq || $medium_freq > $high_freq} {
+			send_user "\nFAILURE: GPU frequency low > medium or medium > high\n"
+			set exit_code 1
+		}
+		if {$low_mem > $medium_mem || $medium_mem > $high_mem} {
+			send_user "\nFAILURE: GPU memory frequency low > medium or medium > high\n"
+			set exit_code 1
+		}
+		if {$low_volt > $medium_volt || $medium_volt > $high_volt} {
+			send_user "\nFAILURE: GPU voltage low > medium or medium > high\n"
+			set exit_code 1
+		}
+	}
 } else {
-	if {$low_freq > $medium_freq || $medium_freq > $high_freq} {
-		send_user "\nFAILURE: GPU frequency low > medium or medium > high\n"
-		set exit_code 1
-	}
-	if {$low_mem > $medium_mem || $medium_mem > $high_mem} {
-		send_user "\nFAILURE: GPU memory frequency low > medium or medium > high\n"
-		set exit_code 1
-	}
-	if {$low_volt > $medium_volt || $medium_volt > $high_volt} {
-		send_user "\nFAILURE: GPU voltage low > medium or medium > high\n"
-		set exit_code 1
-	}
+	send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,voltage=x,verbose' failure ($match != 2)\n"
+	set exit_code 1
 }
 
 #
