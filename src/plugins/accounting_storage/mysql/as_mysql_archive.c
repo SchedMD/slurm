@@ -92,6 +92,7 @@ typedef struct {
 	char *exit_code;
 	char *eligible;
 	char *end;
+	char *flags;
 	char *gid;
 	char *job_db_inx;
 	char *jobid;
@@ -251,6 +252,7 @@ static char *job_req_inx[] = {
 	"derived_ec",
 	"derived_es",
 	"exit_code",
+	"flags",
 	"timelimit",
 	"time_eligible",
 	"time_end",
@@ -294,6 +296,7 @@ enum {
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
 	JOB_REQ_EXIT_CODE,
+	JOB_REQ_FLAGS,
 	JOB_REQ_TIMELIMIT,
 	JOB_REQ_ELIGIBLE,
 	JOB_REQ_END,
@@ -601,6 +604,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->derived_ec, buffer);
 	packstr(object->derived_es, buffer);
 	packstr(object->exit_code, buffer);
+	packstr(object->flags, buffer);
 	packstr(object->timelimit, buffer);
 	packstr(object->eligible, buffer);
 	packstr(object->end, buffer);
@@ -675,6 +679,7 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
 		unpackstr_ptr(&object->derived_es, &tmp32, buffer);
 		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
+		unpackstr_ptr(&object->flags, &tmp32, buffer);
 		unpackstr_ptr(&object->timelimit, &tmp32, buffer);
 		unpackstr_ptr(&object->eligible, &tmp32, buffer);
 		unpackstr_ptr(&object->end, &tmp32, buffer);
@@ -2340,6 +2345,7 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.derived_ec = row[JOB_REQ_DERIVED_EC];
 		job.derived_es = row[JOB_REQ_DERIVED_ES];
 		job.exit_code = row[JOB_REQ_EXIT_CODE];
+		job.flags = row[JOB_REQ_FLAGS];
 		job.timelimit = row[JOB_REQ_TIMELIMIT];
 		job.eligible = row[JOB_REQ_ELIGIBLE];
 		job.end = row[JOB_REQ_END];
@@ -2416,6 +2422,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.derived_ec,
 			   object.derived_es,
 			   object.exit_code,
+			   object.flags,
 			   object.timelimit,
 			   object.eligible,
 			   object.end,

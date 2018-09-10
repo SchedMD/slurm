@@ -462,7 +462,7 @@ no_rollup_change:
 			"id_group, nodelist, id_resv, timelimit, "
 			"time_eligible, time_submit, time_start, "
 			"job_name, track_steps, state, priority, cpus_req, "
-			"nodes_alloc, mem_req",
+			"nodes_alloc, mem_req, flags",
 			mysql_conn->cluster_name, job_table);
 
 		if (wckeyid)
@@ -500,7 +500,7 @@ no_rollup_change:
 			   ") values (%u, UNIX_TIMESTAMP(), "
 			   "%u, %u, %u, %u, %u, %u, %u, %u, "
 			   "'%s', %u, %u, %ld, %ld, %ld, "
-			   "'%s', %u, %u, %u, %u, %u, %"PRIu64"",
+			   "'%s', %u, %u, %u, %u, %u, %"PRIu64", %u",
 			   job_ptr->job_id,
 			   job_ptr->array_job_id, array_task_id,
 			   job_ptr->pack_job_id, job_ptr->pack_job_offset,
@@ -511,7 +511,8 @@ no_rollup_change:
 			   jname, track_steps, job_state,
 			   job_ptr->priority, job_ptr->details->min_cpus,
 			   job_ptr->total_nodes,
-			   job_ptr->details->pn_min_memory);
+			   job_ptr->details->pn_min_memory,
+			   job_ptr->db_flags);
 
 		if (wckeyid)
 			xstrfmtcat(query, ", %u", wckeyid);
@@ -560,7 +561,7 @@ no_rollup_change:
 			   "state=greatest(state, %u), priority=%u, "
 			   "cpus_req=%u, nodes_alloc=%u, "
 			   "mem_req=%"PRIu64", id_array_job=%u, id_array_task=%u, "
-			   "pack_job_id=%u, pack_job_offset=%u",
+			   "pack_job_id=%u, pack_job_offset=%u, flags=%u",
 			   job_ptr->assoc_id, job_ptr->user_id,
 			   job_ptr->group_id, nodes,
 			   job_ptr->resv_id, job_ptr->time_limit,
@@ -570,7 +571,8 @@ no_rollup_change:
 			   job_ptr->total_nodes,
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->array_job_id, array_task_id,
-			   job_ptr->pack_job_id, job_ptr->pack_job_offset);
+			   job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			   job_ptr->db_flags);
 
 		if (wckeyid)
 			xstrfmtcat(query, ", id_wckey=%u", wckeyid);
@@ -685,6 +687,7 @@ no_rollup_change:
 			   "timelimit=%u, mem_req=%"PRIu64", "
 			   "id_array_job=%u, id_array_task=%u, "
 			   "pack_job_id=%u, pack_job_offset=%u, "
+			   "flags=%u, "
 			   "time_eligible=%ld, mod_time=UNIX_TIMESTAMP() "
 			   "where job_db_inx=%"PRIu64,
 			   start_time, jname, job_state,
@@ -694,6 +697,7 @@ no_rollup_change:
 			   job_ptr->details->pn_min_memory,
 			   job_ptr->array_job_id, array_task_id,
 			   job_ptr->pack_job_id, job_ptr->pack_job_offset,
+			   job_ptr->db_flags,
 			   begin_time, job_ptr->db_index);
 
 		if (debug_flags & DEBUG_FLAG_DB_JOB)

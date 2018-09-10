@@ -760,6 +760,7 @@ typedef struct {
 	time_t eligible;
 	time_t end;
 	uint32_t exitcode;
+	uint32_t flags;
 	void *first_step_ptr;
 	uint32_t gid;
 	uint32_t jobid;
