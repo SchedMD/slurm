@@ -1185,7 +1185,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
 	pack16(dump_job_ptr->batch_flag, buffer);
 	pack16(dump_job_ptr->mail_type, buffer);
-	pack16(dump_job_ptr->state_reason, buffer);
+	pack32(dump_job_ptr->state_reason, buffer);
 	pack8(dump_job_ptr->reboot, buffer);
 	pack16(dump_job_ptr->restart_cnt, buffer);
 	pack16(dump_job_ptr->wait_all_nodes, buffer);
@@ -1305,10 +1305,10 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t array_task_id = NO_VAL;
 	uint32_t array_flags = 0, max_run_tasks = 0, tot_run_tasks = 0;
 	uint32_t min_exit_code = 0, max_exit_code = 0, tot_comp_tasks = 0;
-	uint32_t pack_job_id = 0, pack_job_offset = 0;
+	uint32_t pack_job_id = 0, pack_job_offset = 0, state_reason;
 	uint16_t details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
-	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
+	uint16_t alloc_resp_port, other_port, mail_type, tmp16;
 	uint16_t restart_cnt, ckpt_interval;
 	uint16_t wait_all_nodes, warn_flags = 0, warn_signal, warn_time;
 	acct_policy_limit_set_t limit_set;
@@ -1430,7 +1430,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&kill_on_node_fail, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
-		safe_unpack16(&state_reason, buffer);
+		safe_unpack32(&state_reason, buffer);
 		safe_unpack8 (&reboot, buffer);
 		safe_unpack16(&restart_cnt, buffer);
 		safe_unpack16(&wait_all_nodes, buffer);
@@ -1655,7 +1655,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&kill_on_node_fail, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
-		safe_unpack16(&state_reason, buffer);
+		safe_unpack16(&tmp16, buffer);
+		state_reason = tmp16;
 		safe_unpack8 (&reboot, buffer);
 		safe_unpack16(&restart_cnt, buffer);
 		safe_unpack16(&wait_all_nodes, buffer);
@@ -1879,7 +1880,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&kill_on_node_fail, buffer);
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
-		safe_unpack16(&state_reason, buffer);
+		safe_unpack16(&tmp16, buffer);
+		state_reason = tmp16;
 		safe_unpack8 (&reboot, buffer);
 		safe_unpack16(&restart_cnt, buffer);
 		safe_unpack16(&wait_all_nodes, buffer);
