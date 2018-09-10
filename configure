@@ -18671,10 +18671,10 @@ $as_echo "static" >&6; };
     # variables.  Some need to be resolved now ($libdir) and others
     # ($(top_builddir)) need to be resolved when dealing with the Makefile.am's
     LIB_SLURM="-Wl,-rpath=$libdir/slurm"
-    LIB_SLURM+=' -L$(top_builddir)/src/api/.libs -lslurmfull'
+    LIB_SLURM=$LIB_SLURM' -L$(top_builddir)/src/api/.libs -lslurmfull'
 
     LIB_SLURMDB="-Wl,-rpath=$libdir/slurm"
-    LIB_SLURMDB+=' -L$(top_builddir)/src/api/.libs -L$(top_builddir)/src/db_api/.libs -lslurmdb -lslurmfull'
+    LIB_SLURMDB=$LIB_SLURMDB' -L$(top_builddir)/src/api/.libs -L$(top_builddir)/src/db_api/.libs -lslurmdb -lslurmfull'
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: shared" >&5
 $as_echo "shared" >&6; };
   fi
@@ -20954,7 +20954,7 @@ rm -f conftest.err conftest.i conftest.$ac_ext
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V1_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V1_CPPFLAGS+=" -DPMIXP_V1_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+                PMIX_V1_CPPFLAGS=$PMIX_V1_CPPFLAGS" -DPMIXP_V1_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
               # We don't want to search the other lib after we found it in
               # one place or we might report a false duplicate if lib64 is a
@@ -20972,7 +20972,7 @@ rm -f conftest.err conftest.i conftest.$ac_ext
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V2_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V2_CPPFLAGS+=" -DPMIXP_V2_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+                PMIX_V2_CPPFLAGS=$PMIX_V2_CPPFLAGS" -DPMIXP_V2_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
               # We don't want to search the other lib after we found it in
               # one place or we might report a false duplicate if lib64 is a
@@ -20990,7 +20990,7 @@ rm -f conftest.err conftest.i conftest.$ac_ext
               if test "$ac_with_rpath" = "yes"; then
                 PMIX_V3_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
               else
-                PMIX_V3_CPPFLAGS+=" -DPMIXP_V3_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+                PMIX_V3_CPPFLAGS=$PMIX_V3_CPPFLAGS" -DPMIXP_V3_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
               fi
               # We don't want to search the other lib after we found it in
               # one place or we might report a false duplicate if lib64 is a
@@ -21345,7 +21345,7 @@ $as_echo "$as_me: ucx checking result: $x_ac_cv_ucx_libdir" >&6;}
       if test "$ac_with_rpath" = "yes"; then
         UCX_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_ucx_libdir"
       else
-        UCX_CPPFLAGS+=" -DPMIXP_UCX_LIBPATH=\\\"$x_ac_cv_ucx_libdir\\\""
+        UCX_CPPFLAGS=$UCX_CPPFLAGS" -DPMIXP_UCX_LIBPATH=\\\"$x_ac_cv_ucx_libdir\\\""
       fi
 
 $as_echo "#define HAVE_UCX 1" >>confdefs.h

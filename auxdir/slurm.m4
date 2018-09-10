@@ -121,10 +121,10 @@ AC_DEFUN([X_AC_LIBSLURM], [
     # variables.  Some need to be resolved now ($libdir) and others
     # ($(top_builddir)) need to be resolved when dealing with the Makefile.am's
     LIB_SLURM="-Wl,-rpath=$libdir/slurm"
-    LIB_SLURM+=' -L$(top_builddir)/src/api/.libs -lslurmfull'
+    LIB_SLURM=$LIB_SLURM' -L$(top_builddir)/src/api/.libs -lslurmfull'
 
     LIB_SLURMDB="-Wl,-rpath=$libdir/slurm"
-    LIB_SLURMDB+=' -L$(top_builddir)/src/api/.libs -L$(top_builddir)/src/db_api/.libs -lslurmdb -lslurmfull'
+    LIB_SLURMDB=$LIB_SLURMDB' -L$(top_builddir)/src/api/.libs -L$(top_builddir)/src/db_api/.libs -lslurmdb -lslurmfull'
     AC_MSG_RESULT([shared]);
   fi
 

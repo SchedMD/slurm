@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential double free when a faulure happens when unpacking a
     node_registration_status_msg.
  -- Fix sacctmgr show runaways.
+ -- Removed non-POSIX append operator from configure script for non-bash
+    support.
 
 * Changes in Slurm 18.08.0
 ==========================
