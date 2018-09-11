@@ -30,7 +30,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li>Specific Systems</li>
 <ul>
 <li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
-<li><a href="cray_alps.html">Cray User and Administrator Guide with ALPS</a></li>
 <li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 <li><a href="intel_knl.html">Intel Knights Landing (KNL) User and Administrator Guide</a></li>
 </ul>
@@ -89,7 +88,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li>Specific Systems</li>
 <ul>
 <li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
-<li><a href="cray_alps.html">Cray User and Administrator Guide with ALPS</a></li>
 <li><a href="ibm-pe.html">IBM Parallel Environment User and Administrator Guide</a></li>
 </ul>
 </ul>

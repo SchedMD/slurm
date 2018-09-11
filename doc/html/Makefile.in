@@ -474,7 +474,6 @@ generated_html = \
 	core_spec_plugins.html \
 	cpu_management.html \
 	cray.html \
-	cray_alps.html \
 	crypto_plugins.html \
 	disclaimer.html \
 	dist_plane.html \
