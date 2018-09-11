@@ -77,7 +77,7 @@ and site reports.</p>
     <th width="45%">Title</th>
   </tr>
 
-<tr><td nowrap>08:30 - 09:00</td><td>Technical</td><td>Clayer, Faure (Atos)</td><td>Layout For Checkpoint Restart on Specialized Blades</td></tr>
+<tr><td nowrap>08:30 - 09:00</td><td>Technical</td><td>Brophy, Perry, Parisek, Cadeau (Atos)</td><td>Layout For Checkpoint Restart on Specialized Blades</td></tr>
 <tr><td nowrap>09:00 - 09:30</td><td>Site Report</td><td>Hautreux (CEA)</td><td>CEA Site Report</td></tr>
 <tr><td nowrap>09:30 - 10:00</td><td>Site Report</td><td>Llopis Sanmill&aacute;n, Lindqvist, Hoimyr (CERN)</td><td>Colliding High Energy Physics With HPC, Cloud, and Parallel Filesystems</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
@@ -151,7 +151,7 @@ and site reports.</p>
 <!--- Wednesday --->
 
 <h3>Layout For Checkpoint Restart on Specialized Blades</h3>
-<p>Bill Brophy, Martin Perry, Doug Parisek (Atos)</p>
+<p>Bill Brophy, Martin Perry, Doug Parisek Thomas Cadeau (Atos)</p>
 <p>A new feature has been introduced in Slurm (Bull/Atos version) to support node selection which takes into consideration hardware topology information. Specifically, configuration information for Bull Sequana blades containing PCIe switches connecting the nodes and the drives of the blade, in order to support a fault-tolerant application checkpoint/restart mechanism. In the logic which selects nodes for jobs desiring to use nodes configured on PCIe switches, an algorithm was provided to enforce the rules/restrictions necessary to ensure an allocation which could support a high availability checkpoint restart mechanism. A new layout plugin with an associated configuration file are utilized to provide this new capability. This feature is then used with FTI checkpoint/restart API and specialized scripts to change the access of the nodes to the associated drives.</p>
 
 <h3>CEA Site Report</h3>
