@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
     burst buffer.
  -- burst_buffer/cray - Update burst buffers when an association or qos
     is removed from the system.
+ -- Remove documentation for deprecated Cray/ALPS systems. Please switch to
+    Native Cray mode instead.
 
 * Changes in Slurm 18.08.0
 ==========================
