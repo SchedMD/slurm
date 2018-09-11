@@ -30,13 +30,175 @@ and site reports.</p>
 
 <a name="schedule"><h1>Schedule</h1></a>
 
-<p>Information not currently available.</p>
+<h2>Tuesday, 25 September 2018</h2>
 
+<table width="100%" border=1 cellspacing=0 cellpadding=4>
+
+<tr>
+  <th width="10%">Time</th>
+  <th width="15%">Theme</th>
+  <th width="30%">Speaker</th>
+  <th width="45%">Title</th>
+ </tr>
+
+<tr><td bgcolor="#F0F1C9">08:00 - 08:30</td><td colspan="3" bgcolor="#F0F1C9">Registration </td></tr>
+<tr><td nowrap>08:30 - 08:45</td><td>Welcome</td><td>TBD</td><td>Welcome</td></tr>
+<tr><td nowrap>08:45 - 09:30</td><td>Keynote</td><td>Dr. Francisco Castej&oacute;n</td><td>TBD</td></tr>
+<tr><td nowrap>09:30 - 10:00</td><td>Tutorial </td><td>Moll Marqu&egrave;s (SchedMD)</td><td>Slurm Introduction</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>TBD (CSCS/ICEI)</td><td>Workload Management Requirements for an Interactive Computing e-Infrastructure</td></tr>
+<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Peltz (LANL)</td><td>Slurm in a Container-Only World</td></tr>
+<tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Jacobsen (NERSC)</td><td>A Declarative Programming Style Job Submission Filter</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
+<tr><td nowrap>12:50 - 13:40</td><td>Technical</td><td>Clayer, Faure (Atos)</td><td>Generalized Hypercube &emdash; A Topology Plugin</td></tr>
+<tr><td nowrap>13:40 - 14:10</td><td>Technical</td><td>Ewan (EPFL)</td><td>Keeping Accounts Consistent Across Clusters Using LDAP and YAML</td></tr>
+<tr><td nowrap>14:10 - 14:40</td><td>Technical</td><td>Arnhold, Rotscher, Markwardt (Dresden)</td><td>Real-Time Job Monitoring Using An Extended slurmctld Generic Plugin</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">14:40 - 15:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+<tr><td nowrap>15:00 - 15:30</td><td>Technical</td><td>Bartkiewicz, Jette (SchedMD)</td><td>Scheduling by Trackable Resource (cons_tres)</td></tr>
+<tr><td nowrap>15:30 - 16:10</td><td>Technical</td><td>TBD (Google)</td><td>Cloud Bursting with GCE</td></tr>
+<tr><td nowrap>16:10 - 16:40</td><td>Technical</td><td>Christiansen</td><td>Slurm 18.08 Overview &amp; Roadmap</td></tr>
+
+<tr>
+  <td bgcolor="#F0F1C9">XX:00</td>
+  <td bgcolor="#F0F1C9">Dinner</td>
+  <td bgcolor="#F0F1C9">TBD</td>
+  <td bgcolor="#F0F1C9"></td>
+</tr>
+</table>
+
+<h2>Wednesday, 26 September 2018</h2>
+
+<table width="100%" border=1 cellspacing=0 cellpadding=4>
+
+  <tr>
+    <th width="10%">Time</th>
+    <th width="15%">Theme</th>
+    <th width="30%">Speaker</th>
+    <th width="45%">Title</th>
+  </tr>
+
+<tr><td nowrap>08:30 - 09:00</td><td>Technical</td><td>Clayer, Faure (Atos)</td><td>Layout For Checkpoint Restart on Specialized Blades</td></tr>
+<tr><td nowrap>09:00 - 09:30</td><td>Site Report</td><td>Hautreux (CEA)</td><td>CEA Site Report</td></tr>
+<tr><td nowrap>09:30 - 10:00</td><td>Site Report</td><td>Llopis Sanmill&aacute;n, Lindqvist, Hoimyr (CERN)</td><td>Colliding High Energy Physics With HPC, Cloud, and Parallel Filesystems</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+<tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>Jokanovic, Corbalan, D'Amico (BSC)</td><td>Slurm Simulator Improvements and Evaluation</td></tr>
+<tr><td nowrap>10:50 - 11:20</td><td>Site Report</td><td>Pardo (CETA-CIEMAT)</td><td>CETA-CIEMAT Site Report</td></tr>
+<tr><td nowrap>11:20 - 11:50</td><td>Site Report</td><td>Gila</td><td>Tuning Slurm the CSCS Way</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
+<tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Jette, Sanchez Graells (SchedMD)</td><td>Workload Scheduling and Power Management</td></tr>
+<tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Fullop, Senator (LANL)</td><td>LANL Site Report</td></tr>
+<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Botts, Jacobsen (NERSC)</td><td>NERSC Site Report</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+<tr><td nowrap>14:40 - 15:40</td><td>Technical</td><td>Wickberg (SchedMD)</td><td>Field Notes Mark 2: Random Musings</td></tr>
+<tr><td nowrap>15:40 - 16:10</td><td>Closing</td><td>Wickberg (SchedMD)</td><td>Closing Remarks</td></tr>
+
+</table>
+
+<br><br>
 <a name="abstracts"><h1>Abstracts</h1></a>
 
-<p>Information not currently available.</p>
+<!--- Tuesday --->
+
+<h3>Keynote</h3>
+<p>Dr. Francisco Castej&oacute;n is the Head of the Unit of Theory at the Spanish Fusion Lab and Head of the Stellerator Optimization Working Group at EUROfusion.</p>
+
+<h3>Slurm Introduction</h3>
+<p>Felip Moll Marqu&egrave;s (SchedMD)</p>
+<p></p>
+
+<h3>Workload Management Requirements for an Interactive Computing e-Infrastructure</h3>
+<p>TBD (CSCS/ICEI)</p>
+<p>The European ICEI project is co-funded by the European Commission and is formed by the leading European Supercomputing Centres BSC (Spain), CEA (France), CINECA (Italy), ETH Z&uuml;rich/CSCS (Switzerland) and Forschungszentrum J&uuml;lich/JSC (Germany). The ICEI project plans to deliver a set of e-infrastructure services that will be federated to form the Fenix Infrastructure. The distinguishing characteristic of this e-infrastructure is that data repositories and scalable supercomputing systems will be in close proximity and well-integrated. The participating supercomputing centers have Slurm resource management and scheduling systems available on a diverse range of systems including high-end clusters and systems with accelerators. In this talk, we present key requirements by ICEI for the site workload managers, including features such as support for interactive supercomputing, integration of resources such as storage hierarchies, support for RESTful interfaces and an ability to handle credentials such as OAuth and/or SAML.</p>
+
+<h3>Slurm in a Container-Only World</h3>
+<p>Paul Peltz (LANL)</p>
+<p>Los Alamos National Laboratory is researching the viability of using containers as the primary mechanism for supporting user applications for future systems. This presentation will cover the challenges and modifications that are required to run Slurm in a container only environment. LANL will also discuss Kraken which is used as the boot and provisioning system to support a container based environment.</p>
+
+<h3>A Declarative Programming Style Job Submission Filter</h3>
+<p>Douglas Jacobsen (NERSC)</p>
+<p>The NERSC policy set for managing a complex workload has a number of complex requirements, not least of which is the ability to flexibly add new policies rapidly in a bug-free way. At the beginning of 2018 we replaced our traditional procedural-style lua job submission and modification filter with a declarative rules-based job submission filter. The rules are described in /etc/slurm/policy.yaml. Each ruleset has rule matching definitions, validation definitions (a matching ruleset that fail validation results in an error), and execution definitions (job parameter modifications), as well as a numerical priority to indicate the order of evaluation. The underlying code is still the lua job_submit plugin, however it has transformed into library code that is easily extensible and shared between systems, while the policies are separated into a YAML data description and easily tracked over time. A driver is included to allow automated testing of both the lua library code and policy sets without a slurm instance for unit testing. Looking forward these policy definitions will be easily shared with the cli_filter to enable client and server-side enforcement of policies. These innovations have led to simpler modification and update of policy sets while reducing the potential for introducing bugs with seemingly simple modifications.</p>
+
+<h3>Generalized Hypercube &emdash; A Topology Plugin</h3>
+<p>Mathis Clayer, Adrien Faure (Atos)</p>
+<p>The hypercube topology is a way to provide fast internode communication, but for such topology, we have a strong constraint on the number of switches (2dim). The topology named Generalized HyperCube topology (GHC) avoids this constraint. This topology allows to define any number of switches in each dimension. This presentation will provide details on the development made to create this new topology plugin, how to enable this plugin, some performance test related to this plugin and the plan to push it to the community.</p>
+
+<h3>Keeping Accounts Consistent Across Clusters Using LDAP and YAML</h3>
+<p>Roche Ewan (EPFL)</p>
+<p>We have developed a simple but powerful user management system that allows one to have a consistent user and account configuration across multiple clusters each with their own Slurm database. We explain how this is achieved with a bit of YAML and PERL and some LDAP on the side. As anything that can be updated using sacctmgr can be described in a YAML file one can go further than managing accounts and shares. We show how the system can be extended to manage the QoS associated with accounts.</p>
+
+<h3>Real-Time Job Monitoring Using An Extended slurmctld Generic Plugin</h3>
+<p>Mike Arnhold, Danny Rotscher, Ulf Markwardt (Dresden)</p>
+<p>Monitoring cluster job information with the current Slurm API in real time can put a significant strain on the Slurm controller daemon in a high throughput environment. However, during job scheduling all job information relevant for monitoring is already present but not accessible in the current version of Slurm and only a limited set of data is provided in the prolog/epilog script environment. Calling the Slurm API after job submission or allocation to prospectively infer or retrospectively gather those information has serious impact on information quality and the Slurm controller’s performance on a busy system. Attempts to collect the data from compute nodes to unburden the Slurm controller were unsatisfying due to a high network load and additional computation needs. Thus, extending the Slurmctld Generic Plugin with access to the job information on schedule time would make real time monitoring implementations possible utilizing the data with low additional computational efforts.</p>
+
+<p>This presentation will discuss this extension provided by the plugstack source files of the Slurm controller daemon with a SPANK-like usability in mind. A new architecture, called SPACE – Stackable Plug-in Architecture for Slurm Controller Extension, will be introduced, which currently provides job prolog and epilog functionality. Via a read-only interface internal Slurm data are made available, like detailed information on jobs, nodes, and partitions.</p>
+
+<p>Based on SPACE, a monitoring infrastructure for real time visualization of a peta-scale HPC cluster can be set up. Additional components of this infrastructure are the RabbitMQ framework, enabling asynchronous data queuing to further unburden the Slurm controller, and a websocket client/server framework./p>
+
+<h3>Scheduling by Trackable Resource (cons_tres)</h3>
+<p>Dominik Bartkiewicz, Morris Jette (SchedMD)</p>
+<p>Slurm’s data structures and logic for scheduling of resources has always been oriented toward CPU management. While Slurm can schedule other resources such as GPUs, their support is quite limited including the requirement that the number of GPUs per node is uniform across all allocated compute nodes and co-allocation of adjacent CPUs and GPUs is not integral to the resource selection process. This is problematic as GPUs provide the majority of compute power in many new systems.</p>
+
+<p>Slurm enhancements are currently underway that will eliminate these limitations by managing the allocation of all resources in a uniform fashion. CPUs, GPU, memory and potentially other generic resources will be treated on an equal basis for scheduling purposes. A multitude of new job options are being added to provide additional flexibility in job resource requirement specification. Major changes are being made in Slurm’s Generic RESource (GRES) data structures and a new scheduling plugin is being developed. This presentation will describe the design, development and release schedule for this new functionality.</p>
+
+<h3>Cloud Bursting with GCE</h3>
+<p>TBD (Google)</p>
+<p></p>
+
+<h3>Slurm 18.08 Overview &amp; Roadmap</h3>
+<p>Brian Christiansen (SchedMD)</p>
+<p>Slurm version 18.08 was released in August 2018 and includes a multitude of new features. This presentation will include an overview of these features, and a look at the upcoming roadmap.</p>
+
+<!--- Wednesday --->
+
+<h3>Layout For Checkpoint Restart on Specialized Blades</h3>
+<p>Bill Brophy, Martin Perry, Doug Parisek (Atos)</p>
+<p>A new feature has been introduced in Slurm (Bull/Atos version) to support node selection which takes into consideration hardware topology information. Specifically, configuration information for Bull Sequana blades containing PCIe switches connecting the nodes and the drives of the blade, in order to support a fault-tolerant application checkpoint/restart mechanism. In the logic which selects nodes for jobs desiring to use nodes configured on PCIe switches, an algorithm was provided to enforce the rules/restrictions necessary to ensure an allocation which could support a high availability checkpoint restart mechanism. A new layout plugin with an associated configuration file are utilized to provide this new capability. This feature is then used with FTI checkpoint/restart API and specialized scripts to change the access of the nodes to the associated drives.</p>
+
+<h3>CEA Site Report</h3>
+<p>Matthieu Hautreux (CEA)</p>
+<p>CEA site report including a site update, Slurm usage details and some minor modifications.</p>
+
+<h3>Colliding High Energy Physics With HPC, Cloud, and Parallel Filesystems</h3>
+<p>Pablo Llopis Sanmill&aacute;n, Carolina Lindqvist, Nils Hoimyr (CERN)</p>
+<p>CERN, the European Laboratory for Particle Physics in Geneva, amasses massive data from experiments at the laboratory, notably data generated by the Large Hadron Collider (LHC). LHC data reconstruction, analysis and simulation is done in a High Throughput Computing environment, on the Worldwide LHC Computing Grid (WLCG), and on HTCondor at CERN and partners.</p>
+
+<p>While most of the physics simulations done in High Energy Physics (HEP) are embarrasingly parallel, there are also MPI applications in use, notably for accelerator physics and lattice-QCD simulations, as well as for engineering applications, such as CFD. For these use-cases, CERN operates an HPC facility running Slurm, with about 5000 cores. The Slurm HPC cluster is integrated with the larger 200k cores HTC-batch facility in the CERN data centre, with which it shares part of the system configuration. We operate our computing facilities in an agile environment for rapid system updates. Our site report will cover the setup of this relatively small Slurm facility, and how it integrates with our agile computing environment. We also provide details beyond Slurm about several HPC-related aspects of our infrastructure, focusing on the integration with OpenStack, as well as optimizations that were carried out for the CephFS parallel file system that MPI jobs rely on. Finally, we describe our future plans for making a more efficient use of our Slurm-based HPC resources.</p>
+
+<h3>Slurm Simulator Improvements and Evaluation</h3>
+<p>Ana Jokanovic, Julita Corbalan,  Marco D’Amico (BSC)</p>
+<p>Having a precise and a fast job scheduler model that resembles the real-machine job scheduling software behavior is extremely
+important in the field of job scheduling. The idea behind Slurm simulator is preserving the original code of the core Slurm functions while allowing for all the advantages of a simulator.</p>
+
+<p>Since 2011, Slurm simulator has passed through several iterations of improvements in different research centers. The first version of Slurm simulator was created by a Slurm system administrator from Barcelona Supercomputing Center, A. Lucero, with the idea to allow Slurm administrators to do their parametric analysis in the Slurm code itself without affecting the system performance. While the idea was promptly accepted by Slurm community, none of the existing versions of the simulator until today was brought to the level of precision and speed for correct decision and practical use.</p>
+
+<p>Our team enthusiastically accepted the Slurm simulator, i.e., the latest version that was available at the moment, with the intention of implementing new job scheduling policies. However, very soon we realized it had many flaws which made it inaccurate for any serious study of scheduling policies. We calculated variations across multiple runs, up to 277 minutes of delays for a single job start time, on a simulated system of 3456 nodes and workloads with 5000 jobs modeled with Cirne model.</p>
+
+<h3>CETA-CIEMAT Site Report</h3>
+<p>Alfonso Pardo (CETA-CIEMAT)</p>
+<p>Alfonso is responsible of HPC systems at CETA-CIEMAT, a centre that belongs to CIEMAT, located in other city (Trujillo). The site is devoted to computing and it is also partner of the Extremadura University (UEX) for computing-related tasks. Therefore, CETA-CIEMAT has its own DPC with diverse HPC facilities, but it is principally focused on GPUs. They were using Slurm for years to enable a constellation of these systems. Alfonso also knows the infrastructure in Madrid, the future acquisitions, and definitively, he can give a global report of the use of Slurm at CIEMAT.</p>
+
+<h3>Tuning Slurm the CSCS Way</h3>
+<p>Miguel Gila (CSCS)</p>
+<p>In this talk we will give an overview of the operational work and customizations introduced to Slurm that help us at the Swiss National Supercomputing Centre (CSCS) to better understand what and how users use and abuse Slurm and the HPC systems. Tuning the scheduler with RM-Replay as well as generating automated GPU accounting and Job reporting and exhaustive user command logging give us deep insight into how the systems are used help plan for future system needs.</p>
+
+<h3>Workload Scheduling and Power Management</h3>
+<p>Morris Jette, Alejandro Sanchez Graells (SchedMD)</p>
+<p>Power management is becoming a more critical issue in high performance computing.  Infrastructure for satisfying customer demands, both in Slurm and the underlying hardware are lacking. User guidance with respect power management for their workload is typically sparse or absent. This presentation will describe current power management capabilities, goals of the HPC community, and possible paths to reach those goals.</p>
+
+<h3>LANL Site Report</h3>
+<p>Joshi Fullop, Steven Senator (LANL)</p>
+<p>Site Description, our efforts in the first year of transition, good experiences working with SchedMD, some of our biggest hurdles, what we’ll be working on and evaluating next, what we’re looking forward to in upcoming Slurm releases, and our wishlist</p>
+
+<h3>NERSC Site Report</h3>
+<p>James Botts, Douglas Jacobsen (NERSC)</p>
+<p>NERSC has been using Slurm on all its capability HPC systems since 2015, and on all systems since 2017, supporting over 7000 users and a wide variety of workloads. Through priority management and qos routing via the job_submit plugin, shared, interactive and realtime workloads are supported while keeping system utilization maximized and effectively running large (> 8000 nodes on cori) jobs. In our smaller HTC systems supporting high energy physics and bioinformatics, Slurm has been tuned to maximize throughput and support the Shifter container technology. Recent integration of enhanced node reboot support in Slurm 18.08 provides critical improvements allow Slurm to automatically manage maintenance reboots (supporting huge pages more effectively on Cray systems) and rolling updates of the system. We have also recently retuned much of our priority structure as the production version of the QoS-based Priority Threshold and Aging limits algorithms have been integrated into Slurm.</p>
+
+<h3>Field Notes Mark Two: Random Musings From a New Hat</h3>
+<p>Tim Wickberg (SchedMD)</p>
+<p>Best practices observed from three years behind SchedMD's customer support organization, alongside an impractical demonstration of Slurm's API capabilities, and musings on future features and direction for Slurm in the coming years.</p>
+
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 30 May 2018</p>
+<p style="text-align:center;">Last modified 10 September 2018</p>
 
 <!--#include virtual="footer.txt"-->
