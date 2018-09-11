@@ -288,7 +288,7 @@ SlurmdSpoolDir=/var/spool/slurmd.%n
 </pre>
 
 <p>
-It is up to you to start each slurmd daemon with the proper NodeName.
+You can manually start each slurmd daemon with the proper NodeName.
 For example, to start the slurmd daemons for host1 from the
 above slurm.conf example:</p>
 
@@ -298,6 +298,44 @@ host1> slurmd -N foo11
 host1> slurmd -N foo21
 </pre>
 
+<p>
+If you have SysV init scripts, slurmd daemons will automatically be started by
+whenever MULTIPLE_SLURMD is set to yes in /etc/sysconfig/slurm.
+If your distribution uses systemd, you may want to use templating feature to
+define one slurmd.service file and registering each of your virtual nodes
+within it, for example:</p>
+
+<pre>
+[Unit]
+Description=Slurm node daemon
+After=network.target munge.service remote-fs.target
+ConditionPathExists=/etc/slurm.conf
+
+[Service]
+Type=forking
+EnvironmentFile=-/etc/sysconfig/slurmd
+ExecStart=/usr/sbin/slurmd -N%i $SLURMD_OPTIONS
+ExecReload=/bin/kill -HUP $MAINPID
+PIDFile=/var/run/slurmd-%i.pid
+KillMode=process
+LimitNOFILE=51200
+LimitMEMLOCK=infinity
+LimitSTACK=infinity
+Delegate=yes
+
+[Install]
+WantedBy=multi-user.target
+</pre>
+
+<p>Then, enabling/managing a service like this (what is <i>%i</i> in the file
+will be replaced by what is after the <i>@</i> in the command line):</p>
+
+<pre>
+systemctl enable slurmd@nodeXYZ
+systemctl start/stop/restart slurmd@nodeXYZ
+</pre>
+
+</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 2 November 2016</p>
