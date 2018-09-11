@@ -5158,7 +5158,9 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 						 topo_core_bitmap[i]));
 		}
 		for (s = 0; ((s < sockets) && avail_gres); s++) {
-			if (core_bitmap) {
+			if (!enforce_binding) {
+				c = 0;
+			} else if (core_bitmap) {
 				for (c = 0; c < cores_per_sock; c++) {
 					j = (s * cores_per_sock) + c;
 					if (bit_test(core_bitmap, j))
