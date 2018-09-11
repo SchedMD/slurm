@@ -152,12 +152,22 @@ Main:
 	    if ( defined $gres ) {
                   my @gres = split(/,/,$gres);
                   foreach my $grestype ( @gres ) {
+			  $grestype =~ s/\([^)]*\)//g;
                           my @elt = split(/:/,$grestype);
 			  if ( $#elt>0 && $elt[0] eq "gpu" ) {
-			          $gpus = int($elt[-1]);
+				if ( $elt[1] =~ /^[0-9]+$/ ) {
+					$gpus += int($elt[1]);
+			        } else {
+					$gpus += int($elt[2]);
+				}
 			  }
 			  if ( $#elt>0 && $elt[0] eq "mic" ) {
-			          $mics = int($elt[-1]);
+				if ( $elt[1] =~ /^[0-9]+$/ ) {
+					$mics += int($elt[1]);
+			        } else {
+					$mics += int($elt[2]);
+				}
+
 			  }
 		  }
 	    }
