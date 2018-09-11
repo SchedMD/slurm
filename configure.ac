@@ -285,11 +285,6 @@ dnl check for whether to include IBM NRT (Network Resource Table) support
 dnl
 X_AC_NRT
 
-dnl check for SGI job container support
-dnl
-X_AC_SGI_JOB
-
-
 dnl check for netloc library
 dnl
 X_AC_NETLOC
@@ -563,7 +558,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
-		 src/plugins/proctrack/sgi_job/Makefile
 		 src/plugins/proctrack/lua/Makefile
 		 src/plugins/route/Makefile
 		 src/plugins/route/default/Makefile

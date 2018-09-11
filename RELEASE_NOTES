@@ -32,6 +32,8 @@ NOTE: Cray/ALPS support has been removed.
 
 NOTE: Built-in BLCR support has been removed.
 
+NOTE: The proctrack/sgi_job plugin has been removed.
+
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res

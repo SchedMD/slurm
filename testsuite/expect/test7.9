@@ -63,11 +63,6 @@ expect {
 		set invalid 1
 		exp_continue
 	}
-	-re "proctrack/sgi_job" {
-		send_user "\nWARNING: test incompatible with proctrack/sgi_job\n"
-		set invalid 1
-		exp_continue
-	}
 	-re "proctrack/cray" {
 		send_user "\nWARNING: test incompatible with proctrack/cray\n"
 		set invalid 1

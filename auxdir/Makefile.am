@@ -34,7 +34,6 @@ EXTRA_DIST = \
     x_ac_ptrace.m4 \
     x_ac_readline.m4 \
     x_ac_setproctitle.m4 \
-    x_ac_sgi_job.m4 \
     x_ac_slurm_ssl.m4 \
     x_ac_systemd.m4 \
     x_ac_uid_gid_size.m4

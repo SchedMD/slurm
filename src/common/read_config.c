@@ -4369,13 +4369,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		      "is required");
 		return SLURM_ERROR;
 	}
-#else
-#ifdef HAVE_REAL_CRAY
-	if (xstrcmp(conf->proctrack_type, "proctrack/sgi_job")) {
-		error("On Cray ProctrackType=proctrack/sgi_job is required");
-		return SLURM_ERROR;
-	}
-#endif
 #endif
 
 	conf->private_data = 0; /* Set to default before parsing PrivateData */

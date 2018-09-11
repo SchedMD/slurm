@@ -45,7 +45,6 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --without pam      %_without_pam        1     don't require pam-devel RPM to be installed
 # --with percs       %_with_percs         1     build percs RPM
 # --without readline %_without_readline   1     don't require readline-devel RPM to be installed
-# --with sgijob      %_with_sgijob        1     build proctrack-sgi-job RPM
 #
 #  Allow defining --with and --without build options or %_with and %without in .rpmmacros
 #    slurm_with    builds option by default unless --without is specified
@@ -89,7 +88,6 @@ Source:		%{slurm_source_dir}.tar.bz2
 %slurm_with_opt pam
 %endif
 
-%slurm_without_opt sgijob
 %slurm_without_opt lua
 %slurm_without_opt partial-attach
 
@@ -300,17 +298,6 @@ BuildRequires: nrt
 Slurm plugins to run on an IBM PERCS system, POE interface and NRT switch plugin
 %endif
 
-%if %{slurm_with sgijob}
-%package proctrack-sgi-job
-Summary: Slurm process tracking plugin for SGI job containers
-Group: System Environment/Base
-Requires: slurm
-BuildRequires: job
-%description proctrack-sgi-job
-Slurm process tracking plugin for SGI job containers
-(See http://oss.sgi.com/projects/pagg)
-%endif
-
 %if %{slurm_with lua}
 %package lua
 Summary: Slurm lua bindings
@@ -507,10 +494,6 @@ rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
 %if ! %{slurm_with lua}
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/job_submit_lua.so
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_lua.so
-%endif
-
-%if ! %{slurm_with sgijob}
-rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_sgi_job.so
 %endif
 
 %if ! %{slurm_with percs}
@@ -912,13 +895,6 @@ rm -rf $RPM_BUILD_ROOT
 %if %{slurm_with percs}
 %files -f percs.files percs
 %defattr(-,root,root)
-%endif
-#############################################################################
-
-%if %{slurm_with sgijob}
-%files proctrack-sgi-job
-%defattr(-,root,root)
-%{_libdir}/slurm/proctrack_sgi_job.so
 %endif
 #############################################################################
 
