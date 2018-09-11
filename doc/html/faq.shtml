@@ -1660,7 +1660,7 @@ when all of the processes associated with a job or job step have completed.
 Those plugins relying upon a kernel patch can reliably identify every process.
 Those plugins dependent upon process group IDs or parent process IDs are not
 reliable. See the <i>ProctrackType</i> description in the <i>slurm.conf</i>
-man page for details. We rely upon the sgi_job for most systems.</p>
+man page for details. We rely upon the cgroup plugin for most systems.</p>
 
 <p><a name="slurmd_oom"><b>34. How can I prevent the <i>slurmd</i> and
 <i>slurmstepd</i> daemons from being killed when a node's memory
