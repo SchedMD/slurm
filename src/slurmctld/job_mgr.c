@@ -9825,9 +9825,6 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 	int max_cpu_cnt = -1, max_core_cnt = -1;
 	int i;
 	struct job_details *detail_ptr = job_ptr->details;
-	char *cmd_line = NULL;
-	char *tmp = NULL;
-	uint32_t len = 0;
 	uint16_t shared = 0;
 
 	if (!detail_ptr)
@@ -9869,22 +9866,11 @@ static void _pack_default_job_details(struct job_record *job_ptr,
 			packstr(detail_ptr->dependency, buffer);
 
 			if (detail_ptr->argv) {
-				/* Determine size needed for a string
-				 * containing all arguments */
-				for (i =0; detail_ptr->argv[i]; i++) {
-					len += strlen(detail_ptr->argv[i]);
-				}
-				len += i;
-
-				cmd_line = xmalloc(len);
-				tmp = cmd_line;
+				char *cmd_line = NULL;
 				for (i = 0; detail_ptr->argv[i]; i++) {
-					if (i != 0) {
-						*tmp = ' ';
-						tmp++;
-					}
-					strcpy(tmp,detail_ptr->argv[i]);
-					tmp += strlen(detail_ptr->argv[i]);
+					if (i != 0)
+						xstrcatchar(cmd_line, ' ');
+					xstrcat(cmd_line, detail_ptr->argv[i]);
 				}
 				packstr(cmd_line, buffer);
 				xfree(cmd_line);
