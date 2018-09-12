@@ -55,21 +55,6 @@ static int g_io_init_msg_packed_size =
 
 #define io_init_msg_packed_size() g_io_init_msg_packed_size
 
-/*
-static void
-_print_data(char *data, int datalen)
-{
-	char buf[1024];
-	size_t len = 0;
-	int i;
-
-	for (i = 0; i < datalen; i++)
-		len += sprintf(buf+len, "%02x", data[i]);
-
-	info("data: %s", buf);
-}
-*/
-
 void
 io_hdr_pack(io_hdr_t *hdr, Buf buffer)
 {

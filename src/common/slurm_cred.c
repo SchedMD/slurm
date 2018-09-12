@@ -81,7 +81,6 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
  */
 #define DEFAULT_EXPIRATION_WINDOW 120
 
-#define EXTREME_DEBUG   0
 #define MAX_TIME 0x7fffffff
 
 /*
@@ -1573,20 +1572,6 @@ _slurm_cred_alloc(void)
 
 	return cred;
 }
-
-
-#if EXTREME_DEBUG
-static void
-_print_data(char *data, int datalen)
-{
-	char buf[1024];
-	size_t len = 0;
-	int i;
-
-	for (i = 0; i < datalen; i++)
-		len += sprintf(buf+len, "%02x", data[i]);
-}
-#endif
 
 static int
 _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
