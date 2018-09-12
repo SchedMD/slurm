@@ -5787,6 +5787,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	sock_gres_t *sock_gres;
 	gres_job_state_t *job_specs;
 	int i, c, s, sock_cnt = 0, req_cores, rem_sockets, full_socket;
+	int tot_core_cnt = 0, min_core_cnt = 1;
 	uint64_t cnt_avail_sock, cnt_avail_total, max_gres = 0, rem_gres = 0;
 	uint64_t tot_gres_sock, max_tasks;
 	uint32_t task_cnt_incr;
@@ -5805,6 +5806,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			if (bit_test(avail_core, i))
 				avail_cores_per_sock[s]++;
 		}
+		tot_core_cnt += avail_cores_per_sock[s];
 	}
 
 	task_cnt_incr = *min_tasks_this_node;
@@ -5861,6 +5863,11 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				*min_tasks_this_node = max_gres;
 		}
 
+		min_core_cnt = MAX(*min_tasks_this_node, 1) *
+			       MAX(mc_ptr->cpus_per_task, 1);
+		min_core_cnt = (min_core_cnt + cpus_per_core - 1) /
+			       cpus_per_core;
+
 		/* Filter out unusable GRES by socket */
 		avail_cores_tot = 0;
 		cnt_avail_total = sock_gres->cnt_any_sock;
@@ -5880,10 +5887,17 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 						sock_gres->cnt_by_sock[s];
 					sock_gres->cnt_by_sock[s] = 0;
 				}
-				if (first_pass) {
-					i = s * cores_per_socket;
-					bit_nclear(avail_core, i,
-						   i + cores_per_socket - 1);
+				if (first_pass &&
+				    (tot_core_cnt > min_core_cnt)) {
+					for (c = 0; c < cores_per_socket; c++) {
+						i = (s * cores_per_socket) + c;
+						if (!bit_test(avail_core, i))
+							continue;
+						bit_clear(avail_core, i);
+						if (--tot_core_cnt <=
+						    min_core_cnt)
+							break;
+					}
 				}
 				continue;
 			}
