@@ -168,7 +168,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	slurm_make_time_str ((time_t *)&job_step_ptr->start_time, time_str,
 		sizeof(time_str));
 	if (job_step_ptr->time_limit == INFINITE)
-		sprintf(limit_str, "UNLIMITED");
+		snprintf(limit_str, sizeof(limit_str), "UNLIMITED");
 	else
 		secs2time_str ((time_t)job_step_ptr->time_limit * 60,
 				limit_str, sizeof(limit_str));
