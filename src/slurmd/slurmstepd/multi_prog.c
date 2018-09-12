@@ -328,7 +328,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 {
 	int i, j, line_num = 0, rank_id, total_ranks = 0;
 	char *line = NULL, *local_data = NULL;
-	char *end_ptr = NULL, *save_ptr = NULL, *tmp_str;
+	char *end_ptr = NULL, *save_ptr = NULL, *tmp_str = NULL;
 	char *rank_spec = NULL, *cmd_spec = NULL, *args_spec = NULL;
 	char *p = NULL;
 	char **tmp_args, **tmp_cmd, *one_rank;
@@ -358,8 +358,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		else
 			line_break = false;
 		if (last_line_break && last_rank_spec) {
-			tmp_str = xmalloc(strlen(last_rank_spec) + 3);
-			sprintf(tmp_str, "[%s]", last_rank_spec);
+			xstrfmtcat(tmp_str, "[%s]", last_rank_spec);
 			hl = hostlist_create(tmp_str);
 			xfree(tmp_str);
 			if (!hl)
@@ -422,8 +421,7 @@ extern void multi_prog_parse(stepd_step_rec_t *job, uint32_t **gtid)
 		else
 			args_spec = p;		/* arguments string */
 
-		tmp_str = xmalloc(strlen(rank_spec) + 3);
-		sprintf(tmp_str, "[%s]", rank_spec);
+		xstrfmtcat(tmp_str, "[%s]", rank_spec);
 		hl = hostlist_create(tmp_str);
 		xfree(tmp_str);
 		if (!hl)
