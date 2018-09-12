@@ -1793,12 +1793,13 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 			      char *hostname, int nodeid)
 {
 	int i;
-	char tmp_str[10], *task_list = NULL;
+	char *tmp_str = NULL, *task_list = NULL;
 	hostlist_t hl = hostlist_create(NULL);
 
 	for (i=0; i<msg->tasks_to_launch[nodeid]; i++) {
-		sprintf(tmp_str, "%u", msg->global_task_ids[nodeid][i]);
+		xstrfmtcat(tmp_str, "%u", msg->global_task_ids[nodeid][i]);
 		hostlist_push_host(hl, tmp_str);
+		xfree(tmp_str);
 	}
 	task_list = hostlist_ranged_string_xmalloc(hl);
 	hostlist_destroy(hl);
