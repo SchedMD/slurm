@@ -5262,6 +5262,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 			sock_gres->total_cnt -= sock_gres->cnt_by_sock[s];
 			sock_gres->cnt_by_sock[s] = 0;
 			avail_sock--;
+			avail_sock_flag[s] = false;
 		}
 		xfree(avail_sock_flag);
 	}
