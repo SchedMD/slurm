@@ -50,12 +50,12 @@ and site reports.</p>
 <tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Peltz (LANL)</td><td>Slurm in a Container-Only World</td></tr>
 <tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Jacobsen (NERSC)</td><td>A Declarative Programming Style Job Submission Filter</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
-<tr><td nowrap>12:50 - 13:40</td><td>Technical</td><td>Clayer, Faure (Atos)</td><td>Generalized Hypercube &emdash; A Topology Plugin</td></tr>
-<tr><td nowrap>13:40 - 14:10</td><td>Technical</td><td>Ewan (EPFL)</td><td>Keeping Accounts Consistent Across Clusters Using LDAP and YAML</td></tr>
-<tr><td nowrap>14:10 - 14:40</td><td>Technical</td><td>Arnhold, Rotscher, Markwardt (Dresden)</td><td>Real-Time Job Monitoring Using An Extended slurmctld Generic Plugin</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">14:40 - 15:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>15:00 - 15:30</td><td>Technical</td><td>Bartkiewicz, Jette (SchedMD)</td><td>Scheduling by Trackable Resource (cons_tres)</td></tr>
-<tr><td nowrap>15:30 - 16:10</td><td>Technical</td><td>TBD (Google)</td><td>Cloud Bursting with GCE</td></tr>
+<tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Clayer, Faure (Atos)</td><td>Generalized Hypercube &mdash; A Topology Plugin</td></tr>
+<tr><td nowrap>13:20 - 13:50</td><td>Technical</td><td>Ewan (EPFL)</td><td>Keeping Accounts Consistent Across Clusters Using LDAP and YAML</td></tr>
+<tr><td nowrap>13:50 - 14:20</td><td>Technical</td><td>Arnhold, Rotscher, Markwardt (Dresden)</td><td>Real-Time Job Monitoring Using An Extended slurmctld Generic Plugin</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+<tr><td nowrap>14:40 - 15:10</td><td>Technical</td><td>Bartkiewicz, Jette (SchedMD)</td><td>Scheduling by Trackable Resource (cons_tres)</td></tr>
+<tr><td nowrap>15:10 - 16:10</td><td>Technical</td><td>TBD (Google)</td><td>Cloud Bursting with GCE</td></tr>
 <tr><td nowrap>16:10 - 16:40</td><td>Technical</td><td>Christiansen</td><td>Slurm 18.08 Overview &amp; Roadmap</td></tr>
 
 <tr>
@@ -118,7 +118,7 @@ and site reports.</p>
 <p>Douglas Jacobsen (NERSC)</p>
 <p>The NERSC policy set for managing a complex workload has a number of complex requirements, not least of which is the ability to flexibly add new policies rapidly in a bug-free way. At the beginning of 2018 we replaced our traditional procedural-style lua job submission and modification filter with a declarative rules-based job submission filter. The rules are described in /etc/slurm/policy.yaml. Each ruleset has rule matching definitions, validation definitions (a matching ruleset that fail validation results in an error), and execution definitions (job parameter modifications), as well as a numerical priority to indicate the order of evaluation. The underlying code is still the lua job_submit plugin, however it has transformed into library code that is easily extensible and shared between systems, while the policies are separated into a YAML data description and easily tracked over time. A driver is included to allow automated testing of both the lua library code and policy sets without a slurm instance for unit testing. Looking forward these policy definitions will be easily shared with the cli_filter to enable client and server-side enforcement of policies. These innovations have led to simpler modification and update of policy sets while reducing the potential for introducing bugs with seemingly simple modifications.</p>
 
-<h3>Generalized Hypercube &emdash; A Topology Plugin</h3>
+<h3>Generalized Hypercube &mdash; A Topology Plugin</h3>
 <p>Mathis Clayer, Adrien Faure (Atos)</p>
 <p>The hypercube topology is a way to provide fast internode communication, but for such topology, we have a strong constraint on the number of switches (2dim). The topology named Generalized HyperCube topology (GHC) avoids this constraint. This topology allows to define any number of switches in each dimension. This presentation will provide details on the development made to create this new topology plugin, how to enable this plugin, some performance test related to this plugin and the plan to push it to the community.</p>
 
@@ -199,6 +199,6 @@ important in the field of job scheduling. The idea behind Slurm simulator is pre
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 10 September 2018</p>
+<p style="text-align:center;">Last modified 12 September 2018</p>
 
 <!--#include virtual="footer.txt"-->
