@@ -2096,6 +2096,12 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			min_tasks_this_node = job_ptr->details->num_tasks;
 			max_tasks_this_node = job_ptr->details->num_tasks;
 		}
+	} else if (job_ptr->details &&
+		   ((job_ptr->details->num_tasks == 1) ||
+		    (job_ptr->details->num_tasks ==
+		     job_ptr->details->max_nodes))) {
+		min_tasks_this_node = 1;
+		max_tasks_this_node = 1;
 	} else {
 		min_tasks_this_node = 1;
 		max_tasks_this_node = NO_VAL;

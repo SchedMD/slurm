@@ -5788,7 +5788,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	gres_job_state_t *job_specs;
 	int i, c, s, sock_cnt = 0, req_cores, rem_sockets, full_socket;
 	uint64_t cnt_avail_sock, cnt_avail_total, max_gres = 0, rem_gres = 0;
-	uint64_t max_tasks;
+	uint64_t tot_gres_sock, max_tasks;
 	uint32_t task_cnt_incr;
 	bool *req_sock = NULL;	/* Required socket */
 	uint16_t *avail_cores_per_sock, cpus_per_gres;
@@ -5870,16 +5870,24 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				cnt_avail_sock = sock_gres->cnt_by_sock[s];
 			} else
 				cnt_avail_sock = 0;
-			if (job_specs->gres_per_socket >
-			    (sock_gres->cnt_any_sock + cnt_avail_sock)) {
+			tot_gres_sock = sock_gres->cnt_any_sock +
+					cnt_avail_sock;
+			if ((job_specs->gres_per_socket > tot_gres_sock) ||
+			    (tot_gres_sock == 0)) {
 				/* Insufficient GRES on this socket */
 				if (sock_gres->cnt_by_sock) {
 					sock_gres->total_cnt -=
 						sock_gres->cnt_by_sock[s];
 					sock_gres->cnt_by_sock[s] = 0;
 				}
+				if (first_pass) {
+					i = s * cores_per_socket;
+					bit_nclear(avail_core, i,
+						   i + cores_per_socket - 1);
+				}
 				continue;
 			}
+
 			avail_cores_tot += avail_cores_per_sock[s];
 			/* Test for available cores on this socket */
 			if ((enforce_binding || first_pass) &&
