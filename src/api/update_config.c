@@ -324,5 +324,5 @@ _slurm_update (void *data, slurm_msg_type_t msg_type)
 	if (rc != SLURM_SUCCESS)
 		slurm_seterrno_ret(rc);
 
-        return SLURM_PROTOCOL_SUCCESS;
+        return SLURM_SUCCESS;
 }

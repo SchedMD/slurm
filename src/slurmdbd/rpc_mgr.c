@@ -77,7 +77,7 @@ extern void *rpc_mgr(void *no_data)
 
 	/* initialize port for RPCs */
 	if ((sockfd = slurm_init_msg_engine_port(get_dbd_port()))
-	    == SLURM_SOCKET_ERROR)
+	    == SLURM_ERROR)
 		fatal("slurm_init_msg_engine_port error %m");
 
 	slurm_persist_conn_recv_server_init();
@@ -93,7 +93,7 @@ extern void *rpc_mgr(void *no_data)
 		 */
 		if ((newsockfd = slurm_accept_msg_conn(sockfd,
 						       &cli_addr)) ==
-		    SLURM_SOCKET_ERROR) {
+		    SLURM_ERROR) {
 			slurm_persist_conn_free_thread_loc(i);
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");

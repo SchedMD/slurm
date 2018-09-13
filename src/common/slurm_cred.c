@@ -994,7 +994,7 @@ slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 
 	slurm_mutex_unlock(&ctx->mutex);
 
-	return (rc > 0 ? SLURM_SUCCESS : SLURM_FAILURE);
+	return (rc > 0 ? SLURM_SUCCESS : SLURM_ERROR);
 }
 
 int
@@ -1037,7 +1037,7 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time,
 
 error:
 	slurm_mutex_unlock(&ctx->mutex);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 int

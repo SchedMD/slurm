@@ -95,7 +95,7 @@ scontrol_print_licenses(const char *name)
 	/* call the controller to get the meat
 	 */
 	cc = slurm_load_licenses(last_update, &msg, show_flags);
-	if (cc != SLURM_PROTOCOL_SUCCESS) {
+	if (cc != SLURM_SUCCESS) {
 		/* Hosed, crap out.
 		 */
 		exit_code = 1;

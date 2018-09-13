@@ -539,7 +539,7 @@ static int _load_cluster_nodes(slurm_msg_t *req_msg,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /* Maintain a consistent ordering of records */
@@ -669,7 +669,7 @@ static int _load_fed_nodes(slurm_msg_t *req_msg,
 	if (!orig_msg)
 		slurm_seterrno_ret(SLURM_ERROR);
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -884,5 +884,5 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }

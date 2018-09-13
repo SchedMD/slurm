@@ -457,7 +457,7 @@ extern int acct_gather_interconnect_p_get_data(acct_gather_data_t *data)
 	if (_read_ofed_values() != SLURM_SUCCESS) {
 		debug2("%s: Cannot retrieve ofed counters", __func__);
 		slurm_mutex_unlock(&ofed_lock);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	data[tres_pos].num_reads = ofed_sens.total_rcvpkts;

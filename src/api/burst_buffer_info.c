@@ -148,7 +148,7 @@ extern int slurm_load_burst_buffer_stat(int argc, char **argv,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -192,7 +192,7 @@ extern int slurm_load_burst_buffer_info(burst_buffer_info_msg_t **
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

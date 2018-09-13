@@ -375,11 +375,11 @@ extern int slurm_notify_job (uint32_t job_id, char *message)
 
 	if (slurm_send_recv_controller_rc_msg(&msg, &rc,
 					      working_cluster_rec) < 0)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 
 	if (rc) {
 		slurm_seterrno_ret(rc);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;

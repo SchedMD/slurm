@@ -161,7 +161,7 @@ int pmixp_coll_contrib_local(pmixp_coll_t *coll, pmixp_coll_type_t type,
 					    cbfunc, cbdata);
 		break;
 	default:
-		ret = SLURM_FAILURE;
+		ret = SLURM_ERROR;
 		break;
 	}
 
@@ -206,7 +206,7 @@ int pmixp_coll_init(pmixp_coll_t *coll, pmixp_coll_type_t type,
 		break;
 	default:
 		PMIXP_ERROR("Unknown coll type");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 	hostlist_destroy(hl);
 	if (rc) {

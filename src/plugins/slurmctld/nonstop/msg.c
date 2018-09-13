@@ -309,7 +309,7 @@ static void *_msg_thread(void *no_data)
 		if (i > 0)
 			sleep(10);
 		sock_fd = slurm_init_msg_engine_port(nonstop_comm_port);
-		if (sock_fd != SLURM_SOCKET_ERROR)
+		if (sock_fd != SLURM_ERROR)
 			break;
 		error("slurmctld/nonstop: can not open port: %hu %m",
 		      nonstop_comm_port);
@@ -318,7 +318,7 @@ static void *_msg_thread(void *no_data)
 	/* Process incoming RPCs until told to shutdown */
 	while (!thread_shutdown) {
 		new_fd = slurm_accept_msg_conn(sock_fd, &cli_addr);
-		if (new_fd == SLURM_SOCKET_ERROR) {
+		if (new_fd == SLURM_ERROR) {
 			if (errno != EINTR) {
 				info("slurmctld/nonstop: "
 				     "slurm_accept_msg_conn %m");

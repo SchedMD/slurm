@@ -226,7 +226,7 @@ int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 
 /*
  * Rewind the last play of credential cred. This allows the credential
- *  be used again. Returns SLURM_FAILURE if no credential state is found
+ *  be used again. Returns SLURM_ERROR if no credential state is found
  *  to be rewound, SLURM_SUCCESS otherwise.
  */
 int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t *cred);

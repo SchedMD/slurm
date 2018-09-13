@@ -414,12 +414,12 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 	xassert(agent_arg_ptr->hostlist);
 
 	if (agent_arg_ptr->node_count == 0)
-		return SLURM_FAILURE;	/* no messages to be sent */
+		return SLURM_ERROR;	/* no messages to be sent */
 	hostlist_cnt = hostlist_count(agent_arg_ptr->hostlist);
 	if (agent_arg_ptr->node_count != hostlist_cnt) {
 		error("%s: node_count RPC different from hosts listed (%d!=%d)",
 		     __func__, agent_arg_ptr->node_count, hostlist_cnt);
-		return SLURM_FAILURE;	/* no messages to be sent */
+		return SLURM_ERROR;	/* no messages to be sent */
 	}
 	return SLURM_SUCCESS;
 }

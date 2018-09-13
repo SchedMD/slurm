@@ -82,7 +82,7 @@ scontrol_print_layout (int argc, char **argv)
 		i++;
 	}
 	if (slurm_load_layout (layout_type, entities, type, flags,
-			       &layout_info_ptr) == SLURM_PROTOCOL_SUCCESS) {
+			       &layout_info_ptr) == SLURM_SUCCESS) {
 		slurm_print_layout_info ( stdout, layout_info_ptr, one_liner );
 		slurm_free_layout_info_msg (layout_info_ptr);
 	}

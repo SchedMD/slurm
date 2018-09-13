@@ -1135,7 +1135,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		sockfd[i] = slurm_init_msg_engine_addrname_port(
 					node_addr,
 					slurmctld_conf.slurmctld_port+i);
-		if (sockfd[i] == SLURM_SOCKET_ERROR) {
+		if (sockfd[i] == SLURM_ERROR) {
 			fatal("slurm_init_msg_engine_addrname_port error %m");
 			return NULL;	/* Fix CLANG false positive */
 		}
@@ -1190,7 +1190,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		 */
 		if ((newsockfd = slurm_accept_msg_conn(sockfd[i],
 						       &cli_addr)) ==
-		    SLURM_SOCKET_ERROR) {
+		    SLURM_ERROR) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
 			server_thread_decr();

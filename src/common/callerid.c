@@ -95,7 +95,7 @@ static int _match_inode(callerid_conn_t *conn_result, ino_t *inode_search,
 		debug3("_match_inode matched");
 		return SLURM_SUCCESS;
 	}
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int _match_conn(callerid_conn_t *conn_search, ino_t *inode_result,
@@ -110,7 +110,7 @@ static int _match_conn(callerid_conn_t *conn_search, ino_t *inode_result,
 	    memcmp((void*)&conn_search->ip_src, (void*)&conn_row->ip_src,
 		   addrbytes) !=0
 	   )
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 
 	debug3("_match_conn matched inode %lu", (long unsigned int)inode_row);
 	*inode_result = inode_row;
@@ -131,7 +131,7 @@ static int _find_match_in_tcp_file(
 		int (*match_func)(callerid_conn_t *,
 				   ino_t *, callerid_conn_t *, ino_t, int))
 {
-	int rc = SLURM_FAILURE;
+	int rc = SLURM_ERROR;
 	FILE *fp;
 	char ip_dst_str[INET6_ADDRSTRLEN+1]; /* +1 for scanf to add \0 */
 	char ip_src_str[INET6_ADDRSTRLEN+1];
@@ -214,12 +214,12 @@ static int _find_inode_in_fddir(pid_t pid, ino_t inode)
 	struct dirent *entryp;
 	char dirpath[1024];
 	char fdpath[2048];
-	int rc = SLURM_FAILURE;
+	int rc = SLURM_ERROR;
 	struct stat statbuf;
 
 	snprintf(dirpath, 1024, "/proc/%d/fd", (pid_t)pid);
 	if ((dirp = opendir(dirpath)) == NULL) {
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	while (1) {
@@ -262,7 +262,7 @@ extern int callerid_find_inode_by_conn(callerid_conn_t conn, ino_t *inode)
 
 	/* Add new protocols here if needed, such as UDP */
 
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 
@@ -282,7 +282,7 @@ extern int callerid_find_conn_by_inode(callerid_conn_t *conn, ino_t inode)
 
 	/* Add new protocols here if needed, such as UDP */
 
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 
@@ -298,14 +298,14 @@ extern int find_pid_by_inode (pid_t *pid_result, ino_t inode)
 	DIR *dirp;
 	struct dirent *entryp;
 	char *dirpath = "/proc";
-	int rc = SLURM_FAILURE;
+	int rc = SLURM_ERROR;
 	pid_t pid;
 
 	if ((dirp = opendir(dirpath)) == NULL) {
 		/* Houston, we have a problem: /proc is inaccessible */
 		error("find_pid_by_inode: unable to open %s: %m",
 				dirpath);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	while (1) {
@@ -340,7 +340,7 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 	struct dirent *entryp;
 	char *dirpath = "/proc/self/fd";
 	char fdpath[1024];
-	int rc = SLURM_FAILURE;
+	int rc = SLURM_ERROR;
 	struct stat statbuf;
 
 	if ((dirp = opendir(dirpath)) == NULL) {

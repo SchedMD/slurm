@@ -432,7 +432,7 @@ _handle_accept(void *arg)
 	return NULL;
 
 fail:
-	rc = SLURM_FAILURE;
+	rc = SLURM_ERROR;
 	safe_write(fd, &rc, sizeof(int));
 rwfail:
 	if (close(fd) == -1)
@@ -455,7 +455,7 @@ _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 			return -1;
 		} else {
 			debug3("Leaving _handle_request on read error: %m");
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 	}
 	debug3("Got request %d", req);
@@ -549,12 +549,12 @@ _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
 		break;
 	default:
 		error("Unrecognized request: %d", req);
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 		break;
 	}
 
 	debug3("Leaving  _handle_request: %s",
-	       rc ? "SLURM_FAILURE" : "SLURM_SUCCESS");
+	       rc ? "SLURM_ERROR" : "SLURM_SUCCESS");
 	return rc;
 }
 
@@ -565,7 +565,7 @@ _handle_state(int fd, stepd_step_rec_t *job)
 
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -589,7 +589,7 @@ _handle_info(int fd, stepd_step_rec_t *job)
 
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -600,7 +600,7 @@ _handle_mem_limits(int fd, stepd_step_rec_t *job)
 
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -610,7 +610,7 @@ _handle_uid(int fd, stepd_step_rec_t *job)
 
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -620,7 +620,7 @@ _handle_nodeid(int fd, stepd_step_rec_t *job)
 
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -808,7 +808,7 @@ done:
 	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -893,7 +893,7 @@ done:
 
 rwfail:
 	xfree(image_dir);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -931,7 +931,7 @@ done:
 
 rwfail:
 	xfree(message);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -1013,7 +1013,7 @@ done:
 	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -1115,7 +1115,7 @@ rwfail:
 	}
 	xfree(pids);
 	xfree(gtids);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -1137,7 +1137,7 @@ _handle_pid_in_container(int fd, stepd_step_rec_t *job)
 	debug("Leaving _handle_pid_in_container");
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static void _block_on_pid(pid_t pid)
@@ -1226,7 +1226,7 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 	if (job->stepid != SLURM_EXTERN_CONT) {
 		error("%s: non-extern step (%u) given for job %u.",
 		      __func__, job->stepid, job->jobid);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	debug("%s: for job %u.%u, pid %d",
@@ -1245,17 +1245,17 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 
 	if (proctrack_g_add(job, pid) != SLURM_SUCCESS) {
 		error("%s: Job %u can't add pid %d to proctrack plugin in the extern_step.", __func__, job->jobid, pid);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	if (task_g_add_pid(pid) != SLURM_SUCCESS) {
 		error("%s: Job %u can't add pid %d to task plugin in the extern_step.", __func__, job->jobid, pid);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	if (jobacct_gather_add_task(pid, &jobacct_id, 1) != SLURM_SUCCESS) {
 		error("%s: Job %u can't add pid %d to jobacct_gather plugin in the extern_step.", __func__, job->jobid, pid);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	/* spawn a thread that will wait on the pid given */
@@ -1280,7 +1280,7 @@ _handle_add_extern_pid(int fd, stepd_step_rec_t *job)
 	debug("Leaving _handle_add_extern_pid");
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int _handle_x11_display(int fd, stepd_step_rec_t *job)
@@ -1300,7 +1300,7 @@ static int _handle_x11_display(int fd, stepd_step_rec_t *job)
 	debug("Leaving _handle_get_x11_display");
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -1310,7 +1310,7 @@ _handle_daemon_pid(int fd, stepd_step_rec_t *job)
 
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 /* Wait for the job to completely start before trying to suspend it. */
@@ -1420,7 +1420,7 @@ done:
 	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -1495,7 +1495,7 @@ done:
 	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -1609,7 +1609,7 @@ rwfail:	if (lock_set) {
 		slurm_mutex_unlock(&step_complete.lock);
 	}
 	FREE_NULL_BUFFER(buffer);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -1679,7 +1679,7 @@ _handle_task_info(int fd, stepd_step_rec_t *job)
 
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 /* We don't check the uid in this function, anyone may list the task info. */
@@ -1705,7 +1705,7 @@ _handle_list_pids(int fd, stepd_step_rec_t *job)
 rwfail:
 	if (npids > 0)
 		xfree(pids);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int
@@ -1736,7 +1736,7 @@ done:
 	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 extern void wait_for_resumed(uint16_t msg_type)

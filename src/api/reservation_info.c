@@ -212,5 +212,5 @@ extern int slurm_load_reservations (time_t update_time,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }

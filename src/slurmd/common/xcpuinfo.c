@@ -232,7 +232,7 @@ handle_write:
        if (hwloc_topology_load(*topology)) {
 	       /* error in load hardware topology */
 	       debug("hwloc_topology_load() failed.");
-	       ret = SLURM_FAILURE;
+	       ret = SLURM_ERROR;
        } else if (!conf->def_config) {
 	       debug2("hwloc_topology_export_xml");
 	       if (_internal_hwloc_topology_export_xml(*topology, topo_file)) {
@@ -290,7 +290,7 @@ extern int xcpuinfo_hwloc_topo_get(
 		hwloc_xml_whole = xstrdup_printf("%s/hwloc_topo_whole.xml",
 						 conf->spooldir);
 	if (xcpuinfo_hwloc_topo_load(&topology, hwloc_xml_whole, true)
-	    == SLURM_FAILURE) {
+	    == SLURM_ERROR) {
 		hwloc_topology_destroy(topology);
 		xfree(hwloc_xml_whole);
 		return 2;

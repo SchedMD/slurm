@@ -1256,7 +1256,7 @@ job_manager(stepd_step_rec_t *job)
 	/* fork necessary threads for checkpoint */
 	if (checkpoint_stepd_prefork(job) != SLURM_SUCCESS) {
 		error("Failed checkpoint_stepd_prefork");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 		xstrfmtcat(err_msg,
 			   "checkpoint_stepd_prefork failure for job %u.%u on %s",
 			   job->jobid, job->stepid, conf->hostname);
@@ -1270,7 +1270,7 @@ job_manager(stepd_step_rec_t *job)
 	if (!job->batch && (job->stepid != SLURM_EXTERN_CONT) &&
 	    (mpi_hook_slurmstepd_prefork(job, &job->env) != SLURM_SUCCESS)) {
 		error("Failed mpi_hook_slurmstepd_prefork");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 		xstrfmtcat(err_msg,
 			   "mpi_hook_slurmstepd_prefork failure for job %u.%u on %s",
 			   job->jobid, job->stepid, conf->hostname);

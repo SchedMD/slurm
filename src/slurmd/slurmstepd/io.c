@@ -1705,19 +1705,19 @@ io_dup_stdio(stepd_step_task_info_t *t)
 {
 	if (dup2(t->stdin_fd, STDIN_FILENO  ) < 0) {
 		error("dup2(stdin): %m");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	fd_set_noclose_on_exec(STDIN_FILENO);
 
 	if (dup2(t->stdout_fd, STDOUT_FILENO) < 0) {
 		error("dup2(stdout): %m");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	fd_set_noclose_on_exec(STDOUT_FILENO);
 
 	if (dup2(t->stderr_fd, STDERR_FILENO) < 0) {
 		error("dup2(stderr): %m");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	fd_set_noclose_on_exec(STDERR_FILENO);
 

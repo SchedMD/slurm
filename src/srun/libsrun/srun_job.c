@@ -1949,7 +1949,7 @@ static int _set_rlimit_env(void)
 
 		if (getrlimit (rli->resource, rlim) < 0) {
 			error ("getrlimit (RLIMIT_%s): %m", rli->name);
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 			continue;
 		}
 
@@ -1965,7 +1965,7 @@ static int _set_rlimit_env(void)
 
 		if (setenvf (NULL, name, format, cur) < 0) {
 			error ("unable to set %s in environment", name);
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 			continue;
 		}
 
@@ -2034,7 +2034,7 @@ static int _set_umask_env(void)
 			((mask>>6)&07), ((mask>>3)&07), mask&07);
 		if (setenvf(NULL, "SLURM_UMASK", "%s", mask_char) < 0) {
 			error ("unable to set SLURM_UMASK in environment");
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 		debug ("propagating UMASK=%s", mask_char);
 	}

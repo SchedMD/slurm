@@ -96,7 +96,7 @@ extern int state_control_configured_tres(char *type)
 
 	memset(&req, 0, sizeof(assoc_mgr_info_request_msg_t));
 	cc = slurm_load_assoc_mgr_info(&req, &msg);
-	if (cc != SLURM_PROTOCOL_SUCCESS) {
+	if (cc != SLURM_SUCCESS) {
 		slurm_perror("slurm_load_assoc_mgr_info error");
 		goto cleanup;
 	}

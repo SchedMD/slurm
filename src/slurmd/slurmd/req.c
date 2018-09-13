@@ -694,12 +694,12 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 
 	if (pipe(to_stepd) < 0 || pipe(to_slurmd) < 0) {
 		error("_forkexec_slurmstepd pipe failed: %m");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	if (_add_starting_step(type, req)) {
 		error("_forkexec_slurmstepd failed in _add_starting_step: %m");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	if ((pid = fork()) < 0) {
@@ -709,7 +709,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		close(to_slurmd[0]);
 		close(to_slurmd[1]);
 		_remove_starting_step(type, req);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	} else if (pid > 0) {
 		int rc = SLURM_SUCCESS;
 #if (SLURMSTEPD_MEMCHECK == 0)
@@ -741,11 +741,11 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		if (i < 0) {
 			error("%s: Can not read return code from slurmstepd "
 			      "got %d: %m", __func__, i);
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		} else if (i != sizeof(int)) {
 			error("%s: slurmstepd failed to send return code "
 			      "got %d: %m", __func__, i);
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		} else {
 			int delta_time = time(NULL) - start_time;
 			int cc;
@@ -4195,7 +4195,7 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 		error("sbcast: data decompression error for UID %u, file %s",
 		      key.uid, key.fname);
 		_fb_rdunlock();
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	offset = 0;
@@ -4208,7 +4208,7 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 			error("sbcast: uid:%u can't write `%s`: %m",
 			      key.uid, key.fname);
 			_fb_rdunlock();
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 		offset += inx;
 	}
@@ -4739,7 +4739,7 @@ static void _epilog_complete_msg_setup(
  *  Send epilog complete message to currently active controller.
  *  If enabled, use message aggregation.
  *   Returns SLURM_SUCCESS if message sent successfully,
- *           SLURM_FAILURE if epilog complete message fails to be sent.
+ *           SLURM_ERROR if epilog complete message fails to be sent.
  */
 static int
 _epilog_complete(uint32_t jobid, int rc)
@@ -6195,7 +6195,7 @@ _add_starting_step(uint16_t type, void *req)
 	default:
 		error("%s called with an invalid type: %u", __func__, type);
 		xfree(starting_step);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	list_append(conf->starting_steps, starting_step);
@@ -6225,7 +6225,7 @@ _remove_starting_step(uint16_t type, void *req)
 		break;
 	default:
 		error("%s called with an invalid type: %u", __func__, type);
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 		goto fail;
 	}
 
@@ -6235,7 +6235,7 @@ _remove_starting_step(uint16_t type, void *req)
 		error("%s: step %u.%u not found", __func__,
 		      starting_step.job_id,
 		      starting_step.step_id);
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 	slurm_cond_broadcast(&conf->starting_steps_cond);
 fail:

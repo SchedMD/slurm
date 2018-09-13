@@ -70,5 +70,5 @@ extern int slurm_complete_job (uint32_t job_id, uint32_t job_return_code)
 	if (rc)
 		slurm_seterrno_ret(rc);
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }

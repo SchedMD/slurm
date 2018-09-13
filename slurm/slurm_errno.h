@@ -55,12 +55,6 @@ extern "C" {
 /* general return codes */
 #define SLURM_SUCCESS   0
 #define SLURM_ERROR    -1
-#define SLURM_FAILURE  -1
-
-/* general communication layer return codes */
-#define SLURM_SOCKET_ERROR     -1
-#define SLURM_PROTOCOL_SUCCESS  0
-#define SLURM_PROTOCOL_ERROR   -1
 
 enum {
 	/* General Message error codes */

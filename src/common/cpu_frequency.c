@@ -208,10 +208,10 @@ static int _derive_avail_freq(int cpuidx)
 
 	min_freq = _cpu_freq_get_scaling_freq(cpuidx, "scaling_min_freq");
 	if (min_freq == 0)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	max_freq = _cpu_freq_get_scaling_freq(cpuidx, "scaling_max_freq");
 	if (max_freq == 0)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	delta_freq = (max_freq - min_freq) / (FREQ_LIST_MAX - 1);
 	for (i = 0; i < (FREQ_LIST_MAX - 1); i++)
 		cpufreq[cpuidx].avail_freq[i] = min_freq + (delta_freq * i);
@@ -224,7 +224,7 @@ static int _derive_avail_freq(int cpuidx)
 /*
  * Find available frequencies on this cpu
  * IN      cpuidx     - cpu to query
- * Return: SLURM_SUCCESS or SLURM_FAILURE
+ * Return: SLURM_SUCCESS or SLURM_ERROR
  *         avail_freq array will be in strictly ascending order
  */
 static int
@@ -362,7 +362,7 @@ cpu_freq_init(slurmd_conf_t *conf)
 			}
 		}
 		fclose(fp);
-		if (_cpu_freq_cpu_avail(i) == SLURM_FAILURE)
+		if (_cpu_freq_cpu_avail(i) == SLURM_ERROR)
 			continue;
 		if ((i == 0) && (debug_flags & DEBUG_FLAG_CPU_FREQ)) {
 			for (j = 0; j < cpufreq[i].nfreq; j++) {
@@ -675,7 +675,7 @@ _cpu_freq_next_cpu(char **core_range, uint16_t *cpuidx,
 /*
  * Find current governor on this cpu
  *
- * Return: SLURM_SUCCESS or SLURM_FAILURE
+ * Return: SLURM_SUCCESS or SLURM_ERROR
  */
 static int
 _cpu_freq_get_cur_gov(int cpuidx)
@@ -688,17 +688,17 @@ _cpu_freq_get_cur_gov(int cpuidx)
 		 PATH_TO_CPU "cpu%u/cpufreq/scaling_governor", cpuidx);
 	if ((fp = fopen(path, "r")) == NULL) {
 		error("%s: Could not open scaling_governor", __func__);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	if (fgets(gov_value, LINE_LEN, fp) == NULL) {
 		error("%s: Could not read scaling_governor", __func__);
 		fclose(fp);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	if (strlen(gov_value) >= GOV_NAME_LEN) {
 		error("%s: scaling_governor is to long", __func__);
 		fclose(fp);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	strcpy(cpufreq[cpuidx].org_governor, gov_value);
 	fclose(fp);
@@ -728,7 +728,7 @@ _cpu_freq_set_gov(stepd_step_rec_t *job, int cpuidx, char* gov )
 		fclose(fp);
 	} else {
 		error("%s: Can not set CPU governor: %m", __func__);
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 	if (fd >= 0) {
 		(void) fd_release_lock(fd);
@@ -806,7 +806,7 @@ _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
 		fclose(fp);
 	} else {
 		error("%s: Can not set %s: %m", __func__, option);
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 	if (fd >= 0) {
 		(void) fd_release_lock(fd);
@@ -827,7 +827,7 @@ _cpu_freq_set_scaling_freq(stepd_step_rec_t *job, int cpx, uint32_t freq,
  * Get current state
  *
  * IN:     cpuidx        - cpu to query
- * Return: SLURM_SUCCESS or SLURM_FAILURE
+ * Return: SLURM_SUCCESS or SLURM_ERROR
  */
 static int
 _cpu_freq_current_state(int cpuidx)
@@ -866,22 +866,22 @@ _cpu_freq_current_state(int cpuidx)
 	else
 		freq = _cpu_freq_get_scaling_freq(cpuidx, "scaling_cur_freq");
 	if (freq == 0)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	cpufreq[cpuidx].org_frequency = freq;
 	freq = _cpu_freq_get_scaling_freq(cpuidx, "scaling_min_freq");
 	if (freq == 0)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	cpufreq[cpuidx].org_min_freq = freq;
 	freq = _cpu_freq_get_scaling_freq(cpuidx, "scaling_max_freq");
 	if (freq == 0)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	cpufreq[cpuidx].org_max_freq = freq;
 
 	if (_cpu_freq_get_cur_gov(cpuidx) == SLURM_SUCCESS) {
 		cpufreq[cpuidx].org_set = true;
 		return SLURM_SUCCESS;
 	} else {
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 }
 
@@ -894,7 +894,7 @@ _cpu_freq_govspec_string(uint32_t cpu_freq, int cpuidx)
 {
 
 	if ((cpu_freq & CPU_FREQ_RANGE_FLAG) == 0)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 		
 	switch(cpu_freq)
 	{
@@ -919,7 +919,7 @@ _cpu_freq_govspec_string(uint32_t cpu_freq, int cpuidx)
 			strcpy(cpufreq[cpuidx].new_governor, "userspace");
 		return SLURM_SUCCESS;
 	default:
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 }
 
@@ -1032,7 +1032,7 @@ _cpu_freq_setup_data(stepd_step_rec_t *job, int cpx)
 	}
 
 	/* Get current state */
-	if (_cpu_freq_current_state(cpx) == SLURM_FAILURE)
+	if (_cpu_freq_current_state(cpx) == SLURM_ERROR)
 		return;
 
 	if (job->cpu_freq_min == NO_VAL &&
@@ -1176,23 +1176,23 @@ cpu_freq_set(stepd_step_rec_t *job)
 				 * Set it so it is in range
 				 * have to go to UserSpace to do it. */
 				rc = _cpu_freq_set_gov(job, i, "userspace");
-				if (rc == SLURM_FAILURE)
+				if (rc == SLURM_ERROR)
 					return;
 				rc = _cpu_freq_set_scaling_freq(job, i, freq,
 						         "scaling_setspeed");
-				if (rc == SLURM_FAILURE)
+				if (rc == SLURM_ERROR)
 					continue;
 				if (cpufreq[i].new_governor[0] == '\0') {
 					/* Not requesting new gov, so restore */
 					rc = _cpu_freq_set_gov(job, i,
 						cpufreq[i].org_governor);
-					if (rc == SLURM_FAILURE)
+					if (rc == SLURM_ERROR)
 						continue;
 				}
 			}
 			rc = _cpu_freq_set_scaling_freq(job, i, freq,
 							"scaling_max_freq");
-			if (rc == SLURM_FAILURE)
+			if (rc == SLURM_ERROR)
 				continue;
 		}
 		if (cpufreq[i].new_min_freq != NO_VAL) {
@@ -1202,40 +1202,40 @@ cpu_freq_set(stepd_step_rec_t *job)
 				 * Set it so it is in range
 				 * have to go to UserSpace to do it. */
 				rc = _cpu_freq_set_gov(job, i, "userspace");
-				if (rc == SLURM_FAILURE)
+				if (rc == SLURM_ERROR)
 					continue;
 				rc = _cpu_freq_set_scaling_freq(job, i, freq,
 						         "scaling_setspeed");
-				if (rc == SLURM_FAILURE)
+				if (rc == SLURM_ERROR)
 					continue;
 				if (cpufreq[i].new_governor[0] == '\0') {
 					/* Not requesting new gov, so restore */
 					rc= _cpu_freq_set_gov(job, i,
 						cpufreq[i].org_governor);
-					if (rc == SLURM_FAILURE)
+					if (rc == SLURM_ERROR)
 						continue;
 				}
 			}
 			rc= _cpu_freq_set_scaling_freq(job, i, freq,
 						       "scaling_min_freq");
-			if (rc == SLURM_FAILURE)
+			if (rc == SLURM_ERROR)
 				continue;
 		}
 		if (cpufreq[i].new_frequency != NO_VAL) {
 			if (xstrcmp(cpufreq[i].org_governor,"userspace")) {
 				rc = _cpu_freq_set_gov(job, i, "userspace");
-				if (rc == SLURM_FAILURE)
+				if (rc == SLURM_ERROR)
 					continue;
 			}
 			rc = _cpu_freq_set_scaling_freq(job, i,
 					cpufreq[i].new_frequency,
 					"scaling_setspeed");
-			if (rc == SLURM_FAILURE)
+			if (rc == SLURM_ERROR)
 				continue;
 		}
 		if (cpufreq[i].new_governor[0] != '\0') {
 			rc = _cpu_freq_set_gov(job, i, cpufreq[i].new_governor);
-			if (rc == SLURM_FAILURE)
+			if (rc == SLURM_ERROR)
 				continue;
 		}
 		if (debug_flags & DEBUG_FLAG_CPU_FREQ) {
@@ -1281,12 +1281,12 @@ cpu_freq_reset(stepd_step_rec_t *job)
 
 		if (cpufreq[i].new_frequency != NO_VAL) {
 			rc = _cpu_freq_set_gov(job, i, "userspace");
-			if (rc == SLURM_FAILURE)
+			if (rc == SLURM_ERROR)
 				continue;
 			rc = _cpu_freq_set_scaling_freq(job, i,
 					cpufreq[i].org_frequency,
 					"scaling_setspeed");
-			if (rc == SLURM_FAILURE)
+			if (rc == SLURM_ERROR)
 				continue;
 			cpufreq[i].new_governor[0] = 'u'; /* force gov reset */
 		}
@@ -1297,19 +1297,19 @@ cpu_freq_reset(stepd_step_rec_t *job)
 			rc = _cpu_freq_set_scaling_freq(job, i,
 					cpufreq[i].org_max_freq,
 					"scaling_max_freq");
-			if (rc == SLURM_FAILURE)
+			if (rc == SLURM_ERROR)
 				continue;
 		}
 		if (cpufreq[i].new_min_freq != NO_VAL) {
 			rc = _cpu_freq_set_scaling_freq(job, i,
 					cpufreq[i].org_min_freq,
 					"scaling_min_freq");
-			if (rc == SLURM_FAILURE)
+			if (rc == SLURM_ERROR)
 				continue;
 		}
 		if (cpufreq[i].new_governor[0] != '\0') {
 			rc = _cpu_freq_set_gov(job, i, cpufreq[i].org_governor);
-			if (rc == SLURM_FAILURE)
+			if (rc == SLURM_ERROR)
 				continue;
 		}
 
@@ -1420,7 +1420,7 @@ cpu_freq_set_env(char* var, uint32_t argmin, uint32_t argmax, uint32_t arggov)
 	}
 	if (setenvf(NULL, var, "%s", bfall)) {
 		error("Unable to set %s", var);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
 }

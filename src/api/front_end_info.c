@@ -229,5 +229,5 @@ slurm_load_front_end (time_t update_time, front_end_info_msg_t **resp)
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }

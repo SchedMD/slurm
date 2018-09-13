@@ -128,7 +128,7 @@ extern int init(void)
 	libpmix_plug = _libpmix_open();
 	if (!libpmix_plug) {
 		PMIXP_ERROR("pmi/pmix: can not load PMIx library");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
 }

@@ -187,7 +187,7 @@ static int lua_register_slurm_output_functions (void)
 	/*
 	 * slurm.SUCCESS, slurm.FAILURE and slurm.ERROR
 	 */
-	lua_pushnumber (L, SLURM_FAILURE);
+	lua_pushnumber (L, SLURM_ERROR);
 	lua_setfield (L, -2, "FAILURE");
 	lua_pushnumber (L, SLURM_ERROR);
 	lua_setfield (L, -2, "ERROR");

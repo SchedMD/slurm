@@ -3121,7 +3121,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 	slurm_mutex_unlock(&global_lock);
 	if (jp->tables_per_task == 0) {
 		hostlist_iterator_destroy(hi);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	hostlist_iterator_reset(hi);
 
@@ -3145,7 +3145,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		 * immed_slots are non-zero unless running on an HFI network
 		 * with User Space communications, so ignore user options.
 		 * Alternately we can check for non-zero user option and
-		 * return SLURM_FAILURE here. */
+		 * return SLURM_ERROR here. */
 		if ((cau != 0) || (immed != 0)) {
 			debug("switch/nrt: cau:%hu immed:%hu ignored for job",
 			      cau, immed);
@@ -3158,7 +3158,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		info("switch/nrt: invalid instances specification (%d)",
 		     instances);
 		hostlist_iterator_destroy(hi);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	jp->tables_per_task *= instances;
 
@@ -3169,7 +3169,7 @@ nrt_build_jobinfo(slurm_nrt_jobinfo_t *jp, hostlist_t hl,
 		     protocol);
 		xfree(protocol_table);
 		hostlist_iterator_destroy(hi);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	jp->tables_per_task *= protocol_table->protocol_table_cnt;
 
@@ -3240,7 +3240,7 @@ fail:
 	(void) nrt_job_step_complete(jp, hl);	/* Release resources already
 						 * allocated */
 	/* slurmctld will call nrt_free_jobinfo(jp) to free memory */
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static void
@@ -3938,7 +3938,7 @@ _unload_window_all_jobs(char *adapter_name, nrt_adapter_t adapter_type,
 
 	if (job_keys)
 		free(job_keys);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int _unload_job_table(slurm_nrt_jobinfo_t *jp)
@@ -4128,7 +4128,7 @@ nrt_libstate_restore(Buf buffer)
 	if (!nrt_state) {
 		error("nrt_libstate_restore nrt_state is NULL");
 		slurm_mutex_unlock(&global_lock);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	rc = _unpack_libstate(nrt_state, buffer);
 	slurm_mutex_unlock(&global_lock);

@@ -105,5 +105,5 @@ slurm_load_licenses(time_t t,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }

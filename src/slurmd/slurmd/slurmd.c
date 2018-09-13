@@ -334,7 +334,7 @@ main (int argc, char **argv)
 	 * Restore any saved revoked credential information
 	 */
 	if (!conf->cleanstart && (_restore_cred_state(conf->vctx) < 0))
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 
 	if (jobacct_gather_init() != SLURM_SUCCESS)
 		fatal("Unable to initialize jobacct_gather");
@@ -641,7 +641,7 @@ send_registration_msg(uint32_t status, bool startup)
 		if (slurm_send_recv_controller_msg(&req, &resp_msg,
 						   working_cluster_rec) < 0) {
 			error("Unable to register: %m");
-			ret_val = SLURM_FAILURE;
+			ret_val = SLURM_ERROR;
 			goto fail;
 		}
 		slurm_free_node_registration_status_msg(msg);
@@ -1522,7 +1522,7 @@ _slurmd_init(void)
 	/* slurm_select_init() must be called before
 	 * build_all_nodeline_info() to be called with proper argument. */
 	if (slurm_select_init(1) != SLURM_SUCCESS )
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	build_all_nodeline_info(true, 0);
 	build_all_frontend_info(true);
 
@@ -1537,12 +1537,12 @@ _slurmd_init(void)
 	 */
 	if (_set_slurmd_spooldir() < 0) {
 		error("Unable to initialize slurmd spooldir");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	/* Set up the hwloc whole system xml file */
 	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 
 	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
@@ -1550,9 +1550,9 @@ _slurmd_init(void)
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
 	    (gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL)
 	     != SLURM_SUCCESS))
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	if (slurm_topo_init() != SLURM_SUCCESS)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 
 	/*
 	 * Get and set slurmd topology information
@@ -1577,13 +1577,13 @@ _slurmd_init(void)
 	_print_conf();
 
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	if (slurmd_task_init() != SLURM_SUCCESS)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	if (spank_slurmd_init() < 0)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 
 	if (getrlimit(RLIMIT_CPU, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
@@ -1607,7 +1607,7 @@ _slurmd_init(void)
 	 * Create a context for verifying slurm job credentials
 	 */
 	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	if (!xstrcmp(conf->select_type, "select/serial")) {
 		/* Only cache credential for 5 seconds with select/serial
 		 * for shorter cache searches and higher throughput */
@@ -1655,7 +1655,7 @@ _slurmd_init(void)
 			if ((access("/var/tmp", W_OK) != 0) ||
 			    (chdir("/var/tmp") < 0)) {
 				error("chdir(/var/tmp): %m");
-				return SLURM_FAILURE;
+				return SLURM_ERROR;
 			} else
 				info("chdir to /var/tmp");
 		}
@@ -1663,7 +1663,7 @@ _slurmd_init(void)
 
 	if ((devnull = open("/dev/null", O_RDWR | O_CLOEXEC)) < 0) {
 		error("Unable to open /dev/null: %m");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	/* make sure we have slurmstepd installed */

@@ -131,7 +131,7 @@ main (int argc, char **argv)
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t */
 	if (!(job = _step_setup(cli, self, msg))) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 		goto ending;
 	}
 
@@ -143,7 +143,7 @@ main (int argc, char **argv)
 	/* sets job->msg_handle and job->msgid */
 	if (msg_thr_create(job) == SLURM_ERROR) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 		goto ending;
 	}
 
@@ -420,7 +420,7 @@ _send_fail_to_slurmd(int sock)
 	/* If running under valgrind/memcheck, this pipe doesn't work correctly
 	 * so just skip it. */
 #if (SLURMSTEPD_MEMCHECK == 0)
-	int fail = SLURM_FAILURE;
+	int fail = SLURM_ERROR;
 
 	if (errno)
 		fail = errno;

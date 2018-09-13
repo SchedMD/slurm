@@ -87,7 +87,7 @@ extern int slurm_load_powercap(powercap_info_msg_t **resp)
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

@@ -87,7 +87,7 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
 	xfree(local_hostname);
-	if (rc == SLURM_SOCKET_ERROR)
+	if (rc == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -104,7 +104,7 @@ extern int slurm_submit_batch_job(job_desc_msg_t *req,
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -147,7 +147,7 @@ extern int slurm_submit_batch_pack_job(List job_req_list,
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
 	xfree(local_hostname);
-	if (rc == SLURM_SOCKET_ERROR)
+	if (rc == SLURM_ERROR)
 		return SLURM_ERROR;
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
@@ -163,5 +163,5 @@ extern int slurm_submit_batch_pack_job(List job_req_list,
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }

@@ -936,11 +936,11 @@ extern int scontrol_callerid(int argc, char **argv)
 			!= SLURM_SUCCESS) {
 		fprintf(stderr,
 			"slurm_network_callerid: unable to retrieve callerid data from remote slurmd\n");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	} else if (job_id == NO_VAL) {
 		fprintf(stderr,
 			"slurm_network_callerid: remote job id indeterminate\n");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	} else {
 		printf("%u %s\n", job_id, node_name);
 		return SLURM_SUCCESS;

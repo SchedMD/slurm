@@ -90,7 +90,7 @@ extern int slurm_load_topo(topo_info_response_msg_t **resp)
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

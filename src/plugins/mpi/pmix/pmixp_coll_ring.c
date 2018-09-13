@@ -602,7 +602,7 @@ int pmixp_coll_ring_check(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr)
 		nodename = pmixp_info_job_host(hdr->nodeid);
 		PMIXP_ERROR("%p: unexpected contrib from %s:%u, expected is %d",
 			    coll, nodename, hdr->nodeid, _ring_prev_id(coll));
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	rc = pmixp_coll_check(coll, hdr->seq);
 	if (PMIXP_COLL_REQ_FAILURE == rc) {

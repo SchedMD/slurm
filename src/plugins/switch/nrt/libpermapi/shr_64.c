@@ -294,7 +294,7 @@ static void _agent_proc_connect(int fe_comm_socket,uint32_t fe_auth_key)
 
 	while (1) {
 		fe_comm_conn = slurm_accept_msg_conn(fe_comm_socket, &be_addr);
-		if (fe_comm_conn != SLURM_SOCKET_ERROR) {
+		if (fe_comm_conn != SLURM_ERROR) {
 			if (_validate_connect(fe_comm_conn, fe_auth_key))
 				be_connected = true;
 			break;

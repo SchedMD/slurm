@@ -142,7 +142,7 @@ static int _check_lustre_fs(void)
 			if (!proc_dir) {
 				error("%s: not able to read %s %m",
 				      __func__, lustre_directory);
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			} else {
 				closedir(proc_dir);
 			}
@@ -179,7 +179,7 @@ static int _read_lustre_counters(void)
 	proc_dir = opendir(lustre_dir);
 	if (proc_dir == NULL) {
 		error("%s: Cannot open %s %m", __func__, lustre_dir);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	while ((entry = readdir(proc_dir))) {
@@ -306,7 +306,7 @@ static int _update_node_filesystem(void)
 	if (_read_lustre_counters() != SLURM_SUCCESS) {
 		error("%s: Cannot read lustre counters", __func__);
 		slurm_mutex_unlock(&lustre_lock);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	if (first) {
@@ -454,7 +454,7 @@ extern int acct_gather_filesystem_p_get_data(acct_gather_data_t *data)
 	if (_read_lustre_counters() != SLURM_SUCCESS) {
 		error("%s: Cannot read lustre counters", __func__);
 		slurm_mutex_unlock(&lustre_lock);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	/* Obtain the current values read from all lustre-xxxx directories */

@@ -3115,7 +3115,7 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 	if (!comm_cluster_rec) {
 		/* This means the addr wasn't set up already */
 		if (!(proto_conf = _slurm_api_get_comm_config()))
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 
 		for (i = 0; i < proto_conf->control_cnt; i++) {
 			proto_conf->controller_addr[i].sin_port =
@@ -4616,7 +4616,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 	 */
 	if ((fd = slurm_open_controller_conn(&ctrl_addr, &use_backup,
 					     comm_cluster_rec)) < 0) {
-		rc = SLURM_SOCKET_ERROR;
+		rc = SLURM_ERROR;
 		goto cleanup;
 	}
 
@@ -4639,7 +4639,7 @@ cleanup:
  *  Open a connection to the "address" specified in the slurm msg `req'
  *   Then, immediately close the connection w/out waiting for a reply.
  *
- *   Returns SLURM_SUCCESS on success SLURM_FAILURE (< 0) for failure.
+ *   Returns SLURM_SUCCESS on success SLURM_ERROR (< 0) for failure.
  *
  * DO NOT USE THIS IN NEW CODE
  * Use slurm_send_recv_rc_msg_only_one() or something similar instead.
@@ -4671,7 +4671,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int pollrc;
 
 	if ((fd = slurm_open_msg_conn(&req->address)) < 0) {
-		return SLURM_SOCKET_ERROR;
+		return SLURM_ERROR;
 	}
 
 	if ((rc = slurm_send_node_msg(fd, req)) < 0) {

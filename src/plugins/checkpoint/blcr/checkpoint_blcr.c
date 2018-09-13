@@ -438,7 +438,7 @@ extern int slurm_ckpt_signal_tasks(stepd_step_rec_t *job, char *image_dir)
 	fd = xmalloc(sizeof(int) * 2 * job->node_tasks);
 	if (!children || !fd) {
 		error("slurm_ckpt_signal_tasks: memory exhausted");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 		goto out;
 	}
 	for (i = 0; i < job->node_tasks; i ++) {

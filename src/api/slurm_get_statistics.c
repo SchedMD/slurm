@@ -56,7 +56,7 @@ extern int slurm_reset_statistics(stats_info_request_msg_t *req)
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
 
-	if (rc == SLURM_SOCKET_ERROR)
+	if (rc == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -71,7 +71,7 @@ extern int slurm_reset_statistics(stats_info_request_msg_t *req)
 			slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 
 }
 
@@ -91,7 +91,7 @@ extern int slurm_get_statistics(stats_info_response_msg_t **buf,
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
 
-	if (rc == SLURM_SOCKET_ERROR)
+	if (rc == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
@@ -108,5 +108,5 @@ extern int slurm_get_statistics(stats_info_response_msg_t **buf,
 			slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }

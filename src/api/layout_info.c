@@ -59,7 +59,7 @@
  */
 /*extern int slurm_load_layout (node_info_msg_t **resp, char* l_type)
 {
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }*/
 
 extern int slurm_load_layout (char *layout_type, char *entities, char *type,
@@ -100,7 +100,7 @@ extern int slurm_load_layout (char *layout_type, char *entities, char *type,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 void slurm_print_layout_info ( FILE* out, layout_info_msg_t *layout_info_ptr,

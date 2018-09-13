@@ -2643,7 +2643,7 @@ extern void slurm_reset_alias(char *node_name, char *node_addr,
 
 /*
  * slurm_conf_get_addr - Return the slurm_addr_t for a given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
+ * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
  */
 extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address)
 {
@@ -2664,7 +2664,7 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address)
 				if (p->addr.sin_family == 0 &&
 				    p->addr.sin_port == 0) {
 					slurm_conf_unlock();
-					return SLURM_FAILURE;
+					return SLURM_ERROR;
 				}
 				p->addr_initialized = true;
 			}
@@ -2676,14 +2676,14 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address)
 	}
 	slurm_conf_unlock();
 
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 /*
  * slurm_conf_get_cpus_bsct -
  * Return the cpus, boards, sockets, cores, and threads configured for a
  * given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
+ * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
  */
 extern int slurm_conf_get_cpus_bsct(const char *node_name,
 				    uint16_t *cpus, uint16_t *boards,
@@ -2717,13 +2717,13 @@ extern int slurm_conf_get_cpus_bsct(const char *node_name,
 	}
 	slurm_conf_unlock();
 
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 /*
  * slurm_conf_get_res_spec_info - Return resource specialization info
  * for a given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
+ * Returns SLURM_SUCCESS on success, SLURM_ERROR on failure.
  */
 extern int slurm_conf_get_res_spec_info(const char *node_name,
 					char **cpu_spec_list,
@@ -2753,7 +2753,7 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
 	}
 	slurm_conf_unlock();
 
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 /* gethostname_short - equivalent to gethostname, but return only the first

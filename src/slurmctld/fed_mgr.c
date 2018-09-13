@@ -1038,7 +1038,7 @@ static int _persist_fed_job_lock_bool(slurmdb_cluster_rec_t *conn,
 	req_msg.data             = &sib_msg;
 
 	if (_send_recv_msg(conn, &req_msg, &resp_msg, false)) {
-		rc = SLURM_PROTOCOL_ERROR;
+		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
@@ -1047,12 +1047,12 @@ static int _persist_fed_job_lock_bool(slurmdb_cluster_rec_t *conn,
 		if ((rc = slurm_get_return_code(resp_msg.msg_type,
 						resp_msg.data))) {
 			slurm_seterrno(rc);
-			rc = SLURM_PROTOCOL_ERROR;
+			rc = SLURM_ERROR;
 		}
 		break;
 	default:
 		slurm_seterrno(SLURM_UNEXPECTED_MSG_ERROR);
-		rc = SLURM_PROTOCOL_ERROR;
+		rc = SLURM_ERROR;
 		break;
 	}
 
@@ -2051,7 +2051,7 @@ extern int _handle_fed_job_sync(fed_job_update_info_t *job_update_info)
  * independently get the job read lock. */
 extern int _handle_fed_send_job_sync(fed_job_update_info_t *job_update_info)
 {
-        int rc = SLURM_PROTOCOL_SUCCESS;
+        int rc = SLURM_SUCCESS;
 	List jobids;
         slurm_msg_t req_msg, job_msg;
 	sib_msg_t sib_msg = {0};
@@ -3749,7 +3749,7 @@ next_lock:
 	/* have to release the lock on those that said yes */
 	_job_unlock_spec_sibs(job_ptr, replied_sibs);
 
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static int _slurmdbd_conn_active()
@@ -3805,7 +3805,7 @@ extern int fed_mgr_job_lock(struct job_record *job_ptr)
 						   job_ptr->job_id,
 						   cluster_id);
 		} else {
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 
 		if (!rc) {

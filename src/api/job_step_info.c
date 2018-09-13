@@ -449,7 +449,7 @@ _load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
 	if (!orig_msg)
 		slurm_seterrno_ret(ESLURM_INVALID_JOB_ID);
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

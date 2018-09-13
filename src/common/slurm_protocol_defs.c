@@ -5617,7 +5617,7 @@ extern int parse_part_enforce_type(char *enforce_part_type, uint16_t *param)
 		*param = PARTITION_ENFORCE_ALL;
 	} else {
 		error("Bad EnforcePartLimits: %s\n", value);
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	xfree(value);

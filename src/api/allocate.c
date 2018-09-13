@@ -141,13 +141,13 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	if (host_set)
 		req->alloc_node = NULL;
 
-	if (rc == SLURM_SOCKET_ERROR)
-		return SLURM_SOCKET_ERROR;
+	if (rc == SLURM_ERROR)
+		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
-			return SLURM_PROTOCOL_ERROR;
+			return SLURM_ERROR;
 		*resp = NULL;
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
@@ -157,7 +157,7 @@ slurm_allocate_resources (job_desc_msg_t *req,
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -236,7 +236,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
 
-	if (rc == SLURM_SOCKET_ERROR) {
+	if (rc == SLURM_ERROR) {
 		int errnum = errno;
 		destroy_forward(&req_msg.forward);
 		destroy_forward(&resp_msg.forward);
@@ -264,7 +264,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		resp = (resource_allocation_response_msg_t *) resp_msg.data;
 		if (resp->node_cnt > 0) {
 			/* yes, allocation has been granted */
-			errno = SLURM_PROTOCOL_SUCCESS;
+			errno = SLURM_SUCCESS;
 		} else if (!req->immediate) {
 			if (resp->error_code != SLURM_SUCCESS)
 				info("%s", slurm_strerror(resp->error_code));
@@ -406,7 +406,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 	*will_run_resp = earliest_resp;
 
 	if (!earliest_resp)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -513,7 +513,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
 
-	if (rc == SLURM_SOCKET_ERROR) {
+	if (rc == SLURM_ERROR) {
 		int errnum = errno;
 		destroy_forward(&req_msg.forward);
 		destroy_forward(&resp_msg.forward);
@@ -547,7 +547,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 		_pack_alloc_test(resp, &node_cnt, &job_id);
 		if (node_cnt > 0) {
 			/* yes, allocation has been granted */
-			errno = SLURM_PROTOCOL_SUCCESS;
+			errno = SLURM_SUCCESS;
 		} else if (immediate_flag) {
 			debug("Immediate allocation not granted");
 		} else {
@@ -789,12 +789,12 @@ static int _job_will_run_cluster(job_desc_msg_t *req,
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg, cluster);
 
 	if (rc < 0)
-		return SLURM_SOCKET_ERROR;
+		return SLURM_ERROR;
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		if (_handle_rc_msg(&resp_msg) < 0)
-			return SLURM_PROTOCOL_ERROR;
+			return SLURM_ERROR;
 		break;
 	case RESPONSE_JOB_WILL_RUN:
 		*will_run_resp = (will_run_response_msg_t *) resp_msg.data;
@@ -804,7 +804,7 @@ static int _job_will_run_cluster(job_desc_msg_t *req,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -843,7 +843,7 @@ re_send:
 			goto re_send;
 		}
 		if (rc < 0)
-			return SLURM_PROTOCOL_ERROR;
+			return SLURM_ERROR;
 		*resp = NULL;
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
@@ -854,7 +854,7 @@ re_send:
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS ;
+	return SLURM_SUCCESS ;
 }
 
 /*
@@ -893,14 +893,14 @@ extern int slurm_allocation_lookup(uint32_t jobid,
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO:
 		*info = (resource_allocation_response_msg_t *) resp_msg.data;
-		return SLURM_PROTOCOL_SUCCESS;
+		return SLURM_SUCCESS;
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -939,14 +939,14 @@ extern int slurm_pack_job_lookup(uint32_t jobid, List *info)
 		break;
 	case RESPONSE_JOB_PACK_ALLOCATION:
 		*info = (List) resp_msg.data;
-		return SLURM_PROTOCOL_SUCCESS;
+		return SLURM_SUCCESS;
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -986,14 +986,14 @@ extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t pack_job_offset,
 		break;
 	case RESPONSE_JOB_SBCAST_CRED:
 		*info = (job_sbcast_cred_msg_t *)resp_msg.data;
-		return SLURM_PROTOCOL_SUCCESS;
+		return SLURM_SUCCESS;
 		break;
 	default:
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

@@ -73,7 +73,7 @@ slurm_reconfigure (void)
 	if (rc)
 		slurm_seterrno_ret(rc);
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -144,7 +144,7 @@ extern int slurm_takeover(int backup_inx)
 
 static int _send_message_controller(int dest, slurm_msg_t *req)
 {
-	int rc = SLURM_PROTOCOL_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	int fd = -1;
 	slurm_msg_t resp_msg;
 
@@ -222,7 +222,7 @@ slurm_set_debugflags (uint64_t debug_flags_plus, uint64_t debug_flags_minus)
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
-        return SLURM_PROTOCOL_SUCCESS;
+        return SLURM_SUCCESS;
 }
 
 /*
@@ -260,7 +260,7 @@ slurm_set_debug_level (uint32_t debug_level)
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
-        return SLURM_PROTOCOL_SUCCESS;
+        return SLURM_SUCCESS;
 }
 
 /*
@@ -298,7 +298,7 @@ slurm_set_schedlog_level (uint32_t schedlog_level)
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
-        return SLURM_PROTOCOL_SUCCESS;
+        return SLURM_SUCCESS;
 }
 
 /*
@@ -335,5 +335,5 @@ extern int slurm_set_fs_dampeningfactor (uint16_t factor)
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
-        return SLURM_PROTOCOL_SUCCESS;
+        return SLURM_SUCCESS;
 }

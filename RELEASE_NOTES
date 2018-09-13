@@ -43,6 +43,10 @@ NOTE: slurmd and slurmctld will now fatal if two incompatible mechanisms for
       been deprecated in favour of OverMemoryKill, since now the default is
       *NOT* to have any memory enforcement mechanism.
 
+NOTE: SLURM_FAILURE, SLURM_SOCKET_ERROR, SLURM_PROTOCOL_SUCCESS, and
+      SLURM_PROTOCOL_ERROR been removed please update to SLURM_SUCCESS or
+      SLURM_ERROR as appropriate.
+
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res

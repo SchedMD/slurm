@@ -1001,7 +1001,7 @@ unpack_error:
 	error("Incomplete job state save file");
 	info("Recovered information about %d jobs", job_cnt);
 	free_buf(buffer);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 /*
@@ -1061,7 +1061,7 @@ unpack_error:
 	error("Invalid job data checkpoint file");
 	xfree(ver_str);
 	free_buf(buffer);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 static void _pack_acct_policy_limit(acct_policy_limit_set_t *limit_set,
@@ -2404,7 +2404,7 @@ unpack_error:
 	for (i = 0; i < pelog_env_size; i++)
 		xfree(pelog_env[i]);
 	xfree(pelog_env);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 /*
@@ -2755,7 +2755,7 @@ unpack_error:
 	xfree(work_dir);
 	xfree(ckpt_dir);
 	xfree(restart_dir);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 /* _add_job_hash - add a job hash entry for given job record, job_id must

@@ -809,7 +809,7 @@ unpack_error:
 	xfree(trig_ptr->program);
 	FREE_NULL_BITMAP(trig_ptr->nodes_bitmap);
 	xfree(trig_ptr);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 extern int trigger_state_save(void)

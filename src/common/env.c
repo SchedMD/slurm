@@ -296,11 +296,11 @@ int setup_env(env_t *env, bool preserve_env)
 	if (!preserve_env && env->ntasks) {
 		if (setenvf(&env->env, "SLURM_NTASKS", "%d", env->ntasks)) {
 			error("Unable to set SLURM_NTASKS environment variable");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 		if (setenvf(&env->env, "SLURM_NPROCS", "%d", env->ntasks)) {
 			error("Unable to set SLURM_NPROCS environment variable");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 	}
 
@@ -308,55 +308,55 @@ int setup_env(env_t *env, bool preserve_env)
 	    setenvf(&env->env, "SLURM_CPUS_PER_TASK", "%d",
 		    env->cpus_per_task) ) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->ntasks_per_node
 	   && setenvf(&env->env, "SLURM_NTASKS_PER_NODE", "%d",
 		      env->ntasks_per_node) ) {
 		error("Unable to set SLURM_NTASKS_PER_NODE");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->ntasks_per_socket
 	   && setenvf(&env->env, "SLURM_NTASKS_PER_SOCKET", "%d",
 		      env->ntasks_per_socket) ) {
 		error("Unable to set SLURM_NTASKS_PER_SOCKET");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->ntasks_per_core
 	   && setenvf(&env->env, "SLURM_NTASKS_PER_CORE", "%d",
 		      env->ntasks_per_core) ) {
 		error("Unable to set SLURM_NTASKS_PER_CORE");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->cpus_on_node
 	   && setenvf(&env->env, "SLURM_CPUS_ON_NODE", "%d",
 		      env->cpus_on_node) ) {
 		error("Unable to set SLURM_CPUS_ON_NODE");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	set_distribution(env->distribution, &dist, &lllp_dist);
 	if (dist)
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 
 	if ((env->distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%u",
 			    env->plane_size)) {
 			error("Can't set SLURM_DIST_PLANESIZE env variable");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 
 	if (lllp_dist)
 		if (setenvf(&env->env, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
 			error("Can't set SLURM_DIST_LLLP env variable");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 
 
@@ -428,22 +428,22 @@ int setup_env(env_t *env, bool preserve_env)
 		if (!env->batch_flag) {
 			if (setenvf(&env->env, "SLURM_CPU_BIND", str_bind)) {
 				error("Unable to set SLURM_CPU_BIND");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SLURM_CPU_BIND_LIST",
 				    str_bind_list)) {
 				error("Unable to set SLURM_CPU_BIND_LIST");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SLURM_CPU_BIND_TYPE",
 				    str_bind_type)) {
 				error("Unable to set SLURM_CPU_BIND_TYPE");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE",
 				    str_verbose)) {
 				error("Unable to set SLURM_CPU_BIND_VERBOSE");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 		}
 
@@ -512,66 +512,66 @@ int setup_env(env_t *env, bool preserve_env)
 		if (env->batch_flag) {
 			if (setenvf(&env->env, "SBATCH_MEM_BIND", str_bind)) {
 				error("Unable to set SBATCH_MEM_BIND");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SBATCH_MEM_BIND_LIST",
 				    str_bind_list)) {
 				error("Unable to set SBATCH_MEM_BIND_LIST");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (str_prefer &&
 			    setenvf(&env->env, "SBATCH_MEM_BIND_PREFER",
 				    str_prefer)) {
 				error("Unable to set SBATCH_MEM_BIND_PREFER");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (str_bind_sort &&
 			    setenvf(&env->env, "SBATCH_MEM_BIND_SORT",
 				    str_bind_sort)) {
 				error("Unable to set SBATCH_MEM_BIND_SORT");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SBATCH_MEM_BIND_TYPE",
 				    str_bind_type)) {
 				error("Unable to set SBATCH_MEM_BIND_TYPE");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SBATCH_MEM_BIND_VERBOSE",
 				    str_verbose)) {
 				error("Unable to set SBATCH_MEM_BIND_VERBOSE");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 		} else {
 			if (setenvf(&env->env, "SLURM_MEM_BIND", str_bind)) {
 				error("Unable to set SLURM_MEM_BIND");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SLURM_MEM_BIND_LIST",
 				    str_bind_list)) {
 				error("Unable to set SLURM_MEM_BIND_LIST");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (str_prefer &&
 			    setenvf(&env->env, "SLURM_MEM_BIND_PREFER",
 				    str_prefer)) {
 				error("Unable to set SLURM_MEM_BIND_PREFER");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (str_bind_sort &&
 			    setenvf(&env->env, "SLURM_MEM_BIND_SORT",
 				    str_bind_sort)) {
 				error("Unable to set SLURM_MEM_BIND_SORT");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SLURM_MEM_BIND_TYPE",
 				    str_bind_type)) {
 				error("Unable to set SLURM_MEM_BIND_TYPE");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE",
 				    str_verbose)) {
 				error("Unable to set SLURM_MEM_BIND_VERBOSE");
-				rc = SLURM_FAILURE;
+				rc = SLURM_ERROR;
 			}
 		}
 
@@ -580,42 +580,42 @@ int setup_env(env_t *env, bool preserve_env)
 
 	if (cpu_freq_set_env("SLURM_CPU_FREQ_REQ", env->cpu_freq_min,
 			env->cpu_freq_max, env->cpu_freq_gov) != SLURM_SUCCESS)
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 
 	if (env->overcommit
 	    && (setenvf(&env->env, "SLURM_OVERCOMMIT", "1"))) {
 		error("Unable to set SLURM_OVERCOMMIT environment variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->slurmd_debug
 	    && setenvf(&env->env, "SLURMD_DEBUG", "%d", env->slurmd_debug)) {
 		error("Can't set SLURMD_DEBUG environment variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->labelio
 	   && setenvf(&env->env, "SLURM_LABELIO", "1")) {
 		error("Unable to set SLURM_LABELIO environment variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->jobid >= 0) {
 		if (setenvf(&env->env, "SLURM_JOB_ID", "%d", env->jobid)) {
 			error("Unable to set SLURM_JOB_ID environment");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 		/* and for backwards compatibility... */
 		if (setenvf(&env->env, "SLURM_JOBID", "%d", env->jobid)) {
 			error("Unable to set SLURM_JOBID environment");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 	}
 
 	if (env->job_name) {
 		if (setenvf(&env->env, "SLURM_JOB_NAME", "%s", env->job_name)) {
 			error("Unable to set SLURM_JOB_NAME environment");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 	}
 
@@ -630,75 +630,75 @@ int setup_env(env_t *env, bool preserve_env)
 			       (int)env->task_pid)) {
 			error("Unable to set SLURM_TASK_PID environment "
 			      "variable");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 		if ((env->nodeid >= 0) &&
 		    setenvf(&env->env, "SLURM_NODEID", "%d", env->nodeid)) {
 			error("Unable to set SLURM_NODEID environment");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 
 		if ((env->procid >= 0) &&
 		    setenvf(&env->env, "SLURM_PROCID", "%d", env->procid)) {
 			error("Unable to set SLURM_PROCID environment");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 
 		if ((env->localid >= 0) &&
 		    setenvf(&env->env, "SLURM_LOCALID", "%d", env->localid)) {
 			error("Unable to set SLURM_LOCALID environment");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 	}
 
 	if (env->stepid >= 0) {
 		if (setenvf(&env->env, "SLURM_STEP_ID", "%d", env->stepid)) {
 			error("Unable to set SLURM_STEP_ID environment");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 		/* and for backwards compatibility... */
 		if (setenvf(&env->env, "SLURM_STEPID", "%d", env->stepid)) {
 			error("Unable to set SLURM_STEPID environment");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 	}
 
 	if (!preserve_env && env->nhosts
 	    && setenvf(&env->env, "SLURM_NNODES", "%d", env->nhosts)) {
 		error("Unable to set SLURM_NNODES environment var");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->nhosts
 	    && setenvf(&env->env, "SLURM_JOB_NUM_NODES", "%d", env->nhosts)) {
 		error("Unable to set SLURM_JOB_NUM_NODES environment var");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->nodelist &&
 	    setenvf(&env->env, "SLURM_NODELIST", "%s", env->nodelist)) {
 		error("Unable to set SLURM_NODELIST environment var.");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->partition
 	    && setenvf(&env->env, "SLURM_JOB_PARTITION", "%s", env->partition)) {
 		error("Unable to set SLURM_JOB_PARTITION environment var.");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (!preserve_env && env->task_count
 	    && setenvf (&env->env,
 			"SLURM_TASKS_PER_NODE", "%s", env->task_count)) {
 		error ("Can't set SLURM_TASKS_PER_NODE env variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->comm_port
 	    && setenvf (&env->env, "SLURM_SRUN_COMM_PORT", "%u",
 			env->comm_port)) {
 		error ("Can't set SLURM_SRUN_COMM_PORT env variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->cli) {
@@ -718,46 +718,46 @@ int setup_env(env_t *env, bool preserve_env)
 	if (env->sgtids &&
 	    setenvf(&env->env, "SLURM_GTIDS", "%s", env->sgtids)) {
 		error("Unable to set SLURM_GTIDS environment variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->pty_port
 	&&  setenvf(&env->env, "SLURM_PTY_PORT", "%hu", env->pty_port)) {
 		error("Can't set SLURM_PTY_PORT env variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 	if (env->ws_col
 	&&  setenvf(&env->env, "SLURM_PTY_WIN_COL", "%hu", env->ws_col)) {
 		error("Can't set SLURM_PTY_WIN_COL env variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 	if (env->ws_row
 	&&  setenvf(&env->env, "SLURM_PTY_WIN_ROW", "%hu", env->ws_row)) {
 		error("Can't set SLURM_PTY_WIN_ROW env variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 	if (env->ckpt_dir
 	&& setenvf(&env->env, "SLURM_CHECKPOINT_IMAGE_DIR", "%s",
 		   env->ckpt_dir)) {
 		error("Can't set SLURM_CHECKPOINT_IMAGE_DIR env variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->restart_cnt &&
 	    setenvf(&env->env, "SLURM_RESTART_COUNT", "%u", env->restart_cnt)) {
 		error("Can't set SLURM_RESTART_COUNT env variable");
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	}
 
 	if (env->user_name) {
 		if (setenvf(&env->env, "SLURM_JOB_UID", "%u",
 			    (unsigned int) env->uid)) {
 			error("Can't set SLURM_JOB_UID env variable");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 		if (setenvf(&env->env, "SLURM_JOB_USER", "%s", env->user_name)){
 			error("Can't set SLURM_JOB_USER env variable");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 	}
 
@@ -768,7 +768,7 @@ int setup_env(env_t *env, bool preserve_env)
 			    env->account)) {
 			error("%s: can't set SLURM_JOB_ACCOUNT env variable",
 			      __func__);
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 	}
 	if (env->qos) {
@@ -778,7 +778,7 @@ int setup_env(env_t *env, bool preserve_env)
 			    env->qos)) {
 			error("%s: can't set SLURM_JOB_QOS env variable",
 				__func__);
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 	}
 	if (env->resv_name) {
@@ -788,7 +788,7 @@ int setup_env(env_t *env, bool preserve_env)
 			    env->resv_name)) {
 			error("%s: can't set SLURM_JOB_RESERVATION env variable",
 				__func__);
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 		}
 	}
 

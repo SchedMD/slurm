@@ -362,7 +362,7 @@ static void *_background_rpc_mgr(void *no_data)
 						 control_machine[backup_inx],
 						 slurmctld_conf.
 						 slurmctld_port))
-	    == SLURM_SOCKET_ERROR)
+	    == SLURM_ERROR)
 		fatal("slurm_init_msg_engine_addrname_port error %m");
 	unlock_slurmctld(config_read_lock);
 
@@ -384,7 +384,7 @@ static void *_background_rpc_mgr(void *no_data)
 		 * message implementation that just passes sockfd to newsockfd
 		 */
 		if ((newsockfd = slurm_accept_msg_conn(sockfd, &cli_addr))
-		    == SLURM_SOCKET_ERROR) {
+		    == SLURM_ERROR) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
 			continue;

@@ -105,7 +105,7 @@ int check_header_version(header_t * header)
 		}
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

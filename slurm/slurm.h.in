@@ -5095,7 +5095,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
  * OUT job_id -  ID of the job or NO_VAL
  * OUT node_name - name of the remote slurmd
  * IN node_name_size - size of the node_name buffer
- * RET SLURM_PROTOCOL_SUCCESS or SLURM_FAILURE on error
+ * RET SLURM_SUCCESS or SLURM_ERROR on error
  */
 extern int slurm_network_callerid(network_callerid_msg_t req,
 				  uint32_t *job_id,

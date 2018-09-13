@@ -4234,7 +4234,7 @@ unpack_error:
 	xfree(tres_per_socket);
 	xfree(tres_per_task);
 
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 /* Perform periodic job step checkpoints (per user request) */

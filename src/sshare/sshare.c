@@ -322,7 +322,7 @@ static int _get_info(shares_request_msg_t *shares_req,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /* returns number of objects added to list */

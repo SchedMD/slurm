@@ -529,7 +529,7 @@ static int _auth_cred_verify(Buf buf)
 	if (!auth_cred) {
 		PMIXP_ERROR("Unpacking authentication credential: %s",
 			    g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	auth_info = slurm_get_auth_info();

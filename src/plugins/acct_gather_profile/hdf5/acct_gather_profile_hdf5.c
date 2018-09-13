@@ -362,7 +362,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 
 	if (file_id < 1) {
 		info("PROFILE: Failed to create Node group");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	/*
 	 * fd_set_close_on_exec(file_id); Not supported for HDF5
@@ -373,7 +373,7 @@ extern int acct_gather_profile_p_node_step_start(stepd_step_rec_t* job)
 		H5Fclose(file_id);
 		file_id = -1;
 		info("PROFILE: Failed to create Node group");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	put_int_attribute(gid_node, ATTR_NODEINX, g_job->nodeid);
 	put_string_attribute(gid_node, ATTR_NODENAME, g_job->node_name);

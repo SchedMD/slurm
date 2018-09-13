@@ -291,7 +291,7 @@ extern int slurm_checkpoint_error (uint32_t job_id, uint32_t step_id,
 	rc = slurm_send_recv_controller_msg(&msg, &resp_msg,
 					    working_cluster_rec);
 
-	if (rc == SLURM_SOCKET_ERROR)
+	if (rc == SLURM_ERROR)
 		return rc;
 
 	switch (resp_msg.msg_type) {

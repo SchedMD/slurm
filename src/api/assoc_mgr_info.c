@@ -85,5 +85,5 @@ slurm_load_assoc_mgr_info(assoc_mgr_info_request_msg_t *req,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }

@@ -372,13 +372,13 @@ static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
 		      ip_src_str,
 		      req.port_src,
 		      user_name);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	} else if (*job_id == NO_VAL) {
 		debug("From %s port %d as %s: job indeterminate",
 		      ip_src_str,
 		      req.port_src,
 		      user_name);
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	} else {
 		info("From %s port %d as %s: member of job %u",
 		     ip_src_str,

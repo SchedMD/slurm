@@ -450,7 +450,7 @@ unpack_error:
 		fatal("Incomplete nonstop state file, start with '-i' to ignore this");
 	error("Incomplete nonstop state file");
 	free_buf(buffer);
-	return SLURM_FAILURE;
+	return SLURM_ERROR;
 }
 
 extern void init_job_db(void)

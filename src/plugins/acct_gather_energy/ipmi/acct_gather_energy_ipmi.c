@@ -257,18 +257,18 @@ static int _init_ipmi_config (void)
 	if (ipmi_monitoring_init(ipmimonitoring_init_flags, &errnum) < 0) {
 		error("ipmi_monitoring_init: %s",
 		      ipmi_monitoring_ctx_strerror(errnum));
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	if (!(ipmi_ctx = ipmi_monitoring_ctx_create())) {
 		error("ipmi_monitoring_ctx_create");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	if (sdr_cache_directory) {
 		if (ipmi_monitoring_ctx_sdr_cache_directory(
 			    ipmi_ctx, sdr_cache_directory) < 0) {
 			error("ipmi_monitoring_ctx_sdr_cache_directory: %s",
 			      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 	}
 	/* Must call otherwise only default interpretations ever used */
@@ -276,7 +276,7 @@ static int _init_ipmi_config (void)
 		    ipmi_ctx, sensor_config_file) < 0) {
 		error("ipmi_monitoring_ctx_sensor_config_file: %s",
 		      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	if (slurm_ipmi_conf.reread_sdr_cache)
@@ -348,7 +348,7 @@ static int _check_power_sensor(void)
 			      MAX_LOG_ERRORS);
 			check_err_cnt++;
 		}
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	check_err_cnt = 0;
@@ -361,12 +361,12 @@ static int _check_power_sensor(void)
 		if (sensor_units < 0) {
 			error("ipmi_monitoring_sensor_read_sensor_units: %s",
 			      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 		if (sensor_units != slurm_ipmi_conf.variable) {
 			error("Configured sensor is not in Watt, "
 			      "please check ipmi.conf");
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 
 		/* update current value of the sensor */
@@ -377,7 +377,7 @@ static int _check_power_sensor(void)
 			    (uint32_t) (*((double *)sensor_reading));
 		} else {
 			error("ipmi read an empty value for power consumption");
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 		++i;
 	} while (ipmi_monitoring_sensor_iterator_next(ipmi_ctx));
@@ -395,7 +395,7 @@ static int _find_power_sensor(void)
 {
 	int sensor_count;
 	int i;
-	int rc = SLURM_FAILURE;
+	int rc = SLURM_ERROR;
 	void* sensor_reading;
 	int sensor_units, record_id;
 	static uint8_t find_err_cnt = 0;
@@ -422,7 +422,7 @@ static int _find_power_sensor(void)
 			      MAX_LOG_ERRORS);
 			find_err_cnt++;
 		}
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	find_err_cnt = 0;
@@ -434,7 +434,7 @@ static int _find_power_sensor(void)
 		if (sensor_units < 0) {
 			error("ipmi_monitoring_sensor_read_sensor_units: %s",
 			      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 
 		if (sensor_units != slurm_ipmi_conf.variable)
@@ -444,7 +444,7 @@ static int _find_power_sensor(void)
 		if (record_id < 0) {
 			error("ipmi_monitoring_sensor_read_record_id: %s",
 			      ipmi_monitoring_ctx_errormsg(ipmi_ctx));
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 
 		sensor_reading =
@@ -469,7 +469,7 @@ static int _find_power_sensor(void)
 			last_update_time = time(NULL);
 		} else {
 			error("ipmi read an empty value for power consumption");
-			rc = SLURM_FAILURE;
+			rc = SLURM_ERROR;
 			continue;
 		}
 		rc = SLURM_SUCCESS;
@@ -519,7 +519,7 @@ static int _read_ipmi_values(void)
 			      MAX_LOG_ERRORS);
 			read_err_cnt++;
 		}
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 
 	read_err_cnt = 0;
@@ -533,7 +533,7 @@ static int _read_ipmi_values(void)
 			    (uint32_t) (*((double *)sensor_reading));
 		} else {
 			error("ipmi read an empty value for power consumption");
-			return SLURM_FAILURE;
+			return SLURM_ERROR;
 		}
 		++i;
 	} while (ipmi_monitoring_sensor_iterator_next(ipmi_ctx));
@@ -612,7 +612,7 @@ static int _thread_update_node_energy(void)
 static int _thread_init(void)
 {
 	static bool first = true;
-	static bool first_init = SLURM_FAILURE;
+	static bool first_init = SLURM_ERROR;
 	int rc = SLURM_SUCCESS;
 	uint16_t i;
 
@@ -622,7 +622,7 @@ static int _thread_init(void)
 
 	if (_init_ipmi_config() != SLURM_SUCCESS) {
 		//TODO verbose error?
-		rc = SLURM_FAILURE;
+		rc = SLURM_ERROR;
 	} else {
 		if ((sensors_len == 0 && _find_power_sensor() != SLURM_SUCCESS)
 		    || _check_power_sensor() != SLURM_SUCCESS) {

@@ -1825,7 +1825,7 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
 		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 		break;
 	}
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1900,7 +1900,7 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

@@ -80,7 +80,7 @@ extern int slurm_load_federation(void **fed_pptr)
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 int _sort_clusters_by_name(void *x, void *y)

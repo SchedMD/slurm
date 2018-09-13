@@ -405,7 +405,7 @@ static int _load_cluster_parts(slurm_msg_t *req_msg,
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /* Maintain a consistent ordering of records */
@@ -536,7 +536,7 @@ static int _load_fed_parts(slurm_msg_t *req_msg,
 	if (!orig_msg)
 		slurm_seterrno_ret(SLURM_ERROR);
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

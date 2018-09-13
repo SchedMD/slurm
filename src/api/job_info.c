@@ -1215,7 +1215,7 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 		xfree(hash_job_id);
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1493,7 +1493,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		break;
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1797,7 +1797,7 @@ int slurm_job_cpus_allocated_str_on_node(char *cpus,
  * OUT job_id -  ID of the job or NO_VAL
  * OUT node_name - name of the remote slurmd
  * IN node_name_size - size of the node_name buffer
- * RET SLURM_PROTOCOL_SUCCESS or SLURM_FAILURE on error
+ * RET SLURM_SUCCESS or SLURM_ERROR on error
  */
 extern int
 slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
@@ -1830,7 +1830,7 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 		addr.sin_family = AF_INET;
 		target_slurmd = inet_addr("127.0.0.1"); //choose a test target
 		*/
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	} else
 		memcpy(&target_slurmd, req.ip_src, 4);
 
@@ -1861,7 +1861,7 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 	}
 
 	slurm_free_network_callerid_msg(resp_msg.data);
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 static int
@@ -2042,7 +2042,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 	if (!*factors_resp) {
 		*factors_resp =
 			xmalloc(sizeof(priority_factors_response_msg_t));
-		return SLURM_PROTOCOL_SUCCESS;
+		return SLURM_SUCCESS;
 	}
 
 	/* Find duplicate job records and jobs local to other clusters and set
@@ -2118,7 +2118,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 		xfree(hash_part_id);
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*

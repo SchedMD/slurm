@@ -680,7 +680,7 @@ extern void scontrol_print_assoc_mgr_info(int argc, char **argv)
 	/* call the controller to get the meat */
 	cc = slurm_load_assoc_mgr_info(&req, &msg);
 
-	if (cc == SLURM_PROTOCOL_SUCCESS) {
+	if (cc == SLURM_SUCCESS) {
 		/* print the info
 		 */
 		_print_assoc_mgr_info(msg);

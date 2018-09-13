@@ -920,14 +920,6 @@ head2 SLURM ERRNO
 
 =item * SLURM_ERROR             -1
 
-=item * SLURM_FAILURE           -1
-
-=item * SLURM_SOCKET_ERROR      -1
-
-=item * SLURM_PROTOCOL_SUCCESS  0
-
-=item * SLURM_PROTOCOL_ERROR    -1
-
 =back
 
 =head3 General Message error codes
