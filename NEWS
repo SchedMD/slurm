@@ -343,6 +343,8 @@ documents those changes that are of interest to users and administrators.
     burst buffer.
  -- burst_buffer/cray - Update burst buffers when an association or qos
     is removed from the system.
+ -- If failed over to a backup controller, ensure the agent thread is launched
+    to handle deferred tasks.
 
 * Changes in Slurm 17.11.9-2
 ============================
