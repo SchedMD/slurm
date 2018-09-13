@@ -181,8 +181,20 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 }
 
 #
-# Clean up any vestigial jobs
+# Log any vestigial jobs and cancel them
 #
+if {$exit_code != 0} {
+	spawn $squeue -tall -n "test$test_id"
+	expect {
+		timeout {
+			send_user "\nFAILURE: squeue not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
 exec $scancel -n "test$test_id"
 
 if {$exit_code == 0} {
