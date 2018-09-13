@@ -748,8 +748,9 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				    const uint16_t cr_type, bool preempt_mode)
 {
-	uint32_t c, i, j, s, n, *sock_start, *sock_end, size, csize, core_cnt;
-	uint16_t cps = 0, cpus, vpus, sockets, sock_size;
+	uint32_t c, i, j, k, s, n;
+	uint32_t *sock_start, *sock_end, size, csize, core_cnt;
+	uint16_t cps = 0, cpus, vpus, sockets, sock_size, orig_cpu_cnt;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bitstr_t *core_map;
 	bool *sock_used, *sock_avoid;
@@ -902,6 +903,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			xfree(cpus_cnt);
 		}
 
+		orig_cpu_cnt = cpus;
 		while (cpus > 0) {
 			uint16_t prev_cpus = cpus;
 			for (s = 0; s < sockets && cpus > 0; s++) {
@@ -928,12 +930,40 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				 continue;
 			if (!preempt_mode) {
 				/* we're stuck! */
+				char *core_str = NULL, *sock_str = NULL, *sep;
+				for (j = 0, k = c; j < (cps * sockets);
+				     j++, k++) {
+					if (!bit_test(core_map, k))
+						continue;
+					if (sock_str)
+						sep = ",";
+					else
+						sep = "";
+					xstrfmtcat(core_str, "%s%d", sep, j);
+				}
+				if (!core_str)
+					core_str = xstrdup("NONE");
+				for (s = 0; s < sockets; s++) {
+					if (!sock_avoid[s])
+						continue;
+					if (sock_str)
+						sep = ",";
+					else
+						sep = "";
+					xstrfmtcat(sock_str, "%s%d", sep, s);
+				}
+				if (!sock_str)
+					sock_str = xstrdup("NONE");
 				job_ptr->priority = 0;
 				job_ptr->state_reason = WAIT_HELD;
-				error("%s: %s: sync loop not progressing on node %s, holding %pJ",
-				      plugin_type, __func__,
+				error("%s: %s: sync loop not progressing, holding %pJ, "
+				      "tried to use %u CPUs on node %s core_map:%s avoided_sockets:%s",
+				      plugin_type, __func__, job_ptr,
+				      orig_cpu_cnt,
 				      select_node_record[n].node_ptr->name,
-				      job_ptr);
+				      core_str, sock_str);
+				xfree(core_str);
+				xfree(sock_str);
 			}
 			error_code = SLURM_ERROR;
 			goto fini;
