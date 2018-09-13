@@ -130,6 +130,7 @@ expect {
 #
 # Test of --gpu-bind=closest
 #
+send_user "\n\nTEST 1\n"
 set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J "test$test_id" -t1 ./$file_in]
 expect {
 	timeout {
@@ -146,6 +147,7 @@ expect {
 # Test of --gpu-bind=map_gpu
 # Note that if the task count exceeds the provided map_gpu, the map will be cycled over for additional tasks
 #
+send_user "\n\nTEST 2\n"
 if {$gpu_cnt < 4} {
 	set map_gpu "map_gpu:1,0"
 	set match_goal 2
@@ -155,8 +157,16 @@ if {$gpu_cnt < 4} {
 	set match_goal 4
 	set tasks_per_node 4
 }
+
+#
+# If $gpu_cnt > $cpus_per_node then assume there is no DefCpusPerGpu configured
+#
 set matches 0
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J "test$test_id" -l -t1 ./$file_in]
+if {$gpu_cnt > $cpus_per_node} {
+	set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J "test$test_id" -l -t1 ./$file_in]
+} else {
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J "test$test_id" -l -t1 ./$file_in]
+}
 expect {
 	-re "($number): HOST:($controlmachine_regex) CUDA_VISIBLE_DEVICES:($number)" {
 		if       {$expect_out(1,string) == 0 && $expect_out(3,string) == 1} {
@@ -188,13 +198,22 @@ if {$matches != $match_goal} {
 # Test of --gpu-bind=mask_gpu
 # Note that if the task count exceeds the provided mask_gpu, the mask will be cycled over for additional tasks
 #
+send_user "\n\nTEST 3\n"
 if {$gpu_cnt < 4} {
 	set mask_gpu "mask_gpu:0x3,0x1"
 } else {
 	set mask_gpu "mask_gpu:0x3,0x1,0x5,9"
 }
+
 set matches 0
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J "test$test_id" -l -t1 ./$file_in]
+#
+# If $gpu_cnt > $cpus_per_node then assume there is no DefCpusPerGpu configured
+#
+if {$gpu_cnt > $cpus_per_node} {
+	set srun_pid [spawn $srun --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J "test$test_id" -l -t1 ./$file_in]
+} else {
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J "test$test_id" -l -t1 ./$file_in]
+}
 expect {
 	-re "($number): HOST:($controlmachine_regex) CUDA_VISIBLE_DEVICES:($number_commas)" {
 		if       {$expect_out(1,string) == 0 && $expect_out(3,string) eq "0,1"} {
