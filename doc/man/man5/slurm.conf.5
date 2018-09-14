@@ -178,8 +178,8 @@ determined by the value of \fBJobAcctGatherFrequency\fR.
 Identifies the plugin to be used for energy consumption accounting.
 The jobacct_gather plugin and slurmd daemon call this plugin to collect
 energy consumption data for jobs and nodes. The collection of energy
-consumption data takes place on node level, hence only in case of exclusive
-job allocation the energy consumption measurements will reflect the jobs
+consumption data takes place on the node level, hence only in case of exclusive
+job allocation the energy consumption measurements will reflect the job's
 real consumption. In case of node sharing between jobs the reported consumed
 energy per job (through sstat or sacct) will not reflect the real energy
 consumed by the jobs.
@@ -4170,7 +4170,7 @@ The default value is 1.
 If a job step request does not specify an option to control how tasks are bound
 to allocated CPUs (\-\-cpu-bind) and all nodes allocated to the job have the same
 \fBCpuBind\fR option the node \fBCpuBind\fR option will control how tasks are
-bound to allocated resources. Supported values for\fBCpuBind\fR are "none",
+bound to allocated resources. Supported values for \fBCpuBind\fR are "none",
 "board", "socket", "ldom" (NUMA), "core" and "thread".
 
 .TP
