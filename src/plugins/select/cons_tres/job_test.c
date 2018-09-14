@@ -3116,7 +3116,28 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			break;
 	}
 
-fini:	FREE_NULL_BITMAP(orig_node_map);
+fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list && orig_core_array) {
+		/*
+		 * Update available CPU count for any removed cores.
+		 * Cores are only removed for jobs with GRES to enforce binding.
+		 */
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(node_map, i)||
+			    !orig_core_array[i] || !avail_core[i])
+				continue;
+			count = bit_set_count(orig_core_array[i]) -
+				bit_set_count(avail_core[i]);
+			count *= select_node_record[i].vpus;
+			if (count > avail_res_array[i]->avail_cpus) {
+				error("%s: %s: avail_cpus underflow for %pJ",
+				      plugin_type, __func__, job_ptr);
+				avail_res_array[i]->avail_cpus = 0;
+			} else {
+				avail_res_array[i]->avail_cpus -= count;
+			}
+		}
+	}
+	FREE_NULL_BITMAP(orig_node_map);
 	free_core_array(&orig_core_array);
 	return ec;
 }
