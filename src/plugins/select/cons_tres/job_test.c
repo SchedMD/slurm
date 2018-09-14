@@ -96,6 +96,12 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		       uint32_t req_nodes, avail_res_t **avail_res_array,
 		       uint16_t cr_type, bool prefer_alloc_nodes,
 		       bool first_pass);
+static int _eval_nodes_busy(struct job_record *job_ptr,
+			    gres_mc_data_t *mc_ptr, bitstr_t *node_map,
+			    bitstr_t **avail_core, uint32_t min_nodes,
+			    uint32_t max_nodes, uint32_t req_nodes,
+			    avail_res_t **avail_res_array, uint16_t cr_type,
+			    bool prefer_alloc_nodes, bool first_pass);
 static int _eval_nodes_spread(struct job_record *job_ptr,
 			      gres_mc_data_t *mc_ptr, bitstr_t *node_map,
 			      bitstr_t **avail_core, uint32_t min_nodes,
@@ -2209,8 +2215,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 					  prefer_alloc_nodes, first_pass);
 	}
 
-#if 0
-//FIXME: Weights job-specific due to FLEX reservations and node_features reboot needs, lower priority work
 	if (prefer_alloc_nodes && !details_ptr->contiguous) {
 		/*
 		 * Select resource on busy nodes first in order to leave
@@ -2218,11 +2222,14 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		 * running jobs can get more easily started by the backfill
 		 * scheduler plugin
 		 */
-		return _eval_nodes_busy(job_ptr, node_map,
-				       min_nodes, max_nodes, req_nodes,
-				       cr_node_cnt, cpu_cnt);
+		return _eval_nodes_busy(job_ptr, mc_ptr, node_map, avail_core,
+					min_nodes, max_nodes, req_nodes,
+					avail_res_array, cr_type,
+					prefer_alloc_nodes, first_pass);
 	}
 
+#if 0
+//FIXME: Weights job-specific due to FLEX reservations and node_features reboot needs, lower priority work
 	if ((cr_type & CR_LLN) ||
 	    (job_ptr->part_ptr &&
 	     (job_ptr->part_ptr->flags & PART_FLAG_LLN))) {
@@ -2821,9 +2828,11 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 	int64_t rem_max_cpus;
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
+	bitstr_t *orig_node_map = bit_copy(node_map);
 	bool gres_per_job;
 	uint16_t avail_cpus = 0, min_gres_cpu;
 	uint32_t sockets_per_node = 1;
+	struct node_record *node_ptr;
 
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
@@ -2851,8 +2860,12 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 				bit_clear(node_map, i);
 				continue;
 			}
-			if (!bit_test(node_map, i))
+			if (!bit_test(node_map, i)) {
+				node_ptr = node_record_table_ptr + i;
+				debug("%pJ required node %s not available",
+				      job_ptr, node_ptr->name);
 				continue;
+			}
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus)
 				continue;
@@ -2901,6 +2914,9 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 	for (i = i_start; i <= i_end; i++) {
 		if (!avail_res_array[i] || !avail_res_array[i]->avail_cpus)
 			continue;
+		/* Node not available or already selected */
+		if (!bit_test(orig_node_map, i) || bit_test(node_map, i))
+			continue;
 		avail_cpus = avail_res_array[i]->avail_cpus;
 		_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 			     details_ptr, avail_res_array[i], i, cr_type,
@@ -2945,7 +2961,176 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	return error_code;
+fini:	bit_free(orig_node_map);
+	return error_code;
+}
+
+/*
+ * A variation of _eval_nodes() to select resources using busy nodes first.
+ */
+static int _eval_nodes_busy(struct job_record *job_ptr,
+			      gres_mc_data_t *mc_ptr, bitstr_t *node_map,
+			      bitstr_t **avail_core, uint32_t min_nodes,
+			      uint32_t max_nodes, uint32_t req_nodes,
+			      avail_res_t **avail_res_array, uint16_t cr_type,
+			      bool prefer_alloc_nodes, bool first_pass)
+{
+	int i, i_start, i_end, error_code = SLURM_ERROR;
+	int idle_test;
+	int rem_cpus, rem_nodes; /* remaining resources desired */
+	int min_rem_nodes;	/* remaining resources desired */
+	int total_cpus = 0;	/* #CPUs allocated to job */
+	int64_t rem_max_cpus;
+	struct job_details *details_ptr = job_ptr->details;
+	bitstr_t *req_map = details_ptr->req_node_bitmap;
+	bitstr_t *orig_node_map = bit_copy(node_map);
+	bool gres_per_job;
+	uint16_t avail_cpus = 0, min_gres_cpu;
+	uint32_t sockets_per_node = 1;
+	struct node_record *node_ptr;
+
+	rem_cpus = details_ptr->min_cpus;
+	rem_max_cpus = details_ptr->max_cpus;
+	rem_nodes = MAX(min_nodes, req_nodes);
+	min_rem_nodes = min_nodes;
+	if ((details_ptr->num_tasks != NO_VAL) &&
+	    (details_ptr->num_tasks != 0))
+		max_nodes = MIN(max_nodes, details_ptr->num_tasks);
+	gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list);
+	if (job_ptr->details->mc_ptr &&
+	    job_ptr->details->mc_ptr->sockets_per_node)
+		sockets_per_node = job_ptr->details->mc_ptr->sockets_per_node;
+	min_gres_cpu = gres_plugin_job_min_cpu_node(sockets_per_node,
+					job_ptr->details->ntasks_per_node,
+					job_ptr->gres_list);
+
+	i_start = bit_ffs(node_map);
+	if (i_start >= 0)
+		i_end = bit_fls(node_map);
+	else
+		i_end = i_start - 1;
+	if (req_map) {
+		for (i = i_start; i <= i_end; i++) {
+			if (!bit_test(req_map, i)) {
+				bit_clear(node_map, i);
+				continue;
+			}
+			if (!bit_test(node_map, i)) {
+				node_ptr = node_record_table_ptr + i;
+				debug("%pJ required node %s not available",
+				      job_ptr, node_ptr->name);
+				continue;
+			}
+			if (!avail_res_array[i] ||
+			    !avail_res_array[i]->avail_cpus)
+				continue;
+			avail_cpus = avail_res_array[i]->avail_cpus;
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
+				     details_ptr, avail_res_array[i], i,
+				     cr_type, min_gres_cpu);
+			if ((avail_cpus > 0) && (max_nodes > 0)) {
+				total_cpus += avail_cpus;
+				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
+				rem_nodes--;
+				min_rem_nodes--;
+				/* leaving bitmap set, decr max limit */
+				if (max_nodes)
+					max_nodes--;
+				if (gres_per_job) {
+					gres_plugin_job_sched_add(
+						job_ptr->gres_list,
+						avail_res_array[i]->
+						sock_gres_list, avail_cpus);
+				}
+			} else {	/* node not selected (yet) */
+				bit_clear(node_map, i);
+			}
+		}
+		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+		    gres_plugin_job_sched_test(job_ptr->gres_list,
+					       job_ptr->job_id)) {
+			error_code = SLURM_SUCCESS;
+			bit_and(node_map, req_map);
+			goto fini;
+		}
+	} else {
+		bit_clear_all(node_map);
+	}
+
+	/* Compute CPUs already allocated to required nodes */
+	if ((details_ptr->max_cpus != NO_VAL) &&
+	    (total_cpus > details_ptr->max_cpus)) {
+		info("%pJ can't use required nodes due to max CPU limit",
+		     job_ptr);
+		goto fini;
+	}
+
+	/*
+	 * Start by using nodes that already have a job running.
+	 * Then try to use idle nodes
+	 */
+	for (idle_test = 0; idle_test < 2; idle_test++) {
+		for (i = i_start; i <= i_end; i++) {
+			if (!avail_res_array[i] ||
+			    !avail_res_array[i]->avail_cpus)
+				continue;
+			/* Node not available or already selected */
+			if (!bit_test(orig_node_map, i) ||
+			    bit_test(node_map, i))
+				continue;
+			if (((idle_test == 0) &&
+			     bit_test(idle_node_bitmap, i)) ||
+			    ((idle_test == 1) &&
+			     !bit_test(idle_node_bitmap, i)))
+				continue;
+			avail_cpus = avail_res_array[i]->avail_cpus;
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
+				     details_ptr, avail_res_array[i], i,
+				     cr_type, min_gres_cpu);
+			if (avail_cpus == 0)
+				continue;
+			total_cpus += avail_cpus;
+			if ((details_ptr->max_cpus != NO_VAL) &&
+			    (total_cpus > details_ptr->max_cpus)) {
+				debug2("%s: %s: %pJ can't use node %d without exceeding job limit",
+				       plugin_type, __func__, job_ptr, i);
+				total_cpus -= avail_cpus;
+				continue;
+			}
+			rem_cpus -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
+			rem_nodes--;
+			min_rem_nodes--;
+			if (max_nodes)
+				max_nodes--;
+			bit_set(node_map, i);
+			if (gres_per_job) {
+				gres_plugin_job_sched_add(job_ptr->gres_list,
+					avail_res_array[i]->sock_gres_list,
+					avail_cpus);
+			}
+			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+			    gres_plugin_job_sched_test(job_ptr->gres_list,
+						       job_ptr->job_id)) {
+				error_code = SLURM_SUCCESS;
+				goto fini;
+			}
+			if (max_nodes == 0)
+				break;
+		}
+	}
+
+	if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
+	    !gres_plugin_job_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
+		bit_clear_all(node_map);
+		error_code = SLURM_ERROR;
+	} else {
+		error_code = SLURM_SUCCESS;
+	}
+
+fini:	bit_free(orig_node_map);
+	return error_code;
 }
 
 static uint16_t _valid_uint16(uint16_t arg)
