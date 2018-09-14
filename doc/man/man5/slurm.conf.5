@@ -122,8 +122,9 @@ Also see \fBDefaultStoragePort\fR.
 Comma separated list of resources you wish to track on the cluster.
 These are the resources requested by the sbatch/srun job when it
 is submitted.  Currently this consists of any GRES, BB (burst buffer) or
-license along with CPU, Memory, Node, Energy, FS/[Disk|Lustre], IC/OFED.
-By default Billing, CPU, Energy, Memory, Node, and FS/Disk are tracked.
+license along with CPU, Memory, Node, Energy, FS/[Disk|Lustre], IC/OFED, Pages,
+and VMem. By default Billing, CPU, Energy, Memory, Node, FS/Disk, Pages and VMem
+are tracked.
 AccountingStorageTRES=gres/craynetwork,license/iop1
 will track billing, cpu, energy, memory, nodes, FS/disk along with a
 gres called craynetwork as well as a license called iop1.  Whenever these
