@@ -2549,9 +2549,9 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			}
 			info("%s: eval_nodes:%d consec "
 			     "CPUs:%d nodes:%d %s begin:%d end:%d required:%d weight:%"PRIu64,
-			     plugin_type, i, consec_cpus[i], consec_nodes[i], gres_print,
-			     consec_start[i], consec_end[i], consec_req[i],
-			     consec_weight[i]);
+			     plugin_type, i, consec_cpus[i], consec_nodes[i],
+			     gres_print, consec_start[i], consec_end[i],
+			     consec_req[i], consec_weight[i]);
 			xfree(gres_str);
 		}
 	}
