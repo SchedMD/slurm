@@ -385,6 +385,23 @@ static uint32_t _str_2_res_flags(char *flags)
 	return 0;
 }
 
+static uint32_t _str_2_job_flags(char *flags)
+{
+	if (xstrcasestr(flags, "None"))
+		return SLURMDB_JOB_FLAG_NONE;
+
+	if (xstrcasestr(flags, "SchedSubmit"))
+		return SLURMDB_JOB_FLAG_SUBMIT;
+
+	if (xstrcasestr(flags, "SchedMain"))
+		return SLURMDB_JOB_FLAG_SCHED;
+
+	if (xstrcasestr(flags, "SchedBackfill"))
+		return SLURMDB_JOB_FLAG_BACKFILL;
+
+	return SLURMDB_JOB_FLAG_NOTSET;
+}
+
 static void _destroy_local_cluster_rec(void *object)
 {
 	xfree(object);
@@ -1756,6 +1773,60 @@ extern uint32_t str_2_cluster_fed_states(char *state)
 	}
 
 	return fed_state;
+}
+
+extern char *slurmdb_job_flags_str(uint32_t flags)
+{
+	char *job_flags = NULL;
+
+	if (flags & SLURMDB_JOB_FLAG_NONE)
+		return xstrdup("None");
+
+	if (flags & SLURMDB_JOB_FLAG_NOTSET)
+		return xstrdup("NotSet");
+
+	if (flags & SLURMDB_JOB_FLAG_SUBMIT)
+		xstrcat(job_flags, "SchedSubmit");
+	else if (flags & SLURMDB_JOB_FLAG_SCHED)
+		xstrcat(job_flags, "SchedMain");
+	else if (flags & SLURMDB_JOB_FLAG_BACKFILL)
+		xstrcat(job_flags, "SchedBackfill");
+
+	/*
+	 * In the future if there are more flags we will need to add comma's to
+	 * the end of Backfilled and NormalSched above and uncomment this code
+	 * below.
+	 */
+	/* if (job_flags) */
+	/* 	job_flags[strlen(job_flags)-1] = '\0'; */
+
+	return job_flags;
+}
+
+extern uint32_t str_2_job_flags(char *flags)
+{
+	uint32_t job_flags = 0;
+	char *token, *my_flags, *last = NULL;
+
+	if (!flags) {
+		error("We need a server job flags string to translate");
+		return SLURMDB_JOB_FLAG_NONE;
+	}
+
+	my_flags = xstrdup(flags);
+	token = strtok_r(my_flags, ",", &last);
+	while (token) {
+		job_flags |= _str_2_job_flags(token);
+		if (job_flags & SLURMDB_JOB_FLAG_NOTSET) {
+			error("%s: Invalid job flag %s", __func__, token);
+			xfree(my_flags);
+			return SLURMDB_JOB_FLAG_NOTSET;
+		}
+		token = strtok_r(NULL, ",", &last);
+	}
+	xfree(my_flags);
+
+	return job_flags;
 }
 
 extern char *slurmdb_qos_flags_str(uint32_t flags)

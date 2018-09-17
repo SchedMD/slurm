@@ -168,6 +168,18 @@ enum cluster_fed_states {
 /* flags and types of resources */
 /* when we come up with some */
 
+/*
+ * Translation of db_flags in the struct job_record and flag
+ * slurmdb_job_[rec|cond]_t
+ */
+#define SLURMDB_JOB_FLAG_NONE     0x00000000 /* No flags */
+#define SLURMDB_JOB_CLEAR_SCHED   0x0000000f /* clear scheduling bits */
+#define SLURMDB_JOB_FLAG_NOTSET   0x00000001 /* Not set */
+#define SLURMDB_JOB_FLAG_SUBMIT   0x00000002 /* Job was started on submit */
+#define SLURMDB_JOB_FLAG_SCHED    0x00000004 /* Job was started from main
+					      * scheduler */
+#define SLURMDB_JOB_FLAG_BACKFILL 0x00000008 /* Job was started from backfill */
+
 /* Slurm job condition flags */
 #define JOBCOND_FLAG_DUP      0x00000001 /* Report duplicate job entries */
 #define JOBCOND_FLAG_NO_STEP  0x00000002 /* Don't report job step info */
