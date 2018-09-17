@@ -315,11 +315,11 @@ void *agent(void *args)
 			if (WIFEXITED(status)) {
 				rc = WEXITSTATUS(status);
 				if (rc != 0) {
-					error("ReboodProgram exit status of %d",
+					error("RebootProgram exit status of %d",
 					      rc);
 				}
 			} else if (WIFSIGNALED(status)) {
-				error("ReboodProgram signaled: %s",
+				error("RebootProgram signaled: %s",
 				      strsignal(WTERMSIG(status)));
 			}
 		}

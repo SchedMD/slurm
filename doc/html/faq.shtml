@@ -436,7 +436,7 @@ Bash's <i>-i</i> option tells it to run in interactive mode (with prompts).
 <br/>You can also configure <i>SallocDefaultCommand</i> in <i>slurm.conf</i>
 to automatically launch a shell, e.g.:
 <pre>
-SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu_bind=no --mpi=none $SHELL"
+SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu-bind=no --mpi=none $SHELL"
 </pre>
 And then run <i>salloc</i> directly which will provide you an allocation with
 an interactive shell console.
@@ -494,7 +494,7 @@ Srun's <i>--pty</i> option runs task zero in pseudo terminal mode. Bash's
 In addition to that method you have the option to define the
 <i>SallocDefaultCommand</i> to run a task in pseudo terminal mode directly,
 so you get the prompt just invoking salloc:
-<pre>SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu_bind=no --mpi=none $SHELL"</pre>
+<pre>SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu-bind=no --mpi=none $SHELL"</pre>
 Finally you can make use of X11 feature and run a graphical terminal.
 (e.g. <i>srun xterm</i>).<br>
 <p><a name="force"><b>16. What does &quot;srun: Force Terminated job&quot;
@@ -1932,7 +1932,7 @@ launch a shell on a node in the job's allocation?</b></a></br>
 Yes, just use the SallocDefaultCommand configuration parameter in your
 slurm.conf file as shown below.</p>
 <pre>
-SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu_bind=no --mpi=none $SHELL"
+SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu-bind=no --mpi=none $SHELL"
 </pre>
 
 <p>

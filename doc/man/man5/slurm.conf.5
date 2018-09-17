@@ -122,8 +122,9 @@ Also see \fBDefaultStoragePort\fR.
 Comma separated list of resources you wish to track on the cluster.
 These are the resources requested by the sbatch/srun job when it
 is submitted.  Currently this consists of any GRES, BB (burst buffer) or
-license along with CPU, Memory, Node, Energy, FS/[Disk|Lustre], IC/OFED.
-By default Billing, CPU, Energy, Memory, Node, and FS/Disk are tracked.
+license along with CPU, Memory, Node, Energy, FS/[Disk|Lustre], IC/OFED, Pages,
+and VMem. By default Billing, CPU, Energy, Memory, Node, FS/Disk, Pages and VMem
+are tracked.
 AccountingStorageTRES=gres/craynetwork,license/iop1
 will track billing, cpu, energy, memory, nodes, FS/disk along with a
 gres called craynetwork as well as a license called iop1.  Whenever these
@@ -177,8 +178,8 @@ determined by the value of \fBJobAcctGatherFrequency\fR.
 Identifies the plugin to be used for energy consumption accounting.
 The jobacct_gather plugin and slurmd daemon call this plugin to collect
 energy consumption data for jobs and nodes. The collection of energy
-consumption data takes place on node level, hence only in case of exclusive
-job allocation the energy consumption measurements will reflect the jobs
+consumption data takes place on the node level, hence only in case of exclusive
+job allocation the energy consumption measurements will reflect the job's
 real consumption. In case of node sharing between jobs the reported consumed
 energy per job (through sstat or sacct) will not reflect the real energy
 consumed by the jobs.
@@ -202,12 +203,13 @@ execution of the command "sudo modprobe msr".
 .TP
 \fBAcctGatherInfinibandType\fR
 Identifies the plugin to be used for infiniband network traffic accounting.
-The plugin is activated only when profiling on hdf5 files is activated and
-the user asks for network data collection for jobs through \-\-profile=Network
-(or =All). The collection of network traffic data takes place on node level,
+The jobacct_gather plugin and slurmd daemon call this plugin to collect
+network traffic data for jobs and nodes.
+The collection of network traffic data takes place on the node level,
 hence only in case of exclusive job allocation the collected values will
-reflect the jobs real traffic. All network traffic data are logged on hdf5 files
-per job on each node. No storage on the Slurm database takes place.
+reflect the job's real traffic. In case of node sharing between jobs the reported
+network traffic per job (through sstat or sacct) will not reflect the real
+network traffic by the jobs.
 
 Configurable values at present are:
 .RS
@@ -218,17 +220,21 @@ No infiniband network data are collected.
 \fBacct_gather_infiniband/ofed\fR
 Infiniband network traffic data are collected from the hardware monitoring
 counters of Infiniband devices through the OFED library.
+In order to account for per job network traffic, add the "ic/ofed" TRES to
+\fIAccountingStorageTRES\fR.
 .RE
 
 .TP
 \fBAcctGatherFilesystemType\fR
 Identifies the plugin to be used for filesystem traffic accounting.
-The plugin is activated only when profiling on hdf5 files is activated and
-the user asks for filesystem data collection for jobs through \-\-profile=Lustre
-(or =All). The collection of filesystem traffic data takes place on node level,
+The jobacct_gather plugin and slurmd daemon call this plugin to collect
+filesystem traffic data for jobs and nodes.
+The collection of filesystem traffic data takes place on the node level,
 hence only in case of exclusive job allocation the collected values will
-reflect the jobs real traffic. All filesystem traffic data are logged on hdf5 files
-per job on each node. No storage on the Slurm database takes place.
+reflect the job's real traffic. In case of node sharing between jobs the reported
+filesystem traffic per job (through sstat or sacct) will not reflect the real
+filesystem traffic by the jobs.
+
 
 Configurable values at present are:
 .RS
@@ -239,6 +245,8 @@ No filesystem data are collected.
 \fBacct_gather_filesystem/lustre\fR
 Lustre filesystem traffic data are collected from the counters found in
 /proc/fs/lustre/.
+In order to account for per job lustre traffic, add the "disk/lustre" TRES to
+\fIAccountingStorageTRES\fR.
 .RE
 
 .TP
@@ -3686,7 +3694,7 @@ Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
 
 .TP
 \fBSuspendRate\fR
-The rate at which nodes are place into power save mode by \fBSuspendProgram\fR.
+The rate at which nodes are placed into power save mode by \fBSuspendProgram\fR.
 The value is number of nodes per minute and it can be used to prevent
 a large drop in power consumption (e.g. after a large job completes).
 A value of zero results in no limits being imposed.
@@ -4225,7 +4233,7 @@ The default value is 1.
 If a job step request does not specify an option to control how tasks are bound
 to allocated CPUs (\-\-cpu-bind) and all nodes allocated to the job have the same
 \fBCpuBind\fR option the node \fBCpuBind\fR option will control how tasks are
-bound to allocated resources. Supported values for\fBCpuBind\fR are "none",
+bound to allocated resources. Supported values for \fBCpuBind\fR are "none",
 "board", "socket", "ldom" (NUMA), "core" and "thread".
 
 .TP

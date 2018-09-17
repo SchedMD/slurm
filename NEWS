@@ -44,6 +44,9 @@ documents those changes that are of interest to users and administrators.
     is removed from the system.
  -- Remove documentation for deprecated Cray/ALPS systems. Please switch to
     Native Cray mode instead.
+ -- Completely copy features when copying the list in the slurmctld.
+ -- Revert 450cd6c8535ce5.  It caused issues finding nodes with numbers and '-'
+    together at the end of a node name.
 
 * Changes in Slurm 18.08.0
 ==========================
