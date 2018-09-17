@@ -2279,6 +2279,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bool enforce_binding = false;
 	uint32_t sockets_per_node = 1;
+	uint16_t *avail_cpu_per_node = NULL;
 
 	xassert(node_map);
 	if (select_node_cnt != node_record_count) {
@@ -2378,6 +2379,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
 	consec_weight[consec_index] = NO_VAL64;
 
+	avail_cpu_per_node = xmalloc(sizeof(uint16_t) * select_node_cnt);
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
@@ -2408,6 +2410,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				      avail_core, avail_res_array, first_pass);
 			if (avail_cpus == 0)
 				goto fini;
+			avail_cpu_per_node[i] = avail_cpus;
 			total_cpus += avail_cpus;
 			rem_cpus -= avail_cpus;
 			rem_nodes--;
@@ -2474,6 +2477,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 						avail_res_array[i]->avail_cpus;
 				}
 			}
+			avail_cpu_per_node[i] = avail_cpus;
 		}
 		/*
 		 * If job requested contiguous nodes,
@@ -2669,10 +2673,9 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 					/* required node already in set */
 					continue;
 				}
-				if (!avail_res_array[i] ||
-				    !avail_res_array[i]->avail_cpus)
+				if (avail_cpu_per_node[i] == 0)
 					continue;
-				avail_cpus = avail_res_array[i]->avail_cpus;
+				avail_cpus = avail_cpu_per_node[i];
 
 				/*
 				 * This could result in 0, but if the user
@@ -2719,10 +2722,9 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 					break;
 				if (bit_test(node_map, i))
 					continue;
-				if (!avail_res_array[i] ||
-				    !avail_res_array[i]->avail_cpus)
+				if (avail_cpu_per_node[i] == 0)
 					continue;
-				avail_cpus = avail_res_array[i]->avail_cpus;
+				avail_cpus = avail_cpu_per_node[i];
 
 				/*
 				 * This could result in 0, but if the user
@@ -2759,20 +2761,15 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			}
 		} else {
 			/* No required nodes, try best fit single node */
-			int *cpus_array = NULL, array_len;
 			int best_fit = -1, best_size = 0;
 			int first = consec_start[best_fit_index];
 			int last  = consec_end[best_fit_index];
 			if (rem_nodes <= 1) {
-				array_len =  last - first + 1;
-				cpus_array = xmalloc(sizeof(int) * array_len);
 				for (i = first, j = 0; i <= last; i++, j++) {
 					if (bit_test(node_map, i) ||
 					    !avail_res_array[i])
 						continue;
-					cpus_array[j] =
-						avail_res_array[i]->avail_cpus;
-					if (cpus_array[j] < rem_cpus)
+					if (avail_cpu_per_node[i] < rem_cpus)
 						continue;
 					if (gres_per_job &&
 					    !gres_plugin_job_sched_test2(
@@ -2783,9 +2780,10 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 						continue;
 					}
 					if ((best_fit == -1) ||
-					    (cpus_array[j] < best_size)) {
-						best_fit = j;
-						best_size = cpus_array[j];
+					    (avail_cpu_per_node[i] <best_size)){
+						best_fit = i;
+						best_size =
+							avail_cpu_per_node[i];
 						if (best_size == rem_cpus)
 							break;
 					}
@@ -2794,11 +2792,12 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				 * If we found a single node to use,
 				 * clear CPU counts for all other nodes
 				 */
-				for (i = first, j = 0;
-				     ((i <= last) && (best_fit != -1));
-				     i++, j++) {
-					if (j != best_fit)
-						cpus_array[j] = 0;
+				if (best_fit != -1) {
+					for (i = first; i <= last; i++) {
+						if (i == best_fit)
+							continue;
+						avail_cpu_per_node[i] = 0;
+					}
 				}
 			}
 
@@ -2814,12 +2813,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				    !avail_res_array[i])
 					continue;
 
-				if (cpus_array) {
-					avail_cpus = cpus_array[j];
-				} else {
-					avail_cpus =
-						avail_res_array[i]->avail_cpus;
-				}
+				avail_cpus = avail_cpu_per_node[i];
 				if (avail_cpus <= 0)
 					continue;
 
@@ -2865,7 +2859,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 						sock_gres_list, avail_cpus);
 				}
 			}
-			xfree(cpus_array);
 		}
 
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -2883,7 +2876,8 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes))
 		error_code = SLURM_SUCCESS;
 
-fini:	xfree(consec_cpus);
+fini:	xfree(avail_cpu_per_node);
+	xfree(consec_cpus);
 	xfree(consec_nodes);
 	xfree(consec_start);
 	xfree(consec_end);
