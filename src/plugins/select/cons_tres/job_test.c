@@ -2223,9 +2223,10 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;
 	} else if (max_tasks_this_node != NO_VAL) {
-		*avail_cpus = max_tasks_this_node;
+		int i = max_tasks_this_node;
 		if (mc_ptr->cpus_per_task)
-			*avail_cpus *= mc_ptr->cpus_per_task;
+			i *= mc_ptr->cpus_per_task;
+		*avail_cpus = MIN(*avail_cpus, i);
 	}
 }
 
