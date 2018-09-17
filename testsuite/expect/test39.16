@@ -30,7 +30,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "39.15"
+set test_id     "39.16"
 set exit_code   0
 set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
