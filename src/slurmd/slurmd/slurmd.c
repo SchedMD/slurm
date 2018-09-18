@@ -1076,7 +1076,7 @@ _read_config(void)
 static void
 _reconfigure(void)
 {
-	bool did_change;
+	uint32_t cpu_cnt;
 
 	_reconfig = 0;
 	slurm_conf_reinit(conf->conffile);
@@ -1118,15 +1118,12 @@ _reconfigure(void)
 	 */
 	group_cache_purge();
 
-	gres_plugin_reconfig(&did_change);
+	gres_plugin_reconfig();
 	(void) switch_g_reconfig();
 	container_g_reconfig();
-	if (did_change) {
-		uint32_t cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
-		(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name,
-						    NULL);
-		send_registration_msg(SLURM_SUCCESS, false);
-	}
+	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
+	(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL);
+	send_registration_msg(SLURM_SUCCESS, false);
 
 	/* reconfigure energy */
 	acct_gather_energy_g_set_data(ENERGY_DATA_RECONFIG, NULL);

@@ -1656,11 +1656,10 @@ static void _gres_reconfig(bool reconfig)
 {
 	struct node_record *node_ptr;
 	char *gres_name;
-	bool gres_changed;
 	int i;
 
 	if (reconfig) {
-		gres_plugin_reconfig(&gres_changed);
+		gres_plugin_reconfig();
 	} else {
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {

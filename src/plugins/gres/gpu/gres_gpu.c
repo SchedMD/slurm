@@ -390,8 +390,11 @@ extern int node_config_load(List gres_conf_list)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (gres_devices)
-		return rc;
+	/* Assume this state is caused by an scontrol reconfigure */
+	if (gres_devices) {
+	        info("Resetting gres_devices");
+	        FREE_NULL_LIST(gres_devices);
+	}
 
 #if 0
 //FIXME: gres_conf_list contains records of type gres_slurmd_conf_t*

@@ -284,7 +284,7 @@ extern int gres_plugin_fini(void);
  * Perform reconfig, re-read any configuration files
  * OUT did_change - set if gres configuration changed
  */
-extern int gres_plugin_reconfig(bool *did_change);
+extern int gres_plugin_reconfig(void);
 
 /*
  * Provide a plugin-specific help message for salloc, sbatch and srun
