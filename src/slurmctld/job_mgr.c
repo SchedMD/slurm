@@ -4290,6 +4290,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->job_id   = save_job_id;
 	job_ptr_pend->job_next = save_job_next;
 	job_ptr_pend->details  = save_details;
+	job_ptr_pend->db_flags = 0;
 	job_ptr_pend->step_list = save_step_list;
 	job_ptr_pend->db_index = save_db_index;
 
@@ -4592,11 +4593,13 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 			if (part_limits_rc == WAIT_NO_REASON) {
 				rc = select_nodes(job_ptr, test_only,
 						  select_node_bitmap, err_msg,
-						  true);
+						  true,
+						  SLURMDB_JOB_FLAG_SUBMIT);
 			} else {
 				rc = select_nodes(job_ptr, true,
 						  select_node_bitmap, err_msg,
-						  true);
+						  true,
+						  SLURMDB_JOB_FLAG_SUBMIT);
 				if ((rc == SLURM_SUCCESS) &&
 				    (part_limits_rc == WAIT_PART_DOWN))
 					rc = ESLURM_PARTITION_DOWN;
@@ -4650,10 +4653,12 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		part_limits_rc = job_limits_check(&job_ptr, false);
 		if (part_limits_rc == WAIT_NO_REASON) {
 			rc = select_nodes(job_ptr, test_only,
-					  select_node_bitmap, err_msg, true);
+					  select_node_bitmap, err_msg, true,
+					  SLURMDB_JOB_FLAG_SUBMIT);
 		} else if (part_limits_rc == WAIT_PART_DOWN) {
 			rc = select_nodes(job_ptr, true,
-					  select_node_bitmap, err_msg, true);
+					  select_node_bitmap, err_msg, true,
+					  SLURMDB_JOB_FLAG_SUBMIT);
 			if (rc == SLURM_SUCCESS)
 				rc = ESLURM_PARTITION_DOWN;
 		}
@@ -15626,6 +15631,8 @@ reply:
 	job_ptr->pre_sus_time = (time_t) 0;
 	job_ptr->suspend_time = (time_t) 0;
 	job_ptr->tot_sus_time = (time_t) 0;
+
+	job_ptr->db_flags = 0;
 
 	/* clear signal sent flag on requeue */
 	job_ptr->warn_flags &= ~WARN_SENT;

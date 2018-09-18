@@ -2492,6 +2492,8 @@ static char *_build_tres_str(struct job_record *job_ptr)
  *	job's resource allocation (not returned if NULL), caller
  *	must free
  * IN submission - if set ignore reservations
+ * IN scheduler_type - which scheduler is calling this
+ *      (i.e. SLURMDB_JOB_FLAG_BACKFILL, SLURMDB_JOB_FLAG_SCHED, etc)
  * OUT err_msg - if not NULL set to error message for job, caller must xfree
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
@@ -2507,7 +2509,7 @@ static char *_build_tres_str(struct job_record *job_ptr)
  */
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			bitstr_t **select_node_bitmap, char **err_msg,
-			bool submission)
+			bool submission, uint32_t scheduler_type)
 {
 	int bb, error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
@@ -2894,6 +2896,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		last_job_update = now;
 		goto cleanup;
 	}
+
+	job_ptr->db_flags &= SLURMDB_JOB_CLEAR_SCHED;
+	job_ptr->db_flags |= scheduler_type;
 
 	/* This could be set in the select plugin so we want to keep the flag */
 	configuring = IS_JOB_CONFIGURING(job_ptr);

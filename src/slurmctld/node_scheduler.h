@@ -125,6 +125,8 @@ extern void re_kill_job(struct job_record *job_ptr);
  *	job's resource allocation (not returned if NULL), caller
  *	must free
  * IN submission - if set ignore reservations
+ * IN scheduler_type - which scheduler is calling this
+ *      (i.e. SLURMDB_JOB_FLAG_BACKFILL, SLURMDB_JOB_FLAG_SCHED, etc)
  * OUT err_msg - if not NULL set to error message for job, caller must xfree
  * RET 0 on success, ESLURM code from slurm_errno.h otherwise
  * globals: list_part - global list of partition info
@@ -140,7 +142,7 @@ extern void re_kill_job(struct job_record *job_ptr);
  */
 extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			bitstr_t **select_node_bitmap, char **err_msg,
-			bool submission);
+			bool submission, uint32_t scheduler_type);
 
 /*
  * get_node_cnts - determine the number of nodes for the requested job.

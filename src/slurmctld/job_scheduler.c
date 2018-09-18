@@ -899,7 +899,8 @@ next_part:		part_ptr = (struct part_record *)
 		job_ptr->details->exc_node_bitmap =
 			bit_copy(fini_job_ptr->job_resrcs->node_bitmap);
 		bit_not(job_ptr->details->exc_node_bitmap);
-		error_code = select_nodes(job_ptr, false, NULL, NULL, false);
+		error_code = select_nodes(job_ptr, false, NULL, NULL, false,
+					  SLURMDB_JOB_FLAG_SCHED);
 		bit_free(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = orig_exc_bitmap;
 		if (error_code == SLURM_SUCCESS) {
@@ -1832,7 +1833,8 @@ next_task:
 			goto skip_start;
 		}
 
-		error_code = select_nodes(job_ptr, false, NULL, NULL, false);
+		error_code = select_nodes(job_ptr, false, NULL, NULL, false,
+					  SLURMDB_JOB_FLAG_SCHED);
 
 		if (error_code == SLURM_SUCCESS) {
 			/*
