@@ -2919,7 +2919,10 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	ListIterator iter;
+	bool enforce_binding = false;
 
+	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
+		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
@@ -2955,7 +2958,9 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus)
 				continue;
-			avail_cpus = avail_res_array[i]->avail_cpus;
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, rem_nodes,
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -3009,7 +3014,9 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 			if (!bit_test(nwt->node_bitmap, i) ||
 			    bit_test(node_map, i))
 				continue;
-			avail_cpus = avail_res_array[i]->avail_cpus;
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, rem_nodes,
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -3092,7 +3099,10 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	ListIterator iter;
+	bool enforce_binding = false;
 
+	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
+		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
@@ -3128,7 +3138,9 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus)
 				continue;
-			avail_cpus = avail_res_array[i]->avail_cpus;
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, rem_nodes,
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -3192,7 +3204,10 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 				    ((idle_test == 1) &&
 				     !bit_test(idle_node_bitmap, i)))
 					continue;
-				avail_cpus = avail_res_array[i]->avail_cpus;
+				_select_cores(job_ptr, mc_ptr, enforce_binding,
+					      i, &avail_cpus, max_nodes,
+					      rem_nodes, avail_core,
+					      avail_res_array, first_pass);
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type,
@@ -3277,7 +3292,10 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 	node_weight_type *nwt;
 	ListIterator iter;
 	uint16_t *avail_cpu_per_node = NULL;
+	bool enforce_binding = false;
 
+	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
+		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
@@ -3313,7 +3331,9 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus)
 				continue;
-			avail_cpus = avail_res_array[i]->avail_cpus;
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, rem_nodes,
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -3373,7 +3393,10 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 				if (!bit_test(nwt->node_bitmap, i) ||
 				    bit_test(node_map, i))
 					continue;
-				avail_cpus = avail_res_array[i]->avail_cpus;
+				_select_cores(job_ptr, mc_ptr, enforce_binding,
+					      i, &avail_cpus, max_nodes,
+					      rem_nodes, avail_core,
+					      avail_res_array, first_pass);
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type,
@@ -3476,7 +3499,10 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	ListIterator iter;
+	bool enforce_binding = false;
 
+	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
+		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
 	rem_nodes = MAX(min_nodes, req_nodes);
@@ -3512,7 +3538,9 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus)
 				continue;
-			avail_cpus = avail_res_array[i]->avail_cpus;
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, rem_nodes,
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -3566,7 +3594,9 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 			if (!bit_test(nwt->node_bitmap, i) ||
 			    bit_test(node_map, i))
 				continue;
-			avail_cpus = avail_res_array[i]->avail_cpus;
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, rem_nodes,
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus,
 				     min_rem_nodes, details_ptr,
 				     avail_res_array[i], i, cr_type,
