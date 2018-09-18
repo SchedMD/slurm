@@ -2164,6 +2164,7 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	int alloc_tasks = 0;
 	uint32_t min_tasks_this_node = 0, max_tasks_this_node = 0;
 
+	rem_nodes = MIN(rem_nodes, 1);	/* If range of node counts */
 	if (mc_ptr->ntasks_per_node) {
 		min_tasks_this_node = mc_ptr->ntasks_per_node;
 		max_tasks_this_node = mc_ptr->ntasks_per_node;
@@ -2190,15 +2191,16 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		}
 	} else if (job_ptr->details &&
 		   ((job_ptr->details->num_tasks == 1) ||
-		    (job_ptr->details->num_tasks ==
-		     job_ptr->details->max_nodes))) {
+		    ((job_ptr->details->num_tasks ==
+		      job_ptr->details->min_nodes) &&
+		     (job_ptr->details->num_tasks ==
+		      job_ptr->details->max_nodes)))) {
 		min_tasks_this_node = 1;
 		max_tasks_this_node = 1;
 	} else {
 		min_tasks_this_node = 1;
 		max_tasks_this_node = NO_VAL;
 	}
-
 	/* Determine how many tasks can be started on this node */
 	if (mc_ptr->cpus_per_task &&
 	    (!job_ptr->details || !job_ptr->details->overcommit)) {
@@ -2407,7 +2409,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			if (!bit_test(req_map, i))
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, max_nodes, rem_nodes,
+				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			if (avail_cpus == 0)
 				goto fini;
@@ -2459,7 +2461,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		} else {
 			node_ptr = node_record_table_ptr + i;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, max_nodes, rem_nodes,
+				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			if (avail_cpus == 0) {
 				bit_clear(node_map, i);
@@ -2552,7 +2554,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				if (gres_str)
 					gres_print = gres_str;
 			}
-			info("%s: eval_nodes:%d consec "
+			info("%s: eval_nodes: set:%d consec "
 			     "CPUs:%d nodes:%d %s begin:%d end:%d required:%d weight:%"PRIu64,
 			     plugin_type, i, consec_cpus[i], consec_nodes[i],
 			     gres_print, consec_start[i], consec_end[i],
@@ -2959,7 +2961,7 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 			    !avail_res_array[i]->avail_cpus)
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, max_nodes, rem_nodes,
+				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
@@ -3015,7 +3017,7 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 			    bit_test(node_map, i))
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, max_nodes, rem_nodes,
+				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
@@ -3139,7 +3141,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 			    !avail_res_array[i]->avail_cpus)
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, max_nodes, rem_nodes,
+				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
@@ -3206,7 +3208,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 					continue;
 				_select_cores(job_ptr, mc_ptr, enforce_binding,
 					      i, &avail_cpus, max_nodes,
-					      rem_nodes, avail_core,
+					      min_rem_nodes, avail_core,
 					      avail_res_array, first_pass);
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
@@ -3332,7 +3334,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 			    !avail_res_array[i]->avail_cpus)
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, max_nodes, rem_nodes,
+				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
@@ -3395,7 +3397,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 					continue;
 				_select_cores(job_ptr, mc_ptr, enforce_binding,
 					      i, &avail_cpus, max_nodes,
-					      rem_nodes, avail_core,
+					      min_rem_nodes, avail_core,
 					      avail_res_array, first_pass);
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
@@ -3539,7 +3541,7 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 			    !avail_res_array[i]->avail_cpus)
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, max_nodes, rem_nodes,
+				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
@@ -3595,7 +3597,7 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 			    bit_test(node_map, i))
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
-				      &avail_cpus, max_nodes, rem_nodes,
+				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus,
 				     min_rem_nodes, details_ptr,
