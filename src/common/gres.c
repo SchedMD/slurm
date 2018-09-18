@@ -5890,6 +5890,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 						if (!bit_test(avail_core, i))
 							continue;
 						bit_clear(avail_core, i);
+						*avail_cpus -= cpus_per_core;
 						if (--tot_core_cnt <=
 						    min_core_cnt)
 							break;
@@ -6037,6 +6038,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		if (cpus_per_gres) {
 			i = *avail_cpus / cpus_per_gres;
 			sock_gres->total_cnt = MIN(i, sock_gres->total_cnt);
+			if ((job_specs->gres_per_node > sock_gres->total_cnt) ||
+			    (job_specs->gres_per_task > sock_gres->total_cnt)) {
+				*max_tasks_this_node = 0;
+			}
 		}
 	}
 	list_iterator_destroy(sock_gres_iter);
