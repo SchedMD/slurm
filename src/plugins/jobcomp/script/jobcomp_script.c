@@ -179,6 +179,7 @@ struct jobcomp_info {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	uint32_t exit_code;
+	uint32_t db_flags;
 	uint32_t derived_ec;
 	uint32_t pack_job_id;
 	uint32_t pack_job_offset;
@@ -215,6 +216,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 
 	j->jobid = job->job_id;
 	j->exit_code = job->exit_code;
+	j->db_flags = job->db_flags;
 	j->derived_ec = job->derived_ec;
 	j->uid = job->user_id;
 	j->user_name = xstrdup(uid_to_string_cached((uid_t)job->user_id));
@@ -439,6 +441,10 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append_fmt (&env, "SUBMIT","%ld", (long)job->submit);
 	_env_append_fmt (&env, "PROCS", "%u",  job->nprocs);
 	_env_append_fmt (&env, "NODECNT", "%u", job->nnodes);
+
+	tz = slurmdb_job_flags_str(job->db_flags);
+	_env_append (&env, "DB_FLAGS", tz);
+	xfree(tz);
 
 	_env_append (&env, "BATCH", (job->batch_flag ? "yes" : "no"));
 	_env_append (&env, "CLUSTER",	job->cluster);
