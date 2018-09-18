@@ -928,6 +928,24 @@ extern void print_fields(type_t type, void *object)
 					     outbuf,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_FLAGS:
+			switch(type) {
+			case JOB:
+				tmp_int = job->flags;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_int = SLURMDB_JOB_FLAG_NONE;
+				break;
+			}
+			if (tmp_int != SLURMDB_JOB_FLAG_NONE)
+				tmp_char = slurmdb_job_flags_str(tmp_int);
+
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_GID:
 			switch(type) {
 			case JOB:
