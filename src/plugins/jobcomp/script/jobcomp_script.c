@@ -193,6 +193,7 @@ struct jobcomp_info {
 	time_t start;
 	time_t end;
 	char *cluster;
+	char *constraints;
 	char *group_name;
 	char *orig_dependency;
 	char *nodes;
@@ -216,6 +217,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 
 	j->jobid = job->job_id;
 	j->exit_code = job->exit_code;
+	j->constraints = xstrdup(job->details->features);
 	j->db_flags = job->db_flags;
 	j->derived_ec = job->derived_ec;
 	j->uid = job->user_id;
@@ -448,6 +450,7 @@ static char ** _create_environment (struct jobcomp_info *job)
 
 	_env_append (&env, "BATCH", (job->batch_flag ? "yes" : "no"));
 	_env_append (&env, "CLUSTER",	job->cluster);
+	_env_append (&env, "CONSTRAINTS", job->constraints);
 	_env_append (&env, "NODES",     job->nodes);
 	_env_append (&env, "ACCOUNT",   job->account);
 	_env_append (&env, "JOBNAME",   job->name);
