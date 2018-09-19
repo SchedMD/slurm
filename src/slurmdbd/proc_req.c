@@ -2667,6 +2667,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	details.work_dir = _replace_double_quotes(job_start_msg->work_dir);
 	details.submit_time = job_start_msg->submit_time;
 	job.db_flags = job_start_msg->db_flags;
+	details.features = _replace_double_quotes(job_start_msg->constraints);
 
 	job.array_recs = &array_recs;
 	job.details = &details;

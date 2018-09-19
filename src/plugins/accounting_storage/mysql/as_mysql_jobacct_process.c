@@ -58,6 +58,7 @@ char *job_req_inx[] = {
 	"t1.admin_comment",
 	"t1.array_max_tasks",
 	"t1.array_task_str",
+	"t1.constraints",
 	"t1.cpus_req",
 	"t1.derived_ec",
 	"t1.derived_es",
@@ -112,6 +113,7 @@ enum {
 	JOB_REQ_ADMIN_COMMENT,
 	JOB_REQ_ARRAY_MAX,
 	JOB_REQ_ARRAY_STR,
+	JOB_REQ_CONSTRAINTS,
 	JOB_REQ_REQ_CPUS,
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
@@ -826,6 +828,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->derived_es = xstrdup(row[JOB_REQ_DERIVED_ES]);
 		job->admin_comment = xstrdup(row[JOB_REQ_ADMIN_COMMENT]);
 		job->system_comment = xstrdup(row[JOB_REQ_SYSTEM_COMMENT]);
+		job->constraints = xstrdup(row[JOB_REQ_CONSTRAINTS]);
 		job->flags = slurm_atoul(row[JOB_REQ_FLAGS]);
 
 		if (row[JOB_REQ_PARTITION])
@@ -1438,6 +1441,31 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 			if (set)
 				xstrcat(*extra, " || ");
 			xstrfmtcat(*extra, "t1.id_assoc='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if (job_cond->constraint_list &&
+	    list_count(job_cond->constraint_list)) {
+		set = 0;
+		if (*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->constraint_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcat(*extra, " && ");
+			if (object[0])
+				xstrfmtcat(*extra,
+					   "t1.constraints like '%%%s%%'",
+					   object);
+			else
+				xstrcat(*extra, "t1.constraints=''");
+
 			set = 1;
 		}
 		list_iterator_destroy(itr);

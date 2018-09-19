@@ -855,6 +855,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->array_task_str);
 		xfree(job->blockid);
 		xfree(job->cluster);
+		xfree(job->constraints);
 		xfree(job->derived_es);
 		xfree(job->jobname);
 		xfree(job->mcs_label);
@@ -1152,6 +1153,7 @@ extern void slurmdb_destroy_job_cond(void *object)
 		FREE_NULL_LIST(job_cond->acct_list);
 		FREE_NULL_LIST(job_cond->associd_list);
 		FREE_NULL_LIST(job_cond->cluster_list);
+		FREE_NULL_LIST(job_cond->constraint_list);
 		FREE_NULL_LIST(job_cond->groupid_list);
 		FREE_NULL_LIST(job_cond->jobname_list);
 		FREE_NULL_LIST(job_cond->partition_list);

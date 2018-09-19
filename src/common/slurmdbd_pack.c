@@ -499,6 +499,7 @@ static void _pack_job_start_msg(void *in,
 		pack32(msg->array_task_pending, buffer);
 		pack32(msg->assoc_id, buffer);
 		packstr(msg->block_id, buffer);
+		packstr(msg->constraints, buffer);
 		pack32(msg->db_flags, buffer);
 		pack64(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
@@ -590,6 +591,8 @@ static int _unpack_job_start_msg(void **msg,
 		safe_unpack32(&msg_ptr->array_task_pending, buffer);
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->constraints,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->db_flags, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);

@@ -657,6 +657,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"allocations",    no_argument,       0,    'X'},
                 {"brief",          no_argument,       0,    'b'},
                 {"completion",     no_argument,       0,    'c'},
+                {"constraints",    required_argument, 0,    'C'},
                 {"delimiter",      required_argument, 0,    OPT_LONG_DELIMITER},
                 {"duplicates",     no_argument,       0,    'D'},
                 {"federation",     no_argument,       0,    OPT_LONG_FEDR},
@@ -744,9 +745,12 @@ extern void parse_command_line(int argc, char **argv)
 			fields_delimiter = optarg;
 			break;
 		case 'C':
-			/* 'C' is deprecated since 'M' is cluster on
-			   everything else.
-			*/
+			if (!job_cond->constraint_list)
+				job_cond->constraint_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->constraint_list,
+					      optarg);
+			break;
 		case 'M':
 			if (!xstrcasecmp(optarg, "all") ||
 			    !xstrcasecmp(optarg, "-1")) {	/* vestigial */

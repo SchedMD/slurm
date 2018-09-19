@@ -4553,6 +4553,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);	/* count(acct_list) */
 			pack32(NO_VAL, buffer);	/* count(associd_list) */
 			pack32(NO_VAL, buffer);	/* count(cluster_list) */
+			pack32(NO_VAL, buffer);	/* count(constraint_list) */
 			pack32(0, buffer);	/* cpus_max */
 			pack32(0, buffer);	/* cpus_min */
 			pack32(SLURMDB_JOB_FLAG_NOTSET, buffer); /* db_flags */
@@ -4611,6 +4612,16 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 		pack32(count, buffer);
 		if (count && (count != NO_VAL)) {
 			itr = list_iterator_create(object->cluster_list);
+			while ((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+
+		count = _list_count_null(object->constraint_list);
+		pack32(count, buffer);
+		if (count && (count != NO_VAL)) {
+			itr = list_iterator_create(object->constraint_list);
 			while ((tmp_info = list_next(itr))) {
 				packstr(tmp_info, buffer);
 			}
@@ -5291,6 +5302,20 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
 						       buffer);
 				list_append(object_ptr->cluster_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count && (count != NO_VAL)) {
+			object_ptr->constraint_list =
+				list_create(slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->constraint_list,
+					    tmp_info);
 			}
 		}
 
@@ -5993,6 +6018,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->associd, buffer);
 		packstr(job->blockid, buffer);
 		packstr(job->cluster, buffer);
+		packstr(job->constraints, buffer);
 		pack32((uint32_t)job->derived_ec, buffer);
 		packstr(job->derived_es, buffer);
 		pack32(job->elapsed, buffer);
@@ -6246,6 +6272,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->associd, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->cluster, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->constraints,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		job_ptr->derived_ec = (int32_t)uint32_tmp;
 		safe_unpackstr_xmalloc(&job_ptr->derived_es, &uint32_tmp,
@@ -6256,6 +6284,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&uint32_tmp, buffer);
 		job_ptr->exitcode = (int32_t)uint32_tmp;
 		safe_unpack32(&job_ptr->flags, buffer);
+
 		safe_unpack32(&job_ptr->gid, buffer);
 		safe_unpack32(&job_ptr->jobid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);

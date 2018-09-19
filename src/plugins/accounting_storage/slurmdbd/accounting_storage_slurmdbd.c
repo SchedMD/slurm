@@ -126,6 +126,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->account);
 		xfree(req->array_task_str);
 		xfree(req->block_id);
+		xfree(req->constraints);
 		xfree(req->mcs_label);
 		xfree(req->name);
 		xfree(req->nodes);
@@ -203,7 +204,9 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	}
 
 	req->db_flags      = job_ptr->db_flags;
+
 	req->db_index      = job_ptr->db_index;
+	req->constraints   = xstrdup(job_ptr->details->features);
 	req->job_state     = job_ptr->job_state;
 	req->name          = xstrdup(job_ptr->name);
 	req->nodes         = xstrdup(job_ptr->nodes);

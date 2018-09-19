@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     "no_send_gids to go back to the original behavior.
  -- Add job flags to the database.  Currently used to determine which scheduler
     scheduled the job.
+ -- Add constraints/features to the database.
 
 * Changes in Slurm 18.08.1
 ==========================

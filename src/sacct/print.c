@@ -714,6 +714,21 @@ extern void print_fields(type_t type, void *object)
 					     tmp_char,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_CONSTRAINTS:
+			switch(type) {
+			case JOB:
+				tmp_char = job->constraints;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_CONSUMED_ENERGY:
 			switch (type) {
 			case JOB:

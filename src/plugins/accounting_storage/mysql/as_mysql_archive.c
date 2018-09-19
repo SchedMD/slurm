@@ -87,6 +87,7 @@ typedef struct {
 	char *array_max_tasks;
 	char *array_taskid;
 	char *blockid;
+	char *constraints;
 	char *derived_ec;
 	char *derived_es;
 	char *exit_code;
@@ -249,6 +250,7 @@ static char *job_req_inx[] = {
 	"id_array_job",
 	"id_array_task",
 	"id_block",
+	"constraints",
 	"derived_ec",
 	"derived_es",
 	"exit_code",
@@ -293,6 +295,7 @@ enum {
 	JOB_REQ_ARRAYJOBID,
 	JOB_REQ_ARRAYTASKID,
 	JOB_REQ_BLOCKID,
+	JOB_REQ_CONSTRAINTS,
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
 	JOB_REQ_EXIT_CODE,
@@ -601,6 +604,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->array_max_tasks, buffer);
 	packstr(object->array_taskid, buffer);
 	packstr(object->blockid, buffer);
+	packstr(object->constraints, buffer);
 	packstr(object->derived_ec, buffer);
 	packstr(object->derived_es, buffer);
 	packstr(object->exit_code, buffer);
@@ -676,6 +680,7 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->array_max_tasks, &tmp32, buffer);
 		unpackstr_ptr(&object->array_taskid, &tmp32, buffer);
 		unpackstr_ptr(&object->blockid, &tmp32, buffer);
+		unpackstr_ptr(&object->constraints, &tmp32, buffer);
 		unpackstr_ptr(&object->derived_ec, &tmp32, buffer);
 		unpackstr_ptr(&object->derived_es, &tmp32, buffer);
 		unpackstr_ptr(&object->exit_code, &tmp32, buffer);
@@ -2342,6 +2347,7 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.array_max_tasks = row[JOB_REQ_ARRAY_MAX];
 		job.array_taskid = row[JOB_REQ_ARRAYTASKID];
 		job.blockid = row[JOB_REQ_BLOCKID];
+		job.constraints = row[JOB_REQ_CONSTRAINTS];
 		job.derived_ec = row[JOB_REQ_DERIVED_EC];
 		job.derived_es = row[JOB_REQ_DERIVED_ES];
 		job.exit_code = row[JOB_REQ_EXIT_CODE];
@@ -2419,6 +2425,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.array_jobid,
 			   object.array_taskid,
 			   object.blockid,
+			   object.constraints,
 			   object.derived_ec,
 			   object.derived_es,
 			   object.exit_code,

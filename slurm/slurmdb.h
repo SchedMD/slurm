@@ -297,6 +297,7 @@ typedef struct {
 	List acct_list;		/* list of char * */
 	List associd_list;	/* list of char */
 	List cluster_list;	/* list of char * */
+	List constraint_list; 	/* list of char * */
 	uint32_t cpus_max;      /* number of cpus high range */
 	uint32_t cpus_min;      /* number of cpus low range */
 	uint32_t db_flags;      /* flags sent from the slurmctld on the job */
@@ -767,6 +768,7 @@ typedef struct {
 	uint32_t associd;
 	char	*blockid;
 	char    *cluster;
+	char    *constraints;
 	uint32_t derived_ec;
 	char	*derived_es; /* aka "comment" */
 	uint32_t elapsed;
