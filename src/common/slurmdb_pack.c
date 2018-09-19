@@ -4566,6 +4566,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			pack32(0, buffer);	/* nodes_min */
 			pack32(NO_VAL, buffer);	/* count(partition_list) */
 			pack32(NO_VAL, buffer);	/* count(qos_list) */
+			pack32(NO_VAL, buffer);	/* count(reason_list) */
 			pack32(NO_VAL, buffer);	/* count(resv_list) */
 			pack32(NO_VAL, buffer);	/* count(resvid_list) */
 			pack32(NO_VAL, buffer);	/* count(step_list) */
@@ -4693,6 +4694,16 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 		pack32(count, buffer);
 		if (count && (count != NO_VAL)) {
 			itr = list_iterator_create(object->qos_list);
+			while ((tmp_info = list_next(itr))) {
+				packstr(tmp_info, buffer);
+			}
+			list_iterator_destroy(itr);
+		}
+
+		count = _list_count_null(object->reason_list);
+		pack32(count, buffer);
+		if (count && (count != NO_VAL)) {
+			itr = list_iterator_create(object->reason_list);
 			while ((tmp_info = list_next(itr))) {
 				packstr(tmp_info, buffer);
 			}
@@ -5398,6 +5409,18 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
+			object_ptr->reason_list =
+				list_create(slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info,
+						       &uint32_tmp, buffer);
+				list_append(object_ptr->reason_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
 			object_ptr->resv_list =
 				list_create(slurm_destroy_char);
 			for (i = 0; i < count; i++) {
@@ -6049,6 +6072,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->show_full, buffer);
 		pack_time(job->start, buffer);
 		pack32(job->state, buffer);
+		pack32(job->state_reason_prev, buffer);
 		_pack_slurmdb_stats(&job->stats, protocol_version, buffer);
 
 		if (job->steps)
@@ -6309,6 +6333,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack_time(&job_ptr->start, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		job_ptr->state = uint32_tmp;
+		safe_unpack32(&job_ptr->state_reason_prev, buffer);
 		if (_unpack_slurmdb_stats(&job_ptr->stats, protocol_version,
 					  buffer)
 		    != SLURM_SUCCESS)

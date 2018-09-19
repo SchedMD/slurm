@@ -112,6 +112,7 @@ typedef struct {
 	char *resvid;
 	char *start;
 	char *state;
+	char *state_reason_prev;
 	char *submit;
 	char *suspended;
 	char *system_comment;
@@ -276,6 +277,7 @@ static char *job_req_inx[] = {
 	"id_resv",
 	"time_start",
 	"state",
+	"state_reason_prev",
 	"time_submit",
 	"time_suspended",
 	"track_steps",
@@ -321,6 +323,7 @@ enum {
 	JOB_REQ_RESVID,
 	JOB_REQ_START,
 	JOB_REQ_STATE,
+	JOB_REQ_STATE_REASON,
 	JOB_REQ_SUBMIT,
 	JOB_REQ_SUSPENDED,
 	JOB_REQ_TRACKSTEPS,
@@ -630,6 +633,7 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->resvid, buffer);
 	packstr(object->start, buffer);
 	packstr(object->state, buffer);
+	packstr(object->state_reason_prev, buffer);
 	packstr(object->submit, buffer);
 	packstr(object->suspended, buffer);
 	packstr(object->system_comment, buffer);
@@ -706,6 +710,7 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->resvid, &tmp32, buffer);
 		unpackstr_ptr(&object->start, &tmp32, buffer);
 		unpackstr_ptr(&object->state, &tmp32, buffer);
+		unpackstr_ptr(&object->state_reason_prev, &tmp32, buffer);
 		unpackstr_ptr(&object->submit, &tmp32, buffer);
 		unpackstr_ptr(&object->suspended, &tmp32, buffer);
 		unpackstr_ptr(&object->system_comment, &tmp32, buffer);
@@ -2371,6 +2376,7 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.resvid = row[JOB_REQ_RESVID];
 		job.start = row[JOB_REQ_START];
 		job.state = row[JOB_REQ_STATE];
+		job.state_reason_prev = row[JOB_REQ_STATE_REASON];
 		job.submit = row[JOB_REQ_SUBMIT];
 		job.suspended = row[JOB_REQ_SUSPENDED];
 		job.track_steps = row[JOB_REQ_TRACKSTEPS];
@@ -2451,6 +2457,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.resvid,
 			   object.start,
 			   object.state,
+			   object.state_reason_prev,
 			   object.submit,
 			   object.suspended,
 			   object.track_steps,

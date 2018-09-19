@@ -805,6 +805,9 @@ struct job_record {
 					 * return valid job information during
 					 * scheduling cycle (state_reason is
 					 * cleared at start of cycle) */
+	uint32_t state_reason_prev_db;	/* Previous state_reason that isn't
+					 * priority or resources, only stored in
+					 * the database. */
 	List step_list;			/* list of job's steps */
 	time_t suspend_time;		/* time job last suspended or resumed */
 	char *system_comment;		/* slurmctld's arbitrary comment */

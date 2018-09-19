@@ -207,6 +207,97 @@ static int _addto_id_char_list(List char_list, char *names, bool gid)
 }
 
 /* returns number of objects added to list */
+static int _addto_reason_char_list(List char_list, char *names)
+{
+	int i = 0, start = 0;
+	uint32_t c;
+	char *name = NULL, *tmp_char = NULL;
+	ListIterator itr = NULL;
+	char quote_c = '\0';
+	int quote = 0;
+	int count = 0;
+
+	if (!char_list) {
+		error("No list was given to fill in");
+		return 0;
+	}
+
+	itr = list_iterator_create(char_list);
+	if (names) {
+		if (names[i] == '\"' || names[i] == '\'') {
+			quote_c = names[i];
+			quote = 1;
+			i++;
+		}
+		start = i;
+		while (names[i]) {
+			//info("got %d - %d = %d", i, start, i-start);
+			if (quote && names[i] == quote_c)
+				break;
+			else if (names[i] == '\"' || names[i] == '\'')
+				names[i] = '`';
+			else if (names[i] == ',') {
+				if ((i-start) > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					c = job_reason_num(name);
+					if (c == NO_VAL)
+						fatal("unrecognized job reason value %s",
+						      name);
+					xfree(name);
+					name = xstrdup_printf("%u", c);
+
+					while ((tmp_char = list_next(itr))) {
+						if (!xstrcasecmp(tmp_char,
+								 name))
+							break;
+					}
+
+					if (!tmp_char) {
+						list_append(char_list, name);
+						count++;
+					} else
+						xfree(name);
+					list_iterator_reset(itr);
+				}
+				i++;
+				start = i;
+				if (!names[i]) {
+					info("There is a problem with "
+					     "your request.  It appears you "
+					     "have spaces inside your list.");
+					break;
+				}
+			}
+			i++;
+		}
+		if ((i-start) > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			c = job_reason_num(name);
+			if (c == NO_VAL)
+				fatal("unrecognized job reason value '%s'",
+				      name);
+			xfree(name);
+			name = xstrdup_printf("%u", c);
+
+			while ((tmp_char = list_next(itr))) {
+				if (!xstrcasecmp(tmp_char, name))
+					break;
+			}
+
+			if (!tmp_char) {
+				list_append(char_list, name);
+				count++;
+			} else
+				xfree(name);
+		}
+	}
+	list_iterator_destroy(itr);
+	return count;
+}
+
+/* returns number of objects added to list */
 static int _addto_state_char_list(List char_list, char *names)
 {
 	int i = 0, start = 0;
@@ -666,7 +757,6 @@ extern void parse_command_line(int argc, char **argv)
                 {"endtime",        required_argument, 0,    'E'},
                 {"file",           required_argument, 0,    'f'},
                 {"flags",          required_argument, 0,    'F'},
-                {"gid",            required_argument, 0,    'g'},
                 {"group",          required_argument, 0,    'g'},
                 {"help",           no_argument,       0,    'h'},
                 {"local",          no_argument,       0,    OPT_LONG_LOCAL},
@@ -690,6 +780,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"parsable2",      no_argument,       0,    'P'},
                 {"qos",            required_argument, 0,    'q'},
                 {"partition",      required_argument, 0,    'r'},
+                {"reason",         required_argument, 0,    'R'},
                 {"state",          required_argument, 0,    's'},
                 {"starttime",      required_argument, 0,    'S'},
                 {"truncate",       no_argument,       0,    'T'},
@@ -919,6 +1010,13 @@ extern void parse_command_line(int argc, char **argv)
 
 			slurm_addto_char_list(job_cond->partition_list,
 					      optarg);
+			break;
+		case 'R':
+			if (!job_cond->reason_list)
+				job_cond->reason_list =
+					list_create(slurm_destroy_char);
+
+			_addto_reason_char_list(job_cond->reason_list, optarg);
 			break;
 		case 's':
 			if (!job_cond->state_list)

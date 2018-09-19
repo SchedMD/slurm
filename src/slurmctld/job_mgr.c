@@ -1187,6 +1187,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->batch_flag, buffer);
 	pack16(dump_job_ptr->mail_type, buffer);
 	pack32(dump_job_ptr->state_reason, buffer);
+	pack32(dump_job_ptr->state_reason_prev_db, buffer);
 	pack8(dump_job_ptr->reboot, buffer);
 	pack16(dump_job_ptr->restart_cnt, buffer);
 	pack16(dump_job_ptr->wait_all_nodes, buffer);
@@ -1303,7 +1304,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	time_t last_sched_eval = 0;
 	time_t resize_time = 0, now = time(NULL);
 	uint8_t reboot = 0, power_flags = 0;
-	uint32_t array_task_id = NO_VAL;
+	uint32_t array_task_id = NO_VAL, state_reason_prev_db;
 	uint32_t array_flags = 0, max_run_tasks = 0, tot_run_tasks = 0;
 	uint32_t min_exit_code = 0, max_exit_code = 0, tot_comp_tasks = 0;
 	uint32_t pack_job_id = 0, pack_job_offset = 0, state_reason;
@@ -1433,6 +1434,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack16(&batch_flag, buffer);
 		safe_unpack16(&mail_type, buffer);
 		safe_unpack32(&state_reason, buffer);
+		safe_unpack32(&state_reason_prev_db, buffer);
 		safe_unpack8 (&reboot, buffer);
 		safe_unpack16(&restart_cnt, buffer);
 		safe_unpack16(&wait_all_nodes, buffer);
@@ -2182,6 +2184,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->check_job    = check_job;
 	job_ptr->start_time   = start_time;
 	job_ptr->state_reason = state_reason;
+	job_ptr->state_reason_prev_db = state_reason_prev_db;
 	job_ptr->state_desc   = state_desc;
 	state_desc            = NULL;	/* reused, nothing left to free */
 	job_ptr->suspend_time = suspend_time;

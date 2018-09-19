@@ -87,6 +87,7 @@ char *job_req_inx[] = {
 	"t1.partition",
 	"t1.priority",
 	"t1.state",
+	"t1.state_reason_prev",
 	"t1.system_comment",
 	"t1.time_eligible",
 	"t1.time_end",
@@ -142,6 +143,7 @@ enum {
 	JOB_REQ_PARTITION,
 	JOB_REQ_PRIORITY,
 	JOB_REQ_STATE,
+	JOB_REQ_STATE_REASON,
 	JOB_REQ_SYSTEM_COMMENT,
 	JOB_REQ_ELIGIBLE,
 	JOB_REQ_END,
@@ -830,6 +832,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->system_comment = xstrdup(row[JOB_REQ_SYSTEM_COMMENT]);
 		job->constraints = xstrdup(row[JOB_REQ_CONSTRAINTS]);
 		job->flags = slurm_atoul(row[JOB_REQ_FLAGS]);
+		job->state_reason_prev = slurm_atoul(row[JOB_REQ_STATE_REASON]);
 
 		if (row[JOB_REQ_PARTITION])
 			job->partition = xstrdup(row[JOB_REQ_PARTITION]);
@@ -1484,6 +1487,25 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		else
 			xstrfmtcat(*extra, "t1.flags & %u", job_cond->db_flags);
 
+		xstrcat(*extra, ")");
+	}
+
+	if (job_cond->reason_list && list_count(job_cond->reason_list)) {
+		set = 0;
+		if (*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		itr = list_iterator_create(job_cond->reason_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "t1.state_reason_prev='%s'",
+				   object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
 		xstrcat(*extra, ")");
 	}
 

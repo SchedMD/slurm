@@ -310,6 +310,7 @@ typedef struct {
 	uint32_t nodes_min;     /* number of nodes low range */
 	List partition_list;	/* list of char * */
 	List qos_list;  	/* list of char * */
+	List reason_list;	/* list of char * */
 	List resv_list;		/* list of char * */
 	List resvid_list;	/* list of char * */
 	List state_list;        /* list of char * */
@@ -797,6 +798,7 @@ typedef struct {
 	uint32_t show_full;
 	time_t start;
 	uint32_t state;
+	uint32_t state_reason_prev;
 	slurmdb_stats_t stats;
 	List    steps; /* list of slurmdb_step_rec_t *'s */
 	time_t submit;

@@ -1158,6 +1158,7 @@ extern void slurmdb_destroy_job_cond(void *object)
 		FREE_NULL_LIST(job_cond->jobname_list);
 		FREE_NULL_LIST(job_cond->partition_list);
 		FREE_NULL_LIST(job_cond->qos_list);
+		FREE_NULL_LIST(job_cond->reason_list);
 		FREE_NULL_LIST(job_cond->resv_list);
 		FREE_NULL_LIST(job_cond->resvid_list);
 		FREE_NULL_LIST(job_cond->step_list);

@@ -281,6 +281,8 @@ typedef struct dbd_job_start_msg {
 	uint64_t req_mem;       /* requested minimum memory */
 	uint32_t resv_id;	/* reservation id */
 	time_t   start_time;	/* job start time */
+	uint32_t state_reason_prev; /* Last reason of blocking before job
+				     * started */
 	time_t   submit_time;	/* job submit time */
 	uint32_t timelimit;	/* job timelimit */
 	uint32_t uid;	        /* user ID if associations are being used */

@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Add job flags to the database.  Currently used to determine which scheduler
     scheduled the job.
  -- Add constraints/features to the database.
+ -- Add last reason job didn't run before resources/priority to the database.
 
 * Changes in Slurm 18.08.1
 ==========================

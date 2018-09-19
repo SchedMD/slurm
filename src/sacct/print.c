@@ -1795,6 +1795,22 @@ extern void print_fields(type_t type, void *object)
 					     tmp_int,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_REASON:
+			switch(type) {
+			case JOB:
+				tmp_char = job_reason_string(
+					job->state_reason_prev);
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+				tmp_char = NULL;
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_REQ_CPUFREQ_MIN:
 			switch (type) {
 			case JOB:
