@@ -3339,7 +3339,6 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 
 	xassert(save_ptr);
 	if (!in_val && (*save_ptr == NULL)) {
-		*save_ptr = NULL;
 		return NULL;
 	}
 
@@ -3424,7 +3423,7 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 		/* No type or explicit count. Count is 1 by default */
 		*cnt = 1;
 		if (comma) {
-			offset = comma - name;
+			offset = (comma + 1) - name;
 			prev_save_ptr += offset;
 		} else	/* No more GRES */
 			prev_save_ptr = NULL;
@@ -8712,7 +8711,6 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 
 	xassert(save_ptr);
 	if (!in_val && (*save_ptr == NULL)) {
-		*save_ptr = NULL;
 		return NULL;
 	}
 
