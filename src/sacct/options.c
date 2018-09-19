@@ -455,6 +455,7 @@ static void _init_params(void)
 {
 	memset(&params, 0, sizeof(sacct_parameters_t));
 	params.job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
+	params.job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 	params.job_cond->flags |= JOBCOND_FLAG_NO_TRUNC;
 	params.convert_flags = CONVERT_NUM_UNIT_EXACT;
 	params.units = NO_VAL;
@@ -663,6 +664,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"help-fields",    no_argument,       0,    'e'},
                 {"endtime",        required_argument, 0,    'E'},
                 {"file",           required_argument, 0,    'f'},
+                {"flags",          required_argument, 0,    'F'},
                 {"gid",            required_argument, 0,    'g'},
                 {"group",          required_argument, 0,    'g'},
                 {"help",           no_argument,       0,    'h'},
@@ -718,7 +720,7 @@ extern void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:DeE:f:g:hi:I:j:k:K:lLM:nN:o:pPq:r:s:S:Ttu:UvVW:x:X",
+				"aA:bcC:DeE:f:F:g:hi:I:j:k:K:lLM:nN:o:pPq:r:s:S:Ttu:UvVW:x:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -772,6 +774,11 @@ extern void parse_command_line(int argc, char **argv)
 		case 'f':
 			xfree(params.opt_filein);
 			params.opt_filein = xstrdup(optarg);
+			break;
+		case 'F':
+			job_cond->db_flags = str_2_job_flags(optarg);
+			if (job_cond->db_flags == SLURMDB_JOB_FLAG_NOTSET)
+				exit(1);
 			break;
 		case 'g':
 			if (!job_cond->groupid_list)

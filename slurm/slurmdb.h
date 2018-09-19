@@ -299,6 +299,7 @@ typedef struct {
 	List cluster_list;	/* list of char * */
 	uint32_t cpus_max;      /* number of cpus high range */
 	uint32_t cpus_min;      /* number of cpus low range */
+	uint32_t db_flags;      /* flags sent from the slurmctld on the job */
 	int32_t exitcode;       /* exit code of job */
 	uint32_t flags;         /* Reporting flags*/
 	List format_list; 	/* list of char * */

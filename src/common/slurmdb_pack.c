@@ -4555,6 +4555,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);	/* count(cluster_list) */
 			pack32(0, buffer);	/* cpus_max */
 			pack32(0, buffer);	/* cpus_min */
+			pack32(SLURMDB_JOB_FLAG_NOTSET, buffer); /* db_flags */
 			pack32(0, buffer);	/* exitcode */
 			pack32(0, buffer);	/* job cond flags */
 			pack32(NO_VAL, buffer);	/* count(format_list) */
@@ -4618,6 +4619,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
+		pack32(object->db_flags, buffer);
 		pack32((uint32_t)object->exitcode, buffer);
 		pack32(object->flags, buffer);
 
@@ -5294,6 +5296,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&object_ptr->cpus_max, buffer);
 		safe_unpack32(&object_ptr->cpus_min, buffer);
+		safe_unpack32(&object_ptr->db_flags, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		object_ptr->exitcode = (int32_t)uint32_tmp;
 		safe_unpack32(&object_ptr->flags, buffer);

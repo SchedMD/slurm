@@ -1444,6 +1444,21 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		xstrcat(*extra, ")");
 	}
 
+	if (job_cond->db_flags != SLURMDB_JOB_FLAG_NOTSET) {
+		set = 1;
+		if (*extra)
+			xstrcat(*extra, " && (");
+		else
+			xstrcat(*extra, " where (");
+
+		if (job_cond->db_flags == SLURMDB_JOB_FLAG_NONE)
+			xstrfmtcat(*extra, "t1.flags = %u", job_cond->db_flags);
+		else
+			xstrfmtcat(*extra, "t1.flags & %u", job_cond->db_flags);
+
+		xstrcat(*extra, ")");
+	}
+
 	if (job_cond->userid_list && list_count(job_cond->userid_list)) {
 		set = 0;
 		if (*extra)
