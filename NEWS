@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix checking missing return codes when unpacking structures.
  -- Fix slurm.spec-legacy including slurmsmwd
  -- More explicit error message when cgroup oom-kill events detected.
+ -- When updating an association and are unable to find parent association
+    initialize old fairshare association pointer correctly.
 
 * Changes in Slurm 17.11.9-2
 ============================
