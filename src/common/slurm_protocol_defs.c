@@ -67,6 +67,7 @@
 strong_alias(preempt_mode_string, slurm_preempt_mode_string);
 strong_alias(preempt_mode_num, slurm_preempt_mode_num);
 strong_alias(job_reason_string, slurm_job_reason_string);
+strong_alias(job_reason_num, slurm_job_reason_num);
 strong_alias(job_share_string, slurm_job_share_string);
 strong_alias(job_state_string, slurm_job_state_string);
 strong_alias(job_state_string_compact, slurm_job_state_string_compact);
@@ -2000,6 +2001,409 @@ extern char *job_reason_string(enum job_state_reason inx)
 		snprintf(val, sizeof(val), "%d", inx);
 		return val;
 	}
+}
+
+/* Given a job's reason string for waiting, return enum job_state_reason */
+extern enum job_state_reason job_reason_num(char *reason)
+{
+	if (!xstrcasecmp(reason, "None"))
+		return WAIT_NO_REASON;
+	if (!xstrcasecmp(reason, "Prolog"))
+		return WAIT_PROLOG;
+	if (!xstrcasecmp(reason, "Priority"))
+		return WAIT_PRIORITY;
+	if (!xstrcasecmp(reason, "Dependency"))
+		return WAIT_DEPENDENCY;
+	if (!xstrcasecmp(reason, "Resources"))
+		return WAIT_RESOURCES;
+	if (!xstrcasecmp(reason, "PartitionNodeLimit"))
+		return WAIT_PART_NODE_LIMIT;
+	if (!xstrcasecmp(reason, "PartitionTimeLimit"))
+		return WAIT_PART_TIME_LIMIT;
+	if (!xstrcasecmp(reason, "PartitionDown"))
+		return WAIT_PART_DOWN;
+	if (!xstrcasecmp(reason, "PartitionInactive"))
+		return WAIT_PART_INACTIVE;
+	if (!xstrcasecmp(reason, "JobHeldAdmin"))
+		return WAIT_HELD;
+	if (!xstrcasecmp(reason, "JobHeldUser"))
+		return WAIT_HELD_USER;
+	if (!xstrcasecmp(reason, "BeginTime"))
+		return WAIT_TIME;
+	if (!xstrcasecmp(reason, "Licenses"))
+		return WAIT_LICENSES;
+	if (!xstrcasecmp(reason, "AssociationJobLimit"))
+		return WAIT_ASSOC_JOB_LIMIT;
+	if (!xstrcasecmp(reason, "AssociationResourceLimit"))
+		return WAIT_ASSOC_RESOURCE_LIMIT;
+	if (!xstrcasecmp(reason, "AssociationTimeLimit"))
+		return WAIT_ASSOC_TIME_LIMIT;
+	if (!xstrcasecmp(reason, "Reservation"))
+		return WAIT_RESERVATION;
+	if (!xstrcasecmp(reason, "ReqNodeNotAvail"))
+		return WAIT_NODE_NOT_AVAIL;
+	if (!xstrcasecmp(reason, "FrontEndDown"))
+		return WAIT_FRONT_END;
+	if (!xstrcasecmp(reason, "PartitionDown"))
+		return FAIL_DOWN_PARTITION;
+	if (!xstrcasecmp(reason, "NodeDown"))
+		return FAIL_DOWN_NODE;
+	if (!xstrcasecmp(reason, "BadConstraints"))
+		return FAIL_BAD_CONSTRAINTS;
+	if (!xstrcasecmp(reason, "SystemFailure"))
+		return FAIL_SYSTEM;
+	if (!xstrcasecmp(reason, "JobLaunchFailure"))
+		return FAIL_LAUNCH;
+	if (!xstrcasecmp(reason, "NonZeroExitCode"))
+		return FAIL_EXIT_CODE;
+	if (!xstrcasecmp(reason, "TimeLimit"))
+		return FAIL_TIMEOUT;
+	if (!xstrcasecmp(reason, "InactiveLimit"))
+		return FAIL_INACTIVE_LIMIT;
+	if (!xstrcasecmp(reason, "InvalidAccount"))
+		return FAIL_ACCOUNT;
+	if (!xstrcasecmp(reason, "InvalidQOS"))
+		return FAIL_QOS;
+	if (!xstrcasecmp(reason, "QOSUsageThreshold"))
+		return WAIT_QOS_THRES;
+	if (!xstrcasecmp(reason, "QOSJobLimit"))
+		return WAIT_QOS_JOB_LIMIT;
+	if (!xstrcasecmp(reason, "QOSResourceLimit"))
+		return WAIT_QOS_RESOURCE_LIMIT;
+	if (!xstrcasecmp(reason, "QOSTimeLimit"))
+		return WAIT_QOS_TIME_LIMIT;
+	if (!xstrcasecmp(reason, "BlockMaxError"))
+		return WAIT_BLOCK_MAX_ERR;
+	if (!xstrcasecmp(reason, "BlockFreeAction"))
+		return WAIT_BLOCK_D_ACTION;
+	if (!xstrcasecmp(reason, "Cleaning"))
+		return WAIT_CLEANING;
+	if (!xstrcasecmp(reason, "QOSNotAllowed"))
+		return WAIT_QOS;
+	if (!xstrcasecmp(reason, "AccountNotAllowed"))
+		return WAIT_ACCOUNT;
+	if (!xstrcasecmp(reason, "DependencyNeverSatisfied"))
+		return WAIT_DEP_INVALID;
+	if (!xstrcasecmp(reason, "QOSGrpCpuLimit"))
+		return WAIT_QOS_GRP_CPU;
+	if (!xstrcasecmp(reason, "QOSGrpCPUMinutesLimit"))
+		return WAIT_QOS_GRP_CPU_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpCPURunMinutesLimit"))
+		return WAIT_QOS_GRP_CPU_RUN_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpJobsLimit"))
+		return WAIT_QOS_GRP_JOB;
+	if (!xstrcasecmp(reason, "QOSGrpMemLimit"))
+		return WAIT_QOS_GRP_MEM;
+	if (!xstrcasecmp(reason, "QOSGrpNodeLimit"))
+		return WAIT_QOS_GRP_NODE;
+	if (!xstrcasecmp(reason, "QOSGrpSubmitJobsLimit"))
+		return WAIT_QOS_GRP_SUB_JOB;
+	if (!xstrcasecmp(reason, "QOSGrpWallLimit"))
+		return WAIT_QOS_GRP_WALL;
+	if (!xstrcasecmp(reason, "QOSMaxCpuPerJobLimit"))
+		return WAIT_QOS_MAX_CPU_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxCpuMinutesPerJobLimit"))
+		return WAIT_QOS_MAX_CPU_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxNodePerJobLimit"))
+		return WAIT_QOS_MAX_NODE_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxWallDurationPerJobLimit"))
+		return WAIT_QOS_MAX_WALL_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxCpuPerUserLimit"))
+		return WAIT_QOS_MAX_CPU_PER_USER;
+	if (!xstrcasecmp(reason, "QOSMaxJobsPerUserLimit"))
+		return WAIT_QOS_MAX_JOB_PER_USER;
+	if (!xstrcasecmp(reason, "QOSMaxNodePerUserLimit"))
+		return WAIT_QOS_MAX_NODE_PER_USER;
+	if (!xstrcasecmp(reason, "QOSMaxSubmitJobPerUserLimit"))
+		return WAIT_QOS_MAX_SUB_JOB;
+	if (!xstrcasecmp(reason, "QOSMinCpuNotSatisfied"))
+		return WAIT_QOS_MIN_CPU;
+	if (!xstrcasecmp(reason, "AssocGrpCpuLimit"))
+		return WAIT_ASSOC_GRP_CPU;
+	if (!xstrcasecmp(reason, "AssocGrpCPUMinutesLimit"))
+		return WAIT_ASSOC_GRP_CPU_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpCPURunMinutesLimit"))
+		return WAIT_ASSOC_GRP_CPU_RUN_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpJobsLimit"))
+		return WAIT_ASSOC_GRP_JOB;
+	if (!xstrcasecmp(reason, "AssocGrpMemLimit"))
+		return WAIT_ASSOC_GRP_MEM;
+	if (!xstrcasecmp(reason, "AssocGrpNodeLimit"))
+		return WAIT_ASSOC_GRP_NODE;
+	if (!xstrcasecmp(reason, "AssocGrpSubmitJobsLimit"))
+		return WAIT_ASSOC_GRP_SUB_JOB;
+	if (!xstrcasecmp(reason, "AssocGrpWallLimit"))
+		return WAIT_ASSOC_GRP_WALL;
+	if (!xstrcasecmp(reason, "AssocMaxJobsLimit"))
+		return WAIT_ASSOC_MAX_JOBS;
+	if (!xstrcasecmp(reason, "AssocMaxCpuPerJobLimit"))
+		return WAIT_ASSOC_MAX_CPU_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxCpuMinutesPerJobLimit"))
+		return WAIT_ASSOC_MAX_CPU_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxNodePerJobLimit"))
+		return WAIT_ASSOC_MAX_NODE_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxWallDurationPerJobLimit"))
+		return WAIT_ASSOC_MAX_WALL_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxSubmitJobLimit"))
+		return WAIT_ASSOC_MAX_SUB_JOB;
+	if (!xstrcasecmp(reason, "JobHoldMaxRequeue"))
+		return WAIT_MAX_REQUEUE;
+	if (!xstrcasecmp(reason, "JobArrayTaskLimit"))
+		return WAIT_ARRAY_TASK_LIMIT;
+	if (!xstrcasecmp(reason, "BurstBufferResources"))
+		return WAIT_BURST_BUFFER_RESOURCE;
+	if (!xstrcasecmp(reason, "BurstBufferStageIn"))
+		return WAIT_BURST_BUFFER_STAGING;
+	if (!xstrcasecmp(reason, "BurstBufferOperation"))
+		return FAIL_BURST_BUFFER_OP;
+	if (!xstrcasecmp(reason, "PowerNotAvail"))
+		return WAIT_POWER_NOT_AVAIL;
+	if (!xstrcasecmp(reason, "PowerReserved"))
+		return WAIT_POWER_RESERVED;
+	if (!xstrcasecmp(reason, "AssocGrpUnknown"))
+		return WAIT_ASSOC_GRP_UNK;
+	if (!xstrcasecmp(reason, "AssocGrpUnknownMinutes"))
+		return WAIT_ASSOC_GRP_UNK_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpUnknownRunMinutes"))
+		return WAIT_ASSOC_GRP_UNK_RUN_MIN;
+	if (!xstrcasecmp(reason, "AssocMaxUnknownPerJob"))
+		return WAIT_ASSOC_MAX_UNK_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxUnknownPerNode"))
+		return WAIT_ASSOC_MAX_UNK_PER_NODE;
+	if (!xstrcasecmp(reason, "AssocMaxUnknownMinutesPerJob"))
+		return WAIT_ASSOC_MAX_UNK_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxCpuPerNode"))
+		return WAIT_ASSOC_MAX_CPU_PER_NODE;
+	if (!xstrcasecmp(reason, "AssocGrpMemMinutes"))
+		return WAIT_ASSOC_GRP_MEM_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpMemRunMinutes"))
+		return WAIT_ASSOC_GRP_MEM_RUN_MIN;
+	if (!xstrcasecmp(reason, "AssocMaxMemPerJob"))
+		return WAIT_ASSOC_MAX_MEM_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxMemPerNode"))
+		return WAIT_ASSOC_MAX_MEM_PER_NODE;
+	if (!xstrcasecmp(reason, "AssocMaxMemMinutesPerJob"))
+		return WAIT_ASSOC_MAX_MEM_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocGrpNodeMinutes"))
+		return WAIT_ASSOC_GRP_NODE_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpNodeRunMinutes"))
+		return WAIT_ASSOC_GRP_NODE_RUN_MIN;
+	if (!xstrcasecmp(reason, "AssocMaxNodeMinutesPerJob"))
+		return WAIT_ASSOC_MAX_NODE_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocGrpEnergy"))
+		return WAIT_ASSOC_GRP_ENERGY;
+	if (!xstrcasecmp(reason, "AssocGrpEnergyMinutes"))
+		return WAIT_ASSOC_GRP_ENERGY_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpEnergyRunMinutes"))
+		return WAIT_ASSOC_GRP_ENERGY_RUN_MIN;
+	if (!xstrcasecmp(reason, "AssocMaxEnergyPerJob"))
+		return WAIT_ASSOC_MAX_ENERGY_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxEnergyPerNode"))
+		return WAIT_ASSOC_MAX_ENERGY_PER_NODE;
+	if (!xstrcasecmp(reason, "AssocMaxEnergyMinutesPerJob"))
+		return WAIT_ASSOC_MAX_ENERGY_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocGrpGRES"))
+		return WAIT_ASSOC_GRP_GRES;
+	if (!xstrcasecmp(reason, "AssocGrpGRESMinutes"))
+		return WAIT_ASSOC_GRP_GRES_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpGRESRunMinutes"))
+		return WAIT_ASSOC_GRP_GRES_RUN_MIN;
+	if (!xstrcasecmp(reason, "AssocMaxGRESPerJob"))
+		return WAIT_ASSOC_MAX_GRES_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxGRESPerNode"))
+		return WAIT_ASSOC_MAX_GRES_PER_NODE;
+	if (!xstrcasecmp(reason, "AssocMaxGRESMinutesPerJob"))
+		return WAIT_ASSOC_MAX_GRES_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocGrpLicense"))
+		return WAIT_ASSOC_GRP_LIC;
+	if (!xstrcasecmp(reason, "AssocGrpLicenseMinutes"))
+		return WAIT_ASSOC_GRP_LIC_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpLicenseRunMinutes"))
+		return WAIT_ASSOC_GRP_LIC_RUN_MIN;
+	if (!xstrcasecmp(reason, "AssocMaxLicensePerJob"))
+		return WAIT_ASSOC_MAX_LIC_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxLicenseMinutesPerJob"))
+		return WAIT_ASSOC_MAX_LIC_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocGrpBB"))
+		return WAIT_ASSOC_GRP_BB;
+	if (!xstrcasecmp(reason, "AssocGrpBBMinutes"))
+		return WAIT_ASSOC_GRP_BB_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpBBRunMinutes"))
+		return WAIT_ASSOC_GRP_BB_RUN_MIN;
+	if (!xstrcasecmp(reason, "AssocMaxBBPerJob"))
+		return WAIT_ASSOC_MAX_BB_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxBBPerNode"))
+		return WAIT_ASSOC_MAX_BB_PER_NODE;
+	if (!xstrcasecmp(reason, "AssocMaxBBMinutesPerJob"))
+		return WAIT_ASSOC_MAX_BB_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSGrpUnknown"))
+		return WAIT_QOS_GRP_UNK;
+	if (!xstrcasecmp(reason, "QOSGrpUnknownMinutes"))
+		return WAIT_QOS_GRP_UNK_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpUnknownRunMinutes"))
+		return WAIT_QOS_GRP_UNK_RUN_MIN;
+	if (!xstrcasecmp(reason, "QOSMaxUnknownPerJob"))
+		return WAIT_QOS_MAX_UNK_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxUnknownPerNode"))
+		return WAIT_QOS_MAX_UNK_PER_NODE;
+	if (!xstrcasecmp(reason, "QOSMaxUnknownPerUser"))
+		return WAIT_QOS_MAX_UNK_PER_USER;
+	if (!xstrcasecmp(reason, "QOSMaxUnknownMinutesPerJob"))
+		return WAIT_QOS_MAX_UNK_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMinUnknown"))
+		return WAIT_QOS_MIN_UNK;
+	if (!xstrcasecmp(reason, "QOSMaxCpuPerNode"))
+		return WAIT_QOS_MAX_CPU_PER_NODE;
+	if (!xstrcasecmp(reason, "QOSGrpMemoryMinutes"))
+		return WAIT_QOS_GRP_MEM_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpMemoryRunMinutes"))
+		return WAIT_QOS_GRP_MEM_RUN_MIN;
+	if (!xstrcasecmp(reason, "QOSMaxMemoryPerJob"))
+		return WAIT_QOS_MAX_MEM_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxMemoryPerNode"))
+		return WAIT_QOS_MAX_MEM_PER_NODE;
+	if (!xstrcasecmp(reason, "QOSMaxMemoryPerUser"))
+		return WAIT_QOS_MAX_MEM_PER_USER;
+	if (!xstrcasecmp(reason, "QOSMaxMemoryMinutesPerJob"))
+		return WAIT_QOS_MAX_MEM_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMinMemory"))
+		return WAIT_QOS_MIN_MEM;
+	if (!xstrcasecmp(reason, "QOSGrpNodeMinutes"))
+		return WAIT_QOS_GRP_NODE_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpNodeRunMinutes"))
+		return WAIT_QOS_GRP_NODE_RUN_MIN;
+	if (!xstrcasecmp(reason, "QOSMaxNodeMinutesPerJob"))
+		return WAIT_QOS_MAX_NODE_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMinNode"))
+		return WAIT_QOS_MIN_NODE;
+	if (!xstrcasecmp(reason, "QOSGrpEnergy"))
+		return WAIT_QOS_GRP_ENERGY;
+	if (!xstrcasecmp(reason, "QOSGrpEnergyMinutes"))
+		return WAIT_QOS_GRP_ENERGY_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpEnergyRunMinutes"))
+		return WAIT_QOS_GRP_ENERGY_RUN_MIN;
+	if (!xstrcasecmp(reason, "QOSMaxEnergyPerJob"))
+		return WAIT_QOS_MAX_ENERGY_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxEnergyPerNode"))
+		return WAIT_QOS_MAX_ENERGY_PER_NODE;
+	if (!xstrcasecmp(reason, "QOSMaxEnergyPerUser"))
+		return WAIT_QOS_MAX_ENERGY_PER_USER;
+	if (!xstrcasecmp(reason, "QOSMaxEnergyMinutesPerJob"))
+		return WAIT_QOS_MAX_ENERGY_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMinEnergy"))
+		return WAIT_QOS_MIN_ENERGY;
+	if (!xstrcasecmp(reason, "QOSGrpGRES"))
+		return WAIT_QOS_GRP_GRES;
+	if (!xstrcasecmp(reason, "QOSGrpGRESMinutes"))
+		return WAIT_QOS_GRP_GRES_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpGRESRunMinutes"))
+		return WAIT_QOS_GRP_GRES_RUN_MIN;
+	if (!xstrcasecmp(reason, "QOSMaxGRESPerJob"))
+		return WAIT_QOS_MAX_GRES_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxGRESPerNode"))
+		return WAIT_QOS_MAX_GRES_PER_NODE;
+	if (!xstrcasecmp(reason, "QOSMaxGRESPerUser"))
+		return WAIT_QOS_MAX_GRES_PER_USER;
+	if (!xstrcasecmp(reason, "QOSMaxGRESMinutesPerJob"))
+		return WAIT_QOS_MAX_GRES_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMinGRES"))
+		return WAIT_QOS_MIN_GRES;
+	if (!xstrcasecmp(reason, "QOSGrpLicense"))
+		return WAIT_QOS_GRP_LIC;
+	if (!xstrcasecmp(reason, "QOSGrpLicenseMinutes"))
+		return WAIT_QOS_GRP_LIC_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpLicenseRunMinutes"))
+		return WAIT_QOS_GRP_LIC_RUN_MIN;
+	if (!xstrcasecmp(reason, "QOSMaxLicensePerJob"))
+		return WAIT_QOS_MAX_LIC_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxLicensePerUser"))
+		return WAIT_QOS_MAX_LIC_PER_USER;
+	if (!xstrcasecmp(reason, "QOSMaxLicenseMinutesPerJob"))
+		return WAIT_QOS_MAX_LIC_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMinLicense"))
+		return WAIT_QOS_MIN_LIC;
+	if (!xstrcasecmp(reason, "QOSGrpBB"))
+		return WAIT_QOS_GRP_BB;
+	if (!xstrcasecmp(reason, "QOSGrpBBMinutes"))
+		return WAIT_QOS_GRP_BB_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpBBRunMinutes"))
+		return WAIT_QOS_GRP_BB_RUN_MIN;
+	if (!xstrcasecmp(reason, "QOSMaxBBPerJob"))
+		return WAIT_QOS_MAX_BB_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxBBPerNode"))
+		return WAIT_QOS_MAX_BB_PER_NODE;
+	if (!xstrcasecmp(reason, "QOSMaxBBPerUser"))
+		return WAIT_QOS_MAX_BB_PER_USER;
+	if (!xstrcasecmp(reason, "AssocMaxBBMinutesPerJob"))
+		return WAIT_QOS_MAX_BB_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMinBB"))
+		return WAIT_QOS_MIN_BB;
+	if (!xstrcasecmp(reason, "DeadLine"))
+		return FAIL_DEADLINE;
+	if (!xstrcasecmp(reason, "MaxBBPerAccount"))
+		return WAIT_QOS_MAX_BB_PER_ACCT;
+	if (!xstrcasecmp(reason, "MaxCpuPerAccount"))
+		return WAIT_QOS_MAX_CPU_PER_ACCT;
+	if (!xstrcasecmp(reason, "MaxEnergyPerAccount"))
+		return WAIT_QOS_MAX_ENERGY_PER_ACCT;
+	if (!xstrcasecmp(reason, "MaxGRESPerAccount"))
+		return WAIT_QOS_MAX_GRES_PER_ACCT;
+	if (!xstrcasecmp(reason, "MaxNodePerAccount"))
+		return WAIT_QOS_MAX_NODE_PER_ACCT;
+	if (!xstrcasecmp(reason, "MaxLicensePerAccount"))
+		return WAIT_QOS_MAX_LIC_PER_ACCT;
+	if (!xstrcasecmp(reason, "MaxMemoryPerAccount"))
+		return WAIT_QOS_MAX_MEM_PER_ACCT;
+	if (!xstrcasecmp(reason, "MaxUnknownPerAccount"))
+		return WAIT_QOS_MAX_UNK_PER_ACCT;
+	if (!xstrcasecmp(reason, "MaxJobsPerAccount"))
+		return WAIT_QOS_MAX_JOB_PER_ACCT;
+	if (!xstrcasecmp(reason, "MaxSubmitJobsPerAccount"))
+		return WAIT_QOS_MAX_SUB_JOB_PER_ACCT;
+	if (!xstrcasecmp(reason, "PartitionConfig"))
+		return WAIT_PART_CONFIG;
+	if (!xstrcasecmp(reason, "AccountingPolicy"))
+		return WAIT_ACCOUNT_POLICY;
+	if (!xstrcasecmp(reason, "FedJobLock"))
+		return WAIT_FED_JOB_LOCK;
+	if (!xstrcasecmp(reason, "OutOfMemory"))
+		return FAIL_OOM;
+	if (!xstrcasecmp(reason, "MaxMemPerLimit"))
+		return WAIT_PN_MEM_LIMIT;
+	if (!xstrcasecmp(reason, "AssocGrpBilling"))
+		return WAIT_ASSOC_GRP_BILLING;
+	if (!xstrcasecmp(reason, "AssocGrpBillingMinutes"))
+		return WAIT_ASSOC_GRP_BILLING_MIN;
+	if (!xstrcasecmp(reason, "AssocGrpBillingRunMinutes"))
+		return WAIT_ASSOC_GRP_BILLING_RUN_MIN;
+	if (!xstrcasecmp(reason, "AssocMaxBillingPerJob"))
+		return WAIT_ASSOC_MAX_BILLING_PER_JOB;
+	if (!xstrcasecmp(reason, "AssocMaxBillingPerNode"))
+		return WAIT_ASSOC_MAX_BILLING_PER_NODE;
+	if (!xstrcasecmp(reason, "AssocMaxBillingMinutesPerJob"))
+		return WAIT_ASSOC_MAX_BILLING_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSGrpBilling"))
+		return WAIT_QOS_GRP_BILLING;
+	if (!xstrcasecmp(reason, "QOSGrpBillingMinutes"))
+		return WAIT_QOS_GRP_BILLING_MIN;
+	if (!xstrcasecmp(reason, "QOSGrpBillingRunMinutes"))
+		return WAIT_QOS_GRP_BILLING_RUN_MIN;
+	if (!xstrcasecmp(reason, "QOSMaxBillingPerJob"))
+		return WAIT_QOS_MAX_BILLING_PER_JOB;
+	if (!xstrcasecmp(reason, "QOSMaxBillingPerNode"))
+		return WAIT_QOS_MAX_BILLING_PER_NODE;
+	if (!xstrcasecmp(reason, "QOSMaxBillingPerUser"))
+		return WAIT_QOS_MAX_BILLING_PER_USER;
+	if (!xstrcasecmp(reason, "QOSMaxBillingMinutesPerJob"))
+		return WAIT_QOS_MAX_BILLING_MINS_PER_JOB;
+	if (!xstrcasecmp(reason, "MaxBillingPerAccount"))
+		return WAIT_QOS_MAX_BILLING_PER_ACCT;
+	if (!xstrcasecmp(reason, "QOSMinBilling"))
+		return WAIT_QOS_MIN_BILLING;
+	if (!xstrcasecmp(reason, "ReservationDeleted"))
+		return WAIT_RESV_DELETED;
+
+	return NO_VAL;
 }
 
 /* If the job is held up by a QOS GRP limit return true else return false. */
@@ -5247,7 +5651,7 @@ extern bool cluster_in_federation(void *ptr, char *cluster_name)
 		return status;
 	iter = list_iterator_create(fed->cluster_list);
 	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter))) {
-		if (!xstrcmp(cluster->name, cluster_name)) {
+		if (!xstrcasecmp(cluster->name, cluster_name)) {
 			status = true;
 			break;
 		}

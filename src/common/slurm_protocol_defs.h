@@ -1539,6 +1539,7 @@ extern uint16_t bb_state_num(char *tok);
 extern char *health_check_node_state_str(uint32_t node_state);
 
 extern char *job_reason_string(enum job_state_reason inx);
+extern enum job_state_reason job_reason_num(char *reason);
 extern bool job_state_qos_grp_limit(enum job_state_reason state_reason);
 extern char *job_share_string(uint16_t shared);
 extern char *job_state_string(uint32_t inx);
