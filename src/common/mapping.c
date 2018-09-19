@@ -40,6 +40,19 @@
 
 #include "src/common/mapping.h"
 
+static void _dump_config(uint32_t node_cnt, uint32_t task_cnt,
+			 uint16_t *tasks, uint32_t **tids, int offset)
+{
+	int i, j;
+
+	error("%s: Unable to find task offset %d", __func__, offset);
+	for (i = 0; i < node_cnt; i++) {
+		for (j = 0; j < tasks[i]; j++) {
+			error("TIDS[%d][%d]:%u", i, j, tids[i][j]);
+		}
+	}
+}
+
 /*
  * pack_process_mapping()
  */
@@ -74,7 +87,11 @@ pack_process_mapping(uint32_t node_cnt,
 				 * if we didn't consume entire
 				 * quota on this node
 				 */
-				xassert(offset >= tids[i][next_task[i]]);
+				if (offset > tids[i][next_task[i]]) {
+					_dump_config(node_cnt, task_cnt,
+						     tasks, tids, offset);
+					abort();
+				}
 				if (offset == tids[i][next_task[i]]) {
 					start_node = i;
 					break;

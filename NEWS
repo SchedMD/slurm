@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- Completely copy features when copying the list in the slurmctld.
  -- Revert 450cd6c8535ce5.  It caused issues finding nodes with numbers and '-'
     together at the end of a node name.
+ -- PMIX - Fix issue with packing processes when using an arbitrary task
+    distribution.
 
 * Changes in Slurm 18.08.0
 ==========================
