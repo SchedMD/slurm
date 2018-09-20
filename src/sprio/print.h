@@ -58,6 +58,7 @@ typedef struct job_format {
 
 int print_jobs_array(List factors, List format);
 int print_job_from_format(priority_factors_object_t * job, List list);
+double get_priority_from_factors(priority_factors_object_t *prio_factors);
 
 /*****************************************************************************
  * Job Line Format Options

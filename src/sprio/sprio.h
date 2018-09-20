@@ -75,6 +75,7 @@ struct sprio_parameters {
 	char* jobs;
 	char* parts;
 	char* users;
+	char* sort;
 
 	List  format_list;
 	List  job_list;
@@ -95,5 +96,6 @@ extern char    *weight_tres; /* weight str TRES factors */
 
 extern void parse_command_line( int argc, char* *argv );
 extern int  parse_format( char* format );
+extern void sort_job_list(List job_list);
 
 #endif

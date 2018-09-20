@@ -108,6 +108,7 @@ parse_command_line( int argc, char* *argv )
 		{"clusters",   required_argument, 0, 'M'},
 		{"norm",       no_argument,       0, 'n'},
 		{"format",     required_argument, 0, 'o'},
+		{"sort",       required_argument, 0, 'S'},
 		{"partition",  required_argument, 0, 'p'},
 		{"user",       required_argument, 0, 'u'},
 		{"users",      required_argument, 0, 'u'},
@@ -126,7 +127,7 @@ parse_command_line( int argc, char* *argv )
 	/* get defaults from environment */
 	_opt_env();
 
-	while ((opt_char = getopt_long(argc, argv, "hj::lM:no:p:u:vVw",
+	while ((opt_char = getopt_long(argc, argv, "hj::lM:no:S:p:u:vVw",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -161,6 +162,10 @@ parse_command_line( int argc, char* *argv )
 		case (int) 'o':
 			xfree(params.format);
 			params.format = xstrdup(optarg);
+			break;
+		case (int) 'S':
+			xfree(params.sort);
+			params.sort = xstrdup(optarg);
 			break;
 		case (int) 'p':
 			xfree(params.parts);

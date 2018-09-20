@@ -45,11 +45,12 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/sprio/print.h"
-#include "src/sprio/sprio.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/sprio/print.h"
+#include "src/sprio/sprio.h"
 
 static int	_print_str(char *str, int width, bool right, bool cut_output);
 
@@ -69,6 +70,7 @@ int print_jobs_array(List jobs, List format)
 
 	/* Print the jobs of interest */
 	if (jobs) {
+		sort_job_list(jobs);
 		list_for_each (jobs, (ListForF) print_job_from_format,
 			       (void *) format);
 	}
@@ -76,7 +78,7 @@ int print_jobs_array(List jobs, List format)
 	return SLURM_SUCCESS;
 }
 
-static double _get_priority(priority_factors_object_t *prio_factors)
+double get_priority_from_factors(priority_factors_object_t *prio_factors)
 {
 	int i = 0;
 	double priority = prio_factors->priority_age
@@ -303,7 +305,7 @@ int _print_job_priority_normalized(priority_factors_object_t * job, int width,
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
 	else {
-		double priority = _get_priority(job);
+		double priority = get_priority_from_factors(job);
 		double prio = priority / (double) ((uint32_t) 0xffffffff);
 
 		sprintf(temp, "%16.14f", prio);
@@ -323,7 +325,7 @@ int _print_job_priority_weighted(priority_factors_object_t * job, int width,
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
 	else {
-		sprintf(temp, "%lld", (long long)_get_priority(job));
+		sprintf(temp, "%lld", (long long)get_priority_from_factors(job));
 		_print_str(temp, width, right, true);
 	}
 	if (suffix)

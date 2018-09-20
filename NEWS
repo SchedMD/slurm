@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
     distribution.
  -- Fix hostlists to be able to handle nodenames with '-' in them surrounded
     by integers.
+ -- Added sort option to sprio output.
 
 * Changes in Slurm 18.08.0
 ==========================
