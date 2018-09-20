@@ -45,6 +45,10 @@ if { [test_super_user] == 0 } {
 	send_user "WARNING: Test can only be run as SlurmUser\n"
 	exit $exit_code
 }
+if {[test_front_end] != 0} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit 0
+}
 
 proc clean_up { } {
 

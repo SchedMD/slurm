@@ -59,12 +59,12 @@ proc set_node_feature {node_name new_avail_feature new_active_feature} {
 set match 0
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-   env | grep SLURMD_NODENAME
+   $scontrol show job \$SLURM_JOB_ID | grep ' NodeList='
 "
 set timeout $max_job_delay
 set srun_pid [spawn $srun -t1 --exclusive -N1 $file_in]
 expect {
-	-re "SLURMD_NODENAME=($alpha_numeric)" {
+	-re "NodeList=($alpha_numeric)" {
 		set node_name $expect_out(1,string)
 		set match 1
 		exp_continue
@@ -151,7 +151,7 @@ set_node_feature $node_name $new_avail_node_feat $new_active_node_feat
 set match 0
 set srun_pid [spawn $srun -t1 -C $feature -N1 $file_in]
 expect {
-	-re "SLURMD_NODENAME=$node_name" {
+	-re "NodeList=$node_name" {
 		set match 1
 		exp_continue
 	}
