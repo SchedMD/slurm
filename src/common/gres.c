@@ -5813,12 +5813,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		job_specs = sock_gres->job_specs;
 		if (!job_specs)
 			continue;
-		if (job_specs->gres_per_job) {
-			if (job_specs->total_gres >= job_specs->gres_per_job) {
-				/* Already reached gres_per_job limit */
-				*max_tasks_this_node = 0;
-				break;
-			}
+		if (job_specs->gres_per_job &&
+		    (job_specs->total_gres < job_specs->gres_per_job)) {
 			rem_gres = job_specs->gres_per_job -
 				   job_specs->total_gres;
 		}
