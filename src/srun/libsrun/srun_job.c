@@ -1479,16 +1479,12 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	job->pack_ntasks = NO_VAL;
  	job->pack_offset = NO_VAL;
 	job->pack_task_offset = NO_VAL;
+	job->nhosts   = ainfo->nnodes;
 
 #if defined HAVE_FRONT_END
 	/* Limited job step support */
 	opt_local->overcommit = true;
-	job->nhosts = 1;
 #else
-	job->nhosts   = ainfo->nnodes;
-#endif
-
-#if !defined HAVE_FRONT_END
 	if (opt_local->min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt_local->min_nodes);
