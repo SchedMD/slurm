@@ -97,6 +97,12 @@ Does not support federated cluster information (local data only).
 .IP
 
 .TP
+\f3\-C \fP\f2constraint_list\fP\f3,\fP \f3\-\-constraints\fP\f3=\fP\f2constraint_list\fP
+Comma separated list to filter jobs based on what constraints/features the job
+requested.  Multiple options will be treated as 'and' not 'or', so the job would
+need all constraints specified to be returned not one or the other.
+
+.TP
 \f3\-\-delimiter\f3=\fP\f2characters\fP
 ASCII characters used to separate the fields when specifying
 the \f3\-p\fP or \f3\-P\fP options. The default delimiter
@@ -135,29 +141,29 @@ Account             AdminComment        AllocCPUS           AllocGRES
 AllocNodes          AllocTRES           AssocID             AveCPU
 AveCPUFreq          AveDiskRead         AveDiskWrite        AvePages
 AveRSS              AveVMSize           BlockID             Cluster
-Comment             ConsumedEnergy      ConsumedEnergyRaw   CPUTime
-CPUTimeRAW          DerivedExitCode     Elapsed             ElapsedRaw
-Eligible            End                 ExitCode            GID
-Group               JobID               JobIDRaw            JobName
-Layout              MaxDiskRead         MaxDiskReadNode     MaxDiskReadTask
-MaxDiskWrite        MaxDiskWriteNode    MaxDiskWriteTask    MaxPages
-MaxPagesNode        MaxPagesTask        MaxRSS              MaxRSSNode
-MaxRSSTask          MaxVMSize           MaxVMSizeNode       MaxVMSizeTask
-McsLabel            MinCPU              MinCPUNode          MinCPUTask
-NCPUS               NNodes              NodeList            NTasks
-Priority            Partition           QOS                 QOSRAW
-ReqCPUFreq          ReqCPUFreqMin       ReqCPUFreqMax       ReqCPUFreqGov
-ReqCPUS             ReqGRES             ReqMem              ReqNodes
-ReqTRES             Reservation         ReservationId       Reserved
-ResvCPU             ResvCPURAW          Start               State
-Submit              Suspended           SystemCPU           SystemComment
-Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
-TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
-TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
-TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
-TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
-User                UserCPU             WCKey               WCKeyID
-WorkDir
+Comment             Constraints         ConsumedEnergy      ConsumedEnergyRaw
+CPUTime             CPUTimeRAW          DerivedExitCode     Elapsed
+ElapsedRaw          Eligible            End                 ExitCode
+Flags               GID                 Group               JobID
+JobIDRaw            JobName             Layout              MaxDiskRead
+MaxDiskReadNode     MaxDiskReadTask     MaxDiskWrite        MaxDiskWriteNode
+MaxDiskWriteTask    MaxPages            MaxPagesNode        MaxPagesTask
+MaxRSS              MaxRSSNode          MaxRSSTask          MaxVMSize
+MaxVMSizeNode       MaxVMSizeTask       McsLabel            MinCPU
+MinCPUNode          MinCPUTask          NCPUS               NNodes
+NodeList            NTasks              Priority            Partition
+QOS                 QOSRAW              Reason              ReqCPUFreq
+ReqCPUFreqMin       ReqCPUFreqMax       ReqCPUFreqGov       ReqCPUS
+ReqGRES             ReqMem              ReqNodes            ReqTRES
+Reservation         ReservationId       Reserved            ResvCPU
+ResvCPURAW          Start               State               Submit
+Suspended           SystemCPU           SystemComment       Timelimit
+TimelimitRaw        TotalCPU            TRESUsageInAve      TRESUsageInMax
+TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin      TRESUsageInMinNode
+TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve     TRESUsageOutMax
+TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin     TRESUsageOutMinNode
+TRESUsageOutMinTask TRESUsageOutTot     UID                 User
+UserCPU             WCKey               WCKeyID             WorkDir
 
 NOTE: When using with Ave[RSS|VM]Size or their values in
 TRESUsageIn[Ave|Tot].  They represent the average/total of the highest
@@ -198,6 +204,12 @@ Show jobs from the federation if a member of one.
 Causes the \f3sacct\fP command to read job accounting data from the
 named \f2file\fP instead of the current Slurm job accounting log
 file. Only applicable when running the filetxt plugin.
+
+.TP
+\f3\-F \fP\f2flag_list\fP\f3,\fP  \f3\-\-flags\fP\f3=\fP\f2flag_list\fP
+Comma separated list to filter jobs based on what various ways the jobs were
+handled.  Current flags are SchedSubmit, SchedMain, SchedBackfill.  These
+particular options describe the scheduler that started the job.
 
 .TP
 \f3\-g \fP\f2gid_list\fP\f3, \-\-gid=\fP\f2gid_list\fP \f3\-\-group=\fP\f2group_list\fP
@@ -332,6 +344,11 @@ Only send data about jobs using these qos.  Default is all.
 
 Comma separated list of partitions to select jobs and job steps
 from. The default is all partitions.
+
+.TP
+\f3\-R \fP\f2reason_list\fP\f3,\fP  \f3\-\-reason\fP\f3=\fP\f2reason_list\fP
+Comma separated list to filter jobs based on what reason the job wasn't
+scheduled outside resources/priority.
 
 .TP
 \f3\-s \fP\f2state_list\fP\f3,\fP \f3\-\-state\fP\f3=\fP\f2state_list\fP
