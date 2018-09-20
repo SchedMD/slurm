@@ -47,7 +47,7 @@ and site reports.</p>
 <tr><td nowrap>09:30 - 10:00</td><td>Tutorial </td><td>Moll Marqu&egrave;s (SchedMD)</td><td>Slurm Introduction</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:00 - 10:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>10:20 - 10:50</td><td>Technical</td><td>TBD (CSCS/ICEI)</td><td>Workload Management Requirements for an Interactive Computing e-Infrastructure</td></tr>
-<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Peltz (LANL)</td><td>Slurm in a Container-Only World</td></tr>
+<tr><td nowrap>10:50 - 11:20</td><td>Technical</td><td>Peltz, Wofford (LANL)</td><td>Slurm in a Container-Only World</td></tr>
 <tr><td nowrap>11:20 - 11:50</td><td>Technical</td><td>Jacobsen (NERSC)</td><td>A Declarative Programming Style Job Submission Filter</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Clayer, Faure (Atos)</td><td>Generalized Hypercube &mdash; A Topology Plugin</td></tr>
@@ -111,7 +111,7 @@ and site reports.</p>
 <p>The European ICEI project is co-funded by the European Commission and is formed by the leading European Supercomputing Centres BSC (Spain), CEA (France), CINECA (Italy), ETH Z&uuml;rich/CSCS (Switzerland) and Forschungszentrum J&uuml;lich/JSC (Germany). The ICEI project plans to deliver a set of e-infrastructure services that will be federated to form the Fenix Infrastructure. The distinguishing characteristic of this e-infrastructure is that data repositories and scalable supercomputing systems will be in close proximity and well-integrated. The participating supercomputing centers have Slurm resource management and scheduling systems available on a diverse range of systems including high-end clusters and systems with accelerators. In this talk, we present key requirements by ICEI for the site workload managers, including features such as support for interactive supercomputing, integration of resources such as storage hierarchies, support for RESTful interfaces and an ability to handle credentials such as OAuth and/or SAML.</p>
 
 <h3>Slurm in a Container-Only World</h3>
-<p>Paul Peltz (LANL)</p>
+<p>Paul Peltz, Lowell Wofford (LANL)</p>
 <p>Los Alamos National Laboratory is researching the viability of using containers as the primary mechanism for supporting user applications for future systems. This presentation will cover the challenges and modifications that are required to run Slurm in a container only environment. LANL will also discuss Kraken which is used as the boot and provisioning system to support a container based environment.</p>
 
 <h3>A Declarative Programming Style Job Submission Filter</h3>

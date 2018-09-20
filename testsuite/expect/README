@@ -366,6 +366,7 @@ test7.14   Verify the ability to modify the Derived Exit Code/String fields
 test7.15   Verify signal mask of tasks have no ignored signals.
 test7.16   Verify that auth/munge credential is properly validated.
 test7.17   Test GRES APIs.
+test7.18   Test of slurm_hostlist_find().
 
 
 test9.#    System stress testing. Exercises all commands and daemons.

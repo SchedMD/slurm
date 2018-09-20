@@ -45,6 +45,10 @@ documents those changes that are of interest to users and administrators.
  -- Remove documentation for deprecated Cray/ALPS systems. Please switch to
     Native Cray mode instead.
  -- Completely copy features when copying the list in the slurmctld.
+ -- PMIX - Fix issue with packing processes when using an arbitrary task
+    distribution.
+ -- Fix hostlists to be able to handle nodenames with '-' in them surrounded
+    by integers.
 
 * Changes in Slurm 18.08.0
 ==========================

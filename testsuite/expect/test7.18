@@ -1,0 +1,78 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose:  Test of slurm_hostlist_find().
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes a file in the working
+#          directory named test7.18.prog
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Marshall Garey
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "7.18"
+set exit_code   0
+set test_prog   "test$test_id.prog"
+
+print_header $test_id
+
+#
+# Delete left-over programs and rebuild them.
+#
+exec $bin_rm -f $test_prog
+
+send_user "slurm_dir is $slurm_dir\n"
+if [file exists ${slurm_dir}/lib64/libslurm.so] {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm
+} else {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
+}
+exec $bin_chmod 700 $test_prog
+
+spawn ./$test_prog
+expect {
+	-re "FAILURE" {
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		log_error "test$test_id.prog not responding."
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if { $exit_code == 0 } {
+	file delete $test_prog
+	send_user "\nSUCCESS\n"
+} else {
+	send_user "\nFAILURE: One or more hosts weren't found.\n"
+}
+
+exit $exit_code
