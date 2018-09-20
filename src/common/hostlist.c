@@ -1101,14 +1101,12 @@ static int hostrange_hn_within(hostrange_t hr, hostname_t hn, int dims)
 
 		ldiff = len1 - len2;
 
-		if (ldiff > 0 && isdigit(hr->prefix[len1-1]) &&
-		    (strlen(hn->suffix) >= ldiff)) {
+		if (ldiff > 0 && (strlen(hn->suffix) >= ldiff)) {
 			/* Tack on ldiff of the hostname's suffix to
 			 * that of it's prefix */
 			hn->prefix = realloc(hn->prefix, len2+ldiff+1);
 			strncat(hn->prefix, hn->suffix, ldiff);
-		} else if (ldiff < 0 &&
-			   isdigit(hn->prefix[len2+ldiff])) {
+		} else if (ldiff < 0) {
 			/* strip off the ldiff here */
 			hn->prefix[len2+ldiff] = '\0';
 		} else
