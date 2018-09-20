@@ -3496,9 +3496,14 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		return EINVAL;
 	}
 
+#ifdef HAVE_FRONT_END
+	bit_set_all(step_ptr->exit_node_bitmap);
+	rem_nodes = 0;
+#else
 	bit_nset(step_ptr->exit_node_bitmap,
 		 req->range_first, req->range_last);
 	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
+#endif
 	if (rem)
 		*rem = rem_nodes;
 	if (rem_nodes == 0) {
