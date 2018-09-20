@@ -205,6 +205,7 @@ struct jobcomp_info {
 	char *work_dir;
 	char *user_name;
 	char *reservation;
+	uint32_t state_reason_prev;
 	char *std_in;
 	char *std_out;
 	char *std_err;
@@ -219,6 +220,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->exit_code = job->exit_code;
 	j->constraints = xstrdup(job->details->features);
 	j->db_flags = job->db_flags;
+	j->state_reason_prev = job->state_reason_prev_db;
 	j->derived_ec = job->derived_ec;
 	j->uid = job->user_id;
 	j->user_name = xstrdup(uid_to_string_cached((uid_t)job->user_id));
@@ -462,6 +464,8 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append (&env, "RESERVATION", job->reservation);
 	_env_append (&env, "USERNAME", job->user_name);
 	_env_append (&env, "GROUPNAME", job->group_name);
+	_env_append (&env, "STATEREASONPREV",
+		     job_reason_string(job->state_reason_prev));
 	if (job->std_in)
 		_env_append (&env, "STDIN",     job->std_in);
 	if (job->std_out)
