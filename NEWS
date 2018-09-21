@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix hostlists to be able to handle nodenames with '-' in them surrounded
     by integers.
  -- Fix correct job CPU count allocated.
+ -- Fix sacctmgr setting GrpJobs limit when setting GrpJobsAccrue limit.
 
 * Changes in Slurm 18.08.0
 ==========================
