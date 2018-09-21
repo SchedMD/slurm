@@ -1304,7 +1304,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	time_t last_sched_eval = 0;
 	time_t resize_time = 0, now = time(NULL);
 	uint8_t reboot = 0, power_flags = 0;
-	uint32_t array_task_id = NO_VAL, state_reason_prev_db;
+	uint32_t array_task_id = NO_VAL, state_reason_prev_db = 0;
 	uint32_t array_flags = 0, max_run_tasks = 0, tot_run_tasks = 0;
 	uint32_t min_exit_code = 0, max_exit_code = 0, tot_comp_tasks = 0;
 	uint32_t pack_job_id = 0, pack_job_offset = 0, state_reason;
