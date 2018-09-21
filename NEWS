@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
     distribution.
  -- Fix hostlists to be able to handle nodenames with '-' in them surrounded
     by integers.
+ -- Fix correct job CPU count allocated.
 
 * Changes in Slurm 18.08.0
 ==========================
