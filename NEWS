@@ -335,6 +335,7 @@ documents those changes that are of interest to users and administrators.
     is removed from the system.
  -- If failed over to a backup controller, ensure the agent thread is launched
     to handle deferred tasks.
+ -- Fix correct job CPU count allocated.
 
 * Changes in Slurm 17.11.9-2
 ============================
