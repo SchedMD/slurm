@@ -45,6 +45,11 @@ if {[test_cray]} {
 	exit $exit_code
 }
 
+if { [file exists ${slurm_dir}/lib/libpmi.so] == 0 } {
+    send_user "\nWARNING: PMI library not compiled, can't perform pmi testing\n"
+    exit 0
+}
+
 #
 # Delete left-over program and rebuild it.
 #
