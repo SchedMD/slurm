@@ -259,7 +259,6 @@ typedef struct dbd_job_start_msg {
 	char *   array_task_str;/* hex string of unstarted tasks */
 	uint32_t array_task_pending;/* number of tasks still pending */
 	uint32_t assoc_id;	/* accounting association id */
-	char *   block_id;      /* Bluegene block id */
 	char *   constraints;   /* features/constraints requested by job */
 	uint32_t db_flags;      /* flags about job */
 	uint64_t db_index;	/* index into the db for this job */

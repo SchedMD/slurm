@@ -125,7 +125,6 @@ static void _partial_free_dbd_job_start(void *object)
 	if (req) {
 		xfree(req->account);
 		xfree(req->array_task_str);
-		xfree(req->block_id);
 		xfree(req->constraints);
 		xfree(req->mcs_label);
 		xfree(req->name);
@@ -329,11 +328,11 @@ static void *_set_db_inx_thread(void *no_data)
 				continue;
 			}
 
-			/* we only want to destory the pointer
-			   here not the contents (except
-			   block_id) so call special function
-			   _partial_destroy_dbd_job_start.
-			*/
+			/*
+			 * We only want to destory the pointer
+			 * here not the contents so call special function
+			 * _partial_destroy_dbd_job_start.
+			 */
 			if (!local_job_list)
 				local_job_list = list_create(
 					_partial_destroy_dbd_job_start);

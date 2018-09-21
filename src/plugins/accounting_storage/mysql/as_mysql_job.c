@@ -473,8 +473,6 @@ no_rollup_change:
 			xstrcat(query, ", account");
 		if (partition)
 			xstrcat(query, ", `partition`");
-		if (job_ptr->comment)
-			xstrcat(query, ", id_block");
 		if (job_ptr->wckey)
 			xstrcat(query, ", wckey");
 		if (job_ptr->network)
@@ -525,8 +523,6 @@ no_rollup_change:
 			xstrfmtcat(query, ", '%s'", job_ptr->account);
 		if (partition)
 			xstrfmtcat(query, ", '%s'", partition);
-		if (job_ptr->comment) /* overloaded with block_id */
-			xstrfmtcat(query, ", '%s'", job_ptr->comment);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, ", '%s'", job_ptr->wckey);
 		if (job_ptr->network)
@@ -591,8 +587,6 @@ no_rollup_change:
 			xstrfmtcat(query, ", account='%s'", job_ptr->account);
 		if (partition)
 			xstrfmtcat(query, ", `partition`='%s'", partition);
-		if (job_ptr->comment) /* overloaded with block_id */
-			xstrfmtcat(query, ", id_block='%s'", job_ptr->comment);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, ", wckey='%s'", job_ptr->wckey);
 		if (job_ptr->network)
@@ -656,8 +650,6 @@ no_rollup_change:
 			xstrfmtcat(query, "account='%s', ", job_ptr->account);
 		if (partition)
 			xstrfmtcat(query, "`partition`='%s', ", partition);
-		if (job_ptr->comment)
-			xstrfmtcat(query, "id_block='%s', ", job_ptr->comment);
 		if (job_ptr->wckey)
 			xstrfmtcat(query, "wckey='%s', ", job_ptr->wckey);
 		if (job_ptr->network)
