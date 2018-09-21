@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- cons_res: Delay exiting cr_job_test until after cores/cpus are calculated
     and distributed.
  -- Fix bug where binary in cwd would trump binary in PATH with test_exec.
+ -- Fix check to test printf("%s\n", NULL); to not require
+    -Wno-format-truncation CFLAG.
 
 * Changes in Slurm 18.08.3
 ==========================

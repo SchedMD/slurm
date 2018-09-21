@@ -17,8 +17,16 @@ AC_DEFUN([X_AC_PRINTF_NULL], [
   AC_MSG_CHECKING([for support of printf("%s", NULL)])
   AC_RUN_IFELSE([AC_LANG_PROGRAM([
 	#include <stdio.h>
-	#include <stdlib.h>],
-	[[ char tmp[8]; char *n=NULL; snprintf(tmp,8,"%s",n); exit(0); ]])],
+	#include <stdlib.h>
+	#include <string.h>
+        char *n=NULL;],
+	[[
+	char tmp[16];
+	char *expected = "test (null)";
+	snprintf(tmp,sizeof(tmp),"test %s",n);
+	if (strncmp(tmp, expected, sizeof(tmp)))
+		exit(1);
+	exit(0); ]])],
     printf_null_ok=yes,
     printf_null_ok=no,
     printf_null_ok=yes)
