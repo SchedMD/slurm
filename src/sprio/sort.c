@@ -41,6 +41,9 @@
 
 #include "src/sprio/sprio.h"
 
+/* Constants */
+#define DEFAULT_SORT "i"
+
 /* Macros */
 #define COND_NEGATE(cond,val) ((cond)?(-(val)):(val))
 #define CMP_INT(a,b) (((a) < (b)) ? -1 : ((a) > (b)))
@@ -68,7 +71,7 @@ extern void sort_job_list(List job_list)
 	int i;
 	char c;
 	if (params.sort == NULL)
-		params.sort = xstrdup("y"); /* default: job priority */
+		params.sort = xstrdup(DEFAULT_SORT); /* default: job priority */
 	/*
 	 * parse sort spec string from end, so the sorts happen in reverse
 	 * order.
