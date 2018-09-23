@@ -4871,12 +4871,12 @@ Jobs that run in partitions with "OverSubscribe=EXCLUSIVE" will have
 exclusive access to all allocated nodes.
 .TP
 \fBFORCE\fR
-Makes all resources in the partition available for sharing
-without any means for users to disable it.
+Makes all resources in the partition available for oversubscription without
+any means for users to disable it.
 May be followed with a colon and maximum number of jobs in
 running or suspended state.
 For example "OverSubscribe=FORCE:4" enables each node, socket or
-core to execute up to four jobs at once.
+core to oversubscribe each resource four ways.
 Recommended only for systems running with gang scheduling
 (\fBPreemptMode=suspend,gang\fR).
 NOTE: \fIPreemptType=QOS\fR will permit one additional job to be run
