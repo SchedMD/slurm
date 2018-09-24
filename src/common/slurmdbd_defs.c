@@ -336,13 +336,6 @@ extern int slurm_send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	static int max_agent_queue = 0;
 
 	/*
-	 * slurmdbd connection has been unexpectedly closed, i.e. slurmctld
-	 * shutdown or backup has given up control.
-	 */
-	if (!slurmdbd_conn_active())
-		return SLURM_ERROR;
-
-	/*
 	 * Whatever our max job count is multiplied by 2 plus node count
 	 * multiplied by 4 or MAX_AGENT_QUEUE which ever is bigger.
 	 */

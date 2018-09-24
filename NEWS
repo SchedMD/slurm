@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.12
 ===========================
+ -- Fix regression in 17.11.10 that caused dbd messages to not be queued up
+    when the dbd was down.
 
 * Changes in Slurm 17.11.11
 ===========================
