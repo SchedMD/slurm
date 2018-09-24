@@ -83,10 +83,9 @@ and site reports.</p>
 <tr><td nowrap bgcolor="#F0F1C9">11:50 - 12:50</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>12:50 - 13:20</td><td>Technical</td><td>Jette, Sanchez Graells (SchedMD)</td><td>Workload Scheduling and Power Management</td></tr>
 <tr><td nowrap>13:20 - 13:50</td><td>Site Report</td><td>Fullop, Senator (LANL)</td><td>LANL Site Report</td></tr>
-<tr><td nowrap>13:50 - 14:20</td><td>Site Report</td><td>Botts, Jacobsen (NERSC)</td><td>NERSC Site Report</td></tr>
-<tr><td nowrap bgcolor="#F0F1C9">14:20 - 14:40</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
-<tr><td nowrap>14:40 - 15:40</td><td>Technical</td><td>Wickberg (SchedMD)</td><td>Field Notes Mark 2: Random Musings</td></tr>
-<tr><td nowrap>15:40 - 16:10</td><td>Closing</td><td>Wickberg (SchedMD)</td><td>Closing Remarks</td></tr>
+<tr><td nowrap bgcolor="#F0F1C9">13:50 - 14:10</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
+<tr><td nowrap>14:10 - 15:10</td><td>Technical</td><td>Wickberg (SchedMD)</td><td>Field Notes Mark 2: Random Musings</td></tr>
+<tr><td nowrap>15:10 - 15:30</td><td>Closing</td><td>Wickberg (SchedMD)</td><td>Closing Remarks</td></tr>
 
 </table>
 
@@ -185,16 +184,12 @@ important in the field of job scheduling. The idea behind Slurm simulator is pre
 <p>Joshi Fullop, Steven Senator (LANL)</p>
 <p>Site Description, our efforts in the first year of transition, good experiences working with SchedMD, some of our biggest hurdles, what we’ll be working on and evaluating next, what we’re looking forward to in upcoming Slurm releases, and our wishlist</p>
 
-<h3>NERSC Site Report</h3>
-<p>James Botts, Douglas Jacobsen (NERSC)</p>
-<p>NERSC has been using Slurm on all its capability HPC systems since 2015, and on all systems since 2017, supporting over 7000 users and a wide variety of workloads. Through priority management and qos routing via the job_submit plugin, shared, interactive and realtime workloads are supported while keeping system utilization maximized and effectively running large (> 8000 nodes on cori) jobs. In our smaller HTC systems supporting high energy physics and bioinformatics, Slurm has been tuned to maximize throughput and support the Shifter container technology. Recent integration of enhanced node reboot support in Slurm 18.08 provides critical improvements allow Slurm to automatically manage maintenance reboots (supporting huge pages more effectively on Cray systems) and rolling updates of the system. We have also recently retuned much of our priority structure as the production version of the QoS-based Priority Threshold and Aging limits algorithms have been integrated into Slurm.</p>
-
 <h3>Field Notes Mark Two: Random Musings From a New Hat</h3>
 <p>Tim Wickberg (SchedMD)</p>
 <p>Best practices observed from three years behind SchedMD's customer support organization, alongside an impractical demonstration of Slurm's API capabilities, and musings on future features and direction for Slurm in the coming years.</p>
 
 <!-- -------------------------------------------------------------------------- -->
 
-<p style="text-align:center;">Last modified 12 September 2018</p>
+<p style="text-align:center;">Last modified 24 September 2018</p>
 
 <!--#include virtual="footer.txt"-->
