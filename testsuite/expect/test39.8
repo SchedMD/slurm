@@ -42,7 +42,7 @@ proc get_node_config {} {
 	set cpus_tot 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
-	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
 	set timeout $max_job_delay
 	log_user 0
 	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 ./$file_in]

@@ -42,7 +42,7 @@ proc get_node_config {} {
 	set cpus_tot 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
-	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
 	set timeout $max_job_delay
 	log_user 0
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 -J "test$test_id" $file_in]
@@ -73,17 +73,21 @@ print_header $test_id
 set select_type [test_select_type]
 if {![string compare $select_type "cons_tres"] ||
     (![string compare $select_type "cray"] && [test_select_type_params "other_cons_tres"])} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+	send_user "\nValid configuration, using select/cons_tres\n"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
+	exit 0
+}
+if {[test_front_end]} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit $exit_code
 }
 
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 if {$nb_nodes < 2} {
-        send_user "\nWARNING: This test is 2 or more nodes in the default partition\n"
-        exit 0
+	send_user "\nWARNING: This test is 2 or more nodes in the default partition\n"
+	exit 0
 }
 set nb_nodes 2
 set nb_tasks 3

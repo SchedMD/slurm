@@ -43,9 +43,9 @@ proc get_node_config {} {
 	set cpus_tot 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
-	make_bash_script $file_in1 "$scontrol show node \$SLURMD_NODENAME"
+	make_bash_script $file_in1 "$scontrol show node \$SLURM_JOB_NODENAME"
 	set timeout $max_job_delay
-	log_user 0
+	log_user 1
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 -J "test$test_id" $file_in1]
 	expect {
 		-re "CPUTot=($number)" {
@@ -120,10 +120,14 @@ print_header $test_id
 set select_type [test_select_type]
 if {![string compare $select_type "cons_tres"] ||
     (![string compare $select_type "cray"] && [test_select_type_params "other_cons_tres"])} {
-        send_user "\nValid configuration, using select/cons_tres\n"
+	send_user "\nValid configuration, using select/cons_tres\n"
 } else {
-        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
-        exit 0
+	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
+	exit 0
+}
+if {[test_front_end]} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit $exit_code
 }
 
 set def_part_name [default_partition]
@@ -171,7 +175,7 @@ $scontrol -dd show job \$SLURM_JOB_ID | grep \"GRES=\"
 fi
 exit 0"
 make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
-$scontrol show node \$SLURMD_NODENAME | grep Gres
+$scontrol show node \$SLURM_JOB_NODENAME | grep Gres
 exit 0"
 
 #

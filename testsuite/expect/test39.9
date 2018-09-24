@@ -42,7 +42,7 @@ proc get_node_config {} {
 	set cpus_tot 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
-	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
 	set timeout $max_job_delay
 	log_user 0
 	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 ./$file_in]
@@ -179,6 +179,7 @@ if {$match != 1} {
 # Test of --gpu-freq=high,memory=high,voltage=high,verbose
 #
 send_user "\n\nTEST 4\n"
+set hostname "UNKNOWN"
 set match 0
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=high,memory=high,voltage=high,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
@@ -189,7 +190,7 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re "HOST:($controlmachine_regex) " {
+	-re " NodeList=($controlmachine_regex)" {
 		set hostname $expect_out(1,string)
 		incr match
 		exp_continue
