@@ -2416,11 +2416,9 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-info("AT %d AVAIL_CPUS:%u", __LINE__, avail_cpus);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
-info("AT %d AVAIL_CPUS:%u", __LINE__, avail_cpus);
 			if (avail_cpus == 0)
 				goto fini;
 			avail_cpu_per_node[i] = avail_cpus;
@@ -3573,7 +3571,6 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 						sock_gres_list, avail_cpus);
 				}
 			} else {	/* node not selected (yet) */
-//FIXME: This logic seems bad, other functions have similar logic
 				bit_clear(node_map, i);
 			}
 		}
