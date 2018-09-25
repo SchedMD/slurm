@@ -214,11 +214,12 @@ struct jobcomp_info {
 static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 {
 	enum job_states state;
-	struct jobcomp_info * j = xmalloc (sizeof (*j));
+	struct jobcomp_info *j = xmalloc(sizeof(struct jobcomp_info));
 
 	j->jobid = job->job_id;
 	j->exit_code = job->exit_code;
-	j->constraints = xstrdup(job->details->features);
+	if (job->details)
+		j->constraints = xstrdup(job->details->features);
 	j->db_flags = job->db_flags;
 	j->state_reason_prev = job->state_reason_prev_db;
 	j->derived_ec = job->derived_ec;
