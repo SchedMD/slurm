@@ -152,6 +152,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	if {$job_id == 0} {
 		send_user "\nFAILURE: sbatch job submit failure\n"
 		set exit_code 1
+		set tot_gpus [expr $inx - 1]
 		break
 	}
 }
@@ -159,6 +160,14 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 #
 # Check the output file contents to identify allocated GPUs
 #
+# Reset max_file_delay to avoid possibly huge delays here when tot_gpus is large
+# Perform large delay at the start and small delays for each job's output
+#
+set save_max_file_delay $max_file_delay
+if {$tot_gpus > 4 && $max_file_delay > 30} {
+	sleep [expr $max_file_delay - 20]
+	set max_file_delay 20
+}
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set ofile ${file_out}.${inx}
 	if {[wait_for_file $ofile] != 0} {
@@ -184,6 +193,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 		}
 	}
 }
+set max_file_delay $save_max_file_delay
 
 #
 # Log any vestigial jobs and cancel them
