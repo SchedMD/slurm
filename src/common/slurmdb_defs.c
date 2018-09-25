@@ -1782,7 +1782,7 @@ extern char *slurmdb_job_flags_str(uint32_t flags)
 {
 	char *job_flags = NULL;
 
-	if (flags & SLURMDB_JOB_FLAG_NONE)
+	if (flags == SLURMDB_JOB_FLAG_NONE)
 		return xstrdup("None");
 
 	if (flags & SLURMDB_JOB_FLAG_NOTSET)
