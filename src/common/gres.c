@@ -6932,6 +6932,8 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 				job_specs->gres_cnt_node_select =
 					xmalloc(sizeof(uint64_t) * node_cnt);
 			}
+			if (i == i_first)	/* Reinitialize counter */
+				job_specs->total_gres = 0;
 
 			if (node_specs->topo_cnt == 0) {
 				/* No topology, just set a count */
