@@ -41,6 +41,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "slurmdbd_agent.h"
+
 #define DBD_MAGIC		0xDEAD3219
 #define MAX_AGENT_QUEUE		10000
 #define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
@@ -1032,6 +1034,13 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	int cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
 	static int max_agent_queue = 0;
+
+	/*
+	 * slurmdbd connection has been unexpectedly closed, i.e. slurmctld
+	 * shutdown or backup has given up control.
+	 */
+	if (!slurmdbd_conn_active())
+		return SLURM_ERROR;
 
 	/*
 	 * Whatever our max job count is multiplied by 2 plus node count
