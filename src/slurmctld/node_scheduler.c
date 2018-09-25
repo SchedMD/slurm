@@ -2515,7 +2515,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	bitstr_t *select_bitmap = NULL;
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = NULL;
-	uint32_t min_nodes, max_nodes, req_nodes;
+	uint32_t min_nodes = 0, max_nodes = 0, req_nodes = 0;
 	time_t now = time(NULL);
 	bool configuring = false;
 	List preemptee_job_list = NULL;
