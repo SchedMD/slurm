@@ -1799,6 +1799,8 @@ static void _queue_reboot_msg(void)
 		else if (IS_NODE_FUTURE(node_ptr) &&
 			 (node_ptr->last_response == (time_t) 0))
 			want_reboot = true; /* system just restarted */
+		else if (IS_NODE_DOWN(node_ptr))
+			want_reboot = true;
 		else
 			want_reboot = false;
 		if (!want_reboot) {

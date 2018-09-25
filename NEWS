@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Change the defaults to MemLimitEnforce=no and NoOverMemoryKill
     (See RELEASE_NOTES).
  -- Prevent abort when using Cray node features plugin on non-knl.
+ -- Add ability to reboot down nodes with scontrol reboot_nodes.
 
 * Changes in Slurm 18.08.0
 ==========================
