@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacctmgr setting GrpJobs limit when setting GrpJobsAccrue limit.
  -- Change the defaults to MemLimitEnforce=no and NoOverMemoryKill
     (See RELEASE_NOTES).
+ -- Prevent abort when using Cray node features plugin on non-knl.
 
 * Changes in Slurm 18.08.0
 ==========================
