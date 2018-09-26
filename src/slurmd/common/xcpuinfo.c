@@ -292,6 +292,7 @@ extern int xcpuinfo_hwloc_topo_get(
 	if (xcpuinfo_hwloc_topo_load(&topology, hwloc_xml_whole, true)
 	    == SLURM_FAILURE) {
 		hwloc_topology_destroy(topology);
+		xfree(hwloc_xml_whole);
 		return 2;
 	}
 #if _DEBUG
