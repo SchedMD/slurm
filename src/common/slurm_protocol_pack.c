@@ -1711,11 +1711,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_PERSIST_INIT:
 		/* the version is contained in the data so use that instead of
 		   what is in the message */
-		slurm_persist_unpack_init_req_msg(
+		rc = slurm_persist_unpack_init_req_msg(
 			(persist_init_req_msg_t **)&msg->data, buffer);
 		break;
 	case PERSIST_RC:
-		slurm_persist_unpack_rc_msg(
+		rc = slurm_persist_unpack_rc_msg(
 			(persist_rc_msg_t **)&msg->data,
 			buffer, msg->protocol_version);
 		break;
@@ -1817,7 +1817,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case TASK_USER_MANAGED_IO_STREAM:
-		_unpack_task_user_managed_io_stream_msg(
+		rc = _unpack_task_user_managed_io_stream_msg(
 			(task_user_managed_io_msg_t **) &msg->data, buffer,
 			msg->protocol_version);
 		break;
@@ -1894,17 +1894,18 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_STEP_LAYOUT:
 	case REQUEST_JOB_STEP_STAT:
 	case REQUEST_JOB_STEP_PIDS:
-		_unpack_job_step_id_msg((job_step_id_msg_t **)&msg->data,
-					buffer,
-					msg->protocol_version);
+		rc = _unpack_job_step_id_msg((job_step_id_msg_t **)&msg->data,
+					     buffer,
+					     msg->protocol_version);
 		break;
 	case RESPONSE_STEP_LAYOUT:
-		unpack_slurm_step_layout((slurm_step_layout_t **)&msg->data,
-					 buffer,
-					 msg->protocol_version);
+		rc = unpack_slurm_step_layout(
+			(slurm_step_layout_t **)&msg->data,
+			buffer,
+			msg->protocol_version);
 		break;
 	case RESPONSE_JOB_STEP_PIDS:
-		_unpack_job_step_pids(
+		rc = _unpack_job_step_pids(
 			(job_step_pids_t **)&msg->data,
 			buffer,	msg->protocol_version);
 		break;
@@ -2105,13 +2106,13 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case REQUEST_PRIORITY_FACTORS:
-		_unpack_priority_factors_request_msg(
+		rc = _unpack_priority_factors_request_msg(
 			(priority_factors_request_msg_t**)&msg->data,
 			buffer,
 			msg->protocol_version);
 		break;
 	case RESPONSE_PRIORITY_FACTORS:
-		_unpack_priority_factors_response_msg(
+		rc = _unpack_priority_factors_response_msg(
 			(priority_factors_response_msg_t**)&msg->data,
 			buffer,
 			msg->protocol_version);
@@ -2229,15 +2230,15 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 
 	case REQUEST_STATS_INFO:
-		_unpack_stats_request_msg((stats_info_request_msg_t **)
-					  &msg->data, buffer,
-					  msg->protocol_version);
+		rc = _unpack_stats_request_msg((stats_info_request_msg_t **)
+					       &msg->data, buffer,
+					       msg->protocol_version);
 		break;
 
 	case RESPONSE_STATS_INFO:
-		_unpack_stats_response_msg((stats_info_response_msg_t **)
-					   &msg->data, buffer,
-					   msg->protocol_version);
+		rc = _unpack_stats_response_msg((stats_info_response_msg_t **)
+						&msg->data, buffer,
+						msg->protocol_version);
 		break;
 
 	case REQUEST_FORWARD_DATA:
