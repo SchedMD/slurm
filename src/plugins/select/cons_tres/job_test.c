@@ -3360,20 +3360,11 @@ static int _topo_weight_sort(void *x, void *y)
 	return (int) (nwt1->weight - nwt2->weight);
 }
 
+/*
+ * Allocate resources to the job on one leaf switch if possible,
+ * otherwise distribute the job allocation over many leaf switches.
+ */
 static int _eval_nodes_dfly(struct job_record *job_ptr,
-			    gres_mc_data_t *mc_ptr, bitstr_t *node_map,
-			    bitstr_t **avail_core, uint32_t min_nodes,
-			    uint32_t max_nodes, uint32_t req_nodes,
-			    avail_res_t **avail_res_array, uint16_t cr_type,
-			    bool prefer_alloc_nodes, bool first_pass)
-{
-//FIXME: Temporary placeholder
-return _eval_nodes_topo(job_ptr, mc_ptr, node_map, avail_core, min_nodes,
-	max_nodes, req_nodes, avail_res_array, cr_type, prefer_alloc_nodes,
-	first_pass);
-}
-
-static int _eval_nodes_topo(struct job_record *job_ptr,
 			    gres_mc_data_t *mc_ptr, bitstr_t *node_map,
 			    bitstr_t **avail_core, uint32_t min_nodes,
 			    uint32_t max_nodes, uint32_t req_nodes,
@@ -3411,7 +3402,14 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 	int64_t time_waiting = 0;
 	int leaf_switch_count = 0, req_leaf_switch_count = 0;
 	int top_switch_inx = -1;
+	int prev_rem_nodes;
 
+	if (job_ptr->req_switch > 1) {
+		/* Maximum leaf switch count >1 probably makes no sense */
+		info("%s: Resetting %pJ leaf switch count from %u to 0",
+		     __func__, job_ptr, job_ptr->req_switch);
+		job_ptr->req_switch = 0;
+	}
 	if (job_ptr->req_switch) {
 		time_t     time_now;
 		time_now = time(NULL);
@@ -3465,7 +3463,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 
 	/*
 	 * Add required nodes to job allocation and
-	 * Build list of node bitmaps, sorted by weight
+	 * build list of node bitmaps, sorted by weight
 	 */
 	i_first = bit_ffs(node_map);
 	if (i_first == -1) {
@@ -3596,7 +3594,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 		goto fini;
 	}
 
-	/* Check that all specific required nodes are on shared network */
+	/* Check that all specificly required nodes are on shared network */
 	if (req_nodes_bitmap &&
 	    !bit_super_set(req_nodes_bitmap,
 			   switch_node_bitmap[top_switch_inx])) {
@@ -3607,12 +3605,23 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 	}
 
 	/*
+	 * Remove nodes from consideration that can not be reached from this
+	 * top level switch
+	 */
+	for (i = 0; i < switch_record_cnt; i++) {
+		if (top_switch_inx != i) {
+			  bit_and(switch_node_bitmap[i],
+				  switch_node_bitmap[top_switch_inx]);
+		}
+	}
+
+	/*
 	 * Identify the best set of nodes (i.e. nodes with the lowest weight,
 	 * in addition to the required nodes) that can be used to satisfy the
-	 * job request. All nodes must be on a common switch. The logic here
-	 * adds groups of nodes, all with the same weight, so we usually
-	 * identify more nodes than required to satisfy the request. Later
-	 * logic selects from those nodes to get the best topology.
+	 * job request. All nodes must be on a common top-level switch. The
+	 * logic here adds groups of nodes, all with the same weight, so we
+	 * usually identify more nodes than required to satisfy the request.
+	 * Later logic selects from those nodes to get the best topology.
 	 */
 	best_nodes_bitmap = bit_alloc(select_node_cnt);
 	iter = list_iterator_create(node_weight_list);
@@ -3734,6 +3743,642 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			}
 		}
 		bit_or(node_map, req2_nodes_bitmap);
+		if ((job_ptr->req_switch > 0) &&
+		    (req_leaf_switch_count > job_ptr->req_switch) &&
+		    (time_waiting < job_ptr->wait4switch)) {
+			info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
+			     plugin_type, __func__, job_ptr, leaf_switch_count,
+			     job_ptr->req_switch);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+
+		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+		    (!gres_per_job ||
+		     gres_plugin_job_sched_test(job_ptr->gres_list,
+					        job_ptr->job_id))) {
+			/* Required nodes completely satisfied the request */
+			error("%s: Scheduling anomaly for %pJ",
+			      __func__, job_ptr);
+			rc = SLURM_SUCCESS;
+			goto fini;
+		}
+		if (max_nodes <= 0) {
+			rc = SLURM_ERROR;
+			info("%s: %s: %pJ reached maximum node limit",
+			     plugin_type, __func__, job_ptr);
+			goto fini;
+		}
+	}
+
+	/*
+	 * Construct a set of switch array entries.
+	 * Use the same indexes as switch_record_table in slurmctld.
+	 */
+	bit_or(best_nodes_bitmap, node_map);
+	avail_nodes_bitmap = bit_alloc(node_record_count);
+	for (i = 0, switch_ptr = switch_record_table; i < switch_record_cnt;
+	     i++, switch_ptr++) {
+		bit_and(switch_node_bitmap[i], best_nodes_bitmap);
+		bit_or(avail_nodes_bitmap, switch_node_bitmap[i]);
+		switch_node_cnt[i] = bit_set_count(switch_node_bitmap[i]);
+	}
+
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		for (i = 0; i < switch_record_cnt; i++) {
+			char *node_names = NULL;
+			if (switch_node_cnt[i]) {
+				node_names =
+					bitmap2node_name(switch_node_bitmap[i]);
+			}
+			info("switch=%s level=%d nodes=%u:%s required:%u speed:%u",
+			     switch_record_table[i].name,
+			     switch_record_table[i].level,
+			     switch_node_cnt[i], node_names,
+			     switch_required[i],
+			     switch_record_table[i].link_speed);
+			xfree(node_names);
+		}
+	}
+
+	if (req_nodes_bitmap &&
+	    (!bit_super_set(req_nodes_bitmap, avail_nodes_bitmap))) {
+		info("%s: %s: %pJ requires nodes not available on any switch",
+		     plugin_type, __func__, job_ptr);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	if ((req_nodes_bitmap || req2_nodes_bitmap) &&
+	    (job_ptr->req_switch > 0) &&
+	    (req_leaf_switch_count > job_ptr->req_switch) &&
+	    (time_waiting < job_ptr->wait4switch)) {
+		info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
+		     plugin_type, __func__, job_ptr, leaf_switch_count,
+		     job_ptr->req_switch);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	/*
+	 * If no resources have yet been  selected,
+	 * then pick one leaf switch with the most available nodes.
+	 */
+	if (req_leaf_switch_count == 0) {
+		int best_switch_inx = -1;
+		for (i = 0; i < switch_record_cnt; i++) {
+			if (switch_record_table[i].level != 0)
+				continue;
+			if ((best_switch_inx == -1) ||
+			    (switch_node_cnt[i] >
+			     switch_node_cnt[best_switch_inx]))
+				best_switch_inx = i;
+		}
+		if (best_switch_inx != -1) {
+			req_leaf_switch_count = 1;
+			switch_required[best_switch_inx] = 1;
+		}
+	}
+
+	/*
+	 * All required resources currently on one leaf switch. Determine if
+	 * the entire job request can be satisfied using just that one switch.
+	 */
+	if (req_leaf_switch_count == 1) {
+		best_cpu_cnt = 0;
+		best_node_cnt = 0;
+		FREE_NULL_LIST(best_gres);
+		for (i = 0; i < switch_record_cnt; i++) {
+			if (!switch_required[i] || !switch_node_bitmap[i] ||
+			    (switch_record_table[i].level != 0))
+				continue;
+			i_first = bit_ffs(switch_node_bitmap[i]);
+			if (i_first >= 0)
+				i_last = bit_fls(switch_node_bitmap[i]);
+			else
+				i_last = -2;
+			for (j = i_first; j <= i_last; j++) {
+				if (!bit_test(switch_node_bitmap[i], j) ||
+				    bit_test(node_map, j) ||
+				    !avail_cpu_per_node[j])
+					continue;
+				avail_cpus = avail_cpu_per_node[j];
+				best_cpu_cnt += avail_cpus;
+				best_node_cnt++;
+				if (gres_per_job) {
+					gres_plugin_job_sched_consec(
+						&best_gres, job_ptr->gres_list,
+						avail_res_array[i]->sock_gres_list);
+				}
+			}
+			break;
+		}
+		sufficient = (best_cpu_cnt >= rem_cpus) &&
+			     _enough_nodes(best_node_cnt, rem_nodes,
+				   min_nodes, req_nodes);
+		if (sufficient && gres_per_job) {
+			sufficient = gres_plugin_job_sched_sufficient(
+						job_ptr->gres_list, best_gres);
+		}
+		if (sufficient && (i < switch_record_cnt)) {
+			/* Complete request using this one leaf switch */
+			for (j = i_first; j <= i_last; j++) {
+				if (!bit_test(switch_node_bitmap[i], j) ||
+				    bit_test(node_map, j) ||
+				    !avail_cpu_per_node[j])
+					continue;
+				avail_cpus = avail_cpu_per_node[j];
+				rem_nodes--;
+				min_rem_nodes--;
+				max_nodes--;
+				total_cpus += avail_cpus;
+				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
+				if (gres_per_job) {
+					gres_plugin_job_sched_add(
+						job_ptr->gres_list,
+						avail_res_array[j]->
+						sock_gres_list,
+						avail_cpus);
+				}
+				bit_set(node_map, j);
+				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+				    (!gres_per_job ||
+				     gres_plugin_job_sched_test(
+							job_ptr->gres_list,
+							job_ptr->job_id))) {
+					rc = SLURM_SUCCESS;
+					goto fini;
+				}
+			}
+		}
+	}
+
+	/*
+	 * Add additional resources as required from additional leaf switches
+	 * on a round-robin basis
+	 */
+	prev_rem_nodes = rem_nodes + 1;
+	while (1) {
+		if (prev_rem_nodes == rem_nodes)
+			break;	/* Stalled */
+		prev_rem_nodes = rem_nodes;
+		if ((job_ptr->req_switch > 0) &&
+		    (req_leaf_switch_count >= job_ptr->req_switch) &&
+		    (time_waiting < job_ptr->wait4switch)) {
+			info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
+			     plugin_type, __func__, job_ptr, leaf_switch_count,
+			     job_ptr->req_switch);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+		for (i = 0; i < switch_record_cnt; i++) {
+			if (!switch_node_bitmap[i] ||
+			    (switch_record_table[i].level != 0))
+				continue;
+			i_first = bit_ffs(switch_node_bitmap[i]);
+			if (i_first >= 0)
+				i_last = bit_fls(switch_node_bitmap[i]);
+			else
+				i_last = -2;
+			for (j = i_first; j <= i_last; j++) {
+				if (!bit_test(switch_node_bitmap[i], j) ||
+				    bit_test(node_map, j) ||
+				    !avail_cpu_per_node[j])
+					continue;
+				avail_cpus = avail_cpu_per_node[j];
+				rem_nodes--;
+				min_rem_nodes--;
+				max_nodes--;
+				total_cpus += avail_cpus;
+				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
+				if (gres_per_job) {
+					gres_plugin_job_sched_add(
+						job_ptr->gres_list,
+						avail_res_array[j]->
+						sock_gres_list,
+						avail_cpus);
+				}
+				bit_set(node_map, j);
+				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+				    (!gres_per_job ||
+				     gres_plugin_job_sched_test(
+							job_ptr->gres_list,
+							job_ptr->job_id))) {
+					rc = SLURM_SUCCESS;
+					goto fini;
+				}
+				break;	/* Move to next switch */
+			}
+		}
+	}
+	if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
+	    (!gres_per_job ||
+	     gres_plugin_job_sched_test(job_ptr->gres_list, job_ptr->job_id))) {
+		rc = SLURM_SUCCESS;
+		goto fini;
+	}
+	rc = SLURM_ERROR;
+
+fini:	FREE_NULL_LIST(best_gres);
+	FREE_NULL_LIST(node_weight_list);
+	FREE_NULL_BITMAP(avail_nodes_bitmap);
+	FREE_NULL_BITMAP(req_nodes_bitmap);
+	FREE_NULL_BITMAP(req2_nodes_bitmap);
+	FREE_NULL_BITMAP(best_nodes_bitmap);
+	xfree(avail_cpu_per_node);
+	xfree(switch_cpu_cnt);
+	xfree(switch_gres);
+	xfree(switch_node_bitmap);
+	xfree(switch_node_cnt);
+	xfree(switch_required);
+	xfree(switch_weight);
+	return rc;
+}
+
+/* Allocate resources to job using a minimal leaf switch count */
+static int _eval_nodes_topo(struct job_record *job_ptr,
+			    gres_mc_data_t *mc_ptr, bitstr_t *node_map,
+			    bitstr_t **avail_core, uint32_t min_nodes,
+			    uint32_t max_nodes, uint32_t req_nodes,
+			    avail_res_t **avail_res_array, uint16_t cr_type,
+			    bool prefer_alloc_nodes, bool first_pass)
+{
+	int       *switch_cpu_cnt = NULL;	/* total CPUs on switch */
+	List      *switch_gres = NULL;		/* available GRES on switch */
+	bitstr_t **switch_node_bitmap = NULL;	/* nodes on this switch */
+	int       *switch_node_cnt = NULL;	/* total nodes on switch */
+	int       *switch_required = NULL;	/* set if has required node */
+	uint64_t  *switch_weight = NULL;	/* node scheduling weight */
+	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
+	bitstr_t  *req_nodes_bitmap   = NULL;	/* required node bitmap */
+	bitstr_t  *req2_nodes_bitmap  = NULL;	/* required+lowest prio nodes */
+	bitstr_t  *best_nodes_bitmap  = NULL;	/* required+low prio nodes */
+	int i, i_first, i_last, j, rc = SLURM_SUCCESS;
+	int best_cpu_cnt = 0, best_node_cnt = 0, req_node_cnt = 0;
+	List best_gres = NULL;
+	struct switch_record *switch_ptr;
+	List node_weight_list = NULL;
+	topo_weight_info_t *nw = NULL;
+	ListIterator iter;
+	struct node_record *node_ptr;
+	uint16_t avail_cpus = 0, min_gres_cpu;
+	int64_t rem_max_cpus;
+	int rem_cpus, rem_nodes; /* remaining resources desired */
+	int min_rem_nodes;	/* remaining resources desired */
+	int total_cpus = 0;	/* #CPUs allocated to job */
+	bool enforce_binding = false;
+	struct job_details *details_ptr = job_ptr->details;
+	bool gres_per_job, sufficient = false;
+	uint16_t *avail_cpu_per_node = NULL;
+	uint32_t sockets_per_node = 1;
+	int64_t time_waiting = 0;
+	int leaf_switch_count = 0, req_leaf_switch_count = 0;
+	int top_switch_inx = -1;
+	int prev_rem_nodes;
+
+	if (job_ptr->req_switch) {
+		time_t     time_now;
+		time_now = time(NULL);
+		if (job_ptr->wait4switch_start == 0)
+			job_ptr->wait4switch_start = time_now;
+		time_waiting = time_now - job_ptr->wait4switch_start;
+	}
+
+	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
+		enforce_binding = true;
+	rem_cpus = details_ptr->min_cpus;
+	rem_max_cpus = details_ptr->max_cpus;
+	min_rem_nodes = min_nodes;
+	if (job_ptr->details->mc_ptr &&
+	    job_ptr->details->mc_ptr->sockets_per_node)
+		sockets_per_node = job_ptr->details->mc_ptr->sockets_per_node;
+	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list)))
+		rem_nodes = MIN(min_nodes, req_nodes);
+	else
+		rem_nodes = MAX(min_nodes, req_nodes);
+	min_gres_cpu = gres_plugin_job_min_cpu_node(sockets_per_node,
+					job_ptr->details->ntasks_per_node,
+					job_ptr->gres_list);
+
+	/* Validate availability of required nodes */
+	if (job_ptr->details->req_node_bitmap) {
+		if (!bit_super_set(job_ptr->details->req_node_bitmap,
+				   node_map)) {
+			info("%s: %s: %pJ requires nodes which are not currently available",
+			      plugin_type, __func__, job_ptr);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+
+		req_node_cnt = bit_set_count(job_ptr->details->req_node_bitmap);
+		if (req_node_cnt == 0) {
+			info("%s: %s: %pJ required node list has no nodes",
+			      plugin_type, __func__, job_ptr);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+		if (req_node_cnt > max_nodes) {
+			info("%s: %s: %pJ requires more nodes than currently available (%u>%u)",
+			      plugin_type, __func__, job_ptr, req_node_cnt,
+			      max_nodes);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
+		req_nodes_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
+	}
+
+	/*
+	 * Add required nodes to job allocation and
+	 * build list of node bitmaps, sorted by weight
+	 */
+	i_first = bit_ffs(node_map);
+	if (i_first == -1) {
+		debug("%s: %s: %pJ node_map is empty",
+		      plugin_type, __func__, job_ptr);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+	i_last = bit_fls(node_map);
+	avail_cpu_per_node = xmalloc(sizeof(uint16_t) * select_node_cnt);
+	node_weight_list = list_create(_topo_weight_free);
+	for (i = i_first; i <= i_last; i++) {
+		topo_weight_info_t nw_static;
+		if (!bit_test(node_map, i))
+			continue;
+		if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i)) {
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, min_rem_nodes,
+				      avail_core, avail_res_array, first_pass);
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
+				     details_ptr, avail_res_array[i], i,
+				     cr_type, min_gres_cpu);
+			if (avail_cpus == 0) {
+				debug2("%s: %s: %pJ insufficient resources on required node",
+				       plugin_type, __func__, job_ptr);
+				rc = SLURM_ERROR;
+				goto fini;
+			}
+			avail_cpu_per_node[i] = avail_cpus;
+			rem_nodes--;
+			min_rem_nodes--;
+			max_nodes--;
+			total_cpus += avail_cpus;
+			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
+			if (gres_per_job) {
+				gres_plugin_job_sched_add(job_ptr->gres_list,
+					avail_res_array[i]->sock_gres_list,
+					avail_cpus);
+			}
+		}
+
+		node_ptr = node_record_table_ptr + i;
+		nw_static.weight = node_ptr->sched_weight;
+		nw = list_find_first(node_weight_list, _topo_weight_find,
+				     &nw_static);
+		if (!nw) {	/* New node weight to add */
+			nw = xmalloc(sizeof(topo_weight_info_t));
+			nw->node_bitmap = bit_alloc(select_node_cnt);
+			nw->weight = node_ptr->sched_weight;
+			list_append(node_weight_list, nw);
+		}
+		bit_set(nw->node_bitmap, i);
+		nw->node_cnt++;
+	}
+
+	if (req_nodes_bitmap) {
+		bit_and(node_map, req_nodes_bitmap);
+		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+		    gres_plugin_job_sched_test(job_ptr->gres_list,
+					       job_ptr->job_id)) {
+			/* Required nodes completely satisfied the request */
+			rc = SLURM_SUCCESS;
+			goto fini;
+		}
+		if (max_nodes <= 0) {
+			rc = SLURM_ERROR;
+			info("%s: %s: %pJ requires nodes exceed maximum node limit",
+			     plugin_type, __func__, job_ptr);
+			goto fini;
+		}
+	} else {
+		bit_clear_all(node_map);
+	}
+
+	list_sort(node_weight_list, _topo_weight_sort);
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		(void) list_for_each(node_weight_list, _topo_weight_log, NULL);
+
+	/*
+	 * Identify the highest level switch to be used.
+	 * Note that nodes can be on multiple non-overlapping switches.
+	 */
+	switch_cpu_cnt     = xmalloc(sizeof(int)        * switch_record_cnt);
+	switch_gres        = xmalloc(sizeof(List)       * switch_record_cnt);
+	switch_node_bitmap = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
+	switch_node_cnt    = xmalloc(sizeof(int)        * switch_record_cnt);
+	switch_required    = xmalloc(sizeof(int)        * switch_record_cnt);
+	switch_weight      = xmalloc(sizeof(uint64_t)   * switch_record_cnt);
+
+	if (!req_nodes_bitmap)
+		nw = list_peek(node_weight_list);
+	for (i = 0, switch_ptr = switch_record_table; i < switch_record_cnt;
+	     i++, switch_ptr++) {
+		switch_node_bitmap[i] = bit_copy(switch_ptr->node_bitmap);
+		if (req_nodes_bitmap &&
+		    bit_overlap(req_nodes_bitmap, switch_node_bitmap[i])) {
+			switch_required[i] = 1;
+			if (switch_record_table[i].level == 0) {
+				leaf_switch_count++;
+				req_leaf_switch_count++;
+			}
+			if ((top_switch_inx == -1) ||
+			    (switch_record_table[i].level >
+			     switch_record_table[top_switch_inx].level)) {
+				top_switch_inx = i;
+			}
+		}
+		if (!req_nodes_bitmap &&
+		    bit_overlap(nw->node_bitmap, switch_node_bitmap[i])) {
+			if ((top_switch_inx == -1) ||
+			    (switch_record_table[i].level >
+			     switch_record_table[top_switch_inx].level)) {
+				top_switch_inx = i;
+			}
+		}
+	}
+
+	/*
+	 * Top switch is highest level switch containing all required nodes
+	 * OR all nodes of the lowest scheduling weight
+	 * OR -1 of can not identify top-level switch
+	 */
+	if (top_switch_inx == -1) {
+		error("%s: %s: %pJ unable to identify top level switch",
+		       plugin_type, __func__, job_ptr);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	/* Check that all specificly required nodes are on shared network */
+	if (req_nodes_bitmap &&
+	    !bit_super_set(req_nodes_bitmap,
+			   switch_node_bitmap[top_switch_inx])) {
+		rc = SLURM_ERROR;
+		info("%s: %s: %pJ requires nodes that do not have shared network",
+		     plugin_type, __func__, job_ptr);
+		goto fini;
+	}
+
+	/*
+	 * Remove nodes from consideration that can not be reached from this
+	 * top level switch.
+	 */
+	for (i = 0; i < switch_record_cnt; i++) {
+		if (top_switch_inx != i) {
+			  bit_and(switch_node_bitmap[i],
+				  switch_node_bitmap[top_switch_inx]);
+		}
+	}
+
+	/*
+	 * Identify the best set of nodes (i.e. nodes with the lowest weight,
+	 * in addition to the required nodes) that can be used to satisfy the
+	 * job request. All nodes must be on a common top-level switch. The
+	 * logic here adds groups of nodes, all with the same weight, so we
+	 * usually identify more nodes than required to satisfy the request.
+	 * Later logic selects from those nodes to get the best topology.
+	 */
+	best_nodes_bitmap = bit_alloc(select_node_cnt);
+	iter = list_iterator_create(node_weight_list);
+	while (!sufficient && (nw = list_next(iter))) {
+		if (best_node_cnt > 0) {
+			/*
+			 * All of the lower priority nodes should be included
+			 * in the job's allocation. Nodes from the next highest
+			 * weight nodes are included only as needed.
+			 */
+			if (req2_nodes_bitmap)
+				bit_or(req2_nodes_bitmap, best_nodes_bitmap);
+			else
+				req2_nodes_bitmap = bit_copy(best_nodes_bitmap);
+		}
+		i_first = bit_ffs(nw->node_bitmap);
+		if (i_first == -1)
+			continue;
+		i_last = bit_fls(nw->node_bitmap);
+		for (i = i_first; i <= i_last; i++) {
+			if (avail_cpu_per_node[i])
+				continue;	/* Required node */
+			if (!bit_test(nw->node_bitmap, i) ||
+			    !bit_test(switch_node_bitmap[top_switch_inx], i))
+				continue;
+			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
+				      &avail_cpus, max_nodes, min_rem_nodes,
+				      avail_core, avail_res_array, first_pass);
+			if (avail_cpus == 0) {
+				bit_clear(nw->node_bitmap, i);
+				continue;
+			}
+			bit_set(best_nodes_bitmap, i);
+			avail_cpu_per_node[i] = avail_cpus;
+			best_cpu_cnt += avail_cpus;
+			best_node_cnt++;
+			if (gres_per_job) {
+				gres_plugin_job_sched_consec(
+					&best_gres, job_ptr->gres_list,
+					avail_res_array[i]->sock_gres_list);
+			}
+		}
+
+		sufficient = (best_cpu_cnt >= rem_cpus) &&
+			     _enough_nodes(best_node_cnt, rem_nodes,
+					   min_nodes, req_nodes);
+		if (sufficient && gres_per_job) {
+			sufficient = gres_plugin_job_sched_sufficient(
+					job_ptr->gres_list, best_gres);
+		}
+	}
+	list_iterator_destroy(iter);
+
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		char *gres_str = NULL, *gres_print = "";
+		char *node_names;
+		if (req_nodes_bitmap) {
+			node_names = bitmap2node_name(req_nodes_bitmap);
+			info("%s: Required nodes:%s", __func__, node_names);
+			xfree(node_names);
+		}
+		node_names = bitmap2node_name(best_nodes_bitmap);
+		if (gres_per_job) {
+			gres_str = gres_plugin_job_sched_str(best_gres,
+							job_ptr->gres_list);
+			if (gres_str)
+				gres_print = gres_str;
+		}
+		info("%s: Best nodes:%s node_cnt:%d cpu_cnt:%d %s", __func__,
+		     node_names, best_node_cnt, best_cpu_cnt, gres_print);
+		xfree(node_names);
+		xfree(gres_str);
+	}
+	if (!sufficient) {
+		info("%s: %s: insufficient resources currently available for %pJ",
+		      plugin_type, __func__, job_ptr);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	/*
+	 * Add lowest weight nodes. Treat similar to required nodes for the job.
+	 * Job will still need to add some higher weight nodes later.
+	 */
+	if (req2_nodes_bitmap) {
+		i_first = bit_ffs(req2_nodes_bitmap);
+		if (i_first >= 0)
+			i_last = bit_fls(req2_nodes_bitmap);
+		else
+			i_last = -2;
+		for (i = i_first; ((i <= i_last) && (max_nodes > 0)); i++) {
+			if (!bit_test(req2_nodes_bitmap, i))
+				continue;
+			rem_nodes--;
+			min_rem_nodes--;
+			max_nodes--;
+			avail_cpus = avail_cpu_per_node[i];
+			total_cpus += avail_cpus;
+			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
+			if (gres_per_job) {
+				gres_plugin_job_sched_add(job_ptr->gres_list,
+					avail_res_array[i]->sock_gres_list,
+					avail_cpus);
+			}
+		}
+
+		for (i = 0, switch_ptr = switch_record_table;
+		     i < switch_record_cnt; i++, switch_ptr++) {
+			if (switch_required[i])
+				continue;
+			if (bit_overlap(req2_nodes_bitmap,
+					switch_node_bitmap[i])) {
+				switch_required[i] = 1;
+				if (switch_record_table[i].level == 0) {
+					leaf_switch_count++;
+					req_leaf_switch_count++;
+				}
+			}
+		}
+		bit_or(node_map, req2_nodes_bitmap);
+		if ((job_ptr->req_switch > 0) &&
+		    (req_leaf_switch_count > job_ptr->req_switch) &&
+		    (time_waiting < job_ptr->wait4switch)) {
+			info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
+			     plugin_type, __func__, job_ptr, leaf_switch_count,
+			     job_ptr->req_switch);
+			rc = SLURM_ERROR;
+			goto fini;
+		}
 
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    (!gres_per_job ||
@@ -3845,8 +4490,14 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 	}
 
 	/* Add additional resources as required from additional leaf switches */
+	prev_rem_nodes = rem_nodes + 1;
 	while (1) {
-		if ((req_leaf_switch_count >= job_ptr->req_switch) &&
+		if (prev_rem_nodes == rem_nodes)
+			break; 	/* Stalled */
+		prev_rem_nodes = rem_nodes;
+
+		if ((job_ptr->req_switch > 0) &&
+		    (req_leaf_switch_count >= job_ptr->req_switch) &&
 		    (time_waiting < job_ptr->wait4switch)) {
 			info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
 			     plugin_type, __func__, job_ptr, leaf_switch_count,
