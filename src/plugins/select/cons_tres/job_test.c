@@ -2366,6 +2366,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	}
 
 	if (switch_record_cnt && switch_record_table &&
+	    !details_ptr->contiguous &&
 	    ((topo_optional == false) || job_ptr->req_switch)) {
 		/* Perform optimized resource selection based upon topology */
 		if (have_dragonfly) {
@@ -3752,7 +3753,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 		}
 	}
 
-//FIXME: details_ptr->contiguous ???
 	/*
 	 * Construct a set of switch array entries.
 	 * Use the same indexes as switch_record_table in slurmctld.
@@ -3815,9 +3815,9 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			for (j = i_first; j <= i_last; j++) {
 				if (!bit_test(switch_node_bitmap[i], j) ||
 				    bit_test(node_map, j) ||
-				    !avail_cpu_per_node[i])
+				    !avail_cpu_per_node[j])
 					continue;
-				avail_cpus = avail_cpu_per_node[i];
+				avail_cpus = avail_cpu_per_node[j];
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
@@ -3832,7 +3832,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 						avail_cpus);
 				}
 				bit_set(node_map, j);
-				if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
+				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				    (!gres_per_job ||
 				     gres_plugin_job_sched_test(
 							job_ptr->gres_list,
@@ -3865,13 +3865,14 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			      switch_node_cnt[top_switch_inx])))
 				top_switch_inx = i;
 		}
-		if (top_switch_inx == -1) {
-			info("%s: %s: %pJ insufficient resources",
-			     plugin_type, __func__, job_ptr);
-			rc = SLURM_ERROR;
-			goto fini;
-		}
+		if (top_switch_inx == -1)
+			break;
 
+		/*
+		 * NOTE: Ideally we would add nodes in order of resource
+		 * availability rather than in order of bitmap position, but
+		 * that would add even more complexity and overhead.
+		 */
 		i_first = bit_ffs(switch_node_bitmap[top_switch_inx]);
 		if (i_first >= 0)
 			i_last = bit_fls(switch_node_bitmap[top_switch_inx]);
@@ -3895,7 +3896,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 					avail_cpus);
 			}
 			bit_set(node_map, i);
-			if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
+			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 			    (!gres_per_job ||
 			     gres_plugin_job_sched_test(job_ptr->gres_list,
 							job_ptr->job_id))) {
@@ -3904,6 +3905,12 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			}
 		}
 		switch_node_cnt[top_switch_inx] = 0;	/* Used all */
+	}
+	if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
+	    (!gres_per_job ||
+	     gres_plugin_job_sched_test(job_ptr->gres_list, job_ptr->job_id))) {
+		rc = SLURM_SUCCESS;
+		goto fini;
 	}
 	rc = SLURM_ERROR;
 
