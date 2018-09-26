@@ -2265,7 +2265,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case MESSAGE_COMPOSITE:
 	case RESPONSE_MESSAGE_COMPOSITE:
 		rc = _unpack_composite_msg((composite_msg_t **) &(msg->data),
-					    buffer, msg->protocol_version);
+					   buffer, msg->protocol_version);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
@@ -2289,9 +2289,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						  msg->protocol_version);
 		break;
 	case RESPONSE_NETWORK_CALLERID:
-		rc = _unpack_network_callerid_resp_msg((network_callerid_resp_t **)
-						  &(msg->data), buffer,
-						  msg->protocol_version);
+		rc = _unpack_network_callerid_resp_msg(
+			(network_callerid_resp_t **)&(msg->data), buffer,
+			msg->protocol_version);
 		break;
 	case REQUEST_EVENT_LOG:
 		rc = _unpack_event_log_msg((slurm_event_log_msg_t **)
