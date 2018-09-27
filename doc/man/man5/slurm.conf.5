@@ -1070,15 +1070,17 @@ Exclude shared memory from accounting.
 Use PSS value instead of RSS to calculate real usage of memory.
 The PSS value will be saved as RSS.
 .TP
-\fBNoOverMemoryKill\fR
-Do not kill process that uses more then requested memory.
-This parameter should be used with caution as if jobs exceeds
-its memory allocation it may affect other processes and/or machine
-health.
+\fBOverMemoryKill\fR
+Kill steps that are being detected to use more memory than requested, every
+time accounting information is gathered by JobAcctGather plugin.
+This parameter will not kill a job directly, but only the step.
+See \fBMemLimitEnforce\fB for that purpose. This parameter should be used
+with caution as if jobs exceeds its memory allocation it may affect other
+processes and/or machine health.
 NOTE: It is recommended to limit memory by enabling task/cgroup
-in TaskPlugin and making use of ConstrainRAMSpace=yes cgroup.conf.
-If so, having JobAcctGather as an extra mechanism for memory enforcement
-is not recommended, so setting \fBNoOverMemoryKill\fR is advised.
+in TaskPlugin and making use of ConstrainRAMSpace=yes cgroup.conf instead
+of using this JobAcctGather mechanism for memory enforcement, since the former
+has a lower resolution (JobAcctGatherFreq) and OOMs could happen at some point.
 .RE
 
 .TP
@@ -1128,7 +1130,7 @@ Also see \fBDefaultStoragePort\fR.
 \fBJobCompType\fR
 The job completion logging mechanism type.
 Acceptable values at present include "jobcomp/none", "jobcomp/elasticsearch",
-"jobcomp/filetxt", "jobcomp/mysql" and "jobcomp/script"".
+"jobcomp/filetxt", "jobcomp/mysql" and "jobcomp/script".
 The default value is "jobcomp/none", which means that upon job completion
 the record of the job is purged from the system.  If using the accounting
 infrastructure this plugin may not be of interest since the information
@@ -1477,12 +1479,17 @@ a node cannot be shared with other users.
 
 .TP
 \fBMemLimitEnforce\fR
-If set to "no" then Slurm will not terminate the job or the job step
-if they exceeds the value requested using the \-\-mem\-per\-cpu option of
-salloc/sbatch/srun. This is useful if jobs need to specify \-\-mem\-per\-cpu
-for scheduling but they should not be terminate if they exceed the
-estimated value. The default value is 'yes', terminate the job/step
-if exceed the requested memory.
+If set to yes then Slurm will terminate the job if it exceeds the value
+requested using the \-\-mem\-per\-cpu option of salloc/sbatch/srun.
+This is useful in combination with \fBJobAcctGaterParams=OverMemoryKill\fB.
+Used when jobs need to specify \-\-mem\-per\-cpu for scheduling and they should
+be terminated if they exceed the estimated value.
+The default value is 'no', which disables this enforcing mechanism.
+NOTE: It is recommended to limit memory by enabling task/cgroup
+in TaskPlugin and making use of ConstrainRAMSpace=yes cgroup.conf instead
+of using this JobAcctGather mechanism for memory enforcement, since the former
+has a lower resolution (JobAcctGatherFreq) and OOMs could happen at some point.
+.RE
 
 .TP
 \fBMessageTimeout\fR
@@ -4217,7 +4224,7 @@ Isolation of the Slurm daemons from user jobs may improve application performanc
 If this option and \fBCpuSpecList\fR are both designated for a
 node, an error is generated.  For information on the algorithm used by Slurm
 to select the cores refer to the core specialization documentation
-(https://slurm.schedmd.com/core_spec.html).
+( https://slurm.schedmd.com/core_spec.html ).
 
 .TP
 \fBCoresPerSocket\fR
@@ -4944,12 +4951,12 @@ Jobs that run in partitions with "OverSubscribe=EXCLUSIVE" will have
 exclusive access to all allocated nodes.
 .TP
 \fBFORCE\fR
-Makes all resources in the partition available for sharing
-without any means for users to disable it.
+Makes all resources in the partition available for oversubscription without
+any means for users to disable it.
 May be followed with a colon and maximum number of jobs in
 running or suspended state.
 For example "OverSubscribe=FORCE:4" enables each node, socket or
-core to execute up to four jobs at once.
+core to oversubscribe each resource four ways.
 Recommended only for systems running with gang scheduling
 (\fBPreemptMode=suspend,gang\fR).
 NOTE: \fIPreemptType=QOS\fR will permit one additional job to be run

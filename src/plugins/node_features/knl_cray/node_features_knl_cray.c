@@ -1587,7 +1587,7 @@ static void _update_all_node_features(
 	 */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		if (bit_test(knl_node_bitmap, i)) {
+		if (knl_node_bitmap && bit_test(knl_node_bitmap, i)) {
 			if (validate_mode)
 				_validate_node_features(node_ptr);
 			continue;

@@ -541,22 +541,15 @@ sufficiently large resource limit and ensuring that <i>slurmd</i> takes
 full advantage of this limit. For example, you can set user root's
 locked memory limit ulimit to be unlimited on the compute nodes (see
 <i>"man limits.conf"</i>) and ensuring that <i>slurmd</i> takes
-full advantage of this limit (e.g. by adding something like
-<i>"ulimit -l unlimited"</i> to the <i>/etc/init.d/slurm</i>
-script used to initiate <i>slurmd</i>). It may also be desirable to lock
+full advantage of this limit (e.g. by adding <i>"LimitMEMLOCK=infinity"</i>
+to your systemd's <i>slurmd.service</i> file). It may also be desirable to lock
 the slurmd daemon's memory to help ensure that it keeps responding if memory
-swapping begins. A sample <i>/etc/sysconfig/slurm</i> file is shown below.
+swapping begins. A sample <i>/etc/sysconfig/slurm</i> which can be read from
+systemd is shown below.
 Related information about <a href="#pam">PAM</a> is also available.</p>
 <pre>
 #
 # Example /etc/sysconfig/slurm
-#
-# Increase the memlock limit so that user tasks can get
-# unlimited memlock
-ulimit -l unlimited
-#
-# Increase the open file limit
-ulimit -n 8192
 #
 # Memlocks the slurmd process's memory so that if a node
 # starts swapping, the slurmd will continue to respond

@@ -920,8 +920,10 @@ extern void jag_common_poll_data(
 	char sbuf[72];
 	int energy_counted = 0;
 	time_t ct;
-	static int no_over_memory_kill = -1;
+	static int over_memory_kill = -1;
 	int i = 0;
+	char *acct_params = slurm_get_jobacct_gather_params();
+	char *tok, *save_ptr = NULL;
 
 	xassert(callbacks);
 
@@ -936,14 +938,20 @@ extern void jag_common_poll_data(
 	}
 	processing = 1;
 
-	if (no_over_memory_kill == -1) {
-		char *acct_params = slurm_get_jobacct_gather_params();
-		if (acct_params && xstrcasestr(acct_params, "NoOverMemoryKill"))
-			no_over_memory_kill = 1;
-		else
-			no_over_memory_kill = 0;
+	if (over_memory_kill == -1 && acct_params) {
+		tok = strtok_r(acct_params, ",", &save_ptr);
+		while(tok) {
+			if (xstrcasecmp(tok, "OverMemoryKill") == 0) {
+				over_memory_kill = 1;
+				break;
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
 		xfree(acct_params);
 	}
+
+	if (over_memory_kill == -1)
+		over_memory_kill = 0;
 
 	if (!callbacks->get_precs)
 		callbacks->get_precs = _get_precs;
@@ -1090,7 +1098,7 @@ extern void jag_common_poll_data(
 	}
 	list_iterator_destroy(itr);
 
-	if (!no_over_memory_kill)
+	if (over_memory_kill)
 		jobacct_gather_handle_mem_limit(total_job_mem, total_job_vsize);
 
 finished:

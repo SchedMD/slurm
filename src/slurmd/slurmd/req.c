@@ -2900,9 +2900,6 @@ _enforce_job_mem_limit(void)
 	};
 	struct job_mem_info *job_mem_info_ptr = NULL;
 
-	/* If users have configured MemLimitEnforce=no
-	 * in their slurm.conf keep going.
-	 */
 	if (conf->mem_limit_enforce == false)
 		return;
 

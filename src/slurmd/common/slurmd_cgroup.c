@@ -474,7 +474,8 @@ extern bool check_memspec_cgroup_job_confinement(void)
 
 	task_plugin_type = slurm_get_task_plugin();
 
-	if (cg_conf->constrain_ram_space &&
+	if ((cg_conf->constrain_ram_space ||
+	     cg_conf->constrain_swap_space) &&
 	    strstr(task_plugin_type, "cgroup"))
 		status = true;
 
