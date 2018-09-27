@@ -4485,7 +4485,7 @@ tryagain:
 	}
 
 	conf = slurm_conf_lock();
-	have_backup = conf->control_machine[1] ? true : false;
+	have_backup = conf->control_cnt > 1;
 	slurmctld_timeout = conf->slurmctld_timeout;
 	slurm_conf_unlock();
 

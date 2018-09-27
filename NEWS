@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent abort when using Cray node features plugin on non-knl.
  -- Add ability to reboot down nodes with scontrol reboot_nodes.
  -- Protect against sending to the slurmdbd if the connection has gone away.
+ -- Fix invalid read when not using backup slurmctlds.
 
 * Changes in Slurm 18.08.0
 ==========================
