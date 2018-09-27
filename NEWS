@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- More explicit error message when cgroup oom-kill events detected.
  -- When updating an association and are unable to find parent association
     initialize old fairshare association pointer correctly.
+ -- Wrap slurm_cond_signal() calls with mutexes where needed.
 
 * Changes in Slurm 17.11.9-2
 ============================

@@ -10710,7 +10710,9 @@ static inline bool _purge_complete_pack_job(struct job_record *pack_leader)
 	if (i) {
 		debug2("%s: purged %d old job records", __func__, i);
 		last_job_update = time(NULL);
+		slurm_mutex_lock(&purge_thread_lock);
 		slurm_cond_signal(&purge_thread_cond);
+		slurm_mutex_unlock(&purge_thread_lock);
 	}
 	return true;
 }
@@ -10782,7 +10784,9 @@ void purge_old_job(void)
 	if (i) {
 		debug2("purge_old_job: purged %d old job records", i);
 		last_job_update = time(NULL);
+		slurm_mutex_lock(&purge_thread_lock);
 		slurm_cond_signal(&purge_thread_cond);
+		slurm_mutex_unlock(&purge_thread_lock);
 	}
 }
 
@@ -10802,7 +10806,9 @@ extern int purge_job_record(uint32_t job_id)
 	count = list_delete_all(job_list, &list_find_job_id, (void *)&job_id);
 	if (count) {
 		last_job_update = time(NULL);
+		slurm_mutex_lock(&purge_thread_lock);
 		slurm_cond_signal(&purge_thread_cond);
+		slurm_mutex_unlock(&purge_thread_lock);
 	}
 
 	return count;
