@@ -61,6 +61,8 @@ documents those changes that are of interest to users and administrators.
  -- Set SLURM_CLUSTER_NAME environment variable in MailProg to the ClusterName.
  -- smail - use SLURM_CLUSTER_NAME environment variable.
  -- job_submit/lua - expose argc/argv options through lua interface.
+ -- slurmdbd - prevent false-positive warning about innodb settings having
+    been set too low if they're actually set over 2GB.
 
 * Changes in Slurm 18.08.0
 ==========================
