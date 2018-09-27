@@ -3866,7 +3866,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 				if (gres_per_job) {
 					gres_plugin_job_sched_consec(
 						&best_gres, job_ptr->gres_list,
-						avail_res_array[i]->sock_gres_list);
+						avail_res_array[j]->sock_gres_list);
 				}
 			}
 			break;
