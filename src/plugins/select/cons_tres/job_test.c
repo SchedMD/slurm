@@ -3752,7 +3752,12 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 			rc = SLURM_ERROR;
 			goto fini;
 		}
-
+		if (max_nodes <= 0) {
+			rc = SLURM_ERROR;
+			info("%s: %s: %pJ reached maximum node limit",
+			     plugin_type, __func__, job_ptr);
+			goto fini;
+		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    (!gres_per_job ||
 		     gres_plugin_job_sched_test(job_ptr->gres_list,
@@ -3761,12 +3766,6 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 			error("%s: Scheduling anomaly for %pJ",
 			      __func__, job_ptr);
 			rc = SLURM_SUCCESS;
-			goto fini;
-		}
-		if (max_nodes <= 0) {
-			rc = SLURM_ERROR;
-			info("%s: %s: %pJ reached maximum node limit",
-			     plugin_type, __func__, job_ptr);
 			goto fini;
 		}
 	}
@@ -3909,6 +3908,12 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 					rc = SLURM_SUCCESS;
 					goto fini;
 				}
+				if (max_nodes <= 0) {
+					rc = SLURM_ERROR;
+					info("%s: %s: %pJ reached maximum node limit",
+					     plugin_type, __func__, job_ptr);
+					goto fini;
+				}
 			}
 		}
 	}
@@ -3966,6 +3971,12 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 							job_ptr->gres_list,
 							job_ptr->job_id))) {
 					rc = SLURM_SUCCESS;
+					goto fini;
+				}
+				if (max_nodes <= 0) {
+					rc = SLURM_ERROR;
+					info("%s: %s: %pJ reached maximum node limit",
+					     plugin_type, __func__, job_ptr);
 					goto fini;
 				}
 				break;	/* Move to next switch */
