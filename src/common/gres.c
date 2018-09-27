@@ -4043,6 +4043,8 @@ extern bool gres_plugin_job_sched_sufficient(List job_gres_list,
 
 	if (!job_gres_list)
 		return true;
+	if (!sock_gres_list)
+		return false;
 
 	iter = list_iterator_create(job_gres_list);
 	while ((job_gres_state = (gres_state_t *) list_next(iter))) {
