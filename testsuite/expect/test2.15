@@ -52,6 +52,9 @@ if {[test_front_end] != 0} {
 } elseif {[test_killonbadexit]} {
     send_user "\nWARNING: This test is incompatible with KillOnBadExit=1\n"
     exit 0
+} elseif {[string first "none" [get_affinity_types]] != -1} {
+    send_user "\nWARNING: This test is incompatible with TaskPlugin=none\n"
+    exit 0
 }
 
 set node_cnt 2
@@ -67,11 +70,12 @@ if {$available < $node_cnt} {
 make_bash_script $file_in "
 if \[ \$SLURM_PROCID = 0 \]; then
 	$bin_echo JOBID=\$SLURM_JOB_ID
-	$bin_echo \"Proc \$SLURM_PROCID on HOST=\$SLURMD_NODENAME : I await the end of the other tasks\"
+	$bin_echo \"Proc \$SLURM_PROCID on HOST0=\$SLURMD_NODENAME : I await the end of the other tasks\"
 	$bin_sleep 35
 	$squeue -o \"%i %10j %2t %N\"
 	$bin_echo \"Proc \$SLURM_PROCID terminated properly\"
 else
+	$bin_echo \"Proc \$SLURM_PROCID on HOST1=\$SLURMD_NODENAME : Waiting to get killed\"
 	$bin_sleep 10
 	$bin_sleep 1
 	$bin_echo \"Proc \$SLURM_PROCID terminated improperly, not killed\"
@@ -83,6 +87,7 @@ fi
 # Run job with one task continuing
 #
 set host ""
+set host_cnt 0
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N$node_cnt -t1 ./$file_in]
 set srun_id $spawn_id
@@ -91,8 +96,14 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "HOST=($alpha_numeric_under)" {
-		set host $expect_out(1,string)
+	-re "HOST($number)=($alpha_numeric_under)" {
+		if {$expect_out(1,string) == 0} {
+			set host $expect_out(2,string)
+		}
+		incr host_cnt
+		if {$host_cnt < $node_cnt} {
+			exp_continue
+		}
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
