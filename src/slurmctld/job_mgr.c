@@ -3929,14 +3929,19 @@ extern int kill_running_job_by_node_name(char *node_name)
 extern void excise_node_from_job(struct job_record *job_ptr,
 				 struct node_record *node_ptr)
 {
-	int i, orig_pos = -1, new_pos = -1;
+	int i, i_first, i_last, orig_pos = -1, new_pos = -1;
 	bitstr_t *orig_bitmap;
 
 	orig_bitmap = bit_copy(job_ptr->node_bitmap);
 	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
 	xfree(job_ptr->nodes);
 	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
-	for (i = bit_ffs(orig_bitmap); i < node_record_count; i++) {
+	i_first = bit_ffs(orig_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(orig_bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(orig_bitmap,i))
 			continue;
 		orig_pos++;
@@ -11315,8 +11320,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	 */
 	if (job_specs->req_nodes &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
-		/* Use req_nodes to change the nodes associated with a running
-		 * for lack of other field in the job request to use */
+		/*
+		 * Use req_nodes to change the nodes associated with a running
+		 * for lack of other field in the job request to use
+		 */
 		if ((job_specs->req_nodes[0] == '\0') ||
 		    node_name2bitmap(job_specs->req_nodes,
 				     false, &new_req_bitmap) ||
@@ -11333,8 +11340,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				   job_specs->req_nodes, job_ptr);
 			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
-			i_last  = bit_fls(job_ptr->node_bitmap);
-			for (i=i_first; i<=i_last; i++) {
+			if (i_first >= 0)
+				i_last  = bit_fls(job_ptr->node_bitmap);
+			else
+				i_last = -2;
+			for (i = i_first; i <= i_last; i++) {
 				if (bit_test(new_req_bitmap, i) ||
 				    !bit_test(job_ptr->node_bitmap, i))
 					continue;
@@ -11347,8 +11357,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					       &job_ptr->gres_detail_cnt,
 					       &job_ptr->gres_detail_str);
 			job_post_resize_acctg(job_ptr);
-			/* Since job_post_resize_acctg will restart
-			 * things, don't do it again. */
+			/*
+			 * Since job_post_resize_acctg will restart
+			 * things, don't do it again.
+			 */
 			update_accounting = false;
 		} else {
 			update_accounting = true;
