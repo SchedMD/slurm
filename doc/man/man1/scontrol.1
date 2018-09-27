@@ -1325,6 +1325,20 @@ priority.
 The value may not exceed 65533.
 
 .TP
+\fIPriorityJobFactor\fP=<count>
+Partition factor used by priority/multifactor plugin in calculating
+job priority.  The value may not exceed 65533.  Also see PriorityTier.
+
+.TP
+\fIPriorityTier\fP=<count>
+Jobs submitted to a partition with a higher priority tier value will
+be dispatched before pending jobs in partition with lower priority tier
+value and,  if  possible,  they  will  preempt  running jobs from
+partitions with lower priority tier values.  Note that a partition's
+priority tier takes precedence over a job's priority.  The value may
+not exceed 65533.  Also see PriorityJobFactor.
+
+.TP
 \fIQOS\fP=<QOSname|blank to remove>
 Set the partition QOS with a QOS name or to remove the Partition QOS
 leave the option blank.
