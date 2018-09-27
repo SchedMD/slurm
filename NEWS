@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Protect against sending to the slurmdbd if the connection has gone away.
  -- Fix invalid read when not using backup slurmctlds.
  -- Prevent acct coordinators from changing default acct on add user.
+ -- Don't allow scontrol top do modify job priorities when priority == 1.
 
 * Changes in Slurm 18.08.0
 ==========================

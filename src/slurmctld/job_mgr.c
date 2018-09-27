@@ -16266,10 +16266,14 @@ static int _set_top(List top_job_list, uid_t uid)
 	other_job_list = list_create(NULL);
 	iter = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		/*
+		 * Do not select jobs with priority 0 (held), or
+		 * priority 1 (would be held if we lowered the priority).
+		 */
 		if ((job_ptr->bit_flags & TOP_PRIO_TMP) ||
 		    (job_ptr->details == NULL) ||
 		    (job_ptr->part_ptr_list)   ||
-		    (job_ptr->priority == 0)   ||
+		    (job_ptr->priority <= 1)   ||
 		    (job_ptr->assoc_ptr != first_job_ptr->assoc_ptr) ||
 		    (job_ptr->part_ptr  != first_job_ptr->part_ptr)  ||
 		    (job_ptr->qos_ptr   != first_job_ptr->qos_ptr)   ||
@@ -16292,7 +16296,9 @@ static int _set_top(List top_job_list, uid_t uid)
 		prio_elem = list_pop(prio_list);
 		next_prio = *prio_elem;
 		xfree(prio_elem);
-		if ((last_prio != NO_VAL) && (next_prio == last_prio))
+		if ((last_prio != NO_VAL) && (next_prio == last_prio) &&
+		    /* Don't set job priority lower than 1 */
+		    (last_prio > 1))
 			next_prio = last_prio - 1;
 		last_prio = next_prio;
 		delta_prio = (int64_t) next_prio - job_ptr->priority;
