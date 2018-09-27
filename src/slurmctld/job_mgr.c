@@ -12642,8 +12642,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				   job_specs->min_nodes, job_ptr);
 			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
-			i_last  = bit_fls(job_ptr->node_bitmap);
-			for (i=i_first, total=0; i<=i_last; i++) {
+			if (i_first >= 0)
+				i_last  = bit_fls(job_ptr->node_bitmap);
+			else
+				i_last = -2;
+			for (i = i_first, total = 0; i <= i_last; i++) {
 				if (!bit_test(job_ptr->node_bitmap, i))
 					continue;
 				if (++total <= job_specs->min_nodes)
@@ -12656,8 +12659,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_post_resize_acctg(job_ptr);
 			sched_info("update_job: set nodes to %s for %pJ",
 				   job_ptr->nodes, job_ptr);
-			/* Since job_post_resize_acctg will restart
-			 * things don't do it again. */
+			/*
+			 * Since job_post_resize_acctg() will restart
+			 * things don't do it again.
+			 */
 			update_accounting = false;
 		}
 		gres_build_job_details(job_ptr->gres_list,
