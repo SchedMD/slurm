@@ -8659,7 +8659,7 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 {
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
-	uint64_t core_cnt, gres_cnt;
+	uint64_t core_cnt, gres_cnt, min_gres = 1;
 
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
@@ -8685,7 +8685,6 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 		return 0;
 	}
 
-//FIXME: Add step support for other GRES count specifications
 	if (job_gres_ptr->gres_cnt_step_alloc) {
 		uint64_t job_gres_avail = job_gres_ptr->gres_per_node;
 		if (!ignore_alloc) {
@@ -8700,6 +8699,13 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 		return 0;
 	}
 
+	if (step_gres_ptr->gres_per_node)
+		min_gres = step_gres_ptr-> gres_per_node;
+	if (step_gres_ptr->gres_per_socket)
+		min_gres = MAX(min_gres, step_gres_ptr->gres_per_socket);
+	if (step_gres_ptr->gres_per_task)
+		min_gres = MAX(min_gres, step_gres_ptr->gres_per_task);
+
 	if (job_gres_ptr->gres_bit_alloc &&
 	    job_gres_ptr->gres_bit_alloc[node_offset]) {
 		gres_cnt = bit_set_count(job_gres_ptr->
@@ -8711,7 +8717,7 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 						  gres_bit_step_alloc
 						  [node_offset]);
 		}
-		if (step_gres_ptr->gres_per_node > gres_cnt)
+		if (min_gres > gres_cnt)
 			core_cnt = 0;
 		else
 			core_cnt = NO_VAL64;
@@ -8722,7 +8728,7 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			gres_cnt -= job_gres_ptr->
 				    gres_cnt_step_alloc[node_offset];
 		}
-		if (step_gres_ptr->gres_per_node > gres_cnt)
+		if (min_gres > gres_cnt)
 			core_cnt = 0;
 		else
 			core_cnt = NO_VAL64;
@@ -9796,7 +9802,7 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
 }
 
 /*
- * Determine how many cores of a job's allocation can be allocated to a job
+ * Determine how many cores of a job's allocation can be allocated to a step
  *	on a specific node
  * IN job_gres_list - a running job's gres info
  * IN/OUT step_gres_list - a pending job step's gres requirements
@@ -9814,8 +9820,8 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 	uint64_t core_cnt, tmp_cnt;
 	ListIterator  job_gres_iter, step_gres_iter;
 	gres_state_t *job_gres_ptr, *step_gres_ptr;
-//FIXME: Add step support for other GRES count specifications
-//	if (step_gres_list == NULL)
+
+	if (step_gres_list == NULL)
 		return NO_VAL64;
 	if (job_gres_list == NULL)
 		return 0;
