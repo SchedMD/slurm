@@ -14945,7 +14945,7 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op,
 static int _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp)
 {
 	int i, i_first, i_last, rc = SLURM_SUCCESS;
-	struct node_record *node_ptr = node_record_table_ptr;
+	struct node_record *node_ptr;
 	uint32_t node_flags;
 	time_t now = time(NULL);
 
@@ -14957,10 +14957,10 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp)
 		i_last = bit_fls(job_ptr->node_bitmap);
 	else
 		i_last = -2;
+	node_ptr = node_record_table_ptr + i_first;
 	for (i = i_first; i <= i_last; i++, node_ptr++) {
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
-
 		node_ptr->sus_job_cnt++;
 		if (node_ptr->run_job_cnt)
 			(node_ptr->run_job_cnt)--;
@@ -15006,23 +15006,29 @@ static int _suspend_job_nodes(struct job_record *job_ptr, bool indf_susp)
  */
 static int _resume_job_nodes(struct job_record *job_ptr, bool indf_susp)
 {
-	int i, rc = SLURM_SUCCESS;
-	struct node_record *node_ptr = node_record_table_ptr;
+	int i, i_first, i_last, rc = SLURM_SUCCESS;
+	struct node_record *node_ptr;
 	uint32_t node_flags;
 
 	if ((rc = select_g_job_resume(job_ptr, indf_susp)) != SLURM_SUCCESS)
 		return rc;
 
-	for (i=0; i<node_record_count; i++, node_ptr++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+	i_first = bit_ffs(job_ptr->node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(job_ptr->node_bitmap);
+	else
+		i_last = -2;
+	node_ptr = node_record_table_ptr + i_first;
+	for (i = i_first; i <= i_last; i++, node_ptr++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 		if (IS_NODE_DOWN(node_ptr))
 			return SLURM_ERROR;
 	}
 
-	node_ptr = node_record_table_ptr;
-	for (i=0; i<node_record_count; i++, node_ptr++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
+	node_ptr = node_record_table_ptr + i_first;
+	for (i = i_first; i <= i_last; i++, node_ptr++) {
+		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
 
 		if (node_ptr->sus_job_cnt)
