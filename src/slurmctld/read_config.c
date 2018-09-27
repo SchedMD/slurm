@@ -1054,7 +1054,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	bool over_memory_kill = false;
 	bool cgroup_mem_confinement= false;
 	char *task_plugin_type = NULL;
-	slurm_cgroup_conf_t slurm_cgroup_conf;
+	slurm_cgroup_conf_t *slurm_cgroup_conf;
 
 	/* initialization */
 	START_TIMER;
@@ -1111,18 +1111,18 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 	}
 
-	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
-	if (!read_slurm_cgroup_conf(&slurm_cgroup_conf)) {
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	if ((slurm_cgroup_conf = xcgroup_get_slurm_cgroup_conf())) {
 		task_plugin_type = slurm_get_task_plugin();
 
-		if ((slurm_cgroup_conf.constrain_ram_space ||
-		     slurm_cgroup_conf.constrain_swap_space) &&
+		if ((slurm_cgroup_conf->constrain_ram_space ||
+		     slurm_cgroup_conf->constrain_swap_space) &&
 		    strstr(task_plugin_type, "cgroup"))
 			cgroup_mem_confinement = true;
 
 		xfree(task_plugin_type);
-		free_slurm_cgroup_conf(&slurm_cgroup_conf);
 	}
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	if (slurmctld_conf.mem_limit_enforce || over_memory_kill) {
 		if (cgroup_mem_confinement)
