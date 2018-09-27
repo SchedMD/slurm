@@ -2140,13 +2140,21 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		int job_core_size, step_core_size;
 		job_core_size  = bit_size(job_resrcs_ptr->core_bitmap_used);
 		step_core_size = bit_size(step_ptr->core_bitmap_job);
-		if (job_core_size != step_core_size) {
+		if (job_core_size == step_core_size) {
+			bit_and_not(job_resrcs_ptr->core_bitmap_used,
+				    step_ptr->core_bitmap_job);
+		} else if (job_ptr->bit_flags & JOB_RESIZED) {
+			/*
+			 * If a job is resized, the core bitmap will differ in
+			 * the step, see rebuild_step_bitmaps(). Problem will
+			 * go away when we have per-node core bitmaps.
+			 */
+			info("%s: %pS ending, unable to update job's core use infomation due to job resizing",
+			     __func__, step_ptr);
+		} else {
 			error("%s: %pS core_bitmap size mismatch (%d != %d)",
 			      __func__, step_ptr, job_core_size,
 			      step_core_size);
-		} else {
-			bit_and_not(job_resrcs_ptr->core_bitmap_used,
-				    step_ptr->core_bitmap_job);
 		}
 		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	}

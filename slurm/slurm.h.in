@@ -1039,6 +1039,7 @@ enum ctx_keys {
 					 * a job. */
 #define GRES_DISABLE_BIND  0x00080000	/* Disable CPU/GRES binding */
 #define JOB_MEM_SET        0x00100000	/* Memory limit explicity set by job */
+#define JOB_RESIZED        0x00200000	/* Running job added/removed nodes */
 
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
 #define X11_FORWARD_BATCH	0x0002  /* only the batch node */

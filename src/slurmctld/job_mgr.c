@@ -3823,6 +3823,9 @@ extern int kill_running_job_by_node_name(char *node_name)
 				gres_build_job_details(job_ptr->gres_list,
 						       &job_ptr->gres_detail_cnt,
 						       &job_ptr->gres_detail_str);
+				if (job_ptr->step_list &&
+				    (list_count(job_ptr->step_list) > 0))
+					job_ptr->bit_flags |= JOB_RESIZED;
 				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 				   job_ptr->details->requeue) {
@@ -11356,6 +11359,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			gres_build_job_details(job_ptr->gres_list,
 					       &job_ptr->gres_detail_cnt,
 					       &job_ptr->gres_detail_str);
+			if (job_ptr->step_list &&
+			    (list_count(job_ptr->step_list) > 0))
+				job_ptr->bit_flags |= JOB_RESIZED;
 			job_post_resize_acctg(job_ptr);
 			/*
 			 * Since job_post_resize_acctg will restart
@@ -12613,6 +12619,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 						     orig_jobx_node_bitmap);
 				(void) gs_job_fini(job_ptr);
 				(void) gs_job_start(expand_job_ptr);
+				if (expand_job_ptr->step_list &&
+				    (list_count(expand_job_ptr->step_list) > 0))
+					expand_job_ptr->bit_flags |= JOB_RESIZED;
 			}
 			FREE_NULL_BITMAP(orig_job_node_bitmap);
 			FREE_NULL_BITMAP(orig_jobx_node_bitmap);
