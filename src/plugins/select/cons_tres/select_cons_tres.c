@@ -2706,6 +2706,7 @@ extern void cr_destroy_row_data(struct part_row_data *row, uint16_t num_rows)
 extern void dump_parts(struct part_res_record *p_ptr)
 {
 	uint32_t n, r;
+	struct node_record *node_ptr;
 
 	info("part:%s rows:%u prio:%u ", p_ptr->part_ptr->name, p_ptr->num_rows,
 	     p_ptr->part_ptr->priority_tier);
@@ -2716,16 +2717,19 @@ extern void dump_parts(struct part_res_record *p_ptr)
 	for (r = 0; r < p_ptr->num_rows; r++) {
 		char str[64]; /* print first 64 bits of bitmaps */
 		char *sep = "", *tmp = NULL;
-		for (n = 0; n < MIN(4, select_node_cnt); n++) {
-			if (p_ptr->row[r].row_bitmap &&
-			    p_ptr->row[r].row_bitmap[n]) {
-				bit_fmt(str, sizeof(str),
-					p_ptr->row[r].row_bitmap[n]);
-			} else {
-				sprintf(str, "[none]");
-			}
-			xstrfmtcat(tmp, "%sbitmap[%u]:%s", sep, n, str);
+		int max_nodes_rep = 4;	/* max 4 allocated nodes to report */
+		for (n = 0; n < select_node_cnt; n++) {
+			if (!p_ptr->row[r].row_bitmap ||
+			    !p_ptr->row[r].row_bitmap[n] ||
+			    !bit_set_count(p_ptr->row[r].row_bitmap[n]))
+				continue;
+			node_ptr = node_record_table_ptr + n;
+			bit_fmt(str, sizeof(str), p_ptr->row[r].row_bitmap[n]);
+			xstrfmtcat(tmp, "%salloc_cores[%s]:%s",
+				   sep, node_ptr->name, str);
 			sep = ",";
+			if (--max_nodes_rep == 0)
+				break;
 		}
 		info(" row:%u num_jobs:%u: %s", r, p_ptr->row[r].num_jobs, tmp);
 		xfree(tmp);
