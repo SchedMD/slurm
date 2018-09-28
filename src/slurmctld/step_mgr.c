@@ -1041,19 +1041,23 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		return NULL;
 	}
 
-	/* If we have a select plugin that figures this out for us
-	 * just return.  Else just do the normal operations.
+	/*
+	 * If we have a select plugin that selects step resources, then use it
+	 * and return.  Else just do the normal operations.
 	 */
-	if ((nodes_picked = select_g_step_pick_nodes(
-		     job_ptr, select_jobinfo, node_count, &select_nodes_avail)))
+	if ((nodes_picked = select_g_step_pick_nodes(job_ptr, select_jobinfo,
+						     node_count,
+						     &select_nodes_avail)))
 		return nodes_picked;
 
 	if (!nodes_avail)
 		nodes_avail = bit_copy (job_ptr->node_bitmap);
 	bit_and (nodes_avail, up_node_bitmap);
 	if (step_spec->features) {
-		/* We only select for a single feature name here.
-		 * FIXME: Add support for AND, OR, etc. here if desired */
+		/*
+		 * We only select for a single feature name here.
+		 * FIXME: Add support for AND, OR, etc. here if desired
+		 */
 		node_feature_t *feat_ptr;
 		feat_ptr = list_find_first(active_feature_list,
 					   list_find_feature,
@@ -1067,8 +1071,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	if (step_spec->pn_min_memory &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
 	     (job_resrcs_ptr->memory_used == NULL))) {
-		error("_pick_step_nodes: job lacks memory allocation details to enforce memory limits for %pJ",
-		      job_ptr);
+		error("%s: job lacks memory allocation details to enforce memory limits for %pJ",
+		      __func__, job_ptr);
 		step_spec->pn_min_memory = 0;
 	} else if (step_spec->pn_min_memory == MEM_PER_CPU)
 		step_spec->pn_min_memory = 0;	/* clear MEM_PER_CPU flag */
@@ -1105,9 +1109,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 	}
 
-	/* In exclusive mode, just satisfy the processor count.
+	/*
+	 * In exclusive mode, just satisfy the processor count.
 	 * Do not use nodes that have no unused CPUs or insufficient
-	 * unused memory */
+	 * unused memory
+	 */
 	if (step_spec->exclusive) {
 		int avail_cpus, avail_tasks, total_cpus, total_tasks, node_inx;
 		int i_first, i_last;
@@ -1136,9 +1142,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				goto cleanup;
 			}
 			if (!bit_super_set(selected_nodes, up_node_bitmap)) {
-				info("_pick_step_nodes: selected nodes (%s) "
-				     "are DOWN",
-				     step_spec->node_list);
+				info("%s: selected nodes (%s) are DOWN",
+				     __func__, step_spec->node_list);
 				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
 			}
@@ -1424,23 +1429,25 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	if (select_nodes_avail) {
-		/* The select plugin told us these were the
-		 * only ones we could choose from.  If it
-		 * doesn't fit here then defer request */
+		/*
+		 * The select plugin told us these were the only ones we could
+		 * choose from.  If it doesn't fit here then defer request
+		 */
 		bit_and(nodes_avail, select_nodes_avail);
 		FREE_NULL_BITMAP(select_nodes_avail);
 	}
 
 	if (step_spec->node_list) {
 		bitstr_t *selected_nodes = NULL;
-		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-			info("selected nodelist is %s", step_spec->node_list);
-
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
+			info("%s: selected nodelist is %s", __func__,
+			     step_spec->node_list);
+		}
 		error_code = node_name2bitmap(step_spec->node_list, false,
 					      &selected_nodes);
 		if (error_code) {
-			info("_pick_step_nodes: invalid node list %s",
-				step_spec->node_list);
+			info("%s: invalid node list %s", __func__,
+			     step_spec->node_list);
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
@@ -1462,9 +1469,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				     __func__, step_spec->node_list);
 			} else {
 				*return_code = ESLURM_NODES_BUSY;
-				info ("_pick_step_nodes: some requested nodes"
-				      " %s still have memory used by other steps",
-				      step_spec->node_list);
+				info ("%s: some requested nodes %s still have memory used by other steps",
+				      __func__, step_spec->node_list);
 			}
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
@@ -1475,10 +1481,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 		if (selected_nodes) {
 			int node_cnt = 0;
-			/* use selected nodes to run the job and
-			 * make them unavailable for future use */
+			/*
+			 * Use selected nodes to run the step and
+			 * mark them unavailable for future use
+			 */
 
-			/* If we have selected more than we requested
+			/*
+			 * If we have selected more than we requested
 			 * make the available nodes equal to the
 			 * selected nodes and we will pick from that
 			 * list later on in the function.
@@ -1508,12 +1517,16 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		nodes_picked = bit_alloc(bit_size(nodes_avail));
 	}
 
-	/* In case we are in relative mode, do not look for idle nodes
+	/*
+	 * In case we are in relative mode, do not look for idle nodes
 	 * as we will not try to get idle nodes first but try to get
-	 * the relative node first */
+	 * the relative node first
+	 */
 	if (step_spec->relative != NO_VAL16) {
-		/* Remove first (step_spec->relative) nodes from
-		 * available list */
+		/*
+		 * Remove first (step_spec->relative) nodes from
+		 * available list
+		 */
 		bitstr_t *relative_nodes = NULL;
 		relative_nodes = bit_pick_cnt(job_ptr->node_bitmap,
 					      step_spec->relative);
@@ -1536,7 +1549,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				char *temp;
 				temp = bitmap2node_name(step_ptr->
 							step_node_bitmap);
-				info("%pS has nodes %s", step_ptr, temp);
+				info("%s: %pS has nodes %s", __func__,
+				     step_ptr, temp);
 				xfree(temp);
 			}
 		}
@@ -1553,16 +1567,18 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			temp3 = step_spec->node_list;
 		else
 			temp3 = "NONE";
-		info("step pick %u-%u nodes, avail:%s idle:%s picked:%s",
-		     step_spec->min_nodes, step_spec->max_nodes, temp1, temp2,
-		     temp3);
+		info("%s: step pick %u-%u nodes, avail:%s idle:%s picked:%s",
+		     __func__, step_spec->min_nodes, step_spec->max_nodes,
+		     temp1, temp2, temp3);
 		xfree(temp1);
 		xfree(temp2);
 	}
 
-	/* if user specifies step needs a specific processor count and
+	/*
+	 * If user specifies step needs a specific processor count and
 	 * all nodes have the same processor count, just translate this to
-	 * a node count */
+	 * a node count
+	 */
 	if (step_spec->cpu_count && job_ptr->job_resrcs &&
 	    (job_ptr->job_resrcs->cpu_array_cnt == 1) &&
 	    (job_ptr->job_resrcs->cpu_array_value)) {
@@ -1699,8 +1715,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 				cpu_cnt = _count_cpus(job_ptr, node_tmp,
 						      usable_cpu_cnt);
 				if (cpu_cnt == 0) {
-					/* Node not usable (memory insufficient
-					 * to allocate any CPUs, etc.) */
+					/*
+					 * Node not usable (memory insufficient
+					 * to allocate any CPUs, etc.)
+					 */
 					bit_and_not(nodes_avail, node_tmp);
 					FREE_NULL_BITMAP(node_tmp);
 					continue;
@@ -1719,8 +1737,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			}
 		}
 
-		/* user is requesting more cpus than we got from the
-		 * picked nodes we should return with an error */
+		/*
+		 * user is requesting more cpus than we got from the
+		 * picked nodes we should return with an error
+		 */
 		if (step_spec->cpu_count > cpus_picked_cnt) {
 			if (step_spec->cpu_count &&
 			    (step_spec->cpu_count <=
@@ -1754,8 +1774,10 @@ cleanup:
 	if (*return_code == SLURM_SUCCESS) {
 		*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	} else if (*return_code == ESLURM_NODE_NOT_AVAIL) {
-		/* Return ESLURM_NODES_BUSY if the node is not responding.
-		 * The node will eventually either come back UP or go DOWN. */
+		/*
+		 * Return ESLURM_NODES_BUSY if the node is not responding.
+		 * The node will eventually either come back UP or go DOWN.
+		 */
 		nodes_picked = bit_copy(up_node_bitmap);
 		bit_not(nodes_picked);
 		bit_and(nodes_picked, job_ptr->node_bitmap);
@@ -2464,8 +2486,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 
 	job_ptr->time_last_active = now;
 
-	/* make sure this exists since we need it so we don't core on
-	 * a xassert */
+	/* make sure select_jobinfo exists to avoid xassert */
 	select_jobinfo = select_g_select_jobinfo_alloc();
 	nodeset = _pick_step_nodes(job_ptr, step_specs, step_gres_list,
 				   cpus_per_task, node_count, select_jobinfo,
