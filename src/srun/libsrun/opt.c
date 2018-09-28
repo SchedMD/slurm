@@ -83,8 +83,6 @@
 #include "multi_prog.h"
 #include "opt.h"
 
-//#define HAVE_GPUS 1
-
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
@@ -3316,11 +3314,9 @@ static void _usage(void)
 "            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
 "            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
 "            [--mpi-combine=yes|no] [--pack-group=value]\n"
-#ifdef HAVE_GPUS
 "            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "            [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB]\n"
-#endif
 "            executable [args...]\n");
 
 }
@@ -3491,7 +3487,6 @@ static void _help(void)
 
 	spank_print_options(stdout, 6, 30);
 
-#ifdef HAVE_GPUS
 	printf("\n"
 "GPU scheduling options:\n"
 "      --cpus-per-gpu=n        number of CPUs required per allocated GPU\n"
@@ -3503,7 +3498,6 @@ static void _help(void)
 "      --gpus-per-task=n       number of GPUs required per spawned task\n"
 "      --mem-per-gpu=n         real memory required per allocated GPU\n"
 		);
-#endif
 
 	printf("\n"
 #if defined HAVE_LIBNRT /* IBM PE specific options */

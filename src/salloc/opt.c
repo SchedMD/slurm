@@ -77,8 +77,6 @@
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 
-// #define HAVE_GPUS 1
-
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
@@ -2142,11 +2140,9 @@ static void _usage(void)
 "              [--core-spec=cores] [--thread-spec=threads] [--reboot]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "              [--delay-boot=mins] [--use-min-nodes]\n"
-#ifdef HAVE_GPUS
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "              [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
 "              [--mem-per-gpu=MB]\n"
-#endif
 "              [executable [args...]]\n");
 }
 
@@ -2265,7 +2261,6 @@ static void _help(void)
 	}
 	slurm_conf_unlock();
 
-#ifdef HAVE_GPUS
 	printf("\n"
 "GPU scheduling options:\n"
 "      --cpus-per-gpu=n        number of CPUs required per allocated GPU\n"
@@ -2277,7 +2272,6 @@ static void _help(void)
 "      --gpus-per-task=n       number of GPUs required per spawned task\n"
 "      --mem-per-gpu=n         real memory required per allocated GPU\n"
 		);
-#endif
 	spank_print_options(stdout, 6, 30);
 
 	printf("\n"
