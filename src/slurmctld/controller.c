@@ -173,6 +173,7 @@ time_t	control_time = 0;
 time_t	last_proc_req_start = 0;
 bool	ping_nodes_now = false;
 pthread_cond_t purge_thread_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 int	sched_interval = 60;
 slurmctld_config_t slurmctld_config;
 diag_stats_t slurmctld_diag_stats;
@@ -201,7 +202,6 @@ static int      job_sched_cnt = 0;
 static uint32_t max_server_threads = MAX_SERVER_THREADS;
 static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
-static pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static int	recover   = DEFAULT_RECOVER;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pid_t	slurmctld_pid;
@@ -767,7 +767,9 @@ int main(int argc, char **argv)
 		slurm_priority_fini();
 		slurmctld_plugstack_fini();
 		shutdown_state_save();
+		slurm_mutex_lock(&purge_thread_lock);
 		slurm_cond_signal(&purge_thread_cond); /* wake up last time */
+		slurm_mutex_unlock(&purge_thread_lock);
 		pthread_join(slurmctld_config.thread_id_purge_files, NULL);
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);

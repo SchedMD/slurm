@@ -283,7 +283,9 @@ extern int acct_gather_profile_fini(void)
 	}
 
 	if (timer_thread_id) {
+		slurm_mutex_lock(&timer_thread_mutex);
 		slurm_cond_signal(&timer_thread_cond);
+		slurm_mutex_unlock(&timer_thread_mutex);
 		pthread_join(timer_thread_id, NULL);
 	}
 

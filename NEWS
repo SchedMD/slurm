@@ -48,6 +48,12 @@ documents those changes that are of interest to users and administrators.
     fields set in xtconsumer output.
  -- Fix infinite loop in slurmctld if GRES is specified without a count.
  -- sacct: Print error when unknown arguments are found.
+ -- Fix checking missing return codes when unpacking structures.
+ -- Fix slurm.spec-legacy including slurmsmwd
+ -- More explicit error message when cgroup oom-kill events detected.
+ -- When updating an association and are unable to find parent association
+    initialize old fairshare association pointer correctly.
+ -- Wrap slurm_cond_signal() calls with mutexes where needed.
 
 * Changes in Slurm 18.08.0
 ==========================
@@ -351,6 +357,12 @@ documents those changes that are of interest to users and administrators.
     to handle deferred tasks.
  -- Fix correct job CPU count allocated.
  -- Protect against sending to the slurmdbd if the connection has gone away.
+ -- Fix checking missing return codes when unpacking structures.
+ -- Fix slurm.spec-legacy including slurmsmwd
+ -- More explicit error message when cgroup oom-kill events detected.
+ -- When updating an association and are unable to find parent association
+    initialize old fairshare association pointer correctly.
+ -- Wrap slurm_cond_signal() calls with mutexes where needed.
 
 * Changes in Slurm 17.11.9-2
 ============================
