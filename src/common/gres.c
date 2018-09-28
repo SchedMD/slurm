@@ -3411,13 +3411,11 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 	/* Identify numeric value, including suffix */
 	if (!sep) {
 		/* No type or explicit count. Count is 1 by default */
-
 		*cnt = 1;
 		if (comma)
 			*save_ptr += (comma + 1) - name;
 		else	/* No more GRES */
 			*save_ptr += strlen(name);
-
 	} else if (sep[0] == '\0') {
 		/* Malformed input (e.g. "gpu:tesla:") */
 		rc = ESLURM_INVALID_GRES;

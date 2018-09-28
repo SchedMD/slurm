@@ -225,6 +225,7 @@ extern time_t control_time;		/* Time when became primary controller */
 extern uint32_t   cluster_cpus;
 extern bool node_features_updated;
 extern pthread_cond_t purge_thread_cond;
+extern pthread_mutex_t purge_thread_lock;
 extern int   sched_interval;
 extern bool  slurmctld_init_db;
 extern int   slurmctld_primary;

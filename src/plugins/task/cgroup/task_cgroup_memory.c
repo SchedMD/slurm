@@ -917,7 +917,7 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 
 	slurm_mutex_lock(&oom_mutex);
 	if (oom_kill_count) {
-		error("Detected %"PRIu64" oom-kill event(s) in step %s cgroup.",
+		error("Detected %"PRIu64" oom-kill event(s) in step %s cgroup. Some of your processes may have been killed by the cgroup out-of-memory handler.",
 		      oom_kill_count, step_str);
 		rc = ENOMEM;
 	}

@@ -2466,6 +2466,17 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
+		/*
+		 * If the user issuing the command is a coordinator,
+		 * do not allow changing the default account
+		 */
+		if (is_coord && (object->is_def == 1)) {
+			error("Coordinator %s(%d) tried to change the default account of user %s to account %s",
+			      user_name, uid, object->user, object->acct);
+			rc = ESLURM_ACCESS_DENIED;
+			break;
+		}
+
 		if (is_coord && _check_coord_qos(mysql_conn, object->cluster,
 						 object->acct, user_name,
 						 object->qos_list)

@@ -922,7 +922,6 @@ extern void jag_common_poll_data(
 	time_t ct;
 	static int over_memory_kill = -1;
 	int i = 0;
-	char *acct_params = slurm_get_jobacct_gather_params();
 	char *tok, *save_ptr = NULL;
 
 	xassert(callbacks);
@@ -938,20 +937,23 @@ extern void jag_common_poll_data(
 	}
 	processing = 1;
 
-	if (over_memory_kill == -1 && acct_params) {
-		tok = strtok_r(acct_params, ",", &save_ptr);
-		while(tok) {
-			if (xstrcasecmp(tok, "OverMemoryKill") == 0) {
-				over_memory_kill = 1;
-				break;
-			}
-			tok = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(acct_params);
-	}
+	if (over_memory_kill == -1) {
+		char *acct_params = slurm_get_jobacct_gather_params();
 
-	if (over_memory_kill == -1)
 		over_memory_kill = 0;
+
+		if (acct_params) {
+			tok = strtok_r(acct_params, ",", &save_ptr);
+			while (tok) {
+				if (xstrcasecmp(tok, "OverMemoryKill") == 0) {
+					over_memory_kill = 1;
+					break;
+				}
+				tok = strtok_r(NULL, ",", &save_ptr);
+			}
+			xfree(acct_params);
+		}
+	}
 
 	if (!callbacks->get_precs)
 		callbacks->get_precs = _get_precs;
