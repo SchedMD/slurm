@@ -3319,43 +3319,36 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 /*
  * Reentrant TRES specification parse logic
  * in_val IN - initial input string
+ * type OUT -  must be xfreed by caller
  * cnt OUT - count of values
- * gres_list IN - where to search for (or add) new job TRES record
  * save_ptr IN/OUT - NULL on initial call, otherwise value from previous call
- * rc OUT - unchanged or an error code
- * RET gres - job record to set value in, found or created by this function
+ * RET rc - error code
  */
-static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
-					    List gres_list, char **save_ptr,
-					    int *rc)
+static int _get_next_gres(char *in_val, char **type_ptr, int *context_inx_ptr,
+			  uint64_t *cnt, char **save_ptr)
 {
-	static char *prev_save_ptr = NULL;
 	char *end_ptr = NULL, *comma, *sep, *sep2, *name = NULL, *type = NULL;
-	int context_inx, i, my_rc = SLURM_SUCCESS, offset = 0;
+	size_t offset = 0;
+	int i, rc = SLURM_SUCCESS;
 	unsigned long long int value;
-	gres_job_state_t *job_gres_data = NULL;
-	gres_state_t *gres_ptr;
-	gres_key_t job_search_key;
 
 	xassert(save_ptr);
+
 	if (!in_val && (*save_ptr == NULL)) {
-		return NULL;
+		return rc;
 	}
 
 	if (*save_ptr == NULL) {
-		prev_save_ptr = in_val;
-	} else if (*save_ptr != prev_save_ptr) {
-		my_rc = SLURM_ERROR;
+		*save_ptr = in_val;
+	}
+
+next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
+		*save_ptr = NULL;
 		goto fini;
 	}
 
-next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
-		*save_ptr = NULL;
-		return NULL;
-	}
-
 	/* Identify the appropriate context for input token */
-	name = xstrdup(prev_save_ptr);
+	name = xstrdup(*save_ptr);
 	comma = strchr(name, ',');
 	sep =   strchr(name, ':');
 	if (sep && (!comma || (sep < comma))) {
@@ -3372,17 +3365,14 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 			offset = end_ptr - name + 1;
 			xfree(name);
 			if (!comma) {
-				prev_save_ptr = NULL;
+				*save_ptr = NULL;
 				goto fini;
 			} else {
-				prev_save_ptr += offset;
+				*save_ptr += offset;
 				goto next;
 			}
 		}
-	} else if (!comma) {
-		/* TRES name only, implied count of 1 */
-		sep = NULL;
-	} else {
+	} else if (comma) {
 		comma[0] = '\0';
 		sep = NULL;
 	}
@@ -3395,10 +3385,10 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 	}
 	if (i >= gres_context_cnt) {
 		debug("%s: Failed to locate GRES %s", __func__, name);
-		my_rc = ESLURM_INVALID_GRES;
+		rc = ESLURM_INVALID_GRES;
 		goto fini;
 	}
-	context_inx = i;
+	*context_inx_ptr = i;
 
 	/* Identify GRES type/model name (value is optional) */
 	if (!sep) {
@@ -3408,7 +3398,7 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 		type = xstrdup(sep);
 		if ((sep2 = strchr(type, ':'))) {
 			sep2[0] = '\0';
-			offset = sep2 - type + 1;
+			offset = (sep2 + 1) - type;
 			sep += offset;
 		} else {
 			sep = NULL;
@@ -3421,20 +3411,21 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 	/* Identify numeric value, including suffix */
 	if (!sep) {
 		/* No type or explicit count. Count is 1 by default */
+
 		*cnt = 1;
-		if (comma) {
-			offset = (comma + 1) - name;
-			prev_save_ptr += offset;
-		} else	/* No more GRES */
-			prev_save_ptr = NULL;
+		if (comma)
+			*save_ptr += (comma + 1) - name;
+		else	/* No more GRES */
+			*save_ptr += strlen(name);
+
 	} else if (sep[0] == '\0') {
 		/* Malformed input (e.g. "gpu:tesla:") */
-		my_rc = ESLURM_INVALID_GRES;
+		rc = ESLURM_INVALID_GRES;
 		goto fini;
 	} else if ((sep[0] >= '0') && (sep[0] <= '9')) {
 		value = strtoull(sep, &end_ptr, 10);
 		if (value == ULLONG_MAX) {
-			my_rc = ESLURM_INVALID_GRES;
+			rc = ESLURM_INVALID_GRES;
 			goto fini;
 		}
 		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
@@ -3453,14 +3444,71 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 		if (end_ptr[0] == ',') {
 			end_ptr++;
 		} else if (end_ptr[0] != '\0') {
-			my_rc = ESLURM_INVALID_GRES;
+			rc = ESLURM_INVALID_GRES;
 			goto fini;
 		}
 		*cnt = value;
 		offset = end_ptr - name;
-		prev_save_ptr += offset;
+		*save_ptr += offset;
+	}
+fini:
+	if (rc != SLURM_SUCCESS) {
+		*save_ptr = NULL;
+		if (rc == ESLURM_INVALID_GRES) {
+			info("%s: Invalid GRES job specification %s", __func__,
+			     in_val);
+		}
+		xfree(type);
+		*type_ptr = NULL;
+	}
+	xfree(name);
+	*type_ptr = type;
+	return rc;
+}
+
+/*
+ * Reentrant TRES specification parse logic
+ * in_val IN - initial input string
+ * cnt OUT - count of values
+ * gres_list IN - where to search for (or add) new job TRES record
+ * save_ptr IN/OUT - NULL on initial call, otherwise value from previous call
+ * rc OUT - unchanged or an error code
+ * RET gres - job record to set value in, found or created by this function
+ */
+static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
+					    List gres_list, char **save_ptr,
+					    int *rc)
+{
+	static char *prev_save_ptr = NULL;
+	int context_inx = NO_VAL, my_rc = SLURM_SUCCESS;
+	gres_job_state_t *job_gres_data = NULL;
+	gres_state_t *gres_ptr;
+	gres_key_t job_search_key;
+	char *type = NULL, *name = NULL;
+
+	xassert(save_ptr);
+	if (!in_val && (*save_ptr == NULL)) {
+		return NULL;
 	}
 
+	if (*save_ptr == NULL) {
+		prev_save_ptr = in_val;
+	} else if (*save_ptr != prev_save_ptr) {
+		my_rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
+		*save_ptr = NULL;
+		return NULL;
+	}
+
+	if ((my_rc = _get_next_gres(in_val, &type,
+				    &context_inx, cnt, &prev_save_ptr)) ||
+	    (context_inx == NO_VAL)) {
+		prev_save_ptr = NULL;
+		goto fini;
+	}
 	/* Find the job GRES record */
 	job_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	job_search_key.type_id = _build_id(type);
@@ -8708,12 +8756,11 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 					      int *rc)
 {
 	static char *prev_save_ptr = NULL;
-	char *end_ptr = NULL, *comma, *sep, *sep2, *name = NULL, *type = NULL;
-	int context_inx, i, my_rc = SLURM_SUCCESS, offset = 0;
-	unsigned long long int value;
+	int context_inx = NO_VAL, my_rc = SLURM_SUCCESS;
 	gres_step_state_t *step_gres_data = NULL;
 	gres_state_t *gres_ptr;
 	gres_key_t step_search_key;
+	char *type = NULL, *name = NULL;
 
 	xassert(save_ptr);
 	if (!in_val && (*save_ptr == NULL)) {
@@ -8727,113 +8774,17 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 		goto fini;
 	}
 
-next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
+	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 		*save_ptr = NULL;
 		return NULL;
 	}
 
-	/* Identify the appropriate context for input token */
-	name = xstrdup(prev_save_ptr);
-	comma = strchr(name, ',');
-	sep =   strchr(name, ':');
-	if (sep && (!comma || (sep < comma))) {
-		sep[0] = '\0';
-		sep++;
-		sep2 = strchr(sep, ':');
-		if (sep2 && (!comma || (sep2 < comma)))
-			sep2++;
-		else
-			sep2 = sep;
-		if ((sep2[0] == '0') &&
-		    ((value = strtoull(sep2, &end_ptr, 10)) == 0)) {
-			/* Ignore GRES with explicit zero count */
-			offset = end_ptr - name + 1;
-			xfree(name);
-			if (!comma) {
-				prev_save_ptr = NULL;
-				goto fini;
-			} else {
-				prev_save_ptr += offset;
-				goto next;
-			}
-		}
-	} else if (!comma) {
-		/* TRES name only, implied count of 1 */
-		sep = NULL;
-	} else {
-		comma[0] = '\0';
-		sep = NULL;
-	}
-
-	for (i = 0; i < gres_context_cnt; i++) {
-		if (!xstrcmp(name, gres_context[i].gres_name) ||
-		    !xstrncmp(name, gres_context[i].gres_name_colon,
-			      gres_context[i].gres_name_colon_len))
-			break;	/* GRES name match found */
-	}
-	if (i >= gres_context_cnt) {
-		debug("%s: Failed to locate GRES %s", __func__, name);
-		my_rc = ESLURM_INVALID_GRES;
+	if ((my_rc = _get_next_gres(in_val, &type,
+				    &context_inx, cnt, &prev_save_ptr)) ||
+	    (context_inx == NO_VAL)) {
+		prev_save_ptr = NULL;
 		goto fini;
 	}
-	context_inx = i;
-
-	/* Identify GRES type/model name (value is optional) */
-	if (!sep) {
-		/* No type or count */
-		type = NULL;
-	} else if ((sep[0] < '0') || (sep[0] > '9')) {
-		type = xstrdup(sep);
-		if ((sep2 = strchr(type, ':'))) {
-			sep2[0] = '\0';
-			offset = sep2 - type + 1;
-			sep += offset;
-		} else {
-			sep = NULL;
-		}
-	} else {
-		/* Count in this field, no type */
-		type = NULL;
-	}
-
-	/* Identify numeric value, including suffix */
-	if (!sep) {
-		/* No type or explicit count. Count is 1 by default */
-		*cnt = 1;
-		if (comma)
-			prev_save_ptr += (comma + 1) - name;
-		else
-			prev_save_ptr += strlen(name);
-	} else if ((sep[0] >= '0') && (sep[0] <= '9')) {
-		value = strtoull(sep, &end_ptr, 10);
-		if (value == ULLONG_MAX) {
-			my_rc = ESLURM_INVALID_GRES;
-			goto fini;
-		}
-		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
-			value *= 1024;
-			end_ptr++;
-		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
-			value *= (1024 * 1024);
-			end_ptr++;
-		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
-			value *= ((uint64_t)1024 * 1024 * 1024);
-			end_ptr++;
-		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
-			value *= ((uint64_t)1024 * 1024 * 1024 * 1024);
-			end_ptr++;
-		}
-		if (end_ptr[0] == ',') {
-			end_ptr++;
-		} else if (end_ptr[0] != '\0') {
-			my_rc = ESLURM_INVALID_GRES;
-			goto fini;
-		}
-		*cnt = value;
-		offset = end_ptr - name;
-		prev_save_ptr += offset;
-	}
-
 	/* Find the step GRES record */
 	step_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	step_search_key.type_id = _build_id(type);
