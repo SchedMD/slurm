@@ -2297,6 +2297,40 @@ static void _set_def_cpu_bind(struct job_record *job_ptr)
 }
 
 /*
+ * A step may explicity set a TRES count to zero in order to avoid making use
+ * of the job's TRES specifications. At this point, clear the records with
+ * zero counts.
+ */
+static void _clear_zero_tres(char **tres_spec)
+{
+	char *new_spec = NULL, *new_sep = "";
+	char *tmp, *tok, *sep, *end_ptr = NULL, *save_ptr = NULL;
+	long int cnt;
+
+	if (*tres_spec == NULL)
+		return;
+
+	tmp = xstrdup(*tres_spec);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		bool copy_rec = true;
+		sep = strrchr(tok, ':');
+		if (sep) {
+			cnt = strtoll(sep+1, &end_ptr, 10);
+			if ((cnt == 0) && (end_ptr[0] == '\0'))
+				copy_rec = false;
+		}
+		if (copy_rec) {
+			xstrfmtcat(new_spec, "%s%s", new_sep, tok);
+			new_sep = ",";
+		}
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(*tres_spec);
+	*tres_spec = new_spec;
+}
+
+/*
  * If a job step specification does not include any TRES specification,
  * then copy those values from the job record
  */
@@ -2305,16 +2339,20 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
 {
 	if (!xstrcasecmp(step_specs->tres_per_node, "NONE")) {
 		xfree(step_specs->tres_per_node);
-		return;
 	} else if (step_specs->tres_per_step	||
 		   step_specs->tres_per_node	||
 		   step_specs->tres_per_socket	||
-		   step_specs->tres_per_task)
-		return;
-	step_specs->tres_per_step	= xstrdup(job_ptr->tres_per_job);
-	step_specs->tres_per_node	= xstrdup(job_ptr->tres_per_node);
-	step_specs->tres_per_socket	= xstrdup(job_ptr->tres_per_socket);
-	step_specs->tres_per_task	= xstrdup(job_ptr->tres_per_task);
+		   step_specs->tres_per_task) {
+		_clear_zero_tres(&step_specs->tres_per_step);
+		_clear_zero_tres(&step_specs->tres_per_node);
+		_clear_zero_tres(&step_specs->tres_per_socket);
+		_clear_zero_tres(&step_specs->tres_per_task);
+	} else {
+		step_specs->tres_per_step   = xstrdup(job_ptr->tres_per_job);
+		step_specs->tres_per_node   = xstrdup(job_ptr->tres_per_node);
+		step_specs->tres_per_socket = xstrdup(job_ptr->tres_per_socket);
+		step_specs->tres_per_task   = xstrdup(job_ptr->tres_per_task);
+	}
 }
 
 /*
