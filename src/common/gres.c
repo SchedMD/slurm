@@ -3273,8 +3273,7 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 			offset = sep2 - type + 1;
 			sep += offset;
 		} else {
-			my_rc = ESLURM_INVALID_GRES;
-			goto fini;
+			sep = NULL;
 		}
 	} else {
 		/* Count in this field, no type */
@@ -3286,7 +3285,7 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 		/* No type or explicit count. Count is 1 by default */
 		*cnt = 1;
 		if (comma) {
-			offset = comma - name;
+			offset = (comma + 1) - name;
 			prev_save_ptr += offset;
 		} else	/* No more GRES */
 			prev_save_ptr = NULL;
@@ -7069,8 +7068,7 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 			offset = sep2 - type + 1;
 			sep += offset;
 		} else {
-			my_rc = ESLURM_INVALID_GRES;
-			goto fini;
+			sep = NULL;
 		}
 	} else {
 		/* Count in this field, no type */
@@ -7081,6 +7079,10 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 	if (!sep) {
 		/* No type or explicit count. Count is 1 by default */
 		*cnt = 1;
+		if (comma)
+			prev_save_ptr += (comma + 1) - name;
+		else
+			prev_save_ptr += strlen(name);
 	} else if ((sep[0] >= '0') && (sep[0] <= '9')) {
 		value = strtoull(sep, &end_ptr, 10);
 		if (value == ULLONG_MAX) {

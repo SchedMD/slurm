@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't allow scontrol top do modify job priorities when priority == 1.
  -- slurmsmwd - change parsing code to handle systems with the svid or inst
     fields set in xtconsumer output.
+ -- Fix infinite loop in slurmctld if GRES is specified without a count.
 
 * Changes in Slurm 18.08.0
 ==========================
