@@ -16297,8 +16297,12 @@ static int _set_top(List top_job_list, uid_t uid)
 		next_prio = *prio_elem;
 		xfree(prio_elem);
 		if ((last_prio != NO_VAL) && (next_prio == last_prio) &&
-		    /* Don't set job priority lower than 1 */
-		    (last_prio > 1))
+		    (last_prio > 2))
+			/*
+			 * We don't want to set job priority lower than 1, so
+			 * last_prio cannot be smaller than 2, since we will
+			 * later use last_prio - 1 for the new job priority.
+			 */
 			next_prio = last_prio - 1;
 		last_prio = next_prio;
 		delta_prio = (int64_t) next_prio - job_ptr->priority;
