@@ -150,6 +150,10 @@ if {$job_id(0) == 0 || $job_id(1) == 0 || $job_id(2) == 0} {
 
 send_user "\nReport initial job priorities\n\n"
 load_job_prio
+if {$prio(0) < 3 || $prio(1) < 3 || $prio(2) < 3} {
+	log_warn "Priorities are too low to test. Increase the PriorityWeight values when using the priority/multifactor plugin."
+	end_it
+}
 
 send_user "\Reset and test job priorities\n\n"
 spawn $scontrol top $job_id(2),$job_id(1)
