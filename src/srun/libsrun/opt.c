@@ -574,7 +574,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->gpu_freq = xstrdup(opt.gpu_freq);
 	opt_dup->gpus_per_node = xstrdup(opt.gpus_per_node);
 	opt_dup->gpus_per_socket = xstrdup(opt.gpus_per_socket);
-	opt_dup->gpus_per_node = xstrdup(opt.gpus_per_node);
+	opt_dup->gpus_per_task = xstrdup(opt.gpus_per_task);
 	opt.hint_env = NULL;		/* Moved by memcpy */
 	sropt.hostfile = NULL;		/* Moved by memcpy */
 	opt_dup->srun_opt->ifname = xstrdup(sropt.ifname);
