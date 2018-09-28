@@ -2326,6 +2326,7 @@ static void _clear_zero_tres(char **tres_spec)
 		}
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
+	xfree(tmp);
 	xfree(*tres_spec);
 	*tres_spec = new_spec;
 }
