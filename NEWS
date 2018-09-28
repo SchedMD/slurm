@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix invalid read when not using backup slurmctlds.
  -- Prevent acct coordinators from changing default acct on add user.
  -- Don't allow scontrol top do modify job priorities when priority == 1.
+ -- slurmsmwd - change parsing code to handle systems with the svid or inst
+    fields set in xtconsumer output.
 
 * Changes in Slurm 18.08.0
 ==========================

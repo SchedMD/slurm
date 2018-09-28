@@ -236,8 +236,10 @@ static void _send_failed_nodes(char *nodelist)
 	while ((ptr = strtok_r(search, " ", &svptr))) {
 		search = NULL;
 
-		while (*ptr == ':')
-			ptr++;
+		ptr = strrchr(ptr, ':');
+		if (!ptr)
+			continue;
+		ptr++;
 
 		ptr = _trim(ptr);
 
