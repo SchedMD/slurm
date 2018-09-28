@@ -3130,7 +3130,7 @@ extern void slurm_init_job_desc_msg(job_desc_msg_t *job_desc_msg);
  * OUT job_alloc_resp_msg - response to request.  This only represents
  *   a job allocation if resources are immediately.  Otherwise it just contains
  *   the job id of the enqueued job request.
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 extern int slurm_allocate_resources(job_desc_msg_t *job_desc_msg,
@@ -3194,7 +3194,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
  *			     allocation
  * IN job_id - job allocation identifier
  * OUT resp - job allocation information
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 extern int slurm_allocation_lookup(uint32_t job_id,
@@ -3206,7 +3206,7 @@ extern int slurm_allocation_lookup(uint32_t job_id,
  * IN jobid - job allocation identifier
  * OUT resp - list of job allocation information, type
  *	      resource_allocation_response_msg_t
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: returns information an individual job as well
  * NOTE: free the response using list_destroy()
  */
@@ -3254,7 +3254,7 @@ extern void slurm_allocation_msg_thr_destroy(allocation_msg_thread_t *msg_thr);
  * NOTE: free the response using slurm_free_submit_response_response_msg
  * IN job_desc_msg - description of batch job request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_submit_batch_job(job_desc_msg_t *job_desc_msg,
 				  submit_response_msg_t **slurm_alloc_msg);
@@ -3265,7 +3265,7 @@ extern int slurm_submit_batch_job(job_desc_msg_t *job_desc_msg,
  * NOTE: free the response using slurm_free_submit_response_response_msg
  * IN job_req_list - List of resource allocation requests, type job_desc_msg_t
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_submit_batch_pack_job(List job_req_list,
 				       submit_response_msg_t **slurm_alloc_msg);
@@ -3288,7 +3288,7 @@ extern int slurm_job_batch_script(FILE *out, uint32_t jobid);
  * slurm_job_will_run - determine if a job would execute immediately if
  *	submitted now
  * IN job_desc_msg - description of resource allocation request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_job_will_run(job_desc_msg_t *job_desc_msg);
 
@@ -3297,7 +3297,7 @@ extern int slurm_job_will_run(job_desc_msg_t *job_desc_msg);
  *	immediately if submitted now
  * IN job_req_list - List of job_desc_msg_t structures describing the resource
  *		allocation request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_pack_job_will_run(List job_req_list);
 
@@ -3308,7 +3308,7 @@ extern int slurm_pack_job_will_run(List job_req_list);
  * IN job_desc_msg - description of resource allocation request
  * OUT will_run_resp - job run time data
  *      free using slurm_free_will_run_response_msg()
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_job_will_run2(job_desc_msg_t *req,
 			       will_run_response_msg_t **will_run_resp);
@@ -3320,7 +3320,7 @@ extern int slurm_job_will_run2(job_desc_msg_t *req,
  * IN pack_job_offset - pack job index (or NO_VAL if not pack job)
  * IN step_id - step allocation identifier (or NO_VAL for entire job)
  * OUT info - job allocation information including a credential for sbcast
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
  */
 extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t pack_job_offset,
@@ -3342,7 +3342,7 @@ extern void slurm_free_license_info_msg(license_info_msg_t *);
  * IN assoc_mgr_info_request_msg_t: request filtering data returned
  * OUT assoc_mgr_info_msg_t: returned structure filled in with
  * assoc_mgr lists, must be freed by slurm_free_assoc_mgr_info_msg
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_load_assoc_mgr_info(assoc_mgr_info_request_msg_t *,
 				     assoc_mgr_info_msg_t **);
@@ -3386,7 +3386,7 @@ typedef struct job_step_kill_msg {
  * IN job_id     - the job's id
  * IN signal     - signal number
  * IN flags      - see KILL_JOB_* flags above
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_kill_job(uint32_t job_id, uint16_t signal, uint16_t flags);
 
@@ -3395,7 +3395,7 @@ extern int slurm_kill_job(uint32_t job_id, uint16_t signal, uint16_t flags);
  * IN job_id  - the job's id
  * IN step_id - the job step's id
  * IN signal  - signal number
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_kill_job_step(uint32_t job_id,
 			       uint32_t step_id,
@@ -3410,7 +3410,7 @@ extern int slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags);
  *
  * IN msg_type - msg_type to send
  * IN kill_msg - job_step_kill_msg_t parameters.
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_kill_job_msg(uint16_t msg_type, job_step_kill_msg_t *kill_msg);
 
@@ -3418,7 +3418,7 @@ extern int slurm_kill_job_msg(uint16_t msg_type, job_step_kill_msg_t *kill_msg);
  * slurm_signal_job - send the specified signal to all steps of an existing job
  * IN job_id     - the job's id
  * IN signal     - signal number
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_signal_job(uint32_t job_id, uint16_t signal);
 
@@ -3428,7 +3428,7 @@ extern int slurm_signal_job(uint32_t job_id, uint16_t signal);
  * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
  *              to send a signal to a job's batch script
  * IN signal  - signal number
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_signal_job_step(uint32_t job_id,
 				 uint32_t step_id,
@@ -3443,7 +3443,7 @@ extern int slurm_signal_job_step(uint32_t job_id,
  * slurm_complete_job - note the completion of a job and all of its steps
  * IN job_id - the job's id
  * IN job_return_code - the highest exit code of any task of the job
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_complete_job(uint32_t job_id, uint32_t job_return_code);
 
@@ -3456,7 +3456,7 @@ extern int slurm_complete_job(uint32_t job_id, uint32_t job_return_code);
  * IN job_id  - the job's id
  * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
  *              to terminate a job's batch script
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_terminate_job_step(uint32_t job_id, uint32_t step_id);
 
@@ -3644,7 +3644,7 @@ extern long slurm_api_version(void);
  * IN update_time - time of current configuration data
  * IN slurm_ctl_conf_ptr - place to store slurm control configuration
  *	pointer
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_ctl_conf
  */
 extern int slurm_load_ctl_conf(time_t update_time,
@@ -3948,7 +3948,7 @@ extern char *slurm_sprint_job_info(slurm_job_info_t *job_ptr,
  * slurm_update_job - issue RPC to a job's configuration per request,
  *	only usable by user root or (for some parameters) the job's owner
  * IN job_msg - description of job updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_update_job(job_desc_msg_t *job_msg);
 
@@ -3958,7 +3958,7 @@ extern int slurm_update_job(job_desc_msg_t *job_msg);
  * IN job_msg - description of job updates
  * OUT resp - per task response to the request,
  *	      free using slurm_free_job_array_resp()
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_update_job2(job_desc_msg_t *job_msg,
 			     job_array_resp_msg_t **resp);
@@ -3989,7 +3989,7 @@ extern uint32_t slurm_xlate_job_id(char *job_id_str);
  *	job steps
  * IN step_response_pptr - place to store a step response pointer
  * IN show_flags - job step filtering options
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
 extern int slurm_get_job_steps(time_t update_time,
@@ -4207,7 +4207,7 @@ void slurm_init_update_node_msg(update_node_msg_t *update_node_msg);
  * slurm_update_node - issue RPC to a node's configuration per request,
  *	only usable by user root
  * IN node_msg - description of node updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_update_node(update_node_msg_t *node_msg);
 
@@ -4277,7 +4277,7 @@ void slurm_init_update_front_end_msg(update_front_end_msg_t *update_front_end_ms
  * slurm_update_front_end - issue RPC to a front_end node's configuration per
  *	request, only usable by user root
  * IN front_end_msg - description of front_end node updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_update_front_end(update_front_end_msg_t *front_end_msg);
 
@@ -4362,7 +4362,7 @@ extern void slurm_print_powercap_info_msg(FILE *out,
 /*
  * slurm_update_powercap - issue RPC to update powercapping cap 
  * IN powercap_msg - description of powercapping updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_update_powercap(update_powercap_msg_t *powercap_msg);
 
@@ -4459,7 +4459,7 @@ extern char *slurm_sprint_partition_info(partition_info_t *part_ptr,
 /*
  * slurm_create_partition - create a new partition, only usable by user root
  * IN part_msg - description of partition configuration
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_create_partition(update_part_msg_t *part_msg);
 
@@ -4467,7 +4467,7 @@ extern int slurm_create_partition(update_part_msg_t *part_msg);
  * slurm_update_partition - issue RPC to update a partition's configuration
  *	per request, only usable by user root
  * IN part_msg - description of partition updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_update_partition(update_part_msg_t *part_msg);
 
@@ -4475,7 +4475,7 @@ extern int slurm_update_partition(update_part_msg_t *part_msg);
  * slurm_delete_partition - issue RPC to delete a partition, only usable
  *	by user root
  * IN part_msg - description of partition to delete
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_delete_partition(delete_part_msg_t *part_msg);
 
@@ -4518,7 +4518,7 @@ extern char *slurm_create_reservation(resv_desc_msg_t *resv_msg);
  * slurm_update_reservation - modify an existing reservation, only usable by
  *	user root
  * IN resv_msg - description of reservation
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_update_reservation(resv_desc_msg_t *resv_msg);
 
@@ -4526,7 +4526,7 @@ extern int slurm_update_reservation(resv_desc_msg_t *resv_msg);
  * slurm_delete_reservation - issue RPC to delete a reservation, only usable
  *	by user root
  * IN resv_msg - description of reservation to delete
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_delete_reservation(reservation_name_msg_t *resv_msg);
 
@@ -4624,7 +4624,7 @@ extern int slurm_takeover(int backup_inx);
  * slurm_set_debugflags - issue RPC to set slurm controller debug flags
  * IN debug_flags_plus  - debug flags to be added
  * IN debug_flags_minus - debug flags to be removed
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_set_debugflags(uint64_t debug_flags_plus,
 				uint64_t debug_flags_minus);
@@ -4632,21 +4632,21 @@ extern int slurm_set_debugflags(uint64_t debug_flags_plus,
 /*
  * slurm_set_debug_level - issue RPC to set slurm controller debug level
  * IN debug_level - requested debug level
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_set_debug_level(uint32_t debug_level);
 
 /*
  * slurm_set_schedlog_level - issue RPC to set slurm scheduler log level
  * IN schedlog_level - requested scheduler log level
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_set_schedlog_level(uint32_t schedlog_level);
 
 /*
  * slurm_set_fs_dampeningfactor - issue RPC to set slurm fs dampening factor
  * IN factor - requested fs dampening factor
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_set_fs_dampeningfactor(uint16_t factor);
 

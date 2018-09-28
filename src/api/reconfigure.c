@@ -189,7 +189,7 @@ static int _send_message_controller(int dest, slurm_msg_t *req)
  * IN debug_flags_plus  - debug flags to be added
  * IN debug_flags_minus - debug flags to be removed
  * IN debug_flags_set   - new debug flags value
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int
 slurm_set_debugflags (uint64_t debug_flags_plus, uint64_t debug_flags_minus)
@@ -228,7 +228,7 @@ slurm_set_debugflags (uint64_t debug_flags_plus, uint64_t debug_flags_minus)
 /*
  * slurm_set_debug_level - issue RPC to set slurm controller debug level
  * IN debug_level - requested debug level
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int
 slurm_set_debug_level (uint32_t debug_level)
@@ -266,7 +266,7 @@ slurm_set_debug_level (uint32_t debug_level)
 /*
  * slurm_set_schedlog_level - issue RPC to set slurm scheduler log level
  * IN schedlog_level - requested scheduler log level
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_set_schedlog_level (uint32_t schedlog_level)
@@ -304,7 +304,7 @@ slurm_set_schedlog_level (uint32_t schedlog_level)
 /*
  * slurm_set_fs_dampeningfactor - issue RPC to set fs dampening factor
  * IN factor  - requested fs dampening factor
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_set_fs_dampeningfactor (uint16_t factor)
 {

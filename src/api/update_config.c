@@ -52,7 +52,7 @@ static int _slurm_update (void * data, slurm_msg_type_t msg_type);
  * slurm_update_front_end - issue RPC to a front_end node's configuration per
  *	request, only usable by user root
  * IN front_end_msg - description of front_end node updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_update_front_end (update_front_end_msg_t * front_end_msg)
@@ -64,7 +64,7 @@ slurm_update_front_end (update_front_end_msg_t * front_end_msg)
  * slurm_update_job - issue RPC to a job's configuration per request,
  *	only usable by user root or (for some parameters) the job's owner
  * IN job_msg - description of job updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_update_job (job_desc_msg_t * job_msg)
@@ -83,7 +83,7 @@ slurm_update_job (job_desc_msg_t * job_msg)
  * IN job_msg - description of job updates
  * OUT resp - per task response to the request,
  *	      free using slurm_free_job_array_resp()
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int
 slurm_update_job2 (job_desc_msg_t * job_msg, job_array_resp_msg_t **resp)
@@ -142,7 +142,7 @@ tryagain:
  * slurm_update_node - issue RPC to a node's configuration per request,
  *	only usable by user root
  * IN node_msg - description of node updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_update_node ( update_node_msg_t * node_msg)
@@ -153,7 +153,7 @@ slurm_update_node ( update_node_msg_t * node_msg)
  * slurm_update_layout - issue RPC to a layout's configuration per request,
  *	only usable by user root
  * IN layout_msg - command line (same format as conf)
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_update_layout ( update_layout_msg_t * layout_msg)
@@ -164,7 +164,7 @@ slurm_update_layout ( update_layout_msg_t * layout_msg)
 /*
  * slurm_create_partition - create a new partition, only usable by user root
  * IN part_msg - description of partition configuration
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_create_partition ( update_part_msg_t * part_msg)
@@ -176,7 +176,7 @@ slurm_create_partition ( update_part_msg_t * part_msg)
  * slurm_update_partition - issue RPC to a partition's configuration per
  *	request, only usable by user root
  * IN part_msg - description of partition updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_update_partition ( update_part_msg_t * part_msg )
@@ -188,7 +188,7 @@ slurm_update_partition ( update_part_msg_t * part_msg )
  * slurm_delete_partition - issue RPC to delete a partition, only usable
  *	by user root
  * IN part_msg - description of partition to delete
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_delete_partition ( delete_part_msg_t * part_msg )
@@ -199,7 +199,7 @@ slurm_delete_partition ( delete_part_msg_t * part_msg )
 /*
  * slurm_update_powercap - issue RPC to update powercapping cap 
  * IN powercap_msg - description of powercapping updates
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_update_powercap ( update_powercap_msg_t * powercap_msg )
@@ -253,7 +253,7 @@ slurm_create_reservation (resv_desc_msg_t * resv_msg)
  * slurm_update_reservation - modify an existing reservation, only usable by
  *	user root
  * IN resv_msg - description of reservation
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_update_reservation (resv_desc_msg_t * resv_msg)
 {
@@ -264,7 +264,7 @@ extern int slurm_update_reservation (resv_desc_msg_t * resv_msg)
  * slurm_delete_reservation - issue RPC to delete a reservation, only usable
  *	by user root
  * IN resv_msg - description of reservation to delete
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int
 slurm_delete_reservation (reservation_name_msg_t * resv_msg)

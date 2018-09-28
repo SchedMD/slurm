@@ -101,7 +101,7 @@ static int _job_will_run_cluster(job_desc_msg_t *req,
  * slurm_allocate_resources - allocate resources for a job request
  * IN job_desc_msg - description of resource allocation request
  * OUT slurm_alloc_msg - response to request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 int
@@ -594,7 +594,7 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
  * slurm_job_will_run - determine if a job would execute immediately if
  *	submitted now
  * IN job_desc_msg - description of resource allocation request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int slurm_job_will_run(job_desc_msg_t *req)
 {
@@ -674,7 +674,7 @@ int slurm_job_will_run(job_desc_msg_t *req)
  *	immediately if submitted now
  * IN job_req_list - List of job_desc_msg_t structures describing the resource
  *		allocation request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_pack_job_will_run(List job_req_list)
 {
@@ -766,7 +766,7 @@ extern int slurm_pack_job_will_run(List job_req_list)
  * IN job_desc_msg - description of resource allocation request
  * OUT will_run_resp - job run time data
  * 	free using slurm_free_will_run_response_msg()
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 int slurm_job_will_run2 (job_desc_msg_t *req,
 			 will_run_response_msg_t **will_run_resp)
@@ -811,7 +811,7 @@ static int _job_will_run_cluster(job_desc_msg_t *req,
  * slurm_job_step_create - create a job step for a given job id
  * IN slurm_step_alloc_req_msg - description of job step request
  * OUT slurm_step_alloc_resp_msg - response to request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 int
@@ -862,7 +862,7 @@ re_send:
  * 			     without the addrs and such
  * IN jobid - job allocation identifier
  * OUT info - job allocation information
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 extern int slurm_allocation_lookup(uint32_t jobid,
@@ -908,7 +908,7 @@ extern int slurm_allocation_lookup(uint32_t jobid,
  * 			   allocation without the addrs and such
  * IN jobid - job allocation identifier
  * OUT info - job allocation information
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: returns information an individual job as well
  * NOTE: free the response using list_destroy()
  */
@@ -956,7 +956,7 @@ extern int slurm_pack_job_lookup(uint32_t jobid, List *info)
  * IN pack_job_offset - pack job  index (or NO_VAL if not pack job)
  * IN step_id - step allocation identifier (or NO_VAL for entire job)
  * OUT info - job allocation information including a credential for sbcast
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the "resp" using slurm_free_sbcast_cred_msg
  */
 extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t pack_job_offset,

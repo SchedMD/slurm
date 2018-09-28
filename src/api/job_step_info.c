@@ -463,7 +463,7 @@ _load_fed_steps(slurm_msg_t *req_msg, job_step_info_response_msg_t **resp,
  *	job steps
  * IN job_info_msg_pptr - place to store a job configuration pointer
  * IN show_flags - job step filtering options
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
 int

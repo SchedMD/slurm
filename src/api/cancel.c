@@ -51,7 +51,7 @@
  * IN job_id     - the job's id
  * IN signal     - signal number
  * IN flags      - see KILL_JOB_* flags in slurm.h
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int
 slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t flags)
@@ -87,7 +87,7 @@ slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t flags)
  * IN job_id     - the job's id
  * IN step_id    - the job step's id
  * IN signal     - signal number
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int
 slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
@@ -157,7 +157,7 @@ slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags)
  *
  * IN msg_type - msg_type to send
  * IN kill_msg - job_step_kill_msg_t parameters.
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_kill_job_msg(uint16_t msg_type, job_step_kill_msg_t *kill_msg)
 {

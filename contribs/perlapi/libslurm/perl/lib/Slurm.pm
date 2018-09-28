@@ -429,7 +429,7 @@ Issue RPC to submit a job for later execution.
 
 =item * IN $job_desc_msg: description of batch job request, with structure of C<job_desc_msg_t>.
     
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
+=item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
     
 =back
 
@@ -441,7 +441,7 @@ Determine if a job would execute immediately if submitted now.
     
 =item * IN $job_desc_msg: description of resource allocation request, with structure of C<job_desc_msg_t>.
     
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
+=item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
     
 =back
 
@@ -474,7 +474,7 @@ Send the specified signal to all steps of an existing job.
     
 =item * IN $batch_flag: 1 to signal batch shell only, otherwise 0.
     
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
+=item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
     
 =back
     
@@ -490,7 +490,7 @@ Send the specified signal to an existing job step.
     
 =item * IN $signal: signal number.
     
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
+=item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
     
 =back
     
@@ -504,7 +504,7 @@ Send the specified signal to all steps of an existing job.
     
 =item * IN $signal: signal number.
     
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
+=item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
     
 =back
     
@@ -520,7 +520,7 @@ Send the specified signal to an existing job step.
     
 =item * IN $signal: signal number.
     
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
+=item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
     
 =back
     
@@ -539,7 +539,7 @@ Note the completion of a job and all of its steps.
     
 =item * IN $job_rc: the highest exit code of any task of the job.
     
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
+=item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
     
 =back
 
@@ -553,7 +553,7 @@ Terminates a job step by sending a REQUEST_TERMINATE_TASKS rpc to all slurmd of 
     
 =item * IN $step_id: the job step's id - use SLURM_BATCH_SCRIPT as the step_id to terminate a job's batch script.
     
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
+=item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
     
 =back
 
@@ -877,7 +877,7 @@ Issue RPC to a job's configuration per request only usable by user root or (for 
     
 =item * IN $job_info: description of job updates, with structure of C<job_desc_msg_t>.
     
-=item * RET: 0 on success, otherwise return -1 and set errno to indicate the error.
+=item * RET: SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set.
 
 =back
 

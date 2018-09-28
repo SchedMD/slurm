@@ -948,7 +948,7 @@ static int _persist_update_job_resp(slurmdb_cluster_rec_t *conn,
  * IN job_id      - the job's id
  * IN return_code - return code of job.
  * IN start_time  - time the fed job started
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 				   uint32_t return_code, time_t start_time)
@@ -1013,7 +1013,7 @@ static int _persist_fed_job_response(slurmdb_cluster_rec_t *conn, uint32_t job_i
  * IN job_id     - the job's id
  * IN cluster_id - cluster id of the cluster locking
  * IN do_lock    - true == lock, false == unlock
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 static int _persist_fed_job_lock_bool(slurmdb_cluster_rec_t *conn,
 				      uint32_t job_id, uint32_t cluster_id,
@@ -1084,7 +1084,7 @@ static int _persist_fed_job_unlock(slurmdb_cluster_rec_t *conn, uint32_t job_id,
  * IN job_id     - the job's id
  * IN cluster_id - cluster id of the cluster that started the job
  * IN start_time - time the fed job started
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 static int _persist_fed_job_start(slurmdb_cluster_rec_t *conn,
 				  uint32_t job_id, uint32_t cluster_id,
@@ -1170,7 +1170,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
  * IN conn       - sibling connection
  * IN job_id     - the job's id
  * IN start_time - time the fed job started
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 				    uint32_t job_id, uint32_t state)

@@ -204,7 +204,7 @@ static int _terminate_job_step(const job_step_info_t *step,
  * slurm_signal_job - send the specified signal to all steps of an existing job
  * IN job_id     - the job's id
  * IN signal     - signal number
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int
 slurm_signal_job (uint32_t job_id, uint16_t signal)
@@ -240,7 +240,7 @@ fail1:
  * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
  *              to send a signal to a job's batch script
  * IN signal  - signal number
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int
 slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
@@ -298,7 +298,7 @@ fail:
  * IN job_id  - the job's id
  * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
  *              to terminate a job's batch script
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int
 slurm_terminate_job_step (uint32_t job_id, uint32_t step_id)

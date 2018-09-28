@@ -1370,7 +1370,7 @@ extern void parse_int_to_array(int in, int *out);
  *	credential.
  * IN slurm_step_alloc_req_msg - description of job step request
  * OUT slurm_step_alloc_resp_msg - response to request
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 extern int slurm_job_step_create (

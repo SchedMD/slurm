@@ -49,7 +49,7 @@
  * slurm_complete_job - note the completion of a job allocation
  * IN job_id - the job's id
  * IN job_return_code - the highest exit code of any task of the job
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 extern int slurm_complete_job (uint32_t job_id, uint32_t job_return_code)
 {

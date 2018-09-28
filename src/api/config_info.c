@@ -1789,7 +1789,7 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
  * IN update_time - time of current configuration data
  * IN slurm_ctl_conf_ptr - place to store slurm control configuration
  *	pointer
- * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_ctl_conf
  */
 int
