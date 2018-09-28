@@ -829,3 +829,4 @@ test39.13  Validate proper GRES operation under heavy load (many jobs)
 test39.14  Increase size of job with allocated GPUs
 test39.15  Test --gpus-per-tres with --overcommit option
 test39.16  Test --gpus-per-tres with --exclusive option
+test39.17  Test allocating sub-sets of GRES to job steps
