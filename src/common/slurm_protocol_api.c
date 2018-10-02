@@ -4532,7 +4532,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int rc = SLURM_SUCCESS;
 	int fd = -1;
 	struct pollfd pfd;
-	int timeout = slurm_get_msg_timeout();
+	int timeout = (slurm_get_msg_timeout() * 1000);
 	int value = -1;
 	int pollrc;
 
