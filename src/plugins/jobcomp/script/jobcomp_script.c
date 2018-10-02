@@ -683,7 +683,9 @@ extern int fini ( void )
 	if (script_thread) {
 		verbose("Script Job Completion plugin shutting down");
 		agent_exit = 1;
+		slurm_mutex_lock(&comp_list_mutex);
 		slurm_cond_broadcast(&comp_list_cond);
+		slurm_mutex_unlock(&comp_list_mutex);
 		pthread_join(script_thread, NULL);
 		script_thread = 0;
 	}

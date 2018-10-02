@@ -412,7 +412,9 @@ cr_callback(void *unused)
 
 		debug2("step not launched.");
 
+		slurm_mutex_lock(&step_launch_mutex);
 		slurm_cond_broadcast(&step_launch_cond);
+		slurm_mutex_unlock(&step_launch_mutex);
 	}
 
 	return 0;

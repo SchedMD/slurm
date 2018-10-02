@@ -730,7 +730,9 @@ static void *_thread_ipmi_run(void *no_data)
 			info("ipmi-thread: aborted");
 		slurm_mutex_unlock(&ipmi_mutex);
 
+		slurm_mutex_lock(&launch_mutex);
 		slurm_cond_signal(&launch_cond);
+		slurm_mutex_unlock(&launch_mutex);
 
 		return NULL;
 	}
@@ -740,7 +742,9 @@ static void *_thread_ipmi_run(void *no_data)
 	slurm_mutex_unlock(&ipmi_mutex);
 	flag_thread_started = true;
 
+	slurm_mutex_lock(&launch_mutex);
 	slurm_cond_signal(&launch_cond);
+	slurm_mutex_unlock(&launch_mutex);
 
 	/* setup timer */
 	gettimeofday(&tvnow, NULL);
@@ -932,16 +936,17 @@ extern int fini(void)
 
 	flag_energy_accounting_shutdown = true;
 
+	slurm_mutex_lock(&launch_mutex);
 	/* clean up the launch thread */
 	slurm_cond_signal(&launch_cond);
+	slurm_mutex_unlock(&launch_mutex);
 
 	if (thread_ipmi_id_launcher)
 		pthread_join(thread_ipmi_id_launcher, NULL);
 
+	slurm_mutex_lock(&ipmi_mutex);
 	/* clean up the run thread */
 	slurm_cond_signal(&ipmi_cond);
-
-	slurm_mutex_lock(&ipmi_mutex);
 
 	if (ipmi_ctx)
 		ipmi_monitoring_ctx_destroy(ipmi_ctx);
