@@ -544,6 +544,20 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 					   "unrecognized action_generic_failure=%s, setting to 'allow'",
 					   v);
 			}
+		} else if (!xstrncasecmp(*argv, "action_adopt_failure=", 21)) {
+			v = (char *)(21 + *argv);
+			if (!xstrncasecmp(v, "allow", 5))
+				opts.action_adopt_failure =
+					CALLERID_ACTION_ALLOW;
+			else if (!xstrncasecmp(v, "deny", 4))
+				opts.action_adopt_failure =
+					CALLERID_ACTION_DENY;
+			else {
+				pam_syslog(pamh,
+					   LOG_ERR,
+					   "unrecognized action_adopt_failure=%s, setting to 'allow'",
+					   v);
+			}
 		} else if (!xstrncasecmp(*argv, "log_level=", 10)) {
 			v = (char *)(10 + *argv);
 			opts.log_level = _parse_log_level(pamh, v);
@@ -710,8 +724,12 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 			    (opts.action_adopt_failure ==
 			     CALLERID_ACTION_ALLOW))
 				rc = PAM_SUCCESS;
-			else
+			else {
+				send_user_msg(pamh, "Access denied by "
+					      PAM_MODULE_NAME
+					      ": failed to adopt process into cgroup, denying access because action_adopt_failure=deny");
 				rc = PAM_PERM_DENIED;
+			}
 			goto cleanup;
 		}
 	} else {
