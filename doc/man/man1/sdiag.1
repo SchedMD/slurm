@@ -124,6 +124,11 @@ Counter of scheduling executions per minute
 \fBLast queue length\fR
 Length of jobs pending queue.
 
+.TP
+\fBLatency for gettimeofday()\fR
+Latency of 1000 calls to the gettimeofday() syscall in microseconds,
+as measured at controller startup.
+
 .LP
 The third block of information is related to backfilling scheduling algorithm.
 A backfilling scheduling cycle implies to get locks for jobs, nodes and
