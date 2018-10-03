@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
  -- Wrap slurm_cond_signal() calls with mutexes where needed.
  -- Fix correct timeout with resends in slurm_send_only_node_msg.
  -- Fix pam_slurm_adopt to honor action_adopt_failure.
+ -- job_submit/lua - expose argc/argv options through lua interface.
 
 * Changes in Slurm 17.11.9-2
 ============================

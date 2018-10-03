@@ -708,6 +708,22 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->admin_comment);
 	} else if (!xstrcmp(name, "alloc_node")) {
 		lua_pushstring (L, job_desc->alloc_node);
+	} else if (!xstrcmp(name, "argc")) {
+		lua_pushnumber (L, job_desc->argc);
+	} else if (!xstrcmp(name, "argv")) {
+		if ((job_desc->argc == 0) ||
+		    (job_desc->argv == NULL)) {
+			lua_pushnil (L);
+		} else {
+			lua_newtable(L);
+			for (i = 0; i < job_desc->argc; i++) {
+				if (job_desc->argv[i] != NULL) {
+					lua_pushnumber (L, i);
+					lua_pushstring (L, job_desc->argv[i]);
+					lua_settable (L, -3);
+				}
+			}
+		}
 	} else if (!xstrcmp(name, "array_inx")) {
 		lua_pushstring (L, job_desc->array_inx);
 	} else if (!xstrcmp(name, "begin_time")) {
