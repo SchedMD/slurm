@@ -172,79 +172,79 @@ static inline int _internal_hwloc_topology_export_xml(
 extern int xcpuinfo_hwloc_topo_load(
 	void *topology_in, char *topo_file, bool full)
 {
-       int ret = SLURM_SUCCESS;
-       struct stat buf;
-       hwloc_topology_t *topology = topology_in;
-       hwloc_topology_t tmp_topo;
+	int ret = SLURM_SUCCESS;
+	struct stat buf;
+	hwloc_topology_t *topology = topology_in;
+	hwloc_topology_t tmp_topo;
 
-       xassert(topo_file);
+	xassert(topo_file);
 
-       if (!topology_in) {
-	       topology = &tmp_topo;
-	       goto handle_write;
-       }
+	if (!topology_in) {
+		topology = &tmp_topo;
+		goto handle_write;
+	}
 
-       if (!stat(topo_file, &buf)) {
-               debug2("%s: xml file (%s) found", __func__, topo_file);
-               if (hwloc_topology_set_xml(*topology, topo_file))
-                       error("%s: hwloc_topology_set_xml() failed (%s)",
-                             __func__, topo_file);
-	       else if (hwloc_topology_load(*topology))
-                       error("%s: hwloc_topology_load() failed (%s)",
-                             __func__, topo_file);
-               else
-		       return ret;
-       }
+	if (!stat(topo_file, &buf)) {
+		debug2("%s: xml file (%s) found", __func__, topo_file);
+		if (hwloc_topology_set_xml(*topology, topo_file))
+			error("%s: hwloc_topology_set_xml() failed (%s)",
+			      __func__, topo_file);
+		else if (hwloc_topology_load(*topology))
+			error("%s: hwloc_topology_load() failed (%s)",
+			      __func__, topo_file);
+		else
+			return ret;
+	}
 
-       hwloc_topology_destroy(*topology);
+	hwloc_topology_destroy(*topology);
 
 handle_write:
 
-       hwloc_topology_init(topology);
+	hwloc_topology_init(topology);
 
-       if (full) {
-	       /* parse all system */
-	       hwloc_topology_set_flags(*topology,
-					HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
+	if (full) {
+		/* parse all system */
+		hwloc_topology_set_flags(*topology,
+					 HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM);
 
-	       /* ignores cache, misc */
+		/* ignores cache, misc */
 #if HWLOC_API_VERSION < 0x00020000
-	       hwloc_topology_ignore_type (*topology, HWLOC_OBJ_CACHE);
-	       hwloc_topology_ignore_type (*topology, HWLOC_OBJ_MISC);
+		hwloc_topology_ignore_type (*topology, HWLOC_OBJ_CACHE);
+		hwloc_topology_ignore_type (*topology, HWLOC_OBJ_MISC);
 #else
-	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L1CACHE,
-					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L2CACHE,
-					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L3CACHE,
-					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L4CACHE,
-					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L5CACHE,
-					      HWLOC_TYPE_FILTER_KEEP_NONE);
-	       hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_MISC,
-					      HWLOC_TYPE_FILTER_KEEP_NONE);
+		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L1CACHE,
+					       HWLOC_TYPE_FILTER_KEEP_NONE);
+		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L2CACHE,
+					       HWLOC_TYPE_FILTER_KEEP_NONE);
+		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L3CACHE,
+					       HWLOC_TYPE_FILTER_KEEP_NONE);
+		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L4CACHE,
+					       HWLOC_TYPE_FILTER_KEEP_NONE);
+		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L5CACHE,
+					       HWLOC_TYPE_FILTER_KEEP_NONE);
+		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_MISC,
+					       HWLOC_TYPE_FILTER_KEEP_NONE);
 #endif
-       }
+	}
 
-       /* load topology */
-       debug2("hwloc_topology_load");
-       if (hwloc_topology_load(*topology)) {
-	       /* error in load hardware topology */
-	       debug("hwloc_topology_load() failed.");
-	       ret = SLURM_FAILURE;
-       } else if (!conf->def_config) {
-	       debug2("hwloc_topology_export_xml");
-	       if (_internal_hwloc_topology_export_xml(*topology, topo_file)) {
-		       /* error in export hardware topology */
-		       error("%s: failed (load will be required after read failures).", __func__);
-	       }
-       }
+	/* load topology */
+	debug2("hwloc_topology_load");
+	if (hwloc_topology_load(*topology)) {
+		/* error in load hardware topology */
+		debug("hwloc_topology_load() failed.");
+		ret = SLURM_FAILURE;
+	} else if (!conf->def_config) {
+		debug2("hwloc_topology_export_xml");
+		if (_internal_hwloc_topology_export_xml(*topology, topo_file)) {
+			/* error in export hardware topology */
+			error("%s: failed (load will be required after read failures).", __func__);
+		}
+	}
 
-       if (!topology_in)
-	       hwloc_topology_destroy(tmp_topo);
+	if (!topology_in)
+		hwloc_topology_destroy(tmp_topo);
 
-       return ret;
+	return ret;
 }
 
 /*
@@ -436,7 +436,7 @@ extern int xcpuinfo_hwloc_topo_get(
 				for (idx[PU]=0; idx[PU]<nobj[PU]; ++idx[PU]) {
 					/* get hwloc_obj by indexes */
 					obj=hwloc_get_obj_below_array_by_type(
-					            topology, 3, objtype, idx);
+						topology, 3, objtype, idx);
 					if (!obj)
 						continue;
 					macid = obj->os_index;
@@ -479,7 +479,7 @@ extern int xcpuinfo_hwloc_topo_get(
 		debug("AbstractId PhysicalId Inverse");
 		for (i = 0; i < *p_cpus; i++) {
 			debug3("   %4d      %4u       %4u",
-				i, (*p_block_map)[i], (*p_block_map_inv)[i]);
+			       i, (*p_block_map)[i], (*p_block_map_inv)[i]);
 		}
 		debug("------");
 	}
@@ -574,7 +574,7 @@ extern int xcpuinfo_hwloc_topo_get(
 			/* see if the ID has already been seen */
 			for (i=0; i<numproc; i++) {
 				if ((cpuinfo[i].physid == val)
-				&&  (cpuinfo[i].physcnt))
+				    &&  (cpuinfo[i].physcnt))
 					break;
 			}
 
@@ -595,7 +595,7 @@ extern int xcpuinfo_hwloc_topo_get(
 			/* see if the ID has already been seen */
 			for (i = 0; i < numproc; i++) {
 				if ((cpuinfo[i].coreid == val)
-				&&  (cpuinfo[i].corecnt))
+				    &&  (cpuinfo[i].corecnt))
 					break;
 			}
 
@@ -616,7 +616,7 @@ extern int xcpuinfo_hwloc_topo_get(
 			/* Note: this value is a count, not an index */
 		    	if (val > numproc) {	/* out of bounds, ignore */
 				debug("siblings is %u (> %d), ignored",
-					val, numproc);
+				      val, numproc);
 				continue;
 			}
 			if (curcpu < numproc)
@@ -627,7 +627,7 @@ extern int xcpuinfo_hwloc_topo_get(
 			/* Note: this value is a count, not an index */
 		    	if (val > numproc) {	/* out of bounds, ignore */
 				debug("cores is %u (> %d), ignored",
-					val, numproc);
+				      val, numproc);
 				continue;
 			}
 			if (curcpu < numproc)
@@ -667,7 +667,7 @@ extern int xcpuinfo_hwloc_topo_get(
 			cores = numcpu / sockets;	/* assume multi-core */
 			if (cores > 1) {
 				debug3("Warning: cpuinfo missing 'core id' or "
-					"'cpu cores' but assuming multi-core");
+				       "'cpu cores' but assuming multi-core");
 			}
 		}
 		if (cores == 0)
@@ -910,7 +910,7 @@ static int _compute_block_map(uint16_t numproc,
 
 	if (block_map_inv) {
 		debug3("\nMachine -> Abstract logical CPU ID block mapping: "
-			"(inverse)");
+		       "(inverse)");
 		debug3("Input: (Machine ID)  ");
 		for (i = 0; i < numproc; i++) {
 			debug3("%3d", i);
