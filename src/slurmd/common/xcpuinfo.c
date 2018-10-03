@@ -176,6 +176,8 @@ extern int xcpuinfo_hwloc_topo_load(
 	struct stat buf;
 	hwloc_topology_t *topology = topology_in;
 	hwloc_topology_t tmp_topo;
+	static bool first_full = true;
+	bool check_file = true;
 
 	xassert(topo_file);
 
@@ -184,7 +186,14 @@ extern int xcpuinfo_hwloc_topo_load(
 		goto handle_write;
 	}
 
-	if (!stat(topo_file, &buf)) {
+	if (full && first_full) {
+		/* Always regenerate file on slurmd startup */
+		if (run_in_daemon("slurmd"))
+			check_file = false;
+		first_full = false;
+	}
+
+	if (check_file && !stat(topo_file, &buf)) {
 		debug2("%s: xml file (%s) found", __func__, topo_file);
 		if (hwloc_topology_set_xml(*topology, topo_file))
 			error("%s: hwloc_topology_set_xml() failed (%s)",

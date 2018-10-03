@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- Wrap slurm_cond_signal() calls with mutexes where needed.
  -- Fix correct timeout with resends in slurm_send_only_node_msg.
  -- Fix pam_slurm_adopt to honor action_adopt_failure.
+ -- Have the slurmd recreate the hwloc xml file for the full system on restart.
 
 * Changes in Slurm 18.08.0
 ==========================
