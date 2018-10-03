@@ -383,6 +383,8 @@ documents those changes that are of interest to users and administrators.
  -- When updating an association and are unable to find parent association
     initialize old fairshare association pointer correctly.
  -- Wrap slurm_cond_signal() calls with mutexes where needed.
+ -- Fix correct timeout with resends in slurm_send_only_node_msg.
+ -- Fix pam_slurm_adopt to honor action_adopt_failure.
 
 * Changes in Slurm 17.11.9-2
 ============================

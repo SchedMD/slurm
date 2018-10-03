@@ -274,7 +274,7 @@ A good way to observe the operation of the gang scheduler is by running
 <P>
 For performance reasons, the backfill scheduler reserves whole nodes for jobs,
 not partial nodes. If during backfill scheduling a job preempts one or more
-other jbos, the whole nodes for those preempted jobs are reserved for the
+other jobs, the whole nodes for those preempted jobs are reserved for the
 preemptor job, even if the preemptor job requested fewer resources than that.
 These reserved nodes aren't available to other jobs during that backfill
 cycle, even if the other jobs could fit on the nodes. Therefore, jobs may
