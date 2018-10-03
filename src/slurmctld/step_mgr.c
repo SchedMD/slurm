@@ -1022,6 +1022,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	struct step_record *step_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
+	int i_first, i_last;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -1043,7 +1044,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	/*
 	 * If we have a select plugin that selects step resources, then use it
-	 * and return.  Else just do the normal operations.
+	 * and return (does not happen today). Otherwise select step resources
+	 * in this function.
 	 */
 	if ((nodes_picked = select_g_step_pick_nodes(job_ptr, select_jobinfo,
 						     node_count,
@@ -1065,7 +1067,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		if (feat_ptr && feat_ptr->node_bitmap)
 			bit_and(nodes_avail, feat_ptr->node_bitmap);
 		else
-			bit_nclear(nodes_avail, 0, (bit_size(nodes_avail)-1));
+			bit_clear_all(nodes_avail);
 	}
 
 	if (step_spec->pn_min_memory &&
@@ -1084,16 +1086,22 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			FREE_NULL_BITMAP(select_nodes_avail);
 			return NULL;
 		}
-		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count;
-		     i++) {
+		i_first = bit_ffs(job_ptr->node_bitmap);
+		if (i_first >= 0)
+			i_last  = bit_fls(job_ptr->node_bitmap);
+		else
+			i_last = -2;
+		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
 			node_ptr = node_record_table_ptr + i;
 			if (IS_NODE_POWER_SAVE(node_ptr) ||
 			    IS_NODE_FUTURE(node_ptr) ||
 			    IS_NODE_NO_RESPOND(node_ptr)) {
-				/* Node is/was powered down. Need to wait
-				 * for it to start responding again. */
+				/*
+				 * Node is/was powered down. Need to wait
+				 * for it to start responding again.
+				 */
 				FREE_NULL_BITMAP(nodes_avail);
 				FREE_NULL_BITMAP(select_nodes_avail);
 				*return_code = ESLURM_NODES_BUSY;
@@ -1116,7 +1124,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	 */
 	if (step_spec->exclusive) {
 		int avail_cpus, avail_tasks, total_cpus, total_tasks, node_inx;
-		int i_first, i_last;
 		uint64_t avail_mem, total_mem;
 		uint64_t gres_cnt;
 		uint32_t nodes_picked_cnt = 0;
@@ -1154,7 +1161,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 		node_inx = -1;
 		i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
-		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
+		if (i_first >= 0)
+			i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
+		else
+			i_last = -2;
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
@@ -1267,8 +1277,10 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 		if (selected_nodes) {
 			if (!bit_super_set(selected_nodes, nodes_avail)) {
-				/* some required nodes have no available
-				 * processors, defer request */
+				/*
+				 * Some required nodes have no available
+				 * processors, defer request
+				 */
 				i_last = -1;
 				tasks_picked_cnt = 0;
 			}
@@ -1289,9 +1301,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 
 		if (select_nodes_avail) {
-			/* The select plugin told us these were the
-			 * only ones we could choose from.  If it
-			 * doesn't fit here then defer request */
+			/*
+			 * The select plugin told us these were the
+			 * only nodes we could choose from.  If step
+			 * doesn't fit here then defer request
+			 */
 			if (!bit_super_set(nodes_avail, select_nodes_avail)) {
 				tasks_picked_cnt = 0;
 			}
@@ -1331,8 +1345,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 		usable_cpu_cnt = xmalloc(sizeof(uint32_t) * node_record_count);
 		first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
-		last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);
-		for (i=first_bit, node_inx=-1; i<=last_bit; i++) {
+		if (first_bit >= 0)
+			last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);
+		else
+			last_bit = -2;
+		for (i = first_bit, node_inx = -1; i <= last_bit; i++) {
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
 			node_inx++;
@@ -1603,8 +1620,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			usable_cpu_cnt = xmalloc(sizeof(uint32_t) *
 						 node_record_count);
 			first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
-			last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);
-			for (i=first_bit, node_inx=-1; i<=last_bit; i++) {
+			if (first_bit >= 0)
+				last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);
+			else
+				last_bit = -2;
+			for (i = first_bit, node_inx = -1; i <= last_bit; i++) {
 				if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 					continue;
 				node_inx++;
@@ -1615,7 +1635,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
-			verbose("step picked %d of %u nodes",
+			verbose("%s: step picked %d of %u nodes", __func__,
 				nodes_picked_cnt, step_spec->min_nodes);
 		}
 		if (nodes_idle)
@@ -1738,8 +1758,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 
 		/*
-		 * user is requesting more cpus than we got from the
-		 * picked nodes we should return with an error
+		 * User is requesting more cpus than we got from the
+		 * picked nodes. We should return with an error
 		 */
 		if (step_spec->cpu_count > cpus_picked_cnt) {
 			if (step_spec->cpu_count &&
