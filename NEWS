@@ -58,6 +58,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix pam_slurm_adopt to honor action_adopt_failure.
  -- Have the slurmd recreate the hwloc xml file for the full system on restart.
  -- sdiag - correct the units for the gettimeofday() stat to microseconds.
+ -- Set SLURM_CLUSTER_NAME environment variable in MailProg to the ClusterName.
 
 * Changes in Slurm 18.08.0
 ==========================
