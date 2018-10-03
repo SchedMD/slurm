@@ -196,11 +196,21 @@ the correct facilities. Configurable values are:
 
 </dd>
 
+<dl compact>
 <dt><b>log_level</b></dt>
 <dd>See <a href="https://slurm.schedmd.com/slurm.conf.html#OPT_SlurmdDebug">
 SlurmdDebug</a> in slurm.conf for available options.
 The default log_level is <b>info</b>.
 </dd>
+</dl>
+
+<dl compact>
+<dt><b>nodename</b></dt>
+<dd>If the NodeName defined in <b>slurm.conf</b> is different than this node's
+hostname (as reported by <b>hostname -s</b>), then this must be set to the
+NodeName in <b>slurm.conf</b> that this host operates as.
+</dd>
+</dl>
 
 </dl>
 
@@ -237,6 +247,6 @@ on the source node, such as on a login node, it is better to have the RPC be
 rejected rather than silently dropped. This will allow better responsiveness to
 the RPC initiator.</p>
 
-<p style="text-align:center;">Last modified 12 December 2017</p>
+<p style="text-align:center;">Last modified 3 October 2018</p>
 
 <!--#include virtual="footer.txt"-->
