@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 17.11.11
+===========================
+
 * Changes in Slurm 17.11.10
 ===========================
  -- Move priority_sort_part_tier from slurmctld to libslurm to make it possible
