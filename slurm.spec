@@ -1,5 +1,5 @@
 Name:		slurm
-Version:	18.08.0
+Version:	18.08.1
 %define rel	1
 Release:	%{rel}%{?dist}
 Summary:	Slurm Workload Manager
