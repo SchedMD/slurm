@@ -765,12 +765,12 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 		 */
 		assoc->usage->parent_assoc_ptr =
 			_find_assoc_parent(assoc, true);
-		if (!assoc->usage->parent_assoc_ptr)
+		if (!assoc->usage->parent_assoc_ptr) {
 			error("Can't find parent id %u for assoc %u, "
 			      "this should never happen.",
 			      assoc->parent_id, assoc->id);
-
-		if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
+			assoc->usage->fs_assoc_ptr = NULL;
+		} else if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
 			assoc->usage->fs_assoc_ptr =
 				_find_assoc_parent(assoc, false);
 		else if (assoc->usage->parent_assoc_ptr->shares_raw

@@ -413,13 +413,13 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 			   &job->job_mem, &job->step_mem);
 
 	/*
-	 * If users have configured MemLimitEnforce=no
-	 * in their slurm.conf keep going.
+	 * Always set mem limits now that MemLimitEnforce=no
+	 * by default or JobAcctGatherParams=OverMemoryKill will not work.
 	 */
-	if (job->step_mem && conf->mem_limit_enforce) {
+	if (job->step_mem) {
 		jobacct_gather_set_mem_limit(job->jobid, job->stepid,
 					     job->step_mem);
-	} else if (job->job_mem && conf->mem_limit_enforce) {
+	} else if (job->job_mem) {
 		jobacct_gather_set_mem_limit(job->jobid, job->stepid,
 					     job->job_mem);
 	}
@@ -530,11 +530,9 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	format_core_allocs(msg->cred, conf->node_name, conf->cpus,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
-	if (job->step_mem
-		&& conf->mem_limit_enforce)
+	if (job->step_mem)
 		jobacct_gather_set_mem_limit(job->jobid, NO_VAL, job->step_mem);
-	else if (job->job_mem
-		&& conf->mem_limit_enforce)
+	else if (job->job_mem)
 		jobacct_gather_set_mem_limit(job->jobid, NO_VAL, job->job_mem);
 
 	get_cred_gres(msg->cred, conf->node_name,
