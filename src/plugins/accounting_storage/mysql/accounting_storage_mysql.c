@@ -2472,7 +2472,7 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 }
 
 static int _get_database_variable(mysql_conn_t *mysql_conn,
-				  const char *variable_name, int *value)
+				  const char *variable_name, uint64_t *value)
 {
 	MYSQL_ROW row = NULL;
 	MYSQL_RES *result = NULL;
@@ -2498,7 +2498,7 @@ static int _get_database_variable(mysql_conn_t *mysql_conn,
 	xfree(query);
 
 	row = mysql_fetch_row(result);
-	*value = (int) strtol(row[1], &err_check, 10);
+	*value = (uint64_t) strtoll(row[1], &err_check, 10);
 
 	if (*err_check) {
 		error("%s: error parsing string to int `%s`", __func__, row[1]);
@@ -2517,19 +2517,19 @@ static int _get_database_variable(mysql_conn_t *mysql_conn,
 static int _check_database_variables(mysql_conn_t *mysql_conn)
 {
 	const char buffer_var[] = "innodb_buffer_pool_size";
-	const int buffer_size = 1073741824;
+	const uint64_t buffer_size = 1073741824;
 	const char logfile_var[] = "innodb_log_file_size";
-	const int logfile_size = 67108864;
+	const uint64_t logfile_size = 67108864;
 	const char lockwait_var[] = "innodb_lock_wait_timeout";
-	const int lockwait_timeout = 900;
+	const uint64_t lockwait_timeout = 900;
 
-	int value;
+	uint64_t value;
 	bool recommended_values = true;
 	char *error_msg = xstrdup("Database settings not recommended values:");
 
 	if (_get_database_variable(mysql_conn, buffer_var, &value))
 		goto error;
-	debug2("%s: %u", buffer_var, value);
+	debug2("%s: %lu", buffer_var, value);
 	if (value < (buffer_size / 2)) {
 		recommended_values = false;
 		xstrfmtcat(error_msg, " %s", buffer_var);
@@ -2537,7 +2537,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 
 	if (_get_database_variable(mysql_conn, logfile_var, &value))
 		goto error;
-	debug2("%s: %u", logfile_var, value);
+	debug2("%s: %lu", logfile_var, value);
 	if (value < (logfile_size / 2)) {
 		recommended_values = false;
 		xstrfmtcat(error_msg, " %s", logfile_var);
@@ -2545,7 +2545,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 
 	if (_get_database_variable(mysql_conn, lockwait_var, &value))
 		goto error;
-	debug2("%s: %u", lockwait_var, value);
+	debug2("%s: %lu", lockwait_var, value);
 	if (value < (lockwait_timeout / 2)) {
 		recommended_values = false;
 		xstrfmtcat(error_msg, " %s", lockwait_var);

@@ -197,6 +197,7 @@ static mail_info_t *_mail_alloc(void);
 static void  _mail_free(void *arg);
 static void *_mail_proc(void *arg);
 static char *_mail_type_str(uint16_t mail_type);
+static char **_build_mail_env(void);
 
 static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mail_mutex  = PTHREAD_MUTEX_INITIALIZER;
@@ -1780,6 +1781,20 @@ static void _mail_free(void *arg)
 	}
 }
 
+static char **_build_mail_env(void)
+{
+	char **my_env;
+
+        my_env = xmalloc(sizeof(char *));
+        my_env[0] = NULL;
+        if (slurmctld_conf.cluster_name) {
+                setenvf(&my_env, "SLURM_CLUSTER_NAME", "%s",
+                        slurmctld_conf.cluster_name);
+        }
+
+	 return my_env;
+}
+
 /* process an email request and free the record */
 static void *_mail_proc(void *arg)
 {
@@ -1791,6 +1806,8 @@ static void *_mail_proc(void *arg)
 		error("fork(): %m");
 	} else if (pid == 0) {	/* child */
 		int fd_0, fd_1, fd_2, i;
+		char **my_env = NULL;
+		my_env = _build_mail_env();
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
 		if ((fd_0 = open("/dev/null", O_RDWR)) == -1)	// fd = 0
@@ -1801,7 +1818,7 @@ static void *_mail_proc(void *arg)
 			error("Couldn't do a dup on fd 2 %m");
 		execle(slurmctld_conf.mail_prog, "mail",
 			"-s", mi->message, mi->user_name,
-			NULL, NULL);
+			NULL, my_env);
 		error("Failed to exec %s: %m",
 			slurmctld_conf.mail_prog);
 		exit(1);

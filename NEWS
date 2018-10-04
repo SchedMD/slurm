@@ -74,6 +74,15 @@ documents those changes that are of interest to users and administrators.
  -- When updating an association and are unable to find parent association
     initialize old fairshare association pointer correctly.
  -- Wrap slurm_cond_signal() calls with mutexes where needed.
+ -- Fix correct timeout with resends in slurm_send_only_node_msg.
+ -- Fix pam_slurm_adopt to honor action_adopt_failure.
+ -- Have the slurmd recreate the hwloc xml file for the full system on restart.
+ -- sdiag - correct the units for the gettimeofday() stat to microseconds.
+ -- Set SLURM_CLUSTER_NAME environment variable in MailProg to the ClusterName.
+ -- smail - use SLURM_CLUSTER_NAME environment variable.
+ -- job_submit/lua - expose argc/argv options through lua interface.
+ -- slurmdbd - prevent false-positive warning about innodb settings having
+    been set too low if they're actually set over 2GB.
 
 * Changes in Slurm 18.08.0
 ==========================
@@ -385,6 +394,7 @@ documents those changes that are of interest to users and administrators.
  -- Wrap slurm_cond_signal() calls with mutexes where needed.
  -- Fix correct timeout with resends in slurm_send_only_node_msg.
  -- Fix pam_slurm_adopt to honor action_adopt_failure.
+ -- job_submit/lua - expose argc/argv options through lua interface.
 
 * Changes in Slurm 17.11.9-2
 ============================
