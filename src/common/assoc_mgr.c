@@ -342,6 +342,7 @@ static void _normalize_assoc_shares_traditional(
 		slurmdb_assoc_rec_t *assoc)
 {
 	slurmdb_assoc_rec_t *assoc2 = assoc;
+	xassert(assoc);
 
 	if ((assoc->shares_raw == SLURMDB_FS_USE_PARENT)
 	    && assoc->usage->fs_assoc_ptr) {
