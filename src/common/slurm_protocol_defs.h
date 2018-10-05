@@ -1025,6 +1025,7 @@ typedef struct prolog_launch_msg {
 	char *std_err;			/* pathname of stderr */
 	char *std_out;			/* pathname of stdout */
 	uint32_t uid;
+    uint16_t *job_node_cpus; /* Number of CPUs required on the nodes for the job */
 	char *user_name;		/* job's user name */
 	char *work_dir;			/* full pathname of working directory */
 	uint16_t x11;			/* X11 forwarding setup flags */

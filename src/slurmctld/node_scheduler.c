@@ -3272,6 +3272,8 @@ extern void launch_prolog(struct job_record *job_ptr)
 		return;
 #endif
 
+	xassert(job_ptr->job_resrcs);
+	job_resrcs_ptr = job_ptr->job_resrcs;
 	prolog_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
 
 	/* Locks: Write job */
@@ -3290,6 +3292,8 @@ extern void launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->user_name = xstrdup(job_ptr->user_name);
 	prolog_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
 	prolog_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+    prolog_msg_ptr->nnodes = job_resrcs_ptr->nhosts;
+    prolog_msg_ptr->job_node_cpus = job_resrcs_ptr->cpus;
 	prolog_msg_ptr->partition = xstrdup(job_ptr->partition);
 	prolog_msg_ptr->std_err = xstrdup(job_ptr->details->std_err);
 	prolog_msg_ptr->std_out = xstrdup(job_ptr->details->std_out);
@@ -3307,8 +3311,6 @@ extern void launch_prolog(struct job_record *job_ptr)
 	prolog_msg_ptr->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 						  job_ptr->spank_job_env);
 
-	xassert(job_ptr->job_resrcs);
-	job_resrcs_ptr = job_ptr->job_resrcs;
 	memset(&cred_arg, 0, sizeof(slurm_cred_arg_t));
 	cred_arg.jobid               = job_ptr->job_id;
 	cred_arg.stepid              = SLURM_EXTERN_CONT;

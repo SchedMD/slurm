@@ -9527,7 +9527,7 @@ _pack_job_desc_list_msg(List job_req_list, Buf buffer,
 	job_desc_msg_t *req;
 	ListIterator iter;
 	uint16_t cnt = 0;
- 
+
 	if (job_req_list)
 		cnt = list_count(job_req_list);
 	pack16(cnt, buffer);
@@ -9554,7 +9554,6 @@ _unpack_job_desc_list_msg(List *job_req_list, Buf buffer,
 	job_desc_msg_t *req;
 	uint16_t cnt = 0;
 	int i;
- 
 	*job_req_list = NULL;
 
 	safe_unpack16(&cnt, buffer);
@@ -11313,6 +11312,10 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
 			      buffer);
+
+        xassert(msg->nnodes > 0);
+        pack16_array(msg->job_node_cpus, msg->nnodes, buffer);
+
 		slurm_cred_pack(msg->cred, buffer, protocol_version);
 		packstr(msg->user_name, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -11420,6 +11423,9 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 		safe_unpackstr_array(&launch_msg_ptr->spank_job_env,
 				     &launch_msg_ptr->spank_job_env_size,
 				     buffer);
+        safe_unpack16_array(&launch_msg_ptr->job_node_cpus,
+                    &launch_msg_ptr->nnodes,
+                    buffer);
 		if (!(launch_msg_ptr->cred = slurm_cred_unpack(buffer,
 							protocol_version)))
 			goto unpack_error;
