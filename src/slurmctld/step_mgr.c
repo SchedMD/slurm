@@ -906,7 +906,7 @@ static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 	xassert(usable_cpu_cnt);
 	cpu_target = (cpu_cnt + node_cnt - 1) / node_cnt;
 	if (cpu_target > 1024)
-		info("_pick_step_nodes_cpus: high cpu_target (%d)",cpu_target);
+		info("%s: high cpu_target (%d)", __func__, cpu_target);
 	if ((cpu_cnt <= node_cnt) || (cpu_target > 1024))
 		return bit_pick_cnt(nodes_bitmap, node_cnt);
 
@@ -1005,7 +1005,7 @@ static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
  * NOTE: returned bitmap must be freed by the caller using FREE_NULL_BITMAP()
  */
 static bitstr_t *
-_pick_step_nodes (struct job_record  *job_ptr,
+_pick_step_nodes (struct job_record *job_ptr,
 		  job_step_create_request_msg_t *step_spec,
 		  List step_gres_list, int cpus_per_task, uint32_t node_count,
 		  dynamic_plugin_data_t *select_jobinfo, int *return_code)
@@ -1054,7 +1054,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (!nodes_avail)
 		nodes_avail = bit_copy (job_ptr->node_bitmap);
-	bit_and (nodes_avail, up_node_bitmap);
+	bit_and(nodes_avail, up_node_bitmap);
 	if (step_spec->features) {
 		/*
 		 * We only select for a single feature name here.
@@ -1118,9 +1118,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 
 	/*
-	 * In exclusive mode, just satisfy the processor count.
-	 * Do not use nodes that have no unused CPUs or insufficient
-	 * unused memory
+	 * Exclusive mode:
+	 * Do not use nodes with insufficient CPUs, memory or GRES.
 	 */
 	if (step_spec->exclusive) {
 		int avail_cpus, avail_tasks, total_cpus, total_tasks, node_inx;
@@ -2678,8 +2677,10 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->tres_per_socket = xstrdup(step_specs->tres_per_socket);
 	step_ptr->tres_per_task = xstrdup(step_specs->tres_per_task);
 
-	/* step's name and network default to job's values if not
-	 * specified in the step specification */
+	/*
+	 * step's name and network default to job's values if not
+	 * specified in the step specification
+	 */
 	if (step_specs->name && step_specs->name[0])
 		step_ptr->name = xstrdup(step_specs->name);
 	else
@@ -2692,9 +2693,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->select_jobinfo = select_jobinfo;
 	select_jobinfo = NULL;
 
-	/* the step time_limit is recorded as submitted (INFINITE
+	/*
+	 * the step time_limit is recorded as submitted (INFINITE
 	 * or partition->max_time by default), but the allocation
-	 * time limits may cut it short */
+	 * time limits may cut it short
+	 */
 	if (step_specs->time_limit == NO_VAL || step_specs->time_limit == 0 ||
 	    step_specs->time_limit == INFINITE) {
 		step_ptr->time_limit = INFINITE;
@@ -2732,10 +2735,11 @@ step_create(job_step_create_request_msg_t *step_specs,
 		}
 		if (step_specs->resv_port_cnt == NO_VAL16
 		    && (mpi_params = slurm_get_mpi_params())) {
-
 			step_specs->resv_port_cnt = 0;
-			/* reserved port count set to maximum task count on
-			 * any node plus one */
+			/*
+			 * reserved port count set to maximum task count on
+			 * any node plus one
+			 */
 			for (i = 0; i < step_ptr->step_layout->node_cnt; i++) {
 				step_specs->resv_port_cnt =
 					MAX(step_specs->resv_port_cnt,
@@ -2744,8 +2748,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_specs->resv_port_cnt++;
 			xfree(mpi_params);
 		}
-		if (step_specs->resv_port_cnt != NO_VAL16
-		    && step_specs->resv_port_cnt != 0) {
+		if ((step_specs->resv_port_cnt != NO_VAL16) &&
+		    (step_specs->resv_port_cnt != 0)) {
 			step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
 			i = resv_port_alloc(step_ptr);
 			if (i != SLURM_SUCCESS) {
@@ -2758,7 +2762,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
 					   step_ptr->job_ptr->job_id,
 					   step_ptr->step_id) < 0)
-			fatal ("step_create: switch_g_alloc_jobinfo error");
+			fatal("%s: switch_g_alloc_jobinfo error", __func__);
 
 		if (switch_g_build_jobinfo(step_ptr->switch_job,
 					   step_ptr->step_layout,
@@ -2772,14 +2776,13 @@ step_create(job_step_create_request_msg_t *step_specs,
 	} else
 		xfree(step_node_list);
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
-		fatal ("step_create: checkpoint_alloc_jobinfo error");
+		fatal("%s: checkpoint_alloc_jobinfo error", __func__);
 	*new_step_record = step_ptr;
 
 	if (!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	select_g_step_start(step_ptr);
-
 
 	step_set_alloc_tres(step_ptr, node_count, false, true);
 
@@ -2834,19 +2837,20 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			step_ptr->job_ptr->front_end_ptr->protocol_version;
 #endif
 
-	/* build  cpus-per-node arrays for the subset of nodes used by step */
-	first_bit = bit_ffs(job_ptr->node_bitmap);
-	last_bit  = bit_fls(job_ptr->node_bitmap);
-
 	if (job_ptr->details && job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 		if (mc_ptr->ntasks_per_core &&
 		    (mc_ptr->ntasks_per_core != INFINITE16)) {
 			ntasks_per_core = mc_ptr->ntasks_per_core;
 		}
-
 	}
 
+	/* build cpus-per-node arrays for the subset of nodes used by step */
+	first_bit = bit_ffs(job_ptr->node_bitmap);
+	if (first_bit >= 0)
+		last_bit = bit_fls(job_ptr->node_bitmap);
+	else
+		last_bit = -2;
 	for (i = first_bit; i <= last_bit; i++) {
 		uint16_t cpus, cpus_used;
 
@@ -2898,12 +2902,12 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			} else {
 				/*
 				 * Here we are trying to figure out how many
-				 * cpus each task really needs.  This really
+				 * CPUs each task really needs. This really
 				 * only becomes an issue if the job requested
-				 * ntasks_per_core|socket=1.  We just increase
+				 * ntasks_per_core|socket=1. We just increase
 				 * the number of cpus_per_task to the thread
-				 * count.  Since the system could be
-				 * heterogeneous we needed to make this an
+				 * count. Since the system could be
+				 * heterogeneous, we needed to make this an
 				 * array.
 				 */
 				uint16_t threads_per_core;
@@ -2981,27 +2985,30 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			} else
 				cpu_count_reps[cpu_inx]++;
 			set_nodes++;
-			/*FIX ME: on a heterogeneous system running
-			  the linear select plugin we could get a node
-			  that doesn't have as many cpus as we decided
-			  we needed for each task.  This would result
-			  in not getting a task for the node we
-			  received.  This is usually in error.  This
-			  only happens when the person doesn't specify
-			  how many cpus_per_task they want, and we
-			  have to come up with a number, in this case
-			  it is wrong.
-			*/
-			/* if (cpus_per_task > 0) */
-			/* 	set_tasks +=  */
-			/* 		(uint16_t)usable_cpus / cpus_per_task; */
-			/* else */
-			/* 	/\* since cpus_per_task is 0 we just */
-			/* 	   add the number of cpus available */
-			/* 	   for this job *\/ */
-			/* 	set_tasks += usable_cpus; */
-			/* info("usable_cpus is %d and set_tasks %d %d", */
-			/*      usable_cpus, set_tasks, cpus_per_task); */
+#if 0
+			/*
+			 * FIXME: on a heterogeneous system running the
+			 * select/linear plugin we could get a node that doesn't
+			 * have as many CPUs as we decided we needed for each
+			 * task. This would result in not getting a task for
+			 * the node we selected. This is usually in error. This
+			 * only happens when the person doesn't specify how many
+			 * cpus_per_task they want, and we have to come up with
+			 * a number, in this case it is wrong.
+			 */
+			if (cpus_per_task > 0) {
+				set_tasks +=
+					(uint16_t)usable_cpus / cpus_per_task;
+			} else {
+				/*
+				 * Since cpus_per_task is 0, we just add the
+				 * count of CPUs available for this job
+				 */
+				set_tasks += usable_cpus;
+			}
+			info("usable_cpus is %d and set_tasks %d %d",
+			     usable_cpus, set_tasks, cpus_per_task);
+#endif
 			if (set_nodes == node_count)
 				break;
 		}

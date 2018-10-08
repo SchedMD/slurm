@@ -1778,7 +1778,6 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 					  uint32_t node_count,
 					  bitstr_t **avail_nodes)
 {
-//FIXME: Unused by select/cons_res, but perhaps desired here, lower priority work
 	return NULL;
 }
 
