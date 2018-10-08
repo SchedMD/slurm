@@ -1035,12 +1035,16 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
  *		gres_plugin_step_state_validate()
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_offset - job's zero-origin index to the node of interest
+ * IN first_step_node - true if this is the first node in the step's allocation
+ * IN tasks_on_node - number of tasks to be launched on this node
+ * IN rem_nodes - desired additional node count to allocate, including this node
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
-				  int node_offset, uint32_t job_id,
-				  uint32_t step_id);
+				  int node_offset, bool first_step_node,
+				  uint16_t tasks_on_node, uint32_t rem_nodes,
+				  uint32_t job_id, uint32_t step_id);
 
 /*
  * Deallocate resource to a step and update job and step gres information

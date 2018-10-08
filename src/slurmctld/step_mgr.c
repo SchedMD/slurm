@@ -1964,7 +1964,8 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 	int cpus_alloc;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
-	bool pick_step_cores = true;
+	bool first_step_node = true, pick_step_cores = true;
+	uint32_t rem_nodes;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -1985,8 +1986,10 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		pick_step_cores = false;
 	} else if ((step_ptr->exclusive == 0) ||
 		   (step_ptr->cpu_count == job_ptr->total_cpus)) {
-		/* Step uses all of job's cores
-		 * Just copy the bitmap to save time */
+		/*
+		 * Step uses all of job's cores
+		 * Just copy the bitmap to save time
+		 */
 		step_ptr->core_bitmap_job = bit_copy(
 			job_resrcs_ptr->core_bitmap);
 		pick_step_cores = false;
@@ -2000,6 +2003,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		step_ptr->pn_min_memory = 0;
 	}
 
+	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
 			continue;
@@ -2010,14 +2014,20 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
 			fatal("step_alloc_lps: node index bad");
 
-		/* NOTE: The --overcommit option can result in
-		 * cpus_used[] having a higher value than cpus[] */
+		/*
+		 * NOTE: The --overcommit option can result in
+		 * cpus_used[] having a higher value than cpus[]
+		 */
 		cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 			     step_ptr->cpus_per_task;
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
-				       job_node_inx, job_ptr->job_id,
-				       step_ptr->step_id);
+				job_node_inx, first_step_node,
+				step_ptr->step_layout->tasks[step_node_inx],
+				rem_nodes, job_ptr->job_id,
+				step_ptr->step_id);
+		first_step_node = false;
+		rem_nodes--;
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
 			if (step_ptr->pn_min_memory & MEM_PER_CPU) {
 				uint64_t mem_use = step_ptr->pn_min_memory;

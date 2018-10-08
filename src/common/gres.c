@@ -253,8 +253,9 @@ static void	_set_gres_socks(char *orig_config, char **new_config,
 				char *gres_name_colon, int gres_name_colon_len);
 static void	_sock_gres_del(void *x);
 static int	_step_alloc(void *step_gres_data, void *job_gres_data,
-			    int node_offset, char *gres_name,
-			    uint32_t job_id, uint32_t step_id);
+			    int node_offset, bool first_step_node,
+			    char *gres_name, uint32_t job_id, uint32_t step_id,
+			    uint16_t tasks_on_node, uint32_t rem_nodes);
 static int	_step_dealloc(void *step_gres_data, void *job_gres_data,
 			      char *gres_name, uint32_t job_id,
 			      uint32_t step_id);
@@ -8662,20 +8663,6 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
 
-	if ((node_offset == NO_VAL) ||
-	    (0 == job_gres_ptr->node_cnt)) {	/* no_consume */
-		if ((step_gres_ptr->gres_per_step >
-		     job_gres_ptr->gres_per_job) ||
-		    (job_gres_ptr->gres_per_node &&
-		     (step_gres_ptr->gres_per_node >
-		      job_gres_ptr->gres_per_node)) ||
-		    (job_gres_ptr->gres_per_socket &&
-		     (step_gres_ptr->gres_per_socket >
-		      job_gres_ptr->gres_per_socket)))
-			return 0;
-		return NO_VAL64;
-	}
-
 	if (node_offset >= job_gres_ptr->node_cnt) {
 		error("gres/%s: %s %u.%u node offset invalid (%d >= %u)",
 		      gres_name, __func__, job_id, step_id, node_offset,
@@ -9866,12 +9853,13 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 }
 
 static int _step_alloc(void *step_gres_data, void *job_gres_data,
-		       int node_offset, char *gres_name,
-		       uint32_t job_id, uint32_t step_id)
+		       int node_offset, bool first_step_node, char *gres_name,
+		       uint32_t job_id, uint32_t step_id,
+		       uint16_t tasks_on_node, uint32_t rem_nodes)
 {
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
-	uint64_t gres_needed, gres_avail;
+	uint64_t gres_needed, gres_avail, max_gres = 0;
 	bitstr_t *gres_bit_alloc;
 	int i, len;
 
@@ -9889,10 +9877,25 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		return SLURM_ERROR;
 	}
 
+	if (step_gres_ptr->gres_per_step && first_step_node)
+		step_gres_ptr->total_gres = 0;
 	if (step_gres_ptr->gres_per_node) {
 		gres_needed = step_gres_ptr->gres_per_node;
+	} else if (step_gres_ptr->gres_per_task) {
+		gres_needed = step_gres_ptr->gres_per_task * tasks_on_node;
+	} else if (step_gres_ptr->gres_per_step && (rem_nodes == 1)) {
+		gres_needed = step_gres_ptr->gres_per_step -
+			      step_gres_ptr->total_gres;
+	} else if (step_gres_ptr->gres_per_step) {
+		/* Leave at least one GRES per remaining node */
+		max_gres = step_gres_ptr->gres_per_step -
+			   step_gres_ptr->total_gres - (rem_nodes - 1);
+		gres_needed = 1;
 	} else {
-//FIXME: Add step support for other GRES count specifications
+		/*
+		 * No explicit step GRES specification.
+		 * Note that gres_per_socket is not supported for steps
+		 */
 		gres_needed = job_gres_ptr->gres_cnt_node_alloc[node_offset];
 	}
 	if (step_gres_ptr->node_cnt == 0)
@@ -9920,13 +9923,6 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		      gres_needed, gres_avail);
 		return SLURM_ERROR;
 	}
-	if (step_gres_ptr->gres_cnt_node_alloc &&
-	    (node_offset < step_gres_ptr->node_cnt))
-		step_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_needed;
-	if (!job_gres_ptr->gres_cnt_step_alloc) {
-		job_gres_ptr->gres_cnt_step_alloc =
-			xmalloc(sizeof(uint64_t) * job_gres_ptr->node_cnt);
-	}
 
 	if (gres_needed >
 	    (gres_avail - job_gres_ptr->gres_cnt_step_alloc[node_offset])) {
@@ -9938,6 +9934,19 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		      job_gres_ptr->gres_cnt_step_alloc[node_offset]);
 		return SLURM_ERROR;
 	}
+	gres_avail -= job_gres_ptr->gres_cnt_step_alloc[node_offset];
+	if (max_gres)
+		gres_needed = MIN(gres_avail, max_gres);
+
+	if (!job_gres_ptr->gres_cnt_step_alloc) {
+		job_gres_ptr->gres_cnt_step_alloc =
+			xmalloc(sizeof(uint64_t) * job_gres_ptr->node_cnt);
+	}
+
+	if (step_gres_ptr->gres_cnt_node_alloc &&
+	    (node_offset < step_gres_ptr->node_cnt))
+		step_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_needed;
+	step_gres_ptr->total_gres += gres_needed;
 
 	if (step_gres_ptr->node_in_use == NULL) {
 		step_gres_ptr->node_in_use = bit_alloc(job_gres_ptr->node_cnt);
@@ -10007,12 +10016,16 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
  *		gres_plugin_step_state_validate()
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_offset - job's zero-origin index to the node of interest
+ * IN first_step_node - true if this is the first node in the step's allocation
+ * IN tasks_on_node - number of tasks to be launched on this node
+ * IN rem_nodes - desired additional node count to allocate, including this node
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
-				  int node_offset, uint32_t job_id,
-				  uint32_t step_id)
+				  int node_offset, bool first_step_node,
+				  uint16_t tasks_on_node, uint32_t rem_nodes,
+				  uint32_t job_id, uint32_t step_id)
 {
 	int i, rc, rc2;
 	ListIterator step_gres_iter,  job_gres_iter;
@@ -10021,7 +10034,7 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 	if (step_gres_list == NULL)
 		return SLURM_SUCCESS;
 	if (job_gres_list == NULL) {
-		error("%s: step allocates gres, but job %u has none",
+		error("%s: step allocates GRES, but job %u has none",
 		      __func__, job_id);
 		return SLURM_ERROR;
 	}
@@ -10037,7 +10050,7 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 				break;
 		}
 		if (i >= gres_context_cnt) {
-			error("%s: could not find plugin %u for step %u.%u",
+			error("%s: could not find GRES plugin %u for step %u.%u",
 			      __func__, step_gres_ptr->plugin_id,
 			      job_id, step_id);
 			rc = ESLURM_INVALID_GRES;
@@ -10073,7 +10086,8 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 
 		rc2 = _step_alloc(step_gres_ptr->gres_data,
 				  job_gres_ptr->gres_data, node_offset,
-				  gres_context[i].gres_name, job_id, step_id);
+				  first_step_node, gres_context[i].gres_name,
+				  job_id, step_id, tasks_on_node, rem_nodes);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
