@@ -1022,6 +1022,7 @@ _pick_step_nodes (struct job_record *job_ptr,
 	struct step_record *step_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
+	uint64_t gres_cpus;
 	int i_first, i_last;
 
 	xassert(job_resrcs_ptr);
@@ -1124,7 +1125,6 @@ _pick_step_nodes (struct job_record *job_ptr,
 	if (step_spec->exclusive) {
 		int avail_cpus, avail_tasks, total_cpus, total_tasks, node_inx;
 		uint64_t avail_mem, total_mem;
-		uint64_t gres_cnt;
 		uint32_t nodes_picked_cnt = 0;
 		uint32_t tasks_picked_cnt = 0, total_task_cnt = 0;
 		bitstr_t *selected_nodes = NULL, *non_selected_nodes = NULL;
@@ -1214,22 +1214,22 @@ _pick_step_nodes (struct job_record *job_ptr,
 					total_tasks = 0;
 			}
 
-			gres_cnt = gres_plugin_step_test(step_gres_list,
-							 job_ptr->gres_list,
-							 node_inx, false,
-							 job_ptr->job_id,
-							 NO_VAL);
-			if ((gres_cnt != NO_VAL64) && (cpus_per_task > 0))
-				gres_cnt /= cpus_per_task;
-			avail_tasks = MIN((uint64_t)avail_tasks, gres_cnt);
-			gres_cnt = gres_plugin_step_test(step_gres_list,
-							 job_ptr->gres_list,
-							 node_inx, true,
-							 job_ptr->job_id,
-							 NO_VAL);
-			if ((gres_cnt != NO_VAL64) && (cpus_per_task > 0))
-				gres_cnt /= cpus_per_task;
-			total_tasks = MIN((uint64_t)total_tasks, gres_cnt);
+			gres_cpus = gres_plugin_step_test(step_gres_list,
+							  job_ptr->gres_list,
+							  node_inx, false,
+							  job_ptr->job_id,
+							  NO_VAL);
+			if ((gres_cpus != NO_VAL64) && (cpus_per_task > 0))
+				gres_cpus /= cpus_per_task;
+			avail_tasks = MIN((uint64_t)avail_tasks, gres_cpus);
+			gres_cpus = gres_plugin_step_test(step_gres_list,
+							  job_ptr->gres_list,
+							  node_inx, true,
+							  job_ptr->job_id,
+							  NO_VAL);
+			if ((gres_cpus != NO_VAL64) && (cpus_per_task > 0))
+				gres_cpus /= cpus_per_task;
+			total_tasks = MIN((uint64_t)total_tasks, gres_cpus);
 			if (step_spec->plane_size &&
 			    step_spec->plane_size != NO_VAL16) {
 				if (avail_tasks < step_spec->plane_size)
@@ -1323,8 +1323,7 @@ _pick_step_nodes (struct job_record *job_ptr,
 		return NULL;
 	}
 
-	if ((step_spec->pn_min_memory && _is_mem_resv()) ||
-	    (step_spec->tres_per_node && step_spec->tres_per_node[0])) {
+	if ((step_spec->pn_min_memory && _is_mem_resv()) || step_gres_list) {
 		int fail_mode = ESLURM_INVALID_TASK_MEMORY;
 		uint64_t tmp_mem;
 		uint32_t tmp_cpus, avail_cpus, total_cpus;
@@ -1393,20 +1392,20 @@ _pick_step_nodes (struct job_record *job_ptr,
 			}
 
 			/* ignore current step allocations */
-			tmp_cpus = gres_plugin_step_test(step_gres_list,
-							 job_ptr->gres_list,
-							 node_inx, true,
-							 job_ptr->job_id,
-							 NO_VAL);
-			total_cpus = MIN(total_cpus, tmp_cpus);
+			gres_cpus = gres_plugin_step_test(step_gres_list,
+							  job_ptr->gres_list,
+							  node_inx, true,
+							  job_ptr->job_id,
+							  NO_VAL);
+			total_cpus = MIN(total_cpus, gres_cpus);
 			/* consider current step allocations */
-			tmp_cpus = gres_plugin_step_test(step_gres_list,
-							 job_ptr->gres_list,
-							 node_inx, false,
-							 job_ptr->job_id,
-							 NO_VAL);
-			if (tmp_cpus < avail_cpus) {
-				avail_cpus = tmp_cpus;
+			gres_cpus = gres_plugin_step_test(step_gres_list,
+							  job_ptr->gres_list,
+							  node_inx, false,
+							  job_ptr->job_id,
+							  NO_VAL);
+			if (gres_cpus < avail_cpus) {
+				avail_cpus = gres_cpus;
 				usable_cpu_cnt[i] = avail_cpus;
 				fail_mode = ESLURM_INVALID_GRES;
 			}
