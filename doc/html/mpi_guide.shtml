@@ -487,7 +487,7 @@ Slurm provides a version of the PMI2 client library in the contribs directory. T
 installed in the Slurm lib directory. If your MPI implementation supports PMI2 and you wish to use
 the Slurm provided library you have to link the Slurm provided library explicitly:
 <pre>
-$ mpicc -L&lt;path_to_pim2_lib&gt; -lpmi2 ...
+$ mpicc -L&lt;path_to_pmi2_lib&gt; -lpmi2 ...
 $ srun -n20 a.out
 </pre>
 
