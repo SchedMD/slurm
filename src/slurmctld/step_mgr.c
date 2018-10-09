@@ -1016,7 +1016,7 @@ _pick_step_nodes (struct job_record *job_ptr,
 	bitstr_t *select_nodes_avail = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt = 0;
-	int cpu_cnt, i, task_cnt;
+	int cpu_cnt, i, task_cnt, max_rem_nodes;
 	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -1024,6 +1024,7 @@ _pick_step_nodes (struct job_record *job_ptr,
 	uint32_t *usable_cpu_cnt = NULL;
 	uint64_t gres_cpus;
 	int i_first, i_last;
+	bool first_step_node = true;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -1042,6 +1043,7 @@ _pick_step_nodes (struct job_record *job_ptr,
 		*return_code = ESLURM_INVALID_NODE_COUNT;
 		return NULL;
 	}
+	max_rem_nodes = step_spec->max_nodes;
 
 	/*
 	 * If we have a select plugin that selects step resources, then use it
@@ -1216,7 +1218,9 @@ _pick_step_nodes (struct job_record *job_ptr,
 
 			gres_cpus = gres_plugin_step_test(step_gres_list,
 							  job_ptr->gres_list,
-							  node_inx, false,
+							  node_inx,
+							  first_step_node,
+							  max_rem_nodes, false,
 							  job_ptr->job_id,
 							  NO_VAL);
 			if ((gres_cpus != NO_VAL64) && (cpus_per_task > 0))
@@ -1224,7 +1228,9 @@ _pick_step_nodes (struct job_record *job_ptr,
 			avail_tasks = MIN((uint64_t)avail_tasks, gres_cpus);
 			gres_cpus = gres_plugin_step_test(step_gres_list,
 							  job_ptr->gres_list,
-							  node_inx, true,
+							  node_inx,
+							  first_step_node,
+							  max_rem_nodes, true,
 							  job_ptr->job_id,
 							  NO_VAL);
 			if ((gres_cpus != NO_VAL64) && (cpus_per_task > 0))
@@ -1271,6 +1277,8 @@ _pick_step_nodes (struct job_record *job_ptr,
 				nodes_picked_cnt++;
 				tasks_picked_cnt += avail_tasks;
 				total_task_cnt += total_tasks;
+				max_rem_nodes--;
+				first_step_node = false;
 			}
 		}
 
@@ -1394,14 +1402,18 @@ _pick_step_nodes (struct job_record *job_ptr,
 			/* ignore current step allocations */
 			gres_cpus = gres_plugin_step_test(step_gres_list,
 							  job_ptr->gres_list,
-							  node_inx, true,
+							  node_inx,
+							  first_step_node,
+							  max_rem_nodes, true,
 							  job_ptr->job_id,
 							  NO_VAL);
 			total_cpus = MIN(total_cpus, gres_cpus);
 			/* consider current step allocations */
 			gres_cpus = gres_plugin_step_test(step_gres_list,
 							  job_ptr->gres_list,
-							  node_inx, false,
+							  node_inx,
+							  first_step_node,
+							  max_rem_nodes, false,
 							  job_ptr->job_id,
 							  NO_VAL);
 			if (gres_cpus < avail_cpus) {
@@ -1433,6 +1445,8 @@ _pick_step_nodes (struct job_record *job_ptr,
 				mem_blocked_cpus += (total_cpus - avail_cpus);
 			} else {
 				mem_blocked_cpus += (total_cpus - avail_cpus);
+				max_rem_nodes--;
+				first_step_node = false;
 			}
 		}
 	}
@@ -2011,7 +2025,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 			continue;
 		step_node_inx++;
 		if (job_node_inx >= job_resrcs_ptr->nhosts)
-			fatal("step_alloc_lps: node index bad");
+			fatal("%s: node index bad", __func__);
 
 		/*
 		 * NOTE: The --overcommit option can result in
@@ -2815,7 +2829,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	slurm_step_layout_req_t step_layout_req;
 	uint64_t gres_cpus;
 	int cpu_inx = -1, cpus_task_inx = -1;
-	int i, usable_cpus, usable_mem;
+	int i, usable_cpus, usable_mem, rem_nodes;
 	int set_nodes = 0/* , set_tasks = 0 */;
 	int pos = -1, job_node_offset = -1;
 	int first_bit, last_bit;
@@ -2824,6 +2838,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	uint32_t cpus_task = 0;
 	uint16_t ntasks_per_core = 0;
 	uint16_t ntasks_per_socket = 0;
+	bool first_step_node = true;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -2855,6 +2870,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	}
 
 	/* build cpus-per-node arrays for the subset of nodes used by step */
+	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
 	first_bit = bit_ffs(job_ptr->node_bitmap);
 	if (first_bit >= 0)
 		last_bit = bit_fls(job_ptr->node_bitmap);
@@ -2973,7 +2989,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			gres_cpus = gres_plugin_step_test(step_ptr->gres_list,
 							  job_ptr->gres_list,
 							  job_node_offset,
-							  false,
+							  first_step_node,
+							  rem_nodes, false,
 							  job_ptr->job_id,
 							  step_ptr->step_id);
 			if (usable_cpus > gres_cpus)
@@ -2994,6 +3011,9 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			} else
 				cpu_count_reps[cpu_inx]++;
 			set_nodes++;
+			first_step_node = false;
+			rem_nodes--;
+
 #if 0
 			/*
 			 * FIXME: on a heterogeneous system running the
