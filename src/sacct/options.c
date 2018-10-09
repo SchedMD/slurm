@@ -757,6 +757,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"endtime",        required_argument, 0,    'E'},
                 {"file",           required_argument, 0,    'f'},
                 {"flags",          required_argument, 0,    'F'},
+                {"gid",            required_argument, 0,    'g'},
                 {"group",          required_argument, 0,    'g'},
                 {"help",           no_argument,       0,    'h'},
                 {"local",          no_argument,       0,    OPT_LONG_LOCAL},
