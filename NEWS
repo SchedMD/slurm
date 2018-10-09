@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.11
 ===========================
+ -- Correctly initialize variable in env_array_user_default().
 
 * Changes in Slurm 17.11.10
 ===========================

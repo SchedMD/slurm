@@ -2057,7 +2057,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	char cmdstr[256], *env_loc = NULL;
-	char *stepd_path;
+	char *stepd_path = NULL;
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
 	pid_t child;
@@ -2081,7 +2081,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		fatal("Could not locate command: /bin/echo");
 	xstrfmtcat(stepd_path, "%s/sbin/slurmstepd", SLURM_PREFIX);
 	if (stat(stepd_path, &buf) == 0) {
-		xstrfmtcat(stepd_path, "%s getenv", stepd_path);
+		xstrcat(stepd_path, " getenv");
 		env_loc = stepd_path;
 	} else if (stat("/bin/env", &buf) == 0)
 		env_loc = "/bin/env";
