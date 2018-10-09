@@ -9938,6 +9938,11 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		return SLURM_ERROR;
 	}
 
+	if (!job_gres_ptr->gres_cnt_step_alloc) {
+		job_gres_ptr->gres_cnt_step_alloc =
+			xmalloc(sizeof(uint64_t) * job_gres_ptr->node_cnt);
+	}
+
 	if (gres_needed >
 	    (gres_avail - job_gres_ptr->gres_cnt_step_alloc[node_offset])) {
 		error("gres/%s: %s for %u.%u, step's > job's "
@@ -9951,11 +9956,6 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	gres_avail -= job_gres_ptr->gres_cnt_step_alloc[node_offset];
 	if (max_gres)
 		gres_needed = MIN(gres_avail, max_gres);
-
-	if (!job_gres_ptr->gres_cnt_step_alloc) {
-		job_gres_ptr->gres_cnt_step_alloc =
-			xmalloc(sizeof(uint64_t) * job_gres_ptr->node_cnt);
-	}
 
 	if (step_gres_ptr->gres_cnt_node_alloc &&
 	    (node_offset < step_gres_ptr->node_cnt))
