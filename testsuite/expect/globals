@@ -4393,3 +4393,31 @@ proc cuda_count { cuda_string } {
 	}
 	return $cuda_count
 }
+
+################################################################
+#
+# Proc: get_acct_store_tres
+#
+# Purpose: Get the configured value of AccountingStorageTRES
+#
+# Returns Returns the configured value of AccountingStorageTRES
+#
+################################################################
+proc get_acct_store_tres { } {
+	global scontrol alpha_comma_slash
+
+	log_user 0
+	set store_tres ""
+	spawn $scontrol show config
+	expect {
+		-re "AccountingStorageTRES *= ($alpha_comma_slash)" {
+			set store_tres $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $store_tres
+}
