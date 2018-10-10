@@ -183,6 +183,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
+ -- Extend the job prolog env with SLURM_ACTUAL_NODE_CPUS and SLURM_JOB_NODE_CPUS
+    to allow the prolog script to assess if a job will consume the complete node.
  -- Run epilog and clean up allocation when a job is resized to zero and its
     resources transferred to another job (--depend=expand).
  -- If GRES are associated with specific sockets, identify those sockets in the
@@ -3281,7 +3283,7 @@ documents those changes that are of interest to users and administrators.
  -- Add an ack reply from slurmd to slurmstepd when job setup is done and the
     job is ready to be executed.
  -- Removed support for authd. authd has not been developed and supported since
-    several years. 
+    several years.
  -- Introduce a new parameter requeue_setup_env_fail in SchedulerParameters.
     A job that fails to setup the environment will be requeued and the node
     drained.
