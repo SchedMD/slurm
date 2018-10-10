@@ -22,7 +22,7 @@ The official issue tracker for Slurm is at
 
 We welcome code contributions and patches, but **we do not accept Pull Requests
 through Github at this time.** Please submit patches as attachments to new
-bugs under "Contributions" category.
+issues under the "C - Contributions" severity level.
 
 SOURCE DISTRIBUTION HIERARCHY
 -----------------------------
