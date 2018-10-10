@@ -5825,12 +5825,6 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 			      gres_name, job_id);
 			xfree(job_gres_ptr->gres_bit_alloc);
 		}
-		job_gres_ptr->gres_bit_alloc = xmalloc(sizeof(bitstr_t *) *
-						       node_cnt);
-		if (!job_gres_ptr->gres_cnt_node_alloc) {
-			job_gres_ptr->gres_cnt_node_alloc =
-				xmalloc(sizeof(uint64_t) * node_cnt);
-		}
 	}
 	/*
 	 * These next 2 checks were added long before job resizing was allowed.
@@ -5848,6 +5842,13 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data,
 		debug2("gres/%s: job %u node_cnt is now smaller than it was when allocated %u to %d",
 		      gres_name, job_id, job_gres_ptr->node_cnt, node_cnt);
 	}
+
+	if (!job_gres_ptr->gres_bit_alloc)
+		job_gres_ptr->gres_bit_alloc =
+			xmalloc(sizeof(bitstr_t *) * node_cnt);
+	if (!job_gres_ptr->gres_cnt_node_alloc)
+		job_gres_ptr->gres_cnt_node_alloc =
+			xmalloc(sizeof(uint64_t) * node_cnt);
 
 	/*
 	 * Check that sufficient resources exist on this node

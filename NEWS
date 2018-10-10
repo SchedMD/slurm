@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Correctly initialize variable in env_array_user_default().
  -- Remove race condition when signaling starting step.
+ -- Fix issue where 17.11 job's using GRES in didn't initialize new 18.08
+    structures after unpack.
 
 * Changes in Slurm 18.08.1
 ==========================
