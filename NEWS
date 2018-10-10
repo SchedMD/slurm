@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove race condition when signaling starting step.
  -- Fix issue where 17.11 job's using GRES in didn't initialize new 18.08
     structures after unpack.
+ -- Stop removing nodes once the minimum CPU or node count for the job is
+    reached in the cons_res plugin.
 
 * Changes in Slurm 18.08.1
 ==========================
