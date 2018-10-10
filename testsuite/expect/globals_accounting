@@ -1847,7 +1847,6 @@ proc check_resource_limits { name res_limits } {
 #
 # Returns: 0 if successful, 1 otherwise
 #
-#
 ###############################################################
 proc mod_resource {name mod_limits} {
 
@@ -1894,6 +1893,15 @@ proc mod_resource {name mod_limits} {
 	return $exit_code
 }
 
+###############################################################
+#
+# Proc: get_assoc_id
+#
+# Purpose: Return association ID for given user/account/cluster
+#
+# Returns: association ID if successful, -1 otherwise
+#
+###############################################################
 proc get_assoc_id {user acct cluster} {
 	global sacctmgr number
 
@@ -1901,17 +1909,17 @@ proc get_assoc_id {user acct cluster} {
 
 	if { ![string length $user] } {
 		send_user "\nFAILURE: we need a user to check\n"
-		return 1
+		return -1
 	}
 
 	if { ![string length $acct] } {
 		send_user "\nFAILURE: we need a account to check\n"
-		return 1
+		return -1
 	}
 
 	if { ![string length $cluster] } {
 		send_user "\nFAILURE: we need a cluster to check\n"
-		return 1
+		return -1
 	}
 
 	log_user 0
