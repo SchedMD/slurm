@@ -235,6 +235,34 @@ _domain_socket_destroy(int fd)
 		error("Unable to unlink domain socket: %m");
 }
 
+/* Wait for the job to be running (pids added) before continuing. */
+static int _wait_for_job_running(stepd_step_rec_t *job)
+{
+	struct timespec ts = {0, 0};
+	int count = 0;
+	int rc = SLURM_SUCCESS;
+
+	slurm_mutex_lock(&job->state_mutex);
+
+	/*
+	 * SLURMSTEPD_STEP_RUNNING is 2 so we need loop at least that
+	 * many times, but we don't want to loop any more than that.
+	 */
+	while ((job->state < SLURMSTEPD_STEP_RUNNING) && (count < 2)) {
+		ts.tv_sec  = time(NULL) + 60;
+		slurm_cond_timedwait(&job->state_cond, &job->state_mutex, &ts);
+		count++;
+	}
+
+	if (job->state < SLURMSTEPD_STEP_RUNNING) {
+		debug("step %u.%u not running yet %d [cont_id:%"PRIu64"]",
+		      job->jobid, job->stepid, job->state, job->cont_id);
+		rc = ESLURMD_JOB_NOTRUNNING;
+	}
+
+	slurm_mutex_unlock(&job->state_mutex);
+	return rc;
+}
 
 static void *
 _msg_thr_internal(void *job_arg)
@@ -653,11 +681,8 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 	/*
 	 * Sanity checks
 	 */
-	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%"PRIu64"]",
-			job->jobid, job->stepid, job->cont_id);
+	if ((errnum = _wait_for_job_running(job)) != SLURM_SUCCESS) {
 		rc = -1;
-		errnum = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
@@ -950,7 +975,6 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 		errnum = EPERM;
 		goto done;
 	}
-
 	debug("_handle_terminate for step=%u.%u uid=%d",
 	      job->jobid, job->stepid, uid);
 	step_terminate_monitor_start(job);
@@ -958,11 +982,8 @@ _handle_terminate(int fd, stepd_step_rec_t *job, uid_t uid)
 	/*
 	 * Sanity checks
 	 */
-	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%"PRIu64"]",
-			job->jobid, job->stepid, job->cont_id);
+	if ((errnum = _wait_for_job_running(job)) != SLURM_SUCCESS) {
 		rc = -1;
-		errnum = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
@@ -1313,19 +1334,6 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-/* Wait for the job to completely start before trying to suspend it. */
-static void _wait_for_job_init(stepd_step_rec_t *job)
-{
-	slurm_mutex_lock(&job->state_mutex);
-	while (1) {
-		if (job->state != SLURMSTEPD_STEP_STARTING) {
-			slurm_mutex_unlock(&job->state_mutex);
-			break;
-		}
-		slurm_cond_wait(&job->state_cond, &job->state_mutex);
-	}
-}
-
 static int
 _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 {
@@ -1347,13 +1355,8 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		goto done;
 	}
 
-	_wait_for_job_init(job);
-
-	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%"PRIu64"]",
-			job->jobid, job->stepid, job->cont_id);
+	if ((errnum = _wait_for_job_running(job)) != SLURM_SUCCESS) {
 		rc = -1;
-		errnum = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
@@ -1443,11 +1446,8 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 		goto done;
 	}
 
-	if (job->cont_id == 0) {
-		debug ("step %u.%u invalid container [cont_id:%"PRIu64"]",
-			job->jobid, job->stepid, job->cont_id);
+	if ((errnum = _wait_for_job_running(job)) != SLURM_SUCCESS) {
 		rc = -1;
-		errnum = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 

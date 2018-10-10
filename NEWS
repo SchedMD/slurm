@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 18.08.2
 ==========================
  -- Correctly initialize variable in env_array_user_default().
+ -- Remove race condition when signaling starting step.
 
 * Changes in Slurm 18.08.1
 ==========================
