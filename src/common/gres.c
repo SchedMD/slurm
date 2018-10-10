@@ -265,8 +265,9 @@ static void	_step_state_log(void *gres_data, uint32_t job_id,
 				uint32_t step_id, char *gres_name);
 static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			   int node_offset, bool first_step_node,
-			   int max_rem_nodes, bool ignore_alloc,
-			   char *gres_name, uint32_t job_id, uint32_t step_id);
+			   uint16_t cpus_per_task, int max_rem_nodes,
+			   bool ignore_alloc, char *gres_name,
+			   uint32_t job_id, uint32_t step_id);
 static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
 static void	_validate_config(slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
@@ -8655,12 +8656,13 @@ static void _gres_step_list_delete(void *list_element)
 
 static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			   int node_offset, bool first_step_node,
-			   int max_rem_nodes, bool ignore_alloc,
-			   char *gres_name, uint32_t job_id, uint32_t step_id)
+			   uint16_t cpus_per_task, int max_rem_nodes,
+			   bool ignore_alloc, char *gres_name,
+			   uint32_t job_id, uint32_t step_id)
 {
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
-	uint64_t core_cnt, gres_cnt, min_gres = 1;
+	uint64_t core_cnt, gres_cnt, min_gres = 1, task_cnt;
 
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
@@ -8706,9 +8708,13 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 						  gres_bit_step_alloc
 						  [node_offset]);
 		}
-		if (min_gres > gres_cnt)
+		if (min_gres > gres_cnt) {
 			core_cnt = 0;
-		else
+		} else if (step_gres_ptr->gres_per_task) {
+			task_cnt = (gres_cnt + step_gres_ptr->gres_per_task - 1)
+				   / step_gres_ptr->gres_per_task;
+			core_cnt = task_cnt * cpus_per_task;
+		} else
 			core_cnt = NO_VAL64;
 	} else if (job_gres_ptr->gres_cnt_node_alloc &&
 		   job_gres_ptr->gres_cnt_step_alloc) {
@@ -8717,9 +8723,13 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			gres_cnt -= job_gres_ptr->
 				    gres_cnt_step_alloc[node_offset];
 		}
-		if (min_gres > gres_cnt)
+		if (min_gres > gres_cnt) {
 			core_cnt = 0;
-		else
+		} else if (step_gres_ptr->gres_per_task) {
+			task_cnt = (gres_cnt + step_gres_ptr->gres_per_task - 1)
+				   / step_gres_ptr->gres_per_task;
+			core_cnt = task_cnt * cpus_per_task;
+		} else
 			core_cnt = NO_VAL64;
 	} else {
 		debug3("gres/%s: %s %u.%u gres_bit_alloc and gres_cnt_node_alloc are NULL",
@@ -9803,6 +9813,7 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  * IN/OUT step_gres_list - a pending job step's gres requirements
  * IN node_offset - index into the job's node allocation
  * IN first_step_node - true if this is node zero of the step (do initialization)
+ * IN cpus_per_task - number of CPUs required per task
  * IN max_rem_nodes - maximum nodes remaining for step (including this one)
  * IN ignore_alloc - if set ignore resources already allocated to running steps
  * IN job_id, step_id - ID of the step being allocated.
@@ -9811,7 +9822,8 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  */
 extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 				      int node_offset, bool first_step_node,
-				      int max_rem_nodes, bool ignore_alloc,
+				      uint16_t cpus_per_task, int max_rem_nodes,
+				      bool ignore_alloc,
 				      uint32_t job_id, uint32_t step_id)
 {
 	int i;
@@ -9824,6 +9836,8 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 	if (job_gres_list == NULL)
 		return 0;
 
+	if (cpus_per_task == 0)
+		cpus_per_task = 1;
 	core_cnt = NO_VAL64;
 	(void) gres_plugin_init();
 
@@ -9850,7 +9864,8 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 			tmp_cnt = _step_test(step_gres_ptr->gres_data,
 					     job_gres_ptr->gres_data,
 					     node_offset, first_step_node,
-					     max_rem_nodes, ignore_alloc,
+					     cpus_per_task, max_rem_nodes,
+					     ignore_alloc,
 					     gres_context[i].gres_name,
 					     job_id, step_id);
 			if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))

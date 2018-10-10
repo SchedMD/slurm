@@ -1024,6 +1024,7 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  * IN/OUT step_gres_list - a pending job step's gres requirements
  * IN node_offset - index into the job's node allocation
  * IN first_step_node - true if this is node zero of the step (do initialization)
+ * IN cpus_per_task - number of CPUs required per task
  * IN max_rem_nodes - maximum nodes remaining for step (including this one)
  * IN ignore_alloc - if set ignore resources already allocated to running steps
  * IN job_id, step_id - ID of the step being allocated.
@@ -1032,7 +1033,8 @@ extern void gres_plugin_step_state_log(List gres_list, uint32_t job_id,
  */
 extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 				      int node_offset, bool first_step_node,
-				      int max_rem_nodes, bool ignore_alloc,
+				      uint16_t cpus_per_task, int max_rem_nodes,
+				      bool ignore_alloc,
 				      uint32_t job_id, uint32_t step_id);
 
 /*

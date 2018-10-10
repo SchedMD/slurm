@@ -1217,22 +1217,18 @@ _pick_step_nodes (struct job_record *job_ptr,
 			}
 
 			gres_cpus = gres_plugin_step_test(step_gres_list,
-							  job_ptr->gres_list,
-							  node_inx,
-							  first_step_node,
-							  max_rem_nodes, false,
-							  job_ptr->job_id,
-							  NO_VAL);
+						job_ptr->gres_list, node_inx,
+						first_step_node, cpus_per_task,
+						max_rem_nodes, false,
+						job_ptr->job_id, NO_VAL);
 			if ((gres_cpus != NO_VAL64) && (cpus_per_task > 0))
 				gres_cpus /= cpus_per_task;
 			avail_tasks = MIN((uint64_t)avail_tasks, gres_cpus);
 			gres_cpus = gres_plugin_step_test(step_gres_list,
-							  job_ptr->gres_list,
-							  node_inx,
-							  first_step_node,
-							  max_rem_nodes, true,
-							  job_ptr->job_id,
-							  NO_VAL);
+						job_ptr->gres_list, node_inx,
+						first_step_node, cpus_per_task,
+						max_rem_nodes, true,
+						job_ptr->job_id, NO_VAL);
 			if ((gres_cpus != NO_VAL64) && (cpus_per_task > 0))
 				gres_cpus /= cpus_per_task;
 			total_tasks = MIN((uint64_t)total_tasks, gres_cpus);
@@ -1401,21 +1397,17 @@ _pick_step_nodes (struct job_record *job_ptr,
 
 			/* ignore current step allocations */
 			gres_cpus = gres_plugin_step_test(step_gres_list,
-							  job_ptr->gres_list,
-							  node_inx,
-							  first_step_node,
-							  max_rem_nodes, true,
-							  job_ptr->job_id,
-							  NO_VAL);
+						job_ptr->gres_list, node_inx,
+						first_step_node, cpus_per_task,
+						max_rem_nodes, true,
+						job_ptr->job_id, NO_VAL);
 			total_cpus = MIN(total_cpus, gres_cpus);
 			/* consider current step allocations */
 			gres_cpus = gres_plugin_step_test(step_gres_list,
-							  job_ptr->gres_list,
-							  node_inx,
-							  first_step_node,
-							  max_rem_nodes, false,
-							  job_ptr->job_id,
-							  NO_VAL);
+						job_ptr->gres_list, node_inx,
+						first_step_node, cpus_per_task,
+						max_rem_nodes, false,
+						job_ptr->job_id, NO_VAL);
 			if (gres_cpus < avail_cpus) {
 				avail_cpus = gres_cpus;
 				usable_cpu_cnt[i] = avail_cpus;
@@ -2987,12 +2979,13 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			}
 
 			gres_cpus = gres_plugin_step_test(step_ptr->gres_list,
-							  job_ptr->gres_list,
-							  job_node_offset,
-							  first_step_node,
-							  rem_nodes, false,
-							  job_ptr->job_id,
-							  step_ptr->step_id);
+							job_ptr->gres_list,
+							job_node_offset,
+							first_step_node,
+							step_ptr->cpus_per_task,
+							rem_nodes, false,
+							job_ptr->job_id,
+							step_ptr->step_id);
 			if (usable_cpus > gres_cpus)
 				usable_cpus = gres_cpus;
 			if (usable_cpus <= 0) {
