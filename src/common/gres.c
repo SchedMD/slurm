@@ -9906,7 +9906,7 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		return SLURM_ERROR;
 	}
 
-	if (step_gres_ptr->gres_per_step && first_step_node)
+	if (first_step_node)
 		step_gres_ptr->total_gres = 0;
 	if (step_gres_ptr->gres_per_node) {
 		gres_needed = step_gres_ptr->gres_per_node;
@@ -10816,10 +10816,7 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 			gres_step_state_t *gres_data_ptr = (gres_step_state_t *)
 				gres_state_ptr->gres_data;
 			col_name = gres_data_ptr->type_name;
-//FIXME: Step support, change to total_gres check below once field is set
-//			count = gres_data_ptr->total_gres;
-			count = gres_data_ptr->gres_per_node *
-				(uint64_t)gres_data_ptr->node_cnt;
+			count = gres_data_ptr->total_gres;
 		}
 
 		for (i = 0; i < gres_context_cnt; i++) {
