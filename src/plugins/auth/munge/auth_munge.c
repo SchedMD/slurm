@@ -479,7 +479,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 
  unpack_error:
 	plugin_errno = SLURM_AUTH_UNPACK;
-	xfree( cred );
+	slurm_auth_destroy(cred);
 	return NULL;
 }
 
