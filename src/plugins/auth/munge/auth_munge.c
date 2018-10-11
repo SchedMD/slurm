@@ -356,7 +356,8 @@ slurm_auth_get_gid( slurm_auth_credential_t *cred, char *opts )
  * Slurm's marshalling protocol.
  */
 int
-slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
+slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf,
+		 uint16_t protocol_version )
 {
 	if (cred == NULL) {
 		plugin_errno = SLURM_AUTH_BADARG;
@@ -388,7 +389,7 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
  * to Slurm's marshalling protocol.
  */
 slurm_auth_credential_t *
-slurm_auth_unpack( Buf buf )
+slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 {
 	slurm_auth_credential_t *cred = NULL;
 	char    *type;

@@ -259,8 +259,12 @@ stepd_connect(const char *directory, const char *nodename,
 		goto fail1;
 	}
 
-	/* Pack the auth credential */
-	rc = g_slurm_auth_pack(auth_cred, buffer);
+	/*
+	 * Pack the auth credential.
+	 * Always send SLURM_MIN_PROTOCOL_VERSION since we don't know the
+	 * version at the moment.
+	 */
+	rc = g_slurm_auth_pack(auth_cred, buffer, SLURM_MIN_PROTOCOL_VERSION);
 	(void) g_slurm_auth_destroy(auth_cred);
 	if (rc) {
 		error("Packing authentication credential: %s",

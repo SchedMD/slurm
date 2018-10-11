@@ -65,8 +65,9 @@ typedef struct slurm_auth_ops {
         int          (*verify)    ( void *cred, char *auth_info );
         uid_t        (*get_uid)   ( void *cred, char *auth_info );
         gid_t        (*get_gid)   ( void *cred, char *auth_info );
-        int          (*pack)      ( void *cred, Buf buf );
-        void *       (*unpack)    ( Buf buf );
+        int          (*pack)      ( void *cred, Buf buf,
+				    uint16_t protocol_version );
+        void *       (*unpack)    ( Buf buf, uint16_t protocol_version );
         int          (*print)     ( void *cred, FILE *fp );
         int          (*sa_errno)  ( void *cred );
         const char * (*sa_errstr) ( int slurm_errno );
@@ -222,20 +223,20 @@ gid_t g_slurm_auth_get_gid(void *cred, char *auth_info)
         return (*(ops.get_gid))(cred, auth_info);
 }
 
-int g_slurm_auth_pack(void *cred, Buf buf)
+int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
 {
         if (slurm_auth_init(NULL) < 0)
                 return SLURM_ERROR;
 
-        return (*(ops.pack))(cred, buf);
+        return (*(ops.pack))(cred, buf, protocol_version);
 }
 
-void *g_slurm_auth_unpack(Buf buf)
+void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 {
 	if (slurm_auth_init(NULL) < 0)
                 return NULL;
 
-        return (*(ops.unpack))(buf);
+        return (*(ops.unpack))(buf, protocol_version);
 }
 
 int g_slurm_auth_print(void *cred, FILE *fp)

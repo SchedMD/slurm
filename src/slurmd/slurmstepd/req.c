@@ -413,7 +413,7 @@ _handle_accept(void *arg)
 	safe_read(fd, get_buf_data(buffer), len);
 
 	/* Unpack and verify the auth credential */
-	auth_cred = g_slurm_auth_unpack(buffer);
+	auth_cred = g_slurm_auth_unpack(buffer, SLURM_PROTOCOL_VERSION);
 	if (auth_cred == NULL) {
 		error("Unpacking authentication credential: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));

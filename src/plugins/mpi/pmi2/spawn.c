@@ -158,7 +158,12 @@ spawn_req_pack(spawn_req_t *req, Buf buf)
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
 		return;
 	}
-	(void) g_slurm_auth_pack(auth_cred, buf);
+
+	/*
+	 * We can use SLURM_PROTOCOL_VERSION here since there is no possibility
+	 * of protocol mismatch.
+	 */
+	(void) g_slurm_auth_pack(auth_cred, buf, SLURM_PROTOCOL_VERSION);
 	(void) g_slurm_auth_destroy(auth_cred);
 
 	pack32(req->seq, buf);
@@ -197,7 +202,11 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 	char *auth_info;
 	uid_t auth_uid, my_uid;
 
-	auth_cred = g_slurm_auth_unpack(buf);
+	/*
+	 * We can use SLURM_PROTOCOL_VERSION here since there is no possibility
+	 * of protocol mismatch.
+	 */
+	auth_cred = g_slurm_auth_unpack(buf, SLURM_PROTOCOL_VERSION);
 	if (auth_cred == NULL) {
 		error("authentication: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );

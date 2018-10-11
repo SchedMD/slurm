@@ -509,7 +509,11 @@ static int _auth_cred_create(Buf buf)
 		return rc;
 	}
 
-	rc = g_slurm_auth_pack(auth_cred, buf);
+	/*
+	 * We can use SLURM_PROTOCOL_VERSION here since there is no possibility
+	 * of protocol mismatch.
+	 */
+	rc = g_slurm_auth_pack(auth_cred, buf, SLURM_PROTOCOL_VERSION);
 	if (rc)
 		PMIXP_ERROR("Packing authentication credential: %s",
 			    g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
@@ -525,7 +529,11 @@ static int _auth_cred_verify(Buf buf)
 	char *auth_info = NULL;
 	int rc = SLURM_SUCCESS;
 
-	auth_cred = g_slurm_auth_unpack(buf);
+	/*
+	 * We can use SLURM_PROTOCOL_VERSION here since there is no possibility
+	 * of protocol mismatch.
+	 */
+	auth_cred = g_slurm_auth_unpack(buf, SLURM_PROTOCOL_VERSION);
 	if (!auth_cred) {
 		PMIXP_ERROR("Unpacking authentication credential: %s",
 			    g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));

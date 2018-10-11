@@ -4795,7 +4795,8 @@ _pack_composite_msg(composite_msg_t *msg, Buf buffer, uint16_t protocol_version)
 				xfree(auth_info);
 			}
 
-			g_slurm_auth_pack(tmp_info->auth_cred, buffer);
+			g_slurm_auth_pack(tmp_info->auth_cred, buffer,
+					  protocol_version);
 
 			if (!tmp_info->data_size) {
 				pack_msg(tmp_info, buffer);
@@ -4853,7 +4854,7 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 			safe_unpack16(&tmp_info->msg_index, buffer);
 
 			if (!(tmp_info->auth_cred =
-			      g_slurm_auth_unpack(buffer))) {
+			      g_slurm_auth_unpack(buffer, protocol_version))) {
 				error("authentication: %s ",
 				      g_slurm_auth_errstr(
 					      g_slurm_auth_errno(NULL)));

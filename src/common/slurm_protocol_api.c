@@ -96,7 +96,7 @@ static int message_timeout = -1;
 /* STATIC FUNCTIONS */
 static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
-static int   _unpack_msg_uid(Buf buffer);
+static int   _unpack_msg_uid(Buf buffer, uint16_t protocol_version);
 static bool  _is_port_ok(int, uint16_t, bool);
 
 #if _DEBUG
@@ -3250,7 +3250,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 	if (check_header_version(&header) < 0) {
 		slurm_addr_t resp_addr;
 		char addr_str[32];
-		int uid = _unpack_msg_uid(buffer);
+		int uid = _unpack_msg_uid(buffer, header.version);
 
 		if (!slurm_get_peer_addr(fd, &resp_addr)) {
 			slurm_print_slurm_addr(
@@ -3281,7 +3281,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 		      "slurm_receive_msg_and_forward instead", __func__);
 	}
 
-	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
+	if ((auth_cred = g_slurm_auth_unpack(buffer, header.version)) == NULL) {
 		error("%s: authentication: %s ", __func__,
 		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
@@ -3520,7 +3520,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	if (check_header_version(&header) < 0) {
 		slurm_addr_t resp_addr;
 		char addr_str[32];
-		int uid = _unpack_msg_uid(buffer);
+		int uid = _unpack_msg_uid(buffer, header.version);
 		if (!slurm_get_peer_addr(fd, &resp_addr)) {
 			slurm_print_slurm_addr(
 				&resp_addr, addr_str, sizeof(addr_str));
@@ -3552,7 +3552,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		      "slurm_receive_msg_and_forward instead");
 	}
 
-	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
+	if ((auth_cred = g_slurm_auth_unpack(buffer, header.version)) == NULL) {
 		error( "authentication: %s ",
 		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		free_buf(buffer);
@@ -3627,12 +3627,12 @@ total_return:
 
 /* try to determine the UID associated with a message with different
  * message header version, return -1 if we can't tell */
-static int _unpack_msg_uid(Buf buffer)
+static int _unpack_msg_uid(Buf buffer, uint16_t protocol_version)
 {
 	int uid = -1;
 	void *auth_cred = NULL, *auth_info;
 
-	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL)
+	if ((auth_cred = g_slurm_auth_unpack(buffer, protocol_version)) == NULL)
 		return uid;
 	auth_info = slurm_get_auth_info();
 	uid = (int) g_slurm_auth_get_uid(auth_cred, auth_info);
@@ -3720,7 +3720,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	if (check_header_version(&header) < 0) {
 		slurm_addr_t resp_addr;
 		char addr_str[32];
-		int uid = _unpack_msg_uid(buffer);
+		int uid = _unpack_msg_uid(buffer, header.version);
 
 		if (!slurm_get_peer_addr(fd, &resp_addr)) {
 			slurm_print_slurm_addr(
@@ -3786,7 +3786,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		}
 	}
 
-	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
+	if ((auth_cred = g_slurm_auth_unpack(buffer, header.version)) == NULL) {
 		error( "authentication: %s ",
 		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		free_buf(buffer);
@@ -3977,7 +3977,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	/*
 	 * Pack auth credential
 	 */
-	rc = g_slurm_auth_pack(auth_cred, buffer);
+	rc = g_slurm_auth_pack(auth_cred, buffer, header.version);
 	(void) g_slurm_auth_destroy(auth_cred);
 	if (rc) {
 		error("authentication: %s",
