@@ -227,17 +227,35 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf,
 		return SLURM_ERROR;
 	}
 
-	/*
-	 * Prefix the credential with a description of the credential
-	 * type so that it can be sanity-checked at the receiving end.
-	 */
-	packmem( (char *) plugin_type, strlen( plugin_type ) + 1, buf );
-	pack32( plugin_version, buf );
-	/*
-	 * Pack the data values.
-	 */
-	pack32( (uint32_t) cred->uid, buf );
-	pack32( (uint32_t) cred->gid, buf );
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		/*
+		 * Prefix the credential with a description of the credential
+		 * type so that it can be sanity-checked at the receiving end.
+		 */
+		packmem((char *) plugin_type, strlen( plugin_type ) + 1, buf);
+		pack32(plugin_version, buf);
+		/*
+		 * Pack the data values.
+		 */
+		pack32((uint32_t) cred->uid, buf);
+		pack32((uint32_t) cred->gid, buf);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		/*
+		 * Prefix the credential with a description of the credential
+		 * type so that it can be sanity-checked at the receiving end.
+		 */
+		packmem((char *) plugin_type, strlen( plugin_type ) + 1, buf);
+		pack32(plugin_version, buf);
+		/*
+		 * Pack the data values.
+		 */
+		pack32((uint32_t) cred->uid, buf);
+		pack32((uint32_t) cred->gid, buf);
+	} else {
+		error("%s: Unknown protocol version %d",
+		      __func__, protocol_version);
+		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -260,36 +278,72 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 		return NULL;
 	}
 
-	/*
-	 * Get the authentication type.
-	 */
-	safe_unpackmem_ptr( &tmpstr, &size, buf );
-	if (( tmpstr == NULL )
-	||  ( xstrcmp( tmpstr, plugin_type ) != 0 )) {
-		debug("slurm_auth_unpack error: packed by %s unpack by %s",
-		      tmpstr, plugin_type);
-		plugin_errno = SLURM_AUTH_MISMATCH;
-		return NULL;
-	}
-	safe_unpack32( &version, buf );
-
 	/* Allocate a new credential. */
-	cred = ((slurm_auth_credential_t *)
-		xmalloc( sizeof( slurm_auth_credential_t ) ));
-	cred->cr_errno = SLURM_SUCCESS;
+	cred = xmalloc(sizeof(slurm_auth_credential_t));
 
-	/*
-	 * We do it the hard way because we don't know anything about the
-	 * size of uid_t or gid_t, only that they are integer values.  We
-	 * pack them as 32-bit integers, but we can't pass addresses to them
-	 * directly to unpack as 32-bit integers because there will be bad
-	 * clobbering if they really aren't.  This technique ensures a
-	 * warning at compile time if the sizes are incompatible.
-	 */
-	safe_unpack32( &tmpint, buf );
-	cred->uid = tmpint;
-	safe_unpack32( &tmpint, buf );
-	cred->gid = tmpint;
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		/*
+		 * Get the authentication type.
+		 */
+		safe_unpackmem_ptr(&tmpstr, &size, buf);
+		if (xstrcmp(tmpstr, plugin_type)) {
+			debug("slurm_auth_unpack error: packed by %s unpack by %s",
+			      tmpstr, plugin_type);
+			plugin_errno = SLURM_AUTH_MISMATCH;
+			return NULL;
+		}
+
+		safe_unpack32(&version, buf);
+
+		cred->cr_errno = SLURM_SUCCESS;
+
+		/*
+		 * We do it the hard way because we don't know anything about
+		 * the size of uid_t or gid_t, only that they are integer
+		 * values.  We pack them as 32-bit integers, but we can't pass
+		 * addresses to them directly to unpack as 32-bit integers
+		 * because there will be bad clobbering if they really aren't.
+		 * This technique ensures a warning at compile time if the sizes
+		 * are incompatible.
+		 */
+		safe_unpack32( &tmpint, buf );
+		cred->uid = tmpint;
+		safe_unpack32( &tmpint, buf );
+		cred->gid = tmpint;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+			/*
+		 * Get the authentication type.
+		 */
+		safe_unpackmem_ptr(&tmpstr, &size, buf);
+		if (xstrcmp(tmpstr, plugin_type)) {
+			debug("slurm_auth_unpack error: packed by %s unpack by %s",
+			      tmpstr, plugin_type);
+			plugin_errno = SLURM_AUTH_MISMATCH;
+			return NULL;
+		}
+
+		safe_unpack32(&version, buf);
+
+		cred->cr_errno = SLURM_SUCCESS;
+
+		/*
+		 * We do it the hard way because we don't know anything about
+		 * the size of uid_t or gid_t, only that they are integer
+		 * values.  We pack them as 32-bit integers, but we can't pass
+		 * addresses to them directly to unpack as 32-bit integers
+		 * because there will be bad clobbering if they really aren't.
+		 * This technique ensures a warning at compile time if the sizes
+		 * are incompatible.
+		 */
+		safe_unpack32( &tmpint, buf );
+		cred->uid = tmpint;
+		safe_unpack32( &tmpint, buf );
+		cred->gid = tmpint;
+	} else {
+		error("%s: unknown protocol version %u",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
 
 	return cred;
 

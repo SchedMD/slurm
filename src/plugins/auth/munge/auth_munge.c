@@ -370,16 +370,33 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf,
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
-	/*
-	 * Prefix the credential with a description of the credential
-	 * type so that it can be sanity-checked at the receiving end.
-	 */
-	packstr( (char *) plugin_type, buf );
-	pack32( plugin_version, buf );
-	/*
-	 * Pack the data.
-	 */
-	packstr(cred->m_str, buf);
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		/*
+		 * Prefix the credential with a description of the credential
+		 * type so that it can be sanity-checked at the receiving end.
+		 */
+		packstr((char *) plugin_type, buf);
+		pack32(plugin_version, buf);
+		/*
+		 * Pack the data.
+		 */
+		packstr(cred->m_str, buf);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		/*
+		 * Prefix the credential with a description of the credential
+		 * type so that it can be sanity-checked at the receiving end.
+		 */
+		packstr((char *) plugin_type, buf);
+		pack32(plugin_version, buf);
+		/*
+		 * Pack the data.
+		 */
+		packstr(cred->m_str, buf);
+	} else {
+		error("%s: Unknown protocol version %d",
+		      __func__, protocol_version);
+		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -401,31 +418,63 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 		return NULL;
 	}
 
-	/*
-	 * Get the authentication type.
-	 */
-	safe_unpackmem_ptr( &type, &size, buf );
 
-	if (( type == NULL ) ||
-	    ( xstrcmp( type, plugin_type ) != 0 )) {
-		debug("slurm_auth_unpack error: packed by %s unpack by %s",
-		      type, plugin_type);
-		plugin_errno = SLURM_AUTH_MISMATCH;
-		return NULL;
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		/*
+		 * Get the authentication type.
+		 */
+		safe_unpackmem_ptr(&type, &size, buf);
+
+		if (xstrcmp(type, plugin_type)) {
+			debug("slurm_auth_unpack error: packed by %s unpack by %s",
+			      type, plugin_type);
+			plugin_errno = SLURM_AUTH_MISMATCH;
+			return NULL;
+		}
+		safe_unpack32(&version, buf);
+
+		/* Allocate and initialize credential. */
+		cred = xmalloc(sizeof(*cred));
+		cred->verified = false;
+		cred->m_str    = NULL;
+		cred->buf      = NULL;
+		cred->len      = 0;
+		cred->cr_errno = SLURM_SUCCESS;
+
+		xassert((cred->magic = MUNGE_MAGIC));
+
+		safe_unpackstr_malloc(&cred->m_str, &size, buf);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		/*
+		 * Get the authentication type.
+		 */
+		safe_unpackmem_ptr(&type, &size, buf);
+
+		if (xstrcmp(type, plugin_type)) {
+			debug("slurm_auth_unpack error: packed by %s unpack by %s",
+			      type, plugin_type);
+			plugin_errno = SLURM_AUTH_MISMATCH;
+			return NULL;
+		}
+		safe_unpack32(&version, buf);
+
+		/* Allocate and initialize credential. */
+		cred = xmalloc(sizeof(*cred));
+		cred->verified = false;
+		cred->m_str    = NULL;
+		cred->buf      = NULL;
+		cred->len      = 0;
+		cred->cr_errno = SLURM_SUCCESS;
+
+		xassert((cred->magic = MUNGE_MAGIC));
+
+		safe_unpackstr_malloc(&cred->m_str, &size, buf);
+	} else {
+		error("%s: unknown protocol version %u",
+		      __func__, protocol_version);
+		goto unpack_error;
 	}
-	safe_unpack32( &version, buf );
 
-	/* Allocate and initialize credential. */
-	cred = xmalloc(sizeof(*cred));
-	cred->verified = false;
-	cred->m_str    = NULL;
-	cred->buf      = NULL;
-	cred->len      = 0;
-	cred->cr_errno = SLURM_SUCCESS;
-
-	xassert((cred->magic = MUNGE_MAGIC));
-
-	safe_unpackstr_malloc(&cred->m_str, &size, buf);
 	return cred;
 
  unpack_error:
