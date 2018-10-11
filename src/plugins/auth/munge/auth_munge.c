@@ -51,6 +51,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_time.h"
+#include "src/common/util-net.h"
 
 #define MUNGE_ERRNO_OFFSET	1000
 #define RETRY_COUNT		20
@@ -102,6 +103,7 @@ typedef struct _slurm_auth_credential {
 	int  magic;        /* magical munge validity magic                   */
 #endif
 	char   *m_str;     /* munged string                                  */
+	struct in_addr addr; /* IP addr where cred was encoded               */
 	void   *buf;       /* Application specific data                      */
 	bool    verified;  /* true if this cred has been verified            */
 	int     len;       /* amount of App data                             */
@@ -351,6 +353,46 @@ slurm_auth_get_gid( slurm_auth_credential_t *cred, char *opts )
 	return cred->gid;
 }
 
+
+/*
+ * Obtain the Host addr from where the credential originated.
+ */
+char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
+{
+	char *hostname = NULL;
+	struct hostent *he;
+	char   h_buf[4096];
+	int    h_err  = 0;
+
+	if (cred == NULL) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return NULL;
+	}
+
+	if (!cred->verified) {
+		int rc;
+		char *socket = _auth_opts_to_socket(opts);
+		rc = _decode_cred(cred, socket);
+		xfree(socket);
+		if (rc < 0) {
+			cred->cr_errno = SLURM_AUTH_INVALID;
+			return NULL;
+		}
+	}
+
+	xassert(cred->magic == MUNGE_MAGIC);
+
+	he = get_host_by_addr((char *)&cred->addr.s_addr,
+			      sizeof(cred->addr.s_addr),
+			      AF_INET, (void *)&h_buf, sizeof(h_buf), &h_err);
+	if (he)
+		hostname = xstrdup(he->h_name);
+	else
+		error("%s: Lookup failed: %s", __func__, host_strerror(h_err));
+
+	return hostname;
+}
+
 /*
  * Marshall a credential for transmission over the network, according to
  * Slurm's marshalling protocol.
@@ -540,7 +582,6 @@ slurm_auth_errstr( int slurm_errno )
 	}
 }
 
-
 /*
  * Decode the munge encoded credential `m_str' placing results, if validated,
  * into slurm credential `c'
@@ -616,14 +657,20 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 		goto done;
 	}
 
+	/*
+	 * Store the addr so we can use it to verify where we came from later if
+	 * needed.
+	 */
+	if (munge_ctx_get(ctx, MUNGE_OPT_ADDR4, &c->addr) != EMUNGE_SUCCESS)
+		error ("auth_munge: Unable to retrieve addr: %s",
+		       munge_ctx_strerror(ctx));
+
 	c->verified = true;
 
      done:
 	munge_ctx_destroy(ctx);
 	return err ? SLURM_ERROR : SLURM_SUCCESS;
 }
-
-
 
 /*
  *  Allocate space for Munge credential info structure

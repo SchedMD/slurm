@@ -65,6 +65,7 @@ typedef struct slurm_auth_ops {
         int          (*verify)    ( void *cred, char *auth_info );
         uid_t        (*get_uid)   ( void *cred, char *auth_info );
         gid_t        (*get_gid)   ( void *cred, char *auth_info );
+        char *       (*get_host)  ( void *cred, char *auth_info );
         int          (*pack)      ( void *cred, Buf buf,
 				    uint16_t protocol_version );
         void *       (*unpack)    ( Buf buf, uint16_t protocol_version );
@@ -82,6 +83,7 @@ static const char *syms[] = {
 	"slurm_auth_verify",
 	"slurm_auth_get_uid",
 	"slurm_auth_get_gid",
+	"slurm_auth_get_host",
 	"slurm_auth_pack",
 	"slurm_auth_unpack",
 	"slurm_auth_print",
@@ -221,6 +223,14 @@ gid_t g_slurm_auth_get_gid(void *cred, char *auth_info)
                 return SLURM_AUTH_NOBODY;
 
         return (*(ops.get_gid))(cred, auth_info);
+}
+
+char *g_slurm_auth_get_host(void *cred, char *auth_info)
+{
+	if (slurm_auth_init(NULL) < 0)
+                return NULL;
+
+        return (*(ops.get_host))(cred, auth_info);
 }
 
 int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)

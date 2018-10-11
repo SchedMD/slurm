@@ -107,6 +107,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  *
  */
 typedef struct _slurm_auth_credential {
+	char *hostname;
 	uid_t uid;
 	gid_t gid;
 	int cr_errno;
@@ -151,10 +152,14 @@ extern int fini ( void )
 slurm_auth_credential_t *slurm_auth_create(char *auth_info)
 {
 	slurm_auth_credential_t *cred;
+
 	cred = xmalloc(sizeof(slurm_auth_credential_t));
 	cred->cr_errno = SLURM_SUCCESS;
 	cred->uid = geteuid();
 	cred->gid = getegid();
+
+	cred->hostname = xshort_hostname();
+
 	return cred;
 }
 
@@ -169,6 +174,7 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
 		plugin_errno = SLURM_AUTH_MEMORY;
 		return SLURM_ERROR;
 	}
+	xfree(cred->hostname);
 	xfree( cred );
 	return SLURM_SUCCESS;
 }
@@ -215,6 +221,20 @@ slurm_auth_get_gid( slurm_auth_credential_t *cred, char *auth_info )
 }
 
 /*
+ * Obtain the Linux GID from the credential.  See slurm_auth_get_uid()
+ * above for details on correct behavior.
+ */
+char *
+slurm_auth_get_host( slurm_auth_credential_t *cred, char *auth_info )
+{
+	if ( cred == NULL ) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return NULL;
+	} else
+		return xstrdup(cred->hostname);
+}
+
+/*
  * Marshall a credential for transmission over the network, according to
  * Slurm's marshalling protocol.
  */
@@ -239,6 +259,7 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf,
 		 */
 		pack32((uint32_t) cred->uid, buf);
 		pack32((uint32_t) cred->gid, buf);
+		packstr(cred->hostname, buf);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/*
 		 * Prefix the credential with a description of the credential
@@ -272,6 +293,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 	uint32_t tmpint;
 	uint32_t version;
 	uint32_t size;
+	uint32_t uint32_tmp = 0;
 
 	if ( buf == NULL ) {
 		plugin_errno = SLURM_AUTH_BADARG;
@@ -310,6 +332,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 		cred->uid = tmpint;
 		safe_unpack32( &tmpint, buf );
 		cred->gid = tmpint;
+		safe_unpackstr_xmalloc(&cred->hostname, &uint32_tmp, buf);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			/*
 		 * Get the authentication type.
