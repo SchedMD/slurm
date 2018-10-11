@@ -683,7 +683,7 @@ no_rollup_change:
 			xstrfmtcat(query, "work_dir='%s', ",
 				   job_ptr->details->work_dir);
 		if (job_ptr->details->features)
-			xstrfmtcat(query, ", constraints='%s'",
+			xstrfmtcat(query, "constraints='%s', ",
 				   job_ptr->details->features);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', "
