@@ -1,0 +1,462 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose:  Test of SLURM functionality
+#           Test GPU resource limits with various allocation options
+#
+# Requires: AccountingStorageEnforce=limits
+#           AccountingStorageTRES=gres/gpu
+#           SelectType=select/cons_tres
+#           Administrator permissions
+#
+# Output:   "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#           "FAILURE: ..." otherwise with an explanation of the failure, OR
+#           anything else indicates a failure mode that must be investigated.
+#
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id        "39.20"
+set acct           "test$test_id\_acct"
+set cluster        [get_cluster_name]
+set exit_code      0
+set file_in        "test$test_id.input"
+set file_out1      "test$test_id.output1"
+set file_out2      "test$test_id.output2"
+set user           [get_my_user_name]
+
+proc setup { gpu_limit } {
+	global acct cluster exit_code user
+
+#FIXME: Once bug 5840 is fixed, remove "return 0" below and in proc cleanup
+send_user "\nFAILURE: AWAITING FIX FOR BUG 5840\n"
+return 0
+
+	set acct_req(cluster) $cluster
+	set acct_req(parent)  "root"
+	set acct_req(maxtres) "gres/gpu=$gpu_limit"
+
+	set user_req(cluster) $cluster
+	set user_req(account) $acct
+
+	if { [add_acct $acct [array get acct_req]] } {
+		send_user "\nFAILURE: child account was not added\n"
+		incr exit_code
+		return 1
+	}
+
+	if { [add_user $user [array get user_req]] } {
+		send_user "\nFAILURE: user was not added to child account\n"
+		incr exit_code
+		return 1
+	}
+
+	return 0
+}
+
+proc cleanup { } {
+	global acct
+
+#FIXME: AWAITING FIX FOR BUG 5840
+return 0
+
+	remove_acct "" $acct
+}
+
+proc get_node_config {} {
+	global cpus_per_socket sockets_per_node test_id
+	global exit_code file_in max_job_delay number srun scontrol
+
+	set cpus_tot 1
+	set sockets_per_node 1
+	set cpus_per_socket 1
+	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
+	set timeout $max_job_delay
+	log_user 0
+	set srun_pid [spawn $srun -n1 -t1 -J "test$test_id" $file_in]
+	expect {
+		-re "CPUTot=($number)" {
+			set cpus_tot $expect_out(1,string)
+			exp_continue
+		}
+		-re "Sockets=($number)" {
+			set sockets_per_node $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+}
+
+print_header $test_id
+
+set store_tres [string tolower [get_acct_store_tres]]
+set store_gpu [string first "gres/gpu" $store_tres]
+if {$store_gpu == -1} {
+	send_user "\nWARNING: This test requires accounting for GPUs\n"
+	exit $exit_code
+} elseif { [test_using_slurmdbd] == 0 } {
+	send_user "\nWARNING: This test can't be run without AccountStorageType=slurmdbd\n"
+	exit $exit_code
+} elseif { [test_enforce_limits] == 0 } {
+	send_user "\nWARNING: This test can't be run without AccountingStorageEnforce=limits\n"
+	exit $exit_code
+} elseif {[test_front_end]} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit $exit_code
+} elseif {[string compare [check_accounting_admin_level] "Administrator"]} {
+	send_user "\nThis test can't be run without being an Accounting administrator.\n"
+	exit $exit_code
+}
+
+set select_type [test_select_type]
+if {![string compare $select_type "cons_tres"] ||
+    (![string compare $select_type "cray"] && [test_select_type_params "other_cons_tres"])} {
+	send_user "\nValid configuration, using select/cons_tres\n"
+} else {
+	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
+	exit 0
+}
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+send_user "\nDefault partition node count is $nb_nodes\n"
+if {$nb_nodes > 1} {
+	set nb_nodes 2
+}
+set gpu_cnt [get_gpu_count $nb_nodes]
+if {$gpu_cnt < 0} {
+	send_user "\nFAILURE: Error getting GPU count\n"
+	exit 1
+}
+if {$gpu_cnt < 2} {
+	send_user "\nWARNING: This test requires 2 or more GPUs in the default partition\n"
+	exit 0
+}
+
+get_node_config
+set cpus_per_node [expr $sockets_per_node * $cpus_per_socket]
+
+send_user "GPUs per node is $gpu_cnt\n"
+send_user "Sockets per node is $sockets_per_node\n"
+send_user "CPUs per socket is $cpus_per_socket\n"
+send_user "CPUs per node is $cpus_per_node\n"
+
+if {$cpus_per_node < 3} {
+	send_user "\nWARNING: This test requires 3 or more CPUs per node in the default partition\n"
+	exit 0
+}
+
+# Remove any vestigial test account
+cleanup
+
+# Add parent account (off root)
+set gpu_limit [expr $gpu_cnt * $nb_nodes]
+if {$gpu_limit > 8} {
+	set gpu_limit 8
+} else {
+	incr gpu_limit -1
+}
+if {[setup $gpu_limit]} {
+	cleanup
+	exit 1
+}
+
+make_bash_script $file_in "
+	$scontrol -dd show job \${SLURM_JOBID} | grep gpu
+	exit 0"
+
+#
+# Test --gpus option by job (first job over limit, second job under limit)
+#
+send_user "\n\nTEST 1: --gpus option by job (first job over limit, second job under limit)\n"
+
+set timeout $max_job_delay
+exec $bin_rm -f $file_out1  $file_out2
+set gpu_fail_cnt [expr $gpu_limit + 1]
+set job_id1 0
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus=$gpu_fail_cnt -t1 -o $file_out1 -J "test$test_id" ./$file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	set exit_code 1
+}
+
+set job_id2 0
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus=$gpu_limit -t1 -o $file_out2 -J "test$test_id" ./$file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	set exit_code 1
+}
+
+if {[wait_for_job $job_id2 "DONE"] != 0} {
+	send_user "\nFAILURE: job job_id2 did not complete\n"
+	cancel_job $job_id2
+	set exit_code 1
+}
+
+set match 0
+spawn $scontrol show job $job_id1
+expect {
+	-re "JobState=PENDING" {
+		incr match
+		exp_continue
+	}
+	-re "Reason=.*AssocMaxGRESPerJob" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 2} {
+	send_user "\nFAILURE: job $job_id1 state is bad\n"
+	set exit_code 1
+}
+cancel_job $job_id1
+if {$exit_code != 0} {
+	cleanup
+	exit $exit_code
+}
+
+#
+# Test --gpus-per-node option by job (first job over limit, second job under limit)
+#
+send_user "\n\nTEST 2: --gpus-per-node option by job (first job over limit, second job under limit)\n"
+
+set timeout $max_job_delay
+exec $bin_rm -f $file_out1  $file_out2
+set gpu_good_cnt [expr ($gpu_limit + $nb_nodes - 1) / $nb_nodes]
+if {$nb_nodes == 1} {
+	set gpu_fail_cnt [expr $gpu_limit + 1]
+} else {
+	set gpu_fail_cnt [expr $gpu_good_cnt + 1]
+}
+set job_id1 0
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-node=$gpu_fail_cnt -N$nb_nodes -t1 -o $file_out1 -J "test$test_id" ./$file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	set exit_code 1
+}
+
+set job_id2 0
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-node=$gpu_good_cnt -N$nb_nodes -t1 -o $file_out2 -J "test$test_id" ./$file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	set exit_code 1
+}
+
+if {[wait_for_job $job_id2 "DONE"] != 0} {
+	send_user "\nFAILURE: job job_id2 did not complete\n"
+	cancel_job $job_id2
+	set exit_code 1
+}
+
+set match 0
+spawn $scontrol show job $job_id1
+expect {
+	-re "JobState=PENDING" {
+		incr match
+		exp_continue
+	}
+	-re "Reason=.*AssocMaxGRESPerJob" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 2} {
+	send_user "\nFAILURE: job $job_id1 state is bad\n"
+	set exit_code 1
+}
+cancel_job $job_id1
+if {$exit_code != 0} {
+	cleanup
+	exit $exit_code
+}
+
+#
+# Test --gpus-per-task option by job (first job over limit, second job under limit)
+#
+send_user "\n\nTEST 3: --gpus-per-task option by job (first job over limit, second job under limit)\n"
+
+set timeout $max_job_delay
+exec $bin_rm -f $file_out1  $file_out2
+set gpu_good_cnt $gpu_limit
+set gpu_fail_cnt [expr $gpu_limit + 1]
+set job_id1 0
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_fail_cnt -t1 -o $file_out1 -J "test$test_id" ./$file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	set exit_code 1
+}
+
+set job_id2 0
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_good_cnt -t1 -o $file_out2 -J "test$test_id" ./$file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	set exit_code 1
+}
+
+if {[wait_for_job $job_id2 "DONE"] != 0} {
+	send_user "\nFAILURE: job job_id2 did not complete\n"
+	cancel_job $job_id2
+	set exit_code 1
+}
+
+set match 0
+spawn $scontrol show job $job_id1
+expect {
+	-re "JobState=PENDING" {
+		incr match
+		exp_continue
+	}
+	-re "Reason=.*AssocMaxGRESPerJob" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 2} {
+	send_user "\nFAILURE: job $job_id1 state is bad\n"
+	set exit_code 1
+}
+cancel_job $job_id1
+if {$exit_code != 0} {
+	cleanup
+	exit $exit_code
+}
+
+#
+# Remove any vestigial test account
+#
+cleanup
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out1 $file_out2
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

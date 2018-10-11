@@ -832,3 +832,4 @@ test39.16  Test --gpus-per-tres with --exclusive option
 test39.17  Test allocating sub-sets of GRES to job steps
 test39.18  PLACEHOLDER FOR MICHAEL HINTON'S WORK
 test39.19  Test accounting for GPU resources with various allocation options
+test39.20  Test GPU resource limits with various allocation options
