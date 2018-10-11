@@ -76,6 +76,9 @@ set store_gpu [string first "gres/gpu" $store_tres]
 if {$store_gpu == -1} {
 	send_user "\nWARNING: This test requires accounting for GPUs\n"
 	exit $exit_code
+} elseif {[test_front_end]} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit $exit_code
 }
 
 set select_type [test_select_type]
@@ -85,10 +88,6 @@ if {![string compare $select_type "cons_tres"] ||
 } else {
 	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
 	exit 0
-}
-if {[test_front_end]} {
-	send_user "\nWARNING: This test is incompatible with front-end systems\n"
-	exit $exit_code
 }
 
 set def_part_name [default_partition]
@@ -153,7 +152,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job  did not complete\n"
+	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -211,7 +210,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job  did not complete\n"
+	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -270,7 +269,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job  did not complete\n"
+	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -328,7 +327,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job  did not complete\n"
+	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -393,7 +392,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job  did not complete\n"
+	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -451,7 +450,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job  did not complete\n"
+	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -510,7 +509,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job  did not complete\n"
+	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -568,7 +567,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job  did not complete\n"
+	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -640,7 +639,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job  did not complete\n"
+	send_user "\nFAILURE: job did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
