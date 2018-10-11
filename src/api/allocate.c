@@ -197,7 +197,6 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	if (!req->immediate) {
 		listen = _create_allocation_response_socket();
 		if (listen == NULL) {
-			xfree(req->alloc_node);
 			xfree(req);
 			return NULL;
 		}
@@ -216,7 +215,6 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		destroy_forward(&resp_msg.forward);
 		if (!req->immediate)
 			_destroy_allocation_response_socket(listen);
-		xfree(req->alloc_node);
 		xfree(req);
 		errno = errnum;
 		return NULL;
@@ -273,7 +271,6 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	destroy_forward(&resp_msg.forward);
 	if (!req->immediate)
 		_destroy_allocation_response_socket(listen);
-	xfree(req->alloc_node);
 	xfree(req);
 	if (!resp && already_done && (errnum == SLURM_SUCCESS))
 		errnum = ESLURM_ALREADY_DONE;
