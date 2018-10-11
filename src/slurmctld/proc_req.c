@@ -1303,6 +1303,8 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 					 slurmctld_config.auth_info);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	char *hostname = g_slurm_auth_get_host(msg->auth_cred,
+					       slurmctld_config.auth_info);
 	uint32_t job_uid = NO_VAL;
 	struct job_record *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
@@ -1373,6 +1375,10 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			break;
 		}
 
+		/* use the credential to validate where we came from */
+		xfree(job_desc_msg->alloc_node);
+		job_desc_msg->alloc_node = xstrdup(hostname);
+
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
 			error_code = ESLURM_INVALID_NODE_NAME;
@@ -1434,6 +1440,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		list_append(submit_job_list, job_ptr);
 	}
 	list_iterator_destroy(iter);
+	xfree(hostname);
 
 	if ((error_code == 0) && (!first_job_ptr)) {
 		error("%s: No error, but no pack_job_id", __func__);
@@ -1542,6 +1549,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 					 slurmctld_config.auth_info);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	char *hostname = g_slurm_auth_get_host(msg->auth_cred,
+					       slurmctld_config.auth_info);
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
 	bool reject_job = false;
@@ -1567,6 +1576,11 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 
 	sched_debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%d",
 		     uid);
+
+	/* use the credential to validate where we came from */
+	xfree(job_desc_msg->alloc_node);
+	job_desc_msg->alloc_node = hostname;
+	hostname = NULL;
 
 	/* do RPC call */
 	if ((job_desc_msg->alloc_node == NULL) ||
@@ -2913,6 +2927,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 					 slurmctld_config.auth_info);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	char *hostname = g_slurm_auth_get_host(msg->auth_cred,
+					       slurmctld_config.auth_info);
 	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
@@ -2931,6 +2947,12 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	if ((error_code = _valid_id("REQUEST_JOB_WILL_RUN",
 				    job_desc_msg, uid, gid)))
 		goto send_reply;
+
+
+	/* use the credential to validate where we came from */
+	xfree(job_desc_msg->alloc_node);
+	job_desc_msg->alloc_node = hostname;
+	hostname = NULL;
 
 	if ((job_desc_msg->alloc_node == NULL)
 	    ||  (job_desc_msg->alloc_node[0] == '\0')) {
@@ -3970,6 +3992,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 					 slurmctld_config.auth_info);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	char *hostname = g_slurm_auth_get_host(msg->auth_cred,
+					       slurmctld_config.auth_info);
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 
@@ -3987,6 +4011,11 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		reject_job = true;
 		goto send_msg;
 	}
+
+	/* use the credential to validate where we came from */
+	xfree(job_desc_msg->alloc_node);
+	job_desc_msg->alloc_node = hostname;
+	hostname = NULL;
 
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4113,6 +4142,8 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 					 slurmctld_config.auth_info);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred,
 					 slurmctld_config.auth_info);
+	char *hostname = g_slurm_auth_get_host(msg->auth_cred,
+					       slurmctld_config.auth_info);
 	uint32_t job_uid = NO_VAL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
@@ -4174,6 +4205,10 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			break;
 		}
 
+		/* use the credential to validate where we came from */
+		xfree(job_desc_msg->alloc_node);
+		job_desc_msg->alloc_node = xstrdup(hostname);
+
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
 			error("REQUEST_SUBMIT_BATCH_PACK_JOB lacks alloc_node from uid=%d",
@@ -4208,6 +4243,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		pack_job_offset++;
 	}
 	list_iterator_destroy(iter);
+	xfree(hostname);
 	unlock_slurmctld(job_read_lock);
 	if (error_code != SLURM_SUCCESS)
 		goto send_msg;
