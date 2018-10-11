@@ -87,7 +87,7 @@ typedef struct {
 } load_willrun_resp_struct_t;
 
 static int _handle_rc_msg(slurm_msg_t *msg);
-static listen_t *_create_allocation_response_socket(char *interface_hostname);
+static listen_t *_create_allocation_response_socket(void);
 static void _destroy_allocation_response_socket(listen_t *listen);
 static void _wait_for_allocation_response(uint32_t job_id,
 					  const listen_t *listen,
@@ -111,8 +111,6 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	int rc;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	bool host_set = false;
-	char host[64];
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -122,24 +120,11 @@ slurm_allocate_resources (job_desc_msg_t *req,
 	if (req->alloc_sid == NO_VAL)
 		req->alloc_sid = getsid(0);
 
-	if ( (req->alloc_node == NULL)
-	    && (gethostname_short(host, sizeof(host)) == 0) ) {
-		req->alloc_node = host;
-		host_set  = true;
-	}
-
 	req_msg.msg_type = REQUEST_RESOURCE_ALLOCATION;
 	req_msg.data     = req;
 
 	rc = slurm_send_recv_controller_msg(&req_msg, &resp_msg,
 					    working_cluster_rec);
-
-	/*
-	 *  Clear this hostname if set internally to this function
-	 *    (memory is on the stack)
-	 */
-	if (host_set)
-		req->alloc_node = NULL;
 
 	if (rc == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -187,7 +172,6 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	resource_allocation_response_msg_t *resp = NULL;
-	char *hostname = NULL;
 	uint32_t job_id;
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
@@ -210,18 +194,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 	if (req->alloc_sid == NO_VAL)
 		req->alloc_sid = getsid(0);
 
-	if (user_req->alloc_node != NULL) {
-		req->alloc_node = xstrdup(user_req->alloc_node);
-	} else if ((hostname = xshort_hostname()) != NULL) {
-		req->alloc_node = hostname;
-	} else {
-		error("Could not get local hostname,"
-		      " forcing immediate allocation mode.");
-		req->immediate = 1;
-	}
-
 	if (!req->immediate) {
-		listen = _create_allocation_response_socket(hostname);
+		listen = _create_allocation_response_socket();
 		if (listen == NULL) {
 			xfree(req->alloc_node);
 			xfree(req);
@@ -459,13 +433,11 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	List resp = NULL;
-	char *local_hostname = NULL;
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
 	int errnum = SLURM_SUCCESS;
 	ListIterator iter;
 	bool immediate_flag = false;
-	bool immediate_logged = false;
 	uint32_t node_cnt = 0, job_id = 0;
 	bool already_done = false;
 
@@ -477,12 +449,11 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	 */
 
 	if (!immediate_flag) {
-		listen = _create_allocation_response_socket(local_hostname);
+		listen = _create_allocation_response_socket();
 		if (listen == NULL)
 			return NULL;
 	}
 
-	local_hostname = xshort_hostname();
 	iter = list_iterator_create(job_req_list);
 	while ((req = (job_desc_msg_t *) list_next(iter))) {
 		if (req->alloc_sid == NO_VAL)
@@ -490,18 +461,6 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 		if (listen)
 			req->alloc_resp_port = listen->port;
 
-		if (!req->alloc_node) {
-			if (local_hostname) {
-				req->alloc_node = local_hostname;
-			} else if (immediate_logged) {
-				req->immediate = 1;
-			} else {
-				req->immediate = 1;
-				error("Could not get local hostname, forcing "
-				      "immediate allocation mode");
-				immediate_logged = true;
-			}
-		}
 		if (req->immediate)
 			immediate_flag = true;
 	}
@@ -519,13 +478,6 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 		destroy_forward(&resp_msg.forward);
 		if (listen)
 			_destroy_allocation_response_socket(listen);
-		iter = list_iterator_create(job_req_list);
-		while ((req = (job_desc_msg_t *)list_next(iter))) {
-			if (req->alloc_node == local_hostname)
-				req->alloc_node = NULL;
-		}
-		list_iterator_destroy(iter);
-		xfree(local_hostname);
 		errno = errnum;
 		return NULL;
 	}
@@ -576,13 +528,6 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 	destroy_forward(&resp_msg.forward);
 	if (listen)
 		_destroy_allocation_response_socket(listen);
-	iter = list_iterator_create(job_req_list);
-	while ((req = (job_desc_msg_t *)list_next(iter))) {
-		if (req->alloc_node == local_hostname)
-			req->alloc_node = NULL;
-	}
-	list_iterator_destroy(iter);
-	xfree(local_hostname);
 	if (!resp && already_done && (errnum == SLURM_SUCCESS))
 		errnum = ESLURM_ALREADY_DONE;
 	errno = errnum;
@@ -599,15 +544,10 @@ List slurm_allocate_pack_job_blocking(List job_req_list, time_t timeout,
 int slurm_job_will_run(job_desc_msg_t *req)
 {
 	will_run_response_msg_t *will_run_resp = NULL;
-	char buf[64], local_hostname[64];
+	char buf[64];
 	int rc;
 	char *cluster_name = NULL;
 	void *ptr = NULL;
-
-	if ((req->alloc_node == NULL) &&
-	    (gethostname_short(local_hostname, sizeof(local_hostname)) == 0)) {
-		req->alloc_node = local_hostname;
-	}
 
 	if (working_cluster_rec)
 		cluster_name = working_cluster_rec->name;
@@ -661,8 +601,6 @@ int slurm_job_will_run(job_desc_msg_t *req)
 		slurm_free_will_run_response_msg(will_run_resp);
 	}
 
-	if (req->alloc_node == local_hostname)
-		req->alloc_node = NULL;
 	if (ptr)
 		slurm_destroy_federation_rec(ptr);
 
@@ -680,7 +618,7 @@ extern int slurm_pack_job_will_run(List job_req_list)
 {
 	job_desc_msg_t *req;
 	will_run_response_msg_t *will_run_resp;
-	char buf[64], local_hostname[64] = "", *sep = "";
+	char buf[64], *sep = "";
 	int rc = SLURM_SUCCESS, inx = 0;
 	ListIterator iter, itr;
 	time_t first_start = (time_t) 0;
@@ -693,12 +631,8 @@ extern int slurm_pack_job_will_run(List job_req_list)
 		return SLURM_ERROR;
 	}
 
-	(void) gethostname_short(local_hostname, sizeof(local_hostname));
 	iter = list_iterator_create(job_req_list);
 	while ((req = (job_desc_msg_t *) list_next(iter))) {
-		if ((req->alloc_node == NULL) && local_hostname[0])
-			req->alloc_node = local_hostname;
-
 		will_run_resp = NULL;
 		rc = slurm_job_will_run2(req, &will_run_resp);
 
@@ -732,8 +666,6 @@ extern int slurm_pack_job_will_run(List job_req_list)
 
 			slurm_free_will_run_response_msg(will_run_resp);
 		}
-		if (req->alloc_node == local_hostname)
-			req->alloc_node = NULL;
 		if (rc != SLURM_SUCCESS)
 			break;
 		inx++;
@@ -1188,7 +1120,7 @@ cleanup_hostfile:
 /***************************************************************************
  * Support functions for slurm_allocate_resources_blocking()
  ***************************************************************************/
-static listen_t *_create_allocation_response_socket(char *interface_hostname)
+static listen_t *_create_allocation_response_socket(void)
 {
 	listen_t *listen = NULL;
 	uint16_t *ports;
@@ -1210,7 +1142,7 @@ static listen_t *_create_allocation_response_socket(char *interface_hostname)
 		close(listen->fd);
 		return NULL;
 	}
-	listen->hostname = xstrdup(interface_hostname);
+	listen->hostname = xshort_hostname();
 	/* FIXME - screw it!  I can't seem to get the port number through
 	   slurm_* functions */
 	listen->port = ntohs(listen->address.sin_port);
