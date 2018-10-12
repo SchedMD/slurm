@@ -10351,7 +10351,7 @@ extern int gres_plugin_job_count(List gres_list, int arr_len,
 		xassert(job_gres_state_ptr);
 
 		gres_count_ids[ix]  = job_gres_ptr->plugin_id;
-		gres_count_vals[ix] = job_gres_state_ptr->gres_per_node;
+		gres_count_vals[ix] = job_gres_state_ptr->total_gres;
 		if (++ix >= arr_len)
 			break;
 	}

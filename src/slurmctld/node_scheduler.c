@@ -179,7 +179,6 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 {
 	char                gres_name[64];
 	int                 i, rv;
-	int                 node_cnt;
 	int                 gres_type_count;
 	uint32_t            *gres_count_ids;
 	uint64_t            *gres_count_vals;
@@ -188,7 +187,6 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 	if (!job_ptr->node_bitmap || !job_ptr->gres_list)
 		return SLURM_SUCCESS;
 
-	node_cnt = bit_set_count(job_ptr->node_bitmap);
 	gres_type_count = list_count(job_ptr->gres_list);
 	gres_count_ids  = xmalloc(sizeof(uint32_t) * gres_type_count);
 	gres_count_vals = xmalloc(sizeof(uint64_t) * gres_type_count);
@@ -199,7 +197,6 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 		for (i = 0; i < gres_type_count; i++) {
 			if (!gres_count_ids[i])
 				break;
-			gres_count_vals[i] *= node_cnt;
 			/* Map the GRES type ID back to a GRES type name. */
 			gres_gresid_to_gresname(gres_count_ids[i], gres_name,
 						sizeof(gres_name));
