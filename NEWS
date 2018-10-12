@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
     reached in the cons_res plugin.
  -- Process any changes to MinJobAge and SlurmdTimeout in the slurmctld when
     it is reconfigured to determine changes in its background timers.
+ -- Use previous SlurmdTimeout in the slurmctld after a reconfigure to
+    determine the time a node has been down.
 
 * Changes in Slurm 18.08.1
 ==========================
