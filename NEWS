@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
     scheduled the job.
  -- Add constraints/features to the database.
  -- Add last reason job didn't run before resources/priority to the database.
+ -- Make it so we set the alloc_node in a resource allocation based on the auth
+    plugin instead of the rpc call.
 
 * Changes in Slurm 18.08.2
 ==========================
