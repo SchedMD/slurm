@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     structures after unpack.
  -- Stop removing nodes once the minimum CPU or node count for the job is
     reached in the cons_res plugin.
+ -- Process any changes to MinJobAge and SlurmdTimeout in the slurmctld when
+    it is reconfigured to determine changes in its background timers.
 
 * Changes in Slurm 18.08.1
 ==========================

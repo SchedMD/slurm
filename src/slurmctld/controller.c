@@ -1872,7 +1872,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_acct_gather_node_time;
 	static time_t last_ext_sensors_time;
 	static time_t last_no_resp_msg_time;
-	static time_t last_ping_node_time;
+	static time_t last_ping_node_time = (time_t) 0;
 	static time_t last_ping_srun_time;
 	static time_t last_purge_job_time;
 	static time_t last_resv_time;
@@ -1925,24 +1925,7 @@ static void *_slurmctld_background(void *no_data)
 	last_uid_update = last_reboot_msg_time = now;
 	last_acct_gather_node_time = last_ext_sensors_time = now;
 
-	if ((slurmctld_conf.min_job_age > 0) &&
-	    (slurmctld_conf.min_job_age < PURGE_JOB_INTERVAL)) {
-		/* Purge jobs more quickly, especially for high job flow */
-		purge_job_interval = MAX(10, slurmctld_conf.min_job_age);
-	} else
-		purge_job_interval = PURGE_JOB_INTERVAL;
 
-	if (slurmctld_conf.slurmd_timeout) {
-		/* We ping nodes that haven't responded in SlurmdTimeout/3,
-		 * but need to do the test at a higher frequency or we might
-		 * DOWN nodes with times that fall in the gap. */
-		ping_interval = slurmctld_conf.slurmd_timeout / 3;
-	} else {
-		/* This will just ping non-responding nodes
-		 * and restore them to service */
-		ping_interval = 100;	/* 100 seconds */
-	}
-	last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME - ping_interval;
 	last_ping_srun_time = now;
 	last_node_acct = now;
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -1964,6 +1947,29 @@ static void *_slurmctld_background(void *no_data)
 			no_resp_msg_interval = 60;
 		else
 			no_resp_msg_interval = 1;
+
+		if ((slurmctld_conf.min_job_age > 0) &&
+		    (slurmctld_conf.min_job_age < PURGE_JOB_INTERVAL)) {
+			/* Purge jobs more quickly, especially for high job flow */
+			purge_job_interval = MAX(10, slurmctld_conf.min_job_age);
+		} else
+			purge_job_interval = PURGE_JOB_INTERVAL;
+
+		if (slurmctld_conf.slurmd_timeout) {
+			/* We ping nodes that haven't responded in SlurmdTimeout/3,
+			 * but need to do the test at a higher frequency or we might
+			 * DOWN nodes with times that fall in the gap. */
+			ping_interval = slurmctld_conf.slurmd_timeout / 3;
+		} else {
+			/* This will just ping non-responding nodes
+			 * and restore them to service */
+			ping_interval = 100;	/* 100 seconds */
+		}
+
+		if (!last_ping_node_time) {
+			last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME -
+					      ping_interval;
+		}
 
 		if (slurmctld_config.shutdown_time) {
 			struct timespec ts = {0, 0};
