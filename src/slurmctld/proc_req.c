@@ -1376,8 +1376,10 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		}
 
 		/* use the credential to validate where we came from */
-		xfree(job_desc_msg->alloc_node);
-		job_desc_msg->alloc_node = xstrdup(hostname);
+		if (hostname) {
+			xfree(job_desc_msg->alloc_node);
+			job_desc_msg->alloc_node = xstrdup(hostname);
+		}
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -1578,9 +1580,11 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		     uid);
 
 	/* use the credential to validate where we came from */
-	xfree(job_desc_msg->alloc_node);
-	job_desc_msg->alloc_node = hostname;
-	hostname = NULL;
+	if (hostname) {
+		xfree(job_desc_msg->alloc_node);
+		job_desc_msg->alloc_node = hostname;
+		hostname = NULL;
+	}
 
 	/* do RPC call */
 	if ((job_desc_msg->alloc_node == NULL) ||
@@ -2950,9 +2954,11 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 
 
 	/* use the credential to validate where we came from */
-	xfree(job_desc_msg->alloc_node);
-	job_desc_msg->alloc_node = hostname;
-	hostname = NULL;
+	if (hostname) {
+		xfree(job_desc_msg->alloc_node);
+		job_desc_msg->alloc_node = hostname;
+		hostname = NULL;
+	}
 
 	if ((job_desc_msg->alloc_node == NULL)
 	    ||  (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4013,9 +4019,11 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	}
 
 	/* use the credential to validate where we came from */
-	xfree(job_desc_msg->alloc_node);
-	job_desc_msg->alloc_node = hostname;
-	hostname = NULL;
+	if (hostname) {
+		xfree(job_desc_msg->alloc_node);
+		job_desc_msg->alloc_node = hostname;
+		hostname = NULL;
+	}
 
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -4206,8 +4214,10 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		}
 
 		/* use the credential to validate where we came from */
-		xfree(job_desc_msg->alloc_node);
-		job_desc_msg->alloc_node = xstrdup(hostname);
+		if (hostname) {
+			xfree(job_desc_msg->alloc_node);
+			job_desc_msg->alloc_node = xstrdup(hostname);
+		}
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
