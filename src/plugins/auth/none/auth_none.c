@@ -312,6 +312,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 			debug("slurm_auth_unpack error: packed by %s unpack by %s",
 			      tmpstr, plugin_type);
 			plugin_errno = SLURM_AUTH_MISMATCH;
+			slurm_auth_destroy(cred);
 			return NULL;
 		}
 
@@ -342,6 +343,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 			debug("slurm_auth_unpack error: packed by %s unpack by %s",
 			      tmpstr, plugin_type);
 			plugin_errno = SLURM_AUTH_MISMATCH;
+			slurm_auth_destroy(cred);
 			return NULL;
 		}
 
