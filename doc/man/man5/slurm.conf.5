@@ -4983,7 +4983,9 @@ Partition\-specific resource allocation type.
 This option replaces the global \fBSelectTypeParameters\fR value.
 Supported values are \fBCR_Core\fR, \fBCR_Core_Memory\fR, \fBCR_Socket\fR and
 \fBCR_Socket_Memory\fR.
-Use requires the system\-wide \fBSelectTypeParameters\fR value be set.
+Use requires the system\-wide \fBSelectTypeParameters\fR value be set to
+any of the four supported values previously listed; otherwise, the
+partition-specific value will be ignored.
 
 .TP
 \fBShared\fR
