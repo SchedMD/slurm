@@ -139,6 +139,7 @@ void ping_nodes (void)
 	int i;
 	time_t now = time(NULL), still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
+	static time_t last_ping_timeout = (time_t) 0;
 	hostlist_t down_hostlist = NULL;
 	char *host_str = NULL;
 	agent_arg_t *ping_agent_args = NULL;
@@ -172,15 +173,15 @@ void ping_nodes (void)
 	 * Because of this, we extend the SlurmdTimeout by the
 	 * time needed to complete a ping of all nodes.
 	 */
-	if ((slurmctld_conf.slurmd_timeout == 0) ||
+	if ((last_ping_timeout == 0) ||
 	    (last_ping_time == (time_t) 0)) {
 		node_dead_time = (time_t) 0;
 	} else {
-		node_dead_time = last_ping_time -
-				 slurmctld_conf.slurmd_timeout;
+		node_dead_time = last_ping_time - last_ping_timeout;
 	}
 	still_live_time = now - (slurmctld_conf.slurmd_timeout / 3);
 	last_ping_time  = now;
+	last_ping_timeout = slurmctld_conf.slurmd_timeout;
 
 	if (max_reg_threads == 0) {
 		max_reg_threads = MAX(slurm_get_tree_width(), 1);

@@ -26,6 +26,23 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Correctly initialize variable in env_array_user_default().
  -- Remove race condition when signaling starting step.
+ -- Fix issue where 17.11 job's using GRES in didn't initialize new 18.08
+    structures after unpack.
+ -- Stop removing nodes once the minimum CPU or node count for the job is
+    reached in the cons_res plugin.
+ -- Process any changes to MinJobAge and SlurmdTimeout in the slurmctld when
+    it is reconfigured to determine changes in its background timers.
+ -- Use previous SlurmdTimeout in the slurmctld after a reconfigure to
+    determine the time a node has been down.
+ -- Fix multi-cluster srun between clusters with different SelectType plugins.
+ -- Fix removing job licenses on reconfig/restart when configured license
+    counts are 0.
+ -- If a job requested multiple licenses and one license was removed then on
+    a reconfigure/restart all of the licenses -- including the valid ones
+    would be removed.
+ -- Fix issue where job's license string wasn't updated after a restart when
+    licenses were removed or added.
+ -- Add allow_zero_lic to SchedulerParameters.
 
 * Changes in Slurm 18.08.1
 ==========================

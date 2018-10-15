@@ -2914,6 +2914,7 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 {
 	int i, count, ec, most_cpus = 0;
 	bitstr_t *origmap, *reqmap = NULL;
+	int rem_node_cnt, rem_cpu_cnt = 0;
 
 	if (job_ptr->details->req_node_bitmap)
 		reqmap = job_ptr->details->req_node_bitmap;
@@ -2955,28 +2956,43 @@ static int _choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 	 * incrementally remove nodes with low cpu counts and retry */
 	for (i = 0; i < cr_node_cnt; i++) {
 		most_cpus = MAX(most_cpus, cpu_cnt[i]);
+		rem_cpu_cnt += cpu_cnt[i];
 	}
 
 	for (count = 1; count < most_cpus; count++) {
-		int nochange = 1;
+		bool no_change = true, no_more_remove = false;
 		bit_or(node_map, origmap);
+		rem_node_cnt = bit_set_count(node_map);
 		for (i = 0; i < cr_node_cnt; i++) {
 			if ((cpu_cnt[i] > 0) && (cpu_cnt[i] <= count)) {
 				if (!bit_test(node_map, i))
 					continue;
 				if (reqmap && bit_test(reqmap, i))
 					continue;
-				nochange = 0;
+				rem_cpu_cnt -= cpu_cnt[i];
+				if (rem_cpu_cnt < job_ptr->details->min_cpus) {
+					/* Can not remove this node */
+					no_more_remove = true;
+					break;
+				}
+				no_change = false;
 				bit_clear(node_map, i);
 				bit_clear(origmap, i);
+				if ((--rem_node_cnt <= min_nodes) ||
+				    (rem_cpu_cnt ==
+				     job_ptr->details->min_cpus)) {
+					/* Can not remove any more nodes */
+					no_more_remove = true;
+					break;
+				}
 			}
 		}
-		if (nochange)
+		if (no_change)
 			continue;
 		ec = _eval_nodes(job_ptr, node_map, min_nodes, max_nodes,
 				 req_nodes, cr_node_cnt, cpu_cnt, cr_type,
 				 prefer_alloc_nodes);
-		if (ec == SLURM_SUCCESS) {
+		if ((ec == SLURM_SUCCESS) || no_more_remove) {
 			FREE_NULL_BITMAP(origmap);
 			return ec;
 		}
