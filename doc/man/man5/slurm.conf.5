@@ -2511,6 +2511,10 @@ The interpretation of this parameter varies by \fBSchedulerType\fR.
 Multiple options may be comma separated.
 .RS
 .TP
+\fBallow_zero_lic\fR
+If set, then job submissions requesting more than configured licenses won't be
+rejected.
+.TP
 \fBassoc_limit_stop\fR
 If set and a job cannot start due to association limits, then do not attempt
 to initiate any lower priority jobs in that partition. Setting this can

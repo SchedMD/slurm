@@ -182,10 +182,16 @@ static List _build_license_list(char *licenses, bool *valid)
 	return lic_list;
 }
 
-/* Given a list of license_t records, return a license string.
+/*
+ * Given a list of license_t records, return a license string.
+ *
  * This can be combined with _build_license_list() to eliminate duplicates
- * (e.g. "tux:2,tux:3" gets changed to "tux:5"). */
-static char * _build_license_string(List license_list)
+ *
+ * IN license_list - list of license_t records
+ *
+ * RET string represenation of licenses. Must be destroyed by caller.
+ */
+extern char *license_list_to_string(List license_list)
 {
 	char *sep = "";
 	char *licenses = NULL;
@@ -514,6 +520,10 @@ extern void license_free(void)
 /*
  * license_validate - Test if the required licenses are valid
  * IN licenses - required licenses
+ * IN validate_configured - if true, validate that there are enough configured
+ *                          licenses for the requested amount.
+ * IN validate_existing - if true, validate that licenses exist, otherwise don't
+ *                        return them in the final list.
  * OUT tres_req_cnt - appropriate counts for each requested gres,
  *                    since this only matters on pending jobs you can
  *                    send in NULL otherwise
@@ -521,7 +531,8 @@ extern void license_free(void)
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
  */
-extern List license_validate(char *licenses,
+extern List license_validate(char *licenses, bool validate_configured,
+			     bool validate_existing,
 			     uint64_t *tres_req_cnt, bool *valid)
 {
 	ListIterator iter;
@@ -555,9 +566,14 @@ extern List license_validate(char *licenses,
 		if (!match) {
 			debug("License name requested (%s) does not exist",
 			      license_entry->name);
+			if (!validate_existing) {
+				list_remove(iter);
+				continue;
+			}
 			*valid = false;
 			break;
-		} else if (license_entry->total > match->total) {
+		} else if (validate_configured &&
+			   (license_entry->total > match->total)) {
 			debug("Licenses count requested higher than configured "
 			      "(%s: %u > %u)",
 			      match->name, license_entry->total, match->total);
@@ -595,7 +611,7 @@ extern void license_job_merge(struct job_record *job_ptr)
 	FREE_NULL_LIST(job_ptr->license_list);
 	job_ptr->license_list = _build_license_list(job_ptr->licenses, &valid);
 	xfree(job_ptr->licenses);
-	job_ptr->licenses = _build_license_string(job_ptr->license_list);
+	job_ptr->licenses = license_list_to_string(job_ptr->license_list);
 }
 
 /*

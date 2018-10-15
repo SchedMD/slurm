@@ -116,12 +116,17 @@ extern int license_job_test(struct job_record *job_ptr, time_t when,
 /*
  * license_validate - Test if the required licenses are valid
  * IN licenses - required licenses
+ * IN validate_configured - if true, validate that there are enough configured
+ *                          licenses for the requested amount.
+ * IN validate_existing - if true, validate that licenses exist, otherwise don't
+ *                        return them in the final list.
  * OUT tres_req_cnt - appropriate counts for each requested gres
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
  * RET license_list, must be destroyed by caller
  */
-extern List license_validate(char *licenses,
+extern List license_validate(char *licenses, bool validate_configured,
+			     bool validate_existing,
 			     uint64_t *tres_req_cnt, bool *valid);
 
 /*
@@ -129,6 +134,18 @@ extern List license_validate(char *licenses,
  *	names found in the two lists
  */
 extern bool license_list_overlap(List list_1, List list_2);
+
+/*
+ * Given a list of license_t records, return a license string.
+ *
+ * This can be combined with _build_license_list() to eliminate duplicates
+ * (e.g. "tux*2,tux*3" gets changed to "tux*5").
+ *
+ * IN license_list - list of license_t records
+ *
+ * RET string represenation of licenses. Must be destroyed by caller.
+ */
+extern char *license_list_to_string(List license_list);
 
 /* pack_all_licenses()
  *
