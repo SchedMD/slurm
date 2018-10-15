@@ -174,6 +174,7 @@ typedef struct mail_info {
 	char *message;
 } mail_info_t;
 
+static void _agent_defer(void);
 static void _agent_retry(int min_wait, bool wait_too);
 static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
 static int  _signal_defer(queued_request_t *queued_req_ptr);
@@ -199,10 +200,14 @@ static void *_mail_proc(void *arg);
 static char *_mail_type_str(uint16_t mail_type);
 static char **_build_mail_env(void);
 
-static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mail_mutex  = PTHREAD_MUTEX_INITIALIZER;
-static List retry_list = NULL;		/* agent_arg_t list for retry */
+static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
+static List defer_list = NULL;		/* agent_arg_t list for requests
+					 * requiring job write lock */
 static List mail_list = NULL;		/* pending e-mail requests */
+static List retry_list = NULL;		/* agent_arg_t list for retry */
+
 
 static pthread_mutex_t agent_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cnt_cond  = PTHREAD_COND_INITIALIZER;
@@ -572,7 +577,7 @@ static void _update_wdog_state(thd_t *thread_ptr,
  * _wdog - Watchdog thread. Send SIGUSR1 to threads which have been active
  *	for too long.
  * IN args - pointer to agent_info_t with info on threads to watch
- * Sleep between polls with exponential times (from 0.125 to 1.0 second)
+ * Sleep between polls with exponential times (from 0.005 to 1.0 second)
  */
 static void *_wdog(void *args)
 {
@@ -1368,6 +1373,7 @@ static void *_agent_init(void *arg)
 	int min_wait;
 	bool mail_too;
 	struct timespec ts = {0, 0};
+	time_t last_defer_attempt = (time_t) 0;
 
 	while (true) {
 		slurm_mutex_lock(&pending_mutex);
@@ -1386,6 +1392,11 @@ static void *_agent_init(void *arg)
 		pending_mail = false;
 		pending_wait_time = NO_VAL16;
 		slurm_mutex_unlock(&pending_mutex);
+
+		if (last_defer_attempt + 2 < last_job_update) {
+			last_defer_attempt = time(NULL);
+			_agent_defer();
+		}
 
 		_agent_retry(min_wait, mail_too);
 	}
@@ -1502,21 +1513,62 @@ pack_it:
 	packstr_array(rpc_host_list, rpc_count, buffer);
 }
 
+static void _agent_defer(void)
+{
+	int rc = -1;
+	queued_request_t *queued_req_ptr = NULL;
+	agent_arg_t *agent_arg_ptr = NULL;
+	/* Write lock on jobs */
+	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
+
+	lock_slurmctld(job_write_lock);
+	slurm_mutex_lock(&defer_mutex);
+	if (defer_list) {
+		/* first try to find a new (never tried) record */
+		while ((queued_req_ptr = list_pop(defer_list))) {
+			agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
+			if (agent_arg_ptr->msg_type ==
+			    REQUEST_BATCH_JOB_LAUNCH)
+				rc = _batch_launch_defer(queued_req_ptr);
+			else if (agent_arg_ptr->msg_type ==
+				 REQUEST_SIGNAL_TASKS)
+				rc = _signal_defer(queued_req_ptr);
+			else
+				fatal("%s: Invalid message type (%u)",
+				      __func__, agent_arg_ptr->msg_type);
+
+			if (rc == -1) {   /* abort request */
+				_purge_agent_args(
+					queued_req_ptr->agent_arg_ptr);
+				xfree(queued_req_ptr);
+			} else if (rc == 0) {
+				/* ready to process now, move to retry_list */
+				slurm_mutex_lock(&retry_mutex);
+				if (!retry_list)
+					retry_list =
+						list_create(_list_delete_retry);
+				list_append(retry_list, queued_req_ptr);
+				slurm_mutex_unlock(&retry_mutex);
+			}
+		}
+	}
+
+	slurm_mutex_unlock(&defer_mutex);
+	unlock_slurmctld(job_write_lock);
+
+	return;
+}
+
 /* Do the work requested by agent_retry (retry pending RPCs).
  * This is a separate thread so the job records can be locked */
 static void _agent_retry(int min_wait, bool mail_too)
 {
-	int rc1, rc2;
 	time_t now = time(NULL);
 	queued_request_t *queued_req_ptr = NULL;
 	agent_arg_t *agent_arg_ptr = NULL;
 	ListIterator retry_iter;
 	mail_info_t *mi = NULL;
-	/* Write lock on jobs */
-	slurmctld_lock_t job_write_lock =
-		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
-	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
 		static time_t last_msg_time = (time_t) 0;
@@ -1549,7 +1601,6 @@ static void _agent_retry(int min_wait, bool mail_too)
 		/* too much work already */
 		slurm_mutex_unlock(&agent_cnt_mutex);
 		slurm_mutex_unlock(&retry_mutex);
-		unlock_slurmctld(job_write_lock);
 		return;
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
@@ -1559,20 +1610,9 @@ static void _agent_retry(int min_wait, bool mail_too)
 		retry_iter = list_iterator_create(retry_list);
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
-			rc1 = _batch_launch_defer(queued_req_ptr);
-			rc2 = _signal_defer(queued_req_ptr);
-			if (rc1 == -1 || rc2  == -1) {		/* abort request */
-				_purge_agent_args(queued_req_ptr->
-						  agent_arg_ptr);
-				xfree(queued_req_ptr);
-				list_remove(retry_iter);
-				continue;
-			}
-			if (rc1 > 0 || rc2 > 0)
-				continue;
  			if (queued_req_ptr->last_attempt == 0) {
 				list_remove(retry_iter);
-				break;
+				break;		/* Process this request now */
 			}
 		}
 		list_iterator_destroy(retry_iter);
@@ -1587,17 +1627,6 @@ static void _agent_retry(int min_wait, bool mail_too)
 		/* next try to find an older record to retry */
 		while ((queued_req_ptr = (queued_request_t *)
 				list_next(retry_iter))) {
-			rc1 = _batch_launch_defer(queued_req_ptr);
-			rc2 = _signal_defer(queued_req_ptr);
-			if (rc1 == -1 || rc2 == -1) { 	/* abort request */
-				_purge_agent_args(queued_req_ptr->
-						  agent_arg_ptr);
-				xfree(queued_req_ptr);
-				list_remove(retry_iter);
-				continue;
-			}
-			if (rc1 > 0 || rc2 > 0)
-				continue;
 			age = difftime(now, queued_req_ptr->last_attempt);
 			if (age > min_wait) {
 				list_remove(retry_iter);
@@ -1607,7 +1636,6 @@ static void _agent_retry(int min_wait, bool mail_too)
 		list_iterator_destroy(retry_iter);
 	}
 	slurm_mutex_unlock(&retry_mutex);
-	unlock_slurmctld(job_write_lock);
 
 	if (queued_req_ptr) {
 		agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
@@ -1664,13 +1692,22 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	queued_req_ptr->agent_arg_ptr = agent_arg_ptr;
 /*	queued_req_ptr->last_attempt  = 0; Implicit */
 
-	slurm_mutex_lock(&retry_mutex);
-
-	if (retry_list == NULL)
-		retry_list = list_create(_list_delete_retry);
-	list_append(retry_list, (void *)queued_req_ptr);
-	slurm_mutex_unlock(&retry_mutex);
-
+	if (((agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) &&
+	     (_batch_launch_defer(queued_req_ptr) != 0)) ||
+	    ((agent_arg_ptr->msg_type == REQUEST_SIGNAL_TASKS) &&
+	     (_signal_defer(queued_req_ptr) != 0))) {
+		slurm_mutex_lock(&defer_mutex);
+		if (defer_list == NULL)
+			defer_list = list_create(_list_delete_retry);
+		list_append(defer_list, (void *)queued_req_ptr);
+		slurm_mutex_unlock(&defer_mutex);
+	} else {
+		slurm_mutex_lock(&retry_mutex);
+		if (retry_list == NULL)
+			retry_list = list_create(_list_delete_retry);
+		list_append(retry_list, (void *)queued_req_ptr);
+		slurm_mutex_unlock(&retry_mutex);
+	}
 	/* now process the request in a separate pthread
 	 * (if we can create another pthread to do so) */
 	agent_trigger(999, false);
@@ -1685,6 +1722,11 @@ extern void agent_purge(void)
 		slurm_mutex_lock(&retry_mutex);
 		FREE_NULL_LIST(retry_list);
 		slurm_mutex_unlock(&retry_mutex);
+	}
+	if (defer_list) {
+		slurm_mutex_lock(&defer_mutex);
+		FREE_NULL_LIST(retry_list);
+		slurm_mutex_unlock(&defer_mutex);
 	}
 	if (mail_list) {
 		slurm_mutex_lock(&mail_mutex);
@@ -2056,9 +2098,6 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	int nodes_ready = 0, tmp = 0;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
-	if (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH)
-		return 0;
-
 	if (difftime(now, queued_req_ptr->last_attempt) < 10) {
 		/* Reduce overhead by only testing once every 10 secs */
 		return 1;
@@ -2148,10 +2187,6 @@ static int _signal_defer(queued_request_t *queued_req_ptr)
 	struct job_record *job_ptr;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
-	if (agent_arg_ptr->msg_type != REQUEST_SIGNAL_TASKS)
-		return 0;
-
-
 	signal_msg_ptr = (signal_tasks_msg_t *)agent_arg_ptr->msg_args;
 	job_ptr = find_job_record(signal_msg_ptr->job_id);
 
