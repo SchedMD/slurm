@@ -158,7 +158,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 }
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
-	[cancel_job $job_id]
+	cancel_job $job_id
 	set exit_code 1
 }
 if {[wait_for_file $file_flag_1] != 0} {
@@ -245,7 +245,7 @@ if {$disabled == 0} {
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
-	[cancel_job $job_id]
+	cancel_job $job_id
 	set exit_code 1
 }
 if {[wait_for_file $file_flag_1] != 0} {
