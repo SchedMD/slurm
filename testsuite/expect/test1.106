@@ -62,7 +62,7 @@ expect {
 }
 if {$job_id != 0} {
 	send_user "\nFAILURE: job submitted despite the deadline\n"
-	[cancel_job $job_id]
+	cancel_job $job_id
 	exit 1
 }
 if {$time_error == 0} {

@@ -122,7 +122,7 @@ fashion on nodes "nid00003" and "nid00004" as shown below.</p>
 <br>
 
 <p>Some options should be specified only in the first job component.
-For example, specifyihg a batch job output file in the second job component's
+For example, specifying a batch job output file in the second job component's
 options will result in the first job component (where the batch script executes)
 using the default output file name.</p>
 

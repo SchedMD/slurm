@@ -52,6 +52,7 @@
 #include "../common/common_jag.h"
 
 #define _DEBUG 0
+#define MAX_DEPTH 1024
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -82,33 +83,18 @@ const char plugin_name[] = "Job accounting gather LINUX plugin";
 const char plugin_type[] = "jobacct_gather/linux";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-/*
- * _get_offspring_data() -- collect memory usage data for the offspring
- *
- * For each process that lists <pid> as its parent, add its memory
- * usage data to the ancestor's <prec> record. Recurse to gather data
- * for *all* subsequent generations.
- *
- * IN:	prec_list       list of prec's
- *      ancestor	The entry in precTable[] to which the data
- * 			should be added. Even as we recurse, this will
- * 			always be the prec for the base of the family
- * 			tree.
- * 	pid		The process for which we are currently looking
- * 			for offspring.
- *
- * OUT:	none.
- *
- * RETVAL:	none.
- *
- * THREADSAFE! Only one thread ever gets here.
- */
-static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
+static void _get_offspring_data_recursive(List prec_list, jag_prec_t *ancestor,
+					  pid_t pid, int level)
 {
 	ListIterator itr;
 	jag_prec_t *prec = NULL;
 	int i;
 
+	if ( level++ > MAX_DEPTH) {
+		error("%s: maximum recursion depth exceeded: %d",
+		      __func__, level);
+		return;
+	}
 	itr = list_iterator_create(prec_list);
 	while((prec = list_next(itr))) {
 		if (prec->ppid != pid)
@@ -118,7 +104,8 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 		     prec->pid, prec->ppid,
 		     prec->tres_data[TRES_ARRAY_MEM].size_read);
 #endif
-		_get_offspring_data(prec_list, ancestor, prec->pid);
+		_get_offspring_data_recursive(prec_list, ancestor, prec->pid,
+					      level);
 
 		ancestor->usec += prec->usec;
 		ancestor->ssec += prec->ssec;
@@ -167,6 +154,33 @@ static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
 	}
 	list_iterator_destroy(itr);
 
+	return;
+}
+
+/*
+ * _get_offspring_data() -- collect memory usage data for the offspring
+ *
+ * For each process that lists <pid> as its parent, add its memory
+ * usage data to the ancestor's <prec> record. Recurse to gather data
+ * for *all* subsequent generations.
+ *
+ * IN:	prec_list       list of prec's
+ *      ancestor	The entry in precTable[] to which the data
+ * 			should be added. Even as we recurse, this will
+ * 			always be the prec for the base of the family
+ * 			tree.
+ * 	pid		The process for which we are currently looking
+ * 			for offspring.
+ *
+ * OUT:	none.
+ *
+ * RETVAL:	none.
+ *
+ * THREADSAFE! Only one thread ever gets here.
+ */
+static void _get_offspring_data(List prec_list, jag_prec_t *ancestor, pid_t pid)
+{
+	_get_offspring_data_recursive(prec_list, ancestor, pid, 0);
 	return;
 }
 

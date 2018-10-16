@@ -14529,6 +14529,7 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 {
 	int base_state;
 	bool arr_finished = false, task_failed = false, task_requeued = false;
+	bool was_running = false;
 	struct job_record *master_job = NULL;
 	uint32_t max_exit_code = 0;
 
@@ -14548,8 +14549,12 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 		 */
 		(void) bb_g_job_cancel(job_ptr);
 	}
+	if (job_ptr->bit_flags & JOB_WAS_RUNNING) {
+		job_ptr->bit_flags &= ~JOB_WAS_RUNNING;
+		was_running = true;
+	}
 
-	_job_array_comp(job_ptr, true, requeue);
+	_job_array_comp(job_ptr, was_running, requeue);
 
 	if (!IS_JOB_RESIZING(job_ptr) &&
 	    !IS_JOB_PENDING(job_ptr)  &&

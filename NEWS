@@ -43,6 +43,12 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where job's license string wasn't updated after a restart when
     licenses were removed or added.
  -- Add allow_zero_lic to SchedulerParameters.
+ -- Avoid scheduling tasks in excess of ArrayTaskThrottle when canceling tasks
+    of an array.
+ -- Fix jobs that request memory per node and task count that can't be
+    scheduled right away.
+ -- Avoid infinite loop with jobacct_gather/linux when pids wrap around
+    /proc/sys/kernel/pid_max.
 
 * Changes in Slurm 18.08.1
 ==========================
