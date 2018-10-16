@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     of an array.
  -- Fix jobs that request memory per node and task count that can't be
     scheduled right away.
+ -- Avoid infinite loop with jobacct_gather/linux when pids wrap around
+    /proc/sys/kernel/pid_max.
 
 * Changes in Slurm 18.08.1
 ==========================
