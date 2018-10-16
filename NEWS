@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where job's license string wasn't updated after a restart when
     licenses were removed or added.
  -- Add allow_zero_lic to SchedulerParameters.
+ -- Avoid scheduling tasks in excess of ArrayTaskThrottle when canceling tasks
+    of an array.
 
 * Changes in Slurm 18.08.1
 ==========================

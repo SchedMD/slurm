@@ -1040,6 +1040,7 @@ enum ctx_keys {
 #define JOB_ACCRUE_OVER    0x00040000	/* We have cleared the accrual count of
 					 * a job. */
 #define GRES_DISABLE_BIND  0x00080000	/* Disable CPU/GRES binding */
+#define JOB_WAS_RUNNING    0x00100000  /* Job was running */
 
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
 #define X11_FORWARD_BATCH	0x0002  /* only the batch node */

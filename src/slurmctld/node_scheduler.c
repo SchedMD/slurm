@@ -2424,6 +2424,7 @@ static void _end_null_job(struct job_record *job_ptr)
 	job_ptr->exit_code = 0;
 	gres_plugin_job_clear(job_ptr->gres_list);
 	job_ptr->job_state = JOB_RUNNING;
+	job_ptr->bit_flags |= JOB_WAS_RUNNING;
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->sched_nodes);
@@ -2911,6 +2912,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	configuring = IS_JOB_CONFIGURING(job_ptr);
 
 	job_ptr->job_state = JOB_RUNNING;
+	job_ptr->bit_flags |= JOB_WAS_RUNNING;
 
 	if (select_g_select_nodeinfo_set(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_select_nodeinfo_set(%pJ): %m", job_ptr);
