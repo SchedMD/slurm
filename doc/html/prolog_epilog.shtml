@@ -316,10 +316,6 @@ follows:<br>
 <p>Unless otherwise specified, these environment variables are available
 to all of the programs.</p>
 <ul>
-<li><b>BASIL_RESERVATION_ID</b>
-Basil reservation ID.
-Available on Cray systems with ALPS only.</li>
-
 <li><b>SLURM_ARRAY_JOB_ID</b>
 If this job is part of a job array, this will be set to the job ID.
 Otherwise it will not be set.
