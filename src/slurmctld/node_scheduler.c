@@ -2665,11 +2665,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	/* Set this guess here to give the user tools an idea
 	 * of how many nodes Slurm is planning on giving the job.
 	 * This needs to be done on success or not.  It means the job
-	 * could run on nodes.  We only set the wag once to avoid
-	 * having to go through the bit logic multiple times.
+	 * could run on nodes.
 	 */
-	if (select_bitmap
-	    && ((error_code == SLURM_SUCCESS) || !job_ptr->node_cnt_wag)) {
+	if (select_bitmap) {
 		selected_node_cnt = bit_set_count(select_bitmap);
 		job_ptr->node_cnt_wag = selected_node_cnt;
 	} else

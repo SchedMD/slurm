@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- Add allow_zero_lic to SchedulerParameters.
  -- Avoid scheduling tasks in excess of ArrayTaskThrottle when canceling tasks
     of an array.
+ -- Fix jobs that request memory per node and task count that can't be
+    scheduled right away.
 
 * Changes in Slurm 18.08.1
 ==========================
