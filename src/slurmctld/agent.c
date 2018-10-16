@@ -1725,7 +1725,7 @@ extern void agent_purge(void)
 	}
 	if (defer_list) {
 		slurm_mutex_lock(&defer_mutex);
-		FREE_NULL_LIST(retry_list);
+		FREE_NULL_LIST(defer_list);
 		slurm_mutex_unlock(&defer_mutex);
 	}
 	if (mail_list) {
