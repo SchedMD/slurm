@@ -425,6 +425,7 @@ extern void print_fields(type_t type, void *object)
 	if ((uint64_t)step_cpu_tres_rec_count == INFINITE64)
 		step_cpu_tres_rec_count = 0;
 
+	curr_inx = 1;
 	list_iterator_reset(print_fields_itr);
 	while ((field = list_next(print_fields_itr))) {
 		char *tmp_char = NULL, id[FORMAT_STRING_SIZE];
