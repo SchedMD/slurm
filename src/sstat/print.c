@@ -118,6 +118,7 @@ void print_fields(slurmdb_step_rec_t *step)
 //	int curr_inx = 1;
 //	char outbuf[FORMAT_STRING_SIZE];
 
+	curr_inx = 1;
 	list_iterator_reset(print_fields_itr);
 	while ((field = list_next(print_fields_itr))) {
 		char *tmp_char = NULL;
