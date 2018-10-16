@@ -1025,6 +1025,32 @@ _create_path_list(void)
 }
 
 /*
+ * check a specific path to see if it is an appropriate exectuable
+ * IN path - path to check
+ * IN access_mode - determine if executable is accessible to caller with
+ *		    specified mode
+ * IN test_exec   - if false, do not confirm access mode of cmd
+ * RET true if path is acceptable executable, false otherwise
+ */
+static bool _check_exec(const char *path, int access_mode, bool test_exec)
+{
+	struct stat st;
+        if (stat(path, &st)) {
+		debug2("_check_exec: failed to stat path %s", path);
+		return false;
+	}
+	if (S_ISDIR(st.st_mode)) {
+		debug2("_check_exec: path %s is a directory", path);
+		return false;
+	}
+	if (test_exec && access(path, access_mode)) {
+		debug2("_check_exec: path %s is not accessible", path);
+		return false;
+	}
+	return true;
+}
+
+/*
  * search PATH to confirm the location and access mode of the given command
  * IN cwd - current working directory
  * IN cmd - command to execute
@@ -1044,7 +1070,7 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 	if (cmd[0] == '.') {
 		if (test_exec) {
 			char *cmd1 = xstrdup_printf("%s/%s", cwd, cmd);
-			if (access(cmd1, access_mode) == 0)
+			if (_check_exec(cmd1, access_mode, test_exec))
 				xstrcat(fullpath, cmd1);
 			xfree(cmd1);
 		}
@@ -1052,7 +1078,7 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 	}
 	/* Absolute path */
 	if (cmd[0] == '/') {
-		if (test_exec && (access(cmd, access_mode) == 0))
+		if (test_exec && _check_exec(cmd, access_mode, test_exec))
 			xstrcat(fullpath, cmd);
 		goto done;
 	}
@@ -1071,7 +1097,7 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 		else
 			xstrfmtcat(fullpath, "%s/%s", path, cmd);
 
-		if (access(fullpath, access_mode) == 0)
+		if (_check_exec(fullpath, access_mode, test_exec))
 			goto done;
 
 		xfree(fullpath);
