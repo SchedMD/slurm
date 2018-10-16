@@ -1025,14 +1025,11 @@ _create_path_list(void)
 }
 
 /*
- * check a specific path to see if it is an appropriate exectuable
- * IN path - path to check
- * IN access_mode - determine if executable is accessible to caller with
- *		    specified mode
- * IN test_exec   - if false, do not confirm access mode of cmd
- * RET true if path is acceptable executable, false otherwise
+ * Check a specific path to see if the executable exists and is not a directory
+ * IN path - path of executable to check
+ * RET true if path exists and is not a directory; false otherwise
  */
-static bool _check_exec(const char *path, int access_mode, bool test_exec)
+static bool _exists(const char *path)
 {
 	struct stat st;
         if (stat(path, &st)) {
@@ -1043,7 +1040,19 @@ static bool _check_exec(const char *path, int access_mode, bool test_exec)
 		debug2("_check_exec: path %s is a directory", path);
 		return false;
 	}
-	if (test_exec && access(path, access_mode)) {
+	return true;
+}
+
+/*
+ * Check a specific path to see if the executable is accessible
+ * IN path - path of executable to check
+ * IN access_mode - determine if executable is accessible to caller with
+ *		    specified mode
+ * RET true if path is accessible according to access mode, false otherwise
+ */
+static bool _accessible(const char *path, int access_mode)
+{
+	if (access(path, access_mode)) {
 		debug2("_check_exec: path %s is not accessible", path);
 		return false;
 	}
@@ -1070,25 +1079,26 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 	if (cmd[0] == '.') {
 		if (test_exec) {
 			char *cmd1 = xstrdup_printf("%s/%s", cwd, cmd);
-			if (_check_exec(cmd1, access_mode, test_exec))
-				xstrcat(fullpath, cmd1);
+			if (_exists(cmd1) && _accessible(cmd1, access_mode))
+				fullpath = xstrdup(cmd1);
 			xfree(cmd1);
 		}
-		goto done;
+		return fullpath;
 	}
 	/* Absolute path */
 	if (cmd[0] == '/') {
-		if (test_exec && _check_exec(cmd, access_mode, test_exec))
-			xstrcat(fullpath, cmd);
-		goto done;
+		if (test_exec && _exists(cmd) && _accessible(cmd, access_mode))
+			fullpath = xstrdup(cmd);
+		return fullpath;
 	}
 	/* Otherwise search in PATH */
 	l = _create_path_list();
 	if (l == NULL)
 		return NULL;
 
+	/* Check cwd last, so local binaries do not trump binaries in PATH */
 	if (check_current_dir)
-		list_prepend(l, xstrdup(cwd));
+		list_append(l, xstrdup(cwd));
 
 	i = list_iterator_create(l);
 	while ((path = list_next(i))) {
@@ -1096,13 +1106,16 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 			xstrfmtcat(fullpath, "%s/%s/%s", cwd, path, cmd);
 		else
 			xstrfmtcat(fullpath, "%s/%s", path, cmd);
-
-		if (_check_exec(fullpath, access_mode, test_exec))
-			goto done;
-
+		/* Use first executable found in PATH */
+		if (_exists(fullpath)) {
+			if (!test_exec)
+				break;
+			if (_accessible(path, access_mode))
+				break;
+		}
 		xfree(fullpath);
 	}
-done:
+	list_iterator_destroy(i);
 	FREE_NULL_LIST(l);
 	return fullpath;
 }

@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
     previously accrued for priority.
  -- cons_res: Delay exiting cr_job_test until after cores/cpus are calculated
     and distributed.
+ -- Fix bug where binary in cwd would trump binary in PATH with test_exec.
 
 * Changes in Slurm 18.08.3
 ==========================
