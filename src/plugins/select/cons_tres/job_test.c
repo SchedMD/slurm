@@ -2585,19 +2585,29 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		}
 		for (i = 0; i < consec_index; i++) {
 			char *gres_str = NULL, *gres_print = "";
+			bitstr_t *host_bitmap;
+			char *host_list;
 			if (gres_per_job) {
 				gres_str = gres_plugin_job_sched_str(
 						consec_gres[i],
 						job_ptr->gres_list);
-				if (gres_str)
+				if (gres_str) {
+					xstrcat(gres_str, " ");
 					gres_print = gres_str;
+				}
 			}
+
+			host_bitmap = bit_alloc(select_node_cnt);
+			bit_nset(host_bitmap, consec_start[i], consec_end[i]);
+			host_list = bitmap2node_name(host_bitmap);
 			info("%s: eval_nodes: set:%d consec "
-			     "CPUs:%d nodes:%d %s begin:%d end:%d required:%d weight:%"PRIu64,
+			     "CPUs:%d nodes:%d:%s %sbegin:%d end:%d required:%d weight:%"PRIu64,
 			     plugin_type, i, consec_cpus[i], consec_nodes[i],
-			     gres_print, consec_start[i], consec_end[i],
-			     consec_req[i], consec_weight[i]);
+			     host_list, gres_print, consec_start[i],
+			     consec_end[i], consec_req[i], consec_weight[i]);
+			bit_free(host_bitmap);
 			xfree(gres_str);
+			xfree(host_list);
 		}
 	}
 
