@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix --parsable2 output for sacct and sstat commands to remove a stray
     trailing delimiter.
  -- When modifying a user's name in sacctmgr enforce PreserveCaseUser.
+ -- When adding a coordinator or user that was once deleted enforce
+    PreserveCaseUser.
 
 * Changes in Slurm 18.08.1
 ==========================
