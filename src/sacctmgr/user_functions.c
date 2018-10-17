@@ -254,7 +254,8 @@ static int _set_rec(int *start, int argc, char **argv,
 					 MAX(command_len, 1))) {
 			if (user->name)
 				xfree(user->name);
-			user->name = strip_quotes(argv[i]+end, NULL, 1);
+			user->name = strip_quotes(argv[i]+end, NULL,
+						  user_case_norm);
 			u_set = 1;
 		} else if (!xstrncasecmp(argv[i], "RawUsage",
 					 MAX(command_len, 7))) {

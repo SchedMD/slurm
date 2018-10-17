@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
     /proc/sys/kernel/pid_max.
  -- Fix --parsable2 output for sacct and sstat commands to remove a stray
     trailing delimiter.
+ -- When modifying a user's name in sacctmgr enforce PreserveCaseUser.
 
 * Changes in Slurm 18.08.1
 ==========================
