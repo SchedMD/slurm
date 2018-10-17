@@ -51,6 +51,11 @@ documents those changes that are of interest to users and administrators.
     /proc/sys/kernel/pid_max.
  -- Fix --parsable2 output for sacct and sstat commands to remove a stray
     trailing delimiter.
+ -- When modifying a user's name in sacctmgr enforce PreserveCaseUser.
+ -- When adding a coordinator or user that was once deleted enforce
+    PreserveCaseUser.
+ -- Correctly handle scenarios where a partitions MaxMemPerCPU is less than
+    a jobs --mem-per-cpu and also -c is greater than 1.
 
 * Changes in Slurm 18.08.1
 ==========================
@@ -375,6 +380,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.11
 ===========================
  -- Correctly initialize variable in env_array_user_default().
+ -- Correctly handle scenarios where a partitions MaxMemPerCPU is less than
+    a jobs --mem-per-cpu and also -c is greater than 1.
 
 * Changes in Slurm 17.11.10
 ===========================
