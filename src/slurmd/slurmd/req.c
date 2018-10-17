@@ -5802,13 +5802,12 @@ done:
 }
 
 /* NOTE: call _destroy_env() to free returned value */
-static char **
-_build_env(job_env_t *job_env)
+static char **_build_env(job_env_t *job_env)
 {
 	char **env = xmalloc(sizeof(char *));
 	bool user_name_set = 0;
 
-	env[0]  = NULL;
+	env[0] = NULL;
 	if (!valid_spank_job_env(job_env->spank_job_env,
 				 job_env->spank_job_env_size,
 				 job_env->uid)) {
@@ -5832,7 +5831,7 @@ _build_env(job_env_t *job_env)
 
 	setenvf(&env, "SLURM_CLUSTER_NAME", "%s", conf->cluster_name);
 	setenvf(&env, "SLURM_JOB_ID", "%u", job_env->jobid);
-	setenvf(&env, "SLURM_JOB_UID",   "%u", job_env->uid);
+	setenvf(&env, "SLURM_JOB_UID", "%u", job_env->uid);
 
 #ifndef HAVE_NATIVE_CRAY
 	/* uid_to_string on a cray is a heavy call, so try to avoid it */
@@ -5847,7 +5846,7 @@ _build_env(job_env_t *job_env)
 		xfree(job_env->user_name);
 
 	setenvf(&env, "SLURM_JOBID", "%u", job_env->jobid);
-	setenvf(&env, "SLURM_UID",   "%u", job_env->uid);
+	setenvf(&env, "SLURM_UID", "%u", job_env->uid);
 	if (job_env->node_list)
 		setenvf(&env, "SLURM_NODELIST", "%s", job_env->node_list);
 
