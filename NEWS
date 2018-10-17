@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 17.11.11
 ===========================
  -- Correctly initialize variable in env_array_user_default().
+ -- Correctly handle scenarios where a partitions MaxMemPerCPU is less than
+    a jobs --mem-per-cpu and also -c is greater than 1.
 
 * Changes in Slurm 17.11.10
 ===========================
