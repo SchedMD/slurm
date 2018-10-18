@@ -172,18 +172,6 @@ in every case, but it may serve as a good starting point.</li>
 If most jobs are short lived then use of the <i>sched/builtin</i> plugin is
 recommended. This manages a queue of jobs on a First-In-First-Out (FIFO) basis
 and eliminates logic used to sort the queue by priority.
-<li><b>SelectType</b>:
-If only serial jobs (single CPU jobs) are to be executed, use of the
-<i>select/serial</i> plugin is recommended. This plugin eliminates much of
-the logic found in other select plugins to optimize job allocations with
-respect to network topology. It also reduces communications required to
-executed batch jobs by 75 percent through the use of a "pull" model, where
-the completeion of each job by the <i>slurmd</i> daemon initiates a single
-message to the <i>slurmctld</i> daemon upon completion of the job's epilog
-script. The response to this message can be information required to initiate
-another job utilizing the resources just released by the previous job.
-<b>NOTE:</b> The use of <i>select/serial</i> prevents the job's <i>Epilog</i>
-program from being initiated with any SPANK environment variables.</li>
 <li><b>SlurmctldPort</b>:
 It is desirable to configure the <b>slurmctld</b> daemon to accept incoming
 messages on more than one port in order to avoid having incoming messages
