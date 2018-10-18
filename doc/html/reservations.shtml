@@ -176,9 +176,8 @@ feature that every selected node must contain.</p>
 whole nodes.
 This capability permits the administrator to identify the core count to be
 reserved on each node as shown in the examples below.<br>
-<b>NOTE:</b> Core reservations are not available on
-Cray/ALPS systems, nor when the system is configured to use the select/linear
-or select/serial plugins.</p>
+<b>NOTE:</b> Core reservations are not available when the system is configured
+to use the select/linear plugin.</p>
 <pre>
 # Create a two core reservation for user alan
 $ scontrol create reservation StartTime=now Duration=60 \
@@ -436,7 +435,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 15 December 2016</p>
+<p style="text-align: center;">Last modified 18 October 2018</p>
 
 <!--#include virtual="footer.txt"-->
 

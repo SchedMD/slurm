@@ -604,8 +604,6 @@ The more frequently executed scheduling logic only starts jobs on a first-in
 first-out (FIFO) basis and lacks logic for concurrently scheduling all
 components of a heterogeneous job.</p>
 
-<p>Heterogeneous jobs are not supported with Slurm's select/serial plugin.</p>
-
 <p>Heterogeneous jobs are not supported on Cray ALPS systems.</p>
 
 <p>Heterogeneous jobs are not supported on IBM PE systems.</p>
@@ -703,6 +701,6 @@ especially other heterogeneous jobs.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 13 July 2018</p>
+<p style="text-align:center;">Last modified 18 October 2018</p>
 
 <!--#include virtual="footer.txt"-->
