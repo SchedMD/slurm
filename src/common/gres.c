@@ -82,6 +82,7 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
 #include "src/common/plugin.h"
@@ -3596,6 +3597,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  uint16_t *cpus_per_task,
 					  List *gres_list)
 {
+	static uint32_t select_plugin_type = NO_VAL;
 	typedef struct overlap_check {
 		gres_job_state_t *without_model_state;
 		uint32_t plugin_id;
@@ -3616,6 +3618,16 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 
 	if ((rc = gres_plugin_init()) != SLURM_SUCCESS)
 		return rc;
+
+	if ((select_plugin_type == NO_VAL) &&
+	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
+				&select_plugin_type) != SLURM_SUCCESS)) {
+		select_plugin_type = NO_VAL;	/* error */
+	}
+	if ((select_plugin_type != SELECT_TYPE_CONS_TRES) &&
+	    (cpus_per_tres || tres_per_job || tres_per_socket ||
+	     tres_per_task || mem_per_tres))
+		return ESLURM_UNSUPPOERTED_GRES;
 
 	/*
 	 * Clear fields as requested by job update (i.e. input value is "")
