@@ -358,6 +358,9 @@ documents those changes that are of interest to users and administrators.
     node_features_p_changeable_feature in node_features plugin.
  -- Add Slurm configuration file check logic using "slurmctld -t" command.
 
+* Changes in Slurm 17.11.12
+===========================
+
 * Changes in Slurm 17.11.11
 ===========================
  -- Correctly initialize variable in env_array_user_default().
