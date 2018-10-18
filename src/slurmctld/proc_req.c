@@ -2643,8 +2643,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		       comp_msg->job_id, TIME_STR);
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
-		if (replace_batch_job(msg, job_ptr, running_composite))
-			*run_scheduler = true;
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 
 	/* If running composite lets not call this to avoid deadlock */
