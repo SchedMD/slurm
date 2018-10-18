@@ -22,8 +22,7 @@ edit = sed \
         -e 's|@bindir[@]|$(bindir)|g' \
         -e 's|@libdir[@]|$(libdir)|g' \
         -e 's|@sbindir[@]|$(sbindir)|g' \
-        -e 's|@sysconfdir[@]|$(sysconfdir)|g' \
-        -e 's|@BLUEGENE_LOADED_FALSE[@]|$(BLUEGENE_LOADED_FALSE)|g'
+        -e 's|@sysconfdir[@]|$(sysconfdir)|g'
 
 noinst_DATA = $(ETC_FILES)
 

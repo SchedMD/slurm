@@ -30,10 +30,6 @@ CONFDIR="@sysconfdir@"
 LIBDIR="@libdir@"
 SBINDIR="@sbindir@"
 
-# On a bluegene system this will be set to '#'.
-# Yes, FALSE is the correct variable to look at in the .in script.
-HAVE_BG="@BLUEGENE_LOADED_FALSE@"
-
 # Source function library.
 if [ -f /etc/rc.status ]; then
    . /etc/rc.status
@@ -97,14 +93,6 @@ start() {
     shift
     echo -n "starting $prog: "
     unset HOME MAIL USER USERNAME
-
-
-    if [[ $HAVE_BG == "#" ]] && [[ $prog == slurmctld ]]
-    then
-	    # On bluegene systems this need to be set of DB2 can unexpectedly
-	    # crash when the slurmctld is exiting. (Bug 1597)
-	    export DB2NOEXITLIST=ON
-    fi
 
     $STARTPROC $SBINDIR/$prog $*
     rc_status -v
