@@ -48,9 +48,6 @@ if {[test_front_end]} {
 } elseif {[test_multiple_slurmd] != 0} {
 	send_user "\nWARNING: This test is incompatible with multiple slurmd systems\n"
 	exit 0
-} elseif {[test_serial]} {
-	send_user "\nWARNING: This test is incompatible with a serial system\n"
-	exit 0
 }
 
 if {[test_launch_poe]} {

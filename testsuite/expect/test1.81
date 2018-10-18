@@ -40,14 +40,6 @@ set exit_code   0
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-} elseif {[test_serial]} {
-	send_user "\nWARNING: This test is incompatible with serial system\n"
-	exit $exit_code
-}
-
 if {[test_launch_poe]} {
 	set use_envvar MP_I_UPMD_HOSTNAME
 } else {

@@ -38,28 +38,17 @@ set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set job_id           0
+set min_nodes        1
+set max_nodes        3
 set num_nodes_test1  ""
 set num_nodes_test2  ""
 set num_nodes_test3  ""
+set num_procs        6
 set num_procs_test1  ""
 set num_procs_test2  ""
 set num_procs_test3  ""
 
-
 print_header $test_id
-
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-} elseif {[test_serial]} {
-	set min_nodes	1
-	set max_nodes	1
-	set num_procs	1
-} else {
-	set min_nodes	1
-	set max_nodes	3
-	set num_procs	6
-}
 
 #
 # Build input script file

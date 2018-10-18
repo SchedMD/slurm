@@ -40,17 +40,9 @@ set job_id      0
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray/alps systems\n"
-	exit $exit_code
-}
-
 set node_cnt [available_nodes $partition ""]
 if {$node_cnt < 2} {
 	send_user "WARNING: Not enough nodes in partition ($node_cnt < 2)\n"
-	exit $exit_code
-} elseif {[test_serial]} {
-	send_user "\nWARNING: This test is incompatible with serial systems\n"
 	exit $exit_code
 }
 

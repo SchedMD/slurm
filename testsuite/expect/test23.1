@@ -39,11 +39,6 @@ set not_support 0
 
 print_header $test_id
 
-if {[test_alps]} {
-        send_user "\nWARNING: This test is incompatible with Cray systems\n"
-        exit $exit_code
-}
-
 ################################################################
 #
 # Proc: sstat_job

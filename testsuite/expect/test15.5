@@ -44,11 +44,6 @@ set sleep_time  180
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 set inactive_limit  $sleep_time
 set kill_wait       $sleep_time
 set over_time_limit 0

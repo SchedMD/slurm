@@ -44,14 +44,6 @@ set nodelist_name ""
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-} elseif {[test_serial]} {
-	send_user "\nWARNING: Test incompatible with select/serial\n"
-	exit $exit_code
-}
-
 #
 # Submit a job and get the node's NodeName from the nodelist
 #

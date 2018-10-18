@@ -39,8 +39,6 @@ set prompt           "PROMPT: "
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
-} elseif {[test_serial]} {
-	set task_num 1
 } else {
 	set task_num 2
 }

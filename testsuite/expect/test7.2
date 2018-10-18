@@ -78,10 +78,7 @@ expect {
 	}
 }
 
-if {[test_alps]} {
-	send_user "\nWARNING: Additional portions of this test are incompatible with Cray systems\n"
-	exit $exit_code
-} elseif {[test_launch_poe]} {
+if {[test_launch_poe]} {
 	send_user "\nWARNING: Additional portions of this test are incompatible using poe to launch tasks\n"
 	exit $exit_code
 }
@@ -96,15 +93,8 @@ if { $exit_code == 0 } {
 # Spawn a job to test PMI functionality
 #
 set timeout $max_job_delay
-
-if {[test_serial]} {
-	set node_cnt 1
-	set task_cnt 1
-} else {
-	set node_cnt 1-4
-	set task_cnt 8
-}
-
+set node_cnt 1-4
+set task_cnt 8
 
 # Test uses srun based task launch
 # Adjust time limits as needed for large task counts */

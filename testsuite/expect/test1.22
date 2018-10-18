@@ -39,23 +39,13 @@ set exit_code   0
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 #
 # Submit a job with one thread fanout
 #
 set host_0      ""
 set timeout $max_job_delay
-if {[test_serial]} {
-	set node_cnt 1
-	set task_num 1
-} else {
-	set node_cnt 1-64
-	set task_num [get_max_tasks]
-}
+set node_cnt 1-64
+set task_num [get_max_tasks]
 if {[test_launch_poe]} {
 	set node_name_env MP_I_UPMD_HOSTNAME
 	set node_cnt 1

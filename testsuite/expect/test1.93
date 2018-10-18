@@ -122,11 +122,6 @@ proc end_test { } {
 
 print_header $test_id
 
-if {[test_serial]} {
-	send_user "\nWARNING: This test is incompatible with select/serial systems\n"
-	exit 0
-}
-
 if {![test_super_user]} {
 	send_user "\nWARNING: This test is only suitable for a super user (to restore down nodes).\n"
 	exit 0

@@ -59,7 +59,7 @@ if {![string compare [test_launch_type] "runjob"]} {
 	set have_runjob 1
 }
 
-if {$have_runjob || [test_serial]} {
+if {$have_runjob} {
 	set nnodes 1
 } else {
 	set nnodes [available_nodes $partition idle]

@@ -39,11 +39,6 @@ set file_prog   "test$test_id.prog"
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 #
 # Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output

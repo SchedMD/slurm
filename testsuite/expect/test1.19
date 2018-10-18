@@ -47,26 +47,13 @@ set file_out_u       "test$test_id.u.%u.output"
 set file_err_u       "test$test_id.u.%u.error"
 set user_name        ""
 set job_id           0
+set task_cnt         5
 
 print_header $test_id
 
-
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-} elseif {[test_launch_poe]} {
+if {[test_launch_poe]} {
 	send_user "\nWARNING: This test is incompatible with POE systems\n"
 	exit $exit_code
-} elseif {[test_serial]} {
-	set task_cnt 1
-} else {
-	set task_cnt 5
-}
-
-if {[test_launch_poe]} {
-	set node_name_env MP_I_UPMD_HOSTNAME
-} else {
-	set node_name_env SLURMD_NODENAME
 }
 
 #
@@ -166,7 +153,7 @@ if {[wait_for_file $file_err_j_glob] == 0} {
 #  file name and confirm it is created
 #
 set job_id   0
-set srun_pid [spawn $srun --output=$file_out_perc -N1 -v -t1 $bin_printenv $node_name_env]
+set srun_pid [spawn $srun --output=$file_out_perc -N1 -v -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
@@ -197,7 +184,7 @@ if {[wait_for_file $file_out_perc_result] != 0} {
 #  file name and confirm it is created
 #
 set job_id   0
-set srun_pid [spawn $srun --output=$file_out_J -N1 -v -t1 $bin_printenv $node_name_env]
+set srun_pid [spawn $srun --output=$file_out_J -N1 -v -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
@@ -315,7 +302,7 @@ set file_out_n_glob  "test$test_id.n.$node_id.output"
 exec $bin_rm -f $file_out_n_glob
 
 set job_id   0
-set srun_pid [spawn $srun --output=$file_out_n -N1 -n$task_cnt -O -v -t1 $bin_printenv $node_name_env]
+set srun_pid [spawn $srun --output=$file_out_n -N1 -n$task_cnt -O -v -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
@@ -361,8 +348,8 @@ if {$file_cnt != 1} {
 #
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-  $srun -n4 -O --output=$file_out_s -t1 $bin_printenv $node_name_env
-  $srun -n4 -O --output=$file_out_s -t1 $bin_printenv $node_name_env
+  $srun -n4 -O --output=$file_out_s -t1 $bin_printenv SLURMD_NODENAME
+  $srun -n4 -O --output=$file_out_s -t1 $bin_printenv SLURMD_NODENAME
 "
 
 for {set step_id 0} {$step_id < 4} {incr step_id} {
@@ -370,13 +357,8 @@ for {set step_id 0} {$step_id < 4} {incr step_id} {
 	exec $bin_rm -f $file_out_s_glob
 }
 
-if { [test_serial] } {
-	set node_cnt 1-1
-	set task_cnt 1
-} else {
-	set node_cnt 1-4
-	set task_cnt 4
-}
+set node_cnt 1-4
+set task_cnt 4
 
 # Note: Task count is in the script for each srun
 #	There is not oversubscribe option for sbatch.

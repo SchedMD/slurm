@@ -41,12 +41,6 @@ set ckpt_out             -1
 
 print_header $test_id
 
-# if the srun --checkpoint option worked this test would work.
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 #
 # Submit a slurm job that print it's info from scontrol
 #

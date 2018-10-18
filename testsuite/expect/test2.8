@@ -337,7 +337,7 @@ expect {
 		wait
 	}
 }
-if {[test_alps] == 0 && $matches != 1} {
+if {$matches != 1} {
 	send_user "\nFAILURE: scontrol failed to find all job steps\n"
 	end_it 1
 }
@@ -365,7 +365,7 @@ expect {
 		wait
 	}
 }
-if {[test_alps] == 0 && $matches != 1} {
+if {$matches != 1} {
 	send_user "\nFAILURE: scontrol failed to specific job step\n"
 	end_it 1
 }
@@ -401,7 +401,7 @@ expect {
 		wait
 	}
 }
-if {[test_alps] == 0 && $matches != 1} {
+if {$matches != 1} {
 	send_user "\nFAILURE: scontrol found unexpected job step\n"
 	end_it 1
 }

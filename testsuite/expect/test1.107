@@ -52,11 +52,6 @@ proc endit { } {
 	exit $exit_code
 }
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray/alps systems\n"
-	exit $exit_code
-}
-
 #
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
 # otherwise this test may fail.

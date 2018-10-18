@@ -40,12 +40,6 @@ set job_id2     0
 
 print_header $test_id
 
-# if scontrol could be ran from the compute nodes this would work as well
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 #
 # Build input script files
 #

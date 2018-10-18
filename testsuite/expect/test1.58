@@ -38,11 +38,6 @@ set jobid                0
 
 print_header $test_id
 
-if { [test_alps] } {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 #
 # Run an srun to grab a single node allocation, but not start any
 # job steps.

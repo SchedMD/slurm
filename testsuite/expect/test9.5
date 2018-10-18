@@ -44,20 +44,12 @@ set task_cnt    $max_stress_tasks
 if { [string compare [test_launch_type] "slurm"] } {
 	send_user "\nWARNING: This test is only compatible with systems using launch/slurm\n"
 	exit $exit_code
-} elseif { [test_serial] } {
-	set node_cnt 1
-	set task_cnt 1
 } else {
 	set node_cnt 1-4
 }
 set other_opts    "-O"
 
 print_header $test_id
-
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
 
 # Execute an srun job to print hostname to output_file with task_cnt tasks
 # per node, wait for completion

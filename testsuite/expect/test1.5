@@ -66,11 +66,6 @@ expect {
 }
 
 set target_matches 3
-if {$matches < $target_matches && [test_alps]} {
-#	NOTE: On emulated Cray system, the matches should be 3.
-#	On a real ALPS/BASIL Cray system, the matches should be 1.
-	set target_matches 1
-}
 if {$matches < $target_matches} {
 	send_user "\nFAILURE: srun failed to report help message ($matches of $target_matches)\n"
 	set exit_code 1

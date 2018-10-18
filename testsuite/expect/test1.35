@@ -43,11 +43,6 @@ set steps_started        30
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray/ALPS systems\n"
-	exit $exit_code
-}
-
 log_user 0
 set job_mem_opt  "--comment=no_mem"
 set step_mem_opt "--comment=no_mem"

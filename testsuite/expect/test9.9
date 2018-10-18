@@ -43,8 +43,6 @@ print_header $test_id
 
 if {[test_front_end] || $enable_memory_leak_debug != 0} {
 	set job_cnt 2
-} elseif {[test_serial]} {
-	set job_cnt 5000
 }
 
 #

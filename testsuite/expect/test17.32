@@ -40,11 +40,6 @@ set job_id      0
 
 print_header $test_id
 
-if {[test_alps]} {
-        send_user "\nWARNING: This test is incompatible with Cray systems\n"
-        exit $exit_code
-}
-
 #
 # Submit a slurm job that will print slurm env vars and execute 'id'
 #
@@ -56,11 +51,7 @@ make_bash_script $file_in "
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
-if { [test_serial] } {
-	set task_cnt 1
-} else {
-	set task_cnt 10
-}
+set task_cnt 10
 spawn $sbatch --ntasks=$task_cnt --overcommit -N1 --output=$file_out -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {

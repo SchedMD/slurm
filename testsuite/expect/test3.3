@@ -41,11 +41,6 @@ set read_state     ""
 
 print_header $test_id
 
-if {[test_alps]} {
-        send_user "\nWARNING: This test is incompatible with Cray systems\n"
-        exit $exit_code
-}
-
 #
 # Identify a node and its state
 #

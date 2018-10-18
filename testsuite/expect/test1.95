@@ -56,9 +56,6 @@ if {[file executable $upcc] == 0} {
 if {[test_front_end]} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
 	exit 0
-} elseif {[test_serial]} {
-	send_user "WARNING: Test is incompatible with serial system\n"
-	exit 0
 }
 
 #

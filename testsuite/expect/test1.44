@@ -98,11 +98,6 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 		exec $bin_sleep 1
 		set stdout_lines [get_line_cnt $file_out]
 	}
-	if {$stdout_lines != $stdout_target && [test_alps]} {
-		# The ALPS/Cray system is going to always throw an extra
-		# line on no matter what.
-		set stdout_target [expr $stdin_lines * $task_cnt + 1]
-	}
 	if {$stdout_lines != $stdout_target} {
 		if {$stdout_lines == 0} {
 			send_user "\nFAILURE: stdout is empty, is current working directory writable from compute nodes?\n"

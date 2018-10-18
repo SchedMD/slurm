@@ -40,11 +40,6 @@ set job_id      0
 
 print_header $test_id
 
-if {[test_alps]} {
-        send_user "\nWARNING: This test is incompatible with Cray systems\n"
-        exit $exit_code
-}
-
 set def_part [default_partition]
 set oversubscribe [partition_oversubscribe $def_part]
 if {[string compare $oversubscribe "FORCE"] == 0} {

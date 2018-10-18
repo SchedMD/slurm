@@ -39,14 +39,6 @@ set timeout $max_job_delay
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit 0
-} elseif {[test_serial]} {
-	send_user "\nWARNING: This test is incompatible with serial systems\n"
-	exit 0
-}
-
 if {[slurmd_user_root] == 0} {
 	send_user "\nWARNING: This test is incompatible with SlurmdUser != root\n"
 	exit 0

@@ -39,11 +39,6 @@ set matches     0
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 #
 # Spawn initial program via srun
 # Send the signal while the srun is waiting for a resource allocation

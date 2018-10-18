@@ -36,11 +36,6 @@ set job_id      0
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray/alps systems\n"
-	exit $exit_code
-}
-
 #
 # Spawn a job with a deadline and no time
 #

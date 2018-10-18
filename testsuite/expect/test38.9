@@ -33,6 +33,7 @@ source ./globals
 set test_id     "38.9"
 set exit_code	0
 set prompt	"PROMPT:"
+set task_num	2
 
 print_header $test_id
 
@@ -43,12 +44,6 @@ if {[test_front_end]} {
 if {[test_pack_step] == 0} {
 	send_user "\nWARNING: heterogeneous steps not currently supported\n"
 	exit $exit_code
-}
-
-if {[test_serial]} {
-	set task_num 1
-} else {
-	set task_num 2
 }
 
 set def_part_name [default_partition]

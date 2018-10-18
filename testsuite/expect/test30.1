@@ -70,8 +70,8 @@ proc check_path {path file_name} {
 	}
 }
 
-if {[test_cray] || [test_alps]} {
-	send_user "Warning: This test does not work correctly on a Cray (Native or ALPS) system\n";
+if {[test_cray]} {
+	send_user "Warning: This test does not work correctly on a Cray system\n";
 	exit $exit_code
 }
 

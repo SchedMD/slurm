@@ -43,18 +43,9 @@ set file_in          "test$test_id.input"
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit 0
-} elseif {[test_serial]} {
-	set min_nodes        1
-	set max_nodes        1
-	set env_valu_nprocs  1
-} else {
-	set min_nodes        1
-	set max_nodes        2
-	set env_valu_nprocs  5
-}
+set min_nodes        1
+set max_nodes        2
+set env_valu_nprocs  5
 set env_valu_nnodes  "$min_nodes-$max_nodes"
 set env_name_nprocs  "SLURM_NPROCS"
 set env_name_stdout  "SLURM_STDOUTMODE"

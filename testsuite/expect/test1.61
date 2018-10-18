@@ -42,11 +42,6 @@ set timeout 60
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 exec $bin_rm -f $file_in file_out file_err
 make_bash_script $file_in "
   $bin_date

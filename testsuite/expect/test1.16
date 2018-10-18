@@ -40,11 +40,6 @@ set scratch_file       "scratch.$test_id"
 
 print_header $test_id
 
-if {[test_alps]} {
-        send_user "\nWARNING: This test is incompatible with Cray systems\n"
-        exit $exit_code
-}
-
 #
 # Create a scratch file
 #

@@ -40,10 +40,7 @@ set timed_out   0
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-} elseif {[test_launch_poe]} {
+if {[test_launch_poe]} {
 	send_user "\nWARNING: This test is incompatible with POE systems\n"
 	exit $exit_code
 }
@@ -67,12 +64,7 @@ if {$overtimelim != 0} {
 #
 set timeout [expr $max_job_delay + 60 + 60 + 120]
 
-if {[test_serial]} {
-	set node_cnt 1-1
-	set task_cnt 1
-} else {
-	set node_cnt 1-2
-}
+set node_cnt 1-2
 
 set srun_pid [spawn $srun -N$node_cnt -n$task_cnt --overcommit --debugger-test -t1 $bin_id]
 expect {

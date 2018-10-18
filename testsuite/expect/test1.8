@@ -50,12 +50,6 @@ set got_sleep_err        0
 
 print_header $test_id
 
-# if the srun -i option worked this test would work.
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray systems\n"
-	exit $exit_code
-}
-
 #
 # Delete left-over stdin/out/err files
 # Build stdin file

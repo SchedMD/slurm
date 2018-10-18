@@ -36,11 +36,6 @@ set job_id      0
 
 print_header $test_id
 
-if {[test_alps]} {
-	send_user "\nWARNING: This test is incompatible with Cray/alps systems\n"
-	exit $exit_code
-}
-
 set part_name [default_partition]
 set default_time [get_partition_default_time_limit $part_name]
 if { $default_time != -1} {
