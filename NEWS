@@ -22,6 +22,9 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we set the alloc_node in a resource allocation based on the auth
     plugin instead of the rpc call.
 
+* Changes in Slurm 18.08.3
+==========================
+
 * Changes in Slurm 18.08.2
 ==========================
  -- Correctly initialize variable in env_array_user_default().
@@ -379,6 +382,9 @@ documents those changes that are of interest to users and administrators.
  -- Change function name from node_features_p_changible_feature() to
     node_features_p_changeable_feature in node_features plugin.
  -- Add Slurm configuration file check logic using "slurmctld -t" command.
+
+* Changes in Slurm 17.11.12
+===========================
 
 * Changes in Slurm 17.11.11
 ===========================
