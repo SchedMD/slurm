@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.0pre2
 ==============================
+ -- Removed select/serial plugin.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
