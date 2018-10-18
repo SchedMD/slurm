@@ -1608,11 +1608,6 @@ _slurmd_init(void)
 	 */
 	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
 		return SLURM_ERROR;
-	if (!xstrcmp(conf->select_type, "select/serial")) {
-		/* Only cache credential for 5 seconds with select/serial
-		 * for shorter cache searches and higher throughput */
-		slurm_cred_ctx_set(conf->vctx, SLURM_CRED_OPT_EXPIRY_WINDOW, 5);
-	}
 
 	if (conf->cleanstart) {
 		/*
