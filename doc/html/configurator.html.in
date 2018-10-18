@@ -506,8 +506,6 @@ Select one value for <B>SelectType</B>:<BR>
 <input type="radio" name="select_type" value="linear">
 <B>Linear</B>: Node-base
 resource allocation, does not manage individual processor allocation<BR>
-<input type="radio" name="select_type" value="serial">
-<B>Serial</B>: Execute single CPU jobs only<BR>
 <DL>
 <DT><B>SelectTypeParameters</B> (As used by <I>SelectType=cons_res or cray</I> only):
     <DD> Note: The -E extension for sockets, cores, and threads
