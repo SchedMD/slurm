@@ -163,7 +163,6 @@ static time_t   last_file_write_time = (time_t) 0;
 static uint32_t max_array_size = NO_VAL;
 static bitstr_t *requeue_exit = NULL;
 static bitstr_t *requeue_exit_hold = NULL;
-static int	select_serial = -1;
 static bool     validate_cfgd_licenses = true;
 
 /* Local functions */
@@ -6648,13 +6647,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	uint32_t user_submit_priority, acct_reason = 0;
 	acct_policy_limit_set_t acct_policy_limit_set;
 
-	if (select_serial == -1) {
-		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
-			select_serial = 0;
-		else
-			select_serial = 1;
-	}
-
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
 	acct_policy_limit_set.tres =
 		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
@@ -7916,7 +7908,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			job_desc->fed_siblings_viable;
 		update_job_fed_details(job_ptr);
 	}
-	if ((job_desc->shared == JOB_SHARED_NONE) && (select_serial == 0)) {
+	if (job_desc->shared == JOB_SHARED_NONE) {
 		detail_ptr->share_res  = 0;
 		detail_ptr->whole_node = WHOLE_NODE_REQUIRED;
 	} else if (job_desc->shared == JOB_SHARED_OK) {
@@ -13386,13 +13378,6 @@ static void _send_job_kill(struct job_record *job_ptr)
 	struct node_record *node_ptr;
 #endif
 
-	if (select_serial == -1) {
-		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
-			select_serial = 0;
-		else
-			select_serial = 1;
-	}
-
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 
@@ -13439,8 +13424,7 @@ static void _send_job_kill(struct job_record *job_ptr)
 	}
 #endif
 	if (agent_args->node_count == 0) {
-		if ((job_ptr->details->expanding_jobid == 0) &&
-		    (select_serial == 0)) {
+		if (job_ptr->details->expanding_jobid == 0) {
 			error("%s: %pJ allocated no nodes to be killed on",
 			      __func__, job_ptr);
 		}
@@ -14273,7 +14257,6 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		} else if (job_ptr->restart_cnt) {
 			/*
 			 * Duplicate epilog complete can be due to race
-			 * condition, especially with select/serial
 			 */
 			debug("%s: %pJ duplicate epilog complete response",
 			      __func__, job_ptr);

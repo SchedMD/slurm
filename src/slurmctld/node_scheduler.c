@@ -465,7 +465,6 @@ extern void set_job_alias_list(struct job_record *job_ptr)
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 			     bool suspended, bool preempted)
 {
-	static int select_serial = -1;
 	int i;
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
@@ -479,13 +478,6 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	xassert(job_ptr->details);
 
 	trace_job(job_ptr, __func__, "");
-
-	if (select_serial == -1) {
-		if (xstrcmp(slurmctld_conf.select_type, "select/serial"))
-			select_serial = 0;
-		else
-			select_serial = 1;
-	}
 
 	acct_policy_job_fini(job_ptr);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
@@ -615,8 +607,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	}
 
 	if (agent_args->node_count == 0) {
-		if ((job_ptr->details->expanding_jobid == 0) &&
-		    (select_serial == 0)) {
+		if (job_ptr->details->expanding_jobid == 0) {
 			error("%s: %pJ allocated no nodes to be killed on",
 			      __func__, job_ptr);
 		}
