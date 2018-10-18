@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
     a jobs --mem-per-cpu and also -c is greater than 1.
  -- Set AccrueTime correctly when MaxJobsAccrue is disabled and BeginTime has
     not been established.
+ -- Correctly account for job arrays for new {Max/Grp}JobsAccrue limits.
 
 * Changes in Slurm 18.08.1
 ==========================

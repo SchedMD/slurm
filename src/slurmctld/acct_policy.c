@@ -4216,6 +4216,16 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 				 details_ptr->begin_time) ?
 				details_ptr->begin_time : time(NULL);
 
+			/*
+			 * If we have an array here and no limit we want to add
+			 * all the tasks in the array.
+			 */
+			if (job_ptr->array_recs &&
+			    job_ptr->array_recs->task_cnt)
+				create_cnt = job_ptr->array_recs->task_cnt;
+			else
+				create_cnt = 1;
+
 			_add_accrue_time_internal(job_ptr->assoc_ptr,
 						  qos_ptr_1,
 						  used_limits_a1,
@@ -4223,7 +4233,7 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 						  qos_ptr_2,
 						  used_limits_a2,
 						  used_limits_u2,
-						  1);
+						  create_cnt);
 		}
 
 		goto endit;
