@@ -4207,8 +4207,13 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 	    (create_cnt && (!job_ptr->array_recs ||
 			    !job_ptr->array_recs->task_cnt))) {
 		if (!details_ptr->accrue_time) {
+			/*
+			 * If no limit and begin_time hasn't happened yet
+			 * then set accrue_time to now.
+			 */
 			details_ptr->accrue_time =
-				(max_jobs_accrue == INFINITE) ?
+				((max_jobs_accrue == INFINITE) &&
+				 details_ptr->begin_time) ?
 				details_ptr->begin_time : time(NULL);
 
 			_add_accrue_time_internal(job_ptr->assoc_ptr,
