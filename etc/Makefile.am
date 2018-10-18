@@ -8,7 +8,6 @@ edit = sed \
         -e 's|@libdir[@]|$(libdir)|g' \
         -e 's|@sbindir[@]|$(sbindir)|g' \
         -e 's|@sysconfdir[@]|$(sysconfdir)|g' \
-	-e 's|@BLUEGENE_LOADED_FALSE[@]|$(BLUEGENE_LOADED_FALSE)|g' \
 	-e 's|@SYSTEMD_TASKSMAX_OPTION[@]|$(SYSTEMD_TASKSMAX_OPTION)|g'
 
 noinst_DATA = $(ETC_FILES)
