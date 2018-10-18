@@ -365,7 +365,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid GRES specification (with and without type identification)" },
 	{ ESLURM_REBOOT_IN_PROGRESS,
 	  "Reboot already in progress" },
-	{ ESLURM_UNSUPPOERTED_GRES,
+	{ ESLURM_UNSUPPORTED_GRES,
 	  "Requested GRES option unsupported by configured SelectType plugin" },
 
 	/* slurmd error codes */

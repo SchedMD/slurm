@@ -3627,7 +3627,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 	if ((select_plugin_type != SELECT_TYPE_CONS_TRES) &&
 	    (cpus_per_tres || tres_per_job || tres_per_socket ||
 	     tres_per_task || mem_per_tres))
-		return ESLURM_UNSUPPOERTED_GRES;
+		return ESLURM_UNSUPPORTED_GRES;
 
 	/*
 	 * Clear fields as requested by job update (i.e. input value is "")

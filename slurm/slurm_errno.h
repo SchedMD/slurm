@@ -203,7 +203,7 @@ enum {
 	ESLURM_RESERVATION_MAINT,
 	ESLURM_INVALID_GRES_TYPE,
 	ESLURM_REBOOT_IN_PROGRESS =			2120,
-	ESLURM_UNSUPPOERTED_GRES,
+	ESLURM_UNSUPPORTED_GRES,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
