@@ -57,7 +57,6 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/strnatcmp.h"
-#include "src/common/strlcpy.h"
 #include "src/common/timers.h"
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"

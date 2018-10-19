@@ -51,7 +51,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "src/common/log.h"
-#include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
