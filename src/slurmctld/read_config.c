@@ -386,6 +386,7 @@ static int _build_bitmaps(void)
 
 	/* initialize the idle and up bitmaps */
 	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
 	FREE_NULL_BITMAP(booting_node_bitmap);
 	FREE_NULL_BITMAP(cg_node_bitmap);
 	FREE_NULL_BITMAP(future_node_bitmap);
@@ -395,6 +396,7 @@ static int _build_bitmaps(void)
 	FREE_NULL_BITMAP(up_node_bitmap);
 	FREE_NULL_BITMAP(rs_node_bitmap);
 	avail_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+	bf_ignore_node_bitmap = bit_alloc(node_record_count);
 	booting_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	cg_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
 	future_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
@@ -432,7 +434,7 @@ static int _build_bitmaps(void)
 		if (IS_NODE_IDLE(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
 			if ((drain_flag == 0) &&
 			    (!IS_NODE_NO_RESPOND(node_ptr)))
-				bit_set(avail_node_bitmap, i);
+				make_node_avail(i);
 			bit_set(up_node_bitmap, i);
 		}
 		if (IS_NODE_POWER_SAVE(node_ptr))

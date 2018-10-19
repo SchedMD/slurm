@@ -177,6 +177,7 @@ static int max_backfill_job_per_user = 0;
 static int max_backfill_job_per_user_part = 0;
 static int max_backfill_jobs_start = 0;
 static bool backfill_continue = false;
+static bool backfill_ign_new_avail_nodes = false;
 static bool assoc_limit_stop = false;
 static int defer_rpc_cnt = 0;
 static int sched_timeout = SCHED_TIMEOUT;
@@ -809,6 +810,13 @@ static void _load_config(void)
 		backfill_continue = false;
 	}
 
+	if (backfill_continue &&
+	    (xstrstr(sched_params, "bf_ignore_newly_avail_nodes"))) {
+		backfill_ign_new_avail_nodes = true;
+	} else {
+		backfill_ign_new_avail_nodes = false;
+	}
+
 	if (sched_params && (strstr(sched_params, "assoc_limit_stop"))) {
 		assoc_limit_stop = true;
 	} else {
@@ -1257,6 +1265,11 @@ static int _attempt_backfill(void)
 	}
 
 	sort_job_queue(job_queue);
+
+	/* Ignore nodes that have been set as available during this cycle. */
+	if (backfill_ign_new_avail_nodes)
+		bit_clear_all(bf_ignore_node_bitmap);
+
 	while (1) {
 		uint32_t bf_job_id, bf_array_task_id, bf_job_priority,
 			prio_reserve;
@@ -1848,6 +1861,8 @@ next_task:
 		/* Identify usable nodes for this job */
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
+		if (backfill_ign_new_avail_nodes)
+			bit_and_not(avail_bitmap, bf_ignore_node_bitmap);
 		filter_by_node_owner(job_ptr, avail_bitmap);
 		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
 		for (j = 0; ; ) {

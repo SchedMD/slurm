@@ -398,7 +398,7 @@ static void _do_power_work(time_t now)
 			if (!IS_NODE_DOWN(node_ptr) &&
 			    !IS_NODE_DRAIN(node_ptr) &&
 			    !IS_NODE_FAIL(node_ptr))
-				bit_set(avail_node_bitmap,   i);
+				make_node_avail(i);
 			bit_set(power_node_bitmap,   i);
 			bit_set(sleep_node_bitmap,   i);
 			bit_set(suspend_node_bitmap, i);

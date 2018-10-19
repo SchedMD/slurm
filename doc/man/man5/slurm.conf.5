@@ -2505,6 +2505,13 @@ This can result in lower priority jobs being backfill scheduled instead
 of newly arrived higher priority jobs, but will permit more queued jobs to be
 considered for backfill scheduling.
 .TP
+\fBbf_ignore_newly_avail_nodes\fR
+If set, then only resources available at the beginning of a backfill cycle
+will be considered for use. Otherwise resources made available during that
+backfill cycle (during a yield with bf_continue set) may be used for lower
+priority jobs, delaying the initiation of higher priority jobs.
+Disabled by default.
+.TP
 \fBbf_interval=#\fR
 The number of seconds between backfill iterations.
 Higher values result in less overhead and better responsiveness.

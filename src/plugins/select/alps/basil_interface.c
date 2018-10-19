@@ -351,7 +351,7 @@ extern int basil_inventory(void)
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 			if (!IS_NODE_DRAIN(node_ptr) &&
 			    !IS_NODE_FAIL(node_ptr)) {
-				bit_set(avail_node_bitmap, node_inx);
+				make_node_avail(node_inx);
 			}
 		}
 	}
