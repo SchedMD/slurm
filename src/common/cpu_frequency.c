@@ -129,7 +129,7 @@ static int _fd_lock_retry(int fd)
 static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 {
 	char tmp[PATH_MAX];
-	int fd, sz;
+	int fd;
 
 	snprintf(tmp, sizeof(tmp), "%s/cpu", slurmd_spooldir);
 	if ((mkdir(tmp, 0700) != 0) && (errno != EEXIST)) {
@@ -144,10 +144,12 @@ static int _set_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	}
 	if (_fd_lock_retry(fd) < 0)
 		error("%s: fd_get_write_lock: %m %s", __func__, tmp);
-	sz = sizeof(uint32_t);
-	if (fd_write_n(fd, (void *) &job_id, sz) != sz)
-		error("%s: write: %m %s", __func__, tmp);
+	safe_write(fd, &job_id, sizeof(job_id));
 
+	return fd;
+
+rwfail:
+	error("%s: write: %m %s", __func__, tmp);
 	return fd;
 }
 
@@ -157,7 +159,7 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 {
 	char tmp[PATH_MAX];
 	uint32_t in_job_id;
-	int fd, sz;
+	int fd;
 
 	snprintf(tmp, sizeof(tmp), "%s/cpu", slurmd_spooldir);
 	if ((mkdir(tmp, 0700) != 0) && (errno != EEXIST)) {
@@ -176,14 +178,9 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 		close(fd);
 		return -1;
 	}
-	sz = sizeof(uint32_t);
-	if (fd_read_n(fd, (void *) &in_job_id, sz) != sz) {
-		error("%s: read: %m %s", __func__, tmp);
-		(void) fd_release_lock(fd);
-		close(fd);
-		return -1;
-	}
+	safe_read(fd, &in_job_id, sizeof(in_job_id));
 	(void) fd_release_lock(fd);
+
 	if (job_id != in_job_id) {
 		/* Result of various race conditions */
 		debug("%s: CPU %d now owned by job %u rather than job %u",
@@ -196,6 +193,12 @@ static int _test_cpu_owner_lock(int cpu_id, uint32_t job_id)
 	       __func__, cpu_id, job_id);
 
 	return 0;
+
+rwfail:
+	error("%s: read: %m %s", __func__, tmp);
+	(void) fd_release_lock(fd);
+	close(fd);
+	return -1;
 }
 
 /*
