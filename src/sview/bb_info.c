@@ -501,7 +501,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 			}
 			sview_bb_info_ptr->bb_ptr = bb_resv_ptr;
 			sview_bb_info_ptr->bb_name = xstrdup(bb_name_id);
-			strcpy(bb_name_id, "");	/* Clear bb_name_id */
+			bb_name_id[0] = '\0';	/* Clear bb_name_id */
 			sview_bb_info_ptr->color_inx = pos % sview_colors_cnt;
 			sview_bb_info_ptr->plugin = xstrdup(bb_ptr->name);
 			sview_bb_info_ptr->pos = pos++;
