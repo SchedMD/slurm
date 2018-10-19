@@ -673,7 +673,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 		       slurm_msg_type_t msg_type)
 {
 #ifndef HAVE_FRONT_END
-	int i;
+	int i, i_first, i_last;
 #endif
 	signal_tasks_msg_t *signal_tasks_msg;
 	agent_arg_t *agent_args = NULL;
@@ -697,7 +697,12 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
 	agent_args->node_count = 1;
 #else
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0; i < node_record_count; i++) {
+	i_first = bit_ffs(step_ptr->step_node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(step_ptr->step_node_bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
 		if (agent_args->protocol_version >
