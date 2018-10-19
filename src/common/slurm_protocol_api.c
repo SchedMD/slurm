@@ -71,6 +71,7 @@
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_route.h"
+#include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
@@ -1965,35 +1966,30 @@ static char *_global_auth_key(void)
 	static bool loaded_storage_pass = false;
 	static char storage_pass[512] = "\0";
 	static char *storage_pass_ptr = NULL;
-	slurm_ctl_conf_t *conf;
 
 	if (loaded_storage_pass)
 		return storage_pass_ptr;
 
 	if (slurmdbd_conf) {
 		if (slurmdbd_conf->auth_info) {
-			if (strlen(slurmdbd_conf->auth_info) >=
-			    sizeof(storage_pass)) {
+			if (strlcpy(storage_pass, slurmdbd_conf->auth_info,
+				    sizeof(storage_pass))
+			    >= sizeof(storage_pass))
 				fatal("AuthInfo is too long");
-			} else {
-				strcpy(storage_pass, slurmdbd_conf->auth_info);
-				storage_pass_ptr = storage_pass;
-			}
+			storage_pass_ptr = storage_pass;
 		}
 	} else {
-		conf = slurm_conf_lock();
+		slurm_ctl_conf_t *conf = slurm_conf_lock();
 		if (conf->accounting_storage_pass) {
-			if (strlen(conf->accounting_storage_pass) >=
-			    sizeof(storage_pass)) {
+			if (strlcpy(storage_pass, conf->accounting_storage_pass,
+				    sizeof(storage_pass))
+			    >= sizeof(storage_pass))
 				fatal("AccountingStoragePass is too long");
-			} else {
-				strcpy(storage_pass,
-				       conf->accounting_storage_pass);
-				storage_pass_ptr = storage_pass;
-			}
+			storage_pass_ptr = storage_pass;
 		}
 		slurm_conf_unlock();
 	}
+
 	loaded_storage_pass = true;
 	return storage_pass_ptr;
 }
