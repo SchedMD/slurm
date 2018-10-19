@@ -159,15 +159,15 @@ extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 /*
  * _report_lock_set - report whether the read or write lock is set
  */
-static void _report_lock_set(char *str, lock_datatype_t datatype)
+static void _report_lock_set(char **str, lock_datatype_t datatype)
 {
 	/* the try functions return zero on success */
 	if (slurm_rwlock_tryrdlock(&slurmctld_locks[datatype])) {
-		strcat(str, "W");
+		*str = "W";
 	} else {
 		slurm_rwlock_unlock(&slurmctld_locks[datatype]);
 		if (slurm_rwlock_trywrlock(&slurmctld_locks[datatype]))
-			strcat(str, "R");
+			*str = "R";
 		else
 			slurm_rwlock_unlock(&slurmctld_locks[datatype]);
 	}
@@ -179,14 +179,14 @@ static void _report_lock_set(char *str, lock_datatype_t datatype)
  */
 int report_locks_set(void)
 {
-	char conf[4] = "", job[4] = "", node[4] = "", part[4] = "", fed[4] = "";
+	char *conf = "", *job = "", *node = "", *part = "", *fed = "";
 	int lock_count;
 
-	_report_lock_set(conf, CONF_LOCK);
-	_report_lock_set(job, JOB_LOCK);
-	_report_lock_set(node, NODE_LOCK);
-	_report_lock_set(part, PART_LOCK);
-	_report_lock_set(fed, FED_LOCK);
+	_report_lock_set(&conf, CONF_LOCK);
+	_report_lock_set(&job, JOB_LOCK);
+	_report_lock_set(&node, NODE_LOCK);
+	_report_lock_set(&part, PART_LOCK);
+	_report_lock_set(&fed, FED_LOCK);
 
 	lock_count = strlen(conf) + strlen(job) + strlen(node)
 		     + strlen(part) + strlen(fed);
