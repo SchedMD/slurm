@@ -2439,10 +2439,10 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 	int		rc, i, msg_rc;
 	slurm_msg_t	req_msg;
 	complete_batch_script_msg_t req;
-	bool		msg_to_ctld;
+	bool msg_to_ctld = true;
 
 	if (conf->msg_aggr_window_msgs > 1)
-		msg_to_ctld = 0;
+		msg_to_ctld = false;
 
 	req.job_id	= job->jobid;
 	if (job->oom_error)
