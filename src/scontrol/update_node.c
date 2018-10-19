@@ -141,12 +141,12 @@ scontrol_update_node (int argc, char **argv)
 			node_msg.weight = num;
 			update_cnt++;
 		} else if (xstrncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
-			int len = strlen(val);
-			reason_str = xmalloc(len+1);
+			int len;
+
 			if (*val == '"')
-				strcpy(reason_str, val+1);
+				reason_str = xstrdup(val + 1);
 			else
-				strcpy(reason_str, val);
+				reason_str = xstrdup(val);
 
 			len = strlen(reason_str) - 1;
 			if ((len >= 0) && (reason_str[len] == '"'))
@@ -300,12 +300,11 @@ scontrol_update_front_end (int argc, char **argv)
 		if (xstrncasecmp(tag, "FrontendName", MAX(tag_len, 1)) == 0)
 			front_end_msg.name = val;
 		else if (xstrncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
-			int len = strlen(val);
-			reason_str = xmalloc(len+1);
+			int len;
 			if (*val == '"')
-				strcpy(reason_str, val+1);
+				reason_str = xstrdup(val + 1);
 			else
-				strcpy(reason_str, val);
+				reason_str = xstrdup(val);
 
 			len = strlen(reason_str) - 1;
 			if ((len >= 0) && (reason_str[len] == '"'))
