@@ -456,10 +456,9 @@ extern char *format_task_dist_states(task_dist_states_t t)
 }
 
 /* return command name from its full path name */
-char * base_name(char* command)
+char *base_name(const char *command)
 {
-	char *char_ptr, *name;
-	int i;
+	const char *char_ptr;
 
 	if (command == NULL)
 		return NULL;
@@ -470,10 +469,7 @@ char * base_name(char* command)
 	else
 		char_ptr++;
 
-	i = strlen(char_ptr);
-	name = xmalloc(i+1);
-	strcpy(name, char_ptr);
-	return name;
+	return xstrdup(char_ptr);
 }
 
 static long _str_to_mbytes(const char *arg, int use_gbytes)

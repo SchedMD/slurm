@@ -61,7 +61,7 @@ void set_distribution(task_dist_states_t distribution,
 task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size);
 
 /* return command name from its full path name */
-char * base_name(char* command);
+char *base_name(const char *command);
 
 /*
  * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
