@@ -669,8 +669,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->job_hostlist    = xstrdup(cred->job_hostlist);
 	rcred->ctime  = cred->ctime;
 	rcred->siglen = cred->siglen;
-	/* Assumes signature is a string,
-	 * otherwise use xmalloc and strcpy here */
+	/* Assumes signature is a string, otherwise use xmalloc and memcpy */
 	rcred->signature = xstrdup(cred->signature);
 
 	slurm_mutex_unlock(&cred->mutex);
