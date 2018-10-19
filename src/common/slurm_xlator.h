@@ -111,8 +111,6 @@
 #define bit_copybits		slurm_bit_copybits
 
 /* fd.[ch] functions */
-#define fd_read_n		slurm_fd_read_n
-#define fd_write_n		slurm_fd_write_n
 #define fd_set_blocking		slurm_fd_set_blocking
 #define fd_set_nonblocking	slurm_fd_set_nonblocking
 

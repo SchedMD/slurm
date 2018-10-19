@@ -49,8 +49,6 @@
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
  * for details. 
  */
-strong_alias(fd_read_n,		slurm_fd_read_n);
-strong_alias(fd_write_n,	slurm_fd_write_n);
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
 
@@ -159,52 +157,6 @@ static pid_t fd_test_lock(int fd, int type)
 	return(lock.l_pid);
 }
 
-
-ssize_t fd_read_n(int fd, void *buf, size_t n)
-{
-	size_t nleft;
-	ssize_t nread;
-	unsigned char *p;
-
-	p = buf;
-	nleft = n;
-	while (nleft > 0) {
-		if ((nread = read(fd, p, nleft)) < 0) {
-			if (errno == EINTR)
-				continue;
-			else
-				return(-1);
-		}
-		else if (nread == 0) {          /* EOF */
-			break;
-		}
-		nleft -= nread;
-		p += nread;
-	}
-	return(n - nleft);
-}
-
-
-ssize_t fd_write_n(int fd, void *buf, size_t n)
-{
-	size_t nleft;
-	ssize_t nwritten;
-	unsigned char *p;
-
-	p = buf;
-	nleft = n;
-	while (nleft > 0) {
-		if ((nwritten = write(fd, p, nleft)) < 0) {
-			if (errno == EINTR)
-				continue;
-			else
-				return(-1);
-		}
-		nleft -= nwritten;
-		p += nwritten;
-	}
-	return(n);
-}
 
 /* Wait for a file descriptor to be readable (up to time_limit seconds).
  * Return 0 when readable or -1 on error */
