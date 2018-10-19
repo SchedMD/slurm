@@ -1706,17 +1706,6 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	return false;
 }
 
-static char * timestr (const time_t *tp, char *buf, size_t n)
-{
-	char fmt[] = "%y%m%d%H%M%S";
-	struct tm tmval;
-
-	if (!slurm_localtime_r (tp, &tmval))
-		error ("localtime_r: %m");
-	slurm_strftime (buf, n, fmt, &tmval);
-	return (buf);
-}
-
 extern void
 slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 {
@@ -1946,35 +1935,22 @@ _job_state_pack_one(job_state_t *j, Buf buffer)
 }
 
 
-static job_state_t *
-_job_state_unpack_one(Buf buffer)
+static job_state_t *_job_state_unpack_one(Buf buffer)
 {
-	char         t1[64], t2[64], t3[64];
 	job_state_t *j = xmalloc(sizeof(*j));
 
-	safe_unpack32(    &j->jobid,      buffer);
-	safe_unpack_time( &j->revoked,    buffer);
-	safe_unpack_time( &j->ctime,      buffer);
-	safe_unpack_time( &j->expiration, buffer);
+	safe_unpack32(&j->jobid, buffer);
+	safe_unpack_time(&j->revoked, buffer);
+	safe_unpack_time(&j->ctime, buffer);
+	safe_unpack_time(&j->expiration, buffer);
 
-	if (j->revoked) {
-		strcpy(t2, " revoked:");
-		timestr(&j->revoked, (t2+9), (64-9));
-	} else {
-		t2[0] = '\0';
-	}
-	if (j->expiration) {
-		strcpy(t3, " expires:");
-		timestr(&j->expiration, (t3+9), (64-9));
-	} else {
-		t3[0] = '\0';
-	}
-	debug3("cred_unpack: job %u ctime:%s%s%s",
-	       j->jobid, timestr (&j->ctime, t1, 64), t2, t3);
+	debug3("cred_unpack: job %u ctime:%"PRIu64" revoked:%"PRIu64" expires:%"PRIu64,
+	       j->jobid, (uint64_t)j->ctime, (uint64_t)j->revoked,
+	       (uint64_t)j->expiration);
 
 	if ((j->revoked) && (j->expiration == (time_t) MAX_TIME)) {
-		info ("Warning: revoke on job %u has no expiration",
-		      j->jobid);
+		info("Warning: revoke on job %u has no expiration",
+		     j->jobid);
 		j->expiration = j->revoked + 600;
 	}
 
