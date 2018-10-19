@@ -290,11 +290,10 @@ extern int gres_plugin_fini(void);
 extern int gres_plugin_reconfig(void);
 
 /*
- * Provide a plugin-specific help message for salloc, sbatch and srun
- * IN/OUT msg - buffer provided by caller and filled in by plugin
- * IN msg_size - size of msg buffer in bytes
+ * Return a plugin-specific help message for salloc, sbatch and srun
+ * Result must be xfree()'d
  */
-extern int gres_plugin_help_msg(char *msg, int msg_size);
+extern char *gres_plugin_help_msg(void);
 
 /*
  **************************************************************************

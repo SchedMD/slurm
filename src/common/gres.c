@@ -618,37 +618,27 @@ fini:	slurm_mutex_unlock(&gres_context_lock);
  */
 
 /*
- * Provide a plugin-specific help message for salloc, sbatch and srun
- * IN/OUT msg - buffer provided by caller and filled in by plugin
- * IN msg_size - size of msg buffer in bytes
+ * Return a plugin-specific help message for salloc, sbatch and srun
+ * Result must be xfree()'d.
  *
  * NOTE: GRES "type" (e.g. model) information is only available from slurmctld
  * after slurmd registers. It is not readily available from srun (as used here).
  */
-extern int gres_plugin_help_msg(char *msg, int msg_size)
+extern char *gres_plugin_help_msg(void)
 {
-	int i, rc;
-	char *header = "Valid gres options are:\n";
+	int i;
+	char *msg = xstrdup("Valid gres options are:\n");
 
-	if (msg_size < 1)
-		return EINVAL;
+	gres_plugin_init();
 
-	msg[0] = '\0';
-	rc = gres_plugin_init();
-
-	if ((strlen(header) + 2) <= msg_size)
-		strcat(msg, header);
 	slurm_mutex_lock(&gres_context_lock);
-	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		if ((strlen(msg) + strlen(gres_context[i].gres_name) + 9) >
-		    msg_size)
- 			break;
-		strcat(msg, gres_context[i].gres_name);
-		strcat(msg, "[[:type]:count]\n");
+	for (i = 0; i < gres_context_cnt; i++) {
+		xstrcat(msg, gres_context[i].gres_name);
+		xstrcat(msg, "[[:type]:count]\n");
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
-	return rc;
+	return msg;
 }
 
 /*

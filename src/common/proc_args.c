@@ -81,13 +81,9 @@ void print_slurm_version(void)
 /* print the available gres options */
 void print_gres_help(void)
 {
-	char help_msg[1024] = "";
-
-	gres_plugin_help_msg(help_msg, sizeof(help_msg));
-	if (help_msg[0])
-		printf("%s", help_msg);
-	else
-		printf("No gres help is available\n");
+	char *msg = gres_plugin_help_msg();
+	printf("%s", msg);
+	xfree(msg);
 }
 
 void set_distribution(task_dist_states_t distribution,
