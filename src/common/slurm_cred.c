@@ -1065,16 +1065,8 @@ slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid)
 	}
 
 	j->expiration  = time(NULL) + ctx->expiry_window;
-#if DEBUG_TIME
-	{
-		char buf[64];
-		debug2("set revoke expiration for jobid %u to %s",
-		       j->jobid, timestr(&j->expiration, buf, 64));
-	}
-#else
 	debug2("set revoke expiration for jobid %u to %"PRIu64" UTS",
 	       j->jobid, (uint64_t) j->expiration);
-#endif
 	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_SUCCESS;
 
@@ -1772,14 +1764,8 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	}
 
 	if (cred->ctime <= j->revoked) {
-#if DEBUG_TIME
-		char buf[64];
-		debug3("cred for %u revoked. expires at %s",
-		       j->jobid, timestr(&j->expiration, buf, 64));
-#else
 		debug3("cred for %u revoked. expires at %"PRIu64" UTS",
 		       j->jobid, (uint64_t) j->expiration);
-#endif
 		return true;
 	}
 
@@ -1860,28 +1846,10 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 
 	i = list_iterator_create(ctx->job_list);
 	while ((j = list_next(i))) {
-#if DEBUG_TIME
-		char t1[64], t2[64], t3[64];
-		if (j->revoked) {
-			strcpy(t2, " revoked:");
-			timestr(&j->revoked, (t2+9), (64-9));
-		} else {
-			t2[0] = '\0';
-		}
-		if (j->expiration) {
-			strcpy(t3, " expires:");
-			timestr(&j->expiration, (t3+9), (64-9));
-		} else {
-			t3[0] = '\0';
-		}
-		debug3("state for jobid %u: ctime:%s%s%s",
-		       j->jobid, timestr(&j->ctime, t1, 64), t2, t3);
-#else
 		debug3("state for jobid %u: ctime:%"PRIu64" revoked:%"PRIu64" "
 		       "expires:%"PRIu64"",
 		       j->jobid, (uint64_t)j->ctime, (uint64_t)j->revoked,
 		       (uint64_t)j->expiration);
-#endif
 		if (j->revoked && (now > j->expiration)) {
 			list_delete_item(i);
 		}
