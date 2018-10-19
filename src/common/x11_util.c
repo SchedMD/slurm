@@ -40,6 +40,7 @@
 #include "src/common/list.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
+#include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
