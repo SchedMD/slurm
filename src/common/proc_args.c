@@ -476,7 +476,7 @@ char * base_name(char* command)
 	return name;
 }
 
-static long _str_to_mbtyes(const char *arg, int use_gbytes)
+static long _str_to_mbytes(const char *arg, int use_gbytes)
 {
 	long result;
 	char *endptr;
@@ -509,7 +509,7 @@ static long _str_to_mbtyes(const char *arg, int use_gbytes)
  */
 long str_to_mbytes(const char *arg)
 {
-	return _str_to_mbtyes(arg, 0);
+	return _str_to_mbytes(arg, 0);
 }
 
 /*
@@ -530,7 +530,7 @@ long str_to_mbytes2(const char *arg)
 		xfree(sched_params);
 	}
 
-	return _str_to_mbtyes(arg, use_gbytes);
+	return _str_to_mbytes(arg, use_gbytes);
 }
 
 /* Convert a string into a node count */
