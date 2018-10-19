@@ -337,7 +337,6 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 			max_path_len = 256;
 	}
 	fq_path = xmalloc( strlen( dir ) + max_path_len + 1 );
-	xassert( fq_path );
 
 	/*
 	 * Write the directory name in it, then a separator, then
