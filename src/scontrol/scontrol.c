@@ -588,7 +588,7 @@ _print_daemons (void)
 	char node_name_long[MAX_SLURM_NAME];
 	char *c, *n, *token, *save_ptr = NULL;
 	int actld = 0, ctld = 0, d = 0, i;
-	char daemon_list[] = "slurmctld slurmd";
+	char *daemon_list = NULL;
 
 	slurm_conf_init(NULL);
 	conf = slurm_conf_lock();
@@ -627,12 +627,12 @@ _print_daemons (void)
 		xfree(n);
 	}
 
-	strcpy(daemon_list, "");
 	if (actld && ctld)
-		strcat(daemon_list, "slurmctld ");
+		xstrcat(daemon_list, "slurmctld ");
 	if (actld && d)
-		strcat(daemon_list, "slurmd");
+		xstrcat(daemon_list, "slurmd");
 	fprintf (stdout, "%s\n", daemon_list) ;
+	xfree(daemon_list);
 }
 
 /*
