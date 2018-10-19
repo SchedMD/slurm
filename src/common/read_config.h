@@ -552,7 +552,7 @@ extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr,
  * NOTE: NodeName in the config may be different from real hostname.
  *       Use get_conf_node_name() to get the former.
  */
-extern int gethostname_short (char *name, size_t len);
+extern int gethostname_short(char *name, size_t len);
 
 /*
  * Replace first "%h" in path string with NodeHostname.

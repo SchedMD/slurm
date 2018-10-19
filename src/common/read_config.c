@@ -2756,32 +2756,27 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
 	return SLURM_ERROR;
 }
 
-/* gethostname_short - equivalent to gethostname, but return only the first
+/*
+ * gethostname_short - equivalent to gethostname, but return only the first
  * component of the fully qualified name
  * (e.g. "linux123.foo.bar" becomes "linux123")
  * OUT name
  */
-int
-gethostname_short (char *name, size_t len)
+int gethostname_short(char *name, size_t len)
 {
-	int error_code, name_len;
+	int error_code;
 	char *dot_ptr, path_name[1024];
 
-	error_code = gethostname (path_name, sizeof(path_name));
+	error_code = gethostname(path_name, sizeof(path_name));
 	if (error_code)
 		return error_code;
 
-	dot_ptr = strchr (path_name, '.');
-	if (dot_ptr == NULL)
-		dot_ptr = path_name + strlen(path_name);
-	else
-		dot_ptr[0] = '\0';
+	if ((dot_ptr = strchr(path_name, '.')))
+		*dot_ptr = '\0';
 
-	name_len = (dot_ptr - path_name);
-	if (name_len > len)
+	if (strlcpy(name, path_name, len) >= len)
 		return ENAMETOOLONG;
 
-	strcpy (name, path_name);
 	return 0;
 }
 
