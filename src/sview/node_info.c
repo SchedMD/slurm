@@ -493,14 +493,14 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	}
 
 	if (node_ptr->cpu_load == NO_VAL) {
-		strcpy(tmp_cpu_load, "N/A");
+		strlcpy(tmp_cpu_load, "N/A", sizeof(tmp_cpu_load));
 	} else {
 		snprintf(tmp_cpu_load, sizeof(tmp_cpu_load),
 			 "%.2f", (node_ptr->cpu_load / 100.0));
 	}
 
 	if (node_ptr->free_mem == NO_VAL64) {
-		strcpy(tmp_free_mem, "N/A");
+		strlcpy(tmp_free_mem, "N/A", sizeof(tmp_free_mem));
 	} else {
 		snprintf(tmp_free_mem, sizeof(tmp_free_mem),
 		         "%"PRIu64"M", node_ptr->free_mem);

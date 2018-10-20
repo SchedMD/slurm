@@ -54,6 +54,7 @@
 #include "src/common/slurmdb_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 
