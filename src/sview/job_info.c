@@ -2402,12 +2402,42 @@ static void _get_step_nodelist(job_step_info_t *step_ptr, char *buf,
 	snprintf(buf, buf_size, "%s", step_ptr->nodes);
 }
 
+static int _id_from_stepstr(char *str) {
+	char *end = NULL;
+	int id = strtol(str, &end, 10);
+	/* if no digits found, it must be text */
+	if (end == str) {
+		if (!strcasecmp(str, "TBD"))
+			id = SLURM_PENDING_STEP;
+		else if (!strcasecmp(str, "Batch"))
+			id = SLURM_BATCH_SCRIPT;
+		else if (!strcasecmp(str, "Extern"))
+			id = SLURM_EXTERN_CONT;
+		else
+			id = NO_VAL;
+	}
+	return id;
+}
+
+static void _stepstr_from_step(job_step_info_t *step_ptr, char *dest,
+			       uint32_t len) {
+	if (step_ptr->step_id == SLURM_PENDING_STEP)
+		snprintf(dest, len, "TBD");
+	else if (step_ptr->step_id == SLURM_EXTERN_CONT)
+		snprintf(dest, len, "Extern");
+	else if (step_ptr->step_id == SLURM_BATCH_SCRIPT)
+		snprintf(dest, len, "Batch");
+	else
+		snprintf(dest, len, "%u",
+			 step_ptr->step_id);
+}
+
 static void _layout_step_record(GtkTreeView *treeview,
 				job_step_info_t *step_ptr,
 				int update, bool suspended)
 {
 	char *uname;
-	char tmp_char[50], tmp_nodes[50], tmp_time[50];
+	char tmp_char[100], tmp_str[50], tmp_nodes[50], tmp_time[50];
 	GtkTreeIter iter;
 	uint32_t state;
 	GtkTreeStore *treestore =
@@ -2439,8 +2469,9 @@ static void _layout_step_record(GtkTreeView *treeview,
 //			 step_ptr->step_id,
 //			 step_ptr->job_id, step_ptr->step_id);
 	} else {
-		snprintf(tmp_char, sizeof(tmp_char), "%u.%u",
-			 step_ptr->job_id, step_ptr->step_id);
+		_stepstr_from_step(step_ptr, tmp_str, sizeof(tmp_str));
+		snprintf(tmp_char, sizeof(tmp_char), "%u.%s",
+			 step_ptr->job_id, tmp_str);
 	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2563,6 +2594,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	char tmp_cpu_min[40],  tmp_time_run[40],   tmp_time_limit[40];
 	char tmp_node_cnt[40], tmp_time_start[40], tmp_task_cnt[40];
 	char tmp_step_id[40], tmp_job_id[400];
+	char tmp_fmt_stepid[40];
 	uint32_t state;
 	int color_inx = step_ptr->step_id % sview_colors_cnt;
 
@@ -2606,7 +2638,9 @@ static void _update_step_record(job_step_info_t *step_ptr,
 	slurm_make_time_str((time_t *)&step_ptr->start_time, tmp_time_start,
 			    sizeof(tmp_time_start));
 
+	_stepstr_from_step(step_ptr, tmp_fmt_stepid, sizeof(tmp_fmt_stepid));
 	snprintf(tmp_step_id, sizeof(tmp_step_id), "%u", step_ptr->step_id);
+
 	if (step_ptr->array_job_id) {
 		snprintf(tmp_job_id, sizeof(tmp_job_id), "%u_%u.%u (%u.%u)",
 			 step_ptr->array_job_id, step_ptr->array_task_id,
@@ -2618,8 +2652,8 @@ static void _update_step_record(job_step_info_t *step_ptr,
 //			 step_ptr->step_id,
 //			 step_ptr->job_id, step_ptr->step_id);
 	} else {
-		snprintf(tmp_job_id, sizeof(tmp_job_id), "%u.%u",
-			 step_ptr->job_id, step_ptr->step_id);
+		snprintf(tmp_job_id, sizeof(tmp_job_id), "%u.%s",
+			 step_ptr->job_id, tmp_fmt_stepid);
 	}
 
 	tmp_uname = uid_to_string_cached((uid_t)step_ptr->user_id);
@@ -2630,7 +2664,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 			   SORTID_COLOR_INX,    color_inx,
 			   SORTID_CPUS,         tmp_cpu_min,
 			   SORTID_CPUS_PER_TRES, step_ptr->cpus_per_tres,
-			   SORTID_JOBID,        tmp_step_id,
+			   SORTID_JOBID,        tmp_fmt_stepid,
 			   SORTID_JOBID_FORMATTED, tmp_job_id,
 			   SORTID_MEM_PER_TRES,	step_ptr->mem_per_tres,
 			   SORTID_NAME,         step_ptr->name,
@@ -4195,7 +4229,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 		offset++;
 	else
 		offset = tmp_jobid;
-	jobid = atoi(offset);
+	jobid = _id_from_stepstr(offset);
 	g_free(tmp_jobid);
 	gtk_tree_model_get(model, iter, SORTID_JOBID_FORMATTED, &tmp_jobid, -1);
 	gtk_tree_model_get(model, iter, SORTID_CLUSTER_NAME, &cluster_name, -1);
