@@ -365,6 +365,9 @@ documents those changes that are of interest to users and administrators.
     node_features_p_changeable_feature in node_features plugin.
  -- Add Slurm configuration file check logic using "slurmctld -t" command.
 
+* Changes in Slurm 17.11.13
+===========================
+
 * Changes in Slurm 17.11.12
 ===========================
  -- Fix regression in 17.11.10 that caused dbd messages to not be queued up
