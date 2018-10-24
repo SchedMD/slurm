@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- burst_buffer/cray - avoid launching a job that would be immediately
     cancelled due to a DataWarp failure.
+ -- Fix message sent to user to display preempted instead of time limit when
+    a job is preempted.
 
 * Changes in Slurm 18.08.3
 ==========================
