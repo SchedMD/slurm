@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Improve error message when failures happen processing a nodes gres config.
  -- When building rpms ignore redundant standard rpaths and insecure relative
     rpaths, for RHEL based distros which use "check-rpaths" tool.
+ -- Don't skip jobs in scontrol hold.
 
 * Changes in Slurm 18.08.3
 ==========================
