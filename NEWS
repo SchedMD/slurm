@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     cancelled due to a DataWarp failure.
  -- Fix message sent to user to display preempted instead of time limit when
     a job is preempted.
+ -- Fix memory leak when a failure happens processing a nodes gres config.
 
 * Changes in Slurm 18.08.3
 ==========================

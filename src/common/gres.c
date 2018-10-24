@@ -1282,7 +1282,9 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 			      "type %s from node %s",
 			      __func__, tmp_name, node_name);
 			xfree(tmp_cpus);
+			xfree(tmp_links);
 			xfree(tmp_name);
+			xfree(tmp_type);
 			continue;
 		}
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
@@ -1309,6 +1311,7 @@ unpack_error:
 	xfree(tmp_cpus);
 	xfree(tmp_links);
 	xfree(tmp_name);
+	xfree(tmp_type);
 	slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
 }
