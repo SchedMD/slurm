@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     a job is preempted.
  -- Fix memory leak when a failure happens processing a nodes gres config.
  -- Improve error message when failures happen processing a nodes gres config.
+ -- When building rpms ignore redundant standard rpaths and insecure relative
+    rpaths, for RHEL based distros which use "check-rpaths" tool.
 
 * Changes in Slurm 18.08.3
 ==========================

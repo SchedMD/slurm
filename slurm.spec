@@ -314,6 +314,10 @@ make %{?_smp_mflags}
 
 %install
 
+# Ignore redundant standard rpaths and insecure relative rpaths,
+# for RHEL based distros which use "check-rpaths" tool.
+export QA_RPATHS=0x5
+
 # Strip out some dependencies
 
 cat > find-requires.sh <<'EOF'
