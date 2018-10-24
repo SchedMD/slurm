@@ -1276,11 +1276,11 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 		if (j >= gres_context_cnt) {
 			/*
 			 * GresPlugins is inconsistently configured.
-			 * Not a fatal error. Skip this data.
+			 * Not a fatal error, but skip this data.
 			 */
-			error("%s: no plugin configured to unpack data "
-			      "type %s from node %s",
-			      __func__, tmp_name, node_name);
+			error("%s: No plugin configured to process GRES data from node %s (Name:%s Type:%s PluginID:%u Count:%"PRIu64")",
+			      __func__, node_name, tmp_name, tmp_type,
+			      plugin_id, count64);
 			xfree(tmp_cpus);
 			xfree(tmp_links);
 			xfree(tmp_name);

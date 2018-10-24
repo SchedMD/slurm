@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix message sent to user to display preempted instead of time limit when
     a job is preempted.
  -- Fix memory leak when a failure happens processing a nodes gres config.
+ -- Improve error message when failures happen processing a nodes gres config.
 
 * Changes in Slurm 18.08.3
 ==========================
