@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.4
 ==========================
+ -- burst_buffer/cray - avoid launching a job that would be immediately
+    cancelled due to a DataWarp failure.
 
 * Changes in Slurm 18.08.3
 ==========================
