@@ -72,12 +72,14 @@ List job_list __attribute__((weak_import)) = NULL;
 uint16_t running_cache __attribute__((weak_import)) = 0;
 pthread_mutex_t assoc_cache_mutex __attribute__((weak_import));
 pthread_cond_t assoc_cache_cond __attribute__((weak_import));
+int node_record_count __attribute__((weak_import);
 #else
 slurm_ctl_conf_t slurmctld_conf;
 List job_list = NULL;
 uint16_t running_cache = 0;
 pthread_mutex_t assoc_cache_mutex;
 pthread_cond_t assoc_cache_cond;
+int node_record_count;
 #endif
 
 /*

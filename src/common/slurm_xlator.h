@@ -365,9 +365,14 @@
 /* slurmdbd_defs.[ch] functions */
 #define slurmdbd_defs_init      slurm_slurmdbd_defs_init
 #define slurmdbd_defs_fini      slurm_slurmdbd_defs_fini
+#define slurmdbd_free_buffer	slurm_slurmdbd_free_buffer
 #define slurmdbd_free_list_msg	slurm_slurmdbd_free_list_msg
 #define slurmdbd_free_usage_msg slurm_slurmdbd_free_usage_msg
 #define slurmdbd_free_id_rc_msg slurm_slurmdbd_free_id_rc_msg
+
+/* slurmdbd_pack.[ch] functions */
+#define pack_slurmdbd_msg	slurm_pack_slurmdbd_msg
+#define unpack_slurmdbd_msg	slurm_unpack_slurmdbd_msg
 
 /* plugin.[ch] functions */
 #define plugin_get_syms         slurm_plugin_get_syms
