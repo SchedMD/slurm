@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix regression in 18.08.2 that caused dbd messages to not be queued up
     when the dbd was down.
+ -- Fix regression in 18.08.1 that can cause a slurmctld crash when splitting
+    job array elements.
 
 * Changes in Slurm 18.08.2
 ==========================
