@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 18.08.4
+==========================
+
 * Changes in Slurm 18.08.3
 ==========================
  -- Fix regression in 18.08.2 that caused dbd messages to not be queued up
