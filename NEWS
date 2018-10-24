@@ -26,8 +26,15 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we set the alloc_node in a resource allocation based on the auth
     plugin instead of the rpc call.
 
+* Changes in Slurm 18.08.4
+==========================
+
 * Changes in Slurm 18.08.3
 ==========================
+ -- Fix regression in 18.08.2 that caused dbd messages to not be queued up
+    when the dbd was down.
+ -- Fix regression in 18.08.1 that can cause a slurmctld crash when splitting
+    job array elements.
 
 * Changes in Slurm 18.08.2
 ==========================
@@ -387,8 +394,13 @@ documents those changes that are of interest to users and administrators.
     node_features_p_changeable_feature in node_features plugin.
  -- Add Slurm configuration file check logic using "slurmctld -t" command.
 
+* Changes in Slurm 17.11.13
+===========================
+
 * Changes in Slurm 17.11.12
 ===========================
+ -- Fix regression in 17.11.10 that caused dbd messages to not be queued up
+    when the dbd was down.
 
 * Changes in Slurm 17.11.11
 ===========================

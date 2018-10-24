@@ -4258,10 +4258,12 @@ extern List feature_list_copy(List feature_list_src)
 	while ((feat_src = (job_feature_t *) list_next(iter))) {
 		feat_dest = xmalloc(sizeof(job_feature_t));
 		memcpy(feat_dest, feat_src, sizeof(job_feature_t));
-		feat_dest->node_bitmap_active =
-			bit_copy(feat_src->node_bitmap_active);
-		feat_dest->node_bitmap_avail =
-			bit_copy(feat_src->node_bitmap_avail);
+		if (feat_src->node_bitmap_active)
+			feat_dest->node_bitmap_active =
+				bit_copy(feat_src->node_bitmap_active);
+		if (feat_src->node_bitmap_avail)
+			feat_dest->node_bitmap_avail =
+				bit_copy(feat_src->node_bitmap_avail);
 		feat_dest->name = xstrdup(feat_src->name);
 		list_append(feature_list_dest, feat_dest);
 	}

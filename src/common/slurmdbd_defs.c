@@ -44,6 +44,7 @@
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
  */
+strong_alias(slurmdbd_free_buffer,	slurm_slurmdbd_free_buffer);
 strong_alias(slurmdbd_free_list_msg,	slurm_slurmdbd_free_list_msg);
 strong_alias(slurmdbd_free_usage_msg,	slurm_slurmdbd_free_usage_msg);
 strong_alias(slurmdbd_free_id_rc_msg,	slurm_slurmdbd_free_id_rc_msg);

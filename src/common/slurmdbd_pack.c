@@ -44,6 +44,13 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
+ * for details.
+ */
+strong_alias(pack_slurmdbd_msg, slurm_pack_slurmdbd_msg);
+strong_alias(unpack_slurmdbd_msg, slurm_unpack_slurmdbd_msg);
+
 static int _unpack_config_name(char **object, uint16_t rpc_version, Buf buffer)
 {
 	char *config_name;
