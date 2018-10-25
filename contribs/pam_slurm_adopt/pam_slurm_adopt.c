@@ -78,7 +78,8 @@ typedef enum {
 	CALLERID_ACTION_ALLOW,
 	CALLERID_ACTION_IGNORE,
 	CALLERID_ACTION_DENY,
-	CALLERID_ACTION_NO_ADOPT_ONLY_CHECK,
+	CALLERID_ACTION_ADOPT_AND_CHECK,
+	CALLERID_ACTION_ONLY_CHECK,
 } callerid_action_t;
 
 /* module options */
@@ -92,7 +93,7 @@ static struct {
 	callerid_action_t action_unknown;
 	callerid_action_t action_adopt_failure;
 	callerid_action_t action_generic_failure;
-	callerid_action_t action_no_adopt_only_check;
+	callerid_action_t action_adopt;
 	log_level_t log_level;
 	char *node_name;
 	bool disable_x11;
@@ -107,7 +108,7 @@ static void _init_opts(void)
 	opts.action_unknown = CALLERID_ACTION_NEWEST;
 	opts.action_adopt_failure = CALLERID_ACTION_ALLOW;
 	opts.action_generic_failure = CALLERID_ACTION_IGNORE;
-	opts.action_no_adopt_only_check = CALLERID_ACTION_NO_ADOPT_ONLY_CHECK;
+	opts.action_adopt = CALLERID_ACTION_ADOPT_AND_CHECK;
 	opts.log_level = LOG_LEVEL_INFO;
 	opts.node_name = NULL;
 	opts.disable_x11 = false;
@@ -407,8 +408,9 @@ static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
  * what job initiated this connection. If it can be determined, the process is
  * adopted into that job's step_extern. In the event of any failure, it returns
  * PAM_IGNORE so that it will fall through to the next action */
-static int _try_rpc(pam_handle_t *pamh, struct passwd *pwd, uint32_t *job_id)
+static int _try_rpc(pam_handle_t *pamh, struct passwd *pwd)
 {
+	uint32_t job_id;
 	int rc;
 	char ip_src_str[INET6_ADDRSTRLEN];
 	struct callerid_conn conn;
@@ -437,25 +439,28 @@ static int _try_rpc(pam_handle_t *pamh, struct passwd *pwd, uint32_t *job_id)
 	}
 
 	/* Ask the slurmd at the source IP address about this connection */
-	rc = _rpc_network_callerid(&conn, pwd->pw_name, job_id);
+	rc = _rpc_network_callerid(&conn, pwd->pw_name, &job_id);
 	if (rc == SLURM_SUCCESS) {
-		step_loc_t stepd;
-		memset(&stepd, 0, sizeof(stepd));
-		/* We only need the jobid and stepid filled in here
-		   all the rest isn't needed for the adopt.
-		*/
-		stepd.jobid = job_id;
-		stepd.stepid = SLURM_EXTERN_CONT;
+		if (opts.action_adopt == CALLERID_ACTION_ADOPT_AND_CHECK) {
+			step_loc_t stepd;
+			memset(&stepd, 0, sizeof(step_loc_t));
+			/* We only need the jobid and stepid filled in here
+			all the rest isn't needed for the adopt.
+			*/
+			stepd.jobid = job_id;
+			stepd.stepid = SLURM_EXTERN_CONT;
 
-		/* Adopt the process. If the adoption succeeds, return SUCCESS.
-		 * If not, maybe the adoption failed because the user hopped
-		 * into one node and was adopted into a job there that isn't on
-		 * our node here. In that case we got a bad jobid so we'll fall
-		 * through to the next action */
-		if (_adopt_process(pamh, getpid(), &stepd) == SLURM_SUCCESS)
-			return PAM_SUCCESS;
-		else
-			return PAM_IGNORE;
+			/* Adopt the process. If the adoption succeeds, return SUCCESS.
+			* If not, maybe the adoption failed because the user hopped
+			* into one node and was adopted into a job there that isn't on
+			* our node here. In that case we got a bad jobid so we'll fall
+			* through to the next action */
+			if (_adopt_process(pamh, getpid(), &stepd) == SLURM_SUCCESS)
+				return PAM_SUCCESS;
+			else
+				return PAM_IGNORE;
+		}
+		return PAM_SUCCESS;
 	}
 
 	info("From %s port %d as %s: unable to determine source job",
@@ -654,27 +659,15 @@ static int check_pam_service(pam_handle_t *pamh)
 	return PAM_IGNORE;
 }
 
-/* Parse arguments, etc then get my socket address/port information. Attempt to
- * adopt this process into a job in the following order:
- * 	1) If the user has only one job on the node, pick that one
- * 	2) Send RPC to source IP of socket. If there is a slurmd at the IP
- * 		address, ask it which job I belong to. On success, pick that one
- *	3) Pick a job semi-randomly (default) or skip the adoption (if
- *		configured)
- */
-/* Take control of the session, to avoid other pam modules doing the
- * same and change e.g., cgroups.
- */
-PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags
-				__attribute__((unused)), int argc, const char **argv)
-{
+int _adopt_and_or_check(pam_handle_t *pamh, int flags
+				__attribute__((unused)), int argc, const char **argv) {
+
 	int retval = PAM_IGNORE, rc = PAM_IGNORE, slurmrc, bufsize, user_jobs;
 	char *user_name;
 	List steps = NULL;
 	step_loc_t *stepd = NULL;
 	struct passwd pwd, *pwd_result;
 	char *buf = NULL;
-	uint32_t job_id;
 
 	_init_opts();
 	_parse_opts(pamh, argc, argv);
@@ -820,6 +813,17 @@ cleanup:
 	return rc;
 
 
+				
+}
+
+
+/* Take control of the session, to avoid other pam modules doing the
+ * same and change e.g., cgroups.
+ */
+PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags
+				__attribute__((unused)), int argc, const char **argv)
+{
+	return _adopt_and_or_check(pamh, flags, argc, argv);
 }
 
 /* Close the session. Always succeeds, we do not need to do anything here.
@@ -842,141 +846,7 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 				__attribute__((unused)), int argc, const char **argv)
 {
-	int retval = PAM_IGNORE, rc = PAM_IGNORE, slurmrc, bufsize, user_jobs;
-	char *user_name;
-	List steps = NULL;
-	step_loc_t *stepd = NULL;
-	struct passwd pwd, *pwd_result;
-	char *buf = NULL;
-	uint32_t job_id;
-
-	_init_opts();
-	_parse_opts(pamh, argc, argv);
-	_log_init(opts.log_level);
-
-	switch (opts.action_generic_failure) {
-	case CALLERID_ACTION_DENY:
-		rc = PAM_PERM_DENIED;
-		break;
-	case CALLERID_ACTION_ALLOW:
-		rc = PAM_SUCCESS;
-		break;
-	case CALLERID_ACTION_IGNORE:
-		rc = PAM_IGNORE;
-		break;
-		/* Newer gcc versions warn if enum cases are missing */
-	default:
-		error("The code is broken!!!!");
-	}
-
-	retval = pam_get_item(pamh, PAM_USER, (void *) &user_name);
-	if (user_name == NULL || retval != PAM_SUCCESS)  {
-		pam_syslog(pamh, LOG_ERR, "No username in PAM_USER? Fail!");
-		return PAM_SESSION_ERR;
-	}
-
-	/* Check for an unsafe config that might lock out root. This is a very
-	 * basic check that shouldn't be 100% relied on */
-	if (!opts.ignore_root &&
-	    (opts.action_unknown == CALLERID_ACTION_DENY ||
-	     opts.action_no_jobs != CALLERID_ACTION_ALLOW ||
-	     opts.action_adopt_failure != CALLERID_ACTION_ALLOW ||
-	     opts.action_generic_failure != CALLERID_ACTION_ALLOW
-		    )) {
-		/* Let's get verbose */
-		info("===============================");
-		info("Danger!!!");
-		info("A crazy admin set ignore_root=0 and some unsafe actions");
-		info("You might lock out root!");
-		info("If this is desirable, modify the source code");
-		info("Setting ignore_root=1 and continuing");
-		opts.ignore_root = 1;
-	}
-
-	/* Ignoring root is probably best but the admin can allow it */
-	if (!strcmp(user_name, "root")) {
-		if (opts.ignore_root) {
-			info("Ignoring root user");
-			return PAM_IGNORE;
-		} else {
-			/* This administrator is crazy */
-			info("Danger!!! This is a connection attempt by root and ignore_root=0 is set! Hope for the best!");
-		}
-	}
-
-	/* Calculate buffer size for getpwnam_r */
-	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	if (bufsize == -1)
-		bufsize = 16384; /* take a large guess */
-
-	buf = xmalloc(bufsize);
-	retval = getpwnam_r(user_name, &pwd, buf, bufsize, &pwd_result);
-	if (pwd_result == NULL) {
-		if (retval == 0) {
-			error("getpwnam_r could not locate %s", user_name);
-		} else {
-			errno = retval;
-			error("getpwnam_r: %m");
-		}
-
-		xfree(buf);
-		return PAM_SESSION_ERR;
-	}
-
-	/* Check if there are any steps on the node from any user. A failure here
-	 * likely means failures everywhere so exit on failure or if no local jobs
-	 * exist. */
-	steps = stepd_available(NULL, opts.node_name);
-	if (!steps) {
-		error("Error obtaining local step information.");
-		goto cleanup;
-	}
-
-	/* Check to see if this user has only one job on the node. If so, choose
-	 * that job and adopt this process into it (unless configured not to) */
-	user_jobs = _user_job_count(steps, pwd.pw_uid, &stepd);
-	pam_syslog(pamh, LOG_INFO, "user jobs = %d", user_jobs);
-	if (user_jobs == 0) {
-		if (opts.action_no_jobs == CALLERID_ACTION_DENY) {
-			send_user_msg(pamh,
-				      "Access denied by "
-				      PAM_MODULE_NAME
-				      ": you have no active jobs on this node");
-			rc = PAM_PERM_DENIED;
-		} else {
-			debug("uid %u owns no jobs but action_no_jobs=ignore",
-			      pwd.pw_uid);
-			rc = PAM_IGNORE;
-		}
-		pam_syslog(pamh, LOG_INFO, "user jobs == 0, bailing");
-		goto cleanup;
-	} else if (user_jobs == 1 && opts.single_job_skip_rpc) {
-		debug("uid %u has %d jobs", pwd.pw_uid, user_jobs);
-		rc = PAM_SUCCESS;
-		goto cleanup;
-	}
-
-	/* Single job check turned up nothing (or we skipped it). Make RPC call
-	 * to slurmd at source IP. 
-	 */
-	rc = _try_rpc(pamh, &pwd, &job_id);
-	if (rc == PAM_SUCCESS)
-		goto cleanup;
-
-	/* The source of the connection either didn't reply or couldn't
-	 * determine the job ID at the source. Check if we allow, if yes, 
-	 * pass the account. 
-	 */
-	if (opts.action_unknown == CALLERID_ACTION_ALLOW) {
-		debug("Allowing due to action_unknown=allow");
-		rc = PAM_SUCCESS;
-	}
-
-cleanup:
-	FREE_NULL_LIST(steps);
-	xfree(buf);
-	xfree(opts.node_name);
-	return rc;
+	return _adopt_and_or_check(pamh, flags, argc, argv);
 }
 
 #ifdef PAM_STATIC
