@@ -197,7 +197,7 @@ static void _job_array_comp(struct job_record *job_ptr, bool was_running,
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
 			struct job_record **job_rec_ptr, uid_t submit_uid,
 			char **err_msg, uint16_t protocol_version);
-static void _job_timed_out(struct job_record *job_ptr);
+static void _job_timed_out(struct job_record *job_ptr, bool preempted);
 static void _kill_dependent(struct job_record *job_ptr);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -8514,7 +8514,7 @@ void job_time_limit(void)
 				     __func__, job_ptr);
 				job_ptr->job_state = JOB_PREEMPTED |
 						     JOB_COMPLETING;
-				_job_timed_out(job_ptr);
+				_job_timed_out(job_ptr, true);
 				xfree(job_ptr->state_desc);
 			}
 			goto time_check;
@@ -8529,7 +8529,7 @@ void job_time_limit(void)
 			/* job inactive, kill it */
 			info("%s: inactivity time limit reached for %pJ",
 			     __func__, job_ptr);
-			_job_timed_out(job_ptr);
+			_job_timed_out(job_ptr, false);
 			job_ptr->state_reason = FAIL_INACTIVE_LIMIT;
 			xfree(job_ptr->state_desc);
 			goto time_check;
@@ -8594,7 +8594,7 @@ void job_time_limit(void)
 			if (job_ptr->end_time <= over_run) {
 				last_job_update = now;
 				info("Time limit exhausted for %pJ", job_ptr);
-				_job_timed_out(job_ptr);
+				_job_timed_out(job_ptr, false);
 				job_ptr->state_reason = FAIL_TIMEOUT;
 				xfree(job_ptr->state_desc);
 				goto time_check;
@@ -8606,7 +8606,7 @@ void job_time_limit(void)
 		    (job_ptr->resv_ptr->end_time + resv_over_run) < time(NULL)){
 			last_job_update = now;
 			info("Reservation ended for %pJ", job_ptr);
-			_job_timed_out(job_ptr);
+			_job_timed_out(job_ptr, false);
 			job_ptr->state_reason = FAIL_TIMEOUT;
 			xfree(job_ptr->state_desc);
 			goto time_check;
@@ -8624,7 +8624,7 @@ void job_time_limit(void)
 
 		if (job_ptr->state_reason == FAIL_TIMEOUT) {
 			last_job_update = now;
-			_job_timed_out(job_ptr);
+			_job_timed_out(job_ptr, false);
 			xfree(job_ptr->state_desc);
 			goto time_check;
 		}
@@ -8861,7 +8861,7 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 }
 
 /* Terminate a job that has exhausted its time limit */
-static void _job_timed_out(struct job_record *job_ptr)
+static void _job_timed_out(struct job_record *job_ptr, bool preempted)
 {
 	xassert(job_ptr);
 
@@ -8874,7 +8874,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 			job_ptr->job_state = JOB_TIMEOUT | JOB_COMPLETING;
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
-		deallocate_nodes(job_ptr, true, false, false);
+		deallocate_nodes(job_ptr, !preempted, false, preempted);
 	} else
 		job_signal(job_ptr, SIGKILL, 0, 0, false);
 	return;

@@ -434,7 +434,6 @@ scontrol_hold(char *op, char *job_str)
 				slurm_free_job_array_resp(resp);
 				resp = NULL;
 			}
-			job_msg.job_id_str = _next_job_id();
 		}
 		return rc;
 	} else if (job_str) {

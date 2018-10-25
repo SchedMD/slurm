@@ -81,10 +81,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="topology.html">Topology</a></li>
 <li><a href="tres.html">Trackable Resources (TRES)</a></li>
 </ul>
-<li>External Schedulers</li>
-<ul>
-<li><a href="http://docs.hp.com/en/5991-4847/ch09s02.html">Submitting Jobs through LSF</a></li>
-</ul>
 <li>Specific Systems</li>
 <ul>
 <li><a href="cray.html">Cray User and Administrator Guide with Native Slurm</a></li>
@@ -139,6 +135,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 18 June 2018</p>
+<p style="text-align:center;">Last modified 24 October 2018</p>
 
 <!--#include virtual="footer.txt"-->

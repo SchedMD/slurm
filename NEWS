@@ -28,10 +28,19 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.4
 ==========================
+ -- burst_buffer/cray - avoid launching a job that would be immediately
+    cancelled due to a DataWarp failure.
+ -- Fix message sent to user to display preempted instead of time limit when
+    a job is preempted.
+ -- Fix memory leak when a failure happens processing a nodes gres config.
+ -- Improve error message when failures happen processing a nodes gres config.
+ -- When building rpms ignore redundant standard rpaths and insecure relative
+    rpaths, for RHEL based distros which use "check-rpaths" tool.
+ -- Don't skip jobs in scontrol hold.
 
 * Changes in Slurm 18.08.3
 ==========================
- -- Fix regression in 18.08.2 that caused dbd messages to not be queued up
+ -- Fix regression in 18.08.1 that caused dbd messages to not be queued up
     when the dbd was down.
  -- Fix regression in 18.08.1 that can cause a slurmctld crash when splitting
     job array elements.
