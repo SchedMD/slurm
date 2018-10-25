@@ -82,7 +82,6 @@ AC_DEFUN([X_AC_DEBUG], [
     test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O1 -fno-strict-aliasing"
     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O1 -fno-strict-aliasing"
   fi
-  AM_CONDITIONAL(DEBUG_MODULES, test "$x_ac_debug" = "yes")
   AC_MSG_RESULT([${x_ac_debug=no}])
 
   AC_MSG_CHECKING([whether memory leak debugging is enabled])

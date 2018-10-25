@@ -682,8 +682,6 @@ SLURMCTLD_PORT_COUNT
 SLURMDBD_PORT
 SLURMD_PORT
 SLURMCTLD_PORT
-DEBUG_MODULES_FALSE
-DEBUG_MODULES_TRUE
 DATAWARP_LDFLAGS
 DATAWARP_CPPFLAGS
 CRAY_TASK_LDFLAGS
@@ -23216,14 +23214,6 @@ fi
     test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O1 -fno-strict-aliasing"
     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O1 -fno-strict-aliasing"
   fi
-   if test "$x_ac_debug" = "yes"; then
-  DEBUG_MODULES_TRUE=
-  DEBUG_MODULES_FALSE='#'
-else
-  DEBUG_MODULES_TRUE='#'
-  DEBUG_MODULES_FALSE=
-fi
-
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_debug=no}" >&5
 $as_echo "${x_ac_debug=no}" >&6; }
 
@@ -25206,10 +25196,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_ALPS_CRAY_EMULATION_TRUE}" && test -z "${HAVE_ALPS_CRAY_EMULATION_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_ALPS_CRAY_EMULATION\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${DEBUG_MODULES_TRUE}" && test -z "${DEBUG_MODULES_FALSE}"; then
-  as_fn_error $? "conditional \"DEBUG_MODULES\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_NRT_TRUE}" && test -z "${HAVE_NRT_FALSE}"; then
