@@ -829,7 +829,7 @@ static void _validate_links(gres_slurmd_conf_t *p)
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		val = strtol(tok, &end_ptr, 10);
-		if ((val < 0) || (val > GRES_MAX_LINK) || (val == LONG_MIN) ||
+		if ((val < -1) || (val > GRES_MAX_LINK) || (val == LONG_MIN) ||
 		    (end_ptr[0] != '\0')) {
 			error("gres.conf: Ignoring invalid Link (%s) for Name=%s",
 			      tok, p->name);
@@ -1350,16 +1350,18 @@ static void _gres_node_list_delete(void *list_element)
 	gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
 	FREE_NULL_BITMAP(gres_node_ptr->gres_bit_alloc);
 	xfree(gres_node_ptr->gres_used);
+	if (gres_node_ptr->links_cnt) {
+		for (i = 0; i < gres_node_ptr->link_len; i++)
+			xfree(gres_node_ptr->links_cnt[i]);
+		xfree(gres_node_ptr->links_cnt);
+	}
 	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
-		if (gres_node_ptr->links_bitmap)
-			FREE_NULL_BITMAP(gres_node_ptr->links_bitmap[i]);
 		if (gres_node_ptr->topo_core_bitmap)
 			FREE_NULL_BITMAP(gres_node_ptr->topo_core_bitmap[i]);
 		if (gres_node_ptr->topo_gres_bitmap)
 			FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
 		xfree(gres_node_ptr->topo_type_name[i]);
 	}
-	xfree(gres_node_ptr->links_bitmap);
 	xfree(gres_node_ptr->topo_core_bitmap);
 	xfree(gres_node_ptr->topo_gres_bitmap);
 	xfree(gres_node_ptr->topo_gres_cnt_alloc);
@@ -1814,19 +1816,43 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 	return rc;
 }
 
-static bitstr_t *_links_str2bitmap(char *links, char *node_name)
+/* Convert comma-delimited array of link counts to an integer array */
+static void _links_str2bitmap(char *links, char *node_name,
+			      gres_node_state_t *gres_data,
+			      int gres_inx, int gres_cnt)
 {
-	bitstr_t *link_bitmap = NULL;
+	char *start_ptr = links, *end_ptr = NULL;
+	int i = 0;
 
-	if (!links || !links[0])
-		return NULL;
-	link_bitmap = bit_alloc(GRES_MAX_LINK + 1);
-	if (bit_unfmt(link_bitmap, links) == 0)
-		return link_bitmap;
-	info("%s: Ignoring invalid GRES links (%s) for node %s", __func__,
-	     links, node_name);
-	bit_free(link_bitmap);
-	return NULL;
+	if (gres_inx >= gres_data->link_len) {
+		error("%s: Invalid GRES index (%d >= %d)", __func__, gres_inx,
+		      gres_cnt);
+		return;
+	}
+
+	while (1) {
+		gres_data->links_cnt[gres_inx][i] =
+			strtol(start_ptr, &end_ptr, 10);
+		if (gres_data->links_cnt[gres_inx][i] < -2) {
+			error("%s: Invalid GRES Links value (%s) on node %s",
+			      __func__, links, node_name);
+			gres_data->links_cnt[gres_inx][i] = 0;
+			return;	
+		}
+		if (end_ptr[0] == '\0')
+			return;
+		if (end_ptr[0] != ',') {
+			error("%s: Invalid GRES Links value (%s) on node %s",
+			      __func__, links, node_name);
+			return;	
+		}
+		if (++i >= gres_data->link_len) {
+			error("%s: Invalid GRES Links value (%s) on node %s",
+			      __func__, links, node_name);
+			return;	
+		}
+		start_ptr = end_ptr + 1;
+	}
 }
 
 static int _node_config_validate(char *node_name, char *orig_config,
@@ -1881,8 +1907,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		xfree(gres_data->topo_gres_cnt_alloc);
 		xfree(gres_data->topo_gres_cnt_avail);
 		for (i = 0; i < gres_data->topo_cnt; i++) {
-			if (gres_data->links_bitmap)
-				FREE_NULL_BITMAP(gres_data->links_bitmap[i]);
 			if (gres_data->topo_gres_bitmap) {
 				FREE_NULL_BITMAP(gres_data->
 						 topo_gres_bitmap[i]);
@@ -1893,7 +1917,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			}
 			xfree(gres_data->topo_type_name[i]);
 		}
-		xfree(gres_data->links_bitmap);
 		xfree(gres_data->topo_gres_bitmap);
 		xfree(gres_data->topo_core_bitmap);
 		xfree(gres_data->topo_type_id);
@@ -1913,8 +1936,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			xrealloc(gres_data->topo_gres_cnt_avail,
 				 set_cnt * sizeof(uint64_t));
 		for (i = 0; i < gres_data->topo_cnt; i++) {
-			if (gres_data->links_bitmap)
-				FREE_NULL_BITMAP(gres_data->links_bitmap[i]);
 			if (gres_data->topo_gres_bitmap) {
 				FREE_NULL_BITMAP(gres_data->
 						 topo_gres_bitmap[i]);
@@ -1925,9 +1946,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			}
 			xfree(gres_data->topo_type_name[i]);
 		}
-		gres_data->links_bitmap =
-			xrealloc(gres_data->links_bitmap,
-				 set_cnt * sizeof(bitstr_t *));
 		gres_data->topo_gres_bitmap =
 			xrealloc(gres_data->topo_gres_bitmap,
 				 set_cnt * sizeof(bitstr_t *));
@@ -2000,9 +2018,25 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				      context_ptr->gres_type, node_name);
 			}
 
-			gres_data->links_bitmap[i] =
-				_links_str2bitmap(gres_slurmd_conf->links,
-						  node_name);
+			if (gres_slurmd_conf->links) {
+				if (gres_data->links_cnt &&
+				    (gres_data->link_len != gres_cnt)) {
+					/* Size changed, need to rebuild */
+					for (j = 0; j < gres_data->link_len;j++)
+						xfree(gres_data->links_cnt[j]);
+					xfree(gres_data->links_cnt);
+				}
+				if (!gres_data->links_cnt) {
+					gres_data->link_len = gres_cnt;
+					gres_data->links_cnt =
+						xmalloc(sizeof(int *)*gres_cnt);
+					for (j = 0; j < gres_cnt; j++) {
+						gres_data->links_cnt[j] =
+							xmalloc(sizeof(int) *
+								gres_cnt);
+					}
+				}
+			}
 			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
 			for (j = 0; j < gres_slurmd_conf->count; j++) {
 				bit_set(gres_data->topo_gres_bitmap[i],
@@ -2013,6 +2047,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					/* Set by recovered job */
 					gres_data->topo_gres_cnt_alloc[i]++;
 				}
+				_links_str2bitmap(gres_slurmd_conf->links,
+						  node_name, gres_data,
+						  gres_inx, gres_cnt);
 				gres_inx++;
 			}
 			gres_data->topo_type_id[i] =
@@ -2082,10 +2119,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		      gres_data->gres_cnt_config, gres_data->gres_cnt_found);
 		if (gres_data->topo_core_bitmap) {
 			for (i = 0; i < gres_data->topo_cnt; i++) {
-				if (gres_data->links_bitmap) {
-					FREE_NULL_BITMAP(gres_data->
-							 links_bitmap[i]);
-				}
 				if (gres_data->topo_core_bitmap) {
 					FREE_NULL_BITMAP(gres_data->
 							 topo_core_bitmap[i]);
@@ -2096,7 +2129,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				}
 				xfree(gres_data->topo_type_name[i]);
 			}
-			xfree(gres_data->links_bitmap);
 			xfree(gres_data->topo_core_bitmap);
 			xfree(gres_data->topo_gres_bitmap);
 			xfree(gres_data->topo_gres_cnt_alloc);
@@ -2531,7 +2563,7 @@ unpack_error:
 
 static void *_node_state_dup(void *gres_data)
 {
-	int i;
+	int i, j;
 	gres_node_state_t *gres_ptr = (gres_node_state_t *) gres_data;
 	gres_node_state_t *new_gres;
 
@@ -2546,12 +2578,19 @@ static void *_node_state_dup(void *gres_data)
 	new_gres->no_consume      = gres_ptr->no_consume;
 	if (gres_ptr->gres_bit_alloc)
 		new_gres->gres_bit_alloc = bit_copy(gres_ptr->gres_bit_alloc);
+
+	if (gres_ptr->links_cnt && gres_ptr->link_len) {
+		new_gres->links_cnt = xmalloc(sizeof(int *)*gres_ptr->link_len);
+		j = sizeof(int) * gres_ptr->link_len;
+		for (i = 0; i < gres_ptr->link_len; i++) {
+			new_gres->links_cnt[i] = xmalloc(j);
+			memcpy(new_gres->links_cnt[i],gres_ptr->links_cnt[i],j);
+		}
+	}
+
 	if (gres_ptr->topo_cnt == 0)
 		return new_gres;
-
 	new_gres->topo_cnt         = gres_ptr->topo_cnt;
-	new_gres->links_bitmap = xmalloc(gres_ptr->topo_cnt  *
-					 sizeof(bitstr_t *));
 	new_gres->topo_core_bitmap = xmalloc(gres_ptr->topo_cnt *
 					     sizeof(bitstr_t *));
 	new_gres->topo_gres_bitmap = xmalloc(gres_ptr->topo_cnt *
@@ -2563,10 +2602,6 @@ static void *_node_state_dup(void *gres_data)
 	new_gres->topo_type_id = xmalloc(gres_ptr->topo_cnt * sizeof(uint32_t));
 	new_gres->topo_type_name = xmalloc(gres_ptr->topo_cnt * sizeof(char *));
 	for (i = 0; i < gres_ptr->topo_cnt; i++) {
-		if (gres_ptr->links_bitmap[i]) {
-			new_gres->links_bitmap[i] =
-				bit_copy(gres_ptr->links_bitmap[i]);
-		}
 		if (gres_ptr->topo_core_bitmap[i]) {
 			new_gres->topo_core_bitmap[i] =
 				bit_copy(gres_ptr->topo_core_bitmap[i]);
@@ -2809,8 +2844,8 @@ static char *_node_gres_used(void *gres_data, char *gres_name)
 static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 {
 	gres_node_state_t *gres_node_ptr;
-	int i;
-	char tmp_str[128];
+	int i, j;
+	char *buf = NULL, *sep, tmp_str[128];
 
 	xassert(gres_data);
 	gres_node_ptr = (gres_node_state_t *) gres_data;
@@ -2845,15 +2880,22 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 
 	info("  gres_used:%s", gres_node_ptr->gres_used);
 
+	if (gres_node_ptr->links_cnt && gres_node_ptr->link_len) {
+		for (i = 0; i < gres_node_ptr->link_len; i++) {
+			sep = "";
+			for (j = 0; j < gres_node_ptr->link_len; j++) {
+				xstrfmtcat(buf, "%s%d", sep,
+					   gres_node_ptr->links_cnt[i][j]);
+				sep = ", ";
+			}
+			info("  links[%d]:%s", i, buf);
+			xfree(buf);
+		}
+	}
+
 	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
 		info("  type[%d]:%s(%u)", i, gres_node_ptr->topo_type_name[i],
 		     gres_node_ptr->topo_type_id[i]);
-		if (gres_node_ptr->links_bitmap &&
-		    gres_node_ptr->links_bitmap[i]) {
-			bit_fmt(tmp_str, sizeof(tmp_str),
-				gres_node_ptr->links_bitmap[i]);
-			info("   links_bitmap[%d]:%s", i, tmp_str);
-		}
 		if (gres_node_ptr->topo_core_bitmap[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_node_ptr->topo_core_bitmap[i]);
