@@ -23216,6 +23216,14 @@ fi
     test "$GCC" = yes && CFLAGS="$CFLAGS -Wall -g -O1 -fno-strict-aliasing"
     test "$GXX" = yes && CXXFLAGS="$CXXFLAGS -Wall -g -O1 -fno-strict-aliasing"
   fi
+   if test "$x_ac_debug" = "yes"; then
+  DEBUG_MODULES_TRUE=
+  DEBUG_MODULES_FALSE='#'
+else
+  DEBUG_MODULES_TRUE='#'
+  DEBUG_MODULES_FALSE=
+fi
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${x_ac_debug=no}" >&5
 $as_echo "${x_ac_debug=no}" >&6; }
 
@@ -23345,16 +23353,6 @@ $as_echo "no" >&6; }
   if test "$x_ac_optimizations" = no; then
     test "$GCC" = yes && CFLAGS="$CFLAGS -O0"
   fi
-
-
- if test "x$ac_debug" = "xtrue"; then
-  DEBUG_MODULES_TRUE=
-  DEBUG_MODULES_FALSE='#'
-else
-  DEBUG_MODULES_TRUE='#'
-  DEBUG_MODULES_FALSE=
-fi
-
 
 
 

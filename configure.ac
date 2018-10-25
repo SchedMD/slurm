@@ -263,8 +263,6 @@ X_AC_SETPROCTITLE
 dnl check for debug compilation, must follow X_AC_CRAY
 dnl
 X_AC_DEBUG
-AM_CONDITIONAL(DEBUG_MODULES, test "x$ac_debug" = "xtrue")
-
 
 dnl check for slurmctld, slurmd and slurmdbd default ports,
 dnl and default number of slurmctld ports
