@@ -330,18 +330,20 @@ static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, List steps)
 	rc = _indeterminate_multiple(pamh, steps, pwd->pw_uid, &stepd);
 	if (rc == PAM_SUCCESS) {
 		info("action_unknown: Picked job %u", stepd->jobid);
-		if (_adopt_process(pamh, getpid(), stepd) == SLURM_SUCCESS) {
-			return PAM_SUCCESS;
+		if (opts.action_adopt == CALLERID_ACTION_ADOPT_AND_CHECK) {
+			if (_adopt_process(pamh, getpid(), stepd) == SLURM_SUCCESS) {
+				return PAM_SUCCESS;
+			}
+			if (opts.action_adopt_failure == CALLERID_ACTION_ALLOW)
+				return PAM_SUCCESS;
+			else
+				return PAM_PERM_DENIED;
 		}
-		if (opts.action_adopt_failure == CALLERID_ACTION_ALLOW)
-			return PAM_SUCCESS;
-		else
-			return PAM_PERM_DENIED;
-	} else {
-		/* This pam module was worthless, apparently */
-		debug("_indeterminate_multiple failed to find a job to adopt this into");
-		return rc;
-	}
+	} 
+
+	/* This pam module was worthless, apparently */
+	debug("_indeterminate_multiple failed to find a job to adopt this into");
+	return rc;
 }
 
 /* _user_job_count returns the count of jobs owned by the user AND sets job_id
@@ -558,6 +560,11 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 					   "unrecognized action_unknown=%s, setting to 'newest'",
 					   v);
 			}
+		} else if (!xstrncasecmp(*argv, "action_adopt=", 13)){
+			v = (char *)(13 + *argv);
+			if (!xstrncasecmp(v, "check_only", 10))
+				opts.action_adopt = CALLERID_ACTION_ONLY_CHECK;
+
 		} else if (!xstrncasecmp(*argv,"action_generic_failure=",23)) {
 			v = (char *)(23 + *argv);
 			if (!xstrncasecmp(v, "allow", 5))
@@ -659,6 +666,16 @@ static int check_pam_service(pam_handle_t *pamh)
 	return PAM_IGNORE;
 }
 
+/* Parse arguments, etc then get my socket address/port information. 
+ * Always check if the user has a job on the node, otherwise deny access.
+ * If action_adopt=check_only, do not adopt the job, otherwise attempt to
+ * adopt this process into a job in the following order:
+ * 	1) If the user has only one job on the node, pick that one
+ * 	2) Send RPC to source IP of socket. If there is a slurmd at the IP
+ * 		address, ask it which job I belong to. On success, pick that one
+ *	3) Pick a job semi-randomly (default) or skip the adoption (if
+ *		configured)
+ */
 int _adopt_and_or_check(pam_handle_t *pamh, int flags
 				__attribute__((unused)), int argc, const char **argv) {
 
@@ -737,7 +754,8 @@ int _adopt_and_or_check(pam_handle_t *pamh, int flags
 		return PAM_SESSION_ERR;
 	}
 
-	if (_load_cgroup_config() != SLURM_SUCCESS)
+	if (opts.action_adopt==CALLERID_ACTION_ADOPT_AND_CHECK 
+	    && _load_cgroup_config() != SLURM_SUCCESS)
 		return rc;
 
 	/* Check if there are any steps on the node from any user. A failure here
@@ -772,19 +790,23 @@ int _adopt_and_or_check(pam_handle_t *pamh, int flags
 			info("Connection by user %s: user has only one job %u",
 			     user_name,
 			     stepd->jobid);
-			slurmrc = _adopt_process(pamh, getpid(), stepd);
-			/* If adoption into the only job fails, it is time to
-			 * exit. Return code is based on the
-			 * action_adopt_failure setting */
-			if (slurmrc == SLURM_SUCCESS ||
-			    (opts.action_adopt_failure ==
-			     CALLERID_ACTION_ALLOW))
+			if (opts.action_adopt == CALLERID_ACTION_ADOPT_AND_CHECK) {
+				slurmrc = _adopt_process(pamh, getpid(), stepd);
+				/* If adoption into the only job fails, it is time to
+				* exit. Return code is based on the
+				* action_adopt_failure setting */
+				if (slurmrc == SLURM_SUCCESS ||
+					(opts.action_adopt_failure ==
+					CALLERID_ACTION_ALLOW))
+					rc = PAM_SUCCESS;
+                else {
+                    send_user_msg(pamh, "Access denied by "
+                                  PAM_MODULE_NAME
+                                  ": failed to adopt process into cgroup, denying access because action_adopt_failure=deny");
+                    rc = PAM_PERM_DENIED;
+                }
+			} else {
 				rc = PAM_SUCCESS;
-			else {
-				send_user_msg(pamh, "Access denied by "
-					      PAM_MODULE_NAME
-					      ": failed to adopt process into cgroup, denying access because action_adopt_failure=deny");
-				rc = PAM_PERM_DENIED;
 			}
 			goto cleanup;
 		}
@@ -811,9 +833,6 @@ cleanup:
 	xfree(opts.pam_service);
 	xcgroup_fini_slurm_cgroup_conf();
 	return rc;
-
-
-				
 }
 
 
@@ -835,14 +854,7 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags
 }
 
 
-/* Parse arguments, etc then get my socket address/port information. Attempt to
- * adopt this process into a job in the following order:
- * 	1) If the user has only one job on the node, pick that one
- * 	2) Send RPC to source IP of socket. If there is a slurmd at the IP
- * 		address, ask it which job I belong to. On success, pick that one
- *	3) Pick a job semi-randomly (default) or skip the adoption (if
- *		configured)
- */
+
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 				__attribute__((unused)), int argc, const char **argv)
 {
