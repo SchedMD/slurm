@@ -2594,7 +2594,9 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.hint_env &&
-	    (!opt.hint_set && !sropt.cpu_bind_type_set &&
+	    (!opt.hint_set &&
+	     ((sropt.cpu_bind_type == CPU_BIND_VERBOSE) ||
+	      !sropt.cpu_bind_type_set) &&
 	     !opt.ntasks_per_core_set && !opt.threads_per_core_set)) {
 		if (verify_hint(opt.hint_env,
 				&opt.sockets_per_node,

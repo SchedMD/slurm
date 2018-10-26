@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     rpaths, for RHEL based distros which use "check-rpaths" tool.
  -- Don't skip jobs in scontrol hold.
  -- Avoid locking the job_list when unneeded.
+ -- Allow --cpu-bind=verbose to be used with SLURM_HINT environment variable.
 
 * Changes in Slurm 18.08.3
 ==========================
