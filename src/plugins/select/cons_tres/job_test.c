@@ -39,7 +39,7 @@
 #include "dist_tasks.h"
 #include "job_test.h"
 
-#define _DEBUG 1	/* Enables module specific debugging */
+#define _DEBUG 0	/* Enables module specific debugging */
 
 /*
  * These symbols are defined here so when we link with something other
