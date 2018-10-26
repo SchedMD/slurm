@@ -170,18 +170,6 @@ slurm_auth_credential_t *slurm_auth_create(char *opts)
 		return NULL;
 	}
 
-#if 0
-	/* This logic can be used to determine what socket is used by default.
-	 * A typical name is "/var/run/munge/munge.socket.2" */
-{
-	char *old_socket;
-	if (munge_ctx_get(ctx, MUNGE_OPT_SOCKET, &old_socket) != EMUNGE_SUCCESS)
-		error("munge_ctx_get failure");
-	else
-		info("Default Munge socket is %s", old_socket);
-}
-#endif
-
 	if (opts) {
 		socket = _auth_opts_to_socket(opts);
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
