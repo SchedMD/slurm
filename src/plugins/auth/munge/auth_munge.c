@@ -104,9 +104,7 @@ typedef struct _slurm_auth_credential {
 #endif
 	char   *m_str;     /* munged string                                  */
 	struct in_addr addr; /* IP addr where cred was encoded               */
-	void   *buf;       /* Application specific data                      */
 	bool    verified;  /* true if this cred has been verified            */
-	int     len;       /* amount of App data                             */
 	uid_t   uid;       /* UID. valid only if verified == true            */
 	gid_t   gid;       /* GID. valid only if verified == true            */
 	int cr_errno;
@@ -187,8 +185,6 @@ slurm_auth_credential_t *slurm_auth_create(char *opts)
 	cred = xmalloc(sizeof(*cred));
 	cred->verified = false;
 	cred->m_str    = NULL;
-	cred->buf      = NULL;
-	cred->len      = 0;
 	cred->cr_errno = SLURM_SUCCESS;
 
 	xassert((cred->magic = MUNGE_MAGIC));
@@ -202,7 +198,7 @@ slurm_auth_credential_t *slurm_auth_create(char *opts)
 	ohandler = xsignal(SIGALRM, (SigFunc *)SIG_BLOCK);
 
 again:
-	err = munge_encode(&cred->m_str, ctx, cred->buf, cred->len);
+	err = munge_encode(&cred->m_str, ctx, NULL, 0);
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
 			debug("Munge encode failed: %s (retrying ...)",
@@ -241,14 +237,9 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
-	/*
-	 * Note: Munge cred string and application-specific data in
-	 *  "buf" not encoded with xmalloc()
-	 */
+	/* Note: Munge cred string not encoded with xmalloc() */
 	if (cred->m_str)
 		free(cred->m_str);
-	if (cred->buf)
-		free(cred->buf);
 
 	xfree(cred);
 	return SLURM_SUCCESS;
@@ -466,8 +457,6 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 		cred = xmalloc(sizeof(*cred));
 		cred->verified = false;
 		cred->m_str    = NULL;
-		cred->buf      = NULL;
-		cred->len      = 0;
 		cred->cr_errno = SLURM_SUCCESS;
 
 		xassert((cred->magic = MUNGE_MAGIC));
@@ -491,8 +480,6 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 		cred = xmalloc(sizeof(*cred));
 		cred->verified = false;
 		cred->m_str    = NULL;
-		cred->buf      = NULL;
-		cred->len      = 0;
 		cred->cr_errno = SLURM_SUCCESS;
 
 		xassert((cred->magic = MUNGE_MAGIC));
@@ -600,13 +587,8 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 	}
 
     again:
-	c->buf = NULL;
-	err = munge_decode(c->m_str, ctx, &c->buf, &c->len, &c->uid, &c->gid);
+	err = munge_decode(c->m_str, ctx, NULL, NULL, &c->uid, &c->gid);
 	if (err != EMUNGE_SUCCESS) {
-		if (c->buf) {
-			free(c->buf);
-			c->buf = NULL;
-		}
 		if ((err == EMUNGE_SOCKET) && retry--) {
 			debug("Munge decode failed: %s (retrying ...)",
 			      munge_ctx_strerror(ctx));
