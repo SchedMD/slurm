@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- When building rpms ignore redundant standard rpaths and insecure relative
     rpaths, for RHEL based distros which use "check-rpaths" tool.
  -- Don't skip jobs in scontrol hold.
+ -- Avoid locking the job_list when unneeded.
 
 * Changes in Slurm 18.08.3
 ==========================
