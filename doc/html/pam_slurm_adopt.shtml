@@ -166,7 +166,9 @@ one job will result in this action being taken. Configurable values are:
 <dd>
 <dl compact>
 <dt><b>allow</b> (default)</dt>
-<dd>Let the connection through without adoption.</dd>
+<dd>Let the connection through without adoption. <b>WARNING: This value is
+insecure and is recommended for testing purposes only. We recommend using
+"deny."</b></dd>
 <dt><b>deny</b></dt>
 <dd>Deny the connection.</dd>
 </dl>
@@ -185,7 +187,9 @@ the correct facilities. Configurable values are:
 <dd>
 <dl compact>
 <dt><b>ignore</b> (default)</dt>
-<dd>Do nothing. Fall through to the next pam module.</dd>
+<dd>Do nothing. Fall through to the next pam module. <b>WARNING: This value is
+insecure and is recommended for testing purposes only. We recommend using
+"deny."</b></dd>
 <dt><b>allow</b></dt>
 <dd>Let the connection through without adoption.</dd>
 <dt><b>deny</b></dt>
@@ -247,6 +251,6 @@ on the source node, such as on a login node, it is better to have the RPC be
 rejected rather than silently dropped. This will allow better responsiveness to
 the RPC initiator.</p>
 
-<p style="text-align:center;">Last modified 3 October 2018</p>
+<p style="text-align:center;">Last modified 24 October 2018</p>
 
 <!--#include virtual="footer.txt"-->
