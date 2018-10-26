@@ -121,6 +121,28 @@ typedef struct _plugin_args {
 	char *default_plugin;
 } _plugin_args_t;
 
+static char *_plugin_id2name(int plugin_id)
+{
+	static char id_str[16];
+
+	if (plugin_id == SELECT_PLUGIN_CONS_RES)
+		return "cons_res";
+	if (plugin_id == SELECT_PLUGIN_LINEAR)
+		return "linear";
+	if (plugin_id == SELECT_PLUGIN_SERIAL)
+		return "serial";
+	if (plugin_id == SELECT_PLUGIN_CRAY_LINEAR)
+		return "cray+linear";
+	if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES)
+		return "cray+cons_res";
+	if (plugin_id == SELECT_PLUGIN_CONS_TRES)
+		return "cons_tres";
+	if (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES)
+		return "cray+cons_tres";
+	snprintf(id_str, sizeof(id_str), "%d", plugin_id);
+	return id_str;
+}
+
 static int _load_plugins(void *x, void *arg)
 {
 	char *plugin_name     = (char *)x;
@@ -734,8 +756,8 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 		pack32(*(ops[plugin_id].plugin_id),
 		       buffer);
 	} else {
-		error("select_g_select_nodeinfo_pack: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 	}
 
 	return (*(ops[plugin_id].
@@ -758,19 +780,49 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
-		for (i=0; i<select_context_cnt; i++)
+		for (i = 0; i < select_context_cnt; i++) {
 			if (*(ops[i].plugin_id) == plugin_id) {
 				nodeinfo_ptr->plugin_id = i;
 				break;
 			}
+		}
 		if (i >= select_context_cnt) {
-			error("we don't have select plugin type %u",plugin_id);
+			/*
+			 * cons_res and cons_tres have equivalent pack logic,
+			 * so we can switch without a cold-start
+			 */
+			bool retry = false;
+			if (plugin_id == SELECT_PLUGIN_CONS_RES) {
+				plugin_id = SELECT_PLUGIN_CONS_TRES;
+				retry = true;
+			} else if (plugin_id == SELECT_PLUGIN_CONS_TRES) {
+				plugin_id = SELECT_PLUGIN_CONS_RES;
+				retry = true;
+			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
+				plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
+				retry = true;
+			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) {
+				plugin_id = SELECT_PLUGIN_CRAY_CONS_RES;
+				retry = true;
+			}
+			if (retry) {
+				for (i = 0; i < select_context_cnt; i++) {
+					if (*(ops[i].plugin_id) == plugin_id) {
+						nodeinfo_ptr->plugin_id = i;
+						break;
+					}
+				}
+			}
+		}
+		if (i >= select_context_cnt) {
+			error("%s: select plugin %s not found", __func__,
+			      _plugin_id2name(plugin_id));
 			goto unpack_error;
 		}
 	} else {
 		nodeinfo_ptr->plugin_id = select_context_default;
-		error("select_g_select_nodeinfo_unpack: protocol_version"
-		      " %hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 		goto unpack_error;
 	}
 
@@ -784,7 +836,7 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 unpack_error:
 	select_g_select_nodeinfo_free(nodeinfo_ptr);
 	*nodeinfo = NULL;
-	error("select_g_select_nodeinfo_unpack: unpack error");
+	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
 }
 
@@ -990,8 +1042,8 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id), buffer);
 	} else {
-		error("select_g_select_jobinfo_pack: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 	}
 
 	return (*(ops[plugin_id].jobinfo_pack))(data, buffer, protocol_version);
@@ -1019,19 +1071,49 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
-		for (i=0; i<select_context_cnt; i++)
+		for (i = 0; i < select_context_cnt; i++) {
 			if (*(ops[i].plugin_id) == plugin_id) {
 				jobinfo_ptr->plugin_id = i;
 				break;
 			}
+		}
 		if (i >= select_context_cnt) {
-			error("we don't have select plugin type %u", plugin_id);
+			/*
+			 * cons_res and cons_tres have equivalent pack logic,
+			 * so we can switch without a cold-start
+			 */
+			bool retry = false;
+			if (plugin_id == SELECT_PLUGIN_CONS_RES) {
+				plugin_id = SELECT_PLUGIN_CONS_TRES;
+				retry = true;
+			} else if (plugin_id == SELECT_PLUGIN_CONS_TRES) {
+				plugin_id = SELECT_PLUGIN_CONS_RES;
+				retry = true;
+			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
+				plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
+				retry = true;
+			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) {
+				plugin_id = SELECT_PLUGIN_CRAY_CONS_RES;
+				retry = true;
+			}
+			if (retry) {
+				for (i = 0; i < select_context_cnt; i++) {
+					if (*(ops[i].plugin_id) == plugin_id) {
+						jobinfo_ptr->plugin_id = i;
+						break;
+					}
+				}
+			}
+		}
+		if (i >= select_context_cnt) {
+			error("%s: select plugin %s not found", __func__,
+			      _plugin_id2name(plugin_id));
 			goto unpack_error;
 		}
 	} else {
 		jobinfo_ptr->plugin_id = select_context_default;
-		error("select_g_select_jobinfo_unpack: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 		goto unpack_error;
 	}
 
@@ -1045,7 +1127,7 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 unpack_error:
 	select_g_select_jobinfo_free(jobinfo_ptr);
 	*jobinfo = NULL;
-	error("select_g_select_jobinfo_unpack: unpack error");
+	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
 }
 

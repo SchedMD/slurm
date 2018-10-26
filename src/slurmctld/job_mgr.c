@@ -6809,7 +6809,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-//FIXME: TRES counts not necessarily established for GRES at this point
 	gres_set_job_tres_cnt(gres_list,
 			      job_desc->min_nodes,
 			      job_desc->tres_req_cnt,
@@ -10536,11 +10535,15 @@ void reset_job_bitmaps(void)
 			      job_ptr);
 			job_fail = true;
 		}
+		if (!job_fail && !IS_JOB_FINISHED(job_ptr) &&
+		    gres_plugin_job_revalidate(job_ptr->gres_list)) {
+			error("Aborting %pJ due to use of unsupported GRES options",
+			      job_ptr);
+			job_fail = true;
+		}
 		_reset_step_bitmaps(job_ptr);
 
-		/* Do not increase the job->node_cnt for
-		 * completed jobs.
-		 */
+		/* Do not increase the job->node_cnt for completed jobs */
 		if (! IS_JOB_COMPLETED(job_ptr))
 			build_node_details(job_ptr, false); /* set node_addr */
 
@@ -11502,7 +11505,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_specs->cpus_per_task = NO_VAL16;	/* Unchanged */
 	}
 	if (gres_update) {
-//FIXME: TRES counts not necessarily established for GRES at this point
 		gres_set_job_tres_cnt(gres_list, detail_ptr->min_nodes,
 				      job_specs->tres_req_cnt, false);
 	}

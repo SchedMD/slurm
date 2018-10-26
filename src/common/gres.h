@@ -550,6 +550,17 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  List *gres_list);
 
 /*
+ * Determine if a job's specified GRES can be supported. This is designed to
+ * prevent the running of a job using the GRES options only supported by the
+ * select/cons_tres plugin when switching (on slurmctld restart) from the
+ * cons_tres plugin to any other select plugin.
+ *
+ * IN gres_list - List of GRES records for this job to track usage
+ * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
+ */
+extern int gres_plugin_job_revalidate(List gres_list);
+
+/*
  * Clear GRES allocation info for all job GRES at start of scheduling cycle
  * Return TRUE if any gres_per_job constraints to satisfy
  */

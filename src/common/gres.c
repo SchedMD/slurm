@@ -3858,6 +3858,46 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 }
 
 /*
+ * Determine if a job's specified GRES can be supported. This is designed to
+ * prevent the running of a job using the GRES options only supported by the
+ * select/cons_tres plugin when switching (on slurmctld restart) from the
+ * cons_tres plugin to any other select plugin.
+ *
+ * IN gres_list - List of GRES records for this job to track usage
+ * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
+ */
+extern int gres_plugin_job_revalidate(List gres_list)
+{
+	static uint32_t select_plugin_type = NO_VAL;
+	gres_state_t *gres_state;
+	gres_job_state_t *job_gres_data;
+	ListIterator iter;
+	int rc = SLURM_SUCCESS;
+
+	if ((select_plugin_type == NO_VAL) &&
+	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
+				&select_plugin_type) != SLURM_SUCCESS)) {
+		select_plugin_type = NO_VAL;	/* error */
+	}
+	if (!gres_list || (select_plugin_type == SELECT_TYPE_CONS_TRES))
+		return SLURM_SUCCESS;
+
+	iter = list_iterator_create(gres_list);
+	while ((gres_state = (gres_state_t *) list_next(iter))) {
+		job_gres_data = (gres_job_state_t *) gres_state->gres_data;
+		if (job_gres_data->gres_per_job ||
+		    job_gres_data->gres_per_socket ||
+		    job_gres_data->gres_per_task) {
+			rc = ESLURM_UNSUPPORTED_GRES;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
  * Find a sock_gres_t record in a list by matching the plugin_id and type_id
  *	from a gres_state_t job record
  * IN x - a sock_gres_t record to test
