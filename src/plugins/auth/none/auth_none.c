@@ -122,7 +122,7 @@ static int plugin_errno = SLURM_SUCCESS;
  * the general ones.
  */
 enum {
-	SLURM_AUTH_UNPACK
+	SLURM_AUTH_UNPACK = SLURM_AUTH_FIRST_LOCAL_ERROR,
 };
 
 /*
