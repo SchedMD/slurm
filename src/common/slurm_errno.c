@@ -53,7 +53,6 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 
 /* Type for error string table entries */
@@ -521,11 +520,6 @@ static char *_lookup_slurm_api_errtab(int errnum)
 			break;
 		}
 	}
-
-	if ((res == NULL) &&
-	    (errnum >= ESLURM_JOBCOMP_MIN) &&
-	    (errnum <= ESLURM_JOBCOMP_MAX))
-		res = g_slurm_jobcomp_strerror(errnum);
 
 #if 0
 	/* If needed, re-locate slurmctld/sched_plugin.[ch] into common */

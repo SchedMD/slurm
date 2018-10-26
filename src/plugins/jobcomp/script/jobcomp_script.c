@@ -142,35 +142,6 @@ static pthread_cond_t comp_list_cond = PTHREAD_COND_INITIALIZER;
 static int agent_exit = 0;
 
 /*
- *  Local plugin errno
- */
-static int plugin_errno = SLURM_SUCCESS;
-
-static struct jobcomp_errno {
-	int n;
-	const char *descr;
-} errno_table [] = {
-	{ 0,      "No Error"              },
-	{ EACCES, "Script access denied"  },
-	{ EEXIST, "Script does not exist" },
-	{ EINVAL, "JocCompLoc invalid"    },
-	{ -1,     "Unknown Error"         }
-};
-
-/*
- *  Return string representation of plugin errno
- */
-static const char * _jobcomp_script_strerror (int errnum)
-{
-	struct jobcomp_errno *ep = errno_table;
-
-	while ((ep->n != errnum) && (ep->n != -1))
-		ep++;
-
-	return (ep->descr);
-}
-
-/*
  *  Structure for holding job completion information for later
  *   use by script;
  */
@@ -336,17 +307,14 @@ _check_script_permissions(char * path)
 	struct stat st;
 
 	if (stat(path, &st) < 0) {
-		plugin_errno = errno;
 		return error("jobcomp/script: failed to stat %s: %m", path);
 	}
 
 	if (!(st.st_mode & S_IFREG)) {
-		plugin_errno = EACCES;
 		return error("jobcomp/script: %s isn't a regular file", path);
 	}
 
 	if (access(path, X_OK) < 0) {
-		plugin_errno = EACCES;
 		return error("jobcomp/script: %s is not executable", path);
 	}
 
@@ -634,7 +602,6 @@ extern int init(void)
 extern int slurm_jobcomp_set_location (char * location)
 {
 	if (location == NULL) {
-		plugin_errno = EACCES;
 		return error("jobcomp/script JobCompLoc needs to be set");
 	}
 
@@ -662,18 +629,6 @@ int slurm_jobcomp_log_record (struct job_record *record)
 	slurm_mutex_unlock(&comp_list_mutex);
 
 	return SLURM_SUCCESS;
-}
-
-/* Return the error code of the plugin*/
-extern int slurm_jobcomp_get_errno(void)
-{
-	return plugin_errno;
-}
-
-/* Return a string representation of the error */
-extern const char * slurm_jobcomp_strerror(int errnum)
-{
-	return _jobcomp_script_strerror (errnum);
 }
 
 /* Called when script unloads */

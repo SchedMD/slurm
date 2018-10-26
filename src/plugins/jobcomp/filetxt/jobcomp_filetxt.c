@@ -88,20 +88,6 @@ const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 		"WcKey=%s Cluster=%s SubmitTime=%s EligibleTime=%s%s%s "\
 		"DerivedExitCode=%s ExitCode=%s %s\n"
 
-/* Type for error string table entries */
-typedef struct {
-	int xe_number;
-	char *xe_message;
-} slurm_errtab_t;
-
-static slurm_errtab_t slurm_errtab[] = {
-	{0, "No error"},
-	{-1, "Unspecified error"}
-};
-
-/* A plugin-global errno. */
-static int plugin_errno = SLURM_SUCCESS;
-
 /* File descriptor used for logging */
 static pthread_mutex_t  file_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *           log_name  = NULL;
@@ -140,24 +126,6 @@ _get_group_name(uint32_t group_id, char *group_name, int buf_size)
 }
 
 /*
- * Linear search through table of errno values and strings,
- * returns NULL on error, string on success.
- */
-static char *_lookup_slurm_api_errtab(int errnum)
-{
-	char *res = NULL;
-	int i;
-
-	for (i = 0; i < sizeof(slurm_errtab) / sizeof(slurm_errtab_t); i++) {
-		if (slurm_errtab[i].xe_number == errnum) {
-			res = slurm_errtab[i].xe_message;
-			break;
-		}
-	}
-	return res;
-}
-
-/*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
@@ -184,7 +152,6 @@ extern int slurm_jobcomp_set_location ( char * location )
 	int rc = SLURM_SUCCESS;
 
 	if (location == NULL) {
-		plugin_errno = EACCES;
 		return SLURM_ERROR;
 	}
 	xfree(log_name);
@@ -196,7 +163,6 @@ extern int slurm_jobcomp_set_location ( char * location )
 	job_comp_fd = open(location, O_WRONLY | O_CREAT | O_APPEND, 0644);
 	if (job_comp_fd == -1) {
 		fatal("open %s: %m", location);
-		plugin_errno = errno;
 		rc = SLURM_ERROR;
 	} else
 		fchmod(job_comp_fd, 0644);
@@ -402,7 +368,6 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 			if (errno == EAGAIN)
 				continue;
 			else {
-				plugin_errno = errno;
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -413,17 +378,6 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	xfree(exit_code_str);
 	slurm_mutex_unlock( &file_lock );
 	return rc;
-}
-
-extern int slurm_jobcomp_get_errno( void )
-{
-	return plugin_errno;
-}
-
-extern char *slurm_jobcomp_strerror( int errnum )
-{
-	char *res = _lookup_slurm_api_errtab(errnum);
-	return (res ? res : strerror(errnum));
 }
 
 /*

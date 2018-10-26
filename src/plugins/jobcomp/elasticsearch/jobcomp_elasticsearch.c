@@ -120,17 +120,6 @@ int accounting_enforce = 0;
 void *acct_db_conn = NULL;
 #endif
 
-/* Type for error string table entries */
-typedef struct {
-	int xe_number;
-	char *xe_message;
-} slurm_errtab_t;
-
-static slurm_errtab_t slurm_errtab[] = {
-	{0, "No error"},
-	{-1, "Unspecified error"}
-};
-
 /* Type for handling HTTP responses */
 struct http_response {
 	char *message;
@@ -151,9 +140,6 @@ static pthread_mutex_t pend_jobs_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t job_handler_thread;
 static List jobslist = NULL;
 static bool thread_shutdown = false;
-
-/* A plugin-global errno. */
-static int plugin_errno = SLURM_SUCCESS;
 
 /* Get the user name for the give user_id */
 static void _get_user_name(uint32_t user_id, char *user_name, int buf_size)
@@ -183,24 +169,6 @@ static void _get_group_name(uint32_t group_id, char *group_name, int buf_size)
 		cache_gid = group_id;
 	}
 	snprintf(group_name, buf_size, "%s", cache_name);
-}
-
-/*
- * Linear search through table of errno values and strings,
- * returns NULL on error, string on success.
- */
-static char *_lookup_slurm_api_errtab(int errnum)
-{
-	char *res = NULL;
-	int i;
-
-	for (i = 0; i < sizeof(slurm_errtab) / sizeof(slurm_errtab_t); i++) {
-		if (slurm_errtab[i].xe_number == errnum) {
-			res = slurm_errtab[i].xe_message;
-			break;
-		}
-	}
-	return res;
 }
 
 /* Read file to data variable */
@@ -996,17 +964,6 @@ extern int slurm_jobcomp_set_location(char *location)
 	curl_global_cleanup();
 
 	return rc;
-}
-
-extern int slurm_jobcomp_get_errno(void)
-{
-	return plugin_errno;
-}
-
-extern char *slurm_jobcomp_strerror(int errnum)
-{
-	char *res = _lookup_slurm_api_errtab(errnum);
-	return (res ? res : strerror(errnum));
 }
 
 /*

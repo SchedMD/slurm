@@ -97,12 +97,6 @@ extern int g_slurm_jobcomp_fini(void);
 /* write record of a job's completion */
 extern int g_slurm_jobcomp_write(struct job_record *job_ptr);
 
-/* return error code */
-extern int g_slurm_jobcomp_errno(void);
-
-/* convert job completion logger specific error code to a string */
-extern char *g_slurm_jobcomp_strerror(int errnum);
-
 /*
  * get info from the storage
  * returns List of jobcomp_job_rec_t *
