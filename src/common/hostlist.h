@@ -67,8 +67,6 @@
 		_X	= NULL; 		\
 	} while (0)
 
-extern char *alpha_num;
-
 /* Notes:
  *
  * If WITH_LSD_FATAL_ERROR_FUNC is defined, the linker will expect to
