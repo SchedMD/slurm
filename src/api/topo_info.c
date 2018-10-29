@@ -146,7 +146,7 @@ extern void slurm_print_topo_record(FILE * out, topo_info_t *topo_ptr,
 	if (topo_ptr->switches)
 		len += xstrfmtcat(line, " Switches=%s", topo_ptr->switches);
 
-	if (max_len && (len > max_len))
+	if ((max_len > 0) && (len > max_len))
 		line[max_len] = '\0';
 
 	fprintf(out, "%s\n", line);
