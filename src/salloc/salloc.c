@@ -60,6 +60,7 @@
 #include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
+#include "src/common/node_select.h"
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
@@ -692,7 +693,7 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 			working_cluster_rec->control_host,
 			working_cluster_rec->control_port,
 			working_cluster_rec->rpc_version,
-			working_cluster_rec->plugin_id_select);
+			select_get_plugin_id());
 	}
 
 	if (!_wait_nodes_ready(alloc)) {
