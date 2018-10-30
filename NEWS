@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Make it so fixing runaway jobs will not alter the same job requeued
     when not runaway.
  -- Avoid checking state when searching for runaway jobs.
+ -- Remove redundant check for end time of job when searching for runaway jobs.
 
 * Changes in Slurm 18.08.3
 ==========================

@@ -258,10 +258,6 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 	runaway_jobs = list_create(NULL);
 	db_jobs_itr = list_iterator_create(db_jobs_list);
 	while ((db_job = list_next(db_jobs_itr))) {
-		/* If this job has end time, it is not a runaway job */
-		if (db_job->end)
-			continue;
-
 		job_runaway = true;
 		for (i = 0, clus_job = clus_jobs->job_array;
 		     i < clus_jobs->record_count; i++, clus_job++) {
