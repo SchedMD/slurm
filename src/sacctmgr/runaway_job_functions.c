@@ -261,7 +261,8 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 		job_runaway = true;
 		for (i = 0, clus_job = clus_jobs->job_array;
 		     i < clus_jobs->record_count; i++, clus_job++) {
-			if (db_job->jobid == clus_job->job_id) {
+			if ((db_job->jobid == clus_job->job_id) &&
+			    (db_job->submit == clus_job->submit_time)) {
 				job_runaway = false;
 				break;
 			}
