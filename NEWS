@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow --cpu-bind=verbose to be used with SLURM_HINT environment variable.
  -- Make it so fixing runaway jobs will not alter the same job requeued
     when not runaway.
+ -- Avoid checking state when searching for runaway jobs.
 
 * Changes in Slurm 18.08.3
 ==========================

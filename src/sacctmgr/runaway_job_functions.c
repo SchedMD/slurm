@@ -103,8 +103,8 @@ static void _print_runaway_jobs(List format_list, List jobs)
 	int field_count;
 
 	printf("NOTE: Runaway jobs are jobs that don't exist in the "
-	       "controller but are still considered pending, running or "
-	       "suspended in the database\n");
+	       "controller but have a start time and no end time "
+	       "in the database\n");
 
 	if (!format_list || !list_count(format_list)) {
 		if (!format_list)
@@ -198,10 +198,6 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 	List cluster_list;
 
 	job_cond->flags |= JOBCOND_FLAG_RUNAWAY | JOBCOND_FLAG_NO_TRUNC;
-	job_cond->state_list = list_create(slurm_destroy_char);
-	slurm_addto_char_list(job_cond->state_list, "0");
-	slurm_addto_char_list(job_cond->state_list, "1");
-	slurm_addto_char_list(job_cond->state_list, "2");
 
 	if (!job_cond->cluster_list || !list_count(job_cond->cluster_list)) {
 		char *cluster = slurm_get_cluster_name();
