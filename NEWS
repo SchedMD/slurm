@@ -39,6 +39,20 @@ documents those changes that are of interest to users and administrators.
  -- When building rpms ignore redundant standard rpaths and insecure relative
     rpaths, for RHEL based distros which use "check-rpaths" tool.
  -- Don't skip jobs in scontrol hold.
+ -- Avoid locking the job_list when unneeded.
+ -- Allow --cpu-bind=verbose to be used with SLURM_HINT environment variable.
+ -- Make it so fixing runaway jobs will not alter the same job requeued
+    when not runaway.
+ -- Avoid checking state when searching for runaway jobs.
+ -- Remove redundant check for end time of job when searching for runaway jobs.
+ -- Make sure that we properly check for runawayjobs where another job might
+    have the same id (for example, if a job was requeued) by also checking the
+    submit time.
+ -- Add scontrol update job ResetAccrueTime to clear a job's time
+    previously accrued for priority.
+ -- cons_res: Delay exiting cr_job_test until after cores/cpus are calculated
+    and distributed.
+ -- Fix bug where binary in cwd would trump binary in PATH with test_exec.
 
 * Changes in Slurm 18.08.3
 ==========================

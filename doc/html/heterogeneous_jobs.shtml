@@ -432,6 +432,11 @@ plugins. Slurm's ability to execute such an application can be disabled on the
 entire cluster by adding "disable_hetero_steps" to Slurm's SchedulerParameters
 configuration parameter.</p>
 
+<p><b>IMPORTANT:</b> While the srun command can be used to launch heterogeneous
+job steps, mpirun would require substantial modification to support
+heterogeneous applications. We are aware of no such mpirun development efforts
+at this time.</p>
+
 <p>By default, the applications launched by a single execution of the srun
 command (even for different components of the heterogeneous job) are combined
 into one MPI_COMM_WORLD with non-overlapping task IDs.</p>

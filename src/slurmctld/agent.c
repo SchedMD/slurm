@@ -716,25 +716,31 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	ret_data_info_t *ret_data_info = NULL;
 	state_t state;
 	int is_ret_list = 1;
-	/* Locks: Read config, write job, write node */
+	/* Locks: Read config, write node */
 	slurmctld_lock_t node_write_lock =
-	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+		{ .conf = READ_LOCK, .node = WRITE_LOCK };
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	int i;
 
 	/* Notify slurmctld of non-responding nodes */
 	if (no_resp_cnt) {
 		/* Update node table data for non-responding nodes */
-		lock_slurmctld(node_write_lock);
 		if (agent_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
 			/* Requeue the request */
 			batch_job_launch_msg_t *launch_msg_ptr =
 					*agent_ptr->msg_args_pptr;
 			uint32_t job_id = launch_msg_ptr->job_id;
+			/* Locks: Write job, write node, read federation */
+			slurmctld_lock_t job_write_lock =
+				{ .job  = WRITE_LOCK,
+				  .node = WRITE_LOCK,
+				  .fed  = READ_LOCK };
+
+			lock_slurmctld(job_write_lock);
 			job_complete(job_id, slurmctld_conf.slurm_user_id,
 				     true, false, 0);
+			unlock_slurmctld(job_write_lock);
 		}
-		unlock_slurmctld(node_write_lock);
 	}
 	if (retry_cnt && agent_ptr->retry)
 		_queue_agent_retry(agent_ptr, retry_cnt);
