@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
     submit time.
  -- Add scontrol update job ResetAccrueTime to clear a job's time
     previously accrued for priority.
+ -- cons_res: Delay exiting cr_job_test until after cores/cpus are calculated
+    and distributed.
 
 * Changes in Slurm 18.08.3
 ==========================
