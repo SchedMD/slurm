@@ -1821,15 +1821,18 @@ static void _links_str2bitmap(char *links, char *node_name,
 			      gres_node_state_t *gres_data,
 			      int gres_inx, int gres_cnt)
 {
-	char *start_ptr = links, *end_ptr = NULL;
+	char *start_ptr, *end_ptr = NULL;
 	int i = 0;
 
+	if (!links)	/* No "Links=" data */
+		return;
 	if (gres_inx >= gres_data->link_len) {
 		error("%s: Invalid GRES index (%d >= %d)", __func__, gres_inx,
 		      gres_cnt);
 		return;
 	}
 
+	start_ptr = links;
 	while (1) {
 		gres_data->links_cnt[gres_inx][i] =
 			strtol(start_ptr, &end_ptr, 10);
