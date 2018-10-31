@@ -1843,7 +1843,13 @@ alloc_job:
 		job_ptr->total_cpus = MAX(job_ptr->details->min_cpus,
 					  job_ptr->details->min_nodes);
 	}
-	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
+
+	/*
+	 * Defer checking select mode until we get a correct CPU count. Then
+	 * exit if select mode is not SELECT_MODE_RUN_NOW, making sure to free
+	 * job_ptr->job_resrcs.
+	 */
+	if (error_code != SLURM_SUCCESS) {
 		xfree(tres_mc_ptr);
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
@@ -2046,6 +2052,16 @@ alloc_job:
 		job_ptr->total_cpus = build_cnt;
 	else
 		job_ptr->total_cpus = total_cpus;	/* best guess */
+
+	/*
+	 * Stop if we aren't trying to start the job right now. We needed to
+	 * get to here to have an accurate total_cpus so that accounting limits
+	 * checks are accurate later on.
+	 */
+	if (mode != SELECT_MODE_RUN_NOW) {
+		free_job_resources(&job_ptr->job_resrcs);
+		return error_code;
+	}
 
 	if (!(cr_type & CR_MEMORY))
 		return error_code;
