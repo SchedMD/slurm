@@ -21,6 +21,8 @@ documents those changes that are of interest to users and administrators.
  -- Make sure that we properly check for runawayjobs where another job might
     have the same id (for example, if a job was requeued) by also checking the
     submit time.
+ -- Add scontrol update job ResetAccrueTime to clear a job's time
+    previously accrued for priority.
 
 * Changes in Slurm 18.08.3
 ==========================
