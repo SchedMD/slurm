@@ -3872,8 +3872,6 @@ alloc_job:
 	 */
 	if (mode != SELECT_MODE_RUN_NOW) {
 		free_job_resources(&job_ptr->job_resrcs);
-		FREE_NULL_BITMAP(avail_cores);
-		FREE_NULL_BITMAP(free_cores);
 		return error_code;
 	}
 
