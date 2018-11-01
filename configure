@@ -19293,6 +19293,7 @@ fi
 
 
 
+
 for ac_header in stdlib.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "stdlib.h" "ac_cv_header_stdlib_h" "$ac_includes_default"
@@ -23981,11 +23982,7 @@ fi
 
 
 
-# Workaround with gcc 7.2 printing a warning about printing NULL's
-# This should be fixed in a future version so we properly protect against
-# *printf handling NULLs
-old_CFLAGS=$CFLAGS
-CFLAGS="$CFLAGS -Wno-format-truncation"
+
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for support of printf(\"%s\", NULL)" >&5
 $as_echo_n "checking for support of printf(\"%s\", NULL)... " >&6; }
@@ -23997,10 +23994,18 @@ else
 
 	#include <stdio.h>
 	#include <stdlib.h>
+	#include <string.h>
+        char *n=NULL;
 int
 main ()
 {
- char tmp[8]; char *n=NULL; snprintf(tmp,8,"%s",n); exit(0);
+
+	char tmp[16];
+	char *expected = "test (null)";
+	snprintf(tmp,sizeof(tmp),"test %s",n);
+	if (strncmp(tmp, expected, sizeof(tmp)))
+		exit(1);
+	exit(0);
   ;
   return 0;
 }
@@ -24022,7 +24027,6 @@ fi
 $as_echo "yes" >&6; }
   fi
 
-CFLAGS=$old_CFLAGS
 
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for whether to include readline suport" >&5
