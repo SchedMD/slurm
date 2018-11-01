@@ -44,6 +44,7 @@
 #include "src/common/list.h"
 
 typedef struct jag_prec {	/* process record */
+	bool	visited;
 	int	act_cpufreq;	/* actual average cpu frequency */
 	int	last_cpu;	/* last cpu */
 	pid_t	pid;
