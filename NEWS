@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix bug where binary in cwd would trump binary in PATH with test_exec.
  -- Fix check to test printf("%s\n", NULL); to not require
     -Wno-format-truncation CFLAG.
+ -- Fix JobAcctGatherParams=UsePss to report the correct usage.
 
 * Changes in Slurm 18.08.3
 ==========================
