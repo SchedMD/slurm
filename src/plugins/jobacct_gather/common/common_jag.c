@@ -193,6 +193,7 @@ static int _get_pss(char *proc_smaps_file, jag_prec_t *prec)
         /* Sanity checks */
 
         if (pss > 0 && prec->tres_data[TRES_ARRAY_MEM].size_read > pss) {
+		pss *= 1024; /* Scale KB to B */
                 prec->tres_data[TRES_ARRAY_MEM].size_read = pss;
         }
 
