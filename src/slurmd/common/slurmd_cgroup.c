@@ -177,17 +177,16 @@ extern int init_system_memory_cgroup(void)
 	char* slurm_cgpath;
 	slurm_cgroup_conf_t *cg_conf;
 
-	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
-
 	/* initialize memory cgroup namespace */
 	if (xcgroup_ns_create(&memory_ns, "", "memory")
 	    != XCGROUP_SUCCESS) {
-		slurm_mutex_unlock(&xcgroup_config_read_mutex);
 		error("system cgroup: unable to create memory namespace");
 		return SLURM_ERROR;
 	}
+
+	/* read cgroup configuration */
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = xcgroup_get_slurm_cgroup_conf();
 
 	constrain_kmem_space = cg_conf->constrain_kmem_space;
 	constrain_ram_space = cg_conf->constrain_ram_space;
