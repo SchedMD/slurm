@@ -328,7 +328,7 @@ static int _slurm_cred_init(void)
 	if ( g_context )
 		goto done;
 
-	type = slurm_get_crypto_type();
+	type = slurm_get_cred_type();
 	g_context = plugin_context_create(
 		plugin_type, type, (void **)&ops, syms, sizeof(syms));
 

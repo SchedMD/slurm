@@ -472,11 +472,11 @@ char *slurm_get_cluster_name(void);
  */
 extern char *slurm_get_comm_parameters(void);
 
-/* slurm_get_crypto_type
- * returns the crypto_type from slurmctld_conf object
- * RET char *    - crypto type, MUST be xfreed by caller
+/* slurm_get_cred_type
+ * returns the cred_type from slurmctld_conf object
+ * RET char *    - cred type, MUST be xfreed by caller
  */
-extern char *slurm_get_crypto_type(void);
+extern char *slurm_get_cred_type(void);
 
 /* slurm_get_fast_schedule
  * returns the value of fast_schedule in slurmctld_conf object

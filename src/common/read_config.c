@@ -2818,7 +2818,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->core_spec_plugin);
-	xfree (ctl_conf_ptr->crypto_type);
+	xfree (ctl_conf_ptr->cred_type);
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->epilog_slurmctld);
 	FREE_NULL_LIST(ctl_conf_ptr->ext_sensors_conf);
@@ -2958,7 +2958,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->core_spec_plugin);
-	xfree (ctl_conf_ptr->crypto_type);
+	xfree (ctl_conf_ptr->cred_type);
 	ctl_conf_ptr->def_mem_per_cpu           = 0;
 	ctl_conf_ptr->debug_flags		= 0;
 	ctl_conf_ptr->disable_root_jobs         = 0;
@@ -3607,8 +3607,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				      CPU_FREQ_USERSPACE;
 	}
 
-	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
-		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);
+	if (!s_p_get_string(&conf->cred_type, "CryptoType", hashtbl))
+		 conf->cred_type = xstrdup(DEFAULT_CRYPTO_TYPE);
 
 	if (s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerCPU", hashtbl))
 		conf->def_mem_per_cpu |= MEM_PER_CPU;

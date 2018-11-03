@@ -1212,22 +1212,22 @@ extern char *slurm_get_comm_parameters(void)
 }
 
 
-/* slurm_get_crypto_type
- * returns the crypto_type from slurmctld_conf object
- * RET char *    - crypto type, MUST be xfreed by caller
+/* slurm_get_cred_type
+ * returns the cred_type from slurmctld_conf object
+ * RET char *    - cred type, MUST be xfreed by caller
  */
-extern char *slurm_get_crypto_type(void)
+extern char *slurm_get_cred_type(void)
 {
-	char *crypto_type = NULL;
+	char *cred_type = NULL;
 	slurm_ctl_conf_t *conf;
 
 	if (slurmdbd_conf) {
 	} else {
 		conf = slurm_conf_lock();
-		crypto_type = xstrdup(conf->crypto_type);
+		cred_type = xstrdup(conf->cred_type);
 		slurm_conf_unlock();
 	}
-	return crypto_type;
+	return cred_type;
 }
 
 /* slurm_get_power_parameters

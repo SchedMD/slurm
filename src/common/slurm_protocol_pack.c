@@ -6110,7 +6110,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->core_spec_plugin, buffer);
 		pack32(build_ptr->cpu_freq_def, buffer);
 		pack32(build_ptr->cpu_freq_govs, buffer);
-		packstr(build_ptr->crypto_type, buffer);
+		packstr(build_ptr->cred_type, buffer);
 
 		pack64(build_ptr->def_mem_per_cpu, buffer);
 		pack64(build_ptr->debug_flags, buffer);
@@ -6404,7 +6404,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->core_spec_plugin, buffer);
 		pack32(build_ptr->cpu_freq_def, buffer);
 		pack32(build_ptr->cpu_freq_govs, buffer);
-		packstr(build_ptr->crypto_type, buffer);
+		packstr(build_ptr->cred_type, buffer);
 
 		pack64(build_ptr->def_mem_per_cpu, buffer);
 		pack64(build_ptr->debug_flags, buffer);
@@ -6673,7 +6673,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->core_spec_plugin, buffer);
 		pack32(build_ptr->cpu_freq_def, buffer);
 		pack32(build_ptr->cpu_freq_govs, buffer);
-		packstr(build_ptr->crypto_type, buffer);
+		packstr(build_ptr->cred_type, buffer);
 
 		pack64(build_ptr->def_mem_per_cpu, buffer);
 		pack64(build_ptr->debug_flags, buffer);
@@ -6964,7 +6964,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint32_tmp,
+		safe_unpackstr_xmalloc(&build_ptr->cred_type, &uint32_tmp,
 				       buffer);
 
 		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
@@ -7358,7 +7358,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint32_tmp,
+		safe_unpackstr_xmalloc(&build_ptr->cred_type, &uint32_tmp,
 				       buffer);
 
 		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
@@ -7754,7 +7754,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
 		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint32_tmp,
+		safe_unpackstr_xmalloc(&build_ptr->cred_type, &uint32_tmp,
 				       buffer);
 
 		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
