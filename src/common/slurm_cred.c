@@ -210,17 +210,17 @@ struct slurm_job_credential {
  * at the end of the structure.
  */
 typedef struct {
-	void *(*crypto_read_private_key)	(const char *path);
-	void *(*crypto_read_public_key)		(const char *path);
-	void  (*crypto_destroy_key)		(void *key);
-	int   (*crypto_sign)			(void * key, char *buffer,
-						 int buf_size, char **sig_pp,
-						 uint32_t *sig_size_p);
-	int   (*crypto_verify_sign)		(void * key, char *buffer,
-						 uint32_t buf_size,
-						 char *signature,
-						 uint32_t sig_size);
-	const char *(*crypto_str_error)		(int);
+	void *(*cred_read_private_key)	(const char *path);
+	void *(*cred_read_public_key)	(const char *path);
+	void  (*cred_destroy_key)	(void *key);
+	int   (*cred_sign)		(void *key, char *buffer,
+					 int buf_size, char **sig_pp,
+					 uint32_t *sig_size_p);
+	int   (*cred_verify_sign)	(void *key, char *buffer,
+					 uint32_t buf_size,
+					 char *signature,
+					 uint32_t sig_size);
+	const char *(*cred_str_error)	(int);
 } slurm_cred_ops_t;
 
 /*
@@ -392,7 +392,7 @@ slurm_cred_creator_ctx_create(const char *path)
 
 	ctx->type = SLURM_CRED_CREATOR;
 
-	ctx->key = (*(ops.crypto_read_private_key))(path);
+	ctx->key = (*(ops.cred_read_private_key))(path);
 	if (!ctx->key)
  		goto fail;
 
@@ -420,7 +420,7 @@ slurm_cred_verifier_ctx_create(const char *path)
 
 	ctx->type = SLURM_CRED_VERIFIER;
 
-	ctx->key = (*(ops.crypto_read_public_key))(path);
+	ctx->key = (*(ops.cred_read_public_key))(path);
 	if (!ctx->key)
 		goto fail;
 
@@ -449,9 +449,9 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	if (ctx->exkey)
-		(*(ops.crypto_destroy_key))(ctx->exkey);
+		(*(ops.cred_destroy_key))(ctx->exkey);
 	if (ctx->key)
-		(*(ops.crypto_destroy_key))(ctx->key);
+		(*(ops.cred_destroy_key))(ctx->key);
 	FREE_NULL_LIST(ctx->job_list);
 	FREE_NULL_LIST(ctx->state_list);
 
@@ -1462,7 +1462,7 @@ _ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path)
 
 	xassert(ctx != NULL);
 
-	pk = (*(ops.crypto_read_private_key))(path);
+	pk = (*(ops.cred_read_private_key))(path);
 	if (!pk)
 		return SLURM_ERROR;
 
@@ -1476,7 +1476,7 @@ _ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path)
 
 	slurm_mutex_unlock(&ctx->mutex);
 
-	(*(ops.crypto_destroy_key))(tmpk);
+	(*(ops.cred_destroy_key))(tmpk);
 
 	return SLURM_SUCCESS;
 }
@@ -1488,7 +1488,7 @@ _ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path)
 	void *pk   = NULL;
 
 	xassert(ctx != NULL);
-	pk = (*(ops.crypto_read_public_key))(path);
+	pk = (*(ops.cred_read_public_key))(path);
 	if (!pk)
 		return SLURM_ERROR;
 
@@ -1498,7 +1498,7 @@ _ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path)
 	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	if (ctx->exkey)
-		(*(ops.crypto_destroy_key))(ctx->exkey);
+		(*(ops.cred_destroy_key))(ctx->exkey);
 
 	ctx->exkey = ctx->key;
 	ctx->key   = pk;
@@ -1522,7 +1522,7 @@ _exkey_is_valid(slurm_cred_ctx_t ctx)
 
 	if (time(NULL) > ctx->exkey_exp) {
 		debug2("old job credential key slurmd expired");
-		(*(ops.crypto_destroy_key))(ctx->exkey);
+		(*(ops.cred_destroy_key))(ctx->exkey);
 		ctx->exkey = NULL;
 		return false;
 	}
@@ -1573,16 +1573,16 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 
 	buffer = init_buf(4096);
 	_pack_cred(cred, buffer, protocol_version);
-	rc = (*(ops.crypto_sign))(ctx->key,
-				  get_buf_data(buffer),
-				  get_buf_offset(buffer),
-				  &cred->signature,
-				  &cred->siglen);
+	rc = (*(ops.cred_sign))(ctx->key,
+				get_buf_data(buffer),
+				get_buf_offset(buffer),
+				&cred->signature,
+				&cred->siglen);
 	free_buf(buffer);
 
 	if (rc) {
 		error("Credential sign: %s",
-		      (*(ops.crypto_str_error))(rc));
+		      (*(ops.cred_str_error))(rc));
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
@@ -1599,23 +1599,23 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	buffer = init_buf(4096);
 	_pack_cred(cred, buffer, protocol_version);
 
-	rc = (*(ops.crypto_verify_sign))(ctx->key,
-					 get_buf_data(buffer),
-					 get_buf_offset(buffer),
-					 cred->signature,
-					 cred->siglen);
+	rc = (*(ops.cred_verify_sign))(ctx->key,
+				       get_buf_data(buffer),
+				       get_buf_offset(buffer),
+				       cred->signature,
+				       cred->siglen);
 	if (rc && _exkey_is_valid(ctx)) {
-		rc = (*(ops.crypto_verify_sign))(ctx->exkey,
-						 get_buf_data(buffer),
-						 get_buf_offset(buffer),
-						 cred->signature,
-						 cred->siglen);
+		rc = (*(ops.cred_verify_sign))(ctx->exkey,
+					       get_buf_data(buffer),
+					       get_buf_offset(buffer),
+					       cred->signature,
+					       cred->siglen);
 	}
 	free_buf(buffer);
 
 	if (rc) {
 		error("Credential signature check: %s",
-		      (*(ops.crypto_str_error))(rc));
+		      (*(ops.cred_str_error))(rc));
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
@@ -2112,14 +2112,14 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 
 	buffer = init_buf(4096);
 	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
-	rc = (*(ops.crypto_sign))(
+	rc = (*(ops.cred_sign))(
 		ctx->key, get_buf_data(buffer), get_buf_offset(buffer),
 		&sbcast_cred->signature, &sbcast_cred->siglen);
 	free_buf(buffer);
 
 	if (rc) {
 		error("sbcast_cred sign: %s",
-		      (*(ops.crypto_str_error))(rc));
+		      (*(ops.cred_str_error))(rc));
 		delete_sbcast_cred(sbcast_cred);
 		return NULL;
 	}
@@ -2197,14 +2197,14 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 		_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
 		/* NOTE: the verification checks that the credential was
 		 * created by SlurmUser or root */
-		rc = (*(ops.crypto_verify_sign)) (
+		rc = (*(ops.cred_verify_sign)) (
 			ctx->key, get_buf_data(buffer), get_buf_offset(buffer),
 			sbcast_cred->signature, sbcast_cred->siglen);
 		free_buf(buffer);
 
 		if (rc) {
 			error("sbcast_cred verify: %s",
-			      (*(ops.crypto_str_error))(rc));
+			      (*(ops.cred_str_error))(rc));
 			return NULL;
 		}
 		_sbast_cache_add(sbcast_cred);
@@ -2238,13 +2238,13 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 			buffer = init_buf(4096);
 			_pack_sbcast_cred(sbcast_cred, buffer,
 					  protocol_version);
-			rc = (*(ops.crypto_verify_sign)) (
+			rc = (*(ops.cred_verify_sign)) (
 				ctx->key, get_buf_data(buffer),
 				get_buf_offset(buffer),
 				sbcast_cred->signature, sbcast_cred->siglen);
 			free_buf(buffer);
 			if (rc)
-				err_str = (char *)(*(ops.crypto_str_error))(rc);
+				err_str = (char *)(*(ops.cred_str_error))(rc);
 			if (err_str && xstrcmp(err_str, "Credential replayed")){
 				error("sbcast_cred verify: %s", err_str);
 				return NULL;
