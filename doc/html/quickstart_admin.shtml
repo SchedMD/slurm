@@ -123,8 +123,6 @@ present. Build dependencies for various plugins and commands are denoted below:
 		as the default authentication mechanism.</li>
 <li> <b>MySQL</b> MySQL support for accounting will be built if the
 		<i>mysql</i> development library is present.</li>
-<li> <b>OpenSSL</b> The <i>crypto/openssl</i> CryptoType plugin will be built if
-		the <i>openssl</i> development library is present.</li>
 <li> <b>PAM Support</b> PAM support will be added if the <i>PAM</i> development
 		library is installed.</li>
 <li> <b>NUMA Affinity</b> NUMA support in the task/affinity plugin will be
@@ -465,33 +463,6 @@ This design offers improved performance by removing much of the
 job step initiation overhead from the <i> slurmctld </i> daemon.
 The digital signature mechanism is specified by the <b>CryptoType</b>
 configuration parameter and the default mechanism is MUNGE. </p>
-
-<h3>OpenSSL</h3>
-<p>If using <a href="http://www.openssl.org/">OpenSSL</a> digital signatures,
-unique job credential keys must be created for your site using the program
-<a href="http://www.openssl.org/">openssl</a>.
-<b>You must use openssl and not ssh-genkey to construct these keys.</b>
-An example of how to do this is shown below. Specify file names that
-match the values of <b>JobCredentialPrivateKey</b> and
-<b>JobCredentialPublicCertificate</b> in your configuration file.
-The <b>JobCredentialPrivateKey</b> file must be readable only by <b>SlurmUser</b>.
-The <b>JobCredentialPublicCertificate</b> file must be readable by all users.
-Note that you should build the key files on one node and then distribute
-them to all nodes in the cluster.
-This ensures that all nodes have a consistent set of digital signature
-keys.
-These keys are used by <i>slurmctld</i> to construct a job step
-credential, which is sent to <i>srun</i> and then forwarded to
-<i>slurmd</i> to initiate job steps.</p>
-
-<p class="commandline" style="margin-left:.2in">
-<i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
-<i>openssl rsa -in &lt;sysconfdir&gt;/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i>
-</p>
-
-<h3>MUNGE</h3>
-<p>If using MUNGE digital signatures, no Slurm keys are required.
-This will be addressed in the installation and configuration of MUNGE.</p>
 
 <h3>Authentication</h3>
 <p>Authentication of communications (identifying who generated a particular
