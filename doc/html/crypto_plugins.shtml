@@ -28,7 +28,6 @@ cryptographic mechanism.
 We recommend, for example:</p>
 <ul>
 <li><b>munge</b> &mdash; LLNL's Munge system.</li>
-<li><b>openssl</b> &mdash; Open SSL.</li>
 </ul></p>
 
 <p><span class="commandline">const char plugin_name[]</span><br>
@@ -166,6 +165,6 @@ appropriate value to indicate the reason for failure.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 2 November 2018</p>
 
 <!--#include virtual="footer.txt"-->
