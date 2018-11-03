@@ -181,7 +181,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_CHECKPOINT_TYPE_CHANGE,
 	  "CheckpointType change requires restart of all Slurm daemons "
 	  "to take effect"					},
-	{ ESLURM_INVALID_CRYPTO_TYPE_CHANGE,
+	{ ESLURM_INVALID_CRED_TYPE_CHANGE,
 	  "CryptoType change requires restart of all Slurm daemons "
 	  "to take effect"					},
 	{ ESLURM_INVALID_SCHEDTYPE_CHANGE,

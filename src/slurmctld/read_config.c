@@ -2446,7 +2446,7 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 	if (xstrcmp(old_cred_type, ctl_conf_ptr->cred_type)) {
 		xfree(ctl_conf_ptr->cred_type);
 		ctl_conf_ptr->cred_type = old_cred_type;
-		rc = ESLURM_INVALID_CRYPTO_TYPE_CHANGE;
+		rc = ESLURM_INVALID_CRED_TYPE_CHANGE;
 	} else {	/* free duplicate value */
 		xfree(old_cred_type);
 	}
