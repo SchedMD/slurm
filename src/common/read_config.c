@@ -3609,14 +3609,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
 		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);
-	if ((xstrcmp(conf->crypto_type, "crypto/openssl") == 0) &&
-	    ((conf->job_credential_private_key == NULL) ||
-	     (conf->job_credential_public_certificate == NULL))) {
-		error("CryptoType=crypto/openssl requires that both "
-		      "JobCredentialPrivateKey and "
-		      "JobCredentialPublicCertificate be set");
-		return SLURM_ERROR;
-	}
 
 	if (s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerCPU", hashtbl))
 		conf->def_mem_per_cpu |= MEM_PER_CPU;

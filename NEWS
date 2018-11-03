@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Removed select/serial plugin.
  -- Remove 512-character line length limit in slurm_print_topo_record().
     (Used by "scontrol show topology".)
+ -- Removed crypto/openssl plugin.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

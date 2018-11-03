@@ -41,7 +41,6 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --without munge    %_without_munge      path  don't build auth-munge RPM
 # --with mysql       %_with_mysql         1     require mysql/mariadb support
 # --without netloc   %_without_netloc     path  require netloc support
-# --with openssl     %_with_openssl       1     require openssl RPM to be installed
 # --without pam      %_without_pam        1     don't require pam-devel RPM to be installed
 # --with percs       %_with_percs         1     build percs RPM
 # --without readline %_without_readline   1     don't require readline-devel RPM to be installed
@@ -69,13 +68,9 @@ Source:		%{slurm_source_dir}.tar.bz2
 # If they are not set they will still be compiled if the packages exist.
 %slurm_without_opt mysql
 %slurm_without_opt blcr
-%slurm_without_opt openssl
 
 # Build with munge by default on all platforms (disable using --without munge)
 %slurm_with_opt munge
-
-# Build with OpenSSL by default on all platforms (disable using --without openssl)
-%slurm_with_opt openssl
 
 # Use readline by default on all systems
 %slurm_with_opt readline
@@ -104,10 +99,6 @@ BuildRequires: python
 
 %if %{slurm_with readline}
 BuildRequires: readline-devel
-%endif
-
-%if %{slurm_with openssl}
-BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
 
 %define use_mysql_devel %(perl -e '`rpm -q mariadb-devel`; print $?;')
@@ -635,8 +626,6 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/burst_buffer_cray.so        &&
    echo %{_libdir}/slurm/burst_buffer_cray.so        >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so          &&
    echo %{_libdir}/slurm/checkpoint_blcr.so          >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so           &&
-   echo %{_libdir}/slurm/crypto_openssl.so           >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rrd.so          &&
    echo %{_libdir}/slurm/ext_sensors_rrd.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_elasticsearch.so    &&
