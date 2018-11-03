@@ -133,7 +133,7 @@ struct sbcast_cred {
 	uint32_t *gids;		/* extended group ids for user		*/
 	char *nodes;		/* nodes for which credential is valid	*/
 	char *signature;	/* credential signature			*/
-	unsigned int siglen;	/* signature length in bytes		*/
+	uint32_t siglen;	/* signature length in bytes		*/
 };
 
 /*
@@ -200,7 +200,7 @@ struct slurm_job_credential {
 	uint16_t  x11;		/* x11 flags set on job allocation	*/
 
 	char     *signature; 	/* credential signature			*/
-	unsigned int siglen;	/* signature length in bytes		*/
+	uint32_t siglen;	/* signature length in bytes		*/
 };
 
 /*
@@ -215,11 +215,11 @@ typedef struct slurm_crypto_ops {
 	void  (*crypto_destroy_key)		(void *key);
 	int   (*crypto_sign)			(void * key, char *buffer,
 						 int buf_size, char **sig_pp,
-						 unsigned int *sig_size_p);
+						 uint32_t *sig_size_p);
 	int   (*crypto_verify_sign)		(void * key, char *buffer,
-						 unsigned int buf_size,
+						 uint32_t buf_size,
 						 char *signature,
-						 unsigned int sig_size);
+						 uint32_t sig_size);
 	const char *(*crypto_str_error)		(int);
 } slurm_crypto_ops_t;
 
