@@ -209,7 +209,7 @@ struct slurm_job_credential {
  * plugins will stop working.  If you need to add fields, add them
  * at the end of the structure.
  */
-typedef struct slurm_crypto_ops {
+typedef struct {
 	void *(*crypto_read_private_key)	(const char *path);
 	void *(*crypto_read_public_key)		(const char *path);
 	void  (*crypto_destroy_key)		(void *key);
@@ -221,11 +221,11 @@ typedef struct slurm_crypto_ops {
 						 char *signature,
 						 uint32_t sig_size);
 	const char *(*crypto_str_error)		(int);
-} slurm_crypto_ops_t;
+} slurm_cred_ops_t;
 
 /*
  * These strings must be in the same order as the fields declared
- * for slurm_crypto_ops_t.
+ * for slurm_cred_ops_t.
  */
 static const char *syms[] = {
 	"cred_p_read_private_key",
@@ -241,7 +241,7 @@ struct sbcast_cache {
 	uint32_t     value;	/* Slurm job id for this credential	*/
 };
 
-static slurm_crypto_ops_t ops;
+static slurm_cred_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
