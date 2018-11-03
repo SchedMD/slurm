@@ -282,8 +282,8 @@ static int _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 static int _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *c,
 					uint16_t protocol_version);
 
-static int _slurm_crypto_init(void);
-static int _slurm_crypto_fini(void);
+static int _slurm_cred_init(void);
+static int _slurm_cred_fini(void);
 
 static job_state_t  * _job_state_unpack_one(Buf buffer);
 static cred_state_t * _cred_state_unpack_one(Buf buffer);
@@ -300,7 +300,7 @@ static void _cred_state_pack_one(cred_state_t *s, Buf buffer);
 static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
 static void _sbcast_cache_del(void *x);
 
-static int _slurm_crypto_init(void)
+static int _slurm_cred_init(void)
 {
 	char	*auth_info, *tok;
 	char    *plugin_type = "crypto";
@@ -348,15 +348,15 @@ done:
 }
 
 /* Initialize the plugin. */
-int slurm_crypto_init(void)
+int slurm_cred_init(void)
 {
-	if (_slurm_crypto_init() < 0)
+	if (_slurm_cred_init() < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
 
-static int _slurm_crypto_fini(void)
+static int _slurm_cred_fini(void)
 {
 	int rc;
 
@@ -371,9 +371,9 @@ static int _slurm_crypto_fini(void)
 }
 
 /* Terminate the plugin and release all memory. */
-extern int slurm_crypto_fini(void)
+extern int slurm_cred_fini(void)
 {
-	if (_slurm_crypto_fini() < 0)
+	if (_slurm_cred_fini() < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -384,7 +384,7 @@ slurm_cred_creator_ctx_create(const char *path)
 {
 	slurm_cred_ctx_t ctx = NULL;
 
-	if (_slurm_crypto_init() < 0)
+	if (_slurm_cred_init() < 0)
 		return NULL;
 
 	ctx = _slurm_cred_ctx_alloc();
@@ -412,7 +412,7 @@ slurm_cred_verifier_ctx_create(const char *path)
 {
 	slurm_cred_ctx_t ctx = NULL;
 
-	if (_slurm_crypto_init() < 0)
+	if (_slurm_cred_init() < 0)
 		return NULL;
 
 	ctx = _slurm_cred_ctx_alloc();
@@ -442,7 +442,7 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 {
 	if (ctx == NULL)
 		return;
-	if (_slurm_crypto_init() < 0)
+	if (_slurm_cred_init() < 0)
 		return;
 
 	slurm_mutex_lock(&ctx->mutex);
@@ -530,7 +530,7 @@ slurm_cred_ctx_get(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...)
 int
 slurm_cred_ctx_key_update(slurm_cred_ctx_t ctx, const char *path)
 {
-	if (_slurm_crypto_init() < 0)
+	if (_slurm_cred_init() < 0)
 		return SLURM_ERROR;
 
 	if (ctx->type == SLURM_CRED_CREATOR)
@@ -549,7 +549,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 
 	xassert(ctx != NULL);
 	xassert(arg != NULL);
-	if (_slurm_crypto_init() < 0)
+	if (_slurm_cred_init() < 0)
 		return NULL;
 
 	cred = _slurm_cred_alloc();
@@ -821,7 +821,7 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	xassert(ctx  != NULL);
 	xassert(cred != NULL);
 	xassert(arg  != NULL);
-	if (_slurm_crypto_init() < 0)
+	if (_slurm_cred_init() < 0)
 		return SLURM_ERROR;
 
 	slurm_mutex_lock(&cred->mutex);
@@ -2095,7 +2095,7 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 	sbcast_cred_t *sbcast_cred;
 
 	xassert(ctx);
-	if (_slurm_crypto_init() < 0)
+	if (_slurm_cred_init() < 0)
 		return NULL;
 
 	sbcast_cred = xmalloc(sizeof(struct sbcast_cred));
@@ -2186,7 +2186,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 
 	xassert(ctx);
 
-	if (_slurm_crypto_init() < 0)
+	if (_slurm_cred_init() < 0)
 		return NULL;
 
 	if (now > sbcast_cred->expiration)

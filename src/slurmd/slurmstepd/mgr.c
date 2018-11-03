@@ -1205,7 +1205,7 @@ job_manager(stepd_step_rec_t *job)
 	    (checkpoint_init(ckpt_type) != SLURM_SUCCESS)	||
 	    (jobacct_gather_init() != SLURM_SUCCESS)		||
 	    (acct_gather_profile_init() != SLURM_SUCCESS)	||
-	    (slurm_crypto_init() != SLURM_SUCCESS)		||
+	    (slurm_cred_init() != SLURM_SUCCESS)		||
 	    (job_container_init() != SLURM_SUCCESS)		||
 	    (gres_plugin_init() != SLURM_SUCCESS)) {
 		rc = SLURM_PLUGIN_NAME_INVALID;

@@ -876,7 +876,7 @@ int main(int argc, char **argv)
 	group_cache_purge();
 	license_free();
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
-	slurm_crypto_fini();	/* must be after ctx_destroy */
+	slurm_cred_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
 	slurm_api_clear_config();
 	usleep(500000);

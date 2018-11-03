@@ -388,7 +388,7 @@ main (int argc, char **argv)
 	_wait_for_all_threads(120);
 	_slurmd_fini();
 	_destroy_conf();
-	slurm_crypto_fini();	/* must be after _destroy_conf() */
+	slurm_cred_fini();	/* must be after _destroy_conf() */
 	group_cache_purge();
 	file_bcast_purge();
 
