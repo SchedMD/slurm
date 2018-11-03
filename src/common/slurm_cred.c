@@ -245,7 +245,7 @@ static slurm_crypto_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
-static time_t crypto_restart_time = (time_t) 0;
+static time_t cred_restart_time = (time_t) 0;
 static List sbcast_cache_list = NULL;
 static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 
@@ -323,8 +323,8 @@ static int _slurm_crypto_init(void)
 	}
 
 	slurm_mutex_lock( &g_context_lock );
-	if (crypto_restart_time == (time_t) 0)
-		crypto_restart_time = time(NULL);
+	if (cred_restart_time == (time_t) 0)
+		cred_restart_time = time(NULL);
 	if ( g_context )
 		goto done;
 
@@ -2233,7 +2233,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 
 		if (!cache_match_found) {
 			error("sbcast_cred verify: signature not in cache");
-			if (SLURM_DIFFTIME(now, crypto_restart_time) > 60)
+			if (SLURM_DIFFTIME(now, cred_restart_time) > 60)
 				return NULL;	/* restarted >60 secs ago */
 			buffer = init_buf(4096);
 			_pack_sbcast_cred(sbcast_cred, buffer,
