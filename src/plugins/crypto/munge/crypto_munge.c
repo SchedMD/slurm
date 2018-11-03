@@ -149,15 +149,13 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void
-crypto_destroy_key(void *key)
+extern void cred_p_destroy_key(void *key)
 {
 	munge_ctx_destroy((munge_ctx_t) key);
 	return;
 }
 
-extern void *
-crypto_read_private_key(const char *path)
+extern void *cred_p_read_private_key(const char *path)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
@@ -165,7 +163,7 @@ crypto_read_private_key(const char *path)
 	int auth_ttl, rc;
 
 	if ((ctx = munge_ctx_create()) == NULL) {
-		error ("crypto_read_private_key: munge_ctx_create failed");
+		error("%s: munge_ctx_create failed", __func__);
 		return (NULL);
 	}
 
@@ -204,8 +202,7 @@ crypto_read_private_key(const char *path)
 	return ((void *) ctx);
 }
 
-extern void *
-crypto_read_public_key(const char *path)
+extern void *cred_p_read_public_key(const char *path)
 {
 	munge_ctx_t ctx;
 	char *socket;
@@ -236,8 +233,7 @@ crypto_read_public_key(const char *path)
 	return (void *) ctx;
 }
 
-extern const char *
-crypto_str_error(int errnum)
+extern const char *cred_p_str_error(int errnum)
 {
 	if (errnum == ESIG_BUF_DATA_MISMATCH)
 		return "Credential data mismatch";
@@ -252,9 +248,8 @@ crypto_str_error(int errnum)
 }
 
 /* NOTE: Caller must xfree the signature returned by sig_pp */
-extern int
-crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
-	    unsigned int *sig_size_p)
+extern int cred_p_sign(void *key, char *buffer, int buf_size,
+		       char **sig_pp, unsigned int *sig_size_p)
 {
 	int retry = RETRY_COUNT, auth_ttl;
 	char *cred;
@@ -285,9 +280,8 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 	return 0;
 }
 
-extern int
-crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
-		   char *signature, unsigned int sig_size)
+extern int cred_p_verify_sign(void *key, char *buffer, unsigned int buf_size,
+			      char *signature, unsigned int sig_size)
 {
 	int retry = RETRY_COUNT;
 	uid_t uid;

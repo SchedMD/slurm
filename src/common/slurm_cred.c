@@ -228,12 +228,12 @@ typedef struct slurm_crypto_ops {
  * for slurm_crypto_ops_t.
  */
 static const char *syms[] = {
-	"crypto_read_private_key",
-	"crypto_read_public_key",
-	"crypto_destroy_key",
-	"crypto_sign",
-	"crypto_verify_sign",
-	"crypto_str_error"
+	"cred_p_read_private_key",
+	"cred_p_read_public_key",
+	"cred_p_destroy_key",
+	"cred_p_sign",
+	"cred_p_verify_sign",
+	"cred_p_str_error",
 };
 
 struct sbcast_cache {
