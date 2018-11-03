@@ -308,12 +308,6 @@ dnl
 X_AC_READLINE
 
 dnl
-dnl
-X_AC_SLURM_WITH_SSL
-AM_CONDITIONAL(HAVE_OPENSSL, test "x$ac_have_openssl" = "xyes")
-AC_SUBST(HAVE_OPENSSL)
-
-dnl
 dnl Check for systemd presence, version and system unit dir
 dnl
 X_AC_SYSTEMD
@@ -342,14 +336,6 @@ if test "x$multiple_slurmd" = "xyes"; then
 else
   AC_MSG_RESULT([no])
 fi
-
-
-savedLIBS="$LIBS"
-savedCFLAGS="$CFLAGS"
-LIBS="$SSL_LIBS $LIBS"
-CFLAGS="$SSL_CPPFLAGS $CFLAGS"
-LIBS="$savedLIBS"
-CFLAGS="$savedCFLAGS"
 
 savedLIBS="$LIBS"
 LIBS="-lutil $LIBS"

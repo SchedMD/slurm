@@ -653,12 +653,6 @@ MUNGE_LDFLAGS
 MUNGE_CPPFLAGS
 MUNGE_LIBS
 SYSTEMD_TASKSMAX_OPTION
-HAVE_OPENSSL
-HAVE_OPENSSL_FALSE
-HAVE_OPENSSL_TRUE
-SSL_CPPFLAGS
-SSL_LIBS
-SSL_LDFLAGS
 READLINE_LIBS
 HAVE_MAN2HTML
 HAVE_MAN2HTML_FALSE
@@ -1023,7 +1017,6 @@ with_nrth
 with_libnrt
 with_netloc
 with_readline
-with_ssl
 with_munge
 enable_multiple_slurmd
 with_blcr
@@ -1782,7 +1775,6 @@ Optional Packages:
   --with-libnrt=PATH      Parent directory of libnrt.so
   --with-netloc=PATH      Specify path to netloc installation
   --without-readline      compile without readline support
-  --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
   --with-blcr=PATH        Specify path to BLCR installation
   --with-libcurl=PREFIX   look for the curl library in PREFIX/lib and headers
@@ -24016,179 +24008,6 @@ $as_echo "$as_me: WARNING: configured for readline support, but couldn't find li
 
 
 
-  ssl_default_dirs="/usr/local/openssl64 /usr/local/openssl /usr/lib/openssl    \
-                    /usr/local/ssl /usr/lib/ssl /usr/local \
-                    /usr/pkg /opt /opt/openssl /usr"
-
-
-
-
-
-  SSL_LIB_TEST="-lcrypto"
-
-
-# Check whether --with-ssl was given.
-if test "${with_ssl+set}" = set; then :
-  withval=$with_ssl;
-  	tryssldir=$withval
-
-	if test "x$ac_have_nrt" = "xyes"; then
-		# it appears on p7 machines the openssl doesn't
-		# link correctly so we need to add -ldl
-		SSL_LIB_TEST="$SSL_LIB_TEST -ldl"
-  	fi
-
-fi
-
-
-  saved_LIBS="$LIBS"
-  saved_LDFLAGS="$LDFLAGS"
-  saved_CPPFLAGS="$CPPFLAGS"
-  if test "x$prefix" != "xNONE" ; then
-  	tryssldir="$tryssldir $prefix"
-  fi
-
-  if test "x$tryssldir" != "xno" ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSL directory" >&5
-$as_echo_n "checking for OpenSSL directory... " >&6; }
-if ${ac_cv_openssldir+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  	for ssldir in $tryssldir "" $ssl_default_dirs; do
-  		CPPFLAGS="$saved_CPPFLAGS"
-  		LDFLAGS="$saved_LDFLAGS"
-  		LIBS="$saved_LIBS $SSL_LIB_TEST"
-
-  		# Skip directories if they don't exist
-  		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
-  			continue;
-  		fi
-  		sslincludedir="$ssldir"
-  		if test ! -z "$ssldir"; then
-  			# Try to use $ssldir/lib if it exists, otherwise
-  			# $ssldir
-  			if test -d "$ssldir/lib" ; then
-  				LDFLAGS="-L$ssldir/lib $saved_LDFLAGS"
-  				if test ! -z "$need_dash_r" ; then
-  					LDFLAGS="-R$ssldir/lib $LDFLAGS"
-  				fi
-  			else
-  				LDFLAGS="-L$ssldir $saved_LDFLAGS"
-  				if test ! -z "$need_dash_r" ; then
-  					LDFLAGS="-R$ssldir $LDFLAGS"
-  				fi
-  			fi
-  			# Try to use $ssldir/include if it exists, otherwise
-  			# $ssldir
-  			if test -d "$ssldir/include" ; then
-				sslincludedir="$ssldir/include"
-  				CPPFLAGS="-I$ssldir/include $saved_CPPFLAGS"
-  			else
-  				CPPFLAGS="-I$ssldir $saved_CPPFLAGS"
-  			fi
-  		fi
-		test -f "$sslincludedir/openssl/rand.h" || continue
-		test -f "$sslincludedir/openssl/hmac.h" || continue
-		test -f "$sslincludedir/openssl/sha.h" || continue
-
-  		# Basic test to check for compatible version and correct linking
-  		if test "$cross_compiling" = yes; then :
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "cannot run test program while cross compiling
-See \`config.log' for more details" "$LINENO" 5; }
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-  #include <stdlib.h>
-  #include <openssl/rand.h>
-  #include <openssl/hmac.h>
-  #include <openssl/sha.h>
-  #define SIZE 8
-  int main(void)
-  {
-  	int a[SIZE], i;
-	for (i=0; i<SIZE; i++)
-		a[i] = rand();
-  	RAND_add(a, sizeof(a), sizeof(a));
-  	return(RAND_status() <= 0);
-  }
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-
-  				ac_have_openssl="yes"
-  				break;
-
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-
-  		if test ! -z "$ac_have_openssl" ; then
-  			break;
-  		fi
-  	done
-
-	if test ! -z "$ac_have_openssl" ; then
-		ac_cv_openssldir=$ssldir
-	fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_openssldir" >&5
-$as_echo "$ac_cv_openssldir" >&6; }
-  fi
-
-  if test ! -z "$ac_have_openssl" ; then
-    SSL_LIBS="$SSL_LIB_TEST"
-
-$as_echo "#define HAVE_OPENSSL 1" >>confdefs.h
-
-    if (test ! -z "$ac_cv_openssldir") ; then
-  	  	ssldir=$ac_cv_openssldir
-  	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
-  		# Try to use $ssldir/lib if it exists, otherwise
-  		# $ssldir
-  		if test -d "$ssldir/lib" ; then
-  			SSL_LDFLAGS="-L$ssldir/lib"
-  		else
-  			SSL_LDFLAGS="-L$ssldir"
-  		fi
-  		# Try to use $ssldir/include if it exists, otherwise
-  		# $ssldir
-  		if test -d "$ssldir/include" ; then
-  			SSL_CPPFLAGS="-I$ssldir/include"
-  		else
-  			SSL_CPPFLAGS="-I$ssldir"
-  		fi
-  	fi
-    fi
-  else
-    SSL_LIBS=""
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: could not find working OpenSSL library" >&5
-$as_echo "$as_me: WARNING: could not find working OpenSSL library" >&2;}
-  fi
-
-  LIBS="$saved_LIBS"
-  CPPFLAGS="$saved_CPPFLAGS"
-  LDFLAGS="$saved_LDFLAGS"
-
-
- if test "x$ac_have_openssl" = "xyes"; then
-  HAVE_OPENSSL_TRUE=
-  HAVE_OPENSSL_FALSE='#'
-else
-  HAVE_OPENSSL_TRUE='#'
-  HAVE_OPENSSL_FALSE=
-fi
-
-
-
-
-
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for systemd presence" >&5
 $as_echo_n "checking for systemd presence... " >&6; }
 if ${_cv_systemd_presence+:} false; then :
@@ -24354,14 +24173,6 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
-
-
-savedLIBS="$LIBS"
-savedCFLAGS="$CFLAGS"
-LIBS="$SSL_LIBS $LIBS"
-CFLAGS="$SSL_CPPFLAGS $CFLAGS"
-LIBS="$savedLIBS"
-CFLAGS="$savedCFLAGS"
 
 savedLIBS="$LIBS"
 LIBS="-lutil $LIBS"
@@ -25220,10 +25031,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_MAN2HTML_TRUE}" && test -z "${HAVE_MAN2HTML_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_MAN2HTML\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_OPENSSL_TRUE}" && test -z "${HAVE_OPENSSL_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_OPENSSL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_MUNGE_TRUE}" && test -z "${WITH_MUNGE_FALSE}"; then

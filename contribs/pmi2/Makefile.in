@@ -135,7 +135,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
-	$(top_srcdir)/auxdir/x_ac_slurm_ssl.m4 \
 	$(top_srcdir)/auxdir/x_ac_ssh2.m4 \
 	$(top_srcdir)/auxdir/x_ac_systemd.m4 \
 	$(top_srcdir)/auxdir/x_ac_ucx.m4 \
@@ -317,7 +316,6 @@ H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
 HAVE_NRT = @HAVE_NRT@
-HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HDF5_CC = @HDF5_CC@
 HDF5_CFLAGS = @HDF5_CFLAGS@
@@ -433,9 +431,6 @@ SLURM_VERSION_STRING = @SLURM_VERSION_STRING@
 SSH2_CPPFLAGS = @SSH2_CPPFLAGS@
 SSH2_LDFLAGS = @SSH2_LDFLAGS@
 SSH2_LIBS = @SSH2_LIBS@
-SSL_CPPFLAGS = @SSL_CPPFLAGS@
-SSL_LDFLAGS = @SSL_LDFLAGS@
-SSL_LIBS = @SSL_LIBS@
 STRIP = @STRIP@
 SUCMD = @SUCMD@
 SYSTEMD_TASKSMAX_OPTION = @SYSTEMD_TASKSMAX_OPTION@
