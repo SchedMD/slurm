@@ -106,13 +106,4 @@ extern char *uid_to_string_cached(uid_t uid);
  */
 char *gid_to_string (gid_t gid);
 
-/* slurm_find_group_user()
- *
- * Find the user entry in the group gid. As groups could
- * be split across multiple lines in /etc/group we
- * have to iterate on them.
- */
-int
-slurm_find_group_user(struct passwd *pwd, gid_t gid);
-
 #endif /*__SLURM_UID_UTILITY_H__*/

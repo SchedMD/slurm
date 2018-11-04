@@ -315,30 +315,3 @@ gid_to_string (gid_t gid)
 		gstring = xstrdup("nobody");
 	return gstring;
 }
-
-int
-slurm_find_group_user(struct passwd *pwd, gid_t gid)
-{
-	struct group grp;
-	struct group *grpp;
-	char buf[PW_BUF_SIZE];
-	int cc;
-
-	setgrent();
-	while (1) {
-		cc = getgrent_r(&grp, buf, PW_BUF_SIZE, &grpp);
-		if (cc)
-			break;
-		if (grpp->gr_gid != gid)
-			continue;
-		for (cc = 0; grpp->gr_mem[cc] ; cc++) {
-			if (xstrcmp(pwd->pw_name, grpp->gr_mem[cc]) == 0) {
-				endgrent();
-				return 1;
-			}
-		}
-	}
-	endgrent();
-
-	return 0;
-}
