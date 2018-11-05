@@ -794,14 +794,15 @@ static void _wake_pending_steps(struct job_record *job_ptr)
 		config_start_count = 8;	
 		config_max_age = 60;
 		if (sched_params) {
-			tmp_ptr = strstr(sched_params, "step_retry_count=");
+			tmp_ptr = xstrcasestr(sched_params,
+					      "step_retry_count=");
 			if (tmp_ptr) {
 				param = strtol(tmp_ptr + 17, NULL, 10);
 				if ((param >= 1) &&
 				    (param != LONG_MIN) && (param != LONG_MAX))
 					config_start_count = param;
 			}
-			tmp_ptr = strstr(sched_params, "step_retry_time=");
+			tmp_ptr = xstrcasestr(sched_params, "step_retry_time=");
 			if (tmp_ptr) {
 				param = strtol(tmp_ptr + 16, NULL, 10);
 				if ((param >= 1) &&

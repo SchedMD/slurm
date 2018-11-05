@@ -599,7 +599,7 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 		sched_update = slurmctld_conf.last_update;
 		sched_params = slurm_get_sched_params();
 		if (sched_params &&
-		    (tmp_ptr = strstr(sched_params, "max_switch_wait="))) {
+		    (tmp_ptr = xstrcasestr(sched_params, "max_switch_wait="))) {
 		/*                                   0123456789012345 */
 			i = atoi(tmp_ptr + 16);
 			if (i < 0) {
@@ -4753,19 +4753,20 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if (sched_update != slurmctld_conf.last_update) {
 		sched_update = slurmctld_conf.last_update;
 		sched_params = slurm_get_sched_params();
-		if (sched_params && strstr(sched_params, "defer"))
+		if (sched_params && xstrcasestr(sched_params, "defer"))
 			defer_sched = 1;
 		else
 			defer_sched = 0;
 		if (sched_params &&
-		    (tmp_ptr = strstr(sched_params, "delay_boot="))) {
+		    (tmp_ptr = xstrcasestr(sched_params, "delay_boot="))) {
 			i = time_str2secs(tmp_ptr + 11);
 			if (i != NO_VAL)
 				delay_boot = i;
 		}
 		bf_min_age_reserve = 0;
 		if (sched_params &&
-		    (tmp_ptr = strstr(sched_params, "bf_min_age_reserve="))) {
+		    (tmp_ptr = xstrcasestr(sched_params,
+					   "bf_min_age_reserve="))) {
 			int min_age = atoi(tmp_ptr + 19);
 			if (min_age > 0)
 				bf_min_age_reserve = min_age;
@@ -5324,8 +5325,8 @@ static bool _get_whole_hetjob(void)
 		sched_update = slurmctld_conf.last_update;
 		sched_params = slurm_get_sched_params();
 		if (sched_params) {
-			if (strstr(sched_params, "whole_hetjob") ||
-			    strstr(sched_params, "whole_pack"))
+			if (xstrcasestr(sched_params, "whole_hetjob") ||
+			    xstrcasestr(sched_params, "whole_pack"))
 				whole_hetjob = true;
 			else
 				whole_hetjob = false;
@@ -7158,7 +7159,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 		max_script = 4 * 1024 * 1024;
 		sched_params = slurm_get_sched_params();
 		if (sched_params &&
-		    (tmp_ptr = strstr(sched_params, "max_script_size="))) {
+		    (tmp_ptr = xstrcasestr(sched_params, "max_script_size="))) {
 			max_script = atoi(tmp_ptr + 16);
 		}
 		xfree(sched_params);
@@ -7706,7 +7707,7 @@ static uint16_t _default_wait_all_nodes(job_desc_msg_t *job_desc)
 		return default_batch_wait;
 
 	sched_params = slurm_get_sched_params();
-	if (sched_params && strstr(sched_params, "sbatch_wait_nodes"))
+	if (sched_params && xstrcasestr(sched_params, "sbatch_wait_nodes"))
 		default_batch_wait = 1;
 	else
 		default_batch_wait = 0;
@@ -16141,7 +16142,8 @@ extern int job_set_top(top_job_msg_t *top_ptr, uid_t uid, int conn_fd,
 		char *sched_params;
 		bool disable_user_top = true;
 		sched_params = slurm_get_sched_params();
-		if (sched_params && strstr(sched_params, "enable_user_top"))
+		if (sched_params &&
+		    xstrcasestr(sched_params, "enable_user_top"))
 			disable_user_top = false;
 		xfree(sched_params);
 		if (disable_user_top) {
@@ -17185,7 +17187,7 @@ extern void init_requeue_policy(void)
 	kill_invalid_dep = false;
 	sched_params = slurm_get_sched_params();
 	if (sched_params) {
-		if (strstr(sched_params, "kill_invalid_depend"))
+		if (xstrcasestr(sched_params, "kill_invalid_depend"))
 			kill_invalid_dep = true;
 		xfree(sched_params);
 	}

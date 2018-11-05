@@ -515,7 +515,7 @@ long str_to_mbytes2(const char *arg)
 
 	if (use_gbytes == -1) {
 		char *sched_params = slurm_get_sched_params();
-		if (sched_params && strstr(sched_params, "default_gbytes"))
+		if (sched_params && xstrcasestr(sched_params, "default_gbytes"))
 			use_gbytes = 1;
 		else
 			use_gbytes = 0;

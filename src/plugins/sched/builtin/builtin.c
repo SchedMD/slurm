@@ -117,7 +117,7 @@ static void _load_config(void)
 
 	sched_params = slurm_get_sched_params();
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "interval=")))
+	if (sched_params && (tmp_ptr = xstrcasestr(sched_params, "interval=")))
 		builtin_interval = atoi(tmp_ptr + 9);
 	if (builtin_interval < 1) {
 		error("Invalid SchedulerParameters interval: %d",
@@ -125,9 +125,11 @@ static void _load_config(void)
 		builtin_interval = BACKFILL_INTERVAL;
 	}
 
-	if (sched_params && (tmp_ptr=strstr(sched_params, "max_job_bf=")))
+	if (sched_params && (tmp_ptr = xstrcasestr(sched_params,
+						   "max_job_bf=")))
 		max_sched_job_cnt = atoi(tmp_ptr + 11);
-	if (sched_params && (tmp_ptr=strstr(sched_params, "bf_max_job_test=")))
+	if (sched_params && (tmp_ptr = xstrcasestr(sched_params,
+						   "bf_max_job_test=")))
 		max_sched_job_cnt = atoi(tmp_ptr + 16);
 	if (max_sched_job_cnt < 1) {
 		error("Invalid SchedulerParameters bf_max_job_test: %d",

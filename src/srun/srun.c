@@ -159,9 +159,10 @@ static bool _enable_pack_steps(void)
 	bool enabled = true;
 	char *sched_params = slurm_get_sched_params();
 
-	if (sched_params && strstr(sched_params, "disable_hetero_steps"))
+	if (sched_params && xstrcasestr(sched_params, "disable_hetero_steps"))
 		enabled = false;
-	else if (sched_params && strstr(sched_params, "enable_hetero_steps"))
+	else if (sched_params &&
+		 xstrcasestr(sched_params, "enable_hetero_steps"))
 		enabled = true;
 	else {
 		char *select_type = slurm_get_select_type();

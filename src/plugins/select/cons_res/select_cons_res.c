@@ -2147,12 +2147,12 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	}
 
 	sched_params = slurm_get_sched_params();
-	if (sched_params && strstr(sched_params, "preempt_strict_order"))
+	if (sched_params && xstrcasestr(sched_params, "preempt_strict_order"))
 		preempt_strict_order = true;
 	else
 		preempt_strict_order = false;
 	if (sched_params &&
-	    (tmp_ptr = strstr(sched_params, "preempt_reorder_count="))) {
+	    (tmp_ptr = xstrcasestr(sched_params, "preempt_reorder_count="))) {
 		preempt_reorder_cnt = atoi(tmp_ptr + 22);
 		if (preempt_reorder_cnt < 0) {
 			fatal("Invalid SchedulerParameters "
@@ -2161,7 +2161,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		}
 	}
         if (sched_params &&
-            (tmp_ptr = strstr(sched_params, "bf_window_linear="))) {
+            (tmp_ptr = xstrcasestr(sched_params, "bf_window_linear="))) {
 		bf_window_scale = atoi(tmp_ptr + 17);
 		if (bf_window_scale <= 0) {
 			fatal("Invalid SchedulerParameters bf_window_linear: %d",
@@ -2170,15 +2170,15 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	} else
 		bf_window_scale = 0;
 
-	if (sched_params && strstr(sched_params, "pack_serial_at_end"))
+	if (sched_params && xstrcasestr(sched_params, "pack_serial_at_end"))
 		pack_serial_at_end = true;
 	else
 		pack_serial_at_end = false;
-	if (sched_params && strstr(sched_params, "spec_cores_first"))
+	if (sched_params && xstrcasestr(sched_params, "spec_cores_first"))
 		spec_cores_first = true;
 	else
 		spec_cores_first = false;
-	if (sched_params && strstr(sched_params, "bf_busy_nodes"))
+	if (sched_params && xstrcasestr(sched_params, "bf_busy_nodes"))
 		backfill_busy_nodes = true;
 	else
 		backfill_busy_nodes = false;
@@ -2188,9 +2188,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	preempt_by_part = false;
 	preempt_by_qos = false;
 	if (preempt_type) {
-		if (strstr(preempt_type, "partition"))
+		if (xstrcasestr(preempt_type, "partition"))
 			preempt_by_part = true;
-		if (strstr(preempt_type, "qos"))
+		if (xstrcasestr(preempt_type, "qos"))
 			preempt_by_qos = true;
 		xfree(preempt_type);
 	}

@@ -2479,7 +2479,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		bool validate_socket_cnt = true;
 
 		if (node_features_plugin &&
-		    strstr(node_features_plugin, "knl")) {
+		    xstrcasestr(node_features_plugin, "knl")) {
 			/* KNL reboots can change the NUMA count (treated like
 			 * a socket count) without changing the total core
 			 * count, which Slurm will support. */

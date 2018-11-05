@@ -1828,7 +1828,8 @@ static bool _opt_verify(void)
 	if (saopt.wait_all_nodes == NO_VAL16) {
 		char *sched_params;
 		sched_params = slurm_get_sched_params();
-		if (sched_params && strstr(sched_params, "salloc_wait_nodes"))
+		if (sched_params && xstrcasestr(sched_params,
+						"salloc_wait_nodes"))
 			saopt.wait_all_nodes = 1;
 		xfree(sched_params);
 	}

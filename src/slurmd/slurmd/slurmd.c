@@ -2353,7 +2353,7 @@ static void _select_spec_cores(void)
 	bool spec_cores_first;
 
 	sched_params = slurm_get_sched_params();
-	if (sched_params && strstr(sched_params, "spec_cores_first"))
+	if (sched_params && xstrcasestr(sched_params, "spec_cores_first"))
 		spec_cores_first = true;
 	else
 		spec_cores_first = false;

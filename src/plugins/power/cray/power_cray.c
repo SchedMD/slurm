@@ -241,7 +241,7 @@ static void _load_config(void)
 		sched_params = xmalloc(1);	/* Set defaults below */
 
 	/*                                   12345678901234567890 */
-	if ((tmp_ptr = strstr(sched_params, "balance_interval="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "balance_interval="))) {
 		balance_interval = atoi(tmp_ptr + 17);
 		if (balance_interval < 1) {
 			error("PowerParameters: balance_interval=%d invalid",
@@ -253,7 +253,7 @@ static void _load_config(void)
 	}
 
 	xfree(capmc_path);
-	if ((tmp_ptr = strstr(sched_params, "capmc_path="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "capmc_path="))) {
 		capmc_path = xstrdup(tmp_ptr + 11);
 		tmp_ptr = strchr(capmc_path, ',');
 		if (tmp_ptr)
@@ -263,7 +263,7 @@ static void _load_config(void)
 	}
 
 	/*                                   12345678901234567890 */
-	if ((tmp_ptr = strstr(sched_params, "cap_watts="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "cap_watts="))) {
 		cap_watts = strtol(tmp_ptr + 10, &end_ptr, 10);
 		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
 			cap_watts *= 1000;
@@ -274,7 +274,7 @@ static void _load_config(void)
 		cap_watts = DEFAULT_CAP_WATTS;
 	}
 
-	if ((tmp_ptr = strstr(sched_params, "decrease_rate="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "decrease_rate="))) {
 		decrease_rate = atoi(tmp_ptr + 14);
 		if (decrease_rate < 1) {
 			error("PowerParameters: decrease_rate=%u invalid",
@@ -285,7 +285,7 @@ static void _load_config(void)
 		decrease_rate = DEFAULT_DECREASE_RATE;
 	}
 
-	if ((tmp_ptr = strstr(sched_params, "increase_rate="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "increase_rate="))) {
 		increase_rate = atoi(tmp_ptr + 14);
 		if (increase_rate < 1) {
 			error("PowerParameters: increase_rate=%u invalid",
@@ -296,14 +296,14 @@ static void _load_config(void)
 		increase_rate = DEFAULT_INCREASE_RATE;
 	}
 
-	if (strstr(sched_params, "job_level"))
+	if (xstrcasestr(sched_params, "job_level"))
 		job_level = 1;
-	else if (strstr(sched_params, "job_no_level"))
+	else if (xstrcasestr(sched_params, "job_no_level"))
 		job_level = 0;
 	else
 		job_level = NO_VAL;
 
-	if ((tmp_ptr = strstr(sched_params, "get_timeout="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "get_timeout="))) {
 		get_timeout = atoi(tmp_ptr + 12);
 		if (get_timeout < 1) {
 			error("PowerParameters: get_timeout=%d invalid",
@@ -314,7 +314,7 @@ static void _load_config(void)
 		get_timeout = DEFAULT_GET_TIMEOUT;
 	}
 
-	if ((tmp_ptr = strstr(sched_params, "lower_threshold="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "lower_threshold="))) {
 		lower_threshold = atoi(tmp_ptr + 16);
 		if (lower_threshold < 1) {
 			error("PowerParameters: lower_threshold=%u invalid",
@@ -325,7 +325,7 @@ static void _load_config(void)
 		lower_threshold = DEFAULT_LOWER_THRESHOLD;
 	}
 
-	if ((tmp_ptr = strstr(sched_params, "recent_job="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "recent_job="))) {
 		recent_job = atoi(tmp_ptr + 11);
 		if (recent_job < 1) {
 			error("PowerParameters: recent_job=%u invalid",
@@ -336,7 +336,7 @@ static void _load_config(void)
 		recent_job = DEFAULT_RECENT_JOB;
 	}
 
-	if ((tmp_ptr = strstr(sched_params, "set_timeout="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "set_timeout="))) {
 		set_timeout = atoi(tmp_ptr + 12);
 		if (set_timeout < 1) {
 			error("PowerParameters: set_timeout=%d invalid",
@@ -347,7 +347,7 @@ static void _load_config(void)
 		set_timeout = DEFAULT_SET_TIMEOUT;
 	}
 
-	if ((tmp_ptr = strstr(sched_params, "set_watts="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "set_watts="))) {
 		set_watts = strtol(tmp_ptr + 10, &end_ptr, 10);
 		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
 			set_watts *= 1000;
@@ -358,7 +358,7 @@ static void _load_config(void)
 		set_watts = 0;
 	}
 
-	if ((tmp_ptr = strstr(sched_params, "upper_threshold="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "upper_threshold="))) {
 		upper_threshold = atoi(tmp_ptr + 16);
 		if (upper_threshold < 1) {
 			error("PowerParameters: upper_threshold=%u invalid",
