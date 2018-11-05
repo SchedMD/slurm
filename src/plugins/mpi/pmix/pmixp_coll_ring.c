@@ -331,6 +331,31 @@ static void _libpmix_cb(void *_vcbdata)
 	xfree(cbdata);
 }
 
+static void _invoke_callback(pmixp_coll_ring_ctx_t *coll_ctx)
+{
+	pmixp_coll_t *coll = _ctx_get_coll(coll_ctx);
+	if (!coll->cbfunc) {
+		return;
+	}
+	pmixp_coll_ring_cbdata_t *cbdata;
+	char *data = get_buf_data(coll_ctx->ring_buf);
+	size_t data_sz = get_buf_offset(coll_ctx->ring_buf);
+	cbdata = xmalloc(sizeof(pmixp_coll_ring_cbdata_t));
+
+	cbdata->coll = coll;
+	cbdata->coll_ctx = coll_ctx;
+	cbdata->buf = coll_ctx->ring_buf;
+	cbdata->seq = coll_ctx->seq;
+	pmixp_lib_modex_invoke(coll->cbfunc, SLURM_SUCCESS,
+			       data, data_sz,
+			       coll->cbdata,_libpmix_cb,(void *)cbdata);
+	/* Clear callback info as we are not
+	 * allowed to use it second time
+	 */
+	coll->cbfunc = NULL;
+	coll->cbdata = NULL;
+}
+
 static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 {
 	int ret = 0;
@@ -351,25 +376,7 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 			/* check for all data is collected and forwarded */
 			if (!_ring_remain_contrib(coll_ctx) ) {
 				coll_ctx->state = PMIXP_COLL_RING_FINALIZE;
-
-				if (coll->cbfunc) {
-					pmixp_coll_ring_cbdata_t *cbdata;
-
-					cbdata = xmalloc(
-						sizeof(pmixp_coll_ring_cbdata_t));
-					cbdata->coll = coll;
-					cbdata->coll_ctx = coll_ctx;
-					cbdata->buf = coll_ctx->ring_buf;
-					cbdata->seq = coll_ctx->seq;
-					pmixp_lib_modex_invoke(
-						coll->cbfunc, SLURM_SUCCESS,
-						get_buf_data(
-							coll_ctx->ring_buf),
-						get_buf_offset(
-							coll_ctx->ring_buf),
-						coll->cbdata, _libpmix_cb,
-						(void *)cbdata);
-				}
+				_invoke_callback(coll_ctx);
 				ret = true;
 			}
 			break;
@@ -721,12 +728,8 @@ void pmixp_coll_ring_reset_if_to(pmixp_coll_t *coll, time_t ts) {
 		}
 		if (ts - coll->ts > pmixp_info_timeout()) {
 			/* respond to the libpmix */
-			if (coll_ctx->contrib_local && coll->cbfunc) {
-				pmixp_lib_modex_invoke(coll->cbfunc,
-						       PMIXP_ERR_TIMEOUT, NULL,
-						       0, coll->cbdata,
-						       NULL, NULL);
-			}
+			pmixp_coll_localcb_nodata(coll, PMIXP_ERR_TIMEOUT);
+
 			/* report the timeout event */
 			PMIXP_ERROR("%p: collective timeout seq=%d",
 				    coll, coll_ctx->seq);

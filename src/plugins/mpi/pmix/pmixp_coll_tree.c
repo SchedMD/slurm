@@ -594,10 +594,10 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		/* something went wrong with upward send.
 		 * notify libpmix about that and abort
 		 * collective */
-		if (coll->cbfunc) {
-			pmixp_lib_modex_invoke(coll->cbfunc, SLURM_ERROR, NULL,
-					       0, coll->cbdata, NULL, NULL);
-		}
+
+		/* respond to the libpmix */
+		pmixp_coll_localcb_nodata(coll, SLURM_ERROR);
+
 		_reset_coll(coll);
 		/* Don't need to do anything else */
 		return false;
@@ -699,9 +699,9 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		size_t size = get_buf_offset(tree->dfwd_buf) -
 			tree->dfwd_offset;
 		tree->dfwd_cb_wait++;
-		pmixp_lib_modex_invoke(coll->cbfunc, SLURM_SUCCESS, data, size,
-				       coll->cbdata, _libpmix_cb,
-				       (void*)cbdata);
+		pmixp_lib_modex_invoke(coll->cbfunc, SLURM_SUCCESS,
+				       data, size, coll->cbdata,
+				       _libpmix_cb, (void*)cbdata);
 #ifdef PMIXP_COLL_DEBUG
 		PMIXP_DEBUG("%p: local delivery, size = %lu",
 			    coll, size);
@@ -724,10 +724,10 @@ static int _progress_ufwd_sc(pmixp_coll_t *coll)
 		/* something went wrong with upward send.
 		 * notify libpmix about that and abort
 		 * collective */
-		if (coll->cbfunc) {
-			pmixp_lib_modex_invoke(coll->cbfunc, SLURM_ERROR, NULL,
-					       0, coll->cbdata, NULL, NULL);
-		}
+
+		/* respond to the libpmix */
+		pmixp_coll_localcb_nodata(coll, SLURM_ERROR);
+
 		_reset_coll(coll);
 		/* Don't need to do anything else */
 		return false;
@@ -816,10 +816,11 @@ static int _progress_dfwd(pmixp_coll_t *coll)
 		 * notify libpmix about that and abort
 		 * collective */
 		PMIXP_ERROR("%p: failed to send, abort collective", coll);
-		if (coll->cbfunc) {
-			pmixp_lib_modex_invoke(coll->cbfunc, SLURM_ERROR, NULL,
-					       0, coll->cbdata, NULL, NULL);
-		}
+
+
+		/* respond to the libpmix */
+		pmixp_coll_localcb_nodata(coll, SLURM_ERROR);
+
 		_reset_coll(coll);
 		/* Don't need to do anything else */
 		return false;
@@ -1308,17 +1309,8 @@ void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts)
 
 	if (ts - coll->ts > pmixp_info_timeout()) {
 		/* respond to the libpmix */
-		if (tree->contrib_local && coll->cbfunc) {
-			/* Call the callback only if:
-			 * - we were asked to do that (coll->cbfunc != NULL);
-			 * - local contribution was received.
-			 * TODO: we may want to mark this event to respond with
-			 * to the next local request immediately and with the
-			 * proper (status == PMIX_ERR_TIMEOUT)
-			 */
-			pmixp_lib_modex_invoke(coll->cbfunc, PMIXP_ERR_TIMEOUT, NULL,
-					       0, coll->cbdata, NULL, NULL);
-		}
+		pmixp_coll_localcb_nodata(coll, PMIXP_ERR_TIMEOUT);
+
 		/* report the timeout event */
 		PMIXP_ERROR("%p: collective timeout seq=%d", coll, coll->seq);
 		pmixp_coll_log(coll);
