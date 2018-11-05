@@ -6252,7 +6252,7 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 	gres_job_state_t *job_specs;
 	gres_node_state_t *node_specs;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
-	int max_gres;
+	int max_gres, pick_gres;
 	int fini = 0;
 
 	job_specs = sock_gres->job_specs;
@@ -6295,14 +6295,19 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 			}
 		}
 	}
-
+	if ((max_gres > 1) && (node_specs->link_len == gres_cnt))
+		pick_gres  = NO_VAL16;
+	else
+		pick_gres = max_gres;
 	/*
 	 * Now pick specific GRES for these sockets.
+	 * First select all GRES that we might possibly use.
+	 * Then remove those which are not required and not "best".
 	 */
-	for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt < max_gres)); s++) {
+	for (s = 0; ((s < sock_cnt) && (alloc_gres_cnt < pick_gres)); s++) {
 		if (!used_sock[s])
 			continue;
-		for (g = 0; ((g < gres_cnt) && (alloc_gres_cnt < max_gres));
+		for (g = 0; ((g < gres_cnt) && (alloc_gres_cnt < pick_gres));
 		     g++) {
 			if (sock_gres->bits_by_sock[s] &&
 			    !bit_test(sock_gres->bits_by_sock[s], g))
@@ -6341,8 +6346,53 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 		error("cons_tres: %s: job %u failed to find any available GRES on node %d",
 		      __func__, job_id, node_inx);
 	}
+	/* Now pick the "best" max_gres GRES with respect to link counts. */
+	if (alloc_gres_cnt > max_gres) {
+		int best_link_cnt = -1, best_inx1 = -1, best_inx2 = -1;
+		for (s = 0; s < gres_cnt; s++) {
+			if (!bit_test(job_specs->gres_bit_select[node_inx], s))
+				continue;
+			for (g = s + 1; g < gres_cnt; g++) {
+				if (!bit_test(job_specs->
+					      gres_bit_select[node_inx], g))
+					continue;
+				if (node_specs->links_cnt[s][g] <=
+				    best_link_cnt)
+					continue;
+				best_link_cnt = node_specs->links_cnt[s][g];
+				best_inx1 = s;
+				best_inx2 = g;
+			}
+		}
+		while ((alloc_gres_cnt > max_gres) && (best_link_cnt != -1)) {
+			int worst_inx = -1, worst_link_cnt = NO_VAL16;
+			for (g = 0; g < gres_cnt; g++) {
+				if (g == best_inx1)
+					continue;
+				if (!bit_test(job_specs->
+					      gres_bit_select[node_inx], g))
+					continue;
+				if (node_specs->links_cnt[best_inx1][g] >=
+				    worst_link_cnt)
+					continue;
+				worst_link_cnt =
+					node_specs->links_cnt[best_inx1][g];
+				worst_inx = g;
+			}
+			if (worst_inx == -1) {
+				error("%s: error managing links_cnt", __func__);
+				break;
+			}
+			bit_clear(job_specs->gres_bit_select[node_inx],
+				  worst_inx);
+			job_specs->gres_cnt_node_select[node_inx]--;
+			alloc_gres_cnt--;
+			job_specs->total_gres--;
+		}
+	}
+
 	xfree(used_sock);
-	if (job_specs->gres_per_job == job_specs->total_gres)
+	if (job_specs->total_gres >= job_specs->gres_per_job)
 		fini = 1;
 	return fini;
 }
