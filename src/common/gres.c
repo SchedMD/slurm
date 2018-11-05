@@ -1817,9 +1817,9 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 }
 
 /* Convert comma-delimited array of link counts to an integer array */
-static void _links_str2bitmap(char *links, char *node_name,
-			      gres_node_state_t *gres_data,
-			      int gres_inx, int gres_cnt)
+static void _links_str2array(char *links, char *node_name,
+			     gres_node_state_t *gres_data,
+			     int gres_inx, int gres_cnt)
 {
 	char *start_ptr, *end_ptr = NULL;
 	int i = 0;
@@ -2050,9 +2050,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					/* Set by recovered job */
 					gres_data->topo_gres_cnt_alloc[i]++;
 				}
-				_links_str2bitmap(gres_slurmd_conf->links,
-						  node_name, gres_data,
-						  gres_inx, gres_cnt);
+				_links_str2array(gres_slurmd_conf->links,
+						 node_name, gres_data,
+						 gres_inx, gres_cnt);
 				gres_inx++;
 			}
 			gres_data->topo_type_id[i] =
