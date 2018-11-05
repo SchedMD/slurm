@@ -6348,7 +6348,7 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 	}
 	/* Now pick the "best" max_gres GRES with respect to link counts. */
 	if (alloc_gres_cnt > max_gres) {
-		int best_link_cnt = -1, best_inx1 = -1, best_inx2 = -1;
+		int best_link_cnt = -1, best_inx = -1;
 		for (s = 0; s < gres_cnt; s++) {
 			if (!bit_test(job_specs->gres_bit_select[node_inx], s))
 				continue;
@@ -6360,23 +6360,22 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 				    best_link_cnt)
 					continue;
 				best_link_cnt = node_specs->links_cnt[s][g];
-				best_inx1 = s;
-				best_inx2 = g;
+				best_inx = s;
 			}
 		}
 		while ((alloc_gres_cnt > max_gres) && (best_link_cnt != -1)) {
 			int worst_inx = -1, worst_link_cnt = NO_VAL16;
 			for (g = 0; g < gres_cnt; g++) {
-				if (g == best_inx1)
+				if (g == best_inx)
 					continue;
 				if (!bit_test(job_specs->
 					      gres_bit_select[node_inx], g))
 					continue;
-				if (node_specs->links_cnt[best_inx1][g] >=
+				if (node_specs->links_cnt[best_inx][g] >=
 				    worst_link_cnt)
 					continue;
 				worst_link_cnt =
-					node_specs->links_cnt[best_inx1][g];
+					node_specs->links_cnt[best_inx][g];
 				worst_inx = g;
 			}
 			if (worst_inx == -1) {
