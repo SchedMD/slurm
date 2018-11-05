@@ -229,6 +229,7 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 		return NULL;
 	}
 	setenvf(env, PMIXP_SLURM_MAPPING_ENV, "%s", mapping);
+	xfree(mapping);
 
 	/* only return NULL on error */
 	return (void *)0xdeadbeef;
