@@ -46,7 +46,7 @@
 #include <stdbool.h>		/* for bool type */
 #include <stddef.h>		/* for NULL */
 #include <stdlib.h>		/* for abort() */
-#include <string.h>		/* for strerror() */
+#include <string.h>
 #include "src/common/log.h"	/* for error() */
 #include "src/common/strlcpy.h"
 
@@ -116,6 +116,7 @@
 	do {								\
 		int err = pthread_cond_init(cond, cont_attr);		\
 		if (err) {						\
+			errno = err;					\
 			fatal("%s:%d %s: pthread_cond_init(): %m",	\
 				__FILE__, __LINE__, __func__);		\
 			abort();					\
@@ -126,6 +127,7 @@
 	do {								\
 		int err = pthread_cond_signal(cond);			\
 		if (err) {						\
+			errno = err;					\
 			error("%s:%d %s: pthread_cond_signal(): %m",	\
 				__FILE__, __LINE__, __func__);		\
 		}							\
@@ -135,6 +137,7 @@
 	do {								\
 		int err = pthread_cond_broadcast(cond);			\
 		if (err) {						\
+			errno = err;					\
 			error("%s:%d %s: pthread_cond_broadcast(): %m",	\
 				__FILE__, __LINE__, __func__);		\
 		}							\
@@ -144,6 +147,7 @@
 	do {								\
 		int err = pthread_cond_wait(cond, mutex);		\
 		if (err) {						\
+			errno = err;					\
 			error("%s:%d %s: pthread_cond_wait(): %m",	\
 				__FILE__, __LINE__, __func__);		\
 		}							\
@@ -155,9 +159,9 @@
 	do {								\
 		int err = pthread_cond_timedwait(cond, mutex, abstime);	\
 		if (err && (err != ETIMEDOUT)) {			\
-			error("%s:%d %s: pthread_cond_timedwait(): %s",	\
-				__FILE__, __LINE__, __func__,		\
-				strerror(err));				\
+			errno = err;					\
+			error("%s:%d %s: pthread_cond_timedwait(): %m",	\
+			      __FILE__, __LINE__, __func__);		\
 		}							\
 	} while (0)
 
@@ -165,6 +169,7 @@
 	do {								\
 		int err = pthread_cond_destroy(cond);			\
 		if (err) {						\
+			errno = err;					\
 			error("%s:%d %s: pthread_cond_destroy(): %m",	\
 				__FILE__, __LINE__, __func__);		\
 		}							\
@@ -219,6 +224,7 @@
 	do {								\
 		int err = pthread_rwlock_init(rwlock, NULL);		\
 		if (err) {						\
+			errno = err;					\
 			fatal("%s:%d %s: pthread_rwlock_init(): %m",	\
 			      __FILE__, __LINE__, __func__);		\
 		}							\
@@ -228,6 +234,7 @@
 	do {								\
 		int err = pthread_rwlock_destroy(rwlock);		\
 		if (err) {						\
+			errno = err;					\
 			fatal("%s:%d %s: pthread_rwlock_destroy(): %m",	\
 			      __FILE__, __LINE__, __func__);		\
 		}							\
@@ -237,6 +244,7 @@
 	do {								\
 		int err = pthread_rwlock_rdlock(rwlock);		\
 		if (err) {						\
+			errno = err;					\
 			fatal("%s:%d %s: pthread_rwlock_rdlock(): %m",	\
 			      __FILE__, __LINE__, __func__);		\
 		}							\
@@ -246,6 +254,7 @@
 	do {								\
 		int err = pthread_rwlock_wrlock(rwlock);		\
 		if (err) {						\
+			errno = err;					\
 			fatal("%s:%d %s: pthread_rwlock_wrlock(): %m",	\
 			      __FILE__, __LINE__, __func__);		\
 		}							\
@@ -255,6 +264,7 @@
 	do {								\
 		int err = pthread_rwlock_unlock(rwlock);		\
 		if (err) {						\
+			errno = err;					\
 			fatal("%s:%d %s: pthread_rwlock_unlock(): %m",	\
 			      __FILE__, __LINE__, __func__);		\
 		}							\
@@ -266,29 +276,47 @@
 #ifdef PTHREAD_SCOPE_SYSTEM
 #  define slurm_attr_init(attr)						\
 	do {								\
-		if (pthread_attr_init(attr))				\
+		int err = pthread_attr_init(attr);			\
+		if (err) {						\
+			errno = err;					\
 			fatal("pthread_attr_init: %m");			\
+		}							\
 		/* we want 1:1 threads if there is a choice */		\
-		if (pthread_attr_setscope(attr, PTHREAD_SCOPE_SYSTEM))	\
+		err = pthread_attr_setscope(attr, PTHREAD_SCOPE_SYSTEM);\
+		if (err) {						\
+			errno = err;					\
 			error("pthread_attr_setscope: %m");		\
-		if (pthread_attr_setstacksize(attr, 1024*1024))		\
+		}							\
+		err = pthread_attr_setstacksize(attr, 1024*1024);	\
+		if (err) {						\
+			errno = err;					\
 			error("pthread_attr_setstacksize: %m");		\
+		}							\
 	 } while (0)
 #else
 #  define slurm_attr_init(attr)						\
 	do {								\
-		if (pthread_attr_init(attr))				\
+		int err = pthread_attr_init(attr);			\
+		if (err) {						\
+			errno = err;					\
 			fatal("pthread_attr_init: %m");			\
-		if (pthread_attr_setstacksize(attr, 1024*1024))		\
+		}							\
+		err = pthread_attr_setstacksize(attr, 1024*1024);	\
+		if (err) {						\
+			errno = err;					\
 			error("pthread_attr_setstacksize: %m");		\
+		}							\
 	} while (0)
 #endif
 
 #define slurm_attr_destroy(attr)					\
 	do {								\
-		if (pthread_attr_destroy(attr))				\
+		int err = pthread_attr_destroy(attr);			\
+		if (err) {						\
+			errno = err;					\
 			error("pthread_attr_destroy failed, "		\
 				"possible memory leak!: %m");		\
+		}							\
 	} while (0)
 
 /*
@@ -298,9 +326,13 @@
 #define slurm_thread_create(id, func, arg)				\
 	do {								\
 		pthread_attr_t attr;					\
+		int err;						\
 		slurm_attr_init(&attr);					\
-		if (pthread_create(id, &attr, func, arg))		\
+		err = pthread_create(id, &attr, func, arg);		\
+		if (err) {						\
+			errno = err;					\
 			fatal("%s: pthread_create error %m", __func__);	\
+		}							\
 		slurm_attr_destroy(&attr);				\
 	} while (0)
 
@@ -321,14 +353,21 @@
 	do {								\
 		pthread_t *id_ptr, id_local;				\
 		pthread_attr_t attr;					\
+		int err;						\
 		id_ptr = (id != (pthread_t *) NULL) ? id : &id_local;	\
 		slurm_attr_init(&attr);					\
-		if (pthread_attr_setdetachstate(&attr,			\
-						PTHREAD_CREATE_DETACHED)) \
+		err = pthread_attr_setdetachstate(&attr,		\
+						  PTHREAD_CREATE_DETACHED); \
+		if (err) {						\
+			errno = err;					\
 			fatal("%s: pthread_attr_setdetachstate %m",	\
 			      __func__);				\
-		if (pthread_create(id_ptr, &attr, func, arg))		\
+		}							\
+		err = pthread_create(id_ptr, &attr, func, arg);		\
+		if (err) {						\
+			errno = err;					\
 			fatal("%s: pthread_create error %m", __func__);	\
+		}							\
 		slurm_attr_destroy(&attr);				\
 	} while (0)
 
