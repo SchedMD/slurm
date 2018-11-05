@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix check to test printf("%s\n", NULL); to not require
     -Wno-format-truncation CFLAG.
  -- Fix JobAcctGatherParams=UsePss to report the correct usage.
+ -- Fix minor memory leak in pmix plugin.
+ -- Fix minor memory leak in slurmctld when reading configuration.
 
 * Changes in Slurm 18.08.3
 ==========================

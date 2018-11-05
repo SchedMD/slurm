@@ -4771,7 +4771,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 				bf_min_age_reserve = min_age;
 		}
 
-		if ((sched_params = slurm_get_sched_params()) &&
+		if (sched_params &&
 		    (xstrcasestr(sched_params, "allow_zero_lic")))
 			validate_cfgd_licenses = false;
 
