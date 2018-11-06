@@ -6415,10 +6415,11 @@ static int _set_job_bits2(struct job_resources *job_res, int node_inx,
 {
 	int core_offset, gres_cnt;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int i, g, rc, s;
+	int i, g, l, rc, s;
 	gres_job_state_t *job_specs;
 	gres_node_state_t *node_specs;
 	int fini = 0;
+	int best_link_cnt = 0, best_inx = -1;
 
 	job_specs = sock_gres->job_specs;
 	node_specs = sock_gres->node_specs;
@@ -6452,34 +6453,60 @@ static int _set_job_bits2(struct job_resources *job_res, int node_inx,
 		sock_cnt = MIN(sock_cnt, i);
 	}
 
+	/*
+	 * Identify the GRES (if any) that we want to use as a basis for
+	 * maximizing link count (connectivity of the GRES).
+	 */
 	xassert(job_res->core_bitmap);
+	gres_cnt = bit_size(job_specs->gres_bit_select[node_inx]);
+	if ((job_specs->gres_per_job > job_specs->total_gres) &&
+	    (node_specs->link_len == gres_cnt)) {
+		for (g = 0; g < gres_cnt; g++) {
+			if (!bit_test(job_specs->gres_bit_select[node_inx], g))
+				continue;
+			best_inx = g;
+			for (s = 0; s < gres_cnt; s++) {
+				best_link_cnt = MAX(node_specs->links_cnt[s][g],
+						    best_link_cnt);
+			}
+			break;
+		}
+	}
+
 	/*
 	 * Now pick specific GRES for these sockets.
 	 */
-	gres_cnt = bit_size(job_specs->gres_bit_select[node_inx]);
-	for (s = 0;
-	     ((s < sock_cnt) &&
-	      (job_specs->gres_per_job > job_specs->total_gres)); s++) {
-		for (g = 0;
-		     ((g < gres_cnt) &&
-		      (job_specs->gres_per_job > job_specs->total_gres)); g++) {
-			if (sock_gres->bits_by_sock &&
-			    sock_gres->bits_by_sock[s] &&
-			    !bit_test(sock_gres->bits_by_sock[s], g))
-				continue;   /* GRES not on this socket */
-			if (bit_test(node_specs->gres_bit_alloc, g) ||
-			    bit_test(job_specs->gres_bit_select[node_inx], g))
-				continue;   /* Already allocated GRES */
-			bit_set(job_specs->gres_bit_select[node_inx], g);
-			job_specs->gres_cnt_node_select[node_inx]++;
-			job_specs->total_gres++;
+	for (l = best_link_cnt;
+	     ((l >= 0) && (job_specs->gres_per_job > job_specs->total_gres));
+	     l--) {
+		for (s = 0;
+		     ((s < sock_cnt) &&
+		      (job_specs->gres_per_job > job_specs->total_gres)); s++) {
+			for (g = 0;
+			     ((g < gres_cnt) &&
+			      (job_specs->gres_per_job >job_specs->total_gres));
+			     g++) {
+				if ((l > 0) &&
+				    (node_specs->links_cnt[best_inx][g] < l))
+					continue;   /* Want better link count */
+				if (sock_gres->bits_by_sock &&
+				    sock_gres->bits_by_sock[s] &&
+				    !bit_test(sock_gres->bits_by_sock[s], g))
+					continue;  /* GRES not on this socket */
+				if (bit_test(node_specs->gres_bit_alloc, g) ||
+				    bit_test(job_specs->gres_bit_select[node_inx],
+					     g))
+					continue;   /* Already allocated GRES */
+				bit_set(job_specs->gres_bit_select[node_inx],g);
+				job_specs->gres_cnt_node_select[node_inx]++;
+				job_specs->total_gres++;
+			}
 		}
 	}
 	if (job_specs->gres_per_job == job_specs->total_gres)
 		fini = 1;
 	return fini;
 }
-
 
 /*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
@@ -6499,10 +6526,11 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 {
 	int core_offset, gres_cnt;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int c, i, g, rc, s;
+	int c, i, g, l, rc, s;
 	gres_job_state_t *job_specs;
 	gres_node_state_t *node_specs;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
+	int *links_cnt = NULL, best_link_cnt = 0;
 
 	job_specs = sock_gres->job_specs;
 	node_specs = sock_gres->node_specs;
@@ -6545,6 +6573,8 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 	 * Second: Try to place additional GRES on allocated sockets.
 	 * Third: Use any additional available GRES.
 	 */
+	if (node_specs->link_len == gres_cnt)
+		links_cnt = xmalloc(sizeof(int) * gres_cnt);
 	for (s = 0;
 	     ((s < sock_cnt) && (alloc_gres_cnt < job_specs->gres_per_node));
 	     s++) {
@@ -6561,49 +6591,93 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 			bit_set(job_specs->gres_bit_select[node_inx], g);
 			job_specs->gres_cnt_node_select[node_inx]++;
 			alloc_gres_cnt++;
+			for (l = 0; links_cnt && (l < gres_cnt); l++) {
+				if ((l == g) ||
+				    bit_test(node_specs->gres_bit_alloc, l))
+					continue;
+				links_cnt[l] += node_specs->links_cnt[g][l];
+			}
 			break;
 		}
 	}
-	/* Try to place additional GRES on allocated sockets. */
-	for (s = 0;
-	     ((s < sock_cnt) && (alloc_gres_cnt < job_specs->gres_per_node));
-	     s++) {
-		if (!used_sock[s])
-			continue;
-		for (g = 0; g < gres_cnt; g++) {
-			if (sock_gres->bits_by_sock    &&
-			    sock_gres->bits_by_sock[s] &&
-			    !bit_test(sock_gres->bits_by_sock[s], g))
-				continue;   /* GRES not on this socket */
-			if (bit_test(node_specs->gres_bit_alloc, g) ||
-			    bit_test(job_specs->gres_bit_select[node_inx], g))
-				continue;   /* Already allocated GRES */
-			bit_set(job_specs->gres_bit_select[node_inx], g);
-			job_specs->gres_cnt_node_select[node_inx]++;
-			if (++alloc_gres_cnt == job_specs->gres_per_node)
-				break;
+
+	if (links_cnt) {
+		for (l = 0; l < gres_cnt; l++)
+			best_link_cnt = MAX(links_cnt[l], best_link_cnt);
+		if (best_link_cnt > 4) {
+			/* Scale down to reasonable iteration count (<= 4) */
+			g = (best_link_cnt + 3) / 4;
+			best_link_cnt = 0;
+			for (l = 0; l < gres_cnt; l++) {
+				links_cnt[l] /= g;
+				best_link_cnt = MAX(links_cnt[l],best_link_cnt);
+			}
 		}
 	}
-	/* Use any additional available GRES. */
-	for (s = 0;
-	     ((s < sock_cnt) && (alloc_gres_cnt < job_specs->gres_per_node));
-	     s++) {
-		if (used_sock[s])
-			continue;
-		for (g = 0; g < gres_cnt; g++) {
-			if (sock_gres->bits_by_sock    &&
-			    sock_gres->bits_by_sock[s] &&
-			    !bit_test(sock_gres->bits_by_sock[s], g))
-				continue;   /* GRES not on this socket */
-			if (bit_test(node_specs->gres_bit_alloc, g) ||
-			    bit_test(job_specs->gres_bit_select[node_inx], g))
-				continue;   /* Already allocated GRES */
-			bit_set(job_specs->gres_bit_select[node_inx], g);
-			job_specs->gres_cnt_node_select[node_inx]++;
-			if (++alloc_gres_cnt == job_specs->gres_per_node)
-				break;
+
+	/*
+	 * Try to place additional GRES on allocated sockets. Favor use of
+	 * GRES which are best linked to GRES which have already been selected.
+	 */
+	for (l = best_link_cnt;
+	     ((l >= 0) && (alloc_gres_cnt < job_specs->gres_per_node)); l--) {
+		for (s = 0;
+		     ((s < sock_cnt) &&
+		      (alloc_gres_cnt < job_specs->gres_per_node)); s++) {
+			if (!used_sock[s])
+				continue;
+			for (g = 0; g < gres_cnt; g++) {
+				if (links_cnt && (links_cnt[g] < l))
+					continue;
+				if (sock_gres->bits_by_sock    &&
+				    sock_gres->bits_by_sock[s] &&
+				    !bit_test(sock_gres->bits_by_sock[s], g))
+					continue;  /* GRES not on this socket */
+				if (bit_test(node_specs->gres_bit_alloc, g) ||
+				    bit_test(job_specs->gres_bit_select[node_inx],
+					     g))
+					continue;   /* Already allocated GRES */
+				bit_set(job_specs->gres_bit_select[node_inx],g);
+				job_specs->gres_cnt_node_select[node_inx]++;
+				alloc_gres_cnt++;
+				if (alloc_gres_cnt == job_specs->gres_per_node)
+					break;
+			}
 		}
 	}
+
+	/*
+	 * Use any additional available GRES. Again, favor use of GRES
+	 * which are best linked to GRES which have already been selected.
+	 */
+	for (l = best_link_cnt;
+	     ((l >= 0) && (alloc_gres_cnt < job_specs->gres_per_node)); l--) {
+		for (s = 0;
+		     ((s < sock_cnt) &&
+		      (alloc_gres_cnt < job_specs->gres_per_node)); s++) {
+			if (used_sock[s])
+				continue;
+			for (g = 0; g < gres_cnt; g++) {
+				if (links_cnt && (links_cnt[g] < l))
+					continue;
+				if (sock_gres->bits_by_sock    &&
+				    sock_gres->bits_by_sock[s] &&
+				    !bit_test(sock_gres->bits_by_sock[s], g))
+					continue;  /* GRES not on this socket */
+				if (bit_test(node_specs->gres_bit_alloc, g) ||
+				    bit_test(job_specs->gres_bit_select[node_inx],
+					     g))
+					continue;   /* Already allocated GRES */
+				bit_set(job_specs->gres_bit_select[node_inx],g);
+				job_specs->gres_cnt_node_select[node_inx]++;
+				alloc_gres_cnt++;
+				if (alloc_gres_cnt == job_specs->gres_per_node)
+					break;
+			}
+		}
+	}
+
+	xfree(links_cnt);
 	xfree(used_sock);
 }
 
@@ -6625,10 +6699,11 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 {
 	int core_offset, gres_cnt;
 	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
-	int c, i, g, rc, s;
+	int c, i, g, l, rc, s;
 	gres_job_state_t *job_specs;
 	gres_node_state_t *node_specs;
 	int *used_sock = NULL, used_sock_cnt = 0;
+	int *links_cnt = NULL, best_link_cnt = 0;
 
 	job_specs = sock_gres->job_specs;
 	node_specs = sock_gres->node_specs;
@@ -6729,28 +6804,65 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 		}
 	}
 
-	/* Now pick specific GRES for these sockets */
+	/*
+	 * Identify the available GRES with best connectivity
+	 * (i.e. higher link_cnt)
+	 */
+	if (node_specs->link_len == gres_cnt) {
+		links_cnt = xmalloc(sizeof(int) * gres_cnt);
+		for (g = 0; g < gres_cnt; g++) {
+			if (bit_test(node_specs->gres_bit_alloc, g))
+				continue;
+			for (l = 0; l < gres_cnt; l++) {
+				if ((l == g) ||
+				    bit_test(node_specs->gres_bit_alloc, l))
+					continue;
+				links_cnt[l] += node_specs->links_cnt[g][l];
+			}
+		}
+		for (l = 0; l < gres_cnt; l++)
+			best_link_cnt = MAX(links_cnt[l], best_link_cnt);
+		if (best_link_cnt > 4) {
+			/* Scale down to reasonable iteration count (<= 4) */
+			g = (best_link_cnt + 3) / 4;
+			best_link_cnt = 0;
+			for (l = 0; l < gres_cnt; l++) {
+				links_cnt[l] /= g;
+				best_link_cnt = MAX(links_cnt[l],best_link_cnt);
+			}
+		}
+	}
+
+	/*
+	 * Now pick specific GRES for these sockets.
+	 * Try to use GRES with best connectivity (higher link_cnt values)
+	 */
 	for (s = 0; s < sock_cnt; s++) {
 		if (!used_sock[s])
 			continue;
 		i = 0;
-		for (g = 0; g < gres_cnt; g++) {
-			if (sock_gres->bits_by_sock    &&
-			    sock_gres->bits_by_sock[s] &&
-			    !bit_test(sock_gres->bits_by_sock[s], g))
-				continue;   /* GRES not on this socket */
-			if (node_specs->gres_bit_alloc &&
-			    bit_test(node_specs->gres_bit_alloc, g))
-				continue;   /* Already allocated GRES */
-			if (job_specs->gres_bit_select[node_inx] &&
-			    bit_test(job_specs->gres_bit_select[node_inx], g))
-				continue;   /* Already allocated GRES */
-			bit_set(job_specs->gres_bit_select[node_inx], g);
-			job_specs->gres_cnt_node_select[node_inx]++;
-			if (++i == job_specs->gres_per_socket)
-				break;
+		for (l = best_link_cnt;
+		     ((l >= 0) && (i < job_specs->gres_per_socket)); l--) {
+			for (g = 0; g < gres_cnt; g++) {
+				if (sock_gres->bits_by_sock    &&
+				    sock_gres->bits_by_sock[s] &&
+				    !bit_test(sock_gres->bits_by_sock[s], g))
+					continue;  /* GRES not on this socket */
+				if (node_specs->gres_bit_alloc &&
+				    bit_test(node_specs->gres_bit_alloc, g))
+					continue;   /* Already allocated GRES */
+				if (job_specs->gres_bit_select[node_inx] &&
+				    bit_test(job_specs->gres_bit_select[node_inx],
+					     g))
+					continue;   /* Already allocated GRES */
+				bit_set(job_specs->gres_bit_select[node_inx],g);
+				job_specs->gres_cnt_node_select[node_inx]++;
+				if (++i == job_specs->gres_per_socket)
+					break;
+			}
 		}
 	}
+	xfree(links_cnt);
 	xfree(used_sock);
 }
 
@@ -6772,16 +6884,19 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 			   uint32_t **tasks_per_node_socket)
 {
 	uint16_t sock_cnt = 0;
-	int gres_cnt, g, s;
+	int gres_cnt, g, l, s;
 	gres_job_state_t *job_specs;
 	gres_node_state_t *node_specs;
 	uint32_t total_tasks = 0;
 	uint64_t total_gres_cnt = 0, total_gres_goal;
+	int *links_cnt = NULL, best_link_cnt = 0;
 
 	job_specs = sock_gres->job_specs;
 	node_specs = sock_gres->node_specs;
 	sock_cnt = sock_gres->sock_cnt;
 	gres_cnt = bit_size(job_specs->gres_bit_select[node_inx]);
+	if (node_specs->link_len == gres_cnt)
+		links_cnt = xmalloc(sizeof(int) * gres_cnt);
 
 	/* First pick GRES for acitve sockets */
 	for (s = 0; s < sock_cnt; s++) {
@@ -6805,33 +6920,59 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 			bit_set(job_specs->gres_bit_select[node_inx], g);
 			job_specs->gres_cnt_node_select[node_inx]++;
 			total_gres_cnt++;
+			for (l = 0; links_cnt && (l < gres_cnt); l++) {
+				if ((l == g) ||
+				    bit_test(node_specs->gres_bit_alloc, l))
+					continue;
+				links_cnt[l] += node_specs->links_cnt[g][l];
+			}
 		}
 	}
 
-	/* Next pick additional GRES as needed */
-	total_gres_goal = total_tasks * job_specs->gres_per_task;
-	if (total_gres_cnt >= total_gres_goal)
-		return;
-	for (s = 0; s < sock_cnt; s++) {
-		if (total_gres_cnt >= total_gres_goal)
-			break;
-		for (g = 0; g < gres_cnt; g++) {
-			if (total_gres_cnt >= total_gres_goal)
-				break;
-			if (sock_gres->bits_by_sock &&
-			    sock_gres->bits_by_sock[s] &&
-			    !bit_test(sock_gres->bits_by_sock[s], g))
-				continue;   /* GRES not on this socket */
-			if (bit_test(node_specs->gres_bit_alloc, g) ||
-			    bit_test(job_specs->gres_bit_select[node_inx], g))
-				continue;   /* Already allocated GRES */
-			bit_set(job_specs->gres_bit_select[node_inx], g);
-			job_specs->gres_cnt_node_select[node_inx]++;
-			total_gres_cnt++;
+	if (links_cnt) {
+		for (l = 0; l < gres_cnt; l++)
+			best_link_cnt = MAX(links_cnt[l], best_link_cnt);
+		if (best_link_cnt > 4) {
+			/* Scale down to reasonable iteration count (<= 4) */
+			g = (best_link_cnt + 3) / 4;
+			best_link_cnt = 0;
+			for (l = 0; l < gres_cnt; l++) {
+				links_cnt[l] /= g;
+				best_link_cnt = MAX(links_cnt[l],best_link_cnt);
+			}
 		}
-		if (total_gres_cnt == total_gres_goal)
-			break;
 	}
+
+	/*
+	 * Next pick additional GRES as needed. Favor use of GRES which
+	 * are best linked to GRES which have already been selected.
+	 */
+	total_gres_goal = total_tasks * job_specs->gres_per_task;
+	for (l = best_link_cnt;
+	     ((l >= 0) && (total_gres_cnt < total_gres_goal)); l--) {
+		for (s = 0;
+		     ((s < sock_cnt) && (total_gres_cnt < total_gres_goal));
+		     s++) {
+			for (g = 0;
+			     ((g < gres_cnt) &&
+			      (total_gres_cnt < total_gres_goal)); g++) {
+				if (links_cnt && (links_cnt[g] < l))
+					continue;
+				if (sock_gres->bits_by_sock &&
+				    sock_gres->bits_by_sock[s] &&
+				    !bit_test(sock_gres->bits_by_sock[s], g))
+					continue;  /* GRES not on this socket */
+				if (bit_test(node_specs->gres_bit_alloc, g) ||
+				    bit_test(job_specs->gres_bit_select[node_inx],
+					     g))
+					continue;   /* Already allocated GRES */
+				bit_set(job_specs->gres_bit_select[node_inx],g);
+				job_specs->gres_cnt_node_select[node_inx]++;
+				total_gres_cnt++;
+			}
+		}
+	}
+	xfree(links_cnt);
 }
 
 /* Build array to identify task count for each node-socket pair */
@@ -7184,7 +7325,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 			if (job_fini == -1) {
 				/*
 				 * _set_job_bits1() updates total_gres counter,
-				 * this handle other cases
+				 * this handle other cases.
 				 */
 				job_specs->total_gres +=
 					job_specs->gres_cnt_node_select[i];
@@ -7194,7 +7335,11 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 	}
 
 	if (job_fini == 0) {
-		/* Need more GRES to satisfy gres-per-job option with bitmaps */
+		/*
+		 * Need more GRES to satisfy gres-per-job option with bitmaps.
+		 * This logic will make use of GRES that are not on allocated
+		 * sockets and are thus generally less desirable to use.
+		 */
 		node_inx = -1;
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
