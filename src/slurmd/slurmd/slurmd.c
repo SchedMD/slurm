@@ -637,13 +637,15 @@ send_registration_msg(uint32_t status, bool startup)
 		req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
 		req.data     = msg;
 
-		if (slurm_send_recv_controller_msg(&req, &resp_msg,
-						   working_cluster_rec) < 0) {
+		ret_val = slurm_send_recv_controller_msg(&req, &resp_msg,
+							 working_cluster_rec);
+		slurm_free_node_registration_status_msg(msg);
+
+		if (ret_val < 0) {
 			error("Unable to register: %m");
 			ret_val = SLURM_FAILURE;
 			goto fail;
 		}
-		slurm_free_node_registration_status_msg(msg);
 
 		_handle_node_reg_resp(&resp_msg);
 		if (resp_msg.msg_type != RESPONSE_SLURM_RC) {

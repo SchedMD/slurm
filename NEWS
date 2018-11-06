@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak in pmix plugin.
  -- Fix minor memory leak in slurmctld when reading configuration.
  -- Handle return codes correctly from pthread_* functions.
+ -- Fix minor memory leak when a slurmd is unable to contact a slurmctld
+    when trying to register.
 
 * Changes in Slurm 18.08.3
 ==========================
