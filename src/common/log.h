@@ -252,6 +252,7 @@ extern int get_log_level(void);
 /* fatal() exits program
  * error() returns SLURM_ERROR
  */
+void	log_var(const log_level_t, const char *, ...) __attribute__ ((format (printf, 2, 3)));
 void	fatal_abort(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	fatal(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));

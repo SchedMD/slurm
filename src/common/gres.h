@@ -88,7 +88,21 @@ typedef struct gres_slurmd_conf {
 
 	/* Gres ID number */
 	uint32_t plugin_id;
+
+	/* If true, this is a gres for Slurm to specifically IGNORE */
+	bool ignore;
 } gres_slurmd_conf_t;
+
+
+/* Extra data and functions to be passed in to the node_config_load() */
+typedef struct node_config_load {
+	/* How many cpus there are configured on the node*/
+	uint32_t cpu_cnt;
+	/* A pointer to the mac_to_abs function */
+	int (*xcpuinfo_mac_to_abs) (char *mac, char **abs);
+} node_config_load_t;
+
+
 
 /* Current GRES state information managed by slurmctld daemon */
 typedef struct gres_node_state {
@@ -297,8 +311,16 @@ extern int gres_plugin_reconfig(void);
 extern char *gres_plugin_help_msg(void);
 
 /*
+ * Convert a GRES name or model into a number for faster comparison operations
+ * IN name - GRES name or model
+ * RET - An int representing a custom hash of the name
+ */
+extern uint32_t	gres_plugin_build_id(char *name);
+
+
+/*
  **************************************************************************
- *                 PLUGIN CALLS FOR SLURMD DAEMOtN                         *
+ *                 PLUGIN CALLS FOR SLURMD DAEMON                         *
  **************************************************************************
  */
 /*
@@ -306,9 +328,11 @@ extern char *gres_plugin_help_msg(void);
  * IN cpu_cnt - Number of CPUs on configured on this node
  * IN node_name - Name of this node
  * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct, if available
+ * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct, if available
  */
 extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
-					void *xcpuinfo_abs_to_mac);
+					void *xcpuinfo_abs_to_mac,
+					void *xcpuinfo_mac_to_abs);
 
 /*
  * Pack this node's gres configuration into a buffer

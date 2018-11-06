@@ -211,6 +211,7 @@
 #define	log_fp			slurm_log_fp
 #define	log_has_data		slurm_log_has_data
 #define	log_flush		slurm_log_flush
+#define log_var			slurm_log_var
 #define	fatal_abort		slurm_fatal_abort
 #define	fatal			slurm_fatal
 #define	error			slurm_error

@@ -29,6 +29,7 @@ EXTRA_DIST = \
     x_ac_ncurses.m4 \
     x_ac_netloc.m4 \
     x_ac_nrt.m4 \
+    x_ac_nvml.m4 \
     x_ac_pam.m4 \
     x_ac_printf_null.m4 \
     x_ac_ptrace.m4 \

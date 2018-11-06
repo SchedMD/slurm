@@ -195,6 +195,29 @@ JobStep=1234.2 CUDA_VISIBLE_DEVICES=3
 
 <P>NOTE: Be sure to specify the <I>File</I> parameters in the <I>gres.conf</I>
 file and ensure they are in the increasing numeric order.</P>
+
+<p>When possible, Slurm automatically determines the GPUs on the system using
+NVIDIA's NVML library. The NVML library (which powers the
+<code class="commandline">nvidia-smi</code> tool) numbers GPUs in order by their
+PCI bus IDs. For this numbering to match the numbering reported by CUDA, the
+<code class="commandline">CUDA_DEVICE_ORDER</code> environmental variable must
+be set to <code class="commandline">CUDA_DEVICE_ORDER=PCI_BUS_ID</code>.</p>
+
+<p>GPU device files (e.g. <code class="commandline">/dev/nvidia1</code>) are
+based on the Linux minor number assignment, while NVML's device numbers are
+assigned via PCI bus ID, from lowest to highest. Mapping between these two is
+indeterministic and system dependent, and could vary between boots after
+hardware or OS changes. For the most part, this assignment seems fairly stable.
+However, an after-bootup check is required to guarantee that a GPU device is
+assigned to a specific device file.</p>
+
+<p>Please consult
+<a
+href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#env-vars"
+>the NVIDIA CUDA docs</a> for more information on the <code class="commandline">
+CUDA_VISIBLE_DEVICES</code> and <code class="commandline">CUDA_DEVICE_ORDER
+</code> environmental variables.</p>
+
 <!-------------------------------------------------------------------------->
 <h2>MIC Management</h2>
 
@@ -218,6 +241,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 7 November 2017</p>
+<p style="text-align: center;">Last modified 6 November 2018</p>
 
 <!--#include virtual="footer.txt"-->
