@@ -122,6 +122,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
+	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_pmix.m4 \
@@ -284,6 +285,9 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 NRT_CPPFLAGS = @NRT_CPPFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
+NVML_CPPFLAGS = @NVML_CPPFLAGS@
+NVML_LDFLAGS = @NVML_LDFLAGS@
+NVML_LIBS = @NVML_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OFED_CPPFLAGS = @OFED_CPPFLAGS@
@@ -1057,6 +1061,9 @@ EXTRA_DIST = \
 	test39.15			\
 	test39.16			\
 	test39.17			\
+	test39.18			\
+	test39.18.prog.c		\
+	test39.18.ulong.c		\
 	test39.19			\
 	test39.20
 
