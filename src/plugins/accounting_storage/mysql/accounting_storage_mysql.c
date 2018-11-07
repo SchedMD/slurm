@@ -820,7 +820,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	   built off this one */
 	if (mysql_db_create_table(mysql_conn, cluster_table,
 				  cluster_table_fields,
-				  ", primary key (name(20)))") == SLURM_ERROR)
+				  ", primary key (name(42)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	/* This table needs to be made before conversions also since
@@ -833,7 +833,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	if (mysql_db_create_table(mysql_conn, tres_table,
 				  tres_table_fields,
 				  ", primary key (id), "
-				  "unique index (type(20), name(20))) "
+				  "unique index (type(42), name(42))) "
 				  "auto_increment=1001")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -958,26 +958,26 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	if (mysql_db_create_table(mysql_conn, acct_coord_table,
 				  acct_coord_table_fields,
-				  ", primary key (acct(20), user(20)), "
-				  "key user (user(20)))")
+				  ", primary key (acct(42), user(42)), "
+				  "key user (user(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if (mysql_db_create_table(mysql_conn, acct_table, acct_table_fields,
-				  ", primary key (name(20)))") == SLURM_ERROR)
+				  ", primary key (name(42)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if (mysql_db_create_table(mysql_conn, res_table,
 				  res_table_fields,
 				  ", primary key (id), "
-				  "unique index (name(20), server(20), type))")
+				  "unique index (name(42), server(42), type))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if (mysql_db_create_table(mysql_conn, clus_res_table,
 				  clus_res_table_fields,
-				  ", primary key (res_id, cluster(20)), "
-				  "unique index (res_id, cluster(20)))")
+				  ", primary key (res_id, cluster(42)), "
+				  "unique index (res_id, cluster(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -985,7 +985,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	if (mysql_db_create_table(mysql_conn, qos_table,
 				  qos_table_fields,
 				  ", primary key (id), "
-				  "unique index (name(20)))")
+				  "unique index (name(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 	else {
@@ -1049,12 +1049,12 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 
 	/* This must be ran after create_cluster_tables() */
 	if (mysql_db_create_table(mysql_conn, user_table, user_table_fields,
-				  ", primary key (name(20)))") == SLURM_ERROR)
+				  ", primary key (name(42)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if (mysql_db_create_table(mysql_conn, federation_table,
 				  federation_table_fields,
-				  ", primary key (name(20)))") == SLURM_ERROR)
+				  ", primary key (name(42)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	rc = as_mysql_convert_non_cluster_tables_post_create(mysql_conn);
@@ -1207,9 +1207,9 @@ extern int create_cluster_assoc_table(
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  assoc_table_fields,
 				  ", primary key (id_assoc), "
-				  "unique index (user(20), acct(20), "
-				  "`partition`(20)), "
-				  "key lft (lft), key account (acct(20)))")
+				  "unique index (user(42), acct(42), "
+				  "`partition`(42)), "
+				  "key lft (lft), key account (acct(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1464,7 +1464,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  event_table_fields,
-				  ", primary key (node_name(20), time_start))")
+				  ", primary key (node_name(42), time_start))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1534,8 +1534,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  wckey_table_fields,
 				  ", primary key (id_wckey), "
-				  " unique index (wckey_name(20), "
-				  "user(20)))")
+				  " unique index (wckey_name(42), "
+				  "user(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
