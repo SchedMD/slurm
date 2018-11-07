@@ -51,7 +51,7 @@ extern int common_node_config_load(List gres_conf_list,
 	hostlist_t hl;
 	char *slash, *root_path, *one_name;
 	gres_device_t *gres_device;
-	bool debug_flags;
+	uint64_t debug_flags;
 
 	xassert(gres_conf_list);
 	xassert(gres_devices);
