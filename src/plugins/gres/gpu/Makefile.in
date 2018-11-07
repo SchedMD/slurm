@@ -125,6 +125,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nrt.m4 \
+	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
 	$(top_srcdir)/auxdir/x_ac_pmix.m4 \
@@ -174,7 +175,9 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-gres_gpu_la_DEPENDENCIES = ../common/libgres_common.la
+am__DEPENDENCIES_1 =
+gres_gpu_la_DEPENDENCIES = ../common/libgres_common.la \
+	$(am__DEPENDENCIES_1)
 am_gres_gpu_la_OBJECTS = gres_gpu.lo
 gres_gpu_la_OBJECTS = $(am_gres_gpu_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -367,6 +370,9 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 NRT_CPPFLAGS = @NRT_CPPFLAGS@
 NUMA_LIBS = @NUMA_LIBS@
+NVML_CPPFLAGS = @NVML_CPPFLAGS@
+NVML_LDFLAGS = @NVML_LDFLAGS@
+NVML_LIBS = @NVML_LIBS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OFED_CPPFLAGS = @OFED_CPPFLAGS@
@@ -501,13 +507,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(NVML_CPPFLAGS)
 pkglib_LTLIBRARIES = gres_gpu.la
 
 # Gres GPU plugin.
 gres_gpu_la_SOURCES = gres_gpu.c
-gres_gpu_la_LDFLAGS = $(PLUGIN_FLAGS)
-gres_gpu_la_LIBADD = ../common/libgres_common.la
+gres_gpu_la_LDFLAGS = $(PLUGIN_FLAGS) $(NVML_LDFLAGS)
+gres_gpu_la_LIBADD = ../common/libgres_common.la $(NVML_LIBS)
 all: all-am
 
 .SUFFIXES:

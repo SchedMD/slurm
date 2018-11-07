@@ -51,10 +51,12 @@ extern int common_node_config_load(List gres_conf_list,
 	hostlist_t hl;
 	char *slash, *root_path, *one_name;
 	gres_device_t *gres_device;
+	bool debug_flags;
 
 	xassert(gres_conf_list);
 	xassert(gres_devices);
 
+	debug_flags = slurm_get_debug_flags();
 	itr = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(itr))) {
 		if ((gres_slurmd_conf->has_file != 1) ||
@@ -97,9 +99,12 @@ extern int common_node_config_load(List gres_conf_list,
 				gres_device->dev_num = atoi(one_name + i);
 				break;
 			}
-			info("%s device number %d(%s):%s",
-			     gres_name, gres_device->dev_num,
-			     gres_device->path, gres_device->major);
+
+			if (debug_flags & DEBUG_FLAG_GRES) {
+				info("%s device number %d(%s):%s",
+				     gres_name, gres_device->dev_num,
+				     gres_device->path, gres_device->major);
+			}
 			free(one_name);
 		}
 		hostlist_destroy(hl);

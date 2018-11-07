@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "July 2018" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "November 2018" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for generic resource management.
@@ -12,6 +12,7 @@ DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
 environment variable. The file will always be located in the
 same directory as the \fBslurm.conf\fP file. If generic resource counts are
 set by the gres plugin function node_config_load(), this file may be optional.
+
 .LP
 Parameter names are case insensitive.
 Any text following a "#" in the configuration file is treated
@@ -19,6 +20,14 @@ as a comment through the end of that line.
 Changes to the configuration file take effect upon restart of
 Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
+
+.LP
+For "GresTypes=gpu", by default Slurm will use all GPUs detected on the system
+at slurmd daemon startup. To ignore specific GPUs, simply specify a GRES gpu line with
+\fBIgnore=true\fR. Alternatively, you can choose to specify only the explicit
+GPUs you want to use. If you do this, other lines with "Ignore=true" are of no
+effect.
+
 .LP
 The overall configuration parameters available include:
 
@@ -70,7 +79,7 @@ processing unit logical number (PU L#) seen in lstopo output.
 
 .TP
 \fBFile\fR
-Fully qualified pathname of the device files associated with a resource. 
+Fully qualified pathname of the device files associated with a resource.
 The file name parsing logic includes support for simple regular expressions as
 shown in the example.
 This field is generally required if enforcement of generic resource
@@ -92,13 +101,16 @@ file.
 
 .TP
 \fBLinks\fR
-If multiple devices should be co-scheduled whenever possible, then specify a
-link number on both devices that have the same value.
-Devices may have multiple links and those numberic values should be
-identified in a comma separated list.
+Specify a comma delimited list of numbers identifying the number of connections
+between the devices so that better connected devices can be co\-scheduled.
+This is an ordered list in which the number of connections this specific
+device has to device number 0 would be in the first position, the number of
+connections it has to device 1 in the second position, etc.
+Specify a count of -1 for the number of connections this device has with itself.
 A typical use case would be to identify GPUs having LNLink connectivity.
-This is an optional value.
-.\
+This is an optional value and is typically automatically generated using
+NVIDIA libraries.
+
 .TP
 \fBName\fR
 Name of the generic resource. Any desired name may be used.
@@ -131,6 +143,15 @@ An arbitrary string identifying the type of device.
 For example, a particular model of GPU.
 If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024).
 
+.TP
+\fBIgnore\fR
+Defaults to \fBfalse\fR or \fBno\fR. If set to \fBtrue\fR or \fByes\fR, this
+GRES will be ignored (for GRESs that support it). Currently, the only supported
+GRESs are \fBName=gpu\fR. If all GRESs of the same name contain lines with
+Ignore=true, then all system-detected GRESs will be used except for the
+explicitly ignored GRESs. Specifying a NodeName will limit the scope of the
+ignored GRES to just that node.
+
 .SH "EXAMPLES"
 .LP
 .br
@@ -138,57 +159,75 @@ If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024)
 .br
 # Slurm's Generic Resource (GRES) configuration file
 .br
+## Ignore select GPU devices that are out of service on the current node
+.br
 ##################################################################
 .br
-# Configure support for our four GPUs
+Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1 Ignore=true Links=\-1,2,0
 .br
-Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1
+Name=gpu Type=tesla  File=/dev/nvidia1 COREs=2,3 Ignore=true Links=2,\-1,1
 .br
-Name=gpu Type=gtx560 File=/dev/nvidia1 COREs=0,1
-.br
-Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3
-.br
-Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
-.br
-Name=bandwidth Count=20M
+Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Ignore=true Links=0,1,\-1
 
-\. .LP
-\. .br
-\. ##################################################################
-\. .br
-\. # Slurm's Generic Resource (GRES) configuration file
-\. .br
-\. ##################################################################
-\. .br
-\. # Configure support for our four GPUs with NVLink
-\. .br
-\. Name=gpu Type=tesla File=/dev/nvidia0 COREs=0,1 Links=0
-\. .br
-\. Name=gpu Type=tesla File=/dev/nvidia1 COREs=0,1 Links=0
-\. .br
-Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Links=1
-.br
-Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3 Links=1
-\. 
 .LP
 .br
 ##################################################################
 .br
 # Slurm's Generic Resource (GRES) configuration file
 .br
-# Use a single gres.conf file for all compute nodes
+## Overwrite system defaults and explicitly configure three GPUs with NVLink
 .br
 ##################################################################
 .br
-NodeName=tux[0\-15]  Name=gpu File=/dev/nvidia[0\-3]
+Name=gpu Type=tesla File=/dev/nvidia[0\-1] COREs=0,1
 .br
-NodeName=tux[16\-31] Name=gpu File=/dev/nvidia[0\-7]
+# NOTE: nvidia2 device is out of service
+.br
+# Name=gpu Type=tesla  File=/dev/nvidia[2\-3] COREs=2,3
+.br
+Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
+.br
+
+.LP
+.br
+##################################################################
+.br
+# Slurm's Generic Resource (GRES) configuration file
+.br
+## Use a single gres.conf file for all compute nodes
+.br
+##################################################################
+.br
+## Explicitly specify devices on nodes tux0\-tux15
+.br
+# NodeName=tux[0\-15]  Name=gpu File=/dev/nvidia[0\-3]
+.br
+# NOTE: tux3 nvidia1 device is out of service
+.br
+NodeName=tux[0\-2]  Name=gpu File=/dev/nvidia[0\-3]
+.br
+NodeName=tux3  Name=gpu File=/dev/nvidia[0,2\-3]
+.br
+NodeName=tux[4\-15]  Name=gpu File=/dev/nvidia[0\-3]
+.br
+.br
+## Ignore select system-detected devices on nodes tux16-tux31
+.br
+NodeName=tux18 Name=gpu File=/dev/nvidia[1\-2] Ignore=true
+.br
+NodeName=tux[19,25,28] Name=gpu File=/dev/nvidia3 Ignore=true
+.br
+NodeName=tux29 Name=gpu File=/dev/nvidia[0,4] Ignore=true
+.br
+NodeName=tux31 Name=gpu File=/dev/nvidia0 Ignore=true
+.br
+
 
 .SH "COPYING"
 Copyright (C) 2010 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2014 SchedMD LLC.
+Copyright (C) 2010\-2018 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

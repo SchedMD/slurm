@@ -1148,7 +1148,8 @@ _reconfigure(void)
 	(void) switch_g_reconfig();
 	container_g_reconfig();
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
-	(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL);
+	(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL,
+					    (void *)&xcpuinfo_mac_to_abs);
 	send_registration_msg(SLURM_SUCCESS, false);
 
 	/* reconfigure energy */
@@ -1550,7 +1551,8 @@ _slurmd_init(void)
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
 
 	if ((gres_plugin_init() != SLURM_SUCCESS) ||
-	    (gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL)
+	    (gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL,
+					  (void *)&xcpuinfo_mac_to_abs)
 	     != SLURM_SUCCESS))
 		return SLURM_ERROR;
 	if (slurm_topo_init() != SLURM_SUCCESS)
