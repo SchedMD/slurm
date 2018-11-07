@@ -45,14 +45,18 @@ GresTypes=gpu,bandwidth
 NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,bandwidth:lustre:no_consume:4G
 </PRE>
 
-<P>Each compute node with generic resources must also contain a <I>gres.conf</I>
+<P>Each compute node with generic resources typically contain a <I>gres.conf</I>
 file describing which resources are available on the node, their count, 
 associated device files and cores which should be used with those resources.
+In the case of GPUs, their configuration will be automatically gathered using
+the NVML library, if installed.
+Configuration information about all other generic resource must explicitly be
+described in the <I>gres.conf</I> file.
 The configuration parameters available are:</P>
 
 <UL>
 <LI><B>Name</B> name of a generic resource (must match <B>GresTypes</B>
-values in <I>slurm.conf</I> ).</LI>
+values in <I>slurm.conf</I>).</LI>
 
 <LI><B>Count</B> Number of resources of this type available on this node.
 The default value is set to the number of <B>File</B> values specified (if any),
@@ -129,17 +133,54 @@ Name=bandwidth Type=lustre Count=4G
 <h2>Running Jobs</h2>
 
 <P>Jobs will not be allocated any generic resources unless specifically
-requested at job submit time using the <I>--gres</I> option supported by
-the <I>salloc</I>, <I>sbatch</I> and <I>srun</I> commands. The option
-requires an argument specifying which generic resources are required and
-how many resources. The resource specification is of the form
-<I>name[:type:count]</I>. The <I>name</I> is the same name as
+requested at job submit time using the options:</P>
+<DL>
+<DD><I>--gres</I></DD>
+<DT>Generic resources required per node</DT>
+<DD><I>--gpu</I></DD>
+<DT>GPUs required per job</DT>
+<DD><I>--gpu-per-node</I></DD>
+<DT>GPUs required per node. Equivalent to the <I>--gres</I> option for GPUs.</DT>
+<DD><I>--gpu-per-socket</I></DD>
+<DT>GPUs required per socket. Requires the job to specify a task socket.</DT>
+<DD><I>--gpu-per-task</I></DD>
+<DT>GPUs required per task. Requires the job to specify a task count.</DT>
+</DL>
+
+<P>All of these options are supported by the <I>salloc</I>, <I>sbatch</I> and
+<I>srun</I> commands.
+Note that all of the <I>--gpu*</I> options are only supported by Slurm's
+select/cons_tres plugin.
+Jobs requesting these options when the select/cons_tres plugin is <U>not</U>
+configured will be rejected.
+The <I>--gres</I> option requires an argument specifying which generic resources
+are required and how many resources using the form <I>name[:type:count]</I>
+while all of the <I>--gpu*</I> options require an argument of the form
+ <I>[type]:count</I>.
+The <I>name</I> is the same name as
 specified by the <I>GresTypes</I> and <I>Gres</I> configuration parameters.
 <I>type</I> identifies a specific type of that generic resource (e.g. a
 specific model of GPU).
 <I>count</I> specifies how many resources are required and has a default
 value of 1. For example:<BR> 
 <I>sbatch --gres=gpu:kepler:2 ...</I>.</P>
+
+<P>Several addition resource requirement specifications are available
+specifically for GPUs and detailed descriptions about these options are
+available in the man pages for the job submission commands.
+As for the <I>--gpu*</I> option, these options are only supported by Slurm's
+select/cons_tres plugin.</P>
+</P>
+<DL>
+<DD><I>--cpus-per-gpu</I></DD>
+<DT>Count of CPUs allocated per GPU.</DT>
+<DD><I>--gpu-bind</I></DD>
+<DT>Define how tasks are bound to GPUs.</DT>
+<DD><I>--gpu-freq</I></DD>
+<DT>Specify GPU frequency, GPU memory frequency and/or GPU voltage.</DT>
+<DD><I>--mem-per-gpu</I></DD>
+<DT>Memory allocated per GPU.</DT>
+</DL>
 
 <P>Jobs will be allocated specific generic resources as needed to satisfy
 the request. If the job is suspended, those resources do not become available
@@ -241,6 +282,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 6 November 2018</p>
+<p style="text-align: center;">Last modified 7 November 2018</p>
 
 <!--#include virtual="footer.txt"-->
