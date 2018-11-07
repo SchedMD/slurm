@@ -1057,9 +1057,11 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 	list_iterator_destroy(iter);
 }
 
-/* No gres.conf file found.
+/*
+ * No gres.conf file found.
  * Initialize gres table with zero counts of all resources.
- * Counts can be altered by node_config_load() in the gres plugin. */
+ * Counts can be altered by node_config_load() in the gres plugin.
+ */
 static int _no_gres_conf(node_config_load_t *node_conf)
 {
 	int i, rc = SLURM_SUCCESS;
@@ -1076,7 +1078,7 @@ static int _no_gres_conf(node_config_load_t *node_conf)
 		list_append(gres_conf_list, p);
 		/*
 		 * If there is no plugin specific shared
-		 * library the exported methods are NULL.
+		 * library, the exported methods are NULL.
 		 */
 		if (gres_context[i].ops.node_config_load) {
 			rc = (*(gres_context[i].ops.node_config_load))

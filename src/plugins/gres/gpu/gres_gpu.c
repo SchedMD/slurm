@@ -647,24 +647,24 @@ static void _add_gpu_to_gres_list(List gres_list, int device_cnt, int cpu_cnt,
 	ListIterator itr = list_iterator_create(gres_list);
 
 	/*
-	 * See if the first record already exists and has a count of 0
-	 * If so, overwrite it
+	 * If the first record already exists and has a count of 0 then
+	 * overwrite it.
 	 * This is a placeholder record created in gres.c#_no_gres_conf()
 	 */
 	gpu_record = list_next(itr);
-	if (gpu_record && gpu_record->count == 0)
+	if (gpu_record && (gpu_record->count == 0))
 		use_empty_first_record = true;
 	else
 		gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
 	gpu_record->cpu_cnt = cpu_cnt;
 	gpu_record->cpus_bitmap = bit_alloc(gpu_record->cpu_cnt);
 	if (bit_unfmt(gpu_record->cpus_bitmap, cpu_aff_abs_range) != 0) {
-		error("bit_unfmt(dst_bitmap, src_str) failed");
-		error("Is the CPU range larger than the CPU count allows?");
-		error("src_str: %s", cpu_aff_abs_range);
-		error("dst_bitmap_size: %ld",
+		error("%s: bit_unfmt(dst_bitmap, src_str) failed", __func__);
+		error("    Is the CPU range larger than the CPU count allows?");
+		error("    src_str: %s", cpu_aff_abs_range);
+		error("    dst_bitmap_size: %ld",
 		      bit_size(gpu_record->cpus_bitmap));
-		error("cpu_cnt: %d", gpu_record->cpu_cnt);
+		error("    cpu_cnt: %d", gpu_record->cpu_cnt);
 		bit_free(gpu_record->cpus_bitmap);
 		if (!use_empty_first_record)
 			xfree(gpu_record);
@@ -898,7 +898,8 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	bool use_system_detected = true;
 
 	if (gres_list_conf == NULL) {
-		error("gres_list_conf is NULL. This shouldn't happen");
+		error("%s: gres_list_conf is NULL. This shouldn't happen",
+		      __func__);
 		return;
 	}
 
@@ -916,7 +917,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		char **file_array;
 		char *hl_name;
 		if (gres_record->count == 0) {
-			info("Empty gres.conf file detected");
+			info("%s: Empty gres.conf file detected", __func__);
 			// Use system-detected
 			break;
 		}
@@ -1413,9 +1414,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
 		char *device_brand = NULL;
 
-		if (_nvml_get_handle(i, &device) != SLURM_SUCCESS) {
+		if (_nvml_get_handle(i, &device) != SLURM_SUCCESS)
 			continue;
-		}
 
 		_nvml_get_device_name(&device, device_name,
 				      NVML_DEVICE_NAME_BUFFER_SIZE);
@@ -1605,7 +1605,7 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 		 * Remove trailing newlines from fgets output
 		 * See https://stackoverflow.com/a/28462221/1416379
 		 */
-		buffer[strcspn(buffer, "\r\n")] = 0;
+		buffer[strcspn(buffer, "\r\n")] = '\0';
 
 		// Ignore blank lines or lines that start with #
 		if (!buffer[0] || buffer[0] == '#')
