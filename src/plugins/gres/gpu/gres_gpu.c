@@ -44,8 +44,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -93,11 +93,9 @@ const char	*plugin_name		= "Gres GPU plugin";
 const char	*plugin_type		= "gres/gpu";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
+static uint64_t	debug_flags		= 0;
 static char	*gres_name		= "gpu";
-
-static List gres_devices = NULL;
-
-
+static List	gres_devices		= NULL;
 
 #define GPU_LOW		1
 #define GPU_MEDIUM	2
@@ -109,9 +107,9 @@ static List gres_devices = NULL;
 #define GPU_MODE_VOLT	3
 
 
-#define MAX_CPUS	32768 // 1 << 15 == 2^15 == 32768
+#define MAX_CPUS	0x8000
 #define ULONG_BYTES	(sizeof(unsigned long))
-#define ULONG_BITS	(ULONG_BYTES*8)
+#define ULONG_BITS	(ULONG_BYTES * 8)
 /*
  * The # of unsigned longs needed to accommodate a bitmask array capable
  * of representing MAX_CPUS cpus (will vary if 32-bit or 64-bit)
@@ -405,13 +403,14 @@ static void _print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
  * Print the gres.conf record in a parsable format
  * Do NOT change the format of this without also changing test39.17!
  */
-static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf)
+static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
+				      log_level_t log_lvl)
 {
-	info("GRES_PARSABLE(%ld):%s|%d|%s|%s|%s|%s",
-	     gres_slurmd_conf->count, gres_slurmd_conf->type_name,
-	     gres_slurmd_conf->cpu_cnt, gres_slurmd_conf->cpus,
-	     gres_slurmd_conf->links, gres_slurmd_conf->file,
-	     gres_slurmd_conf->ignore ? "IGNORE":"");
+	log_var(log_lvl, "GRES_PARSABLE(%ld):%s|%d|%s|%s|%s|%s",
+		gres_slurmd_conf->count, gres_slurmd_conf->type_name,
+		gres_slurmd_conf->cpu_cnt, gres_slurmd_conf->cpus,
+		gres_slurmd_conf->links, gres_slurmd_conf->file,
+		gres_slurmd_conf->ignore ? "IGNORE":"");
 }
 
 // Prints out each gres_slurmd_conf_t record in the list
@@ -420,13 +419,13 @@ static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
 {
 	ListIterator itr;
 	gres_slurmd_conf_t *gres_record;
+
 	if (gres_list == NULL)
 		return;
-
 	itr = list_iterator_create(gres_list);
 	while ((gres_record = list_next(itr))) {
 		if (parsable)
-			_print_gres_conf_parsable(gres_record);
+			_print_gres_conf_parsable(gres_record, log_lvl);
 		else
 			_print_gres_conf(gres_record, log_lvl);
 	}
@@ -440,12 +439,10 @@ static void _print_gres_list(List gres_list, log_level_t log_lvl)
 }
 
 // Prints out each gres_slurmd_conf_t record in the list
-static void _print_gres_list_parsable(List gres_list)
+static void _print_gres_list_parsable(List gres_list, log_level_t log_lvl)
 {
-	_print_gres_list_helper(gres_list, 0, true);
+	_print_gres_list_helper(gres_list, log_lvl, true);
 }
-
-
 
 static void _delete_gres_list(void *x)
 {
@@ -472,6 +469,7 @@ static char *_strip_brackets_xmalloc(char *str)
 	// index to null char at end of string
 	int end;
 	bool done = false;
+
 	if (str == NULL)
 		return NULL;
 
@@ -547,13 +545,8 @@ static int _key_in_number_range_str(char *x, char *key)
 
 	// Linearly check to see if all of key's devices are in x's devices
 	while ((key_name = hostlist_shift(hl_key))) {
-		if(hostlist_find(hl_x, key_name) >= 0) {
-			// It was found. Good. Continue checking other key names
-		}
-		else {
-			// It was not found!
-			rc = 1;
-		}
+		if (hostlist_find(hl_x, key_name) < 0)
+			rc = 1;	/* Not found */
 		free(key_name);
 		if (rc == 1)
 			break;
@@ -585,9 +578,6 @@ static int _find_gres_in_list(void *x, void *key)
 	// Found!
 	return 1;
 }
-
-
-
 
 /*
  * Returns 1 if a is a subset of b or vice versa; else returns 0.
@@ -630,7 +620,7 @@ static int _find_gres_device_file_in_list(void *a, void *b)
  */
 static int _find_gres_device_in_list(void *a, void *b)
 {
-	if(a == NULL || b == NULL)
+	if (!a|| !b)
 		return 0;
 
 	// Make sure we have the right record before checking the devices
@@ -702,8 +692,6 @@ static void _add_record_to_gres_list(List gres_list, gres_slurmd_conf_t *record)
 			      record->links, record->ignore);
 }
 
-
-
 /*
  * See if a gres gpu device file already exists in a gres list
  * If the device exists, returns the gres record that contains it, else returns
@@ -736,7 +724,6 @@ static void *_device_exists_in_list(List gres_list,
 			       gres_record);
 }
 
-
 /*
  * See if a gres gpu record exists in a gres list
  *
@@ -764,7 +751,7 @@ static void _merge_device_into_list(List gres_list, gres_slurmd_conf_t *device)
 	int devices_added = 0;
 	gres_slurmd_conf_t *record;
 
-	if(device == NULL || device->file == NULL) {
+	if (!device || !device->file) {
 		debug2("Warning: device to merge was null or had null file");
 		return;
 	}
@@ -782,7 +769,6 @@ static void _merge_device_into_list(List gres_list, gres_slurmd_conf_t *device)
 
 	hostlist_destroy(record_hl);
 }
-
 
 /*
  * Add GRES record and device to list out only if it doesn't exist already in
@@ -861,7 +847,6 @@ void _add_unique_gres_list_to_list_compare(List gres_list_out,
 	list_iterator_destroy(itr);
 }
 
-
 /*
  * Add all unique, unignored devices specified by the GRES records in list in
  * only if they don't already exist in list out.
@@ -879,7 +864,6 @@ void _add_unique_gres_list_to_list(List gres_list_out, List gres_list_in) {
 	}
 	list_iterator_destroy(itr);
 }
-
 
 /*
  * Takes the gres.conf records and gpu devices detected on the node and either
@@ -1094,7 +1078,7 @@ static void _nvml_get_version(char *version, unsigned int len)
  * TODO: the nvml init() function is very slow. Can we run it in
  * parallel so it doesn't add to startup time?
  */
-static int _nvml_init()
+static int _nvml_init(void)
 {
 	nvmlReturn_t nvml_rc = nvmlInit();
 	if (nvml_rc != NVML_SUCCESS) {
@@ -1107,15 +1091,13 @@ static int _nvml_init()
 /*
  * Undo _nvml_init
  */
-static void _nvml_shutdown()
+static void _nvml_shutdown(void)
 {
 	nvmlReturn_t nvml_rc = nvmlShutdown();
 	if (nvml_rc != NVML_SUCCESS) {
 		error("Failed to shutdown NVML: %s", nvmlErrorString(nvml_rc));
 	}
 }
-
-
 
 // Get the total # of GPUs on the system
 static void _nvml_get_device_count(unsigned int *device_count)
@@ -1144,7 +1126,6 @@ static int _nvml_get_handle(int index, nvmlDevice_t *device)
 	return SLURM_SUCCESS;
 }
 
-
 /*
  * Get the name of the GPU
  */
@@ -1157,7 +1138,6 @@ static void _nvml_get_device_name(nvmlDevice_t *device, char *device_name,
 		      nvmlErrorString(nvml_rc));
 	}
 }
-
 
 /*
  * Allocates a string in device_brand containing the brand/type of the GPU
@@ -1211,9 +1191,6 @@ static char *_nvml_get_device_brand(nvmlDevice_t *device)
 	return device_brand;
 }
 
-
-
-
 // Get the UUID of the device, since device index can fluctuate
 static void _nvml_get_device_uuid(nvmlDevice_t *device, char *uuid,
 				  unsigned int len)
@@ -1224,7 +1201,6 @@ static void _nvml_get_device_uuid(nvmlDevice_t *device, char *uuid,
 		      nvmlErrorString(nvml_rc));
 	}
 }
-
 
 /*
  * Get the PCI Bus ID of the device, since device index can fluctuate
@@ -1252,7 +1228,6 @@ static void _nvml_get_device_minor_number(nvmlDevice_t *device,
 		      nvmlErrorString(nvml_rc));
 	}
 }
-
 
 /*
  * Retrieves an array of unsigned ints (sized to cpuSetSize) of bitmasks with
@@ -1382,7 +1357,6 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
 	if (bit_cur != -1)
 		fatal("%s: bit_cur(%d) != 0", __func__, bit_cur);
 }
-
 
 #ifdef HAVE_NVML
 /*
@@ -1525,7 +1499,6 @@ static char *_test_nvml_cpu_conv(char *cpu_range)
 		cpu_set[i] = 0;
 	}
 
-
 	if (xstrcmp(cpu_range, "~zero") == 0) {
 		// nothing
 	} else if (xstrcmp(cpu_range, "~max") == 0) {
@@ -1584,8 +1557,6 @@ static char *_test_nvml_cpu_conv(char *cpu_range)
 	bit_free(cpu_aff_mac_bitstr);
 	return result;
 }
-
-
 
 /*
  * Parses fake_gpus_file for fake GPU devices and adds them to gres_list_system
@@ -1700,7 +1671,7 @@ static void _add_fake_gpus_from_file(List gres_list_system,
  * If fake_gpus.conf does not exist, or an error occurs, returns NULL
  * Caller is responsible for freeing the list if not NULL.
  */
-static List _get_system_gpu_list_fake()
+static List _get_system_gpu_list_fake(void)
 {
 	List gres_list_system = NULL;
 	struct stat config_stat;
@@ -1745,8 +1716,10 @@ extern int node_config_load(List gres_conf_list,
 	int rc = SLURM_SUCCESS;
 	List gres_list_system = NULL;
 	bool using_fake_system = false;
+	log_level_t log_lvl;
 
 	/* Assume this state is caused by an scontrol reconfigure */
+	debug_flags = slurm_get_debug_flags();
 	if (gres_devices) {
 		debug("Resetting gres_devices");
 		FREE_NULL_LIST(gres_devices);
@@ -1762,21 +1735,24 @@ extern int node_config_load(List gres_conf_list,
 	if (gres_list_system == NULL)
 		error("System GPU detection failed");
 #endif
-	if (gres_list_system && list_is_empty(gres_list_system)) {
-		info("There were 0 GPUs detected on the system");
-	}
+	if (debug_flags & DEBUG_FLAG_GRES)
+		log_lvl = LOG_LEVEL_INFO;
+	else
+		log_lvl = LOG_LEVEL_DEBUG;
+	if (gres_list_system && list_is_empty(gres_list_system))
+		log_var(log_lvl, "There were 0 GPUs detected on the system");
 
-	info("Normalizing gres.conf with system devices");
+	log_var(log_lvl, "Normalizing gres.conf with system devices");
 	_normalize_gres_conf(gres_conf_list, gres_list_system);
 	FREE_NULL_LIST(gres_list_system);
 
-	info("Final normalized gres.conf list:");
-	_print_gres_list(gres_conf_list, LOG_LEVEL_INFO);
+	log_var(log_lvl, "Final normalized gres.conf list:");
+	_print_gres_list(gres_conf_list, log_lvl);
 
 	// Print in parsable format for tests if fake system is in use
 	if (using_fake_system) {
-		info("Final normalized gres.conf list (parsable):");
-		_print_gres_list_parsable(gres_conf_list);
+		log_var(log_lvl, "Final normalized gres.conf list (parsable):");
+		_print_gres_list_parsable(gres_conf_list, log_lvl);
 	}
 
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
@@ -1786,7 +1762,6 @@ extern int node_config_load(List gres_conf_list,
 
 	return rc;
 }
-
 
 /*
  * Set environment variables as appropriate for a job (i.e. all tasks) based

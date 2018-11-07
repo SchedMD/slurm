@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  Test gres.conf and system GPU normalization and merging
- *  logic
+ *  Test gres.conf and system GPU normalization and merging logic.
  *****************************************************************************
  *  Copyright (C) 2018 SchedMD LLC
  *  Written by Michael Hinton
@@ -35,7 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-// TODO: These are the only headers I need explicitly. Should I include more?
+#include <sys/stat.h>
 #include "src/common/gres.h"
 #include "src/common/xstring.h"
 
@@ -49,9 +48,10 @@ int main(int argc, char *argv[])
 	char *slurm_conf = NULL;
 	char *gres_conf = NULL;
 	char *fake_gpus_conf = NULL;
+	struct stat stat_buf;
 
 	if (argc != 3) {
-		printf("failure: Not enough/too many arguments!\n");
+		printf("FAILURE: Not enough or too many arguments!\n");
 		exit(1);
 	}
 
@@ -59,11 +59,24 @@ int main(int argc, char *argv[])
 	xstrfmtcat(gres_conf, "%s/%s", argv[1], "gres.conf");
 	xstrfmtcat(fake_gpus_conf, "%s/%s", argv[1], "fake_gpus.conf");
 
+	if (stat(slurm_conf, &stat_buf) != 0) {
+		printf("FAILURE: Could not find slurm_conf file at %s\n",
+		       slurm_conf);
+		exit(1);
+	}
+	if (stat(gres_conf, &stat_buf) != 0) {
+		printf("FAILURE: Could not find gres_conf file at %s\n",
+		       gres_conf);
+		exit(1);
+	}
+	if (stat(fake_gpus_conf, &stat_buf) != 0) {
+		printf("FAILURE: Could not find fake_gpus_conf file at %s\n",
+		       fake_gpus_conf);
+		exit(1);
+	}
 	printf("slurm_conf: %s\n", slurm_conf);
 	printf("gres_conf: %s\n", gres_conf);
 	printf("fake_gpus_conf: %s\n", fake_gpus_conf);
-
-	// TODO: Emit failure if conf files cannot be found (test was messed up)
 
 	// Only log info to avoid buffer truncation in expect regex
 	opts.stderr_level = LOG_LEVEL_INFO;
@@ -73,13 +86,13 @@ int main(int argc, char *argv[])
 	setenv("SLURM_CONF", slurm_conf, 1);
 	rc = gres_plugin_init();
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_init");
+		slurm_perror("FAILURE: gres_plugin_init");
 		exit(1);
 	}
 
 	rc = gres_plugin_node_config_load(4, node_name, NULL, NULL);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_node_config_load");
+		slurm_perror("FAILURE: gres_plugin_node_config_load");
 		exit(1);
 	}
 

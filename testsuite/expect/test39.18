@@ -61,7 +61,6 @@ proc generate_file {text filepath} {
 	exec echo $text > $filepath
 }
 
-
 # Contain slurm.conf data to this file
 # This is all we need to trigger loading the GRES GPU plugin
 set slurm_conf "
@@ -112,7 +111,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "No response from $test_ulong_prog\n"
+		send_user "FAILURE: No response from $test_ulong_prog\n"
+		exit 1
 	}
 	eof {
 		wait
@@ -159,7 +159,7 @@ proc check_configuration {test_minor gres_conf fake_gpus_conf expected_output} {
 			exp_continue
 		}
 		timeout {
-			send_user "No response from $test_prog\n"
+			send_user "FAILURE: No response from $test_prog\n"
 			set failed 1
 		}
 		eof {
@@ -218,7 +218,6 @@ set expected_output "
 GRES_PARSABLE(2):tesla|4|2-3|0,1|${dev}\[1-2\]|
 "
 check_configuration 1 $gres_conf $fake_gpus_conf $expected_output
-
 
 # ##############################################################################
 # # Test 2 - Explicit device specification overrules system detected
@@ -288,7 +287,6 @@ GRES_PARSABLE(2):tesla|4|0-3|0,3|${dev}\[7-8\]|
 "
 check_configuration 5 $gres_conf $fake_gpus_conf $expected_output
 
-
 # ##############################################################################
 # # Test 100 - Empty everything
 # ##############################################################################
@@ -334,7 +332,6 @@ GRES_PARSABLE(1):tesla|4|(null)|0-1|${dev}8|
 GRES_PARSABLE(1):tesla|4|2-3|(null)|${dev}9|
 "
 check_configuration 102 $gres_conf $fake_gpus_conf $expected_output
-
 
 # ##############################################################################
 # # Test 6 - Different types, different records
@@ -476,7 +473,6 @@ GRES_PARSABLE(3):tesla|4|0-3|0,1|${dev}\[1,3-4\]|
 "
 check_configuration 12 $gres_conf $fake_gpus_conf $expected_output
 
-
 # ##############################################################################
 # # Test 13 - Test duplicate ignores handling in gres.conf
 # ##############################################################################
@@ -592,8 +588,6 @@ GRES_PARSABLE(1):tesla|4|0|0,1|${dev}1|
 "
 check_configuration 18 $gres_conf $fake_gpus_conf $expected_output
 
-
-
 # ##############################################################################
 # # Test 19 - Work with null links
 # ##############################################################################
@@ -653,7 +647,6 @@ GRES_PARSABLE(1):0|4|0-3|0,1|${dev}4|
 "
 check_configuration 21 $gres_conf $fake_gpus_conf $expected_output
 
-
 # ##############################################################################
 # # Test 22 - Type not specified
 # ##############################################################################
@@ -671,8 +664,6 @@ set expected_output "
 GRES_PARSABLE(4):(null)|4|0-3|0,1|${dev}\[1-4\]|
 "
 check_configuration 22 $gres_conf $fake_gpus_conf $expected_output
-
-
 
 # ##############################################################################
 # # Test 23 - Cores not specified or null
@@ -694,8 +685,6 @@ GRES_PARSABLE(1):tesla|4|0|0,1|${dev}5|
 "
 check_configuration 23 $gres_conf $fake_gpus_conf $expected_output
 
-
-
 # ##############################################################################
 # # Test 200 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 	       An array of 20 unsigned longs with all bits set
@@ -714,7 +703,6 @@ set expected_output "
 GRES_PARSABLE(1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
 check_configuration 200 $gres_conf $fake_gpus_conf $expected_output
-
 
 # ##############################################################################
 # # Test 201 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
@@ -735,9 +723,6 @@ GRES_PARSABLE(1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
 check_configuration 201 $gres_conf $fake_gpus_conf $expected_output
 
-
-
-
 # ##############################################################################
 # # Test 202 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 	       An array of 3 unsigned longs with all bits set
@@ -756,11 +741,6 @@ set expected_output "
 GRES_PARSABLE(1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
 check_configuration 202 $gres_conf $fake_gpus_conf $expected_output
-
-
-
-
-
 
 # ##############################################################################
 # # Test 203 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
@@ -781,8 +761,6 @@ GRES_PARSABLE(1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
 check_configuration 203 $gres_conf $fake_gpus_conf $expected_output
 
-
-
 # ##############################################################################
 # # Test 204 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 	       An array of all zeros
@@ -796,8 +774,6 @@ set expected_output "
 GRES_PARSABLE(1):tesla|0|(null)|(null)|${dev}1|
 "
 check_configuration 204 $gres_conf $fake_gpus_conf $expected_output
-
-
 
 # ##############################################################################
 # # Test 205 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
@@ -813,7 +789,6 @@ GRES_PARSABLE(1):tesla|16|0|(null)|${dev}1|
 "
 check_configuration 205 $gres_conf $fake_gpus_conf $expected_output
 
-
 # ##############################################################################
 # # Test 206 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 	       An array of 1, with cpus 0-1 set out of 4 system cpus
@@ -828,7 +803,6 @@ GRES_PARSABLE(1):tesla|4|0-1|(null)|${dev}1|
 "
 check_configuration 206 $gres_conf $fake_gpus_conf $expected_output
 
-
 # ##############################################################################
 # # Test 207 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 	       An array of 1, with cpus 8-15 set out of 16 system cpus
@@ -842,6 +816,7 @@ set expected_output "
 GRES_PARSABLE(1):tesla|16|8-15|(null)|${dev}1|
 "
 check_configuration 207 $gres_conf $fake_gpus_conf $expected_output
+
 
 
 
@@ -869,7 +844,6 @@ check_configuration 207 $gres_conf $fake_gpus_conf $expected_output
 # ##############################################################################
 # # Cleanup and finish
 # ##############################################################################
-
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"

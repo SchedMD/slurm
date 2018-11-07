@@ -1074,7 +1074,8 @@ static int _no_gres_conf(node_config_load_t *node_conf)
 		p->name		= xstrdup(gres_context[i].gres_name);
 		p->plugin_id	= gres_context[i].plugin_id;
 		list_append(gres_conf_list, p);
-		/* If there is no plugin specific shared
+		/*
+		 * If there is no plugin specific shared
 		 * library the exported methods are NULL.
 		 */
 		if (gres_context[i].ops.node_config_load) {

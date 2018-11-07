@@ -249,10 +249,12 @@ extern int get_log_level(void);
  * %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
  */
 
-/* fatal() exits program
+/*
+ * fatal() exits program
  * error() returns SLURM_ERROR
  */
-void	log_var(const log_level_t, const char *, ...) __attribute__ ((format (printf, 2, 3)));
+void	log_var(const log_level_t, const char *, ...)
+			__attribute__ ((format (printf, 2, 3)));
 void	fatal_abort(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	fatal(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));

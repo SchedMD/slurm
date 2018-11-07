@@ -83,20 +83,20 @@ typedef struct gres_slurmd_conf {
 	/* Name of this gres */
 	char *name;
 
-	/* Type of this gres (e.g. model name) */
+	/* Type of this GRES (e.g. model name) */
 	char *type_name;
 
-	/* Gres ID number */
+	/* GRES ID number */
 	uint32_t plugin_id;
 
-	/* If true, this is a gres for Slurm to specifically IGNORE */
+	/* If true, this is a GRES for Slurm to specifically IGNORE */
 	bool ignore;
 } gres_slurmd_conf_t;
 
 
 /* Extra data and functions to be passed in to the node_config_load() */
 typedef struct node_config_load {
-	/* How many cpus there are configured on the node*/
+	/* How many CPUs there are configured on the node */
 	uint32_t cpu_cnt;
 	/* A pointer to the mac_to_abs function */
 	int (*xcpuinfo_mac_to_abs) (char *mac, char **abs);
@@ -315,7 +315,7 @@ extern char *gres_plugin_help_msg(void);
  * IN name - GRES name or model
  * RET - An int representing a custom hash of the name
  */
-extern uint32_t	gres_plugin_build_id(char *name);
+extern uint32_t gres_plugin_build_id(char *name);
 
 
 /*

@@ -23,7 +23,7 @@ of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
 For "GresTypes=gpu", by default Slurm will use all GPUs detected on the system
-at slurmd startup. To ignore specific GPUs, simply specify a GRES gpu line with
+at slurmd daemon startup. To ignore specific GPUs, simply specify a GRES gpu line with
 \fBIgnore=true\fR. Alternatively, you can choose to specify only the explicit
 GPUs you want to use. If you do this, other lines with "Ignore=true" are of no
 effect.
@@ -101,13 +101,16 @@ file.
 
 .TP
 \fBLinks\fR
-If multiple devices should be co-scheduled whenever possible, then specify a
-link number on both devices that have the same value.
-Devices may have multiple links and those numeric values should be
-identified in a comma separated list.
+Specify a comma delimited list of numbers identifying the number of connections
+between the devices so that better connected devices can be co\-scheduled.
+This is an ordered list in which the number of connections this specific
+device has to device number 0 would be in the first position, the number of
+connections it has to device 1 in the second position, etc.
+Specify a count of -1 for the number of connections this device has with itself.
 A typical use case would be to identify GPUs having LNLink connectivity.
-This is an optional value.
-.\
+This is an optional value and is typically automatically generated using
+NVIDIA libraries.
+
 .TP
 \fBName\fR
 Name of the generic resource. Any desired name may be used.
@@ -160,9 +163,11 @@ ignored GRES to just that node.
 .br
 ##################################################################
 .br
-Name=gpu Type=gtx560 File=/dev/nvidia1 COREs=0,1 Ignore=true
+Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1 Ignore=true Links=-1,2,0
 .br
-Name=gpu Type=tesla  File=/dev/nvidia[4-5] COREs=2,3 Ignore=true
+Name=gpu Type=tesla  File=/dev/nvidia1 COREs=2,3 Ignore=true Links=2,-1,1
+.br
+Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Ignore=true Links=-0,1,-1
 
 .LP
 .br
@@ -174,13 +179,13 @@ Name=gpu Type=tesla  File=/dev/nvidia[4-5] COREs=2,3 Ignore=true
 .br
 ##################################################################
 .br
-Name=gpu Type=tesla File=/dev/nvidia[0-1] COREs=0,1 Links=0
+Name=gpu Type=tesla File=/dev/nvidia[0-1] COREs=0,1
 .br
 # NOTE: nvidia2 device is out of service
 .br
-# Name=gpu Type=tesla  File=/dev/nvidia[2-3] COREs=2,3 Links=1
+# Name=gpu Type=tesla  File=/dev/nvidia[2-3] COREs=2,3
 .br
-Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3 Links=1
+Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
 .br
 
 .LP
@@ -222,7 +227,7 @@ NodeName=tux31 Name=gpu File=/dev/nvidia0 Ignore=true
 Copyright (C) 2010 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2014 SchedMD LLC.
+Copyright (C) 2010\-2018 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.
