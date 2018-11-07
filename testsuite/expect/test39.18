@@ -30,15 +30,15 @@
 ############################################################################
 source ./globals
 
-set test_id     "39.18"
-set exit_code   0
-set test_prog   "test$test_id.prog"
-set cfgdir	"test${test_id}_configs"
-set cfgpath     "[pwd]/$cfgdir"
-set nodename    "test_node"
-set nodename1   "different_node"
+set test_id		"39.18"
+set exit_code		0
+set test_prog		"test$test_id.prog"
+set cfgdir		"test${test_id}_configs"
+set cfgpath		"[pwd]/$cfgdir"
+set nodename		"test_node"
+set nodename1		"different_node"
 set test_ulong_prog	"test$test_id.ulong"
-# Assume unsinged long is 64 bits unless overwritten
+# Assume unsigned long is 64 bits unless overwritten
 set ulong_bits  64
 print_header $test_id
 
@@ -95,6 +95,9 @@ touch_file $dev8
 
 # Build test program
 set build_cmd "$bin_cc ${test_prog}.c -g -pthread -export-dynamic -o ${test_prog} -I${src_dir} -I${build_dir} ${build_dir}/src/api/libslurm.o -ldl"
+if {$use_valgrind} {
+	set build_cmd "$build_cmd -DUSING_VALGRIND"
+}
 send_user "$build_cmd\n"
 eval exec $build_cmd
 

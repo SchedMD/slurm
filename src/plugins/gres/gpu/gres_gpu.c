@@ -117,6 +117,8 @@ static List	gres_devices		= NULL;
  * -> Integer division floor -> 3 ulongs to represent 130 CPUs
  */
 #define CPU_SET_SIZE	((MAX_CPUS + (ULONG_BITS-1)) / ULONG_BITS)
+#define NVLINK_SELF	-1
+#define NVLINK_NONE	0
 
 static int _xlate_freq_value(char *gpu_freq)
 {
@@ -385,7 +387,9 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 }
 
 
-// A one-liner version of _print_gres_conf_full
+/*
+ * A one-liner version of _print_gres_conf_full()
+ */
 static void _print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 			     log_level_t log_lvl)
 {
@@ -413,7 +417,9 @@ static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
 		gres_slurmd_conf->ignore ? "IGNORE":"");
 }
 
-// Prints out each gres_slurmd_conf_t record in the list
+/*
+ * Prints out each gres_slurmd_conf_t record in the list
+ */
 static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
 				    bool parsable)
 {
@@ -432,16 +438,20 @@ static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
 	list_iterator_destroy(itr);
 }
 
-// Prints out each gres_slurmd_conf_t record in the list
+/*
+ * Print each gres_slurmd_conf_t record in the list
+ */
 static void _print_gres_list(List gres_list, log_level_t log_lvl)
 {
 	_print_gres_list_helper(gres_list, log_lvl, false);
 }
 
-// Prints out each gres_slurmd_conf_t record in the list
-static void _print_gres_list_parsable(List gres_list, log_level_t log_lvl)
+/*
+ * Print each record in the list in a parsable manner, for test consumption
+ */
+static void _print_gres_list_parsable(List gres_list)
 {
-	_print_gres_list_helper(gres_list, log_lvl, true);
+	_print_gres_list_helper(gres_list, LOG_LEVEL_INFO, true);
 }
 
 static void _delete_gres_list(void *x)
@@ -498,7 +508,12 @@ static char *_strip_brackets_xmalloc(char *str)
 	return xstrdup(&str[start]);
 }
 
-// Make sure that 0,1 and 0-1 are considered equal
+/*
+ * Returns 0 if range string a and b are equal, else returns 1.
+ *
+ * This normalizes ranges, so that "0-2" and "0,1,2" are considered equal.
+ * This also strips brackets for comparison, e.g. "[0-2]"
+ */
 static int _compare_number_range_str(char *a, char *b)
 {
 	hostlist_t hl_a, hl_b;
@@ -558,7 +573,9 @@ static int _key_in_number_range_str(char *x, char *key)
 }
 
 
-// Returns non-zero if (x==key); o/w returns zero.
+/*
+ * Returns 1 if (x==key); else returns 0.
+ */
 static int _find_gres_in_list(void *x, void *key)
 {
 	gres_slurmd_conf_t *item_a = (gres_slurmd_conf_t *) x;
@@ -811,8 +828,6 @@ static void _add_unique_gres_to_list(List gres_list_out,
 	}
 }
 
-
-
 /*
  * Add all unique, unignored devices specified by the GRES records in list in
  * only if they don't already exist in list out.
@@ -1048,7 +1063,6 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 
 #ifdef HAVE_NVML
 
-
 /*
  * Get the version of the system's graphics driver
  */
@@ -1074,7 +1088,6 @@ static void _nvml_get_version(char *version, unsigned int len)
 		version[0] = '\0';
 	}
 }
-
 
 /*
  * First initialize NVML library. This takes a few seconds
@@ -1103,7 +1116,9 @@ static void _nvml_shutdown(void)
 	}
 }
 
-// Get the total # of GPUs on the system
+/*
+ * Get the total # of GPUs in the system
+ */
 static void _nvml_get_device_count(unsigned int *device_count)
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetCount(device_count);
@@ -1195,7 +1210,9 @@ static char *_nvml_get_device_brand(nvmlDevice_t *device)
 	return device_brand;
 }
 
-// Get the UUID of the device, since device index can fluctuate
+/*
+ * Get the UUID of the device, since device index can fluctuate
+ */
 static void _nvml_get_device_uuid(nvmlDevice_t *device, char *uuid,
 				  unsigned int len)
 {
@@ -1246,7 +1263,6 @@ static void _nvml_get_device_minor_number(nvmlDevice_t *device,
 static void _nvml_get_device_affinity(nvmlDevice_t *device, unsigned int size,
 				      unsigned long *cpu_set)
 {
-	// NOTE: There may be 2 mem leaks in this function
 	nvmlReturn_t nvml_rc = nvmlDeviceGetCpuAffinity(*device, size, cpu_set);
 	if (nvml_rc != NVML_SUCCESS) {
 		error("NVML: Failed to get cpu affinity of GPU: %s",
@@ -1254,50 +1270,134 @@ static void _nvml_get_device_affinity(nvmlDevice_t *device, unsigned int size,
 	}
 }
 
+
+
 /*
- * Allocates a string `nvlinks` that is a comma separated list of link ids for
+ * Returns the busId string of the connected endpoint device of an nvlink lane.
+ * If query fails, an empty string is returned.
+ * The returned string must be xfree'd.
+ *
+ * device - the GPU device
+ * lane - the nvlink lane that we are checking
+ *
+ * device <---lane---> endpoint/remote device
+ */
+static char *_nvml_get_nvlink_remote_pcie(nvmlDevice_t *device,
+					  unsigned int lane)
+{
+	nvmlPciInfo_t pci_info = {{0}};
+	nvmlReturn_t nvml_rc = nvmlDeviceGetNvLinkRemotePciInfo(*device, lane,
+								&pci_info);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("NVML: Failed to get PCI info of endpoint device for lane"
+		      " %d: %s", lane, nvmlErrorString(nvml_rc));
+		return xstrdup("");
+	} else {
+		return xstrdup(pci_info.busId);
+	}
+}
+
+
+
+/*
+ * Does a linear search for string str in array of strings str_arr, starting
+ * from index 0.
+ * Returns the index of the first match found, else returns -1 if not found.
+ *
+ * str - the string to search for
+ * str_array - the array of strings to search in
+ * size - the size of str_arr
+ */
+static int _get_index_from_str_arr(char *str, char **str_arr, unsigned int size)
+{
+	int i;
+	if (str_arr == NULL || str == NULL)
+		return -1;
+	for (i = 0; i < size; ++i) {
+		if (xstrcmp(str, str_arr[i]) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+/*
+ * Allocates and returns a string that is a comma separated list of nvlinks of
  * the device. If no links are specified, then an empty string will be returned.
  * The string must be xfree'd.
  *
- * TODO: This needs to build a graph using an adjacency matrix
+ * device - the current GPU to get the nvlink info for
+ * index - the index of the current GPU as returned by NVML. Based on PCI bus id
+ * device_lut - an array of PCI busid's for each GPU. The index is the GPU index
+ * device_count - the size of device_lut
  */
-static char *_nvml_get_nvlink_info(nvmlDevice_t *device)
+static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
+				   char **device_lut, unsigned int device_count)
 {
 	unsigned int i;
 	nvmlReturn_t nvml_rc;
 	nvmlEnableState_t is_active;
 	bool add_comma = false;
-	char *nvlinks = NULL;
+	int *links = xmalloc(sizeof(int) * device_count);
+	char *links_str = NULL;
 
-	// Test all the possible nvlink ids
+	// Initialize links
+	for (i = 0; i < device_count; ++i) {
+		if (i == index)
+			links[i] = NVLINK_SELF;
+		else
+			links[i] = NVLINK_NONE;
+	}
+
+	// Query all nvlink lanes
 	for (i = 0; i < NVML_NVLINK_MAX_LINKS; ++i) {
 		nvml_rc = nvmlDeviceGetNvLinkState(*device, i, &is_active);
 		if (nvml_rc == NVML_ERROR_INVALID_ARGUMENT) {
-			debug3("NVML: Device or nvlink %d is invalid or is "
-			       "inactive", i);
+			debug3("NVML: Device/lane %d is invalid", i);
 			continue;
 		} else if (nvml_rc == NVML_ERROR_NOT_SUPPORTED) {
-			debug3("NVML: nvlink %d not supported by device", i);
-			continue;
+			debug3("NVML: Device %d does not support "
+			       "nvmlDeviceGetNvLinkState()", i);
+			break;
 		} else if (nvml_rc != NVML_SUCCESS) {
 			error("NVML: Failed to get nvlink info of GPU: %s",
 			      nvmlErrorString(nvml_rc));
 		}
-		// If nvlink is active, add to the nvlinks string
+		// See if nvlink lane is active
 		if (is_active == NVML_FEATURE_ENABLED) {
+			char *busid;
+			int k;
 			debug3("NVML: nvlink %d is enabled", i);
-			if (add_comma) {
-				xstrcat(nvlinks, ",");
-			} else {
-				add_comma = true;
+
+			/*
+			 * Count link endpoints see what GPUs are single/double
+			 * linked. E.g. if single link (1), inc. to double (2)
+			 */
+			busid = _nvml_get_nvlink_remote_pcie(device, i);
+			k = _get_index_from_str_arr(busid, device_lut,
+						    device_count);
+			// Ignore self and not-founds
+			if ((k != index) && (k != -1)) {
+				links[k]++;
 			}
-			xstrfmtcat(nvlinks, "%u", i);
+			xfree(busid);
 		} else
 			debug3("NVML: nvlink %d is disabled", i);
 	}
-	if (!nvlinks)
-		nvlinks = xstrdup("");
-	return nvlinks;
+
+	// Convert links to comma separated string
+	for (i = 0; i < device_count; ++i) {
+		if (add_comma)
+			xstrcat(links_str, ",");
+		else
+			add_comma = true;
+		xstrfmtcat(links_str, "%d", links[i]);
+	}
+
+	xfree(links);
+	if (!links_str)
+		links_str = xstrdup("");
+	return links_str;
 }
 
 #endif // HAVE_NVML
@@ -1311,7 +1411,6 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device)
  * 		   be bitstr_size bits wide.
  * cpu_set: The cpu_set array returned by nvmlDeviceGetCpuAffinity()
  * cpu_set_size: The size of the cpu_set array
- *
  */
 static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
 				unsigned long *cpu_set,
@@ -1374,11 +1473,12 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
  */
 static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 {
-	int i;
+	unsigned int i;
 	unsigned int device_count = 0;
 	List gres_list_system = list_create(_delete_gres_list);
 	char driver[NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE];
 	char version[NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE];
+	char **device_lut;
 
 	if (_nvml_init() != SLURM_SUCCESS) {
 		return NULL;
@@ -1396,6 +1496,29 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	       CPU_SET_SIZE);
 	debug2("Total CPU count: %d", node_config->cpu_cnt);
 	debug2("Device count: %d", device_count);
+
+
+	// Create a device index --> PCI Bus ID lookup table
+	device_lut = xmalloc(sizeof(char *) * device_count);
+
+	/*
+	 * Loop through to create device to PCI busId lookup table
+	 */
+	for (i = 0; i < device_count; ++i) {
+		nvmlDevice_t device;
+		nvmlPciInfo_t pci_info = {{0}};
+
+		// Initialize to null
+		device_lut[i] = NULL;
+
+		if (_nvml_get_handle(i, &device) != SLURM_SUCCESS) {
+			continue;
+		}
+		_nvml_get_device_pci_info(&device, &pci_info);
+		if (pci_info.busId)
+			device_lut[i] = xstrdup(pci_info.busId);
+	}
+
 
 	/*
 	 * Loop through all the GPUs on the system and add to gres_list_system
@@ -1441,7 +1564,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 			continue;
 		}
 
-		nvlinks = _nvml_get_nvlink_info(&device);
+		nvlinks = _nvml_get_nvlink_info(&device, i, device_lut,
+						device_count);
 		device_brand = _nvml_get_device_brand(&device);
 		xstrfmtcat(device_file, "/dev/nvidia%u", minor_number);
 
@@ -1467,6 +1591,15 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		xfree(device_brand);
 		xfree(device_file);
 	}
+
+	/*
+	 * Free lookup table
+	 */
+	for (i = 0; i < device_count; ++i) {
+		if (device_lut[i])
+			xfree(device_lut[i]);
+	}
+	xfree(device_lut);
 
 	_nvml_shutdown();
 	info("%u GPU system devices detected", device_count);
@@ -1551,11 +1684,7 @@ static char *_test_nvml_cpu_conv(char *cpu_range)
 	// Convert from bitstr_t to cpu range str
 	result = bit_fmt_full(cpu_aff_mac_bitstr);
 
-	// TODO: Test this out as well
-	// // Convert cpu range str from machine to abstract(slurm) format
-	// if (node_config->xcpuinfo_mac_to_abs(cpu_aff_mac_range,
-	// 				     &cpu_aff_abs_range)!=0) {
-	// 	error("    Conversion from machine to abst
+	// TODO: Test converting CPU range from machine to abstract format?
 
 	bit_free(cpu_aff_mac_bitstr);
 	return result;
@@ -1754,8 +1883,8 @@ extern int node_config_load(List gres_conf_list,
 
 	// Print in parsable format for tests if fake system is in use
 	if (using_fake_system) {
-		log_var(log_lvl, "Final normalized gres.conf list (parsable):");
-		_print_gres_list_parsable(gres_conf_list, log_lvl);
+		info("Final normalized gres.conf list (parsable):");
+		_print_gres_list_parsable(gres_conf_list);
 	}
 
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);

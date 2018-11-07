@@ -43,8 +43,6 @@ int main(int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	int rc;
 	char *node_name = argv[2];
-	char *config_dir = NULL;
-	char *test = NULL;
 	char *slurm_conf = NULL;
 	char *gres_conf = NULL;
 	char *fake_gpus_conf = NULL;
@@ -84,11 +82,6 @@ int main(int argc, char *argv[])
 
 	// Override where Slurm looks for conf files
 	setenv("SLURM_CONF", slurm_conf, 1);
-	rc = gres_plugin_init();
-	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_init");
-		exit(1);
-	}
 
 	rc = gres_plugin_node_config_load(4, node_name, NULL, NULL);
 	if (rc != SLURM_SUCCESS) {
@@ -96,7 +89,20 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	// No need to free memory, because we are exiting
+/*
+ * You'll have to reconfigure Slurm with --enable-memory-leak-debug to eliminate
+ * all "possibly lost" blocks and to see the full call stack of valgrind memory
+ * errors inside plugins. See plugin_unload() in src/common/plugin.c
+ */
+#ifdef USING_VALGRIND
+	// Clean up for valgrind
+	slurm_conf_destroy();
+	gres_plugin_fini();
+	log_fini();
+	xfree(slurm_conf);
+	xfree(gres_conf);
+	xfree(fake_gpus_conf);
+#endif
 
 	printf("Test ran to completion\n");
 	exit(0);
