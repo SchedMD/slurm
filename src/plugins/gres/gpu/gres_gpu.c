@@ -620,7 +620,7 @@ static int _find_gres_device_file_in_list(void *a, void *b)
  */
 static int _find_gres_device_in_list(void *a, void *b)
 {
-	if (!a|| !b)
+	if (!a || !b)
 		return 0;
 
 	// Make sure we have the right record before checking the devices
@@ -666,7 +666,8 @@ static void _add_gpu_to_gres_list(List gres_list, int device_cnt, int cpu_cnt,
 		      bit_size(gpu_record->cpus_bitmap));
 		error("cpu_cnt: %d", gpu_record->cpu_cnt);
 		bit_free(gpu_record->cpus_bitmap);
-		xfree(gpu_record);
+		if (!use_empty_first_record)
+			xfree(gpu_record);
 		list_iterator_destroy(itr);
 		return;
 	}
@@ -705,7 +706,7 @@ static void *_device_file_exists_in_list(List gres_list,
 	if (gres_list == NULL)
 		return NULL;
 	return list_find_first(gres_list, _find_gres_device_file_in_list,
-			gres_record);
+			       gres_record);
 }
 
 /*
@@ -772,11 +773,11 @@ static void _merge_device_into_list(List gres_list, gres_slurmd_conf_t *device)
 
 /*
  * Add GRES record and device to list out only if it doesn't exist already in
- * list out.
+ * list_out.
  * Also, only adds records that are NOT ignored
  */
-void _add_unique_gres_to_list(List gres_list_out,
-			      gres_slurmd_conf_t *gres_record)
+static void _add_unique_gres_to_list(List gres_list_out,
+				     gres_slurmd_conf_t *gres_record)
 {
 	if (gres_record->ignore) {
 		debug3("Omitting adding this record due to ignore=true:");
@@ -818,15 +819,15 @@ void _add_unique_gres_to_list(List gres_list_out,
  * Also checks to make sure list in doesn't add any records to list out that are
  * specifically ignored in list compare.
  */
-void _add_unique_gres_list_to_list_compare(List gres_list_out,
-					   List gres_list_compare,
-					   List gres_list_in)
+static void _add_unique_gres_list_to_list_compare(List gres_list_out,
+						  List gres_list_compare,
+						  List gres_list_in)
 {
 	ListIterator itr;
 	gres_slurmd_conf_t *gres_record;
 	gres_slurmd_conf_t *gres_compare;
 
-	if (gres_list_in == NULL || list_is_empty(gres_list_in))
+	if (!gres_list_in || list_is_empty(gres_list_in))
 		return;
 
 	itr = list_iterator_create(gres_list_in);
@@ -851,11 +852,13 @@ void _add_unique_gres_list_to_list_compare(List gres_list_out,
  * Add all unique, unignored devices specified by the GRES records in list in
  * only if they don't already exist in list out.
  */
-void _add_unique_gres_list_to_list(List gres_list_out, List gres_list_in) {
+static void _add_unique_gres_list_to_list(List gres_list_out,
+					  List gres_list_in)
+{
 	ListIterator itr;
 	gres_slurmd_conf_t *gres_record;
 
-	if (list_is_empty(gres_list_in))
+	if (!gres_list_in || list_is_empty(gres_list_in))
 		return;
 
 	itr = list_iterator_create(gres_list_in);
@@ -912,7 +915,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		hostlist_t hl;
 		char **file_array;
 		char *hl_name;
-		if (gres_record->count <= 0) {
+		if (gres_record->count == 0) {
 			info("Empty gres.conf file detected");
 			// Use system-detected
 			break;
@@ -1588,7 +1591,7 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 
 	// Loop through each line of the file
 	while (fgets(buffer, 256, f) != NULL) {
-		char *save_ptr;
+		char *save_ptr = NULL;
 		char *tok;
 		int i = 0;
 		int cpu_count = 0;

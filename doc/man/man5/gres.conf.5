@@ -163,11 +163,11 @@ ignored GRES to just that node.
 .br
 ##################################################################
 .br
-Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1 Ignore=true Links=-1,2,0
+Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1 Ignore=true Links=\-1,2,0
 .br
-Name=gpu Type=tesla  File=/dev/nvidia1 COREs=2,3 Ignore=true Links=2,-1,1
+Name=gpu Type=tesla  File=/dev/nvidia1 COREs=2,3 Ignore=true Links=2,\-1,1
 .br
-Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Ignore=true Links=-0,1,-1
+Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Ignore=true Links=0,1,\-1
 
 .LP
 .br
@@ -179,11 +179,11 @@ Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Ignore=true Links=-0,1,-1
 .br
 ##################################################################
 .br
-Name=gpu Type=tesla File=/dev/nvidia[0-1] COREs=0,1
+Name=gpu Type=tesla File=/dev/nvidia[0\-1] COREs=0,1
 .br
 # NOTE: nvidia2 device is out of service
 .br
-# Name=gpu Type=tesla  File=/dev/nvidia[2-3] COREs=2,3
+# Name=gpu Type=tesla  File=/dev/nvidia[2\-3] COREs=2,3
 .br
 Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
 .br
@@ -198,7 +198,7 @@ Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
 .br
 ##################################################################
 .br
-## Explicitly specify devices on nodes tux0-tux15
+## Explicitly specify devices on nodes tux0\-tux15
 .br
 # NodeName=tux[0\-15]  Name=gpu File=/dev/nvidia[0\-3]
 .br
@@ -206,14 +206,14 @@ Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
 .br
 NodeName=tux[0\-2]  Name=gpu File=/dev/nvidia[0\-3]
 .br
-NodeName=tux3  Name=gpu File=/dev/nvidia[0,2-3]
+NodeName=tux3  Name=gpu File=/dev/nvidia[0,2\-3]
 .br
 NodeName=tux[4\-15]  Name=gpu File=/dev/nvidia[0\-3]
 .br
 .br
 ## Ignore select system-detected devices on nodes tux16-tux31
 .br
-NodeName=tux18 Name=gpu File=/dev/nvidia[1-2] Ignore=true
+NodeName=tux18 Name=gpu File=/dev/nvidia[1\-2] Ignore=true
 .br
 NodeName=tux[19,25,28] Name=gpu File=/dev/nvidia3 Ignore=true
 .br
