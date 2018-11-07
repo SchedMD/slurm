@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak when a slurmd is unable to contact a slurmctld
     when trying to register.
  -- Fix sreport sizesbyaccount report when using Flatview and accounts.
+ -- Fix incorrect shift when dealing with node weights and scheduling.
 
 * Changes in Slurm 18.08.3
 ==========================
