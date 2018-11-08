@@ -120,7 +120,7 @@ proc _get_mem {prog} {
 	set diff_mem [expr $mem_used - $mem_size]
 	set error_mem [expr abs($diff_mem)]
 	if {($mem_used < $mem_size) || ($error_mem > $max_mem_error)} {
-		send_user "\nFAILURE: $prog memory use discrepancy of $error_mem KB\n"
+		send_user "\nFAILURE: $prog memory use discrepancy of $diff_mem KB\n"
 		send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 		return 1
 	} else {
