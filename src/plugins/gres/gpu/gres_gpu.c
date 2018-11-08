@@ -1339,15 +1339,10 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 	nvmlEnableState_t is_active;
 	bool add_comma = false;
 	int *links = xmalloc(sizeof(int) * device_count);
-	char *links_str = NULL;
+	char *links_str = NULL, *sep = "";
 
-	// Initialize links
-	for (i = 0; i < device_count; ++i) {
-		if (i == index)
-			links[i] = NVLINK_SELF;
-		else
-			links[i] = NVLINK_NONE;
-	}
+	// Initialize links, xmalloc() initialized the array to 0 or NVLINK_NONE
+	links[index] = NVLINK_SELF;
 
 	// Query all nvlink lanes
 	for (i = 0; i < NVML_NVLINK_MAX_LINKS; ++i) {
@@ -1387,11 +1382,8 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 
 	// Convert links to comma separated string
 	for (i = 0; i < device_count; ++i) {
-		if (add_comma)
-			xstrcat(links_str, ",");
-		else
-			add_comma = true;
-		xstrfmtcat(links_str, "%d", links[i]);
+		xstrfmtcat(links_str, "%s%d", sep, links[i]);
+		sep = ",";
 	}
 
 	xfree(links);
@@ -1595,10 +1587,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	/*
 	 * Free lookup table
 	 */
-	for (i = 0; i < device_count; ++i) {
-		if (device_lut[i])
-			xfree(device_lut[i]);
-	}
+	for (i = 0; i < device_count; ++i)
+		xfree(device_lut[i]);
 	xfree(device_lut);
 
 	_nvml_shutdown();

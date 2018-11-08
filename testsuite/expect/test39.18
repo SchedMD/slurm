@@ -131,8 +131,8 @@ send_user "sizeof(unsigned long) = $ulong_bits\n"
 # matches the expected output
 set failed_tests [list]
 proc check_configuration {test_minor gres_conf fake_gpus_conf expected_output} {
-	global cfgpath nodename test_prog alpha_numeric_special exit_code \
-	       test_id failed_tests use_valgrind
+	global cfgpath nodename test_prog alpha_numeric_special exit_code
+	global test_id failed_tests use_valgrind
 	set failed 0
 	send_user "\n====test$test_id.$test_minor====\n\n"
 
