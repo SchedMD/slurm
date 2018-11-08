@@ -2495,7 +2495,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 
 	if (sropt.test_exec) {
 		/* Validate command's existence */
-		if (sropt.prolog) {
+		if (sropt.prolog && xstrcasecmp(sropt.prolog, "none")) {
 			if ((fullpath = search_path(opt.cwd, sropt.prolog,
 						    true, R_OK|X_OK, true)))
 				sropt.prolog = fullpath;
@@ -2503,7 +2503,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 				error("prolog '%s' not found in PATH or CWD (%s), or wrong permissions",
 				      sropt.prolog, opt.cwd);
 		}
-		if (sropt.epilog) {
+		if (sropt.epilog && xstrcasecmp(sropt.epilog, "none")) {
 			if ((fullpath = search_path(opt.cwd, sropt.epilog,
 						    true, R_OK|X_OK, true)))
 				sropt.epilog = fullpath;
