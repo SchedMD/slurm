@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Re-enabling features combined by OR within parenthesis for non-knl setups.
  -- Prevent sending duplicate requests to reboot a node before ResumeTimeout.
  -- Down nodes that don't reboot by ResumeTimeout.
+ -- Update seff to reflect API change from rss_max to tres_usage_in_max.
 
 * Changes in Slurm 18.08.4
 ==========================
