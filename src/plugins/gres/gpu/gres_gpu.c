@@ -1337,7 +1337,6 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 	unsigned int i;
 	nvmlReturn_t nvml_rc;
 	nvmlEnableState_t is_active;
-	bool add_comma = false;
 	int *links = xmalloc(sizeof(int) * device_count);
 	char *links_str = NULL, *sep = "";
 
