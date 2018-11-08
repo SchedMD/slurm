@@ -3059,8 +3059,10 @@ proc scale_to_megs { value factor } {
 		set value [expr $value * 1]
 	} elseif {[string compare $factor "K"] == 0} {
 		set value [expr $value / 1024]
+		set value [expr {round($value)}]
 	} else {
 		set value [expr $value / (1024 * 1024)]
+		set value [expr {round($value)}]
 	}
 
 	return $value
@@ -3086,6 +3088,7 @@ proc scale_to_ks { value factor } {
 		set value [expr $value * 1]
 	} else {
 		set value [expr $value / 1024]
+		set value [expr {round($value)}]
 	}
 
 	return $value
