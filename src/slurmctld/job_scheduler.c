@@ -375,6 +375,25 @@ static bool _job_runnable_test2(struct job_record *job_ptr, bool check_min_time)
 }
 
 /*
+ * Job, reservation and partition tests for ability to run now.
+ * If a job is submitted to multiple partitions, don't consider partitions
+ * on which the job would not fit given the current set of nodes in the
+ * reservation.
+ * IN job_ptr - job to test
+ * IN part_ptr - partition to test
+ */
+static bool _job_runnable_test3(struct job_record *job_ptr,
+				struct part_record *part_ptr)
+{
+	if (job_ptr->resv_ptr && job_ptr->resv_ptr->node_bitmap &&
+	    part_ptr && part_ptr->node_bitmap &&
+	    (bit_overlap(job_ptr->resv_ptr->node_bitmap, part_ptr->node_bitmap)
+	     < job_ptr->node_cnt_wag))
+		return false;
+	return true;
+}
+
+/*
  * build_job_queue - build (non-priority ordered) list of pending jobs
  * IN clear_start - if set then clear the start_time for pending jobs,
  *		    true when called from sched/backfill or sched/builtin
@@ -1548,6 +1567,10 @@ static int _schedule(uint32_t job_limit)
 							job_ptr->part_ptr_list);
 next_part:			part_ptr = (struct part_record *)
 					   list_next(part_iterator);
+
+				if (!_job_runnable_test3(job_ptr, part_ptr))
+					continue;
+
 				if (part_ptr) {
 					job_ptr->part_ptr = part_ptr;
 					if (job_limits_check(&job_ptr, false) !=
@@ -1585,6 +1608,10 @@ next_part:			part_ptr = (struct part_record *)
 			}
 			if (!job_ptr || !IS_JOB_PENDING(job_ptr))
 				continue;	/* started in other partition */
+
+			if (!_job_runnable_test3(job_ptr, part_ptr))
+				continue;
+
 			job_ptr->part_ptr = part_ptr;
 		}
 

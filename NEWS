@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Handle updating identical license or partition information correctly.
  -- Makes sure accounts and QOS' are all lower case to match documentation
     when read in from the slurm.conf file.
+ -- Don't consider partitions without enough nodes in reservation,
+    main scheduler.
 
 * Changes in Slurm 18.08.3
 ==========================
