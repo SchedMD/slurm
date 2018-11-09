@@ -11545,6 +11545,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	    !xstrcmp(job_specs->partition, job_ptr->partition)) {
 		sched_debug("update_job: new partition identical to old partition %pJ",
 			    job_ptr);
+		xfree(job_specs->partition);
 	} else if (job_specs->partition) {
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -11892,6 +11893,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					    job_ptr->licenses)) {
 		sched_debug("update_job: new licenses identical to old licenses \"%s\"",
 			    job_ptr->licenses);
+		xfree(job_specs->licenses);
 	} else if (job_specs->licenses) {
 		bool valid, pending = IS_JOB_PENDING(job_ptr);
 		license_list = license_validate(job_specs->licenses, true, true,
