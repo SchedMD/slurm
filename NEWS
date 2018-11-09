@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- libslurm/perl - Fix segfault caused by incorrect hv_to_slurm_ctl_conf.
  -- Add qos and assoc options to confirmation dialogs.
  -- Handle updating identical license or partition information correctly.
+ -- Makes sure accounts and QOS' are all lower case to match documentation
+    when read in from the slurm.conf file.
 
 * Changes in Slurm 18.08.3
 ==========================
