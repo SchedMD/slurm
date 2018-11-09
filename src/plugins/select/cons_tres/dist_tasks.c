@@ -1231,6 +1231,13 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 {
 	int error_code;
 
+	/*
+	 * Zero size jobs are supported for the creation and deletion of
+	 * persistent burst buffers.
+	 */
+	if (job_ptr->details->min_nodes == 0)
+		return SLURM_SUCCESS;
+
 	if (job_ptr->details->core_spec != NO_VAL16) {
 		/*
 		 * The job has been allocated all non-specialized cores.
