@@ -317,8 +317,6 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 extern void add_job_res(job_resources_t *job_resrcs_ptr,
 			bitstr_t ***sys_resrcs_ptr)
 {
-//FIXME: Add other resources than CPUs (e.g. GPUs) for backfill, lower priority work
-//Change argument to job pointer? Enhance contents of job_resources_t?, lower priority work
 	int i, i_first, i_last;
 	int c, c_job, c_off = 0, c_max;
 	int rep_inx = 0, rep_offset = -1;
@@ -468,7 +466,6 @@ extern void log_tres_state(struct node_use_record *node_usage,
 		     _node_state_str(node_usage[i].node_state),
 		     node_usage[i].alloc_memory,
 		     select_node_record[i].real_memory);
-//FIXME: Add GRES/TRES info for backfill, lower priority work
 	}
 
 	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
@@ -545,8 +542,6 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 	List gres_list;
 	bool old_job = false;
 
-//FIXME: Need to add support for additional resources for backfill, lower priority work
-//FIXME: Sync with recent changes to cons_res plugin, lower priority work
 	if (select_state_initializing) {
 		/*
 		 * Ignore job removal until select/cons_tres data structures
@@ -792,7 +787,6 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 	 *   - for now, try sorting jobs by first bit set
 	 *     - if job allocations stay "in blocks", then this should work OK
 	 *     - may still get scenarios where jobs should switch rows
-	 *     - fixme: JOB SHUFFLING BETWEEN ROWS NEEDS TESTING
 	 */
 	qsort(ss, num_jobs, sizeof(struct sort_support), _compare_support);
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
