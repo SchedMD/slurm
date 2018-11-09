@@ -2458,7 +2458,7 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;
 	req_msg.data	= &req;
 
-	info("sending REQUEST_COMPLETE_BATCH_SCRIPT, error:%u status %d",
+	info("sending REQUEST_COMPLETE_BATCH_SCRIPT, error:%d status:%d",
 	     err, status);
 
 	/* Note: these log messages don't go to slurmd.log from here */

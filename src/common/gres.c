@@ -827,7 +827,7 @@ static void _validate_links(gres_slurmd_conf_t *p)
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		val = strtol(tok, &end_ptr, 10);
-		if ((val < -1) || (val > GRES_MAX_LINK) || (val == LONG_MIN) ||
+		if ((val < -2) || (val > GRES_MAX_LINK) || (val == LONG_MIN) ||
 		    (end_ptr[0] != '\0')) {
 			error("gres.conf: Ignoring invalid Link (%s) for Name=%s",
 			      tok, p->name);

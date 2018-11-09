@@ -720,8 +720,10 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		}
 		slurm_make_time_str(&now, time_str, sizeof(time_str));
 
-		/* Not really errors,
-		 * but we want messages displayed by default */
+		/*
+		 * Not really errors,
+		 * but we want messages displayed by default
+		 */
 		if (sig == SIG_TIME_LIMIT) {
 			error("*** %s ON %s CANCELLED AT %s DUE TO TIME LIMIT ***",
 			      entity, job->node_name, time_str);
