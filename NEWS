@@ -38,7 +38,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect shift when dealing with node weights and scheduling.
  -- libslurm/perl - Fix segfault caused by incorrect hv_to_slurm_ctl_conf.
  -- Add qos and assoc options to confirmation dialogs.
- -- Fix losing license information whe updating job.
+ -- Handle updating identical license or partition information correctly.
 
 * Changes in Slurm 18.08.3
 ==========================
