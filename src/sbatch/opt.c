@@ -2830,9 +2830,6 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if (opt.ntasks_set && (opt.ntasks > 0))
-		pack_env.ntasks = opt.ntasks;
-
 	_fullpath(&sbopt.efname, opt.cwd);
 	_fullpath(&sbopt.ifname, opt.cwd);
 	_fullpath(&sbopt.ofname, opt.cwd);
@@ -3031,6 +3028,9 @@ static bool _opt_verify(void)
 			opt.min_nodes = opt.max_nodes = hostlist_count(hl);
 		}
 	}
+
+	if (opt.ntasks_set && (opt.ntasks > 0))
+		pack_env.ntasks = opt.ntasks;
 
 	if (hl)
 		hostlist_destroy(hl);
