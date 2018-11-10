@@ -143,21 +143,6 @@ Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
 .br
 Name=bandwidth Count=20M
 
-\. .LP
-\. .br
-\. ##################################################################
-\. .br
-\. # Slurm's Generic Resource (GRES) configuration file
-\. .br
-\. ##################################################################
-\. .br
-\. # Configure support for our four GPUs with NVLink
-\. .br
-\. Name=gpu Type=tesla File=/dev/nvidia0 COREs=0,1 Links=0
-\. .br
-\. Name=gpu Type=tesla File=/dev/nvidia1 COREs=0,1 Links=0
-\. .br
-\. 
 .LP
 .br
 ##################################################################
