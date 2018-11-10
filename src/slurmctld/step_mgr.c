@@ -2208,8 +2208,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		} else if (job_ptr->bit_flags & JOB_RESIZED) {
 			/*
 			 * If a job is resized, the core bitmap will differ in
-			 * the step, see rebuild_step_bitmaps(). Problem will
-			 * go away when we have per-node core bitmaps.
+			 * the step. See rebuild_step_bitmaps(). The problem
+			 * will go away when we have per-node core bitmaps.
 			 */
 			info("%s: %pS ending, unable to update job's core use infomation due to job resizing",
 			     __func__, step_ptr);

@@ -3823,9 +3823,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 				gres_build_job_details(job_ptr->gres_list,
 						       &job_ptr->gres_detail_cnt,
 						       &job_ptr->gres_detail_str);
-				if (job_ptr->step_list &&
-				    (list_count(job_ptr->step_list) > 0))
-					job_ptr->bit_flags |= JOB_RESIZED;
 				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 				   job_ptr->details->requeue) {
@@ -11373,9 +11370,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			gres_build_job_details(job_ptr->gres_list,
 					       &job_ptr->gres_detail_cnt,
 					       &job_ptr->gres_detail_str);
-			if (job_ptr->step_list &&
-			    (list_count(job_ptr->step_list) > 0))
-				job_ptr->bit_flags |= JOB_RESIZED;
 			job_post_resize_acctg(job_ptr);
 			/*
 			 * Since job_post_resize_acctg will restart
@@ -12632,9 +12626,6 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 						     orig_jobx_node_bitmap);
 				(void) gs_job_fini(job_ptr);
 				(void) gs_job_start(expand_job_ptr);
-				if (expand_job_ptr->step_list &&
-				    (list_count(expand_job_ptr->step_list) > 0))
-					expand_job_ptr->bit_flags |= JOB_RESIZED;
 			}
 			FREE_NULL_BITMAP(orig_job_node_bitmap);
 			FREE_NULL_BITMAP(orig_jobx_node_bitmap);
@@ -13480,13 +13471,13 @@ extern void job_post_resize_acctg(struct job_record *job_ptr)
 {
 	time_t org_submit = job_ptr->details->submit_time;
 
-	/* NOTE: The RESIZING FLAG needed to be set with
-	   job_pre_resize_acctg the assert is here to make sure we
-	   code it that way. */
+	/*
+	 * NOTE: The RESIZING FLAG needed to be set with job_pre_resize_acctg()
+	 * the assert is here to make sure we code it that way.
+	 */
 	xassert(IS_JOB_RESIZING(job_ptr));
 	acct_policy_add_job_submit(job_ptr);
-	/* job_set_alloc_tres has to be done
-	 * before acct_policy_job_begin */
+	/* job_set_alloc_tres() must be called before acct_policy_job_begin() */
 	job_set_alloc_tres(job_ptr, false);
 	acct_policy_job_begin(job_ptr);
 	job_claim_resv(job_ptr);
@@ -13502,12 +13493,22 @@ extern void job_post_resize_acctg(struct job_record *job_ptr)
 	job_ptr->details->submit_time = org_submit;
 	job_ptr->job_state &= (~JOB_RESIZING);
 
-	/* Reset the end_time_exp that was probably set to NO_VAL when
+	/*
+	 * Reset the end_time_exp that was probably set to NO_VAL when
 	 * ending the job on the resize.  If using the
 	 * priority/multifactor plugin if the end_time_exp is NO_VAL
 	 * it will not run again for the job.
 	 */
 	job_ptr->end_time_exp = job_ptr->end_time;
+
+	/*
+	 * If a job is resized, the core bitmap will differ in the step.
+	 * See rebuild_step_bitmaps(). The problem will go away when we have
+	 * per-node core bitmaps. For now just set a flag that the job was
+	 * resized while there were active job steps.
+	 */
+	if (job_ptr->step_list && (list_count(job_ptr->step_list) > 0))
+		job_ptr->bit_flags |= JOB_RESIZED;
 }
 
 static char *_build_step_id(char *buf, int buf_len, uint32_t step_id)
