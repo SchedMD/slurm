@@ -135,6 +135,11 @@ static char *_auth_opts_to_socket(void)
  */
 extern int init ( void )
 {
+	/*
+	 * Get slurm user id once. We use it later to verify credentials.
+	 */
+	slurm_user = slurm_get_slurm_user_id();
+
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -155,7 +160,7 @@ extern void cred_p_destroy_key(void *key)
 	return;
 }
 
-extern void *cred_p_read_private_key(const char *path)
+static void *_munge_ctx_setup(bool creator)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
@@ -182,55 +187,35 @@ extern void *cred_p_read_private_key(const char *path)
 	if (auth_ttl)
 		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
-	/*
-	 *   Only allow slurmd_user (usually root) to decode job
-	 *   credentials created by
-	 *   slurmctld. This provides a slight layer of extra security,
-	 *   as non-privileged users cannot get at the contents of job
-	 *   credentials.
-	 */
-	err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
-			    slurm_get_slurmd_user_id());
+	if (creator) {
+		/*
+		 * Only allow slurmd_user (usually root) to decode job
+		 * credentials created by slurmctld. This provides a slight
+		 * layer of extra security, as non-privileged users cannot
+		 * get at the contents of job credentials.
+		 */
+		err = munge_ctx_set(ctx, MUNGE_OPT_UID_RESTRICTION,
+				    slurm_get_slurmd_user_id());
 
-	if (err != EMUNGE_SUCCESS) {
-		error("Unable to set uid restriction on munge credentials: %s",
-		      munge_ctx_strerror (ctx));
-		munge_ctx_destroy(ctx);
-		return(NULL);
-	}
-
-	return ((void *) ctx);
-}
-
-extern void *cred_p_read_public_key(const char *path)
-{
-	munge_ctx_t ctx;
-	char *socket;
-	int auth_ttl, rc;
-
-	/*
-	 * Get slurm user id once. We use it later to verify credentials.
-	 */
-	slurm_user = slurm_get_slurm_user_id();
-
-	ctx = munge_ctx_create();
-
-	socket = _auth_opts_to_socket();
-	if (socket) {
-		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
-		xfree(socket);
-		if (rc != EMUNGE_SUCCESS) {
-			error("munge_ctx_set failure");
+		if (err != EMUNGE_SUCCESS) {
+			error("Unable to set uid restriction on munge credentials: %s",
+			      munge_ctx_strerror(ctx));
 			munge_ctx_destroy(ctx);
 			return NULL;
 		}
 	}
 
-	auth_ttl = slurm_get_auth_ttl();
-	if (auth_ttl)
-		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
-
 	return (void *) ctx;
+}
+
+extern void *cred_p_read_private_key(const char *path)
+{
+	return _munge_ctx_setup(true);
+}
+
+extern void *cred_p_read_public_key(const char *path)
+{
+	return _munge_ctx_setup(false);
 }
 
 extern const char *cred_p_str_error(int errnum)
