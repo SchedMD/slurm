@@ -773,13 +773,9 @@ void pmixp_coll_ring_log(pmixp_coll_t *coll)
 
 		if (coll_ctx->in_use) {
 			int id;
-			char *done_contrib, *wait_contrib;
-			hostlist_t hl_done_contrib, hl_wait_contrib;
-
-			pmixp_hostset_from_ranges(coll->pset.procs,
-						  coll->pset.nprocs,
-						  &hl_done_contrib);
-			hl_wait_contrib = hostlist_copy(hl_done_contrib);
+			char *done_contrib = NULL, *wait_contrib = NULL;
+			hostlist_t hl_done_contrib = NULL,
+				hl_wait_contrib = NULL, *tmp_list;
 
 			PMIXP_ERROR("\t seq=%d contribs: loc=%d/prev=%d/fwd=%d",
 				    coll_ctx->seq, coll_ctx->contrib_local,
@@ -789,34 +785,48 @@ void pmixp_coll_ring_log(pmixp_coll_t *coll)
 				    coll->peers_cnt);
 
 			for (id = 0; id < coll->peers_cnt; id++) {
-				char *nodename = pmixp_info_job_host(id);
+				char *nodename;
 
-				if(coll_ctx->contrib_map[id]) {
-					hostlist_delete_host(hl_wait_contrib,
-							     nodename);
-				} else {
-					hostlist_delete_host(hl_done_contrib,
-							     nodename);
-				}
+				if (coll->my_peerid == id)
+					continue;
+
+				nodename = pmixp_info_job_host(id);
+
+				tmp_list = coll_ctx->contrib_map[id] ?
+					&hl_done_contrib : &hl_wait_contrib;
+
+				if (!*tmp_list)
+					*tmp_list = hostlist_create(nodename);
+				else
+					hostlist_push_host(*tmp_list, nodename);
 				xfree(nodename);
 			}
-			done_contrib = slurm_hostlist_ranged_string_xmalloc(
-				hl_done_contrib);
-			wait_contrib = slurm_hostlist_ranged_string_xmalloc(
-				hl_wait_contrib);
-			PMIXP_ERROR("\t done contrib: %s",
-				    strlen(done_contrib) ? done_contrib : "-");
-			PMIXP_ERROR("\t wait contrib: %s",
-				    strlen(wait_contrib) ? wait_contrib : "-");
+			if (hl_done_contrib) {
+				done_contrib =
+					slurm_hostlist_ranged_string_xmalloc(
+						hl_done_contrib);
+				FREE_NULL_HOSTLIST(hl_done_contrib);
+			}
+
+			if (hl_wait_contrib) {
+				wait_contrib =
+					slurm_hostlist_ranged_string_xmalloc(
+						hl_wait_contrib);
+				FREE_NULL_HOSTLIST(hl_wait_contrib);
+			}
+			PMIXP_ERROR("\t\t done contrib: %s",
+				    done_contrib ? done_contrib : "-");
+			PMIXP_ERROR("\t\t wait contrib: %s",
+				    wait_contrib ? wait_contrib : "-");
 			PMIXP_ERROR("\t status=%s",
 				    pmixp_coll_ring_state2str(coll_ctx->state));
-			PMIXP_ERROR("\t buf size=%u, remain=%u",
-				    size_buf(coll_ctx->ring_buf),
-				    remaining_buf(coll_ctx->ring_buf));
+			if (coll_ctx->ring_buf) {
+				PMIXP_ERROR("\t buf (offset/size): %u/%u",
+					    get_buf_offset(coll_ctx->ring_buf),
+					    size_buf(coll_ctx->ring_buf));
+			}
 			xfree(done_contrib);
 			xfree(wait_contrib);
-			hostlist_destroy(hl_done_contrib);
-			hostlist_destroy(hl_wait_contrib);
 		}
 	}
 }
