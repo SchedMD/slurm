@@ -323,10 +323,9 @@ extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
 #endif
 	}
 
-
 	if ((uid != slurm_user) && (uid != 0)) {
-		error("crypto/munge: Unexpected uid (%d) != Slurm uid (%d)",
-		      (int) uid, (int) slurm_user);
+		error("%s: Unexpected uid (%u) != Slurm uid (%u)",
+		      plugin_type, uid, slurm_user);
 		rc = ESIG_BAD_USERID;
 	}
 	else if (buf_size != buf_out_size)
