@@ -441,7 +441,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	svp = hv_fetch(hv, "control_addr", 12, FALSE);
 	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
 		av = (AV*)SvRV(*svp);
-		n = av_len(av);
+		n = av_len(av) + 1;
 		conf->control_addr = xmalloc(n * sizeof(char *));
 		for (i = 0; i < n; i++) {
 			conf->control_addr[i] =
@@ -450,11 +450,11 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	} else {
 		/* nothing to do */
 	}
-	svp = hv_fetch(hv, "control_machine", 12, FALSE);
+	svp = hv_fetch(hv, "control_machine", 15, FALSE);
 	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) {
 		av = (AV*)SvRV(*svp);
-		n = av_len(av);
-		conf->control_addr = xmalloc(n * sizeof(char *));
+		n = av_len(av) + 1;
+		conf->control_machine = xmalloc(n * sizeof(char *));
 		for (i = 0; i < n; i++) {
 			conf->control_machine[i] =
 				(char *)SvPV(*(av_fetch(av, i, FALSE)), len);

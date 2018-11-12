@@ -4,6 +4,82 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from Slurm User Group Meeting, September 2018</h2>
+<ul>
+
+<!-- Tuesday -->
+
+<!--
+<li>Keynote: <a href=""></a>,
+Dr. Francisco Castej&oacute;n</li>
+-->
+
+<li>Tutorial: <a href="SLUG18/slurm_overview.pdf">Slurm Overview</a>,
+Felip Moll Marqu&egrave;s, SchedMD</li>
+
+<li>Technical: <a href="SLUG18/SLUG-2018-ICEI.pdf">Workload Management Requirements for an Interactive Computing e-Infrastructure</a>,
+Sadaf Alam (CSCS) and the ICEI team (BSC, CEA, CINECA, CSCS, J&uuml;lich)</li>
+
+<li>Technical: <a href="SLUG18/container_only_world.pdf">Slurm in a Container Only World &mdash; Are We Crazy?</a>,
+Paul Peltz and Lowell Wofford (LANL)</li>
+
+<li>Technical: <a href="SLUG18/kraken-overview.pdf">Kraken - A stateful approach to cluster management</a>,
+Paul Peltz and Lowell Wofford (LANL)</li>
+
+<li>Technical: <a href="SLUG18/lib_job_submit.pdf">A Declarative Programming Style Job Submission Filter</a>,
+Douglas Jacobsen, NERSC</li>
+
+<li>Technical: <a href="SLUG18/GHC_SLUG.pdf">Generalized Hypercube (GHC) &mdash; A Topology Plugin</a>,
+M. Clayer and A. Faure, Atos</li>
+
+<li>Technical: <a href="SLUG18/ewan_roche_slug18.pdf">Keeping Accounts Consistent Across Clusters Using LDAP and YAML</a>,
+Christian Cl&eacute;men&ccedil;on, Ewan Roche, Ricardo Silva (EPFL)</li>
+
+<li>Technical: <a href="SLUG18/SPACE_SLUG2018.pdf">Real-Time Job Monitoring Using An Extended slurmctld Generic Plugin &mdash; Introducing the plugin architecture SPACE</a>,
+Mike Arnhold, Ulf Markwardt, and Danny Rotscher (Dresden)</li>
+
+<li>Technical: <a href="SLUG18/cons_tres.pdf">Scheduling by Trackable Resource (cons_tres)</a>,
+Morris Jette and Dominik Bartkiewicz, SchedMD</li>
+
+<!--
+<li>Technical: <a href="">Cloud Bursting with GCE</a>,
+Wyatt Gorman (Google) and Brian Christiansen (SchedMD)</li>
+-->
+
+<li>Technical: <a href="SLUG18/Slurm_18.08_Overview.pdf">Slurm 18.08 Overview</a>,
+Brian Christiansen, SchedMD</li>
+
+<!-- Wednesday -->
+
+<li>Technical: <a href="SLUG18/SLUG-PCIe.pdf">Layout For Checkpoint Restart on Specialized Blades</a>,
+Bill Brophy, Martin Perry, Doug Parisek, and Steve Mehlberg (Atos)</li>
+
+<li>Site Report: <a href="SLUG18/cea-slug18.pdf">CEA Site Report</a>,
+Regine Gaudin, CEA</li>
+
+<li>Site Report: <a href="SLUG18/CERN-SLUG2018.pdf">Colliding High Energy Physics With HPC, Cloud, and Parallel Filesystems</a>,
+Carolina Lindqvist, Pablo Llopis, and Nils H&oslash;imyr (CERN)</li>
+
+<li>Technical: <a href="SLUG18/slurm_sim.pdf">Slurm Simulator Improvements and Evaluation</a>,
+Marco D'Amico, Ana Jokanovic, Julita Corbalan (BSC)</li>
+
+<li>Site Report: <a href="SLUG18/CETA-CIEMAT.pdf">CETA-CIEMAT Site Report</a>,
+Alfonso Pardo, CETA-CIEMAT</li>
+
+<li>Site Report: <a href="SLUG18/Tuning_Slurm_the_CSCS_way.pdf">Tuning Slurm the CSCS Way</a>,
+Miguel Gila, CSCS</li>
+
+<li>Technical: <a href="SLUG18/power_management.pdf">Workload Scheduling and Power Management</a>,
+Morris Jette and Alejandro Sanchez, SchedMD</li>
+
+<li>Site Report: <a href="SLUG18/LANL-SLUG18.pdf">LANL Site Report &mdash; One Year Post Migration</a>,
+Joseph 'Joshi' Fullop, LANL</li>
+
+<li>Technical: <a href="SLUG18/field_notes2.pdf">Field Notes Mark 2: Random Musings From Under A New Hat</a>,
+Tim Wickberg, SchedMD</li>
+
+</ul>
+
 <!-- SC17 Slurm Booth + BOF-->
 <h2>Presentations from Slurm Booth and Birds of a Feather, SC17, November 2017</h2>
 <ul>
@@ -886,6 +962,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 29 November 2017</p>
+<p style="text-align:center;">Last modified 11 November 2018</p>
 
 <!--#include virtual="footer.txt"-->

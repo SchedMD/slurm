@@ -1337,6 +1337,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&p->allow_accounts, "AllowAccounts",tbl))
 			s_p_get_string(&p->allow_accounts,
 				       "AllowAccounts", dflt);
+		/* lower case account names */
+		if (p->allow_accounts)
+			xstrtolower(p->allow_accounts);
 		if (p->allow_accounts &&
 		    (xstrcasecmp(p->allow_accounts, "ALL") == 0))
 			xfree(p->allow_accounts);
@@ -1349,6 +1352,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_string(&p->allow_qos, "AllowQos", tbl))
 			s_p_get_string(&p->allow_qos, "AllowQos", dflt);
+		/* lower case qos names */
+		if (p->allow_qos)
+			xstrtolower(p->allow_qos);
 		if (p->allow_qos && (xstrcasecmp(p->allow_qos, "ALL") == 0))
 			xfree(p->allow_qos);
 
@@ -1359,6 +1365,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			error("Both AllowAccounts and DenyAccounts are "
 			      "defined, DenyAccounts will be ignored");
 		}
+		/* lower case account names */
+		else if(p->deny_accounts)
+			xstrtolower(p->deny_accounts);
 
 		if (!s_p_get_string(&p->deny_qos, "DenyQos", tbl))
 			s_p_get_string(&p->deny_qos, "DenyQos", dflt);
@@ -1366,6 +1375,9 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			error("Both AllowQos and DenyQos are defined, "
 			      "DenyQos will be ignored");
 		}
+		/* lower case qos names */
+		else if(p->deny_qos)
+			xstrtolower(p->deny_qos);
 
 		if (!s_p_get_string(&p->allow_alloc_nodes,
 				    "AllocNodes", tbl)) {

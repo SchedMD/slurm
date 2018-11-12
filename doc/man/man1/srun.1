@@ -1294,7 +1294,11 @@ The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and fB\-\-mem\-per\-gpu\fR
 options are mutually exclusive.
 
 NOTE: A memory size specification of zero is treated as a special case and
-grants the job access to all of the memory on each node.
+grants the job access to all of the memory on each node for newly submitted jobs
+and all available job memory to a new job steps.
+
+Specificing new memory limits for job steps are only advisory.
+
 If the job is allocated multiple nodes in a heterogeneous cluster, the memory
 limit on each node will be that of the node in the allocation with the smallest
 memory size (same limit will apply to every node in the job's allocation).

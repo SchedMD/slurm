@@ -1739,6 +1739,12 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	else if (assoc->grp_jobs != NO_VAL)
 		printf("  GrpJobs       = %u\n", assoc->grp_jobs);
 
+	if (assoc->grp_jobs_accrue == INFINITE)
+		printf("  GrpJobsAccrue            = None\n");
+	else if (assoc->grp_jobs_accrue != NO_VAL)
+		printf("  GrpJobsAccrue            = %u\n",
+		       assoc->grp_jobs_accrue);
+
 	if (assoc->grp_submit_jobs == INFINITE)
 		printf("  GrpSubmitJobs = NONE\n");
 	else if (assoc->grp_submit_jobs != NO_VAL)
@@ -1789,11 +1795,6 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	else if (assoc->max_jobs_accrue != NO_VAL)
 		printf("  MaxJobsPrioAcc= %u\n", assoc->max_jobs_accrue);
 
-	if (assoc->min_prio_thresh == INFINITE)
-		printf("  MinPrioThresh = NONE\n");
-	else if (assoc->min_prio_thresh != NO_VAL)
-		printf("  MinPrioThresh = %u\n", assoc->min_prio_thresh);
-
 	if (assoc->max_submit_jobs == INFINITE)
 		printf("  MaxSubmitJobs = NONE\n");
 	else if (assoc->max_submit_jobs != NO_VAL)
@@ -1841,6 +1842,11 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 			      time_buf, sizeof(time_buf));
 		printf("  MaxWall       = %s\n", time_buf);
 	}
+
+	if (assoc->min_prio_thresh == INFINITE)
+		printf("  MinPrioThresh = NONE\n");
+	else if (assoc->min_prio_thresh != NO_VAL)
+		printf("  MinPrioThresh = %u\n", assoc->min_prio_thresh);
 
 	if (assoc->parent_acct)
 		printf("  Parent        = %s\n", assoc->parent_acct);
@@ -1969,6 +1975,12 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 	else if (qos->grp_jobs != NO_VAL)
 		printf("  GrpJobs                  = %u\n", qos->grp_jobs);
 
+	if (qos->grp_jobs_accrue == INFINITE)
+		printf("  GrpJobsAccrue            = None\n");
+	else if (qos->grp_jobs_accrue != NO_VAL)
+		printf("  GrpJobsAccrue            = %u\n",
+		       qos->grp_jobs_accrue);
+
 	if (qos->grp_submit_jobs == INFINITE)
 		printf("  GrpSubmitJobs            = NONE\n");
 	else if (qos->grp_submit_jobs != NO_VAL)
@@ -2008,6 +2020,18 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 			      time_buf, sizeof(time_buf));
 		printf("  GrpWall                  = %s\n", time_buf);
 	}
+
+	if (qos->max_jobs_accrue_pa == INFINITE)
+		printf("  MaxJobsAccruePerAccount  = NONE\n");
+	else if(qos->max_jobs_accrue_pa != NO_VAL)
+		printf("  MaxJobsAccruePerAccount  = %u\n",
+		       qos->max_jobs_accrue_pa);
+
+	if (qos->max_jobs_accrue_pu == INFINITE)
+		printf("  MaxJobsAccruePerUser     = NONE\n");
+	else if(qos->max_jobs_accrue_pu != NO_VAL)
+		printf("  MaxJobsAccruePerUser     = %u\n",
+		       qos->max_jobs_accrue_pu);
 
 	if (qos->max_jobs_pa == INFINITE)
 		printf("  MaxJobsPerAccount        = NONE\n");
@@ -2064,6 +2088,21 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  MaxTRESPerUser           = %s\n", tmp_char);
 		xfree(tmp_char);
 	}
+
+	if (qos->min_prio_thresh == INFINITE)
+		printf("  MinPrioThresh            = NONE\n");
+	else if (qos->min_prio_thresh != NO_VAL)
+		printf("  MinPrioThresh            = %u\n",
+		       qos->min_prio_thresh);
+
+	if (qos->min_tres_pj) {
+		sacctmgr_initialize_g_tres_list();
+		tmp_char = slurmdb_make_tres_string_from_simple(
+			qos->min_tres_pj, g_tres_list, NO_VAL,
+			CONVERT_NUM_UNIT_EXACT, 0, NULL);
+		printf("  MinTRESPerJob            = %s\n", tmp_char);
+		xfree(tmp_char);
+	}
 	if (qos->max_tres_mins_pj) {
 		sacctmgr_initialize_g_tres_list();
 		tmp_char = slurmdb_make_tres_string_from_simple(
@@ -2116,6 +2155,16 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		printf("  Priority                 = NONE\n");
 	else if (qos->priority != NO_VAL)
 		printf("  Priority                 = %d\n", qos->priority);
+
+	if (qos->usage_factor == INFINITE)
+		printf("  UsageFactor              = NONE\n");
+	else if(qos->usage_factor != NO_VAL)
+		printf("  UsageFactor              = %.4lf\n", qos->usage_factor);
+
+	if (qos->usage_thres == INFINITE)
+		printf("  UsageThreshold           = NONE\n");
+	else if (qos->usage_thres != NO_VAL)
+		printf("  UsageThreshold           = %.4lf\n", qos->usage_thres);
 
 }
 

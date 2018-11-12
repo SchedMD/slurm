@@ -514,11 +514,6 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				xfree(tmp_char);
 			}
-		} else if (!xstrncasecmp(argv[i], "MinPrioThresh",
-					 MAX(command_len, 4))) {
-			if (get_uint(argv[i]+end, &qos->min_prio_thresh,
-				     "MinPrioThresh") == SLURM_SUCCESS)
-				set = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxSubmitJobsPerAccount",
 					 MAX(command_len, 17)) ||
 			   !xstrncasecmp(argv[i], "MaxSubmitJobsPA",
@@ -645,6 +640,11 @@ static int _set_rec(int *start, int argc, char **argv,
 					tres_flags);
 				xfree(tmp_char);
 			}
+		} else if (!xstrncasecmp(argv[i], "MinPrioThresh",
+					 MAX(command_len, 4))) {
+			if (get_uint(argv[i]+end, &qos->min_prio_thresh,
+				     "MinPrioThresh") == SLURM_SUCCESS)
+				set = 1;
 		} else if (!xstrncasecmp(argv[i], "MinTRESPerJob",
 					 MAX(command_len, 7))) {
 			sacctmgr_initialize_g_tres_list();

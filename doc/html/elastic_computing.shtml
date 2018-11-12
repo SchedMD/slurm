@@ -8,7 +8,9 @@
 shrinks on demand, typically relying upon a service such as
 <a href="http://aws.amazon.com/ec2/">Amazon Elastic Computing Cloud (Amazon EC2)</a>
 and <a href="https://cloud.google.com">Google Cloud Platform</a> (GCP
-integration scripts can be found in the contribs directory) for resources.
+integration scripts can be found at
+<a href="https://github.com/SchedMD/slurm-gcp">https://github.com/SchedMD/slurm-gcp</a>)
+for resources.
 These resources can be combined with an existing cluster to process excess
 workload (cloud bursting) or it can operate as an independent self-contained
 cluster.

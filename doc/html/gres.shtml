@@ -123,10 +123,10 @@ If <B>Type</B> is specified, then <B>Count</B> is limited in size (currently 102
 <P>Sample gres.conf file:</P>
 <PRE>
 # Configure support for our four GPUs, plus bandwidth
-Name=gpu Type=tesla  File=/dev/nvidia0 CPUs=0,1
-Name=gpu Type=tesla  File=/dev/nvidia1 CPUs=0,1
-Name=gpu Type=kepler File=/dev/nvidia2 CPUs=2,3
-Name=gpu Type=kepler File=/dev/nvidia3 CPUs=2,3
+Name=gpu Type=tesla  File=/dev/nvidia0 Cores=0,1
+Name=gpu Type=tesla  File=/dev/nvidia1 Cores=0,1
+Name=gpu Type=kepler File=/dev/nvidia2 Cores=2,3
+Name=gpu Type=kepler File=/dev/nvidia3 Cores=2,3
 Name=bandwidth Type=lustre Count=4G
 </PRE>
 <!-------------------------------------------------------------------------->
