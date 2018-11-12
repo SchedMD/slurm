@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't consider partitions without enough nodes in reservation,
     main scheduler.
  -- Set SLURM_NTASKS correctly if having to determine from other options.
+ -- Removed GCP scripts from contribs. Now located at:
+    https://github.com/SchedMD/slurm-gcp.
 
 * Changes in Slurm 18.08.3
 ==========================
