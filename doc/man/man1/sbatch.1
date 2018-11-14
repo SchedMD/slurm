@@ -1638,6 +1638,12 @@ the sbatch-generated wrapper script is used.
 \fB\-x\fR, \fB\-\-exclude\fR=<\fInode name list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
 
+.TP
+\fB\-\-x11\fR[=<\fIall\fR|\fIbatch\fR|\fIfirst\fR|\fIlast\fR>]
+Sets up X11 forwarding on all, batch host, first or last node(s) of the
+allocation. This option is only enabled if Slurm was compiled with X11 support
+and PrologFlags=x11 is defined in the slurm.conf. Default is \fIbatch\fR.
+
 .SH \fBfilename pattern\fR
 .PP
 \fBsbatch\fR allows for a filename pattern to contain one or more replacement
