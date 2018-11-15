@@ -184,7 +184,7 @@ static int _print_stats(void)
 		       buf->bf_queue_len_sum / buf->bf_cycle_counter);
 	}
 
-	printf("\nLatency for gettimeofday() (x1000): %d microseconds\n",
+	printf("\nLatency for 1000 calls to gettimeofday(): %d microseconds\n",
 	       buf->gettimeofday_latency);
 
 	printf("\nRemote Procedure Call statistics by message type\n");

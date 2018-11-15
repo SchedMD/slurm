@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove 512-character line length limit in slurm_print_topo_record().
     (Used by "scontrol show topology".)
  -- Removed crypto/openssl plugin.
+ -- Tweak the sdiag gettimeofday() line format for greater clarity.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
