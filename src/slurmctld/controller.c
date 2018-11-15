@@ -306,7 +306,7 @@ int main(int argc, char **argv)
 	slurmctld_diag_stats.latency +=  now.tv_usec - start.tv_usec;
 
 	if (slurmctld_diag_stats.latency > 200)
-		error("High latency for gettimeofday(): %d nanoseconds",
+		error("High latency for 1000 calls to gettimeofday(): %d microseconds",
 		      slurmctld_diag_stats.latency);
 
 	/*

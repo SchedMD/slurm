@@ -74,6 +74,8 @@ documents those changes that are of interest to users and administrators.
  -- Set SLURM_NTASKS correctly if having to determine from other options.
  -- Removed GCP scripts from contribs. Now located at:
     https://github.com/SchedMD/slurm-gcp.
+ -- Don't check existence of srun --prolog or --epilog executables when set to
+    "none" and SLURM_TEST_EXEC is used.
 
 * Changes in Slurm 18.08.3
 ==========================

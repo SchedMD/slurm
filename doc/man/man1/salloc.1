@@ -1593,6 +1593,12 @@ slurm.conf this value is ignored.
 \fB\-x\fR, \fB\-\-exclude\fR=<\fInode name list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
 
+.TP
+\fB\-\-x11\fR[=<\fIall\fR|\fIfirst\fR|\fIlast\fR>]
+Sets up X11 forwarding on all, first or last node(s) of the allocation. This
+option is only enabled if Slurm was compiled with X11 support and
+PrologFlags=x11 is defined in the slurm.conf. Default is \fIall\fR.
+
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP
 Upon startup, salloc will read and handle the options set in the following
