@@ -3230,7 +3230,7 @@ static void _opt_list(void)
 	info("gpus-per-socket   : %s", opt.gpus_per_socket);
 	info("gpus-per-task     : %s", opt.gpus_per_task);
 	info("mem-per-gpu       : %"PRIi64, opt.mem_per_gpu);
-	info("tres-per-job      : %s", opt.gpus_per_task);
+	info("tres-per-job      : %s", opt.tres_per_job);
 
 	str = print_commandline(sropt.argc, sropt.argv);
 	info("remote command    : `%s'", str);
