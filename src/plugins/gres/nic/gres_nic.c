@@ -145,15 +145,14 @@ extern int fini(void)
  * This only validates that the configuration was specified in gres.conf.
  * In the general case, no code would need to be changed.
  */
-extern int node_config_load(List gres_conf_list)
+extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 {
 	int rc = SLURM_SUCCESS;
 
 	if (gres_devices)
 		return rc;
 
-	rc = common_node_config_load(gres_conf_list, gres_name,
-				     &gres_devices);
+	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
