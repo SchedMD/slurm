@@ -936,7 +936,12 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 			// Use system-detected
 			break;
 		}
-
+		// Skip this GRES record if it's not a GPU GRES
+		if (xstrcasecmp(gres_record->name, "gpu") != 0) {
+			debug2("%s: ignoring `%s` GRES record",
+			       __func__, gres_record->name);
+			continue;
+		}
 		// Use system-detected if there are only ignore records in conf
 		if (use_system_detected && gres_record->ignore == false) {
 			use_system_detected = false;
@@ -1862,7 +1867,6 @@ extern int node_config_load(List gres_conf_list,
 		log_lvl = LOG_LEVEL_DEBUG;
 	if (gres_list_system && list_is_empty(gres_list_system))
 		log_var(log_lvl, "There were 0 GPUs detected on the system");
-
 	log_var(log_lvl, "Normalizing gres.conf with system devices");
 	_normalize_gres_conf(gres_conf_list, gres_list_system);
 	FREE_NULL_LIST(gres_list_system);
