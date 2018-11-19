@@ -176,17 +176,16 @@ if {$match != 1} {
 }
 
 #
-# Test of --gpu-freq=high,memory=high,voltage=high,verbose
+# Test of --gpu-freq=high,memory=high,verbose
 #
 send_user "\n\nTEST 4\n"
 set hostname "UNKNOWN"
 set match 0
-set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=high,memory=high,voltage=high,verbose -J "test$test_id" -t1 ./$file_in]
+set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=high,memory=high,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
-	-re "GpuFreq=freq:($number),memory_freq:($number),voltage:($number)" {
+	-re "GpuFreq=freq:($number),memory_freq:($number)" {
 		set high_freq $expect_out(1,string)
 		set high_mem  $expect_out(2,string)
-		set high_volt $expect_out(3,string)
 		incr match
 		exp_continue
 	}
@@ -206,12 +205,11 @@ expect {
 }
 if {$match == 2} {
 	send_user "\n\nTEST 5\n"
-	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=medium,memory=medium,voltage=medium,verbose -J "test$test_id" -t1 ./$file_in]
+	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J "test$test_id" -t1 ./$file_in]
 	expect {
-		-re "GpuFreq=freq:($number),memory_freq:($number),voltage:($number)" {
+		-re "GpuFreq=freq:($number),memory_freq:($number)" {
 			set medium_freq $expect_out(1,string)
 			set medium_mem  $expect_out(2,string)
-			set medium_volt $expect_out(3,string)
 			incr match
 			exp_continue
 		}
@@ -226,12 +224,11 @@ if {$match == 2} {
 	}
 
 	send_user "\n\nTEST 6\n"
-	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=low,memory=low,voltage=low,verbose -J "test$test_id" -t1 ./$file_in]
+	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=low,memory=low,verbose -J "test$test_id" -t1 ./$file_in]
 	expect {
-		-re "GpuFreq=freq:($number),memory_freq:($number),voltage:($number)" {
+		-re "GpuFreq=freq:($number),memory_freq:($number)" {
 			set low_freq $expect_out(1,string)
 			set low_mem  $expect_out(2,string)
-			set low_volt $expect_out(3,string)
 			incr match
 			exp_continue
 		}
@@ -245,7 +242,7 @@ if {$match == 2} {
 		}
 	}
 	if {$match != 4} {
-		send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,voltage=x,verbose' failure ($match != 4)\n"
+		send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,verbose' failure ($match != 4)\n"
 		set exit_code 1
 	} else {
 		if {$low_freq > $medium_freq || $medium_freq > $high_freq} {
@@ -256,13 +253,9 @@ if {$match == 2} {
 			send_user "\nFAILURE: GPU memory frequency low > medium or medium > high\n"
 			set exit_code 1
 		}
-		if {$low_volt > $medium_volt || $medium_volt > $high_volt} {
-			send_user "\nFAILURE: GPU voltage low > medium or medium > high\n"
-			set exit_code 1
-		}
 	}
 } else {
-	send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,voltage=x,verbose' failure ($match != 2)\n"
+	send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,verbose' failure ($match != 2)\n"
 	set exit_code 1
 }
 

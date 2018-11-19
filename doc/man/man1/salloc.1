@@ -571,35 +571,35 @@ Not supported unless the entire node is allocated to the job.
 
 .TP
 \fB\-\-gpu\-freq\fR=[<\fItype\fR]=\fIvalue\fR>[,<\fItype\fR=\fIvalue\fR>][,verbose]
-Request that GPUs allocated to the job are configured with specific voltage
-and/or frequency values.
+Request that GPUs allocated to the job are configured with specific frequency
+values.
 This option can be used to independently configure the GPU and its memory
 frequencies.
 In some cases, system power caps may override the requested values.
-The field \fItype\fR can be "memory" or "voltage".
+The field \fItype\fR can be "memory".
 If \fItype\fR is not specified. the GPU frequency is implied.
 The \fIvalue\fR field can either be "low", "medium", "high", "highm1" or
 a numeric value (megahertz or volts).
 If the specified numeric value is not possible, a value as close as
 possible will be used. See below for definition of the values.
 The \fIverbose\fR option causes current GPU frequency information to be logged.
-Examples of use include "\-\-gpu\-freq\fR=medium,memory=high,voltage=high" and
-\-\-gpu\-freq\fR=450".
+Examples of use include "\-\-gpu\-freq=medium,memory=high" and
+\-\-gpu\-freq=450".
 
 Supported \fIvalue\fR definitions:
 .RS
 .TP 10
 \fBlow\fR
-the lowest available frequency or voltage
+the lowest available frequency.
 .TP
 \fBmedium\fR
-attempts to set a frequency  or voltage in the middle of the available range
+attempts to set a frequency in the middle of the available range.
 .TP
 \fBhigh\fR
-the highest available frequency or voltage
+the highest available frequency.
 .TP
 \fBhighm1\fR
-(high minus one) will select the next highest available frequency or voltage
+(high minus one) will select the next highest available frequency.
 .RE
 
 .TP
@@ -1777,7 +1777,7 @@ Requested binding of tasks to GPU.
 Only set if the \fB\-\-gpu\-bind\fR option is specified.
 .TP
 \fBSLURM_GPU_FREQ\fR
-Requested GPU frequency and voltage.
+Requested GPU frequency.
 Only set if the \fB\-\-gpu\-freq\fR option is specified.
 .TP
 \fBSLURM_GPUS_PER_NODE\fR

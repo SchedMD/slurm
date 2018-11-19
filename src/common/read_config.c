@@ -3717,7 +3717,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->group_time = DEFAULT_GROUP_TIME;
 
 	if (!s_p_get_string(&conf->gpu_freq_def, "GpuFreqDef", hashtbl))
-		conf->gpu_freq_def = xstrdup("high,memory=high,voltage=high");
+		conf->gpu_freq_def = xstrdup("high,memory=high");
 
 	if (!s_p_get_uint16(&conf->inactive_limit, "InactiveLimit", hashtbl))
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;

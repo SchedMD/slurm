@@ -177,7 +177,7 @@ select/cons_tres plugin.</P>
 <DD><I>--gpu-bind</I></DD>
 <DT>Define how tasks are bound to GPUs.</DT>
 <DD><I>--gpu-freq</I></DD>
-<DT>Specify GPU frequency, GPU memory frequency and/or GPU voltage.</DT>
+<DT>Specify GPU frequency and/or GPU memory frequency.</DT>
 <DD><I>--mem-per-gpu</I></DD>
 <DT>Memory allocated per GPU.</DT>
 </DL>
