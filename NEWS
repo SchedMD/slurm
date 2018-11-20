@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
     "none" and SLURM_TEST_EXEC is used.
  -- Add "P" suffix support to job and step tres specifications.
  -- Accept modifiers for TRES originally added in 6f0342e0358.
+ -- When doing a reconfigure handle QOS' GrpJobsAccrue correctly.
 
 * Changes in Slurm 18.08.3
 ==========================

@@ -477,6 +477,7 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 	if (!qos || !qos->usage)
 		return SLURM_ERROR;
 
+	qos->usage->accrue_cnt = 0;
 	qos->usage->grp_used_jobs  = 0;
 	qos->usage->grp_used_submit_jobs = 0;
 	for (i=0; i<qos->usage->tres_cnt; i++) {
