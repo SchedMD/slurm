@@ -443,8 +443,9 @@ extern int assoc_mgr_set_missing_uids();
  */
 extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc);
 
-/* Find the position of the given TRES ID or type/name in the
- * assoc_mgr_tres_array, if the ID isn't found -1 is returned.
+/*
+ * Find the position of the given TRES ID or type/name in the
+ * assoc_mgr_tres_array. If the ID isn't found -1 is returned.
  */
 extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked);
 

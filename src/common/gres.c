@@ -11242,7 +11242,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 			      state_type);
 			continue;
 		}
-		/* Set main tres's count. */
+		/* Set main TRES's count (i.e. if no GRES "type"). */
 		if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec, true)) != -1)
 			tres_cnt[tres_pos] = count;
 

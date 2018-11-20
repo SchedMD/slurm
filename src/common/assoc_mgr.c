@@ -6091,16 +6091,22 @@ extern int assoc_mgr_set_missing_uids()
 extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc)
 {
 	xassert(assoc);
-	/* Use slurmctld_conf.priority_flags directly instead of using a
+	/*
+	 * Use slurmctld_conf.priority_flags directly instead of using a
 	 * global flags variable. assoc_mgr_init() would be the logical
 	 * place to set a global, but there is no great location for
-	 * resetting it when scontrol reconfigure is called */
+	 * resetting it when scontrol reconfigure is called
+	 */
 	if (slurmctld_conf.priority_flags & PRIORITY_FLAGS_FAIR_TREE)
 		_normalize_assoc_shares_fair_tree(assoc);
 	else
 		_normalize_assoc_shares_traditional(assoc);
 }
 
+/*
+ * Find the position of the given TRES ID or type/name in the
+ * assoc_mgr_tres_array. If the ID isn't found -1 is returned.
+ */
 extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 {
 	int i, tres_pos = -1;
@@ -6116,7 +6122,7 @@ extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 	xassert(g_tres_count);
 	xassert(assoc_mgr_tres_array[g_tres_count - 1]);
 
-	for (i=0; i<g_tres_count; i++) {
+	for (i = 0; i < g_tres_count; i++) {
 		if (tres_rec->id &&
 		    assoc_mgr_tres_array[i]->id == tres_rec->id) {
 			tres_pos = i;
@@ -6273,7 +6279,7 @@ extern char *assoc_mgr_make_tres_str_from_array(
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	for (i=0; i<g_tres_count; i++) {
+	for (i = 0; i < g_tres_count; i++) {
 		if (!assoc_mgr_tres_array[i])
 			continue;
 
@@ -6284,19 +6290,18 @@ extern char *assoc_mgr_make_tres_str_from_array(
 		} else if (!tres_cnt[i])
 			continue;
 
-		if (flags & TRES_STR_FLAG_SIMPLE)
+		if (flags & TRES_STR_FLAG_SIMPLE) {
 			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 				   tres_str ? "," : "",
 				   assoc_mgr_tres_array[i]->id, tres_cnt[i]);
-		else {
+		} else {
 			/* Always skip these when printing out named TRES */
 			if ((tres_cnt[i] == NO_VAL64) ||
 			    (tres_cnt[i] == INFINITE64))
 				continue;
 			if ((flags & TRES_STR_CONVERT_UNITS) &&
 			    ((assoc_mgr_tres_array[i]->id == TRES_MEM) ||
-			     !xstrcasecmp(assoc_mgr_tres_array[i]->type, "bb"))
-				) {
+			     !xstrcasecmp(assoc_mgr_tres_array[i]->type,"bb"))){
 				char outbuf[32];
 				convert_num_unit((double)tres_cnt[i], outbuf,
 						 sizeof(outbuf), UNIT_MEGA,
@@ -6319,11 +6324,12 @@ extern char *assoc_mgr_make_tres_str_from_array(
 					   tres_str ? "," : "",
 					   assoc_mgr_tres_name_array[i],
 					   outbuf);
-			} else
+			} else {
 				xstrfmtcat(tres_str, "%s%s=%"PRIu64,
 					   tres_str ? "," : "",
 					   assoc_mgr_tres_name_array[i],
 					   tres_cnt[i]);
+			}
 		}
 	}
 
