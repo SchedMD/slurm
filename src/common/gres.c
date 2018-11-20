@@ -3314,6 +3314,9 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
 			value *= ((uint64_t)1024 * 1024 * 1024 * 1024);
 			end_ptr++;
+		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
+			value *= ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
+			end_ptr++;
 		}
 		if (end_ptr[0] == ',') {
 			end_ptr++;
@@ -7104,6 +7107,9 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 			end_ptr++;
 		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
 			value *= ((uint64_t)1024 * 1024 * 1024 * 1024);
+			end_ptr++;
+		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
+			value *= ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
 			end_ptr++;
 		}
 		if (end_ptr[0] == ',') {
