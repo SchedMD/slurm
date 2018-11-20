@@ -41,8 +41,6 @@ set output_use  "test$test_id.use.output"
 set script_use  "test$test_id.use.bash"
 set tmp_file    "test$test_id"
 
-stop_root_user
-
 proc find_bb_jobid { fname bb_jobid } {
 	global bin_cat
 
@@ -80,6 +78,8 @@ proc find_bb_data { file_name string_seek } {
 }
 
 print_header $test_id
+
+stop_root_user
 
 set bb_types [get_bb_types]
 if {[string first "cray" $bb_types] == -1} {
