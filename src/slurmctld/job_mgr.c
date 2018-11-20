@@ -8219,9 +8219,30 @@ extern bool valid_tres_cnt(char *tres)
 			}
 
 			val = strtoll(sep, &end_ptr, 10);
-			if (((end_ptr[0] != '\0') || (val < 0) ||
+			/* First only check numeric component for validity */
+			if (((val < 0) ||
 			    (val == LLONG_MAX)) ||
 			    (!valid_name && (val != 0))) {
+				rc = false;
+				break;
+			}
+
+			/*
+			 * Now check that any count modifier is valid.
+			 * First check that modifier is not more than 1 char
+			 */
+			if ((end_ptr[0] != '\0') && (end_ptr[1] != '\0')) {
+				rc = false;
+				break;
+			}
+
+			/* Test for valid char: [null|k|K|m|M|g|G|t|T|p|P] */
+			if ((end_ptr[0] != '\0') &&
+			    (end_ptr[0] != 'k') && (end_ptr[0] != 'K') &&
+			    (end_ptr[0] != 'm') && (end_ptr[0] != 'M') &&
+			    (end_ptr[0] != 'g') && (end_ptr[0] != 'G') &&
+			    (end_ptr[0] != 't') && (end_ptr[0] != 'T') &&
+			    (end_ptr[0] != 'p') && (end_ptr[0] != 'P')) {
 				rc = false;
 				break;
 			}
