@@ -1005,6 +1005,7 @@ EXTRA_DIST = \
 	test35.3			\
 	test35.4			\
 	test35.5			\
+	test35.6			\
 	test36.1			\
 	test36.2			\
 	test36.3			\
