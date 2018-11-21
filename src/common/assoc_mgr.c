@@ -6106,7 +6106,7 @@ extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc)
 
 /*
  * Find the position of the given TRES ID or type/name in the
- * assoc_mgr_tres_array. If the ID isn't found -1 is returned.
+ * assoc_mgr_tres_array. If the TRES name or ID isn't found -1 is returned.
  */
 extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 {
@@ -6129,9 +6129,9 @@ extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 			tres_pos = i;
 			break;
 		} else if (!xstrcasecmp(assoc_mgr_tres_array[i]->type,
-				  tres_rec->type) &&
-			 !xstrcasecmp(assoc_mgr_tres_array[i]->name,
-				  tres_rec->name)) {
+					tres_rec->type) &&
+			  !xstrcasecmp(assoc_mgr_tres_array[i]->name,
+				       tres_rec->name)) {
 			tres_pos = i;
 			break;
 		}
@@ -6143,11 +6143,71 @@ extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked)
 	return tres_pos;
 }
 
-/* The assoc_mgr tres read lock needs to be locked before calling this
- * function and while using the returned record */
+/*
+ * Find the position of the given TRES name in the
+ * assoc_mgr_tres_array. Ignore anything after ":" in the TRES name.
+ * So tres_rec->name of "gpu" can match accounting TRES name of "gpu:tesla".
+ * If the TRES name isn't found -1 is returned.
+ */
+extern int assoc_mgr_find_tres_pos2(slurmdb_tres_rec_t *tres_rec, bool locked)
+{
+	int i, len, tres_pos = -1;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	if (!tres_rec->type)
+		return tres_pos;
+
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	xassert(assoc_mgr_tres_array);
+	xassert(g_tres_count);
+	xassert(assoc_mgr_tres_array[g_tres_count - 1]);
+
+	len = strlen(tres_rec->name);
+	for (i = 0; i < g_tres_count; i++) {
+		if (xstrcasecmp(assoc_mgr_tres_array[i]->type, tres_rec->type))
+			continue;
+		if (xstrncasecmp(assoc_mgr_tres_array[i]->name, tres_rec->name,
+				 len) ||
+		    (assoc_mgr_tres_array[i]->name[len] != ':'))
+			continue;
+		tres_pos = i;
+		break;
+	}
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
+	return tres_pos;
+}
+
+/*
+ * Calls assoc_mgr_find_tres_pos and returns the pointer in the
+ * assoc_mgr_tres_array.
+ * NOTE: The assoc_mgr tres read lock needs to be locked before calling this
+ * function and while using the returned record.
+ */
 extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(slurmdb_tres_rec_t *tres_rec)
 {
 	int pos = assoc_mgr_find_tres_pos(tres_rec, 1);
+
+	if (pos == -1)
+		return NULL;
+	else
+		return assoc_mgr_tres_array[pos];
+}
+
+/*
+ * Calls assoc_mgr_find_tres_pos and returns the pointer in the
+ * assoc_mgr_tres_array. Ignores GRES "type" option.
+ * NOTE: The assoc_mgr tres read lock needs to be locked before calling this
+ * function and while using the returned record.
+ */
+extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec2(
+		slurmdb_tres_rec_t *tres_rec)
+{
+	int pos = assoc_mgr_find_tres_pos2(tres_rec, 1);
 
 	if (pos == -1)
 		return NULL;

@@ -11143,25 +11143,48 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 				   tres_str ? "," : "",
 				   tres_rec->id, count);
 
-		/*
-		 * Now lets put of the : name tres if we are tracking
-		 * it as well.  This would be handy for gres like
-		 * gpu:tesla, where you might want to track both as TRES.
-		 */
-		if (col_name && (i < gres_context_cnt)) {
-			tres_req.name = xstrdup_printf(
-				"%s%s",
-				gres_context[i].gres_name_colon,
-				col_name);
-			tres_rec = assoc_mgr_find_tres_rec(&tres_req);
-			xfree(tres_req.name);
-			if (tres_rec &&
-			    slurmdb_find_tres_count_in_string(
-				    tres_str, tres_rec->id) == INFINITE64)
-				/* New gres */
-				xstrfmtcat(tres_str, "%s%u=%"PRIu64,
-					   tres_str ? "," : "",
-					   tres_rec->id, count);
+		if (i < gres_context_cnt) {
+			if (col_name) {
+				/*
+				 * Now let's put of the : name TRES if we are
+				 * tracking it as well.  This would be handy
+				 * for GRES like "gpu:tesla", where you might
+				 * want to track both as TRES.
+				 */
+				tres_req.name = xstrdup_printf(
+					"%s%s",
+					gres_context[i].gres_name_colon,
+					col_name);
+				tres_rec = assoc_mgr_find_tres_rec(&tres_req);
+				xfree(tres_req.name);
+				if (tres_rec &&
+				    slurmdb_find_tres_count_in_string(
+					    tres_str, tres_rec->id) == INFINITE64)
+					/* New GRES */
+					xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+						   tres_str ? "," : "",
+						   tres_rec->id, count);
+			} else {
+				/*
+				 * Job allocated GRES without "type"
+				 * specification, but Slurm is only accounting
+				 * for this GRES by specific "type", so pick
+				 * some valid "type" to get some accounting.
+				 * Although the reported "type" may not be
+				 * accurate, it is better than nothing...
+				 */
+				tres_req.name = xstrdup_printf(
+					"%s", gres_context[i].gres_name);
+				tres_rec = assoc_mgr_find_tres_rec2(&tres_req);
+				xfree(tres_req.name);
+				if (tres_rec &&
+				    slurmdb_find_tres_count_in_string(
+					    tres_str, tres_rec->id) == INFINITE64)
+					/* New GRES */
+					xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+						   tres_str ? "," : "",
+						   tres_rec->id, count);
+			}
 		}
 	}
 	list_iterator_destroy(itr);
@@ -11206,8 +11229,17 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		assoc_mgr_lock(&locks);
 
 	slurm_mutex_lock(&gres_context_lock);
+	/* Initialize all GRES counters to zero. Increment them later. */
+	for (i = 0; i < gres_context_cnt; i++) {
+		tres_rec.name =	gres_context[i].gres_name;
+		if (tres_rec.name &&
+		    ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec,true)) !=-1))
+			tres_cnt[tres_pos] = 0;
+	}
+
 	itr = list_iterator_create(gres_list);
 	while ((gres_state_ptr = list_next(itr))) {
+		bool set_total = false;
 		for (i = 0; i < gres_context_cnt; i++) {
 			if (gres_context[i].plugin_id ==
 			    gres_state_ptr->plugin_id) {
@@ -11215,7 +11247,6 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 				break;
 			}
 		}
-
 		if (!tres_rec.name) {
 			debug("%s: couldn't find name", __func__);
 			continue;
@@ -11242,13 +11273,23 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 			      state_type);
 			continue;
 		}
-		/* Set main TRES's count (i.e. if no GRES "type"). */
-		if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec, true)) != -1)
-			tres_cnt[tres_pos] = count;
+		/*
+		 * Set main TRES's count (i.e. if no GRES "type" is being
+		 * accounted for). We need to increment counter since the job
+		 * may have been allocated multiple GRES types, but Slurm is
+		 * only configured to track the total count. For example, a job
+		 * allocated 1 GPU of type "tesla" and 1 GPU of type "volta",
+		 * but we want to record that the job was allocated a total of
+		 * 2 GPUs.
+		 */
+		if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec,true)) != -1){
+			tres_cnt[tres_pos] += count;
+			set_total = true;
+		}
 
 		/*
 		 * Set TRES count for GRES model types. This would be handy for
-		 * GRES like gpu:tesla, where you might want to track both as
+		 * GRES like "gpu:tesla", where you might want to track both as
 		 * TRES.
 		 */
 		switch (state_type) {
@@ -11263,8 +11304,22 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 					"%s%s",
 					gres_context[i].gres_name_colon,
 					col_name);
-
 				if ((tres_pos = assoc_mgr_find_tres_pos(
+					     &tres_rec, true)) != -1)
+					tres_cnt[tres_pos] = count;
+				xfree(tres_rec.name);
+			} else if (!set_total) {
+				/*
+				 * Job allocated GRES without "type"
+				 * specification, but Slurm is only accounting
+				 * for this GRES by specific "type", so pick
+				 * some valid "type" to get some accounting.
+				 * Although the reported "type" may not be
+				 * accurate, it is better than nothing...
+				 */
+				tres_rec.name = xstrdup_printf(
+					"%s", gres_context[i].gres_name);
+				if ((tres_pos = assoc_mgr_find_tres_pos2(
 					     &tres_rec, true)) != -1)
 					tres_cnt[tres_pos] = count;
 				xfree(tres_rec.name);

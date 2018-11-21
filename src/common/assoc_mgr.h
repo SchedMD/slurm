@@ -445,17 +445,35 @@ extern void assoc_mgr_normalize_assoc_shares(slurmdb_assoc_rec_t *assoc);
 
 /*
  * Find the position of the given TRES ID or type/name in the
- * assoc_mgr_tres_array. If the ID isn't found -1 is returned.
+ * assoc_mgr_tres_array. If the TRES name or ID isn't found -1 is returned.
  */
 extern int assoc_mgr_find_tres_pos(slurmdb_tres_rec_t *tres_rec, bool locked);
 
-/* calls assoc_mgr_find_tres_pos and returns the pointer in the
+/*
+ * Find the position of the given TRES name in the
+ * assoc_mgr_tres_array. Ignore anything after ":" in the TRES name.
+ * So tres_rec->name of "gpu" can match accounting TRES name of "gpu:tesla".
+ * If the TRES name isn't found -1 is returned.
+ */
+extern int assoc_mgr_find_tres_pos2(slurmdb_tres_rec_t *tres_rec, bool locked);
+
+/*
+ * Calls assoc_mgr_find_tres_pos and returns the pointer in the
  * assoc_mgr_tres_array.
  * NOTE: The assoc_mgr tres read lock needs to be locked before calling this
  * function and while using the returned record.
  */
 extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(
 	slurmdb_tres_rec_t *tres_rec);
+
+/*
+ * Calls assoc_mgr_find_tres_pos and returns the pointer in the
+ * assoc_mgr_tres_array. Ignores GRES "type" option.
+ * NOTE: The assoc_mgr tres read lock needs to be locked before calling this
+ * function and while using the returned record.
+ */
+extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec2(
+		slurmdb_tres_rec_t *tres_rec);
 
 /* fills in allocates and sets tres_cnt based off tres_str
  * OUT tres_cnt - array to be filled in g_tres_cnt in length

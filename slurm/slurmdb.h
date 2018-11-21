@@ -249,12 +249,13 @@ typedef struct {
 	uint64_t alloc_secs; /* total amount of secs allocated if used in an
 				accounting_list */
 	uint32_t rec_count;  /* number of records alloc_secs is, DON'T PACK */
-	uint64_t count; /* Count of tres on a given cluster, 0 if
-			   listed generically. */
-	uint32_t id;    /* Database ID for the tres */
-	char *name;     /* Name of tres if type is generic like GRES
-			   or License. */
-	char *type;     /* Type of tres (CPU, MEM, etc) */
+	uint64_t count; /* Count of TRES on a given cluster, 0 if
+			 * listed generically. */
+	uint32_t id;    /* Database ID for the TRES */
+	char *name;     /* Name of TRES if type is generic like GRES
+			 * or License. Make include optional GRES type
+			 * (e.g. "gpu" or "gpu:tesla") */
+	char *type;     /* Type of TRES (CPU, MEM, etc) */
 } slurmdb_tres_rec_t;
 
 /* slurmdb_assoc_cond_t is used in other structures below so

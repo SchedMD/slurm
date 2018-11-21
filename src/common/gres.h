@@ -1180,7 +1180,8 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 extern gres_job_state_t *gres_get_job_state(List gres_list, char *name);
 extern gres_step_state_t *gres_get_step_state(List gres_list, char *name);
 
-/* Translate a gres_list into a tres_str
+/*
+ * Translate a gres_list into a tres_str
  * IN gres_list - filled in with gres_job_state_t or gres_step_state_t's
  * IN is_job - if is job function expects gres_job_state_t's else
  *             gres_step_state_t's

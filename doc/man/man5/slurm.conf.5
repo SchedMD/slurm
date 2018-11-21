@@ -125,11 +125,31 @@ is submitted.  Currently this consists of any GRES, BB (burst buffer) or
 license along with CPU, Memory, Node, Energy, FS/[Disk|Lustre], IC/OFED, Pages,
 and VMem. By default Billing, CPU, Energy, Memory, Node, FS/Disk, Pages and VMem
 are tracked.
+
 AccountingStorageTRES=gres/craynetwork,license/iop1
 will track billing, cpu, energy, memory, nodes, FS/disk along with a
 gres called craynetwork as well as a license called iop1.  Whenever these
 resources are used on the cluster they are recorded. The TRES are automatically
 set up in the database on the start of the slurmctld.
+
+If multiple GRES of different types are tracked (e.g. GPUs of different types),
+then job requests with matching type specifications will be recorded.
+Given a configuration of
+"AccountingStorageTRES=gres/gpu,gres/gpu:tesla,gres/gpu:volta"
+Then "gres/gpu:tesla" and "gres/gpu:volta" will track only jobs that explicitly
+request those two GPU types, while "gres/gpu" will track allocated GPUs of any
+type ("tesla", "volta" or any other GPU type).
+
+Given a configuration of
+"AccountingStorageTRES=gres/gpu:tesla,gres/gpu:volta"
+Then "gres/gpu:tesla" and "gres/gpu:volta" will track jobs that explicitly
+request those GPU types.
+If a job requests GPUs, but does not explicitly specify the GPU type, then
+it's resource allocation will be accounted for as either "gres/gpu:tesla" or
+"gres/gpu:volta", although the accounting may not match the actualy GPU type
+allocated to the job and the GPUs allocated to the job could be heterogeneous.
+In an environment containing various GPU types, use of a job_submit plugin
+may be desired in order to force jobs to explicitly specify some GPU type.
 
 .TP
 \fBAccountingStorageType\fR

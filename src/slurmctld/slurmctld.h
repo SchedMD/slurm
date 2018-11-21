@@ -946,7 +946,7 @@ struct 	step_record {
 	dynamic_plugin_data_t *switch_job; /* switch context, opaque */
 	time_t time_last_active;	/* time step was last found on node */
 	time_t tot_sus_time;		/* total time in suspended state */
-	char *tres_alloc_str;           /* simple tres string for step */
+	char *tres_alloc_str;           /* simple TRES string for step */
 	char *tres_bind;		/* Task to TRES binding directives */
 	char *tres_fmt_alloc_str;       /* formatted tres string for step */
 	char *tres_freq;		/* TRES frequency directives */
