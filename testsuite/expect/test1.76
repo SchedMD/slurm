@@ -111,7 +111,7 @@ proc test_case {opt expmin expcur expmax expgov} {
 		} 
 	}
 	if {[string compare $start_value ""] == 0} {
-		send_user "\nERROR: --cpu-freq=$opt -- can't find starting values\n"
+		send_user "\nFAILURE: --cpu-freq=$opt -- can't find starting values\n"
 		close $fd
 		log_user 1
 		return 1
@@ -127,7 +127,7 @@ proc test_case {opt expmin expcur expmax expgov} {
 		} 
 	}
 	if {[string compare $test_value ""] == 0} {
-		send_user "\nERROR: --cpu-freq=$opt -- can't find test values\n"
+		send_user "\nFAILURE: --cpu-freq=$opt -- can't find test values\n"
 		close $fd
 		log_user 1
 		return 1
@@ -143,7 +143,7 @@ proc test_case {opt expmin expcur expmax expgov} {
 		} 
 	}
 	if {[string compare $end_value ""] == 0} {
-		send_user "\nERROR: --cpu-freq=$opt -- can't find ending values\n"
+		send_user "\nFAILURE: --cpu-freq=$opt -- can't find ending values\n"
 		close $fd
 		log_user 1
 		return 1
@@ -173,33 +173,40 @@ proc test_case {opt expmin expcur expmax expgov} {
 	set ecur [string range [lindex $end_vals 2] 4 end]
 	set emax [string range [lindex $end_vals 3] 4 end]
 
-	if {[string compare $expgov 0] !=0 
+	if {[string compare $expgov 0] != 0 
 	    && [string compare $tgov $expgov] != 0} {
-		send_user "\nERROR: --cpu-freq=$opt -- test governor $tgov not expected ($expgov)\n"
+		send_user "\nFAILURE: --cpu-freq=$opt -- test governor $tgov not expected ($expgov)\n"
 		log_user 1
 		return 1
 	}
-	if {[string compare $expmin 0] !=0 
+	if {[string compare $expmin 0] != 0 
 	    && [string compare $tmin $expmin] != 0} {
-		send_user "\nERROR: --cpu-freq=$opt -- test min $tmin not expected ($expmin)\n"
+		send_user "\nFAILURE: --cpu-freq=$opt -- test min $tmin not expected ($expmin)\n"
 		log_user 1
 		return 1
 	}
-	# Check that actual frequency is within 5 percent of target
-	if {$expcur != 0 && [expr abs($tcur - $expcur) * 100 / $expcur] > 5} {
+	# Check that actual frequency is within 10 percent of target
+	if {$expcur != 0} {
+		set percent_error [expr abs($tcur - $expcur) * 100 / $expcur]
+	} else {
+		set percent_error 0
+	}
+	if {$percent_error > 10} {
 		set real_error 1
 		if {![string compare $opt "High"]} {
 			if {$tcur > $expcur} {
-				send_user "WARNING: --cpu-freq=$opt -- test cur $tcur higher than ($expcur).  This is expected on overclocked systems.\n\n"
+				send_user "\nWARNING: --cpu-freq=$opt -- test cur $tcur higher than ($expcur).  This is expected on overclocked systems.\n\n"
 				set real_error 0
 			}
 		}
 
 		if {$real_error} {
-			send_user "\nERROR: --cpu-freq=$opt -- test cur $tcur not expected ($expcur)\n"
+			send_user "\nFAILURE: --cpu-freq=$opt -- test cur $tcur not expected ($expcur, error is $percent_error percent)\n"
 			log_user 1
 			return 1
 		}
+	} elseif {$expcur != 0} {
+		send_user "\nDifference between requested and actual frequency is $percent_error percent ($tcur vs. $expcur)\n\n"
 	}
 	if {[string compare $expmax 0] !=0 
 	    && [string compare $tmax $expmax] != 0} {
@@ -209,17 +216,17 @@ proc test_case {opt expmin expcur expmax expgov} {
 	}
 	
 	if {[string compare $sgov $egov] != 0} {
-		send_user "\nERROR: --cpu-freq=$opt -- starting governor $sgov not reset ($egov)\n"
+		send_user "\nFAILURE: --cpu-freq=$opt -- starting governor $sgov not reset ($egov)\n"
 		log_user 1
 		return 1
 	}
 	if {[string compare $smin $emin] != 0} {
-		send_user "\nERROR: --cpu-freq=$opt -- starting min $smin not reset ($emin)\n"
+		send_user "\nFAILURE: --cpu-freq=$opt -- starting min $smin not reset ($emin)\n"
 		log_user 1
 		return 1
 	}
 	if {[string compare $smax $emax] != 0} {
-		send_user "\nERROR: --cpu-freq=$opt -- starting max $smax not reset ($emax)\n"
+		send_user "\nFAILURE: --cpu-freq=$opt -- starting max $smax not reset ($emax)\n"
 		log_user 1
 		return 1
 	}
@@ -235,7 +242,7 @@ if {[test_cpu_affinity_or_cgroup] == 0} {
 }
 if {[test_fast_schedule] != 0} {
 	send_user "\nWARNING: FastSchedule=0 is recommended.\n"
-	send_user "         Proceeding assuming that the number of cpu declared is accurate.\n"
+	send_user "         Proceeding assuming that the number of CPUs declared is accurate.\n"
 }
 log_user 0
 spawn $scontrol show config
