@@ -1,0 +1,92 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Containers Guide</h1>
+
+<p>Containers are new and generally exciting development in HPC workloads. Containers
+rely on existing kernel features to allow greater user control over what applications
+see and can interact with at any given time. For HPC Workloads, these are usually
+restricted to the 
+<a href="http://man7.org/linux/man-pages/man7/mount_namespaces.7.html">mount namespace</a>.
+
+Slurm allows container developers to create <a href="plugins.html">SPANK Plugins</a>
+at various points of job execution to support containers. A 
+<a href="job_container_plugins.html">Job Container Plugin</a> is usually the ideal
+plugin to write to add support for any given container system. Slurm is generally
+agnostic to containers and can be made to start most if not all types.
+</p>
+
+<p>Links to several container varieties are provided below:
+<ul>
+<li><a href="#shifter">Shifter</a></li>
+<li><a href="#charliecloud">Charliecloud</a></li>
+<li><a href="#singularity">Singularity</a></li>
+<li><a href="#docker">Docker</a></li>
+<li><a href="#udocker">UDOCKER</a></li>
+<li><a href="#k8s">Kubernetes Pods (k8s)</a></li>
+</ul>
+
+Please note this list is not exhaustive as new containers types are being 
+created all the time.
+</p>
+
+<hr size=4 width="100%">
+<h2>Container Types</h2>
+<h3 name="shifter"><a href="https://github.com/NERSC/shifter">Shifter</a></h3>
+
+<p>Shifter is container project out of <a href="http://www.nersc.gov/">NERSC</a> 
+to provide HPC containers with full scheduler integration. Shifter 
+provides a <a href="https://github.com/NERSC/shifter/wiki/SLURM-Integration">
+Slurm plugin</a> to provide users access to job containers.</p>
+
+<h3 name="charliecloud"><a href="https://github.com/hpc/charliecloud">Charliecloud</a></h3>
+
+<p>Charliecloud is stand alone user namespace container out of 
+<a href="https://lanl.gov/">LANL</a> to provide HPC containers. Charliecloud does
+not currently have any Slurm integration, but does not require any as it requires
+no special permissions to run as a user.</p>
+
+<h3 name="singularity"><a href="https://www.sylabs.io/singularity/">Singularity</a></h3>
+
+<p>Singularity is hybrid container system that supports:
+<ul>
+	<li>Slurm integration via 
+		<a href="https://github.com/sylabs/singularity/blob/master/docs/2.x-slurm/README.md">
+		Plugin</a>. A full description of the plug was provided at 
+		<a href="https://slurm.schedmd.com/SLUG17/SLUG_Bull_Singularity.pdf">
+		SLUG17 Singularity Presentation</a>.
+	</li>
+	<li>User namespace containers via sandbox mode that require no additional
+		permissions. </li>
+	<li>Users directly calling singularity via setuid executable outside of Slurm</a>
+</ul>
+</p>
+<h3 name="docker"><a href="https://www.docker.com/">Docker</a></h3>
+
+<p>Docker currently has multiple design points that make it unfriendly to HPC 
+systems.  The issue that usually stops most sites from using Docker is the 
+requirement of "only trusted users should be allowed to control your Docker 
+daemon"
+<a href="https://docs.docker.com/engine/security/security/">[Docker Security]</a> 
+which is not acceptable to most HPC systems.</p>
+
+<p>Sites with trusted users can add them to the docker unix group and allow them
+control Docker directly from inside of jobs. There is currently no support for
+starting or stopping docker containers directly in Slurm.</p>
+
+<h4 name="udocker"><a href="https://github.com/indigo-dc/udocker">UDOCKER</a></h4>
+
+<p>UDOCKER is Docker feature subset clone that is designed to allow execution of 
+docker commands without increased user privileges.</p>
+
+<h3 name="k8s"><a href="https://kubernetes.io/docs/concepts/workloads/pods/pod/">Kubernetes Pods (k8s)</a></h3>
+
+<p> Kubernetes is a container orchestration system that uses PODs, which are
+generally a logical grouping of containers for singular purpose. </p>
+
+<p>There is currently no support for Kubernetes Pods in Slurm.</p>
+
+<hr size=4 width="100%">
+
+<p style="text-align:center;">Last modified November 2018</p>
+
+<!--#include virtual="footer.txt"-->

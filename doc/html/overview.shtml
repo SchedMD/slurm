@@ -75,6 +75,10 @@ building block approach. These plugins presently include:
   Interface to various checkpoint mechanisms.
 </li>
 
+<li><a href="containers.html">Containers</a>:
+  HPC workload container support and implementations.
+</li>
+
 <li><a href="crypto_plugins.html">Cryptography (Digital Signature
   Generation)</a>:
   Mechanism used to generate a digital signature, which is used to validate
