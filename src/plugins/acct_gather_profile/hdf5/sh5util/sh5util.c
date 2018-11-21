@@ -315,7 +315,7 @@ static void _remove_empty_output(void)
 	 * the program failed somewhere along the
 	 * way and the file is just left hanging...
 	 */
-	if ((sb.st_size == 0)) {
+	if (!sb.st_size) {
 		info("Output file generated is empty, removing it: %s",
 		     params.output);
 		if (remove(params.output) == -1)

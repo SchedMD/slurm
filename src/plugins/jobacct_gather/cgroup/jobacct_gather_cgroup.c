@@ -96,17 +96,45 @@ const char plugin_name[] = "Job accounting gather cgroup plugin";
 const char plugin_type[] = "jobacct_gather/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static void _prec_extra(jag_prec_t *prec)
+static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 {
 	unsigned long utime, stime, total_rss, total_pgpgin;
 	char *cpu_time = NULL, *memory_stat = NULL, *ptr;
 	size_t cpu_time_size = 0, memory_stat_size = 0;
+	xcgroup_t *task_cpuacct_cg = NULL;;
+	xcgroup_t *task_memory_cg = NULL;
+	bool exit_early = false;
+
+	/* Find which task cgroups to use */
+	task_memory_cg = list_find_first(task_memory_cg_list,
+					 find_task_cg_info,
+					 &taskid);
+	task_cpuacct_cg = list_find_first(task_cpuacct_cg_list,
+					  find_task_cg_info,
+					  &taskid);
+
+	/*
+	 * We should always find the task cgroups; if we don't for some reason,
+	 * just print an error and return.
+	 */
+	if (!task_cpuacct_cg) {
+		error("%s: Could not find task_cpuacct_cg, this should never happen",
+		      __func__);
+		exit_early = true;
+	}
+	if (!task_memory_cg) {
+		error("%s: Could not find task_memory_cg, this should never happen",
+		      __func__);
+		exit_early = true;
+	}
+	if (exit_early)
+		return;
 
 	//DEF_TIMERS;
 	//START_TIMER;
 	/* info("before"); */
 	/* print_jag_prec(prec); */
-	xcgroup_get_param(&task_cpuacct_cg, "cpuacct.stat",
+	xcgroup_get_param(task_cpuacct_cg, "cpuacct.stat",
 			  &cpu_time, &cpu_time_size);
 	if (cpu_time == NULL) {
 		debug2("%s: failed to collect cpuacct.stat pid %d ppid %d",
@@ -117,7 +145,7 @@ static void _prec_extra(jag_prec_t *prec)
 		prec->ssec = stime;
 	}
 
-	xcgroup_get_param(&task_memory_cg, "memory.stat",
+	xcgroup_get_param(task_memory_cg, "memory.stat",
 			  &memory_stat, &memory_stat_size);
 	if (memory_stat == NULL) {
 		debug2("%s: failed to collect memory.stat  pid %d ppid %d",
@@ -355,4 +383,25 @@ extern char* jobacct_cgroup_create_slurm_cg(xcgroup_ns_t* ns)
 	}
 
 	return pre;
+}
+
+extern int find_task_cg_info(void *x, void *key)
+{
+	task_cg_info_t *task_cg = (task_cg_info_t*)x;
+	uint32_t taskid = *(uint32_t*)key;
+
+	if (task_cg->taskid == taskid)
+		return 1;
+
+	return 0;
+}
+
+extern void free_task_cg_info(void *object)
+{
+	task_cg_info_t *task_cg = (task_cg_info_t *)object;
+
+	if (task_cg) {
+		xcgroup_destroy(&task_cg->task_cg);
+		xfree(task_cg);
+	}
 }
