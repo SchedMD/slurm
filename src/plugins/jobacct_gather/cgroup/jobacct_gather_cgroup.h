@@ -43,8 +43,17 @@
 #include "src/common/xcgroup_read_config.h"
 #include "src/slurmd/common/xcgroup.h"
 
-extern xcgroup_t task_memory_cg;
-extern xcgroup_t task_cpuacct_cg;
+/*
+ * There are potentially multiple tasks on a node, so we want to
+ * track every task cgroup and which taskid it belongs to.
+ */
+typedef struct task_cg_info {
+	xcgroup_t task_cg;
+	uint32_t taskid;
+} task_cg_info_t;
+
+extern List task_memory_cg_list;
+extern List task_cpuacct_cg_list;
 
 extern int jobacct_gather_cgroup_cpuacct_init(
 	slurm_cgroup_conf_t *slurm_cgroup_conf);
@@ -76,3 +85,7 @@ extern int jobacct_gather_cgroup_memory_attach_task(
 /* 	pid_t pid, jobacct_id_t *jobacct_id); */
 
 extern char* jobacct_cgroup_create_slurm_cg (xcgroup_ns_t* ns);
+
+extern int find_task_cg_info(void *x, void *key);
+
+extern void free_task_cg_info(void *task_cg);

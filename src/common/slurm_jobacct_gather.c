@@ -172,7 +172,7 @@ static void _init_tres_usage(struct jobacctinfo *jobacct,
 		jobacct->tres_usage_out_min[i] = INFINITE64;
 		jobacct->tres_usage_out_tot[i] = INFINITE64;
 
-		if (jobacct_id && jobacct_id->taskid != NO_VAL16) {
+		if (jobacct_id && jobacct_id->taskid != NO_VAL) {
 			jobacct->tres_usage_in_max_taskid[i] =
 				(uint64_t) jobacct_id->taskid;
 			jobacct->tres_usage_in_min_taskid[i] =
@@ -320,6 +320,10 @@ static void _pack_jobacct_id(jobacct_id_t *jobacct_id,
 		pack16((uint16_t) jobacct_id->taskid, buffer);
 	} else {
 		pack32(NO_VAL, buffer);
+		/*
+		 * This pack is not used in modern code, so leave
+		 * it NO_VAL16.
+		 */
 		pack16(NO_VAL16, buffer);
 	}
 }
@@ -904,7 +908,7 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct = xmalloc(sizeof(struct jobacctinfo));
 
 	if (!jobacct_id) {
-		temp_id.taskid = NO_VAL16;
+		temp_id.taskid = NO_VAL;
 		temp_id.nodeid = NO_VAL;
 		jobacct_id = &temp_id;
 	}
