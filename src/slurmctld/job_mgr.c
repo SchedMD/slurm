@@ -5561,6 +5561,7 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			/* task_id_bitmap changes, so we need a copy of it */
 			bitstr_t *task_id_bitmap_orig =
 				bit_copy(job_ptr->array_recs->task_id_bitmap);
+
 			bit_and_not(job_ptr->array_recs->task_id_bitmap,
 				array_bitmap);
 			xfree(job_ptr->array_recs->task_id_str);
@@ -5583,6 +5584,23 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			} else {
 				_job_array_comp(job_ptr, false, false);
 				job_count -= (orig_task_cnt - new_task_count);
+				/*
+				 * Since we are altering the job array's
+				 * task_cnt we must go alter this count in the
+				 * acct_policy code as if they are finishing
+				 * (accrue_cnt/job_submit etc...).
+				 */
+				if (job_ptr->array_recs->task_cnt >
+				    new_task_count) {
+					uint32_t tmp_state = job_ptr->job_state;
+					job_ptr->job_state = JOB_CANCELLED;
+
+					job_ptr->array_recs->task_cnt -=
+						new_task_count;
+					acct_policy_remove_job_submit(job_ptr);
+					job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
+					job_ptr->job_state = tmp_state;
+				}
 			}
 
 			/*
@@ -11659,7 +11677,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else
-			detail_ptr->accrue_time = 0;
+			acct_policy_remove_accrue_time(job_ptr, false);
 	}
 
 	/*

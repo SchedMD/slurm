@@ -2576,6 +2576,103 @@ static void _add_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 	}
 }
 
+static void _remove_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
+					 slurmdb_qos_rec_t *qos_ptr_1,
+					 slurmdb_used_limits_t *used_limits_a1,
+					 slurmdb_used_limits_t *used_limits_u1,
+					 slurmdb_qos_rec_t *qos_ptr_2,
+					 slurmdb_used_limits_t *used_limits_a2,
+					 slurmdb_used_limits_t *used_limits_u2,
+					 int cnt)
+{
+	/* info("Removing from %p %p %p %p %p %p %p %d", */
+	/*      assoc_ptr, qos_ptr_1, used_limits_a1, used_limits_u1, */
+	/*      qos_ptr_2, used_limits_a2, used_limits_u2, cnt); */
+
+	if (qos_ptr_1) {
+		if (qos_ptr_1->usage->accrue_cnt >= cnt)
+			qos_ptr_1->usage->accrue_cnt -= cnt;
+		else {
+			error("%s: QOS %s accrue_cnt underflow",
+			      __func__, qos_ptr_1->name);
+			qos_ptr_1->usage->accrue_cnt = 0;
+		}
+	}
+
+	if (used_limits_a1) {
+		if (used_limits_a1->accrue_cnt >= cnt)
+			used_limits_a1->accrue_cnt -= cnt;
+		else {
+			error("%s: QOS %s acct %s accrue_cnt underflow",
+			      __func__, qos_ptr_1->name,
+			      used_limits_a1->acct);
+			used_limits_a1->accrue_cnt = 0;
+		}
+	}
+
+	if (used_limits_u1) {
+		if (used_limits_u1->accrue_cnt >= cnt)
+			used_limits_u1->accrue_cnt -= cnt;
+		else {
+			error("%s: QOS %s user %u accrue_cnt underflow",
+			      __func__, qos_ptr_1->name,
+			      used_limits_u1->uid);
+			used_limits_u1->accrue_cnt = 0;
+		}
+	}
+
+	if (qos_ptr_2) {
+		if (qos_ptr_2->usage->accrue_cnt)
+			qos_ptr_2->usage->accrue_cnt -= cnt;
+		else {
+			error("%s: QOS %s accrue_cnt underflow",
+			      __func__, qos_ptr_2->name);
+			qos_ptr_2->usage->accrue_cnt = 0;
+		}
+	}
+
+	if (used_limits_a2) {
+		if (used_limits_a2->accrue_cnt >= cnt)
+			used_limits_a2->accrue_cnt -= cnt;
+		else {
+			error("%s: QOS %s acct %s accrue_cnt underflow",
+			      __func__, qos_ptr_2->name,
+			      used_limits_a2->acct);
+			used_limits_a2->accrue_cnt = 0;
+		}
+	}
+
+	if (used_limits_u2) {
+		if (used_limits_u2->accrue_cnt >= cnt)
+			used_limits_u2->accrue_cnt -= cnt;
+		else {
+			error("%s: QOS %s user %u accrue_cnt underflow",
+			      __func__, qos_ptr_2->name,
+			      used_limits_a2->uid);
+			used_limits_u2->accrue_cnt = 0;
+		}
+	}
+
+	while (assoc_ptr) {
+		if (assoc_ptr->usage->accrue_cnt >= cnt) {
+			/* info("removing it to %u(%s/%s/%s) %p %d %d", */
+			/*      assoc_ptr->id, assoc_ptr->acct, */
+			/*      assoc_ptr->user, assoc_ptr->partition, */
+			/*      assoc_ptr->usage, */
+			/*      assoc_ptr->usage->accrue_cnt, cnt); */
+			assoc_ptr->usage->accrue_cnt -= cnt;
+		} else {
+			error("%s: Assoc %u(%s/%s/%s) accrue_cnt underflow",
+			      __func__, assoc_ptr->id,
+			      assoc_ptr->acct,
+			      assoc_ptr->user,
+			      assoc_ptr->partition);
+			assoc_ptr->usage->accrue_cnt = 0;
+		}
+		/* now go up the hierarchy */
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+}
 
 static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 				  struct part_record *part_ptr,
@@ -4075,75 +4172,30 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 	if (details_ptr->accrue_time) {
 		if (!(job_ptr->bit_flags & JOB_ACCRUE_OVER) &&
 		    !IS_JOB_PENDING(job_ptr)) {
+			int job_cnt;
+			/*
+			 * Normally only single jobs come in here, but if we
+			 * don't have any limits and an array is cancelled the
+			 * array itself comes in so we need to remove all of it.
+			 */
+
+			if (job_ptr->array_recs &&
+			    job_ptr->array_recs->task_cnt)
+				job_cnt = job_ptr->array_recs->task_cnt;
+			else
+				job_cnt = 1;
 
 			/* We only want to handle this once */
 			job_ptr->bit_flags |= JOB_ACCRUE_OVER;
 
-			if (qos_ptr_1) {
-				if (qos_ptr_1->usage->accrue_cnt)
-					qos_ptr_1->usage->accrue_cnt--;
-				else
-					error("%s: QOS %s accrue_cnt underflow",
-					      __func__, qos_ptr_1->name);
-			}
-
-			if (used_limits_a1) {
-				if (used_limits_a1->accrue_cnt)
-					used_limits_a1->accrue_cnt--;
-				else
-					error("%s: QOS %s acct %s accrue_cnt underflow",
-					      __func__, qos_ptr_1->name,
-					      used_limits_a1->acct);
-			}
-
-			if (used_limits_u1) {
-				if (used_limits_u1->accrue_cnt)
-					used_limits_u1->accrue_cnt--;
-				else
-					error("%s: QOS %s user %u accrue_cnt underflow",
-					      __func__, qos_ptr_1->name,
-					      used_limits_u1->uid);
-			}
-
-			if (qos_ptr_2) {
-				if (qos_ptr_2->usage->accrue_cnt)
-					qos_ptr_2->usage->accrue_cnt--;
-				else
-					error("%s: QOS %s accrue_cnt underflow",
-					      __func__, qos_ptr_2->name);
-			}
-
-			if (used_limits_a2) {
-				if (used_limits_a2->accrue_cnt)
-					used_limits_a2->accrue_cnt--;
-				else
-					error("%s: QOS %s acct %s accrue_cnt underflow",
-					      __func__, qos_ptr_2->name,
-					      used_limits_a2->acct);
-			}
-
-			if (used_limits_u2) {
-				if (used_limits_u2->accrue_cnt)
-					used_limits_u2->accrue_cnt--;
-				else
-					error("%s: QOS %s user %u accrue_cnt underflow",
-					      __func__, qos_ptr_2->name,
-					      used_limits_a2->uid);
-			}
-
-			assoc_ptr = job_ptr->assoc_ptr;
-			while (assoc_ptr) {
-				if (assoc_ptr->usage->accrue_cnt)
-					assoc_ptr->usage->accrue_cnt--;
-				else
-					error("%s: Assoc %u(%s/%s/%s) accrue_cnt underflow",
-					      __func__, assoc_ptr->id,
-					      assoc_ptr->acct,
-					      assoc_ptr->user,
-					      assoc_ptr->partition);
-				/* now go up the hierarchy */
-				assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
-			}
+			_remove_accrue_time_internal(job_ptr->assoc_ptr,
+						     qos_ptr_1,
+						     used_limits_a1,
+						     used_limits_u1,
+						     qos_ptr_2,
+						     used_limits_a2,
+						     used_limits_u2,
+						     job_cnt);
 		}
 
 		/* We already have our time and we aren't an array, endit */
@@ -4312,6 +4364,7 @@ extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 	slurmdb_used_limits_t *used_limits_a2 = NULL, *used_limits_u2 = NULL;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
+	int job_cnt;
 
 	/* check to see if we are enforcing limits */
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
@@ -4346,6 +4399,15 @@ extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 				job_ptr->user_id);
 	}
 
+	/*
+	 * Normally only single jobs come in here, but if we don't have any
+	 * limits the array itself comes in so we need to add it all.
+	 */
+	if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
+		job_cnt = job_ptr->array_recs->task_cnt;
+	else
+		job_cnt = 1;
+
 	_add_accrue_time_internal(assoc_ptr,
 				  qos_ptr_1,
 				  used_limits_a1,
@@ -4353,7 +4415,80 @@ extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 				  qos_ptr_2,
 				  used_limits_a2,
 				  used_limits_u2,
-				  1);
+				  job_cnt);
+	if (!assoc_mgr_locked)
+		assoc_mgr_unlock(&locks);
+}
+
+extern void acct_policy_remove_accrue_time(struct job_record *job_ptr,
+					   bool assoc_mgr_locked)
+{
+	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
+	slurmdb_assoc_rec_t *assoc_ptr;
+	slurmdb_used_limits_t *used_limits_a1 = NULL, *used_limits_u1 = NULL;
+	slurmdb_used_limits_t *used_limits_a2 = NULL, *used_limits_u2 = NULL;
+	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK };
+	int job_cnt;
+
+	/* check to see if we are enforcing limits */
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
+		return;
+
+	if (!job_ptr->details || !job_ptr->details->accrue_time)
+		return;
+
+	if (!assoc_mgr_locked)
+		assoc_mgr_lock(&locks);
+
+	assoc_ptr = job_ptr->assoc_ptr;
+	if (!assoc_ptr) {
+		fatal_abort("%s: no assoc_ptr", __func__);
+		goto end_it;
+	}
+
+	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+
+	if (qos_ptr_1) {
+		used_limits_a1 = _get_acct_used_limits(
+			&qos_ptr_1->usage->acct_limit_list,
+			assoc_ptr->acct);
+		used_limits_u1 = _get_user_used_limits(
+				&qos_ptr_1->usage->user_limit_list,
+				job_ptr->user_id);
+	}
+
+	if (qos_ptr_2) {
+		used_limits_a2 = _get_acct_used_limits(
+			&qos_ptr_2->usage->acct_limit_list,
+			assoc_ptr->acct);
+		used_limits_u2 = _get_user_used_limits(
+				&qos_ptr_2->usage->user_limit_list,
+				job_ptr->user_id);
+	}
+
+	/*
+	 * Normally only single jobs come in here, but if we don't have any
+	 * limits the array itself comes in so we need to add it all.
+	 */
+	if (job_ptr->array_recs && job_ptr->array_recs->task_cnt)
+		job_cnt = job_ptr->array_recs->task_cnt;
+	else
+		job_cnt = 1;
+
+	_remove_accrue_time_internal(assoc_ptr,
+				     qos_ptr_1,
+				     used_limits_a1,
+				     used_limits_u1,
+				     qos_ptr_2,
+				     used_limits_a2,
+				     used_limits_u2,
+				     job_cnt);
+
+	/* reset the job */
+	job_ptr->details->accrue_time = 0;
+	job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
+
+end_it:
 	if (!assoc_mgr_locked)
 		assoc_mgr_unlock(&locks);
 }
