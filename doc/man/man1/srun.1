@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "July 2018" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "November 2018" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -762,21 +762,24 @@ See \fBEXAMPLE\fR below.
 
 .TP
 \fB\-\-export\fR=<\fIenvironment variables [ALL] | NONE\fR>
-Identify which environment variables are propagated to the launched application,
-by default all are propagated.
+Identify which environment variables are propagated to the launched application.
+By default, \fIall\fR are propagated.
 Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
 value (e.g. "\-\-export=EDITOR") or specific values
-may be exported (e.g. "\-\-export=EDITOR=/bin/emacs").  In these two examples
-the environment propagated will only contain the variable "EDITOR"
-and nothing else.
-If one desires to add to the environment instead of replacing it have the
-argument include \fIALL\fR (e.g. "\-\-export=EDITOR,ALL").  This will propagate
-"EDITOR" along with the current environment.
-If one desires no environment variables be propagated use the argument
+may be exported (e.g. "\-\-export=EDITOR=/bin/emacs"). In these two examples,
+the propagated environment will only contain the variable \fIEDITOR\fR.
+If one desires to add to the environment instead of replacing it, have the
+argument include \fIALL\fR (e.g. "\-\-export=ALL,EDITOR=/bin/emacs").
+This will propagate \fIEDITOR\fR along with the current environment.
+Unlike sbatch, if \fIALL\fR is specified, any additional specified environment
+variables are ignored.
+If one desires no environment variables be propagated, use the argument
 \fINONE\fR.
-Regardless of this setting, the appropriate "SLURM_*" task environment variables
-are always exported to the environment.
+Regardless of this setting, the appropriate \fISLURM_*\fR task environment
+variables are always exported to the environment.
+\fIsrun\fR may deviate from the above behavior if the default launch plugin,
+\fIlaunch/slurm\fR, is not used.
 
 .TP
 \fB\-\-gid\fR=<\fIgroup\fR>
