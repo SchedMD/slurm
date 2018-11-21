@@ -178,19 +178,23 @@ code,
 pre,
 .commandline {
 	font-family: 'Source Code Pro', monospace;
-	font-size: .85em;
 }
 
 code,
 .commandline {
 	display: inline;
 	overflow: auto;
+	padding: 0 0.2em;
+	border-radius: 5px;
+	border: 1px solid #e8e8e8;
+	background-color: #e8e8e8;
 }
 
 pre {
 	background: #333333;
 	color: #EEEEEE;
 	display: block;
+	font-size: .85em;
 	overflow: auto;
 	padding: 12px 18px;
 }
