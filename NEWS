@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove unneeded extra parentheses from sh5util.
  -- Fix jobacct_gather/cgroup to work correctly when more than one task is
     started on a node.
+ -- If requesting --ntasks-per-node with no tasks set tasks correctly.
 
 * Changes in Slurm 18.08.3
 ==========================

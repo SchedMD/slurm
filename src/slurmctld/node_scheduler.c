@@ -1343,11 +1343,6 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			saved_job_num_tasks = job_ptr->details->num_tasks;
 			job_ptr->details->min_nodes = feat_ptr->count;
 			job_ptr->details->min_cpus = feat_ptr->count;
-			if (job_ptr->details->ntasks_per_node &&
-			    job_ptr->details->num_tasks) {
-				job_ptr->details->num_tasks = min_nodes *
-					job_ptr->details->ntasks_per_node;
-			}
 			FREE_NULL_LIST(*preemptee_job_list);
 			job_ptr->details->pn_min_memory = orig_req_mem;
 			if (sort_again) {
@@ -4219,6 +4214,12 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
 	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
 	job_ptr->total_nodes = job_ptr->node_cnt = hostlist_count(host_list);
+
+	/* Update the job num_tasks to account for variable node count jobs */
+	if (job_ptr->details->ntasks_per_node && job_ptr->details->num_tasks)
+		job_ptr->details->num_tasks = job_ptr->node_cnt *
+			job_ptr->details->ntasks_per_node;
+
 	xrealloc(job_ptr->node_addr,
 		 (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 
