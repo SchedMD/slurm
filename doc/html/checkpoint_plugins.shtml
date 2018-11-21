@@ -39,7 +39,6 @@ in other Slurm functions used by the plugin.</p>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/checkpoint/blcr/checkpoint_blcr.c</span>
 for a sample implementation of a Slurm job checkpoint plugin.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
@@ -57,7 +56,6 @@ SLURM_SUCCESS. </p>
 
 <p>There is also a checkpoint-specific error code and message that may be associated
 with each job step.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -214,7 +212,6 @@ of a tasks from a checkpoint image, called by <b>slurmstepd</b>.</p>
 On failure, the plugin should return SLURM_ERROR and set the error_code
 and error_msg to an appropriate value to indicate the reason for failure.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

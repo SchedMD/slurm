@@ -549,7 +549,6 @@ stopsrc -s pnsd
 startsrc -s pnsd -a -D
 </pre>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 31 March 2016</p>
 

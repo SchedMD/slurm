@@ -49,7 +49,6 @@ or several job steps may independently use a portion of the allocation.</p>
   Figure 2. Slurm entities
 </div>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Commands</h2>
 <p>Man pages exist for all Slurm daemons, commands, and API functions. The command
@@ -114,7 +113,6 @@ or jobs approaching their time limit.</p>
 <p><span class="commandline"><b>sview</b></span> is a graphical user interface to
 get and update state information for jobs, partitions, and nodes managed by Slurm.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Examples</h2>
 <p>First we determine what partitions exist on the system, what nodes
@@ -343,7 +341,6 @@ adev0: squeue
 JOBID PARTITION NAME USER ST TIME  NODES NODELIST(REASON)
 </pre>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Best Practices, Large Job Counts</h2>
 
@@ -357,7 +354,6 @@ managing a collection of batch jobs with identical resource requirements.
 Most Slurm commands can manage job arrays either as individual elements (tasks)
 or as a single entity (e.g. delete an entire job array in a single command).</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2><a name="mpi">MPI</a></h2>
 

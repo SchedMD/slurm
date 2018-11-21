@@ -207,7 +207,6 @@ may be in a different location as specified by <b>--checkpoint-dir</b>
 option at job submit time or scontrol's <b>ImageDir</b> option.
 </ul>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 12 August 2013</p>
 

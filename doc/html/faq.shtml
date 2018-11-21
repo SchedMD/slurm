@@ -1062,7 +1062,6 @@ sview color-coding is affected by the GTK theme. The node status grid
 is made up of button widgets and certain GTK themes don't show the color
 setting as desired. Changing GTK themes can restore proper color-coding.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h2>For Administrators</h2>
@@ -2356,7 +2355,6 @@ cray_netroot_preload.settings.load.data.compute.size_limit: 0
 <p>This is a generally useful technique for preventing remote lookups of commonly
 accessed files within jobs.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 04 July 2018</p>
 

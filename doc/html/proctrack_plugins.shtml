@@ -54,7 +54,6 @@ in other Slurm functions used by the plugin.</p>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/proctrack/pgid/proctrack_pgid.c</span>
 for an example implementation of a Slurm proctrack plugin.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p> The implementation must support a container id of type uint64_t.
@@ -71,7 +70,6 @@ The implementation should endeavor to provide useful and pertinent information
 by whatever means is practical.
 Successful API calls are not required to reset errno to a known value.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -137,7 +135,6 @@ was sent.
 If the signal can not be sent, the function should return SLURM_ERROR and set
 its errno to an appropriate value to indicate the reason for failure.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">int proctrack_p_destroy (uint64_t id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Destroy or otherwise
@@ -173,7 +170,6 @@ Count of process IDs in the container.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if
   successful, SLURM_ERROR else.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

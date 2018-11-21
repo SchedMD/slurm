@@ -251,7 +251,6 @@ Translate burst buffer string to TRES string.
 The TRES string of the given burst buffer (Note: User must xfree the
 return value).
 
-<p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 15 May 2017</p>
 

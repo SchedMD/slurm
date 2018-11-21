@@ -28,7 +28,6 @@ specifications.</li>
 <i>slurm_load_ctl_conf</i>.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Get Job Information</h3>
@@ -57,7 +56,6 @@ available is will vary by select plugin type configured.</li>
 <i>slurm_load_jobs</i>.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Get Job Step Information</h3>
@@ -77,7 +75,6 @@ a specific job step.</li>
 allocated by <i>slurm_get_job_steps</i>.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Get Node Information</h3>
@@ -96,7 +93,6 @@ a specific node.</li>
 allocated by <i>slurm_load_node</i>.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Get Partition Information</h3>
@@ -115,7 +111,6 @@ a specific partition.</li>
 allocated by <i>slurm_load_partitions</i>.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Error Handling</h3>
@@ -131,7 +126,6 @@ standard output.</li>
 Slurm error code.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Resource Allocation</h3>
@@ -175,7 +169,6 @@ memory leak. This can be used to confirm that an
 allocation is still active or for error recovery.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Job Step Creation</h3>
@@ -212,7 +205,6 @@ field as returned by <i>slurm_step_ctx_get</i>.</li>
 <li><b>slurm_spawn_kill</b> &mdash; Signal spawned tasks.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Job and Job Step Signaling and Cancelling</h3>
@@ -223,7 +215,6 @@ field as returned by <i>slurm_step_ctx_get</i>.</li>
 <li><b>slurm_kill_job_step</b> &mdash; Signal or cancel a job step.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Job Completion</h3>
@@ -236,7 +227,6 @@ Releases resource allocation for the job.</li>
 job step.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Checkpoint</h3>
@@ -269,7 +259,6 @@ the last checkpoint operation on a given job step.</li>
 checkpointed job resume execution.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Administrative Functions</h3>
@@ -300,7 +289,6 @@ information associated with a given partition.</li>
 <li><b>slurm_delete_partition</b> &mdash; Destroy a partition.</li>
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Slurm Host List Support</h3>
@@ -324,7 +312,6 @@ name.</li>
 allocated by <i>slurm_hostlist_create</i>.
 
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 13 November 2005</p>
 

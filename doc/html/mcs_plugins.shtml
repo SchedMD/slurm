@@ -43,7 +43,6 @@ in other Slurm functions used by the plugin.</p>
 <span class="commandline">src/plugins/mcs/group</span> and
 <span class="commandline">src/common/slurm_mcs.c</span>
 for an example implementation of a Slurm MCS plugin.
-<p class="footer"><a href="#top">top</a>
 
 <h2>API Functions</h2>
 <p>All of the following functions are required. Functions which are not
@@ -102,7 +101,6 @@ MCS_label of user and MCS_label of jobs/nodes.<br>
 <dt><span class="commandline">MCSParameters</span>
 <dd>If MCSPlugin!=mcs/none, specifies options
 
-<p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 12 October 2015</p>
 

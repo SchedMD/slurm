@@ -119,7 +119,6 @@ environment variables reserved for CUDA use).</p>
 <b>DebugFlags=GRES</b> to log GRES state changes. Note the resulting output can
 be quite verbose, especially for larger clusters.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 18 May 2011</p>
 

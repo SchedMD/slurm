@@ -45,7 +45,6 @@ in other Slurm functions used by the plugin.</p>
 <span class="commandline">src/plugins/acct_gather_energy/rapl</span> and 
 <span class="commandline">src/common/slurm_acct_gather_energy.c</span>
 for a sample implementation of a Slurm energy accounting plugin.
-<p class="footer"><a href="#top">top</a>
 
 <h2>API Functions</h2>
 <p>All of the following functions are required. Functions which are not
@@ -122,7 +121,6 @@ plugin and the frequency at which to gather node energy data.</p>
 <dd>Time interval between pollings in seconds.
 </dl>
 
-<p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

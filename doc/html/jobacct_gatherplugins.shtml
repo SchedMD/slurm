@@ -46,7 +46,6 @@ accounting and from these plugins.</p>
 <span class="commandline">src/plugins/jobacct_gather/linux</span> and
 <span class="commandline">src/common/slurm_jobacct_gather.[c|h]</span>
 for a sample implementation of a Slurm job accounting gather plugin.
-<p class="footer"><a href="#top">top</a>
 
 
 <h2>API Functions</h2>
@@ -300,7 +299,6 @@ Gets the stats of the job in accounting.
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<p class="footer"><a href="#top">top</a>
 
 <h2>Parameters</h2>
 <p>These parameters can be used in the slurm.conf to configure the
@@ -312,7 +310,6 @@ plugin and the frequency at which to gather information about running jobs.</p>
 <dd>Time interval between pollings in seconds.
 </dl>
 
-<p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

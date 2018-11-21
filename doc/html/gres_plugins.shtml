@@ -41,7 +41,6 @@ in other Slurm functions used by the plugin.</p>
 nothing today).
 </ul>
 
-<p class="footer"><a href="#top">top</a>
 
 <h2>API Functions</h2>
 <p>All of the following functions are required. Functions which are not
@@ -175,7 +174,6 @@ Data type depends upon the value of gres_step_data_type data_type.<br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

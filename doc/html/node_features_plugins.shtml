@@ -35,7 +35,6 @@ in other Slurm functions used by the plugin.</p>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/node_features/knl_cray/node_features_knl_cray.c</span>
 for a sample implementation of a Slurm node features plugin.
-<p class="footer"><a href="#top">top</a>
 
 <h2>API Functions</h2>
 
@@ -234,7 +233,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   True if user can change node active features to other available features.</p>
 
-<p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 15 May 2018</p>
 

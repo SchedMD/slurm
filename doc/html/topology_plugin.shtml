@@ -60,7 +60,6 @@ information by whatever means is practical.
 Successful API calls are not required to reset any errno to a known value.
 However, the initial value of any errno, prior to any error condition
 arising, should be SLURM_SUCCESS. </p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear.
@@ -113,7 +112,6 @@ in the hierarchy is separated by a period. The final element will always be
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS or
 SLURM_ERROR on failure.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

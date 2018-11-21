@@ -133,7 +133,6 @@ nodes that the job is to be ended. The <b>slurmd</b> daemon does the following:
 <li>Send an epilog_complete RPC to the <b>slurmctld</b> daemon</li>
 </ol>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 18 May 2011</p>
 

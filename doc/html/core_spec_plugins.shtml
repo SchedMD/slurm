@@ -44,7 +44,6 @@ Each job step will have a different container ID.
 Since a job may execute multiple job steps sequentially and/or in parallel;
 these functions will be called once for each job step on each compute node.</p>
 
-<p class="footer"><a href="#top">top</a>
 
 <h2>API Functions</h2>
 <p>All of the following functions are required. Functions which are not
@@ -142,7 +141,6 @@ node.
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

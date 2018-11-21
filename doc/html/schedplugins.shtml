@@ -40,7 +40,6 @@ daemons from any version, however this may result in difficult to diagnose
 failures due to changes in the arguments to plugin functions or changes
 in other Slurm functions used by the plugin.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
@@ -64,7 +63,6 @@ addition to a per-credential errno, it is not required to enforce mutual exclusi
 Successful API calls are not required to reset any errno to a known value. However,
 the initial value of any errno, prior to any error condition arising, should be
 SLURM_SUCCESS. </p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -148,7 +146,6 @@ resource requirements, time limit, etc.</p>
 happened such as time or size limits.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None</p>
 <p style="margin-left:.2in"><b>Returns</b>: Nothing.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">char *slurm_sched_p_get_conf (void);</p></a>
 <p style="margin-left:.2in"><b>Description</b>: Return scheduler specific
@@ -172,7 +169,6 @@ specific error code.</p>
 specific error code.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Pointer to string describing the error
 or NULL if no description found in this plugin.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 15 December 2016</p>
 

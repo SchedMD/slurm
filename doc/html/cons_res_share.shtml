@@ -260,7 +260,6 @@ the accounting plugin, which periodically gathers data about running jobs. Set
 <CODE>JobAcctGather</CODE> and <CODE>JobAcctFrequency</CODE> to
 values suitable for your system.</P>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 31 March 2016</p>
 
