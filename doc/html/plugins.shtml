@@ -29,7 +29,6 @@ Not all compute nodes in a cluster need be updated at the same time, but
 all Slurm APIs, commands, plugins, etc. on a compute node should represent
 the same version of Slurm.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 
@@ -55,7 +54,6 @@ daemons from any version, however this may result in difficult to diagnose
 failures due to changes in the arguments to plugin functions or changes
 in other Slurm functions used by the plugin.</p>
 </ul>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions in All Plugins</h2>
 <p class="commandline">int init (void);</p>
@@ -81,7 +79,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">_fini()</span>.</p>
 <p>The functions need not appear. The plugin may provide either
 <span class="commandline">init()</span> or <span class="commandline">fini()</span> or both.</p>
-<p class="footer"><a href="#top">top</a></p>
 <h2>Thread Safety</h2>
 
 <p>Slurm is a multithreaded application. The Slurm plugin library may exercise
@@ -307,7 +304,6 @@ uint32_t reason_uid;
   No special advice.
 </p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 20 December 2017</p>
 

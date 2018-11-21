@@ -41,7 +41,6 @@ in other Slurm functions used by the plugin.</p>
 <span class="commandline">src/plugins/ext_sensors/rrd</span> and
 <span class="commandline">src/common/slurm_ext_sensors.c</span>
 for a sample implementation of a Slurm external sensors plugin.
-<p class="footer"><a href="#top">top</a>
 
 <h2>API Functions</h2>
 <p>All of the following functions are required. Functions which are not
@@ -130,7 +129,6 @@ plugin and the frequency at which to gather external sensors data.</p>
 <dd>Time interval between pollings in seconds.
 </dl>>
 
-<p class="footer"><a href="#top">top</a>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

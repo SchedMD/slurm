@@ -56,7 +56,6 @@ slurmstepd process runs
 which executes immediately before fork/exec of tasks.
 <br>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p> These functions are expected to read and/or modify data structures directly in
@@ -64,7 +63,6 @@ the slurmd daemon's and srun memory. Slurmd is a multi-threaded program with ind
 read and write locks on each data structure type. Therefore the type of operations
 permitted on various data structures is identified for each function.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -137,7 +135,6 @@ execution.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 15 September 2017</p>
 

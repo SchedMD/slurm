@@ -81,7 +81,6 @@ When slurmctld is restarted, other function calls may be replayed.
 <span class="commandline">select_p_node_init()</span> may be used
 to synchronize the plugin's state with that of slurmctld.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p> These functions are expected to read and/or modify data structures directly in
@@ -95,7 +94,6 @@ be used to establish the initial mapping of bitmap entries to nodes.
 Functions defined in <i>src/common/bitmap.h</i> should be used for bitmap
 manipulations (these functions are directly accessible from the plugin).</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -146,7 +144,6 @@ from which user SlurmUser (as defined in slurm.conf) can read. Cannot be NULL.</
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h3>State Initialization Functions</h3>
 
@@ -181,7 +178,6 @@ of change in partition configuration or general configuration change.
 The plugin will test global variables for changes as appropriate.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Node-Specific Functions</h3>
@@ -290,7 +286,6 @@ the entire system.</p>
 to the node data structure. Each node's node rank field may be set.<br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Job-Specific Functions</h3>
@@ -584,7 +579,6 @@ to the node being removed from a job's allocation.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
 failure, the plugin should return a Slurm error code.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Step-Specific Functions</h3>
@@ -620,7 +614,6 @@ False if the termination of the step has completed (all processes have exited).<
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h3>Advanced Reservation Functions</h3>
@@ -644,7 +637,6 @@ used in the reservation OUT (flush bitstr then apply only used cores).<br>
 be used for the advanced reservation or NULL if the selected nodes can not
 be used for an advanced reservation.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h3>Get Information Functions</h3>
 
@@ -661,7 +653,6 @@ the job related to the query (if applicable; may be NULL).<br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h3>Block Allocator interface</h3>
 
@@ -682,7 +673,6 @@ Only used by Cray ALPS at present.
 <p style="margin-left:.2in"><b>Returns</b>: An array containing the number of
 elements in each dimension of the system size.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 14 June 2018</p>
 

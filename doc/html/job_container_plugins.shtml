@@ -42,7 +42,6 @@ in other Slurm functions used by the plugin.</p>
 <p>The programmer is urged to study
 <span class="commandline">src/plugins/proctrack/job_container/job_container_cncu.c</span>
 for an example implementation of a Slurm proctrack plugin.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p> The implementation must support a container ID of type uint64_t.
@@ -59,7 +58,6 @@ The implementation should endeavor to provide useful and pertinent information
 by whatever means is practical.
 Successful API calls are not required to reset errno to a known value.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -140,7 +138,6 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Description</b>: Note change in configuration,
 especially the value of the DebugFlags with respect to JobContainer.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

@@ -228,7 +228,6 @@ changes due to new licenses being added, or old licenses being removed, and
 updates Slurm. Should the license count decrease, the running jobs will not be
 affected only the dispatch of new job will reflect the new license count.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 2 February 2015</p>
 

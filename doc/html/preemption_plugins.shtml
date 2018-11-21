@@ -41,7 +41,6 @@ in other Slurm functions used by the plugin.</p>
 <span class="commandline">src/plugins/preempt/partition_prio/preempt_partition_prio.c</span>
 for an example implementation of a Slurm preemption plugin.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented
@@ -100,7 +99,6 @@ preemption is enabled.</p>
 <p style="margin-left:.2in"><b>Returns</b>: true if running jobs may be
 preempted, otherwise false</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

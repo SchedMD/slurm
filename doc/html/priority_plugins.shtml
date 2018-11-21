@@ -39,7 +39,6 @@ in other Slurm functions used by the plugin.</p>
 <span class="commandline">src/plugins/priority/basic/priority_basic.c</span>
 for an example implementation of a Slurm priority plugin.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
@@ -76,7 +75,6 @@ wants to see.</p>
 priority_factors_object_t's containing the job priority factors the user has
 asked to see.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -144,7 +142,6 @@ containing the requested job priority factors</p>
 <span class="commandline">job_ptr</span> (input) pointer to the job record.</p>
 <p style="margin-left:.2in"><b>Returns</b>: void</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

@@ -210,7 +210,6 @@ specified in the slurm.conf. This allows new jobs to be submitted while the Cray
 is down and prevents any new jobs from being started.
 </p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 7 September 2017</p>
 

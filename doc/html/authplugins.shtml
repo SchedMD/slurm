@@ -33,7 +33,6 @@ in other Slurm functions used by the plugin.</p>
 
 <p>The programmer is urged to study <span class="commandline">src/plugins/auth/none/auth_none.c</span>
 for an example implementation of a Slurm authentication plugin.</p>
-<p class="footer"><a href="#top">top</a></p>
 <h2>Data Objects</h2>
 <p> The implementation must support an opaque class, which it defines, to be used
 as an authentication &quot;credential.&quot; This class must encapsulate all user-specific
@@ -69,7 +68,6 @@ SLURM_SUCCESS. </p>
 do not conflict with the values assigned above. This is done programmatically
 by assigning plugin-specific errno values which are arithmetically greater than
 or equal to the symbol SLURM_AUTH_FIRST_LOCAL_ERROR.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -120,7 +118,6 @@ be NULL.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">int slurm_auth_verify (void *cr, char *auth_info );</p>
 <p style="margin-left:.2in"><b>Description</b>: Verifies that a credential is
@@ -163,7 +160,6 @@ identification of the server.</p>
 associated with the credential. In case of error, SLURM_AUTH_NOBODY should be
 returned and errno set appropriately to indicate the cause of the failure.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p class="commandline">int slurm_auth_pack (void *cr, Buf buf);</p>
 <p style="margin-left:.2in"><b>Description</b>: Marshals a credential into a buffer
@@ -210,7 +206,6 @@ is to provide a depiction of the credential for debugging purposes.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure
 the plugin should return SLURM_ERROR and set the errno appropriately to indicate
 the cause of failure.</p>
-<p class="footer"><a href="#top">top</a></p>
 <p class="commandline">int slurm_auth_errno (void *cr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Returns the current value of errno.
 Whether the value is associated with the given credential or with the plugin as
@@ -232,7 +227,6 @@ by the API.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A pointer to a static error message.
 This function must always return a pointer to a string, even if the string is
 empty or ambiguous such as &quot;unknown error.&quot;</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

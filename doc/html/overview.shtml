@@ -177,7 +177,6 @@ there are available resources within the job's allocation.</p>
   Figure 2. Slurm entities
 </div>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Configurability</h2>
 <p>Node state monitored include: count of processors, size of real memory, size

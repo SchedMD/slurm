@@ -49,7 +49,6 @@ following allocation of the task ids:
 <p>Figure 3: Process layout for <i>srun -N 4-4 -n 21 -m plane=2 <...></i>
 </center>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Plane distribution and task affinity</h2>
 
@@ -87,7 +86,6 @@ resources.
 <p>On the other hand, four planes (scheduling across processors) would
 minimize contention for cache and memory.
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h3>Examples of plane distributions with process
 affinity enabled</h3>
@@ -131,7 +129,6 @@ following allocation of the task ids:
 <i>srun -N 4-4 -n 21 -m plane=2 --cpu-bind=core <...></i>.
 </center>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 October 2017</p>
 

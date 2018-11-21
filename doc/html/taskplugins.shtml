@@ -38,7 +38,6 @@ daemons from any version, however this may result in difficult to diagnose
 failures due to changes in the arguments to plugin functions or changes
 in other Slurm functions used by the plugin.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an
@@ -47,7 +46,6 @@ as practically as possible the reason for any failed API call.
 These values must not be used as return values in integer-valued functions
 in the API. The proper error return value from integer-valued functions is
 SLURM_ERROR.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -228,7 +226,6 @@ data structure definition.</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 30 January 2018</p>
 

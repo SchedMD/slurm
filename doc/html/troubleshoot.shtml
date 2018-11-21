@@ -52,7 +52,6 @@ using the commands "<i>/etc/init.d/slurm stop</i>"
 and then "<i>/etc/init.d/slurm startclean</i>").
 Note: All running jobs and other state information will be lost.</li>
 </ol>
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h2><a name="sched">Jobs are not getting scheduled</a></h2>
@@ -85,7 +84,6 @@ See the <a href="faq.html#backfill">backfill documentation</a>
 for more details.</li>
 </ul>
 
-<p class="footer"><a href="#top">top</a></p>
 
 
 <h2><a name="completing">Jobs and nodes are stuck in COMPLETING state</a></h2>
@@ -110,7 +108,6 @@ be killed, by sending email or rebooting the node. For more information,
 see the <i>slurm.conf</i> documentation.</li>
 </ol>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2><a name="nodes">Notes are getting set to a DOWN state</a></h2>
 
@@ -160,7 +157,6 @@ using the commands "<i>/etc/init.d/slurm stop</i>"
 and then "<i>/etc/init.d/slurm startclean</i>").
 Note: All jobs and other state information on that node will be lost.</li>
 </ol>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2><a name="network">Networking and configuration problems</a></h2>
 
@@ -190,7 +186,6 @@ Slurm daemons will support RPCs and state files from the two previous major
 releases (e.g. a version 17.11.x SlurmDBD will support slurmctld daemons and
 commands with a version of 17.11.x, 17.02.x or 16.05.x).</li>
 </ol>
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 14 June 2018</p>
 

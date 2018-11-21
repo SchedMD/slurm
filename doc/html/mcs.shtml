@@ -245,7 +245,6 @@ NodeName=node0001 Arch=x86_64 CoresPerSocket=4
 <p>Please see the <a href="mcs_plugins.html">MCS Plugin Programmer Guide</a>
 for details on developing additional MCS plugins.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 7 November 2017</p>
 

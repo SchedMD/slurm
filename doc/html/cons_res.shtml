@@ -105,7 +105,6 @@ environment nodes are shared by default, <i>--exclusive</i> allows users to
 obtain dedicated nodes.</li>
 </ul>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Examples of CR_Memory, CR_Socket_Memory, and CR_CPU_Memory type consumable resources</h2>
 
@@ -173,7 +172,6 @@ JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
  1836  allNodes  sleep sballe  R  0:11      5 hydra[12-16]
 </pre>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Example of Node Allocations Using Consumable Resource Plugin</h2>
 
@@ -216,7 +214,6 @@ there are processors to minimize interference by the kernel and daemons.</p>
 
 <p>The user launches them in the same order as listed above.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Using Slurm's Default Node Allocation (Non-shared Mode)</h2>
 
@@ -257,7 +254,6 @@ parallel performance. The drawback is
 that jobs can tie up large amount of resources that it does not use and which
 cannot be shared with other jobs.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Using a Processor Consumable Resource Approach</h2>
 
@@ -339,7 +335,6 @@ The reason for that is if users have mpi//threaded/openMP
 programs that will take advantage of all the CPUs within a node but only need
 one mpi process per node.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 21 April 2014</p>
 

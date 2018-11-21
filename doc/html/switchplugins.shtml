@@ -37,7 +37,6 @@ daemons from any version, however this may result in difficult to diagnose
 failures due to changes in the arguments to plugin functions or changes
 in other Slurm functions used by the plugin.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>Data Objects</h2>
 <p> The implementation must support two opaque data classes.
@@ -69,7 +68,6 @@ addition to a per-credential errno, it is not required to enforce mutual exclusi
 Successful API calls are not required to reset any errno to a known value. However,
 the initial value of any errno, prior to any error condition arising, should be
 SLURM_SUCCESS. </p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -132,7 +130,6 @@ to indicate the reason for failure.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h3>Node's Switch State Monitoring Functions</h3>
 
@@ -375,7 +372,6 @@ pointer to where the requested data should be stored. </p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <h3>Node Specific Switch Management Functions</h3>
 <p class="commandline">int switch_p_node_init (void);</p>
@@ -394,7 +390,6 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h3>Job Step Management Functions</h3>
 <pre>
@@ -498,7 +493,6 @@ allocated to a job step.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h3>Job Management Suspend/Resume Functions</h3>
 
@@ -629,7 +623,6 @@ specific error code.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Pointer to string describing the error
 or NULL if no description found in this plugin.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 27 March 2015</p>
 

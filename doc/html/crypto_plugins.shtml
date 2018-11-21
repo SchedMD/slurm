@@ -57,7 +57,6 @@ information by whatever means is practical.
 Successful API calls are not required to reset any errno to a known value.
 However, the initial value of any errno, prior to any error condition
 arising, should be SLURM_SUCCESS. </p>
-<p class="footer"><a href="#top">top</a></p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear.
@@ -163,7 +162,6 @@ Size of the signature as returned in sig_size_p by cred_p_sign().</p>
 On failure, the plugin should return SLURM_ERROR and set the errno to an
 appropriate value to indicate the reason for failure.</p>
 
-<p class="footer"><a href="#top">top</a></p>
 
 <p style="text-align:center;">Last modified 2 November 2018</p>
 
