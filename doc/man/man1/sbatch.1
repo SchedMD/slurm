@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "July 2018" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "November 2018" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -822,13 +822,16 @@ NOTE: Only valid for users root and SlurmUser.
 NOTE: Not valid for federated clusters.
 
 .TP
-\fB\-k\fR, \fB\-\-no\-kill\fR
+\fB\-k\fR, \fB\-\-no\-kill\fR [=off]
 Do not automatically terminate a job if one of the nodes it has been
 allocated fails.  The user will assume the responsibilities for fault\-tolerance
 should a node fail.  When there is a node failure, any active job steps (usually
 MPI jobs) on that node will almost certainly suffer a fatal error, but with
 \-\-no\-kill, the job allocation will not be revoked so the user may launch
 new job steps on the remaining nodes in their allocation.
+
+Specify an optional argument of "off" disable the effect of the
+\fBSBATCH_NO_KILL\fR environment variable.
 
 By default Slurm terminates the entire job allocation if any node fails in its
 range of allocated nodes.
@@ -1939,6 +1942,9 @@ Same as \fB\-\-mem\-per\-gpu\fR
 .TP
 \fBSBATCH_NETWORK\fR
 Same as \fB\-\-network\fR
+.TP
+\fBSBATCH_NO_KILL\fR
+Same as \fB\-k\fR, \fB\-\-no\-kill\fR
 .TP
 \fBSBATCH_NO_REQUEUE\fR
 Same as \fB\-\-no\-requeue\fR

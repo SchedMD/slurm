@@ -8,6 +8,9 @@ documents those changes that are of interest to users and administrators.
     (Used by "scontrol show topology".)
  -- Removed crypto/openssl plugin.
  -- Tweak the sdiag gettimeofday() line format for greater clarity.
+ -- Add support for SALLOC/SBATCH/SLURM_NO_KILL environment variables.
+    Add salloc/sbatch/srun support for optional "--no-kill=off" option to
+    disable the environment variables.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

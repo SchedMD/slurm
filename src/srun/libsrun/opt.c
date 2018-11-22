@@ -119,6 +119,7 @@
 #define OPT_INT64	0x25
 #define OPT_USE_MIN_NODES 0x26
 #define OPT_MEM_PER_GPU   0x27
+#define OPT_NO_KILL       0x28
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -243,7 +244,7 @@ struct option long_options[] = {
 	{"immediate",        optional_argument, 0, 'I'},
 	{"join",             no_argument,       0, 'j'},
 	{"job-name",         required_argument, 0, 'J'},
-	{"no-kill",          no_argument,       0, 'k'},
+	{"no-kill",          optional_argument, 0, 'k'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"label",            no_argument,       0, 'l'},
 	{"licenses",         required_argument, 0, 'L'},
@@ -363,7 +364,7 @@ struct option long_options[] = {
 #endif
 	{NULL,               0,                 0, 0}
 	};
-char *opt_string = "+A:B:c:C:d:D:e:EG:hHi:I::jJ:kK::lL:m:M:n:N:"
+char *opt_string = "+A:B:c:C:d:D:e:EG:hHi:I::jJ:k::K::lL:m:M:n:N:"
 		   "o:Op:P:q:Qr:sS:t:T:uU:vVw:W:x:XZ";
 
 
@@ -1047,6 +1048,8 @@ env_vars_t env_vars[] = {
 {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_JOB_ID",        OPT_INT,        &opt.jobid,         NULL             },
 {"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &sropt.job_name_set_env},
+{"SLURM_JOB_NUM_NODES", OPT_NODES,      NULL,               NULL             },
+{"SLURM_JOB_NODELIST",  OPT_STRING,     &sropt.alloc_nodelist,NULL           },
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &sropt.kill_bad_exit,NULL            },
 {"SLURM_LABELIO",       OPT_INT,        &sropt.labelio,     NULL             },
 {"SLURM_MEM_PER_GPU",   OPT_MEM_PER_GPU,&opt.mem_per_gpu,  NULL              },
@@ -1056,8 +1059,7 @@ env_vars_t env_vars[] = {
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
 {"SLURM_NETWORK",       OPT_STRING,     &opt.network,  &sropt.network_set_env},
-{"SLURM_JOB_NUM_NODES", OPT_NODES,      NULL,               NULL             },
-{"SLURM_JOB_NODELIST",  OPT_STRING,     &sropt.alloc_nodelist,NULL           },
+{"SLURM_NO_KILL",       OPT_NO_KILL,    NULL,               NULL             },
 {"SLURM_NTASKS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
 {"SLURM_NPROCS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
 {"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
@@ -1229,6 +1231,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		}
 		break;
 
+	case OPT_NO_KILL:
+		opt.no_kill = true;
+		break;
 
 	case OPT_OVERCOMMIT:
 		opt.overcommit = true;
@@ -1559,7 +1564,12 @@ static void _set_options(const int argc, char **argv)
 			opt.job_name = xstrdup(optarg);
 			break;
 		case (int)'k':
-			opt.no_kill = true;
+			if (optarg &&
+			    (!xstrcasecmp(optarg, "off") ||
+			     !xstrcasecmp(optarg, "no"))) {
+				opt.no_kill = false;
+			} else
+				opt.no_kill = true;
 			break;
 		case (int)'K':
 			if (optarg)

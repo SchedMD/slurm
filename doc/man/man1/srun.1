@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "July 2018" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "November 2018" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1045,7 +1045,7 @@ single letter option must be followed immediately with the value and
 not include a space between them. For example "\-K1" and not "\-K 1".
 
 .TP
-\fB\-k\fR, \fB\-\-no\-kill\fR
+\fB\-k\fR, \fB\-\-no\-kill\fR [=off]
 Do not automatically terminate a job if one of the nodes it has been
 allocated fails. This option applies to job and step allocations.
 The job will assume all responsibilities for fault\-tolerance.
@@ -1054,6 +1054,10 @@ Tasks launch using this option will not be considered terminated
 \fB\-W\fR, \fB\-\-wait\fR options will have no effect upon the job step).
 The active job step (MPI job) will likely suffer a fatal error,
 but subsequent job steps may be run if this option is specified.
+
+Specify an optional argument of "off" disable the effect of the
+\fBSLURM_NO_KILL\fR environment variable.
+
 The default action is to terminate the job upon node failure.
 
 .TP
@@ -2553,7 +2557,7 @@ Same as \fB\-\-delay\-boot\fR
 Same as \fB\-d, \-\-slurmd\-debug\fR
 .TP
 \fBSLURM_DEPENDENCY\fR
-\fB\-P, \-\-dependency\fR=<\fIjobid\fR>
+Same as \fB\-P, \-\-dependency\fR=<\fIjobid\fR>
 .TP
 \fBSLURM_DISABLE_STATUS\fR
 Same as \fB\-X, \-\-disable\-status\fR
@@ -2646,6 +2650,9 @@ Same as \fB\-\-mpi\fR
 .TP
 \fBSLURM_NETWORK\fR
 Same as \fB\-\-network\fR
+.TP
+\fBSLURM_NO_KILL\fR
+Same as \fB\-k\fR, \fB\-\-no\-kill\fR
 .TP
 \fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
 Same as \fB\-n, \-\-ntasks\fR

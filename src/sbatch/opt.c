@@ -117,6 +117,7 @@ enum wrappers {
 #define OPT_INT64	  0x24
 #define OPT_USE_MIN_NODES 0x25
 #define OPT_MEM_PER_GPU   0x26
+#define OPT_NO_KILL       0x27
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -513,6 +514,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
   {"SBATCH_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
   {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL          },
+  {"SBATCH_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
   {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
   {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
@@ -697,6 +699,10 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("Invalid SBATCH_OPEN_MODE: %s. Ignored", val);
 		break;
 
+	case OPT_NO_KILL:
+		opt.no_kill = true;
+		break;
+
 	case OPT_NO_REQUEUE:
 		sbopt.requeue = 0;
 		break;
@@ -781,7 +787,7 @@ static struct option long_options[] = {
 	{"immediate",     no_argument,       0, 'I'},
 	{"job-name",      required_argument, 0, 'J'},
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
-	{"no-kill",       no_argument,       0, 'k'},
+	{"no-kill",       optional_argument, 0, 'k'},
 	{"licenses",      required_argument, 0, 'L'},
 	{"distribution",  required_argument, 0, 'm'},
 	{"cluster",       required_argument, 0, 'M'},
@@ -882,7 +888,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+ba:A:B:c:C:d:D:e:F:G:hHi:IJ:kL:m:M:n:N:o:Op:P:q:QsS:t:uU:vVw:Wx:";
+	"+ba:A:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:P:q:QsS:t:uU:vVw:Wx:";
 char *pos_delimit;
 
 
@@ -1483,7 +1489,12 @@ static void _set_options(int argc, char **argv)
 			opt.job_name = xstrdup(optarg);
 			break;
 		case 'k':
-			opt.no_kill = true;
+			if (optarg &&
+			    (!xstrcasecmp(optarg, "off") ||
+			     !xstrcasecmp(optarg, "no"))) {
+				opt.no_kill = false;
+			} else
+				opt.no_kill = true;
 			break;
 		case 'L':
 			xfree(opt.licenses);

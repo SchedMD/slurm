@@ -107,6 +107,7 @@
 #define OPT_DELAY_BOOT	0x1e
 #define OPT_INT64	0x1f
 #define OPT_MEM_PER_GPU   0x20
+#define OPT_NO_KILL       0x21
 #define OPT_USE_MIN_NODES 0x23
 
 /* generic getopt_long flags, integers and *not* valid characters */
@@ -453,6 +454,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
   {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
+  {"SALLOC_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
@@ -589,6 +591,9 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_NO_BELL:
 		saopt.bell = BELL_NEVER;
 		break;
+	case OPT_NO_KILL:
+		opt.no_kill = true;
+		break;
 	case OPT_JOBID:
 		info("WARNING: Creating Slurm job allocation from within "
 			"another allocation");
@@ -705,7 +710,7 @@ static void _set_options(int argc, char **argv)
 		{"hold",          no_argument,       0, 'H'},
 		{"immediate",     optional_argument, 0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
-		{"no-kill",       no_argument,       0, 'k'},
+		{"no-kill",       optional_argument, 0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
 		{"licenses",      required_argument, 0, 'L'},
 		{"distribution",  required_argument, 0, 'm'},
@@ -795,7 +800,7 @@ static void _set_options(int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:B:c:C:d:D:F:G:hHI::J:kK::L:m:M:n:N:Op:P:q:QsS:t:uU:vVw:W:x:";
+		"+A:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:P:q:QsS:t:uU:vVw:W:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -891,7 +896,12 @@ static void _set_options(int argc, char **argv)
 			opt.job_name = xstrdup(optarg);
 			break;
 		case 'k':
-			opt.no_kill = true;
+			if (optarg &&
+			    (!xstrcasecmp(optarg, "off") ||
+			     !xstrcasecmp(optarg, "no"))) {
+				opt.no_kill = false;
+			} else
+				opt.no_kill = true;
 			break;
 		case 'K': /* argument is optional */
 			if (optarg) {
