@@ -543,7 +543,7 @@ static char *_lookup_slurm_api_errtab(int errnum)
  * Return string associated with error (Slurm or system).
  * Always returns a valid string (because strerror always does).
  */
-char *slurm_strerror(int errnum)
+const char *slurm_strerror(int errnum)
 {
 	char *res = _lookup_slurm_api_errtab(errnum);
 	if (res)
@@ -577,7 +577,7 @@ void slurm_seterrno(int errnum)
 /*
  * Print "message: error description" on stderr for current errno value.
  */
-void slurm_perror(char *msg)
+void slurm_perror(const char *msg)
 {
 	fprintf(stderr, "%s: %s\n", msg, slurm_strerror(errno));
 }

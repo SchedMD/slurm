@@ -290,7 +290,7 @@ enum {
 };
 
 /* look up an errno value */
-char * slurm_strerror(int errnum);
+const char * slurm_strerror(int errnum);
 
 /* set an errno value */
 void slurm_seterrno(int errnum);
@@ -299,7 +299,7 @@ void slurm_seterrno(int errnum);
 int slurm_get_errno(void);
 
 /* print message: error string for current errno value */
-void slurm_perror(char *msg);
+void slurm_perror(const char *msg);
 
 #ifdef __cplusplus
 }
