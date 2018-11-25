@@ -579,7 +579,7 @@ void slurm_seterrno(int errnum)
 /*
  * Print "message: error description" on stderr for current errno value.
  */
-void slurm_perror(char *msg)
+void slurm_perror(const char *msg)
 {
 	fprintf(stderr, "%s: %s\n", msg, slurm_strerror(errno));
 }

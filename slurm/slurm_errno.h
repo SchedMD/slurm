@@ -300,7 +300,7 @@ void slurm_seterrno(int errnum);
 int slurm_get_errno(void);
 
 /* print message: error string for current errno value */
-void slurm_perror(char *msg);
+void slurm_perror(const char *msg);
 
 #ifdef __cplusplus
 }
