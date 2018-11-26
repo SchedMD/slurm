@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
  -- Accept modifiers for TRES originally added in 6f0342e0358.
  -- Don't remove reservation on slurmctld restart if nodes are removed from
     configuration.
+ -- Fix bad xfree in task/cgroup.
 
 * Changes in Slurm 18.08.3
 ==========================
