@@ -1990,7 +1990,13 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				tmp_bitmap =
 					bit_alloc(gres_slurmd_conf->cpu_cnt);
 				bit_unfmt(tmp_bitmap, gres_slurmd_conf->cpus);
-				if (gres_slurmd_conf->cpu_cnt == core_cnt) {
+				if (bit_set_count(tmp_bitmap) == core_cnt) {
+					/*
+					 * GPU is bound to all cores on node.
+					 * Do not report its socket binding.
+					 */
+				} else if (gres_slurmd_conf->cpu_cnt ==
+					   core_cnt) {
 					if (!tot_core_bitmap) {
 						tot_core_bitmap =
 							bit_alloc(core_cnt);
