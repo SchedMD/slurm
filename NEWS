@@ -58,7 +58,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't remove reservation on slurmctld restart if nodes are removed from
     configuration.
  -- Fix bad xfree in task/cgroup.
- -- Fix accrue underflow errors and resource count management with task arrays.
+ -- Fix removing counters if a job array isn't subject to limits and is
+    canceled while pending.
 
 * Changes in Slurm 18.08.3
 ==========================
