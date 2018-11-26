@@ -55,6 +55,8 @@ documents those changes that are of interest to users and administrators.
     started on a node.
  -- If requesting --ntasks-per-node with no tasks set tasks correctly.
  -- Accept modifiers for TRES originally added in 6f0342e0358.
+ -- Don't remove reservation on slurmctld restart if nodes are removed from
+    configuration.
 
 * Changes in Slurm 18.08.3
 ==========================
