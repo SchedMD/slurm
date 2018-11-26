@@ -527,7 +527,8 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason_uid = reason_uid;
 			}
 
-			if (node_ptr->node_state & NODE_STATE_POWER_UP)
+			if (IS_NODE_POWER_UP(node_ptr) ||
+			    IS_NODE_REBOOT(node_ptr))
 				node_ptr->boot_req_time = boot_req_time;
 
 			if (!slurmctld_conf.fast_schedule) {
