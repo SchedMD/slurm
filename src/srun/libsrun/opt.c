@@ -3511,11 +3511,6 @@ static void _help(void)
 		);
 
 	printf("\n"
-#if defined HAVE_LIBNRT /* IBM PE specific options */
-"PE related options:\n"
-"      --network=type          communication protocol to be used\n"
-"\n"
-#endif
 #ifdef HAVE_NATIVE_CRAY			/* Native Cray specific options */
 "Cray related options:\n"
 "      --network=type          Use network performance counters\n"

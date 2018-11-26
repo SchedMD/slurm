@@ -372,7 +372,6 @@ rm -f %{buildroot}/%{_libdir}/slurm/libsched_if64.so
 rm -f %{buildroot}/%{_libdir}/slurm/proctrack_sgi_job.so
 rm -f %{buildroot}/%{_libdir}/slurm/runjob_plugin.so
 rm -f %{buildroot}/%{_libdir}/slurm/select_bluegene.so
-rm -f %{buildroot}/%{_libdir}/slurm/switch_nrt.so
 rm -f %{buildroot}/%{_mandir}/man5/bluegene*
 rm -f %{buildroot}/%{_sbindir}/sfree
 rm -f %{buildroot}/%{_sbindir}/slurm_epilog

@@ -36,6 +36,8 @@ NOTE: The proctrack/sgi_job plugin has been removed.
 
 NOTE: The crypto/openssl plugin has been removed.
 
+NOTE: The switch/nrt plugin has been removed.
+
 NOTE: slurmd and slurmctld will now fatal if two incompatible mechanisms for
       enforcing memory limits are set. This makes incompatible the use of
       task/cgroup memory limit enforcing (Constrain[RAM|Swap]Space=yes) with
