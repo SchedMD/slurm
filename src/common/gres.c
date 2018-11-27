@@ -1217,11 +1217,12 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 {
 	int i, j, rc;
-	uint32_t cpu_cnt, magic, plugin_id, utmp32;
-	uint64_t count64;
-	uint16_t rec_cnt, protocol_version;
-	uint8_t has_file;
-	char *tmp_cpus, *tmp_links, *tmp_name, *tmp_type;
+	uint32_t cpu_cnt = 0, magic = 0, plugin_id = 0, utmp32 = 0;
+	uint64_t count64 = 0;
+	uint16_t rec_cnt = 0, protocol_version = 0;
+	uint8_t has_file = 0;
+	char *tmp_cpus = NULL, *tmp_links = NULL, *tmp_name = NULL;
+	char *tmp_type = NULL;
 	gres_slurmd_conf_t *p;
 
 	rc = gres_plugin_init();
@@ -2516,10 +2517,10 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 					 uint16_t protocol_version)
 {
 	int i, rc;
-	uint32_t magic, plugin_id;
-	uint64_t gres_cnt_avail;
-	uint16_t rec_cnt;
-	uint8_t  has_bitmap;
+	uint32_t magic = 0, plugin_id = 0;
+	uint64_t gres_cnt_avail = 0;
+	uint16_t rec_cnt = 0;
+	uint8_t  has_bitmap = 0;
 	gres_state_t *gres_ptr;
 	gres_node_state_t *gres_node_ptr;
 
@@ -4520,9 +4521,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 					uint16_t protocol_version)
 {
 	int i = 0, rc;
-	uint32_t magic, plugin_id, utmp32 = 0;
-	uint16_t rec_cnt;
-	uint8_t  has_more;
+	uint32_t magic = 0, plugin_id = 0, utmp32 = 0;
+	uint16_t rec_cnt = 0;
+	uint8_t  has_more = 0;
 	gres_state_t *gres_ptr;
 	gres_job_state_t *gres_job_ptr = NULL;
 
@@ -9638,9 +9639,9 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 					 uint16_t protocol_version)
 {
 	int i, rc;
-	uint32_t magic, plugin_id, uint32_tmp = 0;
-	uint16_t rec_cnt;
-	uint8_t has_file;
+	uint32_t magic = 0, plugin_id = 0, uint32_tmp = 0;
+	uint16_t rec_cnt = 0;
+	uint8_t data_flag = 0;
 	gres_state_t *gres_ptr;
 	gres_step_state_t *gres_step_ptr = NULL;
 
@@ -9676,14 +9677,14 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			if (gres_step_ptr->node_cnt > NO_VAL)
 				goto unpack_error;
 			unpack_bit_str_hex(&gres_step_ptr->node_in_use, buffer);
-			safe_unpack8(&has_file, buffer);
-			if (has_file) {
+			safe_unpack8(&data_flag, buffer);
+			if (data_flag) {
 				safe_unpack64_array(
 					&gres_step_ptr->gres_cnt_node_alloc,
 					&uint32_tmp, buffer);
 			}
-			safe_unpack8(&has_file, buffer);
-			if (has_file) {
+			safe_unpack8(&data_flag, buffer);
+			if (data_flag) {
 				gres_step_ptr->gres_bit_alloc =
 					xmalloc(sizeof(bitstr_t *) *
 						gres_step_ptr->node_cnt);
@@ -9704,8 +9705,8 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			if (gres_step_ptr->node_cnt > NO_VAL)
 				goto unpack_error;
 			unpack_bit_str_hex(&gres_step_ptr->node_in_use, buffer);
-			safe_unpack8(&has_file, buffer);
-			if (has_file) {
+			safe_unpack8(&data_flag, buffer);
+			if (data_flag) {
 				gres_step_ptr->gres_bit_alloc =
 					xmalloc(sizeof(bitstr_t *) *
 						gres_step_ptr->node_cnt);
