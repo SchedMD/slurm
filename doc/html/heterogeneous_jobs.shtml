@@ -584,7 +584,7 @@ determined by examining Slurm environment variables.</p>
 memory in the future.
 This typically requires the backfill scheduler be able to allocate each
 component of a heterogeneous job on a different node in order to begin its
-resource allocation, even if multiple compoents of the job do actually get
+resource allocation, even if multiple components of the job do actually get
 allocated resources on the same node.</p>
 
 <p>In a federation of clusters, a heterogeneous job will execute entirely on
