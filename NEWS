@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
     canceled while pending.
  -- Make sure SLURM_NTASKS_PER_NODE is set correctly when env is overwritten
     by the command line.
+ -- Clean up step on a failed node correctly.
 
 * Changes in Slurm 18.08.3
 ==========================
