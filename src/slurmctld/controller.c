@@ -1856,7 +1856,8 @@ static void _queue_reboot_msg(void)
 		node_ptr->boot_req_time = now;
 		node_ptr->last_response = now + slurm_get_resume_timeout();
 
-		if ((node_ptr->next_state != NO_VAL) && (node_ptr->reason))
+		if ((node_ptr->next_state != NO_VAL) && node_ptr->reason &&
+		    !xstrstr(node_ptr->reason, "reboot issued"))
 			xstrcat(node_ptr->reason, " : reboot issued");
 	}
 	if (reboot_agent_args != NULL) {
@@ -2047,6 +2048,10 @@ static void *_slurmctld_background(void *no_data)
 			job_resv_check();
 			step_checkpoint();
 			unlock_slurmctld(job_write_lock);
+
+			lock_slurmctld(node_write_lock);
+			check_reboot_nodes();
+			unlock_slurmctld(node_write_lock);
 		}
 
 		if (slurmctld_conf.health_check_interval &&
