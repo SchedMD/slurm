@@ -1267,16 +1267,9 @@ the compute nodes
 Identifies the mechanism to be used to launch application tasks.
 Acceptable values include:
 .RS
-.TP 15
-\fBlaunch/aprun\fR
-For use with Cray systems with ALPS and the default value for those systems
-.TP
-\fBlaunch/poe\fR
-For use with IBM Parallel Environment (PE) and the default value for systems
-with the IBM NRT library installed.
 .TP
 \fBlaunch/slurm\fR
-For all other systems and the default value for those systems
+The default value.
 .RE
 
 .TP
@@ -3684,7 +3677,6 @@ Acceptable values include
 "switch/cray" for Cray systems,
 "switch/none" for switches not requiring special processing for job launch
 or termination (Ethernet, and InfiniBand) and
-"switch/nrt" for IBM's Network Resource Table API.
 The default value is "switch/none".
 All Slurm daemons, commands and running jobs must be restarted for a
 change in \fBSwitchType\fR to take effect.
@@ -4100,8 +4092,6 @@ through the host database (/etc/hosts) or DNS, depending on the resolver
 settings.  Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
-Only short hostname forms are compatible with the switch/nrt plugin at
-this time.
 It may also be an arbitrary string if \fBNodeHostname\fR is specified.
 If the \fBNodeName\fR is "DEFAULT", the values specified
 with that record will apply to subsequent node specifications
@@ -4124,8 +4114,6 @@ through the host database (/etc/hosts) or DNS, depending on the resolver
 settings.  Note that if the short form of the hostname is not used, it
 may prevent use of hostlist expressions (the numeric portion in brackets
 must be at the end of the string).
-Only short hostname forms are compatible with the switch/nrt plugin at
-this time.
 A node range expression can be used to specify a set of nodes.
 If an expression is used, the number of nodes identified by
 \fBNodeHostname\fR on a line in the configuration file must

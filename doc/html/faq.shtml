@@ -20,8 +20,6 @@
   job?</a></li>
 <li><a href="#steps">How can I run multiple jobs from within a single
   script?</a></li>
-<li><a href="#orphan">Why do I have job steps when my job has already
-  COMPLETED?</a></li>
 <li><a href="#multi_batch">How can I run a job within an existing job
   allocation?</a></li>
 <li><a href="#user_env">How does Slurm establish the environment for my
@@ -383,23 +381,6 @@ Some jobs actually launch thousands of job steps this way. The job
 steps will be allocated nodes that are not already allocated to
 other job steps. This essential provides a second level of resource
 management within the job for the job steps.</p>
-
-<p><a name="orphan"><b>9. Why do I have job steps when my job has
-already COMPLETED?</b></a><br>
-NOTE: This only applies to systems configured with
-<i>SwitchType=switch/nrt</i>.
-All other systems will purge all job steps on job completion.</p>
-<p>Slurm maintains switch (network interconnect) information within
-the job step for IBM NRT switches.
-This information must be maintained until we are absolutely certain
-that the processes associated with the switch have been terminated
-to avoid the possibility of re-using switch resources for other
-jobs (even on different nodes).
-Slurm considers jobs COMPLETED when all nodes allocated to the
-job are either DOWN or confirm termination of all its processes.
-This enables Slurm to purge job information in a timely fashion
-even when there are many failing nodes.
-Unfortunately the job step information may persist longer.</p>
 
 <p><a name="multi_batch"><b>10. How can I run a job within an existing
 job allocation?</b></a><br>
@@ -1289,14 +1270,11 @@ Just install the test version in a different location with a different
 The test system's <i>slurm.conf</i> should specify different
 pathnames and port numbers to avoid conflicts.
 The only problem is if more than one version of Slurm is configured
-with <i>switch/nrt</i> or <i>burst_buffer/*</i> plugins.
+with <i>burst_buffer/*</i> plugins or others that may interact with external
+system APIs.
 In that case, there can be conflicting API requests from
 the different Slurm systems.
-This can be avoided by configuring the test system with <i>switch/none</i>
-and <i>burst_buffer/none</i>.
-MPI jobs started on an NRT switch system without the
-switch windows configured will not execute properly, but other jobs
-will run fine.
+This can be avoided by configuring the test system with <i>burst_buffer/none</i>.
 
 <p><a name="multi_slurmd"><b>14. Can Slurm emulate a larger cluster?</b></a><br>
 Yes, this can be useful for testing purposes.
