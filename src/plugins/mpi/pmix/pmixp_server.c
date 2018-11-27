@@ -1468,8 +1468,14 @@ static int _slurm_send(pmixp_ep_t *ep, pmixp_base_hdr_t bhdr, Buf buf)
 		break;
 	case PMIXP_EP_NOIDEID: {
 		char *nodename = pmixp_info_job_host(ep->ep.nodeid);
-		rc = pmixp_p2p_send(nodename, addr, data, dsize,
+		char *address = xstrdup(addr);
+
+		xstrsubstitute(address, "%n", nodename);
+		xstrsubstitute(address, "%h", nodename);
+
+		rc = pmixp_p2p_send(nodename, address, data, dsize,
 				    500, 7, 0);
+		xfree(address);
 		xfree(nodename);
 		break;
 	}
