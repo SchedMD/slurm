@@ -57,12 +57,6 @@ if {[string compare $select_type "cons_res"]} {
 	exit 0
 }
 
-if {[test_launch_poe]} {
-	set taskid_env MP_CHILD
-} else {
-	set taskid_env SLURM_PROCID
-}
-
 #
 # Submit a 1 node job to determine the node's CPU count
 #
@@ -152,7 +146,7 @@ if {[string compare $host ""] == 0} {
 
 send_user "found idle node $host with $cpu_cnt processors\n"
 
-set srun_pid [spawn $srun -N1 -w$host --cpus-per-task=1 --exclusive -l -t1 $bin_printenv $taskid_env]
+set srun_pid [spawn $srun -N1 -w$host --cpus-per-task=1 --exclusive -l -t1 $bin_printenv SLURM_PROCID]
 expect {
 	-re "($number):" {
 		incr task_cnt
@@ -201,7 +195,7 @@ if {$cpu_cnt < 2} {
 # Now verify the --cpus-per-task option
 #
 set task_cnt  0
-set srun_pid [spawn $srun -N1 --cpus-per-task=2 --exclusive -l -t1 --nodelist=$host $bin_printenv $taskid_env]
+set srun_pid [spawn $srun -N1 --cpus-per-task=2 --exclusive -l -t1 --nodelist=$host $bin_printenv SLURM_PROCID]
 expect {
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "

@@ -39,11 +39,6 @@ set exit_code   0
 
 print_header $test_id
 
-if {[test_launch_poe]} {
-	send_user "\nWARNING: This test is incompatible with poe\n"
-	exit 0
-}
-
 # Remove any remaining files
 exec $bin_rm -f $file_out
 

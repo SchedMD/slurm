@@ -1778,23 +1778,6 @@ proc test_switch_nrt { } {
 
 ################################################################
 #
-# Proc: test_launch_poe
-#
-# Purpose: Determine if the system is using launch/poe.
-#
-# Returns 1 if the system is running launch/poe, 0 otherwise
-#
-################################################################
-
-proc test_launch_poe { } {
-	if {![string compare [test_launch_type] "poe"]} {
-		return 1
-	}
-	return 0
-}
-
-################################################################
-#
 # Proc: test_launch_type
 #
 # Purpose: Determine launch type plugin.

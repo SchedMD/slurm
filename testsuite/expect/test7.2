@@ -78,11 +78,6 @@ expect {
 	}
 }
 
-if {[test_launch_poe]} {
-	send_user "\nWARNING: Additional portions of this test are incompatible using poe to launch tasks\n"
-	exit $exit_code
-}
-
 if { $exit_code == 0 } {
 	send_user "\n\nSo far, so good\nNow run PMI test under srun\n"
 } else {

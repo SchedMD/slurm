@@ -37,6 +37,7 @@ set test_id     "2.8"
 set exit_code   0
 set job_id1     0
 set job_id2     0
+set step_id	0
 
 print_header $test_id
 
@@ -69,12 +70,6 @@ proc end_it {code} {
 		send_user "\nSUCCESS\n"
 	}
 	exit $code
-}
-
-if {[test_launch_poe]} {
-	set step_id 1
-} else {
-	set step_id 0
 }
 
 #

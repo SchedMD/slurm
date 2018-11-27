@@ -51,12 +51,6 @@ if {[test_front_end]} {
 	exit 0
 }
 
-if {[test_launch_poe]} {
-	set node_name_env MP_I_UPMD_HOSTNAME
-} else {
-	set node_name_env SLURMD_NODENAME
-}
-
 set available [available_nodes $partition ""]
 if {$available < 3} {
 	send_user "\nWARNING: This test requires 3 nodes, "
@@ -79,7 +73,7 @@ set host_1_num       0
 set host_2_num       0
 set job_id 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N3-3 -p $partition --contiguous -t1 $srun -l $bin_printenv $node_name_env]
+set salloc_pid [spawn $salloc -N3-3 -p $partition --contiguous -t1 $srun -l $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Required node not available|Node count specification invalid|configuration not available" {
 		send_user "\nWARNING: can't test --contiguous distribution\n"

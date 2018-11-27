@@ -38,14 +38,9 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
+set step_id      0
 
 print_header $test_id
-
-if {[test_launch_poe]} {
-	set step_id 1
-} else {
-	set step_id 0
-}
 
 #
 # Delete left-over input script

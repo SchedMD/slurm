@@ -36,20 +36,9 @@ set test_id        "1.33"
 set exit_code      0
 set exit_script    "./test$test_id.exit.bash"
 set test_script    "./test$test_id.bash"
-set launch_poe     0
+set task_cnt       2
 
 print_header $test_id
-
-if {[test_launch_poe]} {
-	set launch_poe  1
-	set task_cnt	1
-	set sum1	10
-	set key2	"srun_exit_code_10"
-} else {
-	set task_cnt	2
-	set sum1	21
-	set key2	"srun_exit_code_11"
-}
 
 #
 # Delete left-over scripts and build new ones
@@ -90,21 +79,12 @@ expect {
 		set exit_code 1
 	}
 	eof {
-		if { $launch_poe } {
-			# since with poe we can only grab the poe's return code
-			# we check here to make sure it is the correct number
-			catch wait result
-			set rc [lindex $result 3]
-			incr sum $rc
-			send_user "\npoe return code is $rc\n"
-		} else {
-			wait
-		}
+		wait
 	}
 }
 
-if {$sum != $sum1} {
-	send_user "\nFAILURE: srun failed to report exit code ($sum != $sum1) $myexit\n"
+if {$sum != 21} {
+	send_user "\nFAILURE: srun failed to report exit code ($sum != 21) $myexit\n"
 	set exit_code 1
 }
 
@@ -114,7 +94,7 @@ if {$sum != $sum1} {
 set matches 0
 spawn $test_script
 expect {
-	-re "$key2" {
+	-re "srun_exit_code_11" {
 		send_user "Above error are expected, no worries\n"
 		incr matches
 		exp_continue

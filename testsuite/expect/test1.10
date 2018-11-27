@@ -39,11 +39,6 @@ set exit_code   0
 
 print_header $test_id
 
-if { [test_launch_poe] } {
-	send_user "\nWARNING: This test is incompatible with launch/poe systems\n"
-	exit $exit_code
-}
-
 if {[test_launch_test_exec]} {
 	send_user "\nWARNING: This test is incompatible with LaunchParameters=test_exec\n"
 	exit $exit_code

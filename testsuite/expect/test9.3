@@ -43,12 +43,7 @@ set job_name     "test$test_id"
 
 set cycle_count [get_cycle_count]
 set task_cnt    $max_stress_tasks
-if { [test_launch_poe] } {
-	send_user "\nWARNING: This test is not compatible with POE systems\n"
-	exit $exit_code
-} else {
-	set node_cnt 1-4
-}
+set node_cnt	1-4
 set other_opts   "-O"
 
 print_header $test_id

@@ -36,16 +36,9 @@ source ./globals
 set test_id     "1.2"
 set exit_code   0
 set tasks       0
+set task_cnt	10
 
 print_header $test_id
-
-# if the srun --overcommit option worked this test would work.
-if {[test_launch_poe]} {
-	# POE does not support the overcommit option
-	set task_cnt 1
-} else {
-	set task_cnt 10
-}
 
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks

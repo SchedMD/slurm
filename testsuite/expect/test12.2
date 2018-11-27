@@ -48,6 +48,10 @@ set sleep_time  32
 set ret_code    42
 set file_size   10485760
 set num_tasks   3
+set max_time_error 5
+set max_mem_error 4300
+set step_id	0
+
 print_header $test_id
 
 if {[test_front_end]} {
@@ -58,19 +62,6 @@ if {![test_accting_steps]} {
 	send_user "\nWARNING: This test can not be run with nosteps or nojobs "
 	send_user "(AccountingStorageEnforce)\n"
 	exit 0
-}
-
-if {[test_launch_poe]} {
-#	Allow extra time and memory for the POE process
-	set max_time_error 10
-	set max_mem_error  140000
-	set step_id        1
-	set launch_poe     1
-} else {
-	set max_time_error 5
-	set max_mem_error  4300
-	set step_id        0
-	set launch_poe     0
 }
 
 proc _get_mem {prog} {
@@ -369,13 +360,9 @@ expect {
 		wait
 	}
 }
-if {$launch_poe != 0} {
-	set match_target 2
-} else {
-	set match_target 4
-}
-if {$matches < $match_target} {
-	send_user "\nFAILURE: sacct reporting failed ($matches < $match_target)\n"
+
+if {$matches < 4} {
+	send_user "\nFAILURE: sacct reporting failed ($matches < 4)\n"
 	set exit_code 1
 }
 

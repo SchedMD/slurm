@@ -48,10 +48,6 @@ set matches          0
 
 print_header $test_id
 
-if {[test_launch_poe]} {
-	set launch_poe 1
-}
-
 #
 # Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output
@@ -190,10 +186,6 @@ expect {
 			incr matches
 		} else {
 			send_user "\nNOFILE value bad ($expect_out(1,string) != $limit_nofile)\n"
-			if {$launch_poe} {
-				send_user "This is expected on POE systems\n"
-				incr matches
-			}
 		}
 		exp_continue
 	}

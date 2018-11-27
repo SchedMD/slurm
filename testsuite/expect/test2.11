@@ -37,18 +37,10 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
+set step_id	0
 set scontrol_id 0
 
 print_header $test_id
-
-if {[test_launch_poe]} {
-	set step_id 1
-} elseif { [string compare [test_launch_type] "slurm"] } {
-	send_user "\nWARNING: This test is only compatible with systems using launch/slurm or launch/poe\n"
-	exit $exit_code
-} else {
-	set step_id 0
-}
 
 # Delete left-over stdout file
 file delete $file_out

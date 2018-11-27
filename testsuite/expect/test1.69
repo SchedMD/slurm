@@ -56,9 +56,6 @@ if {![string compare $select_type "alps"]} {
 		send_user "\nWARNING: This test is incompatible with exclusive node allocations and only one node\n"
 		exit $exit_code
 	}
-} elseif {[test_launch_poe]} {
-	send_user "\nWARNING: This test is incompatible with POE systems\n"
-	exit $exit_code
 }
 
 if {[test_select_type_params "Memory"]} {

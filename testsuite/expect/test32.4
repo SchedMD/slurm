@@ -142,12 +142,5 @@ if {$rm_cnt != $node_cnt} {
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
-} elseif {[test_launch_poe]} {
-	send_user "\nWARNING: Sporatic failures with POE are expected. Please retest.\n"
-#	POE BUG: If the application exits immediately then pmdv12 hangs until
-#	slurm kills it with a timeout, thus the sleep below is required:
-#	F S   UID   PID  PPID  C PRI  NI ADDR SZ WCHAN TTY   TIME CMD
-#	4 R  1001 17141 17137 99  80   0 - 33410 ?    ?  00:00:02 pmdv12
-#	0 Z  1001 17152 17141  0  80   0 -     0 exit ?  00:00:00 test1.33.exit.b <defunct>
 }
 exit $exit_code

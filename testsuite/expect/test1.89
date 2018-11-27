@@ -67,12 +67,6 @@ if {$force == 1} {
 	exit 0
 }
 
-if { [test_launch_poe] } {
-	set launch_poe 1
-} else {
-	set launch_poe 0
-}
-
 #
 # Build a test program to report affinity by task
 #
@@ -197,23 +191,6 @@ expect {
 if {$task_mask != $expected_mask} {
 	send_user "\nFAILURE: affinity mask inconsistency ($task_mask != $expected_mask)\n"
 	set exit_code 1
-}
-
-if { $launch_poe != 0 } {
-	send_user "\nWARNING: Additional tests not supported with launch/poe systems\n"
-	send "exit\r"
-	expect {
-		eof {
-			wait
-		}
-	}
-	if {$exit_code == 0} {
-		file delete $file_prog
-		send_user "\nSUCCESS\n"
-	} else {
-		send_user "\nFAILURE: See note about reading second prompt in the script (line 128)\n"
-	}
-	exit $exit_code
 }
 
 #

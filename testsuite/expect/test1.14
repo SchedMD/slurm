@@ -48,12 +48,6 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
-if {[test_launch_poe]} {
-	set node_name_env MP_I_UPMD_HOSTNAME
-} else {
-	set node_name_env SLURMD_NODENAME
-}
-
 #
 # Delete left-over input script
 # Build input script file

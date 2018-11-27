@@ -45,9 +45,6 @@ print_header $test_id
 if {[test_front_end]} {
         send_user "\nWARNING: This test is incompatible with front-end systems\n"
         exit $exit_code
-} elseif {[test_launch_poe]} {
-        send_user "\nWARNING: This test is incompatible with POE systems\n"
-        exit $exit_code
 }
 
 # find out if we have enough nodes to test functionality

@@ -46,15 +46,8 @@ set host_0      ""
 set timeout $max_job_delay
 set node_cnt 1-64
 set task_num [get_max_tasks]
-if {[test_launch_poe]} {
-	set node_name_env MP_I_UPMD_HOSTNAME
-	set node_cnt 1
-	set task_num 1
-} else {
-	set node_name_env SLURMD_NODENAME
-}
 
-set srun_pid [spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_printenv $node_name_env]
+set srun_pid [spawn $srun -N$node_cnt -l --threads=1 -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "0: *($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
@@ -83,7 +76,7 @@ if {[string compare $host_0 ""] == 0} {
 #
 set host_0      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N$node_cnt -n$task_num -O -l --threads=$task_num -t1 $bin_printenv $node_name_env]
+set srun_pid [spawn $srun -N$node_cnt -n$task_num -O -l --threads=$task_num -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Memory required by task is not available" {
 		send_user "\nWARNING: DefMemPerTask is configured too high for this test\n"

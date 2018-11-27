@@ -38,6 +38,7 @@ set cwd           "[$bin_pwd]"
 set exit_code     0
 set test_node     ""
 set job_id        0
+set step_id       0
 set file_err      "${cwd}/test${test_id}_err"
 set file_in       "test${test_id}_script"
 set file_out      "${cwd}/test${test_id}_out"
@@ -103,12 +104,6 @@ set available [available_nodes $partition idle]
 if {$available < 2} {
     send_user "\nWARNING: not enough nodes currently available ($available avail, 2 needed)\n"
     exit $exit_code
-}
-
-if {[test_launch_poe]} {
-	set step_id 1
-} else {
-	set step_id 0
 }
 
 remove_acct [get_cluster_name] $test_acct

@@ -40,11 +40,6 @@ set exit_code   0
 
 print_header $test_id
 
-if {[test_launch_poe]} {
-	send_user "\nWARNING: This test is incompatible with POE systems\n"
-	exit $exit_code
-}
-
 # remove any remaining files
 exec $bin_rm -f $test_timer $test_srun $file_in
 

@@ -51,12 +51,6 @@ if { [test_front_end] } {
 	exit $exit_code
 }
 
-if {[test_launch_poe]} {
-	set node_name_env MP_I_UPMD_HOSTNAME
-} else {
-	set node_name_env SLURMD_NODENAME
-}
-
 # find out if we have enough nodes to test functionality
 set partition [default_partition]
 set node_count [get_node_cnt_in_part $partition]
@@ -171,7 +165,7 @@ for {set i 0} {$i<4} {incr i} {
 	#
 	# execute srun with a specific node count
 	#
-	send "$srun -l $extra -O $bin_printenv $node_name_env\r"
+	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\r"
 	expect {
 		-re "($number): *($alpha_numeric_under)" {
 			set task_id $expect_out(1,string)
@@ -323,7 +317,7 @@ for {set i 0} {$i<5} {incr i} {
 	# execute srun with a specific node count
 	#
 
-	send "$srun -l $extra -O $bin_printenv $node_name_env\r"
+	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\r"
 
 	expect {
 		-re "($number): *($alpha_numeric_under)" {

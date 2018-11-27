@@ -39,7 +39,6 @@ set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set file_prog_get    "test$test_id.prog"
 set job_id           0
-set launch_poe       0
 set limit_core       943
 set limit_fsize      674515
 set limit_nofile     1016
@@ -52,9 +51,6 @@ print_header $test_id
 if {[test_front_end] != 0 && [test_super_user] == 0} {
 	send_user "\nWARNING: This test is incompatible with front-end systems\n"
 	exit $exit_code
-}
-if {[test_launch_poe]} {
-	set launch_poe 1
 }
 
 #
@@ -204,10 +200,6 @@ expect {
 			incr matches
 		} else {
 			send_user "\nNOFILE value bad ($expect_out(1,string) != $limit_nofile)\n"
-			if {$launch_poe} {
-				send_user "This is expected on POE systems\n"
-				incr matches
-			}
 		}
 		exp_continue
 	}

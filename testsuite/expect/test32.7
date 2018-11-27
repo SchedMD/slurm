@@ -58,15 +58,6 @@ if {[slurmd_user_root] == 0} {
 	send_user "\nWARNING: This test is incompatible with SlurmdUser != root\n"
 	exit 0
 }
-if {[test_launch_poe]} {
-	send_user "\nWARNING: This test is incompatible with POE systems\n"
-	exit 0
-#	POE BUG: If the application exits immediately then pmdv12 hangs until
-#	slurm kills it with a timeout:
-#	F S   UID   PID  PPID  C PRI  NI ADDR SZ WCHAN TTY   TIME CMD
-#	4 R  1001 17141 17137 99  80   0 - 33410 ?    ?  00:00:02 pmdv12
-#	0 Z  1001 17152 17141  0  80   0 -     0 exit ?  00:00:00 test1.33.exit.b <defunct>
-}
 
 #
 # Remove any vestigial files

@@ -40,11 +40,6 @@ set prompt      "PROMPT:"
 
 print_header $test_id
 
-if { [test_launch_poe] } {
-	send_user "\nWARNING: This test is incompatible with launch/poe systems\n"
-	exit 0
-}
-
 #
 # Test if memory affinity support is supported.
 #
@@ -236,13 +231,6 @@ expect {
 		exp_continue
 	}
 	-re $prompt
-}
-if { [test_launch_poe] } {
-	if {$exit_code == 0} {
-		exec $bin_rm -f $file_prog
-		send_user "\nSUCCESS\n"
-	}
-	exit $exit_code
 }
 
 #

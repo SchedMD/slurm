@@ -39,11 +39,6 @@ set file_prog    "test$test_id.prog"
 
 print_header $test_id
 
-if { [test_launch_poe] } {
-	send_user "\nWARNING: This test is incompatible with launch/poe systems\n"
-	exit $exit_code
-}
-
 #
 # Delete left-over programs and rebuild them.
 #

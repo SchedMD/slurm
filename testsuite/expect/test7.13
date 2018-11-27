@@ -44,10 +44,6 @@ if {![test_accting_steps]} {
 	send_user "(AccoutingStorageEnforce)\n"
 	exit 0
 }
-if {[test_launch_poe]} {
-	send_user "\nWARNING: This test is incompatible with launch/poe systems\n"
-	exit 0
-}
 
 #
 # Delete left-over programs and rebuild them.

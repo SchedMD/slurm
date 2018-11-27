@@ -34,14 +34,9 @@ source ./globals
 
 set test_id              "1.55"
 set test_script          "test$test_id.sh"
+set step_id              0
 
 print_header $test_id
-
-if {[test_launch_poe]} {
-	set step_id 1
-} else {
-	set step_id 0
-}
 
 #
 # Create a test script to be launch by srun

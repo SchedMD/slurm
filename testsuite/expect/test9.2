@@ -47,21 +47,15 @@ set other_opts   "-O"
 
 print_header $test_id
 
-if {[test_launch_poe]} {
-	set node_name_env MP_I_UPMD_HOSTNAME
-} else {
-	set node_name_env SLURMD_NODENAME
-}
-
 # Execute an srun job to print hostname to output_file with task_cnt tasks per node,
 # wait for completion
 # Returns 0 on successful completion, returns 1 otherwise
 proc run_hostname_job { output_file } {
 	global bin_printenv bin_rm job_name number srun node_cnt other_opts
-	global task_cnt timeout node_name_env
+	global task_cnt timeout
 	exec $bin_rm -f $output_file
 
-	set srun_pid [spawn $srun --job-name=$job_name --input=/dev/null --output=$output_file --error=/dev/null -n$task_cnt -N$node_cnt $other_opts -t1 $bin_printenv $node_name_env]
+	set srun_pid [spawn $srun --job-name=$job_name --input=/dev/null --output=$output_file --error=/dev/null -n$task_cnt -N$node_cnt $other_opts -t1 $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "Unable to contact" {
 			send_user "\nFAILURE: slurm appears to be down\n"

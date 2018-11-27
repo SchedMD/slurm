@@ -40,12 +40,6 @@ set exit_code   0
 
 print_header $test_id
 
-if {[test_launch_poe]} {
-	set node_name_env MP_I_UPMD_HOSTNAME
-} else {
-	set node_name_env SLURMD_NODENAME
-}
-
 #
 # Submit a 3+ node job
 #
@@ -63,7 +57,7 @@ if {$available < $node_cnt} {
     exit $exit_code
 }
 
-set srun_pid [spawn $srun -N$node_cnt -l -t1 $bin_printenv $node_name_env]
+set srun_pid [spawn $srun -N$node_cnt -l -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Node count specification invalid" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -144,7 +138,7 @@ set host_0      ""
 set host_1      ""
 set host_2      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_printenv $node_name_env]
+set srun_pid [spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Invalid node name specified" {
 		send_user "\nWARNING: Appears you are using "
@@ -208,7 +202,7 @@ if {$dup_hostname == 1} {
 set host_0      ""
 set host_1      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --nodelist=$include_node -t1 $bin_printenv $node_name_env]
+set srun_pid [spawn $srun -N1 -l --nodelist=$include_node -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "($number): *($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {

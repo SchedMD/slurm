@@ -83,18 +83,12 @@ if {$min_cpu_cnt < 3} {
 	exit 0
 }	
 
-if {[test_launch_poe]} {
-	set use_envvar MP_I_UPMD_HOSTNAME
-} else {
-	set use_envvar SLURM_NODEID
-}
-
 #
 # Submit a two node job with "pack" distribution
 #
 set expected_layout [list 0 0 0 1]
 set tested_layout [list -1 -1 -1 -1]
-set srun_pid [spawn $srun -O -N2 -n4 --exclusive -l --distribution=pack -t1 $bin_printenv $use_envvar]
+set srun_pid [spawn $srun -O -N2 -n4 --exclusive -l --distribution=pack -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "srun: error" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -144,7 +138,7 @@ if {[string compare $tested_layout $expected_layout]} {
 set expected_layout [list 0 0 1 1]
 set tested_layout [list -1 -1 -1 -1]
 set timeout $max_job_delay
-set srun_pid [spawn $srun -O -N2 -n4 --exclusive -l --distribution=nopack -t1 $bin_printenv $use_envvar]
+set srun_pid [spawn $srun -O -N2 -n4 --exclusive -l --distribution=nopack -t1 $bin_printenv SLURM_NODEID]
 expect {
 	-re "More processors requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"

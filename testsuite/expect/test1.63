@@ -95,8 +95,7 @@ if {$match_sig < 1} {
 	send_user "\nFAILURE: srun failed to properly process SIGINT\n"
 	set exit_code 1
 }
-if {$match_abort < 1 && [test_launch_poe] == 0} {
-#	POE could end without "forcing job termination" message being generated
+if {$match_abort < 1} {
 	send_user "\nFAILURE: srun failed to properly process multiple SIGINT to abort\n"
 	set exit_code 1
 }

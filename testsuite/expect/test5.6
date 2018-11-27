@@ -38,6 +38,7 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
+set step_id      0
 set job_name1    "test$test_id.job1"
 set job_name2    "test$test_id.job2"
 set node_cnt 1-1
@@ -47,12 +48,6 @@ print_header $test_id
 if {[job_submit_all_partitions] != 0} {
 	send_user "\nWARNING: This test is incompatible with JobSubmitPlugins=all_partitions\n"
 	exit 0
-}
-
-if {[test_launch_poe]} {
-	set step_id 1
-} else {
-	set step_id 0
 }
 
 #

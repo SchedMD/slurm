@@ -97,15 +97,6 @@ if {$matches != 1} {
 	exit 1
 }
 
-if {[test_launch_poe]} {
-	send_user "\nWARNING: Remaining tests incompatible with POE\n"
-	if {$exit_code == 0} {
-		exec $bin_rm -f $file_in
-		send_user "\nSUCCESS\n"
-	}
-	exit $exit_code
-}
-
 #
 # Spawn a job via srun to print environment variables with --export=ALL
 #

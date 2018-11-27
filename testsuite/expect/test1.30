@@ -44,18 +44,13 @@ if { [test_front_end] } {
 } else {
 	set max_node_cnt 1024
 }
-if { [test_launch_poe] } {
-	set env_name "MP_I_UPMD_HOSTNAME"
-} else {
-	set env_name "SLURMD_NODENAME"
-}
 
 #
 # Spawn a srun immediate jobs with ever larger node counts
 #
 set timeout $max_job_delay
 for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt * 2]} {
-	set srun_pid [spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_printenv $env_name]
+	set srun_pid [spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_printenv SLURMD_NODENAME]
 	expect {
 		-re "Immediate execution impossible" {
 			send_user "This error is expected, no worries\n"

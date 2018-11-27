@@ -60,11 +60,7 @@ if {$available < $node_cnt} {
 #
 # Build input script file
 #
-if {[test_launch_poe]} {
-	make_bash_script $file_in "$srun -l $bin_printenv MP_I_UPMD_HOSTNAME"
-} else {
-	make_bash_script $file_in "$srun -l $bin_printenv SLURMD_NODENAME"
-}
+make_bash_script $file_in "$srun -l $bin_printenv SLURMD_NODENAME"
 
 #
 # Run job to determine what nodes are available

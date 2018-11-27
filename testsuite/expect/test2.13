@@ -38,16 +38,11 @@ set file_in1      "test$test_id.input1"
 set file_in2      "test$test_id.input2"
 set file_out      "test$test_id.output"
 set job_id        0
+set step_id       0
 set orig_time     0
 set new_time      0
 
 print_header $test_id
-
-if {[test_launch_poe]} {
-	set step_id 1
-} else {
-	set step_id 0
-}
 
 #
 # Build input batch file
