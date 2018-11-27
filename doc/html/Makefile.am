@@ -39,7 +39,6 @@ generated_html = \
 	hdf5_profile_user_guide.html \
 	heterogeneous_jobs.html \
 	high_throughput.html \
-	ibm-pe.html \
 	intel_knl.html \
 	jobacct_gatherplugins.html \
 	job_array.html \

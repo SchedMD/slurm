@@ -87,6 +87,13 @@ documents those changes that are of interest to users and administrators.
     started on a node.
  -- If requesting --ntasks-per-node with no tasks set tasks correctly.
  -- Accept modifiers for TRES originally added in 6f0342e0358.
+ -- Don't remove reservation on slurmctld restart if nodes are removed from
+    configuration.
+ -- Fix bad xfree in task/cgroup.
+ -- Fix removing counters if a job array isn't subject to limits and is
+    canceled while pending.
+ -- Make sure SLURM_NTASKS_PER_NODE is set correctly when env is overwritten
+    by the command line.
 
 * Changes in Slurm 18.08.3
 ==========================

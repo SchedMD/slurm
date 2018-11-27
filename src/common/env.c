@@ -902,6 +902,7 @@ extern char *uint32_compressed_to_str(uint32_t array_len,
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
  *	SLURM_NODE_ALIASES
+ *	SLURM_NTASKS_PER_NODE
  *
  * dest OUT - array in which to the set environment variables
  * alloc IN - resource allocation response
@@ -1094,6 +1095,11 @@ extern int env_array_for_job(char ***dest,
 		env_array_overwrite_pack_fmt(dest, "SLURM_CPUS_PER_TASK",
 					     pack_offset, "%d",
 					     desc->cpus_per_task);
+	}
+	if (desc->ntasks_per_node && (desc->ntasks_per_node != NO_VAL16)) {
+		env_array_overwrite_pack_fmt(dest, "SLURM_NTASKS_PER_NODE",
+					     pack_offset, "%d",
+					     desc->ntasks_per_node);
 	}
 
 	return rc;

@@ -442,7 +442,6 @@ error:
 	for (k = 0; k < allow_lines; k++) {
 		xfree(allowed_dev_major[k]);
 	}
-	xfree(allowed_dev_major);
 
 	return fstatus;
 }

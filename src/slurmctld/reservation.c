@@ -3114,7 +3114,6 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 {
 	bool account_not = false, user_not = false;
 	slurmctld_resv_t old_resv_ptr;
-	bitstr_t *node_bitmap;
 
 	if ((resv_ptr->name == NULL) || (resv_ptr->name[0] == '\0')) {
 		error("Read reservation without name");
@@ -3177,6 +3176,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		resv_ptr->user_list = user_list;
 		resv_ptr->user_not  = user_not;
 	}
+
 	if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
 	    resv_ptr->part_ptr && resv_ptr->part_ptr->node_bitmap) {
 		memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
@@ -3205,18 +3205,35 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		xfree(old_resv_ptr.tres_str);
 		last_resv_update = time(NULL);
 	} else if (resv_ptr->node_list) {	/* Change bitmap last */
-		if (xstrcasecmp(resv_ptr->node_list, "ALL") == 0) {
-			node_bitmap = bit_alloc(node_record_count);
-			bit_nset(node_bitmap, 0, (node_record_count - 1));
-		} else if (node_name2bitmap(resv_ptr->node_list,
-					    false, &node_bitmap)) {
-			error("Reservation %s has invalid nodes (%s)",
-			      resv_ptr->name, resv_ptr->node_list);
-			return false;
-		}
-
+		/*
+		 * Node bitmap must be recreated in any case, i.e. when
+		 * they grow because adding new nodes to slurm.conf
+		 */
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
-		resv_ptr->node_bitmap = node_bitmap;
+		if (node_name2bitmap(resv_ptr->node_list, false,
+				     &resv_ptr->node_bitmap)) {
+			char *new_node_list;
+			resv_ptr->node_cnt = bit_set_count(
+				resv_ptr->node_bitmap);
+			if (!resv_ptr->node_cnt) {
+				error("Reservation %s has no nodes left, deleting it",
+				      resv_ptr->name);
+				return false;
+			}
+			new_node_list = bitmap2node_name(resv_ptr->node_bitmap);
+			info("Reservation %s has invalid nodes (%s), shrinking to (%s)",
+			     resv_ptr->name, resv_ptr->node_list,
+			     new_node_list);
+			xfree(resv_ptr->node_list);
+			resv_ptr->node_list = new_node_list;
+			new_node_list = NULL;
+			memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
+			old_resv_ptr.tres_str = resv_ptr->tres_str;
+			resv_ptr->tres_str = NULL;
+			_set_tres_cnt(resv_ptr, &old_resv_ptr);
+			xfree(old_resv_ptr.tres_str);
+			last_resv_update = time(NULL);
+		}
 	}
 
 	return true;
