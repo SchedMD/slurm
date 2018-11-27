@@ -6632,7 +6632,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		       struct job_record **job_pptr, uid_t submit_uid,
 		       char **err_msg, uint16_t protocol_version)
 {
-	static int launch_type_poe = -1;
 	int error_code = SLURM_SUCCESS, i, qos_error;
 	struct part_record *part_ptr = NULL;
 	List part_ptr_list = NULL;
@@ -6920,15 +6919,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		error_code = ESLURM_INVALID_MCS_LABEL;
 		goto cleanup_fail;
 	}
-
-	if (launch_type_poe == -1) {
-		if (!xstrcmp(slurmctld_conf.launch_type, "launch/poe"))
-			launch_type_poe = 1;
-		else
-			launch_type_poe = 0;
-	}
-	if (launch_type_poe == 1)
-		job_ptr->next_step_id = 1;
 
 	/*
 	 * Permission for altering priority was confirmed above. The job_submit

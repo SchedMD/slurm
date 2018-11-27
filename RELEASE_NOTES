@@ -36,6 +36,8 @@ NOTE: The proctrack/sgi_job plugin has been removed.
 
 NOTE: The crypto/openssl plugin has been removed.
 
+NOTE: The launch/poe plugin has been removed.
+
 NOTE: The switch/nrt plugin has been removed.
 
 NOTE: slurmd and slurmctld will now fatal if two incompatible mechanisms for
