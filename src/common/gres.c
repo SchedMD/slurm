@@ -4812,7 +4812,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  uint32_t job_id, char *node_name, char *gres_name)
 {
 	int i, j, core_size, core_ctld, top_inx;
-	uint64_t gres_avail = 0, gres_total;
+	uint64_t gres_avail = 0, gres_total, gres_tmp;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint32_t *cores_addnt = NULL; /* Additional cores avail from this GRES */
@@ -4973,15 +4973,19 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				break;
 			}
 			cores_avail[top_inx] = 0;	/* Flag as used */
-			i = node_gres_ptr->topo_gres_cnt_avail[top_inx];
-			if (!use_total_gres) {
-				i -= node_gres_ptr->
-				     topo_gres_cnt_alloc[top_inx];
+			gres_tmp = node_gres_ptr->topo_gres_cnt_avail[top_inx];
+			if (!use_total_gres &&
+			    (gres_tmp >=
+			     node_gres_ptr->topo_gres_cnt_alloc[top_inx])) {
+				gres_tmp -= node_gres_ptr->
+					    topo_gres_cnt_alloc[top_inx];
+			} else if (!use_total_gres) {
+				gres_tmp = 0;
 			}
-			if (i < 0) {
-				error("gres/%s: topology allocation error on "
-				      "node %s", gres_name, node_name);
-				continue;
+			if (gres_tmp == 0) {
+				error("gres/%s: topology allocation error on node %s",
+				      gres_name, node_name);
+				break;
 			}
 			/* update counts of allocated cores and GRES */
 			if (!node_gres_ptr->topo_core_bitmap[top_inx]) {
@@ -4998,11 +5002,14 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 					node_gres_ptr->
 					topo_core_bitmap[top_inx]);
 			}
-			if (i > 0) {
-				/* Available GRES count is up to i, but take 1
-				 * per loop to maximize available core count */
+			if (gres_tmp > 0) {
+				/*
+				 * Available GRES count is up to gres_tmp,
+				 * but take 1 per loop to maximize available
+				 * core count
+				 */
 				gres_avail += 1;
-				gres_total += i;
+				gres_total += gres_tmp;
 			}
 			core_cnt = bit_set_count(alloc_core_bitmap);
 		}
