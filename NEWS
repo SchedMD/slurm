@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix bad xfree in task/cgroup.
  -- Fix removing counters if a job array isn't subject to limits and is
     canceled while pending.
+ -- Make sure SLURM_NTASKS_PER_NODE is set correctly when env is overwritten
+    by the command line.
 
 * Changes in Slurm 18.08.3
 ==========================
