@@ -510,9 +510,15 @@ int main(int argc, char **argv)
 			alloc = (resource_allocation_response_msg_t *)
 				list_next(iter_resp);
 
-			if (alloc && desc && (desc->bitflags & JOB_NTASKS_SET))
-				desc->num_tasks =
-					alloc->node_cnt * desc->ntasks_per_node;
+			if (alloc && desc &&
+			    (desc->bitflags & JOB_NTASKS_SET)) {
+				if (desc->ntasks_per_node != NO_VAL16)
+					desc->num_tasks =
+						alloc->node_cnt *
+						desc->ntasks_per_node;
+				else if (alloc->node_cnt > desc->num_tasks)
+					desc->num_tasks = alloc->node_cnt;
+			}
 
 			if (env_array_for_job(&env, alloc, desc, i++) !=
 			    SLURM_SUCCESS)
@@ -521,9 +527,14 @@ int main(int argc, char **argv)
 		list_iterator_destroy(iter_resp);
 		list_iterator_destroy(iter_req);
 	} else {
-		if (alloc && desc && (desc->bitflags & JOB_NTASKS_SET))
-			desc->num_tasks =
-				alloc->node_cnt * desc->ntasks_per_node;
+		if (alloc && desc && (desc->bitflags & JOB_NTASKS_SET)) {
+			if (desc->ntasks_per_node != NO_VAL16)
+				desc->num_tasks =
+					alloc->node_cnt * desc->ntasks_per_node;
+			else if (alloc->node_cnt > desc->num_tasks)
+				desc->num_tasks = alloc->node_cnt;
+		}
+
 		if (env_array_for_job(&env, alloc, desc, -1) != SLURM_SUCCESS)
 			goto relinquish;
 	}
