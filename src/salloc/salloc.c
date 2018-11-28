@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 	pid_t pid  = getpid();
 	pid_t tpgid = 0;
 	pid_t rc_pid = 0;
-	int i, j, rc = 0;
+	int i, j, rc = 0, num_tasks = 0;
 	bool pack_fini = false;
 	int pack_argc, pack_inx, pack_argc_off;
 	char **pack_argv;
@@ -520,6 +520,7 @@ int main(int argc, char **argv)
 					desc->num_tasks = alloc->node_cnt;
 			}
 
+			num_tasks += desc->num_tasks;
 			if (env_array_for_job(&env, alloc, desc, i++) !=
 			    SLURM_SUCCESS)
 				goto relinquish;
@@ -534,11 +535,13 @@ int main(int argc, char **argv)
 			else if (alloc->node_cnt > desc->num_tasks)
 				desc->num_tasks = alloc->node_cnt;
 		}
-
+		num_tasks += desc->num_tasks;
 		if (env_array_for_job(&env, alloc, desc, -1) != SLURM_SUCCESS)
 			goto relinquish;
 	}
 
+	env_array_append_fmt(&env, "SLURM_NTASKS", "%d", num_tasks);
+	env_array_append_fmt(&env, "SLURM_NPROCS", "%d", num_tasks);
 	if (working_cluster_rec && working_cluster_rec->name) {
 		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
 				     working_cluster_rec->name);
