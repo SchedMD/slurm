@@ -148,7 +148,13 @@ typedef struct gres_node_state {
 	uint32_t *topo_type_id;		/* GRES type (e.g. model ID) */
 	char **topo_type_name;		/* GRES type (e.g. model name) */
 
-	/* GRES type specific information (if gres.conf contains type option) */
+	/*
+	 * GRES type specific information (if gres.conf contains type option)
+	 *
+	 * NOTE: If a job requests GRES without a type specification, these
+	 * type_cnt_alloc will not be incremented. Only the gres_cnt_alloc
+	 * will be incremented.
+	 */
 	uint16_t type_cnt;		/* Size of type_ arrays */
 	uint64_t *type_cnt_alloc;
 	uint64_t *type_cnt_avail;

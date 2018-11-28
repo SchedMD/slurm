@@ -928,11 +928,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		_validate_links(p);
 	}
 
-	if (s_p_get_string(&p->type_name, "Type", tbl) && !p->file) {
+	if (s_p_get_string(&p->type_name, "Type", tbl)) {
 		p->config_flags |= GRES_CONF_HAS_TYPE;
-//FIXME: Remove this later
-		p->file = xstrdup("/dev/null");
-		p->config_flags |= GRES_CONF_HAS_FILE;
 	}
 
 	if (!s_p_get_boolean((bool *)&p->ignore, "Ignore", tbl))
@@ -1565,9 +1562,20 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 
 	for (i = 0; i < gres_data->type_cnt; i++) {
 		model_cnt = 0;
-		for (j = 0; j < gres_data->topo_cnt; j++) {
-			if (gres_data->type_id[i] == gres_data->topo_type_id[j])
-				model_cnt += gres_data->topo_gres_cnt_avail[j];
+		if (gres_data->type_cnt) {
+			for (j = 0; j < gres_data->type_cnt; j++) {
+				if (gres_data->type_id[i] ==
+				    gres_data->type_id[j])
+					model_cnt +=
+						gres_data->type_cnt_avail[j];
+			}
+		} else {
+			for (j = 0; j < gres_data->topo_cnt; j++) {
+				if (gres_data->type_id[i] ==
+				    gres_data->topo_type_id[j])
+					model_cnt +=
+					      gres_data->topo_gres_cnt_avail[j];
+			}
 		}
 		if (fast_schedule >= 2) {
 			gres_data->type_cnt_avail[i] = model_cnt;
@@ -5087,6 +5095,10 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		gres_avail = node_gres_ptr->type_cnt_avail[i];
 		if (!use_total_gres)
 			gres_avail -= node_gres_ptr->type_cnt_alloc[i];
+		gres_tmp = node_gres_ptr->gres_cnt_avail;
+		if (!use_total_gres)
+			gres_tmp -= node_gres_ptr->gres_cnt_alloc;
+		gres_avail = MIN(gres_avail, gres_tmp);
 		if (job_gres_ptr->gres_per_node > gres_avail)
 			return (uint32_t) 0;	/* insufficient, GRES to use */
 		return NO_VAL;
@@ -5567,7 +5579,7 @@ static sock_gres_t *_build_sock_gres_by_type(gres_job_state_t *job_gres_ptr,
 {
 	int i;
 	sock_gres_t *sock_gres;
-	uint64_t avail_gres, min_gres = 1;
+	uint64_t avail_gres, min_gres = 1, gres_tmp;
 	bool match = false;
 
 	if (job_gres_ptr->gres_per_node)
@@ -5591,6 +5603,10 @@ static sock_gres_t *_build_sock_gres_by_type(gres_job_state_t *job_gres_ptr,
 		} else {
 			avail_gres = node_gres_ptr->type_cnt_avail[i];
 		}
+		gres_tmp = node_gres_ptr->gres_cnt_avail;
+		if (!use_total_gres)
+			gres_tmp -= node_gres_ptr->gres_cnt_alloc;
+		avail_gres = MIN(avail_gres, gres_tmp);
 		if (avail_gres < min_gres)
 			continue;	/* Insufficient GRES remaining */
 		sock_gres->cnt_any_sock += avail_gres;
@@ -7745,6 +7761,9 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	if (node_gres_ptr->no_consume)
 		return SLURM_SUCCESS;
 
+	if (job_gres_ptr->type_name && !job_gres_ptr->type_name[0])
+		xfree(job_gres_ptr->type_name);
+
 	xfree(node_gres_ptr->gres_used);	/* Clear cache */
 	if (job_gres_ptr->node_cnt == 0) {
 		job_gres_ptr->node_cnt = node_cnt;
@@ -8074,9 +8093,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		gres_cnt = job_gres_ptr->gres_per_node;
 		for (j = 0; j < node_gres_ptr->type_cnt; j++) {
 			int64_t k;
-			if (!node_gres_ptr->type_name[j] ||
-			    (job_gres_ptr->type_id !=
-			     node_gres_ptr->type_id[j]))
+			if (job_gres_ptr->type_id !=
+			    node_gres_ptr->type_id[j])
 				continue;
 			k = node_gres_ptr->type_cnt_avail[j] -
 			    node_gres_ptr->type_cnt_alloc[j];
@@ -8328,9 +8346,8 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	if (!type_array_updated && job_gres_ptr->type_name) {
 		gres_cnt = job_gres_ptr->gres_per_node;
 		for (j = 0; j < node_gres_ptr->type_cnt; j++) {
-			if (!node_gres_ptr->type_name[j] ||
-			    (job_gres_ptr->type_id !=
-			     node_gres_ptr->type_id[j]))
+			if (job_gres_ptr->type_id !=
+			    node_gres_ptr->type_id[j])
 				continue;
 			k = MIN(gres_cnt, node_gres_ptr->type_cnt_alloc[j]);
 			node_gres_ptr->type_cnt_alloc[j] -= k;
