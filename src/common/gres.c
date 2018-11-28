@@ -9047,7 +9047,8 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
 
-	if (node_offset >= job_gres_ptr->node_cnt) {
+	if ((node_offset >= job_gres_ptr->node_cnt) &&
+	    (job_gres_ptr->node_cnt != 0)) {	/* GRES is type no_consume */
 		error("gres/%s: %s %u.%u node offset invalid (%d >= %u)",
 		      gres_name, __func__, job_id, step_id, node_offset,
 		      job_gres_ptr->node_cnt);
