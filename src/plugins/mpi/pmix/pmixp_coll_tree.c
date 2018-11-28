@@ -183,14 +183,6 @@ static void _reset_coll(pmixp_coll_t *coll)
 		} else {
 			tree->state = PMIXP_COLL_TREE_SYNC;
 		}
-
-		if (!tree->contrib_local) {
-			/* drop the callback info if we haven't started
-			 * next collective locally
-			 */
-			coll->cbdata = NULL;
-			coll->cbfunc = NULL;
-		}
 		break;
 	default:
 		PMIXP_ERROR("Bad collective state = %d", (int)tree->state);
