@@ -1096,6 +1096,7 @@ static int _no_gres_conf(node_config_load_t *node_conf)
  * IN node_name - Name of this node
  * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct, if available
  * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct, if available
+ * NOTE: Called from slurmd and slurmstepd
  */
 extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 					void *xcpuinfo_abs_to_mac,
@@ -1277,11 +1278,10 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 				continue;
 			if (xstrcmp(gres_context[j].gres_name, tmp_name)) {
 				/*
-				 * Should have beeen caught in
+				 * Should have been caught in
 				 * gres_plugin_init()
 				 */
-				error("%s: gres/%s duplicate plugin ID with"
-				      " %s, unable to process",
+				error("%s: gres/%s duplicate plugin ID with %s, unable to process",
 				      __func__, tmp_name,
 				      gres_context[j].gres_name);
 				continue;
@@ -1296,9 +1296,9 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 				 * Avoid over-subscribing memory with
 				 * huge bitmaps
 				 */
-				error("%s: gres/%s has File plus very "
-				      "large Count (%"PRIu64") for "
-				      "node %s, resetting value to %d",
+				error("%s: gres/%s has \"File=\" plus very large "
+				      "\"Count\" (%"PRIu64") for node %s, "
+				      "resetting value to %d",
 				      __func__, tmp_name, count64,
 				      node_name, MAX_GRES_BITMAP);
 				count64 = MAX_GRES_BITMAP;
@@ -2732,10 +2732,12 @@ static void _node_state_dealloc(gres_state_t *gres_ptr)
 			gres_node_ptr->topo_gres_cnt_alloc[i] = 0;
 		}
 	} else {
-		/* This array can be set at startup if a job has been allocated
+		/*
+		 * This array can be set at startup if a job has been allocated
 		 * specific GRES and the node has not registered with the
 		 * details needed to track individual GRES (rather than only
-		 * a GRES count). */
+		 * a GRES count).
+		 */
 		xfree(gres_node_ptr->topo_gres_cnt_alloc);
 	}
 
@@ -6459,7 +6461,7 @@ static int _set_job_bits2(struct job_resources *job_res, int node_inx,
 		return fini;
 	}
 	if (!job_specs->gres_bit_select ||
-	   !job_specs->gres_bit_select[node_inx]) {
+	    !job_specs->gres_bit_select[node_inx]) {
 		error("cons_tres: %s: gres_bit_select NULL for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return SLURM_ERROR;
@@ -7748,7 +7750,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 				    job_gres_ptr->gres_bit_alloc[node_offset]);
 		/* Using pre-selected GRES */
 		} else if (job_gres_ptr->gres_cnt_node_select &&
-		    job_gres_ptr->gres_cnt_node_select[node_index]) {
+			   job_gres_ptr->gres_cnt_node_select[node_index]) {
 			gres_cnt = job_gres_ptr->
 				   gres_cnt_node_select[node_index];
 		} else if (job_gres_ptr->gres_bit_select &&
