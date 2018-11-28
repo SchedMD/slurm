@@ -2612,48 +2612,58 @@ static void *_node_state_dup(void *gres_data)
 		}
 	}
 
-	if (gres_ptr->topo_cnt == 0)
-		return new_gres;
-	new_gres->topo_cnt         = gres_ptr->topo_cnt;
-	new_gres->topo_core_bitmap = xmalloc(gres_ptr->topo_cnt *
-					     sizeof(bitstr_t *));
-	new_gres->topo_gres_bitmap = xmalloc(gres_ptr->topo_cnt *
-					     sizeof(bitstr_t *));
-	new_gres->topo_gres_cnt_alloc = xmalloc(gres_ptr->topo_cnt *
-						sizeof(uint64_t));
-	new_gres->topo_gres_cnt_avail = xmalloc(gres_ptr->topo_cnt *
-						sizeof(uint64_t));
-	new_gres->topo_type_id = xmalloc(gres_ptr->topo_cnt * sizeof(uint32_t));
-	new_gres->topo_type_name = xmalloc(gres_ptr->topo_cnt * sizeof(char *));
-	for (i = 0; i < gres_ptr->topo_cnt; i++) {
-		if (gres_ptr->topo_core_bitmap[i]) {
-			new_gres->topo_core_bitmap[i] =
-				bit_copy(gres_ptr->topo_core_bitmap[i]);
+	if (gres_ptr->topo_cnt) {
+		new_gres->topo_cnt         = gres_ptr->topo_cnt;
+		new_gres->topo_core_bitmap = xmalloc(gres_ptr->topo_cnt *
+						     sizeof(bitstr_t *));
+		new_gres->topo_gres_bitmap = xmalloc(gres_ptr->topo_cnt *
+						     sizeof(bitstr_t *));
+		new_gres->topo_gres_cnt_alloc = xmalloc(gres_ptr->topo_cnt *
+							sizeof(uint64_t));
+		new_gres->topo_gres_cnt_avail = xmalloc(gres_ptr->topo_cnt *
+							sizeof(uint64_t));
+		new_gres->topo_type_id = xmalloc(gres_ptr->topo_cnt *
+						 sizeof(uint32_t));
+		new_gres->topo_type_name = xmalloc(gres_ptr->topo_cnt *
+						   sizeof(char *));
+		for (i = 0; i < gres_ptr->topo_cnt; i++) {
+			if (gres_ptr->topo_core_bitmap[i]) {
+				new_gres->topo_core_bitmap[i] =
+					bit_copy(gres_ptr->topo_core_bitmap[i]);
+			}
+			new_gres->topo_gres_bitmap[i] =
+				bit_copy(gres_ptr->topo_gres_bitmap[i]);
+			new_gres->topo_gres_cnt_alloc[i] =
+				gres_ptr->topo_gres_cnt_alloc[i];
+			new_gres->topo_gres_cnt_avail[i] =
+				gres_ptr->topo_gres_cnt_avail[i];
+			new_gres->topo_type_id[i] = gres_ptr->topo_type_id[i];
+			new_gres->topo_type_name[i] =
+				xstrdup(gres_ptr->topo_type_name[i]);
 		}
-		new_gres->topo_gres_bitmap[i] =
-			bit_copy(gres_ptr->topo_gres_bitmap[i]);
-		new_gres->topo_gres_cnt_alloc[i] =
-			gres_ptr->topo_gres_cnt_alloc[i];
-		new_gres->topo_gres_cnt_avail[i] =
-			gres_ptr->topo_gres_cnt_avail[i];
-		new_gres->topo_type_id[i] = gres_ptr->topo_type_id[i];
-		new_gres->topo_type_name[i] =
-			xstrdup(gres_ptr->topo_type_name[i]);
 	}
 
-	new_gres->type_cnt       = gres_ptr->type_cnt;
-	new_gres->type_cnt_alloc = xmalloc(gres_ptr->type_cnt *
-					   sizeof(uint64_t));
-	new_gres->type_cnt_avail = xmalloc(gres_ptr->type_cnt *
-					   sizeof(uint64_t));
-	new_gres->type_id = xmalloc(gres_ptr->type_cnt * sizeof(uint32_t));
-	new_gres->type_name = xmalloc(gres_ptr->type_cnt * sizeof(char *));
-	for (i = 0; i < gres_ptr->type_cnt; i++) {
-		new_gres->type_cnt_alloc[i] = gres_ptr->type_cnt_alloc[i];
-		new_gres->type_cnt_avail[i] = gres_ptr->type_cnt_avail[i];
-		new_gres->type_id[i] = gres_ptr->type_id[i];
-		new_gres->type_name[i] = xstrdup(gres_ptr->type_name[i]);
+	if (gres_ptr->type_cnt) {
+		new_gres->type_cnt       = gres_ptr->type_cnt;
+		new_gres->type_cnt_alloc = xmalloc(gres_ptr->type_cnt *
+						   sizeof(uint64_t));
+		new_gres->type_cnt_avail = xmalloc(gres_ptr->type_cnt *
+						   sizeof(uint64_t));
+		new_gres->type_id = xmalloc(gres_ptr->type_cnt *
+					    sizeof(uint32_t));
+		new_gres->type_name = xmalloc(gres_ptr->type_cnt *
+					      sizeof(char *));
+		for (i = 0; i < gres_ptr->type_cnt; i++) {
+			new_gres->type_cnt_alloc[i] =
+				gres_ptr->type_cnt_alloc[i];
+			new_gres->type_cnt_avail[i] =
+				gres_ptr->type_cnt_avail[i];
+			new_gres->type_id[i] = gres_ptr->type_id[i];
+			new_gres->type_name[i] =
+				xstrdup(gres_ptr->type_name[i]);
+		}
 	}
+
 	return new_gres;
 }
 
