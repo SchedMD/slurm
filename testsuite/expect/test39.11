@@ -106,7 +106,7 @@ send_user "\n\nTEST: --tres-per-job=craynetwork:# option\n"
 set match 0
 set node_cnt 0
 set timeout $max_job_delay
-if {$craynetwork_count > 1 || $nb_nodes > 1} {
+if {$craynetwork_count > 1 && $nb_nodes > 1} {
 	set gres_target [expr $craynetwork_count * 2 - 1]
 	set node_target 2
 } else {
