@@ -3292,10 +3292,6 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 			prev_save_ptr += offset;
 		} else	/* No more GRES */
 			prev_save_ptr = NULL;
-	} else if (sep[0] == '\0') {
-		/* Malformed input (e.g. "gpu:tesla:") */
-		my_rc = ESLURM_INVALID_GRES;
-		goto fini;
 	} else if ((sep[0] >= '0') && (sep[0] <= '9')) {
 		value = strtoull(sep, &end_ptr, 10);
 		if (value == ULLONG_MAX) {
@@ -3327,6 +3323,10 @@ next:	if (prev_save_ptr[0] == '\0') {	/* Empty input token */
 		*cnt = value;
 		offset = end_ptr - name;
 		prev_save_ptr += offset;
+	} else {
+		/* Malformed input (e.g. "gpu:tesla:") */
+		my_rc = ESLURM_INVALID_GRES;
+		goto fini;
 	}
 
 	/* Find the job GRES record */
