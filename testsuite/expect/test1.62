@@ -101,6 +101,35 @@ proc run_gpu_test { gres_cnt } {
 	return 0
 }
 
+proc run_gpu_fail { gres_spec } {
+	global max_job_delay srun number exit_code file_in
+
+	set timeout $max_job_delay
+	set bad_format 0
+	set devices    0
+	set invalid    0
+	set srun_pid [spawn $srun -N1 -n1 --gres=$gres_spec -t1 ./$file_in]
+	expect {
+		-re "Invalid" {
+			incr invalid
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$invalid == 0} {
+		send_user "\WARNING: Failure to reject job with invalid GRES specification\n"
+		set exit_code 1
+	}
+	return
+}
+
 print_header $test_id
 
 if {[test_alps]} {
@@ -143,6 +172,18 @@ if {[run_gpu_test 1 ] != 0} {
 } elseif {[run_gpu_test 3 ] != 0} {
 	incr exit_code
 }
+
+#
+# Spawn a job via srun with various invalid GRES specifications
+#
+send_user "\nTest various invalid GRES specifications\n"
+run_gpu_fail "gpu::"
+run_gpu_fail "gpu:1X"
+run_gpu_fail "gpu:INVALID_COUNT"
+run_gpu_fail "gpu:tesla:"
+run_gpu_fail "gpu:tesla:INVALID_COUNT"
+run_gpu_fail "gpu:INVALID_TYPE:"
+run_gpu_fail "gpu:INVALID_TYPE:INVALID_COUNT"
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
