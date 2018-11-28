@@ -139,11 +139,11 @@ typedef struct slurm_gres_ops {
 /* Gres plugin context, one for each gres type */
 typedef struct slurm_gres_context {
 	plugin_handle_t	cur_plugin;
+	uint8_t		config_flags;		/* See GRES_CONF_* in gres.h */
 	char *		gres_name;		/* name (e.g. "gpu") */
 	char *		gres_name_colon;	/* name + colon (e.g. "gpu:") */
 	int		gres_name_colon_len;	/* size of gres_name_colon */
 	char *		gres_type;		/* plugin name (e.g. "gres/gpu") */
-	bool		has_file;		/* found "File=" in slurm.conf */
 	slurm_gres_ops_t ops;			/* pointers to plugin symbols */
 	uint32_t	plugin_id;		/* key for searches */
 	plugrack_t	plugin_list;		/* plugrack info */
@@ -920,7 +920,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	if (s_p_get_string(&p->file, "File", tbl)) {
 		p->count = _validate_file(p->file, p->name);
-		p->has_file = 1;
+		p->config_flags |= GRES_CONF_HAS_FILE;
 	}
 
 	if (s_p_get_string(&p->links, "Link",  tbl) ||
@@ -929,8 +929,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	}
 
 	if (s_p_get_string(&p->type_name, "Type", tbl) && !p->file) {
+		p->config_flags |= GRES_CONF_HAS_TYPE;
+//FIXME: Remove this later
 		p->file = xstrdup("/dev/null");
-		p->has_file = 2;
+		p->config_flags |= GRES_CONF_HAS_FILE;
 	}
 
 	if (!s_p_get_boolean((bool *)&p->ignore, "Ignore", tbl))
@@ -1026,30 +1028,42 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	int has_file = -1, has_type = -1, rec_count = 0;
+	int new_has_file = -1, new_has_type = -1, rec_count = 0;
+	bool orig_has_file, orig_has_type;
 
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
 		if (gres_slurmd_conf->plugin_id != context_ptr->plugin_id)
 			continue;
 		rec_count++;
-		if (has_file == -1)
-			has_file = (int) gres_slurmd_conf->has_file;
-		else if (( has_file && !gres_slurmd_conf->has_file) ||
-			 (!has_file &&  gres_slurmd_conf->has_file)) {
-			fatal("gres.conf for %s, some records have File "
-			      "specification while others do not",
+		orig_has_file = gres_slurmd_conf->config_flags &
+				GRES_CONF_HAS_FILE;
+		if (new_has_file == -1) {
+			if (gres_slurmd_conf->config_flags &
+			    GRES_CONF_HAS_FILE) {
+				new_has_file = 1;
+			} else
+				new_has_file = 0;
+		} else if (( new_has_file && !orig_has_file) ||
+			   (!new_has_file &&  orig_has_file)) {
+			fatal("gres.conf for %s, some records have \"File\" specification while others do not",
 			      context_ptr->gres_name);
 		}
-		if (has_type == -1) {
-			has_type = (int) (gres_slurmd_conf->type_name != NULL);
-		} else if (( has_type && !gres_slurmd_conf->type_name) ||
-			   (!has_type &&  gres_slurmd_conf->type_name)) {
-			fatal("gres.conf for %s, some records have Type "
-			      "specification while others do not",
+		orig_has_type = gres_slurmd_conf->config_flags &
+				GRES_CONF_HAS_TYPE;
+		if (new_has_type == -1) {
+			if (gres_slurmd_conf->config_flags &
+			    GRES_CONF_HAS_TYPE) {
+				new_has_type = 1;
+			} else
+				new_has_type = 0;
+		} else if (( new_has_type && !orig_has_type) ||
+			   (!new_has_type &&  orig_has_type)) {
+			fatal("gres.conf for %s, some records have \"Type=\" specification while others do not",
 			      context_ptr->gres_name);
 		}
-		if ((has_file == 0) && (has_type == 0) && (rec_count > 1)) {
+		if ((new_has_file == 0) && (new_has_type == 0) &&
+		    (rec_count > 1)) {
 			fatal("gres.conf duplicate records for %s",
 			      context_ptr->gres_name);
 		}
@@ -1196,7 +1210,7 @@ extern int gres_plugin_node_config_pack(Buf buffer)
 			pack32(magic, buffer);
 			pack64(gres_slurmd_conf->count, buffer);
 			pack32(gres_slurmd_conf->cpu_cnt, buffer);
-			pack8(gres_slurmd_conf->has_file, buffer);
+			pack8(gres_slurmd_conf->config_flags, buffer);
 			pack32(gres_slurmd_conf->plugin_id, buffer);
 			packstr(gres_slurmd_conf->cpus, buffer);
 			packstr(gres_slurmd_conf->links, buffer);
@@ -1221,7 +1235,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 	uint32_t cpu_cnt = 0, magic = 0, plugin_id = 0, utmp32 = 0;
 	uint64_t count64 = 0;
 	uint16_t rec_cnt = 0, protocol_version = 0;
-	uint8_t has_file = 0;
+	uint8_t config_flags = 0;
 	char *tmp_cpus = NULL, *tmp_links = NULL, *tmp_name = NULL;
 	char *tmp_type = NULL;
 	gres_slurmd_conf_t *p;
@@ -1253,7 +1267,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 
 			safe_unpack64(&count64, buffer);
 			safe_unpack32(&cpu_cnt, buffer);
-			safe_unpack8(&has_file, buffer);
+			safe_unpack8(&config_flags, buffer);
 			safe_unpack32(&plugin_id, buffer);
 			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
@@ -1266,14 +1280,22 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 
 			safe_unpack64(&count64, buffer);
 			safe_unpack32(&cpu_cnt, buffer);
-			safe_unpack8(&has_file, buffer);
+			safe_unpack8(&config_flags, buffer);
 			safe_unpack32(&plugin_id, buffer);
 			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
 			tmp_links = NULL;
 			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
 		}
+		if (config_flags & GRES_CONF_OLD_FILE) {
+			/* Old RPC, possibly with "Type=" */
+			config_flags = GRES_CONF_HAS_FILE;
+			if (tmp_type)
+				config_flags |= GRES_CONF_HAS_TYPE;
+		}
 	 	for (j = 0; j < gres_context_cnt; j++) {
+			bool new_has_file,  new_has_type;
+			bool orig_has_file, orig_has_type;
 	 		if (gres_context[j].plugin_id != plugin_id)
 				continue;
 			if (xstrcmp(gres_context[j].gres_name, tmp_name)) {
@@ -1286,12 +1308,15 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 				      gres_context[j].gres_name);
 				continue;
 			}
-			if (gres_context[j].has_file && !has_file && count64) {
-				error("%s: gres/%s lacks File parameter for node %s",
+			new_has_file  = config_flags & GRES_CONF_HAS_FILE;
+			orig_has_file = gres_context[j].config_flags &
+					GRES_CONF_HAS_FILE;
+			if (orig_has_file && !new_has_file && count64) {
+				error("%s: gres/%s lacks \"File=\" parameter for node %s",
 				      __func__, tmp_name, node_name);
-				has_file = 1;
+				config_flags |= GRES_CONF_HAS_FILE;
 			}
-			if (has_file && (count64 > MAX_GRES_BITMAP)) {
+			if (new_has_file && (count64 > MAX_GRES_BITMAP)) {
 				/*
 				 * Avoid over-subscribing memory with
 				 * huge bitmaps
@@ -1303,8 +1328,15 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 				      node_name, MAX_GRES_BITMAP);
 				count64 = MAX_GRES_BITMAP;
 			}
-			if (has_file)	/* Don't clear if already set */
-				gres_context[j].has_file = true;
+			new_has_type  = config_flags & GRES_CONF_HAS_FILE;
+			orig_has_type = gres_context[j].config_flags &
+					GRES_CONF_HAS_TYPE;
+			if (orig_has_type && !new_has_type && count64) {
+				error("%s: gres/%s lacks \"Type\" parameter for node %s",
+				      __func__, tmp_name, node_name);
+				config_flags |= GRES_CONF_HAS_TYPE;
+			}
+			gres_context[j].config_flags |= config_flags;
 			break;
 	 	}
 		if (j >= gres_context_cnt) {
@@ -1322,9 +1354,9 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 			continue;
 		}
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
+		p->config_flags = config_flags;
 		p->count = count64;
 		p->cpu_cnt = cpu_cnt;
-		p->has_file = has_file;
 		p->cpus = tmp_cpus;
 		tmp_cpus = NULL;	/* Nothing left to xfree */
 		p->links = tmp_links;
@@ -1885,6 +1917,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	bitstr_t *tot_core_bitmap = NULL;
+	bool has_file;
 
 	xassert(core_cnt);
 	if (gres_ptr->gres_data == NULL)
@@ -1941,7 +1974,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->topo_cnt = set_cnt;
 	}
 
-	if (context_ptr->has_file && (set_cnt != gres_data->topo_cnt)) {
+	has_file = context_ptr->config_flags & GRES_CONF_HAS_FILE;
+	if (has_file && (set_cnt != gres_data->topo_cnt)) {
 		/*
 		 * Need to rebuild topology info
 		 * Resize the data structures here
@@ -2102,7 +2136,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	else if (gres_data->gres_cnt_avail == NO_VAL64)
 		gres_data->gres_cnt_avail = 0;
 
-	if (context_ptr->has_file) {
+	if (has_file) {
 		if (gres_data->gres_cnt_avail > MAX_GRES_BITMAP) {
 			error("%s: gres/%s has File plus very large Count "
 			      "(%"PRIu64") for node %s, resetting value to %u",
@@ -2374,7 +2408,7 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	else if (gres_data->gres_cnt_avail == NO_VAL64)
 		gres_data->gres_cnt_avail = 0;
 
-	if (context_ptr->has_file) {
+	if (context_ptr->config_flags & GRES_CONF_HAS_FILE) {
 		if (gres_data->gres_bit_alloc == NULL) {
 			gres_data->gres_bit_alloc =
 				bit_alloc(gres_data->gres_cnt_avail);
@@ -2389,8 +2423,10 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	if ((fast_schedule < 2) &&
 	    (gres_data->gres_cnt_found != NO_VAL64) &&
 	    (gres_data->gres_cnt_found <  gres_data->gres_cnt_config)) {
-		/* Do not set node DOWN, but give the node
-		 * a chance to register with more resources */
+		/*
+		 * Do not set node DOWN, but give the node
+		 * a chance to register with more resources
+		 */
 		gres_data->gres_cnt_found = NO_VAL64;
 	} else if ((fast_schedule == 0) &&
 		   (gres_data->gres_cnt_found != NO_VAL64) &&

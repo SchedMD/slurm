@@ -651,11 +651,14 @@ static void _add_gpu_to_gres_list(List gres_list, int device_cnt, int cpu_cnt,
 		list_iterator_destroy(itr);
 		return;
 	}
+	if (device_file)
+		gpu_record->config_flags |= GRES_CONF_HAS_FILE;
+	if (type)
+		gpu_record->config_flags |= GRES_CONF_HAS_TYPE;
 	gpu_record->cpus = xstrdup(cpu_aff_abs_range);
 	gpu_record->type_name = xstrdup(type);
 	gpu_record->name = xstrdup("gpu");
 	gpu_record->file = xstrdup(device_file);
-	gpu_record->has_file = 1;
 	gpu_record->links = xstrdup(nvlinks);
 	gpu_record->count = device_cnt;
 	gpu_record->plugin_id = gres_plugin_build_id("gpu");

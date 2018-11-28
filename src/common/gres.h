@@ -63,8 +63,15 @@ typedef struct {
 	char *path;
 } gres_device_t;
 
+#define GRES_CONF_OLD_FILE	0x01	/* File= is configured. No independent
+					 * information about Type= option.*/
+#define GRES_CONF_HAS_FILE	0x02	/* File= is configured */
+#define GRES_CONF_HAS_TYPE	0x04	/* Type= is configured */
+
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
+	uint8_t config_flags;	/* See GRES_CONF_* values above */
+
 	/* Count of gres available in this configuration record */
 	uint64_t count;
 
@@ -75,7 +82,6 @@ typedef struct gres_slurmd_conf {
 
 	/* Device file associated with this configuration record */
 	char *file;
-	uint8_t has_file;	/* non-zero if file is set, flag for RPC */
 
 	/* Comma-separated list of communication link IDs (numbers) */
 	char *links;

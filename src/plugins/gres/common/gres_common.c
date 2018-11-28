@@ -59,7 +59,7 @@ extern int common_node_config_load(List gres_conf_list,
 	debug_flags = slurm_get_debug_flags();
 	itr = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(itr))) {
-		if ((gres_slurmd_conf->has_file != 1) ||
+		if (!(gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE) ||
 		    !gres_slurmd_conf->file ||
 		    xstrcmp(gres_slurmd_conf->name, gres_name))
 			continue;
