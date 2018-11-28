@@ -110,6 +110,7 @@ send_user "\nGPU count is $gpu_cnt\n"
 send_user "Sockets per node is $sockets_per_node\n"
 send_user "CPUs per socket is $cpus_per_socket\n"
 
+set tot_cpus [expr $sockets_per_node * $cpus_per_socket]
 set tot_gpus $gpu_cnt
 if {$nb_nodes > 1} {
 	incr tot_gpus $gpu_cnt
@@ -131,11 +132,17 @@ make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$C
 #
 # Submit job with various --gpus counters, up to 2 full nodes or 32 GPUs
 #
+#	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $hostname -J "test$test_id" --output=$ofile ./$file_in1
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set job_id 0
 	set ofile ${file_out}.${inx}
 	exec $bin_rm -f $ofile
-	spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $hostname -J "test$test_id" --output=$ofile ./$file_in1
+	if {$tot_gpus > $tot_cpus} {
+#		Assumes no configured DefCPUsPerGPU
+		spawn $sbatch --gpus=$inx -t1 -w $hostname -J "test$test_id" --output=$ofile ./$file_in1
+	} else {
+		spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 -w $hostname -J "test$test_id" --output=$ofile ./$file_in1
+	}
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
