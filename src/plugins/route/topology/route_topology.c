@@ -167,6 +167,8 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	msg_count = hostlist_count(hl);
 	slurm_mutex_lock(&route_lock);
 	if (switch_record_cnt == 0) {
+		if (_run_in_daemon())
+			fatal_abort("%s: Somehow we have 0 for switch_record_cnt and we are here in the slurmctld.  This should never happen.", __func__);
 		/* configs have not already been processed */
 		slurm_conf_init(NULL);
 		if (init_node_conf()) {
