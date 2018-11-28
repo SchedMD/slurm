@@ -67,6 +67,7 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmix: Make multi-slurmd work correctly when using ring communication.
  -- mpi/pmix: Fix double invocation of the PMIx lib fence callback.
  -- mpi/pmix: Remove unneeded libpmix callback drop in tree-based coll.
+ -- Fix race condition in route/topology when the slurmctld is reconfigured.
 
 * Changes in Slurm 18.08.3
 ==========================
