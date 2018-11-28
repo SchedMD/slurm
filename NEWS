@@ -71,7 +71,6 @@ documents those changes that are of interest to users and administrators.
  -- In route/topology validate the slurmctld doesn't try to initialize the
     node system.
  -- Fix issue when requesting invalid gres.
- -- Fix salloc and missing SLURM_NTASKS.
  -- Validate job_ptr in backfill before restoring preempt state.
  -- Fix issue when job's environment is minimal and only contains variables
     Slurm is going to replace internally.
