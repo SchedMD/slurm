@@ -1276,10 +1276,6 @@ static int _attempt_backfill(void)
 		bf_array_task_id = job_queue_rec->array_task_id;
 		xfree(job_queue_rec);
 
-		/* Restore preemption state if needed. */
-		_restore_preempt_state(job_ptr, &tmp_preempt_start_time,
-				       &tmp_preempt_in_progress);
-
 		if (slurmctld_config.shutdown_time ||
 		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){
 			break;
@@ -1331,6 +1327,10 @@ static int _attempt_backfill(void)
 			if (!job_ptr)	/* All task array elements started */
 				continue;
 		}
+
+		/* Restore preemption state if needed. */
+		_restore_preempt_state(job_ptr, &tmp_preempt_start_time,
+				       &tmp_preempt_in_progress);
 
 		/*
 		 * Establish baseline (worst case) start time for pack job
