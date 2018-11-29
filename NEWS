@@ -104,6 +104,7 @@ documents those changes that are of interest to users and administrators.
     node system.
  -- Fix issue when requesting invalid gres.
  -- Fix salloc and missing SLURM_NTASKS.
+ -- Validate job_ptr in backfill before restoring preempt state.
 
 * Changes in Slurm 18.08.3
 ==========================
