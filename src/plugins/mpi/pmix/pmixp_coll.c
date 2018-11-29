@@ -290,3 +290,15 @@ void pmixp_coll_log(pmixp_coll_t *coll)
 		break;
 	}
 }
+
+void pmixp_coll_localcb_nodata(pmixp_coll_t *coll, int status)
+{
+	if (coll->cbfunc) {
+		pmixp_lib_modex_invoke(coll->cbfunc, status, NULL,
+				       0, coll->cbdata, NULL, NULL);
+		/* Clear callback info as we are not allowed
+		 * to use it second ime */
+		coll->cbfunc = NULL;
+		coll->cbdata = NULL;
+	}
+}

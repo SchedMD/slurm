@@ -3535,10 +3535,6 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 			*save_ptr += (comma + 1) - name;
 		else	/* No more GRES */
 			*save_ptr += strlen(name);
-	} else if (sep[0] == '\0') {
-		/* Malformed input (e.g. "gpu:tesla:") */
-		rc = ESLURM_INVALID_GRES;
-		goto fini;
 	} else if ((sep[0] >= '0') && (sep[0] <= '9')) {
 		value = strtoull(sep, &end_ptr, 10);
 		if (value == ULLONG_MAX) {
@@ -3570,6 +3566,10 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		*cnt = value;
 		offset = end_ptr - name;
 		*save_ptr += offset;
+	} else {
+		/* Malformed input (e.g. "gpu:tesla:") */
+		rc = ESLURM_INVALID_GRES;
+		goto fini;
 	}
 fini:
 	if (rc != SLURM_SUCCESS) {

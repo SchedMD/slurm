@@ -183,14 +183,6 @@ static void _reset_coll(pmixp_coll_t *coll)
 		} else {
 			tree->state = PMIXP_COLL_TREE_SYNC;
 		}
-
-		if (!tree->contrib_local) {
-			/* drop the callback info if we haven't started
-			 * next collective locally
-			 */
-			coll->cbdata = NULL;
-			coll->cbfunc = NULL;
-		}
 		break;
 	default:
 		PMIXP_ERROR("Bad collective state = %d", (int)tree->state);
@@ -594,10 +586,10 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		/* something went wrong with upward send.
 		 * notify libpmix about that and abort
 		 * collective */
-		if (coll->cbfunc) {
-			pmixp_lib_modex_invoke(coll->cbfunc, SLURM_ERROR, NULL,
-					       0, coll->cbdata, NULL, NULL);
-		}
+
+		/* respond to the libpmix */
+		pmixp_coll_localcb_nodata(coll, SLURM_ERROR);
+
 		_reset_coll(coll);
 		/* Don't need to do anything else */
 		return false;
@@ -699,9 +691,14 @@ static int _progress_ufwd(pmixp_coll_t *coll)
 		size_t size = get_buf_offset(tree->dfwd_buf) -
 			tree->dfwd_offset;
 		tree->dfwd_cb_wait++;
-		pmixp_lib_modex_invoke(coll->cbfunc, SLURM_SUCCESS, data, size,
-				       coll->cbdata, _libpmix_cb,
-				       (void*)cbdata);
+		pmixp_lib_modex_invoke(coll->cbfunc, SLURM_SUCCESS,
+				       data, size, coll->cbdata,
+				       _libpmix_cb, (void*)cbdata);
+		/* Clear callback info as we are not
+		 * allowed to use it second time
+		 */
+		coll->cbfunc = NULL;
+		coll->cbdata = NULL;
 #ifdef PMIXP_COLL_DEBUG
 		PMIXP_DEBUG("%p: local delivery, size = %lu",
 			    coll, size);
@@ -724,10 +721,10 @@ static int _progress_ufwd_sc(pmixp_coll_t *coll)
 		/* something went wrong with upward send.
 		 * notify libpmix about that and abort
 		 * collective */
-		if (coll->cbfunc) {
-			pmixp_lib_modex_invoke(coll->cbfunc, SLURM_ERROR, NULL,
-					       0, coll->cbdata, NULL, NULL);
-		}
+
+		/* respond to the libpmix */
+		pmixp_coll_localcb_nodata(coll, SLURM_ERROR);
+
 		_reset_coll(coll);
 		/* Don't need to do anything else */
 		return false;
@@ -788,6 +785,11 @@ static int _progress_ufwd_wpc(pmixp_coll_t *coll)
 				       coll->cbdata, _libpmix_cb,
 				       (void *)cbdata);
 		tree->dfwd_cb_wait++;
+		/* Clear callback info as we are not
+		 * allowed to use it second time
+		 */
+		coll->cbfunc = NULL;
+		coll->cbdata = NULL;
 #ifdef PMIXP_COLL_DEBUG
 		PMIXP_DEBUG("%p: local delivery, size = %lu",
 			    coll, size);
@@ -816,10 +818,11 @@ static int _progress_dfwd(pmixp_coll_t *coll)
 		 * notify libpmix about that and abort
 		 * collective */
 		PMIXP_ERROR("%p: failed to send, abort collective", coll);
-		if (coll->cbfunc) {
-			pmixp_lib_modex_invoke(coll->cbfunc, SLURM_ERROR, NULL,
-					       0, coll->cbdata, NULL, NULL);
-		}
+
+
+		/* respond to the libpmix */
+		pmixp_coll_localcb_nodata(coll, SLURM_ERROR);
+
 		_reset_coll(coll);
 		/* Don't need to do anything else */
 		return false;
@@ -1308,17 +1311,8 @@ void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts)
 
 	if (ts - coll->ts > pmixp_info_timeout()) {
 		/* respond to the libpmix */
-		if (tree->contrib_local && coll->cbfunc) {
-			/* Call the callback only if:
-			 * - we were asked to do that (coll->cbfunc != NULL);
-			 * - local contribution was received.
-			 * TODO: we may want to mark this event to respond with
-			 * to the next local request immediately and with the
-			 * proper (status == PMIX_ERR_TIMEOUT)
-			 */
-			pmixp_lib_modex_invoke(coll->cbfunc, PMIXP_ERR_TIMEOUT, NULL,
-					       0, coll->cbdata, NULL, NULL);
-		}
+		pmixp_coll_localcb_nodata(coll, PMIXP_ERR_TIMEOUT);
+
 		/* report the timeout event */
 		PMIXP_ERROR("%p: collective timeout seq=%d", coll, coll->seq);
 		pmixp_coll_log(coll);
@@ -1354,38 +1348,50 @@ void pmixp_coll_tree_log(pmixp_coll_t *coll)
 			    tree->contrib_prnt ? "true" : "false");
 	}
 	if (tree->chldrn_cnt) {
-		char *done_contrib, *wait_contrib;
-		hostlist_t hl_done_contrib, hl_wait_contrib;
-		hl_done_contrib = hostlist_copy(tree->all_chldrn_hl);
-		hl_wait_contrib = hostlist_copy(tree->all_chldrn_hl);
+		char *done_contrib = NULL, *wait_contrib = NULL;
+		hostlist_t hl_done_contrib = NULL,
+			hl_wait_contrib = NULL, *tmp_list;
 
 		PMIXP_ERROR("child contribs [%d]:", tree->chldrn_cnt);
 		for (i = 0; i < tree->chldrn_cnt; i++) {
 			nodename = pmixp_info_job_host(tree->chldrn_ids[i]);
-			if (tree->contrib_chld[i]) {
-				hostlist_delete_host(hl_wait_contrib, nodename);
-			} else {
-				hostlist_delete_host(hl_done_contrib, nodename);
-			}
+			tmp_list = tree->contrib_chld[i] ?
+				&hl_done_contrib : &hl_wait_contrib;
+
+			if (!*tmp_list)
+				*tmp_list = hostlist_create(nodename);
+			else
+				hostlist_push_host(*tmp_list, nodename);
+
 			xfree(nodename);
 		}
-		done_contrib = slurm_hostlist_ranged_string_xmalloc(
-			hl_done_contrib);
-		wait_contrib = slurm_hostlist_ranged_string_xmalloc(
-			hl_wait_contrib);
+		if (hl_done_contrib) {
+			done_contrib =
+				slurm_hostlist_ranged_string_xmalloc(
+					hl_done_contrib);
+			FREE_NULL_HOSTLIST(hl_done_contrib);
+		}
+
+		if (hl_wait_contrib) {
+			wait_contrib =
+				slurm_hostlist_ranged_string_xmalloc(
+					hl_wait_contrib);
+			FREE_NULL_HOSTLIST(hl_wait_contrib);
+		}
 		PMIXP_ERROR("\t done contrib: %s",
-			    strlen(done_contrib) ? done_contrib : "-");
+			    done_contrib ? done_contrib : "-");
 		PMIXP_ERROR("\t wait contrib: %s",
-			    strlen(wait_contrib) ? wait_contrib : "-");
-		hostlist_destroy(hl_done_contrib);
-		hostlist_destroy(hl_wait_contrib);
+			    wait_contrib ? wait_contrib : "-");
 		xfree(done_contrib);
 		xfree(wait_contrib);
 	}
-	PMIXP_ERROR("status: coll=%s upfw=%s dfwd=%s", pmixp_coll_tree_state2str(tree->state),
+	PMIXP_ERROR("status: coll=%s upfw=%s dfwd=%s",
+		    pmixp_coll_tree_state2str(tree->state),
 		    pmixp_coll_tree_sndstatus2str(tree->ufwd_status),
 		    pmixp_coll_tree_sndstatus2str(tree->dfwd_status));
-	PMIXP_ERROR("bufs (size/remain): upfw %u/%u, dfwd %u/%u",
-		    size_buf(tree->ufwd_buf), remaining_buf(tree->ufwd_buf),
-		    size_buf(tree->dfwd_buf), remaining_buf(tree->dfwd_buf));
+	PMIXP_ERROR("dfwd status: dfwd_cb_cnt=%u, dfwd_cb_wait=%u",
+		    tree->dfwd_cb_cnt, tree->dfwd_cb_wait);
+	PMIXP_ERROR("bufs (offset/size): upfw %u/%u, dfwd %u/%u",
+		    get_buf_offset(tree->ufwd_buf), size_buf(tree->ufwd_buf),
+		    get_buf_offset(tree->dfwd_buf), size_buf(tree->dfwd_buf));
 }

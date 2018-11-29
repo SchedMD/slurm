@@ -3302,10 +3302,25 @@ extern int pack_ctld_job_step_info_response_msg(
 extern int kill_step_on_node(struct job_record  *job_ptr,
 			     struct node_record *node_ptr, bool node_fail)
 {
+#ifdef HAVE_FRONT_END
+	static bool front_end = true;
+#else
+	static bool front_end = false;
+#endif
+	static int launch_slurm = -1;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
-	int found = 0;
-	int bit_position;
+	int i, i_first, i_last;
+	uint32_t step_rc = 0;
+	int bit_position, found = 0, rem = 0, step_node_inx;
+	step_complete_msg_t req;
+
+	if (launch_slurm == -1) {
+		if (!xstrcmp(slurmctld_conf.launch_type, "launch/slurm"))
+			launch_slurm = 1;
+		else
+			launch_slurm = 0;
+	}
 
 	if ((job_ptr == NULL) || (node_ptr == NULL))
 		return found;
@@ -3315,13 +3330,47 @@ extern int kill_step_on_node(struct job_record  *job_ptr,
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;
-		if (bit_test(step_ptr->step_node_bitmap, bit_position) == 0)
+		if (!bit_test(step_ptr->step_node_bitmap, bit_position))
 			continue;
-		if (node_fail && !step_ptr->no_kill)
-			srun_step_complete(step_ptr);
-		info("killing %pS on node %s", step_ptr, node_ptr->name);
-		signal_step_tasks_on_node(node_ptr->name, step_ptr, SIGKILL,
-					  REQUEST_TERMINATE_TASKS);
+
+		/* Remove step allocation from the job's allocation */
+		i_first = bit_ffs(step_ptr->step_node_bitmap);
+		i_last = bit_fls(step_ptr->step_node_bitmap);
+		for (i = i_first, step_node_inx = 0; i <= i_last; i++) {
+			if (i == bit_position)
+				break;
+			if (bit_test(step_ptr->step_node_bitmap, i))
+				step_node_inx++;
+		}
+		memset(&req, 0, sizeof(step_complete_msg_t));
+		req.job_id = job_ptr->job_id;
+		req.job_step_id = step_ptr->step_id;
+		req.range_first = step_node_inx;
+		req.range_last = step_node_inx;
+		req.step_rc = 9;
+		req.jobacct = NULL;	/* No accounting */
+		(void) step_partial_comp(&req, 0, &rem, &step_rc);
+
+		if (node_fail && !step_ptr->no_kill) {
+			info("Killing %pS due to failed node %s", step_ptr,
+			     node_ptr->name);
+
+			/*
+			 * Never signal tasks on a front_end system or not using
+			 * Slurm task launcher (i.e. BGQ and ALPS) system.
+			 * Otherwise signal step on all nodes
+			 */
+			if (!front_end && launch_slurm) {
+				signal_step_tasks(step_ptr, SIGKILL,
+						  REQUEST_TERMINATE_TASKS);
+			}
+		} else {
+			info("Killing %pS on failed node %s", step_ptr,
+			     node_ptr->name);
+			signal_step_tasks_on_node(node_ptr->name, step_ptr,
+						  SIGKILL,
+						  REQUEST_TERMINATE_TASKS);
+		}
 		found++;
 	}
 

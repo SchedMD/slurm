@@ -331,6 +331,34 @@ static void _libpmix_cb(void *_vcbdata)
 	xfree(cbdata);
 }
 
+static void _invoke_callback(pmixp_coll_ring_ctx_t *coll_ctx)
+{
+	pmixp_coll_ring_cbdata_t *cbdata;
+	char *data;
+	size_t data_sz;
+	pmixp_coll_t *coll = _ctx_get_coll(coll_ctx);
+
+	if (!coll->cbfunc)
+		return;
+
+	data = get_buf_data(coll_ctx->ring_buf);
+	data_sz = get_buf_offset(coll_ctx->ring_buf);
+	cbdata = xmalloc(sizeof(pmixp_coll_ring_cbdata_t));
+
+	cbdata->coll = coll;
+	cbdata->coll_ctx = coll_ctx;
+	cbdata->buf = coll_ctx->ring_buf;
+	cbdata->seq = coll_ctx->seq;
+	pmixp_lib_modex_invoke(coll->cbfunc, SLURM_SUCCESS,
+			       data, data_sz,
+			       coll->cbdata, _libpmix_cb, (void *)cbdata);
+	/*
+	 * Clear callback info as we are not allowed to use it second time
+	 */
+	coll->cbfunc = NULL;
+	coll->cbdata = NULL;
+}
+
 static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 {
 	int ret = 0;
@@ -351,25 +379,7 @@ static void _progress_coll_ring(pmixp_coll_ring_ctx_t *coll_ctx)
 			/* check for all data is collected and forwarded */
 			if (!_ring_remain_contrib(coll_ctx) ) {
 				coll_ctx->state = PMIXP_COLL_RING_FINALIZE;
-
-				if (coll->cbfunc) {
-					pmixp_coll_ring_cbdata_t *cbdata;
-
-					cbdata = xmalloc(
-						sizeof(pmixp_coll_ring_cbdata_t));
-					cbdata->coll = coll;
-					cbdata->coll_ctx = coll_ctx;
-					cbdata->buf = coll_ctx->ring_buf;
-					cbdata->seq = coll_ctx->seq;
-					pmixp_lib_modex_invoke(
-						coll->cbfunc, SLURM_SUCCESS,
-						get_buf_data(
-							coll_ctx->ring_buf),
-						get_buf_offset(
-							coll_ctx->ring_buf),
-						coll->cbdata, _libpmix_cb,
-						(void *)cbdata);
-				}
+				_invoke_callback(coll_ctx);
 				ret = true;
 			}
 			break;
@@ -721,12 +731,8 @@ void pmixp_coll_ring_reset_if_to(pmixp_coll_t *coll, time_t ts) {
 		}
 		if (ts - coll->ts > pmixp_info_timeout()) {
 			/* respond to the libpmix */
-			if (coll_ctx->contrib_local && coll->cbfunc) {
-				pmixp_lib_modex_invoke(coll->cbfunc,
-						       PMIXP_ERR_TIMEOUT, NULL,
-						       0, coll->cbdata,
-						       NULL, NULL);
-			}
+			pmixp_coll_localcb_nodata(coll, PMIXP_ERR_TIMEOUT);
+
 			/* report the timeout event */
 			PMIXP_ERROR("%p: collective timeout seq=%d",
 				    coll, coll_ctx->seq);
@@ -770,13 +776,9 @@ void pmixp_coll_ring_log(pmixp_coll_t *coll)
 
 		if (coll_ctx->in_use) {
 			int id;
-			char *done_contrib, *wait_contrib;
-			hostlist_t hl_done_contrib, hl_wait_contrib;
-
-			pmixp_hostset_from_ranges(coll->pset.procs,
-						  coll->pset.nprocs,
-						  &hl_done_contrib);
-			hl_wait_contrib = hostlist_copy(hl_done_contrib);
+			char *done_contrib = NULL, *wait_contrib = NULL;
+			hostlist_t hl_done_contrib = NULL,
+				hl_wait_contrib = NULL, *tmp_list;
 
 			PMIXP_ERROR("\t seq=%d contribs: loc=%d/prev=%d/fwd=%d",
 				    coll_ctx->seq, coll_ctx->contrib_local,
@@ -786,34 +788,48 @@ void pmixp_coll_ring_log(pmixp_coll_t *coll)
 				    coll->peers_cnt);
 
 			for (id = 0; id < coll->peers_cnt; id++) {
-				char *nodename = pmixp_info_job_host(id);
+				char *nodename;
 
-				if(coll_ctx->contrib_map[id]) {
-					hostlist_delete_host(hl_wait_contrib,
-							     nodename);
-				} else {
-					hostlist_delete_host(hl_done_contrib,
-							     nodename);
-				}
+				if (coll->my_peerid == id)
+					continue;
+
+				nodename = pmixp_info_job_host(id);
+
+				tmp_list = coll_ctx->contrib_map[id] ?
+					&hl_done_contrib : &hl_wait_contrib;
+
+				if (!*tmp_list)
+					*tmp_list = hostlist_create(nodename);
+				else
+					hostlist_push_host(*tmp_list, nodename);
 				xfree(nodename);
 			}
-			done_contrib = slurm_hostlist_ranged_string_xmalloc(
-				hl_done_contrib);
-			wait_contrib = slurm_hostlist_ranged_string_xmalloc(
-				hl_wait_contrib);
-			PMIXP_ERROR("\t done contrib: %s",
-				    strlen(done_contrib) ? done_contrib : "-");
-			PMIXP_ERROR("\t wait contrib: %s",
-				    strlen(wait_contrib) ? wait_contrib : "-");
+			if (hl_done_contrib) {
+				done_contrib =
+					slurm_hostlist_ranged_string_xmalloc(
+						hl_done_contrib);
+				FREE_NULL_HOSTLIST(hl_done_contrib);
+			}
+
+			if (hl_wait_contrib) {
+				wait_contrib =
+					slurm_hostlist_ranged_string_xmalloc(
+						hl_wait_contrib);
+				FREE_NULL_HOSTLIST(hl_wait_contrib);
+			}
+			PMIXP_ERROR("\t\t done contrib: %s",
+				    done_contrib ? done_contrib : "-");
+			PMIXP_ERROR("\t\t wait contrib: %s",
+				    wait_contrib ? wait_contrib : "-");
 			PMIXP_ERROR("\t status=%s",
 				    pmixp_coll_ring_state2str(coll_ctx->state));
-			PMIXP_ERROR("\t buf size=%u, remain=%u",
-				    size_buf(coll_ctx->ring_buf),
-				    remaining_buf(coll_ctx->ring_buf));
+			if (coll_ctx->ring_buf) {
+				PMIXP_ERROR("\t buf (offset/size): %u/%u",
+					    get_buf_offset(coll_ctx->ring_buf),
+					    size_buf(coll_ctx->ring_buf));
+			}
 			xfree(done_contrib);
 			xfree(wait_contrib);
-			hostlist_destroy(hl_done_contrib);
-			hostlist_destroy(hl_wait_contrib);
 		}
 	}
 }
