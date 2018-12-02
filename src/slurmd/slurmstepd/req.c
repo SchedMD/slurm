@@ -77,7 +77,7 @@
 #include "src/slurmd/common/task_plugin.h"
 
 static void *_handle_accept(void *arg);
-static int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid);
+static int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_state(int fd, stepd_step_rec_t *job);
 static int _handle_info(int fd, stepd_step_rec_t *job);
 static int _handle_mem_limits(int fd, stepd_step_rec_t *job);
@@ -396,7 +396,6 @@ _handle_accept(void *arg)
 	void *auth_cred;
 	int rc;
 	uid_t uid;
-	gid_t gid;
 	char *auth_info;
 
 	debug3("Entering _handle_accept (new thread)");
@@ -431,11 +430,10 @@ _handle_accept(void *arg)
 		goto fail;
 	}
 
-	/* Get the uid & gid from the credential, then destroy it. */
+	/* Get the uid from the credential, then destroy it. */
 	uid = g_slurm_auth_get_uid(auth_cred, auth_info);
-	gid = g_slurm_auth_get_gid(auth_cred, auth_info);
 	xfree(auth_info);
-	debug3("  Identity: uid=%d, gid=%d", uid, gid);
+	debug3("  Identity: uid=%u", uid);
 	g_slurm_auth_destroy(auth_cred);
 	FREE_NULL_BUFFER(buffer);
 
@@ -443,7 +441,7 @@ _handle_accept(void *arg)
 	safe_write(fd, &rc, sizeof(int));
 
 	while (1) {
-		rc = _handle_request(fd, job, uid, gid);
+		rc = _handle_request(fd, job, uid);
 		if (rc != SLURM_SUCCESS)
 			break;
 	}
@@ -471,8 +469,7 @@ rwfail:
 }
 
 
-int
-_handle_request(int fd, stepd_step_rec_t *job, uid_t uid, gid_t gid)
+int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	int req;
