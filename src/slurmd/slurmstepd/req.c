@@ -474,16 +474,16 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	int req;
 
-	debug3("Entering _handle_request");
+	debug3("%s: entering", __func__);
 	if ((rc = read(fd, &req, sizeof(int))) != sizeof(int)) {
 		if (rc == 0) { /* EOF, normal */
 			return -1;
 		} else {
-			debug3("Leaving _handle_request on read error: %m");
+			debug3("%s: leaving on read error: %m", __func__);
 			return SLURM_ERROR;
 		}
 	}
-	debug3("Got request %d", req);
+
 	switch (req) {
 	case REQUEST_SIGNAL_PROCESS_GROUP:	/* Defunct */
 	case REQUEST_SIGNAL_TASK_LOCAL:		/* Defunct */
@@ -578,8 +578,7 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid)
 		break;
 	}
 
-	debug3("Leaving  _handle_request: %s",
-	       rc ? "SLURM_ERROR" : "SLURM_SUCCESS");
+	debug3("%s: leaving with rc: %d", __func__, rc);
 	return rc;
 }
 
