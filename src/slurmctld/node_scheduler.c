@@ -152,7 +152,7 @@ static void _set_sched_weight(struct node_set *node_set_ptr);
 static int _sort_node_set(const void *x, const void *y);
 static bitstr_t *_valid_features(struct job_record *job_ptr,
 				 struct config_record *config_ptr,
-				 bool can_reboot);
+				 bool can_reboot, bitstr_t *reboot_bitmap);
 
 static uint32_t reboot_weight = 0;
 
@@ -3583,6 +3583,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	bool has_xor = false;
 	bool resv_overlap = false;
 	bitstr_t *node_maps[NM_TYPES] = { NULL, NULL, NULL, NULL, NULL, NULL };
+	bitstr_t *reboot_bitmap = NULL;
 
 	if (job_ptr->resv_name) {
 		/*
@@ -3650,6 +3651,8 @@ static int _build_node_list(struct job_record *job_ptr,
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
+	if (can_reboot)
+		reboot_bitmap = bit_alloc(node_record_count);
 	node_set_inx = 0;
 	node_set_len = list_count(config_list) * 8 + 1;
 	node_set_ptr = (struct node_set *)
@@ -3720,7 +3723,7 @@ static int _build_node_list(struct job_record *job_ptr,
 
 		if (has_xor) {
 			tmp_feature = _valid_features(job_ptr, config_ptr,
-						      can_reboot);
+						      can_reboot, reboot_bitmap);
 			if (tmp_feature == NULL) {
 				FREE_NULL_BITMAP(node_set_ptr[node_set_inx].
 						 my_bitmap);
@@ -3768,8 +3771,13 @@ static int _build_node_list(struct job_record *job_ptr,
 
 		/* Identify the nodes that need reboot for use */
 		if (!test_only && can_reboot) {
-			(void) _match_feature(job_ptr->details->feature_list,
-					      &node_maps[REBOOT]);
+			if (has_xor) {
+				node_maps[REBOOT] = bit_copy(reboot_bitmap);
+			} else {
+				(void) _match_feature(
+					job_ptr->details->feature_list,
+					&node_maps[REBOOT]);
+			}
 			/* No nodes in set require reboot */
 			if (node_maps[REBOOT] &&
 			    !bit_overlap(prev_node_set_ptr->my_bitmap,
@@ -3991,6 +3999,7 @@ end_node_set:
 		}
 	}
 
+	FREE_NULL_BITMAP(reboot_bitmap);
 	*node_set_size = node_set_inx;
 	*node_set_pptr = node_set_ptr;
 	return SLURM_SUCCESS;
@@ -4361,6 +4370,7 @@ extern int pick_batch_host(struct job_record *job_ptr)
  * IN config_ptr - node's configuration record
  * IN can_reboot - if true node can use any available feature,
  *	else job can use only active features
+ * IN reboot_bitmap - bitmap of nodes requiring reboot for use (updated)
  * RET NULL if request is not satisfied, otherwise a bitmap indicating
  *	which mutually exclusive features are satisfied. For example
  *	_valid_features("[fs1|fs2|fs3|fs4]", "fs3") returns a bitmap with
@@ -4372,11 +4382,12 @@ extern int pick_batch_host(struct job_record *job_ptr)
  */
 static bitstr_t *_valid_features(struct job_record *job_ptr,
 				 struct config_record *config_ptr,
-				 bool can_reboot)
+				 bool can_reboot, bitstr_t *reboot_bitmap)
 {
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *result_node_bitmap = NULL, *paren_node_bitmap = NULL;
-	bitstr_t *working_node_bitmap;
+	bitstr_t *working_node_bitmap, *active_node_bitmap = NULL;
+	bitstr_t *tmp_node_bitmap = NULL;
 	ListIterator feat_iter;
 	job_feature_t *job_feat_ptr;
 	int last_op = FEATURE_OP_AND, paren_op = FEATURE_OP_AND;
@@ -4394,6 +4405,8 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 			/* Combine features within parenthesis */
 			paren_node_bitmap =
 				bit_copy(job_feat_ptr->node_bitmap_avail);
+			if (can_reboot)
+				active_node_bitmap = bit_copy(paren_node_bitmap);
 			last_paren = job_feat_ptr->paren;
 			paren_op = job_feat_ptr->op_code;
 			while ((job_feat_ptr = (job_feature_t *)
@@ -4402,6 +4415,8 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 				     can_reboot) {
 					bit_and(paren_node_bitmap,
 						job_feat_ptr->node_bitmap_avail);
+					bit_and(active_node_bitmap,
+						job_feat_ptr->node_bitmap_active);
 				} else if (paren_op == FEATURE_OP_AND) {
 					bit_and(paren_node_bitmap,
 						job_feat_ptr->node_bitmap_active);
@@ -4409,6 +4424,8 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 					   can_reboot) {
 					bit_or(paren_node_bitmap,
 					       job_feat_ptr->node_bitmap_avail);
+					bit_or(active_node_bitmap,
+					       job_feat_ptr->node_bitmap_active);
 				} else if (paren_op == FEATURE_OP_OR) {
 					bit_or(paren_node_bitmap,
 					       job_feat_ptr->node_bitmap_active);
@@ -4438,13 +4455,23 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 		    ((job_feat_ptr->op_code == FEATURE_OP_END)  &&
 		     ((last_op == FEATURE_OP_XAND) ||
 		      (last_op == FEATURE_OP_XOR)))) {
-			if (bit_super_set(config_ptr->node_bitmap,
-					  working_node_bitmap)) {
+			if (bit_overlap(config_ptr->node_bitmap,
+					working_node_bitmap)) {
 				bit_set(result_node_bitmap, position);
+				if (can_reboot && reboot_bitmap &&
+				    active_node_bitmap) {
+					tmp_node_bitmap = bit_copy(config_ptr->
+								   node_bitmap);
+					bit_and_not(tmp_node_bitmap,
+						    active_node_bitmap);
+					bit_or(reboot_bitmap, tmp_node_bitmap);
+					bit_free(tmp_node_bitmap);
+				}
 			}
 			position++;
 			last_op = job_feat_ptr->op_code;
 		}
+		FREE_NULL_BITMAP(active_node_bitmap);
 		FREE_NULL_BITMAP(paren_node_bitmap);
 	}
 	list_iterator_destroy(feat_iter);
