@@ -86,6 +86,8 @@ documents those changes that are of interest to users and administrators.
     node change when possible.
  -- Fix scheduling logic bug. There should have been a test for _not_
     NODE_SET_REBOOT to continue.
+ -- Fix a scheuling logic bug with respect to XOR operation support when there
+    are down nodes.
 
 * Changes in Slurm 18.08.3
 ==========================

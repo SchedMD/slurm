@@ -1253,8 +1253,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			 * purge it
 			 */
 			for (i = 0; i < node_set_size; i++) {
-				if (!bit_super_set(node_set_ptr[i].my_bitmap,
-						   work_bitmap))
+				if (!bit_overlap(node_set_ptr[i].my_bitmap,
+						 work_bitmap))
 					continue;
 				tmp_node_set_ptr[tmp_node_set_size].
 					cpus_per_node =
@@ -1277,6 +1277,13 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					bit_copy(node_set_ptr[i].feature_bits);
 				tmp_node_set_ptr[tmp_node_set_size].my_bitmap =
 					bit_copy(node_set_ptr[i].my_bitmap);
+				bit_and(tmp_node_set_ptr[tmp_node_set_size].
+					my_bitmap, work_bitmap);
+				if (accumulate_bitmap && has_xand) {
+					bit_and_not(tmp_node_set_ptr[
+						tmp_node_set_size].my_bitmap,
+						accumulate_bitmap);
+				}
 				prev_node_set_ptr = tmp_node_set_ptr +
 						    tmp_node_set_size;
 				tmp_node_set_size++;
