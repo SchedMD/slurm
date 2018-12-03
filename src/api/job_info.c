@@ -347,7 +347,6 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char *tmp6_ptr;
 	char tmp_line[1024 * 128];
 	char tmp_path[MAXPATHLEN];
-	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
 	job_resources_t *job_resrcs = job_ptr->job_resrcs;
 	char *out = NULL;
@@ -568,10 +567,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 13 ******/
 	xstrfmtcat(out, "%s=%s", nodelist, job_ptr->nodes);
-	if (job_ptr->nodes && ionodes) {
-		xstrfmtcat(out, "[%s]", ionodes);
-		xfree(ionodes);
-	}
+
 	if (job_ptr->sched_nodes)
 		xstrfmtcat(out, " Sched%s=%s", nodelist, job_ptr->sched_nodes);
 

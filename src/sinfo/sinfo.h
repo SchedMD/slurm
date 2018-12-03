@@ -108,7 +108,6 @@ typedef struct {
 	hostlist_t hostnames;
 	hostlist_t node_addr;
 	hostlist_t nodes;
-	hostlist_t ionodes;
 
 	/* part_info contains partition, avail, max_time, job_size,
 	 * root, share/oversubscribe, groups, priority */
