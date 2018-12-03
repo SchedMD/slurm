@@ -71,9 +71,34 @@ static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 	month_start = slurm_mktime(&start_tm);
 
 	query = xstrdup_printf("UPDATE \"%s_%s\" SET hourly_rollup = %ld, "
-			       "daily_rollup = %ld, monthly_rollup = %ld",
+			       "daily_rollup = %ld, monthly_rollup = %ld;",
 			       mysql_conn->cluster_name, last_ran_table,
 			       month_start, month_start, month_start);
+
+	/*
+	 * Delete allocated time from the assoc and wckey usage tables.
+	 * If the only usage during those times was runaway jobs, then rollup
+	 * won't clear that usage, so we have to clear it here. Rollup will
+	 * re-create the correct rows in these tables.
+	 */
+	xstrfmtcat(query, "DELETE FROM \"%s_%s\" where time_start >= %ld;",
+		   mysql_conn->cluster_name, assoc_hour_table,
+		   month_start);
+	xstrfmtcat(query, "DELETE FROM \"%s_%s\" where time_start >= %ld;",
+		   mysql_conn->cluster_name, assoc_day_table,
+		   month_start);
+	xstrfmtcat(query, "DELETE FROM \"%s_%s\" where time_start >= %ld;",
+		   mysql_conn->cluster_name, assoc_month_table,
+		   month_start);
+	xstrfmtcat(query, "DELETE FROM \"%s_%s\" where time_start >= %ld;",
+		   mysql_conn->cluster_name, wckey_hour_table,
+		   month_start);
+	xstrfmtcat(query, "DELETE FROM \"%s_%s\" where time_start >= %ld;",
+		   mysql_conn->cluster_name, wckey_day_table,
+		   month_start);
+	xstrfmtcat(query, "DELETE FROM \"%s_%s\" where time_start >= %ld;",
+		   mysql_conn->cluster_name, wckey_month_table,
+		   month_start);
 
 	if (debug_flags & DEBUG_FLAG_DB_QUERY)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);

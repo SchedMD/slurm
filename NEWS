@@ -75,6 +75,9 @@ documents those changes that are of interest to users and administrators.
  -- Validate job_ptr in backfill before restoring preempt state.
  -- Fix issue when job's environment is minimal and only contains variables
     Slurm is going to replace internally.
+ -- When handling runaway jobs remove all usage before rollup to remove any
+    time that wasn't existent instead of just updating lines that have time
+    with a lesser time.
 
 * Changes in Slurm 18.08.3
 ==========================
