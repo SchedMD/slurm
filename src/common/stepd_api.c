@@ -208,19 +208,12 @@ _guess_nodename(void)
 }
 
 /*
- * Connect to a slurmstepd proccess by way of its unix domain socket.
- *
- * Both "directory" and "nodename" may be null, in which case stepd_connect
- * will attempt to determine them on its own.  If you are using multiple
- * slurmd on one node (unusual outside of development environments), you
- * will get one of the local NodeNames more-or-less at random.
- *
- * Returns a socket descriptor for the opened socket on success,
- * and -1 on error.
+ * Legacy version for connecting to pre-19.05 stepds.
+ * Remove this two versions after 19.05 is released.
  */
-extern int
-stepd_connect(const char *directory, const char *nodename,
-	      uint32_t jobid, uint32_t stepid, uint16_t *protocol_version)
+static int _stepd_connect_legacy(const char *directory, const char *nodename,
+				 uint32_t jobid, uint32_t stepid,
+				 uint16_t *protocol_version)
 {
 	int req = REQUEST_CONNECT;
 	int fd = -1;
@@ -230,22 +223,6 @@ stepd_connect(const char *directory, const char *nodename,
 	char *local_nodename = NULL;
 	Buf buffer;
 	int len;
-
-	*protocol_version = 0;
-
-	if (nodename == NULL) {
-		if (!(local_nodename = _guess_nodename()))
-			return -1;
-		nodename = local_nodename;
-	}
-	if (directory == NULL) {
-		slurm_ctl_conf_t *cf;
-
-		cf = slurm_conf_lock();
-		directory = slurm_conf_expand_slurmd_path(
-			cf->slurmd_spooldir, nodename);
-		slurm_conf_unlock();
-	}
 
 	buffer = init_buf(0);
 	/* Create an auth credential */
@@ -302,6 +279,71 @@ fail1:
 	free_buf(buffer);
 	xfree(local_nodename);
 	return -1;
+}
+
+/*
+ * Connect to a slurmstepd proccess by way of its unix domain socket.
+ *
+ * Both "directory" and "nodename" may be null, in which case stepd_connect
+ * will attempt to determine them on its own.  If you are using multiple
+ * slurmd on one node (unusual outside of development environments), you
+ * will get one of the local NodeNames more-or-less at random.
+ *
+ * Returns a file descriptor for the opened socket on success alongside the
+ * protocol_version for the stepd, or -1 on error.
+ */
+extern int stepd_connect(const char *directory, const char *nodename,
+			 uint32_t jobid, uint32_t stepid,
+			 uint16_t *protocol_version)
+{
+	int req = SLURM_PROTOCOL_VERSION;
+	int fd = -1;
+	int rc;
+	char *local_nodename = NULL;
+
+	*protocol_version = 0;
+
+	if (nodename == NULL) {
+		if (!(local_nodename = _guess_nodename()))
+			return -1;
+		nodename = local_nodename;
+	}
+	if (directory == NULL) {
+		slurm_ctl_conf_t *cf = slurm_conf_lock();
+		directory = slurm_conf_expand_slurmd_path(cf->slurmd_spooldir,
+							  nodename);
+		slurm_conf_unlock();
+	}
+
+	/* Connect to the step */
+	fd = _step_connect(directory, nodename, jobid, stepid);
+	if (fd == -1)
+		goto fail1;
+
+	safe_write(fd, &req, sizeof(int));
+	safe_read(fd, &rc, sizeof(int));
+	if (rc < 0)
+		goto rwfail;
+	else if (rc)
+		*protocol_version = rc;
+
+	xfree(local_nodename);
+	return fd;
+
+rwfail:
+	close(fd);
+	/*
+	 * Most likely case for ending up here is when connecting to a
+	 * pre-19.05 stepd. Assume that the stepd shut the connection down
+	 * since we sent SLURM_PROTOCOL_VERSION instead of SOCKET_CONNECT,
+	 * and retry with the older connection style. Remove this fallback
+	 * 2 versions after 19.05.
+	 */
+	fd = _stepd_connect_legacy(directory, nodename, jobid, stepid,
+				   protocol_version);
+fail1:
+	xfree(local_nodename);
+	return fd;
 }
 
 

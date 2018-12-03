@@ -37,6 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE	/* needed for struct ucred definition */
+
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -384,58 +386,80 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	return SLURM_SUCCESS;
 }
 
-static void *
-_handle_accept(void *arg)
+static void *_handle_accept(void *arg)
 {
 	/*struct request_params *param = (struct request_params *)arg;*/
 	int fd = ((struct request_params *)arg)->fd;
 	stepd_step_rec_t *job = ((struct request_params *)arg)->job;
 	int req;
-	int len;
+	int client_protocol_ver;
 	Buf buffer = NULL;
-	void *auth_cred;
 	int rc;
 	uid_t uid;
-	char *auth_info;
 
-	debug3("Entering _handle_accept (new thread)");
+	debug3("%s: entering (new thread)", __func__);
 	xfree(arg);
 
+	/*
+	 * Prior to 19.05, REQUEST_CONNECT was the first thing written on
+	 * the socket, followed by an auth_cred. In 19.05, this changes over
+	 * to SLURM_PROTOCOL_VERSION from the client and the (unneeded)
+	 * credential is no longer received. The REQUEST_CONNECT block should
+	 * be removed two versions after 19.05.
+	 */
 	safe_read(fd, &req, sizeof(int));
-	if (req != REQUEST_CONNECT) {
-		error("First message must be REQUEST_CONNECT");
-		goto fail;
-	}
+	if (req == REQUEST_CONNECT) {
+		int len;
+		void *auth_cred;
+		char *auth_info = slurm_get_auth_info();
 
-	safe_read(fd, &len, sizeof(int));
-	buffer = init_buf(len);
-	safe_read(fd, get_buf_data(buffer), len);
+		/* assume oldest we can talk to */
+		client_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 
-	/* Unpack and verify the auth credential */
-	auth_cred = g_slurm_auth_unpack(buffer, SLURM_PROTOCOL_VERSION);
-	if (auth_cred == NULL) {
-		error("Unpacking authentication credential: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
-		FREE_NULL_BUFFER(buffer);
-		goto fail;
-	}
-	auth_info = slurm_get_auth_info();
-	rc = g_slurm_auth_verify(auth_cred, auth_info);
-	if (rc != SLURM_SUCCESS) {
-		error("Verifying authentication credential: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		safe_read(fd, &len, sizeof(int));
+		buffer = init_buf(len);
+		safe_read(fd, get_buf_data(buffer), len);
+
+		/* Unpack and verify the auth credential */
+		auth_cred = g_slurm_auth_unpack(buffer, SLURM_PROTOCOL_VERSION);
+		if (auth_cred == NULL) {
+			error("Unpacking authentication credential: %s",
+			      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+			FREE_NULL_BUFFER(buffer);
+			goto fail;
+		}
+		rc = g_slurm_auth_verify(auth_cred, auth_info);
+		if (rc != SLURM_SUCCESS) {
+			error("Verifying authentication credential: %s",
+			      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+			xfree(auth_info);
+			(void) g_slurm_auth_destroy(auth_cred);
+			FREE_NULL_BUFFER(buffer);
+			goto fail;
+		}
+
+		/* Get the uid from the credential, then destroy it. */
+		uid = g_slurm_auth_get_uid(auth_cred, auth_info);
 		xfree(auth_info);
-		(void) g_slurm_auth_destroy(auth_cred);
+		g_slurm_auth_destroy(auth_cred);
 		FREE_NULL_BUFFER(buffer);
+	} else if (req >= SLURM_MIN_PROTOCOL_VERSION) {
+		struct ucred ucred;
+		socklen_t ucred_len = sizeof(ucred);
+		client_protocol_ver = req;
+
+		if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &ucred, &ucred_len) == -1) {
+			rc = SLURM_ERROR;
+			goto fail;
+		}
+		uid = ucred.uid;
+	} else {
+		error("%s: Invalid Protocol Version %d", __func__, rc);
 		goto fail;
 	}
 
-	/* Get the uid from the credential, then destroy it. */
-	uid = g_slurm_auth_get_uid(auth_cred, auth_info);
-	xfree(auth_info);
-	debug3("  Identity: uid=%u", uid);
-	g_slurm_auth_destroy(auth_cred);
-	FREE_NULL_BUFFER(buffer);
+	debug3("%s: Protocol Version %d from uid=%u",
+	       __func__, client_protocol_ver, uid);
 
 	rc = SLURM_PROTOCOL_VERSION;
 	safe_write(fd, &rc, sizeof(int));
@@ -454,7 +478,7 @@ _handle_accept(void *arg)
 	slurm_cond_signal(&message_cond);
 	slurm_mutex_unlock(&message_lock);
 
-	debug3("Leaving  _handle_accept");
+	debug3("Leaving %s", __func__);
 	return NULL;
 
 fail:
@@ -463,7 +487,7 @@ fail:
 rwfail:
 	if (close(fd) == -1)
 		error("Closing accepted fd after error: %m");
-	debug("Leaving  _handle_accept on an error");
+	debug("Leaving %s on an error", __func__);
 	FREE_NULL_BUFFER(buffer);
 	return NULL;
 }
