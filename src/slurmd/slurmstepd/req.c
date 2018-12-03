@@ -445,13 +445,12 @@ static void *_handle_accept(void *arg)
 		FREE_NULL_BUFFER(buffer);
 	} else if (req >= SLURM_MIN_PROTOCOL_VERSION) {
 		struct ucred ucred;
-		socklen_t ucred_len = sizeof(ucred);
+		socklen_t len = sizeof(ucred);
 		client_protocol_ver = req;
 
-		if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &ucred, &ucred_len) == -1) {
-			rc = SLURM_ERROR;
+		rc = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &ucred, &len);
+		if (rc)
 			goto fail;
-		}
 		uid = ucred.uid;
 	} else {
 		error("%s: Invalid Protocol Version %d", __func__, rc);
