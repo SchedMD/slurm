@@ -23,7 +23,7 @@ my @grouping = qw( 50 250 500 1000 );
 my $flat_view = 0;
 my $acct_as_parent = 1;
 
-my $clusters = Slurmdb::report_job_sizes_grouped_by_top_account($db_conn, \%job_cond, \@grouping, $flat_view, $acct_as_parent);
+my $clusters = Slurmdb::report_job_sizes_grouped_by_account($db_conn, \%job_cond, \@grouping, $flat_view, $acct_as_parent);
 
 for (my $i = 0; $i < @$clusters; $i++) {
     print "cluster   $clusters->[$i]{'cluster'}\n";

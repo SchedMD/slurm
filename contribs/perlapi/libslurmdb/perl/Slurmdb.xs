@@ -124,7 +124,7 @@ slurmdb_report_cluster_user_by_account(db_conn, assoc_condition)
         RETVAL
 
 SV*
-slurmdb_report_job_sizes_grouped_by_top_account(db_conn, job_condition, grouping_array, flat_view, acct_as_parent)
+slurmdb_report_job_sizes_grouped_by_account(db_conn, job_condition, grouping_array, flat_view, acct_as_parent)
 	void* db_conn
 	HV*   job_condition
 	AV*   grouping_array
@@ -136,7 +136,7 @@ slurmdb_report_job_sizes_grouped_by_top_account(db_conn, job_condition, grouping
 	List grouping_list = slurm_list_create(NULL);
 	slurmdb_job_cond_t *job_cond = (slurmdb_job_cond_t*)
 		slurm_xmalloc(sizeof(slurmdb_job_cond_t), __FILE__,
-		__LINE__, "slurmdb_report_job_sizes_grouped_by_top_account");
+		__LINE__, "slurmdb_report_job_sizes_grouped_by_account");
 	if (hv_to_job_cond(job_condition, job_cond) < 0) {
 		XSRETURN_UNDEF;
 	}
@@ -145,7 +145,7 @@ slurmdb_report_job_sizes_grouped_by_top_account(db_conn, job_condition, grouping
 	}
 	results = (AV*)sv_2mortal((SV*)newAV());
     CODE:
-	list = slurmdb_report_job_sizes_grouped_by_top_account(db_conn,
+	list = slurmdb_report_job_sizes_grouped_by_account(db_conn,
 	                   job_cond, grouping_list, flat_view, acct_as_parent);
 	if (list) {
 	    if (cluster_grouping_list_to_av(list, results) < 0) {

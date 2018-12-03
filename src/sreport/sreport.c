@@ -420,7 +420,7 @@ static void _job_rep (int argc, char **argv)
 	/* For backwards compatibility we just look at the 1st char
 	 * by default since Sizes was the original name */
 	if (!xstrncasecmp(argv[0], "SizesByAccount", MAX(command_len, 1))) {
-		error_code = job_sizes_grouped_by_top_acct(
+		error_code = job_sizes_grouped_by_acct(
 			(argc - 1), &argv[1]);
 	} else if (!xstrncasecmp(argv[0],
 				 "SizesByWcKey", MAX(command_len, 8))) {
@@ -429,7 +429,7 @@ static void _job_rep (int argc, char **argv)
 	} else if (!xstrncasecmp(argv[0],
 				"SizesByAccountAndWcKey",
 				MAX(command_len, 15))) {
-		error_code = job_sizes_grouped_by_top_acct_and_wckey(
+		error_code = job_sizes_grouped_by_acct_and_wckey(
 			(argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;

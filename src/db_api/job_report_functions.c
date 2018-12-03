@@ -550,8 +550,8 @@ end_it:
 	return cluster_list;
 }
 
-extern List slurmdb_report_job_sizes_grouped_by_top_account(
-	void *db_conn, slurmdb_job_cond_t *job_cond, List grouping_list,
+extern List slurmdb_report_job_sizes_grouped_by_account(
+	void *db_conn,  slurmdb_job_cond_t *job_cond, List grouping_list,
 	bool flat_view, bool acct_as_parent)
 {
 	return _process_grouped_report(db_conn, job_cond, grouping_list,
@@ -565,7 +565,7 @@ extern List slurmdb_report_job_sizes_grouped_by_wckey(void *db_conn,
 				       0, 1, 0, false);
 }
 
-extern List slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
+extern List slurmdb_report_job_sizes_grouped_by_account_then_wckey(
 	void *db_conn, slurmdb_job_cond_t *job_cond,
 	List grouping_list, bool flat_view, bool acct_as_parent)
 {

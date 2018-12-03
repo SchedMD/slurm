@@ -54,9 +54,9 @@ enum {
 };
 
 enum {
-	GROUPED_TOP_ACCT,
+	GROUPED_ACCT,
 	GROUPED_WCKEY,
-	GROUPED_TOP_ACCT_AND_WCKEY,
+	GROUPED_ACCT_AND_WCKEY,
 };
 
 static List print_fields_list = NULL; /* types are of print_field_t */
@@ -794,9 +794,9 @@ static int _run_report(int type, int argc, char **argv)
 		slurm_addto_char_list(grouping_list, "50,250,500,1000");
 
 	switch (type) {
-	case GROUPED_TOP_ACCT:
+	case GROUPED_ACCT:
 		if (!(slurmdb_report_cluster_grouping_list =
-		      slurmdb_report_job_sizes_grouped_by_top_account(
+		      slurmdb_report_job_sizes_grouped_by_account(
 			      db_conn, job_cond, grouping_list, flat_view,
 			      acct_as_parent))) {
 			exit_code = 1;
@@ -816,9 +816,9 @@ static int _run_report(int type, int argc, char **argv)
 			slurm_addto_char_list(format_list, "Cl,wc");
 		object_str = "by Wckey ";
 		break;
-	case GROUPED_TOP_ACCT_AND_WCKEY:
+	case GROUPED_ACCT_AND_WCKEY:
 		if (!(slurmdb_report_cluster_grouping_list =
-		    slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
+		      slurmdb_report_job_sizes_grouped_by_account_then_wckey(
 			      db_conn, job_cond, grouping_list, flat_view,
 			      acct_as_parent))) {
 			exit_code = 1;
@@ -1022,9 +1022,9 @@ end_it:
 	return rc;
 }
 
-extern int job_sizes_grouped_by_top_acct(int argc, char **argv)
+extern int job_sizes_grouped_by_acct(int argc, char **argv)
 {
-	return _run_report(GROUPED_TOP_ACCT, argc, argv);
+	return _run_report(GROUPED_ACCT, argc, argv);
 }
 
 extern int job_sizes_grouped_by_wckey(int argc, char **argv)
@@ -1032,7 +1032,7 @@ extern int job_sizes_grouped_by_wckey(int argc, char **argv)
 	return _run_report(GROUPED_WCKEY, argc, argv);
 }
 
-extern int job_sizes_grouped_by_top_acct_and_wckey(int argc, char **argv)
+extern int job_sizes_grouped_by_acct_and_wckey(int argc, char **argv)
 {
-	return _run_report(GROUPED_TOP_ACCT_AND_WCKEY, argc, argv);
+	return _run_report(GROUPED_ACCT_AND_WCKEY, argc, argv);
 }
