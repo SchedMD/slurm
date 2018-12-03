@@ -1075,9 +1075,10 @@ static void _filter_by_node_feature(struct job_record *job_ptr,
 		return;
 
 	for (i = 0; i < node_set_size; i++) {
-		if ((node_set_ptr[i].flags & NODE_SET_REBOOT))
-			continue;
-		bit_and_not(avail_node_bitmap, node_set_ptr[i].my_bitmap);
+		if (node_set_ptr[i].flags & NODE_SET_REBOOT) {
+			bit_and_not(avail_node_bitmap,
+				    node_set_ptr[i].my_bitmap);
+		}
 	}
 }
 

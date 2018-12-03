@@ -84,6 +84,8 @@ documents those changes that are of interest to users and administrators.
     locations.
  -- Fix scheduling logic to avoid using nodes that require a reboot for KNL
     node change when possible.
+ -- Fix scheduling logic bug. There should have been a test for _not_
+    NODE_SET_REBOOT to continue.
 
 * Changes in Slurm 18.08.3
 ==========================
