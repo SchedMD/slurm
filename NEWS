@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove sbatch --x11 option. Slurm's internal X11 forwarding is now only
     supported from salloc, or an allocating srun command.
  -- Suppressed printing of job id in sbatch when quiet flag is set.
+ -- Changed sreport 'SizesByAccount' and 'SizesByAccountAndWckey' default
+    behavior and added new 'AcctAsParent' option.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

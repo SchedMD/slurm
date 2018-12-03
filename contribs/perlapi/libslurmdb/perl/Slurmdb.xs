@@ -124,11 +124,12 @@ slurmdb_report_cluster_user_by_account(db_conn, assoc_condition)
         RETVAL
 
 SV*
-slurmdb_report_job_sizes_grouped_by_top_account(db_conn, job_condition, grouping_array, flat_view)
+slurmdb_report_job_sizes_grouped_by_top_account(db_conn, job_condition, grouping_array, flat_view, acct_as_parent)
 	void* db_conn
 	HV*   job_condition
 	AV*   grouping_array
 	bool  flat_view
+	bool  acct_as_parent
     INIT:
 	AV*   results;
 	List  list = NULL;
@@ -145,7 +146,7 @@ slurmdb_report_job_sizes_grouped_by_top_account(db_conn, job_condition, grouping
 	results = (AV*)sv_2mortal((SV*)newAV());
     CODE:
 	list = slurmdb_report_job_sizes_grouped_by_top_account(db_conn,
-		job_cond, grouping_list, flat_view);
+	                   job_cond, grouping_list, flat_view, acct_as_parent);
 	if (list) {
 	    if (cluster_grouping_list_to_av(list, results) < 0) {
 		XSRETURN_UNDEF;

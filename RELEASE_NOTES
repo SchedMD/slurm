@@ -62,6 +62,14 @@ NOTE: Limit pam_slurm_adopt to run only in the sshd context by default, for
 NOTE: The --quiet flag in sbatch will now suppress the printing of
       "Submitted batch job %u" and "Submitted batch job %u on cluster %s".
 
+NOTE: Sreport report 'job SizesByAccount' and 'job SizesByAccountAndWckey'
+      have been changed and now will default to report the root account totals
+      if no Accounts= are specified. If specified, the requested accounts will
+      now be displayed instead of the ones in a lower level in the tree.
+      Old behavior can still be invoked using the new option 'AcctAsParent'.
+      Perl API functions have been adapted removing the '_top_' in the
+      respective signatures. The new parameter have also been added.
+
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res

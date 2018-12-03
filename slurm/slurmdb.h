@@ -1467,10 +1467,12 @@ extern List slurmdb_report_cluster_user_by_wckey(void *db_conn,
 						 slurmdb_wckey_cond_t *wckey_cond);
 
 
-extern List slurmdb_report_job_sizes_grouped_by_top_account(void *db_conn,
-							    slurmdb_job_cond_t *job_cond,
-							    List grouping_list,
-							    bool flat_view);
+extern List slurmdb_report_job_sizes_grouped_by_top_account(
+	void *db_conn,
+	slurmdb_job_cond_t *job_cond,
+	List grouping_list,
+	bool flat_view,
+	bool acct_as_parent);
 
 extern List slurmdb_report_job_sizes_grouped_by_wckey(void *db_conn,
 						      slurmdb_job_cond_t *job_cond,
@@ -1480,7 +1482,8 @@ extern List slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
 	void *db_conn,
 	slurmdb_job_cond_t *job_cond,
 	List grouping_list,
-	bool flat_view);
+	bool flat_view,
+	bool acct_as_parent);
 
 
 /* report on users with top usage

@@ -63,6 +63,7 @@ static List print_fields_list = NULL; /* types are of print_field_t */
 static List grouping_print_fields_list = NULL; /* types are of print_field_t */
 static int print_job_count = 0;
 static bool flat_view = false;
+static bool acct_as_parent = false;
 static bool individual_grouping = 0;
 
 /*
@@ -266,6 +267,10 @@ static int _set_cond(int *start, int argc, char **argv,
 		if (!end && !xstrncasecmp(argv[i], "all_clusters",
 					  MAX(command_len, 1))) {
 			local_cluster_flag = 1;
+			continue;
+		} else if (!end && !xstrncasecmp(argv[i], "AcctAsParent",
+						 MAX(command_len, 2))) {
+			acct_as_parent = true;
 			continue;
 		} else if (!end && !xstrncasecmp(argv[i], "PrintJobCount",
 						 MAX(command_len, 2))) {
@@ -792,7 +797,8 @@ static int _run_report(int type, int argc, char **argv)
 	case GROUPED_TOP_ACCT:
 		if (!(slurmdb_report_cluster_grouping_list =
 		      slurmdb_report_job_sizes_grouped_by_top_account(
-			      db_conn, job_cond, grouping_list, flat_view))) {
+			      db_conn, job_cond, grouping_list, flat_view,
+			      acct_as_parent))) {
 			exit_code = 1;
 			goto end_it;
 		}
@@ -812,8 +818,9 @@ static int _run_report(int type, int argc, char **argv)
 		break;
 	case GROUPED_TOP_ACCT_AND_WCKEY:
 		if (!(slurmdb_report_cluster_grouping_list =
-		      slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
-			      db_conn, job_cond, grouping_list, flat_view))) {
+		    slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
+			      db_conn, job_cond, grouping_list, flat_view,
+			      acct_as_parent))) {
 			exit_code = 1;
 			goto end_it;
 		}

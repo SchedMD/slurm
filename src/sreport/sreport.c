@@ -898,16 +898,19 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
                                   or WCKeyUtilizationByUser, List of wckeys\n\
                                   to include in report.  Default is all.   \n\
                                                                            \n\
-     job     - Accounts=<OPT>   - List of accounts to use for the report   \n\
-                                  Default is all.  The SizesbyAccount(*)   \n\
-                                  report only displays 1 hierarchical level.\n\
-                                  If accounts are specified the next layer \n\
-                                  of accounts under those specified will be\n\
-                                  displayed, not the accounts specified.   \n\
-                                  In the SizesByAccount(*) reports the     \n\
-                                  default for accounts is root.  This      \n\
-                                  explanation does not apply when ran with \n\
-                                  the FlatView option.                     \n\
+     job     - Accounts=<OPT>   - List of accounts to use for the report.  \n\
+                                  Default is all, which will show only     \n\
+                                  one line corresponding to the totals of  \n\
+                                  all accounts in the hierarchy.           \n\
+                                  This explanation does not apply when ran \n\
+                                  with the FlatView or AcctAsParent option.\n\
+             - AcctAsParent     - When used with the SizesbyAccount(*)     \n\
+                                  will take specified accounts as parents  \n\
+                                  and the next layer of accounts under     \n\
+                                  those specified will be displayed.       \n\
+                                  Default is root if no Accounts specified.\n\
+                                  When FlatView is used, this option is    \n\
+                                  ignored.                                 \n\
              - FlatView         - When used with the SizesbyAccount(*)     \n\
                                   will not group accounts in a             \n\
                                   hierarchical level, but print each       \n\

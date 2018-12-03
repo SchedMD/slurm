@@ -138,7 +138,7 @@ static void _check_create_grouping(
 /* FIXME: This only works for CPUS now */
 static List _process_grouped_report(
 	void *db_conn, slurmdb_job_cond_t *job_cond, List grouping_list,
-	bool flat_view, bool wckey_type, bool both)
+	bool flat_view, bool wckey_type, bool both, bool acct_as_parent)
 {
 	int exit_code = 0;
 	void *object = NULL, *object2 = NULL;
@@ -249,14 +249,30 @@ static List _process_grouped_report(
 		assoc_cond.cluster_list = job_cond->cluster_list;
 		/* don't limit associations to having the partition_list */
 		//assoc_cond.partition_list = job_cond->partition_list;
-		if (!job_cond->acct_list || !list_count(job_cond->acct_list)) {
-			FREE_NULL_LIST(job_cond->acct_list);
-			job_cond->acct_list = list_create(NULL);
-			list_append(job_cond->acct_list, "root");
+		if (acct_as_parent) {
+			/*
+			 * Behave like an 'ls', will ask for the subaccounts of
+			 * the requested account.
+			 */
+			if (!job_cond->acct_list ||
+			    !list_count(job_cond->acct_list)) {
+				FREE_NULL_LIST(job_cond->acct_list);
+				job_cond->acct_list = list_create(NULL);
+				list_append(job_cond->acct_list, "root");
+				assoc_cond.parent_acct_list =
+					job_cond->acct_list;
+			} else {
+				assoc_cond.parent_acct_list =
+					job_cond->acct_list;
+			}
+		} else {
+			/* Ask strictly for these accounts. */
+			if (job_cond->acct_list &&
+			    list_count(job_cond->acct_list))
+				assoc_cond.acct_list = job_cond->acct_list;
 		}
-		assoc_cond.parent_acct_list = job_cond->acct_list;
 		object_list = acct_storage_g_get_assocs(db_conn, my_uid,
-							      &assoc_cond);
+							&assoc_cond);
 	}
 
 	if (wckey_type || both) {
@@ -534,24 +550,25 @@ end_it:
 	return cluster_list;
 }
 
-extern List slurmdb_report_job_sizes_grouped_by_top_account(void *db_conn,
-	slurmdb_job_cond_t *job_cond, List grouping_list, bool flat_view)
+extern List slurmdb_report_job_sizes_grouped_by_top_account(
+	void *db_conn, slurmdb_job_cond_t *job_cond, List grouping_list,
+	bool flat_view, bool acct_as_parent)
 {
 	return _process_grouped_report(db_conn, job_cond, grouping_list,
-				       flat_view, 0, 0);
+				       flat_view, 0, 0, acct_as_parent);
 }
 
 extern List slurmdb_report_job_sizes_grouped_by_wckey(void *db_conn,
 	slurmdb_job_cond_t *job_cond, List grouping_list)
 {
 	return _process_grouped_report(db_conn, job_cond, grouping_list,
-				       0, 1, 0);
+				       0, 1, 0, false);
 }
 
 extern List slurmdb_report_job_sizes_grouped_by_top_account_then_wckey(
 	void *db_conn, slurmdb_job_cond_t *job_cond,
-	List grouping_list, bool flat_view)
+	List grouping_list, bool flat_view, bool acct_as_parent)
 {
-	return _process_grouped_report(
-		db_conn, job_cond, grouping_list, flat_view, 0, 1);
+	return _process_grouped_report(db_conn, job_cond, grouping_list,
+				       flat_view, 0, 1, acct_as_parent);
 }

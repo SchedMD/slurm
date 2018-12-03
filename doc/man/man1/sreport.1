@@ -223,8 +223,8 @@ This report will display the amount of time used for job ranges
 specified by the 'grouping=' option.  Only a single level in the tree
 is displayed defaulting to the root dir.  If you specify other
 accounts with the 'account=' option sreport will use those accounts as
-the root account and you will receive the sub accounts for the
-accounts listed.
+the root account and you will receive the aggregated totals of each listed
+account plus their sub accounts.
 .TP
 .B job SizesByAccountAndWckey
 This report is very similar to SizesByAccount with the difference being
@@ -321,12 +321,16 @@ List of wckeys to include in report. Default is all.
 
 .TP
 .B Accounts=<OPT>
-List of accounts to use for the report Default is all.  The SizesByAccount(*)
-report only displays 1 hierarchical level. If accounts are specified
-the next layer of accounts under those specified will be displayed,
-not the accounts specified.  In the SizesByAccount(*) reports the default
-for accounts is root.  This explanation does not apply when ran with
-the FlatView option.
+List of accounts to use for the report. Default is all which will show only
+one line corresponding to the totals of all accounts in the hierarchy.
+This explanation does not apply when ran with the FlatView or AcctAsParent
+options.
+.TP
+.B AcctAsParent
+When used with the SizesbyAccount(*) will take specified accounts
+as parents and the next layer of accounts under those specified
+will be displayed. Default is root if no specific Accounts are requested.
+When FlatView is used, this option is ignored.
 .TP
 .B FlatView
 When used with the SizesbyAccount(*) will not group accounts in a
