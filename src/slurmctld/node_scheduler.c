@@ -2103,13 +2103,13 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						smallest_min_mem;
 			}
 
-#if 0
+#if _DEBUG
 {
-			char *tmp_str1 = bitmap2node_name(backup_bitmap);
-			char *tmp_str2 = bitmap2node_name(avail_bitmap);
-			info("pick %pJ err:%d nodes:%u:%u:%u mode:%u select %s of %s",
-			     job_ptr, pick_code, min_nodes, req_nodes,
-			     max_nodes, select_mode, tmp_str2, tmp_str1);
+			char *tmp_str1 = bitmap2node_name(avail_bitmap);
+			char *tmp_str2 = bitmap2node_name(backup_bitmap);
+			info("%s: %pJ err:%d nodes:%u:%u:%u mode:%u select %s from %s",
+			     __func__, job_ptr, pick_code, min_nodes, req_nodes,
+			     max_nodes, select_mode, tmp_str1, tmp_str2);
 			xfree(tmp_str1);
 			xfree(tmp_str2);
 }
@@ -3396,7 +3396,7 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 		bit_and(node_bitmap, work_bitmap);
 	FREE_NULL_BITMAP(feature_bitmap);
 	FREE_NULL_BITMAP(paren_bitmap);
-#if 0
+#if _DEBUG
 {
 	char tmp[32];
 	bit_fmt(tmp, sizeof(tmp), node_bitmap);
@@ -4051,15 +4051,21 @@ static void _log_node_set(struct job_record *job_ptr,
 {
 /* Used for debugging purposes only */
 #if _DEBUG
-	char *node_list;
+	char *node_list, feature_bits[64];
 	int i;
 
 	info("NodeSet for %pJ", job_ptr);
 	for (i = 0; i < node_set_size; i++) {
 		node_list = bitmap2node_name(node_set_ptr[i].my_bitmap);
-		info("NodeSet[%d] Nodes:%s NodeWeight:%u Flags:%u SchedWeight:%"PRIu64,
+		if (node_set_ptr[i].feature_bits) {
+			bit_fmt(feature_bits, sizeof(feature_bits),
+				node_set_ptr[i].feature_bits);
+		} else
+			feature_bits[0] = '\0';
+		info("NodeSet[%d] Nodes:%s NodeWeight:%u Flags:%u FeatureBits:%s SchedWeight:%"PRIu64,
 		     i, node_list, node_set_ptr[i].node_weight,
-		     node_set_ptr[i].flags, node_set_ptr[i].sched_weight);
+		     node_set_ptr[i].flags, feature_bits,
+		     node_set_ptr[i].sched_weight);
 		xfree(node_list);
 	}
 #endif
@@ -4489,6 +4495,11 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 	char tmp[64];
 	bit_fmt(tmp, sizeof(tmp), result_node_bitmap);
 	info("CONFIG_FEATURE:%s FEATURE_XOR_BITS:%s", config_ptr->feature, tmp);
+	if (reboot_bitmap && (bit_ffs(reboot_bitmap) >= 0)) {
+		char *reboot_node_str = bitmap2node_name(reboot_bitmap);
+		info("REBOOT_NODES:%s", reboot_node_str);
+		xfree(reboot_node_str);
+	}
 }
 #endif
 
