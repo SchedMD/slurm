@@ -674,8 +674,7 @@ extern void find_feature_nodes(List feature_list, bool can_reboot)
 			job_feat_ptr->node_bitmap_active =
 				bit_alloc(node_record_count);
 		}
-		if (can_reboot &&
-		    node_features_g_changeable_feature(job_feat_ptr->name)) {
+		if (can_reboot && job_feat_ptr->changeable) {
 			node_feat_ptr = list_find_first(avail_feature_list,
 							list_find_feature,
 							job_feat_ptr->name);
@@ -1111,6 +1110,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	bitstr_t *save_share_node_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
 	List preemptee_candidates = NULL;
+	bool old_feat_change = false;
 	bool has_xand = false;
 	bool resv_overlap = false;
 	uint32_t powercap;
@@ -1209,6 +1209,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		bitstr_t *paren_bitmap = NULL, *work_bitmap;
 		uint64_t smallest_min_mem = INFINITE64;
 		uint64_t orig_req_mem = job_ptr->details->pn_min_memory;
+		bool feat_change = false;
 
 		feat_iter = list_iterator_create(
 				job_ptr->details->feature_list);
@@ -1222,12 +1223,14 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					      job_ptr->details->features);
 					bit_free(paren_bitmap);
 				}
+				feat_change |= feat_ptr->changeable;
 				paren_bitmap =
 					bit_copy(feat_ptr->node_bitmap_avail);
 				last_paren_opt = feat_ptr->op_code;
 				last_paren_cnt = feat_ptr->paren;
 				continue;
 			} else if (last_paren_cnt > 0) {
+				feat_change |= feat_ptr->changeable;
 				if (last_paren_opt == FEATURE_OP_AND) {
 					bit_and(paren_bitmap,
 						feat_ptr->node_bitmap_avail);
@@ -1240,8 +1243,11 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				if (last_paren_cnt)
 					continue;
 				work_bitmap = paren_bitmap;
-			} else
+			} else {
+				/* Outside of parenthesis */
+				feat_change = feat_ptr->changeable;
 				work_bitmap = feat_ptr->node_bitmap_avail;
+			}
 			if (feat_ptr->count == 0) {
 				FREE_NULL_BITMAP(paren_bitmap);
 				continue;
@@ -1396,8 +1402,14 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				if (feat_ptr->op_code == FEATURE_OP_XAND)
 					has_xand = true;
 				if (has_xand) {
+					if (old_feat_change && feat_change) {
+						error_code =
+						    ESLURM_MULTI_KNL_CONSTRAINT;
+						break;
+					}
+					old_feat_change |= feat_change;
 					/*
-					 * Don't make it required since we
+					 * Don't make nodes required since we
 					 * check value on each call to
 					 * _pick_best_nodes()
 					 */

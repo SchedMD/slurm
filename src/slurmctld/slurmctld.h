@@ -466,6 +466,8 @@ extern time_t last_job_update;	/* time of last update to job records */
 #define FEATURE_OP_END  4		/* last entry lacks separator */
 typedef struct job_feature {
 	char *name;			/* name of feature */
+	bool changeable;		/* return value of
+					 * node_features_g_changeable_feature */
 	uint16_t count;			/* count of nodes with this feature */
 	uint8_t op_code;		/* separator, see FEATURE_OP_ above */
 	bitstr_t *node_bitmap_active;	/* nodes with this feature active */

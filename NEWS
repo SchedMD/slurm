@@ -88,6 +88,9 @@ documents those changes that are of interest to users and administrators.
     NODE_SET_REBOOT to continue.
  -- Fix a scheuling logic bug with respect to XOR operation support when there
     are down nodes.
+ -- If there is a constraint construct of the form "[...&...]"
+    then an error is generated if more than one of those specifications
+    contains KNL NUMA or MCDRAM modes.
 
 * Changes in Slurm 18.08.3
 ==========================

@@ -365,6 +365,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid GRES specification (with and without type identification)" },
 	{ ESLURM_REBOOT_IN_PROGRESS,
 	  "Reboot already in progress" },
+	{ ESLURM_MULTI_KNL_CONSTRAINT,
+	  "Multiple KNL NUMA and/or MCDRAM constraints require use of a heterogeneous job" },
 
 	/* slurmd error codes */
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,

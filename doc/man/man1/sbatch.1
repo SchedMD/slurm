@@ -298,6 +298,12 @@ For example: "\fB\-\-constraint=[rack1*2&rack2*4]"\fR might
 be used to specify that two nodes must be allocated from nodes with the feature
 of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
+
+\fBNOTE:\fR This construct does not support multiple Intel KNL NUMA or MCDRAM
+modes. For example, while "\fB\-\-constraint=[(knl&quad)*2&(knl&hemi)*4]"\fR is
+not supported, "\fB\-\-constraint=[haswell*2&(knl&hemi)*4]"\fR is supported.
+Specification of multiple KNL modes requires the use of a heterogeneous job.
+
 .TP
 \fBParenthesis\fR
 Parenthesis can be used to group like node features together. For example
