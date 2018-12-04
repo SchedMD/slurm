@@ -103,7 +103,6 @@ documents those changes that are of interest to users and administrators.
  -- In route/topology validate the slurmctld doesn't try to initialize the
     node system.
  -- Fix issue when requesting invalid gres.
- -- Fix salloc and missing SLURM_NTASKS.
  -- Validate job_ptr in backfill before restoring preempt state.
  -- Fix issue when job's environment is minimal and only contains variables
     Slurm is going to replace internally.
@@ -114,6 +113,15 @@ documents those changes that are of interest to users and administrators.
     environment if the corresponding command line options are used.
  -- slurmd - fix handling of the -f flag to specify alternate config file
     locations.
+ -- Fix scheduling logic to avoid using nodes that require a reboot for KNL
+    node change when possible.
+ -- Fix scheduling logic bug. There should have been a test for _not_
+    NODE_SET_REBOOT to continue.
+ -- Fix a scheuling logic bug with respect to XOR operation support when there
+    are down nodes.
+ -- If there is a constraint construct of the form "[...&...]"
+    then an error is generated if more than one of those specifications
+    contains KNL NUMA or MCDRAM modes.
 
 * Changes in Slurm 18.08.3
 ==========================

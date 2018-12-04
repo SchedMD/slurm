@@ -4357,6 +4357,8 @@ extern int build_feature_list(struct job_record *job_ptr)
 			}
 			feat = xmalloc(sizeof(job_feature_t));
 			feat->name = xstrdup(feature);
+			feat->changeable = node_features_g_changeable_feature(
+							feature);
 			feat->count = count;
 			feat->paren = paren;
 			if (paren)
@@ -4385,6 +4387,8 @@ extern int build_feature_list(struct job_record *job_ptr)
 			}
 			feat = xmalloc(sizeof(job_feature_t));
 			feat->name = xstrdup(feature);
+			feat->changeable = node_features_g_changeable_feature(
+							feature);
 			feat->count = count;
 			feat->paren = paren;
 			if (paren)
@@ -4435,6 +4439,8 @@ extern int build_feature_list(struct job_record *job_ptr)
 			if (feature) {
 				feat = xmalloc(sizeof(job_feature_t));
 				feat->name = xstrdup(feature);
+				feat->changeable = node_features_g_changeable_feature(
+								feature);
 				feat->count = count;
 				feat->paren = paren;
 				feat->op_code = FEATURE_OP_END;
