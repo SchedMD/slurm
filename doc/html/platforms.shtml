@@ -3,18 +3,27 @@
 <h1>Platforms</h1>
 <h2>Operating Systems</h2>
 <ul>
-<li><b>FreeBSD</b> &mdash; Fully supported.</li>
+<li><b>FreeBSD</b> &mdash; Limited support, not actively tested.</li>
 <li><b>Linux</b> &mdash; Slurm has been thoroughly tested on most popular Linux
-distributions using i386, ia64, and x86_64 architectures.</li>
-<li><b>NetBSD</b> &mdash; Fully supported.</li>
-<li><b>OS X</b> &mdash; Slurm has run OS X in the past, but the current OS X linker
-does not support Slurm plugins. (OS X dynamically linked objects can be called by
-the main program. They may not call functions in the main program or other
-dynamically linked objects, which are features required by Slurm.)</li>
-<li><b>Solaris</b> &mdash; OpenSolaris is fully supported.</li>
-<li><b>Other</b> &mdash; Slurm ports to other systems will be gratefully accepted.</li>
+distributions using arm64 (aarch64), ppc64, and x86_64 architectures. Some
+features are limited to recent releases and newer Linux kernel versions.
+Currently supported distributions include:
+<ul>
+<li>Cray Linux Environment 5.2 (deprecated, and will be removed in a future release)</li>
+<li>Cray Linux Environment 6</li>
+<li>Debian (jessie, stretch, buster, and newer)</li>
+<li>RedHat Enterprise Linux 6 (RHEL6), CentOS 6, Scientific Linux 6 (deprecated, and will be removed in a future release)</li>
+<li>RedHat Enterprise Linux 7 (RHEL7), CentOS 7, Scientific Linux 7 (and newer)</li>
+<li>SUSE Linux Enterprise Server(SLES) 12 (and newer)</li>
+<li>Ubuntu (16.04, 18.04, and newer)</li>
+</ul>
+</li>
+<li><b>NetBSD</b> &mdash; Limited support, not actively tested.</li>
+<li><b>macOS</b> &mdash; Slurm has run on macOS in the past, but does not
+currently. It should be possible to fix this with some adjustments to linker
+and compiler flags, and any patches would be appreciated.
 </ul>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p style="text-align:center;">Last modified 4 December 2018</p>
 
 <!--#include virtual="footer.txt"-->
