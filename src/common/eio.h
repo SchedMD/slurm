@@ -96,7 +96,8 @@ void eio_new_obj(eio_handle_t *eio, eio_obj_t *obj);
 bool eio_remove_obj(eio_obj_t *obj, List objs);
 
 
-/* This routine will watch for activtiy on the fd's as long
+/*
+ * This routine will watch for activity on the fd's as long
  * as obj->readable() or obj->writable() returns >0
  *
  * routine returns 0 when either list is empty or no objects in list are
