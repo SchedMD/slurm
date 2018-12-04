@@ -80,6 +80,8 @@ documents those changes that are of interest to users and administrators.
     with a lesser time.
  -- salloc - set SLURM_NTASKS_PER_CORE and SLURM_NTASKS_PER_SOCKET in the
     environment if the corresponding command line options are used.
+ -- slurmd - fix handling of the -f flag to specify alternate config file
+    locations.
 
 * Changes in Slurm 18.08.3
 ==========================

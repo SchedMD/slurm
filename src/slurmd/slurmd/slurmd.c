@@ -1535,6 +1535,14 @@ _slurmd_init(void)
 	_read_config();
 
 	/*
+	 * Make sure all further plugin init() calls see this value to ensure
+	 * they read from the correct directory, and that the slurmstepd
+	 * picks up the correct configuration when fork()'d.
+	 * Required for correct operation of the -f flag.
+	 */
+	setenv("SLURM_CONF", conf->conffile, 1);
+
+	/*
 	 * Create slurmd spool directory if necessary.
 	 */
 	if (_set_slurmd_spooldir() < 0) {

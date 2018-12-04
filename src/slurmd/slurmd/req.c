@@ -849,8 +849,6 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 #endif
 		int i;
 		int failed = 0;
-		/* inform slurmstepd about our config */
-		setenv("SLURM_CONF", conf->conffile, 1);
 
 		/*
 		 * Child forks and exits
