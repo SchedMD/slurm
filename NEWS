@@ -78,6 +78,8 @@ documents those changes that are of interest to users and administrators.
  -- When handling runaway jobs remove all usage before rollup to remove any
     time that wasn't existent instead of just updating lines that have time
     with a lesser time.
+ -- salloc - set SLURM_NTASKS_PER_CORE and SLURM_NTASKS_PER_SOCKET in the
+    environment if the corresponding command line options are used.
 
 * Changes in Slurm 18.08.3
 ==========================
