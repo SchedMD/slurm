@@ -7639,6 +7639,17 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
 					     name_len)) {
 					continue;
 				}
+
+				/*
+				 * If we are are the front we can not overwrite
+				 * that spot, we can clear it an then add to the
+				 * end of the array.
+				 */
+				if (i == 0) {
+					array_ptr[0][0] = '\0';
+					i = rec_cnt;
+					break;
+				}
 				/* over-write duplicate */
 				memcpy(&buffer[pos],
 				       job_ptr->details->env_sup[j], env_len);
