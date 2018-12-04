@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Add support for SALLOC/SBATCH/SLURM_NO_KILL environment variables.
     Add salloc/sbatch/srun support for optional "--no-kill=off" option to
     disable the environment variables.
+ -- Fix salloc and missing SLURM_NTASKS.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
