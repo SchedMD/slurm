@@ -1175,7 +1175,7 @@ enum gres_step_data_type {
 
 /*
  * get data from a step's GRES data structure
- * IN job_gres_list  - step's GRES data structure
+ * IN step_gres_list  - step's GRES data structure
  * IN gres_name - name of a GRES type
  * IN node_inx - zero-origin index of the node within the job's allocation
  *	for which data is desired. Note this can differ from the step's

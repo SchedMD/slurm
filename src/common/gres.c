@@ -971,7 +971,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	s_p_hashtbl_destroy(tbl);
 
-	for (i=0; i<gres_context_cnt; i++) {
+	for (i = 0; i < gres_context_cnt; i++) {
 		if (xstrcasecmp(p->name, gres_context[i].gres_name) == 0)
 			break;
 	}
