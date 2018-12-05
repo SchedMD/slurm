@@ -513,6 +513,9 @@ _init_from_slurmd(int sock, char **argv,
 				  slurmdb_destroy_tres_rec,
 				  buffer, SLURM_PROTOCOL_VERSION);
 		free_buf(buffer);
+	} else {
+		fatal("%s: We didn't get any tres from slurmd. This should never happen.",
+		      __func__);
 	}
 
 	xassert(tmp_list);

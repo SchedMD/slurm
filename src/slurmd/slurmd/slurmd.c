@@ -133,6 +133,8 @@ slurmd_conf_t * conf = NULL;
 int fini_job_cnt = 0;
 uint32_t *fini_job_id = NULL;
 pthread_mutex_t fini_job_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t tres_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  tres_cond      = PTHREAD_COND_INITIALIZER;
 
 /*
  * count of active threads
@@ -600,6 +602,14 @@ static void _handle_node_reg_resp(slurm_msg_t *resp_msg)
 		debug("%s: slurmctld sent back %u TRES.",
 		       __func__, g_tres_count);
 		assoc_mgr_unlock(&locks);
+
+		/*
+		 * Signal any threads potentially waiting to run.
+		 */
+		slurm_mutex_lock(&tres_mutex);
+		slurm_cond_broadcast(&tres_cond);
+		slurm_mutex_unlock(&tres_mutex);
+
 		/* assoc_mgr_post_tres_list will destroy the list */
 		resp->tres_list = NULL;
 	}

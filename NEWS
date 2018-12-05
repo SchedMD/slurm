@@ -123,6 +123,11 @@ documents those changes that are of interest to users and administrators.
  -- If there is a constraint construct of the form "[...&...]"
     then an error is generated if more than one of those specifications
     contains KNL NUMA or MCDRAM modes.
+ -- Fix stepd segfault race if slurmctld hasn't registered with the launching
+    slurmd yet delivering it's TRES list.
+ -- Add SchedulerParameters option of bf_ignore_newly_avail_nodes to avoid
+    scheduling lower priority jobs on resources that become available during
+    the backfill scheduling cycle when bf_continue is enabled.
 
 * Changes in Slurm 18.08.3
 ==========================

@@ -268,6 +268,8 @@ extern List avail_feature_list;	/* list of available node features */
 \*****************************************************************************/
 extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes,
 					 * state not DOWN, DRAIN or FAILING */
+extern bitstr_t *bf_ignore_node_bitmap;	/* bitmap of nodes made available during
+					 * backfill cycle */
 extern bitstr_t *booting_node_bitmap;	/* bitmap of booting nodes */
 extern bitstr_t *cg_node_bitmap;	/* bitmap of completing nodes */
 extern bitstr_t *future_node_bitmap;	/* bitmap of FUTURE nodes */
@@ -1158,6 +1160,9 @@ extern void dump_step_desc(job_step_create_request_msg_t *step_spec);
 /* Remove one node from a job's allocation */
 extern void excise_node_from_job(struct job_record *job_ptr,
 				 struct node_record *node_ptr);
+
+/* make_node_avail - flag specified node as available */
+extern void make_node_avail(int node_inx);
 
 /*
  * Copy a job's feature list

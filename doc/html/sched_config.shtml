@@ -99,6 +99,11 @@ See the <a href="slurm.conf.html">slurm.conf(5)</a> man page for more details.
 <UL>
 <LI><B>bf_continue</B> - If set, then continue backfill scheduling after
 periodically releasing locks for other operations.</LI>
+<LI><B>bf_ignore_newly_avail_nodes</B> - If set, then only resources available
+at the beginning of a backfill cycle will be considered for use. Otherwise
+resources made available during that backfill cycle may be used for lower
+priority jobs, delaying the initiation of higher priority jobs when using
+bf_continue. Disabled by default.</LI>
 <LI><B>bf_interval=#</B> - Interval between backfill scheduling attempts.
 Default value is 30 seconds.</LI>
 <LI><B>bf_max_job_part=#</B> - Maximum number of jobs to initiate per partition
@@ -136,6 +141,6 @@ the locks are relinquish in microseconds. The default value is 500,000
 microseconds (0.5 seconds).  </LI>
 </UL>
 
-<p style="text-align:center;">Last modified 3 February 2015</p>
+<p style="text-align:center;">Last modified 5 December 2018</p>
 
 <!--#include virtual="footer.txt"-->
