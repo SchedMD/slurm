@@ -96,6 +96,7 @@ documents those changes that are of interest to users and administrators.
     scheduling lower priority jobs on resources that become available during
     the backfill scheduling cycle when bf_continue is enabled.
  -- Decrement message_connections in stepd code on error path correctly.
+ -- Decrease an error message to be debug.
 
 * Changes in Slurm 18.08.3
 ==========================

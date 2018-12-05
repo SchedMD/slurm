@@ -412,7 +412,7 @@ _handle_accept(void *arg)
 
 	safe_read(fd, &req, sizeof(int));
 	if (req != REQUEST_CONNECT) {
-		error("First message must be REQUEST_CONNECT");
+		debug("First message must be REQUEST_CONNECT");
 		goto fail;
 	}
 
