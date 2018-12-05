@@ -654,17 +654,6 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 		opts.ignore_root = 1;
 	}
 
-	/* Ignoring root is probably best but the admin can allow it */
-	if (!strcmp(user_name, "root")) {
-		if (opts.ignore_root) {
-			info("Ignoring root user");
-			return PAM_IGNORE;
-		} else {
-			/* This administrator is crazy */
-			info("Danger!!! This is a connection attempt by root and ignore_root=0 is set! Hope for the best!");
-		}
-	}
-
 	/* Calculate buffer size for getpwnam_r */
 	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
 	if (bufsize == -1)
@@ -682,6 +671,17 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 
 		xfree(buf);
 		return PAM_SESSION_ERR;
+	}
+
+	/* Ignoring root is probably best but the admin can allow it */
+	if (pwd.pw_uid == 0) {
+		if (opts.ignore_root) {
+			info("Ignoring root user");
+			return PAM_IGNORE;
+		} else {
+			/* This administrator is crazy */
+			info("Danger!!! This is a connection attempt by root (user id 0) and ignore_root=0 is set! Hope for the best!");
+		}
 	}
 
 	/* Check if there are any steps on the node from any user. A failure here
