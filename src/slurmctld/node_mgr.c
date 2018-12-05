@@ -3729,8 +3729,8 @@ extern void make_node_avail(int node_inx)
 
 	/*
 	 * If we are in the middle of a backfill cycle, this bitmap is
-	 * used (when bf_ignore_newly_avail_nodes is enabled) to avoid
-	 * scheduling lower priority jobs on to newly available resources.
+	 * used (when bf_continue is enabled) to avoid scheduling lower
+	 * priority jobs on to newly available resources.
 	 */
 	bit_set(bf_ignore_node_bitmap, node_inx);
 }
