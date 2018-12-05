@@ -234,6 +234,19 @@ NodeName in <b>slurm.conf</b> that this host operates as.
 </dd>
 </dl>
 
+<dl compact>
+<dt><b>service</b></dt>
+<dd>The pam service name for which this module should run. By default
+it only runs for sshd for which it was designed for. A
+different service name can be specified like "login" or "*" to
+allow the module to in any service context. For local pam logins
+this module could cause unexpected behaviour or even security
+issues. Therefore if the service name does not match then this
+module will not perform the adoption logic and returns
+PAM_IGNORE immediately.
+</dd>
+</dl>
+
 </dl>
 
 <h2><a name="SLURM_CONFIG">Slurm Configuration</a></h2>

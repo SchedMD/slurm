@@ -20,6 +20,11 @@ documents those changes that are of interest to users and administrators.
     is also now removed, although harmless if still set.)
  -- Make LaunchParameters=send_gids the default introducing the reverse option
     "disable_send_gids to go back to the original behavior.
+ -- Limit pam_slurm_adopt to run only in the sshd context by default, for
+    security reasons. A new module option 'service=<name>' can be used to
+    allow a different PAM applications to work. The option 'service=*' can be
+    used to restore the old behavior of always performing the adopt logic
+    regardless of the PAM application context.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
