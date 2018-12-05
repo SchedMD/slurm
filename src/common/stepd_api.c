@@ -577,8 +577,10 @@ stepd_available(const char *directory, const char *nodename)
 	struct stat stat_buf;
 
 	if (nodename == NULL) {
-		if (!(nodename = _guess_nodename()))
+		if (!(nodename = _guess_nodename())) {
+			error("%s: Couldn't find nodename", __func__);
 			return NULL;
+		}
 	}
 	if (directory == NULL) {
 		slurm_ctl_conf_t *cf;

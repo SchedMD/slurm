@@ -696,12 +696,15 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	if (_load_cgroup_config() != SLURM_SUCCESS)
 		return rc;
 
-	/* Check if there are any steps on the node from any user. A failure here
+	/*
+	 * Check if there are any steps on the node from any user. A failure here
 	 * likely means failures everywhere so exit on failure or if no local jobs
-	 * exist. */
+	 * exist. This can also happen if SlurmdSpoolDir cannot be found, or if
+	 * the NodeName cannot be established for some reason.
+	 */
 	steps = stepd_available(NULL, opts.node_name);
 	if (!steps) {
-		error("Error obtaining local step information.");
+		send_user_msg(pamh, "No Slurm jobs found on node.");
 		goto cleanup;
 	}
 

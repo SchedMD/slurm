@@ -98,6 +98,8 @@ documents those changes that are of interest to users and administrators.
  -- Decrement message_connections in stepd code on error path correctly.
  -- Decrease an error message to be debug.
  -- Fix missing suffixes in squeue.
+ -- pam_slurm_adopt - send an error message to the user if no Slurm jobs
+    can be located on the node.
 
 * Changes in Slurm 18.08.3
 ==========================
