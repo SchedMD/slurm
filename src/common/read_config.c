@@ -4409,10 +4409,6 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		    (conf->prolog_flags & PROLOG_FLAG_CONTAIN)) {
 			fatal("PrologFlags invalid combination: NoHold cannot be combined with Contain and/or X11");
 		}
-		if ((conf->prolog_flags & PROLOG_FLAG_CONTAIN) &&
-		    xstrcmp(conf->proctrack_type, "proctrack/cgroup")) {
-			fatal("PrologFlags=Contain requires ProcTrackType=proctrack/cgroup");
-		}
 		if (conf->prolog_flags & PROLOG_FLAG_NOHOLD) {
 			conf->prolog_flags |= PROLOG_FLAG_ALLOC;
 		}
