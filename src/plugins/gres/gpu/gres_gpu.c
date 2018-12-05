@@ -877,6 +877,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	gres_slurmd_conf_t *gres_record;
 	List gres_list_conf_single, gres_list_final, non_gpu_list;
 	bool use_system_detected = true;
+	bool log_zero = true;
 
 	if (gres_list_conf == NULL) {
 		error("%s: gres_list_conf is NULL. This shouldn't happen",
@@ -898,11 +899,6 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		hostlist_t hl;
 		char **file_array;
 		char *hl_name;
-		if (gres_record->count == 0) {
-			info("%s: Empty gres.conf file detected", __func__);
-			// Use system-detected
-			break;
-		}
 		// Just move this GRES record if it's not a GPU GRES
 		if (xstrcasecmp(gres_record->name, "gpu") != 0) {
 			debug2("%s: preserving original `%s` GRES record",
@@ -916,6 +912,15 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 					  gres_record->type_name,
 					  gres_record->links,
 					  gres_record->ignore);
+			continue;
+		}
+		if (gres_record->count == 0) {
+			if (log_zero) {
+				info("%s: gres.conf record has zero count",
+				     __func__);
+				log_zero = false;
+			}
+			// Use system-detected devices
 			continue;
 		}
 		// Use system-detected if there are only ignore records in conf
