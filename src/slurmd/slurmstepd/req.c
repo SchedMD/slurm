@@ -126,7 +126,7 @@ typedef struct {
 
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
-static int message_connections;
+static int message_connections = 0;
 static int msg_target_node_id = 0;
 
 /*
@@ -316,6 +316,14 @@ static void _wait_for_connections(void)
 	slurm_mutex_unlock(&message_lock);
 }
 
+static void _decrement_message_connections(void)
+{
+	slurm_mutex_lock(&message_lock);
+	message_connections--;
+	slurm_cond_signal(&message_cond);
+	slurm_mutex_unlock(&message_lock);
+}
+
 static bool
 _msg_socket_readable(eio_obj_t *obj)
 {
@@ -451,12 +459,8 @@ _handle_accept(void *arg)
 	if (close(fd) == -1)
 		error("Closing accepted fd: %m");
 
-	slurm_mutex_lock(&message_lock);
-	message_connections--;
-	slurm_cond_signal(&message_cond);
-	slurm_mutex_unlock(&message_lock);
-
-	debug3("Leaving  _handle_accept");
+	debug3("Leaving %s", __func__);
+	_decrement_message_connections();
 	return NULL;
 
 fail:
@@ -467,6 +471,7 @@ rwfail:
 		error("Closing accepted fd after error: %m");
 	debug("Leaving  _handle_accept on an error");
 	FREE_NULL_BUFFER(buffer);
+	_decrement_message_connections();
 	return NULL;
 }
 

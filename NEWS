@@ -95,6 +95,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameters option of bf_ignore_newly_avail_nodes to avoid
     scheduling lower priority jobs on resources that become available during
     the backfill scheduling cycle when bf_continue is enabled.
+ -- Decrement message_connections in stepd code on error path correctly.
 
 * Changes in Slurm 18.08.3
 ==========================
