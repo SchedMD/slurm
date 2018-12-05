@@ -9,6 +9,7 @@ EnvironmentFile=-/etc/sysconfig/slurmctld
 ExecStart=@sbindir@/slurmctld $SLURMCTLD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 PIDFile=/var/run/slurmctld.pid
+LimitNOFILE=65536
 @SYSTEMD_TASKSMAX_OPTION@
 
 [Install]
