@@ -128,7 +128,7 @@ send_user_msg(pam_handle_t *pamh, const char *mesg)
 
 	/*  Construct msg to send to app.
 	 */
-	memcpy(str, mesg, sizeof(str));
+	strncpy(str, mesg, sizeof(str));
 	msg[0].msg_style = PAM_ERROR_MSG;
 	msg[0].msg = str;
 	pmsg[0] = &msg[0];
