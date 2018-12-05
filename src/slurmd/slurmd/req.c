@@ -494,6 +494,16 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		goto rwfail;
 
 	/*
+	 * Wait for the regestration to come back from the slurmctld so we have
+	 * a TRES list to work with.
+	 */
+	if (!assoc_mgr_tres_list) {
+		slurm_mutex_lock(&tres_mutex);
+		slurm_cond_wait(&tres_cond, &tres_mutex);
+		slurm_mutex_unlock(&tres_mutex);
+	}
+
+	/*
 	 * Send over right after the slurmd_conf_lite! We don't care about the
 	 * assoc/qos locks assoc_mgr_post_tres_list is requesting as those lists
 	 * don't exist here.
@@ -510,8 +520,8 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		free_buf(buffer);
 		buffer = NULL;
 	} else {
-		len = 0;
-		safe_write(fd, &len, sizeof(int));
+		fatal("%s: assoc_mgr_tres_list is NULL when trying to start a slurmstepd. This should never happen.",
+		      __func__);
 	}
 	assoc_mgr_unlock(&locks);
 

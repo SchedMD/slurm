@@ -90,6 +90,8 @@ documents those changes that are of interest to users and administrators.
  -- If there is a constraint construct of the form "[...&...]"
     then an error is generated if more than one of those specifications
     contains KNL NUMA or MCDRAM modes.
+ -- Fix stepd segfault race if slurmctld hasn't registered with the launching
+    slurmd yet delivering it's TRES list.
 
 * Changes in Slurm 18.08.3
 ==========================
