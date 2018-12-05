@@ -97,6 +97,7 @@ documents those changes that are of interest to users and administrators.
     the backfill scheduling cycle when bf_continue is enabled.
  -- Decrement message_connections in stepd code on error path correctly.
  -- Decrease an error message to be debug.
+ -- Fix missing suffixes in squeue.
 
 * Changes in Slurm 18.08.3
 ==========================
