@@ -481,6 +481,8 @@ extern int gres_plugin_init(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 	char *last = NULL, *names, *one_name, *full_name;
+	char *sorted_names = NULL, *sep = "";
+	bool have_gpu = false, have_mps = false;
 
 	if (init_run && (gres_context_cnt >= 0))
 		return rc;
@@ -499,9 +501,30 @@ extern int gres_plugin_init(void)
 	if ((gres_plugin_list == NULL) || (gres_plugin_list[0] == '\0'))
 		goto fini;
 
-	gres_context_cnt = 0;
+	/* Insure that "gres/mps" follows "gres/gpu" */
 	names = xstrdup(gres_plugin_list);
 	one_name = strtok_r(names, ",", &last);
+	while (one_name) {
+		if (!xstrcmp(one_name, "mps") && !have_gpu) {
+			have_mps = true;	/* Need to append */
+		} else {
+			if (!xstrcmp(one_name, "gpu"))
+				have_gpu = true;
+			xstrfmtcat(sorted_names, "%s%s", sep, one_name);
+			sep = ",";
+		}
+		one_name = strtok_r(NULL, ",", &last);
+	}
+	if (have_mps) {
+		if (!have_gpu)
+			fatal("GresTypes: gres/mps requires that gres/gpu also be configured");
+		xstrfmtcat(sorted_names, "%s%s", sep, "mps");
+		sep = ",";
+	}
+	xfree(names);
+
+	gres_context_cnt = 0;
+	one_name = strtok_r(sorted_names, ",", &last);
 	while (one_name) {
 		full_name = xstrdup("gres/");
 		xstrcat(full_name, one_name);
@@ -519,8 +542,10 @@ extern int gres_plugin_init(void)
 			(void) _load_gres_plugin(one_name,
 						 gres_context +
 						 gres_context_cnt);
-			/* Ignore return code.
-			 * Proceed to support gres even without the plugin */
+			/*
+			 * Ignore return code.
+			 * Proceed to support gres even without the plugin
+			 */
 			gres_context[gres_context_cnt].gres_name =
 				xstrdup(one_name);
 			gres_context[gres_context_cnt].plugin_id =
@@ -529,10 +554,10 @@ extern int gres_plugin_init(void)
 		}
 		one_name = strtok_r(NULL, ",", &last);
 	}
-	xfree(names);
+	xfree(sorted_names);
 
 	/* Ensure that plugin_id is valid and unique */
-	for (i=0; i<gres_context_cnt; i++) {
+	for (i = 0; i < gres_context_cnt; i++) {
 		for (j = i+1; j < gres_context_cnt; j++) {
 			if (gres_context[i].plugin_id !=
 			    gres_context[j].plugin_id)
