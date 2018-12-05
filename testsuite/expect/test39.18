@@ -188,7 +188,7 @@ proc check_configuration {test_minor gres_conf fake_gpus_conf expected_output} {
 # NOTES:
 ################################################################################
 # fake_gpus.conf is of the following format, with each line representing one
-# device:
+# GPU device:
 #
 #     type|cpu_count|cpu_range|links|device_files
 #
@@ -197,7 +197,7 @@ proc check_configuration {test_minor gres_conf fake_gpus_conf expected_output} {
 #
 # The GRES_PARSABLE output is of the following format:
 #
-#     GRES_PARSABLE(device_count):type|cpu_count|cpu_range|links|device_files
+# GRES_PARSABLE[name](device_count):type|cpu_count|cpu_range|links|device_files
 #
 # To better decipher the tests, temporarily increase the log verbosity in
 # test39.18.prog.c. E.g.:
@@ -223,8 +223,8 @@ tesla|4|2-3|0,1|${dev}3
 tesla|4|2-3|0,1|${dev}4
 "
 set expected_output "
-GRES_PARSABLE(2):tesla|4|0-1|0,1|${dev}\[1-2\]|
-GRES_PARSABLE(2):tesla|4|2-3|0,1|${dev}\[3-4\]|
+GRES_PARSABLE\[gpu\](2):tesla|4|0-1|0,1|${dev}\[1-2\]|
+GRES_PARSABLE\[gpu\](2):tesla|4|2-3|0,1|${dev}\[3-4\]|
 "
 check_configuration 0 $gres_conf $fake_gpus_conf $expected_output
 
@@ -244,7 +244,7 @@ tesla|4|2-3|0,1|${dev}3
 tesla|4|2-3|0,1|${dev}4
 "
 set expected_output "
-GRES_PARSABLE(2):tesla|4|2-3|0,1|${dev}\[1-2\]|
+GRES_PARSABLE\[gpu\](2):tesla|4|2-3|0,1|${dev}\[1-2\]|
 "
 check_configuration 1 $gres_conf $fake_gpus_conf $expected_output
 
@@ -265,8 +265,8 @@ tesla|4|2-3|0,1|${dev}3
 tesla|4|2-3|0,1|${dev}4
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|4|0-1|0,1|${dev}1|
-GRES_PARSABLE(2):tesla|4|2-3|0,1|${dev}\[3-4\]|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|0,1|${dev}1|
+GRES_PARSABLE\[gpu\](2):tesla|4|2-3|0,1|${dev}\[3-4\]|
 "
 check_configuration 2 $gres_conf $fake_gpus_conf $expected_output
 
@@ -287,7 +287,7 @@ tesla|4|0-1|0,1|${dev}5
 tesla|4|0-1|0,1|${dev}6
 "
 set expected_output "
-GRES_PARSABLE(4):tesla|4|2-3|0,1|${dev}\[1-4\]|
+GRES_PARSABLE\[gpu\](4):tesla|4|2-3|0,1|${dev}\[1-4\]|
 "
 check_configuration 4 $gres_conf $fake_gpus_conf $expected_output
 
@@ -308,11 +308,11 @@ Name=gpu Type=tesla File=${dev}8 Cores=0-3 Links=0,3
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(2):tesla|4|0-3|0|${dev}\[1-2\]|
-GRES_PARSABLE(2):tesla|4|0-3|1|${dev}\[3-4\]|
-GRES_PARSABLE(1):tesla|4|0-3|0,1|${dev}5|
-GRES_PARSABLE(1):tesla|4|0-3|0,2|${dev}6|
-GRES_PARSABLE(2):tesla|4|0-3|0,3|${dev}\[7-8\]|
+GRES_PARSABLE\[gpu\](2):tesla|4|0-3|0|${dev}\[1-2\]|
+GRES_PARSABLE\[gpu\](2):tesla|4|0-3|1|${dev}\[3-4\]|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,1|${dev}5|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,2|${dev}6|
+GRES_PARSABLE\[gpu\](2):tesla|4|0-3|0,3|${dev}\[7-8\]|
 "
 check_configuration 5 $gres_conf $fake_gpus_conf $expected_output
 
@@ -335,7 +335,7 @@ Name=gpu Type=tesla File=${dev}\[1-4\] Cores=2-3 Links=0,1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(4):tesla|4|2-3|0,1|${dev}\[1-4\]|
+GRES_PARSABLE\[gpu\](4):tesla|4|2-3|0,1|${dev}\[1-4\]|
 "
 check_configuration 101 $gres_conf $fake_gpus_conf $expected_output
 
@@ -354,10 +354,10 @@ tesla|4|2-3|(null)|${dev}9
 tesla|4|(null)|(null)|(null)
 "
 set expected_output "
-GRES_PARSABLE(2):tesla|4|0-1|(null)|${dev}\[5-6\]|
-GRES_PARSABLE(1):tesla|4|(null)|(null)|${dev}7|
-GRES_PARSABLE(1):tesla|4|(null)|0-1|${dev}8|
-GRES_PARSABLE(1):tesla|4|2-3|(null)|${dev}9|
+GRES_PARSABLE\[gpu\](2):tesla|4|0-1|(null)|${dev}\[5-6\]|
+GRES_PARSABLE\[gpu\](1):tesla|4|(null)|(null)|${dev}7|
+GRES_PARSABLE\[gpu\](1):tesla|4|(null)|0-1|${dev}8|
+GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}9|
 "
 check_configuration 102 $gres_conf $fake_gpus_conf $expected_output
 
@@ -374,7 +374,10 @@ Name=mic     Type=tesla File=${dev}4 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(1):tesla|4|0-3|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
+GRES_PARSABLE\[tmpdisk\](1):tesla|4|0-3|(null)|${dev}2|
+GRES_PARSABLE\[nic\](1):tesla|4|0-3|(null)|${dev}3|
+GRES_PARSABLE\[mic\](1):tesla|4|0-3|(null)|${dev}4|
 "
 check_configuration 103 $gres_conf $fake_gpus_conf $expected_output
 
@@ -397,7 +400,10 @@ tesla|4|0-3|(null)|${dev}3
 tesla|4|0-3|(null)|${dev}4
 "
 set expected_output "
-GRES_PARSABLE(3):tesla|4|0-3|(null)|${dev}\[2-4\]|
+GRES_PARSABLE\[gpu\](3):tesla|4|0-3|(null)|${dev}\[2-4\]|
+GRES_PARSABLE\[tmpdisk\](1):tesla|4|0-3|(null)|${dev}2|IGNORE
+GRES_PARSABLE\[nic\](1):tesla|4|0-3|(null)|${dev}3|IGNORE
+GRES_PARSABLE\[mic\](1):tesla|4|0-3|(null)|${dev}4|IGNORE
 "
 check_configuration 104 $gres_conf $fake_gpus_conf $expected_output
 
@@ -412,7 +418,7 @@ NodeName=$nodename              Type=tesla File=${dev}2 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(1):tesla|4|0-3|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
 "
 check_configuration 105 $gres_conf $fake_gpus_conf $expected_output
 
@@ -432,7 +438,7 @@ tesla|4|0-3|(null)|${dev}1
 tesla|4|0-3|(null)|${dev}2
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|4|0-3|(null)|${dev}2|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}2|
 "
 check_configuration 106 $gres_conf $fake_gpus_conf $expected_output
 
@@ -458,7 +464,9 @@ set gres_conf "
 NodeName=$nodename Name=tmpdisk Count=10g
 "
 set fake_gpus_conf ""
-set expected_output ""
+set expected_output "
+GRES_PARSABLE\[tmpdisk\](-2147483648):(null)|4|(null)|(null)|(null)|
+"
 check_configuration 108 $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
@@ -474,8 +482,8 @@ Name=gpu Type=b File=${dev}6 Cores=0-3 Links=0,1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(2):a|4|0-3|0,1|${dev}\[1-2\]|
-GRES_PARSABLE(2):b|4|0-3|0,1|${dev}\[5-6\]|
+GRES_PARSABLE\[gpu\](2):a|4|0-3|0,1|${dev}\[1-2\]|
+GRES_PARSABLE\[gpu\](2):b|4|0-3|0,1|${dev}\[5-6\]|
 "
 check_configuration 6 $gres_conf $fake_gpus_conf $expected_output
 
@@ -495,7 +503,7 @@ tesla|4|0-3|0,1|${dev}3
 tesla|4|0-3|0,1|${dev}4
 "
 set expected_output "
-GRES_PARSABLE(4):tesla|4|0-3|0,1|${dev}\[1-4\]|
+GRES_PARSABLE\[gpu\](4):tesla|4|0-3|0,1|${dev}\[1-4\]|
 "
 check_configuration 7 $gres_conf $fake_gpus_conf $expected_output
 
@@ -510,7 +518,7 @@ Name=gpu Type=tesla File=${dev}2 Cores=0-3 Links=0,1 Ignore=true
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(4):tesla|4|0-3|0,1|${dev}\[1-4\]|
+GRES_PARSABLE\[gpu\](4):tesla|4|0-3|0,1|${dev}\[1-4\]|
 "
 check_configuration 8 $gres_conf $fake_gpus_conf $expected_output
 
@@ -530,7 +538,7 @@ tesla|4|0-3|0,1|${dev}3
 tesla|4|0-3|0,1|${dev}4
 "
 set expected_output "
-GRES_PARSABLE(4):tesla|4|0-3|0,1|${dev}\[1-4\]|
+GRES_PARSABLE\[gpu\](4):tesla|4|0-3|0,1|${dev}\[1-4\]|
 "
 check_configuration 9 $gres_conf $fake_gpus_conf $expected_output
 
@@ -549,8 +557,8 @@ Name=gpu Type=tesla_b File=${dev}8 Cores=0-3 Links=0,1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(4):tesla_a|4|0-3|0,1|${dev}\[1-2,5,7\]|
-GRES_PARSABLE(4):tesla_b|4|0-3|0,1|${dev}\[3-4,6,8\]|
+GRES_PARSABLE\[gpu\](4):tesla_a|4|0-3|0,1|${dev}\[1-2,5,7\]|
+GRES_PARSABLE\[gpu\](4):tesla_b|4|0-3|0,1|${dev}\[3-4,6,8\]|
 "
 check_configuration 10 $gres_conf $fake_gpus_conf $expected_output
 
@@ -574,7 +582,7 @@ tesla|4|0-3|0,1|${dev}7
 tesla|4|0-3|0,1|${dev}8
 "
 set expected_output "
-GRES_PARSABLE(6):tesla|4|0-3|0,1|${dev}\[1-2,4,6-8\]|
+GRES_PARSABLE\[gpu\](6):tesla|4|0-3|0,1|${dev}\[1-2,4,6-8\]|
 "
 check_configuration 11 $gres_conf $fake_gpus_conf $expected_output
 
@@ -594,7 +602,7 @@ tesla|4|0-3|0,1|${dev}3
 tesla|4|0-3|0,1|${dev}4
 "
 set expected_output "
-GRES_PARSABLE(3):tesla|4|0-3|0,1|${dev}\[1,3-4\]|
+GRES_PARSABLE\[gpu\](3):tesla|4|0-3|0,1|${dev}\[1,3-4\]|
 "
 check_configuration 12 $gres_conf $fake_gpus_conf $expected_output
 
@@ -618,7 +626,7 @@ tesla|4|0-3|0,1|${dev}3
 tesla|4|0-3|0,1|${dev}4
 "
 set expected_output "
-GRES_PARSABLE(2):tesla|4|0-3|0,1|${dev}\[1-2\]|
+GRES_PARSABLE\[gpu\](2):tesla|4|0-3|0,1|${dev}\[1-2\]|
 "
 check_configuration 13 $gres_conf $fake_gpus_conf $expected_output
 
@@ -636,7 +644,7 @@ Name=gpu Type=tesla File=${dev}\[3-4\] Cores=0-3 Links=0,1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(2):tesla|4|0-3|0,1|${dev}\[3-4\]|
+GRES_PARSABLE\[gpu\](2):tesla|4|0-3|0,1|${dev}\[3-4\]|
 "
 check_configuration 14 $gres_conf $fake_gpus_conf $expected_output
 
@@ -653,7 +661,7 @@ Name=gpu Type=tesla File=${dev}\[1-4\] Cores=0-3 Links=0,1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(4):tesla|4|0-3|0,1|${dev}\[1-4\]|
+GRES_PARSABLE\[gpu\](4):tesla|4|0-3|0,1|${dev}\[1-4\]|
 "
 check_configuration 15 $gres_conf $fake_gpus_conf $expected_output
 
@@ -670,7 +678,7 @@ Name=gpu Type=tesla File=${dev}\[1-4\] Cores=0-3 Links=0,1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(4):tesla|4|0-3|0,1|${dev}\[4,3,2,1\]|
+GRES_PARSABLE\[gpu\](4):tesla|4|0-3|0,1|${dev}\[4,3,2,1\]|
 "
 check_configuration 16 $gres_conf $fake_gpus_conf $expected_output
 
@@ -687,10 +695,10 @@ Name=gpu Type=tesla File=${dev}4 Cores=0-3 Links=0,1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(1):tesla|4|0|0,1|${dev}1|
-GRES_PARSABLE(1):tesla|4|0-1|0,1|${dev}2|
-GRES_PARSABLE(1):tesla|4|0-2|0,1|${dev}3|
-GRES_PARSABLE(1):tesla|4|0-3|0,1|${dev}4|
+GRES_PARSABLE\[gpu\](1):tesla|4|0|0,1|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|0,1|${dev}2|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-2|0,1|${dev}3|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,1|${dev}4|
 "
 check_configuration 17 $gres_conf $fake_gpus_conf $expected_output
 
@@ -707,7 +715,7 @@ Name=gpu Type=tesla File=${dev}1 Cores=0-3 Links=0,1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(1):tesla|4|0|0,1|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0|0,1|${dev}1|
 "
 check_configuration 18 $gres_conf $fake_gpus_conf $expected_output
 
@@ -724,8 +732,8 @@ Name=gpu Type=tesla File=${dev}4 Cores=0-3 Links=0
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(3):tesla|4|0-3|(null)|${dev}\[1-3\]|
-GRES_PARSABLE(1):tesla|4|0-3|0|${dev}4|
+GRES_PARSABLE\[gpu\](3):tesla|4|0-3|(null)|${dev}\[1-3\]|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0|${dev}4|
 "
 check_configuration 19 $gres_conf $fake_gpus_conf $expected_output
 
@@ -742,9 +750,9 @@ Name=gpu Type=tesla File=${dev}4 Cores=0-3 Links=0,1,2
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(2):tesla|4|0-3|(null)|${dev}\[1,3\]|
-GRES_PARSABLE(1):tesla|4|0-3|0,1|${dev}2|
-GRES_PARSABLE(1):tesla|4|0-3|0,1,2|${dev}4|
+GRES_PARSABLE\[gpu\](2):tesla|4|0-3|(null)|${dev}\[1,3\]|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,1|${dev}2|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,1,2|${dev}4|
 "
 check_configuration 20 $gres_conf $fake_gpus_conf $expected_output
 
@@ -761,9 +769,9 @@ Name=gpu File=${dev}4 Cores=0-3 Links=0,1 Type=0
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(1):|4|0-3|0,1|${dev}2|
-GRES_PARSABLE(1):null|4|0-3|0,1|${dev}3|
-GRES_PARSABLE(1):0|4|0-3|0,1|${dev}4|
+GRES_PARSABLE\[gpu\](1):|4|0-3|0,1|${dev}2|
+GRES_PARSABLE\[gpu\](1):null|4|0-3|0,1|${dev}3|
+GRES_PARSABLE\[gpu\](1):0|4|0-3|0,1|${dev}4|
 "
 check_configuration 21 $gres_conf $fake_gpus_conf $expected_output
 
@@ -781,7 +789,7 @@ Name=gpu File=${dev}4 Cores=0-3 Links=0,1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(4):(null)|4|0-3|0,1|${dev}\[1-4\]|
+GRES_PARSABLE\[gpu\](4):(null)|4|0-3|0,1|${dev}\[1-4\]|
 "
 check_configuration 22 $gres_conf $fake_gpus_conf $expected_output
 
@@ -799,9 +807,9 @@ Name=gpu Type=tesla File=${dev}5 Links=0,1 Cores=0
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE(3):tesla|4|(null)|0,1|${dev}\[1-3\]|
-GRES_PARSABLE(1):tesla|4|null|0,1|${dev}4|
-GRES_PARSABLE(1):tesla|4|0|0,1|${dev}5|
+GRES_PARSABLE\[gpu\](3):tesla|4|(null)|0,1|${dev}\[1-3\]|
+GRES_PARSABLE\[gpu\](1):tesla|4|null|0,1|${dev}4|
+GRES_PARSABLE\[gpu\](1):tesla|4|0|0,1|${dev}5|
 "
 check_configuration 23 $gres_conf $fake_gpus_conf $expected_output
 
@@ -820,7 +828,7 @@ set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|$cpus_count|~$cpu_array|(null)|${dev}1
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
 check_configuration 200 $gres_conf $fake_gpus_conf $expected_output
 
@@ -839,7 +847,7 @@ set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|$cpus_count|~$cpu_array|(null)|${dev}1
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
 check_configuration 201 $gres_conf $fake_gpus_conf $expected_output
 
@@ -858,7 +866,7 @@ set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|$cpus_count|~$cpu_array|(null)|${dev}1
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
 check_configuration 202 $gres_conf $fake_gpus_conf $expected_output
 
@@ -877,7 +885,7 @@ set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|$cpus_count|~max|(null)|${dev}1
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
 check_configuration 203 $gres_conf $fake_gpus_conf $expected_output
 
@@ -891,7 +899,7 @@ set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|0|~zero|(null)|${dev}1
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|0|(null)|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|0|(null)|(null)|${dev}1|
 "
 check_configuration 204 $gres_conf $fake_gpus_conf $expected_output
 
@@ -905,7 +913,7 @@ set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|16|~one|(null)|${dev}1
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|16|0|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|16|0|(null)|${dev}1|
 "
 check_configuration 205 $gres_conf $fake_gpus_conf $expected_output
 
@@ -919,7 +927,7 @@ set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|4|~three|(null)|${dev}1
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|4|0-1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}1|
 "
 check_configuration 206 $gres_conf $fake_gpus_conf $expected_output
 
@@ -933,7 +941,7 @@ set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|16|~half|(null)|${dev}1
 "
 set expected_output "
-GRES_PARSABLE(1):tesla|16|8-15|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|16|8-15|(null)|${dev}1|
 "
 check_configuration 207 $gres_conf $fake_gpus_conf $expected_output
 

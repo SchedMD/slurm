@@ -373,11 +373,11 @@ static void _print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
 				      log_level_t log_lvl)
 {
-	log_var(log_lvl, "GRES_PARSABLE(%ld):%s|%d|%s|%s|%s|%s",
-		gres_slurmd_conf->count, gres_slurmd_conf->type_name,
-		gres_slurmd_conf->cpu_cnt, gres_slurmd_conf->cpus,
-		gres_slurmd_conf->links, gres_slurmd_conf->file,
-		gres_slurmd_conf->ignore ? "IGNORE":"");
+	log_var(log_lvl, "GRES_PARSABLE[%s](%ld):%s|%d|%s|%s|%s|%s",
+		gres_slurmd_conf->name, gres_slurmd_conf->count,
+		gres_slurmd_conf->type_name, gres_slurmd_conf->cpu_cnt,
+		gres_slurmd_conf->cpus, gres_slurmd_conf->links,
+		gres_slurmd_conf->file, gres_slurmd_conf->ignore ? "IGNORE":"");
 }
 
 /*
