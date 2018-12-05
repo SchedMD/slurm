@@ -2211,7 +2211,7 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 			 * the step. See rebuild_step_bitmaps(). The problem
 			 * will go away when we have per-node core bitmaps.
 			 */
-			info("%s: %pS ending, unable to update job's core use infomation due to job resizing",
+			info("%s: %pS ending, unable to update job's core use information due to job resizing",
 			     __func__, step_ptr);
 		} else {
 			error("%s: %pS core_bitmap size mismatch (%d != %d)",

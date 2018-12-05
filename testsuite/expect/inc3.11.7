@@ -38,7 +38,7 @@ proc inc3_11_7 {} {
 
 	send_user "\n+++++ STARTING TEST 7 (Within: inc3.11.7) +++++\n"
 
-	# Make a reservation, just to get node size infomation
+	# Make a reservation, just to get node size information
 	set ret_code [create_res "StartTime=now Duration=1 Nodes=$part_node User=$user_name" 0]
 	if {$ret_code != 0} {
 		send_user "\n\033\[31mFAILURE: Unable to create a valid reservation (Within inc3.11.7)\033\[m\n"

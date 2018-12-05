@@ -225,7 +225,7 @@ extern int topo_build_config(void)
 
 /*
  * topo_generate_node_ranking  - Reads in topology.conf file and the switch 
- * connection infomation for the Hypercube network topology. Use Hilbert Curves
+ * connection information for the Hypercube network topology. Use Hilbert Curves
  * to sort switches into multiple 1 dimensional tables which are used in the 
  * select plugin to find the best-fit cluster of nodes for a job. 
  */
