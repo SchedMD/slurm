@@ -618,9 +618,10 @@ static int _find_gres_device_in_list(void *a, void *b)
  * Creates a gres_slurmd_conf_t record to add to a list of gres_slurmd_conf_t
  * records
  */
-static void _add_gpu_to_gres_list(List gres_list, int device_cnt, int cpu_cnt,
-				  char *cpu_aff_abs_range, char *device_file,
-				  char *type, char *nvlinks, bool ignore)
+static void _add_gres_to_list(List gres_list, char *name, int device_cnt,
+			      int cpu_cnt, char *cpu_aff_abs_range,
+			      char *device_file, char *type, char *nvlinks,
+			      bool ignore)
 {
 	gres_slurmd_conf_t *gpu_record;
 	bool use_empty_first_record = false;
@@ -657,11 +658,11 @@ static void _add_gpu_to_gres_list(List gres_list, int device_cnt, int cpu_cnt,
 		gpu_record->config_flags |= GRES_CONF_HAS_TYPE;
 	gpu_record->cpus = xstrdup(cpu_aff_abs_range);
 	gpu_record->type_name = xstrdup(type);
-	gpu_record->name = xstrdup("gpu");
+	gpu_record->name = xstrdup(name);
 	gpu_record->file = xstrdup(device_file);
 	gpu_record->links = xstrdup(nvlinks);
 	gpu_record->count = device_cnt;
-	gpu_record->plugin_id = gres_plugin_build_id("gpu");
+	gpu_record->plugin_id = gres_plugin_build_id(name);
 	gpu_record->ignore = ignore;
 	if (!use_empty_first_record)
 		list_append(gres_list, gpu_record);
@@ -671,9 +672,9 @@ static void _add_gpu_to_gres_list(List gres_list, int device_cnt, int cpu_cnt,
 // Duplicate an existing gres_slurmd_conf_t record and add it to a list
 static void _add_record_to_gres_list(List gres_list, gres_slurmd_conf_t *record)
 {
-	_add_gpu_to_gres_list(gres_list, record->count, record->cpu_cnt,
-			      record->cpus, record->file, record->type_name,
-			      record->links, record->ignore);
+	_add_gres_to_list(gres_list, record->name, record->count,
+			  record->cpu_cnt, record->cpus, record->file,
+			  record->type_name, record->links, record->ignore);
 }
 
 /*
@@ -874,8 +875,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 {
 	ListIterator itr_conf, itr_single, itr_system;
 	gres_slurmd_conf_t *gres_record;
-	List gres_list_conf_single;
-	List gres_list_final;
+	List gres_list_conf_single, gres_list_final, non_gpu_list;
 	bool use_system_detected = true;
 
 	if (gres_list_conf == NULL) {
@@ -886,6 +886,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 
 	gres_list_conf_single = list_create(_delete_gres_list);
 	gres_list_final = list_create(_delete_gres_list);
+	non_gpu_list = list_create(_delete_gres_list);
 
 	debug2("gres_list_conf:");
 	_print_gres_list(gres_list_conf, LOG_LEVEL_DEBUG2);
@@ -902,10 +903,19 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 			// Use system-detected
 			break;
 		}
-		// Skip this GRES record if it's not a GPU GRES
+		// Just move this GRES record if it's not a GPU GRES
 		if (xstrcasecmp(gres_record->name, "gpu") != 0) {
-			debug2("%s: ignoring `%s` GRES record",
+			debug2("%s: preserving original `%s` GRES record",
 			       __func__, gres_record->name);
+			_add_gres_to_list(non_gpu_list,
+					  gres_record->name,
+					  gres_record->count,
+					  gres_record->cpu_cnt,
+					  gres_record->cpus,
+					  gres_record->file,
+					  gres_record->type_name,
+					  gres_record->links,
+					  gres_record->ignore);
 			continue;
 		}
 		// Use system-detected if there are only ignore records in conf
@@ -920,13 +930,14 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 				continue;
 
 			// Add device from single record
-			_add_gpu_to_gres_list(gres_list_conf_single, 1,
-					      gres_record->cpu_cnt,
-					      gres_record->cpus,
-					      gres_record->file,
-					      gres_record->type_name,
-					      gres_record->links,
-					      gres_record->ignore);
+			_add_gres_to_list(gres_list_conf_single,
+					  gres_record->name, 1,
+					  gres_record->cpu_cnt,
+					  gres_record->cpus,
+					  gres_record->file,
+					  gres_record->type_name,
+					  gres_record->links,
+					  gres_record->ignore);
 			continue;
 		}
 		// count > 1; Break down record into individual devices
@@ -963,12 +974,13 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		// Break down file into individual file names
 		// Create an array of these file names, and index off of i
 		for (i = 0; i < file_count; ++i) {
-			_add_gpu_to_gres_list(gres_list_conf_single, 1,
-					      gres_record->cpu_cnt,
-					      gres_record->cpus, file_array[i],
-					      gres_record->type_name,
-					      gres_record->links,
-					      gres_record->ignore);
+			_add_gres_to_list(gres_list_conf_single,
+					  gres_record->name, 1,
+					  gres_record->cpu_cnt,
+					  gres_record->cpus, file_array[i],
+					  gres_record->type_name,
+					  gres_record->links,
+					  gres_record->ignore);
 			xfree(file_array[i]);
 		}
 		xfree(file_array);
@@ -1027,9 +1039,13 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	while ((gres_record = list_pop(gres_list_final))) {
 		list_append(gres_list_conf, gres_record);
 	}
+	while ((gres_record = list_pop(non_gpu_list))) {
+		list_append(gres_list_conf, gres_record);
+	}
 
 	FREE_NULL_LIST(gres_list_conf_single);
 	FREE_NULL_LIST(gres_list_final);
+	FREE_NULL_LIST(non_gpu_list);
 }
 
 #ifdef HAVE_NVML
@@ -1543,9 +1559,9 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		debug2("    CPU Affinity Range: %s", cpu_aff_mac_range);
 		debug2("    CPU Affinity Range Abstract: %s",cpu_aff_abs_range);
 
-		_add_gpu_to_gres_list(gres_list_system, 1, node_config->cpu_cnt,
-				      cpu_aff_abs_range, device_file,
-				      device_brand, nvlinks, false);
+		_add_gres_to_list(gres_list_system, "gpu", 1,
+				  node_config->cpu_cnt, cpu_aff_abs_range,
+				  device_file, device_brand, nvlinks, false);
 
 		xfree(cpu_aff_mac_range);
 		xfree(cpu_aff_abs_range);
@@ -1747,8 +1763,8 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 			      "<cpu_range>|<links>|<device_file>", line_number);
 
 		// Add the GPU specified by the parsed line
-		_add_gpu_to_gres_list(gres_list_system, 1, cpu_count, cpu_range,
-				      device_file, type, links, false);
+		_add_gres_to_list(gres_list_system, "gpu", 1, cpu_count,
+				  cpu_range, device_file, type, links, false);
 		xfree(cpu_range);
 		xfree(device_file);
 		xfree(type);
