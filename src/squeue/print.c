@@ -2138,6 +2138,8 @@ int _print_job_cpus_per_tres(job_info_t *job, int width,
 				   right_justify, true);
 
 	}
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
@@ -2155,6 +2157,8 @@ int _print_job_mem_per_tres(job_info_t *job, int width,
 				   right_justify, true);
 
 	}
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
@@ -2175,6 +2179,8 @@ int _print_job_tres_alloc(job_info_t *job, int width,
 				   right_justify, true);
 
 	}
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
@@ -2192,6 +2198,8 @@ int _print_job_tres_bind(job_info_t *job, int width,
 				   right_justify, true);
 
 	}
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
@@ -2209,6 +2217,8 @@ int _print_job_tres_freq(job_info_t *job, int width,
 				   right_justify, true);
 
 	}
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
@@ -2226,6 +2236,8 @@ int _print_job_tres_per_job(job_info_t *job, int width,
 				   right_justify, true);
 
 	}
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
@@ -2243,6 +2255,8 @@ int _print_job_tres_per_node(job_info_t *job, int width,
 				   right_justify, true);
 
 	}
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
@@ -2260,6 +2274,8 @@ int _print_job_tres_per_socket(job_info_t *job, int width,
 				   right_justify, true);
 
 	}
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 
@@ -2277,6 +2293,8 @@ int _print_job_tres_per_task(job_info_t *job, int width,
 				   right_justify, true);
 
 	}
+	if (suffix)
+		printf("%s", suffix);
 	return SLURM_SUCCESS;
 }
 

@@ -1,0 +1,113 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Containers Guide</h1>
+
+<p>Containers are new and generally exciting development in HPC workloads.
+Containers rely on existing kernel features to allow greater user control over
+what applications see and can interact with at any given time. For HPC
+Workloads, these are usually restricted to the
+<a href="http://man7.org/linux/man-pages/man7/mount_namespaces.7.html">mount namespace</a>.
+
+Slurm allows container developers to create
+<a href="plugins.html">SPANK Plugins</a> that can be called at various points of
+job execution to support containers. Slurm is generally agnostic to containers
+and can be made to start most, if not all, types.
+</p>
+
+<p>Links to several container varieties are provided below:
+<ul>
+<li><a href="#charliecloud">Charliecloud</a></li>
+<li><a href="#docker">Docker</a></li>
+<li><a href="#udocker">UDOCKER</a></li>
+<li><a href="#k8s">Kubernetes Pods (k8s)</a></li>
+<li><a href="#shifter">Shifter</a></li>
+<li><a href="#singularity">Singularity</a></li>
+</ul>
+
+Please note this list is not exhaustive as new containers types are being
+created all the time.
+</p>
+
+<hr size=4 width="100%">
+<h2>Container Types</h2>
+<h3 name="charliecloud"><a href="https://github.com/hpc/charliecloud">Charliecloud</a></h3>
+
+<p>Charliecloud is stand alone user namespace container out of
+<a href="https://lanl.gov/">LANL</a> to provide HPC containers. Charliecloud does
+does not have/require any Slurm integration as it requires no special
+permissions to run as a user.</p>
+
+<h3 name="docker"><a href="https://www.docker.com/">Docker</a></h3>
+
+<p>Docker currently has multiple design points that make it unfriendly to HPC
+systems.  The issue that usually stops most sites from using Docker is the
+requirement of "only trusted users should be allowed to control your Docker
+daemon"
+<a href="https://docs.docker.com/engine/security/security/">[Docker Security]</a>
+which is not acceptable to most HPC systems.</p>
+
+<p>Sites with trusted users can add them to the docker Unix group and allow them
+control Docker directly from inside of jobs. There is currently no support for
+starting or stopping docker containers directly in Slurm.</p>
+
+<h3 name="udocker"><a href="https://github.com/indigo-dc/udocker">UDOCKER</a></h3>
+
+<p>UDOCKER is Docker feature subset clone that is designed to allow execution of
+docker commands without increased user privileges.</p>
+
+<h3 name="k8s">
+	<a href="https://kubernetes.io/docs/concepts/workloads/pods/pod/">
+		Kubernetes Pods (k8s)
+	</a>
+</h3>
+
+<p> Kubernetes is a container orchestration system that uses PODs, which are
+generally a logical grouping of containers for singular purpose. </p>
+
+<p>There is currently no support for Kubernetes Pods in Slurm.</p>
+
+<h3 name="shifter"><a href="https://github.com/NERSC/shifter">Shifter</a></h3>
+
+<p>Shifter is a container project out of <a href="http://www.nersc.gov/">NERSC</a>
+to provide HPC containers with full scheduler integration.
+
+<ul>
+	<li>Shifter provides full 
+		<a href="https://github.com/NERSC/shifter/wiki/SLURM-Integration">
+			instructions to integrate with Slurm
+		</a>.
+	</li>
+	<li>Presentations about Shifter and Slurm:
+		<ul>
+			<li> <a href="https://slurm.schedmd.com/SLUG15/shifter.pdf">
+				Never Port Your Code Again - Docker functionality with Shifter using SLURM
+			</a> </li>
+			<li> <a href="https://www.slideshare.net/insideHPC/shifter-containers-in-hpc-environments">
+				Shifter: Containers in HPC Environments
+			</a> </li>
+		</ul>
+	</li>
+</ul>
+</p>
+
+<h3 name="singularity"><a href="https://www.sylabs.io/singularity/">Singularity</a></h3>
+
+<p>Singularity is hybrid container system that supports:
+<ul>
+	<li>Slurm integration via
+		<a href="https://github.com/sylabs/singularity/blob/master/docs/2.x-slurm/README.md">
+		Plugin</a>. A full description of the plugin was provided in the
+		<a href="https://slurm.schedmd.com/SLUG17/SLUG_Bull_Singularity.pdf">
+		SLUG17 Singularity Presentation</a>.
+	</li>
+	<li>User namespace containers via sandbox mode that require no additional
+		permissions.</li>
+	<li>Users directly calling singularity via setuid executable outside of Slurm.</a>
+</ul>
+</p>
+
+<hr size=4 width="100%">
+
+<p style="text-align:center;">Last modified November 2018</p>
+
+<!--#include virtual="footer.txt"-->

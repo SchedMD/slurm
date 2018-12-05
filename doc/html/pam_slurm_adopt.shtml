@@ -200,6 +200,24 @@ insecure and is recommended for testing purposes only. We recommend using
 
 </dd>
 
+<dt><b>disable_x11</b></dt>
+<dd>Turn off Slurm built-in X11 forwarding support. Configurable values are:
+
+<dl compact>
+<dt></dt>
+<dd>
+<dl compact>
+<dt><b>0</b> (default)</dt>
+<dd>If the job the connection is adopted into has Slurm's X11 forwarding
+enabled, the DISPLAY variable will be overwritten with the X11 tunnel
+endpoint details.</dd>
+<dt><b>1</b></dt>
+<dd>Do not check for Slurm's X11 forwarding support, and do not alter the
+DISPLAY variable.</dd>
+</dl>
+
+</dd>
+
 <dl compact>
 <dt><b>log_level</b></dt>
 <dd>See <a href="https://slurm.schedmd.com/slurm.conf.html#OPT_SlurmdDebug">
@@ -251,6 +269,6 @@ on the source node, such as on a login node, it is better to have the RPC be
 rejected rather than silently dropped. This will allow better responsiveness to
 the RPC initiator.</p>
 
-<p style="text-align:center;">Last modified 24 October 2018</p>
+<p style="text-align:center;">Last modified 4 December 2018</p>
 
 <!--#include virtual="footer.txt"-->
