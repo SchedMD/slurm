@@ -265,7 +265,7 @@ No filesystem data are collected.
 \fBacct_gather_filesystem/lustre\fR
 Lustre filesystem traffic data are collected from the counters found in
 /proc/fs/lustre/.
-In order to account for per job lustre traffic, add the "disk/lustre" TRES to
+In order to account for per job lustre traffic, add the "fs/lustre" TRES to
 \fIAccountingStorageTRES\fR.
 .RE
 
@@ -2074,7 +2074,7 @@ NOTE: see "man cgroup.conf" for configuration details
 which uses Cray proprietary process tracking
 .TP
 \fBproctrack/linuxproc\fR
-which uses linux process tree using parent process IDs
+which uses linux process tree using parent process IDs.
 .TP
 \fBproctrack/lua\fR
 which uses a site\-specific LUA script to track processes
@@ -2132,6 +2132,7 @@ This container may be used for user processes not launched under Slurm control,
 for example the PAM module may place processes launch through a direct user
 login into this container.
 Setting the Contain implicitly sets the Alloc flag.
+You must set ProctrackType=proctrack/cgroup when using the Contain flag.
 .TP
 \fBNoHold\fR
 If set, the Alloc flag should also be set.  This will allow for salloc to not
@@ -5444,11 +5445,11 @@ Cluster name specified in the slurm.conf will be used.
 \fBEXAMPLE\fR
 .RE
 ClusterName=linux
-.RE
+.br
 include /home/slurm/etc/%c_config
-.RE
+.br
 # Above line interpreted as
-.RE
+.br
 # "include /home/slurm/etc/linux_config"
 
 .SH "FILE AND DIRECTORY PERMISSIONS"
