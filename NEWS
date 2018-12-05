@@ -12,6 +12,12 @@ documents those changes that are of interest to users and administrators.
     Add salloc/sbatch/srun support for optional "--no-kill=off" option to
     disable the environment variables.
  -- Fix salloc and missing SLURM_NTASKS.
+ -- Alter the backfill scheduler behavior to prevent it from scheduling lower
+    priority jobs on resources that become available during the backfill
+    scheduling cycle when bf_continue is enabled. This behavior was available
+    as the bf_ignore_newly_avail_nodes option in 18.08.4+, but is now enabled
+    by default. (The SchedulerParameters option of bf_ignore_newly_avail_nodes
+    is also now removed, although harmless if still set.)
 
 * Changes in Slurm 19.05.0pre1
 ==============================
