@@ -109,15 +109,14 @@ static void _my_sleep(int secs)
 
 static void _load_config(void)
 {
-	char *sched_params, *tmp_ptr;
+	char *sched_params = slurm_get_sched_params();
+	char *tmp_ptr;
 
 	sched_timeout = slurm_get_msg_timeout() / 2;
 	sched_timeout = MAX(sched_timeout, 1);
 	sched_timeout = MIN(sched_timeout, 10);
 
-	sched_params = slurm_get_sched_params();
-
-	if (sched_params && (tmp_ptr = xstrcasestr(sched_params, "interval=")))
+	if ((tmp_ptr = xstrcasestr(sched_params, "interval=")))
 		builtin_interval = atoi(tmp_ptr + 9);
 	if (builtin_interval < 1) {
 		error("Invalid SchedulerParameters interval: %d",
@@ -125,11 +124,9 @@ static void _load_config(void)
 		builtin_interval = BACKFILL_INTERVAL;
 	}
 
-	if (sched_params && (tmp_ptr = xstrcasestr(sched_params,
-						   "max_job_bf=")))
+	if ((tmp_ptr = xstrcasestr(sched_params, "max_job_bf=")))
 		max_sched_job_cnt = atoi(tmp_ptr + 11);
-	if (sched_params && (tmp_ptr = xstrcasestr(sched_params,
-						   "bf_max_job_test=")))
+	if ((tmp_ptr = xstrcasestr(sched_params, "bf_max_job_test=")))
 		max_sched_job_cnt = atoi(tmp_ptr + 16);
 	if (max_sched_job_cnt < 1) {
 		error("Invalid SchedulerParameters bf_max_job_test: %d",

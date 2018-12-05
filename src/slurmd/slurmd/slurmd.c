@@ -2371,15 +2371,15 @@ static void _select_spec_cores(void)
 {
 	int spec_cores, res_core, res_sock, res_off, core_off, thread_off;
 	int from_core, to_core, incr_core, from_sock, to_sock, incr_sock;
-	char *sched_params;
+	char *sched_params = slurm_get_sched_params();
 	bool spec_cores_first;
 
-	sched_params = slurm_get_sched_params();
-	if (sched_params && xstrcasestr(sched_params, "spec_cores_first"))
+	if (xstrcasestr(sched_params, "spec_cores_first"))
 		spec_cores_first = true;
 	else
 		spec_cores_first = false;
 	xfree(sched_params);
+
 	if (spec_cores_first) {
 		from_core = 0;
 		to_core   = conf->cores;

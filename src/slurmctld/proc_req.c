@@ -2269,8 +2269,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 	if (!running_composite) {
 		if (config_update != slurmctld_conf.last_update) {
 			char *sched_params = slurm_get_sched_params();
-			defer_sched = (sched_params &&
-				       xstrcasestr(sched_params, "defer"));
+			defer_sched = (xstrcasestr(sched_params, "defer"));
 			xfree(sched_params);
 			config_update = slurmctld_conf.last_update;
 		}
@@ -6584,12 +6583,10 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 		int time_limit;
 		char *tmp_ptr;
 
-		defer_sched = (sched_params &&
-			       xstrcasestr(sched_params, "defer"));
+		defer_sched = (xstrcasestr(sched_params, "defer"));
 
 		time_limit = slurm_get_msg_timeout() / 2;
-		if (sched_params &&
-		    (tmp_ptr = xstrcasestr(sched_params, "max_sched_time="))) {
+		if ((tmp_ptr = xstrcasestr(sched_params, "max_sched_time="))) {
 			sched_timeout = atoi(tmp_ptr + 15);
 			if ((sched_timeout <= 0) ||
 			    (sched_timeout > time_limit)) {

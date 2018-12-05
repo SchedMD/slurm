@@ -237,8 +237,6 @@ static void _load_config(void)
 
 	debug_flag = slurm_get_debug_flags();
 	sched_params = slurm_get_power_parameters();
-	if (!sched_params)
-		sched_params = xmalloc(1);	/* Set defaults below */
 
 	/*                                   12345678901234567890 */
 	if ((tmp_ptr = xstrcasestr(sched_params, "balance_interval="))) {

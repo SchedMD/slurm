@@ -242,9 +242,8 @@ int main(int argc, char **argv)
 			}
 
 			sched_params = slurm_get_sched_params();
-			no_env_cache = (sched_params &&
-					xstrcasestr(sched_params,
-						    "no_env_cache"));
+			if (xstrcasestr(sched_params, "no_env_cache"))
+				no_env_cache = true;
 			xfree(sched_params);
 
 			env = env_array_user_default(user,

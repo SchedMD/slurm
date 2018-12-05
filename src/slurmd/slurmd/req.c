@@ -1755,8 +1755,7 @@ _get_user_env(batch_job_launch_msg_t *req)
 
 	if (config_update != conf->last_update) {
 		char *sched_params = slurm_get_sched_params();
-		no_env_cache = (sched_params &&
-				xstrcasestr(sched_params, "no_env_cache"));
+		no_env_cache = (xstrcasestr(sched_params, "no_env_cache"));
 		xfree(sched_params);
 		config_update = conf->last_update;
 	}
@@ -2586,8 +2585,7 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 
 	if (config_update != conf->last_update) {
 		char *sched_params = slurm_get_sched_params();
-		requeue_no_hold = (sched_params &&
-				   xstrcasestr(sched_params,
+		requeue_no_hold = (xstrcasestr(sched_params,
 					       "nohold_on_prolog_fail"));
 		xfree(sched_params);
 		config_update = conf->last_update;
@@ -6469,8 +6467,7 @@ _requeue_setup_env_fail(void)
 
 	if (config_update != conf->last_update) {
 		char *sched_params = slurm_get_sched_params();
-		requeue = (sched_params &&
-			   (xstrcasestr(sched_params, "no_env_cache") ||
+		requeue = ((xstrcasestr(sched_params, "no_env_cache") ||
 			    xstrcasestr(sched_params,
 					"requeue_setup_env_fail")));
 		xfree(sched_params);

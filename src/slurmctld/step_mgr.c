@@ -788,29 +788,25 @@ static void _wake_pending_steps(struct job_record *job_ptr)
 		return;
 
 	if (config_start_count == -1) {
-		char *sched_params, *tmp_ptr;
+		char *sched_params = slurm_get_sched_params();
+		char *tmp_ptr;
 		long int param;
-		sched_params = slurm_get_sched_params();
 		config_start_count = 8;	
 		config_max_age = 60;
-		if (sched_params) {
-			tmp_ptr = xstrcasestr(sched_params,
-					      "step_retry_count=");
-			if (tmp_ptr) {
-				param = strtol(tmp_ptr + 17, NULL, 10);
-				if ((param >= 1) &&
-				    (param != LONG_MIN) && (param != LONG_MAX))
-					config_start_count = param;
-			}
-			tmp_ptr = xstrcasestr(sched_params, "step_retry_time=");
-			if (tmp_ptr) {
-				param = strtol(tmp_ptr + 16, NULL, 10);
-				if ((param >= 1) &&
-				    (param != LONG_MIN) && (param != LONG_MAX))
-					config_max_age = param;
-			}
-			xfree(sched_params);
+
+		if ((tmp_ptr = xstrcasestr(sched_params, "step_retry_count="))) {
+			param = strtol(tmp_ptr + 17, NULL, 10);
+			if ((param >= 1) && (param != LONG_MIN) &&
+			    (param != LONG_MAX))
+				config_start_count = param;
 		}
+		if ((tmp_ptr = xstrcasestr(sched_params, "step_retry_time="))) {
+			param = strtol(tmp_ptr + 16, NULL, 10);
+			if ((param >= 1) && (param != LONG_MIN) &&
+			    (param != LONG_MAX))
+				config_max_age = param;
+		}
+		xfree(sched_params);
 	}
 	max_age = time(NULL) - config_max_age;
 

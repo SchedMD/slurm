@@ -1011,12 +1011,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	}
 
 	sched_params = slurm_get_sched_params();
-	if (sched_params && xstrcasestr(sched_params, "preempt_strict_order"))
+	if (xstrcasestr(sched_params, "preempt_strict_order"))
 		preempt_strict_order = true;
 	else
 		preempt_strict_order = false;
-	if (sched_params &&
-	    (tmp_ptr = xstrcasestr(sched_params, "preempt_reorder_count="))) {
+	if ((tmp_ptr = xstrcasestr(sched_params, "preempt_reorder_count="))) {
 		preempt_reorder_cnt = atoi(tmp_ptr + 22);
 		if (preempt_reorder_cnt < 0) {
 			error("Invalid SchedulerParameters preempt_reorder_count: %d",
@@ -1024,8 +1023,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			preempt_reorder_cnt = 1;	/* Use default value */
 		}
 	}
-        if (sched_params &&
-            (tmp_ptr = xstrcasestr(sched_params, "bf_window_linear="))) {
+        if ((tmp_ptr = xstrcasestr(sched_params, "bf_window_linear="))) {
 		bf_window_scale = atoi(tmp_ptr + 17);
 		if (bf_window_scale <= 0) {
 			error("Invalid SchedulerParameters bf_window_linear: %d",
@@ -1035,15 +1033,15 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	} else
 		bf_window_scale = 0;
 
-	if (sched_params && xstrcasestr(sched_params, "pack_serial_at_end"))
+	if (xstrcasestr(sched_params, "pack_serial_at_end"))
 		pack_serial_at_end = true;
 	else
 		pack_serial_at_end = false;
-	if (sched_params && xstrcasestr(sched_params, "spec_cores_first"))
+	if (xstrcasestr(sched_params, "spec_cores_first"))
 		spec_cores_first = true;
 	else
 		spec_cores_first = false;
-	if (sched_params && xstrcasestr(sched_params, "bf_busy_nodes"))
+	if (xstrcasestr(sched_params, "bf_busy_nodes"))
 		backfill_busy_nodes = true;
 	else
 		backfill_busy_nodes = false;

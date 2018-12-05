@@ -1778,10 +1778,8 @@ static bool _opt_verify(void)
 			opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
 
 	if (saopt.wait_all_nodes == NO_VAL16) {
-		char *sched_params;
-		sched_params = slurm_get_sched_params();
-		if (sched_params && xstrcasestr(sched_params,
-						"salloc_wait_nodes"))
+		char *sched_params = slurm_get_sched_params();
+		if (xstrcasestr(sched_params, "salloc_wait_nodes"))
 			saopt.wait_all_nodes = 1;
 		xfree(sched_params);
 	}

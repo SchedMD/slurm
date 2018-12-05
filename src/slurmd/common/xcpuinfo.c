@@ -324,8 +324,7 @@ extern int xcpuinfo_hwloc_topo_get(
 	if (hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
 	    hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET)) {
 		char *sched_params = slurm_get_sched_params();
-		if (sched_params &&
-		    strcasestr(sched_params, "Ignore_NUMA")) {
+		if (xstrcasestr(sched_params, "Ignore_NUMA")) {
 			info("Ignoring NUMA nodes within a socket");
 		} else {
 			info("Considering each NUMA node as a socket");
