@@ -97,6 +97,15 @@ This module has the following options (* = default):
         0* = If the step the job is adopted into has X11 enabled, set
              the DISPLAY variable in the processes environment accordingly.
 
+    service - The pam service name for which this module should run. By default
+              it only runs for sshd for which it was designed for. A
+              different service name can be specified like "login" or "*" to
+              allow the module to in any service context. For local pam logins
+              this module could cause unexpected behaviour or even security
+              issues. Therefore if the service name does not match then this
+              module will not perform the adoption logic and returns
+              PAM_IGNORE immediately.
+
 SLURM.CONF CONFIGURATION
   PrologFlags=contain must be set in slurm.conf. This sets up the "extern" step
   into which ssh-launched processes will be adopted.

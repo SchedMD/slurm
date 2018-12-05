@@ -93,6 +93,7 @@ static struct {
 	log_level_t log_level;
 	char *node_name;
 	bool disable_x11;
+	char *pam_service;
 } opts;
 
 static void _init_opts(void)
@@ -106,6 +107,7 @@ static void _init_opts(void)
 	opts.log_level = LOG_LEVEL_INFO;
 	opts.node_name = NULL;
 	opts.disable_x11 = false;
+	opts.pam_service = NULL;
 }
 
 /* Adopts a process into the given step. Returns SLURM_SUCCESS if
@@ -579,6 +581,9 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 			opts.node_name = xstrdup(v);
 		} else if (!xstrncasecmp(*argv, "disable_x11=1", 13)) {
 			opts.disable_x11 = true;
+		} else if (!xstrncasecmp(*argv, "service=", 8)) {
+			v = (char *)(8 + *argv);
+			opts.pam_service = xstrdup(v);
 		}
 	}
 
@@ -591,6 +596,41 @@ static void _log_init(log_level_t level)
 	logopts.stderr_level  = LOG_LEVEL_FATAL;
 	logopts.syslog_level  = level;
 	log_init(PAM_MODULE_NAME, logopts, LOG_AUTHPRIV, NULL);
+}
+
+/* Make sure to only continue if we're running in the sshd context
+ *
+ * If this module is used locally e.g. via sudo then unexpected things might
+ * happen (e.g. passing environment variables interpreted by slurm code like
+ * SLURM_CONF or inheriting file descriptors that are used by _try_rpc()).
+ */
+static int check_pam_service(pam_handle_t *pamh)
+{
+	const char *allowed = opts.pam_service ? opts.pam_service : "sshd";
+	char *service = NULL;
+	int rc;
+
+	if (!strcmp(allowed, "*"))
+		// any service name is allowed
+		return PAM_SUCCESS;
+
+	rc = pam_get_item(pamh, PAM_SERVICE, (void*)&service);
+
+	if (rc != PAM_SUCCESS) {
+		pam_syslog(pamh, LOG_ERR, "failed to obtain PAM_SERVICE name");
+		return rc;
+	}
+	else if (service == NULL) {
+		// this shouldn't actually happen
+		return PAM_BAD_ITEM;
+	}
+
+	if (!strcmp(service, allowed)) {
+		return PAM_SUCCESS;
+	}
+
+	pam_syslog(pamh, LOG_INFO, "Not adopting process since this is not an allowed pam service");
+	return PAM_IGNORE;
 }
 
 /* Parse arguments, etc then get my socket address/port information. Attempt to
@@ -613,6 +653,12 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 
 	_init_opts();
 	_parse_opts(pamh, argc, argv);
+
+	retval = check_pam_service(pamh);
+	if (retval != PAM_SUCCESS) {
+		return retval;
+	}
+
 	_log_init(opts.log_level);
 
 	switch (opts.action_generic_failure) {
@@ -749,6 +795,7 @@ cleanup:
 	FREE_NULL_LIST(steps);
 	xfree(buf);
 	xfree(opts.node_name);
+	xfree(opts.pam_service);
 	xcgroup_fini_slurm_cgroup_conf();
 	return rc;
 }
