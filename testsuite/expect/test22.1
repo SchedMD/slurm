@@ -473,7 +473,7 @@ proc create_sql {cluster sql_in sql_rem} {
 	# Use sacct to see if the job loaded
 	#
 	set matches 0
-	set my_pid [eval spawn $sacct -p -C $cluster --format=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str]
+	set my_pid [eval spawn $sacct -p -M $cluster --format=cluster,account,associd,wckey,wckeyid,start,end,elapsed --noheader --start=$start_str --end=$end_str]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacct command\n"

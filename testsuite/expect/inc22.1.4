@@ -50,7 +50,7 @@ proc inc22_1_4 {} {
 	#Test for job 1
 	send_user "\nSearch for job1 on cluster $cluster (Within: inc21.1.4)\n"
 	set usermatch 0
-	spawn $sacct -p -C $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=jobname
+	spawn $sacct -p -M $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=jobname
 	expect {
 		-re "$test_job1." {
 			incr usermatch
@@ -81,7 +81,7 @@ proc inc22_1_4 {} {
 	# Test for job2
 	send_user "\nSearch for job2 on cluster $cluster (Within: inc21.1.4)\n"
 	set usermatch 0
-	spawn $sacct -p -C $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=jobname
+	spawn $sacct -p -M $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=jobname
 	expect {
 		-re "$test_job2." {
 			incr usermatch
@@ -111,7 +111,7 @@ proc inc22_1_4 {} {
 	# Test for job3
 	send_user "\nSearch for job3 on cluster $cluster (Within: inc21.1.4)\n"
 	set usermatch 0
-	spawn $sacct -p -C $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=jobname
+	spawn $sacct -p -M $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=jobname
 	expect {
 		-re "$test_job3." {
 			incr usermatch
