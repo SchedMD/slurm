@@ -659,6 +659,8 @@ executed (ran to completion with an exit code of zero).
 \fBsingleton\fR
 This job can begin execution after any previously launched jobs
 sharing the same job name and user have terminated.
+In other words, only one job by that name and owned by that user can be running
+or suspended at any point in time.
 .RE
 .TP
 \fIEligibleTime\fP=<time_spec>
