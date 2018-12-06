@@ -137,7 +137,12 @@ typedef struct gres_node_state {
 	uint64_t  gres_cnt_alloc;
 	bitstr_t *gres_bit_alloc;	/* If gres.conf contains File field */
 
-	/* Topology specific information */
+	/*
+	 * Topology specific information. In the case of gres/mps, there is one
+	 * topo record per file (GPU) and the size of the GRES bitmaps (i.e.
+	 * gres_bit_alloc and topo_gres_bitmap[#]) is equal to the number of
+	 * GPUs on the node while the count is a site-configurable value.
+	 */
 	uint16_t topo_cnt;		/* Size of topo_ arrays */
 	int link_len;			/* Size of link_cnt */
 	int **links_cnt;		/* Count of links between GRES */

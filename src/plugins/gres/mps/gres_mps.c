@@ -192,6 +192,7 @@ static List _build_gpu_list(List gres_list)
 		hl = hostlist_create(gres_record->file);
 		while ((f_name = hostlist_shift(hl))) {
 			gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
+			gpu_record->config_flags = gres_record->config_flags;
 			gpu_record->file = xstrdup(f_name);
 			gpu_record->name = xstrdup(gres_record->name);
 			gpu_record->type_name = xstrdup(gres_record->type_name);
@@ -233,9 +234,13 @@ static List _build_mps_list(List gres_list)
 		count_per_file = gres_record->count/hostlist_count(hl);
 		while ((f_name = hostlist_shift(hl))) {
 			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
+			mps_record->config_flags = gres_record->config_flags;
+			if (gres_record->type_name)
+				mps_record->config_flags |= GRES_CONF_HAS_TYPE;
 			mps_record->count = count_per_file;
 			mps_record->file = xstrdup(f_name);
 			mps_record->name = xstrdup(gres_record->name);
+			mps_record->plugin_id = gres_record->plugin_id;
 			mps_record->type_name = xstrdup(gres_record->type_name);
 			list_append(mps_list, mps_record);
 			free(f_name);
@@ -262,6 +267,10 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 		mps_itr = list_iterator_create(mps_conf_list);
 		while ((mps_record = list_next(mps_itr))) {
 			if (!xstrcmp(gpu_record->file, mps_record->file)) {
+				if (gpu_record->type_name) {
+					mps_record->config_flags |=
+						GRES_CONF_HAS_TYPE;
+				}
 				xfree(mps_record->type_name);
 				mps_record->type_name =
 					xstrdup(gpu_record->type_name);
@@ -273,9 +282,11 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 		list_iterator_destroy(mps_itr);
 		if (!mps_record) {
 			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
+			mps_record->config_flags = gpu_record->config_flags;
 			mps_record->count = 0;
 			mps_record->file = xstrdup(gpu_record->file);
 			mps_record->name = xstrdup("mps");
+			mps_record->plugin_id = gres_plugin_build_id("mps");
 			mps_record->type_name = xstrdup(gpu_record->type_name);
 			list_append(gres_conf_list, mps_record);
 		}

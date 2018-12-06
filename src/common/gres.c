@@ -1782,11 +1782,12 @@ static int _node_config_init(char *node_name, char *orig_config,
 	context_ptr->total_cnt += gres_data->gres_cnt_config;
 
 	/* Use count from recovered state, if higher */
-	gres_data->gres_cnt_avail  = MAX(gres_data->gres_cnt_avail,
-					 gres_data->gres_cnt_config);
+	gres_data->gres_cnt_avail = MAX(gres_data->gres_cnt_avail,
+					gres_data->gres_cnt_config);
 	if ((gres_data->gres_bit_alloc != NULL) &&
 	    (gres_data->gres_cnt_avail >
-	     bit_size(gres_data->gres_bit_alloc))) {
+	     bit_size(gres_data->gres_bit_alloc)) &&
+	    !_multi_count_per_file(context_ptr->gres_name)) {
 		gres_data->gres_bit_alloc =
 			bit_realloc(gres_data->gres_bit_alloc,
 				    gres_data->gres_cnt_avail);
@@ -1887,7 +1888,8 @@ extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 	int      found = 0;
 
 	if (gres_conf_list == NULL) {
-		/* Should not reach this as if there are GRES id's then there
+		/*
+		 * Should not reach this as if there are GRES id's then there
 		 * must have been a gres_conf_list.
 		 */
 		info("%s--The gres_conf_list is NULL!!!", __func__);
@@ -2143,20 +2145,30 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					}
 				}
 			}
-			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
-			for (j = 0; j < gres_slurmd_conf->count; j++) {
+			if (_multi_count_per_file(gres_slurmd_conf->name)) {
+				gres_data->topo_gres_bitmap[i] =
+					bit_alloc(set_cnt);
 				bit_set(gres_data->topo_gres_bitmap[i],
 					gres_inx);
-				if (gres_data->gres_bit_alloc &&
-				    bit_test(gres_data->gres_bit_alloc,
-					     gres_inx)) {
-					/* Set by recovered job */
-					gres_data->topo_gres_cnt_alloc[i]++;
-				}
-				_links_str2array(gres_slurmd_conf->links,
-						 node_name, gres_data,
-						 gres_inx, gres_cnt);
 				gres_inx++;
+			} else {
+				gres_data->topo_gres_bitmap[i] =
+					bit_alloc(gres_cnt);
+				for (j = 0; j < gres_slurmd_conf->count; j++) {
+					bit_set(gres_data->topo_gres_bitmap[i],
+						gres_inx);
+					if (gres_data->gres_bit_alloc &&
+					    bit_test(gres_data->gres_bit_alloc,
+						     gres_inx)) {
+						/* Set by recovered job */
+						gres_data->topo_gres_cnt_alloc[i]++;
+					}
+					_links_str2array(
+							gres_slurmd_conf->links,
+							node_name, gres_data,
+							gres_inx, gres_cnt);
+					gres_inx++;
+				}
 			}
 			gres_data->topo_type_id[i] =
 				gres_plugin_build_id(gres_slurmd_conf->
@@ -2186,6 +2198,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->gres_cnt_avail = 0;
 
 	if (has_file) {
+		uint64_t gres_bits;
 		if (gres_data->gres_cnt_avail > MAX_GRES_BITMAP) {
 			error("%s: gres/%s has File plus very large Count "
 			      "(%"PRIu64") for node %s, resetting value to %u",
@@ -2194,14 +2207,16 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			      MAX_GRES_BITMAP);
 			gres_data->gres_cnt_avail = MAX_GRES_BITMAP;
 		}
+		if (_multi_count_per_file(context_ptr->gres_name))
+			gres_bits = set_cnt;
+		else
+			gres_bits = gres_data->gres_cnt_avail;
 		if (gres_data->gres_bit_alloc == NULL) {
-			gres_data->gres_bit_alloc =
-				bit_alloc(gres_data->gres_cnt_avail);
-		} else if (gres_data->gres_cnt_avail !=
-			   bit_size(gres_data->gres_bit_alloc)) {
+			gres_data->gres_bit_alloc = bit_alloc(gres_bits);
+		} else if (gres_bits != bit_size(gres_data->gres_bit_alloc)) {
 			gres_data->gres_bit_alloc =
 				bit_realloc(gres_data->gres_bit_alloc,
-					    gres_data->gres_cnt_avail);
+					    gres_bits);
 		}
 	}
 
@@ -2458,14 +2473,17 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 		gres_data->gres_cnt_avail = 0;
 
 	if (context_ptr->config_flags & GRES_CONF_HAS_FILE) {
+		uint64_t gres_bits;
+		if (_multi_count_per_file(context_ptr->gres_name))
+			gres_bits = gres_data->topo_cnt;
+		else
+			gres_bits = gres_data->gres_cnt_avail;
 		if (gres_data->gres_bit_alloc == NULL) {
-			gres_data->gres_bit_alloc =
-				bit_alloc(gres_data->gres_cnt_avail);
-		} else if (gres_data->gres_cnt_avail !=
-			   bit_size(gres_data->gres_bit_alloc)) {
+			gres_data->gres_bit_alloc = bit_alloc(gres_bits);
+		} else if (gres_bits != bit_size(gres_data->gres_bit_alloc)) {
 			gres_data->gres_bit_alloc =
 				bit_realloc(gres_data->gres_bit_alloc,
-					    gres_data->gres_cnt_avail);
+					    gres_bits);
 		}
 	}
 
@@ -2515,7 +2533,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL))
 		*gres_list = list_create(_gres_node_list_delete);
-	for (i=0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		/* Find gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
 		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
@@ -2570,8 +2588,10 @@ extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
 		pack32(magic, buffer);
 		pack32(gres_ptr->plugin_id, buffer);
 		pack64(gres_node_ptr->gres_cnt_avail, buffer);
-		/* Just note if gres_bit_alloc exists.
-		 * Rebuild it based upon the state of recovered jobs */
+		/*
+		 * Just note if gres_bit_alloc exists.
+		 * Rebuild it based upon the state of recovered jobs
+		 */
 		if (gres_node_ptr->gres_bit_alloc)
 			has_bitmap = 1;
 		else
@@ -2993,8 +3013,9 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 	}
 
 	if (gres_node_ptr->gres_bit_alloc) {
-		bit_fmt(tmp_str, sizeof(tmp_str), gres_node_ptr->gres_bit_alloc);
-		info("  gres_bit_alloc:%s", tmp_str);
+		bit_fmt(tmp_str, sizeof(tmp_str),gres_node_ptr->gres_bit_alloc);
+		info("  gres_bit_alloc(%d):%s",
+		     (int) bit_size(gres_node_ptr->gres_bit_alloc), tmp_str);
 	} else {
 		info("  gres_bit_alloc:NULL");
 	}
