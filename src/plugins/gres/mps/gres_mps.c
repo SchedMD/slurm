@@ -54,6 +54,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/env.h"
 #include "src/common/gres.h"
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
 
@@ -92,6 +93,209 @@ static uint64_t	debug_flags		= 0;
 static char	*gres_name		= "mps";
 static List	gres_devices		= NULL;
 
+static void _delete_gres_list(void *x)
+{
+	gres_slurmd_conf_t *p = (gres_slurmd_conf_t *) x;
+	xfree(p->cpus);
+	FREE_NULL_BITMAP(p->cpus_bitmap);
+	xfree(p->file);
+	xfree(p->links);
+	xfree(p->name);
+	xfree(p->type_name);
+	xfree(p);
+}
+
+/*
+ * A one-liner version of _print_gres_conf_full()
+ */
+static void _print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
+			     log_level_t log_lvl)
+{
+	log_var(log_lvl,
+		"    GRES[%s](%"PRIu64"): %8s | %s",
+		gres_slurmd_conf->name, gres_slurmd_conf->count,
+		gres_slurmd_conf->type_name, gres_slurmd_conf->file);
+}
+
+
+/*
+ * Print the gres.conf record in a parsable format
+ * Do NOT change the format of this without also changing test39.17!
+ */
+static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
+				      log_level_t log_lvl)
+{
+	log_var(log_lvl, "GRES_PARSABLE[%s](%"PRIu64"):%s|%s",
+		gres_slurmd_conf->name, gres_slurmd_conf->count,
+		gres_slurmd_conf->type_name, gres_slurmd_conf->file);
+}
+
+/*
+ * Prints out each gres_slurmd_conf_t record in the list
+ */
+static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
+				    bool parsable)
+{
+	ListIterator itr;
+	gres_slurmd_conf_t *gres_record;
+
+	if (gres_list == NULL)
+		return;
+	itr = list_iterator_create(gres_list);
+	while ((gres_record = list_next(itr))) {
+		if (parsable)
+			_print_gres_conf_parsable(gres_record, log_lvl);
+		else
+			_print_gres_conf(gres_record, log_lvl);
+	}
+	list_iterator_destroy(itr);
+}
+
+/*
+ * Print each gres_slurmd_conf_t record in the list
+ */
+static void _print_gres_list(List gres_list, log_level_t log_lvl)
+{
+	_print_gres_list_helper(gres_list, log_lvl, false);
+}
+
+/*
+ * Convert all GPU records to a new entries in a list where each File is a
+ * unique device (i.e. convert a record with "File=nvidia[0-3]" into 4 separate
+ * records).
+ */
+static List _build_gpu_list(List gres_list)
+{
+	ListIterator itr;
+	gres_slurmd_conf_t *gres_record, *gpu_record;
+	List gpu_list;
+	hostlist_t hl;
+	char *f_name;
+	bool log_fname = true;
+
+	if (gres_list == NULL)
+		return NULL;
+
+	gpu_list = list_create(_delete_gres_list);
+	itr = list_iterator_create(gres_list);
+	while ((gres_record = list_next(itr))) {
+		if (xstrcmp(gres_record->name, "gpu"))
+			continue;
+		if (!gres_record->file) {
+			if (log_fname) {
+				error("%s: GPU configuration lacks \"File\" specification",
+				      plugin_name);
+				log_fname = false;
+			}
+			continue;
+		}
+		hl = hostlist_create(gres_record->file);
+		while ((f_name = hostlist_shift(hl))) {
+			gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
+			gpu_record->file = xstrdup(f_name);
+			gpu_record->name = xstrdup(gres_record->name);
+			gpu_record->type_name = xstrdup(gres_record->type_name);
+			list_append(gpu_list, gpu_record);
+			free(f_name);
+		}
+		hostlist_destroy(hl);
+	}
+	list_iterator_destroy(itr);
+
+	return gpu_list;
+}
+
+/*
+ * Convert all MPS records to a new entries in a list where each File is a
+ * unique device (i.e. convert a record with "File=nvidia[0-3]" into 4 separate
+ * records). Similar to _build_gpu_list(), but we copy more fields, divide the
+ * "Count" across all MPS records and remove from the original list.
+ */
+static List _build_mps_list(List gres_list)
+{
+	ListIterator itr;
+	gres_slurmd_conf_t *gres_record, *mps_record;
+	List mps_list;
+	hostlist_t hl;
+	char *f_name;
+	uint64_t count_per_file;
+
+	if (gres_list == NULL)
+		return NULL;
+
+	mps_list = list_create(_delete_gres_list);
+	itr = list_iterator_create(gres_list);
+	while ((gres_record = list_next(itr))) {
+		if (xstrcmp(gres_record->name, "mps") ||
+		    !gres_record->file)
+			continue;
+		hl = hostlist_create(gres_record->file);
+		count_per_file = gres_record->count/hostlist_count(hl);
+		while ((f_name = hostlist_shift(hl))) {
+			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
+			mps_record->count = count_per_file;
+			mps_record->file = xstrdup(f_name);
+			mps_record->name = xstrdup(gres_record->name);
+			mps_record->type_name = xstrdup(gres_record->type_name);
+			list_append(mps_list, mps_record);
+			free(f_name);
+		}
+		hostlist_destroy(hl);
+		(void) list_remove(itr);
+	}
+	list_iterator_destroy(itr);
+
+	return mps_list;
+}
+
+/* Merge MPS records back to original list, updating and reordering as needed */
+static void _merge_lists(List gres_conf_list, List gpu_conf_list,
+			 List mps_conf_list)
+{
+	ListIterator gpu_itr, mps_itr;
+	gres_slurmd_conf_t *gpu_record, *mps_record;
+	bool log_match = true;
+
+	/* Add MPS records, matching File ordering to that of GPU records */
+	gpu_itr = list_iterator_create(gpu_conf_list);
+	while ((gpu_record = list_next(gpu_itr))) {
+		mps_itr = list_iterator_create(mps_conf_list);
+		while ((mps_record = list_next(mps_itr))) {
+			if (!xstrcmp(gpu_record->file, mps_record->file)) {
+				xfree(mps_record->type_name);
+				mps_record->type_name =
+					xstrdup(gpu_record->type_name);
+				list_append(gres_conf_list, mps_record);
+				(void) list_remove(mps_itr);
+				break;
+			}
+		}
+		list_iterator_destroy(mps_itr);
+		if (!mps_record) {
+			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
+			mps_record->count = 0;
+			mps_record->file = xstrdup(gpu_record->file);
+			mps_record->name = xstrdup("mps");
+			mps_record->type_name = xstrdup(gpu_record->type_name);
+			list_append(gres_conf_list, mps_record);
+		}
+	}
+	list_iterator_destroy(gpu_itr);
+
+	/* Move any remaining MPS records (no matching File) */
+	mps_itr = list_iterator_create(mps_conf_list);
+	while ((mps_record = list_next(mps_itr))) {
+		if (log_match) {
+			error("%s: MPS configuration lacks matching GPU configuration",
+			      plugin_name);
+			log_match = false;
+		}
+		list_append(gres_conf_list, mps_record);
+		(void) list_remove(mps_itr);
+	}
+	list_iterator_destroy(mps_itr);
+}
+
 extern int init(void)
 {
 	info("%s: %s loaded", __func__, plugin_name);
@@ -114,15 +318,54 @@ extern int fini(void)
 extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 {
 	int rc = SLURM_SUCCESS;
+	log_level_t log_lvl;
+	List gpu_conf_list, mps_conf_list;
 
+	/* Assume this state is caused by an scontrol reconfigure */
 	debug_flags = slurm_get_debug_flags();
-	if (gres_devices)
-		return rc;
+	if (gres_devices) {
+		debug("Resetting gres_devices");
+		FREE_NULL_LIST(gres_devices);
+	}
+
+	if (debug_flags & DEBUG_FLAG_GRES)
+		log_lvl = LOG_LEVEL_INFO;
+	else
+		log_lvl = LOG_LEVEL_DEBUG;
+
+	log_var(log_lvl, "%s: Initalized gres.conf list:", plugin_name);
+	_print_gres_list(gres_conf_list, log_lvl);
 
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
-
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
+
+	/*
+	 * Ensure that every GPU device file is listed as a MPS file.
+	 * Any MPS entry that we need to add will have a "Count" of zero.
+	 * Every MPS "Type" will be made to match the GPU "Type". The order
+	 * of MPS records (by "File") must match the order in which GPUs are
+	 * defined for the GRES bitmaps in slurmctld to line up.
+	 *
+	 * First, convert all GPU records to a new entries in a list where
+	 * each File is a unique device (i.e. convert a record with
+	 * "File=nvidia[0-3]" into 4 separate records).
+	 */
+	gpu_conf_list = _build_gpu_list(gres_conf_list);
+
+	/* Now move MPS records to new List, each with unique device file */
+	mps_conf_list = _build_mps_list(gres_conf_list);
+
+	/*
+	 * Merge MPS records back to original list, updating and reordering
+	 * as needed.
+	 */
+	_merge_lists(gres_conf_list, gpu_conf_list, mps_conf_list);
+	FREE_NULL_LIST(gpu_conf_list);
+	FREE_NULL_LIST(mps_conf_list);
+
+	log_var(log_lvl, "%s: Final gres.conf list:", plugin_name);
+	_print_gres_list(gres_conf_list, log_lvl);
 
 	return rc;
 }
@@ -155,6 +398,7 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
 extern void step_set_env(char ***step_env_ptr, void *gres_ptr, char *tres_freq,
 			 int local_proc_id)
 {
+//FIXME: CHECK FOR MEMORY LEAKS
 //	static int local_inx = 0;
 //	static bool already_seen = false;
 
