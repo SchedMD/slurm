@@ -179,7 +179,7 @@ out:
 
 	slurm_mutex_unlock(&gids_mutex);
 
-	END_TIMER3("group_cache_lookup(), you might consider enabling LaunchParameters=send_gids",
+	END_TIMER3("group_cache_lookup(), you might consider disabling LaunchParameters=no_send_gids",
 		   3000000);
 
 	return ngids;
