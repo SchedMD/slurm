@@ -2526,7 +2526,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 
 	if (_get_database_variable(mysql_conn, buffer_var, &value))
 		goto error;
-	debug2("%s: %lu", buffer_var, value);
+	debug2("%s: %"PRIu64, buffer_var, value);
 	if (value < (buffer_size / 2)) {
 		recommended_values = false;
 		xstrfmtcat(error_msg, " %s", buffer_var);
@@ -2534,7 +2534,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 
 	if (_get_database_variable(mysql_conn, logfile_var, &value))
 		goto error;
-	debug2("%s: %lu", logfile_var, value);
+	debug2("%s: %"PRIu64, logfile_var, value);
 	if (value < (logfile_size / 2)) {
 		recommended_values = false;
 		xstrfmtcat(error_msg, " %s", logfile_var);
@@ -2542,7 +2542,7 @@ static int _check_database_variables(mysql_conn_t *mysql_conn)
 
 	if (_get_database_variable(mysql_conn, lockwait_var, &value))
 		goto error;
-	debug2("%s: %lu", lockwait_var, value);
+	debug2("%s: %"PRIu64, lockwait_var, value);
 	if (value < (lockwait_timeout / 2)) {
 		recommended_values = false;
 		xstrfmtcat(error_msg, " %s", lockwait_var);
