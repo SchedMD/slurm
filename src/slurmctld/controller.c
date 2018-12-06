@@ -466,7 +466,7 @@ int main(int argc, char **argv)
 	 * Avoid constant xstrcasestr calls as part of step launch.
 	 * This could live elsewhere if someone finds a better home for it.
 	 */
-	if (xstrcasestr(slurmctld_conf.launch_params, "no_send_gids"))
+	if (xstrcasestr(slurmctld_conf.launch_params, "disable_send_gids"))
 		slurmctld_config.send_groups_in_cred = false;
 	else
 		slurmctld_config.send_groups_in_cred = true;
@@ -1000,7 +1000,7 @@ static void _reconfigure_slurm(void)
 	 * Avoid constant xstrcasestr calls as part of step launch.
 	 * This could live elsewhere if someone finds a better home for it.
 	 */
-	if (xstrcasestr(slurmctld_conf.launch_params, "no_send_gids"))
+	if (xstrcasestr(slurmctld_conf.launch_params, "disable_send_gids"))
 		slurmctld_config.send_groups_in_cred = false;
 	else
 		slurmctld_config.send_groups_in_cred = true;

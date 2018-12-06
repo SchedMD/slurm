@@ -1313,7 +1313,7 @@ only take effect for newly launched jobs.
 Sort NUMA memory at step start. User can override this default with
 SLURM_MEM_BIND environment variable or \-\-mem\-bind=nosort command line option.
 .TP
-\fBno_send_gids\fR
+\fBdisable_send_gids\fR
 By default the slurmctld will lookup and send the user_name and extended gids
 for a job, rather than individual on each node as part of each task launch. Which avoids issues around name service scalability when launching jobs involving
 many nodes.  Using this option will reverse this functionality.

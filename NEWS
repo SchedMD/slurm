@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
     as the bf_ignore_newly_avail_nodes option in 18.08.4+, but is now enabled
     by default. (The SchedulerParameters option of bf_ignore_newly_avail_nodes
     is also now removed, although harmless if still set.)
+ -- Make LaunchParameters=send_gids the default introducing the reverse option
+    "disable_send_gids to go back to the original behavior.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
@@ -31,8 +33,6 @@ documents those changes that are of interest to users and administrators.
     available by parsing the gres.conf file.
  -- Add configuration parameter "GpuFreqDef" to control a job's default GPU
     frequency.
- -- Make LaunchParameters=send_gids the default introducing the reverse option
-    "no_send_gids to go back to the original behavior.
  -- Add job flags to the database.  Currently used to determine which scheduler
     scheduled the job.
  -- Add constraints/features to the database.
