@@ -102,6 +102,7 @@ documents those changes that are of interest to users and administrators.
     can be located on the node.
  -- Run SlurmctldPrimaryOffProg when the primary slurmctld process shuts down.
  -- job_submit/lua: Add several slurmctld return codes.
+ -- job_submit/lua: Add user/group info to jobs.
 
 * Changes in Slurm 18.08.3
 ==========================

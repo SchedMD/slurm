@@ -321,6 +321,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 	} else if (!xstrcmp(name, "gres")) {
 		/* "gres" replaced by "tres_per_node" in v18.08 */
 		lua_pushstring (L, job_ptr->tres_per_node);
+	} else if (!xstrcmp(name, "group_id")) {
+		lua_pushnumber (L, job_ptr->group_id);
 	} else if (!xstrcmp(name, "job_id")) {
 		lua_pushnumber (L, job_ptr->job_id);
 	} else if (!xstrcmp(name, "job_state")) {
@@ -434,6 +436,10 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushstring (L, job_ptr->tres_per_socket);
 	} else if (!xstrcmp(name, "tres_per_task")) {
 		lua_pushstring (L, job_ptr->tres_per_task);
+	} else if (!xstrcmp(name, "user_id")) {
+		lua_pushnumber (L, job_ptr->user_id);
+	} else if (!xstrcmp(name, "user_name")) {
+		lua_pushstring (L, job_ptr->user_name);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		lua_pushnumber (L, job_ptr->wait4switch);
 	} else if (!xstrcmp(name, "wckey")) {
