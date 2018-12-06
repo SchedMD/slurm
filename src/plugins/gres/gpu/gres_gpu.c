@@ -357,7 +357,7 @@ static void _print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 			     log_level_t log_lvl)
 {
 	log_var(log_lvl,
-		"    GRES[%s](%ld): %8s | Cores(%d): %6s | Links: %6s | %15s%s",
+		"    GRES[%s](%"PRIu64"): %8s | Cores(%d): %6s | Links: %6s | %15s%s",
 		gres_slurmd_conf->name, gres_slurmd_conf->count,
 		gres_slurmd_conf->type_name, gres_slurmd_conf->cpu_cnt,
 		gres_slurmd_conf->cpus, gres_slurmd_conf->links,
@@ -373,7 +373,7 @@ static void _print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
 				      log_level_t log_lvl)
 {
-	log_var(log_lvl, "GRES_PARSABLE[%s](%ld):%s|%d|%s|%s|%s|%s",
+	log_var(log_lvl, "GRES_PARSABLE[%s](%"PRIu64"):%s|%d|%s|%s|%s|%s",
 		gres_slurmd_conf->name, gres_slurmd_conf->count,
 		gres_slurmd_conf->type_name, gres_slurmd_conf->cpu_cnt,
 		gres_slurmd_conf->cpus, gres_slurmd_conf->links,
@@ -1854,11 +1854,12 @@ extern int node_config_load(List gres_conf_list,
 		log_lvl = LOG_LEVEL_DEBUG;
 	if (gres_list_system && list_is_empty(gres_list_system))
 		log_var(log_lvl, "There were 0 GPUs detected on the system");
-	log_var(log_lvl, "Normalizing gres.conf with system devices");
+	log_var(log_lvl, "%s: Normalizing gres.conf with system devices",
+		plugin_name);
 	_normalize_gres_conf(gres_conf_list, gres_list_system);
 	FREE_NULL_LIST(gres_list_system);
 
-	log_var(log_lvl, "Final normalized gres.conf list:");
+	log_var(log_lvl, "%s: Final normalized gres.conf list:", plugin_name);
 	_print_gres_list(gres_conf_list, log_lvl);
 
 	// Print in parsable format for tests if fake system is in use
