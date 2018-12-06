@@ -4225,6 +4225,76 @@ proc get_gpu_count { node_count } {
 
 ################################################################
 #
+# Proc: get_mps_count
+#
+# Returns number of mps per gpu on the one node with the
+# highest count in the default partition.
+#
+################################################################
+proc get_mps_count { } {
+	global number sinfo
+	set fini 0
+	set node_inx 0
+	set def_part [default_partition]
+	set alpha_numeric_colon_paren "\[a-zA-Z0-9_\\(\\),\:\-\]+"
+
+	log_user 0
+	spawn $sinfo -N -p$def_part -oGRES=%G -h
+	expect {
+		-re "GRES=($alpha_numeric_colon_paren)" {
+			set gpu_count 0
+			set parts [split $expect_out(1,string) ",/"]
+			while 1 {
+				set gpu_found [lsearch $parts "gpu*"]
+				if { $gpu_found == -1 } break
+
+				set parts2 [split [lindex $parts $gpu_found] ":(/"]
+				set col [lsearch -regexp $parts2 ^$number$]
+				if { $col == -1 } {
+					incr gpu_count
+				} else {
+					set gpu_count [expr $gpu_count + [lindex $parts2 $col]]
+				}
+				set parts [lreplace $parts $gpu_found $gpu_found]
+			}
+
+			set mps_count 0
+			set parts [split $expect_out(1,string) ",/"]
+			while 1 {
+				set mps_found [lsearch $parts "mps*"]
+				if { $mps_found == -1 } break
+
+				set parts2 [split [lindex $parts $mps_found] ":(/"]
+				set col [lsearch -regexp $parts2 ^$number$]
+				if { $col == -1 } {
+					incr mps_count
+				} else {
+					set mps_count [expr $mps_count + [lindex $parts2 $col]]
+				}
+				set parts [lreplace $parts $mps_found $mps_found]
+			}
+
+			if {$gpu_count > 0 && $mps_count > 0} {
+				lappend mps_per_gpu [expr $mps_count / $gpu_count]
+				incr node_inx
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$node_inx == 0} {
+		return 0
+	}
+	set count [lindex [lsort -decreasing -integer $mps_per_gpu] 0]
+	return $count
+}
+
+################################################################
+#
 # Proc: get_over_time_limit
 #
 # Returns the value of OverTimeLimit in slurm.conf

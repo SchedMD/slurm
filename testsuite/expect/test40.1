@@ -1,0 +1,119 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test some invalid gres/mps job option
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "40.1"
+set exit_code   0
+set job_id      0
+
+print_header $test_id
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+
+set mps_cnt [get_mps_count]
+if {$mps_cnt < 0} {
+	send_user "\nFAILURE: Error getting MPS count\n"
+	exit 1
+}
+if {$mps_cnt < 1} {
+	send_user "\nWARNING: This test requires 1 or more MPS in the default partition\n"
+	exit 0
+}
+if {$mps_cnt < 100} {
+	send_user "\nFAILURE: MPS per GPU is unexpectedly low ($mps_cnt < 100). Check your configuration\n"
+	set exit_code 1
+}
+send_user "\nMPS per GPU count is $mps_cnt\n"
+
+#
+# Request both GPUs and MPS in single request
+#
+send_user "\n\n==== TEST 1 ====\n"
+spawn $sbatch --gres=mps:1,gpu:1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
+expect {
+	-re "Submitted batch job ($number)" {
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Request MPS plus GPU frequency
+#
+send_user "\n\n==== TEST 2 ====\n"
+spawn $sbatch --gres=mps:1 --gpu-freq=high -N1 --output=/dev/null -t1 --wrap $bin_hostname
+expect {
+	-re "Submitted batch job ($number)" {
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Request MPS per job with node count > 1
+# Request MPS per socket with socket count > 1
+# Request MPS per task with task count > 1
+#
+# FIXME: Add these tests whenever tres-per-* options added
+#	 The tests already exist in src/common/gres.c to reject such jobs
+#
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

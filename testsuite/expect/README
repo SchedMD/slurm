@@ -813,3 +813,8 @@ test39.17  Test allocating sub-sets of GRES to job steps
 test39.18  Test gres.conf and system GPU normalization and merging logic
 test39.19  Test accounting for GPU resources with various allocation options
 test39.20  Test GPU resource limits with various allocation options
+
+
+test40.#   Test of job select/cons_tres and gres/mps options.
+=============================================================
+test40.1   Test some invalid gres/mps job option
