@@ -3763,6 +3763,7 @@ static bool _generic_job_state(gres_job_state_t *job_state)
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
 extern int gres_plugin_job_state_validate(char *cpus_per_tres,
+					  char *tres_freq,
 					  char *tres_per_job,
 					  char *tres_per_node,
 					  char *tres_per_socket,
@@ -3786,6 +3787,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 	} overlap_check_t;
 	overlap_check_t *over_list;
 	int i, over_count = 0, rc = SLURM_SUCCESS, size;
+	bool have_gres_gpu = false, have_gres_mps = false;
 	bool overlap_merge = false;
 	gres_state_t *gres_state;
 	gres_job_state_t *job_gres_data;
@@ -3931,6 +3933,34 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 			rc = ESLURM_INVALID_GRES;
 			break;
 		}
+		if (!have_gres_gpu && !xstrcmp(job_gres_data->gres_name, "gpu"))
+			have_gres_gpu = true;
+		if (!xstrcmp(job_gres_data->gres_name, "mps")) {
+			have_gres_mps = true;
+			/*
+			 * gres/mps only supports a per-node count,
+			 * set either explicitly or implicitly.
+			 */
+			if (job_gres_data->gres_per_job &&
+			    (*max_nodes != 1)) {
+				rc = ESLURM_INVALID_GRES;
+				break;
+			}
+			if (job_gres_data->gres_per_socket &&
+			    (*sockets_per_node != 1)) {
+				rc = ESLURM_INVALID_GRES;
+				break;
+			}
+			if (job_gres_data->gres_per_task && (*num_tasks != 1)) {
+				rc = ESLURM_INVALID_GRES;
+				break;
+			}
+		}
+		if (have_gres_gpu && have_gres_mps) {
+			rc = ESLURM_INVALID_GRES;
+			break;
+		}
+
 		for (i = 0; i < over_count; i++) {
 			if (over_list[i].plugin_id == gres_state->plugin_id)
 				break;
@@ -3956,6 +3986,11 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 				overlap_merge = true;
 		}
 	}
+	if (have_gres_mps && (rc == SLURM_SUCCESS) && tres_freq &&
+	    strstr(tres_freq, "gpu")) {
+		rc = ESLURM_INVALID_GRES;
+	}
+
 	if (overlap_merge) {	/* Merge generic data if possible */
 		uint16_t cpus_per_gres;
 		uint64_t mem_per_gres;

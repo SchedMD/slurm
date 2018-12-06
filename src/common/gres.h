@@ -576,6 +576,7 @@ extern char *gres_plugin_job_alloc_count(List gres_list);
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
 extern int gres_plugin_job_state_validate(char *cpus_per_tres,
+					  char *tres_freq,
 					  char *tres_per_job,
 					  char *tres_per_node,
 					  char *tres_per_socket,

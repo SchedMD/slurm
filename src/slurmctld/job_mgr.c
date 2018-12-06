@@ -6790,6 +6790,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	if ((error_code = gres_plugin_job_state_validate(
 						job_desc->cpus_per_tres,
+						job_desc->tres_freq,
 						job_desc->tres_per_job,
 						job_desc->tres_per_node,
 						job_desc->tres_per_socket,
@@ -11512,6 +11513,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if ((error_code = gres_plugin_job_state_validate(
 						job_specs->cpus_per_tres,
 						job_specs->tres_per_job,
+						job_specs->tres_freq,
 						job_specs->tres_per_node,
 						job_specs->tres_per_socket,
 						job_specs->tres_per_task,

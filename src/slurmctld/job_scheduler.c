@@ -3107,6 +3107,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 				FREE_NULL_LIST(job_ptr->gres_list);
 				(void) gres_plugin_job_state_validate(
 						job_ptr->cpus_per_tres,
+						job_ptr->tres_freq,
 						job_ptr->tres_per_job,
 						job_ptr->tres_per_node,
 						job_ptr->tres_per_socket,
