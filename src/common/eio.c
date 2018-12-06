@@ -36,13 +36,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
+#define _GNU_SOURCE	/* For POLLRDHUP */
 
 #include <errno.h>
 #include <poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#if defined(__FreeBSD__) || defined(__NetBSD__)
+#define POLLRDHUP POLLHUP
+#endif
 
 #include "src/common/fd.h"
 #include "src/common/eio.h"
@@ -406,23 +410,13 @@ _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[], List l)
 		readable = _is_readable(obj);
 		if (writable && readable) {
 			pfds[nfds].fd     = obj->fd;
-#ifdef POLLRDHUP
-/* Available since Linux 2.6.17 */
 			pfds[nfds].events = POLLOUT | POLLIN |
 					    POLLHUP | POLLRDHUP;
-#else
-			pfds[nfds].events = POLLOUT | POLLIN | POLLHUP;
-#endif
 			map[nfds]         = obj;
 			nfds++;
 		} else if (readable) {
 			pfds[nfds].fd     = obj->fd;
-#ifdef POLLRDHUP
-/* Available since Linux 2.6.17 */
 			pfds[nfds].events = POLLIN | POLLRDHUP;
-#else
-			pfds[nfds].events = POLLIN;
-#endif
 			map[nfds]         = obj;
 			nfds++;
 		} else if (writable) {
