@@ -110,7 +110,7 @@ eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 	eio_handle_t *eio = xmalloc(sizeof(*eio));
 
 	if (pipe(eio->fds) < 0) {
-		error ("eio_create: pipe: %m");
+		error("%s: pipe: %m", __func__);
 		eio_handle_destroy(eio);
 		return (NULL);
 	}
@@ -148,9 +148,9 @@ void eio_handle_destroy(eio_handle_t *eio)
 
 bool eio_message_socket_readable(eio_obj_t *obj)
 {
-	debug3("Called eio_message_socket_readable %d %d",
-	       obj->shutdown, obj->fd);
 	xassert(obj);
+	debug3("%s: shutdown %d fd %d", __func__, obj->shutdown, obj->fd);
+
 	if (obj->shutdown == true) {
 		if (obj->fd != -1) {
 			debug2("  false, shutdown");
@@ -173,7 +173,7 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	slurm_msg_t *msg = NULL;
 	int len = sizeof(addr);
 
-	debug3("Called eio_msg_socket_accept");
+	debug3("%s: start", __func__);
 
 	xassert(obj);
 	xassert(obj->ops->handle_msg);
@@ -241,7 +241,7 @@ int eio_signal_shutdown(eio_handle_t *eio)
 	eio->shutdown_time = time(NULL);
 	slurm_mutex_unlock(&eio->shutdown_mutex);
 	if (write(eio->fds[1], &c, sizeof(char)) != 1)
-		return error("eio_handle_signal_shutdown: write; %m");
+		return error("%s: write; %m", __func__);
 	return 0;
 }
 
@@ -249,7 +249,7 @@ int eio_signal_wakeup(eio_handle_t *eio)
 {
 	char c = 0;
 	if (write(eio->fds[1], &c, sizeof(char)) != 1)
-		return error("eio_handle_signal_wake: write; %m");
+		return error("%s: write; %m", __func__);
 	return 0;
 }
 
@@ -343,8 +343,8 @@ int eio_handle_mainloop(eio_handle_t *eio)
 		slurm_mutex_unlock(&eio->shutdown_mutex);
 		if (shutdown_time &&
 		    (difftime(time(NULL), shutdown_time)>=eio->shutdown_wait)) {
-			error("%s: Abandoning IO %d secs after job shutdown "
-			      "initiated", __func__, eio->shutdown_wait);
+			error("%s: Abandoning IO %d secs after job shutdown initiated",
+			      __func__, eio->shutdown_wait);
 			break;
 		}
 	}
@@ -401,7 +401,7 @@ _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[], List l)
 	bool          readable, writable;
 
 	if (!pfds) {	/* Fix for CLANG false positive */
-		fatal("pollfd data structure is null");
+		fatal("%s: pollfd data structure is null", __func__);
 		return nfds;
 	}
 
