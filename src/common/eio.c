@@ -92,9 +92,7 @@ struct eio_handle_components {
 	List new_objs;
 };
 
-
-/* Function prototypes
- */
+/* Function prototypes */
 
 static int          _poll_internal(struct pollfd *pfds, unsigned int nfds,
 				   time_t shutdown_time);
@@ -103,7 +101,6 @@ static void         _poll_dispatch(struct pollfd *, unsigned int, eio_obj_t **,
 		                   List objList);
 static void         _poll_handle_event(short revents, eio_obj_t *obj,
 		                       List objList);
-
 
 eio_handle_t *eio_handle_create(uint16_t shutdown_wait)
 {
@@ -348,16 +345,17 @@ int eio_handle_mainloop(eio_handle_t *eio)
 			break;
 		}
 	}
-  error:
+
+error:
 	retval = -1;
-  done:
+done:
 	xfree(pollfds);
 	xfree(map);
 	return retval;
 }
 
-static int
-_poll_internal(struct pollfd *pfds, unsigned int nfds, time_t shutdown_time)
+static int _poll_internal(struct pollfd *pfds, unsigned int nfds,
+			  time_t shutdown_time)
 {
 	int n, timeout;
 
@@ -380,20 +378,18 @@ _poll_internal(struct pollfd *pfds, unsigned int nfds, time_t shutdown_time)
 	return n;
 }
 
-static bool
-_is_writable(eio_obj_t *obj)
+static bool _is_writable(eio_obj_t *obj)
 {
 	return (obj->ops->writable && (*obj->ops->writable)(obj));
 }
 
-static bool
-_is_readable(eio_obj_t *obj)
+static bool _is_readable(eio_obj_t *obj)
 {
 	return (obj->ops->readable && (*obj->ops->readable)(obj));
 }
 
-static unsigned int
-_poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[], List l)
+static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
+					List l)
 {
 	ListIterator  i    = list_iterator_create(l);
 	eio_obj_t    *obj  = NULL;
@@ -430,9 +426,8 @@ _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[], List l)
 	return nfds;
 }
 
-static void
-_poll_dispatch(struct pollfd *pfds, unsigned int nfds, eio_obj_t *map[],
-	       List objList)
+static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
+			   eio_obj_t *map[], List objList)
 {
 	int i;
 
@@ -442,8 +437,7 @@ _poll_dispatch(struct pollfd *pfds, unsigned int nfds, eio_obj_t *map[],
 	}
 }
 
-static void
-_poll_handle_event(short revents, eio_obj_t *obj, List objList)
+static void _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 {
 	bool read_called = false;
 	bool write_called = false;
@@ -506,8 +500,7 @@ _poll_handle_event(short revents, eio_obj_t *obj, List objList)
 	}
 }
 
-static struct io_operations *
-_ops_copy(struct io_operations *ops)
+static struct io_operations *_ops_copy(struct io_operations *ops)
 {
 	struct io_operations *ret = xmalloc(sizeof(*ops));
 
@@ -516,8 +509,7 @@ _ops_copy(struct io_operations *ops)
 	return ret;
 }
 
-eio_obj_t *
-eio_obj_create(int fd, struct io_operations *ops, void *arg)
+eio_obj_t *eio_obj_create(int fd, struct io_operations *ops, void *arg)
 {
 	eio_obj_t *obj = xmalloc(sizeof(*obj));
 	obj->fd  = fd;
@@ -543,7 +535,6 @@ void eio_obj_destroy(void *arg)
 		xfree(obj);
 	}
 }
-
 
 /*
  * Add an eio_obj_t "obj" to an eio_handle_t "eio"'s internal object list.
