@@ -1368,7 +1368,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 				      node_name, MAX_GRES_BITMAP);
 				count64 = MAX_GRES_BITMAP;
 			}
-			new_has_type  = config_flags & GRES_CONF_HAS_FILE;
+			new_has_type  = config_flags & GRES_CONF_HAS_TYPE;
 			orig_has_type = gres_context[j].config_flags &
 					GRES_CONF_HAS_TYPE;
 			if (orig_has_type && !new_has_type && count64) {
