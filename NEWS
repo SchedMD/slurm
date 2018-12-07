@@ -106,6 +106,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix formatting issues when printing uint64_t.
  -- Bump RLIMIT_NOFILE for daemons in systemd services.
  -- Expand %x in job name in 'scontrol show job'.
+ -- salloc/sbatch/srun - print warning if mutually exclusive options of --mem
+    and --mem-per-cpu are both set.
 
 * Changes in Slurm 18.08.3
 ==========================
