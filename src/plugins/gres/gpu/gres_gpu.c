@@ -643,7 +643,7 @@ static void _add_gres_to_list(List gres_list, char *name, int device_cnt,
 		error("%s: bit_unfmt(dst_bitmap, src_str) failed", __func__);
 		error("    Is the CPU range larger than the CPU count allows?");
 		error("    src_str: %s", cpu_aff_abs_range);
-		error("    dst_bitmap_size: %ld",
+		error("    dst_bitmap_size: %"BITSTR_FMT,
 		      bit_size(gpu_record->cpus_bitmap));
 		error("    cpu_cnt: %d", gpu_record->cpu_cnt);
 		bit_free(gpu_record->cpus_bitmap);
