@@ -1505,13 +1505,12 @@ _handle_resume(int fd, stepd_step_rec_t *job, uid_t uid)
 		error("switch_g_job_step_post_resume: %m");
 
 	/*
-	 * Reset CPU and TRES frequencies if changed
+	 * Reset CPU frequencies if changed
 	 */
 	if ((job->cpu_freq_min != NO_VAL) || (job->cpu_freq_max != NO_VAL) ||
 	    (job->cpu_freq_gov != NO_VAL))
 		cpu_freq_set(job);
-	if (job->tres_freq)
-		tres_freq_set(job);
+	// TODO: Reset TRES frequencies?
 
 	slurm_mutex_unlock(&suspend_mutex);
 

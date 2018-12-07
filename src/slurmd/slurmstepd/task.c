@@ -453,11 +453,9 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	}
 	if (!job->batch && job->step_gres_list) {
 		/*
-		 * Modify copy of job's environment as neede for GRES. Do not
+		 * Modify copy of job's environment as needed for GRES. Do not
 		 * alter in place or concurrent searches of the environment can
 		 * generate invalid memory references.
-		 *
-		 * Also sets GRES frequency as needed.
 		 */
 		job->envtp->env = env_array_copy((const char **) job->env);
 		gres_plugin_step_set_env(&job->envtp->env, job->step_gres_list,

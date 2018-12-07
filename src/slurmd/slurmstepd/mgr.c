@@ -1233,10 +1233,12 @@ job_manager(stepd_step_rec_t *job)
 	if (job->stepid == SLURM_EXTERN_CONT)
 		return _spawn_job_container(job);
 
-	if (!job->batch && (job->accel_bind_type || job->tres_bind)) {
+	if (!job->batch && (job->accel_bind_type || job->tres_bind ||
+	    job->tres_freq)) {
+		info("Running gres_plugin_node_config_load()!");
 		(void) gres_plugin_node_config_load(conf->cpus, conf->node_name,
-						    (void *)&xcpuinfo_abs_to_mac,
-						    (void *)&xcpuinfo_mac_to_abs);
+						(void *)&xcpuinfo_abs_to_mac,
+						(void *)&xcpuinfo_mac_to_abs);
 	}
 
 	debug2("Before call to spank_init()");
@@ -1394,13 +1396,12 @@ fail2:
 	task_g_post_step(job);
 
 	/*
-	 * Reset CPU and TRES frequencies if changed
+	 * Reset CPU frequencies if changed
 	 */
 	if ((job->cpu_freq_min != NO_VAL) || (job->cpu_freq_max != NO_VAL) ||
 	    (job->cpu_freq_gov != NO_VAL))
 		cpu_freq_reset(job);
-	if (job->tres_freq)
-		tres_freq_reset(job);
+	// TODO: Reset TRES frequencies?
 
 	/*
 	 * Notify srun of completion AFTER frequency reset to avoid race
@@ -1706,6 +1707,23 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		goto fail1;
 	} else {
 		*io_initialized = true;
+	}
+
+	/*
+	 * Now that errors will be copied back to srun, set the frequencies of
+	 * the GPUs allocated to the step (and eventually other GRES hardware
+	 * config options)
+	 * TODO: generic "settings" parameter rather than tres_freq
+	 */
+	if (!job->batch && job->tres_freq) {
+		// Make sure stepd is root. If not, emit error
+		// TODO: Leave privilege checking to step_configure_hardware()?
+		if (getuid() == (uid_t) 0) {
+			gres_plugin_step_configure_hardware(job->tres_freq);
+		} else {
+			error("Slurmd started with insufficient permissions: "
+			      "Cannot configure GRES hardware unless privileged");
+		}
 	}
 
 	/*

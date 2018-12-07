@@ -2234,7 +2234,6 @@ extern uint16_t slurm_get_ext_sensors_freq(void)
 }
 
 /*
- * slurm_get_jobcomp_type
  * returns the configured GpuFreqDef value
  * RET char *    - GpuFreqDef value,  MUST be xfreed by caller
  */

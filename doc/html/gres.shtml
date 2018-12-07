@@ -16,7 +16,7 @@ interest are:</P>
 
 <UL>
 <LI><B>GresTypes</B> a comma delimited list of generic resources to be
-managed (e.g. <I>GresTypes=gpu,mic</I>). This name may be that of an
+managed (e.g. <I>GresTypes=gpu,mps</I>). This name may be that of an
 optional plugin providing additional control over the resources.</LI>
 <LI><B>Gres</B> the generic resource configuration details in the format<br>
 &lt;name&gt;[:&lt;type&gt;][:no_consume]:&lt;number&gt;[K|M|G]<br>
@@ -29,8 +29,7 @@ jobs can use the same generic resource) with the optional field ":no_consume".
 The final field must specify a generic resource count.
 A suffix of "K", "M" or "G" may be used to multiply the count by 1024,
 1048576 or 1073741824 respectively.
-By default a node has no generic resources and its maximum count is
-4,294,967,295.</LI>
+By default a node has no generic resources.</LI>
 </UL>
 
 <P>Note that the Gres specification for each node works in the same fashion
@@ -72,7 +71,7 @@ For example, it may be strongly preferable
 to use specific cores with specific devices (e.g. on a NUMA
 architecture). Multiple cores may be specified using a comma
 delimited list or a range may be specified using a "-" separator
-(e.g. "0,1,2,3" or "0\-3").
+(e.g. "0,1,2,3" or "0-3").
 <B>If specified, then only the identified cores can be allocated with each generic
 resource; an attempt to use other cores will not be honored.</B>
 If not specified, then any core can be used with the resources, which also
@@ -135,16 +134,16 @@ Name=bandwidth Type=lustre Count=4G
 <P>Jobs will not be allocated any generic resources unless specifically
 requested at job submit time using the options:</P>
 <DL>
-<DD><I>--gres</I></DD>
-<DT>Generic resources required per node</DT>
-<DD><I>--gpu</I></DD>
-<DT>GPUs required per job</DT>
-<DD><I>--gpu-per-node</I></DD>
-<DT>GPUs required per node. Equivalent to the <I>--gres</I> option for GPUs.</DT>
-<DD><I>--gpu-per-socket</I></DD>
-<DT>GPUs required per socket. Requires the job to specify a task socket.</DT>
-<DD><I>--gpu-per-task</I></DD>
-<DT>GPUs required per task. Requires the job to specify a task count.</DT>
+<DT><I>--gres</I></DT>
+<DD>Generic resources required per node</DD>
+<DT><I>--gpu</I></DT>
+<DD>GPUs required per job</DD>
+<DT><I>--gpu-per-node</I></DT>
+<DD>GPUs required per node. Equivalent to the <I>--gres</I> option for GPUs.</DD>
+<DT><I>--gpu-per-socket</I></DT>
+<DD>GPUs required per socket. Requires the job to specify a task socket.</DD>
+<DT><I>--gpu-per-task</I></DT>
+<DD>GPUs required per task. Requires the job to specify a task count.</DD>
 </DL>
 
 <P>All of these options are supported by the <I>salloc</I>, <I>sbatch</I> and
@@ -172,14 +171,14 @@ As for the <I>--gpu*</I> option, these options are only supported by Slurm's
 select/cons_tres plugin.</P>
 </P>
 <DL>
-<DD><I>--cpus-per-gpu</I></DD>
-<DT>Count of CPUs allocated per GPU.</DT>
-<DD><I>--gpu-bind</I></DD>
-<DT>Define how tasks are bound to GPUs.</DT>
-<DD><I>--gpu-freq</I></DD>
-<DT>Specify GPU frequency and/or GPU memory frequency.</DT>
-<DD><I>--mem-per-gpu</I></DD>
-<DT>Memory allocated per GPU.</DT>
+<DT><I>--cpus-per-gpu</I></DT>
+<DD>Count of CPUs allocated per GPU.</DD>
+<DT><I>--gpu-bind</I></DT>
+<DD>Define how tasks are bound to GPUs.</DD>
+<DT><I>--gpu-freq</I></DT>
+<DD>Specify GPU frequency and/or GPU memory frequency.</DD>
+<DT><I>--mem-per-gpu</I></DT>
+<DD>Memory allocated per GPU.</DD>
 </DL>
 
 <P>Jobs will be allocated specific generic resources as needed to satisfy
@@ -215,7 +214,8 @@ wait
 <h2>GPU Management</h2>
 
 <P>In the case of Slurm's GRES plugin for GPUs, the environment variable
-CUDA_VISIBLE_DEVICES is set for each job step to determine which GPUs are
+<code class="commandline">CUDA_VISIBLE_DEVICES</code>
+is set for each job step to determine which GPUs are
 available for its use on each node. This environment variable is only set
 when tasks are launched on a specific compute node (no global environment
 variable is set for the <i>salloc</i> command and the environment variable set
@@ -225,7 +225,8 @@ CUDA version 3.1 (or higher) uses this environment
 variable in order to run multiple jobs or job steps on a node with GPUs
 and ensure that the resources assigned to each are unique. In the example
 above, the allocated node may have four or more graphics devices. In that
-case, CUDA_VISIBLE_DEVICES will reference unique devices for each file and
+case, <code class="commandline">CUDA_VISIBLE_DEVICES</code>
+will reference unique devices for each file and
 the output might resemble this:</P>
 
 <PRE>
@@ -244,7 +245,7 @@ PCI bus IDs. For this numbering to match the numbering reported by CUDA, the
 <code class="commandline">CUDA_DEVICE_ORDER</code> environmental variable must
 be set to <code class="commandline">CUDA_DEVICE_ORDER=PCI_BUS_ID</code>.</p>
 
-<p>GPU device files (e.g. <code class="commandline">/dev/nvidia1</code>) are
+<p>GPU device files (e.g. <i>/dev/nvidia1</i>) are
 based on the Linux minor number assignment, while NVML's device numbers are
 assigned via PCI bus ID, from lowest to highest. Mapping between these two is
 indeterministic and system dependent, and could vary between boots after
@@ -252,26 +253,29 @@ hardware or OS changes. For the most part, this assignment seems fairly stable.
 However, an after-bootup check is required to guarantee that a GPU device is
 assigned to a specific device file.</p>
 
-<p>Please consult
-<a
-href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#env-vars"
->the NVIDIA CUDA docs</a> for more information on the <code class="commandline">
-CUDA_VISIBLE_DEVICES</code> and <code class="commandline">CUDA_DEVICE_ORDER
-</code> environmental variables.</p>
+<p>Please consult the
+<a href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#env-vars">
+NVIDIA CUDA documentation</a> for more information about the
+<code class="commandline">CUDA_VISIBLE_DEVICES</code> and
+<code class="commandline">CUDA_DEVICE_ORDER</code> environmental variables.</p>
 
 <!-------------------------------------------------------------------------->
 <h2>MIC Management</h2>
 
 <P>Slurm can be used to provide resource management for systems with the
 Intel&reg; Many Integrated Core (MIC) processor.
-Slurm sets an OFFLOAD_DEVICES environment variable, which controls the
+Slurm sets an <code class="commandline">OFFLOAD_DEVICES</code>
+environment variable, which controls the
 selection of MICs available to a job step.
-The OFFLOAD_DEVICES environment variable is used by both Intel
+The <code class="commandline">OFFLOAD_DEVICES</code>
+environment variable is used by both Intel
 LEO (Language Extensions for Offload) and the MKL (Math Kernel Library)
 automatic offload.
-(This is very similar to how the CUDA_VISIBLE_DEVICES environment variable is
+(This is very similar to how the
+<code class="commandline">CUDA_VISIBLE_DEVICES</code> environment variable is
 used to control which GPUs can be used by CUDA&trade; software.)
-If no MICs are reserved via GRES, the OFFLOAD_DEVICES variable is set to
+If no MICs are reserved via GRES, the
+<code class="commandline">OFFLOAD_DEVICES</code> variable is set to
 -1. This causes the code to ignore the offload directives and run MKL
 routines on the CPU. The code will still run but only on the CPU. This
 also gives a somewhat cryptic warning:</P>
@@ -282,6 +286,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 7 November 2018</p>
+<p style="text-align: center;">Last modified 28 November 2018</p>
 
 <!--#include virtual="footer.txt"-->

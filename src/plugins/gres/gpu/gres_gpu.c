@@ -92,19 +92,16 @@
 const char	*plugin_name		= "Gres GPU plugin";
 const char	*plugin_type		= "gres/gpu";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
-
 static uint64_t	debug_flags		= 0;
 static char	*gres_name		= "gpu";
 static List	gres_devices		= NULL;
 
-#define GPU_LOW		1
-#define GPU_MEDIUM	2
-#define GPU_HIGH_M1	3
-#define GPU_HIGH	4
-
+#define GPU_LOW		((unsigned int) -1)
+#define GPU_MEDIUM	((unsigned int) -2)
+#define GPU_HIGH_M1	((unsigned int) -3)
+#define GPU_HIGH	((unsigned int) -4)
 #define GPU_MODE_FREQ	1
 #define GPU_MODE_MEM	2
-
 #define MAX_CPUS	0x8000
 #define ULONG_BYTES	(sizeof(unsigned long))
 #define ULONG_BITS	(ULONG_BYTES * 8)
@@ -117,18 +114,59 @@ static List	gres_devices		= NULL;
 #define CPU_SET_SIZE	((MAX_CPUS + (ULONG_BITS-1)) / ULONG_BITS)
 #define NVLINK_SELF	-1
 #define NVLINK_NONE	0
+#define FREQS_SIZE	512
+#define FREQS_CONCISE	5 // This must never be smaller than 5, or error
 
-static int _xlate_freq_value(char *gpu_freq)
+#ifdef HAVE_NVML
+
+/*
+ * Initialize the NVML library. This takes a few seconds
+ */
+static void _nvml_init(void)
 {
-	int value;
+	nvmlReturn_t nvml_rc;
+	DEF_TIMERS;
+	START_TIMER;
+	nvml_rc = nvmlInit();
+	END_TIMER;
+	debug2("nvmlInit() took %ld microseconds", DELTA_TIMER);
+	if (nvml_rc != NVML_SUCCESS)
+		error("Failed to initialize NVML: %s",
+		      nvmlErrorString(nvml_rc));
+	else
+		info("Successfully initialized NVML");
+}
+
+/*
+ * Undo _nvml_init
+ */
+static void _nvml_shutdown(void)
+{
+	nvmlReturn_t nvml_rc;
+	DEF_TIMERS;
+	START_TIMER;
+	nvml_rc = nvmlShutdown();
+	END_TIMER;
+	debug2("nvmlShutdown() took %ld microseconds", DELTA_TIMER);
+	if (nvml_rc != NVML_SUCCESS)
+		error("Failed to shut down NVML: %s", nvmlErrorString(nvml_rc));
+	else
+		info("Successfully shut down NVML");
+}
+
+#endif // HAVE_NVML
+
+static unsigned int _xlate_freq_value(char *gpu_freq)
+{
+	unsigned int value;
 
 	if ((gpu_freq[0] < '0') && (gpu_freq[0] > '9'))
 		return 0;	/* Not a numeric value */
-	value = strtol(gpu_freq, NULL, 10);
+	value = strtoul(gpu_freq, NULL, 10);
 	return value;
 }
 
-static int _xlate_freq_code(char *gpu_freq)
+static unsigned int _xlate_freq_code(char *gpu_freq)
 {
 	if (!gpu_freq || !gpu_freq[0])
 		return 0;
@@ -148,27 +186,14 @@ static int _xlate_freq_code(char *gpu_freq)
 	return 0;	/* Bad user input */
 }
 
-
-static int _xlate_freq_code2value(int gpu_mode, int freq_code, int gpu_idx)
-{
-	int value = 0;
-
-//FIXME: Need logic to translate freq_code (high, medium, low, etc.) to numeric value
-//the translation could vary by GPU in a heterogeneous environment
-	if (gpu_mode == GPU_MODE_FREQ)
-		value = freq_code * 10;
-	else if (gpu_mode == GPU_MODE_MEM)
-		value = freq_code * 100;
-
-	return value;
-}
-
-static void _parse_gpu_freq2(char *gpu_freq, int *gpu_freq_code,
-			     int *gpu_freq_value, int *mem_freq_code,
-			     int *mem_freq_value, bool *verbose_flag)
+static void _parse_gpu_freq2(char *gpu_freq, unsigned int *gpu_freq_code,
+			     unsigned int *gpu_freq_value,
+			     unsigned int *mem_freq_code,
+			     unsigned int *mem_freq_value, bool *verbose_flag)
 {
 	char *tmp, *tok, *sep, *save_ptr = NULL;
-
+	if (!gpu_freq || !gpu_freq[0])
+		return;
 	tmp = xstrdup(gpu_freq);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
@@ -199,127 +224,593 @@ static void _parse_gpu_freq2(char *gpu_freq, int *gpu_freq_code,
 	xfree(tmp);
 }
 
-static void _parse_gpu_freq(char *gpu_freq, int *gpu_freq_code,
-			    int *gpu_freq_value, int *mem_freq_code,
-			    int *mem_freq_value, bool *verbose_flag)
+static void _parse_gpu_freq(char *gpu_freq, unsigned int *gpu_freq_num,
+			    unsigned int *mem_freq_num, bool *verbose_flag)
 {
-	int def_gpu_freq_code = 0, def_gpu_freq_value = 0;
-	int def_mem_freq_code = 0, def_mem_freq_value = 0;
-	int job_gpu_freq_code = 0, job_gpu_freq_value = 0;
-	int job_mem_freq_code = 0, job_mem_freq_value = 0;
+	unsigned int def_gpu_freq_code = 0, def_gpu_freq_value = 0;
+	unsigned int def_mem_freq_code = 0, def_mem_freq_value = 0;
+	unsigned int job_gpu_freq_code = 0, job_gpu_freq_value = 0;
+	unsigned int job_mem_freq_code = 0, job_mem_freq_value = 0;
 	char *def_freq;
 
 	_parse_gpu_freq2(gpu_freq, &job_gpu_freq_code, &job_gpu_freq_value,
 			 &job_mem_freq_code, &job_mem_freq_value, verbose_flag);
 
+	// Defaults to high for both mem and gfx
 	def_freq = slurm_get_gpu_freq_def();
 	_parse_gpu_freq2(def_freq, &def_gpu_freq_code, &def_gpu_freq_value,
 			 &def_mem_freq_code, &def_mem_freq_value, verbose_flag);
 	xfree(def_freq);
 
 	if (job_gpu_freq_code)
-		*gpu_freq_code = job_gpu_freq_code;
+		*gpu_freq_num = job_gpu_freq_code;
 	else if (job_gpu_freq_value)
-		*gpu_freq_value = job_gpu_freq_value;
+		*gpu_freq_num = job_gpu_freq_value;
 	else if (def_gpu_freq_code)
-		*gpu_freq_code = def_gpu_freq_code;
+		*gpu_freq_num = def_gpu_freq_code;
 	else if (def_gpu_freq_value)
-		*gpu_freq_value = def_gpu_freq_value;
+		*gpu_freq_num = def_gpu_freq_value;
 
 	if (job_mem_freq_code)
-		*mem_freq_code = job_mem_freq_code;
+		*mem_freq_num = job_mem_freq_code;
 	else if (job_mem_freq_value)
-		*mem_freq_value = job_mem_freq_value;
+		*mem_freq_num = job_mem_freq_value;
 	else if (def_mem_freq_code)
-		*mem_freq_code = def_mem_freq_code;
+		*mem_freq_num = def_mem_freq_code;
 	else if (def_mem_freq_value)
-		*mem_freq_value = def_mem_freq_value;
+		*mem_freq_num = def_mem_freq_value;
 }
 
-static void _set_freq(char *gpu_freq, char *global_list, int node_inx)
+/*
+ * Sort an array of unsigned ints in descending order using the bubble sort
+ * algorithm. If the array is already sorted, then this will only take O(n).
+ * If it's perfectly unsorted, this will take O(n^2).
+ *
+ * arr		(IN) An array of frequencies to sort
+ * size		(IN) The number of frequency elements in arr
+ */
+static void _bubble_sort_descending(unsigned int *arr, unsigned int size)
+{
+	bool sorted = false;
+	unsigned int i, count;
+	if (!arr) {
+		error("%s: array is null", __func__);
+		return;
+	}
+	if (size <= 0) {
+		error("%s: array size is <= 0", __func__);
+		return;
+	}
+	count = size - 1;
+
+	do {
+		// Temporarily set to true to see if array is sorted
+		sorted = true;
+		// for each pair of adjacent elements
+		for (i = 0; i < count; i++) {
+			// if the pair is not sorted DESC, swap them
+			if (arr[i] < arr[i + 1]) {
+				unsigned int tmp = arr[i];
+				arr[i] = arr[i + 1];
+				arr[i + 1] = tmp;
+				// reset sorted, because we swapped
+				sorted = false;
+			}
+		}
+		// Every pass requires processing one less element
+		count--;
+	} while (!sorted);
+}
+
+#ifdef HAVE_NVML
+
+/*
+ * Get the handle to the GPU for the passed index
+ *
+ * index 	(IN) The GPU index (corresponds to PCI Bus ID order)
+ * device	(OUT) The device handle
+ *
+ * Returns true if successful, false if not
+ */
+static bool _nvml_get_handle(int index, nvmlDevice_t *device)
+{
+	nvmlReturn_t nvml_rc;
+	nvml_rc = nvmlDeviceGetHandleByIndex(index, device);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("NVML: Failed to get device handle for GPU %d: %s", index,
+		      nvmlErrorString(nvml_rc));
+		return false;
+	}
+	return true;
+}
+
+/*
+ * Get all possible memory frequencies for the device
+ *
+ * device		(IN) The device handle
+ * mem_freqs_size	(IN/OUT) The size of the mem_freqs array; this will be
+ * 			overwritten with the number of memory freqs found.
+ * mem_freqs		(OUT) The possible memory frequencies, sorted in
+ * 			descending order
+ *
+ * Return true if successful, false if not.
+ */
+static bool _nvml_get_mem_freqs(nvmlDevice_t *device,
+				unsigned int *mem_freqs_size,
+				unsigned int *mem_freqs)
+{
+	nvmlReturn_t nvml_rc;
+	DEF_TIMERS;
+	START_TIMER;
+	nvml_rc = nvmlDeviceGetSupportedMemoryClocks(*device, mem_freqs_size,
+						     mem_freqs);
+	END_TIMER;
+	debug2("nvmlDeviceGetSupportedMemoryClocks() took %ld microseconds",
+	       DELTA_TIMER);
+
+	if (nvml_rc != NVML_SUCCESS) {
+		error("%s: Failed to get supported memory frequencies for the "
+		      "GPU : %s", __func__, nvmlErrorString(nvml_rc));
+		return false;
+	}
+
+	_bubble_sort_descending(mem_freqs, *mem_freqs_size);
+
+	if ((*mem_freqs_size > 1) &&
+	    (mem_freqs[0] <= mem_freqs[(*mem_freqs_size)-1])) {
+		error("%s: mem frequencies are not stored in descending order!",
+		      __func__);
+		return false;
+	}
+	return true;
+}
+
+/*
+ * Get all possible graphics frequencies for the device
+ *
+ * device		(IN) The device handle
+ * mem_freq		(IN) The memory frequency to get graphics freqs for.
+ * gfx_freqs_size	(IN/OUT) The size of the gfx_freqs array; this will
+ * 			be overwritten with the number of graphics freqs found.
+ * gfx_freqs		(OUT) The possible graphics frequencies, sorted in
+ * 			descending order
+ *
+ * Return true if successful, false if not.
+ */
+static bool _nvml_get_gfx_freqs(nvmlDevice_t *device,
+				unsigned int mem_freq,
+				unsigned int *gfx_freqs_size,
+				unsigned int *gfx_freqs)
+{
+	nvmlReturn_t nvml_rc;
+	DEF_TIMERS;
+	START_TIMER;
+	nvml_rc = nvmlDeviceGetSupportedGraphicsClocks(*device, mem_freq,
+						       gfx_freqs_size,
+						       gfx_freqs);
+	END_TIMER;
+	debug2("nvmlDeviceGetSupportedGraphicsClocks() took %ld microseconds",
+	       DELTA_TIMER);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("%s: Failed to get supported graphics frequencies for the"
+		      " GPU at mem frequency %u: %s", __func__, mem_freq,
+		      nvmlErrorString(nvml_rc));
+		return false;
+	}
+
+	_bubble_sort_descending(gfx_freqs, *gfx_freqs_size);
+
+	if ((*gfx_freqs_size > 1) &&
+	    (gfx_freqs[0] <= gfx_freqs[(*gfx_freqs_size)-1])) {
+		error("%s: gfx frequencies are not stored in descending order!",
+		      __func__);
+		return false;
+	}
+	return true;
+}
+
+/*
+ * Print out all possible graphics frequencies for the given device and mem
+ * freq. If there are many frequencies, only prints out a few.
+ *
+ * device		(IN) The device handle
+ * mem_freq		(IN) The memory frequency to get graphics freqs for.
+ * gfx_freqs_size	(IN) The size of the gfx_freqs array
+ * gfx_freqs		(IN) A preallocated empty array of size gfx_freqs_size
+ * 			to fill with possible graphics frequencies
+ * l			(IN) The log level at which to print
+ *
+ * NOTE: The contents of gfx_freqs will be modified during use.
+ */
+static void _nvml_print_gfx_freqs(nvmlDevice_t *device, unsigned int mem_freq,
+				  unsigned int gfx_freqs_size,
+				  unsigned int *gfx_freqs, log_level_t l)
+{
+	unsigned int size = gfx_freqs_size;
+	bool concise = false;
+	unsigned int i;
+
+	if (!_nvml_get_gfx_freqs(device, mem_freq, &size, gfx_freqs))
+		return;
+
+	if (size > FREQS_CONCISE)
+		concise = true;
+
+	log_var(l, "        Possible GPU Graphics Frequencies (%u):", size);
+	log_var(l, "        ---------------------------------");
+	if (!concise) {
+		for (i = 0; i < size; ++i) {
+			log_var(l, "          *%u MHz [%u]", gfx_freqs[i], i);
+		}
+		return;
+	}
+	// first, next, ..., middle, ..., penultimate, last
+	log_var(l, "          *%u MHz [0]", gfx_freqs[0]);
+	log_var(l, "          *%u MHz [1]", gfx_freqs[1]);
+	log_var(l, "          ...");
+	log_var(l, "          *%u MHz [%u]", gfx_freqs[(size - 1) / 2],
+	     (size - 1) / 2);
+	log_var(l, "          ...");
+	log_var(l, "          *%u MHz [%u]", gfx_freqs[size - 2], size - 2);
+	log_var(l, "          *%u MHz [%u]", gfx_freqs[size - 1], size - 1);
+}
+
+/*
+ * Print out all possible memory and graphics frequencies for the given device.
+ * If there are more than FREQS_SIZE frequencies, prints a summary instead
+ *
+ * device	(IN) The device handle
+ * l		(IN) The log level at which to print
+ */
+static void _nvml_print_freqs(nvmlDevice_t *device, log_level_t l)
+{
+	unsigned int mem_size = FREQS_SIZE;
+	unsigned int mem_freqs[FREQS_SIZE] = {0};
+	unsigned int gfx_freqs[FREQS_SIZE] = {0};
+	unsigned int i;
+	bool concise = false;
+
+	if (!_nvml_get_mem_freqs(device, &mem_size, mem_freqs))
+		return;
+
+	if (mem_size > FREQS_CONCISE)
+		concise = true;
+
+	log_var(l, "Possible GPU Memory Frequencies (%u):", mem_size);
+	log_var(l, "-------------------------------");
+	if (concise) {
+		// first, next, ..., middle, ..., penultimate, last
+		unsigned int tmp;
+		log_var(l, "    *%u MHz [0]", mem_freqs[0]);
+		_nvml_print_gfx_freqs(device, mem_freqs[0], FREQS_SIZE,
+				      gfx_freqs, l);
+		log_var(l, "    *%u MHz [1]", mem_freqs[1]);
+		_nvml_print_gfx_freqs(device, mem_freqs[1], FREQS_SIZE,
+				      gfx_freqs, l);
+		log_var(l, "    ...");
+		tmp = (mem_size - 1) / 2;
+		log_var(l, "    *%u MHz [%u]", mem_freqs[tmp], tmp);
+		_nvml_print_gfx_freqs(device, mem_freqs[tmp], FREQS_SIZE,
+				      gfx_freqs, l);
+		log_var(l, "    ...");
+		tmp = mem_size - 2;
+		log_var(l, "    *%u MHz [%u]", mem_freqs[tmp], tmp);
+		_nvml_print_gfx_freqs(device, mem_freqs[tmp], FREQS_SIZE,
+				      gfx_freqs, l);
+		tmp = mem_size - 1;
+		log_var(l, "    *%u MHz [%u]", mem_freqs[tmp], tmp);
+		_nvml_print_gfx_freqs(device, mem_freqs[tmp], FREQS_SIZE,
+				      gfx_freqs, l);
+		return;
+	}
+
+	for (i = 0; i < mem_size; ++i) {
+		log_var(l,"    *%u MHz [%u]", mem_freqs[i], i);
+		_nvml_print_gfx_freqs(device, mem_freqs[i], FREQS_SIZE,
+				      gfx_freqs, l);
+	}
+}
+
+/*
+ * Convert frequency to nearest valid frequency found in frequency array
+ *
+ * freq		(IN/OUT) The frequency to check, in MHz. Also the output, if
+ * 		it needs to be changed.
+ * freqs_size	(IN) The size of the freqs array
+ * freqs	(IN) An array of frequency values in MHz, sorted highest to
+ * 		lowest
+ *
+ * Inspired by src/common/cpu_frequency#_cpu_freq_freqspec_num()
+ */
+static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
+			      unsigned int *freqs)
+{
+	unsigned int i;
+	if (!freq || !(*freq)) {
+		error("%s: No frequency supplied", __func__);
+		return;
+	}
+	if (!freqs || !(*freqs)) {
+		error("%s: No frequency list supplied", __func__);
+		return;
+	}
+	if (freqs_size <= 0) {
+		error("%s: Frequency list is empty", __func__);
+		return;
+	}
+
+	// Check for special case values; freqs is sorted in descending order
+	switch ((*freq)) {
+	case GPU_LOW:
+		*freq = freqs[freqs_size - 1];
+		debug2("Setting to GPU_LOW:");
+		debug2("Freq: %u MHz", *freq);
+		return;
+
+	case GPU_MEDIUM:
+		*freq = freqs[(freqs_size - 1)/2];
+		debug2("Setting to GPU_MEDIUM:");
+		debug2("Freq: %u MHz", *freq);
+		return;
+
+	case GPU_HIGH_M1:
+		if (freqs_size == 1)
+			*freq = freqs[0];
+		else
+			*freq = freqs[1];
+		debug2("Setting to GPU_HIGH_M1:");
+		debug2("Freq: %u MHz", *freq);
+		return;
+
+	case GPU_HIGH:
+		*freq = freqs[0];
+		debug2("Setting to GPU_HIGH:");
+		debug2("Freq: %u MHz", *freq);
+		return;
+
+	default:
+		debug2("Freq is not a special case. Continue...");
+		break;
+	}
+
+	/* check if freq is out of bounds of freqs */
+	if (*freq > freqs[0]) {
+		error("Rounding requested frequency %u MHz down to %u MHz "
+		      "(highest available)", *freq, freqs[0]);
+		*freq = freqs[0];
+		return;
+	} else if (*freq < freqs[freqs_size - 1]) {
+		error("Rounding requested frequency %u MHz up to %u MHz (lowest"
+		      " available)", *freq, freqs[freqs_size - 1]);
+		*freq = freqs[freqs_size - 1];
+		return;
+	}
+
+	/* check for frequency, and round up if no exact match */
+	for (i = 0; i < freqs_size - 1;) {
+		if (*freq == freqs[i])
+			// No change necessary
+			debug2("No change necessary. Freq: %u MHz", *freq);
+			return;
+		i++;
+		/*
+		 * Step down to next element to round up.
+		 * Safe to advance due to bounds checks above here
+		 */
+		if (*freq > freqs[i]) {
+			error("Rounding requested frequency %u MHz up to %u MHz"
+			     " (next available)", *freq, freqs[i-1]);
+			*freq = freqs[i-1];
+			return;
+		}
+	}
+	error("Got to the end of the function. This shouldn't happen. Freq: "
+	      "%u MHz", *freq);
+}
+
+/*
+ * Get the nearest valid memory and graphics clock frequency
+ *
+ * device		(IN) The NVML GPU device handle
+ * mem_freq		(IN/OUT) The requested memory frequency, in MHz. This
+ * 			will be overwritten with the output value, if different.
+ * gfx_freq 		(IN/OUT) The requested graphics frequency, in MHz. This
+ * 			will be overwritten with the output value, if different.
+ */
+static void _nvml_get_nearest_freqs(nvmlDevice_t *device,
+				    unsigned int *mem_freq,
+				    unsigned int *gfx_freq)
+{
+	unsigned int mem_freqs[FREQS_SIZE] = {0};
+	unsigned int mem_freqs_size = FREQS_SIZE;
+	unsigned int gfx_freqs[FREQS_SIZE] = {0};
+	unsigned int gfx_freqs_size = FREQS_SIZE;
+
+	// Get the memory frequencies
+	if (!_nvml_get_mem_freqs(device, &mem_freqs_size, mem_freqs))
+		return;
+
+	// Set the nearest valid memory frequency for the requested frequency
+	_get_nearest_freq(mem_freq, mem_freqs_size, mem_freqs);
+
+	// Get the graphics frequencies at this memory frequency
+	if (!_nvml_get_gfx_freqs(device, *mem_freq, &gfx_freqs_size, gfx_freqs))
+		return;
+	// Set the nearest valid graphics frequency for the requested frequency
+	_get_nearest_freq(gfx_freq, gfx_freqs_size, gfx_freqs);
+}
+
+/*
+ * Set the memory and graphics clock frequency for the GPU
+ *
+ * device		(IN) The NVML GPU device handle
+ * mem_freq		(IN) The memory clock frequency, in MHz
+ * gfx_freq		(IN) The graphics clock frequency, in MHz
+ *
+ * Returns true if successful, false if not
+ */
+static bool _nvml_set_freqs(nvmlDevice_t *device, unsigned int mem_freq,
+			    unsigned int gfx_freq)
+{
+	nvmlReturn_t nvml_rc;
+	DEF_TIMERS;
+	debug2("nvmlDeviceSetApplicationsClocks(%u, %u)", mem_freq, gfx_freq);
+	START_TIMER;
+	nvml_rc = nvmlDeviceSetApplicationsClocks(*device, mem_freq, gfx_freq);
+	END_TIMER;
+	debug2("nvmlDeviceSetApplicationsClocks() took %ld microseconds",
+	       DELTA_TIMER);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("%s: Failed to set memory and graphics clock frequency "
+		      "pair (%u, %u) for the GPU: %s", __func__, mem_freq,
+		      gfx_freq, nvmlErrorString(nvml_rc));
+		return false;
+	}
+	return true;
+}
+
+#endif // HAVE_NVML
+
+static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 {
 	bool verbose_flag = false;
-	int len = strlen(global_list);
-	int *gpu_index = xmalloc(sizeof(int) * len);
-	int gpu_index_cnt = 0, i;
-	char *tok, *tmp, *sep = "", *save_ptr = NULL;
-	int gpu_freq_num = 0, mem_freq_num = 0;
-	int gpu_freq_code = 0, mem_freq_code = 0;
-	int gpu_freq_value = 0, mem_freq_value = 0;
+	int gpu_len = bit_size(gpus);
+	int i = -1, count = 0, count_set = 0;
+	unsigned int gpu_freq_num = 0, mem_freq_num = 0;
+	bool freq_set = false;
+	char *tmp = NULL;
+#ifdef HAVE_NVML
+	_nvml_init();
+#endif
 
-	/* Parse device ID information */
-	tmp = xstrdup(global_list);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		gpu_index[gpu_index_cnt] = strtol(tok, NULL, 10);
-		if ((gpu_index[gpu_index_cnt] >= 0) &&
-		    (gpu_index[gpu_index_cnt] < 1024)) {
-			gpu_index_cnt++;
-		} else {
-			error("%s: %s: Invalid GPU device id (%d)",
-			      plugin_type, __func__, gpu_index[gpu_index_cnt]);
-		}
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
+	// TODO: Overwrite gpus if env var is specified? Do this earlier?
 
 	/*
 	 * Parse frequency information
 	 */
-	_parse_gpu_freq(gpu_freq, &gpu_freq_code, &gpu_freq_value,
-			&mem_freq_code, &gpu_freq_value, &verbose_flag);
+	debug2("_parse_gpu_freq(%s)", gpu_freq);
+	_parse_gpu_freq(gpu_freq, &gpu_freq_num, &mem_freq_num, &verbose_flag);
+	if (verbose_flag)
+		debug2("verbose_flag ON");
 
+	// TODO: Pull out keyword detection code into a single location
+	if (mem_freq_num == GPU_LOW)
+		debug2("User requested mem=low");
+	else if (mem_freq_num == GPU_MEDIUM)
+		debug2("User requested mem=medium");
+	else if (mem_freq_num == GPU_HIGH)
+		debug2("User requested mem=high");
+	else if (mem_freq_num == GPU_HIGH_M1)
+		debug2("User requested mem=highm1");
+	else
+		debug2("User requested mem=%u", mem_freq_num);
+
+	if (gpu_freq_num == GPU_LOW)
+		debug2("User requested gfx=low");
+	else if (gpu_freq_num == GPU_MEDIUM)
+		debug2("User requested gfx=medium");
+	else if (gpu_freq_num == GPU_HIGH)
+		debug2("User requested gfx=high");
+	else if (gpu_freq_num == GPU_HIGH_M1)
+		debug2("User requested gfx=highm1");
+	else
+		debug2("User requested gfx=%u", gpu_freq_num);
+
+	if (!mem_freq_num || !gpu_freq_num) {
+		debug2("%s: No frequencies to set", __func__);
+		return;
+	}
 	/*
-	 * Now set the values on the devices, translate codes to numeric values
-	 * depending upon the available values on each device
+	 * Set the frequency for each device allocated to the step
 	 */
-	for (i = 0; i < gpu_index_cnt; i++) {
-//FIXME: Flesh out code to set GPU frequncy values, see bug 5520
-		if (gpu_freq_code || gpu_freq_value) {
-			if (gpu_freq_code) {
-				gpu_freq_num  = _xlate_freq_code2value(
-							GPU_MODE_FREQ,
-							gpu_freq_code,
-							gpu_index[i]);
-			} else {
-				gpu_freq_num = gpu_freq_value;
-			}
-			xstrfmtcat(tmp, "freq:%d", gpu_freq_num);
+	while (++i < gpu_len) {
+		char *sep = "";
+#ifdef HAVE_NVML
+		nvmlDevice_t device;
+#endif
+		if (!bit_test(gpus, i))
+			continue;
+		count++;
+
+#ifdef HAVE_NVML
+		if (!_nvml_get_handle(i, &device))
+			continue;
+		_nvml_get_nearest_freqs(&device, &mem_freq_num, &gpu_freq_num);
+		freq_set = _nvml_set_freqs(&device, mem_freq_num, gpu_freq_num);
+#else
+		error("Slurm wasn't configured with NVIDIA NVML support");
+		error("Can't set GPU frequency");
+		return;
+#endif
+		// TODO: Will these always be set?
+		if (mem_freq_num) {
+			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq_num);
 			sep = ",";
 		}
-		if (mem_freq_code || gpu_freq_value) {
-			if (mem_freq_code) {
-				mem_freq_num  = _xlate_freq_code2value(
-							GPU_MODE_MEM,
-							mem_freq_code,
-							gpu_index[i]);
-			} else {
-				mem_freq_num = mem_freq_value;
-			}
-			xstrfmtcat(tmp, "%smemory_freq:%d", sep, mem_freq_num);
-			sep = ",";
+		if (gpu_freq_num) {
+			xstrfmtcat(tmp, "%sgraphics_freq:%u", sep,
+				   gpu_freq_num);
 		}
-		info("Set GPU[%d] %s", gpu_index[i], tmp);
-		if ((node_inx == 0) && (i == 0) && verbose_flag)
+
+		if (freq_set) {
+			info("Successfully set GPU[%d] %s", i, tmp);
+			count_set++;
+		} else {
+			info("Failed to set GPU[%d] %s", i, tmp);
+		}
+
+		if (verbose_flag) {
 			fprintf(stderr, "GpuFreq=%s\n", tmp);
+		}
 		xfree(tmp);
 	}
 
-	xfree(gpu_index);
+	if (count_set != count)
+		error("%s: Could not set frequencies for all GPUs. Set "
+		      "%d/%d total GPUs", __func__, count_set, count);
+#ifdef HAVE_NVML
+	_nvml_shutdown();
+#endif
+}
+
+extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
+{
+	char *tmp = NULL;
+	char *freq = NULL;
+	info("step_configure_hardware()!");
+	if (!usable_gpus) {
+		debug2("%s: Empty GPUs string", __func__);
+		// TODO: Should we set ALL GPU frequencies in this case?
+		return;
+	}
+	if (!tres_freq)
+		debug2("%s: Empty frequency string", __func__);
+	else if ((tmp = strstr(tres_freq, "gpu:"))) {
+		// Strip off "gpu:" from tres_freq
+		freq = xstrdup(tmp + 4);
+		if ((tmp = strchr(freq, ';')))
+			tmp[0] = '\0';
+	}
+
+	// Set the frequency of each GPU index specified in the bitstr
+	_set_freq(usable_gpus, freq);
+	xfree(freq);
 }
 
 static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		     bitstr_t *usable_gres,
 		     bool *already_seen, int *local_inx,
-		     bool reset, bool is_job, char *gpu_freq)
+		     bool reset, bool is_job)
 {
 	char *global_list = NULL, *local_list = NULL;
 	char *slurm_env_var = NULL;
 
 	if (is_job)
-		slurm_env_var = "SLURM_JOB_GPUS";
+		// TODO: This env var doesn't exist. Should it be SLURM_GRES?
+		slurm_env_var = "SLURM_JOB_GRES";
+		// slurm_env_var = "SLURM_GRES";
 	else
-		slurm_env_var = "SLURM_STEP_GPUS";
+		slurm_env_var = "SLURM_STEP_GRES";
 
 	if (*already_seen) {
 		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
@@ -333,8 +824,6 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 			    reset, is_job);
 
 	if (global_list) {
-		if (gpu_freq)
-			_set_freq(gpu_freq, global_list, node_inx);
 		env_array_overwrite(env_ptr, slurm_env_var, global_list);
 		xfree(global_list);
 	}
@@ -348,7 +837,6 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		*already_seen = true;
 	}
 }
-
 
 /*
  * A one-liner version of _print_gres_conf_full()
@@ -364,7 +852,6 @@ static void _print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 		gres_slurmd_conf->file,
 		gres_slurmd_conf->ignore ? " | IGNORE":"");
 }
-
 
 /*
  * Print the gres.conf record in a parsable format
@@ -453,7 +940,7 @@ static char *_strip_brackets_xmalloc(char *str)
 		if (!str[i]) {
 			done = true;
 		} else if (str[i] == '[') {
-			start = i+1;
+			start = i + 1;
 		} else if (str[i] == ']') {
 			end = i;
 			done = true;
@@ -535,7 +1022,6 @@ static int _key_in_number_range_str(char *x, char *key)
 	return rc;
 }
 
-
 /*
  * Returns 1 if (x==key); else returns 0.
  */
@@ -589,7 +1075,6 @@ static int _find_gres_device_file_in_list(void *a, void *b)
 	// Found!
 	return 1;
 }
-
 
 /*
  * Like _find_gres_in_list, except also checks to make sure the device file
@@ -742,7 +1227,6 @@ static void _merge_device_into_list(List gres_list, gres_slurmd_conf_t *device)
 	}
 
 	record = _gres_exists_in_list(gres_list, device);
-
 	record_hl = hostlist_create(record->file);
 	// Merge each device into the record's devices
 	devices_added = hostlist_push(record_hl, device->file);
@@ -1082,33 +1566,6 @@ static void _nvml_get_version(char *version, unsigned int len)
 }
 
 /*
- * First initialize NVML library. This takes a few seconds
- *
- * TODO: the nvml init() function is very slow. Can we run it in
- * parallel so it doesn't add to startup time?
- */
-static int _nvml_init(void)
-{
-	nvmlReturn_t nvml_rc = nvmlInit();
-	if (nvml_rc != NVML_SUCCESS) {
-		error("Failed to init NVML: %s", nvmlErrorString(nvml_rc));
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
-}
-
-/*
- * Undo _nvml_init
- */
-static void _nvml_shutdown(void)
-{
-	nvmlReturn_t nvml_rc = nvmlShutdown();
-	if (nvml_rc != NVML_SUCCESS) {
-		error("Failed to shutdown NVML: %s", nvmlErrorString(nvml_rc));
-	}
-}
-
-/*
  * Get the total # of GPUs in the system
  */
 static void _nvml_get_device_count(unsigned int *device_count)
@@ -1119,22 +1576,6 @@ static void _nvml_get_device_count(unsigned int *device_count)
 		      nvmlErrorString(nvml_rc));
 		*device_count = 0;
 	}
-}
-
-/*
- * Get the handle to the GPU
- * IN: index
- * OUT: device
- */
-static int _nvml_get_handle(int index, nvmlDevice_t *device)
-{
-	nvmlReturn_t nvml_rc = nvmlDeviceGetHandleByIndex(index, device);
-	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get device handle of GPU: %s",
-		      nvmlErrorString(nvml_rc));
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
 }
 
 /*
@@ -1262,8 +1703,6 @@ static void _nvml_get_device_affinity(nvmlDevice_t *device, unsigned int size,
 	}
 }
 
-
-
 /*
  * Returns the busId string of the connected endpoint device of an nvlink lane.
  * If query fails, an empty string is returned.
@@ -1288,8 +1727,6 @@ static char *_nvml_get_nvlink_remote_pcie(nvmlDevice_t *device,
 		return xstrdup(pci_info.busId);
 	}
 }
-
-
 
 /*
  * Does a linear search for string str in array of strings str_arr, starting
@@ -1346,7 +1783,7 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 			       "nvmlDeviceGetNvLinkState()", i);
 			break;
 		} else if (nvml_rc != NVML_SUCCESS) {
-			error("NVML: Failed to get nvlink info of GPU: %s",
+			error("NVML: Failed to get nvlink info from GPU: %s",
 			      nvmlErrorString(nvml_rc));
 		}
 		// See if nvlink lane is active
@@ -1356,8 +1793,9 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 			debug3("NVML: nvlink %d is enabled", i);
 
 			/*
-			 * Count link endpoints see what GPUs are single/double
-			 * linked. E.g. if single link (1), inc. to double (2)
+			 * Count link endpoints to determine single and double
+			 * links. E.g. if already a single link (1), increment
+			 * to a double (2).
 			 */
 			busid = _nvml_get_nvlink_remote_pcie(device, i);
 			k = _get_index_from_str_arr(busid, device_lut,
@@ -1411,13 +1849,13 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
 	bit_cur = bitstr_bits - 1;
 
 	// Iterate through each cpu_set long int
-	for (j = cpu_set_size-1; j >= 0; --j) {
+	for (j = cpu_set_size - 1; j >= 0; --j) {
 		// Iterate through the bytes of the jth ulong bitmask
 		char *bitmask = (char *) &cpu_set[j];
 #ifdef SLURM_BIGENDIAN
 		for (k = 0; k < ULONG_BYTES; ++k) {
 #else
-		for (k = ULONG_BYTES-1; k >= 0; --k) {
+		for (k = ULONG_BYTES - 1; k >= 0; --k) {
 #endif // SLURM_BIGENDIAN
 			unsigned char byte = bitmask[k];
 			unsigned char mask;
@@ -1463,10 +1901,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	char version[NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE];
 	char **device_lut;
 
-	if (_nvml_init() != SLURM_SUCCESS) {
-		return NULL;
-	}
-
+	_nvml_init();
 	_nvml_get_driver(driver, NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE);
 	_nvml_get_version(version, NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE);
 	debug("Systems Graphics Driver Version: %s", driver);
@@ -1479,7 +1914,6 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	       CPU_SET_SIZE);
 	debug2("Total CPU count: %d", node_config->cpu_cnt);
 	debug2("Device count: %d", device_count);
-
 
 	// Create a device index --> PCI Bus ID lookup table
 	device_lut = xmalloc(sizeof(char *) * device_count);
@@ -1494,14 +1928,12 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		// Initialize to null
 		device_lut[i] = NULL;
 
-		if (_nvml_get_handle(i, &device) != SLURM_SUCCESS) {
+		if (!_nvml_get_handle(i, &device))
 			continue;
-		}
 		_nvml_get_device_pci_info(&device, &pci_info);
 		if (pci_info.busId)
 			device_lut[i] = xstrdup(pci_info.busId);
 	}
-
 
 	/*
 	 * Loop through all the GPUs on the system and add to gres_list_system
@@ -1520,9 +1952,13 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
 		char *device_brand = NULL;
 
-		if (_nvml_get_handle(i, &device) != SLURM_SUCCESS)
+		if (!_nvml_get_handle(i, &device)) {
+			error("Creating null GRES GPU record");
+			_add_gres_to_list(gres_list_system, "gpu", 1,
+					  node_config->cpu_cnt, NULL,
+					  NULL, NULL, NULL, false);
 			continue;
-
+		}
 		_nvml_get_device_name(&device, device_name,
 				      NVML_DEVICE_NAME_BUFFER_SIZE);
 		_nvml_get_device_uuid(&device, uuid,
@@ -1563,6 +1999,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		debug2("    GPU Device File (minor number): %s", device_file);
 		debug2("    CPU Affinity Range: %s", cpu_aff_mac_range);
 		debug2("    CPU Affinity Range Abstract: %s",cpu_aff_abs_range);
+		// Print out possible memory frequencies for this device
+		_nvml_print_freqs(&device, LOG_LEVEL_DEBUG2);
 
 		_add_gres_to_list(gres_list_system, "gpu", 1,
 				  node_config->cpu_cnt, cpu_aff_abs_range,
@@ -1581,9 +2019,9 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	for (i = 0; i < device_count; ++i)
 		xfree(device_lut[i]);
 	xfree(device_lut);
-
 	_nvml_shutdown();
-	info("%u GPU system devices detected", device_count);
+
+	info("%u GPU system device(s) detected", device_count);
 	return gres_list_system;
 }
 
@@ -1671,6 +2109,87 @@ static char *_test_nvml_cpu_conv(char *cpu_range)
 	return result;
 }
 
+static void _print_failed_sort(unsigned int *arr, unsigned int size)
+{
+	unsigned int i;
+	info("GRES_PARSABLE:failed");
+	info("Array that failed to sort:");
+	for (i = 0; i < size; ++i) {
+		info("*%u", arr[i]);
+	}
+}
+
+// If failed, return false. Else, return true
+static bool _test_check_sort(unsigned int *arr, unsigned int size)
+{
+	// Make sure we are dealing with at least two elements
+	if (size <= 1)
+		return true;
+
+	if (arr[0] < arr[size - 1]) {
+		_print_failed_sort(arr, size);
+		return false;
+	}
+
+	if (arr[0] < arr[1]) {
+		_print_failed_sort(arr, size);
+		return false;
+	}
+
+	if (arr[size - 2] < arr[size - 1]) {
+		_print_failed_sort(arr, size);
+		return false;
+	}
+	return true;
+}
+
+/*
+ * Test bubble sort code
+ */
+static void _test_bubble_sort(void)
+{
+	unsigned int arr_asc[]  = {0,1,2,3,4,5,6,7};
+	unsigned int arr_desc[] = {7,6,5,4,3,2,1,0};
+	unsigned int arr_rand[] = {5,4,7,2,1,0,6,3};
+	unsigned int arr_same[] = {5,5,5,5,5,5,5,5};
+	unsigned int arr_dup[]  = {0,0,5,5,4,4,2,2};
+	unsigned int arr_one[]  = {1000};
+	unsigned int arr_none[] = {};
+	unsigned int *arr_null = NULL;
+	info("Testing arr_asc...");
+	_bubble_sort_descending(arr_asc, 8);
+	if (!_test_check_sort(arr_asc, 8))
+		return;
+	info("Testing arr_desc...");
+	_bubble_sort_descending(arr_desc, 8);
+	if (!_test_check_sort(arr_desc, 8))
+		return;
+	info("Testing arr_rand...");
+	_bubble_sort_descending(arr_rand, 8);
+	if (!_test_check_sort(arr_rand, 8))
+		return;
+	info("Testing arr_same...");
+	_bubble_sort_descending(arr_same, 8);
+	if (!_test_check_sort(arr_same, 8))
+		return;
+	info("Testing arr_dup...");
+	_bubble_sort_descending(arr_dup, 8);
+	if (!_test_check_sort(arr_dup, 8))
+		return;
+
+	// These just need to not crash
+	info("Testing arr_one...");
+	_bubble_sort_descending(arr_one, 1);
+	info("Testing arr_none...");
+	_bubble_sort_descending(arr_none, 0);
+	info("Testing arr_null...");
+	_bubble_sort_descending(arr_null, 1);
+
+	info("GRES_PARSABLE:succeeded");
+}
+
+
+
 /*
  * Parses fake_gpus_file for fake GPU devices and adds them to gres_list_system
  *
@@ -1722,6 +2241,14 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 			continue;
 
 		debug("%s", buffer);
+
+		// Put in hooks to test out specific portions of code
+		if (buffer[0] == 'b') {
+			// Test bubble sort!
+			_test_bubble_sort();
+			continue;
+		}
+
 
 		// Parse values from the line
 		tok = strtok_r(buffer, "|", &save_ptr);
@@ -1894,33 +2421,20 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
 	bool already_seen = false;
 
 	_set_env(job_env_ptr, gres_ptr, node_inx, NULL,
-		 &already_seen, &local_inx, false, true, NULL);
+		 &already_seen, &local_inx, false, true);
 }
 
 /*
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job step's GRES state.
  */
-extern void step_set_env(char ***step_env_ptr, void *gres_ptr, char *tres_freq,
-			 int local_proc_id)
+extern void step_set_env(char ***step_env_ptr, void *gres_ptr)
 {
 	static int local_inx = 0;
 	static bool already_seen = false;
-	char  *tmp, *gpu_freq = NULL;
 
-	if (local_proc_id == 0) {
-		if (tres_freq && (tmp = strstr(tres_freq, "gpu:"))) {
-			gpu_freq = xstrdup(tmp + 4);
-			if ((tmp = strchr(gpu_freq, ';')))
-				tmp[0] = '\0';
-		} else {
-			/* Make non-NULL to process default: GpuFreqDef */
-			gpu_freq = xstrdup("");
-		}
-	}
 	_set_env(step_env_ptr, gres_ptr, 0, NULL,
-		 &already_seen, &local_inx, false, false, gpu_freq);
-	xfree(gpu_freq);
+		 &already_seen, &local_inx, false, false);
 }
 
 /*
@@ -1934,7 +2448,7 @@ extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
 	static bool already_seen = false;
 
 	_set_env(step_env_ptr, gres_ptr, 0, usable_gres,
-		 &already_seen, &local_inx, true, false, NULL);
+		 &already_seen, &local_inx, true, false);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */

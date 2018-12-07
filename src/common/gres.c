@@ -134,6 +134,7 @@ typedef struct slurm_gres_ops {
 						  enum gres_step_data_type data_type,
 						  void *data);
 	List            (*get_devices)		( void );
+	void            (*step_configure_hardware)	( bitstr_t *, char * );
 } slurm_gres_ops_t;
 
 /* Gres plugin context, one for each gres type */
@@ -388,6 +389,7 @@ static int _load_gres_plugin(char *plugin_name,
 		"job_info",
 		"step_info",
 		"get_devices",
+		"step_configure_hardware",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -473,7 +475,7 @@ static int _unload_gres_plugin(slurm_gres_context_t *plugin_context)
 }
 
 /*
- * Initialize the gres plugin.
+ * Initialize the GRES plugins.
  *
  * Returns a Slurm errno.
  */
@@ -1934,22 +1936,25 @@ static void _links_str2array(char *links, char *node_name,
 		gres_data->links_cnt[gres_inx][i] =
 			strtol(start_ptr, &end_ptr, 10);
 		if (gres_data->links_cnt[gres_inx][i] < -2) {
-			error("%s: Invalid GRES Links value (%s) on node %s",
-			      __func__, links, node_name);
+			error("%s: Invalid GRES Links value (%s) on node %s:"
+			      "Link value '%d' < -2", __func__, links,
+			      node_name, gres_data->links_cnt[gres_inx][i]);
 			gres_data->links_cnt[gres_inx][i] = 0;
-			return;	
+			return;
 		}
 		if (end_ptr[0] == '\0')
 			return;
 		if (end_ptr[0] != ',') {
-			error("%s: Invalid GRES Links value (%s) on node %s",
-			      __func__, links, node_name);
-			return;	
+			error("%s: Invalid GRES Links value (%s) on node %s:"
+			      "end_ptr[0]='%c' != ','", __func__, links,
+			      node_name, end_ptr[0]);
+			return;
 		}
 		if (++i >= gres_data->link_len) {
-			error("%s: Invalid GRES Links value (%s) on node %s",
-			      __func__, links, node_name);
-			return;	
+			error("%s: Invalid GRES Links value (%s) on node %s:"
+			      "i=%d >= link_len=%d", __func__, links, node_name,
+			      i, gres_data->link_len);
+			return;
 		}
 		start_ptr = end_ptr + 1;
 	}
@@ -3649,10 +3654,10 @@ fini:
 }
 
 /*
- * Reentrant TRES specification parse logic
+ * TRES specification parse logic
  * in_val IN - initial input string
  * cnt OUT - count of values
- * gres_list IN - where to search for (or add) new job TRES record
+ * gres_list IN/OUT - where to search for (or add) new job TRES record
  * save_ptr IN/OUT - NULL on initial call, otherwise value from previous call
  * rc OUT - unchanged or an error code
  * RET gres - job record to set value in, found or created by this function
@@ -9226,10 +9231,10 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 }
 
 /*
- * Reentrant TRES specification parse logic
+ * TRES specification parse logic
  * in_val IN - initial input string
  * cnt OUT - count of values
- * gres_list IN - where to search for (or add) new step TRES record
+ * gres_list IN/OUT - where to search for (or add) new step TRES record
  * save_ptr IN/OUT - NULL on initial call, otherwise value from previous call
  * rc OUT - unchanged or an error code
  * RET gres - step record to set value in, found or created by this function
@@ -9980,6 +9985,11 @@ static bitstr_t * _get_usable_gres(int context_inx)
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int gres_inx = 0;
 
+	if (!gres_conf_list) {
+		error("gres_conf_list is null!");
+		return NULL;
+	}
+
 	CPU_ZERO(&mask);
 #ifdef __FreeBSD__
 	rc = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, -1,
@@ -9989,7 +9999,6 @@ static bitstr_t * _get_usable_gres(int context_inx)
 #else
 	rc = sched_getaffinity(0, &mask);
 #endif
-
 	if (rc) {
 		error("sched_getaffinity error: %m");
 		return usable_gres;
@@ -10029,6 +10038,34 @@ static bitstr_t * _get_usable_gres(int context_inx)
 #endif
 
 	return usable_gres;
+}
+
+/*
+ * Configure the GRES hardware allocated to the current step while privileged
+ */
+extern void gres_plugin_step_configure_hardware(char *settings)
+{
+	int i;
+	(void) gres_plugin_init();
+	debug2("gres_plugin_step_configure_hardware(%s)", settings);
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (i = 0; i < gres_context_cnt; i++) {
+		bitstr_t *devices = NULL;
+		if (gres_context[i].ops.step_configure_hardware == NULL) {
+			continue;
+		}
+		// Get all GRESs allocated to this step of the current type
+		devices = _get_usable_gres(i);
+		if (settings)
+			debug2("settings: %s", settings);
+		if (devices)
+			debug2("devices: %s", bit_fmt_full(devices));
+		(*(gres_context[i].ops.step_configure_hardware)) (devices,
+								  settings);
+		FREE_NULL_BITMAP(devices);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
 }
 
 /*

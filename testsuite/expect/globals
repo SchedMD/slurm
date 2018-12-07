@@ -2012,6 +2012,25 @@ proc test_select_type_params { type } {
 
 ################################################################
 #
+# Proc: test_root_user
+#
+# Purpose: Determine if user is root
+#
+################################################################
+
+proc test_root_user { } {
+	global super_user super_user_set
+	set uid [get_my_uid]
+	if {$uid == 0} {
+		set super_user 1
+		set super_user_set 1
+		return 1
+	}
+	return 0
+}
+
+################################################################
+#
 # Proc: test_super_user
 #
 # Purpose: Determine if user is a Slurm super user (i.e. user
