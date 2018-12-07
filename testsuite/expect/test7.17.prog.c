@@ -146,6 +146,7 @@ int main(int argc, char *argv[])
 		tres_per_node = xstrdup(argv[1]);
 
 	rc = gres_plugin_job_state_validate(NULL,	/* cpus_per_tres */
+					    NULL,	/* tres_freq */
 					    NULL,	/* tres_per_job */
 					    tres_per_node,
 					    NULL,	/* tres_per_socket */
