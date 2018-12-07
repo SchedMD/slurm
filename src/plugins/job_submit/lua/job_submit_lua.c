@@ -321,6 +321,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 	} else if (!xstrcmp(name, "gres")) {
 		/* "gres" replaced by "tres_per_node" in v18.08 */
 		lua_pushstring (L, job_ptr->tres_per_node);
+	} else if (!xstrcmp(name, "group_id")) {
+		lua_pushnumber (L, job_ptr->group_id);
 	} else if (!xstrcmp(name, "job_id")) {
 		lua_pushnumber (L, job_ptr->job_id);
 	} else if (!xstrcmp(name, "job_state")) {
@@ -434,6 +436,10 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushstring (L, job_ptr->tres_per_socket);
 	} else if (!xstrcmp(name, "tres_per_task")) {
 		lua_pushstring (L, job_ptr->tres_per_task);
+	} else if (!xstrcmp(name, "user_id")) {
+		lua_pushnumber (L, job_ptr->user_id);
+	} else if (!xstrcmp(name, "user_name")) {
+		lua_pushstring (L, job_ptr->user_name);
 	} else if (!xstrcmp(name, "wait4switch")) {
 		lua_pushnumber (L, job_ptr->wait4switch);
 	} else if (!xstrcmp(name, "wckey")) {
@@ -1471,12 +1477,22 @@ static void _register_lua_slurm_output_functions (void)
 	lua_setfield (L, -2, "ERROR");
 	lua_pushnumber (L, SLURM_SUCCESS);
 	lua_setfield (L, -2, "SUCCESS");
+	lua_pushnumber (L, ESLURM_ACCESS_DENIED);
+	lua_setfield (L, -2, "ESLURM_ACCESS_DENIED");
+	lua_pushnumber (L, ESLURM_ACCOUNTING_POLICY);
+	lua_setfield (L, -2, "ESLURM_ACCOUNTING_POLICY");
 	lua_pushnumber (L, ESLURM_INVALID_ACCOUNT);
 	lua_setfield (L, -2, "ESLURM_INVALID_ACCOUNT");
 	lua_pushnumber (L, ESLURM_INVALID_LICENSES);
 	lua_setfield (L, -2, "ESLURM_INVALID_LICENSES");
+	lua_pushnumber (L, ESLURM_INVALID_NODE_COUNT);
+	lua_setfield (L, -2, "ESLURM_INVALID_NODE_COUNT");
 	lua_pushnumber (L, ESLURM_INVALID_TIME_LIMIT);
 	lua_setfield (L, -2, "ESLURM_INVALID_TIME_LIMIT");
+	lua_pushnumber (L, ESLURM_JOB_MISSING_SIZE_SPECIFICATION);
+	lua_setfield (L, -2, "ESLURM_JOB_MISSING_SIZE_SPECIFICATION");
+	lua_pushnumber (L, ESLURM_MISSING_TIME_LIMIT);
+	lua_setfield (L, -2, "ESLURM_MISSING_TIME_LIMIT");
 
 	/*
 	 * Other definitions needed to interpret data

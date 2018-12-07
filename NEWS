@@ -140,6 +140,10 @@ documents those changes that are of interest to users and administrators.
  -- pam_slurm_adopt - send an error message to the user if no Slurm jobs
     can be located on the node.
  -- Run SlurmctldPrimaryOffProg when the primary slurmctld process shuts down.
+ -- job_submit/lua: Add several slurmctld return codes.
+ -- job_submit/lua: Add user/group info to jobs.
+ -- Fix formatting issues when printing uint64_t.
+ -- Bump RLIMIT_NOFILE for daemons in systemd services.
 
 * Changes in Slurm 18.08.3
 ==========================
