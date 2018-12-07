@@ -181,8 +181,8 @@ static unsigned int _xlate_freq_code(char *gpu_freq)
 	else if (!strcasecmp(gpu_freq, "high"))
 		return GPU_HIGH;
 
-	verbose("%s: %s: Invalid job GPU frequency (%s)",
-		plugin_type, __func__, gpu_freq);
+	debug("%s: %s: Invalid job GPU frequency (%s)",
+	      plugin_type, __func__, gpu_freq);
 	return 0;	/* Bad user input */
 }
 
@@ -519,23 +519,25 @@ static void _nvml_print_freqs(nvmlDevice_t *device, log_level_t l)
  * freqs_size	(IN) The size of the freqs array
  * freqs	(IN) An array of frequency values in MHz, sorted highest to
  * 		lowest
+ * log_lvl	(IN) The log level at which to print
  *
  * Inspired by src/common/cpu_frequency#_cpu_freq_freqspec_num()
  */
 static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
-			      unsigned int *freqs)
+			      unsigned int *freqs, log_level_t log_lvl)
 {
 	unsigned int i;
+
 	if (!freq || !(*freq)) {
-		error("%s: No frequency supplied", __func__);
+		log_var(log_lvl, "%s: No frequency supplied", __func__);
 		return;
 	}
 	if (!freqs || !(*freqs)) {
-		error("%s: No frequency list supplied", __func__);
+		log_var(log_lvl, "%s: No frequency list supplied", __func__);
 		return;
 	}
 	if (freqs_size <= 0) {
-		error("%s: Frequency list is empty", __func__);
+		log_var(log_lvl, "%s: Frequency list is empty", __func__);
 		return;
 	}
 
@@ -575,13 +577,13 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 
 	/* check if freq is out of bounds of freqs */
 	if (*freq > freqs[0]) {
-		error("Rounding requested frequency %u MHz down to %u MHz "
-		      "(highest available)", *freq, freqs[0]);
+		log_var(log_lvl, "Rounding requested frequency %u MHz down to %u MHz "
+			"(highest available)", *freq, freqs[0]);
 		*freq = freqs[0];
 		return;
 	} else if (*freq < freqs[freqs_size - 1]) {
-		error("Rounding requested frequency %u MHz up to %u MHz (lowest"
-		      " available)", *freq, freqs[freqs_size - 1]);
+		log_var(log_lvl, "Rounding requested frequency %u MHz up to %u MHz "
+			"(lowest available)", *freq, freqs[freqs_size - 1]);
 		*freq = freqs[freqs_size - 1];
 		return;
 	}
@@ -598,14 +600,14 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 		 * Safe to advance due to bounds checks above here
 		 */
 		if (*freq > freqs[i]) {
-			error("Rounding requested frequency %u MHz up to %u MHz"
-			     " (next available)", *freq, freqs[i-1]);
+			log_var(log_lvl, ("Rounding requested frequency %u MHz up to %u MHz "
+				"(next available)", *freq, freqs[i-1]);
 			*freq = freqs[i-1];
 			return;
 		}
 	}
-	error("Got to the end of the function. This shouldn't happen. Freq: "
-	      "%u MHz", *freq);
+	error("%s: Got to the end of the function. This shouldn't happen. Freq: %u MHz",
+	      __func__, *freq);
 }
 
 /*
@@ -616,10 +618,11 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
  * 			will be overwritten with the output value, if different.
  * gfx_freq 		(IN/OUT) The requested graphics frequency, in MHz. This
  * 			will be overwritten with the output value, if different.
+ * log_lvl		(IN) The log level at which to print
  */
 static void _nvml_get_nearest_freqs(nvmlDevice_t *device,
 				    unsigned int *mem_freq,
-				    unsigned int *gfx_freq)
+				    unsigned int *gfx_freq, log_level_t log_lvl)
 {
 	unsigned int mem_freqs[FREQS_SIZE] = {0};
 	unsigned int mem_freqs_size = FREQS_SIZE;
@@ -631,13 +634,13 @@ static void _nvml_get_nearest_freqs(nvmlDevice_t *device,
 		return;
 
 	// Set the nearest valid memory frequency for the requested frequency
-	_get_nearest_freq(mem_freq, mem_freqs_size, mem_freqs);
+	_get_nearest_freq(mem_freq, mem_freqs_size, mem_freqs, log_lvl);
 
 	// Get the graphics frequencies at this memory frequency
 	if (!_nvml_get_gfx_freqs(device, *mem_freq, &gfx_freqs_size, gfx_freqs))
 		return;
 	// Set the nearest valid graphics frequency for the requested frequency
-	_get_nearest_freq(gfx_freq, gfx_freqs_size, gfx_freqs);
+	_get_nearest_freq(gfx_freq, gfx_freqs_size, gfx_freqs, log_lvl);
 }
 
 /*
@@ -671,14 +674,21 @@ static bool _nvml_set_freqs(nvmlDevice_t *device, unsigned int mem_freq,
 
 #endif // HAVE_NVML
 
-static void _set_freq(bitstr_t *gpus, char *gpu_freq)
+/*
+ * Set GPU frequencies for this job
+ * gpus			(IN) GPUs on which to operate
+ * gpu_freq		(IN) requested frequencies
+ * log_lvl		(IN) The log level at which to print
+ */
+static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 {
 	bool verbose_flag = false;
 	int gpu_len = bit_size(gpus);
 	int i = -1, count = 0, count_set = 0;
 	unsigned int gpu_freq_num = 0, mem_freq_num = 0;
-	bool freq_set = false;
+	bool freq_set = false, freq_logged = false;
 	char *tmp = NULL;
+
 #ifdef HAVE_NVML
 	_nvml_init();
 #endif
@@ -720,6 +730,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		debug2("%s: No frequencies to set", __func__);
 		return;
 	}
+
 	/*
 	 * Set the frequency for each device allocated to the step
 	 */
@@ -735,11 +746,16 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 #ifdef HAVE_NVML
 		if (!_nvml_get_handle(i, &device))
 			continue;
-		_nvml_get_nearest_freqs(&device, &mem_freq_num, &gpu_freq_num);
+		_nvml_get_nearest_freqs(&device, &mem_freq_num, &gpu_freq_num,
+					log_lvl);
 		freq_set = _nvml_set_freqs(&device, mem_freq_num, gpu_freq_num);
 #else
-		error("Slurm wasn't configured with NVIDIA NVML support");
-		error("Can't set GPU frequency");
+		log_var(log_lvl,
+			"Slurm is not configured with NVIDIA NVML support. "
+			"Can not set GPU frequency");
+		fprintf(stderr,
+			"Slurm is not configured with NVIDIA NVML support. "
+			"Can not set GPU frequency\n");
 		return;
 #endif
 		// TODO: Will these always be set?
@@ -753,21 +769,26 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		}
 
 		if (freq_set) {
-			info("Successfully set GPU[%d] %s", i, tmp);
+			log_var(log_lvl, "Successfully set GPU[%d] %s", i, tmp);
 			count_set++;
 		} else {
-			info("Failed to set GPU[%d] %s", i, tmp);
+			log_var(log_lvl, "Failed to set GPU[%d] %s", i, tmp);
 		}
 
-		if (verbose_flag) {
+		if (verbose_flag && !freq_logged) {
 			fprintf(stderr, "GpuFreq=%s\n", tmp);
+			freq_logged = true;	/* Just log for first GPU */
 		}
 		xfree(tmp);
 	}
 
-	if (count_set != count)
-		error("%s: Could not set frequencies for all GPUs. Set "
-		      "%d/%d total GPUs", __func__, count_set, count);
+	if (count_set != count) {
+		log_var(log_lvl,
+			"%s: Could not set frequencies for all GPUs. "
+			"Set %d/%d total GPUs", __func__, count_set, count);
+		fprintf(stderr, "Could not set frequencies for all GPUs. "
+			"Set %d/%d total GPUs\n", count_set, count);
+	}
 #ifdef HAVE_NVML
 	_nvml_shutdown();
 #endif
@@ -777,23 +798,26 @@ extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 {
 	char *tmp = NULL;
 	char *freq = NULL;
-	info("step_configure_hardware()!");
-	if (!usable_gpus) {
-		debug2("%s: Empty GPUs string", __func__);
-		// TODO: Should we set ALL GPU frequencies in this case?
-		return;
-	}
+	log_level_t log_lvl;
+
+	if (!usable_gpus)
+		return;		/* Job allocated no GPUs */
 	if (!tres_freq)
-		debug2("%s: Empty frequency string", __func__);
-	else if ((tmp = strstr(tres_freq, "gpu:"))) {
-		// Strip off "gpu:" from tres_freq
-		freq = xstrdup(tmp + 4);
-		if ((tmp = strchr(freq, ';')))
-			tmp[0] = '\0';
-	}
+		return;		/* No TRES frequency spec */
+	if (!(tmp = strstr(tres_freq, "gpu:")))
+		return;		/* No GPU frequency spec */
+
+	// Strip "gpu:" from tres_freq
+	freq = xstrdup(tmp + 4);
+	if ((tmp = strchr(freq, ';')))
+		tmp[0] = '\0';
 
 	// Set the frequency of each GPU index specified in the bitstr
-	_set_freq(usable_gpus, freq);
+	if (debug_flags & DEBUG_FLAG_GRES)
+		log_lvl = LOG_LEVEL_INFO;
+	else
+		log_lvl = LOG_LEVEL_DEBUG;
+	_set_freq(usable_gpus, freq, log_lvl);
 	xfree(freq);
 }
 

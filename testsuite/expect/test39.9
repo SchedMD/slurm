@@ -35,10 +35,10 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 set freq_parse "GpuFreq=memory_freq:($number),graphics_freq:($number)"
-set nvml_parse "Slurm wasn't configured with NVIDIA NVML support"
-set nvml_warning "\nWARNING: Slurm is not configured for NVML support; couldn't test setting GPU frequencies\n"
+set nvml_parse "Slurm is not configured with NVIDIA NVML support"
+set nvml_warning "\nWARNING: Slurm is not configured with NVML support. Could not test setting GPU frequencies\n"
 set permission_parse "Cannot configure GRES hardware unless privileged"
-set permission_warning "\nWARNING: Slurmd is not root; couldn't test setting GPU frequencies due to insufficient permissions\n"
+set permission_warning "\nWARNING: Slurmd is not root. Could not test setting GPU frequencies due to insufficient permissions\n"
 
 proc get_node_config {} {
 	global cpus_per_socket sockets_per_node
