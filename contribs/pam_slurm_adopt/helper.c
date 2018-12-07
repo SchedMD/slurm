@@ -110,7 +110,6 @@ send_user_msg(pam_handle_t *pamh, const char *mesg)
 	void *dummy;    /* needed to eliminate warning:
 			 * dereferencing type-punned pointer will
 			 * break strict-aliasing rules */
-	char str[PAM_MAX_MSG_SIZE];
 	struct pam_message msg[1];
 	const struct pam_message *pmsg[1];
 	struct pam_response *prsp;
@@ -128,9 +127,8 @@ send_user_msg(pam_handle_t *pamh, const char *mesg)
 
 	/*  Construct msg to send to app.
 	 */
-	strncpy(str, mesg, sizeof(str));
 	msg[0].msg_style = PAM_ERROR_MSG;
-	msg[0].msg = str;
+	msg[0].msg = mesg;
 	pmsg[0] = &msg[0];
 	prsp = NULL;
 
