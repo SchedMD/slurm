@@ -137,6 +137,7 @@ static void _free_node_info(void)
  * %a - Job array ID (index) number.
  * %j - Job ID
  * %u - User name
+ * %x - Job name
  */
 static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 			  char *fname)
@@ -180,6 +181,8 @@ static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
 		tmp = tmp2;
 		tmp2 = NULL;
 	}
+	xstrsubstituteall(tmp, "%x", job_ptr->name);	/* Job name */
+
 	if (tmp[0] == '/')
 		snprintf(buf, buf_size, "%s", tmp);
 	else
