@@ -46,6 +46,7 @@
 
 #include <errno.h>
 #include <grp.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -1102,12 +1103,11 @@ static void _sig_handler(int signal)
 static void *_slurmctld_rpc_mgr(void *no_data)
 {
 	int newsockfd;
-	int *sockfd;	/* our set of socket file descriptors */
+	struct pollfd *fds;
 	slurm_addr_t cli_addr, srv_addr;
 	uint16_t port;
 	char ip[32];
 	int fd_next = 0, i, nports;
-	fd_set rfds;
 	connection_arg_t *conn_arg = NULL;
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = {
@@ -1138,17 +1138,17 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		fatal("slurmctld port count is zero");
 		return NULL;	/* Fix CLANG false positive */
 	}
-	sockfd = xmalloc(sizeof(int) * nports);
+	fds = xmalloc(sizeof(struct pollfd) * nports);
 	for (i = 0; i < nports; i++) {
-		sockfd[i] = slurm_init_msg_engine_addrname_port(
-					node_addr,
-					slurmctld_conf.slurmctld_port+i);
-		if (sockfd[i] == SLURM_ERROR) {
+		fds[i].fd = slurm_init_msg_engine_addrname_port(node_addr,
+			slurmctld_conf.slurmctld_port + i);
+		fds[i].events = POLLIN;
+		if (fds[i].fd == SLURM_ERROR) {
 			fatal("slurm_init_msg_engine_addrname_port error %m");
 			return NULL;	/* Fix CLANG false positive */
 		}
-		fd_set_close_on_exec(sockfd[i]);
-		if (slurm_get_stream_addr(sockfd[i], &srv_addr)) {
+		fd_set_close_on_exec(fds[i].fd);
+		if (slurm_get_stream_addr(fds[i].fd, &srv_addr)) {
 			error("slurm_get_stream_addr error %m");
 		} else {
 			slurm_get_ip_str(&srv_addr, &port, ip, sizeof(ip));
@@ -1171,21 +1171,16 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	 * Process incoming RPCs until told to shutdown
 	 */
 	while (_wait_for_server_thread()) {
-		int max_fd = -1;
-		FD_ZERO(&rfds);
-		for (i=0; i<nports; i++) {
-			FD_SET(sockfd[i], &rfds);
-			max_fd = MAX(sockfd[i], max_fd);
-		}
-		if (select(max_fd+1, &rfds, NULL, NULL, NULL) == -1) {
+		if (poll(fds, nports, -1) == -1) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn select: %m");
 			server_thread_decr();
 			continue;
 		}
+
 		/* find one to process */
-		for (i=0; i<nports; i++) {
-			if (FD_ISSET(sockfd[(fd_next+i) % nports], &rfds)) {
+		for (i = 0; i < nports; i++) {
+			if (fds[(fd_next + i) % nports].revents) {
 				i = (fd_next + i) % nports;
 				break;
 			}
@@ -1196,9 +1191,8 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		 * accept needed for stream implementation is a no-op in
 		 * message implementation that just passes sockfd to newsockfd
 		 */
-		if ((newsockfd = slurm_accept_msg_conn(sockfd[i],
-						       &cli_addr)) ==
-		    SLURM_ERROR) {
+		if ((newsockfd = slurm_accept_msg_conn(fds[i].fd, &cli_addr))
+		    == SLURM_ERROR) {
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
 			server_thread_decr();
@@ -1229,8 +1223,8 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 
 	debug3("%s shutting down", __func__);
 	for (i = 0; i < nports; i++)
-		close(sockfd[i]);
-	xfree(sockfd);
+		close(fds[i].fd);
+	xfree(fds);
 	server_thread_decr();
 	pthread_exit((void *) 0);
 	return NULL;
