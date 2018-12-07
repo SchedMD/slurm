@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
     allow a different PAM applications to work. The option 'service=*' can be
     used to restore the old behavior of always performing the adopt logic
     regardless of the PAM application context.
+ -- pam_slurm_adopt: Use uid to determine whether root is logging.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
