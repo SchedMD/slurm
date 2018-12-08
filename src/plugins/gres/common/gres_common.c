@@ -177,7 +177,11 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		    gres_job_ptr->gres_bit_alloc &&
 		    gres_job_ptr->gres_bit_alloc[node_inx]) {
 			bit_alloc = gres_job_ptr->gres_bit_alloc[node_inx];
-		} else if (gres_job_ptr && (gres_job_ptr->gres_per_node > 0))
+		} else if (gres_job_ptr &&
+			   ((gres_job_ptr->gres_per_job    > 0) ||
+			    (gres_job_ptr->gres_per_node   > 0) ||
+			    (gres_job_ptr->gres_per_socket > 0) ||
+			    (gres_job_ptr->gres_per_task   > 0)))
 			alloc_cnt = true;
 
 	} else {
@@ -188,7 +192,11 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		    gres_step_ptr->gres_bit_alloc &&
 		    gres_step_ptr->gres_bit_alloc[0]) {
 			bit_alloc = gres_step_ptr->gres_bit_alloc[0];
-		} else if (gres_step_ptr && (gres_step_ptr->gres_per_node > 0))
+		} else if (gres_step_ptr &&
+			   ((gres_step_ptr->gres_per_step   > 0) ||
+			    (gres_step_ptr->gres_per_node   > 0) ||
+			    (gres_step_ptr->gres_per_socket > 0) ||
+			    (gres_step_ptr->gres_per_task   > 0)))
 			alloc_cnt = true;
 	}
 
