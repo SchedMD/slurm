@@ -9969,7 +9969,9 @@ extern uint64_t gres_plugin_step_count(List step_gres_list, char *gres_name)
 
 /*
  * Given a GRES context index, return a bitmap representing those GRES
- * which are available from the CPUs current allocated to this process
+ * which are available from the CPUs current allocated to this process.
+ * This function only works with task/cgroup and constrained devices or
+ * if the job step has access to the entire node's resources.
  */
 static bitstr_t * _get_usable_gres(int context_inx)
 {
