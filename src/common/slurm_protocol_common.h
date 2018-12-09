@@ -58,10 +58,6 @@
 /* used in interface methods */
 #define SLURM_PROTOCOL_FUNCTION_NOT_IMPLEMENTED -2
 
-/* max slurm message send and receive buffer size
- * this may need to be increased to 350k-512k */
-#define SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE (512*1024)
-
 /* slurm protocol header defines, based upon config.h, 16 bits */
 /* A new SLURM_PROTOCOL_VERSION needs to be made each time the version
  * changes so the slurmdbd can talk all versions for update messages.
