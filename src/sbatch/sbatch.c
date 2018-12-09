@@ -519,11 +519,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->name = xstrdup("sbatch");
 	desc->reservation  = xstrdup(opt.reservation);
 	desc->wckey  = xstrdup(opt.wckey);
-	desc->x11 = opt.x11;
-	if (desc->x11) {
-		desc->x11_magic_cookie = xstrdup(opt.x11_magic_cookie);
-		desc->x11_target_port = opt.x11_target_port;
-	}
 
 	desc->req_nodes = xstrdup(opt.nodelist);
 	desc->extra = xstrdup(opt.extra);
