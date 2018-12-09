@@ -6664,6 +6664,19 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	user_submit_priority = job_desc->priority;
 
+	/*
+	 * Reject X11 forwarding requests from 17.11/18.08 clients since the
+	 * implementation has changed, and support for setting up tunnels in
+	 * the older style was removed with no backwards compatibility.
+	 * Remove this two versions after 19.05 is released.
+	 */
+	if (job_desc->x11 && (protocol_version < SLURM_19_05_PROTOCOL_VERSION)) {
+		info("%s: cannot support X11 tunnelling from older salloc/srun",
+		     __func__);
+		error_code = ESLURM_X11_NOT_AVAIL;
+		goto cleanup_fail;
+	}
+
 	/* ensure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
 		error_code = node_name2bitmap(job_desc->req_nodes, false,
