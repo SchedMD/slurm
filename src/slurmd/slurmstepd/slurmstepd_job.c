@@ -423,8 +423,10 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	/* only need these values on the extern step, don't copy otherwise */
 	if ((msg->job_step_id == SLURM_EXTERN_CONT) && msg->x11) {
 		job->x11 = msg->x11;
+		job->x11_alloc_host = xstrdup(msg->x11_alloc_host);
+		job->x11_alloc_port = msg->x11_alloc_port;
 		job->x11_magic_cookie = xstrdup(msg->x11_magic_cookie);
-		job->x11_target_host = xstrdup(msg->x11_target_host);
+		job->x11_target = xstrdup(msg->x11_target);
 		job->x11_target_port = msg->x11_target_port;
 	}
 

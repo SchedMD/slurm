@@ -2102,8 +2102,10 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 
 		if (setup_x11) {
 			launch_req->x11 = req->x11;
+			launch_req->x11_alloc_host = req->x11_alloc_host;
+			launch_req->x11_alloc_port = req->x11_alloc_port;
 			launch_req->x11_magic_cookie = req->x11_magic_cookie;
-			launch_req->x11_target_host = req->x11_target_host;
+			launch_req->x11_target = req->x11_target;
 			launch_req->x11_target_port = req->x11_target_port;
 		}
 	}

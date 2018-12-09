@@ -579,7 +579,7 @@ struct job_details {
 	char *work_dir;			/* pathname of working directory */
 	uint16_t x11;			/* --x11 flags */
 	char *x11_magic_cookie;		/* x11 magic cookie */
-	/* no x11_target_host, alloc_node is the same */
+	char *x11_target;		/* target host, or socket if port == 0 */
 	uint16_t x11_target_port;	/* target TCP port on alloc_node */
 };
 

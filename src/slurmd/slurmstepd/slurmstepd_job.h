@@ -242,8 +242,10 @@ typedef struct {
 
 	uint16_t x11;			/* only set for extern step */
 	int x11_display;		/* display number if x11 forwarding setup */
+	char *x11_alloc_host;		/* remote host to proxy through */
+	uint16_t x11_alloc_port;	/* remote port to proxy through */
 	char *x11_magic_cookie;		/* xauth magic cookie value */
-	char *x11_target_host;		/* remote machine to connect back to */
+	char *x11_target;		/* remote target. unix socket if port == 0 */
 	uint16_t x11_target_port;	/* remote x11 port to connect back to */
 	char *x11_xauthority;		/* temporary XAUTHORITY location, or NULL */
 } stepd_step_rec_t;

@@ -877,7 +877,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->wckey);
 		xfree(msg->work_dir);
 		xfree(msg->x11_magic_cookie);
-		/* no x11_target_host, its the same as alloc_node */
+		xfree(msg->x11_target);
 		xfree(msg);
 	}
 }
@@ -914,8 +914,9 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 		xfree(msg->work_dir);
 		xfree(msg->user_name);
 
+		xfree(msg->x11_alloc_host);
 		xfree(msg->x11_magic_cookie);
-		xfree(msg->x11_target_host);
+		xfree(msg->x11_target);
 
 		if (msg->spank_job_env) {
 			for (i = 0; i < msg->spank_job_env_size; i++)
@@ -1357,8 +1358,9 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 
 	xfree(msg->tres_bind);
 	xfree(msg->tres_freq);
+	xfree(msg->x11_alloc_host);
 	xfree(msg->x11_magic_cookie);
-	xfree(msg->x11_target_host);
+	xfree(msg->x11_target);
 
 	xfree(msg);
 }

@@ -421,7 +421,8 @@ typedef struct slurm_options {
 	char *tres_freq;		/* derived from gpu_freq	*/
 	uint16_t x11;			/* --x11			*/
 	char *x11_magic_cookie;		/* cookie retrieved from xauth	*/
-	/* no x11_target_host here, alloc_host will be equivalent */
+	char *x11_target;		/* target host, or unix socket	*/
+					/* if x11_target_port == 0	*/
 	uint16_t x11_target_port;	/* target display TCP port on localhost */
 } slurm_opt_t;
 

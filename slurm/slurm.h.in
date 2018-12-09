@@ -1543,7 +1543,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *wckey;            /* wckey for job */
 	uint16_t x11;		/* --x11 flags */
 	char *x11_magic_cookie;	/* automatically stolen from submit node */
-				/* no x11_target_host, alloc_node is the same */
+	char *x11_target;	/* target hostname, or unix socket if port == 0 */
 	uint16_t x11_target_port; /* target tcp port, 6000 + the display number */
 } job_desc_msg_t;
 

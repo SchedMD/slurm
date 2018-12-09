@@ -176,8 +176,8 @@ static void _shutdown_x11(int signal)
 
 /*
  * Bind to a local port and forward to the x11_target_port on
- * x11_target_host. Relies on the user having working password-less SSH
- * pre-shared keys setup in $HOME/.ssh/ that are accepted by x11_target_host.
+ * x11_alloc_host. Relies on the user having working password-less SSH
+ * pre-shared keys setup in $HOME/.ssh/ that are accepted by x11_alloc_host.
  *
  * IN: job
  * IN/OUT: display - local X11 display number
@@ -219,10 +219,10 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 		return SLURM_ERROR;
 	}
 
-	slurm_set_addr(&sin, SSH_PORT, job->x11_target_host);
+	slurm_set_addr(&sin, SSH_PORT, job->x11_alloc_host);
 	if ((ssh_socket = slurm_open_msg_conn(&sin)) == -1) {
 		error("Failed to connect to %s port %u.",
-		      job->x11_target_host, SSH_PORT);
+		      job->x11_alloc_host, SSH_PORT);
 		return SLURM_ERROR;
 	}
 

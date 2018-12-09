@@ -879,8 +879,10 @@ typedef struct launch_tasks_request_msg {
 
 	/* only filled out if step is SLURM_EXTERN_CONT */
 	uint16_t x11;			/* X11 forwarding setup flags */
+	char *x11_alloc_host;		/* host to proxy through */
+	uint16_t x11_alloc_port;	/* port to proxy through */
 	char *x11_magic_cookie;		/* X11 auth cookie to abuse */
-	char *x11_target_host;		/* X11 login node to connect back to */
+	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
 } launch_tasks_request_msg_t;
 
@@ -1016,8 +1018,10 @@ typedef struct prolog_launch_msg {
 	char *user_name;		/* job's user name */
 	char *work_dir;			/* full pathname of working directory */
 	uint16_t x11;			/* X11 forwarding setup flags */
+	char *x11_alloc_host;		/* srun/salloc host to setup proxy */
+	uint16_t x11_alloc_port;	/* srun/salloc port to setup proxy */
 	char *x11_magic_cookie;		/* X11 auth cookie to abuse */
-	char *x11_target_host;		/* X11 login node to connect back to */
+	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
 } prolog_launch_msg_t;
 

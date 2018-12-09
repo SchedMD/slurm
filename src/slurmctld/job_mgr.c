@@ -540,7 +540,7 @@ static void _delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details->restart_dir);
 	xfree(job_entry->details->work_dir);
 	xfree(job_entry->details->x11_magic_cookie);
-	/* no x11_target_host, it's the same as alloc_node */
+	xfree(job_entry->details->x11_target);
 	xfree(job_entry->details);	/* Must be last */
 }
 
@@ -7965,7 +7965,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->max_nodes  = job_desc->max_nodes;
 	detail_ptr->x11        = job_desc->x11;
 	detail_ptr->x11_magic_cookie = xstrdup(job_desc->x11_magic_cookie);
-	/* no x11_target_host, alloc_nodes is the same */
+	detail_ptr->x11_target = xstrdup(job_desc->x11_target);
 	detail_ptr->x11_target_port = job_desc->x11_target_port;
 	if (job_desc->req_nodes) {
 		detail_ptr->req_nodes =

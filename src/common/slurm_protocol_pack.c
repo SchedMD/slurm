@@ -8579,7 +8579,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->extra, buffer);
 		pack16(job_desc_ptr->x11, buffer);
 		packstr(job_desc_ptr->x11_magic_cookie, buffer);
-		/* no x11_target_host here, alloc_node is equivalent */
+		packstr(job_desc_ptr->x11_target, buffer);
 		pack16(job_desc_ptr->x11_target_port, buffer);
 
 		packstr(job_desc_ptr->cpus_per_tres, buffer);
@@ -9048,7 +9048,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->x11, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->x11_magic_cookie,
 				       &uint32_tmp, buffer);
-		/* no x11_target_host here, alloc_node is equivalent */
+		safe_unpackstr_xmalloc(&job_desc_ptr->x11_target,
+				       &uint32_tmp, buffer);
 		safe_unpack16(&job_desc_ptr->x11_target_port, buffer);
 
 		safe_unpackstr_xmalloc(&job_desc_ptr->cpus_per_tres,
@@ -10145,8 +10146,10 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
 		pack16(msg->x11, buffer);
+		packstr(msg->x11_alloc_host, buffer);
+		pack16(msg->x11_alloc_port, buffer);
 		packstr(msg->x11_magic_cookie, buffer);
-		packstr(msg->x11_target_host, buffer);
+		packstr(msg->x11_target, buffer);
 		pack16(msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
@@ -10236,7 +10239,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->tres_freq, buffer);
 		pack16(msg->x11, buffer);
 		packstr(msg->x11_magic_cookie, buffer);
-		packstr(msg->x11_target_host, buffer);
+		packstr(msg->x11_alloc_host, buffer);
 		pack16(msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
@@ -10325,7 +10328,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 
 		pack16(msg->x11, buffer);
 		packstr(msg->x11_magic_cookie, buffer);
-		packstr(msg->x11_target_host, buffer);
+		packstr(msg->x11_alloc_host, buffer);
 		pack16(msg->x11_target_port, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -10471,9 +10474,12 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr_xmalloc(&msg->tres_bind, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->tres_freq, &uint32_tmp, buffer);
 		safe_unpack16(&msg->x11, buffer);
+		safe_unpackstr_xmalloc(&msg->x11_alloc_host, &uint32_tmp,
+				       buffer);
+		safe_unpack16(&msg->x11_alloc_port, buffer);
 		safe_unpackstr_xmalloc(&msg->x11_magic_cookie, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&msg->x11_target_host, &uint32_tmp,
+		safe_unpackstr_xmalloc(&msg->x11_target, &uint32_tmp,
 				       buffer);
 		safe_unpack16(&msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
@@ -10604,7 +10610,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack16(&msg->x11, buffer);
 		safe_unpackstr_xmalloc(&msg->x11_magic_cookie, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&msg->x11_target_host, &uint32_tmp,
+		safe_unpackstr_xmalloc(&msg->x11_alloc_host, &uint32_tmp,
 				       buffer);
 		safe_unpack16(&msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -10733,7 +10739,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack16(&msg->x11, buffer);
 		safe_unpackstr_xmalloc(&msg->x11_magic_cookie, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&msg->x11_target_host, &uint32_tmp,
+		safe_unpackstr_xmalloc(&msg->x11_alloc_host, &uint32_tmp,
 				       buffer);
 		safe_unpack16(&msg->x11_target_port, buffer);
 	} else {
@@ -11148,8 +11154,10 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 		packstr(msg->work_dir, buffer);
 
 		pack16(msg->x11, buffer);
+		packstr(msg->x11_alloc_host, buffer);
+		pack16(msg->x11_alloc_port, buffer);
 		packstr(msg->x11_magic_cookie, buffer);
-		packstr(msg->x11_target_host, buffer);
+		packstr(msg->x11_target, buffer);
 		pack16(msg->x11_target_port, buffer);
 
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
@@ -11171,7 +11179,7 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 
 		pack16(msg->x11, buffer);
 		packstr(msg->x11_magic_cookie, buffer);
-		packstr(msg->x11_target_host, buffer);
+		packstr(msg->x11_alloc_host, buffer);
 		pack16(msg->x11_target_port, buffer);
 
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
@@ -11192,7 +11200,7 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 
 		pack16(msg->x11, buffer);
 		packstr(msg->x11_magic_cookie, buffer);
-		packstr(msg->x11_target_host, buffer);
+		packstr(msg->x11_alloc_host, buffer);
 		pack16(msg->x11_target_port, buffer);
 
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
@@ -11233,9 +11241,12 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 				       buffer);
 
 		safe_unpack16(&launch_msg_ptr->x11, buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_alloc_host,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&launch_msg_ptr->x11_alloc_port, buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_magic_cookie,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_target_host,
+		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_target,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&launch_msg_ptr->x11_target_port, buffer);
 
@@ -11270,7 +11281,7 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 		safe_unpack16(&launch_msg_ptr->x11, buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_magic_cookie,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_target_host,
+		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_alloc_host,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&launch_msg_ptr->x11_target_port, buffer);
 
@@ -11305,7 +11316,7 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 		safe_unpack16(&launch_msg_ptr->x11, buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_magic_cookie,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_target_host,
+		safe_unpackstr_xmalloc(&launch_msg_ptr->x11_alloc_host,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&launch_msg_ptr->x11_target_port, buffer);
 
