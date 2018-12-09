@@ -1763,7 +1763,7 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.x11) {
-		opt.x11_target_port = x11_get_display_port();
+		x11_get_display(&opt.x11_target_port, &opt.x11_target);
 		opt.x11_magic_cookie = x11_get_xauth();
 	}
 

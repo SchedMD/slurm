@@ -786,6 +786,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	j->x11 = opt.x11;
 	if (j->x11) {
 		j->x11_magic_cookie = xstrdup(opt.x11_magic_cookie);
+		j->x11_target = xstrdup(opt.x11_target);
 		j->x11_target_port = opt.x11_target_port;
 	}
 

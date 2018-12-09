@@ -2,7 +2,7 @@
  *  x11_util.c - x11 forwarding support functions
  *		 also see src/slurmd/slurmstepd/x11_forwarding.[ch]
  *****************************************************************************
- *  Copyright (C) 2017 SchedMD LLC.
+ *  Copyright (C) 2017-2019 SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -36,6 +36,9 @@
 \*****************************************************************************/
 
 #include <regex.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "src/common/list.h"
 #include "src/common/read_config.h"
@@ -75,12 +78,17 @@ uint16_t x11_str2flags(const char *str)
 	return flags;
 }
 
-
-/* set target port based on DISPLAY */
-extern int x11_get_display_port(void)
+/*
+ * Get local TCP port for X11 from DISPLAY environment variable, alongside an
+ * xmalloc()'d hostname in *target. If the port returned is 0, *target returns
+ * an xmalloc()'d string pointing to the local UNIX socket.
+ *
+ * Warning - will call exit(-1) if not able to retrieve.
+ */
+extern void x11_get_display(uint16_t *port, char **target)
 {
-	int port;
 	char *display, *port_split, *port_period;
+	*target = NULL;
 
 	display = xstrdup(getenv("DISPLAY"));
 
@@ -90,9 +98,15 @@ extern int x11_get_display_port(void)
 	}
 
 	if (display[0] == ':') {
-		error("Cannot forward to local display. "
-		      "Can only use X11 forwarding with network displays.");
-		exit(-1);
+		struct stat st;
+		*port = 0;
+		xstrfmtcat(*target, "/tmp/.X11-unix/X%s", display + 1);
+		xfree(display);
+		if (stat(*target, &st) != 0) {
+			error("Cannot stat() local X11 socket `%s`", *target);
+			exit(-1);
+		}
+		return;
 	}
 
 	port_split = strchr(display, ':');
@@ -101,7 +115,7 @@ extern int x11_get_display_port(void)
 		      "Cannot use X11 forwarding.");
 		exit(-1);
 	}
-
+	*port_split = '\0';
 	port_split++;
 	port_period = strchr(port_split, '.');
 	if (!port_period) {
@@ -111,11 +125,8 @@ extern int x11_get_display_port(void)
 	}
 	*port_period = '\0';
 
-	port = atoi(port_split) + X11_TCP_PORT_OFFSET;
-
-	xfree(display);
-
-	return port;
+	*port = atoi(port_split) + X11_TCP_PORT_OFFSET;
+	*target = display;
 }
 
 extern char *x11_get_xauth(void)
