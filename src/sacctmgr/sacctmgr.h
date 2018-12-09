@@ -67,7 +67,6 @@
 
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
-#define BUFFER_SIZE 4096
 #define FORMAT_STRING_SIZE 34
 
 typedef enum {

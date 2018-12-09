@@ -46,8 +46,6 @@
 #include "src/common/proc_args.h"
 #include "src/common/strlcpy.h"
 
-#define BUFFER_SIZE 4096
-
 char *command_name;
 int exit_code;		/* sacctmgr's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
