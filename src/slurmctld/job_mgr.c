@@ -8946,6 +8946,10 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		info("%s: job failed to specify Script", __func__);
 		return ESLURM_JOB_SCRIPT_MISSING;
 	}
+	if (job_desc_msg->script && job_desc_msg->x11) {
+		info("%s: batch job cannot use X11 forwarding", __func__);
+		return ESLURM_X11_NOT_AVAIL;
+	}
 	if (job_desc_msg->user_id == NO_VAL) {
 		info("%s: job failed to specify User", __func__);
 		return ESLURM_USER_ID_MISSING;
