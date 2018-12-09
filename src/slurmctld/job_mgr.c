@@ -8924,20 +8924,21 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if ((job_desc_msg->min_cpus  == NO_VAL) &&
 	    (job_desc_msg->min_nodes == NO_VAL) &&
 	    (job_desc_msg->req_nodes == NULL)) {
-		info("Job specified no min_cpus, min_nodes or req_nodes");
+		info("%s: job specified no min_cpus, min_nodes or req_nodes",
+		     __func__);
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
 	if ((allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0) &&
 	    (job_desc_msg->script == NULL)) {
-		info("_validate_job_desc: job failed to specify Script");
+		info("%s: job failed to specify Script", __func__);
 		return ESLURM_JOB_SCRIPT_MISSING;
 	}
 	if (job_desc_msg->user_id == NO_VAL) {
-		info("_validate_job_desc: job failed to specify User");
+		info("%s: job failed to specify User", __func__);
 		return ESLURM_USER_ID_MISSING;
 	}
 	if ( job_desc_msg->group_id == NO_VAL ) {
-		debug("_validate_job_desc: job failed to specify group");
+		debug("%s: job failed to specify group", __func__);
 		return ESLURM_GROUP_ID_MISSING;
 	}
 	if (job_desc_msg->contiguous == NO_VAL16)
