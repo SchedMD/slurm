@@ -1052,9 +1052,13 @@ extern uint64_t gres_plugin_step_count(List step_gres_list, char *gres_name);
 /*
  * Configure the GRES hardware allocated to the current step while privileged
  *
- * settings	(IN) A string containing configuration settings for the hardware
+ * IN step_gres_list - Step's GRES specification
+ * IN node_id        - relative position of this node in step
+ * IN settings       - string containing configuration settings for the hardware
  */
-extern void gres_plugin_step_configure_hardware(char *settings);
+extern void gres_plugin_step_configure_hardware(List step_gres_list,
+						uint32_t node_id,
+						char *settings);
 
 /*
  * Optionally undo GRES hardware configuration while privileged

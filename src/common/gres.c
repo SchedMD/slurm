@@ -10046,26 +10046,54 @@ static bitstr_t * _get_usable_gres(int context_inx)
 
 /*
  * Configure the GRES hardware allocated to the current step while privileged
+ *
+ * IN step_gres_list - Step's GRES specification
+ * IN node_id        - relative position of this node in step
+ * IN settings       - string containing configuration settings for the hardware
  */
-extern void gres_plugin_step_configure_hardware(char *settings)
+extern void gres_plugin_step_configure_hardware(List step_gres_list,
+						uint32_t node_id,
+						char *settings)
 {
 	int i;
+	ListIterator iter;
+	gres_state_t *gres_ptr;
+	gres_step_state_t *gres_step_ptr;
+	bitstr_t *devices;
+
+	if (!step_gres_list)
+		return;
+
 	(void) gres_plugin_init();
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		bitstr_t *devices = NULL;
-		if (gres_context[i].ops.step_configure_hardware == NULL) {
+		if (gres_context[i].ops.step_configure_hardware == NULL)
 			continue;
+
+		iter = list_iterator_create(step_gres_list);
+		while ((gres_ptr = list_next(iter))) {
+			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
+				break;
 		}
-		// Get all GRESs allocated to this step of the current type
-		devices = _get_usable_gres(i);
+		list_iterator_destroy(iter);
+		if (!gres_ptr || !gres_ptr->gres_data)
+			continue;
+		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
+		if ((gres_step_ptr->node_cnt != 1) ||
+		    !gres_step_ptr->gres_bit_alloc ||
+		    !gres_step_ptr->gres_bit_alloc[0])
+			continue;
+
+		devices = gres_step_ptr->gres_bit_alloc[0];
 		if (settings)
 			debug2("settings: %s", settings);
-		if (devices)
-			debug2("devices: %s", bit_fmt_full(devices));
-		(*(gres_context[i].ops.step_configure_hardware)) (devices,
-								  settings);
-		FREE_NULL_BITMAP(devices);
+		if (devices) {
+			char *dev_str = bit_fmt_full(devices);
+			info("devices: %s", dev_str);
+			xfree(dev_str);
+		}
+		(*(gres_context[i].ops.step_configure_hardware))(devices,
+								 settings);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }

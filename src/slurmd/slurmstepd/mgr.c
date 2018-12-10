@@ -1727,11 +1727,14 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	 * TODO: generic "settings" parameter rather than tres_freq
 	 */
 	if (!job->batch && job->tres_freq) {
-		if (getuid() == (uid_t) 0)
-			gres_plugin_step_configure_hardware(job->tres_freq);
-		else
+		if (getuid() == (uid_t) 0) {
+			gres_plugin_step_configure_hardware(job->step_gres_list,
+							    job->nodeid,
+							    job->tres_freq);
+		} else {
 			error("step_configure_hardware() invalid permissions:"
 			      " Slurmd was not started as root");
+		}
 	}
 
 	/*
