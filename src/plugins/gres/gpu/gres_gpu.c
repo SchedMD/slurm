@@ -683,15 +683,15 @@ static bool _nvml_reset_freqs(nvmlDevice_t *device)
 {
 	nvmlReturn_t nvml_rc;
 	DEF_TIMERS;
+
 	START_TIMER;
 	nvml_rc = nvmlDeviceResetApplicationsClocks(*device);
 	END_TIMER;
 	debug3("nvmlDeviceResetApplicationsClocks() took %ld microseconds",
 	       DELTA_TIMER);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("%s: "
-		      "Failed to reset GPU frequencies to the hardware default"
-		      ": %s", __func__, nvmlErrorString(nvml_rc));
+		error("%s: Failed to reset GPU frequencies to the hardware default: %s",
+		      __func__, nvmlErrorString(nvml_rc));
 		return false;
 	}
 	return true;
@@ -712,6 +712,8 @@ static unsigned int _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
 	nvmlReturn_t nvml_rc;
 	unsigned int freq = 0;
 	char *type_str = "unknown";
+	DEF_TIMERS;
+
 	switch (type) {
 	case NVML_CLOCK_GRAPHICS:
 		type_str = "graphics";
@@ -724,7 +726,6 @@ static unsigned int _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
 		break;
 	}
 
-	DEF_TIMERS;
 	START_TIMER;
 	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, &freq);
 	END_TIMER;
@@ -944,6 +945,7 @@ extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 	if ((tmp = strchr(freq, ';')))
 		tmp[0] = '\0';
 
+#ifdef HAVE_NVML
 	// Save a copy of the GPUs affected, so we can reset things afterwards
 	saved_gpus = bit_copy(usable_gpus);
 
@@ -951,7 +953,7 @@ extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 		log_lvl = LOG_LEVEL_INFO;
 	else
 		log_lvl = LOG_LEVEL_DEBUG;
-#ifdef HAVE_NVML
+
 	_nvml_init();
 	// Set the frequency of each GPU index specified in the bitstr
 	_set_freq(usable_gpus, freq, log_lvl);
@@ -978,11 +980,6 @@ extern void step_unconfigure_hardware(void)
 	_reset_freq(saved_gpus, log_lvl);
 	FREE_NULL_BITMAP(saved_gpus);
 	_nvml_shutdown();
-#else
-	log_var(log_lvl, "Slurm is not configured with NVIDIA NVML support. "
-		"Cannot reset GPU frequency");
-	fprintf(stderr, "Slurm is not configured with NVIDIA NVML support. "
-		"Cannot reset GPU frequency\n");
 #endif
 }
 
