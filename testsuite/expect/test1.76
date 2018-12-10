@@ -52,6 +52,8 @@ print_header	$test_id
 
 ################################################################
 # Run a test case.
+# "test_case" is a wrapper for "test_freq" due to current Linux
+# not reliably changing frequency, so we can repeat a test
 #
 # Parameters
 # - opt		value of --cpu-freq
@@ -61,10 +63,11 @@ print_header	$test_id
 # - expgov      expected value of scaling_governor (if 0, don't check)
 #
 # Returns
-# 0 on success, 1 on failure.
+# 0 on success, 1 on failure
+ # 2 if measured frequency differs too much from target frequency
 #   FAILURE message is sent to user on failure.
 ################################################################
-proc test_case {opt expmin expcur expmax expgov} {
+proc test_freq {opt expmin expcur expmax expgov} {
 	global bin_rm srun sbatch test_node test_cpu wd number
 	log_user 0
 	exec $bin_rm -f $wd/test1.76.out
@@ -201,9 +204,9 @@ proc test_case {opt expmin expcur expmax expgov} {
 		}
 
 		if {$real_error} {
-			send_user "\nFAILURE: --cpu-freq=$opt -- test cur $tcur not expected ($expcur, error is $percent_error percent)\n"
+			send_user "\nWARNING: --cpu-freq=$opt -- test cur $tcur not expected ($expcur, error is $percent_error percent)\n"
 			log_user 1
-			return 1
+			return 2
 		}
 	} elseif {$expcur != 0} {
 		send_user "\nDifference between requested and actual frequency is $percent_error percent ($tcur vs. $expcur)\n\n"
@@ -233,6 +236,18 @@ proc test_case {opt expmin expcur expmax expgov} {
 
 	log_user 1
 	return 0	
+}
+
+proc test_case {opt expmin expcur expmax expgov} {
+	set retry_cnt 5
+	for {set inx 0} {$inx < $retry_cnt} {incr inx} {
+		set rc [test_freq $opt $expmin $expcur $expmax $expgov]
+		if {$rc != 2} {
+			return $rc
+		}
+	}
+	send_user "\nFAILURE: --cpu-freq control failing repeatedly\n"
+	return $rc
 }
 
 # Check environment
