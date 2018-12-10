@@ -131,7 +131,7 @@ static void _nvml_init(void)
 	START_TIMER;
 	nvml_rc = nvmlInit();
 	END_TIMER;
-	debug2("nvmlInit() took %ld microseconds", DELTA_TIMER);
+	debug3("nvmlInit() took %ld microseconds", DELTA_TIMER);
 	if (nvml_rc != NVML_SUCCESS)
 		error("Failed to initialize NVML: %s",
 		      nvmlErrorString(nvml_rc));
@@ -149,14 +149,12 @@ static void _nvml_shutdown(void)
 	START_TIMER;
 	nvml_rc = nvmlShutdown();
 	END_TIMER;
-	debug2("nvmlShutdown() took %ld microseconds", DELTA_TIMER);
+	debug3("nvmlShutdown() took %ld microseconds", DELTA_TIMER);
 	if (nvml_rc != NVML_SUCCESS)
 		error("Failed to shut down NVML: %s", nvmlErrorString(nvml_rc));
 	else
 		info("Successfully shut down NVML");
 }
-
-#endif // HAVE_NVML
 
 static unsigned int _xlate_freq_value(char *gpu_freq)
 {
@@ -263,6 +261,8 @@ static void _parse_gpu_freq(char *gpu_freq, unsigned int *gpu_freq_num,
 		*mem_freq_num = def_mem_freq_value;
 }
 
+#endif // HAVE_NVML
+
 /*
  * Sort an array of unsigned ints in descending order using the bubble sort
  * algorithm. If the array is already sorted, then this will only take O(n).
@@ -347,7 +347,7 @@ static bool _nvml_get_mem_freqs(nvmlDevice_t *device,
 	nvml_rc = nvmlDeviceGetSupportedMemoryClocks(*device, mem_freqs_size,
 						     mem_freqs);
 	END_TIMER;
-	debug2("nvmlDeviceGetSupportedMemoryClocks() took %ld microseconds",
+	debug3("nvmlDeviceGetSupportedMemoryClocks() took %ld microseconds",
 	       DELTA_TIMER);
 
 	if (nvml_rc != NVML_SUCCESS) {
@@ -391,7 +391,7 @@ static bool _nvml_get_gfx_freqs(nvmlDevice_t *device,
 						       gfx_freqs_size,
 						       gfx_freqs);
 	END_TIMER;
-	debug2("nvmlDeviceGetSupportedGraphicsClocks() took %ld microseconds",
+	debug3("nvmlDeviceGetSupportedGraphicsClocks() took %ld microseconds",
 	       DELTA_TIMER);
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to get supported graphics frequencies for the"
@@ -547,14 +547,12 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 	switch ((*freq)) {
 	case GPU_LOW:
 		*freq = freqs[freqs_size - 1];
-		debug2("Setting to GPU_LOW:");
-		debug2("Freq: %u MHz", *freq);
+		debug2("Frequency GPU_LOW: %u MHz", *freq);
 		return;
 
 	case GPU_MEDIUM:
 		*freq = freqs[(freqs_size - 1) / 2];
-		debug2("Setting to GPU_MEDIUM:");
-		debug2("Freq: %u MHz", *freq);
+		debug2("Frequency GPU_MEDIUM: %u MHz", *freq);
 		return;
 
 	case GPU_HIGH_M1:
@@ -562,14 +560,12 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 			*freq = freqs[0];
 		else
 			*freq = freqs[1];
-		debug2("Setting to GPU_HIGH_M1:");
-		debug2("Freq: %u MHz", *freq);
+		debug2("Frequency GPU_HIGH_M1: %u MHz", *freq);
 		return;
 
 	case GPU_HIGH:
 		*freq = freqs[0];
-		debug2("Setting to GPU_HIGH:");
-		debug2("Freq: %u MHz", *freq);
+		debug2("Frequency GPU_HIGH: %u MHz", *freq);
 		return;
 
 	default:
@@ -614,7 +610,7 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 }
 
 /*
- * Get the nearest valid memory and graphics clock frequency
+ * Get the nearest valid memory and graphics clock frequencies
  *
  * device		(IN) The NVML GPU device handle
  * mem_freq		(IN/OUT) The requested memory frequency, in MHz. This
@@ -647,11 +643,11 @@ static void _nvml_get_nearest_freqs(nvmlDevice_t *device,
 }
 
 /*
- * Set the memory and graphics clock frequency for the GPU
+ * Set the memory and graphics clock frequencies for the GPU
  *
- * device		(IN) The NVML GPU device handle
- * mem_freq		(IN) The memory clock frequency, in MHz
- * gfx_freq		(IN) The graphics clock frequency, in MHz
+ * device	(IN) The NVML GPU device handle
+ * mem_freq	(IN) The memory clock frequency, in MHz
+ * gfx_freq	(IN) The graphics clock frequency, in MHz
  *
  * Returns true if successful, false if not
  */
@@ -660,12 +656,11 @@ static bool _nvml_set_freqs(nvmlDevice_t *device, unsigned int mem_freq,
 {
 	nvmlReturn_t nvml_rc;
 	DEF_TIMERS;
-	debug2("nvmlDeviceSetApplicationsClocks(%u, %u)", mem_freq, gfx_freq);
 	START_TIMER;
 	nvml_rc = nvmlDeviceSetApplicationsClocks(*device, mem_freq, gfx_freq);
 	END_TIMER;
-	debug2("nvmlDeviceSetApplicationsClocks() took %ld microseconds",
-	       DELTA_TIMER);
+	debug3("nvmlDeviceSetApplicationsClocks(%u, %u) took %ld microseconds",
+	       mem_freq, gfx_freq, DELTA_TIMER);
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to set memory and graphics clock frequency "
 		      "pair (%u, %u) for the GPU: %s", __func__, mem_freq,
@@ -675,8 +670,83 @@ static bool _nvml_set_freqs(nvmlDevice_t *device, unsigned int mem_freq,
 	return true;
 }
 
-#endif // HAVE_NVML
+/*
+ * Reset the memory and graphics clock frequencies for the GPU to the same
+ * default frequencies that are used after system reboot or driver reload. This
+ * default cannot be changed.
+ *
+ * device	(IN) The NVML GPU device handle
+ *
+ * Returns true if successful, false if not
+ */
+static bool _nvml_reset_freqs(nvmlDevice_t *device)
+{
+	nvmlReturn_t nvml_rc;
+	DEF_TIMERS;
+	START_TIMER;
+	nvml_rc = nvmlDeviceResetApplicationsClocks(*device);
+	END_TIMER;
+	debug3("nvmlDeviceResetApplicationsClocks() took %ld microseconds",
+	       DELTA_TIMER);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("%s: "
+		      "Failed to reset GPU frequencies to the hardware default"
+		      ": %s", __func__, nvmlErrorString(nvml_rc));
+		return false;
+	}
+	return true;
+}
 
+/*
+ * Get the memory or graphics clock frequency that the GPU is currently running
+ * at
+ *
+ * device	(IN) The NVML GPU device handle
+ * type		(IN) The clock type to query. Either NVML_CLOCK_GRAPHICS or
+ * 		NVML_CLOCK_MEM.
+ *
+ * Returns the clock frequency in MHz if successful, or 0 if not
+ */
+static unsigned int _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
+{
+	nvmlReturn_t nvml_rc;
+	unsigned int freq = 0;
+	char *type_str = "unknown";
+	switch (type) {
+	case NVML_CLOCK_GRAPHICS:
+		type_str = "graphics";
+		break;
+	case NVML_CLOCK_MEM:
+		type_str = "memory";
+		break;
+	default:
+		error("%s: Unsupported clock type", __func__);
+		break;
+	}
+
+	DEF_TIMERS;
+	START_TIMER;
+	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, &freq);
+	END_TIMER;
+	debug3("nvmlDeviceGetApplicationsClock(%s) took %ld microseconds",
+	       type_str, DELTA_TIMER);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("%s: Failed to get the GPU %s frequency: %s", __func__,
+		      type_str, nvmlErrorString(nvml_rc));
+		return 0;
+	}
+	return freq;
+}
+
+static unsigned int _nvml_get_gfx_freq(nvmlDevice_t *device)
+{
+	return _nvml_get_freq(device, NVML_CLOCK_GRAPHICS);
+}
+
+static unsigned int _nvml_get_mem_freq(nvmlDevice_t *device)
+{
+	return _nvml_get_freq(device, NVML_CLOCK_MEM);
+}
 
 /*
  * Convert a frequency value to a string
@@ -703,16 +773,70 @@ static char *_freq_value_to_string(unsigned int freq)
 	}
 }
 
+/*
+ * Reset the frequencies of each GPU in the step to the hardware default
+ * NOTE: NVML must be initialized beforehand
+ *
+ * gpus		(IN) A bitmap specifying the GPUs on which to operate.
+ * log_lvl	(IN) The log level at which to print
+ */
+static void _reset_freq(bitstr_t *gpus, log_level_t log_lvl)
+{
+	int gpu_len = bit_size(gpus);
+	int i = -1, count = 0, count_set = 0;
+	bool freq_reset = false;
+
+	/*
+	 * Reset the frequency of each device allocated to the step
+	 */
+	for (i = 0; i < gpu_len; i++) {
+		nvmlDevice_t device;
+		if (!bit_test(gpus, i))
+			continue;
+		count++;
+
+		if (!_nvml_get_handle(i, &device))
+			continue;
+
+		debug2("Memory frequency before reset: %u",
+		       _nvml_get_mem_freq(&device));
+		debug2("Graphics frequency before reset: %u",
+		       _nvml_get_gfx_freq(&device));
+		freq_reset =_nvml_reset_freqs(&device);
+		debug2("Memory frequency after reset: %u",
+		       _nvml_get_mem_freq(&device));
+		debug2("Graphics frequency after reset: %u",
+		       _nvml_get_gfx_freq(&device));
+
+		// TODO: Check to make sure that the frequency reset
+
+		if (freq_reset) {
+			log_var(log_lvl, "Successfully reset GPU[%d]", i);
+			count_set++;
+		} else {
+			log_var(log_lvl, "Failed to reset GPU[%d]", i);
+		}
+	}
+
+	if (count_set != count) {
+		log_var(log_lvl,
+			"%s: Could not reset frequencies for all GPUs. "
+			"Set %d/%d total GPUs", __func__, count_set, count);
+		fprintf(stderr, "Could not reset frequencies for all GPUs. "
+			"Set %d/%d total GPUs\n", count_set, count);
+	}
+}
 
 /*
  * Set the frequencies of each GPU specified for the step
+ * NOTE: NVML must be initialized beforehand
  *
  * gpus		(IN) A bitmap specifying the GPUs on which to operate.
- * gpu_freq	(IN) The frequencies to set each of the GPUs to. If NULL, then
- * 		defaults to GpuFreqDef, which defaults to "high,memory=high" if
- * 		not set.
+ * gpu_freq	(IN) The frequencies to set each of the GPUs to. If a NULL or
+ * 		empty memory or graphics frequency is specified, then GpuFreqDef
+ * 		will be consulted, which defaults to "high,memory=high" if not
+ * 		set.
  * log_lvl	(IN) The log level at which to print
- * NOTE: NVML must be initialized beforehand
  */
 static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 {
@@ -748,28 +872,26 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 	 */
 	for (i = 0; i < gpu_len; i++) {
 		char *sep = "";
-#ifdef HAVE_NVML
 		nvmlDevice_t device;
-#endif
 		if (!bit_test(gpus, i))
 			continue;
 		count++;
 
-#ifdef HAVE_NVML
 		if (!_nvml_get_handle(i, &device))
 			continue;
 		_nvml_get_nearest_freqs(&device, &mem_freq_num, &gpu_freq_num,
 					log_lvl);
+
+		debug2("Memory frequency before set: %u",
+		       _nvml_get_mem_freq(&device));
+		debug2("Graphics frequency before set: %u",
+		       _nvml_get_gfx_freq(&device));
 		freq_set = _nvml_set_freqs(&device, mem_freq_num, gpu_freq_num);
-#else
-		log_var(log_lvl,
-			"Slurm is not configured with NVIDIA NVML support. "
-			"Can not set GPU frequency");
-		fprintf(stderr,
-			"Slurm is not configured with NVIDIA NVML support. "
-			"Can not set GPU frequency\n");
-		return;
-#endif
+		debug2("Memory frequency after set: %u",
+		       _nvml_get_mem_freq(&device));
+		debug2("Graphics frequency after set: %u",
+		       _nvml_get_gfx_freq(&device));
+
 		if (mem_freq_num) {
 			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq_num);
 			sep = ",";
@@ -802,6 +924,8 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 	}
 }
 
+#endif // HAVE_NVML
+
 extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 {
 	char *tmp = NULL;
@@ -823,33 +947,42 @@ extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 	// Save a copy of the GPUs affected, so we can reset things afterwards
 	saved_gpus = bit_copy(usable_gpus);
 
-#ifdef HAVE_NVML
-	_nvml_init();
-#endif
-	// Set the frequency of each GPU index specified in the bitstr
 	if (debug_flags & DEBUG_FLAG_GRES)
 		log_lvl = LOG_LEVEL_INFO;
 	else
 		log_lvl = LOG_LEVEL_DEBUG;
+#ifdef HAVE_NVML
+	_nvml_init();
+	// Set the frequency of each GPU index specified in the bitstr
 	_set_freq(usable_gpus, freq, log_lvl);
 	xfree(freq);
+#else
+	log_var(log_lvl, "Slurm is not configured with NVIDIA NVML support. "
+		"Cannot set GPU frequency");
+	fprintf(stderr,	"Slurm is not configured with NVIDIA NVML support. "
+		"Cannot set GPU frequency\n");
+#endif
 }
 
 extern void step_unconfigure_hardware(void)
 {
 	log_level_t log_lvl;
-	if (!saved_gpus)
-		return;
-
-	// Reset the frequency back to the maximum
 	if (debug_flags & DEBUG_FLAG_GRES)
 		log_lvl = LOG_LEVEL_INFO;
 	else
 		log_lvl = LOG_LEVEL_DEBUG;
-	_set_freq(saved_gpus, "high,memory=high", log_lvl);
-	FREE_NULL_BITMAP(saved_gpus);
+	if (!saved_gpus)
+		return;
 #ifdef HAVE_NVML
+	// Reset the frequencies back to the hardware default
+	_reset_freq(saved_gpus, log_lvl);
+	FREE_NULL_BITMAP(saved_gpus);
 	_nvml_shutdown();
+#else
+	log_var(log_lvl, "Slurm is not configured with NVIDIA NVML support. "
+		"Cannot reset GPU frequency");
+	fprintf(stderr, "Slurm is not configured with NVIDIA NVML support. "
+		"Cannot reset GPU frequency\n");
 #endif
 }
 
