@@ -135,6 +135,7 @@ typedef struct slurm_gres_ops {
 						  void *data);
 	List            (*get_devices)		( void );
 	void            (*step_configure_hardware)	( bitstr_t *, char * );
+	void            (*step_unconfigure_hardware)	( void );
 } slurm_gres_ops_t;
 
 /* Gres plugin context, one for each gres type */
@@ -390,6 +391,7 @@ static int _load_gres_plugin(char *plugin_name,
 		"step_info",
 		"get_devices",
 		"step_configure_hardware",
+		"step_unconfigure_hardware",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -10049,8 +10051,6 @@ extern void gres_plugin_step_configure_hardware(char *settings)
 {
 	int i;
 	(void) gres_plugin_init();
-	debug2("gres_plugin_step_configure_hardware(%s)", settings);
-
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
 		bitstr_t *devices = NULL;
@@ -10066,6 +10066,23 @@ extern void gres_plugin_step_configure_hardware(char *settings)
 		(*(gres_context[i].ops.step_configure_hardware)) (devices,
 								  settings);
 		FREE_NULL_BITMAP(devices);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+}
+
+/*
+ * Optionally undo GRES hardware configuration while privileged
+ */
+extern void gres_plugin_step_unconfigure_hardware(void)
+{
+	int i;
+	(void) gres_plugin_init();
+	slurm_mutex_lock(&gres_context_lock);
+	for (i = 0; i < gres_context_cnt; i++) {
+		if (gres_context[i].ops.step_unconfigure_hardware == NULL) {
+			continue;
+		}
+		(*(gres_context[i].ops.step_unconfigure_hardware)) ();
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }

@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "November 2018" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "December 2018" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for generic resource management.
@@ -101,15 +101,24 @@ file.
 
 .TP
 \fBLinks\fR
-Specify a comma delimited list of numbers identifying the number of connections
-between the devices so that better connected devices can be co\-scheduled.
+A comma\-delimited list of numbers identifying the number of connections
+between this device and other devices to allow coscheduling of
+better connected devices.
 This is an ordered list in which the number of connections this specific
 device has to device number 0 would be in the first position, the number of
-connections it has to device 1 in the second position, etc.
-Specify a count of -1 for the number of connections this device has with itself.
-A typical use case would be to identify GPUs having LNLink connectivity.
-This is an optional value and is typically automatically generated using
-NVIDIA libraries.
+connections it has to device number 1 in the second position, etc.
+A \-1 indicates the device itself and a 0 indicates no connection.
+If specified, then this line can only contain a single GRES device (i.e. can
+only contain a single file via \fBFile\fR).
+
+
+This is an optional value and is typically automatically determined using
+the NVIDIA NVML library.
+A typical use case would be to identify GPUs having NVLink connectivity.
+Note that for GPUs, the minor number assigned by the OS and used in the device
+file (i.e. the X in \fI/dev/nvidiaX\fR) is not necessarily the same as the
+device number/index. The device number is created by sorting the GPUs by PCI bus
+ID and then numbering them starting from the smallest bus ID.
 
 .TP
 \fBName\fR

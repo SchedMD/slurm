@@ -1401,7 +1401,18 @@ fail2:
 	if ((job->cpu_freq_min != NO_VAL) || (job->cpu_freq_max != NO_VAL) ||
 	    (job->cpu_freq_gov != NO_VAL))
 		cpu_freq_reset(job);
-	// TODO: Reset TRES frequencies?
+
+	/*
+	 * Reset GRES hardware, if needed. This is where GPU frequency is reset.
+	 * Make sure stepd is root. If not, emit error.
+	 */
+	if (!job->batch && job->tres_freq) {
+		if (getuid() == (uid_t) 0)
+			gres_plugin_step_unconfigure_hardware();
+		else
+			error("step_unconfigure_hardware() invalid permissions:"
+			      " Slurmd was not started as root");
+	}
 
 	/*
 	 * Notify srun of completion AFTER frequency reset to avoid race
@@ -1712,18 +1723,15 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	/*
 	 * Now that errors will be copied back to srun, set the frequencies of
 	 * the GPUs allocated to the step (and eventually other GRES hardware
-	 * config options)
+	 * config options). Make sure stepd is root. If not, emit error.
 	 * TODO: generic "settings" parameter rather than tres_freq
 	 */
 	if (!job->batch && job->tres_freq) {
-		// Make sure stepd is root. If not, emit error
-		// TODO: Leave privilege checking to step_configure_hardware()?
-		if (getuid() == (uid_t) 0) {
+		if (getuid() == (uid_t) 0)
 			gres_plugin_step_configure_hardware(job->tres_freq);
-		} else {
-			error("Slurmd started with insufficient permissions: "
-			      "Cannot configure GRES hardware unless privileged");
-		}
+		else
+			error("step_configure_hardware() invalid permissions:"
+			      " Slurmd was not started as root");
 	}
 
 	/*

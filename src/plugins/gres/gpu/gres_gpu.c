@@ -117,6 +117,8 @@ static List	gres_devices		= NULL;
 #define FREQS_SIZE	512
 #define FREQS_CONCISE	5 // This must never be smaller than 5, or error
 
+static bitstr_t	*saved_gpus		= NULL;
+
 #ifdef HAVE_NVML
 
 /*
@@ -550,7 +552,7 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 		return;
 
 	case GPU_MEDIUM:
-		*freq = freqs[(freqs_size - 1)/2];
+		*freq = freqs[(freqs_size - 1) / 2];
 		debug2("Setting to GPU_MEDIUM:");
 		debug2("Freq: %u MHz", *freq);
 		return;
@@ -577,13 +579,13 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 
 	/* check if freq is out of bounds of freqs */
 	if (*freq > freqs[0]) {
-		log_var(log_lvl, "Rounding requested frequency %u MHz down to %u MHz "
-			"(highest available)", *freq, freqs[0]);
+		log_var(log_lvl, "Rounding requested frequency %u MHz down to "
+			"%u MHz (highest available)", *freq, freqs[0]);
 		*freq = freqs[0];
 		return;
 	} else if (*freq < freqs[freqs_size - 1]) {
-		log_var(log_lvl, "Rounding requested frequency %u MHz up to %u MHz "
-			"(lowest available)", *freq, freqs[freqs_size - 1]);
+		log_var(log_lvl, "Rounding requested frequency %u MHz up to %u "
+			"MHz (lowest available)", *freq, freqs[freqs_size - 1]);
 		*freq = freqs[freqs_size - 1];
 		return;
 	}
@@ -600,14 +602,15 @@ static void _get_nearest_freq(unsigned int *freq, unsigned int freqs_size,
 		 * Safe to advance due to bounds checks above here
 		 */
 		if (*freq > freqs[i]) {
-			log_var(log_lvl, ("Rounding requested frequency %u MHz up to %u MHz "
-				"(next available)", *freq, freqs[i-1]);
-			*freq = freqs[i-1];
+			log_var(log_lvl, "Rounding requested frequency %u MHz "
+				"up to %u MHz (next available)", *freq,
+				freqs[i - 1]);
+			*freq = freqs[i - 1];
 			return;
 		}
 	}
-	error("%s: Got to the end of the function. This shouldn't happen. Freq: %u MHz",
-	      __func__, *freq);
+	error("%s: Got to the end of the function. This shouldn't happen. Freq:"
+	      " %u MHz", __func__, *freq);
 }
 
 /*
@@ -674,11 +677,42 @@ static bool _nvml_set_freqs(nvmlDevice_t *device, unsigned int mem_freq,
 
 #endif // HAVE_NVML
 
+
 /*
- * Set GPU frequencies for this job
- * gpus			(IN) GPUs on which to operate
- * gpu_freq		(IN) requested frequencies
- * log_lvl		(IN) The log level at which to print
+ * Convert a frequency value to a string
+ * Returned string must be xfree()'ed
+ */
+static char *_freq_value_to_string(unsigned int freq)
+{
+	switch (freq) {
+	case GPU_LOW:
+		return xstrdup("low");
+		break;
+	case GPU_MEDIUM:
+		return xstrdup("medium");
+		break;
+	case GPU_HIGH:
+		return xstrdup("high");
+		break;
+	case GPU_HIGH_M1:
+		return xstrdup("highm1");
+		break;
+	default:
+		return xstrdup_printf("%u", freq);
+		break;
+	}
+}
+
+
+/*
+ * Set the frequencies of each GPU specified for the step
+ *
+ * gpus		(IN) A bitmap specifying the GPUs on which to operate.
+ * gpu_freq	(IN) The frequencies to set each of the GPUs to. If NULL, then
+ * 		defaults to GpuFreqDef, which defaults to "high,memory=high" if
+ * 		not set.
+ * log_lvl	(IN) The log level at which to print
+ * NOTE: NVML must be initialized beforehand
  */
 static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 {
@@ -688,10 +722,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 	unsigned int gpu_freq_num = 0, mem_freq_num = 0;
 	bool freq_set = false, freq_logged = false;
 	char *tmp = NULL;
-
-#ifdef HAVE_NVML
-	_nvml_init();
-#endif
 
 	// TODO: Overwrite gpus if env var is specified? Do this earlier?
 
@@ -703,28 +733,12 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 	if (verbose_flag)
 		debug2("verbose_flag ON");
 
-	// TODO: Pull out keyword detection code into a single location
-	if (mem_freq_num == GPU_LOW)
-		debug2("User requested mem=low");
-	else if (mem_freq_num == GPU_MEDIUM)
-		debug2("User requested mem=medium");
-	else if (mem_freq_num == GPU_HIGH)
-		debug2("User requested mem=high");
-	else if (mem_freq_num == GPU_HIGH_M1)
-		debug2("User requested mem=highm1");
-	else
-		debug2("User requested mem=%u", mem_freq_num);
-
-	if (gpu_freq_num == GPU_LOW)
-		debug2("User requested gfx=low");
-	else if (gpu_freq_num == GPU_MEDIUM)
-		debug2("User requested gfx=medium");
-	else if (gpu_freq_num == GPU_HIGH)
-		debug2("User requested gfx=high");
-	else if (gpu_freq_num == GPU_HIGH_M1)
-		debug2("User requested gfx=highm1");
-	else
-		debug2("User requested gfx=%u", gpu_freq_num);
+	tmp = _freq_value_to_string(mem_freq_num);
+	debug2("Requested GPU memory frequency: %s", tmp);
+	xfree(tmp);
+	tmp = _freq_value_to_string(gpu_freq_num);
+	debug2("Requested GPU graphics frequency: %s", tmp);
+	xfree(tmp);
 
 	if (!mem_freq_num || !gpu_freq_num) {
 		debug2("%s: No frequencies to set", __func__);
@@ -732,7 +746,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 	}
 
 	/*
-	 * Set the frequency for each device allocated to the step
+	 * Set the frequency of each device allocated to the step
 	 */
 	while (++i < gpu_len) {
 		char *sep = "";
@@ -758,7 +772,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 			"Can not set GPU frequency\n");
 		return;
 #endif
-		// TODO: Will these always be set?
 		if (mem_freq_num) {
 			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq_num);
 			sep = ",";
@@ -789,9 +802,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 		fprintf(stderr, "Could not set frequencies for all GPUs. "
 			"Set %d/%d total GPUs\n", count_set, count);
 	}
-#ifdef HAVE_NVML
-	_nvml_shutdown();
-#endif
 }
 
 extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
@@ -812,6 +822,12 @@ extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 	if ((tmp = strchr(freq, ';')))
 		tmp[0] = '\0';
 
+	// Save a copy of the GPUs affected, so we can reset things afterwards
+	saved_gpus = bit_copy(usable_gpus);
+
+#ifdef HAVE_NVML
+	_nvml_init();
+#endif
 	// Set the frequency of each GPU index specified in the bitstr
 	if (debug_flags & DEBUG_FLAG_GRES)
 		log_lvl = LOG_LEVEL_INFO;
@@ -819,6 +835,25 @@ extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 		log_lvl = LOG_LEVEL_DEBUG;
 	_set_freq(usable_gpus, freq, log_lvl);
 	xfree(freq);
+}
+
+extern void step_unconfigure_hardware(void)
+{
+	log_level_t log_lvl;
+	if (!saved_gpus) {
+		return;
+	}
+
+	// Reset the frequency back to the maximum
+	if (debug_flags & DEBUG_FLAG_GRES)
+		log_lvl = LOG_LEVEL_INFO;
+	else
+		log_lvl = LOG_LEVEL_DEBUG;
+	_set_freq(saved_gpus, "high,memory=high", log_lvl);
+	FREE_NULL_BITMAP(saved_gpus);
+#ifdef HAVE_NVML
+	_nvml_shutdown();
+#endif
 }
 
 static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
@@ -863,17 +898,16 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 }
 
 /*
- * A one-liner version of _print_gres_conf_full()
+ * Print the GRES conf record on a single line
  */
 static void _print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 			     log_level_t log_lvl)
 {
-	log_var(log_lvl,
-		"    GRES[%s](%"PRIu64"): %8s | Cores(%d): %6s | Links: %6s | %15s%s",
-		gres_slurmd_conf->name, gres_slurmd_conf->count,
-		gres_slurmd_conf->type_name, gres_slurmd_conf->cpu_cnt,
-		gres_slurmd_conf->cpus, gres_slurmd_conf->links,
-		gres_slurmd_conf->file,
+	log_var(log_lvl, "    GRES[%s](%"PRIu64"): %8s | Cores(%d): %6s | "
+		"Links: %6s | %15s%s", gres_slurmd_conf->name,
+		gres_slurmd_conf->count, gres_slurmd_conf->type_name,
+		gres_slurmd_conf->cpu_cnt, gres_slurmd_conf->cpus,
+		gres_slurmd_conf->links, gres_slurmd_conf->file,
 		gres_slurmd_conf->ignore ? " | IGNORE":"");
 }
 
@@ -1006,9 +1040,8 @@ static int _compare_number_range_str(char *a, char *b)
 	a_range = _strip_brackets_xmalloc(a_range_brackets);
 	b_range = _strip_brackets_xmalloc(b_range_brackets);
 
-	if (xstrcmp(a_range, b_range) != 0) {
+	if (xstrcmp(a_range, b_range))
 		rc = 1;
-	}
 	hostlist_destroy(hl_a);
 	hostlist_destroy(hl_b);
 	xfree(a_range_brackets);
@@ -1055,15 +1088,15 @@ static int _find_gres_in_list(void *x, void *key)
 	gres_slurmd_conf_t *item_b = (gres_slurmd_conf_t *) key;
 
 	// Check if type names are equal
-	if (xstrcmp(item_a->type_name, item_b->type_name) != 0)
+	if (xstrcmp(item_a->type_name, item_b->type_name))
 		return 0;
 
 	// Check if cpus are equal
-	if (_compare_number_range_str(item_a->cpus, item_b->cpus) != 0)
+	if (_compare_number_range_str(item_a->cpus, item_b->cpus))
 		return 0;
 
 	// Check if links are equal
-	if (_compare_number_range_str(item_a->links, item_b->links) != 0)
+	if (_compare_number_range_str(item_a->links, item_b->links))
 		return 0;
 	// Found!
 	return 1;
@@ -1078,16 +1111,16 @@ static int _find_gres_device_file_in_list(void *a, void *b)
 	gres_slurmd_conf_t *item_b = (gres_slurmd_conf_t *) b;
 
 	if (item_a->count > item_b->count) {
-		if (_key_in_number_range_str(item_a->file, item_b->file) != 0)
+		if (_key_in_number_range_str(item_a->file, item_b->file))
 			return 0;
 	} else if (item_a->count < item_b->count) {
-		if (_key_in_number_range_str(item_b->file, item_a->file) != 0)
+		if (_key_in_number_range_str(item_b->file, item_a->file))
 			return 0;
 	} else {
 		// a and b have the same number of devices
 		if (item_a->count == 1) {
 			// Only a strcmp should be necessary for single devices
-			if (xstrcmp(item_a->file, item_b->file) != 0)
+			if (xstrcmp(item_a->file, item_b->file))
 				return 0;
 		} else {
 			if (_key_in_number_range_str(item_a->file, item_b->file)
@@ -1113,10 +1146,10 @@ static int _find_gres_device_in_list(void *a, void *b)
 		return 0;
 
 	// Make sure we have the right record before checking the devices
-	if (_find_gres_in_list(a, b) != 1)
+	if (!_find_gres_in_list(a, b))
 		return 0;
 
-	if (_find_gres_device_file_in_list(a, b) != 1)
+	if (!_find_gres_device_file_in_list(a, b))
 		return 0;
 
 	// Found!
@@ -1148,7 +1181,7 @@ static void _add_gres_to_list(List gres_list, char *name, int device_cnt,
 		gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
 	gpu_record->cpu_cnt = cpu_cnt;
 	gpu_record->cpus_bitmap = bit_alloc(gpu_record->cpu_cnt);
-	if (bit_unfmt(gpu_record->cpus_bitmap, cpu_aff_abs_range) != 0) {
+	if (bit_unfmt(gpu_record->cpus_bitmap, cpu_aff_abs_range)) {
 		error("%s: bit_unfmt(dst_bitmap, src_str) failed", __func__);
 		error("    Is the CPU range larger than the CPU count allows?");
 		error("    src_str: %s", cpu_aff_abs_range);
@@ -1408,7 +1441,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		char **file_array;
 		char *hl_name;
 		// Just move this GRES record if it's not a GPU GRES
-		if (xstrcasecmp(gres_record->name, "gpu") != 0) {
+		if (xstrcasecmp(gres_record->name, "gpu")) {
 			debug2("%s: preserving original `%s` GRES record",
 			       __func__, gres_record->name);
 			_add_gres_to_list(non_gpu_list,
@@ -1517,7 +1550,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	list_iterator_destroy(itr_single);
 
 	debug2("GPUs detected on the node, but not specified in gres.conf:");
-	if (gres_list_system != NULL) {
+	if (gres_list_system) {
 		itr_system = list_iterator_create(gres_list_system);
 		while ((gres_record = list_next(itr_system))) {
 			if (!_device_exists_in_list(gres_list_conf_single,
@@ -1903,7 +1936,7 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
 
 	// If this isn't -1, then something went horribly wrong
 	if (bit_cur != -1)
-		fatal("%s: bit_cur(%d) != 0", __func__, bit_cur);
+		fatal("%s: bit_cur(%d) != -1", __func__, bit_cur);
 }
 
 #ifdef HAVE_NVML
@@ -2001,7 +2034,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 		// Convert cpu range str from machine to abstract(slurm) format
 		if (node_config->xcpuinfo_mac_to_abs(cpu_aff_mac_range,
-						     &cpu_aff_abs_range) != 0) {
+						     &cpu_aff_abs_range)) {
 			error("    Conversion from machine to abstract failed");
 			xfree(cpu_aff_mac_range);
 			continue;
@@ -2012,15 +2045,18 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		device_brand = _nvml_get_device_brand(&device);
 		xstrfmtcat(device_file, "/dev/nvidia%u", minor_number);
 
-		debug2("Device index %d:", i);
-		debug2("    GPU Name: %s", device_name);
-		debug2("    GPU Brand/Type: %s", device_brand);
-		debug2("    GPU UUID: %s", uuid);
-		debug2("    GPU PCI Domain/Bus/Device: %u:%u:%u",
-		       pci_info.domain, pci_info.bus, pci_info.device);
-		debug2("    GPU PCI.busId: %s", pci_info.busId);
-		debug2("    GPU NV Links: %s", nvlinks);
-		debug2("    GPU Device File (minor number): %s", device_file);
+		debug2("GPU index %u:", i);
+		debug2("    Name: %s", device_name);
+		debug2("    Brand/Type: %s", device_brand);
+		debug2("    UUID: %s", uuid);
+		debug2("    PCI Domain/Bus/Device: %u:%u:%u", pci_info.domain,
+		       pci_info.bus, pci_info.device);
+		debug2("    PCI Bus ID: %s", pci_info.busId);
+		debug2("    NVLinks: %s", nvlinks);
+		debug2("    Device File (minor number): %s", device_file);
+		if (minor_number != i)
+			debug("Note: GPU index %u is different from minor "
+			      "number %u", i, minor_number);
 		debug2("    CPU Affinity Range: %s", cpu_aff_mac_range);
 		debug2("    CPU Affinity Range Abstract: %s",cpu_aff_abs_range);
 		// Print out possible memory frequencies for this device
@@ -2243,7 +2279,7 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 	}
 
 	// Loop through each line of the file
-	while (fgets(buffer, 256, f) != NULL) {
+	while (fgets(buffer, 256, f)) {
 		char *save_ptr = NULL;
 		char *tok;
 		int i = 0;
@@ -2390,7 +2426,7 @@ extern int node_config_load(List gres_conf_list,
 	}
 
 	gres_list_system = _get_system_gpu_list_fake();
-	if (gres_list_system != NULL)
+	if (gres_list_system)
 		using_fake_system = true;
 #ifdef HAVE_NVML
 	// Only query real system devices if there is no fake override

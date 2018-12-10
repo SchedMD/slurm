@@ -266,3 +266,8 @@ extern void step_configure_hardware(bitstr_t *usable_gres, char *settings)
 {
 
 }
+
+extern void step_unconfigure_hardware(void)
+{
+
+}

@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "November 2018" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "December 2018" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -583,6 +583,8 @@ Request that GPUs allocated to the job are configured with specific frequency
 values.
 This option can be used to independently configure the GPU and its memory
 frequencies.
+After the job is completed, the frequencies of all affected GPUs will be reset
+to the highest possible values.
 In some cases, system power caps may override the requested values.
 The field \fItype\fR can be "memory".
 If \fItype\fR is not specified, the GPU frequency is implied.
