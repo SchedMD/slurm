@@ -55,7 +55,8 @@ account    sufficient    pam_slurm_adopt.so
 <p>pam_slurm_adopt must be used with the task/cgroup plugin.
 The pam_systemd module will conflict with pam_slurm_adopt, so you need to
 disable it in all files that are included in sshd or system-auth (e.g.
-password-auth, common-session, etc.). You must also make sure a different PAM
+password-auth, common-session, etc.). You should also stop and mask
+systemd-logind. You must also make sure a different PAM
 module isn't short-circuiting the account stack before it gets to
 pam_slurm_adopt.so. From the example above, the following two lines have been
 commented out in the included password-auth file:</p>
@@ -215,6 +216,8 @@ endpoint details.</dd>
 <dd>Do not check for Slurm's X11 forwarding support, and do not alter the
 DISPLAY variable.</dd>
 </dl>
+</dd>
+</dl>
 
 </dd>
 
@@ -265,13 +268,13 @@ assume that the user has no jobs allocated to the node. Depending on your
 configuration of the PAM module, you might accidentally deny all user ssh
 attempts without <b>PrologFlags=contain.</b></p>
 
+<p>The <b>UsePAM</b> option in slurm.conf is not related to pam_slurm_adopt.</p>
+
+
 <h2><a name="OTHER_CONFIG">Other Configuration</a></h2>
 
 <p>Verify that <b>UsePAM</b> is set to <b>On</b> in /etc/ssh/sshd_config (it
 should be on by default).</p>
-
-<p>The <b>UsePAM</b> option in slurm.conf is not related to this module, and
-usually should not be set on your cluster.</p>
 
 <h3>Firewalls, IP Addresses, etc.</h3>
 
@@ -282,6 +285,11 @@ on the source node, such as on a login node, it is better to have the RPC be
 rejected rather than silently dropped. This will allow better responsiveness to
 the RPC initiator.</p>
 
-<p style="text-align:center;">Last modified 4 December 2018</p>
+<h2><a name="LIMITATIONS">Limitations</a></h2>
+
+<p>Alternate authentication methods such as dual-factor authentication may break
+process adoption with pam_slurm_adopt.</p>
+
+<p style="text-align:center;">Last modified 7 December 2018</p>
 
 <!--#include virtual="footer.txt"-->
