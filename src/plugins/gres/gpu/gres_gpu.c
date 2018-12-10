@@ -723,8 +723,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 	bool freq_set = false, freq_logged = false;
 	char *tmp = NULL;
 
-	// TODO: Overwrite gpus if env var is specified? Do this earlier?
-
 	/*
 	 * Parse frequency information
 	 */
@@ -748,7 +746,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 	/*
 	 * Set the frequency of each device allocated to the step
 	 */
-	while (++i < gpu_len) {
+	for (i = 0; i < gpu_len; i++) {
 		char *sep = "";
 #ifdef HAVE_NVML
 		nvmlDevice_t device;
@@ -840,9 +838,8 @@ extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 extern void step_unconfigure_hardware(void)
 {
 	log_level_t log_lvl;
-	if (!saved_gpus) {
+	if (!saved_gpus)
 		return;
-	}
 
 	// Reset the frequency back to the maximum
 	if (debug_flags & DEBUG_FLAG_GRES)
