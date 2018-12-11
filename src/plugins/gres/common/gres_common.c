@@ -41,6 +41,17 @@
 #include "src/common/xstring.h"
 #include "src/common/xcgroup_read_config.h"
 
+static void _free_name_list(void *x)
+{
+	free(x);
+}
+static int _match_name_list(void *x, void *key)
+{
+	if (!xstrcmp(x, key))
+		return 1;	/* duplicate file name */
+	return 0;
+}
+
 extern int common_node_config_load(List gres_conf_list,
 				   char *gres_name,
 				   List *gres_devices)
@@ -52,11 +63,13 @@ extern int common_node_config_load(List gres_conf_list,
 	char *slash, *root_path, *one_name;
 	gres_device_t *gres_device;
 	uint64_t debug_flags;
+	List names_list;
 
 	xassert(gres_conf_list);
 	xassert(gres_devices);
 
 	debug_flags = slurm_get_debug_flags();
+	names_list = list_create(_free_name_list);
 	itr = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(itr))) {
 		if (!(gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE) ||
@@ -99,18 +112,26 @@ extern int common_node_config_load(List gres_conf_list,
 				gres_device->dev_num = atoi(one_name + i);
 				break;
 			}
+			if ((rc == SLURM_SUCCESS) &&
+			    list_find_first(names_list, _match_name_list,
+					    one_name)) {
+				error("%s duplicate device file name (%s)",
+				      gres_name, one_name);
+				rc = SLURM_ERROR;
+			}
 
 			if (debug_flags & DEBUG_FLAG_GRES) {
 				info("%s device number %d(%s):%s",
 				     gres_name, gres_device->dev_num,
 				     gres_device->path, gres_device->major);
 			}
-			free(one_name);
+			(void) list_append(names_list, one_name);
 		}
 		hostlist_destroy(hl);
 		xfree(root_path);
 	}
 	list_iterator_destroy(itr);
+	list_destroy(names_list);
 
 	return rc;
 }
