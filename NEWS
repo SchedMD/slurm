@@ -48,6 +48,9 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we set the alloc_node in a resource allocation based on the auth
     plugin instead of the rpc call.
 
+* Changes in Slurm 18.08.5
+==========================
+
 * Changes in Slurm 18.08.4
 ==========================
  -- burst_buffer/cray - avoid launching a job that would be immediately
