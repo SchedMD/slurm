@@ -193,6 +193,12 @@ static List _build_gpu_list(List gres_list)
 		while ((f_name = hostlist_shift(hl))) {
 			gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
 			gpu_record->config_flags = gres_record->config_flags;
+			gpu_record->cpu_cnt = gres_record->cpu_cnt;
+			gpu_record->cpus = xstrdup(gres_record->cpus);
+			if (gres_record->cpus_bitmap) {
+				gpu_record->cpus_bitmap =
+					bit_copy(gres_record->cpus_bitmap);
+			}
 			gpu_record->file = xstrdup(f_name);
 			gpu_record->name = xstrdup(gres_record->name);
 			gpu_record->type_name = xstrdup(gres_record->type_name);
@@ -238,6 +244,12 @@ static List _build_mps_list(List gres_list)
 			if (gres_record->type_name)
 				mps_record->config_flags |= GRES_CONF_HAS_TYPE;
 			mps_record->count = count_per_file;
+			mps_record->cpu_cnt = gres_record->cpu_cnt;
+			mps_record->cpus = xstrdup(gres_record->cpus);
+			if (gres_record->cpus_bitmap) {
+				mps_record->cpus_bitmap =
+					bit_copy(gres_record->cpus_bitmap);
+			}
 			mps_record->file = xstrdup(f_name);
 			mps_record->name = xstrdup(gres_record->name);
 			mps_record->plugin_id = gres_record->plugin_id;
@@ -271,6 +283,17 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 					mps_record->config_flags |=
 						GRES_CONF_HAS_TYPE;
 				}
+				if (gpu_record->cpus) {
+					xfree(mps_record->cpus);
+					mps_record->cpus =
+						xstrdup(gpu_record->cpus);
+				}
+				if (gpu_record->cpus_bitmap) {
+					mps_record->cpu_cnt =
+						gpu_record->cpu_cnt;
+					mps_record->cpus_bitmap =
+					      bit_copy(gpu_record->cpus_bitmap);
+				}
 				xfree(mps_record->type_name);
 				mps_record->type_name =
 					xstrdup(gpu_record->type_name);
@@ -284,6 +307,12 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
 			mps_record->config_flags = gpu_record->config_flags;
 			mps_record->count = 0;
+			mps_record->cpu_cnt = gpu_record->cpu_cnt;
+			mps_record->cpus = xstrdup(gpu_record->cpus);
+			if (gpu_record->cpus_bitmap) {
+				mps_record->cpus_bitmap =
+					bit_copy(gpu_record->cpus_bitmap);
+			}
 			mps_record->file = xstrdup(gpu_record->file);
 			mps_record->name = xstrdup("mps");
 			mps_record->plugin_id = gres_plugin_build_id("mps");
