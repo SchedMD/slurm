@@ -274,9 +274,9 @@ the RPC initiator.</p>
 
 <h2><a name="LIMITATIONS">Limitations</a></h2>
 
-<p>Alternate authentication methods such as dual-factor authentication may break
-process adoption with pam_slurm_adopt.</p>
+<p>Alternate authentication methods such as multi-factor authentication may
+break process adoption with pam_slurm_adopt.</p>
 
-<p style="text-align:center;">Last modified 7 December 2018</p>
+<p style="text-align:center;">Last modified 11 December 2018</p>
 
 <!--#include virtual="footer.txt"-->
