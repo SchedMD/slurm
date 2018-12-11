@@ -117,9 +117,8 @@ static List	gres_devices		= NULL;
 #define FREQS_SIZE	512
 #define FREQS_CONCISE	5 // This must never be smaller than 5, or error
 
-static bitstr_t	*saved_gpus		= NULL;
-
 #ifdef HAVE_NVML
+static bitstr_t	*saved_gpus		= NULL;
 
 /*
  * Initialize the NVML library. This takes a few seconds
@@ -929,8 +928,10 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 
 extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 {
-	char *tmp = NULL;
+#ifdef HAVE_NVML
 	char *freq = NULL;
+#endif
+	char *tmp = NULL;
 	log_level_t log_lvl;
 
 	if (!usable_gpus)
@@ -940,19 +941,19 @@ extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 	if (!(tmp = strstr(tres_freq, "gpu:")))
 		return;		/* No GPU frequency spec */
 
+	if (debug_flags & DEBUG_FLAG_GRES)
+		log_lvl = LOG_LEVEL_INFO;
+	else
+		log_lvl = LOG_LEVEL_DEBUG;
+
+#ifdef HAVE_NVML
 	// Strip "gpu:" from tres_freq
 	freq = xstrdup(tmp + 4);
 	if ((tmp = strchr(freq, ';')))
 		tmp[0] = '\0';
 
-#ifdef HAVE_NVML
 	// Save a copy of the GPUs affected, so we can reset things afterwards
 	saved_gpus = bit_copy(usable_gpus);
-
-	if (debug_flags & DEBUG_FLAG_GRES)
-		log_lvl = LOG_LEVEL_INFO;
-	else
-		log_lvl = LOG_LEVEL_DEBUG;
 
 	_nvml_init();
 	// Set the frequency of each GPU index specified in the bitstr
@@ -968,14 +969,16 @@ extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
 
 extern void step_unconfigure_hardware(void)
 {
+#ifdef HAVE_NVML
 	log_level_t log_lvl;
+
+	if (!saved_gpus)
+		return;
 	if (debug_flags & DEBUG_FLAG_GRES)
 		log_lvl = LOG_LEVEL_INFO;
 	else
 		log_lvl = LOG_LEVEL_DEBUG;
-	if (!saved_gpus)
-		return;
-#ifdef HAVE_NVML
+
 	// Reset the frequencies back to the hardware default
 	_reset_freq(saved_gpus, log_lvl);
 	FREE_NULL_BITMAP(saved_gpus);
