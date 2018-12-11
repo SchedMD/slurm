@@ -91,6 +91,7 @@ int main(int argc, char **argv)
 	bool pack_fini = false;
 	List job_env_list = NULL, job_req_list = NULL;
 	sbatch_env_t *local_env = NULL;
+	bool quiet = false;
 
 	/* force line-buffered output on non-tty outputs */
 	if (!isatty(STDOUT_FILENO))
@@ -113,6 +114,9 @@ int main(int argc, char **argv)
 		error("Failed to register atexit handler for plugins: %m");
 
 	script_name = process_options_first_pass(argc, argv);
+
+	/* Preserve quiet request which is lost in second pass */
+	quiet = opt.quiet;
 
 	/* reinit log with new verbosity (if changed by command line) */
 	if (opt.verbose || opt.quiet) {
@@ -298,17 +302,21 @@ int main(int argc, char **argv)
 
 	print_multi_line_string(resp->job_submit_user_msg, -1);
 
-	if (!sbopt.parsable) {
-		printf("Submitted batch job %u", resp->job_id);
-		if (working_cluster_rec)
-			printf(" on cluster %s", working_cluster_rec->name);
-		printf("\n");
-	} else {
-		printf("%u", resp->job_id);
-		if (working_cluster_rec)
-			printf(";%s", working_cluster_rec->name);
-		printf("\n");
+	if (!quiet) {
+		if (!sbopt.parsable) {
+			printf("Submitted batch job %u", resp->job_id);
+			if (working_cluster_rec)
+				printf(" on cluster %s",
+				       working_cluster_rec->name);
+			printf("\n");
+		} else {
+			printf("%u", resp->job_id);
+			if (working_cluster_rec)
+				printf(";%s", working_cluster_rec->name);
+			printf("\n");
+		}
 	}
+
 	if (sbopt.wait)
 		rc = _job_wait(resp->job_id);
 

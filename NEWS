@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- pam_slurm_adopt: Use uid to determine whether root is logging.
  -- Remove sbatch --x11 option. Slurm's internal X11 forwarding is now only
     supported from salloc, or an allocating srun command.
+ -- Suppressed printing of job id in sbatch when quiet flag is set.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

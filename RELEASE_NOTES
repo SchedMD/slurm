@@ -59,6 +59,9 @@ NOTE: Limit pam_slurm_adopt to run only in the sshd context by default, for
       used to restore the old behavior of always performing the adopt logic
       regardless of the PAM application context.
 
+NOTE: The --quiet flag in sbatch will now suppress the printing of
+      "Submitted batch job %u" and "Submitted batch job %u on cluster %s".
+
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res
