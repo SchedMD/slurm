@@ -5769,6 +5769,36 @@ static sock_gres_t *_build_sock_gres_basic(gres_job_state_t *job_gres_ptr,
 	return sock_gres;
 }
 
+static void _sock_gres_log(List sock_gres_list, char *node_name)
+{
+	sock_gres_t *sock_gres;
+	ListIterator iter;
+	int i;
+
+	if (!sock_gres_list)
+		return;
+
+	info("Sock_gres state for %s", node_name);
+	iter = list_iterator_create(sock_gres_list);
+	while ((sock_gres = (sock_gres_t *) list_next(iter))) {
+		info("Gres:%s Type:%s TotalCnt:%"PRIu64" AnySockCnt:%"PRIu64" MaxNodeGres:%"PRIu64,
+		     sock_gres->gres_name, sock_gres->type_name,
+		     sock_gres->total_cnt, sock_gres->cnt_any_sock,
+		     sock_gres->max_node_gres);
+		for (i = 0; i < sock_gres->sock_cnt; i++) {
+			char tmp[32] = "";
+			if (sock_gres->bits_by_sock &&
+			    sock_gres->bits_by_sock[i]) {
+				bit_fmt(tmp, sizeof(tmp),
+					sock_gres->bits_by_sock[i]);
+			}
+			info("  Sock[%d]Cnt:%"PRIu64" Bits:%s", i,
+			     sock_gres->cnt_by_sock[i], tmp);
+		}
+	}
+	list_iterator_destroy(iter);
+}
+
 /*
  * Determine how many cores on each socket of a node can be used by this job
  * IN job_gres_list   - job's gres_list built by gres_plugin_job_state_validate()
@@ -5865,6 +5895,9 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 	}
 	list_iterator_destroy(job_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
+
+	if (gres_debug)
+		_sock_gres_log(sock_gres_list, node_name);
 
 	return sock_gres_list;
 }
