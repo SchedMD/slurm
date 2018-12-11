@@ -892,6 +892,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 					 * (deprecated, use Cores) */
 		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
+		{"Files",  S_P_STRING},	/* Path to Gres device */
 		{"Link",  S_P_STRING},	/* Communication link IDs */
 		{"Links", S_P_STRING},	/* Communication link IDs */
 		{"Name",  S_P_STRING},	/* Gres name */
@@ -958,7 +959,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		xfree(local_cpus);
 	}
 
-	if (s_p_get_string(&p->file, "File", tbl)) {
+	if (s_p_get_string(&p->file, "File", tbl) ||
+	    s_p_get_string(&p->file, "Files", tbl)) {
 		p->count = _validate_file(p->file, p->name);
 		p->config_flags |= GRES_CONF_HAS_FILE;
 	}
@@ -1038,6 +1040,7 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
 		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
+		{"Files",  S_P_STRING},	/* Path to Gres device */
 		{"Link",  S_P_STRING},	/* Communication link IDs */
 		{"Links", S_P_STRING},	/* Communication link IDs */
 		{"Name",  S_P_STRING},	/* Gres name */
@@ -1183,8 +1186,8 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 
 	gres_conf_file = get_extra_conf_path("gres.conf");
 	if (stat(gres_conf_file, &config_stat) < 0) {
-		error("can't stat gres.conf file %s, assuming zero resource "
-		      "counts", gres_conf_file);
+		error("can't stat gres.conf file %s, assuming zero resource counts",
+		      gres_conf_file);
 		xfree(gres_conf_file);
 		return _no_gres_conf(&node_conf);
 	}
