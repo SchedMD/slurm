@@ -5707,7 +5707,7 @@ static char **_build_env(job_env_t *job_env)
 
 	slurm_mutex_lock(&conf->config_mutex);
 	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
-	setenvf(&env, "SLURM_CONF", conf->conffile);
+	setenvf(&env, "SLURM_CONF", "%s", conf->conffile);
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	setenvf(&env, "SLURM_CLUSTER_NAME", "%s", conf->cluster_name);

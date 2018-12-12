@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Changed sreport 'SizesByAccount' and 'SizesByAccountAndWckey' default
     behavior and added new 'AcctAsParent' option.
  -- Add ave watts to api and sview.
+ -- Added printf attribute to setenvf() and corrected related warnings.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

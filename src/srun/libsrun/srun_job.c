@@ -1842,7 +1842,7 @@ static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 	if (resp->account) {
 		key = _build_key("SLURM_JOB_ACCOUNT", pack_offset);
 		if (!getenv(key) &&
-		    (setenvf(NULL, key, "%u", resp->account) < 0)) {
+		    (setenvf(NULL, key, "%s", resp->account) < 0)) {
 			error("unable to set %s in environment", key);
 		}
 		xfree(key);
