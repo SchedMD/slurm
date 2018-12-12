@@ -255,7 +255,7 @@ proc inc22_1_fed {} {
 
 	# test the Job Size report
 	set matches 0
-	spawn $sreport --federation job size grouping=2,4  start=$start_str end=$end_str -tsec -p -n
+	spawn $sreport --federation job size AcctAsParent grouping=2,4  start=$start_str end=$end_str -tsec -p -n
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.fed)\n"

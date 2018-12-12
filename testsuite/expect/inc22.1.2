@@ -248,7 +248,7 @@ proc inc22_1_2 {} {
 
 	# test the Job Size report
 	set matches 0
-	set my_pid [spawn $sreport --local job size grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
+	set my_pid [spawn $sreport --local job size AcctAsParent grouping=2,4 cluster='$cluster' start=$start_str end=$end_str -tsec -p -n]
 	expect {
 		-re "There was a problem" {
 			send_user "FAILURE: there was a problem with the sacctmgr command (Within: inc22.1.2)\n"
