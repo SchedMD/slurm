@@ -29,6 +29,27 @@ GPUs you want to use. If you do this, other lines with "Ignore=true" are of no
 effect.
 
 .LP
+CUDA Multi-Process Service (MPS) provides a mechanism where GPUs can be
+shared by multiple jobs, where each job is allocated some percentage of the
+GPU's resources.
+GPUs to be made available for MPS must be identified in the \fBslurm.conf\fP
+and \fBgres.conf\fP configuration files with each device \fBFile\fR being
+explicitly named and it's \fBCount\fR specified (typically a multiple of 100).
+If the GPU sharing that \fBFile\fR name contains \fBCore\fR or \fBType\fR
+parameters, that information will be automatically copied to the corresponding
+MPS GRES (details about those configuration parameters below).
+Note that the same GPU can be allocated either as a GPU type GRES or as an
+MPS type GRES, but not both.
+In other words, once a GPU has been allocated as a gres/gpu resources it will
+not be available as a gres/mps.
+Likewise, once a GPU has been allocated as a gres/mps resources it will
+not be available as a gres/gpu.
+
+.LP
+\fBNOTE:\fP Slurm support for gres/mps requires the use of the select/cons_tres
+plugin.
+
+.LP
 The overall configuration parameters available include:
 
 .TP
@@ -93,6 +114,14 @@ names are specified, which involves more overhead than just tracking the
 device counts.
 Use the \fBFile\fR parameter only if the \fBCount\fR is not sufficient for
 tracking purposes.
+
+Except in the case of MPS support, if \fBFile\fR is specified then \fBCount\fR
+must be either set to the number of file names specified or not set (the
+default value is the number of files specified).
+In the case of MPS support, each GPU would be identifed by name using the
+\fBFile\fR parameter and \fBCount\fR would specify the number of MPS entries
+that would correspond to that GPU; typically 100 or some multiple of 100.
+
 NOTE: If you specify the \fBFile\fR parameter for a resource on some node,
 the option must be specified on all nodes and Slurm will track the assignment
 of each specific resource on each node. Otherwise Slurm will only track a
@@ -162,6 +191,24 @@ explicitly ignored GRESs. Specifying a NodeName will limit the scope of the
 ignored GRES to just that node.
 
 .SH "EXAMPLES"
+.LP
+.br
+##################################################################
+.br
+# Slurm's Generic Resource (GRES) configuration file
+.br
+## Define GPU devices with MPS support
+.br
+##################################################################
+.br
+Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1
+.br
+Name=gpu Type=tesla  File=/dev/nvidia1 COREs=2,3
+.br
+Name=mps Count=100 File=/dev/nvidia0 COREs=0,1
+.br
+Name=mps Count=100  File=/dev/nvidia1 COREs=2,3
+
 .LP
 .br
 ##################################################################

@@ -4350,10 +4350,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		(uint64_t) conf->priority_weight_part +
 		(uint64_t) conf->priority_weight_qos;
 	/* TODO include TRES weights */
-	if (tot_prio_weight > 0xffffffff) {
-		error("PriorityWeight values too high, job priority value may "
-		      "overflow");
-	}
+	if (tot_prio_weight > 0xffffffff)
+		error("PriorityWeight values too high, job priority value may overflow");
 
 	/* Out of order due to use with ProctrackType */
 	if (!s_p_get_string(&conf->switch_type, "SwitchType", hashtbl))

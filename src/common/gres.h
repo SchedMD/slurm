@@ -108,8 +108,6 @@ typedef struct node_config_load {
 	int (*xcpuinfo_mac_to_abs) (char *mac, char **abs);
 } node_config_load_t;
 
-
-
 /* Current GRES state information managed by slurmctld daemon */
 typedef struct gres_node_state {
 	/* Actual hardware found */

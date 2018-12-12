@@ -2,11 +2,24 @@
 
 <h1>Generic Resource (GRES) Scheduling</h1>
 
-<P>Generic resource (GRES) scheduling is supported through a flexible plugin
-mechanism. Support is currently provided for Graphics Processing Units (GPUs)
-and Intel&reg; Many Integrated Core (MIC) processors.</P>
+<h2>Contents</h2>
+<a href="#Overview">Overview</a><br>
+<a href="#Configuration">Configuration</a><br>
+<a href="#Running_Jobs">Running Jobs</a><br>
+<a href="#GPU_Management">GPU Managements</a><br>
+<a href="#MPS_Management">MPS Managements</a><br>
+<a href="#MIC_Management">MIC Managements</a><br>
 
 <!-------------------------------------------------------------------------->
+<a id="Overview"></a>
+<h2>Overview</h2>
+<P>Generic resource (GRES) scheduling is supported through a flexible plugin
+mechanism. Support is currently provided for Graphics Processing Units (GPUs),
+CUDA Multi-Process Service (MPS), and
+Intel&reg; Many Integrated Core (MIC) processors.</P>
+
+<!-------------------------------------------------------------------------->
+<a id="Configuration"></a>
 <h2>Configuration</h2>
 
 <P>Slurm supports no generic resources in the default configuration.
@@ -32,7 +45,7 @@ A suffix of "K", "M" or "G" may be used to multiply the count by 1024,
 By default a node has no generic resources.</LI>
 </UL>
 
-<P>Note that the Gres specification for each node works in the same fashion
+<P>Note that the GRES specification for each node works in the same fashion
 as the other resources managed. Depending upon the value of the
 <I>FastSchedule</I> parameter, nodes which are found to have fewer resources
 than configured will be placed in a DOWN state.</P>
@@ -40,8 +53,8 @@ than configured will be placed in a DOWN state.</P>
 <P>Sample slurm.conf file:</P>
 <PRE>
 # Configure support for our four GPUs
-GresTypes=gpu,bandwidth
-NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,bandwidth:lustre:no_consume:4G
+GresTypes=gpu,mps,bandwidth
+NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,mps:400,bandwidth:lustre:no_consume:4G
 </PRE>
 
 <P>Each compute node with generic resources typically contain a <I>gres.conf</I>
@@ -103,10 +116,14 @@ and Slurm's task/cgroup plugin, which will place the allocated files into
 the job's cgroup and prevent use of other files.
 Please see Slurm's <a href="cgroups.html">Cgroups Guide</a> for more
 information.<br>
-If File is specified then Count must be either set to the number
-of file names specified or not set (the default value is the number of files
-specified).
-NOTE: If you specify the File parameter for a resource on some node,
+Except in the case of MPS support, if <B>File</B> is specified then <B>Count</B>
+must be either set to the number of file names specified or not set (the
+default value is the number of files specified).
+In the case of MPS support, each GPU would be identifed by name using the
+<B>File</B> parameter and <B>Count</B> would specify the number of MPS entries
+that would correspond to that GPU; typically 100 or some multiple of 100.
+<br>
+NOTE: If you specify the <B>File</B> parameter for a resource on some node,
 the option must be specified on all nodes and Slurm will track the assignment
 of each specific resource on each node. Otherwise Slurm will only track a
 count of allocated resources rather than the state of each individual device
@@ -121,14 +138,19 @@ If <B>Type</B> is specified, then <B>Count</B> is limited in size (currently 102
 
 <P>Sample gres.conf file:</P>
 <PRE>
-# Configure support for our four GPUs, plus bandwidth
+# Configure support for four GPUs (with MPS), plus bandwidth
 Name=gpu Type=tesla  File=/dev/nvidia0 Cores=0,1
 Name=gpu Type=tesla  File=/dev/nvidia1 Cores=0,1
 Name=gpu Type=kepler File=/dev/nvidia2 Cores=2,3
 Name=gpu Type=kepler File=/dev/nvidia3 Cores=2,3
+Name=mps Count=100  File=/dev/nvidia0
+Name=mps Count=100  File=/dev/nvidia1
+Name=mps Count=100  File=/dev/nvidia2
+Name=mps Count=100  File=/dev/nvidia3
 Name=bandwidth Type=lustre Count=4G
 </PRE>
 <!-------------------------------------------------------------------------->
+<a id="Running_Jobs"></a>
 <h2>Running Jobs</h2>
 
 <P>Jobs will not be allocated any generic resources unless specifically
@@ -211,6 +233,7 @@ wait
 </PRE>
 
 <!-------------------------------------------------------------------------->
+<a id="GPU_Management"></a>
 <h2>GPU Management</h2>
 
 <P>In the case of Slurm's GRES plugin for GPUs, the environment variable
@@ -260,6 +283,42 @@ NVIDIA CUDA documentation</a> for more information about the
 <code class="commandline">CUDA_DEVICE_ORDER</code> environmental variables.</p>
 
 <!-------------------------------------------------------------------------->
+<a id="MPS_Management"></a>
+<h2>MPS Management</h2>
+
+<p>CUDA Multi-Process Service (MPS) provides a mechanism where GPUs can be
+shared by multiple jobs, where each job is allocated some percentage of the
+GPU's resources.
+GPUs to be made available for MPS must be identified in the <I>slurm.conf</I>
+and <I>gres.conf</I> configuration files with each device <B>File</B> being
+explicitly named and it's <B>Count</B> specified (typically a multiple of 100).
+If the GPU sharing that <B>File</B> name contains <B>Core</B> or <B>Type</B>
+parameters, that information will be automatically copied to the corresponding
+MPS GRES.
+Note that the same GPU can be allocated either as a GPU type GRES or as an
+MPS type GRES, but not both.
+In other words, once a GPU has been allocated as a gres/gpu resources it will
+not be available as a gres/mps.
+Likewise, once a GPU has been allocated as a gres/mps resources it will
+not be available as a gres/gpu.</p>
+
+<P><B>NOTE:</B> Slurm support for gres/mps requires the use of the
+select/cons_tres plugin.</P>
+
+<p>Jobs requesting MPS resources will have the same environment variables set
+as for GPU resources, namely <code class="commandline">CUDA_VISIBLE_DEVICES</code>
+and <code class="commandline">CUDA_DEVICE_ORDER</code>.
+In addition they will have the
+<code class="commandline">CUDA_MPS_ACTIVE_THREAD_PERCENTAGE</code>
+environment variable set where it's value is the job's percentage of MPS
+resources available on the assigned GPU.</p>
+
+<p>Please consult the
+<a href="https://docs.nvidia.com/deploy/pdf/CUDA_Multi_Process_Service_Overview.pdf">
+NVIDIA Multi-Process Service documentation</a> for more information about MPS.</p>
+
+<!-------------------------------------------------------------------------->
+<a id="MIC_Management"></a>
 <h2>MIC Management</h2>
 
 <P>Slurm can be used to provide resource management for systems with the
@@ -286,6 +345,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 28 November 2018</p>
+<p style="text-align: center;">Last modified 12 December 2018</p>
 
 <!--#include virtual="footer.txt"-->
