@@ -21090,15 +21090,17 @@ else
             _x_ac_freeipmi_cppflags_save="$CPPFLAGS"
             CPPFLAGS="-I$d/include $CPPFLAGS"
             _x_ac_freeipmi_libs_save="$LIBS"
-            LIBS="-L$d/$bit -lipmimonitoring $LIBS"
+            LIBS="-L$d/$bit -lipmimonitoring -lfreeipmi $LIBS"
             cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#include <ipmi_monitoring.h>
-              #include <ipmi_monitoring_bitmasks.h>
+#include <freeipmi/freeipmi.h>
+	      #include <ipmi_monitoring.h>
+	      #include <ipmi_monitoring_bitmasks.h>
 int
 main ()
 {
-int err;
+ipmi_ctx_t ipmi_ctx = ipmi_ctx_create();
+	      int err;
               unsigned int flag = 0;
               return ipmi_monitoring_init (flag, &err);
   ;
@@ -21122,8 +21124,8 @@ fi
 $as_echo "$x_ac_cv_freeipmi_dir" >&6; }
 
     if test -z "$x_ac_cv_freeipmi_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate freeipmi installation" >&5
-$as_echo "$as_me: WARNING: unable to locate freeipmi installation" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate freeipmi installation (libipmonitoring/libfreeipmi" >&5
+$as_echo "$as_me: WARNING: unable to locate freeipmi installation (libipmonitoring/libfreeipmi" >&2;}
     else
       FREEIPMI_CPPFLAGS="-I$x_ac_cv_freeipmi_dir/include"
       if test "$ac_with_rpath" = "yes"; then
@@ -21131,7 +21133,7 @@ $as_echo "$as_me: WARNING: unable to locate freeipmi installation" >&2;}
       else
         FREEIPMI_LDFLAGS="-L$x_ac_cv_freeipmi_dir/$bit"
       fi
-      FREEIPMI_LIBS="-lipmimonitoring"
+      FREEIPMI_LIBS="-lipmimonitoring -lfreeipmi"
 
 $as_echo "#define HAVE_FREEIPMI 1" >>confdefs.h
 
