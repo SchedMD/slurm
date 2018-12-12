@@ -141,9 +141,9 @@ function displayfile()
    get_field("ClusterName",document.config.cluster_name) + "<br>" +
    "#JobAcctGatherFrequency=30 <br>" +
    "JobAcctGatherType=jobacct_gather/" + get_radio_value(document.config.job_acct_gather_type) + "<br>" +
-   "#SlurmctldDebug=3 <br>" +
+   "#SlurmctldDebug=info <br>" +
    get_field("SlurmctldLogFile",document.config.slurmctld_logfile) + "<br>" +
-   "#SlurmdDebug=3 <br>" +
+   "#SlurmdDebug=info <br>" +
    get_field("SlurmdLogFile",document.config.slurmd_logfile) + "<br>" +
    "# <br>" +
    "# <br>" +
