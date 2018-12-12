@@ -35,10 +35,12 @@ AC_DEFUN([X_AC_FREEIPMI],
             _x_ac_freeipmi_cppflags_save="$CPPFLAGS"
             CPPFLAGS="-I$d/include $CPPFLAGS"
             _x_ac_freeipmi_libs_save="$LIBS"
-            LIBS="-L$d/$bit -lipmimonitoring $LIBS"
-            AC_TRY_LINK([#include <ipmi_monitoring.h>
-              #include <ipmi_monitoring_bitmasks.h>],
-              [int err;]
+            LIBS="-L$d/$bit -lipmimonitoring -lfreeipmi $LIBS"
+            AC_TRY_LINK([#include <freeipmi/freeipmi.h>
+	      #include <ipmi_monitoring.h>
+	      #include <ipmi_monitoring_bitmasks.h>],
+              [ipmi_ctx_t ipmi_ctx = ipmi_ctx_create();]
+	      [int err;]
               [unsigned int flag = 0;]
               [return ipmi_monitoring_init (flag, &err);],
               AS_VAR_SET(x_ac_cv_freeipmi_dir, $d), [])
@@ -51,7 +53,7 @@ AC_DEFUN([X_AC_FREEIPMI],
       ])
 
     if test -z "$x_ac_cv_freeipmi_dir"; then
-      AC_MSG_WARN([unable to locate freeipmi installation])
+      AC_MSG_WARN([unable to locate freeipmi installation (libipmonitoring/libfreeipmi])
     else
       FREEIPMI_CPPFLAGS="-I$x_ac_cv_freeipmi_dir/include"
       if test "$ac_with_rpath" = "yes"; then
@@ -59,7 +61,7 @@ AC_DEFUN([X_AC_FREEIPMI],
       else
         FREEIPMI_LDFLAGS="-L$x_ac_cv_freeipmi_dir/$bit"
       fi
-      FREEIPMI_LIBS="-lipmimonitoring"
+      FREEIPMI_LIBS="-lipmimonitoring -lfreeipmi"
       AC_DEFINE(HAVE_FREEIPMI, 1, [Define to 1 if freeipmi library found])
     fi
 
