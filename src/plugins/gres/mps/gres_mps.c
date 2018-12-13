@@ -338,7 +338,7 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 
 extern int init(void)
 {
-	info("%s: %s loaded", __func__, plugin_name);
+	debug("%s: %s loaded", __func__, plugin_name);
 
 	return SLURM_SUCCESS;
 }
@@ -410,6 +410,53 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	return rc;
 }
 
+static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
+		     bitstr_t *usable_gres,
+		     bool *already_seen, int *local_inx,
+		     bool reset, bool is_job)
+{
+	char *global_list = NULL, *local_list = NULL, *percentage = NULL;
+	char *slurm_env_var = NULL;
+
+	if (is_job)
+		// TODO: This env var doesn't exist. Should it be SLURM_GRES?
+		slurm_env_var = "SLURM_JOB_GRES";
+		// slurm_env_var = "SLURM_GRES";
+	else
+		slurm_env_var = "SLURM_STEP_GRES";
+
+	if (*already_seen) {
+		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
+		local_list = xstrdup(getenvp(*env_ptr,
+					     "CUDA_VISIBLE_DEVICES"));
+	}
+
+	common_gres_set_env(gres_devices, env_ptr, gres_ptr, node_inx,
+			    usable_gres, "", local_inx,
+			    &percentage, &local_list, &global_list,
+			    reset, is_job);
+
+	if (percentage) {
+		env_array_overwrite(env_ptr,
+				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
+				    percentage);
+		xfree(percentage);
+	}
+
+	if (global_list) {
+		env_array_overwrite(env_ptr, slurm_env_var, global_list);
+		xfree(global_list);
+	}
+
+	if (local_list) {
+		env_array_overwrite(env_ptr, "CUDA_VISIBLE_DEVICES",
+				    local_list);
+		env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL", local_list);
+		xfree(local_list);
+		*already_seen = true;
+	}
+}
+
 /*
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job's GRES state.
@@ -424,11 +471,11 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
 	 * (different prologs and such) which would also result in bad info each
 	 * call after the first.
 	 */
-//	int local_inx = 0;
-//	bool already_seen = false;
+	int local_inx = 0;
+	bool already_seen = false;
 
-//	_set_env(job_env_ptr, gres_ptr, node_inx, NULL,
-//		 &already_seen, &local_inx, false, true);
+	_set_env(job_env_ptr, gres_ptr, node_inx, NULL,
+		 &already_seen, &local_inx, false, true);
 }
 
 /*
@@ -437,12 +484,11 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
  */
 extern void step_set_env(char ***step_env_ptr, void *gres_ptr)
 {
-//FIXME: CHECK FOR MEMORY LEAKS
-//	static int local_inx = 0;
-//	static bool already_seen = false;
+	static int local_inx = 0;
+	static bool already_seen = false;
 
-//	_set_env(step_env_ptr, gres_ptr, 0, NULL,info("LOAD GPU");
-//		 &already_seen, &local_inx, false, false);
+	_set_env(step_env_ptr, gres_ptr, 0, NULL,
+		 &already_seen, &local_inx, false, false);
 }
 
 /*
@@ -452,11 +498,11 @@ extern void step_set_env(char ***step_env_ptr, void *gres_ptr)
 extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
 			   bitstr_t *usable_gres)
 {
-//	static int local_inx = 0;
-//	static bool already_seen = false;
+	static int local_inx = 0;
+	static bool already_seen = false;
 
-//	_set_env(step_env_ptr, gres_ptr, 0, usable_gres,
-//		 &already_seen, &local_inx, true, false);
+	_set_env(step_env_ptr, gres_ptr, 0, usable_gres,
+		 &already_seen, &local_inx, true, false);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor*/

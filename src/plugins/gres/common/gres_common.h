@@ -66,7 +66,7 @@ extern bool common_use_local_device_index(void);
 extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				void *gres_ptr, int node_inx,
 				bitstr_t *usable_gres, char *prefix,
-				int *local_inx,
+				int *local_inx, char **percentage,
 				char **local_list, char **global_list,
 				bool reset, bool is_job);
 

@@ -818,3 +818,4 @@ test39.20  Test GPU resource limits with various allocation options
 test40.#   Test of job select/cons_tres and gres/mps options.
 =============================================================
 test40.1   Test some invalid gres/mps job option
+test40.2   Test scheduling of gres/gpu and gres/mps

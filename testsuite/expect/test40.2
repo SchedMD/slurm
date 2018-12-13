@@ -1,0 +1,99 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test scheduling of gres/gpu and gres/mps
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id     "40.2"
+set exit_code   0
+set file_in    "test$test_id.input1"
+set job_id      0
+
+print_header $test_id
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+
+set mps_cnt [get_mps_count]
+if {$mps_cnt < 0} {
+	send_user "\nFAILURE: Error getting MPS count\n"
+	exit 1
+}
+if {$mps_cnt < 1} {
+	send_user "\nWARNING: This test requires 1 or more MPS in the default partition\n"
+	exit 0
+}
+if {$mps_cnt < 100} {
+	send_user "\nFAILURE: MPS per GPU is unexpectedly low ($mps_cnt < 100). Check your configuration\n"
+	set exit_code 1
+}
+send_user "\nMPS per GPU count is $mps_cnt\n"
+
+#
+# Simple MPS request, check environment variables
+#
+send_user "\n\n==== TEST 1 ====\n"
+make_bash_script $file_in "
+echo HOST:\$SLURMD_NODENAME
+echo CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
+echo CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
+exit 0"
+set timeout $max_job_delay
+set matches 0
+set target [expr $mps_cnt / 2]
+set srun_pid [spawn $srun --gres=mps:$target -n1 -t1 $file_in]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number)" {
+		incr matches
+		exp_continue
+	}
+	-re "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
+		if {$expect_out(1,string) == $target} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is bad\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	timeout {
+                send_user "\nFAILURE: srun not responding\n"
+                slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

@@ -272,7 +272,8 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			   int node_offset, bool first_step_node,
 			   uint16_t cpus_per_task, int max_rem_nodes,
 			   bool ignore_alloc, char *gres_name,
-			   uint32_t job_id, uint32_t step_id);
+			   uint32_t job_id, uint32_t step_id,
+			   uint32_t plugin_id);
 static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
 static void	_validate_config(slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
@@ -9347,7 +9348,8 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			   int node_offset, bool first_step_node,
 			   uint16_t cpus_per_task, int max_rem_nodes,
 			   bool ignore_alloc, char *gres_name,
-			   uint32_t job_id, uint32_t step_id)
+			   uint32_t job_id, uint32_t step_id,
+			   uint32_t plugin_id)
 {
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
@@ -9387,7 +9389,8 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 		min_gres = MAX(min_gres, gres_cnt);
 	}
 
-	if (job_gres_ptr->gres_bit_alloc &&
+	if ((plugin_id != mps_plugin_id) &&
+	    job_gres_ptr->gres_bit_alloc &&
 	    job_gres_ptr->gres_bit_alloc[node_offset]) {
 		gres_cnt = bit_set_count(job_gres_ptr->
 					 gres_bit_alloc[node_offset]);
@@ -9855,8 +9858,7 @@ void gres_plugin_step_state_rebase(List gres_list,
 		if (!gres_step_ptr)
 			continue;
 		if (!gres_step_ptr->node_in_use) {
-			error("gres_plugin_step_state_rebase: node_in_use is "
-			      "NULL");
+			error("gres_plugin_step_state_rebase: node_in_use is NULL");
 			continue;
 		}
 		new_node_cnt = bit_set_count(new_job_node_bitmap);
@@ -10099,8 +10101,8 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 				}
 			}
 		} else {
-			error("gres_plugin_step_state_unpack: protocol_version"
-			      " %hu not supported", protocol_version);
+			error("%s: protocol_version %hu not supported",
+			      __func__, protocol_version);
 			goto unpack_error;
 		}
 
@@ -10131,8 +10133,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 	return rc;
 
 unpack_error:
-	error("gres_plugin_step_state_unpack: unpack error from step %u.%u",
-	      job_id, step_id);
+	error("%s: unpack error from step %u.%u", __func__, job_id, step_id);
 	if (gres_step_ptr)
 		_step_state_delete(gres_step_ptr);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -10636,7 +10637,8 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 					     cpus_per_task, max_rem_nodes,
 					     ignore_alloc,
 					     gres_context[i].gres_name,
-					     job_id, step_id);
+					     job_id, step_id,
+					     step_gres_ptr->plugin_id);
 			if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
 				core_cnt = tmp_cnt;
 			break;

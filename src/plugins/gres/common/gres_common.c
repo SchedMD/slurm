@@ -171,7 +171,7 @@ extern bool common_use_local_device_index(void)
 extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				void *gres_ptr, int node_inx,
 				bitstr_t *usable_gres, char *prefix,
-				int *local_inx,
+				int *local_inx, char **percentage,
 				char **local_list, char **global_list,
 				bool reset, bool is_job)
 {
@@ -183,12 +183,14 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	ListIterator itr;
 	char *global_prefix = "", *local_prefix = "";
 	char *new_global_list = NULL, *new_local_list = NULL;
+	uint64_t gres_per_node = 0;
 
 	if (!gres_devices)
 		return;
 
-	xassert(local_list);
 	xassert(global_list);
+	xassert(local_list);
+	xassert(percentage);
 
 	if (is_job) {
 		gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
@@ -202,9 +204,9 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			   ((gres_job_ptr->gres_per_job    > 0) ||
 			    (gres_job_ptr->gres_per_node   > 0) ||
 			    (gres_job_ptr->gres_per_socket > 0) ||
-			    (gres_job_ptr->gres_per_task   > 0)))
+			    (gres_job_ptr->gres_per_task   > 0))) {
 			alloc_cnt = true;
-
+		}
 	} else {
 		gres_step_state_t *gres_step_ptr =
 			(gres_step_state_t *) gres_ptr;
@@ -217,8 +219,12 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			   ((gres_step_ptr->gres_per_step   > 0) ||
 			    (gres_step_ptr->gres_per_node   > 0) ||
 			    (gres_step_ptr->gres_per_socket > 0) ||
-			    (gres_step_ptr->gres_per_task   > 0)))
+			    (gres_step_ptr->gres_per_task   > 0))) {
 			alloc_cnt = true;
+		}
+		if (gres_step_ptr) {
+			gres_per_node = gres_step_ptr->gres_per_node;
+		}
 	}
 
 	/* If we are resetting and we don't have a usable_gres we just exit */
@@ -280,6 +286,11 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	} else if (!*global_list) {
 		xstrcat(*global_list, "NoDevFiles");
 		xstrcat(*local_list, "NoDevFiles");
+	}
+
+	if (gres_per_node) {
+		xfree(*percentage);
+		xstrfmtcat(*percentage, "%"PRIu64, gres_per_node);
 	}
 }
 

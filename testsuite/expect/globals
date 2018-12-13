@@ -4246,8 +4246,8 @@ proc get_gpu_count { node_count } {
 #
 # Proc: get_mps_count
 #
-# Returns number of mps per gpu on the one node with the
-# highest count in the default partition.
+# Returns number of GRES MPS resources per GPU on the one node
+# with the highest count in the default partition.
 #
 ################################################################
 proc get_mps_count { } {
