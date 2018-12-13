@@ -56,6 +56,7 @@
 #include "src/common/env.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
 
 #include "../common/gres_common.h"
@@ -841,11 +842,16 @@ static void _reset_freq(bitstr_t *gpus, log_level_t log_lvl)
 static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 {
 	bool verbose_flag = false;
-	int gpu_len = bit_size(gpus);
+	int gpu_len = 0;
 	int i = -1, count = 0, count_set = 0;
 	unsigned int gpu_freq_num = 0, mem_freq_num = 0;
 	bool freq_set = false, freq_logged = false;
 	char *tmp = NULL;
+	slurm_cgroup_conf_t *cg_conf;
+	bool task_cgroup = false;
+	bool constrained_devices = false;
+	bool cgroups_active = false;
+	char *task_plugin_type = NULL;
 
 	/*
 	 * Parse frequency information
@@ -867,18 +873,48 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq, log_level_t log_lvl)
 		return;
 	}
 
+	// Check if GPUs are constrained by cgroups
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	if (cg_conf && cg_conf->constrain_devices)
+		constrained_devices = true;
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+
+	// Check if task/cgroup plugin is loaded
+	task_plugin_type = slurm_get_task_plugin();
+	if (strstr(task_plugin_type, "cgroup"))
+		task_cgroup = true;
+	xfree(task_plugin_type);
+
+	// If both of these are true, then GPUs will be constrained
+	if (constrained_devices && task_cgroup) {
+		cgroups_active = true;
+		gpu_len = bit_set_count(gpus);
+		debug2("%s: cgroups are configured. Using LOCAL GPU IDs",
+		       __func__);
+	} else {
+	 	gpu_len = bit_size(gpus);
+		debug2("%s: cgroups are NOT configured. Assuming GLOBAL GPU IDs",
+		       __func__);
+	}
+
 	/*
 	 * Set the frequency of each device allocated to the step
 	 */
 	for (i = 0; i < gpu_len; i++) {
 		char *sep = "";
 		nvmlDevice_t device;
-		if (!bit_test(gpus, i))
+
+		// Only check the global GPU bitstring if not using cgroups
+		if (!cgroups_active && !bit_test(gpus, i)) {
+			debug2("Passing over NVML device %u", i);
 			continue;
+		}
 		count++;
 
 		if (!_nvml_get_handle(i, &device))
 			continue;
+		debug2("Setting frequency of NVML device %u", i);
 		_nvml_get_nearest_freqs(&device, &mem_freq_num, &gpu_freq_num,
 					log_lvl);
 
