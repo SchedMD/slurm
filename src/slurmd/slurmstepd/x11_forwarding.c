@@ -383,11 +383,6 @@ void *_keepalive_engine(void *x)
 
 void *_accept_engine(void *x)
 {
-	if (listen(listen_socket, 2) == -1) {
-		error("listening socket returned an error: %m");
-		goto shutdown;
-	}
-
 	while (true) {
 		slurm_addr_t sin;
 		channel_info_t *ci = xmalloc(sizeof(channel_info_t));
