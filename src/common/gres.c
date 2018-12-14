@@ -238,7 +238,8 @@ static char *	_node_gres_used(void *gres_data, char *gres_name);
 static int	_node_reconfig(char *node_name, char *orig_config,
 			       char **new_config, gres_state_t *gres_ptr,
 			       uint16_t fast_schedule,
-			       slurm_gres_context_t *context_ptr);
+			       slurm_gres_context_t *context_ptr,
+			       bool *updated_gpu_cnt);
 static void	_node_state_dealloc(gres_state_t *gres_ptr);
 static void *	_node_state_dup(void *gres_data);
 static void	_node_state_log(void *gres_data, char *node_name,
@@ -1786,7 +1787,7 @@ static int _node_config_init(char *node_name, char *orig_config,
 	}
 	gres_data = (gres_node_state_t *) gres_ptr->gres_data;
 
-	/* If the resource isn't configured for use with this node*/
+	/* If the resource isn't configured for use with this node */
 	if ((orig_config == NULL) || (orig_config[0] == '\0') ||
 	    (updated_config == false)) {
 		gres_data->gres_cnt_config = 0;
@@ -2478,12 +2479,16 @@ extern void gres_plugin_node_feature(char *node_name,
 
 static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 			  gres_state_t *gres_ptr, uint16_t fast_schedule,
-			  slurm_gres_context_t *context_ptr)
+			  slurm_gres_context_t *context_ptr,
+			  bool *updated_gpu_cnt)
 {
-	int rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
 	gres_node_state_t *gres_data;
+	uint64_t gres_bits;
 
 	xassert(gres_ptr);
+	xassert(updated_gpu_cnt);
+	*updated_gpu_cnt = false;
 	if (gres_ptr->gres_data == NULL)
 		gres_ptr->gres_data = _build_gres_node_state();
 	gres_data = gres_ptr->gres_data;
@@ -2507,7 +2512,6 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 		gres_data->gres_cnt_avail = 0;
 
 	if (context_ptr->config_flags & GRES_CONF_HAS_FILE) {
-		uint64_t gres_bits;
 		if (_multi_count_per_file(context_ptr->gres_name))
 			gres_bits = gres_data->topo_cnt;
 		else
@@ -2518,6 +2522,33 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 			gres_data->gres_bit_alloc =
 				bit_realloc(gres_data->gres_bit_alloc,
 					    gres_bits);
+		}
+	} else if (gres_data->gres_bit_alloc &&
+		   !_multi_count_per_file(context_ptr->gres_name)) {
+		/*
+		 * If GRES count changed in configuration between reboots,
+		 * update bitmap sizes as needed.
+		 */
+		gres_bits = gres_data->gres_cnt_avail;
+		if (gres_bits != bit_size(gres_data->gres_bit_alloc)) {
+			info("gres/%s count changed on node %s to %"PRIu64,
+			     context_ptr->gres_name, node_name, gres_bits);
+			if (context_ptr->plugin_id == gpu_plugin_id)
+				*updated_gpu_cnt = true;
+			gres_data->gres_bit_alloc =
+				bit_realloc(gres_data->gres_bit_alloc,
+					    gres_bits);
+			for (i = 0; i < gres_data->topo_cnt; i++) {
+				if (gres_data->topo_gres_bitmap &&
+				    gres_data->topo_gres_bitmap[i] &&
+				    (gres_bits !=
+				     bit_size(gres_data->topo_gres_bitmap[i]))){
+					gres_data->topo_gres_bitmap[i] =
+						bit_realloc(
+						gres_data->topo_gres_bitmap[i],
+						gres_bits);
+				}
+			}
 		}
 	}
 
@@ -2542,6 +2573,71 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	return rc;
 }
 
+/* The GPU count on a node changed. Update MPS data structures to match */
+static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
+				  gres_state_t *gpu_gres_ptr)
+{
+	gres_node_state_t *gpu_gres_data, *mps_gres_data;
+	uint64_t gpu_cnt;
+	int i;
+
+	if (!gpu_gres_ptr || !mps_gres_ptr)
+		return;
+	gpu_gres_data = gpu_gres_ptr->gres_data;
+	mps_gres_data = mps_gres_ptr->gres_data;
+	gpu_cnt = gpu_gres_data->gres_cnt_avail;
+	if (gpu_cnt == bit_size(mps_gres_data->gres_bit_alloc))
+		return;		/* No change for gres/mps */
+
+	mps_gres_data->gres_bit_alloc =
+			bit_realloc(mps_gres_data->gres_bit_alloc, gpu_cnt);
+
+	/* Free any excess gres/mps topo records */
+	for (i = gpu_cnt; i < mps_gres_data->topo_cnt; i++) {
+		if (mps_gres_data->topo_core_bitmap)
+			FREE_NULL_BITMAP(mps_gres_data->topo_core_bitmap[i]);
+		if (mps_gres_data->topo_gres_bitmap)
+			FREE_NULL_BITMAP(mps_gres_data->topo_gres_bitmap[i]);
+		xfree(mps_gres_data->topo_type_name[i]);
+	}
+
+	/* Add any additional required gres/mps topo records */
+	if (mps_gres_data->topo_cnt) {
+		mps_gres_data->topo_core_bitmap =
+			xrealloc(mps_gres_data->topo_core_bitmap,
+				 sizeof(bitstr_t *) * gpu_cnt);
+		mps_gres_data->topo_gres_bitmap =
+			xrealloc(mps_gres_data->topo_gres_bitmap,
+				 sizeof(bitstr_t *) * gpu_cnt);
+		mps_gres_data->topo_gres_cnt_alloc =
+			xrealloc(mps_gres_data->topo_gres_cnt_alloc,
+				 sizeof(uint64_t) * gpu_cnt);
+		mps_gres_data->topo_gres_cnt_avail =
+			xrealloc(mps_gres_data->topo_gres_cnt_avail,
+				 sizeof(uint64_t) * gpu_cnt);
+		mps_gres_data->topo_type_id =
+			xrealloc(mps_gres_data->topo_type_id,
+				 sizeof(uint32_t) * gpu_cnt);
+		mps_gres_data->topo_type_name =
+			xrealloc(mps_gres_data->topo_type_name,
+				 sizeof(char *) * gpu_cnt);
+	}
+	for (i = mps_gres_data->topo_cnt; i < gpu_cnt; i++) {
+		mps_gres_data->topo_gres_bitmap[i] = bit_alloc(gpu_cnt);
+		bit_set(mps_gres_data->topo_gres_bitmap[i], i);
+	}
+
+	for (i = 0; i < mps_gres_data->topo_cnt; i++) {
+		if (mps_gres_data->topo_gres_bitmap &&
+		    mps_gres_data->topo_gres_bitmap[i] &&
+		    (gpu_cnt != bit_size(mps_gres_data->topo_gres_bitmap[i]))) {
+			mps_gres_data->topo_gres_bitmap[i] =
+				bit_realloc(mps_gres_data->topo_gres_bitmap[i],
+					    gpu_cnt);
+		}
+	}
+}
+
 /*
  * Note that a node's configuration has been modified (e.g. "scontol update ..")
  * IN node_name - name of the node for which the gres information applies
@@ -2560,7 +2656,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 {
 	int i, rc, rc2;
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr;
+	gres_state_t *gres_ptr, *mps_gres_ptr;
 
 	rc = gres_plugin_init();
 
@@ -2568,6 +2664,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 	if ((gres_context_cnt > 0) && (*gres_list == NULL))
 		*gres_list = list_create(_gres_node_list_delete);
 	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+		bool updated_gpu_cnt = false;
 		/* Find gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
 		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
@@ -2579,8 +2676,20 @@ extern int gres_plugin_node_reconfig(char *node_name,
 			continue;
 
 		rc2 = _node_reconfig(node_name, orig_config, new_config,
-				     gres_ptr, fast_schedule, &gres_context[i]);
+				     gres_ptr, fast_schedule, &gres_context[i],
+				     &updated_gpu_cnt);
 		rc = MAX(rc, rc2);
+
+		if (!updated_gpu_cnt || !have_mps)
+			continue;
+		/* Need to update gres/mps counts too */
+		gres_iter = list_iterator_create(*gres_list);
+		while ((mps_gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+			if (mps_gres_ptr->plugin_id == mps_plugin_id)
+				break;
+		}
+		list_iterator_destroy(gres_iter);
+		_sync_node_mps_to_gpu(mps_gres_ptr, gres_ptr);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -8274,9 +8383,6 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			len = MIN(len, node_gres_ptr->gres_cnt_config);
 		}
 
-
-
-
 		if ((node_gres_ptr->topo_cnt == 0) && (gres_per_bit > 1)) {
 			/*
 			 * Need to add node topo arrays for slurmctld restart
@@ -8308,8 +8414,6 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 				bit_set(node_gres_ptr->topo_gres_bitmap[i], i);
 			}
 		}
-
-
 
 		for (i = 0; i < len; i++) {
 			gres_cnt = 0;

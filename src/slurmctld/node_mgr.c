@@ -406,8 +406,8 @@ extern int load_all_node_state ( bool state_only )
 				goto unpack_error;
 			base_state = node_state & NODE_STATE_BASE;
 		} else {
-			error("load_all_node_state: protocol_version "
-			      "%hu not supported", protocol_version);
+			error("%s: protocol_version %hu not supported",
+			      __func__, protocol_version);
 			goto unpack_error;
 		}
 
@@ -418,12 +418,11 @@ extern int load_all_node_state ( bool state_only )
 		    (cores == 0) ||
 		    (threads == 0) ||
 		    (base_state  >= NODE_STATE_END)) {
-			error ("Invalid data for node %s: procs=%u, boards=%u,"
-			       " sockets=%u, cores=%u, threads=%u, state=%u",
+			error("Invalid data for node %s: procs=%u, boards=%u, "
+			       "sockets=%u, cores=%u, threads=%u, state=%u",
 				node_name, cpus, boards,
 				sockets, cores, threads, node_state);
-			error ("No more node data will be processed from the "
-				"checkpoint file");
+			error("No more node data will be processed from the checkpoint file");
 			goto unpack_error;
 
 		}
