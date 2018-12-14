@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Backfill - If a job has a time_limit guess the end time of a job better
     if OverTimeLimit is Unlimited.
  -- Fix "sacctmgr show events event=cluster"
+ -- Fix sacctmgr show runawayjobs from sibling cluster
 
 * Changes in Slurm 18.08.4
 ==========================
