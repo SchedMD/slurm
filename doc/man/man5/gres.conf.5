@@ -34,15 +34,15 @@ shared by multiple jobs, where each job is allocated some percentage of the
 GPU's resources.
 GPUs to be made available for MPS must be identified in the \fBslurm.conf\fP
 and \fBgres.conf\fP configuration files with each device \fBFile\fR being
-explicitly named and it's \fBCount\fR specified (typically a multiple of 100).
+explicitly named and its \fBCount\fR specified (typically a multiple of 100).
 If the GPU sharing that \fBFile\fR name contains \fBCore\fR or \fBType\fR
 parameters, that information will be automatically copied to the corresponding
 MPS GRES (details about those configuration parameters below).
 Note that the same GPU can be allocated either as a GPU type GRES or as an
 MPS type GRES, but not both.
-In other words, once a GPU has been allocated as a gres/gpu resources it will
+In other words, once a GPU has been allocated as a gres/gpu resource it will
 not be available as a gres/mps.
-Likewise, once a GPU has been allocated as a gres/mps resources it will
+Likewise, once a GPU has been allocated as a gres/mps resource it will
 not be available as a gres/gpu.
 
 .LP
@@ -231,15 +231,15 @@ Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Ignore=true Links=0,1,\-1
 .br
 # Slurm's Generic Resource (GRES) configuration file
 .br
-## Overwrite system defaults and explicitly configure three GPUs with NVLink
+## Overwrite system defaults and explicitly configure three GPUs
 .br
 ##################################################################
 .br
 Name=gpu Type=tesla File=/dev/nvidia[0\-1] COREs=0,1
 .br
-# NOTE: nvidia2 device is out of service
-.br
 # Name=gpu Type=tesla  File=/dev/nvidia[2\-3] COREs=2,3
+.br
+# NOTE: nvidia2 device is out of service
 .br
 Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
 .br
