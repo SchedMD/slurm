@@ -7110,6 +7110,124 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 }
 
 /*
+ * Select one specific GRES topo entry (set GRES bitmap) for this job on this
+ *	node based upon per-node resource specification
+ * job_res IN - job resource allocation
+ * node_inx IN - global node index
+ * job_node_inx IN - node index for this job's allocation
+ * job_specs IN - job request specifications, UPDATED: set bits in
+ *		  gres_bit_select
+ * node_specs IN - node resource request specifications
+ * job_id IN - job ID for logging
+ * tres_mc_ptr IN - job's multi-core options
+ */
+static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
+				int job_node_inx, sock_gres_t *sock_gres,
+				uint32_t job_id, gres_mc_data_t *tres_mc_ptr)
+{
+	int core_offset;
+	uint16_t sock_cnt = 0, cores_per_socket_cnt = 0;
+	int c, i, rc, s, t;
+	gres_job_state_t *job_specs;
+	gres_node_state_t *node_specs;
+	int *used_sock = NULL, alloc_gres_cnt = 0;
+	uint64_t gres_per_bit;
+
+	job_specs = sock_gres->job_specs;
+	gres_per_bit = job_specs->gres_per_node;
+	node_specs = sock_gres->node_specs;
+	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
+				   &cores_per_socket_cnt);
+	if (rc != SLURM_SUCCESS) {
+		error("cons_tres: %s: Invalid socket/core count for job %u on node %d",
+		      __func__, job_id, node_inx);
+		return;
+	}
+	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
+	if (core_offset < 0) {
+		error("cons_tres: %s: Invalid core offset for job %u on node %d",
+		      __func__, job_id, node_inx);
+		return;
+	}
+	i = sock_gres->sock_cnt;
+	if ((i != 0) && (i != sock_cnt)) {
+		error("cons_tres: %s: Inconsistent socket count (%d != %d) for job %u on node %d",
+		      __func__, i, sock_cnt, job_id, node_inx);
+		sock_cnt = MIN(sock_cnt, i);
+	}
+
+	xassert(job_res->core_bitmap);
+	used_sock = xmalloc(sizeof(int) * sock_cnt);
+	for (s = 0; s < sock_cnt; s++) {
+		for (c = 0; c < cores_per_socket_cnt; c++) {
+			i = (s * cores_per_socket_cnt) + c;
+			if (bit_test(job_res->core_bitmap, (core_offset + i))) {
+				used_sock[s]++;
+				break;
+			}
+		}
+	}
+
+	/*
+	 * Now pick specific GRES for these sockets.
+	 * First: Try to select a GRES local to allocated socket with
+	 *	sufficient resources.
+	 * Second: Use available GRES with sufficient resources.
+	 * Thrid: Use any available GRES.
+	 */
+	for (s = 0; (s < sock_cnt) && (alloc_gres_cnt == 0); s++) {
+		if (!used_sock[s])
+			continue;
+		for (t = 0; t < node_specs->topo_cnt; t++) {
+			if (node_specs->topo_gres_cnt_alloc    &&
+			    node_specs->topo_gres_cnt_avail    &&
+			    node_specs->topo_gres_cnt_avail[t] &&
+			    ((node_specs->topo_gres_cnt_avail[t] -
+			      node_specs->topo_gres_cnt_alloc[t]) <
+			     gres_per_bit))
+				continue;	/* Insufficient resources */
+			if (sock_gres->bits_by_sock    &&
+			    sock_gres->bits_by_sock[s] &&
+			    !bit_test(sock_gres->bits_by_sock[s], t))
+				continue;   /* GRES not on this socket */
+			bit_set(job_specs->gres_bit_select[node_inx], t);
+			job_specs->gres_cnt_node_select[node_inx] +=
+								gres_per_bit;
+			alloc_gres_cnt += gres_per_bit;
+			break;
+		}
+	}
+
+	/* Select available GRES with sufficient resources */
+	for (t = 0; (t < node_specs->topo_cnt) && (alloc_gres_cnt == 0); t++) {
+		if (node_specs->topo_gres_cnt_alloc    &&
+		    node_specs->topo_gres_cnt_avail    &&
+		    node_specs->topo_gres_cnt_avail[t] &&
+		    ((node_specs->topo_gres_cnt_avail[t] -
+		      node_specs->topo_gres_cnt_alloc[t]) < gres_per_bit))
+			continue;	/* Insufficient resources */
+		bit_set(job_specs->gres_bit_select[node_inx], t);
+		job_specs->gres_cnt_node_select[node_inx] += gres_per_bit;
+		alloc_gres_cnt += gres_per_bit;
+		break;
+	}
+
+	/* Select available GRES with any resources */
+	for (t = 0; (t < node_specs->topo_cnt) && (alloc_gres_cnt == 0); t++){
+		if (node_specs->topo_gres_cnt_alloc    &&
+		    node_specs->topo_gres_cnt_avail    &&
+		    node_specs->topo_gres_cnt_avail[t])
+			continue;	/* No resources */
+		bit_set(job_specs->gres_bit_select[node_inx], t);
+		job_specs->gres_cnt_node_select[node_inx] += gres_per_bit;
+		alloc_gres_cnt += gres_per_bit;
+		break;
+	}
+
+	xfree(used_sock);
+}
+
+/*
  * Select specific GRES (set GRES bitmap) for this job on this node based upon
  *	per-socket resource specification
  * job_res IN - job resource allocation
@@ -7732,7 +7850,13 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 			job_specs->gres_bit_select[i] = bit_alloc(gres_cnt);
 			job_specs->gres_cnt_node_select[i] = 0;
 
-			if (job_specs->gres_per_node) {
+			if (job_specs->gres_per_node &&
+			    (sock_gres->plugin_id == mps_plugin_id)) {
+				/* gres/mps: select specific topo bit for job */
+				_pick_specific_topo(job_res, i, node_inx,
+						    sock_gres, job_id,
+						    tres_mc_ptr);
+			} else if (job_specs->gres_per_node) {
 				_set_node_bits(job_res, i, node_inx,
 					       sock_gres, job_id, tres_mc_ptr);
 			} else if (job_specs->gres_per_socket) {
