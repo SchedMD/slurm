@@ -115,8 +115,6 @@
 #include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/common/xcpuinfo.h"
 
-#define GETOPT_ARGS	"bcCd:Df:hL:Mn:N:vV"
-
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
 #endif
@@ -1371,10 +1369,16 @@ _process_cmdline(int ac, char **av)
 {
 	int c;
 	char *tmp_char;
+	static char *opt_string = "bcCd:Df:hL:Mn:N:vV";
+
+	static struct option long_options[] = {
+		{"version",		no_argument,       0, 'V'},
+		{NULL,			0,                 0, 0}
+	};
 
 	conf->prog = xbasename(av[0]);
 
-	while ((c = getopt(ac, av, GETOPT_ARGS)) > 0) {
+	while ((c = getopt_long(ac, av, opt_string, long_options, NULL)) > 0) {
 		switch (c) {
 		case 'b':
 			conf->boot_time = 1;
