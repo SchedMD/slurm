@@ -1241,7 +1241,7 @@ int32_t *bitfmt2int(char *bit_str_ptr)
 }
 
 /*
- * intbitfmt - convert a array of interger (start/end) pairs
+ * intbitfmt - convert a array of integer (start/end) pairs
  *	terminated by -1 (e.g. "0, 30, 45, 45, 50, 60, -1") to a
  *	string describing bitmap (output from bit_fmt, e.g. "0-30,45,50-60")
  * input: int array
