@@ -623,7 +623,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		}
 #endif
 		/*
-		 * Insure all nodes in avail_node_bitmap are represented
+		 * Ensure all nodes in avail_node_bitmap are represented
 		 * in exc_cores. For now include ALL nodes.
 		 */
 		c = select_node_record[select_node_cnt-1].cume_cores;
@@ -773,7 +773,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			}
 #endif
 			/*
-			 * Insure all nodes in avail_node_bitmap are represented
+			 * Ensure all nodes in avail_node_bitmap are represented
 			 * in exc_cores. For now include ALL nodes.
 			 */
 			c = select_node_record[select_node_cnt-1].cume_cores;

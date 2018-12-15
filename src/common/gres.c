@@ -509,7 +509,7 @@ extern int gres_plugin_init(void)
 	if ((gres_plugin_list == NULL) || (gres_plugin_list[0] == '\0'))
 		goto fini;
 
-	/* Insure that "gres/mps" follows "gres/gpu" */
+	/* Ensure that "gres/mps" follows "gres/gpu" */
 	have_gpu = false;
 	have_mps = false;
 	names = xstrdup(gres_plugin_list);
@@ -3479,7 +3479,7 @@ static int _clear_mem_per_gres(void *x, void *arg)
 }
 
 /*
- * Insure consistency of gres_per_* options
+ * Ensure consistency of gres_per_* options
  * Modify task and node count as needed for consistentcy with GRES options
  * RET -1 on failure, 0 on success
  */
@@ -3495,7 +3495,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	int req_sockets, req_cpus_per_task;
 	uint16_t cpus_per_gres;
 
-	/* Insure gres_per_job >= gres_per_node >= gres_per_socket */
+	/* Ensure gres_per_job >= gres_per_node >= gres_per_socket */
 	if (job_gres_data->gres_per_job &&
 	    ((job_gres_data->gres_per_node &&
 	      (job_gres_data->gres_per_node > job_gres_data->gres_per_job)) ||
@@ -3505,7 +3505,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	      (job_gres_data->gres_per_socket > job_gres_data->gres_per_job))))
 		return -1;
 
-	/* Insure gres_per_job >= gres_per_task */
+	/* Ensure gres_per_job >= gres_per_task */
 	if (job_gres_data->gres_per_node &&
 	    ((job_gres_data->gres_per_task &&
 	      (job_gres_data->gres_per_task > job_gres_data->gres_per_node)) ||
@@ -3526,8 +3526,8 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	}
 
 	/*
-	 * Insure gres_per_job is multiple of gres_per_node
-	 * Insure node count is consistent with GRES parameters
+	 * Ensure gres_per_job is multiple of gres_per_node
+	 * Ensure node count is consistent with GRES parameters
 	 */
 	if (job_gres_data->gres_per_job && job_gres_data->gres_per_node) {
 		if (job_gres_data->gres_per_job % job_gres_data->gres_per_node){
@@ -3542,8 +3542,8 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	}
 
 	/*
-	 * Insure gres_per_node is multiple of gres_per_socket
-	 * Insure task count is consistent with GRES parameters
+	 * Ensure gres_per_node is multiple of gres_per_socket
+	 * Ensure task count is consistent with GRES parameters
 	 */
 	if (job_gres_data->gres_per_node && job_gres_data->gres_per_socket) {
 		if (job_gres_data->gres_per_node %
@@ -3559,8 +3559,8 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			return -1;
 	}
 	/*
-	 * Insure gres_per_job is multiple of gres_per_task
-	 * Insure task count is consistent with GRES parameters
+	 * Ensure gres_per_job is multiple of gres_per_task
+	 * Ensure task count is consistent with GRES parameters
 	 */
 	if (job_gres_data->gres_per_job && job_gres_data->gres_per_task) {
 		if (job_gres_data->gres_per_job % job_gres_data->gres_per_task){
@@ -3576,8 +3576,8 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	}
 
 	/*
-	 * Insure gres_per_node is multiple of gres_per_task
-	 * Insure tasks_per_node is consistent with GRES parameters
+	 * Ensure gres_per_node is multiple of gres_per_task
+	 * Ensure tasks_per_node is consistent with GRES parameters
 	 */
 	if (job_gres_data->gres_per_node && job_gres_data->gres_per_task) {
 		if (job_gres_data->gres_per_node %
@@ -3595,8 +3595,8 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	}
 
 	/*
-	 * Insure gres_per_socket is multiple of gres_per_task
-	 * Insure ntasks_per_socket is consistent with GRES parameters
+	 * Ensure gres_per_socket is multiple of gres_per_task
+	 * Ensure ntasks_per_socket is consistent with GRES parameters
 	 */
 	if (job_gres_data->gres_per_socket && job_gres_data->gres_per_task) {
 		if (job_gres_data->gres_per_socket %
@@ -3613,7 +3613,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			return -1;
 	}
 
-	/* Insure that cpus_per_gres * gres_per_task == cpus_per_task */
+	/* Ensure that cpus_per_gres * gres_per_task == cpus_per_task */
 	if (job_gres_data->cpus_per_gres)
 		cpus_per_gres = job_gres_data->cpus_per_gres;
 	else
@@ -3627,7 +3627,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			return -1;
 	}
 
-	/* Insure tres_per_job >= node count */
+	/* Ensure tres_per_job >= node count */
 	if (job_gres_data->gres_per_job) {
 		if (job_gres_data->gres_per_job < *min_nodes)
 			return -1;
@@ -4061,7 +4061,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 
 	/*
 	 * Check for record overlap (e.g. "gpu:2,gpu:tesla:1")
-	 * Insure tres_per_job >= tres_per_node >= tres_per_socket
+	 * Ensure tres_per_job >= tres_per_node >= tres_per_socket
 	 */
 	over_list = xmalloc(sizeof(overlap_check_t) * size);
 	iter = list_iterator_create(*gres_list);
@@ -7717,7 +7717,7 @@ static uint64_t _get_job_cnt(sock_gres_t *sock_gres,
 	gres_job_state_t *job_specs = sock_gres->job_specs;
 
 	avail_gres = node_specs->gres_cnt_avail - node_specs->gres_cnt_alloc;
-	/* Insure at least one GRES per node on remaining nodes */
+	/* Ensure at least one GRES per node on remaining nodes */
 	max_gres = job_specs->gres_per_job - job_specs->total_gres -
 		   (rem_node_cnt - 1);
 	max_gres = MIN(avail_gres, max_gres);
