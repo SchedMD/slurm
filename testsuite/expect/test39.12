@@ -137,6 +137,7 @@ set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
 #
 make_bash_script $file_in "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 if \[ \$SLURM_PROCID -eq 0 \]; then
+sleep 1
 $scontrol -dd show job \$SLURM_JOB_ID | grep \"GRES=\"
 fi
 exit 0"
