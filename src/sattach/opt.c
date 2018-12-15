@@ -116,29 +116,6 @@ int initialize_and_process_args(int argc, char **argv)
 }
 
 /*
- * print error message to stderr with opt.progname prepended
- */
-#undef USE_ARGERROR
-#if USE_ARGERROR
-static void argerror(const char *msg, ...)
-  __attribute__ ((format (printf, 1, 2)));
-static void argerror(const char *msg, ...)
-{
-	va_list ap;
-	char buf[256];
-
-	va_start(ap, msg);
-	vsnprintf(buf, sizeof(buf), msg, ap);
-
-	fprintf(stderr, "%s: %s\n",
-		opt.progname ? opt.progname : "sbatch", buf);
-	va_end(ap);
-}
-#else
-#  define argerror error
-#endif				/* USE_ARGERROR */
-
-/*
  *  Get a POSITIVE decimal integer from arg.
  *
  *  Returns the integer on success, exits program on failure.

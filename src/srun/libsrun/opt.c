@@ -675,29 +675,6 @@ static bool _valid_node_list(char **node_list_pptr)
 }
 
 /*
- * print error message to stderr with opt.progname prepended
- */
-#undef USE_ARGERROR
-#if USE_ARGERROR
-static void argerror(const char *msg, ...)
-  __attribute__ ((format (printf, 1, 2)));
-static void argerror(const char *msg, ...)
-{
-	va_list ap;
-	char buf[256];
-
-	va_start(ap, msg);
-	vsnprintf(buf, sizeof(buf), msg, ap);
-
-	fprintf(stderr, "%s: %s\n",
-		opt.progname ? opt.progname : "srun", buf);
-	va_end(ap);
-}
-#else
-#  define argerror error
-#endif				/* USE_ARGERROR */
-
-/*
  * _opt_default(): used by initialize_and_process_args to set defaults
  */
 static void _opt_default(void)

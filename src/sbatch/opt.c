@@ -170,29 +170,6 @@ static void _usage(void);
 /*---[ end forward declarations of static functions ]---------------------*/
 
 /*
- * print error message to stderr with opt.progname prepended
- */
-#undef USE_ARGERROR
-#if USE_ARGERROR
-static void argerror(const char *msg, ...)
-	__attribute__ ((format (printf, 1, 2)));
-static void argerror(const char *msg, ...)
-{
-	va_list ap;
-	char buf[256];
-
-	va_start(ap, msg);
-	vsnprintf(buf, sizeof(buf), msg, ap);
-
-	fprintf(stderr, "%s: %s\n",
-		opt.progname ? opt.progname : "sbatch", buf);
-	va_end(ap);
-}
-#else
-#  define argerror error
-#endif				/* USE_ARGERROR */
-
-/*
  * If the node list supplied is a file name, translate that into
  *	a list of nodes, we orphan the data pointed to
  * RET true if the node list is a valid one
