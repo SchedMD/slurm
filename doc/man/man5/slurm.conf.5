@@ -2314,12 +2314,12 @@ Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
 
 .TP
 \fBResumeTimeout\fR
-Maximum time permitted (in second) between when a node resume request
+Maximum time permitted (in seconds) between when a node resume request
 is issued and when the node is actually available for use.
 Nodes which fail to respond in this time frame will be marked DOWN and
 the jobs scheduled on the node requeued.
 Nodes which reboot after this time frame will be marked DOWN with a reason of
-"unexpected reboot."
+"Node unexpectedly rebooted."
 The default value is 60 seconds.
 Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR,
