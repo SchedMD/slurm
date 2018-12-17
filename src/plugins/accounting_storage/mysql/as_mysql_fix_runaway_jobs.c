@@ -121,9 +121,21 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_job_rec_t *first_job;
 	char *temp_cluster_name = mysql_conn->cluster_name;
 
-	list_sort(runaway_jobs, _job_sort_by_start_time);
-	first_job = list_peek(runaway_jobs);
+	if (!runaway_jobs) {
+		error("%s: No List of runaway jobs to fix given.",
+		      __func__);
+		rc = SLURM_ERROR;
+		goto bail;
+	}
 
+	list_sort(runaway_jobs, _job_sort_by_start_time);
+
+	if (!(first_job = list_peek(runaway_jobs))) {
+		error("%s: List of runaway jobs to fix is unexpectedly empty",
+		      __func__);
+		rc = SLURM_ERROR;
+		goto bail;
+	}
 
 	if (check_connection(mysql_conn) != SLURM_SUCCESS) {
 		rc = ESLURM_DB_CONNECTION;
