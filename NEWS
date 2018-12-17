@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
     values starting with a decimal to be invalid for PriorityWeightTRES and
     TRESBillingWeight.
  -- Fix possibility to update a job's reservation to none.
+ -- Suppress connection errors to primary slurmdbd when backup dbd is active.
 
 * Changes in Slurm 18.08.4
 ==========================
