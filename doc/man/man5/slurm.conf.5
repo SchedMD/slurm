@@ -1931,6 +1931,7 @@ PriorityWeightTRES=CPU=1000,Mem=2000,GRES/gpu=3000
 
 Applicable only if PriorityType=priority/multifactor and if
 AccountingStorageTRES is configured with each TRES Type.
+Negative values are allowed.
 The default values are 0.
 
 .TP
@@ -5068,6 +5069,8 @@ The weighted amount of a resource can be adjusted by adding a suffix of K,M,G,T
 or P after the billing weight. For example, a memory weight of "mem=.25" on a
 job allocated 8GB will be billed 2048 (8192MB *.25) units. A memory weight of
 "mem=.25G" on the same job will be billed 2 (8192MB * (.25/1024)) units.
+
+Negative values are allowed.
 
 When a job is allocated 1 CPU and 8 GB of memory on a partition configured with
 TRESBillingWeights="CPU=1.0,Mem=0.25G,GRES/gpu=2.0", the billable TRES will be:
