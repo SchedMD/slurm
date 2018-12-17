@@ -1465,9 +1465,12 @@ static void _merge_device_into_list(List gres_list, gres_slurmd_conf_t *device)
 }
 
 /*
- * Add GRES record and device to list out only if it doesn't exist already in
- * list_out.
+ * Add GRES record and device to gres_list_out only if it doesn't exist already
+ * in gres_list_out.
  * Also, only adds records that are NOT ignored
+ *
+ * gres_list_out	(OUT) The list to add to
+ * gres_record		(IN) The record to add
  */
 static void _add_unique_gres_to_list(List gres_list_out,
 				     gres_slurmd_conf_t *gres_record)
@@ -1505,43 +1508,50 @@ static void _add_unique_gres_to_list(List gres_list_out,
 }
 
 /*
- * Add all unique, unignored devices specified by the GRES records in list in
- * only if they don't already exist in list out.
- * Also checks to make sure list in doesn't add any records to list out that are
- * specifically ignored in list compare.
+ * Add all unique, unignored devices specified by the GRES records in
+ * gres_list_in only if they don't already exist in gres_list_out.
+ * Also checks to make sure gres_list_in doesn't add any records to
+ * gres_list_out that are specifically ignored in gres_list_ignore.
+ * I.e.:
+ *     gres_list_out = gres_list_in & (~gres_list_ignore)
+ *
+ * gres_list_out	(OUT) The output GRES list
+ * gres_list_ignore	(IN) A list of GRES ignore records that will apply
+ * 			against gres_list_in
+ * gres_list_in		(IN) A list of GRES records to add
  */
-static void _add_unique_gres_list_to_list_compare(List gres_list_out,
-						  List gres_list_compare,
-						  List gres_list_in)
+static void _add_unique_gres_list_to_list_ignore(List gres_list_out,
+						 List gres_list_ignore,
+						 List gres_list_in)
 {
 	ListIterator itr;
-	gres_slurmd_conf_t *gres_record;
-	gres_slurmd_conf_t *gres_compare;
+	gres_slurmd_conf_t *gres_in;
+	gres_slurmd_conf_t *gres_ignore;
 
 	if (!gres_list_in || list_is_empty(gres_list_in))
 		return;
 
 	itr = list_iterator_create(gres_list_in);
-	while ((gres_record = list_next(itr))) {
+	while ((gres_in = list_next(itr))) {
 		// Make sure current device isn't ignored in list compare
-		gres_compare = _device_exists_in_list(gres_list_compare,
-						      gres_record);
-		if (gres_compare && gres_compare->ignore) {
+		gres_ignore = _device_file_exists_in_list(gres_list_ignore,
+							  gres_in);
+		if (gres_ignore && gres_ignore->ignore) {
 			debug3("This GRES device:");
-			_print_gres_conf(gres_record, LOG_LEVEL_DEBUG3);
+			_print_gres_conf(gres_in, LOG_LEVEL_DEBUG3);
 			debug3("is ignored by this record:");
-			_print_gres_conf(gres_compare, LOG_LEVEL_DEBUG3);
+			_print_gres_conf(gres_ignore, LOG_LEVEL_DEBUG3);
 			continue;
 		}
 
-		_add_unique_gres_to_list(gres_list_out, gres_record);
+		_add_unique_gres_to_list(gres_list_out, gres_in);
 	}
 	list_iterator_destroy(itr);
 }
 
 /*
- * Add all unique, unignored devices specified by the GRES records in list in
- * only if they don't already exist in list out.
+ * Add all unique, unignored devices specified by the GRES records in
+ * gres_list_in only if they don't already exist in gres_list_out.
  */
 static void _add_unique_gres_list_to_list(List gres_list_out,
 					  List gres_list_in)
@@ -1571,8 +1581,6 @@ static void _add_unique_gres_list_to_list(List gres_list_out,
  * NOTES:
  * gres_list_conf_single: Same as gres_list_conf, except broken down so each
  * 			  GRES record has only one device file.
- * gres_list_final: The final normalized and compressed gres.conf list to be
- * 		    returned in the gres_list_conf list pointer.
  *
  * Remember, this code is run for each node on the cluster
  * The records need to be unique, keyed off of:
@@ -1584,7 +1592,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 {
 	ListIterator itr_conf, itr_single, itr_system;
 	gres_slurmd_conf_t *gres_record;
-	List gres_list_conf_single, gres_list_final, non_gpu_list;
+	List gres_list_conf_single, gres_list_gpu, gres_list_non_gpu;
 	bool use_system_detected = true;
 	bool log_zero = true;
 
@@ -1595,8 +1603,8 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	}
 
 	gres_list_conf_single = list_create(_delete_gres_list);
-	gres_list_final = list_create(_delete_gres_list);
-	non_gpu_list = list_create(_delete_gres_list);
+	gres_list_gpu = list_create(_delete_gres_list);
+	gres_list_non_gpu = list_create(_delete_gres_list);
 
 	debug2("gres_list_conf:");
 	_print_gres_list(gres_list_conf, LOG_LEVEL_DEBUG2);
@@ -1612,7 +1620,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		if (xstrcasecmp(gres_record->name, "gpu")) {
 			debug2("%s: preserving original `%s` GRES record",
 			       __func__, gres_record->name);
-			_add_gres_to_list(non_gpu_list,
+			_add_gres_to_list(gres_list_non_gpu,
 					  gres_record->name,
 					  gres_record->count,
 					  gres_record->cpu_cnt,
@@ -1729,37 +1737,38 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	}
 
 	// Combine single device records into multiple device records
-	debug2("Adding unique unignored USER-SPECIFIED devices:");
-	_add_unique_gres_list_to_list(gres_list_final, gres_list_conf_single);
+	debug2("Adding unique USER-SPECIFIED devices:");
+	_add_unique_gres_list_to_list(gres_list_gpu, gres_list_conf_single);
 
 	// If gres.conf is empty or only ignored devices, fill with system info
 	if (use_system_detected) {
 		debug2("Adding unique unignored SYSTEM-DETECTED devices:");
-		_add_unique_gres_list_to_list_compare(gres_list_final,
-						      gres_list_conf_single,
-						      gres_list_system);
+		// gres_list_conf_single only contains ignore records here
+		_add_unique_gres_list_to_list_ignore(gres_list_gpu,
+						     gres_list_conf_single,
+						     gres_list_system);
 	}
 
-	debug2("gres_list_final:");
-	_print_gres_list(gres_list_final, LOG_LEVEL_DEBUG2);
+	debug2("gres_list_gpu:");
+	_print_gres_list(gres_list_gpu, LOG_LEVEL_DEBUG2);
 
 	/*
 	 * Free old records in gres_list_conf
-	 * Replace gres_list_conf with gres_list_final
+	 * Replace gres_list_conf with gres_list_gpu
 	 * Note: list_transfer won't work because lists don't have same delFunc
 	 * Note: list_append_list won't work because delFunc is non-null
 	 */
 	list_flush(gres_list_conf);
-	while ((gres_record = list_pop(gres_list_final))) {
+	while ((gres_record = list_pop(gres_list_gpu))) {
 		list_append(gres_list_conf, gres_record);
 	}
-	while ((gres_record = list_pop(non_gpu_list))) {
+	while ((gres_record = list_pop(gres_list_non_gpu))) {
 		list_append(gres_list_conf, gres_record);
 	}
 
 	FREE_NULL_LIST(gres_list_conf_single);
-	FREE_NULL_LIST(gres_list_final);
-	FREE_NULL_LIST(non_gpu_list);
+	FREE_NULL_LIST(gres_list_gpu);
+	FREE_NULL_LIST(gres_list_non_gpu);
 }
 
 #ifdef HAVE_NVML

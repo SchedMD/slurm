@@ -23,10 +23,11 @@ of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
 For "GresTypes=gpu", by default Slurm will use all GPUs detected on the system
-at slurmd daemon startup. To ignore specific GPUs, simply specify a GRES gpu line with
-\fBIgnore=true\fR. Alternatively, you can choose to specify only the explicit
-GPUs you want to use. If you do this, other lines with "Ignore=true" are of no
-effect.
+at slurmd daemon startup. To ignore specific GPUs, simply specify
+\fBIgnore=true\fR along with \fBName\fR (=gpu) and \fBFile\fR.
+Alternatively, you can choose to specify only the explicit
+GPUs you want to use. If you do this, other lines with \fBIgnore=true\fR are of
+no effect.
 
 .LP
 CUDA Multi-Process Service (MPS) provides a mechanism where GPUs can be
@@ -219,11 +220,11 @@ Name=mps Count=100  File=/dev/nvidia1 COREs=2,3
 .br
 ##################################################################
 .br
-Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1 Ignore=true Links=\-1,2,0
+Name=gpu File=/dev/nvidia0 Ignore=true
 .br
-Name=gpu Type=tesla  File=/dev/nvidia1 COREs=2,3 Ignore=true Links=2,\-1,1
+Name=gpu File=/dev/nvidia1 Ignore=true
 .br
-Name=gpu Type=tesla  File=/dev/nvidia2 COREs=2,3 Ignore=true Links=0,1,\-1
+Name=gpu File=/dev/nvidia2 Ignore=true
 
 .LP
 .br
@@ -250,7 +251,7 @@ Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
 .br
 # Slurm's Generic Resource (GRES) configuration file
 .br
-## Use a single gres.conf file for all compute nodes
+## Use a single gres.conf file for all compute nodes \- positive method
 .br
 ##################################################################
 .br
@@ -266,16 +267,26 @@ NodeName=tux3  Name=gpu File=/dev/nvidia[0,2\-3]
 .br
 NodeName=tux[4\-15]  Name=gpu File=/dev/nvidia[0\-3]
 .br
+
+.LP
 .br
-## Ignore select system-detected devices on nodes tux16-tux31
+##################################################################
 .br
-NodeName=tux18 Name=gpu File=/dev/nvidia[1\-2] Ignore=true
+# Slurm's Generic Resource (GRES) configuration file
 .br
-NodeName=tux[19,25,28] Name=gpu File=/dev/nvidia3 Ignore=true
+## Use a single gres.conf file for all compute nodes \- negative method
 .br
-NodeName=tux29 Name=gpu File=/dev/nvidia[0,4] Ignore=true
+##################################################################
 .br
-NodeName=tux31 Name=gpu File=/dev/nvidia0 Ignore=true
+## Ignore select system-detected devices on nodes tux0\-tux15
+.br
+NodeName=tux0 Name=gpu File=/dev/nvidia[1\-2] Ignore=true
+.br
+NodeName=tux[4,9,12] Name=gpu File=/dev/nvidia3 Ignore=true
+.br
+NodeName=tux13 Name=gpu File=/dev/nvidia[0,4] Ignore=true
+.br
+NodeName=tux15 Name=gpu File=/dev/nvidia0 Ignore=true
 .br
 
 
