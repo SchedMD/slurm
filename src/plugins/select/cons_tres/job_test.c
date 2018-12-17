@@ -1997,7 +1997,7 @@ alloc_job:
 		return error_code;
 	}
 
-	/* translate job_res->cpus array into format with rep count */
+	/* translate job_res->cpus array into format with repitition count */
 	build_cnt = build_job_resources_cpu_array(job_res);
 	if (job_ptr->details->whole_node == 1) {
 		job_ptr->total_cpus = 0;
