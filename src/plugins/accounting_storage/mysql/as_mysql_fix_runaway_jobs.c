@@ -164,6 +164,17 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	iter = list_iterator_create(runaway_jobs);
 	while ((job = list_next(iter))) {
+		/*
+		 * Currently you can only fix one cluster at a time, so we need
+		 * to verify we don't have multiple cluster names.
+		 */
+		if (xstrcmp(job->cluster, first_job->cluster)) {
+			error("%s: You can only fix runaway jobs on one cluster at a time.",
+			      __func__);
+			rc = SLURM_ERROR;
+			goto bail;
+		}
+
 		xstrfmtcat(job_ids, "%s%d", ((job_ids) ? "," : ""), job->jobid);
 	}
 
