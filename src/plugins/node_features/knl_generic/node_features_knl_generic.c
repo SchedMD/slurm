@@ -1721,6 +1721,9 @@ extern int node_features_p_node_update(char *active_features,
 		if (mcdram_per_node && (mcdram_inx >= 0)) {
 			mcdram_size = mcdram_per_node[i] *
 				      (100 - mcdram_pct[mcdram_inx]) / 100;
+			if (!node_ptr->gres)
+				node_ptr->gres =
+					xstrdup(node_ptr->config_ptr->gres);
 			gres_plugin_node_feature(node_ptr->name, "hbm",
 						 mcdram_size, &node_ptr->gres,
 						 &node_ptr->gres_list);

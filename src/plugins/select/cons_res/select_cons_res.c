@@ -1759,7 +1759,13 @@ static time_t _guess_job_end(struct job_record * job_ptr, time_t now)
 	if (over_time_limit == 0) {
 		end_time = job_ptr->end_time + slurmctld_conf.kill_wait;
 	} else if (over_time_limit == INFINITE16) {
-		end_time = now + (365 * 24 * 60 * 60);	/* one year */
+		/* No idea when the job might end, this is just a guess */
+		if (job_ptr->time_limit && (job_ptr->time_limit != NO_VAL) &&
+		    (job_ptr->time_limit != INFINITE)) {
+			end_time = now + (job_ptr->time_limit * 60);
+		} else {
+			end_time = now + (365 * 24 * 60 * 60);	/* one year */
+		}
 	} else {
 		end_time = job_ptr->end_time + slurmctld_conf.kill_wait +
 			   (over_time_limit  * 60);

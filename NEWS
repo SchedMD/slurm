@@ -50,6 +50,16 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.5
 ==========================
+ -- Backfill - If a job has a time_limit guess the end time of a job better
+    if OverTimeLimit is Unlimited.
+ -- Fix "sacctmgr show events event=cluster"
+ -- Fix sacctmgr show runawayjobs from sibling cluster
+ -- Avoid bit offset of -1 in call to bit_nclear().
+ -- Insure that "hbm" is a configured GresType on knl systems.
+ -- Fix NodeFeaturesPlugins=node_features/knl_generic to allow other gres
+    other than knl.
+ -- cons_res: Prevent overflow on multiply.
+ -- Better debug for bad values in gres.conf.
 
 * Changes in Slurm 18.08.4
 ==========================

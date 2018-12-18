@@ -505,7 +505,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 	if (!list_count(format_list)) {
 		if (event_cond->event_type == SLURMDB_EVENT_CLUSTER)
 			slurm_addto_char_list(format_list,
-					      "Cluster,Cpus,Start,End,"
+					      "Cluster,TRES,Start,End,"
 					      "ClusterNodes");
 		else
 			slurm_addto_char_list(format_list,

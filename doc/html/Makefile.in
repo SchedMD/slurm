@@ -465,6 +465,7 @@ generated_html = \
 	checkpoint_plugins.html \
 	cons_res.html \
 	cons_res_share.html \
+	containers.html \
 	contributor.html \
 	core_spec.html \
 	core_spec_plugins.html \

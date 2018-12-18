@@ -919,7 +919,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	uint64_t tmp_uint64;
 	char *tmp_str, *last;
 	bool cores_flag = false, cpus_flag = false;
-	char *type_str;
+	char *type_str = NULL;
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
