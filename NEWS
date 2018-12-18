@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix "sacctmgr show events event=cluster"
  -- Fix sacctmgr show runawayjobs from sibling cluster
  -- Avoid bit offset of -1 in call to bit_nclear().
+ -- Insure that "hbm" is a configured GresType on knl systems.
 
 * Changes in Slurm 18.08.4
 ==========================
