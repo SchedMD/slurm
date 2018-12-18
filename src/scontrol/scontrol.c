@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 			all_flag = 1;
 			break;
 		case (int)'d':
-			detail_flag++;
+			detail_flag = 1;
 			break;
 		case (int)'F':
 			future_flag = 1;

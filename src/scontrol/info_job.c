@@ -60,11 +60,8 @@ scontrol_load_job(job_info_msg_t ** job_buffer_pptr, uint32_t job_id)
 	if (all_flag)
 		show_flags |= SHOW_ALL;
 
-	if (detail_flag) {
+	if (detail_flag)
 		show_flags |= SHOW_DETAIL;
-		if (detail_flag > 1)
-			show_flags |= SHOW_DETAIL2;
-	}
 	if (federation_flag)
 		show_flags |= SHOW_FEDERATION;
 	if (local_flag)
