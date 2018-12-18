@@ -90,7 +90,7 @@ static void _block_whole_nodes(bitstr_t *node_bitmap,
 static gres_mc_data_t *_build_gres_mc_data(struct job_record *job_ptr);
 static List _build_node_weight_list(bitstr_t *node_bitmap);
 static int  _compare_support(const void *v, const void *v1);
-static void _cpus_to_use(uint16_t *avail_cpus, int rem_cpus, int rem_nodes,
+static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_cpus, int rem_nodes,
 			 struct job_details *details_ptr,
 			 avail_res_t *avail_res, int node_inx,
 			 uint16_t cr_type, uint16_t min_gres_cpu);
@@ -2128,7 +2128,7 @@ static inline void _log_select_maps(char *loc, bitstr_t *node_map,
  *	resources will be available for nodes considered later in the
  *	scheduling process
  * OUT avail_cpus - Count of CPUs to use on this node
- * IN rem_min_cpus - Miniumum count of CPUs remaining to be allocated for job
+ * IN rem_max_cpus - Maximum count of CPUs remaining to be allocated for job
  * IN rem_nodes - Count of nodes remaining to be allocated for job
  * IN details_ptr - Job details information
  * IN avail_res - Available resources for job on this node, contents updated
@@ -2136,7 +2136,7 @@ static inline void _log_select_maps(char *loc, bitstr_t *node_map,
  * IN cr_type - Resource allocation units (CR_CORE, CR_SOCKET, etc).
  * IN min_gres_cpu - Minimum CPUs per node based upon GRES requirements
  */
-static void _cpus_to_use(uint16_t *avail_cpus, int rem_min_cpus,
+static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_max_cpus,
 			 int rem_nodes, struct job_details *details_ptr,
 			 avail_res_t *avail_res, int node_inx,
 			 uint16_t cr_type, uint16_t min_gres_cpu)
@@ -2150,9 +2150,9 @@ static void _cpus_to_use(uint16_t *avail_cpus, int rem_min_cpus,
 	resv_cpus *= vpus_per_core(details_ptr, node_inx);
 	if (cr_type & CR_SOCKET)
 		resv_cpus *= select_node_record[node_inx].cores;
-	rem_min_cpus -= resv_cpus;
-	if (*avail_cpus > rem_min_cpus) {
-		*avail_cpus = MAX(rem_min_cpus, (int)details_ptr->pn_min_cpus);
+	rem_max_cpus -= resv_cpus;
+	if (*avail_cpus > rem_max_cpus) {
+		*avail_cpus = MAX(rem_max_cpus, (int)details_ptr->pn_min_cpus);
 		*avail_cpus = MAX(*avail_cpus, min_gres_cpu);
 		/* Round up CPU count to CPU in allocation unit (e.g. core) */
 		avail_res->avail_cpus = *avail_cpus;
@@ -2308,6 +2308,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	bool new_best;
 	uint64_t best_weight = 0;
 	uint16_t avail_cpus = 0, min_gres_cpu;
+	int64_t rem_max_cpus;
 	int total_cpus = 0;	/* #CPUs allocated to job */
 	bool gres_per_job, required_node;
 	struct job_details *details_ptr = job_ptr->details;
@@ -2419,6 +2420,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 
 	avail_cpu_per_node = xmalloc(sizeof(uint16_t) * select_node_cnt);
 	rem_cpus = details_ptr->min_cpus;
+	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list))) {
 		rem_nodes = MIN(min_nodes, req_nodes);
@@ -2447,7 +2449,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-			_cpus_to_use(&avail_cpus, rem_cpus, min_rem_nodes,
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
 			if (avail_cpus == 0) {
@@ -2458,6 +2460,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			avail_cpu_per_node[i] = avail_cpus;
 			total_cpus += avail_cpus;
 			rem_cpus -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
@@ -2741,7 +2744,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				 * them and then the step layout will sort
 				 * things out.
 				 */
-				_cpus_to_use(&avail_cpus, rem_cpus,
+				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type,
 					     min_gres_cpu);
@@ -2760,6 +2763,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				min_rem_nodes--;
 				max_nodes--;
 				rem_cpus -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
 					gres_plugin_job_sched_add(
 						job_ptr->gres_list,
@@ -2788,7 +2792,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				 * them and then the step layout will sort
 				 * things out.
 				 */
-				_cpus_to_use(&avail_cpus, rem_cpus,
+				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type,
 					     min_gres_cpu);
@@ -2802,6 +2806,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 					continue;
 				}
 				rem_cpus -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				bit_set(node_map, i);
 				rem_nodes--;
 				min_rem_nodes--;
@@ -2886,7 +2891,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				 * them and then the step layout will sort
 				 * things out.
 				 */
-				_cpus_to_use(&avail_cpus, rem_cpus,
+				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type,
 					     min_gres_cpu);
@@ -2900,6 +2905,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 					continue;
 				}
 				rem_cpus -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				bit_set(node_map, i);
 				rem_nodes--;
 				min_rem_nodes--;
@@ -2959,6 +2965,7 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
+	int64_t rem_max_cpus;
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bitstr_t *orig_node_map = bit_copy(node_map);
@@ -2974,6 +2981,7 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
+	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
@@ -3015,12 +3023,13 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-			_cpus_to_use(&avail_cpus, rem_cpus, min_rem_nodes,
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
 			if ((avail_cpus > 0) && (max_nodes > 0)) {
 				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				rem_nodes--;
 				min_rem_nodes--;
 				/* leaving bitmap set, decr max limit */
@@ -3077,7 +3086,7 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-			_cpus_to_use(&avail_cpus, rem_cpus, min_rem_nodes,
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
 			if (avail_cpus == 0)
@@ -3091,6 +3100,7 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 				continue;
 			}
 			rem_cpus -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
@@ -3146,6 +3156,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
+	int64_t rem_max_cpus;
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bitstr_t *orig_node_map = bit_copy(node_map);
@@ -3161,6 +3172,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
+	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
@@ -3202,12 +3214,13 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-			_cpus_to_use(&avail_cpus, rem_cpus, min_rem_nodes,
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
 			if ((avail_cpus > 0) && (max_nodes > 0)) {
 				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				rem_nodes--;
 				min_rem_nodes--;
 				/* leaving bitmap set, decr max limit */
@@ -3276,7 +3289,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 					      i, &avail_cpus, max_nodes,
 					      min_rem_nodes, avail_core,
 					      avail_res_array, first_pass);
-				_cpus_to_use(&avail_cpus, rem_cpus,
+				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type,
 					     min_gres_cpu);
@@ -3292,6 +3305,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 					continue;
 				}
 				rem_cpus -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
@@ -3396,6 +3410,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 	ListIterator iter;
 	struct node_record *node_ptr;
 	uint16_t avail_cpus = 0, min_gres_cpu;
+	int64_t rem_max_cpus;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
@@ -3426,6 +3441,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
+	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if (job_ptr->details->mc_ptr &&
 	    job_ptr->details->mc_ptr->sockets_per_node)
@@ -3487,7 +3503,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-			_cpus_to_use(&avail_cpus, rem_cpus, min_rem_nodes,
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
 			if (avail_cpus == 0) {
@@ -3502,6 +3518,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 			max_nodes--;
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
 				gres_plugin_job_sched_add(job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
@@ -3724,6 +3741,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 			avail_cpus = avail_cpu_per_node[i];
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
 				gres_plugin_job_sched_add(job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
@@ -3893,6 +3911,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 				max_nodes--;
 				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
 					gres_plugin_job_sched_add(
 						job_ptr->gres_list,
@@ -3957,6 +3976,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 				max_nodes--;
 				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
 					gres_plugin_job_sched_add(
 						job_ptr->gres_list,
@@ -4034,6 +4054,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 	ListIterator iter;
 	struct node_record *node_ptr;
 	uint16_t avail_cpus = 0, min_gres_cpu;
+	int64_t rem_max_cpus;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
@@ -4058,6 +4079,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
+	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if (job_ptr->details->mc_ptr &&
 	    job_ptr->details->mc_ptr->sockets_per_node)
@@ -4119,7 +4141,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-			_cpus_to_use(&avail_cpus, rem_cpus, min_rem_nodes,
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
 			if (avail_cpus == 0) {
@@ -4134,6 +4156,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			max_nodes--;
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
 				gres_plugin_job_sched_add(job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
@@ -4356,6 +4379,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			avail_cpus = avail_cpu_per_node[i];
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
 				gres_plugin_job_sched_add(job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
@@ -4475,6 +4499,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 				max_nodes--;
 				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
 					gres_plugin_job_sched_add(
 						job_ptr->gres_list,
@@ -4546,6 +4571,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			avail_cpus = avail_cpu_per_node[i];
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
 				gres_plugin_job_sched_add(job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
@@ -4597,6 +4623,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
+	int64_t rem_max_cpus;
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bitstr_t *orig_node_map = bit_copy(node_map);
@@ -4613,6 +4640,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
+	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
@@ -4654,12 +4682,13 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-			_cpus_to_use(&avail_cpus, rem_cpus, min_rem_nodes,
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
 			if ((avail_cpus > 0) && (max_nodes > 0)) {
 				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				rem_nodes--;
 				min_rem_nodes--;
 				/* leaving bitmap set, decr max limit */
@@ -4723,7 +4752,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 					      i, &avail_cpus, max_nodes,
 					      min_rem_nodes, avail_core,
 					      avail_res_array, first_pass);
-				_cpus_to_use(&avail_cpus, rem_cpus,
+				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type,
 					     min_gres_cpu);
@@ -4757,6 +4786,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 				continue;
 			}
 			rem_cpus -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
@@ -4812,6 +4842,7 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
 	int total_cpus = 0;	/* #CPUs allocated to job */
+	int64_t rem_max_cpus;
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bitstr_t *orig_node_map = bit_copy(node_map);
@@ -4827,6 +4858,7 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 	if (job_ptr->gres_list && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
+	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
@@ -4868,12 +4900,13 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-			_cpus_to_use(&avail_cpus, rem_cpus, min_rem_nodes,
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
 			if ((avail_cpus > 0) && (max_nodes > 0)) {
 				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				rem_nodes--;
 				min_rem_nodes--;
 				/* leaving bitmap set, decr max limit */
@@ -4930,7 +4963,7 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
-			_cpus_to_use(&avail_cpus, rem_cpus,
+			_cpus_to_use(&avail_cpus, rem_max_cpus,
 				     min_rem_nodes, details_ptr,
 				     avail_res_array[i], i, cr_type,
 				     min_gres_cpu);
@@ -4945,6 +4978,7 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 				continue;
 			}
 			rem_cpus -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
