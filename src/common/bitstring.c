@@ -1270,16 +1270,18 @@ inx2bitfmt (int32_t *inx)
 
 int inx2bitstr(bitstr_t *b, int32_t *inx)
 {
-	int32_t *p;
+	int32_t *p, bit_cnt;
 	int rc = 0;
 
 	assert(b);
 	assert(inx);
 
-	bit_nclear(b, 0, _bitstr_bits(b) - 1);
+	bit_cnt = _bitstr_bits(b);
+	if (bit_cnt > 0)
+		bit_nclear(b, 0, bit_cnt - 1);
 	for (p = inx; *p != -1; p += 2) {
-		if ((*p < 0) || (*p >= _bitstr_bits(b))
-		    ||  (*(p + 1) < 0) || (*(p + 1) >= _bitstr_bits(b))) {
+		if ((*p < 0) || (*p >= bit_cnt) ||
+		    (*(p + 1) < 0) || (*(p + 1) >= bit_cnt)) {
 			rc = -1;
 			break;
 		}
