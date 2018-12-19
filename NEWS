@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     other than knl.
  -- cons_res: Prevent overflow on multiply.
  -- Better debug for bad values in gres.conf.
+ -- Fix double accounting of energy at end of job.
 
 * Changes in Slurm 18.08.4
 ==========================
