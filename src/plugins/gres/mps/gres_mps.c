@@ -419,9 +419,7 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	char *slurm_env_var = NULL;
 
 	if (is_job)
-		// TODO: This env var doesn't exist. Should it be SLURM_GRES?
 		slurm_env_var = "SLURM_JOB_GRES";
-		// slurm_env_var = "SLURM_GRES";
 	else
 		slurm_env_var = "SLURM_STEP_GRES";
 
