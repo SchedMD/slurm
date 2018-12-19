@@ -573,11 +573,14 @@ static int _cmp_sock(const void *a, const void *b)
 static int _compute_c_b_task_dist(struct job_record *job_ptr)
 {
 	bool over_subscribe = false;
-	uint32_t n, i, tid, maxtasks, l;
+	uint32_t n, i, i_first, i_last, tid, t, maxtasks, l;
 	uint16_t *avail_cpus;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool log_over_subscribe = true;
 	char *err_msg = NULL;
+	uint16_t *vpus;
+	bool space_remaining = false;
+	int rem_cpus, rem_tasks;
 
 	if (!job_res)
 		err_msg = "job_res is NULL";
@@ -589,6 +592,15 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		error("%s: %s: Invalid allocation for %pJ: %s",
 		      plugin_type, __func__, job_ptr, err_msg);
 		return SLURM_ERROR;
+	}
+
+	vpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
+	i_first = bit_ffs(job_res->node_bitmap);
+	i_last  = bit_fls(job_res->node_bitmap);
+	for (i = i_first, n = 0; i <= i_last; i++) {
+		if (!bit_test(job_res->node_bitmap, i))
+			continue;
+		vpus[n++] = select_node_record[i].vpus;
 	}
 
 	maxtasks = job_res->ncpus;
@@ -620,8 +632,54 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		job_ptr->details->cpus_per_task = 1;
 	if (job_ptr->details->overcommit)
 		log_over_subscribe = false;
-	for (tid = 0, i = job_ptr->details->cpus_per_task; (tid < maxtasks);
-	     i += job_ptr->details->cpus_per_task) {	/* cycle counter */
+	/* Start by allocating one task per node */
+	space_remaining = false;
+	tid = 0;
+	for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
+		if (avail_cpus[n] || over_subscribe) {
+			tid++;
+			job_res->tasks_per_node[n]++;
+			for (l = 0; l < job_ptr->details->cpus_per_task; l++) {
+				if (job_res->cpus[n] < avail_cpus[n])
+					job_res->cpus[n]++;
+			}
+			if ((i + 1) <= avail_cpus[n])
+				space_remaining = true;
+		}
+	}
+	if (!space_remaining)
+		over_subscribe = true;
+
+	/* Next fill out the CPUs on the cores already allocated to this job */
+	for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
+		rem_cpus = job_res->cpus[n] % vpus[n];
+		rem_tasks = rem_cpus / job_ptr->details->cpus_per_task;
+		if (rem_tasks == 0)
+			continue;
+		for (t = 0; ((t < rem_tasks) && (tid < maxtasks)); t++){
+			if (!over_subscribe &&
+			    ((avail_cpus[n] - job_res->cpus[n]) <
+			     job_ptr->details->cpus_per_task))
+				break;
+			tid++;
+			job_res->tasks_per_node[n]++;
+			for (l = 0; l < job_ptr->details->cpus_per_task; l++) {
+				if (job_res->cpus[n] < avail_cpus[n])
+					job_res->cpus[n]++;
+			}
+		}
+	}
+
+	/*
+	 * Next distribute additional tasks, packing the cores or sockets as
+	 * appropriate to avoid allocating more CPUs than needed. For example,
+	 * with core allocations and 2 processors per core, we don't want to
+	 * partially populate some cores on some nodes and allocate extra
+	 * cores on other nodes. So "srun -n20 hostname" should not launch 7
+	 * tasks on node 0, 7 tasks on node 1, and 6 tasks on node 2.  It should
+	 * launch 8 tasks on node, 8 tasks on node 1, and 4 tasks on node 2.
+	 */
+	for (i = 0; tid < maxtasks; i++) {
 		bool space_remaining = false;
 		if (over_subscribe && log_over_subscribe) {
 			/*
@@ -635,7 +693,13 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 			log_over_subscribe = false;	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
-			if ((i <= avail_cpus[n]) || over_subscribe) {
+			rem_tasks = vpus[n] / job_ptr->details->cpus_per_task;
+			rem_tasks = MAX(rem_tasks, 1);
+			for (t = 0; ((t < rem_tasks) && (tid < maxtasks)); t++){
+				if (!over_subscribe &&
+				    ((avail_cpus[n] - job_res->cpus[n]) <
+				     job_ptr->details->cpus_per_task))
+					break;
 				tid++;
 				job_res->tasks_per_node[n]++;
 				for (l = 0; l < job_ptr->details->cpus_per_task;
@@ -643,18 +707,23 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 					if (job_res->cpus[n] < avail_cpus[n])
 						job_res->cpus[n]++;
 				}
-				if ((i + 1) <= avail_cpus[n])
+				if ((avail_cpus[n] - job_res->cpus[n]) >=
+				    job_ptr->details->cpus_per_task)
 					space_remaining = true;
 			}
 		}
-		if (!space_remaining) {
+		if (!space_remaining)
 			over_subscribe = true;
-		}
 	}
 	xfree(avail_cpus);
+	xfree(vpus);
 
 	if (job_ptr->details->overcommit && job_ptr->tres_per_task)
 		maxtasks = job_ptr->details->num_tasks;
+	/*
+	 * Distribute any remaining tasks (without dedicated CPUs) evenly
+	 * across nodes
+	 */
 	while (tid < maxtasks) {
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 			tid++;
