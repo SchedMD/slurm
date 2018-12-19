@@ -244,7 +244,7 @@ if {$job_id2 == 0} {
 }
 
 if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: job job_id2 did not complete\n"
+	send_user "\nFAILURE: job $job_id2 did not complete\n"
 	cancel_job $job_id2
 	set exit_code 1
 }
@@ -332,7 +332,7 @@ if {$job_id2 == 0} {
 }
 
 if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: job job_id2 did not complete\n"
+	send_user "\nFAILURE: job $job_id2 did not complete\n"
 	cancel_job $job_id2
 	set exit_code 1
 }
@@ -416,7 +416,7 @@ if {$job_id2 == 0} {
 }
 
 if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: job job_id2 did not complete\n"
+	send_user "\nFAILURE: job $job_id2 did not complete\n"
 	cancel_job $job_id2
 	set exit_code 1
 }

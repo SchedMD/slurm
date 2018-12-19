@@ -314,7 +314,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -381,7 +381,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -423,7 +423,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -464,7 +464,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -512,7 +512,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -553,7 +553,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -595,7 +595,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -636,7 +636,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
@@ -691,7 +691,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: job did not complete\n"
+	send_user "\nFAILURE: job $job_id did not complete\n"
 	cancel_job $job_id
 	exit 1
 }
