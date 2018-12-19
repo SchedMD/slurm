@@ -776,6 +776,19 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 	return 0;
 }
 
+static bool _run_in_daemon(void)
+{
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmd,slurmstepd");
+	}
+
+	return run;
+}
+
 /* Make sure that specified file name exists, wait up to 20 seconds or generate
  * fatal error and exit. */
 static void _my_stat(char *file_name)
@@ -783,6 +796,9 @@ static void _my_stat(char *file_name)
 	struct stat config_stat;
 	bool sent_msg = false;
 	int i;
+
+	if (!_run_in_daemon())
+		return;
 
 	for (i = 0; i < 20; i++) {
 		if (i)
@@ -1125,6 +1141,8 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 			fatal("gres.conf duplicate records for %s",
 			      context_ptr->gres_name);
 		}
+		if (new_has_file)
+			context_ptr->config_flags |= GRES_CONF_HAS_FILE;
 	}
 	list_iterator_destroy(iter);
 }
@@ -1206,8 +1224,11 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	}
 
 	slurm_mutex_lock(&gres_context_lock);
-	if (!gres_node_name && node_name)
+	if (xstrcmp(gres_node_name, node_name)) {
+		xfree(gres_node_name);
 		gres_node_name = xstrdup(node_name);
+	}
+
 	gres_cpu_cnt = cpu_cnt;
 	tbl = s_p_hashtbl_create(_gres_options);
 	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
