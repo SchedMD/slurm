@@ -43,8 +43,6 @@
  */
 #define MAX_BOARDS 8
 
-#define _DEBUG 0	/* Enables module specific debugging */
-
 /*
  * Combination counts
  * comb_counts[n-1][k-1] = number of combinations of
@@ -74,8 +72,7 @@ static int _compute_plane_dist(struct job_record *job_ptr);
 static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				    const uint16_t cr_type, bool preempt_mode);
 static void _gen_combs(int *comb_list, int n, int k);
-static inline void _log_select_maps(char *loc, bitstr_t *node_map,
-				    bitstr_t *core_map);
+static inline void _log_select_maps(char *loc, struct job_record *job_ptr);
 
 /*
  * sync up core bitmap arrays with job_resources_t struct using a best-fit
@@ -1173,21 +1170,35 @@ static int _set_task_dist(struct job_record *job_ptr)
 }
 
 /* Enable detailed logging of cr_dist() node and core bitmaps */
-static inline void _log_select_maps(char *loc, bitstr_t *node_map,
-				    bitstr_t *core_map)
+static inline void _log_select_maps(char *loc, struct job_record *job_ptr)
 {
-#if _DEBUG
+	job_resources_t *job_res = job_ptr->job_resrcs;
 	char tmp[100];
+	int i;
 
-	if (node_map) {
-		bit_fmt(tmp, sizeof(tmp), node_map);
-		info("%s nodemap:%s", loc, tmp);
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		info("%s: %s %pJ", __func__, loc, job_ptr);
+		if (job_res->node_bitmap) {
+			bit_fmt(tmp, sizeof(tmp), job_res->node_bitmap);
+			info("  node_bitmap:%s", tmp);
+		}
+		if (job_res->core_bitmap) {
+			bit_fmt(tmp, sizeof(tmp), job_res->core_bitmap);
+			info("  core_bitmap:%s", tmp);
+		}
+		if (job_res->cpus) {
+			for (i = 0; i < job_res->nhosts; i++) {
+				info("  avail_cpus[%d]:%u", i,
+				     job_res->cpus[i]);
+			}
+		}
+		if (job_res->tasks_per_node) {
+			for (i = 0; i < job_res->nhosts; i++) {
+				info("  tasks_per_node[%d]:%u", i,
+				     job_res->tasks_per_node[i]);
+			}
+		}
 	}
-	if (core_map) {
-		bit_fmt(tmp, sizeof(tmp), core_map);
-		info("%s coremap:%s", loc, tmp);
-	}
-#endif
 }
 
 /*
@@ -1264,8 +1275,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		return SLURM_SUCCESS;
 	}
 
-	_log_select_maps("cr_dist/start", job_ptr->job_resrcs->node_bitmap,
-			 job_ptr->job_resrcs->core_bitmap);
+	_log_select_maps("cr_dist/start", job_ptr);
 	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
 	    SLURM_DIST_PLANE) {
 		/* Perform plane distribution on the job_resources_t struct */
@@ -1278,6 +1288,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 	}
+	_log_select_maps("cr_dist/middle", job_ptr);
 
 	/*
 	 * now sync up the core_bitmap with the job_resources_t struct
@@ -1334,7 +1345,6 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		return SLURM_ERROR;
 	}
 
-	_log_select_maps("cr_dist/fini", job_ptr->job_resrcs->node_bitmap,
-			 job_ptr->job_resrcs->core_bitmap);
+	_log_select_maps("cr_dist/fini", job_ptr);
 	return error_code;
 }
