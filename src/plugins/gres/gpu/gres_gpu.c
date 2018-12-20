@@ -1614,6 +1614,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		hostlist_t hl;
 		char **file_array;
 		char *hl_name;
+
 		// Just move this GRES record if it's not a GPU GRES
 		if (xstrcasecmp(gres_record->name, "gpu")) {
 			debug2("%s: preserving original `%s` GRES record",
@@ -1628,6 +1629,10 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 					  gres_record->links,
 					  gres_record->ignore);
 			continue;
+		}
+		if (!gres_record->file) {
+			error("%s: gres/gpu lacks \"File\" specification",
+			       __func__);
 		}
 		if (gres_record->count == 0) {
 			if (log_zero) {
