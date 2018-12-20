@@ -257,10 +257,12 @@ static void	_set_gres_socks(char *orig_config, char **new_config,
 				bitstr_t *tot_core_bitmap, int core_cnt,
 				int sock_cnt, char *gres_name,
 				char *gres_name_colon, int gres_name_colon_len);
+static bool	_shared_gres(uint32_t plugin_id);
 static void	_sock_gres_del(void *x);
 static int	_step_alloc(void *step_gres_data, void *job_gres_data,
-			    int node_offset, bool first_step_node,
-			    char *gres_name, uint32_t job_id, uint32_t step_id,
+			    uint32_t plugin_id, int node_offset,
+			    bool first_step_node, char *gres_name,
+			    uint32_t job_id, uint32_t step_id,
 			    uint16_t tasks_on_node, uint32_t rem_nodes);
 static int	_step_dealloc(void *step_gres_data, void *job_gres_data,
 			      char *gres_name, uint32_t job_id,
@@ -10912,8 +10914,20 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 	return core_cnt;
 }
 
+/*
+ * Return TRUE if this plugin ID consumes GRES count > 1 for a single device
+ * file (e.g. MPS)
+ */
+static bool _shared_gres(uint32_t plugin_id)
+{
+	if (plugin_id == mps_plugin_id)
+		return true;
+	return false;
+}
+
 static int _step_alloc(void *step_gres_data, void *job_gres_data,
-		       int node_offset, bool first_step_node, char *gres_name,
+		       uint32_t plugin_id, int node_offset,
+		       bool first_step_node, char *gres_name,
 		       uint32_t job_id, uint32_t step_id,
 		       uint16_t tasks_on_node, uint32_t rem_nodes)
 {
@@ -11022,19 +11036,29 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	}
 
 	gres_bit_alloc = bit_copy(job_gres_ptr->gres_bit_alloc[node_offset]);
-	if (job_gres_ptr->gres_bit_step_alloc &&
-	    job_gres_ptr->gres_bit_step_alloc[node_offset]) {
-		bit_and_not(gres_bit_alloc,
-			job_gres_ptr->gres_bit_step_alloc[node_offset]);
-	}
-
 	len = bit_size(gres_bit_alloc);
-	for (i = 0; i < len; i++) {
-		if (gres_needed > 0) {
-			if (bit_test(gres_bit_alloc, i))
-				gres_needed--;
-		} else {
-			bit_clear(gres_bit_alloc, i);
+	if (_shared_gres(plugin_id)) {
+		for (i = 0; i < len; i++) {
+			if (gres_needed > 0) {
+				if (bit_test(gres_bit_alloc, i))
+					gres_needed = 0;
+			} else {
+				bit_clear(gres_bit_alloc, i);
+			}
+		}
+	} else {
+		if (job_gres_ptr->gres_bit_step_alloc &&
+		    job_gres_ptr->gres_bit_step_alloc[node_offset]) {
+			bit_and_not(gres_bit_alloc,
+				job_gres_ptr->gres_bit_step_alloc[node_offset]);
+		}
+		for (i = 0; i < len; i++) {
+			if (gres_needed > 0) {
+				if (bit_test(gres_bit_alloc, i))
+					gres_needed--;
+			} else {
+				bit_clear(gres_bit_alloc, i);
+			}
 		}
 	}
 	if (gres_needed) {
@@ -11145,7 +11169,8 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 		}
 
 		rc2 = _step_alloc(step_gres_ptr->gres_data,
-				  job_gres_ptr->gres_data, node_offset,
+				  job_gres_ptr->gres_data,
+				  step_gres_ptr->plugin_id, node_offset,
 				  first_step_node, gres_context[i].gres_name,
 				  job_id, step_id, tasks_on_node, rem_nodes);
 		if (rc2 != SLURM_SUCCESS)

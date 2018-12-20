@@ -224,9 +224,101 @@ if {$match != 3} {
 }
 
 #
-# Run step to try to consume gres/mps than allocated to the job
+# Run three steps in parallel to make sure steps get delay as needed to avoid
+# oversubscribing consumed MPS resources
 #
 send_user "\n\n==== TEST 4 ====\n"
+set target_job  [expr $mps_cnt / 2]
+set target_step [expr $target_job / 2]
+make_bash_script $file_in1 "
+echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
+$bin_sleep 5
+exit 0"
+make_bash_script $file_in2 "
+$srun --mem=0 --gres=mps:$target_step $file_in1 &
+$srun --mem=0 --gres=mps:$target_step $file_in1 &
+$srun --mem=0 --gres=mps:$target_step $file_in1 &
+wait
+$bin_date
+exit 0"
+set job_id 0
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out -J "test$test_id" $file_in2]
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+                send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	set exit_code 1
+}
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: job $job_id did not complete\n"
+	cancel_job $job_id2
+	set exit_code 1
+}
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: no output file\n"
+	exit 1
+}
+set match 0
+spawn $bin_cat $file_out
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
+		incr match
+		if {$match == 1} {
+			set dev  $expect_out(1,string)
+			set perc $expect_out(2,string)
+		} else {
+			if {$dev != $expect_out(1,string)} {
+				send_user "\nFAILURE: bad CUDA device ID ($dev != $expect_out(1,string))\n"
+				set exit_code 1
+			}
+			if {$perc != $expect_out(2,string)} {
+				send_user "\nFAILURE: inconsistent step MPS percentages ($perc != $expect_out(2,string))\n"
+				set exit_code 1
+			}
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 3} {
+	send_user "\nFAILURE: bad CUDA information about job ($match != 3)\n"
+	set exit_code 1
+}
+log_user 0
+set match 0
+spawn $bin_cat $file_out
+expect {
+	-re "step creation temporarily disabled" {
+		incr match
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {$match != 1} {
+	send_user "\nFAILURE: failed to delay step for sufficient MPS resources ($match != 1)\n"
+	set exit_code 1
+}
+
+#
+# Run step to try to consume gres/mps than allocated to the job
+#
+send_user "\n\n==== TEST 5 ====\n"
 set target_job  [expr $mps_cnt / 2]
 set target_step [expr $target_job + 1]
 make_bash_script $file_in1 "
