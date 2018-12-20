@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
     TRESBillingWeight.
  -- Fix possibility to update a job's reservation to none.
  -- Suppress connection errors to primary slurmdbd when backup dbd is active.
+ -- Suppress connection errors to primary db when backup db kicks in
 
 * Changes in Slurm 18.08.4
 ==========================

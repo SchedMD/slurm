@@ -703,6 +703,8 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 		mysql_options(mysql_conn->db_conn, MYSQL_OPT_CONNECT_TIMEOUT,
 			      (char *)&my_timeout);
 		while (!storage_init) {
+			debug2("Attempting to connect to %s:%d", db_host,
+			       db_info->port);
 			if (!mysql_real_connect(mysql_conn->db_conn, db_host,
 					        db_info->user, db_info->pass,
 					        db_name, db_info->port, NULL,
@@ -715,15 +717,17 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 				} else {
 					const char *err_str = mysql_error(
 						mysql_conn->db_conn);
-					error("mysql_real_connect failed: "
-					      "%d %s",
-					      err, err_str);
 					if ((db_host == db_info->host)
 					    && db_info->backup) {
+						debug2("mysql_real_connect failed: %d %s",
+						       err, err_str);
 						db_host = db_info->backup;
 						continue;
 					}
 
+					error("mysql_real_connect failed: "
+					      "%d %s",
+					      err, err_str);
 					rc = ESLURM_DB_CONNECTION;
 					mysql_close(mysql_conn->db_conn);
 					mysql_conn->db_conn = NULL;
