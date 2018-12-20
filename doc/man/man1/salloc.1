@@ -41,6 +41,19 @@ If salloc is unable to execute the user command, it will
 return 1 and print errors to stderr. Else if success or if killed by signals
 HUP, INT, KILL, or QUIT: it will return 0.
 
+.SH "COMMAND PATH RESOLUTION"
+
+.nr step 1 1
+If provided, the command is resolved in the following order:
+.br
+.IP \n[step]. 3
+If command starts with ".", then path is constructed as:
+current working directory / command
+.IP \n+[step].
+If command starts with a "/", then path is considered absolute.
+.IP \n+[step].
+If command can be resolved through PATH. See \fBpath_resolution\fR(7).
+
 .SH "OPTIONS"
 .LP
 

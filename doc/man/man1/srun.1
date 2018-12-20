@@ -25,6 +25,21 @@ srun will return the highest exit code of all tasks run or the highest signal
 (with the high-order bit set in an 8-bit integer -- e.g. 128 + signal) of any
 task that exited with a signal.
 
+.SH "EXECUTABLE PATH RESOLUTION"
+
+.nr step 1 1
+The executable is resolved in the following order:
+.br
+.IP \n[step]. 3
+If executable starts with ".", then path is constructed as:
+current working directory / executable
+.IP \n+[step].
+If executable starts with a "/", then path is considered absolute.
+.IP \n+[step].
+If executable can be resolved through PATH. See \fBpath_resolution\fR(7).
+.IP \n+[step].
+If executable is in current working directory.
+
 .SH "OPTIONS"
 .LP
 

@@ -39,6 +39,21 @@ https://slurm.schedmd.com/cpu_management.html
 .SH "RETURN VALUE"
 sbatch will return 0 on success or error code on failure.
 
+.SH "SCRIPT PATH RESOLUTION"
+
+.nr step 1 1
+The batch script is resolved in the following order:
+.br
+.IP \n[step]. 3
+If script starts with ".", then path is constructed as:
+current working directory / script
+.IP \n+[step].
+If script starts with a "/", then path is considered absolute.
+.IP \n+[step].
+If script is in current working directory.
+.IP \n+[step].
+If script can be resolved through PATH. See \fBpath_resolution\fR(7).
+
 .SH "OPTIONS"
 .LP
 
