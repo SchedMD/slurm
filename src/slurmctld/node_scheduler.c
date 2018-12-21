@@ -2669,6 +2669,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		 (error_code != ESLURM_RESERVATION_MAINT)) {
 		/* Select resources for the job here */
 		job_array_pre_sched(job_ptr);
+		if (job_ptr->job_resrcs)
+			error("%s: calling _get_req_features() for %pJ with not NULL job resources",
+			      __func__, job_ptr);
 		error_code = _get_req_features(node_set_ptr, node_set_size,
 					       &select_bitmap, job_ptr,
 					       part_ptr, min_nodes, max_nodes,

@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Read gres.conf for cloud nodes on slurmctld.
  -- Don't assume the first node of a job is the batch host when purging jobs
     from a node.
+ -- Better debugging when a job doesn't have a job_resrcs ptr.
 
 * Changes in Slurm 18.08.4
 ==========================
