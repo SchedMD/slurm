@@ -75,11 +75,28 @@ if {[test_cray]} {
 	exit $exit_code
 }
 
-if { [catch {exec which rpmbuild}]} {
+if {[catch {exec which rpmbuild}]} {
 	send_user "Warning: This test requires rpmbuild to work.\n";
 	exit $exit_code
 }
 
+set match 0
+spawn uname -a
+expect {
+	-re "($number)-Ubuntu" {
+		if {$expect_out(1,string) == 45} {
+			set match 1
+		}
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$match == 1} {
+	send_user "Warning: This test does not work on this kernel\n";
+	exit $exit_code
+}
 
 set timeout 1200
 exec $bin_rm -fr /tmp/slurm-0-0 $tar_name /tmp/built_rpms
