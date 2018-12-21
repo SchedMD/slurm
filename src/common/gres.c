@@ -1355,6 +1355,13 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
+			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
+				info("Node:%s Gres:%s Type:%s Flags:%u CPU_IDs:%s CPU#:%u Count:%"
+				     PRIu64" Links:%s",
+				     node_name, tmp_name, tmp_type,
+				     config_flags, tmp_cpus, cpu_cnt, count64,
+				     tmp_links);
+			}
 		} else {  /* protocol_version >= SLURM_MIN_PROTOCOL_VERSION */
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
