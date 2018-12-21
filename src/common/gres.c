@@ -2017,9 +2017,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				 uint16_t fast_schedule, char **reason_down,
 				 slurm_gres_context_t *context_ptr)
 {
-	int i, j, gres_inx, rc = SLURM_SUCCESS;
+	int cpus_config = 0, i, j, gres_inx, rc = SLURM_SUCCESS;
 	uint64_t gres_cnt, set_cnt = 0;
-	bool cpus_config = false, updated_config = false;
+	bool cpu_config_err = false, updated_config = false;
 	gres_node_state_t *gres_data;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
@@ -2141,13 +2141,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				tmp_bitmap =
 					bit_alloc(gres_slurmd_conf->cpu_cnt);
 				bit_unfmt(tmp_bitmap, gres_slurmd_conf->cpus);
-				if (bit_set_count(tmp_bitmap) == core_cnt) {
-					/*
-					 * GPU is bound to all cores on node.
-					 * Do not report its socket binding.
-					 */
-				} else if (gres_slurmd_conf->cpu_cnt ==
-					   core_cnt) {
+				if (gres_slurmd_conf->cpu_cnt == core_cnt) {
 					if (!tot_core_bitmap) {
 						tot_core_bitmap =
 							bit_alloc(core_cnt);
@@ -2184,8 +2178,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					      node_name);
 				}
 				FREE_NULL_BITMAP(tmp_bitmap);
-				cpus_config = true;
-			} else if (cpus_config) {
+				cpus_config = core_cnt;
+			} else if (cpus_config && !cpu_config_err) {
+				cpu_config_err = true;
 				error("%s: has CPUs configured for only some of the records on node %s",
 				      context_ptr->gres_type, node_name);
 			}
@@ -2245,6 +2240,28 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			i++;
 		}
 		list_iterator_destroy(iter);
+		if (cpu_config_err) {
+			/*
+			 * Some GRES of this type have "CPUs" configured. Set
+			 * topo_core_bitmap for all others with all bits set.
+			 */
+			iter = list_iterator_create(gres_conf_list);
+			while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
+				list_next(iter))) {
+				if (gres_slurmd_conf->plugin_id !=
+				    context_ptr->plugin_id)
+					continue;
+				for (j = 0; j < i; j++) {
+					if (gres_data->topo_core_bitmap[j])
+						continue;
+					gres_data->topo_core_bitmap[j] =
+						bit_alloc(cpus_config);
+					bit_set_all(gres_data->
+						    topo_core_bitmap[j]);
+				}
+			}
+			list_iterator_destroy(iter);
+		}
 	}
 
 	if ((orig_config == NULL) || (orig_config[0] == '\0'))
