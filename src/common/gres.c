@@ -601,9 +601,11 @@ fini:	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
 }
 
-/* Add a GRES record. This is used by the node_features plugin after the
+/*
+ * Add a GRES record. This is used by the node_features plugin after the
  * slurm.conf file is read and the initial GRES records are built by
- * gres_plugin_init(). */
+ * gres_plugin_init().
+ */
 extern void gres_plugin_add(char *gres_name)
 {
 	int i;
@@ -2630,6 +2632,7 @@ static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 			FREE_NULL_BITMAP(mps_gres_data->topo_gres_bitmap[i]);
 		xfree(mps_gres_data->topo_type_name[i]);
 	}
+	mps_gres_data->topo_cnt = gpu_cnt;
 
 	/* Add any additional required gres/mps topo records */
 	if (mps_gres_data->topo_cnt) {

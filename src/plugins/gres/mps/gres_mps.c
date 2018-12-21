@@ -226,6 +226,7 @@ static List _build_mps_list(List gres_list)
 	hostlist_t hl;
 	char *f_name;
 	uint64_t count_per_file;
+	int mps_no_file_recs = 0, mps_file_recs = 0;
 
 	if (gres_list == NULL)
 		return NULL;
@@ -233,36 +234,95 @@ static List _build_mps_list(List gres_list)
 	mps_list = list_create(_delete_gres_list);
 	itr = list_iterator_create(gres_list);
 	while ((gres_record = list_next(itr))) {
-		if (xstrcmp(gres_record->name, "mps") ||
-		    !gres_record->file)
+		if (xstrcmp(gres_record->name, "mps"))
 			continue;
-		hl = hostlist_create(gres_record->file);
-		count_per_file = gres_record->count/hostlist_count(hl);
-		while ((f_name = hostlist_shift(hl))) {
+		if (!gres_record->file) {
+			if (mps_no_file_recs)
+				fatal("gres/mps: bad configuration, multiple configurations without \"File\"");
+			if (mps_file_recs)
+				fatal("gres/mps: multiple configurations with and without \"File\"");
+			mps_no_file_recs++;
 			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
 			mps_record->config_flags = gres_record->config_flags;
 			if (gres_record->type_name)
 				mps_record->config_flags |= GRES_CONF_HAS_TYPE;
-			mps_record->count = count_per_file;
+			mps_record->count = gres_record->count;
 			mps_record->cpu_cnt = gres_record->cpu_cnt;
 			mps_record->cpus = xstrdup(gres_record->cpus);
 			if (gres_record->cpus_bitmap) {
 				mps_record->cpus_bitmap =
 					bit_copy(gres_record->cpus_bitmap);
 			}
-			mps_record->file = xstrdup(f_name);
 			mps_record->name = xstrdup(gres_record->name);
 			mps_record->plugin_id = gres_record->plugin_id;
 			mps_record->type_name = xstrdup(gres_record->type_name);
 			list_append(mps_list, mps_record);
-			free(f_name);
+		} else {
+			mps_file_recs++;
+			if (mps_no_file_recs)
+				fatal("gres/mps: multiple configurations with and without \"File\"");
+			hl = hostlist_create(gres_record->file);
+			count_per_file = gres_record->count/hostlist_count(hl);
+			while ((f_name = hostlist_shift(hl))) {
+				mps_record =xmalloc(sizeof(gres_slurmd_conf_t));
+				mps_record->config_flags =
+					gres_record->config_flags;
+				if (gres_record->type_name) {
+					mps_record->config_flags |=
+						GRES_CONF_HAS_TYPE;
+				}
+				mps_record->count = count_per_file;
+				mps_record->cpu_cnt = gres_record->cpu_cnt;
+				mps_record->cpus = xstrdup(gres_record->cpus);
+				if (gres_record->cpus_bitmap) {
+					mps_record->cpus_bitmap =
+					     bit_copy(gres_record->cpus_bitmap);
+				}
+				mps_record->file = xstrdup(f_name);
+				mps_record->name = xstrdup(gres_record->name);
+				mps_record->plugin_id = gres_record->plugin_id;
+				mps_record->type_name =
+					xstrdup(gres_record->type_name);
+				list_append(mps_list, mps_record);
+				free(f_name);
+			}
+			hostlist_destroy(hl);
 		}
-		hostlist_destroy(hl);
 		(void) list_remove(itr);
 	}
 	list_iterator_destroy(itr);
 
 	return mps_list;
+}
+
+/* Distributed MPS Count to records on original list */
+static void _distribute_count(List gres_conf_list, List gpu_conf_list,
+			      uint64_t count)
+{
+	ListIterator gpu_itr;
+	gres_slurmd_conf_t *gpu_record, *mps_record;
+	int rem_gpus = list_count(gpu_conf_list);
+
+	gpu_itr = list_iterator_create(gpu_conf_list);
+	while ((gpu_record = list_next(gpu_itr))) {
+		mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
+		mps_record->config_flags = gpu_record->config_flags;
+		mps_record->count = count / rem_gpus;
+		count -= mps_record->count;
+		rem_gpus--;
+		mps_record->cpu_cnt = gpu_record->cpu_cnt;
+		mps_record->cpus = xstrdup(gpu_record->cpus);
+		if (gpu_record->cpus_bitmap) {
+			mps_record->cpus_bitmap =
+				bit_copy(gpu_record->cpus_bitmap);
+		}
+		mps_record->file = xstrdup(gpu_record->file);
+		mps_record->name = xstrdup("mps");
+		mps_record->plugin_id = gres_plugin_build_id("mps");
+		mps_record->type_name = xstrdup(gpu_record->type_name);
+		list_append(gres_conf_list, mps_record);
+	}
+	list_iterator_destroy(gpu_itr);
 }
 
 /* Merge MPS records back to original list, updating and reordering as needed */
@@ -271,7 +331,22 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 {
 	ListIterator gpu_itr, mps_itr;
 	gres_slurmd_conf_t *gpu_record, *mps_record;
-	bool log_match = true;
+
+	/*
+	 * If gres/mps has Count, but no File specification and there are more
+	 * than one gres/gpu record, then evenly distribute gres/mps Count
+	 * evenly over all gres/gpu file records
+	 */
+	if ((list_count(mps_conf_list) == 1) &&
+	    (list_count(gpu_conf_list) >  1)) {
+		mps_record = list_peek(mps_conf_list);
+		if (!mps_record->file) {
+			_distribute_count(gres_conf_list, gpu_conf_list,
+					  mps_record->count);
+			list_flush(mps_conf_list);
+			return;
+		}
+	}
 
 	/* Add MPS records, matching File ordering to that of GPU records */
 	gpu_itr = list_iterator_create(gpu_conf_list);
@@ -279,6 +354,7 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 		mps_itr = list_iterator_create(mps_conf_list);
 		while ((mps_record = list_next(mps_itr))) {
 			if (!xstrcmp(gpu_record->file, mps_record->file)) {
+				/* Copy gres/gpu Type & CPU info to gres/mps */
 				if (gpu_record->type_name) {
 					mps_record->config_flags |=
 						GRES_CONF_HAS_TYPE;
@@ -304,6 +380,7 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 		}
 		list_iterator_destroy(mps_itr);
 		if (!mps_record) {
+			/* Add gres/mps record to match gres/gps record */
 			mps_record = xmalloc(sizeof(gres_slurmd_conf_t));
 			mps_record->config_flags = gpu_record->config_flags;
 			mps_record->count = 0;
@@ -322,16 +399,12 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 	}
 	list_iterator_destroy(gpu_itr);
 
-	/* Move any remaining MPS records (no matching File) */
+	/* Remove any remaining MPS records (no matching File) */
 	mps_itr = list_iterator_create(mps_conf_list);
 	while ((mps_record = list_next(mps_itr))) {
-		if (log_match) {
-			error("%s: MPS configuration lacks matching GPU configuration",
-			      plugin_name);
-			log_match = false;
-		}
-		list_append(gres_conf_list, mps_record);
-		(void) list_remove(mps_itr);
+		error("%s: Discarding gres/mps configuration (File=%s) without matching gres/gpu record",
+		      plugin_name, mps_record->file);
+		(void) list_delete_item(mps_itr);
 	}
 	list_iterator_destroy(mps_itr);
 }

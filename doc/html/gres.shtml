@@ -289,9 +289,11 @@ NVIDIA CUDA documentation</a> for more information about the
 <p>CUDA Multi-Process Service (MPS) provides a mechanism where GPUs can be
 shared by multiple jobs, where each job is allocated some percentage of the
 GPU's resources.
-GPUs to be made available for MPS must be identified in the <I>slurm.conf</I>
+GPUs to be made available for MPS should be identified in the <I>slurm.conf</I>
 and <I>gres.conf</I> configuration files with each device <B>File</B> being
 explicitly named and its <B>Count</B> specified (typically a multiple of 100).
+Alternately, specify <B>Count</B> without <B>File</B> and the value of
+<B>Count</B> value will be distributed evenly across all defined GPUs.
 If the GPU sharing that <B>File</B> name contains <B>Core</B> or <B>Type</B>
 parameters, that information will be automatically copied to the corresponding
 MPS GRES.
@@ -345,6 +347,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 13 December 2018</p>
+<p style="text-align: center;">Last modified 21 December 2018</p>
 
 <!--#include virtual="footer.txt"-->
