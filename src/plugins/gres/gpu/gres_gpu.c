@@ -1567,6 +1567,14 @@ static void _add_unique_gres_list_to_list(List gres_list_out,
 	list_iterator_destroy(itr);
 }
 
+/* Sort gres/gpu records by "File" value */
+static int _sort_gpu_by_file(void *x, void *y)
+{
+	gres_slurmd_conf_t *gres_record1 = *(gres_slurmd_conf_t **) x;
+	gres_slurmd_conf_t *gres_record2 = *(gres_slurmd_conf_t **) y;
+	return xstrcmp(gres_record1->file, gres_record2->file);
+}
+
 /*
  * Takes the gres.conf records and gpu devices detected on the node and either
  * merges them together or warns where they are different.
@@ -1762,6 +1770,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	 * Note: list_append_list won't work because delFunc is non-null
 	 */
 	list_flush(gres_list_conf);
+	list_sort(gres_list_gpu, _sort_gpu_by_file);
 	while ((gres_record = list_pop(gres_list_gpu))) {
 		list_append(gres_list_conf, gres_record);
 	}
