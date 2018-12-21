@@ -2218,8 +2218,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					if (gres_data->gres_bit_alloc &&
 					    bit_test(gres_data->gres_bit_alloc,
 						     gres_inx)) {
-						/* Set by recovered job */
-						gres_data->topo_gres_cnt_alloc[i]++;
+					    /* Set by recovered job */
+					    gres_data->topo_gres_cnt_alloc[i]++;
 					}
 					_links_str2array(
 							gres_slurmd_conf->links,
@@ -3178,8 +3178,8 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 
 	if (gres_node_ptr->gres_bit_alloc) {
 		bit_fmt(tmp_str, sizeof(tmp_str),gres_node_ptr->gres_bit_alloc);
-		info("  gres_bit_alloc(%d):%s",
-		     (int) bit_size(gres_node_ptr->gres_bit_alloc), tmp_str);
+		info("  gres_bit_alloc:%s of %d",
+		     tmp_str, (int) bit_size(gres_node_ptr->gres_bit_alloc));
 	} else {
 		info("  gres_bit_alloc:NULL");
 	}
@@ -3205,13 +3205,15 @@ static void _node_state_log(void *gres_data, char *node_name, char *gres_name)
 		if (gres_node_ptr->topo_core_bitmap[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_node_ptr->topo_core_bitmap[i]);
-			info("   topo_core_bitmap[%d]:%s", i, tmp_str);
+			info("   topo_core_bitmap[%d]:%s of %d", i, tmp_str,
+			     (int)bit_size(gres_node_ptr->topo_core_bitmap[i]));
 		} else
 			info("   topo_core_bitmap[%d]:NULL", i);
 		if (gres_node_ptr->topo_gres_bitmap[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_node_ptr->topo_gres_bitmap[i]);
-			info("   topo_gres_bitmap[%d]:%s", i, tmp_str);
+			info("   topo_gres_bitmap[%d]:%s of %d", i, tmp_str,
+			     (int)bit_size(gres_node_ptr->topo_gres_bitmap[i]));
 		} else
 			info("   topo_gres_bitmap[%d]:NULL", i);
 		info("   topo_gres_cnt_alloc[%d]:%"PRIu64"", i,
@@ -5000,8 +5002,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 	return rc;
 
 unpack_error:
-	error("gres_plugin_job_state_unpack: unpack error from job %u",
-	      job_id);
+	error("%s: unpack error from job %u", __func__, job_id);
 	if (gres_job_ptr)
 		_job_state_delete(gres_job_ptr);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -5965,13 +5966,15 @@ static void _sock_gres_log(List sock_gres_list, char *node_name)
 		     sock_gres->max_node_gres);
 		for (i = 0; i < sock_gres->sock_cnt; i++) {
 			char tmp[32] = "";
+			int len = 0;
 			if (sock_gres->bits_by_sock &&
 			    sock_gres->bits_by_sock[i]) {
 				bit_fmt(tmp, sizeof(tmp),
 					sock_gres->bits_by_sock[i]);
+				len = bit_size(sock_gres->bits_by_sock[i]);
 			}
-			info("  Sock[%d]Cnt:%"PRIu64" Bits:%s", i,
-			     sock_gres->cnt_by_sock[i], tmp);
+			info("  Sock[%d]Cnt:%"PRIu64" Bits:%s of %d", i,
+			     sock_gres->cnt_by_sock[i], tmp, len);
 		}
 	}
 	list_iterator_destroy(iter);
@@ -9378,7 +9381,8 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 		if (gres_ptr->gres_bit_alloc && gres_ptr->gres_bit_alloc[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_ptr->gres_bit_alloc[i]);
-			info("  gres_bit_alloc[%d]:%s", i, tmp_str);
+			info("  gres_bit_alloc[%d]:%s of %d", i, tmp_str,
+			     (int) bit_size(gres_ptr->gres_bit_alloc[i]));
 		} else if (gres_ptr->gres_bit_alloc)
 			info("  gres_bit_alloc[%d]:NULL", i);
 
@@ -9386,7 +9390,8 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 		    gres_ptr->gres_bit_step_alloc[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_ptr->gres_bit_step_alloc[i]);
-			info("  gres_bit_step_alloc[%d]:%s", i, tmp_str);
+			info("  gres_bit_step_alloc[%d]:%s of %d", i, tmp_str,
+			     (int) bit_size(gres_ptr->gres_bit_step_alloc[i]));
 		} else if (gres_ptr->gres_bit_step_alloc)
 			info("  gres_bit_step_alloc[%d]:NULL", i);
 
@@ -9409,7 +9414,8 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 		    gres_ptr->gres_bit_select[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_ptr->gres_bit_select[i]);
-			info("  gres_bit_select[%d]:%s", i, tmp_str);
+			info("  gres_bit_select[%d]:%s of %d", i, tmp_str,
+			     (int) bit_size(gres_ptr->gres_bit_select[i]));
 		} else if (gres_ptr->gres_bit_select)
 			info("  gres_bit_select[%d]:NULL", i);
 	}
@@ -10256,8 +10262,8 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 			}
 			rec_cnt++;
 		} else {
-			error("gres_plugin_step_state_pack: protocol_version "
-			      "%hu not supported", protocol_version);
+			error("%s: protocol_version %hu not supported",
+			      __func__, protocol_version);
 			break;
 		}
 	}
@@ -10375,10 +10381,8 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			 * A likely sign that GresPlugins has changed.
 			 * Not a fatal error, skip over the data.
 			 */
-			info("gres_plugin_step_state_unpack: no plugin "
-			      "configured to unpack data type %u from "
-			      "step %u.%u",
-			      plugin_id, job_id, step_id);
+			info("%s: no plugin configured to unpack data type %u from step %u.%u",
+			      __func__, plugin_id, job_id, step_id);
 			_step_state_delete(gres_step_ptr);
 			gres_step_ptr = NULL;
 			continue;
@@ -10797,7 +10801,9 @@ static void _step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id,
 			if (gres_ptr->gres_bit_alloc[i]) {
 				bit_fmt(tmp_str, sizeof(tmp_str),
 					gres_ptr->gres_bit_alloc[i]);
-				info("  gres_bit_alloc[%d]:%s", i, tmp_str);
+				info("  gres_bit_alloc[%d]:%s of %d", i,
+				     tmp_str,
+				     (int)bit_size(gres_ptr->gres_bit_alloc[i]));
 			} else
 				info("  gres_bit_alloc[%d]:NULL", i);
 		}
