@@ -545,10 +545,15 @@ static int _read_ipmi_values(void)
 }
 
 /* updates the given energy according to the last watt reading of the sensor */
-static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt)
+static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt,
+			   uint32_t readings)
 {
+	uint32_t prev_watts;
+
 	if (e->current_watts) {
-		e->base_watts = e->current_watts;
+		prev_watts = e->current_watts;
+		e->base_watts = ((e->base_watts * readings) +
+				 e->current_watts) / (readings + 1);
 		e->current_watts = last_update_watt;
 		if (previous_update_time == 0)
 			e->base_consumed_energy = 0;
@@ -557,7 +562,7 @@ static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt)
 				_get_additional_consumption(
 					previous_update_time,
 					last_update_time,
-					e->base_watts,
+					prev_watts,
 					e->current_watts);
 		e->previous_consumed_energy = e->consumed_energy;
 		e->consumed_energy += e->base_consumed_energy;
@@ -577,6 +582,7 @@ static int _thread_update_node_energy(void)
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t i;
+	static uint32_t readings = 0;
 
 	rc = _read_ipmi_values();
 
@@ -586,21 +592,24 @@ static int _thread_update_node_energy(void)
 			if (sensors[i].energy.current_watts == NO_VAL)
 				return rc;
 			_update_energy(&sensors[i].energy,
-				       sensors[i].last_update_watt);
+				       sensors[i].last_update_watt,
+				       readings);
 		}
 
 		if (previous_update_time == 0)
 			previous_update_time = last_update_time;
 	}
 
+	readings++;
+
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		for (i = 0; i < sensors_len; ++i)
-			info("ipmi-thread: sensor %u current_watts: %u, "
-			     "consumed %"PRIu64" Joules %"PRIu64" new",
+			info("ipmi-thread: sensor %u current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
 			     sensors[i].id,
 			     sensors[i].energy.current_watts,
 			     sensors[i].energy.consumed_energy,
-			     sensors[i].energy.base_consumed_energy);
+			     sensors[i].energy.base_consumed_energy,
+			     sensors[i].energy.base_watts);
 	}
 
 	return rc;

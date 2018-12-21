@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't assume the first node of a job is the batch host when purging jobs
     from a node.
  -- Better debugging when a job doesn't have a job_resrcs ptr.
+ -- Store ave watts in energy plugins.
 
 * Changes in Slurm 18.08.4
 ==========================
