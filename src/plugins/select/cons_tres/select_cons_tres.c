@@ -1450,11 +1450,6 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern bool select_p_job_expand_allow(void)
-{
-	return true;
-}
-
 static job_resources_t *_create_job_resources(int node_cnt)
 {
 	job_resources_t *job_resrcs_ptr;

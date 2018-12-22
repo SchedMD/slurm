@@ -71,7 +71,6 @@ const char *node_select_syms[] = {
 	"select_p_job_test",
 	"select_p_job_begin",
 	"select_p_job_ready",
-	"select_p_job_expand_allow",
 	"select_p_job_expand",
 	"select_p_job_resized",
 	"select_p_job_signal",
@@ -301,17 +300,6 @@ extern int other_job_ready(struct job_record *job_ptr)
 		return -1;
 
 	return (*(ops.job_ready))(job_ptr);
-}
-
-/*
- * Test if expanding a job is permitted
- */
-extern bool other_job_expand_allow(void)
-{
-	if (other_select_init() < 0)
-		return false;
-
-	return (*(ops.job_expand_allow))();
 }
 
 /*

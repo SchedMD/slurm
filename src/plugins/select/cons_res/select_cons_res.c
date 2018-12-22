@@ -2402,11 +2402,6 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern bool select_p_job_expand_allow(void)
-{
-	return true;
-}
-
 extern int select_p_job_expand(struct job_record *from_job_ptr,
 			       struct job_record *to_job_ptr)
 {

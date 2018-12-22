@@ -74,7 +74,6 @@ const char *node_select_syms[] = {
 	"select_p_job_test",
 	"select_p_job_begin",
 	"select_p_job_ready",
-	"select_p_job_expand_allow",
 	"select_p_job_expand",
 	"select_p_job_resized",
 	"select_p_job_signal",
@@ -560,18 +559,6 @@ extern int select_g_job_ready(struct job_record *job_ptr)
 
 	return (*(ops[select_context_default].job_ready))
 		(job_ptr);
-}
-
-/*
- * Test if job expansion is supported
- */
-extern bool select_g_job_expand_allow(void)
-{
-	if (slurm_select_init(0) < 0)
-		return false;
-
-	return (*(ops[select_context_default].job_expand_allow))
-		();
 }
 
 /*

@@ -1952,11 +1952,6 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	return other_job_resized(job_ptr, node_ptr);
 }
 
-extern bool select_p_job_expand_allow(void)
-{
-	return other_job_expand_allow();
-}
-
 extern int select_p_job_expand(struct job_record *from_job_ptr,
 			       struct job_record *to_job_ptr)
 {
