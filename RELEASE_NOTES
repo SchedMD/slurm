@@ -86,6 +86,9 @@ NOTE: libslurmdb has been merged into libslurm.  If functionality is needed
 NOTE: 32-bit builds have been deprecated. Use --enable-deprecated to continue
       building on 32-bit systems.
 
+NOTE: Expansion of running jobs has been disabled. A new SchedulerParameter of
+      permit_job_expansion has been added for sites that wish to re-enable it.
+
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res

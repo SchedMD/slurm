@@ -2454,6 +2454,9 @@ extern int sync_job_files(void);
  * priorities of all jobs to avoid decrementing the base down to zero */
 extern void sync_job_priorities(void);
 
+/* True if running jobs are allowed to expand, false otherwise. */
+extern bool permit_job_expansion(void);
+
 /*
  * update_job - update a job's parameters per the supplied specifications
  * IN msg - RPC to update job, including change specification

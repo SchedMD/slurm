@@ -11394,6 +11394,24 @@ static void _realloc_nodes(struct job_record *job_ptr,
 	}
 }
 
+extern bool permit_job_expansion(void)
+{
+	static time_t sched_update = 0;
+	static bool permit_job_expansion = false;
+
+	if (sched_update != slurmctld_conf.last_update) {
+		char *sched_params = slurm_get_sched_params();
+		sched_update = slurmctld_conf.last_update;
+		if (xstrcasestr(sched_params, "permit_job_expansion"))
+			permit_job_expansion = true;
+		else
+			permit_job_expansion = false;
+		xfree(sched_params);
+	}
+
+	return permit_job_expansion;
+}
+
 static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		       uid_t uid)
 {
@@ -11983,7 +12001,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (job_specs->min_nodes > job_ptr->node_cnt) &&
-	    !select_g_job_expand_allow() &&
+	    !permit_job_expansion() &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
 		info("Change of size for %pJ not supported", job_ptr);
 		error_code = ESLURM_NOT_SUPPORTED;

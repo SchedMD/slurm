@@ -3125,8 +3125,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 		else if (xstrncasecmp(tok, "after", 5) == 0)
 			depend_type = SLURM_DEPEND_AFTER;
 		else if (xstrncasecmp(tok, "expand", 6) == 0) {
-			if (!select_g_job_expand_allow()) {
-				rc = ESLURM_DEPENDENCY;
+			if (!permit_job_expansion()) {
+				rc = ESLURM_NOT_SUPPORTED;
 				break;
 			}
 			depend_type = SLURM_DEPEND_EXPAND;
