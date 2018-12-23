@@ -11530,8 +11530,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		gres_list = gres_plugin_job_state_dup(job_ptr->gres_list);
 		if ((error_code = gres_plugin_job_state_validate(
 						job_specs->cpus_per_tres,
-						job_specs->tres_per_job,
 						job_specs->tres_freq,
+						job_specs->tres_per_job,
 						job_specs->tres_per_node,
 						job_specs->tres_per_socket,
 						job_specs->tres_per_task,
