@@ -461,7 +461,7 @@ static void *_handle_accept(void *arg)
 			goto fail;
 		uid = ucred.uid;
 	} else {
-		error("%s: Invalid Protocol Version %d", __func__, rc);
+		error("%s: Invalid Protocol Version %d", __func__, req);
 		goto fail;
 	}
 
