@@ -573,14 +573,14 @@ static int _cmp_sock(const void *a, const void *b)
 static int _compute_c_b_task_dist(struct job_record *job_ptr)
 {
 	bool over_subscribe = false;
-	uint32_t n, i, i_first, i_last, tid, t, maxtasks, l;
+	uint32_t n, tid, t, maxtasks, l;
 	uint16_t *avail_cpus;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool log_over_subscribe = true;
 	char *err_msg = NULL;
 	uint16_t *vpus;
 	bool space_remaining = false;
-	int rem_cpus, rem_tasks;
+	int i, i_first, i_last, rem_cpus, rem_tasks;
 
 	if (!job_res)
 		err_msg = "job_res is NULL";
@@ -596,7 +596,10 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 
 	vpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
 	i_first = bit_ffs(job_res->node_bitmap);
-	i_last  = bit_fls(job_res->node_bitmap);
+	if (i_first >= 0)
+		i_last  = bit_fls(job_res->node_bitmap);
+	else
+		i_last = -2;
 	for (i = i_first, n = 0; i <= i_last; i++) {
 		if (!bit_test(job_res->node_bitmap, i))
 			continue;
