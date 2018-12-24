@@ -2283,18 +2283,20 @@ static int _node_config_validate(char *node_name, char *orig_config,
 
 	if (has_file) {
 		uint64_t gres_bits;
-		if (gres_data->gres_cnt_avail > MAX_GRES_BITMAP) {
-			error("%s: gres/%s has File plus very large Count "
-			      "(%"PRIu64") for node %s, resetting value to %u",
-			      __func__, context_ptr->gres_type,
-			      gres_data->gres_cnt_avail, node_name,
-			      MAX_GRES_BITMAP);
-			gres_data->gres_cnt_avail = MAX_GRES_BITMAP;
-		}
-		if (_shared_gres(context_ptr->plugin_id))
+		if (_shared_gres(context_ptr->plugin_id)) {
 			gres_bits = set_cnt;
-		else
+		} else {
+			if (gres_data->gres_cnt_avail > MAX_GRES_BITMAP) {
+				error("%s: %s has \"File\" plus very large \"Count\" "
+				      "(%"PRIu64") for node %s, resetting value to %u",
+				      __func__, context_ptr->gres_type,
+				      gres_data->gres_cnt_avail, node_name,
+				      MAX_GRES_BITMAP);
+				gres_data->gres_cnt_avail = MAX_GRES_BITMAP;
+				gres_data->gres_cnt_found = MAX_GRES_BITMAP;
+			}
 			gres_bits = gres_data->gres_cnt_avail;
+		}
 		if (gres_data->gres_bit_alloc == NULL) {
 			gres_data->gres_bit_alloc = bit_alloc(gres_bits);
 		} else if (gres_bits != bit_size(gres_data->gres_bit_alloc)) {
