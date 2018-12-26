@@ -1246,6 +1246,13 @@ extern void gres_set_node_tres_cnt(List gres_list, uint64_t *tres_cnt,
 /* return the major info from a given path of a device */
 extern char *gres_device_major(char *dev_path);
 
-extern void destroy_gres_device(void *p);
+/* Free memory for gres_device_t record */
+extern void destroy_gres_device(void *gres_device_ptr);
+
+/*
+ * Convert GRES config_flags to a string. The pointer returned references local
+ * storage in this function, which is not re-entrant.
+ */
+extern char *gres_flags2str(uint8_t config_flags);
 
 #endif /* !_GRES_H */

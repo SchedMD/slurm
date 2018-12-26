@@ -99,10 +99,10 @@ extern int common_node_config_load(List gres_conf_list,
 			continue;
 		}
 		while ((one_name = hostlist_shift(hl))) {
-			if (!*gres_devices)
+			if (!*gres_devices) {
 				*gres_devices =
 					list_create(destroy_gres_device);
-
+			}
 			gres_device = xmalloc(sizeof(gres_device_t));
 			list_append(*gres_devices, gres_device);
 
@@ -395,10 +395,14 @@ rwfail:
 extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
 			    log_level_t log_lvl)
 {
-	log_var(log_lvl,
-		"    GRES[%s](%"PRIu64"): %8s | %s",
-		gres_slurmd_conf->name, gres_slurmd_conf->count,
-		gres_slurmd_conf->type_name, gres_slurmd_conf->file);
+	log_var(log_lvl, "    GRES[%s] Type:%s Count:%"PRIu64" Cores(%d):%s  "
+		"Links:%s Flags:%s File:%s %s", gres_slurmd_conf->name,
+		gres_slurmd_conf->type_name, gres_slurmd_conf->count,
+		gres_slurmd_conf->cpu_cnt, gres_slurmd_conf->cpus,
+		gres_slurmd_conf->links,
+		gres_flags2str(gres_slurmd_conf->config_flags),
+		gres_slurmd_conf->file,
+		gres_slurmd_conf->ignore ? " | IGNORE":"");
 }
 
 

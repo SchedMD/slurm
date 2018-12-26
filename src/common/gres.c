@@ -1358,13 +1358,6 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
-			if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
-				info("Node:%s Gres:%s Type:%s Flags:%u CPU_IDs:%s CPU#:%u Count:%"
-				     PRIu64" Links:%s",
-				     node_name, tmp_name, tmp_type,
-				     config_flags, tmp_cpus, cpu_cnt, count64,
-				     tmp_links);
-			}
 		} else {  /* protocol_version >= SLURM_MIN_PROTOCOL_VERSION */
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
@@ -1379,6 +1372,12 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
 		}
+		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
+			info("Node:%s Gres:%s Type:%s Flags:%u CPU_IDs:%s CPU#:%u Count:%"
+			     PRIu64" Links:%s",
+			     node_name, tmp_name, tmp_type, config_flags,
+			     tmp_cpus, cpu_cnt, count64, tmp_links);
+			}
 		if (config_flags & GRES_CONF_OLD_FILE) {
 			/* Old RPC, possibly with "Type=" */
 			config_flags = GRES_CONF_HAS_FILE;
@@ -8271,6 +8270,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	bool type_array_updated = false;
 	bitstr_t *alloc_core_bitmap = NULL;
 	uint64_t gres_per_bit = 1;
+	bool log_cnt_err = true;
+	char *log_type;
 
 	/*
 	 * Validate data structures. Either job_gres_data->node_cnt and
@@ -8509,8 +8510,10 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			node_gres_ptr->gres_cnt_alloc += gres_per_bit;
 			gres_cnt -= gres_per_bit;
 		}
-		if (gres_cnt)
-			verbose("Gres topology sub-optimal for job %u", job_id);
+		if (gres_cnt) {
+			verbose("gres/%s topology sub-optimal for job %u",
+				gres_name, job_id);
+		}
 		/* Pass 3: Allocate any available GRES */
 		for (i=0; i<node_gres_ptr->gres_cnt_avail && gres_cnt>0; i++) {
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
@@ -8535,12 +8538,19 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 				continue;
 			sz1 = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
 			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
-			if (sz1 != sz2) {
+
+			if ((sz1 != sz2) && log_cnt_err) {
+				if (_shared_gres(plugin_id))
+					log_type = "File";
+				else
+					log_type = "Count";
 				/* Avoid abort on bit_overlap below */
-				error("Gres count mismatch for node %s "
-				      "(%d != %d)", node_name, sz1, sz2);
-				continue;
+				error("gres/%s %s mismatch for node %s (%d != %d)",
+				      gres_name, log_type, node_name, sz1, sz2);
+				log_cnt_err = false;
 			}
+			if (sz1 != sz2)
+				continue;	/* See error above */
 			gres_cnt = bit_overlap(job_gres_ptr->
 					       gres_bit_alloc[node_offset],
 					       node_gres_ptr->
@@ -12209,13 +12219,36 @@ extern char *gres_device_major(char *dev_path)
 	return ret_major;
 }
 
-extern void destroy_gres_device(void *p)
+/* Free memory for gres_device_t record */
+extern void destroy_gres_device(void *gres_device_ptr)
 {
-	gres_device_t *gres_device = (gres_device_t *)p;
+	gres_device_t *gres_device = (gres_device_t *) gres_device_ptr;
+
 	if (!gres_device)
 		return;
-
 	xfree(gres_device->path);
 	xfree(gres_device->major);
 	xfree(gres_device);
+}
+
+/*
+ * Convert GRES config_flags to a string. The pointer returned references local
+ * storage in this function, which is not re-entrant.
+ */
+extern char *gres_flags2str(uint8_t config_flags)
+{
+	static char flag_str[64];
+	char *sep = "";
+
+	flag_str[0] = '\0';
+	if (config_flags & GRES_CONF_HAS_FILE) {
+		strcat(flag_str, "HAS_FILE");
+		sep = ",";
+	}
+	if (config_flags & GRES_CONF_HAS_TYPE) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "HAS_TYPE");
+	}
+
+	return flag_str;
 }
