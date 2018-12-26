@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Store ave watts in energy plugins.
  -- Add XCC plugin for reading Lenovo Power.
  -- Fix minor memory leak when scheduling rebootable nodes.
+ -- Fix debug2 prefix for sched log.
 
 * Changes in Slurm 18.08.4
 ==========================

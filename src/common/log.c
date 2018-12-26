@@ -1174,7 +1174,7 @@ static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list arg
 
 		case LOG_LEVEL_DEBUG2:
 			priority = LOG_DEBUG;
-			pfx = sched ? "debug: sched: " : "debug2: ";
+			pfx = sched ? "debug2: sched: " : "debug2: ";
 			break;
 
 		case LOG_LEVEL_DEBUG3:
