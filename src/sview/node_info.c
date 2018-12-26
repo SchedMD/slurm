@@ -42,6 +42,7 @@ enum {
 	SORTID_ACTIVE_FEATURES,
 	SORTID_ARCH,
 	SORTID_AVAIL_FEATURES,
+	SORTID_AVE_WATTS,
 	SORTID_BOARDS,
 	SORTID_BOOT_TIME,
 	SORTID_CAP_WATTS,
@@ -56,7 +57,6 @@ enum {
 	SORTID_FREE_MEM,
 	SORTID_GRES,
 	SORTID_IDLE_CPUS,
-	SORTID_LOWEST_JOULES,
 	SORTID_MCS_LABEL,
 	SORTID_NAME,
 	SORTID_NODE_ADDR,
@@ -153,11 +153,11 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_LOWEST_JOULES, "Lowest Joules", false,
-	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CONSUMED_ENERGY,"Consumed Joules", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CURRENT_WATTS, "Current Watts", false,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_AVE_WATTS, "Average Watts", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CAP_WATTS,"Cap Watts", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
@@ -416,10 +416,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
 			 "%"PRIu64"", node_ptr->energy->consumed_energy);
 	}
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_node,
-						 SORTID_LOWEST_JOULES),
-				   tmp_base_watts);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
@@ -430,6 +426,11 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   find_col_name(display_data_node,
 						 SORTID_CURRENT_WATTS),
 				   tmp_current_watts);
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_AVE_WATTS),
+				   tmp_base_watts);
 
 	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
 		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "N/A");
@@ -571,7 +572,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_ACTIVE_FEATURES, node_ptr->features_act,
 			   SORTID_ARCH,      node_ptr->arch,
 			   SORTID_AVAIL_FEATURES,  node_ptr->features,
-			   SORTID_LOWEST_JOULES, tmp_base_watts,
+			   SORTID_AVE_WATTS, tmp_base_watts,
 			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
 			   SORTID_CLUSTER_NAME, node_ptr->cluster_name,

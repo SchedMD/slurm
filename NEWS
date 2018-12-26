@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- Suppressed printing of job id in sbatch when quiet flag is set.
  -- Changed sreport 'SizesByAccount' and 'SizesByAccountAndWckey' default
     behavior and added new 'AcctAsParent' option.
+ -- Add ave watts to api and sview.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
