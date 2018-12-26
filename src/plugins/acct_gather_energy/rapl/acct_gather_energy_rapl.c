@@ -311,6 +311,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	double energy_units;
 	uint64_t result;
 	double ret;
+	static uint32_t readings = 0;
 
 	if (pkg_fd[0] < 0) {
 		error("%s: device /dev/cpu/#/msr not opened "
@@ -362,13 +363,18 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 			(uint64_t)ret - energy->base_consumed_energy;
 		energy->current_watts =
 			(uint32_t)ret - energy->previous_consumed_energy;
+		energy->base_watts =  ((energy->base_watts * readings) +
+				       energy->current_watts) / (readings + 1);
+
 		interval = time(NULL) - energy->poll_time;
 		if (interval)	/* Prevent divide by zero */
 			energy->current_watts /= (float)interval;
 	} else {
 		energy->consumed_energy = 1;
 		energy->base_consumed_energy = (uint64_t)ret;
+		energy->base_watts = 0;
 	}
+	readings++;
 	energy->previous_consumed_energy = (uint64_t)ret;
 	energy->poll_time = time(NULL);
 

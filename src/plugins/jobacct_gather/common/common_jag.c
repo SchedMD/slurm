@@ -609,8 +609,14 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 					&jobacct->energy);
 				jobacct->tres_usage_in_tot[TRES_ARRAY_ENERGY] =
 					jobacct->energy.consumed_energy;
-				debug2("getjoules_task energy = %"PRIu64"",
-				       jobacct->energy.consumed_energy);
+				jobacct->tres_usage_out_tot[TRES_ARRAY_ENERGY] =
+					jobacct->energy.current_watts;
+				debug2("%s: energy = %"PRIu64" watts = %"PRIu64,
+				       __func__,
+				       jobacct->tres_usage_in_tot[
+					       TRES_ARRAY_ENERGY],
+				       jobacct->tres_usage_out_tot[
+					       TRES_ARRAY_ENERGY]);
 			}
 
 			debug4("no pids in this container %"PRIu64"", cont_id);
@@ -1004,7 +1010,9 @@ extern void jag_common_poll_data(
 
 		/* get energy consumption
 		 * only once is enough since we
-		 * report per node energy consumption */
+		 * report per node energy consumption.
+		 * Energy is stored in read fields, while power is stored
+		 * in write fields.*/
 		debug2("energycounted = %d", energy_counted);
 		if (energy_counted == 0) {
 			acct_gather_energy_g_get_data(
@@ -1012,8 +1020,13 @@ extern void jag_common_poll_data(
 				&jobacct->energy);
 			prec->tres_data[TRES_ARRAY_ENERGY].size_read =
 				jobacct->energy.consumed_energy;
-			debug2("getjoules_task energy = %"PRIu64,
-			       jobacct->energy.consumed_energy);
+			prec->tres_data[TRES_ARRAY_ENERGY].size_write =
+				jobacct->energy.current_watts;
+			debug2("%s: energy = %"PRIu64" watts = %"PRIu64" ave_watts = %u",
+			       __func__,
+			       prec->tres_data[TRES_ARRAY_ENERGY].size_read,
+			       prec->tres_data[TRES_ARRAY_ENERGY].size_write,
+			       jobacct->energy.base_watts);
 			energy_counted = 1;
 		}
 
@@ -1071,7 +1084,7 @@ extern void jag_common_poll_data(
 		jobacct->act_cpufreq =
 			_update_weighted_freq(jobacct, sbuf);
 
-		debug("%s: Task %u pid %d ave_freq = %u mem size/max %"PRIu64"/%"PRIu64" vmem size/max %"PRIu64"/%"PRIu64", disk read size/max (%"PRIu64"/%"PRIu64"), disk write size/max (%"PRIu64"/%"PRIu64"), time %f(%u+%u)",
+		debug("%s: Task %u pid %d ave_freq = %u mem size/max %"PRIu64"/%"PRIu64" vmem size/max %"PRIu64"/%"PRIu64", disk read size/max (%"PRIu64"/%"PRIu64"), disk write size/max (%"PRIu64"/%"PRIu64"), time %f(%u+%u) Energy tot/max %"PRIu64"/%"PRIu64" TotPower %"PRIu64" MaxPower %"PRIu64" MinPower %"PRIu64,
 		      __func__,
 		      jobacct->id.taskid,
 		      jobacct->pid,
@@ -1087,7 +1100,12 @@ extern void jag_common_poll_data(
 		      (double)(jobacct->tres_usage_in_tot[TRES_ARRAY_CPU] /
 			       CPU_TIME_ADJ),
 		      jobacct->user_cpu_sec,
-		      jobacct->sys_cpu_sec);
+		      jobacct->sys_cpu_sec,
+		      jobacct->tres_usage_in_tot[TRES_ARRAY_ENERGY],
+		      jobacct->tres_usage_in_max[TRES_ARRAY_ENERGY],
+		      jobacct->tres_usage_out_tot[TRES_ARRAY_ENERGY],
+		      jobacct->tres_usage_out_max[TRES_ARRAY_ENERGY],
+		      jobacct->tres_usage_out_min[TRES_ARRAY_ENERGY]);
 
 		if (profile &&
 		    acct_gather_profile_g_is_active(ACCT_GATHER_PROFILE_TASK)) {

@@ -13782,15 +13782,15 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		    (job_ptr->pack_job_offset == 0)		&&
 		    (job_ptr->time_last_active < startup_time)	&&
 		    (job_ptr->start_time       < startup_time)	&&
-		    (node_inx == bit_ffs(job_ptr->node_bitmap))) {
+		    (node_ptr == find_node_record(job_ptr->batch_host))) {
 			bool requeue = false;
 			char *requeue_msg = "";
 			if (job_ptr->details && job_ptr->details->requeue) {
 				requeue = true;
 				requeue_msg = ", Requeuing job";
 			}
-			info("Batch %pJ missing from node 0 (not found BatchStartTime after startup)%s",
-			     job_ptr, requeue_msg);
+			info("Batch %pJ missing from batch node %s (not found BatchStartTime after startup)%s",
+			     job_ptr, job_ptr->batch_host, requeue_msg);
 			job_ptr->exit_code = 1;
 			job_complete(job_ptr->job_id,
 				     slurmctld_conf.slurm_user_id,

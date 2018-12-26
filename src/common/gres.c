@@ -1146,6 +1146,7 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 			fatal("gres.conf duplicate records for %s",
 			      context_ptr->gres_name);
 		}
+
 		if (new_has_file)
 			context_ptr->config_flags |= GRES_CONF_HAS_FILE;
 	}

@@ -65,6 +65,13 @@ documents those changes that are of interest to users and administrators.
  -- Better debug for bad values in gres.conf.
  -- Fix double accounting of energy at end of job.
  -- Read gres.conf for cloud nodes on slurmctld.
+ -- Don't assume the first node of a job is the batch host when purging jobs
+    from a node.
+ -- Better debugging when a job doesn't have a job_resrcs ptr.
+ -- Store ave watts in energy plugins.
+ -- Add XCC plugin for reading Lenovo Power.
+ -- Fix minor memory leak when scheduling rebootable nodes.
+ -- Fix debug2 prefix for sched log.
 
 * Changes in Slurm 18.08.4
 ==========================

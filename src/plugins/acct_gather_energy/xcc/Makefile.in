@@ -13,6 +13,12 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+# Makefile for acct_gather_energy/xcc plugin
+
+#dprx need to uncomment this when safe to build
+#SUBDIRS = include lib
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -88,7 +94,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = contribs/perlapi/libslurmdb
+subdir = src/plugins/acct_gather_energy/xcc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -142,6 +148,55 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__uninstall_files_from_dir = { \
+  test -z "$$files" \
+    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
+    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+         $(am__cd) "$$dir" && rm -f $$files; }; \
+  }
+am__installdirs = "$(DESTDIR)$(pkglibdir)"
+LTLIBRARIES = $(pkglib_LTLIBRARIES)
+am__DEPENDENCIES_1 =
+@BUILD_IPMI_TRUE@acct_gather_energy_xcc_la_DEPENDENCIES =  \
+@BUILD_IPMI_TRUE@	$(am__DEPENDENCIES_1)
+am__acct_gather_energy_xcc_la_SOURCES_DIST = acct_gather_energy_xcc.c
+@BUILD_IPMI_TRUE@am_acct_gather_energy_xcc_la_OBJECTS =  \
+@BUILD_IPMI_TRUE@	acct_gather_energy_xcc.lo
+am__EXTRA_acct_gather_energy_xcc_la_SOURCES_DIST =  \
+	acct_gather_energy_xcc.c
+acct_gather_energy_xcc_la_OBJECTS =  \
+	$(am_acct_gather_energy_xcc_la_OBJECTS)
+AM_V_lt = $(am__v_lt_@AM_V@)
+am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
+am__v_lt_0 = --silent
+am__v_lt_1 = 
+acct_gather_energy_xcc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(acct_gather_energy_xcc_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@BUILD_IPMI_TRUE@am_acct_gather_energy_xcc_la_rpath = -rpath \
+@BUILD_IPMI_TRUE@	$(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -154,15 +209,58 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
-SOURCES =
-DIST_SOURCES =
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
+depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
+am__maybe_remake_depfiles = depfiles
+am__depfiles_remade = ./$(DEPDIR)/acct_gather_energy_xcc.Plo
+am__mv = mv -f
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_@AM_V@)
+am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
+am__v_CC_0 = @echo "  CC      " $@;
+am__v_CC_1 = 
+CCLD = $(CC)
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_@AM_V@)
+am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+am__v_CCLD_0 = @echo "  CCLD    " $@;
+am__v_CCLD_1 = 
+SOURCES = $(acct_gather_energy_xcc_la_SOURCES) \
+	$(EXTRA_acct_gather_energy_xcc_la_SOURCES)
+DIST_SOURCES = $(am__acct_gather_energy_xcc_la_SOURCES_DIST) \
+	$(am__EXTRA_acct_gather_energy_xcc_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
-am__DIST_COMMON = $(srcdir)/Makefile.in
+# Read a list of newline-separated strings from the standard input,
+# and print each of them once, without duplicates.  Input order is
+# *not* preserved.
+am__uniquify_input = $(AWK) '\
+  BEGIN { nonempty = 0; } \
+  { items[$$0] = 1; nonempty = 1; } \
+  END { if (nonempty) { for (i in items) print i; }; } \
+'
+# Make sure the list of sources is unique.  This is necessary because,
+# e.g., the same source file might be shared among _SOURCES variables
+# for different programs/libraries.
+am__define_uniq_tagged_files = \
+  list='$(am__tagged_files)'; \
+  unique=`for i in $$list; do \
+    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+  done | $(am__uniquify_input)`
+ETAGS = etags
+CTAGS = ctags
+am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/auxdir/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -418,39 +516,21 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-# copied from pidgin
-#
-perl_dir = perl
-perlpath = /usr/bin/perl
-perl_sources = \
-	       $(perl_dir)/Makefile.PL.in \
-	       $(perl_dir)/ppport.h \
-	       $(perl_dir)/Slurmdb.pm \
-	       $(perl_dir)/Slurmdb.xs \
-	       $(perl_dir)/slurmdb-perl.h \
-	       $(perl_dir)/cluster.c
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(FREEIPMI_CPPFLAGS)
+@BUILD_IPMI_TRUE@PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+@BUILD_IPMI_TRUE@pkglib_LTLIBRARIES = acct_gather_energy_xcc.la
 
-test_sources = \
-	       $(perl_dir)/t/00-use.t \
-	       $(perl_dir)/t/01-clusters_get.t \
-	       $(perl_dir)/t/02-report_cluster_account_by_user.t \
-	       $(perl_dir)/t/03-report_cluster_user_by_account.t \
-	       $(perl_dir)/t/04-report_job_sizes_grouped_by_account.t \
-	       $(perl_dir)/t/05-report_user_top_usage.t \
-	       $(perl_dir)/t/06-jobs_get.t \
-	       $(perl_dir)/t/07-qos_get.t
+# Energy accounting xcc plugin.
+@BUILD_IPMI_TRUE@acct_gather_energy_xcc_la_SOURCES = acct_gather_energy_xcc.c
 
-EXTRA_DIST = $(perl_sources) $(test_sources)
-AM_CPPFLAGS = \
-	-DVERSION=\"$(VERSION)\" \
-	-I$(top_srcdir) \
-	-I$(top_builddir) \
-	$(DEBUG_CFLAGS) \
-	$(PERL_CFLAGS)
-
+#acct_gather_energy_xcc_la_CFLAGS = $(MYSQL_CFLAGS)
+@BUILD_IPMI_TRUE@acct_gather_energy_xcc_la_LDFLAGS = $(PLUGIN_FLAGS) $(FREEIPMI_LDFLAGS)
+@BUILD_IPMI_TRUE@acct_gather_energy_xcc_la_LIBADD = $(FREEIPMI_LIBS)
+@BUILD_IPMI_FALSE@EXTRA_acct_gather_energy_xcc_la_SOURCES = acct_gather_energy_xcc.c
 all: all-am
 
 .SUFFIXES:
+.SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -460,9 +540,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign contribs/perlapi/libslurmdb/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/acct_gather_energy/xcc/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign contribs/perlapi/libslurmdb/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/acct_gather_energy/xcc/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -481,17 +561,136 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 
+install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
+	@$(NORMAL_INSTALL)
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	list2=; for p in $$list; do \
+	  if test -f $$p; then \
+	    list2="$$list2 $$p"; \
+	  else :; fi; \
+	done; \
+	test -z "$$list2" || { \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(pkglibdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(pkglibdir)" || exit 1; \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(pkglibdir)'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(pkglibdir)"; \
+	}
+
+uninstall-pkglibLTLIBRARIES:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	for p in $$list; do \
+	  $(am__strip_dir) \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(pkglibdir)/$$f'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(pkglibdir)/$$f"; \
+	done
+
+clean-pkglibLTLIBRARIES:
+	-test -z "$(pkglib_LTLIBRARIES)" || rm -f $(pkglib_LTLIBRARIES)
+	@list='$(pkglib_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
+
+acct_gather_energy_xcc.la: $(acct_gather_energy_xcc_la_OBJECTS) $(acct_gather_energy_xcc_la_DEPENDENCIES) $(EXTRA_acct_gather_energy_xcc_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(acct_gather_energy_xcc_la_LINK) $(am_acct_gather_energy_xcc_la_rpath) $(acct_gather_energy_xcc_la_OBJECTS) $(acct_gather_energy_xcc_la_LIBADD) $(LIBS)
+
+mostlyclean-compile:
+	-rm -f *.$(OBJEXT)
+
+distclean-compile:
+	-rm -f *.tab.c
+
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_energy_xcc.Plo@am__quote@ # am--include-marker
+
+$(am__depfiles_remade):
+	@$(MKDIR_P) $(@D)
+	@echo '# dummy' >$@-t && $(am__mv) $@-t $@
+
+am--depfiles: $(am__depfiles_remade)
+
+.c.o:
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
+
+.c.obj:
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.c.lo:
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
-tags TAGS:
 
-ctags CTAGS:
+ID: $(am__tagged_files)
+	$(am__define_uniq_tagged_files); mkid -fID $$unique
+tags: tags-am
+TAGS: tags
 
-cscope cscopelist:
+tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
+	set x; \
+	here=`pwd`; \
+	$(am__define_uniq_tagged_files); \
+	shift; \
+	if test -z "$(ETAGS_ARGS)$$*$$unique"; then :; else \
+	  test -n "$$unique" || unique=$$empty_fix; \
+	  if test $$# -gt 0; then \
+	    $(ETAGS) $(ETAGSFLAGS) $(AM_ETAGSFLAGS) $(ETAGS_ARGS) \
+	      "$$@" $$unique; \
+	  else \
+	    $(ETAGS) $(ETAGSFLAGS) $(AM_ETAGSFLAGS) $(ETAGS_ARGS) \
+	      $$unique; \
+	  fi; \
+	fi
+ctags: ctags-am
 
+CTAGS: ctags
+ctags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
+	$(am__define_uniq_tagged_files); \
+	test -z "$(CTAGS_ARGS)$$unique" \
+	  || $(CTAGS) $(CTAGSFLAGS) $(AM_CTAGSFLAGS) $(CTAGS_ARGS) \
+	     $$unique
+
+GTAGS:
+	here=`$(am__cd) $(top_builddir) && pwd` \
+	  && $(am__cd) $(top_srcdir) \
+	  && gtags -i $(GTAGS_ARGS) "$$here"
+cscopelist: cscopelist-am
+
+cscopelist-am: $(am__tagged_files)
+	list='$(am__tagged_files)'; \
+	case "$(srcdir)" in \
+	  [\\/]* | ?:[\\/]*) sdir="$(srcdir)" ;; \
+	  *) sdir=$(subdir)/$(srcdir) ;; \
+	esac; \
+	for i in $$list; do \
+	  if test -f "$$i"; then \
+	    echo "$(subdir)/$$i"; \
+	  else \
+	    echo "$$sdir/$$i"; \
+	  fi; \
+	done >> $(top_builddir)/cscope.files
+
+distclean-tags:
+	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 
 distdir: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) distdir-am
@@ -528,8 +727,11 @@ distdir-am: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile all-local
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
+	for dir in "$(DESTDIR)$(pkglibdir)"; do \
+	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -551,16 +753,25 @@ install-strip:
 	fi
 mostlyclean-generic:
 
+clean-generic:
+
+distclean-generic:
+	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
+	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
+		-rm -f ./$(DEPDIR)/acct_gather_energy_xcc.Plo
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic
+distclean-am: clean-am distclean-compile distclean-generic \
+	distclean-tags
 
 dvi: dvi-am
 
@@ -580,7 +791,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-exec-local
+install-exec-am: install-pkglibLTLIBRARIES
 
 install-html: install-html-am
 
@@ -603,12 +814,14 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
+		-rm -f ./$(DEPDIR)/acct_gather_energy_xcc.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-generic mostlyclean-libtool
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
 
 pdf: pdf-am
 
@@ -618,105 +831,27 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-local
+uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .MAKE: install-am install-strip
 
-.PHONY: all all-am all-local check check-am clean clean-generic \
-	clean-libtool cscopelist-am ctags-am distclean \
-	distclean-generic distclean-libtool distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-exec-local install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags-am uninstall uninstall-am uninstall-local
+.PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
+	clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-pkglibLTLIBRARIES install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
-
-$(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
-	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
-		for f in ${perl_sources}; do \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-		for f in ${test_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-	fi
-	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= PERL_MM_OPT=
-
-#
-# Note on linking logic below
-#
-# Suse Linux compiles with gcc, but picks some other compiler to use for linking.
-#   Since some CFLAGS may be incompatible with this other compiler, the build
-#   may fail, as seen on BlueGene platforms.
-# Other Linux implementations sems to work fine with the LD specified as below
-#
-all-local: $(perl_dir)/Makefile #libslurmdb
-	@cd $(perl_dir) && \
-	if [ ! -f Makefile ]; then \
-		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= PERL_MM_OPT=; \
-	fi && \
-	($(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS) $(LDFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS) $(CPPFLAGS)" $(PERL_EXTRA_OPTS) || \
-	 $(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS) $(LDFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS) $(CPPFLAGS)" $(PERL_EXTRA_OPTS)) && \
-	cd ..;
-
-install-exec-local:
-	@cd $(perl_dir) && \
-	$(MAKE) DESTDIR=$(DESTDIR) install && \
-	cd ..;
-
-# Evil Hack (TM)
-# ... which doesn't work with DESTDIR installs. FIXME?
-uninstall-local:
-	@cd $(perl_dir) && \
-	`$(MAKE) uninstall | grep unlink | sed -e 's#/usr#${prefix}#' -e 's#unlink#rm -f#'` && \
-	cd ..;
-
-clean-generic:
-	@cd $(perl_dir); \
-	$(MAKE) clean; \
-	if test "x${top_srcdir}" != "x${top_builddir}"; then \
-		rm -fr lib t *c *h *xs typemap classmap; \
-	fi; \
-	cd ..;
-
-	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
-		for f in ${perl_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-		for f in ${test_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-	fi
-
-distclean-generic:
-	@cd $(perl_dir); \
-	$(MAKE) realclean; \
-	rm -f Makefile.PL; \
-	rm -f Makefile.old; \
-	rm -f Makefile; \
-	cd ..;
-
-	@rm -f Makefile
-
-	@if test "x${top_srcdir}" != "x${top_builddir}"; then \
-		for f in ${perl_sources}; do \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-		for f in ${test_sources}; do \
-			$(mkdir_p) `dirname $$f`; \
-			${LN_S} -f ${abs_srcdir}/$$f $$f; \
-		done; \
-	fi
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
