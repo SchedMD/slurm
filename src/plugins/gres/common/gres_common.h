@@ -76,4 +76,19 @@ extern void common_send_stepd(int fd, List gres_devices);
 /* Receive GRES information from slurmd on the specified file descriptor */
 extern void common_recv_stepd(int fd, List *gres_devices);
 
+/*
+ * A one-liner version of _print_gres_conf_full()
+ */
+extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
+			    log_level_t log_lvl);
+/*
+ * Print each gres_slurmd_conf_t record in the list
+ */
+extern void print_gres_list(List gres_list, log_level_t log_lvl);
+
+/*
+ * Print each gres_slurmd_conf_t record in the list in a parsable manner for
+ * test consumption
+ */
+extern void print_gres_list_parsable(List gres_list);
 #endif

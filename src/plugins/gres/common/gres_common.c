@@ -52,6 +52,12 @@ static int _match_name_list(void *x, void *key)
 	return 0;
 }
 
+/*
+ * Common validation for what was read in from the gres.conf.
+ * IN gres_conf_list
+ * IN gres_name
+ * OUT gres_devices
+ */
 extern int common_node_config_load(List gres_conf_list,
 				   char *gres_name,
 				   List *gres_devices)
@@ -381,4 +387,69 @@ extern void common_recv_stepd(int fd, List *gres_devices)
 rwfail:
 	error("%s: failed", __func__);
 	return;
+}
+
+/*
+ * A one-liner version of _print_gres_conf_full()
+ */
+extern void print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
+			    log_level_t log_lvl)
+{
+	log_var(log_lvl,
+		"    GRES[%s](%"PRIu64"): %8s | %s",
+		gres_slurmd_conf->name, gres_slurmd_conf->count,
+		gres_slurmd_conf->type_name, gres_slurmd_conf->file);
+}
+
+
+/*
+ * Print the gres.conf record in a parsable format
+ * Do NOT change the format of this without also changing test39.18!
+ */
+static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
+				      log_level_t log_lvl)
+{
+	log_var(log_lvl, "GRES_PARSABLE[%s](%"PRIu64"):%s|%d|%s|%s|%s|%s",
+		gres_slurmd_conf->name, gres_slurmd_conf->count,
+		gres_slurmd_conf->type_name, gres_slurmd_conf->cpu_cnt,
+		gres_slurmd_conf->cpus, gres_slurmd_conf->links,
+		gres_slurmd_conf->file, gres_slurmd_conf->ignore ? "IGNORE":"");
+}
+
+/*
+ * Prints out each gres_slurmd_conf_t record in the list
+ */
+static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
+				    bool parsable)
+{
+	ListIterator itr;
+	gres_slurmd_conf_t *gres_record;
+
+	if (gres_list == NULL)
+		return;
+	itr = list_iterator_create(gres_list);
+	while ((gres_record = list_next(itr))) {
+		if (parsable)
+			_print_gres_conf_parsable(gres_record, log_lvl);
+		else
+			print_gres_conf(gres_record, log_lvl);
+	}
+	list_iterator_destroy(itr);
+}
+
+/*
+ * Print each gres_slurmd_conf_t record in the list
+ */
+extern void print_gres_list(List gres_list, log_level_t log_lvl)
+{
+	_print_gres_list_helper(gres_list, log_lvl, false);
+}
+
+/*
+ * Print each gres_slurmd_conf_t record in the list in a parsable manner for
+ * test consumption
+ */
+extern void print_gres_list_parsable(List gres_list)
+{
+	_print_gres_list_helper(gres_list, LOG_LEVEL_INFO, true);
 }

@@ -106,60 +106,6 @@ static void _delete_gres_list(void *x)
 }
 
 /*
- * A one-liner version of _print_gres_conf_full()
- */
-static void _print_gres_conf(gres_slurmd_conf_t *gres_slurmd_conf,
-			     log_level_t log_lvl)
-{
-	log_var(log_lvl,
-		"    GRES[%s](%"PRIu64"): %8s | %s",
-		gres_slurmd_conf->name, gres_slurmd_conf->count,
-		gres_slurmd_conf->type_name, gres_slurmd_conf->file);
-}
-
-
-/*
- * Print the gres.conf record in a parsable format
- * Do NOT change the format of this without also changing test39.17!
- */
-static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
-				      log_level_t log_lvl)
-{
-	log_var(log_lvl, "GRES_PARSABLE[%s](%"PRIu64"):%s|%s",
-		gres_slurmd_conf->name, gres_slurmd_conf->count,
-		gres_slurmd_conf->type_name, gres_slurmd_conf->file);
-}
-
-/*
- * Prints out each gres_slurmd_conf_t record in the list
- */
-static void _print_gres_list_helper(List gres_list, log_level_t log_lvl,
-				    bool parsable)
-{
-	ListIterator itr;
-	gres_slurmd_conf_t *gres_record;
-
-	if (gres_list == NULL)
-		return;
-	itr = list_iterator_create(gres_list);
-	while ((gres_record = list_next(itr))) {
-		if (parsable)
-			_print_gres_conf_parsable(gres_record, log_lvl);
-		else
-			_print_gres_conf(gres_record, log_lvl);
-	}
-	list_iterator_destroy(itr);
-}
-
-/*
- * Print each gres_slurmd_conf_t record in the list
- */
-static void _print_gres_list(List gres_list, log_level_t log_lvl)
-{
-	_print_gres_list_helper(gres_list, log_lvl, false);
-}
-
-/*
  * Convert all GPU records to a new entries in a list where each File is a
  * unique device (i.e. convert a record with "File=nvidia[0-3]" into 4 separate
  * records).
@@ -423,6 +369,24 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+
+/*
+ * Return true if fake_gpus.conf does exist. Used for testing
+ */
+static bool _test_gpu_list_fake(void)
+{
+	struct stat config_stat;
+	char *fake_gpus_file = NULL;
+	bool have_fake_gpus = false;
+
+	fake_gpus_file = get_extra_conf_path("fake_gpus.conf");
+	if (stat(fake_gpus_file, &config_stat) >= 0) {
+		have_fake_gpus = true;
+	}
+	xfree(fake_gpus_file);
+	return have_fake_gpus;
+}
+
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf.
@@ -433,6 +397,7 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	int rc = SLURM_SUCCESS;
 	log_level_t log_lvl;
 	List gpu_conf_list, mps_conf_list;
+	bool have_fake_gpus = _test_gpu_list_fake();
 
 	/* Assume this state is caused by an scontrol reconfigure */
 	debug_flags = slurm_get_debug_flags();
@@ -447,11 +412,7 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 		log_lvl = LOG_LEVEL_DEBUG;
 
 	log_var(log_lvl, "%s: Initalized gres.conf list:", plugin_name);
-	_print_gres_list(gres_conf_list, log_lvl);
-
-	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
-	if (rc != SLURM_SUCCESS)
-		fatal("%s failed to load configuration", plugin_name);
+	print_gres_list(gres_conf_list, log_lvl);
 
 	/*
 	 * Ensure that every GPU device file is listed as a MPS file.
@@ -477,8 +438,18 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	FREE_NULL_LIST(gpu_conf_list);
 	FREE_NULL_LIST(mps_conf_list);
 
+	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
+	if (rc != SLURM_SUCCESS)
+		fatal("%s failed to load configuration", plugin_name);
+
 	log_var(log_lvl, "%s: Final gres.conf list:", plugin_name);
-	_print_gres_list(gres_conf_list, log_lvl);
+	print_gres_list(gres_conf_list, log_lvl);
+
+	// Print in parsable format for tests if fake system is in use
+	if (have_fake_gpus) {
+		info("Final normalized gres.conf list (parsable):");
+		print_gres_list_parsable(gres_conf_list);
+	}
 
 	return rc;
 }
@@ -576,7 +547,7 @@ extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
 		 &already_seen, &local_inx, true, false);
 }
 
-/* Send GRES information to slurmstepd on the specified file descriptor*/
+/* Send GRES information to slurmstepd on the specified file descriptor */
 extern void send_stepd(int fd)
 {
 	common_send_stepd(fd, gres_devices);
