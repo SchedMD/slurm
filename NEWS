@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Better debugging when a job doesn't have a job_resrcs ptr.
  -- Store ave watts in energy plugins.
  -- Add XCC plugin for reading Lenovo Power.
+ -- Fix minor memory leak when scheduling rebootable nodes.
 
 * Changes in Slurm 18.08.4
 ==========================

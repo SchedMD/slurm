@@ -3970,6 +3970,7 @@ end_node_set:
 		} else {
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		}
+		FREE_NULL_BITMAP(reboot_bitmap);
 		return rc;
 	}
 
