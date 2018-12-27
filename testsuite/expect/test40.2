@@ -378,6 +378,47 @@ if {$match != 1} {
 }
 
 #
+# Run multi-node job
+#
+send_user "\n\n==== TEST 6 ====\n"
+set node_cnt [get_mps_node_count]
+if {$node_cnt > 2} {
+	set node_cnt 2
+}
+set target_job  [expr $mps_cnt / 2]
+make_bash_script $file_in1 "
+echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
+$bin_sleep 5
+exit 0"
+set match 0
+set hostname "NO_VAL"
+set srun_pid [spawn $srun --gres=mps:$target -N$node_cnt -t1 -J "test$test_id" $file_in1]
+expect {
+	-re "HOST:($alpha_numeric_under)" {
+		incr match
+		if {$match == 1} {
+			set hostname $expect_out(1,string)
+		} elseif {[string compare $hostname $expect_out(1,string)] == 0} {
+			send_user "\nFAILURE: Two tasks ran on same node ($hostname))\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	timeout {
+                send_user "\nFAILURE: srun not responding\n"
+                slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != $node_cnt} {
+	send_user "\nFAILURE: failed to get data from multiple nodes ($match != $node_cnt)\n"
+	set exit_code 1
+}
+
+#
 # Clean up and exit
 #
 if {$exit_code == 0} {
