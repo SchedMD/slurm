@@ -213,6 +213,9 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			    (gres_job_ptr->gres_per_task   > 0))) {
 			alloc_cnt = true;
 		}
+		if (gres_job_ptr) {
+			gres_per_node = gres_job_ptr->gres_per_node;
+		}
 	} else {
 		gres_step_state_t *gres_step_ptr =
 			(gres_step_state_t *) gres_ptr;
