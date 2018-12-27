@@ -2639,11 +2639,17 @@ static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 	gpu_gres_data = gpu_gres_ptr->gres_data;
 	mps_gres_data = mps_gres_ptr->gres_data;
 	gpu_cnt = gpu_gres_data->gres_cnt_avail;
-	if (gpu_cnt == bit_size(mps_gres_data->gres_bit_alloc))
+	if (mps_gres_data->gres_bit_alloc &&
+	    (gpu_cnt == bit_size(mps_gres_data->gres_bit_alloc)))
 		return;		/* No change for gres/mps */
 
-	mps_gres_data->gres_bit_alloc =
-			bit_realloc(mps_gres_data->gres_bit_alloc, gpu_cnt);
+	if (!mps_gres_data->gres_bit_alloc) {
+		mps_gres_data->gres_bit_alloc = bit_alloc(gpu_cnt);
+	} else {
+		mps_gres_data->gres_bit_alloc =
+				bit_realloc(mps_gres_data->gres_bit_alloc,
+					    gpu_cnt);
+	}
 
 	/* Free any excess gres/mps topo records */
 	for (i = gpu_cnt; i < mps_gres_data->topo_cnt; i++) {
