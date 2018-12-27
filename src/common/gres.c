@@ -9441,23 +9441,26 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 		}
 	}
 
-	info("  total_node_cnt:%u", gres_ptr->total_node_cnt);
+	/*
+	 * These arrays are only used for resource selection and may include
+	 * data for many nodes not used in the resources eventually allocated
+	 * to this job.
+	 */
+	info("  total_node_cnt:%u (sparsely populated for resource selection)",
+	     gres_ptr->total_node_cnt);
 	for (i = 0; i < gres_ptr->total_node_cnt; i++) {
 		if (gres_ptr->gres_cnt_node_select &&
 		    gres_ptr->gres_cnt_node_select[i]) {
 			info("  gres_cnt_node_select[%d]:%"PRIu64,
 			     i, gres_ptr->gres_cnt_node_select[i]);
-		} else if (gres_ptr->gres_cnt_node_select)
-			info("  gres_cnt_node_select[%d]:NULL", i);
-
+		}
 		if (gres_ptr->gres_bit_select &&
 		    gres_ptr->gres_bit_select[i]) {
 			bit_fmt(tmp_str, sizeof(tmp_str),
 				gres_ptr->gres_bit_select[i]);
 			info("  gres_bit_select[%d]:%s of %d", i, tmp_str,
 			     (int) bit_size(gres_ptr->gres_bit_select[i]));
-		} else if (gres_ptr->gres_bit_select)
-			info("  gres_bit_select[%d]:NULL", i);
+		}
 	}
 }
 
