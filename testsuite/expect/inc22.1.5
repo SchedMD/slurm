@@ -1,0 +1,147 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Use sreport to get job usage reports with default options and with
+#          different switches. Configuration set up in test22.1.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Felip Moll <felip.moll@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+proc inc22_1_5 { } {
+
+	global users accounts
+	global sreport exit_code
+	global sql_in_clus1 sql_rem_clus1 sql_in_clus2 sql_rem_clus2
+	global user1 user2 account1 account2 account3
+	global cluster1 cluster2
+
+	# Mon Dec 31 23:00:00 2007
+	set start_time "Mon Dec 31 23:00:00 2007"
+	set period_start [exec date +%s --date=$start_time]
+
+	# Tue Dec 31 23:59:59 2008
+	set end_time "Tue Jan 31 23:59:59 2008"
+	set period_end [exec date +%s --date=$end_time]
+
+	set start_str [timestamp -format %Y-%m-%dT%X -seconds $period_start]
+	set end_str [timestamp -format %Y-%m-%dT%X -seconds $period_end]
+
+	send_user "\nTesting sreport for default (non-AcctAsParent) and FlatView (Within: inc22.1.5)\n"
+
+	# test the job report for root account
+	set matches 0
+	set my_pid [spawn $sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n]
+	expect {
+		-re "There was a problem" {
+			send_user "FAILURE: there was a problem with the sreport command (Within: inc22.1.5)\n"
+			incr exit_code 1
+		}
+		-re "$cluster1.root.4.*.100.00%" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sreport not responding (Within: inc22.1.5)\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sreport didn't give good info test1 $matches. (Within: inc22.1.5)\n"
+		incr exit_code 1
+	}
+
+	if {$exit_code} {
+		return $exit_code
+	}
+
+	# test the job report with flatview, should show first level of accounts under root individually
+	set matches 0
+	set my_pid [spawn $sreport job sizesbyaccount printjobcount cluster='$cluster1' start=$start_str end=$end_str -p -n flatview]
+	expect {
+		-re "There was a problem" {
+			send_user "FAILURE: there was a problem with the sreport command (Within: inc22.1.5)\n"
+			incr exit_code 1
+		}
+		#test22-1clus1|test22-1acct1|2|0|0|0|0|50.00%|
+		#test22-1clus1|test22-1acct2|1|0|0|0|0|25.00%|
+		#test22-1clus1|test22-1acct3|1|0|0|0|0|25.00%|
+		-re "$cluster1.$account1.2.*.50.00%.\r.$cluster1.$account2.1.*.25.00%.\r.$cluster1.$account3.1.*.25.00%" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sreport not responding (Within: inc22.1.5)\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sreport didn't give good info test2 $matches. (Within: inc22.1.5)\n"
+		incr exit_code 1
+	}
+
+	if {$exit_code} {
+		return $exit_code
+	}
+
+	# test the job report for specific account, should show just one account with all its jobs
+	set matches 0
+	set my_pid [spawn $sreport job sizesbyaccount printjobcount cluster='$cluster1' account=$account1 start=$start_str end=$end_str -p -n]
+	expect {
+		-re "There was a problem" {
+			send_user "FAILURE: there was a problem with the sreport command (Within: inc22.1.5)\n"
+			incr exit_code 1
+		}
+		-re "$cluster1.$account1.2.*.100.00%." {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sreport not responding (Within: inc22.1.5)\n"
+			slow_kill $my_pid
+			incr exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != 1} {
+		send_user "\nFAILURE:  sreport didn't give good info test3 $matches. (Within: inc22.1.5)\n"
+		incr exit_code 1
+	}
+
+	return $exit_code
+}

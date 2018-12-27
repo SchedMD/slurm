@@ -39,6 +39,7 @@ source ./inc22.1.1
 source ./inc22.1.2
 source ./inc22.1.3
 source ./inc22.1.4
+source ./inc22.1.5
 source ./inc22.1.fed
 
 set test_id     "22.1"
@@ -618,6 +619,10 @@ if {$exit_code ne 0} {
 	end_it
 }
 set exit_code [inc22_1_4]
+if {$exit_code ne 0} {
+	end_it
+}
+set exit_code [inc22_1_5]
 if {$exit_code ne 0} {
 	end_it
 }
