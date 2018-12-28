@@ -250,23 +250,7 @@ The amount of HBM on each node should not be configured in a Slurm configuration
 file, but that information will be loaded by the knl_cray plugin using
 information provided by the capmc program.</p>
 
-<h3>Sample slurm.conf file for knl_cray plugin</h3>
-
-<pre>
-# Sample slurm.conf
-NodeFeaturesPlugins=knl_cray
-DebugFlags=NodeFeatures
-GresTypes=hbm
-#
-ResumeProgram=/opt/slurm/default/sbin/capmc_resume
-SuspendTime=30000000
-ResumeTimeout=1800
-...
-Nodename=default Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000 Feature=knl
-NodeName=nid[00000-00127] State=UNKNOWN
-</pre>
-
-<h3>Sample knl_cray.conf file</h3>
+<h4>Sample knl_cray.conf file</h4>
 
 <pre>
 # Sample knl_cray.conf
@@ -277,7 +261,7 @@ AllowNUMA=a2a,snc2,hemi
 DefaultMCDRAM=cache     # MCDRAM=cache
 </pre>
 
-<h3>Sample slurm.conf File</h3>
+<h4>Sample slurm.conf File</h4>
 
 <pre>
 # Sample slurm.conf
@@ -321,7 +305,7 @@ change node state information outside of Slurm then use the following proceedure
 </ol>
 </p>
 
-<h3>Sample knl_generic.conf File</h3>
+<h4>Sample knl_generic.conf File</h4>
 
 <pre>
 # Sample knl_generic.conf
@@ -331,7 +315,7 @@ AllowNUMA=a2a,snc2,hemi
 DefaultMCDRAM=cache     # MCDRAM=cache
 </pre>
 
-<h3>Sample slurm.conf File</h3>
+<h4>Sample slurm.conf File</h4>
 
 <pre>
 # Sample slurm.conf
