@@ -173,6 +173,7 @@ be modified.<br>
 (input) List of pointer to partitions which this user is authorized to use.<br>
 <span class="commandline">modify_uid</span>
 (input) user ID initiating the request.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">0</span> on success, or an
 errno on failure. Slurm specific error numbers from <i>slurm/slurm_errno.h</i>
 may be used. On failure, the request will be rejected and the user will have an
