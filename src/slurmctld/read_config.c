@@ -1700,7 +1700,7 @@ static void _gres_reconfig(bool reconfig)
 	struct node_record *node_ptr;
 	char *gres_name;
 	bool gres_changed;
-	int i;
+	int i, total_threads, total_cores;
 
 	if (reconfig) {
 		gres_plugin_reconfig(&gres_changed);
@@ -1725,11 +1725,14 @@ static void _gres_reconfig(bool reconfig)
 			gres_plugin_node_config_load(
 				node_ptr->config_ptr->cpus, node_ptr->name,
 				NULL);
+			total_cores = node_ptr->config_ptr->sockets *
+				node_ptr->config_ptr->cores;
+			total_threads = total_cores *
+				node_ptr->config_ptr->threads;
 			gres_plugin_node_config_validate(
 				node_ptr->name, node_ptr->config_ptr->gres,
 				&node_ptr->gres, &node_ptr->gres_list,
-				node_ptr->config_ptr->threads,
-				node_ptr->config_ptr->cores,
+				total_threads, total_cores,
 				slurmctld_conf.fast_schedule, NULL);
 		}
 	}
