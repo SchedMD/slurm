@@ -364,7 +364,7 @@ log_err = slurm.error
 cpuset_dir = get_cpuset_dir ()
 if cpuset_dir == nil then
    print "cpuset must be mounted"
-   return 0
+   return slurm.SUCCESS
 end
 
 root_cpuset.cpus = cpuset_read (cpuset_dir, "cpus")
