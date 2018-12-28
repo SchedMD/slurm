@@ -2815,6 +2815,10 @@ The default units in job submission memory and temporary disk size specification
 will be gigabytes rather than megabytes.
 Users can override the default by using a suffix of "M" for megabytes.
 .TP
+\fBdisable_job_shrink\fR
+Deny user requests to shrink the side of running jobs. (However, running jobs
+may still shrink due to node failure if the \-\-no-kill option was set.)
+.TP
 \fBdisable_hetero_steps\fR
 Disable job steps that span heterogeneous job allocations.
 The default value on Cray systems.

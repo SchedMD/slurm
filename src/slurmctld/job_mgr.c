@@ -11412,6 +11412,24 @@ extern bool permit_job_expansion(void)
 	return permit_job_expansion;
 }
 
+extern bool permit_job_shrink(void)
+{
+	static time_t sched_update = 0;
+	static bool permit_job_shrink = false;
+
+	if (sched_update != slurmctld_conf.last_update) {
+		char *sched_params = slurm_get_sched_params();
+		sched_update = slurmctld_conf.last_update;
+		if (xstrcasestr(sched_params, "disable_job_shrink"))
+			permit_job_shrink = false;
+		else
+			permit_job_shrink = true;
+		xfree(sched_params);
+	}
+
+	return permit_job_shrink;
+}
+
 static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		       uid_t uid)
 {
@@ -11695,7 +11713,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		 * Use req_nodes to change the nodes associated with a running
 		 * for lack of other field in the job request to use
 		 */
-		if ((job_specs->req_nodes[0] == '\0') ||
+		if (!permit_job_shrink()) {
+			error("request to shrink %pJ denied by configuration",
+			      job_ptr);
+			error_code = ESLURM_NOT_SUPPORTED;
+			goto fini;
+		} else if ((job_specs->req_nodes[0] == '\0') ||
 		    node_name2bitmap(job_specs->req_nodes,
 				     false, &new_req_bitmap) ||
 		    !bit_super_set(new_req_bitmap, job_ptr->node_bitmap) ||
@@ -13017,6 +13040,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if (job_specs->min_nodes == job_ptr->node_cnt) {
 			debug2("No change in node count update for %pJ",
 			       job_ptr);
+		} else if (!permit_job_shrink()) {
+			error("request to shrink %pJ denied by configuration",
+			      job_ptr);
+			error_code = ESLURM_NOT_SUPPORTED;
+			goto fini;
 		} else {
 			int i, i_first, i_last, total;
 			struct node_record *node_ptr;

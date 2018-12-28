@@ -2457,6 +2457,9 @@ extern void sync_job_priorities(void);
 /* True if running jobs are allowed to expand, false otherwise. */
 extern bool permit_job_expansion(void);
 
+/* True if running jobs are allowed to shrink, false otherwise. */
+extern bool permit_job_shrink(void);
+
 /*
  * update_job - update a job's parameters per the supplied specifications
  * IN msg - RPC to update job, including change specification
