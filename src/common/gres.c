@@ -2373,8 +2373,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
  * IN orig_config - Gres information supplied from slurm.conf
  * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
  * IN/OUT gres_list - List of Gres records for this node to track usage
- * IN cpu_cnt - Count of CPUs (threads) on this node
- * IN core_cnt - Count of cores on this node
+ * IN threads_per_core - Count of CPUs (threads) per core on this node
+ * IN cores_per_sock - Count of cores per socket on this node
  * IN sock_cnt - Count of sockets on this node
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
@@ -2385,14 +2385,16 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    char *orig_config,
 					    char **new_config,
 					    List *gres_list,
-					    int cpu_cnt, int core_cnt,
-					    int sock_cnt,
+					    int threads_per_core,
+					    int cores_per_sock, int sock_cnt,
 					    uint16_t fast_schedule,
 					    char **reason_down)
 {
 	int i, rc, rc2;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
+	int core_cnt = sock_cnt * cores_per_sock;
+	int cpu_cnt  = core_cnt * threads_per_core;
 
 	rc = gres_plugin_init();
 

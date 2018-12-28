@@ -2464,10 +2464,11 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		error_code = SLURM_ERROR;
 		xstrcat(reason_down, "Could not unpack gres data");
 	} else if (gres_plugin_node_config_validate(
-			   node_ptr->name, config_ptr->gres,
-			   &node_ptr->gres, &node_ptr->gres_list, threads1,
-			   cores1, sockets1, slurmctld_conf.fast_schedule,
-			   &reason_down)
+				node_ptr->name, config_ptr->gres,
+				&node_ptr->gres, &node_ptr->gres_list,
+				reg_msg->threads, reg_msg->cores,
+				reg_msg->sockets, slurmctld_conf.fast_schedule,
+				&reason_down)
 		   != SLURM_SUCCESS) {
 		error_code = EINVAL;
 		/* reason_down set in function above */
@@ -2946,7 +2947,7 @@ extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg,
 		uint16_t protocol_version, bool *newly_up)
 {
-	int error_code = 0, i, j, rc, thread_cnt, core_cnt, socket_cnt;
+	int error_code = 0, i, j, rc;
 	bool update_node_state = false;
 	struct job_record *job_ptr;
 	struct config_record *config_ptr;
@@ -3099,15 +3100,13 @@ extern int validate_nodes_via_front_end(
 		config_ptr = node_ptr->config_ptr;
 		node_ptr->last_response = MAX(now, node_ptr->last_response);
 
-		socket_cnt = reg_msg->sockets;
-		core_cnt   = socket_cnt * reg_msg->cores;
-		thread_cnt = core_cnt * reg_msg->threads;
 		rc = gres_plugin_node_config_validate(node_ptr->name,
 						config_ptr->gres,
 						&node_ptr->gres,
 						&node_ptr->gres_list,
-						thread_cnt, core_cnt,
-						socket_cnt,
+						reg_msg->threads,
+						reg_msg->cores,
+						reg_msg->sockets,
 						slurmctld_conf.fast_schedule,
 						&reason_down);
 		if (rc) {
