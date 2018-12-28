@@ -94,8 +94,7 @@ typedef struct env_options {
  * if env is NULL, otherwise they operate on the argument array */
 int	envcount (char **env);
 char *	getenvp(char **env, const char *name);
-int	setenvf(char ***envp, const char *name, const char *fmt, ...)
-		__attribute__ ((format (printf, 3, 4)));
+int	setenvf(char ***envp, const char *name, const char *fmt, ...);
 int	setenvfs(const char *fmt, ...);
 void	unsetenvp(char **env, const char *name);
 
