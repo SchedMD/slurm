@@ -601,6 +601,20 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 extern int gres_plugin_job_revalidate(List gres_list);
 
 /*
+ * Determine if a job's specified GRES are currently valid. This is designed to
+ * manage jobs allocated GRES which are either no longer supported or a GRES
+ * configured with the "File" option in gres.conf where the count has changed,
+ * in which case we don't know how to map the job's old GRES bitmap onto the
+ * current GRES bitmaps.
+ *
+ * IN job_id - ID of job being validated (used for logging)
+ * IN job_gres_list - List of GRES records for this job to track usage
+ * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
+ */
+extern int gres_plugin_job_revalidate2(uint32_t job_id, List job_gres_list,
+				       bitstr_t *node_bitmap);
+
+/*
  * Clear GRES allocation info for all job GRES at start of scheduling cycle
  * Return TRUE if any gres_per_job constraints to satisfy
  */

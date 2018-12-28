@@ -4281,6 +4281,159 @@ extern int gres_plugin_job_revalidate(List gres_list)
 }
 
 /*
+ * Return TRUE if any of this job's GRES has a populated gres_bit_alloc element.
+ * This indicates the allocated GRES has a File configuration parameter and is
+ * tracking individual file assignments.
+ */
+static bool _job_has_gres_bits(List job_gres_list)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *gres_ptr;
+	gres_job_state_t *job_gres_ptr;
+	bool rc = false;
+	int i;
+
+	if (!job_gres_list)
+		return false;
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		job_gres_ptr = gres_ptr->gres_data;
+		if (!job_gres_ptr)
+			continue;
+		for (i = 0; i < job_gres_ptr->node_cnt; i++) {
+			if (job_gres_ptr->gres_bit_alloc &&
+			    job_gres_ptr->gres_bit_alloc[i]) {
+				rc = true;
+				break;
+			}
+		}
+		if (rc)
+			break;
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return rc;
+}
+
+static int _get_node_gres_cnt(List node_gres_list, uint32_t plugin_id)
+{
+	ListIterator node_gres_iter;
+	gres_node_state_t *gres_node_ptr;
+	gres_state_t *gres_ptr;
+	int gres_cnt = 0;
+
+	if (!node_gres_list)
+		return 0;
+
+	node_gres_iter = list_iterator_create(node_gres_list);
+        while ((gres_ptr = (gres_state_t *) list_next(node_gres_iter))) {
+		if (gres_ptr->plugin_id != plugin_id)
+			continue;
+		gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
+		gres_cnt = (int) gres_node_ptr->gres_cnt_config;
+		break;
+	}
+	list_iterator_destroy(node_gres_iter);
+
+	return gres_cnt;
+}
+
+/*
+ * Return TRUE if the identified node in the job allocation can satisfy the
+ * job's GRES specification without change in its bitmaps. In other words,
+ * return FALSE if the job allocation identifies specific GRES devices and the
+ * count of those devices on this node has changed.
+ *
+ * IN job_gres_list - List of GRES records for this job to track usage
+ * IN node_inx - zero-origin index into this job's node allocation
+ * IN node_gres_list - List of GRES records for this node
+ */
+static bool _validate_node_gres_cnt(uint32_t job_id, List job_gres_list,
+				    int node_inx, List node_gres_list,
+				    char *node_name)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *gres_ptr;
+	gres_job_state_t *job_gres_ptr;
+	bool rc = true;
+	int job_gres_cnt, node_gres_cnt;
+
+	if (!job_gres_list)
+		return true;
+
+	(void) gres_plugin_init();
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		job_gres_ptr = gres_ptr->gres_data;
+		if (!job_gres_ptr || !job_gres_ptr->gres_bit_alloc)
+			continue;
+		if ((node_inx >= job_gres_ptr->node_cnt) ||
+		    !job_gres_ptr->gres_bit_alloc[node_inx])
+			continue;
+		job_gres_cnt = bit_size(job_gres_ptr->gres_bit_alloc[node_inx]);
+		node_gres_cnt = _get_node_gres_cnt(node_gres_list,
+						   gres_ptr->plugin_id);
+		if (job_gres_cnt != node_gres_cnt) {
+			error("%s: Killing job %u: gres/%s count mismatch on node "
+			      "%s (%d != %d)",
+			      __func__, job_id, job_gres_ptr->gres_name,
+			      node_name, job_gres_cnt, node_gres_cnt);
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return rc;
+}
+
+/*
+ * Determine if a job's specified GRES are currently valid. This is designed to
+ * manage jobs allocated GRES which are either no longer supported or a GRES
+ * configured with the "File" option in gres.conf where the count has changed,
+ * in which case we don't know how to map the job's old GRES bitmap onto the
+ * current GRES bitmaps.
+ *
+ * IN job_id - ID of job being validated (used for logging)
+ * IN job_gres_list - List of GRES records for this job to track usage
+ * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
+ */
+extern int gres_plugin_job_revalidate2(uint32_t job_id, List job_gres_list,
+				       bitstr_t *node_bitmap)
+{
+	struct node_record *node_ptr;
+	int rc = SLURM_SUCCESS;
+	int i_first, i_last, i;
+	int node_inx = -1;
+
+	if (!job_gres_list || !node_bitmap ||
+	    !_job_has_gres_bits(job_gres_list))
+		return SLURM_SUCCESS;
+
+	i_first = bit_ffs(node_bitmap);
+	if (i_first >= 0)
+		i_last = bit_fls(node_bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(node_bitmap, i))
+			continue;
+		node_ptr = node_record_table_ptr + i;
+		node_inx++;
+		if (!_validate_node_gres_cnt(job_id, job_gres_list, node_inx,
+					     node_ptr->gres_list,
+					     node_ptr->name)) {
+			rc = ESLURM_INVALID_GRES;
+			break;
+		}
+	}
+
+	return rc;
+}
+
+/*
  * Find a sock_gres_t record in a list by matching the plugin_id and type_id
  *	from a gres_state_t job record
  * IN x - a sock_gres_t record to test
@@ -9376,7 +9529,7 @@ extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
 static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 {
 	gres_job_state_t *gres_ptr;
-	char tmp_str[128];
+	char *sparse_msg = "", tmp_str[128];
 	int i;
 
 	xassert(gres_data);
@@ -9454,8 +9607,9 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 	 * data for many nodes not used in the resources eventually allocated
 	 * to this job.
 	 */
-	info("  total_node_cnt:%u (sparsely populated for resource selection)",
-	     gres_ptr->total_node_cnt);
+	if (gres_ptr->total_node_cnt)
+		sparse_msg = " (sparsely populated for resource selection)";
+	info("  total_node_cnt:%u%s", gres_ptr->total_node_cnt, sparse_msg);
 	for (i = 0; i < gres_ptr->total_node_cnt; i++) {
 		if (gres_ptr->gres_cnt_node_select &&
 		    gres_ptr->gres_cnt_node_select[i]) {
