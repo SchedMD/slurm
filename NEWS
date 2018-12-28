@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Add XCC plugin for reading Lenovo Power.
  -- Fix minor memory leak when scheduling rebootable nodes.
  -- Fix debug2 prefix for sched log.
+ -- Fix printing correct SLURM_JOB_ACCOUNT_PACK_GROUP_* in env for a Het Job.
 
 * Changes in Slurm 18.08.4
 ==========================
