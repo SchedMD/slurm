@@ -211,7 +211,7 @@ int setenvf(char ***envp, const char *name, const char *fmt, ...)
 	va_list ap;
 	int size, rc;
 
-	if (!name)
+	if (!name || name[0] == '\0')
 		return EINVAL;
 
 	value = xmalloc(ENV_BUFSIZE);
