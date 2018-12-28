@@ -55,12 +55,12 @@ exec $bin_cc -O -o $io_prog ${io_prog}.c
 exec $bin_chmod 700 $io_prog
 
 send_user "slurm_dir is $slurm_dir\n"
-if [file exists ${slurm_dir}/lib64/libslurm.so] {
-	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm\n"
-	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm
+if [file exists ${slurm_dir}/lib64/slurm/libslurmfull.so] {
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib64/slurm -L${slurm_dir}/lib64/slurm -lslurmfull\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib64/slurm -L${slurm_dir}/lib64/slurm -lslurmfull
 } else {
-	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm\n"
-	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
+	send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib/slurm -L${slurm_dir}/lib/slurm -lslurmfull\n"
+	exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib/slurm -L${slurm_dir}/lib/slurm -lslurmfull
 }
 exec $bin_chmod 700 $test_prog
 
