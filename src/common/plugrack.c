@@ -353,47 +353,6 @@ static bool _match_major(const char *path_name, const char *major_type)
 	return true;
 }
 
-int plugrack_purge_idle(plugrack_t rack)
-{
-	ListIterator it;
-	plugrack_entry_t *e;
-
-	if (!rack)
-		return SLURM_ERROR;
-
-	it = list_iterator_create(rack->entries);
-	while ((e = list_next(it)) != NULL) {
-		if ((e->plug != PLUGIN_INVALID_HANDLE) &&
-		    (e->refcount == 0)) {
-			plugin_unload(e->plug);
-			e->plug = PLUGIN_INVALID_HANDLE;
-		}
-	}
-	list_iterator_destroy(it);
-
-	return SLURM_SUCCESS;
-}
-
-
-int plugrack_load_all(plugrack_t rack)
-{
-	ListIterator it;
-	plugrack_entry_t *e;
-
-	if (!rack)
-		return SLURM_ERROR;
-
-	it = list_iterator_create(rack->entries);
-	while ((e = list_next(it)) != NULL) {
-		if (e->plug == PLUGIN_INVALID_HANDLE) {
-			plugin_load_from_file(&e->plug, e->fq_path);
-		}
-	}
-	list_iterator_destroy(it);
-
-	return SLURM_SUCCESS;
-}
-
 plugin_handle_t plugrack_use_by_type(plugrack_t rack, const char *full_type)
 {
 	ListIterator it;
@@ -429,33 +388,6 @@ plugin_handle_t plugrack_use_by_type(plugrack_t rack, const char *full_type)
 	/* Couldn't find a suitable plugin. */
 	list_iterator_destroy(it);
 	return PLUGIN_INVALID_HANDLE;
-}
-
-int plugrack_finished_with_plugin(plugrack_t rack, plugin_handle_t plug)
-{
-	ListIterator it;
-	plugrack_entry_t *e;
-
-	if (!rack)
-		return SLURM_ERROR;
-
-	it = list_iterator_create(rack->entries);
-	while ((e = list_next(it)) != NULL) {
-		if (e->plug == plug) {
-			e->refcount--;
-			if (e->refcount < 0)
-				e->refcount = 0;
-
-			/* Do something here with purge policy. */
-
-			list_iterator_destroy(it);
-			return SLURM_SUCCESS;
-		}
-	}
-
-	/* Plugin not in this rack. */
-	list_iterator_destroy(it);
-	return SLURM_ERROR;
 }
 
 extern int plugrack_print_all_plugin(plugrack_t rack)

@@ -81,21 +81,6 @@ int plugrack_set_major_type(plugrack_t rack, const char *type);
 int plugrack_read_dir(plugrack_t rack, const char *dir);
 
 /*
- * Remove from memory all plugins that are not currently in use by the
- * program.
- *
- * Returns a Slurm errno.
- */
-int plugrack_purge_idle(plugrack_t rack);
-
-/*
- * Load into memory all plugins which are currently unloaded.
- *
- * Returns a Slurm errno.
- */
-int plugrack_load_all(plugrack_t rack);
-
-/*
  * Find a plugin in the rack which matches the given minor type,
  * load it if necessary, and return a handle to it.
  *
@@ -103,14 +88,6 @@ int plugrack_load_all(plugrack_t rack);
  * found or loaded.
  */
 plugin_handle_t plugrack_use_by_type(plugrack_t rack, const char *type);
-
-/*
- * Indicate that a plugin is no longer needed.  Whether the plugin
- * is actually unloaded depends on the rack's disposal policy.
- *
- * Returns a Slurm errno.
- */
-int plugrack_finished_with_plugin(plugrack_t rack, plugin_handle_t plug);
 
 /*
  * print all plugins in rack
