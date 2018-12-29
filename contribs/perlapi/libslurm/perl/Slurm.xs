@@ -1672,17 +1672,6 @@ slurm_get_select_nodeinfo(slurm_t self, dynamic_plugin_data_t *nodeinfo, uint32_
 				sv_setuv(data, (UV)tmp_16);
 			}
 			break;
-		case SELECT_NODEDATA_STR:         /* data-> char *  needs to be freed with xfree */
-			RETVAL = slurm_get_select_nodeinfo(nodeinfo, data_type, state, &tmp_str);
-			if (RETVAL == 0) {
-				char *str;
-				int len = strlen(tmp_str) + 1;
-				New(0, str, len, char);
-				Copy(tmp_str, str, len, char);
-				xfree(tmp_str);
-				sv_setpvn(data, str, len);
-			}
-			break;
 		case SELECT_NODEDATA_PTR:         /* data-> select_nodeinfo_t *nodeinfo */
 			RETVAL = slurm_get_select_nodeinfo(nodeinfo, data_type, state, &tmp_ptr);
 			if (RETVAL == 0) {

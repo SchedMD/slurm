@@ -81,7 +81,6 @@ $nodeinfo = $resp->{node_array}->[0]->{select_nodeinfo};
 
 my $nodeinfo_data = {
     SELECT_NODEDATA_SUBCNT() => ["", [qw(bluegene linear cons_res)]],
-    SELECT_NODEDATA_STR() => ["", [qw(bluegene)]],
     SELECT_NODEDATA_PTR() => ["Slurm::select_nodeinfo_t", [qw(linear cray cons_res)]],
 };
 

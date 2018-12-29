@@ -631,8 +631,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * SELECT_NODEDATA_SUBCNT            2
 
-=item * SELECT_NODEDATA_STR               4
-
 =item * SELECT_NODEDATA_PTR               5
 
 =back
