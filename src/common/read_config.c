@@ -3181,7 +3181,7 @@ static int _config_is_storage(s_p_hashtbl_t *hashtbl, char *name)
 		goto end;
 	}
 	iter = list_iterator_create(config);
-	while ((pair = list_next(iter)) != NULL)
+	while ((pair = list_next(iter)))
 		s_p_parse_pair(hashtbl, pair->name, pair->value);
 	list_iterator_destroy(iter);
 	FREE_NULL_LIST(config);

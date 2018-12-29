@@ -634,7 +634,7 @@ static void _update_info_node(List info_list, GtkTreeView *tree_view)
 	set_for_update(model, SORTID_UPDATED);
 
 	itr = list_iterator_create(info_list);
-	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
+	while ((sview_node_info = list_next(itr))) {
 		/* This means the tree_store changed (added new column
 		 * or something). */
 		if (last_model != model)
@@ -714,7 +714,7 @@ need_refresh:
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_node_info = (sview_node_info_t*) list_next(itr))) {
+	while ((sview_node_info = list_next(itr))) {
 		node_ptr = sview_node_info->node_ptr;
 		i++;
 		if (!xstrcmp(node_ptr->name, name)) {

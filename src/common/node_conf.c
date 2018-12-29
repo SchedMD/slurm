@@ -890,7 +890,7 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 	*bitmap = my_bitmap;
 
 	hi = hostlist_iterator_create(hl);
-	while ((name = hostlist_next(hi)) != NULL) {
+	while ((name = hostlist_next(hi))) {
 		struct node_record *node_ptr;
 		node_ptr = _find_node_record(name, best_effort, true);
 		if (node_ptr) {

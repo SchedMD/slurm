@@ -428,8 +428,7 @@ int main(int argc, char **argv)
 		/* Allocation granted to regular job */
 		i = 0;
 		iter_resp = list_iterator_create(job_resp_list);
-		while ((alloc = (resource_allocation_response_msg_t *)
-				list_next(iter_resp))) {
+		while ((alloc = list_next(iter_resp))) {
 			if (i == 0) {
 				my_job_id = alloc->job_id;
 				info("Granted job allocation %u", my_job_id);
@@ -492,9 +491,8 @@ int main(int argc, char **argv)
 		i = 0;
 		iter_req = list_iterator_create(job_req_list);
 		iter_resp = list_iterator_create(job_resp_list);
-		while ((desc = (job_desc_msg_t *) list_next(iter_req))) {
-			alloc = (resource_allocation_response_msg_t *)
-				list_next(iter_resp);
+		while ((desc = list_next(iter_req))) {
+			alloc = list_next(iter_resp);
 
 			if (alloc && desc &&
 			    (desc->bitflags & JOB_NTASKS_SET)) {
@@ -708,7 +706,7 @@ static void _match_job_name(List job_req_list, char *job_name)
 		return;
 
 	iter = list_iterator_create(job_req_list);
-	while ((desc = (job_desc_msg_t *) list_next(iter))) {
+	while ((desc = list_next(iter))) {
 		if ((i++ < cnt) && (desc->bitflags & JOB_SALLOC_FLAG)) {
 			xfree(desc->name);
 			desc->name = xstrdup(job_name);

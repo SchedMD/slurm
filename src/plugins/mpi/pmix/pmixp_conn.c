@@ -94,7 +94,7 @@ void pmixp_conn_cleanup(void)
 {
 	ListIterator it = list_iterator_create(_conn_list);
 	pmixp_conn_t *hndl = NULL;
-	while (NULL != (hndl = list_next(it))) {
+	while ((hndl = list_next(it))) {
 		if (PMIXP_CONN_EMPTY == hndl->type) {
 			/* move this handler to the empty list */
 			list_remove(it);

@@ -747,7 +747,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 		if (opt_list)
 			opt_iter = list_iterator_create(opt_list);
 		job_iter = list_iterator_create(srun_job_list);
-		while ((job = (srun_job_t *) list_next(job_iter))) {
+		while ((job = list_next(job_iter))) {
 			if (pack_jobid)
 				job->pack_jobid = pack_jobid;
 			job->stepid = NO_VAL;
@@ -756,7 +756,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 		}
 
 		list_iterator_reset(job_iter);
-		while ((job = (srun_job_t *) list_next(job_iter))) {
+		while ((job = list_next(job_iter))) {
 			if (opt_list)
 				opt_local = list_next(opt_iter);
 			if (!opt_local)
@@ -805,7 +805,7 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			hostset_destroy(hs);
 
 			list_iterator_reset(job_iter);
-			while ((job = (srun_job_t *) list_next(job_iter))) {
+			while ((job = list_next(job_iter))) {
 				if (slurm_step_ctx_get(job->step_ctx,
 						SLURM_STEP_CTX_RESP,
 						&step_resp) == SLURM_SUCCESS) {
@@ -845,7 +845,7 @@ static void _cancel_steps(List srun_job_list)
 	msg.step_rc = 0;
 
 	job_iter = list_iterator_create(srun_job_list);
-	while ((job = (srun_job_t *) list_next(job_iter))) {
+	while ((job = list_next(job_iter))) {
 		if (job->stepid == NO_VAL)
 			continue;
 		msg.job_id	= job->jobid;
@@ -895,8 +895,7 @@ static char *_compress_pack_nodelist(List used_resp_list)
 	pack_resp_list = list_create(_pack_struct_del);
 	hs = hostset_create("");
 	resp_iter = list_iterator_create(used_resp_list);
-	while ((resp = (resource_allocation_response_msg_t *)
-			list_next(resp_iter))) {
+	while ((resp = list_next(resp_iter))) {
 		if (!resp->node_list)
 			continue;
 		len += strlen(resp->node_list);
@@ -952,8 +951,7 @@ static char *_compress_pack_nodelist(List used_resp_list)
 	for (i = 0; i < cnt; i++) {
 		node_name = hostset_nth(hs, i);
 		resp_iter = list_iterator_create(pack_resp_list);
-		while ((pack_resp = (pack_resp_struct_t *)
-				    list_next(resp_iter))) {
+		while ((pack_resp = list_next(resp_iter))) {
 			j = hostlist_find(pack_resp->host_list, node_name);
 			if ((j == -1) || !pack_resp->cpu_cnt)
 				continue;	/* node not in this pack job */
@@ -1079,8 +1077,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		if (max_pack_offset > 0)
 			pack_offset = 0;
 		resp_iter = list_iterator_create(job_resp_list);
-		while ((resp = (resource_allocation_response_msg_t *)
-				list_next(resp_iter))) {
+		while ((resp = list_next(resp_iter))) {
 			bool merge_nodelist = true;
 			_print_job_information(resp);
 			(void) get_next_opt(-2);
@@ -1235,8 +1232,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			srun_job_list = list_create(NULL);
 			opt_iter  = list_iterator_create(opt_list);
 			resp_iter = list_iterator_create(job_resp_list);
-			while ((resp = (resource_allocation_response_msg_t *)
-				       list_next(resp_iter))) {
+			while ((resp = list_next(resp_iter))) {
 				if (my_job_id == 0) {
 					my_job_id = resp->job_id;
 					*got_alloc = true;
@@ -1293,8 +1289,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 
 		if (opt_list) {
 			resp_iter = list_iterator_create(job_resp_list);
-			while ((resp = (resource_allocation_response_msg_t *)
-				       list_next(resp_iter))) {
+			while ((resp = list_next(resp_iter))) {
 				slurm_free_resource_allocation_response_msg(
 									resp);
 			}
@@ -2097,7 +2092,7 @@ static int _shepherd_spawn(srun_job_t *job, List srun_job_list, bool got_alloc)
 	if (srun_job_list) {
 		ListIterator job_iter;
 		job_iter  = list_iterator_create(srun_job_list);
-		while ((job = (srun_job_t *) list_next(job_iter))) {
+		while ((job = list_next(job_iter))) {
 			(void) slurm_kill_job_step(job->jobid, job->stepid,
 						   SIGKILL);
 			if (got_alloc)

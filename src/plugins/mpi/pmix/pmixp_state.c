@@ -95,7 +95,7 @@ static pmixp_coll_t *_find_collective(pmixp_coll_type_t type,
 
 	/* Walk through the list looking for the collective descriptor */
 	it = list_iterator_create(_pmixp_state.coll);
-	while (NULL != (coll = list_next(it))) {
+	while ((coll = list_next(it))) {
 		if (coll->pset.nprocs != nprocs) {
 			continue;
 		}

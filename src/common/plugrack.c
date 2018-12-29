@@ -139,7 +139,7 @@ int plugrack_destroy(plugrack_t *rack)
 	 * will suddenly be outside our virtual address space.
 	 */
 	it = list_iterator_create(rack->entries);
-	while ((e = list_next(it)) != NULL) {
+	while ((e = list_next(it))) {
 		if (e->refcount > 0) {
 			debug2("%s: attempt to destroy plugin rack that is still in use",
 			       __func__);
@@ -377,7 +377,7 @@ extern int plugrack_print_all_plugin(plugrack_t *rack)
 	xassert(rack->entries);
 	itr = list_iterator_create(rack->entries);
 	info("MPI types are...");
-	while ((e = list_next(itr)) != NULL) {
+	while ((e = list_next(itr))) {
 		/*
 		 * Support symbolic links for various pmix plugins with names
 		 * that contain version numbers without listing duplicates

@@ -993,7 +993,7 @@ static void *_thread_per_group_rpc(void *args)
 
 	//info("got %d messages back", list_count(ret_list));
 	itr = list_iterator_create(ret_list);
-	while ((ret_data_info = list_next(itr)) != NULL) {
+	while ((ret_data_info = list_next(itr))) {
 		rc = slurm_get_return_code(ret_data_info->type,
 					   ret_data_info->data);
 		/* SPECIAL CASE: Record node's CPU load */
@@ -1484,8 +1484,7 @@ extern void agent_pack_pending_rpc_stats(Buf buffer)
 	if (retry_list) {
 		list_iter = list_iterator_create(retry_list);
 		/* iterate through list, find type slot or make a new one */
-		while ((queued_req_ptr = (queued_request_t *)
-					 list_next(list_iter))) {
+		while ((queued_req_ptr = list_next(list_iter))) {
 			agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 			if (rpc_count < DUMP_RPC_COUNT) {
 				rpc_type_list[rpc_count] =
@@ -1587,8 +1586,7 @@ static void _agent_retry(int min_wait, bool mail_too)
 			info("slurmctld: agent retry_list size is %d",
 			     list_size);
 			retry_iter = list_iterator_create(retry_list);
-			while ((queued_req_ptr = (queued_request_t *)
-					list_next(retry_iter))) {
+			while ((queued_req_ptr = list_next(retry_iter))) {
 				agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 				msg_type[i++] = agent_arg_ptr->msg_type;
 				if (i == 5)
@@ -1614,8 +1612,7 @@ static void _agent_retry(int min_wait, bool mail_too)
 	if (retry_list) {
 		/* first try to find a new (never tried) record */
 		retry_iter = list_iterator_create(retry_list);
-		while ((queued_req_ptr = (queued_request_t *)
-				list_next(retry_iter))) {
+		while ((queued_req_ptr = list_next(retry_iter))) {
  			if (queued_req_ptr->last_attempt == 0) {
 				list_remove(retry_iter);
 				break;		/* Process this request now */
@@ -1631,8 +1628,7 @@ static void _agent_retry(int min_wait, bool mail_too)
 
 		retry_iter = list_iterator_create(retry_list);
 		/* next try to find an older record to retry */
-		while ((queued_req_ptr = (queued_request_t *)
-				list_next(retry_iter))) {
+		while ((queued_req_ptr = list_next(retry_iter))) {
 			age = difftime(now, queued_req_ptr->last_attempt);
 			if (age > min_wait) {
 				list_remove(retry_iter);

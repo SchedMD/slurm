@@ -495,7 +495,7 @@ static filetxt_job_rec_t *_find_job_record(List job_list,
 	filetxt_job_rec_t *job = NULL;
 	ListIterator itr = list_iterator_create(job_list);
 
-	while ((job = (filetxt_job_rec_t *)list_next(itr)) != NULL) {
+	while ((job = list_next(itr))) {
 		if (job->header.jobnum == header.jobnum) {
 			if (job->header.job_submit == 0 && type == JOB_START) {
 				list_remove(itr);
@@ -537,7 +537,7 @@ static filetxt_step_rec_t *_find_step_record(filetxt_job_rec_t *job,
 		return step;
 
 	itr = list_iterator_create(job->steps);
-	while ((step = (filetxt_step_rec_t *)list_next(itr)) != NULL) {
+	while ((step = list_next(itr))) {
 		if (step->stepnum == stepnum)
 			break;
 	}

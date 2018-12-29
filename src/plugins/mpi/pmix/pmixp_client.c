@@ -265,7 +265,7 @@ static void _set_procdatas(List lresp)
 		PMIX_INFO_CREATE(info, count);
 		it = list_iterator_create(rankinfo);
 		j = 0;
-		while (NULL != (tkvp = list_next(it))) {
+		while ((tkvp = list_next(it))) {
 			/* Just copy all the fields here. We will free
 			 * original kvp's using list_destroy without free'ing
 			 * their fields so it is safe to do so.
@@ -633,7 +633,7 @@ extern int pmixp_libpmix_job_set(void)
 	PMIX_INFO_CREATE(info, ninfo);
 	it = list_iterator_create(lresp);
 	i = 0;
-	while (NULL != (kvp = list_next(it))) {
+	while ((kvp = list_next(it))) {
 		info[i] = *kvp;
 		i++;
 	}

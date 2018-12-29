@@ -102,7 +102,7 @@ int print_sinfo_list(List sinfo_list)
 	if (!params.no_header)
 		print_sinfo_entry(NULL);
 
-	while ((current = list_next(i)) != NULL)
+	while ((current = list_next(i)))
 		 print_sinfo_entry(current);
 
 	list_iterator_destroy(i);
@@ -114,7 +114,7 @@ int print_sinfo_entry(sinfo_data_t *sinfo_data)
 	ListIterator i = list_iterator_create(params.format_list);
 	sinfo_format_t *current;
 
-	while ((current = (sinfo_format_t *) list_next(i)) != NULL) {
+	while ((current = list_next(i))) {
 		if (current->function(sinfo_data, current->width,
 				      current->right_justify, current->suffix)
 		    != SLURM_SUCCESS)
@@ -376,7 +376,7 @@ static void _set_node_field_size(List sinfo_list)
 	sinfo_data_t *current;
 	int max_width = MIN_NODE_FIELD_SIZE, this_width = 0;
 
-	while ((current = (sinfo_data_t *) list_next(i)) != NULL) {
+	while ((current = list_next(i))) {
 		tmp = hostlist_ranged_string_xmalloc(current->nodes);
 		this_width = strlen(tmp);
 		xfree(tmp);
@@ -392,7 +392,7 @@ static void _set_part_field_size(List sinfo_list)
 	sinfo_data_t *current;
 	int max_width = MIN_PART_FIELD_SIZE, this_width = 0;
 
-	while ((current = (sinfo_data_t *) list_next(i)) != NULL) {
+	while ((current = list_next(i))) {
 		if (!current->part_info || !current->part_info->name)
 			continue;
 		this_width = strlen(current->part_info->name);

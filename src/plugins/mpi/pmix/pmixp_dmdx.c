@@ -452,7 +452,7 @@ void pmixp_dmdx_timeout_cleanup(void)
 	time_t ts = time(NULL);
 
 	/* run through all requests and discard stale one's */
-	while (NULL != (req = list_next(it))) {
+	while ((req = list_next(it))) {
 		if ((ts - req->ts) > pmixp_info_timeout()) {
 #ifndef NDEBUG
 			/* respond with the timeout to libpmix */

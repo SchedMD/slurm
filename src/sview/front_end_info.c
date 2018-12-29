@@ -448,7 +448,7 @@ need_refresh:
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_fe_info = (sview_front_end_info_t*) list_next(itr))) {
+	while ((sview_fe_info = list_next(itr))) {
 		front_end_ptr = sview_fe_info->front_end_ptr;
 		if (xstrcmp(front_end_ptr->name, name) == 0) {
 			j = 0;

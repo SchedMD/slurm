@@ -158,7 +158,7 @@ int print_job_from_format(priority_factors_object_t * job, List list)
 	job_format_t *current;
 	int total_width = 0;
 
-	while ((current = (job_format_t *) list_next(i)) != NULL) {
+	while ((current = list_next(i))) {
 		if (current->
 		    function(job, current->width, current->right_justify,
 			     current->suffix)

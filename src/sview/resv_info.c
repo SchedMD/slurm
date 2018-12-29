@@ -673,7 +673,7 @@ static void _update_info_resv(List info_list,
 	set_for_update(model, SORTID_UPDATED);
 
 	itr = list_iterator_create(info_list);
-	while ((sview_resv_info = (sview_resv_info_t*) list_next(itr))) {
+	while ((sview_resv_info = list_next(itr))) {
 		/* This means the tree_store changed (added new column
 		   or something). */
 		if (last_model != model)
@@ -821,7 +821,7 @@ need_refresh:
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_resv_info = (sview_resv_info_t*) list_next(itr))) {
+	while ((sview_resv_info = list_next(itr))) {
 		resv_ptr = sview_resv_info->resv_ptr;
 		if (!xstrcmp(resv_ptr->name, name)) {
 			j=0;

@@ -374,7 +374,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		}
 
 		job_iter = list_iterator_create(srun_job_list);
-		while ((job = (srun_job_t *) list_next(job_iter))) {
+		while ((job = list_next(job_iter))) {
 			char *node_list = NULL;
 			int i, node_inx;
 			total_ntasks += job->ntasks;
@@ -438,7 +438,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		while ((opt_local = list_next(opt_iter))) {
 			srun_opt_t *srun_opt = opt_local->srun_opt;
 			xassert(srun_opt);
-			job = (srun_job_t *) list_next(job_iter);
+			job = list_next(job_iter);
 			if (!job) {
 				slurm_mutex_lock(&step_mutex);
 				while (step_cnt > 0)
@@ -622,7 +622,7 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 		job_iter  = list_iterator_create(srun_job_list);
 		opt_iter  = list_iterator_create(opt_list);
 		while ((opt_local = list_next(opt_iter))) {
-			job = (srun_job_t *) list_next(job_iter);
+			job = list_next(job_iter);
 			if (!job) {
 				if (first_job) {
 					fini_srun(first_job, got_alloc,

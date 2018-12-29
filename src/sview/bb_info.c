@@ -394,7 +394,7 @@ static void _update_info_bb(List info_list, GtkTreeView *tree_view)
 	set_for_update(model, SORTID_UPDATED);
 
 	itr = list_iterator_create(info_list);
-	while ((sview_bb_info = (sview_bb_info_t*) list_next(itr))) {
+	while ((sview_bb_info = list_next(itr))) {
 		/* This means the tree_store changed (added new column
 		 * or something). */
 		if (last_model != model)
@@ -541,7 +541,7 @@ static void _display_info_bb(List info_list, popup_info_t *popup_win)
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_bb_info = (sview_bb_info_t*) list_next(itr))) {
+	while ((sview_bb_info = list_next(itr))) {
 		bb_ptr = sview_bb_info->bb_ptr;
 
 		if (bb_ptr->name) {

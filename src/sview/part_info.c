@@ -1546,7 +1546,7 @@ static void _update_info_part(List info_list,
 	set_for_update(model, SORTID_UPDATED);
 
 	itr = list_iterator_create(info_list);
-	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
+	while ((sview_part_info = list_next(itr))) {
 		/* This means the tree_store changed (added new column
 		   or something). */
 		if (last_model != model)
@@ -1933,7 +1933,7 @@ need_refresh:
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_part_info = (sview_part_info_t*) list_next(itr))) {
+	while ((sview_part_info = list_next(itr))) {
 		part_ptr = sview_part_info->part_ptr;
 
 		if (cluster_name &&

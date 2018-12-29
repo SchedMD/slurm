@@ -81,7 +81,7 @@ static List _build_cluster_list(slurmdb_federation_rec_t *fed)
 
 	cluster_list = list_create(slurm_destroy_char);
 	iter = list_iterator_create(fed->cluster_list);
-	while ((cluster = (slurmdb_cluster_rec_t *) list_next(iter)))
+	while ((cluster = list_next(iter)))
 		(void) slurm_addto_char_list(cluster_list, cluster->name);
 	list_iterator_destroy(iter);
 
@@ -687,7 +687,7 @@ extern int get_data(void)
 			continue;
 
 		itr_step = list_iterator_create(job->steps);
-		while ((step = list_next(itr_step)) != NULL) {
+		while ((step = list_next(itr_step))) {
 			/* now aggregate the aggregatable */
 
 			if (step->state < JOB_COMPLETE)

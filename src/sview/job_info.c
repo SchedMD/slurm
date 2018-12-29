@@ -2910,7 +2910,7 @@ static void _update_info_job(List info_list,
 	set_for_update(model, SORTID_UPDATED);
 
 	itr = list_iterator_create(info_list);
-	while ((sview_job_info = (sview_job_info_t*) list_next(itr))) {
+	while ((sview_job_info = list_next(itr))) {
 		job_ptr = sview_job_info->job_ptr;
 
 		/* This means the tree_store changed (added new column
@@ -3226,7 +3226,7 @@ need_refresh:
 	}
 
 	itr = list_iterator_create(info_list);
-	while ((sview_job_info = (sview_job_info_t*) list_next(itr))) {
+	while ((sview_job_info = list_next(itr))) {
 		if (sview_job_info->job_ptr->job_id ==
 		    spec_info->search_info->int_data)
 			break;
