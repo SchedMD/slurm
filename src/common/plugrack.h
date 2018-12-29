@@ -50,7 +50,7 @@ typedef struct _plugrack * plugrack_t;
 /*
  * Returns a new plugin rack object on success and NULL on failure.
  */
-plugrack_t plugrack_create( void );
+plugrack_t plugrack_create(void);
 
 /*
  * Destroy a plugin rack.  All the associated plugins are unloaded and
@@ -58,7 +58,7 @@ plugrack_t plugrack_create( void );
  *
  * Returns a Slurm errno.
  */
-int plugrack_destroy( plugrack_t rack );
+int plugrack_destroy(plugrack_t rack);
 
 /*
  * Set the major type of the plugins for this rack.  This affects
@@ -69,7 +69,7 @@ int plugrack_destroy( plugrack_t rack );
  *
  * Returns a Slurm errno.
  */
-int plugrack_set_major_type( plugrack_t rack, const char *type );
+int plugrack_set_major_type(plugrack_t rack, const char *type);
 
 /*
  * Paranoia settings.  OR these together, if desired.
@@ -106,9 +106,9 @@ int plugrack_set_major_type( plugrack_t rack, const char *type );
  *
  * Returns a Slurm errno.
  */
-int plugrack_set_paranoia( plugrack_t rack,
-			   const uint32_t paranoia_flags,
-			   const uid_t uid );
+int plugrack_set_paranoia(plugrack_t rack,
+			  const uint32_t paranoia_flags,
+			  const uid_t uid);
 
 /*
  * Add plugins to a rack by scanning the given directory.  If a
@@ -119,8 +119,7 @@ int plugrack_set_paranoia( plugrack_t rack,
  *
  * Returns a Slurm errno.
  */
-int plugrack_read_dir( plugrack_t rack,
-		       const char *dir );
+int plugrack_read_dir(plugrack_t rack, const char *dir);
 
 /*
  * Remove from memory all plugins that are not currently in use by the
@@ -128,14 +127,14 @@ int plugrack_read_dir( plugrack_t rack,
  *
  * Returns a Slurm errno.
  */
-int plugrack_purge_idle( plugrack_t rack );
+int plugrack_purge_idle(plugrack_t rack);
 
 /*
  * Load into memory all plugins which are currently unloaded.
  *
  * Returns a Slurm errno.
  */
-int plugrack_load_all( plugrack_t rack );
+int plugrack_load_all(plugrack_t rack);
 
 /*
  * Find a plugin in the rack which matches the given minor type,
@@ -144,8 +143,7 @@ int plugrack_load_all( plugrack_t rack );
  * Returns PLUGIN_INVALID_HANDLE if a suitable plugin cannot be
  * found or loaded.
  */
-plugin_handle_t plugrack_use_by_type( plugrack_t rack,
-				      const char *type );
+plugin_handle_t plugrack_use_by_type(plugrack_t rack, const char *type);
 
 /*
  * Indicate that a plugin is no longer needed.  Whether the plugin
@@ -153,14 +151,13 @@ plugin_handle_t plugrack_use_by_type( plugrack_t rack,
  *
  * Returns a Slurm errno.
  */
-int plugrack_finished_with_plugin( plugrack_t rack, plugin_handle_t plug );
+int plugrack_finished_with_plugin(plugrack_t rack, plugin_handle_t plug);
 
 /*
  * print all plugins in rack
  *
  * Returns a Slurm errno.
  */
-int plugrack_print_all_plugin( plugrack_t rack);
-
+int plugrack_print_all_plugin(plugrack_t rack);
 
 #endif /*__PLUGRACK_H__*/
