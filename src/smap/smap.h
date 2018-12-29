@@ -63,16 +63,6 @@
 #  endif
 #endif
 
-/*
- * On some systems (read AIX), curses.h includes term.h which does this
- *    #define lines cur_term-> _c3
- * This makes the symbol "lines" unusable. There is a similar #define
- * "columns", "bell", "tone", "pulse", "hangup" and many, many more!!
- */
-#ifdef lines
-#  undef lines
-#endif
-
 #ifndef SYSTEM_DIMENSIONS
 #  define SYSTEM_DIMENSIONS 1
 #endif
