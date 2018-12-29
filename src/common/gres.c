@@ -428,10 +428,6 @@ static int _load_gres_plugin(char *plugin_name,
 	if (plugin_context->plugin_list == NULL) {
 		char *plugin_dir;
 		plugin_context->plugin_list = plugrack_create();
-		if (plugin_context->plugin_list == NULL) {
-			error("gres: cannot create plugin manager");
-			return SLURM_ERROR;
-		}
 		plugrack_set_major_type(plugin_context->plugin_list,
 					"gres");
 		plugin_dir = slurm_get_plugin_dir();

@@ -430,10 +430,6 @@ extern plugin_context_t *plugin_context_create(
 	if (!c->plugin_list) {
 		char *plugin_dir;
 		c->plugin_list = plugrack_create();
-		if (!c->plugin_list) {
-			error("cannot create plugin manager");
-			goto fail;
-		}
 		plugrack_set_major_type(c->plugin_list, plugin_type);
 		plugin_dir = slurm_get_plugin_dir();
 		plugrack_read_dir(c->plugin_list, plugin_dir);
