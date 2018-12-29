@@ -226,7 +226,7 @@ enum job_states {
 					but sent SIGSTOP */
 #define JOB_RECONFIG_FAIL 0x00020000 /* Node configuration for job failed,
 					not job state, just job requeue flag */
-#define	JOB_POWER_UP_NODE  0x00040000 /* Allocated powered down nodes,
+#define	JOB_POWER_UP_NODE 0x00040000 /* Allocated powered down nodes,
 				      * waiting for reboot */
 #define JOB_REVOKED       0x00080000 /* Sibling job revoked */
 #define JOB_REQUEUE_FED   0x00100000 /* Job is being requeued by federation */
