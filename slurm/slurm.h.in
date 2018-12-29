@@ -584,22 +584,22 @@ enum select_jobdata_type {
 };
 
 enum select_nodedata_type {
-	SELECT_NODEDATA_BITMAP_SIZE, /* data-> uint16_t */
-	SELECT_NODEDATA_SUBGRP_SIZE, /* data-> uint16_t */
-	SELECT_NODEDATA_SUBCNT,      /* data-> uint16_t */
-	SELECT_NODEDATA_BITMAP,      /* data-> bitstr_t * needs to be
-				      * freed with FREE_NULL_BITMAP */
-	SELECT_NODEDATA_STR,         /* data-> char *  needs to be
-				      * freed with xfree */
-	SELECT_NODEDATA_PTR,         /* data-> select_nodeinfo_t *nodeinfo */
-	SELECT_NODEDATA_EXTRA_INFO,  /* data-> char *  needs to be
-				      * freed with xfree */
-	SELECT_NODEDATA_RACK_MP,     /* data-> char * needs to be
-				      * freed with xfree */
-	SELECT_NODEDATA_MEM_ALLOC,   /* data-> uint32_t */
-	SELECT_NODEDATA_TRES_ALLOC_FMT_STR, /* data-> char * needs to be freed
-					       with xfree */
-	SELECT_NODEDATA_TRES_ALLOC_WEIGHTED /* data-> double */
+	SELECT_NODEDATA_BITMAP_SIZE = 0,	/* data-> uint16_t */
+	SELECT_NODEDATA_SUBGRP_SIZE = 1,	/* data-> uint16_t */
+	SELECT_NODEDATA_SUBCNT = 2,		/* data-> uint16_t */
+	SELECT_NODEDATA_BITMAP = 3,		/* data-> bitstr_t *,
+						 * free with FREE_NULL_BITMAP */
+	SELECT_NODEDATA_STR = 4,		/* data-> char *,
+						 * free with xfree */
+	SELECT_NODEDATA_PTR = 5,		/* data-> select_nodeinfo_t *nodeinfo */
+	SELECT_NODEDATA_EXTRA_INFO = 6,		/* data-> char *,
+						 * free with xfree */
+	SELECT_NODEDATA_RACK_MP = 7,		/* data-> char *,
+						 * free with xfree */
+	SELECT_NODEDATA_MEM_ALLOC = 8,		/* data-> uint32_t */
+	SELECT_NODEDATA_TRES_ALLOC_FMT_STR = 9,	/* data-> char *,
+						 * free with xfree */
+	SELECT_NODEDATA_TRES_ALLOC_WEIGHTED = 10, /* data-> double */
 };
 
 enum select_print_mode {
