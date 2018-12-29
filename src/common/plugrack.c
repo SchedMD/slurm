@@ -89,7 +89,7 @@ struct _plugrack {
 };
 
 static bool _match_major(const char *path_name, const char *major_type);
-static int _plugrack_read_single_dir(plugrack_new_t *rack, char *dir);
+static int _plugrack_read_single_dir(plugrack_t *rack, char *dir);
 static bool _so_file(char *pathname);
 
 /*
@@ -116,16 +116,16 @@ static void plugrack_entry_destructor(void *v)
 	xfree(victim);
 }
 
-plugrack_new_t *plugrack_create(const char *major_type)
+plugrack_t *plugrack_create(const char *major_type)
 {
-	plugrack_new_t *rack = xmalloc(sizeof(*rack));
+	plugrack_t *rack = xmalloc(sizeof(*rack));
 
 	rack->major_type = xstrdup(major_type);
 	rack->entries = list_create(plugrack_entry_destructor);
 	return rack;
 }
 
-int plugrack_destroy(plugrack_new_t *rack)
+int plugrack_destroy(plugrack_t *rack)
 {
 	ListIterator it;
 	plugrack_entry_t *e;
@@ -155,7 +155,7 @@ int plugrack_destroy(plugrack_new_t *rack)
 	return SLURM_SUCCESS;
 }
 
-static int plugrack_add_plugin_path(plugrack_new_t *rack,
+static int plugrack_add_plugin_path(plugrack_t *rack,
 				    const char *full_type,
 				    const char *fq_path)
 {
@@ -176,7 +176,7 @@ static int plugrack_add_plugin_path(plugrack_new_t *rack,
 }
 
 /* test for the plugin in the various colon separated directories */
-int plugrack_read_dir(plugrack_new_t *rack, const char *dir)
+int plugrack_read_dir(plugrack_t *rack, const char *dir)
 {
 	char *head, *dir_array;
 	int i, rc = SLURM_SUCCESS;
@@ -204,7 +204,7 @@ int plugrack_read_dir(plugrack_new_t *rack, const char *dir)
 	return rc;
 }
 
-static int _plugrack_read_single_dir(plugrack_new_t *rack, char *dir)
+static int _plugrack_read_single_dir(plugrack_t *rack, char *dir)
 {
 	char *fq_path;
 	char *tail;
@@ -330,7 +330,7 @@ static bool _match_major(const char *path_name, const char *major_type)
 	return true;
 }
 
-plugin_handle_t plugrack_use_by_type(plugrack_new_t *rack, const char *full_type)
+plugin_handle_t plugrack_use_by_type(plugrack_t *rack, const char *full_type)
 {
 	ListIterator it;
 	plugrack_entry_t *e;
@@ -367,7 +367,7 @@ plugin_handle_t plugrack_use_by_type(plugrack_new_t *rack, const char *full_type
 	return PLUGIN_INVALID_HANDLE;
 }
 
-extern int plugrack_print_all_plugin(plugrack_new_t *rack)
+extern int plugrack_print_all_plugin(plugrack_t *rack)
 {
 	ListIterator itr;
 	plugrack_entry_t *e = NULL;
