@@ -1666,18 +1666,10 @@ slurm_get_select_nodeinfo(slurm_t self, dynamic_plugin_data_t *nodeinfo, uint32_
 			      only Slurm::
 			    */
 		switch(data_type) {
-		case SELECT_NODEDATA_BITMAP_SIZE: /* data-> uint16_t */
 		case SELECT_NODEDATA_SUBCNT:      /* data-> uint16_t */
 			RETVAL = slurm_get_select_nodeinfo(nodeinfo, data_type, state, &tmp_16);
 			if (RETVAL == 0) {
 				sv_setuv(data, (UV)tmp_16);
-			}
-			break;
-		case SELECT_NODEDATA_BITMAP:      /* data-> bitstr_t * needs to be
-						   * freed with FREE_NULL_BITMAP */
-			RETVAL = slurm_get_select_nodeinfo(nodeinfo, data_type, state, &tmp_bitmap);
-			if (RETVAL == 0) {
-				sv_setref_pv(data, "Slurm::Bitstr", tmp_bitmap);
 			}
 			break;
 		case SELECT_NODEDATA_STR:         /* data-> char *  needs to be freed with xfree */
