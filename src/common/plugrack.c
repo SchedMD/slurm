@@ -53,7 +53,6 @@
 strong_alias(plugrack_create,         slurm_plugrack_create);
 strong_alias(plugrack_destroy,        slurm_plugrack_destroy);
 strong_alias(plugrack_read_dir,       slurm_plugrack_read_dir);
-strong_alias(plugrack_set_major_type, slurm_plugrack_set_major_type);
 strong_alias(plugrack_use_by_type,    slurm_plugrack_use_by_type);
 
 /*
@@ -117,12 +116,12 @@ static void plugrack_entry_destructor(void *v)
 	xfree(victim);
 }
 
-plugrack_t plugrack_create(void)
+plugrack_t plugrack_create(const char *major_type)
 {
 	plugrack_t rack = xmalloc(sizeof(struct _plugrack));
 
-	rack->major_type   = NULL;
-	rack->entries      = list_create(plugrack_entry_destructor);
+	rack->major_type = xstrdup(major_type);
+	rack->entries = list_create(plugrack_entry_destructor);
 	return rack;
 }
 
@@ -153,28 +152,6 @@ int plugrack_destroy(plugrack_t rack)
 	FREE_NULL_LIST(rack->entries);
 	xfree(rack->major_type);
 	xfree(rack);
-	return SLURM_SUCCESS;
-}
-
-int plugrack_set_major_type(plugrack_t rack, const char *type)
-{
-	if (!rack)
-		return SLURM_ERROR;
-	if (!type)
-		return SLURM_ERROR;
-
-	/* Free any pre-existing type. */
-	xfree(rack->major_type);
-
-	/* Install a new one. */
-	if (type != NULL) {
-		rack->major_type = xstrdup(type);
-		if ( rack->major_type == NULL ) {
-			debug3( "plugrack_set_major_type: unable to set type");
-			return SLURM_ERROR;
-		}
-	}
-
 	return SLURM_SUCCESS;
 }
 

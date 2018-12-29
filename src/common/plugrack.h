@@ -48,9 +48,9 @@
 typedef struct _plugrack * plugrack_t;
 
 /*
- * Returns a new plugin rack object on success and NULL on failure.
+ * Returns a new plugin rack object for a provided major type.
  */
-plugrack_t plugrack_create(void);
+plugrack_t plugrack_create(const char *major_type);
 
 /*
  * Destroy a plugin rack.  All the associated plugins are unloaded and
@@ -59,17 +59,6 @@ plugrack_t plugrack_create(void);
  * Returns a Slurm errno.
  */
 int plugrack_destroy(plugrack_t rack);
-
-/*
- * Set the major type of the plugins for this rack.  This affects
- * subsequent calls to add plugins from files.
- *
- * Pass NULL to disable typing in plugins handled by this rack.
- * This is the default.
- *
- * Returns a Slurm errno.
- */
-int plugrack_set_major_type(plugrack_t rack, const char *type);
 
 /*
  * Add plugins to a rack by scanning the given directory.  If a

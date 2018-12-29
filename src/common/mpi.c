@@ -190,8 +190,7 @@ int _mpi_init (char *mpi_type)
 		char *plugin_dir;
 		plugrack_t mpi_rack;
 
-		mpi_rack = plugrack_create();
-		plugrack_set_major_type(mpi_rack, "mpi");
+		mpi_rack = plugrack_create("mpi");
 		plugin_dir = slurm_get_plugin_dir();
 		plugrack_read_dir(mpi_rack, plugin_dir);
 		plugrack_print_all_plugin(mpi_rack);
