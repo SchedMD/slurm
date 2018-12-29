@@ -148,7 +148,7 @@ typedef struct slurm_gres_context {
 	char *		gres_type;		/* plugin name (e.g. "gres/gpu") */
 	slurm_gres_ops_t ops;			/* pointers to plugin symbols */
 	uint32_t	plugin_id;		/* key for searches */
-	plugrack_t	plugin_list;		/* plugrack info */
+	plugrack_new_t *plugin_list;		/* plugrack info */
 	uint64_t        total_cnt;
 } slurm_gres_context_t;
 

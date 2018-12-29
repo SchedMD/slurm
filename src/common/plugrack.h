@@ -45,12 +45,12 @@
 #include "src/common/list.h"
 
 /* Opaque type for plugin rack. */
-typedef struct _plugrack * plugrack_t;
+typedef struct _plugrack plugrack_new_t;
 
 /*
  * Returns a new plugin rack object for a provided major type.
  */
-plugrack_t plugrack_create(const char *major_type);
+plugrack_new_t *plugrack_create(const char *major_type);
 
 /*
  * Destroy a plugin rack.  All the associated plugins are unloaded and
@@ -58,7 +58,7 @@ plugrack_t plugrack_create(const char *major_type);
  *
  * Returns a Slurm errno.
  */
-int plugrack_destroy(plugrack_t rack);
+int plugrack_destroy(plugrack_new_t *rack);
 
 /*
  * Add plugins to a rack by scanning the given directory.  If a
@@ -67,7 +67,7 @@ int plugrack_destroy(plugrack_t rack);
  *
  * Returns a Slurm errno.
  */
-int plugrack_read_dir(plugrack_t rack, const char *dir);
+int plugrack_read_dir(plugrack_new_t *rack, const char *dir);
 
 /*
  * Find a plugin in the rack which matches the given minor type,
@@ -76,13 +76,13 @@ int plugrack_read_dir(plugrack_t rack, const char *dir);
  * Returns PLUGIN_INVALID_HANDLE if a suitable plugin cannot be
  * found or loaded.
  */
-plugin_handle_t plugrack_use_by_type(plugrack_t rack, const char *type);
+plugin_handle_t plugrack_use_by_type(plugrack_new_t *rack, const char *type);
 
 /*
  * print all plugins in rack
  *
  * Returns a Slurm errno.
  */
-int plugrack_print_all_plugin(plugrack_t rack);
+int plugrack_print_all_plugin(plugrack_new_t *rack);
 
 #endif /*__PLUGRACK_H__*/
