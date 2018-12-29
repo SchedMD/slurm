@@ -357,7 +357,6 @@
 #define node_state_string_compact slurm_node_state_string_compact
 #define private_data_string	slurm_private_data_string
 #define accounting_enforce_string slurm_accounting_enforce_string
-#define node_use_string		slurm_node_use_string
 #define reservation_flags_string slurm_reservation_flags_string
 #define print_multi_line_string slurm_print_multi_line_string
 

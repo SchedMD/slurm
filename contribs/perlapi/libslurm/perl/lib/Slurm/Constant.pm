@@ -611,18 +611,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =back
 
-=head3 Node use type
-
-=over 2
-
-=item * SELECT_COPROCESSOR_MODE         0
-
-=item * SELECT_VIRTUAL_NODE_MODE        1
-
-=item * SELECT_NAV_MODE                 2
-
-=back
-
 =head3 Select jobdata type
 
 =over 2

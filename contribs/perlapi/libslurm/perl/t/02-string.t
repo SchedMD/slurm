@@ -67,8 +67,3 @@ cmp_ok($str, "eq", "usage", "private data string");
 # 13
 $str = $slurm->accounting_enforce_string(6);
 cmp_ok($str, "eq", "limits,wckeys", "accounting enforce string");
-
-
-# 15
-$str = $slurm->node_use_string(SELECT_VIRTUAL_NODE_MODE);
-cmp_ok($str, "eq", "VIRTUAL", "node use type string");

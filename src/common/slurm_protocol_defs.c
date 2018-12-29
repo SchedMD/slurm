@@ -76,7 +76,6 @@ strong_alias(node_state_string, slurm_node_state_string);
 strong_alias(node_state_string_compact, slurm_node_state_string_compact);
 strong_alias(private_data_string, slurm_private_data_string);
 strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
-strong_alias(node_use_string, slurm_node_use_string);
 strong_alias(cray_nodelist2nids, slurm_cray_nodelist2nids);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 strong_alias(print_multi_line_string, slurm_print_multi_line_string);
@@ -3729,19 +3728,6 @@ extern void accounting_enforce_string(uint16_t enforce, char *str, int str_len)
 
 	if (str[0] == '\0')
 		strcat(str, "none");
-}
-
-extern char* node_use_string(enum node_use_type node_use)
-{
-	switch (node_use) {
-	case (SELECT_COPROCESSOR_MODE):
-		return "COPROCESSOR";
-	case (SELECT_VIRTUAL_NODE_MODE):
-		return "VIRTUAL";
-	default:
-		break;
-	}
-	return "";
 }
 
 extern char *cray_nodelist2nids(hostlist_t hl_in, char *nodelist)

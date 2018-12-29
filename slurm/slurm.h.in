@@ -561,12 +561,6 @@ enum connection_type {
 	SELECT_HTC_L            /* nodes in a htc running in Linux mode */
 };
 
-enum node_use_type {
-	SELECT_COPROCESSOR_MODE,/* use extra processor for communications */
-	SELECT_VIRTUAL_NODE_MODE,/* application uses both processors */
-	SELECT_NAV_MODE		/* either mode is acceptable */
-};
-
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
 	/* 100 unused (originally for BlueGene) */

@@ -325,18 +325,6 @@ Get the string representation of the specified accounting enforce type.
 
 =back    
 
-=head3 $str = $slurm->node_use_string($num);
-
-Get the string representation of the specified node usage type.
-
-=over 2
-
-=item * IN $num: node usage type number.
-    
-=item * RET: node usage type string.
-
-=back    
-
 
     
 
