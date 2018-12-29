@@ -1656,8 +1656,6 @@ int
 slurm_get_select_nodeinfo(slurm_t self, dynamic_plugin_data_t *nodeinfo, uint32_t data_type, uint32_t state, SV *data)
 	PREINIT:
 		uint16_t tmp_16;
-		char *tmp_str;
-		bitstr_t *tmp_bitmap;
 		select_nodeinfo_t *tmp_ptr;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
