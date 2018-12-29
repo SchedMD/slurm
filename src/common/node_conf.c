@@ -605,8 +605,7 @@ extern struct config_record * create_config_record (void)
 	config_ptr->node_bitmap = NULL;
 	xassert (config_ptr->magic = CONFIG_MAGIC);  /* set value */
 
-	if (list_append(config_list, config_ptr) == NULL)
-		fatal ("create_config_record: unable to allocate memory");
+	list_append(config_list, config_ptr);
 
 	return config_ptr;
 }

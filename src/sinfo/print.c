@@ -361,11 +361,8 @@ format_add_function(List list, int width, bool right, char *suffix,
 	tmp->width = width;
 	tmp->right_justify = right;
 	tmp->suffix = suffix;
+	list_append(list, tmp);
 
-	if (list_append(list, tmp) == NULL) {
-		fprintf(stderr, "Memory exhausted\n");
-		exit(1);
-	}
 	return SLURM_SUCCESS;
 }
 
