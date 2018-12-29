@@ -188,7 +188,7 @@ s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
 	int len;
 
 	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
-	hashtbl = (s_p_hashtbl_t *)xmalloc(len);
+	hashtbl = xmalloc(len);
 
 	for (op = options; op->key != NULL; op++) {
 		value = xmalloc(sizeof(s_p_values_t));
@@ -203,11 +203,10 @@ s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
 		if (op->type == S_P_LINE || op->type == S_P_EXPLINE) {
 			/* line_options mandatory for S_P_*LINE */
 			xassert(op->line_options);
-			expdata = (_expline_values_t*)
-				xmalloc(sizeof(_expline_values_t));
+			expdata = xmalloc(sizeof(_expline_values_t));
 			expdata->template =
 				s_p_hashtbl_create(op->line_options);
-			expdata->index = (s_p_hashtbl_t*)xmalloc(len);
+			expdata->index = xmalloc(len);
 			expdata->values = NULL;
 			value->data = expdata;
 		}
@@ -545,7 +544,7 @@ s_p_hashtbl_t* _hashtbl_copy_keys(const s_p_hashtbl_t* from_hashtbl,
 	xassert(from_hashtbl);
 
 	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
-	to_hashtbl = (s_p_hashtbl_t *)xmalloc(len);
+	to_hashtbl = xmalloc(len);
 
 	for (i = 0; i < CONF_HASH_LEN; ++i) {
 		for (val_ptr = from_hashtbl[i]; val_ptr;
@@ -610,7 +609,7 @@ static void *_handle_string(const char *key, const char *value)
 
 static void *_handle_long(const char *key, const char *value)
 {
-	long* data = (long*)xmalloc(sizeof(long));
+	long *data = xmalloc(sizeof(*data));
 	if (s_p_handle_long(data, key, value) == SLURM_ERROR)
 		return NULL;
 	return data;
@@ -618,7 +617,7 @@ static void *_handle_long(const char *key, const char *value)
 
 static void *_handle_uint16(const char *key, const char *value)
 {
-	uint16_t* data = (uint16_t*)xmalloc(sizeof(uint16_t));
+	uint16_t *data = xmalloc(sizeof(*data));
 	if (s_p_handle_uint16(data, key, value) == SLURM_ERROR)
 		return NULL;
 	return data;
@@ -626,7 +625,7 @@ static void *_handle_uint16(const char *key, const char *value)
 
 static void *_handle_uint32(const char *key, const char *value)
 {
-	uint32_t* data = (uint32_t*)xmalloc(sizeof(uint32_t));
+	uint32_t *data = xmalloc(sizeof(*data));
 	if (s_p_handle_uint32(data, key, value) == SLURM_ERROR)
 		return NULL;
 	return data;
@@ -634,7 +633,7 @@ static void *_handle_uint32(const char *key, const char *value)
 
 static void *_handle_uint64(const char *key, const char *value)
 {
-	uint64_t* data = (uint64_t*)xmalloc(sizeof(uint64_t));
+	uint64_t *data = xmalloc(sizeof(*data));
 	if (s_p_handle_uint64(data, key, value) == SLURM_ERROR)
 		return NULL;
 	return data;
@@ -642,7 +641,7 @@ static void *_handle_uint64(const char *key, const char *value)
 
 static void *_handle_boolean(const char *key, const char *value)
 {
-	bool* data = (bool*)xmalloc(sizeof(bool));
+	bool *data = xmalloc(sizeof(*data));
 	if (s_p_handle_boolean(data, key, value) == SLURM_ERROR)
 		return NULL;
 	return data;
@@ -650,7 +649,7 @@ static void *_handle_boolean(const char *key, const char *value)
 
 static void *_handle_float(const char *key, const char *value)
 {
-	float* data = (float*)xmalloc(sizeof(float));
+	float *data = xmalloc(sizeof(*data));
 	if (s_p_handle_float(data, key, value) == SLURM_ERROR)
 		return NULL;
 	return data;
@@ -658,7 +657,7 @@ static void *_handle_float(const char *key, const char *value)
 
 static void *_handle_double(const char *key, const char *value)
 {
-	double* data = (double*)xmalloc(sizeof(double));
+	double *data = xmalloc(sizeof(*data));
 	if (s_p_handle_double(data, key, value) == SLURM_ERROR)
 		return NULL;
 	return data;
@@ -666,7 +665,7 @@ static void *_handle_double(const char *key, const char *value)
 
 static void *_handle_ldouble(const char *key, const char *value)
 {
-	long double* data = (long double*)xmalloc(sizeof(long double));
+	long double *data = xmalloc(sizeof(*data));
 	if (s_p_handle_long_double(data, key, value) == SLURM_ERROR)
 		return NULL;
 	return data;
@@ -743,7 +742,7 @@ static void _handle_expline_sc(s_p_hashtbl_t* index_tbl,
 			(s_p_hashtbl_t*)matchp_index->data, tbl);
 		s_p_hashtbl_destroy(tbl);
 	} else {
-		index_value = (s_p_values_t*)xmalloc(sizeof(s_p_values_t));
+		index_value = xmalloc(sizeof(s_p_values_t));
 		index_value->key = xstrdup(master_value);
 		index_value->destroy = _empty_destroy;
 		index_value->data = tbl;
@@ -1510,7 +1509,7 @@ static s_p_hashtbl_t* _parse_expline_adapt_table(const s_p_hashtbl_t* hashtbl)
 	xassert(hashtbl);
 
 	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
-	to_hashtbl = (s_p_hashtbl_t *)xmalloc(len);
+	to_hashtbl = xmalloc(len);
 
 	for (i = 0; i < CONF_HASH_LEN; ++i) {
 		for (val_ptr = hashtbl[i]; val_ptr; val_ptr = val_ptr->next) {
@@ -1731,8 +1730,7 @@ int s_p_parse_line_expanded(const s_p_hashtbl_t *hashtbl,
 	 *  {key: value2, attr1: val1.2, attr2: val2.2}
 	 * ]
 	 */
-	tables = (s_p_hashtbl_t**)xmalloc(tables_count *
-					  sizeof(s_p_hashtbl_t*));
+	tables = xmalloc(tables_count * sizeof(s_p_hashtbl_t *));
 	for (i = 0; i < tables_count; i++) {
 		free(value_str);
 		value_str = hostlist_shift(value_hl);
