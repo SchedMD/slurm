@@ -594,8 +594,6 @@ enum select_nodedata_type {
 	SELECT_NODEDATA_PTR = 5,		/* data-> select_nodeinfo_t *nodeinfo */
 	SELECT_NODEDATA_EXTRA_INFO = 6,		/* data-> char *,
 						 * free with xfree */
-	SELECT_NODEDATA_RACK_MP = 7,		/* data-> char *,
-						 * free with xfree */
 	SELECT_NODEDATA_MEM_ALLOC = 8,		/* data-> uint32_t */
 	SELECT_NODEDATA_TRES_ALLOC_FMT_STR = 9,	/* data-> char *,
 						 * free with xfree */
