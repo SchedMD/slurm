@@ -178,7 +178,7 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	uint32_t my_state = node_ptr->node_state;
 	char *cloud_str = "", *comp_str = "", *drain_str = "", *power_str = "";
 	char time_str[32];
-	char *out = NULL, *reason_str = NULL, *select_reason_str = NULL;
+	char *out = NULL, *reason_str = NULL;
 	uint16_t alloc_cpus = 0;
 	int idle_cpus;
 	uint64_t alloc_memory;
@@ -448,15 +448,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	/****** Line ******/
 	if (node_ptr->reason && node_ptr->reason[0])
 		xstrcat(reason_str, node_ptr->reason);
-	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-				  SELECT_NODEDATA_EXTRA_INFO,
-				  0, &select_reason_str);
-	if (select_reason_str && select_reason_str[0]) {
-		if (reason_str)
-			xstrcat(reason_str, "\n");
-		xstrcat(reason_str, select_reason_str);
-	}
-	xfree(select_reason_str);
 	if (reason_str) {
 		int inx = 1;
 		char *save_ptr = NULL, *tok, *user_name;

@@ -830,7 +830,6 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 	if (last_list)
 		last_list_itr = list_iterator_create(last_list);
 	for (i=0; i<node_info_ptr->record_count; i++) {
-		char *select_reason_str = NULL;
 		node_ptr = &(node_info_ptr->node_array[i]);
 
 		if (!node_ptr->name || (node_ptr->name[0] == '\0'))
@@ -882,21 +881,6 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr,
 				"%s [%s@%s]", node_ptr->reason, user, time_str);
 		} else if (node_ptr->reason)
 			sview_node_info_ptr->reason = xstrdup(node_ptr->reason);
-
-		slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
-					  SELECT_NODEDATA_EXTRA_INFO,
-					  0, &select_reason_str);
-		if (select_reason_str && select_reason_str[0]) {
-			if (sview_node_info_ptr->reason)
-				xstrfmtcat(sview_node_info_ptr->reason, "\n%s",
-					   select_reason_str);
-			else {
-				sview_node_info_ptr->reason = select_reason_str;
-				select_reason_str = NULL;
-			}
-		}
-		xfree(select_reason_str);
-
 
 		if (node_ptr->boot_time) {
 			slurm_make_time_str(&node_ptr->boot_time,
