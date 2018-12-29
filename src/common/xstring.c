@@ -609,11 +609,9 @@ static char *_xstrdup_vprintf(const char *fmt, va_list ap)
 {
 	/* Start out with a size of 100 bytes. */
 	int n, size = 100;
-	char *p = NULL;
 	va_list our_ap;
+	char *p = xmalloc(size);
 
-	if ((p = xmalloc(size)) == NULL)
-		return NULL;
 	while (1) {
 		/* Try to print in the allocated space. */
 		va_copy(our_ap, ap);
@@ -627,8 +625,7 @@ static char *_xstrdup_vprintf(const char *fmt, va_list ap)
 			size = n + 1;           /* precisely what is needed */
 		else                      /* glibc 2.0 */
 			size *= 2;              /* twice the old size */
-		if ((p = xrealloc(p, size)) == NULL)
-			return NULL;
+		p = xrealloc(p, size);
 	}
 	/* NOTREACHED */
 }
