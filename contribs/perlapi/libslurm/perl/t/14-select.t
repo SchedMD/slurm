@@ -41,20 +41,7 @@ SKIP: {
 
 
 my $jobinfo_data = {
-    SELECT_JOBDATA_GEOMETRY() => [ "ARRAY", [qw(bluegene)] ],
-    SELECT_JOBDATA_ROTATE() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_CONN_TYPE() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_ALTERED() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_REBOOT() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_NODE_CNT() => ["", [qw(bluegene)]],
     SELECT_JOBDATA_RESV_ID() => ["", [qw(cray)]],
-    SELECT_JOBDATA_BLOCK_ID() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_NODES() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_IONODES() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_BLRTS_IMAGE() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_LINUX_IMAGE() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_MLOADER_IMAGE() => ["", [qw(bluegene)]],
-    SELECT_JOBDATA_RAMDISK_IMAGE() => ["", [qw(bluegene)]],
     SELECT_JOBDATA_PTR() => ["Slurm::select_jobinfo_t", [qw(cray)]],
 };
 
@@ -80,7 +67,7 @@ $nodeinfo = $resp->{node_array}->[0]->{select_nodeinfo};
 
 
 my $nodeinfo_data = {
-    SELECT_NODEDATA_SUBCNT() => ["", [qw(bluegene linear cons_res)]],
+    SELECT_NODEDATA_SUBCNT() => ["", [qw(linear cons_res)]],
     SELECT_NODEDATA_PTR() => ["Slurm::select_nodeinfo_t", [qw(linear cray cons_res)]],
 };
 

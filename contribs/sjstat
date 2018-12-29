@@ -75,11 +75,6 @@ use autouse 'Pod::Usage' => qw(pod2usage);
 	isslurmup();
 
 #
-#	See if bluegene system.
-#
-	my $bglflag = 1  if (`scontrol show config | grep -i bluegene`);
-
-#
 #	Get user options.
 #
 	get_options();
@@ -108,25 +103,6 @@ use autouse 'Pod::Usage' => qw(pod2usage);
 	exit;
 
 
-#
-# Do usable for bluegene
-#
-sub Usable
-{
-	my ($tot, $out) = @_;
-
-	$tot *= 1024.0 if ($tot =~ /K/);
-	$out *= 1024.0 if ($out =~ /K/);
-
-	my $usable =  $tot - $out;
-	if ($usable > 1024.0) {
-		$usable  /=  1024.0;
-		$usable .= 'K';
-	}
-
-	return($usable);
-}
-	
 #
 # Get the SLURM partitions information.
 #
@@ -158,11 +134,7 @@ sub do_sinfo
 			$s_out[$ct]    = $fields[2];
 			$s_total[$ct]  = $fields[3];
 
-		if ($bglflag) {
-			$s_usable[$ct] = Usable($s_total[$ct], $s_out[$ct]);
-		} else {
-			$s_usable[$ct] = $s_total[$ct] - $s_out[$ct];
-		}
+		$s_usable[$ct] = $s_total[$ct] - $s_out[$ct];
 
 		$s_feat[$ct] = ($line[4] .= " ");
 		$s_feat[$ct] =~ s/\(null\)//g;

@@ -273,8 +273,7 @@ _sacctmgr()
 		    PartitionTimeLimit"
     local qospreempt="cluster cancel checkpoint requeue suspend"
 
-    local clusflags="aix bgl bgq bluegene crayxt frontend multipleslumd\
-		     sunconstellation xcpu"
+    local clusflags="frontend multipleslurmd"
 
     # Check whether we are in the middle of an option. If so serve them.
     remainings=$(compute_set_diff "$longoptions" "${COMP_WORDS[*]}")
@@ -1358,7 +1357,6 @@ _salloc()
     --wait-all-nodes) offer_list "1 0" ;;
     --conn-type) offer_list "MESH TORUS NAV" ;;
     esac
-    #TODO options for blue gene systems
 }
 complete -F _salloc salloc
 
@@ -1449,7 +1447,6 @@ _sbatch()
     --wait-all-nodes) offer_list "1 0" ;;
     *)  _filedir
     esac
-    #TODO options for blue gene systems
 }
 complete -o filenames -F _sbatch sbatch
 
@@ -1548,7 +1545,6 @@ _srun()
     --conn-type) offer_list "MESH TORUS NAV" ;;
     *)  COMPREPLY=( $( compgen -c -- "$cur" ) ) ; return
     esac
-    #TODO options for blue gene systems
 }
 complete -F _srun srun
 
