@@ -569,7 +569,7 @@ enum select_plugin_type {
 /* switch plugin (id) in use by cluster */
 enum switch_plugin_type {
 	SWITCH_PLUGIN_NONE         = 100, /* NONE */
-	SWITCH_PLUGIN_GENERIC      = 101, /* Genereic */
+	SWITCH_PLUGIN_GENERIC      = 101, /* Generic */
 	SWITCH_PLUGIN_CRAY         = 102, /* NRT */
 	SWITCH_PLUGIN_NRT          = 103, /* Cray */
 };
