@@ -319,10 +319,6 @@ static bool _match_major(const char *path_name, const char *major_type)
 {
 	char *head = (char *)path_name;
 
-	/* Special case for BlueGene systems */
-	if (xstrncmp(head, "libsched_if", 11) == 0)
-		return false;
-
 	if (xstrncmp(head, "lib", 3) == 0)
 		head += 3;
 	if (xstrncmp(head, major_type, strlen(major_type)))
