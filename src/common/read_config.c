@@ -1267,7 +1267,6 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			       const char *line, char **leftover)
 {
 	s_p_hashtbl_t *tbl, *dflt;
-	slurm_conf_partition_t *p;
 	uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0;
 	job_defaults_t *job_defaults;
 	char *cpu_bind = NULL, *tmp = NULL;
@@ -1329,7 +1328,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		return 0;
 	} else {
-		p = xmalloc(sizeof(slurm_conf_partition_t));
+		slurm_conf_partition_t *p = xmalloc(sizeof(*p));
 		dflt = default_partition_tbl;
 
 		p->name = xstrdup(value);
