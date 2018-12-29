@@ -60,10 +60,8 @@
  */
 #if defined (__APPLE__)
 slurmd_conf_t *conf __attribute__((weak_import));
-int bg_recover __attribute__((weak_import)) = NOT_FROM_CONTROLLER;
 #else
 slurmd_conf_t *conf;
-int bg_recover = NOT_FROM_CONTROLLER;
 #endif
 
 
