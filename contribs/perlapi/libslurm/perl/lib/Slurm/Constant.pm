@@ -589,28 +589,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =back
 
-=head3 Connection type
-
-=over 2
-
-=item * SELECT_MESH         0
-
-=item * SELECT_TORUS        1
-
-=item * SELECT_NAV          2
-
-=item * SELECT_SMALL        3
-
-=item * SELECT_HTC_S        4
-
-=item * SELECT_HTC_D        5
-
-=item * SELECT_HTC_V        6
-
-=item * SELECT_HTC_L        7
-
-=back
-
 =head3 Select jobdata type
 
 =over 2
