@@ -383,7 +383,6 @@
 #define plugrack_destroy        slurm_plugrack_destroy
 #define plugrack_read_dir       slurm_plugrack_read_dir
 #define plugrack_set_major_type slurm_plugrack_set_major_type
-#define plugrack_set_paranoia   slurm_plugrack_set_paranoia
 #define plugrack_use_by_type    slurm_plugrack_use_by_type
 
 #define jobacctinfo_pack	slurm_jobacctinfo_pack

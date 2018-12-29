@@ -435,8 +435,6 @@ extern plugin_context_t *plugin_context_create(
 			goto fail;
 		}
 		plugrack_set_major_type(c->plugin_list, plugin_type);
-		plugrack_set_paranoia(
-			c->plugin_list, PLUGRACK_PARANOIA_NONE, 0);
 		plugin_dir = slurm_get_plugin_dir();
 		plugrack_read_dir(c->plugin_list, plugin_dir);
 		xfree(plugin_dir);

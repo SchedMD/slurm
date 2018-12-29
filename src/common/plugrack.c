@@ -54,7 +54,6 @@ strong_alias(plugrack_create,         slurm_plugrack_create);
 strong_alias(plugrack_destroy,        slurm_plugrack_destroy);
 strong_alias(plugrack_read_dir,       slurm_plugrack_read_dir);
 strong_alias(plugrack_set_major_type, slurm_plugrack_set_major_type);
-strong_alias(plugrack_set_paranoia,   slurm_plugrack_set_paranoia);
 strong_alias(plugrack_use_by_type,    slurm_plugrack_use_by_type);
 
 /*
@@ -84,23 +83,11 @@ typedef struct _plugrack_entry {
  * Implementation of the plugin rack.
  *
  * entries is the list of plugrack_entry_t.
- *
- * uid is the Linux UID of the person authorized to own the plugin
- * and write to the plugin file and the directory where it is stored.
- * This field is used only if paranoia is nonzero.
- *
- * paranoia is a set of bit flags indicating what operations should be
- * done to verify the integrity and authority of the plugin before
- * loading it.
  */
 struct _plugrack {
 	List entries;
 	const char *major_type;
-	uid_t uid;
-	uint8_t paranoia;
 };
-
-#define PLUGRACK_UID_NOBODY		99	/* RedHat's, anyway. */
 
 static bool _match_major(const char *path_name, const char *major_type);
 static int _plugrack_read_single_dir(plugrack_t rack, char *dir);
@@ -130,60 +117,11 @@ static void plugrack_entry_destructor(void *v)
 	xfree(victim);
 }
 
-/*
- * Check a pathname to see if it is owned and writable by the appropriate
- * users, and writable by no one else.  The path can be either to a file
- * or to a directory.  This is so, when fishing for plugins in a whole
- * directory, we can test the directory once and then each file.
- *
- * Returns non-zero if the file system node indicated by the path name
- * is owned by the user in the plugin rack and not writable by anyone
- * else, and these actions are requested by the rack's paranoia policy.
- */
-static int accept_path_paranoia(plugrack_t rack,
-				const char *fq_path,
-				int check_own,
-				int check_write)
-{
-	struct stat st;
-
-	/* Internal function, so assert rather than fail gracefully. */
-	xassert(rack);
-	xassert(fq_path);
-
-	if (stat(fq_path, &st) < 0) {
-		debug3("%s: stat(%s) failed", __func__, fq_path);
-		return 0;
-	}
-
-	/* Is path owned by authorized user? */
-	if (check_own) {
-		if (st.st_uid != rack->uid) {
-			debug3("%s: %s not owned by proper user",
-			       __func__, fq_path);
-			return 0;
-		}
-	}
-
-	/* Is path writable by others? */
-	if (check_write) {
-		if ((st.st_mode & S_IWGRP) || (st.st_mode & S_IWOTH)) {
-			debug3("%s: %s writable by others",
-			       __func__, fq_path);
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
 plugrack_t plugrack_create(void)
 {
 	plugrack_t rack = xmalloc(sizeof(struct _plugrack));
 
-	rack->paranoia     = PLUGRACK_PARANOIA_NONE;
 	rack->major_type   = NULL;
-	rack->uid          = PLUGRACK_UID_NOBODY;
 	rack->entries      = list_create(plugrack_entry_destructor);
 	return rack;
 }
@@ -235,21 +173,6 @@ int plugrack_set_major_type(plugrack_t rack, const char *type)
 			debug3( "plugrack_set_major_type: unable to set type");
 			return SLURM_ERROR;
 		}
-	}
-
-	return SLURM_SUCCESS;
-}
-
-int plugrack_set_paranoia(plugrack_t rack,
-			  const uint32_t flags,
-			  const uid_t uid)
-{
-	if (!rack)
-		return SLURM_ERROR;
-
-	rack->paranoia = flags;
-	if (flags) {
-		rack->uid = uid;
 	}
 
 	return SLURM_SUCCESS;
@@ -333,15 +256,6 @@ static int _plugrack_read_single_dir(plugrack_t rack, char *dir)
 	*tail = '/';
 	++tail;
 
-	/* Check whether we should be paranoid about this directory. */
-	if (!accept_path_paranoia(rack,
-				  dir,
-				  rack->paranoia & PLUGRACK_PARANOIA_DIR_OWN,
-				  rack->paranoia & PLUGRACK_PARANOIA_DIR_WRITABLE)) {
-		xfree(fq_path);
-		return SLURM_ERROR;
-	}
-
 	/* Open the directory. */
 	dirp = opendir(dir);
 	if (dirp == NULL) {
@@ -380,16 +294,6 @@ static int _plugrack_read_single_dir(plugrack_t rack, char *dir)
 		if ((rack->major_type) &&
 		    (!_match_major(e->d_name, rack->major_type)))
 			continue;
-
-		/* See if we should be paranoid about this file. */
-		if (!accept_path_paranoia(rack,
-					  fq_path,
-					  rack->paranoia & PLUGRACK_PARANOIA_FILE_OWN,
-					  rack->paranoia & PLUGRACK_PARANOIA_FILE_WRITABLE)) {
-			debug3("plugin_read_dir: skipping %s for security reasons",
-			       fq_path);
-			continue;
-		}
 
 		/* Test the type. */
 		if (plugin_peek(fq_path, plugin_type, type_len, NULL) ==

@@ -72,50 +72,9 @@ int plugrack_destroy(plugrack_t rack);
 int plugrack_set_major_type(plugrack_t rack, const char *type);
 
 /*
- * Paranoia settings.  OR these together, if desired.
- *
- * _DIR_OWN - verify that the directory containing the plugin is owned
- * by a certain user.
- * _DIR_WRITABLE - verify that the directory containing the plugin is
- * not writable by anyone except its owner.
- * _FILE_OWN - verify that the plugin is owned by a certain user.
- * _FILE_WRITABLE - verify that the plugin is not writable by anyone
- * except its onwer.
- */
-#define PLUGRACK_PARANOIA_NONE			0x00
-#define PLUGRACK_PARANOIA_DIR_OWN		0x01
-#define PLUGRACK_PARANOIA_DIR_WRITABLE		0x02
-#define PLUGRACK_PARANOIA_FILE_OWN		0x04
-#define PLUGRACK_PARANOIA_FILE_WRITABLE		0x08
-
-/*
- * Indicate the manner in which the rack should be paranoid about
- * accepting plugins.
- *
- * paranoia_flags is an ORed combination of the flags listed above.
- * They do not combine across separate calls; the flags must be fully
- * specified at each call.
- *
- * The paranoia setting affects only subsequent attempts to place
- * plugins in the rack.
- *
- * If the flag parameter specifies ownership checking, "uid" gives the
- * numerical user ID of the authorized owner of the plugin and the
- * directory where it resides.  If no ownership checking is requested,
- * this parameter is ignored.
- *
- * Returns a Slurm errno.
- */
-int plugrack_set_paranoia(plugrack_t rack,
-			  const uint32_t paranoia_flags,
-			  const uid_t uid);
-
-/*
  * Add plugins to a rack by scanning the given directory.  If a
  * type has been set for this rack, only those plugins whose major type
- * matches the rack's type will be loaded.  If a rack's paranoia factors
- * have been set, they are applied to files considered candidates for
- * plugins.  Plugins that fail the paranoid examination are not loaded.
+ * matches the rack's type will be loaded.
  *
  * Returns a Slurm errno.
  */

@@ -434,8 +434,6 @@ static int _load_gres_plugin(char *plugin_name,
 		}
 		plugrack_set_major_type(plugin_context->plugin_list,
 					"gres");
-		plugrack_set_paranoia(plugin_context->plugin_list,
-				      PLUGRACK_PARANOIA_NONE, 0);
 		plugin_dir = slurm_get_plugin_dir();
 		plugrack_read_dir(plugin_context->plugin_list, plugin_dir);
 		xfree(plugin_dir);
