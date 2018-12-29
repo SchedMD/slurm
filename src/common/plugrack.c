@@ -97,25 +97,24 @@ struct _plugrack {
 	List entries;
 	const char *major_type;
 	uid_t uid;
-	uint8_t     paranoia;
+	uint8_t paranoia;
 };
 
 #define PLUGRACK_UID_NOBODY		99	/* RedHat's, anyway. */
 
-static bool _match_major ( const char *path_name, const char *major_type );
-static int _plugrack_read_single_dir( plugrack_t rack, char *dir );
-static bool _so_file( char *pathname );
+static bool _match_major(const char *path_name, const char *major_type);
+static int _plugrack_read_single_dir(plugrack_t rack, char *dir);
+static bool _so_file(char *pathname);
 
 /*
  * Destructor function for the List code.  This should entirely
  * clean up a plugin_entry_t.
  */
-static void
-plugrack_entry_destructor( void *v )
+static void plugrack_entry_destructor(void *v)
 {
 	plugrack_entry_t *victim = v;
 
-	if ( victim == NULL )
+	if (victim == NULL)
 		return;
 
 	/*
@@ -123,12 +122,12 @@ plugrack_entry_destructor( void *v )
 	 * is to make sure we were actually called from the List destructor
 	 * which should only be callable from plugrack_destroy().
 	 */
-	xassert( victim->refcount == 0 );
-	xfree( victim->full_type );
-	xfree( victim->fq_path );
-	if ( victim->plug != PLUGIN_INVALID_HANDLE )
-		plugin_unload( victim->plug );
-	xfree( victim );
+	xassert(victim->refcount == 0);
+	xfree(victim->full_type);
+	xfree(victim->fq_path);
+	if (victim->plug != PLUGIN_INVALID_HANDLE)
+		plugin_unload(victim->plug);
+	xfree(victim);
 }
 
 /*
@@ -141,37 +140,36 @@ plugrack_entry_destructor( void *v )
  * is owned by the user in the plugin rack and not writable by anyone
  * else, and these actions are requested by the rack's paranoia policy.
  */
-static int
-accept_path_paranoia( plugrack_t rack,
-		      const char *fq_path,
-		      int check_own,
-		      int check_write )
+static int accept_path_paranoia(plugrack_t rack,
+				const char *fq_path,
+				int check_own,
+				int check_write)
 {
 	struct stat st;
 
 	/* Internal function, so assert rather than fail gracefully. */
-	xassert( rack );
-	xassert( fq_path );
+	xassert(rack);
+	xassert(fq_path);
 
-	if ( stat( fq_path, &st ) < 0 ) {
-		debug3( "accept_path_paranoia: stat(%s) failed", fq_path );
+	if (stat(fq_path, &st) < 0) {
+		debug3("%s: stat(%s) failed", __func__, fq_path);
 		return 0;
 	}
 
 	/* Is path owned by authorized user? */
-	if ( check_own ) {
-		if ( st.st_uid != rack->uid ) {
-			debug3( "accept_path_paranoia: %s not owned by "
-				"proper user", fq_path );
+	if (check_own) {
+		if (st.st_uid != rack->uid) {
+			debug3("%s: %s not owned by proper user",
+			       __func__, fq_path);
 			return 0;
 		}
 	}
 
 	/* Is path writable by others? */
-	if ( check_write ) {
-		if (  ( st.st_mode & S_IWGRP ) || ( st.st_mode & S_IWOTH ) ) {
-			debug3( "accept_path_paranoia: %s writable by others",
-				fq_path );
+	if (check_write) {
+		if ((st.st_mode & S_IWGRP) || (st.st_mode & S_IWOTH)) {
+			debug3("%s: %s writable by others",
+			       __func__, fq_path);
 			return 0;
 		}
 	}
@@ -179,26 +177,23 @@ accept_path_paranoia( plugrack_t rack,
 	return 1;
 }
 
-
-plugrack_t plugrack_create( void )
+plugrack_t plugrack_create(void)
 {
 	plugrack_t rack = xmalloc(sizeof(struct _plugrack));
 
 	rack->paranoia     = PLUGRACK_PARANOIA_NONE;
 	rack->major_type   = NULL;
 	rack->uid          = PLUGRACK_UID_NOBODY;
-	rack->entries      = list_create( plugrack_entry_destructor );
+	rack->entries      = list_create(plugrack_entry_destructor);
 	return rack;
 }
 
-
-int
-plugrack_destroy( plugrack_t rack )
+int plugrack_destroy(plugrack_t rack)
 {
 	ListIterator it;
 	plugrack_entry_t *e;
 
-	if ( ! rack )
+	if (!rack)
 		return SLURM_ERROR;
 
 	/*
@@ -206,38 +201,36 @@ plugrack_destroy( plugrack_t rack )
 	 * the program might crash because cached virtual mapped addresses
 	 * will suddenly be outside our virtual address space.
 	 */
-	it = list_iterator_create( rack->entries );
-	while ( ( e = list_next( it ) ) != NULL ) {
-		if ( e->refcount > 0 ) {
-			debug2( "plugrack_destroy: attempt to destroy "
-				"plugin rack that is still in use" );
-			list_iterator_destroy( it );
+	it = list_iterator_create(rack->entries);
+	while ((e = list_next(it)) != NULL) {
+		if (e->refcount > 0) {
+			debug2("%s: attempt to destroy plugin rack that is still in use",
+			       __func__);
+			list_iterator_destroy(it);
 			return SLURM_ERROR; /* plugins still in use. */
 		}
 	}
-	list_iterator_destroy( it );
+	list_iterator_destroy(it);
 
-	FREE_NULL_LIST( rack->entries );
-	xfree( rack->major_type );
-	xfree( rack );
+	FREE_NULL_LIST(rack->entries);
+	xfree(rack->major_type);
+	xfree(rack);
 	return SLURM_SUCCESS;
 }
 
-
-int
-plugrack_set_major_type( plugrack_t rack, const char *type )
+int plugrack_set_major_type(plugrack_t rack, const char *type)
 {
-	if ( ! rack )
+	if (!rack)
 		return SLURM_ERROR;
-	if ( ! type )
+	if (!type)
 		return SLURM_ERROR;
 
 	/* Free any pre-existing type. */
-	xfree( rack->major_type );
+	xfree(rack->major_type);
 
 	/* Install a new one. */
-	if ( type != NULL ) {
-		rack->major_type = xstrdup( type );
+	if (type != NULL) {
+		rack->major_type = xstrdup(type);
 		if ( rack->major_type == NULL ) {
 			debug3( "plugrack_set_major_type: unable to set type");
 			return SLURM_ERROR;
@@ -247,79 +240,71 @@ plugrack_set_major_type( plugrack_t rack, const char *type )
 	return SLURM_SUCCESS;
 }
 
-
-int
-plugrack_set_paranoia( plugrack_t rack,
-		       const uint32_t flags,
-		       const uid_t uid )
-
+int plugrack_set_paranoia(plugrack_t rack,
+			  const uint32_t flags,
+			  const uid_t uid)
 {
-	if ( ! rack )
+	if (!rack)
 		return SLURM_ERROR;
 
 	rack->paranoia = flags;
-	if ( flags ) {
+	if (flags) {
 		rack->uid = uid;
 	}
 
 	return SLURM_SUCCESS;
 }
 
-static int
-plugrack_add_plugin_path( plugrack_t rack,
-			  const char *full_type,
-			  const char *fq_path )
+static int plugrack_add_plugin_path(plugrack_t rack,
+				    const char *full_type,
+				    const char *fq_path)
 {
 	plugrack_entry_t *e;
 
-	if ( ( ! rack ) || ( ! fq_path ) )
+	if ((!rack) || (!fq_path))
 		return SLURM_ERROR;
 
 	e = xmalloc(sizeof(*e));
 
-	e->full_type = xstrdup( full_type );
-	e->fq_path   = xstrdup( fq_path );
+	e->full_type = xstrdup(full_type);
+	e->fq_path   = xstrdup(fq_path);
 	e->plug      = PLUGIN_INVALID_HANDLE;
 	e->refcount  = 0;
-	list_append( rack->entries, e );
+	list_append(rack->entries, e);
 
 	return SLURM_SUCCESS;
 }
 
-
 /* test for the plugin in the various colon separated directories */
-int
-plugrack_read_dir( plugrack_t rack, const char *dir )
+int plugrack_read_dir(plugrack_t rack, const char *dir)
 {
 	char *head, *dir_array;
 	int i, rc = SLURM_SUCCESS;
 
-	if ( ( ! rack ) || ( ! dir ) )
+	if ((!rack) || (!dir))
 		return SLURM_ERROR;
 
 	dir_array = xstrdup(dir);
 	head = dir_array;
-	for (i=0; ; i++) {
+	for (i = 0; ; i++) {
 		if (dir_array[i] == '\0') {
-			if ( _plugrack_read_single_dir( rack, head ) ==
-			     SLURM_ERROR)
+			if (_plugrack_read_single_dir(rack, head) ==
+			    SLURM_ERROR)
 				rc = SLURM_ERROR;
 			break;
-		}
-		else if (dir_array[i] == ':') {
+		} else if (dir_array[i] == ':') {
 			dir_array[i] = '\0';
-			if ( _plugrack_read_single_dir( rack, head ) ==
-			     SLURM_ERROR)
+			if (_plugrack_read_single_dir(rack, head) ==
+			    SLURM_ERROR)
 				rc = SLURM_ERROR;
 			head = dir_array + i + 1;
 		}
 	}
-	xfree( dir_array );
+	xfree(dir_array);
 	return rc;
 }
 
-static int
-_plugrack_read_single_dir( plugrack_t rack, char *dir )
+static int _plugrack_read_single_dir(plugrack_t rack, char *dir)
 {
 	char *fq_path;
 	char *tail;
@@ -327,7 +312,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 	struct dirent *e;
 	struct stat st;
 	static const size_t type_len = 64;
-	char plugin_type[ type_len ];
+	char plugin_type[type_len];
 	static int max_path_len = 0;
 
 	/* Allocate a buffer for fully-qualified path names. */
@@ -336,40 +321,38 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		if (max_path_len <= 0)
 			max_path_len = 256;
 	}
-	fq_path = xmalloc( strlen( dir ) + max_path_len + 1 );
+	fq_path = xmalloc(strlen(dir) + max_path_len + 1);
 
 	/*
 	 * Write the directory name in it, then a separator, then
 	 * keep track of where we want to write the individual file
 	 * names.
 	 */
-	strcpy( fq_path, dir );
-	tail = &fq_path[ strlen( dir ) ];
+	strcpy(fq_path, dir);
+	tail = &fq_path[strlen(dir)];
 	*tail = '/';
 	++tail;
 
 	/* Check whether we should be paranoid about this directory. */
-	if ( ! accept_path_paranoia( rack,
-				     dir,
-				     rack->paranoia &
-				     PLUGRACK_PARANOIA_DIR_OWN,
-				     rack->paranoia &
-				     PLUGRACK_PARANOIA_DIR_WRITABLE ) ) {
-		xfree( fq_path );
+	if (!accept_path_paranoia(rack,
+				  dir,
+				  rack->paranoia & PLUGRACK_PARANOIA_DIR_OWN,
+				  rack->paranoia & PLUGRACK_PARANOIA_DIR_WRITABLE)) {
+		xfree(fq_path);
 		return SLURM_ERROR;
 	}
 
 	/* Open the directory. */
-	dirp = opendir( dir );
-	if ( dirp == NULL ) {
-		error( "cannot open plugin directory %s", dir );
-		xfree( fq_path );
+	dirp = opendir(dir);
+	if (dirp == NULL) {
+		error("cannot open plugin directory %s", dir);
+		xfree(fq_path);
 		return SLURM_ERROR;
 	}
 
-	while ( 1 ) {
-		e = readdir( dirp );
-		if ( e == NULL )
+	while (1) {
+		e = readdir(dirp);
+		if (e == NULL)
 			break;
 
 		/*
@@ -378,16 +361,16 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		 * in the  allocation of "tail" above, so this unbounded copy
 		 * should work.
 		 */
-		strcpy( tail, e->d_name );
+		strcpy(tail, e->d_name);
 
 		/* Check only regular files. */
-		if ( (xstrncmp(e->d_name, ".", 1) == 0) ||
-		     (stat( fq_path, &st ) < 0) ||
-		     (! S_ISREG(st.st_mode)) )
+		if ((xstrncmp(e->d_name, ".", 1) == 0) ||
+		    (stat(fq_path, &st) < 0) ||
+		    (!S_ISREG(st.st_mode)))
 			continue;
 
 		/* Check only shared object files */
-		if (! _so_file(e->d_name))
+		if (!_so_file(e->d_name))
 			continue;
 
 		/* file's prefix must match specified major_type
@@ -399,55 +382,51 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 			continue;
 
 		/* See if we should be paranoid about this file. */
-		if (!accept_path_paranoia( rack,
-					   fq_path,
-					   rack->paranoia &
-					   PLUGRACK_PARANOIA_FILE_OWN,
-					   rack->paranoia &
-					   PLUGRACK_PARANOIA_FILE_WRITABLE )) {
-			debug3( "plugin_read_dir: skipping %s for security "
-				"reasons", fq_path );
+		if (!accept_path_paranoia(rack,
+					  fq_path,
+					  rack->paranoia & PLUGRACK_PARANOIA_FILE_OWN,
+					  rack->paranoia & PLUGRACK_PARANOIA_FILE_WRITABLE)) {
+			debug3("plugin_read_dir: skipping %s for security reasons",
+			       fq_path);
 			continue;
 		}
 
 		/* Test the type. */
-		if ( plugin_peek( fq_path,
-				  plugin_type,
-				  type_len,
-				  NULL ) == SLURM_ERROR ) {
+		if (plugin_peek(fq_path, plugin_type, type_len, NULL) ==
+		    SLURM_ERROR) {
 			continue;
 		}
 
-		if (   rack->major_type &&
-		       ( xstrncmp(rack->major_type,
-				  plugin_type,
-				  strlen( rack->major_type ) ) != 0 ) ) {
+		if (rack->major_type &&
+		    (xstrncmp(rack->major_type, plugin_type,
+			      strlen(rack->major_type)) != 0)) {
 			continue;
 		}
 
 		/* Add it to the list. */
-		(void) plugrack_add_plugin_path( rack, plugin_type, fq_path );
+		(void) plugrack_add_plugin_path(rack, plugin_type, fq_path);
 	}
 
-	closedir( dirp );
+	closedir(dirp);
 
-	xfree( fq_path );
+	xfree(fq_path);
 	return SLURM_SUCCESS;
 }
 
-/* Return true if the specified pathname is recognized as that of a shared
- * object (i.e. containing ".so\0") */
-static bool
-_so_file ( char *file_name )
+/*
+ * Return true if the specified pathname is recognized as that of a shared
+ * object (i.e. containing ".so\0")
+ */
+static bool _so_file(char *file_name)
 {
 	int i;
 
 	if (file_name == NULL)
 		return false;
 
-	for (i=0; file_name[i] ;i++) {
-		if ( (file_name[i]   == '.') && (file_name[i+1] == 's') &&
-		     (file_name[i+2] == 'o') && (file_name[i+3] == '\0') )
+	for (i=0; file_name[i]; i++) {
+		if ((file_name[i]   == '.') && (file_name[i+1] == 's') &&
+		    (file_name[i+2] == 'o') && (file_name[i+3] == '\0'))
 			return true;
 	}
 	return false;
@@ -455,8 +434,7 @@ _so_file ( char *file_name )
 
 /* Return true of the specified major_type is a prefix of the shared object
  * pathname (i.e. either "<major_name>..." or "lib<major_name>...") */
-static bool
-_match_major ( const char *path_name, const char *major_type )
+static bool _match_major(const char *path_name, const char *major_type)
 {
 	char *head = (char *)path_name;
 
@@ -471,57 +449,53 @@ _match_major ( const char *path_name, const char *major_type )
 	return true;
 }
 
-int
-plugrack_purge_idle( plugrack_t rack )
+int plugrack_purge_idle(plugrack_t rack)
 {
 	ListIterator it;
 	plugrack_entry_t *e;
 
-	if ( ! rack )
+	if (!rack)
 		return SLURM_ERROR;
 
-	it = list_iterator_create( rack->entries );
-	while ( ( e = list_next( it ) ) != NULL ) {
-		if ( ( e->plug != PLUGIN_INVALID_HANDLE ) &&
-		     ( e->refcount == 0 ) ){
-			plugin_unload( e->plug );
+	it = list_iterator_create(rack->entries);
+	while ((e = list_next(it)) != NULL) {
+		if ((e->plug != PLUGIN_INVALID_HANDLE) &&
+		    (e->refcount == 0)) {
+			plugin_unload(e->plug);
 			e->plug = PLUGIN_INVALID_HANDLE;
 		}
 	}
+	list_iterator_destroy(it);
 
-	list_iterator_destroy( it );
 	return SLURM_SUCCESS;
 }
 
 
-int
-plugrack_load_all( plugrack_t rack )
+int plugrack_load_all(plugrack_t rack)
 {
 	ListIterator it;
 	plugrack_entry_t *e;
 
-	if ( ! rack )
+	if (!rack)
 		return SLURM_ERROR;
 
-	it = list_iterator_create( rack->entries );
-	while ( ( e = list_next( it ) ) != NULL ) {
-		if ( e->plug == PLUGIN_INVALID_HANDLE ) {
+	it = list_iterator_create(rack->entries);
+	while ((e = list_next(it)) != NULL) {
+		if (e->plug == PLUGIN_INVALID_HANDLE) {
 			plugin_load_from_file(&e->plug, e->fq_path);
 		}
 	}
+	list_iterator_destroy(it);
 
-	list_iterator_destroy( it );
 	return SLURM_SUCCESS;
 }
 
-plugin_handle_t
-plugrack_use_by_type( plugrack_t rack,
-		      const char *full_type )
+plugin_handle_t plugrack_use_by_type(plugrack_t rack, const char *full_type)
 {
 	ListIterator it;
 	plugrack_entry_t *e;
 
-	if ( (!rack) || (!full_type) )
+	if ((!rack) || (!full_type))
 		return PLUGIN_INVALID_HANDLE;
 
 	it = list_iterator_create(rack->entries);
@@ -534,7 +508,7 @@ plugrack_use_by_type( plugrack_t rack,
 		/* See if plugin is loaded. */
 		if (e->plug == PLUGIN_INVALID_HANDLE  &&
 		    (err = plugin_load_from_file(&e->plug, e->fq_path)))
-			error ("%s: %s", e->fq_path, plugin_strerror (err));
+			error("%s: %s", e->fq_path, plugin_strerror(err));
 
 		/* If load was successful, increment the reference count. */
 		if (e->plug != PLUGIN_INVALID_HANDLE)
@@ -553,32 +527,30 @@ plugrack_use_by_type( plugrack_t rack,
 	return PLUGIN_INVALID_HANDLE;
 }
 
-
-int
-plugrack_finished_with_plugin( plugrack_t rack, plugin_handle_t plug )
+int plugrack_finished_with_plugin(plugrack_t rack, plugin_handle_t plug)
 {
 	ListIterator it;
 	plugrack_entry_t *e;
 
-	if ( ! rack )
+	if (!rack)
 		return SLURM_ERROR;
 
-	it = list_iterator_create( rack->entries );
-	while ( ( e = list_next( it ) ) != NULL ) {
-		if ( e->plug == plug ) {
+	it = list_iterator_create(rack->entries);
+	while ((e = list_next(it)) != NULL) {
+		if (e->plug == plug) {
 			e->refcount--;
-			if ( e->refcount < 0 )
+			if (e->refcount < 0)
 				e->refcount = 0;
 
 			/* Do something here with purge policy. */
 
-			list_iterator_destroy( it );
+			list_iterator_destroy(it);
 			return SLURM_SUCCESS;
 		}
 	}
 
 	/* Plugin not in this rack. */
-	list_iterator_destroy( it );
+	list_iterator_destroy(it);
 	return SLURM_ERROR;
 }
 
