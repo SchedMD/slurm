@@ -533,11 +533,10 @@ stepd_attach(int fd, uint16_t protocol_version,
 		resp->gtids = xmalloc(len);
 		safe_read(fd, resp->gtids, len);
 
-		resp->executable_names =
-			(char **)xmalloc(sizeof(char *) * ntasks);
+		resp->executable_names = xmalloc(sizeof(char *) * ntasks);
 		for (i = 0; i < ntasks; i++) {
 			safe_read(fd, &len, sizeof(int));
-			resp->executable_names[i] = (char *)xmalloc(len);
+			resp->executable_names[i] = xmalloc(len);
 			safe_read(fd, resp->executable_names[i], len);
 		}
 	}
@@ -1080,8 +1079,7 @@ stepd_task_info(int fd, uint16_t protocol_version,
 	safe_write(fd, &req, sizeof(int));
 
 	safe_read(fd, &ntasks, sizeof(uint32_t));
-	task = (slurmstepd_task_info_t *)xmalloc(
-		ntasks * sizeof(slurmstepd_task_info_t));
+	task = xmalloc(ntasks * sizeof(slurmstepd_task_info_t));
 	for (i = 0; i < ntasks; i++) {
 		safe_read(fd, &(task[i].id), sizeof(int));
 		safe_read(fd, &(task[i].gtid), sizeof(uint32_t));

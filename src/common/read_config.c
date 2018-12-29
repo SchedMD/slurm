@@ -2066,7 +2066,7 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	}
 
 	/* Create the new data structure and link it into the hash tables */
-	new = (names_ll_t *)xmalloc(sizeof(names_ll_t));
+	new = xmalloc(sizeof(*new));
 	new->alias	= xstrdup(alias);
 	new->hostname	= xstrdup(hostname);
 	new->address	= xstrdup(address);
@@ -5554,8 +5554,7 @@ extern int
 unpack_config_plugin_params(void **object, uint16_t protocol_version, Buf buff)
 {
 	uint32_t uint32_tmp;
-	config_plugin_params_t *object_ptr =
-		xmalloc(sizeof(config_plugin_params_t));
+	config_plugin_params_t *object_ptr = xmalloc(sizeof(*object_ptr));
 
 	*object = object_ptr;
 	safe_unpackstr_xmalloc(&object_ptr->name,  &uint32_tmp, buff);

@@ -78,7 +78,7 @@ xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc)
 	xhash_t* table = NULL;
 	if (!idfunc)
 		return NULL;
-	table = (xhash_t*)xmalloc(sizeof(xhash_t));
+	table = xmalloc(sizeof(xhash_t));
 	table->ht = NULL; /* required by uthash */
 	table->count = 0;
 	table->identify = idfunc;
@@ -111,7 +111,7 @@ void* xhash_add(xhash_t* table, void* item)
 	xhash_item_t* hash_item = NULL;
 	if (!table || !item)
 		return NULL;
-	hash_item          = (xhash_item_t*)xmalloc(sizeof(xhash_item_t));
+	hash_item = xmalloc(sizeof(xhash_item_t));
 	hash_item->item    = item;
 	hash_item->key     = table->identify(item);
 	hash_item->keysize = strlen(hash_item->key);

@@ -597,11 +597,9 @@ extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt)
  */
 extern struct config_record * create_config_record (void)
 {
-	struct config_record *config_ptr;
+	struct config_record *config_ptr = xmalloc(sizeof(*config_ptr));
 
 	last_node_update = time (NULL);
-	config_ptr = (struct config_record *)
-		     xmalloc (sizeof (struct config_record));
 
 	config_ptr->nodes = NULL;
 	config_ptr->node_bitmap = NULL;
@@ -640,8 +638,7 @@ extern struct node_record *create_node_record (
 	new_buffer_size =
 		((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
 	if (!node_record_table_ptr) {
-		node_record_table_ptr =
-			(struct node_record *) xmalloc (new_buffer_size);
+		node_record_table_ptr = xmalloc(new_buffer_size);
 	} else if (old_buffer_size != new_buffer_size) {
 		xrealloc (node_record_table_ptr, new_buffer_size);
 		/*

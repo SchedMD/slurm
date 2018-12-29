@@ -278,7 +278,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	int rc = 0;
 
 	if (!log)  {
-		log = (log_t *)xmalloc(sizeof(log_t));
+		log = xmalloc(sizeof(log_t));
 		log->logfp = NULL;
 		log->argv0 = NULL;
 		log->buf   = NULL;
@@ -374,7 +374,7 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 	int rc = 0;
 
 	if (!sched_log) {
-		sched_log = (log_t *)xmalloc(sizeof(log_t));
+		sched_log = xmalloc(sizeof(log_t));
 		atfork_install_handlers();
 	}
 

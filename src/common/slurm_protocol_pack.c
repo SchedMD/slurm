@@ -9664,7 +9664,7 @@ _unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
 	safe_unpack32_array(&msg->local_pids, &ntasks, buffer);
 	if (msg->ntasks != ntasks)
 		goto unpack_error;
-	msg->executable_names = (char **)xmalloc(sizeof(char *) * msg->ntasks);
+	msg->executable_names = xmalloc(sizeof(char *) * msg->ntasks);
 	for (i = 0; i < msg->ntasks; i++) {
 		safe_unpackstr_xmalloc(&(msg->executable_names[i]), &uint32_tmp,
 				       buffer);

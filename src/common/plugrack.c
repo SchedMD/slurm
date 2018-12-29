@@ -182,7 +182,7 @@ accept_path_paranoia( plugrack_t rack,
 
 plugrack_t plugrack_create( void )
 {
-	plugrack_t rack = (plugrack_t) xmalloc( sizeof( struct _plugrack ) );
+	plugrack_t rack = xmalloc(sizeof(struct _plugrack));
 
 	rack->paranoia     = PLUGRACK_PARANOIA_NONE;
 	rack->major_type   = NULL;
@@ -275,7 +275,7 @@ plugrack_add_plugin_path( plugrack_t rack,
 	if ( ( ! rack ) || ( ! fq_path ) )
 		return SLURM_ERROR;
 
-	e = (plugrack_entry_t *) xmalloc( sizeof( plugrack_entry_t ) );
+	e = xmalloc(sizeof(*e));
 
 	e->full_type = xstrdup( full_type );
 	e->fq_path   = xstrdup( fq_path );

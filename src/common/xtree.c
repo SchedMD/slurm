@@ -127,7 +127,7 @@ xtree_node_t* xtree_add_child(xtree_t* tree,
 
 	xassert(flags & (XTREE_APPEND | XTREE_PREPEND));
 
-	newnode = (xtree_node_t*)xmalloc(sizeof(xtree_node_t));
+	newnode = xmalloc(sizeof(xtree_node_t));
 	newnode->data     = data;
 	newnode->parent   = parent;
 	newnode->start    = NULL;
@@ -195,7 +195,7 @@ xtree_node_t* xtree_add_sibling(xtree_t* tree,
 	if (!node->parent)
 		return NULL;
 
-	newnode = (xtree_node_t*)xmalloc(sizeof(xtree_node_t));
+	newnode = xmalloc(sizeof(xtree_node_t));
 	newnode->data     = data;
 	newnode->parent   = node->parent;
 	newnode->start    = NULL;
@@ -455,8 +455,7 @@ xtree_node_t** xtree_get_parents(xtree_t* tree,
 		return NULL;
 
 	parents_size = XTREE_GET_PARENTS_FIRST_SIZE;
-	parents_list = (xtree_node_t**)xmalloc(
-			sizeof(xtree_node_t*)*parents_size);
+	parents_list = xmalloc(sizeof(xtree_node_t *) * parents_size);
 
 	current_node = node->parent;
 	while (current_node) {
@@ -562,7 +561,7 @@ xtree_node_t** xtree_get_leaves(xtree_t* tree,
 	}
 	st.list_count = 0;
 	st.size = XTREE_GET_LEAVES_FIRST_SIZE;
-	st.list = (xtree_node_t**)xmalloc(sizeof(xtree_node_t*)*st.size);
+	st.list = xmalloc(sizeof(xtree_node_t *) * st.size);
 	xtree_walk(tree, node, 0, UINT32_MAX, xtree_get_leaves_helper, &st);
 	if (st.list_count != 0) {
 		st.list = (xtree_node_t**)xrealloc(st.list,

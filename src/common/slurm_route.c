@@ -494,7 +494,7 @@ extern int route_split_hostlist_treewidth(hostlist_t hl,
 
 	host_count = hostlist_count(hl);
 	span = set_span(host_count, tree_width);
-	*sp_hl = (hostlist_t*) xmalloc(tree_width * sizeof(hostlist_t));
+	*sp_hl = xmalloc(tree_width * sizeof(hostlist_t));
 
 	while ((name = hostlist_shift(hl))) {
 		(*sp_hl)[nhl] = hostlist_create(name);
