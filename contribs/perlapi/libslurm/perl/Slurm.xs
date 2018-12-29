@@ -1667,7 +1667,6 @@ slurm_get_select_nodeinfo(slurm_t self, dynamic_plugin_data_t *nodeinfo, uint32_
 			    */
 		switch(data_type) {
 		case SELECT_NODEDATA_BITMAP_SIZE: /* data-> uint16_t */
-		case SELECT_NODEDATA_SUBGRP_SIZE: /* data-> uint16_t */
 		case SELECT_NODEDATA_SUBCNT:      /* data-> uint16_t */
 			RETVAL = slurm_get_select_nodeinfo(nodeinfo, data_type, state, &tmp_16);
 			if (RETVAL == 0) {

@@ -631,8 +631,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * SELECT_NODEDATA_BITMAP_SIZE       0
 
-=item * SELECT_NODEDATA_SUBGRP_SIZE       1
-
 =item * SELECT_NODEDATA_SUBCNT            2
 
 =item * SELECT_NODEDATA_BITMAP            3

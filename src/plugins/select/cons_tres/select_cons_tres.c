@@ -2035,9 +2035,6 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	}
 
 	switch (dinfo) {
-	case SELECT_NODEDATA_SUBGRP_SIZE:
-		*uint16 = 0;
-		break;
 	case SELECT_NODEDATA_SUBCNT:
 		if (state == NODE_STATE_ALLOCATED)
 			*uint16 = nodeinfo->alloc_cpus;

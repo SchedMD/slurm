@@ -81,7 +81,6 @@ $nodeinfo = $resp->{node_array}->[0]->{select_nodeinfo};
 
 my $nodeinfo_data = {
     SELECT_NODEDATA_BITMAP_SIZE() => ["", [qw(bluegene)]],
-    SELECT_NODEDATA_SUBGRP_SIZE() => ["", [qw(bluegene linear cons_res)]],
     SELECT_NODEDATA_SUBCNT() => ["", [qw(bluegene linear cons_res)]],
     SELECT_NODEDATA_BITMAP() => ["Slurm::Bitstr", [qw(bluegene)]],
     SELECT_NODEDATA_STR() => ["", [qw(bluegene)]],
