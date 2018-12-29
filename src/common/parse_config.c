@@ -603,12 +603,12 @@ static int _handle_common(s_p_values_t *v,
 	return 1;
 }
 
-static void* _handle_string(const char* key, const char* value)
+static void *_handle_string(const char *key, const char *value)
 {
 	return xstrdup(value);
 }
 
-static void* _handle_long(const char* key, const char* value)
+static void *_handle_long(const char *key, const char *value)
 {
 	long* data = (long*)xmalloc(sizeof(long));
 	if (s_p_handle_long(data, key, value) == SLURM_ERROR)
@@ -616,7 +616,7 @@ static void* _handle_long(const char* key, const char* value)
 	return data;
 }
 
-static void* _handle_uint16(const char* key, const char* value)
+static void *_handle_uint16(const char *key, const char *value)
 {
 	uint16_t* data = (uint16_t*)xmalloc(sizeof(uint16_t));
 	if (s_p_handle_uint16(data, key, value) == SLURM_ERROR)
@@ -624,7 +624,7 @@ static void* _handle_uint16(const char* key, const char* value)
 	return data;
 }
 
-static void* _handle_uint32(const char* key, const char* value)
+static void *_handle_uint32(const char *key, const char *value)
 {
 	uint32_t* data = (uint32_t*)xmalloc(sizeof(uint32_t));
 	if (s_p_handle_uint32(data, key, value) == SLURM_ERROR)
@@ -632,7 +632,7 @@ static void* _handle_uint32(const char* key, const char* value)
 	return data;
 }
 
-static void* _handle_uint64(const char* key, const char* value)
+static void *_handle_uint64(const char *key, const char *value)
 {
 	uint64_t* data = (uint64_t*)xmalloc(sizeof(uint64_t));
 	if (s_p_handle_uint64(data, key, value) == SLURM_ERROR)
@@ -640,7 +640,7 @@ static void* _handle_uint64(const char* key, const char* value)
 	return data;
 }
 
-static void* _handle_boolean(const char* key, const char* value)
+static void *_handle_boolean(const char *key, const char *value)
 {
 	bool* data = (bool*)xmalloc(sizeof(bool));
 	if (s_p_handle_boolean(data, key, value) == SLURM_ERROR)
@@ -648,7 +648,7 @@ static void* _handle_boolean(const char* key, const char* value)
 	return data;
 }
 
-static void* _handle_float(const char* key, const char* value)
+static void *_handle_float(const char *key, const char *value)
 {
 	float* data = (float*)xmalloc(sizeof(float));
 	if (s_p_handle_float(data, key, value) == SLURM_ERROR)
@@ -656,7 +656,7 @@ static void* _handle_float(const char* key, const char* value)
 	return data;
 }
 
-static void* _handle_double(const char* key, const char* value)
+static void *_handle_double(const char *key, const char *value)
 {
 	double* data = (double*)xmalloc(sizeof(double));
 	if (s_p_handle_double(data, key, value) == SLURM_ERROR)
@@ -664,7 +664,7 @@ static void* _handle_double(const char* key, const char* value)
 	return data;
 }
 
-static void* _handle_ldouble(const char* key, const char* value)
+static void *_handle_ldouble(const char *key, const char *value)
 {
 	long double* data = (long double*)xmalloc(sizeof(long double));
 	if (s_p_handle_long_double(data, key, value) == SLURM_ERROR)
