@@ -173,10 +173,6 @@ extern void slurm_get_addr ( slurm_addr_t * slurm_address ,
 extern void slurm_print_slurm_addr ( slurm_addr_t * address,
 				     char *buf, size_t n ) ;
 
-/* Given a file descriptor, write the peer connection's
- * IP address and port into the supplied buffer */
-extern void slurm_print_peer_addr(int fd, char *buf, int buf_size);
-
 /*****************************/
 /* slurm addr pack functions */
 /*****************************/

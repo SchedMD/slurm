@@ -738,32 +738,6 @@ extern void slurm_print_slurm_addr ( slurm_addr_t * address, char *buf,
 	snprintf(buf, n, "%s:%d", addrbuf, ntohs(address->sin_port));
 }
 
-/* Given a file descriptor, write the peer connection's
- * IP address and port into the supplied buffer */
-extern void slurm_print_peer_addr(int fd, char *buf, int buf_size)
-{
-	char ipstr[INET6_ADDRSTRLEN];
-	struct sockaddr_storage addr;
-	socklen_t addrlen = sizeof(addr);
-	int port = -1;
-
-	if (getpeername(fd, (struct sockaddr*)&addr, &addrlen) == 0) {
-		if (addr.ss_family == AF_INET) {
-			struct sockaddr_in *s = (struct sockaddr_in *)&addr;
-			port = ntohs(s->sin_port);
-			inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
-			snprintf(buf, buf_size, "%s:%d", ipstr, port);
-		} else if (addr.ss_family == AF_INET6) {
-			struct sockaddr_in6 *s = (struct sockaddr_in6 *)&addr;
-			port = ntohs(s->sin6_port);
-			inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof ipstr);
-			snprintf(buf, buf_size, "[%s]:%d", ipstr, port);
-		}
-	}
-	if (port < 0)
-		snprintf(buf, buf_size, "%s", "<getpeername error>");
-}
-
 extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
 {
 	pack32( ntohl( addr->sin_addr.s_addr ), buffer );
