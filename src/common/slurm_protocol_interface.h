@@ -54,15 +54,6 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
 
-/****************\
- **  Data Types  **
- \****************/
-
-typedef enum slurm_socket_type {
-	SLURM_MESSAGE ,
-	SLURM_STREAM
-} slurm_socket_type_t;
-
 /*******************************\
  **  MIDDLE LAYER FUNCTIONS  **
  \*******************************/
