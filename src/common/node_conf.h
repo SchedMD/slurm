@@ -51,7 +51,6 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_protocol_socket_common.h"
 #include "src/common/xhash.h"
 
 #define CONFIG_MAGIC	0xc065eded

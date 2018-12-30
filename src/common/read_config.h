@@ -47,7 +47,6 @@
 
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_protocol_socket_common.h"
 #include "src/common/parse_config.h"
 
 extern slurm_ctl_conf_t slurmctld_conf;

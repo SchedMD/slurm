@@ -106,6 +106,4 @@
 #define SLURM_MSG_KEEP_BUFFER   0x0004
 #define SLURM_DROP_PRIV		0x0008
 
-#include "src/common/slurm_protocol_socket_common.h"
-
 #endif
