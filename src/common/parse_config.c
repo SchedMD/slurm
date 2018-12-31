@@ -1622,12 +1622,12 @@ static int _parse_expline_doexpand(s_p_hashtbl_t** tables,
 		   ((item_count % tables_count) == 0)) {
 		items_per_record = (int) (item_count / tables_count);
 	} else {
-		item_str = hostlist_ranged_string_malloc(item_hl);
+		item_str = hostlist_ranged_string_xmalloc(item_hl);
 		error("parsing %s=%s : count is not coherent with the"
 		      " amount of records or there must be no more than"
 		      " one (%d vs %d)", item->key, item_str,
 		      item_count, tables_count);
-		free(item_str);
+		xfree(item_str);
 		return 0;
 	}
 
