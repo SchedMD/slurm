@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  slurm_protocol_socket_implementation.c - slurm communications interfaces
- *					     based upon sockets.
+ *  slurm_protocol_socket.c - slurm socket handling functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.

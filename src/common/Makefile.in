@@ -169,7 +169,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	fd.lo slurm_cred.lo slurm_errno.lo slurm_ext_sensors.lo \
 	slurm_mcs.lo slurm_priority.lo slurm_protocol_api.lo \
 	slurm_protocol_pack.lo slurm_protocol_util.lo \
-	slurm_protocol_socket_implementation.lo slurm_protocol_defs.lo \
+	slurm_protocol_socket.lo slurm_protocol_defs.lo \
 	slurm_rlimits_info.lo slurmdb_defs.lo slurmdb_pack.lo \
 	slurmdbd_defs.lo slurmdbd_pack.lo working_cluster.lo uid.lo \
 	util-net.lo slurm_auth.lo slurm_acct_gather.lo \
@@ -264,7 +264,7 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
 	./$(DEPDIR)/slurm_protocol_pack.Plo \
-	./$(DEPDIR)/slurm_protocol_socket_implementation.Plo \
+	./$(DEPDIR)/slurm_protocol_socket.Plo \
 	./$(DEPDIR)/slurm_protocol_util.Plo \
 	./$(DEPDIR)/slurm_resource_info.Plo \
 	./$(DEPDIR)/slurm_rlimits_info.Plo ./$(DEPDIR)/slurm_route.Plo \
@@ -644,7 +644,7 @@ libcommon_la_SOURCES = \
 	slurm_protocol_pack.h		\
 	slurm_protocol_util.c		\
 	slurm_protocol_util.h		\
-	slurm_protocol_socket_implementation.c	\
+	slurm_protocol_socket.c		\
 	slurm_protocol_common.h		\
 	slurm_protocol_interface.h	\
 	slurm_protocol_defs.c		\
@@ -871,7 +871,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_defs.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_pack.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_socket_implementation.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_socket.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_util.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_resource_info.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_rlimits_info.Plo@am__quote@ # am--include-marker
@@ -1125,7 +1125,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/slurm_protocol_api.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_defs.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_pack.Plo
-	-rm -f ./$(DEPDIR)/slurm_protocol_socket_implementation.Plo
+	-rm -f ./$(DEPDIR)/slurm_protocol_socket.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_util.Plo
 	-rm -f ./$(DEPDIR)/slurm_resource_info.Plo
 	-rm -f ./$(DEPDIR)/slurm_rlimits_info.Plo
@@ -1265,7 +1265,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/slurm_protocol_api.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_defs.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_pack.Plo
-	-rm -f ./$(DEPDIR)/slurm_protocol_socket_implementation.Plo
+	-rm -f ./$(DEPDIR)/slurm_protocol_socket.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_util.Plo
 	-rm -f ./$(DEPDIR)/slurm_resource_info.Plo
 	-rm -f ./$(DEPDIR)/slurm_rlimits_info.Plo
