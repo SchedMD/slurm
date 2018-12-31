@@ -2793,7 +2793,6 @@ extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
 			has_bitmap = 0;
 		pack8(has_bitmap, buffer);
 		rec_cnt++;
-		break;
 	}
 	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
