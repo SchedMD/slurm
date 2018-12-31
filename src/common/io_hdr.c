@@ -201,35 +201,23 @@ int
 io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
 {
 	Buf buf;
-	char *ptr;
-	size_t rem_size;
-	ssize_t size_written;
+	int rc = SLURM_ERROR;
 
 	xassert(msg);
 
-	debug2("Entering io_init_msg_write_to_fd");
+	debug2("%s: entering", __func__);
 	msg->version = IO_PROTOCOL_VERSION;
 	buf = init_buf(io_init_msg_packed_size());
-	debug2("  msg->nodeid = %d", msg->nodeid);
+	debug2("%s: msg->nodeid = %d", __func__, msg->nodeid);
 	io_init_msg_pack(msg, buf);
 
-	ptr = get_buf_data(buf);
-	rem_size = io_init_msg_packed_size();
-	while (rem_size) {
-		size_written = write(fd, ptr, rem_size);
-		if (size_written < 0) {
-			if (errno == EINTR)
-				continue;
-			free_buf(buf);
-			return SLURM_ERROR;
-		}
-		rem_size -= size_written;
-		ptr += size_written;
-	}
+	safe_write(fd, buf->head, io_init_msg_packed_size());
+	rc = SLURM_SUCCESS;
 
+rwfail:
 	free_buf(buf);
-	debug2("Leaving  io_init_msg_write_to_fd");
-	return SLURM_SUCCESS;
+	debug2("%s: leaving", __func__);
+	return rc;
 }
 
 int
