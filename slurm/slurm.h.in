@@ -47,9 +47,6 @@
 #define SYSTEM_DIMENSIONS 1
 #define HIGHEST_DIMENSIONS 5
 
-/* Define to 1 if you have the <sys/socket.h> header file. */
-#undef HAVE_SYS_SOCKET_H
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +54,7 @@ extern "C" {
 #include <slurm/slurm_errno.h>
 
 #include <inttypes.h>		/* for uint16_t, uint32_t definitions */
+#include <netinet/in.h>		/* struct sockaddr_in */
 #include <stdbool.h>
 #include <stdio.h>		/* for FILE definitions */
 #include <sys/types.h>		/* for uid_t definition */
@@ -64,13 +62,7 @@ extern "C" {
 #include <unistd.h>
 
 /* Define slurm_addr_t below to avoid including extraneous slurm headers */
-#ifdef	HAVE_SYS_SOCKET_H
-#  ifndef __slurm_addr_t_defined
-#    include <netinet/in.h>
-#    define  __slurm_addr_t_defined
 typedef struct sockaddr_in slurm_addr_t;
-#  endif
-#endif
 
 #ifndef __slurmdb_cluster_rec_t_defined
 #  define __slurmdb_cluster_rec_t_defined
