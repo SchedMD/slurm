@@ -2760,8 +2760,7 @@ extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
 	int rc = SLURM_SUCCESS;
 	uint32_t top_offset, tail_offset;
 	uint32_t magic = GRES_MAGIC;
-	uint16_t rec_cnt = 0;
-	uint8_t  has_bitmap;
+	uint16_t gres_bitmap_size, rec_cnt = 0;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 	gres_node_state_t *gres_node_ptr;
@@ -2788,10 +2787,10 @@ extern int gres_plugin_node_state_pack(List gres_list, Buf buffer,
 		 * Rebuild it based upon the state of recovered jobs
 		 */
 		if (gres_node_ptr->gres_bit_alloc)
-			has_bitmap = 1;
+			gres_bitmap_size = bit_size(gres_node_ptr->gres_bit_alloc);
 		else
-			has_bitmap = 0;
-		pack8(has_bitmap, buffer);
+			gres_bitmap_size = 0;
+		pack16(gres_bitmap_size, buffer);
 		rec_cnt++;
 	}
 	list_iterator_destroy(gres_iter);
@@ -2818,7 +2817,7 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 	int i, rc;
 	uint32_t magic = 0, plugin_id = 0;
 	uint64_t gres_cnt_avail = 0;
-	uint16_t rec_cnt = 0;
+	uint16_t gres_bitmap_size = 0, rec_cnt = 0;
 	uint8_t  has_bitmap = 0;
 	gres_state_t *gres_ptr;
 	gres_node_state_t *gres_node_ptr;
@@ -2837,13 +2836,24 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpack64(&gres_cnt_avail, buffer);
+			safe_unpack16(&gres_bitmap_size, buffer);
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
 			safe_unpack32(&plugin_id, buffer);
 			safe_unpack64(&gres_cnt_avail, buffer);
 			safe_unpack8(&has_bitmap, buffer);
+			if (has_bitmap)
+				gres_bitmap_size = gres_cnt_avail;
+			else
+				gres_bitmap_size = 0;
 		} else {
 			error("%s: protocol_version %hu not supported",
 			      __func__, protocol_version);
@@ -2864,9 +2874,9 @@ extern int gres_plugin_node_state_unpack(List *gres_list, Buf buffer,
 		}
 		gres_node_ptr = _build_gres_node_state();
 		gres_node_ptr->gres_cnt_avail = gres_cnt_avail;
-		if (has_bitmap) {
+		if (gres_bitmap_size) {
 			gres_node_ptr->gres_bit_alloc =
-				bit_alloc(gres_cnt_avail);
+				bit_alloc(gres_bitmap_size);
 		}
 		gres_ptr = xmalloc(sizeof(gres_state_t));
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
