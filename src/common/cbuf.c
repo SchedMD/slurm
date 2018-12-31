@@ -47,26 +47,7 @@
 
 #include "src/common/cbuf.h"
 #include "src/common/log.h"
-
-
-/*********************
- *  lsd_nomem_error  *
- *********************/
-
-#ifdef WITH_LSD_NOMEM_ERROR_FUNC
-#  undef lsd_nomem_error
-   extern void * lsd_nomem_error(char *file, int line, char *mesg);
-#else /* !WITH_LSD_NOMEM_ERROR_FUNC */
-#  ifndef lsd_nomem_error
-	static void * lsd_nomem_error(char *file, int line, char *mesg)
-	{
-		log_oom(file, line, mesg);
-		abort();
-		return NULL;
-	}
-#  endif /* !lsd_nomem_error */
-#endif /* !WITH_LSD_NOMEM_ERROR_FUNC */
-
+#include "src/common/xmalloc.h"
 
 /***************
  *  Constants  *
@@ -89,7 +70,7 @@ struct cbuf {
 
     pthread_mutex_t     mutex;          /* mutex to protect access to cbuf   */
 
-    int                 alloc;          /* num bytes malloc'd/realloc'd      */
+    int                 alloc;          /* num bytes xmalloc'd/xrealloc'd      */
     int                 minsize;        /* min bytes of data to allocate     */
     int                 maxsize;        /* max bytes of data to allocate     */
     int                 size;           /* num bytes of data allocated       */
@@ -145,10 +126,8 @@ cbuf_create (int minsize, int maxsize)
         errno = EINVAL;
         return(NULL);
     }
-    if (!(cb = malloc(sizeof(struct cbuf)))) {
-        errno = ENOMEM;
-        return(lsd_nomem_error(__FILE__, __LINE__, "cbuf struct"));
-    }
+    cb = xmalloc(sizeof(struct cbuf));
+
     /*  Circular buffer is empty when (i_in == i_out),
      *    so reserve 1 byte for this sentinel.
      */
@@ -160,11 +139,7 @@ cbuf_create (int minsize, int maxsize)
     cb->alloc += 2 * CBUF_MAGIC_LEN;
 #endif /* !NDEBUG */
 
-    if (!(cb->data = malloc(cb->alloc))) {
-        free(cb);
-        errno = ENOMEM;
-        return(lsd_nomem_error(__FILE__, __LINE__, "cbuf data"));
-    }
+    cb->data = xmalloc(cb->alloc);
     slurm_mutex_init(&cb->mutex);
     cb->minsize = minsize;
     cb->maxsize = (maxsize > minsize) ? maxsize : minsize;
@@ -207,18 +182,18 @@ cbuf_destroy (cbuf_t cb)
 
 #ifndef NDEBUG
     /*  The moon sometimes looks like a C, but you can't eat that.
-     *  Munch the magic cookies before freeing memory.
+     *  Munch the magic cookies before xfreeing memory.
      */
     cb->magic = ~CBUF_MAGIC;            /* the anti-cookie! */
     memcpy(cb->data - CBUF_MAGIC_LEN, (void *) &cb->magic, CBUF_MAGIC_LEN);
     memcpy(cb->data + cb->size + 1, (void *) &cb->magic, CBUF_MAGIC_LEN);
-    cb->data -= CBUF_MAGIC_LEN;         /* jump back to what malloc returned */
+    cb->data -= CBUF_MAGIC_LEN;         /* jump back to what xmalloc returned */
 #endif /* !NDEBUG */
 
-    free(cb->data);
+    xfree(cb->data);
     slurm_mutex_unlock(&cb->mutex);
     slurm_mutex_destroy(&cb->mutex);
-    free(cb);
+    xfree(cb);
     return;
 }
 
@@ -1606,15 +1581,10 @@ cbuf_grow (cbuf_t cb, int n)
 
     data = cb->data;
 #ifndef NDEBUG
-    data -= CBUF_MAGIC_LEN;             /* jump back to what malloc returned */
+    data -= CBUF_MAGIC_LEN;             /* jump back to what xmalloc returned */
 #endif /* !NDEBUG */
 
-    if (!(data = realloc(data, m))) {
-        /*
-         *  XXX: Set flag or somesuch to prevent regrowing when out of memory?
-         */
-        return(0);                      /* unable to grow data buffer */
-    }
+    data = xrealloc(data, m);
     cb->data = data;
     cb->alloc = m;
     cb->size = m - size_meta;
