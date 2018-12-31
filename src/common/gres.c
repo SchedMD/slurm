@@ -1803,18 +1803,14 @@ static int _node_config_init(char *node_name, char *orig_config,
 			     gres_state_t *gres_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	bool updated_config = false;
 	gres_node_state_t *gres_data;
 
-	if (gres_ptr->gres_data == NULL) {
+	if (!gres_ptr->gres_data)
 		gres_ptr->gres_data = _build_gres_node_state();
-		updated_config = true;
-	}
 	gres_data = (gres_node_state_t *) gres_ptr->gres_data;
 
 	/* If the resource isn't configured for use with this node */
-	if ((orig_config == NULL) || (orig_config[0] == '\0') ||
-	    (updated_config == false)) {
+	if ((orig_config == NULL) || (orig_config[0] == '\0')) {
 		gres_data->gres_cnt_config = 0;
 		return rc;
 	}
