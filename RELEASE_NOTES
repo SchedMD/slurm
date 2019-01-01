@@ -96,6 +96,8 @@ HIGHLIGHTS
  -- Remove select/serial plugin.
  -- Changed the default fair share algorithm to "fair tree". To disable this
     and revert to "classic" fair share you must set PriorityFlags=NO_FAIR_TREE.
+ -- Add AdminPrioFactor to job to set an administrator priority factor for a
+    job. Can be set by scontrol or by a job submit plugin.
 
 RPMBUILD CHANGES
 ================

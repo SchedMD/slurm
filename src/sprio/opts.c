@@ -331,6 +331,10 @@ extern int parse_format( char* format )
 			job_format_add_partition(params.format_list,
 						 field_size, right_justify,
 						 suffix);
+		else if (field[0] == 'S')
+			job_format_add_admin_priority(params.format_list,
+						      field_size,
+						      right_justify, suffix);
 		else if (field[0] == 'q')
 			job_format_add_qos_priority_normalized(params.format_list,
 							       field_size,

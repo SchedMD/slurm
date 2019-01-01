@@ -7,6 +7,7 @@
 <LI> <a href=#intro>Introduction</a>
 <LI> <a href=#mfjppintro>Multi-factor Job Priority Plugin</a>
 <LI> <a href=#general>Job Priority Factors In General</a>
+<LI> <a href=#admin>Admin Factor</a>
 <LI> <a href=#age>Age Factor</a>
 <LI> <a href=#jobsize>Job Size Factor</a>
 <LI> <a href=#partition>Partition Factor</a>
@@ -32,9 +33,12 @@
 <a name=mfjppintro>
 <h2>Multi-factor 'Factors'</h2></a>
 
-<P> There are six factors in the Multi-factor Job Priority plugin that influence job priority:</P>
+<P> There are seven factors in the Multi-factor Job Priority plugin that
+influence job priority:</P>
 
 <DL>
+<DT> Admin
+<DD> a factor dictated by an administrator
 <DT> Age
 <DD> the length of time a job has been waiting in the queue, eligible to be scheduled
 <DT> Fair-share
@@ -64,6 +68,7 @@ requested/allocated TRES Type in a given partition
 <P> The job's priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm.conf file.  Job priority can be expressed as:</P>
 <PRE>
 Job_priority =
+	admin_factor +
 	(PriorityWeightAge) * (age_factor) +
 	(PriorityWeightFairshare) * (fair-share_factor) +
 	(PriorityWeightJobSize) * (job_size_factor) +
@@ -93,6 +98,13 @@ Job_priority =
   so for those factors you want to make predominant.</P>
 
 <!-------------------------------------------------------------------------->
+<a name=admin>
+<h2>Admin Factor</h2></a>
+
+<P> The admin factor is a factor that can be set either using scontrol or
+through a job submit plugin. An example use case, might be a job submit plugin
+that sets a specific priority based on how many resources are requested.</P>
+
 <a name=age>
 <h2>Age Factor</h2></a>
 

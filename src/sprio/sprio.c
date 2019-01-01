@@ -155,14 +155,14 @@ int main (int argc, char **argv)
 			}
 		} else {
 			if (params.long_list) {
-				params.format = "%.15i %9r %.8u %.10Y %.10A %.10F %.10J %.10P %.10Q %.11N %.20T";
+				params.format = "%.15i %9r %.8u %.10Y %.10S %.10A %.10F %.10J %.10P %.10Q %.11N %.20T";
 			} else {
 				params.format = xstrdup("%.15i %9r");
 				if (params.sibling && !params.local)
 					xstrcat(params.format, " %.8c");
 				if (params.users)
 					xstrcat(params.format, " %.8u");
-				xstrcat(params.format, " %.10Y");
+				xstrcat(params.format, " %.10Y %.10S");
 				if (weight_age)
 					xstrcat(params.format, " %.10A");
 				if (weight_fs)

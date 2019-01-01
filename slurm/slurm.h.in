@@ -1361,6 +1361,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
 	char *acctg_freq;	/* accounting polling intervals (seconds) */
 	char *admin_comment;	/* administrator's arbitrary comment (update only) */
+	uint32_t admin_prio_factor; /* factor to consider in priority */
 	char *alloc_node;	/* node making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or
 				 * slurm_allocate* function */
@@ -1541,6 +1542,7 @@ typedef struct job_info {
 	char *account;		/* charge to specified account */
 	time_t accrue_time;	/* time job is eligible for running */
 	char *admin_comment;	/* administrator's arbitrary comment */
+	uint32_t admin_prio_factor; /* factor to consider in priority */
 	char    *alloc_node;	/* local node making resource alloc */
 	uint32_t alloc_sid;	/* local sid making resource alloc */
 	void *array_bitmap;	/* NOTE: set on unpack */
@@ -1689,6 +1691,7 @@ typedef struct priority_factors_object {
 	char *partition;
 	uint32_t user_id;
 
+	uint32_t priority_admin;
 	double	 priority_age;
 	double	 priority_fs;
 	double	 priority_js;
