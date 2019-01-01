@@ -2735,7 +2735,43 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 {
 	priority_factors_object_t *object = (priority_factors_object_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(0, buffer);
+			pack32(0, buffer);
+
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+			packdouble(0, buffer);
+
+			pack32(0, buffer);
+			packnull(buffer);
+
+			return;
+		}
+
+		pack32(object->job_id, buffer);
+		pack32(object->user_id, buffer);
+
+		packdouble(object->priority_age, buffer);
+		packdouble(object->priority_fs, buffer);
+		packdouble(object->priority_js, buffer);
+		packdouble(object->priority_part, buffer);
+		packdouble(object->priority_qos, buffer);
+
+		packdouble_array(object->priority_tres, object->tres_cnt,
+				 buffer);
+		pack32(object->tres_cnt, buffer);
+		packstr_array(assoc_mgr_tres_name_array, object->tres_cnt,
+			      buffer);
+		packdouble_array(object->tres_weights, object->tres_cnt,
+				 buffer);
+
+		pack32(object->nice, buffer);
+		packstr(object->partition, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(0, buffer);
 			pack32(0, buffer);
@@ -2783,7 +2819,28 @@ static int _unpack_priority_factors_object(void **object, Buf buffer,
 		xmalloc(sizeof(priority_factors_object_t));
 	*object = (void *) object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->job_id, buffer);
+		safe_unpack32(&object_ptr->user_id, buffer);
+
+		safe_unpackdouble(&object_ptr->priority_age, buffer);
+		safe_unpackdouble(&object_ptr->priority_fs, buffer);
+		safe_unpackdouble(&object_ptr->priority_js, buffer);
+		safe_unpackdouble(&object_ptr->priority_part, buffer);
+		safe_unpackdouble(&object_ptr->priority_qos, buffer);
+
+		safe_unpackdouble_array(&object_ptr->priority_tres, &tmp32,
+					buffer);
+		safe_unpack32(&object_ptr->tres_cnt, buffer);
+		safe_unpackstr_array(&object_ptr->tres_names,
+				     &object_ptr->tres_cnt, buffer);
+		safe_unpackdouble_array(&object_ptr->tres_weights, &tmp32,
+					buffer);
+
+		safe_unpack32(&object_ptr->nice, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->partition, &tmp32,
+				       buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&object_ptr->job_id, buffer);
 		safe_unpack32(&object_ptr->user_id, buffer);
 
