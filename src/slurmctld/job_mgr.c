@@ -10591,6 +10591,20 @@ void reset_job_bitmaps(void)
 			      job_ptr);
 			job_fail = true;
 		}
+		if (!job_fail &&
+		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
+		    gres_plugin_job_revalidate2(job_ptr->job_id,
+					job_ptr->gres_list,
+					job_ptr->job_resrcs->node_bitmap)) {
+			/*
+			 * This can be due to the job being allocated GRES
+			 * which no longer exist (i.e. the GRES count on some
+			 * allocated node changed since when the job started).
+			 */
+			error("Aborting %pJ due to use of invalid GRES configuration",
+			      job_ptr);
+			job_fail = true;
+		}
 		_reset_step_bitmaps(job_ptr);
 
 		/* Do not increase the job->node_cnt for completed jobs */

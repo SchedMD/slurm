@@ -278,6 +278,8 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			   bool ignore_alloc, char *gres_name,
 			   uint32_t job_id, uint32_t step_id,
 			   uint32_t plugin_id);
+static void	_sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
+				      gres_state_t *gpu_gres_ptr);
 static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
 static void	_validate_config(slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
@@ -1846,7 +1848,7 @@ static int _node_config_init(char *node_name, char *orig_config,
 extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 					List *gres_list)
 {
-	int i, rc;
+	int i, rc, rc2;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 
@@ -1856,7 +1858,7 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
 		*gres_list = list_create(_gres_node_list_delete);
 	}
-	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; i < gres_context_cnt; i++) {
 		/* Find or create gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
 		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
@@ -1870,8 +1872,10 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 			list_append(*gres_list, gres_ptr);
 		}
 
-		rc = _node_config_init(node_name, orig_config,
-				       &gres_context[i], gres_ptr);
+		rc2 = _node_config_init(node_name, orig_config,
+					&gres_context[i], gres_ptr);
+		if (rc == SLURM_SUCCESS)
+			rc = rc2;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -2022,10 +2026,20 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		return rc;
 
 	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &set_cnt);
+	if (gres_data->gres_cnt_config > gres_cnt) {
+		if (reason_down && (*reason_down == NULL)) {
+			xstrfmtcat(*reason_down,
+				   "%s count reported lower than configured "
+				   "(%"PRIu64" < %"PRIu64")",
+				   context_ptr->gres_type,
+				   gres_cnt, gres_data->gres_cnt_config);
+		}
+		rc = EINVAL;
+	}
 	if (gres_data->gres_cnt_found != gres_cnt) {
 		if (gres_data->gres_cnt_found != NO_VAL64) {
-			info("%s: count changed for node %s from %"PRIu64" to %"PRIu64,
-			     context_ptr->gres_type, node_name,
+			info("%s: %s: \"Count\" changed on node %s (%"PRIu64" != %"PRIu64")",
+			     __func__, context_ptr->gres_type, node_name,
 			     gres_data->gres_cnt_found, gres_cnt);
 		}
 		if ((gres_data->gres_cnt_found != NO_VAL64) &&
@@ -2045,7 +2059,13 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 	if (updated_config == false)
 		return rc;
-
+	if ((gres_data->gres_cnt_config != 0) &&
+	    (set_cnt > gres_data->gres_cnt_config)) {
+		info("%s: %s: \"Count\" on node %s inconsistent with slurmctld count (%"PRIu64" != %"PRIu64")",
+		     __func__, context_ptr->gres_type, node_name,
+		     set_cnt, gres_data->gres_cnt_config);
+		set_cnt = gres_data->gres_cnt_config;	/* Ignore excess GRES */
+	}
 	if ((set_cnt == 0) && (set_cnt != gres_data->topo_cnt)) {
 		/* Need to clear topology info */
 		xfree(gres_data->topo_gres_cnt_alloc);
@@ -2160,8 +2180,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					bit_or(tot_core_bitmap,
 					       gres_data->topo_core_bitmap[i]);
 				} else if (i == 0) {
-					error("%s: invalid GRES cpu count (%u) on node %s",
-					      context_ptr->gres_type,
+					error("%s: %s: invalid GRES cpu count (%u) on node %s",
+					      __func__, context_ptr->gres_type,
 					      gres_slurmd_conf->cpu_cnt,
 					      node_name);
 				}
@@ -2169,8 +2189,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				cpus_config = core_cnt;
 			} else if (cpus_config && !cpu_config_err) {
 				cpu_config_err = true;
-				error("%s: has CPUs configured for only some of the records on node %s",
-				      context_ptr->gres_type, node_name);
+				error("%s: %s: has CPUs configured for only some of the records on node %s",
+				      __func__, context_ptr->gres_type,
+				      node_name);
 			}
 
 			if (gres_slurmd_conf->links) {
@@ -2380,7 +2401,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 {
 	int i, rc, rc2;
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr;
+	gres_state_t *gres_ptr, *gres_gpu_ptr = NULL, *gres_mps_ptr = NULL;
 	int core_cnt = sock_cnt * cores_per_sock;
 	int cpu_cnt  = core_cnt * threads_per_core;
 
@@ -2389,7 +2410,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL))
 		*gres_list = list_create(_gres_node_list_delete);
-	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; i < gres_context_cnt; i++) {
 		/* Find or create gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
 		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
@@ -2407,7 +2428,12 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    sock_cnt, fast_schedule, reason_down,
 					    &gres_context[i]);
 		rc = MAX(rc, rc2);
+		if (gres_ptr->plugin_id == gpu_plugin_id)
+			gres_gpu_ptr = gres_ptr;
+		else if (gres_ptr->plugin_id == mps_plugin_id)
+			gres_mps_ptr = gres_ptr;
 	}
+	_sync_node_mps_to_gpu(gres_mps_ptr, gres_gpu_ptr);
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
@@ -2624,6 +2650,7 @@ static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 
 	if (!gpu_gres_ptr || !mps_gres_ptr)
 		return;
+
 	gpu_gres_data = gpu_gres_ptr->gres_data;
 	mps_gres_data = mps_gres_ptr->gres_data;
 	gpu_cnt = gpu_gres_data->gres_cnt_avail;
