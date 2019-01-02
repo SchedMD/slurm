@@ -1670,11 +1670,14 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 		if (fast_schedule >= 2) {
 			gres_data->type_cnt_avail[i] = model_cnt;
 		} else if (model_cnt < gres_data->type_cnt_avail[i]) {
-			xstrfmtcat(*reason_down,
-				   "%s:%s count too low "
-				   "(%"PRIu64" < %"PRIu64")",
-				   gres_name, gres_data->type_name[i],
-				   model_cnt, gres_data->type_cnt_avail[i]);
+			if (reason_down) {
+				xstrfmtcat(*reason_down,
+					   "%s:%s count too low "
+					   "(%"PRIu64" < %"PRIu64")",
+					   gres_name, gres_data->type_name[i],
+					   model_cnt,
+					   gres_data->type_cnt_avail[i]);
+			}
 			return -1;
 		}
 	}
