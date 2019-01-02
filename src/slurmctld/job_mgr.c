@@ -10591,6 +10591,7 @@ void reset_job_bitmaps(void)
 			      job_ptr);
 			job_fail = true;
 		}
+#if 0
 		if (!job_fail &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
 		    gres_plugin_job_revalidate2(job_ptr->job_id,
@@ -10605,6 +10606,7 @@ void reset_job_bitmaps(void)
 			      job_ptr);
 			job_fail = true;
 		}
+#endif
 		_reset_step_bitmaps(job_ptr);
 
 		/* Do not increase the job->node_cnt for completed jobs */

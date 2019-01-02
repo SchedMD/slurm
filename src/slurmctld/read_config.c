@@ -1712,12 +1712,14 @@ static void _gres_reconfig(bool reconfig)
 				gres_name = node_ptr->config_ptr->gres;
 			gres_plugin_init_node_config(node_ptr->name, gres_name,
 						     &node_ptr->gres_list);
+			if (!IS_NODE_CLOUD(node_ptr))
+				continue;
 
 			/*
-			 * Load in GRES for node now based upon state save and
-			 * configuration inforation. Get current information
-			 * when the node registers, which can take a while for
-			 * a node in the cloud to boot.
+			 * Load in GRES for node now. By default Slurm gets this
+			 * information when the node registers for the first
+			 * time, which can take a while for a node in the cloud
+			 * to boot.
 			 */
 			gres_plugin_node_config_load(
 				node_ptr->config_ptr->cpus, node_ptr->name,
