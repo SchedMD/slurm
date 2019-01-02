@@ -1198,7 +1198,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		{NULL}
 	};
 
-	int count = 0, i, rc;
+	int count = 0, i, rc, rc2;
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
@@ -1250,12 +1250,14 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	s_p_hashtbl_destroy(tbl);
 	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
 
-	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; i < gres_context_cnt; i++) {
 		_validate_config(&gres_context[i]);
 		if (gres_context[i].ops.node_config_load == NULL)
 			continue;	/* No plugin */
-		rc = (*(gres_context[i].ops.node_config_load))(gres_conf_list,
-							       &node_conf);
+		rc2 = (*(gres_context[i].ops.node_config_load))(gres_conf_list,
+								&node_conf);
+		if (rc == SLURM_SUCCESS)
+			rc = rc2;
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
