@@ -605,7 +605,7 @@ NodeName=$nodename Name=tmpdisk Count=10g
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[tmpdisk\](18446744071562067968):(null)|4|(null)|(null)|(null)|
+GRES_PARSABLE\[tmpdisk\](10737418240):(null)|4|(null)|(null)|(null)|
 "
 check_configuration 34 $gres_conf $fake_gpus_conf $expected_output
 
