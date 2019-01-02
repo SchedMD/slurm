@@ -5092,6 +5092,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 	 * alphabetical order.
 	 */
 
+	if (debug_flags & DEBUG_FLAG_ACCRUE) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Accrue");
+	}
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5361,7 +5366,9 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 	tmp_str = xstrdup(debug_flags);
 	tok = strtok_r(tmp_str, ",", &last);
 	while (tok) {
-		if (xstrcasecmp(tok, "Backfill") == 0)
+		if (xstrcasecmp(tok, "Accrue") == 0)
+			(*flags_out) |= DEBUG_FLAG_ACCRUE;
+		else if (xstrcasecmp(tok, "Backfill") == 0)
 			(*flags_out) |= DEBUG_FLAG_BACKFILL;
 		else if (xstrcasecmp(tok, "BackfillMap") == 0)
 			(*flags_out) |= DEBUG_FLAG_BACKFILL_MAP;
