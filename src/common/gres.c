@@ -2123,7 +2123,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		gres_data->topo_type_name = xrealloc(gres_data->topo_type_name,
 						     set_cnt * sizeof(char *));
 		gres_data->topo_cnt = set_cnt;
-	} else if (_shared_gres(context_ptr->plugin_id)) {
+	} else if (_shared_gres(context_ptr->plugin_id) && gres_data->topo_cnt){
 		/*
 		 * Need to rebuild topology info to recover state after
 		 * slurmctld restart with running jobs.
