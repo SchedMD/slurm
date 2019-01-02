@@ -673,7 +673,7 @@ static int _find_cluster_rec_in_list(void *obj, void *key)
 }
 
 /* Prepare cluster_list to be federation centric that will be passed to
- * verify_clsuters_exists in federation_functions.c.
+ * verify_fed_clusters in federation_functions.c.
  */
 static int _verify_fed_clusters(List cluster_list, const char *fed_name,
 				bool *existing_fed)
