@@ -2650,7 +2650,7 @@ static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 				  gres_state_t *gpu_gres_ptr)
 {
 	gres_node_state_t *gpu_gres_data, *mps_gres_data;
-	uint64_t gpu_cnt;
+	uint64_t gpu_cnt, mps_alloc = 0, mps_rem;
 	int i;
 
 	if (!gpu_gres_ptr || !mps_gres_ptr)
@@ -2679,7 +2679,6 @@ static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 			FREE_NULL_BITMAP(mps_gres_data->topo_gres_bitmap[i]);
 		xfree(mps_gres_data->topo_type_name[i]);
 	}
-	mps_gres_data->topo_cnt = gpu_cnt;
 
 	/* Add any additional required gres/mps topo records */
 	if (mps_gres_data->topo_cnt) {
@@ -2701,11 +2700,39 @@ static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 		mps_gres_data->topo_type_name =
 			xrealloc(mps_gres_data->topo_type_name,
 				 sizeof(char *) * gpu_cnt);
+	} else {
+		mps_gres_data->topo_core_bitmap =
+			xmalloc(sizeof(bitstr_t *) * gpu_cnt);
+		mps_gres_data->topo_gres_bitmap =
+			xmalloc(sizeof(bitstr_t *) * gpu_cnt);
+		mps_gres_data->topo_gres_cnt_alloc =
+			xmalloc(sizeof(uint64_t) * gpu_cnt);
+		mps_gres_data->topo_gres_cnt_avail =
+			xmalloc(sizeof(uint64_t) * gpu_cnt);
+		mps_gres_data->topo_type_id =
+			xmalloc(sizeof(uint32_t) * gpu_cnt);
+		mps_gres_data->topo_type_name =
+			xmalloc(sizeof(char *) * gpu_cnt);
 	}
+
+	/*
+	 * Evenly distribute any remaining MPS counts.
+	 * Counts get reset as needed when the node registers.
+	 */
+	for (i = 0; i < mps_gres_data->topo_cnt; i++)
+		mps_alloc += mps_gres_data->topo_gres_cnt_avail[i];
+	if (mps_alloc >= mps_gres_data->gres_cnt_avail)
+		mps_rem = 0;
+	else
+		mps_rem = mps_gres_data->gres_cnt_avail - mps_alloc;
 	for (i = mps_gres_data->topo_cnt; i < gpu_cnt; i++) {
 		mps_gres_data->topo_gres_bitmap[i] = bit_alloc(gpu_cnt);
 		bit_set(mps_gres_data->topo_gres_bitmap[i], i);
+		mps_alloc = mps_rem / (gpu_cnt - i);
+		mps_gres_data->topo_gres_cnt_avail[i] = mps_alloc;
+		mps_rem -= mps_alloc;
 	}
+	mps_gres_data->topo_cnt = gpu_cnt;
 
 	for (i = 0; i < mps_gres_data->topo_cnt; i++) {
 		if (mps_gres_data->topo_gres_bitmap &&
