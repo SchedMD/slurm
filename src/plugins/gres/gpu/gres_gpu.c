@@ -1261,7 +1261,7 @@ static int _find_gres_device_in_list(void *a, void *b)
  * Creates a gres_slurmd_conf_t record to add to a list of gres_slurmd_conf_t
  * records
  */
-static void _add_gres_to_list(List gres_list, char *name, int device_cnt,
+static void _add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 			      int cpu_cnt, char *cpu_aff_abs_range,
 			      char *device_file, char *type, char *nvlinks,
 			      bool ignore)
