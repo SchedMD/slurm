@@ -100,8 +100,8 @@ static bool  _is_port_ok(int, uint16_t, bool);
 static void _print_data(char *data, int len);
 #endif
 
-/* define the slurmdbd_options flag */
-slurm_dbd_conf_t *slurmdbd_conf = NULL;
+/* define slurmdbd_conf here so we can treat its existence as a flag */
+slurmdbd_conf_t *slurmdbd_conf = NULL;
 
 /**********************************************************************\
  * protocol configuration functions

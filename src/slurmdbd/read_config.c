@@ -196,7 +196,7 @@ extern int read_slurmdbd_conf(void)
 	/* Set initial values */
 	slurm_mutex_lock(&conf_mutex);
 	if (slurmdbd_conf == NULL) {
-		slurmdbd_conf = xmalloc(sizeof(slurm_dbd_conf_t));
+		slurmdbd_conf = xmalloc(sizeof(*slurmdbd_conf));
 		boot_time = time(NULL);
 	}
 	_clear_slurmdbd_conf();
