@@ -79,7 +79,7 @@ building block approach. These plugins presently include:
   HPC workload container support and implementations.
 </li>
 
-<li><a href="crypto_plugins.html">Cryptography (Digital Signature
+<li><a href="cred_plugins.html">Credential (Digital Signature
   Generation)</a>:
   Mechanism used to generate a digital signature, which is used to validate
   that job step is authorized to execute on specific nodes.
@@ -232,6 +232,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 6 March 2013</p>
+<p style="text-align:center;">Last modified 7 January 2019</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1024,7 +1024,7 @@ head2 SLURM ERRNO
 
 =item * ESLURM_JOB_HELD                                 2042
 
-=item * ESLURM_INVALID_CRYPTO_TYPE_CHANGE               2043
+=item * ESLURM_INVALID_CRED_TYPE_CHANGE                 2043
 
 =item * ESLURM_INVALID_TASK_MEMORY                      2044
 

@@ -74,7 +74,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_AUTH_TYPE          "auth/munge"
 #define DEFAULT_BATCH_START_TIMEOUT 10
 #define DEFAULT_COMPLETE_WAIT       0
-#define DEFAULT_CRYPTO_TYPE        "crypto/munge"
+#define DEFAULT_CRED_TYPE           "cred/munge"
 #define DEFAULT_EPILOG_MSG_TIME     2000
 #define DEFAULT_EXT_SENSORS_TYPE    "ext_sensors/none"
 #define DEFAULT_FAST_SCHEDULE       1

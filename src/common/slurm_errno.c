@@ -182,7 +182,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "CheckpointType change requires restart of all Slurm daemons "
 	  "to take effect"					},
 	{ ESLURM_INVALID_CRED_TYPE_CHANGE,
-	  "CryptoType change requires restart of all Slurm daemons "
+	  "CredType change requires restart of all Slurm daemons "
 	  "to take effect"					},
 	{ ESLURM_INVALID_SCHEDTYPE_CHANGE,
 	  "SchedulerType change requires restart of the slurmctld daemon "

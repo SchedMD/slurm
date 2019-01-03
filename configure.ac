@@ -474,8 +474,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/core_spec/Makefile
 		 src/plugins/core_spec/cray/Makefile
 		 src/plugins/core_spec/none/Makefile
-		 src/plugins/crypto/Makefile
-		 src/plugins/crypto/munge/Makefile
+		 src/plugins/cred/Makefile
+		 src/plugins/cred/munge/Makefile
 		 src/plugins/ext_sensors/Makefile
 		 src/plugins/ext_sensors/rrd/Makefile
 		 src/plugins/ext_sensors/none/Makefile

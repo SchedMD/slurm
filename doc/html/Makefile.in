@@ -471,7 +471,7 @@ generated_html = \
 	core_spec_plugins.html \
 	cpu_management.html \
 	cray.html \
-	crypto_plugins.html \
+	cred_plugins.html \
 	disclaimer.html \
 	dist_plane.html \
 	documentation.html \

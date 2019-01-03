@@ -461,7 +461,7 @@ credential, which is sent to <i>srun</i> and then forwarded to
 <i>slurmd</i> to initiate job steps.
 This design offers improved performance by removing much of the
 job step initiation overhead from the <i> slurmctld </i> daemon.
-The digital signature mechanism is specified by the <b>CryptoType</b>
+The digital signature mechanism is specified by the <b>CredType</b>
 configuration parameter and the default mechanism is MUNGE. </p>
 
 <h3>Authentication</h3>
@@ -719,6 +719,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 14 June 2018</p>
+<p style="text-align:center;">Last modified 7 January 2019</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "December 2018" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "January 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -324,7 +324,7 @@ The default value is 120 seconds.
 Path name to a MUNGE daemon socket to use
 (e.g. "socket=/var/run/munge/munge.socket.2").
 The default value is "/var/run/munge/munge.socket.2".
-Used by \fIauth/munge\fR and \fIcrypto/munge\fR.
+Used by \fIauth/munge\fR and \fIcred/munge\fR.
 .TP
 \fBttl\fR
 Credential lifetime, in seconds (e.g. "ttl=300").
@@ -521,13 +521,13 @@ attempts to use the UserSpace CPU governor (a default value)
 .RE
 The default is OnDemand, Performance and UserSpace.
 .TP
-\fBCryptoType\fR
+\fBCredType\fR
 The cryptographic signature tool to be used in the creation of
 job step credentials.
-The slurmctld daemon must be restarted for a change in \fBCryptoType\fR
+The slurmctld daemon must be restarted for a change in \fBCredType\fR
 to take effect.
-Acceptable values at present include "crypto/munge".
-The default value is "crypto/munge" and is the recommended.
+Acceptable values at present include "cred/munge".
+The default value is "cred/munge" and is the recommended.
 
 .TP
 \fBDebugFlags\fR
@@ -1194,18 +1194,6 @@ used only for Cray systems (CNCU = Compute Node Clean Up)
 \fBjob_container/none\fR
 used for all other system types
 .RE
-
-.TP
-\fBJobCredentialPrivateKey\fR
-Fully qualified pathname of a file containing a private key used for
-authentication by Slurm daemons.
-This parameter is ignored if \fBCryptoType=crypto/munge\fR.
-
-.TP
-\fBJobCredentialPublicCertificate\fR
-Fully qualified pathname of a file containing a public key used for
-authentication by Slurm daemons.
-This parameter is ignored if \fBCryptoType=crypto/munge\fR.
 
 .TP
 \fBJobFileAppend\fR

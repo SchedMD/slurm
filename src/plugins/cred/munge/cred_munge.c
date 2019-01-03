@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  crypto_munge.c - Munge based cryptographic signature plugin
+ *  cred_munge.c - Munge based credential signature plugin
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
@@ -81,8 +81,8 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]        = "Munge cryptographic signature plugin";
-const char plugin_type[]        = "crypto/munge";
+const char plugin_name[]	= "Munge credential signature plugin";
+const char plugin_type[]	= "cred/munge";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /*
@@ -266,8 +266,7 @@ extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
 			rc = err;
 			goto end_it;
 		} else {
-			debug2("We had a replayed crypto, but this "
-			       "is expected in multiple slurmd mode.");
+			debug2("We had a replayed credential, but this is expected in multiple slurmd mode.");
 		}
 #else
 		if (err == EMUNGE_CRED_REPLAYED)

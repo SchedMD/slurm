@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
  -- Kill running/pending job is allocated GRES and that GRES has a "File"
     configuration, and the GRES count changes.
  -- Add new DebugFlag=Accrue for accrue accounting debugging purposes.
+ -- Change CryptoType option to CredType, and rename crypto/munge plugin to
+    cred/munge.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

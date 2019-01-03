@@ -76,7 +76,7 @@ the <b>srun</b> command will retry the request on a periodic basis.
 dependencies and better performance in the initiation of job steps, but that 
 is not currently supported.)
 If the request can be satisfied, the response contains a digitally signed
-credential (by the <b>crypto</b> plugin) identifying the resources to be used.</p>
+credential (by the <b>cred</b> plugin) identifying the resources to be used.</p>
 
 <h2>Task Launch</h2>
 
@@ -134,6 +134,6 @@ nodes that the job is to be ended. The <b>slurmd</b> daemon does the following:
 </ol>
 
 
-<p style="text-align:center;">Last modified 18 May 2011</p>
+<p style="text-align:center;">Last modified 7 January 2019</p>
 
 <!--#include virtual="footer.txt"-->

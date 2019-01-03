@@ -36,6 +36,9 @@ NOTE: The proctrack/sgi_job plugin has been removed.
 
 NOTE: The crypto/openssl plugin has been removed.
 
+NOTE: The CryptoType option has been renamed to CredType, and the crypto/munge
+      plugin has been renamed to cred/munge.
+
 NOTE: The launch/poe plugin has been removed.
 
 NOTE: The switch/nrt plugin has been removed.

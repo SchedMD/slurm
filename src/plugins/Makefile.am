@@ -8,7 +8,7 @@ SUBDIRS = \
 	burst_buffer		\
 	checkpoint		\
 	core_spec		\
-	crypto			\
+	cred			\
 	ext_sensors		\
 	gres			\
 	jobacct_gather		\

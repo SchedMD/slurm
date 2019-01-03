@@ -303,7 +303,7 @@ static void _sbcast_cache_del(void *x);
 static int _slurm_cred_init(void)
 {
 	char	*auth_info, *tok;
-	char    *plugin_type = "crypto";
+	char    *plugin_type = "cred";
 	char	*type = NULL;
 	int	retval = SLURM_SUCCESS;
 

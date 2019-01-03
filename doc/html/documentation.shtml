@@ -112,7 +112,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="authplugins.html">Authentication Plugin Programmer Guide</a></li>
 <li><a href="bb_plugins.html">Burst Buffer Plugin Programmer Guide</a></li>
 <li><a href="core_spec_plugins.html">Core Specialization Plugin Programmer Guide</a></li>
-<li><a href="crypto_plugins.html">Cryptographic Plugin Programmer Guide</a></li>
+<li><a href="cred_plugins.html">Credential Plugin Programmer Guide</a></li>
 <li><a href="acct_gather_energy_plugins.html">Energy Accounting Plugin Programmer Guide</a></li>
 <li><a href="ext_sensorsplugins.html">External Sensors Plugin Programmer Guide</a></li>
 <li><a href="gres_plugins.html">Generic Resources (GRES) Plugin Programmer Guide</a></li>
@@ -140,6 +140,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 21 November 2018</p>
+<p style="text-align:center;">Last modified 7 January 2019</p>
 
 <!--#include virtual="footer.txt"-->

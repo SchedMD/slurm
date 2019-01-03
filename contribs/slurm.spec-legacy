@@ -219,16 +219,16 @@ Slurm NULL authentication module
 %endif
 
 # This is named munge instead of auth-munge since there are 2 plugins in the
-# package.  auth-munge and crypto-munge
+# package.  auth-munge and cred-munge
 %if %{slurm_with munge}
 %package munge
-Summary: Slurm authentication and crypto implementation using Munge
+Summary: Slurm authentication and cred implementation using Munge
 Group: System Environment/Base
 Requires: slurm munge
 BuildRequires: munge-devel munge-libs
 Obsoletes: slurm-auth-munge
 %description munge
-Slurm authentication and crypto implementation using Munge. Used to
+Slurm authentication and cred implementation using Munge. Used to
 authenticate user originating an RPC, digitally sign and/or encrypt messages
 %endif
 
@@ -475,7 +475,7 @@ rm -f $RPM_BUILD_ROOT/%{_sbindir}/slurm_prolog
 %endif
 %if ! %{slurm_with munge}
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_munge.so
-rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_munge.so
+rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/cred_munge.so
 %endif
 rm -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/.packlist
 rm -f $RPM_BUILD_ROOT/%{_perlarchlibdir}/perllocal.pod
@@ -733,7 +733,7 @@ rm -rf $RPM_BUILD_ROOT
 %files munge
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_munge.so
-%{_libdir}/slurm/crypto_munge.so
+%{_libdir}/slurm/cred_munge.so
 %endif
 #############################################################################
 

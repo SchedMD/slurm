@@ -1,4 +1,4 @@
-# Makefile for crypto/munge plugin
+# Makefile for cred/munge plugin
 
 AUTOMAKE_OPTIONS = foreign
 
@@ -8,12 +8,12 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(MUNGE_CPPFLAGS)
 
 # Add your plugin to this line, following the naming conventions.
 if WITH_MUNGE
-MUNGE = crypto_munge.la
+MUNGE = cred_munge.la
 endif
 
 pkglib_LTLIBRARIES = $(MUNGE)
 
-# Munge crypto plugin
-crypto_munge_la_SOURCES = crypto_munge.c
-crypto_munge_la_LDFLAGS = $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
-crypto_munge_la_LIBADD =  $(MUNGE_LIBS)
+# Munge cred plugin
+cred_munge_la_SOURCES = cred_munge.c
+cred_munge_la_LDFLAGS = $(PLUGIN_FLAGS) $(MUNGE_LDFLAGS)
+cred_munge_la_LIBADD =  $(MUNGE_LIBS)
