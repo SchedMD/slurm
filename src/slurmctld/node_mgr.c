@@ -1692,26 +1692,29 @@ int update_node ( update_node_msg_t * update_node_msg )
 	FREE_NULL_HOSTLIST(hostname_list);
 	last_node_update = now;
 
-	if ((error_code == 0) && (update_node_msg->features)) {
+	if ((error_code == SLURM_SUCCESS) && (update_node_msg->features)) {
 		error_code = _update_node_avail_features(
 					update_node_msg->node_names,
 					update_node_msg->features,
 					FEATURE_MODE_IND);
 	}
-	if ((error_code == 0) && (update_node_msg->gres)) {
+	if ((error_code == SLURM_SUCCESS) && (update_node_msg->gres)) {
 		error_code = _update_node_gres(update_node_msg->node_names,
 					       update_node_msg->gres);
 	}
 
-	/* Update weight. Weight is part of config_ptr,
-	 * hence split config records if required */
-	if ((error_code == 0) && (update_node_msg->weight != NO_VAL))	{
+	/*
+	 * Update weight. Weight is part of config_ptr,
+	 * hence split config records if required
+	 */
+	if ((error_code == SLURM_SUCCESS) &&
+	    (update_node_msg->weight != NO_VAL))	{
 		error_code = _update_node_weight(update_node_msg->node_names,
 						 update_node_msg->weight);
-		if (!error_code)
+		if (error_code == SLURM_SUCCESS) {
 			/* sort config_list by weight for scheduling */
 			list_sort(config_list, &list_compare_config);
-
+		}
 	}
 
 	return error_code;
@@ -2053,13 +2056,14 @@ static int _update_node_gres(char *node_names, char *gres)
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap);
 	if (rc) {
-		info("_update_node_gres: invalid node_name");
+		info("%s: invalid node_name", __func__);
 		return rc;
 	}
 
-	/* For each config_record with one of these nodes,
-	 * update it (if all nodes updated) or split it into
-	 * a new entry */
+	/*
+	 * For each config_record with one of these nodes, update it (if all
+	 * nodes updated) or split it into a new entry
+	 */
 	config_iterator = list_iterator_create(config_list);
 	while ((config_ptr = (struct config_record *)
 			list_next(config_iterator))) {
@@ -2116,7 +2120,8 @@ static int _update_node_gres(char *node_names, char *gres)
 	}
 	FREE_NULL_BITMAP(node_bitmap);
 
-	info("_update_node_gres: nodes %s gres set to: %s", node_names, gres);
+	if (rc == SLURM_SUCCESS)
+		info("%s: nodes %s gres set to: %s", __func__, node_names,gres);
 	return SLURM_SUCCESS;
 }
 
