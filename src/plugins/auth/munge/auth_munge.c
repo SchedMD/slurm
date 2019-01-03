@@ -127,7 +127,6 @@ typedef struct munge_info {
 /* Static prototypes
  */
 
-static char *         _auth_opts_to_socket(char *opts);
 static munge_info_t * cred_info_alloc(void);
 static munge_info_t * cred_info_create(munge_ctx_t ctx);
 static void           cred_info_destroy(munge_info_t *);
@@ -171,7 +170,7 @@ slurm_auth_credential_t *slurm_auth_create(char *opts)
 	}
 
 	if (opts) {
-		socket = _auth_opts_to_socket(opts);
+		socket = slurm_auth_opts_to_socket(opts);
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
 		xfree(socket);
 		if (rc != EMUNGE_SUCCESS) {
@@ -276,7 +275,7 @@ slurm_auth_verify( slurm_auth_credential_t *c, char *opts )
 	if (c->verified)
 		return SLURM_SUCCESS;
 
-	socket = _auth_opts_to_socket(opts);
+	socket = slurm_auth_opts_to_socket(opts);
 	rc = _decode_cred(c, socket);
 	xfree(socket);
 	if (rc < 0)
@@ -299,7 +298,7 @@ slurm_auth_get_uid( slurm_auth_credential_t *cred, char *opts )
 
 	if (!cred->verified) {
 		int rc;
-		char *socket = _auth_opts_to_socket(opts);
+		char *socket = slurm_auth_opts_to_socket(opts);
 		rc = _decode_cred(cred, socket);
 		xfree(socket);
 		if (rc < 0) {
@@ -327,7 +326,7 @@ slurm_auth_get_gid( slurm_auth_credential_t *cred, char *opts )
 
 	if (!cred->verified) {
 		int rc;
-		char *socket = _auth_opts_to_socket(opts);
+		char *socket = slurm_auth_opts_to_socket(opts);
 		rc = _decode_cred(cred, socket);
 		xfree(socket);
 		if (rc < 0) {
@@ -359,7 +358,7 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
 
 	if (!cred->verified) {
 		int rc;
-		char *socket = _auth_opts_to_socket(opts);
+		char *socket = slurm_auth_opts_to_socket(opts);
 		rc = _decode_cred(cred, socket);
 		xfree(socket);
 		if (rc < 0) {
@@ -745,31 +744,4 @@ _print_cred(munge_ctx_t ctx)
 	munge_info_t *mi = cred_info_create(ctx);
 	_print_cred_info(mi);
 	cred_info_destroy(mi);
-}
-
-/*
- * Convert AuthInfo to a socket path. Accepts two input formats:
- * 1) <path>		(Old format)
- * 2) socket=<path>[,]	(New format)
- * NOTE: Caller must xfree return value
- */
-static char *_auth_opts_to_socket(char *opts)
-{
-	char *socket = NULL, *sep, *tmp;
-
-	if (!opts)
-		return NULL;
-
-	tmp = strstr(opts, "socket=");
-	if (tmp) {	/* New format */
-		socket = xstrdup(tmp + 7);
-		sep = strchr(socket, ',');
-		if (sep)
-			sep[0] = '\0';
-	} else if (strchr(opts, '='))
-		;	/* New format, but socket not specified */
-	else
-		socket = xstrdup(opts);	/* Old format */
-
-	return socket;
 }

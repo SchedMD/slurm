@@ -98,38 +98,6 @@ enum local_error_code {
 static uid_t slurm_user = 0;
 
 /*
- * Convert AuthInfo to a socket path. Accepts two input formats:
- * 1) <path>		(Old format)
- * 2) socket=<path>[,]	(New format)
- * NOTE: Caller must xfree return value
- */
-static char *_auth_opts_to_socket(void)
-{
-	char *socket = NULL, *sep, *tmp;
-	char *opts = slurm_get_auth_info();
-
-	if (!opts)
-		return NULL;
-
-	tmp = strstr(opts, "socket=");
-	if (tmp) {	/* New format */
-		socket = xstrdup(tmp + 7);
-		sep = strchr(socket, ',');
-		if (sep)
-			sep[0] = '\0';
-	} else if (strchr(opts, '='))
-		;	/* New format, but socket not specified */
-	else {
-		socket = opts;	/* Old format */
-		opts = NULL;
-	}
-
-	xfree(opts);
-
-	return socket;
-}
-
-/*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
@@ -164,7 +132,7 @@ static void *_munge_ctx_setup(bool creator)
 {
 	munge_ctx_t ctx;
 	munge_err_t err;
-	char *socket;
+	char *opts, *socket;
 	int auth_ttl, rc;
 
 	if ((ctx = munge_ctx_create()) == NULL) {
@@ -172,7 +140,8 @@ static void *_munge_ctx_setup(bool creator)
 		return (NULL);
 	}
 
-	socket = _auth_opts_to_socket();
+	opts = slurm_get_auth_info();
+	socket = slurm_auth_opts_to_socket(opts);
 	if (socket) {
 		rc = munge_ctx_set(ctx, MUNGE_OPT_SOCKET, socket);
 		xfree(socket);
@@ -182,6 +151,7 @@ static void *_munge_ctx_setup(bool creator)
 			return NULL;
 		}
 	}
+	xfree(opts);
 
 	auth_ttl = slurm_get_auth_ttl();
 	if (auth_ttl)

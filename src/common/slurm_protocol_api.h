@@ -82,6 +82,15 @@ enum {
  */
 char *slurm_get_auth_info(void);
 
+/*
+ * slurm_auth_opts_to_socket
+ * Convert AuthInfo to a socket path. Accepts two input formats:
+ * 1) <path>           (Old format)
+ * 2) socket=<path>[,] (New format)
+ * RET char * - socket path,	MUST be xfreed by caller
+ */
+char *slurm_auth_opts_to_socket(char *opts);
+
 /* slurm_get_sbcast_parameters
  * RET char * - SbcastParameters from slurm.conf,  MUST be xfreed by caller
  */
