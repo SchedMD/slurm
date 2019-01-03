@@ -77,6 +77,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak when scheduling rebootable nodes.
  -- Fix debug2 prefix for sched log.
  -- Fix printing correct SLURM_JOB_ACCOUNT_PACK_GROUP_* in env for a Het Job.
+ -- sbatch - search current working directory first for job script.
 
 * Changes in Slurm 18.08.4
 ==========================
