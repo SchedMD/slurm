@@ -55,9 +55,8 @@
 /* SlurmDBD configuration parameters */
 typedef struct {
 	time_t		last_update;	/* time slurmdbd.conf read	*/
-	char *		archive_dir;    /* location to localy
-					 * store data if not
-					 * using a script               */
+	char *		archive_dir;    /* location to locally store
+					 * data if not using a script   */
 	char *		archive_script;	/* script to archive old data	*/
 	char *		auth_info;	/* authentication info		*/
 	char *		auth_type;	/* authentication mechanism	*/
