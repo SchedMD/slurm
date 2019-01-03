@@ -617,6 +617,16 @@ typedef struct {
 					   sibling names */
 } job_fed_details_t;
 
+#define HETJOB_PRIO_MIN	0x0001	/* Sort by mininum component priority[tier] */
+#define HETJOB_PRIO_MAX	0x0002	/* Sort by maximum component priority[tier] */
+#define HETJOB_PRIO_AVG	0x0004	/* Sort by average component priority[tier] */
+
+typedef struct {
+	bool any_resv;			/* at least one component with resv */
+	uint32_t priority_tier;		/* whole hetjob calculated tier */
+	uint32_t priority;		/* whole hetjob calculated priority */
+} pack_details_t;
+
 /*
  * NOTE: When adding fields to the job_record, or any underlying structures,
  * be sure to sync with job_array_split.
@@ -751,6 +761,7 @@ struct job_record {
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
+	pack_details_t *pack_details;	/* hetjob details */
 	uint32_t pack_job_id;		/* lead job ID of pack job leader */
 	char *pack_job_id_set;		/* job IDs for all components */
 	uint32_t pack_job_offset;	/* pack job index */
