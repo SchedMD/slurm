@@ -1711,6 +1711,9 @@ static void _set_gres_cnt(char *orig_config, char **new_config,
 		if (xstrcmp(tok, gres_name) &&
 		    xstrncmp(tok, gres_name_colon, gres_name_colon_len)) {
 			xstrcat(new_configured_res, tok);
+		} else if (new_cnt == 0) {
+			xstrfmtcat(new_configured_res, "%s:%"PRIu64"%s",
+				   gres_name, new_cnt, add_info);
 		} else if ((new_cnt % (1024 * 1024 * 1024)) == 0) {
 			new_cnt /= (1024 * 1024 * 1024);
 			xstrfmtcat(new_configured_res, "%s:%"PRIu64"G%s",
