@@ -117,12 +117,13 @@ char *print_mail_type(const uint16_t type);
  * search PATH to confirm the location and access mode of the given command
  * IN cwd - current working directory
  * IN cmd - command to execute
- * IN check_current_dir - if true, search cwd for the command
+ * IN check_cwd_last - if true, search cwd after PATH is checked
+ *                   - if false, search cwd for the command first
  * IN access_mode - required access rights of cmd
  * IN test_exec - if false, do not confirm access mode of cmd if full path
  * RET full path of cmd or NULL if not found
  */
-char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
+char *search_path(char *cwd, char *cmd, bool check_cwd_last, int access_mode,
 		  bool test_exec);
 
 /* helper function for printing options */

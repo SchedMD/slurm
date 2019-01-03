@@ -1063,12 +1063,13 @@ static bool _accessible(const char *path, int access_mode)
  * search PATH to confirm the location and access mode of the given command
  * IN cwd - current working directory
  * IN cmd - command to execute
- * IN check_current_dir - if true, search cwd for the command
+ * IN check_cwd_last - if true, search cwd after PATH is checked
+ *                   - if false, search cwd for the command first
  * IN access_mode - required access rights of cmd
  * IN test_exec - if false, do not confirm access mode of cmd if full path
  * RET full path of cmd or NULL if not found
  */
-char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
+char *search_path(char *cwd, char *cmd, bool check_cwd_last, int access_mode,
 		  bool test_exec)
 {
 	List         l        = NULL;
@@ -1096,9 +1097,10 @@ char *search_path(char *cwd, char *cmd, bool check_current_dir, int access_mode,
 	if (l == NULL)
 		return NULL;
 
-	/* Check cwd last, so local binaries do not trump binaries in PATH */
-	if (check_current_dir)
+	if (check_cwd_last)
 		list_append(l, xstrdup(cwd));
+	else
+		list_prepend(l, xstrdup(cwd));
 
 	i = list_iterator_create(l);
 	while ((path = list_next(i))) {
