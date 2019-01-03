@@ -76,7 +76,6 @@
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
 
-
 strong_alias(convert_num_unit2, slurm_convert_num_unit2);
 strong_alias(convert_num_unit, slurm_convert_num_unit);
 strong_alias(revert_num_unit, slurm_revert_num_unit);
@@ -87,11 +86,8 @@ strong_alias(get_unit_type, slurm_get_unit_type);
 
 /* #DEFINES */
 #define _DEBUG	0
-#define MAX_SHUTDOWN_RETRY 5
 
 /* STATIC VARIABLES */
-/* static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER; */
-/* static slurm_ctl_conf_t slurmctld_conf; */
 static int message_timeout = -1;
 
 /* STATIC FUNCTIONS */

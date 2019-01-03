@@ -64,7 +64,6 @@
 
 /* Global variables */
 pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
-//slurm_dbd_conf_t *slurmdbd_conf = NULL;
 
 /* Local functions */
 static void _clear_slurmdbd_conf(void);
