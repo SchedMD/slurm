@@ -504,7 +504,8 @@ extern char *gres_get_node_drain(List gres_list);
 extern char *gres_get_node_used(List gres_list);
 
 /*
- * Give the total system count of a given gres
+ * Give the total system count of a given GRES
+ * Returns NO_VAL64 if name not found
  */
 extern uint64_t gres_get_system_cnt(char *name);
 

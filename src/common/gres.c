@@ -3420,13 +3420,17 @@ extern char *gres_get_node_used(List gres_list)
 	return gres_used;
 }
 
+/*
+ * Give the total system count of a given GRES
+ * Returns NO_VAL64 if name not found
+ */
 extern uint64_t gres_get_system_cnt(char *name)
 {
-	uint64_t count = 0;
+	uint64_t count = NO_VAL64;
 	int i;
 
 	if (!name)
-		return 0;
+		return NO_VAL64;
 
 	(void) gres_plugin_init();
 

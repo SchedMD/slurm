@@ -2464,6 +2464,8 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 			continue;
 		} else if (!xstrcmp(tres_rec->type, "gres")) {
 			tres_rec->count = gres_get_system_cnt(tres_rec->name);
+			if (tres_rec->count == NO_VAL64)
+				tres_rec->count = 0;   /* GRES name not found */
 			continue;
 		} else if (!xstrcmp(tres_rec->type, "license")) {
 			tres_rec->count = get_total_license_cnt(
