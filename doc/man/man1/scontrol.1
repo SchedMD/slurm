@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "October 2018" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "January 2019" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -1136,8 +1136,11 @@ Identify generic resources to be associated with the specified node.  Any
 previously defined generic resources will be overwritten with the new value.
 Specifications for multiple generic resources should be comma separated.
 Each resource specification consists of a name followed by an optional
-colon with a numeric value (default value is one)
-(e.g. "Gres=bandwidth:10000,gpus").
+colon with a numeric value (default value is one) (e.g. "Gres=bandwidth:10000").
+Modification of GRES count associated with specific files (e.g. GPUs) is not
+allowed other than to set their count on a node to zero.
+In order to change the GRES count to another value, modify your slurm.conf and
+gres.conf files and restart daemons.
 If GRES as associated with specific sockets, that information will be reported
 For example if all 4 GPUs on a node are all associated with socket zero, then
 "Gres=gpu:4(S:0)". If associated with sockets 0 and 1 then "Gres=gpu:4(S:0-1)".

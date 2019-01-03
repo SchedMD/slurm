@@ -2565,9 +2565,9 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 			  slurm_gres_context_t *context_ptr,
 			  bool *updated_gpu_cnt)
 {
-	int i, rc = SLURM_SUCCESS;
+	int i;
 	gres_node_state_t *gres_data;
-	uint64_t gres_bits;
+	uint64_t gres_bits, gres_config_cnt, orig_cnt;
 
 	xassert(gres_ptr);
 	xassert(updated_gpu_cnt);
@@ -2575,16 +2575,32 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 	if (gres_ptr->gres_data == NULL)
 		gres_ptr->gres_data = _build_gres_node_state();
 	gres_data = gres_ptr->gres_data;
+	orig_cnt = gres_data->gres_cnt_config;
 
-	/* remove the last count */
-	context_ptr->total_cnt -= gres_data->gres_cnt_config;
-
+	gres_config_cnt = gres_data->gres_cnt_config;
 	_get_gres_cnt(gres_data, orig_config,
 		      context_ptr->gres_name,
 		      context_ptr->gres_name_colon,
 		      context_ptr->gres_name_colon_len);
 
-	/* add the new */
+	if (gres_data->gres_cnt_config == orig_cnt)
+		return SLURM_SUCCESS;	/* No change in count */
+	if ((context_ptr->config_flags & GRES_CONF_HAS_FILE) &&
+	    (gres_data->gres_cnt_config != 0)) {
+		error("Attempt to change gres/%s count changed on node %s from %"PRIu64" to %"PRIu64,
+		      context_ptr->gres_name, node_name,
+		      context_ptr->total_cnt, gres_data->gres_cnt_config);
+		gres_data->gres_cnt_config = gres_config_cnt; /* Restore cnt */
+		_set_gres_cnt(orig_config,	/* Update "new_config" */
+			      new_config, orig_cnt,
+			      context_ptr->gres_name,
+			      context_ptr->gres_name_colon,
+			      context_ptr->gres_name_colon_len);
+		return ESLURM_INVALID_GRES;
+	}
+
+	/* Update count */
+	context_ptr->total_cnt -= orig_cnt;
 	context_ptr->total_cnt += gres_data->gres_cnt_config;
 
 	if ((gres_data->gres_cnt_config == 0) || (fast_schedule > 0))
@@ -2653,7 +2669,7 @@ static int _node_reconfig(char *node_name, char *orig_config, char **new_config,
 			      context_ptr->gres_name_colon_len);
 	}
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /* The GPU count on a node changed. Update MPS data structures to match */
@@ -2774,14 +2790,14 @@ extern int gres_plugin_node_reconfig(char *node_name,
 {
 	int i, rc, rc2;
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr, *mps_gres_ptr;
+	gres_state_t *gres_ptr, *gpu_gres_ptr = NULL, *mps_gres_ptr;
 
 	rc = gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL))
 		*gres_list = list_create(_gres_node_list_delete);
-	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
+	for (i = 0; i < gres_context_cnt; i++) {
 		bool updated_gpu_cnt = false;
 		/* Find gres_state entry on the list */
 		gres_iter = list_iterator_create(*gres_list);
@@ -2797,17 +2813,18 @@ extern int gres_plugin_node_reconfig(char *node_name,
 				     gres_ptr, fast_schedule, &gres_context[i],
 				     &updated_gpu_cnt);
 		rc = MAX(rc, rc2);
-
-		if (!updated_gpu_cnt || !have_mps)
-			continue;
-		/* Need to update gres/mps counts too */
+		if (updated_gpu_cnt)
+			gpu_gres_ptr = gres_ptr;
+	}
+	if (gpu_gres_ptr && have_mps) {
+		/* Update gres/mps counts and bitmaps to match gres/gpu */
 		gres_iter = list_iterator_create(*gres_list);
 		while ((mps_gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 			if (_shared_gres(mps_gres_ptr->plugin_id))
 				break;
 		}
 		list_iterator_destroy(gres_iter);
-		_sync_node_mps_to_gpu(mps_gres_ptr, gres_ptr);
+		_sync_node_mps_to_gpu(mps_gres_ptr, gpu_gres_ptr);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 
