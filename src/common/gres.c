@@ -2144,6 +2144,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			if (gres_slurmd_conf->plugin_id !=
 			    context_ptr->plugin_id)
 				continue;
+			if (gres_data->gres_bit_alloc) {
+				gres_data->gres_bit_alloc = bit_realloc(
+					gres_data->gres_bit_alloc, set_cnt);
+			}
 			if ((gres_data->gres_bit_alloc) &&
 			    !_shared_gres(context_ptr->plugin_id))
 				gres_data->topo_gres_cnt_alloc[i] = 0;
@@ -2229,8 +2233,12 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				gres_inx++;
 			} else {
 				gres_data->topo_gres_bitmap[i] =
-					bit_alloc(gres_cnt);
+					bit_alloc(set_cnt);
 				for (j = 0; j < gres_slurmd_conf->count; j++) {
+					if (gres_inx >= set_cnt) {
+						/* Ignore excess GRES on node */
+						break;
+					}
 					bit_set(gres_data->topo_gres_bitmap[i],
 						gres_inx);
 					if (gres_data->gres_bit_alloc &&
@@ -4372,6 +4380,10 @@ static bool _job_has_gres_bits(List job_gres_list)
 	return rc;
 }
 
+/*
+ * Return count of configured GRES.
+ * NOTE: For gres/mps return count of gres/gpu
+ */
 static int _get_node_gres_cnt(List node_gres_list, uint32_t plugin_id)
 {
 	ListIterator node_gres_iter;
@@ -4382,6 +4394,8 @@ static int _get_node_gres_cnt(List node_gres_list, uint32_t plugin_id)
 	if (!node_gres_list)
 		return 0;
 
+	if (plugin_id == mps_plugin_id)
+		plugin_id = gpu_plugin_id;
 	node_gres_iter = list_iterator_create(node_gres_list);
         while ((gres_ptr = (gres_state_t *) list_next(node_gres_iter))) {
 		if (gres_ptr->plugin_id != plugin_id)

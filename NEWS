@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
     behavior and added new 'AcctAsParent' option.
  -- Add ave watts to api and sview.
  -- Added printf attribute to setenvf() and corrected related warnings.
+ -- Kill running/pending job is allocated GRES and that GRES has a "File"
+    configuration, and the GRES count changes.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
