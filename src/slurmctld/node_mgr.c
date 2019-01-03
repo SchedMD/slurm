@@ -2051,7 +2051,7 @@ static int _update_node_gres(char *node_names, char *gres)
 	struct config_record *config_ptr, *new_config_ptr;
 	struct config_record *first_new = NULL;
 	struct node_record *node_ptr;
-	int rc, config_cnt, tmp_cnt;
+	int rc, rc2, config_cnt, tmp_cnt;
 	int i, i_first, i_last;
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap);
@@ -2111,18 +2111,20 @@ static int _update_node_gres(char *node_names, char *gres)
 		i_last = i_first - 1;
 	for (i = i_first; i <= i_last; i++) {
 		node_ptr = node_record_table_ptr + i;
-		(void) gres_plugin_node_reconfig(node_ptr->name,
-						 node_ptr->config_ptr->gres,
-						 &node_ptr->gres,
-						 &node_ptr->gres_list,
-						 slurmctld_conf.fast_schedule);
+		rc2 = gres_plugin_node_reconfig(node_ptr->name,
+						node_ptr->config_ptr->gres,
+						&node_ptr->gres,
+						&node_ptr->gres_list,
+						slurmctld_conf.fast_schedule);
+		if (rc == SLURM_SUCCESS)
+			rc = rc2;
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
 	FREE_NULL_BITMAP(node_bitmap);
 
 	if (rc == SLURM_SUCCESS)
 		info("%s: nodes %s gres set to: %s", __func__, node_names,gres);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* Reset the config pointer for updated jobs */
