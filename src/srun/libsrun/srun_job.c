@@ -113,6 +113,8 @@ static int shepherd_fd = -1;
 static pthread_t signal_thread = (pthread_t) 0;
 static int pty_sigarray[] = { SIGWINCH, 0 };
 
+extern char **environ;
+
 /*
  * Prototypes:
  */
@@ -1337,7 +1339,7 @@ extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
 		exit(error_exit);
 	}
 
-	env_array_merge(&job->env, (const char **)__environ);
+	env_array_merge(&job->env, (const char **)environ);
 }
 
 extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc,
