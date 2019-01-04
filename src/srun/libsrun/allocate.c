@@ -74,6 +74,7 @@ pthread_mutex_t msg_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t msg_cond = PTHREAD_COND_INITIALIZER;
 allocation_msg_thread_t *msg_thr = NULL;
 struct pollfd global_fds[1];
+uint16_t slurmctld_comm_port = 0;
 
 extern char **environ;
 
@@ -699,14 +700,11 @@ extern List existing_allocation(void)
 int slurmctld_msg_init(void)
 {
 	slurm_addr_t slurm_address;
-	uint16_t port;
 	static int slurmctld_fd = -1;
 	uint16_t *ports;
 
 	if (slurmctld_fd >= 0)	/* May set early for queued job allocation */
 		return slurmctld_fd;
-
-	slurmctld_comm_addr.port = 0;
 
 	if ((ports = slurm_get_srun_port_range()))
 		slurmctld_fd = slurm_init_msg_engine_ports(ports);
@@ -725,9 +723,8 @@ int slurmctld_msg_init(void)
 	fd_set_nonblocking(slurmctld_fd);
 	/* hostname is not set,  so slurm_get_addr fails
 	   slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
-	port = ntohs(slurm_address.sin_port);
-	slurmctld_comm_addr.port     = port;
-	debug2("srun PMI messages to port=%u", slurmctld_comm_addr.port);
+	slurmctld_comm_port = ntohs(slurm_address.sin_port);
+	debug2("srun PMI messages to port=%u", slurmctld_comm_port);
 
 	return slurmctld_fd;
 }
@@ -946,8 +943,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 
 	/* srun uses the same listening port for the allocation response
 	 * message as all other messages */
-	j->alloc_resp_port = slurmctld_comm_addr.port;
-	j->other_port = slurmctld_comm_addr.port;
+	j->alloc_resp_port = slurmctld_comm_port;
+	j->other_port = slurmctld_comm_port;
 
 	if (opt_local->spank_job_env_size) {
 		j->spank_job_env      = opt_local->spank_job_env;

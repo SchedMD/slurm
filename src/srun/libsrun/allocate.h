@@ -44,11 +44,7 @@
 #include "src/srun/libsrun/opt.h"
 #include "src/srun/libsrun/srun_job.h"
 
-typedef struct slurmctld_communication_addr {
-	uint16_t port;
-} slurmctld_comm_addr_t;
-
-slurmctld_comm_addr_t slurmctld_comm_addr;
+extern uint16_t slurmctld_comm_port;
 
 /*
  * Allocate nodes from the slurm controller -- retrying the attempt
