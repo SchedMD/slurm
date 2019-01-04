@@ -11770,7 +11770,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	/* this needs to be after partition and QOS checks */
 	if (job_specs->reservation
-	    && !xstrcmp(job_specs->reservation, job_ptr->resv_name)) {
+	    && (!xstrcmp(job_specs->reservation, job_ptr->resv_name) ||
+		(!job_ptr->resv_name && job_specs->reservation[0] == '\0'))) {
 		sched_debug("update_job: new reservation identical to old reservation %pJ",
 			    job_ptr);
 	} else if (job_specs->reservation) {
@@ -12201,6 +12202,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->resv_ptr = new_resv_ptr;
 		sched_info("update_job: setting reservation to %s for %pJ",
 			   job_ptr->resv_name, job_ptr);
+		update_accounting = true;
+	} else if (job_specs->reservation &&
+		   job_specs->reservation[0] == '\0' &&
+		   job_ptr->resv_name) {
+		xfree(job_ptr->resv_name);
+		job_ptr->resv_id    = 0;
+		job_ptr->resv_ptr   = NULL;
+		sched_info("update_job: setting reservation to '' for %pJ",
+			   job_ptr);
 		update_accounting = true;
 	}
 
