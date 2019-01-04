@@ -152,6 +152,16 @@ _create_socket(const char *name)
 	int len;
 	struct sockaddr_un addr;
 
+	/*
+	 * If socket name would be truncated, emit error and exit
+	 */
+	if (strlen(name) > sizeof(addr.sun_path) - 1) {
+		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
+		      __func__, name, strlen(name) + 1, sizeof(addr.sun_path));
+		errno = ESLURMD_INVALID_SOCKET_NAME_LEN;
+		return -1;
+	}
+
 	/* create a unix domain stream socket */
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
 		return -1;
@@ -234,7 +244,7 @@ _domain_socket_destroy(int fd)
 		error("Unable to close domain socket: %m");
 
 	if (unlink(socket_name) == -1)
-		error("Unable to unlink domain socket: %m");
+		error("Unable to unlink domain socket `%s`: %m", socket_name);
 }
 
 /* Wait for the job to be running (pids added) before continuing. */

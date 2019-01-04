@@ -429,6 +429,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job step is suspended"                               },
  	{ ESLURMD_STEP_NOTSUSPENDED,
 	  "Job step is not currently suspended"                 },
+	{ ESLURMD_INVALID_SOCKET_NAME_LEN,
+	  "Unix socket name exceeded maximum length"		},
 
 	/* slurmd errors in user batch job */
 	{ ESCRIPT_CHDIR_FAILED,

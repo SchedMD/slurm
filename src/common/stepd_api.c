@@ -154,19 +154,28 @@ _step_connect(const char *directory, const char *nodename,
 	int fd;
 	int len;
 	struct sockaddr_un addr;
-	char *name = NULL;
+	char *name = xstrdup_printf("%s/%s_%u.%u",
+				    directory, nodename, jobid, stepid);
+
+	/*
+	 * If socket name would be truncated, emit error and exit
+	 */
+	if (strlen(name) >= sizeof(addr.sun_path)) {
+		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
+		      __func__, name, strlen(name) + 1, sizeof(addr.sun_path));
+		xfree(name);
+		return -1;
+	}
 
 	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		error("%s: socket() failed dir %s node %s job %u step %u %m",
 		      __func__, directory, nodename, jobid, stepid);
+		xfree(name);
 		return -1;
 	}
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-
-	xstrfmtcat(name, "%s/%s_%u.%u", directory, nodename, jobid, stepid);
-
 	strlcpy(addr.sun_path, name, sizeof(addr.sun_path));
 	len = strlen(addr.sun_path) + 1 + sizeof(addr.sun_family);
 

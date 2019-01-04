@@ -1170,6 +1170,8 @@ head2 SLURM ERRNO
 
 =item * ESLURMD_STEP_NOTSUSPENDED               4029
 
+=item * ESLURMD_INVALID_SOCKET_NAME_LEN         4030
+
 =back
 
 =head3 slurmd errors in user batch job

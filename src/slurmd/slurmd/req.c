@@ -6283,8 +6283,13 @@ _rpc_forward_data(slurm_msg_t *msg)
 	debug3("Entering _rpc_forward_data, address: %s, len: %u",
 	       req->address, req->len);
 
-	/* sanity check */
-	if (strlen(req->address) > sizeof(sa.sun_path) - 1) {
+	/*
+	 * If socket name would be truncated, emit error and exit
+	 */
+	if (strlen(req->address) >= sizeof(sa.sun_path)) {
+		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
+		      __func__, req->address, strlen(req->address) + 1,
+		      sizeof(sa.sun_path));
 		slurm_seterrno(EINVAL);
 		rc = errno;
 		goto done;
