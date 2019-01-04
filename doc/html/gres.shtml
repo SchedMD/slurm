@@ -143,12 +143,12 @@ If <B>Type</B> is specified, then <B>Count</B> is limited in size (currently 102
 <P>Sample gres.conf file:</P>
 <PRE>
 # Configure support for four GPUs (with MPS), plus bandwidth
-Name=gpu Type=tesla  File=/dev/nvidia0 Cores=0,1
-Name=gpu Type=tesla  File=/dev/nvidia1 Cores=0,1
-Name=gpu Type=kepler File=/dev/nvidia2 Cores=2,3
-Name=gpu Type=kepler File=/dev/nvidia3 Cores=2,3
-Name=mps Count=100  File=/dev/nvidia0
-Name=mps Count=100  File=/dev/nvidia1
+Name=gpu Type=gp100  File=/dev/nvidia0 Cores=0,1
+Name=gpu Type=gp100  File=/dev/nvidia1 Cores=0,1
+Name=gpu Type=p6000  File=/dev/nvidia2 Cores=2,3
+Name=gpu Type=p6000  File=/dev/nvidia3 Cores=2,3
+Name=mps Count=200  File=/dev/nvidia0
+Name=mps Count=200  File=/dev/nvidia1
 Name=mps Count=100  File=/dev/nvidia2
 Name=mps Count=100  File=/dev/nvidia3
 Name=bandwidth Type=lustre Count=4G
@@ -294,11 +294,16 @@ NVIDIA CUDA documentation</a> for more information about the
 shared by multiple jobs, where each job is allocated some percentage of the
 GPU's resources.
 GPUs to be made available for MPS should be identified in the <I>slurm.conf</I>
-and <I>gres.conf</I> configuration files with each device <B>File</B> being
-explicitly named and its <B>Count</B> specified (typically a multiple of 100).
-Alternately, specify <B>Count</B> without <B>File</B> and the value of
-<B>Count</B> value will be distributed evenly across all defined GPUs.
-If the GPU sharing that <B>File</B> name contains <B>Core</B> or <B>Type</B>
+and <I>gres.conf</I> configuration files with each device <I>File</I> being
+explicitly named and its <I>Count</I> specified (typically a multiple of 100,
+although different values can be used for different GPU types in a heterogeneous
+environment).
+Alternately, specify <I>Count</I> without <I>File</I> and the value of
+<I>Count</I> value will be distributed evenly across all defined GPUs.
+Note that if NVIDIA's NVML library is installed, the GPU configuration
+(i.e. <I>Type</I>, <I>File</I>, <I>Cores</I> and <I>Links</I> data) will be
+automatically gathered and need not be recorded in the <I>gres.conf</I> file.
+If the GPU sharing that <I>File</I> name contains <I>Core</I> or <I>Type</I>
 parameters, that information will be automatically copied to the corresponding
 MPS GRES.
 Note that the same GPU can be allocated either as a GPU type GRES or as an
@@ -308,8 +313,26 @@ not be available as a gres/mps.
 Likewise, once a GPU has been allocated as a gres/mps resource it will
 not be available as a gres/gpu.</p>
 
+<PRE>
+# Configure support for four GPUs (with MPS), plus bandwidth
+Name=gpu Type=gp100  File=/dev/nvidia0 Cores=0,1
+Name=gpu Type=gp100  File=/dev/nvidia1 Cores=0,1
+Name=gpu Type=p6000  File=/dev/nvidia2 Cores=2,3
+Name=gpu Type=p6000  File=/dev/nvidia3 Cores=2,3
+# Set gres/mps Count value to 100 on each of the 4 available GPUs
+Name=mps Count=400
+Name=bandwidth Type=lustre Count=4G
+</PRE>
+
 <P><B>NOTE:</B> Slurm support for gres/mps requires the use of the
 select/cons_tres plugin.</P>
+
+<p>Job requests for MPS will be processed the same as any other GRES except
+that the request must be satisfied using only one GPU per node.
+A job request for "--gres=mps:50" will not be satisfied by using 20 percent
+of one GPU and 30 percent of a second GPU on a single node.
+Also note that GRES types of GPU <u>and</u> MPS can not be requested within
+a single job.</p>
 
 <p>Jobs requesting MPS resources will have the same environment variables set
 as for GPU resources, namely <code class="commandline">CUDA_VISIBLE_DEVICES</code>
@@ -351,6 +374,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 31 December 2018</p>
+<p style="text-align: center;">Last modified 4 January 2019</p>
 
 <!--#include virtual="footer.txt"-->
