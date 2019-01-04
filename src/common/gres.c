@@ -11808,6 +11808,9 @@ extern uint64_t gres_plugin_step_count(List step_gres_list, char *gres_name)
  */
 static bitstr_t * _get_usable_gres(int context_inx)
 {
+#if defined(__APPLE__)
+	return NULL;
+#else
 #ifdef __NetBSD__
 	// On NetBSD, cpuset_t is an opaque data type
 	cpuset_t *mask = cpuset_create();
@@ -11873,6 +11876,7 @@ static bitstr_t * _get_usable_gres(int context_inx)
 #endif
 
 	return usable_gres;
+#endif
 }
 
 /*
