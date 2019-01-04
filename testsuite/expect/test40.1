@@ -105,6 +105,56 @@ expect {
 }
 
 #
+# Request over 100% MPS
+#
+send_user "\n\n==== TEST 3 ====\n"
+spawn $sbatch --gres=mps:101% -N1 --output=/dev/null -t1 --wrap $bin_hostname
+expect {
+	-re "Submitted batch job ($number)" {
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# Request over percentage of GPUs
+#
+send_user "\n\n==== TEST 4 ====\n"
+spawn $sbatch --gres=gpu:10% -N1 --output=/dev/null -t1 --wrap $bin_hostname
+expect {
+	-re "Submitted batch job ($number)" {
+		cancel_job $expect_out(1,string)
+		send_user "\nFAILURE: batch request not rejected\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error: " {
+		send_user "\nError is expected, no worries.\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
 # Request MPS per job with node count > 1
 # Request MPS per socket with socket count > 1
 # Request MPS per task with task count > 1

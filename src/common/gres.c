@@ -3793,18 +3793,22 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
  * in_val IN - initial input string
  * type OUT -  must be xfreed by caller
  * cnt OUT - count of values
+ * flags OUT - user flags (GRES_PERCENT, GRES_NO_CONSUME)
  * save_ptr IN/OUT - NULL on initial call, otherwise value from previous call
  * RET rc - error code
  */
 static int _get_next_gres(char *in_val, char **type_ptr, int *context_inx_ptr,
-			  uint64_t *cnt, char **save_ptr)
+			  uint64_t *cnt, uint16_t *flags, char **save_ptr)
 {
 	char *end_ptr = NULL, *comma, *sep, *sep2, *name = NULL, *type = NULL;
 	size_t offset = 0;
 	int i, rc = SLURM_SUCCESS;
 	unsigned long long int value;
 
+	xassert(cnt);
+	xassert(flags);
 	xassert(save_ptr);
+	*flags = 0;
 
 	if (!in_val && (*save_ptr == NULL)) {
 		return rc;
@@ -3894,7 +3898,10 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 			rc = ESLURM_INVALID_GRES;
 			goto fini;
 		}
-		if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
+		if (end_ptr[0] == '%') {
+			*flags |= GRES_PERCENT;
+			end_ptr++;
+		} else if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
 			value *= 1024;
 			end_ptr++;
 		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
@@ -3958,6 +3965,7 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 	gres_state_t *gres_ptr;
 	gres_key_t job_search_key;
 	char *type = NULL, *name = NULL;
+	uint16_t flags = 0;
 
 	xassert(save_ptr);
 	if (!in_val && (*save_ptr == NULL)) {
@@ -3976,12 +3984,19 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 		return NULL;
 	}
 
-	if ((my_rc = _get_next_gres(in_val, &type,
-				    &context_inx, cnt, &prev_save_ptr)) ||
+	if ((my_rc = _get_next_gres(in_val, &type, &context_inx,
+				    cnt, &flags, &prev_save_ptr)) ||
 	    (context_inx == NO_VAL)) {
 		prev_save_ptr = NULL;
 		goto fini;
 	}
+	if ((flags & GRES_PERCENT) &&
+	    ((*cnt > 100) ||
+	     !_shared_gres(gres_context[context_inx].plugin_id))) {
+		my_rc = ESLURM_INVALID_GRES;
+		goto fini;
+	}
+
 	/* Find the job GRES record */
 	job_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	job_search_key.type_id = gres_plugin_build_id(type);
@@ -4002,6 +4017,7 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 		gres_ptr->gres_data = job_gres_data;
 		list_append(gres_list, gres_ptr);
 	}
+	job_gres_data->flags = flags;
 
 fini:	xfree(name);
 	xfree(type);
@@ -5010,6 +5026,7 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack16(gres_job_ptr->cpus_per_gres, buffer);
+			pack16(gres_job_ptr->flags, buffer);
 			pack64(gres_job_ptr->gres_per_job, buffer);
 			pack64(gres_job_ptr->gres_per_node, buffer);
 			pack64(gres_job_ptr->gres_per_socket, buffer);
@@ -5205,6 +5222,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			safe_unpack32(&plugin_id, buffer);
 			gres_job_ptr = xmalloc(sizeof(gres_job_state_t));
 			safe_unpack16(&gres_job_ptr->cpus_per_gres, buffer);
+			safe_unpack16(&gres_job_ptr->flags, buffer);
 			safe_unpack64(&gres_job_ptr->gres_per_job, buffer);
 			safe_unpack64(&gres_job_ptr->gres_per_node, buffer);
 			safe_unpack64(&gres_job_ptr->gres_per_socket, buffer);
@@ -9733,6 +9751,25 @@ extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
 	list_iterator_destroy(gres_iter);
 }
 
+/*
+ * Translate GRES flag to string.
+ * NOT reentrant
+ */
+static char *_gres_flags_str(uint16_t flags)
+{
+	static char flag_str[128];
+
+	flag_str[0] = '\0';
+	if (flags & GRES_PERCENT)
+		strcat(flag_str, "percent");
+	if (flags & GRES_NO_CONSUME) {
+		if (flag_str[0])
+			strcat(flag_str, ",");
+		strcat(flag_str, "no_consume");
+	}
+	return flag_str;
+}
+
 static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 {
 	gres_job_state_t *gres_ptr;
@@ -9741,9 +9778,9 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 
 	xassert(gres_data);
 	gres_ptr = (gres_job_state_t *) gres_data;
-	info("gres:%s(%u) type:%s(%u) job:%u state",
+	info("gres:%s(%u) type:%s(%u) job:%u flags:%s state",
 	      gres_ptr->gres_name, plugin_id, gres_ptr->type_name,
-	      gres_ptr->type_id, job_id);
+	      gres_ptr->type_id, job_id, _gres_flags_str(gres_ptr->flags));
 	if (gres_ptr->cpus_per_gres)
 		info("  cpus_per_gres:%u", gres_ptr->cpus_per_gres);
 	else if (gres_ptr->def_cpus_per_gres)
@@ -10137,6 +10174,7 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 	gres_state_t *gres_ptr;
 	gres_key_t step_search_key;
 	char *type = NULL, *name = NULL;
+	uint16_t flags = 0;
 
 	xassert(save_ptr);
 	if (!in_val && (*save_ptr == NULL)) {
@@ -10155,12 +10193,20 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 		return NULL;
 	}
 
-	if ((my_rc = _get_next_gres(in_val, &type,
-				    &context_inx, cnt, &prev_save_ptr)) ||
+	if ((my_rc = _get_next_gres(in_val, &type, &context_inx,
+				    cnt, &flags, &prev_save_ptr)) ||
 	    (context_inx == NO_VAL)) {
 		prev_save_ptr = NULL;
 		goto fini;
 	}
+	if ((flags & GRES_PERCENT) &&
+	    ((*cnt > 100) ||
+	     !_shared_gres(gres_context[context_inx].plugin_id))) {
+		my_rc = ESLURM_INVALID_GRES;
+		prev_save_ptr = NULL;
+		goto fini;
+	}
+
 	/* Find the step GRES record */
 	step_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	step_search_key.type_id = gres_plugin_build_id(type);
@@ -10179,6 +10225,7 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 		gres_ptr->gres_data = step_gres_data;
 		list_append(gres_list, gres_ptr);
 	}
+	step_gres_data->flags = flags;
 
 fini:	xfree(name);
 	xfree(type);
@@ -10631,6 +10678,7 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack16(gres_step_ptr->cpus_per_gres, buffer);
+			pack16(gres_step_ptr->flags, buffer);
 			pack64(gres_step_ptr->gres_per_step, buffer);
 			pack64(gres_step_ptr->gres_per_node, buffer);
 			pack64(gres_step_ptr->gres_per_socket, buffer);
@@ -10757,6 +10805,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 			safe_unpack32(&plugin_id, buffer);
 			gres_step_ptr = xmalloc(sizeof(gres_step_state_t));
 			safe_unpack16(&gres_step_ptr->cpus_per_gres, buffer);
+			safe_unpack16(&gres_step_ptr->flags, buffer);
 			safe_unpack64(&gres_step_ptr->gres_per_step, buffer);
 			safe_unpack64(&gres_step_ptr->gres_per_node, buffer);
 			safe_unpack64(&gres_step_ptr->gres_per_socket, buffer);
@@ -11247,8 +11296,9 @@ static void _step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id,
 	int i;
 
 	xassert(gres_ptr);
-	info("gres:%s type:%s(%u) step:%u.%u state", gres_name,
-	     gres_ptr->type_name, gres_ptr->type_id, job_id, step_id);
+	info("gres:%s type:%s(%u) step:%u.%u flags:%s state", gres_name,
+	     gres_ptr->type_name, gres_ptr->type_id, job_id, step_id,
+	     _gres_flags_str(gres_ptr->flags));
 	if (gres_ptr->cpus_per_gres)
 		info("  cpus_per_gres:%u", gres_ptr->cpus_per_gres);
 	if (gres_ptr->gres_per_step)

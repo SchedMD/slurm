@@ -329,7 +329,7 @@ select/cons_tres plugin.</P>
 
 <p>Job requests for MPS will be processed the same as any other GRES except
 that the request must be satisfied using only one GPU per node.
-A job request for "--gres=mps:50" will not be satisfied by using 20 percent
+A job request for "--gres=mps:50%" will not be satisfied by using 20 percent
 of one GPU and 30 percent of a second GPU on a single node.
 Also note that GRES types of GPU <u>and</u> MPS can not be requested within
 a single job.</p>
