@@ -2603,9 +2603,11 @@ static void _remove_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 		if (used_limits_a1->accrue_cnt >= cnt)
 			used_limits_a1->accrue_cnt -= cnt;
 		else {
-			error("%s: QOS %s acct %s accrue_cnt underflow",
-			      __func__, qos_ptr_1->name,
-			      used_limits_a1->acct);
+			if (qos_ptr_1) {
+				error("%s: QOS %s acct %s accrue_cnt underflow",
+				      __func__, qos_ptr_1->name,
+				      used_limits_a1->acct);
+			}
 			used_limits_a1->accrue_cnt = 0;
 		}
 	}
@@ -2614,9 +2616,11 @@ static void _remove_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 		if (used_limits_u1->accrue_cnt >= cnt)
 			used_limits_u1->accrue_cnt -= cnt;
 		else {
-			error("%s: QOS %s user %u accrue_cnt underflow",
-			      __func__, qos_ptr_1->name,
-			      used_limits_u1->uid);
+			if (qos_ptr_1) {
+				error("%s: QOS %s user %u accrue_cnt underflow",
+				      __func__, qos_ptr_1->name,
+				      used_limits_u1->uid);
+			}
 			used_limits_u1->accrue_cnt = 0;
 		}
 	}
@@ -2635,9 +2639,11 @@ static void _remove_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 		if (used_limits_a2->accrue_cnt >= cnt)
 			used_limits_a2->accrue_cnt -= cnt;
 		else {
-			error("%s: QOS %s acct %s accrue_cnt underflow",
-			      __func__, qos_ptr_2->name,
-			      used_limits_a2->acct);
+			if (qos_ptr_2) {
+				error("%s: QOS %s acct %s accrue_cnt underflow",
+				      __func__, qos_ptr_2->name,
+				      used_limits_a2->acct);
+			}
 			used_limits_a2->accrue_cnt = 0;
 		}
 	}
@@ -2646,9 +2652,11 @@ static void _remove_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 		if (used_limits_u2->accrue_cnt >= cnt)
 			used_limits_u2->accrue_cnt -= cnt;
 		else {
-			error("%s: QOS %s user %u accrue_cnt underflow",
-			      __func__, qos_ptr_2->name,
-			      used_limits_a2->uid);
+			if (qos_ptr_2 && used_limits_a2) {
+				error("%s: QOS %s user %u accrue_cnt underflow",
+				      __func__, qos_ptr_2->name,
+				      used_limits_a2->uid);
+			}
 			used_limits_u2->accrue_cnt = 0;
 		}
 	}
