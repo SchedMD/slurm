@@ -51,7 +51,7 @@
 
 #include "task_cgroup.h"
 
-#if defined(__FreeBSD__) || defined(__NetBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
 #else
 #include <sys/eventfd.h>
@@ -414,11 +414,11 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	return 0;
 }
 
-#if defined(__FreeBSD__) || defined(__NetBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 
 static int _register_oom_notifications(char *ignored)
 {
-	error("OOM notification does not work on FreeBSD or NetBSD");
+	error("OOM notification does not work on FreeBSD, NetBSD, or macOS");
 
 	return SLURM_ERROR;
 }

@@ -46,7 +46,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#if defined(__FreeBSD__) || defined(__NetBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
 #endif
 

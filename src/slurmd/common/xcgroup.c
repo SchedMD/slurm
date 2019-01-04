@@ -200,7 +200,7 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 		options = opt_combined;
 	}
 
-#if defined(__FreeBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 	if (mount("cgroup", cgns->mnt_point,
 		  MS_NOSUID|MS_NOEXEC|MS_NODEV, options))
 #else

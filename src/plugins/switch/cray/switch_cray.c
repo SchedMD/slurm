@@ -35,7 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#if !(defined(__FreeBSD__) || defined(__NetBSD__))
+#if !(defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__))
 #include "config.h"
 
 #define _GNU_SOURCE

@@ -47,7 +47,7 @@
 #define MAX_MOVE_WAIT 5000
 
 // http://lists.debian.org/debian-boot/2012/04/msg00047.html
-#if defined(__FreeBSD__) || defined(__NetBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define	MS_NOSUID	MNT_NOSUID
 #define	MS_NOEXEC	MNT_NOEXEC
 #define	MS_NODEV	0
