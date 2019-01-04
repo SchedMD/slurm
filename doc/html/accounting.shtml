@@ -412,12 +412,16 @@ environment variable.
 The default value is the prefix given at configure time + "/lib/slurm".</li>
 
 <li><b>SlurmUser</b>:
-The name of the user that the <i>slurmctld</i> daemon executes as.
+The name of the user that the <i>slurmdbd</i> daemon executes as.
 This user must exist on the machine executing the Slurm Database Daemon
-and have the same user ID as the hosts on which <i>slurmctld</i> execute.
+and have the same UID as the hosts on which <i>slurmctld</i> execute.
 For security purposes, a user other than "root" is recommended.
 The default value is "root". This name should also be the same SlurmUser
-on all clusters reporting to the SlurmDBD.</li>
+on all clusters reporting to the SlurmDBD.
+NOTE: If this user is different from the one set for \fBslurmctld\fR and is not
+root, it must be added to accounting with AdminLevel=Admin and \fBslurmctld\fR
+must be restarted.
+</li>
 
 <li><b>StorageHost</b>:
 Define the name of the host the database is running where we are going

@@ -506,11 +506,15 @@ If not set (default), then job step records are never purged.
 
 .TP
 \fBSlurmUser\fR
-The name of the user that the \fBslurmctld\fR daemon executes as.
+The name of the user that the \fBslurmdbd\fR daemon executes as.
 This user must exist on the machine executing the Slurm Database Daemon
-and have the same user ID as the hosts on which \fBslurmctld\fR execute.
+and have the same UID as the hosts on which \fBslurmctld\fR execute.
 For security purposes, a user other than "root" is recommended.
-The default value is "root".
+The default value is "root". This name should also be the same SlurmUser
+on all clusters reporting to the SlurmDBD.
+NOTE: If this user is different from the one set for \fBslurmctld\fR and is not
+root, it must be added to accounting with AdminLevel=Admin and \fBslurmctld\fR
+must be restarted.
 
 .TP
 \fBStorageHost\fR
