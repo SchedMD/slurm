@@ -1056,7 +1056,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			       "EnergyIPMIUsername", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.workaround_flags,
 			       "EnergyIPMIWorkaroundFlags", tbl);
-		s_p_get_boolean(&tmp_bool, "EnergyXCCFake", tbl);
+		(void) s_p_get_boolean(&tmp_bool, "EnergyXCCFake", tbl);
 		if (tmp_bool) {
 			slurm_ipmi_conf.flags |= XCC_FLAG_FAKE;
 			/*
