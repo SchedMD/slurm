@@ -66,11 +66,6 @@
 #include <unistd.h>
 #include <math.h>
 
-/* From Linux sys/types.h */
-#if defined(__FreeBSD__)
-typedef unsigned long int	ulong;
-#endif
-
 #define MAX_PKGS        256
 
 #define MSR_RAPL_POWER_UNIT             0x606
@@ -331,7 +326,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		double power_units = pow(0.5, (double)(result&0xf));
-		ulong max_power;
+		unsigned long max_power;
 
 		info("RAPL powercapture_debug Energy units = %.6f, "
 		     "Power Units = %.6f", energy_units, power_units);
