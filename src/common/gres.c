@@ -5006,7 +5006,59 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_job_ptr = (gres_job_state_t *) gres_ptr->gres_data;
 
-		if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+			pack32(magic, buffer);
+			pack32(gres_ptr->plugin_id, buffer);
+			pack16(gres_job_ptr->cpus_per_gres, buffer);
+			pack64(gres_job_ptr->gres_per_job, buffer);
+			pack64(gres_job_ptr->gres_per_node, buffer);
+			pack64(gres_job_ptr->gres_per_socket, buffer);
+			pack64(gres_job_ptr->gres_per_task, buffer);
+			pack64(gres_job_ptr->mem_per_gres, buffer);
+			pack64(gres_job_ptr->total_gres, buffer);
+			packstr(gres_job_ptr->type_name, buffer);
+			pack32(gres_job_ptr->node_cnt, buffer);
+
+			if (gres_job_ptr->gres_cnt_node_alloc) {
+				pack8((uint8_t) 1, buffer);
+				pack64_array(gres_job_ptr->gres_cnt_node_alloc,
+					     gres_job_ptr->node_cnt, buffer);
+			} else {
+				pack8((uint8_t) 0, buffer);
+			}
+
+			if (gres_job_ptr->gres_bit_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					pack_bit_str_hex(gres_job_ptr->
+							 gres_bit_alloc[i],
+							 buffer);
+				}
+			} else {
+				pack8((uint8_t) 0, buffer);
+			}
+			if (details && gres_job_ptr->gres_bit_step_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					pack_bit_str_hex(gres_job_ptr->
+							 gres_bit_step_alloc[i],
+							 buffer);
+				}
+			} else {
+				pack8((uint8_t) 0, buffer);
+			}
+			if (details && gres_job_ptr->gres_cnt_step_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					pack64(gres_job_ptr->
+					       gres_cnt_step_alloc[i],
+					       buffer);
+				}
+			} else {
+				pack8((uint8_t) 0, buffer);
+			}
+			rec_cnt++;
+		} else if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack16(gres_job_ptr->cpus_per_gres, buffer);
@@ -5146,7 +5198,68 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			break;
 		rec_cnt--;
 
-		if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			gres_job_ptr = xmalloc(sizeof(gres_job_state_t));
+			safe_unpack16(&gres_job_ptr->cpus_per_gres, buffer);
+			safe_unpack64(&gres_job_ptr->gres_per_job, buffer);
+			safe_unpack64(&gres_job_ptr->gres_per_node, buffer);
+			safe_unpack64(&gres_job_ptr->gres_per_socket, buffer);
+			safe_unpack64(&gres_job_ptr->gres_per_task, buffer);
+			safe_unpack64(&gres_job_ptr->mem_per_gres, buffer);
+			safe_unpack64(&gres_job_ptr->total_gres, buffer);
+			safe_unpackstr_xmalloc(&gres_job_ptr->type_name,
+					       &utmp32, buffer);
+			gres_job_ptr->type_id =
+				gres_plugin_build_id(gres_job_ptr->type_name);
+			safe_unpack32(&gres_job_ptr->node_cnt, buffer);
+			if (gres_job_ptr->node_cnt > NO_VAL)
+				goto unpack_error;
+
+			safe_unpack8(&has_more, buffer);
+			if (has_more) {
+				safe_unpack64_array(
+					&gres_job_ptr->gres_cnt_node_alloc,
+					&utmp32, buffer);
+			}
+
+			safe_unpack8(&has_more, buffer);
+			if (has_more) {
+				gres_job_ptr->gres_bit_alloc =
+					xmalloc(sizeof(bitstr_t *) *
+						gres_job_ptr->node_cnt);
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					unpack_bit_str_hex(&gres_job_ptr->
+							   gres_bit_alloc[i],
+							   buffer);
+				}
+			}
+			safe_unpack8(&has_more, buffer);
+			if (has_more) {
+				gres_job_ptr->gres_bit_step_alloc =
+					xmalloc(sizeof(bitstr_t *) *
+						gres_job_ptr->node_cnt);
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					unpack_bit_str_hex(&gres_job_ptr->
+							   gres_bit_step_alloc[i],
+							   buffer);
+				}
+			}
+			safe_unpack8(&has_more, buffer);
+			if (has_more) {
+				gres_job_ptr->gres_cnt_step_alloc =
+					xmalloc(sizeof(uint64_t) *
+						gres_job_ptr->node_cnt);
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					safe_unpack64(&gres_job_ptr->
+						      gres_cnt_step_alloc[i],
+						      buffer);
+				}
+			}
+		} else if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
@@ -10514,8 +10627,36 @@ extern int gres_plugin_step_state_pack(List gres_list, Buf buffer,
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
 
-
-		if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+			pack32(magic, buffer);
+			pack32(gres_ptr->plugin_id, buffer);
+			pack16(gres_step_ptr->cpus_per_gres, buffer);
+			pack64(gres_step_ptr->gres_per_step, buffer);
+			pack64(gres_step_ptr->gres_per_node, buffer);
+			pack64(gres_step_ptr->gres_per_socket, buffer);
+			pack64(gres_step_ptr->gres_per_task, buffer);
+			pack64(gres_step_ptr->mem_per_gres, buffer);
+			pack64(gres_step_ptr->total_gres, buffer);
+			pack32(gres_step_ptr->node_cnt, buffer);
+			pack_bit_str_hex(gres_step_ptr->node_in_use, buffer);
+			if (gres_step_ptr->gres_cnt_node_alloc) {
+				pack8((uint8_t) 1, buffer);
+				pack64_array(gres_step_ptr->gres_cnt_node_alloc,
+					     gres_step_ptr->node_cnt, buffer);
+			} else {
+				pack8((uint8_t) 0, buffer);
+			}
+			if (gres_step_ptr->gres_bit_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i = 0; i < gres_step_ptr->node_cnt; i++)
+					pack_bit_str_hex(gres_step_ptr->
+							 gres_bit_alloc[i],
+							 buffer);
+			} else {
+				pack8((uint8_t) 0, buffer);
+			}
+			rec_cnt++;
+		} else if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 			pack32(magic, buffer);
 			pack32(gres_ptr->plugin_id, buffer);
 			pack16(gres_step_ptr->cpus_per_gres, buffer);
@@ -10609,7 +10750,41 @@ extern int gres_plugin_step_state_unpack(List *gres_list, Buf buffer,
 		if ((buffer == NULL) || (remaining_buf(buffer) == 0))
 			break;
 		rec_cnt--;
-		if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+			safe_unpack32(&plugin_id, buffer);
+			gres_step_ptr = xmalloc(sizeof(gres_step_state_t));
+			safe_unpack16(&gres_step_ptr->cpus_per_gres, buffer);
+			safe_unpack64(&gres_step_ptr->gres_per_step, buffer);
+			safe_unpack64(&gres_step_ptr->gres_per_node, buffer);
+			safe_unpack64(&gres_step_ptr->gres_per_socket, buffer);
+			safe_unpack64(&gres_step_ptr->gres_per_task, buffer);
+			safe_unpack64(&gres_step_ptr->mem_per_gres, buffer);
+			safe_unpack64(&gres_step_ptr->total_gres, buffer);
+			safe_unpack32(&gres_step_ptr->node_cnt, buffer);
+			if (gres_step_ptr->node_cnt > NO_VAL)
+				goto unpack_error;
+			unpack_bit_str_hex(&gres_step_ptr->node_in_use, buffer);
+			safe_unpack8(&data_flag, buffer);
+			if (data_flag) {
+				safe_unpack64_array(
+					&gres_step_ptr->gres_cnt_node_alloc,
+					&uint32_tmp, buffer);
+			}
+			safe_unpack8(&data_flag, buffer);
+			if (data_flag) {
+				gres_step_ptr->gres_bit_alloc =
+					xmalloc(sizeof(bitstr_t *) *
+						gres_step_ptr->node_cnt);
+				for (i = 0; i < gres_step_ptr->node_cnt; i++) {
+					unpack_bit_str_hex(&gres_step_ptr->
+							   gres_bit_alloc[i],
+							   buffer);
+				}
+			}
+		} else if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
