@@ -4122,6 +4122,10 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 		return SLURM_ERROR;
 	}
 
+	/* If Job is held don't accrue time */
+	if (!job_ptr->priority)
+		return SLURM_SUCCESS;
+
 	/* No accrue_time and the job isn't pending, bail */
 	if (!details_ptr->accrue_time && !IS_JOB_PENDING(job_ptr))
 		return SLURM_SUCCESS;
@@ -4368,6 +4372,10 @@ extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 
 	/* check to see if we are enforcing limits */
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
+		return;
+
+	/* If Job is held don't accrue time */
+	if (!job_ptr->priority)
 		return;
 
 	assoc_ptr = job_ptr->assoc_ptr;

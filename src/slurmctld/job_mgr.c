@@ -11305,6 +11305,10 @@ static void _hold_job_rec(struct job_record *job_ptr, uid_t uid)
 
 	job_ptr->direct_set_prio = 1;
 	job_ptr->priority = 0;
+
+	if (IS_JOB_PENDING(job_ptr))
+		acct_policy_remove_accrue_time(job_ptr, false);
+
 	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
 		j = list_count(job_ptr->part_ptr_list);
 		for (i = 0; i < j; i++) {
