@@ -9154,7 +9154,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 				continue;
 			if (node_gres_ptr->topo_gres_cnt_alloc[i] >=
 			    gres_per_bit) {
-				node_gres_ptr->topo_gres_cnt_alloc[i] =-
+				node_gres_ptr->topo_gres_cnt_alloc[i] -=
 								gres_per_bit;
 			} else {
 				error("gres/%s: job %u dealloc node %s "
