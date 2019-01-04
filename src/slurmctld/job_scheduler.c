@@ -143,6 +143,7 @@ static int sched_pend_thread = 0;
 static bool sched_running = false;
 static struct timeval sched_last = {0, 0};
 static uint32_t max_array_size = NO_VAL;
+static uint16_t bf_hetjob_prio = 0;
 static int sched_min_interval = 2;
 
 static int bb_array_stage_cnt = 10;
@@ -507,6 +508,9 @@ extern List build_job_queue(bool clear_start, bool backfill)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (!backfill && job_ptr->pack_job_id)
+			continue;
+
 		if (IS_JOB_PENDING(job_ptr))
 			acct_policy_handle_accrue_time(job_ptr, false);
 
@@ -1036,6 +1040,21 @@ static int _schedule(uint32_t job_limit)
 			}
 		} else {
 			def_job_limit = 100;
+		}
+
+		bf_hetjob_prio = 0;
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "bf_hetjob_prio="))) {
+			tmp_ptr = strtok(tmp_ptr + 15, ",");
+			if (!xstrcasecmp(tmp_ptr, "min"))
+				bf_hetjob_prio |= HETJOB_PRIO_MIN;
+			else if (!xstrcasecmp(tmp_ptr, "max"))
+				bf_hetjob_prio |= HETJOB_PRIO_MAX;
+			else if (!xstrcasecmp(tmp_ptr, "avg"))
+				bf_hetjob_prio |= HETJOB_PRIO_AVG;
+			else
+				error("Invalid SchedulerParameters bf_hetjob_prio: %s",
+				      tmp_ptr);
 		}
 
 		if ((tmp_ptr = xstrcasestr(sched_params,
@@ -1838,6 +1857,7 @@ extern int sort_job_queue2(void *x, void *y)
 {
 	job_queue_rec_t *job_rec1 = *(job_queue_rec_t **) x;
 	job_queue_rec_t *job_rec2 = *(job_queue_rec_t **) y;
+	pack_details_t *details = NULL;
 	bool has_resv1, has_resv2;
 	static time_t config_update = 0;
 	static bool preemption_enabled = true;
@@ -1857,35 +1877,113 @@ extern int sort_job_queue2(void *x, void *y)
 			return 1;
 	}
 
-	has_resv1 = (job_rec1->job_ptr->resv_id != 0);
-	has_resv2 = (job_rec2->job_ptr->resv_id != 0);
+	if (bf_hetjob_prio && job_rec1->job_ptr->pack_job_id &&
+	    (job_rec1->job_ptr->pack_job_id !=
+	     job_rec2->job_ptr->pack_job_id)) {
+		if ((details = job_rec1->job_ptr->pack_details))
+			has_resv1 = details->any_resv;
+		else {
+			error("%s: %pJ has no pack_details", __func__,
+			      job_rec1->job_ptr);
+			has_resv1 = (job_rec1->job_ptr->resv_id != 0);
+		}
+	} else
+		has_resv1 = (job_rec1->job_ptr->resv_id != 0);
+
+	if (bf_hetjob_prio && job_rec2->job_ptr->pack_job_id &&
+	    (job_rec2->job_ptr->pack_job_id !=
+	     job_rec1->job_ptr->pack_job_id)) {
+		if ((details = job_rec2->job_ptr->pack_details))
+			has_resv2 = details->any_resv;
+		else {
+			error("%s: %pJ has no pack_details", __func__,
+			      job_rec2->job_ptr);
+			has_resv2 = (job_rec2->job_ptr->resv_id != 0);
+		}
+	} else
+		has_resv2 = (job_rec2->job_ptr->resv_id != 0);
+
 	if (has_resv1 && !has_resv2)
 		return -1;
 	if (!has_resv1 && has_resv2)
 		return 1;
 
 	if (job_rec1->part_ptr && job_rec2->part_ptr) {
-		p1 = job_rec1->part_ptr->priority_tier;
-		p2 = job_rec2->part_ptr->priority_tier;
+		if (bf_hetjob_prio && job_rec1->job_ptr->pack_job_id &&
+		    (job_rec1->job_ptr->pack_job_id !=
+		     job_rec2->job_ptr->pack_job_id)) {
+			if ((details = job_rec1->job_ptr->pack_details))
+				p1 = details->priority_tier;
+			else {
+				error("%s: %pJ has no pack_details", __func__,
+				      job_rec1->job_ptr);
+				p1 = job_rec1->part_ptr->priority_tier;
+			}
+		} else
+			p1 = job_rec1->part_ptr->priority_tier;
+
+		if (bf_hetjob_prio && job_rec2->job_ptr->pack_job_id &&
+		    (job_rec2->job_ptr->pack_job_id !=
+		     job_rec1->job_ptr->pack_job_id)) {
+			if ((details = job_rec2->job_ptr->pack_details))
+				p2 = details->priority_tier;
+			else {
+				error("%s: %pJ has no pack_details", __func__,
+				      job_rec2->job_ptr);
+				p2 = job_rec2->part_ptr->priority_tier;
+			}
+		} else
+			p2 = job_rec2->part_ptr->priority_tier;
+
 		if (p1 < p2)
 			return 1;
 		if (p1 > p2)
 			return -1;
 	}
 
-	if (job_rec1->job_ptr->part_ptr_list &&
-	    job_rec1->job_ptr->priority_array)
-		p1 = job_rec1->priority;
-	else
-		p1 = job_rec1->job_ptr->priority;
+	if (bf_hetjob_prio && job_rec1->job_ptr->pack_job_id &&
+	    (job_rec1->job_ptr->pack_job_id !=
+	     job_rec2->job_ptr->pack_job_id)) {
+		if ((details = job_rec1->job_ptr->pack_details))
+			p1 = details->priority;
+		else {
+			error("%s: %pJ has no pack_details", __func__,
+			      job_rec1->job_ptr);
+			if (job_rec1->job_ptr->part_ptr_list &&
+			    job_rec1->job_ptr->priority_array)
+				p1 = job_rec1->priority;
+			else
+				p1 = job_rec1->job_ptr->priority;
+		}
+	} else {
+		if (job_rec1->job_ptr->part_ptr_list &&
+		    job_rec1->job_ptr->priority_array)
+			p1 = job_rec1->priority;
+		else
+			p1 = job_rec1->job_ptr->priority;
+	}
 
-
-	if (job_rec2->job_ptr->part_ptr_list &&
-	    job_rec2->job_ptr->priority_array)
-		p2 = job_rec2->priority;
-	else
-		p2 = job_rec2->job_ptr->priority;
-
+	if (bf_hetjob_prio && job_rec2->job_ptr->pack_job_id &&
+	    (job_rec2->job_ptr->pack_job_id !=
+	     job_rec1->job_ptr->pack_job_id)) {
+		if ((details = job_rec2->job_ptr->pack_details))
+			p2 = details->priority;
+		else {
+			error("%s: %pJ has no pack_details", __func__,
+			      job_rec2->job_ptr);
+			if (job_rec2->job_ptr->part_ptr_list &&
+			    job_rec2->job_ptr->priority_array)
+				p2 = job_rec2->priority;
+			else
+				p2 = job_rec2->job_ptr->priority;
+		}
+	} else {
+		if (job_rec2->job_ptr->part_ptr_list &&
+		    job_rec2->job_ptr->priority_array)
+			p2 = job_rec2->priority;
+		else
+			p2 = job_rec2->job_ptr->priority;
+	}
 
 	if (p1 < p2)
 		return 1;

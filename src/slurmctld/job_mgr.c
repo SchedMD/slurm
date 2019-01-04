@@ -9189,6 +9189,13 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->origin_cluster);
+	if (job_ptr->pack_details && job_ptr->pack_job_id) {
+		/* xfree struct if hetjob leader and NULL ptr otherwise. */
+		if (job_ptr->pack_job_offset == 0)
+			xfree(job_ptr->pack_details);
+		else
+			job_ptr->pack_details = NULL;
+	}
 	xfree(job_ptr->pack_job_id_set);
 	FREE_NULL_LIST(job_ptr->pack_job_list);
 	xfree(job_ptr->partition);
@@ -11206,6 +11213,10 @@ static void _hold_job_rec(struct job_record *job_ptr, uid_t uid)
 
 	job_ptr->direct_set_prio = 1;
 	job_ptr->priority = 0;
+
+	if (IS_JOB_PENDING(job_ptr))
+		acct_policy_remove_accrue_time(job_ptr, false);
+
 	if (job_ptr->part_ptr_list && job_ptr->priority_array) {
 		j = list_count(job_ptr->part_ptr_list);
 		for (i = 0; i < j; i++) {

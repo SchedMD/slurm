@@ -170,6 +170,7 @@ static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
 static uint32_t bf_min_prio_reserve = 0;
 static List deadlock_global_list;
+static uint16_t bf_hetjob_prio = 0;
 static int max_backfill_job_cnt = 100;
 static int max_backfill_job_per_assoc = 0;
 static int max_backfill_job_per_part = 0;
@@ -188,12 +189,16 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     bitstr_t *res_bitmap,
 			     node_space_map_t *node_space,
 			     int *node_space_recs);
+static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val);
 static int  _attempt_backfill(void);
 static int  _clear_job_start_times(void *x, void *arg);
 static int  _clear_qos_blocked_times(void *x, void *arg);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2);
 static uint32_t _get_job_max_tl(struct job_record *job_ptr, time_t now,
 				node_space_map_t *node_space);
+static bool _hetjob_any_resv(struct job_record *het_leader);
+static uint32_t _hetjob_calc_prio(struct job_record *het_leader);
+static uint32_t _hetjob_calc_prio_tier(struct job_record *het_leader);
 static void _job_pack_deadlock_fini(void);
 static bool _job_pack_deadlock_test(struct job_record *job_ptr);
 static bool _job_part_valid(struct job_record *job_ptr,
@@ -214,6 +219,7 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
 static void _pack_start_test(node_space_map_t *node_space);
 static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
 				  node_space_map_t *node_space);
+static int  _set_hetjob_details(void *x, void *arg);
 static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
 static bool _test_resv_overlap(node_space_map_t *node_space,
 			       bitstr_t *use_bitmap, uint32_t start_time,
@@ -828,6 +834,21 @@ static void _load_config(void)
 		yield_sleep = YIELD_SLEEP;
 	}
 
+	bf_hetjob_prio = 0;
+	if (sched_params &&
+	    (tmp_ptr = strstr(sched_params, "bf_hetjob_prio="))) {
+		tmp_ptr = strtok(tmp_ptr + 15, ",");
+		if (!xstrcasecmp(tmp_ptr, "min"))
+			bf_hetjob_prio |= HETJOB_PRIO_MIN;
+		else if (!xstrcasecmp(tmp_ptr, "max"))
+			bf_hetjob_prio |= HETJOB_PRIO_MAX;
+		else if (!xstrcasecmp(tmp_ptr, "avg"))
+			bf_hetjob_prio |= HETJOB_PRIO_AVG;
+		else
+			error("Invalid SchedulerParameters bf_hetjob_prio: %s",
+			      tmp_ptr);
+	}
+
 	if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_cnt=")))
 		defer_rpc_cnt = atoi(tmp_ptr + 12);
 	else if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_count=")))
@@ -1072,6 +1093,167 @@ static void _restore_preempt_state(struct job_record *job_ptr,
 	}
 }
 
+/*
+ * IN/OUT: prio to be adjusted
+ * IN: value from current component partition
+ */
+static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val)
+{
+	if (!*prio)
+		*prio = val;
+	else if (bf_hetjob_prio & HETJOB_PRIO_MIN)
+		*prio = MIN(*prio, val);
+	else if (bf_hetjob_prio & HETJOB_PRIO_MAX)
+		*prio = MAX(*prio, val);
+	else if (bf_hetjob_prio & HETJOB_PRIO_AVG)
+		*prio += val;
+}
+
+/*
+ * IN: job_record pointer of a hetjob leader (caller responsible)
+ * RET: [min|max|avg] Priority of all components from same hetjob
+ */
+static uint32_t _hetjob_calc_prio(struct job_record *het_leader)
+{
+	struct job_record *het_comp = NULL;
+	uint32_t prio = 0, tmp = 0, cnt = 0, i = 0, nparts = 0;
+	ListIterator iter = NULL;
+
+	if (bf_hetjob_prio & HETJOB_PRIO_MIN)
+		prio = INFINITE;
+
+	iter = list_iterator_create(het_leader->pack_job_list);
+	while ((het_comp = list_next(iter))) {
+		if (het_comp->part_ptr_list && het_comp->priority_array &&
+		    (nparts = list_count(het_comp->part_ptr_list))) {
+			for (i = 0; i < nparts; i++) {
+				tmp = het_comp->priority_array[i];
+				if (tmp == 0) { /* job held */
+					prio = 0;
+					break;
+				}
+				_adjust_hetjob_prio(&prio, tmp);
+				cnt++;
+			}
+			if (prio == 0) /* job held */
+				break;
+		} else {
+			tmp = het_comp->priority;
+			if (tmp == 0) { /* job held */
+				prio = 0;
+				break;
+			}
+			_adjust_hetjob_prio(&prio, tmp);
+			cnt++;
+		}
+		if ((bf_hetjob_prio & HETJOB_PRIO_MIN) && (prio == 1))
+			break; /* Can not get lower */
+	}
+	list_iterator_destroy(iter);
+	if (prio && cnt && (bf_hetjob_prio & HETJOB_PRIO_AVG))
+		prio /= cnt;
+
+	return prio;
+}
+
+/*
+ * IN: job_record pointer of a hetjob leader (caller responsible)
+ * RET: [min|max|avg] PriorityTier of all components from same hetjob
+ */
+static uint32_t _hetjob_calc_prio_tier(struct job_record *het_leader)
+{
+	struct job_record *het_comp = NULL;
+	struct part_record *part_ptr = NULL;
+	uint32_t prio_tier = 0, tmp = 0, cnt = 0;
+	ListIterator iter = NULL, iter2 = NULL;
+
+	if (bf_hetjob_prio & HETJOB_PRIO_MIN)
+		prio_tier = NO_VAL16 - 1;
+
+	iter = list_iterator_create(het_leader->pack_job_list);
+	while ((het_comp = list_next(iter))) {
+		if (het_comp->part_ptr_list &&
+		    list_count(het_comp->part_ptr_list)) {
+			iter2 = list_iterator_create(het_comp->part_ptr_list);
+			while ((part_ptr = list_next(iter2))) {
+				tmp = part_ptr->priority_tier;
+				_adjust_hetjob_prio(&prio_tier, tmp);
+				cnt++;
+			}
+			list_iterator_destroy(iter2);
+		} else {
+			tmp = het_comp->part_ptr->priority_tier;
+			_adjust_hetjob_prio(&prio_tier, tmp);
+			cnt++;
+		}
+		if ((bf_hetjob_prio & HETJOB_PRIO_MIN) && (prio_tier == 0))
+			break; /* Minimum found. */
+		if ((bf_hetjob_prio & HETJOB_PRIO_MAX) &&
+		    (prio_tier == (NO_VAL16 - 1)))
+			break; /* Maximum found. */
+	}
+	list_iterator_destroy(iter);
+	if (prio_tier && cnt && (bf_hetjob_prio & HETJOB_PRIO_AVG))
+		prio_tier /= cnt;
+
+	return prio_tier;
+}
+
+/*
+ * IN: job_record pointer of a hetjob leader (caller responsible)
+ * RET: true if any component from same hetjob has a reservation
+ */
+static bool _hetjob_any_resv(struct job_record *het_leader)
+{
+	struct job_record *het_comp = NULL;
+	ListIterator iter = NULL;
+	bool any_resv = false;
+
+	iter = list_iterator_create(het_leader->pack_job_list);
+	while (!any_resv && (het_comp = list_next(iter))) {
+		if (het_comp->resv_id != 0)
+			any_resv = true;
+	}
+	list_iterator_destroy(iter);
+
+	return any_resv;
+}
+
+static int _set_hetjob_pack_details(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *)x;
+	job_ptr->pack_details = (pack_details_t *)arg;
+
+	return SLURM_SUCCESS;
+}
+
+static int _set_hetjob_details(void *x, void *arg)
+{
+	struct job_record *job_ptr = (struct job_record *) x;
+	pack_details_t *details = NULL;
+
+	if (IS_JOB_PENDING(job_ptr) && job_ptr->pack_job_id &&
+	    !job_ptr->pack_job_offset && job_ptr->pack_job_list) {
+		/*
+		 * Pending hetjob leader component. Do calculations only once
+		 * for whole hetjob. xmalloc memory for 1 pack_details struct,
+		 * but make the pointer accessible in all hetjob components.
+		 */
+		if (!job_ptr->pack_details)
+			job_ptr->pack_details = xmalloc(sizeof(pack_details_t));
+
+		details = job_ptr->pack_details;
+		details->any_resv = _hetjob_any_resv(job_ptr);
+		details->priority_tier = _hetjob_calc_prio_tier(job_ptr);
+		details->priority = _hetjob_calc_prio(job_ptr);
+
+		list_for_each(job_ptr->pack_job_list,
+			      _set_hetjob_pack_details, details);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _attempt_backfill(void)
 {
 	DEF_TIMERS;
@@ -1155,6 +1337,9 @@ static int _attempt_backfill(void)
 
 	if (backfill_continue)
 		list_for_each(job_list, _clear_job_start_times, NULL);
+
+	if (bf_hetjob_prio)
+		list_for_each(job_list, _set_hetjob_details, NULL);
 
 	gettimeofday(&bf_time1, NULL);
 

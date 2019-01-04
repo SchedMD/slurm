@@ -2569,6 +2569,48 @@ extended period of time.
 Setting this option will cause the backfill scheduler to continue processing
 pending jobs from its original job list after releasing locks even if job
 or node state changes.
+This can result in lower priority jobs being backfill scheduled instead
+of newly arrived higher priority jobs, but will permit more queued jobs to be
+considered for backfill scheduling.
+.TP
+\fBbf_hetjob_prio=[min|avg|max]\fR
+At the beginning of each backfill scheduling cycle, a list of pending to be
+scheduled jobs is sorted according to the precedence order configured in
+\fBPriorityType\fR. This option instructs the scheduler to alter the sorting
+algorithm to ensure that all components belonging to the same heterogeneous job
+will be attempted to be scheduled consecutively (thus not fragmented in the
+resulting list). More specifically, all components from the same heterogeneous
+job will be treated as if they all have the same priority (minimum, average or
+maximum depending upon this option's parameter) when compared with other jobs
+(or other heterogeneous job components). The original order will be preserved
+within the same heterogeneous job. Note that the operation is calculated for
+the \fBPriorityTier\fR layer and for the \fBPriority\fR resulting from the
+priority/multifactor plugin calculations. When enabled, if any heterogeneous job
+requested an advanced reservation, then all of that job's components will be
+treated as if they had requested an advanced reservation (and get
+preferential treatment in scheduling).
+
+Note that this operation does not update the \fBPriority\fR values of the
+heterogeneous job components, only their order within the list, so the output of
+the sprio command will not be effected.
+
+Heterogeneous jobs have special scheduling properties: they are only scheduled
+by the backfill scheduling plugin, each of their components is considered
+separately when reserving resources (and might have different \fBPriorityTier\fR
+or different \fBPriority\fR values), and no heterogeneous job component is
+actually allocated resources until all if its components can be initiated.
+This may imply potential scheduling deadlock scenarios because components
+from different heterogeneous jobs can start reserving resources in an
+interleaved fashion (not consecutively), but none of the jobs can reserve
+resources for all components and start. Enabling this option can help to
+mitigate this problem. By default, this option is disabled.
+.TP
+\fBbf_ignore_newly_avail_nodes\fR
+If set, then only resources available at the beginning of a backfill cycle
+will be considered for use. Otherwise resources made available during that
+backfill cycle (during a yield with bf_continue set) may be used for lower
+priority jobs, delaying the initiation of higher priority jobs.
+Disabled by default.
 .TP
 \fBbf_interval=#\fR
 The number of seconds between backfill iterations.

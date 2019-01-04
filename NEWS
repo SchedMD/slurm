@@ -78,6 +78,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix debug2 prefix for sched log.
  -- Fix printing correct SLURM_JOB_ACCOUNT_PACK_GROUP_* in env for a Het Job.
  -- sbatch - search current working directory first for job script.
+ -- Make it so held jobs reset the AccrueTime and do not count against any
+    AccrueTime limits.
+ -- Add SchedulerParameters option of bf_hetjob_prio=[min|avg|max] to alter the
+    job sorting algorithm for scheduling heterogeneous jobs.
 
 * Changes in Slurm 18.08.4
 ==========================
