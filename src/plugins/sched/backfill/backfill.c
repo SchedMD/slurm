@@ -1343,7 +1343,7 @@ static int _attempt_backfill(void)
 
 	gettimeofday(&bf_time1, NULL);
 
-	slurmctld_diag_stats.bf_queue_len = list_count(job_queue);
+	slurmctld_diag_stats.bf_queue_len = job_test_count;
 	slurmctld_diag_stats.bf_queue_len_sum += slurmctld_diag_stats.
 						 bf_queue_len;
 	slurmctld_diag_stats.bf_last_depth = 0;
