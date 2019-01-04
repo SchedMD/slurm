@@ -455,7 +455,7 @@ static local_cluster_rec_t * _job_will_run (job_desc_msg_t *req)
 			ListIterator itr;
 			uint32_t *job_id_ptr;
 			char *job_list = NULL, *sep = "";
-			local_cluster->preempt_cnt = slurm_list_count(
+			local_cluster->preempt_cnt = list_count(
 				will_run_resp->preemptee_job_id);
 			itr = list_iterator_create(will_run_resp->
 						   preemptee_job_id);
