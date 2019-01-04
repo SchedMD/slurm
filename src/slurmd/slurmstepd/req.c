@@ -452,14 +452,20 @@ static void *_handle_accept(void *arg)
 		g_slurm_auth_destroy(auth_cred);
 		FREE_NULL_BUFFER(buffer);
 	} else if (req >= SLURM_MIN_PROTOCOL_VERSION) {
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+		gid_t tmp_gid;
+
+		rc = getpeereid(fd, &uid, &tmp_gid);
+#else
 		struct ucred ucred;
 		socklen_t len = sizeof(ucred);
-		client_protocol_ver = req;
 
 		rc = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &ucred, &len);
+		uid = ucred.uid;
+#endif
 		if (rc)
 			goto fail;
-		uid = ucred.uid;
+		client_protocol_ver = req;
 	} else {
 		error("%s: Invalid Protocol Version %d", __func__, req);
 		goto fail;
