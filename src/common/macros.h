@@ -380,10 +380,10 @@
 #    define strong_alias(name, aliasname) \
      extern __typeof (name) aliasname __attribute ((alias (#name)))
 #  else
-     /* dummy function definition,
-      * confirm "aliasname" is free and waste "name" */
 #    define strong_alias(name, aliasname) \
-     extern void aliasname(int name)
+     __asm__(".global _" #aliasname); \
+     __asm__(".set _" #aliasname ", _" #name); \
+     extern __typeof (name) aliasname
 #  endif
 #endif
 
