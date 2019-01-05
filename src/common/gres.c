@@ -2263,6 +2263,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			gres_data->topo_type_name[i] =
 				xstrdup(gres_slurmd_conf->type_name);
 			i++;
+			if (i >= gres_data->topo_cnt)
+				break;
 		}
 		list_iterator_destroy(iter);
 		if (cpu_config_err) {
