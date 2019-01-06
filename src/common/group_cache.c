@@ -166,8 +166,17 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 
 	/* Cache lookup failed or entry value was too old, fetch new
 	 * value and insert it into cache.  */
+#if defined(__APPLE__)
+	/*
+	 * macOS has (int *) for the third argument instead
+	 * of (gid_t *) like FreeBSD, NetBSD, and Linux.
+	 */
+	while (getgrouplist(entry->username, entry->gid,
+			    (int *)entry->gids, &entry->ngids) == -1) {
+#else
 	while (getgrouplist(entry->username, entry->gid,
 			    entry->gids, &entry->ngids) == -1) {
+#endif
 		/* group list larger than array, resize array to fit */
 		entry->gids = xrealloc(entry->gids,
 				       entry->ngids * sizeof(gid_t));
