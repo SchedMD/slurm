@@ -86,20 +86,20 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
-struct node_record *node_record_table_ptr __attribute__((weak_import));
-List part_list __attribute__((weak_import));
-List job_list __attribute__((weak_import));
-int node_record_count __attribute__((weak_import));
-time_t last_node_update __attribute__((weak_import));
-struct switch_record *switch_record_table __attribute__((weak_import));
-int switch_record_cnt __attribute__((weak_import));
-slurmctld_config_t slurmctld_config __attribute__((weak_import));
+extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+extern struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern List part_list __attribute__((weak_import));
+extern List job_list __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
+extern time_t last_node_update __attribute__((weak_import));
+extern struct switch_record *switch_record_table __attribute__((weak_import));
+extern int switch_record_cnt __attribute__((weak_import));
+extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 
-int hypercube_dimensions __attribute__((weak_import));
-struct hypercube_switch *hypercube_switch_table __attribute__((weak_import));
-int hypercube_switch_cnt __attribute__((weak_import));
-struct hypercube_switch ***hypercube_switches __attribute__((weak_import));
+extern int hypercube_dimensions __attribute__((weak_import));
+extern struct hypercube_switch *hypercube_switch_table __attribute__((weak_import));
+extern int hypercube_switch_cnt __attribute__((weak_import));
+extern struct hypercube_switch ***hypercube_switches __attribute__((weak_import));
 
 #else
 slurm_ctl_conf_t slurmctld_conf;

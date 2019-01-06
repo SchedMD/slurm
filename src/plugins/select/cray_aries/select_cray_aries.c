@@ -122,15 +122,15 @@ typedef enum {
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-slurmctld_config_t slurmctld_config __attribute__((weak_import));
-slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
-slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import)) = NULL;
-struct node_record *node_record_table_ptr __attribute__((weak_import));
-int node_record_count __attribute__((weak_import));
-time_t last_node_update __attribute__((weak_import));
-int slurmctld_primary __attribute__((weak_import));
-void *acct_db_conn  __attribute__((weak_import)) = NULL;
-bool  ignore_state_errors __attribute__((weak_import)) = true;
+extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
+extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+extern slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import));
+extern struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
+extern time_t last_node_update __attribute__((weak_import));
+extern int slurmctld_primary __attribute__((weak_import));
+extern void *acct_db_conn  __attribute__((weak_import));
+extern bool ignore_state_errors __attribute__((weak_import)) = true;
 #else
 slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;

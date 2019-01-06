@@ -67,12 +67,12 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined(__APPLE__)
-slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
-List job_list __attribute__((weak_import)) = NULL;
-uint16_t running_cache __attribute__((weak_import)) = 0;
-pthread_mutex_t assoc_cache_mutex __attribute__((weak_import));
-pthread_cond_t assoc_cache_cond __attribute__((weak_import));
-int node_record_count __attribute__((weak_import);
+extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+extern List job_list __attribute__((weak_import));
+extern uint16_t running_cache __attribute__((weak_import));
+extern pthread_mutex_t assoc_cache_mutex __attribute__((weak_import));
+extern pthread_cond_t assoc_cache_cond __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
 List job_list = NULL;

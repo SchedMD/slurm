@@ -114,20 +114,20 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
-struct node_record *node_record_table_ptr __attribute__((weak_import));
-List part_list __attribute__((weak_import));
-List job_list __attribute__((weak_import));
-int node_record_count __attribute__((weak_import));
-time_t last_node_update __attribute__((weak_import));
-struct switch_record *switch_record_table __attribute__((weak_import));
-int switch_record_cnt __attribute__((weak_import));
-bitstr_t *avail_node_bitmap __attribute__((weak_import));
-bitstr_t *idle_node_bitmap __attribute__((weak_import));
-uint16_t *cr_node_num_cores __attribute__((weak_import));
-uint32_t *cr_node_cores_offset __attribute__((weak_import));
-int slurmctld_tres_cnt __attribute__((weak_import)) = 0;
-slurmctld_config_t slurmctld_config __attribute__((weak_import));
+extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
+extern struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern List part_list __attribute__((weak_import));
+extern List job_list __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
+extern time_t last_node_update __attribute__((weak_import));
+extern struct switch_record *switch_record_table __attribute__((weak_import));
+extern int switch_record_cnt __attribute__((weak_import));
+extern bitstr_t *avail_node_bitmap __attribute__((weak_import));
+extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
+extern uint16_t *cr_node_num_cores __attribute__((weak_import));
+extern uint32_t *cr_node_cores_offset __attribute__((weak_import));
+extern int slurmctld_tres_cnt __attribute__((weak_import));
+extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
 struct node_record *node_record_table_ptr;

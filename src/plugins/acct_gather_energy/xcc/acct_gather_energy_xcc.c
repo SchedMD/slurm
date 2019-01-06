@@ -64,7 +64,7 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-slurmd_conf_t *conf __attribute__((weak_import)) = NULL;
+extenr slurmd_conf_t *conf __attribute__((weak_import));
 #else
 slurmd_conf_t *conf = NULL;
 #endif

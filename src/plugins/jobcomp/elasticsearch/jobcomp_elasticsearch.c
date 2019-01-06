@@ -113,8 +113,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-int accounting_enforce __attribute__((weak_import)) = 0;
-void *acct_db_conn __attribute__((weak_import)) = NULL;
+extern int accounting_enforce __attribute__((weak_import));
+extern void *acct_db_conn __attribute__((weak_import));
 #else
 int accounting_enforce = 0;
 void *acct_db_conn = NULL;

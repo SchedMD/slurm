@@ -50,7 +50,7 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-int slurmctld_tres_cnt __attribute__((weak_import)) = 0;
+extern int slurmctld_tres_cnt __attribute__((weak_import));
 #else
 int slurmctld_tres_cnt = 0;
 #endif

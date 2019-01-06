@@ -62,8 +62,8 @@
  * overwritten when linking with the slurmstepd.
  */
 #if defined (__APPLE__)
-uint32_t g_tres_count __attribute__((weak_import));
-char **assoc_mgr_tres_name_array __attribute__((weak_import));
+extern uint32_t g_tres_count __attribute__((weak_import));
+extern char **assoc_mgr_tres_name_array __attribute__((weak_import));
 #else
 uint32_t g_tres_count;
 char **assoc_mgr_tres_name_array;

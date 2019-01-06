@@ -47,8 +47,8 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-slurmctld_config_t slurmctld_config __attribute__((weak_import));
-struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
+extern struct node_record *node_record_table_ptr __attribute__((weak_import));
 #else
 slurmctld_config_t slurmctld_config;
 struct node_record *node_record_table_ptr;
