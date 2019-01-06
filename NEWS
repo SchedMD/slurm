@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
     AccrueTime limits.
  -- Add SchedulerParameters option of bf_hetjob_prio=[min|avg|max] to alter the
     job sorting algorithm for scheduling heterogeneous jobs.
+ -- Fix initialization of assoc_mgr_locks and slurmctld_locks lock structures.
 
 * Changes in Slurm 18.08.4
 ==========================
