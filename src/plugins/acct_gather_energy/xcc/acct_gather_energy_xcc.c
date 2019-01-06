@@ -1020,8 +1020,8 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 		/* ipmi initialisation parameters */
 		s_p_get_uint32(&slurm_ipmi_conf.authentication_type,
 			       "EnergyIPMIAuthenticationType", tbl);
-		s_p_get_boolean(&(slurm_ipmi_conf.adjustment),
-				"EnergyIPMICalcAdjustment", tbl);
+		(void) s_p_get_boolean(&(slurm_ipmi_conf.adjustment),
+				       "EnergyIPMICalcAdjustment", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.cipher_suite_id,
 			       "EnergyIPMICipherSuiteId", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.disable_auto_probe,
