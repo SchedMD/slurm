@@ -56,10 +56,19 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
-set available [available_nodes $partition ""]
-if {$available < 2} {
-    send_user "\nWARNING: not enough nodes currently available ($available avail, 2 needed)\n"
+set nb_nodes [available_nodes $partition ""]
+if {$nb_nodes < 2} {
+    send_user "\nWARNING: not enough nodes currently available ($nb_nodes avail, 2 needed)\n"
     exit $exit_code
+}
+set gpu_cnt [get_gpu_count $nb_nodes]
+if {$gpu_cnt < 0} {
+	send_user "\nFAILURE: Error getting GPU count\n"
+	exit 1
+}
+if {$gpu_cnt < 1} {
+	send_user "\nWARNING: This test requires 1 or more GPUs per node in the default partition\n"
+	exit 0
 }
 
 #
