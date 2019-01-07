@@ -101,7 +101,7 @@ static uid_t slurm_user = 0;
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init(void)
 {
 	/*
 	 * Get slurm user id once. We use it later to verify credentials.
@@ -116,7 +116,7 @@ extern int init ( void )
  * fini() is called when the plugin is unloaded,
  * free any global memory allocations here to avoid memory leaks.
  */
-extern int fini ( void )
+extern int fini(void)
 {
 	verbose("%s unloaded", plugin_name);
 	return SLURM_SUCCESS;
@@ -137,7 +137,7 @@ static void *_munge_ctx_setup(bool creator)
 
 	if ((ctx = munge_ctx_create()) == NULL) {
 		error("%s: munge_ctx_create failed", __func__);
-		return (NULL);
+		return NULL;
 	}
 
 	opts = slurm_get_auth_info();
@@ -215,7 +215,7 @@ extern int cred_p_sign(void *key, char *buffer, int buf_size,
 	if (auth_ttl)
 		(void) munge_ctx_set(ctx, MUNGE_OPT_TTL, auth_ttl);
 
-    again:
+again:
 	err = munge_encode(&cred, ctx, buffer, buf_size);
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
@@ -242,12 +242,12 @@ extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
 	uid_t uid;
 	gid_t gid;
 	void *buf_out = NULL;
-	int   buf_out_size;
-	int   rc = 0;
+	int buf_out_size;
+	int rc = SLURM_SUCCESS;
 	munge_err_t err;
 	munge_ctx_t ctx = (munge_ctx_t) key;
 
-    again:
+again:
 	err = munge_decode(signature, ctx, &buf_out, &buf_out_size,
 			   &uid, &gid);
 
@@ -281,11 +281,11 @@ extern int cred_p_verify_sign(void *key, char *buffer, uint32_t buf_size,
 		error("%s: Unexpected uid (%u) != Slurm uid (%u)",
 		      plugin_type, uid, slurm_user);
 		rc = ESIG_BAD_USERID;
-	}
-	else if (buf_size != buf_out_size)
+	} else if (buf_size != buf_out_size)
 		rc = ESIG_BUF_SIZE_MISMATCH;
 	else if (memcmp(buffer, buf_out, buf_size))
 		rc = ESIG_BUF_DATA_MISMATCH;
+
 end_it:
 	if (buf_out)
 		free(buf_out);
