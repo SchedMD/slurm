@@ -226,7 +226,8 @@ static void	_job_state_log(void *gres_data, uint32_t job_id,
 static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *core_bitmap,
 			  int core_start_bit, int core_end_bit, bool *topo_set,
-			  uint32_t job_id, char *node_name, char *gres_name);
+			  uint32_t job_id, char *node_name, char *gres_name,
+			  uint32_t plugin_id);
 static int	_load_gres_plugin(char *plugin_name,
 				  slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
@@ -5544,10 +5545,11 @@ static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  bool use_total_gres, bitstr_t *core_bitmap,
 			  int core_start_bit, int core_end_bit, bool *topo_set,
-			  uint32_t job_id, char *node_name, char *gres_name)
+			  uint32_t job_id, char *node_name, char *gres_name,
+			  uint32_t plugin_id)
 {
-	int i, j, core_size, core_ctld, top_inx;
-	uint64_t gres_avail = 0, gres_total, gres_tmp;
+	int i, j, core_size, core_ctld, top_inx = -1;
+	uint64_t gres_avail = 0, gres_max = 0, gres_total, gres_tmp;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint32_t *cores_addnt = NULL; /* Additional cores avail from this GRES */
@@ -5555,6 +5557,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 	uint32_t core_cnt = 0;
 	bitstr_t *alloc_core_bitmap = NULL;
 	bitstr_t *avail_core_bitmap = NULL;
+	bool shared_gres = _shared_gres(plugin_id);
 
 	if (node_gres_ptr->no_consume)
 		use_total_gres = true;
@@ -5588,6 +5591,8 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 					gres_avail -= node_gres_ptr->
 						      topo_gres_cnt_alloc[i];
 				}
+				if (shared_gres)
+					gres_max = MAX(gres_max, gres_avail);
 				continue;
 			}
 			core_ctld = bit_size(node_gres_ptr->
@@ -5605,9 +5610,13 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 					gres_avail -= node_gres_ptr->
 						      topo_gres_cnt_alloc[i];
 				}
+				if (shared_gres)
+					gres_max = MAX(gres_max, gres_avail);
 				break;
 			}
 		}
+		if (shared_gres)
+			gres_avail = gres_max;
 		if (job_gres_ptr->gres_per_node > gres_avail)
 			return (uint32_t) 0;	/* insufficient, GRES to use */
 		return NO_VAL;
@@ -5723,7 +5732,12 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				break;
 			}
 			/* update counts of allocated cores and GRES */
-			if (!node_gres_ptr->topo_core_bitmap[top_inx]) {
+			if (shared_gres) {
+				/*
+				 * Process outside of loop after specific
+				 * device selected
+				 */
+			} else if (!node_gres_ptr->topo_core_bitmap[top_inx]) {
 				bit_nset(alloc_core_bitmap, 0, core_ctld - 1);
 			} else if (gres_avail) {
 				bit_or(alloc_core_bitmap,
@@ -5737,7 +5751,10 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 					node_gres_ptr->
 					topo_core_bitmap[top_inx]);
 			}
-			if (gres_tmp > 0) {
+			if (shared_gres) {
+				gres_total = MAX(gres_total, gres_tmp);
+				gres_avail = gres_total;
+			} else {
 				/*
 				 * Available GRES count is up to gres_tmp,
 				 * but take 1 per loop to maximize available
@@ -5745,6 +5762,20 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				 */
 				gres_avail += 1;
 				gres_total += gres_tmp;
+				core_cnt = bit_set_count(alloc_core_bitmap);
+			}
+		}
+		if (shared_gres && (top_inx >= 0) &&
+		    (gres_avail > job_gres_ptr->gres_per_node)) {
+			if (!node_gres_ptr->topo_core_bitmap[top_inx]) {
+				bit_nset(alloc_core_bitmap, 0, core_ctld - 1);
+			} else {
+				bit_or(alloc_core_bitmap,
+				       node_gres_ptr->
+				       topo_core_bitmap[top_inx]);
+				if (core_bitmap)
+					bit_and(alloc_core_bitmap,
+						avail_core_bitmap);
 			}
 			core_cnt = bit_set_count(alloc_core_bitmap);
 		}
@@ -5914,7 +5945,8 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 					    use_total_gres, core_bitmap,
 					    core_start_bit, core_end_bit,
 					    &topo_set, job_id, node_name,
-					    gres_context[i].gres_name);
+					    gres_context[i].gres_name,
+					    gres_context[i].plugin_id);
 			if (tmp_cnt != NO_VAL) {
 				if (core_cnt == NO_VAL)
 					core_cnt = tmp_cnt;
@@ -9898,7 +9930,7 @@ extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		if (job_gres_ptr->plugin_id == gres_name_type_id) {
-			gres_val = ((gres_job_state_t*)
+			gres_val = ((gres_job_state_t *)
 				   (job_gres_ptr->gres_data))->gres_per_node;
 			break;
 		}
