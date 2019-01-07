@@ -50,8 +50,8 @@ proc setup { gpu_limit } {
 	global acct cluster exit_code user
 
 #FIXME: Once bug 5840 is fixed, remove "return 0" below and in proc cleanup
-send_user "\nFAILURE: AWAITING FIX FOR BUG 5840\n"
-return 0
+#send_user "\nFAILURE: AWAITING FIX FOR BUG 5840\n"
+#return 0
 
 	set acct_req(cluster) $cluster
 	set acct_req(parent)  "root"
@@ -79,7 +79,7 @@ proc cleanup { } {
 	global acct
 
 #FIXME: AWAITING FIX FOR BUG 5840
-return 0
+#return 0
 
 	remove_acct "" $acct
 }
