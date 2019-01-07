@@ -4246,11 +4246,11 @@ proc get_gpu_count { node_count } {
 #
 # Proc: get_mps_count
 #
-# Returns number of GRES MPS resources per GPU on the one node
-# with the highest count in the default partition.
+# For a given node count, returns number of MPS resources per GPU on
+# those "node_count" nodes with the highest values
 #
 ################################################################
-proc get_mps_count { } {
+proc get_mps_count { node_count } {
 	global number sinfo
 	set fini 0
 	set node_inx 0
@@ -4305,10 +4305,10 @@ proc get_mps_count { } {
 	}
 	log_user 1
 
-	if {$node_inx == 0} {
+	if {$node_inx < $node_count} {
 		return 0
 	}
-	set count [lindex [lsort -decreasing -integer $mps_per_gpu] 0]
+	set count [lindex [lsort -decreasing -integer $mps_per_gpu] [expr $node_count - 1]]
 	return $count
 }
 

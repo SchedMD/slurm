@@ -52,7 +52,7 @@ if {![string compare $select_type "cons_tres"] ||
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
 
-set mps_cnt [get_mps_count]
+set mps_cnt [get_mps_count 1]
 if {$mps_cnt < 0} {
 	send_user "\nFAILURE: Error getting MPS count\n"
 	exit 1
