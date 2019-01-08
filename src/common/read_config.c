@@ -3642,12 +3642,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				      CPU_FREQ_USERSPACE;
 	}
 
-	if (!s_p_get_string(&conf->cred_type, "CredType", hashtbl) &&
-	    s_p_get_string(&conf->cred_type, "CryptoType", hashtbl)) {
-		/* swap crypto/ for cred/ in */
-		xstrsubstitute(conf->cred_type, "crypto", "cred");
-	} else
-		 conf->cred_type = xstrdup(DEFAULT_CRED_TYPE);
+	if (!s_p_get_string(&conf->cred_type, "CredType", hashtbl)) {
+		if (s_p_get_string(&conf->cred_type, "CryptoType", hashtbl)) {
+			/* swap crypto/ for cred/ */
+			xstrsubstitute(conf->cred_type, "crypto", "cred");
+		} else
+			 conf->cred_type = xstrdup(DEFAULT_CRED_TYPE);
+	}
 
 	if (s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerCPU", hashtbl))
 		conf->def_mem_per_cpu |= MEM_PER_CPU;
