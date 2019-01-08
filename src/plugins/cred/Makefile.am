@@ -1,3 +1,3 @@
 # Makefile for cred plugins
 
-SUBDIRS = munge
+SUBDIRS = munge none
