@@ -70,8 +70,7 @@ List assoc_mgr_wckey_list = NULL;
 
 static char *assoc_mgr_cluster_name = NULL;
 static int setup_children = 0;
-static pthread_rwlock_t assoc_mgr_locks[ASSOC_MGR_ENTITY_COUNT]
-	= { PTHREAD_RWLOCK_INITIALIZER };
+static pthread_rwlock_t assoc_mgr_locks[ASSOC_MGR_ENTITY_COUNT];
 
 static assoc_init_args_t init_setup;
 static slurmdb_assoc_rec_t **assoc_hash_id = NULL;
@@ -2114,7 +2113,14 @@ bool verify_assoc_lock(assoc_mgr_lock_datatype_t datatype, lock_level_t level)
 
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
 {
+	static bool init_run = false;
 	xassert(_store_locks(locks));
+
+	if (!init_run) {
+		init_run = true;
+		for (int i = 0; i < ASSOC_MGR_ENTITY_COUNT; i++)
+			slurm_rwlock_init(&assoc_mgr_locks[i]);
+	}
 
 	if (locks->assoc == READ_LOCK)
 		slurm_rwlock_rdlock(&assoc_mgr_locks[ASSOC_LOCK]);
