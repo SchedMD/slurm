@@ -2114,11 +2114,12 @@ bool verify_assoc_lock(assoc_mgr_lock_datatype_t datatype, lock_level_t level)
 extern void assoc_mgr_lock(assoc_mgr_lock_t *locks)
 {
 	static bool init_run = false;
+	int i;
 	xassert(_store_locks(locks));
 
 	if (!init_run) {
 		init_run = true;
-		for (int i = 0; i < ASSOC_MGR_ENTITY_COUNT; i++)
+		for (i = 0; i < ASSOC_MGR_ENTITY_COUNT; i++)
 			slurm_rwlock_init(&assoc_mgr_locks[i]);
 	}
 
