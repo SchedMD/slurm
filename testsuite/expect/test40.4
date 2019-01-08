@@ -80,6 +80,11 @@ proc cleanup { } {
 print_header $test_id
 
 set store_tres [string tolower [get_acct_store_tres]]
+set store_mps [string first "gres/mps:" $store_tres]
+if {$store_mps != -1} {
+	send_user "\nWARNING: This test requires homogeneous MPS accounting (NO Type)\n"
+	exit $exit_code
+}
 set store_mps [string first "gres/mps" $store_tres]
 if {$store_mps == -1} {
 	send_user "\nWARNING: This test requires accounting for MPS\n"

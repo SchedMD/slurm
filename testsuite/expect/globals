@@ -4453,13 +4453,13 @@ proc cuda_count { cuda_string } {
 #
 ################################################################
 proc get_acct_store_tres { } {
-	global scontrol alpha_comma_slash
+	global scontrol alpha_numeric_special
 
 	log_user 0
 	set store_tres ""
 	spawn $scontrol show config
 	expect {
-		-re "AccountingStorageTRES *= ($alpha_comma_slash)" {
+		-re "AccountingStorageTRES *= ($alpha_numeric_special)" {
 			set store_tres $expect_out(1,string)
 			exp_continue
 		}

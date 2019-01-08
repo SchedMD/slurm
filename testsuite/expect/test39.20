@@ -49,10 +49,6 @@ set user           [get_my_user_name]
 proc setup { gpu_limit } {
 	global acct cluster exit_code user
 
-#FIXME: Once bug 5840 is fixed, remove "return 0" below and in proc cleanup
-#send_user "\nFAILURE: AWAITING FIX FOR BUG 5840\n"
-#return 0
-
 	set acct_req(cluster) $cluster
 	set acct_req(parent)  "root"
 	set acct_req(maxtres) "gres/gpu=$gpu_limit"
@@ -77,9 +73,6 @@ proc setup { gpu_limit } {
 
 proc cleanup { } {
 	global acct
-
-#FIXME: AWAITING FIX FOR BUG 5840
-#return 0
 
 	remove_acct "" $acct
 }
@@ -120,6 +113,11 @@ proc get_node_config {} {
 print_header $test_id
 
 set store_tres [string tolower [get_acct_store_tres]]
+set store_mps [string first "gres/gpu:" $store_tres]
+if {$store_mps != -1} {
+	send_user "\nWARNING: This test requires homogeneous GPU accounting (NO Type)\n"
+	exit $exit_code
+}
 set store_gpu [string first "gres/gpu" $store_tres]
 if {$store_gpu == -1} {
 	send_user "\nWARNING: This test requires accounting for GPUs\n"
