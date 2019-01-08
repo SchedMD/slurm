@@ -106,12 +106,11 @@ extern bool verify_lock(lock_datatype_t datatype, lock_level_t level)
 extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 {
 	static bool init_run = false;
-	int i;
 	xassert(_store_locks(lock_levels));
 
 	if (!init_run) {
 		init_run = true;
-		for (i = 0; i < ENTITY_COUNT; i++)
+		for (int i = 0; i < ENTITY_COUNT; i++)
 			slurm_rwlock_init(&slurmctld_locks[i]);
 	}
 
