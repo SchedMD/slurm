@@ -651,7 +651,9 @@ EXTRA_DIST = \
 	test40.1			\
 	test40.2			\
 	test40.3			\
-	test40.4
+	test40.4			\
+	test40.5			\
+	test40.6
 
 distclean-local:
 	rm -rf *error *output

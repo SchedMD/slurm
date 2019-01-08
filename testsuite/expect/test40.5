@@ -1,0 +1,221 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Increase size of job with allocated MPS
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "WARNING: ..." with an explanation of why the test can't be made, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id          "40.5"
+set exit_code        0
+set file_in1         "test$test_id.input1"
+set file_in2         "test$test_id.input2"
+set file_in3         "test$test_id.input3"
+set file_out1        "test$test_id.output1"
+set file_out2        "test$test_id.output2"
+
+print_header $test_id
+
+set select_type [test_select_type]
+if {![string compare $select_type "cons_tres"] ||
+    (![string compare $select_type "cray"] && [test_select_type_params "other_cons_tres"])} {
+        send_user "\nValid configuration, using select/cons_tres\n"
+} else {
+        send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
+        exit $exit_code
+}
+if {[test_front_end]} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit $exit_code
+}
+
+set nb_nodes [available_nodes $partition ""]
+if {$nb_nodes < 2} {
+    send_user "\nWARNING: not enough nodes currently available ($nb_nodes avail, 2 needed)\n"
+    exit $exit_code
+}
+set mps_cnt [get_mps_count $nb_nodes]
+if {$mps_cnt < 0} {
+	send_user "\nFAILURE: Error getting MPS count\n"
+	exit 1
+}
+if {$mps_cnt < 100} {
+	send_user "\nWARNING: This test requires 100 or more MPS per GPU in the default partition\n"
+	exit 0
+}
+
+#
+# Build input scripts
+# file_in1: Determine MPS allocated, wait for dependent job to exit,
+#	expand allocation and run another job
+# file_in2: Determine allocated, shrink to size 0 and exit
+# file_in3: Print the hostname and MPS info
+#
+exec $bin_rm -f $file_out1 $file_out2
+make_bash_script $file_in1 "
+	$scontrol -dd show job \${SLURM_JOBID}
+	$srun ./$file_in3
+	sleep 20	# Wait for job 2 submission
+	while true; do
+		$squeue -h -n test_child_$test_id | wc | grep -e ' *0 *0 *0'
+		if \[ \${?} -eq 0 \]; then
+			break
+		fi
+		sleep 5
+	done
+	$scontrol update JobId=\${SLURM_JOBID} NumNodes=ALL
+	. slurm_job_\${SLURM_JOBID}_resize.sh
+	$scontrol -dd show job \${SLURM_JOBID}
+	$srun ./$file_in3
+	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.csh
+	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh
+	exit 0"
+
+make_bash_script $file_in2 "
+	$scontrol -dd show job \${SLURM_JOBID}
+	$scontrol update JobId=\${SLURM_JOBID} NumNodes=0
+	. slurm_job_\${SLURM_JOBID}_resize.sh
+	# JOB GETS CANCELLED HERE AS BATCH HOST GETS REMOVED FROM JOB ALLOCATION
+	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.csh
+	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh
+	exit 0"
+
+make_bash_script $file_in3 "
+echo 'HOST:'\$SLURMD_NODENAME 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES 'CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:'\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"
+
+#
+# Submit job to expand: uses 10 gres/mps on one node
+#
+set job_id1 0
+spawn $sbatch -N1 --exclusive -J "test$test_id" -t2 --gres=mps:10 --output=$file_out1 $file_in1
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id1 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: job 1 not submitted\n"
+	exit 1
+}
+if {[wait_for_job $job_id1 "RUNNING"] != 0} {
+	send_user "\nFAILURE: job 1 did not start\n"
+	cancel_job $job_id1
+	exit 1
+}
+
+#
+# Submit job to shrink: uses 10 gres/mps on one node
+#
+set job_id2 0
+spawn $sbatch -N1 --exclusive -J "test_child_$test_id" --dependency=expand:$job_id1 -t1 --gres=mps:10 --output=$file_out2 $file_in2
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id2 $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id2 == 0} {
+	send_user "\nFAILURE: job 2 not submitted\n"
+	cancel_job $job_id1
+	exit 1
+}
+if {[wait_for_job $job_id1 "DONE"] != 0} {
+	send_user "\nFAILURE: job 1 did not complete\n"
+	cancel_job $job_id1
+	cancel_job $job_id2
+	exit 1
+}
+if {[wait_for_job $job_id2 "DONE"] != 0} {
+	send_user "\nFAILURE: job 2 did not complete\n"
+	cancel_job $job_id2
+	exit 1
+}
+
+#
+# Parse the output files from job 1
+#
+send_user "\n\nParse job 1 output\n"
+if {[wait_for_file $file_out1] != 0} {
+	send_user "\nFAILURE: no output file\n"
+	exit 1
+}
+set match 0
+spawn $bin_cat $file_out1
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:10" {
+		incr match
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 3} {
+	send_user "\nFAILURE: bad CUDA information about job 1 ($match != 3)\n"
+	set exit_code 1
+}
+
+#
+# Parse the output files from job 2
+# Not currently looking for anything, but do log it's contents before purge
+#
+send_user "\n\nParse job 2 output\n"
+if {[wait_for_file $file_out2] != 0} {
+	send_user "\nFAILURE: no output file\n"
+	exit 1
+}
+set match 0
+spawn $bin_cat $file_out2
+expect {
+	eof {
+		wait
+	}
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in1 $file_in2 $file_in3 $file_out1 $file_out2
+	exec $bin_rm -f slurm_job_${job_id2}_resize.csh
+	exec $bin_rm -f slurm_job_${job_id2}_resize.sh
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
