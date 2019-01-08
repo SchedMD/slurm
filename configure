@@ -18965,6 +18965,76 @@ $as_echo "#define SLURM_BIGENDIAN 1" >>confdefs.h
 
 
 
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for C99 support" >&5
+$as_echo_n "checking for C99 support... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+
+        for (int i = 0; i < 10; i++)
+          ;
+
+  ;
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  c99_ok=yes
+else
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -std=gnu99" >&5
+$as_echo_n "checking whether C compiler accepts -std=gnu99... " >&6; }
+if ${ax_cv_check_cflags___std_gnu99+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS  -std=gnu99"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ax_cv_check_cflags___std_gnu99=yes
+else
+  ax_cv_check_cflags___std_gnu99=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___std_gnu99" >&5
+$as_echo "$ax_cv_check_cflags___std_gnu99" >&6; }
+if test "x$ax_cv_check_cflags___std_gnu99" = xyes; then :
+  c99_ok=yes && CFLAGS="$CFLAGS -std=gnu99"
+else
+  c99_ok=no
+fi
+
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  if test "$c99_ok" = "no"; then
+    as_fn_error $? "cannot build C99 programs correctly" "$LINENO" 5
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+  fi
+
+
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for uid_t and gid_t data sizes)" >&5
 $as_echo_n "checking for uid_t and gid_t data sizes)... " >&6; }
   if test "$cross_compiling" = yes; then :
