@@ -4508,6 +4508,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	details_new->std_in = xstrdup(job_details->std_in);
 	details_new->std_out = xstrdup(job_details->std_out);
 	details_new->work_dir = xstrdup(job_details->work_dir);
+	details_new->x11_magic_cookie = xstrdup(job_details->x11_magic_cookie);
 
 	if (job_ptr->fed_details)
 		add_fed_job_info(job_ptr);
