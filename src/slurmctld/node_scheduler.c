@@ -996,6 +996,37 @@ extern void filter_by_node_owner(struct job_record *job_ptr,
 }
 
 /*
+ * Remove nodes from consideration for allocation based upon GRES. Specificially
+ *	if this job uses gres/mps, do not use any nodes already allocated to
+ *	other jobs also using gres/mps.
+ * job_ptr IN - Job to be scheduled
+ * usable_node_mask IN/OUT - Nodes available for use by this job
+ */
+extern void filter_by_node_gres(struct job_record *job_ptr,
+			        bitstr_t *usable_node_mask)
+{
+	struct job_record *test_job_ptr;
+	ListIterator iter;
+
+	if (!gres_plugin_job_uses_mps(job_ptr->gres_list))
+		return;
+
+	iter = list_iterator_create(job_list);
+	while ((test_job_ptr = list_next(iter))) {
+		if (!test_job_ptr->gres_list ||
+		    (test_job_ptr->user_id != job_ptr->user_id) ||
+		    IS_JOB_PENDING(test_job_ptr) ||
+		    IS_JOB_COMPLETED(test_job_ptr))
+			continue;
+		if (!gres_plugin_job_uses_mps(test_job_ptr->gres_list))
+			continue;
+
+		bit_and_not(usable_node_mask, test_job_ptr->node_bitmap);
+	}
+	list_iterator_destroy(iter);
+}
+
+/*
  * Remove nodes from consideration for allocation based upon "mcs" by
  * other users
  * job_ptr IN - Job to be scheduled
@@ -1024,7 +1055,7 @@ extern void filter_by_node_mcs(struct job_record *job_ptr, int mcs_select,
 		}
 	} else {
 		for (i = 0, node_ptr = node_record_table_ptr;
-		     i < node_record_count;i++, node_ptr++) {
+		     i < node_record_count; i++, node_ptr++) {
 			 if (node_ptr->mcs_label != NULL) {
 				bit_clear(usable_node_mask, i);
 			}
@@ -1154,9 +1185,11 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (can_reboot && !test_only)
 		_filter_by_node_feature(job_ptr, node_set_ptr, node_set_size);
 
-	/* get mcs_select */
-	mcs_select = slurm_mcs_get_select(job_ptr);
-	filter_by_node_mcs(job_ptr, mcs_select, share_node_bitmap);
+	if (!test_only) {
+		mcs_select = slurm_mcs_get_select(job_ptr);
+		filter_by_node_mcs(job_ptr, mcs_select, share_node_bitmap);
+		filter_by_node_gres(job_ptr, share_node_bitmap);
+	}
 
 	/* save job and request state */
 	saved_min_nodes = min_nodes;

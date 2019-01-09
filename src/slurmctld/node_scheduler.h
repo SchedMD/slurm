@@ -84,6 +84,16 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc);
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		bool suspended, bool preempted);
 
+/*
+ * Remove nodes from consideration for allocation based upon GRES. Specificially
+ *	if this job uses gres/mps, do not use any nodes already allocated to
+ *	other jobs also using gres/mps.
+ * job_ptr IN - Job to be scheduled
+ * usable_node_mask IN/OUT - Nodes available for use by this job
+ */
+extern void filter_by_node_gres(struct job_record *job_ptr,
+			        bitstr_t *usable_node_mask);
+
 /* Remove nodes from consideration for allocation based upon "mcs" by
  * other users
  * job_ptr IN - Job to be scheduled

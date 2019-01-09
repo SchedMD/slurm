@@ -329,10 +329,15 @@ select/cons_tres plugin.</P>
 
 <p>Job requests for MPS will be processed the same as any other GRES except
 that the request must be satisfied using only one GPU per node.
-A job request for "--gres=mps:50%" will not be satisfied by using 20 percent
-of one GPU and 30 percent of a second GPU on a single node.
+For example, a job request for "--gres=mps:50" will not be satisfied by using
+20 percent of one GPU and 30 percent of a second GPU on a single node.
+Multiple jobs from different users can use MPS on a node at the same time, but
+only one job for a given user can use MPS on a node at any given time.
+However the user can utilize MPS resources on other nodes as appropriate.
 Also note that GRES types of GPU <u>and</u> MPS can not be requested within
-a single job.</p>
+a single job.
+An epilog program should be used to terminate any MPS server started by the
+user/job.</p>
 
 <p>Jobs requesting MPS resources will have the same environment variables set
 as for GPU resources, namely <code class="commandline">CUDA_VISIBLE_DEVICES</code>
@@ -374,6 +379,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 4 January 2019</p>
+<p style="text-align: center;">Last modified 9 January 2019</p>
 
 <!--#include virtual="footer.txt"-->
