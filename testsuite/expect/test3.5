@@ -285,7 +285,7 @@ if {$found != 1} {
 #
 # Test modification of TRESBillingWeights
 #
-set tres_line "cPu=1,mem=0.5G"
+set tres_line "cPu=1,mem=-0.5G,node=.3,energy=-10"
 spawn $scontrol update partitionname=$part_name TRESBillingWeights=$tres_line
 expect {
 	-re "error" {
