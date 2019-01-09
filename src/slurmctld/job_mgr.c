@@ -1468,6 +1468,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			part_ptr_list = get_part_list(partition, &err_part);
 			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
+				if (list_count(part_ptr_list) == 1)
+					FREE_NULL_LIST(part_ptr_list);
 			} else {
 				verbose("Invalid partition (%s) for JobId=%u",
 					err_part, job_id);
@@ -1692,6 +1694,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			part_ptr_list = get_part_list(partition, &err_part);
 			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
+				if (list_count(part_ptr_list) == 1)
+					FREE_NULL_LIST(part_ptr_list);
 			} else {
 				verbose("Invalid partition (%s) for JobId=%u",
 					err_part, job_id);
@@ -1895,6 +1899,8 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			part_ptr_list = get_part_list(partition, &err_part);
 			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
+				if (list_count(part_ptr_list) == 1)
+					FREE_NULL_LIST(part_ptr_list);
 			} else {
 				verbose("Invalid partition (%s) for JobId=%u",
 					err_part, job_id);
@@ -3196,9 +3202,15 @@ static void _rebuild_part_name_list(struct job_record  *job_ptr)
 	ListIterator part_iterator;
 
 	xfree(job_ptr->partition);
+
+	if (!job_ptr->part_ptr_list) {
+		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
+		last_job_update = time(NULL);
+		return;
+	}
+
 	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) {
 		job_active = true;
-		xfree(job_ptr->partition);
 		job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
 	} else if (IS_JOB_PENDING(job_ptr))
 		job_pending = true;
@@ -6161,8 +6173,11 @@ static int _get_job_parts(job_desc_msg_t * job_desc,
 		if (part_ptr == NULL) {
 			part_ptr_list = get_part_list(job_desc->partition,
 						      &err_part);
-			if (part_ptr_list)
+			if (part_ptr_list) {
 				part_ptr = list_peek(part_ptr_list);
+				if (list_count(part_ptr_list) == 1)
+					FREE_NULL_LIST(part_ptr_list);
+			}
 		}
 		if (part_ptr == NULL) {
 			info("%s: invalid partition specified: %s",
@@ -10888,8 +10903,11 @@ void reset_job_bitmaps(void)
 				part_ptr_list = get_part_list(
 						job_ptr->partition,
 						&err_part);
-				if (part_ptr_list)
+				if (part_ptr_list) {
 					part_ptr = list_peek(part_ptr_list);
+					if (list_count(part_ptr_list) == 1)
+						FREE_NULL_LIST(part_ptr_list);
+				}
 			}
 			if (part_ptr == NULL) {
 				error("Invalid partition (%s) for %pJ",
@@ -11622,9 +11640,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			;
 		else if ((new_part_ptr->state_up & PARTITION_SUBMIT) == 0)
 			error_code = ESLURM_PARTITION_NOT_AVAIL;
-		else if (new_part_ptr == job_ptr->part_ptr)
+		else if (!part_ptr_list &&
+			 !xstrcmp(new_part_ptr->name, job_ptr->partition)) {
+			sched_debug("update_job: 2 new partition identical to old partition %pJ",
+				    job_ptr);
+			xfree(job_specs->partition);
 			new_part_ptr = NULL;
-
+		}
 		if (error_code != SLURM_SUCCESS)
 			goto fini;
 	}
@@ -12120,7 +12142,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			     new_req_bitmap_given ?
 			     new_req_bitmap : job_ptr->details->req_node_bitmap,
 			     use_part_ptr,
-			     part_ptr_list ?
+			     job_specs->partition ?
 			     part_ptr_list : job_ptr->part_ptr_list,
 			     use_assoc_ptr, use_qos_ptr)))
 			goto fini;
@@ -12166,15 +12188,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (new_part_ptr) {
 		/* Change partition */
-		xfree(job_ptr->partition);
-		job_ptr->partition = xstrdup(new_part_ptr->name);
 		job_ptr->part_ptr = new_part_ptr;
-
-		xfree(job_ptr->priority_array);	/* Rebuilt in plugin */
-
 		FREE_NULL_LIST(job_ptr->part_ptr_list);
 		job_ptr->part_ptr_list = part_ptr_list;
 		part_ptr_list = NULL;	/* nothing to free */
+
+		_rebuild_part_name_list(job_ptr);
+
+		/* Rebuilt in priority/multifactor plugin */
+		xfree(job_ptr->priority_array);
 
 		info("%s: setting partition to %s for %pJ",
 		     __func__, job_specs->partition, job_ptr);
