@@ -234,7 +234,7 @@ static List _build_mps_list(List gres_list)
 			}
 			hostlist_destroy(hl);
 		}
-		(void) list_remove(itr);
+		(void) list_delete_item(itr);
 	}
 	list_iterator_destroy(itr);
 
@@ -313,6 +313,8 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 				if (gpu_record->cpus_bitmap) {
 					mps_record->cpu_cnt =
 						gpu_record->cpu_cnt;
+					FREE_NULL_BITMAP(
+						mps_record->cpus_bitmap);
 					mps_record->cpus_bitmap =
 					      bit_copy(gpu_record->cpus_bitmap);
 				}

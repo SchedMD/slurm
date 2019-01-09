@@ -637,7 +637,7 @@ extern int gres_plugin_fini(void)
 		goto fini;
 
 	init_run = false;
-	for (i=0; i<gres_context_cnt; i++) {
+	for (i = 0; i < gres_context_cnt; i++) {
 		j = _unload_gres_plugin(gres_context + i);
 		if (j != SLURM_SUCCESS)
 			rc = j;
