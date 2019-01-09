@@ -1615,7 +1615,13 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 				break;
 			}
 			tmp_gres_cnt = strtoll(num + 1, &last_num, 10);
-			if (last_num[0] == '\0')
+			if ((num[1] < '0') || (num[1] > '9')) {
+				/*
+				 * Type name, no count (e.g. "gpu:tesla").
+				 * assume count of 1.
+				 */
+				tmp_gres_cnt = 1;
+			} else if (last_num[0] == '\0')
 				;
 			else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
 				tmp_gres_cnt *= 1024;
@@ -1633,13 +1639,6 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 				error("Bad GRES configuration: %s", tok);
 				break;
 			}
-
-			/*
-			 * If we have a GRES that has a type but not a count we
-			 * will have 0 here, so set it correctly.
-			 */
-			if (!tmp_gres_cnt)
-				tmp_gres_cnt = 1;
 
 			gres_config_cnt += tmp_gres_cnt;
 			num[0] = '\0';
