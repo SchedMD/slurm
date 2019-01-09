@@ -106,6 +106,16 @@ jobcomp_destroy_job(void *object)
 		xfree(job->geo);
 		xfree(job->bg_start_point);
 		xfree(job->work_dir);
+		xfree(job->resv_name);
+		xfree(job->req_gres);
+		xfree(job->account);
+		xfree(job->qos_name);
+		xfree(job->wckey);
+		xfree(job->cluster);
+		xfree(job->submit_time);
+		xfree(job->eligible_time);
+		xfree(job->exit_code);
+		xfree(job->derived_ec);
 		xfree(job);
 	}
 }

@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix possibility to update a job's reservation to none.
  -- Suppress connection errors to primary slurmdbd when backup dbd is active.
  -- Suppress connection errors to primary db when backup db kicks in
+ -- Add missing fields for sacct --completion when using jobcomp/filetxt.
 
 * Changes in Slurm 18.08.4
 ==========================
