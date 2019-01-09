@@ -3345,7 +3345,8 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	bit_free(orig_node_map);
+fini:	FREE_NULL_LIST(node_weight_list);
+	bit_free(orig_node_map);
 	return error_code;
 }
 
@@ -4822,7 +4823,8 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	bit_free(orig_node_map);
+fini:	FREE_NULL_LIST(node_weight_list);
+	bit_free(orig_node_map);
 	xfree(avail_cpu_per_node);
 	return error_code;
 }
@@ -5014,7 +5016,8 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 		error_code = SLURM_SUCCESS;
 	}
 
-fini:	bit_free(orig_node_map);
+fini:	FREE_NULL_LIST(node_weight_list);
+	bit_free(orig_node_map);
 	return error_code;
 
 }
