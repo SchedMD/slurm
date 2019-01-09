@@ -747,6 +747,7 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 {
 	gres_slurmd_conf_t *p;
 	char *links = NULL;
+	int index = -1, offset, mult = 1;
 
 	p = (gres_slurmd_conf_t *) x;
 	xassert(p);
@@ -757,16 +758,33 @@ static int _log_gres_slurmd_conf(void *x, void *arg)
 		return 0;
 	}
 
+	if (p->file) {
+		index = 0;
+		offset = strlen(p->file);
+		while (offset > 0) {
+			offset--;
+			if ((p->file[offset] < '0') || (p->file[offset] > '9'))
+				break;
+			index += (p->file[offset] - '0') * mult;
+			mult *= 10;
+		}
+	}
+
 	if (p->links)
 		xstrfmtcat(links, "Links=%s", p->links);
-	if (p->cpus) {
-		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s "
-		     "Cores=%s CoreCnt=%u %s",
-		     p->name, p->type_name, p->count, p->plugin_id, p->file,
-		     p->cpus, p->cpu_cnt, links);
+	if (p->cpus && (index != -1)) {
+		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u "
+		     "File=%s Cores=%s CoreCnt=%u %s",
+		     p->name, p->type_name, p->count, index, p->plugin_id,
+		     p->file, p->cpus, p->cpu_cnt, links);
+	} else if (index != -1) {
+		info("Gres Name=%s Type=%s Count=%"PRIu64" Index=%d ID=%u File=%s %s",
+		     p->name, p->type_name, p->count, index, p->plugin_id,
+		     p->file, links);
 	} else if (p->file) {
 		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u File=%s %s",
-		     p->name, p->type_name, p->count, p->plugin_id, p->file, links);
+		     p->name, p->type_name, p->count, p->plugin_id, p->file,
+		    links);
 	} else {
 		info("Gres Name=%s Type=%s Count=%"PRIu64" ID=%u %s", p->name,
 		     p->type_name, p->count, p->plugin_id, links);
@@ -1249,7 +1267,6 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		}
 	}
 	s_p_hashtbl_destroy(tbl);
-	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
 
 	for (i = 0; i < gres_context_cnt; i++) {
 		_validate_config(&gres_context[i]);
@@ -1260,6 +1277,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		if (rc == SLURM_SUCCESS)
 			rc = rc2;
 	}
+	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
 	slurm_mutex_unlock(&gres_context_lock);
 
 	xfree(gres_conf_file);

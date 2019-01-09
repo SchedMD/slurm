@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "February 2017" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "January 2019" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -36,6 +36,10 @@ Run slurmd in the foreground. Error and debug messages will be copied to stderr.
 .TP
 \fB\-f <file>\fR
 Read configuration from the specified file. See \fBNOTES\fR below.
+.TP
+\fB\-G\fR
+Print Generic RESource (GRES) configuration (based upon gres.conf contents
+for this node) and exit.
 .TP
 \fB\-h\fR
 Help; print a brief summary of command options.

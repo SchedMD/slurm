@@ -38,6 +38,8 @@ documents those changes that are of interest to users and administrators.
  -- Add new DebugFlag=Accrue for accrue accounting debugging purposes.
  -- Change CryptoType option to CredType, and rename crypto/munge plugin to
     cred/munge.
+ -- Add slurmd -G option to print GRES configuration and exit. This is useful
+    for testing and debugging.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

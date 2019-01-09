@@ -1367,9 +1367,10 @@ _print_config(void)
 static void
 _process_cmdline(int ac, char **av)
 {
+	static char *opt_string = "bcCd:Df:GhL:Mn:N:vV";
 	int c;
 	char *tmp_char;
-	static char *opt_string = "bcCd:Df:hL:Mn:N:vV";
+	bool print_gres = false;
 
 	static struct option long_options[] = {
 		{"version",		no_argument,       0, 'V'},
@@ -1399,6 +1400,9 @@ _process_cmdline(int ac, char **av)
 			break;
 		case 'f':
 			conf->conffile = xstrdup(optarg);
+			break;
+		case 'G':
+			print_gres = true;
 			break;
 		case 'h':
 			_usage();
@@ -1443,6 +1447,16 @@ _process_cmdline(int ac, char **av)
 	if (!conf->stepd_loc) {
 		conf->stepd_loc =
 			xstrdup_printf("%s/sbin/slurmstepd", SLURM_PREFIX);
+	}
+
+	if (print_gres) {
+		conf->debug_flags = DEBUG_FLAG_GRES;
+		(void) gres_plugin_init();
+		(void) gres_plugin_node_config_load(
+					1024,	/* Do not need real CPU count */
+					conf->node_name, NULL,
+					(void *)&xcpuinfo_mac_to_abs);
+		exit(0);
 	}
 }
 
@@ -1902,6 +1916,7 @@ Usage: %s [OPTIONS]\n\
    -d stepd    Pathname to the slurmstepd program.\n\
    -D          Run daemon in foreground.\n\
    -f config   Read configuration from the specified file.\n\
+   -G          Print node's GRES configuration ane exit.\n\
    -h          Print this help message.\n\
    -L logfile  Log messages to the file `logfile'.\n\
    -M          Use mlock() to lock slurmd pages into memory.\n\
