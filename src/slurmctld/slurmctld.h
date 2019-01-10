@@ -328,6 +328,12 @@ extern time_t last_front_end_update;	/* time of last front_end update */
 \*****************************************************************************/
 #define PART_MAGIC 0xaefe8495
 
+typedef struct {
+	slurmdb_bf_usage_t *job_usage;
+	slurmdb_bf_usage_t *resv_usage;
+	xhash_t *user_usage;
+} bf_part_data_t;
+
 struct part_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
 				/* DO NOT ALPHABETIZE */
@@ -389,6 +395,7 @@ struct part_record {
 	uint16_t cr_type;	/* Custom CR values for partition (if supported by select plugin) */
 	uint64_t *tres_cnt;	/* array of total TRES in partition. NO_PACK */
 	char     *tres_fmt_str;	/* str of configured TRES in partition */
+	bf_part_data_t *bf_data;/* backfill data, NO PACK */
 };
 
 extern List part_list;			/* list of part_record entries */

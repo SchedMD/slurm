@@ -680,6 +680,8 @@ static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc)
 				debug2("user %s default acct is %s",
 				       user->name, user->default_acct);
 			}
+			/* cache user rec reference for backfill*/
+			assoc->user_rec = user;
 			break;
 		}
 		list_iterator_destroy(user_itr);

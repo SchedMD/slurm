@@ -388,6 +388,7 @@ struct part_record *create_part_record(void)
 		part_ptr->nodes = xstrdup(default_part.nodes);
 	else
 		part_ptr->nodes = NULL;
+	part_ptr->bf_data = NULL;
 
 	(void) list_append(part_list, part_ptr);
 
@@ -1004,6 +1005,26 @@ int init_part_conf(void)
 }
 
 /*
+ * Free memory for cached backfill data in partition record
+ */
+static void _bf_data_free(bf_part_data_t **datap)
+{
+	bf_part_data_t *data;
+	if (!datap || !*datap)
+		return;
+
+	data = *datap;
+
+	slurmdb_destroy_bf_usage(data->job_usage);
+        slurmdb_destroy_bf_usage(data->resv_usage);
+	xhash_free(data->user_usage);
+	xfree(data);
+
+	*datap = NULL;
+	return;
+}
+
+/*
  * _list_delete_part - delete an entry from the global partition list,
  *	see common/list.h for documentation
  * global: node_record_count - count of nodes in the system
@@ -1051,6 +1072,8 @@ static void _list_delete_part(void *part_entry)
 	xfree(part_ptr->qos_char);
 	xfree(part_ptr->tres_cnt);
 	xfree(part_ptr->tres_fmt_str);
+	_bf_data_free(&part_ptr->bf_data);
+
 	xfree(part_entry);
 }
 

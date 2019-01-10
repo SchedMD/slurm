@@ -722,6 +722,17 @@ extern void slurmdb_destroy_assoc_usage(void *object)
 	}
 }
 
+extern void slurmdb_destroy_bf_usage(void *object)
+{
+	slurmdb_destroy_bf_usage_members(object);
+	xfree(object);
+}
+
+extern void slurmdb_destroy_bf_usage_members(void *object)
+{
+	return;
+}
+
 extern void slurmdb_destroy_qos_usage(void *object)
 {
 	slurmdb_qos_usage_t *usage =
@@ -753,6 +764,7 @@ extern void slurmdb_destroy_user_rec(void *object)
 		xfree(slurmdb_user->name);
 		xfree(slurmdb_user->old_name);
 		FREE_NULL_LIST(slurmdb_user->wckey_list);
+		slurmdb_destroy_bf_usage(slurmdb_user->bf_usage);
 		xfree(slurmdb_user);
 	}
 }
@@ -866,6 +878,9 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		xfree(assoc->user);
 
 		slurmdb_destroy_assoc_usage(assoc->usage);
+		/* NOTE assoc->user_rec is a soft reference, do not free here */
+		assoc->user_rec = NULL;
+		slurmdb_destroy_bf_usage(assoc->bf_usage);
 	}
 }
 

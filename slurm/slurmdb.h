@@ -435,6 +435,8 @@ typedef struct {
 
 /* This has slurmdb_assoc_rec_t's in it so we define the struct afterwards. */
 typedef struct slurmdb_assoc_usage slurmdb_assoc_usage_t;
+typedef struct slurmdb_bf_usage slurmdb_bf_usage_t;
+typedef struct slurmdb_user_rec slurmdb_user_rec_t;
 
 typedef struct slurmdb_assoc_rec {
 	List accounting_list; /* list of slurmdb_accounting_rec_t *'s */
@@ -448,6 +450,8 @@ typedef struct slurmdb_assoc_rec {
 	struct slurmdb_assoc_rec *assoc_next_id; /* next assoc with
 							* same hash index
 							* DOESN'T GET PACKED */
+	slurmdb_bf_usage_t *bf_usage; /* data for backfill scheduler,
+				       * (DON'T PACK) */
 	char *cluster;		   /* cluster associated to association */
 
 	uint32_t def_qos_id;       /* Which QOS id is this
@@ -557,6 +561,10 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t uid;		   /* user ID */
 	slurmdb_assoc_usage_t *usage;
 	char *user;		   /* user associated to assoc */
+	slurmdb_user_rec_t *user_rec; /* Cache of user record
+				       * soft ref - mem not managed here
+				       * (DON'T PACK)
+				       */
 } slurmdb_assoc_rec_t;
 
 struct slurmdb_assoc_usage {
@@ -623,6 +631,11 @@ struct slurmdb_assoc_usage {
 	bitstr_t *valid_qos;    /* qos available for this association
 				 * derived from the qos_list.
 				 * (DON'T PACK for state file) */
+};
+
+struct slurmdb_bf_usage {
+	uint64_t count;
+	time_t last_sched;
 };
 
 typedef struct {
@@ -1166,10 +1179,12 @@ typedef struct {
 	uint16_t without_defaults;
 } slurmdb_user_cond_t;
 
-typedef struct {
+struct slurmdb_user_rec {
 	uint16_t admin_level; /* really slurmdb_admin_level_t but for
 				 packing purposes needs to be uint16_t */
 	List assoc_list; /* list of slurmdb_association_rec_t *'s */
+	slurmdb_bf_usage_t *bf_usage; /* data for backfill scheduler,
+				       * (DON'T PACK) */
 	List coord_accts; /* list of slurmdb_coord_rec_t *'s */
 	char *default_acct;
 	char *default_wckey;
@@ -1177,7 +1192,7 @@ typedef struct {
 	char *old_name;
 	uint32_t uid;
 	List wckey_list; /* list of slurmdb_wckey_rec_t *'s */
-} slurmdb_user_rec_t;
+};
 
 typedef struct {
 	List objects; /* depending on type */
@@ -1753,6 +1768,8 @@ extern int slurmdb_get_first_pack_cluster(List job_req_list,
 
 /************** helper functions **************/
 extern void slurmdb_destroy_assoc_usage(void *object);
+extern void slurmdb_destroy_bf_usage(void *object);
+extern void slurmdb_destroy_bf_usage_members(void *object);
 extern void slurmdb_destroy_qos_usage(void *object);
 extern void slurmdb_destroy_user_rec(void *object);
 extern void slurmdb_destroy_account_rec(void *object);

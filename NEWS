@@ -110,6 +110,7 @@ documents those changes that are of interest to users and administrators.
  -- X11 Forwarding - reimplement using new internal network forwarding RPCs.
  -- Remove slurm_jobcomp_get_errno and slurm_jobcomp_strerror from jobcomp
     plugin API.
+ -- Optimize backfill for checking max jobs per assoc, partition, user, etc.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
