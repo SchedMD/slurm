@@ -3577,6 +3577,7 @@ static void _job_state_delete(void *gres_data)
 	if (gres_ptr->gres_bit_select) {
 		for (i = 0; i < gres_ptr->total_node_cnt; i++)
 			FREE_NULL_BITMAP(gres_ptr->gres_bit_select[i]);
+		xfree(gres_ptr->gres_bit_select);
 	}
 	xfree(gres_ptr->gres_cnt_node_alloc);
 	xfree(gres_ptr->gres_cnt_node_select);
@@ -6345,8 +6346,8 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		sock_gres->type_id = job_gres_ptr->type_id;
 		sock_gres->type_name = xstrdup(job_gres_ptr->type_name);
 	} else {
-		xfree(sock_gres->cnt_by_sock);
-		xfree(sock_gres);
+		_sock_gres_del(sock_gres);
+		sock_gres = NULL;
 	}
 	return sock_gres;
 }
