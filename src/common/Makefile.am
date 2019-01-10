@@ -108,6 +108,7 @@ libcommon_la_SOURCES = 			\
 	job_options.c job_options.h	\
 	global_defaults.c		\
 	timers.c timers.h		\
+	track_script.c track_script.h	\
 	slurm_xlator.h			\
 	stepd_api.c stepd_api.h		\
 	write_labelled_message.c	\

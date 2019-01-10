@@ -24,7 +24,7 @@ To do so, use the procedure documented by the package, typically 'autoreconf'.])
 # Owen Taylor     1997-2001
 
 # Increment this whenever this file is changed.
-#serial 3
+#serial 1
 
 dnl AM_PATH_GLIB_2_0([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, MODULES]]]])
 dnl Test for GLIB, and define GLIB_CFLAGS and GLIB_LIBS, if gmodule, gobject,
@@ -34,16 +34,10 @@ AC_DEFUN([AM_PATH_GLIB_2_0],
 [dnl 
 dnl Get the cflags and libraries from pkg-config
 dnl
-
-dnl We can't use PKG_PREREQ because that needs 0.29.
-m4_ifndef([PKG_PROG_PKG_CONFIG],
-          [pkg.m4 version 0.28 or later is required])
-
 AC_ARG_ENABLE(glibtest, [  --disable-glibtest      do not try to compile and run a test GLIB program],
 		    , enable_glibtest=yes)
 
-  min_glib_version=ifelse([$1], [], [2.0.0], [$1])
-  pkg_config_args="glib-2.0 >= $min_glib_version"
+  pkg_config_args=glib-2.0
   for module in . $4
   do
       case "$module" in
@@ -74,15 +68,7 @@ AC_ARG_ENABLE(glibtest, [  --disable-glibtest      do not try to compile and run
     PKG_CONFIG=no
   fi
 
-  dnl For GLIB_CFLAGS and GLIB_LIBS
-  PKG_CHECK_MODULES([GLIB], [$pkg_config_args], [:], [:])
-
-  dnl For the tools
-  PKG_CHECK_VAR([GLIB_GENMARSHAL], [glib-2.0], [glib_genmarshal])
-  PKG_CHECK_VAR([GOBJECT_QUERY], [glib-2.0], [gobject_query])
-  PKG_CHECK_VAR([GLIB_MKENUMS], [glib-2.0], [glib_mkenums])
-  PKG_CHECK_VAR([GLIB_COMPILE_RESOURCES], [gio-2.0], [glib_compile_resources])
-
+  min_glib_version=ifelse([$1], ,2.0.0,$1)
   AC_MSG_CHECKING(for GLIB - version >= $min_glib_version)
 
   if test x$PKG_CONFIG != xno ; then
@@ -100,6 +86,13 @@ AC_ARG_ENABLE(glibtest, [  --disable-glibtest      do not try to compile and run
   fi
 
   if test x"$no_glib" = x ; then
+    GLIB_GENMARSHAL=`$PKG_CONFIG --variable=glib_genmarshal glib-2.0`
+    GOBJECT_QUERY=`$PKG_CONFIG --variable=gobject_query glib-2.0`
+    GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
+    GLIB_COMPILE_RESOURCES=`$PKG_CONFIG --variable=glib_compile_resources gio-2.0`
+
+    GLIB_CFLAGS=`$PKG_CONFIG --cflags $pkg_config_args`
+    GLIB_LIBS=`$PKG_CONFIG --libs $pkg_config_args`
     glib_config_major_version=`$PKG_CONFIG --modversion glib-2.0 | \
            sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[0-9]]*\)/\1/'`
     glib_config_minor_version=`$PKG_CONFIG --modversion glib-2.0 | \
@@ -233,6 +226,12 @@ main (void)
      GLIB_COMPILE_RESOURCES=""
      ifelse([$3], , :, [$3])
   fi
+  AC_SUBST(GLIB_CFLAGS)
+  AC_SUBST(GLIB_LIBS)
+  AC_SUBST(GLIB_GENMARSHAL)
+  AC_SUBST(GOBJECT_QUERY)
+  AC_SUBST(GLIB_MKENUMS)
+  AC_SUBST(GLIB_COMPILE_RESOURCES)
   rm -f conf.glibtest
 ])
 
@@ -427,7 +426,7 @@ main ()
 ])
 
 dnl pkg.m4 - Macros to locate and utilise pkg-config.   -*- Autoconf -*-
-dnl serial 11 (pkg-config-0.29)
+dnl serial 11 (pkg-config-0.29.1)
 dnl
 dnl Copyright © 2004 Scott James Remnant <scott@netsplit.com>.
 dnl Copyright © 2012-2015 Dan Nicholson <dbn.lists@gmail.com>
@@ -469,7 +468,7 @@ dnl
 dnl See the "Since" comment for each macro you use to see what version
 dnl of the macros you require.
 m4_defun([PKG_PREREQ],
-[m4_define([PKG_MACROS_VERSION], [0.29])
+[m4_define([PKG_MACROS_VERSION], [0.29.1])
 m4_if(m4_version_compare(PKG_MACROS_VERSION, [$1]), -1,
     [m4_fatal([pkg.m4 version $1 or higher is required but ]PKG_MACROS_VERSION[ found])])
 ])dnl PKG_PREREQ
