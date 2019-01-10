@@ -320,11 +320,17 @@ static void _set_job_time_limit(struct job_record *job_ptr, uint32_t new_limit)
  */
 static bool _many_pending_rpcs(void)
 {
+	bool many_pending_rpcs = false;
+
+	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	//info("thread_count = %u", slurmctld_config.server_thread_count);
 	if ((max_rpc_cnt > 0) &&
 	    (slurmctld_config.server_thread_count >= max_rpc_cnt))
-		return true;
-	return false;
+		many_pending_rpcs = true;
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
+	return many_pending_rpcs;
+
 }
 
 /*
@@ -1047,11 +1053,15 @@ static int _yield_locks(int64_t usec)
 	unlock_slurmctld(all_locks);
 	while (!stop_backfill) {
 		bf_sleep_usec += _my_sleep(usec);
+		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 		if ((max_rpc_cnt == 0) ||
-		    (slurmctld_config.server_thread_count <= yield_rpc_cnt))
+		    (slurmctld_config.server_thread_count <= yield_rpc_cnt)) {
+			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 			break;
+		}
 		verbose("backfill: continuing to yield locks, %d RPCs pending",
 			slurmctld_config.server_thread_count);
+		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 	}
 	lock_slurmctld(all_locks);
 	slurm_mutex_lock(&config_lock);
@@ -1491,7 +1501,7 @@ static int _attempt_backfill(void)
 	struct timeval bf_time1, bf_time2;
 	int rc = 0, error_code;
 	int job_test_count = 0, test_time_count = 0, pend_time;
-	bool already_counted;
+	bool already_counted, many_rpcs = false;
 	uint32_t reject_array_job_id = 0;
 	struct part_record *reject_array_part = NULL;
 	uint32_t start_time;
@@ -1610,9 +1620,15 @@ static int _attempt_backfill(void)
 		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){
 			break;
 		}
-		if (((max_rpc_cnt > 0) &&
-		     (slurmctld_config.server_thread_count >= max_rpc_cnt)) ||
-		    (slurm_delta_tv(&start_tv) >= yield_interval)) {
+
+		many_rpcs = false;
+		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+		if ((max_rpc_cnt > 0) &&
+		    (slurmctld_config.server_thread_count >= max_rpc_cnt))
+			many_rpcs = true;
+		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
+		if (many_rpcs || (slurm_delta_tv(&start_tv) >= sched_timeout)) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
 				info("backfill: yielding locks after testing "
@@ -1964,9 +1980,15 @@ next_task:
 			break;
 		}
 		test_time_count++;
-		if (((max_rpc_cnt > 0) &&
-		     (slurmctld_config.server_thread_count >= max_rpc_cnt)) ||
-		    (slurm_delta_tv(&start_tv) >= yield_interval)) {
+
+		many_rpcs = false;
+		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+		if ((max_rpc_cnt > 0) &&
+		    (slurmctld_config.server_thread_count >= max_rpc_cnt))
+			many_rpcs = true;
+		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
+		if (many_rpcs || (slurm_delta_tv(&start_tv) >= sched_timeout)) {
 			uint32_t save_time_limit = job_ptr->time_limit;
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
@@ -2666,11 +2688,15 @@ skip_start:
 		     slurmctld_diag_stats.bf_last_depth,
 		     job_test_count, TIME_STR);
 	}
+
+	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	if (slurmctld_config.server_thread_count >= 150) {
 		info("backfill: %d pending RPCs at cycle end, consider "
 		     "configuring max_rpc_cnt",
 		     slurmctld_config.server_thread_count);
 	}
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
 	return rc;
 }
 
