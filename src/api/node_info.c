@@ -409,15 +409,11 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 
 	/****** Power Consumption Line ******/
 	if (!node_ptr->energy || node_ptr->energy->current_watts == NO_VAL)
-		xstrcat(out, "CurrentWatts=n/s AveWatts=n/s LowestJoules=n/s ConsumedJoules=n/s");
+		xstrcat(out, "CurrentWatts=n/s AveWatts=n/s");
 	else
-		xstrfmtcat(out, "CurrentWatts=%u AveWatts=%u "
-				"LowestJoules=%"PRIu64" "
-				"ConsumedJoules=%"PRIu64"",
+		xstrfmtcat(out, "CurrentWatts=%u AveWatts=%u",
 				node_ptr->energy->current_watts,
-				node_ptr->energy->base_watts,
-				node_ptr->energy->base_consumed_energy,
-				node_ptr->energy->consumed_energy);
+				node_ptr->energy->base_watts);
 
 	xstrcat(out, line_end);
 

@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
     JobAcctGatherParam=OverMemoryKill.
  -- sview - disable admin mode option (which would not work anyways) if the
     user is not an admin in SlurmDBD.
+ -- Remove joules reporting from sview and scontrol.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

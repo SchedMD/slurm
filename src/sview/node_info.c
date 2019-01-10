@@ -50,7 +50,6 @@ enum {
 	SORTID_COLOR,
 	SORTID_CPUS,
 	SORTID_CPU_LOAD,
-	SORTID_CONSUMED_ENERGY,
 	SORTID_CORES,
 	SORTID_CURRENT_WATTS,
 	SORTID_ERR_CPUS,
@@ -153,8 +152,6 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_SLURMD_START_TIME, "SlurmdStartTime", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_CONSUMED_ENERGY,"Consumed Joules", false,
-	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CURRENT_WATTS, "Current Watts", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_AVE_WATTS, "Average Watts", false,
@@ -198,7 +195,6 @@ static void _layout_node_record(GtkTreeView *treeview,
 	char tmp_cnt[50];
 	char tmp_current_watts[50];
 	char tmp_base_watts[50];
-	char tmp_consumed_energy[50];
 	char tmp_cap_watts[50], tmp_owner[32];
 	char tmp_version[50];
 	char *upper = NULL, *lower = NULL;
@@ -406,21 +402,12 @@ static void _layout_node_record(GtkTreeView *treeview,
 			 "N/A");
 		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
 			 "N/A");
-		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
-			 "N/A");
 	} else {
 		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
 			 "%u", node_ptr->energy->current_watts);
 		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
 			 "%u", node_ptr->energy->base_watts);
-		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
-			 "%"PRIu64"", node_ptr->energy->consumed_energy);
 	}
-
-	add_display_treestore_line(update, treestore, &iter,
-				   find_col_name(display_data_node,
-						 SORTID_CONSUMED_ENERGY),
-				   tmp_consumed_energy);
 
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
@@ -465,7 +452,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	char tmp_disk[20], tmp_cpus[20], tmp_idle_cpus[20];
 	char tmp_mem[20], tmp_used_memory[20];
 	char tmp_used_cpus[20], tmp_cpu_load[20], tmp_free_mem[20], tmp_owner[32];
-	char tmp_current_watts[50], tmp_base_watts[50], tmp_consumed_energy[50];
+	char tmp_current_watts[50], tmp_base_watts[50];
 	char tmp_cap_watts[50], tmp_version[50];
 	char *tmp_state_lower, *tmp_state_upper;
 
@@ -475,15 +462,11 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			 "N/A");
 		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
 			 "N/A");
-		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
-			 "N/A");
 	} else {
 		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
 			 "%u ", node_ptr->energy->current_watts);
 		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
 			 "%u", node_ptr->energy->base_watts);
-		snprintf(tmp_consumed_energy, sizeof(tmp_consumed_energy),
-			 "%"PRIu64"", node_ptr->energy->consumed_energy);
 	}
 
 	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
@@ -580,7 +563,6 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos
 				% sview_colors_cnt],
-			   SORTID_CONSUMED_ENERGY, tmp_consumed_energy,
 			   SORTID_CORES,     node_ptr->cores,
 			   SORTID_CPUS,      tmp_cpus,
 			   SORTID_CURRENT_WATTS, tmp_current_watts,
