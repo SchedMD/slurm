@@ -794,9 +794,11 @@ int main(int argc, char **argv)
 		acct_storage_g_close_connection(&acct_db_conn);
 		slurm_acct_storage_fini();
 
-		/* join the power save thread after saving all state
+		/*
+		 * join the power save thread after saving all state
 		 * since it could wait a while waiting for spawned
-		 * processes to exit */
+		 * processes to exit
+		 */
 		pthread_join(slurmctld_config.thread_id_power, NULL);
 
 		/* stop the heartbeat last */
@@ -824,9 +826,11 @@ int main(int argc, char **argv)
 	layouts_fini();
 	g_slurm_jobcomp_fini();
 
-	/* Since pidfile is created as user root (its owner is
+	/*
+	 * Since pidfile is created as user root (its owner is
 	 *   changed to SlurmUser) SlurmUser may not be able to
-	 *   remove it, so this is not necessarily an error. */
+	 *   remove it, so this is not necessarily an error.
+	 */
 	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0) {
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
@@ -855,6 +859,7 @@ int main(int argc, char **argv)
 
 	/* Purge our local data structures */
 	xcgroup_fini_slurm_cgroup_conf();
+	power_save_fini();
 	job_fini();
 	part_fini();	/* part_fini() must precede node_fini() */
 	node_fini();

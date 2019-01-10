@@ -974,6 +974,17 @@ extern bool power_save_test(void)
 	return rc;
 }
 
+/* Free module's allocated memory */
+extern void power_save_fini(void)
+{
+	slurm_mutex_lock(&power_mutex);
+	if (power_save_started) {     /* Already running */
+		power_save_started = false;
+		FREE_NULL_LIST(proc_track_list);
+	}
+	slurm_mutex_unlock(&power_mutex);
+}
+
 /*
  * init_power_save - Initialize the power save module. Started as a
  *	pthread. Terminates automatically at slurmctld shutdown time.

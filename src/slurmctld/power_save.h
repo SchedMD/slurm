@@ -60,4 +60,7 @@ extern bool power_save_test(void);
 /* power_job_reboot - Reboot compute nodes for a job from the head node */
 extern int power_job_reboot(struct job_record *job_ptr);
 
+/* Free module's allocated memory */
+extern void power_save_fini(void);
+
 #endif /* _HAVE_POWER_SAVE_H */
