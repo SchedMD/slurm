@@ -440,7 +440,7 @@ set target_job [expr $mps_cnt / 2]
 make_bash_script $file_in1 "
 echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
 $sbatch --gres=mps:$target_job -w \$SLURMD_NODENAME -n1 -t1 -o $file_out2 -J test$test_id $file_in2
-sleep 1
+sleep 30
 exit 0"
 
 make_bash_script $file_in2 "
@@ -463,9 +463,10 @@ expect {
 		wait
 	}
 }
+sleep 30
 if {[wait_for_job $job_id1 "DONE"] != 0} {
 	send_user "\nFAILURE: job $job_id1 did not complete\n"
-	cancel_job $job_id
+	cancel_job $job_id1
 	set exit_code 1
 }
 if {[wait_for_file $file_out1] != 0} {
@@ -504,7 +505,7 @@ if {$job_id2 == 0} {
 send_user "\n\n"
 if {[wait_for_job $job_id2 "DONE"] != 0} {
 	send_user "\nFAILURE: job $job_id2 did not complete\n"
-	cancel_job $job_id
+	cancel_job $job_id2
 	set exit_code 1
 }
 if {[wait_for_file $file_out2] != 0} {
