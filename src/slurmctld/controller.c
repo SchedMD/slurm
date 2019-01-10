@@ -854,6 +854,7 @@ int main(int argc, char **argv)
 	slurm_sched_fini();	/* Stop all scheduling */
 
 	/* Purge our local data structures */
+	xcgroup_fini_slurm_cgroup_conf();
 	job_fini();
 	part_fini();	/* part_fini() must precede node_fini() */
 	node_fini();
