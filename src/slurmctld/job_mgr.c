@@ -8399,6 +8399,8 @@ extern void job_config_fini(struct job_record *job_ptr)
 	 */
 	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
 		launch_prolog(job_ptr);
+	if (job_ptr->batch_flag)
+		(void)build_batch_step(job_ptr);
 }
 
 /*
@@ -14108,6 +14110,7 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if ((step_ptr->step_id == SLURM_EXTERN_CONT) ||
+		    (step_ptr->step_id == SLURM_BATCH_SCRIPT) ||
 		    (step_ptr->state != JOB_RUNNING))
 			continue;
 		if (!bit_test(step_ptr->step_node_bitmap, node_inx))

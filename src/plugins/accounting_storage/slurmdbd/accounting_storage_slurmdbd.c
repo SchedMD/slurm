@@ -2702,15 +2702,6 @@ extern int jobacct_storage_p_step_start(void *db_conn,
 
 	snprintf(node_list, BUFFER_SIZE, "%s", temp_nodes);
 
-	if (step_ptr->step_id == SLURM_BATCH_SCRIPT) {
-		/*
-		 * We overload tres_per_node with the node name of where the
-		 * script was running.
-		 */
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->tres_per_node);
-		nodes = tasks = 1;
-	}
-
 	if (!step_ptr->job_ptr->db_index
 	    && (!step_ptr->job_ptr->details
 		|| !step_ptr->job_ptr->details->submit_time)) {

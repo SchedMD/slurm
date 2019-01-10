@@ -73,6 +73,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_ext_sensors.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_protocol_api.h"
@@ -2520,36 +2521,32 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 	 */
 	if (association_based_accounting && job_ptr &&
 	    (job_ptr->job_state != JOB_PENDING)) {
-		struct step_record batch_step;
-		memset(&batch_step, 0, sizeof(struct step_record));
-		batch_step.job_ptr = job_ptr;
-		batch_step.step_id = SLURM_BATCH_SCRIPT;
-		batch_step.jobacct = comp_msg->jobacct;
-		batch_step.exit_code = comp_msg->job_rc;
-#ifdef HAVE_FRONT_END
-		nodes = job_ptr->nodes;
-#endif
-		/*
-		 * We overload tres_per_node with the node name of where the
-		 * script was running.
-		 */
-		batch_step.tres_per_node = nodes;
-		if (node_name2bitmap(nodes, false,
-				     &batch_step.step_node_bitmap) != 0) {
-			error("%s: %pJ has invalid node list (%s)",
-			      __func__, job_ptr, nodes);
+		/* This logic was taken from _slurm_rpc_step_complete() */
+		struct step_record *step_ptr =
+			find_step_record(job_ptr, SLURM_BATCH_SCRIPT);
+		if (!step_ptr) {
+			if (msg->protocol_version >=
+			    SLURM_19_05_PROTOCOL_VERSION)
+				error("%s: Could not for batch step for %pJ, this should never happen.",
+				      __func__, job_ptr);
+			else
+				debug2("%s: Batch step complete from old version of Slurm recieved for job %pJ.",
+				       __func__, job_ptr);
+			step_ptr = build_batch_step(job_ptr);
 		}
-		batch_step.requid = -1;
-		batch_step.start_time = job_ptr->start_time;
-		batch_step.name = "batch";
-		batch_step.select_jobinfo = job_ptr->select_jobinfo;
 
-		step_set_alloc_tres(&batch_step, 1, false, false);
-
-		jobacct_storage_g_step_start(acct_db_conn, &batch_step);
-		jobacct_storage_g_step_complete(acct_db_conn, &batch_step);
-		FREE_NULL_BITMAP(batch_step.step_node_bitmap);
-		xfree(batch_step.tres_alloc_str);
+		if (step_ptr->step_id != SLURM_BATCH_SCRIPT) {
+			error("%s: %pJ Didn't find batch step, found step %u. This should never happen.",
+			      __func__, job_ptr, step_ptr->step_id);
+		} else {
+			step_ptr->exit_code = comp_msg->job_rc;
+			jobacctinfo_destroy(step_ptr->jobacct);
+			step_ptr->jobacct = comp_msg->jobacct;
+			comp_msg->jobacct = NULL;
+			step_ptr->state |= JOB_COMPLETING;
+			jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
+			delete_step_record(job_ptr, step_ptr->step_id);
+		}
 	}
 
 #ifdef HAVE_FRONT_END

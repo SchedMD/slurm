@@ -4844,3 +4844,32 @@ extern struct step_record *build_extern_step(struct job_record *job_ptr)
 
 	return step_ptr;
 }
+
+extern struct step_record *build_batch_step(struct job_record *job_ptr)
+{
+	struct step_record *step_ptr = _create_step_record(job_ptr, 0);
+
+	step_ptr->step_layout = fake_slurm_step_layout_create(
+		job_ptr->batch_host, NULL, NULL, 1, 1);
+	checkpoint_alloc_jobinfo(&step_ptr->check_job);
+	step_ptr->ext_sensors = ext_sensors_alloc();
+	step_ptr->name = xstrdup("batch");
+	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
+	step_ptr->state = JOB_RUNNING;
+	step_ptr->start_time = job_ptr->start_time;
+	step_ptr->step_id = SLURM_BATCH_SCRIPT;
+	step_ptr->batch_step = 1;
+
+	if (node_name2bitmap(job_ptr->batch_host, false,
+			     &step_ptr->step_node_bitmap)) {
+		error("%s: %pJ has invalid node list (%s)",
+		      __func__, job_ptr, job_ptr->batch_host);
+	}
+
+	step_ptr->time_last_active = time(NULL);
+	step_set_alloc_tres(step_ptr, 1, false, false);
+
+	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
+
+	return step_ptr;
+}

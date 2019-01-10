@@ -3023,10 +3023,15 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * a reboot first.  Job state could be changed above so we need to
 	 * recheck its state to see if it's currently configuring.
 	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC.
+	 *
+	 * We also need to add the batch step here.
 	 */
-	if ((slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
-	    (!IS_JOB_CONFIGURING(job_ptr)))
-		launch_prolog(job_ptr);
+	if (!IS_JOB_CONFIGURING(job_ptr)) {
+		if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
+			launch_prolog(job_ptr);
+		if (job_ptr->batch_flag)
+			(void)build_batch_step(job_ptr);
+	}
 
 cleanup:
 	if (job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap &&

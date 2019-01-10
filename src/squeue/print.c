@@ -2378,6 +2378,9 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 		} else if (step->step_id == SLURM_EXTERN_CONT) {
 			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.Extern",
 				 step->array_job_id, step->array_task_id);
+		} else if (step->step_id == SLURM_BATCH_SCRIPT) {
+			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.Batch",
+				 step->array_job_id, step->array_task_id);
 		} else {
 			snprintf(id, FORMAT_STRING_SIZE, "%u_%u.%u",
 				 step->array_job_id, step->array_task_id,
@@ -2390,6 +2393,9 @@ int _print_step_id(job_step_info_t * step, int width, bool right, char* suffix)
 				 step->job_id);
 		} else if (step->step_id == SLURM_EXTERN_CONT) {
 			snprintf(id, FORMAT_STRING_SIZE, "%u.Extern",
+				 step->job_id);
+		} else if (step->step_id == SLURM_BATCH_SCRIPT) {
+			snprintf(id, FORMAT_STRING_SIZE, "%u.Batch",
 				 step->job_id);
 		} else {
 			snprintf(id, FORMAT_STRING_SIZE, "%u.%u",
