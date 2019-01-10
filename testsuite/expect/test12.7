@@ -251,10 +251,19 @@ if {[wait_for_job $job_id "PENDING"] != 0} {
 	send_user "\nFAILURE: error waiting for job $job_id to pend\n"
 	set exit_code 1
 }
+# Wait for the state changes to propagate to the database for sacct
+sleep 3
+# The job state should be NODE_FAIL
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
 	endit 1 "FAILURE: Bad NODE_FAIL count ($fail_count != 1)"
 }
+# The batch step state should be CANCELLED
+set canc_count [check_sacct_states "CANCELLED" 0]
+if {$canc_count != 1} {
+	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
+}
+# The requeued job state should be PENDING
 set pend_count [check_sacct_states "PENDING" 0]
 if {$pend_count != 1} {
 	endit 1 "FAILURE: Bad PENDING count ($pend_count != 1)"
@@ -274,8 +283,13 @@ set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
 	endit 1 "FAILURE: Bad NODE_FAIL count ($fail_count != 1)"
 }
+set canc_count [check_sacct_states "CANCELLED" 0]
+if {$canc_count != 1} {
+	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
+}
 set run_count [check_sacct_states "RUNNING" 0]
-if {$run_count != 1} {
+# The requeued job and its batch step should now be running.
+if {$run_count != 2} {
 	endit 1 "FAILURE: Bad RUNNING count ($run_count != 1)"
 }
 send_user "So far, so good\n\n"
@@ -293,6 +307,12 @@ expect {
 
 # Wait a bit for the job to be requeued then check its state
 sleep 8
+if {[wait_for_job $job_id "PENDING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to pend\n"
+	set exit_code 1
+}
+# Wait for the state changes to propagate to the database for sacct
+sleep 3
 send_user "\n\nTest 4\n"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
@@ -302,8 +322,9 @@ set req_count [check_sacct_states "REQUEUE" 0]
 if {$req_count != 1} {
 	endit 1 "FAILURE: Bad REQUEUE count ($req_count != 1)"
 }
+# The first and second batch steps should both show CANCELLED
 set canc_count [check_sacct_states "CANCELLED" 0]
-if {$canc_count != 1} {
+if {$canc_count != 2} {
 	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
 }
 set pend_count [check_sacct_states "PENDING" 0]
@@ -319,8 +340,9 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 # Wait for batch script to start (after message delays, prologs, etc.)
 sleep 5
 
-# Check for steps after requeue
-check_step 1
+# Check for steps after requeue. There should be 3 batch steps - the first 2
+# that are CANCELLED, and now the last one that is running.
+check_step 3
 
 
 send_user "\n\nTest 5\n"
@@ -333,11 +355,12 @@ if {$req_count != 1} {
 	endit 1 "FAILURE: Bad REQUEUE count ($req_count != 1)"
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
-if {$canc_count != 1} {
+if {$canc_count != 2} {
 	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
 }
+# The job and its batch step should be RUNNING
 set run_count [check_sacct_states "RUNNING" 0]
-if {$run_count != 1} {
+if {$run_count != 2} {
 	endit 1 "FAILURE: Bad RUNNING count ($run_count != 1)"
 }
 send_user "So far, so good\n\n"
@@ -349,7 +372,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 # Check steps after job has completed
-check_step 2
+check_step 3
 send_user "\n\nTest 6\n"
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
@@ -360,7 +383,7 @@ if {$req_count != 1} {
 	endit 1 "FAILURE: Bad REQUEUE count ($req_count != 1)"
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
-if {$canc_count != 1} {
+if {$canc_count != 2} {
 	endit 1 "FAILURE: Bad CANCELLED count ($canc_count != 1)"
 }
 set comp_count [check_sacct_states "COMPLETED" 0]

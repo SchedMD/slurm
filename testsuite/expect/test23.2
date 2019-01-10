@@ -240,7 +240,7 @@ sleep 5
 #
 ################################################################
 
-proc sstat_job { soption job_id } {
+proc sstat_job { soption job_id step_id } {
 	global sstat number
 	set debug       0
 	set exit_code   0
@@ -257,6 +257,11 @@ proc sstat_job { soption job_id } {
 			}
 			-re "$job_id.($number)" {
 				if {$debug} {send_user "\nmatch $expect_out(1,string)\n"}
+				incr matches
+				exp_continue
+			}
+			-re "$job_id.batch" {
+				if {$debug} {send_user "\nmatch batch\n"}
 				incr matches
 				exp_continue
 			}
@@ -311,7 +316,7 @@ proc sstat_job { soption job_id } {
 	}
 
 	if { $soption == "-parsable" || $soption == "p" } {
-		spawn $sstat -$soption -p -j $job_id
+		spawn $sstat -$soption -p -j $job_id.$step_id
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
@@ -332,7 +337,7 @@ proc sstat_job { soption job_id } {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id..\\|" {
+			-re "$job_id.$step_id\\|" {
 				if {$debug} {send_user "\nmatch9\n"}
 				incr matches
 				exp_continue
@@ -353,7 +358,7 @@ proc sstat_job { soption job_id } {
 	}
 
 	if { $soption == "-parsable2" || $soption == "P" } {
-		spawn $sstat -$soption -j $job_id
+		spawn $sstat -$soption -j $job_id.$step_id
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
@@ -374,7 +379,7 @@ proc sstat_job { soption job_id } {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id..\\|" {
+			-re "$job_id.$step_id\\|" {
 				if {$debug} {send_user "\nmatch13\n"}
 				incr matches
 				exp_continue
@@ -510,61 +515,61 @@ proc sstat_vargs { soption vargs job_id} {
 	}
 }
 ################################################################
-set matches [sstat_job a $job_id3]
-if {$matches != 3} {
+set matches [sstat_job a $job_id3 ""]
+if {$matches != 4} {
 	send_user "\nFAILURE: sstat -a failed ($matches != 3)\n"
 	set exit_code 1
 }
 
-set matches [sstat_job -allsteps $job_id3]
-if {$matches != 3} {
+set matches [sstat_job -allsteps $job_id3 ""]
+if {$matches != 4} {
 	send_user "\nFAILURE: sstat --allsteps failed ($matches != 3)\n"
 	set exit_code 1
 }
 
-set matches [sstat_job n $job_id3]
+set matches [sstat_job n $job_id3 ""]
 if {$matches != 1} {
 	send_user "\nFAILURE: sstat -n failed ($matches != 1)\n"
 	set exit_code 1
 }
 
-set matches [sstat_job -noheader $job_id3]
+set matches [sstat_job -noheader $job_id3 ""]
 if {$matches != 1} {
 	send_user "\nFAILURE: sstat --noheader failed ($matches != 1)\n"
 	set exit_code 1
 }
 
-set matches [sstat_job p $job_id3]
+set matches [sstat_job p $job_id3 0]
 if {$matches != 4} {
 	send_user "\nFAILURE: sstat -p failed ($matches != 4)\n"
 	set exit_code 1
 }
 
-set matches [sstat_job -parsable $job_id3]
+set matches [sstat_job -parsable $job_id3 0]
 if {$matches != 4} {
 	send_user "\nFAILURE: sstat --parsable failed ($matches != 4)\n"
 	set exit_code 1
 }
 
-set matches [sstat_job P $job_id3]
+set matches [sstat_job P $job_id3 0]
 if {$matches != 4} {
 	send_user "\nFAILURE: sstat -P failed ($matches != 4)\n"
 	set exit_code 1
 }
 
-set matches [sstat_job -parsable2 $job_id3]
+set matches [sstat_job -parsable2 $job_id3 0]
 if {$matches != 4} {
 	send_user "\nFAILURE: sstat --parsable2 failed ($matches != 4)\n"
 	set exit_code 1
 }
 
-set matches [sstat_job v $job_id3]
+set matches [sstat_job v $job_id3 0]
 if {$matches != 4} {
 	send_user "\nFAILURE: sstat -v failed ($matches != 4)\n"
 	set exit_code 1
 }
 
-set matches [sstat_job -verbose $job_id3]
+set matches [sstat_job -verbose $job_id3 0]
 if {$matches != 4} {
 	send_user "\nFAILURE: sstat --verbose failed ($matches != 4)\n"
 	set exit_code 1
