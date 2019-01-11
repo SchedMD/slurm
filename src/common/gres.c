@@ -3849,7 +3849,7 @@ static bool _is_valid_number(char *tok, unsigned long long int *value)
  * in_val IN - initial input string
  * type OUT -  must be xfreed by caller
  * cnt OUT - count of values
- * flags OUT - user flags (GRES_PERCENT, GRES_NO_CONSUME)
+ * flags OUT - user flags (GRES_NO_CONSUME)
  * save_ptr IN/OUT - NULL on initial call, otherwise value from previous call
  * RET rc - error code
  */
@@ -4008,12 +4008,6 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 				    cnt, &flags, &prev_save_ptr)) ||
 	    (context_inx == NO_VAL)) {
 		prev_save_ptr = NULL;
-		goto fini;
-	}
-	if ((flags & GRES_PERCENT) &&
-	    ((*cnt > 100) ||
-	     !_shared_gres(gres_context[context_inx].plugin_id))) {
-		my_rc = ESLURM_INVALID_GRES;
 		goto fini;
 	}
 
@@ -9841,17 +9835,9 @@ extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
  */
 static char *_gres_flags_str(uint16_t flags)
 {
-	static char flag_str[128];
-
-	flag_str[0] = '\0';
-	if (flags & GRES_PERCENT)
-		strcat(flag_str, "percent");
-	if (flags & GRES_NO_CONSUME) {
-		if (flag_str[0])
-			strcat(flag_str, ",");
-		strcat(flag_str, "no_consume");
-	}
-	return flag_str;
+	if (flags & GRES_NO_CONSUME)
+		return "no_consume";
+	return "";
 }
 
 static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
@@ -10281,13 +10267,6 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 	if ((my_rc = _get_next_gres(in_val, &type, &context_inx,
 				    cnt, &flags, &prev_save_ptr)) ||
 	    (context_inx == NO_VAL)) {
-		prev_save_ptr = NULL;
-		goto fini;
-	}
-	if ((flags & GRES_PERCENT) &&
-	    ((*cnt > 100) ||
-	     !_shared_gres(gres_context[context_inx].plugin_id))) {
-		my_rc = ESLURM_INVALID_GRES;
 		prev_save_ptr = NULL;
 		goto fini;
 	}

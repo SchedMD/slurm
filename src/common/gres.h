@@ -68,8 +68,7 @@ typedef struct {
 #define GRES_CONF_HAS_FILE	0x02	/* File= is configured */
 #define GRES_CONF_HAS_TYPE	0x04	/* Type= is configured */
 
-#define GRES_PERCENT		0x0001	/* Requesting percentage of available */
-#define GRES_NO_CONSUME		0x0002	/* Requesting no consume of resources */
+#define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
 
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
@@ -173,7 +172,7 @@ typedef struct gres_job_state {
 	char *gres_name;		/* GRES name (e.g. "gpu") */
 	uint32_t type_id;		/* GRES type (e.g. model ID) */
 	char *type_name;		/* GRES type (e.g. model name) */
-	uint16_t flags;			/* GRES_PERCENT, GRES_NO_CONSUME, etc. */
+	uint16_t flags;			/* GRES_NO_CONSUME, etc. */
 
 	/* Count of required GRES resources plus associated CPUs and memory */
 	uint16_t cpus_per_gres;
@@ -226,7 +225,7 @@ typedef struct gres_job_state {
 typedef struct gres_step_state {
 	uint32_t type_id;		/* GRES type (e.g. model ID) */
 	char *type_name;		/* GRES type (e.g. model name) */
-	uint16_t flags;			/* GRES_PERCENT, GRES_NO_CONSUME, etc. */
+	uint16_t flags;			/* GRES_NO_CONSUME, etc. */
 
 	/* Count of required GRES resources plus associated CPUs and memory */
 	uint16_t cpus_per_gres;
