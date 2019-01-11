@@ -3906,19 +3906,6 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		sep2 = NULL;
 	}
 
-	for (i = 0; i < gres_context_cnt; i++) {
-		if (!xstrcmp(name, gres_context[i].gres_name) ||
-		    !xstrncmp(name, gres_context[i].gres_name_colon,
-			      gres_context[i].gres_name_colon_len))
-			break;	/* GRES name match found */
-	}
-	if (i >= gres_context_cnt) {
-		debug("%s: Failed to locate GRES %s", __func__, name);
-		rc = ESLURM_INVALID_GRES;
-		goto fini;
-	}
-	*context_inx_ptr = i;
-
 	if (sep2) {		/* Two colons */
 		/* We have both type and count */
 		type = xstrdup(sep);
@@ -3947,6 +3934,19 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		xfree(type);
 		goto next;
 	}
+
+	for (i = 0; i < gres_context_cnt; i++) {
+		if (!xstrcmp(name, gres_context[i].gres_name) ||
+		    !xstrncmp(name, gres_context[i].gres_name_colon,
+			      gres_context[i].gres_name_colon_len))
+			break;	/* GRES name match found */
+	}
+	if (i >= gres_context_cnt) {
+		debug("%s: Failed to locate GRES %s", __func__, name);
+		rc = ESLURM_INVALID_GRES;
+		goto fini;
+	}
+	*context_inx_ptr = i;
 
 fini:	if (rc != SLURM_SUCCESS) {
 		*save_ptr = NULL;
