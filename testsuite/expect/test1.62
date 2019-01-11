@@ -124,8 +124,10 @@ proc run_gpu_fail { gres_spec } {
 		}
 	}
 	if {$invalid == 0} {
-		send_user "\WARNING: Failure to reject job with invalid GRES specification\n"
+		send_user "\nFAILURE: Failure to reject job with invalid GRES specification\n"
 		set exit_code 1
+	} else {
+		send_user "\nError is expected, no worries.\n"
 	}
 	return
 }
@@ -169,9 +171,8 @@ if {[run_gpu_test 1 ] != 0} {
 # Spawn a job via srun with various invalid GRES specifications
 #
 send_user "\nTest various invalid GRES specifications\n"
+run_gpu_fail "gpu:"
 run_gpu_fail "gpu::"
-run_gpu_fail "gpu:1X"
-run_gpu_fail "gpu:INVALID_COUNT"
 run_gpu_fail "gpu:tesla:"
 run_gpu_fail "gpu:tesla:INVALID_COUNT"
 run_gpu_fail "gpu:INVALID_TYPE:"

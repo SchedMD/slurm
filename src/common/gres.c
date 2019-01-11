@@ -3908,6 +3908,11 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 
 	if (sep2) {		/* Two colons */
 		/* We have both type and count */
+		if ((sep[0] == '\0') || (sep2[0] == '\0')) {
+			/* Bad format (e.g. "gpu:tesla:" or "gpu::1") */
+			rc = ESLURM_INVALID_GRES;
+			goto fini;
+		}
 		type = xstrdup(sep);
 		if (!_is_valid_number(sep2, &value)) {
 			debug("%s: Invalid count value GRES %s:%s:%s", __func__,
@@ -3916,7 +3921,11 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 			goto fini;
 		}
 	} else if (sep) {	/* One colon */
-		if (_is_valid_number(sep, &value)) {
+		if (sep[0] == '\0') {
+			/* Bad format (e.g. "gpu:") */
+			rc = ESLURM_INVALID_GRES;
+			goto fini;
+		} else if (_is_valid_number(sep, &value)) {
 			/* We have count, but no type */
 			type = NULL;
 		} else {
