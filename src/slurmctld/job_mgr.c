@@ -8231,12 +8231,7 @@ extern bool valid_tres_cnt(char *tres)
 			}
 		} else if ((colon = strchr(sep, ':'))) {
 			/* Includes explicit "name:type:count" */
-			if ((sep[0] >= '0') && (sep[0] <= '9')) {
-				/* "type" is numeric */
-				rc = false;
-				break;
-			}
-			sep = colon + 1;
+			sep = colon + 1;	/* Points to count */
 			val = strtoll(sep, &end_ptr, 10);
 			/* First only check numeric component for validity */
 			if (((val < 0) ||
@@ -8247,33 +8242,18 @@ extern bool valid_tres_cnt(char *tres)
 			}
 
 			/*
-			 * Now check that any count modifier is valid.
-			 * First check that modifier is not more than 1 char
+			 * Now check that any count suffic is valid.
 			 */
-			if ((end_ptr[0] != '\0') && (end_ptr[1] != '\0')) {
-				rc = false;
-				break;
-			}
-
-			/* Test for valid char: [null|k|K|m|M|g|G|t|T|p|P] */
-			if ((end_ptr[0] != '\0') &&
-			    (end_ptr[0] != 'k') && (end_ptr[0] != 'K') &&
-			    (end_ptr[0] != 'm') && (end_ptr[0] != 'M') &&
-			    (end_ptr[0] != 'g') && (end_ptr[0] != 'G') &&
-			    (end_ptr[0] != 't') && (end_ptr[0] != 'T') &&
-			    (end_ptr[0] != 'p') && (end_ptr[0] != 'P')) {
+			if (suffix_mult(end_ptr) == NO_VAL64) {
 				rc = false;
 				break;
 			}
 		} else {
-			val = strtoll(sep, &end_ptr, 10);
-			/* First only check numeric component for validity */
-			if (((val < 0) ||
-			    (val == LLONG_MAX)) ||
-			    (!valid_name && (val != 0))) {
-				rc = false;
-				break;
-			}
+			/*
+			 * Includes "name:type" or "name:count"
+			 * Since we don't know if there is a count,
+			 * we can not do more now.
+			 */
 		}
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}

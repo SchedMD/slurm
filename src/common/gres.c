@@ -3810,6 +3810,28 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 }
 
 /*
+ * Translate a string, with optional suffix, into its equivalent numeric value
+ * tok IN - the string to translate
+ * value IN - numeric value
+ * RET true if "tok" is a valid number
+ */
+static bool _is_valid_number(char *tok, unsigned long long int *value)
+{
+	unsigned long long int tmp_val;
+	uint64_t mult;
+	char *end_ptr = NULL;
+
+	tmp_val = strtoull(tok, &end_ptr, 10);
+	if (tmp_val == ULLONG_MAX)
+		return false;
+	if ((mult = suffix_mult(end_ptr)) == NO_VAL64)
+		return false;
+	tmp_val *= mult;
+	*value = tmp_val;
+	return true;
+}
+
+/*
  * Reentrant TRES specification parse logic
  * in_val IN - initial input string
  * type OUT -  must be xfreed by caller
@@ -3821,10 +3843,9 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 static int _get_next_gres(char *in_val, char **type_ptr, int *context_inx_ptr,
 			  uint64_t *cnt, uint16_t *flags, char **save_ptr)
 {
-	char *end_ptr = NULL, *comma, *sep, *sep2, *name = NULL, *type = NULL;
-	size_t offset = 0;
+	char *comma, *sep, *sep2, *name = NULL, *type = NULL;
 	int i, rc = SLURM_SUCCESS;
-	unsigned long long int value;
+	unsigned long long int value = 0;
 
 	xassert(cnt);
 	xassert(flags);
@@ -3844,34 +3865,32 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		goto fini;
 	}
 
-	/* Identify the appropriate context for input token */
 	name = xstrdup(*save_ptr);
 	comma = strchr(name, ',');
-	sep =   strchr(name, ':');
-	if (sep && (!comma || (sep < comma))) {
+	if (comma) {
+		*save_ptr += (comma - name + 1);
+		comma[0] = '\0';
+	} else {
+		*save_ptr += strlen(name);
+	}
+
+	if (name[0] == '\0') {
+		/* Nothing but a comma */
+		xfree(name);
+		goto next;
+	}
+
+	sep = strchr(name, ':');
+	if (sep) {
 		sep[0] = '\0';
 		sep++;
 		sep2 = strchr(sep, ':');
-		if (sep2 && (!comma || (sep2 < comma)))
+		if (sep2) {
+			sep2[0] = '\0';
 			sep2++;
-		else
-			sep2 = sep;
-		if ((sep2[0] == '0') &&
-		    ((value = strtoull(sep2, &end_ptr, 10)) == 0)) {
-			/* Ignore GRES with explicit zero count */
-			offset = end_ptr - name + 1;
-			xfree(name);
-			if (!comma) {
-				*save_ptr = NULL;
-				goto fini;
-			} else {
-				*save_ptr += offset;
-				goto next;
-			}
 		}
-	} else if (comma) {
-		comma[0] = '\0';
-		sep = NULL;
+	} else {
+		sep2 = NULL;
 	}
 
 	for (i = 0; i < gres_context_cnt; i++) {
@@ -3887,73 +3906,36 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 	}
 	*context_inx_ptr = i;
 
-	/* Identify GRES type/model name (value is optional) */
-	if (!sep) {
-		/* No type or count */
-		type = NULL;
-	} else if ((sep[0] < '0') || (sep[0] > '9')) {
+	if (sep2) {		/* Two colons */
+		/* We have both type and count */
 		type = xstrdup(sep);
-		if ((sep2 = strchr(type, ':'))) {
-			sep2[0] = '\0';
-			offset = (sep2 + 1) - type;
-			sep += offset;
-		} else {
-			sep = NULL;
+		if (!_is_valid_number(sep2, &value)) {
+			debug("%s: Invalid count value GRES %s:%s:%s", __func__,
+			      name, type, sep2);
+			rc = ESLURM_INVALID_GRES;
+			goto fini;
 		}
-	} else {
-		/* Count in this field, no type */
+	} else if (sep) {	/* One colon */
+		if (_is_valid_number(sep, &value)) {
+			/* We have count, but no type */
+			type = NULL;
+		} else {
+			/* We have type with implicit count of 1 */
+			type = xstrdup(sep);
+			value = 1;
+		}
+	} else {		/* No colon */
+		/* We have no type and implicit count of 1 */
 		type = NULL;
+		value = 1;
+	}
+	if (value == 0) {
+		xfree(name);
+		xfree(type);
+		goto next;
 	}
 
-	/* Identify numeric value, including suffix */
-	if (!sep) {
-		/* No type or explicit count. Count is 1 by default */
-		*cnt = 1;
-		if (comma)
-			*save_ptr += (comma + 1) - name;
-		else	/* No more GRES */
-			*save_ptr += strlen(name);
-	} else if ((sep[0] >= '0') && (sep[0] <= '9')) {
-		value = strtoull(sep, &end_ptr, 10);
-		if (value == ULLONG_MAX) {
-			rc = ESLURM_INVALID_GRES;
-			goto fini;
-		}
-		if (end_ptr[0] == '%') {
-			*flags |= GRES_PERCENT;
-			end_ptr++;
-		} else if ((end_ptr[0] == 'k') || (end_ptr[0] == 'K')) {
-			value *= 1024;
-			end_ptr++;
-		} else if ((end_ptr[0] == 'm') || (end_ptr[0] == 'M')) {
-			value *= (1024 * 1024);
-			end_ptr++;
-		} else if ((end_ptr[0] == 'g') || (end_ptr[0] == 'G')) {
-			value *= ((uint64_t)1024 * 1024 * 1024);
-			end_ptr++;
-		} else if ((end_ptr[0] == 't') || (end_ptr[0] == 'T')) {
-			value *= ((uint64_t)1024 * 1024 * 1024 * 1024);
-			end_ptr++;
-		} else if ((end_ptr[0] == 'p') || (end_ptr[0] == 'P')) {
-			value *= ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
-			end_ptr++;
-		}
-		if (end_ptr[0] == ',') {
-			end_ptr++;
-		} else if (end_ptr[0] != '\0') {
-			rc = ESLURM_INVALID_GRES;
-			goto fini;
-		}
-		*cnt = value;
-		offset = end_ptr - name;
-		*save_ptr += offset;
-	} else {
-		/* Malformed input (e.g. "gpu:tesla:") */
-		rc = ESLURM_INVALID_GRES;
-		goto fini;
-	}
-fini:
-	if (rc != SLURM_SUCCESS) {
+fini:	if (rc != SLURM_SUCCESS) {
 		*save_ptr = NULL;
 		if (rc == ESLURM_INVALID_GRES) {
 			info("%s: Invalid GRES job specification %s", __func__,
@@ -3961,9 +3943,12 @@ fini:
 		}
 		xfree(type);
 		*type_ptr = NULL;
+	} else {
+		*cnt = value;
+		*type_ptr = type;
 	}
 	xfree(name);
-	*type_ptr = type;
+
 	return rc;
 }
 
@@ -3996,6 +3981,7 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 	if (*save_ptr == NULL) {
 		prev_save_ptr = in_val;
 	} else if (*save_ptr != prev_save_ptr) {
+		error("%s: parsing error", __func__);
 		my_rc = SLURM_ERROR;
 		goto fini;
 	}
@@ -10269,6 +10255,7 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 	if (*save_ptr == NULL) {
 		prev_save_ptr = in_val;
 	} else if (*save_ptr != prev_save_ptr) {
+		error("%s: parsing error", __func__);
 		my_rc = SLURM_ERROR;
 		goto fini;
 	}
