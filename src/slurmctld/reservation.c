@@ -4534,7 +4534,7 @@ static void _add_bb_resv(burst_buffer_info_msg_t **bb_resv, char *plugin,
 
 static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
 {
-	uint64_t cnt;
+	uint64_t cnt, mult;
 	char *end_ptr = NULL, *unit = NULL;
 	char *sep, *tmp_spec, *tok, *plugin, *type;
 
@@ -4567,35 +4567,8 @@ static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
 		    !xstrcasecmp(unit, "node") ||
 		    !xstrcasecmp(unit, "nodes")) {
 			type = "nodes";	/* Cray node spec format */
-		} else if (!xstrcasecmp(unit, "k") ||
-			   !xstrcasecmp(unit, "kib")) {
-			cnt *= 1024;
-		} else if (!xstrcasecmp(unit, "kb")) {
-			cnt *= 1000;
-
-		} else if (!xstrcasecmp(unit, "m") ||
-			   !xstrcasecmp(unit, "mib")) {
-			cnt *= ((uint64_t)1024 * 1024);
-		} else if (!xstrcasecmp(unit, "mb")) {
-			cnt *= ((uint64_t)1000 * 1000);
-
-		} else if (!xstrcasecmp(unit, "g") ||
-			   !xstrcasecmp(unit, "gib")) {
-			cnt *= ((uint64_t)1024 * 1024 * 1024);
-		} else if (!xstrcasecmp(unit, "gb")) {
-			cnt *= ((uint64_t)1000 * 1000 * 1000);
-
-		} else if (!xstrcasecmp(unit, "t") ||
-			   !xstrcasecmp(unit, "tib")) {
-			cnt *= ((uint64_t)1024 * 1024 * 1024 * 1024);
-		} else if (!xstrcasecmp(unit, "tb")) {
-			cnt *= ((uint64_t)1000 * 1000 * 1000 * 1000);
-
-		} else if (!xstrcasecmp(unit, "p") ||
-			   !xstrcasecmp(unit, "pib")) {
-			cnt *= ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
-		} else if (!xstrcasecmp(unit, "pb")) {
-			cnt *= ((uint64_t)1000 * 1000 * 1000 * 1000 * 1000);
+		} else if ((mult = suffix_mult(unit)) != NO_VAL64) {
+			cnt *= mult;
 		}
 
 		if (cnt)
