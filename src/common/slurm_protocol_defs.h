@@ -1608,6 +1608,13 @@ extern void print_multi_line_string(char *user_msg, int inx);
  */
 extern char *rpc_num2string(uint16_t opcode);
 
+/*
+ * Given a numeric suffix, return the equivalent multiplier for the numeric
+ * portion. For example: "k" returns 1024, "KB" returns 1000, etc.
+ * The return value for an invalid suffix is NO_VAL64.
+ */
+extern uint64_t suffix_mult(char *suffix);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\

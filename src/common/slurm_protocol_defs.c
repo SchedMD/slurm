@@ -5681,3 +5681,53 @@ extern void print_multi_line_string(char *user_msg, int inx)
 	}
 	xfree(buf);
 }
+
+/*
+ * Given a numeric suffix, return the equivalent multiplier for the numeric
+ * portion. For example: "k" returns 1024, "KB" returns 1000, etc.
+ * The return value for an invalid suffix is NO_VAL64.
+ */
+extern uint64_t suffix_mult(char *suffix)
+{
+	uint64_t multiplier;
+
+	if (!suffix || (suffix[0] == '\0')) {
+		multiplier = 1;
+
+	} else if (!xstrcasecmp(suffix, "k") ||
+		   !xstrcasecmp(suffix, "kib")) {
+		multiplier = 1024;
+	} else if (!xstrcasecmp(suffix, "kb")) {
+		multiplier = 1000;
+
+	} else if (!xstrcasecmp(suffix, "m") ||
+		   !xstrcasecmp(suffix, "mib")) {
+		multiplier = ((uint64_t)1024 * 1024);
+	} else if (!xstrcasecmp(suffix, "mb")) {
+		multiplier = ((uint64_t)1000 * 1000);
+
+	} else if (!xstrcasecmp(suffix, "g") ||
+		   !xstrcasecmp(suffix, "gib")) {
+		multiplier = ((uint64_t)1024 * 1024 * 1024);
+	} else if (!xstrcasecmp(suffix, "gb")) {
+		multiplier = ((uint64_t)1000 * 1000 * 1000);
+
+	} else if (!xstrcasecmp(suffix, "t") ||
+		   !xstrcasecmp(suffix, "tib")) {
+		multiplier = ((uint64_t)1024 * 1024 * 1024 * 1024);
+	} else if (!xstrcasecmp(suffix, "tb")) {
+		multiplier = ((uint64_t)1000 * 1000 * 1000 * 1000);
+
+	} else if (!xstrcasecmp(suffix, "p") ||
+		   !xstrcasecmp(suffix, "pib")) {
+		multiplier = ((uint64_t)1024 * 1024 * 1024 * 1024 * 1024);
+	} else if (!xstrcasecmp(suffix, "pb")) {
+		multiplier = ((uint64_t)1000 * 1000 * 1000 * 1000 * 1000);
+
+	} else {
+		debug("%s: Unrecognized numeric suffix '%s'", __func__, suffix);
+		multiplier = NO_VAL64;
+	}
+
+	return multiplier;
+}
