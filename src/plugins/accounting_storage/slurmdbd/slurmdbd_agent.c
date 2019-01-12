@@ -480,7 +480,7 @@ end_it:
 /* Open a connection to the Slurm DBD and set slurmdbd_conn */
 static void _open_slurmdbd_conn(bool need_db)
 {
-	bool try_backup = true;
+	char *backup_host = NULL;
 	int rc;
 
 	if (slurmdbd_conn && slurmdbd_conn->fd >= 0) {
@@ -524,16 +524,27 @@ static void _open_slurmdbd_conn(bool need_db)
 			slurmdbd_conn->rem_host);
 	}
 
+	// See if a backup slurmdbd is configured
+	backup_host = slurm_get_accounting_storage_backup_host();
+
 again:
+	// A connection failure is only an error if backup dne or also fails
+	if (backup_host)
+		slurmdbd_conn->flags |= PERSIST_FLAG_SUPPRESS_ERR;
+	else
+		slurmdbd_conn->flags &= (~PERSIST_FLAG_SUPPRESS_ERR);
 
 	if (((rc = slurm_persist_conn_open(slurmdbd_conn)) != SLURM_SUCCESS) &&
-	    try_backup) {
+	    backup_host) {
 		xfree(slurmdbd_conn->rem_host);
-		try_backup = false;
-		if ((slurmdbd_conn->rem_host =
-		     slurm_get_accounting_storage_backup_host()))
-			goto again;
+		// Force the next error to display
+		slurmdbd_conn->comm_fail_time = 0;
+		slurmdbd_conn->rem_host = backup_host;
+		backup_host = NULL;
+		goto again;
 	}
+
+	xfree(backup_host);
 
 	if (rc == SLURM_SUCCESS) {
 		/* set the timeout to the timeout to be used for all other

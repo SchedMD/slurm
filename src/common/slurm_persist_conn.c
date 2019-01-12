@@ -538,9 +538,15 @@ extern int slurm_persist_conn_open_without_init(
 			    persist_conn->rem_host);
 	if ((persist_conn->fd = slurm_open_msg_conn(&addr)) < 0) {
 		if (_comm_fail_log(persist_conn)) {
-			error("%s: failed to open persistent connection to %s:%d: %m",
-			      __func__, persist_conn->rem_host,
-			      persist_conn->rem_port);
+			char *s = xstrdup_printf("%s: failed to open persistent connection to %s:%d: %m",
+						 __func__,
+						 persist_conn->rem_host,
+						 persist_conn->rem_port);
+			if (persist_conn->flags & PERSIST_FLAG_SUPPRESS_ERR)
+				debug2("%s", s);
+			else
+				error("%s", s);
+			xfree(s);
 		}
 		return SLURM_ERROR;
 	}

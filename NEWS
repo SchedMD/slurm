@@ -90,6 +90,12 @@ documents those changes that are of interest to users and administrators.
     job sorting algorithm for scheduling heterogeneous jobs.
  -- Fix initialization of assoc_mgr_locks and slurmctld_locks lock structures.
  -- Fix segfault with job arrays using X11 forwarding.
+ -- Revert regression caused by e0ee1c7054 which caused negative values and
+    values starting with a decimal to be invalid for PriorityWeightTRES and
+    TRESBillingWeight.
+ -- Fix possibility to update a job's reservation to none.
+ -- Suppress connection errors to primary slurmdbd when backup dbd is active.
+ -- Suppress connection errors to primary db when backup db kicks in
 
 * Changes in Slurm 18.08.4
 ==========================

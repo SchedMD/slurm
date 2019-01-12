@@ -64,6 +64,8 @@ extern void run_dbd_backup(void)
 	slurmdbd_conn.cluster_name = "backup_slurmdbd";
 	slurmdbd_conn.fd = -1;
 	slurmdbd_conn.shutdown = &shutdown_time;
+	// Prevent constant reconnection tries from filling up the error logs
+	slurmdbd_conn.flags |= PERSIST_FLAG_SUPPRESS_ERR;
 
 	slurm_persist_conn_open_without_init(&slurmdbd_conn);
 

@@ -932,7 +932,7 @@ static int _tres_weight_item(double *weights, char *item_str)
 	if (strchr(type, '/'))
 		type = strtok_r(type, "/", &name);
 
-	if (!value_str || !*value_str || !isdigit(*value_str)) {
+	if (!value_str || !*value_str) {
 		error("\"%s\" is an invalid TRES weight entry", item_str);
 		return SLURM_ERROR;
 	}
