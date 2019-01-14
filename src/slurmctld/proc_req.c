@@ -4596,9 +4596,9 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	DEF_TIMERS;
 	update_node_msg_t *update_node_msg_ptr =
 		(update_node_msg_t *) msg->data;
-	/* Locks: Write job and write node */
+	/* Locks: Write job, partition and node */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred,
 					 slurmctld_config.auth_info);
 
