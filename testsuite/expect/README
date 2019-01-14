@@ -364,6 +364,7 @@ test7.14   Verify the ability to modify the Derived Exit Code/String fields
 test7.15   Verify signal mask of tasks have no ignored signals.
 test7.16   Verify that auth/munge credential is properly validated.
 test7.17   Test GRES APIs.
+test7.19   Test sbatch/srun/salloc path resolving
 
 
 test8.#    Test of Blue Gene specific functionality.
