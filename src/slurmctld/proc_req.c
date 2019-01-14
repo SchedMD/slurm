@@ -6068,7 +6068,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		}
 		node_ptr->node_state |= NODE_STATE_REBOOT;
 		node_ptr->boot_req_time = (time_t) 0;
-		node_ptr->last_response = now + slurmctld_config.boot_time;
+		node_ptr->last_response = now + slurmctld_conf.resume_timeout;
 		if (reboot_msg) {
 			node_ptr->next_state = reboot_msg->next_state;
 			if (reboot_msg->reason) {
