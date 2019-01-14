@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
     when JobAcctGatherType=jobacct_gather/cgroup.
  -- Fixed srun from double printing invalid option msg twice.
  -- Remove unused -b flag from getopt call in sbatch.
+ -- Disable reporting of node TRES in sreport.
 
 * Changes in Slurm 18.08.4
 ==========================
