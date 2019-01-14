@@ -67,9 +67,6 @@ extern int attach_system_memory_pid(pid_t pid);
 /* Check that corespec cgroup job confinement is configured */
 extern bool check_corespec_cgroup_job_confinement(void);
 
-/* Check that memspec cgroup job confinement is configured */
-extern bool check_memspec_cgroup_job_confinement(void);
-
 /* Attach a pid to the system cgroups */
 extern void attach_system_cgroup_pid(pid_t pid);
 

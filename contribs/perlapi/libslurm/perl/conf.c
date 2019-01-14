@@ -204,9 +204,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 
 	STORE_FIELD(hv, conf, max_tasks_per_node, uint16_t);
 
-	if (conf->mem_limit_enforce)
-		STORE_FIELD(hv, conf, mem_limit_enforce, uint16_t);
-
 	STORE_FIELD(hv, conf, min_job_age, uint16_t);
 
 	if (conf->mpi_default)
@@ -527,7 +524,6 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, max_mem_per_cpu, uint64_t, TRUE);
 	FETCH_FIELD(hv, conf, max_step_cnt, uint32_t, FALSE);
 	FETCH_FIELD(hv, conf, max_tasks_per_node, uint16_t, TRUE);
-	FETCH_FIELD(hv, conf, mem_limit_enforce, uint16_t, FALSE);
 	FETCH_FIELD(hv, conf, min_job_age, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, mpi_default, charp, FALSE);
 	FETCH_FIELD(hv, conf, mpi_params, charp, FALSE);

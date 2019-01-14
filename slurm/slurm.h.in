@@ -2659,6 +2659,7 @@ typedef struct slurm_ctl_conf {
 					* gather plugins */
 	char *job_acct_gather_type; /* job accounting gather type */
 	char *job_acct_gather_params; /* job accounting gather parameters */
+	uint16_t job_acct_oom_kill; /* Enforce mem limit at runtime y|n */
 	char *job_ckpt_dir;	/* directory saving job record checkpoint */
 	char *job_comp_host;	/* job completion logging host */
 	char *job_comp_loc;	/* job completion logging location */
@@ -2695,7 +2696,6 @@ typedef struct slurm_ctl_conf {
 	uint16_t max_tasks_per_node; /* maximum tasks per node */
 	char *mcs_plugin; /* mcs plugin type */
 	char *mcs_plugin_params; /* mcs plugin parameters */
-	uint16_t mem_limit_enforce; /* Enforce mem limit at runtime y|n */
 	uint32_t min_job_age;	/* COMPLETED jobs over this age (secs)
 				 * purged from in memory records */
 	char *mpi_default;	/* Default version of MPI in use */

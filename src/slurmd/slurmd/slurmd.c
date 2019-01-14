@@ -832,11 +832,10 @@ _read_config(void)
 	char *path_pubkey = NULL;
 	slurm_ctl_conf_t *cf = NULL;
 	int cc;
+	bool cgroup_mem_confinement = false;
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
 #endif
-	char *tok, *save_ptr = NULL;
-	bool over_memory_kill = false;
 
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
@@ -1077,34 +1076,14 @@ _read_config(void)
 	conf->kill_wait = cf->kill_wait;
 	conf->use_pam = cf->use_pam;
 	conf->task_plugin_param = cf->task_plugin_param;
-
-	conf->mem_limit_enforce = cf->mem_limit_enforce;
 	conf->health_check_interval = cf->health_check_interval;
 
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
 
-	if (check_memspec_cgroup_job_confinement()) {
-		if (conf->mem_limit_enforce) {
-			fatal("Job's memory is being constrained by TaskPlugin cgroup and at the same time MemoryLimitEnforce=yes is set in slurm.conf. This enables two incompatible memory enforcement mechanisms, one of them must be disabled.");
-		}
-
-		if (cf->job_acct_gather_params) {
-			tok = strtok_r(cf->job_acct_gather_params, ",",
-				       &save_ptr);
-			while(tok) {
-				if (xstrcasecmp(tok, "OverMemoryKill") == 0) {
-					over_memory_kill = true;
-					break;
-				}
-				tok = strtok_r(NULL, ",", &save_ptr);
-			}
-		}
-
-		if (over_memory_kill) {
-			fatal("Job's memory is being constrained by TaskPlugin cgroup and at the same time OverMemoryKill param is set in JobAcctGatherParams slurm.conf.  This enables two incompatible memory enforcement mechanisms, one of them must be disabled.");
-		}
-	}
+	cgroup_mem_confinement = xcgroup_mem_cgroup_job_confinement();
+	if (slurmctld_conf.job_acct_oom_kill && cgroup_mem_confinement)
+		fatal("Jobs memory is being constrained by both TaskPlugin cgroup and JobAcctGather plugin. This enables two incompatible memory enforcement mechanisms, one of them must be disabled.");
 }
 
 static void
@@ -1114,9 +1093,8 @@ _reconfigure(void)
 
 	_reconfig = 0;
 	slurm_conf_reinit(conf->conffile);
-	_read_config();
-
 	xcgroup_reconfig_slurm_cgroup_conf();
+	_read_config();
 
 	/*
 	 * Rebuild topology information and refresh slurmd topo infos
@@ -2336,7 +2314,7 @@ static int _memory_spec_init(void)
 		      "configured for this node");
 		return SLURM_SUCCESS;
 	}
-	if (!check_memspec_cgroup_job_confinement()) {
+	if (!xcgroup_mem_cgroup_job_confinement()) {
 		if (slurm_get_select_type_param() & CR_MEMORY) {
 			error("Resource spec: Limited MemSpecLimit support. "
 			     "Slurmd daemon not memory constrained. "

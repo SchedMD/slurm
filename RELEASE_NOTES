@@ -46,11 +46,16 @@ NOTE: The switch/nrt plugin has been removed.
 NOTE: slurmd and slurmctld will now fatal if two incompatible mechanisms for
       enforcing memory limits are set. This makes incompatible the use of
       task/cgroup memory limit enforcing (Constrain[RAM|Swap]Space=yes) with
-      MemLimitEnforce=yes or with JobAcctGatherParams=OverMemoryKill, which
-      could cause problems when a task is killed by one of them while the other
-      is at the same time managing that task. The NoOverMemoryKill setting has
-      been deprecated in favour of OverMemoryKill, since now the default is
-      *NOT* to have any memory enforcement mechanism.
+      JobAcctGatherParams=OverMemoryKill, which could cause problems when a
+      task is killed by one of them while the other is at the same time
+      managing that task. The NoOverMemoryKill setting has been deprecated in
+      favour of OverMemoryKill, since now the default is *NOT* to have any
+      memory enforcement mechanism.
+
+NOTE: MemLimitEnforce parameter has been removed and the functionality that
+      was provided with it has been merged into a JobAcctGatherParams. It
+      may be enabled by setting JobAcctGatherParams=OverMemoryKill, so now
+      job and steps killing by OOM is enabled from the same place.
 
 NOTE: SLURM_FAILURE, SLURM_SOCKET_ERROR, SLURM_PROTOCOL_SUCCESS, and
       SLURM_PROTOCOL_ERROR been removed please update to SLURM_SUCCESS or

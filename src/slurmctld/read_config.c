@@ -1052,11 +1052,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
 	char *mpi_params;
 	uint16_t old_select_type_p = slurmctld_conf.select_type_param;
-	char *tok, *save_ptr = NULL;
-	bool over_memory_kill = false;
-	bool cgroup_mem_confinement= false;
-	char *task_plugin_type = NULL;
-	slurm_cgroup_conf_t *slurm_cgroup_conf;
+	bool cgroup_mem_confinement = false;
 
 	/* initialization */
 	START_TIMER;
@@ -1101,40 +1097,17 @@ int read_slurm_conf(int recover, bool reconfig)
 		return error_code;
 	}
 
-	if (slurmctld_conf.job_acct_gather_params) {
-		tok = strtok_r(slurmctld_conf.job_acct_gather_params,
-			       ",", &save_ptr);
-		while(tok) {
-			if (xstrcasecmp(tok, "OverMemoryKill") == 0) {
-				over_memory_kill = true;
-				break;
-			}
-			tok = strtok_r(NULL, ",", &save_ptr);
-		}
-	}
+	if (reconfig)
+		xcgroup_reconfig_slurm_cgroup_conf();
 
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	if ((slurm_cgroup_conf = xcgroup_get_slurm_cgroup_conf())) {
-		task_plugin_type = slurm_get_task_plugin();
+	cgroup_mem_confinement = xcgroup_mem_cgroup_job_confinement();
 
-		if ((slurm_cgroup_conf->constrain_ram_space ||
-		     slurm_cgroup_conf->constrain_swap_space) &&
-		    strstr(task_plugin_type, "cgroup"))
-			cgroup_mem_confinement = true;
-
-		xfree(task_plugin_type);
-	}
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
-	if (slurmctld_conf.mem_limit_enforce || over_memory_kill) {
-		if (cgroup_mem_confinement)
-			fatal("Incompatible memory enforcement mechanisms task/cgroup and JobAcctGather are set. You must disable one of them.");
-		else
-			info("Memory enforcing by using JobAcctGather's mechanism is discouraged, task/cgroup is recommended where available.");
-	} else {
-		if (!cgroup_mem_confinement)
-			info("No memory enforcing mechanism configured.");
-	}
+	if (slurmctld_conf.job_acct_oom_kill && cgroup_mem_confinement)
+		fatal("Jobs memory is being constrained by both TaskPlugin cgroup and JobAcctGather plugin. This enables two incompatible memory enforcement mechanisms, one of them must be disabled.");
+	else if (slurmctld_conf.job_acct_oom_kill)
+		info("Memory enforcing by using JobAcctGather's mechanism is discouraged, task/cgroup is recommended where available.");
+	else if (!cgroup_mem_confinement)
+		info("No memory enforcing mechanism configured.");
 
 	if (layouts_init() != SLURM_SUCCESS) {
 		if (test_config) {

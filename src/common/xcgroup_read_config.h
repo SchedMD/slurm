@@ -75,9 +75,6 @@ typedef struct slurm_cgroup_conf {
 	float     max_swap_percent;      /* Upper bound on swap as % of RAM  */
 	uint64_t  memory_swappiness;
 
-	bool      memlimit_enforcement;
-	float     memlimit_threshold;
-
 	bool      constrain_devices;
 	char *    allowed_devices_file;
 
@@ -123,5 +120,8 @@ extern int xcgroup_read_conf(int fd);
  *      xcgroup_config_read_mutex must not be locked before calling.
  */
 extern void xcgroup_fini_slurm_cgroup_conf(void);
+
+/* Check that memspec cgroup job confinement is configured */
+extern bool xcgroup_mem_cgroup_job_confinement(void);
 
 #endif /* !_CGROUP_READ_CONFIG_H */

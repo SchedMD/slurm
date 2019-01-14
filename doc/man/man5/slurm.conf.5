@@ -1095,13 +1095,11 @@ Use PSS value instead of RSS to calculate real usage of memory.
 The PSS value will be saved as RSS.
 .TP
 \fBOverMemoryKill\fR
-Kill steps that are being detected to use more memory than requested, every
-time accounting information is gathered by JobAcctGather plugin.
-This parameter will not kill a job directly, but only the step.
-See \fBMemLimitEnforce\fR for that purpose. This parameter should be used
-with caution as if jobs exceeds its memory allocation it may affect other
-processes and/or machine health.
-NOTE: It is recommended to limit memory by enabling task/cgroup
+Kill jobs or steps that are being detected to use more memory than requested
+every time accounting information is gathered by the JobAcctGather plugin.
+This parameter should be used with caution as if jobs exceeds its memory
+allocation it may affect other processes and/or machine health.
+NOTE: If available it is recommended to limit memory by enabling task/cgroup
 in TaskPlugin and making use of ConstrainRAMSpace=yes cgroup.conf instead
 of using this JobAcctGather mechanism for memory enforcement, since the former
 has a lower resolution (JobAcctGatherFreq) and OOMs could happen at some point.
@@ -1480,20 +1478,6 @@ only users with the same group can share the nodes.
 .TP
 \fBmcs/user\fR
 a node cannot be shared with other users.
-.RE
-
-.TP
-\fBMemLimitEnforce\fR
-If set to yes then Slurm will terminate the job if it exceeds the value
-requested using the \-\-mem\-per\-cpu option of salloc/sbatch/srun.
-This is useful in combination with \fBJobAcctGatherParams=OverMemoryKill\fR.
-Used when jobs need to specify \-\-mem\-per\-cpu for scheduling and they should
-be terminated if they exceed the estimated value.
-The default value is 'no', which disables this enforcing mechanism.
-NOTE: It is recommended to limit memory by enabling task/cgroup
-in TaskPlugin and making use of ConstrainRAMSpace=yes cgroup.conf instead
-of using this JobAcctGather mechanism for memory enforcement, since the former
-has a lower resolution (JobAcctGatherFreq) and OOMs could happen at some point.
 .RE
 
 .TP

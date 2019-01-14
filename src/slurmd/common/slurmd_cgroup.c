@@ -461,29 +461,6 @@ extern int attach_system_memory_pid(pid_t pid)
 	return SLURM_SUCCESS;
 }
 
-extern bool check_memspec_cgroup_job_confinement(void)
-{
-	char *task_plugin_type = NULL;
-	bool status = false;
-	slurm_cgroup_conf_t *cg_conf;
-
-	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
-
-	task_plugin_type = slurm_get_task_plugin();
-
-	if ((cg_conf->constrain_ram_space ||
-	     cg_conf->constrain_swap_space) &&
-	    strstr(task_plugin_type, "cgroup"))
-		status = true;
-
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
-	xfree(task_plugin_type);
-	return status;
-}
-
 extern bool check_corespec_cgroup_job_confinement(void)
 {
 	char *task_plugin_type = NULL;

@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Add slurmd -G option to print GRES configuration and exit. This is useful
     for testing and debugging.
  -- Support GRES types that include numbers (e.g. "--gres=gpu:123g:2").
+ -- Remove MemLimitEnforce parameter and move functionality into
+    JobAcctGatherParam=OverMemoryKill.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
