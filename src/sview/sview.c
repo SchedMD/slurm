@@ -629,6 +629,7 @@ static gboolean _delete(GtkWidget *widget,
 	FREE_NULL_LIST(cluster_list);
 	xfree(orig_cluster_name);
 	uid_cache_clear();
+	assoc_mgr_fini(0);
 #endif
 	for (i = 0; i<debug_action_entries; i++) {
 		xfree(debug_actions[i].name);
@@ -732,6 +733,24 @@ static char *_get_ui_description()
 		"  </menubar>"
 		"</ui>");
 	return ui_description;
+}
+
+static bool _user_is_admin(void)
+{
+	uid_t uid = getuid();
+	void *db_conn = NULL;
+	slurmdb_admin_level_t level;
+
+	if ((uid == 0) || uid == slurm_get_slurm_user_id())
+		return true;
+
+	if (!(db_conn = slurmdb_connection_get()))
+		return false;
+
+	level = assoc_mgr_get_admin_level(db_conn, uid);
+	slurmdb_connection_close(&db_conn);
+
+	return (level >= SLURMDB_ADMIN_SUPER_USER);
 }
 
 /* Returns a menubar widget made from the above menu */
@@ -927,6 +946,16 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 				     window);
 	gtk_action_group_set_sensitive(admin_action_group,
 				       working_sview_config.admin_mode);
+
+	/*
+	 * If user is neither root, slurm user, nor listed as a super user
+	 * in the db, disable admin_mode.
+	 */
+	if (!_user_is_admin()) {
+		GtkAction *tmp = NULL;
+		tmp = gtk_action_group_get_action(menu_action_group, "admin");
+		gtk_action_set_sensitive(tmp, false);
+	}
 
 	g_ui_manager = gtk_ui_manager_new();
 	gtk_ui_manager_insert_action_group(g_ui_manager, menu_action_group, 0);

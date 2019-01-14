@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Support GRES types that include numbers (e.g. "--gres=gpu:123g:2").
  -- Remove MemLimitEnforce parameter and move functionality into
     JobAcctGatherParam=OverMemoryKill.
+ -- sview - disable admin mode option (which would not work anyways) if the
+    user is not an admin in SlurmDBD.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
