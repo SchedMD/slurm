@@ -2440,12 +2440,11 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 
 	xassert(assoc_mgr_tres_array);
 
-	for (i=0; i < g_tres_count; i++) {
+	for (i = 0; i < g_tres_count; i++) {
 		tres_rec = assoc_mgr_tres_array[i];
 
 		if (!tres_rec->type) {
-			error("TRES %d doesn't have a type given, "
-			      "this should never happen",
+			error("TRES %d doesn't have a type given, this should never happen",
 			      tres_rec->id);
 			continue; /* this should never happen */
 		}
