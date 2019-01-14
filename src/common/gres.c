@@ -950,7 +950,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	int i;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t *p;
-	uint64_t tmp_uint64;
+	uint64_t tmp_uint64, mult;
 	char *tmp_str, *last;
 	bool cores_flag = false, cpus_flag = false;
 	char *type_str = NULL;
@@ -1030,18 +1030,9 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			fatal("Invalid GRES record for %s, invalid count %s",
 			      p->name, tmp_str);
 		}
-		if ((last[0] == 'k') || (last[0] == 'K'))
-			tmp_uint64 *= 1024;
-		else if ((last[0] == 'm') || (last[0] == 'M'))
-			tmp_uint64 *= (1024 * 1024);
-		else if ((last[0] == 'g') || (last[0] == 'G'))
-			tmp_uint64 *= ((uint64_t)1024 * 1024 * 1024);
-		else if ((last[0] == 't') || (last[0] == 'T'))
-			tmp_uint64 *= ((uint64_t)1024 * 1024 * 1024 * 1024);
-		else if ((last[0] == 'p') || (last[0] == 'P'))
-			tmp_uint64 *= ((uint64_t)1024 * 1024 * 1024 * 1024 *
-				       1024);
-		else if (last[0] != '\0') {
+		if ((mult = suffix_mult(last)) != NO_VAL64) {
+			tmp_uint64 *= mult;
+		} else {
 			fatal("Invalid GRES record for %s, invalid count %s",
 			      p->name, tmp_str);
 		}
@@ -1588,7 +1579,7 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 	char *node_gres_config, *tok, *last_tok = NULL;
 	char *sub_tok, *last_sub_tok = NULL;
 	char *num, *last_num = NULL;
-	uint64_t gres_config_cnt = 0, tmp_gres_cnt = 0;
+	uint64_t gres_config_cnt = 0, tmp_gres_cnt = 0, mult;
 	int i;
 
 	xassert(gres_data);
@@ -1621,21 +1612,9 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 				 * assume count of 1.
 				 */
 				tmp_gres_cnt = 1;
-			} else if (last_num[0] == '\0')
-				;
-			else if ((last_num[0] == 'k') || (last_num[0] == 'K'))
-				tmp_gres_cnt *= 1024;
-			else if ((last_num[0] == 'm') || (last_num[0] == 'M'))
-				tmp_gres_cnt *= (1024 * 1024);
-			else if ((last_num[0] == 'g') || (last_num[0] == 'G'))
-				tmp_gres_cnt *= ((uint64_t)1024 * 1024 * 1024);
-			else if ((last_num[0] == 't') || (last_num[0] == 'T'))
-				tmp_gres_cnt *= ((uint64_t)1024 * 1024 * 1024 *
-						 1024);
-			else if ((last_num[0] == 'p') || (last_num[0] == 'P'))
-				tmp_gres_cnt *= ((uint64_t)1024 * 1024 * 1024 *
-						 1024 * 1024);
-			else {
+			} else if ((mult = suffix_mult(last_num)) != NO_VAL64) {
+				tmp_gres_cnt *= mult;
+			} else {
 				error("Bad GRES configuration: %s", tok);
 				break;
 			}
