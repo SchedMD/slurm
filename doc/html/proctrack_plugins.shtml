@@ -28,11 +28,6 @@ recommended mechanism for non CRAY systems. </li>
 of the Linux process table and use the parent process ID to determine
 what processes are members of a Slurm job. NOTE: This mechanism is
 not entirely reliable for process tracking.</li>
-<li><b>lua</b> &mdash; Use site-defined <a href="http://www.lua.org">Lua</a>
-script for process tracking. Sample Lua scripts can be found with the
-Slurm distribution in the directory <i>contribs/lua</i>. The default
-installation location of the Lua scripts is the same location as the Slurm
-configuration file, <i>slurm.conf</i>.</li>
 <li><b>pgid</b> &mdash; Use process group ID to determine
 what processes are members of a Slurm job. NOTE: This mechanism is
 not entirely reliable for process tracking.</li>
@@ -171,6 +166,6 @@ Count of process IDs in the container.</p>
   successful, SLURM_ERROR else.</p>
 
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 14 January 2019</p>
 
 <!--#include virtual="footer.txt"-->

@@ -544,7 +544,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
-		 src/plugins/proctrack/lua/Makefile
 		 src/plugins/route/Makefile
 		 src/plugins/route/default/Makefile
 		 src/plugins/route/topology/Makefile

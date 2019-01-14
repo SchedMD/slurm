@@ -421,8 +421,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = \
 	job_submit.license.lua	\
-	job_submit.lua		\
-	proctrack.lua
+	job_submit.lua
 
 all: all-am
 

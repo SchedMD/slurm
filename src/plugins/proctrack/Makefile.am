@@ -4,8 +4,4 @@ if HAVE_NATIVE_CRAY
 CRAY = cray
 endif
 
-if HAVE_LUA
-LUA = lua
-endif
-
-SUBDIRS = $(CRAY) $(LUA) pgid linuxproc cgroup
+SUBDIRS = cgroup $(CRAY) linuxproc pgid

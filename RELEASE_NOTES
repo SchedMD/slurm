@@ -41,6 +41,8 @@ NOTE: The CryptoType option has been renamed to CredType, and the crypto/munge
 
 NOTE: The launch/poe plugin has been removed.
 
+NOTE: The proctrack/lua plugin has been removed.
+
 NOTE: The switch/nrt plugin has been removed.
 
 NOTE: slurmd and slurmctld will now fatal if two incompatible mechanisms for

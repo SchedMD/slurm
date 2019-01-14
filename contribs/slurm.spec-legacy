@@ -286,7 +286,7 @@ Requires: slurm lua
 BuildRequires: lua-devel
 %description lua
 Slurm lua bindings
-Includes the Slurm proctrack/lua and job_submit/lua plugin
+Includes the Slurm job_submit/lua plugin
 %endif
 
 %package contribs
@@ -492,7 +492,6 @@ rm -f ${RPM_BUILD_ROOT}%{_libexecdir}/slurm/cr_*
 
 %if ! %{slurm_with lua}
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/job_submit_lua.so
-rm -f ${RPM_BUILD_ROOT}%{_libdir}/slurm/proctrack_lua.so
 %endif
 
 # Build man pages that are generated directly by the tools
@@ -876,7 +875,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %doc contribs/lua/proctrack.lua
 %{_libdir}/slurm/job_submit_lua.so
-%{_libdir}/slurm/proctrack_lua.so
 %endif
 #############################################################################
 
