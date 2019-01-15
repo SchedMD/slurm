@@ -1419,7 +1419,7 @@ _process_cmdline(int ac, char **av)
 
 	/*
 	 *  If slurmstepd path wasn't overridden by command line, set
-	 *   it to the default here:
+	 *  it to the default here:
 	 */
 	if (!conf->stepd_loc) {
 		conf->stepd_loc =
@@ -1427,7 +1427,14 @@ _process_cmdline(int ac, char **av)
 	}
 
 	if (print_gres) {
-		conf->debug_flags = DEBUG_FLAG_GRES;
+		log_options_t *o = &conf->log_opts;
+		o->logfile_level = LOG_LEVEL_QUIET;
+		o->stderr_level = LOG_LEVEL_INFO;
+		o->syslog_level = LOG_LEVEL_INFO;
+		o->prefix_level = false;
+		log_alter(conf->log_opts, SYSLOG_FACILITY_USER, NULL);
+
+		slurm_set_debug_flags(DEBUG_FLAG_GRES);
 		(void) gres_plugin_init();
 		(void) gres_plugin_node_config_load(
 					1024,	/* Do not need real CPU count */
