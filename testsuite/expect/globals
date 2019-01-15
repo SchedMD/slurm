@@ -1154,6 +1154,36 @@ proc get_affinity_params { } {
 
 ################################################################
 #
+# Proc: test_constrain_devices
+#
+# Purpose: Determine if devices are constrained by cgroup.
+# the value of ConstrainDevices in the gres.conf.
+#
+# Returns 1 if constrained, 0 otherwise
+#
+################################################################
+proc test_constrain_devices { } {
+	global scontrol number
+
+	log_user 0
+	set constrain_devices 0
+	spawn $scontrol show config
+	expect {
+		-re "ConstrainDevices *= yes" {
+			set constrain_devices 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	log_user 1
+	return $constrain_devices
+}
+
+################################################################
+#
 # Proc: get_bb_emulate
 #
 # Purpose: Determine if Cray burst buffers API is emulated
