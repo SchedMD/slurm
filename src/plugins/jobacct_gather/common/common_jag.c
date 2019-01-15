@@ -365,8 +365,12 @@ static int _get_process_data_line(int in, jag_prec_t *prec) {
 	prec->tres_data[TRES_ARRAY_VMEM].size_read = vsize;
 	prec->tres_data[TRES_ARRAY_MEM].size_read = rss * my_pagesize;
 
-	prec->usec  = (double)utime/(double)hertz;
-	prec->ssec  = (double)stime/(double)hertz;
+	/*
+	 * Store unnormalized times, we will normalize in when
+	 * transfering to a struct jobacctinfo in job_common_poll_data()
+	 */
+	prec->usec = (double)utime;
+	prec->ssec = (double)stime;
 	prec->last_cpu = last_cpu;
 	return 1;
 }
@@ -998,7 +1002,7 @@ extern void jag_common_poll_data(
 		last_total_cputime =
 			(double)jobacct->tres_usage_in_tot[TRES_ARRAY_CPU];
 
-		cpu_calc = prec->ssec + prec->usec;
+		cpu_calc = (prec->ssec + prec->usec) / (double)hertz;
 
 		/*
 		 * Since we are not storing things as a double anymore make it
@@ -1072,8 +1076,8 @@ extern void jag_common_poll_data(
 		total_job_vsize += jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
 
 		/* Update the cpu times */
-		jobacct->user_cpu_sec = (uint32_t)prec->usec;
-		jobacct->sys_cpu_sec = (uint32_t)prec->ssec;
+		jobacct->user_cpu_sec = (uint32_t)(prec->usec / (double)hertz);
+		jobacct->sys_cpu_sec = (uint32_t)(prec->ssec / (double)hertz);
 
 		/* compute frequency */
 		jobacct->this_sampled_cputime =

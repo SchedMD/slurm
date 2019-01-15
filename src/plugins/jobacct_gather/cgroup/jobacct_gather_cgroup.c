@@ -144,6 +144,10 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 		       __func__, prec->pid, prec->ppid);
 	} else {
 		sscanf(cpu_time, "%*s %lu %*s %lu", &utime, &stime);
+		/*
+		 * Store unnormalized times, we will normalize in when
+		 * transfering to a struct jobacctinfo in job_common_poll_data()
+		 */
 		prec->usec = utime;
 		prec->ssec = stime;
 	}
