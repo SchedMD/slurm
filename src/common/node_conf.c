@@ -566,7 +566,11 @@ extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt)
 		config_ptr->weight = node->weight;
 		if (node->feature && node->feature[0])
 			config_ptr->feature = xstrdup(node->feature);
-		config_ptr->gres = gres_plugin_name_filter(node->gres, node->nodenames);
+		if (!set_bitmap) {
+			/* In slurmctld */
+			config_ptr->gres = gres_plugin_name_filter(node->gres,
+							       node->nodenames);
+		}
 
 		rc = _build_single_nodeline_info(node, config_ptr);
 		max_rc = MAX(max_rc, rc);
