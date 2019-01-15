@@ -4730,11 +4730,12 @@ extern int build_feature_list(struct job_record *job_ptr)
 				fail = true;
 				break;
 			}
-			if (paren) {
+			if (paren && (node_features_g_count() > 0)) {
 				/*
 				 * Most (but not all) of the logic to support
-				 * OR within parenthesis works today. Disable
-				 * for now.
+				 * OR within parenthesis works today except when
+				 * trying to use available (not active) features
+				 * srun -C "(hemi|snc2|snc4|quad)&(flat|cache)" ...
 				 */
 				fail = true;
 				break;
