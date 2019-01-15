@@ -217,9 +217,14 @@ sleep 10
 
 # Check that the job is held due to the failed prolog or JobHeldAdmin
 # Either state is possible due to race conditions
+set cleaning 0
 set match 0
 spawn $squeue -h -j$job_id -o%t|%r
 expect {
+	-re "PD.Cleaning" {
+		set cleaning 1
+		exp_continue
+	}
 	-re "PD.launch failed requeued held" {
 		set match 1
 		exp_continue
@@ -236,7 +241,29 @@ expect {
 		wait
 	}
 }
-
+if {$cleaning == 1} {
+	send_user "\nWARNING: Waiting longer for job cleanup\n"
+	sleep 30
+	set match 0
+	spawn $squeue -h -j$job_id -o%t|%r
+	expect {
+		-re "PD.launch failed requeued held" {
+			set match 1
+			exp_continue
+		}
+		-re "PD.JobHeldAdmin" {
+			set match 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
 if {$match == 0} {
 	send_user "\nFAILURE: job $job_id is not in the correct state. "
 	send_user "Job $job_id should be Pending and have reason: "
