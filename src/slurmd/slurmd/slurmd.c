@@ -1395,8 +1395,7 @@ _process_cmdline(int ac, char **av)
 		case 'n':
 			conf->nice = strtol(optarg, &tmp_char, 10);
 			if (tmp_char[0] != '\0') {
-				error("Invalid option for -n option (nice "
-				      "value), ignored");
+				error("Invalid option for -n option (nice value), ignored");
 				conf->nice = 0;
 			}
 			break;
@@ -1894,7 +1893,7 @@ Usage: %s [OPTIONS]\n\
    -d stepd    Pathname to the slurmstepd program.\n\
    -D          Run daemon in foreground.\n\
    -f config   Read configuration from the specified file.\n\
-   -G          Print node's GRES configuration ane exit.\n\
+   -G          Print node's GRES configuration and exit.\n\
    -h          Print this help message.\n\
    -L logfile  Log messages to the file `logfile'.\n\
    -M          Use mlock() to lock slurmd pages into memory.\n\
