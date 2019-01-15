@@ -52,6 +52,13 @@ if {[test_front_end]} {
         exit $exit_code
 }
 
+set constrain_devices [test_constrain_devices]
+if {$constrain_devices} {
+	send_user "Devices files are constrained by cgroups\n"
+} else {
+	send_user "Devices files are NOT constrained by cgroups\n"
+}
+
 set nb_nodes [available_nodes $partition ""]
 if {$nb_nodes < 2} {
     send_user "\nWARNING: not enough nodes currently available ($nb_nodes avail, 2 needed)\n"
@@ -84,7 +91,9 @@ make_bash_script $file_in1 "
 	$bin_rm -f slurm_job_\${SLURM_JOBID}_resize.sh
 	exit 0"
 
+# NOTE: We pipe stderr from slurmd and discard stdout
 make_bash_script $file_in2 "
+$slurmd -N \$SLURMD_NODENAME -G 2>&1 >/dev/null | grep 'Gres Name=mps' | grep 'Index='\$CUDA_VISIBLE_DEVICES
 echo 'HOST:'\$SLURMD_NODENAME 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES 'CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:'\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"
 
 #
@@ -124,10 +133,12 @@ if {[wait_for_file $file_out] != 0} {
 	exit 1
 }
 set match 0
+set percentage -1
 spawn $bin_cat $file_out
 expect {
-	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:10" {
+	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
 		incr match
+		set percentage $expect_out(2,string)
 		exp_continue
 	}
 	eof {
@@ -137,6 +148,39 @@ expect {
 if {$match != 3} {
 	send_user "\nFAILURE: bad CUDA information about job 1 ($match != 3)\n"
 	set exit_code 1
+}
+
+#
+# If devices not constrained and Count on all allocated devices is the same
+# then confirm the CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value above is correct
+#
+if {$exit_code == 0 && $constrain_devices == 0} {
+	set count -1
+	log_user 0
+	spawn $bin_cat $file_out
+	expect {
+		-re "Count=($number)" {
+			if {$count == -1} {
+				set count $expect_out(1,string)
+			} elseif {$count != $expect_out(1,string)} {
+				set count -1
+			}
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	if {$count > 0} {
+		set count [expr 10 * 100 / $count]
+		if {$percentage != $count} {
+			send_user "\nFAILURE: Bad CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value ($percentage != $count)\n"
+			set exit_code 1
+		} else {
+			send_user "\n CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is good\n"
+		}
+	}
 }
 
 if {$exit_code == 0} {
