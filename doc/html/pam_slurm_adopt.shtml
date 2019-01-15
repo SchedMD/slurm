@@ -36,7 +36,7 @@ system-auth or sshd (you may use either the "required" or "sufficient" PAM
 control flag):</p>
 
 <pre>
-account    sufficient    pam_slurm_adopt.so
+account    required      pam_slurm_adopt.so
 </pre>
 
 <p> The order of plugins is very important. pam_slurm_adopt.so should be the
@@ -49,7 +49,7 @@ You might have the following account stack in sshd:</p>
 account    required      pam_nologin.so
 account    include       password-auth
 ...
-account    sufficient    pam_slurm_adopt.so
+account    required      pam_slurm_adopt.so
 </pre>
 
 <p>pam_slurm_adopt must be used with the task/cgroup plugin.
@@ -87,6 +87,16 @@ account    required      pam_access.so
 +:wheel:ALL
 -:ALL:ALL
 </pre>
+
+<p>An alternative to pam_access is to place pam_listfile.so before
+pam_slurm_adopt.so. For example:</p>
+
+<pre>
+account    sufficient    pam_listfile.so item=user sense=allow onerr=fail file=/path/to/allowed_users_file
+account    required      pam_slurm_adopt.so
+</pre>
+
+<p>List the usernames of the allowed users in allowed_users_file.</p>
 
 <p>When access is denied, the user will receive a relevant error message.</p>
 
