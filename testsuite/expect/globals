@@ -106,6 +106,8 @@ cset sshare      "${slurm_dir}/bin/sshare"
 cset sstat       "${slurm_dir}/bin/sstat"
 cset strigger    "${slurm_dir}/bin/strigger"
 
+cset slurmd      "${slurm_dir}/sbin/slurmd"
+
 cset pbsnodes    "${slurm_dir}/bin/pbsnodes"
 cset qdel        "${slurm_dir}/bin/qdel"
 cset qstat       "${slurm_dir}/bin/qstat"
@@ -1180,6 +1182,33 @@ proc test_constrain_devices { } {
 
 	log_user 1
 	return $constrain_devices
+}
+
+################################################################
+#
+# Proc: get_mps_count_by_index
+#
+# Return the Count of a specific gres/mps device
+#
+################################################################
+proc get_mps_count_by_index { index hostname } {
+	global slurmd number alpha_numeric_special
+
+	log_user 0
+	set count 0
+	spawn $slurmd -G -N $hostname
+	expect {
+		-re "Gres Name=mps Type=$alpha_numeric_special Count=($number) Index=$index" {
+			set count $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $count
 }
 
 ################################################################
