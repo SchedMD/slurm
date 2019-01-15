@@ -622,6 +622,58 @@ extern void gres_plugin_add(char *gres_name)
 fini:	slurm_mutex_unlock(&gres_context_lock);
 }
 
+/* Given a gres_name, return its context index or -1 if not found */
+static int _gres_name_context(char *gres_name)
+{
+	int i;
+
+	for (i = 0; i < gres_context_cnt; i++) {
+		if (!xstrcmp(gres_context[i].gres_name, gres_name))
+			return i;
+	}
+
+	return -1;
+}
+
+/*
+ * Takes a GRES config line (typically from slurm.conf) and remove any
+ * records for GRES which are not defined in GresTypes.
+ * RET string of valid GRES, Release memory using xfree()
+ */
+extern char *gres_plugin_name_filter(char *orig_gres, char *nodes)
+{
+	char *new_gres = NULL, *save_ptr = NULL;
+	char *colon, *sep = "", *tmp, *tok, *name;
+
+	slurm_mutex_lock(&gres_context_lock);
+	if (!orig_gres || !orig_gres[0] || !gres_context_cnt) {
+		slurm_mutex_unlock(&gres_context_lock);
+		return new_gres;
+	}
+
+	tmp = xstrdup(orig_gres);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		name = xstrdup(tok);
+		if ((colon = strchr(name, ':')))
+			colon[0] = '\0';
+		if (_gres_name_context(name) != -1) {
+			xstrfmtcat(new_gres, "%s%s", sep, tok);
+			sep = ",";
+		} else {
+			/* Logging may not be initialized at this point */
+			error("Invalid GRES configured on node %s: %s", nodes,
+			      tok);
+		}
+		xfree(name);
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+	xfree(tmp);
+
+	return new_gres;
+}
+
 /*
  * Terminate the gres plugin. Free memory.
  *

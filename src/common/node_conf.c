@@ -57,6 +57,7 @@
 #include <time.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -565,8 +566,7 @@ extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt)
 		config_ptr->weight = node->weight;
 		if (node->feature && node->feature[0])
 			config_ptr->feature = xstrdup(node->feature);
-		if (node->gres && node->gres[0])
-			config_ptr->gres = xstrdup(node->gres);
+		config_ptr->gres = gres_plugin_name_filter(node->gres, node->nodenames);
 
 		rc = _build_single_nodeline_info(node, config_ptr);
 		max_rc = MAX(max_rc, rc);

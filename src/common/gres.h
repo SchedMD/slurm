@@ -336,6 +336,12 @@ extern char *gres_plugin_help_msg(void);
  */
 extern uint32_t gres_plugin_build_id(char *name);
 
+/*
+ * Takes a GRES config line (typically from slurm.conf) and remove any
+ * records for GRES which are not defined in GresTypes.
+ * RET string of valid GRES, Release memory using xfree()
+ */
+extern char *gres_plugin_name_filter(char *orig_gres, char *nodes);
 
 /*
  **************************************************************************
