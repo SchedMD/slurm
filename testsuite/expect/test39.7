@@ -34,6 +34,7 @@ set test_id     "39.7"
 set exit_code   0
 set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
+set timeout $max_job_delay
 
 proc get_node_config {} {
 	global cpus_per_socket sockets_per_node
@@ -69,7 +70,7 @@ proc get_node_config {} {
 }
 
 proc run_gpu_per_job { cpus_per_gpu } {
-	global exit_code file_in number srun test_id
+	global exit_code file_in number srun test_id timeout
 
 	set cpu_count 0
 	set srun_pid [spawn $srun --gpus=1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 ./$file_in]
@@ -95,7 +96,7 @@ proc run_gpu_per_job { cpus_per_gpu } {
 }
 
 proc run_gpu_per_node { cpus_per_gpu } {
-	global exit_code file_in number srun test_id
+	global exit_code file_in number srun test_id timeout
 
 	set cpu_count 0
 	set srun_pid [spawn $srun --gpus-per-node=1 -N1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 ./$file_in]
@@ -121,7 +122,7 @@ proc run_gpu_per_node { cpus_per_gpu } {
 }
 
 proc run_gpu_per_task { cpus_per_gpu } {
-	global exit_code file_in number srun test_id
+	global exit_code file_in number srun test_id timeout
 
 	set cpu_count 0
 	set srun_pid [spawn $srun --gpus-per-task=1 -n1 --cpus-per-gpu=$cpus_per_gpu -J "test$test_id" -t1 ./$file_in]
