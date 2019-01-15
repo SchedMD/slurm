@@ -543,7 +543,7 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		     bool *already_seen, int *local_inx,
 		     bool reset, bool is_job)
 {
-	char *global_list = NULL, *local_list = NULL, *percentage = NULL;
+	char *global_list = NULL, *local_list = NULL, *perc_env = NULL;
 	char perc_str[64], *slurm_env_var = NULL;
 	uint64_t count_on_dev, gres_per_node = 0, percentage;
 	int global_id = -1;
@@ -557,7 +557,7 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
 		local_list = xstrdup(getenvp(*env_ptr,
 					     "CUDA_VISIBLE_DEVICES"));
-		percentage = xstrdup(getenvp(*env_ptr,
+		perc_env = xstrdup(getenvp(*env_ptr,
 					  "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"));
 	}
 
@@ -566,11 +566,11 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 			    &gres_per_node, &local_list, &global_list,
 			    reset, is_job, &global_id);
 
-	if (percentage) {
+	if (perc_env) {
 		env_array_overwrite(env_ptr,
-				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
-				    percentage);
-		xfree(percentage);
+				    "CUDA_MPS_ACTIVE_THREAD_perc_str",
+				    perc_env);
+		xfree(perc_env);
 	} else if (gres_per_node && mps_info) {
 		count_on_dev = _get_dev_count(global_id);
 		percentage = (gres_per_node * 100) / count_on_dev;
