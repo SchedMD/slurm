@@ -290,19 +290,21 @@ NVIDIA CUDA documentation</a> for more information about the
 <a id="MPS_Management"></a>
 <h2>MPS Management</h2>
 
-<p>CUDA Multi-Process Service (MPS) provides a mechanism where GPUs can be
+<p><a href="https://docs.nvidia.com/deploy/pdf/CUDA_Multi_Process_Service_Overview.pdf">
+CUDA Multi-Process Service (MPS)</a> provides a mechanism where GPUs can be
 shared by multiple jobs, where each job is allocated some percentage of the
 GPU's resources.
 GPUs to be made available for MPS should be identified in the <I>slurm.conf</I>
 and <I>gres.conf</I> configuration files with each device <I>File</I> being
 explicitly named and its <I>Count</I> specified (typically a multiple of 100,
 although different values can be used for different GPU types in a heterogeneous
-environment).
+environment to reflect the processing power of each).
 Alternately, specify <I>Count</I> without <I>File</I> and the value of
-<I>Count</I> value will be distributed evenly across all defined GPUs.
+<I>Count</I> will be distributed evenly across all defined GPUs.
 Note that if NVIDIA's NVML library is installed, the GPU configuration
 (i.e. <I>Type</I>, <I>File</I>, <I>Cores</I> and <I>Links</I> data) will be
-automatically gathered and need not be recorded in the <I>gres.conf</I> file.
+automatically gathered from there and need not be recorded in the
+<I>gres.conf</I> file.
 If the GPU sharing that <I>File</I> name contains <I>Core</I> or <I>Type</I>
 parameters, that information will be automatically copied to the corresponding
 MPS GRES.
@@ -311,17 +313,35 @@ MPS type GRES, but not both.
 In other words, once a GPU has been allocated as a gres/gpu resource it will
 not be available as a gres/mps.
 Likewise, once a GPU has been allocated as a gres/mps resource it will
-not be available as a gres/gpu.</p>
+not be available as a gres/gpu.
+However the same GPU can be allocated as MPS generic resources to multiple jobs
+so long as the total count of MPS allocated to jobs does not exceed the
+configured count.
+Two example configurations for Slurm's gres.conf file are shown below.</p>
 
 <PRE>
+# Example 1 of gres.conf
 # Configure support for four GPUs (with MPS), plus bandwidth
-Name=gpu Type=gp100  File=/dev/nvidia0 Cores=0,1
-Name=gpu Type=gp100  File=/dev/nvidia1 Cores=0,1
-Name=gpu Type=p6000  File=/dev/nvidia2 Cores=2,3
-Name=gpu Type=p6000  File=/dev/nvidia3 Cores=2,3
+Name=gpu Type=gp100 File=/dev/nvidia0 Cores=0,1
+Name=gpu Type=gp100 File=/dev/nvidia1 Cores=0,1
+Name=gpu Type=p6000 File=/dev/nvidia2 Cores=2,3
+Name=gpu Type=p6000 File=/dev/nvidia3 Cores=2,3
 # Set gres/mps Count value to 100 on each of the 4 available GPUs
 Name=mps Count=400
 Name=bandwidth Type=lustre Count=4G
+</PRE>
+
+<PRE>
+# Example 2 of gres.conf
+# Configure support for four differernt GPU types (with MPS)
+Name=gpu Type=gtx1080 File=/dev/nvidia0 Cores=0,1
+Name=gpu Type=gtx1070 File=/dev/nvidia1 Cores=0,1
+Name=gpu Type=gtx1060 File=/dev/nvidia2 Cores=2,3
+Name=gpu Type=gtx1050 File=/dev/nvidia3 Cores=2,3
+Name=mps Count=1300   File=/dev/nvidia0
+Name=mps Count=1200   File=/dev/nvidia1
+Name=mps Count=1100   File=/dev/nvidia2
+Name=mps Count=1000   File=/dev/nvidia3
 </PRE>
 
 <P><B>NOTE:</B> Slurm support for gres/mps requires the use of the
@@ -336,6 +356,7 @@ only one job for a given user can use MPS on a node at any given time.
 However the user can utilize MPS resources on other nodes as appropriate.
 Also note that GRES types of GPU <u>and</u> MPS can not be requested within
 a single job.
+Also jobs requesting MPS resources can not specify a GPU frequency.
 An epilog program should be used to terminate any MPS server started by the
 user/job.</p>
 
@@ -345,7 +366,15 @@ and <code class="commandline">CUDA_DEVICE_ORDER</code>.
 In addition they will have the
 <code class="commandline">CUDA_MPS_ACTIVE_THREAD_PERCENTAGE</code>
 environment variable set where its value is the job's percentage of MPS
-resources available on the assigned GPU.</p>
+resources available on the assigned GPU.
+The percentage will be calculated based upon the portion of the configured
+Count on the Gres is allocated to a job of step.
+For example, a job requesting "--gres=gpu:200" and using the second
+configuration above would be allocated<br>
+15% of the gtx1080 (File=/dev/nvidia0, 200 x 100 / 1300 = 15), or<br>
+16% of the gtx1070 (File=/dev/nvidia0, 200 x 100 / 1200 = 16), or<br>
+18% of the gtx1060 (File=/dev/nvidia0, 200 x 100 / 1100 = 18), or<br>
+20% of the gtx1050 (File=/dev/nvidia0, 200 x 100 / 1000 = 20).</p>
 
 <p>Please consult the
 <a href="https://docs.nvidia.com/deploy/pdf/CUDA_Multi_Process_Service_Overview.pdf">
@@ -379,6 +408,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 9 January 2019</p>
+<p style="text-align: center;">Last modified 15 January 2019</p>
 
 <!--#include virtual="footer.txt"-->
