@@ -177,26 +177,25 @@ extern bool common_use_local_device_index(void)
 extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				void *gres_ptr, int node_inx,
 				bitstr_t *usable_gres, char *prefix,
-				int *local_inx, char **percentage,
+				int *local_inx, uint64_t *gres_per_node,
 				char **local_list, char **global_list,
-				bool reset, bool is_job)
+				bool reset, bool is_job, int *global_id)
 {
 	int i, len;
 	bitstr_t *bit_alloc = NULL;
 	bool use_local_dev_index = common_use_local_device_index();
-	bool alloc_cnt = false;
+	bool alloc_cnt = false, set_global_id = false;
 	gres_device_t *gres_device, *first_device = NULL;
 	ListIterator itr;
 	char *global_prefix = "", *local_prefix = "";
 	char *new_global_list = NULL, *new_local_list = NULL;
-	uint64_t gres_per_node = 0;
+	uint64_t tmp_gres_per_node = 0;
 
 	if (!gres_devices)
 		return;
 
 	xassert(global_list);
 	xassert(local_list);
-	xassert(percentage);
 
 	if (is_job) {
 		gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
@@ -214,7 +213,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			alloc_cnt = true;
 		}
 		if (gres_job_ptr) {
-			gres_per_node = gres_job_ptr->gres_per_node;
+			tmp_gres_per_node = gres_job_ptr->gres_per_node;
 		}
 	} else {
 		gres_step_state_t *gres_step_ptr =
@@ -232,7 +231,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			alloc_cnt = true;
 		}
 		if (gres_step_ptr) {
-			gres_per_node = gres_step_ptr->gres_per_node;
+			tmp_gres_per_node = gres_step_ptr->gres_per_node;
 		}
 	}
 
@@ -259,6 +258,10 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 					first_device = gres_device;
 				if (!bit_test(usable_gres, i))
 					continue;
+			}
+			if (global_id && !set_global_id) {
+				*global_id = gres_device->dev_num;
+				set_global_id = true;
 			}
 			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
 				   prefix, use_local_dev_index ?
@@ -298,8 +301,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	}
 
 	if (gres_per_node) {
-		xfree(*percentage);
-		xstrfmtcat(*percentage, "%"PRIu64, gres_per_node);
+		*gres_per_node = tmp_gres_per_node;
 	}
 }
 

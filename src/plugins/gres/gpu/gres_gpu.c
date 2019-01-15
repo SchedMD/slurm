@@ -1027,8 +1027,7 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		     bool *already_seen, int *local_inx,
 		     bool reset, bool is_job)
 {
-	char *global_list = NULL, *local_list = NULL, *percentage = NULL;
-	char *slurm_env_var = NULL;
+	char *global_list = NULL, *local_list = NULL, *slurm_env_var = NULL;
 
 	if (is_job)
 		slurm_env_var = "SLURM_JOB_GRES";
@@ -1042,11 +1041,8 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	}
 
 	common_gres_set_env(gres_devices, env_ptr, gres_ptr, node_inx,
-			    usable_gres, "", local_inx,
-			    &percentage, &local_list, &global_list,
-			    reset, is_job);
-
-	xfree(percentage);
+			    usable_gres, "", local_inx,  NULL,
+			    &local_list, &global_list, reset, is_job, NULL);
 
 	if (global_list) {
 		env_array_overwrite(env_ptr, slurm_env_var, global_list);

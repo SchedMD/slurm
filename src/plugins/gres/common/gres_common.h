@@ -66,9 +66,9 @@ extern bool common_use_local_device_index(void);
 extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				void *gres_ptr, int node_inx,
 				bitstr_t *usable_gres, char *prefix,
-				int *local_inx, char **percentage,
+				int *local_inx, uint64_t *gres_per_node,
 				char **local_list, char **global_list,
-				bool reset, bool is_job);
+				bool reset, bool is_job, int *global_id);
 
 /* Send GRES information from slurmd on the specified file descriptor */
 extern void common_send_stepd(int fd, List gres_devices);

@@ -92,6 +92,12 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 static uint64_t	debug_flags		= 0;
 static char	*gres_name		= "mps";
 static List	gres_devices		= NULL;
+static List	mps_info		= NULL;
+
+typedef struct mps_dev_info {
+	uint64_t count;
+	int id;
+} mps_dev_info_t;
 
 static void _delete_gres_list(void *x)
 {
@@ -367,6 +373,7 @@ extern int fini(void)
 {
 	debug("%s: unloading %s", __func__, plugin_name);
 	FREE_NULL_LIST(gres_devices);
+	FREE_NULL_LIST(mps_info);
 
 	return SLURM_SUCCESS;
 }
@@ -389,6 +396,51 @@ static bool _test_gpu_list_fake(void)
 	return have_fake_gpus;
 }
 
+/* Translate device file name to numeric index "/dev/nvidia2" -> 2 */
+static int _compute_local_id(char *dev_file_name)
+{
+	int i, local_id = -1, mult = 1;
+
+	if (!dev_file_name)
+		return -1;
+
+	for (i = strlen(dev_file_name) - 1; i >= 0; i--) {
+		if ((dev_file_name[i] < '0') || (dev_file_name[i] > '9'))
+			break;
+		if (local_id == -1)
+			local_id = 0;
+		local_id += (dev_file_name[i] - '0') * mult;
+		mult *= 10;
+	}
+
+	return local_id;
+}
+
+static void _mps_conf_del(void *x)
+{
+	xfree(x);
+}
+
+static void _build_mps_dev_info(List gres_conf_list)
+{
+	uint32_t mps_plugin_id = gres_plugin_build_id("mps");
+	gres_slurmd_conf_t *gres_conf;
+	mps_dev_info_t *mps_conf;
+	ListIterator iter;
+
+	mps_info = list_create(_mps_conf_del);
+	iter = list_iterator_create(gres_conf_list);
+	while ((gres_conf = list_next(iter))) {
+		if (gres_conf->plugin_id != mps_plugin_id)
+			continue;
+		mps_conf = xmalloc(sizeof(mps_dev_info_t));
+		mps_conf->count = gres_conf->count;
+		mps_conf->id = _compute_local_id(gres_conf->file);
+		list_append(mps_info, mps_conf);
+	}
+	list_iterator_destroy(iter);
+}
+
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf.
@@ -407,6 +459,7 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 		debug("Resetting gres_devices");
 		FREE_NULL_LIST(gres_devices);
 	}
+	FREE_NULL_LIST(mps_info);
 
 	if (debug_flags & DEBUG_FLAG_GRES)
 		log_lvl = LOG_LEVEL_INFO;
@@ -443,6 +496,7 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
+	_build_mps_dev_info(gres_conf_list);
 
 	log_var(log_lvl, "%s: Final gres.conf list:", plugin_name);
 	print_gres_list(gres_conf_list, log_lvl);
@@ -456,13 +510,43 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	return rc;
 }
 
+/* Given a global device ID, return its gres/mps count */
+static uint64_t _get_dev_count(int global_id)
+{
+	ListIterator itr;
+	mps_dev_info_t *mps_ptr;
+	uint64_t count = NO_VAL64;
+
+	if (!mps_info) {
+		error("%s: mps_info is NULL", __func__);
+		return 100;
+	}
+	itr = list_iterator_create(mps_info);
+	while ((mps_ptr = (mps_dev_info_t *) list_next(itr))) {
+		if (mps_ptr->id == global_id) {
+			count = mps_ptr->count;
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	if (count == NO_VAL64) {
+		error("%s: Could not find gres/mps count for device ID %d",
+		      __func__,  global_id);
+		return 100;
+	}
+
+	return count;
+}
+
 static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		     bitstr_t *usable_gres,
 		     bool *already_seen, int *local_inx,
 		     bool reset, bool is_job)
 {
 	char *global_list = NULL, *local_list = NULL, *percentage = NULL;
-	char *slurm_env_var = NULL;
+	char perc_str[64], *slurm_env_var = NULL;
+	uint64_t count_on_dev, gres_per_node = 0, percentage;
+	int global_id = -1;
 
 	if (is_job)
 		slurm_env_var = "SLURM_JOB_GRES";
@@ -473,18 +557,34 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
 		local_list = xstrdup(getenvp(*env_ptr,
 					     "CUDA_VISIBLE_DEVICES"));
+		percentage = xstrdup(getenvp(*env_ptr,
+					  "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"));
 	}
 
 	common_gres_set_env(gres_devices, env_ptr, gres_ptr, node_inx,
 			    usable_gres, "", local_inx,
-			    &percentage, &local_list, &global_list,
-			    reset, is_job);
+			    &gres_per_node, &local_list, &global_list,
+			    reset, is_job, &global_id);
 
 	if (percentage) {
 		env_array_overwrite(env_ptr,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
 				    percentage);
 		xfree(percentage);
+	} else if (gres_per_node && mps_info) {
+		count_on_dev = _get_dev_count(global_id);
+		percentage = (gres_per_node * 100) / count_on_dev;
+		percentage = MAX(percentage, 1);
+		snprintf(perc_str, sizeof(perc_str), "%"PRIu64, percentage);
+		env_array_overwrite(env_ptr,
+				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
+				    perc_str);
+	} else if (gres_per_node) {
+		error("%s: mps_info list is NULL", __func__);
+		snprintf(perc_str, sizeof(perc_str), "%"PRIu64, gres_per_node);
+		env_array_overwrite(env_ptr,
+				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
+				    perc_str);
 	}
 
 	if (global_list) {
@@ -523,7 +623,7 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
 }
 
 /*
- * Set environment variables as appropriate for a job (i.e. all tasks) based
+ * Set environment variables as appropriate for a step (i.e. all tasks) based
  * upon the job step's GRES state.
  */
 extern void step_set_env(char ***step_env_ptr, void *gres_ptr)
@@ -552,13 +652,53 @@ extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
 /* Send GRES information to slurmstepd on the specified file descriptor */
 extern void send_stepd(int fd)
 {
+	int mps_cnt;
+	mps_dev_info_t *mps_ptr;
+	ListIterator itr;
+
 	common_send_stepd(fd, gres_devices);
+
+	if (!mps_info) {
+		mps_cnt = 0;
+		safe_write(fd, &mps_cnt, sizeof(int));
+	} else {
+		mps_cnt = list_count(mps_info);
+		safe_write(fd, &mps_cnt, sizeof(int));
+		itr = list_iterator_create(mps_info);
+		while ((mps_ptr = (mps_dev_info_t *) list_next(itr))) {
+			safe_write(fd, &mps_ptr->count, sizeof(uint64_t));
+			safe_write(fd, &mps_ptr->id, sizeof(int));
+		}
+		list_iterator_destroy(itr);
+	}
+	return;
+
+rwfail:	error("%s: failed", __func__);
+	return;
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
 extern void recv_stepd(int fd)
 {
+	int i, mps_cnt;
+	mps_dev_info_t *mps_ptr;
+
 	common_recv_stepd(fd, &gres_devices);
+
+	safe_read(fd, &mps_cnt, sizeof(int));
+	if (mps_cnt) {
+		mps_info = list_create(_mps_conf_del);
+		for (i = 0; i < mps_cnt; i++) {
+			mps_ptr = xmalloc(sizeof(mps_dev_info_t));
+			safe_read(fd, &mps_ptr->count, sizeof(uint64_t));
+			safe_read(fd, &mps_ptr->id, sizeof(int));
+			list_append(mps_info, mps_ptr);
+		}
+	}
+	return;
+
+rwfail:	error("%s: failed", __func__);
+	return;
 }
 
 /*
