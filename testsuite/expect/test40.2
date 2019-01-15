@@ -67,6 +67,13 @@ if {$mps_cnt < 100} {
 }
 send_user "\nMPS per GPU count is $mps_cnt\n"
 
+set constrain_devices [test_constrain_devices]
+if {$constrain_devices} {
+	send_user "Devices files are constrained by cgroups\n"
+} else {
+	send_user "Devices files are NOT constrained by cgroups\n"
+}
+
 #
 # Simple MPS request, check environment variables
 #
@@ -77,21 +84,26 @@ echo CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 echo CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
 exit 0"
 set timeout $max_job_delay
+set device -1
+set host "unknown"
 set matches 0
+set percentage -1
 set target [expr $mps_cnt / 2]
 set srun_pid [spawn $srun --gres=mps:$target -n1 -t1 -J "test$test_id" $file_in1]
 expect {
+	-re "HOST:($alpha_numeric_under)" {
+		incr matches
+		set host $expect_out(1,string)
+		exp_continue
+	}
 	-re "CUDA_VISIBLE_DEVICES:($number)" {
 		incr matches
+		set device $expect_out(1,string)
 		exp_continue
 	}
 	-re "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
-		if {$expect_out(1,string) == $target} {
-			incr matches
-		} else {
-			send_user "\nFAILURE: CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is bad\n"
-			set exit_code 1
-		}
+		incr matches
+		set percentage $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -102,6 +114,19 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$matches != 3} {
+	send_user "\nFAILURE: output is bad ($matches != 3)\n"
+	set exit_code 1
+} elseif {$constrain_devices == 0} {
+	set mps_count [get_mps_count_by_index $device $host]
+	set target_perc [expr ($target * 100) / $mps_count]
+	if {$percentage != $target_perc} {
+		send_user "\nFAILURE: CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value is bad ($percentage != $target_perc)\n"
+		set exit_code 1
+	} else {
+		send_user "\nConfirmed CUDA_MPS_ACTIVE_THREAD_PERCENTAGE value\n"
+	{
 }
 
 #
