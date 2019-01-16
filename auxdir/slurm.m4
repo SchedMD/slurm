@@ -108,30 +108,23 @@ AC_DEFUN([X_AC_LIBSLURM], [
 
   if test "$x_ac_shared_libslurm" = no; then
     LIB_SLURM_BUILD='$(top_builddir)/src/api/libslurm.o'
-    LIB_SLURMDB_BUILD='$(top_builddir)/src/db_api/libslurmdb.o'
     LIB_SLURM=$LIB_SLURM_BUILD
-    LIB_SLURMDB=$LIB_SLURMDB_BUILD
     AC_MSG_RESULT([static]);
   else
     # The *_BUILD variables are here to make sure these are made before
     # compiling the bin
     LIB_SLURM_BUILD='$(top_builddir)/src/api/full_version.map $(top_builddir)/src/api/libslurmfull.la'
-    LIB_SLURMDB_BUILD='$(top_builddir)/src/db_api/version.map $(top_builddir)/src/db_api/libslurmdb.la'
     # You will notice " or ' each does something different when resolving
     # variables.  Some need to be resolved now ($libdir) and others
     # ($(top_builddir)) need to be resolved when dealing with the Makefile.am's
     LIB_SLURM="-Wl,-rpath=$libdir/slurm"
     LIB_SLURM=$LIB_SLURM' -L$(top_builddir)/src/api/.libs -lslurmfull'
 
-    LIB_SLURMDB="-Wl,-rpath=$libdir/slurm"
-    LIB_SLURMDB=$LIB_SLURMDB' -L$(top_builddir)/src/api/.libs -L$(top_builddir)/src/db_api/.libs -lslurmdb -lslurmfull'
     AC_MSG_RESULT([shared]);
   fi
 
   AC_SUBST(LIB_SLURM)
-  AC_SUBST(LIB_SLURMDB)
   AC_SUBST(LIB_SLURM_BUILD)
-  AC_SUBST(LIB_SLURMDB_BUILD)
 ])
 
 dnl

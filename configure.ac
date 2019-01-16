@@ -409,7 +409,6 @@ AC_CONFIG_FILES([Makefile
 		 src/api/Makefile
 		 src/bcast/Makefile
 		 src/common/Makefile
-		 src/db_api/Makefile
 		 src/layouts/Makefile
 		 src/layouts/power/Makefile
 		 src/layouts/unit/Makefile

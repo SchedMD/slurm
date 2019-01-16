@@ -7,9 +7,9 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = sacctmgr
 
-sacctmgr_DEPENDENCIES = $(LIB_SLURM_BUILD) $(LIB_SLURMDB_BUILD)
+sacctmgr_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
-sacctmgr_LDADD = $(LIB_SLURMDB) $(DL_LIBS) $(READLINE_LIBS)
+sacctmgr_LDADD = $(LIB_SLURM) $(DL_LIBS) $(READLINE_LIBS)
 
 sacctmgr_SOURCES =	\
 	account_functions.c	\

@@ -80,6 +80,9 @@ NOTE: Sreport report 'job SizesByAccount' and 'job SizesByAccountAndWckey'
       Perl API functions have been adapted removing the '_top_' in the
       respective signatures. The new parameter have also been added.
 
+NOTE: libslurmdb has been merged into libslurm.  If functionality is needed
+      from libslurmdb please just link to libslurm.
+
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res

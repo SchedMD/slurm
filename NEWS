@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Change the default fair share algorithm to "fair tree". The new
     PriorityFlags option of NO_FAIR_TREE can be used to revert to "classic"
     fair share scheduling instead.
+ -- libslurmdb has been merged into libslurm.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

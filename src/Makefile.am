@@ -3,7 +3,6 @@ SUBDIRS =		\
 	bcast		\
 	common		\
 	database	\
-	db_api		\
 	layouts		\
 	plugins		\
 	sacct		\

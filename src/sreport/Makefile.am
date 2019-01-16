@@ -15,8 +15,8 @@ sreport_SOURCES =	\
 	resv_reports.c resv_reports.h	\
 	common.c
 
-sreport_LDADD =  $(LIB_SLURMDB) $(DL_LIBS) $(READLINE_LIBS)
-sreport_DEPENDENCIES = $(LIB_SLURM_BUILD) $(LIB_SLURMDB_BUILD)
+sreport_LDADD =  $(LIB_SLURM) $(DL_LIBS) $(READLINE_LIBS)
+sreport_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 sreport_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
