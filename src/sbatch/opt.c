@@ -672,6 +672,7 @@ static struct option long_options[] = {
 	{"account",       required_argument, 0, 'A'},
 	{"array",         required_argument, 0, 'a'},
 	{"extra-node-info", required_argument, 0, 'B'},
+	{"begin",	  required_argument, 0, 'b'},
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"cluster-constraint",required_argument,0, LONG_OPT_CLUSTER_CONSTRAINT},
 	{"constraint",    required_argument, 0, 'C'},
@@ -714,7 +715,6 @@ static struct option long_options[] = {
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
-	{"begin",         required_argument, 0, LONG_OPT_BEGIN},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"comment",       required_argument, 0, LONG_OPT_COMMENT},
@@ -785,7 +785,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:A:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:P:q:QsS:t:uU:vVw:Wx:";
+	"+a:A:b:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:P:q:QsS:t:uU:vVw:Wx:";
 char *pos_delimit;
 
 
@@ -1295,6 +1295,15 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
+                case 'b':
+                        if (!optarg)
+                                break;  /* Fix for Coverity false positive */
+                        opt.begin = parse_time(optarg, 0);
+                        if (opt.begin == 0) {
+                                error("Invalid time specification %s", optarg);
+                                exit(error_exit);
+                        }
+                        break;
 		case 'B':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1686,15 +1695,6 @@ static void _set_options(int argc, char **argv)
 			}
 			if (gid_from_string(optarg, &opt.egid) < 0) {
 				error("--gid=\"%s\" invalid", optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_BEGIN:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.begin = parse_time(optarg, 0);
-			if (opt.begin == 0) {
-				error("Invalid time specification %s", optarg);
 				exit(error_exit);
 			}
 			break;
@@ -3368,7 +3368,7 @@ static void _help(void)
 "  -A, --account=name          charge job to specified account\n"
 "      --bb=<spec>             burst buffer specifications\n"
 "      --bbf=<file_name>       burst buffer specification file\n"
-"      --begin=time            defer job until HH:MM MM/DD/YY\n"
+"  -b, --begin=time            defer job until HH:MM MM/DD/YY\n"
 "      --comment=name          arbitrary comment\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"

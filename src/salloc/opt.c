@@ -605,6 +605,7 @@ static void _set_options(int argc, char **argv)
 	long long priority;
 	static struct option long_options[] = {
 		{"account",       required_argument, 0, 'A'},
+		{"begin",         required_argument, 0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
@@ -641,7 +642,6 @@ static void _set_options(int argc, char **argv)
 		{"wait",          required_argument, 0, 'W'},
 		{"exclude",       required_argument, 0, 'x'},
 		{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
-		{"begin",         required_argument, 0, LONG_OPT_BEGIN},
 		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
@@ -707,7 +707,7 @@ static void _set_options(int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:P:q:QsS:t:uU:vVw:W:x:";
+		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:P:q:QsS:t:uU:vVw:W:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -733,6 +733,16 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
+                case 'b':
+                        if (!optarg)
+                                break;  /* Fix for Coverity false positive */
+                        opt.begin = parse_time(optarg, 0);
+                        if (opt.begin == 0) {
+                                error("Invalid time specification %s",
+                                      optarg);
+                                exit(error_exit);
+                        }
+                        break;
 		case 'B':
 			opt.extra_set = verify_socket_core_thread_count(
 						optarg,
@@ -1079,16 +1089,6 @@ static void _set_options(int argc, char **argv)
 			}
 			if (gid_from_string (optarg, &opt.egid) < 0) {
 				error("--gid=\"%s\" invalid", optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_BEGIN:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.begin = parse_time(optarg, 0);
-			if (opt.begin == 0) {
-				error("Invalid time specification %s",
-				      optarg);
 				exit(error_exit);
 			}
 			break;
@@ -2083,7 +2083,7 @@ static void _help(void)
 "\n"
 "Parallel run options:\n"
 "  -A, --account=name          charge job to specified account\n"
-"      --begin=time            defer job until HH:MM MM/DD/YY\n"
+"  -b, --begin=time            defer job until HH:MM MM/DD/YY\n"
 "      --bell                  ring the terminal bell when the job is allocated\n"
 "      --bb=<spec>             burst buffer specifications\n"
 "      --bbf=<file_name>       burst buffer specification file\n"

@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
     PriorityFlags option of NO_FAIR_TREE can be used to revert to "classic"
     fair share scheduling instead.
  -- libslurmdb has been merged into libslurm.
+ -- Added -b as a short option for --begin and removed the -b option which
+    was a left over artifact from the Moab compatibility work.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

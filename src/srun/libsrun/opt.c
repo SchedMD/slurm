@@ -140,6 +140,7 @@ int	_verbose = 0;
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
 	{"account",          required_argument, 0, 'A'},
+	{"begin",            required_argument, 0, 'b'},
 	{"extra-node-info",  required_argument, 0, 'B'},
 	{"cpus-per-task",    required_argument, 0, 'c'},
 	{"constraint",       required_argument, 0, 'C'},
@@ -188,7 +189,6 @@ struct option long_options[] = {
 	{"bb",               required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 	{"bbf",              required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
-	{"begin",            required_argument, 0, LONG_OPT_BEGIN},
 	{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",   required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
@@ -275,7 +275,7 @@ struct option long_options[] = {
 #endif
 	{NULL,               0,                 0, 0}
 	};
-char *opt_string = "+A:B:c:C:d:D:e:EG:hHi:I::jJ:k::K::lL:m:M:n:N:"
+char *opt_string = "+A:b:B:c:C:d:D:e:EG:hHi:I::jJ:k::K::lL:m:M:n:N:"
 		   "o:Op:P:q:Qr:sS:t:T:uU:vVw:W:x:XZ";
 
 
@@ -1360,6 +1360,16 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
+                case 'b':
+                        if (!optarg)
+                                break;  /* Fix for Coverity false positive */
+                        opt.begin = parse_time(optarg, 0);
+                        if (errno == ESLURM_INVALID_TIME_VALUE) {
+                                error("Invalid time specification %s",
+                                      optarg);
+                                exit(error_exit);
+                        }
+                        break;
 		case (int)'B':
 			opt.extra_set = verify_socket_core_thread_count(
 						optarg,
@@ -1924,16 +1934,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = _read_file(optarg);
-			break;
-		case LONG_OPT_BEGIN:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.begin = parse_time(optarg, 0);
-			if (errno == ESLURM_INVALID_TIME_VALUE) {
-				error("Invalid time specification %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_MAIL_TYPE:
 			if (!optarg)
@@ -3242,7 +3242,7 @@ static void _help(void)
 "      --bb=<spec>             burst buffer specifications\n"
 "      --bbf=<file_name>       burst buffer specification file\n"
 "      --bcast=<dest_path>     Copy executable file to compute nodes\n"
-"      --begin=time            defer job until HH:MM MM/DD/YY\n"
+"  -b, --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --checkpoint=time       job step checkpoint interval\n"
 "      --checkpoint-dir=dir    directory to store job step checkpoint image \n"
