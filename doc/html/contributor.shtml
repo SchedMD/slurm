@@ -11,7 +11,7 @@ In addition the individual's organization should complete the<br>
 <a href="Slurm_Entity.pdf">Slurm Workload Manager Entity Contributor License Agreement</a>.</p>
 
 <p>Signed forms or questions should be directed to
-<a href="mailto:support@schedmd.com">support@schedmd.com</a> or posted to<br><br>
+<a href="mailto:cla@schedmd.com">cla@schedmd.com</a> or posted to<br><br>
 SchedMD LLC<br>
 240 North 1200 East<br>
 Unit 203<br>
@@ -24,6 +24,6 @@ SchedMD can provide design review, code review, integration and long-term
 support at reasonable cost. SchedMD can also perform custom development work
 to satisfy your requirements.</p>
 
-<p style="text-align:center;">Last modified 29 September 2016</p>
+<p style="text-align:center;">Last modified 16 January 2019</p>
 
 <!--#include virtual="footer.txt"-->
