@@ -236,7 +236,7 @@ rebooted and returned to service "As Soon As Possible" (i.e. ASAP). A user
 defined message can be added to the nodes by using the "reason" option. The
 message will be cleared when the node is resumed.  If "nextstate" is specified
 as "DOWN", then the node(s) will remain in a down state after rebooting. If the
-"nextstate" is specifed as "RESUME", then the node(s) will resume as normal
+"nextstate" is specified as "RESUME", then the node(s) will resume as normal
 when the node registers. "Resuming" nodes will be considered as available in
 backfill future scheduling and won't be replaced by idle nodes in a reservation.
 When using the "nextstate" and "reason" options together the reason will be
@@ -626,7 +626,7 @@ Only pending jobs can have the deadline updated.
 Only the Slurm administrator or root can change this parameter.
 .TP
 \fBDelayBoot\fP=<time_spec>
-Change the time to decide wether to reboot nodes in order to satisfy job's
+Change the time to decide whether to reboot nodes in order to satisfy job's
 feature specification if the job has been eligible to run for less than this
 time period. See salloc/sbatch man pages option \-\-delay\-boot.
 .TP
@@ -809,7 +809,7 @@ Set the job's QOS (Quality Of Service) to the specified value.
 Value may be cleared with blank data value, "QOS=".
 .TP
 \fBReboot\fP=<yes|no>
-Set the job's flag that specifies wether to force the allocated nodes to reboot
+Set the job's flag that specifies whether to force the allocated nodes to reboot
 before starting the job. This is only supported with some system configurations
 and therefore it could be silently ignored.
 .TP

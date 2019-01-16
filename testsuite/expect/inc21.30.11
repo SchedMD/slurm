@@ -28,6 +28,12 @@
 proc inc21_30_11 { } {
 
 	global salloc srun acct bin_sleep grpmem_num number exit_code
+	global test_select_type_params
+
+	if {![test_select_type_params "MEMORY"]} {
+		send_user "\nMemory management not configured (Within: inc21.30.11)\n\n"
+		return
+	}
 
 	send_user "\nStarting GrpMem test (Within: inc21.30.11)\n\n"
 	set job_id1 0

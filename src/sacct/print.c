@@ -517,6 +517,8 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = step->job_ptr->account;
 				break;
 			case JOBCOMP:
+				tmp_char = job_comp->account;
+				break;
 			default:
 				tmp_char = "n/a";
 				break;
@@ -693,6 +695,8 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = step->job_ptr->cluster;
 				break;
 			case JOBCOMP:
+				tmp_char = job_comp->cluster;
+				break;
 			default:
 				break;
 			}
@@ -832,9 +836,13 @@ extern void print_fields(type_t type, void *object)
 					 tmp_int, tmp_int2);
 				break;
 			case JOBSTEP:
+				break;
 			case JOBCOMP:
+				if (job_comp->derived_ec)
+					snprintf(outbuf, sizeof(outbuf), "%s",
+						 job_comp->derived_ec);
+				break;
 			default:
-				outbuf[0] = '\0';
 				break;
 			}
 
@@ -889,6 +897,7 @@ extern void print_fields(type_t type, void *object)
 				tmp_int = step->start;
 				break;
 			case JOBCOMP:
+				tmp_int = parse_time(job_comp->eligible_time, 1);
 				break;
 			default:
 				break;
@@ -926,6 +935,10 @@ extern void print_fields(type_t type, void *object)
 				exit_code = step->exitcode;
 				break;
 			case JOBCOMP:
+				if (job_comp->exit_code)
+					snprintf(outbuf, sizeof(outbuf), "%s",
+						 job_comp->exit_code);
+				break;
 			default:
 				break;
 			}
@@ -937,9 +950,9 @@ extern void print_fields(type_t type, void *object)
 					tmp_int = WEXITSTATUS(exit_code);
 				if (tmp_int >= 128)
 					tmp_int -= 128;
+				snprintf(outbuf, sizeof(outbuf), "%d:%d",
+					 tmp_int, tmp_int2);
 			}
-			snprintf(outbuf, sizeof(outbuf), "%d:%d",
-				 tmp_int, tmp_int2);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -1751,28 +1764,28 @@ extern void print_fields(type_t type, void *object)
 			switch(type) {
 			case JOB:
 				tmp_int = job->qosid;
+				if (!g_qos_list) {
+					slurmdb_qos_cond_t qos_cond;
+					memset(&qos_cond, 0,
+					       sizeof(slurmdb_qos_cond_t));
+					qos_cond.with_deleted = 1;
+					g_qos_list = slurmdb_qos_get(
+						acct_db_conn, &qos_cond);
+				}
+
+				tmp_char = _find_qos_name_from_list(g_qos_list,
+								    tmp_int);
 				break;
 			case JOBSTEP:
 
 				break;
 			case JOBCOMP:
-
+				tmp_char = job_comp->qos_name;
 				break;
 			default:
 
 				break;
 			}
-			if (!g_qos_list) {
-				slurmdb_qos_cond_t qos_cond;
-				memset(&qos_cond, 0,
-				       sizeof(slurmdb_qos_cond_t));
-				qos_cond.with_deleted = 1;
-				g_qos_list = slurmdb_qos_get(
-					acct_db_conn, &qos_cond);
-			}
-
-			tmp_char = _find_qos_name_from_list(g_qos_list,
-							    tmp_int);
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
@@ -1897,6 +1910,8 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = step->job_ptr->req_gres;
 				break;
 			case JOBCOMP:
+				tmp_char = job_comp->req_gres;
+				break;
 			default:
 				tmp_char = NULL;
 				break;
@@ -1984,7 +1999,7 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = NULL;
 				break;
 			case JOBCOMP:
-				tmp_char = NULL;
+				tmp_char = job_comp->resv_name;
 				break;
 			default:
 				tmp_char = NULL;
@@ -2422,7 +2437,7 @@ extern void print_fields(type_t type, void *object)
 
 				break;
 			case JOBCOMP:
-
+				tmp_char = job_comp->wckey;
 				break;
 			default:
 
@@ -2460,7 +2475,7 @@ extern void print_fields(type_t type, void *object)
 
 				break;
 			case JOBCOMP:
-
+				tmp_char = job_comp->work_dir;
 				break;
 			default:
 

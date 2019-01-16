@@ -72,6 +72,16 @@ typedef struct {
 	char *geo;
 	char *bg_start_point;
 	char *work_dir;
+	char *resv_name;
+	char *req_gres;
+	char *account;
+	char *qos_name;
+	char *wckey;
+	char *cluster;
+	char *submit_time;
+	char *eligible_time;
+	char *derived_ec;
+	char *exit_code;
 } jobcomp_job_rec_t;
 
 typedef struct slurm_jobcomp_context * slurm_jobcomp_context_t;
