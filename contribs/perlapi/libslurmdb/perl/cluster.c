@@ -141,6 +141,7 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
 
     job_cond->cpus_max = 0;
     job_cond->cpus_min = 0;
+    job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
     job_cond->flags = 0;
     job_cond->nodes_max = 0;
     job_cond->nodes_min = 0;
@@ -148,6 +149,7 @@ hv_to_job_cond(HV* hv, slurmdb_job_cond_t* job_cond)
 
     FETCH_FIELD(hv, job_cond, cpus_max,                 uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, cpus_min,                 uint32_t, FALSE);
+    FETCH_FIELD(hv, job_cond, db_flags,                 uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, flags,                    uint32_t, FALSE);
     FETCH_FIELD(hv, job_cond, exitcode,                 int32_t, FALSE);
     FETCH_FIELD(hv, job_cond, nodes_max,                uint32_t, FALSE);
