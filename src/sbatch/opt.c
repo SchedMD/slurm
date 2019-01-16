@@ -2040,12 +2040,12 @@ static void _set_options(int argc, char **argv)
 			opt.job_flags |= USE_MIN_NODES;
 			break;
 		default:
-			if (spank_process_option (opt_char, optarg) < 0)
+			if (spank_process_option(opt_char, optarg) < 0)
 				exit(error_exit);
 		}
 	}
 
-	spank_option_table_destroy (optz);
+	spank_option_table_destroy(optz);
 }
 
 static void _proc_get_user_env(char *optarg)

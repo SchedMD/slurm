@@ -1330,7 +1330,7 @@ static void _set_options(const int argc, char **argv)
 #ifdef HAVE_PTY_H
 	char *tmp_str;
 #endif
-	struct option *optz = spank_option_table_create (long_options);
+	struct option *optz = spank_option_table_create(long_options);
 
 	if (!optz) {
 		error("Unable to create option table");
@@ -2293,7 +2293,7 @@ static void _set_options(const int argc, char **argv)
 				opt.x11 = X11_FORWARD_ALL;
 			break;
 		default:
-			if (spank_process_option (opt_char, optarg) < 0)
+			if (spank_process_option(opt_char, optarg) < 0)
 				exit(error_exit);
 		}
 	}
@@ -2311,7 +2311,7 @@ static void _set_options(const int argc, char **argv)
 			opt.nodes_set = false;
 	}
 
-	spank_option_table_destroy (optz);
+	spank_option_table_destroy(optz);
 }
 
 /*
