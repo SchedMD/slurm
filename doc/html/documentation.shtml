@@ -62,6 +62,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li>Workload Prioritization
 <ul>
 <li><a href="priority_multifactor.html">Multifactor Job Priority</a></li>
+<li><a href="classic_fair_share.html">Classic Fairshare Algorithm</a></li>
 <li><a href="priority_multifactor3.html">Depth-Oblivious Fair-share Factor</a></li>
 <li><a href="fair_tree.html">Fair Tree Fairshare Algorithm</a></li>
 </ul>

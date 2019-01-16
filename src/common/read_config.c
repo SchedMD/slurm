@@ -4312,7 +4312,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 		if (xstrcasestr(temp_str, "DEPTH_OBLIVIOUS"))
 			conf->priority_flags |= PRIORITY_FLAGS_DEPTH_OBLIVIOUS;
-		else if (xstrcasestr(temp_str, "FAIR_TREE"))
+		else if (!xstrcasestr(temp_str, "NO_FAIR_TREE"))
 			conf->priority_flags |= PRIORITY_FLAGS_FAIR_TREE;
 
 		if (xstrcasestr(temp_str, "INCR_ONLY"))

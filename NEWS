@@ -46,6 +46,9 @@ documents those changes that are of interest to users and administrators.
  -- sview - disable admin mode option (which would not work anyways) if the
     user is not an admin in SlurmDBD.
  -- Remove joules reporting from sview and scontrol.
+ -- Change the default fair share algorithm to "fair tree". The new
+    PriorityFlags option of NO_FAIR_TREE can be used to revert to "classic"
+    fair share scheduling instead.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

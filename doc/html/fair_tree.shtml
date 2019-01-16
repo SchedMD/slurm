@@ -23,7 +23,7 @@ Authors: Ryan Cox and Levi Morrison
 
 <h2><a name="intro">Introduction</a></h2>
 
-<p>PriorityFlags=FAIR_TREE results in changes to several fairshare calculations.
+<p>
 Fair Tree prioritizes users such that if accounts A and B are siblings and A has
 a higher fairshare factor than B, all children of A will have higher fairshare
 factors than all children of B.</p>
@@ -172,8 +172,6 @@ configure the Fair Tree algorithm.  See slurm.conf(5) man page for more
 details.</p>
 
 <dl>
-<dt>PriorityFlags</dt>
-<dd>Set to "FAIR_TREE".</dd>
 <dt>PriorityType</dt>
 <dd>Set this value to "priority/multifactor".
 The default value for this variable is "priority/basic"
@@ -202,6 +200,6 @@ wait until the next iteration as defined by <i>PriorityCalcPeriod</i>.
 
 
 <!-- -------------------------------------------------------------------- -->
-<p style="text-align:center;">Last modified 15 Sep 2014</p>
+<p style="text-align:center;">Last modified 16 Jan 2019</p>
 
 <!--#include virtual="footer.txt"-->
