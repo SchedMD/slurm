@@ -522,11 +522,14 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 /*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
- * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
+ * IN set_bitmap - if true then set node_bitmap in config record (used by
+ *		    slurmd), false is used by slurmctld and testsuite
  * IN tres_cnt - number of TRES configured on system (used on controller side)
+ * IN in_slurmctld - true if being run from slurmctld daemon
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt)
+extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt,
+				   bool in_slurmctld)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	struct config_record *config_ptr = NULL;
@@ -566,7 +569,7 @@ extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt)
 		config_ptr->weight = node->weight;
 		if (node->feature && node->feature[0])
 			config_ptr->feature = xstrdup(node->feature);
-		if (!set_bitmap) {
+		if (in_slurmctld) {
 			/* In slurmctld */
 			config_ptr->gres = gres_plugin_name_filter(node->gres,
 							       node->nodenames);

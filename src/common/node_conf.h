@@ -212,11 +212,14 @@ hostlist_t bitmap2hostlist (bitstr_t *bitmap);
 /*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
- * IN set_bitmap - if true, set node_bitmap in config record (used by slurmd)
+ * IN set_bitmap - if true then set node_bitmap in config record (used by
+ *		    slurmd), false is used by slurmctld and testsuite
  * IN tres_cnt - number of TRES configured on system (used on controller side)
+ * IN in_slurmctld - true if being run from slurmctld daemon
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info (bool set_bitmap, int tres_cnt);
+extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt,
+				   bool in_slurmctld);
 
 /*
  * build_all_frontend_info - get a array of slurm_conf_frontend_t structures

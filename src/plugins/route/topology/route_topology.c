@@ -174,7 +174,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		if (init_node_conf()) {
 			fatal("ROUTE: Failed to init slurm config");
 		}
-		if (build_all_nodeline_info(false, 0)) {
+		if (build_all_nodeline_info(false, 0, _run_in_slurmctld())) {
 			fatal("ROUTE: Failed to build node config");
 		}
 		rehash_node();
