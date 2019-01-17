@@ -194,7 +194,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 {
 	char tmp_cnt[50];
 	char tmp_current_watts[50];
-	char tmp_base_watts[50];
+	char tmp_ave_watts[50];
 	char tmp_cap_watts[50], tmp_owner[32];
 	char tmp_version[50];
 	char *upper = NULL, *lower = NULL;
@@ -400,13 +400,13 @@ static void _layout_node_record(GtkTreeView *treeview,
 	if (node_ptr->energy->current_watts == NO_VAL) {
 		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
 			 "N/A");
-		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
+		snprintf(tmp_ave_watts, sizeof(tmp_ave_watts),
 			 "N/A");
 	} else {
 		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
 			 "%u", node_ptr->energy->current_watts);
-		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
-			 "%u", node_ptr->energy->base_watts);
+		snprintf(tmp_ave_watts, sizeof(tmp_ave_watts),
+			 "%u", node_ptr->energy->ave_watts);
 	}
 
 	add_display_treestore_line(update, treestore, &iter,
@@ -417,7 +417,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_node,
 						 SORTID_AVE_WATTS),
-				   tmp_base_watts);
+				   tmp_ave_watts);
 
 	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
 		snprintf(tmp_cap_watts, sizeof(tmp_cap_watts), "N/A");
@@ -452,7 +452,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	char tmp_disk[20], tmp_cpus[20], tmp_idle_cpus[20];
 	char tmp_mem[20], tmp_used_memory[20];
 	char tmp_used_cpus[20], tmp_cpu_load[20], tmp_free_mem[20], tmp_owner[32];
-	char tmp_current_watts[50], tmp_base_watts[50];
+	char tmp_current_watts[50], tmp_ave_watts[50];
 	char tmp_cap_watts[50], tmp_version[50];
 	char *tmp_state_lower, *tmp_state_upper;
 
@@ -460,13 +460,13 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 	if (node_ptr->energy->current_watts == NO_VAL) {
 		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
 			 "N/A");
-		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
+		snprintf(tmp_ave_watts, sizeof(tmp_ave_watts),
 			 "N/A");
 	} else {
 		snprintf(tmp_current_watts, sizeof(tmp_current_watts),
 			 "%u ", node_ptr->energy->current_watts);
-		snprintf(tmp_base_watts, sizeof(tmp_base_watts),
-			 "%u", node_ptr->energy->base_watts);
+		snprintf(tmp_ave_watts, sizeof(tmp_ave_watts),
+			 "%u", node_ptr->energy->ave_watts);
 	}
 
 	if (!node_ptr->power || (node_ptr->power->cap_watts == NO_VAL)) {
@@ -555,7 +555,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_ACTIVE_FEATURES, node_ptr->features_act,
 			   SORTID_ARCH,      node_ptr->arch,
 			   SORTID_AVAIL_FEATURES,  node_ptr->features,
-			   SORTID_AVE_WATTS, tmp_base_watts,
+			   SORTID_AVE_WATTS, tmp_ave_watts,
 			   SORTID_BOARDS,    node_ptr->boards,
 			   SORTID_BOOT_TIME, sview_node_info_ptr->boot_time,
 			   SORTID_CLUSTER_NAME, node_ptr->cluster_name,

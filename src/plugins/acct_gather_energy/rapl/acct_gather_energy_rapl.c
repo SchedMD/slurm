@@ -358,7 +358,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 			(uint64_t)ret - energy->base_consumed_energy;
 		energy->current_watts =
 			(uint32_t)ret - energy->previous_consumed_energy;
-		energy->base_watts =  ((energy->base_watts * readings) +
+		energy->ave_watts =  ((energy->ave_watts * readings) +
 				       energy->current_watts) / (readings + 1);
 
 		interval = time(NULL) - energy->poll_time;
@@ -367,7 +367,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 	} else {
 		energy->consumed_energy = 1;
 		energy->base_consumed_energy = (uint64_t)ret;
-		energy->base_watts = 0;
+		energy->ave_watts = 0;
 	}
 	readings++;
 	energy->previous_consumed_energy = (uint64_t)ret;

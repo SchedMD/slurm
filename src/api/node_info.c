@@ -413,7 +413,7 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	else
 		xstrfmtcat(out, "CurrentWatts=%u AveWatts=%u",
 				node_ptr->energy->current_watts,
-				node_ptr->energy->base_watts);
+				node_ptr->energy->ave_watts);
 
 	xstrcat(out, line_end);
 

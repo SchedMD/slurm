@@ -552,7 +552,7 @@ static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt,
 
 	if (e->current_watts) {
 		prev_watts = e->current_watts;
-		e->base_watts = ((e->base_watts * readings) +
+		e->ave_watts = ((e->ave_watts * readings) +
 				 e->current_watts) / (readings + 1);
 		e->current_watts = last_update_watt;
 		if (previous_update_time == 0)
@@ -568,7 +568,7 @@ static void _update_energy(acct_gather_energy_t *e, uint32_t last_update_watt,
 		e->consumed_energy += e->base_consumed_energy;
 	} else {
 		e->consumed_energy = 0;
-		e->base_watts = 0;
+		e->ave_watts = 0;
 		e->current_watts = last_update_watt;
 	}
 	e->poll_time = time(NULL);
@@ -609,7 +609,7 @@ static int _thread_update_node_energy(void)
 			     sensors[i].energy.current_watts,
 			     sensors[i].energy.consumed_energy,
 			     sensors[i].energy.base_consumed_energy,
-			     sensors[i].energy.base_watts);
+			     sensors[i].energy.ave_watts);
 	}
 
 	return rc;
@@ -911,7 +911,7 @@ static void _get_node_energy(acct_gather_energy_t *energy)
 		id = descriptions[i].sensor_idxs[j];
 		e = &sensors[id].energy;
 		energy->base_consumed_energy += e->base_consumed_energy;
-		energy->base_watts += e->base_watts;
+		energy->ave_watts += e->ave_watts;
 		energy->consumed_energy += e->consumed_energy;
 		energy->current_watts += e->current_watts;
 		energy->previous_consumed_energy += e->previous_consumed_energy;

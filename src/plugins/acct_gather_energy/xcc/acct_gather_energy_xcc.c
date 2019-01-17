@@ -527,7 +527,7 @@ static int _thread_update_node_energy(void)
 		xcc_energy.consumed_energy = 0;
 		xcc_energy.base_consumed_energy = 0;
 		xcc_energy.previous_consumed_energy = 0;
-		xcc_energy.base_watts = 0;
+		xcc_energy.ave_watts = 0;
 	} else {
 		xcc_energy.previous_consumed_energy =
 			xcc_energy.consumed_energy;
@@ -581,18 +581,12 @@ static int _thread_update_node_energy(void)
 			round((double)xcc_energy.base_consumed_energy /
 			      (double)elapsed);
 
-		/* base_watts is used as TresUsageOutAve (AvePower) */
-		xcc_energy.base_watts = ((xcc_energy.base_watts * readings) +
+		/* ave_watts is used as TresUsageOutAve (AvePower) */
+		xcc_energy.ave_watts = ((xcc_energy.ave_watts * readings) +
 					 xcc_energy.current_watts) /
 					 (readings + 1);
 		readings++;
 	}
-	/*
-	 * FIXME: base_watts is now used to hold ave watts, seems renaming it is
-	 * a good idea.  Currently it is only displayed in sview
-	 * to print out labeled under Lowest Joules?  That seems confusing.  We
-	 * should fix it in the future.
-	 */
 
 	if (debug_flags & DEBUG_FLAG_ENERGY) {
 		info("%s: XCC current_watts: %u consumed energy last interval: %"PRIu64"(current reading %"PRIu64") Joules, elapsed time: %u Seconds, first read energy counter val: %"PRIu64" ave watts: %u",
@@ -602,7 +596,7 @@ static int _thread_update_node_energy(void)
 		     xcc_energy.consumed_energy,
 		     elapsed,
 		     first_consumed_energy,
-		     xcc_energy.base_watts);
+		     xcc_energy.ave_watts);
 	}
 	return SLURM_SUCCESS;
 }

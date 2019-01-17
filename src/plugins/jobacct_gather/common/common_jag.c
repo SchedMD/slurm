@@ -1011,7 +1011,7 @@ extern void jag_common_poll_data(
 			       __func__,
 			       prec->tres_data[TRES_ARRAY_ENERGY].size_read,
 			       prec->tres_data[TRES_ARRAY_ENERGY].size_write,
-			       jobacct->energy.base_watts);
+			       jobacct->energy.ave_watts);
 			energy_counted = 1;
 		}
 

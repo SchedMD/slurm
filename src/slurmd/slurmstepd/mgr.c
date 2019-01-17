@@ -285,11 +285,11 @@ static void _local_jobacctinfo_aggregate(
 		from->tres_usage_in_max[TRES_ARRAY_VMEM];
 
 	/*
-	 * Here base_watts stores the ave of the watts collected so store that
+	 * Here ave_watts stores the ave of the watts collected so store that
 	 * as the last value so the total will be a total of ave instead of just
 	 * the last watts collected.
 	 */
-	from->tres_usage_out_tot[TRES_ARRAY_ENERGY] = from->energy.base_watts;
+	from->tres_usage_out_tot[TRES_ARRAY_ENERGY] = from->energy.ave_watts;
 
 	jobacctinfo_aggregate(dest, from);
 }

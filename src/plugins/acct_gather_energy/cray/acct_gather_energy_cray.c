@@ -156,11 +156,11 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 		diff_energy = curr_energy - energy->previous_consumed_energy;
 
 		energy->consumed_energy += diff_energy;
-		energy->base_watts =  ((energy->base_watts * readings) +
+		energy->ave_watts =  ((energy->ave_watts * readings) +
 				       energy->current_watts) / (readings + 1);
 	} else {
 		energy->base_consumed_energy = curr_energy;
-		energy->base_watts = 0;
+		energy->ave_watts = 0;
 	}
 	readings++;
 	energy->current_watts = curr_power;
@@ -170,7 +170,7 @@ static void _get_joules_task(acct_gather_energy_t *energy)
 		     " %ld secs. Currently at %u watts, ave watts %u",
 		     diff_energy,
 		     energy->poll_time ? now - energy->poll_time : 0,
-		     curr_power, energy->base_watts);
+		     curr_power, energy->ave_watts);
 
 	energy->previous_consumed_energy = curr_energy;
 	energy->poll_time = now;
