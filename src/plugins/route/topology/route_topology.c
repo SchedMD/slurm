@@ -124,7 +124,7 @@ extern int fini(void)
 }
 
 /* Only run when in the slurmctld */
-static bool _run_in_daemon(void)
+static bool _run_in_slurmctld(void)
 {
 	static bool set = false;
 	static bool run = false;
@@ -167,7 +167,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	msg_count = hostlist_count(hl);
 	slurm_mutex_lock(&route_lock);
 	if (switch_record_cnt == 0) {
-		if (_run_in_daemon())
+		if (_run_in_slurmctld())
 			fatal_abort("%s: Somehow we have 0 for switch_record_cnt and we are here in the slurmctld.  This should never happen.", __func__);
 		/* configs have not already been processed */
 		slurm_conf_init(NULL);
@@ -186,14 +186,14 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	slurm_mutex_unlock(&route_lock);
 	*sp_hl = (hostlist_t*) xmalloc(switch_record_cnt * sizeof(hostlist_t));
 	/* Only acquire the slurmctld lock if running as the slurmctld. */
-	if (_run_in_daemon())
+	if (_run_in_slurmctld())
 		lock_slurmctld(node_read_lock);
 	/* create bitmap of nodes to send message too */
 	if (hostlist2bitmap (hl, false, &nodes_bitmap) != SLURM_SUCCESS) {
 		buf = hostlist_ranged_string_xmalloc(hl);
 		fatal("ROUTE: Failed to make bitmap from hostlist=%s.", buf);
 	}
-	if (_run_in_daemon())
+	if (_run_in_slurmctld())
 		unlock_slurmctld(node_read_lock);
 
 	/* Find lowest level switch containing all the nodes in the list */
