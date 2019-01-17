@@ -527,31 +527,36 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		debug3("   TRES_per_task=%s", step_spec->tres_per_task);
 }
 
+/*
+ * _find_step_id - find specific step_id entry in the step list,
+ *	see common/list.h for documentation, key is step_id_ptr
+ * global- job_list - the global partition list
+ */
+extern int _find_step_id(void *step_entry, void *key)
+{
+	uint32_t step_id = *(uint32_t *)key;
+
+	if (((struct step_record *)step_entry)->step_id == step_id)
+		return 1;
+	else
+		return 0;
+}
+
 
 /*
  * find_step_record - return a pointer to the step record with the given
  *	job_id and step_id
  * IN job_ptr - pointer to job table entry to have step record added
- * IN step_id - id of the desired job step or NO_VAL for first one
+ * IN step_id - id of the desired job step
  * RET pointer to the job step's record, NULL on error
  */
 struct step_record *
 find_step_record(struct job_record *job_ptr, uint32_t step_id)
 {
-	ListIterator step_iterator;
-	struct step_record *step_ptr;
-
 	if (job_ptr == NULL)
 		return NULL;
 
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
-		if ((step_ptr->step_id == step_id) || (step_id == NO_VAL))
-			break;
-	}
-	list_iterator_destroy (step_iterator);
-
-	return step_ptr;
+	return list_find_first(job_ptr->step_list, _find_step_id, &step_id);
 }
 
 
