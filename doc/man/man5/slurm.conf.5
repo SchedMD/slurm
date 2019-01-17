@@ -828,10 +828,9 @@ Base scheduling decisions upon the actual configuration of each individual
 node except that the node's processor count in Slurm's configuration must
 match the actual hardware configuration if \fBPreemptMode=suspend,gang\fR,
 \fBSelectType=select/cons_res\fR or \fBSelectType=select/cons_tres\fR are
-configured (all of those plugins
-maintain resource allocation information using bitmaps for the cores in the
-system and must remain static, while the node's memory and disk space can
-be established later).
+configured (all of those plugins maintain resource allocation information using
+bitmaps for the cores in the system and must remain static, while the node's
+memory, disk space, and GRES counts can be established later).
 .TP
 \fB1\fR (default)
 Consider the configuration of each node to be that specified in the
