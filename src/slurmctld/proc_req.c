@@ -3822,55 +3822,31 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		return;
 	}
 
-	if (req->job_step_id == SLURM_BATCH_SCRIPT) {
-		/* FIXME: test for error, possibly cause batch job requeue */
-		error_code = job_complete(req->job_id, uid, false,
-					  false, step_rc);
-		if (!running_composite) {
-			unlock_slurmctld(job_write_lock);
-			_throttle_fini(&active_rpc_cnt);
-		}
-		END_TIMER2("_slurm_rpc_step_complete");
-
-		/* return result */
-		if (error_code) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("%s JobId=%u: %s", __func__,
-				     req->job_id, slurm_strerror(error_code));
-			slurm_send_rc_msg(msg, error_code);
-		} else {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				sched_info("%s JobId=%u: %s", __func__,
-					   req->job_id, TIME_STR);
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			dump_job = true;
-		}
-	} else {
-		error_code = job_step_complete(req->job_id, req->job_step_id,
-					       uid, false, step_rc);
-		if (!running_composite) {
-			unlock_slurmctld(job_write_lock);
-			_throttle_fini(&active_rpc_cnt);
-		}
-		END_TIMER2("_slurm_rpc_step_complete");
-
-		/* return result */
-		if (error_code) {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				info("%s 1 JobId=%u StepId=%u %s",
-				     __func__, req->job_id, req->job_step_id,
-				     slurm_strerror(error_code));
-			slurm_send_rc_msg(msg, error_code);
-		} else {
-			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
-				sched_info("%s JobId=%u StepId=%u %s",
-					   __func__, req->job_id,
-					   req->job_step_id,
-					   TIME_STR);
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			dump_job = true;
-		}
+	error_code = job_step_complete(req->job_id, req->job_step_id,
+				       uid, false, step_rc);
+	if (!running_composite) {
+		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
 	}
+	END_TIMER2("_slurm_rpc_step_complete");
+
+	/* return result */
+	if (error_code) {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+			info("%s 1 JobId=%u StepId=%u %s",
+			     __func__, req->job_id, req->job_step_id,
+			     slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS)
+			sched_info("%s JobId=%u StepId=%u %s",
+				   __func__, req->job_id,
+				   req->job_step_id,
+				   TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		dump_job = true;
+	}
+
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
 }
