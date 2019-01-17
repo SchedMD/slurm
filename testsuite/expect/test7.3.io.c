@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 			int offset;
 			sprintf(buf2, "task %d read from stdin:", procid);
 			offset = strlen(buf2);
-			for (j=0; j<size; j++)	/* may lack null terminator */
+			for (j = 0; j < size; j++) /* may lack null terminator */
 				buf2[offset+j] = buf1[j];
 			buf2[offset+j] = ':';
 			buf2[offset+j+1] = '\0';

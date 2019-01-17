@@ -201,7 +201,7 @@ static void _do_task_work(int *fd_array, int tasks)
 	int i, j, size;
 	char buf[1024];
 
-	for (i=0; i<tasks; i++) {
+	for (i = 0; i < tasks; i++) {
 		if (fd_array[i] < 0) {
 			perror("Invalid file descriptor");
 			continue;
@@ -214,7 +214,7 @@ static void _do_task_work(int *fd_array, int tasks)
 			size = read(fd_array[i], buf, sizeof(buf));
 			if (size > 0) {
 				printf("task %d read:size:%d:msg:", i, size);
-				for (j=0; j<size; j++)
+				for (j = 0; j < size; j++)
 					printf("%c",buf[j]);
 				printf("\n");
 				fflush(stdout);

@@ -1536,7 +1536,7 @@ _slurmd_init(void)
 	init_node_conf();
 	/* slurm_select_init() must be called before
 	 * build_all_nodeline_info() to be called with proper argument. */
-	if (slurm_select_init(1) != SLURM_SUCCESS )
+	if (slurm_select_init(1) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	build_all_nodeline_info(true, 0);
 	build_all_frontend_info(true);
