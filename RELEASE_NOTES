@@ -101,11 +101,11 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     CpuBind parameter based upon changes to a node's NUMA mode.
  -- Add "ValidateMode" configuration parameter to knl.conf for static
     MCDRAM/NUMA configurations.
- -- Add “NodeRebootWeight” option to knl.conf file to modiify a node's
+ -- Add "NodeRebootWeight" option to knl.conf file to modiify a node's
     scheduling weight when rebooting is required to satify a job's constraints.
  -- Add "GetSysStatus" option to burst_buffer.conf file. For burst_buffer/cray
     this would indicate the location of the "dwstat" command.
- -- Add “SetExecHost” flag to burst_buffer.conf to enable access from login node
+ -- Add "SetExecHost" flag to burst_buffer.conf to enable access from login node
     for interactive jobs
  -- Configuration parameters "ControlMachine", "ControlAddr", "BackupController"
     and "BackupAddr" in slurm.conf replaced by an ordered list of
@@ -125,7 +125,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     machine to be unable to create new cgroups.
  -- SchedulerParameters' "whole_pack" option has been renamed to "whole_hetjob",
     although "whole_pack" will still be supported for backward compatibility.
- -- Cray: Add “CheckGhalQuiesce” to "CommunicationParameters" in slurm.conf.
+ -- Cray: Add "CheckGhalQuiesce" to "CommunicationParameters" in slurm.conf.
  -- Remove requirement to have cgroup_allowed_devices_file.conf in order to
     constrain devices. By default all devices are allowed and GRES, that are
     associated with a device file, that are not requested are restricted.
@@ -135,7 +135,7 @@ COMMAND CHANGES (see man pages for details)
  -- Add sbatch "--batch" option to identify features required on batch node.
     For example "sbatch --batch=haswell ...".
  -- sacct can report all information about all components of a heterogeneous
-    job allocation with “--whole-hetjob=yes” option.
+    job allocation with "--whole-hetjob=yes" option.
  -- Report cgroup and NodeFeatures plugin configuration with scontrol and
     sview commands.
  -- Add "scontrol show dwstat" command to display Cray burst buffer status.
@@ -147,17 +147,17 @@ COMMAND CHANGES (see man pages for details)
     currently required to use more CPUs than are bound to a GRES (i.e. if a GPU
     is bound to the CPUs on one socket, but resources on more than one socket
     are required to run the job).
- -- Add name of partition used to output of “srun --test-only …”. This is
+ -- Add name of partition used to output of "srun --test-only ...". This is
     valuable for jobs submitted to multiple partitions.
- -- Add job reason “ReqNodeNotAvail, reserved for maintenance”.
- -- “scontrol reboot” enhancements:
+ -- Add job reason "ReqNodeNotAvail, reserved for maintenance".
+ -- "scontrol reboot" enhancements:
     - Add ability to specify node reason
     - Add ability to specify node state after reboot completion
  -- sdiag command enhancements:
     - Report outgoing message queue contents
     - Report pending job count
  -- Add scontrol ability to create/update "TRESBillingWeights".
- -- Remove “AdminComment +=” syntax from “scontrol update job”.
+ -- Remove "AdminComment +=" syntax from "scontrol update job".
  -- Add sacctmgr options to prevent/manage job queue stuffing:
     - GrpJobsAccrue=<max_jobs>
       Maximum number of pending jobs in aggregate able to accrue age priority
@@ -176,16 +176,16 @@ OTHER CHANGES
 =============
  -- Add new job state of SO/STAGE_OUT indicating that burst buffer stage-out
     operation is in progress.
- -- Add new burst buffer state of “teardown-fail”.
- -- Burst buffer errors logged to new job “SystemComment” field.
+ -- Add new burst buffer state of "teardown-fail".
+ -- Burst buffer errors logged to new job "SystemComment" field.
  -- Enable jobs with zero node count for creation and/or deletion of persistent
     burst buffers.
  -- Avoid terminating other processes in a task group when any task is core
     dumping to avoid incomplete OpenMP core files.
- -- Append “, with requeued tasks” to end of job array “end” email when any task
-    is requeued. This is a hint to use “sacct --duplicates” to see all job
+ -- Append ", with requeued tasks" to end of job array "end" email when any task
+    is requeued. This is a hint to use "sacct --duplicates" to see all job
     accounting information.
- -- Consider nodes in “Resuming” state as available for backfill future
+ -- Consider nodes in "Resuming" state as available for backfill future
     scheduling and do not replace in advanced reservations.
  -- Explicitly shutdown the slurmd daemon when reboot requested.
  -- Calculate TRES billing values at job submission to enforce QOS DenyOnLimit
