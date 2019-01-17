@@ -1274,6 +1274,11 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
+		case '?':
+			fprintf(stderr,
+				"Try \"srun --help\" for more information\n");
+			exit(error_exit);
+			break;
 		case LONG_OPT_PACK_GROUP:
 			xfree(sropt.pack_group);
 			sropt.pack_group = xstrdup(optarg);

@@ -108,6 +108,8 @@ documents those changes that are of interest to users and administrators.
  -- Add missing fields for sacct --completion when using jobcomp/filetxt.
  -- Fix incorrect values set for UserCPU, SystemCPU, and TotalCPU sacct fields
     when JobAcctGatherType=jobacct_gather/cgroup.
+ -- Fixed srun from double printing invalid option msg twice.
+ -- Remove unused -b flag from getopt call in sbatch.
 
 * Changes in Slurm 18.08.4
 ==========================
