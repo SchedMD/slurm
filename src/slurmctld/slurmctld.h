@@ -2353,14 +2353,13 @@ extern void step_alloc_lps(struct step_record *step_ptr);
  *	according to the step_specs.
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN batch_step - set if step is a batch script
  * IN protocol_version - slurm protocol version of client
   * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
 extern int step_create(job_step_create_request_msg_t *step_specs,
-		       struct step_record** new_step_record, bool batch_step,
+		       struct step_record** new_step_record,
 		       uint16_t protocol_version);
 
 /*

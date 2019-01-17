@@ -2408,14 +2408,13 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
  *	according to the step_specs.
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN batch_step - if set then step is a batch script
  * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
 extern int
 step_create(job_step_create_request_msg_t *step_specs,
-	    struct step_record** new_step_record, bool batch_step,
+	    struct step_record** new_step_record,
 	    uint16_t protocol_version)
 {
 	struct step_record *step_ptr;
@@ -2430,6 +2429,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	uint32_t task_dist;
 	uint32_t max_tasks;
+	char *mpi_params;
+
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
 	if (job_ptr == NULL)
@@ -2456,13 +2457,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 		 * If that job is pending either LSF messed up or LSF is
 		 * not being used. We have seen this problem with Moab. */
 		return ESLURM_DUPLICATE_JOB_ID;
-	}
-
-	if (batch_step) {
-		info("user %u attempting to run batch script within existing %pJ",
-		     step_specs->user_id, job_ptr);
-		/* This seems hazardous to allow, but LSF seems to
-		 * work this way, so don't treat it as an error. */
 	}
 
 	if (IS_JOB_FINISHED(job_ptr) ||
@@ -2673,7 +2667,6 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;
 	step_ptr->host = xstrdup(step_specs->host);
-	step_ptr->batch_step = batch_step;
 	if ((step_specs->cpu_freq_min == NO_VAL) &&
 	    (step_specs->cpu_freq_max == NO_VAL) &&
 	    (step_specs->cpu_freq_gov == NO_VAL)) {
@@ -2743,66 +2736,61 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_ptr->time_limit = step_specs->time_limit;
 	}
 
-	/* a batch script does not need switch info */
-	if (!batch_step) {
-		char *mpi_params;
+	step_ptr->step_layout =
+		step_layout_create(step_ptr,
+				   step_node_list, node_count,
+				   step_specs->num_tasks,
+				   (uint16_t)cpus_per_task,
+				   step_specs->task_dist,
+				   step_specs->plane_size);
+	xfree(step_node_list);
+	if (!step_ptr->step_layout) {
+		delete_step_record (job_ptr, step_ptr->step_id);
+		if (step_specs->pn_min_memory)
+			return ESLURM_INVALID_TASK_MEMORY;
+		return SLURM_ERROR;
+	}
+	if (step_specs->resv_port_cnt == NO_VAL16
+	    && (mpi_params = slurm_get_mpi_params())) {
+		step_specs->resv_port_cnt = 0;
+		/*
+		 * reserved port count set to maximum task count on
+		 * any node plus one
+		 */
+		for (i = 0; i < step_ptr->step_layout->node_cnt; i++) {
+			step_specs->resv_port_cnt =
+				MAX(step_specs->resv_port_cnt,
+				    step_ptr->step_layout->tasks[i]);
+		}
+		step_specs->resv_port_cnt++;
+		xfree(mpi_params);
+	}
+	if ((step_specs->resv_port_cnt != NO_VAL16) &&
+	    (step_specs->resv_port_cnt != 0)) {
+		step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
+		i = resv_port_alloc(step_ptr);
+		if (i != SLURM_SUCCESS) {
+			delete_step_record (job_ptr,
+					    step_ptr->step_id);
+			return i;
+		}
+	}
 
-		step_ptr->step_layout =
-			step_layout_create(step_ptr,
-					   step_node_list, node_count,
-					   step_specs->num_tasks,
-					   (uint16_t)cpus_per_task,
-					   step_specs->task_dist,
-					   step_specs->plane_size);
-		xfree(step_node_list);
-		if (!step_ptr->step_layout) {
-			delete_step_record (job_ptr, step_ptr->step_id);
-			if (step_specs->pn_min_memory)
-				return ESLURM_INVALID_TASK_MEMORY;
-			return SLURM_ERROR;
-		}
-		if (step_specs->resv_port_cnt == NO_VAL16
-		    && (mpi_params = slurm_get_mpi_params())) {
-			step_specs->resv_port_cnt = 0;
-			/*
-			 * reserved port count set to maximum task count on
-			 * any node plus one
-			 */
-			for (i = 0; i < step_ptr->step_layout->node_cnt; i++) {
-				step_specs->resv_port_cnt =
-					MAX(step_specs->resv_port_cnt,
-					    step_ptr->step_layout->tasks[i]);
-			}
-			step_specs->resv_port_cnt++;
-			xfree(mpi_params);
-		}
-		if ((step_specs->resv_port_cnt != NO_VAL16) &&
-		    (step_specs->resv_port_cnt != 0)) {
-			step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
-			i = resv_port_alloc(step_ptr);
-			if (i != SLURM_SUCCESS) {
-				delete_step_record (job_ptr,
-						    step_ptr->step_id);
-				return i;
-			}
-		}
+	if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
+				   step_ptr->job_ptr->job_id,
+				   step_ptr->step_id) < 0)
+		fatal("%s: switch_g_alloc_jobinfo error", __func__);
 
-		if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
-					   step_ptr->job_ptr->job_id,
-					   step_ptr->step_id) < 0)
-			fatal("%s: switch_g_alloc_jobinfo error", __func__);
+	if (switch_g_build_jobinfo(step_ptr->switch_job,
+				   step_ptr->step_layout,
+				   step_ptr->network) < 0) {
+		delete_step_record (job_ptr, step_ptr->step_id);
+		if (errno == ESLURM_INTERCONNECT_BUSY)
+			return errno;
+		return ESLURM_INTERCONNECT_FAILURE;
+	}
+	step_alloc_lps(step_ptr);
 
-		if (switch_g_build_jobinfo(step_ptr->switch_job,
-					   step_ptr->step_layout,
-					   step_ptr->network) < 0) {
-			delete_step_record (job_ptr, step_ptr->step_id);
-			if (errno == ESLURM_INTERCONNECT_BUSY)
-				return errno;
-			return ESLURM_INTERCONNECT_FAILURE;
-		}
-		step_alloc_lps(step_ptr);
-	} else
-		xfree(step_node_list);
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal("%s: checkpoint_alloc_jobinfo error", __func__);
 	*new_step_record = step_ptr;
