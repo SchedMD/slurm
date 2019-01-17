@@ -73,7 +73,7 @@
 				        <div>About</div>
 					<ul>
 						<li><a href="overview.shtml">Overview</a></li>
-						<li><a href="news.shtml">What's New</a></li>
+						<li><a href="news.shtml">Release Notes</a></li>
 						<li><a href="team.shtml">Slurm Team</a></li>
 						<li><a href="meetings.shtml">Meetings</a></li>
 						<li><a href="testimonials.shtml">Testimonials</a></li>
