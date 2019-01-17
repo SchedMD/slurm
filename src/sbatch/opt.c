@@ -885,7 +885,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+ba:A:B:c:C:d:D:e:F:G:hHi:IJ:kL:m:M:n:N:o:Op:P:q:QsS:t:uU:vVw:Wx:";
+	"+a:A:B:c:C:d:D:e:F:G:hHi:IJ:kL:m:M:n:N:o:Op:P:q:QsS:t:uU:vVw:Wx:";
 char *pos_delimit;
 
 
