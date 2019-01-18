@@ -253,6 +253,7 @@ NOTE: Nodes will be placed in a state of "REBOOT" until rebooted and returned
 to service with a normal state.
 Alternately the node's state "REBOOT" may be cleared by using the scontrol
 command to set the node state to "RESUME", which clears the "REBOOT" flag.
+A node will be marked DOWN if it doesn't reboot within \fBResumeTimeout\fR.
 
 .TP
 \fBreconfigure\fP
