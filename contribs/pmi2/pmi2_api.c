@@ -8,6 +8,7 @@
 #include "pmi2_util.h"
 #include "slurm/pmi2.h"
 
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +42,7 @@ static int PMI2_fd = -1;
 static int PMI2_size = 1;
 static int PMI2_rank = 0;
 
+static pthread_mutex_t pmi2_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* XXX DJG the "const"s on both of these functions and the Keyvalpair
  * struct are wrong in the isCopy==TRUE case! */
@@ -713,6 +715,7 @@ int PMI2_KVS_Put(const char key[], const char value[])
     const char *errmsg;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, KVSPUT_CMD, KEY_KEY, key, VALUE_KEY, value, NULL);
     if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_WriteSimpleCommandStr");
@@ -723,6 +726,7 @@ int PMI2_KVS_Put(const char key[], const char value[])
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
@@ -737,6 +741,7 @@ int PMI2_KVS_Fence(void)
     const char *errmsg;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, KVSFENCE_CMD, NULL);
     if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_WriteSimpleCommandStr");
@@ -747,6 +752,7 @@ int PMI2_KVS_Fence(void)
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
@@ -766,6 +772,7 @@ int PMI2_KVS_Get(const char *jobid, int src_pmi_id, const char key[], char value
     const char *errmsg;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     snprintf(src_pmi_id_str, sizeof(src_pmi_id_str), "%d", src_pmi_id);
 
@@ -791,6 +798,7 @@ int PMI2_KVS_Get(const char *jobid, int src_pmi_id, const char key[], char value
  fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
  fn_fail:
@@ -808,6 +816,7 @@ int PMI2_Info_GetNodeAttr(const char name[], char value[], int valuelen, int *fl
     const char *errmsg;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     pmi2_errno = PMIi_InitIfSingleton();
     if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_InitIfSingleton");
@@ -830,6 +839,7 @@ int PMI2_Info_GetNodeAttr(const char name[], char value[], int valuelen, int *fl
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
@@ -849,6 +859,7 @@ int PMI2_Info_GetNodeAttrIntArray(const char name[], int array[], int arraylen, 
     const char *valptr;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     pmi2_errno = PMIi_InitIfSingleton();
     if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_InitIfSingleton");
@@ -883,6 +894,7 @@ int PMI2_Info_GetNodeAttrIntArray(const char name[], int array[], int arraylen, 
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
@@ -897,6 +909,7 @@ int PMI2_Info_PutNodeAttr(const char name[], const char value[])
     const char *errmsg;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, PUTNODEATTR_CMD, KEY_KEY, name, VALUE_KEY, value, NULL);
     if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_WriteSimpleCommandStr");
@@ -907,6 +920,7 @@ int PMI2_Info_PutNodeAttr(const char name[], const char value[])
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
@@ -924,6 +938,7 @@ int PMI2_Info_GetJobAttr(const char name[], char value[], int valuelen, int *fla
     const char *errmsg;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     pmi2_errno = PMIi_InitIfSingleton();
     if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_InitIfSingleton");
@@ -947,6 +962,7 @@ int PMI2_Info_GetJobAttr(const char name[], char value[], int valuelen, int *fla
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
@@ -966,6 +982,7 @@ int PMI2_Info_GetJobAttrIntArray(const char name[], int array[], int arraylen, i
     const char *valptr;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     pmi2_errno = PMIi_InitIfSingleton();
     if (pmi2_errno) PMI2U_ERR_SETANDJUMP(1, pmi2_errno, "PMIi_InitIfSingleton");
@@ -1000,6 +1017,7 @@ int PMI2_Info_GetJobAttrIntArray(const char name[], int array[], int arraylen, i
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
@@ -1014,6 +1032,7 @@ int PMI2_Nameserv_publish(const char service_name[], const PMI2U_Info *info_ptr,
     const char *errmsg;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     /* ignoring infokey functionality for now */
     pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, NAMEPUBLISH_CMD,
@@ -1028,6 +1047,7 @@ int PMI2_Nameserv_publish(const char service_name[], const PMI2U_Info *info_ptr,
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
@@ -1047,6 +1067,7 @@ int PMI2_Nameserv_lookup(const char service_name[], const PMI2U_Info *info_ptr,
     const char *found_port;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     /* ignoring infos for now */
     pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, NAMELOOKUP_CMD,
@@ -1063,6 +1084,7 @@ int PMI2_Nameserv_lookup(const char service_name[], const PMI2U_Info *info_ptr,
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
@@ -1078,6 +1100,7 @@ int PMI2_Nameserv_unpublish(const char service_name[],
     const char *errmsg;
 
     PMI2U_printf("[BEGIN]");
+    pthread_mutex_lock(&pmi2_mutex);
 
     pmi2_errno = PMIi_WriteSimpleCommandStr(PMI2_fd, &cmd, NAMEUNPUBLISH_CMD,
                                             NAME_KEY, service_name, INFOKEYCOUNT_KEY, "0", NULL);
@@ -1089,6 +1112,7 @@ int PMI2_Nameserv_unpublish(const char service_name[],
 fn_exit:
     free(cmd.command);
     freepairs(cmd.pairs, cmd.nPairs);
+    pthread_mutex_unlock(&pmi2_mutex);
     PMI2U_printf("[END]");
     return pmi2_errno;
 fn_fail:
