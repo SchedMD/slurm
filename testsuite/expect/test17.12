@@ -411,6 +411,132 @@ proc sub_job_or {nnode fail_test} {
 	}
 }
 
+proc sub_job_or_paren {nnode fail_test} {
+	global exit_code sbatch test_part file_in nodes
+	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
+	global bin_grep
+
+	set test_job 0
+	set fail_node_config 0
+
+    spawn $sbatch -C "($feat0|$feat1)" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+    expect {
+        -re "Submitted batch job ($number)" {
+            set test_job $expect_out(1,string)
+            exp_continue
+        }
+        -re "Requested node configuration is not available" {
+            send_user "\nFAILURE: Unexpected job submit failure\n"
+            set exit_code 1
+            exp_continue
+        }
+        timeout {
+            send_user "\nFAILURE: sbatch is not responding\n"
+            set exit_code 1
+        }
+        eof {
+            wait
+        }
+    }
+    # Check that nodes have the correct features
+    if {$test_job != 0} {
+        check_job $nnode $test_job
+    }
+
+    # (feat0|feat2)
+    set test_job 0
+    set nnode 3
+    spawn $sbatch -C "($feat0|$feat2)" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+    expect {
+        -re "Submitted batch job ($number)" {
+            set test_job $expect_out(1,string)
+            exp_continue
+        }
+        -re "Requested node configuration is not available" {
+            send_user "\nFAILURE: Unexpected job submit failure\n"
+            set exit_code 1
+            exp_continue
+        }
+        timeout {
+            send_user "\nFAILURE: sbatch is not responding\n"
+            set exit_code 1
+        }
+        eof {
+            wait
+        }
+    }
+    # Check that nodes have the correct features
+    if {$test_job != 0} {
+        check_job_nodes $test_job $nodes(0) 1
+        check_job_nodes $test_job $nodes(1) 0
+        check_job_nodes $test_job $nodes(2) 1
+        check_job_nodes $test_job $nodes(3) 1
+        check_job $nnode $test_job
+    }
+
+    # (feat1|feat3)
+    set test_job 0
+    set nnode 2
+    spawn $sbatch -C "($feat1|$feat3)" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+    expect {
+        -re "Submitted batch job ($number)" {
+            set test_job $expect_out(1,string)
+            exp_continue
+        }
+        -re "Requested node configuration is not available" {
+            send_user "\nFAILURE: Unexpected job submit failure\n"
+            set exit_code 1
+            exp_continue
+        }
+        timeout {
+            send_user "\nFAILURE: sbatch is not responding\n"
+            set exit_code 1
+        }
+        eof {
+            wait
+        }
+    }
+    # Check that nodes have the correct features
+    if {$test_job != 0} {
+        check_job_nodes $test_job $nodes(0) 0
+        check_job_nodes $test_job $nodes(1) 1
+        check_job_nodes $test_job $nodes(2) 0
+        check_job_nodes $test_job $nodes(3) 1
+        check_job $nnode $test_job
+    }
+
+    # feat0&(feat2|feat3)
+    set test_job 0
+    set nnode 2
+    spawn $sbatch -C "feat0&(feat2|feat3)" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+    expect {
+        -re "Submitted batch job ($number)" {
+            set test_job $expect_out(1,string)
+            exp_continue
+        }
+        -re "Requested node configuration is not available" {
+            send_user "\nFAILURE: Unexpected job submit failure\n"
+            set exit_code 1
+            exp_continue
+        }
+        timeout {
+            send_user "\nFAILURE: sbatch is not responding\n"
+            set exit_code 1
+        }
+        eof {
+            wait
+        }
+    }
+    # Check that nodes have the correct features
+    if {$test_job != 0} {
+        check_job_nodes $test_job $nodes(0) 0
+        check_job_nodes $test_job $nodes(1) 0
+        check_job_nodes $test_job $nodes(2) 1
+        check_job_nodes $test_job $nodes(3) 1
+        check_job $nnode $test_job
+    }
+}
+
 proc sub_job_xand {nnode fail_test} {
 	global exit_code sbatch test_part file_in nodes
 	global feat0 feat1 feat2 feat3 number scontrol alpha_numeric_nodelist bin_bash
@@ -807,6 +933,10 @@ sub_job_xor 4 1
 # Test OR with 4 nodes
 send_user "\n\n==========Test OR 4 nodes==========\n"
 sub_job_or 4 0
+
+# Test OR within parenthesis
+send_user "\n\n==========Test OR within parenthesis==========\n"
+sub_job_or_paren 4 0
 
 # Test batch host
 send_user "\n\n==========Test batch host==========\n"

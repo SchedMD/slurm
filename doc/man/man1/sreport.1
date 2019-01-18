@@ -69,6 +69,13 @@ for the node will be the highest of the partitions.  If TRESBillingWeights is
 not defined on any partition for a node then the Billing TRES will be equal to
 the number of CPUs on the node.
 
+TRES node usage is no longer reported in percent format or in Cluster
+Utilization.  Please use TRES CPU instead.
+The main issue with using node is in most configurations multiple jobs are able
+to run on the same node.  This makes TRES node accounting count the same node
+multiple times in the same period.  In exclusive node configurations, CPU
+accounting returns the same usage node accounting would.
+
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Print detailed event logging.

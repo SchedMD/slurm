@@ -73,6 +73,7 @@ slurmdb_report_sort_t sort_flag = SLURMDB_REPORT_SORT_TIME;
 char *tres_usage_str = "CPU";
 /* by default, normalize all usernames to lower case */
 bool user_case_norm = true;
+bool node_tres = false;
 
 static char *	_build_cluster_string(void);
 static void	_build_tres_list(void);
@@ -363,6 +364,15 @@ static void _build_tres_list(void)
 				break;
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
+		if (tok && !xstrcasecmp(tok, "node")) {
+			if ((time_format == SLURMDB_REPORT_TIME_SECS_PER) ||
+			    (time_format == SLURMDB_REPORT_TIME_MINS_PER) ||
+			    (time_format == SLURMDB_REPORT_TIME_HOURS_PER) ||
+			    (time_format == SLURMDB_REPORT_TIME_PERCENT))
+				fatal("TRES node usage is no longer reported in percent format reports.  Please use TRES CPU instead.");
+			else
+				node_tres = true;
+		}
 		if (tok) {
 			slurmdb_tres_rec_t *tres2 =
 				slurmdb_copy_tres_rec(tres);
@@ -508,6 +518,8 @@ static void _cluster_rep (int argc, char **argv)
 		   || (xstrncasecmp(argv[0], "UW", 2) == 0)) {
 		error_code = cluster_user_by_wckey((argc - 1), &argv[1]);
 	} else if (xstrncasecmp(argv[0], "Utilization", 2) == 0) {
+		if (node_tres)
+			fatal("TRES node usage is no longer reported in the Cluster Utilization report.  Please use TRES CPU instead.");
 		error_code = cluster_utilization((argc - 1), &argv[1]);
 	} else if (xstrncasecmp(argv[0], "WCKeyUtilizationByUser", 1) == 0) {
 		error_code = cluster_wckey_by_user((argc - 1), &argv[1]);
