@@ -113,7 +113,6 @@ slurmapi_src =           \
 	reservation_info.c \
 	signal.c         \
 	slurm_get_statistics.c \
-	slurm_hostlist.c \
 	slurm_pmi.c      \
 	slurm_pmi.h	 \
 	step_ctx.c       \
