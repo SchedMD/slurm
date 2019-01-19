@@ -446,18 +446,22 @@ extern void gres_plugin_node_feature(char *node_name,
 /*
  * Note that a node's configuration has been modified (e.g. "scontol update ..")
  * IN node_name - name of the node for which the gres information applies
- * IN orig_config - Gres information supplied from slurm.conf
- * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
+ * IN new_gres - Updated GRES information supplied from slurm.conf or scontrol
+ * IN/OUT gres_str - Node's current GRES string, updated as needed
  * IN/OUT gres_list - List of Gres records for this node to track usage
  * IN fast_schedule - 0: Validate and use actual hardware configuration
  *		      1: Validate hardware config, but use slurm.conf config
  *		      2: Don't validate hardware, use slurm.conf configuration
+ * IN cores_per_sock - Number of cores per socket on this node
+ * IN sock_per_node - Total count of sockets on this node (on any board)
  */
 extern int gres_plugin_node_reconfig(char *node_name,
-				     char *orig_config,
-				     char **new_config,
+				     char *new_gres,
+				     char **gres_str,
 				     List *gres_list,
-				     uint16_t fast_schedule);
+				     uint16_t fast_schedule,
+				     int cores_per_sock,
+				     int sock_per_node);
 
 /*
  * Pack a node's current gres status, called from slurmctld for save/restore

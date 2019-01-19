@@ -1759,14 +1759,17 @@ extern void restore_node_features(int recover)
 		}
 
 		/*
-		 * We lose the gres information updated manually and always
+		 * We lose the GRES information updated manually and always
 		 * use the information from slurm.conf
 		 */
 		(void) gres_plugin_node_reconfig(node_ptr->name,
 						 node_ptr->config_ptr->gres,
 						 &node_ptr->gres,
 						 &node_ptr->gres_list,
-						 slurmctld_conf.fast_schedule);
+						 slurmctld_conf.fast_schedule,
+						 node_ptr->cores,
+						 (node_ptr->boards *
+						  node_ptr->sockets));
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
 	_update_node_avail_features(NULL, NULL, FEATURE_MODE_PEND);
@@ -1840,18 +1843,17 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 			new_config_ptr = _dup_config(config_ptr);
 			if (first_new == NULL)
 				first_new = new_config_ptr;
-			/* Change weight for the given node */
+			/* Change weight for the given nodes */
 			new_config_ptr->weight      = weight;
 			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
-
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
 
 			/* Update remaining records */
 			bit_and_not(config_ptr->node_bitmap, tmp_bitmap);
 			xfree(config_ptr->nodes);
 			config_ptr->nodes = bitmap2node_name(
-				config_ptr->node_bitmap);
+						config_ptr->node_bitmap);
 		}
 		FREE_NULL_BITMAP(tmp_bitmap);
 	}
@@ -2046,23 +2048,24 @@ static int _update_node_avail_features(char *node_names, char *avail_features,
  */
 static int _update_node_gres(char *node_names, char *gres)
 {
-	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
+	bitstr_t *changed_node_bitmap = NULL, *node_bitmap = NULL, *tmp_bitmap;
 	ListIterator config_iterator;
 	struct config_record *config_ptr, *new_config_ptr;
 	struct config_record *first_new = NULL;
 	struct node_record *node_ptr;
-	int rc, rc2, config_cnt, tmp_cnt;
+	int rc, rc2, overlap1, overlap2;
 	int i, i_first, i_last;
+	char *change_node_str;
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap);
 	if (rc) {
-		info("%s: invalid node_name", __func__);
+		info("%s: invalid node_name: %s", __func__, node_names);
 		return rc;
 	}
 
 	/*
-	 * For each config_record with one of these nodes, update it (if all
-	 * nodes updated) or split it into a new entry
+	 * For each config_record with one of these nodes,
+	 * update it (if all nodes updated) or split it into a new entry
 	 */
 	config_iterator = list_iterator_create(config_list);
 	while ((config_ptr = (struct config_record *)
@@ -2070,60 +2073,93 @@ static int _update_node_gres(char *node_names, char *gres)
 		if (config_ptr == first_new)
 			break;	/* done with all original records */
 
+		overlap1 = bit_overlap(node_bitmap, config_ptr->node_bitmap);
+		if (overlap1 == 0)
+			continue;  /* No changes to this config_record */
+
+		/* At least some nodes in this config need to change */
 		tmp_bitmap = bit_copy(node_bitmap);
 		bit_and(tmp_bitmap, config_ptr->node_bitmap);
-		config_cnt = bit_set_count(config_ptr->node_bitmap);
-		tmp_cnt = bit_set_count(tmp_bitmap);
-		if (tmp_cnt == 0) {
-			/* no overlap, leave alone */
-		} else if (tmp_cnt == config_cnt) {
-			/* all nodes changed, update in situ */
+		i_first = bit_ffs(tmp_bitmap);
+		if (i_first >= 0)
+			i_last = bit_fls(tmp_bitmap);
+		else
+			i_last = i_first - 1;
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(tmp_bitmap, i))
+				continue;	/* Not this node */
+			node_ptr = node_record_table_ptr + i;
+			rc2 = gres_plugin_node_reconfig(node_ptr->name,
+						gres, &node_ptr->gres,
+						&node_ptr->gres_list,
+						slurmctld_conf.fast_schedule,
+						node_ptr->cores,
+						(node_ptr->boards *
+						 node_ptr->sockets));
+			if (rc2 != SLURM_SUCCESS) {
+				bit_clear(tmp_bitmap, i);
+				overlap1--;
+				if (rc == SLURM_SUCCESS)
+					rc = rc2;
+			}
+			gres_plugin_node_state_log(node_ptr->gres_list,
+						   node_ptr->name);
+		}
+
+		overlap2 = bit_set_count(config_ptr->node_bitmap);
+		if (overlap1 == 0) {
+			/* No nodes actually changed in this configuration */
+		} else if (overlap1 == overlap2) {
+			/* All nodes changes in this configuration */
 			xfree(config_ptr->gres);
 			if (gres && gres[0])
 				config_ptr->gres = xstrdup(gres);
+			if (changed_node_bitmap) {
+				bit_or(changed_node_bitmap, tmp_bitmap);
+				FREE_NULL_BITMAP(tmp_bitmap);
+			} else {
+				changed_node_bitmap = tmp_bitmap;
+				tmp_bitmap = NULL;
+			}
 		} else {
-			/* partial update, split config_record */
+			/*
+			 * Some nodes changes in this configuration.
+			 * Split config_record in two.
+			 */
 			new_config_ptr = _dup_config(config_ptr);
-			if (first_new == NULL)
+			if (!first_new)
 				first_new = new_config_ptr;
 			xfree(new_config_ptr->gres);
 			if (gres && gres[0])
 				new_config_ptr->gres = xstrdup(gres);
-			new_config_ptr->node_bitmap = bit_copy(tmp_bitmap);
+			new_config_ptr->node_bitmap = tmp_bitmap;
 			new_config_ptr->nodes = bitmap2node_name(tmp_bitmap);
-
 			_update_config_ptr(tmp_bitmap, new_config_ptr);
+			if (changed_node_bitmap) {
+				bit_or(changed_node_bitmap, tmp_bitmap);
+			} else {
+				changed_node_bitmap = bit_copy(tmp_bitmap);
+			}
 
-			/* Update remaining records */
+			/* Update remaining config_record */
 			bit_and_not(config_ptr->node_bitmap, tmp_bitmap);
 			xfree(config_ptr->nodes);
-			config_ptr->nodes = bitmap2node_name(config_ptr->
-							     node_bitmap);
+			config_ptr->nodes = bitmap2node_name(
+						config_ptr->node_bitmap);
+			tmp_bitmap = NULL;	/* Nothing left to free */
 		}
-		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 	list_iterator_destroy(config_iterator);
-
-	i_first = bit_ffs(node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(node_bitmap);
-	else
-		i_last = i_first - 1;
-	for (i = i_first; i <= i_last; i++) {
-		node_ptr = node_record_table_ptr + i;
-		rc2 = gres_plugin_node_reconfig(node_ptr->name,
-						node_ptr->config_ptr->gres,
-						&node_ptr->gres,
-						&node_ptr->gres_list,
-						slurmctld_conf.fast_schedule);
-		if (rc == SLURM_SUCCESS)
-			rc = rc2;
-		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
-	}
 	FREE_NULL_BITMAP(node_bitmap);
 
-	if (rc == SLURM_SUCCESS)
-		info("%s: nodes %s gres set to: %s", __func__, node_names,gres);
+	/* Report changes nodes, may be subset of requested nodes */
+	if (changed_node_bitmap) {
+		change_node_str = bitmap2node_name(changed_node_bitmap);
+		info("%s: nodes %s gres set to: %s", __func__,
+		     change_node_str, gres);
+		xfree(changed_node_bitmap);
+	}
+
 	return rc;
 }
 
@@ -2133,8 +2169,8 @@ static void _update_config_ptr(bitstr_t *bitmap,
 {
 	int i;
 
-	for (i=0; i<node_record_count; i++) {
-		if (bit_test(bitmap, i) == 0)
+	for (i = 0; i < node_record_count; i++) {
+		if (!bit_test(bitmap, i))
 			continue;
 		node_record_table_ptr[i].config_ptr = config_ptr;
 	}
