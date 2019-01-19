@@ -527,7 +527,8 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason_uid = reason_uid;
 			}
 
-			if (node_ptr->node_state & NODE_STATE_POWER_UP)
+			if (IS_NODE_POWER_UP(node_ptr) ||
+			    IS_NODE_REBOOT(node_ptr))
 				node_ptr->boot_req_time = boot_req_time;
 
 			if (!slurmctld_conf.fast_schedule) {
@@ -3547,9 +3548,14 @@ void set_node_down_ptr (struct node_record *node_ptr, char *reason)
 	if ((node_ptr->reason == NULL) ||
 	    (xstrncmp(node_ptr->reason, "Not responding", 14) == 0)) {
 		xfree(node_ptr->reason);
-		node_ptr->reason = xstrdup(reason);
-		node_ptr->reason_time = now;
-		node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
+		if (reason) {
+			node_ptr->reason = xstrdup(reason);
+			node_ptr->reason_time = now;
+			node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
+		} else {
+			node_ptr->reason_time = 0;
+			node_ptr->reason_uid = NO_VAL;
+		}
 	}
 	_make_node_down(node_ptr, now);
 	(void) kill_running_job_by_node_name(node_ptr->name);
@@ -4062,4 +4068,44 @@ extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
 	} else
 		error("reset_node_free_mem unable to find node %s", node_name);
 #endif
+}
+
+
+/*
+ * Check for nodes that haven't rebooted yet.
+ *
+ * If the node hasn't booted by ResumeTimeout, mark the node as down.
+ */
+extern void check_reboot_nodes()
+{
+	int i;
+	struct node_record *node_ptr;
+	time_t now = time(NULL);
+	uint16_t resume_timeout = slurmctld_conf.resume_timeout;
+
+	for (i = 0; i < node_record_count; i++) {
+		node_ptr = &node_record_table_ptr[i];
+
+		if (IS_NODE_REBOOT(node_ptr) &&
+		    node_ptr->boot_req_time &&
+		    (node_ptr->boot_req_time + resume_timeout < now)) {
+			char *timeout_msg = "reboot timed out";
+
+			set_node_down_ptr(node_ptr, NULL);
+			node_ptr->node_state &= (~NODE_STATE_REBOOT);
+
+			if ((node_ptr->next_state != NO_VAL) &&
+			    node_ptr->reason) {
+				xstrfmtcat(node_ptr->reason, " : %s",
+					   timeout_msg);
+			} else {
+				xfree(node_ptr->reason);
+				node_ptr->reason = xstrdup(timeout_msg);
+			}
+			node_ptr->reason_time = now;
+			node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
+
+			bit_clear(rs_node_bitmap, i);
+		}
+	}
 }

@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove unused -b flag from getopt call in sbatch.
  -- Disable reporting of node TRES in sreport.
  -- Re-enabling features combined by OR within parenthesis for non-knl setups.
+ -- Prevent sending duplicate requests to reboot a node before ResumeTimeout.
+ -- Down nodes that don't reboot by ResumeTimeout.
 
 * Changes in Slurm 18.08.4
 ==========================
