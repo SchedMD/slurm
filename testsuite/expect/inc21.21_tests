@@ -224,7 +224,7 @@ sleep 10"
 	#
 	# Wait for squeue to update
 	#
-	sleep 2
+	sleep 5
 
 	set pending 0
 	set running 0
