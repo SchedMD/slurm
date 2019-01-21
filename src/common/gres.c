@@ -1959,7 +1959,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	gres_node_state_t *gres_data;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	bool has_file, rebuild_topo = false;
+	bool has_file, has_type, rebuild_topo = false;
+	uint32_t type_id;
 
 	xassert(core_cnt);
 	if (gres_ptr->gres_data == NULL)
@@ -2032,6 +2033,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 
 	has_file = context_ptr->config_flags & GRES_CONF_HAS_FILE;
+	has_type = context_ptr->config_flags & GRES_CONF_HAS_TYPE;
 	if (has_file && (set_cnt != gres_data->topo_cnt)) {
 		/*
 		 * Need to rebuild topology info.
@@ -2213,6 +2215,32 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			}
 			list_iterator_destroy(iter);
 		}
+	} else if (!has_file && has_type) {
+		/* Add GRES Type information as needed */
+		iter = list_iterator_create(gres_conf_list);
+		while ((gres_slurmd_conf = (gres_slurmd_conf_t *)
+			list_next(iter))) {
+			if (gres_slurmd_conf->plugin_id !=
+			    context_ptr->plugin_id)
+				continue;
+			type_id = gres_plugin_build_id(
+					gres_slurmd_conf->type_name);
+			for (i = 0; i < gres_data->type_cnt; i++) {
+				if (type_id == gres_data->type_id[i])
+					break;
+			}
+			if (i < gres_data->type_cnt) {
+				/* Update count as needed */
+				gres_data->type_cnt_avail[i] =
+					gres_slurmd_conf->count;
+			} else {
+				_add_gres_type(gres_slurmd_conf->type_name,
+					       gres_data,
+					       gres_slurmd_conf->count);
+			}
+
+		}
+		list_iterator_destroy(iter);
 	}
 
 	if ((orig_config == NULL) || (orig_config[0] == '\0'))
