@@ -2808,7 +2808,8 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 			continue;	/* Node has none of this GRES */
 
 		gres_node_state = (gres_node_state_t *) gres_ptr->gres_data;
-		if (gres_node_state->topo_cnt) {
+		if (gres_node_state->topo_cnt &&
+		    gres_node_state->gres_cnt_avail) {
 			done_topo = bit_alloc(gres_node_state->topo_cnt);
 			for (i = 0; i < gres_node_state->topo_cnt; i++) {
 				if (bit_test(done_topo, i))
@@ -2870,7 +2871,8 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 				sep = ",";
 			}
 			bit_free(done_topo);
-		} else if (gres_node_state->type_cnt) {
+		} else if (gres_node_state->type_cnt &&
+			   gres_node_state->gres_cnt_avail) {
 			for (i = 0; i < gres_node_state->type_cnt; i++) {
 				gres_sum = gres_node_state->type_cnt_avail[i];
 				suffix = _get_suffix(&gres_sum);
@@ -2880,7 +2882,7 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 					   gres_sum, suffix);
 				sep = ",";
 			}
-		} else {
+		} else if (gres_node_state->gres_cnt_avail) {
 			gres_sum = gres_node_state->gres_cnt_avail;
 			suffix = _get_suffix(&gres_sum);
 			xstrfmtcat(*gres_str, "%s%s:%"PRIu64"%s",
