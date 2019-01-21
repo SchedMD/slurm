@@ -2351,8 +2351,8 @@ extern int gres_plugin_node_config_validate(char *node_name,
 		}
 		rc2 = _node_config_validate(node_name, orig_config, new_config,
 					    gres_ptr, cpu_cnt, core_cnt,
-					    sock_cnt, fast_schedule, reason_down,
-					    &gres_context[i]);
+					    sock_cnt, fast_schedule,
+					    reason_down, &gres_context[i]);
 		rc = MAX(rc, rc2);
 		if (gres_ptr->plugin_id == gpu_plugin_id)
 			gres_gpu_ptr = gres_ptr;
