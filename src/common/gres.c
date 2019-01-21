@@ -1627,7 +1627,7 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 {
 	char *node_gres_config, *tok, *last_tok = NULL;
 	char *sub_tok, *last_sub_tok = NULL;
-	char *num, *last_num = NULL;
+	char *num, *paren, *last_num = NULL;
 	uint64_t gres_config_cnt = 0, tmp_gres_cnt = 0, mult;
 	int i;
 
@@ -1649,6 +1649,9 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			break;
 		}
 		if (!xstrncmp(tok, gres_name_colon, gres_name_colon_len)) {
+			paren = strrchr(tok, '(');
+			if (paren)	/* Ignore socket binding info */
+				paren[0] = '\0';
 			num = strrchr(tok, ':');
 			if (!num) {
 				error("Bad GRES configuration: %s", tok);
@@ -2522,7 +2525,6 @@ static int _node_reconfig_test(char *node_name, char *new_gres,
 		      context_ptr->gres_name,
 		      context_ptr->gres_name_colon,
 		      context_ptr->gres_name_colon_len);
-
 	if ((new_gres_data->gres_cnt_config != 0) &&
 	    (new_gres_data->gres_cnt_config !=
 	     orig_gres_data->gres_cnt_config)) {
