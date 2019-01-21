@@ -187,6 +187,8 @@ static uint32_t gpu_plugin_id = NO_VAL, mps_plugin_id = NO_VAL;
 /* Local functions */
 static gres_node_state_t *
 		_build_gres_node_state(void);
+static void	_build_node_gres_str(List *gres_list, char **gres_str,
+				     int cores_per_sock, int sock_per_node);
 static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 					    uint8_t overcommit,
 					    gres_mc_data_t *tres_mc_ptr,
@@ -253,13 +255,6 @@ static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 static int	_parse_gres_config2(void **dest, slurm_parser_enum_t type,
 				    const char *key, const char *value,
 				    const char *line, char **leftover);
-static void	_set_gres_cnt(char *orig_config, char **gres_str,
-			      uint64_t new_cnt, char *gres_name,
-			      char *gres_name_colon, int gres_name_colon_len);
-static void	_set_gres_socks(char *orig_config, char **new_config,
-				bitstr_t *tot_core_bitmap, int core_cnt,
-				int sock_cnt, char *gres_name,
-				char *gres_name_colon, int gres_name_colon_len);
 static bool	_shared_gres(uint32_t plugin_id);
 static bool	_sharing_gres(uint32_t plugin_id);
 static void	_sock_gres_del(void *x);
@@ -1735,116 +1730,6 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 	return 0;
 }
 
-static void _set_gres_cnt(char *orig_config, char **gres_str,
-			  uint64_t new_cnt, char *gres_name,
-			  char *gres_name_colon, int gres_name_colon_len)
-{
-	char *new_gres_str = NULL, *node_gres_config;
-	char *last_tok = NULL, *tok, *sep, *add_info, *sock_info = NULL;
-
-	if (*gres_str)
-		node_gres_config = xstrdup(*gres_str);
-	else if (orig_config)
-		node_gres_config = xstrdup(orig_config);
-	else
-		return;
-
-	tok = strtok_r(node_gres_config, ",", &last_tok);
-	while (tok) {
-		if (new_gres_str)
-			xstrcat(new_gres_str, ",");
-		if ((sep = strchr(tok, '('))) {
-			sock_info = xstrdup(sep);
-			add_info = sock_info;
-			sep[0] = '\0';
-		} else
-			add_info = "";	
-		if (xstrcmp(tok, gres_name) &&
-		    xstrncmp(tok, gres_name_colon, gres_name_colon_len)) {
-			xstrcat(new_gres_str, tok);
-		} else if (new_cnt == 0) {
-			xstrfmtcat(new_gres_str, "%s:%"PRIu64"%s",
-				   gres_name, new_cnt, add_info);
-		} else if ((new_cnt % (1024 * 1024 * 1024)) == 0) {
-			new_cnt /= (1024 * 1024 * 1024);
-			xstrfmtcat(new_gres_str, "%s:%"PRIu64"G%s",
-				   gres_name, new_cnt, add_info);
-		} else if ((new_cnt % (1024 * 1024)) == 0) {
-			new_cnt /= (1024 * 1024);
-			xstrfmtcat(new_gres_str, "%s:%"PRIu64"M%s",
-				   gres_name, new_cnt, add_info);
-		} else if ((new_cnt % 1024) == 0) {
-			new_cnt /= 1024;
-			xstrfmtcat(new_gres_str, "%s:%"PRIu64"K%s",
-				   gres_name, new_cnt, add_info);
-		} else {
-			xstrfmtcat(new_gres_str, "%s:%"PRIu64"%s",
-				   gres_name, new_cnt, add_info);
-		}
-		xfree(sock_info);
-		tok = strtok_r(NULL, ",", &last_tok);
-	}
-	xfree(node_gres_config);
-	xfree(*gres_str);
-	*gres_str = new_gres_str;
-}
-
-static void _set_gres_socks(char *orig_config, char **new_config,
-			    bitstr_t *tot_core_bitmap,
-			    int core_cnt, int sock_cnt, char *gres_name,
-			    char *gres_name_colon, int gres_name_colon_len)
-{
-	char *new_configured_res = NULL, *node_gres_config;
-	char *last_tok = NULL, *sep, *tok, sock_str[32];
-	bitstr_t *sock_bitmap;
-	int cores_per_sock, c, s, i;
-
-	xassert(sock_cnt);
-	xassert(tot_core_bitmap);
-	if (*new_config)
-		node_gres_config = xstrdup(*new_config);
-	else if (orig_config)
-		node_gres_config = xstrdup(orig_config);
-	else
-		return;
-
-	cores_per_sock = core_cnt / sock_cnt;
-	tok = strtok_r(node_gres_config, ",", &last_tok);
-	while (tok) {
-		if (new_configured_res)
-			xstrcat(new_configured_res, ",");
-		if (xstrcmp(tok, gres_name) &&
-		    xstrncmp(tok, gres_name_colon, gres_name_colon_len)) {
-			xstrcat(new_configured_res, tok);
-		} else {
-			sock_bitmap = bit_alloc(sock_cnt);
-			for (s = 0; s < sock_cnt; s++) {
-				for (c = 0; c < cores_per_sock; c++) {
-					i = s * cores_per_sock + c;
-					if (!bit_test(tot_core_bitmap, i))
-						continue;
-					bit_set(sock_bitmap, s);
-					break;
-				}
-			}
-			bit_fmt(sock_str, sizeof(sock_str), sock_bitmap);
-			for (i = 0; i < sizeof(sock_str) && sock_str[i]; i++) {
-				if (sock_str[i] == ',')
-					sock_str[i] = ';';
-			}
-			if ((sep = strchr(tok, '(')))
-				sep[0] = '\0';
-			xstrfmtcat(new_configured_res, "%s(S:%s)", tok,
-				   sock_str);
-			bit_free(sock_bitmap);
-		}
-		tok = strtok_r(NULL, ",", &last_tok);
-	}
-	xfree(node_gres_config);
-	xfree(*new_config);
-	*new_config = new_configured_res;
-}
-
 static gres_node_state_t *_build_gres_node_state(void)
 {
 	gres_node_state_t *gres_data;
@@ -2074,7 +1959,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	gres_node_state_t *gres_data;
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	bitstr_t *tot_core_bitmap = NULL;
 	bool has_file, rebuild_topo = false;
 
 	xassert(core_cnt);
@@ -2213,23 +2097,14 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					bit_alloc(gres_slurmd_conf->cpu_cnt);
 				bit_unfmt(tmp_bitmap, gres_slurmd_conf->cpus);
 				if (gres_slurmd_conf->cpu_cnt == core_cnt) {
-					if (!tot_core_bitmap) {
-						tot_core_bitmap =
-							bit_alloc(core_cnt);
-					}
 					gres_data->topo_core_bitmap[i] =
 						tmp_bitmap;
-					bit_or(tot_core_bitmap, tmp_bitmap);
 					tmp_bitmap = NULL; /* Nothing to free */
 				} else if (gres_slurmd_conf->cpu_cnt ==
 					   cpu_cnt) {
 					/* Translate CPU to core bitmap */
 					int cpus_per_core = cpu_cnt / core_cnt;
 					int j, core_inx;
-					if (!tot_core_bitmap) {
-						tot_core_bitmap =
-							bit_alloc(core_cnt);
-					}
 					gres_data->topo_core_bitmap[i] =
 						bit_alloc(core_cnt);
 					for (j = 0; j < cpu_cnt; j++) {
@@ -2240,8 +2115,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 							topo_core_bitmap[i],
 							core_inx);
 					}
-					bit_or(tot_core_bitmap,
-					       gres_data->topo_core_bitmap[i]);
 				} else if (i == 0) {
 					error("%s: %s: invalid GRES cpu count (%u) on node %s",
 					      __func__, context_ptr->gres_type,
@@ -2421,24 +2294,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			xfree(gres_data->topo_gres_cnt_avail);
 			xfree(gres_data->topo_type_id);
 			xfree(gres_data->topo_type_name);
-			FREE_NULL_BITMAP(tot_core_bitmap);
 		}
 		gres_data->topo_cnt = 0;
-	} else if ((fast_schedule == 0) &&
-		   (gres_data->gres_cnt_found > gres_data->gres_cnt_config)) {
-		/* need to rebuild new_config */
-		_set_gres_cnt(orig_config, new_config,
-			      gres_data->gres_cnt_found,
-			      context_ptr->gres_name,
-			      context_ptr->gres_name_colon,
-			      context_ptr->gres_name_colon_len);
-	}
-	if (tot_core_bitmap) {
-		_set_gres_socks(orig_config, new_config, tot_core_bitmap,
-				core_cnt, sock_cnt, context_ptr->gres_name,
-				context_ptr->gres_name_colon,
-				context_ptr->gres_name_colon_len);
-		bit_free(tot_core_bitmap);
 	}
 
 	return rc;
@@ -2503,6 +2360,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 			gres_mps_ptr = gres_ptr;
 	}
 	_sync_node_mps_to_gpu(gres_mps_ptr, gres_gpu_ptr);
+	_build_node_gres_str(gres_list, new_config, cores_per_sock, sock_cnt);
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
