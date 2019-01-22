@@ -1730,32 +1730,32 @@ static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *set_cnt)
 extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
 				   int gres_name_len)
 {
-	ListIterator iter;
-	gres_slurmd_conf_t *gres_slurmd_conf;
 	int rc = SLURM_SUCCESS;
 	int      found = 0;
+	int i;
 
-	if (gres_conf_list == NULL) {
-		/* Should not reach this as if there are GRES id's then there
-		 * must have been a gres_conf_list.
-		 */
-		info("%s--The gres_conf_list is NULL!!!", __func__);
-		snprintf(gres_name, gres_name_len, "%u", gres_id);
-		return rc;
+	/*
+	 * Check GresTypes from slurm.conf (gres_context) for GRES type name
+	 */
+	slurm_mutex_lock(&gres_context_lock);
+	for (i = 0; i < gres_context_cnt; ++i) {
+		if (gres_id == gres_context[i].plugin_id) {
+			strlcpy(gres_name, gres_context[i].gres_name,
+				gres_name_len);
+			found = 1;
+			break;
+		}
 	}
+	slurm_mutex_unlock(&gres_context_lock);
 
-	iter = list_iterator_create(gres_conf_list);
-	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
-		if (gres_slurmd_conf->plugin_id != gres_id)
-			continue;
-		strlcpy(gres_name, gres_slurmd_conf->name, gres_name_len);
-		found = 1;
-		break;
-	}
-	list_iterator_destroy(iter);
-
-	if (!found)	/* Could not find GRES type name, use id */
+	/*
+	 * If can't find GRES type name, emit error and default to GRES type ID
+	 */
+	if (!found) {
+		error("Could not find GRES type name in slurm.conf that corresponds to GRES type ID `%d`.  Using ID as GRES type name instead.",
+		      gres_id);
 		snprintf(gres_name, gres_name_len, "%u", gres_id);
+	}
 
 	return rc;
 }
