@@ -307,7 +307,12 @@ static void _internal_step_complete(struct job_record *job_ptr,
 	if (step_ptr->step_id == SLURM_PENDING_STEP)
 		return;
 
+	/*
+	 * Derived exit code is the highest exit code of srun steps, so we
+	 * exclude the batch and extern steps.
+	 */
 	if ((step_ptr->step_id != SLURM_EXTERN_CONT) &&
+	    (step_ptr->step_id != SLURM_BATCH_SCRIPT) &&
 	    ((step_ptr->exit_code == SIG_OOM) ||
 	     (step_ptr->exit_code > job_ptr->derived_ec)))
 		job_ptr->derived_ec = step_ptr->exit_code;
