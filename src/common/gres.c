@@ -2004,7 +2004,20 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			updated_config = true;
 		}
 	}
-	if (updated_config == false)
+	if (!updated_config && gres_data->type_cnt) {
+		/*
+		 * This is needed to address the GRES specification in
+		 * gres.conf having a Type option, while the GRES specification
+		 * in slurm.conf does not.
+		 */
+		for (i = 0; i < gres_data->type_cnt; i++) {
+			if (gres_data->type_cnt_avail[i])
+				continue;
+			updated_config = true;
+			break;
+		}
+	}
+	if (!updated_config)
 		return rc;
 	if ((gres_data->gres_cnt_config != 0) &&
 	    (set_cnt > gres_data->gres_cnt_config)) {
