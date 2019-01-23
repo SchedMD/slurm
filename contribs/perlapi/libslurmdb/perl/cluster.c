@@ -644,10 +644,18 @@ stats_to_hv(slurmdb_stats_t *stats, HV* hv)
     STORE_FIELD(hv, stats, tres_usage_in_max,     charp);
     STORE_FIELD(hv, stats, tres_usage_in_max_nodeid, charp);
     STORE_FIELD(hv, stats, tres_usage_in_max_taskid, charp);
+    STORE_FIELD(hv, stats, tres_usage_in_min,     charp);
+    STORE_FIELD(hv, stats, tres_usage_in_min_nodeid, charp);
+    STORE_FIELD(hv, stats, tres_usage_in_min_taskid, charp);
+    STORE_FIELD(hv, stats, tres_usage_in_tot, charp);
     STORE_FIELD(hv, stats, tres_usage_out_ave,    charp);
     STORE_FIELD(hv, stats, tres_usage_out_max,    charp);
     STORE_FIELD(hv, stats, tres_usage_out_max_nodeid, charp);
     STORE_FIELD(hv, stats, tres_usage_out_max_taskid, charp);
+    STORE_FIELD(hv, stats, tres_usage_out_min,    charp);
+    STORE_FIELD(hv, stats, tres_usage_out_min_nodeid, charp);
+    STORE_FIELD(hv, stats, tres_usage_out_min_taskid, charp);
+    STORE_FIELD(hv, stats, tres_usage_out_tot, charp);
 
     return 0;
 }

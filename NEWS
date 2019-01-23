@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Add missing TRES constants from perl API.
  -- Fix issue where sacct would return incorrect array tasks when querying
     specific tasks.
+ -- Add missing variables to slurmdb_stats_t in the perlapi.
 
 * Changes in Slurm 18.08.4
 ==========================
