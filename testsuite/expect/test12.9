@@ -1,0 +1,185 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of sacct functionality for array jobs.
+#          sacct options j
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC.
+# Written by Dominik Bartkiewicz <bart@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id	"12.9"
+set exit_code	0
+set prompt	"PROMPT: "
+set timeout	60
+
+print_header $test_id
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit $exit_code
+}
+
+if {[test_front_end]} {
+        send_user "\nWARNING: This test is incompatible with front-end systems\n"
+        exit $exit_code
+} elseif {[test_serial]} {
+	set task_num 1
+} else {
+	set task_num 2
+}
+
+proc run_sacct { jobs exp_match_1 exp_match_2 } {
+	global sacct expected_steps array1_job_id array2_job_id
+
+	set matches_1 0
+	set matches_2 0
+	set expected_matches [expr $exp_match_1 + $exp_match_2]
+
+	# Now test sacct
+	spawn $sacct --noheader -j $jobs
+	expect {
+		-re "$array1_job_id" {
+			incr matches_1
+			exp_continue
+		}
+		-re "$array2_job_id" {
+			incr matches_2
+			exp_continue
+		}
+		timeout {
+			log_error "sacct not responding\n"
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches_1 != $exp_match_1} {
+		log_error "sacct failure for array 1 ($matches_1 != $exp_match_1)\n"
+		exit 1
+	}
+
+	if {$matches_2 != $exp_match_2} {
+		log_error "sacct failure for array 2 ($matches_2 != $exp_match_2)\n"
+		exit 1
+	}
+
+	set matches [expr $matches_1 + $matches_2]
+
+	if {$matches != $expected_matches} {
+		log_error "sacct failure ($matches != $expected_matches)\n"
+		exit 1
+	}
+}
+
+set array1_job_id 0
+set array2_job_id 0
+set timeout $max_job_delay
+
+spawn $sbatch -N1 --array=0-5 --wrap=exit
+expect {
+	-re "Submitted batch job ($number)" {
+		set array1_job_id $expect_out(1,string)
+		send_user "\njob $array1_job_id was submitted\n"
+	}
+	-re "error" {
+		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+eval spawn $sbatch -N1 --array=0-5 --wrap=exit
+expect {
+	-re "Submitted batch job ($number)" {
+		set array2_job_id $expect_out(1,string)
+		send_user "\njob $array2_job_id was submitted\n"
+	}
+	-re "error" {
+		send_user "\nFAILURE: sbatch did not submit jobs\n"
+		exit 1
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {[expect_extern_step]} {
+	set expected_steps 3
+} else {
+	set expected_steps 2
+}
+
+#
+# Wait for last job to complete
+#
+if {[wait_for_job $array2_job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for jobs to complete\n"
+	exit 1
+}
+
+# Wait for accounting records to reach slurmdbd
+sleep 5
+set timeout 10
+
+# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
+# launched on each node, so we need to check for 3 steps per job instead of 2.
+spawn $scontrol show config
+expect {
+	-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
+		set expected_steps 3
+	}
+	timeout {
+		log_error "scontrol show config not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Now test sacct one task from each array
+run_sacct "$array1_job_id\_1,$array2_job_id\_3" $expected_steps $expected_steps
+
+# Now test sacct first full array and one task from the second array
+run_sacct "$array1_job_id,$array2_job_id\_3" [expr $expected_steps * 6] $expected_steps
+
+send_user "\nSUCCESS\n"
+exit 0
