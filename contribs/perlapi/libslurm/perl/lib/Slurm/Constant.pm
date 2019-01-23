@@ -741,6 +741,14 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * TRES_NODE                       4
 
+=item * TRES_BILLING                    5
+
+=item * TRES_FS_DISK                    6
+
+=item * TRES_VMEM                       7
+
+=item * TRES_PAGES                      8
+
 =back
 
 =head3 Task distribution

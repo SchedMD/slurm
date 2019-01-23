@@ -411,6 +411,7 @@ test12.5   Test sacct --helpformat option.
 test12.6   Test hdf5 acct_gather_profile (--profile=task)
 test12.7   Validate that -D shows the correct state when jobs are requeued.
 test12.8   Validate that a job step reports TIMEOUT inside accounting.
+test12.9   Test of sacct functionality for array jobs.
 
 test13.#   Testing of switch plugins
 ====================================

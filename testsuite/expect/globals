@@ -4006,6 +4006,32 @@ proc get_prolog { } {
 	return $prolog
 }
 
+proc expect_extern_step { } {
+	global scontrol
+	# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
+	# launched on each node, so we need to check for 3 steps per
+	# job instead of 2.
+
+	log_user 0
+	set extern_step 0
+	set scon_pid [spawn -noecho $scontrol show config]
+	expect {
+		-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
+			set extern_step 1
+		}
+		timeout {
+			log_error "scontrol show config not responding\n"
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $extern_step
+}
+
 ################################################################
 #
 # Proc: test_pack_step

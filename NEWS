@@ -114,6 +114,14 @@ documents those changes that are of interest to users and administrators.
  -- Remove unused -b flag from getopt call in sbatch.
  -- Disable reporting of node TRES in sreport.
  -- Re-enabling features combined by OR within parenthesis for non-knl setups.
+ -- Prevent sending duplicate requests to reboot a node before ResumeTimeout.
+ -- Down nodes that don't reboot by ResumeTimeout.
+ -- Update seff to reflect API change from rss_max to tres_usage_in_max.
+ -- Add missing TRES constants from perl API.
+ -- Fix issue where sacct would return incorrect array tasks when querying
+    specific tasks.
+ -- Add missing variables to slurmdb_stats_t in the perlapi.
+ -- Fix nodes not getting reboot RPC when job requires reboot of nodes.
 
 * Changes in Slurm 18.08.4
 ==========================

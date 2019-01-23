@@ -126,10 +126,13 @@ for my $step (@{$job->{'steps'}}) {
     $tot_cpu_sec += $step->{'tot_cpu_sec'};
     $tot_cpu_usec += $step->{'tot_cpu_usec'};
 
-    my $lmem = $step->{'stats'}{'rss_max'};
-    if ($mem < $lmem) {
-        $mem = $lmem;
-        $ntasks = $step->{'ntasks'};
+    if (exists $step->{'stats'} && exists $step->{'stats'}{'tres_usage_in_max'}) {
+        my $lmem = Slurmdb::find_tres_count_in_string($step->{'stats'}{'tres_usage_in_max'}, TRES_MEM) / 1024;
+
+        if ($mem < $lmem) {
+            $mem = $lmem;
+            $ntasks = $step->{'ntasks'};
+        }
     }
 }
 my $cput = $tot_cpu_sec + int(($tot_cpu_usec / 1000000) + 0.5);

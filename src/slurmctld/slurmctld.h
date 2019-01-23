@@ -2732,4 +2732,11 @@ extern bool valid_tres_cnt(char *tres);
  */
 extern bool valid_tres_name(char *name);
 
+/*
+ * Check for nodes that haven't rebooted yet.
+ *
+ * If the node hasn't booted by ResumeTimeout, mark the node as down.
+ */
+extern void check_reboot_nodes();
+
 #endif /* !_HAVE_SLURMCTLD_H */
