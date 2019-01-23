@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where sacct would return incorrect array tasks when querying
     specific tasks.
  -- Add missing variables to slurmdb_stats_t in the perlapi.
+ -- Fix nodes not getting reboot RPC when job requires reboot of nodes.
 
 * Changes in Slurm 18.08.4
 ==========================

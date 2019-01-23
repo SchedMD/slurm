@@ -4318,6 +4318,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 		reboot_agent_args = xmalloc(sizeof(agent_arg_t));
 		reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
 		reboot_agent_args->retry = 0;
+		reboot_agent_args->node_count = 0;
 		reboot_agent_args->protocol_version = protocol_version;
 		reboot_agent_args->hostlist = hostlist_create(NULL);
 		reboot_msg = xmalloc(sizeof(reboot_msg_t));
@@ -4330,6 +4331,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 			node_ptr = node_record_table_ptr + i;
 			hostlist_push_host(reboot_agent_args->hostlist,
 					   node_ptr->name);
+			reboot_agent_args->node_count++;
 		}
 		nodes = bitmap2node_name(feature_node_bitmap);
 		if (nodes) {
@@ -4348,6 +4350,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 		reboot_agent_args = xmalloc(sizeof(agent_arg_t));
 		reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
 		reboot_agent_args->retry = 0;
+		reboot_agent_args->node_count = 0;
 		reboot_agent_args->protocol_version = protocol_version;
 		reboot_agent_args->hostlist = hostlist_create(NULL);
 		reboot_msg = xmalloc(sizeof(reboot_msg_t));
@@ -4360,6 +4363,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 			node_ptr = node_record_table_ptr + i;
 			hostlist_push_host(reboot_agent_args->hostlist,
 					   node_ptr->name);
+			reboot_agent_args->node_count++;
 		}
 		nodes = bitmap2node_name(boot_node_bitmap);
 		if (nodes) {
