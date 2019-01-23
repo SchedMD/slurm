@@ -562,6 +562,21 @@ static int _sort_desc_submit_time(void *x, void *y)
 	else if (j1->submit > j2->submit)
 		return 1;
 
+	if (j1->array_job_id < j2->array_job_id)
+		return -1;
+	else if (j1->array_job_id > j2->array_job_id)
+		return 1;
+
+	if (j1->array_task_id < j2->array_task_id)
+		return -1;
+	else if (j1->array_task_id > j2->array_task_id)
+		return 1;
+
+	if (j1->jobid < j2->jobid)
+		return -1;
+	else if (j1->jobid > j2->jobid)
+		return 1;
+
 	return 0;
 }
 
@@ -670,9 +685,13 @@ extern int get_data(void)
 	 * one cluster but not when jobs for multiple clusters are requested.
 	 * Remove the current job if there were jobs with the same id submitted
 	 * in the future.
+	 * Else sort the jobs to order the jobs so the last task of arrays don't
+	 * appear to run before any of the other tasks.
 	 */
 	if (params.cluster_name && !(job_cond->flags & JOBCOND_FLAG_DUP))
 		_remove_duplicate_fed_jobs(jobs);
+	else
+		list_sort(jobs, _sort_desc_submit_time);
 
 	itr = list_iterator_create(jobs);
 	while ((job = list_next(itr))) {
