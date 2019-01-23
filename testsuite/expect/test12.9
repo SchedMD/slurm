@@ -157,22 +157,6 @@ if {[wait_for_job $array2_job_id "DONE"] != 0} {
 sleep 5
 set timeout 10
 
-# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
-# launched on each node, so we need to check for 3 steps per job instead of 2.
-spawn $scontrol show config
-expect {
-	-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
-		set expected_steps 3
-	}
-	timeout {
-		log_error "scontrol show config not responding\n"
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-
 # Now test sacct one task from each array
 run_sacct "$array1_job_id\_1,$array2_job_id\_3" $expected_steps $expected_steps
 
