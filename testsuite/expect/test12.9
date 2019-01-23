@@ -179,5 +179,8 @@ run_sacct "$array1_job_id\_1,$array2_job_id\_3" $expected_steps $expected_steps
 # Now test sacct first full array and one task from the second array
 run_sacct "$array1_job_id,$array2_job_id\_3" [expr $expected_steps * 6] $expected_steps
 
+# Now test sacct one task from the first array and the second full
+run_sacct "$array1_job_id\_2,$array2_job_id" $expected_steps [expr $expected_steps * 6]
+
 send_user "\nSUCCESS\n"
 exit 0
