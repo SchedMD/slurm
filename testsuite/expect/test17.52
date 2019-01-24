@@ -40,63 +40,19 @@ set file_out     "test${test_id}.out"
 
 print_header $test_id
 
-#
-# Get the slurm.conf path
-#
-proc get_conf_path { } {
-
-	global scontrol config_path alpha exit_code
-
-	set got_config 0
-	log_user 0
-	spawn $scontrol show config
-	expect {
-		-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
-			set config_path $expect_out(1,string)
-			set got_config 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol is not responding\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$got_config != 1} {
-		send_user "\nFAILURE: did not get slurm.conf path\n"
-		exit 0
-	}
-}
-
-#
-# Copy slurm.conf file
-#
-proc copy_conf { } {
-	global bin_cp exit_code config_path cwd
-
-	spawn $bin_cp -v $config_path/slurm.conf $cwd/slurm.conf.orig
-	expect {
-		timeout {
-			send_user "\nFAILURE: slurm.conf was not copied\n"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
-
 if {[is_super_user] == 0} {
 	send_user "\nWARNING: This test can't be run except as SlurmUser\n"
 	exit 0
 }
 
-get_conf_path
-copy_conf
+set config_path [get_conf_path]
+if { $exit_code != 0 } {
+	exit $exit_code
+}
+copy_conf $config_path $cwd
+if { $exit_code != 0 } {
+	exit $exit_code
+}
 
 send_user "\n---Checking sbatch uses mcs-label only for some jobs (ondemand mode)---\n"
 
