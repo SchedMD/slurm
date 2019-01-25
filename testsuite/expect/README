@@ -687,6 +687,7 @@ test28.7   Confirms job array dependencies.
 test28.8   Test of job array suspend/resume.
 test28.9   Test of maximum running task count in a job array.
 test28.10  Test change to maximum running task count in a job array.
+test28.11  Verify head job isn't purged before other jobs in the array.
 
 
 test29.#   Testing of smd command and option.
