@@ -2017,6 +2017,98 @@ proc test_select_type { } {
 
 ################################################################
 #
+# Proc: get_select_type_params
+#
+# Purpose: Determine SelectTypeParameters being used for a
+#          given partition
+#
+# Returns string containing SelectTypeParameters
+#
+################################################################
+proc get_select_type_params { partition } {
+	global scontrol bin_bash bin_grep alpha_numeric_comma
+
+	log_user 0
+	set params ""
+	if {[string compare $partition ""]} {
+		spawn -noecho $bin_bash -c "exec $scontrol show part $partition | $bin_grep SelectTypeParameters"
+		expect {
+			-re "SelectTypeParameters *= *NONE" {
+				exp_continue
+			}
+			-re "SelectTypeParameters *= *($alpha_numeric_comma)" {
+				set params $expect_out(1,string)
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+	}
+	if { [string compare params ""] } {
+		spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
+		expect {
+			-re "SelectTypeParameters *= *($alpha_numeric_comma)" {
+				set params $expect_out(1,string)
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+	}
+	log_user 1
+
+	return $params
+}
+
+################################################################
+#
+# Proc: get_total_cpus
+#
+# Purpose: Return the TotalCPUs count for a given partition
+#
+# Returns string containing SelectTypeParameters
+#
+################################################################
+proc get_total_cpus { partition } {
+	global scontrol bin_bash bin_grep number
+
+	log_user 0
+	set total_cpus 0
+	if {[string compare $partition ""]} {
+		spawn -noecho $bin_bash -c "exec $scontrol show part $partition"
+		expect {
+			-re "TotalCPUs *= *($number)" {
+				set total_cpus $expect_out(1,string)
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+	}
+	if { $total_cpus < 1 } {
+		spawn -noecho $bin_bash -c "exec $scontrol show part"
+		expect {
+			-re "TotalCPUs *= *($number)" {
+				if { $total_cpus < 1 } {
+					set total_cpus $expect_out(1,string)
+				}
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+	}
+	log_user 1
+
+	return $total_cpus
+}
+
+################################################################
+#
 # Proc: test_select_type_params
 #
 # Purpose: Determine SelectTypeParameters being used
