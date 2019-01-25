@@ -135,6 +135,7 @@ expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		send_user "\njob $job_id was submitted\n"
+		exp_continue
 	}
 	-re "error" {
 		send_user "\nFAILURE: sbatch did not submit jobs\n"
@@ -164,12 +165,10 @@ if {$job_cnt != $array_size} {
 }
 
 # cancel a job with a specific job array index
-set idmatch 0
 spawn $scancel -v $job_id\_$array_id
 expect {
 	-re "Terminating job" {
 		exp_continue
-		incr idmatch
 	}
 	timeout {
 		send_user "\nFAILURE: scancel not responding\n"
