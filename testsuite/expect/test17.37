@@ -60,7 +60,11 @@ if { $job_id1 == 0 } {
 	exit 1
 }
 
-wait_for_job $job_id1 RUNNING
+if {[wait_for_job $job_id1 "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id1 to start\n"
+	cancel_job $job_id1
+	set exit_code 1
+}
 
 # Submit a job that depends on job above
 spawn $sbatch -t1 -dafternotok:$job_id1 -o/dev/null $script
@@ -82,7 +86,11 @@ if { $job_id2 == 0 } {
 	exit 1
 }
 
-wait_for_job $job_id1 DONE
+if {[wait_for_job $job_id1 "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id1 to complete\n"
+	cancel_job $job_id1
+	set exit_code 1
+}
 
 # Check exit code of the first job
 set match 0

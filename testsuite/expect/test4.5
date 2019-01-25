@@ -168,7 +168,11 @@ if {$tmp_id == 0} {
 	set exit_code 1
 }
 
-wait_for_job $tmp_id RUNNING
+if {[wait_for_job $tmp_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $tmp_id to start\n"
+	cancel_job $tmp_id
+	set exit_code 1
+}
 
 spawn $sinfo --Node --node=$node_list(0),$node_list(1) --long --exact --state=allocated -p$partition
 expect {

@@ -54,7 +54,11 @@ proc check_job_nodes {test_job node_name find_node} {
 
 	set nodelist ""
 
-	wait_for_job $test_job "RUNNING"
+	if {[wait_for_job $test_job "RUNNING"] != 0} {
+		send_user "\nFAILURE: error waiting for job $test_job to start\n"
+		cancel_job $test_job
+		set exit_code 1
+	}
 
 	# Check that job that the job used the correct nodes
 	log_user 0
@@ -103,7 +107,11 @@ proc check_job {nnode test_job} {
 
 	set nodelist ""
 
-	wait_for_job $test_job "RUNNING"
+	if {[wait_for_job $test_job "RUNNING"] != 0} {
+		send_user "\nFAILURE: error waiting for job $test_job to start\n"
+		cancel_job $test_job
+		set exit_code 1
+	}
 
 	# Check that job that the job used the correct nodes
 	spawn $scontrol show job $test_job

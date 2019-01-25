@@ -95,7 +95,11 @@ if { $job_id == 0 } {
 	exit 1
 }
 
-wait_for_job $job_id DONE
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
 
 spawn $scontrol requeuehold State=SpecialExit $job_id
 expect {

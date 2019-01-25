@@ -232,7 +232,11 @@ proc check_job { exp_num_jobs } {
 	global squeue job_id num_jobs file_in exit_code
 
 	# Wait a bit for the job to start
-	wait_for_job ${job_id}_0 RUNNING
+	if {[wait_for_job ${job_id}_0 "RUNNING"] != 0} {
+		send_user "\nFAILURE: error waiting for job ${job_id}_0 to start\n"
+		cancel_job ${job_id}_0
+		set exit_code 1
+	}
 
 	set job_cnt 0
 	# If gang scheduling is configured, some jobs will be suspended
@@ -319,7 +323,11 @@ if {$job_id == 0} {
 }
 
 # Wait a bit for job to start
-wait_for_job $job_id RUNNING
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	cancel_job $job_id
+	set exit_code 1
+}
 
 # Identify node to use for testing
 set got_node 0

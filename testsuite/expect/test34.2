@@ -238,13 +238,13 @@ acct_setup $acct_1 $qos_1 "" cancel
 acct_setup $acct_2 $qos_2 $qos_1 cluster
 
 set qos_1_id [sub_job $acct_1]
-if { [wait_for_job $qos_1_id RUNNING] != 0} {
+if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: job $qos_id_1 failed to start\n"
 	clean_up 1
 }
 
 set qos_2_id [sub_job $acct_2]
-if { [wait_for_job $qos_2_id RUNNING] != 0} {
+if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: job $qos_id_2 failed to start\n"
 	clean_up 1
 }
@@ -261,13 +261,13 @@ send_user "\n*** TEST PREEMPT REQUEUE ***\n"
 mod_qos $qos_1 requeue
 
 set qos_1_id [sub_job $acct_1]
-if { [wait_for_job $qos_1_id RUNNING] != 0} {
+if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: job $qos_id_1 failed to start\n"
 	clean_up 1
 }
 
 set qos_2_id [sub_job $acct_2]
-if { [wait_for_job $qos_2_id RUNNING] != 0} {
+if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: job $qos_id_2 failed to start\n"
 	clean_up 1
 }
@@ -276,11 +276,17 @@ sleep 2
 check_job_state $qos_1_id PENDING
 
 # Wait for requeued job to restart
-wait_for_job $qos_2_id DONE
-wait_for_job $qos_1_id RUNNING
+if { [wait_for_job $qos_2_id "DONE"] != 0} {
+	send_user "\nFAILURE: job $qos_2_id failed to complete\n"
+	clean_up 1
+}
+if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: job $qos_1_id failed to start\n"
+	clean_up 1
+}
 
 sleep 2
-check_job_state $qos_1_id RUNNING
+check_job_state $qos_1_id "RUNNING"
 
 cancel_job $qos_1_id
 cancel_job $qos_2_id
