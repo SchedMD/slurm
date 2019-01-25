@@ -53,6 +53,12 @@ proc inc21_21_good { test_type limit } {
 		send_user "\nWARNING: Unable to perform test with exclusive node allocations\n"
 		return $exit_code
 	}	
+	set partition [default_partition]
+	set select_type_param [get_select_type_params $partition]
+	if { [string first "CR_SOCKET" $select_type_param] != -1} {
+		send_user "\nWARNING: This test can't be run SelectTypeParameters=CR_SOCKET\n"
+		return $exit_code
+	}
 	if { [string compare $test_type "maxnode"] == 0 } {
 		set add "--exclusive"
 	} else {
@@ -168,6 +174,13 @@ proc inc21_21_grp_test { test_type limit } {
 
 	if { [default_part_exclusive] != 0} {
 		send_user "\nWARNING: This test can't be run Exclusive node allocations\n"
+		return $exit_code
+	}
+
+	set partition [default_partition]
+	set select_type_param [get_select_type_params $partition]
+	if { [string first "CR_SOCKET" $select_type_param] != -1} {
+		send_user "\nWARNING: This test can't be run SelectTypeParameters=CR_SOCKET\n"
 		return $exit_code
 	}
 
