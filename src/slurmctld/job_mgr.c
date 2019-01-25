@@ -2963,6 +2963,34 @@ extern bool test_job_array_completed(uint32_t array_job_id)
 	return true;
 }
 
+/*
+ * Return true if ALL tasks of specific array job ID are completed AND
+ * all except for the head job have been purged.
+ */
+extern bool _test_job_array_purged(uint32_t array_job_id)
+{
+	struct job_record *job_ptr, *head_job_ptr;
+	int inx;
+
+	head_job_ptr = find_job_record(array_job_id);
+	if (head_job_ptr) {
+		if (!IS_JOB_COMPLETED(head_job_ptr))
+			return false;
+	}
+
+	/* Need to test individual job array records */
+	inx = JOB_HASH_INX(array_job_id);
+	job_ptr = job_array_hash_j[inx];
+	while (job_ptr) {
+		if ((job_ptr->array_job_id == array_job_id) &&
+		    (job_ptr != head_job_ptr)) {
+			return false;
+		}
+		job_ptr = job_ptr->job_array_next_j;
+	}
+	return true;
+}
+
 /* Return true if ALL tasks of specific array job ID are finished */
 extern bool test_job_array_finished(uint32_t array_job_id)
 {
@@ -9305,7 +9333,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 
 	if (job_ptr->array_recs) {
 		if (job_ptr->array_recs->tot_run_tasks ||
-		    !test_job_array_completed(job_ptr->array_job_id)) {
+		    !_test_job_array_purged(job_ptr->array_job_id)) {
 			/* Some tasks from this job array still active */
 			return 0;
 		}
