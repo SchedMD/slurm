@@ -385,6 +385,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 				   job_ptr->array_job_id,
 				   job_ptr->array_task_id);
 		}
+		if (job_ptr->array_max_tasks) {
+			xstrfmtcat(out, "ArrayTaskThrottle=%u ",
+				   job_ptr->array_max_tasks);
+		}
 	} else if (job_ptr->pack_job_id) {
 		xstrfmtcat(out, "PackJobId=%u PackJobOffset=%u ",
 			   job_ptr->pack_job_id, job_ptr->pack_job_offset);
