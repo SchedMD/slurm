@@ -195,7 +195,10 @@ if {$tmp_id == 0} {
 	exit 1
 }
 
-wait_for_job $tmp_id RUNNING
+if {[wait_for_job $tmp_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $tmp_id to start\n"
+	set exit_code 1
+}
 set match 0
 spawn $srun -t1 sleep 10
 expect {

@@ -128,7 +128,10 @@ if {$exit_code} {
 	exit $exit_code
 }
 
-wait_for_job $job_id "RUNNING"
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	set exit_code 1
+}
 
 # Check that the job was submitted with no error
 set match 0

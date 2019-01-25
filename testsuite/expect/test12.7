@@ -181,7 +181,10 @@ if {$job_id == 0} {
 	exit 1
 }
 
-wait_for_job $job_id RUNNING
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	set exit_code 1
+}
 
 set found 0
 spawn $scontrol show job $job_id
@@ -229,7 +232,10 @@ if {$job_id == 0} {
 	exit 1
 }
 
-wait_for_job $job_id RUNNING
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	set exit_code 1
+}
 # Wait for batch script to start (after message delays, prologs, etc.)
 sleep 5
 
@@ -245,7 +251,10 @@ mod_state "resume" "test$test_id"
 
 # Check the job state
 send_user "\n\nTest 2\n"
-wait_for_job $job_id PENDING
+if {[wait_for_job $job_id "PENDING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to pend\n"
+	set exit_code 1
+}
 set fail_count [check_sacct_states "NODE_FAIL" 1]
 if {$fail_count != 1} {
 	endit 1 "FAILURE: Bad NODE_FAIL count ($fail_count != 1)"
@@ -256,7 +265,10 @@ if {$pend_count != 1} {
 }
 send_user "So far, so good\n\n"
 
-wait_for_job $job_id RUNNING
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	set exit_code 1
+}
 # Wait for batch script to start (after message delays, prologs, etc.)
 sleep 5
 
@@ -304,7 +316,10 @@ if {$pend_count != 1} {
 }
 send_user "So far, so good\n\n"
 
-wait_for_job $job_id RUNNING
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	set exit_code 1
+}
 # Wait for batch script to start (after message delays, prologs, etc.)
 sleep 5
 
@@ -331,7 +346,11 @@ if {$run_count != 1} {
 }
 send_user "So far, so good\n\n"
 
-wait_for_job $job_id DONE
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
 
 # Check steps after job has completed
 check_step 2

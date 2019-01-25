@@ -60,7 +60,12 @@ proc run_spread_job { task_cnt } {
 		exit 1
 	}
 
-	wait_for_job $job_id "DONE"
+	if {[wait_for_job $job_id "DONE"] != 0} {
+		send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+		cancel_job $job_id
+		set exit_code 1
+	}
+
 	set timeout 10
 	set num_nodes 0
 	spawn $scontrol show job $job_id

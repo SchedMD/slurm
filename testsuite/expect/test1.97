@@ -319,7 +319,11 @@ expect {
 	}
 }
 
-wait_for_job $tmp_id DONE
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
 
 spawn $scontrol show job $tmp_id
 expect {

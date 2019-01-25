@@ -144,7 +144,11 @@ if {$tmp_job == 0} {
 	exit 0
 }
 
-wait_for_job $tmp_job RUNNING
+if {[wait_for_job $tmp_job "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $tmp_job to start\n"
+	cancel_job $tmp_job
+	set exit_code 1
+}
 
 set got_node 0
 spawn $scontrol show job $tmp_job
@@ -278,8 +282,9 @@ expect {
 	}
 }
 
-if {[wait_for_job $job_id RUNNING] != 0} {
+if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: error waiting for job $job_id to start\n"
+	cancel_job $job_id
 	set exit_code 1
 }
 # Wait for steps to start too
@@ -458,7 +463,10 @@ if {$match != $cnt} {
 }
 
 cancel_job $job_id
-wait_for_job $job_id DONE
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	set exit_code 1
+}
 
 remove_acct "" $test_acct
 

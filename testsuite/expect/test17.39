@@ -141,7 +141,11 @@ if {$match == 0} {
 }
 
 # Wait for the fast job to finish after submitting dependent job
-wait_for_job $fast_id DONE
+if {[wait_for_job $fast_id "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $fast_id to complete\n"
+	set exit_code 1
+	cancel_job $fast_id
+}
 
 # Wait for dependency job to start once the fast job is complete
 if {[wait_for_job $dep_id RUNNING]} {

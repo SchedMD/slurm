@@ -100,7 +100,11 @@ if {$job_id == 0} {
 	exit 1
 }
 
-wait_for_job $job_id DONE
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	set exit_code 1
+	cancel_job $job_id
+}
 
 set sig 0
 spawn $bin_cat $file_out
@@ -180,7 +184,11 @@ if {$job_id == 0} {
 	exit 1
 }
 
-wait_for_job $job_id DONE
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	set exit_code 1
+	cancel_job $job_id
+}
 
 set sig 0
 spawn $bin_cat $file_out

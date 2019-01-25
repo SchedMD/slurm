@@ -316,7 +316,11 @@ expect {
 # Wait long enough to make sure the job step is running and has
 # started its job steps. Check the squeue job step filter option
 #
-wait_for_job $job_id1 "RUNNING"
+if {[wait_for_job $job_id1 "RUNNING"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id1 to start\n"
+	cancel_job $job_id1
+	set exit_code 1
+}
 exec $bin_sleep 10
 set job_found 0
 spawn $squeue --format=%i --steps $job_id1.$step_id

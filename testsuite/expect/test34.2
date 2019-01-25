@@ -278,11 +278,17 @@ sleep 2
 check_job_state $qos_1_id PENDING
 
 # Wait for requeued job to restart
-wait_for_job $qos_2_id DONE
-wait_for_job $qos_1_id RUNNING
+if { [wait_for_job $qos_2_id "DONE"] != 0} {
+	send_user "\nFAILURE: job $qos_2_id failed to complete\n"
+	clean_up 1
+}
+if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
+	send_user "\nFAILURE: job $qos_1_id failed to start\n"
+	clean_up 1
+}
 
 sleep 2
-check_job_state $qos_1_id RUNNING
+check_job_state $qos_1_id "RUNNING"
 
 wait_for_account_done $acct_1,$acct_2
 

@@ -92,7 +92,11 @@ if { $job_id == 0 } {
 }
 
 # Wait for the job to be in the complete state
-wait_for_job $job_id DONE
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
 
 # Requeue the job when it is complete
 requeue_job $job_id
@@ -127,7 +131,11 @@ if { $job_id == 0 } {
 }
 
 # Wait for the job to be in the complete state
-wait_for_job $job_id DONE
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
 
 # Requeue the job when it is complete
 requeue_job $job_id

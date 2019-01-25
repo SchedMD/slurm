@@ -247,7 +247,7 @@ if {$job_id == 0} {
 	exit 1
 }
 
-if { [wait_for_job $job_id DONE] != 0} {
+if { [wait_for_job $job_id "DONE"] != 0} {
 	cancel_job $job_id
 	exit 1
 }
@@ -283,13 +283,13 @@ create_part $part_name_1 $nodes 1 cancel
 create_part $part_name_2 $nodes 2 off
 
 set part_id_1 [sub_job $part_name_1 $job1]
-if { [wait_for_job $part_id_1 RUNNING] != 0} {
+if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
 	send_user "\nFAILURE: job $part_id_1 failed to start\n"
 	clean_up 1
 }
 
 set part_id_2 [sub_job $part_name_2 $job2]
-if { [wait_for_job $part_id_2 RUNNING] != 0} {
+if { [wait_for_job $part_id_2 "RUNNING"] != 0} {
 	send_user "\nFAILURE: job $part_id_1 failed to start\n"
 	clean_up 1
 }
@@ -305,14 +305,14 @@ if { [test_gang] == 1 } {
 
 	mod_part $part_name_1 suspend
 	set part_id_1 [sub_job $part_name_1 $job1]
-	if { [wait_for_job $part_id_1 RUNNING] != 0} {
+	if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
 		send_user "\nFAILURE: job $part_id_1 failed to start\n"
 		clean_up 1
 	}
 
 	set part_id_2 [sub_job $part_name_2 $job2]
 	# Wait for the job to start
-	if { [wait_for_job $part_id_2 RUNNING] != 0} {
+	if { [wait_for_job $part_id_2 "RUNNING"] != 0} {
 		send_user "\nFAILURE: job $part_id_2 failed to start\n"
 		clean_up 1
 	}
@@ -320,11 +320,11 @@ if { [test_gang] == 1 } {
 	sleep 5
 	check_job_state $part_id_1 SUSPENDED
 
-	if { [wait_for_job $part_id_2 DONE] != 0} {
+	if { [wait_for_job $part_id_2 "DONE"] != 0} {
 		send_user "\nFAILURE: job $part_id_2 failed to complete\n"
 		clean_up 1
 	}
-	if { [wait_for_job $part_id_1 RUNNING] != 0} {
+	if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
 		send_user "\nFAILURE: job $part_id_1 failed to start\n"
 		clean_up 1
 	}
@@ -338,13 +338,13 @@ send_user "\n*** TEST PREEMPT REQUEUE ***\n"
 
 mod_part $part_name_1 requeue
 set part_id_1 [sub_job $part_name_1 $job1]
-if { [wait_for_job $part_id_1 RUNNING] != 0} {
+if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
 	send_user "\nFAILURE: job $part_id_1 failed to start\n"
 	clean_up 1
 }
 
 set part_id_2 [sub_job $part_name_2 $job2]
-if { [wait_for_job $part_id_2 RUNNING] != 0} {
+if { [wait_for_job $part_id_2 "RUNNING"] != 0} {
 	send_user "\nFAILURE: job $part_id_2 failed to start\n"
 	clean_up 1
 }
@@ -353,8 +353,14 @@ sleep 5
 check_job_state $part_id_1 PENDING
 
 # Wait for job 1 to be requeued
-wait_for_job $part_id_2 DONE
-wait_for_job $part_id_1 RUNNING
+if { [wait_for_job $part_id_2 "DONE"] != 0} {
+	send_user "\nFAILURE: job $part_id_2 failed to complete\n"
+	clean_up 1
+}
+if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
+	send_user "\nFAILURE: job $part_id_1 failed to start\n"
+	clean_up 1
+}
 
 sleep 5
 check_job_state $part_id_1 RUNNING

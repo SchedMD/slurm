@@ -634,13 +634,13 @@ proc wait_for_job { job_id desired_state } {
 		"RUNNING" {}
 		"SUSPENDED" {}
 		default {
-			send_user "FAILURE: wait_for_job with invalid state: $desired_state\n"
+			send_user "WARNING: wait_for_job with invalid state: $desired_state\n"
 			return 1
 		}
 	}
 
 	if {$job_id == 0} {
-		send_user "FAILURE: wait_for_job with invalid job ID: $job_id\n"
+		send_user "WARNING: wait_for_job with invalid job ID: $job_id\n"
 		return 1
 	}
 
@@ -709,7 +709,7 @@ proc wait_for_job { job_id desired_state } {
 		}
 
 		if { $my_delay > $max_job_state_delay } {
-			send_user "FAILURE: Timeout waiting for job state $desired_state\n"
+			send_user "WARNING: Timeout waiting for job state $desired_state\n"
 			return 1
 		}
 
