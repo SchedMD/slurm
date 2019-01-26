@@ -216,27 +216,9 @@ if { [test_front_end] == 1 } {
 	exit $exit_code
 }
 
-log_user 0
-set got_config 0
-spawn $scontrol show config
-expect {
-	-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
-		set config_dir $expect_out(1,string)
-		set got_config 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$got_config == 0} {
-	send_user "\nFAILURE: Could not identify slurm.conf location\n"
-	exit 1
+set config_dir [get_conf_path]
+if { $exit_code != 0 } {
+	exit $exit_code
 }
 
 set get_name 0
@@ -266,16 +248,9 @@ if {$get_name != 1} {
 #
 # Copy slurm.conf file
 #
-exec $bin_rm -fr $cwd/slurm.conf.orig
-spawn $bin_cp -v $config_dir/slurm.conf $cwd/slurm.conf.orig
-expect {
-	timeout {
-		send_user "\nFAILURE: slurm.conf was not copied\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+copy_conf $config_dir $cwd
+if { $exit_code != 0 } {
+	exit $exit_code
 }
 
 #

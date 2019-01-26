@@ -1,0 +1,204 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Confirms that a job array that requested a feature with
+#          the --constraint option is correctly purged from the controller
+#          (see bug 5702).
+#
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018 SchedMD LLC
+# Written by Marshall Garey
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+
+source ./globals
+
+set test_id "28.11"
+set exit_code 0
+set feature_regex "\[^,\r\n\]"
+set file_script "test$test_id.sh"
+set config_path ""
+set cwd "[$bin_pwd]"
+
+print_header $test_id
+
+proc cleanup { } {
+	global exit_code file_script reconfigure bin_cp cwd config_path
+	send_user "\nChanging slurm.conf back\n"
+	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+	file delete $file_script $cwd/slurm.conf.orig
+	reconfigure
+
+	if { $exit_code == 0 } {
+		send_user "\nSUCCESS\n"
+	} else {
+		send_user "\nFAILURE\n"
+	}
+	exit $exit_code
+}
+
+proc get_single_node_feature { } {
+	global scontrol exit_code feature_regex
+	set ret_features ""
+
+	log_user 1
+	set scon_pid [spawn $scontrol show node]
+	expect {
+		-re "AvailableFeatures=\\(null\\)" {
+			# Ignore null values
+			exp_continue
+		}
+		-re "AvailableFeatures=($feature_regex*)" {
+			set ret_features $expect_out(1,string)
+			# Don't exp_continue since we only care about one.
+		}
+		timeout {
+			log_error "scontrol not responding"
+			slow_kill $scon_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $ret_features
+}
+
+set config_path [get_conf_path]
+if { $exit_code != 0 } {
+	cleanup
+}
+
+copy_conf $config_path $cwd
+if { $exit_code != 0 } {
+	cleanup
+}
+
+# Change the slurm.conf MinJobAge=10 so we don't have to wait very long.
+exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_path/slurm.conf
+exec $bin_echo -e "\nMinJobAge=10" >> $config_path/slurm.conf
+
+reconfigure
+if { $exit_code != 0 } {
+	cleanup
+}
+
+# Verify that MinJobAge was set
+set min_job_age [get_min_job_age]
+if { $min_job_age != 10 } {
+	log_error "Failed to set MinJobAge"
+	set exit_code 1
+	cleanup
+}
+
+set node_feature [get_single_node_feature]
+if { $node_feature == "" } {
+	log_warn "Cannot run this test without any node features."
+	cleanup
+}
+
+# It doesn't matter how long the job sleeps; it will be cancelled anyway.
+make_bash_script $file_script "sleep 5"
+set job_id 0
+spawn $sbatch --constraint=$node_feature --array=1-2 --output="/dev/null" \
+			   $file_script
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		send_user "\njob $job_id was submitted\n"
+		exp_continue
+	}
+	-re "Batch job submission failed" {
+		set exit_code 1
+		log_error "Batch job submission failed"
+		exp_continue
+	}
+	timeout {
+		log_error "sbatch timed out"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if { $exit_code != 0 } {
+	cleanup
+}
+
+# Wait enough time for the jobs to be in the controller
+$bin_sleep 1
+set count 0
+set count_exp 2
+send_user "Verifying the jobs correctly requested the feature $node_feature\n"
+spawn $scontrol show job $job_id
+expect {
+	-re "Features=$node_feature" {
+		incr count
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol timed out"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+if { $count != $count_exp } {
+	log_error "Expected each of the $count_exp jobs to have features=$node_feature, but got $count"
+	cleanup
+}
+
+# Cancel the jobs and wait for them to purged from the controller
+set exit_code [cancel_job $job_id]
+if { $exit_code != 0 } {
+	log_fail "Problem cancelling job $job_id"
+	cleanup
+}
+
+set exit_code 1
+set sleep_time $min_job_age
+incr sleep_time 10
+send_user "Waiting for $sleep_time seconds for the jobs to be purged from the controller\n"
+$bin_sleep $sleep_time
+spawn $scontrol show job $job_id
+expect {
+	-re "Invalid job id specified" {
+		# Good, the job isn't in the controller anymore
+		set exit_code 0
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol timed out"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+cleanup
