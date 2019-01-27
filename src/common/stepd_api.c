@@ -162,7 +162,8 @@ _step_connect(const char *directory, const char *nodename,
 	 */
 	if (strlen(name) >= sizeof(addr.sun_path)) {
 		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
-		      __func__, name, strlen(name) + 1, sizeof(addr.sun_path));
+		      __func__, name, (long int)(strlen(name) + 1),
+		      (long int)sizeof(addr.sun_path));
 		xfree(name);
 		return -1;
 	}

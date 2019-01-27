@@ -6288,8 +6288,9 @@ _rpc_forward_data(slurm_msg_t *msg)
 	 */
 	if (strlen(req->address) >= sizeof(sa.sun_path)) {
 		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
-		      __func__, req->address, strlen(req->address) + 1,
-		      sizeof(sa.sun_path));
+		      __func__, req->address,
+		      (long int)(strlen(req->address) + 1),
+		      (long int)sizeof(sa.sun_path));
 		slurm_seterrno(EINVAL);
 		rc = errno;
 		goto done;

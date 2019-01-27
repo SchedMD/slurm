@@ -157,7 +157,8 @@ _create_socket(const char *name)
 	 */
 	if (strlen(name) > sizeof(addr.sun_path) - 1) {
 		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
-		      __func__, name, strlen(name) + 1, sizeof(addr.sun_path));
+		      __func__, name, (long int)(strlen(name) + 1),
+		      (long int)sizeof(addr.sun_path));
 		errno = ESLURMD_INVALID_SOCKET_NAME_LEN;
 		return -1;
 	}

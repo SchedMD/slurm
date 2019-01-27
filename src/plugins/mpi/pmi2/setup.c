@@ -314,7 +314,8 @@ _setup_stepd_sockets(const stepd_step_rec_t *job, char ***env)
 	if (strlen(fmt_tree_sock_addr) >= sizeof(sa.sun_path)) {
 		error("%s: Unix socket path '%s' is too long. (%ld > %ld)",
 		      __func__, fmt_tree_sock_addr,
-		      strlen(fmt_tree_sock_addr) + 1, sizeof(sa.sun_path));
+		      (long int)(strlen(fmt_tree_sock_addr) + 1),
+		      (long int)sizeof(sa.sun_path));
 		xfree(spool);
 		xfree(fmt_tree_sock_addr);
 		return SLURM_ERROR;
