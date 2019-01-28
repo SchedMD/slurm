@@ -4647,3 +4647,65 @@ proc get_acct_store_tres { } {
 	log_user 1
 	return $store_tres
 }
+
+################################################################
+# Proc: get_conf_path
+#
+# Returns the path to the slurm.conf file
+#
+################################################################
+proc get_conf_path { } {
+	global scontrol alpha exit_code
+
+	set config_path ""
+	set got_config 0
+	log_user 0
+	spawn $scontrol show config
+	expect {
+		-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
+			set config_path $expect_out(1,string)
+			set got_config 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$got_config != 1} {
+		send_user "\nFAILURE: did not get slurm.conf path\n"
+		set exit_code 1
+	}
+	return $config_path
+}
+
+################################################################
+# Proc: copy_conf
+#
+# Copy the slurm.conf file to the a new file called
+# slurm.conf.orig in the current working directory
+#
+# Input config_path - The path to slurm.conf
+# Input cwd - The full path of the current working directory
+#
+################################################################
+proc copy_conf { config_path cwd } {
+	global bin_cp bin_rm exit_code
+
+	exec $bin_rm -fr $cwd/slurm.conf.orig
+	spawn $bin_cp -v $config_path/slurm.conf $cwd/slurm.conf.orig
+	expect {
+		timeout {
+			send_user "\nFAILURE: slurm.conf was not copied\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}

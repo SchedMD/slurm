@@ -1315,8 +1315,9 @@ Lock the slurmstepd process's current memory in RAM.
 Lock the slurmstepd process's current and future memory in RAM.
 .TP
 \fBtest_exec\fR
-Validate the executable command's existence prior to attempting launch on
-the compute nodes
+Have srun verify existence of the executable program along with user
+execute permission on the node where srun was called before attempting to
+launch it on nodes in the step.
 .RE
 
 .TP
@@ -1574,9 +1575,12 @@ default value for \fBWindowTime\fR is 100 milliseconds.
 \fBOverTimeLimit\fR
 Number of minutes by which a job can exceed its time limit before
 being canceled.
-The configured job time limit is treated as a \fIsoft\fR limit.
-Adding \fBOverTimeLimit\fR to the \fIsoft\fR limit provides a \fIhard\fR
-limit, at which point the job is canceled.
+Normally a job's time limit is treated as a \fIhard\fR limit and the job will be
+killed upon reaching that limit.
+Configuring \fBOverTimeLimit\fR will result in the job's time limit being
+treated like a \fIsoft\fR limit.
+Adding the \fBOverTimeLimit\fR value to the \fIsoft\fR time limit provides a
+\fIhard\fR time limit, at which point the job is canceled.
 This is particularly useful for backfill scheduling, which bases upon
 each job's soft time limit.
 The default value is zero.

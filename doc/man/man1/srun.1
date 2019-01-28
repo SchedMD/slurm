@@ -2764,8 +2764,9 @@ Same as \fB\-\-task\-epilog\fR
 Same as \fB\-\-task\-prolog
 .TP
 \fBSLURM_TEST_EXEC\fR
-if defined, then verify existence of the executable program on the local
-computer before attempting to launch it on compute nodes.
+If defined, srun will verify existence of the executable program along with user
+execute permission on the node where srun was called before attempting to
+launch it on nodes in the step.
 .TP
 \fBSLURM_THREAD_SPEC\fR
 Same as \fB\-\-thread\-spec\fR
