@@ -2757,6 +2757,7 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 
 		pack32(object->priority_admin, buffer);
 		packdouble(object->priority_age, buffer);
+		packdouble(object->priority_assoc, buffer);
 		packdouble(object->priority_fs, buffer);
 		packdouble(object->priority_js, buffer);
 		packdouble(object->priority_part, buffer);
@@ -2826,6 +2827,7 @@ static int _unpack_priority_factors_object(void **object, Buf buffer,
 
 		safe_unpack32(&object_ptr->priority_admin, buffer);
 		safe_unpackdouble(&object_ptr->priority_age, buffer);
+		safe_unpackdouble(&object_ptr->priority_assoc, buffer);
 		safe_unpackdouble(&object_ptr->priority_fs, buffer);
 		safe_unpackdouble(&object_ptr->priority_js, buffer);
 		safe_unpackdouble(&object_ptr->priority_part, buffer);
@@ -6466,6 +6468,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->priority_reset_period, buffer);
 		packstr(build_ptr->priority_type, buffer);
 		pack32(build_ptr->priority_weight_age, buffer);
+		pack32(build_ptr->priority_weight_assoc, buffer);
 		pack32(build_ptr->priority_weight_fs, buffer);
 		pack32(build_ptr->priority_weight_js, buffer);
 		pack32(build_ptr->priority_weight_part, buffer);
@@ -7367,6 +7370,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->priority_type, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&build_ptr->priority_weight_age, buffer);
+		safe_unpack32(&build_ptr->priority_weight_assoc, buffer);
 		safe_unpack32(&build_ptr->priority_weight_fs, buffer);
 		safe_unpack32(&build_ptr->priority_weight_js, buffer);
 		safe_unpack32(&build_ptr->priority_weight_part, buffer);

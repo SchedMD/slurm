@@ -628,6 +628,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @mtpn = ''; "
 		"set @mtmpj = ''; "
 		"set @mtrm = ''; "
+		"set @prio = NULL; "
 		"set @def_qos_id = NULL; "
 		"set @qos = ''; "
 		"set @delta_qos = ''; "
@@ -636,6 +637,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"set @mj = 0; "
 		"set @msj = 0; "
 		"set @mwpj = 0; "
+		"set @prio = 0; "
 		"set @def_qos_id = 0; "
 		"set @qos = 1; "
 		"end if; "
@@ -658,6 +660,9 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		"end if; "
 		"if @mwpj is NULL then set @s = CONCAT("
 		"@s, '@mwpj := max_wall_pj, '); "
+		"end if; "
+		"if @prio is NULL then set @s = CONCAT("
+		"@s, '@prio := priority, '); "
 		"end if; "
 		"if @def_qos_id is NULL then set @s = CONCAT("
 		"@s, '@def_qos_id := def_qos_id, '); "
@@ -1194,6 +1199,7 @@ extern int create_cluster_assoc_table(
 		{ "grp_tres_mins", "text not null default ''" },
 		{ "grp_tres_run_mins", "text not null default ''" },
 		{ "grp_wall", "int default NULL" },
+		{ "priority", "int unsigned default NULL" },
 		{ "def_qos_id", "int default NULL" },
 		{ "qos", "blob not null default ''" },
 		{ "delta_qos", "blob not null default ''" },
@@ -1661,6 +1667,8 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 			assoc->max_submit_jobs = INFINITE;
 		if (assoc->max_wall_pj == NO_VAL)
 			assoc->max_wall_pj = INFINITE;
+		if (assoc->priority == NO_VAL)
+			assoc->priority = INFINITE;
 		if (assoc->def_qos_id == NO_VAL)
 			assoc->def_qos_id = INFINITE;
 	}
@@ -1789,6 +1797,17 @@ extern int setup_assoc_limits(slurmdb_assoc_rec_t *assoc,
 		xstrcat(*cols, ", max_wall_pj");
 		xstrfmtcat(*vals, ", %u", assoc->max_wall_pj);
 		xstrfmtcat(*extra, ", max_wall_pj=%u", assoc->max_wall_pj);
+	}
+
+	if (assoc->priority == INFINITE) {
+		xstrcat(*cols, ", priority");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", priority=NULL");
+	} else if ((assoc->priority != NO_VAL)
+		   && ((int32_t)assoc->priority >= 0)) {
+		xstrcat(*cols, ", priority");
+		xstrfmtcat(*vals, ", %u", assoc->priority);
+		xstrfmtcat(*extra, ", priority=%u", assoc->priority);
 	}
 
 	if (assoc->def_qos_id == INFINITE) {
@@ -2401,7 +2420,8 @@ just_update:
 			       "grp_tres=DEFAULT, "
 			       "grp_tres_mins=DEFAULT, "
 			       "grp_tres_run_mins=DEFAULT, "
-			       "qos=DEFAULT, delta_qos=DEFAULT "
+			       "qos=DEFAULT, delta_qos=DEFAULT, "
+			       "priority=DEFAULT "
 			       "where (%s);",
 			       cluster_name, assoc_table, now,
 			       loc_assoc_char);

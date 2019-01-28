@@ -139,6 +139,7 @@ static uint32_t max_age; /* time when not to add any more
 			  * priority to a job if reached */
 static uint16_t enforce;     /* AccountingStorageEnforce */
 static uint32_t weight_age;  /* weight for age factor */
+static uint32_t weight_assoc;/* weight for assoc factor */
 static uint32_t weight_fs;   /* weight for Fairshare factor */
 static uint32_t weight_js;   /* weight for Job Size factor */
 static uint32_t weight_part; /* weight for Partition factor */
@@ -559,6 +560,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		memset(&pre_factors, 0, sizeof(priority_factors_object_t));
 
 	job_ptr->prio_factors->priority_age  *= (double)weight_age;
+	job_ptr->prio_factors->priority_assoc *= (double)weight_assoc;
 	job_ptr->prio_factors->priority_fs   *= (double)weight_fs;
 	job_ptr->prio_factors->priority_js   *= (double)weight_js;
 	job_ptr->prio_factors->priority_part *= (double)weight_part;
@@ -571,6 +573,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 	}
 
 	priority = job_ptr->prio_factors->priority_age
+		+ job_ptr->prio_factors->priority_assoc
 		+ job_ptr->prio_factors->priority_fs
 		+ job_ptr->prio_factors->priority_js
 		+ job_ptr->prio_factors->priority_part
@@ -625,6 +628,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 				(double)weight_part;
 			priority_part +=
 				 (job_ptr->prio_factors->priority_age
+				 + job_ptr->prio_factors->priority_assoc
 				 + job_ptr->prio_factors->priority_fs
 				 + job_ptr->prio_factors->priority_js
 				 + job_ptr->prio_factors->priority_qos
@@ -676,6 +680,9 @@ static uint32_t _get_priority_internal(time_t start_time,
 		info("Weighted Age priority is %f * %u = %.2f",
 		     pre_factors.priority_age, weight_age,
 		     job_ptr->prio_factors->priority_age);
+		info("Weighted Assoc priority is %f * %u = %.2f",
+		     pre_factors.priority_assoc, weight_assoc,
+		     job_ptr->prio_factors->priority_assoc);
 		info("Weighted Fairshare priority is %f * %u = %.2f",
 		     pre_factors.priority_fs, weight_fs,
 		     job_ptr->prio_factors->priority_fs);
@@ -702,10 +709,11 @@ static uint32_t _get_priority_internal(time_t start_time,
 			assoc_mgr_unlock(&locks);
 		}
 
-		info("Job %u priority: %"PRId64" + %.2f + %.2f + %.2f + %.2f + %.2f + %2.f - %"PRId64" = %.2f",
+		info("Job %u priority: %"PRId64" + %2.f + %.2f + %.2f + %.2f + %.2f + %.2f + %2.f - %"PRId64" = %.2f",
 		     job_ptr->job_id,
 		     priority_admin,
 		     job_ptr->prio_factors->priority_age,
+		     job_ptr->prio_factors->priority_assoc,
 		     job_ptr->prio_factors->priority_fs,
 		     job_ptr->prio_factors->priority_js,
 		     job_ptr->prio_factors->priority_part,
@@ -1515,6 +1523,7 @@ static void _internal_setup(void)
 	enforce = slurm_get_accounting_storage_enforce();
 	max_age = slurm_get_priority_max_age();
 	weight_age = slurm_get_priority_weight_age();
+	weight_assoc = slurm_get_priority_weight_assoc();
 	weight_fs = slurm_get_priority_weight_fairshare();
 	weight_js = slurm_get_priority_weight_job_size();
 	weight_part = slurm_get_priority_weight_partition();
@@ -1533,6 +1542,7 @@ static void _internal_setup(void)
 		info("priority: AccountingStorageEnforce is %u", enforce);
 		info("priority: Max Age is %u", max_age);
 		info("priority: Weight Age is %u", weight_age);
+		info("priority: Weight Assoc is %u", weight_assoc);
 		info("priority: Weight Fairshare is %u", weight_fs);
 		info("priority: Weight JobSize is %u", weight_js);
 		info("priority: Weight Part is %u", weight_part);
@@ -2157,6 +2167,10 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 	}
 
 	job_ptr->prio_factors->priority_admin = job_ptr->admin_prio_factor;
+
+	if (job_ptr->assoc_ptr && weight_assoc)
+		job_ptr->prio_factors->priority_assoc =
+			job_ptr->assoc_ptr->usage->norm_priority;
 
 	if (qos_ptr && qos_ptr->priority && weight_qos) {
 		job_ptr->prio_factors->priority_qos =

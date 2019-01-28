@@ -1693,6 +1693,7 @@ typedef struct priority_factors_object {
 
 	uint32_t priority_admin;
 	double	 priority_age;
+	double	 priority_assoc;
 	double	 priority_fs;
 	double	 priority_js;
 	double	 priority_part;
@@ -2733,6 +2734,7 @@ typedef struct slurm_ctl_conf {
 					 * see PRIORITY_RESET_* */
 	char *priority_type;    /* priority type plugin */
 	uint32_t priority_weight_age; /* weight for age factor */
+	uint32_t priority_weight_assoc; /* weight for assoc factor */
 	uint32_t priority_weight_fs; /* weight for Fairshare factor */
 	uint32_t priority_weight_js; /* weight for Job Size factor */
 	uint32_t priority_weight_part; /* weight for Partition factor */

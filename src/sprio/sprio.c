@@ -55,6 +55,7 @@
  ********************/
 struct sprio_parameters params;
 uint32_t weight_age; /* weight for age factor */
+uint32_t weight_assoc; /* weight for assoc factor */
 uint32_t weight_fs; /* weight for Fairshare factor */
 uint32_t weight_js; /* weight for Job Size factor */
 uint32_t weight_part; /* weight for Partition factor */
@@ -88,6 +89,7 @@ int main (int argc, char **argv)
 			exit(error_code);
 		}
 		weight_age  = slurm_ctl_conf_ptr->priority_weight_age;
+		weight_assoc = slurm_ctl_conf_ptr->priority_weight_assoc;
 		weight_fs   = slurm_ctl_conf_ptr->priority_weight_fs;
 		weight_js   = slurm_ctl_conf_ptr->priority_weight_js;
 		weight_part = slurm_ctl_conf_ptr->priority_weight_part;
@@ -97,6 +99,7 @@ int main (int argc, char **argv)
 		slurm_free_ctl_conf(slurm_ctl_conf_ptr);
 	} else {
 		weight_age  = slurm_get_priority_weight_age();
+		weight_assoc  = slurm_get_priority_weight_assoc();
 		weight_fs   = slurm_get_priority_weight_fairshare();
 		weight_js   = slurm_get_priority_weight_job_size();
 		weight_part = slurm_get_priority_weight_partition();
@@ -132,7 +135,7 @@ int main (int argc, char **argv)
 	if (params.format == NULL) {
 		if (params.normalized) {
 			if (params.long_list) {
-				params.format = "%.15i %9r %.8u %10y %10a %10f %10j %10p %10q %20t";
+				params.format = "%.15i %9r %.8u %10y %10a %10b %10f %10j %10p %10q %20t";
 			} else {
 				params.format = xstrdup("%.15i %9r");
 				if (params.sibling && !params.local)
@@ -142,6 +145,8 @@ int main (int argc, char **argv)
 				xstrcat(params.format, " %10y");
 				if (weight_age)
 					xstrcat(params.format, " %10a");
+				if (weight_assoc)
+					xstrcat(params.format, " %10b");
 				if (weight_fs)
 					xstrcat(params.format, " %10f");
 				if (weight_js)
@@ -155,7 +160,7 @@ int main (int argc, char **argv)
 			}
 		} else {
 			if (params.long_list) {
-				params.format = "%.15i %9r %.8u %.10Y %.10S %.10A %.10F %.10J %.10P %.10Q %.11N %.20T";
+				params.format = "%.15i %9r %.8u %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T";
 			} else {
 				params.format = xstrdup("%.15i %9r");
 				if (params.sibling && !params.local)
@@ -165,6 +170,8 @@ int main (int argc, char **argv)
 				xstrcat(params.format, " %.10Y %.10S");
 				if (weight_age)
 					xstrcat(params.format, " %.10A");
+				if (weight_assoc)
+					xstrcat(params.format, " %.10B");
 				if (weight_fs)
 					xstrcat(params.format, " %.10F");
 				if (weight_js)

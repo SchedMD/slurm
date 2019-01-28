@@ -1445,6 +1445,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 			packnull(buffer);
 			pack32(0, buffer);
 			packnull(buffer);
+			pack32(0, buffer);
 
 			pack32(NO_VAL, buffer);
 
@@ -1507,6 +1508,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->parent_acct, buffer);
 		pack32(object->parent_id, buffer);
 		packstr(object->partition, buffer);
+		pack32(object->priority, buffer);
 
 		if (object->qos_list)
 			count = list_count(object->qos_list);
@@ -1827,6 +1829,7 @@ extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 		safe_unpack32(&object_ptr->parent_id, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp,
 				       buffer);
+		safe_unpack32(&object_ptr->priority, buffer);
 
 		safe_unpack32(&count, buffer);
 		/* This needs to look for zero to tell if something

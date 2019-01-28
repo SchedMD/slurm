@@ -1461,6 +1461,8 @@ extern void slurmdb_init_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	assoc->max_submit_jobs = NO_VAL;
 	assoc->max_wall_pj = NO_VAL;
 
+	assoc->priority = NO_VAL;
+
 	/* assoc->shares_norm = NO_VAL64; */
 	assoc->shares_raw = NO_VAL;
 
@@ -3344,6 +3346,8 @@ extern void slurmdb_copy_assoc_rec_limits(slurmdb_assoc_rec_t *out,
 	xfree(out->max_tres_run_mins);
 	out->max_tres_run_mins = xstrdup(in->max_tres_run_mins);
 	out->max_wall_pj = in->max_wall_pj;
+
+	out->priority = in->priority;
 
 	FREE_NULL_LIST(out->qos_list);
 	out->qos_list = slurm_copy_char_list(in->qos_list);

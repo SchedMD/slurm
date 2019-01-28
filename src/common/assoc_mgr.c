@@ -55,6 +55,7 @@
 
 slurmdb_assoc_rec_t *assoc_mgr_root_assoc = NULL;
 uint32_t g_qos_max_priority = 0;
+uint32_t g_assoc_max_priority = 0;
 uint32_t g_qos_count = 0;
 uint32_t g_user_assoc_count = 0;
 uint32_t g_tres_count = 0;
@@ -870,6 +871,51 @@ static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
 	return SLURM_SUCCESS;
 }
 
+static void _set_assoc_norm_priority(slurmdb_assoc_rec_t *assoc)
+{
+	if (!assoc)
+		return;
+
+	if (assoc->priority == INFINITE)
+		assoc->priority = 0;
+
+	if (!g_assoc_max_priority)
+		return;
+
+	if (!assoc->usage)
+		assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
+	assoc->usage->priority_norm =
+		(double)assoc->priority / (double)g_assoc_max_priority;
+}
+
+static void _calculate_assoc_norm_priorities(bool new_max)
+{
+	ListIterator itr = NULL;
+	slurmdb_assoc_rec_t *assoc;
+
+	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(USER_LOCK, WRITE_LOCK));
+
+	itr = list_iterator_create(assoc_mgr_assoc_list);
+
+	if (new_max) {
+		g_assoc_max_priority = 0;
+		while ((assoc = list_next(itr))) {
+			if ((assoc->priority != INFINITE) &&
+			    assoc->priority > g_assoc_max_priority)
+				g_assoc_max_priority = assoc->priority;
+		}
+	}
+
+	list_iterator_reset(itr);
+	while ((assoc = list_next(itr)))
+		_set_assoc_norm_priority(assoc);
+
+	list_iterator_destroy(itr);
+}
+
 static void _set_qos_norm_priority(slurmdb_qos_rec_t *qos)
 {
 	if (!qos || !g_qos_max_priority)
@@ -929,6 +975,7 @@ static int _post_assoc_list(void)
 	slurmdb_assoc_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
 	int reset = 1;
+	g_assoc_max_priority = 0;
 	//DEF_TIMERS;
 
 	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
@@ -971,6 +1018,8 @@ static int _post_assoc_list(void)
 			assoc_mgr_normalize_assoc_shares(assoc);
 	}
 	list_iterator_destroy(itr);
+
+	_calculate_assoc_norm_priorities(true);
 
 	slurmdb_sort_hierarchical_assoc_list(assoc_mgr_assoc_list, true);
 
@@ -3597,6 +3646,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	int parents_changed = 0;
 	int run_update_resvs = 0;
 	int resort = 0;
+	int redo_priority = 0;
 	List remove_list = NULL;
 	List update_list = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .qos = WRITE_LOCK,
@@ -3780,6 +3830,20 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				parents_changed = 1;
 			}
 
+			if (object->priority != NO_VAL) {
+				if (rec->priority == g_assoc_max_priority)
+					redo_priority = 2;
+
+				rec->priority = object->priority;
+
+				if ((rec->priority != INFINITE) &&
+				    (rec->priority > g_assoc_max_priority)) {
+					g_assoc_max_priority = rec->priority;
+					redo_priority = 1;
+				} else if (redo_priority != 2)
+					_set_assoc_norm_priority(rec);
+			}
+
 			if (object->qos_list) {
 				if (rec->qos_list) {
 					_local_update_assoc_qos_list(
@@ -3873,6 +3937,13 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 			if (object->is_def != 1)
 				object->is_def = 0;
 
+			if ((object->priority != INFINITE) &&
+			    (object->priority > g_assoc_max_priority)) {
+				g_assoc_max_priority = object->priority;
+				redo_priority = 1;
+			} else
+				_set_assoc_norm_priority(object);
+
 			/* Set something so we know to add it to the hash */
 			object->uid = INFINITE;
 
@@ -3886,6 +3957,7 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 					     */
 			run_update_resvs = 1; /* needed for updating
 						 reservations */
+
 			break;
 		case SLURMDB_REMOVE_ASSOC:
 			if (!rec) {
@@ -3901,6 +3973,10 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 							set the shares
 							of surrounding children
 						     */
+
+			/* We need to renormalize of something else */
+			if (rec->priority == g_assoc_max_priority)
+				redo_priority = 2;
 
 			_delete_assoc_hash(rec);
 			_remove_from_assoc_list(rec);
@@ -3929,6 +4005,9 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 
 		slurmdb_destroy_assoc_rec(object);
 	}
+
+	if (redo_priority)
+		_calculate_assoc_norm_priorities(redo_priority == 2);
 
 	/* We have to do this after the entire list is processed since
 	 * we may have added the parent which wasn't in the list before

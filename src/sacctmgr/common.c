@@ -1851,6 +1851,11 @@ extern void sacctmgr_print_assoc_limits(slurmdb_assoc_rec_t *assoc)
 	if (assoc->parent_acct)
 		printf("  Parent        = %s\n", assoc->parent_acct);
 
+	if (assoc->priority == INFINITE)
+		printf("  Priority      = NONE\n");
+	else if (assoc->priority != NO_VAL)
+		printf("  Priority      = %d\n", assoc->priority);
+
 	if (assoc->qos_list) {
 		if (!g_qos_list)
 			g_qos_list =

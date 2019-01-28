@@ -240,9 +240,9 @@ static void _print_assoc_mgr_info(assoc_mgr_info_msg_t *msg)
 			else
 				printf("UserName= ");
 
-			printf("Partition=%s ID=%u%s",
+			printf("Partition=%s Priority=%u ID=%u%s",
 			       assoc_rec->partition ? assoc_rec->partition : "",
-			       assoc_rec->id,
+			       assoc_rec->priority, assoc_rec->id,
 			       new_line_char);
 
 			printf("SharesRaw/Norm/Level/Factor="
