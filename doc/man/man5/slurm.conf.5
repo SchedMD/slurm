@@ -1258,8 +1258,9 @@ Lock the slurmstepd process's current memory in RAM.
 Lock the slurmstepd process's current and future memory in RAM.
 .TP
 \fBtest_exec\fR
-Validate the executable command's existence prior to attempting launch on
-the compute nodes
+Have srun verify existence of the executable program along with user
+execute permission on the node where srun was called before attempting to
+launch it on nodes in the step.
 .RE
 
 .TP
