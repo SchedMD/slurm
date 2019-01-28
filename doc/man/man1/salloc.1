@@ -36,6 +36,11 @@ settings and is designed to be executed in the foreground. If you need to
 execute salloc in the background, set its standard input to some file, for
 example: "salloc \-n16 a.out </dev/null &"
 
+.SH "RETURN VALUE"
+If salloc is unable to execute the user script, it will
+return 1 and print errors to stderr. Else if success or if killed by signals
+HUP, INT, KILL, or QUIT: it will return 0.
+
 .SH "OPTIONS"
 .LP
 
