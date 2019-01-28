@@ -18,7 +18,8 @@ abbreviation for the type of node selection algorithm. We recommend, for example
 <ul>
 <li><b>openmpi</b> &mdash; For use with older versions of OpenMPI.</li>
 <li><b>pmi2</b> &mdash; For use with MPI2 and MVAPICH2.</li>
-<li><b>pmix</b> &mdash; Exascale PMI implementation (currently supported by OpenMPI starting from version 2.0)</li>
+<li><b>pmix</b> &mdash; Exascale PMI implementation (currently supported by
+	OpenMPI starting from version 2.0)</li>
 <li><b>none</b> &mdash; For use with most other versions of MPI.</li>
 </ul>
 <p><span class="commandline">const char plugin_name[]</span><br>
@@ -34,27 +35,29 @@ failures due to changes in the arguments to plugin functions or changes
 in other Slurm functions used by the plugin.</p>
 
 <p>A simplified flow of logic follows:
-<br>
-srun is able to specify the correct mpi to use. with --mpi=MPITYPE
-<br>
-srun calls
-<br>
-<i>mpi_p_thr_create((srun_job_t *)job);</i>
-<br>
-which will set up the correct environment for the specified mpi.
-<br>
-slurmd daemon runs
-<br>
-<i>mpi_p_init((stepd_step_rec_t *)job, (int)rank);</i>
-<br>
-which will set configure the slurmd to use the correct mpi as well to interact with the srun.
-<br>
-slurmstepd process runs
-<br>
-<i>p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);</i>
-<br>
-which executes immediately before fork/exec of tasks.
-<br>
+<ul>
+<li>srun is able to specify the correct mpi to use with --mpi=MPITYPE</li>
+<li>
+	srun command runs
+	<span class="commandline">p_mpi_hook_client_prelaunch()</span>
+	which will set up the correct environment for the specified mpi.
+</li>
+<li>
+	slurmstepd process runs
+	<span class="commandline">p_mpi_hook_slurmstepd_prefork()</span>
+	which will set configure the slurmd to use the correct mpi as well to interact with the srun.
+</li>
+<li>
+	slurmstepd process runs
+	<span class="commandline">p_mpi_hook_slurmstepd_task()</span>
+	which executes immediately before fork/exec of each task.
+</li>
+<li>
+	srun command runs
+	<span class="commandline">p_mpi_hook_client_fini()</span>
+	which executes after all tasks have finished.
+</li>
+</ul>
 
 
 <h2>Data Objects</h2>
@@ -63,14 +66,18 @@ the slurmd daemon's and srun memory. Slurmd is a multi-threaded program with ind
 read and write locks on each data structure type. Therefore the type of operations
 permitted on various data structures is identified for each function.</p>
 
+<h2>Environment Variables</h2>
+<p> Slurm will set the following environment variables for plugins:</p>
+<ul>
+<li><b>SLURM_MPI_TYPE</b> &mdash; MPI plugin name that has been loaded for job. </li>
+</ul>
 
 <h2>API Functions</h2>
-<p>The following functions must appear. Functions which are not implemented should
-be stubbed.</p>
+<p>The following functions should be defined or at least be stubbed.</p>
 
 <p class="commandline"> int init (void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-  Called when the plugin is loaded, before any other functions are
+  Called when the plugin is loaded or reloaded, before any other functions are
   called. Put global initialization here.
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
@@ -78,10 +85,11 @@ be stubbed.</p>
 
 <p class="commandline"> void fini (void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-  Called when the plugin is removed. Clear any allocated storage here.
+  Called when the plugin is removed or reloaded. Clear any allocated storage
+  here.
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
 
-<p><b>Note</b>: These init and fini functions are not the same as those
+<p style="margin-left:.2in"><b>Note</b>: These init and fini functions are not the same as those
 described in the <span class="commandline">dlopen (3)</span> system library.
 The C run-time system co-opts those symbols for its own initialization.
 The system <span class="commandline">_init()</span> is called before the Slurm
@@ -89,53 +97,56 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline">int mpi_p_init (stepd_step_rec_t *job, int rank);</p>
-<p style="margin-left:.2in"><b>Description</b>: Used by slurmd to configure the slurmd's environment
+<p class="commandline">mpi_plugin_client_state_t*  p_mpi_hook_client_prelaunch  (const mpi_plugin_client_info_t *job, char ***env)</p>
+<p style="margin-left:.2in"><b>Description</b>: Called by srun to configure the slurmd's environment
 to that of the correct mpi.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br><span class="commandline"> job</span>&nbsp;
-&nbsp;&nbsp;(input) Pointer to the slurmd_job that is running.  Cannot be NULL.<br>
-<span class="commandline"> rank</span>&nbsp;
-&nbsp;&nbsp;(input) Primarily there for MVAPICH.  Used to send the rank fo the mpirun job.
-This can be 0 if no rank information is needed for the mpi type.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR.</p>
-
-<p class="commandline">int mpi_p_thr_create (srun_job_t *job);</p>
-<p style="margin-left:.2in"><b>Description</b>: Used by srun to spawn the thread for the mpi processes.
-Most all the real processing happens here.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> job</span>&nbsp;
-&nbsp;&nbsp;(input) Pointer to the srun_job that is running.  Cannot be NULL.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return -1.</p>
-
-<p class="commandline">int mpi_p_single_task ();</p>
-<p style="margin-left:.2in"><b>Description</b>: Tells the system whether or not multiple tasks
-can run at the same time </p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> none</span></p>
-<p style="margin-left:.2in"><b>Returns</b>: false if multiple tasks can run and true if only
-a single task can run at one time.</p>
-
-<p class="commandline">int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env);</p>
-<p style="margin-left:.2in"><b>Description</b>: Used by slurmstepd process immediately prior
-to fork and exec of user tasks.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> job</span>&nbsp;&nbsp;&nbsp;(input)
-Pointer to the slurmd structure for the job that is running.<br>
-<span class="commandline"> env</span>&nbsp;&nbsp;&nbsp;(input)
-Environment variables for tasks to be spawned.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return -1.</p>
+<span class="commandline">job</span>&nbsp;
+&nbsp;&nbsp;(input) Pointer to the Job Step (stepd_step_rec_t) that about to run.
+Cannot be NULL.<br>
+<span class="commandline">env</span>&nbsp;
+&nbsp;&nbsp;(input/output) Pointer to pointer of job environment to allow plugin
+to modify job environment as needed.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
+failure, the plugin should return SLURM_ERROR.</p>
 
-<p class="commandline">int mpi_p_exit();</p>
-<p style="margin-left:.2in"><b>Description</b>: Cleans up anything that needs cleaning up after
-execution.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> none</span></p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
+<p class="commandline">int p_mpi_hook_slurmstepd_prefork(const stepd_step_rec_t *job, char ***env)</p>
+<p style="margin-left:.2in"><b>Description</b>: Called by slurmstepd before
+forking to create the first job process.  Most all the real processing happens
+here. This is not called for batch jobs and extern steps.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">job</span>&nbsp;
+&nbsp;&nbsp;(input) Pointer to the Job Step (stepd_step_rec_t) that about to run.
+Cannot be NULL.<br>
+<span class="commandline">env</span>&nbsp;
+&nbsp;&nbsp;(input/output) Pointer to pointer of job environment to allow plugin
+to modify job environment as needed.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
+failure, the plugin should return SLURM_ERROR.</p>
 
+<p class="commandline">void p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job, char ***env)</p>
+<p style="margin-left:.2in"><b>Description</b>:&nbsp;
+Called by slurmstepd process immediately after fork and becoming job user, but
+immediatly prior to exec of user task. This is not called for batch job steps
+and extern steps.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">job</span>&nbsp;
+&nbsp;&nbsp;(input) Pointer to the Job Step (stepd_step_rec_t) that about to run.
+Cannot be NULL.<br>
+<span class="commandline">env</span>&nbsp;
+&nbsp;&nbsp;(input/output) Pointer to pointer of job environment to allow plugin
+to modify job environment as needed.
+</p><p style="margin-left:.2in"><b>Returns</b>: void returning function. </p>
 
-<p style="text-align:center;">Last modified 15 September 2017</p>
+<p class="commandline">int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state);</p>
+<p style="margin-left:.2in"><b>Description</b>: Called by srun after all tasks
+are complete. Cleans up anything that needs cleaning up after execution.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">state</span>&nbsp;Launch state of MPI. Currently, a
+typedef of void.
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On
+failure, the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
+
+<p style="text-align:center;">Last modified 15 December 2018</p>
 
 <!--#include virtual="footer.txt"-->
