@@ -266,12 +266,12 @@ static int _read_lustre_counters(void)
 	return SLURM_SUCCESS;
 }
 
-
-
-
 /*
- * _thread_update_node_energy calls _read_ipmi_values and updates all values
- * for node consumption
+ *_update_node_filesystem()
+ *
+ * acct_gather_filesystem_p_node_update calls _update_node_filesystem and
+ * updates all values for node Lustre usage
+ *
  */
 static int _update_node_filesystem(void)
 {
