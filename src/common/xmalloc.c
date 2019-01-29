@@ -63,6 +63,7 @@ static void malloc_assert_failed(char *, const char *, int,
           } while (0)
 #endif /* NDEBUG */
 
+#define XMALLOC_MAGIC 0x42
 
 /*
  * "Safe" version of malloc().

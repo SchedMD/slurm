@@ -97,6 +97,4 @@ void slurm_xfree(void **, const char *, int, const char *);
 void *slurm_xrealloc(void **, size_t, bool, const char *, int, const char *);
 size_t slurm_xsize(void *, const char *, int, const char *);
 
-#define XMALLOC_MAGIC 0x42
-
 #endif /* !_XMALLOC_H */
