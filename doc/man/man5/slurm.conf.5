@@ -2519,6 +2519,16 @@ This can result in lower priority jobs being backfill scheduled instead
 of newly arrived higher priority jobs, but will permit more queued jobs to be
 considered for backfill scheduling.
 .TP
+\fBbf_hetjob_immediate\fR
+Instruct the backfill scheduler to attempt to start a heterogeneous job as
+soon as all of its components are determined able to do so. Otherwise, the
+backfill scheduler will delay heterogeneous jobs initiation attempts until
+after the rest of the queue has been processed. This delay may result in lower
+priority jobs being allocated resources, which could delay the initiation of
+the heterogeneous job due to account and/or QOS limits being reached. This
+option is disabled by default. If enabled and \fBbf_hetjob_prio=min\fR is not
+set, then it would be automatically set.
+.TP
 \fBbf_hetjob_prio=[min|avg|max]\fR
 At the beginning of each backfill scheduling cycle, a list of pending to be
 scheduled jobs is sorted according to the precedence order configured in
