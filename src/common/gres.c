@@ -70,7 +70,6 @@ typedef cpuset_t cpu_set_t;
 #define CPU_ZERO(c) cpuset_zero(*(c))
 #define CPU_ISSET(i,c) cpuset_isset((i),*(c))
 #define sched_getaffinity sched_getaffinity_np
-#define SCHED_GETAFFINITY_THREE_ARGS
 #endif
 
 #include "slurm/slurm.h"
@@ -11184,10 +11183,8 @@ static bitstr_t * _get_usable_gres(int context_inx)
 #ifdef __FreeBSD__
 	rc = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, -1,
 				sizeof(mask), &mask);
-#elif defined SCHED_GETAFFINITY_THREE_ARGS
-	rc = sched_getaffinity(0, sizeof(mask), &mask);
 #else
-	rc = sched_getaffinity(0, &mask);
+	rc = sched_getaffinity(0, sizeof(mask), &mask);
 #endif
 	if (rc) {
 		error("sched_getaffinity error: %m");

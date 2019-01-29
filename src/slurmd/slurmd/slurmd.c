@@ -2287,10 +2287,8 @@ static int _core_spec_init(void)
 #ifdef __FreeBSD__
 		rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID,
 					  pid, sizeof(cpu_set_t), &mask);
-#elif defined(SCHED_GETAFFINITY_THREE_ARGS)
-		rval = sched_setaffinity(pid, sizeof(cpu_set_t), &mask);
 #else
-		rval = sched_setaffinity(pid, &mask);
+		rval = sched_setaffinity(pid, sizeof(cpu_set_t), &mask);
 #endif
 
 		if (rval != 0) {

@@ -18317,7 +18317,7 @@ done
 
 
 
-# Test if sched_setaffinity function exists and argument count (it can vary)
+# Test if sched_setaffinity function exists
   for ac_func in sched_setaffinity
 do :
   ac_fn_c_check_func "$LINENO" "sched_setaffinity" "ac_cv_func_sched_setaffinity"
@@ -18329,46 +18329,6 @@ _ACEOF
 fi
 done
 
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#define _GNU_SOURCE
-    #include <sched.h>
-int
-main ()
-{
-cpu_set_t mask;
-    sched_getaffinity(0, sizeof(cpu_set_t), &mask);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-$as_echo "#define SCHED_GETAFFINITY_THREE_ARGS 1" >>confdefs.h
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#define _GNU_SOURCE
-    #include <sched.h>
-int
-main ()
-{
-cpu_set_t mask;
-    sched_getaffinity(0, &mask);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-$as_echo "#define SCHED_GETAFFINITY_TWO_ARGS 1" >>confdefs.h
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #
 # Test for NUMA memory afffinity functions and set the definitions
