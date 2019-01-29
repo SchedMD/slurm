@@ -518,11 +518,7 @@ static void _handle_stats(List prec_list, char *proc_stat_file,
 	if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
 		error("%s: fcntl(%s): %m", __func__, proc_stat_file);
 
-	prec = try_xmalloc(sizeof(jag_prec_t));
-	if (prec == NULL) {	/* Avoid killing slurmstepd on malloc failure */
-		fclose(stat_fp);
-		return;
-	}
+	prec = xmalloc(sizeof(jag_prec_t));
 
 	if (!tres_count) {
 		assoc_mgr_lock_t locks = {
