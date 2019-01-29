@@ -485,10 +485,12 @@ static void _get_tres_factors(struct job_record *job_ptr,
 		else if (job_ptr->tres_req_cnt)
 			value = job_ptr->tres_req_cnt[i];
 
-		if (value &&
-		    part_ptr &&
-		    part_ptr->tres_cnt &&
-		    part_ptr->tres_cnt[i])
+		if (flags & PRIORITY_FLAGS_NO_NORMAL_TRES)
+			tres_factors[i] = value;
+		else if (value &&
+			 part_ptr &&
+			 part_ptr->tres_cnt &&
+			 part_ptr->tres_cnt[i])
 			tres_factors[i] = value /
 				(double)part_ptr->tres_cnt[i];
 	}
@@ -2163,6 +2165,8 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 	if (job_ptr->part_ptr && job_ptr->part_ptr->priority_job_factor &&
 	    weight_part) {
 		job_ptr->prio_factors->priority_part =
+			(flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
+			job_ptr->part_ptr->priority_job_factor :
 			job_ptr->part_ptr->norm_priority;
 	}
 
@@ -2170,10 +2174,14 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 
 	if (job_ptr->assoc_ptr && weight_assoc)
 		job_ptr->prio_factors->priority_assoc =
-			job_ptr->assoc_ptr->usage->norm_priority;
+			(flags & PRIORITY_FLAGS_NO_NORMAL_ASSOC) ?
+			job_ptr->assoc_ptr->priority :
+			job_ptr->assoc_ptr->usage->priority_norm;
 
 	if (qos_ptr && qos_ptr->priority && weight_qos) {
 		job_ptr->prio_factors->priority_qos =
+			(flags & PRIORITY_FLAGS_NO_NORMAL_QOS) ?
+			qos_ptr->priority :
 			qos_ptr->usage->norm_priority;
 	}
 

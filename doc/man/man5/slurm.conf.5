@@ -1822,7 +1822,7 @@ Supported values are "YES" and "NO".  The default value is "NO".
 
 .TP
 \fBPriorityFlags\fR
-Flags to modify priority behavior
+Flags to modify priority behavior.
 Applicable only if PriorityType=priority/multifactor.
 The keywords below have no associated value
 (e.g. "PriorityFlags=ACCRUE_ALWAYS,SMALL_RELATIVE_TO_TIME").
@@ -1853,6 +1853,24 @@ decrease in value.
 If set, the weighted TRES value (e.g. TRESBillingWeights) is calculated as the
 MAX of individual TRES' on a node (e.g. cpus, mem, gres) plus the sum of all
 global TRES' (e.g. licenses).
+.TP
+\fBNO_NORMAL_ALL\fR
+If set, all NO_NORMAL_* flags are set.
+.TP
+\fBNO_NORMAL_ASSOC\fR
+If set, the associaton factor is not normalized against the highest association
+priority.
+.TP
+\fBNO_NORMAL_PART\fR
+If set, the partition factor is not normalized against the highest partition
+\fBPriorityTier\fR.
+.TP
+\fBNO_NORMAL_QOS\fR
+If set, the QOS factor is not normalized against the highest qos priority.
+.TP
+\fBNO_NORMAL_TRES\fR
+If set, the QOS factor is not normalized against the job's partition TRES
+counts.
 .TP
 \fBSMALL_RELATIVE_TO_TIME\fR
 If set, the job's size component will be based upon not the job size alone, but

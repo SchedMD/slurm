@@ -4322,6 +4322,21 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (xstrcasestr(temp_str, "MAX_TRES"))
 			conf->priority_flags |= PRIORITY_FLAGS_MAX_TRES;
 
+		if (xstrcasestr(temp_str, "NO_NORMAL_ALL"))
+			conf->priority_flags |=
+				PRIORITY_FLAGS_NO_NORMAL_ASSOC |
+				PRIORITY_FLAGS_NO_NORMAL_PART  |
+				PRIORITY_FLAGS_NO_NORMAL_QOS   |
+				PRIORITY_FLAGS_NO_NORMAL_TRES;
+		if (xstrcasestr(temp_str, "NO_NORMAL_ASSOC"))
+			conf->priority_flags |= PRIORITY_FLAGS_NO_NORMAL_ASSOC;
+		if (xstrcasestr(temp_str, "NO_NORMAL_PART"))
+			conf->priority_flags |= PRIORITY_FLAGS_NO_NORMAL_PART;
+		if (xstrcasestr(temp_str, "NO_NORMAL_QOS"))
+			conf->priority_flags |= PRIORITY_FLAGS_NO_NORMAL_QOS;
+		if (xstrcasestr(temp_str, "NO_NORMAL_TRES"))
+			conf->priority_flags |= PRIORITY_FLAGS_NO_NORMAL_TRES;
+
 		xfree(temp_str);
 	}
 

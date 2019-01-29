@@ -982,6 +982,11 @@ enum ctx_keys {
 						    * increase, never decrease
 						    * in value */
 
+#define PRIORITY_FLAGS_NO_NORMAL_ASSOC	0x00000080
+#define PRIORITY_FLAGS_NO_NORMAL_PART	0x00000100
+#define PRIORITY_FLAGS_NO_NORMAL_QOS	0x00000200
+#define PRIORITY_FLAGS_NO_NORMAL_TRES	0x00000400
+
 /* These bits are set in the bitflags field of job_desc_msg_t */
 #define KILL_INV_DEP       0x00000001	/* Kill job on invalid dependency */
 #define NO_KILL_INV_DEP    0x00000002	/* Don't kill job on invalid dependency */

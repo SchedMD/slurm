@@ -99,6 +99,8 @@ HIGHLIGHTS
  -- Add AdminPrioFactor to job to set an administrator priority factor for a
     job. Can be set by scontrol or by a job submit plugin.
  -- Add priorities to assocations.
+ -- Added NO_NORMAL_[ALL|ASSOC|PART|QOS|TRES] PriorityFlags to not normalize
+    associated factors.
 
 RPMBUILD CHANGES
 ================

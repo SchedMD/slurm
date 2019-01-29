@@ -326,6 +326,39 @@ factor as it is currently configured.</P>
 <DT> PriorityWeightTRES
 <DD> A list of TRES Types and weights that scales the contribution of each TRES
   Type's factor.
+
+<DT> PriorityFlags
+<DD> Flags to modify priority behavior. Applicable only if
+PriorityType=priority/multifactor.
+<ul>
+<li>ACCRUE_ALWAYS: If set, priority age factor will be increased despite job
+	dependencies or holds.</li>
+<li>CALCULATE_RUNNING: If set, priorities will be recalculated not only for
+	pending jobs, but also running and suspended jobs.</li>
+<li>DEPTH_OBLIVIOUS: If set, priority will be calculated based similar to the
+	normal multifactor calculation, but depth of the associations in the
+	tree do not adversely effect their priority. This option automatically
+	enables NO_FAIR_TREE.</li>
+<li>NO_FAIR_TREE: Disables the "fair tree" algorithm, and reverts to "classic"
+	fair share priority scheduling.</li>
+<li>INCR_ONLY: If set, priority values will only increase in value. Job
+	priority will never decrease in value.</li>
+<li>MAX_TRES: If set, the weighted TRES value (e.g. TRESBillingWeights) is
+	calculated as the MAX of individual TRES' on a node (e.g. cpus, mem,
+	gres) plus the sum of all global TRES' (e.g. licenses).</li>
+<li>NO_NORMAL_ALL: If set, all NO_NORMAL_* flags are set.</li>
+<li>NO_NORMAL_ASSOC: If set, the associaton factor is not normalized against
+	the highest association priority.</li>
+<li>NO_NORMAL_PART: If set, the partition factor is not normalized against the
+	highest partition PriorityTier</li>
+<li>NO_NORMAL_QOS: If set, the QOS factor is not normalized against the
+	highest qos priority.</li>
+<li>NO_NORMAL_TRES: If set, the QOS factor is not normalized against the job's
+	partition TRES counts.</li>
+<li>SMALL_RELATIVE_TO_TIME: If set, the job's size component will be based
+	upon not the job size alone, but the job's size divided by it's time
+	limit.</li>
+</ul>
 </DL>
 
 <P> Note:  As stated above, the six priority factors range from 0.0 to 1.0.  As such, the PriorityWeight terms may need to be set to a high enough value (say, 1000) to resolve very tiny differences in priority factors.  This is especially true with the fair-share factor, where two jobs may differ in priority by as little as .001. (or even less!)</P>
