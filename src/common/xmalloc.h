@@ -68,9 +68,8 @@
 #ifndef _XMALLOC_H
 #define _XMALLOC_H
 
+#include <stdbool.h>
 #include <sys/types.h>
-
-#include "macros.h"
 
 #define xmalloc(__sz) \
 	slurm_xmalloc (__sz, true, __FILE__, __LINE__, __func__)
