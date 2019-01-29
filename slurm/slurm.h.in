@@ -958,25 +958,29 @@ enum ctx_keys {
 #define PROP_PRIO_NICER		0x0002	/* Ensure that user tasks have a nice
 					 * value that is higher than slurmd */
 
-#define PRIORITY_FLAGS_ACCRUE_ALWAYS	0x0001	/* Flag to always accrue age
-						 * priority to pending jobs
-						 * ignoring dependencies or
-						 * holds */
-#define PRIORITY_FLAGS_MAX_TRES 	0x0002  /* Calcuate billed_tres as the
-						 * MAX of TRES on a node rather
-						 * than the sum or TRES. */
-#define PRIORITY_FLAGS_SIZE_RELATIVE	0x0004	/* Enable job size measurement
-						 * relative to its time limit */
-#define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	0x0008	/* Flag to use depth oblivious
-						 * formula for computing
-						 * hierarchical fairshare */
-#define PRIORITY_FLAGS_CALCULATE_RUNNING 0x0010	/* Calculate priorities for
-						 * running jobs, not only the
-						 * pending jobs. */
-#define PRIORITY_FLAGS_FAIR_TREE	0x0020	/* Prioritize by level in
-						 * account hierarchy. */
-#define PRIORITY_FLAGS_INCR_ONLY	0x0040	/* Priority can only increase,
-						 * never decrease in value */
+#define PRIORITY_FLAGS_ACCRUE_ALWAYS	0x00000001 /* Flag to always accrue age
+						    * priority to pending jobs
+						    * ignoring dependencies or
+						    * holds */
+#define PRIORITY_FLAGS_MAX_TRES 	0x00000002 /* Calcuate billed_tres as
+						    * the MAX of TRES on a node
+						    * rather than the sum or
+						    * TRES. */
+#define PRIORITY_FLAGS_SIZE_RELATIVE	0x00000004 /* Enable job size
+						    * measurement relative to
+						    * its time limit */
+#define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	0x00000008 /* Flag to use depth
+						    * oblivious formula for
+						    * computing hierarchical
+						    * fairshare */
+#define PRIORITY_FLAGS_CALCULATE_RUNNING 0x00000010 /* Calculate priorities for
+						     * running jobs, not only
+						     * the pending jobs. */
+#define PRIORITY_FLAGS_FAIR_TREE	0x00000020 /* Prioritize by level in
+						    * account hierarchy. */
+#define PRIORITY_FLAGS_INCR_ONLY	0x00000040 /* Priority can only
+						    * increase, never decrease
+						    * in value */
 
 /* These bits are set in the bitflags field of job_desc_msg_t */
 #define KILL_INV_DEP       0x00000001	/* Kill job on invalid dependency */
