@@ -97,30 +97,6 @@ void *slurm_xmalloc(size_t size, bool clear,
 }
 
 /*
- * same as above, except return NULL on malloc failure instead of exiting
- */
-void *slurm_try_xmalloc(size_t size, const char *file, int line,
-                        const char *func)
-{
-	void *new;
-	size_t *p;
-	size_t total_size = size + 2 * sizeof(size_t);
-
-	if (size <= 0)
-		return NULL;
-
-	p = calloc(1, total_size);
-	if (!p) {
-		return NULL;
-	}
-	p[0] = XMALLOC_MAGIC;	/* add "secret" magic cookie */
-	p[1] = size;		/* store size in buffer */
-
-	new = &p[2];
-	return new;
-}
-
-/*
  * "Safe" version of realloc().  Args are different: pass in a pointer to
  * the object to be realloced instead of the object itself.
  *   item (IN/OUT)	double-pointer to allocated space
@@ -171,48 +147,6 @@ extern void * slurm_xrealloc(void **item, size_t newsize, bool clear,
 	log_oom(file, line, func);
 	abort();
 }
-
-/*
- * same as above, but return <= 0 on malloc() failure instead of aborting.
- * `*item' will be unchanged.
- */
-int slurm_try_xrealloc(void **item, size_t newsize,
-	               const char *file, int line, const char *func)
-{
-	size_t *p = NULL;
-
-	if (*item != NULL) {
-		size_t old_size;
-		p = (size_t *)*item - 2;
-
-		/* magic cookie still there? */
-		xmalloc_assert(p[0] == XMALLOC_MAGIC);
-		old_size = p[1];
-
-		p = realloc(p, newsize + 2*sizeof(size_t));
-		if (p == NULL)
-			return 0;
-
-		if (old_size < newsize) {
-			char *p_new = (char *)(&p[2]) + old_size;
-			memset(p_new, 0, (newsize-old_size));
-		}
-		xmalloc_assert(p[0] == XMALLOC_MAGIC);
-
-	} else {
-		size_t total_size = newsize + 2 * sizeof(size_t);
-		/* Initalize new memory */
-		p = calloc(1, total_size);
-		if (p == NULL)
-			return 0;
-		p[0] = XMALLOC_MAGIC;
-	}
-
-	p[1] = newsize;
-	*item = &p[2];
-	return 1;
-}
-
 
 /*
  * Return the size of a buffer.

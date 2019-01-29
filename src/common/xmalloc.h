@@ -42,9 +42,7 @@
  * Description:
  *
  * void *xmalloc(size_t size);
- * void *try_xmalloc(size_t size);
  * void xrealloc(void *p, size_t newsize);
- * int  try_xrealloc(void *p, size_t newsize);
  * void xfree(void *p);
  * int  xsize(void *p);
  *
@@ -52,17 +50,11 @@
  * memory. The memory is set to zero. xmalloc() will not return unless
  * there are no errors. The memory must be freed using xfree().
  *
- * try_xmalloc(size) is the same as above, but a NULL pointer is returned
- * when there is an error allocating the memory.
- *
  * xrealloc(p, newsize) changes the size of the block pointed to by p to the
  * value of newsize. Newly allocated memory is zeroed. If p is NULL,
  * xrealloc() performs the same function as  `p = xmalloc(newsize)'. If p
  * is not NULL, it is required to have been initialized with a call to
  * [try_]xmalloc() or [try_]xrealloc().
- *
- * try_xrealloc(p, newsize) is the same as above, but returns <= 0 if the
- * there is an error allocating the requested memory.
  *
  * xfree(p) frees the memory block pointed to by p. The memory must have been
  * initialized with a call to [try_]xmalloc() or [try_]xrealloc().
@@ -86,9 +78,6 @@
 #define xmalloc_nz(__sz) \
 	slurm_xmalloc (__sz, false, __FILE__, __LINE__, __func__)
 
-#define try_xmalloc(__sz) \
-	slurm_try_xmalloc(__sz, __FILE__, __LINE__, __func__)
-
 #define xfree(__p) \
 	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __func__)
 
@@ -100,18 +89,12 @@
         slurm_xrealloc((void **)&(__p), __sz, false, \
                        __FILE__, __LINE__, __func__)
 
-#define try_xrealloc(__p, __sz) \
-	slurm_try_xrealloc((void **)&(__p), __sz, \
-                           __FILE__, __LINE__,  __func__)
-
 #define xsize(__p) \
 	slurm_xsize((void *)__p, __FILE__, __LINE__, __func__)
 
 void *slurm_xmalloc(size_t, bool, const char *, int, const char *);
-void *slurm_try_xmalloc(size_t , const char *, int , const char *);
 void slurm_xfree(void **, const char *, int, const char *);
 void *slurm_xrealloc(void **, size_t, bool, const char *, int, const char *);
-int  slurm_try_xrealloc(void **, size_t, const char *, int, const char *);
 size_t slurm_xsize(void *, const char *, int, const char *);
 
 #define XMALLOC_MAGIC 0x42
