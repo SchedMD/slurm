@@ -37,6 +37,8 @@
 \*****************************************************************************/
 
 #include <string.h>
+#include <unistd.h>
+
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "filetxt_jobacct_process.h"
