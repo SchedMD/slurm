@@ -459,8 +459,8 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
  */
 static struct job_record *_create_job_record(uint32_t num_jobs)
 {
-	struct job_record  *job_ptr;
-	struct job_details *detail_ptr;
+	struct job_record *job_ptr = xmalloc(sizeof(*job_ptr));
+	struct job_details *detail_ptr = xmalloc(sizeof(*detail_ptr));
 
 	if ((job_count + num_jobs) >= slurmctld_conf.max_job_cnt) {
 		error("%s: MaxJobCount limit from slurm.conf reached (%u)",
@@ -469,9 +469,6 @@ static struct job_record *_create_job_record(uint32_t num_jobs)
 
 	job_count += num_jobs;
 	last_job_update = time(NULL);
-
-	job_ptr    = (struct job_record *) xmalloc(sizeof(struct job_record));
-	detail_ptr = (struct job_details *)xmalloc(sizeof(struct job_details));
 
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->array_task_id = NO_VAL;

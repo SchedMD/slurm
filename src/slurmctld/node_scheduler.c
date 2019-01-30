@@ -3233,7 +3233,7 @@ extern void launch_prolog(struct job_record *job_ptr)
 						 &cred_arg,
 						 SLURM_PROTOCOL_VERSION);
 
-	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
+	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->retry = 0;
 #ifdef HAVE_FRONT_END
 	xassert(job_ptr->front_end_ptr);

@@ -178,7 +178,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr,
 		return NULL;
 	}
 
-	step_ptr = (struct step_record *) xmalloc(sizeof(struct step_record));
+	step_ptr = xmalloc(sizeof(struct step_record));
 
 	last_job_update = time(NULL);
 	step_ptr->job_ptr    = job_ptr;

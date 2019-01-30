@@ -2447,7 +2447,7 @@ extern void launch_job(struct job_record *job_ptr)
 	if (launch_job_ptr->pack_job_id)
 		_set_pack_env(launch_job_ptr, launch_msg_ptr);
 
-	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
+	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->protocol_version = protocol_version;
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;

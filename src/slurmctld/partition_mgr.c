@@ -297,11 +297,9 @@ static void _unlink_free_nodes(bitstr_t *old_bitmap,
  */
 struct part_record *create_part_record(void)
 {
-	struct part_record *part_ptr;
+	struct part_record *part_ptr = xmalloc(sizeof(*part_ptr));
 
 	last_part_update = time(NULL);
-
-	part_ptr = (struct part_record *) xmalloc(sizeof(struct part_record));
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 	part_ptr->name              = xstrdup("DEFAULT");
