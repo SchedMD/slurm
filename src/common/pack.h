@@ -366,6 +366,19 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 		goto unpack_error;			\
 } while (0)
 
+#define safe_xcalloc(p, cnt, sz) do {			\
+	assert(cnt);					\
+	assert(sz);					\
+	if (!(p = try_xcalloc(cnt, sz)))		\
+		goto unpack_error;			\
+} while (0)
+
+#define safe_xmalloc(p, sz) do {			\
+	assert(sz);					\
+	if (!(p = try_xmalloc(sz)))			\
+		goto unpack_error;			\
+} while (0)
+
 #define FREE_NULL_BUFFER(_X)		\
 	do {				\
 		if (_X) free_buf (_X);	\

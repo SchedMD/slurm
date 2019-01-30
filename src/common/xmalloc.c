@@ -72,7 +72,7 @@ static void malloc_assert_failed(char *, const char *, int,
  *   clear (IN) initialize to zero
  *   RETURN	pointer to allocate heap space
  */
-void *slurm_xcalloc(size_t count, size_t size, bool clear,
+void *slurm_xcalloc(size_t count, size_t size, bool clear, bool try,
 		    const char *file, int line, const char *func)
 {
 	size_t total_size;
@@ -91,6 +91,8 @@ void *slurm_xcalloc(size_t count, size_t size, bool clear,
 	 * (And on 64-bit, if a 2EB + 16Bytes request isn't sufficient...)
 	 */
 	if ((count != 1) && (count > SIZE_MAX / size / 4)) {
+		if (try)
+			return NULL;
 		log_oom(file, line, func);
 		abort();
 	}
@@ -101,7 +103,10 @@ void *slurm_xcalloc(size_t count, size_t size, bool clear,
 		p = calloc(1, total_size);
 	else
 		p = malloc(total_size);
-	if (!p) {
+
+	if (!p && try) {
+		return NULL;
+	} else if (!p) {
 		/* out of memory */
 		log_oom(file, line, func);
 		abort();
