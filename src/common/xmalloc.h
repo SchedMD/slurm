@@ -77,6 +77,9 @@
 #define try_xcalloc(__cnt, __sz) \
 	slurm_xcalloc(__cnt, __sz, true, true, __FILE__, __LINE__, __func__)
 
+#define xcalloc_nz(__cnt, __sz) \
+	slurm_xcalloc(__cnt, __sz, false, false, __FILE__, __LINE__, __func__)
+
 #define xmalloc(__sz) \
 	slurm_xcalloc(1, __sz, true, false, __FILE__, __LINE__, __func__)
 
