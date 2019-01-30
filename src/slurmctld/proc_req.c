@@ -5538,7 +5538,7 @@ xduparray(uint32_t size, char ** array)
 	if (size == 0)
 		return (char **)NULL;
 
-	result = (char **) xmalloc(sizeof(char *) * size);
+	result = xcalloc(size, sizeof(char *));
 	for (i=0; i<size; i++)
 		result[i] = xstrdup(array[i]);
 

@@ -1144,7 +1144,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		fatal("slurmctld port count is zero");
 		return NULL;	/* Fix CLANG false positive */
 	}
-	fds = xmalloc(sizeof(struct pollfd) * nports);
+	fds = xcalloc(nports, sizeof(struct pollfd));
 	for (i = 0; i < nports; i++) {
 		fds[i].fd = slurm_init_msg_engine_addrname_port(node_addr,
 			slurmctld_conf.slurmctld_port + i);
@@ -2515,8 +2515,8 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 			mem_tres->count += mem_count;
 
 		if (!node_ptr->tres_cnt)
-			node_ptr->tres_cnt = xmalloc(sizeof(uint64_t) *
-						     slurmctld_tres_cnt);
+			node_ptr->tres_cnt = xcalloc(slurmctld_tres_cnt,
+						     sizeof(uint64_t));
 		node_ptr->tres_cnt[TRES_ARRAY_CPU] = cpu_count;
 		node_ptr->tres_cnt[TRES_ARRAY_MEM] = mem_count;
 

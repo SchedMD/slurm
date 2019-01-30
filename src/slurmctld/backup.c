@@ -546,8 +546,8 @@ extern int ping_controllers(bool active_controller)
 	else
 		ping_target_cnt = backup_inx;
 
-	ctld_ping = xmalloc(sizeof(ctld_ping_t) * ping_target_cnt);
-	ping_tids = xmalloc(sizeof(pthread_t) * ping_target_cnt);
+	ctld_ping = xcalloc(ping_target_cnt, sizeof(ctld_ping_t));
+	ping_tids = xcalloc(ping_target_cnt, sizeof(pthread_t));
 
 	for (i = 0; i < ping_target_cnt; i++) {
 		ctld_ping[i].control_time  = (time_t) 0;

@@ -188,8 +188,8 @@ static int _get_gres_alloc(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	gres_type_count = list_count(job_ptr->gres_list);
-	gres_count_ids  = xmalloc(sizeof(uint32_t) * gres_type_count);
-	gres_count_vals = xmalloc(sizeof(uint64_t) * gres_type_count);
+	gres_count_ids = xcalloc(gres_type_count, sizeof(uint32_t));
+	gres_count_vals = xcalloc(gres_type_count, sizeof(uint64_t));
 	rv = gres_plugin_job_count(job_ptr->gres_list, gres_type_count,
 				   gres_count_ids, gres_count_vals);
 	if (rv == SLURM_SUCCESS) {
@@ -245,8 +245,8 @@ static int _get_gres_config(struct job_record *job_ptr)
 	if (i_first == -1)      /* job has no nodes */
 		i_last = -2;
 
-	gres_count_ids  = xmalloc(sizeof(int) * gres_type_count);
-	gres_count_vals = xmalloc(sizeof(int) * gres_type_count);
+	gres_count_ids = xcalloc(gres_type_count, sizeof(int));
+	gres_count_vals = xcalloc(gres_type_count, sizeof(int));
 
 	/*
 	 * Loop through each node allocated to the job tallying all GRES
@@ -1206,7 +1206,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	 * and not user configurable.
 	 */
 	job_ptr->details->min_cpus = 1;
-	tmp_node_set_ptr = xmalloc(sizeof(struct node_set) * node_set_size * 2);
+	tmp_node_set_ptr = xcalloc((node_set_size * 2), sizeof(struct node_set));
 
 	/* Accumulate nodes with required feature counts. */
 	preemptee_candidates = slurm_find_preemptable_jobs(job_ptr);
@@ -1569,8 +1569,8 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 					  job_ptr->details->cpu_freq_max);
 			if (allowed_freqs[0] != 0) {
 				tmp_max_watts_dvfs =
-					xmalloc(sizeof(uint32_t) *
-						(allowed_freqs[0]+1));
+					xcalloc((allowed_freqs[0] + 1),
+						sizeof(uint32_t));
 			}
 			if (job_ptr->details->min_nodes == 0) {
 				error("%s: %pJ min_nodes is zero",
@@ -3692,8 +3692,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		reboot_bitmap = bit_alloc(node_record_count);
 	node_set_inx = 0;
 	node_set_len = list_count(config_list) * 8 + 1;
-	node_set_ptr = (struct node_set *)
-			xmalloc(sizeof(struct node_set) * node_set_len);
+	node_set_ptr = xcalloc(node_set_len, sizeof(struct node_set));
 	config_iterator = list_iterator_create(config_list);
 	while ((config_ptr = (struct config_record *)
 			list_next(config_iterator))) {

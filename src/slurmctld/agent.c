@@ -446,7 +446,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	agent_info_ptr->thread_count   = agent_arg_ptr->node_count;
 	agent_info_ptr->retry          = agent_arg_ptr->retry;
 	agent_info_ptr->threads_active = 0;
-	thread_ptr = xmalloc(agent_info_ptr->thread_count * sizeof(thd_t));
+	thread_ptr = xcalloc(agent_info_ptr->thread_count, sizeof(thd_t));
 	memset(thread_ptr, 0, (agent_info_ptr->thread_count * sizeof(thd_t)));
 	agent_info_ptr->thread_struct  = thread_ptr;
 	agent_info_ptr->msg_type       = agent_arg_ptr->msg_type;
@@ -1469,15 +1469,15 @@ extern void agent_pack_pending_rpc_stats(Buf buffer)
 		/* the other variables need not be cleared */
 	} else {		/* Allocate buffers for data */
 		stat_type_count = 0;
-		rpc_stat_counts = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
-		rpc_stat_types  = xmalloc(sizeof(uint32_t) * MAX_RPC_PACK_CNT);
+		rpc_stat_counts = xcalloc(MAX_RPC_PACK_CNT, sizeof(uint32_t));
+		rpc_stat_types  = xcalloc(MAX_RPC_PACK_CNT, sizeof(uint32_t));
 
 		rpc_count = 0;
-		rpc_host_list = xmalloc(sizeof(char *) * DUMP_RPC_COUNT);
+		rpc_host_list = xcalloc(DUMP_RPC_COUNT, sizeof(char *));
 		for (i = 0; i < DUMP_RPC_COUNT; i++) {
 			rpc_host_list[i] = xmalloc(HOSTLIST_MAX_SIZE);
 		}
-		rpc_type_list = xmalloc(sizeof(uint32_t) * DUMP_RPC_COUNT);
+		rpc_type_list = xcalloc(DUMP_RPC_COUNT, sizeof(uint32_t));
 	}
 
 	slurm_mutex_lock(&retry_mutex);
