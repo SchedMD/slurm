@@ -2464,7 +2464,7 @@ static void
 _pack_network_callerid_msg(network_callerid_msg_t *msg, Buf buffer,
 				uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packmem((char *)msg->ip_src, 16, buffer);
@@ -2487,7 +2487,7 @@ _unpack_network_callerid_msg(network_callerid_msg_t **msg_ptr, Buf buffer,
 	uint32_t uint32_tmp;
 	char *charptr_tmp = NULL;
 	network_callerid_msg_t *msg;
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 
 	msg = xmalloc(sizeof(network_callerid_msg_t));
 	*msg_ptr = msg;
@@ -2533,7 +2533,7 @@ static void _pack_network_callerid_resp_msg(network_callerid_resp_t *msg,
 					    Buf buffer,
 					    uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id,		buffer);
@@ -2551,7 +2551,7 @@ static int _unpack_network_callerid_resp_msg(network_callerid_resp_t **msg_ptr,
 {
 	uint32_t uint32_tmp;
 	network_callerid_resp_t *msg;
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 
 	msg = xmalloc(sizeof(network_callerid_resp_t));
 	*msg_ptr = msg;
@@ -2582,7 +2582,7 @@ static void _pack_shares_request_msg(shares_request_msg_t * msg, Buf buffer,
 	char *tmp_info = NULL;
 	ListIterator itr = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (msg->acct_list)
 		count = list_count(msg->acct_list);
@@ -2618,7 +2618,7 @@ static int _unpack_shares_request_msg(shares_request_msg_t ** msg, Buf buffer,
 	char *tmp_info = NULL;
 	shares_request_msg_t *object_ptr = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	object_ptr = xmalloc(sizeof(shares_request_msg_t));
 	*msg = object_ptr;
@@ -2661,7 +2661,7 @@ static void _pack_shares_response_msg(shares_response_msg_t * msg, Buf buffer,
 	assoc_shares_object_t *share = NULL;
 	uint32_t count = NO_VAL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr_array(msg->tres_names, msg->tres_cnt, buffer);
@@ -2880,7 +2880,7 @@ _pack_priority_factors_request_msg(priority_factors_request_msg_t * msg,
 	uint32_t* tmp = NULL;
 	ListIterator itr = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->job_id_list)
@@ -2925,7 +2925,7 @@ _unpack_priority_factors_request_msg(priority_factors_request_msg_t ** msg,
 	int i;
 	priority_factors_request_msg_t *object_ptr = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	object_ptr = xmalloc(sizeof(priority_factors_request_msg_t));
 	*msg = object_ptr;
@@ -2981,7 +2981,7 @@ _pack_priority_factors_response_msg(priority_factors_response_msg_t * msg,
 	priority_factors_object_t *factors = NULL;
 	uint32_t count = NO_VAL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	if (msg->priority_factors_list)
 		count = list_count(msg->priority_factors_list);
 	pack32(count, buffer);
@@ -3023,7 +3023,7 @@ _unpack_priority_factors_response_msg(priority_factors_response_msg_t ** msg,
 	int i = 0;
 	void *tmp_info = NULL;
 	priority_factors_response_msg_t *object_ptr = NULL;
-	xassert(msg != NULL);
+	xassert(msg);
 
 	object_ptr = xmalloc(sizeof(priority_factors_response_msg_t));
 	*msg = object_ptr;
@@ -3056,7 +3056,7 @@ static void
 _pack_update_front_end_msg(update_front_end_msg_t * msg, Buf buffer,
 			   uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
@@ -3077,7 +3077,7 @@ _unpack_update_front_end_msg(update_front_end_msg_t ** msg, Buf buffer,
 	update_front_end_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(update_front_end_msg_t));
 	*msg = tmp_ptr;
 
@@ -3104,7 +3104,7 @@ static void
 _pack_update_node_msg(update_node_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->cpu_bind, buffer);
@@ -3143,7 +3143,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer,
 	update_node_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(update_node_msg_t));
 	*msg = tmp_ptr;
 
@@ -3195,7 +3195,7 @@ static void
 _pack_update_layout_msg(update_layout_msg_t * msg, Buf buffer,
 			uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->layout, buffer);
@@ -3213,7 +3213,7 @@ static int _unpack_update_layout_msg(update_layout_msg_t ** msg, Buf buffer,
 	update_layout_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(update_layout_msg_t));
 	*msg = tmp_ptr;
 
@@ -3241,7 +3241,7 @@ _pack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t *msg,
 {
 	unsigned int i;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->node_name, buffer);
@@ -3261,7 +3261,7 @@ _unpack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t **msg,
 	uint32_t uint32_tmp;
 	acct_gather_energy_t *e;
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	node_data_ptr = xmalloc(sizeof(acct_gather_node_resp_msg_t));
 	*msg = node_data_ptr;
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -3295,7 +3295,7 @@ static void
 _pack_acct_gather_energy_req(acct_gather_energy_req_msg_t *msg,
 			     Buf buffer, uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 	pack16(msg->delta, buffer);
 }
 
@@ -3305,7 +3305,7 @@ _unpack_acct_gather_energy_req(acct_gather_energy_req_msg_t **msg,
 {
 	acct_gather_energy_req_msg_t *msg_ptr;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	msg_ptr = xmalloc(sizeof(acct_gather_energy_req_msg_t));
 	*msg = msg_ptr;
@@ -3328,7 +3328,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 {
 	int i;
 	uint32_t gres_info_size = 0;
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
@@ -3389,7 +3389,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	slurm_node_registration_status_msg_t *node_reg_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	node_reg_ptr = xmalloc(sizeof(slurm_node_registration_status_msg_t));
 	*msg = node_reg_ptr;
 
@@ -3477,7 +3477,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 				       Buf buffer,
 				       uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
@@ -3540,7 +3540,7 @@ _unpack_resource_allocation_response_msg(
 	resource_allocation_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(resource_allocation_response_msg_t));
 	*msg = tmp_ptr;
 
@@ -3622,7 +3622,7 @@ static void
 _pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t * msg, Buf buffer,
 			  uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	pack32(msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
@@ -3642,7 +3642,7 @@ _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t ** msg, Buf buffer,
 	job_sbcast_cred_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(job_sbcast_cred_msg_t));
 	*msg = tmp_ptr;
 
@@ -3677,7 +3677,7 @@ static void
 _pack_submit_response_msg(submit_response_msg_t * msg, Buf buffer,
 			  uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
@@ -3698,7 +3698,7 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, Buf buffer,
 	uint32_t uint32_tmp;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(submit_response_msg_t));
 	*msg = tmp_ptr;
 
@@ -3729,7 +3729,7 @@ static int _unpack_node_info_msg(node_info_msg_t **msg, Buf buffer,
 	int i;
 	node_info_msg_t *tmp_ptr;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(node_info_msg_t));
 	*msg = tmp_ptr;
 
@@ -3783,7 +3783,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 {
 	uint32_t uint32_tmp;
 
-	xassert(node != NULL);
+	xassert(node);
 	slurm_init_node_info_t(node, false);
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
@@ -3930,7 +3930,7 @@ static void
 _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer,
 			   uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		packstr(msg->allow_accounts, buffer);
@@ -4006,7 +4006,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer,
 	uint32_t uint32_tmp;
 	update_part_msg_t *tmp_ptr;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	/* alloc memory for structure */
 	tmp_ptr = xmalloc(sizeof(update_part_msg_t));
@@ -4125,7 +4125,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
 	uint32_t array_len;
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		packstr(msg->name,         buffer);
@@ -4206,7 +4206,7 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 	uint32_t uint32_tmp = 0;
 	resv_desc_msg_t *tmp_ptr;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	/* alloc memory for structure */
 	tmp_ptr = xmalloc(sizeof(resv_desc_msg_t));
@@ -4319,7 +4319,7 @@ static void
 _pack_delete_partition_msg(delete_part_msg_t * msg, Buf buffer,
 			   uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
@@ -4336,7 +4336,7 @@ _unpack_delete_partition_msg(delete_part_msg_t ** msg, Buf buffer,
 	uint32_t uint32_tmp;
 	delete_part_msg_t *tmp_ptr;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	/* alloc memory for structure */
 	tmp_ptr = xmalloc(sizeof(delete_part_msg_t));
@@ -4361,7 +4361,7 @@ static void
 _pack_resv_name_msg(reservation_name_msg_t * msg, Buf buffer,
 		    uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
@@ -4378,7 +4378,7 @@ _unpack_resv_name_msg(reservation_name_msg_t ** msg, Buf buffer,
 	uint32_t uint32_tmp;
 	reservation_name_msg_t *tmp_ptr;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	/* alloc memory for structure */
 	tmp_ptr = xmalloc(sizeof(reservation_name_msg_t));
@@ -4483,7 +4483,7 @@ extern void
 pack_job_step_create_request_msg(job_step_create_request_msg_t * msg,
 				 Buf buffer, uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
@@ -4576,7 +4576,7 @@ unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	job_step_create_request_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(job_step_create_request_msg_t));
 	*msg = tmp_ptr;
 
@@ -4690,7 +4690,7 @@ unpack_error:
 static void
 _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->job_id,  buffer);
@@ -4781,7 +4781,7 @@ static void
 _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32((uint32_t)msg->job_id, buffer);
 		pack32((uint32_t)msg->return_code, buffer);
@@ -4950,7 +4950,7 @@ static void
 _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer,
 			  uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32((uint32_t)msg->job_id, buffer);
@@ -4992,7 +4992,7 @@ extern void
 pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 				  Buf buffer, uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
@@ -5031,7 +5031,7 @@ unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 	uint32_t uint32_tmp;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(job_step_create_response_msg_t));
 	*msg = tmp_ptr;
 
@@ -5100,7 +5100,7 @@ _unpack_partition_info_msg(partition_info_msg_t ** msg, Buf buffer,
 	int i;
 	partition_info_t *partition = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	*msg = xmalloc(sizeof(partition_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
@@ -5257,7 +5257,7 @@ _unpack_layout_info_msg(layout_info_msg_t ** msg, Buf buffer,
 	uint32_t utmp32, record_count = 0;
 	char *tmp_str = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		*msg = xmalloc(sizeof(layout_info_msg_t));
@@ -5299,7 +5299,7 @@ _unpack_reserve_info_msg(reserve_info_msg_t ** msg, Buf buffer,
 	int i;
 	reserve_info_t *reserve = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	*msg = xmalloc(sizeof(reserve_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
@@ -5539,7 +5539,7 @@ _unpack_job_step_info_response_msg(job_step_info_response_msg_t** msg,
 	int i = 0;
 	job_step_info_t *step;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	*msg = xmalloc(sizeof(job_step_info_response_msg_t));
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -5569,7 +5569,7 @@ unpack_error:
 static void
 _pack_buffer_msg(slurm_msg_t * msg, Buf buffer)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 	packmem_array(msg->data, msg->data_size, buffer);
 }
 
@@ -5583,7 +5583,7 @@ static int _unpack_job_script_msg(char **msg, Buf buffer,
 				  uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
-	xassert(msg != NULL);
+	xassert(msg);
 
 	safe_unpackstr_xmalloc(msg, &uint32_tmp, buffer);
 
@@ -5602,7 +5602,7 @@ _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer,
 	int i;
 	job_info_t *job = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	*msg = xmalloc(sizeof(job_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
@@ -9478,7 +9478,7 @@ _unpack_job_alloc_info_msg(job_alloc_info_msg_t **job_desc_buffer_ptr,
 	job_alloc_info_msg_t *job_desc_ptr;
 
 	/* alloc memory for structure */
-	assert(job_desc_buffer_ptr != NULL);
+	xassert(job_desc_buffer_ptr);
 	job_desc_ptr = xmalloc(sizeof(job_alloc_info_msg_t));
 	*job_desc_buffer_ptr = job_desc_ptr;
 
@@ -9587,7 +9587,7 @@ _unpack_step_alloc_info_msg(step_alloc_info_msg_t **
 	step_alloc_info_msg_t *job_desc_ptr;
 
 	/* alloc memory for structure */
-	assert(job_desc_buffer_ptr != NULL);
+	xassert(job_desc_buffer_ptr);
 	job_desc_ptr = xmalloc(sizeof(step_alloc_info_msg_t));
 	*job_desc_buffer_ptr = job_desc_ptr;
 
@@ -9661,7 +9661,7 @@ static void
 _pack_last_update_msg(last_update_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 	pack_time(msg->last_update, buffer);
 }
 
@@ -9671,7 +9671,7 @@ _unpack_last_update_msg(last_update_msg_t ** msg, Buf buffer,
 {
 	last_update_msg_t *last_update_msg;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	last_update_msg = xmalloc(sizeof(last_update_msg_t));
 	*msg = last_update_msg;
 
@@ -9688,7 +9688,7 @@ static void
 _pack_return_code_msg(return_code_msg_t * msg, Buf buffer,
 		      uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 	pack32(msg->return_code, buffer);
 }
 
@@ -9698,7 +9698,7 @@ _unpack_return_code_msg(return_code_msg_t ** msg, Buf buffer,
 {
 	return_code_msg_t *return_code_msg;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	return_code_msg = xmalloc(sizeof(return_code_msg_t));
 	*msg = return_code_msg;
 
@@ -9715,7 +9715,7 @@ static void
 _pack_return_code2_msg(return_code2_msg_t * msg, Buf buffer,
 		       uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 	pack32(msg->return_code, buffer);
 	packstr(msg->err_msg,    buffer);
 }
@@ -9729,7 +9729,7 @@ _unpack_return_code2_msg(return_code_msg_t ** msg, Buf buffer,
 	uint32_t uint32_tmp = 0;
 	char *err_msg = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	return_code_msg = xmalloc(sizeof(return_code_msg_t));
 	*msg = return_code_msg;
 
@@ -9751,7 +9751,7 @@ static void
 _pack_reroute_msg(reroute_msg_t * msg, Buf buffer, uint16_t protocol_version)
 {
 	xassert(buffer);
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->working_cluster_rec) {
@@ -9773,7 +9773,7 @@ _unpack_reroute_msg(reroute_msg_t **msg, Buf buffer, uint16_t protocol_version)
 	uint8_t uint8_tmp = 0;
 
 	xassert(buffer);
-	xassert(msg != NULL);
+	xassert(msg);
 
 	reroute_msg = xmalloc(sizeof(reroute_msg_t));
 	*msg = reroute_msg;
@@ -9805,7 +9805,7 @@ _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 {
 	int i;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	pack32((uint32_t)msg->job_id, buffer);
 	pack32((uint32_t)msg->job_step_id, buffer);
 	pack16((uint16_t)msg->num_resp_port, buffer);
@@ -9826,7 +9826,7 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 	reattach_tasks_request_msg_t *msg;
 	int i;
 
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 	msg = xmalloc(sizeof(*msg));
 	*msg_ptr = msg;
 
@@ -9867,7 +9867,7 @@ _pack_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg,
 {
 	int i;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	packstr(msg->node_name,   buffer);
 	pack32(msg->return_code, buffer);
 	pack32(msg->ntasks, buffer);
@@ -9888,7 +9888,7 @@ _unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
 	reattach_tasks_response_msg_t *msg = xmalloc(sizeof(*msg));
 	int i;
 
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 	*msg_ptr = msg;
 
 	safe_unpackstr_xmalloc(&msg->node_name, &uint32_tmp, buffer);
@@ -9916,7 +9916,7 @@ static void
 _pack_task_exit_msg(task_exit_msg_t * msg, Buf buffer,
 		    uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 	pack32(msg->return_code, buffer);
 	pack32(msg->num_tasks, buffer);
 	pack32_array(msg->task_id_list,
@@ -9932,7 +9932,7 @@ _unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, Buf buffer,
 	task_exit_msg_t *msg;
 	uint32_t uint32_tmp;
 
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 	msg = xmalloc(sizeof(task_exit_msg_t));
 	*msg_ptr = msg;
 
@@ -9956,7 +9956,7 @@ static void
 _pack_launch_tasks_response_msg(launch_tasks_response_msg_t * msg, Buf buffer,
 				uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
@@ -9978,7 +9978,7 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **msg_ptr,
 	uint32_t uint32_tmp;
 	launch_tasks_response_msg_t *msg;
 
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 	msg = xmalloc(sizeof(launch_tasks_response_msg_t));
 	*msg_ptr = msg;
 
@@ -10013,7 +10013,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 {
 	int i = 0;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
@@ -10298,7 +10298,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 	launch_tasks_request_msg_t *msg;
 	int i = 0;
 
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
 	*msg_ptr = msg;
 
@@ -10708,7 +10708,7 @@ _pack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t * msg,
 				      Buf buffer,
 				      uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 	pack32(msg->task_id, buffer);
 }
 
@@ -10719,7 +10719,7 @@ _unpack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t **msg_ptr,
 {
 	task_user_managed_io_msg_t *msg;
 
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 	msg = xmalloc(sizeof(task_user_managed_io_msg_t));
 	*msg_ptr = msg;
 
@@ -11086,7 +11086,7 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 				    Buf buffer,
 				    uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
@@ -11163,7 +11163,7 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 	uint32_t uint32_tmp = 0;
 	prolog_launch_msg_t *launch_msg_ptr;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	launch_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
 	*msg = launch_msg_ptr;
 
@@ -11904,7 +11904,7 @@ _unpack_front_end_info_msg(front_end_info_msg_t ** msg, Buf buffer,
 	int i;
 	front_end_info_t *front_end = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	*msg = xmalloc(sizeof(front_end_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
@@ -11941,7 +11941,7 @@ _unpack_front_end_info_members(front_end_info_t *front_end, Buf buffer,
 {
 	uint32_t uint32_tmp;
 
-	xassert(front_end != NULL);
+	xassert(front_end);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&front_end->allow_groups, &uint32_tmp,
@@ -12146,7 +12146,7 @@ static void
 _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 			   uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (msg->script_buf)
 		msg->script = msg->script_buf->head;
@@ -12298,7 +12298,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 	uint32_t uint32_tmp;
 	batch_job_launch_msg_t *launch_msg_ptr;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	launch_msg_ptr = xmalloc(sizeof(batch_job_launch_msg_t));
 	*msg = launch_msg_ptr;
 
@@ -12513,7 +12513,7 @@ static void
 _pack_job_id_request_msg(job_id_request_msg_t * msg, Buf buffer,
 			 uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	pack32((uint32_t)msg->job_pid, buffer);
 }
@@ -12525,7 +12525,7 @@ _unpack_job_id_request_msg(job_id_request_msg_t ** msg, Buf buffer,
 	job_id_request_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(job_id_request_msg_t));
 	*msg = tmp_ptr;
 
@@ -12543,7 +12543,7 @@ static void
 _pack_job_id_response_msg(job_id_response_msg_t * msg, Buf buffer,
 			  uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	pack32((uint32_t)msg->job_id, buffer);
 	pack32((uint32_t)msg->return_code, buffer);
@@ -12556,7 +12556,7 @@ _unpack_job_id_response_msg(job_id_response_msg_t ** msg, Buf buffer,
 	job_id_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	xassert(msg != NULL);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(job_id_response_msg_t));
 	*msg = tmp_ptr;
 
@@ -12575,7 +12575,7 @@ static void
 _pack_srun_exec_msg(srun_exec_msg_t * msg, Buf buffer,
 		    uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32(msg ->job_id  , buffer ) ;
 	pack32(msg ->step_id , buffer ) ;
@@ -12587,7 +12587,7 @@ _unpack_srun_exec_msg(srun_exec_msg_t ** msg_ptr, Buf buffer,
 		      uint16_t protocol_version)
 {
 	srun_exec_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (srun_exec_msg_t) ) ;
 	*msg_ptr = msg;
@@ -12607,7 +12607,7 @@ static void
 _pack_srun_ping_msg(srun_ping_msg_t * msg, Buf buffer,
 		    uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32((uint32_t)msg ->job_id  , buffer ) ;
 	pack32((uint32_t)msg ->step_id , buffer ) ;
@@ -12618,7 +12618,7 @@ _unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, Buf buffer,
 		      uint16_t protocol_version)
 {
 	srun_ping_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (srun_ping_msg_t) ) ;
 	*msg_ptr = msg;
@@ -12637,7 +12637,7 @@ static void
 _pack_srun_node_fail_msg(srun_node_fail_msg_t * msg, Buf buffer,
 			 uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32(msg->job_id  , buffer ) ;
 	pack32(msg->step_id , buffer ) ;
@@ -12650,7 +12650,7 @@ _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, Buf buffer,
 {
 	uint32_t uint32_tmp;
 	srun_node_fail_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (srun_node_fail_msg_t) ) ;
 	*msg_ptr = msg;
@@ -12671,7 +12671,7 @@ static void
 _pack_srun_step_missing_msg(srun_step_missing_msg_t * msg, Buf buffer,
 			    uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32(msg->job_id  , buffer ) ;
 	pack32(msg->step_id , buffer ) ;
@@ -12684,7 +12684,7 @@ _unpack_srun_step_missing_msg(srun_step_missing_msg_t ** msg_ptr, Buf buffer,
 {
 	uint32_t uint32_tmp;
 	srun_step_missing_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (srun_step_missing_msg_t) ) ;
 	*msg_ptr = msg;
@@ -12705,7 +12705,7 @@ static void
 _pack_job_ready_msg(job_id_msg_t * msg, Buf buffer,
 		    uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32(msg->job_id  , buffer ) ;
 	pack16(msg->show_flags, buffer);
@@ -12716,7 +12716,7 @@ _unpack_job_ready_msg(job_id_msg_t ** msg_ptr, Buf buffer,
 		      uint16_t protocol_version)
 {
 	job_id_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (job_id_msg_t) );
 	*msg_ptr = msg ;
@@ -12734,7 +12734,7 @@ unpack_error:
 static void
 _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buf);
@@ -12766,7 +12766,7 @@ static void
 _pack_job_user_msg(job_user_id_msg_t * msg, Buf buffer,
 		   uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32(msg->user_id  , buffer ) ;
 	pack16(msg->show_flags, buffer);
@@ -12777,7 +12777,7 @@ _unpack_job_user_msg(job_user_id_msg_t ** msg_ptr, Buf buffer,
 		     uint16_t protocol_version)
 {
 	job_user_id_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (job_user_id_msg_t) );
 	*msg_ptr = msg ;
@@ -12796,7 +12796,7 @@ static void
 _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer,
 		       uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32((uint32_t)msg->job_id, buffer ) ;
 	pack32((uint32_t)msg->step_id , buffer ) ;
@@ -12808,7 +12808,7 @@ _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer,
 			 uint16_t protocol_version)
 {
 	srun_timeout_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (srun_timeout_msg_t) ) ;
 	*msg_ptr = msg ;
@@ -12828,7 +12828,7 @@ static void
 _pack_srun_user_msg(srun_user_msg_t * msg, Buf buffer,
 		    uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32((uint32_t)msg->job_id,  buffer);
 	packstr(msg->msg, buffer);
@@ -12840,7 +12840,7 @@ _unpack_srun_user_msg(srun_user_msg_t ** msg_ptr, Buf buffer,
 {
 	uint32_t uint32_tmp;
 	srun_user_msg_t * msg_user;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg_user = xmalloc(sizeof (srun_user_msg_t)) ;
 	*msg_ptr = msg_user;
@@ -12858,7 +12858,7 @@ unpack_error:
 static void _pack_suspend_msg(suspend_msg_t *msg, Buf buffer,
 			      uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg -> op, buffer);
 		pack32(msg->job_id,  buffer);
@@ -12871,7 +12871,7 @@ static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer,
 {
 	suspend_msg_t * msg;
 	uint32_t uint32_tmp = 0;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (suspend_msg_t) );
 	*msg_ptr = msg ;
@@ -12893,7 +12893,7 @@ unpack_error:
 static void _pack_suspend_int_msg(suspend_int_msg_t *msg, Buf buffer,
 				  uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack8(msg->indf_susp, buffer);
 		pack16(msg->job_core_spec, buffer);
@@ -12908,7 +12908,7 @@ static int  _unpack_suspend_int_msg(suspend_int_msg_t **msg_ptr, Buf buffer,
 				    uint16_t protocol_version)
 {
 	suspend_int_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (suspend_int_msg_t) );
 	*msg_ptr = msg ;
@@ -12934,7 +12934,7 @@ unpack_error:
 static void _pack_top_job_msg(top_job_msg_t *msg, Buf buffer,
 			      uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg -> op, buffer);
 		pack32(msg->job_id,  buffer);
@@ -12947,7 +12947,7 @@ static int  _unpack_top_job_msg(top_job_msg_t **msg_ptr, Buf buffer,
 {
 	top_job_msg_t * msg;
 	uint32_t uint32_tmp = 0;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (top_job_msg_t) );
 	*msg_ptr = msg ;
@@ -12969,7 +12969,7 @@ unpack_error:
 static void _pack_forward_data_msg(forward_data_msg_t *msg,
 				   Buf buffer, uint16_t protocol_version)
 {
-	xassert (msg != NULL);
+	xassert(msg);
 	packstr(msg->address, buffer);
 	pack32(msg->len, buffer);
 	packmem(msg->data, msg->len, buffer);
@@ -12981,7 +12981,7 @@ static int _unpack_forward_data_msg(forward_data_msg_t **msg_ptr,
 	forward_data_msg_t *msg;
 	uint32_t temp32;
 
-	xassert (msg_ptr != NULL);
+	xassert(msg_ptr);
 	msg = xmalloc(sizeof(forward_data_msg_t));
 	*msg_ptr = msg;
 	safe_unpackstr_xmalloc(&msg->address, &temp32, buffer);
@@ -12999,7 +12999,7 @@ unpack_error:
 static void _pack_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg,
 				   Buf buffer, uint16_t protocol_version)
 {
-	xassert (msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->cpu_load, buffer);
@@ -13012,7 +13012,7 @@ static int _unpack_ping_slurmd_resp(ping_slurmd_resp_msg_t **msg_ptr,
 {
 	ping_slurmd_resp_msg_t *msg;
 
-	xassert (msg_ptr != NULL);
+	xassert(msg_ptr);
 	msg = xmalloc(sizeof(ping_slurmd_resp_msg_t));
 	*msg_ptr = msg;
 
@@ -13033,7 +13033,7 @@ static void
 _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer,
 		     uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack16(msg->op,      buffer ) ;
 	pack16(msg->data,    buffer ) ;
@@ -13048,7 +13048,7 @@ _unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer,
 {
 	checkpoint_msg_t * msg;
 	uint32_t uint32_tmp;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (checkpoint_msg_t) ) ;
 	*msg_ptr = msg ;
@@ -13070,7 +13070,7 @@ static void
 _pack_checkpoint_comp(checkpoint_comp_msg_t *msg, Buf buffer,
 		      uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32((uint32_t)msg -> job_id,  buffer ) ;
 	pack32((uint32_t)msg -> step_id, buffer ) ;
@@ -13085,7 +13085,7 @@ _unpack_checkpoint_comp(checkpoint_comp_msg_t **msg_ptr, Buf buffer,
 {
 	uint32_t uint32_tmp;
 	checkpoint_comp_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (checkpoint_comp_msg_t) );
 	*msg_ptr = msg ;
@@ -13107,7 +13107,7 @@ static void
 _pack_checkpoint_task_comp(checkpoint_task_comp_msg_t *msg, Buf buffer,
 			   uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack32((uint32_t)msg -> job_id,  buffer ) ;
 	pack32((uint32_t)msg -> step_id, buffer ) ;
@@ -13123,7 +13123,7 @@ _unpack_checkpoint_task_comp(checkpoint_task_comp_msg_t **msg_ptr, Buf buffer,
 {
 	uint32_t uint32_tmp;
 	checkpoint_task_comp_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (checkpoint_task_comp_msg_t) );
 	*msg_ptr = msg ;
@@ -13146,7 +13146,7 @@ static void
 _pack_checkpoint_resp_msg(checkpoint_resp_msg_t *msg, Buf buffer,
 			  uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	pack_time ( msg -> event_time, buffer ) ;
 	pack32((uint32_t)msg -> error_code,  buffer ) ;
@@ -13159,7 +13159,7 @@ _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer,
 {
 	checkpoint_resp_msg_t * msg;
 	uint32_t uint32_tmp;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (checkpoint_resp_msg_t) ) ;
 	*msg_ptr = msg ;
@@ -13178,7 +13178,7 @@ unpack_error:
 static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer,
 			     uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	grow_buf(buffer,  msg->block_len);
 
@@ -13212,7 +13212,7 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer,
 	uint32_t uint32_tmp = 0;
 	file_bcast_msg_t *msg ;
 
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (file_bcast_msg_t) ) ;
 	*msg_ptr = msg;
@@ -13369,7 +13369,7 @@ static void _pack_kvs_rec(struct kvs_comm *msg_ptr, Buf buffer,
 			  uint16_t protocol_version)
 {
 	int i;
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg_ptr->kvs_name, buffer);
@@ -13419,7 +13419,7 @@ static void _pack_kvs_data(kvs_comm_set_t *msg_ptr, Buf buffer,
 			   uint16_t protocol_version)
 {
 	int i;
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 
 	pack16(msg_ptr->host_cnt, buffer);
 	for (i = 0; i < msg_ptr->host_cnt; i++)
@@ -14006,7 +14006,7 @@ unpack_error:
 static void _pack_spank_env_request_msg(spank_env_request_msg_t * msg,
 					Buf buffer, uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	pack32(msg->job_id, buffer);
 }
@@ -14016,7 +14016,7 @@ static int _unpack_spank_env_request_msg(spank_env_request_msg_t ** msg_ptr,
 {
 	spank_env_request_msg_t *msg;
 
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 	msg = xmalloc(sizeof(spank_env_request_msg_t));
 	*msg_ptr = msg;
 
@@ -14032,7 +14032,7 @@ unpack_error:
 static void _pack_spank_env_responce_msg(spank_env_responce_msg_t * msg,
 					 Buf buffer, uint16_t protocol_version)
 {
-	xassert(msg != NULL);
+	xassert(msg);
 
 	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
 }
@@ -14042,7 +14042,7 @@ static int _unpack_spank_env_responce_msg(spank_env_responce_msg_t ** msg_ptr,
 {
 	spank_env_responce_msg_t *msg;
 
-	xassert(msg_ptr != NULL);
+	xassert(msg_ptr);
 	msg = xmalloc(sizeof(spank_env_responce_msg_t));
 	*msg_ptr = msg;
 
@@ -14059,7 +14059,7 @@ unpack_error:
 static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer,
 				    uint16_t protocol_version)
 {
-	xassert ( msg != NULL );
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->command_id, buffer);
@@ -14073,7 +14073,7 @@ static int  _unpack_stats_request_msg(stats_info_request_msg_t **msg_ptr,
 				      Buf buffer, uint16_t protocol_version)
 {
 	stats_info_request_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof(stats_info_request_msg_t) );
 	*msg_ptr = msg ;
@@ -14098,7 +14098,7 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 {
 	uint32_t uint32_tmp = 0;
 	stats_info_response_msg_t * msg;
-	xassert ( msg_ptr != NULL );
+	xassert(msg_ptr);
 
 	msg = xmalloc ( sizeof (stats_info_response_msg_t) );
 	*msg_ptr = msg ;
@@ -14298,7 +14298,7 @@ _unpack_license_info_msg(license_info_msg_t **msg,
 	int i;
 	uint32_t zz;
 
-	xassert(msg != NULL);
+	xassert(msg);
 	*msg = xmalloc(sizeof(license_info_msg_t));
 
 	/* load buffer's header (data structure version and time)
@@ -14399,7 +14399,7 @@ _pack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *msg,
 	char *tmp_info = NULL;
 	ListIterator itr = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (!msg->acct_list || !(count = list_count(msg->acct_list)))
 		count = NO_VAL;
@@ -14448,7 +14448,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 	char *tmp_info = NULL;
 	assoc_mgr_info_request_msg_t *object_ptr = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	object_ptr = xmalloc(sizeof(assoc_mgr_info_request_msg_t));
 	*msg = object_ptr;
@@ -14518,7 +14518,7 @@ _unpack_event_log_msg(slurm_event_log_msg_t **msg, Buf buffer,
 	uint32_t uint32_tmp = 0;
 	slurm_event_log_msg_t *object_ptr = NULL;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	object_ptr = xmalloc(sizeof(slurm_event_log_msg_t));
 	*msg = object_ptr;
@@ -14577,7 +14577,7 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, Buf buffer,
 	char *data = NULL;
 	Buf req_buf;
 
-	xassert(msg != NULL);
+	xassert(msg);
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		object_ptr = xmalloc(sizeof(ctld_list_msg_t));
