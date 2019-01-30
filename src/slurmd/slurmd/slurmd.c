@@ -98,6 +98,7 @@
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
 #include "src/slurmd/common/task_plugin.h"
+#include "src/common/uid.h"
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -266,25 +267,11 @@ main (int argc, char **argv)
 	slurmd_uid = slurm_get_slurmd_user_id();
 	curr_uid = getuid();
 	if (curr_uid != slurmd_uid) {
-		struct passwd *pw = NULL;
-		char *slurmd_user = NULL;
-		char *curr_user = NULL;
+		char *slurmd_user = uid_to_string_or_null(slurmd_uid);
+		char *curr_user = uid_to_string_or_null(curr_uid);
 
-		/* since when you do a getpwuid you get a pointer to a
-		 * structure you have to do a xstrdup on the first
-		 * call or your information will just get over
-		 * written.  This is a memory leak, but a fatal is
-		 * called right after so it isn't that big of a deal.
-		 */
-		if ((pw = getpwuid(slurmd_uid)))
-			slurmd_user = xstrdup(pw->pw_name);
-		if ((pw = getpwuid(curr_uid)))
-			curr_user = pw->pw_name;
-
-		fatal("You are running slurmd as something "
-		      "other than user %s(%d).  If you want to "
-		      "run as this user add SlurmdUser=%s "
-		      "to the slurm.conf file.",
+		fatal("You are running slurmd as something other than user %s(%u). "
+		      "If you want to run as this user add SlurmdUser=%s to the slurm.conf file.",
 		      slurmd_user, slurmd_uid, curr_user);
 	}
 	init_setproctitle(argc, argv);
