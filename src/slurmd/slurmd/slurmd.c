@@ -97,7 +97,6 @@
 #include "src/common/slurm_topology.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
-#include "src/slurmd/common/task_plugin.h"
 #include "src/common/uid.h"
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xmalloc.h"
@@ -105,16 +104,18 @@
 #include "src/common/xsignal.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
-#include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
-#include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/setproctitle.h"
-#include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
+#include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/common/xcpuinfo.h"
+
+#include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/slurmd/req.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
