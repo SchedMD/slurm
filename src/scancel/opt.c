@@ -344,7 +344,7 @@ static void _opt_args(int argc, char **argv)
 		{NULL,          0,                 0, 0}
 	};
 
-	while ((opt_char = getopt_long(argc, argv, "A:bfiM:n:p:Qq:R:s:t:u:vVw:",
+	while ((opt_char = getopt_long(argc, argv, "A:bfHiM:n:p:Qq:R:s:t:u:vVw:",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
