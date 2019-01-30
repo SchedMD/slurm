@@ -477,6 +477,13 @@ sinfo "-M$fedc1 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc1.+)"
 sinfo "-M$fedc2 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc2.+)"
 sinfo "-M$fedc3 " "(debug\\*\\s+up\\s+infinite\\s+10\\s+idle\\s+$fedc3.+)"
 
+#
+# Remove the sprio format variable if found
+#
+if {[info exists env(SPRIO_FORMAT)]} {
+    unset env(SPRIO_FORMAT)
+}
+
 send_user "\n################################################################\n"
 send_user "verify federated sprio output"
 send_user "\n################################################################\n"

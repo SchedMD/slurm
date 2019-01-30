@@ -658,6 +658,13 @@ send_user "\nSubmitted 2 jobs successfully\n\n"
 set user_name [get_my_user_name]
 
 #
+# Remove the sprio format variable if found
+#
+if {[info exists env(SPRIO_FORMAT)]} {
+    unset env(SPRIO_FORMAT)
+}
+
+#
 # Start testing sprio options and arguments
 #
 sprio_args -h -j $jobid2

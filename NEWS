@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
  -- Added -b as a short option for --begin and removed the -b option which
     was a left over artifact from the Moab compatibility work.
  -- Add ArrayTaskThrottle to "scontrol show job" output.
+ -- Added SPRIO_FORMAT env variable to the sprio command.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
