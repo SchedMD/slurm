@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.13
 ===========================
+ -- Add mitigation for a potential heap overflow on 32-bit systems in xmalloc.
+    CVE-2019-6438.
 
 * Changes in Slurm 17.11.12
 ===========================

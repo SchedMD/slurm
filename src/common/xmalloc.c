@@ -70,12 +70,15 @@ static void malloc_assert_failed(char *, const char *, int,
  *   clear (IN) initialize to zero
  *   RETURN	pointer to allocate heap space
  */
-void *slurm_xmalloc(size_t size, bool clear,
+void *slurm_xmalloc(uint64_t size, bool clear,
 		    const char *file, int line, const char *func)
 {
 	void *new;
 	size_t *p;
 	size_t total_size = size + 2 * sizeof(size_t);
+
+	if (size > 0xffffffff)
+		fatal("attempt at overflow");
 
 	if (size <= 0)
 		return NULL;
