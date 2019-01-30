@@ -5223,8 +5223,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 						      conf->auth_info);
 	int             nsteps = 0;
 	int		delay;
-//	slurm_ctl_conf_t *cf;
-//	struct stat	stat_buf;
 	job_env_t       job_env;
 
 	debug("_rpc_terminate_job, uid = %d", uid);
