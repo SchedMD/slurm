@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix nodes not getting reboot RPC when job requires reboot of nodes.
  -- Fix failing update the partition list of a job.
  -- Use slurm.conf gres ids instead of gres.conf names to get a gres type name.
+ -- Add mitigation for a potential heap overflow on 32-bit systems in xmalloc.
+    CVE-2019-6438.
 
 * Changes in Slurm 18.08.4
 ==========================
@@ -528,6 +530,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.13
 ===========================
+ -- Add mitigation for a potential heap overflow on 32-bit systems in xmalloc.
+    CVE-2019-6438.
 
 * Changes in Slurm 17.11.12
 ===========================

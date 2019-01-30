@@ -76,18 +76,19 @@
 #ifndef _XMALLOC_H
 #define _XMALLOC_H
 
+#include <stdint.h>
 #include <sys/types.h>
 
 #include "macros.h"
 
 #define xmalloc(__sz) \
-	slurm_xmalloc (__sz, true, __FILE__, __LINE__, __func__)
+	slurm_xmalloc ((uint64_t) __sz, true, __FILE__, __LINE__, __func__)
 
 #define xmalloc_nz(__sz) \
-	slurm_xmalloc (__sz, false, __FILE__, __LINE__, __func__)
+	slurm_xmalloc ((uint64_t) __sz, false, __FILE__, __LINE__, __func__)
 
 #define try_xmalloc(__sz) \
-	slurm_try_xmalloc(__sz, __FILE__, __LINE__, __func__)
+	slurm_try_xmalloc((uint64_t) __sz, __FILE__, __LINE__, __func__)
 
 #define xfree(__p) \
 	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __func__)
@@ -107,7 +108,7 @@
 #define xsize(__p) \
 	slurm_xsize((void *)__p, __FILE__, __LINE__, __func__)
 
-void *slurm_xmalloc(size_t, bool, const char *, int, const char *);
+void *slurm_xmalloc(uint64_t, bool, const char *, int, const char *);
 void *slurm_try_xmalloc(size_t , const char *, int , const char *);
 void slurm_xfree(void **, const char *, int, const char *);
 void *slurm_xrealloc(void **, size_t, bool, const char *, int, const char *);
