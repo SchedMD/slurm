@@ -98,15 +98,15 @@ const char plugin_type[] = "acct_gather_filesystem/lustre";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 typedef struct {
-	time_t update_time;
-	uint64_t all_lustre_nb_writes;
-	uint64_t all_lustre_nb_reads;
-	uint64_t all_lustre_write_bytes;
-	uint64_t all_lustre_read_bytes;
-} lustre_sens_t;
+	time_t update_time;	/* time of last plugin stats sampling. */
+	uint64_t write_samples;	/* cumulative number of write samples. */
+	uint64_t read_samples;	/* cumulative number of read samples. */
+	uint64_t write_bytes;	/* cumulative bytes written. */
+	uint64_t read_bytes;	/* cumulative bytes read. */
+} lustre_stats_t;
 
-static lustre_sens_t lustre_se = {0,0,0,0,0};
-static lustre_sens_t lustre_se_prev = {0,0,0,0,0};
+static lustre_stats_t lstats = {0,0,0,0,0};
+static lustre_stats_t lstats_prev = {0,0,0,0,0};
 
 static uint64_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -218,8 +218,8 @@ static int _read_lustre_counters(void)
 		char *path_stats = NULL;
 		bool bread;
 		bool bwrote;
-		uint64_t num_writes = 0, write_bytes = 0;
-		uint64_t num_reads = 0, read_bytes = 0;
+		uint64_t write_samples = 0, write_bytes = 0;
+		uint64_t read_samples = 0, read_bytes = 0;
 
 		if (xstrcmp(entry->d_name, ".") == 0
 		    || xstrcmp(entry->d_name, "..") == 0)
@@ -247,7 +247,7 @@ static int _read_lustre_counters(void)
 				sscanf(buffer,
 				       "%*s %"PRIu64" %*s %*s "
 				       "%*d %*d %"PRIu64"",
-				       &num_writes,
+				       &write_samples,
 				       &write_bytes);
 				debug3("%s "
 				       "%"PRIu64" "
@@ -255,7 +255,7 @@ static int _read_lustre_counters(void)
 				       "writes",
 				       __func__,
 				       write_bytes,
-				       num_writes);
+				       write_samples);
 				bwrote = true;
 			}
 
@@ -263,7 +263,7 @@ static int _read_lustre_counters(void)
 				sscanf(buffer,
 				       "%*s %"PRIu64" %*s %*s "
 				       "%*d %*d %"PRIu64"",
-				       &num_reads,
+				       &read_samples,
 				       &read_bytes);
 				debug3("%s "
 				       "%"PRIu64" "
@@ -271,32 +271,28 @@ static int _read_lustre_counters(void)
 				       "reads",
 				       __func__,
 				       read_bytes,
-				       num_reads);
+				       read_samples);
 				bread = true;
 			}
 		}
 		fclose(fff);
 
-		lustre_se.all_lustre_write_bytes += write_bytes;
-		lustre_se.all_lustre_read_bytes += read_bytes;
-		lustre_se.all_lustre_nb_writes += num_writes;
-		lustre_se.all_lustre_nb_reads += num_reads;
-		debug3("%s: all_lustre_write_bytes %"PRIu64" "
-		       "all_lustre_read_bytes %"PRIu64"",
-		       __func__, lustre_se.all_lustre_write_bytes,
-		       lustre_se.all_lustre_read_bytes);
-		debug3("%s: all_lustre_nb_writes %"PRIu64" "
-		       "all_lustre_nb_reads %"PRIu64"",
-		       __func__, lustre_se.all_lustre_nb_writes,
-		       lustre_se.all_lustre_nb_reads);
+		lstats.write_bytes += write_bytes;
+		lstats.read_bytes += read_bytes;
+		lstats.write_samples += write_samples;
+		lstats.read_samples += read_samples;
+		debug3("%s: write_bytes %"PRIu64" read_bytes %"PRIu64"",
+		       __func__, lstats.write_bytes, lstats.read_bytes);
+		debug3("%s: write_samples %"PRIu64" read_samples %"PRIu64"",
+		       __func__, lstats.write_samples, lstats.read_samples);
 
 	} /* while ((entry = readdir(proc_dir)))  */
 	closedir(proc_dir);
 
-	lustre_se.update_time = time(NULL);
+	lstats.update_time = time(NULL);
 
 	if (first) {
-		memcpy(&lustre_se_prev, &lustre_se, sizeof(lustre_sens_t));
+		memcpy(&lstats_prev, &lstats, sizeof(lustre_stats_t));
 		first = false;
 	}
 
@@ -363,16 +359,16 @@ static int _update_node_filesystem(void)
 	}
 
 	/* Compute the current values read from all lustre-xxxx directories */
-	data[FIELD_READ].u64 = lustre_se.all_lustre_nb_reads -
-		lustre_se_prev.all_lustre_nb_reads;
+	data[FIELD_READ].u64 =
+		lstats.read_samples - lstats_prev.read_samples;
 	data[FIELD_READMB].d =
-		(double)(lustre_se.all_lustre_read_bytes -
-			 lustre_se_prev.all_lustre_read_bytes) / (1 << 20);
-	data[FIELD_WRITE].u64 = lustre_se.all_lustre_nb_writes -
-		lustre_se_prev.all_lustre_nb_writes;
+		(double)(lstats.read_bytes - lstats_prev.read_bytes) /
+		(1 << 20);
+	data[FIELD_WRITE].u64 =
+		lstats.write_samples - lstats_prev.write_samples;
 	data[FIELD_WRITEMB].d =
-		(double)(lustre_se.all_lustre_write_bytes -
-			 lustre_se_prev.all_lustre_write_bytes)	/ (1 << 20);
+		(double)(lstats.write_bytes - lstats_prev.write_bytes) /
+		(1 << 20);
 
 	/* record sample */
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
@@ -381,10 +377,10 @@ static int _update_node_filesystem(void)
 			     dataset, data, str, sizeof(str)));
 	}
 	acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
-					      lustre_se.update_time);
+					      lstats.update_time);
 
 	/* Save current as previous */
-	memcpy(&lustre_se_prev, &lustre_se, sizeof(lustre_sens_t));
+	memcpy(&lstats_prev, &lstats, sizeof(lustre_stats_t));
 
 	slurm_mutex_unlock(&lustre_lock);
 
@@ -484,18 +480,18 @@ extern int acct_gather_filesystem_p_get_data(acct_gather_data_t *data)
 	}
 
 	/* Obtain the current values read from all lustre-xxxx directories */
-	data[tres_pos].num_reads = lustre_se.all_lustre_nb_reads -
-		lustre_se_prev.all_lustre_nb_reads;
-	data[tres_pos].num_writes = lustre_se.all_lustre_nb_writes -
-		lustre_se_prev.all_lustre_nb_writes;
+	data[tres_pos].num_reads =
+		lstats.read_samples - lstats_prev.read_samples;
+	data[tres_pos].num_writes =
+		lstats.write_samples - lstats_prev.write_samples;
 	data[tres_pos].size_read =
-		(double)(lustre_se.all_lustre_read_bytes -
-			 lustre_se_prev.all_lustre_read_bytes) / (1 << 20);
+		(double)(lstats.read_bytes - lstats_prev.read_bytes) /
+		(1 << 20);
 	data[tres_pos].size_write =
-		(double)(lustre_se.all_lustre_write_bytes -
-			 lustre_se_prev.all_lustre_write_bytes)	/ (1 << 20);
+		(double)(lstats.write_bytes - lstats_prev.write_bytes) /
+		(1 << 20);
 
-	memcpy(&lustre_se_prev, &lustre_se, sizeof(lustre_sens_t));
+	memcpy(&lstats_prev, &lstats, sizeof(lustre_stats_t));
 
 	slurm_mutex_unlock(&lustre_lock);
 	return retval;
