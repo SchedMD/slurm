@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid errors from packing accounting_storage_mysql.so when RPM is built
     with out mysql support.
  -- Remove deprecated -t option from slurmctld --help.
+ -- acct_gather_filesystem/lustre - fix stats gathering.
 
 * Changes in Slurm 18.08.5-2
 ============================
