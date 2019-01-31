@@ -24773,11 +24773,7 @@ fi
 $as_echo "${x_ac_deprecated=no}" >&6; }
 
   if test "$x_ac_deprecated" = no; then
-     if test "$ac_bluegene_loaded" = yes; then
-        as_fn_error $? "BlueGene support is deprecated and will be removed in a future release. SchedMD customers are encouraged to contact support to discuss further. Use --enable-deprecated to build." "$LINENO" 5
-     elif test "$ac_have_alps_cray" = yes; then
-        as_fn_error $? "Cray/ALPS support is deprecated and will be removed in a future release. Please consider using Native Cray mode. SchedMD customers are encouraged to contact support to discuss further. Use --enable-deprecated to build." "$LINENO" 5
-     elif test "$ac_have_blcr" = yes; then
+     if test "$ac_have_blcr" = yes; then
         as_fn_error $? "BLCR support is deprecated and will be removed in a future release. SchedMD customers are encouraged to contact support to discuss further. Use --enable-deprecated to build." "$LINENO" 5
      fi
    fi
