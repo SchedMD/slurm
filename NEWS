@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 18.08.6
 ==========================
  -- Added parsing of -H flag with scancel.
+ -- Fix slurmsmwd build on 32-bit systems.
 
 * Changes in Slurm 18.08.5-2
 ============================
