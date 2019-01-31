@@ -209,7 +209,7 @@ static int _read_lustre_counters(void)
 	}
 
 	proc_dir = opendir(lustre_dir);
-	if (proc_dir == NULL) {
+	if (!proc_dir) {
 		error("%s: Cannot open %s %m", __func__, lustre_dir);
 		return SLURM_ERROR;
 	}
@@ -221,8 +221,8 @@ static int _read_lustre_counters(void)
 		uint64_t write_samples = 0, write_bytes = 0;
 		uint64_t read_samples = 0, read_bytes = 0;
 
-		if (xstrcmp(entry->d_name, ".") == 0
-		    || xstrcmp(entry->d_name, "..") == 0)
+		if (!xstrcmp(entry->d_name, ".") ||
+		    !xstrcmp(entry->d_name, ".."))
 			continue;
 
 		xstrfmtcat(path_stats, "%s/%s/stats",
@@ -230,7 +230,7 @@ static int _read_lustre_counters(void)
 		debug3("%s: Found file %s", __func__, path_stats);
 
 		fff = fopen(path_stats, "r");
-		if (fff == NULL) {
+		if (!fff) {
 			error("%s: Cannot open %s %m", __func__, path_stats);
 			xfree(path_stats);
 			continue;
@@ -245,33 +245,19 @@ static int _read_lustre_counters(void)
 
 			if (strstr(buffer, "write_bytes")) {
 				sscanf(buffer,
-				       "%*s %"PRIu64" %*s %*s "
-				       "%*d %*d %"PRIu64"",
-				       &write_samples,
-				       &write_bytes);
-				debug3("%s "
-				       "%"PRIu64" "
-				       "write_bytes %"PRIu64" "
-				       "writes",
-				       __func__,
-				       write_bytes,
-				       write_samples);
+				       "%*s %"PRIu64" %*s %*s %*d %*d %"PRIu64,
+				       &write_samples, &write_bytes);
+				debug3("%s %"PRIu64" write_bytes %"PRIu64" writes",
+				       __func__, write_bytes, write_samples);
 				bwrote = true;
 			}
 
 			if (strstr(buffer, "read_bytes")) {
 				sscanf(buffer,
-				       "%*s %"PRIu64" %*s %*s "
-				       "%*d %*d %"PRIu64"",
-				       &read_samples,
-				       &read_bytes);
-				debug3("%s "
-				       "%"PRIu64" "
-				       "read_bytes %"PRIu64" "
-				       "reads",
-				       __func__,
-				       read_bytes,
-				       read_samples);
+				       "%*s %"PRIu64" %*s %*s %*d %*d %"PRIu64,
+				       &read_samples, &read_bytes);
+				debug3("%s %"PRIu64" read_bytes %"PRIu64" reads",
+				       __func__, read_bytes, read_samples);
 				bread = true;
 			}
 		}
@@ -281,12 +267,11 @@ static int _read_lustre_counters(void)
 		lstats.read_bytes += read_bytes;
 		lstats.write_samples += write_samples;
 		lstats.read_samples += read_samples;
-		debug3("%s: write_bytes %"PRIu64" read_bytes %"PRIu64"",
+		debug3("%s: write_bytes %"PRIu64" read_bytes %"PRIu64,
 		       __func__, lstats.write_bytes, lstats.read_bytes);
-		debug3("%s: write_samples %"PRIu64" read_samples %"PRIu64"",
+		debug3("%s: write_samples %"PRIu64" read_samples %"PRIu64,
 		       __func__, lstats.write_samples, lstats.read_samples);
-
-	} /* while ((entry = readdir(proc_dir)))  */
+	} /* while ((entry = readdir(proc_dir))) */
 	closedir(proc_dir);
 
 	lstats.update_time = time(NULL);
@@ -344,8 +329,7 @@ static int _update_node_filesystem(void)
 		dataset_id = acct_gather_profile_g_create_dataset(
 			"Filesystem", NO_PARENT, dataset);
 		if (dataset_id == SLURM_ERROR) {
-			error("FileSystem: Failed to create the dataset "
-			      "for Lustre");
+			error("FileSystem: Failed to create the dataset for Lustre");
 			slurm_mutex_unlock(&lustre_lock);
 			return SLURM_ERROR;
 		}
@@ -373,13 +357,14 @@ static int _update_node_filesystem(void)
 	/* record sample */
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
 		char str[256];
-		info("PROFILE-Lustre: %s", acct_gather_profile_dataset_str(
+		info("PROFILE-Lustre: %s",
+		     acct_gather_profile_dataset_str(
 			     dataset, data, str, sizeof(str)));
 	}
 	acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
 					      lstats.update_time);
 
-	/* Save current as previous */
+	/* Save current as previous. */
 	memcpy(&lstats_prev, &lstats, sizeof(lustre_stats_t));
 
 	slurm_mutex_unlock(&lustre_lock);
@@ -494,5 +479,6 @@ extern int acct_gather_filesystem_p_get_data(acct_gather_data_t *data)
 	memcpy(&lstats_prev, &lstats, sizeof(lustre_stats_t));
 
 	slurm_mutex_unlock(&lustre_lock);
+
 	return retval;
 }
