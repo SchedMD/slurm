@@ -20,7 +20,6 @@
 <LI> <a href=#configexample>Configuration Example</a>
 </UL>
 
-<!-------------------------------------------------------------------------->
 <a name=intro>
 <h2>Introduction</h2></a>
 
@@ -30,7 +29,6 @@
 
 <P> The Multi-factor Job Priority plugin provides a very versatile facility for ordering the queue of jobs waiting to be scheduled.</P>
 
-<!-------------------------------------------------------------------------->
 <a name=mfjppintro>
 <h2>Multi-factor 'Factors'</h2></a>
 
@@ -64,7 +62,6 @@ requested/allocated TRES Type in a given partition
   (say 70%), set the job size and the age factors to each contribute
   15%, and set the partition and QOS influences to zero.</P>
 
-<!-------------------------------------------------------------------------->
 <a name=general>
 <h2>Job Priority Factors In General</h2></a>
 
@@ -101,7 +98,6 @@ Job_priority =
   weights high enough to avoid this scenario, starting around 1000 or
   so for those factors you want to make predominant.</P>
 
-<!-------------------------------------------------------------------------->
 <a name=admin>
 <h2>Admin Factor</h2></a>
 
@@ -116,7 +112,6 @@ that sets a specific priority based on how many resources are requested.</P>
 
 <P> At some configurable length of time (<i>PriorityMaxAge</i>), the age factor will max out to 1.0.</P>
 
-<!-------------------------------------------------------------------------->
 <a name=jobsize>
 <h2>Job Size Factor</h2></a>
 
@@ -135,7 +130,6 @@ Thus a full-system job with a time limit of one will receive a job size factor
 of 1.0, while a tiny job with a large time limit will receive a job size factor
 close to 0.0.</p>
 
-<!-------------------------------------------------------------------------->
 
 <a name=nice>
 <h2>Nice Factor</h2></a>
@@ -154,7 +148,6 @@ request to run in this partition.  This priority value is then
 normalized to the highest priority of all the partitions to become the
 partition factor.</P>
 
-<!-------------------------------------------------------------------------->
 <a name=qos>
 <h2>Quality of Service (QOS) Factor</h2></a>
 
@@ -163,7 +156,6 @@ number, the greater the job priority will be for jobs that request
 this QOS.  This priority value is then normalized to the highest
 priority of all the QOS's to become the QOS factor.</P>
 
-<!-------------------------------------------------------------------------->
 <a name=tres>
 <h2>TRES Factors</h2></a>
 
@@ -175,7 +167,6 @@ TRES Type requested/allocated in the whole system. The more a given TRES Type is
 requested/allocated on a job, the greater the job priority will be for that job.
 </P>
 
-<!-------------------------------------------------------------------------->
 <a name=fairshare>
 <h2>Fair-share Factor</h2></a>
 
@@ -249,7 +240,6 @@ to a separate <a href="classic_fair_share.html">Classic Fairshare</a>
 documentation page.
 </p>
 
-<!-------------------------------------------------------------------------->
 <a name=sprio>
 <h2>The <i>sprio</i> utility</h2></a>
 
@@ -261,7 +251,6 @@ for each job.  In addition, the <i>sprio -w</i> option displays the
 weights (PriorityWeightAge, PriorityWeightFairshare, etc.) for each
 factor as it is currently configured.</P>
 
-<!-------------------------------------------------------------------------->
 <a name=config>
 <h2>Configuration</h2></a>
 
@@ -327,7 +316,6 @@ factor as it is currently configured.</P>
 
 <P> Note:  As stated above, the six priority factors range from 0.0 to 1.0.  As such, the PriorityWeight terms may need to be set to a high enough value (say, 1000) to resolve very tiny differences in priority factors.  This is especially true with the fair-share factor, where two jobs may differ in priority by as little as .001. (or even less!)</P>
 
-<!-------------------------------------------------------------------------->
 <a name=configexample>
 <h2>Configuration Example</h2></a>
 
@@ -391,7 +379,6 @@ PriorityWeightPartition=1000
 PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
-<!-------------------------------------------------------------------------->
 <p style="text-align:center;">Last modified 1 November 2013</p>
 
 <!--#include virtual="footer.txt"-->
