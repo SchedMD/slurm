@@ -1,0 +1,207 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of setting and viewing AdminPrioFactor
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC.
+# Written by Brian Christiansen <brian@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id     "24.5"
+set exit_code   0
+set timeout	60
+print_header	$test_id
+
+set jobid1 0
+set jobid2 0
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+if { [string compare [priority_type] multifactor] } {
+	log_warn "This test can't be run without a usable PriorityType"
+	exit 0
+}
+
+proc end_it { exit_code } {
+	global test_id jobid1 jobid2
+
+	if {$jobid1} {
+		cancel_job $jobid1
+	}
+	if {$jobid2} {
+		cancel_job $jobid2
+	}
+
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+
+proc def_cpu_cnt { } {
+	global sinfo number
+
+	set partition [default_partition]
+	set cpu_cnt 1
+	spawn $sinfo -h -o "%P %C" -p $partition --state=idle
+	expect {
+		-re "$partition\\* ($number)(K?)/($number)(K?)" {
+			set cpu_cnt $expect_out(3,string)
+			if {[string compare $expect_out(4,string) ""]} {
+				set cpu_cnt [expr $cpu_cnt * 1024]
+			}
+
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $cpu_cnt
+}
+
+proc sub_job { cpu_cnt state } {
+
+	global number sbatch test_id bin_sleep
+
+	set jobid 0
+	spawn $sbatch -J$test_id -o/dev/null -e/dev/null -n $cpu_cnt --exclusive --wrap "$bin_sleep 300"
+	expect {
+		-re "Submitted batch job ($number)" {
+			set jobid $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$jobid == 0} {
+		log_error "did not get sbatch jobid"
+		end_it 1
+	}
+
+	if {[wait_for_job $jobid $state] != 0} {
+		log_error "error starting job $jobid"
+		end_it 1
+	}
+
+	return $jobid
+}
+
+proc sprio_args { args regex match_cnt } {
+	global number float sprio
+	set matches 0
+
+	spawn $sprio {*}$args
+	expect {
+		-re $regex {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			log_error "sprio not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $match_cnt} {
+		log_error "sprio $args failed to match '$regex' $match_cnt times"
+		end_it 1
+	}
+}
+
+proc update_job { jobid prio {error ""} } {
+	global scontrol
+
+	set matches 0
+
+	spawn $scontrol update jobid=$jobid adminpriofactor=$prio
+	set tmp_re ".*"
+	if {$error != ""} {
+		set tmp_re $error
+	}
+	expect {
+		-re $tmp_re {
+			incr matches
+		}
+		timeout {
+			log_error "scontrol not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {($error != "") && !$matches} {
+		log_error "didn't get expected error '$error'"
+		end_it 1
+	}
+}
+
+################################################################
+set cpu_cnt [def_cpu_cnt]
+set jobid1 [sub_job $cpu_cnt RUNNING]
+set jobid2 [sub_job $cpu_cnt PENDING]
+
+if {[info exists env(SPRIO_FORMAT)]} {
+    unset env(SPRIO_FORMAT)
+}
+
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 \[-\]*$number" 1
+update_job $jobid2 100
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 100" 1
+update_job $jobid2 -100
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 -100" 1
+update_job $jobid2 0
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 0" 1
+
+update_job $jobid2 2147483645
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 2147483645" 1
+update_job $jobid2 -2147483645
+sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 -2147483645" 1
+
+update_job $jobid2 2147483646 "scontrol: error: AdminPrioFactor value out of range"
+update_job $jobid2 -2147483646 "scontrol: error: AdminPrioFactor value out of range"
+
+end_it 0
