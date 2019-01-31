@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- Added SPRIO_FORMAT env variable to the sprio command.
  -- Add batch step at the beginning of a batch job so that squeue, sstat, and
     sacct will show the batch step.
+ -- Deprecated 32-bit builds.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

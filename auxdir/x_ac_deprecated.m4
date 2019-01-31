@@ -27,6 +27,9 @@ AC_DEFUN([X_AC_DEPRECATED], [
   AC_MSG_RESULT([${x_ac_deprecated=no}])
 
   if test "$x_ac_deprecated" = no; then
+     if test "$ac_cv_sizeof_void_p" = "4"; then
+        AC_MSG_ERROR([32-bit support is deprecated, and not tested regularly. Use at your own risk.])
+     fi
      if test "$ac_have_blcr" = yes; then
         AC_MSG_ERROR([BLCR support is deprecated and will be removed in a future release. SchedMD customers are encouraged to contact support to discuss further. Use --enable-deprecated to build.])
      fi

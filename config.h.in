@@ -508,6 +508,9 @@
 /* Define to the setproctitle() emulation type */
 #undef SETPROCTITLE_STRATEGY
 
+/* The size of `void *', as computed by sizeof. */
+#undef SIZEOF_VOID_P
+
 /* Define path to sleep command */
 #undef SLEEP_CMD
 

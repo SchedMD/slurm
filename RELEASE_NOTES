@@ -83,6 +83,9 @@ NOTE: Sreport report 'job SizesByAccount' and 'job SizesByAccountAndWckey'
 NOTE: libslurmdb has been merged into libslurm.  If functionality is needed
       from libslurmdb please just link to libslurm.
 
+NOTE: 32-bit builds have been deprecated. Use --enable-deprecated to continue
+      building on 32-bit systems.
+
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res
