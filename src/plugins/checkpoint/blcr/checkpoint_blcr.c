@@ -434,8 +434,8 @@ extern int slurm_ckpt_signal_tasks(stepd_step_rec_t *job, char *image_dir)
 	/*
 	 * the tasks must be checkpointed concurrently.
 	 */
-	children = xmalloc(sizeof(pid_t) * job->node_tasks);
-	fd = xmalloc(sizeof(int) * 2 * job->node_tasks);
+	children = xcalloc(job->node_tasks, sizeof(pid_t));
+	fd = xcalloc(job->node_tasks * 2, sizeof(int));
 	if (!children || !fd) {
 		error("slurm_ckpt_signal_tasks: memory exhausted");
 		rc = SLURM_ERROR;

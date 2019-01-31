@@ -550,7 +550,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	 * space, so they can be xfreed later
 	 */
 	if (num_ptags) {
-		sw_job->ptags = xmalloc(sizeof(int) * num_ptags);
+		sw_job->ptags = xcalloc(num_ptags, sizeof(int));
 		memcpy(sw_job->ptags, ptags, sizeof(int) * num_ptags);
 		free(ptags);
 		sw_job->num_ptags = num_ptags;

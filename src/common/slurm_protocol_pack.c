@@ -7482,7 +7482,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->srun_epilog,
 				       &uint32_tmp, buffer);
 
-		build_ptr->srun_port_range = xmalloc(2 * sizeof(uint16_t));
+		build_ptr->srun_port_range = xcalloc(2, sizeof(uint16_t));
 		safe_unpack16(&build_ptr->srun_port_range[0], buffer);
 		safe_unpack16(&build_ptr->srun_port_range[1], buffer);
 
@@ -7874,7 +7874,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->srun_epilog,
 				       &uint32_tmp, buffer);
 
-		build_ptr->srun_port_range = xmalloc(2 * sizeof(uint16_t));
+		build_ptr->srun_port_range = xcalloc(2, sizeof(uint16_t));
 		safe_unpack16(&build_ptr->srun_port_range[0], buffer);
 		safe_unpack16(&build_ptr->srun_port_range[1], buffer);
 
@@ -7966,8 +7966,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 
 		build_ptr->control_cnt = 2;
-		build_ptr->control_addr = xmalloc(sizeof(char *) * 2);
-		build_ptr->control_machine = xmalloc(sizeof(char *) * 2);
+		build_ptr->control_addr = xcalloc(2, sizeof(char *));
+		build_ptr->control_machine = xcalloc(2, sizeof(char *));
 		safe_unpackstr_xmalloc(&build_ptr->control_addr[1],
  				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->control_machine[1],
@@ -8243,7 +8243,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->srun_epilog,
 				       &uint32_tmp, buffer);
 
-		build_ptr->srun_port_range = xmalloc(2 * sizeof(uint16_t));
+		build_ptr->srun_port_range = xcalloc(2, sizeof(uint16_t));
 		safe_unpack16(&build_ptr->srun_port_range[0], buffer);
 		safe_unpack16(&build_ptr->srun_port_range[1], buffer);
 

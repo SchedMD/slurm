@@ -529,8 +529,8 @@ static uint32_t _get_priority_internal(time_t start_time,
 		memcpy(&pre_factors, job_ptr->prio_factors,
 		       sizeof(priority_factors_object_t));
 		if (job_ptr->prio_factors->priority_tres) {
-			pre_factors.priority_tres = xmalloc(sizeof(double) *
-							    slurmctld_tres_cnt);
+			pre_factors.priority_tres = xcalloc(slurmctld_tres_cnt,
+							    sizeof(double));
 			memcpy(pre_factors.priority_tres,
 			       job_ptr->prio_factors->priority_tres,
 			       sizeof(double) * slurmctld_tres_cnt);
@@ -583,7 +583,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 
 		if (!job_ptr->priority_array) {
 			i = list_count(job_ptr->part_ptr_list) + 1;
-			job_ptr->priority_array = xmalloc(sizeof(uint32_t) * i);
+			job_ptr->priority_array = xcalloc(i, sizeof(uint32_t));
 		}
 
 		i = 0;
@@ -2128,9 +2128,9 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 
 		if (!job_ptr->prio_factors->priority_tres) {
 			job_ptr->prio_factors->priority_tres =
-				xmalloc(sizeof(double) * slurmctld_tres_cnt);
+				xcalloc(slurmctld_tres_cnt, sizeof(double));
 			job_ptr->prio_factors->tres_weights =
-				xmalloc(sizeof(double) * slurmctld_tres_cnt);
+				xcalloc(slurmctld_tres_cnt, sizeof(double));
 			memcpy(job_ptr->prio_factors->tres_weights, weight_tres,
 			       sizeof(double) * slurmctld_tres_cnt);
 			job_ptr->prio_factors->tres_cnt = slurmctld_tres_cnt;

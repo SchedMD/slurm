@@ -133,10 +133,10 @@ static void _add_assoc_hash(slurmdb_assoc_rec_t *assoc)
 	int inx = ASSOC_HASH_ID_INX(assoc->id);
 
 	if (!assoc_hash_id)
-		assoc_hash_id = xmalloc(ASSOC_HASH_SIZE *
-				     sizeof(slurmdb_assoc_rec_t *));
+		assoc_hash_id = xcalloc(ASSOC_HASH_SIZE,
+					sizeof(slurmdb_assoc_rec_t *));
 	if (!assoc_hash)
-		assoc_hash = xmalloc(ASSOC_HASH_SIZE *
+		assoc_hash = xcalloc(ASSOC_HASH_SIZE,
 				     sizeof(slurmdb_assoc_rec_t *));
 
 	assoc->assoc_next_id = assoc_hash_id[inx];
@@ -1145,7 +1145,7 @@ extern int assoc_mgr_post_tres_list(List new_list)
 	slurmdb_tres_rec_t *tres_rec, **new_array;
 	char **new_name_array;
 	bool changed_size = false, changed_pos = false;
-	int i, new_size, new_name_size;
+	int i;
 	int new_cnt;
 
 	xassert(new_list);
@@ -1154,11 +1154,8 @@ extern int assoc_mgr_post_tres_list(List new_list)
 
 	xassert(new_cnt > 0);
 
-	new_size = sizeof(slurmdb_tres_rec_t) * new_cnt;
-	new_array = xmalloc(new_size);
-
-	new_name_size = sizeof(char *) * new_cnt;
-	new_name_array = xmalloc(new_name_size);
+	new_array = xcalloc(new_cnt, sizeof(slurmdb_tres_rec_t));
+	new_name_array = xcalloc(new_cnt, sizeof(char *));
 
 	list_sort(new_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);
 
@@ -1198,7 +1195,7 @@ extern int assoc_mgr_post_tres_list(List new_list)
 	if (changed_pos) {
 		int pos;
 
-		assoc_mgr_tres_old_pos = xmalloc(sizeof(int) * new_cnt);
+		assoc_mgr_tres_old_pos = xcalloc(new_cnt, sizeof(int));
 		for (i=0; i<new_cnt; i++) {
 			if (!new_array[i]) {
 				assoc_mgr_tres_old_pos[i] = -1;
@@ -3163,16 +3160,16 @@ extern void assoc_mgr_get_shares(void *db_conn,
 		share->shares_norm = assoc->usage->shares_norm;
 		share->usage_raw = (uint64_t)assoc->usage->usage_raw;
 
-		share->usage_tres_raw = xmalloc(
-			sizeof(long double) * g_tres_count);
+		share->usage_tres_raw = xcalloc(g_tres_count,
+						sizeof(long double));
 		memcpy(share->usage_tres_raw,
 		       assoc->usage->usage_tres_raw,
 		       sizeof(long double) * g_tres_count);
 
-		share->tres_grp_mins = xmalloc(sizeof(uint64_t) * g_tres_count);
+		share->tres_grp_mins = xcalloc(g_tres_count, sizeof(uint64_t));
 		memcpy(share->tres_grp_mins, assoc->grp_tres_mins_ctld,
 		       sizeof(uint64_t) * g_tres_count);
-		share->tres_run_secs = xmalloc(sizeof(uint64_t) * g_tres_count);
+		share->tres_run_secs = xcalloc(g_tres_count, sizeof(uint64_t));
 		memcpy(share->tres_run_secs,
 		       assoc->usage->grp_used_tres_run_secs,
 		       sizeof(uint64_t) * g_tres_count);
@@ -6224,7 +6221,6 @@ extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec2(
 extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 					uint64_t init_val, bool locked)
 {
-	int array_size = sizeof(uint64_t) * g_tres_count;
 	int diff_cnt = 0, i;
 
 	xassert(tres_cnt);
@@ -6235,9 +6231,9 @@ extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 	 */
 	xfree(*tres_cnt);
 	if (!init_val)
-		*tres_cnt = xmalloc(array_size);
+		*tres_cnt = xcalloc(g_tres_count, sizeof(uint64_t));
 	else {
-		*tres_cnt = xmalloc_nz(array_size);
+		*tres_cnt = xcalloc_nz(g_tres_count, sizeof(uint64_t));
 		for (i=0; i<g_tres_count; i++)
 			(*tres_cnt)[i] = init_val;
 	}

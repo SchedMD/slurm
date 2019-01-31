@@ -185,10 +185,8 @@ s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
 	s_p_values_t *value = NULL;
 	s_p_hashtbl_t *hashtbl = NULL;
 	_expline_values_t* expdata;
-	int len;
 
-	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
-	hashtbl = xmalloc(len);
+	hashtbl = xcalloc(CONF_HASH_LEN, sizeof(s_p_values_t *));
 
 	for (op = options; op->key != NULL; op++) {
 		value = xmalloc(sizeof(s_p_values_t));
@@ -206,7 +204,8 @@ s_p_hashtbl_t *s_p_hashtbl_create(const s_p_options_t options[])
 			expdata = xmalloc(sizeof(_expline_values_t));
 			expdata->template =
 				s_p_hashtbl_create(op->line_options);
-			expdata->index = xmalloc(len);
+			expdata->index = xcalloc(CONF_HASH_LEN,
+						 sizeof(s_p_values_t *));
 			expdata->values = NULL;
 			value->data = expdata;
 		}
@@ -1504,12 +1503,11 @@ static s_p_hashtbl_t* _parse_expline_adapt_table(const s_p_hashtbl_t* hashtbl)
 {
 	s_p_hashtbl_t* to_hashtbl = NULL;
 	s_p_values_t *val_ptr,* val_copy;
-	int len, i;
+	int i;
 
 	xassert(hashtbl);
 
-	len = CONF_HASH_LEN * sizeof(s_p_values_t *);
-	to_hashtbl = xmalloc(len);
+	to_hashtbl = xcalloc(CONF_HASH_LEN, sizeof(s_p_values_t *));
 
 	for (i = 0; i < CONF_HASH_LEN; ++i) {
 		for (val_ptr = hashtbl[i]; val_ptr; val_ptr = val_ptr->next) {
@@ -1730,7 +1728,7 @@ int s_p_parse_line_expanded(const s_p_hashtbl_t *hashtbl,
 	 *  {key: value2, attr1: val1.2, attr2: val2.2}
 	 * ]
 	 */
-	tables = xmalloc(tables_count * sizeof(s_p_hashtbl_t *));
+	tables = xcalloc(tables_count, sizeof(s_p_hashtbl_t *));
 	for (i = 0; i < tables_count; i++) {
 		free(value_str);
 		value_str = hostlist_shift(value_hl);

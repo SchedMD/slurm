@@ -1459,7 +1459,7 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 				    job_ptr->sched_nodes, job_ptr))
 			xfree(client_nodes_file_nid);
 	}
-	setup_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
+	setup_argv = xcalloc(20, sizeof(char *));	/* NULL terminated */
 	setup_argv[0] = xstrdup("dw_wlm_cli");
 	setup_argv[1] = xstrdup("--function");
 	setup_argv[2] = xstrdup("setup");
@@ -1491,7 +1491,7 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 	bb_limit_add(job_ptr->user_id, bb_job->total_size, job_pool, &bb_state,
 		     true);
 
-	data_in_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	data_in_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	data_in_argv[0] = xstrdup("dw_wlm_cli");
 	data_in_argv[1] = xstrdup("--function");
 	data_in_argv[2] = xstrdup("data_in");
@@ -1675,7 +1675,7 @@ static void *_start_stage_in(void *x)
 	/* Round up job buffer size based upon DW "equalize_fragments"
 	 * configuration parameter */
 	if (get_real_size) {
-		size_argv = xmalloc(sizeof(char *) * 10);/* NULL terminated */
+		size_argv = xcalloc(10, sizeof(char *)); /* NULL terminated */
 		size_argv[0] = xstrdup("dw_wlm_cli");
 		size_argv[1] = xstrdup("--function");
 		size_argv[2] = xstrdup("real_size");
@@ -1793,7 +1793,7 @@ static int _queue_stage_out(bb_job_t *bb_job)
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, bb_job->job_id);
 
-	data_out_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	data_out_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	data_out_argv[0] = xstrdup("dw_wlm_cli");
 	data_out_argv[1] = xstrdup("--function");
 	data_out_argv[2] = xstrdup("data_out");
@@ -1802,7 +1802,7 @@ static int _queue_stage_out(bb_job_t *bb_job)
 	data_out_argv[5] = xstrdup("--job");
 	xstrfmtcat(data_out_argv[6], "%s/script", job_dir);
 
-	post_run_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	post_run_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	post_run_argv[0] = xstrdup("dw_wlm_cli");
 	post_run_argv[1] = xstrdup("--function");
 	post_run_argv[2] = xstrdup("post_run");
@@ -2017,7 +2017,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 		}
 	}
 
-	teardown_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	teardown_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	teardown_argv[0] = xstrdup("dw_wlm_cli");
 	teardown_argv[1] = xstrdup("--function");
 	teardown_argv[2] = xstrdup("teardown");
@@ -2233,13 +2233,13 @@ static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
 
 	/* Initialize data structure */
 	ds_len = bb_state.bb_config.pool_cnt + 1;
-	add_space = xmalloc(sizeof(int64_t) * ds_len);
-	avail_space = xmalloc(sizeof(int64_t) * ds_len);
-	granularity = xmalloc(sizeof(int64_t) * ds_len);
-	pool_name = xmalloc(sizeof(char *)  * ds_len);
-	preempt_space = xmalloc(sizeof(int64_t) * ds_len);
-	resv_space = xmalloc(sizeof(int64_t) * ds_len);
-	total_space = xmalloc(sizeof(int64_t) * ds_len);
+	add_space = xcalloc(ds_len, sizeof(int64_t));
+	avail_space = xcalloc(ds_len, sizeof(int64_t));
+	granularity = xcalloc(ds_len, sizeof(int64_t));
+	pool_name = xcalloc(ds_len, sizeof(char *));
+	preempt_space = xcalloc(ds_len, sizeof(int64_t));
+	resv_space = xcalloc(ds_len, sizeof(int64_t));
+	total_space = xcalloc(ds_len, sizeof(int64_t));
 	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
 	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
 		unfree_space = MAX(pool_ptr->used_space,
@@ -3161,7 +3161,7 @@ extern char *bb_p_get_status(uint32_t argc, char **argv)
 	char *status_resp, **script_argv;
 	int i, status = 0;
 
-	script_argv = xmalloc(sizeof(char *) * (argc + 2));
+	script_argv = xcalloc((argc + 2), sizeof(char *));
 	script_argv[0] = "dwstat";
 	for (i = 0; i < argc; i++)
 		script_argv[i + 1] = argv[i];
@@ -3507,7 +3507,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	}
 
 	/* Run "job_process" function, validates user script */
-	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
 	script_argv[2] = xstrdup("job_process");
@@ -3913,7 +3913,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			timeout = bb_state.bb_config.validate_timeout * 1000;
 		else
 			timeout = DEFAULT_VALIDATE_TIMEOUT * 1000;
-		script_argv = xmalloc(sizeof(char *) * 10); /* NULL terminate */
+		script_argv = xcalloc(10, sizeof(char *)); /* NULL terminate */
 		script_argv[0] = xstrdup("dw_wlm_cli");
 		script_argv[1] = xstrdup("--function");
 		script_argv[2] = xstrdup("paths");
@@ -3953,7 +3953,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		}
 
 		/* Setup "pre_run" operation */
-		pre_run_argv = xmalloc(sizeof(char *) * 12);
+		pre_run_argv = xcalloc(12, sizeof(char *));
 		pre_run_argv[0] = xstrdup("dw_wlm_cli");
 		pre_run_argv[1] = xstrdup("--function");
 		pre_run_argv[2] = xstrdup("pre_run");
@@ -4599,7 +4599,7 @@ static void *_create_persistent(void *x)
 	uint32_t timeout;
 	DEF_TIMERS;
 
-	script_argv = xmalloc(sizeof(char *) * 20);	/* NULL terminated */
+	script_argv = xcalloc(20, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
 	script_argv[2] = xstrdup("create_persistent");
@@ -4761,7 +4761,7 @@ static void *_destroy_persistent(void *x)
 		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
-	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
 	script_argv[2] = xstrdup("teardown");
@@ -4852,7 +4852,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	char *resp_msg;
 	char **script_argv;
 
-	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
 	script_argv[2] = xstrdup("show_configurations");
@@ -4920,7 +4920,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	char *resp_msg;
 	char **script_argv;
 
-	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
 	script_argv[2] = xstrdup("show_instances");
@@ -4987,7 +4987,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	char *resp_msg;
 	char **script_argv;
 
-	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
 	script_argv[2] = xstrdup("pools");
@@ -5052,7 +5052,7 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	char *resp_msg;
 	char **script_argv;
 
-	script_argv = xmalloc(sizeof(char *) * 10);	/* NULL terminated */
+	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
 	script_argv[1] = xstrdup("--function");
 	script_argv[2] = xstrdup("show_sessions");
@@ -5164,7 +5164,7 @@ _json_parse_configs_array(json_object *jobj, char *key, int *num)
 	json_object_object_get_ex(jobj, key, &jarray);
 
 	*num = json_object_array_length(jarray);
-	ents = xmalloc(*num * sizeof(bb_configs_t));
+	ents = xcalloc(*num, sizeof(bb_configs_t));
 
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
@@ -5188,7 +5188,7 @@ _json_parse_instances_array(json_object *jobj, char *key, int *num)
 	json_object_object_get_ex(jobj, key, &jarray);
 
 	*num = json_object_array_length(jarray);
-	ents = xmalloc(*num * sizeof(bb_instances_t));
+	ents = xcalloc(*num, sizeof(bb_instances_t));
 
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
@@ -5212,7 +5212,7 @@ _json_parse_pools_array(json_object *jobj, char *key, int *num)
 	json_object_object_get_ex(jobj, key, &jarray);
 
 	*num = json_object_array_length(jarray);
-	ents = xmalloc(*num * sizeof(bb_pools_t));
+	ents = xcalloc(*num, sizeof(bb_pools_t));
 
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);
@@ -5236,7 +5236,7 @@ _json_parse_sessions_array(json_object *jobj, char *key, int *num)
 	json_object_object_get_ex(jobj, key, &jarray);
 
 	*num = json_object_array_length(jarray);
-	ents = xmalloc(*num * sizeof(bb_sessions_t));
+	ents = xcalloc(*num, sizeof(bb_sessions_t));
 
 	for (i = 0; i < *num; i++) {
 		jvalue = json_object_array_get_idx(jarray, i);

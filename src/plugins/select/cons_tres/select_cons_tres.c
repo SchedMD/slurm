@@ -279,7 +279,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			return SLURM_ERROR;
 		}
 		if (!p_ptr->row) {
-			p_ptr->row = xmalloc(p_ptr->num_rows *
+			p_ptr->row = xcalloc(p_ptr->num_rows,
 					     sizeof(struct part_row_data));
 		}
 
@@ -1065,9 +1065,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	cr_destroy_node_data(select_node_usage, select_node_record);
 	select_node_cnt = node_cnt;
-	select_node_record = xmalloc(node_cnt *
+	select_node_record = xcalloc(node_cnt,
 				     sizeof(struct node_res_record));
-	select_node_usage  = xmalloc(node_cnt *
+	select_node_usage  = xcalloc(node_cnt,
 				     sizeof(struct node_use_record));
 
 	for (i = 0; i < select_node_cnt; i++) {
@@ -1460,12 +1460,12 @@ static job_resources_t *_create_job_resources(int node_cnt)
 	job_resources_t *job_resrcs_ptr;
 
 	job_resrcs_ptr = create_job_resources();
-	job_resrcs_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t) * node_cnt);
-	job_resrcs_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * node_cnt);
-	job_resrcs_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
-	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
-	job_resrcs_ptr->memory_allocated = xmalloc(sizeof(uint64_t) * node_cnt);
-	job_resrcs_ptr->memory_used = xmalloc(sizeof(uint64_t) * node_cnt);
+	job_resrcs_ptr->cpu_array_reps = xcalloc(node_cnt, sizeof(uint32_t));
+	job_resrcs_ptr->cpu_array_value = xcalloc(node_cnt, sizeof(uint16_t));
+	job_resrcs_ptr->cpus = xcalloc(node_cnt, sizeof(uint16_t));
+	job_resrcs_ptr->cpus_used = xcalloc(node_cnt, sizeof(uint16_t));
+	job_resrcs_ptr->memory_allocated = xcalloc(node_cnt, sizeof(uint64_t));
+	job_resrcs_ptr->memory_used = xcalloc(node_cnt, sizeof(uint64_t));
 	job_resrcs_ptr->nhosts = node_cnt;
 	return job_resrcs_ptr;
 }
@@ -1539,7 +1539,7 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr,
 			    select_fast_schedule);
 	xfree(to_job_ptr->node_addr);
-	to_job_ptr->node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
+	to_job_ptr->node_addr = xcalloc(node_cnt, sizeof(slurm_addr_t));
 	to_job_ptr->total_cpus = 0;
 
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),
@@ -1962,8 +1962,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 		/* Build allocated TRES info */
 		if (!nodeinfo->tres_alloc_cnt)
-			nodeinfo->tres_alloc_cnt = xmalloc(sizeof(uint64_t) *
-							   slurmctld_tres_cnt);
+			nodeinfo->tres_alloc_cnt = xcalloc(slurmctld_tres_cnt,
+							   sizeof(uint64_t));
 		nodeinfo->tres_alloc_cnt[TRES_ARRAY_CPU] = alloc_cpus;
 		nodeinfo->tres_alloc_cnt[TRES_ARRAY_MEM] =
 			nodeinfo->alloc_memory;
@@ -2366,11 +2366,11 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	 * Construct a set of switch array entries,
 	 * use the same indexes as switch_record_table in slurmctld
 	 */
-	switches_bitmap   = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
-	switches_core_bitmap = xmalloc(sizeof(bitstr_t **) * switch_record_cnt);
-	switches_core_cnt  = xmalloc(sizeof(int)       * switch_record_cnt);
-	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
-	switches_required = xmalloc(sizeof(int)        * switch_record_cnt);
+	switches_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
+	switches_core_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t **));
+	switches_core_cnt = xcalloc(switch_record_cnt, sizeof(int));
+	switches_node_cnt = xcalloc(switch_record_cnt, sizeof(int));
+	switches_required = xcalloc(switch_record_cnt, sizeof(int));
 
 	for (i = 0; i < switch_record_cnt; i++) {
 		switches_bitmap[i] =
@@ -2745,7 +2745,7 @@ extern void cr_sort_part_rows(struct part_res_record *p_ptr)
 	if (!p_ptr->row)
 		return;
 
-	a = xmalloc(sizeof(uint32_t) * p_ptr->num_rows);
+	a = xcalloc(p_ptr->num_rows, sizeof(uint32_t));
 	for (r = 0; r < p_ptr->num_rows; r++) {
 		if (!p_ptr->row[r].row_bitmap)
 			continue;

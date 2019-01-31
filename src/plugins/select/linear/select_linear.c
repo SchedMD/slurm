@@ -240,8 +240,8 @@ static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id)
 
 	if (cr_ptr->run_job_ids == NULL) {	/* create new array */
 		cr_ptr->run_job_len = RUN_JOB_INCR;
-		cr_ptr->run_job_ids = xmalloc(sizeof(uint32_t) *
-					      cr_ptr->run_job_len);
+		cr_ptr->run_job_ids = xcalloc(cr_ptr->run_job_len,
+					      sizeof(uint32_t));
 		cr_ptr->run_job_ids[0] = job_id;
 		return;
 	}
@@ -267,8 +267,8 @@ static void _add_tot_job(struct cr_record *cr_ptr, uint32_t job_id)
 
 	if (cr_ptr->tot_job_ids == NULL) {	/* create new array */
 		cr_ptr->tot_job_len = RUN_JOB_INCR;
-		cr_ptr->tot_job_ids = xmalloc(sizeof(uint32_t) *
-					      cr_ptr->tot_job_len);
+		cr_ptr->tot_job_ids = xcalloc(cr_ptr->tot_job_len,
+					      sizeof(uint32_t));
 		cr_ptr->tot_job_ids[0] = job_id;
 		return;
 	}
@@ -467,12 +467,12 @@ static job_resources_t *_create_job_resources(int node_cnt)
 	job_resources_t *job_resrcs_ptr;
 
 	job_resrcs_ptr = create_job_resources();
-	job_resrcs_ptr->cpu_array_reps = xmalloc(sizeof(uint32_t) * node_cnt);
-	job_resrcs_ptr->cpu_array_value = xmalloc(sizeof(uint16_t) * node_cnt);
-	job_resrcs_ptr->cpus = xmalloc(sizeof(uint16_t) * node_cnt);
-	job_resrcs_ptr->cpus_used = xmalloc(sizeof(uint16_t) * node_cnt);
-	job_resrcs_ptr->memory_allocated = xmalloc(sizeof(uint64_t) * node_cnt);
-	job_resrcs_ptr->memory_used = xmalloc(sizeof(uint64_t) * node_cnt);
+	job_resrcs_ptr->cpu_array_reps = xcalloc(node_cnt, sizeof(uint32_t));
+	job_resrcs_ptr->cpu_array_value = xcalloc(node_cnt, sizeof(uint16_t));
+	job_resrcs_ptr->cpus = xcalloc(node_cnt, sizeof(uint16_t));
+	job_resrcs_ptr->cpus_used = xcalloc(node_cnt, sizeof(uint16_t));
+	job_resrcs_ptr->memory_allocated = xcalloc(node_cnt, sizeof(uint64_t));
+	job_resrcs_ptr->memory_used = xcalloc(node_cnt, sizeof(uint64_t));
 	job_resrcs_ptr->nhosts = node_cnt;
 	return job_resrcs_ptr;
 }
@@ -772,11 +772,11 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	consec_index = 0;
 	consec_size  = 50;	/* start allocation for 50 sets of
 				 * consecutive nodes */
-	consec_cpus  = xmalloc(sizeof(int) * consec_size);
-	consec_nodes = xmalloc(sizeof(int) * consec_size);
-	consec_start = xmalloc(sizeof(int) * consec_size);
-	consec_end   = xmalloc(sizeof(int) * consec_size);
-	consec_req   = xmalloc(sizeof(int) * consec_size);
+	consec_cpus  = xcalloc(consec_size, sizeof(int));
+	consec_nodes = xcalloc(consec_size, sizeof(int));
+	consec_start = xcalloc(consec_size, sizeof(int));
+	consec_end   = xcalloc(consec_size, sizeof(int));
+	consec_req   = xcalloc(consec_size, sizeof(int));
 
 
 	/* Build table with information about sets of consecutive nodes */
@@ -788,7 +788,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	else
 		rem_nodes = min_nodes;
 
-	avail_cpu_cnt = xmalloc(sizeof(int) * select_node_cnt);
+	avail_cpu_cnt = xcalloc(select_node_cnt, sizeof(int));
 	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(bitmap, i)) {
 			avail_cpu_cnt[i] = _get_avail_cpus(job_ptr, i);
@@ -1453,10 +1453,10 @@ static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
 	int i, rc = EINVAL;
 	int32_t rem_cpus, rem_nodes, node_count = 0, total_cpus = 0;
 	int32_t alloc_nodes = 0;
-	int64_t *req_summed_squares = xmalloc(
-		hypercube_dimensions * sizeof(int64_t));
-	int64_t *req_squared_sums = xmalloc(
-		hypercube_dimensions * sizeof(int64_t));
+	int64_t *req_summed_squares = xcalloc(hypercube_dimensions,
+					      sizeof(int64_t));
+	int64_t *req_squared_sums = xcalloc(hypercube_dimensions,
+					    sizeof(int64_t));
 	bitstr_t *req_nodes_bitmap = NULL;
 	bitstr_t *avail_bitmap = NULL;
 	int32_t cur_node_index = -1, node_counter = 0, switch_index;
@@ -1681,10 +1681,10 @@ static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Construct a set of switch array entries,
 	 * use the same indexes as switch_record_table in slurmctld */
-	switches_bitmap   = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
-	switches_cpu_cnt  = xmalloc(sizeof(int)        * switch_record_cnt);
-	switches_node_cnt = xmalloc(sizeof(uint32_t)   * switch_record_cnt);
-	switches_node_use = xmalloc(sizeof(int)        * switch_record_cnt);
+	switches_bitmap   = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
+	switches_cpu_cnt  = xcalloc(switch_record_cnt, sizeof(int));
+	switches_node_cnt = xcalloc(switch_record_cnt, sizeof(uint32_t));
+	switches_node_use = xcalloc(switch_record_cnt, sizeof(int));
 	if (job_ptr->details->req_node_bitmap) {
 		req_nodes_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
 		i = bit_set_count(req_nodes_bitmap);
@@ -1974,10 +1974,10 @@ static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Construct a set of switch array entries,
 	 * use the same indexes as switch_record_table in slurmctld */
-	switches_bitmap   = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
-	switches_cpu_cnt  = xmalloc(sizeof(int)        * switch_record_cnt);
-	switches_node_cnt = xmalloc(sizeof(uint32_t)   * switch_record_cnt);
-	switches_required = xmalloc(sizeof(int)        * switch_record_cnt);
+	switches_bitmap   = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
+	switches_cpu_cnt  = xcalloc(switch_record_cnt, sizeof(int));
+	switches_node_cnt = xcalloc(switch_record_cnt, sizeof(uint32_t));
+	switches_required = xcalloc(switch_record_cnt, sizeof(int));
 	if (job_ptr->details->req_node_bitmap) {
 		req_nodes_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
 		i = bit_set_count(req_nodes_bitmap);
@@ -2504,7 +2504,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr,
 			    select_fast_schedule);
 	xfree(to_job_ptr->node_addr);
-	to_job_ptr->node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
+	to_job_ptr->node_addr = xcalloc(node_cnt, sizeof(slurm_addr_t));
 	to_job_ptr->total_cpus = 0;
 
 	first_bit = MIN(bit_ffs(from_job_resrcs_ptr->node_bitmap),
@@ -2966,7 +2966,7 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 	new_cr_ptr->tot_job_ids = xmalloc(i);
 	memcpy(new_cr_ptr->tot_job_ids, cr_ptr->tot_job_ids, i);
 
-	new_cr_ptr->nodes = xmalloc(select_node_cnt *
+	new_cr_ptr->nodes = xcalloc(select_node_cnt,
 				    sizeof(struct node_cr_record));
 	for (i = 0; i < select_node_cnt; i++) {
 		node_ptr = node_record_table_ptr + i;
@@ -3014,8 +3014,8 @@ static void _init_node_cr(void)
 		return;
 
 	cr_ptr = xmalloc(sizeof(struct cr_record));
-	cr_ptr->nodes = xmalloc(select_node_cnt
-				* sizeof(struct node_cr_record));
+	cr_ptr->nodes = xcalloc(select_node_cnt,
+				sizeof(struct node_cr_record));
 
 	/* build partition records */
 	part_iterator = list_iterator_create(part_list);
@@ -4259,10 +4259,10 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 
 	/* Construct a set of switch array entries,
 	 * use the same indexes as switch_record_table in slurmctld */
-	switches_bitmap   = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
-	switches_cpu_cnt  = xmalloc(sizeof(int)        * switch_record_cnt);
-	switches_node_cnt = xmalloc(sizeof(int)        * switch_record_cnt);
-	switches_required = xmalloc(sizeof(int)        * switch_record_cnt);
+	switches_bitmap   = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
+	switches_cpu_cnt  = xcalloc(switch_record_cnt, sizeof(int));
+	switches_node_cnt = xcalloc(switch_record_cnt, sizeof(int));
+	switches_required = xcalloc(switch_record_cnt, sizeof(int));
 	for (i=0; i<switch_record_cnt; i++) {
 		switches_bitmap[i] = bit_copy(switch_record_table[i].
 					      node_bitmap);

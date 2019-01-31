@@ -142,7 +142,7 @@ static void _init_tres_usage(struct jobacctinfo *jobacct,
 
 	jobacct->tres_count = tres_cnt;
 
-	jobacct->tres_ids = xmalloc(tres_cnt * sizeof(uint32_t));
+	jobacct->tres_ids = xcalloc(tres_cnt, sizeof(uint32_t));
 
 	alloc_size = tres_cnt * sizeof(uint64_t);
 

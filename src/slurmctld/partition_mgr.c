@@ -105,7 +105,7 @@ static int _calc_part_tres(void *x, void *arg)
 
 	xfree(part_ptr->tres_cnt);
 	xfree(part_ptr->tres_fmt_str);
-	part_ptr->tres_cnt = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
+	part_ptr->tres_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
 	tres_cnt = part_ptr->tres_cnt;
 
 	/* sum up nodes' tres in the partition. */
@@ -2093,7 +2093,7 @@ _remove_duplicate_uids(uid_t *u)
 	for (i = 0; u[i]; i++)
 		++num;
 
-	v = xmalloc(num * sizeof(uid_t));
+	v = xcalloc(num, sizeof(uid_t));
 	qsort(u, num, sizeof(uid_t), _uid_cmp);
 
 	j = 0;

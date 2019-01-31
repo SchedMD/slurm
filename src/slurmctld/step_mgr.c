@@ -920,7 +920,7 @@ static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
 
 	/* Need to satisfy both a node count and a cpu count */
 	picked_node_bitmap = bit_alloc(node_record_count);
-	usable_cpu_array = xmalloc(sizeof(int) * cpu_target);
+	usable_cpu_array = xcalloc(cpu_target, sizeof(int));
 	rem_nodes = node_cnt;
 	rem_cpus  = cpu_cnt;
 	first_bit = bit_ffs(nodes_bitmap);
@@ -1164,8 +1164,8 @@ _pick_step_nodes (struct job_record *job_ptr,
 				goto cleanup;
 			}
 			non_selected_nodes = bit_alloc(node_record_count);
-			non_selected_tasks = xmalloc(sizeof(int) *
-						     node_record_count);
+			non_selected_tasks = xcalloc(node_record_count,
+						     sizeof(int));
 		}
 
 		node_inx = -1;
@@ -1353,7 +1353,7 @@ _pick_step_nodes (struct job_record *job_ptr,
 			return NULL;
 		}
 
-		usable_cpu_cnt = xmalloc(sizeof(uint32_t) * node_record_count);
+		usable_cpu_cnt = xcalloc(node_record_count, sizeof(uint32_t));
 		first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
 		if (first_bit >= 0)
 			last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);
@@ -1629,8 +1629,8 @@ _pick_step_nodes (struct job_record *job_ptr,
 		int cpus_needed, node_avail_cnt, nodes_needed;
 
 		if (usable_cpu_cnt == NULL) {
-			usable_cpu_cnt = xmalloc(sizeof(uint32_t) *
-						 node_record_count);
+			usable_cpu_cnt = xcalloc(node_record_count,
+						 sizeof(uint32_t));
 			first_bit = bit_ffs(job_resrcs_ptr->node_bitmap);
 			if (first_bit >= 0)
 				last_bit  = bit_fls(job_resrcs_ptr->node_bitmap);

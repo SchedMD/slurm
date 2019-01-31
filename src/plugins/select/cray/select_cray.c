@@ -621,7 +621,7 @@ static void _initialize_event(alpsc_ev_app_t *event,
 		return;
 	}
 
-	event->nodes = xmalloc(hostlist_count(hl) * sizeof(int32_t));
+	event->nodes = xcalloc(hostlist_count(hl), sizeof(int32_t));
 
 	while ((node = hostlist_next(hlit))) {
 		rv = sscanf(node, "nid%"SCNd32,
@@ -656,7 +656,7 @@ static void _copy_event(alpsc_ev_app_t *dest, alpsc_ev_app_t *src)
 	dest->batch_id = xstrdup(src->batch_id);
 	dest->state = src->state;
 	if (src->num_nodes > 0 && src->nodes != NULL) {
-		dest->nodes = xmalloc(src->num_nodes * sizeof(int32_t));
+		dest->nodes = xcalloc(src->num_nodes, sizeof(int32_t));
 		memcpy(dest->nodes, src->nodes,
 		       src->num_nodes * sizeof(int32_t));
 		dest->num_nodes = src->num_nodes;
@@ -1710,7 +1710,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	slurm_mutex_lock(&blade_mutex);
 
 	if (!blade_array)
-		blade_array = xmalloc(sizeof(blade_info_t) * node_cnt);
+		blade_array = xcalloc(node_cnt, sizeof(blade_info_t));
 
 	if (!blade_nodes_running_npc)
 		blade_nodes_running_npc = bit_alloc(node_cnt);

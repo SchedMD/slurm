@@ -155,15 +155,15 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 	step_layout = xmalloc(sizeof(slurm_step_layout_t));
 	step_layout->node_list = xstrdup(tlist);
 	step_layout->node_cnt = node_cnt;
-	step_layout->tasks = xmalloc(sizeof(uint16_t) * node_cnt);
-	step_layout->tids  = xmalloc(sizeof(uint32_t *) * node_cnt);
+	step_layout->tasks = xcalloc(node_cnt, sizeof(uint16_t));
+	step_layout->tids = xcalloc(node_cnt, sizeof(uint32_t *));
 
 	step_layout->task_cnt = 0;
 	for (i = 0; i < step_layout->node_cnt; i++) {
 		if (cpus_per_node && cpu_count_reps) {
 			step_layout->tasks[i] = cpus_per_node[cpu_inx];
-			step_layout->tids[i] = xmalloc(sizeof(uint32_t) *
-						       step_layout->tasks[i]);
+			step_layout->tids[i] = xcalloc(step_layout->tasks[i],
+						       sizeof(uint32_t));
 
 			for (j = 0; j < step_layout->tasks[i]; j++)
 				step_layout->tids[i][j] =
@@ -183,7 +183,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 			} else {
 				step_layout->tasks[i] = cpn;
 				step_layout->tids[i] =
-					xmalloc(sizeof(uint32_t) * cpn);
+					xcalloc(cpn, sizeof(uint32_t));
 
 				for (j = 0; j < cpn; j++) {
 					step_layout->tids[i][j] =
@@ -218,13 +218,13 @@ extern slurm_step_layout_t *slurm_step_layout_copy(
 	layout->task_cnt = step_layout->task_cnt;
 	layout->task_dist = step_layout->task_dist;
 
-	layout->tasks = xmalloc(sizeof(uint16_t) * layout->node_cnt);
+	layout->tasks = xcalloc(layout->node_cnt, sizeof(uint16_t));
 	memcpy(layout->tasks, step_layout->tasks,
 	       (sizeof(uint16_t) * layout->node_cnt));
 
-	layout->tids  = xmalloc(sizeof(uint32_t *) * layout->node_cnt);
+	layout->tids = xcalloc(layout->node_cnt, sizeof(uint32_t *));
 	for (i = 0; i < layout->node_cnt; i++) {
-		layout->tids[i] = xmalloc(sizeof(uint32_t) * layout->tasks[i]);
+		layout->tids[i] = xcalloc(layout->tasks[i], sizeof(uint32_t));
 		memcpy(layout->tids[i], step_layout->tids[i],
 		       (sizeof(uint32_t) * layout->tasks[i]));
 	}
@@ -385,10 +385,8 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 
 	step_layout->plane_size = step_layout_req->plane_size;
 
-	step_layout->tasks = xmalloc(sizeof(uint16_t)
-				     * step_layout->node_cnt);
-	step_layout->tids  = xmalloc(sizeof(uint32_t *)
-				     * step_layout->node_cnt);
+	step_layout->tasks = xcalloc(step_layout->node_cnt, sizeof(uint16_t));
+	step_layout->tids = xcalloc(step_layout->node_cnt, sizeof(uint32_t *));
 	hl = hostlist_create(step_layout->node_list);
 	/* make sure the number of nodes we think we have
 	 * is the correct number */
@@ -513,8 +511,8 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	 * than strcmp's on nodes.
 	 */
 	step_hosts_cnt  = hostlist_count(step_alloc_hosts);
-	step_hosts_ptrs = xmalloc(sizeof(struct node_record *) *
-				  step_hosts_cnt);
+	step_hosts_ptrs = xcalloc(step_hosts_cnt,
+				  sizeof(struct node_record *));
 
 	step_inx = 0;
 	while((host = hostlist_next(itr_task))) {
@@ -537,8 +535,8 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 		debug3("%s got %u tasks", host, step_layout->tasks[i]);
 		if (step_layout->tasks[i] == 0)
 			goto reset_hosts;
-		step_layout->tids[i] = xmalloc(sizeof(uint32_t)
-					       * step_layout->tasks[i]);
+		step_layout->tids[i] = xcalloc(step_layout->tasks[i],
+					       sizeof(uint32_t));
 		taskid = 0;
 		j = 0;
 
@@ -643,8 +641,8 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 	/* Now distribute the tasks */
 	task_id = 0;
 	for (i = 0; i < step_layout->node_cnt; i++) {
-		step_layout->tids[i] = xmalloc(sizeof(uint32_t)
-					       * step_layout->tasks[i]);
+		step_layout->tids[i] = xcalloc(step_layout->tasks[i],
+					       sizeof(uint32_t));
 		for (j = 0; j < step_layout->tasks[i]; j++) {
 			step_layout->tids[i][j] = task_id;
 			task_id++;
@@ -767,8 +765,8 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 	/* now distribute the tasks */
 	taskid = 0;
 	for (i=0; i < step_layout->node_cnt; i++) {
-		step_layout->tids[i] = xmalloc(sizeof(uint32_t)
-					       * step_layout->tasks[i]);
+		step_layout->tids[i] = xcalloc(step_layout->tasks[i],
+					       sizeof(uint32_t));
 		cur_task[i] = 0;
 	}
 	for (j=0; taskid<step_layout->task_cnt; j++) {   /* cycle counter */

@@ -1009,7 +1009,7 @@ _parse_srun_ports(const char *str)
 	*dash = 0;
 	max = dash + 1;
 
-	v = xmalloc(2 * sizeof(uint16_t));
+	v = xcalloc(2, sizeof(uint16_t));
 
 	if (parse_uint16(min, &v[0]))
 		goto hosed;
@@ -1719,8 +1719,8 @@ static int _load_slurmctld_host(slurm_ctl_conf_t *conf)
 		/*
 		 * Using new-style SlurmctldHost entries.
 		 */
-		conf->control_machine = xmalloc(sizeof(char *) * count);
-		conf->control_addr = xmalloc(sizeof(char *) * count);
+		conf->control_machine = xcalloc(count, sizeof(char *));
+		conf->control_addr = xcalloc(count, sizeof(char *));
 		conf->control_cnt = count;
 
 		for (i = 0; i < count; i++) {

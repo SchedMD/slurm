@@ -410,15 +410,15 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 	int *ffs = NULL;
 	int i, j, low;
 
-	ffs   = xmalloc(sizeof(int) * resp->resp_array_cnt);
+	ffs = xcalloc(resp->resp_array_cnt, sizeof(int));
 	for (i = 0; i < resp->resp_array_cnt; i++) {
 		ffs[i] = bit_ffs(resp->resp_array_task_id[i]);
 	}
 
 	msg = xmalloc(sizeof(job_array_resp_msg_t));
 	msg->job_array_count = resp->resp_array_cnt;
-	msg->job_array_id    = xmalloc(sizeof(char *)   * resp->resp_array_cnt);
-	msg->error_code      = xmalloc(sizeof(uint32_t) * resp->resp_array_cnt);
+	msg->job_array_id = xcalloc(resp->resp_array_cnt, sizeof(char *));
+	msg->error_code = xcalloc(resp->resp_array_cnt, sizeof(uint32_t));
 	for (i = 0; i < resp->resp_array_cnt; i++) {
 		low = -1;
 		for (j = 0; j < resp->resp_array_cnt; j++) {
@@ -1345,7 +1345,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				   .user = READ_LOCK };
 
 	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
-	limit_set.tres = xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
+	limit_set.tres = xcalloc(slurmctld_tres_cnt, sizeof(uint16_t));
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		safe_unpack32(&array_job_id, buffer);
@@ -3350,7 +3350,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	    (job_step_kill_msg->signal == SIGKILL) &&
 	    (job_step_kill_msg->job_step_id != SLURM_BATCH_SCRIPT)) {
 		cnt = list_count(job_ptr->pack_job_list);
-		pack_job_ids = xmalloc(sizeof(uint32_t) * cnt);
+		pack_job_ids = xcalloc(cnt, sizeof(uint32_t));
 		i = 0;
 		iter = list_iterator_create(job_ptr->pack_job_list);
 		while ((job_pack_ptr = (struct job_record *) list_next(iter))) {
@@ -4276,12 +4276,12 @@ extern void rehash_jobs(void)
 
 	if (job_hash == NULL) {
 		hash_table_size = slurmctld_conf.max_job_cnt;
-		job_hash = (struct job_record **)
-			xmalloc(hash_table_size * sizeof(struct job_record *));
-		job_array_hash_j = (struct job_record **)
-			xmalloc(hash_table_size * sizeof(struct job_record *));
-		job_array_hash_t = (struct job_record **)
-			xmalloc(hash_table_size * sizeof(struct job_record *));
+		job_hash = xcalloc(hash_table_size,
+				   sizeof(struct job_record *));
+		job_array_hash_j = xcalloc(hash_table_size,
+					   sizeof(struct job_record *));
+		job_array_hash_t = xcalloc(hash_table_size,
+					   sizeof(struct job_record *));
 	} else if (hash_table_size < (slurmctld_conf.max_job_cnt / 2)) {
 		/* If the MaxJobCount grows by too much, the hash table will
 		 * be ineffective without rebuilding. We don't presently bother
@@ -4388,8 +4388,8 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->gres_req = NULL;
 	job_ptr_pend->gres_used = NULL;
 
-	job_ptr_pend->limit_set.tres =
-		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
+	job_ptr_pend->limit_set.tres = xcalloc(slurmctld_tres_cnt,
+					       sizeof(uint16_t));
 	memcpy(job_ptr_pend->limit_set.tres, job_ptr->limit_set.tres,
 	       sizeof(uint16_t) * slurmctld_tres_cnt);
 
@@ -4428,8 +4428,8 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	job_ptr_pend->sched_nodes = NULL;
 	if (job_ptr->spank_job_env_size) {
 		job_ptr_pend->spank_job_env =
-			xmalloc(sizeof(char *) *
-			(job_ptr->spank_job_env_size + 1));
+			xcalloc((job_ptr->spank_job_env_size + 1),
+				sizeof(char *));
 		for (i = 0; i < job_ptr->spank_job_env_size; i++) {
 			job_ptr_pend->spank_job_env[i] =
 				xstrdup(job_ptr->spank_job_env[i]);
@@ -4474,7 +4474,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	details_new->acctg_freq = xstrdup(job_details->acctg_freq);
 	if (job_details->argc) {
 		details_new->argv =
-			xmalloc(sizeof(char *) * (job_details->argc + 1));
+			xcalloc((job_details->argc + 1), sizeof(char *));
 		for (i = 0; i < job_details->argc; i++) {
 			details_new->argv[i] = xstrdup(job_details->argv[i]);
 		}
@@ -4490,7 +4490,7 @@ extern struct job_record *job_array_split(struct job_record *job_ptr)
 	details_new->orig_dependency = xstrdup(job_details->orig_dependency);
 	if (job_details->env_cnt) {
 		details_new->env_sup =
-			xmalloc(sizeof(char *) * (job_details->env_cnt + 1));
+			xcalloc((job_details->env_cnt + 1), sizeof(char *));
 		for (i = 0; i < job_details->env_cnt; i++) {
 			details_new->env_sup[i] =
 				xstrdup(job_details->env_sup[i]);
@@ -6698,8 +6698,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	acct_policy_limit_set_t acct_policy_limit_set;
 
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
-	acct_policy_limit_set.tres =
-		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
+	acct_policy_limit_set.tres = xcalloc(slurmctld_tres_cnt,
+					     sizeof(uint16_t));
 
 	*job_pptr = (struct job_record *) NULL;
 
@@ -6824,7 +6824,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	job_desc->tres_req_cnt = xmalloc(sizeof(uint64_t) * slurmctld_tres_cnt);
+	job_desc->tres_req_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
 	job_desc->tres_req_cnt[TRES_ARRAY_NODE] = job_desc->min_nodes;
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU]  = job_desc->min_cpus;
 	job_desc->tres_req_cnt[TRES_ARRAY_MEM]  = job_get_tres_mem(NULL,
@@ -7654,8 +7654,8 @@ _read_data_array_from_file(int fd, char *file_name, char ***data,
 	}
 
 	/* We have all the data, now let's compute the pointers */
-	array_ptr = xmalloc(sizeof(char *) *
-			    (rec_cnt + job_ptr->details->env_cnt));
+	array_ptr = xcalloc((rec_cnt + job_ptr->details->env_cnt),
+			    sizeof(char *));
 	for (i = 0, pos = 0; i < rec_cnt; i++) {
 		array_ptr[i] = &buffer[pos];
 		pos += strlen(&buffer[pos]) + 1;
@@ -8757,7 +8757,7 @@ extern void job_set_req_tres(
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	job_ptr->tres_req_cnt = xmalloc(sizeof(uint64_t) * g_tres_count);
+	job_ptr->tres_req_cnt = xcalloc(g_tres_count, sizeof(uint64_t));
 
 	if (job_ptr->details) {
 		node_cnt = job_ptr->details->min_nodes;
@@ -8836,8 +8836,7 @@ extern void job_set_alloc_tres(struct job_record *job_ptr,
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	job_ptr->tres_alloc_cnt = xmalloc(
-		sizeof(uint64_t) * slurmctld_tres_cnt);
+	job_ptr->tres_alloc_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
 
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU] = (uint64_t)job_ptr->total_cpus;
 
@@ -17098,7 +17097,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	 * job_desc->alloc_sid         = job_ptr->alloc_sid;
 	 */
 	job_desc->argc              = details->argc;
-	job_desc->argv              = xmalloc(sizeof(char *) * job_desc->argc);
+	job_desc->argv              = xcalloc(job_desc->argc, sizeof(char *));
 	for (i = 0; i < job_desc->argc; i ++)
 		job_desc->argv[i]   = xstrdup(details->argv[i]);
 	job_desc->begin_time        = details->begin_time;
@@ -17162,8 +17161,8 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(struct job_record *job_ptr)
 	else
 		job_desc->shared     = NO_VAL16;
 	job_desc->spank_job_env_size = job_ptr->spank_job_env_size;
-	job_desc->spank_job_env      = xmalloc(sizeof(char *) *
-					       job_desc->spank_job_env_size);
+	job_desc->spank_job_env      = xcalloc(job_desc->spank_job_env_size,
+					       sizeof(char *));
 	for (i = 0; i < job_desc->spank_job_env_size; i ++)
 		job_desc->spank_job_env[i]= xstrdup(job_ptr->spank_job_env[i]);
 	job_desc->std_err           = xstrdup(details->std_err);
@@ -17901,8 +17900,8 @@ set_remote_working_response(resource_allocation_response_msg_t *resp,
 			resp->working_cluster_rec = response_cluster_rec;
 		}
 
-		resp->node_addr = xmalloc(sizeof(slurm_addr_t) *
-					  job_ptr->node_cnt);
+		resp->node_addr = xcalloc(job_ptr->node_cnt,
+					  sizeof(slurm_addr_t));
 		memcpy(resp->node_addr, job_ptr->node_addr,
 		       (sizeof(slurm_addr_t) * job_ptr->node_cnt));
 	}
@@ -17925,24 +17924,24 @@ extern resource_allocation_response_msg_t *
 		job_info_resp_msg->num_cpu_groups =
 			job_ptr->job_resrcs->cpu_array_cnt;
 		job_info_resp_msg->cpu_count_reps =
-			xmalloc(sizeof(uint32_t) *
-				job_ptr->job_resrcs->cpu_array_cnt);
+			xcalloc(job_ptr->job_resrcs->cpu_array_cnt,
+				sizeof(uint32_t));
 		memcpy(job_info_resp_msg->cpu_count_reps,
 		       job_ptr->job_resrcs->cpu_array_reps,
 		       (sizeof(uint32_t) * job_ptr->job_resrcs->cpu_array_cnt));
 		job_info_resp_msg->cpus_per_node  =
-			xmalloc(sizeof(uint16_t) *
-				job_ptr->job_resrcs->cpu_array_cnt);
+			xcalloc(job_ptr->job_resrcs->cpu_array_cnt,
+				sizeof(uint16_t));
 		memcpy(job_info_resp_msg->cpus_per_node,
 		       job_ptr->job_resrcs->cpu_array_value,
 		       (sizeof(uint16_t) * job_ptr->job_resrcs->cpu_array_cnt));
 	} else {
 		/* Job has changed size, rebuild CPU count info */
 		job_info_resp_msg->num_cpu_groups = job_ptr->node_cnt;
-		job_info_resp_msg->cpu_count_reps =
-			xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
-		job_info_resp_msg->cpus_per_node =
-			xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
+		job_info_resp_msg->cpu_count_reps = xcalloc(job_ptr->node_cnt,
+							    sizeof(uint32_t));
+		job_info_resp_msg->cpus_per_node = xcalloc(job_ptr->node_cnt,
+							   sizeof(uint32_t));
 		for (i = 0, j = -1; i < job_ptr->job_resrcs->nhosts; i++) {
 			if (job_ptr->job_resrcs->cpus[i] == 0)
 				continue;
@@ -17996,7 +17995,7 @@ extern resource_allocation_response_msg_t *
 	if (job_ptr->details && job_ptr->details->env_cnt) {
 		job_info_resp_msg->env_size = job_ptr->details->env_cnt;
 		job_info_resp_msg->environment =
-			xmalloc(sizeof(char *) * job_info_resp_msg->env_size);
+			xcalloc(job_info_resp_msg->env_size, sizeof(char *));
 		for (i = 0; i < job_info_resp_msg->env_size; i++) {
 			job_info_resp_msg->environment[i] =
 				xstrdup(job_ptr->details->env_sup[i]);

@@ -153,8 +153,8 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 	}
 
 	proto_conf = xmalloc(sizeof(slurm_protocol_config_t));
-	proto_conf->controller_addr = xmalloc(sizeof(slurm_addr_t) *
-					      conf->control_cnt);
+	proto_conf->controller_addr = xcalloc(conf->control_cnt,
+					      sizeof(slurm_addr_t));
 	proto_conf->control_cnt = conf->control_cnt;
 	memcpy(&proto_conf->controller_addr[0], &controller_addr,
 	       sizeof(slurm_addr_t));
@@ -983,7 +983,7 @@ double *slurm_get_tres_weight_array(char *weights_str, int tres_cnt, bool fail)
 		return NULL;
 
 	tmp_str = xstrdup(weights_str);
-	weights = xmalloc(sizeof(double) * tres_cnt);
+	weights = xcalloc(tres_cnt, sizeof(double));
 
 	token = strtok_r(tmp_str, ",", &last);
 	while (token) {
@@ -4203,7 +4203,7 @@ int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
 	if (nl > NO_VAL)
 		goto unpack_error;
 	*size_val = ntohl(nl);
-	*slurm_address = xmalloc((*size_val) * sizeof(slurm_addr_t));
+	*slurm_address = xcalloc(*size_val, sizeof(slurm_addr_t));
 
 	for (i = 0; i < *size_val; i++) {
 		if (slurm_unpack_slurm_addr_no_alloc((*slurm_address) + i,
@@ -4979,7 +4979,7 @@ extern int *set_span(int total,  uint16_t tree_width)
 	if (tree_width == 0)
 		tree_width = slurm_get_tree_width();
 
-	span = xmalloc(sizeof(int) * tree_width);
+	span = xcalloc(tree_width, sizeof(int));
 	//info("span count = %d", tree_width);
 	if (total <= tree_width) {
 		return span;

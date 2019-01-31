@@ -583,9 +583,9 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	if (arg->step_core_bitmap)
 		cred->step_core_bitmap =bit_copy(arg->step_core_bitmap);
 	cred->core_array_size     = i;
-	cred->cores_per_socket    = xmalloc(sizeof(uint16_t) * i);
-	cred->sockets_per_node    = xmalloc(sizeof(uint16_t) * i);
-	cred->sock_core_rep_count = xmalloc(sizeof(uint32_t) * i);
+	cred->cores_per_socket = xcalloc(i, sizeof(uint16_t));
+	cred->sockets_per_node = xcalloc(i, sizeof(uint16_t));
+	cred->sock_core_rep_count = xcalloc(i, sizeof(uint32_t));
 	if (arg->cores_per_socket) {
 		memcpy(cred->cores_per_socket, arg->cores_per_socket,
 		       (sizeof(uint16_t) * i));
@@ -652,16 +652,16 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->job_core_bitmap  = bit_copy(cred->job_core_bitmap);
 	rcred->step_core_bitmap = bit_copy(cred->step_core_bitmap);
 	rcred->core_array_size  = cred->core_array_size;
-	rcred->cores_per_socket = xmalloc(sizeof(uint16_t) *
-					  rcred->core_array_size);
+	rcred->cores_per_socket = xcalloc(rcred->core_array_size,
+					  sizeof(uint16_t));
 	memcpy(rcred->cores_per_socket, cred->cores_per_socket,
 	       (sizeof(uint16_t) * rcred->core_array_size));
-	rcred->sockets_per_node = xmalloc(sizeof(uint16_t) *
-					  rcred->core_array_size);
+	rcred->sockets_per_node = xcalloc(rcred->core_array_size,
+					  sizeof(uint16_t));
 	memcpy(rcred->sockets_per_node, cred->sockets_per_node,
 	       (sizeof(uint16_t) * rcred->core_array_size));
-	rcred->sock_core_rep_count = xmalloc(sizeof(uint32_t) *
-					     rcred->core_array_size);
+	rcred->sock_core_rep_count = xcalloc(rcred->core_array_size,
+					     sizeof(uint32_t));
 	memcpy(rcred->sock_core_rep_count, cred->sock_core_rep_count,
 	       (sizeof(uint32_t) * rcred->core_array_size));
 	rcred->job_constraints = xstrdup(cred->job_constraints);
@@ -711,13 +711,13 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->job_core_bitmap  = bit_copy(arg->job_core_bitmap);
 	cred->step_core_bitmap = bit_copy(arg->step_core_bitmap);
 	cred->core_array_size = i;
-	cred->cores_per_socket = xmalloc(sizeof(uint16_t) * i);
+	cred->cores_per_socket = xcalloc(i, sizeof(uint16_t));
 	memcpy(cred->cores_per_socket, arg->cores_per_socket,
 	       (sizeof(uint16_t) * i));
-	cred->sockets_per_node = xmalloc(sizeof(uint16_t) * i);
+	cred->sockets_per_node = xcalloc(i, sizeof(uint16_t));
 	memcpy(cred->sockets_per_node, arg->sockets_per_node,
 	       (sizeof(uint16_t) * i));
-	cred->sock_core_rep_count = xmalloc(sizeof(uint32_t) * i);
+	cred->sock_core_rep_count = xcalloc(i, sizeof(uint32_t));
 	memcpy(cred->sock_core_rep_count, arg->sock_core_rep_count,
 	       (sizeof(uint32_t) * i));
 	cred->job_constraints = xstrdup(arg->job_constraints);
@@ -790,16 +790,16 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->x11            = cred->x11;
 	arg->job_core_bitmap  = bit_copy(cred->job_core_bitmap);
 	arg->step_core_bitmap = bit_copy(cred->step_core_bitmap);
-	arg->cores_per_socket = xmalloc(sizeof(uint16_t) *
-					cred->core_array_size);
+	arg->cores_per_socket = xcalloc(cred->core_array_size,
+					sizeof(uint16_t));
 	memcpy(arg->cores_per_socket, cred->cores_per_socket,
 	       (sizeof(uint16_t) * cred->core_array_size));
-	arg->sockets_per_node = xmalloc(sizeof(uint16_t) *
-					cred->core_array_size);
+	arg->sockets_per_node = xcalloc(cred->core_array_size,
+					sizeof(uint16_t));
 	memcpy(arg->sockets_per_node, cred->sockets_per_node,
 	       (sizeof(uint16_t) * cred->core_array_size));
-	arg->sock_core_rep_count = xmalloc(sizeof(uint32_t) *
-					   cred->core_array_size);
+	arg->sock_core_rep_count = xcalloc(cred->core_array_size,
+					   sizeof(uint32_t));
 	memcpy(arg->sock_core_rep_count, cred->sock_core_rep_count,
 	       (sizeof(uint32_t) * cred->core_array_size));
 	arg->job_constraints = xstrdup(cred->job_constraints);
@@ -876,16 +876,16 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 	arg->x11            = cred->x11;
 	arg->job_core_bitmap = bit_copy(cred->job_core_bitmap);
 	arg->step_core_bitmap = bit_copy(cred->step_core_bitmap);
-	arg->cores_per_socket = xmalloc(sizeof(uint16_t) *
-					cred->core_array_size);
+	arg->cores_per_socket = xcalloc(cred->core_array_size,
+					sizeof(uint16_t));
 	memcpy(arg->cores_per_socket, cred->cores_per_socket,
 	       (sizeof(uint16_t) * cred->core_array_size));
-	arg->sockets_per_node = xmalloc(sizeof(uint16_t) *
-					cred->core_array_size);
+	arg->sockets_per_node = xcalloc(cred->core_array_size,
+					sizeof(uint16_t));
 	memcpy(arg->sockets_per_node, cred->sockets_per_node,
 	       (sizeof(uint16_t) * cred->core_array_size));
-	arg->sock_core_rep_count = xmalloc(sizeof(uint32_t) *
-					   cred->core_array_size);
+	arg->sock_core_rep_count = xcalloc(cred->core_array_size,
+					   sizeof(uint32_t));
 	memcpy(arg->sock_core_rep_count, cred->sock_core_rep_count,
 	       (sizeof(uint32_t) * cred->core_array_size));
 	arg->job_constraints = xstrdup(cred->job_constraints);

@@ -140,8 +140,8 @@ _alloc_libstate(void)
 	libstate->magic = SW_GEN_LIBSTATE_MAGIC;
 	libstate->node_count = 0;
 	libstate->hash_max = SW_GEN_HASH_MAX;
-	libstate->hash_table = xmalloc(sizeof(sw_gen_node_info_t *) *
-				       libstate->hash_max);
+	libstate->hash_table = xcalloc(libstate->hash_max,
+				       sizeof(sw_gen_node_info_t *));
 }
 
 static void
@@ -384,8 +384,8 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	if (!hl)
 		fatal("hostlist_create(%s): %m", step_layout->node_list);
 	gen_step_info->node_cnt = hostlist_count(hl);
-	gen_step_info->node_array = xmalloc(sizeof(sw_gen_node_t *) *
-					    gen_step_info->node_cnt);
+	gen_step_info->node_array = xcalloc(gen_step_info->node_cnt,
+					    sizeof(sw_gen_node_t *));
 	hi = hostlist_iterator_create(hl);
 	for (i = 0; (host = hostlist_next(hi)); i++) {
 		node_ptr = xmalloc(sizeof(sw_gen_node_t));
@@ -394,8 +394,8 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 		gen_node_info = _find_node(host);
 		if (gen_node_info) {	/* Copy node info to this step */
 			node_ptr->ifa_cnt = gen_node_info->ifa_cnt;
-			node_ptr->ifa_array = xmalloc(sizeof(sw_gen_node_t *) *
-						      node_ptr->ifa_cnt);
+			node_ptr->ifa_array = xcalloc(node_ptr->ifa_cnt,
+						      sizeof(sw_gen_node_t *));
 			for (j = 0; j < node_ptr->ifa_cnt; j++) {
 				node_ptr->ifa_array[j] =
 					xmalloc(sizeof(sw_gen_node_t));

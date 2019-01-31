@@ -225,9 +225,9 @@ extern int slurm_select_init(bool only_default)
 		plugin_names = plugin_get_plugins_of_type(plugin_type);
 	}
 	if (plugin_names && (plugin_cnt = list_count(plugin_names))) {
-		ops = xmalloc(sizeof(slurm_select_ops_t) * plugin_cnt);
-		select_context = xmalloc(sizeof(plugin_context_t *) *
-					 plugin_cnt);
+		ops = xcalloc(plugin_cnt, sizeof(slurm_select_ops_t));
+		select_context = xcalloc(plugin_cnt,
+					 sizeof(plugin_context_t *));
 		list_for_each(plugin_names, _load_plugins, &plugin_args);
 	}
 

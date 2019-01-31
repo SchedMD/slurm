@@ -185,10 +185,7 @@ extern int acct_gather_energy_fini(void)
 
 extern acct_gather_energy_t *acct_gather_energy_alloc(uint16_t cnt)
 {
-	acct_gather_energy_t *energy =
-		xmalloc(sizeof(struct acct_gather_energy) * cnt);
-
-	return energy;
+	return xcalloc(cnt, sizeof(struct acct_gather_energy));
 }
 
 extern void acct_gather_energy_destroy(acct_gather_energy_t *energy)

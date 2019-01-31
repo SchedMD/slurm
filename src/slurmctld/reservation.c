@@ -261,8 +261,8 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->boot_time = resv_orig_ptr->boot_time;
 	resv_copy_ptr->burst_buffer = xstrdup(resv_orig_ptr->burst_buffer);
 	resv_copy_ptr->account_cnt = resv_orig_ptr->account_cnt;
-	resv_copy_ptr->account_list = xmalloc(sizeof(char *) *
-					      resv_orig_ptr->account_cnt);
+	resv_copy_ptr->account_list = xcalloc(resv_orig_ptr->account_cnt,
+					      sizeof(char *));
 	resv_copy_ptr->account_not = resv_orig_ptr->account_not;
 	for (i = 0; i < resv_copy_ptr->account_cnt; i++) {
 		resv_copy_ptr->account_list[i] =
@@ -308,8 +308,8 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->tres_fmt_str = xstrdup(resv_orig_ptr->tres_fmt_str);
 	resv_copy_ptr->users = xstrdup(resv_orig_ptr->users);
 	resv_copy_ptr->user_cnt = resv_orig_ptr->user_cnt;
-	resv_copy_ptr->user_list = xmalloc(sizeof(uid_t) *
-					   resv_orig_ptr->user_cnt);
+	resv_copy_ptr->user_list = xcalloc(resv_orig_ptr->user_cnt,
+					   sizeof(uid_t));
 	resv_copy_ptr->user_not = resv_orig_ptr->user_not;
 	for (i = 0; i < resv_copy_ptr->user_cnt; i++)
 		resv_copy_ptr->user_list[i] = resv_orig_ptr->user_list[i];
@@ -949,7 +949,7 @@ static int _build_account_list(char *accounts, int *account_cnt,
 		return ESLURM_INVALID_ACCOUNT;
 
 	i = strlen(accounts);
-	ac_list = xmalloc(sizeof(char *) * (i + 2));
+	ac_list = xcalloc((i + 2), sizeof(char *));
 	tmp = xstrdup(accounts);
 	tok = strtok_r(tmp, ",", &last);
 	while (tok) {
@@ -1008,8 +1008,8 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 		return ESLURM_INVALID_ACCOUNT;
 
 	i = strlen(accounts);
-	ac_list = xmalloc(sizeof(char *) * (i + 2));
-	ac_type = xmalloc(sizeof(int)    * (i + 2));
+	ac_list = xcalloc((i + 2), sizeof(char *));
+	ac_type = xcalloc((i + 2), sizeof(int));
 	ac_cpy = xstrdup(accounts);
 	tok = strtok_r(ac_cpy, ",", &last);
 	while (tok) {
@@ -1178,7 +1178,7 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 		return ESLURM_USER_ID_MISSING;
 
 	i = strlen(users);
-	u_list = xmalloc(sizeof(uid_t) * (i + 2));
+	u_list = xcalloc((i + 2), sizeof(uid_t));
 	tmp = xstrdup(users);
 	tok = strtok_r(tmp, ",", &last);
 	while (tok) {
@@ -1234,9 +1234,9 @@ static int _update_uid_list(slurmctld_resv_t *resv_ptr, char *users)
 
 	/* Parse the incoming user expression */
 	i = strlen(users);
-	u_list = xmalloc(sizeof(uid_t)  * (i + 2));
-	u_name = xmalloc(sizeof(char *) * (i + 2));
-	u_type = xmalloc(sizeof(int)    * (i + 2));
+	u_list = xcalloc((i + 2), sizeof(uid_t));
+	u_name = xcalloc((i + 2), sizeof(char *));
+	u_type = xcalloc((i + 2), sizeof(int));
 	u_cpy = xstrdup(users);
 	tok = strtok_r(u_cpy, ",", &last);
 	while (tok) {
@@ -1474,8 +1474,8 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 		free_job_resources(&resv_ptr->core_resrcs);
 		return;
 	}
-	resv_ptr->core_resrcs->cpus = xmalloc(sizeof(uint16_t) *
-					      resv_ptr->core_resrcs->nhosts);
+	resv_ptr->core_resrcs->cpus = xcalloc(resv_ptr->core_resrcs->nhosts,
+					      sizeof(uint16_t));
 
 	core_offset_local = -1;
 	node_inx = -1;
@@ -3317,10 +3317,10 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		resv_desc.end_time    = resv_ptr->end_time;
 		resv_desc.features    = resv_ptr->features;
 		if (!resv_ptr->full_nodes) {
-			resv_desc.core_cnt    = xmalloc(sizeof(uint32_t) * 2);
+			resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 			resv_desc.core_cnt[0] = resv_ptr->core_cnt;
 		}
-		resv_desc.node_cnt    = xmalloc(sizeof(uint32_t) * 2);
+		resv_desc.node_cnt = xcalloc(2, sizeof(uint32_t));
 		resv_desc.node_cnt[0] = add_nodes;
 		i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &new_bitmap,
 				  &core_bitmap);
@@ -3403,10 +3403,10 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
 	if (!resv_ptr->full_nodes) {
-		resv_desc.core_cnt    = xmalloc(sizeof(uint32_t) * 2);
+		resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 		resv_desc.core_cnt[0] = resv_ptr->core_cnt;
 	}
-	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
+	resv_desc.node_cnt = xcalloc(2, sizeof(uint32_t));
 	resv_desc.node_cnt[0]= resv_ptr->node_cnt - i;
 	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &tmp_bitmap,
 			  &core_bitmap);
@@ -3639,7 +3639,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
 	resv_desc.flags      = resv_ptr->flags;
-	resv_desc.node_cnt   = xmalloc(sizeof(uint32_t) * 2);
+	resv_desc.node_cnt   = xcalloc(2, sizeof(uint32_t));
 	resv_desc.node_cnt[0]= 0 - delta_node_cnt;
 
 	/* Exclude self reserved nodes only if reservation contains any nodes */
