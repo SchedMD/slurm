@@ -13,11 +13,11 @@
 #define xfree(__p) \
 	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __func__)
 #define xmalloc(__sz) \
-	slurm_xmalloc (__sz, true, __FILE__, __LINE__, __func__)
+	slurm_xcalloc(1, __sz, true, false, __FILE__, __LINE__, __func__)
 #endif
 
 extern void slurm_xfree(void **, const char *, int, const char *);
-extern void *slurm_xmalloc(uint64_t, bool, const char *, int, const char *);
+extern void *slurm_xcalloc(size_t, size_t, bool, bool, const char *, int, const char *);
 
 extern void slurm_api_clear_config(void);
 
