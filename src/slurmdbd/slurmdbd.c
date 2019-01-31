@@ -89,9 +89,9 @@ static int    foreground = 0;		/* run process as a daemon */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
 	LOG_OPTS_INITIALIZER;
 static int	 new_nice = 0;
-static pthread_t rpc_handler_thread;	/* thread ID for RPC hander */
-static pthread_t rollup_handler_thread;	/* thread ID for rollup hander */
-static pthread_t commit_handler_thread;	/* thread ID for commit hander */
+static pthread_t rpc_handler_thread = 0; /* thread ID for RPC hander */
+static pthread_t rollup_handler_thread = 0; /* thread ID for rollup hander */
+static pthread_t commit_handler_thread = 0; /* thread ID for commit hander */
 static pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool running_rollup = 0;
 static bool running_commit = 0;
