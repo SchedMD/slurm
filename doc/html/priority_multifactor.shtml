@@ -10,6 +10,7 @@
 <LI> <a href=#admin>Admin Factor</a>
 <LI> <a href=#age>Age Factor</a>
 <LI> <a href=#jobsize>Job Size Factor</a>
+<LI> <a href=#nice>Nice Factor</a>
 <LI> <a href=#partition>Partition Factor</a>
 <LI> <a href=#qos>Quality of Service (QOS) Factor</a>
 <LI> <a href=#tres>TRES Factors</a>
@@ -33,7 +34,7 @@
 <a name=mfjppintro>
 <h2>Multi-factor 'Factors'</h2></a>
 
-<P> There are seven factors in the Multi-factor Job Priority plugin that
+<P> There are eight factors in the Multi-factor Job Priority plugin that
 influence job priority:</P>
 
 <DL>
@@ -45,6 +46,8 @@ influence job priority:</P>
 <DD> the difference between the portion of the computing resource that has been promised and the amount of resources that has been consumed
 <DT> Job size
 <DD> the number of nodes or CPUs a job is allocated
+<DT> Nice
+<DD> a factor that can be controlled by users to prioritize their own jobs.
 <DT> Partition
 <DD> a factor associated with each node partition
 <DT> QOS
@@ -77,6 +80,7 @@ Job_priority =
 	SUM(TRES_weight_cpu * TRES_factor_cpu,
 	    TRES_weight_&lt;type&gt; * TRES_factor_&lt;type&gt;,
 	    ...)
+	- nice_factor
 </PRE>
 
 <P> All of the factors in this formula are floating point numbers that
@@ -129,9 +133,18 @@ behavior as follows. The job size in CPUs is divided by the time limit in
 minutes. The result is divided by the total number of CPUs in the system.
 Thus a full-system job with a time limit of one will receive a job size factor
 of 1.0, while a tiny job with a large time limit will receive a job size factor
-close to 0.0. 
+close to 0.0.</p>
 
 <!-------------------------------------------------------------------------->
+
+<a name=nice>
+<h2>Nice Factor</h2></a>
+<P> Users can adjust the priority of their own jobs by setting the nice value
+on their jobs. Like the system nice, positive values negatively impact a job's
+priority and positive values increase a job's priority. Only privileged users
+can specify a negative value. The adjustment range is +/-2147483645.
+</P>
+
 <a name=partition>
 <h2>Partition Factor</h2></a>
 
