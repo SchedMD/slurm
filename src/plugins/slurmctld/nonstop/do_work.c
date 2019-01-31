@@ -235,10 +235,10 @@ static int _unpack_job_state(job_failures_t **job_pptr, Buf buffer)
 	safe_unpack16(&job_fail_ptr->callback_port, buffer);
 	safe_unpack32(&job_fail_ptr->job_id, buffer);
 	safe_unpack32(&job_fail_ptr->fail_node_cnt, buffer);
-	job_fail_ptr->fail_node_cpus  = xmalloc(sizeof(uint32_t) *
-						job_fail_ptr->fail_node_cnt);
-	job_fail_ptr->fail_node_names = xmalloc(sizeof(char *) *
-						job_fail_ptr->fail_node_cnt);
+	safe_xcalloc(job_fail_ptr->fail_node_cpus,job_fail_ptr->fail_node_cnt,
+		     sizeof(uint32_t));
+	safe_xcalloc(job_fail_ptr->fail_node_names, job_fail_ptr->fail_node_cnt,
+		     sizeof(char *));
 	for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
 		safe_unpack32(&job_fail_ptr->fail_node_cpus[i], buffer);
 		safe_unpackstr_xmalloc(&job_fail_ptr->fail_node_names[i],

@@ -287,10 +287,10 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer,
 		safe_unpack32(&step_layout->task_cnt, buffer);
 		safe_unpack32(&step_layout->task_dist, buffer);
 
-		step_layout->tasks =
-			xmalloc(sizeof(uint32_t) * step_layout->node_cnt);
-		step_layout->tids = xmalloc(sizeof(uint32_t *)
-					    * step_layout->node_cnt);
+		safe_xcalloc(step_layout->tasks, step_layout->node_cnt,
+			     sizeof(uint32_t));
+		safe_xcalloc(step_layout->tids, step_layout->node_cnt,
+			     sizeof(uint32_t *));
 		for (i = 0; i < step_layout->node_cnt; i++) {
 			safe_unpack32_array(&(step_layout->tids[i]),
 					    &num_tids,

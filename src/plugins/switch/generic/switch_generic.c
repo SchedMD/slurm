@@ -493,16 +493,16 @@ int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
 	if (debug_flags & DEBUG_FLAG_SWITCH)
 		info("switch_p_unpack_jobinfo() starting");
 	safe_unpack32(&gen_step_info->node_cnt, buffer);
-	gen_step_info->node_array = xmalloc(sizeof(sw_gen_node_t *) *
-					    gen_step_info->node_cnt);
+	safe_xcalloc(gen_step_info->node_array, gen_step_info->node_cnt,
+		     sizeof(sw_gen_node_t *));
 	for (i = 0; i < gen_step_info->node_cnt; i++) {
 		node_ptr = xmalloc(sizeof(sw_gen_node_t));
 		gen_step_info->node_array[i] = node_ptr;
 		safe_unpackstr_xmalloc(&node_ptr->node_name, &uint32_tmp,
 				       buffer);
 		safe_unpack16(&node_ptr->ifa_cnt, buffer);
-		node_ptr->ifa_array = xmalloc(sizeof(sw_gen_ifa_t *) *
-					      node_ptr->ifa_cnt);
+		safe_xcalloc(node_ptr->ifa_array, node_ptr->ifa_cnt,
+			     sizeof(sw_gen_ifa_t *));
 		for (j = 0; j < node_ptr->ifa_cnt; j++) {
 			ifa_ptr = xmalloc(sizeof(sw_gen_ifa_t));
 			node_ptr->ifa_array[j] = ifa_ptr;
@@ -902,8 +902,8 @@ extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
 	gen_node_info = (sw_gen_node_info_t *) *switch_node;
 
 	safe_unpack16(&gen_node_info->ifa_cnt, buffer);
-	gen_node_info->ifa_array = xmalloc(sizeof(sw_gen_ifa_t *) *
-					   gen_node_info->ifa_cnt);
+	safe_xcalloc(gen_node_info->ifa_array, gen_node_info->ifa_cnt,
+		     sizeof(sw_gen_ifa_t *));
 	safe_unpackstr_xmalloc(&gen_node_info->node_name, &uint32_tmp,
 			       buffer);
 	for (i = 0; i < gen_node_info->ifa_cnt; i++) {

@@ -5421,9 +5421,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 
 			safe_unpack8(&has_more, buffer);
 			if (has_more) {
-				gres_job_ptr->gres_bit_alloc =
-					xmalloc(sizeof(bitstr_t *) *
-						gres_job_ptr->node_cnt);
+				safe_xcalloc(gres_job_ptr->gres_bit_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(bitstr_t *));
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
 					unpack_bit_str_hex(&gres_job_ptr->
 							   gres_bit_alloc[i],
@@ -5432,9 +5432,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			}
 			safe_unpack8(&has_more, buffer);
 			if (has_more) {
-				gres_job_ptr->gres_bit_step_alloc =
-					xmalloc(sizeof(bitstr_t *) *
-						gres_job_ptr->node_cnt);
+				safe_xcalloc(gres_job_ptr->gres_bit_step_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(bitstr_t *));
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
 					unpack_bit_str_hex(&gres_job_ptr->
 							   gres_bit_step_alloc[i],
@@ -5443,9 +5443,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			}
 			safe_unpack8(&has_more, buffer);
 			if (has_more) {
-				gres_job_ptr->gres_cnt_step_alloc =
-					xmalloc(sizeof(uint64_t) *
-						gres_job_ptr->node_cnt);
+				safe_xcalloc(gres_job_ptr->gres_cnt_step_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(uint64_t));
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
 					safe_unpack64(&gres_job_ptr->
 						      gres_cnt_step_alloc[i],
@@ -5482,9 +5482,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 
 			safe_unpack8(&has_more, buffer);
 			if (has_more) {
-				gres_job_ptr->gres_bit_alloc =
-					xmalloc(sizeof(bitstr_t *) *
-						gres_job_ptr->node_cnt);
+				safe_xcalloc(gres_job_ptr->gres_bit_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(bitstr_t *));
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
 					unpack_bit_str_hex(&gres_job_ptr->
 							   gres_bit_alloc[i],
@@ -5493,9 +5493,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			}
 			safe_unpack8(&has_more, buffer);
 			if (has_more) {
-				gres_job_ptr->gres_bit_step_alloc =
-					xmalloc(sizeof(bitstr_t *) *
-						gres_job_ptr->node_cnt);
+				safe_xcalloc(gres_job_ptr->gres_bit_step_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(bitstr_t *));
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
 					unpack_bit_str_hex(&gres_job_ptr->
 							   gres_bit_step_alloc[i],
@@ -5504,9 +5504,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			}
 			safe_unpack8(&has_more, buffer);
 			if (has_more) {
-				gres_job_ptr->gres_cnt_step_alloc =
-					xmalloc(sizeof(uint64_t) *
-						gres_job_ptr->node_cnt);
+				safe_xcalloc(gres_job_ptr->gres_cnt_step_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(uint64_t));
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
 					safe_unpack64(&gres_job_ptr->
 						      gres_cnt_step_alloc[i],
@@ -5530,9 +5530,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			safe_unpack8(&has_more, buffer);
 
 			if (has_more) {
-				gres_job_ptr->gres_bit_alloc =
-					xmalloc(sizeof(bitstr_t *) *
-						gres_job_ptr->node_cnt);
+				safe_xcalloc(gres_job_ptr->gres_bit_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(bitstr_t *));
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
 					unpack_bit_str_hex(&gres_job_ptr->
 							   gres_bit_alloc[i],
@@ -5541,9 +5541,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			}
 			safe_unpack8(&has_more, buffer);
 			if (has_more) {
-				gres_job_ptr->gres_bit_step_alloc =
-					xmalloc(sizeof(bitstr_t *) *
-						gres_job_ptr->node_cnt);
+				safe_xcalloc(gres_job_ptr->gres_bit_step_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(bitstr_t *));
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
 					unpack_bit_str_hex(&gres_job_ptr->
 							   gres_bit_step_alloc[i],
@@ -5552,9 +5552,9 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			}
 			safe_unpack8(&has_more, buffer);
 			if (has_more) {
-				gres_job_ptr->gres_cnt_step_alloc =
-					xmalloc(sizeof(uint64_t) *
-						gres_job_ptr->node_cnt);
+				safe_xcalloc(gres_job_ptr->gres_cnt_step_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(uint64_t));
 				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
 					safe_unpack64(&gres_job_ptr->
 						      gres_cnt_step_alloc[i],
