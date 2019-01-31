@@ -3425,17 +3425,21 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack32(&node_reg_ptr->job_count, buffer);
 		if (node_reg_ptr->job_count > NO_VAL)
 			goto unpack_error;
-		safe_xcalloc(node_reg_ptr->job_id, node_reg_ptr->job_count,
-			     sizeof(uint32_t));
-		for (i = 0; i < node_reg_ptr->job_count; i++) {
-			safe_unpack32(&node_reg_ptr->job_id[i], buffer);
+		if (node_reg_ptr->job_count) {
+			safe_xcalloc(node_reg_ptr->job_id,
+				     node_reg_ptr->job_count,
+				     sizeof(uint32_t));
+			for (i = 0; i < node_reg_ptr->job_count; i++) {
+				safe_unpack32(&node_reg_ptr->job_id[i], buffer);
+			}
+			safe_xcalloc(node_reg_ptr->step_id,
+				     node_reg_ptr->job_count,
+				     sizeof(uint32_t));
+			for (i = 0; i < node_reg_ptr->job_count; i++) {
+				safe_unpack32(&node_reg_ptr->step_id[i],
+					      buffer);
+			}
 		}
-		safe_xcalloc(node_reg_ptr->step_id, node_reg_ptr->job_count,
-			     sizeof(uint32_t));
-		for (i = 0; i < node_reg_ptr->job_count; i++) {
-			safe_unpack32(&node_reg_ptr->step_id[i], buffer);
-		}
-
 		safe_unpack16(&node_reg_ptr->flags, buffer);
 		if ((node_reg_ptr->flags & SLURMD_REG_FLAG_STARTUP)
 		    &&  (switch_g_unpack_node_info(
