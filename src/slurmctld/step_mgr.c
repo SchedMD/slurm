@@ -4796,7 +4796,6 @@ extern int post_job_step(struct step_record *step_ptr)
 				 job_ptr->gres_list, job_ptr->job_id,
 				 step_ptr->step_id);
 
-	last_job_update = time(NULL);
 	/* Don't need to set state. Will be destroyed in next steps. */
 	/* step_ptr->state = JOB_COMPLETE; */
 
