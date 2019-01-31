@@ -17,7 +17,7 @@
 #endif
 
 extern void slurm_xfree(void **, const char *, int, const char *);
-extern void *slurm_xmalloc(size_t, bool, const char *, int, const char *);
+extern void *slurm_xmalloc(uint64_t, bool, const char *, int, const char *);
 
 extern void slurm_api_clear_config(void);
 

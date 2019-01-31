@@ -74,6 +74,13 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we set the alloc_node in a resource allocation based on the auth
     plugin instead of the rpc call.
 
+* Changes in Slurm 18.08.6
+==========================
+
+* Changes in Slurm 18.08.5-2
+============================
+ -- Fix Perl build for 32-bit systems.
+
 * Changes in Slurm 18.08.5
 ==========================
  -- Backfill - If a job has a time_limit guess the end time of a job better
@@ -604,6 +611,10 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 17.11.14
 ===========================
+
+* Changes in Slurm 17.11.13-2
+=============================
+ -- Fix Perl build for 32-bit systems.
 
 * Changes in Slurm 17.11.13
 ===========================
