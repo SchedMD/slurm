@@ -207,6 +207,9 @@ parse_command_line( int argc, char* *argv )
 		}
 	}
 
+	if (params.long_list && params.format)
+		fatal("Options -o(--format) and -l(--long) are mutually exclusive. Please remove one and retry.");
+
 	/* This needs to be evaluated here instead of _opt_env*/
 	if (!override_format_env) {
 		char *env_val;

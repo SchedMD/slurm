@@ -1111,6 +1111,9 @@ extern void parse_command_line(int argc, char **argv)
 		}
 	}
 
+	if (long_output && params.opt_field_list)
+		fatal("Options -o(--format) and -l(--long) are mutually exclusive. Please remove one and retry.");
+
 	if (verbosity) {
 		opts.stderr_level += verbosity;
 		opts.prefix_level = 1;

@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
  -- Add batch step at the beginning of a batch job so that squeue, sstat, and
     sacct will show the batch step.
  -- Deprecated 32-bit builds.
+ -- Make -l and -o mutually exclusive in saccct, squeue, sinfo, and sprio
 
 * Changes in Slurm 19.05.0pre1
 ==============================

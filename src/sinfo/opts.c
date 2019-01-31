@@ -294,6 +294,9 @@ extern void parse_command_line(int argc, char **argv)
 		}
 	}
 
+	if (params.long_output && params.format)
+		fatal("Options -o(--format) and -l(--long) are mutually exclusive. Please remove one and retry.");
+
 	if (opt_a_set && opt_p_set) {
 		error("Conflicting options, -a and -p, specified. "
 		      "Please choose one or the other.");
