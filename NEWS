@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 18.08.6
+==========================
+
 * Changes in Slurm 18.08.5-2
 ============================
  -- Fix Perl build for 32-bit systems.
