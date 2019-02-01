@@ -4279,8 +4279,13 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		}
 		if (!job_desc_msg->burst_buffer) {
 			xfree(job_desc_msg->script);
-			job_desc_msg->script =
-				bb_g_build_pack_script(script, pack_job_offset);
+			if (!(job_desc_msg->script = bb_g_build_pack_script(
+				      script, pack_job_offset))) {
+				error_code =
+					ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				reject_job = true;
+				break;
+			}
 		}
 		job_desc_msg->pack_job_offset = pack_job_offset;
 		error_code = job_allocate(job_desc_msg,

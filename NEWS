@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent segfault on empty response in 'scontrol show dwstat'.
  -- node_features/knl_cray plugin - Preserve node's active features if it has
     already booted when slurmctld daemon is reconfigured.
+ -- Detect missing burst buffer script and reject job.
 
 * Changes in Slurm 18.08.5-2
 ============================
