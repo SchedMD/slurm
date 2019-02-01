@@ -1,0 +1,336 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test non-normalized factors
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC.
+# Written by Brian Christiansen <brian@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id     "24.6"
+set exit_code   0
+set timeout	60
+print_header	$test_id
+
+set ta1         "test$test_id-account.1"
+set tq1         "test$test_id-qos.1"
+
+set p1          "test$test_id-part.1"
+
+set config_path  ""
+
+set jobid1 0
+set jobid2 0
+
+set cwd "[$bin_pwd]"
+
+set access_err 0
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+if { [string compare [priority_type] multifactor] } {
+	log_warn "This test can't be run without a usable PriorityType"
+	exit 0
+}
+
+proc clean_assocs {} {
+	global ta1 tq1
+
+	remove_acct "" $ta1
+	remove_qos $tq1
+}
+
+proc end_it { exit_code } {
+	global test_id jobid1 jobid2 bin_cp config_path cwd ta1 tq1
+
+	if {$jobid1} {
+		cancel_job $jobid1
+	}
+	if {$jobid2} {
+		cancel_job $jobid2
+	}
+
+	clean_assocs
+
+	log_info "Changing slurm.conf back"
+	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+	reconfigure
+
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+proc part_cpu_cnt { partition } {
+	global sinfo number
+
+	set cpu_cnt 1
+	spawn $sinfo -h -o "%C" -p $partition --state=idle
+	expect {
+		-re "($number)(K?)\/($number)(K?)" {
+			set cpu_cnt $expect_out(3,string)
+			if {[string compare $expect_out(4,string) ""]} {
+				set cpu_cnt [expr $cpu_cnt * 1024]
+			}
+
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $cpu_cnt
+}
+
+proc sub_job { args state } {
+
+	global number sbatch test_id bin_sleep
+
+	set jobid 0
+	set cmd "$sbatch -J$test_id -o/dev/null -e/dev/null --exclusive --wrap \"$bin_sleep 300\""
+	append cmd " $args"
+
+	spawn {*}$cmd
+	expect {
+		-re "Submitted batch job ($number)" {
+			set jobid $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$jobid == 0} {
+		log_error "did not get sbatch jobid"
+		end_it 1
+	}
+
+	if {[wait_for_job $jobid $state] != 0} {
+		log_error "error starting job $jobid"
+		end_it 1
+	}
+
+	return $jobid
+}
+
+proc sprio_args { args regex match_cnt } {
+	global sprio
+	set matches 0
+
+	spawn $sprio {*}$args
+	expect {
+		-re $regex {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			log_error "sprio not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $match_cnt} {
+		log_error "sprio $args failed to match '$regex' $match_cnt times"
+		end_it 1
+	}
+}
+
+proc update_job { jobid prio {error ""} } {
+	global scontrol
+
+	set matches 0
+
+	spawn $scontrol update jobid=$jobid adminpriofactor=$prio
+	set tmp_re ".*"
+	if {$error != ""} {
+		set tmp_re $error
+	}
+	expect {
+		-re $tmp_re {
+			incr matches
+		}
+		timeout {
+			log_error "scontrol not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {($error != "") && !$matches} {
+		log_error "didn't get expected error '$error'"
+		end_it 1
+	}
+}
+
+
+proc create_part { name nodes prio } {
+	global scontrol
+
+	spawn $scontrol create partitionname=$name priorityjobfactor=$prio nodes=$nodes
+	expect {
+		-re "error" {
+			log_error "scontrol found error"
+			end_it 1
+		}
+		timeout {
+			log_error "scontrol is not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set found 0
+	spawn $scontrol show partitionname=$name
+	expect {
+		-re "PartitionName=$name" {
+			set found 1
+			exp_continue
+		}
+		timeout {
+			log_error "scontrol is not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$found == 0} {
+		log_error "scontrol did not create partition $name"
+		end_it 1
+	}
+}
+
+################################################################
+
+if {[info exists env(SPRIO_FORMAT)]} {
+    unset env(SPRIO_FORMAT)
+}
+
+set config_path [get_conf_path]
+if { $exit_code != 0 } {
+	exit $exit_code
+}
+
+copy_conf $config_path $cwd
+if { $exit_code != 0 } {
+	exit $exit_code
+}
+exec $bin_sed -i "s/^\\(PriorityWeight.*\\)/#\\1/Ig" $config_path/slurm.conf
+exec $bin_sed -i "s/^\\(PriorityFlags.*\\)/#\\1/Ig" $config_path/slurm.conf
+set prio_conf "
+PriorityWeightAssoc     = 1
+PriorityWeightJobSize   = 1
+PriorityWeightPartition = 1
+PriorityWeightQOS       = 1
+PriorityWeightTRES=cpu=1
+PriorityFlags=NO_NORMAL_ALL
+"
+exec $bin_echo $prio_conf >> $config_path/slurm.conf
+reconfigure
+
+
+# verify NO_NORMAL_ALL shows. It sets multiple flags but show be collapsed to
+# the ALL flag.
+set match 0
+spawn $bin_bash -c "exec $scontrol show config | $bin_grep -i priorityflags"
+expect {
+	-re "NO_NORMAL_ALL" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {!$match} {
+	log_error "didn't find NO_NORMAL_ALL flag"
+	end_it 1
+}
+
+set idle_node [get_idle_node_in_part [default_partition]]
+if {$idle_node == ""} {
+	log_error "no idle nodes"
+	end_it 1
+}
+log_info "idle: $idle_node"
+create_part $p1 $idle_node 10
+
+
+clean_assocs
+
+array set qos_req {}
+set qos_req(priority) 200
+if {[add_qos $tq1 [array get qos_req]]} {
+	end_it 1
+}
+
+array set acct_req {}
+set acct_req(priority) 100
+set acct_req(qos) $tq1
+if {[add_acct $ta1 [array get acct_req]]} {
+	end_it 1
+}
+
+array set user_req {}
+set user_req(account) $ta1
+if {[add_user [get_my_user_name] [array get user_req]]} {
+	end_it 1
+}
+
+set cpu_cnt [part_cpu_cnt $p1]
+set jobid1 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" RUNNING]
+set jobid2 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" PENDING]
+
+sprio_args "-j $jobid2 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid2\\s+100\\s+10\\s+200\\s+cpu=$cpu_cnt" 1
+
+end_it 0
