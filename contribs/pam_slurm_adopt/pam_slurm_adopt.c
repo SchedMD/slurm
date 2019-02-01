@@ -624,7 +624,7 @@ static int _load_cgroup_config()
 {
     if (xcgroup_get_slurm_cgroup_conf() != SLURM_SUCCESS) {
 		info("read_slurm_cgroup_conf failed");
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
 }
