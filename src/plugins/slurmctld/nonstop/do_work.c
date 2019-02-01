@@ -369,12 +369,10 @@ extern int save_nonstop_state(void)
 extern int restore_nonstop_state(void)
 {
 	char *dir_path, *state_file;
-	uint32_t data_allocated, data_size = 0;
 	uint32_t job_cnt = 0;
-	char *data;
 	uint16_t protocol_version = NO_VAL16;
 	Buf buffer;
-	int error_code = SLURM_SUCCESS, i, state_fd, data_read;
+	int error_code = SLURM_SUCCESS, i;
 	time_t buf_time;
 	job_failures_t *job_fail_ptr = NULL;
 
@@ -383,37 +381,14 @@ extern int restore_nonstop_state(void)
 	xstrcat(state_file, "/nonstop_state");
 	xfree(dir_path);
 
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
+	if (!(buffer = create_mmap_buf(state_file))) {
 		error("No nonstop state file (%s) to recover", state_file);
 		xfree(state_file);
 		return error_code;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
 
 	/* Validate state version */
-	buffer = create_buf(data, data_size);
 	safe_unpack16(&protocol_version, buffer);
 	debug3("Version in slurmctld/nonstop header is %u", protocol_version);
 

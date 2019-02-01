@@ -260,10 +260,7 @@ static int _reset_usage(void)
 
 static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 {
-	int data_allocated, data_read = 0;
-	uint32_t data_size = 0;
-	int state_fd;
-	char *data = NULL, *state_file;
+	char *state_file;
 	Buf buffer;
 
 	xassert(last_ran);
@@ -276,37 +273,16 @@ static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 	state_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(state_file, "/priority_last_decay_ran");
 	lock_state_files();
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
+
+	if (!(buffer = create_mmap_buf(state_file))) {
 		info("No last decay (%s) to recover", state_file);
+		xfree(state_file);
 		unlock_state_files();
 		return;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
 	unlock_state_files();
 
-	buffer = create_buf(data, data_size);
 	safe_unpack_time(last_ran, buffer);
 	safe_unpack_time(last_reset, buffer);
 	free_buf(buffer);

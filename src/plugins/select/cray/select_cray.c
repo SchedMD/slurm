@@ -1399,12 +1399,9 @@ extern int select_p_state_save(char *dir_name)
 extern int select_p_state_restore(char *dir_name)
 {
 	static time_t last_config_update = (time_t) 0;
-	int state_fd, i;
+	int i;
 	char *state_file = NULL;
 	Buf buffer = NULL;
-	char *data = NULL;
-	int data_size = 0;
-	int data_allocated, data_read = 0;
 	uint16_t protocol_version = NO_VAL16;
 	uint32_t record_count;
 
@@ -1421,36 +1418,13 @@ extern int select_p_state_restore(char *dir_name)
 
 	state_file = xstrdup(dir_name);
 	xstrcat(state_file, "/blade_state");
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
+	if (!(buffer = create_mmap_buf(state_file))) {
 		error("No blade state file (%s) to recover", state_file);
 		xfree(state_file);
 		return SLURM_SUCCESS;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m",
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
 	}
 	xfree(state_file);
 
-	buffer = create_buf(data, data_size);
 	safe_unpack16(&protocol_version, buffer);
 	debug3("Version in blade_state header is %u", protocol_version);
 
