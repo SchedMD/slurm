@@ -329,7 +329,7 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID|PARTITION|PRIORITY|ADMIN|AGE|FAIRSHARE|JOBSIZE|PARTITION|QOS" {
+			-re "JOBID|PARTITION|PRIORITY|ADMIN|AGE|ASSOC|FAIRSHARE|JOBSIZE|PARTITION|QOS" {
 				if {$debug} {send_user "\nmatch9\n"}
 				incr matches
 				exp_continue
@@ -402,7 +402,7 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID PARTITION     USER   PRIORITY      ADMIN        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE" {
+			-re "JOBID PARTITION     USER   PRIORITY      ADMIN        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE" {
 				if {$debug} {send_user "\nmatch12\n"}
 				incr matches
 				exp_continue
@@ -474,13 +474,13 @@ proc sprio_args { soption sargs jobid} {
 ############# sprio format options
 	if { $soption == "--format" || $soption == "-o" } {
 
-		spawn $sprio $soption "%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
+		spawn $sprio $soption "%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10b %.10B %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID     USER   PRIORITY   PRIORITY      ADMIN        AGE        AGE  " {
+			-re "JOBID     USER   PRIORITY   PRIORITY      ADMIN        AGE        AGE      ASSOC      ASSOC " {
 				if {$debug} {send_user "\nmatch16\n"}
 				incr matches
 				exp_continue
