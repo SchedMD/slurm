@@ -76,6 +76,7 @@ void *slurm_xcalloc(size_t count, size_t size, bool clear, bool try,
 		    const char *file, int line, const char *func)
 {
 	size_t total_size;
+	size_t count_size;
 	size_t *p;
 
 	if (!size || !count)
@@ -97,7 +98,8 @@ void *slurm_xcalloc(size_t count, size_t size, bool clear, bool try,
 		abort();
 	}
 
-	total_size = count * size + 2 * sizeof(size_t);
+	count_size = count * size;
+	total_size = count_size + 2 * sizeof(size_t);
 
 	if (clear)
 		p = calloc(1, total_size);
@@ -112,7 +114,7 @@ void *slurm_xcalloc(size_t count, size_t size, bool clear, bool try,
 		abort();
 	}
 	p[0] = XMALLOC_MAGIC;	/* add "secret" magic cookie */
-	p[1] = size;		/* store size in buffer */
+	p[1] = count_size;	/* store size in buffer */
 
 	return &p[2];
 }
