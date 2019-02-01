@@ -367,12 +367,19 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)
 
 #define safe_xcalloc(p, cnt, sz) do {			\
-	if (!(p = try_xcalloc(cnt, sz)) && cnt && sz)	\
+	size_t _cnt = cnt;				\
+	size_t _sz = sz;				\
+	if (!_cnt || !_sz)				\
+		p = NULL;				\
+	else if (!(p = try_xcalloc(_cnt, _sz)))		\
 		goto unpack_error;			\
 } while (0)
 
 #define safe_xmalloc(p, sz) do {			\
-	if (!(p = try_xmalloc(sz)) && sz)		\
+	size_t _sz = sz;				\
+	if (!_sz)					\
+		p = NULL;				\
+	else if (!(p = try_xmalloc(_sz)))		\
 		goto unpack_error;			\
 } while (0)
 
