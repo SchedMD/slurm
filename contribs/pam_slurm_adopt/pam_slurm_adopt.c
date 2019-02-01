@@ -65,7 +65,7 @@
 #include "slurm/slurm.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/slurmd/common/xcgroup.c"
+#include "src/slurmd/common/xcgroup.h"
 
 /* This definition would probably be good to centralize somewhere */
 #ifndef MAXHOSTNAMELEN
@@ -622,9 +622,7 @@ static void _log_init(log_level_t level)
 
 static int _load_cgroup_config()
 {
-	slurm_cgroup_conf = xmalloc(sizeof(slurm_cgroup_conf_t));
-	memset(slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
-	if (read_slurm_cgroup_conf(slurm_cgroup_conf) != SLURM_SUCCESS) {
+    if (xcgroup_get_slurm_cgroup_conf() != SLURM_SUCCESS) {
 		info("read_slurm_cgroup_conf failed");
 		return SLURM_FAILURE;
 	}
