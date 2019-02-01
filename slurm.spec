@@ -1,6 +1,6 @@
 Name:		slurm
 Version:	19.05.0
-%define rel	0rc1
+%define rel	ug-0rc1
 Release:	%{rel}%{?dist}
 Summary:	Slurm Workload Manager
 
@@ -378,10 +378,12 @@ install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
 %endif
 
 install -D -m644 etc/cgroup.conf.example %{buildroot}/%{_sysconfdir}/cgroup.conf.example
+install -D -m644 etc/cgroup_allowed_devices_file.conf.example %{buildroot}/%{_sysconfdir}/cgroup_allowed_devices_file.conf.example
 install -D -m644 etc/layouts.d.power.conf.example %{buildroot}/%{_sysconfdir}/layouts.d/power.conf.example
 install -D -m644 etc/layouts.d.power_cpufreq.conf.example %{buildroot}/%{_sysconfdir}/layouts.d/power_cpufreq.conf.example
 install -D -m644 etc/layouts.d.unit.conf.example %{buildroot}/%{_sysconfdir}/layouts.d/unit.conf.example
 install -D -m644 etc/slurm.conf.example %{buildroot}/%{_sysconfdir}/slurm.conf.example
+install -D -m755 etc/slurm.epilog.clean %{buildroot}/%{_sysconfdir}/slurm.epilog.clean
 install -D -m644 etc/slurmdbd.conf.example %{buildroot}/%{_sysconfdir}/slurmdbd.conf.example
 install -D -m755 contribs/sjstat %{buildroot}/%{_bindir}/sjstat
 
@@ -489,6 +491,9 @@ rm -rf %{buildroot}
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_libdir}/slurm/*.so
+%if %{with cray}
+%{_libdir}/slurmpmi/*
+%endif
 %exclude %{_libdir}/slurm/accounting_storage_mysql.so
 %exclude %{_libdir}/slurm/job_submit_pbs.so
 %exclude %{_libdir}/slurm/spank_pbs.so
@@ -509,10 +514,12 @@ rm -rf %{buildroot}
 %config %{_sysconfdir}/slurm.conf.template
 %endif
 %config %{_sysconfdir}/cgroup.conf.example
+%config %{_sysconfdir}/cgroup_allowed_devices_file.conf.example
 %config %{_sysconfdir}/layouts.d/power.conf.example
 %config %{_sysconfdir}/layouts.d/power_cpufreq.conf.example
 %config %{_sysconfdir}/layouts.d/unit.conf.example
 %config %{_sysconfdir}/slurm.conf.example
+%config %{_sysconfdir}/slurm.epilog.clean
 %config %{_sysconfdir}/slurmdbd.conf.example
 #############################################################################
 
@@ -571,16 +578,6 @@ rm -rf %{buildroot}
 
 %files torque
 %defattr(-,root,root)
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/pbsnodes
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/qalter
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/qdel
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/qhold
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/qrerun
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/qrls
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/qstat
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/qsub
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/mpiexec
-%attr(755, root, root) %{_libexecdir}/slurm/wrapper/generate_pbs_nodefile
 %{_libdir}/slurm/job_submit_pbs.so
 %{_libdir}/slurm/spank_pbs.so
 #############################################################################
