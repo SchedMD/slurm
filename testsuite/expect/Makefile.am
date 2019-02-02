@@ -537,6 +537,7 @@ EXTRA_DIST = \
 	test24.4.prog.c			\
 	test24.5			\
 	test24.6			\
+	test24.7			\
 	test25.1			\
 	test27.1			\
 	test27.2			\
