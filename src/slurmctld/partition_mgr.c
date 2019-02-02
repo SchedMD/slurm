@@ -1525,19 +1525,37 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->priority_job_factor != NO_VAL16) {
+		int redo_prio = 0;
 		info("%s: setting PriorityJobFactor to %u for partition %s",
 		     __func__, part_desc->priority_job_factor, part_desc->name);
+
+		if ((part_ptr->priority_job_factor == part_max_priority) &&
+		    (part_desc->priority_job_factor < part_max_priority))
+			redo_prio = 2;
+		else if (part_desc->priority_job_factor > part_max_priority)
+			redo_prio = 1;
+
 		part_ptr->priority_job_factor = part_desc->priority_job_factor;
 
 		/* If the max_priority changes we need to change all
 		 * the normalized priorities of all the other
 		 * partitions. If not then just set this partition.
 		 */
-		if (part_ptr->priority_job_factor > part_max_priority) {
+		if (redo_prio) {
 			ListIterator itr = list_iterator_create(part_list);
 			struct part_record *part2 = NULL;
 
-			part_max_priority = part_ptr->priority_job_factor;
+			if (redo_prio == 2) {
+				part_max_priority = 0;
+				while ((part2 = list_next(itr))) {
+					if (part2->priority_job_factor >
+					    part_max_priority)
+						part_max_priority =
+							part2->priority_job_factor;
+				}
+				list_iterator_reset(itr);
+			} else
+				part_max_priority = part_ptr->priority_job_factor;
 
 			while ((part2 = list_next(itr))) {
 				part2->norm_priority =
