@@ -2929,7 +2929,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 {
 	int i, rc;
 	ListIterator gres_iter;
-	gres_state_t *gres_ptr, **gres_ptr_array;
+	gres_state_t *gres_ptr = NULL, **gres_ptr_array;
 	gres_state_t *gpu_gres_ptr = NULL, *mps_gres_ptr;
 
 	rc = gres_plugin_init();
