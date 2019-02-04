@@ -68,7 +68,7 @@ uint32_t g_hashableslen = sizeof(g_hashables)/sizeof(g_hashables[0]);
 static void setup(void)
 {
 	int i;
-	g_ht = xhash_init(hashable_identify, NULL, NULL, 0);
+	g_ht = xhash_init(hashable_identify, NULL);
 	if (!g_ht) return; /* fatal error, will be detected by test cases */
 	for (i = 0; i < g_hashableslen; ++i) {
 		g_hashables[i].id[0] = 0;
@@ -95,11 +95,11 @@ START_TEST(test_init_free)
 	mark_point();
 
 	/* invalid case */
-	ht = xhash_init(NULL, NULL, NULL, 0);
+	ht = xhash_init(NULL, NULL);
 	fail_unless(ht == NULL, "allocated table without identifying function");
 
 	/* alloc and free */
-	ht = xhash_init(hashable_identify, NULL, NULL, 0);
+	ht = xhash_init(hashable_identify, NULL);
 	fail_unless(ht != NULL, "hash table was not allocated");
 	xhash_free(ht);
 }
@@ -111,7 +111,7 @@ START_TEST(test_add)
 	hashable_t a[4] = {{"0", 0}, {"1", 1}, {"2", 2}, {"3", 3}};
 	int i, len = sizeof(a)/sizeof(a[0]);
 	char buffer[255];
-	ht = xhash_init(hashable_identify, NULL, NULL, 0);
+	ht = xhash_init(hashable_identify, NULL);
 	fail_unless(xhash_add(NULL, a) == NULL, "invalid cases not null");
 	fail_unless(xhash_add(ht, NULL) == NULL, "invalid cases not null");
 	fail_unless(xhash_add(ht, a)   != NULL, "xhash_add failed");
@@ -207,7 +207,7 @@ START_TEST(test_count)
 	hashable_t a[4] = {{"0", 0}, {"1", 1}, {"2", 2}, {"3", 3}};
 	fail_unless(xhash_count(ht) == g_hashableslen,
 		"invalid count (fixture table)");
-	ht = xhash_init(hashable_identify, NULL, NULL, 0);
+	ht = xhash_init(hashable_identify, NULL);
 	xhash_add(ht, a);
 	xhash_add(ht, a+1);
 	xhash_add(ht, a+2);
