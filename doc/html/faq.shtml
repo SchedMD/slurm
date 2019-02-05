@@ -625,14 +625,14 @@ While the size of a pending job may be changed with few restrictions, several
 significant restrictions apply to changing the size of a running job as noted
 below:
 <ol>
-<li>Support is not available on Cray ALPS system due to limitations
-in the software underlying Slurm.</li>
 <li>Job(s) changing size must not be in a suspended state, including jobs
 suspended for gang scheduling. The jobs must be in a state of pending or
-running. We plan to modify the gang scheduling logic in the future to
-concurrently schedule a job to be used for expanding another job and the
-job to be expanded.</li>
-</ol></p>
+running.</li>
+<li>Job expansion for runnings jobs is disabled by default.
+Site administrators can enable this capability by setting
+<i>SchedulerParameters=permit_job_expansion</i> in <i>slurm.conf</i></li>
+</ol>
+</p>
 
 <p>Use the <i>scontrol</i> command to change a job's size either by specifying
 a new node count (<i>NumNodes=</i>) for the job or identify the specific nodes
@@ -2334,6 +2334,6 @@ cray_netroot_preload.settings.load.data.compute.size_limit: 0
 accessed files within jobs.</p>
 
 
-<p style="text-align:center;">Last modified 04 July 2018</p>
+<p style="text-align:center;">Last modified 05 February 2019</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "Februrary 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2917,6 +2917,10 @@ The default value is 0 (no limit).
 Job's excluded from attempted scheduling based upon partition will not be
 counted against the \fBdefault_queue_depth\fR limit.
 Also see the \fBbf_max_job_part\fR option.
+.TP
+\fBpermit_job_expansion\fR
+Allow running jobs to request additional nodes be merged in with the current
+job allocation.
 .TP
 \fBpreempt_reorder_count=#\fR
 Specify how many attempts should be made in reording preemptable jobs to
