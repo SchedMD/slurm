@@ -371,6 +371,8 @@ static int _job_rec_field(const struct job_record *job_ptr,
 			lua_pushnumber (L, job_ptr->details->min_nodes);
 		else
 			lua_pushnumber (L, 0);
+	} else if (!xstrcmp(name, "name")) {
+		lua_pushstring (L, job_ptr->name);
 	} else if (!xstrcmp(name, "nice")) {
 		if (job_ptr->details)
 			lua_pushnumber (L, job_ptr->details->nice);
