@@ -404,6 +404,12 @@ Used specifically on a Cray using an Aries Ghal interconnect.  This will check
 to see if the system is quiescing when sending a message, and if so, we wait
 until it is done before sending.
 .TP
+\fBNoAddrCache\fR By default, Slurm will cache a node's network address after
+successfully establishing the node's network address. This option disables the
+cache and Slurm will look up the node's network address each time a connection
+is made. This is useful, for example, in a cloud environment where the node
+addresses come and go out of DNS.
+.TP
 \fBNoCtldInAddrAny\fR
 Used to directly bind to the address of what the node resolves to running
 the slurmctld instead of binding messages to any address on the node,
