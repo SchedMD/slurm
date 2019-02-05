@@ -2250,6 +2250,50 @@ proc test_select_type { } {
 
 ################################################################
 #
+# Proc: test_scheduler_params
+#
+# Purpose: Test SchedulerParameters being used
+#
+# Returns 1 if "type" (input) is found, 0 otherwise
+#
+################################################################
+
+proc test_scheduler_params { type } {
+	global scontrol bin_bash bin_grep alpha_numeric_comma
+
+	log_user 0
+	set ret 0
+	set params ""
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SchedulerParameters"
+	expect {
+		-re "SchedulerParameters *= *($alpha_numeric_comma)" {
+			set params $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+
+	# Since string first doesn't have any case
+	# distinction just make it always be upper.
+	set type [string toupper $type]
+	set params [string toupper $params]
+	set params [split $params ,]
+
+	foreach item $params {
+		if {![string compare $type $item]} {
+			set ret 1
+			break
+		}
+	}
+	log_user 1
+
+	return $ret
+}
+
+################################################################
+#
 # Proc: test_select_type_params
 #
 # Purpose: Determine SelectTypeParameters being used
