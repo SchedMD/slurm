@@ -3782,6 +3782,14 @@ static int _clear_mem_per_gres(void *x, void *arg)
 	job_gres_data->mem_per_gres = 0;
 	return 0;
 }
+static int _clear_total_gres(void *x, void *arg)
+{
+	gres_state_t *gres_ptr = (gres_state_t *) x;
+	gres_job_state_t *job_gres_data;
+	job_gres_data = (gres_job_state_t *) gres_ptr->gres_data;
+	job_gres_data->total_gres = 0;
+	return 0;
+}
 
 /*
  * Ensure consistency of gres_per_* options
@@ -4265,6 +4273,8 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 	/*
 	 * Clear fields as requested by job update (i.e. input value is "")
 	 */
+	if (*gres_list)
+		(void) list_for_each(*gres_list, _clear_total_gres, NULL);
 	if (*gres_list && cpus_per_tres && (cpus_per_tres[0] == '\0')) {
 		(void) list_for_each(*gres_list, _clear_cpus_per_gres, NULL);
 		cpus_per_tres = NULL;
@@ -4312,6 +4322,8 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 							   &save_ptr, &rc))) {
 			job_gres_data->gres_per_job = cnt;
 			in_val = NULL;
+			job_gres_data->total_gres =
+				MAX(job_gres_data->total_gres, cnt);
 		}
 	}
 	if (tres_per_node) {
@@ -4321,6 +4333,10 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 							   &save_ptr, &rc))) {
 			job_gres_data->gres_per_node = cnt;
 			in_val = NULL;
+			if (*min_nodes != NO_VAL)
+				cnt *= *min_nodes;
+			job_gres_data->total_gres =
+				MAX(job_gres_data->total_gres, cnt);
 		}
 	}
 	if (tres_per_socket) {
@@ -4330,6 +4346,14 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 							   &save_ptr, &rc))) {
 			job_gres_data->gres_per_socket = cnt;
 			in_val = NULL;
+			if ((*min_nodes != NO_VAL) &&
+			    (*sockets_per_node != NO_VAL16)) {
+				cnt *= (*min_nodes * *sockets_per_node);
+			} else if ((*num_tasks != NO_VAL) &&
+				   (*ntasks_per_socket != NO_VAL16)) {
+				cnt *= ((*num_tasks + *ntasks_per_socket - 1) /
+				        *ntasks_per_socket);
+			}
 		}
 	}
 	if (tres_per_task) {
@@ -4339,6 +4363,10 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 							   &save_ptr, &rc))) {
 			job_gres_data->gres_per_task = cnt;
 			in_val = NULL;
+			if (*num_tasks != NO_VAL)
+				cnt *= *num_tasks;
+			job_gres_data->total_gres =
+				MAX(job_gres_data->total_gres, cnt);
 		}
 	}
 	if (mem_per_tres) {
