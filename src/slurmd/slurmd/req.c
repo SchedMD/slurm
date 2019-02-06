@@ -5314,7 +5314,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			/*
 			 * There's currently no case in which we enter this
 			 * error condition.  If there was, it's hard to say
-			 * whether to to proceed with the job termination.
+			 * whether to proceed with the job termination.
 			 */
 			error("Error in _wait_for_starting_step");
 		}

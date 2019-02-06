@@ -5067,7 +5067,7 @@ extern int nodelist_find(const char *nodelist, const char *name)
  * IN buf_size: size of buffer.
  * IN orig_type: The original type of num.
  * IN spec_type: Type to convert num to. If specified, num will be converted up
- * or down to to this unit type.
+ * or down to this unit type.
  * IN divisor: size of type
  * IN flags: flags to control whether to convert exactly or not at all.
  */

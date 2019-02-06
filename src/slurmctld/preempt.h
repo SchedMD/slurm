@@ -67,7 +67,7 @@ extern int slurm_preempt_fini(void);
 /*
  * slurm_find_preemptable_jobs - Given a pointer to a pending job, return list
  *	of pointers to preemptable jobs. The jobs should be sorted in order
- *	from most desirable to to least desirable to preempt.
+ *	from most desirable to least desirable to preempt.
  * NOTE: Returns NULL if no preemptable jobs are found.
  * NOTE: Caller must list_destroy() any list returned.
  */
