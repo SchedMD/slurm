@@ -652,7 +652,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 				 + job_ptr->prio_factors->priority_qos
 				 + part_tres
 				 - (double)
-				   (((uint64_t)job_ptr->prio_factors->nice)
+				   (((int64_t)job_ptr->prio_factors->nice)
 				    - NICE_OFFSET));
 
 			/* Priority 0 is reserved for held jobs */
