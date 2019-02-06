@@ -4350,15 +4350,6 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 			in_val = NULL;
 		}
 	}
-	if (tres_per_socket) {
-		char *in_val = tres_per_socket, *save_ptr = NULL;
-		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
-							   *gres_list,
-							   &save_ptr, &rc))) {
-			job_gres_data->gres_per_socket = cnt;
-			in_val = NULL;
-		}
-	}
 	slurm_mutex_unlock(&gres_context_lock);
 
 	if (rc != SLURM_SUCCESS)
