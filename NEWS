@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix considering "resuming" nodes in scheduling.
  -- Do not kill suspended jobs due to exceeding time limit.
  -- Add NoAddrCache CommunicationParameter.
+ -- Don't ping powering up cloud nodes.
 
 * Changes in Slurm 18.08.5-2
 ============================
