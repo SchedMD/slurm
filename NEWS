@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- Make -l and -o mutually exclusive in saccct, squeue, sinfo, and sprio
  -- Disable running job expansion by default. A new SchedulerParameter of
     permit_job_expansion has been added for sites that wish to re-enable it.
+ -- Permit changing a job array's ArrayTaskThrottle value even if the job is
+    terminated (for job requeue).
 
 * Changes in Slurm 19.05.0pre1
 ==============================
