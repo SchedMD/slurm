@@ -2597,11 +2597,10 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	} else {
 		req_msg.job_id = job_id;
 		req_msg.job_id_str = NULL;
-		if (requeue_no_hold) {
-			req_msg.state = JOB_PENDING;
-		} else {
-			req_msg.state = (JOB_REQUEUE_HOLD|JOB_LAUNCH_FAILED);
-		}
+		if (requeue_no_hold)
+			req_msg.flags = JOB_PENDING;
+		else
+			req_msg.flags = (JOB_REQUEUE_HOLD | JOB_LAUNCH_FAILED);
 		resp_msg.msg_type = REQUEST_JOB_REQUEUE;
 		resp_msg.data = &req_msg;
 	}

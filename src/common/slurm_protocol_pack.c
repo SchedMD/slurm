@@ -12749,7 +12749,7 @@ _pack_job_requeue_msg(requeue_msg_t *msg, Buf buf, uint16_t protocol_version)
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buf);
 		packstr(msg->job_id_str, buf);
-		pack32(msg->state, buf);
+		pack32(msg->flags, buf);
 	}
 }
 
@@ -12762,7 +12762,7 @@ _unpack_job_requeue_msg(requeue_msg_t **msg, Buf buf, uint16_t protocol_version)
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&(*msg)->job_id, buf);
 		safe_unpackstr_xmalloc(&(*msg)->job_id_str, &uint32_tmp, buf);
-		safe_unpack32(&(*msg)->state, buf);
+		safe_unpack32(&(*msg)->flags, buf);
 	}
 
 	return SLURM_SUCCESS;

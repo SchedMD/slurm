@@ -690,6 +690,7 @@ test28.10  Test change to maximum running task count in a job array.
 test28.11  Test that job arrays requesting features with --constraint are
 	   purged from the slurmctld correctly after MinJobAge seconds.
 test28.12  Verify head job isn't purged before other jobs in the array.
+test28.13  Test requeue of only failed tasks in the job array.
 
 
 test29.#   Testing of smd command and option.

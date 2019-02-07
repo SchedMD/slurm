@@ -5333,7 +5333,7 @@ inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
 		error_code = job_requeue2(uid, req_ptr, msg, false);
 	} else {
 		error_code = job_requeue(uid, req_ptr->job_id, msg, false,
-					 req_ptr->state);
+					 req_ptr->flags);
 	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("_slurm_rpc_requeue");

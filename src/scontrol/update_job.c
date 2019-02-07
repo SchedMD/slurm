@@ -590,7 +590,7 @@ scontrol_suspend(char *op, char *job_str)
  * IN job_id_str - a job id
  */
 extern void
-scontrol_requeue(char *job_str)
+scontrol_requeue(uint32_t flags, char *job_str)
 {
 	char *job_id_str;
 	int rc, i;
@@ -609,7 +609,7 @@ scontrol_requeue(char *job_str)
 	if (_is_job_id(job_str)) {
 		job_id_str = _next_job_id();
 		while (job_id_str) {
-			rc = slurm_requeue2(job_id_str, 0, &resp);
+			rc = slurm_requeue2(job_id_str, flags, &resp);
 			if (rc != SLURM_SUCCESS) {
 				exit_code = 1;
 				if (quiet_flag != 1) {
@@ -647,18 +647,18 @@ scontrol_requeue(char *job_str)
 }
 
 extern void
-scontrol_requeue_hold(uint32_t state_flag, char *job_str)
+scontrol_requeue_hold(uint32_t flags, char *job_str)
 {
 	int rc, i;
 	char *job_id_str;
 	job_array_resp_msg_t *resp = NULL;
 
-	state_flag |= JOB_REQUEUE_HOLD;
+	flags |= JOB_REQUEUE_HOLD;
 
 	if (_is_job_id(job_str)) {
 		job_id_str = _next_job_id();
 		while (job_id_str) {
-			rc = slurm_requeue2(job_id_str, state_flag, &resp);
+			rc = slurm_requeue2(job_id_str, flags, &resp);
 			if (rc != SLURM_SUCCESS) {
 				exit_code = 1;
 				if (quiet_flag != 1) {
@@ -1482,42 +1482,30 @@ fini:	slurm_free_resource_allocation_response_msg(alloc_info);
 		fclose(resize_sh);
 }
 
-/* parse_requeue_args()
+/*
+ * parse_requeue_args()
  * IN s - string to parse
  * OUT flags - flags to set based upon argument
  * RET 0 on successful parse, -1 otherwise
  */
-extern int
-parse_requeue_flags(char *s, uint32_t *flags)
+extern int parse_requeue_flags(char *s, uint32_t *flags)
 {
-	char *p, *p0, *z;
+	int len;
 
-	p0 = p = xstrdup(s);
-	/* search for =
-	 */
-	z = strchr(p, '=');
-	if (!z) {
-		xfree(p0);
-		return -1;
-	}
-	*z = 0;
-
-	/* validate flags keyword
-	 */
-	if (xstrncasecmp(p, "state", 5)) {
-		xfree(p0);
-		return -1;
-	}
-	++z;
-
-	p = z;
-	if (!xstrncasecmp(p, "specialexit", 11) || !xstrncasecmp(p, "se", 2)) {
-		*flags = JOB_SPECIAL_EXIT;
-		xfree(p0);
+	len = strlen(s);
+	if (!xstrncasecmp(s, "incomplete", len)) {
+		*flags |= JOB_FAILED;
 		return 0;
 	}
 
-	xfree(p0);
+	if (xstrncasecmp(s, "state=", 6))
+		return -1;
+	s += 6;
+	if (!xstrncasecmp(s, "specialexit", 11) || !xstrncasecmp(s, "se", 2)) {
+		*flags |= JOB_SPECIAL_EXIT;
+		return 0;
+	}
+
 	return -1;
 }
 

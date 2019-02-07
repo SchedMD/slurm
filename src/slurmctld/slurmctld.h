@@ -1654,11 +1654,11 @@ extern int job_req_node_filter(struct job_record *job_ptr,
  * IN job_id - id of the job to be requeued
  * IN msg - slurm_msg to send response back on
  * IN preempt - true if job being preempted
- * IN state - may be set to JOB_SPECIAL_EXIT and/or JOB_REQUEUE_HOLD
+ * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
-		       bool preempt, uint32_t state);
+		       bool preempt, uint32_t flags);
 
 /*
  * job_requeue2 - Requeue a running or pending batch job

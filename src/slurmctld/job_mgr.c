@@ -15899,7 +15899,7 @@ extern int job_suspend2(suspend_msg_t *sus_ptr, uid_t uid,
  * RET 0 on success, otherwise ESLURM error code
  */
 static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
-			   uint32_t state)
+			   uint32_t flags)
 {
 	bool is_running = false, is_suspended = false, is_completed = false;
 	bool is_completing = false;
@@ -15913,7 +15913,12 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	if (state & JOB_RECONFIG_FAIL)
+	if (((flags & JOB_STATE_BASE) == JOB_FAILED) &&
+	    IS_JOB_COMPLETE(job_ptr)) {
+		return SLURM_SUCCESS;
+	}
+
+	if (flags & JOB_RECONFIG_FAIL)
 		node_features_g_get_node(job_ptr->nodes);
 
 	/*
@@ -15923,14 +15928,14 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 	 */
 	if (!job_ptr->part_ptr || !job_ptr->details
 	    || !job_ptr->details->requeue) {
-		if (state & JOB_RECONFIG_FAIL)
+		if (flags & JOB_RECONFIG_FAIL)
 			(void) _job_fail(job_ptr, JOB_BOOT_FAIL);
 		return ESLURM_DISABLED;
 	}
 
 	if (job_ptr->batch_flag == 0) {
 		debug("Job-requeue can only be done for batch jobs");
-		if (state & JOB_RECONFIG_FAIL)
+		if (flags & JOB_RECONFIG_FAIL)
 			(void) _job_fail(job_ptr, JOB_BOOT_FAIL);
 		return ESLURM_BATCH_ONLY;
 	}
@@ -15944,7 +15949,7 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 	    (!job_ptr->fed_details || !job_ptr->fed_details->cluster_lock))
 		return ESLURM_JOB_PENDING;
 
-	if ((state & JOB_RECONFIG_FAIL) && IS_JOB_CANCELLED(job_ptr)) {
+	if ((flags & JOB_RECONFIG_FAIL) && IS_JOB_CANCELLED(job_ptr)) {
 		/*
 		 * Job was cancelled (likely be the user) while node
 		 * reconfiguration was in progress, so don't requeue it
@@ -15955,7 +15960,7 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 
 	if (job_ptr->fed_details) {
 		int rc;
-		if ((rc = fed_mgr_job_requeue_test(job_ptr, state)))
+		if ((rc = fed_mgr_job_requeue_test(job_ptr, flags)))
 			return rc;
 
 		/* Sent requeue request to origin cluster */
@@ -16095,7 +16100,7 @@ reply:
 
 	acct_policy_update_pending_job(job_ptr);
 
-	if (state & JOB_SPECIAL_EXIT) {
+	if (flags & JOB_SPECIAL_EXIT) {
 		job_ptr->job_state |= JOB_SPECIAL_EXIT;
 		job_ptr->state_reason = WAIT_HELD_USER;
 		xfree(job_ptr->state_desc);
@@ -16103,10 +16108,10 @@ reply:
 			xstrdup("job requeued in special exit state");
 		job_ptr->priority = 0;
 	}
-	if (state & JOB_REQUEUE_HOLD) {
+	if (flags & JOB_REQUEUE_HOLD) {
 		job_ptr->state_reason = WAIT_HELD_USER;
 		xfree(job_ptr->state_desc);
-		if (state & JOB_LAUNCH_FAILED)
+		if (flags & JOB_LAUNCH_FAILED)
 			job_ptr->state_desc
 				= xstrdup("launch failed requeued held");
 		else
@@ -16143,7 +16148,7 @@ reply:
  * RET 0 on success, otherwise ESLURM error code
  */
 static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
-			   uint32_t state)
+			   uint32_t flags)
 {
 	struct job_record *pack_job;
 	int rc = SLURM_SUCCESS, rc1;
@@ -16160,13 +16165,13 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
 				      __func__, job_ptr);
 				continue;
 			}
-			rc1 = _job_requeue_op(uid, pack_job, preempt, state);
+			rc1 = _job_requeue_op(uid, pack_job, preempt, flags);
 			if (rc1 != SLURM_SUCCESS)
 				rc = rc1;
 		}
 		list_iterator_destroy(iter);
 	} else {
-		rc = _job_requeue_op(uid, job_ptr, preempt, state);
+		rc = _job_requeue_op(uid, job_ptr, preempt, flags);
 	}
 
 	return rc;
@@ -16178,11 +16183,11 @@ static int _job_requeue(uid_t uid, struct job_record *job_ptr, bool preempt,
  * IN job_id - id of the job to be requeued
  * IN msg - slurm_msg to send response back on
  * IN preempt - true if job being preempted
- * IN state - may be set to JOB_SPECIAL_EXIT and/or JOB_REQUEUE_HOLD
+ * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
-		       bool preempt, uint32_t state)
+		       bool preempt, uint32_t flags)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr = NULL;
@@ -16192,7 +16197,7 @@ extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
 	if (job_ptr == NULL) {
 		rc = ESLURM_INVALID_JOB_ID;
 	} else {
-		rc = _job_requeue(uid, job_ptr, preempt, state);
+		rc = _job_requeue(uid, job_ptr, preempt, flags);
 	}
 
 	if (msg) {
@@ -16223,7 +16228,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 	int32_t i, i_first, i_last;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
-	uint32_t state = req_ptr->state;
+	uint32_t flags = req_ptr->flags;
 	char *job_id_str = req_ptr->job_id_str;
 	resp_array_struct_t *resp_array = NULL;
 	job_array_resp_msg_t *resp_array_msg = NULL;
@@ -16252,14 +16257,14 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		     ((job_ptr->array_task_id != NO_VAL) &&
 		      (job_ptr->array_job_id  != job_id)))) {
 			/* This is a regular job or single task of job array */
-			rc = _job_requeue(uid, job_ptr, preempt, state);
+			rc = _job_requeue(uid, job_ptr, preempt, flags);
 			goto reply;
 		}
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
-			rc2 = _job_requeue(uid, job_ptr, preempt, state);
+			rc2 = _job_requeue(uid, job_ptr, preempt, flags);
 			_resp_array_add(&resp_array, job_ptr, rc2);
 		}
 
@@ -16272,7 +16277,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = _job_requeue(uid, job_ptr, preempt,state);
+				rc2 = _job_requeue(uid, job_ptr, preempt,flags);
 				_resp_array_add(&resp_array, job_ptr, rc2);
 			}
 			job_ptr = job_ptr->job_array_next_j;
@@ -16316,7 +16321,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 			continue;
 		}
 
-		rc2 = _job_requeue(uid, job_ptr, preempt, state);
+		rc2 = _job_requeue(uid, job_ptr, preempt, flags);
 		_resp_array_add(&resp_array, job_ptr, rc2);
 	}
 

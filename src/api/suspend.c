@@ -158,11 +158,17 @@ extern int slurm_resume2(char *job_id, job_array_resp_msg_t **resp)
 /*
  * slurm_requeue - re-queue a batch job, if already running
  *	then terminate it first
- * IN job_id     - job on which to perform operation
- * IN state      - state in which to place the job
+ * IN job_id  - job on which to perform operation
+ * IN flags - JOB_SPECIAL_EXIT - job should be placed special exit state and
+ *		  held.
+ *            JOB_REQUEUE_HOLD - job should be placed JOB_PENDING state and
+ *		  held.
+ *            JOB_RECONFIG_FAIL - Node configuration for job failed
+ *            JOB_FAILED - Operate only on jobs which did not complete
+ *		  successfully (i.e. NOT in state JOB_COMPLETE)
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue(uint32_t job_id, uint32_t state)
+extern int slurm_requeue(uint32_t job_id, uint32_t flags)
 {
 	int rc = SLURM_SUCCESS;
 	requeue_msg_t requeue_req;
@@ -172,7 +178,7 @@ extern int slurm_requeue(uint32_t job_id, uint32_t state)
 
 	requeue_req.job_id	= job_id;
 	requeue_req.job_id_str	= NULL;
-	requeue_req.state	= state;
+	requeue_req.flags	= flags;
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
 	req_msg.data		= &requeue_req;
 
@@ -187,11 +193,20 @@ extern int slurm_requeue(uint32_t job_id, uint32_t state)
 /*
  * slurm_requeue2 - re-queue a batch job, if already running
  *	then terminate it first
- * IN job_id_str - job on which to perform operation in string format or NULL
- * IN state      - state in which to place the job
+ * IN job_id in string form  - job on which to perform operation, may be job
+ *            array specification (e.g. "123_1-20,44");
+ * IN flags - JOB_SPECIAL_EXIT - job should be placed special exit state and
+ *		  held.
+ *            JOB_REQUEUE_HOLD - job should be placed JOB_PENDING state and
+ *		  held.
+ *            JOB_RECONFIG_FAIL - Node configuration for job failed
+ *            JOB_FAILED - Operate only on jobs which did not complete
+ *		  successfully (i.e. NOT in state JOB_COMPLETE)
+ * OUT resp - per task response to the request,
+ *	      free using slurm_free_job_array_resp()
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue2(char *job_id_str, uint32_t state,
+extern int slurm_requeue2(char *job_id_str, uint32_t flags,
 			  job_array_resp_msg_t **resp)
 {
 	int rc = SLURM_SUCCESS;
@@ -202,7 +217,7 @@ extern int slurm_requeue2(char *job_id_str, uint32_t state,
 	slurm_msg_t_init(&resp_msg);
 	requeue_req.job_id	= NO_VAL;
 	requeue_req.job_id_str	= job_id_str;
-	requeue_req.state	= state;
+	requeue_req.flags	= flags;
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;
 	req_msg.data		= &requeue_req;
 

@@ -75,7 +75,7 @@ extern int       fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id);
 extern int       fed_mgr_job_unlock(struct job_record *job_ptr);
 extern int       fed_mgr_job_requeue(struct job_record *job_ptr);
 extern int       fed_mgr_job_requeue_test(struct job_record *job_ptr,
-					  uint32_t state);
+					  uint32_t flags);
 extern int       fed_mgr_job_revoke(struct job_record *job_ptr,
 				    bool job_complete, uint32_t exit_code,
 				    time_t start_time);

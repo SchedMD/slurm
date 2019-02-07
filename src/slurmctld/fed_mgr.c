@@ -115,6 +115,7 @@ enum fed_job_update_type {
 
 typedef struct {
 	uint32_t        cluster_lock;
+	uint32_t        flags;
 	uint32_t        job_id;
 	job_info_msg_t *job_info_msg;
 	job_step_kill_msg_t *kill_msg;
@@ -124,7 +125,6 @@ typedef struct {
 	uint64_t        siblings_viable;
 	char           *siblings_str;
 	time_t          start_time;
-	uint32_t        state;
 	char           *submit_cluster;
 	job_desc_msg_t *submit_desc;
 	uint16_t        submit_proto_ver;
@@ -503,7 +503,7 @@ fini:
 	return SLURM_SUCCESS;
 }
 
-static void _mark_self_as_drained()
+static void _mark_self_as_drained(void)
 {
 	List ret_list;
 	slurmdb_cluster_cond_t cluster_cond;
@@ -532,7 +532,7 @@ static void _mark_self_as_drained()
 	FREE_NULL_LIST(ret_list);
 }
 
-static void _remove_self_from_federation()
+static void _remove_self_from_federation(void)
 {
 	List ret_list;
 	slurmdb_federation_cond_t fed_cond;
@@ -1173,7 +1173,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
 static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
-				    uint32_t job_id, uint32_t state)
+				    uint32_t job_id, uint32_t flags)
 {
 	int rc;
 	requeue_msg_t requeue_req;
@@ -1185,7 +1185,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 
 	requeue_req.job_id     = job_id;
 	requeue_req.job_id_str = NULL;
-	requeue_req.state      = state;
+	requeue_req.flags      = flags;
 
 	slurm_msg_t_init(&tmp_msg);
 	tmp_msg.msg_type         = REQUEST_JOB_REQUEUE;
@@ -1388,7 +1388,7 @@ static int _remove_sibling_bit(struct job_record *job_ptr,
 /*
  * Remove all pending federated jobs from the origin cluster.
  */
-static void _cleanup_removed_origin_jobs()
+static void _cleanup_removed_origin_jobs(void)
 {
 	ListIterator job_itr;
 	struct job_record *job_ptr;
@@ -1802,7 +1802,7 @@ static void _handle_fed_job_requeue(fed_job_update_info_t *job_update_info)
 
 	lock_slurmctld(job_write_lock);
 	if ((rc = job_requeue(job_update_info->uid, job_update_info->job_id,
-			      NULL, false, job_update_info->state)))
+			      NULL, false, job_update_info->flags)))
 		error("failed to requeue fed JobId=%u - rc:%d",
 		      job_update_info->job_id, rc);
 	unlock_slurmctld(job_write_lock);
@@ -4256,11 +4256,11 @@ extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids)
  * after epilog) in fed_mgr_job_requeue().
  *
  * IN job_ptr - job to requeue.
- * IN state   - the state of the requeue (e.g. JOB_RECONFIG_FAIL).
+ * IN flags   - flags for the requeue (e.g. JOB_RECONFIG_FAIL).
  * RET returns SLURM_SUCCESS if siblings submitted successfully, SLURM_ERROR
  * 	otherwise.
  */
-extern int fed_mgr_job_requeue_test(struct job_record *job_ptr, uint32_t state)
+extern int fed_mgr_job_requeue_test(struct job_record *job_ptr, uint32_t flags)
 {
 	uint32_t origin_id;
 
@@ -4280,7 +4280,7 @@ extern int fed_mgr_job_requeue_test(struct job_record *job_ptr, uint32_t state)
 			     job_ptr, origin_id);
 
 		_persist_fed_job_requeue(origin_cluster, job_ptr->job_id,
-					 state);
+					 flags);
 
 		job_ptr->job_state |= JOB_REQUEUE_FED;
 
@@ -5082,7 +5082,7 @@ static int _q_sib_job_requeue(slurm_msg_t *msg, uint32_t uid)
 
 	job_update_info->type   = FED_JOB_REQUEUE;
 	job_update_info->job_id = req_ptr->job_id;
-	job_update_info->state  = req_ptr->state;
+	job_update_info->flags  = req_ptr->flags;
 	job_update_info->uid    = uid;
 
 	_append_job_update(job_update_info);

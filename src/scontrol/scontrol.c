@@ -1023,8 +1023,14 @@ static int _process_command (int argc, char **argv)
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
+			uint32_t i, flags = 0, start_pos = 1;
 			for (i = 1; i < argc; i++) {
-				scontrol_requeue(argv[i]);
+				if (parse_requeue_flags(argv[i], &flags))
+					break;
+				start_pos++;
+			}
+			for (i = start_pos; i < argc; i++) {
+				scontrol_requeue(flags, argv[i]);
 			}
 		}
 	}
@@ -1036,13 +1042,14 @@ static int _process_command (int argc, char **argv)
 					"too few arguments for keyword:%s\n",
 					tag);
 		} else {
-			uint32_t state_flag = 0, start_pos = 1;
-			if ((argc > 2) &&
-			    (parse_requeue_flags(argv[1], &state_flag) == 0)) {
-				start_pos = 2;
+			uint32_t i, flags = 0, start_pos = 1;
+			for (i = 1; i < argc; i++) {
+				if (parse_requeue_flags(argv[i], &flags))
+					break;
+				start_pos++;
 			}
 			for (i = start_pos; i < argc; i++) {
-				scontrol_requeue_hold(state_flag, argv[i]);
+				scontrol_requeue_hold(flags, argv[i]);
 			}
 		}
 

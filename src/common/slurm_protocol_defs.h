@@ -1263,7 +1263,7 @@ typedef struct slurm_node_reg_resp_msg {
 typedef struct requeue_msg {
 	uint32_t job_id;	/* slurm job ID (number) */
 	char *   job_id_str;	/* slurm job ID (string) */
-	uint32_t state;        /* JobExitRequeue | Hold */
+	uint32_t flags;         /* JobExitRequeue | Hold | JobFailed | etc. */
 } requeue_msg_t;
 
 typedef struct slurm_event_log_msg {
