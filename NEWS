@@ -62,6 +62,8 @@ documents those changes that are of interest to users and administrators.
     permit_job_expansion has been added for sites that wish to re-enable it.
  -- Permit changing a job array's ArrayTaskThrottle value even if the job is
     terminated (for job requeue).
+ -- Add scontrol requeue option of "Incomplete" which will requeue jobs only if
+    they failed to complete with an exit code of zero.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
