@@ -467,6 +467,50 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 	return priority_fs;
 }
 
+static void _get_tres_factors(struct job_record *job_ptr,
+			      struct part_record *part_ptr,
+			      double *tres_factors)
+{
+	int i;
+
+	xassert(tres_factors);
+
+	/* can't memcpy because of different types
+	 * uint64_t vs. double */
+	for (i = 0; i < slurmctld_tres_cnt; i++) {
+		uint64_t value = 0;
+		if (job_ptr->tres_alloc_cnt)
+			value = job_ptr->tres_alloc_cnt[i];
+		else if (job_ptr->tres_req_cnt)
+			value = job_ptr->tres_req_cnt[i];
+
+		if (value &&
+		    part_ptr &&
+		    part_ptr->tres_cnt &&
+		    part_ptr->tres_cnt[i])
+			tres_factors[i] = value /
+				(double)part_ptr->tres_cnt[i];
+	}
+}
+
+static double _get_tres_prio_weighted(double *tres_factors)
+{
+	int i;
+	double tmp_tres = 0.0;
+
+	xassert(tres_factors);
+
+	if (!weight_tres)
+		return tmp_tres;
+
+	for (i = 0; i < slurmctld_tres_cnt; i++) {
+		tres_factors[i] *= weight_tres[i];
+		tmp_tres += tres_factors[i];
+	}
+
+	return tmp_tres;
+}
+
 /* Returns the priority after applying the weight factors */
 static uint32_t _get_priority_internal(time_t start_time,
 				       struct job_record *job_ptr)
@@ -521,14 +565,9 @@ static uint32_t _get_priority_internal(time_t start_time,
 	job_ptr->prio_factors->priority_qos  *= (double)weight_qos;
 
 	if (weight_tres && job_ptr->prio_factors->priority_tres) {
-		int i;
 		double *tres_factors = NULL;
 		tres_factors = job_ptr->prio_factors->priority_tres;
-
-		for (i = 0; i < slurmctld_tres_cnt; i++) {
-			tres_factors[i] *= weight_tres[i];
-			tmp_tres += tres_factors[i];
-		}
+		tmp_tres = _get_tres_prio_weighted(tres_factors);
 	}
 
 	priority = job_ptr->prio_factors->priority_age
@@ -567,6 +606,18 @@ static uint32_t _get_priority_internal(time_t start_time,
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
 		while ((part_ptr = (struct part_record *)
 			list_next(part_iterator))) {
+			double part_tres = 0.0;
+
+			if (weight_tres) {
+				double part_tres_factors[slurmctld_tres_cnt];
+				memset(part_tres_factors, 0,
+				       sizeof(double) * slurmctld_tres_cnt);
+				_get_tres_factors(job_ptr, part_ptr,
+						  part_tres_factors);
+				part_tres = _get_tres_prio_weighted(
+							part_tres_factors);
+			}
+
 			priority_part = part_ptr->priority_job_factor /
 				(double)part_max_priority *
 				(double)weight_part;
@@ -575,9 +626,9 @@ static uint32_t _get_priority_internal(time_t start_time,
 				 + job_ptr->prio_factors->priority_fs
 				 + job_ptr->prio_factors->priority_js
 				 + job_ptr->prio_factors->priority_qos
-				 + tmp_tres
+				 + part_tres
 				 - (double)
-				   (((uint64_t)job_ptr->prio_factors->nice)
+				   (((int64_t)job_ptr->prio_factors->nice)
 				    - NICE_OFFSET));
 
 			/* Priority 0 is reserved for held jobs */
@@ -1427,6 +1478,13 @@ static void _filter_job(struct job_record *job_ptr,
 			obj->job_id = job_ptr->job_id;
 			obj->partition = job_part_ptr->name;
 			obj->user_id = job_ptr->user_id;
+
+			if (obj->priority_tres) {
+				_get_tres_factors(job_ptr, job_part_ptr,
+						  obj->priority_tres);
+				_get_tres_prio_weighted(obj->priority_tres);
+			}
+
 			list_append(ret_list, obj);
 		}
 		inx++;
@@ -2099,9 +2157,6 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 		job_ptr->prio_factors->nice = NICE_OFFSET;
 
 	if (weight_tres) {
-		int i;
-		double *tres_factors = NULL;
-
 		if (!job_ptr->prio_factors->priority_tres) {
 			job_ptr->prio_factors->priority_tres =
 				xcalloc(slurmctld_tres_cnt, sizeof(double));
@@ -2111,24 +2166,9 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 			       sizeof(double) * slurmctld_tres_cnt);
 			job_ptr->prio_factors->tres_cnt = slurmctld_tres_cnt;
 		}
-		tres_factors = job_ptr->prio_factors->priority_tres;
 
-		/* can't memcpy because of different types
-		 * uint64_t vs. double */
-		for (i = 0; i < slurmctld_tres_cnt; i++) {
-			uint64_t value = 0;
-			if (job_ptr->tres_alloc_cnt)
-				value = job_ptr->tres_alloc_cnt[i];
-			else if (job_ptr->tres_req_cnt)
-				value = job_ptr->tres_req_cnt[i];
-
-			if (value &&
-			    job_ptr->part_ptr &&
-			    job_ptr->part_ptr->tres_cnt &&
-			    job_ptr->part_ptr->tres_cnt[i])
-				tres_factors[i] = value /
-					(double)job_ptr->part_ptr->tres_cnt[i];
-		}
+		_get_tres_factors(job_ptr, job_ptr->part_ptr,
+				  job_ptr->prio_factors->priority_tres);
 	}
 }
 

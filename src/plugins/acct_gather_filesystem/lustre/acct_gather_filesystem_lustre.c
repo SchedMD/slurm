@@ -116,12 +116,46 @@ static uint64_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
 static int tres_pos = -1;
 
-/* Default path to lustre stats */
-const char proc_base_path[] = "/proc/fs/lustre";
 
-/**
- *  is lustre fs supported
- **/
+/*
+ * _llite_path()
+ *
+ * returns the path to Lustre clients stats (depends on Lustre version)
+ * or NULL if none found
+ *
+ */
+static char *_llite_path(void)
+{
+	static char *llite_path = NULL;
+	int i = 0;
+	DIR *llite_dir;
+	static char *test_paths[] = {
+		"/proc/fs/lustre/llite",
+		"/sys/kernel/debug/lustre/llite",
+		NULL
+	};
+
+	if (llite_path)
+		return llite_path;
+
+	while ((llite_path = test_paths[i++])) {
+		if ((llite_dir = opendir(llite_path))) {
+			closedir(llite_dir);
+			return llite_path;
+		}
+
+		debug("%s: unable to open %s %m", __func__, llite_path);
+	}
+	return NULL;
+}
+
+
+/*
+ * _check_lustre_fs()
+ *
+ * check if Lustre is supported
+ *
+ */
 static int _check_lustre_fs(void)
 {
 	static bool set = false;
@@ -129,23 +163,18 @@ static int _check_lustre_fs(void)
 
 	if (!set) {
 		uint32_t profile = 0;
-		char lustre_directory[BUFSIZ];
-		DIR *proc_dir;
 
 		set = true;
 		acct_gather_profile_g_get(ACCT_GATHER_PROFILE_RUNNING,
 					  &profile);
 		if ((profile & ACCT_GATHER_PROFILE_LUSTRE)) {
-			snprintf(lustre_directory, BUFSIZ,
-				 "%s/llite", proc_base_path);
-			proc_dir = opendir(proc_base_path);
-			if (!proc_dir) {
-				error("%s: not able to read %s %m",
-				      __func__, lustre_directory);
+			char *llite_path = _llite_path();
+			if (!llite_path) {
+				error("%s: can't find Lustre stats", __func__);
 				rc = SLURM_ERROR;
-			} else {
-				closedir(proc_dir);
-			}
+			} else
+				debug("%s: using Lustre stats in %s",
+				      __func__, llite_path);
 		} else
 			rc = SLURM_ERROR;
 	}
@@ -154,10 +183,13 @@ static int _check_lustre_fs(void)
 }
 
 /* _read_lustre_counters()
+ *
  * Read counters from all mounted lustre fs
  * from the file stats under the directories:
  *
  * /proc/fs/lustre/llite/lustre-xxxx
+ *  or
+ * /sys/kernel/debug/lustre/llite/lustre-xxxx
  *
  * From the file stat we use 2 entries:
  *
@@ -167,14 +199,17 @@ static int _check_lustre_fs(void)
  */
 static int _read_lustre_counters(void)
 {
-	char lustre_dir[PATH_MAX];
+	char *lustre_dir;
 	DIR *proc_dir;
 	struct dirent *entry;
 	FILE *fff;
 	char buffer[BUFSIZ];
 
-
-	snprintf(lustre_dir, PATH_MAX, "%s/llite", proc_base_path);
+	lustre_dir = _llite_path();
+	if (!lustre_dir) {
+		error("%s: can't find Lustre stats", __func__);
+		return SLURM_ERROR;
+	}
 
 	proc_dir = opendir(lustre_dir);
 	if (proc_dir == NULL) {
