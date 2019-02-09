@@ -665,10 +665,12 @@ extern void slurmdb_destroy_assoc_usage(void *object)
 
 	if (usage) {
 		FREE_NULL_LIST(usage->children_list);
-		FREE_NULL_BITMAP(usage->valid_qos);
+		FREE_NULL_BITMAP(usage->grp_node_bitmap);
+		xfree(usage->grp_node_job_cnt);
 		xfree(usage->grp_used_tres_run_secs);
 		xfree(usage->grp_used_tres);
 		xfree(usage->usage_tres_raw);
+		FREE_NULL_BITMAP(usage->valid_qos);
 		xfree(usage);
 	}
 }
@@ -680,11 +682,13 @@ extern void slurmdb_destroy_qos_usage(void *object)
 
 	if (usage) {
 		FREE_NULL_LIST(usage->acct_limit_list);
-		FREE_NULL_LIST(usage->job_list);
-		FREE_NULL_LIST(usage->user_limit_list);
+		FREE_NULL_BITMAP(usage->grp_node_bitmap);
+		xfree(usage->grp_node_job_cnt);
 		xfree(usage->grp_used_tres_run_secs);
 		xfree(usage->grp_used_tres);
+		FREE_NULL_LIST(usage->job_list);
 		xfree(usage->usage_tres_raw);
+		FREE_NULL_LIST(usage->user_limit_list);
 		xfree(usage);
 	}
 }

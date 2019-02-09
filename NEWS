@@ -64,6 +64,8 @@ documents those changes that are of interest to users and administrators.
     terminated (for job requeue).
  -- Add scontrol requeue option of "Incomplete" which will requeue jobs only if
     they failed to complete with an exit code of zero.
+ -- Modify GrpNodes limit to apply to unique nodes allocated (avoid double
+    counting nodes allocated to multiple jobs in the same QOS or association).
 
 * Changes in Slurm 19.05.0pre1
 ==============================

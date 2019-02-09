@@ -1,0 +1,394 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Test association plus partition/job QoS unique node limits enforced
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id          21.39
+set exit_code        0
+set file_in          "test$test_id.bash"
+set test_acct        "test$test_id\_acct"
+set test_part        "test$test_id\_part"
+set job_qos          "test$test_id\_job_qos"
+set part_qos         "test$test_id\_part_qos"
+
+proc cleanup { } {
+	global test_acct job_qos part_qos scontrol sacctmgr test_part def_part
+	global exit_code
+
+	# Delete the test QOS
+	spawn $sacctmgr -i delete qos $job_qos,$part_qos
+	expect {
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	# Delete account
+	spawn $sacctmgr -i delete account $test_acct
+	expect {
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	# Delete partition
+	spawn $scontrol delete partitionname=$test_part
+	expect {
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc set_assoc {count} {
+	global sacctmgr test_acct exit_code
+
+	spawn $sacctmgr -i modify account $test_acct set grpnodes=$count
+	expect {
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc set_qos {qos_name count} {
+	global sacctmgr exit_code
+
+	spawn $sacctmgr -i modify qos $qos_name set grpnodes=$count
+	expect {
+		timeout {
+			send_user "\nFAILURE: sacctmgr is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+proc reason_node_limit {job_id} {
+	global scontrol exit_code
+
+	set node_limit 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "Reason=AssocGrpNodeLimit" {
+			set node_limit 1
+			exp_continue
+		}
+		-re "Reason=QOSGrpNodeLimit" {
+			set node_limit 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $node_limit
+}
+
+proc run_job_test { } {
+	global file_in cancel_job sbatch scontrol test_acct
+	global test_part job_qos number alpha_numeric_under
+	global nb_nodes exit_code reason_node_limit
+
+	# Time to wait for scheduling logic to set job's Reason to GrpNodeLimit.
+	# For some configurations this might need to be set higher.
+	# Starting at 10 seconds.
+	set sleep_for_reason_set 10
+
+	# Submit 1 node job
+	set job_id1 0
+	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 -o /dev/null -N1 $file_in
+	expect {
+                -re "Submitted batch job ($number)" {
+                        set job_id1 $expect_out(1,string)
+                        exp_continue
+                }
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id1 == 0} {
+		send_user "\nFAILURE: job submit failed\n"
+		set exit_code 1
+		return
+	}
+
+	# Wait for job to start and get its info
+	if {[wait_for_job $job_id1 "RUNNING"] != 0} {
+		send_user "\nFAILURE: error waiting for job $job_id1 to run\n"
+		cancel_job $job_id1
+		set exit_code 1
+		return
+	}
+	set hostname 0
+	spawn $scontrol show job $job_id1
+	expect {
+                -re "BatchHost=($alpha_numeric_under)" {
+                        set hostname $expect_out(1,string)
+                        exp_continue
+                }
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$hostname == 0} {
+		send_user "\nFAILURE: BatchHost for job $job_id1 not found\n"
+		cancel_job $job_id1
+		set exit_code 1
+		return
+	}
+
+	# Submit 1 node job EXCLUDING first job's node
+	set job_id2 0
+	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --exclude=$hostname -o /dev/null -N1 $file_in
+	expect {
+                -re "Submitted batch job ($number)" {
+                        set job_id2 $expect_out(1,string)
+                        exp_continue
+                }
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id2 == 0} {
+		send_user "\nFAILURE: job submit failed\n"
+		cancel_job $job_id1
+		set exit_code 1
+		return
+	}
+
+	# Submit 1 node job INCLUDING first job's node
+	set job_id3 0
+	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --nodelist=$hostname -o /dev/null -N1 $file_in
+	expect {
+                -re "Submitted batch job ($number)" {
+                        set job_id3 $expect_out(1,string)
+                        exp_continue
+                }
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id3 == 0} {
+		send_user "\nFAILURE: job submit failed\n"
+		cancel_job $job_id1
+		cancel_job $job_id2
+		set exit_code 1
+		return
+	}
+
+	# Check if job's are waiting on GrpNodeLimit
+	sleep $sleep_for_reason_set
+	if {[reason_node_limit $job_id2] != 1} {
+		send_user "\nFAILURE: Job $job_id2 should be waiting on GrpNodeLimit, but is not\n"
+		set exit_code 1
+	}
+	if {[reason_node_limit $job_id3] != 0} {
+		send_user "\nFAILURE: Job $job_id3 should not be waiting on GrpNodeLimit, but is\n"
+		set exit_code 1
+	}
+	cancel_job $job_id1
+	cancel_job $job_id2
+	cancel_job $job_id3
+
+	# Try to submit 2-node job while there is 1-node limit
+	if {$nb_nodes < 2} {
+		return
+	}
+	set job_id4 0
+	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 -o /dev/null -N2 $file_in
+	expect {
+                -re "Submitted batch job ($number)" {
+                        set job_id4 $expect_out(1,string)
+                        exp_continue
+                }
+		timeout {
+			send_user "\nFAILURE: sbatch is not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	if {$job_id4 != 0} {
+		sleep $sleep_for_reason_set
+		if {[reason_node_limit $job_id4] != 1} {
+			send_user "\nFAILURE: Job $job_id4 should be waiting on GrpNodeLimit, but is not\n"
+			set exit_code 1
+		}
+		cancel_job $job_id4
+	}
+}
+
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+} elseif { [test_enforce_limits] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
+	exit 0
+}
+if { [test_limits_enforced] == 0 } {
+	send_user "\nWARNING: This test can't be run without enforcing limits\n"
+	exit 0
+}
+if {[test_super_user] == 0} {
+	send_user "\nWARNING Test can only be ran as SlurmUser\n"
+	exit 0
+}
+
+# Start with clean configuration
+cleanup
+
+# Create test QOS
+if {[add_qos $job_qos ""] != 0} {
+	cleanup
+	exit 1
+}
+if {[add_qos $part_qos ""] != 0} {
+	cleanup
+	exit 1
+}
+
+# Add account with QOS
+set match 0
+spawn $sacctmgr -i add account $test_acct qos=$job_qos
+expect {
+	-re "Adding Account" {
+		incr match
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacctmgr is not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 1} {
+	send_user "\nFAILURE: sacctmgr had a problem adding the account\n"
+	cleanup
+	exit 1
+}
+
+# Get user name
+set user_name [get_my_user_name]
+
+# Add user to account
+spawn $sacctmgr -i create user name=$user_name account=$test_acct
+expect {
+	timeout {
+		send_user "\nFAILURE: sacctmgr not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
+# Get default partition name
+set def_part [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part]
+
+# Create a partition to use for testing
+spawn $scontrol create partitionname=$test_part qos=$part_qos nodes=[available_nodes_hostnames $def_part]
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol is not responding\n"
+		set exit_code
+	}
+	eof {
+		wait
+	}
+}
+
+make_bash_script $file_in "$bin_sleep 60"
+
+send_user "\n\nTEST 1: Association GrpNodes limit\n"
+set_assoc 1
+run_job_test
+set_assoc -1
+
+send_user "\n\nTEST 2: Job QOS GrpNodes limit\n"
+set_qos $job_qos 1
+run_job_test
+set_qos $job_qos -1
+
+send_user "\n\nTEST 3: Partition QOS GrpNodes limit\n"
+set_qos $part_qos 1
+run_job_test
+set_qos $part_qos -1
+
+# Clean up and exit
+cleanup
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
+	print_success $test_id
+}
+exit $exit_code

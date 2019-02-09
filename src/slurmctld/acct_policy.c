@@ -69,6 +69,300 @@ typedef struct pack_limits {
 	slurmdb_qos_rec_t *qos_ptr_2;
 } pack_limits_t;
 
+/*
+ * Update a job's allocated node count to reflect only nodes that are not
+ * already allocated to this association.  Needed to enforce GrpNode limit.
+ */
+static void _update_assoc_job_node_cnt(struct job_record *job_ptr,
+				       uint64_t *tres_req_cnt,
+				       struct slurmdb_assoc_usage *assoc_usage)
+{
+#if _DEBUG
+	char node_bitstr[64];
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap) {
+		bit_fmt(node_bitstr, 64, job_ptr->job_resrcs->node_bitmap);
+		info("%s: %pJ job_resrcs->node_bitmap:%s",  __func__, job_ptr,
+		     node_bitstr);
+	} else {
+		info("%s: %pJ job_resrcs->node_bitmap:NULL",  __func__,
+		     job_ptr);
+	}
+	if (tres_req_cnt) {
+		info("%s: %pJ tres_name[%d]:%s tres_req_cnt[%d]:%"PRIu64,
+		     __func__, job_ptr, TRES_ARRAY_NODE,
+		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE],
+		     TRES_ARRAY_NODE, tres_req_cnt[TRES_ARRAY_NODE]);
+	}
+
+	if (assoc_usage->grp_node_bitmap) {
+		bit_fmt(node_bitstr, 64, assoc_usage->grp_node_bitmap);
+		info("%s: assocication grp_node_bitmap:%s", __func__,
+		     node_bitstr);
+	} else {
+		info("%s: assocication grp_node_bitmap:NULL", __func__);
+	}
+	if (assoc_usage->grp_used_tres) {
+		info("%s: assocication tres_name[%d]:%s grp_used_tres[%d]:%"PRIu64,
+		     __func__, TRES_ARRAY_NODE,
+		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE],
+		     TRES_ARRAY_NODE,
+		     assoc_usage->grp_used_tres[TRES_ARRAY_NODE]);
+	} else {
+		info("%s: assocication tres_name[%d]:%s grp_used_tres:NULL",
+		     __func__, TRES_ARRAY_NODE,
+		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE]);
+	}
+#endif
+
+	xassert(assoc_usage);
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap &&
+	    assoc_usage->grp_node_bitmap && tres_req_cnt) {
+		int init_cnt, overlap_cnt, new_node_cnt;
+		overlap_cnt = bit_overlap(job_ptr->job_resrcs->node_bitmap,
+					  assoc_usage->grp_node_bitmap);
+		if (overlap_cnt) {
+			init_cnt =
+				bit_set_count(job_ptr->job_resrcs->node_bitmap);
+			new_node_cnt = init_cnt - overlap_cnt;
+			info("%s: %pJ unique allocated node count changed from %d to %d",
+			     __func__, job_ptr, init_cnt, new_node_cnt);
+			tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
+		}
+	}
+}
+
+/*
+ * Update a job's allocated node count to reflect only nodes that are not
+ * already allocated to this QOS.  Needed to enforce GrpNode limit.
+ */
+static void _update_qos_job_node_cnt(struct job_record *job_ptr,
+				     uint64_t *tres_req_cnt,
+				     slurmdb_qos_usage_t *qos_usage)
+{
+#if _DEBUG
+	char node_bitstr[64];
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap) {
+		bit_fmt(node_bitstr, 64, job_ptr->job_resrcs->node_bitmap);
+		info("%s: %pJ job_resrcs->node_bitmap:%s",  __func__, job_ptr,
+		     node_bitstr);
+	} else {
+		info("%s: %pJ job_resrcs->node_bitmap:NULL",  __func__,
+		     job_ptr);
+	}
+	if (tres_req_cnt) {
+		info("%s: %pJ tres_name[%d]:%s tres_req_cnt[%d]:%"PRIu64,
+		     __func__, job_ptr, TRES_ARRAY_NODE,
+		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE],
+		     TRES_ARRAY_NODE, tres_req_cnt[TRES_ARRAY_NODE]);
+	}
+
+	if (qos_usage->grp_node_bitmap) {
+		bit_fmt(node_bitstr, 64, qos_usage->grp_node_bitmap);
+		info("%s: QOS grp_node_bitmap:%s", __func__,
+		     node_bitstr);
+	} else {
+		info("%s: QOS grp_node_bitmap:NULL", __func__);
+	}
+	if (qos_usage->grp_used_tres) {
+		info("%s: QOS tres_name[%d]:%s grp_used_tres[%d]:%"PRIu64,
+		     __func__, TRES_ARRAY_NODE,
+		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE],
+		     TRES_ARRAY_NODE,
+		     qos_usage->grp_used_tres[TRES_ARRAY_NODE]);
+	} else {
+		info("%s: QOS tres_name[%d]:%s grp_used_tres:NULL",
+		     __func__, TRES_ARRAY_NODE,
+		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE]);
+	}
+#endif
+
+	xassert(qos_usage);
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap &&
+	    qos_usage->grp_node_bitmap && tres_req_cnt) {
+		int init_cnt, overlap_cnt, new_node_cnt;
+		overlap_cnt = bit_overlap(job_ptr->job_resrcs->node_bitmap,
+					  qos_usage->grp_node_bitmap);
+		if (overlap_cnt) {
+			init_cnt =
+				bit_set_count(job_ptr->job_resrcs->node_bitmap);
+			new_node_cnt = init_cnt - overlap_cnt;
+			info("%s: %pJ unique allocated node count changed from %d to %d",
+			     __func__, job_ptr, init_cnt, new_node_cnt);
+			tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
+		}
+	}
+}
+
+/*
+ * Update association's node allocation information for a job being started.
+ * This includes grp_node_bitmap, grp_node_job_cnt and
+ * grp_used_tres[TRES_ARRAY_NODE].
+ */
+static void _add_assoc_node_bitmap(struct job_record *job_ptr,
+				   struct slurmdb_assoc_usage *assoc_usage)
+{
+	static int node_cnt = -1;
+	int i, i_first, i_last;
+
+	xassert(assoc_usage);
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
+		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
+		return;
+	}
+	if (assoc_usage->grp_node_bitmap) {
+		bit_or(assoc_usage->grp_node_bitmap,
+		       job_ptr->job_resrcs->node_bitmap);
+	} else {
+		assoc_usage->grp_node_bitmap =
+			bit_copy(job_ptr->job_resrcs->node_bitmap);
+	}
+
+	if (!assoc_usage->grp_node_job_cnt) {
+		if (node_cnt == -1)
+			node_cnt = bit_size(assoc_usage->grp_node_bitmap);
+		assoc_usage->grp_node_job_cnt = xcalloc(node_cnt,
+							sizeof(uint16_t));
+	}
+	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
+	if (i_first == -1)
+		i_last = -2;
+	else
+		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (bit_test(job_ptr->job_resrcs->node_bitmap, i))
+			assoc_usage->grp_node_job_cnt[i]++;
+	}
+	assoc_usage->grp_used_tres[TRES_ARRAY_NODE] =
+		bit_set_count(assoc_usage->grp_node_bitmap);
+}
+
+/*
+ * Update QOS's node allocation information for a job being started.
+ * This includes grp_node_bitmap, grp_node_job_cnt and
+ * grp_used_tres[TRES_ARRAY_NODE].
+ */
+static void _add_qos_node_bitmap(struct job_record *job_ptr,
+				 slurmdb_qos_rec_t *qos_ptr)
+{
+	slurmdb_qos_usage_t *qos_usage;
+	static int node_cnt = -1;
+	int i, i_first, i_last;
+
+	if (!qos_ptr || !qos_ptr->usage)
+		return;
+	qos_usage = qos_ptr->usage;
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
+		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
+		return;
+	}
+	if (qos_usage->grp_node_bitmap) {
+		bit_or(qos_usage->grp_node_bitmap,
+		       job_ptr->job_resrcs->node_bitmap);
+	} else {
+		qos_usage->grp_node_bitmap =
+			bit_copy(job_ptr->job_resrcs->node_bitmap);
+	}
+
+	if (!qos_usage->grp_node_job_cnt) {
+		if (node_cnt == -1)
+			node_cnt = bit_size(qos_usage->grp_node_bitmap);
+		qos_usage->grp_node_job_cnt = xcalloc(node_cnt,
+						      sizeof(uint16_t));
+	}
+	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
+	if (i_first == -1)
+		i_last = -2;
+	else
+		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (bit_test(job_ptr->job_resrcs->node_bitmap, i))
+			qos_usage->grp_node_job_cnt[i]++;
+	}
+	qos_usage->grp_used_tres[TRES_ARRAY_NODE] =
+		bit_set_count(qos_usage->grp_node_bitmap);
+}
+
+/*
+ * Update association's node allocation information for a job being completed.
+ * This includes grp_node_bitmap, grp_node_job_cnt and
+ * grp_used_tres[TRES_ARRAY_NODE].
+ */
+static void _rm_assoc_node_bitmap(struct job_record *job_ptr,
+				  struct slurmdb_assoc_usage *assoc_usage)
+{
+	int i, i_first, i_last;
+
+	xassert(assoc_usage);
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
+		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
+		return;
+	}
+	if (!assoc_usage->grp_node_bitmap) {
+		error("%s: grp_node_bitmap is NULL", __func__);
+		return;
+	}
+	if (!assoc_usage->grp_node_job_cnt) {
+		error("%s: grp_node_job_cnt is NULL", __func__);
+		return;
+	}
+	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
+	if (i_first == -1)
+		i_last = -2;
+	else
+		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
+			continue;
+		if ((--assoc_usage->grp_node_job_cnt[i] == 0) &&
+		    assoc_usage->grp_node_bitmap)
+			bit_clear(assoc_usage->grp_node_bitmap, i);
+	}
+	assoc_usage->grp_used_tres[TRES_ARRAY_NODE] =
+		bit_set_count(assoc_usage->grp_node_bitmap);
+}
+
+/*
+ * Update QOS's node allocation information for a job being completed.
+ * This includes grp_node_bitmap, grp_node_job_cnt and
+ * grp_used_tres[TRES_ARRAY_NODE].
+ */
+static void _rm_qos_node_bitmap(struct job_record *job_ptr,
+				slurmdb_qos_rec_t *qos_ptr)
+{
+	slurmdb_qos_usage_t *qos_usage;
+	int i, i_first, i_last;
+
+	if (!qos_ptr || !qos_ptr->usage)
+		return;
+	qos_usage = qos_ptr->usage;
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
+		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
+		return;
+	}
+	if (!qos_usage->grp_node_bitmap) {
+		error("%s: grp_node_bitmap is NULL", __func__);
+		return;
+	}
+	if (!qos_usage->grp_node_job_cnt) {
+		error("%s: grp_node_job_cnt is NULL", __func__);
+		return;
+	}
+	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
+	if (i_first == -1)
+		i_last = -2;
+	else
+		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
+			continue;
+		if ((--qos_usage->grp_node_job_cnt[i] == 0) &&
+		    qos_usage->grp_node_bitmap)
+			bit_clear(qos_usage->grp_node_bitmap, i);
+	}
+	qos_usage->grp_used_tres[TRES_ARRAY_NODE] =
+		bit_set_count(qos_usage->grp_node_bitmap);
+}
+
 static int _get_tres_state_reason(int tres_pos, int unk_reason)
 {
 	switch (tres_pos) {
@@ -533,7 +827,7 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 	used_limits = _get_user_used_limits(&qos_ptr->usage->user_limit_list,
 					    job_ptr->user_id);
 
-	switch(type) {
+	switch (type) {
 	case ACCT_POLICY_ADD_SUBMIT:
 		qos_ptr->usage->grp_used_submit_jobs += job_cnt;
 		used_limits->submit_jobs += job_cnt;
@@ -700,7 +994,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		priority_g_job_end(job_ptr);
 	else if (type == ACCT_POLICY_JOB_BEGIN) {
 		uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
-		for (i=0; i<slurmctld_tres_cnt; i++) {
+		for (i = 0; i < slurmctld_tres_cnt; i++) {
 			if (i == TRES_ARRAY_ENERGY)
 				continue;
 			used_tres_run_secs[i] =
@@ -728,7 +1022,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 	 * (!job_ptr->tres_alloc_str).
 	 */
 	if (((type == ACCT_POLICY_ADD_SUBMIT) ||
-	    (type == ACCT_POLICY_REM_SUBMIT)) &&
+	     (type == ACCT_POLICY_REM_SUBMIT)) &&
 	    job_ptr->part_ptr_list &&
 	    (IS_JOB_PENDING(job_ptr) || !job_ptr->tres_alloc_str)) {
 		bool job_first = false;
@@ -779,7 +1073,8 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		 * hand we need to remove the submit from all partition qos
 		 * outside of the one we actually are going to run on.
 		 */
-		if ((type == ACCT_POLICY_JOB_BEGIN) &&
+		if (((type == ACCT_POLICY_JOB_BEGIN) ||
+		     (type == ACCT_POLICY_JOB_FINI)) &&
 		    job_ptr->part_ptr_list) {
 			ListIterator part_itr;
 			struct part_record *part_ptr;
@@ -801,11 +1096,19 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 						    _find_qos_part,
 						    part_ptr->qos_ptr))
 					continue;
-				_qos_adjust_limit_usage(ACCT_POLICY_REM_SUBMIT,
+				if (type == ACCT_POLICY_JOB_BEGIN) {
+					_qos_adjust_limit_usage(
+							ACCT_POLICY_REM_SUBMIT,
 							job_ptr,
 							part_ptr->qos_ptr,
 							used_tres_run_secs,
 							job_cnt);
+					_add_qos_node_bitmap(job_ptr,
+							     part_ptr->qos_ptr);
+				} else {   /* type == ACCT_POLICY_JOB_FINI */
+					_rm_qos_node_bitmap(job_ptr,
+							    part_ptr->qos_ptr);
+				}
 			}
 			list_iterator_destroy(part_itr);
 			FREE_NULL_LIST(part_qos_list);
@@ -817,6 +1120,13 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 					used_tres_run_secs, job_cnt);
 		_qos_adjust_limit_usage(type, job_ptr, qos_ptr_2,
 					used_tres_run_secs, job_cnt);
+		if (type == ACCT_POLICY_JOB_BEGIN) {
+			_add_qos_node_bitmap(job_ptr, qos_ptr_1);
+			_add_qos_node_bitmap(job_ptr, qos_ptr_2);
+		} else if (type == ACCT_POLICY_JOB_FINI) {
+			_rm_qos_node_bitmap(job_ptr, qos_ptr_1);
+			_rm_qos_node_bitmap(job_ptr, qos_ptr_2);
+		}
 	}
 
 	assoc_ptr = job_ptr->assoc_ptr;
@@ -836,12 +1146,14 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			break;
 		case ACCT_POLICY_JOB_BEGIN:
 			assoc_ptr->usage->used_jobs++;
-			for (i=0; i<slurmctld_tres_cnt; i++) {
+ 			_add_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
+			for (i = 0; i < slurmctld_tres_cnt; i++) {
 				if (i == TRES_ARRAY_ENERGY)
 					continue;
-
-				assoc_ptr->usage->grp_used_tres[i] +=
-					job_ptr->tres_alloc_cnt[i];
+				if (i != TRES_ARRAY_NODE) {
+					assoc_ptr->usage->grp_used_tres[i] +=
+	 					job_ptr->tres_alloc_cnt[i];
+				}
 				assoc_ptr->usage->grp_used_tres_run_secs[i] +=
 					used_tres_run_secs[i];
 				debug2("acct_policy_job_begin: after adding %pJ, assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) is %"PRIu64,
@@ -859,9 +1171,10 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				debug2("acct_policy_job_fini: used_jobs "
 				       "underflow for account %s",
 				       assoc_ptr->acct);
-
+ 			_rm_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
 			for (i = 0; i < slurmctld_tres_cnt; i++) {
-				if (i == TRES_ARRAY_ENERGY)
+				if ((i == TRES_ARRAY_ENERGY) ||
+				    (i == TRES_ARRAY_NODE))
 					continue;
 				if (job_ptr->tres_alloc_cnt[i] >
 				    assoc_ptr->usage->grp_used_tres[i]) {
@@ -1767,9 +2080,11 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 	if (!qos_ptr || !qos_out_ptr || !assoc_ptr)
 		return rc;
 
-	/* check to see if we should be using safe limits, if so we
+	/*
+	 * check to see if we should be using safe limits, if so we
 	 * will only start a job if there are sufficient remaining
-	 * cpu-minutes for it to run to completion */
+	 * cpu-minutes for it to run to completion
+	 */
 	if (accounting_enforce & ACCOUNTING_ENFORCE_SAFE)
 		safe_limits = true;
 
@@ -1795,7 +2110,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 		if (qos_ptr->usage->grp_used_jobs >= qos_ptr->grp_jobs) {
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_QOS_GRP_JOB;
-			debug2("%pJ being held, the job is at or exceeds group max jobs limit %u with %u for qos %s",
+			debug2("%pJ being held, the job is at or exceeds group max jobs limit %u with %u for QOS %s",
 			       job_ptr, qos_ptr->grp_jobs,
 			       qos_ptr->usage->grp_used_jobs, qos_ptr->name);
 
@@ -1827,7 +2142,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 		if (wall_mins >= qos_ptr->grp_wall) {
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_QOS_GRP_WALL;
-			debug2("%pJ being held, the job is at or exceeds group wall limit %u with %u for qos %s",
+			debug2("%pJ being held, the job is at or exceeds group wall limit %u with %u for QOS %s",
 			       job_ptr, qos_ptr->grp_wall,
 			       wall_mins, qos_ptr->name);
 			rc = false;
@@ -1836,7 +2151,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 			   ((wall_mins + time_limit) > qos_ptr->grp_wall)) {
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_QOS_GRP_WALL;
-			debug2("%pJ being held, the job request will exceed group wall limit %u if ran with %u for qos %s",
+			debug2("%pJ being held, the job request will exceed group wall limit %u if ran with %u for QOS %s",
 			       job_ptr, qos_ptr->grp_wall,
 			       wall_mins + time_limit, qos_ptr->name);
 			rc = false;
@@ -1895,8 +2210,10 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 
 	/* we don't need to check submit_jobs_pu here */
 
-	/* if the qos limits have changed since job
-	 * submission and job can not run, then kill it */
+	/*
+	 * if the QOS limits have changed since job
+	 * submission and job can not run, then kill it
+	 */
 	if ((job_ptr->limit_set.time != ADMIN_SET_LIMIT)
 	    && (qos_out_ptr->max_wall_pj == INFINITE)
 	    && (qos_ptr->max_wall_pj != INFINITE)) {
@@ -1914,7 +2231,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason =
 				WAIT_QOS_MAX_WALL_PER_JOB;
-			debug2("%pJ being held, time limit %u exceeds qos max wall pj %u",
+			debug2("%pJ being held, time limit %u exceeds QOS max wall pj %u",
 			       job_ptr, job_ptr->time_limit, time_limit);
 			rc = false;
 			goto end_it;
@@ -1933,6 +2250,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 {
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
+	uint64_t orig_node_cnt, new_node_cnt;
 	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
 	bool safe_limits = false;
 	int rc = true, i, tres_pos = 0;
@@ -1942,9 +2260,11 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	if (!qos_ptr || !qos_out_ptr || !assoc_ptr)
 		return rc;
 
-	/* check to see if we should be using safe limits, if so we
-	 * will only start a job if there are sufficient remaining
-	 * cpu-minutes for it to run to completion */
+	/*
+	 * check to see if we should be using safe limits, if so we will only
+	 * will only start a job if there are sufficient remaining cpu-minutes
+	 * for it to run to completion
+	 */
 	if (accounting_enforce & ACCOUNTING_ENFORCE_SAFE)
 		safe_limits = true;
 
@@ -2022,16 +2342,20 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	}
 
-	/* If the JOB's cpu limit wasn't administratively set and the
-	 * QOS has a GrpCPU limit, cancel the job if its minimum
-	 * cpu requirement has exceeded the limit for all CPUs
-	 * usable by the QOS
+	/*
+	 * If the job's CPU limit wasn't administratively set and the QOS
+	 * has a GrpCPU limit, cancel the job if its minimum CPU requirement
+	 * has exceeded the limit for all CPUs usable by the QOS
 	 */
+	orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
+	_update_qos_job_node_cnt(job_ptr, tres_req_cnt, qos_ptr->usage);
+	new_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->grp_tres_ctld,	qos_out_ptr->grp_tres_ctld,
 		tres_req_cnt, qos_ptr->usage->grp_used_tres,
-		NULL, job_ptr->limit_set.tres, 1);
+		NULL, job_ptr->limit_set.tres, true);
+	tres_req_cnt[TRES_ARRAY_NODE] = orig_node_cnt;
 	switch (tres_usage) {
 	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible because the curr_usage sent in is NULL */
@@ -2071,7 +2395,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		&tres_pos,
 		qos_ptr->grp_tres_run_mins_ctld,
 		qos_out_ptr->grp_tres_run_mins_ctld,
-		job_tres_time_limit, tres_run_mins, NULL, NULL, 1);
+		job_tres_time_limit, tres_run_mins, NULL, NULL, true);
 	switch (tres_usage) {
 	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible because the curr_usage sent in is NULL */
@@ -2195,17 +2519,21 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		goto end_it;
 	}
 
+	orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
+	tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->max_tres_pa_ctld, qos_out_ptr->max_tres_pa_ctld,
 		tres_req_cnt, used_limits_a->tres,
-		NULL, job_ptr->limit_set.tres, 1);
+		NULL, job_ptr->limit_set.tres, true);
+	tres_req_cnt[TRES_ARRAY_NODE] = orig_node_cnt;
 	switch (tres_usage) {
 	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible because the curr_usage sent in is NULL */
 		break;
 	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
-		/* Hold the job if it exceeds the per-acct
+		/*
+		 * Hold the job if it exceeds the per-acct
 		 * TRES limit for the given QOS
 		 */
 		xfree(job_ptr->state_desc);
@@ -2221,9 +2549,10 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		goto end_it;
 		break;
 	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
-		/* Hold the job if the user has exceeded
-		 * the QOS per-user TRES limit with their
-		 * current usage */
+		/*
+		 * Hold the job if the user has exceeded the QOS per-user
+		 * TRES limit with their current usage
+		 */
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_PER_ACCT);
@@ -2241,17 +2570,21 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		break;
 	}
 
+	orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
+	tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->max_tres_pu_ctld, qos_out_ptr->max_tres_pu_ctld,
 		tres_req_cnt, used_limits->tres,
-		NULL, job_ptr->limit_set.tres, 1);
+		NULL, job_ptr->limit_set.tres, true);
+	tres_req_cnt[TRES_ARRAY_NODE] = orig_node_cnt;
 	switch (tres_usage) {
 	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible because the curr_usage sent in is NULL */
 		break;
 	case TRES_USAGE_REQ_EXCEEDS_LIMIT:
-		/* Hold the job if it exceeds the per-user
+		/*
+		 * Hold the job if it exceeds the per-user
 		 * TRES limit for the given QOS
 		 */
 		xfree(job_ptr->state_desc);
@@ -2266,9 +2599,10 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 		goto end_it;
 		break;
 	case TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE:
-		/* Hold the job if the user has exceeded
-		 * the QOS per-user TRES limit with their
-		 * current usage */
+		/*
+		 * Hold the job if the user has exceeded the QOS
+		 * per-user TRES limit with their current usage
+		 */
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = _get_tres_state_reason(
 			tres_pos, WAIT_QOS_MAX_UNK_PER_USER);
@@ -2316,15 +2650,15 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 	if (!qos_ptr || !qos_out_ptr)
 		return rc;
 
-	/* The idea here is for qos to trump what an association
-	 * has set for a limit, so if an association set of
-	 * wall 10 mins and the qos has 20 mins set and the
-	 * job has been running for 11 minutes it continues
+	/*
+	 * The idea here is for QOS to trump what an association has set for
+	 * a limit, so if an association set of wall 10 mins and the QOS has
+	 * 20 mins set and the job has been running for 11 minutes it continues
 	 * until 20.
 	 */
 	/* clang needs this memset to avoid a warning */
 	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
-	for (i=0; i<slurmctld_tres_cnt; i++)
+	for (i = 0; i < slurmctld_tres_cnt; i++)
 		tres_usage_mins[i] =
 			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
 	wall_mins = qos_ptr->usage->grp_used_wall / 60;
@@ -2332,7 +2666,7 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
 		qos_out_ptr->grp_tres_mins_ctld, NULL,
-		NULL, tres_usage_mins, NULL, 0);
+		NULL, tres_usage_mins, NULL, false);
 	switch (tres_usage) {
 	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		last_job_update = now;
@@ -2373,7 +2707,7 @@ static int _qos_job_time_out(struct job_record *job_ptr,
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->max_tres_mins_pj_ctld,
 		qos_out_ptr->max_tres_mins_pj_ctld, job_tres_usage_mins,
-		NULL, NULL, NULL, 1);
+		NULL, NULL, NULL, true);
 	switch (tres_usage) {
 	case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 		/* not possible curr_usage is NULL */
@@ -3263,16 +3597,16 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
 	    !(rc = _qos_job_runnable_pre_select(job_ptr, qos_ptr_1, &qos_rec)))
 		goto end_it;
 
-	/* If qos_ptr_1 didn't set the value use the 2nd QOS to set
-	   the limit.
-	*/
+	/* If qos_ptr_1 didn't set the value use the 2nd QOS to set the limit */
 	if (qos_ptr_2 &&
 	    !(rc = _qos_job_runnable_pre_select(job_ptr, qos_ptr_2, &qos_rec)))
 		goto end_it;
 
-	/* check to see if we should be using safe limits, if so we
+	/*
+	 * check to see if we should be using safe limits, if so we
 	 * will only start a job if there are sufficient remaining
-	 * cpu-minutes for it to run to completion */
+	 * cpu-minutes for it to run to completion
+	 */
 	if (accounting_enforce & ACCOUNTING_ENFORCE_SAFE)
 		safe_limits = true;
 
@@ -3349,9 +3683,10 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
 			}
 		}
 
-		/* We don't need to look at the regular limits for
-		 * parents since we have pre-propogated them, so just
-		 * continue with the next parent
+		/*
+		 * We don't need to look at the regular limits for parents
+		 * since we have pre-propogated them, so just continue with
+		 * the next parent.
 		 */
 		if (parent) {
 			assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
@@ -3378,8 +3713,10 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
 
 		/* we don't need to check submit_jobs here */
 
-		/* if the association limits have changed since job
-		 * submission and job can not run, then kill it */
+		/*
+		 * if the association limits have changed since job
+		 * submission and job can not run, then kill it
+		 */
 		if ((job_ptr->limit_set.time != ADMIN_SET_LIMIT)
 		    && (qos_rec.max_wall_pj == INFINITE)
 		    && (assoc_ptr->max_wall_pj != INFINITE)) {
@@ -3428,6 +3765,7 @@ extern bool acct_policy_job_runnable_post_select(
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	uint64_t job_tres_time_limit[slurmctld_tres_cnt];
+	uint64_t orig_node_cnt;
 	uint32_t time_limit;
 	bool rc = true;
 	bool safe_limits = false;
@@ -3476,9 +3814,11 @@ extern bool acct_policy_job_runnable_post_select(
 	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
 	memset(job_tres_time_limit, 0, sizeof(job_tres_time_limit));
 
-	/* time_limit may be NO_VAL if the partition does not have
+	/*
+	 * time_limit may be NO_VAL if the partition does not have
 	 * a DefaultTime, in which case the partition max_time should
-	 * be used instead */
+	 * be used instead
+	 */
 	time_limit = job_ptr->time_limit;
 	_set_time_limit(&time_limit, job_ptr->part_ptr->max_time,
 			job_ptr->part_ptr->default_time, NULL);
@@ -3502,9 +3842,7 @@ extern bool acct_policy_job_runnable_post_select(
 						 job_tres_time_limit)))
 		goto end_it;
 
-	/* If qos_ptr_1 didn't set the value use the 2nd QOS to set
-	   the limit.
-	*/
+	/* If qos_ptr_1 didn't set the value use the 2nd QOS to set the limit */
 	if (qos_ptr_2 &&
 	    !(rc = _qos_job_runnable_post_select(job_ptr, qos_ptr_2,
 						 &qos_rec, tres_req_cnt,
@@ -3513,7 +3851,7 @@ extern bool acct_policy_job_runnable_post_select(
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
-		for (i=0; i<slurmctld_tres_cnt; i++) {
+		for (i = 0; i < slurmctld_tres_cnt; i++) {
 			tres_usage_mins[i] =
 				(uint64_t)(assoc_ptr->usage->usage_tres_raw[i]
 					   / 60);
@@ -3592,12 +3930,15 @@ extern bool acct_policy_job_runnable_post_select(
 			break;
 		}
 
-
+		orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
+		_update_assoc_job_node_cnt(job_ptr, tres_req_cnt,
+					   assoc_ptr->usage);
 		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos,
 			assoc_ptr->grp_tres_ctld, qos_rec.grp_tres_ctld,
 			tres_req_cnt, assoc_ptr->usage->grp_used_tres,
-			NULL, job_ptr->limit_set.tres, 1);
+			NULL, job_ptr->limit_set.tres, true);
+		tres_req_cnt[TRES_ARRAY_NODE] = orig_node_cnt;
 		switch (tres_usage) {
 		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			/* not possible because the curr_usage sent in is NULL*/
@@ -3639,7 +3980,7 @@ extern bool acct_policy_job_runnable_post_select(
 			&tres_pos,
 			assoc_ptr->grp_tres_run_mins_ctld,
 			qos_rec.grp_tres_run_mins_ctld,
-			job_tres_time_limit, tres_run_mins, NULL, NULL, 1);
+			job_tres_time_limit, tres_run_mins, NULL, NULL, true);
 		switch (tres_usage) {
 		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			/* not possible because the curr_usage sent in is NULL*/
@@ -3968,7 +4309,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	uint64_t job_tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t time_delta;
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
-	uint32_t wall_mins;
+	uint32_t wall_mins, orig_node_cnt;
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc = NULL;
@@ -3978,7 +4319,8 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	int i, tres_pos = 0;
 	acct_policy_tres_usage_t tres_usage;
 
-	/* Now see if we are enforcing limits.  If Safe is set then
+	/*
+	 * Now see if we are enforcing limits.  If Safe is set then
 	 * return false as well since we are being safe if the limit
 	 * was changed after the job was already deemed safe to start.
 	 */
@@ -4004,16 +4346,19 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 	memset(job_tres_usage_mins, 0, sizeof(tres_usage_mins));
 	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
 
-	/* find out how many cpu minutes this job has been
-	 * running for. We add 1 here to make it so we can check for
-	 * just > instead of >= in our checks */
-	for (i=0; i<slurmctld_tres_cnt; i++) {
+	/*
+	 * find out how many CPU minutes this job has been running for.
+	 * We add 1 here to make it so we can check for just > instead of
+	 * >= in our checks.
+	 */
+	for (i = 0; i < slurmctld_tres_cnt; i++) {
 		if (i == TRES_ARRAY_ENERGY)
 			continue;
 
-		if (job_ptr->tres_alloc_cnt[i])
+		if (job_ptr->tres_alloc_cnt[i]) {
 			job_tres_usage_mins[i] =
 				(time_delta * job_ptr->tres_alloc_cnt[i]) + 1;
+		}
 	}
 
 	/* check the first QOS setting it's values in the qos_rec */
@@ -4021,16 +4366,14 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 					    &qos_rec, job_tres_usage_mins))
 		goto job_failed;
 
-	/* If qos_ptr_1 didn't set the value use the 2nd QOS to set
-	   the limit.
-	*/
+	/* If qos_ptr_1 didn't set the value use the 2nd QOS to set the limit */
 	if (qos_ptr_2 && !_qos_job_time_out(job_ptr, qos_ptr_2,
 					    &qos_rec, job_tres_usage_mins))
 		goto job_failed;
 
 	/* handle any association stuff here */
 	while (assoc) {
-		for (i=0; i<slurmctld_tres_cnt; i++)
+		for (i = 0; i < slurmctld_tres_cnt; i++)
 			tres_usage_mins[i] =
 				(uint64_t)(assoc->usage->usage_tres_raw[i]
 					   / 60.0);
@@ -4039,7 +4382,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc->grp_tres_mins_ctld,
 			qos_rec.grp_tres_mins_ctld, NULL,
-			NULL, tres_usage_mins, NULL, 0);
+			NULL, tres_usage_mins, NULL, false);
 		switch (tres_usage) {
 		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			last_job_update = now;
@@ -4071,10 +4414,13 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 			break;
 		}
 
+		orig_node_cnt = job_tres_usage_mins[TRES_ARRAY_NODE];
+		job_tres_usage_mins[TRES_ARRAY_NODE] = 0;
 		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos, assoc->max_tres_mins_ctld,
 			qos_rec.max_tres_mins_pj_ctld, job_tres_usage_mins,
-			NULL, NULL, NULL, 1);
+			NULL, NULL, NULL, true);
+		job_tres_usage_mins[TRES_ARRAY_NODE] = orig_node_cnt;
 		switch (tres_usage) {
 		case TRES_USAGE_CUR_EXCEEDS_LIMIT:
 			/* not possible curr_usage is NULL */

@@ -564,6 +564,10 @@ struct slurmdb_assoc_usage {
 				 * (DON'T PACK for state file) */
 	List children_list;     /* list of children associations
 				 * (DON'T PACK) */
+	bitstr_t *grp_node_bitmap;	/* Bitmap of allocated nodes
+					 * (DON'T PACK) */
+	uint16_t *grp_node_job_cnt;	/* Count of jobs allocated on each node
+					 * (DON'T PACK) */
 	uint64_t *grp_used_tres; /* array of active tres counts
 				  * (DON'T PACK for state file) */
 	uint64_t *grp_used_tres_run_secs; /* array of running tres secs
@@ -830,6 +834,10 @@ typedef struct {
 			       * for state file) */
 	List job_list; /* list of job pointers to submitted/running
 			  jobs (DON'T PACK) */
+	bitstr_t *grp_node_bitmap;	/* Bitmap of allocated nodes
+					 * (DON'T PACK) */
+	uint16_t *grp_node_job_cnt;	/* Count of jobs allocated on each node
+					 * (DON'T PACK) */
 	uint32_t grp_used_jobs;	/* count of active jobs (DON'T PACK
 				 * for state file) */
 	uint32_t grp_used_submit_jobs; /* count of jobs pending or running
