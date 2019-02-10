@@ -427,6 +427,13 @@ NOTE: Changing this value will have no effect on any running or
 pending job.
 
 .TP
+\fIPriority\fP
+What priority will be added to a job\'s priority when using this assocation.
+This is overridden if set directly on a user.
+Default is the cluster's limit.
+To clear a previously set value use the modify command with a new value of \-1.
+
+.TP
 \fIQosLevel\fP<operator><comma separated list of qos names>
 Specify the default Quality of Service's that jobs are able to run at
 for this association.  To get a list of valid QOS's use 'sacctmgr list qos'.
@@ -707,6 +714,10 @@ The account name of the parent of this association.
 .TP
 \fIPartition\fP
 The name of a partition in the association.
+
+.TP
+\fIPriority\fP
+What priority will be added to a job\'s priority when using this association.
 
 .TP
 \fIWithRawQOSLevel\fP

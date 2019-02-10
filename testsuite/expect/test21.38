@@ -40,7 +40,11 @@ set tu1         "test$test_id-user.1"
 set tu2         "test$test_id-user.2"
 set cpusval1    2
 set cpusval2    3
+set cpusval3    4
 set nodesval    5
+set prio1       6
+set prio2       7
+set prio3       8
 set access_err  0
 
 # Cluster
@@ -67,12 +71,14 @@ array set acct_mod_desc2 {}
 array set acct_mod_acct_vals2 {}
 array set acct_mod_assoc_vals2 {}
 set acct_mod_assoc_vals2(maxcpus) $cpusval1
+set acct_mod_assoc_vals2(priority) $prio1
 
 # Mod account 3
 array set acct_mod_desc3 {}
 array set acct_mod_acct_vals3 {}
 array set acct_mod_assoc_vals3 {}
 set acct_mod_assoc_vals3(maxcpus) $cpusval2
+set acct_mod_assoc_vals3(priority) $prio2
 
 # Mod account 4
 array set acct_mod_desc4 {}
@@ -81,13 +87,12 @@ array set acct_mod_assoc_vals4 {}
 set acct_mod_assoc_vals4(maxnodes) $nodesval
 
 # Mod User 1
-array set user_mod_info {}
-set user_mod_info(cluster) $tc1
-array set user_mod_acct {
-	adminlevel    Operator
-}
-set user_mod_acct(defaultaccount) $ta2
-array set user_mod_assoc {}
+array set user_mod_desc {}
+set user_mod_desc(account) $ta2
+array set user_mod_acct_vals {}
+array set user_mod_assoc_vals {}
+set user_mod_assoc_vals(maxcpus) $cpusval3
+set user_mod_assoc_vals(priority) $prio3
 
 proc _clean_exit { exit_code } {
 	variable tu1
@@ -161,13 +166,13 @@ if { $exit_code } {
 
 # Check the changes
 set matches 0
-set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres"]
+set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr command\n"
 		incr exit_code
 	}
-	-re "(($ta1|$ta2|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1)" {
+	-re "(($ta1|$ta2|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1\\|$prio1)" {
 		incr matches
 		exp_continue
 	}
@@ -194,13 +199,13 @@ if { $exit_code } {
 
 # Check the changes
 set matches 0
-set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres"]
+set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
 expect {
 	-re "There was a problem" {
 		send_user "FAILURE: there was a problem with the sacctmgr list assoc command\n"
 		incr exit_code
 	}
-	-re "(($ta1|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1)|($ta2\\|($tu1|$tu2){0,6}\\|cpu=$cpusval2)" {
+	-re "(($ta1|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1\\|$prio1)|($ta2\\|($tu1|$tu2){0,6}\\|cpu=$cpusval2\\|$prio2)" {
 		incr matches
 		exp_continue
 	}
@@ -249,6 +254,81 @@ expect {
 }
 if {$matches != 9} {
 	send_user "\nFAILURE:  Account modification 3 incorrect with only $matches out of 9.\n\n"
+	incr exit_code
+	[_clean_exit $exit_code]
+}
+
+# Modify a child user
+set acct_mod_assoc_vals4(maxnodes) -1
+incr exit_code [mod_acct "$ta2,$ta3" [array get acct_mod_desc4] [array get acct_mod_assoc_vals4] [array get acct_mod_acct_vals4]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+incr exit_code [mod_user "$tu1" [array get user_mod_desc] [array get user_mod_assoc_vals] [array get user_mod_user_vals]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+# Check the changes
+set matches 0
+set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr list assoc command\n"
+		incr exit_code
+	}
+	-re "(($ta1|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1\\|$prio1)|($ta2\\|($tu1){0,6}\\|cpu=$cpusval3\\|$prio3)|($ta2\\|($tu2){0,6}\\|cpu=$cpusval2\\|$prio2)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE:sacctmgr list associations not responding\n\n"
+		slow_kill $my_pid
+		incr exit_code
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 9} {
+	send_user "\nFAILURE:  Account modification 4 incorrect with only $matches out of 9.\n\n"
+	incr exit_code
+	[_clean_exit $exit_code]
+}
+
+
+# Unset the user specific values
+set user_mod_assoc_vals(priority) -1
+set user_mod_assoc_vals(maxcpus) -1
+incr exit_code [mod_user "$tu1" [array get user_mod_desc] [array get user_mod_assoc_vals] [array get user_mod_user_vals]]
+if { $exit_code } {
+	[_clean_exit $exit_code]
+}
+
+# Check the changes
+set matches 0
+set my_pid [spawn $sacctmgr -n -P list assoc account=$ta1,$ta2,$ta3 format="account,user,maxtres,priority"]
+expect {
+	-re "There was a problem" {
+		send_user "FAILURE: there was a problem with the sacctmgr list assoc command\n"
+		incr exit_code
+	}
+	-re "(($ta1|$ta3)\\|($tu1|$tu2){0,6}\\|cpu=$cpusval1\\|$prio1)|($ta2\\|($tu1|$tu2){0,6}\\|cpu=$cpusval2\\|$prio2)" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE:sacctmgr list associations not responding\n\n"
+		slow_kill $my_pid
+		incr exit_code
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 9} {
+	send_user "\nFAILURE:  Account modification 5 incorrect with only $matches out of 9.\n\n"
 	incr exit_code
 	[_clean_exit $exit_code]
 }

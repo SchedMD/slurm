@@ -82,10 +82,12 @@ double get_priority_from_factors(priority_factors_object_t *prio_factors)
 {
 	int i = 0;
 	double priority = prio_factors->priority_age
+		+ prio_factors->priority_assoc
 		+ prio_factors->priority_fs
 		+ prio_factors->priority_js
 		+ prio_factors->priority_part
 		+ prio_factors->priority_qos
+		+ (double)((int64_t)prio_factors->priority_admin - NICE_OFFSET)
 		- (double)((int64_t)prio_factors->nice - NICE_OFFSET);
 
 	for (i = 0; i < prio_factors->tres_cnt; i++) {
@@ -243,6 +245,39 @@ int _print_age_priority_weighted(priority_factors_object_t * job, int width,
 		_print_int(weight_age, width, right, true);
 	else
 		_print_int(job->priority_age, width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_assoc_priority_normalized(priority_factors_object_t * job, int width,
+				     bool right, char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("ASSOC", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_assoc, width, right, true);
+	else {
+		double num = 0;
+		if (weight_qos)
+			num = job->priority_assoc / weight_assoc;
+		_print_norm(num, width, right, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_assoc_priority_weighted(priority_factors_object_t * job, int width,
+				   bool right, char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("ASSOC", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(weight_assoc, width, right, true);
+	else
+		_print_int(job->priority_assoc, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -441,6 +476,21 @@ int _print_qos_priority_weighted(priority_factors_object_t * job, int width,
 		_print_int(weight_qos, width, right, true);
 	else
 		_print_int(job->priority_qos, width, right, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_admin_priority(priority_factors_object_t * job, int width,
+			  bool right, char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("ADMIN", width, right, true);
+	else if (job == (priority_factors_object_t *) -1)
+		_print_int(1, width, right, true);
+	else
+		_print_int((int64_t)job->priority_admin - NICE_OFFSET, width,
+			   right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

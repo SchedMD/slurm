@@ -774,6 +774,26 @@ uint32_t slurm_get_priority_weight_age(void)
 }
 
 
+/* slurm_get_priority_weight_assoc
+ * returns the priority weight for association from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_assoc(void)
+{
+	uint32_t factor = NO_VAL;
+	slurm_ctl_conf_t *conf;
+
+	if (slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		factor = conf->priority_weight_assoc;
+		slurm_conf_unlock();
+	}
+
+	return factor;
+}
+
+
 /* slurm_get_priority_weight_fairshare
  * returns the priority weight for fairshare from slurmctld_conf object
  * RET uint32_t - factor weight.

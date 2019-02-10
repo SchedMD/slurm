@@ -1,0 +1,454 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test normalized factors
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC.
+# Written by Brian Christiansen <brian@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id     "24.7"
+set exit_code   0
+set timeout	60
+print_header	$test_id
+
+set ta1         "test$test_id-account.1"
+set ta2         "test$test_id-account.2"
+set tq1         "test$test_id-qos.1"
+set tq2         "test$test_id-qos.2"
+
+set p1         "test$test_id-part.1"
+set p2         "test$test_id-part.2"
+
+set config_path  ""
+
+set jobid1 0
+set jobid2 0
+set jobid3 0
+set jobid4 0
+set jobid5 0
+
+set cwd "[$bin_pwd]"
+
+set access_err 0
+
+set user [get_my_user_name]
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+if { [string compare [priority_type] multifactor] } {
+	log_warn "This test can't be run without a usable PriorityType"
+	exit 0
+}
+
+proc clean_assocs {} {
+	global ta1 ta2 tq1 tq2
+
+	remove_acct "" $ta1
+	remove_acct "" $ta2
+	remove_qos $tq1
+	remove_qos $tq2
+}
+
+proc end_it { exit_code } {
+	global test_id jobid1 jobid2 jobid3 jobid4 jobid5 bin_cp config_path cwd
+
+	if {$jobid1} {
+		cancel_job $jobid1
+	}
+	if {$jobid2} {
+		cancel_job $jobid2
+	}
+	if {$jobid3} {
+		cancel_job $jobid3
+	}
+	if {$jobid4} {
+		cancel_job $jobid4
+	}
+	if {$jobid5} {
+		cancel_job $jobid5
+	}
+
+	clean_assocs
+
+	log_info "Changing slurm.conf back"
+	exec $bin_cp -v $cwd/slurm.conf.orig $config_path/slurm.conf
+	reconfigure
+
+	if {$exit_code == 0} {
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+
+proc part_cpu_cnt { partition } {
+	global sinfo number
+
+	set cpu_cnt 1
+	spawn $sinfo -h -o "%C" -p $partition --state=idle
+	expect {
+		-re "($number)(K?)\/($number)(K?)" {
+			set cpu_cnt $expect_out(3,string)
+			if {[string compare $expect_out(4,string) ""]} {
+				set cpu_cnt [expr $cpu_cnt * 1024]
+			}
+
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+	return $cpu_cnt
+}
+
+proc sub_job { args state } {
+
+	global number sbatch test_id bin_sleep
+
+	set jobid 0
+	set cmd "$sbatch -J$test_id -o/dev/null -e/dev/null --exclusive --wrap \"$bin_sleep 999\""
+	append cmd " $args"
+
+	spawn {*}$cmd
+	expect {
+		-re "Submitted batch job ($number)" {
+			set jobid $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			log_error "sbatch not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$jobid == 0} {
+		log_error "did not get sbatch jobid"
+		end_it 1
+	}
+
+	if {[wait_for_job $jobid $state] != 0} {
+		log_error "error starting job $jobid"
+		end_it 1
+	}
+
+	return $jobid
+}
+
+proc sprio_args { args regex match_cnt } {
+	global sprio
+	set matches 0
+
+	spawn $sprio {*}$args
+	expect {
+		-re $regex {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			log_error "sprio not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $match_cnt} {
+		log_error "sprio $args failed to match '$regex' $match_cnt times"
+		end_it 1
+	}
+}
+
+proc scontrol { args regex match_cnt } {
+	global scontrol
+	set matches 0
+
+	spawn $scontrol {*}$args
+	expect {
+		-re $regex {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			log_error "scontrol not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$matches != $match_cnt} {
+		log_error "scontrol $args failed to match '$regex' $match_cnt times"
+		end_it 1
+	}
+}
+
+proc update_job { jobid prio {error ""} } {
+	global scontrol
+
+	set matches 0
+
+	spawn $scontrol update jobid=$jobid adminpriofactor=$prio
+	set tmp_re ".*"
+	if {$error != ""} {
+		set tmp_re $error
+	}
+	expect {
+		-re $tmp_re {
+			incr matches
+		}
+		timeout {
+			log_error "scontrol not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {($error != "") && !$matches} {
+		log_error "didn't get expected error '$error'"
+		end_it 1
+	}
+}
+
+
+proc create_part { name nodes prio } {
+	global scontrol
+
+	spawn $scontrol create partitionname=$name priorityjobfactor=$prio nodes=$nodes
+	expect {
+		-re "error" {
+			log_error "scontrol found error"
+			end_it 1
+		}
+		timeout {
+			log_error "scontrol is not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set found 0
+	spawn $scontrol show partitionname=$name
+	expect {
+		-re "PartitionName=$name" {
+			set found 1
+			exp_continue
+		}
+		timeout {
+			log_error "scontrol is not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$found == 0} {
+		log_error "scontrol did not create partition $name"
+		end_it 1
+	}
+}
+
+proc update_part { name args } {
+	global scontrol
+
+	set cmd "$scontrol update partitionname=$name"
+	append cmd " $args"
+
+	spawn {*}$cmd
+	expect {
+		-re "error" {
+			log_error "scontrol found error"
+			end_it 1
+		}
+		timeout {
+			log_error "scontrol is not responding"
+			end_it 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+################################################################
+
+if {[info exists env(SPRIO_FORMAT)]} {
+    unset env(SPRIO_FORMAT)
+}
+
+set config_path [get_conf_path]
+if { $exit_code != 0 } {
+	exit $exit_code
+}
+
+copy_conf $config_path $cwd
+if { $exit_code != 0 } {
+	exit $exit_code
+}
+
+set weight 4000000
+set weight_half [expr $weight / 2]
+
+# max is uint16_t
+set part_weight 60000
+set part_weight_half [expr $part_weight / 2]
+
+exec $bin_sed -i "s/^\\(PriorityWeight.*\\)/#\\1/Ig" $config_path/slurm.conf
+exec $bin_sed -i "s/^\\(PriorityFlags.*\\)/#\\1/Ig" $config_path/slurm.conf
+set prio_conf "
+PriorityWeightAssoc     = $weight
+PriorityWeightJobSize   = 1
+PriorityWeightPartition = $part_weight
+PriorityWeightQOS       = $weight
+PriorityWeightTRES=cpu=$weight
+"
+exec $bin_echo $prio_conf >> $config_path/slurm.conf
+reconfigure
+
+
+set idle_node [get_idle_node_in_part [default_partition]]
+if {$idle_node == ""} {
+	log_error "no idle nodes"
+	end_it 1
+}
+log_info "idle: $idle_node"
+create_part $p1 $idle_node $part_weight
+create_part $p2 $idle_node $part_weight_half
+
+clean_assocs
+
+array set qos_req {}
+set qos_req(priority) $weight
+if {[add_qos $tq1 [array get qos_req]]} {
+	end_it 1
+}
+set qos_req(priority) $weight_half
+if {[add_qos $tq2 [array get qos_req]]} {
+	end_it 1
+}
+
+array set acct_req {}
+set acct_req(qos) "$tq1,$tq2"
+set acct_req(priority) $weight
+if {[add_acct $ta1 [array get acct_req]]} {
+	end_it 1
+}
+set acct_req(priority) $weight_half
+if {[add_acct $ta2 [array get acct_req]]} {
+	end_it 1
+}
+
+array set user_req {}
+set user_req(account) "$ta1,$ta2"
+if {[add_user $user [array get user_req]]} {
+	end_it 1
+}
+
+log_info "test1"
+scontrol "show assoc account=$ta1 flags=assoc" "(Account=$ta1 UserName= Partition= Priority=$weight)|(Account=$ta1 UserName=$user\\S+ Partition= Priority=$weight)" 2
+scontrol "show assoc account=$ta2 flags=assoc" "(Account=$ta2 UserName= Partition= Priority=$weight_half)|(Account=$ta2 UserName=$user\\S+ Partition= Priority=$weight_half)" 2
+scontrol "show assoc qos=$tq1 flags=qos" "Priority=$weight" 1
+scontrol "show assoc qos=$tq2 flags=qos" "Priority=$weight_half" 1
+
+set cpu_cnt [part_cpu_cnt $p1]
+set cpu_cnt_half [expr $cpu_cnt / 2]
+set jobid1 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" RUNNING]
+set jobid2 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" PENDING]
+set jobid3 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
+
+sprio_args "-j $jobid2 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid2\\s+$weight\\s+$part_weight\\s+$weight\\s+cpu=$weight" 1
+sprio_args "-n -j $jobid2 -o \"%.15i %10b %10p %10q %12t\"" "$jobid2\\s+1\\.0+\\s+1\\.0+\\s+1\\.0+\\s+cpu=1\\.0+" 1
+
+sprio_args "-j $jobid3 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid3\\s+$weight_half\\s+$part_weight_half\\s+$weight_half\\s+cpu=$weight_half" 1
+sprio_args "-n -j $jobid3 -o \"%.15i %10b %10p %10q %12t\"" "$jobid3\\s+0\\.50+\\s+0\\.50+\\s+0\\.50+\\s+cpu=0\\.5+" 1
+
+log_info "test2"
+# update priorities to high water mark, job should get full weights because the
+# new high wark will be adjusted.
+array set acct_mod_desc {}
+array set acct_mod_acct_vals {}
+array set acct_mod_assoc_vals {}
+set acct_mod_assoc_vals(priority) $weight_half
+if {[mod_acct $ta1 [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]] } {
+	end_it 1
+}
+if {[mod_qos $tq1 [array get acct_mod_assoc_vals]] } {
+	end_it 1
+}
+
+scontrol "show assoc account=$ta1 flags=assoc" "(Account=$ta1 UserName= Partition= Priority=$weight_half)|(Account=$ta1 UserName=$user\\S+ Partition= Priority=$weight_half)" 2
+scontrol "show assoc qos=$tq1 flags=qos" "Priority=$weight_half" 1
+
+update_part $p1 "priorityjobfactor=$part_weight_half"
+
+set jobid4 [sub_job "-n$cpu_cnt -p$p2 -A$ta2 --qos=$tq2" PENDING]
+sprio_args "-j $jobid4 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid4\\s+$weight\\s+$part_weight\\s+$weight\\s+cpu=$weight" 1
+sprio_args "-n -j $jobid4 -o \"%.15i %10b %10p %10q %12t\"" "$jobid4\\s+1\\.0+\\s+1\\.0+\\s+1\\.0+\\s+cpu=1\\.0+" 1
+
+
+log_info "test3"
+# move back to higher wait to test max priorities and normalized values being reconfigured.
+array set acct_mod_desc {}
+array set acct_mod_acct_vals {}
+array set acct_mod_assoc_vals {}
+set acct_mod_assoc_vals(priority) $weight
+if {[mod_acct $ta1 [array get acct_mod_desc] [array get acct_mod_assoc_vals] [array get acct_mod_acct_vals]] } {
+	end_it 1
+}
+if {[mod_qos $tq1 [array get acct_mod_assoc_vals]] } {
+	end_it 1
+}
+
+scontrol "show assoc account=$ta1 flags=assoc" "(Account=$ta1 UserName= Partition= Priority=$weight)|(Account=$ta1 UserName=$user\\S+ Partition= Priority=$weight)" 2
+scontrol "show assoc qos=$tq1 flags=qos" "Priority=$weight" 1
+
+update_part $p1 "priorityjobfactor=$part_weight"
+
+set jobid5 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
+sprio_args "-j $jobid5 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid5\\s+$weight_half\\s+$part_weight_half\\s+$weight_half\\s+cpu=$weight_half" 1
+sprio_args "-n -j $jobid5 -o \"%.15i %10b %10p %10q %12t\"" "$jobid5\\s+0\\.50+\\s+0\\.50+\\s+0\\.50+\\s+cpu=0\\.5+" 1
+
+end_it 0

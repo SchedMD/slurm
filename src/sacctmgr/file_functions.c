@@ -624,6 +624,18 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   parent);
 	}
 
+	if ((file_opts->assoc_rec.priority != NO_VAL)
+	    && (assoc->priority != file_opts->assoc_rec.priority)) {
+		mod_assoc.priority = file_opts->assoc_rec.priority;
+		changed = 1;
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8d -> %d\n",
+			   " Changed Priority",
+			   type, name,
+			   assoc->priority,
+			   file_opts->assoc_rec.priority);
+	}
+
 	if (assoc->qos_list && list_count(assoc->qos_list) &&
 	    file_opts->assoc_rec.qos_list &&
 	    list_count(file_opts->assoc_rec.qos_list)) {
@@ -1524,6 +1536,9 @@ extern int print_file_add_limits_to_line(char **line,
 	if (assoc->max_wall_pj != INFINITE)
 		xstrfmtcat(*line, ":MaxWallDurationPerJob=%u",
 			   assoc->max_wall_pj);
+
+	if (assoc->priority != INFINITE)
+		xstrfmtcat(*line, ":Priority=%u", assoc->priority);
 
 	if (assoc->qos_list && list_count(assoc->qos_list)) {
 		char *temp_char = NULL;

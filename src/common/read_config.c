@@ -308,6 +308,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PriorityType", S_P_STRING},
 	{"PriorityFlags", S_P_STRING},
 	{"PriorityWeightAge", S_P_UINT32},
+	{"PriorityWeightAssoc", S_P_UINT32},
 	{"PriorityWeightFairshare", S_P_UINT32},
 	{"PriorityWeightJobSize", S_P_UINT32},
 	{"PriorityWeightPartition", S_P_UINT32},
@@ -4321,6 +4322,21 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (xstrcasestr(temp_str, "MAX_TRES"))
 			conf->priority_flags |= PRIORITY_FLAGS_MAX_TRES;
 
+		if (xstrcasestr(temp_str, "NO_NORMAL_ALL"))
+			conf->priority_flags |=
+				PRIORITY_FLAGS_NO_NORMAL_ASSOC |
+				PRIORITY_FLAGS_NO_NORMAL_PART  |
+				PRIORITY_FLAGS_NO_NORMAL_QOS   |
+				PRIORITY_FLAGS_NO_NORMAL_TRES;
+		if (xstrcasestr(temp_str, "NO_NORMAL_ASSOC"))
+			conf->priority_flags |= PRIORITY_FLAGS_NO_NORMAL_ASSOC;
+		if (xstrcasestr(temp_str, "NO_NORMAL_PART"))
+			conf->priority_flags |= PRIORITY_FLAGS_NO_NORMAL_PART;
+		if (xstrcasestr(temp_str, "NO_NORMAL_QOS"))
+			conf->priority_flags |= PRIORITY_FLAGS_NO_NORMAL_QOS;
+		if (xstrcasestr(temp_str, "NO_NORMAL_TRES"))
+			conf->priority_flags |= PRIORITY_FLAGS_NO_NORMAL_TRES;
+
 		xfree(temp_str);
 	}
 
@@ -4379,6 +4395,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint32(&conf->priority_weight_age,
 			    "PriorityWeightAge", hashtbl))
 		conf->priority_weight_age = 0;
+	if (!s_p_get_uint32(&conf->priority_weight_assoc,
+			    "PriorityWeightAssoc", hashtbl))
+		conf->priority_weight_assoc = 0;
 	if (!s_p_get_uint32(&conf->priority_weight_fs,
 			    "PriorityWeightFairshare", hashtbl))
 		conf->priority_weight_fs = 0;
@@ -4398,6 +4417,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	/* Check for possible overflow of priority.
 	 * We also check when doing the computation for each job. */
 	tot_prio_weight = (uint64_t) conf->priority_weight_age   +
+		(uint64_t) conf->priority_weight_assoc +
 		(uint64_t) conf->priority_weight_fs   +
 		(uint64_t) conf->priority_weight_js   +
 		(uint64_t) conf->priority_weight_part +

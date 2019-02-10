@@ -471,6 +471,7 @@ static struct job_record *_create_job_record(uint32_t num_jobs)
 	last_job_update = time(NULL);
 
 	job_ptr->magic = JOB_MAGIC;
+	job_ptr->admin_prio_factor = NICE_OFFSET;
 	job_ptr->array_task_id = NO_VAL;
 	job_ptr->details = detail_ptr;
 	job_ptr->prio_factors = xmalloc(sizeof(priority_factors_object_t));
@@ -1177,6 +1178,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->tot_sus_time, buffer);
 	pack_time(dump_job_ptr->deadline, buffer);
 
+	pack32(dump_job_ptr->admin_prio_factor, buffer);
 	pack16(dump_job_ptr->direct_set_prio, buffer);
 	pack32(dump_job_ptr->job_state, buffer);
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
@@ -1293,7 +1295,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint32_t resv_id, spank_job_env_size = 0, qos_id, derived_ec = 0;
 	uint32_t array_job_id = 0, req_switch = 0, wait4switch = 0;
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET, db_flags = 0;
-	uint32_t job_state, delay_boot = 0;
+	uint32_t job_state, delay_boot = 0, admin_prio_factor = NICE_OFFSET;
 	time_t start_time, end_time, end_time_exp, suspend_time,
 		pre_sus_time, tot_sus_time;
 	time_t preempt_time = 0, deadline = 0;
@@ -1424,6 +1426,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpack_time(&tot_sus_time, buffer);
 		safe_unpack_time(&deadline, buffer);
 
+		safe_unpack32(&admin_prio_factor, buffer);
 		safe_unpack16(&direct_set_prio, buffer);
 		safe_unpack32(&job_state, buffer);
 		safe_unpack16(&kill_on_node_fail, buffer);
@@ -2113,6 +2116,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->gres_used    = gres_used;
 	gres_used             = NULL;  /* reused, nothing left to free */
 	job_ptr->gres_list    = gres_list;
+	job_ptr->admin_prio_factor = admin_prio_factor;
 	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
 	job_ptr->derived_ec   = derived_ec;
@@ -7003,6 +7007,13 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		job_ptr->direct_set_prio = 1;
 	}
 
+	/*
+	 * The job submit plugin sets admin_prio_factor to NO_VAL so that it can
+	 * only be set the by the job submit plugin at submission.
+	 */
+	if (job_desc->admin_prio_factor != NO_VAL)
+		job_ptr->admin_prio_factor = job_desc->admin_prio_factor;
+
 	error_code = update_job_dependency(job_ptr, job_desc->dependency);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
@@ -9025,7 +9036,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		}
 	}
 
-
 	if (job_desc_msg->nice == NO_VAL)
 		job_desc_msg->nice = NICE_OFFSET;
 
@@ -9835,6 +9845,7 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 			packstr(dump_job_ptr->partition, buffer);
 		packstr(dump_job_ptr->account, buffer);
 		packstr(dump_job_ptr->admin_comment, buffer);
+		pack32(dump_job_ptr->admin_prio_factor, buffer);
 		packstr(dump_job_ptr->network, buffer);
 		packstr(dump_job_ptr->comment, buffer);
 		packstr(dump_job_ptr->batch_features, buffer);
@@ -11459,6 +11470,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	slurmdb_assoc_rec_t *new_assoc_ptr = NULL, *use_assoc_ptr = NULL;
 	slurmdb_qos_rec_t *new_qos_ptr = NULL, *use_qos_ptr = NULL;
 	slurmctld_resv_t *new_resv_ptr = NULL;
+	uint32_t user_admin_prio_factor;
 
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
@@ -11521,6 +11533,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		error_code = ESLURM_ACCESS_DENIED;
 		goto fini;
 	}
+
+	/* Save before submit plugin potentially modifies it. */
+	user_admin_prio_factor = job_specs->admin_prio_factor;
 
 	if (job_specs->user_id == NO_VAL) {
 		/* Used by job_submit/lua to find default partition and
@@ -13428,6 +13443,25 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			sched_info("update_job: setting TresPerTask to %s for %pJ",
 				   job_ptr->tres_per_task, job_ptr);
 		}
+	}
+
+	/*
+	 * The job submit plugin sets admin_prio_factor to NO_VAL before calling
+	 * the plugin to prevent the user from specifying it.
+	 */
+	if (user_admin_prio_factor != NO_VAL) {
+		if (!operator) {
+			error("Attempt to change AdminPrioFactor for %pJ",
+			      job_ptr);
+			error_code = ESLURM_ACCESS_DENIED;
+			job_specs->admin_prio_factor = NO_VAL;
+		} else
+			job_specs->admin_prio_factor = user_admin_prio_factor;
+	}
+	if (job_specs->admin_prio_factor != NO_VAL) {
+		sched_info("update_job: setting AdinPrioFactor to %u for %pJ",
+			   job_specs->admin_prio_factor, job_ptr);
+		job_ptr->admin_prio_factor = job_specs->admin_prio_factor;
 	}
 
 fini:

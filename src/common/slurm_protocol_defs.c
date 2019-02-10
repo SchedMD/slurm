@@ -3174,6 +3174,35 @@ extern char *priority_flags_string(uint16_t priority_flags)
 			xstrcat(flag_str, ",");
 		xstrcat(flag_str, "MAX_TRES");
 	}
+	if (priority_flags & (PRIORITY_FLAGS_NO_NORMAL_ASSOC |
+			      PRIORITY_FLAGS_NO_NORMAL_PART  |
+			      PRIORITY_FLAGS_NO_NORMAL_QOS   |
+			      PRIORITY_FLAGS_NO_NORMAL_TRES)) {
+		if (flag_str[0])
+			xstrcat(flag_str, ",");
+		xstrcat(flag_str, "NO_NORMAL_ALL");
+	} else {
+		if (priority_flags & PRIORITY_FLAGS_NO_NORMAL_ASSOC) {
+			if (flag_str[0])
+				xstrcat(flag_str, ",");
+			xstrcat(flag_str, "NO_NORMAL_ASSOC");
+		}
+		if (priority_flags & PRIORITY_FLAGS_NO_NORMAL_PART) {
+			if (flag_str[0])
+				xstrcat(flag_str, ",");
+			xstrcat(flag_str, "NO_NORMAL_PART");
+		}
+		if (priority_flags & PRIORITY_FLAGS_NO_NORMAL_QOS) {
+			if (flag_str[0])
+				xstrcat(flag_str, ",");
+			xstrcat(flag_str, "NO_NORMAL_QOS");
+		}
+		if (priority_flags & PRIORITY_FLAGS_NO_NORMAL_TRES) {
+			if (flag_str[0])
+				xstrcat(flag_str, ",");
+			xstrcat(flag_str, "NO_NORMAL_TRES");
+		}
+	}
 
 	return flag_str;
 }

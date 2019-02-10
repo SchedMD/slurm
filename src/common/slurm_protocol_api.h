@@ -346,6 +346,12 @@ char *slurm_get_priority_type(void);
  */
 uint32_t slurm_get_priority_weight_age(void);
 
+/* slurm_get_priority_weight_assoc
+ * returns the priority weight for association from slurmctld_conf object
+ * RET uint32_t - factor weight.
+ */
+uint32_t slurm_get_priority_weight_assoc(void);
+
 /* slurm_get_priority_weight_fairshare
  * returns the priority weight for fairshare from slurmctld_conf object
  * RET uint32_t - factor weight.

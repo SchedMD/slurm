@@ -72,10 +72,16 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_job_id)
 #define job_format_add_prefix(list,wid,right,suffix) \
 	job_format_add_function(list,0,0,suffix,_print_job_prefix)
+#define job_format_add_admin_priority(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_admin_priority)
 #define job_format_add_age_priority_normalized(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_age_priority_normalized)
 #define job_format_add_age_priority_weighted(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_age_priority_weighted)
+#define job_format_add_assoc_priority_normalized(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_assoc_priority_normalized)
+#define job_format_add_assoc_priority_weighted(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_assoc_priority_weighted)
 #define job_format_add_cluster_name(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_cluster_name)
 #define job_format_add_fs_priority_normalized(list,wid,right,suffix) \
@@ -116,10 +122,16 @@ int _print_job_job_id(priority_factors_object_t * job, int width,
 		      bool right_justify, char* suffix);
 int _print_job_prefix(priority_factors_object_t * job, int width,
 		      bool right_justify, char* suffix);
+int _print_admin_priority(priority_factors_object_t * job, int width,
+			  bool right, char* suffix);
 int _print_age_priority_normalized(priority_factors_object_t * job, int width,
 				   bool right_justify, char* suffix);
 int _print_age_priority_weighted(priority_factors_object_t * job, int width,
 				 bool right_justify, char* suffix);
+int _print_assoc_priority_normalized(priority_factors_object_t * job, int width,
+				     bool right_justify, char* suffix);
+int _print_assoc_priority_weighted(priority_factors_object_t * job, int width,
+				   bool right_justify, char* suffix);
 int _print_cluster_name(priority_factors_object_t *job, int width,
 			bool right, char *suffix);
 int _print_fs_priority_normalized(priority_factors_object_t * job, int width,

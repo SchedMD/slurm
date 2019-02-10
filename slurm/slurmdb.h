@@ -544,7 +544,7 @@ typedef struct slurmdb_assoc_rec {
 	uint32_t parent_id;	   /* id of parent account */
 	char *partition;	   /* optional partition in a cluster
 				    * associated to association */
-
+	uint32_t priority;	   /* association priority */
 	List qos_list;             /* list of char * */
 
 	uint32_t rgt;		   /* rgt used for grouping sub
@@ -583,6 +583,9 @@ struct slurmdb_assoc_usage {
 						* parent assoc
 						* set in slurmctld
 						* (DON'T PACK) */
+
+	double priority_norm;   /* normalized priority (DON'T PACK for
+				 * state file) */
 
 	slurmdb_assoc_rec_t *fs_assoc_ptr;    /* ptr to fairshare parent
 					       * assoc if fairshare

@@ -65,7 +65,7 @@ proc def_cpu_cnt { } {
 	set cpu_cnt 1
 	spawn $sinfo -h -o "%P %C" -p $partition --state=idle
 	expect {
-		-re "$partition\\* ($number)(K?)/($number)(K?)" {
+		-re "$partition\\* ($number)(K?)\/($number)(K?)" {
 			set cpu_cnt $expect_out(3,string)
 			if {[string compare $expect_out(4,string) ""]} {
 				set cpu_cnt [expr $cpu_cnt * 1024]
@@ -329,7 +329,7 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID|PARTITION|PRIORITY|AGE|FAIRSHARE|JOBSIZE|PARTITION|QOS" {
+			-re "JOBID|PARTITION|PRIORITY|ADMIN|AGE|ASSOC|FAIRSHARE|JOBSIZE|PARTITION|QOS" {
 				if {$debug} {send_user "\nmatch9\n"}
 				incr matches
 				exp_continue
@@ -402,7 +402,7 @@ proc sprio_args { soption sargs jobid} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID PARTITION     USER   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE" {
+			-re "JOBID PARTITION     USER   PRIORITY      ADMIN        AGE      ASSOC  FAIRSHARE    JOBSIZE  PARTITION        QOS        NICE" {
 				if {$debug} {send_user "\nmatch12\n"}
 				incr matches
 				exp_continue
@@ -474,13 +474,13 @@ proc sprio_args { soption sargs jobid} {
 ############# sprio format options
 	if { $soption == "--format" || $soption == "-o" } {
 
-		spawn $sprio $soption "%.15i %.8u %.10y %.10Y %.10a %.10A %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
+		spawn $sprio $soption "%.15i %.8u %.10y %.10Y %.10S %.10a %.10A %.10b %.10B %.10f %.10F %.10j %.10J %.10p %.10P %.10q %.10Q %.6N" $sargs $jobid
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
 				exp_continue
 			}
-			-re "JOBID     USER   PRIORITY   PRIORITY        AGE        AGE  " {
+			-re "JOBID     USER   PRIORITY   PRIORITY      ADMIN        AGE        AGE      ASSOC      ASSOC " {
 				if {$debug} {send_user "\nmatch16\n"}
 				incr matches
 				exp_continue

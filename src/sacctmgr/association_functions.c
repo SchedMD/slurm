@@ -593,9 +593,13 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				" Bad MaxWall time format: %s\n",
 				type);
 		}
-	} else if (!xstrncasecmp(type, "Parent", MAX(command_len, 1))) {
+	} else if (!xstrncasecmp(type, "Parent", MAX(command_len, 2))) {
 		assoc->parent_acct = strip_quotes(value, NULL, 1);
 		set = 1;
+	} else if (!xstrncasecmp(type, "Priority", MAX(command_len, 2))) {
+		if (get_uint(value, &assoc->priority, "Priority") ==
+		    SLURM_SUCCESS)
+			set = 1;
 	} else if (!xstrncasecmp(type, "QosLevel", MAX(command_len, 1))) {
 		if (!assoc->qos_list)
 			assoc->qos_list = list_create(slurm_destroy_char);
@@ -784,6 +788,9 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		break;
 	case PRINT_PART:
 		field->print_routine(field, assoc->partition, last);
+		break;
+	case PRINT_PRIO:
+		field->print_routine(field, assoc->priority, last);
 		break;
 	case PRINT_QOS:
 		if (!g_qos_list)

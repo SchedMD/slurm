@@ -958,25 +958,34 @@ enum ctx_keys {
 #define PROP_PRIO_NICER		0x0002	/* Ensure that user tasks have a nice
 					 * value that is higher than slurmd */
 
-#define PRIORITY_FLAGS_ACCRUE_ALWAYS	0x0001	/* Flag to always accrue age
-						 * priority to pending jobs
-						 * ignoring dependencies or
-						 * holds */
-#define PRIORITY_FLAGS_MAX_TRES 	0x0002  /* Calcuate billed_tres as the
-						 * MAX of TRES on a node rather
-						 * than the sum or TRES. */
-#define PRIORITY_FLAGS_SIZE_RELATIVE	0x0004	/* Enable job size measurement
-						 * relative to its time limit */
-#define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	0x0008	/* Flag to use depth oblivious
-						 * formula for computing
-						 * hierarchical fairshare */
-#define PRIORITY_FLAGS_CALCULATE_RUNNING 0x0010	/* Calculate priorities for
-						 * running jobs, not only the
-						 * pending jobs. */
-#define PRIORITY_FLAGS_FAIR_TREE	0x0020	/* Prioritize by level in
-						 * account hierarchy. */
-#define PRIORITY_FLAGS_INCR_ONLY	0x0040	/* Priority can only increase,
-						 * never decrease in value */
+#define PRIORITY_FLAGS_ACCRUE_ALWAYS	0x00000001 /* Flag to always accrue age
+						    * priority to pending jobs
+						    * ignoring dependencies or
+						    * holds */
+#define PRIORITY_FLAGS_MAX_TRES 	0x00000002 /* Calcuate billed_tres as
+						    * the MAX of TRES on a node
+						    * rather than the sum or
+						    * TRES. */
+#define PRIORITY_FLAGS_SIZE_RELATIVE	0x00000004 /* Enable job size
+						    * measurement relative to
+						    * its time limit */
+#define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	0x00000008 /* Flag to use depth
+						    * oblivious formula for
+						    * computing hierarchical
+						    * fairshare */
+#define PRIORITY_FLAGS_CALCULATE_RUNNING 0x00000010 /* Calculate priorities for
+						     * running jobs, not only
+						     * the pending jobs. */
+#define PRIORITY_FLAGS_FAIR_TREE	0x00000020 /* Prioritize by level in
+						    * account hierarchy. */
+#define PRIORITY_FLAGS_INCR_ONLY	0x00000040 /* Priority can only
+						    * increase, never decrease
+						    * in value */
+
+#define PRIORITY_FLAGS_NO_NORMAL_ASSOC	0x00000080
+#define PRIORITY_FLAGS_NO_NORMAL_PART	0x00000100
+#define PRIORITY_FLAGS_NO_NORMAL_QOS	0x00000200
+#define PRIORITY_FLAGS_NO_NORMAL_TRES	0x00000400
 
 /* These bits are set in the bitflags field of job_desc_msg_t */
 #define KILL_INV_DEP       0x00000001	/* Kill job on invalid dependency */
@@ -1361,6 +1370,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
 	char *acctg_freq;	/* accounting polling intervals (seconds) */
 	char *admin_comment;	/* administrator's arbitrary comment (update only) */
+	uint32_t admin_prio_factor; /* factor to consider in priority */
 	char *alloc_node;	/* node making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or
 				 * slurm_allocate* function */
@@ -1541,6 +1551,7 @@ typedef struct job_info {
 	char *account;		/* charge to specified account */
 	time_t accrue_time;	/* time job is eligible for running */
 	char *admin_comment;	/* administrator's arbitrary comment */
+	uint32_t admin_prio_factor; /* factor to consider in priority */
 	char    *alloc_node;	/* local node making resource alloc */
 	uint32_t alloc_sid;	/* local sid making resource alloc */
 	void *array_bitmap;	/* NOTE: set on unpack */
@@ -1689,7 +1700,9 @@ typedef struct priority_factors_object {
 	char *partition;
 	uint32_t user_id;
 
+	uint32_t priority_admin;
 	double	 priority_age;
+	double	 priority_assoc;
 	double	 priority_fs;
 	double	 priority_js;
 	double	 priority_part;
@@ -2730,6 +2743,7 @@ typedef struct slurm_ctl_conf {
 					 * see PRIORITY_RESET_* */
 	char *priority_type;    /* priority type plugin */
 	uint32_t priority_weight_age; /* weight for age factor */
+	uint32_t priority_weight_assoc; /* weight for assoc factor */
 	uint32_t priority_weight_fs; /* weight for Fairshare factor */
 	uint32_t priority_weight_js; /* weight for Job Size factor */
 	uint32_t priority_weight_part; /* weight for Partition factor */

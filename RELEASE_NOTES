@@ -96,6 +96,11 @@ HIGHLIGHTS
  -- Remove select/serial plugin.
  -- Changed the default fair share algorithm to "fair tree". To disable this
     and revert to "classic" fair share you must set PriorityFlags=NO_FAIR_TREE.
+ -- Add AdminPrioFactor to job to set an administrator priority factor for a
+    job. Can be set by scontrol or by a job submit plugin.
+ -- Add priorities to assocations.
+ -- Added NO_NORMAL_[ALL|ASSOC|PART|QOS|TRES] PriorityFlags to not normalize
+    associated factors.
 
 RPMBUILD CHANGES
 ================
@@ -104,6 +109,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
  -- Add GPU scheduling options to slurm.conf, available both globally and
     per-partition: DefCpusPerGPU and DefMemPerGPU.
+ -- Add PriorityWeightAssoc to control association priority factor of a job.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
