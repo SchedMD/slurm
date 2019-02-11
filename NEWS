@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- acct_gather_filesystem/lustre - add support for Lustre 2.12 client.
  -- Fix per-partition TRES factors/priority
  -- Fix per-partition NICE priority
+ -- Fix partition access check validation for multi-partition job submissions.
 
 * Changes in Slurm 18.08.5-2
 ============================
