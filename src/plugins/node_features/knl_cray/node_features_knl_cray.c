@@ -2573,7 +2573,8 @@ static int _update_node_state(char *node_list, bool set_locks)
 		time_t now = time(NULL);
 		for (i = 0, node_ptr = node_record_table_ptr;
 		     i < node_record_count; i++, node_ptr++) {
-			if (node_ptr->last_response > now) {
+			if ((node_ptr->last_response > now) &&
+			    IS_NODE_NO_RESPOND(node_ptr)) {
 				/*
 				 * Reboot likely in progress.
 				 * Preserve active KNL features and merge

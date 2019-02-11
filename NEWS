@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix per-partition NICE priority
  -- Fix partition access check validation for multi-partition job submissions.
  -- Prevent segfault on empty response in 'scontrol show dwstat'.
+ -- node_features/knl_cray plugin - Preserve node's active features if it has
+    already booted when slurmctld daemon is reconfigured.
 
 * Changes in Slurm 18.08.5-2
 ============================
