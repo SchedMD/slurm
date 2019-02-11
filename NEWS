@@ -93,6 +93,13 @@ documents those changes that are of interest to users and administrators.
  -- acct_gather_filesystem/lustre - add support for Lustre 2.12 client.
  -- Fix per-partition TRES factors/priority
  -- Fix per-partition NICE priority
+ -- Fix partition access check validation for multi-partition job submissions.
+ -- Prevent segfault on empty response in 'scontrol show dwstat'.
+ -- node_features/knl_cray plugin - Preserve node's active features if it has
+    already booted when slurmctld daemon is reconfigured.
+ -- Detect missing burst buffer script and reject job.
+ -- GRES: Properly reset the topo_gres_cnt_alloc counter on slurmctld restart
+    to prevent underflow.
 
 * Changes in Slurm 18.08.5-2
 ============================

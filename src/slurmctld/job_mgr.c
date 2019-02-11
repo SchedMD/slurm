@@ -6355,6 +6355,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			     (rc == ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP) ||
 			     (slurmctld_conf.enforce_part_limits ==
 			      PARTITION_ENFORCE_ALL))) {
+				fail_rc = rc;
 				break;
 			} else if (rc != SLURM_SUCCESS) {
 				fail_rc = rc;

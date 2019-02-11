@@ -431,6 +431,11 @@ extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset)
 	int cur_offset = 0;
 	DEF_TIMERS;
 
+	if (!script) {
+		error("%s: unexpected NULL script", __func__);
+		return NULL;
+	}
+
 	START_TIMER;
 	tmp = xstrdup(script);
 	tok = strtok_r(tmp, "\n", &save_ptr);

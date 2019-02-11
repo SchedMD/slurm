@@ -51,7 +51,8 @@ extern void scontrol_print_bbstat(int argc, char **argv)
 			slurm_perror("slurm_load_burst_buffer_stat error");
 		return;
 	}
-	fprintf(stdout, "%s", stat_resp);
+	if (stat_resp)
+		fprintf(stdout, "%s", stat_resp);
 	xfree(stat_resp);
 }
 
