@@ -15068,25 +15068,6 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
 	if (IS_JOB_RESIZING(job_ptr))
 		return;
 
-	if (!job_ptr->assoc_id) {
-		slurmdb_assoc_rec_t assoc_rec;
-		/* In case accounting enabled after starting the job */
-		memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
-		assoc_rec.acct      = job_ptr->account;
-		if (job_ptr->part_ptr)
-			assoc_rec.partition = job_ptr->part_ptr->name;
-		assoc_rec.uid       = job_ptr->user_id;
-
-		if (!(assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					      accounting_enforce,
-					      &job_ptr->assoc_ptr, false))) {
-			job_ptr->assoc_id = assoc_rec.id;
-			/* we have to call job start again because the
-			 * associd does not get updated in job complete */
-			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
-		}
-	}
-
 	if (!with_slurmdbd && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
