@@ -106,7 +106,7 @@ RPMs on the server where SlurmDBD is to run.</p>
 <pre>
 sacctmgr list cluster
 </pre>
-If the cluster isn't there add it (where my clusters name were snowflake):
+If the cluster isn't there add it (where my cluster's name was snowflake):
 <pre>
 sacctmgr add cluster snowflake
 </pre>

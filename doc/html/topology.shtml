@@ -142,7 +142,7 @@ switch, the job will be spread across as many leaf switches as possible
 in order to optimize the job's network bandwidth.</p>
 
 <p><b>NOTE:</b>Slurm first identifies the network switches which provide the
-best fit for pending jobs and then selectes the nodes with the lowest "weight"
+best fit for pending jobs and then selects the nodes with the lowest "weight"
 within those switches. If optimizing resource selection by node weight is more
 important than optimizing network topology then do NOT use the
 topology/tree plugin.</p>
@@ -169,8 +169,8 @@ configuration parameter with the <i>max_switch_wait</i> option.</p>
 
 <h2>Environment Variables</h2>
 
-<p>if the topology/tree plugin is used, two environment variables will be set
-to describe that jobs network topology. Note that these environment variables
+<p>If the topology/tree plugin is used, two environment variables will be set
+to describe that job's network topology. Note that these environment variables
 will contain different data for the tasks launched on each node. Use of these
 environment variables is at the discression of the user.</p>
 

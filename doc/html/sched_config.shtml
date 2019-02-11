@@ -131,13 +131,13 @@ The default value is 1440 minutes (one day).</LI>
 <LI><B>bf_yield_interval=#</B> - 
 The backfill scheduler will periodically relinquish locks in order for other
 pending operations to take place. This specifies the times when the locks are
-relinquish in microseconds. The default value is 2,000,000  microseconds
+relinquished in microseconds. The default value is 2,000,000  microseconds
 (2 seconds). Smaller values may be helpful for high throughput computing when
 used in conjunction with the bf_continue option.</LI>
 <LI><B>bf_yield_sleep=#</B> - 
 The backfill scheduler will periodically relinquish locks in order for other
 pending operations to take place. This specifies the length of time for which
-the locks are relinquish in microseconds. The default value is 500,000
+the locks are relinquished in microseconds. The default value is 500,000
 microseconds (0.5 seconds).  </LI>
 </UL>
 
