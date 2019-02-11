@@ -98,20 +98,15 @@ const char plugin_type[] = "acct_gather_filesystem/lustre";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 typedef struct {
-	time_t last_update_time;
 	time_t update_time;
-	uint64_t lustre_nb_writes;
-	uint64_t lustre_nb_reads;
 	uint64_t all_lustre_nb_writes;
 	uint64_t all_lustre_nb_reads;
-	uint64_t lustre_write_bytes;
-	uint64_t lustre_read_bytes;
 	uint64_t all_lustre_write_bytes;
 	uint64_t all_lustre_read_bytes;
 } lustre_sens_t;
 
-static lustre_sens_t lustre_se = {0,0,0,0,0,0,0,0,0,0};
-static lustre_sens_t lustre_se_prev = {0,0,0,0,0,0,0,0,0,0};
+static lustre_sens_t lustre_se = {0,0,0,0,0};
+static lustre_sens_t lustre_se_prev = {0,0,0,0,0};
 
 static uint64_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -223,6 +218,8 @@ static int _read_lustre_counters(void)
 		char *path_stats = NULL;
 		bool bread;
 		bool bwrote;
+		uint64_t num_writes = 0, write_bytes = 0;
+		uint64_t num_reads = 0, read_bytes = 0;
 
 		if (xstrcmp(entry->d_name, ".") == 0
 		    || xstrcmp(entry->d_name, "..") == 0)
@@ -250,15 +247,15 @@ static int _read_lustre_counters(void)
 				sscanf(buffer,
 				       "%*s %"PRIu64" %*s %*s "
 				       "%*d %*d %"PRIu64"",
-				       &lustre_se.lustre_nb_writes,
-				       &lustre_se.lustre_write_bytes);
+				       &num_writes,
+				       &write_bytes);
 				debug3("%s "
 				       "%"PRIu64" "
 				       "write_bytes %"PRIu64" "
 				       "writes",
 				       __func__,
-				       lustre_se.lustre_write_bytes,
-				       lustre_se.lustre_nb_writes);
+				       write_bytes,
+				       num_writes);
 				bwrote = true;
 			}
 
@@ -266,25 +263,24 @@ static int _read_lustre_counters(void)
 				sscanf(buffer,
 				       "%*s %"PRIu64" %*s %*s "
 				       "%*d %*d %"PRIu64"",
-				       &lustre_se.lustre_nb_reads,
-				       &lustre_se.lustre_read_bytes);
+				       &num_reads,
+				       &read_bytes);
 				debug3("%s "
 				       "%"PRIu64" "
 				       "read_bytes %"PRIu64" "
 				       "reads",
 				       __func__,
-				       lustre_se.lustre_read_bytes,
-				       lustre_se.lustre_nb_reads);
+				       read_bytes,
+				       num_reads);
 				bread = true;
 			}
 		}
 		fclose(fff);
 
-		lustre_se.all_lustre_write_bytes +=
-			lustre_se.lustre_write_bytes;
-		lustre_se.all_lustre_read_bytes += lustre_se.lustre_read_bytes;
-		lustre_se.all_lustre_nb_writes += lustre_se.lustre_nb_writes;
-		lustre_se.all_lustre_nb_reads += lustre_se.lustre_nb_reads;
+		lustre_se.all_lustre_write_bytes += write_bytes;
+		lustre_se.all_lustre_read_bytes += read_bytes;
+		lustre_se.all_lustre_nb_writes += num_writes;
+		lustre_se.all_lustre_nb_reads += num_reads;
 		debug3("%s: all_lustre_write_bytes %"PRIu64" "
 		       "all_lustre_read_bytes %"PRIu64"",
 		       __func__, lustre_se.all_lustre_write_bytes,
@@ -297,7 +293,6 @@ static int _read_lustre_counters(void)
 	} /* while ((entry = readdir(proc_dir)))  */
 	closedir(proc_dir);
 
-	lustre_se.last_update_time = lustre_se.update_time;
 	lustre_se.update_time = time(NULL);
 
 	if (first) {
