@@ -1935,9 +1935,16 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				_links_str2bitmap(gres_slurmd_conf->links,
 						  node_name);
 			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
+			gres_data->topo_gres_cnt_alloc[i] = 0;
 			for (j = 0; j < gres_slurmd_conf->count; j++) {
 				bit_set(gres_data->topo_gres_bitmap[i],
-					gres_inx++);
+					gres_inx);
+				if (gres_data->gres_bit_alloc &&
+				    bit_test(gres_data->gres_bit_alloc,
+					     gres_inx)) {
+					gres_data->topo_gres_cnt_alloc[i]++;
+				}
+				gres_inx++;
 			}
 			gres_data->topo_type_id[i] =
 				_build_id(gres_slurmd_conf->type_name);
