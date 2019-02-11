@@ -28,11 +28,12 @@
 # Test MaxJobsSubmits limit
 proc inc21_30_8 {} {
 
-	global sbatch salloc srun acct bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code maxjobsub_num
+	global sbatch salloc srun acct bin_rm bin_sleep jobmatch
+	global job_id1 job_id2 job_id3 number exit_code maxjobsub_num
 
 	send_user "\nStarting MaxJobsSubmits limit test (Within: inc21.30.8)\n\n"
 	set check_num $maxjobsub_num
-	set file_in "in21.30.4_script"
+	set file_in "in21.30.8_script"
 	set tmp_job_id 0
 
 	make_bash_script $file_in "sleep 5"
@@ -125,5 +126,6 @@ proc inc21_30_8 {} {
 		set exit_code 1
 	}
 
+	exec $bin_rm -f $file_in
 	cancel_job $tmp_job_id
 }

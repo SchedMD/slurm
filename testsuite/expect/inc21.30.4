@@ -28,7 +28,8 @@
 # Test GrpSubmit
 proc inc21_30_4 {} {
 
-	global salloc sbatch srun acct bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grsub_num
+	global salloc sbatch srun acct bin_rm bin_sleep jobmatch
+	global job_id1 job_id2 job_id3 number exit_code grsub_num
 
 	send_user "\nStarting GrpSubmit limit test (Within: inc21.30.4)\n\n"
 	set check_num $grsub_num
@@ -125,7 +126,6 @@ proc inc21_30_4 {} {
 		set exit_code 1
 	}
 
+	exec $bin_rm -f $file_in
 	cancel_job $tmp_job_id
-
 }
-

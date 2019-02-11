@@ -48,7 +48,7 @@ proc test_sbatch { local } {
 		set file_in_loc "$file_in"
 		set exp_rc 1
 	}
-	spawn $sbatch -W -t1 --wrap "$file_in_loc -c /bin/false"
+	spawn $sbatch -W -t1 --output=/dev/null --wrap "$file_in_loc -c /bin/false"
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
