@@ -6298,7 +6298,9 @@ inline static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
 	response_msg.data = &status_resp_msg;
 	status_resp_msg.status_resp = bb_g_get_status(status_req_msg->argc,
 						      status_req_msg->argv);
-	response_msg.data_size = strlen(status_resp_msg.status_resp) + 1;
+	if (status_resp_msg.status_resp)
+		response_msg.data_size =
+			strlen(status_resp_msg.status_resp) + 1;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	xfree(status_resp_msg.status_resp);
 }
