@@ -495,7 +495,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		goto rwfail;
 
 	/*
-	 * Wait for the regestration to come back from the slurmctld so we have
+	 * Wait for the registration to come back from the slurmctld so we have
 	 * a TRES list to work with.
 	 */
 	if (!assoc_mgr_tres_list) {
