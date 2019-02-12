@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     to prevent underflow.
  -- Avoid errors from packing accounting_storage_mysql.so when RPM is built
     with out mysql support.
+ -- Remove deprecated -t option from slurmctld --help.
 
 * Changes in Slurm 18.08.5-2
 ============================
