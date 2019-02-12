@@ -78,6 +78,11 @@ Slurm version specifically does <b>not</b> support PMIx v2.x and above.</li>
 <li>Slurm 17.11+ supports both PMIx v1.2+ and v2.x but not v3.x.</li>
 <li>Slurm 18.08+ supports PMIx v1.2+, v2.x and v3.x.</li>
 </ul>
+If running PMIx v1, it is recommended to run at least 1.2.5 since older
+versions may have some compatibility issues with support of pmi and pmi2 APIs.
+
+Note also that Intel MPI doesn't officially support PMIx, so thought it can
+run there is not any guarantee.
 </p>
 
 <p>Altough it is recommended to build PMIx from the
@@ -288,12 +293,13 @@ Alternately configure 'DefaultMpi=pmi' or 'DefaultMpi=pmi_v2' in slurm.conf.</p>
 <p>Starting with Open MPI version 3.1, PMIx version 2 is natively supported.
 To launch Open MPI application using PMIx version 2 the '--mpi=pmix_v2' option
 must be specified on the srun command line or 'DefaultMpi=pmi_v2' configured
-in slurm.conf.</p>
+in slurm.conf. Open MPI version 4.0, adds support for PMIx version 3 and is
+invoked the same way, with '--mpi=pmix_v2'.</p>
 
-<p>Starting from Open MPI version 2.0, PMIx is natively supported. To launch
-Open MPI application using PMIx the '--mpi=pmix' option has to be
-specified on the srun command line. It is also possible to build OpenMPI using
-an external PMIx installation. That option can take one of three values:
+<p>In Open MPI version 2.0, PMIx is natively supported too. To launch
+Open MPI application using PMIx the '--mpi=pmix' or '--mpi=pmix_v1' option has
+to be specified on the srun command line. It is also possible to build OpenMPI
+using an external PMIx installation. That option can take one of three values:
 "internal", "external", or a valid directory name. "internal" (or no DIR value)
 forces Open MPI to use its internal copy of PMIx. "external" forces Open MPI to
 use an external installation of PMIx. Supplying a valid directory name also
@@ -438,6 +444,14 @@ Slurm Process Management Interface (PMI) library:</li>
 <pre>
 <i>export I_MPI_PMI_LIBRARY=/path/to/slurm/pmi/library/libpmi.so</i>
 </pre>
+<p>NOTE: Due to licensing reasons IMPI doesn't link directly to any external
+PMI implementation. Instead one must point to the desired library just
+exporting the environment variable mentioned above, which will then be dlopened
+by IMPI. Also, there is no official support provided by Intel against PMIx
+libraries. Since IMPI is based on MPICH, using PMIx with Intel may work due
+PMIx mantaining compatibility with pmi and pmi2, which are the ones used in
+MPICH, but it is not guaranteed to run in all cases.
+</p>
 <li>Use the <i>srun</i> command to launch the MPI job:</li>
 <pre>
 <i>srun -n &lt;num_procs&gt; a.out</i>
@@ -578,6 +592,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 15 October 2018</p>
+<p style="text-align:center;">Last modified 12 February 2019</p>
 
 <!--#include virtual="footer.txt"-->
