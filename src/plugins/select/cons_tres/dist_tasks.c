@@ -252,6 +252,14 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 				break;
 		}
 		b_min = b + 1;
+		if (b_min > nboards_nb) {
+			char core_str[64];
+			bit_fmt(core_str, 64, job_res->core_bitmap);
+			error("%s: b_min > nboards_nb (%d > %u) node:%s core_bitmap:%s",
+			      __func__, b_min, nboards_nb,
+			      node_record_table_ptr[n].name, core_str);
+			break;
+		}
 		sock_per_comb = b_min * sock_per_brd;
 
 		/* Allocate space for list of board combinations */
