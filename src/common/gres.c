@@ -4216,7 +4216,7 @@ static bool _generic_job_state(gres_job_state_t *job_state)
  *		      provide consistent gres_per_node/task values
  * IN/OUT sockets_per_node - requested sockets_per_node count, may be reset to
  *		      provide consistent gres_per_socket/node values
- * IN/OUT cpus_per_task - requested ntasks_per_socket count, may be reset to
+ * IN/OUT cpus_per_task - requested cpus_per_task count, may be reset to
  *		      provide consistent gres_per_task/cpus_per_gres values
  * OUT gres_list - List of GRES records for this job to track usage
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES

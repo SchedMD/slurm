@@ -171,11 +171,12 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		}
 	}
 
-	/* Safe guard if the user didn't specified a lower number of
-	 * cpus than cpus_per_task or didn't specify the number. */
+	/*
+	 * Safe guard if the user didn't specified a lower number of
+	 * CPUs than cpus_per_task or didn't specify the number.
+	 */
 	if (!maxtasks) {
-		error("_compute_c_b_task_dist: request was for 0 tasks, "
-		      "setting to 1");
+		error("_compute_c_b_task_dist: request was for 0 tasks, setting to 1");
 		maxtasks = 1;
 	}
 	if (job_ptr->details->cpus_per_task == 0)
@@ -186,7 +187,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	     i += job_ptr->details->cpus_per_task ) { /* cycle counter */
 		bool space_remaining = false;
 		if (over_subscribe && log_over_subscribe) {
-			/* 'over_subscribe' is a relief valve that guards
+			/*
+			 * 'over_subscribe' is a relief valve that guards
 			 * against an infinite loop, and it *should* never
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available cpus
@@ -241,8 +243,7 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
 
 	if (plane_size <= 0) {
-		error("cons_res: _compute_plane_dist received invalid "
-		      "plane_size");
+		error("cons_res: _compute_plane_dist received invalid plane_size");
 		return SLURM_ERROR;
 	}
 	job_res->cpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
@@ -251,7 +252,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 	for (tid = 0, i = 0; (tid < maxtasks); i++) { /* cycle counter */
 		bool space_remaining = false;
 		if (over_subscribe && log_over_subscribe) {
-			/* 'over_subscribe' is a relief valve that guards
+			/*
+			 * 'over_subscribe' is a relief valve that guards
 			 * against an infinite loop, and it *should* never
 			 * come into play because maxtasks should never be
 			 * greater than the total number of available cpus

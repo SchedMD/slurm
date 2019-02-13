@@ -624,7 +624,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 
 	/*
 	 * Safe guard if the user didn't specified a lower number of
-	 * cpus than cpus_per_task or didn't specify the number.
+	 * CPUs than cpus_per_task or didn't specify the number.
 	 */
 	if (!maxtasks) {
 		error("%s: %s: changing task count from 0 to 1 for %pJ",
