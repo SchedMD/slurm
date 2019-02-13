@@ -1423,7 +1423,7 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		 *
 		 * In some cases, 1 second has proven insufficient. Longer
 		 * delays may help ensure that all MPI tasks have been stopped
-		 * (that depends upon the MPI implementaiton used), but will
+		 * (that depends upon the MPI implementation used), but will
 		 * also permit longer time periods when more than one job can
 		 * be running on each resource (not good). */
 		if (proctrack_g_signal(job->cont_id, SIGTSTP) < 0) {
