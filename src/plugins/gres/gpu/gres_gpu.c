@@ -1444,12 +1444,36 @@ static void _add_unique_gres_list_to_list(List gres_list_out,
 	list_iterator_destroy(itr);
 }
 
+/* Given a file name return its numeric suffix */
+static int _file_inx(char *fname)
+{
+	int i, len, mult = 1, num, val = 0;
+
+	len = strlen(fname);
+	if (len == 0)
+		return val;
+	for (i = 1; i <= len; i++) {
+		if ((fname[len - i] < '0') ||
+		    (fname[len - i] > '9'))
+			break;
+		num = fname[len - i] - '0';
+		val += (num * mult);
+		mult *= 10;
+	}
+	return val;
+}
+
 /* Sort gres/gpu records by "File" value */
 static int _sort_gpu_by_file(void *x, void *y)
 {
 	gres_slurmd_conf_t *gres_record1 = *(gres_slurmd_conf_t **) x;
 	gres_slurmd_conf_t *gres_record2 = *(gres_slurmd_conf_t **) y;
-	return xstrcmp(gres_record1->file, gres_record2->file);
+	int val1, val2;
+
+	val1 = _file_inx(gres_record1->file);
+	val2 = _file_inx(gres_record2->file);
+
+	return (val1 - val2);
 }
 
 /*
