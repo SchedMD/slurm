@@ -56,7 +56,7 @@ wait
 set match 0
 set time_used  100000
 set timeout [expr $max_job_delay * 10]
-spawn time -p ./$file_in
+spawn $bin_bash -c "time -p ./$file_in"
 expect {
 	-re "Submitted batch job ($number)" {
 		incr match
