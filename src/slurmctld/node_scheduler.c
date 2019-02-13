@@ -3611,7 +3611,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			    int *node_set_size, char **err_msg, bool test_only,
 			    bool can_reboot)
 {
-	int adj_cpus, i, node_set_inx, node_set_len, node_set_inx_base;
+	int i, node_set_inx, node_set_len, node_set_inx_base;
 	int power_cnt, rc;
 	struct node_set *node_set_ptr, *prev_node_set_ptr;
 	struct config_record *config_ptr;
@@ -3703,10 +3703,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			list_next(config_iterator))) {
 		bool cpus_ok = false, mem_ok = false, disk_ok = false;
 		bool job_mc_ok = false, config_filter = false;
-		adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(detail_ptr),
-					     config_ptr->threads,
-					     config_ptr->cpus);
-		if (detail_ptr->pn_min_cpus <= adj_cpus)
+		if (detail_ptr->pn_min_cpus <= config_ptr->cpus)
 			cpus_ok = true;
 		if ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) <=
 		    config_ptr->real_memory)
