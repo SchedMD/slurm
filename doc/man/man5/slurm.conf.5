@@ -4788,8 +4788,10 @@ Once a job has been selected for preemption, its end time is set to the current
 time plus GraceTime. The job's tasks are immediately sent SIGCONT and SIGTERM
 signals in order to provide notification of its imminent termination.
 This is followed by the SIGCONT, SIGTERM and SIGKILL signal sequence upon
-reaching its new end time.
-(Meaningful only for PreemptMode=CANCEL)
+reaching its new end time. This second set of signals is sent to both the
+tasks \fBand\fR the containing batch script, if applicable.
+Meaningful only for PreemptMode=CANCEL.
+See also the global \fBKillWait\fR configuration parameter.
 
 .TP
 \fBHidden\fR
