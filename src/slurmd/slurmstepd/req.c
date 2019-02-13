@@ -1380,7 +1380,6 @@ rwfail:
 static int
 _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 {
-	static int launch_poe = -1;
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 	uint16_t job_core_spec = NO_VAL16;
@@ -1404,14 +1403,6 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 	}
 
 	acct_gather_suspend_poll();
-	if (launch_poe == -1) {
-		char *launch_type = slurm_get_launch_type();
-		if (!xstrcmp(launch_type, "launch/poe"))
-			launch_poe = 1;
-		else
-			launch_poe = 0;
-		xfree(launch_type);
-	}
 
 	/*
 	 * Signal the container
@@ -1435,15 +1426,11 @@ _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid)
 		 * (that depends upon the MPI implementaiton used), but will
 		 * also permit longer time periods when more than one job can
 		 * be running on each resource (not good). */
-		if (launch_poe == 0) {
-			/* IBM MPI seens to periodically hang upon receipt
-			 * of SIGTSTP. */
-			if (proctrack_g_signal(job->cont_id, SIGTSTP) < 0) {
-				verbose("Error suspending %u.%u (SIGTSTP): %m",
-					job->jobid, job->stepid);
-			} else
-				sleep(2);
-		}
+		if (proctrack_g_signal(job->cont_id, SIGTSTP) < 0) {
+			verbose("Error suspending %u.%u (SIGTSTP): %m",
+				job->jobid, job->stepid);
+		} else
+			sleep(2);
 
 		if (proctrack_g_signal(job->cont_id, SIGSTOP) < 0) {
 			verbose("Error suspending %u.%u (SIGSTOP): %m",
