@@ -294,7 +294,7 @@ Alternately configure 'DefaultMpi=pmi' or 'DefaultMpi=pmi_v2' in slurm.conf.</p>
 To launch Open MPI application using PMIx version 2 the '--mpi=pmix_v2' option
 must be specified on the srun command line or 'DefaultMpi=pmi_v2' configured
 in slurm.conf. Open MPI version 4.0, adds support for PMIx version 3 and is
-invoked the same way, with '--mpi=pmix_v2'.</p>
+invoked in the same way, with '--mpi=pmix_v3'.</p>
 
 <p>In Open MPI version 2.0, PMIx is natively supported too. To launch
 Open MPI application using PMIx the '--mpi=pmix' or '--mpi=pmix_v1' option has
