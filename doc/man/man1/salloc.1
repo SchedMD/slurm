@@ -5,7 +5,7 @@ salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
 and then release the allocation when the command is finished.
 
 .SH "SYNOPSIS"
-\fBsalloc\fR [\fIOPTIONS(0)\fR...] \fR[ : \fR[\fIOPTIONS(n)\fR...]\fR] \fIscript(0) \fR[\fIargs(0)\fR...]
+\fBsalloc\fR [\fIOPTIONS(0)\fR...] \fR[ : \fR[\fIOPTIONS(n)\fR...]\fR] \fIcommand(0) \fR[\fIargs(0)\fR...]
 
 Option(s) define multiple jobs in a co-scheduled heterogeneous job.
 For more details about heterogeneous jobs see the document
@@ -37,9 +37,22 @@ execute salloc in the background, set its standard input to some file, for
 example: "salloc \-n16 a.out </dev/null &"
 
 .SH "RETURN VALUE"
-If salloc is unable to execute the user script, it will
+If salloc is unable to execute the user command, it will
 return 1 and print errors to stderr. Else if success or if killed by signals
 HUP, INT, KILL, or QUIT: it will return 0.
+
+.SH "COMMAND PATH RESOLUTION"
+
+.nr step 1 1
+If provided, the command is resolved in the following order:
+.br
+.IP \n[step]. 3
+If command starts with ".", then path is constructed as:
+current working directory / command
+.IP \n+[step].
+If command starts with a "/", then path is considered absolute.
+.IP \n+[step].
+If command can be resolved through PATH. See \fBpath_resolution\fR(7).
 
 .SH "OPTIONS"
 .LP
@@ -150,9 +163,8 @@ description of SallocDefaultCommand in the slurm.conf man page for more
 information about how to spawn a remote shell.
 
 .TP
-\fB\-b\fR, \fB\-\-begin\fR=<\fItime\fR>
-Submit the batch script to the Slurm controller immediately, like normal, but
-tell the controller to defer the allocation of the job until the specified time.
+\fB\-\-begin\fR=<\fItime\fR>
+Defer eligibility of this job allocation until the specified time.
 
 Time may be of the form \fIHH:MM:SS\fR to run a job at
 a specific time of day (seconds are optional).

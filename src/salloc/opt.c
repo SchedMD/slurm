@@ -2071,7 +2071,7 @@ static void _usage(void)
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "              [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
 "              [--mem-per-gpu=MB]\n"
-"              [executable [args...]]\n");
+"              [command [args...]]\n");
 }
 
 static void _help(void)
@@ -2079,7 +2079,7 @@ static void _help(void)
 	slurm_ctl_conf_t *conf;
 
         printf (
-"Usage: salloc [OPTIONS...] [executable [args...]]\n"
+"Usage: salloc [OPTIONS...] [command [args...]]\n"
 "\n"
 "Parallel run options:\n"
 "  -A, --account=name          charge job to specified account\n"

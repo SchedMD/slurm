@@ -110,7 +110,8 @@ typedef struct {
 	uint64_t all_lustre_read_bytes;
 } lustre_sens_t;
 
-static lustre_sens_t lustre_se = {0,0,0,0,0,0,0,0};
+static lustre_sens_t lustre_se = {0,0,0,0,0,0,0,0,0,0};
+static lustre_sens_t lustre_se_prev = {0,0,0,0,0,0,0,0,0,0};
 
 static uint64_t debug_flags = 0;
 static pthread_mutex_t lustre_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -204,6 +205,7 @@ static int _read_lustre_counters(void)
 	struct dirent *entry;
 	FILE *fff;
 	char buffer[BUFSIZ];
+	static bool first = true;
 
 	lustre_dir = _llite_path();
 	if (!lustre_dir) {
@@ -298,6 +300,11 @@ static int _read_lustre_counters(void)
 	lustre_se.last_update_time = lustre_se.update_time;
 	lustre_se.update_time = time(NULL);
 
+	if (first) {
+		memcpy(&lustre_se_prev, &lustre_se, sizeof(lustre_sens_t));
+		first = false;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -310,10 +317,8 @@ static int _read_lustre_counters(void)
  */
 static int _update_node_filesystem(void)
 {
-	static acct_gather_data_t previous;
 	static int dataset_id = -1;
 	static bool first = true;
-	acct_gather_data_t current;
 
 	enum {
 		FIELD_READ,
@@ -354,11 +359,6 @@ static int _update_node_filesystem(void)
 			return SLURM_ERROR;
 		}
 
-		previous.num_reads = lustre_se.all_lustre_nb_reads;
-		previous.num_writes = lustre_se.all_lustre_nb_writes;
-		previous.size_read = lustre_se.all_lustre_read_bytes;
-		previous.size_write = lustre_se.all_lustre_write_bytes;
-
 		first = false;
 	}
 
@@ -368,19 +368,18 @@ static int _update_node_filesystem(void)
 	}
 
 	/* Compute the current values read from all lustre-xxxx directories */
-	current.num_reads = lustre_se.all_lustre_nb_reads;
-	current.num_writes = lustre_se.all_lustre_nb_writes;
-	current.size_read = lustre_se.all_lustre_read_bytes;
-	current.size_write = lustre_se.all_lustre_write_bytes;
+	data[FIELD_READ].u64 = lustre_se.all_lustre_nb_reads -
+		lustre_se_prev.all_lustre_nb_reads;
+	data[FIELD_READMB].d =
+		(double)(lustre_se.all_lustre_read_bytes -
+			 lustre_se_prev.all_lustre_read_bytes) / (1 << 20);
+	data[FIELD_WRITE].u64 = lustre_se.all_lustre_nb_writes -
+		lustre_se_prev.all_lustre_nb_writes;
+	data[FIELD_WRITEMB].d =
+		(double)(lustre_se.all_lustre_write_bytes -
+			 lustre_se_prev.all_lustre_write_bytes)	/ (1 << 20);
 
 	/* record sample */
-	data[FIELD_READ].u64 = current.num_reads - previous.num_reads;
-	data[FIELD_READMB].d =
-		(double)(current.size_read - previous.size_read) / (1 << 20);
-	data[FIELD_WRITE].u64 = current.num_writes - previous.num_writes;
-	data[FIELD_WRITEMB].d =
-		(double)(current.size_write - previous.size_write) / (1 << 20);
-
 	if (debug_flags & DEBUG_FLAG_PROFILE) {
 		char str[256];
 		info("PROFILE-Lustre: %s", acct_gather_profile_dataset_str(
@@ -389,11 +388,8 @@ static int _update_node_filesystem(void)
 	acct_gather_profile_g_add_sample_data(dataset_id, (void *)data,
 					      lustre_se.update_time);
 
-	/* Save current as previous and clean up the working
-	 * data structure.
-	 */
-	memcpy(&previous, &current, sizeof(acct_gather_data_t));
-	memset(&lustre_se, 0, sizeof(lustre_sens_t));
+	/* Save current as previous */
+	memcpy(&lustre_se_prev, &lustre_se, sizeof(lustre_sens_t));
 
 	slurm_mutex_unlock(&lustre_lock);
 
@@ -493,11 +489,18 @@ extern int acct_gather_filesystem_p_get_data(acct_gather_data_t *data)
 	}
 
 	/* Obtain the current values read from all lustre-xxxx directories */
+	data[tres_pos].num_reads = lustre_se.all_lustre_nb_reads -
+		lustre_se_prev.all_lustre_nb_reads;
+	data[tres_pos].num_writes = lustre_se.all_lustre_nb_writes -
+		lustre_se_prev.all_lustre_nb_writes;
+	data[tres_pos].size_read =
+		(double)(lustre_se.all_lustre_read_bytes -
+			 lustre_se_prev.all_lustre_read_bytes) / (1 << 20);
+	data[tres_pos].size_write =
+		(double)(lustre_se.all_lustre_write_bytes -
+			 lustre_se_prev.all_lustre_write_bytes)	/ (1 << 20);
 
-	data[tres_pos].num_reads = lustre_se.all_lustre_nb_reads;
-	data[tres_pos].num_writes = lustre_se.all_lustre_nb_writes;
-	data[tres_pos].size_read = lustre_se.all_lustre_read_bytes;
-	data[tres_pos].size_write = lustre_se.all_lustre_write_bytes;
+	memcpy(&lustre_se_prev, &lustre_se, sizeof(lustre_sens_t));
 
 	slurm_mutex_unlock(&lustre_lock);
 	return retval;
