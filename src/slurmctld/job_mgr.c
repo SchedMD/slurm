@@ -6640,7 +6640,10 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		 * well as the memset for job_desc.
 		 */
 		job_desc.pn_min_memory = detail_ptr->orig_pn_min_memory;
-		job_desc.cpus_per_task = detail_ptr->orig_cpus_per_task;
+		if (detail_ptr->orig_cpus_per_task == NO_VAL16)
+			job_desc.cpus_per_task = 1;
+		else
+			job_desc.cpus_per_task = detail_ptr->orig_cpus_per_task;
 		if (detail_ptr->num_tasks)
 			job_desc.num_tasks = detail_ptr->num_tasks;
 		else {
@@ -8010,11 +8013,13 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->whole_node = 1;
 	if (job_desc->task_dist != NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
-	if (job_desc->cpus_per_task != NO_VAL16)
-		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
-	else
+	if (job_desc->cpus_per_task == NO_VAL16) {
 		detail_ptr->cpus_per_task = 1;
-	detail_ptr->orig_cpus_per_task = detail_ptr->cpus_per_task;
+		detail_ptr->orig_cpus_per_task = NO_VAL16;
+	} else {
+		detail_ptr->cpus_per_task = MAX(job_desc->cpus_per_task, 1);
+		detail_ptr->orig_cpus_per_task = detail_ptr->cpus_per_task;
+	}
 	if (job_desc->pn_min_cpus != NO_VAL16)
 		detail_ptr->pn_min_cpus = job_desc->pn_min_cpus;
 	if (job_desc->overcommit != NO_VAL8)

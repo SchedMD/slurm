@@ -618,7 +618,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrfmtcat(out, "NumCPUs=%s ", tmp_line);
 
 	xstrfmtcat(out, "NumTasks=%u ", job_ptr->num_tasks);
-	xstrfmtcat(out, "CPUs/Task=%u ", job_ptr->cpus_per_task);
+	if (job_ptr->cpus_per_task == NO_VAL16)
+		xstrfmtcat(out, "CPUs/Task=N/A ");
+	else
+		xstrfmtcat(out, "CPUs/Task=%u ", job_ptr->cpus_per_task);
 
 	if (job_ptr->boards_per_node == NO_VAL16)
 		xstrcat(out, "ReqB:S:C:T=*:");

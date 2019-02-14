@@ -1355,10 +1355,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_CPU_MIN),
 				   tmp_char);
 
-	if (job_ptr->cpus_per_task > 0)
-		sprintf(tmp_char, "%u", job_ptr->cpus_per_task);
+	if (job_ptr->cpus_per_task == NO_VAL16)
+		sprintf(tmp_char, "N/A");
 	else
-		sprintf(tmp_char, " ");
+		sprintf(tmp_char, "%u", job_ptr->cpus_per_task);
+
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_CPUS_PER_TASK),
@@ -2026,10 +2027,10 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	}
 
 
-	if (job_ptr->cpus_per_task > 0)
-		sprintf(tmp_cpus_per_task, "%u", job_ptr->cpus_per_task);
+	if (job_ptr->cpus_per_task == NO_VAL16)
+		sprintf(tmp_cpus_per_task, "N/A");
 	else
-		tmp_cpus_per_task[0] = '\0';
+		sprintf(tmp_cpus_per_task, "%u", job_ptr->cpus_per_task);
 
 	snprintf(tmp_cpu_cnt, sizeof(tmp_cpu_cnt), "%u", job_ptr->num_cpus);
 	convert_num_unit((float)job_ptr->pn_min_cpus, tmp_cpu_req,

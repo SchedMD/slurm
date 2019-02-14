@@ -1638,6 +1638,8 @@ int _print_job_cpus_per_task(job_info_t * job, int width, bool right_justify,
 {
 	if (job == NULL)
 		_print_str("CPUS_PER_TASK", width, right_justify, true);
+	else if (job->cpus_per_task == NO_VAL16)
+		_print_str("N/A", width, right_justify, true);
 	else
 		_print_int(job->cpus_per_task, width, right_justify, true);
 

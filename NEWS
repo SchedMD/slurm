@@ -66,6 +66,8 @@ documents those changes that are of interest to users and administrators.
     they failed to complete with an exit code of zero.
  -- Modify GrpNodes limit to apply to unique nodes allocated (avoid double
     counting nodes allocated to multiple jobs in the same QOS or association).
+ -- If a job submit does NOT include --cpus-per-task option, then report the
+    value as "N/A" rather than always mapping the value to 1.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
