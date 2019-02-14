@@ -348,6 +348,57 @@ extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 	return SLURM_SUCCESS;
 }
 
+extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
+{
+	if (!job_cond || (job_cond->flags & JOBCOND_FLAG_RUNAWAY))
+		return;
+	/*
+	 * Defaults for start and end times...
+	 * - with -j and -s:
+	 *   -S defaults to Epoch 0
+	 *   -E defaults to -S (unless no -S then Now)
+	 * - with only -j (NOT -s)
+	 *   -S defaults to Epoch 0
+	 *   -E defaults to Now
+	 * - with only -s (NOT -j):
+	 *   -S defaults to Now
+	 *   -E defaults to -S
+	 * - without either -j nor -s:
+	 *   -S defaults to Midnight
+	 *   -E defaults to Now
+	 */
+	if (job_cond->state_list && list_count(job_cond->state_list)) {
+		if (!job_cond->usage_start &&
+		    (!job_cond->step_list || !list_count(job_cond->step_list)))
+			job_cond->usage_start = time(NULL);
+
+		if (!job_cond->usage_end)
+			job_cond->usage_end = job_cond->usage_start ?
+				job_cond->usage_start : time(NULL);
+	} else if (job_cond->step_list && list_count(job_cond->step_list) &&
+		   !job_cond->usage_end) {
+			job_cond->usage_end = time(NULL);
+	} else {
+		if (!job_cond->usage_start) {
+			struct tm start_tm;
+			job_cond->usage_start = time(NULL);
+			if (!slurm_localtime_r(&job_cond->usage_start,
+					       &start_tm)) {
+				error("Couldn't get localtime from %ld",
+				      (long)job_cond->usage_start);
+			} else {
+				start_tm.tm_sec = 0;
+				start_tm.tm_min = 0;
+				start_tm.tm_hour = 0;
+				job_cond->usage_start = slurm_mktime(&start_tm);
+			}
+		}
+
+		if (!job_cond->usage_end)
+			job_cond->usage_end = time(NULL);
+	}
+}
+
 static uint32_t _str_2_qos_flags(char *flags)
 {
 	if (xstrcasestr(flags, "DenyOnLimit"))

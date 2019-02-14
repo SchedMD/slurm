@@ -291,4 +291,6 @@ extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks);
 /* Setup cluster rec with plugin_id that indexes into select list */
 extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec);
 
+extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond);
+
 #endif

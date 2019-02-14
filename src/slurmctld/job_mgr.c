@@ -5121,6 +5121,11 @@ extern int job_signal(struct job_record *job_ptr, uint16_t signal,
 
 	trace_job(job_ptr, __func__, "enter");
 
+	if (IS_JOB_STAGE_OUT(job_ptr) && (flags & KILL_HURRY)) {
+		job_ptr->bit_flags |= JOB_KILL_HURRY;
+		return bb_g_job_cancel(job_ptr);
+	}
+
 	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 

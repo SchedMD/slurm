@@ -121,14 +121,13 @@ Also see \fBDefaultStoragePort\fR.
 \fBAccountingStorageTRES\fR
 Comma separated list of resources you wish to track on the cluster.
 These are the resources requested by the sbatch/srun job when it
-is submitted.  Currently this consists of any GRES, BB (burst buffer) or
+is submitted. Currently this consists of any GRES, BB (burst buffer) or
 license along with CPU, Memory, Node, Energy, FS/[Disk|Lustre], IC/OFED, Pages,
 and VMem. By default Billing, CPU, Energy, Memory, Node, FS/Disk, Pages and VMem
-are tracked.
-
+are tracked. These default TRES cannot be disabled, but only appended to.
 AccountingStorageTRES=gres/craynetwork,license/iop1
-will track billing, cpu, energy, memory, nodes, FS/disk along with a
-gres called craynetwork as well as a license called iop1.  Whenever these
+will track billing, cpu, energy, memory, nodes, fs/disk, pages and vmem along
+with a gres called craynetwork as well as a license called iop1. Whenever these
 resources are used on the cluster they are recorded. The TRES are automatically
 set up in the database on the start of the slurmctld.
 
@@ -987,7 +986,8 @@ Note that the \fBHealthCheckProgram\fR will be executed at the same time
 on all nodes to minimize its impact upon parallel programs.
 This program is will be killed if it does not terminate normally within
 60 seconds.
-This program will also be executed when the slurmd daemon is first started.
+This program will also be executed when the slurmd daemon is first started and
+before it registers with the slurmctld daemon.
 By default, no program will be executed.
 
 .TP

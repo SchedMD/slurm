@@ -4963,7 +4963,7 @@ static void _slurm_rpc_resv_delete(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info("_slurm_rpc_delete_reservation partition=%s: %s",
+		info("_slurm_rpc_delete_reservation reservation=%s: %s",
 		     resv_desc_ptr->name, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {

@@ -2081,6 +2081,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 						   set_cnt * sizeof(uint32_t));
 		gres_data->topo_type_name = xrealloc(gres_data->topo_type_name,
 						     set_cnt * sizeof(char *));
+		if (gres_data->gres_bit_alloc)
+			gres_data->gres_bit_alloc = bit_realloc(
+				gres_data->gres_bit_alloc, set_cnt);
 		gres_data->topo_cnt = set_cnt;
 	} else if (_shared_gres(context_ptr->plugin_id) && gres_data->topo_cnt){
 		/*
@@ -2098,10 +2101,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			if (gres_slurmd_conf->plugin_id !=
 			    context_ptr->plugin_id)
 				continue;
-			if (gres_data->gres_bit_alloc) {
-				gres_data->gres_bit_alloc = bit_realloc(
-					gres_data->gres_bit_alloc, set_cnt);
-			}
 			if ((gres_data->gres_bit_alloc) &&
 			    !_shared_gres(context_ptr->plugin_id))
 				gres_data->topo_gres_cnt_alloc[i] = 0;

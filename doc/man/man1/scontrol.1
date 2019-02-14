@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "January 2019" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "February 2019" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -231,29 +231,38 @@ they are responding.
 \fBreboot\fP [ASAP] [nextstate=<RESUME|DOWN>] [reason=<reason>] [\fINodeList\fP]
 Reboot all nodes in the system when they become idle using the
 \fBRebootProgram\fP as configured in Slurm's slurm.conf file.
-The option "ASAP" prevents initiation of additional jobs so the node can be
-rebooted and returned to service "As Soon As Possible" (i.e. ASAP). A user
-defined message can be added to the nodes by using the "reason" option. The
-message will be cleared when the node is resumed.  If "nextstate" is specified
-as "DOWN", then the node(s) will remain in a down state after rebooting. If the
-"nextstate" is specified as "RESUME", then the node(s) will resume as normal
-when the node registers. "Resuming" nodes will be considered as available in
+Each node will have the "REBOOT" flag added to its node state.
+After a node reboots and the slurmd daemon starts up again, the
+HealthCheckProgram will run once. Then, the slurmd daemon will register
+itself with the slurmctld daemon and the "REBOOT" flag will be cleared.
+If the node reason is "Reboot ASAP", Slurm will clear the node's "DRAIN"
+state flag as well.
+The "ASAP" option adds the "DRAIN" flag to each node's state, preventing
+additional jobs from running on the node so it can be
+rebooted and returned to service "As Soon As Possible" (i.e. ASAP).
+"ASAP" will also set the node reason to "Reboot ASAP" if the "reason" option
+isn't specified.
+If the "nextstate" option is specified
+as "DOWN", then the node will remain in a down state after rebooting. If
+"nextstate" is specified as "RESUME", then the nodes will resume as normal
+when the node registers and the node reason will be cleared.
+Resuming nodes will be considered as available in
 backfill future scheduling and won't be replaced by idle nodes in a reservation.
 When using the "nextstate" and "reason" options together the reason will be
-appended with "reboot issused" when the reboot is issued and "reboot complete"
-when the node registers with a "nextstate" of "DOWN". An optional list of nodes
+appended with "reboot issued" when the reboot is issued and "reboot complete"
+when the node registers with a "nextstate" of "DOWN".
+The "reason" option sets each node's reason to a user-defined message.
+An optional list of nodes
 to reboot may be specified. By default all nodes are rebooted.
-NOTE: This command does not prevent additional jobs from being scheduled on
-these nodes, so many jobs can be executed on the nodes prior to them being
-rebooted. You can explicitly drain the nodes in order to reboot nodes as soon
-as possible, but the nodes must also explicitly be returned to service after
-being rebooted. You can alternately create an advanced reservation to
+NOTE: By default, this command does not prevent additional jobs from being
+scheduled on any nodes before reboot.
+To do this, you can either use the "ASAP" option or explicitly drain the nodes
+beforehand.
+You can alternately create an advanced reservation to
 prevent additional jobs from being initiated on nodes to be rebooted.
-NOTE: Nodes will be placed in a state of "REBOOT" until rebooted and returned
-to service with a normal state.
-Alternately the node's state "REBOOT" may be cleared by using the scontrol
-command to set the node state to "RESUME", which clears the "REBOOT" flag.
-A node will be marked DOWN if it doesn't reboot within \fBResumeTimeout\fR.
+Pending reboots can be cancelled by using "scontrol cancel_reboot <node>" or
+setting the node state to "CANCEL_REBOOT".
+A node will be marked "DOWN" if it doesn't reboot within \fBResumeTimeout\fR.
 
 .TP
 \fBreconfigure\fP

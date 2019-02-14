@@ -44,16 +44,16 @@ Current TRES Types are:
 <ul>
 <li><b>AccountingStorageTRES</b>
 <p>Used to define which TRES are
-  to be tracked on the system. By default Billing, CPU, Energy, Memory and Node
-  are tracked.  This will be the case whether specified or not. The
-  following example:
+  to be tracked on the system. By default Billing, CPU, Energy, Memory, Node,
+  FS/Disk, Pages and VMem are tracked. These default TRES cannot be disabled,
+  but only appended to. The following example:
 </p>
   <pre>AccountingStorageTRES=gres/craynetwork,license/iop1,bb/cray</pre>
 <p>
-  will track billing, cpu, energy, memory and nodes along with a GRES called
-  craynetwork as well as a license called iop1.  It will also track usage on a
-  Cray burst buffer. Whenever these resources are used on the
-  cluster they are recorded. TRES are automatically set up in the database
+  will track billing, cpu, energy, memory, nodes, fs/disk, pages and vmem along
+  with a GRES called craynetwork as well as a license called iop1. It will
+  also track usage on a Cray burst buffer. Whenever these resources are used on
+  the cluster they are recorded. TRES are automatically set up in the database
   on the start of the slurmctld.
 </p>
 

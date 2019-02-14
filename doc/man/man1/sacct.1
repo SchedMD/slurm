@@ -183,6 +183,7 @@ The section titled "Job Accounting Fields" describes these fields.
 .IP
 Select eligible jobs in any state before the specified time.  If states are
 given with the \-s option return jobs in this state before this period.
+See the \fBDEFAULT TIME WINDOW\fR for more details.
 
 Valid time formats are...
 .sp
@@ -238,6 +239,8 @@ NOTE: A step id of 'batch' will display the information about the
 batch step.
 .IP
 The default is to display information on all jobs.
+See the \fBDEFAULT TIME WINDOW\fR for details about how this option
+changes the default \-S and \-E options.
 
 .TP
 \f3\-k\fP\f3,\fP \f3\-\-timelimit-min\fP
@@ -368,7 +371,9 @@ jobs submitted with the "\-\-hold" option will have "EligibleTime=Unknown" as
 they are pending indefinitely.
 
 NOTE: When specifying states and no start time is given the default
-starttime is 'now'.
+start time is 'now'.  This is only when \-j is not used.  If \-j is used the
+start time will default to 'Epoch'.  In both cases if no end time is given it
+will default to 'now'. See the \fBDEFAULT TIME WINDOW\fR for more details.
 
 .TP
 \f3\-S\fP\f3,\fP \f3\-\-starttime\fP
@@ -377,7 +382,8 @@ of the
 current day, unless the '\-s' or '\-j' options are used. If the '\-s' option is
 used, then the default is 'now'. If states are given with the '\-s' option then
 only jobs in this state at this time will be returned. If the '\-j' option is
-used, then the default time is Unix Epoch 0.
+used, then the default time is Unix Epoch 0. See the \fBDEFAULT TIME WINDOW\fR
+for more details.
 
 Valid time formats are...
 .sp
@@ -957,6 +963,57 @@ released for other jobs.
 \f3TO  TIMEOUT\fP
 Job terminated upon reaching its time limit.
 
+.SH "DEFAULT TIME WINDOW"
+.PP
+The options \-\-starttime and \-\-endtime define the time window in
+between \fBsacct\fR is going to search. For historical and practical
+reasons their default values (i.e. the default time window)
+depends on ohter options: \-\-jobs and \-\-state.
+
+Depending on if \-\-jobs and/or \-\-state are specified, the default
+values of \fB\-\-starttime\fR  and \fB\-\-endtime\fR options are:
+
+.TP
+\f3WITHOUT EITHER \fB\-\-jobs\fR NOR \fB\-\-state\fR\fP specified:
+.RS
+.IP\fB\-\-\-starttime\fR
+Defaults to Midnight.
+.IP\fB\-\-\-endtime\fR
+Defaults to Now.
+.RE
+
+.TP
+\f3WITH \fB\-\-jobs\fR AND WITHOUT \fB\-\-state\fR\fP specified:
+.RS
+.IP\fB\-\-\-starttime\fR
+Dfaults to Epoch 0.
+.IP\fB\-\-\-endtime\fR
+Defaults to Now.
+.RE
+
+.TP
+\f3WITHOUT \fB\-\-jobs\fR AND WITH \fB\-\-state\fR\fP specified:
+.RS
+.IP \fB\-\-\-starttime\fR
+Defaults to Now.
+.IP \fB\-\-\-endtime\fR
+Defaults to \-\-starttime and to Now if \-\-starttime is not
+specified.
+.RE
+
+.TP
+\f3WITH BOTH \fB\-\-jobs\fR AND \fB\-\-state\fR\fP specified:
+.RS
+.IP\fB\-\-\-starttime\fR
+Defaults to Epoch 0.
+.IP\fB\-\-\-endtime\fR
+Defaults to \-\-starttime or to Now if \-\-starttime is not
+specified.
+.RE
+
+.PP
+NOTE: With \fB\-v/\-\-verbose\fR a message about the actual time
+window in use is shown.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
