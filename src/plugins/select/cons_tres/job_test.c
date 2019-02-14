@@ -2187,14 +2187,12 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
  * IN avail_res_array - available resources on the node
  * IN first_pass - set if first scheduling attempt for this job, only use
  *		   co-located GRES and cores
- * IN cr_type - allocation type (sockets, cores, etc.)
  */
 static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			  bool enforce_binding, int node_inx,
 			  uint16_t *avail_cpus, uint32_t max_nodes,
 			  int rem_nodes, bitstr_t **avail_core,
-			  avail_res_t **avail_res_array, bool first_pass,
-			  uint16_t cr_type)
+			  avail_res_t **avail_res_array, bool first_pass)
 {
 	int alloc_tasks = 0;
 	uint32_t min_tasks_this_node = 0, max_tasks_this_node = 0;
@@ -2237,10 +2235,6 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		max_tasks_this_node = NO_VAL;
 	}
 	/* Determine how many tasks can be started on this node */
-	if ((slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
-	    ((cr_type & CR_CPU) == 0) &&
-	    (job_ptr->details->orig_cpus_per_task == NO_VAL16))
-		mc_ptr->cpus_per_task = select_node_record[node_inx].vpus;
 	if (mc_ptr->cpus_per_task &&
 	    (!job_ptr->details || !job_ptr->details->overcommit)) {
 		alloc_tasks = avail_res_array[node_inx]->avail_cpus /
@@ -2454,8 +2448,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			node_ptr = node_record_table_ptr + i;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -2517,8 +2510,7 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 			node_ptr = node_record_table_ptr + i;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			if (avail_cpus == 0) {
 				bit_clear(node_map, i);
 				node_ptr = NULL;
@@ -3030,8 +3022,7 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -3094,8 +3085,7 @@ static int _eval_nodes_spread(struct job_record *job_ptr,
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -3223,8 +3213,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -3299,8 +3288,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr,
 				_select_cores(job_ptr, mc_ptr, enforce_binding,
 					      i, &avail_cpus, max_nodes,
 					      min_rem_nodes, avail_core,
-					      avail_res_array, first_pass,
-					      cr_type);
+					      avail_res_array, first_pass);
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type,
@@ -3515,8 +3503,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 		if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i)) {
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -3683,8 +3670,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			if (avail_cpus == 0) {
 				bit_clear(nw->node_bitmap, i);
 				continue;
@@ -4155,8 +4141,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 		if (req_nodes_bitmap && bit_test(req_nodes_bitmap, i)) {
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -4323,8 +4308,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			if (avail_cpus == 0) {
 				bit_clear(nw->node_bitmap, i);
 				continue;
@@ -4698,8 +4682,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -4769,8 +4752,7 @@ static int _eval_nodes_lln(struct job_record *job_ptr,
 				_select_cores(job_ptr, mc_ptr, enforce_binding,
 					      i, &avail_cpus, max_nodes,
 					      min_rem_nodes, avail_core,
-					      avail_res_array, first_pass,
-					      cr_type);
+					      avail_res_array, first_pass);
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type,
@@ -4919,8 +4901,7 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type, min_gres_cpu);
@@ -4983,8 +4964,7 @@ static int _eval_nodes_serial(struct job_record *job_ptr,
 				continue;
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
-				      avail_core, avail_res_array, first_pass,
-				      cr_type);
+				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus,
 				     min_rem_nodes, details_ptr,
 				     avail_res_array[i], i, cr_type,
@@ -6051,15 +6031,8 @@ static avail_res_t **_get_res_avail(struct job_record *job_ptr,
 	int i, i_first, i_last;
 	avail_res_t **avail_res_array = NULL;
 	uint32_t s_p_n = _socks_per_node(job_ptr);
-	bool reset_cpus_per_task = false;
 
 	_set_gpu_defaults(job_ptr);
-	if ((slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
-	    ((cr_type & CR_CPU) == 0) &&
-	    (job_ptr->details->orig_cpus_per_task == NO_VAL16)) {
-		/* Permit use of all CPUs on each core for gres/gpu */
-		reset_cpus_per_task = true;
-	}
 	avail_res_array = xmalloc(sizeof(avail_res_t *) * select_node_cnt);
 	i_first = bit_ffs(node_map);
 	if (i_first >= 0)
@@ -6069,10 +6042,6 @@ static avail_res_t **_get_res_avail(struct job_record *job_ptr,
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(node_map, i))
 			continue;
-		if (reset_cpus_per_task) {
-			job_ptr->details->cpus_per_task =
-				select_node_record[i].vpus;
-		}
 		avail_res_array[i] = _can_job_run_on_node(job_ptr, core_map, i,
 							  s_p_n, node_usage,
 							  cr_type, test_only,
