@@ -2677,8 +2677,6 @@ static void _usage(char *prog_name)
 	fprintf(stderr, "  -R      "
 			"\tRecover full state from last checkpoint.\n");
 #endif
-	fprintf(stderr, "  -t      "
-			"\tTest configuration files for validity.\n");
 	fprintf(stderr, "  -v      "
 			"\tVerbose mode. Multiple -v's increase verbosity.\n");
 	fprintf(stderr, "  -V      "

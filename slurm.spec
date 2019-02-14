@@ -537,7 +537,9 @@ rm -rf %{buildroot}
 %files slurmdbd
 %defattr(-,root,root)
 %{_sbindir}/slurmdbd
+%if %{with mysql}
 %{_libdir}/slurm/accounting_storage_mysql.so
+%endif
 %{_unitdir}/slurmdbd.service
 #############################################################################
 

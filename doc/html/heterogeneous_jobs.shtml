@@ -502,7 +502,9 @@ error: Attempt to run a job step with pack-group value of 2,
 the job by appending "_PACK_GROUP_" and a sequence number the the usual name.
 In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
 of the heterogeneous job leader and "SLURM_PACK_SIZE" will contain the number of
-components in the job. For example:</p>
+components in the job. If using srun with a single specific pack group (for
+instance --pack-group=1) "SLURM_JOB_ID" will contain the job ID of that specific
+component, behaving like a regular (non hetjob). For example:</p>
 <pre>
 $ salloc -N1 : -N2 bash
 salloc: Pending job allocation 11741
@@ -518,6 +520,10 @@ SLURM_JOB_NODES_PACK_GROUP_1=2
 SLURM_JOB_NODELIST_PACK_GROUP_0=nid00001
 SLURM_JOB_NODELIST_PACK_GROUP_1=nid[00011-00012]
 ...
+$ srun --pack-group=1 printenv SLURM_JOB_ID
+11742
+$ srun --pack-group=0 printenv SLURM_JOB_ID
+11741
 </pre>
 
 <p>The various MPI implementations rely heavily upon Slurm environment variables

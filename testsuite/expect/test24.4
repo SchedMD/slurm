@@ -57,8 +57,8 @@ if {$damp != 1} {
 file delete $test_prog
 
 send_user "build_dir is $build_dir\n"
-send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o  ${build_dir}/src/sshare/process.o -ldl -lm -lhwloc -export-dynamic \n"
-exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o ${build_dir}/src/sshare/process.o -ldl -lm -lhwloc -export-dynamic
+send_user "$bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o  ${build_dir}/src/sshare/process.o -ldl -lm -export-dynamic \n"
+exec       $bin_cc ${test_prog}.c -g -pthread -o ${test_prog} -I${build_dir} -I${src_dir} ${build_dir}/src/api/libslurm.o ${build_dir}/src/slurmctld/locks.o ${build_dir}/src/sshare/process.o -ldl -lm -export-dynamic
 exec $bin_chmod 700 $test_prog
 
 # Usage: test24.4.prog
