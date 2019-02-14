@@ -92,17 +92,22 @@ If any core can be effectively used with the resources, then do not specify the
 A restart of the slurmctld is needed for changes to the Cores option to take
 affect.
 
-\fBNOTE:\fR If your cores contain multiple threads only list the first thread
-of each core. The logic is such that it uses core instead of thread scheduling
-per GRES. Also note that since Slurm must be able to perform resource
-management on heterogeneous clusters having various core ID numbering schemes,
-an abstract index will be used instead of the physical core index. That
-abstract ID may not correspond to your physical core number.
-Basically Slurm starts numbering from 0 to n, being 0 the ID of the first
-processing unit (core or thread if hyperthreading is enabled) on the first
-socket, first core and maybe first thread, and then continuing sequentially to
-the next thread, core, and socket. The numbering generally coincides with the
-processing unit logical number (PU L#) seen in lstopo command output.
+\fBNOTE:\fR If your cores contain multiple threads only the first thread
+(processing unit) of each core needs to be listed.
+Also note that since Slurm must be able to perform resource management on
+heterogeneous clusters having various processing unit numbering schemes,
+a logical processing unit index must be specified instead of the physical
+processing unit index.
+That processing unit logical index might not correspond to your physical index
+number.
+Processing unit 0 will be the first socket, first core and (if configured) first
+thread.
+If hyperthreading is enabled, processing unit 1 will always be the first socket,
+first core and second thread.
+If hyperthreading is not enabled, processing unit 1 will always be the first
+socket and second core.
+This numbering coincides with the processing unit logical number (PU L#) seen
+in "lstopo \-l" command output.
 
 .TP
 \fBFile\fR
