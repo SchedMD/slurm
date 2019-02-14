@@ -56,6 +56,6 @@ autom4te.cache
 /src/sstat/sstat
 /src/strigger/strigger
 /src/sview/sview
-/testsuite/expect/globals.local
+/testsuite/expect/globals.*
 /testsuite/expect/*.log*
 TAGS
