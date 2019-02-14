@@ -1151,7 +1151,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			     List *preemptee_job_list,
 			     bitstr_t *exc_core_bitmap)
 {
-	int i, rc = EINVAL;
+	int i, rc = EINVAL, save_cpus_per_task = -1;
 	uint16_t job_node_req;
 	bitstr_t **exc_cores;
 	char tmp[128];
@@ -1233,6 +1233,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		_dump_parts(select_part_record);
 	}
 
+	if ((slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+	    ((slurmctld_conf.select_type_param & CR_CPU) == 0) &&
+	    (job_ptr->details->orig_cpus_per_task == NO_VAL16)) {
+		/* Permit use of all CPUs on each core for gres/gpu */
+		save_cpus_per_task = job_ptr->details->cpus_per_task;
+	}
 	if (mode == SELECT_MODE_WILL_RUN) {
 		rc = will_run_test(job_ptr, node_bitmap, min_nodes, max_nodes,
 				   req_nodes, job_node_req,
@@ -1248,9 +1254,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	} else {
 		/* Should never get here */
 		error("%s: %s: Mode %d is invalid", plugin_type, __func__, mode);
-		free_core_array(&exc_cores);
-		return EINVAL;
 	}
+	if (save_cpus_per_task != -1)
+		job_ptr->details->cpus_per_task = save_cpus_per_task;
 
 	if ((select_debug_flags & DEBUG_FLAG_CPU_BIND) ||
 	    (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
