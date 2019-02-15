@@ -987,7 +987,8 @@ static pid_t _fork_command(char **command)
 
 	pid = fork();
 	if (pid < 0) {
-		error("fork failed: %m");
+		error("%s: fork failed: %m",
+		      __func__);
 	} else if (pid == 0) {
 		/* child */
 		setpgid(getpid(), 0);
@@ -1008,7 +1009,8 @@ static pid_t _fork_command(char **command)
 		execvp(command[0], command);
 
 		/* should only get here if execvp failed */
-		error("Unable to exec command \"%s\"", command[0]);
+		error("%s: Unable to exec command \"%s\"",
+		      __func__, command[0]);
 		exit(error_exit);
 	}
 	/* parent returns */
