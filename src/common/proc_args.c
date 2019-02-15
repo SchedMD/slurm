@@ -1102,22 +1102,37 @@ char *search_path(char *cwd, char *cmd, bool check_cwd_last, int access_mode,
 	if (cmd[0] == '.') {
 		if (test_exec) {
 			char *cmd1 = xstrdup_printf("%s/%s", cwd, cmd);
-			if (_exists(cmd1) && _accessible(cmd1, access_mode))
+			if (_exists(cmd1) && _accessible(cmd1, access_mode)) {
 				fullpath = xstrdup(cmd1);
+				debug5("%s: relative path found %s -> %s",
+					__func__, cmd, cmd1);
+			} else {
+				debug5("%s: relative path not found %s -> %s",
+					__func__, cmd, cmd1);
+			}
 			xfree(cmd1);
 		}
 		return fullpath;
 	}
 	/* Absolute path */
 	if (cmd[0] == '/') {
-		if (test_exec && _exists(cmd) && _accessible(cmd, access_mode))
+		if (test_exec && _exists(cmd) && _accessible(cmd, access_mode)) {
 			fullpath = xstrdup(cmd);
+			debug5("%s: absolute path found %s",
+			       __func__, cmd);
+		} else {
+			debug5("%s: absolute path not found %s",
+			       __func__, cmd);
+		}
 		return fullpath;
 	}
 	/* Otherwise search in PATH */
 	l = _create_path_list();
-	if (l == NULL)
+	if (l == NULL) {
+		debug5("%s: empty PATH environment",
+			__func__);
 		return NULL;
+	}
 
 	if (check_cwd_last)
 		list_append(l, xstrdup(cwd));
@@ -1132,11 +1147,21 @@ char *search_path(char *cwd, char *cmd, bool check_cwd_last, int access_mode,
 			xstrfmtcat(fullpath, "%s/%s", path, cmd);
 		/* Use first executable found in PATH */
 		if (_exists(fullpath)) {
-			if (!test_exec)
+			if (!test_exec) {
+				debug5("%s: env PATH found: %s",
+					__func__, fullpath);
 				break;
-			if (_accessible(path, access_mode))
+			}
+			if (_accessible(path, access_mode)) {
+				debug5("%s: env PATH found: %s",
+					__func__, fullpath);
 				break;
+			}
 		}
+
+		debug5("%s: env PATH not found: %s",
+			__func__, fullpath);
+
 		xfree(fullpath);
 	}
 	list_iterator_destroy(i);
