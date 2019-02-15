@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Add preempt_send_user_signal SlurmctldParameter option to send user
     signal (e.g. --signal=<SIG_NUM>) at preemption if it hasn't already been
     sent.
+ -- Add PreemptExemptTime parameter to slurm.conf and QOS to guarantee a
+    minimum runtime before preemption.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

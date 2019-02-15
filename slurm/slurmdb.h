@@ -996,6 +996,8 @@ typedef struct {
 			    * change the other qos' this can preempt,
 			    * when doing a get use the preempt_bitstr */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
+	uint32_t preempt_exempt_time; /* Job run time before becoming
+					 eligible for preemption */
 	uint32_t priority;  /* ranged int needs to be a unint for
 			     * heterogeneous systems */
 	slurmdb_qos_usage_t *usage; /* For internal use only, DON'T PACK */

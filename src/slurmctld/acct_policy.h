@@ -174,4 +174,17 @@ extern void acct_policy_remove_accrue_time(struct job_record *job_ptr,
 extern uint32_t acct_policy_get_prio_thresh(struct job_record *job_ptr,
 					    bool assoc_mgr_locked);
 
+/*
+ * acct_policy_get_preemptable_time - get the time the job becomes preemptable
+ * 	based on conf and qos PreemptExemptTime
+ */
+extern time_t acct_policy_get_preemptable_time(struct job_record *job_ptr);
+
+/*
+ * acct_policy_is_job_preemptable - Check if job is preemptable checking
+ * 	global conf and qos options PreemptExemptTime
+ * 	returns true if job is *exempt* from preemption
+ */
+extern bool acct_policy_is_job_preempt_exempt(struct job_record *job_ptr);
+
 #endif /* !_HAVE_ACCT_POLICY_H */

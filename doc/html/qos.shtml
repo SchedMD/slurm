@@ -61,6 +61,10 @@ QOS's that it can preempt.  When there is a queued job with a QOS that
 is allowed to preempt a running job of another QOS, the Slurm
 scheduler will preempt the running job.</P>
 
+<P> The QOS option PreemptExemptTime specifies the minimum run time before the
+job is considered for preemption. The QOS option takes precedence over the
+global option of the same name.</P>
+
 <!-------------------------------------------------------------------------->
 <a name=limits>
 <h2>Job Limits</h2></a>

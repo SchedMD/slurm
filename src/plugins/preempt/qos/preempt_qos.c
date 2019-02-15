@@ -50,6 +50,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/acct_policy.h"
 
 const char	plugin_name[]	= "Preempt by Quality Of Service (QOS)";
 const char	plugin_type[]	= "preempt/qos";
@@ -117,6 +118,8 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 			continue;
 		if (job_ptr->details &&
 		    (job_ptr->details->expanding_jobid == job_p->job_id))
+			continue;
+		if (acct_policy_is_job_preempt_exempt(job_p))
 			continue;
 
 		/* This job is a preemption candidate */

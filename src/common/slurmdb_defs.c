@@ -1587,6 +1587,7 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 
 	qos->grace_time = init_val;
 	qos->preempt_mode = (uint16_t)init_val;
+	qos->preempt_exempt_time = init_val;
 	qos->priority = init_val;
 
 	/* qos->grp_tres_mins = NULL; */
@@ -3527,6 +3528,7 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 	out->preempt_list = slurm_copy_char_list(in->preempt_list);
 
 	out->preempt_mode = in->preempt_mode;
+	out->preempt_exempt_time = in->preempt_exempt_time;
 
 	out->priority = in->priority;
 

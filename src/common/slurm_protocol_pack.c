@@ -5844,6 +5844,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->system_comment,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
+		safe_unpack_time(&job->preemptable_time, buffer);
 		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->resv_name,  &uint32_tmp, buffer);
@@ -6499,6 +6500,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->power_plugin, buffer);
 		pack16(build_ptr->preempt_mode, buffer);
 		packstr(build_ptr->preempt_type, buffer);
+		pack32(build_ptr->preempt_exempt_time, buffer);
 
 		pack32(build_ptr->priority_decay_hl, buffer);
 		pack32(build_ptr->priority_calc_period, buffer);
@@ -7399,6 +7401,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->preempt_mode, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->preempt_type,
 				       &uint32_tmp, buffer);
+		safe_unpack32(&build_ptr->preempt_exempt_time, buffer);
 
 		safe_unpack32(&build_ptr->priority_decay_hl, buffer);
 		safe_unpack32(&build_ptr->priority_calc_period, buffer);

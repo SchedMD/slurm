@@ -2408,6 +2408,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer
 		}
 
 		pack16(object->preempt_mode, buffer);
+		pack32(object->preempt_exempt_time, buffer);
 		pack32(object->priority, buffer);
 
 		packdouble(object->usage_factor, buffer);
@@ -2682,6 +2683,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 		}
 
 		safe_unpack16(&object_ptr->preempt_mode, buffer);
+		safe_unpack32(&object_ptr->preempt_exempt_time, buffer);
 		safe_unpack32(&object_ptr->priority, buffer);
 
 		safe_unpackdouble(&object_ptr->usage_factor, buffer);

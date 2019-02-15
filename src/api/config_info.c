@@ -1165,6 +1165,17 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("PreemptExemptTime");
+	if (slurm_ctl_conf_ptr->preempt_exempt_time == INFINITE)
+		key_pair->value = xstrdup("NONE");
+	else {
+		secs2time_str((time_t) slurm_ctl_conf_ptr->preempt_exempt_time,
+			      tmp_str, sizeof(tmp_str));
+		key_pair->value = xstrdup(tmp_str);
+	}
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PriorityParameters");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->priority_params);
 	list_append(ret_list, key_pair);
@@ -2128,6 +2139,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcasecmp(key_pair->name, "SlurmSchedLogLevel") ||
 		    !xstrcasecmp(key_pair->name, "PreemptMode") ||
 		    !xstrcasecmp(key_pair->name, "PreemptType") ||
+		    !xstrcasecmp(key_pair->name, "PreemptExemptTime") ||
 		    !xstrcasecmp(key_pair->name, "PriorityType") ||
 		    !xstrcasecmp(key_pair->name, "FastSchedule")) {
 			list_append(sched_list, temp);

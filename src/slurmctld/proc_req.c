@@ -843,6 +843,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->preempt_mode        = conf->preempt_mode;
 	conf_ptr->preempt_type        = xstrdup(conf->preempt_type);
+	conf_ptr->preempt_exempt_time = conf->preempt_exempt_time;
 	conf_ptr->priority_decay_hl   = conf->priority_decay_hl;
 	conf_ptr->priority_calc_period = conf->priority_calc_period;
 	conf_ptr->priority_favor_small= conf->priority_favor_small;
