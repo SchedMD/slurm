@@ -1,0 +1,1626 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm sacct with -s R, -S and -E options
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2017 SchedMD LLC.
+# Written by Albert Gil <albert.gil@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+
+source ./globals
+
+set test_id     "12.10"
+set exit_code   0
+set timeout     60
+set ntest       0
+
+print_header $test_id
+
+############################################################################
+#
+# Proc: sacct_query
+#
+# Purpose: Runs sacct with the given args and checks if job is returned or
+#          not as expected.
+#
+# Returns: 0 if sacct works as expected, 1 otherwise.
+#
+# Input: the jobname to match, the args to pass to sacct, and booleans
+#        to specify if job is expected to be returned or not, and if an
+#        error is expected or not.
+#
+############################################################################
+
+proc sacct_query {jobname sacct_args expected_job {expected_err false}} {
+	global sacct number ntest
+
+	set job_found false
+	set err_found false
+	set rc 0
+
+	set cmd_str "$sacct -v -X --format=job,jobname,start,end,state $sacct_args"
+	spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]
+	expect {
+		-re "($jobname)" {
+			set job_found true
+			exp_continue
+		}
+		-re "sacct: error:" {
+			set err_found true
+			exp_continue
+		}
+		timeout {
+			log_error "$sacct is not responding"
+			set rc 1
+		}
+
+	}
+	if {$job_found != $expected_job} {
+		if {$expected_job} {
+			log_error "Job $jobname not shown in sacct but it should for $sacct_args."
+		} else {
+			log_error "Job $jobname shown in sacct but it should not for $sacct_args."
+		}
+		set rc 1
+	}
+	if {$err_found != $expected_err} {
+		if {$expected_err} {
+			log_error "Expected error message returned by sacct but not shown for $sacct_args."
+		} else {
+			log_error "Non-expected error message returned by sacct for $sacct_args."
+		}
+		set rc 1
+	}
+
+	incr ntest
+	return $rc
+}
+
+############################################################################
+#
+# Proc: get_time
+#
+# Purpose: Obtain the current time with the right format
+#          (YYYY-MM-DDTHH:MM:SS) with the date command.
+#
+# Returns: The date, or 0.
+#
+############################################################################
+
+proc get_time { } {
+	global bin_date
+
+	set date 0
+	spawn $bin_date "+%FT%T#"
+	expect {
+		-re "(.+)#" {
+			set date $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+		log_error "$bin_date not responding."
+		}
+	}
+
+	return $date
+}
+
+############################################################################
+#
+# Check preconditions
+#
+############################################################################
+
+if { [test_account_storage] == 0 } {
+	log_error "This test can't be run without a usable AccountStorageType."
+	exit 1
+}
+
+############################################################################
+#
+# Main Test
+#
+# The followind diagram shows the timeline of a running job used in this
+# test:
+#
+#  <-------S-------|<------P------>|<------R------>|-------C-------->
+#   ----|-----|----|----|-----|----|----|-----|----|----|-----|----> t
+#      QsS   QeS   |   QsP   QeP   |   QsR   QeR   |   QsC   QeC
+#               Job Eligible    Job Starts      Job Ends
+#
+# As you can see we define 3 time zones:
+#   S) Before job is Submited (Eligible)
+#   P) Job is Pending
+#   R) Job is Running
+#   C) Job is Completed/Cancelled
+#
+# In each time zone we define two times to be used in the sacct queries:
+#
+#   Qs[S,P,R,C]: Used mainly with -S
+#   Qe[S,P,R,C]: Used mainly with -E
+#
+# The test basically does:
+#
+# 1) Get the QsS and QeS
+# 2) Submit a job forcing it to be Pending
+# 3) Get the QsP and QeP
+# 4) Do all the test with Q[s,e][S,P] while the job is still Pending
+# 5) Make the job to Run
+# 6) Get the QsR and QeR
+# 7) Do all the test with Q[s,e][S,P,R] while the job is still Running
+# 8) Cancel the job
+# 9) Get the QsC and QeC
+# 10) Do all the test with Q[s,e][S,P,R,C] with a Cancelled/Completed job.
+#
+# The expected behavior of default values of -S and -E are the ones defined
+# in the fucntion slurmdb_job_cond_def_start_end():
+#
+#   - with -j and -s:
+#     -S defaults to Epoch 0
+#     -E defaults to -S (unless no -S then Now)
+#   - with only -j (NOT -s)
+#     -S defaults to Epoch 0
+#     -E defaults to Now
+#   - with only -s (NOT -j):
+#     -S defaults to Now
+#     -E defaults to -S
+#   - without either -j nor -s:
+#     -S defaults to Midnight
+#     -E defaults to Now
+#
+############################################################################
+
+
+############################################################################
+
+global srun squeue sacct
+global bin_sleep bin_date
+global number
+
+set failures 0
+
+#
+# Get Random name for the job, to avoid errors with old/duplicated jobs
+#
+set jobname [exec bash -c "cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 4 | head -n 1"]
+log_info "Random job name used to avoid false test error with old/duplicated jobs: $jobname-test$test_id."
+
+#
+# Get query times before any job is run (QsS and QeS)
+#
+set QsS [get_time]
+exec $bin_sleep 2
+set QeS [get_time]
+exec $bin_sleep 2
+
+#
+# Start a long job (will be cancelled)
+#
+set def_node [get_idle_node_in_part [default_partition]]
+set pid_queue [spawn $sbatch -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+expect {
+	-re "Submitted batch job ($number)" {
+		set jobid_queue $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "$sbatch not responding."
+		slow_kill $pid_batch
+		incr failures
+	}
+	eof {
+		wait
+	}
+}
+if {$jobid_queue == 0} {
+	log_error "$sbatch failure."
+	incr failures
+}
+
+wait_for_job $jobid_queue "RUNNING"
+
+
+set pid_batch [spawn $sbatch -w $def_node -J $jobname-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+expect {
+	-re "Submitted batch job ($number)" {
+		set jobid $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		log_error "$sbatch not responding."
+		slow_kill $pid_batch
+		incr failures
+	}
+	eof {
+		wait
+	}
+}
+if {$jobid == 0} {
+	log_error "$sbatch failure."
+	incr failures
+}
+
+# ensure that job is actually pending
+wait_for_job $jobid "PENDING"
+
+exec $bin_sleep 2
+set QsP [get_time]
+exec $bin_sleep 2
+set QeP [get_time]
+exec $bin_sleep 2
+
+#
+# Test cases while the job is still pending
+#
+# With -j and -s:
+# -S defaults to Epoch 0
+# -E defaults to -S (unless no -S then Now)
+#
+log_info "Test cases while the job is still PENDING..."
+
+if {[sacct_query $jobname          "-j $jobid -s R"                 false]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS -E $QeP" false]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R         -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R         -E  QeP"
+	incr failures
+}
+
+# Test -s PD
+if {[sacct_query $jobname          "-j $jobid -s PD"                 true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS -E $QeP" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD         -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD         -E  QeP"
+	incr failures
+}
+
+#
+# With -j and not -s:
+# -S defaults to Epoch 0
+# -E defaults to Now
+#
+if {[sacct_query $jobname          "-j $jobid"                 true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS"         true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid         -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid         -E  QeP"
+	incr failures
+}
+
+#
+# With -s and not -j
+# -S defaults to Now
+# -E defaults to -S
+#
+if {[sacct_query $jobname          "-s R"                 false]  != 0} {
+	log_error "TestCase $ntest: -s R"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP"         false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R         -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s R         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R         -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s R         -E  QeP"
+	incr failures
+}
+
+# For -s PD
+if {[sacct_query $jobname          "-s PD"                 true]  != 0} {
+	log_error "TestCase $ntest: -s PD"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD         -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s PD         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD         -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s PD         -E  QeP"
+	incr failures
+}
+
+#
+# Without none -s nor -j
+# -S defaults to Mindnight
+# -E defaults to Now
+#
+if {[sacct_query $jobname          ""                 true]  != 0} {
+	log_error "TestCase $ntest: "
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest:  -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest:  -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest:  -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest:  -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS"         true] != 0} {
+	log_error "TestCase $ntest:  -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest:  -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest:          -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "         -E $QeP" true] != 0} {
+	log_error "TestCase $ntest:          -E  QeP"
+	incr failures
+}
+
+
+#
+# Canceling the blocking job and wait for the actual one to run
+#
+cancel_job $jobid_queue
+wait_for_job $jobid "RUNNING"
+
+#
+# Get query times while the job is running (QsR and QeR)
+#
+exec $bin_sleep 2
+set QsR [get_time]
+exec $bin_sleep 2
+set QeR [get_time]
+exec $bin_sleep 2
+
+#
+# Test cases while the job is still running
+#
+# With -j and -s:
+# -S defaults to Epoch 0
+# -E defaults to -S (unless no -S then Now)
+#
+log_info "Test cases while the job is still running..."
+if {[sacct_query $jobname          "-j $jobid -s R"                 true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS -E $QeP" false]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsR -E $QeP" false true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsR -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsR"         true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R         -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R         -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R         -E  QeR"
+	incr failures
+}
+
+# Test -s PD
+if {[sacct_query $jobname          "-j $jobid -s PD"                 true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS -E $QeP" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsR -E $QeP" false true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsR -E $QeR" false]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsR"         false]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD         -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD         -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD         -E  QeR"
+	incr failures
+}
+
+#
+# With -j and not -s:
+# -S defaults to Epoch 0
+# -E defaults to Now
+#
+if {[sacct_query $jobname          "-j $jobid"                 true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsR -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsR -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS"         true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsR"         true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid         -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid         -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid         -E  QeR"
+	incr failures
+}
+
+#
+# With -s and not -j
+# -S defaults to Now
+# -E defaults to -S
+#
+if {[sacct_query $jobname          "-s R"                 true]  != 0} {
+	log_error "TestCase $ntest: -s R"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsR -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsR -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP"         false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsR"         true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R         -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s R         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R         -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s R         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R         -E $QeR" false true]  != 0} {
+	log_error "TestCase $ntest: -s R         -E  QeR"
+	incr failures
+}
+
+# For -s PD
+if {[sacct_query $jobname          "-s PD"                 false]  != 0} {
+	log_error "TestCase $ntest: -s PD"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsR -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsR -E $QeR" false]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsR"         false]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD         -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s PD         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD         -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s PD         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD         -E $QeR" false true]  != 0} {
+	log_error "TestCase $ntest: -s PD         -E  QeR"
+	incr failures
+}
+
+#
+# Without none -s nor -j
+# -S defaults to Mindnight
+# -E defaults to Now
+#
+if {[sacct_query $jobname          ""                 true]  != 0} {
+	log_error "TestCase $ntest: "
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest:  -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest:  -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest:  -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest:  -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest:  -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsR -E $QeP" false true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsR -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS"         true] != 0} {
+	log_error "TestCase $ntest:  -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest:  -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsR"         true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest:          -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "         -E $QeP" true] != 0} {
+	log_error "TestCase $ntest:          -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "         -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest:          -E  QeR"
+	incr failures
+}
+
+#
+# Cancel running job
+#
+cancel_job $jobid
+
+#
+# Get query times when job is no more running
+#
+exec $bin_sleep 2
+set QsC [get_time]
+exec $bin_sleep 2
+set QeC [get_time]
+exec $bin_sleep 2
+
+
+#
+# Test cases for non-running job
+#
+# With -j and -s:
+# -S defaults to Epoch 0
+# -E defaults to -S (unless no -S then Now)
+#
+log_info "Test cases when the job is not running..."
+if {[sacct_query $jobname          "-j $jobid -s R"                 true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsR -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsR -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsR -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsR -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsC -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsC -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsC -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsC -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsC -E $QeR" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsC -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsC -E $QeC" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsC -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsP"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsR"         true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R -S $QsC"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R -S  QsC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R         -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R         -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R         -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s R         -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s R         -E  QeC"
+	incr failures
+}
+
+# With -j and -s:
+# -S defaults to Epoch 0
+# -E defaults to -S (unless no -S then Now)
+#
+# For -s PD
+if {[sacct_query $jobname          "-j $jobid -s PD"                 true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsR -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsR -E $QeR" false]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsR -E $QeC" false]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsR -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsC -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsC -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsC -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsC -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsC -E $QeR" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsC -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsC -E $QeC" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsC -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsR"         false]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD -S $QsC"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD -S  QsC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD         -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD         -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD         -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -s PD         -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -s PD         -E  QeC"
+	incr failures
+}
+
+#
+# With -j and not -s:
+# -S defaults to Epoch 0
+# -E defaults to Now
+#
+if {[sacct_query $jobname          "-j $jobid"                 true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsR -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsR -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsR -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsR -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsC -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsC -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsC -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsC -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsC -E $QeR" false true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsC -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsC -E $QeC" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsC -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsS"         true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsR"         true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid -S $QsC"         false] != 0} {
+	log_error "TestCase $ntest: -j  jobid -S  QsC"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -j  jobid         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid         -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -j  jobid         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid         -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid         -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-j $jobid         -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -j  jobid         -E  QeC"
+	incr failures
+}
+
+#
+# With -s and not -j
+# -S defaults to Now
+# -E defaults to -S
+#
+if {[sacct_query $jobname          "-s R"                 false] != 0} {
+	log_error "TestCase $ntest: -s R"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP -E $QeP" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsR -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsR -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsR -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsR -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsC -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsC -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsC -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsC -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsC -E $QeR" false true] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsC -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsC -E $QeC" false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsC -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsP"         false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsR"         true]  != 0} {
+	log_error "TestCase $ntest: -s R -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R -S $QsC"         false] != 0} {
+	log_error "TestCase $ntest: -s R -S  QsC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R         -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s R         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R         -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s R         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R         -E $QeR" false true] != 0} {
+	log_error "TestCase $ntest: -s R         -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s R         -E $QeC" false true] != 0} {
+	log_error "TestCase $ntest: -s R         -E  QeC"
+	incr failures
+}
+
+#
+# With -s and not -j
+# -S defaults to Now
+# -E defaults to -S
+#
+# For -s PD
+#
+if {[sacct_query $jobname          "-s PD"                 false] != 0} {
+	log_error "TestCase $ntest: -s PD"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsR -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsR -E $QeR" false]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsR -E $QeC" false]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsR -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsC -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsC -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsC -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsC -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsC -E $QeR" false true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsC -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsC -E $QeC" false] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsC -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsS"         false] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsP"         true] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsR"         false]  != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD -S $QsC"         false] != 0} {
+	log_error "TestCase $ntest: -s PD -S  QsC"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD         -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest: -s PD         -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD         -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest: -s PD         -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD         -E $QeR" false true] != 0} {
+	log_error "TestCase $ntest: -s PD         -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "-s PD         -E $QeC" false true] != 0} {
+	log_error "TestCase $ntest: -s PD         -E  QeC"
+	incr failures
+}
+
+#
+# Without none -s nor -j
+# -S defaults to Midnight
+# -E defaults to Now
+#
+if {[sacct_query $jobname          ""                 true] != 0} {
+	log_error "TestCase $ntest: "
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS -E $QeS" false] != 0} {
+	log_error "TestCase $ntest:  -S  QsS -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS -E $QeP" true] != 0} {
+	log_error "TestCase $ntest:  -S  QsS -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsS -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsS -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest:  -S  QsP -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP -E $QeP" true] != 0} {
+	log_error "TestCase $ntest:  -S  QsP -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsP -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsP -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsR -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest:  -S  QsR -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsR -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest:  -S  QsR -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsR -E $QeR" true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsR -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsR -E $QeC" true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsR -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsC -E $QeS" false true] != 0} {
+	log_error "TestCase $ntest:  -S  QsC -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsC -E $QeP" false true] != 0} {
+	log_error "TestCase $ntest:  -S  QsC -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsC -E $QeR" false true] != 0} {
+	log_error "TestCase $ntest:  -S  QsC -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsC -E $QeC" false] != 0} {
+	log_error "TestCase $ntest:  -S  QsC -E  QeC"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsS"         true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsS"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsP"         true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsP"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsR"         true]  != 0} {
+	log_error "TestCase $ntest:  -S  QsR"
+	incr failures
+}
+if {[sacct_query $jobname          " -S $QsC"         false] != 0} {
+	log_error "TestCase $ntest:  -S  QsC"
+	incr failures
+}
+if {[sacct_query $jobname          "         -E $QeS" false] != 0} {
+	log_error "TestCase $ntest:          -E  QeS"
+	incr failures
+}
+if {[sacct_query $jobname          "         -E $QeP" true] != 0} {
+	log_error "TestCase $ntest:          -E  QeP"
+	incr failures
+}
+if {[sacct_query $jobname          "         -E $QeR" true] != 0} {
+	log_error "TestCase $ntest:          -E  QeR"
+	incr failures
+}
+if {[sacct_query $jobname          "         -E $QeC" true] != 0} {
+	log_error "TestCase $ntest:          -E  QeC"
+	incr failures
+}
+
+log_info "Jobid    : $jobid"
+log_info "QsS      : $QsS"
+log_info "QeS      : $QeS"
+log_info "QsP      : $QsP"
+log_info "QeP      : $QeP"
+log_info "QsR      : $QsR"
+log_info "QeR      : $QeR"
+log_info "QsC      : $QsC"
+log_info "QeC      : $QeC"
+log_info "TestCases: $ntest"
+log_info "Failures : $failures"
+
+if {$failures == 0} {
+	print_success $test_id
+} else {
+	print_failure $test_id
+	set exit_code 1
+}
+exit $exit_code
