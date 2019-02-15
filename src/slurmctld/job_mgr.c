@@ -8571,7 +8571,11 @@ void job_time_limit(void)
 		if (_pack_configuring_test(job_ptr))
 			continue;
 
-		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
+		/*
+		 * Only running jobs can be killed due to timeout. Do not kill
+		 * suspended jobs due to timeout.
+		 */
+		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 
 		/*
@@ -8580,8 +8584,7 @@ void job_time_limit(void)
 		 * everything below is considered "slow", and needs to jump to
 		 * time_check before the next job is tested
 		 */
-		if (job_ptr->preempt_time &&
-		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
+		if (job_ptr->preempt_time) {
 			if ((job_ptr->warn_time) &&
 			    (!(job_ptr->warn_flags & WARN_SENT)) &&
 			    (job_ptr->warn_time + PERIODIC_TIMEOUT + now >=
