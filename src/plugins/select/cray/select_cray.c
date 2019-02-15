@@ -2243,8 +2243,18 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 					 Buf buffer, uint16_t protocol_version)
 {
 	int rc = SLURM_ERROR;
-	rc = other_select_nodeinfo_pack(nodeinfo->other_nodeinfo,
-					buffer, protocol_version);
+
+	if (!nodeinfo) {
+		/*
+		 * We should never get here,
+		 * but avoid abort with bad data structures
+		 */
+		error("%s: nodeinfo is NULL", __func__);
+		rc = other_select_nodeinfo_pack(NULL, buffer, protocol_version);
+	} else {
+		rc = other_select_nodeinfo_pack(nodeinfo->other_nodeinfo,
+						buffer, protocol_version);
+	}
 
 	return rc;
 }
