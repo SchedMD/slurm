@@ -1019,7 +1019,7 @@ static pid_t _fork_command(char **command)
 		execvp(cpath, command);
 
 		/* should only get here if execvp failed */
-		error("%s: Unable to exec command \"%s\"",
+		error("%s: Unable to exec command \"%s\": %m",
 		      __func__, cpath);
 		xfree(cpath);
 		exit(error_exit);
