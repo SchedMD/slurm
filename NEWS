@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
     with out mysql support.
  -- Remove deprecated -t option from slurmctld --help.
  -- acct_gather_filesystem/lustre - fix stats gathering.
+ -- Enforce documented default usage start and end times when querying jobs from
+    the database.
 
 * Changes in Slurm 18.08.5-2
 ============================

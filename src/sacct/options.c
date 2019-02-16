@@ -988,26 +988,7 @@ extern void parse_command_line(int argc, char **argv)
 		log_alter(opts, 0, NULL);
 	}
 
-	if (!job_cond->usage_start && !job_cond->step_list) {
-		struct tm start_tm;
-		job_cond->usage_start = time(NULL);
-		/* If we are looking for job states default to now.
-		   If not default to midnight of the current day.
-		*/
-		if (!job_cond->state_list
-		    || !list_count(job_cond->state_list)) {
-			if (!slurm_localtime_r(&job_cond->usage_start,
-					       &start_tm)) {
-				error("Couldn't get localtime from %ld",
-				      (long)job_cond->usage_start);
-				return;
-			}
-			start_tm.tm_sec = 0;
-			start_tm.tm_min = 0;
-			start_tm.tm_hour = 0;
-			job_cond->usage_start = slurm_mktime(&start_tm);
-		}
-	}
+	slurmdb_job_cond_def_start_end(job_cond);
 
 	if (verbosity > 0) {
 		char start_char[25], end_char[25];

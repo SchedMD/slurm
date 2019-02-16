@@ -1405,6 +1405,8 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	if (!job_cond || (job_cond->flags & JOBCOND_FLAG_RUNAWAY))
 		return 0;
 
+	slurmdb_job_cond_def_start_end(job_cond);
+
 	if (job_cond->acct_list && list_count(job_cond->acct_list)) {
 		set = 0;
 		if (*extra)
