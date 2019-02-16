@@ -365,32 +365,22 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 
 	switch(base_state) {
 	case JOB_PENDING:
-		if (start) {
-			if (!end) {
-				xstrfmtcat(*extra,
-					   "(t1.time_eligible && "
-					   "((!t1.time_start && !t1.time_end) "
-					   "|| (%d between t1.time_eligible "
-					   "and t1.time_start)))",
-					   start);
-			} else {
-				xstrfmtcat(*extra,
-					   "(t1.time_eligible && ((%d between "
-					   "t1.time_eligible and "
-					   "t1.time_start) || "
-					   "(t1.time_eligible "
-					   "between %d and %d)) || "
-					   "(!t1.time_start && (%d between "
-					   "t1.time_eligible and "
-					   "t1.time_end)))",
-					   start, start,
-					   end, start);
-			}
-		} else if (end) {
-			xstrfmtcat(*extra, "(t1.time_eligible && "
-				   "t1.time_eligible < %d)",
-				   end);
-		}
+		/*
+		 * Generic Query assuming that -S and -E are properly set in
+		 * slurmdb_job_cond_def_start_end
+		 *
+		 * (job eligible)         &&
+		 * (( time_start && -S < time_start) ||
+		 *  (!time_start && job eligible))   &&
+		 * (-E > time_eligible)
+		 */
+		xstrfmtcat(*extra,
+			   "(t1.time_eligible && "
+			   "(( t1.time_start && %d < t1.time_start) || "
+			   "(!t1.time_start && t1.time_eligible)) && "
+			   "(%d > t1.time_eligible))",
+			   start,
+			   end);
 		break;
 	case JOB_SUSPENDED:
 		xstrfmtcat(*extra,
@@ -403,28 +393,20 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 			   start);
 		break;
 	case JOB_RUNNING:
-		if (start) {
-			if (!end) {
-				xstrfmtcat(*extra,
-					   "(t1.time_start && "
-					   "((!t1.time_end && t1.state=%d) || "
-					   "(%d between t1.time_start "
-					   "and t1.time_end)))",
-					   base_state, start);
-			} else {
-				xstrfmtcat(*extra,
-					   "(t1.time_start && "
-					   "((%d between t1.time_start "
-					   "and t1.time_end) "
-					   "|| (t1.time_start between "
-					   "%d and %d)))",
-					   start, start,
-					   end);
-			}
-		} else if (end) {
-			xstrfmtcat(*extra, "(t1.time_start && "
-				   "t1.time_start < %d)", end);
-		}
+		/*
+		 * Generic Query assuming that -S and -E are properly set in
+		 * slurmdb_job_cond_def_start_end
+		 *
+		 * (job started)                     &&
+		 * (-S < time_end || still running)  &&
+		 * (-E > time_start)
+		 */
+		xstrfmtcat(*extra,
+			   "(t1.time_start && "
+			   "((%d < t1.time_end || (!t1.time_end && t1.state=%d))) && "
+			   "((%d > t1.time_start)))",
+			   start, base_state,
+			   end);
 		break;
 	case JOB_COMPLETE:
 	case JOB_CANCELLED:
