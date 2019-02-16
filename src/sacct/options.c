@@ -1004,13 +1004,38 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (verbosity > 0) {
 		char start_char[25], end_char[25];
+		char *verbosity_states = NULL;
 
-		slurm_ctime2_r(&job_cond->usage_start, start_char);
-		if (job_cond->usage_end)
-			slurm_ctime2_r(&job_cond->usage_end, end_char);
+		if (job_cond->state_list && list_count(job_cond->state_list)) {
+			char *state;
+			ListIterator itr = list_iterator_create(
+				job_cond->state_list);
+
+			while ((state = list_next(itr))) {
+				if (verbosity_states)
+					xstrcat(verbosity_states, ",");
+				xstrfmtcat(verbosity_states, "%s",
+					   job_state_string_complete(
+						   atol(state)));
+			}
+			list_iterator_destroy(itr);
+		} else
+			verbosity_states = xstrdup("Eligible");
+
+		if (!job_cond->usage_start)
+			strlcpy(start_char, "Epoch 0", sizeof(start_char));
 		else
-			sprintf(end_char, "Now");
-		info("Jobs eligible from %s - %s", start_char, end_char);
+			slurm_ctime2_r(&job_cond->usage_start, start_char);
+
+		slurm_ctime2_r(&job_cond->usage_end, end_char);
+
+		if (xstrcmp(start_char, end_char))
+			info("Jobs %s in the time window from %s to %s",
+			     verbosity_states, start_char, end_char);
+		else
+			info("Jobs %s at the time instant %s",
+			     verbosity_states, start_char);
+		xfree(verbosity_states);
 	}
 
 	debug("Options selected:\n"

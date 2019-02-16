@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     the database.
  -- Fix issues when querying running jobs from the database.
  -- Deny sacct request where start time is later than the end time requested.
+ -- Fix sacct verbose about time and states queried.
 
 * Changes in Slurm 18.08.5-2
 ============================
