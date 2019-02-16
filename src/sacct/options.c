@@ -990,6 +990,18 @@ extern void parse_command_line(int argc, char **argv)
 
 	slurmdb_job_cond_def_start_end(job_cond);
 
+	if (job_cond->usage_end &&
+	    (job_cond->usage_start > job_cond->usage_end)) {
+		char start_str[32], end_str[32];
+		slurm_make_time_str(&job_cond->usage_start, start_str,
+				    sizeof(start_str));
+		slurm_make_time_str(&job_cond->usage_end, end_str,
+				    sizeof(end_str));
+		error("Start time (%s) requested is after end time (%s).",
+		      start_str, end_str);
+		exit(1);
+	}
+
 	if (verbosity > 0) {
 		char start_char[25], end_char[25];
 

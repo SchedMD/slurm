@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Enforce documented default usage start and end times when querying jobs from
     the database.
  -- Fix issues when querying running jobs from the database.
+ -- Deny sacct request where start time is later than the end time requested.
 
 * Changes in Slurm 18.08.5-2
 ============================
