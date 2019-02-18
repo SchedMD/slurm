@@ -161,8 +161,8 @@ static uint32_t reboot_weight = 0;
  *	the given job_details record.  If it wasn't set, return 0xffff.
  *	Intended for use with the adjust_cpus_nppcu function.
  */
-static uint16_t _get_ntasks_per_core(struct job_details *details) {
-
+static uint16_t _get_ntasks_per_core(struct job_details *details)
+{
 	if (details->mc_ptr)
 		return details->mc_ptr->ntasks_per_core;
 	else
@@ -3617,7 +3617,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
-	int check_node_config;
+	int check_node_config, total_cores;
 	struct job_details *detail_ptr = job_ptr->details;
 	bitstr_t *usable_node_mask = NULL;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
@@ -3703,9 +3703,11 @@ static int _build_node_list(struct job_record *job_ptr,
 			list_next(config_iterator))) {
 		bool cpus_ok = false, mem_ok = false, disk_ok = false;
 		bool job_mc_ok = false, config_filter = false;
+		total_cores = config_ptr->boards * config_ptr->sockets *
+			      config_ptr->cores;
 		adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(detail_ptr),
-					     config_ptr->threads,
-					     config_ptr->cpus);
+					     detail_ptr->cpus_per_task,
+					     total_cores, config_ptr->cpus);
 		if (detail_ptr->pn_min_cpus <= adj_cpus)
 			cpus_ok = true;
 		if ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) <=
@@ -4140,7 +4142,7 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *job_con,
 				 char **err_msg)
 {
-	int adj_cpus, i;
+	int adj_cpus, i, total_cores;
 	multi_core_data_t *mc_ptr = job_con->mc_ptr;
 
 	if (slurmctld_conf.fast_schedule) {	/* test config records */
@@ -4151,10 +4153,12 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 			if (bit_test(node_set_ptr->my_bitmap, i) == 0)
 				continue;
 			node_con = node_record_table_ptr[i].config_ptr;
-			adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(job_con),
-						     node_con->threads,
-						     node_con->cpus);
-
+			total_cores = node_con->boards * node_con->sockets *
+				      node_con->cores;
+			adj_cpus = adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_con),
+						job_con->cpus_per_task,
+						total_cores, node_con->cpus);
 			if (job_con->pn_min_cpus <= adj_cpus)
 				cpus_ok = true;
 			if ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
@@ -4188,11 +4192,13 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 			int job_ok = 0, job_mc_ptr_ok = 0;
 			if (bit_test(node_set_ptr->my_bitmap, i) == 0)
 				continue;
-
 			node_ptr = &node_record_table_ptr[i];
-			adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(job_con),
-						     node_ptr->threads,
-						     node_ptr->cpus);
+			total_cores = node_ptr->boards * node_ptr->sockets *
+				      node_ptr->cores;
+			adj_cpus = adjust_cpus_nppcu(
+						_get_ntasks_per_core(job_con),
+						job_con->cpus_per_task,
+						total_cores, node_ptr->cpus);
 			if ((job_con->pn_min_cpus     <= adj_cpus)            &&
 			    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
 			      node_ptr->real_memory)                          &&

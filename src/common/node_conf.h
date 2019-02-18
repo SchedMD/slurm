@@ -333,11 +333,16 @@ extern uint32_t cr_get_coremap_offset(uint32_t node_index);
  * system it will return a bitmap in cnodes. */
 extern bitstr_t *cr_create_cluster_core_bitmap(int core_mult);
 
-/* Given the number of tasks per core and the actual number of hw threads,
- * compute how many CPUs are "visible" and, hence, usable on the node.
+/*
+ * Determine maximum number of CPUs on this node usable by a job
+ * ntasks_per_core IN - tasks-per-core to be launched by this job
+ * cpus_per_task IN - number of required  CPUs per task for this job
+ * total_cores IN - total number of cores on this node
+ * total_cpus IN - total number of CPUs on this node
+ * RET count of usable CPUs on this node usable by this job
  */
-extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads,
-			     int cpus);
+extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, int cpus_per_task,
+			     int total_cores, int total_cpus);
 
 /*
  * find_hostname - Given a position and a string of hosts, return the hostname

@@ -1067,17 +1067,25 @@ extern bitstr_t *cr_create_cluster_core_bitmap(int core_mult)
 	return core_bitmap;
 }
 
-/* Given the number of tasks per core and the actual number of hw threads,
- * compute how many CPUs are "visible" and, hence, usable on the node.
+/*
+ * Determine maximum number of CPUs on this node usable by a job
+ * ntasks_per_core IN - tasks-per-core to be launched by this job
+ * cpus_per_task IN - number of required  CPUs per task for this job
+ * total_cores IN - total number of cores on this node
+ * total_cpus IN - total number of CPUs on this node
+ * RET count of usable CPUs on this node usable by this job
  */
-extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, uint16_t threads,
-			     int cpus)
+extern int adjust_cpus_nppcu(uint16_t ntasks_per_core, int cpus_per_task,
+			     int total_cores, int total_cpus)
 {
+	int cpus = total_cpus;
+
+//FIXME: This function ignores tasks-per-socket and tasks-per-node checks.
+// Those parameters are tested later
 	if ((ntasks_per_core != 0) && (ntasks_per_core != 0xffff) &&
-	    (threads != 0)) {
-		/* Adjust the number of CPUs according to the percentage of the
-		 * hwthreads/core being used. */
-		cpus = cpus * ntasks_per_core / threads;
+	    (cpus_per_task != 0)) {
+		cpus = MAX((total_cores * ntasks_per_core * cpus_per_task),
+			   total_cpus);
 	}
 
 	return cpus;
