@@ -16,20 +16,20 @@
 # limitations under the License.
 
 resources:
-- name: slurm-network
+- name: pfizer-demo
   type: compute.v1.network
   properties:
     autoCreateSubnetworks: false
-- name: slurm-subnet
+- name: pfizer-demo-subnet
   type: compute.v1.subnetwork
   properties:
-    network: $(ref.slurm-network.selfLink)
+    network: $(ref.pfizer-demo.selfLink)
     ipCidrRange: {{ properties["cidr"]}}
     region: {{ properties["region"] }}
 - name: ssh-firewall-rule
   type: compute.v1.firewall
   properties:
-    network: $(ref.slurm-network.selfLink)
+    network: $(ref.pfizer-demo.selfLink)
     sourceRanges: ["0.0.0.0/0"]
     allowed:
     - IPProtocol: TCP
@@ -38,7 +38,7 @@ resources:
 - name: all-internal-firewall-rule
   type: compute.v1.firewall
   properties:
-    network: $(ref.slurm-network.selfLink)
+    network: $(ref.pfizer-demo.selfLink)
     sourceRanges: [{{properties["cidr"]}}]
     allowed:
     - IPProtocol: TCP
@@ -51,7 +51,7 @@ resources:
 - name: no-ip-internet-route
   type: compute.v1.route
   properties:
-    network: $(ref.slurm-network.selfLink)
+    network: $(ref.pfizer-demo.selfLink)
     tags: ["compute"]
     destRange: 0.0.0.0/0
     nextHopInstance: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/{{ properties["zone"] }}/instances/controller
@@ -79,7 +79,7 @@ resources:
     canIpForward: true
 {% endif %}
     networkInterfaces:
-    - subnetwork: $(ref.slurm-subnet.selfLink)
+    - subnetwork: $(ref.pfizer-demo-subnet.selfLink)
       accessConfigs:
       - name: External NAT
         type: ONE_TO_ONE_NAT
@@ -100,10 +100,10 @@ resources:
       items:
         - key: startup-script
           value: |
-            {{ imports["scripts/startup-script.py"]|indent(12)|replace("@PROJECT@",env["project"])|replace("@ZONE@",properties["zone"])|replace("@INSTANCE_TYPE@","controller")|replace("@MUNGE_KEY@",properties["munge_key"])|replace("@SLURM_VERSION@",properties["slurm_version"])|replace("@STATIC_NODE_COUNT@",properties["static_node_count"])|replace("@MAX_NODE_COUNT@",properties["max_node_count"])|replace("@MACHINE_TYPE@",properties["compute_machine_type"])|replace("@DEF_SLURM_ACCT@",properties["default_account"])|replace("@DEF_SLURM_USERS@",properties["default_users"])|replace("@CLUSTER_NAME@",properties["cluster_name"])|replace("@EXTERNAL_COMPUTE_IPS@",properties["external_compute_ips"]) }}
+            {{ imports["scripts/startup-script.py"]|indent(12)|replace("@PROJECT@",env["project"])|replace("@ZONE@",properties["zone"])|replace("@INSTANCE_TYPE@","controller")|replace("@MUNGE_KEY@",properties["munge_key"])|replace("@SLURM_VERSION@",properties["slurm_version"])|replace("@STATIC_NODE_COUNT@",properties["static_node_count"])|replace("@MAX_NODE_COUNT@",properties["max_node_count"])|replace("@MACHINE_TYPE@",properties["compute_machine_type"])|replace("@DEF_SLURM_ACCT@",properties["default_account"])|replace("@DEF_SLURM_USERS@",properties["default_users"])|replace("@CLUSTER_NAME@",properties["cluster_name"])|replace("@EXTERNAL_COMPUTE_IPS@",properties["external_compute_ips"])|replace("@REMOTE_NFS_TARGET@",properties["remote_nfs_target"]) }}
         - key: startup-script-compute
           value: |
-            {{ imports["scripts/startup-script.py"]|indent(12)|replace("@PROJECT@",env["project"])|replace("@ZONE@",properties["zone"])|replace("@INSTANCE_TYPE@","compute")|replace("@MUNGE_KEY@",properties["munge_key"])|replace("@SLURM_VERSION@",properties["slurm_version"])|replace("@STATIC_NODE_COUNT@",properties["static_node_count"])|replace("@MAX_NODE_COUNT@",properties["max_node_count"])|replace("@MACHINE_TYPE@",properties["compute_machine_type"])|replace("@DEF_SLURM_ACCT@",properties["default_account"])|replace("@DEF_SLURM_USERS@",properties["default_users"])|replace("@CLUSTER_NAME@",properties["cluster_name"])|replace("@EXTERNAL_COMPUTE_IPS@",properties["external_compute_ips"]) }}
+            {{ imports["scripts/startup-script.py"]|indent(12)|replace("@PROJECT@",env["project"])|replace("@ZONE@",properties["zone"])|replace("@INSTANCE_TYPE@","compute")|replace("@MUNGE_KEY@",properties["munge_key"])|replace("@SLURM_VERSION@",properties["slurm_version"])|replace("@STATIC_NODE_COUNT@",properties["static_node_count"])|replace("@MAX_NODE_COUNT@",properties["max_node_count"])|replace("@MACHINE_TYPE@",properties["compute_machine_type"])|replace("@DEF_SLURM_ACCT@",properties["default_account"])|replace("@DEF_SLURM_USERS@",properties["default_users"])|replace("@CLUSTER_NAME@",properties["cluster_name"])|replace("@EXTERNAL_COMPUTE_IPS@",properties["external_compute_ips"])|replace("@REMOTE_NFS_TARGET@",properties["remote_nfs_target"]) }}
         - key: slurm_resume
           value: |
             {{ imports["scripts/resume.py"]|indent(12)|replace("@PROJECT@",env["project"])|replace("@ZONE@",properties["zone"])|replace("@REGION@",properties["region"])|replace("@MACHINE_TYPE@",properties["compute_machine_type"])|replace("@PREEMPTIBLE@",properties["preemptible_bursting"])|replace("@EXTERNAL_COMPUTE_IPS@",properties["external_compute_ips"])|replace("@DISK_SIZE_GB@",properties["compute_disk_size_gb"])|replace("@DISK_TYPE@",properties["compute_disk_type"])  }}
@@ -127,7 +127,7 @@ resources:
         diskType: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/{{ properties["zone"] }}/diskTypes/{{ properties["login_disk_type"] }}
         diskSizeGb: {{ properties["login_disk_size_gb"] }}
     networkInterfaces:
-    - subnetwork: $(ref.slurm-subnet.selfLink)
+    - subnetwork: $(ref.pfizer-demo-subnet.selfLink)
       accessConfigs:
       - name: External NAT
         type: ONE_TO_ONE_NAT
@@ -142,7 +142,7 @@ resources:
       items:
         - key: startup-script
           value: |
-            {{ imports["scripts/startup-script.py"]|indent(12)|replace("@PROJECT@",env["project"])|replace("@ZONE@",properties["zone"])|replace("@INSTANCE_TYPE@","login")|replace("@MUNGE_KEY@",properties["munge_key"])|replace("@SLURM_VERSION@",properties["slurm_version"])|replace("@STATIC_NODE_COUNT@",properties["static_node_count"])|replace("@MAX_NODE_COUNT@",properties["max_node_count"])|replace("@MACHINE_TYPE@",properties["compute_machine_type"])|replace("@DEF_SLURM_ACCT@",properties["default_account"])|replace("@DEF_SLURM_USERS@",properties["default_users"])|replace("@EXTERNAL_COMPUTE_IPS@",properties["external_compute_ips"]) }}
+            {{ imports["scripts/startup-script.py"]|indent(12)|replace("@PROJECT@",env["project"])|replace("@ZONE@",properties["zone"])|replace("@INSTANCE_TYPE@","login")|replace("@MUNGE_KEY@",properties["munge_key"])|replace("@SLURM_VERSION@",properties["slurm_version"])|replace("@STATIC_NODE_COUNT@",properties["static_node_count"])|replace("@MAX_NODE_COUNT@",properties["max_node_count"])|replace("@MACHINE_TYPE@",properties["compute_machine_type"])|replace("@DEF_SLURM_ACCT@",properties["default_account"])|replace("@DEF_SLURM_USERS@",properties["default_users"])|replace("@EXTERNAL_COMPUTE_IPS@",properties["external_compute_ips"])|replace("@REMOTE_NFS_TARGET@",properties["remote_nfs_target"]) }}
 
 
 {% for n in range(properties['static_node_count']) %}
@@ -161,7 +161,7 @@ resources:
         diskType: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/{{ properties["zone"] }}/diskTypes/{{ properties["compute_disk_type"] }}
         diskSizeGb: {{ properties["compute_disk_size_gb"] }}
     networkInterfaces:
-    - subnetwork: $(ref.slurm-subnet.selfLink)
+    - subnetwork: $(ref.pfizer-demo-subnet.selfLink)
 {% if properties['external_compute_ips'] %}
       accessConfigs:
       - name: External NAT
@@ -179,6 +179,6 @@ resources:
       items:
         - key: startup-script
           value: |
-            {{ imports["scripts/startup-script.py"]|indent(12)|replace("@PROJECT@",env["project"])|replace("@ZONE@",properties["zone"])|replace("@INSTANCE_TYPE@","compute")|replace("@MUNGE_KEY@",properties["munge_key"])|replace("@SLURM_VERSION@",properties["slurm_version"])|replace("@STATIC_NODE_COUNT@",properties["static_node_count"])|replace("@MAX_NODE_COUNT@",properties["max_node_count"])|replace("@MACHINE_TYPE@",properties["compute_machine_type"])|replace("@DEF_SLURM_ACCT@",properties["default_account"])|replace("@DEF_SLURM_USERS@",properties["default_users"])|replace("@EXTERNAL_COMPUTE_IPS@",properties["external_compute_ips"]) }}
+            {{ imports["scripts/startup-script.py"]|indent(12)|replace("@PROJECT@",env["project"])|replace("@ZONE@",properties["zone"])|replace("@INSTANCE_TYPE@","compute")|replace("@MUNGE_KEY@",properties["munge_key"])|replace("@SLURM_VERSION@",properties["slurm_version"])|replace("@STATIC_NODE_COUNT@",properties["static_node_count"])|replace("@MAX_NODE_COUNT@",properties["max_node_count"])|replace("@MACHINE_TYPE@",properties["compute_machine_type"])|replace("@DEF_SLURM_ACCT@",properties["default_account"])|replace("@DEF_SLURM_USERS@",properties["default_users"])|replace("@EXTERNAL_COMPUTE_IPS@",properties["external_compute_ips"])|replace("@REMOTE_NFS_TARGET@",properties["remote_nfs_target"]) }}
 {% endfor %}
 

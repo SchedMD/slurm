@@ -26,16 +26,17 @@ resources:
     cluster_name            : google1
     static_node_count       : 2
     max_node_count          : 10
-    zone                    : us-east1-b
-    region                  : us-east1
-    cidr                    : 10.10.0.0/16
+    zone                    : us-central1-a
+    region                  : us-central1
+    cidr                    : 10.11.0.0/16
 
     controller_machine_type : n1-standard-2
     compute_machine_type    : n1-standard-2
     login_machine_type      : n1-standard-1
 
-    slurm_version           : <slurm version e.g. 17.11.5>
+    slurm_version           : 17.11.13
     default_account         : default
-    default_users           : <comma separated list of users>
-    munge_key               : <.e.g date +%s | sha512sum | cut -d' ' -f1 >
+    default_users           : garzoglio
+    munge_key               : 3706df00dbae9668b06c412f416d7acb082f5a7cb262599e86c896cbab043b6c6a96300d76e4d46c2b051f427e2c74f1f2e34394e156f6862683730ed52f2281
+    remote_nfs_target       : 10.221.183.170:/pfizerdata
 #  [END cluster_yaml]

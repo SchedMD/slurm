@@ -30,6 +30,7 @@ PROJECT           = '@PROJECT@'
 ZONE              = '@ZONE@'
 
 APPS_DIR          = '/apps'
+MOUNT_DATA_DIR    = '/mnt/data'
 MUNGE_KEY         = '@MUNGE_KEY@'
 SLURM_VERSION     = '@SLURM_VERSION@'
 STATIC_NODE_COUNT = @STATIC_NODE_COUNT@
@@ -37,6 +38,7 @@ MAX_NODE_COUNT    = @MAX_NODE_COUNT@
 DEF_SLURM_ACCT    = '@DEF_SLURM_ACCT@'
 DEF_SLURM_USERS   = '@DEF_SLURM_USERS@'
 EXTERNAL_COMPUTE_IPS = @EXTERNAL_COMPUTE_IPS@
+REMOTE_NFS_TARGET = '@REMOTE_NFS_TARGET@'
 
 SLURM_PREFIX  = APPS_DIR + '/slurm/slurm-' + SLURM_VERSION
 
@@ -130,7 +132,7 @@ def end_motd():
 Either log out and log back in or cd into ~.
 """])
 
-#END start_motd()
+#END end_motd()
 
 
 def have_internet():
@@ -735,11 +737,26 @@ PATH=$PATH:$S_PATH/bin:$S_PATH/sbin
 def mount_nfs_vols():
 
     f = open('/etc/fstab', 'a')
-    f.write("""
-controller:{0}    {0}     nfs      rw,sync,hard,intr  0     0
+    if REMOTE_NFS_TARGET:
+        f.write("""
+controller:{appsdir}    {appsdir}     nfs      rw,sync,hard,intr  0     0
 controller:/home  /home   nfs      rw,sync,hard,intr  0     0
-""".format(APPS_DIR))
-    f.close()
+{remote_nfs_target}  {mount_data_dir}   nfs      rw,sync,hard,intr  0     0
+""".format(
+            appsdir=APPS_DIR,
+            remote_nfs_target=REMOTE_NFS_TARGET,
+            mount_data_dir=MOUNT_DATA_DIR,)
+        )
+        f.close()
+    else:
+        f.write("""
+controller:{appsdir}    {appsdir}     nfs      rw,sync,hard,intr  0     0
+controller:/home  /home   nfs      rw,sync,hard,intr  0     0
+""".format(
+            appsdir=APPS_DIR,
+            remote_nfs_target=REMOTE_NFS_TARGET,)
+        )
+        f.close()
 
     while subprocess.call(['mount', '-a']):
         print "Waiting for " + APPS_DIR + " and /home to be mounted"
@@ -777,6 +794,10 @@ def main():
         os.makedirs(APPS_DIR + '/slurm')
 
     if INSTANCE_TYPE != "controller":
+        if REMOTE_NFS_TARGET != "":
+            if not os.path.exists(MOUNT_DATA_DIR):
+                os.makedirs(MOUNT_DATA_DIR)
+                os.chmod(MOUNT_DATA_DIR,0o777)
         mount_nfs_vols()
 
     if INSTANCE_TYPE == "controller":

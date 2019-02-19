@@ -50,6 +50,7 @@ optional:
 - login_disk_size_gb
 - login_disk_type
 - preemptible_bursting
+- remote_nfs_target
 
 properties:
   cidr:
@@ -161,4 +162,8 @@ properties:
   zone:
     type        : string
     description : Zone to run the instances in based on Region.
+
+  remote_nfs_target:
+    type        : string
+    description : Remote NFS mount target for the login and compute nodes e.g. 10.221.183.170:/data
 
