@@ -1146,13 +1146,13 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			break;
 		case ACCT_POLICY_JOB_BEGIN:
 			assoc_ptr->usage->used_jobs++;
- 			_add_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
+			_add_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
 			for (i = 0; i < slurmctld_tres_cnt; i++) {
 				if (i == TRES_ARRAY_ENERGY)
 					continue;
 				if (i != TRES_ARRAY_NODE) {
 					assoc_ptr->usage->grp_used_tres[i] +=
-	 					job_ptr->tres_alloc_cnt[i];
+						job_ptr->tres_alloc_cnt[i];
 				}
 				assoc_ptr->usage->grp_used_tres_run_secs[i] +=
 					used_tres_run_secs[i];
@@ -1171,7 +1171,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				debug2("acct_policy_job_fini: used_jobs "
 				       "underflow for account %s",
 				       assoc_ptr->acct);
- 			_rm_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
+			_rm_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
 			for (i = 0; i < slurmctld_tres_cnt; i++) {
 				if ((i == TRES_ARRAY_ENERGY) ||
 				    (i == TRES_ARRAY_NODE))
