@@ -52,6 +52,15 @@ if { [string compare [priority_type] multifactor] } {
 }
 
 #
+# This test needs to be modified to use the core counts rather than CPU counts
+#
+set select_type_params [get_select_type_params ""]
+if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
+	log_warn "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
+	exit 0
+}
+
+#
 # Build input script file
 #
 make_bash_script $file_in "$bin_sleep 600"
