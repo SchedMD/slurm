@@ -16,20 +16,20 @@
 # limitations under the License.
 
 resources:
-- name: pfizer-demo
+- name: slurm-network
   type: compute.v1.network
   properties:
     autoCreateSubnetworks: false
-- name: pfizer-demo-subnet
+- name: slurm-subnet
   type: compute.v1.subnetwork
   properties:
-    network: $(ref.pfizer-demo.selfLink)
+    network: $(ref.slurm-network.selfLink)
     ipCidrRange: {{ properties["cidr"]}}
     region: {{ properties["region"] }}
 - name: ssh-firewall-rule
   type: compute.v1.firewall
   properties:
-    network: $(ref.pfizer-demo.selfLink)
+    network: $(ref.slurm-network.selfLink)
     sourceRanges: ["0.0.0.0/0"]
     allowed:
     - IPProtocol: TCP
@@ -38,7 +38,7 @@ resources:
 - name: all-internal-firewall-rule
   type: compute.v1.firewall
   properties:
-    network: $(ref.pfizer-demo.selfLink)
+    network: $(ref.slurm-network.selfLink)
     sourceRanges: [{{properties["cidr"]}}]
     allowed:
     - IPProtocol: TCP
@@ -51,7 +51,7 @@ resources:
 - name: no-ip-internet-route
   type: compute.v1.route
   properties:
-    network: $(ref.pfizer-demo.selfLink)
+    network: $(ref.slurm-network.selfLink)
     tags: ["compute"]
     destRange: 0.0.0.0/0
     nextHopInstance: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/{{ properties["zone"] }}/instances/controller
@@ -79,7 +79,7 @@ resources:
     canIpForward: true
 {% endif %}
     networkInterfaces:
-    - subnetwork: $(ref.pfizer-demo-subnet.selfLink)
+    - subnetwork: $(ref.slurm-subnet.selfLink)
       accessConfigs:
       - name: External NAT
         type: ONE_TO_ONE_NAT
@@ -127,7 +127,7 @@ resources:
         diskType: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/{{ properties["zone"] }}/diskTypes/{{ properties["login_disk_type"] }}
         diskSizeGb: {{ properties["login_disk_size_gb"] }}
     networkInterfaces:
-    - subnetwork: $(ref.pfizer-demo-subnet.selfLink)
+    - subnetwork: $(ref.slurm-subnet.selfLink)
       accessConfigs:
       - name: External NAT
         type: ONE_TO_ONE_NAT
@@ -161,7 +161,7 @@ resources:
         diskType: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/{{ properties["zone"] }}/diskTypes/{{ properties["compute_disk_type"] }}
         diskSizeGb: {{ properties["compute_disk_size_gb"] }}
     networkInterfaces:
-    - subnetwork: $(ref.pfizer-demo-subnet.selfLink)
+    - subnetwork: $(ref.slurm-subnet.selfLink)
 {% if properties['external_compute_ips'] %}
       accessConfigs:
       - name: External NAT

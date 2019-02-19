@@ -34,9 +34,8 @@ resources:
     compute_machine_type    : n1-standard-2
     login_machine_type      : n1-standard-1
 
-    slurm_version           : 17.11.13
+    slurm_version           : <slurm version e.g. 17.11.13>
     default_account         : default
-    default_users           : garzoglio
-    munge_key               : 3706df00dbae9668b06c412f416d7acb082f5a7cb262599e86c896cbab043b6c6a96300d76e4d46c2b051f427e2c74f1f2e34394e156f6862683730ed52f2281
-    remote_nfs_target       : 10.221.183.170:/pfizerdata
+    default_users           : <comma separated list of users>
+    munge_key               : <.e.g date +%s | sha512sum | cut -d' ' -f1 >
 #  [END cluster_yaml]
