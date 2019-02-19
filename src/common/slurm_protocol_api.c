@@ -1079,6 +1079,21 @@ char *slurm_get_state_save_location(void)
 	return state_save_loc;
 }
 
+/* slurm_get_stepd_loc
+ * get path to the slurmstepd
+ *      1. configure --sbindir concatenated with slurmstepd.
+ *	2. configure --prefix concatenated with /sbin/slurmstepd.
+ * RET char * - absolute path to the slurmstepd, MUST be xfreed by caller
+ */
+extern char *slurm_get_stepd_loc(void)
+{
+#ifdef SBINDIR
+	return xstrdup_printf("%s/slurmstepd", SBINDIR);
+#elif defined SLURM_PREFIX
+	return xstrdup_printf("%s/sbin/slurmstepd", SLURM_PREFIX);
+#endif
+}
+
 /* slurm_get_tmp_fs
  * returns the TmpFS configuration parameter from slurmctld_conf object
  * RET char *    - tmp_fs, MUST be xfreed by caller

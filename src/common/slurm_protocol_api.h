@@ -411,6 +411,12 @@ char *slurm_get_resume_program(void);
  */
 char *slurm_get_state_save_location(void);
 
+/* slurm_get_stepd_loc
+ * get path to the slurmstepd
+ * RET char * - absolute path to the slurmstepd, MUST be xfreed by caller
+ */
+extern char *slurm_get_stepd_loc(void);
+
 /* slurm_get_tmp_fs
  * returns the TmpFS configuration parameter from slurmctld_conf object
  * RET char *    - tmp_fs, MUST be xfreed by caller

@@ -10,7 +10,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS     = -I$(top_srcdir) $(lua_CFLAGS)
+AM_CPPFLAGS     = -I$(top_srcdir) $(lua_CFLAGS) -DSBINDIR=\"$(sbindir)\"
 
 noinst_PROGRAMS = libcommon.o libeio.o libspank.o
 # This is needed if compiling on windows
