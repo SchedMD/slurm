@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
  *****************************************************************************
- *  Portions Copyright (C) 2010-2017 SchedMD LLC <https://www.schedmd.com>.
+ *  Portions Copyright (C) 2010-2019 SchedMD LLC.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -498,6 +498,13 @@ static void _pack_srun_exec_msg(srun_exec_msg_t * msg, Buf buffer,
 				uint16_t protocol_version);
 static int  _unpack_srun_exec_msg(srun_exec_msg_t ** msg_ptr, Buf buffer,
 				  uint16_t protocol_version);
+
+static void _pack_net_forward_msg(net_forward_msg_t *msg,
+				  Buf buffer,
+				  uint16_t protocol_version);
+static int  _unpack_net_forward_msg(net_forward_msg_t **msg_ptr,
+				    Buf buffer,
+				    uint16_t protocol_version);
 
 static void _pack_srun_ping_msg(srun_ping_msg_t * msg, Buf buffer,
 				uint16_t protocol_version);
@@ -1325,6 +1332,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_srun_user_msg((srun_user_msg_t *)msg->data, buffer,
 				    msg->protocol_version);
 		break;
+	case SRUN_NET_FORWARD:
+		_pack_net_forward_msg((net_forward_msg_t *)msg->data,
+				      buffer, msg->protocol_version);
+		break;
 	case REQUEST_CHECKPOINT:
 		_pack_checkpoint_msg((checkpoint_msg_t *)msg->data, buffer,
 				     msg->protocol_version);
@@ -2031,6 +2042,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_srun_ping_msg((srun_ping_msg_t **) & msg->data,
 					   buffer,
 					   msg->protocol_version);
+		break;
+	case SRUN_NET_FORWARD:
+		rc = _unpack_net_forward_msg((net_forward_msg_t **) &msg->data,
+					     buffer, msg->protocol_version);
 		break;
 	case SRUN_NODE_FAIL:
 		rc = _unpack_srun_node_fail_msg((srun_node_fail_msg_t **)
@@ -12658,6 +12673,49 @@ _unpack_srun_exec_msg(srun_exec_msg_t ** msg_ptr, Buf buffer,
 
 unpack_error:
 	slurm_free_srun_exec_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_net_forward_msg(net_forward_msg_t *msg,
+				  Buf buffer,
+				  uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->flags, buffer);
+		pack16(msg->port, buffer);
+		packstr(msg->target, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_net_forward_msg(net_forward_msg_t **msg_ptr,
+				   Buf buffer, uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	net_forward_msg_t *msg = xmalloc(sizeof(*msg));
+	xassert(msg_ptr);
+	*msg_ptr = msg;
+
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->flags, buffer);
+		safe_unpack16(&msg->port, buffer);
+		safe_unpackstr_xmalloc(&msg->target, &uint32_tmp, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_net_forward_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

@@ -1447,6 +1447,14 @@ extern void slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
 	xfree(msg);
 }
 
+extern void slurm_free_net_forward_msg(net_forward_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->target);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
 {
 	if (msg) {
@@ -4921,6 +4929,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case SRUN_STEP_MISSING:
 		slurm_free_srun_step_missing_msg(data);
 		break;
+	case SRUN_NET_FORWARD:
+		slurm_free_net_forward_msg(data);
+		break;
 	case PMI_KVS_GET_REQ:
 		slurm_free_get_kvs_msg(data);
 		break;
@@ -5467,6 +5478,8 @@ rpc_num2string(uint16_t opcode)
 		return "SRUN_REQUEST_SUSPEND";
 	case SRUN_STEP_SIGNAL:
 		return "SRUN_STEP_SIGNAL";
+	case SRUN_NET_FORWARD:
+		return "SRUN_NET_FORWARD";
 
 	case PMI_KVS_PUT_REQ:					/* 7201 */
 		return "PMI_KVS_PUT_REQ";

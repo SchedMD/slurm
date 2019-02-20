@@ -404,6 +404,7 @@ typedef enum {
 	SRUN_REQUEST_SUSPEND,
 	SRUN_STEP_SIGNAL,	/* for launch plugins aprun and poe,
 				 * srun forwards signal to the launch command */
+	SRUN_NET_FORWARD,
 
 	PMI_KVS_PUT_REQ = 7201,
 	PMI_KVS_PUT_RESP,
@@ -1460,6 +1461,7 @@ extern void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);
 extern void slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg);
 extern void slurm_free_srun_exec_msg(srun_exec_msg_t *msg);
 extern void slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
+extern void slurm_free_net_forward_msg(net_forward_msg_t *msg);
 extern void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 extern void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg);
 extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
