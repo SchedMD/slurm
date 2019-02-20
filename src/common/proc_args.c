@@ -44,10 +44,6 @@
 
 #define _GNU_SOURCE
 
-#ifndef SYSTEM_DIMENSIONS
-#  define SYSTEM_DIMENSIONS 1
-#endif
-
 #include <ctype.h>		/* isdigit    */
 #include <fcntl.h>
 #include <limits.h>

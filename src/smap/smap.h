@@ -63,10 +63,6 @@
 #  endif
 #endif
 
-#ifndef SYSTEM_DIMENSIONS
-#  define SYSTEM_DIMENSIONS 1
-#endif
-
 #include <ctype.h>
 #include <getopt.h>
 #include <inttypes.h>

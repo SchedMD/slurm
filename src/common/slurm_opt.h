@@ -50,10 +50,6 @@
 
 #include "slurm/slurm.h"
 
-#ifndef SYSTEM_DIMENSIONS
-#define SYSTEM_DIMENSIONS 1
-#endif
-
 #define DEFAULT_IMMEDIATE	1
 #define DEFAULT_BELL_DELAY	10
 
