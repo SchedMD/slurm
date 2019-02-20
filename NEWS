@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issues when querying running jobs from the database.
  -- Deny sacct request where start time is later than the end time requested.
  -- Fix sacct verbose about time and states queried.
+ -- burst_buffer/cray - allow 'scancel --hurry <jobid>' to tear down a burst
+    buffer that is currently staging data out.
 
 * Changes in Slurm 18.08.5-2
 ============================

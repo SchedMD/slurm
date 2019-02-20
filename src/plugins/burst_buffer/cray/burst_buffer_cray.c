@@ -2132,6 +2132,7 @@ static void *_start_teardown(void *x)
 			}
 			if ((bb_job = _get_bb_job(job_ptr)))
 				bb_job->state = BB_STATE_COMPLETE;
+			job_ptr->job_state &= (~JOB_STAGE_OUT);
 			if (!IS_JOB_PENDING(job_ptr) &&	/* No email if requeue */
 			    (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
 				/*
