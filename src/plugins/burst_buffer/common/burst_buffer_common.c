@@ -1252,8 +1252,13 @@ extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
 			if (pool_ptr->unfree_space >= bb_size) {
 				pool_ptr->unfree_space -= bb_size;
 			} else {
-				error("%s: unfree_space underflow for pool %s",
-				      __func__, pool);
+				/*
+				 * This will happen if we reload burst buffer
+				 * state after making a claim against resources,
+				 * but before the buffer actually gets created.
+				 */
+				debug2("%s: unfree_space underflow for pool %s",
+				       __func__, pool);
 				pool_ptr->unfree_space = 0;
 			}
 			break;
