@@ -13,6 +13,8 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+# Makefile for gpu plugins
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -88,7 +90,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins
+subdir = src/plugins/gpu
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -476,40 +478,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = \
-	accounting_storage	\
-	acct_gather_energy	\
-	acct_gather_profile	\
-	acct_gather_interconnect\
-	acct_gather_filesystem  \
-	auth			\
-	burst_buffer		\
-	checkpoint		\
-	core_spec		\
-	cred			\
-	ext_sensors		\
-	gpu			\
-	gres			\
-	jobacct_gather		\
-	jobcomp			\
-	job_container		\
-	job_submit		\
-	launch			\
-	mcs			\
-	mpi			\
-	node_features		\
-	power			\
-	preempt			\
-	priority		\
-	proctrack		\
-	route			\
-	sched			\
-	select			\
-	slurmctld		\
-	switch			\
-	task			\
-	topology
-
+SUBDIRS = generic nvml
 all: all-recursive
 
 .SUFFIXES:
@@ -522,9 +491,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/plugins/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/plugins/gpu/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/plugins/Makefile
+	  $(AUTOMAKE) --gnu src/plugins/gpu/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

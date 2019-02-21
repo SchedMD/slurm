@@ -10,6 +10,7 @@ SUBDIRS = \
 	core_spec		\
 	cred			\
 	ext_sensors		\
+	gpu			\
 	gres			\
 	jobacct_gather		\
 	jobcomp			\
