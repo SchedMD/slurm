@@ -2777,12 +2777,10 @@ extern int slurm_conf_get_res_spec_info(const char *node_name,
  */
 int gethostname_short(char *name, size_t len)
 {
-	int error_code;
 	char *dot_ptr, path_name[1024];
 
-	error_code = gethostname(path_name, sizeof(path_name));
-	if (error_code)
-		return error_code;
+	if (gethostname(path_name, sizeof(path_name)))
+		return errno;
 
 	if ((dot_ptr = strchr(path_name, '.')))
 		*dot_ptr = '\0';
