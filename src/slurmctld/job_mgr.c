@@ -5754,7 +5754,7 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 	int use_cloud = false;
 	uint16_t over_time_limit;
 
-	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	if (IS_JOB_FINISHED(job_ptr)) {
@@ -5965,7 +5965,7 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	ListIterator iter;
 	int rc, rc1;
 
-	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	job_ptr = find_job_record(job_id);
