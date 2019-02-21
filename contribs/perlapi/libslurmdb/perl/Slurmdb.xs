@@ -10,7 +10,6 @@
 
 #include "const-c.inc"
 
-extern void *slurm_xmalloc(size_t, const char *, int, const char *);
 extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_cluster_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
@@ -38,9 +37,8 @@ slurmdb_clusters_get(db_conn, conditions)
 	HV*   rh;
 	List  list = NULL;
 	ListIterator itr;
-	slurmdb_cluster_cond_t *cluster_cond = (slurmdb_cluster_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_cluster_cond_t), __FILE__,
-		__LINE__, "slurmdb_clusters_get");
+	slurmdb_cluster_cond_t *cluster_cond =
+		xmalloc(sizeof(slurmdb_cluster_cond_t));
 	slurmdb_init_cluster_cond(cluster_cond, 0);
 	slurmdb_cluster_rec_t *rec = NULL;
 
@@ -74,9 +72,8 @@ slurmdb_report_cluster_account_by_user(db_conn, assoc_condition)
     INIT:
 	AV*   results;
 	List  list = NULL;
-	slurmdb_assoc_cond_t *assoc_cond = (slurmdb_assoc_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_assoc_cond_t), __FILE__,
-		__LINE__, "slurmdb_report_cluster_account_by_user");
+	slurmdb_assoc_cond_t *assoc_cond =
+		xmalloc(sizeof(slurmdb_assoc_cond_t));
 
 	if (hv_to_assoc_cond(assoc_condition, assoc_cond) < 0) {
 		XSRETURN_UNDEF;
@@ -102,9 +99,8 @@ slurmdb_report_cluster_user_by_account(db_conn, assoc_condition)
     INIT:
 	AV*   results;
 	List  list = NULL;
-	slurmdb_assoc_cond_t *assoc_cond = (slurmdb_assoc_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_assoc_cond_t), __FILE__,
-		__LINE__, "slurmdb_report_cluster_user_by_account");
+	slurmdb_assoc_cond_t *assoc_cond =
+		xmalloc(sizeof(slurmdb_assoc_cond_t));
 
 	if (hv_to_assoc_cond(assoc_condition, assoc_cond) < 0) {
 		XSRETURN_UNDEF;
@@ -134,9 +130,8 @@ slurmdb_report_job_sizes_grouped_by_account(db_conn, job_condition, grouping_arr
 	AV*   results;
 	List  list = NULL;
 	List grouping_list = slurm_list_create(NULL);
-	slurmdb_job_cond_t *job_cond = (slurmdb_job_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_job_cond_t), __FILE__,
-		__LINE__, "slurmdb_report_job_sizes_grouped_by_account");
+	slurmdb_job_cond_t *job_cond =
+		xmalloc(sizeof(slurmdb_job_cond_t));
 	if (hv_to_job_cond(job_condition, job_cond) < 0) {
 		XSRETURN_UNDEF;
 	}
@@ -167,12 +162,10 @@ slurmdb_report_user_top_usage(db_conn, user_condition, group_accounts)
     INIT:
 	AV*   results;
 	List  list = NULL;
-	slurmdb_user_cond_t* user_cond = (slurmdb_user_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_user_cond_t), __FILE__,
-		__LINE__, "slurmdb_report_user_top_usage");
-	user_cond->assoc_cond =	(slurmdb_assoc_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_assoc_cond_t), __FILE__,
-		__LINE__, "slurmdb_report_user_top_usage");
+	slurmdb_user_cond_t *user_cond =
+		xmalloc(sizeof(slurmdb_user_cond_t));
+	user_cond->assoc_cond =
+		xmalloc(sizeof(slurmdb_assoc_cond_t));
 	if (hv_to_user_cond(user_condition, user_cond) < 0) {
 		XSRETURN_UNDEF;
 	}
@@ -200,9 +193,8 @@ slurmdb_jobs_get(db_conn, conditions)
 	HV*   rh;
 	List  list = NULL;
 	ListIterator itr;
-	slurmdb_job_cond_t *job_cond = (slurmdb_job_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_job_cond_t), __FILE__,
-		__LINE__, "slurmdb_jobs_get");
+	slurmdb_job_cond_t *job_cond =
+		xmalloc(sizeof(slurmdb_job_cond_t));
 	slurmdb_job_rec_t *rec = NULL;
 
 	if (hv_to_job_cond(conditions, job_cond) < 0) {
@@ -238,9 +230,8 @@ slurmdb_qos_get(db_conn, conditions)
 	HV*   rh;
 	List  list = NULL, all = NULL;
 	ListIterator itr;
-	slurmdb_qos_cond_t *qos_cond = (slurmdb_qos_cond_t*)
-		slurm_xmalloc(sizeof(slurmdb_qos_cond_t), __FILE__,
-		__LINE__, "slurmdb_qos_get");
+	slurmdb_qos_cond_t *qos_cond =
+		xmalloc(sizeof(slurmdb_qos_cond_t));
 	slurmdb_qos_rec_t *rec = NULL;
 
 	if (hv_to_qos_cond(conditions, qos_cond) < 0) {

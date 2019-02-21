@@ -7,6 +7,17 @@
 
 #include <msg.h>
 
+/* these declaration are not in slurm.h */
+#ifndef xfree
+#define xfree(__p) \
+        slurm_xfree((void **)&(__p), __FILE__, __LINE__, __func__)
+#define xmalloc(__sz) \
+        slurm_xcalloc(1, __sz, true, false, __FILE__, __LINE__, __func__)
+#endif
+
+extern void slurm_xfree(void **, const char *, int, const char *);
+extern void *slurm_xcalloc(size_t, size_t, bool, bool, const char *, int, const char *);
+
 #define FETCH_LIST_FIELD(hv, ptr, field) \
 	do { \
 	    SV** svp; \
