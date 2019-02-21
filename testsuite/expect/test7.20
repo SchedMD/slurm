@@ -1,0 +1,329 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SPANK plugin that links libslurm and queries job info
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2018-2019 SchedMD LLC
+# Copyright (C) 2008-2009 Lawrence Livermore National Security.
+# Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+# Written by Morris Jette <jette1@llnl.gov>
+# Modified by Nathan Rini <nate@schedmd.com>
+# CODE-OCEC-09-009. All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id			"7.20"
+set cwd				"[$bin_pwd]"
+set exit_code	    0
+set file_in         "${cwd}/test${test_id}.in"
+set file_out	    "${cwd}/test${test_id}.out"
+set file_prog	    "${cwd}/test${test_id}.prog"
+set orig_spank_conf "${cwd}/test${test_id}.orig_conf"
+set new_spank_conf  "${cwd}/test${test_id}.new_conf"
+set spank_out       "${cwd}/test${test_id}.spank.out"
+
+set NO_VAL 4294967294
+
+print_header $test_id
+
+if {[test_super_user] == 0} {
+	log_warn "This test must be run as SlurmUser"
+	exit 0
+}
+if {[test_front_end]} {
+        log_warn "This test is incompatible with front-end systems"
+        exit $exit_code
+}
+
+proc end_it { exit_code } {
+	global test_id orig_spank_conf spank_conf_file new_spank_conf spank_out
+	global file_out spank_out bin_cp bin_rm file_in file_prog
+	#
+	# Restore the original plugstack
+	#
+	if {[file exists $orig_spank_conf]} {
+		exec $bin_cp -f $orig_spank_conf $spank_conf_file
+	} else {
+		exec $bin_rm -f $spank_conf_file
+	}
+	reconfigure
+
+	if {$exit_code == 0} {
+		exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
+		print_success $test_id
+	}
+	exit $exit_code
+}
+
+#
+# Build the plugin
+#
+exec $bin_rm -f ${file_prog}.so
+log_info "slurm_dir is $slurm_dir\n"
+if [file exists ${slurm_dir}/lib64/libslurm.so] {
+	exec $bin_cc -fPIC -g -pthread -ggdb3 -Wall -shared -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib64 -lslurm -o ${file_prog}.so ${file_prog}.c
+} else {
+	exec $bin_cc -fPIC -g -pthread -ggdb3 -Wall -shared -I${slurm_dir}/include -Wl,-rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm -o ${file_prog}.so ${file_prog}.c
+}
+
+#
+# Locate slurm.conf's directory, copy the original plugstack.conf file
+# and create an updated one using our new plugin
+#
+log_user 0
+set config_dir ""
+set ctld_slurm_ver ""
+spawn $scontrol show config
+expect {
+	-re "SLURM_CONF.*= (.*)/slurm.conf.*SLURM_VERSION *= ($float)" {
+		set config_dir $expect_out(1,string)
+		set ctld_slurm_ver $expect_out(2,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if {[string compare $config_dir ""] == 0} {
+	log_error "Could not locate slurm.conf directory"
+	exit 1
+}
+
+log_user 0
+set loc_slurm_ver ""
+spawn $scontrol -V
+expect {
+	-re "slurm ($float)" {
+		set loc_slurm_ver $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+
+if {[string compare $ctld_slurm_ver $loc_slurm_ver]} {
+	log_warn "slurmctld ($ctld_slurm_ver) and local Slurm ($loc_slurm_ver) versions are not the same, can not continue."
+	exit 0
+}
+
+set spank_conf_file ${config_dir}/plugstack.conf
+exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_out $spank_out
+if {[file exists $spank_conf_file]} {
+	spawn $bin_cat $spank_conf_file
+	expect {
+		-re "test${test_id}" {
+			log_error "spank plugin includes vestigial test${test_id}. You probably should manually remove it from $spank_conf_file. it was probably left over from some previous test failure."
+			exit 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	exec $bin_cp -f $spank_conf_file $orig_spank_conf
+	exec $bin_cp -f $spank_conf_file $new_spank_conf
+} else {
+	exec $bin_cp -f /dev/null $new_spank_conf
+}
+
+# create the output file with lower permissions to avoid root umask issues
+exec $bin_touch	"${spank_out}"
+exec $bin_echo "required ${file_prog}.so ${spank_out}" > $new_spank_conf
+spawn $bin_cp -f $new_spank_conf $spank_conf_file
+expect {
+	-re "Permission denied" {
+		log_warn "User lacks permission to update plugstack_conf file"
+		exit 0
+	}
+	eof {
+		wait
+	}
+}
+reconfigure
+
+#
+# Test of srun help message
+#
+# NOTE: Expect parsing failures have been noted running "$srun --help"
+#       directly, so we build a script containing a pipe to tail
+#
+
+log_info "Testing sbatch.........."
+
+make_bash_script $file_in "$srun $bin_echo IT_RAN"
+set job_id 0
+set matches 0
+spawn $sbatch -W -N1 -t1 -o $file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re timeout {
+		log_error "sbatch not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 1} {
+	log_error "sbatch did not return a job id"
+	end_it 1
+}
+# Check echo worked
+spawn $bin_cat $file_out
+expect {
+	-re "error" {
+		log_error "some error happened"
+		end_it 1
+	}
+	-re "IT_RAN" {
+		incr matches
+		exp_continue;
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	log_error "local (srun) sbatch spank plugin failure ($matches != 1)"
+	end_it 1
+}
+
+#check the output of spank plugin
+set matches 0
+set njob_id 0
+spawn $bin_cat $spank_out
+expect {
+# example: slurm_spank_task_ini load_job: step_id=0 job_id=290 array_job_id=0 array_task_id=NO_VAL
+	-re "slurm_spank_task_init (load_job|spank_get_item): step_id=($number) job_id=($number) array_job_id=($number) array_task_id=($number)" {
+		set njob_id $expect_out(3,string)
+		set narray_job_id $expect_out(4,string)
+		set narray_task_id $expect_out(5,string)
+		if {$njob_id == $job_id && $narray_task_id == $NO_VAL} {
+			incr matches
+			exp_continue
+		} else {
+			log_error "unexpected job id: $njob_id != $job_id"
+			end_it 1
+		}
+	}
+	-re "error" {
+		log_error "some error happened"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 4} {
+	log_error "local (srun) sbatch spank plugin failure ($matches != 2)"
+	end_it 1
+}
+
+spawn $bin_rm $spank_out
+
+log_info "Testing sbatch array.........."
+
+make_bash_script $file_in "$srun $bin_echo IT_RAN"
+set job_id 0
+set array_job_id 0
+set matches 0
+spawn $sbatch --array=1-2 -W -N1 -t1 -o $file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set array_job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re timeout {
+		log_error "sbatch not responding"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$job_id == 1} {
+	log_error "sbatch did not return a job id"
+	end_it 1
+}
+# Check echo worked
+spawn $bin_cat $file_out
+expect {
+	-re "error" {
+		log_error "some error happened"
+		end_it 1
+	}
+	-re "IT_RAN" {
+		incr matches
+		exp_continue;
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 2} {
+	log_error "local (srun) sbatch spank plugin failure ($matches != 2)"
+	end_it 1
+}
+
+#check the output of spank plugin
+set matches 0
+spawn $bin_cat $spank_out
+expect {
+	-re "slurm_spank_task_init (load_job|spank_get_item): step_id=(-?$number) job_id=($number) array_job_id=($number) array_task_id=($number)" {
+		set nstep_id $expect_out(2,string)
+		set njob_id $expect_out(3,string)
+		set narray_job_id $expect_out(4,string)
+		set narray_task_id $expect_out(5,string)
+
+		if {$narray_task_id == 0 || $nstep_id == $NO_VAL} {
+			#ignore extern and batch steps
+			exp_continue
+		} elseif {$nstep_id == 0 && $narray_job_id == $array_job_id} {
+			incr matches
+			exp_continue
+		} else {
+			log_error "unexpected array job id: $narray_job_id != $array_job_id"
+			end_it 1
+		}
+	}
+	-re "error" {
+		log_error "some error happened"
+		end_it 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 5} {
+	log_error "local (srun) sbatch spank plugin failure ($matches != 5)"
+	end_it 1
+}
+
+end_it $exit_code

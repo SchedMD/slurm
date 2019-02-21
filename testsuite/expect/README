@@ -369,6 +369,7 @@ test7.16   Verify that auth/munge credential is properly validated.
 test7.17   Test GRES APIs.
 test7.18   Test of slurm_hostlist_find().
 test7.19   Test sbatch/srun/salloc path resolving
+test7.20   Test spank plugins that link against libslurm
 
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
