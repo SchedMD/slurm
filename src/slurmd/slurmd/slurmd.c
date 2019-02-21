@@ -1365,6 +1365,7 @@ _process_cmdline(int ac, char **av)
 			conf->daemonize = 0;
 			break;
 		case 'f':
+			xfree(conf->conffile);
 			conf->conffile = xstrdup(optarg);
 			break;
 		case 'G':
@@ -1375,6 +1376,7 @@ _process_cmdline(int ac, char **av)
 			exit(0);
 			break;
 		case 'L':
+			xfree(conf->logfile);
 			conf->logfile = xstrdup(optarg);
 			break;
 		case 'M':
@@ -1388,6 +1390,7 @@ _process_cmdline(int ac, char **av)
 			}
 			break;
 		case 'N':
+			xfree(conf->node_name);
 			conf->node_name = xstrdup(optarg);
 			break;
 		case 'v':
