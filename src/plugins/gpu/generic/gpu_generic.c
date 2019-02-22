@@ -33,3 +33,76 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/common/slurm_xlator.h"
+#include "src/common/gres.h"
+#include "src/common/log.h"
+
+/*
+ * These variables are required by the generic plugin interface.  If they
+ * are not found in the plugin, the plugin loader will ignore it.
+ *
+ * plugin_name - A string giving a human-readable description of the
+ * plugin.  There is no maximum length, but the symbol must refer to
+ * a valid string.
+ *
+ * plugin_type - A string suggesting the type of the plugin or its
+ * applicability to a particular form of data or method of data handling.
+ * If the low-level plugin API is used, the contents of this string are
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
+ * interface which requires this string to be of the form
+ *
+ *	<application>/<method>
+ *
+ * where <application> is a description of the intended application of
+ * the plugin (e.g., "auth" for Slurm authentication) and <method> is a
+ * description of how this plugin satisfies that application.  Slurm will
+ * only load authentication plugins if the plugin_type string has a prefix
+ * of "auth/".
+ *
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
+ */
+const char	*plugin_name		= "GPU Generic plugin";
+const char	*plugin_type		= "gpu/generic";
+const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
+
+extern int init(void)
+{
+	debug("%s: %s loaded", __func__, plugin_name);
+
+	return SLURM_SUCCESS;
+}
+
+extern int fini(void)
+{
+	debug("%s: unloading %s", __func__, plugin_name);
+
+	return SLURM_SUCCESS;
+}
+
+extern int gpu_p_reconfig(void)
+{
+	return SLURM_SUCCESS;
+}
+
+
+extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
+{
+	return NULL;
+}
+
+extern void gpu_p_step_config_hardware(bitstr_t *usable_gpus, char *tres_freq)
+{
+	return;
+}
+
+extern void gpu_p_step_unconfig_hardware(void)
+{
+	return;
+}
+
+extern char *gpu_p_test_cpu_conv(char *cpu_range)
+{
+	return NULL;
+}

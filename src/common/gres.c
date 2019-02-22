@@ -108,6 +108,7 @@ strong_alias(gres_set_job_tres_cnt, slurm_gres_set_job_tres_cnt);
 strong_alias(gres_set_node_tres_cnt, slurm_gres_set_node_tres_cnt);
 strong_alias(gres_device_major, slurm_gres_device_major);
 strong_alias(destroy_gres_device, slurm_destroy_gres_device);
+strong_alias(destroy_gres_slurmd_conf, slurm_destroy_gres_slurmd_conf);
 
 /* Gres symbols provided by the plugin */
 typedef struct slurm_gres_ops {
@@ -193,7 +194,6 @@ static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 					    gres_mc_data_t *tres_mc_ptr,
 					    struct node_record *node_table_ptr);
 static bitstr_t *_core_bitmap_rebuild(bitstr_t *old_core_bitmap, int new_size);
-static void	_destroy_gres_slurmd_conf(void *x);
 static int	_find_job_by_sock_gres(void *x, void *key);
 static int	_find_sock_by_job_gres(void *x, void *key);
 static void	_free_tasks_per_node_sock(uint32_t **tasks_per_node_socket,
@@ -772,23 +772,6 @@ extern int gres_plugin_reconfig(void)
 }
 
 /*
- * Destroy a gres_slurmd_conf_t record, free it's memory
- */
-static void _destroy_gres_slurmd_conf(void *x)
-{
-	gres_slurmd_conf_t *p = (gres_slurmd_conf_t *) x;
-
-	xassert(p);
-	xfree(p->cpus);
-	FREE_NULL_BITMAP(p->cpus_bitmap);
-	xfree(p->file);		/* Only used by slurmd */
-	xfree(p->links);
-	xfree(p->name);
-	xfree(p->type_name);
-	xfree(p);
-}
-
-/*
  * Log the contents of a gres_slurmd_conf_t record
  */
 static int _log_gres_slurmd_conf(void *x, void *arg)
@@ -1110,7 +1093,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	}
 	if (i >= gres_context_cnt) {
 		error("Ignoring gres.conf record, invalid name: %s", p->name);
-		_destroy_gres_slurmd_conf(p);
+		destroy_gres_slurmd_conf(p);
 		return 0;
 	}
 	p->plugin_id = gres_context[i].plugin_id;
@@ -1217,7 +1200,7 @@ static int _no_gres_conf(node_config_load_t *node_conf)
 
 	slurm_mutex_lock(&gres_context_lock);
 	FREE_NULL_LIST(gres_conf_list);
-	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
+	gres_conf_list = list_create(destroy_gres_slurmd_conf);
 	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
 		p->cpu_cnt	= node_conf->cpu_cnt;
@@ -1292,7 +1275,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
 		fatal("error opening/reading %s", gres_conf_file);
 	FREE_NULL_LIST(gres_conf_list);
-	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
+	gres_conf_list = list_create(destroy_gres_slurmd_conf);
 	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(gres_conf_list, gres_array[i]);
@@ -1382,7 +1365,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 	rc = gres_plugin_init();
 
 	FREE_NULL_LIST(gres_conf_list);
-	gres_conf_list = list_create(_destroy_gres_slurmd_conf);
+	gres_conf_list = list_create(destroy_gres_slurmd_conf);
 
 	safe_unpack16(&protocol_version, buffer);
 
@@ -12925,6 +12908,22 @@ extern void destroy_gres_device(void *gres_device_ptr)
 	xfree(gres_device);
 }
 
+/* Destroy a gres_slurmd_conf_t record, free it's memory */
+extern void destroy_gres_slurmd_conf(void *x)
+{
+	gres_slurmd_conf_t *p = (gres_slurmd_conf_t *) x;
+
+	xassert(p);
+	xfree(p->cpus);
+	FREE_NULL_BITMAP(p->cpus_bitmap);
+	xfree(p->file);		/* Only used by slurmd */
+	xfree(p->links);
+	xfree(p->name);
+	xfree(p->type_name);
+	xfree(p);
+}
+
+
 /*
  * Convert GRES config_flags to a string. The pointer returned references local
  * storage in this function, which is not re-entrant.
@@ -12945,4 +12944,59 @@ extern char *gres_flags2str(uint8_t config_flags)
 	}
 
 	return flag_str;
+}
+
+/*
+ * Creates a gres_slurmd_conf_t record to add to a list of gres_slurmd_conf_t
+ * records
+ */
+extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
+			     int cpu_cnt, char *cpu_aff_abs_range,
+			     char *device_file, char *type, char *links,
+			     bool ignore)
+{
+	gres_slurmd_conf_t *gpu_record;
+	bool use_empty_first_record = false;
+	ListIterator itr = list_iterator_create(gres_list);
+
+	/*
+	 * If the first record already exists and has a count of 0 then
+	 * overwrite it.
+	 * This is a placeholder record created in gres.c#_no_gres_conf()
+	 */
+	gpu_record = list_next(itr);
+	if (gpu_record && (gpu_record->count == 0))
+		use_empty_first_record = true;
+	else
+		gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
+	gpu_record->cpu_cnt = cpu_cnt;
+	gpu_record->cpus_bitmap = bit_alloc(gpu_record->cpu_cnt);
+	if (bit_unfmt(gpu_record->cpus_bitmap, cpu_aff_abs_range)) {
+		error("%s: bit_unfmt(dst_bitmap, src_str) failed", __func__);
+		error("    Is the CPU range larger than the CPU count allows?");
+		error("    src_str: %s", cpu_aff_abs_range);
+		error("    dst_bitmap_size: %"BITSTR_FMT,
+		      bit_size(gpu_record->cpus_bitmap));
+		error("    cpu_cnt: %d", gpu_record->cpu_cnt);
+		bit_free(gpu_record->cpus_bitmap);
+		if (!use_empty_first_record)
+			xfree(gpu_record);
+		list_iterator_destroy(itr);
+		return;
+	}
+	if (device_file)
+		gpu_record->config_flags |= GRES_CONF_HAS_FILE;
+	if (type)
+		gpu_record->config_flags |= GRES_CONF_HAS_TYPE;
+	gpu_record->cpus = xstrdup(cpu_aff_abs_range);
+	gpu_record->type_name = xstrdup(type);
+	gpu_record->name = xstrdup(name);
+	gpu_record->file = xstrdup(device_file);
+	gpu_record->links = xstrdup(links);
+	gpu_record->count = device_cnt;
+	gpu_record->plugin_id = gres_plugin_build_id(name);
+	gpu_record->ignore = ignore;
+	if (!use_empty_first_record)
+		list_append(gres_list, gpu_record);
+	list_iterator_destroy(itr);
 }

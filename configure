@@ -748,6 +748,8 @@ PMIX_V1_LDFLAGS
 PMIX_V1_CPPFLAGS
 NVML_CPPFLAGS
 NVML_LIBS
+BUILD_NVML_FALSE
+BUILD_NVML_TRUE
 HWLOC_LDFLAGS
 HWLOC_CPPFLAGS
 HWLOC_LIBS
@@ -21090,6 +21092,15 @@ fi
 
 $as_echo "#define HAVE_NVML 1" >>confdefs.h
 
+       if test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes"; then
+  BUILD_NVML_TRUE=
+  BUILD_NVML_FALSE='#'
+else
+  BUILD_NVML_TRUE='#'
+  BUILD_NVML_FALSE=
+fi
+
+
     else
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&5
 $as_echo "$as_me: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&2;}
@@ -25182,6 +25193,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_HDF5_TRUE}" && test -z "${BUILD_HDF5_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_HDF5\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_NVML_TRUE}" && test -z "${BUILD_NVML_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_NVML\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PMIX_TRUE}" && test -z "${HAVE_PMIX_FALSE}"; then

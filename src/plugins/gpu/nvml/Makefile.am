@@ -6,13 +6,17 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(NVML_CPPFLAGS)
 
-pkglib_LTLIBRARIES = gpu_nvml.la
+NVML_SOURCES = gpu_nvml.c
 
-# GPU NVML plugin.
-gpu_nvml_la_SOURCES = gpu_nvml.c
+if BUILD_NVML
+# GPU NVML plugin
+pkglib_LTLIBRARIES = gpu_nvml.la
+gpu_nvml_la_SOURCES = $(NVML_SOURCES)
 gpu_nvml_la_LDFLAGS = $(PLUGIN_FLAGS)
 gpu_nvml_la_LIBADD = $(NVML_LIBS)
 
-force:
-$(gpu_nvml_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+else
+
+EXTRA_gpu_nvml_la_SOURCES = $(NVML_SOURCES)
+
+endif
