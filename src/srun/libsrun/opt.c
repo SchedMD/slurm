@@ -2337,7 +2337,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 			     "to mem-per-cpu");
 			opt.pn_min_memory = opt.mem_per_cpu;
 		}
-		info("WARNING: --mem and --mem-per-cpu are mutually exclusive.");
+		error("--mem and --mem-per-cpu are mutually exclusive.");
 	}
 
 	if (sropt.pty) {

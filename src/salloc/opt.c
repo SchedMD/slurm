@@ -1570,7 +1570,7 @@ static bool _opt_verify(void)
 			     "to mem-per-cpu");
 			opt.pn_min_memory = opt.mem_per_cpu;
 		}
-		info("WARNING: --mem and --mem-per-cpu are mutually exclusive.");
+		error("--mem and --mem-per-cpu are mutually exclusive.");
 	}
 
         /* Check to see if user has specified enough resources to
