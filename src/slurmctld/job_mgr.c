@@ -4607,6 +4607,10 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 	ListIterator iter;
 	int rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	int best_rc = -1, part_limits_rc = WAIT_NO_REASON;
+	bitstr_t *save_avail_node_bitmap = NULL;
+
+	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
+	bit_or(avail_node_bitmap, rs_node_bitmap);
 
 	if (job_ptr->part_ptr_list) {
 		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
@@ -4727,6 +4731,10 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		job_ptr->state_reason = WAIT_POWER_RESERVED;
 	else if (rc == ESLURM_PARTITION_DOWN)
 		job_ptr->state_reason = WAIT_PART_DOWN;
+
+	FREE_NULL_BITMAP(avail_node_bitmap);
+	avail_node_bitmap = save_avail_node_bitmap;
+
 	return rc;
 }
 

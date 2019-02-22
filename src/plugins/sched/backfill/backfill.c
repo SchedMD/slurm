@@ -1399,7 +1399,11 @@ static int _attempt_backfill(void)
 	node_space[0].begin_time = sched_start;
 	window_end = sched_start + backfill_window;
 	node_space[0].end_time = window_end;
+
 	node_space[0].avail_bitmap = bit_copy(avail_node_bitmap);
+	/* Make "resuming" nodes available to be scheduled in backfill */
+	bit_or(node_space[0].avail_bitmap, rs_node_bitmap);
+
 	node_space[0].next = 0;
 	node_space_recs = 1;
 	if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)

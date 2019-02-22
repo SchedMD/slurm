@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't check InactiveLimit for salloc --no-shell jobs.
  -- Add SALLOC_GRES and SBATCH_GRES as input to salloc/sbatch.
  -- Remove drain state when node doesn't reboot by ResumeTimeout.
+ -- Fix considering "resuming" nodes in scheduling.
 
 * Changes in Slurm 18.08.5-2
 ============================
