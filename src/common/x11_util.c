@@ -95,6 +95,10 @@ extern int x11_get_display_port(void)
 		exit(-1);
 	}
 
+	/*
+	 * Parse out port number
+	 * Example: localhost/unix:89.0 or localhost/unix:89
+	 */
 	port_split = strchr(display, ':');
 	if (!port_split) {
 		error("Error parsing DISPLAY environment variable. "
@@ -102,14 +106,14 @@ extern int x11_get_display_port(void)
 		exit(-1);
 	}
 
+	/*
+	 * Handle the "screen" portion of the display port.
+	 * Xorg does not require a screen to be specified, defaults to 0.
+	 */
 	port_split++;
 	port_period = strchr(port_split, '.');
-	if (!port_period) {
-		error("Error parsing DISPLAY environment variable. "
-		      "Cannot use X11 forwarding.");
-		exit(-1);
-	}
-	*port_period = '\0';
+	if (port_period)
+		*port_period = '\0';
 
 	port = atoi(port_split) + X11_TCP_PORT_OFFSET;
 
