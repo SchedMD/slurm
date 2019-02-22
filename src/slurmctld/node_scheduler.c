@@ -410,6 +410,18 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	int i;
 	struct node_record *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
+	static bool cloud_dns = false;
+	static time_t sched_update = 0;
+
+	if (sched_update != slurmctld_conf.last_update) {
+		char *ctld_params = slurm_get_slurmctld_params();
+
+		if (xstrcasestr(ctld_params, "cloud_dns"))
+			cloud_dns = true;
+		xfree(ctld_params);
+
+		sched_update = slurmctld_conf.last_update;
+	}
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
@@ -428,7 +440,9 @@ extern void allocate_nodes(struct job_record *job_ptr)
 	license_job_get(job_ptr);
 
 	if (has_cloud) {
-		if (has_cloud_power_save) {
+		if (cloud_dns) {
+			job_ptr->wait_all_nodes = 1;
+		} else if (has_cloud_power_save) {
 			job_ptr->alias_list = xstrdup("TBD");
 			job_ptr->wait_all_nodes = 1;
 		} else

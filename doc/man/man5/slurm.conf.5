@@ -3317,6 +3317,15 @@ Multiple options may be comma-separated.
 Permit setting triggers from non-root/slurm_user users. SlurmUser must also
 be set to root to permit these triggers to work. See the \fBstrigger\fR man
 page for additional details.
+.TP
+\fBcloud_dns\fR
+By default, Slurm expects that the network addresses for cloud nodes won't
+won't be know until creation of the node and that Slurm will be notified of the
+node's address (e.g. \fBscontrol update nodename=<name> nodeaddr=<addr>\fR).
+Since Slurm communications rely on the node configuration found in the
+slurm.conf, Slurm will tell the client command, after waiting for all nodes to
+boot, each node's ip address. However, in environments where the nodes are in
+DNS, this step can be avoided by configuring this option.
 .RE
 
 .TP
