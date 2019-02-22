@@ -188,7 +188,7 @@
 /* define if numa library installed */
 #undef HAVE_NUMA
 
-/* Define to 1 if nvml library found */
+/* Define to 1 if NVML library found */
 #undef HAVE_NVML
 
 /* Define to 1 if ofed library found */
