@@ -643,12 +643,8 @@ static void _load_config(void)
 		backfill_window = BACKFILL_WINDOW;
 	}
 
-	/* "max_job_bf" replaced by "bf_max_job_test" in version 14.03 and
-	 * can be removed later. Only "bf_max_job_test" is documented. */
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_max_job_test=")))
 		max_backfill_job_cnt = atoi(tmp_ptr + 16);
-	else if ((tmp_ptr = xstrcasestr(sched_params, "max_job_bf=")))
-		max_backfill_job_cnt = atoi(tmp_ptr + 11);
 	else
 		max_backfill_job_cnt = 100;
 	if (max_backfill_job_cnt < 1) {
