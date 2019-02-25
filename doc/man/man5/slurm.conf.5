@@ -2626,7 +2626,7 @@ Disabled by default.
 The number of seconds between backfill iterations.
 Higher values result in less overhead and better responsiveness.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
-The default value is 30 seconds.
+Default: 30, Min: 1, Max: 10800 (3h).
 
 .TP
 \fBbf_job_part_count_reserve=#\fR
@@ -2640,6 +2640,7 @@ will be started by the backfill scheduler
 The default value is zero, which will reserve resources for any pending job
 and delay initiation of lower priority jobs.
 Also see bf_min_age_reserve and bf_min_prio_reserve.
+Default: 0, Min: 0, Max: 100000.
 
 .TP
 \fBbf_max_job_array_resv=#\fR
@@ -2651,7 +2652,7 @@ In addition various limits may prevent all the jobs from starting at the
 expected times.
 This has no impact upon the number of tasks from a job array that can be
 started immediately, only those tasks expected to start at some future time.
-The default value is 20 tasks.
+Default: 20, Min: 0, Max: 1000.
 NOTE:
 Jobs submitted to multiple partitions appear in the job queue once per
 partition. If different copies of a single job array record aren't consecutive
@@ -2667,26 +2668,26 @@ has multiple assocations equating to basically different users.
 One can set this limit to prevent users from flooding the backfill
 queue with jobs that cannot start and that prevent jobs from other users
 to start.
-The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBbf_max_job_user\fR \fBbf_max_job_part\fR, \fBbf_max_job_test\fR
 and \fBbf_max_job_user_part=#\fR options.
 Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_assoc\fR.
+Default: 0 (no limit), Min: 0, Max: bf_max_job_test.
 .TP
 \fBbf_max_job_part=#\fR
 The maximum number of jobs per partition to attempt starting with the backfill
 scheduler. This can be especially helpful for systems with large numbers of
 partitions and jobs.
-The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBpartition_job_depth\fR and \fBbf_max_job_test\fR options.
 Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_part\fR.
+Default: 0 (no limit), Min: 0, Max: bf_max_job_test.
 .TP
 \fBbf_max_job_start=#\fR
 The maximum number of jobs which can be initiated in a single iteration
 of the backfill scheduler.
-The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
+Default: 0 (no limit), Min: 0, Max: 10000.
 .TP
 \fBbf_max_job_test=#\fR
 The maximum number of jobs to attempt backfill scheduling for
@@ -2694,10 +2695,10 @@ The maximum number of jobs to attempt backfill scheduling for
 Higher values result in more overhead and less responsiveness.
 Until an attempt is made to backfill schedule a job, its expected
 initiation time value will not be set.
-The default value is 100.
 In the case of large clusters, configuring a relatively small value may be
 desirable.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
+Default: 100, Min: 1, Max: 1,000,000.
 .TP
 \fBbf_max_job_user=#\fR
 The maximum number of jobs per user to attempt starting with the backfill
@@ -2705,26 +2706,27 @@ scheduler for ALL partitions.
 One can set this limit to prevent users from flooding the backfill
 queue with jobs that cannot start and that prevent jobs from other users
 to start.  This is similar to the MAXIJOB limit in Maui.
-The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBbf_max_job_part\fR, \fBbf_max_job_test\fR and
 \fBbf_max_job_user_part=#\fR options.
 Set \fBbf_max_job_test\fR to a value much higher than \fBbf_max_job_user\fR.
+Default: 0 (no limit), Min: 0, Max: bf_max_job_test.
 .TP
 \fBbf_max_job_user_part=#\fR
 The maximum number of jobs per user per partition to attempt starting with the
 backfill scheduler for any single partition.
-The default value is 0, which means no limit.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Also see the \fBbf_max_job_part\fR, \fBbf_max_job_test\fR and
 \fBbf_max_job_user=#\fR options.
+Default: 0 (no limit), Min: 0, Max: bf_max_job_test.
 .TP
 \fBbf_max_time=#\fR
-The maximum time the backfill scheduler can spend (including time spent sleeping
-when locks are released) before discontinuing, even if maximum job counts have
-not been reached.
+The maximum time in seconds the backfill scheduler can spend (including time
+spent sleeping when locks are released) before discontinuing, even if maximum
+job counts have not been reached.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 The default value is the value of bf_interval (which defaults to 30 seconds).
+Default: bf_interval value (def. 30 sec), Min: 1, Max: 3600 (1h).
 NOTE: This needs to be high enough that scheduling isn't always disabled, and
 low enough that our interactive workload can get through in a reasonable period
 of time.  Certainly needs to be below 256 (the default RPC thread limit).
@@ -2742,6 +2744,7 @@ value.
 The default value is zero, which will reserve resources for any pending job
 and delay initiation of lower priority jobs.
 Also see bf_job_part_count_reserve and bf_min_prio_reserve.
+Default: 0, Min: 0, Max: 2592000 (30 days).
 .TP
 \fBbf_min_prio_reserve=#\fR
 The backfill and main scheduling logic will not reserve resources for pending
@@ -2753,24 +2756,25 @@ for job priority below a certain threshold.
 The default value is zero, which will reserve resources for any pending job
 and delay initiation of lower priority jobs.
 Also see bf_job_part_count_reserve and bf_min_age_reserve.
+Default: 0, Min: 0, Max: 2^63.
 .TP
 \fBbf_resolution=#\fR
 The number of seconds in the resolution of data maintained about when jobs
 begin and end.
 Higher values result in less overhead and better responsiveness.
-The default value is 60 seconds.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
+Default: 60, Min: 1, Max: 3600 (1 hour).
 .TP
 \fBbf_window=#\fR
 The number of minutes into the future to look when considering jobs to schedule.
 Higher values result in more overhead and less responsiveness.
-The default value is 1440 minutes (one day).
 A value at least as long as the highest allowed time limit is generally
 advisable to prevent job starvation.
 In order to limit the amount of data managed by the backfill scheduler,
 if the value of \fBbf_window\fR is increased, then it is generally advisable
 to also increase \fBbf_resolution\fR.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
+Default: 1440 (1 day), Min: 1, Max: 43200 (30 days).
 .TP
 \fBbf_window_linear=#\fR
 For performance reasons, the backfill scheduler will decrease precision in
@@ -2797,18 +2801,18 @@ with more than a few hundred simultaneously executing jobs.
 The backfill scheduler will periodically relinquish locks in order for other
 pending operations to take place.
 This specifies the times when the locks are relinquish in microseconds.
-The default value is 2,000,000 microseconds (2 seconds).
 Smaller values may be helpful for high throughput computing when used in
 conjunction with the \fBbf_continue\fR option.
 Also see the \fBbf_yield_sleep\fR option.
+Default: 2,000,000 (2 sec), Min: 1, Max: 10,000,000 (10 sec).
 .TP
 \fBbf_yield_sleep=#\fR
 The backfill scheduler will periodically relinquish locks in order for other
 pending operations to take place.
 This specifies the length of time for which the locks are relinquish in
 microseconds.
-The default value is 500,000 microseconds (0.5 seconds).
 Also see the \fBbf_yield_interval\fR option.
+Default: 500,000 (0.5 sec), Min: 1, Max: 10,000,000 (10 sec).
 .TP
 \fBbuild_queue_timeout=#\fR
 Defines the maximum time that can be devoted to building a queue of jobs to
@@ -2904,8 +2908,8 @@ If the number of active threads in the slurmctld daemon is equal to or
 larger than this value, defer scheduling of jobs.
 This can improve Slurm's ability to process requests at a cost of initiating
 new jobs less frequently.
-The default value is zero, which disables this option.
 If a value is set, then a value of 10 or higher is recommended.
+Default: 0 (option disabled), Min: 0, Max: 1000.
 .TP
 \fBmax_sched_time=#\fR
 How long, in seconds, that the main scheduling loop will execute for before

@@ -88,6 +88,7 @@ documents those changes that are of interest to users and administrators.
  -- Add full node state debug2 output to slurmdbd node up/down update
  -- Set CUDA_VISIBLE_DEVICES and CUDA_MPS_ACTIVE_THREAD_PERCENTAGE environment
     variables in Prolog and Epilog for jobs requesting gres/mps.
+ -- Added thresholds for backfill parameters.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
