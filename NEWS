@@ -85,6 +85,7 @@ documents those changes that are of interest to users and administrators.
     will result in the configured node "Weight" being incremented by one for
     nodes which are not prefered. Consider adjusting configured node "Weight"
     values to achieve the desired node preferences.
+ -- Add full node state debug2 output to slurmdbd node up/down update
 
 * Changes in Slurm 19.05.0pre1
 ==============================
