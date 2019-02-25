@@ -225,7 +225,7 @@ static bool _job_part_valid(struct job_record *job_ptr,
 static void _load_config(void);
 static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
-static uint32_t _my_sleep(int usec);
+static uint32_t _my_sleep(int64_t usec);
 static int  _num_feature_count(struct job_record *job_ptr, bool *has_xand,
 			       bool *has_xor);
 static int  _pack_find_map(void *x, void *key);
@@ -246,7 +246,7 @@ static bool _test_resv_overlap(node_space_map_t *node_space,
 static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, bitstr_t *exc_core_bitmap);
-static int  _yield_locks(int usec);
+static int  _yield_locks(int64_t usec);
 
 /* Log resources to be allocated to a pending job */
 static void _dump_job_sched(struct job_record *job_ptr, time_t end_time,
@@ -594,7 +594,7 @@ extern void stop_backfill_agent(void)
 }
 
 /* Sleep for at least specified time, returns actual sleep time in usec */
-static uint32_t _my_sleep(int usec)
+static uint32_t _my_sleep(int64_t usec)
 {
 	int64_t nsec;
 	uint32_t sleep_time = 0;
@@ -846,7 +846,7 @@ static void _load_config(void)
 	}
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_yield_sleep="))) {
-		yield_sleep = atoi(tmp_ptr + 15);
+		yield_sleep = (int64_t) atoll(tmp_ptr + 15);
 		if (yield_sleep <= 0 || yield_sleep > MAX_YIELD_SLEEP) {
 			error("Invalid backfill scheduler bf_yield_sleep: %d",
 			      yield_sleep);
@@ -953,7 +953,7 @@ extern void *backfill_agent(void *args)
 		if (short_sleep)
 			_my_sleep(1000000);
 		else
-			_my_sleep(backfill_interval * 1000000);
+			_my_sleep((int64_t) backfill_interval * 1000000);
 		if (stop_backfill)
 			break;
 
@@ -1006,7 +1006,7 @@ static int _clear_job_start_times(void *x, void *arg)
 
 /* Return non-zero to break the backfill loop if change in job, node or
  * partition state or the backfill scheduler needs to be stopped. */
-static int _yield_locks(int usec)
+static int _yield_locks(int64_t usec)
 {
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };

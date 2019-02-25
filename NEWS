@@ -89,6 +89,7 @@ documents those changes that are of interest to users and administrators.
  -- Set CUDA_VISIBLE_DEVICES and CUDA_MPS_ACTIVE_THREAD_PERCENTAGE environment
     variables in Prolog and Epilog for jobs requesting gres/mps.
  -- Added thresholds for backfill parameters.
+ -- Fix for backfill sleep overflow when large values are set.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
