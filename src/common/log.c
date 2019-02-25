@@ -82,6 +82,13 @@
 
 #define NAMELEN 16
 
+#define LOG_MACRO(level, sched, fmt) {			\
+	va_list ap;					\
+	va_start(ap, fmt);				\
+	_log_msg(level, sched, fmt, ap);		\
+	va_end(ap);					\
+}
+
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h
 ** for details.
@@ -1282,11 +1289,7 @@ log_flush()
  */
 void fatal(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_FATAL, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_FATAL, false, fmt);
 	log_flush();
 
 	exit(1);
@@ -1297,11 +1300,7 @@ void fatal(const char *fmt, ...)
  */
 void fatal_abort(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_FATAL, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_FATAL, false, fmt);
 	log_flush();
 
 	abort();
@@ -1312,20 +1311,12 @@ void fatal_abort(const char *fmt, ...)
  */
 void log_var(const log_level_t log_lvl, const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(log_lvl, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(log_lvl, false, fmt);
 }
 
 int error(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_ERROR, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_ERROR, false, fmt);
 
 	/*
 	 *  Return SLURM_ERROR so calling functions can
@@ -1336,47 +1327,27 @@ int error(const char *fmt, ...)
 
 void info(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_INFO, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_INFO, false, fmt);
 }
 
 void verbose(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_VERBOSE, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_VERBOSE, false, fmt);
 }
 
 void debug(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_DEBUG, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_DEBUG, false, fmt);
 }
 
 void debug2(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_DEBUG2, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_DEBUG2, false, fmt);
 }
 
 void debug3(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_DEBUG3, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_DEBUG3, false, fmt);
 }
 
 /*
@@ -1385,29 +1356,17 @@ void debug3(const char *fmt, ...)
  */
 void debug4(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_DEBUG4, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_DEBUG4, false, fmt);
 }
 
 void debug5(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_DEBUG5, false, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_DEBUG5, false, fmt);
 }
 
 int sched_error(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_ERROR, true, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_ERROR, true, fmt);
 
 	/*
 	 *  Return SLURM_ERROR so calling functions can
@@ -1418,47 +1377,27 @@ int sched_error(const char *fmt, ...)
 
 void sched_info(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_INFO, true, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_INFO, true, fmt);
 }
 
 void sched_verbose(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_VERBOSE, true, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_VERBOSE, true, fmt);
 }
 
 void sched_debug(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_DEBUG, true, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_DEBUG, true, fmt);
 }
 
 void sched_debug2(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_DEBUG2, true, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_DEBUG2, true, fmt);
 }
 
 void sched_debug3(const char *fmt, ...)
 {
-	va_list ap;
-
-	va_start(ap, fmt);
-	_log_msg(LOG_LEVEL_DEBUG3, true, fmt, ap);
-	va_end(ap);
+	LOG_MACRO(LOG_LEVEL_DEBUG3, true, fmt);
 }
 
 /* Return the highest LOG_LEVEL_* used for any logging mechanism.
