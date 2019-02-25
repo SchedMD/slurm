@@ -580,7 +580,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		    uint16_t signal, uint16_t flags, uid_t uid)
 {
 	struct job_record *job_ptr;
-	struct step_record *step_ptr, step_rec;
+	struct step_record *step_ptr;
 	int rc = SLURM_SUCCESS;
 	static bool notify_slurmd = true;
 	static int notify_srun = -1;
@@ -621,30 +621,9 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 
 	step_ptr = find_step_record(job_ptr, step_id);
 	if (step_ptr == NULL) {
-		if (signal != SIG_NODE_FAIL) {
-			info("job_step_signal %pJ StepId=%u not found",
-			     job_ptr, step_id);
-			return ESLURM_INVALID_JOB_ID;
-		}
-		if (job_ptr->node_bitmap == NULL) {
-			/* Job state has already been cleared for requeue.
-			 * This indicates that all nodes are already down.
-			 * Rely upon real-time server to manage cnodes state */
-			info("%s: %pJ already requeued, can not down cnodes",
-			     __func__, job_ptr);
-			return ESLURM_ALREADY_DONE;
-		}
-		/* If we get a node fail signal, down the cnodes to avoid
-		 * allocating them to another job. */
-		debug("job_step_signal %pJ StepId=%u not found, but got SIG_NODE_FAIL, so failing all nodes in allocation.",
-		      job_ptr, step_id);
-		memset(&step_rec, 0, sizeof(struct step_record));
-		step_rec.step_id = NO_VAL;
-		step_rec.job_ptr = job_ptr;
-		step_rec.select_jobinfo = job_ptr->select_jobinfo;
-		step_rec.step_node_bitmap = job_ptr->node_bitmap;
-		step_ptr = &step_rec;
-		rc = ESLURM_ALREADY_DONE;
+		info("%s: %pJ StepId=%u not found",
+		     __func__, job_ptr, step_id);
+		return ESLURM_INVALID_JOB_ID;
 	} else if (flags & KILL_OOM) {
 		step_ptr->exit_code = SIG_OOM;
 	}
