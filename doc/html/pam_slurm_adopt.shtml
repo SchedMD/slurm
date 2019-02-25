@@ -300,6 +300,9 @@ the RPC initiator.</p>
 <p>Alternate authentication methods such as multi-factor authentication may
 break process adoption with pam_slurm_adopt.</p>
 
+<p>SELinux may conflict with pam_slurm_adopt, so it might need to be
+disabled.</p>
+
 <p style="text-align:center;">Last modified 11 December 2018</p>
 
 <!--#include virtual="footer.txt"-->

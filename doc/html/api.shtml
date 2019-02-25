@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h2><a name="top">Slurm APIs</a></h2>
+<h1><a name="top">Slurm APIs</a></h1>
 
 <h3>Overview</h3>
 <p>All of the Slurm commands utilize a collection of Application Programming

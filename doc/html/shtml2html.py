@@ -13,12 +13,19 @@ include_regex = re.compile(include_pat)
 canonical_pat = r'(<!--\s*#canonical\s*-->)'
 canonical_regex = re.compile(canonical_pat)
 
+page_title_pat = r'(<!--\s*#pagetitle\s*-->)'
+page_title_regex = re.compile(page_title_pat)
+
 url_pat = r'(\s+href\s*=\s*")([^"#]+)(#[^"]+)?(")'
 url_regex = re.compile(url_pat)
+
+first_header_pat = r'(<[h|H]1>\s*[<a name="top">]*\s*([a-zA-Z0-9_ ()\'/-]+)[:]*.*\s*[</a>]*\s*</[h|H]1>)'
+first_header_regex = re.compile(first_header_pat)
 
 version_pat = r'(@SLURM_VERSION@)'
 version_regex = re.compile(version_pat)
 
+title = ''
 dirname = ''
 newfilename = ''
 
@@ -39,6 +46,10 @@ def include_virtual(matchobj):
 def canonical_rewrite(matchobj):
     global newfilename
     return '<link rel="canonical" href="' + canonical_url + newfilename + '" />'
+
+def page_title_rewrite(matchobj):
+    global title
+    return '<title>Slurm Workload Manager - ' + title + '</title>'
 
 def url_rewrite(matchobj):
     global dirname
@@ -81,11 +92,20 @@ for filename in files:
     html = codecs.open(newfilename, 'w', encoding='utf-8')
 
     for line in shtml.readlines():
+        result = first_header_regex.match(line)
+        if result:
+            title = result.group(2)
+            break
+
+    shtml.seek(0)
+    for line in shtml.readlines():
         line = include_regex.sub(include_virtual, line)
+        line = page_title_regex.sub(page_title_rewrite, line)
         line = version_regex.sub(version_rewrite, line)
         line = canonical_regex.sub(canonical_rewrite, line)
         line = url_regex.sub(url_rewrite, line)
         html.write(line)
+
 
     html.close()
     shtml.close()

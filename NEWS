@@ -113,6 +113,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct verbose about time and states queried.
  -- burst_buffer/cray - allow 'scancel --hurry <jobid>' to tear down a burst
     buffer that is currently staging data out.
+ -- X11 forwarding - allow setup if the DISPLAY environment variable lacks
+    a screen number. (Permit both "localhost:10.0" and "localhost:10".)
+ -- docs - change HTML title to include the page title or man page name.
 
 * Changes in Slurm 18.08.5-2
 ============================

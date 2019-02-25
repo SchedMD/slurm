@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width" />
 
-	<title>Slurm Workload Manager</title>
-
+	<!--#pagetitle-->
 	<!--#canonical-->
 
 	<link rel="shortcut icon" href="favicon.ico" />

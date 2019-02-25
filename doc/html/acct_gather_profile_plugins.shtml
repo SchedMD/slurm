@@ -2,8 +2,7 @@
 <!--  Copyright (C) 2013 Bull S. A. S.
       Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois. -->
 
-<h1><a name="top">Slurm Profile Accounting Plugin API (AcctGatherProfileType)
-</a></h1>
+<h1><a name="top">Slurm Profile Accounting Plugin API (AcctGatherProfileType)</a></h1>
 
 <h2> Overview</h2>
 <p> This document describes Slurm profile accounting plugins and the API that
