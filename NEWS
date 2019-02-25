@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't ping powering up cloud nodes.
  -- Add cloud_dns SlurmctldParameter.
  -- Consider --sbindir configure option as the default path to find slurmstepd.
+ -- Fix node state printing of DRAINED$
 
 * Changes in Slurm 18.08.5-2
 ============================
