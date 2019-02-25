@@ -464,8 +464,8 @@ Usage:  sshare [OPTION]                                                    \n\
     -M or --cluster=names  clusters to issue commands to.                  \n\
                            NOTE: SlurmDBD must be up.                      \n\
     -n or --noheader       omit header from output                         \n\
-    -o or --format=        Comma separated list of fields. (use            \n\
-                           (\"--helpformat\" for a list of available fields).\n\
+    -o or --format=        Comma separated list of fields (use             \n\
+                           \"--helpformat\" for a list of available fields).\n\
     -p or --parsable       '|' delimited output with a trailing '|'        \n\
     -P or --parsable2      '|' delimited output without a trailing '|'     \n\
     -u or --users=         display specific users (comma separated list)   \n\
