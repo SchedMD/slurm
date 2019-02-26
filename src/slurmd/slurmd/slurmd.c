@@ -1896,7 +1896,7 @@ Usage: %s [OPTIONS]\n\
    -L logfile  Log messages to the file `logfile'.\n\
    -M          Use mlock() to lock slurmd pages into memory.\n\
    -n value    Run the daemon at the specified nice value.\n\
-   -N host     Run the daemon for specified hostname.\n\
+   -N node     Run the daemon for specified nodename.\n\
    -v          Verbose mode. Multiple -v's increase verbosity.\n\
    -V          Print version information and exit.\n", conf->prog);
 	return;
