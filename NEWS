@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
  -- X11 forwarding - allow setup if the DISPLAY environment variable lacks
     a screen number. (Permit both "localhost:10.0" and "localhost:10".)
  -- docs - change HTML title to include the page title or man page name.
+ -- X11 forwarding - fix an unnecessary error message when using the
+    local_xauthority X11Parameters option.
 
 * Changes in Slurm 18.08.5-2
 ============================
