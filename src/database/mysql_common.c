@@ -678,7 +678,10 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
 	char *db_host = db_info->host;
-
+	unsigned int my_timeout = 30;
+#ifdef MYSQL_OPT_RECONNECT
+	my_bool reconnect = 1;
+#endif
 	xassert(mysql_conn);
 
 	slurm_mutex_lock(&mysql_conn->lock);
@@ -687,62 +690,60 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 		slurm_mutex_unlock(&mysql_conn->lock);
 		fatal("mysql_init failed: %s",
 		      mysql_error(mysql_conn->db_conn));
-	} else {
-		/* If this ever changes you will need to alter
-		 * src/common/slurmdbd_defs.c function _send_init_msg to
-		 * handle a different timeout when polling for the
-		 * response.
-		 */
-		unsigned int my_timeout = 30;
-#ifdef MYSQL_OPT_RECONNECT
-		my_bool reconnect = 1;
-		/* make sure reconnect is on */
-		mysql_options(mysql_conn->db_conn, MYSQL_OPT_RECONNECT,
-			      &reconnect);
-#endif
-		mysql_options(mysql_conn->db_conn, MYSQL_OPT_CONNECT_TIMEOUT,
-			      (char *)&my_timeout);
-		while (!storage_init) {
-			debug2("Attempting to connect to %s:%d", db_host,
-			       db_info->port);
-			if (!mysql_real_connect(mysql_conn->db_conn, db_host,
-					        db_info->user, db_info->pass,
-					        db_name, db_info->port, NULL,
-					        CLIENT_MULTI_STATEMENTS)) {
-				int err = mysql_errno(mysql_conn->db_conn);
-				if (err == ER_BAD_DB_ERROR) {
-					debug("Database %s not created.  "
-					      "Creating", db_name);
-					rc = _create_db(db_name, db_info);
-				} else {
-					const char *err_str = mysql_error(
-						mysql_conn->db_conn);
-					if ((db_host == db_info->host)
-					    && db_info->backup) {
-						debug2("mysql_real_connect failed: %d %s",
-						       err, err_str);
-						db_host = db_info->backup;
-						continue;
-					}
+	}
 
-					error("mysql_real_connect failed: "
-					      "%d %s",
-					      err, err_str);
-					rc = ESLURM_DB_CONNECTION;
-					mysql_close(mysql_conn->db_conn);
-					mysql_conn->db_conn = NULL;
-					break;
-				}
+	/* If this ever changes you will need to alter
+	 * src/common/slurmdbd_defs.c function _send_init_msg to
+	 * handle a different timeout when polling for the
+	 * response.
+	 */
+#ifdef MYSQL_OPT_RECONNECT
+	/* make sure reconnect is on */
+	mysql_options(mysql_conn->db_conn, MYSQL_OPT_RECONNECT,
+		      &reconnect);
+#endif
+	mysql_options(mysql_conn->db_conn, MYSQL_OPT_CONNECT_TIMEOUT,
+		      (char *)&my_timeout);
+	while (!storage_init) {
+		debug2("Attempting to connect to %s:%d", db_host,
+		       db_info->port);
+		if (!mysql_real_connect(mysql_conn->db_conn, db_host,
+					db_info->user, db_info->pass,
+					db_name, db_info->port, NULL,
+					CLIENT_MULTI_STATEMENTS)) {
+			int err = mysql_errno(mysql_conn->db_conn);
+			if (err == ER_BAD_DB_ERROR) {
+				debug("Database %s not created.  "
+				      "Creating", db_name);
+				rc = _create_db(db_name, db_info);
 			} else {
-				storage_init = true;
-				if (mysql_conn->rollback)
-					mysql_autocommit(
-						mysql_conn->db_conn, 0);
-				rc = _mysql_query_internal(
-					mysql_conn->db_conn,
-					"SET session sql_mode='ANSI_QUOTES,"
-					"NO_ENGINE_SUBSTITUTION';");
+				const char *err_str = mysql_error(
+					mysql_conn->db_conn);
+				if ((db_host == db_info->host)
+				    && db_info->backup) {
+					debug2("mysql_real_connect failed: %d %s",
+					       err, err_str);
+					db_host = db_info->backup;
+					continue;
+				}
+
+				error("mysql_real_connect failed: "
+				      "%d %s",
+				      err, err_str);
+				rc = ESLURM_DB_CONNECTION;
+				mysql_close(mysql_conn->db_conn);
+				mysql_conn->db_conn = NULL;
+				break;
 			}
+		} else {
+			storage_init = true;
+			if (mysql_conn->rollback)
+				mysql_autocommit(
+					mysql_conn->db_conn, 0);
+			rc = _mysql_query_internal(
+				mysql_conn->db_conn,
+				"SET session sql_mode='ANSI_QUOTES,"
+				"NO_ENGINE_SUBSTITUTION';");
 		}
 	}
 	slurm_mutex_unlock(&mysql_conn->lock);
