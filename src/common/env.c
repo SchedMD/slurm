@@ -2004,7 +2004,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		fatal("Could not locate command: "SUCMD);
 	if (stat("/bin/echo", &buf))
 		fatal("Could not locate command: /bin/echo");
-	xstrfmtcat(stepd_path, "%s/sbin/slurmstepd", SLURM_PREFIX);
+	stepd_path = slurm_get_stepd_loc();
 	if (stat(stepd_path, &buf) == 0) {
 		xstrcat(stepd_path, " getenv");
 		env_loc = stepd_path;

@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Add NoAddrCache CommunicationParameter.
  -- Don't ping powering up cloud nodes.
  -- Add cloud_dns SlurmctldParameter.
+ -- Consider --sbindir configure option as the default path to find slurmstepd.
 
 * Changes in Slurm 18.08.5-2
 ============================
