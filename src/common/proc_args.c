@@ -469,7 +469,7 @@ char *base_name(const char *command)
    2 : no unit is B
    anything else : no unit is MB
 */
-static long _str_to_mbtyes(const char *arg, int use_gbytes)
+static long _str_to_mbytes(const char *arg, int use_gbytes)
 {
 	long long result;
 	char *endptr;
