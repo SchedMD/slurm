@@ -537,7 +537,7 @@ uint64_t str_to_mbytes2(const char *arg)
  */
 long str_to_mbytes_pbs(const char *arg)
 {
-	return _str_to_mbtyes(arg, 2);
+	return _str_to_mbytes(arg, 2);
 }
 
 /* Convert a string into a node count */
