@@ -321,45 +321,9 @@ static bool _nvml_get_handle(int index, nvmlDevice_t *device)
 	return true;
 }
 
-/*
- * Sort an array of unsigned ints in descending order using the bubble sort
- * algorithm. If the array is already sorted, then this will only take O(n).
- * If it's perfectly unsorted, this will take O(n^2).
- *
- * arr		(IN) An array of frequencies to sort
- * size		(IN) The number of frequency elements in arr
- */
-static void _bubble_sort_descending(unsigned int *arr, unsigned int size)
+static int _sort_freq_descending(const void *a, const void *b)
 {
-	bool sorted = false;
-	unsigned int i, count;
-	if (!arr) {
-		error("%s: array is null", __func__);
-		return;
-	}
-	if (size <= 0) {
-		error("%s: array size is <= 0", __func__);
-		return;
-	}
-	count = size - 1;
-
-	do {
-		// Temporarily set to true to see if array is sorted
-		sorted = true;
-		// for each pair of adjacent elements
-		for (i = 0; i < count; i++) {
-			// if the pair is not sorted DESC, swap them
-			if (arr[i] < arr[i + 1]) {
-				unsigned int tmp = arr[i];
-				arr[i] = arr[i + 1];
-				arr[i + 1] = tmp;
-				// reset sorted, because we swapped
-				sorted = false;
-			}
-		}
-		// Every pass requires processing one less element
-		count--;
-	} while (!sorted);
+	return (*(unsigned long*)b - *(unsigned long*)a);
 }
 
 /*
@@ -392,7 +356,8 @@ static bool _nvml_get_mem_freqs(nvmlDevice_t *device,
 		return false;
 	}
 
-	_bubble_sort_descending(mem_freqs, *mem_freqs_size);
+	qsort(mem_freqs, *mem_freqs_size,
+	      sizeof(unsigned int), _sort_freq_descending);
 
 	if ((*mem_freqs_size > 1) &&
 	    (mem_freqs[0] <= mem_freqs[(*mem_freqs_size)-1])) {
@@ -436,7 +401,8 @@ static bool _nvml_get_gfx_freqs(nvmlDevice_t *device,
 		return false;
 	}
 
-	_bubble_sort_descending(gfx_freqs, *gfx_freqs_size);
+	qsort(gfx_freqs, *gfx_freqs_size,
+	      sizeof(unsigned int), _sort_freq_descending);
 
 	if ((*gfx_freqs_size > 1) &&
 	    (gfx_freqs[0] <= gfx_freqs[(*gfx_freqs_size)-1])) {
