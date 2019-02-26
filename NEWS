@@ -92,6 +92,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for backfill sleep overflow when large values are set.
  -- Execute Epilog on nodes reliquished from job (i.e. job resized).
  -- Rename burst_buffer/cray plugin to burst_buffer/datawarp.
+ -- X11 Forwarding - reimplement using new internal network forwarding RPCs.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

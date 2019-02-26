@@ -2159,11 +2159,8 @@ This flag forces those scripts to run serially within each node, but with
 a significant penalty to job throughput on each node.
 .TP
 \fBX11\fR
-Enable Slurm's built-in X11 forwarding capabilities. Slurm must have been
-compiled with libssh2 support enabled, and either SSH hostkey authentication
-or per-users SSH key authentication must be enabled within the cluster. Only
-RSA keys are supported at this time. Setting the X11 flag implicitly enables
-both Contain and Alloc flags as well.
+Enable Slurm's built-in X11 forwarding capabilities.
+Setting the X11 flag implicitly enables both Contain and Alloc flags as well.
 .RE
 
 .TP
@@ -4150,12 +4147,9 @@ May not exceed 65533 seconds.
 For use with Slurm's built-in X11 forwarding implementation.
 .RS
 .TP 8
-\fBlocal_xauthority\fR
-If set, xauth data on the compute node will be placed in a temporary file
-(under \fBTmpFS\fR) rather than in \fB~/.Xauthority\fR, and the
-\fBXAUTHORITY\fR environment variable will be injected into the job's
-environment (as well as any process captured by pam_slurm_adopt).
-This can help avoid file locking contention on the user's home directory.
+\fBhome_xauthority\fR
+If set, xauth data on the compute node will be placed in \fB~/.Xauthority\fR
+rather than in a temporary file under \fBTmpFS\fR.
 .RE
 
 .LP

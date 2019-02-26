@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  x11_forwarding.c - setup ssh port forwarding
+ *  x11_forwarding.c - setup x11 port forwarding
  *****************************************************************************
- *  Copyright (C) 2017 SchedMD LLC.
+ *  Copyright (C) 2017-2019 SchedMD LLC.
  *  Written by Tim Wickberg <tim@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
@@ -43,17 +43,17 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <libssh2.h>
 
+#include "src/common/eio.h"
+#include "src/common/half_duplex.h"
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
-#include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
@@ -63,17 +63,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#define SSH_PORT 22
-
-/*
- * Ideally these would be selected at run time. Unfortunately,
- * only ssh-rsa and ssh-dss are supported by libssh2 at this time,
- * and ssh-dss is deprecated.
- */
-static char *hostkey_priv = "/etc/ssh/ssh_host_rsa_key";
-static char *hostkey_pub = "/etc/ssh/ssh_host_rsa_key.pub";
-static char *priv_format = "%s/.ssh/id_rsa";
-static char *pub_format = "%s/.ssh/id_rsa.pub";
+static uint32_t job_id = NO_VAL;
 
 static bool local_xauthority = false;
 static char *xauthority = NULL;
@@ -81,47 +71,105 @@ static char hostname[256] = {0};
 
 static int x11_display = 0;
 
-void *_handle_channel(void *x);
-void *_keepalive_engine(void *x);
-void *_accept_engine(void *x);
+static eio_handle_t *eio_handle;
+
+/* Target salloc/srun host/port */
+static slurm_addr_t alloc_node;
+/* X11 display hostname on target, or UNIX socket. */
+static char *x11_target = NULL;
+/* X11 display port on target (if not a UNIX socket). */
+static uint16_t x11_target_port = 0;
+
+static void *_eio_thread(void *arg)
+{
+	eio_handle_mainloop(eio_handle);
+	return NULL;
+}
+
+static bool _x11_socket_readable(eio_obj_t *obj)
+{
+        if (obj->shutdown) {
+		if (obj->fd != -1)
+			close(obj->fd);
+		obj->fd = -1;
+                return false;
+	}
+        return true;
+}
+
+static int _x11_socket_read(eio_obj_t *obj, List objs)
+{
+	eio_obj_t *e1, *e2;
+	slurm_msg_t req, resp;
+	net_forward_msg_t rpc;
+	slurm_addr_t sin;
+	int *local, *remote;
+	int rc;
+
+	local = xmalloc(sizeof(*local));
+	remote = xmalloc(sizeof(*remote));
+
+	if ((*local = slurm_accept_msg_conn(obj->fd, &sin)) == -1) {
+		error("accept call failure, shutting down");
+		goto shutdown;
+	}
+
+	*remote = slurm_open_msg_conn(&alloc_node);
+	if (*remote < 0) {
+		error("%s: slurm_open_msg_conn: %m", __func__);
+		goto shutdown;
+	}
+
+	rpc.job_id = job_id;
+	rpc.flags = 0;
+	rpc.port = x11_target_port;
+	rpc.target = x11_target;
+
+	slurm_msg_t_init(&req);
+	slurm_msg_t_init(&resp);
+
+	req.msg_type = SRUN_NET_FORWARD;
+	req.data = &rpc;
+
+	slurm_send_recv_msg(*remote, &req, &resp, 0);
+
+	if (resp.msg_type != RESPONSE_SLURM_RC) {
+		error("Unexpected response on setup, forwarding failed.");
+		slurm_free_msg_members(&resp);
+		goto shutdown;
+	}
+
+	if ((rc = slurm_get_return_code(resp.msg_type, resp.data))) {
+		error("Error setting up X11 forwarding from remote: %s",
+		      slurm_strerror(rc));
+		slurm_free_msg_members(&resp);
+		goto shutdown;
+	}
+
+	slurm_free_msg_members(&resp);
+
+	/* setup eio to handle both sides of the connection now */
+	e1 = eio_obj_create(*local, &half_duplex_ops, remote);
+	e2 = eio_obj_create(*remote, &half_duplex_ops, local);
+	eio_new_obj(eio_handle, e1);
+	eio_new_obj(eio_handle, e2);
+
+	debug("%s: X11 forwarding setup successful", __func__);
+
+	return SLURM_SUCCESS;
+
+shutdown:
+	debug2("%s: error, shutting down", __func__);
+	if (*local != -1)
+		close(*local);
+	xfree(local);
+	xfree(remote);
+
+	return SLURM_ERROR;
+}
 
 /*
- * libssh2 has some quirks with the mixed use of blocking vs. non-blocking
- * operations within each session. Certain calls, such as channel creation
- * and destruction, are best done as blocking operations. But read/write
- * to the individual channels needs to be non-blocking. As the state applies
- * to the entire session, locks are needed to avoid interacting with the
- * channels when the session is temporarily switched into blocking operation.
- * This also avoids multiple threads interacting with their channels
- * concurrently - as all interation is serialized/deserialized into/from
- * a single TCP stream this should not really affect throughput much, as
- * these operations cannot really act concurrently anyways.
- */
-pthread_mutex_t ssh_lock = PTHREAD_MUTEX_INITIALIZER;
-
-/*
- * Used to break out of the keepalive thread.
- */
-static bool running = true;
-
-/*
- * Target TCP port on target_host to connect to. Needs to be used in
- * to create each separate channel, so set as a global to avoid having
- * to pass it down through several calls.
- */
-static uint16_t x11_target_port;
-
-static int ssh_socket = -1, listen_socket = -1;
-
-static LIBSSH2_SESSION *session = NULL;
-
-typedef struct channel_info {
-	LIBSSH2_CHANNEL *channel;
-	int socket;
-} channel_info_t;
-
-/*
- * Get home directory for a given uid to find their SSH private keys.
+ * Get home directory for a given uid.
  *
  * IN: uid
  * OUT: an xmalloc'd string, or NULL on error.
@@ -147,19 +195,7 @@ static void _shutdown_x11(int signal)
 
 	debug("x11 forwarding shutdown in progress");
 
-	if (listen_socket)
-		close(listen_socket);
-
-	if (session) {
-		libssh2_session_disconnect(session,
-					   "Disconnecting due to shutdown.");
-		libssh2_session_free(session);
-	}
-
-	if (ssh_socket)
-		close(ssh_socket);
-
-	libssh2_exit();
+	eio_signal_shutdown(eio_handle);
 
 	if (xauthority) {
 		if (local_xauthority) {
@@ -178,21 +214,18 @@ static void _shutdown_x11(int signal)
 }
 
 /*
- * Bind to a local port and forward to the x11_target_port on
- * x11_alloc_host. Relies on the user having working password-less SSH
- * pre-shared keys setup in $HOME/.ssh/ that are accepted by x11_alloc_host.
+ * Bind to a local port for X11 connections. Each connection will setup a
+ * separate tunnel through the remote salloc/srun process.
  *
  * IN: job
- * IN/OUT: display - local X11 display number
+ * OUT: display - local X11 display number
+ * OUT: tmp_xauthority - XAUTHORITY file in use
  * OUT: SLURM_SUCCESS or SLURM_ERROR
  */
 extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 			     char **tmp_xauthority)
 {
-	int rc, hostauth_failed = 1;
-	struct sockaddr_in sin;
-	char *home = NULL, *keypub = NULL, *keypriv = NULL;
-	char *user_auth_methods;
+	int listen_socket = -1;
 	uint16_t port;
 	/*
 	 * Range of ports we'll accept locally. This corresponds to X11
@@ -201,72 +234,32 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	 */
 	uint16_t ports[2] = {6020, 6099};
 	int sig_array[2] = {SIGTERM, 0};
+	/*
+	 * EIO handles both the local listening socket, as well as the individual
+	 * forwarded connections.
+	 */
+	eio_obj_t *obj;
+	static struct io_operations x11_socket_ops = {
+		.readable = _x11_socket_readable,
+		.handle_read = _x11_socket_read,
+	};
+
 	*tmp_xauthority = NULL;
+	job_id = job->jobid;
+	x11_target = xstrdup(job->x11_target);
 	x11_target_port = job->x11_target_port;
 
 	xsignal(SIGTERM, _shutdown_x11);
 	xsignal_unblock(sig_array);
 
+	slurm_set_addr(&alloc_node, job->x11_alloc_port, job->x11_alloc_host);
+
 	debug("X11Parameters: %s", conf->x11_params);
-
-	if (!(home = _get_home(job->uid))) {
-		error("could not find HOME in environment");
-		return SLURM_ERROR;
-	}
-
-	keypub = xstrdup_printf(pub_format, home);
-	keypriv = xstrdup_printf(priv_format, home);
-
-	if (libssh2_init(0)) {
-		error("libssh2 initialization failed");
-		return SLURM_ERROR;
-	}
-
-	slurm_set_addr(&sin, SSH_PORT, job->x11_alloc_host);
-	if ((ssh_socket = slurm_open_msg_conn(&sin)) == -1) {
-		error("Failed to connect to %s port %u.",
-		      job->x11_alloc_host, SSH_PORT);
-		return SLURM_ERROR;
-	}
-
-	if (!(session = libssh2_session_init())) {
-		error("Failed to start SSH session.");
-		goto shutdown;
-	}
-
-	if ((rc = libssh2_session_handshake(session, ssh_socket))) {
-		error("Problem starting SSH session: %d", rc);
-		goto shutdown;
-	}
-
-	/* skip ssh fingerprint verification */
-
-	user_auth_methods = libssh2_userauth_list(session, job->user_name,
-						  strlen(job->user_name));
-	debug2("remote accepted auth methods: %s", user_auth_methods);
-
-	/* try hostbased authentication first if available */
-	if (strstr(user_auth_methods, "hostbased")) {
-		/* returns 0 on success */
-		hostauth_failed = libssh2_userauth_hostbased_fromfile(
-			session, job->user_name, hostkey_pub,
-			hostkey_priv, NULL, conf->node_name);
-
-		if (hostauth_failed) {
-			char *err;
-			libssh2_session_last_error(session, &err, NULL, 0);
-			error("hostkey authentication failed: %s", err);
-		} else {
-			debug("hostkey authentication successful");
-		}
-	}
 
 	/*
 	 * Switch uid/gid to the user using seteuid/setegid.
 	 * DO NOT use setuid/setgid as a user could then attach to this
-	 * process and try to recover the ssh hostauth private key from memory.
-	 * We do need to switch euid in case the user's ssh keys are
-	 * on a root_squash filesystem and inaccessible to root.
+	 * process and try to recover any sensitive data that may be in memory.
 	 */
 	if (setegid(job->gid)) {
 		error("%s: setegid failed: %m", __func__);
@@ -281,8 +274,16 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 		goto shutdown;
 	}
 
-	/* use a node-local XAUTHORITY file instead of ~/.Xauthority */
-	if (xstrcasestr(conf->x11_params, "local_xauthority")) {
+	if (xstrcasestr(conf->x11_params, "home_xauthority")) {
+		char *home = NULL;
+		if (!(home = _get_home(job->uid))) {
+			error("could not find HOME in environment");
+			goto shutdown;
+		}
+		xauthority = xstrdup_printf("%s/.Xauthority", home);
+		xfree(home);
+	} else {
+		/* use a node-local XAUTHORITY file instead of ~/.Xauthority */
 		int fd;
 		local_xauthority = true;
 		xauthority = xstrdup_printf("%s/.Xauthority-XXXXXX",
@@ -296,11 +297,7 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 			goto shutdown;
 		}
 		close(fd);
-	} else {
-		xauthority = xstrdup_printf("%s/.Xauthority", home);
 	}
-
-	xfree(home);
 
 	/*
 	 * Slurm uses the shortened hostname by default (and discards any
@@ -309,22 +306,6 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	 */
 	if (gethostname(hostname, sizeof(hostname)))
 		fatal("%s: gethostname failed: %m", __func__);
-
-	/*
-	 * If hostbased failed or was unavailable, try publickey instead.
-	 */
-	if (hostauth_failed
-	    && libssh2_userauth_publickey_fromfile(session, job->user_name,
-						   keypub, keypriv, NULL)) {
-		char *err;
-		libssh2_session_last_error(session, &err, NULL, 0);
-		error("ssh public key authentication failure: %s", err);
-
-		goto shutdown;
-	}
-	xfree(keypub);
-	xfree(keypriv);
-	debug("public key auth successful");
 
 	if (net_stream_listen_ports(&listen_socket, &port, ports, true) == -1) {
 		error("failed to open local socket");
@@ -341,20 +322,13 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	info("X11 forwarding established on DISPLAY=%s:%d.0",
 	     hostname, x11_display);
 
-	/*
-	 * Send keepalives every 60 seconds, and have the server
-	 * send a reply as well. Since we're running async, a separate
-	 * thread will need to handle sending these periodically per
-	 * the libssh2 documentation, as the library itself won't manage
-	 * this for us.
-	 */
-	libssh2_keepalive_config(session, 1, 60);
-
-	slurm_thread_create_detached(NULL, _keepalive_engine, NULL);
-	slurm_thread_create_detached(NULL, _accept_engine, NULL);
+	eio_handle = eio_handle_create(0);
+	obj = eio_obj_create(listen_socket, &x11_socket_ops, NULL);
+	eio_new_initial_obj(eio_handle, obj);
+	slurm_thread_create_detached(NULL, _eio_thread, NULL);
 
 	/*
-	 * Connection handling threads are still running. Return now to signal
+	 * EIO connection handling thread still running. Return now to signal
 	 * that the forwarding code setup has completed successfully, and let
 	 * steps needing X11 forwarding service launch.
 	 */
@@ -364,177 +338,10 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	return SLURM_SUCCESS;
 
 shutdown:
-	xfree(keypub);
-	xfree(keypriv);
+	xfree(x11_target);
 	xfree(xauthority);
-	close(listen_socket);
-	libssh2_session_disconnect(session, "Disconnecting due to error.");
-	libssh2_session_free(session);
-	close(ssh_socket);
-	libssh2_exit();
+	if (listen_socket != -1)
+		close(listen_socket);
 
 	return SLURM_ERROR;
-}
-
-void *_keepalive_engine(void *x)
-{
-	int delay;
-
-	while (running) {
-		debug("x11 forwarding - sending keepalive message");
-		slurm_mutex_lock(&ssh_lock);
-		libssh2_keepalive_send(session, &delay);
-		slurm_mutex_unlock(&ssh_lock);
-		sleep(delay);
-	}
-
-	debug2("exiting %s", __func__);
-	return NULL;
-}
-
-void *_accept_engine(void *x)
-{
-	while (true) {
-		slurm_addr_t sin;
-		channel_info_t *ci = xmalloc(sizeof(channel_info_t));
-
-		if ((ci->socket = slurm_accept_msg_conn(listen_socket, &sin))
-		    == -1) {
-			xfree(ci);
-			error("accept call failure, shutting down");
-			goto shutdown;
-		}
-
-		/* libssh2_channel_direct_tcpip needs blocking I/O */
-		slurm_mutex_lock(&ssh_lock);
-		libssh2_session_set_blocking(session, 1);
-		if (!(ci->channel = libssh2_channel_direct_tcpip(session,
-								 "localhost",
-								 x11_target_port))) {
-			char *ssh_error = NULL;
-			libssh2_session_last_error(session, &ssh_error, NULL, 0);
-			libssh2_session_set_blocking(session, 0);
-			slurm_mutex_unlock(&ssh_lock);
-			error("broken channel call: %s", ssh_error);
-			close(ci->socket);
-			xfree(ci);
-		} else {
-			libssh2_session_set_blocking(session, 0);
-			slurm_mutex_unlock(&ssh_lock);
-
-			slurm_thread_create_detached(NULL, _handle_channel, ci);
-		}
-	}
-
-shutdown:
-	debug2("exiting %s", __func__);
-	running = false;
-	close(listen_socket);
-	libssh2_session_disconnect(session, "Client disconnecting normally");
-	libssh2_session_free(session);
-	close(ssh_socket);
-	libssh2_exit();
-
-	return NULL;
-}
-
-/*
- * Handle forwarding for an individual local connect and SSH channel.
- * Use poll() to sleep until needed.
- */
-void *_handle_channel(void *x) {
-	channel_info_t *ci = (channel_info_t *) x;
-	int i, rc;
-	char buf[16384];
-	ssize_t len, wr;
-	struct pollfd fds[2];
-
-	/*
-	 * Since libssh2 multiplexes channels onto a single socket, there is no
-	 * way to poll only our individual channel. Instead, poll on the SSH
-	 * connection socket, and deal with being woken up even if no data is
-	 * present on our channel. In such an instance, we'll run through the
-	 * loop once then go back to blocking on the poll() call.
-	 */
-	fds[0].fd = ssh_socket;
-	fds[0].events = POLLIN | POLLOUT;
-	fds[1].fd = ci->socket;
-	fds[1].events = POLLIN;
-
-	while (true) {
-		if ((rc = poll(fds, 2, 10000)) == -1) {
-			error("%s: poll returned %d, %m", __func__, rc);
-			goto shutdown;
-		}
-		/*
-		 * read on socket is blocking,
-		 * so make sure it has data ready for us
-		 */
-		if (rc && (fds[1].revents & POLLIN)) {
-			len = recv(ci->socket, buf, sizeof(buf), 0);
-			if (len < 0) {
-				error("%s: failed to read on inbound socket",
-				      __func__);
-				goto shutdown;
-			} else if (0 == len) {
-				error("%s: client disconnected", __func__);
-				goto shutdown;
-			}
-			wr = 0;
-			while(wr < len) {
-				slurm_mutex_lock(&ssh_lock);
-				i = libssh2_channel_write(ci->channel,
-							  buf + wr, len - wr);
-				slurm_mutex_unlock(&ssh_lock);
-				if (LIBSSH2_ERROR_EAGAIN == i) {
-					continue;
-				}
-				if (i < 0) {
-					error("%s: libssh2_channel_write: %d\n",
-					      __func__, i);
-					goto shutdown;
-				}
-				wr += i;
-			}
-		}
-		while (true) {
-			slurm_mutex_lock(&ssh_lock);
-			len = libssh2_channel_read(ci->channel, buf, sizeof(buf));
-			slurm_mutex_unlock(&ssh_lock);
-			if (len == LIBSSH2_ERROR_EAGAIN)
-				break;
-			else if (len < 0) {
-				error("%s: libssh2_channel_read: %d",
-				      __func__, (int)len);
-				goto shutdown;
-			}
-			wr = 0;
-			while (wr < len) {
-				i = send(ci->socket, buf + wr, len - wr, 0);
-				if (i <= 0) {
-					error("%s: write failed", __func__);
-					goto shutdown;
-				}
-				wr += i;
-			}
-
-			slurm_mutex_lock(&ssh_lock);
-			if (libssh2_channel_eof(ci->channel)) {
-				slurm_mutex_unlock(&ssh_lock);
-				error("%s: remote disconnected", __func__);
-				goto shutdown;
-			}
-			slurm_mutex_unlock(&ssh_lock);
-		}
-
-	}
-
-shutdown:
-	close(ci->socket);
-	slurm_mutex_lock(&ssh_lock);
-	libssh2_channel_close(ci->channel);
-	slurm_mutex_unlock(&ssh_lock);
-	error("%s: exiting thread", __func__);
-	xfree(ci);
-	return NULL;
 }

@@ -965,13 +965,8 @@ regex white:default ^JOBID.*
 <img src="squeue_color.png" width=600>
 
 <p><a name="x11"><b>33. Can Slurm export an X11 display on an allocated compute node?</b></a><br/>
-You can use the X11 builtin feature starting at version 17.11. This plugin is
-based on libssh2 and it supports <i>hostbased</i> and <i>pubkey</i>
-authentication.<br/>You just need to have <i>libssh2</i> installed on compute
-nodes, <i>libssh2</i> development package installed in the build host at build
-time and <i>PrologFlags=x11</i> set in <i>slurm.conf</i>. You will need also
-user public/private keys available on compute nodes or otherwise a
-<i>hostbased</i> authentication setup in your ssh servers.
+You can use the X11 builtin feature starting at version 17.11.
+It is enabled by setting <i>PrologFlags=x11</i> in <i>slurm.conf</i>.
 Other X11 plugins must be deactivated.
 <br/>
 Run it as shown:

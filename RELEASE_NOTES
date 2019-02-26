@@ -93,6 +93,18 @@ NOTE: The version field of a node registration message now records the major
       and minor version of slurmd. This changes the data displayed in sinfo,
       sview, scontrol show node and the API.
 
+NOTE: The X11 forwarding code has been revamped, and no longer relies on
+      libssh2 to function. However, support for --x11 alongside sbatch has
+      been removed, as the new forwarding code relies on the allocating
+      salloc or srun command to process the forwarding.
+
+NOTE: X11 Forwarding - the behavior of X11Parameters=local_xauthority is now
+      the default, and that option is ignored. A new option of "home_xauthority"
+      has been option to revert to the pre-19.05 behavior if desired.
+
+NOTE: X11 Forwarding - the behavior of X11Parameters=use_raw_hostname is now
+      the default, and that option is ignored.
+
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res
