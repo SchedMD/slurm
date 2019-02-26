@@ -183,6 +183,7 @@ static List gres_conf_list = NULL;
 static bool init_run = false;
 static bool have_gpu = false, have_mps = false;
 static uint32_t gpu_plugin_id = NO_VAL, mps_plugin_id = NO_VAL;
+static volatile uint32_t autodetect_types = GRES_AUTODETECT_NONE;
 
 /* Local functions */
 static gres_node_state_t *
@@ -1234,6 +1235,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 					void *xcpuinfo_mac_to_abs)
 {
 	static s_p_options_t _gres_options[] = {
+		{"AutoDetect", S_P_STRING},
 		{"Name",     S_P_ARRAY, _parse_gres_config,  NULL},
 		{"NodeName", S_P_ARRAY, _parse_gres_config2, NULL},
 		{NULL}
@@ -1244,6 +1246,8 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
 	char *gres_conf_file;
+	char *autodetect_string = NULL;
+
 	node_config_load_t node_conf = {
 		.cpu_cnt = cpu_cnt,
 		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs
@@ -1276,6 +1280,13 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		fatal("error opening/reading %s", gres_conf_file);
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(destroy_gres_slurmd_conf);
+
+	if (s_p_get_string(&autodetect_string, "Autodetect", tbl)) {
+		if (xstrcasestr(autodetect_string, "nvml"))
+			autodetect_types |= GRES_AUTODETECT_NVML;
+		xfree(autodetect_string);
+	}
+
 	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
 		for (i = 0; i < count; i++) {
 			list_append(gres_conf_list, gres_array[i]);
@@ -12562,6 +12573,11 @@ extern gres_job_state_t *gres_get_job_state(List gres_list, char *name)
 		return NULL;
 
 	return (gres_job_state_t *)gres_state_ptr->gres_data;
+}
+
+extern uint32_t gres_get_autodetect_types(void)
+{
+	return autodetect_types;
 }
 
 extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)

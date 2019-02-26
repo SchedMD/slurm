@@ -70,6 +70,10 @@ typedef struct {
 
 #define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
 
+/* GRES AutoDetect options */
+#define GRES_AUTODETECT_NONE    0x00000000
+#define GRES_AUTODETECT_NVML    0x00000001
+
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
 	uint8_t config_flags;	/* See GRES_CONF_* values above */
@@ -1248,6 +1252,8 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 
 extern gres_job_state_t *gres_get_job_state(List gres_list, char *name);
 extern gres_step_state_t *gres_get_step_state(List gres_list, char *name);
+
+extern uint32_t gres_get_autodetect_types(void);
 
 /*
  * Translate a gres_list into a tres_str
