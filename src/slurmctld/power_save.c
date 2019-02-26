@@ -61,12 +61,14 @@
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/trigger_mgr.h"
 
 #define _DEBUG			0
 #define MAX_SHUTDOWN_DELAY	10	/* seconds to wait for child procs
@@ -89,7 +91,7 @@ bool power_save_started = false;
 int idle_time, suspend_rate, resume_timeout, resume_rate, suspend_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
-time_t last_config = (time_t) 0, last_suspend = (time_t) 0;
+time_t last_config = (time_t) 0;
 time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
 uint16_t slurmd_timeout;
 
@@ -262,7 +264,6 @@ static void _do_power_work(time_t now)
 	bitstr_t *avoid_node_bitmap = NULL, *failed_node_bitmap = NULL;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
-	bool run_suspend = false;
 
 	if (last_work_scan == 0) {
 		if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
@@ -316,18 +317,6 @@ static void _do_power_work(time_t now)
 	suspend_cnt = (suspend_cnt_f + 0.5);
 	resume_cnt  = (resume_cnt_f  + 0.5);
 
-	if (now > (last_suspend + suspend_timeout)) {
-		/* ready to start another round of node suspends */
-		run_suspend = true;
-		if (last_suspend) {
-			bit_nclear(suspend_node_bitmap, 0,
-				   (node_record_count - 1));
-			bit_nclear(resume_node_bitmap, 0,
-				   (node_record_count - 1));
-			last_suspend = (time_t) 0;
-		}
-	}
-
 	last_work_scan = now;
 
 	/* Identify nodes to avoid considering for suspend */
@@ -376,8 +365,7 @@ static void _do_power_work(time_t now)
 		}
 
 		/* Suspend nodes as appropriate */
-		if (run_suspend 					&&
-		    (susp_state == 0)					&&
+		if ((susp_state == 0)					&&
 		    ((suspend_rate == 0) || (suspend_cnt < suspend_rate)) &&
 		    (IS_NODE_IDLE(node_ptr) || IS_NODE_DOWN(node_ptr))	&&
 		    (node_ptr->sus_job_cnt == 0)			&&
@@ -395,15 +383,26 @@ static void _do_power_work(time_t now)
 			suspend_cnt_f++;
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+			bit_set(power_node_bitmap,   i);
+			bit_set(sleep_node_bitmap,   i);
+			bit_set(suspend_node_bitmap, i);
+
+			/* Don't allocate until after SuspendTimeout */
+			bit_clear(avail_node_bitmap, i);
+			node_ptr->last_response = now + suspend_timeout;
+		}
+
+		if (susp_state &&
+		    bit_test(suspend_node_bitmap, i) &&
+		    (node_ptr->last_response < now)) {
+
 			if (!IS_NODE_DOWN(node_ptr) &&
 			    !IS_NODE_DRAIN(node_ptr) &&
 			    !IS_NODE_FAIL(node_ptr))
 				make_node_avail(i);
-			bit_set(power_node_bitmap,   i);
-			bit_set(sleep_node_bitmap,   i);
-			bit_set(suspend_node_bitmap, i);
-			last_suspend = now;
+
 			node_ptr->last_idle = 0;
+			bit_clear(suspend_node_bitmap, i);
 		}
 
 		/*
