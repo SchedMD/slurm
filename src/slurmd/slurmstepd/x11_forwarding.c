@@ -53,6 +53,7 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
@@ -76,6 +77,7 @@ static char *pub_format = "%s/.ssh/id_rsa.pub";
 
 static bool local_xauthority = false;
 static char *xauthority = NULL;
+static char hostname[256] = {0};
 
 static int x11_display = 0;
 
@@ -165,7 +167,7 @@ static void _shutdown_x11(int signal)
 				error("%s: problem unlinking xauthority file %s: %m",
 				      __func__, xauthority);
 		} else
-			x11_delete_xauth(xauthority, conf->hostname, x11_display);
+			x11_delete_xauth(xauthority, hostname, x11_display);
 
 		xfree(xauthority);
 	}
@@ -301,6 +303,17 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	xfree(home);
 
 	/*
+	 * Slurm uses the shortened hostname by default (and discards any
+	 * domain component), which can cause problems for some sites.
+	 * So retrieve the raw value from gethostname() again.
+	 */
+	if (xstrcasestr(conf->x11_params, "use_raw_hostname")) {
+		if (gethostname(hostname, sizeof(hostname)))
+			fatal("%s: gethostname failed: %m", __func__);
+	} else
+		strlcpy(hostname, conf->hostname, sizeof(hostname));
+
+	/*
 	 * If hostbased failed or was unavailable, try publickey instead.
 	 */
 	if (hostauth_failed
@@ -323,13 +336,13 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 
 	x11_display = port - X11_TCP_PORT_OFFSET;
 	if (x11_set_xauth(xauthority, job->x11_magic_cookie,
-			  conf->hostname, x11_display)) {
+			  hostname, x11_display)) {
 		error("%s: failed to run xauth", __func__);
 		goto shutdown;
 	}
 
 	info("X11 forwarding established on DISPLAY=%s:%d.0",
-	     conf->hostname, x11_display);
+	     hostname, x11_display);
 
 	/*
 	 * Send keepalives every 60 seconds, and have the server
