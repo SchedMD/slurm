@@ -1434,9 +1434,5 @@ void sched_debug3(const char *fmt, ...)
  * debug type messages will be ignored. */
 extern int get_log_level(void)
 {
-	int level;
-
-	level = MAX(log->opt.syslog_level, log->opt.logfile_level);
-	level = MAX(level, log->opt.stderr_level);
-	return level;
+	return highest_log_level;
 }
