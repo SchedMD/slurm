@@ -160,10 +160,11 @@ static void _shutdown_x11(int signal)
 	libssh2_exit();
 
 	if (xauthority) {
-		if (local_xauthority && unlink(xauthority))
-			error("%s: problem unlinking xauthority file %s: %m",
-			      __func__, xauthority);
-		else
+		if (local_xauthority) {
+			if (unlink(xauthority))
+				error("%s: problem unlinking xauthority file %s: %m",
+				      __func__, xauthority);
+		} else
 			x11_delete_xauth(xauthority, conf->hostname, x11_display);
 
 		xfree(xauthority);
