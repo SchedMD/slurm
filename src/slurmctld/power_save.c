@@ -94,6 +94,7 @@ char *exc_nodes = NULL, *exc_parts = NULL;
 time_t last_config = (time_t) 0;
 time_t last_log = (time_t) 0, last_work_scan = (time_t) 0;
 uint16_t slurmd_timeout;
+static bool idle_on_node_suspend = false;
 
 typedef struct exc_node_partital {
 	int exc_node_cnt;
@@ -390,6 +391,25 @@ static void _do_power_work(time_t now)
 			/* Don't allocate until after SuspendTimeout */
 			bit_clear(avail_node_bitmap, i);
 			node_ptr->last_response = now + suspend_timeout;
+
+			if (idle_on_node_suspend) {
+				if (IS_NODE_DOWN(node_ptr)) {
+					trigger_node_up(node_ptr);
+					clusteracct_storage_g_node_up(
+						acct_db_conn, node_ptr, now);
+				} else if (IS_NODE_IDLE(node_ptr) &&
+					   (IS_NODE_DRAIN(node_ptr) ||
+					    IS_NODE_FAIL(node_ptr))) {
+					clusteracct_storage_g_node_up(
+						acct_db_conn, node_ptr, now);
+				}
+
+				node_ptr->node_state =
+					NODE_STATE_IDLE |
+					(node_ptr->node_state & NODE_STATE_FLAGS);
+				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+				node_ptr->node_state &= (~NODE_STATE_FAIL);
+			}
 		}
 
 		if (IS_NODE_POWERING_DOWN(node_ptr) &&
@@ -852,6 +872,9 @@ static int _init_power_config(void)
 		exc_nodes = xstrdup(slurmctld_conf.suspend_exc_nodes);
 	if (slurmctld_conf.suspend_exc_parts)
 		exc_parts = xstrdup(slurmctld_conf.suspend_exc_parts);
+
+	idle_on_node_suspend = xstrcasestr(slurmctld_conf.slurmctld_params,
+					   "idle_on_node_suspend");
 
 	if (idle_time < 0) {	/* not an error */
 		debug("power_save module disabled, SuspendTime < 0");

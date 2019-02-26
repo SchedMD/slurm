@@ -148,6 +148,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Add GPU scheduling options to slurm.conf, available both globally and
     per-partition: DefCpusPerGPU and DefMemPerGPU.
  -- Add PriorityWeightAssoc to control association priority factor of a job.
+ -- Add idle_on_node_suspend SlurmctldParameter to make nodes idle regardless
+    of state when suspended.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

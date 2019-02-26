@@ -3455,6 +3455,10 @@ Since Slurm communications rely on the node configuration found in the
 slurm.conf, Slurm will tell the client command, after waiting for all nodes to
 boot, each node's ip address. However, in environments where the nodes are in
 DNS, this step can be avoided by configuring this option.
+.TP
+\fBidle_on_node_suspend\fR Mark nodes as idle, regardless of current state,
+when suspending nodes with \fISuspendProgram\fB so that nodes will be eligible
+to be resumed at a later time.
 .RE
 
 .TP
