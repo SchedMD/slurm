@@ -82,11 +82,14 @@
 
 #define NAMELEN 16
 
-#define LOG_MACRO(level, sched, fmt) {			\
-	va_list ap;					\
-	va_start(ap, fmt);				\
-	_log_msg(level, sched, fmt, ap);		\
-	va_end(ap);					\
+#define LOG_MACRO(level, sched, fmt) {				\
+	if ((level <= highest_log_level) ||			\
+	    (sched && (level <= highest_sched_log_level))) {	\
+		va_list ap;					\
+		va_start(ap, fmt);				\
+		_log_msg(level, sched, fmt, ap);		\
+		va_end(ap);					\
+	}							\
 }
 
 /*
@@ -145,6 +148,9 @@ static pthread_mutex_t  log_lock = PTHREAD_MUTEX_INITIALIZER;
 static log_t            *log = NULL;
 static log_t            *sched_log = NULL;
 
+static volatile log_level_t highest_log_level = LOG_LEVEL_END;
+static volatile log_level_t highest_sched_log_level = LOG_LEVEL_QUIET;
+
 #define LOG_INITIALIZED ((log != NULL) && (log->initialized))
 #define SCHED_LOG_INITIALIZED ((sched_log != NULL) && (sched_log->initialized))
 /* define a default argv0 */
@@ -173,6 +179,14 @@ static bool at_forked = false;
 
 static void _log_flush(log_t *log);
 
+static log_level_t _highest_level(log_level_t a, log_level_t b, log_level_t c)
+{
+	if (a >= b) {
+		return (a >= c) ? a : c;
+	} else {
+		return (b >= c) ? b : c;
+	}
+}
 
 /* Write the current local time into the provided buffer. Returns the
  * number of characters written into the buffer. */
@@ -361,6 +375,10 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	if (log->logfp && (fileno(log->logfp) < 0))
 		log->logfp = NULL;
 
+	highest_log_level = _highest_level(log->opt.syslog_level,
+					   log->opt.logfile_level,
+					   log->opt.stderr_level);
+
 	log->initialized = 1;
  out:
 	return rc;
@@ -447,6 +465,19 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 
 	if (sched_log->logfp && (fileno(sched_log->logfp) < 0))
 		sched_log->logfp = NULL;
+
+	highest_sched_log_level = _highest_level(sched_log->opt.syslog_level,
+						 sched_log->opt.logfile_level,
+						 sched_log->opt.stderr_level);
+
+	/*
+	 * The sched_log_level is (ab)used as a boolean. Force it to the end
+	 * if set so that the LOG_MACRO checks at least stay relatively clean,
+	 * and it's easier for us to introduce the idea of this log level
+	 * varying in the future.
+	 */
+	if (highest_sched_log_level > LOG_LEVEL_QUIET)
+		highest_sched_log_level = LOG_LEVEL_END;
 
 	sched_log->initialized = 1;
  out:
@@ -1137,7 +1168,7 @@ static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list arg
 	}
 
 	if (SCHED_LOG_INITIALIZED && sched &&
-	    (sched_log->opt.logfile_level > LOG_LEVEL_QUIET)) {
+	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
 		buf = vxstrfmt(fmt, args);
 		xlogfmtcat(&msgbuf, "[%M] %s%s%s", sched_log->fpfx, pfx, buf);
 		_log_printf(sched_log, sched_log->fbuf, sched_log->logfp,
@@ -1146,9 +1177,7 @@ static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list arg
 		xfree(msgbuf);
 	}
 
-	if ((level > log->opt.syslog_level)  &&
-	    (level > log->opt.logfile_level) &&
-	    (level > log->opt.stderr_level)) {
+	if (level > highest_log_level) {
 		slurm_mutex_unlock(&log_lock);
 		xfree(buf);
 		return;
