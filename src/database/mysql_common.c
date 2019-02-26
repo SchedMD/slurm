@@ -711,40 +711,39 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 					db_info->user, db_info->pass,
 					db_name, db_info->port, NULL,
 					CLIENT_MULTI_STATEMENTS)) {
+			const char *err_str = NULL;
 			int err = mysql_errno(mysql_conn->db_conn);
-			if (err == ER_BAD_DB_ERROR) {
-				debug("Database %s not created.  "
-				      "Creating", db_name);
-				rc = _create_db(db_name, db_info);
-			} else {
-				const char *err_str = mysql_error(
-					mysql_conn->db_conn);
-				if ((db_host == db_info->host)
-				    && db_info->backup) {
-					debug2("mysql_real_connect failed: %d %s",
-					       err, err_str);
-					db_host = db_info->backup;
-					continue;
-				}
 
-				error("mysql_real_connect failed: "
-				      "%d %s",
-				      err, err_str);
-				rc = ESLURM_DB_CONNECTION;
-				mysql_close(mysql_conn->db_conn);
-				mysql_conn->db_conn = NULL;
-				break;
+			if (err == ER_BAD_DB_ERROR) {
+				debug("Database %s not created.  Creating",
+				      db_name);
+				rc = _create_db(db_name, db_info);
+				continue;
 			}
-		} else {
-			storage_init = true;
-			if (mysql_conn->rollback)
-				mysql_autocommit(
-					mysql_conn->db_conn, 0);
-			rc = _mysql_query_internal(
-				mysql_conn->db_conn,
-				"SET session sql_mode='ANSI_QUOTES,"
-				"NO_ENGINE_SUBSTITUTION';");
+
+			err_str = mysql_error(mysql_conn->db_conn);
+
+			if ((db_host == db_info->host) && db_info->backup) {
+				debug2("mysql_real_connect failed: %d %s",
+				       err, err_str);
+				db_host = db_info->backup;
+				continue;
+			}
+
+			error("mysql_real_connect failed: %d %s",
+			      err, err_str);
+			rc = ESLURM_DB_CONNECTION;
+			mysql_close(mysql_conn->db_conn);
+			mysql_conn->db_conn = NULL;
+			break;
 		}
+
+		storage_init = true;
+		if (mysql_conn->rollback)
+			mysql_autocommit(mysql_conn->db_conn, 0);
+		rc = _mysql_query_internal(mysql_conn->db_conn,
+					   "SET session sql_mode='ANSI_QUOTES,"
+					   "NO_ENGINE_SUBSTITUTION';");
 	}
 	slurm_mutex_unlock(&mysql_conn->lock);
 	errno = rc;
