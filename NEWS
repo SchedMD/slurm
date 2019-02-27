@@ -74,6 +74,7 @@ documents those changes that are of interest to users and administrators.
  -- Change how slurmd fills in the registration message version string from
     PACKAGE_VERSION to SLURM_VERSION_STRING, affecting how the version is
     displayed with sview, sinfo, scontrol and through the API.
+ -- Remove autogen.sh script. Please use the autoreconf command instead.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

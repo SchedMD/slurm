@@ -12,7 +12,7 @@ code base.  We recommend using a git branch for this purpose.</p>
 
 <li>Modify the "Makefile.am" file in the file's parent directory.</li>
 
-<li>Execute "./autogen.sh" in Slurm's top level directory.
+<li>Execute "autoreconf" in Slurm's top level directory.
 If you have older versions of the autoconf, automake, libtool or aclocal then
 you may need to manually modify the Makefile.in file in the file's parent
 directory. If you have different versions of the files than were originally
@@ -43,7 +43,7 @@ file as a model.</li>
 <li>Identify the new Makefile to be built at Slurm configure time in the file
 "configure.ac". Please maintain the alphabetic ordering of entries.</li>
 
-<li>Execute "./autogen.sh" in Slurm's top level directory.
+<li>Execute "autoreconf" in Slurm's top level directory.
 If you have older versions of the autoconf, automake, libtool or aclocal then
 you may need to manually create or modify the Makefile.in files.
 If you have different versions of the files than were originally used by the
@@ -56,6 +56,6 @@ appropriate RPM.</li>
 repository.</li>
 </ol>
 
-<p style="text-align:center;">Last modified 28 April 2013</p>
+<p style="text-align:center;">Last modified 27 February 2019</p>
 
 <!--#include virtual="footer.txt"-->

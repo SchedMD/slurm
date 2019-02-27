@@ -17,7 +17,6 @@ EXTRA_DIST =			\
 	etc/slurmd.service.in	\
 	etc/slurmdbd.conf.example \
 	etc/slurmdbd.service.in	\
-	autogen.sh		\
 	slurm.spec		\
 	README.rst		\
 	RELEASE_NOTES		\
