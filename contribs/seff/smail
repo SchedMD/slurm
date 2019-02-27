@@ -40,15 +40,9 @@ status=`echo "${array[2]}" | tr -d ' '`
 if [ -n "$status" ]; then
     sarray=(${array[0]})
     IFS="="
-    if [ "${sarray[1]}" = "Array" ]; then
-        sarray=(${sarray[3]})
-    else
-        sarray=(${sarray[1]})
-    fi
+    sarray=(${sarray[1]})
     IFS=" "
-    jobid="${sarray[1]}"
-    # Remove the trailing "_*" until seff supports array jobs fully
-    jobid=${jobid%"_*"}
+    jobid=${sarray[1]}
     # Fork a child so sleep is asynchronous.
     {
         sleep 60
