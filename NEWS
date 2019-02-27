@@ -122,6 +122,7 @@ documents those changes that are of interest to users and administrators.
  -- X11 forwarding - fix an unnecessary error message when using the
     local_xauthority X11Parameters option.
  -- Add use_raw_hostname to X11Parameters.
+ -- Fix smail so it passes job arrays to seff correctly.
 
 * Changes in Slurm 18.08.5-2
 ============================
