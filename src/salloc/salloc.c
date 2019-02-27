@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 	List job_req_list = NULL, job_resp_list = NULL;
 	resource_allocation_response_msg_t *alloc = NULL;
 	time_t before, after;
-	allocation_msg_thread_t *msg_thr;
+	allocation_msg_thread_t *msg_thr = NULL;
 	char **env = NULL, *cluster_name;
 	int status = 0;
 	int retries = 0;
@@ -360,9 +360,16 @@ int main(int argc, char **argv)
 	callbacks.job_suspend = _job_suspend_handler;
 	callbacks.user_msg = _user_msg_handler;
 	callbacks.node_fail = _node_fail_handler;
-	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = slurm_allocation_msg_thr_create(&first_job->other_port,
-						  &callbacks);
+	/*
+	 * Create message thread to handle pings and such from slurmctld.
+	 * salloc --no-shell jobs aren't interactive, so they won't respond to
+	 * srun_ping(), so we don't want to kill it after InactiveLimit seconds.
+	 * Not creating this thread will leave other_port == 0, and will
+	 * prevent slurmctld from killing the salloc --no-shell job.
+	 */
+	if (!saopt.no_shell)
+		msg_thr = slurm_allocation_msg_thr_create(&first_job->other_port,
+							  &callbacks);
 
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */
@@ -422,7 +429,8 @@ int main(int argc, char **argv)
 		} else {
 			error("Job submit/allocate failed: %m");
 		}
-		slurm_allocation_msg_thr_destroy(msg_thr);
+		if (msg_thr)
+			slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(error_exit);
 	} else if (job_resp_list && !allocation_interrupted) {
 		/* Allocation granted to regular job */
@@ -626,7 +634,8 @@ relinquish:
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
-	slurm_allocation_msg_thr_destroy(msg_thr);
+	if (msg_thr)
+		slurm_allocation_msg_thr_destroy(msg_thr);
 
 	/*
 	 * Figure out what return code we should use.  If the user's command
