@@ -445,7 +445,8 @@ int main(int argc, char **argv)
 		} else {
 			error("Job submit/allocate failed: %m");
 		}
-		slurm_allocation_msg_thr_destroy(msg_thr);
+		if (msg_thr)
+			slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(error_exit);
 	} else if (job_resp_list && !allocation_interrupted) {
 		/* Allocation granted to regular job */
