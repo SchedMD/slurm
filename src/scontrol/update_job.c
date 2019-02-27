@@ -1506,7 +1506,7 @@ extern int parse_requeue_flags(char *s, uint32_t *flags)
 	int len;
 
 	len = strlen(s);
-	if (!xstrncasecmp(s, "failed", len)) {
+	if (!xstrncasecmp(s, "incomplete", len)) {
 		*flags |= JOB_FAILED;
 		return 0;
 	}

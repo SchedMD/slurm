@@ -62,8 +62,8 @@ documents those changes that are of interest to users and administrators.
     permit_job_expansion has been added for sites that wish to re-enable it.
  -- Permit changing a job array's ArrayTaskThrottle value even if the job is
     terminated (for job requeue).
- -- Add scontrol requeue option of "Failed" which will requeue only jobs which
-    have completed unsuccessfully (not with zero exit code).
+ -- Add scontrol requeue option of "Incomplete" which will requeue jobs only if
+    they failed to complete with an exit code of zero.
  -- Modify GrpNodes limit to apply to unique nodes allocated (avoid double
     counting nodes allocated to multiple jobs in the same QOS or association).
  -- If a job submit does NOT include --cpus-per-task option, then report the
