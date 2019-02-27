@@ -148,11 +148,27 @@ to examine the available partitions, reservations, etc.
 (input) List of pointer to partitions which this user is authorized to use.<br>
 <span class="commandline">submit_uid</span>
 (input) user ID initiating the request.<br>
-<p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">0</span> on success, or an
-errno on failure. Slurm specific error numbers from <i>slurm/slurm_errno.h</i>
-may be used. On failure, the request will be rejected and the user will have an
-appropriate error message printed for that errno. 
+<a name="job_modify_returns"></a><p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">slurm.SUCCESS</span> &mdash;
+Job submission accepted by plugin.<br>
+<span class="commandline">slurm.FAILURE</span> &mdash;
+Job submission rejected due to error (Deprecated in 19.05).<br>
+<span class="commandline">slurm.ERROR</span> &mdash;
+Job submission rejected due to error.<br>
+<span class="commandline">slurm.ESLURM_ACCESS_DENIED</span> &mdash;
+Job submission rejected due to access denied.<br>
+<span class="commandline">slurm.ESLURM_ACCOUNTING_POLICY</span> &mdash;
+Job submission rejected due to accounting policy.<br>
+<span class="commandline">slurm.ESLURM_INVALID_ACCOUNT</span> &mdash;
+Job submission rejected due to invalid account.<br>
+<span class="commandline">slurm.ESLURM_INVALID_LICENSES</span> &mdash;
+Job submission rejected due to access licenses.<br>
+<span class="commandline">slurm.ESLURM_INVALID_TIME_LIMIT</span> &mdash;
+Job submission rejected due to invalid time limit.<br>
+<span class="commandline">slurm.ESLURM_JOB_MISSING_SIZE_SPECIFICATION</span> &mdash;
+Job submission rejected due to missing size specification.<br>
+<span class="commandline">slurm.ESLURM_MISSING_TIME_LIMIT</span> &mdash;
+Job submission rejected due to missing time limit.<br>
 
 <p class="commandline">
 int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr,
@@ -174,11 +190,7 @@ be modified.<br>
 <span class="commandline">modify_uid</span>
 (input) user ID initiating the request.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
-<span class="commandline">0</span> on success, or an
-errno on failure. Slurm specific error numbers from <i>slurm/slurm_errno.h</i>
-may be used. On failure, the request will be rejected and the user will have an
-appropriate error message printed for that errno. 
-
+<a href="#job_modify_returns">Returns from job_modify() are the same as the returns from job_submit().</a>
 
 <h2>Building</h2>
 <p>Generally using a LUA interface for a job submit plugin is best:
