@@ -89,6 +89,10 @@ NOTE: 32-bit builds have been deprecated. Use --enable-deprecated to continue
 NOTE: Expansion of running jobs has been disabled. A new SchedulerParameter of
       permit_job_expansion has been added for sites that wish to re-enable it.
 
+NOTE: The version field of a node registration message now records the major
+      and minor version of slurmd. This changes the data displayed in sinfo,
+      sview, scontrol show node and the API.
+
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res

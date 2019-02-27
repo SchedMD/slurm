@@ -71,6 +71,9 @@ documents those changes that are of interest to users and administrators.
  -- X11 forwarding - use the raw value from gethostname() with xauth to avoid
     authentication issues when Slurm has internally stripped off the domain
     portion.
+ -- Change how slurmd fills in the registration message version string from
+    PACKAGE_VERSION to SLURM_VERSION_STRING, affecting how the version is
+    displayed with sview, sinfo, scontrol and through the API.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
