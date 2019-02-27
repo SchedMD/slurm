@@ -15940,7 +15940,8 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 	}
 
 	if (((flags & JOB_STATE_BASE) == JOB_FAILED) &&
-	    IS_JOB_COMPLETE(job_ptr)) {
+	    (!IS_JOB_FINISHED(job_ptr) || IS_JOB_COMPLETE(job_ptr))) {
+		/* Job completed, but not successfully */
 		return SLURM_SUCCESS;
 	}
 

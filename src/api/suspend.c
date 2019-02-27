@@ -164,8 +164,9 @@ extern int slurm_resume2(char *job_id, job_array_resp_msg_t **resp)
  *            JOB_REQUEUE_HOLD - job should be placed JOB_PENDING state and
  *		  held.
  *            JOB_RECONFIG_FAIL - Node configuration for job failed
- *            JOB_FAILED - Operate only on jobs which did not complete
- *		  successfully (i.e. NOT in state JOB_COMPLETE)
+ *            JOB_FAILED - Operate only on jobs which have completed
+ *		  unsuccessfully (i.e. operate only on terminated jobs
+ *		  without a zero exit code).
  * RET 0 or a slurm error code
  */
 extern int slurm_requeue(uint32_t job_id, uint32_t flags)
@@ -200,8 +201,9 @@ extern int slurm_requeue(uint32_t job_id, uint32_t flags)
  *            JOB_REQUEUE_HOLD - job should be placed JOB_PENDING state and
  *		  held.
  *            JOB_RECONFIG_FAIL - Node configuration for job failed
- *            JOB_FAILED - Operate only on jobs which did not complete
- *		  successfully (i.e. NOT in state JOB_COMPLETE)
+ *            JOB_FAILED - Operate only on jobs which have completed
+ *		  unsuccessfully (i.e. operate only on terminated jobs
+ *		  without a zero exit code).
  * OUT resp - per task response to the request,
  *	      free using slurm_free_job_array_resp()
  * RET 0 or a slurm error code

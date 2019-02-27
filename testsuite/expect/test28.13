@@ -91,7 +91,7 @@ expect {
 }
 
 # requeue only the failed tasks of the job array (just task 2)
-spawn $scontrol requeue incomplete $job_id
+spawn $scontrol requeue failed $job_id
 expect {
 	-re "error" {
 		send_user "\nFAILURE: error running squeue\n"
@@ -130,7 +130,7 @@ expect {
 }
 if {$match != 3} {
 	send_user "\nFAILURE: failed to requeue desired count of job array elements ($match != 3)\n"
-	exit_code 1
+	set exit_code 1
 }
 
 cancel_job $job_id
