@@ -4134,10 +4134,6 @@ If set, xauth data on the compute node will be placed in a temporary file
 \fBXAUTHORITY\fR environment variable will be injected into the job's
 environment (as well as any process captured by pam_slurm_adopt).
 This can help avoid file locking contention on the user's home directory.
-.TP 8
-\fBuse_raw_hostname\fR
-If set, xauth hostname will use the raw value of gethostname() instead
-of the local part-only (as is used elsewhere within Slurm).
 .RE
 
 .LP

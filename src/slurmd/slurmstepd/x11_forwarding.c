@@ -307,11 +307,8 @@ extern int setup_x11_forward(stepd_step_rec_t *job, int *display,
 	 * domain component), which can cause problems for some sites.
 	 * So retrieve the raw value from gethostname() again.
 	 */
-	if (xstrcasestr(conf->x11_params, "use_raw_hostname")) {
-		if (gethostname(hostname, sizeof(hostname)))
-			fatal("%s: gethostname failed: %m", __func__);
-	} else
-		strlcpy(hostname, conf->hostname, sizeof(hostname));
+	if (gethostname(hostname, sizeof(hostname)))
+		fatal("%s: gethostname failed: %m", __func__);
 
 	/*
 	 * If hostbased failed or was unavailable, try publickey instead.
