@@ -746,10 +746,10 @@ PMIX_V2_LDFLAGS
 PMIX_V2_CPPFLAGS
 PMIX_V1_LDFLAGS
 PMIX_V1_CPPFLAGS
-NVML_CPPFLAGS
-NVML_LIBS
 BUILD_NVML_FALSE
 BUILD_NVML_TRUE
+NVML_CPPFLAGS
+NVML_LIBS
 HWLOC_LDFLAGS
 HWLOC_CPPFLAGS
 HWLOC_LIBS
@@ -21092,15 +21092,6 @@ fi
 
 $as_echo "#define HAVE_NVML 1" >>confdefs.h
 
-       if test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes"; then
-  BUILD_NVML_TRUE=
-  BUILD_NVML_FALSE='#'
-else
-  BUILD_NVML_TRUE='#'
-  BUILD_NVML_FALSE=
-fi
-
-
     else
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&5
 $as_echo "$as_me: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&2;}
@@ -21108,6 +21099,14 @@ $as_echo "$as_me: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&2;}
 
 
   fi
+   if test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes"; then
+  BUILD_NVML_TRUE=
+  BUILD_NVML_FALSE='#'
+else
+  BUILD_NVML_TRUE='#'
+  BUILD_NVML_FALSE=
+fi
+
 
 
   _x_ac_pmix_dirs="/usr /usr/local"
