@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#          Test requeue of only failed tasks in the job array.
+#          Test requeue of only incomplete tasks in the job array.
 #
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -43,10 +43,11 @@ if \[ \$SLURM_ARRAY_TASK_ID == 2 \]
 then
 	exit 0
 fi
+sleep 60
 exit 1"
 
 # submit a batch job array
-spawn $sbatch -n1 --array=1-4 --output=/dev/null $file_script
+spawn $sbatch -n1 --array=1-4 --requeue --output=/dev/null $file_script
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -66,12 +67,13 @@ expect {
 	}
 }
 
-# wait for head job to complete
-if {[wait_for_job $job_id "DONE"] != 0} {
+# wait for task 2 to complete
+if {[wait_for_job ${job_id}_2 "DONE"] != 0} {
 	send_user "\nFAILURE: error waiting for job $job_id to complete\n"
 	cancel_job $job_id
 	exit 1
 }
+sleep 5
 
 # check job array states
 spawn $squeue -tall --job=$job_id
@@ -90,7 +92,7 @@ expect {
 	}
 }
 
-# requeue only the failed tasks of the job array (just task 2)
+# requeue only active tasks
 spawn $scontrol requeue incomplete $job_id
 expect {
 	-re "error" {
@@ -106,6 +108,7 @@ expect {
 		wait
 	}
 }
+sleep 5
 
 # check requeued job array states
 set match 0
@@ -130,7 +133,7 @@ expect {
 }
 if {$match != 3} {
 	send_user "\nFAILURE: failed to requeue desired count of job array elements ($match != 3)\n"
-	exit_code 1
+	set exit_code 1
 }
 
 cancel_job $job_id

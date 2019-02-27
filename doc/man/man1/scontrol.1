@@ -295,8 +295,9 @@ The command accepts the following option:
 .RS
 .TP
 \fIIncomplete\fP
-Operate only on jobs (or tasks of a job array) which have not completed
-successfully (i.e. operate only on jobs without a zero exit code).
+Operate only on jobs (or tasks of a job array) which have not completed.
+Specifically only jobs in the following states will be requeued:
+CONFIGURING, RUNNING, STOPPED or SUSPENDED.
 .RE
 
 .TP
@@ -309,8 +310,9 @@ A held job can be released using scontrol to reset its priority (e.g.
 .RS
 .TP
 \fIIncomplete\fP
-Operate only on jobs (or tasks of a job array) which have not completed
-successfully (i.e. operate only on jobs without a zero exit code).
+Operate only on jobs (or tasks of a job array) which have not completed.
+Specifically only jobs in the following states will be requeued:
+CONFIGURING, RUNNING, STOPPED or SUSPENDED.
 .TP
 \fIState=SpecialExit\fP
 The "SpecialExit" keyword specifies that the job

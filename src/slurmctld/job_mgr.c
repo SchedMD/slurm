@@ -15939,8 +15939,8 @@ static int _job_requeue_op(uid_t uid, struct job_record *job_ptr, bool preempt,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	if (((flags & JOB_STATE_BASE) == JOB_FAILED) &&
-	    IS_JOB_COMPLETE(job_ptr)) {
+	if (((flags & JOB_STATE_BASE) == JOB_RUNNING) &&
+	    !IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
 		return SLURM_SUCCESS;
 	}
 
