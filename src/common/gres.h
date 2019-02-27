@@ -70,6 +70,10 @@ typedef struct {
 
 #define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
 
+/* GRES AutoDetect options */
+#define GRES_AUTODETECT_NONE    0x00000000
+#define GRES_AUTODETECT_NVML    0x00000001
+
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
 	uint8_t config_flags;	/* See GRES_CONF_* values above */
@@ -1249,6 +1253,8 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 extern gres_job_state_t *gres_get_job_state(List gres_list, char *name);
 extern gres_step_state_t *gres_get_step_state(List gres_list, char *name);
 
+extern uint32_t gres_get_autodetect_types(void);
+
 /*
  * Translate a gres_list into a tres_str
  * IN gres_list - filled in with gres_job_state_t or gres_step_state_t's
@@ -1286,10 +1292,22 @@ extern char *gres_device_major(char *dev_path);
 /* Free memory for gres_device_t record */
 extern void destroy_gres_device(void *gres_device_ptr);
 
+/* Destroy a gres_slurmd_conf_t record, free it's memory */
+extern void destroy_gres_slurmd_conf(void *x);
+
 /*
  * Convert GRES config_flags to a string. The pointer returned references local
  * storage in this function, which is not re-entrant.
  */
 extern char *gres_flags2str(uint8_t config_flags);
+
+/*
+ * Creates a gres_slurmd_conf_t record to add to a list of gres_slurmd_conf_t
+ * records
+ */
+extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
+			     int cpu_cnt, char *cpu_aff_abs_range,
+			     char *device_file, char *type, char *links,
+			     bool ignore);
 
 #endif /* !_GRES_H */

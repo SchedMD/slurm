@@ -114,6 +114,7 @@ libcommon_la_SOURCES = 			\
 	write_labelled_message.h	\
 	proc_args.c proc_args.h		\
 	node_conf.h node_conf.c		\
+	gpu.h gpu.c			\
 	gres.h gres.c			\
 	entity.h entity.c		\
 	layout.h layout.c		\

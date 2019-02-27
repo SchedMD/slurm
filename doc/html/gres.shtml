@@ -58,10 +58,12 @@ NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,mps:400,bandwidth:lustre:no_cons
 </PRE>
 
 <P>Each compute node with generic resources typically contain a <I>gres.conf</I>
-file describing which resources are available on the node, their count, 
+file describing which resources are available on the node, their count,
 associated device files and cores which should be used with those resources.
-In the case of GPUs, their configuration will be automatically gathered using
-the NVML library, if installed.
+In the case of GPUs, and the <I>gres.conf</I> AutoDetect variable
+contains <I>nvml</I> and that nvml lib is installed and was present during Slurm
+configuration, their configuration will be automatically gathered using the NVML
+library.
 Configuration information about all other generic resource must explicitly be
 described in the <I>gres.conf</I> file.
 The configuration parameters available are:</P>
@@ -143,6 +145,7 @@ If <B>Type</B> is specified, then <B>Count</B> is limited in size (currently 102
 <P>Sample gres.conf file:</P>
 <PRE>
 # Configure support for four GPUs (with MPS), plus bandwidth
+AutoDetect=nvml
 Name=gpu Type=gp100  File=/dev/nvidia0 Cores=0,1
 Name=gpu Type=gp100  File=/dev/nvidia1 Cores=0,1
 Name=gpu Type=p6000  File=/dev/nvidia2 Cores=2,3
@@ -322,6 +325,7 @@ Two example configurations for Slurm's gres.conf file are shown below.</p>
 <PRE>
 # Example 1 of gres.conf
 # Configure support for four GPUs (with MPS), plus bandwidth
+AutoDetect=nvml
 Name=gpu Type=gp100 File=/dev/nvidia0 Cores=0,1
 Name=gpu Type=gp100 File=/dev/nvidia1 Cores=0,1
 Name=gpu Type=p6000 File=/dev/nvidia2 Cores=2,3
@@ -334,6 +338,7 @@ Name=bandwidth Type=lustre Count=4G
 <PRE>
 # Example 2 of gres.conf
 # Configure support for four differernt GPU types (with MPS)
+AutoDetect=nvml
 Name=gpu Type=gtx1080 File=/dev/nvidia0 Cores=0,1
 Name=gpu Type=gtx1070 File=/dev/nvidia1 Cores=0,1
 Name=gpu Type=gtx1060 File=/dev/nvidia2 Cores=2,3

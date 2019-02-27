@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "December 2018" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "February 2019" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for generic resource management.
@@ -52,6 +52,11 @@ plugin.
 
 .LP
 The overall configuration parameters available include:
+
+.TP
+\fBAutoDetect\fR
+Comma separated list of the types of GRES to auto detect.  Valid options are
+'nvml'.  This is needed to use any outside system to configure GRES.
 
 .TP
 \fBCount\fR
@@ -156,8 +161,8 @@ If specified, then this line can only contain a single GRES device (i.e. can
 only contain a single file via \fBFile\fR).
 
 
-This is an optional value and is typically automatically determined using
-the NVIDIA NVML library.
+This is an optional value and is typically automatically determined
+autodetecting the NVIDIA NVML library.
 A typical use case would be to identify GPUs having NVLink connectivity.
 Note that for GPUs, the minor number assigned by the OS and used in the device
 file (i.e. the X in \fI/dev/nvidiaX\fR) is not necessarily the same as the
@@ -215,6 +220,8 @@ ignored GRES to just that node.
 ## Define GPU devices with MPS support
 .br
 ##################################################################
+.br
+AutoDetect=nvml
 .br
 Name=gpu Type=gtx560 File=/dev/nvidia0 COREs=0,1
 .br
@@ -308,7 +315,7 @@ NodeName=tux15 Name=gpu File=/dev/nvidia0 Ignore=true
 Copyright (C) 2010 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
-Copyright (C) 2010\-2018 SchedMD LLC.
+Copyright (C) 2010\-2019 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.
