@@ -118,6 +118,7 @@ documents those changes that are of interest to users and administrators.
  -- docs - change HTML title to include the page title or man page name.
  -- X11 forwarding - fix an unnecessary error message when using the
     local_xauthority X11Parameters option.
+ -- Add use_raw_hostname to X11Parameters.
 
 * Changes in Slurm 18.08.5-2
 ============================
