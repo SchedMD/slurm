@@ -1287,8 +1287,18 @@ static int _part_rec_field(const struct part_record *part_ptr,
 	if (part_ptr == NULL) {
 		error("_get_part_field: part_ptr is NULL");
 		lua_pushnil (L);
+	} else if (!xstrcmp(name, "allow_accounts")) {
+		lua_pushstring (L, part_ptr->allow_accounts);
+	} else if (!xstrcmp(name, "allow_alloc_nodes")) {
+		lua_pushstring (L, part_ptr->allow_alloc_nodes);
+	} else if (!xstrcmp(name, "allow_groups")) {
+		lua_pushstring (L, part_ptr->allow_groups);
 	} else if (!xstrcmp(name, "allow_qos")) {
 		lua_pushstring (L, part_ptr->allow_qos);
+	} else if (!xstrcmp(name, "alternate")) {
+		lua_pushstring (L, part_ptr->alternate);
+	} else if (!xstrcmp(name, "billing_weights_str")) {
+		lua_pushstring (L, part_ptr->billing_weights_str);
 	} else if (!xstrcmp(name, "default_time")) {
 		lua_pushnumber (L, part_ptr->default_time);
 	} else if (!xstrcmp(name, "def_mem_per_cpu") &&
@@ -1297,6 +1307,10 @@ static int _part_rec_field(const struct part_record *part_ptr,
 	} else if (!xstrcmp(name, "def_mem_per_node") &&
 		  !(part_ptr->def_mem_per_cpu & MEM_PER_CPU)) {
 		lua_pushnumber (L, part_ptr->def_mem_per_cpu);
+	} else if (!xstrcmp(name, "deny_accounts")) {
+		lua_pushstring (L, part_ptr->deny_accounts);
+	} else if (!xstrcmp(name, "deny_qos")) {
+		lua_pushstring (L, part_ptr->deny_qos);
 	} else if (!xstrcmp(name, "flag_default")) {
 		int is_default = 0;
 		if (part_ptr->flags & PART_FLAG_DEFAULT)

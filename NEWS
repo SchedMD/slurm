@@ -77,6 +77,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove autogen.sh script. Please use the autoreconf command instead.
  -- Disable a configuration of SelectTypeParameters=CR_ONE_TASK_PER_CORE with
     SelectType=select/cons_tres. This will be addressed later.
+ -- job_submit/lua - expose more fields off the partition record.
 
 * Changes in Slurm 19.05.0pre1
 ==============================
