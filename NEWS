@@ -78,6 +78,8 @@ documents those changes that are of interest to users and administrators.
  -- Disable a configuration of SelectTypeParameters=CR_ONE_TASK_PER_CORE with
     SelectType=select/cons_tres. This will be addressed later.
  -- job_submit/lua - expose more fields off the partition record.
+ -- task/cgroup - prevent setting a memory.soft_limit_in_bytes higher than the
+    memory.limit_in_bytes since the hard limit will take precedence anyway.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

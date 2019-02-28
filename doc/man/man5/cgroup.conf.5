@@ -57,11 +57,19 @@ it will be reset to that upper or lower limit, whichever has been exceeded.
 
 .TP
 \fBAllowedRAMSpace\fR=<number>
-Constrain the job cgroup RAM to this percentage of the allocated memory.
-The percentage supplied may be expressed as floating point
-number, e.g. 98.5. If the \fBAllowedRAMSpace\fR limit is exceeded, the
-job steps will be killed and a warning message will be written to standard
-error.  Also see \fBConstrainRAMSpace\fR.
+Constrain the job/step cgroup RAM to this percentage of the allocated memory.
+The percentage supplied may be expressed as floating point number, e.g. 101.5.
+Sets the cgroup soft memory limit at the allocated memory size and then sets the
+job/step hard memory limit at the (AllowedRAMSpace/100) * allocated memory. If
+the job/step exceeds the hard limit, then it might trigger Out Of Memory (OOM)
+events (including oom-kill) which will be logged to kernel log ringbuffer
+(dmesg in Linux). Setting AllowedRAMSpace above 100 may cause system Out of
+Memory (OOM) events as it allows job/step to allocate more memory than
+configured to the nodes.  Reducing configured node available memory to avoid
+system OOM events is suggested.  Setting AllowedRAMSpace below 100 will result
+in jobs recieving less memory than allocated and soft memory limit will set to
+the same value as the hard limit.
+Also see \fBConstrainRAMSpace\fR.
 The default value is 100.
 
 .TP
