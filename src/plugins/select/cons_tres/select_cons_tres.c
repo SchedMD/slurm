@@ -918,7 +918,7 @@ extern int init(void)
 
 	cr_type = slurmctld_conf.select_type_param;
 	if (cr_type)
-		verbose("%s loaded with argument %u", plugin_name, cr_type);
+		verbose("%s loaded with argument %u", plugin_type, cr_type);
 
 	select_debug_flags = slurm_get_debug_flags();
 
@@ -944,9 +944,9 @@ extern int init(void)
 extern int fini(void)
 {
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		info("%s shutting down ...", plugin_name);
+		info("%s shutting down ...", plugin_type);
 	else
-		verbose("%s shutting down ...", plugin_name);
+		verbose("%s shutting down ...", plugin_type);
 	cr_destroy_node_data(select_node_usage, select_node_record);
 	select_node_record = NULL;
 	select_node_usage = NULL;
