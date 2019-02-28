@@ -367,16 +367,6 @@ static int memcg_initialize (xcgroup_ns_t *ns, xcgroup_t *cg,
 	uint64_t mlb_soft = mem_limit_in_bytes(mem_limit, false);
 	uint64_t mls = swap_limit_in_bytes  (mem_limit);
 
-	if (mlb_soft > mlb) {
-		/*
-		 * NOTE: It is recommended to set the soft limit always below
-		 * the hard limit, otherwise the hard one will take precedence.
-		 */
-		debug2("%s: Setting memory.soft_limit_in_bytes (%"PRIu64" bytes) to the same value as memory.limit_in_bytes (%"PRIu64" bytes) for cgroup: %s",
-		       __func__, mlb_soft, mlb, path);
-		mlb_soft = mlb;
-	}
-
 	if (xcgroup_create (ns, cg, path, uid, gid) != XCGROUP_SUCCESS)
 		return -1;
 
