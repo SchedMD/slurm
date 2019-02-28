@@ -911,6 +911,11 @@ extern int init(void)
 {
 	char *topo_param;
 
+	if (slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) {
+		fatal("%s does not currently support SelectTypeParameters=CR_ONE_TASK_PER_CORE",
+		      plugin_type);
+	}
+
 	cr_type = slurmctld_conf.select_type_param;
 	if (cr_type)
 		verbose("%s loaded with argument %u", plugin_name, cr_type);
