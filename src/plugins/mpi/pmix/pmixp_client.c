@@ -135,6 +135,7 @@ static void _release_cb(pmix_status_t status, void *cbdata)
 static void _general_proc_info(List lresp)
 {
 	pmix_info_t *kvp;
+	bool flag = 0;
 	/* TODO: how can we get this information in SLURM?
 	 * PMIXP_ALLOC_KEY(kvp, PMIX_CPUSET);
 	 * PMIX_VAL_SET(&kvp->value, string, "");
@@ -143,8 +144,7 @@ static void _general_proc_info(List lresp)
 	 * #define PMIX_CREDENTIAL            "pmix.cred"
 	 * TODO: Once spawn will be implemented we'll need to check here
 	 */
-	PMIXP_ALLOC_KEY(kvp, PMIX_SPAWNED);
-	PMIX_VAL_SET(&kvp->value, flag, 0);
+	PMIXP_KVP_CREATE(kvp, PMIX_SPAWNED, &flag, PMIX_BOOL);
 	list_append(lresp, kvp);
 
 	/*
@@ -168,17 +168,14 @@ static void _set_tmpdirs(List lresp)
 	 * do we need to do anything else?
 	 */
 	p = pmixp_info_tmpdir_cli_base();
-	PMIXP_ALLOC_KEY(kvp, PMIX_TMPDIR);
-	PMIX_VAL_SET(&kvp->value, string, p);
+	PMIXP_KVP_CREATE(kvp, PMIX_TMPDIR, p, PMIX_STRING);
 	list_append(lresp, kvp);
 
 	p = pmixp_info_tmpdir_cli();
-	PMIXP_ALLOC_KEY(kvp, PMIX_NSDIR);
-	PMIX_VAL_SET(&kvp->value, string, p);
+	PMIXP_KVP_CREATE(kvp, PMIX_NSDIR, p, PMIX_STRING);
 	list_append(lresp, kvp);
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_TDIR_RMCLEAN);
-	PMIX_VAL_SET(&kvp->value, flag, rmclean);
+	PMIXP_KVP_CREATE(kvp, PMIX_TDIR_RMCLEAN, &rmclean, PMIX_BOOL);
 	list_append(lresp, kvp);
 }
 
@@ -194,13 +191,11 @@ static void _set_procdatas(List lresp)
 
 	/* (char*) jobid assigned by scheduler */
 	xstrfmtcat(p, "%d.%d", pmixp_info_jobid(), pmixp_info_stepid());
-	PMIXP_ALLOC_KEY(kvp, PMIX_JOBID);
-	PMIX_VAL_SET(&kvp->value, string, p);
+	PMIXP_KVP_CREATE(kvp, PMIX_JOBID, p, PMIX_STRING);
 	xfree(p);
 	list_append(lresp, kvp);
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_NODEID);
-	PMIX_VAL_SET(&kvp->value, uint32_t, nsptr->node_id);
+	PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nsptr->node_id, PMIX_UINT32);
 	list_append(lresp, kvp);
 
 	/* store information about local processes */
@@ -210,10 +205,11 @@ static void _set_procdatas(List lresp)
 		int count, j, localid, nodeid;
 		char *nodename;
 		pmix_info_t *info;
+		int tmp;
 
 		rankinfo = list_create(pmixp_xfree_xmalloced);
 
-		PMIXP_ALLOC_KEY(kvp, PMIX_RANK);
+		PMIXP_KVP_ALLOC(kvp, PMIX_RANK);
 		PMIXP_VAL_SET_RANK(&kvp->value, i);
 		list_append(rankinfo, kvp);
 
@@ -221,42 +217,39 @@ static void _set_procdatas(List lresp)
 		 * though (see Slurm MIMD: man srun, section MULTIPLE PROGRAM
 		 * CONFIGURATION)
 		 */
-		PMIXP_ALLOC_KEY(kvp, PMIX_APPNUM);
-		PMIX_VAL_SET(&kvp->value, int, 0);
+		tmp = 0;
+		PMIXP_KVP_CREATE(kvp, PMIX_APPNUM, &tmp, PMIX_INT);
 		list_append(rankinfo, kvp);
 
 		/* TODO: the same as for previous here */
-		PMIXP_ALLOC_KEY(kvp, PMIX_APPLDR);
-		PMIX_VAL_SET(&kvp->value, int, 0);
+		tmp = 0;
+		PMIXP_KVP_CREATE(kvp, PMIX_APPLDR, &tmp, PMIX_INT);
 		list_append(rankinfo, kvp);
 
 		/* TODO: fix when several apps will appear */
-		PMIXP_ALLOC_KEY(kvp, PMIX_GLOBAL_RANK);
-		PMIX_VAL_SET(&kvp->value, uint32_t, i);
+		PMIXP_KVP_CREATE(kvp, PMIX_GLOBAL_RANK, &i, PMIX_UINT32);
 		list_append(rankinfo, kvp);
 
 		/* TODO: fix when several apps will appear */
-		PMIXP_ALLOC_KEY(kvp, PMIX_APP_RANK);
-		PMIX_VAL_SET(&kvp->value, uint32_t, i);
+		PMIXP_KVP_CREATE(kvp, PMIX_APP_RANK, &i, PMIX_UINT32);
 		list_append(rankinfo, kvp);
 
 		localid = pmixp_info_taskid2localid(i);
 		/* this rank is local, store local info ab't it! */
 		if (0 <= localid) {
-			PMIXP_ALLOC_KEY(kvp, PMIX_LOCAL_RANK);
-			PMIX_VAL_SET(&kvp->value, uint16_t, localid);
+			PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_RANK,
+					 &localid, PMIX_UINT16);
 			list_append(rankinfo, kvp);
 
 			/* TODO: fix when several apps will appear */
-			PMIXP_ALLOC_KEY(kvp, PMIX_NODE_RANK);
-			PMIX_VAL_SET(&kvp->value, uint16_t, localid);
+			PMIXP_KVP_CREATE(kvp, PMIX_NODE_RANK,
+					 &localid, PMIX_UINT16);
 			list_append(rankinfo, kvp);
 		}
 
 		nodeid = nsptr->task_map[i];
 		nodename = hostlist_nth(nsptr->hl, nodeid);
-		PMIXP_ALLOC_KEY(kvp, PMIX_HOSTNAME);
-		PMIX_VAL_SET(&kvp->value, string, nodename);
+		PMIXP_KVP_CREATE(kvp, PMIX_HOSTNAME, nodename, PMIX_STRING);
 		list_append(rankinfo, kvp);
 		free(nodename);
 
@@ -274,7 +267,7 @@ static void _set_procdatas(List lresp)
 			j++;
 		}
 		list_destroy(rankinfo);
-		PMIXP_ALLOC_KEY(kvp, PMIX_PROC_DATA);
+		PMIXP_KVP_ALLOC(kvp, PMIX_PROC_DATA);
 		PMIXP_INFO_ARRAY_CREATE(kvp, info, count);
 		info = NULL;
 
@@ -286,28 +279,28 @@ static void _set_procdatas(List lresp)
 static void _set_sizeinfo(List lresp)
 {
 	pmix_info_t *kvp;
+	uint32_t tmp_val;
 	/* size information */
-	PMIXP_ALLOC_KEY(kvp, PMIX_UNIV_SIZE);
-	PMIX_VAL_SET(&kvp->value, uint32_t, pmixp_info_tasks_uni());
+	tmp_val = pmixp_info_tasks_uni();
+	PMIXP_KVP_CREATE(kvp, PMIX_UNIV_SIZE, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_JOB_SIZE);
-	PMIX_VAL_SET(&kvp->value, uint32_t, pmixp_info_tasks());
+	tmp_val = pmixp_info_tasks();
+	PMIXP_KVP_CREATE(kvp, PMIX_JOB_SIZE, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_LOCAL_SIZE);
-	PMIX_VAL_SET(&kvp->value, uint32_t, pmixp_info_tasks_loc());
+	tmp_val = pmixp_info_tasks_loc();
+	PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_SIZE, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
 
 	/* TODO: fix it in future */
-	PMIXP_ALLOC_KEY(kvp, PMIX_NODE_SIZE);
-	PMIX_VAL_SET(&kvp->value, uint32_t, pmixp_info_tasks_loc());
+	tmp_val = pmixp_info_tasks_loc();
+	PMIXP_KVP_CREATE(kvp, PMIX_NODE_SIZE, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_MAX_PROCS);
-	PMIX_VAL_SET(&kvp->value, uint32_t, pmixp_info_tasks_uni());
+	tmp_val = pmixp_info_tasks_uni();
+	PMIXP_KVP_CREATE(kvp, PMIX_MAX_PROCS, &tmp_val, PMIX_UINT32);
 	list_append(lresp, kvp);
-
 }
 
 /*
@@ -353,8 +346,7 @@ static void _set_topology(List lresp)
 		goto err_release_topo;
 	}
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_LOCAL_TOPO);
-	PMIX_VAL_SET(&kvp->value, string, p);
+	PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_TOPO, p, PMIX_STRING);
 	list_append(lresp, kvp);
 
 	/* successful exit - fallthru */
@@ -381,8 +373,7 @@ static int _set_mapsinfo(List lresp)
 	if (PMIX_SUCCESS != rc) {
 		return SLURM_ERROR;
 	}
-	PMIXP_ALLOC_KEY(kvp, PMIX_NODE_MAP);
-	PMIX_VAL_SET(&kvp->value, string, regexp);
+	PMIXP_KVP_CREATE(kvp, PMIX_NODE_MAP, regexp, PMIX_STRING);
 	regexp = NULL;
 	list_append(lresp, kvp);
 
@@ -412,14 +403,11 @@ static int _set_mapsinfo(List lresp)
 		return SLURM_ERROR;
 	}
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_PROC_MAP);
-	PMIX_VAL_SET(&kvp->value, string, regexp);
+	PMIXP_KVP_CREATE(kvp, PMIX_PROC_MAP, regexp, PMIX_STRING);
 	regexp = NULL;
 	list_append(lresp, kvp);
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_ANL_MAP);
-	PMIX_VAL_SET(&kvp->value, string, pmixp_info_task_map());
-	regexp = NULL;
+	PMIXP_KVP_CREATE(kvp, PMIX_ANL_MAP, pmixp_info_task_map(), PMIX_STRING);
 	list_append(lresp, kvp);
 
 	return SLURM_SUCCESS;
@@ -442,13 +430,11 @@ static void _set_localinfo(List lresp)
 		}
 	}
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_LOCAL_PEERS);
-	PMIX_VAL_SET(&kvp->value, string, p);
+	PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_PEERS, p, PMIX_STRING);
 	xfree(p);
 	list_append(lresp, kvp);
 
-	PMIXP_ALLOC_KEY(kvp, PMIX_LOCALLDR);
-	PMIX_VAL_SET(&kvp->value, uint32_t, tmp);
+	PMIXP_KVP_CREATE(kvp, PMIX_LOCALLDR, &tmp, PMIX_UINT32);
 	list_append(lresp, kvp);
 }
 

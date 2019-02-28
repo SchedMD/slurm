@@ -40,14 +40,32 @@
 
 #include "pmixp_common.h"
 
-#define PMIXP_ALLOC_KEY(kvp, key_str)				\
+#ifdef PMIX_VALUE_LOAD
+#define PMIXP_VALUE_LOAD PMIX_VALUE_LOAD
+#else
+#define PMIXP_VALUE_LOAD pmix_value_load
+#endif
+
+#define PMIXP_KVP_ALLOC(kvp, key_str)				\
 {								\
 	char *key = key_str;					\
 	kvp = (pmix_info_t *)xmalloc(sizeof(pmix_info_t));	\
 	(void)strncpy(kvp->key, key, PMIX_MAX_KEYLEN);		\
 }
 
-#define PMIXP_INFO_ADD(kvp, key_str, field, val) {			\
+#define PMIXP_KVP_CREATE(kvp, key_str, val, type)		\
+{								\
+	PMIXP_KVP_ALLOC(kvp, key_str);				\
+	PMIX_INFO_LOAD(kvp, key_str, val, type);		\
+}
+
+
+#define PMIXP_KVP_LOAD(kvp, val, type)				\
+{								\
+	PMIX_INFO_LOAD(kvp, NULL, val, type);			\
+}
+
+#define PMIXP_KVP_ADD(kvp, key_str, val, type) {			\
 	int key_num = 0;						\
 	char *key = key_str;						\
 	if (!kvp) {							\
@@ -58,7 +76,7 @@
 					      sizeof(pmix_info_t));	\
 	}								\
 	(void)strncpy(kvp[key_num].key, key, PMIX_MAX_KEYLEN);		\
-	PMIX_VAL_SET(&kvp[key_num].value, field, val);			\
+	PMIXP_VALUE_LOAD(&kvp[key_num].value, val, type);		\
 }
 
 #define PMIXP_INFO_SIZE(kvp) (xsize(kvp) / sizeof(pmix_info_t))

@@ -230,12 +230,13 @@ int pmixp_lib_init(void)
 {
 	pmix_info_t *kvp = NULL;
 	pmix_status_t rc;
+	uint32_t jobuid = pmixp_info_jobuid();
 
-	PMIXP_INFO_ADD(kvp, PMIX_USERID, uint32_t, pmixp_info_jobuid());
+	PMIXP_KVP_ADD(kvp, PMIX_USERID, &jobuid, PMIX_UINT32);
 
 #ifdef PMIX_SERVER_TMPDIR
-	PMIXP_INFO_ADD(kvp, PMIX_SERVER_TMPDIR, string,
-		       pmixp_info_tmpdir_lib());
+	PMIXP_KVP_ADD(kvp, PMIX_SERVER_TMPDIR,
+		      pmixp_info_tmpdir_lib(), PMIX_STRING);
 #endif
 
 	/* setup the server library */
