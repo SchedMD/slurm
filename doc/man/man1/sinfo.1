@@ -86,7 +86,11 @@ Don't convert units from their original type (e.g. 2048M won't be converted to
 
 .TP
 \fB\-N\fR, \fB\-\-Node\fR
-Print information in a node\-oriented format with one line per node.
+Print information in a node\-oriented format with one line per node
+and partition. That is, if a node belongs to more than one partition, then one
+line for each node\-partition pair will be shown.
+If \fB\-\-partition\fR is also specified, then only one line per node in this
+partition is shown.
 The default is to print information in a partition\-oriented format.
 This is ignored if the \fB\-\-format\fR option is specified.
 
