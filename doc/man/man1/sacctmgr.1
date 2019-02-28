@@ -1907,10 +1907,6 @@ This is the case for each limit that deals with TRES.  To remove the
 limit \-1 is used i.e. GrpTRESMins=cpu=-1 would remove only the cpu
 TRES limit.
 
-NOTE: On GrpTRES limits dealing with nodes as a TRES.  Each job's node
-allocation is counted separately (i.e. if a single node has resources
-allocated to two jobs, this is counted as two allocated nodes).
-
 NOTE: When dealing with Memory as a TRES all limits are in MB.
 
 NOTE: The Billing TRES is calculated from a partition's TRESBillingWeights. It
@@ -1998,10 +1994,6 @@ association and all associations which are children of this association.
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
-.P
-NOTE: Each job's node allocation is counted separately (i.e. if a
-single node has resources allocated to two jobs, this is counted as
-two allocated nodes).
 .TP
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
@@ -2079,10 +2071,6 @@ association and all associations which are children of this association.
 Maximum number of nodes running jobs are able to be
 allocated in aggregate for this association and all associations which
 are children of this association.
-.P
-NOTE: Each job's node allocation is counted separately (i.e. if a
-single node has resources allocated to two jobs, this is counted as
-two allocated nodes).
 .TP
 \fIGrpSubmitJobs=\fP
 Maximum number of jobs which can be in a pending or
