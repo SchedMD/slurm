@@ -911,7 +911,8 @@ extern int init(void)
 {
 	char *topo_param;
 
-	if (slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) {
+	if (run_in_daemon("slurmctld") &&
+	    (slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE)) {
 		fatal("%s does not currently support SelectTypeParameters=CR_ONE_TASK_PER_CORE",
 		      plugin_type);
 	}
