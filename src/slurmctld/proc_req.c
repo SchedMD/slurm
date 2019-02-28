@@ -6047,6 +6047,9 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 		node_ptr->last_response = now + slurmctld_conf.resume_timeout;
 		if (reboot_msg) {
 			node_ptr->next_state = reboot_msg->next_state;
+			if (node_ptr->next_state == NODE_RESUME)
+				bit_set(rs_node_bitmap, i);
+
 			if (reboot_msg->reason) {
 				xfree(node_ptr->reason);
 				node_ptr->reason = xstrdup(reboot_msg->reason);

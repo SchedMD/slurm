@@ -4134,6 +4134,7 @@ extern void check_reboot_nodes()
 
 			set_node_down_ptr(node_ptr, NULL);
 			node_ptr->node_state &= (~NODE_STATE_REBOOT);
+			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 
 			if ((node_ptr->next_state != NO_VAL) &&
 			    node_ptr->reason) {

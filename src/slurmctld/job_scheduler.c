@@ -1199,6 +1199,7 @@ static int _schedule(uint32_t job_limit)
 	failed_resv = xmalloc(sizeof(struct slurmctld_resv*) * MAX_FAILED_RESV);
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	bit_and_not(avail_node_bitmap, booting_node_bitmap);
+	bit_or(avail_node_bitmap, rs_node_bitmap);
 
 	/* Avoid resource fragmentation if important */
 	if (reduce_completing_frag) {
