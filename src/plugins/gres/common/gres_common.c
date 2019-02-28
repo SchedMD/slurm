@@ -137,17 +137,19 @@ extern int common_node_config_load(List gres_conf_list,
 	list_iterator_destroy(itr);
 	list_destroy(names_list);
 
-	itr = list_iterator_create(*gres_devices);
-	while ((gres_device = list_next(itr))) {
-		if (gres_device->dev_num == -1)
-			gres_device->dev_num = ++max_dev_num;
-		if (debug_flags & DEBUG_FLAG_GRES) {
-			info("%s device number %d(%s):%s",
-			     gres_name, gres_device->dev_num,
-			     gres_device->path, gres_device->major);
+	if (*gres_devices) {
+		itr = list_iterator_create(*gres_devices);
+		while ((gres_device = list_next(itr))) {
+			if (gres_device->dev_num == -1)
+				gres_device->dev_num = ++max_dev_num;
+			if (debug_flags & DEBUG_FLAG_GRES) {
+				info("%s device number %d(%s):%s",
+				     gres_name, gres_device->dev_num,
+				     gres_device->path, gres_device->major);
+			}
 		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
 
 	return rc;
 }
