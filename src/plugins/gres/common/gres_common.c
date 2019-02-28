@@ -62,14 +62,15 @@ extern int common_node_config_load(List gres_conf_list,
 				   char *gres_name,
 				   List *gres_devices)
 {
-	int i, rc = SLURM_SUCCESS;
+	int i, tmp, rc = SLURM_SUCCESS;
 	ListIterator itr;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	hostlist_t hl;
-	char *slash, *root_path, *one_name;
+	char *root_path, *one_name;
 	gres_device_t *gres_device;
 	uint64_t debug_flags;
 	List names_list;
+	int max_dev_num = -1;
 
 	xassert(gres_conf_list);
 	xassert(gres_devices);
@@ -83,15 +84,8 @@ extern int common_node_config_load(List gres_conf_list,
 		    xstrcmp(gres_slurmd_conf->name, gres_name))
 			continue;
 		root_path = xstrdup(gres_slurmd_conf->file);
-		slash = strrchr(root_path, '/');
-		if (slash) {
-			hl = hostlist_create(slash + 1);
-			slash[1] = '\0';
-		} else {
-			hl = hostlist_create(root_path);
-			root_path[0] = '\0';
-		}
 
+		hl = hostlist_create(root_path);
 		if (!hl) {
 			error("can't parse gres.conf file record (%s)",
 			      gres_slurmd_conf->file);
@@ -99,6 +93,7 @@ extern int common_node_config_load(List gres_conf_list,
 			continue;
 		}
 		while ((one_name = hostlist_shift(hl))) {
+			int digit = -1;
 			if (!*gres_devices) {
 				*gres_devices =
 					list_create(destroy_gres_device);
@@ -106,18 +101,26 @@ extern int common_node_config_load(List gres_conf_list,
 			gres_device = xmalloc(sizeof(gres_device_t));
 			list_append(*gres_devices, gres_device);
 
-			xstrfmtcat(gres_device->path, "%s%s",
-				   root_path, one_name);
+			gres_device->path = xstrdup(one_name);
 
 			gres_device->major = gres_device_major(
 				gres_device->path);
-
-			for (i = 0; one_name[i]; i++) {
-				if (!isdigit(one_name[i]))
+			tmp = strlen(one_name);
+			for (i = 1;  i <= tmp; i++) {
+				if (isdigit(one_name[tmp - i])) {
+					digit = tmp - i;
 					continue;
-				gres_device->dev_num = atoi(one_name + i);
+				}
 				break;
 			}
+			if (digit >= 0)
+				gres_device->dev_num = atoi(one_name + digit);
+			else
+				gres_device->dev_num = -1;
+
+			if (gres_device->dev_num > max_dev_num)
+				max_dev_num = gres_device->dev_num;
+
 			if ((rc == SLURM_SUCCESS) &&
 			    list_find_first(names_list, _match_name_list,
 					    one_name)) {
@@ -126,11 +129,6 @@ extern int common_node_config_load(List gres_conf_list,
 				rc = SLURM_ERROR;
 			}
 
-			if (debug_flags & DEBUG_FLAG_GRES) {
-				info("%s device number %d(%s):%s",
-				     gres_name, gres_device->dev_num,
-				     gres_device->path, gres_device->major);
-			}
 			(void) list_append(names_list, one_name);
 		}
 		hostlist_destroy(hl);
@@ -138,6 +136,18 @@ extern int common_node_config_load(List gres_conf_list,
 	}
 	list_iterator_destroy(itr);
 	list_destroy(names_list);
+
+	itr = list_iterator_create(*gres_devices);
+	while ((gres_device = list_next(itr))) {
+		if (gres_device->dev_num == -1)
+			gres_device->dev_num = ++max_dev_num;
+		if (debug_flags & DEBUG_FLAG_GRES) {
+			info("%s device number %d(%s):%s",
+			     gres_name, gres_device->dev_num,
+			     gres_device->path, gres_device->major);
+		}
+	}
+	list_iterator_destroy(itr);
 
 	return rc;
 }
