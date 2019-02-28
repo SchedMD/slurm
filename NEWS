@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix node state printing of DRAINED$
  -- Fix spamming dbd of down/drained nodes in maintenance reservation.
  -- Avoid buffer overflow in time_str2secs.
+ -- Calculate suspended time for suspended steps.
 
 * Changes in Slurm 18.08.5-2
 ============================

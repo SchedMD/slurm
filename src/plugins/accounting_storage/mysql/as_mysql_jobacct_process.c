@@ -971,6 +971,10 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			/* figure this out by start stop */
 			step->suspended =
 				slurm_atoul(step_row[STEP_REQ_SUSPENDED]);
+
+			/* fix the suspended number to be correct */
+			if (step->state == JOB_SUSPENDED)
+				step->suspended = now - step->suspended;
 			if (!step->start) {
 				step->elapsed = 0;
 			} else if (!step->end) {
