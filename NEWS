@@ -80,6 +80,11 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - expose more fields off the partition record.
  -- task/cgroup - prevent setting a memory.soft_limit_in_bytes higher than the
     memory.limit_in_bytes since the hard limit will take precedence anyway.
+ -- If a GrpNodes limit is configurated in an association, partition QOS or
+    job QOS then favor use of nodes already allocated to that entity. This
+    will result in the configured node "Weight" being incremented by one for
+    nodes which are not prefered. Consider adjusting configured node "Weight"
+    values to achieve the desired node preferences.
 
 * Changes in Slurm 19.05.0pre1
 ==============================

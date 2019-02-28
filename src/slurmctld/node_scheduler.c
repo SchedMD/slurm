@@ -129,6 +129,7 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr,
 				 char **err_msg);
 
+static bitstr_t *_find_grp_node_bitmap(struct job_record *job_ptr);
 static bool _first_array_task(struct job_record *job_ptr);
 static void _log_node_set(struct job_record *job_ptr,
 			  struct node_set *node_set_ptr,
@@ -1085,6 +1086,56 @@ static void _filter_by_node_feature(struct job_record *job_ptr,
 				    node_set_ptr[i].my_bitmap);
 		}
 	}
+}
+
+/*
+ * For a given job, return a bitmap of nodes to be preferred in it's allocation
+ * to minimize the overall node count for the association or partition closest
+ * to it's GrpNode limit.
+ */
+static bitstr_t *_find_grp_node_bitmap(struct job_record *job_ptr)
+{
+	bitstr_t *grp_node_bitmap = NULL;
+	slurmdb_assoc_rec_t *assoc_ptr;
+	slurmdb_qos_rec_t *qos_ptr;
+	int32_t min_nodes = INT32_MAX;
+	int tmp;
+
+	qos_ptr = job_ptr->part_ptr->qos_ptr;
+	if (qos_ptr && qos_ptr->usage && qos_ptr->usage->grp_node_bitmap &&
+	    qos_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64) {
+		grp_node_bitmap =  qos_ptr->usage-> grp_node_bitmap;
+		min_nodes = qos_ptr->grp_tres_ctld[TRES_ARRAY_NODE] -
+			    qos_ptr->usage->grp_used_tres[TRES_ARRAY_NODE];
+	}
+
+	qos_ptr = job_ptr->qos_ptr;
+	if (qos_ptr && qos_ptr->usage && qos_ptr->usage->grp_node_bitmap &&
+	    qos_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64) {
+		tmp  = qos_ptr->grp_tres_ctld[TRES_ARRAY_NODE] -
+		       qos_ptr->usage->grp_used_tres[TRES_ARRAY_NODE];
+		if (tmp < min_nodes) {
+			min_nodes = tmp;
+			grp_node_bitmap = qos_ptr->usage->grp_node_bitmap;
+		}
+	}
+
+	assoc_ptr = job_ptr->assoc_ptr;
+	while (assoc_ptr) {
+		if (assoc_ptr->usage && assoc_ptr->usage->grp_node_bitmap &&
+		    assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64) {
+			tmp  = assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE] -
+			       assoc_ptr->usage->grp_used_tres[TRES_ARRAY_NODE];
+			if (tmp < min_nodes) {
+				min_nodes = tmp;
+				grp_node_bitmap =
+					assoc_ptr->usage->grp_node_bitmap;
+			}
+		}
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+
+	return grp_node_bitmap;
 }
 
 /*
@@ -3614,7 +3665,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			    bool can_reboot)
 {
 	int adj_cpus, i, node_set_inx, node_set_len, node_set_inx_base;
-	int power_cnt, rc;
+	int power_cnt, rc, qos_cnt;
 	struct node_set *node_set_ptr, *prev_node_set_ptr;
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
@@ -3624,10 +3675,13 @@ static int _build_node_list(struct job_record *job_ptr,
 	bitstr_t *usable_node_mask = NULL;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
 	bitstr_t *tmp_feature;
+	bitstr_t *grp_node_bitmap;
 	bool has_xor = false;
 	bool resv_overlap = false;
 	bitstr_t *node_maps[NM_TYPES] = { NULL, NULL, NULL, NULL, NULL, NULL };
 	bitstr_t *reboot_bitmap = NULL;
+	assoc_mgr_lock_t job_read_locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 
 	if (job_ptr->resv_name) {
 		/*
@@ -3698,7 +3752,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	if (can_reboot)
 		reboot_bitmap = bit_alloc(node_record_count);
 	node_set_inx = 0;
-	node_set_len = list_count(config_list) * 8 + 1;
+	node_set_len = list_count(config_list) * 16 + 1;
 	node_set_ptr = xcalloc(node_set_len, sizeof(struct node_set));
 	config_iterator = list_iterator_create(config_list);
 	while ((config_ptr = (struct config_record *)
@@ -4044,7 +4098,49 @@ end_node_set:
 			break;
 		}
 	}
+	assoc_mgr_lock(&job_read_locks);
+	grp_node_bitmap = _find_grp_node_bitmap(job_ptr);
+	if (grp_node_bitmap) {
+		for (i = (node_set_inx-1); i >= 0; i--) {
+			qos_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
+						grp_node_bitmap);
+			if (qos_cnt == 0) {
+				node_set_ptr[node_set_inx].node_weight += 1;
+				continue;	/* no nodes overlap */
+			}
+			if (qos_cnt == node_set_ptr[i].node_cnt) {
+				continue;	/* all nodes overlap */
+			}
+			/* Some nodes overlap, split record */
+			node_set_ptr[node_set_inx].cpus_per_node =
+				node_set_ptr[i].cpus_per_node;
+			node_set_ptr[node_set_inx].real_memory =
+				node_set_ptr[i].real_memory;
+			node_set_ptr[node_set_inx].node_cnt = qos_cnt;
+			node_set_ptr[i].node_cnt -= qos_cnt;
+			node_set_ptr[node_set_inx].node_weight =
+				node_set_ptr[i].node_weight;
+			node_set_ptr[i].node_weight++;
+			node_set_ptr[node_set_inx].flags =
+				node_set_ptr[i].flags;
+			node_set_ptr[node_set_inx].features =
+				xstrdup(node_set_ptr[i].features);
+			node_set_ptr[node_set_inx].feature_bits =
+				bit_copy(node_set_ptr[i].feature_bits);
+			node_set_ptr[node_set_inx].my_bitmap =
+				bit_copy(node_set_ptr[i].my_bitmap);
+			bit_and(node_set_ptr[node_set_inx].my_bitmap,
+				grp_node_bitmap);
+			bit_and_not(node_set_ptr[i].my_bitmap, grp_node_bitmap);
 
+			node_set_inx++;
+			if (node_set_inx >= node_set_len) {
+				error("%s: node_set buffer filled", __func__);
+				break;
+			}
+		}
+	}
+	assoc_mgr_unlock(&job_read_locks);
 	FREE_NULL_BITMAP(reboot_bitmap);
 	*node_set_size = node_set_inx;
 	*node_set_pptr = node_set_ptr;
