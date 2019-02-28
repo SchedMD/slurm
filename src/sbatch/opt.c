@@ -502,6 +502,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SBATCH_EXPORT",        OPT_STRING,     &sbopt.export_env,  NULL          },
   {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
+  {"SBATCH_GRES",          OPT_STRING,     &opt.gres,          NULL          },
   {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
   {"SBATCH_GPUS",          OPT_STRING,     &opt.gpus,          NULL          },
   {"SBATCH_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
