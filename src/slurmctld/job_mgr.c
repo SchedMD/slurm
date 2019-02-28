@@ -17891,10 +17891,10 @@ static void _set_response_cluster_rec()
 	response_cluster_rec->name = xstrdup(slurmctld_conf.cluster_name);
 	if (slurmctld_conf.slurmctld_addr) {
 		response_cluster_rec->control_host =
-			slurmctld_conf.slurmctld_addr;
+			xstrdup(slurmctld_conf.slurmctld_addr);
 	} else {
 		response_cluster_rec->control_host =
-			slurmctld_conf.control_addr[0];
+			xstrdup(slurmctld_conf.control_addr[0]);
 	}
 	response_cluster_rec->control_port = slurmctld_conf.slurmctld_port;
 	response_cluster_rec->rpc_version = SLURM_PROTOCOL_VERSION;
