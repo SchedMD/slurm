@@ -890,6 +890,7 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 
 		used_limits->jobs++;
 		used_limits_a->jobs++;
+		_add_qos_node_bitmap(job_ptr, qos_ptr);
 		break;
 	case ACCT_POLICY_JOB_FINI:
 		/*
@@ -959,6 +960,7 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 			       "underflow for qos %s account %s",
 			       qos_ptr->name, used_limits_a->acct);
 
+		_rm_qos_node_bitmap(job_ptr, qos_ptr);
 		break;
 	default:
 		error("acct_policy: qos unknown type %d", type);
@@ -1111,13 +1113,6 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 					used_tres_run_secs, job_cnt);
 		_qos_adjust_limit_usage(type, job_ptr, qos_ptr_2,
 					used_tres_run_secs, job_cnt);
-		if (type == ACCT_POLICY_JOB_BEGIN) {
-			_add_qos_node_bitmap(job_ptr, qos_ptr_1);
-			_add_qos_node_bitmap(job_ptr, qos_ptr_2);
-		} else if (type == ACCT_POLICY_JOB_FINI) {
-			_rm_qos_node_bitmap(job_ptr, qos_ptr_1);
-			_rm_qos_node_bitmap(job_ptr, qos_ptr_2);
-		}
 	}
 
 	assoc_ptr = job_ptr->assoc_ptr;
