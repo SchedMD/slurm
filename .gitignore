@@ -9,6 +9,7 @@ Makefile
 autom4te.cache
 /api/full_version.map
 /config.h
+/config.h.in~
 /config.log
 /config.status
 /contribs/cray/opt_modulefiles_slurm
