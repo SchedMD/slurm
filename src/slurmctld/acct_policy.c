@@ -142,7 +142,8 @@ static void _update_qos_job_node_cnt(struct job_record *job_ptr,
 #if _DEBUG
 	char node_bitstr[64];
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap) {
-		bit_fmt(node_bitstr, 64, job_ptr->job_resrcs->node_bitmap);
+		bit_fmt(node_bitstr, sizeof(node_bitstr),
+			job_ptr->job_resrcs->node_bitmap);
 		info("%s: %pJ job_resrcs->node_bitmap:%s",  __func__, job_ptr,
 		     node_bitstr);
 	} else {
@@ -157,7 +158,8 @@ static void _update_qos_job_node_cnt(struct job_record *job_ptr,
 	}
 
 	if (qos_usage->grp_node_bitmap) {
-		bit_fmt(node_bitstr, 64, qos_usage->grp_node_bitmap);
+		bit_fmt(node_bitstr, sizeof(node_bitstr),
+			qos_usage->grp_node_bitmap);
 		info("%s: QOS grp_node_bitmap:%s", __func__,
 		     node_bitstr);
 	} else {
