@@ -73,72 +73,11 @@ typedef struct pack_limits {
  * Update a job's allocated node count to reflect only nodes that are not
  * already allocated to this association.  Needed to enforce GrpNode limit.
  */
-static void _update_assoc_job_node_cnt(struct job_record *job_ptr,
-				       uint64_t *tres_req_cnt,
-				       struct slurmdb_assoc_usage *assoc_usage)
+static void _get_unique_job_node_cnt(struct job_record *job_ptr,
+				     bitstr_t *grp_node_bitmap,
+				     uint64_t *node_cnt)
 {
-#if _DEBUG
-	char node_bitstr[64];
-	if (job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap) {
-		bit_fmt(node_bitstr, 64, job_ptr->job_resrcs->node_bitmap);
-		info("%s: %pJ job_resrcs->node_bitmap:%s",  __func__, job_ptr,
-		     node_bitstr);
-	} else {
-		info("%s: %pJ job_resrcs->node_bitmap:NULL",  __func__,
-		     job_ptr);
-	}
-	if (tres_req_cnt) {
-		info("%s: %pJ tres_name[%d]:%s tres_req_cnt[%d]:%"PRIu64,
-		     __func__, job_ptr, TRES_ARRAY_NODE,
-		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE],
-		     TRES_ARRAY_NODE, tres_req_cnt[TRES_ARRAY_NODE]);
-	}
-
-	if (assoc_usage->grp_node_bitmap) {
-		bit_fmt(node_bitstr, 64, assoc_usage->grp_node_bitmap);
-		info("%s: assocication grp_node_bitmap:%s", __func__,
-		     node_bitstr);
-	} else {
-		info("%s: assocication grp_node_bitmap:NULL", __func__);
-	}
-	if (assoc_usage->grp_used_tres) {
-		info("%s: assocication tres_name[%d]:%s grp_used_tres[%d]:%"PRIu64,
-		     __func__, TRES_ARRAY_NODE,
-		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE],
-		     TRES_ARRAY_NODE,
-		     assoc_usage->grp_used_tres[TRES_ARRAY_NODE]);
-	} else {
-		info("%s: assocication tres_name[%d]:%s grp_used_tres:NULL",
-		     __func__, TRES_ARRAY_NODE,
-		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE]);
-	}
-#endif
-
-	xassert(assoc_usage);
-	if (job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap &&
-	    assoc_usage->grp_node_bitmap && tres_req_cnt) {
-		int init_cnt, overlap_cnt, new_node_cnt;
-		overlap_cnt = bit_overlap(job_ptr->job_resrcs->node_bitmap,
-					  assoc_usage->grp_node_bitmap);
-		if (overlap_cnt) {
-			init_cnt =
-				bit_set_count(job_ptr->job_resrcs->node_bitmap);
-			new_node_cnt = init_cnt - overlap_cnt;
-			info("%s: %pJ unique allocated node count changed from %d to %d",
-			     __func__, job_ptr, init_cnt, new_node_cnt);
-			tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
-		}
-	}
-}
-
-/*
- * Update a job's allocated node count to reflect only nodes that are not
- * already allocated to this QOS.  Needed to enforce GrpNode limit.
- */
-static void _update_qos_job_node_cnt(struct job_record *job_ptr,
-				     uint64_t *tres_req_cnt,
-				     slurmdb_qos_usage_t *qos_usage)
-{
+	xassert(node_cnt);
 #if _DEBUG
 	char node_bitstr[64];
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap) {
@@ -150,47 +89,26 @@ static void _update_qos_job_node_cnt(struct job_record *job_ptr,
 		info("%s: %pJ job_resrcs->node_bitmap:NULL",  __func__,
 		     job_ptr);
 	}
-	if (tres_req_cnt) {
-		info("%s: %pJ tres_name[%d]:%s tres_req_cnt[%d]:%"PRIu64,
-		     __func__, job_ptr, TRES_ARRAY_NODE,
-		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE],
-		     TRES_ARRAY_NODE, tres_req_cnt[TRES_ARRAY_NODE]);
-	}
 
-	if (qos_usage->grp_node_bitmap) {
-		bit_fmt(node_bitstr, sizeof(node_bitstr),
-			qos_usage->grp_node_bitmap);
-		info("%s: QOS grp_node_bitmap:%s", __func__,
+	if (grp_node_bitmap) {
+		bit_fmt(node_bitstr, sizeof(node_bitstr), grp_node_bitmap);
+		info("%s: object grp_node_bitmap:%s", __func__,
 		     node_bitstr);
 	} else {
-		info("%s: QOS grp_node_bitmap:NULL", __func__);
-	}
-	if (qos_usage->grp_used_tres) {
-		info("%s: QOS tres_name[%d]:%s grp_used_tres[%d]:%"PRIu64,
-		     __func__, TRES_ARRAY_NODE,
-		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE],
-		     TRES_ARRAY_NODE,
-		     qos_usage->grp_used_tres[TRES_ARRAY_NODE]);
-	} else {
-		info("%s: QOS tres_name[%d]:%s grp_used_tres:NULL",
-		     __func__, TRES_ARRAY_NODE,
-		     assoc_mgr_tres_name_array[TRES_ARRAY_NODE]);
+		info("%s: object grp_node_bitmap:NULL", __func__);
 	}
 #endif
 
-	xassert(qos_usage);
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->node_bitmap &&
-	    qos_usage->grp_node_bitmap && tres_req_cnt) {
-		int init_cnt, overlap_cnt, new_node_cnt;
-		overlap_cnt = bit_overlap(job_ptr->job_resrcs->node_bitmap,
-					  qos_usage->grp_node_bitmap);
+	    grp_node_bitmap) {
+		uint64_t overlap_cnt = bit_overlap(
+			job_ptr->job_resrcs->node_bitmap, grp_node_bitmap);
 		if (overlap_cnt) {
-			init_cnt =
-				bit_set_count(job_ptr->job_resrcs->node_bitmap);
-			new_node_cnt = init_cnt - overlap_cnt;
-			info("%s: %pJ unique allocated node count changed from %d to %d",
-			     __func__, job_ptr, init_cnt, new_node_cnt);
-			tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
+			uint64_t init_cnt = bit_set_count(
+				job_ptr->job_resrcs->node_bitmap);
+			*node_cnt = init_cnt - overlap_cnt;
+			info("%s: %pJ unique allocated node count changed from %"PRIu64" to %"PRIu64,
+			     __func__, job_ptr, init_cnt, *node_cnt);
 		}
 	}
 }
@@ -2271,7 +2189,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	 * has exceeded the limit for all CPUs usable by the QOS
 	 */
 	orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
-	_update_qos_job_node_cnt(job_ptr, tres_req_cnt, qos_ptr->usage);
+	_get_unique_job_node_cnt(job_ptr, qos_ptr->usage->grp_node_bitmap,
+				 &tres_req_cnt[TRES_ARRAY_NODE]);
 	new_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
@@ -2443,6 +2362,10 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	}
 
 	orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
+	/*
+	 * FIXME: this new_node_cnt is based off the total qos, not the per
+	 * account.
+	 */
 	tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
@@ -2494,6 +2417,10 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	}
 
 	orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
+	/*
+	 * FIXME: this new_node_cnt is based off the total qos, not the per
+	 * user.
+	 */
 	tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
@@ -3854,8 +3781,9 @@ extern bool acct_policy_job_runnable_post_select(
 		}
 
 		orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
-		_update_assoc_job_node_cnt(job_ptr, tres_req_cnt,
-					   assoc_ptr->usage);
+		_get_unique_job_node_cnt(job_ptr,
+					 assoc_ptr->usage->grp_node_bitmap,
+					 &tres_req_cnt[TRES_ARRAY_NODE]);
 		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos,
 			assoc_ptr->grp_tres_ctld, qos_rec.grp_tres_ctld,
