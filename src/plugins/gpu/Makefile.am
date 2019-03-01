@@ -1,3 +1,7 @@
 # Makefile for gpu plugins
 
-SUBDIRS = generic nvml
+SUBDIRS = generic
+
+if BUILD_NVML
+SUBDIRS += nvml
+endif

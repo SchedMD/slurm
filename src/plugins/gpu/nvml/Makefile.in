@@ -176,11 +176,9 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@BUILD_NVML_TRUE@gpu_nvml_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__gpu_nvml_la_SOURCES_DIST = gpu_nvml.c
+gpu_nvml_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = gpu_nvml.lo
-@BUILD_NVML_TRUE@am_gpu_nvml_la_OBJECTS = $(am__objects_1)
-am__EXTRA_gpu_nvml_la_SOURCES_DIST = gpu_nvml.c
+am_gpu_nvml_la_OBJECTS = $(am__objects_1)
 gpu_nvml_la_OBJECTS = $(am_gpu_nvml_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -189,7 +187,6 @@ am__v_lt_1 =
 gpu_nvml_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(gpu_nvml_la_LDFLAGS) $(LDFLAGS) -o $@
-@BUILD_NVML_TRUE@am_gpu_nvml_la_rpath = -rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -225,9 +222,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(gpu_nvml_la_SOURCES) $(EXTRA_gpu_nvml_la_SOURCES)
-DIST_SOURCES = $(am__gpu_nvml_la_SOURCES_DIST) \
-	$(am__EXTRA_gpu_nvml_la_SOURCES_DIST)
+SOURCES = $(gpu_nvml_la_SOURCES)
+DIST_SOURCES = $(gpu_nvml_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -509,13 +505,10 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(NVML_CPPFLAGS)
 NVML_SOURCES = gpu_nvml.c
-
-# GPU NVML plugin
-@BUILD_NVML_TRUE@pkglib_LTLIBRARIES = gpu_nvml.la
-@BUILD_NVML_TRUE@gpu_nvml_la_SOURCES = $(NVML_SOURCES)
-@BUILD_NVML_TRUE@gpu_nvml_la_LDFLAGS = $(PLUGIN_FLAGS)
-@BUILD_NVML_TRUE@gpu_nvml_la_LIBADD = $(NVML_LIBS)
-@BUILD_NVML_FALSE@EXTRA_gpu_nvml_la_SOURCES = $(NVML_SOURCES)
+pkglib_LTLIBRARIES = gpu_nvml.la
+gpu_nvml_la_SOURCES = $(NVML_SOURCES)
+gpu_nvml_la_LDFLAGS = $(PLUGIN_FLAGS)
+gpu_nvml_la_LIBADD = $(NVML_LIBS)
 all: all-am
 
 .SUFFIXES:
@@ -586,7 +579,7 @@ clean-pkglibLTLIBRARIES:
 	}
 
 gpu_nvml.la: $(gpu_nvml_la_OBJECTS) $(gpu_nvml_la_DEPENDENCIES) $(EXTRA_gpu_nvml_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(gpu_nvml_la_LINK) $(am_gpu_nvml_la_rpath) $(gpu_nvml_la_OBJECTS) $(gpu_nvml_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(gpu_nvml_la_LINK) -rpath $(pkglibdir) $(gpu_nvml_la_OBJECTS) $(gpu_nvml_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
