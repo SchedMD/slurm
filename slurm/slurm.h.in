@@ -2509,7 +2509,8 @@ typedef struct reservation_name_msg {
 						    * slurm.conf files checksum
 						    * mismatch */
 #define DEBUG_FLAG_GRES		0x0000000000000040 /* Generic Resource info */
-/* #define DEBUG_FLAG_FREE      0x0000000000000080 */
+#define DEBUG_FLAG_TRES_NODE    0x0000000000000080 /* Print debug for limits
+						    * dealing with TRES=NODE */
 /* #define DEBUG_FLAG_FREE 	0x0000000000000100 */
 /* #define DEBUG_FLAG_FREE 	0x0000000000000200 */
 /* #define DEBUG_FLAG_FREE 	0x0000000000000400 */
