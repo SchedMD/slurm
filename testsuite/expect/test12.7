@@ -127,10 +127,14 @@ proc check_sacct_states { states log_it } {
 
 	log_user $log_it
 	set state_num 0
+
+	# This test will requeue jobs making those jobs be eligible in the
+	# future from sacct's perspective.  Since sacct only shows eligible
+	# jobs we have to specify end in the future.
 	if { $log_it == 1 } {
-		spawn $sacct --job=$job_id --duplicates --parsable2 --start=today -o JobID,State
+		spawn $sacct --job=$job_id --duplicates --parsable2 --start=today --end=tomorrow -o JobID,State
 	} else {
-		spawn $sacct --job=$job_id --duplicates --parsable2 --start=today --noheader -o JobID,State
+		spawn $sacct --job=$job_id --duplicates --parsable2 --start=today --end=tomorrow --noheader -o JobID,State
 	}
 	expect {
 		-re "(\[0-9_\.a-z\]+)\\|($states)" {
