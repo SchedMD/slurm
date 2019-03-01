@@ -176,15 +176,9 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@WITH_CURL_TRUE@acct_gather_profile_influxdb_la_DEPENDENCIES =  \
-@WITH_CURL_TRUE@	$(am__DEPENDENCIES_1)
-am__acct_gather_profile_influxdb_la_SOURCES_DIST =  \
-	acct_gather_profile_influxdb.c
-am__objects_1 = acct_gather_profile_influxdb.lo
-@WITH_CURL_TRUE@am_acct_gather_profile_influxdb_la_OBJECTS =  \
-@WITH_CURL_TRUE@	$(am__objects_1)
-am__EXTRA_acct_gather_profile_influxdb_la_SOURCES_DIST =  \
-	acct_gather_profile_influxdb.c
+acct_gather_profile_influxdb_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am_acct_gather_profile_influxdb_la_OBJECTS =  \
+	acct_gather_profile_influxdb.lo
 acct_gather_profile_influxdb_la_OBJECTS =  \
 	$(am_acct_gather_profile_influxdb_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -195,8 +189,6 @@ acct_gather_profile_influxdb_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) \
 	$(acct_gather_profile_influxdb_la_LDFLAGS) $(LDFLAGS) -o $@
-@WITH_CURL_TRUE@am_acct_gather_profile_influxdb_la_rpath = -rpath \
-@WITH_CURL_TRUE@	$(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -232,10 +224,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(acct_gather_profile_influxdb_la_SOURCES) \
-	$(EXTRA_acct_gather_profile_influxdb_la_SOURCES)
-DIST_SOURCES = $(am__acct_gather_profile_influxdb_la_SOURCES_DIST) \
-	$(am__EXTRA_acct_gather_profile_influxdb_la_SOURCES_DIST)
+SOURCES = $(acct_gather_profile_influxdb_la_SOURCES)
+DIST_SOURCES = $(acct_gather_profile_influxdb_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -516,12 +506,10 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(LIBCURL_CPPFLAGS)
-INFLUXDB_SOURCES = acct_gather_profile_influxdb.c
-@WITH_CURL_TRUE@pkglib_LTLIBRARIES = acct_gather_profile_influxdb.la
-@WITH_CURL_TRUE@acct_gather_profile_influxdb_la_SOURCES = $(INFLUXDB_SOURCES)
-@WITH_CURL_TRUE@acct_gather_profile_influxdb_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@WITH_CURL_TRUE@acct_gather_profile_influxdb_la_LIBADD = $(LIBCURL)
-@WITH_CURL_FALSE@EXTRA_acct_gather_profile_influxdb_la_SOURCES = $(INFLUXDB_SOURCES)
+pkglib_LTLIBRARIES = acct_gather_profile_influxdb.la
+acct_gather_profile_influxdb_la_SOURCES = acct_gather_profile_influxdb.c
+acct_gather_profile_influxdb_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+acct_gather_profile_influxdb_la_LIBADD = $(LIBCURL)
 all: all-am
 
 .SUFFIXES:
@@ -592,7 +580,7 @@ clean-pkglibLTLIBRARIES:
 	}
 
 acct_gather_profile_influxdb.la: $(acct_gather_profile_influxdb_la_OBJECTS) $(acct_gather_profile_influxdb_la_DEPENDENCIES) $(EXTRA_acct_gather_profile_influxdb_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(acct_gather_profile_influxdb_la_LINK) $(am_acct_gather_profile_influxdb_la_rpath) $(acct_gather_profile_influxdb_la_OBJECTS) $(acct_gather_profile_influxdb_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(acct_gather_profile_influxdb_la_LINK) -rpath $(pkglibdir) $(acct_gather_profile_influxdb_la_OBJECTS) $(acct_gather_profile_influxdb_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
