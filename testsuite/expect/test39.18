@@ -45,9 +45,13 @@ print_header $test_id
 
 # Run the test under valgrind if any arguments are given
 set use_valgrind 0
-if {[lindex $argv 0] != ""} {
+set test_minor_in 0
+if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	set use_valgrind 1
 	send_user "Running tests under valgrind!\n"
+} elseif {[lindex $argv 0] != ""} {
+	set test_minor_in [lindex $argv 0]
+	send_user "Running test $test_id.$test_minor_in \n"
 }
 
 proc mkdir {dir} {
@@ -134,8 +138,14 @@ send_user "sizeof(unsigned long) = $ulong_bits\n"
 # matches the expected output
 set failed_tests [list]
 proc check_configuration {test_minor gres_conf fake_gpus_conf expected_output} {
-	global cfgpath nodename test_prog alpha_numeric_special exit_code
+	global cfgpath nodename test_prog alpha_numeric_special exit_code test_minor_in
 	global test_id failed_tests use_valgrind
+
+	if {$test_minor_in != 0 && $test_minor != $test_minor_in} {
+		# Skip this test, because it's not specified by the tester
+		return
+	}
+
 	set failed 0
 	send_user "\n====test$test_id.$test_minor====\n\n"
 
@@ -1350,6 +1360,7 @@ GRES_PARSABLE\[mps\](0):tesla|4|(null)|(null)|${dev}0|
 GRES_PARSABLE\[mps\](0):tesla|4|(null)|(null)|${dev}3|
 "
 check_configuration 96 $gres_conf $fake_gpus_conf $expected_output
+
 
 # ##############################################################################
 # # Tests for expected failures
