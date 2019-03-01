@@ -118,6 +118,7 @@ static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
 static bool	local_test_config = false;
 static int	local_test_config_rc = SLURM_SUCCESS;
+static bool     no_addr_cache = false;
 
 inline static void _normalize_debug_level(uint16_t *level);
 static int _init_slurm_conf(const char *file_name);
@@ -2672,7 +2673,7 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address)
 		if (xstrcmp(p->alias, node_name) == 0) {
 			if (!p->port)
 				p->port = (uint16_t) conf_ptr->slurmd_port;
-			if (!p->addr_initialized) {
+			if (!p->addr_initialized || no_addr_cache) {
 				slurm_set_addr(&p->addr, p->port, p->address);
 				if (p->addr.sin_family == 0 &&
 				    p->addr.sin_port == 0) {
@@ -3230,6 +3231,10 @@ static int _init_slurm_conf(const char *file_name)
 	if (_validate_and_set_defaults(conf_ptr, conf_hashtbl) == SLURM_ERROR)
 		rc = SLURM_ERROR;
 	conf_ptr->slurm_conf = xstrdup(name);
+
+	no_addr_cache = false;
+	if (xstrcasestr("NoAddrCache", conf_ptr->comm_params))
+		no_addr_cache = true;
 
 	return rc;
 }

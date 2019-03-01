@@ -142,6 +142,13 @@ documents those changes that are of interest to users and administrators.
  -- Add SALLOC_GRES and SBATCH_GRES as input to salloc/sbatch.
  -- Remove drain state when node doesn't reboot by ResumeTimeout.
  -- Fix considering "resuming" nodes in scheduling.
+ -- Do not kill suspended jobs due to exceeding time limit.
+ -- Add NoAddrCache CommunicationParameter.
+ -- Don't ping powering up cloud nodes.
+ -- Add cloud_dns SlurmctldParameter.
+ -- Consider --sbindir configure option as the default path to find slurmstepd.
+ -- Fix node state printing of DRAINED$
+ -- Fix spamming dbd of down/drained nodes in maintenance reservation.
 
 * Changes in Slurm 18.08.5-2
 ============================
