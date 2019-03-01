@@ -2080,10 +2080,8 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 			continue;
 		hash_job_inx = prio_obj->job_id % JOB_HASH_SIZE;
 		if (prio_obj->partition) {
-			uint32_t hf_hashv = 0;
 			HASH_FCN(prio_obj->partition,
-				 strlen(prio_obj->partition), 1000000,
-				 hf_hashv, hash_part_inx);
+				 strlen(prio_obj->partition), hash_part_inx);
 		} else {
 			hash_part_inx = 0;
 		}
