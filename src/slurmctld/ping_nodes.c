@@ -265,8 +265,9 @@ void ping_nodes (void)
 #else
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_POWER_SAVE(node_ptr) ||
-		    (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_UP(node_ptr)))
+		if (IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_POWER_SAVE(node_ptr) ||
+		    IS_NODE_POWER_UP(node_ptr))
 			continue;
 		if ((slurmctld_conf.slurmd_timeout == 0) &&
 		    (!restart_flag)			 &&
