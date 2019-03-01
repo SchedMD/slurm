@@ -196,35 +196,37 @@ static void _update_qos_job_node_cnt(struct job_record *job_ptr,
 }
 
 /*
- * Update association's node allocation information for a job being started.
+ * Update node allocation information for a job being started.
  * This includes grp_node_bitmap, grp_node_job_cnt and
- * grp_used_tres[TRES_ARRAY_NODE].
+ * grp_used_tres[TRES_ARRAY_NODE] of an object (qos, assoc, etc).
  */
-static void _add_assoc_node_bitmap(struct job_record *job_ptr,
-				   struct slurmdb_assoc_usage *assoc_usage)
+static void _add_usage_node_bitmap(struct job_record *job_ptr,
+				   bitstr_t **grp_node_bitmap,
+				   uint16_t **grp_node_job_cnt,
+				   uint64_t *grp_used_tres)
 {
 	static int node_cnt = -1;
 	int i, i_first, i_last;
 
-	xassert(assoc_usage);
+	xassert(grp_node_bitmap);
+	xassert(grp_node_job_cnt);
+	xassert(grp_used_tres);
+
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
 		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
 		return;
 	}
-	if (assoc_usage->grp_node_bitmap) {
-		bit_or(assoc_usage->grp_node_bitmap,
-		       job_ptr->job_resrcs->node_bitmap);
-	} else {
-		assoc_usage->grp_node_bitmap =
-			bit_copy(job_ptr->job_resrcs->node_bitmap);
+	if (*grp_node_bitmap)
+		bit_or(*grp_node_bitmap, job_ptr->job_resrcs->node_bitmap);
+	else
+		*grp_node_bitmap = bit_copy(job_ptr->job_resrcs->node_bitmap);
+
+	if (!*grp_node_job_cnt) {
+		if (node_cnt == -1)
+			node_cnt = bit_size(*grp_node_bitmap);
+		*grp_node_job_cnt = xcalloc(node_cnt, sizeof(uint16_t));
 	}
 
-	if (!assoc_usage->grp_node_job_cnt) {
-		if (node_cnt == -1)
-			node_cnt = bit_size(assoc_usage->grp_node_bitmap);
-		assoc_usage->grp_node_job_cnt = xcalloc(node_cnt,
-							sizeof(uint16_t));
-	}
 	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
 	if (i_first == -1)
 		i_last = -2;
@@ -232,78 +234,34 @@ static void _add_assoc_node_bitmap(struct job_record *job_ptr,
 		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
 	for (i = i_first; i <= i_last; i++) {
 		if (bit_test(job_ptr->job_resrcs->node_bitmap, i))
-			assoc_usage->grp_node_job_cnt[i]++;
+			(*grp_node_job_cnt)[i]++;
 	}
-	assoc_usage->grp_used_tres[TRES_ARRAY_NODE] =
-		bit_set_count(assoc_usage->grp_node_bitmap);
+	*grp_used_tres = bit_set_count(*grp_node_bitmap);
 }
 
 /*
- * Update QOS's node allocation information for a job being started.
+ * Update node allocation information for a job being completed.
  * This includes grp_node_bitmap, grp_node_job_cnt and
- * grp_used_tres[TRES_ARRAY_NODE].
+ * grp_used_tres[TRES_ARRAY_NODE] of an object (qos, assoc, etc).
  */
-static void _add_qos_node_bitmap(struct job_record *job_ptr,
-				 slurmdb_qos_rec_t *qos_ptr)
+static void _rm_usage_node_bitmap(struct job_record *job_ptr,
+				  bitstr_t *grp_node_bitmap,
+				  uint16_t *grp_node_job_cnt,
+				  uint64_t *grp_used_tres)
 {
-	slurmdb_qos_usage_t *qos_usage;
-	static int node_cnt = -1;
 	int i, i_first, i_last;
 
-	if (!qos_ptr || !qos_ptr->usage)
-		return;
-	qos_usage = qos_ptr->usage;
+	xassert(grp_used_tres);
+
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
 		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
 		return;
 	}
-	if (qos_usage->grp_node_bitmap) {
-		bit_or(qos_usage->grp_node_bitmap,
-		       job_ptr->job_resrcs->node_bitmap);
-	} else {
-		qos_usage->grp_node_bitmap =
-			bit_copy(job_ptr->job_resrcs->node_bitmap);
-	}
-
-	if (!qos_usage->grp_node_job_cnt) {
-		if (node_cnt == -1)
-			node_cnt = bit_size(qos_usage->grp_node_bitmap);
-		qos_usage->grp_node_job_cnt = xcalloc(node_cnt,
-						      sizeof(uint16_t));
-	}
-	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
-	if (i_first == -1)
-		i_last = -2;
-	else
-		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (bit_test(job_ptr->job_resrcs->node_bitmap, i))
-			qos_usage->grp_node_job_cnt[i]++;
-	}
-	qos_usage->grp_used_tres[TRES_ARRAY_NODE] =
-		bit_set_count(qos_usage->grp_node_bitmap);
-}
-
-/*
- * Update association's node allocation information for a job being completed.
- * This includes grp_node_bitmap, grp_node_job_cnt and
- * grp_used_tres[TRES_ARRAY_NODE].
- */
-static void _rm_assoc_node_bitmap(struct job_record *job_ptr,
-				  struct slurmdb_assoc_usage *assoc_usage)
-{
-	int i, i_first, i_last;
-
-	xassert(assoc_usage);
-	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
-		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
-		return;
-	}
-	if (!assoc_usage->grp_node_bitmap) {
+	if (!grp_node_bitmap) {
 		error("%s: grp_node_bitmap is NULL", __func__);
 		return;
 	}
-	if (!assoc_usage->grp_node_job_cnt) {
+	if (!grp_node_job_cnt) {
 		error("%s: grp_node_job_cnt is NULL", __func__);
 		return;
 	}
@@ -315,54 +273,10 @@ static void _rm_assoc_node_bitmap(struct job_record *job_ptr,
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
 			continue;
-		if ((--assoc_usage->grp_node_job_cnt[i] == 0) &&
-		    assoc_usage->grp_node_bitmap)
-			bit_clear(assoc_usage->grp_node_bitmap, i);
+		if (--grp_node_job_cnt[i] == 0)
+			bit_clear(grp_node_bitmap, i);
 	}
-	assoc_usage->grp_used_tres[TRES_ARRAY_NODE] =
-		bit_set_count(assoc_usage->grp_node_bitmap);
-}
-
-/*
- * Update QOS's node allocation information for a job being completed.
- * This includes grp_node_bitmap, grp_node_job_cnt and
- * grp_used_tres[TRES_ARRAY_NODE].
- */
-static void _rm_qos_node_bitmap(struct job_record *job_ptr,
-				slurmdb_qos_rec_t *qos_ptr)
-{
-	slurmdb_qos_usage_t *qos_usage;
-	int i, i_first, i_last;
-
-	if (!qos_ptr || !qos_ptr->usage)
-		return;
-	qos_usage = qos_ptr->usage;
-	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
-		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
-		return;
-	}
-	if (!qos_usage->grp_node_bitmap) {
-		error("%s: grp_node_bitmap is NULL", __func__);
-		return;
-	}
-	if (!qos_usage->grp_node_job_cnt) {
-		error("%s: grp_node_job_cnt is NULL", __func__);
-		return;
-	}
-	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
-	if (i_first == -1)
-		i_last = -2;
-	else
-		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
-			continue;
-		if ((--qos_usage->grp_node_job_cnt[i] == 0) &&
-		    qos_usage->grp_node_bitmap)
-			bit_clear(qos_usage->grp_node_bitmap, i);
-	}
-	qos_usage->grp_used_tres[TRES_ARRAY_NODE] =
-		bit_set_count(qos_usage->grp_node_bitmap);
+	*grp_used_tres = bit_set_count(grp_node_bitmap);
 }
 
 static int _get_tres_state_reason(int tres_pos, int unk_reason)
@@ -892,7 +806,12 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 
 		used_limits->jobs++;
 		used_limits_a->jobs++;
-		_add_qos_node_bitmap(job_ptr, qos_ptr);
+
+		_add_usage_node_bitmap(
+			job_ptr,
+			&qos_ptr->usage->grp_node_bitmap,
+			&qos_ptr->usage->grp_node_job_cnt,
+			&qos_ptr->usage->grp_used_tres[TRES_ARRAY_NODE]);
 		break;
 	case ACCT_POLICY_JOB_FINI:
 		/*
@@ -962,7 +881,11 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 			       "underflow for qos %s account %s",
 			       qos_ptr->name, used_limits_a->acct);
 
-		_rm_qos_node_bitmap(job_ptr, qos_ptr);
+		_rm_usage_node_bitmap(
+			job_ptr,
+			qos_ptr->usage->grp_node_bitmap,
+			qos_ptr->usage->grp_node_job_cnt,
+			&qos_ptr->usage->grp_used_tres[TRES_ARRAY_NODE]);
 		break;
 	default:
 		error("acct_policy: qos unknown type %d", type);
@@ -1134,7 +1057,14 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			break;
 		case ACCT_POLICY_JOB_BEGIN:
 			assoc_ptr->usage->used_jobs++;
-			_add_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
+			_add_usage_node_bitmap(
+				job_ptr,
+				&assoc_ptr->usage->grp_node_bitmap,
+				&assoc_ptr->usage->grp_node_job_cnt,
+				&assoc_ptr->usage->
+				grp_used_tres[TRES_ARRAY_NODE]);
+
+//			_add_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
 			for (i = 0; i < slurmctld_tres_cnt; i++) {
 				if (i == TRES_ARRAY_ENERGY)
 					continue;
@@ -1159,7 +1089,12 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				debug2("acct_policy_job_fini: used_jobs "
 				       "underflow for account %s",
 				       assoc_ptr->acct);
-			_rm_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
+			_rm_usage_node_bitmap(
+				job_ptr,
+				assoc_ptr->usage->grp_node_bitmap,
+				assoc_ptr->usage->grp_node_job_cnt,
+				&assoc_ptr->usage->
+				grp_used_tres[TRES_ARRAY_NODE]);
 			for (i = 0; i < slurmctld_tres_cnt; i++) {
 				if ((i == TRES_ARRAY_ENERGY) ||
 				    (i == TRES_ARRAY_NODE))
