@@ -1,7 +1,11 @@
 # Makefile for task plugins
 
-SUBDIRS = cgroup cray none
+SUBDIRS = cray none
 
 if HAVE_SCHED_SETAFFINITY
 SUBDIRS += affinity
+endif
+
+if WITH_CGROUP
+SUBDIRS += cgroup
 endif

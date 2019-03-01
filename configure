@@ -708,6 +708,8 @@ HAVE_CHECK_FALSE
 HAVE_CHECK_TRUE
 CHECK_LIBS
 CHECK_CFLAGS
+WITH_CGROUP_FALSE
+WITH_CGROUP_TRUE
 HAVE_SOME_CURSES
 HAVE_SOME_CURSES_FALSE
 HAVE_SOME_CURSES_TRUE
@@ -21966,6 +21968,25 @@ fi
 
 
 
+
+  case "$host" in
+  *-darwin*)
+    with_cgroup=no
+    ;;
+  *)
+    with_cgroup=yes
+    ;;
+  esac
+   if test x$with_cgroup = xyes; then
+  WITH_CGROUP_TRUE=
+  WITH_CGROUP_FALSE='#'
+else
+  WITH_CGROUP_TRUE='#'
+  WITH_CGROUP_FALSE=
+fi
+
+
+
 #
 #  Tests for Check
 #
@@ -25232,6 +25253,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_SOME_CURSES_TRUE}" && test -z "${HAVE_SOME_CURSES_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_SOME_CURSES\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_CGROUP_TRUE}" && test -z "${WITH_CGROUP_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_CGROUP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CHECK_TRUE}" && test -z "${HAVE_CHECK_FALSE}"; then

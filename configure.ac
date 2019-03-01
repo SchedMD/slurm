@@ -212,6 +212,8 @@ X_AC_NCURSES
 AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
 AC_SUBST(HAVE_SOME_CURSES)
 
+X_AC_CGROUP
+
 #
 #  Tests for Check
 #

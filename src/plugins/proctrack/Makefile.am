@@ -4,4 +4,8 @@ if HAVE_NATIVE_CRAY
 CRAY = cray
 endif
 
-SUBDIRS = cgroup $(CRAY) linuxproc pgid
+SUBDIRS = $(CRAY) linuxproc pgid
+
+if WITH_CGROUP
+SUBDIRS += cgroup
+endif
