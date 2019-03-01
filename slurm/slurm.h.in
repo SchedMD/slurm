@@ -2509,13 +2509,10 @@ typedef struct reservation_name_msg {
 						    * slurm.conf files checksum
 						    * mismatch */
 #define DEBUG_FLAG_GRES		0x0000000000000040 /* Generic Resource info */
-#define DEBUG_FLAG_BG_PICK      0x0000000000000080 /* debug for bluegene
-						    * picking blocks */
-#define DEBUG_FLAG_BG_WIRES	0x0000000000000100 /* debug for bluegene
-						    * wires */
-#define DEBUG_FLAG_BG_ALGO	0x0000000000000200 /* debug for bluegene algo */
-#define DEBUG_FLAG_BG_ALGO_DEEP	0x0000000000000400 /* debug for bluegene
-						    * algo deep */
+/* #define DEBUG_FLAG_FREE      0x0000000000000080 */
+/* #define DEBUG_FLAG_FREE 	0x0000000000000100 */
+/* #define DEBUG_FLAG_FREE 	0x0000000000000200 */
+/* #define DEBUG_FLAG_FREE 	0x0000000000000400 */
 #define DEBUG_FLAG_PRIO 	0x0000000000000800 /* debug for priority
 						    * plugin */
 #define DEBUG_FLAG_BACKFILL	0x0000000000001000 /* debug for

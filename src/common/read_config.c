@@ -5142,26 +5142,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "BackfillMap");
 	}
-	if (debug_flags & DEBUG_FLAG_BG_ALGO) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "BGBlockAlgo");
-	}
-	if (debug_flags & DEBUG_FLAG_BG_ALGO_DEEP) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "BGBlockAlgoDeep");
-	}
-	if (debug_flags & DEBUG_FLAG_BG_PICK) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "BGBlockPick");
-	}
-	if (debug_flags & DEBUG_FLAG_BG_WIRES) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "BGBlockWires");
-	}
 	if (debug_flags & DEBUG_FLAG_BURST_BUF) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5407,14 +5387,6 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_BACKFILL;
 		else if (xstrcasecmp(tok, "BackfillMap") == 0)
 			(*flags_out) |= DEBUG_FLAG_BACKFILL_MAP;
-		else if (xstrcasecmp(tok, "BGBlockAlgo") == 0)
-			(*flags_out) |= DEBUG_FLAG_BG_ALGO;
-		else if (xstrcasecmp(tok, "BGBlockAlgoDeep") == 0)
-			(*flags_out) |= DEBUG_FLAG_BG_ALGO_DEEP;
-		else if (xstrcasecmp(tok, "BGBlockPick") == 0)
-			(*flags_out) |= DEBUG_FLAG_BG_PICK;
-		else if (xstrcasecmp(tok, "BGBlockWires") == 0)
-			(*flags_out) |= DEBUG_FLAG_BG_WIRES;
 		else if (xstrcasecmp(tok, "BurstBuffer") == 0)
 			(*flags_out) |= DEBUG_FLAG_BURST_BUF;
 		else if (xstrcasecmp(tok, "CPU_Bind") == 0)
