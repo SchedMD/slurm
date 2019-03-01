@@ -1073,8 +1073,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		 * hand we need to remove the submit from all partition qos
 		 * outside of the one we actually are going to run on.
 		 */
-		if (((type == ACCT_POLICY_JOB_BEGIN) ||
-		     (type == ACCT_POLICY_JOB_FINI)) &&
+		if ((type == ACCT_POLICY_JOB_BEGIN) &&
 		    job_ptr->part_ptr_list) {
 			ListIterator part_itr;
 			struct part_record *part_ptr;
@@ -1096,19 +1095,11 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 						    _find_qos_part,
 						    part_ptr->qos_ptr))
 					continue;
-				if (type == ACCT_POLICY_JOB_BEGIN) {
-					_qos_adjust_limit_usage(
-							ACCT_POLICY_REM_SUBMIT,
+				_qos_adjust_limit_usage(ACCT_POLICY_REM_SUBMIT,
 							job_ptr,
 							part_ptr->qos_ptr,
 							used_tres_run_secs,
 							job_cnt);
-					_add_qos_node_bitmap(job_ptr,
-							     part_ptr->qos_ptr);
-				} else {   /* type == ACCT_POLICY_JOB_FINI */
-					_rm_qos_node_bitmap(job_ptr,
-							    part_ptr->qos_ptr);
-				}
 			}
 			list_iterator_destroy(part_itr);
 			FREE_NULL_LIST(part_qos_list);
