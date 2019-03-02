@@ -4765,17 +4765,17 @@ proc copy_conf { config_path cwd } {
 proc have_nvml { } {
 	global bin_grep number exit_code config_h
 
+	set grep_fail 0
 	set have_nvml 0
 	log_user 0
 	spawn $bin_grep "HAVE_NVML" $config_h
 	expect {
 		-re "HAVE_NVML ($number)" {
 			set have_nvml $expect_out(1,string)
-			send_user "have_nvml is $have_nvml\n"
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: Could not grep $config_h for HAVE_NVML\n"
+			set grep_fail 1
 			set exit_code 1
 		}
 		eof {
@@ -4783,6 +4783,11 @@ proc have_nvml { } {
 		}
 	}
 	log_user 1
+
+	if {$grep_fail == 1} {
+		send_user "\nFAILURE: Could not grep $config_h for HAVE_NVML\n"
+		set have_nvml 0
+	}
 
 	return $have_nvml
 }
