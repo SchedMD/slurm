@@ -84,6 +84,7 @@ if [file exists $local_globals_file] {
 cset slurm_dir   "/usr"
 cset build_dir   "../../"
 cset src_dir     "../../"
+cset config_h    "${build_dir}/config.h"
 cset sacctmgr    "${slurm_dir}/bin/sacctmgr"
 cset sacct       "${slurm_dir}/bin/sacct"
 cset salloc      "${slurm_dir}/bin/salloc"
@@ -4752,4 +4753,36 @@ proc copy_conf { config_path cwd } {
 			wait
 		}
 	}
+}
+
+################################################################
+#
+# Proc: have_nvml
+#
+# Returns 1 if HAVE_NVML is set in config.h. Else, returns 0.
+#
+################################################################
+proc have_nvml { } {
+	global bin_grep number exit_code config_h
+
+	set have_nvml 0
+	log_user 0
+	spawn $bin_grep "HAVE_NVML" $config_h
+	expect {
+		-re "HAVE_NVML ($number)" {
+			set have_nvml $expect_out(1,string)
+			send_user "have_nvml is $have_nvml\n"
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: Could not grep $config_h for HAVE_NVML\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	return $have_nvml
 }
