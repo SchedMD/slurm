@@ -34,6 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "src/common/slurm_xlator.h"
 #include "src/common/gres.h"
 #include "src/common/log.h"
@@ -94,7 +96,18 @@ extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 
 extern void gpu_p_step_config_hardware(bitstr_t *usable_gpus, char *tres_freq)
 {
-	return;
+	xassert(tres_freq);
+	xassert(usable_gpus);
+
+	if (!usable_gpus)
+		return;		/* Job allocated no GPUs */
+	if (!tres_freq)
+		return;		/* No TRES frequency spec */
+
+	if (!strstr(tres_freq, "gpu:"))
+		return;		/* No GPU frequency spec */
+
+	fprintf(stderr, "GpuFreq=control_disabled\n");
 }
 
 extern void gpu_p_step_unconfig_hardware(void)

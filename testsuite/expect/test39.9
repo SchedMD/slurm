@@ -34,11 +34,9 @@ set test_id     "39.9"
 set exit_code   0
 set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
-set freq_parse "GpuFreq=memory_freq:($number),graphics_freq:($number)"
-set nvml_parse "Slurm is not configured with NVIDIA NVML support"
-set nvml_warning "\nWARNING: Slurm is not configured with NVML support. Could not test setting GPU frequencies\n"
-set permission_parse "step_configure_hardware() invalid permissions"
-set permission_warning "\nWARNING: Slurmd is not root. Could not test setting GPU frequencies due to insufficient permissions\n"
+set freq_parse_nvml "GpuFreq=memory_freq:($number),graphics_freq:($number)"
+set freq_parse_generic "GpuFreq=control_disabled"
+set generic_msg "The gpu/generic plugin is loaded, so Slurm can't really test GPU frequency operations. Please set `Autodetect=nvml` in gres.conf to load the gpu/nvml plugin instead."
 
 proc get_node_config {} {
 	global cpus_per_socket sockets_per_node
@@ -75,12 +73,14 @@ proc get_node_config {} {
 
 print_header $test_id
 
-# Should this test run through the motions if slurmd isn't root? Yes, for now...
-# if {[slurmd_user_root] == 0} {
-# 	log_warn "SlurmdUser must be root to set GPU frequencies and run this test."
-# 	exit 0
-# }
-# Should this test run this if NVML isn't installed? Yes, for now...
+if {[have_nvml] == 0} {
+	log_warn "NVML must be installed and enabled to test GPU frequency operations."
+#	exit 0
+}
+if {[slurmd_user_root] == 0} {
+	log_warn "SlurmdUser must be root to test GPU frequency operations."
+	exit 0
+}
 print_time
 
 set select_type [test_select_type]
@@ -118,21 +118,16 @@ exit 0"
 send_user "\n\nTEST 1\n"
 set timeout $max_job_delay
 set match 0
-set has_nvml 1
-set has_permission 1
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=low,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
-	-re $freq_parse {
+	-re $freq_parse_nvml {
 		incr match
 		exp_continue
 	}
-	-re $nvml_parse {
-		set has_nvml 0
-		exp_continue
-	}
-	-re $permission_parse {
-		set has_permission 0
-		exp_continue
+	-re $freq_parse_generic {
+		# Emit warning once and exit
+		log_warn $generic_msg
+		exit $exit_code
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -143,11 +138,7 @@ expect {
 		wait
 	}
 }
-if {$has_permission == 0} {
-	send_user $permission_warning
-} elseif {$has_nvml == 0} {
-	send_user $nvml_warning
-} elseif {$match != 1} {
+if {$match != 1} {
 	send_user "\nFAILURE: srun '--gpu-freq=low,verbose' failure ($match != 1)\n"
 	set exit_code 1
 }
@@ -157,20 +148,10 @@ if {$has_permission == 0} {
 #
 send_user "\n\nTEST 2\n"
 set match 0
-set has_nvml 1
-set has_permission 1
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
-	-re $freq_parse {
+	-re $freq_parse_nvml {
 		incr match
-		exp_continue
-	}
-	-re $nvml_parse {
-		set has_nvml 0
-		exp_continue
-	}
-	-re $permission_parse {
-		set has_permission 0
 		exp_continue
 	}
 	timeout {
@@ -182,11 +163,7 @@ expect {
 		wait
 	}
 }
-if {$has_permission == 0} {
-	send_user $permission_warning
-} elseif {$has_nvml == 0} {
-	send_user $nvml_warning
-} elseif {$match != 1} {
+if {$match != 1} {
 	send_user "\nFAILURE: srun '--gpu-freq=medium,memory=medium,verbose' failure ($match != 1)\n"
 	set exit_code 1
 }
@@ -196,20 +173,10 @@ if {$has_permission == 0} {
 #
 send_user "\n\nTEST 3\n"
 set match 0
-set has_nvml 1
-set has_permission 1
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=highm1,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
-	-re $freq_parse {
+	-re $freq_parse_nvml {
 		incr match
-		exp_continue
-	}
-	-re $nvml_parse {
-		set has_nvml 0
-		exp_continue
-	}
-	-re $permission_parse {
-		set has_permission 0
 		exp_continue
 	}
 	timeout {
@@ -221,11 +188,7 @@ expect {
 		wait
 	}
 }
-if {$has_permission == 0} {
-	send_user $permission_warning
-} elseif {$has_nvml == 0} {
-	send_user $nvml_warning
-} elseif {$match != 1} {
+if {$match != 1} {
 	send_user "\nFAILURE: srun '--gpu-freq=highm1,verbose' failure ($match != 1)\n"
 	set exit_code 1
 }
@@ -236,22 +199,12 @@ if {$has_permission == 0} {
 send_user "\n\nTEST 4\n"
 set hostname "UNKNOWN"
 set match 0
-set has_nvml 1
-set has_permission 1
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=high,memory=high,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
-	-re $freq_parse {
+	-re $freq_parse_nvml {
 		set high_freq $expect_out(1,string)
 		set high_mem  $expect_out(2,string)
 		incr match
-		exp_continue
-	}
-	-re $nvml_parse {
-		set has_nvml 0
-		exp_continue
-	}
-	-re $permission_parse {
-		set has_permission 0
 		exp_continue
 	}
 	-re " NodeList=($controlmachine_regex)" {
@@ -268,30 +221,16 @@ expect {
 		wait
 	}
 }
-if {$has_permission == 0} {
-	send_user $permission_warning
-} elseif {$has_nvml == 0} {
-	send_user $nvml_warning
-} elseif {$match == 2} {
+if {$match == 2} {
 	send_user "\n\nTEST 5\n"
-	set has_nvml 1
-	set has_permission 1
 	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=medium,memory=medium,verbose -J "test$test_id" -t1 ./$file_in]
 	expect {
-		-re $freq_parse {
+		-re $freq_parse_nvml {
 			set medium_freq $expect_out(1,string)
 			set medium_mem  $expect_out(2,string)
 			incr match
 			exp_continue
 		}
-		-re $nvml_parse {
-			set has_nvml 0
-			exp_continue
-		}
-		-re $permission_parse {
-			set has_permission 0
-			exp_continue
-		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
 			slow_kill $srun_pid
@@ -301,31 +240,16 @@ if {$has_permission == 0} {
 			wait
 		}
 	}
-	if {$has_permission == 0} {
-		send_user $permission_warning
-	} elseif {$has_nvml == 0} {
-		send_user $nvml_warning
-	}
 
 	send_user "\n\nTEST 6\n"
-	set has_nvml 1
-	set has_permission 1
 	set srun_pid [spawn $srun -w $hostname --gpus-per-node=1 --gpu-freq=low,memory=low,verbose -J "test$test_id" -t1 ./$file_in]
 	expect {
-		-re $freq_parse {
+		-re $freq_parse_nvml {
 			set low_freq $expect_out(1,string)
 			set low_mem  $expect_out(2,string)
 			incr match
 			exp_continue
 		}
-		-re $nvml_parse {
-			set has_nvml 0
-			exp_continue
-		}
-		-re $permission_parse {
-			set has_permission 0
-			exp_continue
-		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
 			slow_kill $srun_pid
@@ -335,11 +259,7 @@ if {$has_permission == 0} {
 			wait
 		}
 	}
-	if {$has_permission == 0} {
-		send_user $permission_warning
-	} elseif {$has_nvml == 0} {
-		send_user $nvml_warning
-	} elseif {$match != 4} {
+	if {$match != 4} {
 		send_user "\nFAILURE: srun '--gpu-freq=x,memory=x,verbose' failure ($match != 4)\n"
 		set exit_code 1
 	} else {
@@ -363,20 +283,10 @@ if {$has_permission == 0} {
 #
 send_user "\n\nTEST 7\n"
 set match 0
-set has_nvml 1
-set has_permission 1
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=verbose -J "test$test_id" -t1 ./$file_in]
 expect {
-	-re $freq_parse {
+	-re $freq_parse_nvml {
 		incr match
-		exp_continue
-	}
-	-re $nvml_parse {
-		set has_nvml 0
-		exp_continue
-	}
-	-re $permission_parse {
-		set has_permission 0
 		exp_continue
 	}
 	timeout {
@@ -388,11 +298,7 @@ expect {
 		wait
 	}
 }
-if {$has_permission == 0} {
-	send_user $permission_warning
-} elseif {$has_nvml == 0} {
-	send_user $nvml_warning
-} elseif {$match != 1} {
+if {$match != 1} {
 	send_user "\nFAILURE: srun '--gpu-freq=verbose' failure ($match != 1)\n"
 	set exit_code 1
 }
