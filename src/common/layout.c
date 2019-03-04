@@ -104,7 +104,9 @@ const char* layout_hashable_identify(void* item) {
 	return l->name;
 }
 
-const char* layout_hashable_identify_by_type(void* item) {
+void layout_hashable_identify_by_type(void* item, const char** key,
+				      uint32_t* key_len) {
 	layout_t* l = (layout_t*)item;
-	return l->type;
+	*key = l->type;
+	*key_len = strlen(l->type);
 }

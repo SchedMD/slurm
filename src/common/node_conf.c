@@ -95,7 +95,8 @@ static struct node_record *
 		_find_node_record (char *name,bool test_alias,bool log_missing);
 static void	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
-static const char* _node_record_hash_identity (void* item);
+static void _node_record_hash_identity (void* item, const char** key,
+					uint32_t* key_len);
 
 /*
  * _build_single_nodeline_info - From the slurm.conf reader, build table,
@@ -350,10 +351,12 @@ static int _list_find_config (void *config_entry, void *key)
  * xhash helper function to index node_record per name field
  * in node_hash_table
  */
-static const char* _node_record_hash_identity (void* item)
+static void _node_record_hash_identity (void* item, const char** key,
+					uint32_t* key_len)
 {
 	struct node_record *node_ptr = (struct node_record *) item;
-	return node_ptr->name;
+	*key = node_ptr->name;
+	*key_len = strlen(node_ptr->name);
 }
 
 /*
@@ -742,7 +745,7 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 
 	/* try to find via hash table, if it exists */
 	if ((node_ptr =
-	     (struct node_record*) xhash_get(node_hash_table, name))) {
+	     (struct node_record*) xhash_get_str(node_hash_table, name))) {
 		xassert(node_ptr->magic == NODE_MAGIC);
 		return node_ptr;
 	}
@@ -762,7 +765,7 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 		if (!alias)
 			return NULL;
 
-		node_ptr = xhash_get(node_hash_table, alias);
+		node_ptr = xhash_get_str(node_hash_table, alias);
 		if (log_missing)
 			error("%s(%d): lookup failure for %s alias %s",
 			      __func__, __LINE__, name, alias);

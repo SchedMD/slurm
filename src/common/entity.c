@@ -51,10 +51,12 @@
  *                                 HELPERS                                   *
 \*****************************************************************************/
 
-static const char* _entity_data_identify(void* item)
+static void _entity_data_identify(void* item, const char** key,
+				  uint32_t* key_len)
 {
 	entity_data_t* data_item = (entity_data_t*)item;
-	return data_item->key;
+	*key = data_item->key;
+	*key_len = strlen(data_item->key);
 }
 
 static void _entity_data_destroy(void* x)
@@ -85,7 +87,7 @@ static int _entity_add_data(const entity_t* entity, const char* key,
 	if (!key || !*key || !value)
 		return SLURM_ERROR;
 
-	result = (entity_data_t*)xhash_get(entity->data, key);
+	result = (entity_data_t*)xhash_get_str(entity->data, key);
 	if (result != NULL) {
 		/* update existing value by ref or by override */
 		if (byreference) {
@@ -163,7 +165,7 @@ int entity_get_data(const entity_t* entity, const char* key,
 
 void* entity_get_data_ref(const entity_t* entity, const char* key)
 {
-	entity_data_t* data = (entity_data_t*)xhash_get(entity->data, key);
+	entity_data_t* data = (entity_data_t*)xhash_get_str(entity->data, key);
 	if (data) {
 		return data->value;
 	}
@@ -184,7 +186,7 @@ int entity_set_data_ref(const entity_t* entity, const char* key, void* value,
 
 void entity_delete_data(entity_t* entity, const char* key)
 {
-	xhash_delete(entity->data, key);
+	xhash_delete_str(entity->data, key);
 }
 
 void entity_clear_data(entity_t* entity)
@@ -288,8 +290,9 @@ void entity_nodes_walk(entity_t* entity,
 	list_for_each(entity->nodes, _entity_nodes_walkfunc, &real_arg);
 }
 
-const char* entity_hashable_identify(void* item)
+void entity_hashable_identify(void* item, const char** key, uint32_t* key_len)
 {
 	entity_t* entity = (entity_t*)item;
-	return entity->name;
+	*key = entity->name;
+	*key_len = strlen(entity->name);
 }

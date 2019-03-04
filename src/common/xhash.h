@@ -52,9 +52,9 @@ typedef struct xhash_st xhash_t;
   *
   * @param item takes one of the items stored by the lists in the hash
   *             table.
-  * @returns an unique identifier used for making hashes.
+  * @returns unique identifier in 'key' and the length of the key in 'key_len'
   */
-typedef const char* (*xhash_idfunc_t)(void* item);
+typedef void (*xhash_idfunc_t)(void* item, const char** key, uint32_t* key_len);
 
 /**
   * @param id is the unique identifier an item can be identified with.
@@ -85,7 +85,14 @@ xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc);
 /** @returns an item from a key searching through the hash table. NULL if not
  * found.
  */
-void* xhash_get(xhash_t* table, const char* key);
+void* xhash_get(xhash_t* table, const char* key, uint32_t len);
+
+/** @returns an item from a key string searching through the hash table.
+ *  NULL if not found. Wrapper to xhash_get
+ *  @param key is null-terminated unique key
+ *  @returns item from key
+ */
+void* xhash_get_str(xhash_t* table, const char* key);
 
 /** Add an item to the hash table.
  * @param table is the hash table you want to add the item to.
@@ -100,12 +107,26 @@ void* xhash_add(xhash_t* table, void* item);
  * memory associated with the item even if freefunc was not null at init time.
  * @returns the removed item value.
  */
-void* xhash_pop(xhash_t* table, const char* key);
+void* xhash_pop(xhash_t* table, const char* key, uint32_t len);
+
+/** Remove an item associated with a key string from the hash table but
+ *      does not call the table's free_func on the item. 
+ *  Wrapper to xhash_pop
+ *  @param key is null-terminated unique key
+ *  @returns the removed item
+ */
+void* xhash_pop_str(xhash_t* table, const char* key);
 
 /** Remove an item associated with a key from the hash table.
  * If found and freefunc at init time was not null, free the item's memory.
  */
-void xhash_delete(xhash_t* table, const char* key);
+void xhash_delete(xhash_t* table, const char* key, uint32_t len);
+
+/** Remove an item associated with a string key from the hash table
+ *      Wrapper to xhash_delete
+ *  @param key is null-terminated unique key
+ */
+void xhash_delete_str(xhash_t* table, const char* key);
 
 /** @returns the number of items stored in the hash table */
 uint32_t xhash_count(xhash_t* table);

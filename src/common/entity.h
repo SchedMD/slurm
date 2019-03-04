@@ -256,6 +256,6 @@ void entity_nodes_walk(entity_t* entity,
  *
  * Note: it currently just returns the name of the entity
  */
-const char* entity_hashable_identify(void* item);
+void entity_hashable_identify(void* item, const char** key, uint32_t* key_len);
 
 #endif /* end of include guard: __ENTITY_GDBZJYZL_INC__ */

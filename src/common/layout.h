@@ -140,6 +140,7 @@ const char* layout_hashable_identify(void* item);
  *
  * Note: it currently just returns the type of the layout
  */
-const char* layout_hashable_identify_by_type(void* item);
+void layout_hashable_identify_by_type(void* item, const char** key,
+				      uint32_t* key_len);
 
 #endif /* end of include guard: __LAYOUT_DGR6BCQ2_INC__ */

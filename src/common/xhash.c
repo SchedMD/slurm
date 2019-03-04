@@ -83,24 +83,27 @@ xhash_t *xhash_init(xhash_idfunc_t idfunc, xhash_freefunc_t freefunc)
 	return table;
 }
 
-static xhash_item_t* xhash_find(xhash_t* table, const char* key)
+static xhash_item_t* xhash_find(xhash_t* table, const char* key, uint32_t len)
 {
 	xhash_item_t* hash_item = NULL;
-	uint32_t      key_size  = 0;
 
 	if (!table || !key)
 		return NULL;
-	key_size = strlen(key);
-	HASH_FIND(hh, table->ht, key, key_size, hash_item);
+	HASH_FIND(hh, table->ht, key, len, hash_item);
 	return hash_item;
 }
 
-void* xhash_get(xhash_t* table, const char* key)
+void* xhash_get(xhash_t* table, const char* key, uint32_t key_len)
 {
-	xhash_item_t* item = xhash_find(table, key);
+	xhash_item_t* item = xhash_find(table, key, key_len);
 	if (!item)
 		return NULL;
 	return item->item;
+}
+
+void* xhash_get_str(xhash_t* table, const char* key)
+{
+	return xhash_get(table, key, strlen(key));
 }
 
 void* xhash_add(xhash_t* table, void* item)
@@ -113,17 +116,16 @@ void* xhash_add(xhash_t* table, void* item)
 		return NULL;
 	hash_item = xmalloc(sizeof(xhash_item_t));
 	hash_item->item    = item;
-	key     = table->identify(item);
-	keylen = strlen(key);
+	table->identify(item, &key, &keylen);
 	HASH_ADD_KEYPTR(hh, table->ht, key, keylen, hash_item);
 	++table->count;
 	return hash_item->item;
 }
 
-void* xhash_pop(xhash_t* table, const char* key)
+void* xhash_pop(xhash_t* table, const char* key, uint32_t len)
 {
 	void* item_item;
-	xhash_item_t* item = xhash_find(table, key);
+	xhash_item_t* item = xhash_find(table, key, len);
 	if (!item)
 		return NULL;
 	item_item = item->item;
@@ -133,13 +135,23 @@ void* xhash_pop(xhash_t* table, const char* key)
 	return item_item;
 }
 
-void xhash_delete(xhash_t* table, const char* key)
+void* xhash_pop_str(xhash_t* table, const char* key)
 {
-	if (!table || !key)
+	return xhash_pop(table, key, strlen(key));
+}
+
+void xhash_delete(xhash_t* table, const char* key, uint32_t len)
+{
+	if (!table || !key || !len)
 		return;
-	void* item_item = xhash_pop(table, key);
+	void* item_item = xhash_pop(table, key, len);
 	if (table->freefunc)
 		table->freefunc(item_item);
+}
+
+void xhash_delete_str(xhash_t* table, const char* key)
+{
+	return xhash_delete(table, key, strlen(key));
 }
 
 uint32_t xhash_count(xhash_t* table)

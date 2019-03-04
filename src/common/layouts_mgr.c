@@ -181,10 +181,12 @@ typedef struct layouts_keydef_st {
  * layouts_keydef_idfunc - identity function to build an hash table of
  *        layouts_keydef_t
  */
-static const char* layouts_keydef_idfunc(void* item)
+static void layouts_keydef_idfunc(void* item, const char** key,
+				  uint32_t* key_len)
 {
 	layouts_keydef_t* keydef = (layouts_keydef_t*)item;
-	return keydef->key;
+	*key = keydef->key;
+	*key_len = strlen(keydef->key);
 }
 
 /*
@@ -333,7 +335,7 @@ static void _normalize_keydef_mgrkey(char* buffer, uint32_t size,
 
 static void _entity_add_data(entity_t* e, const char* key, void* data)
 {
-	layouts_keydef_t* hkey = xhash_get(mgr->keydefs, key);
+	layouts_keydef_t* hkey = xhash_get_str(mgr->keydefs, key);
 	xassert(hkey);
 	void (*freefunc)(void* p) = xfree_as_callback;
 	if (hkey && hkey->type == L_T_CUSTOM) {
@@ -410,7 +412,7 @@ layouts_keydef_t* _layouts_entity_get_kv_keydef(layout_t* l, entity_t* e,
 	if (l == NULL || e == NULL || key == NULL)
 		return NULL;
 	_normalize_keydef_key(keytmp, PATHLEN, key, l->type);
-	return xhash_get(mgr->keydefs, keytmp);
+	return xhash_get_str(mgr->keydefs, keytmp);
 }
 
 int _layouts_entity_get_kv_type(layout_t* l, entity_t* e, char* key)
@@ -797,7 +799,7 @@ static void _layouts_init_keydef(xhash_t* keydefs,
 		/* if not end of list, a keyspec key is mandatory */
 		_normalize_keydef_key(keytmp, PATHLEN, current->key,
 				      plugin->layout->type);
-		xassert(xhash_get(keydefs, keytmp) == NULL);
+		xassert(xhash_get_str(keydefs, keytmp) == NULL);
 		nkeydef = (layouts_keydef_t*)
 			xmalloc(sizeof(layouts_keydef_t));
 		nkeydef->key = xstrdup(keytmp);
@@ -824,7 +826,7 @@ static void _layouts_init_keydef(xhash_t* keydefs,
 	case LAYOUT_STRUCT_TREE:
 		_normalize_keydef_mgrkey(keytmp, PATHLEN, "enclosed",
 					 plugin->layout->type);
-		xassert(xhash_get(keydefs, keytmp) == NULL);
+		xassert(xhash_get_str(keydefs, keytmp) == NULL);
 		nkeydef = (layouts_keydef_t*)
 			xmalloc(sizeof(layouts_keydef_t));
 		nkeydef->key = xstrdup(keytmp);
@@ -1068,7 +1070,7 @@ static void _layouts_load_automerge(layout_plugin_t* plugin, entity_t* e,
 		option_key = entity_option->key;
 		_normalize_keydef_key(key_keydef, PATHLEN, option_key,
 				      plugin->layout->type);
-		keydef = xhash_get(mgr->keydefs, key_keydef);
+		keydef = xhash_get_str(mgr->keydefs, key_keydef);
 		if (!keydef) {
 			/* key is not meant to be automatically handled,
 			 * ignore it for this function */
@@ -1161,7 +1163,7 @@ static int _layouts_read_config_post(layout_plugin_t* plugin,
 			xfree(root_nodename);
 			return SLURM_ERROR;
 		}
-		e = xhash_get(mgr->entities, _trim(root_nodename));
+		e = xhash_get_str(mgr->entities, _trim(root_nodename));
 		if (!e) {
 			error("layouts: unable to find specified root "
 			      "entity `%s'", _trim(root_nodename));
@@ -1266,7 +1268,7 @@ static int _layouts_load_config_common(layout_plugin_t* plugin,
 		}
 
 		/* look for the entity in the entities hash table*/
-		e = xhash_get(mgr->entities, e_name);
+		e = xhash_get_str(mgr->entities, e_name);
 		if (!e) {
 			/* if the entity does not already exists, create it */
 			if (!s_p_get_string(&e_type, "Type", entity_tbl)) {
@@ -1516,7 +1518,8 @@ uint8_t _layouts_build_xtree_walk(xtree_node_t* node,
 		enclosed_hostlist = hostlist_create(enclosed_str);
 		entity_delete_data(e, p->enclosed_key);
 		while ((enclosed_name = hostlist_shift(enclosed_hostlist))) {
-			enclosed_e = xhash_get(mgr->entities, enclosed_name);
+			enclosed_e = xhash_get_str(mgr->entities,
+						   enclosed_name);
 			if (!enclosed_e) {
 				error("layouts: entity '%s' specified in "
 				      "enclosed entities of entity '%s' "
@@ -1677,7 +1680,7 @@ static void _pack_entity_layout_data(void* item, void* arg)
 
 	/* we must be able to get the keydef associated to the data key */
 	xassert(data);
-	keydef = xhash_get(mgr->keydefs, data->key);
+	keydef = xhash_get_str(mgr->keydefs, data->key);
 	xassert(keydef);
 
 	/* only dump keys related to the targeted layout */
@@ -1921,7 +1924,7 @@ static void _tree_update_node_entity_data(void* item, void* arg)
 
 	/* we must be able to get the keydef associated to the data key */
 	xassert(data);
-	keydef = xhash_get(mgr->keydefs, data->key);
+	keydef = xhash_get_str(mgr->keydefs, data->key);
 	xassert(keydef);
 
 	/* only work on keys that depend of their neighborhood */
@@ -1943,7 +1946,7 @@ static void _tree_update_node_entity_data(void* item, void* arg)
 
 	/* get ref_key (identical if not defined) */
 	if (keydef->ref_key != NULL) {
-		ref_keydef = xhash_get(mgr->keydefs, keydef->ref_key);
+		ref_keydef = xhash_get_str(mgr->keydefs, keydef->ref_key);
 		if (!ref_keydef) {
 			debug2("layouts: autoupdate: key='%s': invalid "
 			       "ref_key='%s'", keydef->key, keydef->ref_key);
@@ -2202,7 +2205,7 @@ static void _dump_entity_data(void* item, void* arg)
 	char* data_dump;
 
 	xassert(data);
-	keydef = xhash_get(mgr->keydefs, data->key);
+	keydef = xhash_get_str(mgr->keydefs, data->key);
 	xassert(keydef);
 	data_dump = _dump_data_key(keydef, data->value);
 
@@ -2520,7 +2523,7 @@ exit:
 
 layout_t* layouts_get_layout_nolock(const char* type)
 {
-	return (layout_t*)xhash_get(mgr->layouts, type);
+	return (layout_t*)xhash_get_str(mgr->layouts, type);
 }
 
 layout_t* layouts_get_layout(const char* type)
@@ -2534,7 +2537,7 @@ layout_t* layouts_get_layout(const char* type)
 
 entity_t* layouts_get_entity_nolock(const char* name)
 {
-	return (entity_t*)xhash_get(mgr->entities, name);
+	return (entity_t*)xhash_get_str(mgr->entities, name);
 }
 
 entity_t* layouts_get_entity(const char* name)
