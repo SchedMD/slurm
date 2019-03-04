@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
     needed in a cloud environment.
  -- pam_slurm_adopt - inject SLURM_JOB_ID environment variable into adopted
     processes.
+ -- PMIx - use the Tree-based collective for empty fence operations.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
