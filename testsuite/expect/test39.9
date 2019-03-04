@@ -75,7 +75,7 @@ print_header $test_id
 
 if {[have_nvml] == 0} {
 	log_warn "NVML must be installed and enabled to test GPU frequency operations."
-#	exit 0
+	exit 0
 }
 if {[slurmd_user_root] == 0} {
 	log_warn "SlurmdUser must be root to test GPU frequency operations."
