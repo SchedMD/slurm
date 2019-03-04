@@ -184,6 +184,7 @@ static bool init_run = false;
 static bool have_gpu = false, have_mps = false;
 static uint32_t gpu_plugin_id = NO_VAL, mps_plugin_id = NO_VAL;
 static volatile uint32_t autodetect_types = GRES_AUTODETECT_NONE;
+static uint32_t select_plugin_type = NO_VAL;
 
 /* Local functions */
 static gres_node_state_t *
@@ -588,6 +589,14 @@ extern int gres_plugin_init(void)
 			strlen(gres_context[i].gres_name_colon);
 	}
 	init_run = true;
+
+	if ((select_plugin_type == NO_VAL) &&
+	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
+				&select_plugin_type) != SLURM_SUCCESS)) {
+		select_plugin_type = NO_VAL;	/* error */
+	}
+	if (have_mps && (select_plugin_type != SELECT_TYPE_CONS_TRES))
+		fatal("Use of gres/mps requires the use of select/cons_tres");
 
 fini:	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
@@ -4230,7 +4239,6 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  uint16_t *cpus_per_task,
 					  List *gres_list)
 {
-	static uint32_t select_plugin_type = NO_VAL;
 	typedef struct overlap_check {
 		gres_job_state_t *without_model_state;
 		uint32_t plugin_id;
@@ -4253,11 +4261,6 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 	if ((rc = gres_plugin_init()) != SLURM_SUCCESS)
 		return rc;
 
-	if ((select_plugin_type == NO_VAL) &&
-	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
-				&select_plugin_type) != SLURM_SUCCESS)) {
-		select_plugin_type = NO_VAL;	/* error */
-	}
 	if ((select_plugin_type != SELECT_TYPE_CONS_TRES) &&
 	    (cpus_per_tres || tres_per_job || tres_per_socket ||
 	     tres_per_task || mem_per_tres))
@@ -4517,11 +4520,6 @@ extern int gres_plugin_job_revalidate(List gres_list)
 	ListIterator iter;
 	int rc = SLURM_SUCCESS;
 
-	if ((select_plugin_type == NO_VAL) &&
-	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
-				&select_plugin_type) != SLURM_SUCCESS)) {
-		select_plugin_type = NO_VAL;	/* error */
-	}
 	if (!gres_list || (select_plugin_type == SELECT_TYPE_CONS_TRES))
 		return SLURM_SUCCESS;
 
@@ -4548,16 +4546,10 @@ extern int gres_plugin_job_revalidate(List gres_list)
  */
 extern bool gres_plugin_job_uses_mps(List job_gres_list)
 {
-	static uint32_t select_plugin_type = NO_VAL;
 	gres_state_t *gres_state;
 	ListIterator iter;
 	bool rc = false;
 
-	if ((select_plugin_type == NO_VAL) &&
-	    (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
-				&select_plugin_type) != SLURM_SUCCESS)) {
-		select_plugin_type = NO_VAL;	/* error */
-	}
 	if (!job_gres_list || (select_plugin_type != SELECT_TYPE_CONS_TRES))
 		return false;
 
