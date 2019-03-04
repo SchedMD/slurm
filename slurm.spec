@@ -311,7 +311,7 @@ notifies slurm about failed nodes.
 	%{?_with_cpusetdir} \
 	%{?_with_mysql_config} \
 	%{?_with_ssl} \
-	%{?_without_cray:--disable-native-cray}\
+	%{?_without_cray:--enable-really-no-cray}\
 	%{?_with_cray_network:--enable-cray-network}\
 	%{?_with_multiple_slurmd:--enable-multiple-slurmd} \
 	%{?_with_pmix} \
