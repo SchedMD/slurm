@@ -1976,7 +1976,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		return rc;
 
 	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &set_cnt);
-	if (gres_data->gres_cnt_config > gres_cnt) {
+	if ((gres_data->gres_cnt_config > gres_cnt) && (fast_schedule != 2)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
 				   "%s count reported lower than configured "
@@ -1986,9 +1986,16 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		}
 		rc = EINVAL;
 	}
+	if ((set_cnt > gres_data->gres_cnt_config) && (fast_schedule == 1)) {
+		debug("%s: %s: Ignoring excess count on node %s (%"
+		      PRIu64" > %"PRIu64")",
+		      __func__, context_ptr->gres_type, node_name, set_cnt,
+		      gres_data->gres_cnt_config);
+		set_cnt = gres_data->gres_cnt_config;
+	}
 	if (gres_data->gres_cnt_found != gres_cnt) {
 		if (gres_data->gres_cnt_found != NO_VAL64) {
-			info("%s: %s: \"Count\" changed on node %s (%"PRIu64" != %"PRIu64")",
+			info("%s: %s: Count changed on node %s (%"PRIu64" != %"PRIu64")",
 			     __func__, context_ptr->gres_type, node_name,
 			     gres_data->gres_cnt_found, gres_cnt);
 		}
@@ -2022,9 +2029,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 	if (!updated_config)
 		return rc;
-	if ((gres_data->gres_cnt_config != 0) &&
-	    (set_cnt > gres_data->gres_cnt_config)) {
-		info("%s: %s: \"Count\" on node %s inconsistent with slurmctld count (%"PRIu64" != %"PRIu64")",
+	if ((set_cnt > gres_data->gres_cnt_config) && (fast_schedule == 2)) {
+		info("%s: %s: count on node %s inconsistent with slurmctld count (%"PRIu64" != %"PRIu64")",
 		     __func__, context_ptr->gres_type, node_name,
 		     set_cnt, gres_data->gres_cnt_config);
 		set_cnt = gres_data->gres_cnt_config;	/* Ignore excess GRES */
@@ -2272,7 +2278,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			      context_ptr->gres_name_colon_len);
 	}
 
-	if ((gres_data->gres_cnt_config == 0) || (fast_schedule > 0))
+	if (fast_schedule > 0)
 		gres_data->gres_cnt_avail = gres_data->gres_cnt_config;
 	else if (gres_data->gres_cnt_found != NO_VAL64)
 		gres_data->gres_cnt_avail = gres_data->gres_cnt_found;
