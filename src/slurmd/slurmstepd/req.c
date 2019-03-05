@@ -1595,7 +1595,7 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	 * ("srun --no-alloc ...") and no tree information can be built
 	 *  without the hostlist from the credential.
 	 */
-	if (step_complete.rank >= 0) {
+	if (step_complete.bits && (step_complete.rank >= 0)) {
 #if 0
 		char bits_string[128];
 		debug2("Setting range %d (bit %d) through %d(bit %d)",

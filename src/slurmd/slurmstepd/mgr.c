@@ -686,7 +686,7 @@ extern void stepd_wait_for_children_slurmstepd(stepd_step_rec_t *job)
 	slurm_mutex_lock(&step_complete.lock);
 
 	/* wait an extra 3 seconds for every level of tree below this level */
-	if (step_complete.children > 0) {
+	if (step_complete.bits && (step_complete.children > 0)) {
 		ts.tv_sec += 3 * (step_complete.max_depth-step_complete.depth);
 		ts.tv_sec += time(NULL) + REVERSE_TREE_CHILDREN_TIMEOUT;
 
@@ -843,7 +843,8 @@ finished:
 	jobacctinfo_destroy(msg.jobacct);
 }
 
-/* Given a starting bit in the step_complete.bits bitstring, "start",
+/*
+ * Given a starting bit in the step_complete.bits bitstring, "start",
  * find the next contiguous range of set bits and return the first
  * and last indices of the range in "first" and "last".
  *
@@ -854,6 +855,9 @@ _bit_getrange(int start, int size, int *first, int *last)
 {
 	int i;
 	bool found_first = false;
+
+	if (!step_complete.bits)
+		return 0;
 
 	for (i = start; i < size; i++) {
 		if (bit_test(step_complete.bits, i)) {
@@ -895,7 +899,10 @@ extern void stepd_send_step_complete_msgs(stepd_step_rec_t *job)
 
 	slurm_mutex_lock(&step_complete.lock);
 	start = 0;
-	size = bit_size(step_complete.bits);
+	if (step_complete.bits)
+		size = bit_size(step_complete.bits);
+	else
+		size = 0;
 
 	/* If no children, send message and return early */
 	if (size == 0) {
