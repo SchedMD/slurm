@@ -994,7 +994,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		{"Links", S_P_STRING},	/* Communication link IDs */
 		{"Name",  S_P_STRING},	/* Gres name */
 		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
-		{"Ignore",S_P_BOOLEAN},
 		{NULL}
 	};
 	int i;
@@ -1071,9 +1070,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		p->config_flags |= GRES_CONF_HAS_TYPE;
 	}
 
-	if (!s_p_get_boolean((bool *)&p->ignore, "Ignore", tbl))
-		p->ignore = false;
-
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
 		tmp_uint64 = strtoll(tmp_str, &last, 10);
 		if ((tmp_uint64 == LONG_MIN) || (tmp_uint64 == LONG_MAX)) {
@@ -1133,7 +1129,6 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 		{"Links", S_P_STRING},	/* Communication link IDs */
 		{"Name",  S_P_STRING},	/* Gres name */
 		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
-		{"Ignore",S_P_BOOLEAN},
 		{NULL}
 	};
 	s_p_hashtbl_t *tbl;
@@ -13231,8 +13226,7 @@ extern char *gres_flags2str(uint8_t config_flags)
  */
 extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 			     int cpu_cnt, char *cpu_aff_abs_range,
-			     char *device_file, char *type, char *links,
-			     bool ignore)
+			     char *device_file, char *type, char *links)
 {
 	gres_slurmd_conf_t *gpu_record;
 	bool use_empty_first_record = false;
@@ -13274,7 +13268,6 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 	gpu_record->links = xstrdup(links);
 	gpu_record->count = device_cnt;
 	gpu_record->plugin_id = gres_plugin_build_id(name);
-	gpu_record->ignore = ignore;
 	if (!use_empty_first_record)
 		list_append(gres_list, gpu_record);
 	list_iterator_destroy(itr);

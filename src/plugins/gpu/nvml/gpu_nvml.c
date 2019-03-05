@@ -1313,7 +1313,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 			error("Creating null GRES GPU record");
 			add_gres_to_list(gres_list_system, "gpu", 1,
 					 node_config->cpu_cnt, NULL,
-					 NULL, NULL, NULL, false);
+					 NULL, NULL, NULL);
 			continue;
 		}
 		_nvml_get_device_name(&device, device_name,
@@ -1364,7 +1364,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 		add_gres_to_list(gres_list_system, "gpu", 1,
 				 node_config->cpu_cnt, cpu_aff_abs_range,
-				 device_file, device_brand, nvlinks, false);
+				 device_file, device_brand, nvlinks);
 
 		xfree(cpu_aff_mac_range);
 		xfree(cpu_aff_abs_range);

@@ -262,8 +262,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 					 gres_record->cpus,
 					 gres_record->file,
 					 gres_record->type_name,
-					 gres_record->links,
-					 gres_record->ignore);
+					 gres_record->links);
 			continue;
 		}
 
@@ -275,8 +274,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 					 gres_record->cpus,
 					 gres_record->file,
 					 gres_record->type_name,
-					 gres_record->links,
-					 gres_record->ignore);
+					 gres_record->links);
 			continue;
 		} else if (!gres_record->file) {
 			for (i = 0; i < gres_record->count; i++)
@@ -286,8 +284,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 						 gres_record->cpus,
 						 gres_record->file,
 						 gres_record->type_name,
-						 gres_record->links,
-						 gres_record->ignore);
+						 gres_record->links);
 			continue;
 		}
 
@@ -302,8 +299,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 					 gres_record->cpu_cnt,
 					 gres_record->cpus, hl_name,
 					 gres_record->type_name,
-					 gres_record->links,
-					 gres_record->ignore);
+					 gres_record->links);
 			free(hl_name);
 		}
 		hostlist_destroy(hl);
@@ -460,7 +456,7 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 
 		// Add the GPU specified by the parsed line
 		add_gres_to_list(gres_list_system, "gpu", 1, cpu_count,
-				 cpu_range, device_file, type, links, false);
+				 cpu_range, device_file, type, links);
 		xfree(cpu_range);
 		xfree(device_file);
 		xfree(type);

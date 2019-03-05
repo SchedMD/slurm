@@ -100,9 +100,6 @@ typedef struct gres_slurmd_conf {
 
 	/* GRES ID number */
 	uint32_t plugin_id;
-
-	/* If true, this is a GRES for Slurm to specifically IGNORE */
-	bool ignore;
 } gres_slurmd_conf_t;
 
 
@@ -1353,7 +1350,6 @@ extern char *gres_flags2str(uint8_t config_flags);
  */
 extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 			     int cpu_cnt, char *cpu_aff_abs_range,
-			     char *device_file, char *type, char *links,
-			     bool ignore);
+			     char *device_file, char *type, char *links);
 
 #endif /* !_GRES_H */
