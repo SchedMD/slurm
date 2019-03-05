@@ -5958,7 +5958,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			}
 		}
 		if (shared_gres && (top_inx >= 0) &&
-		    (gres_avail > job_gres_ptr->gres_per_node)) {
+		    (gres_avail >= job_gres_ptr->gres_per_node)) {
 			if (!node_gres_ptr->topo_core_bitmap[top_inx]) {
 				bit_nset(alloc_core_bitmap, 0, core_ctld - 1);
 			} else {
