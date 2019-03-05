@@ -773,6 +773,12 @@ extern int time_str2secs(const char *string)
 	if ((string == NULL) || (string[0] == '\0'))
 		return NO_VAL;	/* invalid input */
 
+	if (strlen(string) >= 24) {
+		error("%s: time string too long: %s",
+		      __func__, string);
+		return NO_VAL;
+	}
+
 	if ((!xstrcasecmp(string, "-1"))
 	    || (!xstrcasecmp(string, "INFINITE"))
 	    || (!xstrcasecmp(string, "UNLIMITED"))) {
