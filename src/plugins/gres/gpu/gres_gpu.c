@@ -300,11 +300,11 @@ static int _find_gres_device_file_in_list(void *a, void *b)
 }
 
 /*
- * Like _find_gres_in_list, except also checks to make sure the device file
- * range specified by the record with the smaller device count is a subset of
- * the device file range specified by the record with the larger device count.
- * e.g. /dev/tty0 == /dev/tty0 or /dev/tty[0-1] is in /dev/tty[0-2]
- * Returns 1 if a is a subset of b or vice versa; else returns 0.
+ * See if a gres gpu device exists in a gres list
+ * If the device exists, returns the gres record that contains it, else returns
+ * null.
+ *
+ * "device" == type:cpus:links:file
  */
 static int _find_gres_device_in_list(void *a, void *b)
 {
@@ -320,142 +320,6 @@ static int _find_gres_device_in_list(void *a, void *b)
 
 	// Found!
 	return 1;
-}
-
-// Duplicate an existing gres_slurmd_conf_t record and add it to a list
-static void _add_record_to_gres_list(List gres_list, gres_slurmd_conf_t *record)
-{
-	add_gres_to_list(gres_list, record->name, record->count,
-			 record->cpu_cnt, record->cpus, record->file,
-			 record->type_name, record->links, record->ignore);
-}
-
-/*
- * See if a gres gpu device file already exists in a gres list
- * If the device exists, returns the gres record that contains it, else returns
- * null.
- *
- * "device file" == just gres_slurmd_conf_t->file
- */
-static void *_device_file_exists_in_list(List gres_list,
-					 gres_slurmd_conf_t *gres_record)
-{
-	if (gres_list == NULL)
-		return NULL;
-	return list_find_first(gres_list, _find_gres_device_file_in_list,
-			       gres_record);
-}
-
-/*
- * See if a gres gpu device exists in a gres list
- * If the device exists, returns the gres record that contains it, else returns
- * null.
- *
- * "device" == type:cpus:links:file
- */
-static void *_device_exists_in_list(List gres_list,
-				    gres_slurmd_conf_t *gres_record)
-{
-	if (gres_list == NULL)
-		return NULL;
-	return list_find_first(gres_list, _find_gres_device_in_list,
-			       gres_record);
-}
-
-/*
- * Add GRES record and device to gres_list_out only if it doesn't exist already
- * in gres_list_out.
- * Also, only adds records that are NOT ignored
- *
- * gres_list_out	(OUT) The list to add to
- * gres_record		(IN) The record to add
- */
-static void _add_unique_gres_to_list(List gres_list_out,
-				     gres_slurmd_conf_t *gres_record)
-{
-	if (gres_record->ignore) {
-		debug3("Omitting adding this record due to ignore=true");
-		print_gres_conf(gres_record, LOG_LEVEL_DEBUG3);
-		return;
-	}
-	if (!gres_record->file) {
-		debug3("Omitting adding this record due to File=NULL");
-		print_gres_conf(gres_record, LOG_LEVEL_DEBUG3);
-		return;
-	}
-
-	// If device file is already in the list, ignore it
-	if (_device_file_exists_in_list(gres_list_out, gres_record)) {
-		debug3("GRES device file is already specified! Ignoring");
-		print_gres_conf(gres_record, LOG_LEVEL_DEBUG3);
-		return;
-	}
-
-	debug3("Adding the following GRES device:");
-	print_gres_conf(gres_record, LOG_LEVEL_DEBUG3);
-	_add_record_to_gres_list(gres_list_out, gres_record);
-}
-
-/*
- * Add all unique, unignored devices specified by the GRES records in
- * gres_list_in only if they don't already exist in gres_list_out.
- * Also checks to make sure gres_list_in doesn't add any records to
- * gres_list_out that are specifically ignored in gres_list_ignore.
- * I.e.:
- *     gres_list_out = gres_list_in & (~gres_list_ignore)
- *
- * gres_list_out	(OUT) The output GRES list
- * gres_list_ignore	(IN) A list of GRES ignore records that will apply
- * 			against gres_list_in
- * gres_list_in		(IN) A list of GRES records to add
- */
-static void _add_unique_gres_list_to_list_ignore(List gres_list_out,
-						 List gres_list_ignore,
-						 List gres_list_in)
-{
-	ListIterator itr;
-	gres_slurmd_conf_t *gres_in;
-	gres_slurmd_conf_t *gres_ignore;
-
-	if (!gres_list_in || list_is_empty(gres_list_in))
-		return;
-
-	itr = list_iterator_create(gres_list_in);
-	while ((gres_in = list_next(itr))) {
-		// Make sure current device isn't ignored in list compare
-		gres_ignore = _device_file_exists_in_list(gres_list_ignore,
-							  gres_in);
-		if (gres_ignore && gres_ignore->ignore) {
-			debug3("This GRES device:");
-			print_gres_conf(gres_in, LOG_LEVEL_DEBUG3);
-			debug3("is ignored by this record:");
-			print_gres_conf(gres_ignore, LOG_LEVEL_DEBUG3);
-			continue;
-		}
-
-		_add_unique_gres_to_list(gres_list_out, gres_in);
-	}
-	list_iterator_destroy(itr);
-}
-
-/*
- * Add all unique, unignored devices specified by the GRES records in
- * gres_list_in only if they don't already exist in gres_list_out.
- */
-static void _add_unique_gres_list_to_list(List gres_list_out,
-					  List gres_list_in)
-{
-	ListIterator itr;
-	gres_slurmd_conf_t *gres_record;
-
-	if (!gres_list_in || list_is_empty(gres_list_in))
-		return;
-
-	itr = list_iterator_create(gres_list_in);
-	while ((gres_record = list_next(itr))) {
-		_add_unique_gres_to_list(gres_list_out, gres_record);
-	}
-	list_iterator_destroy(itr);
 }
 
 /* Given a file name return its numeric suffix */
@@ -511,11 +375,12 @@ static int _sort_gpu_by_file(void *x, void *y)
  */
 static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 {
-	ListIterator itr_conf, itr_single, itr_system;
+	ListIterator itr_conf, itr_single;
 	gres_slurmd_conf_t *gres_record;
-	List gres_list_conf_single, gres_list_gpu, gres_list_non_gpu;
+	List gres_list_conf_single, gres_list_gpu = NULL, gres_list_non_gpu;
 	bool use_system_detected = true;
 	bool log_zero = true;
+	uint16_t fast_schedule = slurm_get_fast_schedule();
 
 	if (gres_list_conf == NULL) {
 		error("%s: gres_list_conf is NULL. This shouldn't happen",
@@ -524,7 +389,6 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	}
 
 	gres_list_conf_single = list_create(destroy_gres_slurmd_conf);
-	gres_list_gpu = list_create(destroy_gres_slurmd_conf);
 	gres_list_non_gpu = list_create(destroy_gres_slurmd_conf);
 
 	debug2("gres_list_conf:");
@@ -583,8 +447,8 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		}
 
 		if (gres_record->count == 1) {
-			if (_device_exists_in_list(gres_list_conf_single,
-						   gres_record))
+			if (_find_gres_device_in_list(gres_list_conf_single,
+						      gres_record))
 				// Duplicate from single! Do not add
 				continue;
 
@@ -612,8 +476,8 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 			temp_gres_conf->cpus = gres_record->cpus;
 			temp_gres_conf->links = gres_record->links;
 			temp_gres_conf->file = hl_name;
-			if (_device_exists_in_list(gres_list_conf_single,
-						   temp_gres_conf)) {
+			if (_find_gres_device_in_list(gres_list_conf_single,
+						      temp_gres_conf)) {
 				// Duplicate from multiple! Do not add
 			} else {
 				file_array[file_count] = xstrdup(hl_name);
@@ -640,65 +504,44 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	}
 	list_iterator_destroy(itr_conf);
 
-	// Warn about mismatches between detected devices and gres.conf
-	debug2("GPUs specified in gres.conf that are found on node:");
-	itr_single = list_iterator_create(gres_list_conf_single);
-	while ((gres_record = list_next(itr_single))) {
-		if (_device_exists_in_list(gres_list_system, gres_record))
-			print_gres_conf(gres_record, LOG_LEVEL_DEBUG2);
-	}
+	if (fast_schedule == 0) {
+		debug2("FastSchedule == 0, we are only delivering gpus found on the system, ignoring those defined in gres.conf");
+		gres_list_gpu = gres_list_system;
+	} else if (fast_schedule == 1) {
+		if (!gres_list_system)
+			return;
 
-	debug2("GPUs specified in gres.conf that are NOT found on node:");
-	list_iterator_reset(itr_single);
-	while ((gres_record = list_next(itr_single))) {
-		if (!_device_exists_in_list(gres_list_system, gres_record))
-			print_gres_conf(gres_record, LOG_LEVEL_DEBUG2);
-	}
-	list_iterator_destroy(itr_single);
+		itr_single = list_iterator_create(gres_list_conf_single);
+		while ((gres_record = list_next(itr_single))) {
+			if (!list_find_first(
+				    gres_list_system,
+				    _find_gres_device_in_list,
+				    gres_record)) {
+				print_gres_conf(gres_record, LOG_LEVEL_ERROR);
+				fatal("Above record was in the gres.conf, but not found on the system.");
+			}
+			/*
+			 * FIXME: If they didn't specify the file/cpus/links
+			 * lets fill it in here.
+			 */
 
-	debug2("GPUs detected on the node, but not specified in gres.conf:");
-	if (gres_list_system) {
-		itr_system = list_iterator_create(gres_list_system);
-		while ((gres_record = list_next(itr_system))) {
-			if (!_device_exists_in_list(gres_list_conf_single,
-						    gres_record))
-				print_gres_conf(gres_record, LOG_LEVEL_DEBUG2);
 		}
-		list_iterator_destroy(itr_system);
+		list_iterator_destroy(itr_single);
+		gres_list_gpu = gres_list_conf_single;
+	} else if (fast_schedule >= 2) {
+		debug2("FastSchedule == 2, we are believing whatever is in the gres.conf");
+		gres_list_gpu = gres_list_conf_single;
 	}
 
-	debug2("Adding unique USER-SPECIFIED devices:");
-	_add_unique_gres_list_to_list(gres_list_gpu, gres_list_conf_single);
-
-	// If gres.conf is empty or only ignored devices, fill with system info
-	if (use_system_detected) {
-		debug2("Adding unique unignored SYSTEM-DETECTED devices:");
-		// gres_list_conf_single only contains ignore records here
-		_add_unique_gres_list_to_list_ignore(gres_list_gpu,
-						     gres_list_conf_single,
-						     gres_list_system);
-	}
-
-	debug2("gres_list_gpu:");
-	print_gres_list(gres_list_gpu, LOG_LEVEL_DEBUG2);
-
-	/*
-	 * Free old records in gres_list_conf
-	 * Replace gres_list_conf with gres_list_gpu
-	 * Note: list_transfer won't work because lists don't have same delFunc
-	 * Note: list_append_list won't work because delFunc is non-null
-	 */
 	list_flush(gres_list_conf);
-	list_sort(gres_list_gpu, _sort_gpu_by_file);
-	while ((gres_record = list_pop(gres_list_gpu))) {
-		list_append(gres_list_conf, gres_record);
+	if (gres_list_gpu) {
+		list_sort(gres_list_gpu, _sort_gpu_by_file);
+		list_transfer(gres_list_conf, gres_list_gpu);
+		gres_list_gpu = NULL;
 	}
-	while ((gres_record = list_pop(gres_list_non_gpu))) {
-		list_append(gres_list_conf, gres_record);
-	}
-
+	if (gres_list_non_gpu)
+		list_transfer(gres_list_conf, gres_list_non_gpu);
 	FREE_NULL_LIST(gres_list_conf_single);
-	FREE_NULL_LIST(gres_list_gpu);
 	FREE_NULL_LIST(gres_list_non_gpu);
 }
 
