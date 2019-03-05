@@ -227,6 +227,7 @@ if {$gpu_cnt > 1} {
 if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	set gpu_target 3
 	set mem_spec 13
+	set node_count 0
 	set srun_pid [spawn $srun --gpus=$gpu_target -N2 --mem-per-gpu=$mem_spec -J "test$test_id" -t1 ./$file_in]
 	expect {
 		-re "NumNodes=($number)" {
