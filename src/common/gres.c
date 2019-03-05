@@ -2293,12 +2293,16 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			}
 			gres_bits = gres_data->gres_cnt_avail;
 		}
-		if (gres_data->gres_bit_alloc == NULL) {
-			gres_data->gres_bit_alloc = bit_alloc(gres_bits);
-		} else if (gres_bits != bit_size(gres_data->gres_bit_alloc)) {
-			gres_data->gres_bit_alloc =
-				bit_realloc(gres_data->gres_bit_alloc,
-					    gres_bits);
+		if (gres_bits) {
+			if (gres_data->gres_bit_alloc == NULL) {
+				gres_data->gres_bit_alloc =
+					bit_alloc(gres_bits);
+			} else if (gres_bits != bit_size(
+					   gres_data->gres_bit_alloc)) {
+				gres_data->gres_bit_alloc =
+					bit_realloc(gres_data->gres_bit_alloc,
+						    gres_bits);
+			}
 		}
 	}
 
