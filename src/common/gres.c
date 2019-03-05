@@ -595,8 +595,10 @@ extern int gres_plugin_init(void)
 				&select_plugin_type) != SLURM_SUCCESS)) {
 		select_plugin_type = NO_VAL;	/* error */
 	}
-	if (have_mps && (select_plugin_type != SELECT_TYPE_CONS_TRES))
+	if (have_mps && run_in_daemon("slurmctld") &&
+	    (select_plugin_type != SELECT_TYPE_CONS_TRES)) {
 		fatal("Use of gres/mps requires the use of select/cons_tres");
+	}
 
 fini:	slurm_mutex_unlock(&gres_context_lock);
 	return rc;
