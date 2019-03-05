@@ -1095,14 +1095,13 @@ extern uint64_t gres_plugin_step_count(List step_gres_list, char *gres_name);
  * IN node_id        - relative position of this node in step
  * IN settings       - string containing configuration settings for the hardware
  */
-extern void gres_plugin_step_configure_hardware(List step_gres_list,
-						uint32_t node_id,
-						char *settings);
+extern void gres_plugin_step_hardware_init(List step_gres_list,
+					   uint32_t node_id, char *settings);
 
 /*
  * Optionally undo GRES hardware configuration while privileged
  */
-extern void gres_plugin_step_unconfigure_hardware(void);
+extern void gres_plugin_step_hardware_fini(void);
 
 /*
  * Set environment as required for all tasks of a job step

@@ -93,14 +93,14 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 static char	*gres_name		= "gpu";
 static List	gres_devices		= NULL;
 
-extern void step_configure_hardware(bitstr_t *usable_gpus, char *tres_freq)
+extern void step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
-	gpu_g_step_config_hardware(usable_gpus, tres_freq);
+	gpu_g_step_hardware_init(usable_gpus, tres_freq);
 }
 
-extern void step_unconfigure_hardware(void)
+extern void step_hardware_fini(void)
 {
-	gpu_g_step_unconfig_hardware();
+	gpu_g_step_hardware_fini();
 }
 
 static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,

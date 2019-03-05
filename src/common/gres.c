@@ -134,8 +134,8 @@ typedef struct slurm_gres_ops {
 						  enum gres_step_data_type data_type,
 						  void *data);
 	List            (*get_devices)		( void );
-	void            (*step_configure_hardware)	( bitstr_t *, char * );
-	void            (*step_unconfigure_hardware)	( void );
+	void            (*step_hardware_init)	( bitstr_t *, char * );
+	void            (*step_hardware_fini)	( void );
 } slurm_gres_ops_t;
 
 /* Gres plugin context, one for each gres type */
@@ -398,8 +398,8 @@ static int _load_gres_plugin(char *plugin_name,
 		"job_info",
 		"step_info",
 		"get_devices",
-		"step_configure_hardware",
-		"step_unconfigure_hardware",
+		"step_hardware_init",
+		"step_hardware_fini",
 	};
 	int n_syms = sizeof(syms) / sizeof(char *);
 
@@ -11242,9 +11242,8 @@ static bitstr_t * _get_usable_gres(int context_inx)
  * IN node_id        - relative position of this node in step
  * IN settings       - string containing configuration settings for the hardware
  */
-extern void gres_plugin_step_configure_hardware(List step_gres_list,
-						uint32_t node_id,
-						char *settings)
+extern void gres_plugin_step_hardware_init(List step_gres_list,
+					   uint32_t node_id, char *settings)
 {
 	int i;
 	ListIterator iter;
@@ -11258,7 +11257,7 @@ extern void gres_plugin_step_configure_hardware(List step_gres_list,
 	(void) gres_plugin_init();
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		if (gres_context[i].ops.step_configure_hardware == NULL)
+		if (gres_context[i].ops.step_hardware_init == NULL)
 			continue;
 
 		iter = list_iterator_create(step_gres_list);
@@ -11283,7 +11282,7 @@ extern void gres_plugin_step_configure_hardware(List step_gres_list,
 			info("devices: %s", dev_str);
 			xfree(dev_str);
 		}
-		(*(gres_context[i].ops.step_configure_hardware))(devices,
+		(*(gres_context[i].ops.step_hardware_init))(devices,
 								 settings);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -11292,16 +11291,16 @@ extern void gres_plugin_step_configure_hardware(List step_gres_list,
 /*
  * Optionally undo GRES hardware configuration while privileged
  */
-extern void gres_plugin_step_unconfigure_hardware(void)
+extern void gres_plugin_step_hardware_fini(void)
 {
 	int i;
 	(void) gres_plugin_init();
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		if (gres_context[i].ops.step_unconfigure_hardware == NULL) {
+		if (gres_context[i].ops.step_hardware_fini == NULL) {
 			continue;
 		}
-		(*(gres_context[i].ops.step_unconfigure_hardware)) ();
+		(*(gres_context[i].ops.step_hardware_fini)) ();
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }

@@ -1415,10 +1415,10 @@ fail2:
 	 */
 	if (!job->batch && job->tres_freq) {
 		if (getuid() == (uid_t) 0)
-			gres_plugin_step_unconfigure_hardware();
+			gres_plugin_step_hardware_fini();
 		else
-			error("step_unconfigure_hardware() invalid permissions:"
-			      " Slurmd was not started as root");
+			error("%s: invalid permissions: cannot uninitialize GRES hardware unless Slurmd was started as root",
+			      __func__);
 	}
 
 	/*
@@ -1735,12 +1735,12 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	 */
 	if (!job->batch && job->tres_freq) {
 		if (getuid() == (uid_t) 0) {
-			gres_plugin_step_configure_hardware(job->step_gres_list,
-							    job->nodeid,
-							    job->tres_freq);
+			gres_plugin_step_hardware_init(job->step_gres_list,
+						       job->nodeid,
+						       job->tres_freq);
 		} else {
-			error("step_configure_hardware() invalid permissions:"
-			      " Slurmd was not started as root");
+			error("%s: invalid permissions: cannot initialize GRES hardware unless Slurmd was started as root",
+			      __func__);
 		}
 	}
 

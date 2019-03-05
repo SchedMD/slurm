@@ -248,12 +248,12 @@ extern List get_devices(void)
 	return gres_devices;
 }
 
-extern void step_configure_hardware(bitstr_t *usable_gres, char *settings)
+extern void step_hardware_init(bitstr_t *usable_gres, char *settings)
 {
 
 }
 
-extern void step_unconfigure_hardware(void)
+extern void step_hardware_fini(void)
 {
 
 }

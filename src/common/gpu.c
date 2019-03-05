@@ -44,9 +44,9 @@
 typedef struct slurm_ops {
 	void    (*reconfig)		(void);
 	List	(*get_system_gpu_list) 	(node_config_load_t *node_conf);
-	void	(*step_config_hardware)	(bitstr_t *usable_gpus,
+	void	(*step_hardware_init)	(bitstr_t *usable_gpus,
 					 char *tres_freq);
-	void	(*step_unconfig_hardware)(void);
+	void	(*step_hardware_fini)	(void);
 	char   *(*test_cpu_conv)	(char *cpu_range);
 } slurm_ops_t;
 
@@ -57,8 +57,8 @@ typedef struct slurm_ops {
 static const char *syms[] = {
 	"gpu_p_reconfig",
 	"gpu_p_get_system_gpu_list",
-	"gpu_p_step_config_hardware",
-	"gpu_p_step_unconfig_hardware",
+	"gpu_p_step_hardware_init",
+	"gpu_p_step_hardware_fini",
 	"gpu_p_test_cpu_conv",
 };
 
@@ -161,18 +161,18 @@ extern List gpu_g_get_system_gpu_list(node_config_load_t *node_conf)
 	return (*(ops.get_system_gpu_list))(node_conf);
 }
 
-extern void gpu_g_step_config_hardware(bitstr_t *usable_gpus, char *tres_freq)
+extern void gpu_g_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
 	if (gpu_plugin_init() < 0)
 		return;
-	(*(ops.step_config_hardware))(usable_gpus, tres_freq);
+	(*(ops.step_hardware_init))(usable_gpus, tres_freq);
 }
 
-extern void gpu_g_step_unconfig_hardware(void)
+extern void gpu_g_step_hardware_fini(void)
 {
 	if (gpu_plugin_init() < 0)
 		return;
-	(*(ops.step_unconfig_hardware))();
+	(*(ops.step_hardware_fini))();
 }
 
 extern char *gpu_g_test_cpu_conv(char *cpu_range)

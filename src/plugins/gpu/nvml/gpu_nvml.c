@@ -1423,7 +1423,7 @@ extern List gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 	return gres_list_system;
 }
 
-extern void gpu_p_step_config_hardware(bitstr_t *usable_gpus, char *tres_freq)
+extern void gpu_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
 	char *freq = NULL;
 	char *tmp = NULL;
@@ -1453,7 +1453,7 @@ extern void gpu_p_step_config_hardware(bitstr_t *usable_gpus, char *tres_freq)
 	xfree(freq);
 }
 
-extern void gpu_p_step_unconfig_hardware(void)
+extern void gpu_p_step_hardware_fini(void)
 {
 	if (!saved_gpus)
 		return;

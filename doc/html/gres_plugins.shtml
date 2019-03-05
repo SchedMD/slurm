@@ -203,7 +203,7 @@ Returns a <span class="commandline">List</span> of GRES device records of type
 <span class="commandline">gres_slurmd_conf_t</span>.
 
 <p class="commandline">
-void step_configure_hardware(bitstr_t *usable_gres, char *settings)
+void step_hardware_init(bitstr_t *usable_gres, char *settings)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Configure device hardware corresponding to all the GRES devices of the plugin
 type. The <i>slurmstepd</i> calls this function while privileged and before
@@ -220,16 +220,16 @@ hardware devices.<br>
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
 
 <p class="commandline">
-void step_unconfigure_hardware(void)
+void step_hardware_fini(void)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Do hardware configuration after the step is finished while privileged. This is
 meant to allow Slurm to undo hardware configuration changes performed by
-<span class="commandline">step_configure_hardware()</span>.
+<span class="commandline">step_hardware_init()</span>.
 The <i>slurmstepd</i> calls this function while privileged and after tasks
 complete. The <i>gres/gpu</i> plugin resets GPU frequencies to high here.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None.</p>
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
 
-<p style="text-align:center;">Last modified 7 December 2018</p>
+<p style="text-align:center;">Last modified 1 March 2019</p>
 
 <!--#include virtual="footer.txt"-->
