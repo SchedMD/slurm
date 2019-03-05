@@ -88,50 +88,6 @@ static unit_names_t un[] = {
 	{NULL,		0,	0}
 };
 
-/* _get_dash()
- *
- * Check if the string has a - and
- * if it does replace it by a space.
- */
-static uint16_t
-_get_dash(char *s)
-{
-	int cc;
-
-	cc = 0;
-	while (*s) {
-		if (*s == '-') {
-			++cc;
-			*s = ' ';
-		}
-		++s;
-	}
-
-	return cc;
-}
-
-/* _get_num_colon()
- *
- * Count the number of colons and
- * replace them by spaces.
- */
-static uint16_t
-_get_num_colon(char *s)
-{
-	int cc;
-
-	cc = 0;
-	while (*s) {
-		if (*s == ':') {
-			++cc;
-			*s = ' ';
-		}
-		++s;
-	}
-
-	return cc;
-}
-
 /* _is_valid_timespec()
  *
  * Validate that time format follows
@@ -755,20 +711,7 @@ slurm_make_time_str (time_t *time, char *string, int size)
  */
 extern int time_str2secs(const char *string)
 {
-	uint16_t has_dash;
-	uint16_t num_colon;
-	char days[24] = {0};
-	char hours[24] = {0};
-	char minutes[24] = {0};
-	char seconds[24] = {0};
-	char *timestr;
-	char *p;
-	int d;
-	int h;
-	int m;
-	int s;
-	int n;
-	int cc;
+	int d = 0, h = 0, m = 0, s = 0;
 
 	if ((string == NULL) || (string[0] == '\0'))
 		return NO_VAL;	/* invalid input */
@@ -782,64 +725,32 @@ extern int time_str2secs(const char *string)
 	if (! _is_valid_timespec(string))
 		return NO_VAL;
 
-	timestr = p = strdup(string);
-	if (timestr == NULL)
-		return NO_VAL;
-
-	d = h = m = s = 0;
-
-	has_dash  = _get_dash(timestr);
-	num_colon = _get_num_colon(timestr);
-
-	if (has_dash) {
-		/* days- OR days-hours
-		 */
-		sscanf(timestr, "%s%s%n", days, hours, &n);
-		timestr = timestr + n;
-		d = atoi(days) * 86400;
-		h = atoi(hours) * 3600;
-
-		if (num_colon == 1) {
-			/* days-hours:minutes
+	if (xstrchr(string, '-')) {
+		/* days-[hours[:minutes[:seconds]]] */
+		sscanf(string, "%d-%d:%d:%d", &d, &h, &m, &s);
+		d *= 86400;
+		h *= 3600;
+		m *= 60;
+	} else {
+		if (sscanf(string, "%d:%d:%d", &h, &m, &s) == 3) {
+			/* hours:minutes:seconds */
+			h *= 3600;
+			m *= 60;
+		} else {
+			/*
+			 * minutes[:seconds]
+			 * h is minutes here and m is seconds due
+			 * to sscanf parsing left to right
 			 */
-			sscanf(timestr, "%s", minutes);
-			m = atoi(minutes) * 60;
-		} else if (num_colon == 2) {
-			/* days-hours:minutes:seconds
-			 */
-			sscanf(timestr, "%s%s", minutes, seconds);
-			m = atoi(minutes) * 60;
-			s = atoi(seconds);
+			s = m;
+			m = h * 60;
+			h = 0;
 		}
-		goto bye;
 	}
 
-	/* minutes
-	 */
-	if (num_colon == 0) {
-		m = atoi(timestr) * 60;
-	} else if (num_colon == 1) {
-		/* minutes:seconds
-		 */
-		sscanf(timestr, "%s%s", minutes, seconds);
-		m = atoi(minutes) * 60;
-		s = atoi(seconds);
-	} else if (num_colon == 2) {
-		/* hours:minutes:seconds
-		 */
-		sscanf(timestr, "%s%s%s", hours, minutes, seconds);
-		h = atoi(hours) * 3600;
-		m = atoi(minutes) * 60;
-		s = atoi(seconds);
-	}
-
-bye:
-	cc = d + h + m + s;
-	free(p);
-
-	return cc;
-
+	return (d + h + m + s);
 }
+
 extern int time_str2mins(const char *string)
 {
 	int i = time_str2secs(string);
