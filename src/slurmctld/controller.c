@@ -495,20 +495,21 @@ int main(int argc, char **argv)
 	 * Initialize plugins.
 	 * If running configuration test, report ALL failures.
 	 */
-	if (gres_plugin_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize gres plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize gres plugin");
-		}
-	}
 	if (slurm_select_init(1) != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize node selection plugin");
 			test_config_rc = 1;
 		} else {
 			fatal("failed to initialize node selection plugin");
+		}
+	}
+	/* gres_plugin_init() must follow slurm_select_init() */
+	if (gres_plugin_init() != SLURM_SUCCESS) {
+		if (test_config) {
+			error("failed to initialize gres plugin");
+			test_config_rc = 1;
+		} else {
+			fatal("failed to initialize gres plugin");
 		}
 	}
 	if (slurm_preempt_init() != SLURM_SUCCESS) {
