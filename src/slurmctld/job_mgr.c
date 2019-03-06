@@ -14260,16 +14260,13 @@ static void _notify_srun_missing_step(struct job_record *job_ptr, int node_inx,
  *	these jobs and use this function to kill them - one
  *	agent request per node as they register.
  * IN job_id - id of the job to be killed
- * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
+ * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. job reported
+ *		by slurmd on some node, but job records already purged from
+ *		slurmctld)
  * IN node_name - name of the node on which the job resides
  */
-
-/*
- * FIXME: the job_id here is redundant to the job_ptr sent in.  We should change
- * the signature.  I couldn't find any place where job_ptr was NULL.
- */
-extern void
-abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, char *node_name)
+extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
+			      char *node_name)
 {
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
@@ -14301,13 +14298,20 @@ abort_job_on_node(uint32_t job_id, struct job_record *job_ptr, char *node_name)
 	if (job_ptr && job_ptr->front_end_ptr)
 		agent_info->protocol_version =
 			job_ptr->front_end_ptr->protocol_version;
-	debug("Aborting JobId=%u on front end node %s", job_id, node_name);
+	if (job_ptr) {
+		debug("Aborting %pJ on front end node %s", job_ptr, node_name);
+	} else {
+		debug("Aborting JobId=%u on front end node %s", job_id,
+		      node_name);
+	}
 #else
 	struct node_record *node_ptr;
 	if ((node_ptr = find_node_record(node_name)))
 		agent_info->protocol_version = node_ptr->protocol_version;
-
-	debug("Aborting JobId=%u on node %s", job_id, node_name);
+	if (job_ptr)
+		debug("Aborting %pJ on node %s", job_ptr, node_name);
+	else
+		debug("Aborting JobId=%u on node %s", job_id, node_name);
 #endif
 	agent_info->msg_type	= REQUEST_ABORT_JOB;
 	agent_info->msg_args	= kill_req;
