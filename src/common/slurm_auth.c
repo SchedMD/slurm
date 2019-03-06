@@ -234,15 +234,43 @@ int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
         if (slurm_auth_init(NULL) < 0)
                 return SLURM_ERROR;
 
-        return (*(ops.pack))(cred, buf, protocol_version);
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		pack32(*ops.plugin_id, buf);
+		return (*(ops.pack))(cred, buf, protocol_version);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		return (*(ops.pack))(cred, buf, protocol_version);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		return SLURM_ERROR;
+	}
 }
 
 void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 {
+	uint32_t plugin_id = 0;
+
 	if (slurm_auth_init(NULL) < 0)
                 return NULL;
 
-        return (*(ops.unpack))(buf, protocol_version);
+	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		safe_unpack32(&plugin_id, buf);
+		if (plugin_id != *(ops.plugin_id)) {
+			error("%s: remote plugin_id %u != %u",
+			      __func__, plugin_id, *(ops.plugin_id));
+			return NULL;
+		}
+		return (*(ops.unpack))(buf, protocol_version);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		return (*(ops.unpack))(buf, protocol_version);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		return NULL;
+	}
+
+unpack_error:
+	return NULL;
 }
 
 int g_slurm_auth_print(void *cred, FILE *fp)
