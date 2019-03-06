@@ -203,12 +203,6 @@ struct slurm_job_credential {
 	uint32_t siglen;	/* signature length in bytes		*/
 };
 
-/*
- * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, job accounting
- * plugins will stop working.  If you need to add fields, add them
- * at the end of the structure.
- */
 typedef struct {
 	void *(*cred_read_private_key)	(const char *path);
 	void *(*cred_read_public_key)	(const char *path);

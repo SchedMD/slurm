@@ -51,12 +51,6 @@
 
 #define _DEBUG 0
 
-/*
- * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, MPI plugins
- * will stop working.  If you need to add fields, add them
- * at the end of the structure.
- */
 typedef struct slurm_mpi_ops {
 	int          (*slurmstepd_prefork)(const stepd_step_rec_t *job,
 					   char ***env);

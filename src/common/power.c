@@ -48,11 +48,6 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
-/*
- * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, the plugin will stop
- * working.  If you need to add fields, add them at the end of the structure.
- */
 typedef struct slurm_power_ops {
 	void		(*job_resume)	(struct job_record *job_ptr);
 	void		(*job_start)	(struct job_record *job_ptr);

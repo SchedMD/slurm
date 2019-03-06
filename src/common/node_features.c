@@ -50,11 +50,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-/*
- * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, this plugins will stop
- * working.  If you need to add fields, add them to the end of the structure.
- */
 typedef struct node_features_ops {
 	uint32_t(*boot_time)	(void);
 	bool    (*changeable_feature) (char *feature);

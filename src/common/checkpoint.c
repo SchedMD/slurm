@@ -51,12 +51,6 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
-/*
- * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, job completion
- * logging plugins will stop working.  If you need to add fields, add them
- * at the end of the structure.
- */
 typedef struct slurm_checkpoint_ops {
 	int     (*ckpt_op) (uint32_t job_id, uint32_t step_id,
 			    struct step_record *step_ptr, uint16_t op,

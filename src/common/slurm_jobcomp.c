@@ -52,12 +52,6 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
-/*
- * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, job completion
- * logging plugins will stop working.  If you need to add fields, add them
- * at the end of the structure.
- */
 typedef struct slurm_jobcomp_ops {
 	int          (*set_loc)   ( char *loc );
 	int          (*job_write) ( struct job_record *job_ptr);

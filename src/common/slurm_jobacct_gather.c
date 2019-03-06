@@ -86,13 +86,6 @@ strong_alias(jobacctinfo_unpack, slurm_jobacctinfo_unpack);
 strong_alias(jobacctinfo_create, slurm_jobacctinfo_create);
 strong_alias(jobacctinfo_destroy, slurm_jobacctinfo_destroy);
 
-
-/*
- * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, job accounting
- * plugins will stop working.  If you need to add fields, add them
- * at the end of the structure.
- */
 typedef struct slurm_jobacct_gather_ops {
 	void (*poll_data) (List task_list, bool pgid_plugin, uint64_t cont_id,
 			   bool profile);

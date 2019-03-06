@@ -53,12 +53,6 @@
 
 static bool init_run = false;
 
-/*
- * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, authentication
- * plugins will stop working.  If you need to add fields, add them at the
- * end of the structure.
- */
 typedef struct slurm_auth_ops {
         void *       (*create)    ( char *auth_info );
         int          (*destroy)   ( void *cred );

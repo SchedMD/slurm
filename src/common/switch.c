@@ -52,12 +52,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-/*
- * WARNING:  Do not change the order of these fields or add additional
- * fields at the beginning of the structure.  If you do, job completion
- * logging plugins will stop working.  If you need to add fields, add them
- * at the end of the structure.
- */
 typedef struct slurm_switch_ops {
 	uint32_t     (*plugin_id);
 	int          (*state_save)        ( char *dir_name );
