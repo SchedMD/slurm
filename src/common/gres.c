@@ -1976,7 +1976,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		return rc;
 
 	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &set_cnt);
-	if ((gres_data->gres_cnt_config > gres_cnt) && (fast_schedule != 2)) {
+	if ((gres_data->gres_cnt_config > gres_cnt) && (fast_schedule == 1)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
 				   "%s count reported lower than configured "
@@ -1985,6 +1985,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				   gres_cnt, gres_data->gres_cnt_config);
 		}
 		rc = EINVAL;
+abort();
 	}
 	if ((set_cnt > gres_data->gres_cnt_config) && (fast_schedule == 1)) {
 		debug("%s: %s: Ignoring excess count on node %s (%"
@@ -2314,7 +2315,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		}
 	}
 
-	if ((fast_schedule < 2) &&
+	if ((fast_schedule == 1) &&
 	    (gres_data->gres_cnt_found < gres_data->gres_cnt_config)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
