@@ -55,6 +55,7 @@ static bool init_run = false;
 
 typedef struct slurm_auth_ops {
 	uint32_t     (*plugin_id);
+	char         (*plugin_type);
         void *       (*create)    ( char *auth_info );
         int          (*destroy)   ( void *cred );
         int          (*verify)    ( void *cred, char *auth_info );
@@ -74,6 +75,7 @@ typedef struct slurm_auth_ops {
  */
 static const char *syms[] = {
 	"plugin_id",
+	"plugin_type",
 	"slurm_auth_create",
 	"slurm_auth_destroy",
 	"slurm_auth_verify",
@@ -238,6 +240,14 @@ int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
 		pack32(*ops.plugin_id, buf);
 		return (*(ops.pack))(cred, buf, protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		packstr(ops.plugin_type, buf);
+		/*
+		 * This next field was packed with plugin_version within each
+		 * individual auth plugin, but upon unpack was never checked
+		 * against anything. Rather than expose the protocol_version
+		 * symbol, just pack a zero here instead.
+		 */
+		pack32(0, buf);
 		return (*(ops.pack))(cred, buf, protocol_version);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -262,6 +272,16 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 		}
 		return (*(ops.unpack))(buf, protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *plugin_type;
+		uint32_t uint32_tmp, version;
+		safe_unpackmem_ptr(&plugin_type, &uint32_tmp, buf);
+
+		if (xstrcmp(plugin_type, ops.plugin_type)) {
+			error("%s: remote plugin_type `%s` != `%s`",
+			      __func__, plugin_type, ops.plugin_type);
+			return NULL;
+		}
+		safe_unpack32(&version, buf);
 		return (*(ops.unpack))(buf, protocol_version);
 	} else {
 		error("%s: protocol_version %hu not supported",
