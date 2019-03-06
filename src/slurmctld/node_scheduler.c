@@ -510,6 +510,8 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	agent_args->hostlist = hostlist_create(NULL);
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update    = time(NULL);
+	kill_job->job_gres_info =
+		 gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
 	kill_job->job_id    = job_ptr->job_id;
 	kill_job->pack_jobid = job_ptr->pack_job_id;
 	kill_job->step_id   = NO_VAL;
@@ -3230,6 +3232,8 @@ extern void launch_prolog(struct job_record *job_ptr)
 	    !(slurmctld_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
 		job_ptr->state_reason = WAIT_PROLOG;
 
+	prolog_msg_ptr->job_gres_info =
+		 gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
 	prolog_msg_ptr->job_id = job_ptr->job_id;
 	prolog_msg_ptr->pack_job_id = job_ptr->pack_job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;
@@ -4690,6 +4694,8 @@ extern void re_kill_job(struct job_record *job_ptr)
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_args->retry = 0;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
+	kill_job->job_gres_info	=
+		gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
 	kill_job->job_id    = job_ptr->job_id;
 	kill_job->pack_jobid = job_ptr->pack_job_id;
 	kill_job->step_id   = NO_VAL;

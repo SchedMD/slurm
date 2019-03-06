@@ -56,6 +56,7 @@
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "../common/gres_common.h"
@@ -745,10 +746,107 @@ extern List get_devices(void)
 
 extern void step_hardware_init(bitstr_t *usable_gres, char *settings)
 {
-
+	return;
 }
 
 extern void step_hardware_fini(void)
 {
+	return;
+}
 
+/*
+ * Build record used to set environment variables as appropriate for a job's
+ * prolog or epilog based GRES allocated to the job.
+ */
+extern gres_epilog_info_t *epilog_build_env(gres_job_state_t *gres_job_ptr)
+{
+	int i;
+	gres_epilog_info_t *epilog_info;
+
+	epilog_info = xmalloc(sizeof(gres_epilog_info_t));
+	epilog_info->node_cnt = gres_job_ptr->node_cnt;
+	epilog_info->gres_bit_alloc = xcalloc(epilog_info->node_cnt,
+					      sizeof(bitstr_t *));
+	epilog_info->gres_cnt_node_alloc = xcalloc(epilog_info->node_cnt,
+					      sizeof(uint64_t));
+	for (i = 0; i < epilog_info->node_cnt; i++) {
+		if (gres_job_ptr->gres_bit_alloc &&
+		    gres_job_ptr->gres_bit_alloc[i]) {
+			epilog_info->gres_bit_alloc[i] =
+				bit_copy(gres_job_ptr->gres_bit_alloc[i]);
+		}
+		if (gres_job_ptr->gres_bit_alloc &&
+		    gres_job_ptr->gres_bit_alloc[i]) {
+			epilog_info->gres_cnt_node_alloc[i] =
+				gres_job_ptr->gres_cnt_node_alloc[i];
+		}
+	}
+
+	return epilog_info;
+}
+
+/*
+ * Set environment variables as appropriate for a job's prolog or epilog based
+ * GRES allocated to the job.
+ */
+extern void epilog_set_env(char ***epilog_env_ptr,
+			   gres_epilog_info_t *epilog_info, int node_inx)
+{
+	int dev_inx = -1, env_inx = 0, global_id = -1, i;
+	uint64_t count_on_dev, gres_per_node = 0, percentage;
+	gres_device_t *gres_device;
+	ListIterator iter;
+
+	xassert(epilog_env_ptr);
+
+	if (!epilog_info)
+		return;
+
+	if (node_inx > epilog_info->node_cnt) {
+		error("%s: %s: bad node index (%d > %u)", plugin_type, __func__,
+		      node_inx, epilog_info->node_cnt);
+		return;
+	}
+
+	if (*epilog_env_ptr) {
+		for (env_inx = 0; (*epilog_env_ptr)[env_inx]; env_inx++)
+			;
+		xrealloc(*epilog_env_ptr, sizeof(char *) * (env_inx + 3));
+	} else {
+		*epilog_env_ptr = xcalloc(3, sizeof(char *));
+	}
+
+	if (epilog_info->gres_bit_alloc &&
+	    epilog_info->gres_bit_alloc[node_inx])
+		dev_inx = bit_ffs(epilog_info->gres_bit_alloc[node_inx]);
+	if (dev_inx >= 0) {
+		/* Translate bit to device number, may differ */
+		i = -1;
+		iter = list_iterator_create(gres_devices);
+		while ((gres_device = list_next(iter))) {
+			i++;
+			if (i == dev_inx) {
+				global_id = gres_device->dev_num;
+				break;
+			}
+		}
+		list_iterator_destroy(iter);
+	}
+	if (global_id >= 0) {
+		xstrfmtcat((*epilog_env_ptr)[env_inx++],
+			   "CUDA_VISIBLE_DEVICE=%d", global_id);
+	}
+	if ((global_id >= 0) &&
+	    epilog_info->gres_cnt_node_alloc &&
+	    epilog_info->gres_cnt_node_alloc[node_inx]) {
+		gres_per_node = epilog_info->gres_cnt_node_alloc[node_inx];
+		count_on_dev = _get_dev_count(global_id);
+		percentage = (gres_per_node * 100) / count_on_dev;
+		percentage = MAX(percentage, 1);
+		xstrfmtcat((*epilog_env_ptr)[env_inx++],
+			   "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE=%"PRIu64,
+			   percentage);
+	}
+
+	return;
 }

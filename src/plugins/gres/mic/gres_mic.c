@@ -250,10 +250,29 @@ extern List get_devices(void)
 
 extern void step_hardware_init(bitstr_t *usable_gres, char *settings)
 {
-
+	return;
 }
 
 extern void step_hardware_fini(void)
 {
+	return;
+}
 
+/*
+ * Build record used to set environment variables as appropriate for a job's
+ * prolog or epilog based GRES allocated to the job.
+ */
+extern gres_epilog_info_t *epilog_build_env(List job_gres_info)
+{
+	return NULL;
+}
+
+/*
+ * Set environment variables as appropriate for a job's prolog or epilog based
+ * GRES allocated to the job.
+ */
+extern void epilog_set_env(char ***epilog_env_ptr,
+			   gres_epilog_info_t *epilog_info, int node_inx)
+{
+	return;
 }

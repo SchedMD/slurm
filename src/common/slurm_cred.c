@@ -811,6 +811,30 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Return a pointer specific field from a job credential
+ * cred IN - job credential
+ * cred_arg_type in - Field desired
+ * RET - pointer to the information of interest (NOT COPIED), NULL on error
+ */
+extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
+{
+	void *rc = NULL;
+
+	xassert(cred != NULL);
+
+	slurm_mutex_lock(&cred->mutex);
+	if (cred_arg_type == CRED_ARG_JOB_GRES_LIST) {
+		rc = (void *) cred->job_gres_list;
+	} else {
+		error("%s: Invalid arg type requested (%d)", __func__,
+		      cred_arg_type);
+	}
+	slurm_mutex_unlock(&cred->mutex);
+
+	return rc;
+}
+
 extern int
 slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 		  slurm_cred_arg_t *arg, uint16_t protocol_version)

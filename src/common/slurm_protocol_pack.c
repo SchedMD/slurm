@@ -46,6 +46,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/forward.h"
+#include "src/common/gres.h"
 #include "src/common/job_options.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
@@ -4713,6 +4714,8 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		gres_plugin_job_alloc_pack(msg->job_gres_info, buffer,
+					   protocol_version);
 		pack32(msg->job_id,  buffer);
 		pack32(msg->pack_jobid,  buffer);
 		pack32(msg->job_state, buffer);
@@ -4751,8 +4754,8 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 		pack32(msg->step_id,  buffer);
 		pack_time(msg->time, buffer);
 	} else {
-		error("_pack_kill_job_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
@@ -4769,6 +4772,9 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 	*msg = tmp_ptr;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		if (gres_plugin_job_alloc_unpack(&(tmp_ptr->job_gres_info),
+						 buffer, protocol_version))
+			goto unpack_error;
 		safe_unpack32(&(tmp_ptr->job_id),  buffer);
 		safe_unpack32(&(tmp_ptr->pack_jobid),  buffer);
 		safe_unpack32(&(tmp_ptr->job_state),  buffer);
@@ -4813,8 +4819,8 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer,
 		safe_unpack32(&(tmp_ptr->step_id),  buffer);
 		safe_unpack_time(&(tmp_ptr->time), buffer);
 	} else {
-		error("_unpack_kill_job_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported", __func__,
+		      protocol_version);
 		goto unpack_error;
 	}
 	return SLURM_SUCCESS;
@@ -11156,6 +11162,8 @@ static void _pack_prolog_launch_msg(prolog_launch_msg_t *msg,
 	xassert(msg);
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		gres_plugin_job_alloc_pack(msg->job_gres_info, buffer,
+					   protocol_version);
 		pack32(msg->job_id, buffer);
 		pack32(msg->pack_job_id, buffer);
 		pack32(msg->uid, buffer);
@@ -11237,6 +11245,9 @@ static int _unpack_prolog_launch_msg(prolog_launch_msg_t **msg,
 	*msg = launch_msg_ptr;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		if (gres_plugin_job_alloc_unpack(&launch_msg_ptr->job_gres_info,
+						 buffer, protocol_version))
+			goto unpack_error;
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->pack_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);

@@ -72,6 +72,8 @@
  */
 typedef struct slurm_cred_context   * slurm_cred_ctx_t;
 
+/* Used by slurm_cred_get_arg() */
+#define CRED_ARG_JOB_GRES_LIST 1
 
 /*
  * Initialize current process for slurm credential creation.
@@ -209,6 +211,14 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg);
 
 /* Make a copy of the credential's arguements */
 int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg);
+
+/*
+ * Return a pointer specific field from a job credential
+ * cred IN - job credential
+ * cred_arg_type in - Field desired
+ * RET - pointer to the information of interest, NULL on error
+ */
+extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type);
 
 /*
  * Verify the signed credential `cred,' and return cred contents in

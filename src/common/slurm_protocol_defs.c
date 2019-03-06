@@ -907,6 +907,7 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 
 	if (msg) {
 		xfree(msg->alias_list);
+		FREE_NULL_LIST(msg->job_gres_info);
 		xfree(msg->nodes);
 		xfree(msg->partition);
 		xfree(msg->std_err);
@@ -929,8 +930,7 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 	}
 }
 
-extern void slurm_free_complete_prolog_msg(
-	complete_prolog_msg_t * msg)
+extern void slurm_free_complete_prolog_msg(complete_prolog_msg_t * msg)
 {
 	xfree(msg);
 }
@@ -1263,6 +1263,7 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 {
 	if (msg) {
 		int i;
+		FREE_NULL_LIST(msg->job_gres_info);
 		xfree(msg->nodes);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;

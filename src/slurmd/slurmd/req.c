@@ -140,6 +140,7 @@ typedef struct {
 } timer_struct_t;
 
 typedef struct {
+	char **gres_job_env;
 	uint32_t jobid;
 	uint32_t step_id;
 	char *node_list;
@@ -155,6 +156,7 @@ static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char **_build_env(job_env_t *job_env);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
+static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
 static void _job_limits_free(void *x);
 static int  _job_limits_match(void *x, void *key);
@@ -1422,12 +1424,12 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	slurm_addr_t *cli = &msg->orig_addr;
 	hostset_t step_hset = NULL;
 	job_mem_limits_t *job_limits_ptr;
-	int nodeid = 0;
+	int node_id = 0;
 	bitstr_t *numa_bitmap = NULL;
 
 #ifndef HAVE_FRONT_END
 	/* It is always 0 for front end systems */
-	nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
+	node_id = nodelist_find(req->complete_nodelist, conf->node_name);
 #endif
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred, conf->auth_info);
 	req_gid = g_slurm_auth_get_gid(msg->auth_cred, conf->auth_info);
@@ -1441,7 +1443,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
 		goto done;
 	}
-	if (nodeid < 0) {
+	if (node_id < 0) {
 		info("%s: Invalid node list (%s not in %s)", __func__,
 		     conf->node_name, req->complete_nodelist);
 		errnum = ESLURM_INVALID_NODE_NAME;
@@ -1469,7 +1471,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 #endif
-	if (_check_job_credential(req, req_uid, req_gid, nodeid, &step_hset,
+	if (_check_job_credential(req, req_uid, req_gid, node_id, &step_hset,
 				  msg->protocol_version) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m",
@@ -1481,12 +1483,13 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	/* Must follow _check_job_credential(), which sets some req fields */
-	task_g_slurmd_launch_request(req, nodeid);
+	task_g_slurmd_launch_request(req, node_id);
 
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
 		int rc;
 		job_env_t job_env;
+		List job_gres_list, epi_env_gres_list;
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
@@ -1496,7 +1499,13 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 			error("container_g_create(%u): %m", req->job_id);
 
 		memset(&job_env, 0, sizeof(job_env_t));
-
+		job_gres_list = (List) slurm_cred_get_arg(req->cred,
+							CRED_ARG_JOB_GRES_LIST);
+		epi_env_gres_list = gres_plugin_epilog_build_env(job_gres_list,
+							req->complete_nodelist);
+		gres_plugin_epilog_set_env(&job_env.gres_job_env,
+					   epi_env_gres_list, node_id);
+		FREE_NULL_LIST(epi_env_gres_list);
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->job_step_id;
 		job_env.node_list = req->complete_nodelist;
@@ -1506,6 +1515,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.uid = req->uid;
 		job_env.user_name = req->user_name;
 		rc =  _run_prolog(&job_env, req->cred, true);
+		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
 			if (WIFSIGNALED(rc))
@@ -1537,7 +1547,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (req->mem_bind_type & MEM_BIND_SORT) {
 		int task_cnt = -1;
 		if (req->tasks_to_launch)
-			task_cnt = (int) req->tasks_to_launch[nodeid];
+			task_cnt = (int) req->tasks_to_launch[node_id];
 		mem_sort = true;
 		numa_bitmap = _build_numa_bitmap(req->mem_bind_type,
 						 req->mem_bind,
@@ -1606,7 +1616,7 @@ done:
 
 	} else if (errnum == SLURM_SUCCESS) {
 		save_cred_state(conf->vctx);
-		task_g_slurmd_reserve_resources(req, nodeid);
+		task_g_slurmd_reserve_resources(req, node_id);
 	}
 
 	/*
@@ -2164,7 +2174,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 
 static void _rpc_prolog(slurm_msg_t *msg)
 {
-	int rc = SLURM_SUCCESS, alt_rc = SLURM_ERROR;
+	int rc = SLURM_SUCCESS, alt_rc = SLURM_ERROR, node_id = 0;
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	job_env_t job_env;
 	bool     first_job_run;
@@ -2194,6 +2204,10 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 	if (first_job_run) {
+#ifndef HAVE_FRONT_END
+		/* It is always 0 for front end systems */
+		node_id = nodelist_find(req->nodes, conf->node_name);
+#endif
 		if (slurmctld_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
 			_make_prolog_mem_container(msg);
 
@@ -2203,7 +2217,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		slurm_cond_broadcast(&conf->prolog_running_cond);
 		slurm_mutex_unlock(&prolog_mutex);
 		memset(&job_env, 0, sizeof(job_env_t));
-
+		gres_plugin_epilog_set_env(&job_env.gres_job_env,
+					   req->job_gres_info, node_id);
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0;	/* not available */
 		job_env.node_list = req->nodes;
@@ -2216,7 +2231,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, false);
-		xfree(job_env.resv_id);
+		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
 			if (WIFSIGNALED(rc))
@@ -2269,7 +2284,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 {
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	bool     first_job_run;
-	int      rc = SLURM_SUCCESS;
+	int      rc = SLURM_SUCCESS, node_id = 0;
 	bool	 replied = false, revoked;
 	slurm_addr_t *cli = &msg->orig_addr;
 
@@ -2375,11 +2390,23 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	 */
 	if (first_job_run) {
 		job_env_t job_env;
+		List job_gres_list, epi_env_gres_list;
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
+#ifndef HAVE_FRONT_END
+		/* It is always 0 for front end systems */
+		node_id = nodelist_find(req->nodes, conf->node_name);
+#endif
 		memset(&job_env, 0, sizeof(job_env_t));
+		job_gres_list = (List) slurm_cred_get_arg(req->cred,
+							CRED_ARG_JOB_GRES_LIST);
+		epi_env_gres_list = gres_plugin_epilog_build_env(job_gres_list,
+								 req->nodes);
+		gres_plugin_epilog_set_env(&job_env.gres_job_env,
+					   epi_env_gres_list, node_id);
+		FREE_NULL_LIST(epi_env_gres_list);
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
@@ -2395,7 +2422,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, true);
-		xfree(job_env.resv_id);
+		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
 			if (WIFSIGNALED(rc))
@@ -5056,6 +5083,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred,
 						      conf->auth_info);
 	job_env_t       job_env;
+	int		node_id = 0;
 
 	debug("_rpc_abort_job, uid = %d", uid);
 	/*
@@ -5113,8 +5141,14 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	save_cred_state(conf->vctx);
 
-	memset(&job_env, 0, sizeof(job_env_t));
 
+#ifndef HAVE_FRONT_END
+	/* It is always 0 for front end systems */
+	node_id = nodelist_find(req->nodes, conf->node_name);
+#endif
+	memset(&job_env, 0, sizeof(job_env_t));
+	gres_plugin_epilog_set_env(&job_env.gres_job_env, req->job_gres_info,
+				   node_id);
 	job_env.jobid = req->job_id;
 	job_env.node_list = req->nodes;
 	job_env.spank_job_env = req->spank_job_env;
@@ -5122,12 +5156,11 @@ _rpc_abort_job(slurm_msg_t *msg)
 	job_env.uid = req->job_uid;
 
 	_run_epilog(&job_env);
+	_free_job_env(&job_env);
 
 	if (container_g_delete(req->job_id))
 		error("container_g_delete(%u): %m", req->job_id);
 	_launch_complete_rm(req->job_id);
-
-	xfree(job_env.resv_id);
 }
 
 static void _handle_old_batch_job_launch(slurm_msg_t *msg)
@@ -5224,6 +5257,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 						      conf->auth_info);
 	int             nsteps = 0;
 	int		delay;
+	int		node_id = 0;
 	job_env_t       job_env;
 
 	debug("_rpc_terminate_job, uid = %d", uid);
@@ -5424,8 +5458,13 @@ _rpc_terminate_job(slurm_msg_t *msg)
 
 	save_cred_state(conf->vctx);
 
+#ifndef HAVE_FRONT_END
+	/* It is always 0 for front end systems */
+	node_id = nodelist_find(req->nodes, conf->node_name);
+#endif
 	memset(&job_env, 0, sizeof(job_env_t));
-
+	gres_plugin_epilog_set_env(&job_env.gres_job_env, req->job_gres_info,
+				   node_id);
 	job_env.jobid = req->job_id;
 	job_env.node_list = req->nodes;
 	job_env.spank_job_env = req->spank_job_env;
@@ -5433,7 +5472,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	job_env.uid = req->job_uid;
 
 	rc = _run_epilog(&job_env);
-	xfree(job_env.resv_id);
+	_free_job_env(&job_env);
 
 	if (rc) {
 		int term_sig = 0, exit_status = 0;
@@ -5696,6 +5735,8 @@ static char **_build_env(job_env_t *job_env)
 	 */
 	if (job_env->spank_job_env_size)
 		env_array_merge(&env, (const char **) job_env->spank_job_env);
+	if (job_env->gres_job_env)
+		env_array_merge(&env, (const char **) job_env->gres_job_env);
 
 	slurm_mutex_lock(&conf->config_mutex);
 	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
@@ -5742,6 +5783,19 @@ _destroy_env(char **env)
 	}
 
 	return;
+}
+
+static void _free_job_env(job_env_t *env_ptr)
+{
+	int i;
+
+	if (env_ptr->gres_job_env) {
+		for (i = 0; env_ptr->gres_job_env[i]; i++)
+			xfree(env_ptr->gres_job_env[i]);
+		xfree(env_ptr->gres_job_env);
+	}
+	xfree(env_ptr->resv_id);
+	/* NOTE: spank_job_env is just a pointer without allocated memory */
 }
 
 /* Trigger srun of spank prolog or epilog in slurmstepd */

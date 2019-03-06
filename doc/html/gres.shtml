@@ -381,6 +381,12 @@ configuration above would be allocated<br>
 18% of the gtx1060 (File=/dev/nvidia0, 200 x 100 / 1100 = 18), or<br>
 20% of the gtx1050 (File=/dev/nvidia0, 200 x 100 / 1000 = 20).</p>
 
+<p>The <code class="commandline">CUDA_VISIBLE_DEVICES</code>
+and <code class="commandline">CUDA_MPS_ACTIVE_THREAD_PERCENTAGE</code>
+environment variables will also be set for the configured Prolog and Epilog
+programs, which can be used to create, destroy or otherwise manage that user's
+MPS servers.</p>
+
 <p>Please consult the
 <a href="https://docs.nvidia.com/deploy/pdf/CUDA_Multi_Process_Service_Overview.pdf">
 NVIDIA Multi-Process Service documentation</a> for more information about MPS.</p>
@@ -413,6 +419,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 15 January 2019</p>
+<p style="text-align: center;">Last modified 6 March 2019</p>
 
 <!--#include virtual="footer.txt"-->
