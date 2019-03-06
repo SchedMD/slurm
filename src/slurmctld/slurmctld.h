@@ -1035,6 +1035,20 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 			      char *node_name);
 
 /*
+ * abort_job_on_nodes - Kill the specific job_on the specific nodes,
+ *	the request is not processed immediately, but queued.
+ *	This is to prevent a flood of pthreads if slurmctld restarts
+ *	without saved state and slurmd daemons register with a
+ *	multitude of running jobs. Slurmctld will not recognize
+ *	these jobs and use this function to kill them - one
+ *	agent request per node as they register.
+ * IN job_ptr - pointer to terminating job
+ * IN node_name - name of the node on which the job resides
+ */
+extern void abort_job_on_nodes(struct job_record *job_ptr,
+			       bitstr_t *node_bitmap);
+
+/*
  * allocated_session_in_use - check if an interactive session is already running
  * IN new_alloc - allocation (alloc_node:alloc_sid) to test for
  * Returns true if an interactive session of the same node:sid already exists.

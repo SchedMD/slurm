@@ -11787,6 +11787,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if (new_req_bitmap) {
 			int i, i_first, i_last;
 			struct node_record *node_ptr;
+			bitstr_t *rem_nodes;
 			sched_info("update_job: setting nodes to %s for %pJ",
 				   job_specs->req_nodes, job_ptr);
 			job_pre_resize_acctg(job_ptr);
@@ -11795,14 +11796,24 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				i_last  = bit_fls(job_ptr->node_bitmap);
 			else
 				i_last = -2;
+			rem_nodes = bit_alloc(bit_size(job_ptr->node_bitmap));
 			for (i = i_first; i <= i_last; i++) {
 				if (bit_test(new_req_bitmap, i) ||
 				    !bit_test(job_ptr->node_bitmap, i))
+					continue;
+				bit_set(rem_nodes, i);
+			}
+#ifndef HAVE_FRONT_END
+			abort_job_on_nodes(job_ptr, rem_nodes);
+#endif
+			for (i = i_first; i <= i_last; i++) {
+				if (!bit_test(rem_nodes, i))
 					continue;
 				node_ptr = node_record_table_ptr + i;
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			bit_free(rem_nodes);
 			(void) gs_job_start(job_ptr);
 			gres_build_job_details(job_ptr->gres_list,
 					       &job_ptr->gres_detail_cnt,
@@ -13105,6 +13116,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else {
 			int i, i_first, i_last, total;
 			struct node_record *node_ptr;
+			bitstr_t *rem_nodes;
 			sched_info("update_job: set node count to %u for %pJ",
 				   job_specs->min_nodes, job_ptr);
 			job_pre_resize_acctg(job_ptr);
@@ -13113,15 +13125,25 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				i_last  = bit_fls(job_ptr->node_bitmap);
 			else
 				i_last = -2;
+			rem_nodes = bit_alloc(bit_size(job_ptr->node_bitmap));
 			for (i = i_first, total = 0; i <= i_last; i++) {
 				if (!bit_test(job_ptr->node_bitmap, i))
 					continue;
 				if (++total <= job_specs->min_nodes)
 					continue;
+				bit_set(rem_nodes, i);
+			}
+#ifndef HAVE_FRONT_END
+			abort_job_on_nodes(job_ptr, rem_nodes);
+#endif
+			for (i = i_first, total = 0; i <= i_last; i++) {
+				if (!bit_test(rem_nodes, i))
+					continue;
 				node_ptr = node_record_table_ptr + i;
 				kill_step_on_node(job_ptr, node_ptr, false);
 				excise_node_from_job(job_ptr, node_ptr);
 			}
+			bit_free(rem_nodes);
 			(void) gs_job_start(job_ptr);
 			job_post_resize_acctg(job_ptr);
 			sched_info("update_job: set nodes to %s for %pJ",
@@ -14317,6 +14339,76 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	agent_info->msg_args	= kill_req;
 
 	agent_queue_request(agent_info);
+}
+
+/*
+ * abort_job_on_nodes - Kill the specific job_on the specific nodes,
+ *	the request is not processed immediately, but queued.
+ *	This is to prevent a flood of pthreads if slurmctld restarts
+ *	without saved state and slurmd daemons register with a
+ *	multitude of running jobs. Slurmctld will not recognize
+ *	these jobs and use this function to kill them - one
+ *	agent request per node as they register.
+ * IN job_ptr - pointer to terminating job
+ * IN node_name - name of the node on which the job resides
+ */
+extern void abort_job_on_nodes(struct job_record *job_ptr,
+			       bitstr_t *node_bitmap)
+{
+	bitstr_t *full_node_bitmap, *tmp_node_bitmap;
+	struct node_record *node_ptr;
+	int i, i_first, i_last;
+	agent_arg_t *agent_info;
+	kill_job_msg_t *kill_req;
+	uint16_t protocol_version;
+
+#ifdef HAVE_FRONT_END
+	fatal("%s: front-end mode not supported", __func__);
+#endif
+	xassert(node_bitmap);
+	/* Send a separate message for nodes at different protocol_versions */
+	full_node_bitmap = bit_copy(node_bitmap);
+	while ((i_first = bit_ffs(full_node_bitmap)) >= 0) {
+		i_last = bit_fls(full_node_bitmap);
+		node_ptr = node_record_table_ptr + i_first;
+		protocol_version = node_ptr->protocol_version;
+		tmp_node_bitmap = bit_alloc(bit_size(node_bitmap));
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(full_node_bitmap, i))
+				continue;
+			node_ptr = node_record_table_ptr + i;
+			if (node_ptr->protocol_version != protocol_version)
+				continue;
+			bit_clear(full_node_bitmap, i);
+			bit_set(tmp_node_bitmap, i);
+		}
+		kill_req = xmalloc(sizeof(kill_job_msg_t));
+		kill_req->job_gres_info	=
+			gres_plugin_epilog_build_env(job_ptr->gres_list,
+						     job_ptr->nodes);
+		kill_req->job_id	= job_ptr->job_id;
+		kill_req->step_id	= NO_VAL;
+		kill_req->time          = time(NULL);
+		kill_req->nodes		= bitmap2node_name(tmp_node_bitmap);
+		kill_req->pack_jobid	= job_ptr->pack_job_id;
+		kill_req->start_time	= job_ptr->start_time;
+		kill_req->select_jobinfo =
+			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
+		kill_req->spank_job_env = xduparray(job_ptr->spank_job_env_size,
+						    job_ptr->spank_job_env);
+		kill_req->spank_job_env_size = job_ptr->spank_job_env_size;
+		agent_info = xmalloc(sizeof(agent_arg_t));
+		agent_info->node_count	= bit_set_count(tmp_node_bitmap);
+		agent_info->retry	= 1;
+		agent_info->hostlist	= hostlist_create(kill_req->nodes);
+		debug("Aborting %pJ on nodes %s", job_ptr, kill_req->nodes);
+		agent_info->msg_type	= REQUEST_ABORT_JOB;
+		agent_info->msg_args	= kill_req;
+		agent_info->protocol_version = protocol_version;
+		agent_queue_request(agent_info);
+		bit_free(tmp_node_bitmap);
+	}
+	bit_free(full_node_bitmap);
 }
 
 /*
