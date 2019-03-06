@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix spamming dbd of down/drained nodes in maintenance reservation.
  -- Avoid buffer overflow in time_str2secs.
  -- Calculate suspended time for suspended steps.
+ -- Add null check for step_ptr->step_node_bitmap in _pick_step_nodes.
 
 * Changes in Slurm 18.08.5-2
 ============================

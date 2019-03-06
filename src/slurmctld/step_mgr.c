@@ -1539,6 +1539,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			list_next(step_iterator))) {
 			if (step_ptr->state < JOB_RUNNING)
 				continue;
+
+			if (!step_ptr->step_node_bitmap) {
+				error("%s: %pS has no step_node_bitmap",
+				      __func__, step_ptr);
+				continue;
+			}
+
 			bit_or(nodes_idle, step_ptr->step_node_bitmap);
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_STEPS) {
 				char *temp;
