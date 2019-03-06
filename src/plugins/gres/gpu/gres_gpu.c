@@ -140,185 +140,34 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	}
 }
 
-/*
- * Takes a string of form "sdf [x]sd fsf " and returns a new string "x"
- * xfree the returned string
- * Or returns null on failure
- */
-static char *_strip_brackets_xmalloc(char *str)
+/* Check a gres.conf gres to one we found on the system */
+static int _match_gres(gres_slurmd_conf_t *conf_gres,
+		       gres_slurmd_conf_t *sys_gres)
 {
-	int i = 0;
-	// index to start of string
-	int start = 0;
-	// index to null char at end of string
-	int end;
-	bool done = false;
-
-	if (str == NULL)
-		return NULL;
-
-	// Original location of the null pointer
-	end = strlen(str);
-
-	while (done == false) {
-		if (!str[i]) {
-			done = true;
-		} else if (str[i] == '[') {
-			start = i + 1;
-		} else if (str[i] == ']') {
-			end = i;
-			done = true;
-		}
-		i++;
-	}
-
-	// if (start == 0 || end == 0) {
-	// 	info("Warning: String did not have brackets");
-	// }
-	// Overwrite the trailing ] with a null char,
-	if (str[end])
-		str[end] = '\0';
-	// duplicate the string
-	return xstrdup(&str[start]);
-}
-
-/*
- * Returns 0 if range string a and b are equal, else returns 1.
- *
- * This normalizes ranges, so that "0-2" and "0,1,2" are considered equal.
- * This also strips brackets for comparison, e.g. "[0-2]"
- */
-static int _compare_number_range_str(char *a, char *b)
-{
-	hostlist_t hl_a, hl_b;
-	char *a_range_brackets;
-	char *b_range_brackets;
-	char *a_range;
-	char *b_range;
-	int rc = 0;
-
-	// Normalize a and b, so e.g. 0-2 == 0,1,2
-	hl_a = hostlist_create(a);
-	hl_b = hostlist_create(b);
-	a_range_brackets = (char *) hostlist_ranged_string_xmalloc(hl_a);
-	b_range_brackets = (char *) hostlist_ranged_string_xmalloc(hl_b);
-	// If there are brackets, remove them
-	a_range = _strip_brackets_xmalloc(a_range_brackets);
-	b_range = _strip_brackets_xmalloc(b_range_brackets);
-
-	if (xstrcmp(a_range, b_range))
-		rc = 1;
-	hostlist_destroy(hl_a);
-	hostlist_destroy(hl_b);
-	xfree(a_range_brackets);
-	xfree(b_range_brackets);
-	xfree(a_range);
-	xfree(b_range);
-	return rc;
-}
-
-/*
- * Checks to see if the number range string specified by key is a subset of
- * the number range specified by x
- */
-static int _key_in_number_range_str(char *x, char *key)
-{
-	hostlist_t hl_x, hl_key;
-	char *key_name;
-	int rc = 0;
-
-	// Normalize, so e.g. 0-2 == 0,1,2. This true? --> tty0,tty1 == tty[0-1]
-	hl_x = hostlist_create(x);
-	hl_key = hostlist_create(key);
-
-	// Linearly check to see if all of key's devices are in x's devices
-	while ((key_name = hostlist_shift(hl_key))) {
-		if (hostlist_find(hl_x, key_name) < 0)
-			rc = 1;	/* Not found */
-		free(key_name);
-		if (rc == 1)
-			break;
-	}
-
-	hostlist_destroy(hl_x);
-	hostlist_destroy(hl_key);
-	return rc;
-}
-
-/*
- * Returns 1 if (x==key); else returns 0.
- */
-static int _find_gres_in_list(void *x, void *key)
-{
-	gres_slurmd_conf_t *item_a = (gres_slurmd_conf_t *) x;
-	gres_slurmd_conf_t *item_b = (gres_slurmd_conf_t *) key;
-
-	// Check if type names are equal
-	if (xstrcmp(item_a->type_name, item_b->type_name))
+	/*
+	 * If the config gres has a type check it with what is found on the
+	 * system.
+	 */
+	if (conf_gres->type_name &&
+	    xstrcmp(conf_gres->type_name, sys_gres->type_name))
 		return 0;
 
-	// Check if cpus are equal
-	if (_compare_number_range_str(item_a->cpus, item_b->cpus))
+	/*
+	 * If the config gres has a file check it with what is found on the
+	 * system.
+	 */
+	if (conf_gres->file && xstrcmp(conf_gres->file, sys_gres->file))
 		return 0;
 
-	// Check if links are equal
-	if (_compare_number_range_str(item_a->links, item_b->links))
-		return 0;
-	// Found!
-	return 1;
-}
-
-/*
- * Returns 1 if a is a subset of b or vice versa; else returns 0.
- */
-static int _find_gres_device_file_in_list(void *a, void *b)
-{
-	gres_slurmd_conf_t *item_a = (gres_slurmd_conf_t *) a;
-	gres_slurmd_conf_t *item_b = (gres_slurmd_conf_t *) b;
-
-	if (item_a->count > item_b->count) {
-		if (_key_in_number_range_str(item_a->file, item_b->file))
-			return 0;
-	} else if (item_a->count < item_b->count) {
-		if (_key_in_number_range_str(item_b->file, item_a->file))
-			return 0;
-	} else {
-		// a and b have the same number of devices
-		if (item_a->count == 1) {
-			// Only a strcmp should be necessary for single devices
-			if (xstrcmp(item_a->file, item_b->file))
-				return 0;
-		} else {
-			if (_key_in_number_range_str(item_a->file, item_b->file)
-					!= 0)
-				return 0;
-		}
-	}
-
-	// Found!
-	return 1;
-}
-
-/*
- * See if a gres gpu device exists in a gres list
- * If the device exists, returns the gres record that contains it, else returns
- * null.
- *
- * "device" == type:cpus:links:file
- */
-static int _find_gres_device_in_list(void *a, void *b)
-{
-	if (!a || !b)
+	/*
+	 * If the config gres has cpus defined check it with what is found on
+	 * the system.
+	 */
+	if (conf_gres->cpus && conf_gres->cpus_bitmap &&
+	    !bit_equal(conf_gres->cpus_bitmap, sys_gres->cpus_bitmap))
 		return 0;
 
-	// Make sure we have the right record before checking the devices
-	if (!_find_gres_in_list(a, b))
-		return 0;
-
-	if (!_find_gres_device_file_in_list(a, b))
-		return 0;
-
-	// Found!
+	/* If all checks out above or nothing was defined return */
 	return 1;
 }
 
@@ -375,11 +224,9 @@ static int _sort_gpu_by_file(void *x, void *y)
  */
 static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 {
-	ListIterator itr_conf, itr_single;
+	ListIterator itr;
 	gres_slurmd_conf_t *gres_record;
 	List gres_list_conf_single, gres_list_gpu = NULL, gres_list_non_gpu;
-	bool use_system_detected = true;
-	bool log_zero = true;
 	uint16_t fast_schedule = slurm_get_fast_schedule();
 
 	if (gres_list_conf == NULL) {
@@ -395,12 +242,14 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	print_gres_list(gres_list_conf, LOG_LEVEL_DEBUG2);
 
 	// Break down gres_list_conf into 1 device per record
-	itr_conf = list_iterator_create(gres_list_conf);
-	while ((gres_record = list_next(itr_conf))) {
-		int i, file_count = 0;
+	itr = list_iterator_create(gres_list_conf);
+	while ((gres_record = list_next(itr))) {
+		int i;
 		hostlist_t hl;
-		char **file_array;
 		char *hl_name;
+
+		if (!gres_record->count)
+			continue;
 
 		// Just move this GRES record if it's not a GPU GRES
 		if (xstrcasecmp(gres_record->name, "gpu")) {
@@ -417,41 +266,8 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 					 gres_record->ignore);
 			continue;
 		}
-		if (gres_record->cpus) {
-			int offset = 0;
-			if (gres_record->cpus[0] == '[')
-				offset = 1;
-			if ((gres_record->cpus[offset] < '0') ||
-			    (gres_record->cpus[offset] > '9')) {
-				error("%s: gres/gpu has invalid \"CPUs\" specification (%s)",
-				      gres_record->cpus, __func__);
-				xfree(gres_record->cpus);
-			}
-		}
-		if (!gres_record->file) {
-			error("%s: gres/gpu lacks \"File\" specification",
-			      __func__);
-		}
-		if (gres_record->count == 0) {
-			if (log_zero) {
-				info("%s: gres.conf record has zero count",
-				     __func__);
-				log_zero = false;
-			}
-			// Use system-detected devices
-			continue;
-		}
-		// Use system-detected if there are only ignore records in conf
-		if (use_system_detected && (gres_record->ignore == false)) {
-			use_system_detected = false;
-		}
 
 		if (gres_record->count == 1) {
-			if (_find_gres_device_in_list(gres_list_conf_single,
-						      gres_record))
-				// Duplicate from single! Do not add
-				continue;
-
 			// Add device from single record
 			add_gres_to_list(gres_list_conf_single,
 					 gres_record->name, 1,
@@ -462,71 +278,72 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 					 gres_record->links,
 					 gres_record->ignore);
 			continue;
+		} else if (!gres_record->file) {
+			for (i = 0; i < gres_record->count; i++)
+				add_gres_to_list(gres_list_conf_single,
+						 gres_record->name, 1,
+						 gres_record->cpu_cnt,
+						 gres_record->cpus,
+						 gres_record->file,
+						 gres_record->type_name,
+						 gres_record->links,
+						 gres_record->ignore);
+			continue;
 		}
-		// count > 1; Break down record into individual devices
-		hl = hostlist_create(gres_record->file);
-		// Create an array of file name pointers
-		file_array = (char **) xmalloc(gres_record->count
-				     * sizeof(char *));
-		while ((hl_name = hostlist_shift(hl))) {
-			// Create a single gres conf record to compare
-			gres_slurmd_conf_t *temp_gres_conf =
-					xmalloc(sizeof(gres_slurmd_conf_t));
-			temp_gres_conf->type_name = gres_record->type_name;
-			temp_gres_conf->cpus = gres_record->cpus;
-			temp_gres_conf->links = gres_record->links;
-			temp_gres_conf->file = hl_name;
-			if (_find_gres_device_in_list(gres_list_conf_single,
-						      temp_gres_conf)) {
-				// Duplicate from multiple! Do not add
-			} else {
-				file_array[file_count] = xstrdup(hl_name);
-				file_count++;
-			}
-			xfree(temp_gres_conf);
-			free(hl_name);
-		}
-		hostlist_destroy(hl);
 
-		// Break down file into individual file names
-		// Create an array of these file names, and index off of i
-		for (i = 0; i < file_count; ++i) {
+		/*
+		 * count > 1 and we have devices;
+		 * Break down record into individual devices.
+		 */
+		hl = hostlist_create(gres_record->file);
+		while ((hl_name = hostlist_shift(hl))) {
 			add_gres_to_list(gres_list_conf_single,
 					 gres_record->name, 1,
 					 gres_record->cpu_cnt,
-					 gres_record->cpus, file_array[i],
+					 gres_record->cpus, hl_name,
 					 gres_record->type_name,
 					 gres_record->links,
 					 gres_record->ignore);
-			xfree(file_array[i]);
+			free(hl_name);
 		}
-		xfree(file_array);
+		hostlist_destroy(hl);
 	}
-	list_iterator_destroy(itr_conf);
+	list_iterator_destroy(itr);
 
 	if (fast_schedule == 0) {
 		debug2("FastSchedule == 0, we are only delivering gpus found on the system, ignoring those defined in gres.conf");
 		gres_list_gpu = gres_list_system;
 	} else if (fast_schedule == 1) {
+		List tmp_list = NULL;
+		gres_slurmd_conf_t *sys_record;
+
 		if (!gres_list_system)
 			return;
 
-		itr_single = list_iterator_create(gres_list_conf_single);
-		while ((gres_record = list_next(itr_single))) {
-			if (!list_find_first(
-				    gres_list_system,
-				    _find_gres_device_in_list,
-				    gres_record)) {
-				print_gres_conf(gres_record, LOG_LEVEL_ERROR);
-				fatal("Above record was in the gres.conf, but not found on the system.");
+		itr = list_iterator_create(gres_list_system);
+		while ((gres_record = list_pop(gres_list_conf_single))) {
+			list_iterator_reset(itr);
+			while ((sys_record = list_next(itr))) {
+				if (!_match_gres(gres_record, sys_record))
+					continue;
+				list_remove(itr);
+				if (!tmp_list)
+					tmp_list = list_create(
+						destroy_gres_slurmd_conf);
+				list_append(tmp_list, sys_record);
+				break;
 			}
-			/*
-			 * FIXME: If they didn't specify the file/cpus/links
-			 * lets fill it in here.
-			 */
 
+			if (!sys_record) {
+				print_gres_conf(gres_record, LOG_LEVEL_ERROR);
+				error("Above record was in the gres.conf, but not found on the system.");
+			}
+			destroy_gres_slurmd_conf(gres_record);
 		}
-		list_iterator_destroy(itr_single);
+		list_iterator_destroy(itr);
+		FREE_NULL_LIST(gres_list_conf_single);
+		gres_list_conf_single = tmp_list;
+		tmp_list = NULL;
 		gres_list_gpu = gres_list_conf_single;
 	} else if (fast_schedule >= 2) {
 		debug2("FastSchedule == 2, we are believing whatever is in the gres.conf");
