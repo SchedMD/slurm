@@ -249,15 +249,6 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf,
 	}
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
-		/*
-		 * Prefix the credential with a description of the credential
-		 * type so that it can be sanity-checked at the receiving end.
-		 */
-		packmem((char *) plugin_type, strlen( plugin_type ) + 1, buf);
-		pack32(plugin_version, buf);
-		/*
-		 * Pack the data values.
-		 */
 		pack32((uint32_t) cred->uid, buf);
 		pack32((uint32_t) cred->gid, buf);
 		packstr(cred->hostname, buf);
@@ -305,20 +296,6 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 	cred = xmalloc(sizeof(slurm_auth_credential_t));
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
-		/*
-		 * Get the authentication type.
-		 */
-		safe_unpackmem_ptr(&tmpstr, &size, buf);
-		if (xstrcmp(tmpstr, plugin_type)) {
-			debug("slurm_auth_unpack error: packed by %s unpack by %s",
-			      tmpstr, plugin_type);
-			plugin_errno = SLURM_AUTH_MISMATCH;
-			slurm_auth_destroy(cred);
-			return NULL;
-		}
-
-		safe_unpack32(&version, buf);
-
 		cred->cr_errno = SLURM_SUCCESS;
 
 		/*
