@@ -46,6 +46,7 @@ HIGHLIGHTS
     S_CTX_SLURMD context instead.
  -- sbcast - add new BcastAddr option to NodeName lines to allow sbcast traffic
     to flow over an alternate network path.
+ -- Added auth/jwt plugin.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

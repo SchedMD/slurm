@@ -71,6 +71,7 @@ documents those changes that are of interest to users and administrators.
     S_CTX_SLURMD context instead.
  -- sbcast - add new BcastAddr option to NodeName lines to allow sbcast traffic
     to flow over an alternate network path.
+ -- Add auth/jwt plugin.
 
 * Changes in Slurm 19.05.6
 ==========================
