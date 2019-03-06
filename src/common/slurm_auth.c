@@ -54,6 +54,7 @@
 static bool init_run = false;
 
 typedef struct slurm_auth_ops {
+	uint32_t     (*plugin_id);
         void *       (*create)    ( char *auth_info );
         int          (*destroy)   ( void *cred );
         int          (*verify)    ( void *cred, char *auth_info );
@@ -72,6 +73,7 @@ typedef struct slurm_auth_ops {
  * declared for slurm_auth_ops_t.
  */
 static const char *syms[] = {
+	"plugin_id",
 	"slurm_auth_create",
 	"slurm_auth_destroy",
 	"slurm_auth_verify",

@@ -73,6 +73,7 @@
  */
 const char plugin_name[]       	= "Null authentication plugin";
 const char plugin_type[]       	= "auth/none";
+const uint32_t plugin_id = AUTH_PLUGIN_NONE;
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /*

@@ -543,6 +543,12 @@ enum job_acct_types {
 #define PARTITION_ENFORCE_ANY  2 /* job limit must be valid for ANY
 				  * partition */
 
+/* Auth plugin (id) used for communication */
+enum auth_plugin_type {
+	AUTH_PLUGIN_NONE	= 100,
+	AUTH_PLUGIN_MUNGE	= 101,
+};
+
 /* Select plugin (id) in use by cluster */
 enum select_plugin_type {
 	/* 100 unused (originally for BlueGene) */

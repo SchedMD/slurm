@@ -84,6 +84,7 @@
  */
 const char plugin_name[]       	= "Munge authentication plugin";
 const char plugin_type[]       	= "auth/munge";
+const uint32_t plugin_id = AUTH_PLUGIN_MUNGE;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static int plugin_errno = SLURM_SUCCESS;
