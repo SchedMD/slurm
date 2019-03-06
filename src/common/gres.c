@@ -1992,7 +1992,6 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				   gres_cnt, gres_data->gres_cnt_config);
 		}
 		rc = EINVAL;
-abort();
 	}
 	if ((set_cnt > gres_data->gres_cnt_config) && (fast_schedule == 1)) {
 		debug("%s: %s: Ignoring excess count on node %s (%"
