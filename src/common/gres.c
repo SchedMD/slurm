@@ -1993,7 +1993,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		}
 		rc = EINVAL;
 	}
-	if ((set_cnt > gres_data->gres_cnt_config) && (fast_schedule == 1)) {
+	if ((set_cnt > gres_data->gres_cnt_config) && (fast_schedule != 0)) {
 		debug("%s: %s: Ignoring excess count on node %s (%"
 		      PRIu64" > %"PRIu64")",
 		      __func__, context_ptr->gres_type, node_name, set_cnt,
@@ -2667,9 +2667,11 @@ static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 	gpu_gres_data = gpu_gres_ptr->gres_data;
 	mps_gres_data = mps_gres_ptr->gres_data;
 	gpu_cnt = gpu_gres_data->gres_cnt_avail;
-	if (mps_gres_data->gres_bit_alloc &&
-	    (gpu_cnt == bit_size(mps_gres_data->gres_bit_alloc)))
-		return;		/* No change for gres/mps */
+	if (mps_gres_data->gres_bit_alloc) {
+		if (gpu_cnt == bit_size(mps_gres_data->gres_bit_alloc))
+			return;		/* No change for gres/mps */
+	} else if (gpu_cnt == 0)
+		return;			/* Still no GPUs */
 
 	if (!mps_gres_data->gres_bit_alloc) {
 		mps_gres_data->gres_bit_alloc = bit_alloc(gpu_cnt);
