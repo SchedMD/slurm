@@ -59,9 +59,6 @@
 
 typedef struct xhash_item_st {
 	void*		item;    /* user item                               */
-	const char*	key;     /* cached key calculated by user function, */
-                                 /* needed by uthash                        */
-	uint32_t	keysize; /* cached key size                         */
 	UT_hash_handle	hh;      /* make this structure hashable by uthash  */
 } xhash_item_t;
 
@@ -109,14 +106,16 @@ void* xhash_get(xhash_t* table, const char* key)
 void* xhash_add(xhash_t* table, void* item)
 {
 	xhash_item_t* hash_item = NULL;
+	const char *key = NULL;
+	uint32_t keylen = 0;
+
 	if (!table || !item)
 		return NULL;
 	hash_item = xmalloc(sizeof(xhash_item_t));
 	hash_item->item    = item;
-	hash_item->key     = table->identify(item);
-	hash_item->keysize = strlen(hash_item->key);
-	HASH_ADD_KEYPTR(hh, table->ht, hash_item->key,
-			hash_item->keysize, hash_item);
+	key     = table->identify(item);
+	keylen = strlen(key);
+	HASH_ADD_KEYPTR(hh, table->ht, key, keylen, hash_item);
 	++table->count;
 	return hash_item->item;
 }
