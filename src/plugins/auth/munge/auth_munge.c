@@ -107,26 +107,10 @@ typedef struct _slurm_auth_credential {
 	int cr_errno;
 } slurm_auth_credential_t;
 
-/*
- * Munge info structure for print* function
- */
-typedef struct munge_info {
-	time_t         encoded;
-	time_t         decoded;
-	munge_cipher_t cipher;
-	munge_mac_t    mac;
-	munge_zip_t    zip;
-} munge_info_t;
-
-
 /* Static prototypes */
 
-static munge_info_t *cred_info_alloc(void);
-static munge_info_t *cred_info_create(munge_ctx_t ctx);
-static void cred_info_destroy(munge_info_t *);
-static void _print_cred_info(munge_info_t *mi);
-static void _print_cred(munge_ctx_t ctx);
 static int _decode_cred(slurm_auth_credential_t *c, char *socket);
+static void _print_cred(munge_ctx_t ctx);
 
 /*
  *  Munge plugin initialization
@@ -530,81 +514,25 @@ done:
 }
 
 /*
- *  Allocate space for Munge credential info structure
- */
-static munge_info_t *cred_info_alloc(void)
-{
-	munge_info_t *mi = xmalloc(sizeof(*mi));
-	memset(mi, 0, sizeof(*mi));
-	return mi;
-}
-
-/*
- *  Free a Munge cred info object.
- */
-static void cred_info_destroy(munge_info_t *mi)
-{
-	xfree(mi);
-}
-
-/*
- *  Create a credential info object from a Munge context
- */
-static munge_info_t *cred_info_create(munge_ctx_t ctx)
-{
-	munge_err_t e;
-	munge_info_t *mi = cred_info_alloc();
-
-	e = munge_ctx_get(ctx, MUNGE_OPT_ENCODE_TIME, &mi->encoded);
-	if (e != EMUNGE_SUCCESS)
-		error("%s: Unable to retrieve encode time: %s",
-		      plugin_type, munge_ctx_strerror(ctx));
-
-	e = munge_ctx_get(ctx, MUNGE_OPT_DECODE_TIME, &mi->decoded);
-	if (e != EMUNGE_SUCCESS)
-		error("%s: Unable to retrieve decode time: %s",
-		      plugin_type, munge_ctx_strerror(ctx));
-
-	e = munge_ctx_get(ctx, MUNGE_OPT_CIPHER_TYPE, &mi->cipher);
-	if (e != EMUNGE_SUCCESS)
-		error("%s: Unable to retrieve cipher type: %s",
-		      plugin_type, munge_ctx_strerror(ctx));
-
-	e = munge_ctx_get(ctx, MUNGE_OPT_MAC_TYPE, &mi->mac);
-	if (e != EMUNGE_SUCCESS)
-		error("%s: Unable to retrieve mac type: %s",
-		      plugin_type, munge_ctx_strerror(ctx));
-
-	e = munge_ctx_get(ctx, MUNGE_OPT_ZIP_TYPE, &mi->zip);
-	if (e != EMUNGE_SUCCESS)
-		error("%s: Unable to retrieve zip type: %s",
-		      plugin_type, munge_ctx_strerror(ctx));
-
-	return mi;
-}
-
-/*
- *  Print credential info object to the slurm log facility.
- */
-static void _print_cred_info(munge_info_t *mi)
-{
-	char buf[256];
-
-	xassert(mi);
-
-	if (mi->encoded > 0)
-		info("ENCODED: %s", slurm_ctime2_r(&mi->encoded, buf));
-
-	if (mi->decoded > 0)
-		info("DECODED: %s", slurm_ctime2_r(&mi->decoded, buf));
-}
-
-/*
  *  Print credential information.
  */
 static void _print_cred(munge_ctx_t ctx)
 {
-	munge_info_t *mi = cred_info_create(ctx);
-	_print_cred_info(mi);
-	cred_info_destroy(mi);
+	int e;
+	char buf[256];
+	time_t encoded, decoded;
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_ENCODE_TIME, &encoded);
+	if (e != EMUNGE_SUCCESS)
+		debug("%s: Unable to retrieve encode time: %s",
+		      plugin_type, munge_ctx_strerror(ctx));
+	else
+		info("ENCODED: %s", slurm_ctime2_r(&encoded, buf));
+
+	e = munge_ctx_get(ctx, MUNGE_OPT_DECODE_TIME, &decoded);
+	if (e != EMUNGE_SUCCESS)
+		debug("%s: Unable to retrieve decode time: %s",
+		      plugin_type, munge_ctx_strerror(ctx));
+	else
+		info("DECODED: %s", slurm_ctime2_r(&decoded, buf));
 }
