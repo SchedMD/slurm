@@ -1,4 +1,4 @@
-.TH "burst_buffer.conf" "5" "June 2018" "burst_buffer.conf 18.08" "Slurm configuration file"
+.TH "burst_buffer.conf" "5" "March 2019" "burst_buffer.conf 18.08" "Slurm configuration file"
 .SH "NAME"
 burst_buffer.conf \- Slurm configuration file for burst buffer management.
 
@@ -48,13 +48,13 @@ By default all users are permitted to use burst buffers.
 \fBCreateBuffer\fR
 Fully qualified path name of a program which will create both persistent
 and per\-job burst buffers.
-This option is not used by the burst_buffer/cray plugin.
+This option is not used by the burst_buffer/datawarp plugin.
 
 .TP
 \fBDefaultPool\fR
 Name of the pool used by default for resource allocations.
 The default value is the first pool reported by the burst buffer infrastructure.
-This option is only used by the burst_buffer/cray plugin.
+This option is only used by the burst_buffer/datawarp plugin.
 
 .TP
 \fBDenyUsers\fR
@@ -66,7 +66,7 @@ By default all users are permitted to use burst buffers.
 \fBDestroyBuffer\fR
 Fully qualified path name of a program which will destroy both persistent
 and per\-job burst buffers.
-This option is not used by the burst_buffer/cray plugin.
+This option is not used by the burst_buffer/datawarp plugin.
 
 .TP
 \fBFlags\fR
@@ -81,7 +81,7 @@ This is the default behaviour, only privileged users (Slurm operators and
 administrators) can create or destroy persistent burst buffers.
 .TP
 \fBEmulateCray\fR
-Emulating a Cray DataWarp system using the dw_wlm_cli script in the burst_buffer/cray plugin.
+Emulating a Cray DataWarp system using the dw_wlm_cli script in the burst_buffer/datawarp plugin.
 .TP
 \fBEnablePersistent\fR
 Enables regular users to create and destroy persistent burst buffers.
@@ -125,7 +125,7 @@ Granularity of job space allocations in units of bytes.
 The numeric value may have a suffix of "m" (megabytes), "g" (gigabytes),
 "t" (terabytes), "p" (petabytes), or "n" (nodes).
 Bytes is assumed if no suffix is supplied.
-This option is not used by the burst_buffer/cray plugin.
+This option is not used by the burst_buffer/datawarp plugin.
 
 .TP
 \fBOtherTimeout\fR
@@ -162,28 +162,28 @@ By default there is a one day timeout for the stage out process.
 Fully qualified path name of a program which will stage files in for a job.
 See the src/plugins/burst_buffer/generic/bb_start_stage_in.example in the
 Slurm distribution for an example.
-This option is not used by the burst_buffer/cray plugin.
+This option is not used by the burst_buffer/datawarp plugin.
 
 .TP
 \fBStartStageOut\fR
 Fully qualified path name of a program which will stage files out for a job.
 See the src/plugins/burst_buffer/generic/bb_start_stage_out.example in the
 Slurm distribution for an example.
-This option is not used by the burst_buffer/cray plugin.
+This option is not used by the burst_buffer/datawarp plugin.
 
 .TP
 \fBStopStageIn\fR
 Fully qualified path name of a program which will stop staging files in for a job.
 See the src/plugins/burst_buffer/generic/bb_stop_stage_out.example in the
 Slurm distribution for an example.
-This option is not used by the burst_buffer/cray plugin.
+This option is not used by the burst_buffer/datawarp plugin.
 
 .TP
 \fBStopStageOut\fR
 Fully qualified path name of a program which will stop staging files in for a job.
 See the src/plugins/burst_buffer/generic/bb_stop_stage_out.example in the
 Slurm distribution for an example.
-This option is not used by the burst_buffer/cray plugin.
+This option is not used by the burst_buffer/datawarp plugin.
 
 .TP
 \fBValidateTimeout\fR

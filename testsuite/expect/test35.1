@@ -60,8 +60,8 @@ proc find_bb_name { fname bb_name } {
 print_header $test_id
 
 set bb_types [get_bb_types]
-if {[string first "cray" $bb_types] == -1} {
-	send_user "\nWARNING: This test can only be run with the burst_buffer/cray plugin\n"
+if {[string first "datawarp" $bb_types] == -1} {
+	send_user "\nWARNING: This test can only be run with the burst_buffer/datawarp plugin\n"
 	exit 0
 }
 if {[get_bb_persistent] == 0} {

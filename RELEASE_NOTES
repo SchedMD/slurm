@@ -106,6 +106,22 @@ HIGHLIGHTS
  -- Added NO_NORMAL_[ALL|ASSOC|PART|QOS|TRES] PriorityFlags to not normalize
     associated factors.
 
+SPECIAL NOTES FOR CRAY SYSTEMS
+==============================
+The 19.05 release includes some major restructuring for Cray systems in
+particular. This work is being done in anticipation of the next generation
+of Cray system software, and is meant to clarify which configuration options
+and plugin are used on exising Rhine/Redwood (aka Cray XC systems) using
+the Aries interconnect. Changes to your slurm.conf, and other associated
+configuration files will be required before upgrading to this release.
+
+ -- The burst_buffer/cray plugin has been renamed to burst_buffer/datawarp.
+    You will need to update your BurstBufferType in slurm.conf with the
+    updated name, and rename your burst_buffer_cray.conf configuration
+    file to burst_buffer_datawarp.conf as part of your upgrade.
+    (If your burst_buffer configuration file is named burst_buffer.conf,
+    you will not need to rename it.)
+
 RPMBUILD CHANGES
 ================
 

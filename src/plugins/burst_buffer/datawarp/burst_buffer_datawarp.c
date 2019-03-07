@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  burst_buffer_cray.c - Plugin for managing a Cray burst_buffer
+ *  burst_buffer_datawarp.c - Plugin for managing a Cray DataWarp burst_buffer
  *****************************************************************************
  *  Copyright (C) 2014-2018 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -112,8 +112,8 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]        = "burst_buffer cray plugin";
-const char plugin_type[]        = "burst_buffer/cray";
+const char plugin_name[]        = "burst_buffer datawarp plugin";
+const char plugin_type[]        = "burst_buffer/datawarp";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /* Most state information is in a common structure so that we can more
@@ -949,10 +949,10 @@ static void _recover_bb_state(void)
 	safe_unpack16(&protocol_version, buffer);
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover burst_buffer/cray state, data version incompatible, start with '-i' to ignore this");
-		error("******************************************************************");
-		error("Can not recover burst_buffer/cray state, data version incompatible");
-		error("******************************************************************");
+			fatal("Can not recover burst_buffer/datawarp state, data version incompatible, start with '-i' to ignore this");
+		error("**********************************************************************");
+		error("Can not recover burst_buffer/datawarp state, data version incompatible");
+		error("**********************************************************************");
 		return;
 	}
 

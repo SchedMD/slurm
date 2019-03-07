@@ -592,8 +592,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_interconnect_ofed.so &&
    echo %{_libdir}/slurm/acct_gather_interconnect_ofed.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
    echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/burst_buffer_cray.so        &&
-   echo %{_libdir}/slurm/burst_buffer_cray.so        >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/burst_buffer_datawarp.so    &&
+   echo %{_libdir}/slurm/burst_buffer_datawarp.so    >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_blcr.so          &&
    echo %{_libdir}/slurm/checkpoint_blcr.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rrd.so          &&

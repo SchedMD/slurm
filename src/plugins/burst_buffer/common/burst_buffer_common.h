@@ -3,9 +3,9 @@
  *
  *  NOTE: These functions are designed so they can be used by multiple burst
  *  buffer plugins at the same time (e.g. you might provide users access to
- *  both burst_buffer/cray and burst_buffer/generic on the same system), so
- *  the state information is largely in the individual plugin and passed as
- *  a pointer argument to these functions.
+ *  both burst_buffer/datawarp and burst_buffer/generic on the same system),
+ *  so the state information is largely in the individual plugin and passed
+ *  as a pointer argument to these functions.
  *****************************************************************************
  *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>

@@ -1,3 +1,7 @@
 # Makefile for burst buffer plugins
 
-SUBDIRS = cray generic
+SUBDIRS = generic
+
+if WITH_JSON_PARSER
+SUBDIRS += datawarp
+endif

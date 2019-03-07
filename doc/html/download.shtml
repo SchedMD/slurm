@@ -346,7 +346,7 @@ easy and elegantly manner.
 </ul></li><br>
 
 <li><a name="json"><b>JSON</b></a><br>
-Some Slurm plugins (burst_buffer/cray and power/cray) plugins
+Some Slurm plugins (burst_buffer/datawarp and power/cray) plugins
 parse JSON format data.
 These plugins are designed to make use of the JSON-C library for this purpose.
 Instructions for the build are as follows:
@@ -393,6 +393,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 6 June 2018</p>
+<p style="text-align:center;">Last modified 7 March 2019</p>
 
 <!--#include virtual="footer.txt"-->

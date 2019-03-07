@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for burst_buffer/cray plugin
+# Makefile for burst_buffer/datawarp plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -91,7 +91,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/burst_buffer/cray
+subdir = src/plugins/burst_buffer/datawarp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -176,23 +176,19 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@WITH_JSON_PARSER_TRUE@burst_buffer_cray_la_DEPENDENCIES =  \
-@WITH_JSON_PARSER_TRUE@	../common/libburst_buffer_common.la
-am__burst_buffer_cray_la_SOURCES_DIST = burst_buffer_cray.c
-@WITH_JSON_PARSER_TRUE@am_burst_buffer_cray_la_OBJECTS =  \
-@WITH_JSON_PARSER_TRUE@	burst_buffer_cray.lo
-am__EXTRA_burst_buffer_cray_la_SOURCES_DIST = burst_buffer_cray.c
-burst_buffer_cray_la_OBJECTS = $(am_burst_buffer_cray_la_OBJECTS)
+burst_buffer_datawarp_la_DEPENDENCIES =  \
+	../common/libburst_buffer_common.la
+am_burst_buffer_datawarp_la_OBJECTS = burst_buffer_datawarp.lo
+burst_buffer_datawarp_la_OBJECTS =  \
+	$(am_burst_buffer_datawarp_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-burst_buffer_cray_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+burst_buffer_datawarp_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(burst_buffer_cray_la_LDFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS) $(burst_buffer_datawarp_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
-@WITH_JSON_PARSER_TRUE@am_burst_buffer_cray_la_rpath = -rpath \
-@WITH_JSON_PARSER_TRUE@	$(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -208,7 +204,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/burst_buffer_cray.Plo
+am__depfiles_remade = ./$(DEPDIR)/burst_buffer_datawarp.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -228,10 +224,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(burst_buffer_cray_la_SOURCES) \
-	$(EXTRA_burst_buffer_cray_la_SOURCES)
-DIST_SOURCES = $(am__burst_buffer_cray_la_SOURCES_DIST) \
-	$(am__EXTRA_burst_buffer_cray_la_SOURCES_DIST)
+SOURCES = $(burst_buffer_datawarp_la_SOURCES)
+DIST_SOURCES = $(burst_buffer_datawarp_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -511,12 +505,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-@WITH_JSON_PARSER_TRUE@AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(DATAWARP_CPPFLAGS) $(JSON_CPPFLAGS)
-@WITH_JSON_PARSER_TRUE@pkglib_LTLIBRARIES = burst_buffer_cray.la
-@WITH_JSON_PARSER_TRUE@burst_buffer_cray_la_SOURCES = burst_buffer_cray.c
-@WITH_JSON_PARSER_TRUE@burst_buffer_cray_la_LDFLAGS = $(PLUGIN_FLAGS) $(DATAWARP_LDFLAGS) $(JSON_LDFLAGS)
-@WITH_JSON_PARSER_TRUE@burst_buffer_cray_la_LIBADD = ../common/libburst_buffer_common.la
-@WITH_JSON_PARSER_FALSE@EXTRA_burst_buffer_cray_la_SOURCES = burst_buffer_cray.c
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(DATAWARP_CPPFLAGS) $(JSON_CPPFLAGS)
+pkglib_LTLIBRARIES = burst_buffer_datawarp.la
+burst_buffer_datawarp_la_SOURCES = burst_buffer_datawarp.c
+burst_buffer_datawarp_la_LDFLAGS = $(PLUGIN_FLAGS) $(DATAWARP_LDFLAGS) $(JSON_LDFLAGS)
+burst_buffer_datawarp_la_LIBADD = ../common/libburst_buffer_common.la
 all: all-am
 
 .SUFFIXES:
@@ -530,9 +523,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/burst_buffer/cray/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/burst_buffer/datawarp/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/burst_buffer/cray/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/burst_buffer/datawarp/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -586,8 +579,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-burst_buffer_cray.la: $(burst_buffer_cray_la_OBJECTS) $(burst_buffer_cray_la_DEPENDENCIES) $(EXTRA_burst_buffer_cray_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(burst_buffer_cray_la_LINK) $(am_burst_buffer_cray_la_rpath) $(burst_buffer_cray_la_OBJECTS) $(burst_buffer_cray_la_LIBADD) $(LIBS)
+burst_buffer_datawarp.la: $(burst_buffer_datawarp_la_OBJECTS) $(burst_buffer_datawarp_la_DEPENDENCIES) $(EXTRA_burst_buffer_datawarp_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(burst_buffer_datawarp_la_LINK) -rpath $(pkglibdir) $(burst_buffer_datawarp_la_OBJECTS) $(burst_buffer_datawarp_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -595,7 +588,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer_cray.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer_datawarp.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -758,7 +751,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/burst_buffer_cray.Plo
+		-rm -f ./$(DEPDIR)/burst_buffer_datawarp.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -804,7 +797,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/burst_buffer_cray.Plo
+		-rm -f ./$(DEPDIR)/burst_buffer_datawarp.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -843,9 +836,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 .PRECIOUS: Makefile
 
 
-@WITH_JSON_PARSER_TRUE@force:
-@WITH_JSON_PARSER_TRUE@$(burst_buffer_cray_la_LIBADD) : force
-@WITH_JSON_PARSER_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+force:
+$(burst_buffer_datawarp_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

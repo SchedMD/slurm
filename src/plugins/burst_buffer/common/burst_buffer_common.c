@@ -3,9 +3,9 @@
  *
  *  NOTE: These functions are designed so they can be used by multiple burst
  *  buffer plugins at the same time (e.g. you might provide users access to
- *  both burst_buffer/cray and burst_buffer/generic on the same system), so
- *  the state information is largely in the individual plugin and passed as
- *  a pointer argument to these functions.
+ *  both burst_buffer/datawarp and burst_buffer/generic on the same system),
+ *  so the state information is largely in the individual plugin and passed
+ *  as a pointer argument to these functions.
  *****************************************************************************
  *  Copyright (C) 2014-2015 SchedMD LLC.
  *  Written by Morris Jette <jette@schedmd.com>
@@ -414,7 +414,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	state_ptr->bb_config.validate_timeout = DEFAULT_VALIDATE_TIMEOUT;
 
 	/* First look for "burst_buffer.conf" then with "type" field,
-	 * for example "burst_buffer_cray.conf" */
+	 * for example "burst_buffer_datawarp.conf" */
 	bb_conf = get_extra_conf_path("burst_buffer.conf");
 	fd = open(bb_conf, 0);
 	if (fd >= 0) {
