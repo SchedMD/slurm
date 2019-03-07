@@ -99,6 +99,7 @@ enum {
  * The Munge implementation of the slurm AUTH credential
  */
 typedef struct _slurm_auth_credential {
+	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 #ifndef NDEBUG
 #       define MUNGE_MAGIC 0xfeed
 	int  magic;        /* magical munge validity magic                   */

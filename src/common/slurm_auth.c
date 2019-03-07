@@ -55,6 +55,11 @@
 static bool init_run = false;
 
 typedef struct {
+	int index;
+	char data[];
+} cred_wrapper_t;
+
+typedef struct {
 	uint32_t	(*plugin_id);
 	char		(*plugin_type);
 	void *		(*create)	(char *auth_info);
@@ -233,62 +238,79 @@ done:
 
 void *g_slurm_auth_create(char *auth_info)
 {
+	cred_wrapper_t *cred;
+
 	if (slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	return (*(ops[0].create))(auth_info);
+	cred = (*(ops[0].create))(auth_info);
+	if (cred)
+		cred->index = 0;
+	return cred;
 }
 
 int g_slurm_auth_destroy(void *cred)
 {
-	if (slurm_auth_init(NULL) < 0)
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+
+	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_ERROR;
 
-	return (*(ops[0].destroy))(cred);
+	return (*(ops[wrap->index].destroy))(cred);
 }
 
 int g_slurm_auth_verify(void *cred, char *auth_info)
 {
-	if (slurm_auth_init(NULL) < 0)
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+
+	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_ERROR;
 
-	return (*(ops[0].verify))(cred, auth_info);
+	return (*(ops[wrap->index].verify))(cred, auth_info);
 }
 
 uid_t g_slurm_auth_get_uid(void *cred, char *auth_info)
 {
-	if (slurm_auth_init(NULL) < 0)
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+
+	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_AUTH_NOBODY;
 
-	return (*(ops[0].get_uid))(cred, auth_info);
+	return (*(ops[wrap->index].get_uid))(cred, auth_info);
 }
 
 gid_t g_slurm_auth_get_gid(void *cred, char *auth_info)
 {
-	if (slurm_auth_init(NULL) < 0)
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+
+	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_AUTH_NOBODY;
 
-	return (*(ops[0].get_gid))(cred, auth_info);
+	return (*(ops[wrap->index].get_gid))(cred, auth_info);
 }
 
 char *g_slurm_auth_get_host(void *cred, char *auth_info)
 {
-	if (slurm_auth_init(NULL) < 0)
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+
+	if (!wrap || slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	return (*(ops[0].get_host))(cred, auth_info);
+	return (*(ops[wrap->index].get_host))(cred, auth_info);
 }
 
 int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
 {
-	if (slurm_auth_init(NULL) < 0)
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+
+	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_ERROR;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
-		pack32(*ops[0].plugin_id, buf);
-		return (*(ops[0].pack))(cred, buf, protocol_version);
+		pack32(*ops[wrap->index].plugin_id, buf);
+		return (*(ops[wrap->index].pack))(cred, buf, protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		packstr(ops[0].plugin_type, buf);
+		packstr(ops[wrap->index].plugin_type, buf);
 		/*
 		 * This next field was packed with plugin_version within each
 		 * individual auth plugin, but upon unpack was never checked
@@ -296,7 +318,7 @@ int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
 		 * symbol, just pack a zero here instead.
 		 */
 		pack32(0, buf);
-		return (*(ops[0].pack))(cred, buf, protocol_version);
+		return (*(ops[wrap->index].pack))(cred, buf, protocol_version);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -307,16 +329,21 @@ int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
 void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 {
 	uint32_t plugin_id = 0;
+	cred_wrapper_t *cred;
 
-	if (slurm_auth_init(NULL) < 0)
+	if (!buf || slurm_auth_init(NULL) < 0)
 		return NULL;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		safe_unpack32(&plugin_id, buf);
 		for (int i = 0; i < g_context_num; i++) {
-			if (plugin_id == *(ops[i].plugin_id))
-				return (*(ops[i].unpack))(buf,
+			if (plugin_id == *(ops[i].plugin_id)) {
+				cred = (*(ops[i].unpack))(buf,
 							  protocol_version);
+				if (cred)
+					cred->index = i;
+				return cred;
+			}
 		}
 		error("%s: remote plugin_id %u not found",
 		      __func__, plugin_id);
@@ -327,9 +354,13 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 		safe_unpackmem_ptr(&plugin_type, &uint32_tmp, buf);
 		safe_unpack32(&version, buf);
 		for (int i = 0; i < g_context_num; i++) {
-			if (!xstrcmp(plugin_type, ops[i].plugin_type))
-				return (*(ops[i].unpack))(buf,
+			if (!xstrcmp(plugin_type, ops[i].plugin_type)) {
+				cred = (*(ops[i].unpack))(buf,
 							  protocol_version);
+				if (cred)
+					cred->index = i;
+				return cred;
+			}
 		}
 		error("%s: remote plugin_type %s not found",
 		      __func__, plugin_type);
@@ -346,18 +377,22 @@ unpack_error:
 
 int g_slurm_auth_print(void *cred, FILE *fp)
 {
-	if (slurm_auth_init(NULL) < 0)
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+
+	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_ERROR;
 
-	return (*(ops[0].print))(cred, fp);
+	return (*(ops[wrap->index].print))(cred, fp);
 }
 
 int g_slurm_auth_errno(void *cred)
 {
-	if (slurm_auth_init(NULL) < 0)
+	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
+
+	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_ERROR;
 
-	return (*(ops[0].sa_errno))(cred);
+	return (*(ops[wrap->index].sa_errno))(cred);
 }
 
 const char *g_slurm_auth_errstr(int slurm_errno)
@@ -365,7 +400,7 @@ const char *g_slurm_auth_errstr(int slurm_errno)
 	static char auth_init_msg[] = "authentication initialization failure";
 	const char *generic;
 
-	if (slurm_auth_init(NULL) < 0 )
+	if (slurm_auth_init(NULL) < 0)
 		return auth_init_msg;
 
 	if ((generic = slurm_auth_generic_errstr(slurm_errno)))

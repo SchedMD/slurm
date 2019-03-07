@@ -108,6 +108,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  *
  */
 typedef struct _slurm_auth_credential {
+	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	char *hostname;
 	uid_t uid;
 	gid_t gid;
