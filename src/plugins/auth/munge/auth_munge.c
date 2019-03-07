@@ -82,8 +82,8 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]       	= "Munge authentication plugin";
-const char plugin_type[]       	= "auth/munge";
+const char plugin_name[] = "Munge authentication plugin";
+const char plugin_type[] = "auth/munge";
 const uint32_t plugin_id = AUTH_PLUGIN_MUNGE;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
@@ -119,20 +119,19 @@ typedef struct munge_info {
 } munge_info_t;
 
 
-/* Static prototypes
- */
+/* Static prototypes */
 
-static munge_info_t * cred_info_alloc(void);
-static munge_info_t * cred_info_create(munge_ctx_t ctx);
-static void           cred_info_destroy(munge_info_t *);
-static void           _print_cred_info(munge_info_t *mi);
-static void           _print_cred(munge_ctx_t ctx);
-static int            _decode_cred(slurm_auth_credential_t *c, char *socket);
+static munge_info_t *cred_info_alloc(void);
+static munge_info_t *cred_info_create(munge_ctx_t ctx);
+static void cred_info_destroy(munge_info_t *);
+static void _print_cred_info(munge_info_t *mi);
+static void _print_cred(munge_ctx_t ctx);
+static int _decode_cred(slurm_auth_credential_t *c, char *socket);
 
 /*
  *  Munge plugin initialization
  */
-int init ( void )
+int init(void)
 {
 	char *fail_test_env = getenv("SLURM_MUNGE_AUTH_FAIL_TEST");
 	if (fail_test_env)
@@ -159,7 +158,7 @@ slurm_auth_credential_t *slurm_auth_create(char *opts)
 	SigFunc *ohandler;
 	char *socket;
 
-	if (ctx == NULL) {
+	if (!ctx) {
 		error("munge_ctx_create failure");
 		return NULL;
 	}
@@ -206,7 +205,7 @@ again:
 		if (err == EMUNGE_SOCKET)
 			error("If munged is up, restart with --num-threads=10");
 		error("Munge encode failed: %s", munge_ctx_strerror(ctx));
-		xfree( cred );
+		xfree(cred);
 		cred = NULL;
 		plugin_errno = err + MUNGE_ERRNO_OFFSET;
 	} else if ((bad_cred_test > 0) && cred->m_str) {
@@ -224,8 +223,7 @@ again:
 /*
  * Free a credential that was allocated with slurm_auth_alloc().
  */
-int
-slurm_auth_destroy( slurm_auth_credential_t *cred )
+int slurm_auth_destroy(slurm_auth_credential_t *cred)
 {
 	if (!cred) {
 		plugin_errno = ESLURM_AUTH_BADARG;
@@ -247,8 +245,7 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
  *
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
-int
-slurm_auth_verify( slurm_auth_credential_t *c, char *opts )
+int slurm_auth_verify(slurm_auth_credential_t *c, char *opts)
 {
 	int rc;
 	char *socket;
@@ -276,10 +273,9 @@ slurm_auth_verify( slurm_auth_credential_t *c, char *opts )
  * Obtain the Linux UID from the credential.  The accuracy of this data
  * is not assured until slurm_auth_verify() has been called for it.
  */
-uid_t
-slurm_auth_get_uid( slurm_auth_credential_t *cred, char *opts )
+uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *opts)
 {
-	if (cred == NULL) {
+	if (!cred) {
 		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
@@ -304,10 +300,9 @@ slurm_auth_get_uid( slurm_auth_credential_t *cred, char *opts )
  * Obtain the Linux GID from the credential.  See slurm_auth_get_uid()
  * above for details on correct behavior.
  */
-gid_t
-slurm_auth_get_gid( slurm_auth_credential_t *cred, char *opts )
+gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *opts)
 {
-	if (cred == NULL) {
+	if (!cred) {
 		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
@@ -336,8 +331,8 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
 {
 	char *hostname = NULL;
 	struct hostent *he;
-	char   h_buf[4096];
-	int    h_err  = 0;
+	char h_buf[4096];
+	int h_err  = 0;
 
 	if (cred == NULL) {
 		plugin_errno = ESLURM_AUTH_BADARG;
@@ -372,15 +367,14 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
  * Marshall a credential for transmission over the network, according to
  * Slurm's marshalling protocol.
  */
-int
-slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf,
-		 uint16_t protocol_version )
+int slurm_auth_pack(slurm_auth_credential_t *cred, Buf buf,
+		    uint16_t protocol_version )
 {
-	if (cred == NULL) {
+	if (!cred) {
 		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
-	if (buf == NULL) {
+	if (!buf) {
 		cred->cr_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
@@ -402,13 +396,12 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf,
  * Unmarshall a credential after transmission over the network according
  * to Slurm's marshalling protocol.
  */
-slurm_auth_credential_t *
-slurm_auth_unpack( Buf buf, uint16_t protocol_version )
+slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 {
 	slurm_auth_credential_t *cred = NULL;
 	uint32_t size;
 
-	if ( buf == NULL ) {
+	if (!buf) {
 		plugin_errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
@@ -417,7 +410,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 		/* Allocate and initialize credential. */
 		cred = xmalloc(sizeof(*cred));
 		cred->verified = false;
-		cred->m_str    = NULL;
+		cred->m_str = NULL;
 		cred->cr_errno = SLURM_SUCCESS;
 
 		xassert((cred->magic = MUNGE_MAGIC));
@@ -431,23 +424,22 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 
 	return cred;
 
- unpack_error:
+unpack_error:
 	plugin_errno = ESLURM_AUTH_UNPACK;
 	slurm_auth_destroy(cred);
 	return NULL;
 }
 
-int
-slurm_auth_errno( slurm_auth_credential_t *cred )
+int slurm_auth_errno(slurm_auth_credential_t *cred)
 {
-	if ( cred == NULL )
+	if (!cred)
 		return plugin_errno;
 	else
 		return cred->cr_errno;
 }
 
 
-const char *slurm_auth_errstr( int slurm_errno )
+const char *slurm_auth_errstr(int slurm_errno)
 {
 	if (slurm_errno > MUNGE_ERRNO_OFFSET)
 		return munge_strerror(slurm_errno - MUNGE_ERRNO_OFFSET);
@@ -459,8 +451,7 @@ const char *slurm_auth_errstr( int slurm_errno )
  * Decode the munge encoded credential `m_str' placing results, if validated,
  * into slurm credential `c'
  */
-static int
-_decode_cred(slurm_auth_credential_t *c, char *socket)
+static int _decode_cred(slurm_auth_credential_t *c, char *socket)
 {
 	int retry = RETRY_COUNT;
 	munge_err_t err;
@@ -485,7 +476,7 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 		return SLURM_ERROR;
 	}
 
-    again:
+again:
 	err = munge_decode(c->m_str, ctx, NULL, NULL, &c->uid, &c->gid);
 	if (err != EMUNGE_SUCCESS) {
 		if ((err == EMUNGE_SOCKET) && retry--) {
@@ -508,17 +499,15 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 			/*
 			 *  Print any valid credential data
 			 */
-			error ("Munge decode failed: %s",
-			       munge_ctx_strerror(ctx));
+			error("Munge decode failed: %s",
+			      munge_ctx_strerror(ctx));
 			_print_cred(ctx);
 			if (err == EMUNGE_CRED_REWOUND)
 				error("Check for out of sync clocks");
 			c->cr_errno = err + MUNGE_ERRNO_OFFSET;
 #ifdef MULTIPLE_SLURMD
 		} else {
-			debug2("We had a replayed cred, "
-			       "but this is expected in multiple "
-			       "slurmd mode.");
+			debug2("We had a replayed cred, but this is expected in multiple slurmd mode.");
 			err = 0;
 		}
 #endif
@@ -530,12 +519,12 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 	 * needed.
 	 */
 	if (munge_ctx_get(ctx, MUNGE_OPT_ADDR4, &c->addr) != EMUNGE_SUCCESS)
-		error ("auth_munge: Unable to retrieve addr: %s",
-		       munge_ctx_strerror(ctx));
+		error("auth_munge: Unable to retrieve addr: %s",
+		      munge_ctx_strerror(ctx));
 
 	c->verified = true;
 
-     done:
+done:
 	munge_ctx_destroy(ctx);
 	return err ? SLURM_ERROR : SLURM_SUCCESS;
 }
@@ -543,8 +532,7 @@ _decode_cred(slurm_auth_credential_t *c, char *socket)
 /*
  *  Allocate space for Munge credential info structure
  */
-static munge_info_t *
-cred_info_alloc(void)
+static munge_info_t *cred_info_alloc(void)
 {
 	munge_info_t *mi = xmalloc(sizeof(*mi));
 	memset(mi, 0, sizeof(*mi));
@@ -554,8 +542,7 @@ cred_info_alloc(void)
 /*
  *  Free a Munge cred info object.
  */
-static void
-cred_info_destroy(munge_info_t *mi)
+static void cred_info_destroy(munge_info_t *mi)
 {
 	xfree(mi);
 }
@@ -563,64 +550,59 @@ cred_info_destroy(munge_info_t *mi)
 /*
  *  Create a credential info object from a Munge context
  */
-static munge_info_t *
-cred_info_create(munge_ctx_t ctx)
+static munge_info_t *cred_info_create(munge_ctx_t ctx)
 {
 	munge_err_t e;
 	munge_info_t *mi = cred_info_alloc();
 
 	e = munge_ctx_get(ctx, MUNGE_OPT_ENCODE_TIME, &mi->encoded);
 	if (e != EMUNGE_SUCCESS)
-		error ("auth_munge: Unable to retrieve encode time: %s",
-		       munge_ctx_strerror(ctx));
+		error("%s: Unable to retrieve encode time: %s",
+		      plugin_type, munge_ctx_strerror(ctx));
 
 	e = munge_ctx_get(ctx, MUNGE_OPT_DECODE_TIME, &mi->decoded);
 	if (e != EMUNGE_SUCCESS)
-		error ("auth_munge: Unable to retrieve decode time: %s",
-		       munge_ctx_strerror(ctx));
+		error("%s: Unable to retrieve decode time: %s",
+		      plugin_type, munge_ctx_strerror(ctx));
 
 	e = munge_ctx_get(ctx, MUNGE_OPT_CIPHER_TYPE, &mi->cipher);
 	if (e != EMUNGE_SUCCESS)
-		error ("auth_munge: Unable to retrieve cipher type: %s",
-		       munge_ctx_strerror(ctx));
+		error("%s: Unable to retrieve cipher type: %s",
+		      plugin_type, munge_ctx_strerror(ctx));
 
 	e = munge_ctx_get(ctx, MUNGE_OPT_MAC_TYPE, &mi->mac);
 	if (e != EMUNGE_SUCCESS)
-		error ("auth_munge: Unable to retrieve mac type: %s",
-		       munge_ctx_strerror(ctx));
+		error("%s: Unable to retrieve mac type: %s",
+		      plugin_type, munge_ctx_strerror(ctx));
 
 	e = munge_ctx_get(ctx, MUNGE_OPT_ZIP_TYPE, &mi->zip);
 	if (e != EMUNGE_SUCCESS)
-		error ("auth_munge: Unable to retrieve zip type: %s",
-		       munge_ctx_strerror(ctx));
+		error("%s: Unable to retrieve zip type: %s",
+		      plugin_type, munge_ctx_strerror(ctx));
 
 	return mi;
 }
 
-
 /*
  *  Print credential info object to the slurm log facility.
  */
-static void
-_print_cred_info(munge_info_t *mi)
+static void _print_cred_info(munge_info_t *mi)
 {
 	char buf[256];
 
-	xassert(mi != NULL);
+	xassert(mi);
 
 	if (mi->encoded > 0)
-		info ("ENCODED: %s", slurm_ctime2_r(&mi->encoded, buf));
+		info("ENCODED: %s", slurm_ctime2_r(&mi->encoded, buf));
 
 	if (mi->decoded > 0)
-		info ("DECODED: %s", slurm_ctime2_r(&mi->decoded, buf));
+		info("DECODED: %s", slurm_ctime2_r(&mi->decoded, buf));
 }
-
 
 /*
  *  Print credential information.
  */
-static void
-_print_cred(munge_ctx_t ctx)
+static void _print_cred(munge_ctx_t ctx)
 {
 	munge_info_t *mi = cred_info_create(ctx);
 	_print_cred_info(mi);
