@@ -81,13 +81,6 @@ enum {
     SLURM_AUTH_FIRST_LOCAL_ERROR    /* Always keep me last. */
 };
 
-/* Arguments passed to plugin functions */
-enum {
-	ARG_HOST_LIST = 0,
-	ARG_TIMEOUT,
-	ARG_COUNT,
-};
-
 /*
  * Slurm authentication context opaque type.
  */
