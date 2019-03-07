@@ -119,15 +119,6 @@ typedef struct _slurm_auth_credential {
 static int plugin_errno = SLURM_SUCCESS;
 
 /*
- * New errno values particular to this plugin.  We declare the first
- * one to be SLURM_AUTH_FIRST_LOCAL_ERROR to avoid conflicting with
- * the general ones.
- */
-enum {
-	SLURM_AUTH_UNPACK = SLURM_AUTH_FIRST_LOCAL_ERROR,
-};
-
-/*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
@@ -173,7 +164,7 @@ int
 slurm_auth_destroy( slurm_auth_credential_t *cred )
 {
 	if ( cred == NULL ) {
-		plugin_errno = SLURM_AUTH_MEMORY;
+		plugin_errno = ESLURM_AUTH_MEMORY;
 		return SLURM_ERROR;
 	}
 	xfree(cred->hostname);
@@ -200,7 +191,7 @@ uid_t
 slurm_auth_get_uid( slurm_auth_credential_t *cred, char *auth_info )
 {
 	if ( cred == NULL ) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	} else {
 		return cred->uid;
@@ -215,7 +206,7 @@ gid_t
 slurm_auth_get_gid( slurm_auth_credential_t *cred, char *auth_info )
 {
 	if ( cred == NULL ) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	} else {
 		return cred->gid;
@@ -230,7 +221,7 @@ char *
 slurm_auth_get_host( slurm_auth_credential_t *cred, char *auth_info )
 {
 	if ( cred == NULL ) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	} else
 		return xstrdup(cred->hostname);
@@ -245,7 +236,7 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf,
 		 uint16_t protocol_version )
 {
 	if ( ( cred == NULL ) || ( buf == NULL ) ) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -277,7 +268,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 	uint32_t uint32_tmp = 0;
 
 	if ( buf == NULL ) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -326,7 +317,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 	return cred;
 
   unpack_error:
-	plugin_errno = SLURM_AUTH_UNPACK;
+	plugin_errno = ESLURM_AUTH_UNPACK;
 	slurm_auth_destroy(cred);
 	return NULL;
 }
@@ -340,7 +331,7 @@ int
 slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 {
 	if ( ( cred == NULL) || ( fp == NULL ) ) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -373,21 +364,7 @@ slurm_auth_errno( slurm_auth_credential_t *cred )
  * the errors we define here in the plugin.  The Slurm plugin wrappers
  * take care of the API-mandated errors.
  */
-const char *
-slurm_auth_errstr( int slurm_errno )
+const char *slurm_auth_errstr( int slurm_errno )
 {
-	static struct {
-		int err;
-		char *msg;
-	} tbl[] = {
-		{ SLURM_AUTH_UNPACK, "cannot unpack credential" },
-		{ 0, NULL }
-	};
-
-	int i;
-
-	for ( i = 0; ; ++i ) {
-		if ( tbl[ i ].msg == NULL ) return "unknown error";
-		if ( tbl[ i ].err == slurm_errno ) return tbl[ i ].msg;
-	}
+	return "unknown error";
 }

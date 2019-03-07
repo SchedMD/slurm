@@ -53,7 +53,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/util-net.h"
 
-#define MUNGE_ERRNO_OFFSET	1000
+#define MUNGE_ERRNO_OFFSET	10000
 #define RETRY_COUNT		20
 #define RETRY_USEC		100000
 
@@ -89,11 +89,6 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static int plugin_errno = SLURM_SUCCESS;
 static int bad_cred_test = -1;
-
-
-enum {
-	SLURM_AUTH_UNPACK = SLURM_AUTH_FIRST_LOCAL_ERROR
-};
 
 /*
  * The Munge implementation of the slurm AUTH credential
@@ -233,7 +228,7 @@ int
 slurm_auth_destroy( slurm_auth_credential_t *cred )
 {
 	if (!cred) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -259,7 +254,7 @@ slurm_auth_verify( slurm_auth_credential_t *c, char *opts )
 	char *socket;
 
 	if (!c) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -285,7 +280,7 @@ uid_t
 slurm_auth_get_uid( slurm_auth_credential_t *cred, char *opts )
 {
 	if (cred == NULL) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
 
@@ -295,7 +290,7 @@ slurm_auth_get_uid( slurm_auth_credential_t *cred, char *opts )
 		rc = _decode_cred(cred, socket);
 		xfree(socket);
 		if (rc < 0) {
-			cred->cr_errno = SLURM_AUTH_INVALID;
+			cred->cr_errno = ESLURM_AUTH_INVALID;
 			return SLURM_AUTH_NOBODY;
 		}
 	}
@@ -313,7 +308,7 @@ gid_t
 slurm_auth_get_gid( slurm_auth_credential_t *cred, char *opts )
 {
 	if (cred == NULL) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
 
@@ -323,7 +318,7 @@ slurm_auth_get_gid( slurm_auth_credential_t *cred, char *opts )
 		rc = _decode_cred(cred, socket);
 		xfree(socket);
 		if (rc < 0) {
-			cred->cr_errno = SLURM_AUTH_INVALID;
+			cred->cr_errno = ESLURM_AUTH_INVALID;
 			return SLURM_AUTH_NOBODY;
 		}
 	}
@@ -345,7 +340,7 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
 	int    h_err  = 0;
 
 	if (cred == NULL) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -355,7 +350,7 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
 		rc = _decode_cred(cred, socket);
 		xfree(socket);
 		if (rc < 0) {
-			cred->cr_errno = SLURM_AUTH_INVALID;
+			cred->cr_errno = ESLURM_AUTH_INVALID;
 			return NULL;
 		}
 	}
@@ -382,11 +377,11 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf,
 		 uint16_t protocol_version )
 {
 	if (cred == NULL) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 	if (buf == NULL) {
-		cred->cr_errno = SLURM_AUTH_BADARG;
+		cred->cr_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -414,7 +409,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 	uint32_t size;
 
 	if ( buf == NULL ) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
@@ -437,7 +432,7 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 	return cred;
 
  unpack_error:
-	plugin_errno = SLURM_AUTH_UNPACK;
+	plugin_errno = ESLURM_AUTH_UNPACK;
 	slurm_auth_destroy(cred);
 	return NULL;
 }
@@ -451,11 +446,11 @@ int
 slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 {
 	if (cred == NULL) {
-		plugin_errno = SLURM_AUTH_BADARG;
+		plugin_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 	if ( fp == NULL ) {
-		cred->cr_errno = SLURM_AUTH_BADARG;
+		cred->cr_errno = ESLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -475,28 +470,12 @@ slurm_auth_errno( slurm_auth_credential_t *cred )
 }
 
 
-const char *
-slurm_auth_errstr( int slurm_errno )
+const char *slurm_auth_errstr( int slurm_errno )
 {
-	static struct {
-		int err;
-		char *msg;
-	} tbl[] = {
-		{ SLURM_AUTH_UNPACK, "cannot unpack authentication type" },
-		{ 0, NULL }
-	};
-
-	int i;
-
 	if (slurm_errno > MUNGE_ERRNO_OFFSET)
 		return munge_strerror(slurm_errno - MUNGE_ERRNO_OFFSET);
 
-	for ( i = 0; ; ++i ) {
-		if ( tbl[ i ].msg == NULL )
-			return "unknown error";
-		if ( tbl[ i ].err == slurm_errno )
-			return tbl[ i ].msg;
-	}
+	return "unknown error";
 }
 
 /*

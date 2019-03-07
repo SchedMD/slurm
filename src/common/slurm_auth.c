@@ -112,13 +112,10 @@ static const char *slurm_auth_generic_errstr(int slurm_errno)
 	} generic_table[] = {
 		{ SLURM_SUCCESS, "no error" },
 		{ SLURM_ERROR, "unknown error" },
-		{ SLURM_AUTH_NOPLUGIN, "no authentication plugin installed" },
-		{ SLURM_AUTH_BADARG, "bad argument to plugin function" },
-		{ SLURM_AUTH_MEMORY, "memory management error" },
-		{ SLURM_AUTH_NOUSER, "no such user" },
-		{ SLURM_AUTH_INVALID, "authentication credential invalid" },
-		{ SLURM_AUTH_MISMATCH, "authentication type mismatch" },
-		{ SLURM_AUTH_VERSION, "authentication version too old" },
+		{ ESLURM_AUTH_BADARG, "bad argument to plugin function" },
+		{ ESLURM_AUTH_MEMORY, "memory management error" },
+		{ ESLURM_AUTH_INVALID, "authentication credential invalid" },
+		{ ESLURM_AUTH_UNPACK, "cannot unpack credential" },
 		{ 0, NULL }
 	};
 

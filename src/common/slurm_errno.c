@@ -463,6 +463,14 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Failed to open authentication public key"		},
 	{ ESLURM_AUTH_NET_ERROR,
 	  "Failed to connect to authentication agent"		},
+	{ ESLURM_AUTH_BADARG,
+	  "Bad argument to plugin function"			},
+	{ ESLURM_AUTH_MEMORY,
+	  "Memory management error"				},
+	{ ESLURM_AUTH_INVALID,
+	  "Authentication credential invalid"			},
+	{ ESLURM_AUTH_UNPACK,
+	  "Cannot unpack credential"				},
 
 	/* accounting errors */
 	{ ESLURM_DB_CONNECTION,
