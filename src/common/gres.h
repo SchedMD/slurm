@@ -699,7 +699,7 @@ extern bool gres_plugin_job_sched_test2(List job_gres_list, List sock_gres_list,
 					uint32_t job_id);
 
 /*
- * Update a job's total_gres counter as we add a node to potential allocaiton
+ * Update a job's total_gres counter as we add a node to potential allocation
  * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
  * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
  * IN avail_cpus - CPUs currently available on this node
@@ -965,7 +965,7 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
  *		       gres_plugin_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
  * IN node_index  - zero-origin global node index
- * IN node_offset - zero-origin index in job allocaiton to the node of interest
+ * IN node_offset - zero-origin index in job allocation to the node of interest
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
