@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Add null check for step_ptr->step_node_bitmap in _pick_step_nodes.
  -- Fix multi-cluster srun issue after 'scontrol reconfigure' was called.
  -- Fix accessing response_cluster_rec outside of write locks.
+ -- Fix Lua user messages not showing up on rejected submissions.
+ -- Fix printing multi-line error messages on rejected submissions.
 
 * Changes in Slurm 18.08.5-2
 ============================
