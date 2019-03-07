@@ -140,7 +140,6 @@ extern int	g_slurm_auth_pack( void *cred, Buf buf,
  */
 extern void	*g_slurm_auth_unpack( Buf buf, uint16_t protocol_version );
 
-int	g_slurm_auth_print( void *cred, FILE *fp );
 int	g_slurm_auth_errno( void *cred );
 const char *g_slurm_auth_errstr( int slurm_errno );
 

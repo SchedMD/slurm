@@ -323,28 +323,6 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 }
 
 /*
- * Print to a stdio stream a human-readable representation of the
- * credential for debugging or logging purposes.  The format is left
- * to the imagination of the plugin developer.
- */
-int
-slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
-{
-	if ( ( cred == NULL) || ( fp == NULL ) ) {
-		plugin_errno = ESLURM_AUTH_BADARG;
-		return SLURM_ERROR;
-	}
-
-	printf( "BEGIN SLURM BASIC AUTHENTICATION CREDENTIAL\n" );
-	printf( "\tUID = %u\n", cred->uid );
-	printf( "\tGID = %u\n", cred->gid );
-	printf( "END SLURM BASIC AUTHENTICATION CREDENTIAL\n" );
-
-	return SLURM_SUCCESS;
-}
-
-
-/*
  * Return the errno.  If no credential is given, return the errno
  * of the plugin.  This leads to possibly ambiguous situations, but
  * there really isn't any easy way of dealing with that.

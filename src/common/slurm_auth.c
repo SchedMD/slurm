@@ -71,7 +71,6 @@ typedef struct {
 	int		(*pack)		(void *cred, Buf buf,
 					 uint16_t protocol_version);
 	void *		(*unpack)	(Buf buf, uint16_t protocol_version);
-	int		(*print)	(void *cred, FILE *fp);
 	int		(*sa_errno)	(void *cred);
 	const char *	(*sa_errstr)	(int slurm_errno);
 } slurm_auth_ops_t;
@@ -90,7 +89,6 @@ static const char *syms[] = {
 	"slurm_auth_get_host",
 	"slurm_auth_pack",
 	"slurm_auth_unpack",
-	"slurm_auth_print",
 	"slurm_auth_errno",
 	"slurm_auth_errstr",
 };
@@ -370,16 +368,6 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 
 unpack_error:
 	return NULL;
-}
-
-int g_slurm_auth_print(void *cred, FILE *fp)
-{
-	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
-
-	if (!wrap || slurm_auth_init(NULL) < 0)
-		return SLURM_ERROR;
-
-	return (*(ops[wrap->index].print))(cred, fp);
 }
 
 int g_slurm_auth_errno(void *cred)

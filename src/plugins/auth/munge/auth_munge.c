@@ -437,29 +437,6 @@ slurm_auth_unpack( Buf buf, uint16_t protocol_version )
 	return NULL;
 }
 
-/*
- * Print to a stdio stream a human-readable representation of the
- * credential for debugging or logging purposes.  The format is left
- * to the imagination of the plugin developer.
- */
-int
-slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
-{
-	if (cred == NULL) {
-		plugin_errno = ESLURM_AUTH_BADARG;
-		return SLURM_ERROR;
-	}
-	if ( fp == NULL ) {
-		cred->cr_errno = ESLURM_AUTH_BADARG;
-		return SLURM_ERROR;
-	}
-
-	fprintf(fp, "BEGIN SLURM MUNGE AUTHENTICATION CREDENTIAL\n" );
-	fprintf(fp, "%s\n", cred->m_str );
-	fprintf(fp, "END SLURM MUNGE AUTHENTICATION CREDENTIAL\n" );
-	return SLURM_SUCCESS;
-}
-
 int
 slurm_auth_errno( slurm_auth_credential_t *cred )
 {

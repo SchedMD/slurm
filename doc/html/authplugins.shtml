@@ -195,17 +195,6 @@ successfully unpacked. In case of failure, the function should return SLURM_ERRO
 and set errno appropriately to indicate the cause of the failure. If the function
 fails, no assumptions are made about the state of the credential except its suitability
 for destruction via <span class="commandline">slurm_auth_destroy()</span>.</p>
-<p class="commandline">int slurm_auth_print (void *cr, FILE *fp);</p>
-<p style="margin-left:.2in"><b>Description</b>: Writes a human-readable representation
-of the credential to a standard I/O stream. There are no strict API constraints
-on the behavior of this function, however it is recommended that the information
-be as complete and as concise as possible. For example, lengthy digital &quot;signatures&quot;
-need not be printed bitwise, but may be represented by their checksum. The intent
-is to provide a depiction of the credential for debugging purposes.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: None.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure
-the plugin should return SLURM_ERROR and set the errno appropriately to indicate
-the cause of failure.</p>
 <p class="commandline">int slurm_auth_errno (void *cr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Returns the current value of errno.
 Whether the value is associated with the given credential or with the plugin as
@@ -228,6 +217,6 @@ by the API.</p>
 This function must always return a pointer to a string, even if the string is
 empty or ambiguous such as &quot;unknown error.&quot;</p>
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 7 March 2019</p>
 
 <!--#include virtual="footer.txt"-->
