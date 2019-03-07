@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.7
 ==========================
+ -- Remove deadlock situation when logging and --enable-debug is used.
 
 * Changes in Slurm 18.08.6
 ==========================

@@ -72,7 +72,6 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
-#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
@@ -704,7 +703,6 @@ static char *_jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
 	if (job_ptr == NULL)
 		return "%.0sJobId=Invalid";
 
-	xassert(job_ptr->magic == JOB_MAGIC);
 	if (job_ptr->magic != JOB_MAGIC)
 		return "%.0sJobId=CORRUPT";
 
@@ -737,7 +735,6 @@ static char *_stepid2fmt(struct step_record *step_ptr, char *buf, int buf_size)
 	if (step_ptr == NULL)
 		return " StepId=Invalid";
 
-	xassert(step_ptr->magic == STEP_MAGIC);
 	if (step_ptr->magic != STEP_MAGIC)
 		return " StepId=CORRUPT";
 
