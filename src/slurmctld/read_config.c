@@ -142,6 +142,27 @@ static void _sync_part_prio(void);
 static int  _update_preempt(uint16_t old_enable_preempt);
 
 
+/*
+ * Setup the global response_cluster_rec
+ */
+static void _set_response_cluster_rec()
+{
+	if (response_cluster_rec)
+		return;
+
+	response_cluster_rec = xmalloc(sizeof(slurmdb_cluster_rec_t));
+	response_cluster_rec->name = xstrdup(slurmctld_conf.cluster_name);
+	if (slurmctld_conf.slurmctld_addr) {
+		response_cluster_rec->control_host =
+			xstrdup(slurmctld_conf.slurmctld_addr);
+	} else {
+		response_cluster_rec->control_host =
+			xstrdup(slurmctld_conf.control_addr[0]);
+	}
+	response_cluster_rec->control_port = slurmctld_conf.slurmctld_port;
+	response_cluster_rec->rpc_version = SLURM_PROTOCOL_VERSION;
+}
+
 /* Verify that Slurm directories are secure, not world writable */
 static void _stat_slurm_dirs(void)
 {
@@ -1439,6 +1460,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	select_g_reconfigure();
 	if (reconfig && (slurm_mcs_reconfig() != SLURM_SUCCESS))
 		fatal("Failed to reconfigure mcs plugin");
+
+	_set_response_cluster_rec();
 
 	slurmctld_conf.last_update = time(NULL);
 	END_TIMER2("read_slurm_conf");

@@ -1508,7 +1508,31 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			_kill_job_on_msg_fail(pack_job_id);
 		list_destroy(resp);
 	} else {
+		char *aggregate_user_msg = NULL;
+
 send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
+
+		/*
+		 * If job is rejected, add the job submit message to the error
+		 * message to avoid it getting lost. Was saved off earlier.
+		 */
+		for (inx = 0; inx < pack_cnt; inx++) {
+			if (!job_submit_user_msg[inx])
+				continue;
+
+			xstrfmtcat(aggregate_user_msg, "%s%d: %s",
+				   (aggregate_user_msg ? "\n" : ""),
+				    inx, job_submit_user_msg[inx]);
+		}
+		if (aggregate_user_msg) {
+			char *tmp_err_msg = err_msg;
+			err_msg = aggregate_user_msg;
+			if (tmp_err_msg) {
+				xstrfmtcat(err_msg, "\n%s", tmp_err_msg);
+				xfree(tmp_err_msg);
+			}
+		}
+
 		if (err_msg)
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
@@ -1702,6 +1726,21 @@ send_msg:
 			_throttle_fini(&active_rpc_cnt);
 		}
 		info("%s: %s ", __func__, slurm_strerror(error_code));
+
+		/*
+		 * If job is rejected, add the job submit message to the error
+		 * message to avoid it getting lost. Was saved off earlier.
+		 */
+		if (job_submit_user_msg) {
+			char *tmp_err_msg = err_msg;
+			err_msg = job_submit_user_msg;
+			job_submit_user_msg = NULL;
+			if (tmp_err_msg) {
+				xstrfmtcat(err_msg, "\n%s", tmp_err_msg);
+				xfree(tmp_err_msg);
+			}
+		}
+
 		if (err_msg)
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
@@ -4062,6 +4101,21 @@ send_msg:
 
 	if (reject_job) {
 		info("%s: %s", __func__, slurm_strerror(error_code));
+
+		/*
+		 * If job is rejected, add the job submit message to the error
+		 * message to avoid it getting lost. Was saved off earlier.
+		 */
+		if (job_submit_user_msg) {
+			char *tmp_err_msg = err_msg;
+			err_msg = job_submit_user_msg;
+			job_submit_user_msg = NULL;
+			if (tmp_err_msg) {
+				xstrfmtcat(err_msg, "\n%s", tmp_err_msg);
+				xfree(tmp_err_msg);
+			}
+		}
+
 		if (err_msg)
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
@@ -4342,6 +4396,21 @@ send_msg:
 	END_TIMER2("_slurm_rpc_submit_batch_pack_job");
 	if (reject_job) {
 		info("%s: %s", __func__, slurm_strerror(error_code));
+
+		/*
+		 * If job is rejected, add the job submit message to the error
+		 * message to avoid it getting lost. Was saved off earlier.
+		 */
+		if (job_submit_user_msg) {
+			char *tmp_err_msg = err_msg;
+			err_msg = job_submit_user_msg;
+			job_submit_user_msg = NULL;
+			if (tmp_err_msg) {
+				xstrfmtcat(err_msg, "\n%s", tmp_err_msg);
+				xfree(tmp_err_msg);
+			}
+		}
+
 		if (err_msg)
 			slurm_send_rc_err_msg(msg, error_code, err_msg);
 		else
