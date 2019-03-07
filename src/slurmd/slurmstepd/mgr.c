@@ -329,7 +329,8 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 		 * tasks in case one of them called abort
 		 */
 		if (WIFSIGNALED(job->task[i]->estatus)) {
-			error("get_exit_code task %u died by signal", i);
+			error("get_exit_code task %u died by signal: %d",
+			      i, WTERMSIG(job->task[i]->estatus));
 			step_rc = job->task[i]->estatus;
 			break;
 		}
