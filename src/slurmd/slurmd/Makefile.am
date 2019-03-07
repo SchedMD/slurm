@@ -10,8 +10,8 @@ depend_libs = $(top_builddir)/src/common/libdaemonize.la \
 	../common/libslurmd_common.o ../common/libslurmd_reverse_tree_math.la
 
 # These 2 depend_* should look the same in ../slurmstepd/Makefile.am
-depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
-depend_ldflags = $(HWLOC_LDFLAGS) $(SSH2_LDFLAGS)
+depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
+depend_ldflags = $(HWLOC_LDFLAGS)
 
 # This is needed to actually link to the libs that it doesn't use.
 depend_ldflags += -Wl,--no-as-needed

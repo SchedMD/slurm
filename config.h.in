@@ -248,9 +248,6 @@
 /* Define to 1 if you have the <socket.h> header file. */
 #undef HAVE_SOCKET_H
 
-/* Define to 1 if libssh2 found */
-#undef HAVE_SSH2
-
 /* Define to 1 if you have the `statfs' function. */
 #undef HAVE_STATFS
 

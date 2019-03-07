@@ -16,10 +16,10 @@ depend_libs = 				   \
 # rather difficult.  Making the slurmd link to them as well shouldn't increase
 # memory footprint and will fail way earlier and give the user a way to known
 # what is happening.
-depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
-depend_ldflags = $(HWLOC_LDFLAGS) $(SSH2_LDFLAGS)
+depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
+depend_ldflags = $(HWLOC_LDFLAGS)
 
-AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS) $(SSH2_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
 slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd)
 
@@ -36,13 +36,8 @@ slurmstepd_SOURCES = 	        	\
 	pam_ses.c pam_ses.h		\
 	req.c req.h			\
 	multi_prog.c multi_prog.h	\
-	step_terminate_monitor.c step_terminate_monitor.h
-
-if WITH_SLURM_X11
-slurmstepd_SOURCES += x11_forwarding.c x11_forwarding.h
-else
-EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
-endif
+	step_terminate_monitor.c step_terminate_monitor.h \
+	x11_forwarding.c x11_forwarding.h
 
 slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 

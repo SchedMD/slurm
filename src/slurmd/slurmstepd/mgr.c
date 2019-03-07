@@ -958,8 +958,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	int status = 0;
 	pid_t pid;
 	int rc = SLURM_SUCCESS;
-
-#ifdef WITH_SLURM_X11
 	int x11_pipe[2] = {0, 0};
 
 	if (job->x11 && (pipe(x11_pipe) < 0)) {
@@ -968,7 +966,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		close_slurmd_conn();
 		return SLURM_ERROR;
 	}
-#endif
 
 	debug2("%s: Before call to spank_init()", __func__);
 	if (spank_init(job) < 0) {
@@ -994,7 +991,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 
 		_unblock_signals();
 
-#ifdef WITH_SLURM_X11
 		if (job->x11) {
 			int display, len = 0;
 			char *xauthority;
@@ -1042,9 +1038,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 				sleep(100000);
 
 			exit(1);
-		} else
-#endif	/* WITH_SLURM_X11 */
-		{
+		} else {
 			/*
 			 * Need to exec() something for proctrack/linuxproc to
 			 * work, it will not keep a process named "slurmstepd"
@@ -1083,7 +1077,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	jobacct_gather_add_task(pid, &jobacct_id, 1);
 	container_g_add_cont(job->jobid, job->cont_id);
 
-#ifdef WITH_SLURM_X11
 	/*
 	 * For the X11 forwarding, we need to know what local port number the
 	 * forwarding code has started listening on so that the slurmd can
@@ -1124,7 +1117,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 			debug("x11 forwarding local xauthority is %s",
 			      job->x11_xauthority);
 	}
-#endif
 
 	_set_job_state(job, SLURMSTEPD_STEP_RUNNING);
 	if (!conf->job_acct_gather_freq)

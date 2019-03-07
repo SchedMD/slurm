@@ -93,7 +93,6 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 sbin_PROGRAMS = slurmstepd$(EXEEXT)
-@WITH_SLURM_X11_TRUE@am__append_1 = x11_forwarding.c x11_forwarding.h
 subdir = src/slurmd/slurmstepd
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -138,11 +137,10 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
-	$(top_srcdir)/auxdir/x_ac_ssh2.m4 \
 	$(top_srcdir)/auxdir/x_ac_systemd.m4 \
 	$(top_srcdir)/auxdir/x_ac_ucx.m4 \
 	$(top_srcdir)/auxdir/x_ac_uid_gid_size.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/auxdir/x_ac_x11.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -152,22 +150,15 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
-am__slurmstepd_SOURCES_DIST = slurmstepd.c slurmstepd.h mgr.c mgr.h \
-	task.c task.h slurmstepd_job.c slurmstepd_job.h io.c io.h \
-	ulimits.c ulimits.h pdebug.c pdebug.h pam_ses.c pam_ses.h \
-	req.c req.h multi_prog.c multi_prog.h step_terminate_monitor.c \
-	step_terminate_monitor.h x11_forwarding.c x11_forwarding.h
-@WITH_SLURM_X11_TRUE@am__objects_1 = x11_forwarding.$(OBJEXT)
 am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
 	task.$(OBJEXT) slurmstepd_job.$(OBJEXT) io.$(OBJEXT) \
 	ulimits.$(OBJEXT) pdebug.$(OBJEXT) pam_ses.$(OBJEXT) \
 	req.$(OBJEXT) multi_prog.$(OBJEXT) \
-	step_terminate_monitor.$(OBJEXT) $(am__objects_1)
-am__EXTRA_slurmstepd_SOURCES_DIST = x11_forwarding.c x11_forwarding.h
+	step_terminate_monitor.$(OBJEXT) x11_forwarding.$(OBJEXT)
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -215,9 +206,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(slurmstepd_SOURCES) $(EXTRA_slurmstepd_SOURCES)
-DIST_SOURCES = $(am__slurmstepd_SOURCES_DIST) \
-	$(am__EXTRA_slurmstepd_SOURCES_DIST)
+SOURCES = $(slurmstepd_SOURCES)
+DIST_SOURCES = $(slurmstepd_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -418,9 +408,6 @@ SLURM_MINOR = @SLURM_MINOR@
 SLURM_PREFIX = @SLURM_PREFIX@
 SLURM_VERSION_NUMBER = @SLURM_VERSION_NUMBER@
 SLURM_VERSION_STRING = @SLURM_VERSION_STRING@
-SSH2_CPPFLAGS = @SSH2_CPPFLAGS@
-SSH2_LDFLAGS = @SSH2_LDFLAGS@
-SSH2_LIBS = @SSH2_LIBS@
 STRIP = @STRIP@
 SUCMD = @SUCMD@
 SYSTEMD_TASKSMAX_OPTION = @SYSTEMD_TASKSMAX_OPTION@
@@ -508,17 +495,25 @@ depend_libs = \
 # rather difficult.  Making the slurmd link to them as well shouldn't increase
 # memory footprint and will fail way earlier and give the user a way to known
 # what is happening.
-depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS) $(SSH2_LIBS)
-depend_ldflags = $(HWLOC_LDFLAGS) $(SSH2_LDFLAGS)
-AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS) $(SSH2_CPPFLAGS)
+depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
+depend_ldflags = $(HWLOC_LDFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd)
 slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
-slurmstepd_SOURCES = slurmstepd.c slurmstepd.h mgr.c mgr.h task.c \
-	task.h slurmstepd_job.c slurmstepd_job.h io.c io.h ulimits.c \
-	ulimits.h pdebug.c pdebug.h pam_ses.c pam_ses.h req.c req.h \
-	multi_prog.c multi_prog.h step_terminate_monitor.c \
-	step_terminate_monitor.h $(am__append_1)
-@WITH_SLURM_X11_FALSE@EXTRA_slurmstepd_SOURCES = x11_forwarding.c x11_forwarding.h
+slurmstepd_SOURCES = \
+	slurmstepd.c slurmstepd.h	\
+	mgr.c mgr.h			\
+	task.c task.h			\
+	slurmstepd_job.c slurmstepd_job.h \
+	io.c io.h			\
+	ulimits.c ulimits.h     	\
+	pdebug.c pdebug.h		\
+	pam_ses.c pam_ses.h		\
+	req.c req.h			\
+	multi_prog.c multi_prog.h	\
+	step_terminate_monitor.c step_terminate_monitor.h \
+	x11_forwarding.c x11_forwarding.h
+
 slurmstepd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 all: all-am
 
