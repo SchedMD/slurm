@@ -1433,7 +1433,7 @@ a node cannot be shared with other users.
 \fBMemLimitEnforce\fR
 If set to yes then Slurm will terminate the job if it exceeds the value
 requested using the \-\-mem\-per\-cpu option of salloc/sbatch/srun.
-This is useful in combination with \fBJobAcctGaterParams=OverMemoryKill\fB.
+This is useful in combination with \fBJobAcctGatherParams=OverMemoryKill\fB.
 Used when jobs need to specify \-\-mem\-per\-cpu for scheduling and they should
 be terminated if they exceed the estimated value.
 The default value is 'no', which disables this enforcing mechanism.
