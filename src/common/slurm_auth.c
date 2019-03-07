@@ -43,31 +43,31 @@
 #include <pthread.h>
 
 #include "src/common/macros.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xassert.h"
-#include "src/common/xstring.h"
-#include "src/common/slurm_auth.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/slurm_auth.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 static bool init_run = false;
 
-typedef struct slurm_auth_ops {
-	uint32_t     (*plugin_id);
-	char         (*plugin_type);
-        void *       (*create)    ( char *auth_info );
-        int          (*destroy)   ( void *cred );
-        int          (*verify)    ( void *cred, char *auth_info );
-        uid_t        (*get_uid)   ( void *cred, char *auth_info );
-        gid_t        (*get_gid)   ( void *cred, char *auth_info );
-        char *       (*get_host)  ( void *cred, char *auth_info );
-        int          (*pack)      ( void *cred, Buf buf,
-				    uint16_t protocol_version );
-        void *       (*unpack)    ( Buf buf, uint16_t protocol_version );
-        int          (*print)     ( void *cred, FILE *fp );
-        int          (*sa_errno)  ( void *cred );
-        const char * (*sa_errstr) ( int slurm_errno );
+typedef struct {
+	uint32_t	(*plugin_id);
+	char		(*plugin_type);
+	void *		(*create)	(char *auth_info);
+	int		(*destroy)	(void *cred);
+	int		(*verify)	(void *cred, char *auth_info);
+	uid_t		(*get_uid)	(void *cred, char *auth_info);
+	gid_t		(*get_gid)	(void *cred, char *auth_info);
+	char *		(*get_host)	(void *cred, char *auth_info);
+	int		(*pack)		(void *cred, Buf buf,
+					 uint16_t protocol_version);
+	void *		(*unpack)	(Buf buf, uint16_t protocol_version);
+	int		(*print)	(void *cred, FILE *fp);
+	int		(*sa_errno)	(void *cred);
+	const char *	(*sa_errstr)	(int slurm_errno);
 } slurm_auth_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -86,7 +86,7 @@ static const char *syms[] = {
 	"slurm_auth_unpack",
 	"slurm_auth_print",
 	"slurm_auth_errno",
-	"slurm_auth_errstr"
+	"slurm_auth_errstr",
 };
 
 /*
@@ -95,15 +95,14 @@ static const char *syms[] = {
  */
 static slurm_auth_ops_t ops;
 static plugin_context_t *g_context = NULL;
-static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static const char *
-slurm_auth_generic_errstr( int slurm_errno )
+static const char *slurm_auth_generic_errstr(int slurm_errno)
 {
-        static struct {
-                int err;
-                const char *msg;
-        } generic_table[] = {
+	static struct {
+		int err;
+		const char *msg;
+	} generic_table[] = {
 		{ SLURM_SUCCESS, "no error" },
 		{ SLURM_ERROR, "unknown error" },
 		{ SLURM_AUTH_NOPLUGIN, "no authentication plugin installed" },
@@ -114,31 +113,31 @@ slurm_auth_generic_errstr( int slurm_errno )
 		{ SLURM_AUTH_MISMATCH, "authentication type mismatch" },
 		{ SLURM_AUTH_VERSION, "authentication version too old" },
 		{ 0, NULL }
-        };
+	};
 
-        int i;
+	int i;
 
-        for ( i = 0; ; ++i ) {
-                if ( generic_table[ i ].msg == NULL )
+	for (i = 0; ; ++i) {
+		if (generic_table[i].msg == NULL)
 			return NULL;
-                if ( generic_table[ i ].err == slurm_errno )
-                        return generic_table[ i ].msg;
-        }
+		if (generic_table[i].err == slurm_errno)
+			return generic_table[i].msg;
+	}
 }
 
-extern int slurm_auth_init( char *auth_type )
+extern int slurm_auth_init(char *auth_type)
 {
-        int retval = SLURM_SUCCESS;
+	int retval = SLURM_SUCCESS;
 	char *type = NULL;
 	char *plugin_type = "auth";
 
 	if (init_run && g_context)
-                return retval;
+		return retval;
 
 	slurm_mutex_lock(&context_lock);
 
-        if (g_context)
-                goto done;
+	if (g_context)
+		goto done;
 
 	if (auth_type)
 		slurm_set_auth_type(auth_type);
@@ -157,13 +156,12 @@ extern int slurm_auth_init( char *auth_type )
 
 done:
 	xfree(type);
-        slurm_mutex_unlock(&context_lock);
-        return retval;
+	slurm_mutex_unlock(&context_lock);
+	return retval;
 }
 
 /* Release all global memory associated with the plugin */
-extern int
-slurm_auth_fini( void )
+extern int slurm_auth_fini(void)
 {
 	int rc;
 
@@ -188,53 +186,53 @@ void *g_slurm_auth_create(char *auth_info)
 	if (slurm_auth_init(NULL) < 0)
 		return NULL;
 
-        return (*(ops.create))(auth_info);
+	return (*(ops.create))(auth_info);
 }
 
 int g_slurm_auth_destroy(void *cred)
 {
-        if (slurm_auth_init(NULL) < 0)
-                return SLURM_ERROR;
+	if (slurm_auth_init(NULL) < 0)
+		return SLURM_ERROR;
 
-        return (*(ops.destroy))(cred);
+	return (*(ops.destroy))(cred);
 }
 
 int g_slurm_auth_verify(void *cred, char *auth_info)
 {
-        if (slurm_auth_init(NULL) < 0)
-                return SLURM_ERROR;
+	if (slurm_auth_init(NULL) < 0)
+		return SLURM_ERROR;
 
-        return (*(ops.verify))(cred, auth_info);
+	return (*(ops.verify))(cred, auth_info);
 }
 
 uid_t g_slurm_auth_get_uid(void *cred, char *auth_info)
 {
 	if (slurm_auth_init(NULL) < 0)
-                return SLURM_AUTH_NOBODY;
+		return SLURM_AUTH_NOBODY;
 
-        return (*(ops.get_uid))(cred, auth_info);
+	return (*(ops.get_uid))(cred, auth_info);
 }
 
 gid_t g_slurm_auth_get_gid(void *cred, char *auth_info)
 {
 	if (slurm_auth_init(NULL) < 0)
-                return SLURM_AUTH_NOBODY;
+		return SLURM_AUTH_NOBODY;
 
-        return (*(ops.get_gid))(cred, auth_info);
+	return (*(ops.get_gid))(cred, auth_info);
 }
 
 char *g_slurm_auth_get_host(void *cred, char *auth_info)
 {
 	if (slurm_auth_init(NULL) < 0)
-                return NULL;
+		return NULL;
 
-        return (*(ops.get_host))(cred, auth_info);
+	return (*(ops.get_host))(cred, auth_info);
 }
 
 int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
 {
-        if (slurm_auth_init(NULL) < 0)
-                return SLURM_ERROR;
+	if (slurm_auth_init(NULL) < 0)
+		return SLURM_ERROR;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		pack32(*ops.plugin_id, buf);
@@ -261,7 +259,7 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	uint32_t plugin_id = 0;
 
 	if (slurm_auth_init(NULL) < 0)
-                return NULL;
+		return NULL;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		safe_unpack32(&plugin_id, buf);
@@ -295,30 +293,30 @@ unpack_error:
 
 int g_slurm_auth_print(void *cred, FILE *fp)
 {
-        if (slurm_auth_init(NULL) < 0)
-                return SLURM_ERROR;
+	if (slurm_auth_init(NULL) < 0)
+		return SLURM_ERROR;
 
-        return (*(ops.print))(cred, fp);
+	return (*(ops.print))(cred, fp);
 }
 
 int g_slurm_auth_errno(void *cred)
 {
-        if (slurm_auth_init(NULL) < 0)
-                return SLURM_ERROR;
+	if (slurm_auth_init(NULL) < 0)
+		return SLURM_ERROR;
 
-        return (*(ops.sa_errno))(cred);
+	return (*(ops.sa_errno))(cred);
 }
 
 const char *g_slurm_auth_errstr(int slurm_errno)
 {
-        static char auth_init_msg[] = "authentication initialization failure";
-        char *generic;
+	static char auth_init_msg[] = "authentication initialization failure";
+	const char *generic;
 
 	if (slurm_auth_init(NULL) < 0 )
 		return auth_init_msg;
 
-        if ((generic = (char *) slurm_auth_generic_errstr(slurm_errno)))
-                return generic;
+	if ((generic = slurm_auth_generic_errstr(slurm_errno)))
+		return generic;
 
-        return (*(ops.sa_errstr))(slurm_errno);
+	return (*(ops.sa_errstr))(slurm_errno);
 }
