@@ -1133,6 +1133,25 @@ extern char *slurm_get_tmp_fs(char *node_name)
 	return tmp_fs;
 }
 
+/* slurm_get_auth_alt_types
+ * returns the alternate authentication types from slurmctld_conf object
+ * RET char *    - auth alternate types, MUST be xfreed by caller
+ */
+char *slurm_get_auth_alt_types(void)
+{
+	char *auth_alt_types = NULL;
+	slurm_ctl_conf_t *conf = NULL;
+
+	if (slurmdbd_conf) {
+		auth_alt_types = xstrdup(slurmdbd_conf->auth_alt_types);
+	} else {
+		conf = slurm_conf_lock();
+		auth_alt_types = xstrdup(conf->authalttypes);
+		slurm_conf_unlock();
+	}
+	return auth_alt_types;
+}
+
 /* slurm_get_auth_type
  * returns the authentication type from slurmctld_conf object
  * RET char *    - auth type, MUST be xfreed by caller

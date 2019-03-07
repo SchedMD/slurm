@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "August 2018" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "March 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -123,6 +123,11 @@ default Munge daemon provides authentication within a cluster.
 In that case, this will specify the pathname of the socket to use. Per default
 this value is left unspecified, which results in the default authentication
 mechanism being used.
+
+.TP
+\fBAuthAltTypes\fR
+Command separated list of alternative authentication plugins that the slurmdbd
+will permit for communication.
 
 .TP
 \fBAuthType\fR

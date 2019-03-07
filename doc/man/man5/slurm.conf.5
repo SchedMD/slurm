@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "February 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "March 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -301,6 +301,11 @@ If set to 1, Slurm allows individual jobs to override node's configured
 CoreSpecCount value. For a job to take advantage of this feature,
 a command line option of \-\-core\-spec must be specified.  The default
 value for this option is 1 for Cray systems and 0 for other system types.
+
+.TP
+\fBAuthAltTypes\fR
+Command separated list of alternative authentication plugins that the slurmctld
+will permit for communication.
 
 .TP
 \fBAuthInfo\fR

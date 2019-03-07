@@ -58,6 +58,7 @@ typedef struct {
 	char *		archive_dir;    /* location to locally store
 					 * data if not using a script   */
 	char *		archive_script;	/* script to archive old data	*/
+	char *		auth_alt_types;	/* alt authentication plugins	*/
 	char *		auth_info;	/* authentication info		*/
 	char *		auth_type;	/* authentication mechanism	*/
 	uint16_t        commit_delay;   /* On busy systems delay

@@ -2627,6 +2627,7 @@ typedef struct slurm_ctl_conf {
 	char *acct_gather_interconnect_type; /* interconnect accounting type */
 	char *acct_gather_filesystem_type; /* filesystem accounting type */
 	uint16_t acct_gather_node_freq; /* secs between node acct request */
+	char *authalttypes;	/* alternate authentication types */
 	char *authinfo;		/* authentication info */
 	char *authtype;		/* authentication type */
 	uint16_t batch_start_timeout;	/* max secs for batch job to start */

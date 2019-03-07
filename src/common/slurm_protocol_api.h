@@ -438,6 +438,12 @@ extern char *slurm_get_stepd_loc(void);
  */
 extern char *slurm_get_tmp_fs(char *node_name);
 
+/* slurm_get_auth_alt_types
+ * returns the alternate authentication types from slurmctld_conf object
+ * RET char *    - auth alternate types, MUST be xfreed by caller
+ */
+extern char *slurm_get_auth_alt_types(void);
+
 /* slurm_get_auth_type
  * returns the authentication type from slurmctld_conf object
  * RET char *    - auth type, MUST be xfreed by caller

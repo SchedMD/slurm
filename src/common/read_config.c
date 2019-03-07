@@ -199,6 +199,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AcctGatherInfinibandType", S_P_STRING},
 	{"AcctGatherFilesystemType", S_P_STRING},
 	{"AllowSpecResourcesUsage", S_P_BOOLEAN},
+	{"AuthAltTypes", S_P_STRING},
 	{"AuthInfo", S_P_STRING},
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
@@ -3600,6 +3601,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			     "JobCredentialPrivateKey", hashtbl);
 	(void) s_p_get_string(&conf->job_credential_public_certificate,
 			      "JobCredentialPublicCertificate", hashtbl);
+
+	(void) s_p_get_string(&conf->authalttypes, "AuthAltTypes", hashtbl);
 
 	(void) s_p_get_string(&conf->authinfo, "AuthInfo", hashtbl);
 
