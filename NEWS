@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
+ -- Fix RPM packaging for accounting_storage/mysql.
 
 * Changes in Slurm 19.05.0pre2
 ==============================
@@ -118,8 +119,10 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we set the alloc_node in a resource allocation based on the auth
     plugin instead of the rpc call.
 
-* Changes in Slurm 18.08.7
-==========================
+* Changes in Slurm 18.08.6-2
+============================
+ -- Remove deadlock situation when logging and --enable-debug is used.
+ -- Fix RPM packaging for accounting_storage/mysql.
 
 * Changes in Slurm 18.08.6
 ==========================
