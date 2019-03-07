@@ -7516,12 +7516,12 @@ static int _get_sock_cnt(struct job_resources *job_res, int node_inx,
 	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 				   &cores_per_socket_cnt);
 	if (rc != SLURM_SUCCESS) {
-		error("cons_tres: %s: Invalid socket/core count", __func__);
+		error("%s: Invalid socket/core count", __func__);
 		return 1;
 	}
 	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
 	if (core_offset < 0) {
-		error("cons_tres: %s: Invalid core offset", __func__);
+		error("%s: Invalid core offset", __func__);
 		return 1;
 	}
 	for (s = 0; s < sock_cnt; s++) {
@@ -7532,7 +7532,7 @@ static int _get_sock_cnt(struct job_resources *job_res, int node_inx,
 		}
 	}
 	if (used_sock_cnt == 0) {
-		error("cons_tres: %s: No allocated cores found", __func__);
+		error("%s: No allocated cores found", __func__);
 		return 1;
 	}
 	return used_sock_cnt;
@@ -7574,19 +7574,19 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 				   &cores_per_socket_cnt);
 	if (rc != SLURM_SUCCESS) {
-		error("cons_tres: %s: Invalid socket/core count for job %u on node %d",
+		error("%s: Invalid socket/core count for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return rc;
 	}
 	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
 	if (core_offset < 0) {
-		error("cons_tres: %s: Invalid core offset for job %u on node %d",
+		error("%s: Invalid core offset for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return rc;
 	}
 	i = sock_gres->sock_cnt;
 	if ((i != 0) && (i != sock_cnt)) {
-		error("cons_tres: %s: Inconsistent socket count (%d != %d) for job %u on node %d",
+		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
 		      __func__, i, sock_cnt, job_id, node_inx);
 		sock_cnt = MIN(sock_cnt, i);
 	}
@@ -7659,7 +7659,7 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 		}
 	}
 	if (alloc_gres_cnt == 0) {
-		error("cons_tres: %s: job %u failed to find any available GRES on node %d",
+		error("%s: job %u failed to find any available GRES on node %d",
 		      __func__, job_id, node_inx);
 	}
 	/* Now pick the "best" max_gres GRES with respect to link counts. */
@@ -7745,26 +7745,26 @@ static int _set_job_bits2(struct job_resources *job_res, int node_inx,
 	}
 	if (!job_specs->gres_bit_select ||
 	    !job_specs->gres_bit_select[node_inx]) {
-		error("cons_tres: %s: gres_bit_select NULL for job %u on node %d",
+		error("%s: gres_bit_select NULL for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return SLURM_ERROR;
 	}
 	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 				   &cores_per_socket_cnt);
 	if (rc != SLURM_SUCCESS) {
-		error("cons_tres: %s: Invalid socket/core count for job %u on node %d",
+		error("%s: Invalid socket/core count for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return rc;
 	}
 	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
 	if (core_offset < 0) {
-		error("cons_tres: %s: Invalid core offset for job %u on node %d",
+		error("%s: Invalid core offset for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return rc;
 	}
 	i = sock_gres->sock_cnt;
 	if ((i != 0) && (i != sock_cnt)) {
-		error("cons_tres: %s: Inconsistent socket count (%d != %d) for job %u on node %d",
+		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
 		      __func__, i, sock_cnt, job_id, node_inx);
 		sock_cnt = MIN(sock_cnt, i);
 	}
@@ -7854,19 +7854,19 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 				   &cores_per_socket_cnt);
 	if (rc != SLURM_SUCCESS) {
-		error("cons_tres: %s: Invalid socket/core count for job %u on node %d",
+		error("%s: Invalid socket/core count for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return;
 	}
 	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
 	if (core_offset < 0) {
-		error("cons_tres: %s: Invalid core offset for job %u on node %d",
+		error("%s: Invalid core offset for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return;
 	}
 	i = sock_gres->sock_cnt;
 	if ((i != 0) && (i != sock_cnt)) {
-		error("cons_tres: %s: Inconsistent socket count (%d != %d) for job %u on node %d",
+		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
 		      __func__, i, sock_cnt, job_id, node_inx);
 		sock_cnt = MIN(sock_cnt, i);
 	}
@@ -8037,19 +8037,19 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 				   &cores_per_socket_cnt);
 	if (rc != SLURM_SUCCESS) {
-		error("cons_tres: %s: Invalid socket/core count for job %u on node %d",
+		error("%s: Invalid socket/core count for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return;
 	}
 	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
 	if (core_offset < 0) {
-		error("cons_tres: %s: Invalid core offset for job %u on node %d",
+		error("%s: Invalid core offset for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return;
 	}
 	i = sock_gres->sock_cnt;
 	if ((i != 0) && (i != sock_cnt)) {
-		error("cons_tres: %s: Inconsistent socket count (%d != %d) for job %u on node %d",
+		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
 		      __func__, i, sock_cnt, job_id, node_inx);
 		sock_cnt = MIN(sock_cnt, i);
 	}
@@ -8154,19 +8154,19 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 	rc = get_job_resources_cnt(job_res, job_node_inx, &sock_cnt,
 				   &cores_per_socket_cnt);
 	if (rc != SLURM_SUCCESS) {
-		error("cons_tres: %s: Invalid socket/core count for job %u on node %d",
+		error("%s: Invalid socket/core count for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return;
 	}
 	core_offset = get_job_resources_offset(job_res, job_node_inx, 0, 0);
 	if (core_offset < 0) {
-		error("cons_tres: %s: Invalid core offset for job %u on node %d",
+		error("%s: Invalid core offset for job %u on node %d",
 		      __func__, job_id, node_inx);
 		return;
 	}
 	i = sock_gres->sock_cnt;
 	if ((i != 0) && (i != sock_cnt)) {
-		error("cons_tres: %s: Inconsistent socket count (%d != %d) for job %u on node %d",
+		error("%s: Inconsistent socket count (%d != %d) for job %u on node %d",
 		      __func__, i, sock_cnt, job_id, node_inx);
 		sock_cnt = MIN(sock_cnt, i);
 	}
@@ -8189,8 +8189,8 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 	    node_specs->gres_bit_alloc && sock_gres->bits_by_sock) {
 		if (tres_mc_ptr->sockets_per_node > used_sock_cnt) {
 			/* Somehow we have too few sockets in job allocation */
-			error("cons_tres: %s: Inconsistent requested/allocated "
-			      "socket count (%d > %d) for job %u on node %d",
+			error("%s: Inconsistent requested/allocated socket count "
+			      "(%d > %d) for job %u on node %d",
 			      __func__, tres_mc_ptr->sockets_per_node,
 			      used_sock_cnt, job_id, node_inx);
 			for (s = 0; s < sock_cnt; s++) {
@@ -8212,8 +8212,8 @@ static void _set_sock_bits(struct job_resources *job_res, int node_inx,
 			}
 		} else {
 			/* May have needed extra CPUs, exceeding socket count */
-			debug("cons_tres: %s: Inconsistent requested/allocated "
-			      "socket count (%d < %d) for job %u on node %d",
+			debug("%s: Inconsistent requested/allocated socket count "
+			      "(%d < %d) for job %u on node %d",
 			      __func__, tres_mc_ptr->sockets_per_node,
 			      used_sock_cnt, job_id, node_inx);
 			for (s = 0; s < sock_cnt; s++) {
@@ -8775,7 +8775,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					       job_id, tres_mc_ptr,
 						cpus_per_core);
 			} else {
-				error("cons_tres: %s job %u job_spec lacks GRES counter",
+				error("%s job %u job_spec lacks GRES counter",
 				      __func__, job_id);
 			}
 			if (job_fini == -1) {
@@ -8819,7 +8819,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 				break;
 		}
 		if (job_fini == 0) {
-			error("cons_tres: %s job %u failed to satisfy gres-per-job counter",
+			error("%s job %u failed to satisfy gres-per-job counter",
 			      __func__, job_id);
 		}
 	}
