@@ -1118,7 +1118,7 @@ head2 SLURM ERRNO
 
 =over 2
 
-=item * ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN        4000
+=item * ESLURMD_PIPE_ERROR_ON_TASK_SPAWN        4000
 
 =item * ESLURMD_KILL_TASK_FAILED                4001
 

@@ -370,7 +370,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested GRES option unsupported by configured SelectType plugin" },
 
 	/* slurmd error codes */
-	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN,
+	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,
 	  "Pipe error on task spawn"				},
 	{ ESLURMD_KILL_TASK_FAILED,
 	  "Kill task failed"					},
