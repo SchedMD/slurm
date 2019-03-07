@@ -521,14 +521,6 @@ static char *_lookup_slurm_api_errtab(int errnum)
 		}
 	}
 
-#if 0
-	/* If needed, re-locate slurmctld/sched_plugin.[ch] into common */
-	if ((res == NULL) &&
-	    (errnum >= ESLURM_SCHED_MIN) &&
-	    (errnum <= ESLURM_SCHED_MAX))
-		res = sched_strerror(errnum);
-#endif
-
 	return res;
 }
 
