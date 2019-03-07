@@ -826,19 +826,6 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job, int key,
 }
 
 /*
- * switch functions for other purposes
- */
-extern int switch_p_get_errno(void)
-{
-	return SLURM_SUCCESS;
-}
-
-extern char *switch_p_strerror(int errnum)
-{
-	return NULL ;
-}
-
-/*
  * node switch state monitoring functions
  * required for IBM Federation switch
  */

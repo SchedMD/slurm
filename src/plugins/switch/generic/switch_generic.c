@@ -740,23 +740,6 @@ extern int switch_p_get_jobinfo(switch_jobinfo_t *switch_job,
 }
 
 /*
- * switch functions for other purposes
- */
-extern int switch_p_get_errno(void)
-{
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_get_errno() starting");
-	return SLURM_SUCCESS;
-}
-
-extern char *switch_p_strerror(int errnum)
-{
-	if (debug_flags & DEBUG_FLAG_SWITCH)
-		info("switch_p_strerror() starting");
-	return NULL;
-}
-
-/*
  * node switch state monitoring functions
  * required for IBM Federation switch
  */

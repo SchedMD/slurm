@@ -99,8 +99,6 @@ typedef struct slurm_switch_ops {
 					    char ***env, uint32_t nodeid,
 					    uint32_t procid, uint32_t nnodes,
 					    uint32_t nprocs, uint32_t rank);
-	char *	     (*switch_strerror)   ( int errnum );
-	int          (*switch_errno)      ( void );
 	int          (*clear_node)        ( void );
 	int          (*alloc_nodeinfo)    ( switch_node_info_t **nodeinfo );
 	int          (*build_nodeinfo)    ( switch_node_info_t *nodeinfo );
@@ -161,8 +159,6 @@ static const char *syms[] = {
 	"switch_p_job_fini",
 	"switch_p_job_postfini",
 	"switch_p_job_attach",
-	"switch_p_strerror",
-	"switch_p_get_errno",
 	"switch_p_clear_node_state",
 	"switch_p_alloc_node_info",
 	"switch_p_build_node_info",
@@ -677,23 +673,6 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 	return (*(ops[plugin_id].job_attach))
 		(data, env, nodeid, procid, nnodes, nprocs, gid);
 }
-
-extern int switch_g_get_errno(void)
-{
-	if ( switch_init(0) < 0 )
-		return SLURM_ERROR;
-
-	return (*(ops[switch_context_default].switch_errno))( );
-}
-
-extern char *switch_g_strerror(int errnum)
-{
-	if ( switch_init(0) < 0 )
-		return NULL;
-
-	return (*(ops[switch_context_default].switch_strerror))( errnum );
-}
-
 
 /*
  * node switch state monitoring functions

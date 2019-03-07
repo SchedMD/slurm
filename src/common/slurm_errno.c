@@ -529,11 +529,6 @@ static char *_lookup_slurm_api_errtab(int errnum)
 		res = sched_strerror(errnum);
 #endif
 
-	if ((res == NULL) &&
-	    (errnum >= ESLURM_SWITCH_MIN) &&
-	    (errnum <= ESLURM_SWITCH_MAX))
-		res = switch_g_strerror(errnum);
-
 	return res;
 }
 

@@ -94,15 +94,6 @@ extern int  switch_g_restore(char *dir_name, bool recover);
  */
 extern int  switch_g_clear(void);
 
-/* return the number of a switch-specific error code */
-extern int switch_g_get_errno(void);
-
-/* return a string description of a switch specific error code
- * IN errnum - switch specific error return code
- * RET       - string describing the nature of the error
- */
-extern char *switch_g_strerror(int errnum);
-
 /******************************************************\
  * JOB-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/
