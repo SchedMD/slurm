@@ -4555,33 +4555,6 @@ extern int gres_plugin_job_revalidate(List gres_list)
 }
 
 /*
- * Return TRUE if this job uses any gres/mps resources. Used to prevent two
- * jobs from the same user being active at the same time on the same node and
- * using gres/mps since we will not be able to assign each job a differrent
- * percentage of that GPUs MPS resources.
- */
-extern bool gres_plugin_job_uses_mps(List job_gres_list)
-{
-	gres_state_t *gres_state;
-	ListIterator iter;
-	bool rc = false;
-
-	if (!job_gres_list || (select_plugin_type != SELECT_TYPE_CONS_TRES))
-		return false;
-
-	iter = list_iterator_create(job_gres_list);
-	while ((gres_state = (gres_state_t *) list_next(iter))) {
-		if (gres_state->plugin_id == mps_plugin_id) {
-			rc = true;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return rc;
-}
-
-/*
  * Return TRUE if any of this job's GRES has a populated gres_bit_alloc element.
  * This indicates the allocated GRES has a File configuration parameter and is
  * tracking individual file assignments.

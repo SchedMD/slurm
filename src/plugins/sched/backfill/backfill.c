@@ -2032,7 +2032,6 @@ next_task:
 		bit_and_not(avail_bitmap, bf_ignore_node_bitmap);
 		filter_by_node_owner(job_ptr, avail_bitmap);
 		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
-		filter_by_node_gres(job_ptr, avail_bitmap);
 		for (j = 0; ; ) {
 			if ((node_space[j].end_time > start_res) &&
 			     node_space[j].next && (later_start == 0))
@@ -3327,7 +3326,6 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 		filter_by_node_owner(job_ptr, avail_bitmap);
 		mcs_select = slurm_mcs_get_select(job_ptr);
 		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
-		filter_by_node_gres(job_ptr, avail_bitmap);
 		if (job_ptr->details->exc_node_bitmap) {
 			bit_and_not(avail_bitmap,
 				job_ptr->details->exc_node_bitmap);

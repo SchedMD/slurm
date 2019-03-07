@@ -664,14 +664,6 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 extern int gres_plugin_job_revalidate(List gres_list);
 
 /*
- * Return TRUE if this job uses any gres/mps resources. Used to prevent two
- * jobs from the same user being active at the same time on the same node and
- * using gres/mps since we will not be able to assign each job a differrent
- * percentage of that GPUs MPS resources.
- */
-extern bool gres_plugin_job_uses_mps(List job_gres_list);
-
-/*
  * Determine if a job's specified GRES are currently valid. This is designed to
  * manage jobs allocated GRES which are either no longer supported or a GRES
  * configured with the "File" option in gres.conf where the count has changed,
