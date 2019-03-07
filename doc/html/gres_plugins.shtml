@@ -230,6 +230,39 @@ complete. The <i>gres/gpu</i> plugin resets GPU frequencies to high here.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None.</p>
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
 
-<p style="text-align:center;">Last modified 1 March 2019</p>
+<p class="commandline">
+gres_epilog_info_t *epilog_build_env(gres_job_state_t *gres_job_ptr)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Given a job's GRES allocation data, translated that to the data required by
+<span class="commandline">epilog_set_env()</span> to set environment variables
+for the <i>Prolog</i> and <i>Epilog</i> programs.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">gres_job_ptr</span>
+(input) job's GRES allocation data.</p>
+<p style="margin-left:.2in"><b>Returns</b>: Data structure containing the
+information required by <span class="commandline">epilog_set_env()</span>
+to set environment variables for the <i>Prolog</i> and <i>Epilog</i>
+programs.</p>
+
+<p class="commandline">
+void epilog_set_env(char ***epilog_env_ptr, gres_epilog_info_t *epilog_info,
+int node_inx)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+Set GRES specific environment variables for the <i>Prolog</i> and
+<i>Epilog</i> programs.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">epilog_env_ptr</span>
+(input) environment variables set for the <i>Prolog</i> and <i>Epilog</i>
+programs. This array may be reallocated as needed to contain additional
+environment variables.<br>
+<span class="commandline">epilog_info</span>
+(input) GRES specific job allocation information. Built by
+<span class="commandline">epilog_build_env()</span>.<br>
+<span class="commandline">node_inx</span>
+(input) zero-origin index of this node in the job's allocation. Needed to
+identify the resources on a specific node allocated to this job.</p>
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+
+<p style="text-align:center;">Last modified 5 March 2019</p>
 
 <!--#include virtual="footer.txt"-->
