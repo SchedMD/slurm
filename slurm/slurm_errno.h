@@ -206,15 +206,6 @@ enum {
 	ESLURM_MULTI_KNL_CONSTRAINT,
 	ESLURM_UNSUPPORTED_GRES,
 
-	/* switch specific error codes, specific values defined in plugin module */
-	ESLURM_SWITCH_MIN = 3000,
-	ESLURM_SWITCH_MAX = 3099,
-	ESLURM_JOBCOMP_MIN = 3100,
-	ESLURM_JOBCOMP_MAX = 3199,
-	ESLURM_SCHED_MIN = 3200,
-	ESLURM_SCHED_MAX = 3299,
-	/* reserved for other plugin specific error codes up to 3999 */
-
 	/* slurmd error codes */
 	ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN =		4000,
 	ESLURMD_KILL_TASK_FAILED,
