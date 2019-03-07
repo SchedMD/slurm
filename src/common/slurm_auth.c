@@ -45,6 +45,7 @@
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
@@ -129,7 +130,8 @@ static const char *slurm_auth_generic_errstr(int slurm_errno)
 extern int slurm_auth_init(char *auth_type)
 {
 	int retval = SLURM_SUCCESS;
-	char *type = NULL;
+	char *auth_alt_types = NULL, *list = NULL;
+	char *auth_plugin_type, *type, *last = NULL;
 	char *plugin_type = "auth";
 
 	if (init_run && (g_context_num > 0))
@@ -143,26 +145,51 @@ extern int slurm_auth_init(char *auth_type)
 	if (auth_type)
 		slurm_set_auth_type(auth_type);
 
-	type = slurm_get_auth_type();
-
+	type = auth_plugin_type = slurm_get_auth_type();
+	if (run_in_daemon("slurmctld,slurmdbd"))
+		list = auth_alt_types = slurm_get_auth_alt_types();
 	g_context_num = 0;
-
-	xrealloc(ops, sizeof(slurm_auth_ops_t) * (g_context_num + 1));
-	xrealloc(g_context, sizeof(plugin_context_t) * (g_context_num + 1));
-
-	g_context[g_context_num] = plugin_context_create(
-		plugin_type, type, (void **)ops, syms, sizeof(syms));
-
-	if (!g_context[g_context_num]) {
-		error("cannot create %s context for %s", plugin_type, type);
-		retval = SLURM_ERROR;
+	if (!auth_plugin_type || auth_plugin_type[0] == '\0')
 		goto done;
+
+	/*
+	 * This loop construct ensures that the AuthType is in position zero
+	 * of the ops and g_context arrays, followed by any AuthAltTypes that
+	 * have been defined. This ensures that the most common type is found
+	 * first in g_slurm_auth_unpack(), and that we can default to
+	 * the zeroth element rather than tracking the primary plugin
+	 * through some other index.
+	 * One other side effect is that the AuthAltTypes are permitted to
+	 * be comma separated, vs. AuthType which can have only one value.
+	 */
+	while (type) {
+		xrealloc(ops, sizeof(slurm_auth_ops_t) * (g_context_num + 1));
+		xrealloc(g_context,
+			 sizeof(plugin_context_t) * (g_context_num + 1));
+
+		g_context[g_context_num] = plugin_context_create(
+			plugin_type, type, (void **)&ops[g_context_num],
+			syms, sizeof(syms));
+
+		if (!g_context[g_context_num]) {
+			error("cannot create %s context for %s", plugin_type, type);
+			retval = SLURM_ERROR;
+			goto done;
+		}
+		g_context_num++;
+
+		if (auth_alt_types) {
+			type = strtok_r(list, ",", &last);
+			list = NULL; /* for next iteration */
+		} else {
+			type = NULL;
+		}
 	}
-	g_context_num++;
 	init_run = true;
 
 done:
-	xfree(type);
+	xfree(auth_plugin_type);
+	xfree(auth_alt_types);
 	slurm_mutex_unlock(&context_lock);
 	return retval;
 }
@@ -286,24 +313,27 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		safe_unpack32(&plugin_id, buf);
-		if (plugin_id != *(ops[0].plugin_id)) {
-			error("%s: remote plugin_id %u != %u",
-			      __func__, plugin_id, *(ops[0].plugin_id));
-			return NULL;
+		for (int i = 0; i < g_context_num; i++) {
+			if (plugin_id == *(ops[i].plugin_id))
+				return (*(ops[i].unpack))(buf,
+							  protocol_version);
 		}
-		return (*(ops[0].unpack))(buf, protocol_version);
+		error("%s: remote plugin_id %u not found",
+		      __func__, plugin_id);
+		return NULL;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		char *plugin_type;
 		uint32_t uint32_tmp, version;
 		safe_unpackmem_ptr(&plugin_type, &uint32_tmp, buf);
-
-		if (xstrcmp(plugin_type, ops[0].plugin_type)) {
-			error("%s: remote plugin_type `%s` != `%s`",
-			      __func__, plugin_type, ops[0].plugin_type);
-			return NULL;
-		}
 		safe_unpack32(&version, buf);
-		return (*(ops[0].unpack))(buf, protocol_version);
+		for (int i = 0; i < g_context_num; i++) {
+			if (!xstrcmp(plugin_type, ops[i].plugin_type))
+				return (*(ops[i].unpack))(buf,
+							  protocol_version);
+		}
+		error("%s: remote plugin_type %s not found",
+		      __func__, plugin_type);
+		return NULL;
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
