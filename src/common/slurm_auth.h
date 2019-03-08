@@ -63,25 +63,6 @@
  */
 
 /*
- * General error codes that plugins (or the plugin system) can
- * generate.  Plugins may produce additional codes starting with
- * SLURM_AUTH_FIRST_LOCAL_ERROR.  They are responsible for providing
- * text messages to accompany the codes.  This API resolves string
- * messages for these codes.
- */
-enum {
-    SLURM_AUTH_NOPLUGIN,            /* No plugin for this type.          */
-    SLURM_AUTH_BADARG,              /* Bad argument to an API func.      */
-    SLURM_AUTH_MEMORY,              /* Problem allocating memory.        */
-    SLURM_AUTH_NOUSER,              /* User not defined on host.         */
-    SLURM_AUTH_INVALID,             /* Invalid credential.               */
-    SLURM_AUTH_MISMATCH,            /* Credential from another plugin.   */
-    SLURM_AUTH_VERSION,             /* Credential from old plugin.       */
-
-    SLURM_AUTH_FIRST_LOCAL_ERROR    /* Always keep me last. */
-};
-
-/*
  * Slurm authentication context opaque type.
  */
 typedef struct slurm_auth_context * slurm_auth_context_t;
