@@ -51,11 +51,6 @@
 #define	error			slurm_error
 #define	info			slurm_info
 #define	verbose			slurm_verbose
-#define	debug			slurm_debug
-#define	debug2			slurm_debug2
-#define	debug3			slurm_debug3
-#define	debug4			slurm_debug4
-#define	debug5			slurm_debug5
 
 /*
  * Allow up to 999 static TRES

@@ -115,17 +115,9 @@ strong_alias(fatal_abort,	slurm_fatal_abort);
 strong_alias(error,		slurm_error);
 strong_alias(info,		slurm_info);
 strong_alias(verbose,		slurm_verbose);
-strong_alias(debug,		slurm_debug);
-strong_alias(debug2,		slurm_debug2);
-strong_alias(debug3,		slurm_debug3);
-strong_alias(debug4,		slurm_debug4);
-strong_alias(debug5,		slurm_debug5);
 strong_alias(sched_error,	slurm_sched_error);
 strong_alias(sched_info,	slurm_sched_info);
 strong_alias(sched_verbose,	slurm_sched_verbose);
-strong_alias(sched_debug,	slurm_sched_debug);
-strong_alias(sched_debug2,	slurm_sched_debug2);
-strong_alias(sched_debug3,	slurm_sched_debug3);
 
 /*
 ** struct defining a "log" type
@@ -1345,6 +1337,11 @@ void log_var(const log_level_t log_lvl, const char *fmt, ...)
 	LOG_MACRO(log_lvl, false, fmt);
 }
 
+void sched_log_var(const log_level_t log_lvl, const char *fmt, ...)
+{
+	LOG_MACRO(log_lvl, true, fmt);
+}
+
 int error(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_ERROR, false, fmt);
@@ -1366,17 +1363,17 @@ void verbose(const char *fmt, ...)
 	LOG_MACRO(LOG_LEVEL_VERBOSE, false, fmt);
 }
 
-void debug(const char *fmt, ...)
+void slurm_debug(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_DEBUG, false, fmt);
 }
 
-void debug2(const char *fmt, ...)
+void slurm_debug2(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_DEBUG2, false, fmt);
 }
 
-void debug3(const char *fmt, ...)
+void slurm_debug3(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_DEBUG3, false, fmt);
 }
@@ -1385,12 +1382,12 @@ void debug3(const char *fmt, ...)
  * Debug levels higher than debug3 are not written to stderr in the
  * slurmstepd process after stderr is connected back to the client (srun).
  */
-void debug4(const char *fmt, ...)
+void slurm_debug4(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_DEBUG4, false, fmt);
 }
 
-void debug5(const char *fmt, ...)
+void slurm_debug5(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_DEBUG5, false, fmt);
 }
@@ -1414,21 +1411,6 @@ void sched_info(const char *fmt, ...)
 void sched_verbose(const char *fmt, ...)
 {
 	LOG_MACRO(LOG_LEVEL_VERBOSE, true, fmt);
-}
-
-void sched_debug(const char *fmt, ...)
-{
-	LOG_MACRO(LOG_LEVEL_DEBUG, true, fmt);
-}
-
-void sched_debug2(const char *fmt, ...)
-{
-	LOG_MACRO(LOG_LEVEL_DEBUG2, true, fmt);
-}
-
-void sched_debug3(const char *fmt, ...)
-{
-	LOG_MACRO(LOG_LEVEL_DEBUG3, true, fmt);
 }
 
 /* Return the highest LOG_LEVEL_* used for any logging mechanism.
