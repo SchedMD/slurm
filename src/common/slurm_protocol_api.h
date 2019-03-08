@@ -457,12 +457,6 @@ extern char *slurm_get_auth_type(void);
  */
 extern int slurm_set_auth_type(char *auth_type);
 
-/* slurm_get_auth_type
- * returns the authentication type from slurmctld_conf object
- * RET char *    - auth type, MUST be xfreed by caller
- */
-extern char *slurm_get_auth_type(void);
-
 /* slurm_get_bb_params
  * returns the BurstBufferParameters (bb_params) from slurmctld_conf object
  * RET char *    - BurstBufferParameters, MUST be xfreed by caller
