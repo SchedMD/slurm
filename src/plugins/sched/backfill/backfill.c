@@ -115,7 +115,7 @@
 #define MAX_BF_MAX_JOB_TEST            1000000
 #define MAX_BF_MAX_TIME                3600
 #define MAX_BF_MIN_AGE_RESERVE         (30 * 24 * 60 * 60) /* 30 days */
-#define MAX_BF_MIN_PRIO_RESERVE        INFINITE64
+#define MAX_BF_MIN_PRIO_RESERVE        INFINITE
 #define MAX_BF_YIELD_INTERVAL          10000000 /* 10 seconds in usec */
 #define MAX_MAX_RPC_CNT                1000
 #define MAX_YIELD_SLEEP                10000000 /* 10 seconds in usec */
@@ -810,9 +810,13 @@ static void _load_config(void)
 
 	bf_min_prio_reserve = 0;
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_min_prio_reserve="))) {
-		int64_t min_prio = (int64_t) atoll(tmp_ptr + 20);
-		if (min_prio < 0 || min_prio > MAX_BF_MIN_PRIO_RESERVE) {
-			error("Invalid SchedulerParameters bf_min_prio_reserve: %"PRIi64,
+		char *end_ptr = NULL;
+		unsigned long long int min_prio;
+		tmp_ptr += 20;
+		min_prio = strtoull(tmp_ptr, &end_ptr, 10);
+		if ((min_prio < 0) || (min_prio > MAX_BF_MIN_PRIO_RESERVE) ||
+		    (end_ptr[0] != '\0')) {
+			error("Invalid SchedulerParameters bf_min_prio_reserve: %llu",
 			      min_prio);
 		} else {
 			bf_min_prio_reserve = (uint32_t) min_prio;
