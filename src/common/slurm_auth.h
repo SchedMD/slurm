@@ -54,12 +54,7 @@
  *	slurm_auth_init();
  *
  * The authentication type and other parameters are taken from the
- * system's global configuration.  A typical order of calls is:
- *
- *	void *bar = g_slurm_auth_alloc();
- *	g_slurm_auth_verify( bar );
- *	g_slurm_auth_free( bar );
- *
+ * system's global configuration.
  */
 
 /*
