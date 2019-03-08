@@ -740,8 +740,7 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 		drop_priv = true;
 #endif
 
-	req_msg->uid = g_slurm_auth_get_uid(
-		slurmdbd_conn->conn->auth_cred, slurmdbd_conf->auth_info);
+	req_msg->uid = g_slurm_auth_get_uid(slurmdbd_conn->conn->auth_cred);
 
 	/* If the client happens to be a newer version than we are make it so
 	 * they talk language I understand.

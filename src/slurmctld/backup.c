@@ -441,10 +441,8 @@ static int _background_process_msg(slurm_msg_t *msg)
 
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;
-		char *auth_info = slurm_get_auth_info();
-		uid_t uid = g_slurm_auth_get_uid(msg->auth_cred, auth_info);
+		uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-		xfree(auth_info);
 		if (validate_slurm_user(uid))
 			super_user = true;
 

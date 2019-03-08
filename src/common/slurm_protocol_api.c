@@ -3730,8 +3730,8 @@ static int _unpack_msg_uid(Buf buffer, uint16_t protocol_version)
 		xfree(auth_info);
 		return uid;
 	}
-	uid = (int) g_slurm_auth_get_uid(auth_cred, auth_info);
 	xfree(auth_info);
+	uid = (int) g_slurm_auth_get_uid(auth_cred);
 	g_slurm_auth_destroy(auth_cred);
 
 	return uid;

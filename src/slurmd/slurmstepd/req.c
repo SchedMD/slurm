@@ -454,10 +454,10 @@ static void *_handle_accept(void *arg)
 			FREE_NULL_BUFFER(buffer);
 			goto fail;
 		}
+		xfree(auth_info);
 
 		/* Get the uid from the credential, then destroy it. */
-		uid = g_slurm_auth_get_uid(auth_cred, auth_info);
-		xfree(auth_info);
+		uid = g_slurm_auth_get_uid(auth_cred);
 		g_slurm_auth_destroy(auth_cred);
 		FREE_NULL_BUFFER(buffer);
 	} else if (req >= SLURM_MIN_PROTOCOL_VERSION) {

@@ -235,7 +235,7 @@ int g_slurm_auth_verify(void *cred, char *auth_info)
 	return (*(ops[wrap->index].verify))(cred, auth_info);
 }
 
-uid_t g_slurm_auth_get_uid(void *cred, char *auth_info)
+uid_t g_slurm_auth_get_uid(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
@@ -245,7 +245,7 @@ uid_t g_slurm_auth_get_uid(void *cred, char *auth_info)
 	return (*(ops[wrap->index].get_uid))(cred);
 }
 
-gid_t g_slurm_auth_get_gid(void *cred, char *auth_info)
+gid_t g_slurm_auth_get_gid(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
@@ -255,7 +255,7 @@ gid_t g_slurm_auth_get_gid(void *cred, char *auth_info)
 	return (*(ops[wrap->index].get_gid))(cred);
 }
 
-char *g_slurm_auth_get_host(void *cred, char *auth_info)
+char *g_slurm_auth_get_host(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
