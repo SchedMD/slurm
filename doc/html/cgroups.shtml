@@ -120,13 +120,14 @@ details.</p>
 
 <h2>Use of Cgroups for Resource Specialization</h2>
 <p>Resource Specialization may be used to reserve a subset of cores on each compute 
-node for exclusive use b. Slurm compute node daemons (slurmd, slurmstepd). It 
+node for exclusive use. Slurm compute node daemons (slurmd, slurmstepd). It
 may also be used to apply a real memory limit to the daemons. The daemons are 
 confined to the reserved cores using a special <i>system</i> cgroup in the 
 cpuset hierarchy. The memory limit is enforced using a <i>system</i> cgroup 
 in the memory hierarchy. System-level resource specialization is enabled with 
 special node configuration parameters in 
-<a href="slurm.conf.html">slurm.conf</a>.</p>
+<a href="slurm.conf.html">slurm.conf</a> and core specialization in
+<a href="core_spec.html">core_spec.html</a>.
 <h2>Organization of Slurm Cgroups</h2>
 <p>Slurm cgroups are organized as follows.  A base directory (mount point) is
 created at /sys/fs/cgroup, or as configured by the <i>CgroupMountpoint</I> option in

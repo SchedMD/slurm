@@ -171,7 +171,6 @@ def canonical_rewrite(matchobj):
 
 def page_title_rewrite(matchobj):
     global title
-    print "got here"
     return '<title>Slurm Workload Manager - ' + title + '</title>'
 
 def url_rewrite(matchobj):
