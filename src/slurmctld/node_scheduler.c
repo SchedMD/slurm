@@ -1106,9 +1106,9 @@ static bitstr_t *_find_grp_node_bitmap(struct job_record *job_ptr)
 	}
 
 	assoc_ptr = job_ptr->assoc_ptr;
-	while (assoc_ptr) {
-		if (assoc_ptr->usage && assoc_ptr->usage->grp_node_bitmap &&
-		    assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64) {
+	while (assoc_ptr && assoc_ptr->usage) {
+		if (assoc_ptr->usage->grp_node_bitmap &&
+		    (assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64)) {
 			tmp  = assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE] -
 			       assoc_ptr->usage->grp_used_tres[TRES_ARRAY_NODE];
 			if (tmp < min_nodes) {
