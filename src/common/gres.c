@@ -9157,22 +9157,20 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		      gres_name, job_id, job_gres_ptr->node_cnt, node_cnt);
 	}
 
-	if (!job_gres_ptr->gres_bit_alloc)
+	if (!job_gres_ptr->gres_bit_alloc) {
 		job_gres_ptr->gres_bit_alloc = xcalloc(node_cnt,
 						       sizeof(bitstr_t *));
-	if (!job_gres_ptr->gres_cnt_node_alloc)
+	}
+	if (!job_gres_ptr->gres_cnt_node_alloc) {
 		job_gres_ptr->gres_cnt_node_alloc = xcalloc(node_cnt,
 							    sizeof(uint64_t));
+	}
 
 	/*
 	 * select/cons_tres pre-selects the resources and we just need to update
 	 * the data structures to reflect the selected GRES.
 	 */
-	if (job_gres_ptr->total_node_cnt &&
-	    (job_gres_ptr->gres_cnt_node_alloc	||
-	     job_gres_ptr->gres_bit_alloc	||
-	     job_gres_ptr->gres_bit_select	||
-	     job_gres_ptr->gres_cnt_node_select)) {
+	if (job_gres_ptr->total_node_cnt) {
 		/* Resuming job */
 		if (job_gres_ptr->gres_cnt_node_alloc[node_offset]) {
 			gres_cnt = job_gres_ptr->
