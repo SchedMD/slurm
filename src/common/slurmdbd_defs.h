@@ -85,7 +85,7 @@ typedef enum {
 	DBD_MODIFY_CLUSTERS,    /* #1430, Modify existing cluster       */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
 	DBD_NODE_STATE,		/* Record node state transition		*/
-	DBD_RC, 		/* DEFUNCT, use PERSIST_RC instead.	*/
+	DBD_DEFUNCT_RPC_1433,	/* Free for reuse			*/
 	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/
 	DBD_REMOVE_ACCOUNTS,    /* Remove existing account              */
 	DBD_REMOVE_ACCOUNT_COORDS,/* Remove existing coordinator from
@@ -96,9 +96,7 @@ typedef enum {
 	DBD_ROLL_USAGE,         /* #1440 Roll up usage                  */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START,		/* Record step starting			*/
-	DBD_UPDATE_SHARES_USED,	/* Doesn't do anything but
-				 * needs to be here for
-				 * history sake		*/
+	DBD_DEFUNCT_RPC_1443,	/* Free for reuse			*/
 	DBD_GET_JOBS_COND, 	/* Get job information with a condition */
 	DBD_GET_TXN,		/* Get transaction information		*/
 	DBD_GOT_TXN,		/* Got transaction information		*/
