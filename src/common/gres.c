@@ -2999,6 +2999,8 @@ extern int gres_plugin_node_reconfig(char *node_name,
 	/* Build new per-node gres_str */
 	_build_node_gres_str(gres_list, gres_str, cores_per_sock,sock_per_node);
 	slurm_mutex_unlock(&gres_context_lock);
+	xfree(gres_ptr_array);
+
 	return rc;
 }
 
