@@ -211,6 +211,11 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 		return SLURM_ERROR;
 	}
 	auth_info = slurm_get_auth_info();
+	if (g_slurm_auth_verify(auth_cred, auth_info)) {
+		error("authentication: %m");
+		xfree(auth_info);
+		return SLURM_ERROR;
+	}
 	auth_uid = g_slurm_auth_get_uid(auth_cred, auth_info);
 	xfree(auth_info);
 	(void) g_slurm_auth_destroy(auth_cred);

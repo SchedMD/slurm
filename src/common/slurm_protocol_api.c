@@ -3726,6 +3726,10 @@ static int _unpack_msg_uid(Buf buffer, uint16_t protocol_version)
 	if ((auth_cred = g_slurm_auth_unpack(buffer, protocol_version)) == NULL)
 		return uid;
 	auth_info = slurm_get_auth_info();
+	if (g_slurm_auth_verify(auth_cred, auth_info)) {
+		xfree(auth_info);
+		return uid;
+	}
 	uid = (int) g_slurm_auth_get_uid(auth_cred, auth_info);
 	xfree(auth_info);
 	g_slurm_auth_destroy(auth_cred);
