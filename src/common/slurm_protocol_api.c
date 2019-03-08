@@ -4395,17 +4395,7 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 	rc_msg.return_code = rc;
 	rc_msg.err_msg     = err_msg;
 
-	slurm_msg_t_init(&resp_msg);
-	resp_msg.protocol_version = msg->protocol_version;
-	resp_msg.address  = msg->address;
-	resp_msg.msg_type = RESPONSE_SLURM_RC_MSG;
-	resp_msg.data     = &rc_msg;
-	resp_msg.conn = msg->conn;
-	resp_msg.flags = msg->flags;
-	resp_msg.forward = msg->forward;
-	resp_msg.forward_struct = msg->forward_struct;
-	resp_msg.ret_list = msg->ret_list;
-	resp_msg.orig_addr = msg->orig_addr;
+	_resp_msg_setup(&resp_msg, msg, RESPONSE_SLURM_RC_MSG, &rc_msg);
 
 	/* send message */
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
@@ -4431,17 +4421,7 @@ int slurm_send_reroute_msg(slurm_msg_t *msg, slurmdb_cluster_rec_t *cluster_rec)
 	/* Don't free the cluster_rec, it's pointing to the actual object. */
 	reroute_msg.working_cluster_rec = cluster_rec;
 
-	slurm_msg_t_init(&resp_msg);
-	resp_msg.protocol_version = msg->protocol_version;
-	resp_msg.address          = msg->address;
-	resp_msg.msg_type         = RESPONSE_SLURM_REROUTE_MSG;
-	resp_msg.data             = &reroute_msg;
-	resp_msg.conn             = msg->conn;
-	resp_msg.flags            = msg->flags;
-	resp_msg.forward          = msg->forward;
-	resp_msg.forward_struct   = msg->forward_struct;
-	resp_msg.ret_list         = msg->ret_list;
-	resp_msg.orig_addr        = msg->orig_addr;
+	_resp_msg_setup(&resp_msg, msg, RESPONSE_SLURM_REROUTE_MSG, &reroute_msg);
 
 	/* send message */
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
