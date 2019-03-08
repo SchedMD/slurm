@@ -682,7 +682,7 @@ rwfail:	error("%s: failed", __func__);
 extern void recv_stepd(int fd)
 {
 	int i, mps_cnt;
-	mps_dev_info_t *mps_ptr;
+	mps_dev_info_t *mps_ptr = NULL;
 
 	common_recv_stepd(fd, &gres_devices);
 
@@ -694,11 +694,13 @@ extern void recv_stepd(int fd)
 			safe_read(fd, &mps_ptr->count, sizeof(uint64_t));
 			safe_read(fd, &mps_ptr->id, sizeof(int));
 			list_append(mps_info, mps_ptr);
+			mps_ptr = NULL;
 		}
 	}
 	return;
 
 rwfail:	error("%s: failed", __func__);
+	xfree(mps_ptr);
 	return;
 }
 
