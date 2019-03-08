@@ -253,7 +253,7 @@ int slurm_auth_verify(slurm_auth_credential_t *c, char *opts)
  * Obtain the Linux UID from the credential.
  * slurm_auth_verify() must be called first.
  */
-uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *opts)
+uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred)
 {
 	if (!cred || !cred->verified) {
 		/*
@@ -274,7 +274,7 @@ uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *opts)
  * Obtain the Linux GID from the credential.
  * slurm_auth_verify() must be called first.
  */
-gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *opts)
+gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred)
 {
 	if (!cred || !cred->verified) {
 		/*
@@ -296,7 +296,7 @@ gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *opts)
  * Obtain the Host addr from where the credential originated.
  * slurm_auth_verify() must be called first.
  */
-char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
+char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 {
 	char *hostname = NULL;
 	struct hostent *he;

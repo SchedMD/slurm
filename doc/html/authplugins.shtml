@@ -111,25 +111,21 @@ verified to be in order and has not expired. If the credential cannot be verifie
 or if the credential has expired, the function should return SLURM_ERROR and set
 its errno to an appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">uid_t slurm_auth_get_uid (void *cr, char *auth_info);<br>
-gid_t slurm_auth_get_gid (void *cr, char *auth_info);</p>
-<p style="margin-left:.2in"><b>Description</b>: Extracts the numerical UID (GID)
-of the user corresponding to the given credential. Slurm considers this value
-trustworthy only if the credential has been successfully verified using
-<span class="commandline">slurm_auth_verify()</span>.
+<p class="commandline">uid_t slurm_auth_get_uid(void *cred);<br>
+gid_t slurm_auth_get_gid (void *cred);</p>
+<p style="margin-left:.2in"><b>Description</b>: Extracts the numerical UID or GID
+of the user corresponding to the given credential.
+Only valid after <span class="commandline">slurm_auth_verify()</span> has
+been called on a given credential.
 An unverified credential does not immediately give rise to an error condition
-in these functions, since this would require a plugin to distinguish between a
-verified and an unverified credential, which may be computationally expensive.
+in these functions, but instead will return SLURM_AUTH_NOBODY for the UID and GID.
 A plugin may consider the lack of verification as an error.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
- <span class="commandline">cr</span> &nbsp;&nbsp; (input) pointer to the credential
+ <span class="commandline">cred</span> &nbsp;&nbsp; (input) pointer to the credential
 containing the desired identification.  Cannot be NULL.<br>
-<span class="commandline">auth_info</span> &nbsp;&nbsp;(input) plugin specific
-identification of the server.</p>
 <p style="margin-left:.2in"><b>Returns</b>: If successful, the Linux UID (GID)
 associated with the credential. In case of error, SLURM_AUTH_NOBODY should be
 returned and errno set appropriately to indicate the cause of the failure.</p>
-
 
 <p class="commandline">int slurm_auth_pack (void *cr, Buf buf);</p>
 <p style="margin-left:.2in"><b>Description</b>: Marshals a credential into a buffer

@@ -65,9 +65,9 @@ typedef struct {
 	void *		(*create)	(char *auth_info);
 	int		(*destroy)	(void *cred);
 	int		(*verify)	(void *cred, char *auth_info);
-	uid_t		(*get_uid)	(void *cred, char *auth_info);
-	gid_t		(*get_gid)	(void *cred, char *auth_info);
-	char *		(*get_host)	(void *cred, char *auth_info);
+	uid_t		(*get_uid)	(void *cred);
+	gid_t		(*get_gid)	(void *cred);
+	char *		(*get_host)	(void *cred);
 	int		(*pack)		(void *cred, Buf buf,
 					 uint16_t protocol_version);
 	void *		(*unpack)	(Buf buf, uint16_t protocol_version);
@@ -242,7 +242,7 @@ uid_t g_slurm_auth_get_uid(void *cred, char *auth_info)
 	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_AUTH_NOBODY;
 
-	return (*(ops[wrap->index].get_uid))(cred, auth_info);
+	return (*(ops[wrap->index].get_uid))(cred);
 }
 
 gid_t g_slurm_auth_get_gid(void *cred, char *auth_info)
@@ -252,7 +252,7 @@ gid_t g_slurm_auth_get_gid(void *cred, char *auth_info)
 	if (!wrap || slurm_auth_init(NULL) < 0)
 		return SLURM_AUTH_NOBODY;
 
-	return (*(ops[wrap->index].get_gid))(cred, auth_info);
+	return (*(ops[wrap->index].get_gid))(cred);
 }
 
 char *g_slurm_auth_get_host(void *cred, char *auth_info)
@@ -262,7 +262,7 @@ char *g_slurm_auth_get_host(void *cred, char *auth_info)
 	if (!wrap || slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	return (*(ops[wrap->index].get_host))(cred, auth_info);
+	return (*(ops[wrap->index].get_host))(cred);
 }
 
 int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)

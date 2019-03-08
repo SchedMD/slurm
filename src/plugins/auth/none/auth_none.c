@@ -179,7 +179,7 @@ int slurm_auth_verify(slurm_auth_credential_t *cred, char *auth_info)
  * Obtain the Linux UID from the credential.  The accuracy of this data
  * is not assured until slurm_auth_verify() has been called for it.
  */
-uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *auth_info)
+uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred)
 {
 	if (!cred) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -193,7 +193,7 @@ uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *auth_info)
  * Obtain the Linux GID from the credential.
  * See slurm_auth_get_uid() above for details on correct behavior.
  */
-gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *auth_info)
+gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred)
 {
 	if (!cred) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -207,7 +207,7 @@ gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *auth_info)
  * Obtain the originating hostname from the credential.
  * See slurm_auth_get_uid() above for details on correct behavior.
  */
-char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *auth_info)
+char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 {
 	if (!cred) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
