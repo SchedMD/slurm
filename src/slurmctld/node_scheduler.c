@@ -2767,6 +2767,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		 * it was we want to override the other reason so if we are
 		 * backfilling we don't reserve resources if we don't have to.
 		 */
+		free_job_resources(&job_ptr->job_resrcs);
 		if (error_code != SLURM_SUCCESS)
 			debug2("Replacing scheduling error code for %pJ from '%s' to 'Accounting policy'",
 			       job_ptr, slurm_strerror(error_code));
