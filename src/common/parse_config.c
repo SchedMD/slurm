@@ -1114,10 +1114,10 @@ static char *_parse_for_format(s_p_hashtbl_t *f_hashtbl, char *path)
 		}
 
 		/* Build the new path if tmp_str is not NULL*/
-		if (tmp_str != NULL) {
+		if (tmp_str) {
 			format[0] = '\0';
 			xstrfmtcat(filename, "%s%s", tmp_str, format+2);
-			tmp_str = NULL;
+			xfree(tmp_str);
 		} else {
 			error("%s: Value for include modifier %s could "
 			      "not be found", __func__, format);
