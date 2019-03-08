@@ -62,6 +62,7 @@
 
 #include "src/slurmctld/heartbeat.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -419,10 +420,7 @@ inline static void _slurm_rpc_control_status(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	control_status_msg_t data;
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_CONTROL_STATUS;
 	response_msg.data = &data;
 	response_msg.data_size = sizeof(control_status_msg_t);

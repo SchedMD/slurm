@@ -653,6 +653,20 @@ static void _throttle_fini(int *active_rpc_cnt)
 }
 
 /*
+ * Initialize a response slurm_msg_t to an inbound msg,
+ * first by calling slurm_msg_t_init(), then by copying
+ * fields needed to communicate with the remote correctly.
+ */
+extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg)
+{
+	slurm_msg_t_init(resp);
+	resp->address = msg->address;
+	resp->conn = msg->conn;
+	resp->flags = msg->flags;
+	resp->protocol_version = msg->protocol_version;
+}
+
+/*
  * _fill_ctld_conf - make a copy of current slurm configuration
  *	this is done with locks set so the data can change at other times
  * OUT conf_ptr - place to copy configuration to
@@ -1493,10 +1507,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 
 	if (resp) {
 		slurm_msg_t response_msg;
-		slurm_msg_t_init(&response_msg);
-		response_msg.conn = msg->conn;
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_JOB_PACK_ALLOCATION;
 		response_msg.data = resp;
 
@@ -1693,10 +1704,7 @@ send_msg:
 			_throttle_fini(&active_rpc_cnt);
 		}
 
-		slurm_msg_t_init(&response_msg);
-		response_msg.conn = msg->conn;
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
 		response_msg.data = alloc_msg;
 
@@ -1770,12 +1778,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 		unlock_slurmctld(config_read_lock);
 		END_TIMER2("_slurm_rpc_dump_conf");
 
-		/* init response_msg structure */
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_BUILD_INFO;
 		response_msg.data = &config_tbl;
 
@@ -1824,12 +1827,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		info("_slurm_rpc_dump_jobs, size=%d %s", dump_size, TIME_STR);
 #endif
 
-		/* init response_msg structure */
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_JOB_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
@@ -1865,12 +1863,7 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t * msg)
 	info("_slurm_rpc_dump_user_jobs, size=%d %s", dump_size, TIME_STR);
 #endif
 
-	/* init response_msg structure */
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_JOB_INFO;
 	response_msg.data = dump;
 	response_msg.data_size = dump_size;
@@ -1909,11 +1902,7 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t * msg)
 	if (rc != SLURM_SUCCESS) {
 		slurm_send_rc_msg(msg, rc);
 	} else {
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_JOB_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
@@ -1937,11 +1926,7 @@ static void  _slurm_rpc_get_shares(slurm_msg_t *msg)
 	memset(&resp_msg, 0, sizeof(shares_response_msg_t));
 	assoc_mgr_get_shares(acct_db_conn, uid, req_msg, &resp_msg);
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address  = msg->address;
-	response_msg.conn     = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_SHARE_INFO;
 	response_msg.data     = &resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -1965,11 +1950,7 @@ static void  _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	debug2("Processing RPC: REQUEST_PRIORITY_FACTORS from uid=%d", uid);
 	resp_msg.priority_factors_list = priority_g_get_priority_factors_list(
 		req_msg, uid);
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address  = msg->address;
-	response_msg.conn     = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_PRIORITY_FACTORS;
 	response_msg.data     = &resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -2002,11 +1983,7 @@ static void _slurm_rpc_end_time(slurm_msg_t * msg)
 	if (rc != SLURM_SUCCESS) {
 		slurm_send_rc_msg(msg, rc);
 	} else {
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address  = msg->address;
-		response_msg.conn     = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = SRUN_TIMEOUT;
 		response_msg.data     = &timeout_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -2029,11 +2006,7 @@ static void _slurm_rpc_get_fed(slurm_msg_t * msg)
 
 	lock_slurmctld(fed_read_lock);
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_FED_INFO;
 	response_msg.data = fed_mgr_fed_rec;
 
@@ -2075,12 +2048,7 @@ static void _slurm_rpc_dump_front_end(slurm_msg_t * msg)
 		debug2("_slurm_rpc_dump_front_end, size=%d %s",
 		       dump_size, TIME_STR);
 
-		/* init response_msg structure */
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_FRONT_END_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
@@ -2134,12 +2102,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		info("_slurm_rpc_dump_nodes, size=%d %s", dump_size, TIME_STR);
 #endif
 
-		/* init response_msg structure */
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_NODE_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
@@ -2191,12 +2154,7 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t * msg)
 	     node_req_msg->node_name, dump_size, TIME_STR);
 #endif
 
-	/* init response_msg structure */
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_NODE_INFO;
 	response_msg.data = dump;
 	response_msg.data_size = dump_size;
@@ -2243,12 +2201,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 		debug2("_slurm_rpc_dump_partitions, size=%d %s",
 		       dump_size, TIME_STR);
 
-		/* init response_msg structure */
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_PARTITION_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
@@ -2706,11 +2659,7 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 	if (rc != SLURM_SUCCESS) {
 		slurm_send_rc_msg(msg, rc);
 	} else {
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_BATCH_SCRIPT;
 		response_msg.data = script;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -2834,11 +2783,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
-		slurm_msg_t_init(&resp);
-		resp.flags = msg->flags;
-		resp.protocol_version = msg->protocol_version;
-		resp.address = msg->address;
-		resp.conn = msg->conn;
+		response_init(&resp, msg);
 		resp.msg_type = RESPONSE_JOB_STEP_CREATE;
 		resp.data = &job_step_resp;
 
@@ -2901,12 +2846,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, error_code);
 	else {
 		slurm_msg_t response_msg;
-
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_JOB_STEP_INFO;
 		response_msg.data = resp_buffer;
 		response_msg.data_size = resp_buffer_size;
@@ -3015,12 +2955,7 @@ send_reply:
 			slurm_send_rc_msg(msg, error_code);
 	} else if (resp) {
 		slurm_msg_t response_msg;
-		/* init response_msg structure */
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_JOB_WILL_RUN;
 		response_msg.data = resp;
 		resp->job_submit_user_msg = job_submit_user_msg;
@@ -4085,10 +4020,7 @@ send_msg:
 		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
 		submit_msg.error_code = error_code;
 		submit_msg.job_submit_user_msg = job_submit_user_msg;
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -4384,10 +4316,7 @@ send_msg:
 		submit_msg.step_id    = SLURM_BATCH_SCRIPT;
 		submit_msg.error_code = error_code;
 		submit_msg.job_submit_user_msg = job_submit_user_msg;
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -5013,12 +4942,7 @@ static void _slurm_rpc_resv_show(slurm_msg_t * msg)
 		unlock_slurmctld(node_read_lock);
 		END_TIMER2("_slurm_rpc_resv_show");
 
-		/* init response_msg structure */
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_RESERVATION_INFO;
 		response_msg.data = dump;
 		response_msg.data_size = dump_size;
@@ -5069,12 +4993,7 @@ static void _slurm_rpc_layout_show(slurm_msg_t * msg)
 	dump = xfer_buf_data(buffer);
 	END_TIMER2("_slurm_rpc_resv_show");
 
-	/* init response_msg structure */
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_LAYOUT_INFO;
 	response_msg.data = dump;
 	response_msg.data_size = dump_size;
@@ -5109,11 +5028,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 	} else {
 		debug2("_slurm_rpc_job_ready(%u)=%d %s", id_msg->job_id,
 		       result, TIME_STR);
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		rc_msg.return_code = result;
 		response_msg.data = &rc_msg;
 		if(_is_prolog_finished(id_msg->job_id)) {
@@ -5169,11 +5084,7 @@ static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg)
 
 		resp_buffer_size = get_buf_offset(buffer);
 		resp_buffer = xfer_buf_data(buffer);
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address = msg->address;
-		response_msg.conn = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONSE_BURST_BUFFER_INFO;
 		response_msg.data = resp_buffer;
 		response_msg.data_size = resp_buffer_size;
@@ -5559,11 +5470,7 @@ inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg)
 	resp_data = trigger_get(uid, trigger_ptr);
 	END_TIMER2("_slurm_rpc_trigger_get");
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address  = msg->address;
-	response_msg.conn     = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_TRIGGER_GET;
 	response_msg.data     = resp_data;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -5650,11 +5557,7 @@ inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg)
 	unlock_slurmctld(node_read_lock);
 	END_TIMER2("_slurm_rpc_get_topo");
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address  = msg->address;
-	response_msg.conn     = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_TOPO_INFO;
 	response_msg.data     = topo_resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -5682,11 +5585,7 @@ inline static void  _slurm_rpc_get_powercap(slurm_msg_t * msg)
 	unlock_slurmctld(config_read_lock);
 	END_TIMER2("_slurm_rpc_get_powercap");
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address  = msg->address;
-	response_msg.conn     = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_POWERCAP_INFO;
 	response_msg.data     = powercap_resp_msg;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -6166,11 +6065,7 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_dump_spank");
 
 	if (rc == SLURM_SUCCESS) {
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
-		response_msg.address  = msg->address;
-		response_msg.conn     = msg->conn;
+		response_init(&response_msg, msg);
 		response_msg.msg_type = RESPONCE_SPANK_ENVIRONMENT;
 		response_msg.data     = spank_resp_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -6260,10 +6155,7 @@ inline static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
 	bb_status_resp_msg_t status_resp_msg;
 	bb_status_req_msg_t *status_req_msg = (bb_status_req_msg_t *)msg->data;
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_BURST_BUFFER_STATUS;
 	response_msg.data = &status_resp_msg;
 	status_resp_msg.status_resp = bb_g_get_status(status_req_msg->argc,
@@ -6280,10 +6172,7 @@ inline static void _slurm_rpc_control_status(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	control_status_msg_t data;
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_CONTROL_STATUS;
 	response_msg.data = &data;
 	response_msg.data_size = sizeof(control_status_msg_t);
@@ -6314,10 +6203,7 @@ inline static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_STATS_INFO (command: %u)",
 	       request_msg->command_id);
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_STATS_INFO;
 
 	if (request_msg->command_id == STAT_COMMAND_RESET) {
@@ -6372,24 +6258,13 @@ _slurm_rpc_dump_licenses(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_dump_licenses");
 	debug2("%s: size=%d %s", __func__, dump_size, TIME_STR);
 
-	/* init response_msg structure
-	 */
-	slurm_msg_t_init(&response_msg);
-
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_LICENSE_INFO;
 	response_msg.data = dump;
 	response_msg.data_size = dump_size;
 
-	/* send message
-	 */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	xfree(dump);
-	/* Ciao!
-	 */
 }
 
 /* Free memory used to track RPC usage by type and user */
@@ -6744,23 +6619,13 @@ static void _slurm_rpc_assoc_mgr_info(slurm_msg_t * msg)
 	END_TIMER2("_slurm_rpc_assoc_mgr_info");
 	debug2("%s: size=%d %s", __func__, dump_size, TIME_STR);
 
-	/* init response_msg structure
-	 */
-	slurm_msg_t_init(&response_msg);
-
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_ASSOC_MGR_INFO;
 	response_msg.data = dump;
 	response_msg.data_size = dump_size;
-	/* send message
-	 */
+
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	xfree(dump);
-	/* Ciao!
-	 */
 }
 
 /* Take a persist_msg_t and handle it like a normal slurm_msg_t */
@@ -7012,12 +6877,7 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 
 	ctld_resp_msg.my_list = full_resp_list;
 
-	/* Initialize response_msg structure */
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
-	response_msg.address = msg->address;
-	response_msg.conn = msg->conn;
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_CTLD_MULT_MSG;
 	response_msg.data = &ctld_resp_msg;
 
