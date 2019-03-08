@@ -1588,7 +1588,11 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    !s_p_get_uint16(&p->priority_job_factor,
 				    "PriorityJobFactor", dflt)) {
 			p->priority_job_factor = 1;
+		} else if (p->priority_job_factor == 0) {
+			error("Bad value for PriorityJobFactor: 0");
+			p->priority_job_factor = 1;
 		}
+
 		if (!s_p_get_uint16(&p->priority_tier, "PriorityTier", tbl) &&
 		    !s_p_get_uint16(&p->priority_tier, "PriorityTier", dflt)) {
 			p->priority_tier = 1;
