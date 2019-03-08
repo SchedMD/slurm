@@ -814,7 +814,7 @@ static void _load_config(void)
 		unsigned long long int min_prio;
 		tmp_ptr += 20;
 		min_prio = strtoull(tmp_ptr, &end_ptr, 10);
-		if ((min_prio < 0) || (min_prio > MAX_BF_MIN_PRIO_RESERVE) ||
+		if ((min_prio > MAX_BF_MIN_PRIO_RESERVE) ||
 		    (end_ptr[0] != '\0')) {
 			error("Invalid SchedulerParameters bf_min_prio_reserve: %llu",
 			      min_prio);
