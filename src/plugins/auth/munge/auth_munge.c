@@ -250,25 +250,19 @@ int slurm_auth_verify(slurm_auth_credential_t *c, char *opts)
 }
 
 /*
- * Obtain the Linux UID from the credential.  The accuracy of this data
- * is not assured until slurm_auth_verify() has been called for it.
+ * Obtain the Linux UID from the credential.
+ * slurm_auth_verify() must be called first.
  */
 uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *opts)
 {
-	if (!cred) {
+	if (!cred || !cred->verified) {
+		/*
+		 * This xassert will trigger on a development build if
+		 * the calling path did not verify the credential first.
+		 */
+		xassert(!cred);
 		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_AUTH_NOBODY;
-	}
-
-	if (!cred->verified) {
-		int rc;
-		char *socket = slurm_auth_opts_to_socket(opts);
-		rc = _decode_cred(cred, socket);
-		xfree(socket);
-		if (rc < 0) {
-			slurm_seterrno(ESLURM_AUTH_INVALID);
-			return SLURM_AUTH_NOBODY;
-		}
 	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
@@ -277,25 +271,19 @@ uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *opts)
 }
 
 /*
- * Obtain the Linux GID from the credential.  See slurm_auth_get_uid()
- * above for details on correct behavior.
+ * Obtain the Linux GID from the credential.
+ * slurm_auth_verify() must be called first.
  */
 gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *opts)
 {
-	if (!cred) {
+	if (!cred || !cred->verified) {
+		/*
+		 * This xassert will trigger on a development build if
+		 * the calling path did not verify the credential first.
+		 */
+		xassert(!cred);
 		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_AUTH_NOBODY;
-	}
-
-	if (!cred->verified) {
-		int rc;
-		char *socket = slurm_auth_opts_to_socket(opts);
-		rc = _decode_cred(cred, socket);
-		xfree(socket);
-		if (rc < 0) {
-			slurm_seterrno(ESLURM_AUTH_INVALID);
-			return SLURM_AUTH_NOBODY;
-		}
 	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
@@ -306,6 +294,7 @@ gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *opts)
 
 /*
  * Obtain the Host addr from where the credential originated.
+ * slurm_auth_verify() must be called first.
  */
 char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
 {
@@ -314,20 +303,14 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
 	char h_buf[4096];
 	int h_err  = 0;
 
-	if (cred == NULL) {
+	if (!cred || !cred->verified) {
+		/*
+		 * This xassert will trigger on a development build if
+		 * the calling path did not verify the credential first.
+		 */
+		xassert(!cred);
 		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return NULL;
-	}
-
-	if (!cred->verified) {
-		int rc;
-		char *socket = slurm_auth_opts_to_socket(opts);
-		rc = _decode_cred(cred, socket);
-		xfree(socket);
-		if (rc < 0) {
-			slurm_seterrno(ESLURM_AUTH_INVALID);
-			return NULL;
-		}
 	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
