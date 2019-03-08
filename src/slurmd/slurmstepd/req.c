@@ -442,15 +442,13 @@ static void *_handle_accept(void *arg)
 		/* Unpack and verify the auth credential */
 		auth_cred = g_slurm_auth_unpack(buffer, SLURM_PROTOCOL_VERSION);
 		if (auth_cred == NULL) {
-			error("Unpacking authentication credential: %s",
-			      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+			error("Unpacking authentication credential: %m");
 			FREE_NULL_BUFFER(buffer);
 			goto fail;
 		}
 		rc = g_slurm_auth_verify(auth_cred, auth_info);
 		if (rc != SLURM_SUCCESS) {
-			error("Verifying authentication credential: %s",
-			      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+			error("Verifying authentication credential: %m");
 			xfree(auth_info);
 			(void) g_slurm_auth_destroy(auth_cred);
 			FREE_NULL_BUFFER(buffer);

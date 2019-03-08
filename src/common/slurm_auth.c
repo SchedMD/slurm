@@ -71,8 +71,6 @@ typedef struct {
 	int		(*pack)		(void *cred, Buf buf,
 					 uint16_t protocol_version);
 	void *		(*unpack)	(Buf buf, uint16_t protocol_version);
-	int		(*sa_errno)	(void *cred);
-	const char *	(*sa_errstr)	(int slurm_errno);
 } slurm_auth_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -89,8 +87,6 @@ static const char *syms[] = {
 	"slurm_auth_get_host",
 	"slurm_auth_pack",
 	"slurm_auth_unpack",
-	"slurm_auth_errno",
-	"slurm_auth_errstr",
 };
 
 /*
@@ -101,31 +97,6 @@ static slurm_auth_ops_t *ops = NULL;
 static plugin_context_t **g_context = NULL;
 static int g_context_num = -1;
 static pthread_mutex_t context_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static const char *slurm_auth_generic_errstr(int slurm_errno)
-{
-	static struct {
-		int err;
-		const char *msg;
-	} generic_table[] = {
-		{ SLURM_SUCCESS, "no error" },
-		{ SLURM_ERROR, "unknown error" },
-		{ ESLURM_AUTH_BADARG, "bad argument to plugin function" },
-		{ ESLURM_AUTH_MEMORY, "memory management error" },
-		{ ESLURM_AUTH_INVALID, "authentication credential invalid" },
-		{ ESLURM_AUTH_UNPACK, "cannot unpack credential" },
-		{ 0, NULL }
-	};
-
-	int i;
-
-	for (i = 0; ; ++i) {
-		if (generic_table[i].msg == NULL)
-			return NULL;
-		if (generic_table[i].err == slurm_errno)
-			return generic_table[i].msg;
-	}
-}
 
 extern int slurm_auth_init(char *auth_type)
 {
@@ -368,28 +339,4 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 
 unpack_error:
 	return NULL;
-}
-
-int g_slurm_auth_errno(void *cred)
-{
-	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
-
-	if (!wrap || slurm_auth_init(NULL) < 0)
-		return SLURM_ERROR;
-
-	return (*(ops[wrap->index].sa_errno))(cred);
-}
-
-const char *g_slurm_auth_errstr(int slurm_errno)
-{
-	static char auth_init_msg[] = "authentication initialization failure";
-	const char *generic;
-
-	if (slurm_auth_init(NULL) < 0)
-		return auth_init_msg;
-
-	if ((generic = slurm_auth_generic_errstr(slurm_errno)))
-		return generic;
-
-	return (*(ops[0].sa_errstr))(slurm_errno);
 }

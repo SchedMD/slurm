@@ -240,8 +240,7 @@ static int _stepd_connect_legacy(const char *directory, const char *nodename,
 	auth_cred = g_slurm_auth_create(auth_info);
 	xfree(auth_info);
 	if (auth_cred == NULL) {
-		error("Creating authentication credential: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		error("Creating authentication credential: %m");
 		slurm_seterrno(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 		goto fail1;
 	}
@@ -254,8 +253,7 @@ static int _stepd_connect_legacy(const char *directory, const char *nodename,
 	rc = g_slurm_auth_pack(auth_cred, buffer, SLURM_MIN_PROTOCOL_VERSION);
 	(void) g_slurm_auth_destroy(auth_cred);
 	if (rc) {
-		error("Packing authentication credential: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		error("Packing authentication credential: %m");
 		slurm_seterrno(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 		goto fail1;
 	}

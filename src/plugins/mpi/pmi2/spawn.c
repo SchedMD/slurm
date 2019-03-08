@@ -154,8 +154,7 @@ spawn_req_pack(spawn_req_t *req, Buf buf)
 	auth_cred = g_slurm_auth_create(auth_info);
 	xfree(auth_info);
 	if (auth_cred == NULL) {
-		error("authentication: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
+		error("authentication: %m");
 		return;
 	}
 
@@ -208,8 +207,7 @@ spawn_req_unpack(spawn_req_t **req_ptr, Buf buf)
 	 */
 	auth_cred = g_slurm_auth_unpack(buf, SLURM_PROTOCOL_VERSION);
 	if (auth_cred == NULL) {
-		error("authentication: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
+		error("authentication: %m");
 		return SLURM_ERROR;
 	}
 	auth_info = slurm_get_auth_info();

@@ -53,7 +53,6 @@
 #include "src/common/slurm_time.h"
 #include "src/common/util-net.h"
 
-#define MUNGE_ERRNO_OFFSET	10000
 #define RETRY_COUNT		20
 #define RETRY_USEC		100000
 
@@ -87,7 +86,6 @@ const char plugin_type[] = "auth/munge";
 const uint32_t plugin_id = AUTH_PLUGIN_MUNGE;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static int plugin_errno = SLURM_SUCCESS;
 static int bad_cred_test = -1;
 
 /*
@@ -104,7 +102,6 @@ typedef struct _slurm_auth_credential {
 	bool    verified;  /* true if this cred has been verified            */
 	uid_t   uid;       /* UID. valid only if verified == true            */
 	gid_t   gid;       /* GID. valid only if verified == true            */
-	int cr_errno;
 } slurm_auth_credential_t;
 
 /* Static prototypes */
@@ -165,7 +162,6 @@ slurm_auth_credential_t *slurm_auth_create(char *opts)
 	cred = xmalloc(sizeof(*cred));
 	cred->verified = false;
 	cred->m_str    = NULL;
-	cred->cr_errno = SLURM_SUCCESS;
 
 	xassert((cred->magic = MUNGE_MAGIC));
 
@@ -191,7 +187,7 @@ again:
 		error("Munge encode failed: %s", munge_ctx_strerror(ctx));
 		xfree(cred);
 		cred = NULL;
-		plugin_errno = err + MUNGE_ERRNO_OFFSET;
+		slurm_seterrno(ESLURM_AUTH_CRED_INVALID);
 	} else if ((bad_cred_test > 0) && cred->m_str) {
 		int i = ((int) time(NULL)) % strlen(cred->m_str);
 		cred->m_str[i]++;	/* random position in credential */
@@ -210,7 +206,7 @@ again:
 int slurm_auth_destroy(slurm_auth_credential_t *cred)
 {
 	if (!cred) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_ERROR;
 	}
 
@@ -235,7 +231,7 @@ int slurm_auth_verify(slurm_auth_credential_t *c, char *opts)
 	char *socket;
 
 	if (!c) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_ERROR;
 	}
 
@@ -260,7 +256,7 @@ int slurm_auth_verify(slurm_auth_credential_t *c, char *opts)
 uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *opts)
 {
 	if (!cred) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_AUTH_NOBODY;
 	}
 
@@ -270,7 +266,7 @@ uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *opts)
 		rc = _decode_cred(cred, socket);
 		xfree(socket);
 		if (rc < 0) {
-			cred->cr_errno = ESLURM_AUTH_INVALID;
+			slurm_seterrno(ESLURM_AUTH_INVALID);
 			return SLURM_AUTH_NOBODY;
 		}
 	}
@@ -287,7 +283,7 @@ uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *opts)
 gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *opts)
 {
 	if (!cred) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_AUTH_NOBODY;
 	}
 
@@ -297,7 +293,7 @@ gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *opts)
 		rc = _decode_cred(cred, socket);
 		xfree(socket);
 		if (rc < 0) {
-			cred->cr_errno = ESLURM_AUTH_INVALID;
+			slurm_seterrno(ESLURM_AUTH_INVALID);
 			return SLURM_AUTH_NOBODY;
 		}
 	}
@@ -319,7 +315,7 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
 	int h_err  = 0;
 
 	if (cred == NULL) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return NULL;
 	}
 
@@ -329,7 +325,7 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
 		rc = _decode_cred(cred, socket);
 		xfree(socket);
 		if (rc < 0) {
-			cred->cr_errno = ESLURM_AUTH_INVALID;
+			slurm_seterrno(ESLURM_AUTH_INVALID);
 			return NULL;
 		}
 	}
@@ -354,12 +350,8 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *opts)
 int slurm_auth_pack(slurm_auth_credential_t *cred, Buf buf,
 		    uint16_t protocol_version )
 {
-	if (!cred) {
-		plugin_errno = ESLURM_AUTH_BADARG;
-		return SLURM_ERROR;
-	}
-	if (!buf) {
-		cred->cr_errno = ESLURM_AUTH_BADARG;
+	if (!cred || !buf) {
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_ERROR;
 	}
 
@@ -386,7 +378,7 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	uint32_t size;
 
 	if (!buf) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return NULL;
 	}
 
@@ -395,7 +387,6 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 		cred = xmalloc(sizeof(*cred));
 		cred->verified = false;
 		cred->m_str = NULL;
-		cred->cr_errno = SLURM_SUCCESS;
 
 		xassert((cred->magic = MUNGE_MAGIC));
 
@@ -409,26 +400,9 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	return cred;
 
 unpack_error:
-	plugin_errno = ESLURM_AUTH_UNPACK;
+	slurm_seterrno(ESLURM_AUTH_UNPACK);
 	slurm_auth_destroy(cred);
 	return NULL;
-}
-
-int slurm_auth_errno(slurm_auth_credential_t *cred)
-{
-	if (!cred)
-		return plugin_errno;
-	else
-		return cred->cr_errno;
-}
-
-
-const char *slurm_auth_errstr(int slurm_errno)
-{
-	if (slurm_errno > MUNGE_ERRNO_OFFSET)
-		return munge_strerror(slurm_errno - MUNGE_ERRNO_OFFSET);
-
-	return "unknown error";
 }
 
 /*
@@ -488,7 +462,7 @@ again:
 			_print_cred(ctx);
 			if (err == EMUNGE_CRED_REWOUND)
 				error("Check for out of sync clocks");
-			c->cr_errno = err + MUNGE_ERRNO_OFFSET;
+			slurm_seterrno(ESLURM_AUTH_CRED_INVALID);
 #ifdef MULTIPLE_SLURMD
 		} else {
 			debug2("We had a replayed cred, but this is expected in multiple slurmd mode.");

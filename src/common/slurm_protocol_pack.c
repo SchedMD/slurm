@@ -4966,9 +4966,7 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 
 			if (!(tmp_info->auth_cred =
 			      g_slurm_auth_unpack(buffer, protocol_version))) {
-				error("authentication: %s ",
-				      g_slurm_auth_errstr(
-					      g_slurm_auth_errno(NULL)));
+				error("authentication: %m");
 				free_buf(buffer);
 				slurm_seterrno(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 				goto unpack_error;
@@ -4980,10 +4978,7 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 			rc = g_slurm_auth_verify(tmp_info->auth_cred, auth_info);
 
 			if (rc != SLURM_SUCCESS) {
-				error("authentication: %s ",
-				      g_slurm_auth_errstr(
-					      g_slurm_auth_errno(
-						      tmp_info->auth_cred)));
+				error("authentication: %m");
 				slurm_free_comp_msg_list(tmp_info);
 			} else
 				list_append(object_ptr->msg_list, tmp_info);

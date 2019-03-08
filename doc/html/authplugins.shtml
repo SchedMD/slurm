@@ -38,36 +38,6 @@ for an example implementation of a Slurm authentication plugin.</p>
 as an authentication &quot;credential.&quot; This class must encapsulate all user-specific
 information necessary for the operation of the API specification below. The credential
 is referred to in Slurm code by an anonymous pointer (void *).</p>
-<p>The implementation must maintain (though not necessarily directly export) an
-enumerated <b>errno</b> to allow Slurm to discover as practically as possible
-the reason for any failed API call. The following enumerated integer values (declared
-in <span class="commandline">src/common/slurm_auth.h</span>) must be used when
-appropriate.</p>
-<p style="margin-left:.2in">SLURM_AUTH_BADARG> &mdash;an argument to an API function
-was invalid or malformed.<br>
-SLURM_AUTH_MEMORY> &mdash;a request could not be satisfied because memory for it
-could not be allocated.<br>
-SLURM_AUTH_NOUSER> &mdash;a credential is improper because it refers to an unknown
-user.<br>
-SLURM_AUTH_INVALID> &mdash;a credential is improper because the validation of it
-has failed. This is specifically distinct from the expiration of a credential.<br>
-SLURM_AUTH_MISMATCH> &mdash;a credential could not be properly unpacked because it
-is of an incompatible type or version.</p>
-<p>These values must not be used as return values in integer-valued functions
-in the API. The proper error return value from integer-valued functions is SLURM_ERROR.
-While it is most practical to associate a different errno with each instance of
-a credential, this is not necessarily enforced by the API. The implementation
-should endeavor to provide useful and pertinent information by whatever means
-is practical. In most cases, this means an errno for each credential, since plugins
-must be re-entrant. If a plugin maintains a global errno in place of or in addition
-to a per-credential errno, it is not required to enforce mutual exclusion on it.
-Successful API calls are not required to reset any errno to a known value. However,
-the initial value of any errno, prior to any error condition arising, should be
-SLURM_SUCCESS. </p>
-<p>Plugins may assign implementation-specific values to errno so long as they
-do not conflict with the values assigned above. This is done programmatically
-by assigning plugin-specific errno values which are arithmetically greater than
-or equal to the symbol SLURM_AUTH_FIRST_LOCAL_ERROR.</p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
@@ -195,27 +165,6 @@ successfully unpacked. In case of failure, the function should return SLURM_ERRO
 and set errno appropriately to indicate the cause of the failure. If the function
 fails, no assumptions are made about the state of the credential except its suitability
 for destruction via <span class="commandline">slurm_auth_destroy()</span>.</p>
-<p class="commandline">int slurm_auth_errno (void *cr);</p>
-<p style="margin-left:.2in"><b>Description</b>: Returns the current value of errno.
-Whether the value is associated with the given credential or with the plugin as
-a whole is implementation-dependent. Because this function can be used to discover
-the reason why a credential allocation has failed, the argument is advisory. </p>
-<p style="margin-left:.2in"><b>Arguments</b>: <span class="commandline">cr</span>&nbsp;&nbsp;&nbsp;&nbsp;
-(input) pointer to the credential, the status of whose most recently executed
-API function is to be returned. This value may be NULL, indicating that the most
-recent errno value applicable to the plugin as a whole is to be returned.</p>
-<p style="margin-left:.2in"><b>Returns</b>: The current value of errno or SLURM_SUCCESS
-if there is no error to report.</p>
-<p class="commandline">const char *slurm_auth_errstr (int errno);</p>
-<p style="margin-left:.2in"><b>Description</b>: Provides a human-readable string
-associated with the given errno. The plugin need only supply error strings for
-the errno values it defines and not for errno values listed above that are required
-by the API.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: <span class="commandline">errno</span>&nbsp;&nbsp;&nbsp;
-(input) the plugin-specific errno for which a corresponding error message is desired.</p>
-<p style="margin-left:.2in"><b>Returns</b>: A pointer to a static error message.
-This function must always return a pointer to a string, even if the string is
-empty or ambiguous such as &quot;unknown error.&quot;</p>
 
 <p style="text-align:center;">Last modified 7 March 2019</p>
 

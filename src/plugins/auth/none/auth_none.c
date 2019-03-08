@@ -112,11 +112,7 @@ typedef struct _slurm_auth_credential {
 	char *hostname;
 	uid_t uid;
 	gid_t gid;
-	int cr_errno;
 } slurm_auth_credential_t;
-
-/* A plugin-global errno. */
-static int plugin_errno = SLURM_SUCCESS;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -146,7 +142,6 @@ slurm_auth_credential_t *slurm_auth_create(char *auth_info)
 {
 	slurm_auth_credential_t *cred = xmalloc(sizeof(*cred));
 
-	cred->cr_errno = SLURM_SUCCESS;
 	cred->uid = geteuid();
 	cred->gid = getegid();
 
@@ -162,7 +157,7 @@ slurm_auth_credential_t *slurm_auth_create(char *auth_info)
 int slurm_auth_destroy(slurm_auth_credential_t *cred)
 {
 	if (!cred) {
-		plugin_errno = ESLURM_AUTH_MEMORY;
+		slurm_seterrno(ESLURM_AUTH_MEMORY);
 		return SLURM_ERROR;
 	}
 	xfree(cred->hostname);
@@ -187,7 +182,7 @@ int slurm_auth_verify(slurm_auth_credential_t *cred, char *auth_info)
 uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *auth_info)
 {
 	if (!cred) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_AUTH_NOBODY;
 	}
 
@@ -201,7 +196,7 @@ uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred, char *auth_info)
 gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *auth_info)
 {
 	if (!cred) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_AUTH_NOBODY;
 	}
 
@@ -215,7 +210,7 @@ gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred, char *auth_info)
 char *slurm_auth_get_host(slurm_auth_credential_t *cred, char *auth_info)
 {
 	if (!cred) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return NULL;
 	}
 
@@ -230,7 +225,7 @@ int slurm_auth_pack(slurm_auth_credential_t *cred, Buf buf,
 		    uint16_t protocol_version)
 {
 	if (!cred || !buf) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return SLURM_ERROR;
 	}
 
@@ -261,7 +256,7 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	uint32_t uint32_tmp = 0;
 
 	if (!buf) {
-		plugin_errno = ESLURM_AUTH_BADARG;
+		slurm_seterrno(ESLURM_AUTH_BADARG);
 		return NULL;
 	}
 
@@ -269,8 +264,6 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	cred = xmalloc(sizeof(*cred));
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
-		cred->cr_errno = SLURM_SUCCESS;
-
 		/*
 		 * We do it the hard way because we don't know anything about
 		 * the size of uid_t or gid_t, only that they are integer
@@ -286,8 +279,6 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 		cred->gid = tmpint;
 		safe_unpackstr_xmalloc(&cred->hostname, &uint32_tmp, buf);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		cred->cr_errno = SLURM_SUCCESS;
-
 		/*
 		 * We do it the hard way because we don't know anything about
 		 * the size of uid_t or gid_t, only that they are integer
@@ -310,30 +301,7 @@ slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	return cred;
 
 unpack_error:
-	plugin_errno = ESLURM_AUTH_UNPACK;
 	slurm_auth_destroy(cred);
+	slurm_seterrno(ESLURM_AUTH_UNPACK);
 	return NULL;
-}
-
-/*
- * Return the errno.  If no credential is given, return the errno
- * of the plugin.  This leads to possibly ambiguous situations, but
- * there really isn't any easy way of dealing with that.
- */
-int slurm_auth_errno(slurm_auth_credential_t *cred)
-{
-	if (!cred)
-		return plugin_errno;
-	else
-		return cred->cr_errno;
-}
-
-/*
- * Return a string corresponding to an error.  We are responsible only for
- * the errors we define here in the plugin.  The Slurm plugin wrappers
- * take care of the API-mandated errors.
- */
-const char *slurm_auth_errstr(int slurm_errno)
-{
-	return "unknown error";
 }

@@ -503,10 +503,8 @@ static int _auth_cred_create(Buf buf)
 	auth_cred = g_slurm_auth_create(auth_info);
 	xfree(auth_info);
 	if (!auth_cred) {
-		rc = g_slurm_auth_errno(NULL);
-		PMIXP_ERROR("Creating authentication credential: %s",
-			    g_slurm_auth_errstr(rc));
-		return rc;
+		PMIXP_ERROR("Creating authentication credential: %m");
+		return errno;
 	}
 
 	/*
@@ -515,8 +513,7 @@ static int _auth_cred_create(Buf buf)
 	 */
 	rc = g_slurm_auth_pack(auth_cred, buf, SLURM_PROTOCOL_VERSION);
 	if (rc)
-		PMIXP_ERROR("Packing authentication credential: %s",
-			    g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		PMIXP_ERROR("Packing authentication credential: %m");
 
 	g_slurm_auth_destroy(auth_cred);
 
@@ -535,8 +532,7 @@ static int _auth_cred_verify(Buf buf)
 	 */
 	auth_cred = g_slurm_auth_unpack(buf, SLURM_PROTOCOL_VERSION);
 	if (!auth_cred) {
-		PMIXP_ERROR("Unpacking authentication credential: %s",
-			    g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		PMIXP_ERROR("Unpacking authentication credential: %m");
 		return SLURM_ERROR;
 	}
 
@@ -545,8 +541,7 @@ static int _auth_cred_verify(Buf buf)
 	xfree(auth_info);
 
 	if (rc)
-		PMIXP_ERROR("Verifying authentication credential: %s",
-			    g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		PMIXP_ERROR("Verifying authentication credential: %m");
 	g_slurm_auth_destroy(auth_cred);
 	return rc;
 }
