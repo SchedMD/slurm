@@ -3144,15 +3144,13 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 					    job_info_msg->req_cluster);
 		unlock_slurmctld(job_read_lock);
 
-		slurm_msg_t_init(&response_msg);
+		response_init(&response_msg, msg);
 		if (msg->msg_type == DEFUNCT_REQUEST_JOB_ALLOCATION_INFO_LITE)
 			response_msg.msg_type =
 				DEFUNCT_RESPONSE_JOB_ALLOCATION_INFO_LITE;
 		else
 			response_msg.msg_type = RESPONSE_JOB_ALLOCATION_INFO;
 		response_msg.data     = job_info_resp_msg;
-		response_msg.flags    = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 
@@ -3251,11 +3249,9 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 	}
 	unlock_slurmctld(job_read_lock);
 
-	slurm_msg_t_init(&response_msg);
+	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_JOB_PACK_ALLOCATION;
 	response_msg.data     = resp;
-	response_msg.flags    = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 	FREE_NULL_LIST(resp);
 }
@@ -3493,9 +3489,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		job_info_resp_msg.sbcast_cred    = sbcast_cred;
 		unlock_slurmctld(job_read_lock);
 
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
+		response_init(&response_msg, msg);
 		response_msg.msg_type    = RESPONSE_JOB_SBCAST_CRED;
 		response_msg.data        = &job_info_resp_msg;
 
@@ -3840,9 +3834,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 #endif
 	unlock_slurmctld(job_read_lock);
 
-	slurm_msg_t_init(&response_msg);
-	response_msg.flags = msg->flags;
-	response_msg.protocol_version = msg->protocol_version;
+	response_init(&response_msg, msg);
 	response_msg.msg_type    = RESPONSE_STEP_LAYOUT;
 	response_msg.data        = step_layout;
 
@@ -4816,9 +4808,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t * msg)
 		debug2("_slurm_rpc_resv_create complete for %s %s",
 		       resv_desc_ptr->name, TIME_STR);
 		/* send reservation name */
-		slurm_msg_t_init(&response_msg);
-		response_msg.flags = msg->flags;
-		response_msg.protocol_version = msg->protocol_version;
+		response_init(&response_msg, msg);
 		resv_resp_msg.name    = resv_desc_ptr->name;
 		response_msg.msg_type = RESPONSE_CREATE_RESERVATION;
 		response_msg.data     = &resv_resp_msg;
