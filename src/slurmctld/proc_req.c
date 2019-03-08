@@ -264,14 +264,13 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 		drop_priv = true;
 #endif
 
-	/* Just to validate the cred */
-	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred,
-						  slurmctld_config.auth_info);
-	if (g_slurm_auth_errno(msg->auth_cred) != SLURM_SUCCESS) {
-		error("Bad authentication: %s",
-		      g_slurm_auth_errstr(g_slurm_auth_errno(msg->auth_cred)));
+	/* Validate the credential */
+	if (g_slurm_auth_verify(msg->auth_cred, slurmctld_config.auth_info)) {
+		error("Bad authentication: %m");
 		return;
 	}
+	rpc_uid = (uint32_t) g_slurm_auth_get_uid(msg->auth_cred,
+						  slurmctld_config.auth_info);
 	slurm_mutex_lock(&rpc_mutex);
 	if (rpc_type_size == 0) {
 		rpc_type_size = 100;  /* Capture info for first 100 RPC types */
