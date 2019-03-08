@@ -63,28 +63,6 @@
  */
 
 /*
- * Slurm authentication context opaque type.
- */
-typedef struct slurm_auth_context * slurm_auth_context_t;
-
-/*
- * Create an authentication context.
- *
- * Returns NULL on failure.
- */
-slurm_auth_context_t slurm_auth_context_create( const char *auth_type );
-
-/*
- * Destroy an authentication context.  Any jumptables returned by
- * calls to slurm_auth_get_ops() for this context will silently become
- * invalid, and calls to their functions may result in core dumps and
- * other nasty behavior.
- *
- * Returns a Slurm errno.
- */
-int slurm_auth_context_destroy( slurm_auth_context_t ctxt );
-
-/*
  * This is what the UID and GID accessors return on error.  The value
  * is currently RedHat Linux's ID for the user "nobody".
  */
