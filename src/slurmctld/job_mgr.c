@@ -14294,13 +14294,14 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 	kill_job_msg_t *kill_req;
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
-	kill_req->job_gres_info	=
-		gres_plugin_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
 	kill_req->job_id	= job_id;
 	kill_req->step_id	= NO_VAL;
 	kill_req->time          = time(NULL);
 	kill_req->nodes		= xstrdup(node_name);
 	if (job_ptr) {  /* NULL if unknown */
+		kill_req->job_gres_info	=
+			gres_plugin_epilog_build_env(job_ptr->gres_list,
+						     job_ptr->nodes);
 		kill_req->pack_jobid	= job_ptr->pack_job_id;
 		kill_req->start_time = job_ptr->start_time;
 		kill_req->select_jobinfo =
