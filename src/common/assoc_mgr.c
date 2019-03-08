@@ -1203,7 +1203,7 @@ extern int assoc_mgr_post_tres_list(List new_list)
 
 	xassert(new_cnt > 0);
 
-	new_array = xcalloc(new_cnt, sizeof(slurmdb_tres_rec_t));
+	new_array = xcalloc(new_cnt, sizeof(slurmdb_tres_rec_t *));
 	new_name_array = xcalloc(new_cnt, sizeof(char *));
 
 	list_sort(new_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);
