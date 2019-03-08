@@ -91,12 +91,6 @@ extern gid_t	g_slurm_auth_get_gid(void *cred);
 extern char    *g_slurm_auth_get_host(void *cred);
 extern int	g_slurm_auth_pack( void *cred, Buf buf,
 				   uint16_t protocol_version );
-
-/*
- * WARNING!  The returned auth pointer WILL have pointers
- *           into "buf" so do NOT free "buf" until you are done
- *           with the auth pointer.
- */
 extern void	*g_slurm_auth_unpack( Buf buf, uint16_t protocol_version );
 
 #endif /*__SLURM_AUTHENTICATION_H__*/
