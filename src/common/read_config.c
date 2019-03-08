@@ -1567,6 +1567,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 				else
 					p->over_time_limit = i;
 			}
+			xfree(tmp);
 		} else
 			p->over_time_limit = NO_VAL16;
 
