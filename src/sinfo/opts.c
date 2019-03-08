@@ -862,7 +862,7 @@ _parse_format( char* format )
 					right_justify,
 					suffix );
 		} else if (format_all) {
-			;	/* ignore */
+			xfree(suffix);	/* ignore */
 		} else {
 			prefix = xstrdup("%");
 			xstrcat(prefix, token);
