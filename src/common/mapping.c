@@ -147,6 +147,7 @@ pack_process_mapping(uint32_t node_cnt,
 			   start_node, end_node - start_node, depth);
 		offset += mapped;
 	}
+	xfree(next_task);
 	xstrcat(packing,")");
 	return packing;
 }
