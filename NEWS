@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.7
 ==========================
+ -- Set debug statement to debug2 to avoid benign error messages.
 
 * Changes in Slurm 18.08.6-2
 ============================
