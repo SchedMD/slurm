@@ -98,6 +98,7 @@ extern char *fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 	if (esc) {
 		/* esc is malloc */
 		name = esc;
+		esc = NULL;
 		goto fini;
 	}
 
@@ -106,7 +107,7 @@ extern char *fname_create(stepd_step_rec_t *job, const char *format, int taskid)
 	else
 		name = _create_step_fname(name, orig, job, taskid);
 
-fini:
+fini:	xfree(esc);
 	xfree(orig);
 	return name;
 }
@@ -139,8 +140,9 @@ extern char *fname_create2(batch_job_launch_msg_t *req)
 	}
 
 	if (esc) {
-		/* esc is malloc */
+		/* esc is xmalloc */
 		name = esc;
+		esc = NULL;
 		goto fini;
 	}
 
@@ -154,7 +156,7 @@ extern char *fname_create2(batch_job_launch_msg_t *req)
 	job.user_name		= req->user_name;
 	name = _create_batch_fname(name, orig, &job, 0);
 
-fini:
+fini:	xfree(esc);
 	xfree(orig);
 	return name;
 }
