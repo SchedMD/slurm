@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix increasing of job size when extern steps exist.
  -- Reset GPU-related arguments to salloc/sbatch/srun for each separate
     heterogeneous job component.
+ -- Do not set "(null)" for SLURM_JOB_CONSTRAINTS when no constraints are set
+    in PrologSlurmctld/EpilogSlurmctld.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

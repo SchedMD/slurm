@@ -3682,7 +3682,7 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 	}
 
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
-	if (job_ptr->details) {
+	if (job_ptr->details && job_ptr->details->features) {
 		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS",
 			"%s", job_ptr->details->features);
 	}
