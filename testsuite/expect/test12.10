@@ -109,7 +109,7 @@ proc sacct_query {jobname sacct_args expected_job {expected_err false}} {
 ############################################################################
 
 proc get_time { } {
-	global bin_date
+	global bin_date failures
 
 	set date 0
 	spawn $bin_date "+%FT%T#"
@@ -119,7 +119,8 @@ proc get_time { } {
 			exp_continue
 		}
 		timeout {
-		log_error "$bin_date not responding."
+			log_error "$bin_date not responding."
+			incr failures
 		}
 	}
 
@@ -133,8 +134,8 @@ proc get_time { } {
 ############################################################################
 
 if { [test_account_storage] == 0 } {
-	log_error "This test can't be run without a usable AccountStorageType."
-	exit 1
+	log_warn "This test can't be run without a usable AccountStorageType."
+	exit 0
 }
 
 ############################################################################
