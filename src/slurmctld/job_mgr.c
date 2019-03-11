@@ -11450,6 +11450,8 @@ static bool _top_priority(struct job_record *job_ptr, uint32_t pack_job_offset)
 			if (job_ptr->state_reason != FAIL_BAD_CONSTRAINTS
 			    && (job_ptr->state_reason != WAIT_RESV_DELETED)
 			    && (job_ptr->state_reason != FAIL_BURST_BUFFER_OP)
+			    && (job_ptr->state_reason != FAIL_ACCOUNT)
+			    && (job_ptr->state_reason != FAIL_QOS)
 			    && (job_ptr->state_reason != WAIT_HELD)
 			    && (job_ptr->state_reason != WAIT_HELD_USER)
 			    && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
@@ -12351,6 +12353,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->qos_ptr = new_qos_ptr;
 		job_ptr->limit_set.qos = acct_policy_limit_set.qos;
 
+		if (job_ptr->state_reason == FAIL_QOS) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+		}
+
 		info("%s: setting QOS to %s for %pJ",
 		     __func__, new_qos_ptr->name, job_ptr);
 	}
@@ -12361,6 +12368,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		job_ptr->account = xstrdup(new_assoc_ptr->acct);
 		job_ptr->assoc_id = new_assoc_ptr->id;
 		job_ptr->assoc_ptr = new_assoc_ptr;
+
+		if (job_ptr->state_reason == FAIL_ACCOUNT) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+		}
 
 		info("%s: setting account to %s for %pJ",
 		     __func__, job_ptr->account, job_ptr);
@@ -13402,7 +13414,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	} else if ((job_ptr->state_reason != WAIT_HELD)
 		   && (job_ptr->state_reason != WAIT_HELD_USER)
 		   && (job_ptr->state_reason != WAIT_RESV_DELETED)
-		   && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
+		   && (job_ptr->state_reason != WAIT_MAX_REQUEUE)) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
 	}
@@ -15215,6 +15227,8 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	int depend_rc;
 
 	if ((job_ptr->state_reason == FAIL_BURST_BUFFER_OP) ||
+	    (job_ptr->state_reason == FAIL_ACCOUNT) ||
+	    (job_ptr->state_reason == FAIL_QOS) ||
 	    (job_ptr->state_reason == WAIT_HELD) ||
 	    (job_ptr->state_reason == WAIT_HELD_USER) ||
 	    (job_ptr->state_reason == WAIT_MAX_REQUEUE) ||

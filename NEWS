@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid seg_fault on referencing association without a valid_qos bitmap.
  -- If Association/QOS is removed on a pending job set that job as ineligible.
  -- When changing a jobs account/qos always make sure you remove the old limits.
+ -- Don't reset a FAIL_QOS or FAIL_ACCOUNT job reason until the qos or
+    account changed.
 
 * Changes in Slurm 18.08.7
 ==========================
