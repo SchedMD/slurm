@@ -81,6 +81,7 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_conf.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
@@ -93,6 +94,7 @@ typedef cpuset_t cpu_set_t;
 #include "src/common/xstring.h"
 
 #define MAX_GRES_BITMAP 1024
+#define MPS_DEBUG 0
 
 strong_alias(gres_gresid_to_gresname, slurm_gres_gresid_to_gresname);
 strong_alias(gres_get_node_used, slurm_gres_get_node_used);
@@ -175,6 +177,20 @@ typedef struct xcpuinfo_funcs {
 } xcpuinfo_funcs_t;
 xcpuinfo_funcs_t xcpuinfo_ops;
 
+typedef struct mps_assign {
+	uint32_t job_count;	/* Count of job's active on this GPU */
+	uint64_t mps_count;	/* Count of each job's MPS allocation */
+	int gpu_inx;		/* Index of GPU allocated (bit position) */
+	uint32_t user_id;	/* User with MPS allocation on this GPU */
+} mps_assign_t;
+List *mps_table = NULL;	/* List of mps_assign_t records, one per node */
+
+void _del_mps_assign(void *x)
+{
+	mps_assign_t *mps_assign_ptr = (mps_assign_t *) x;
+	xfree(mps_assign_ptr);
+}
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -218,14 +234,16 @@ static void	_gres_job_list_delete(void *list_element);
 static int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   int node_cnt, int node_index, int node_offset,
 			   char *gres_name, uint32_t job_id, char *node_name,
-			   bitstr_t *core_bitmap, uint32_t plugin_id);
+			   bitstr_t *core_bitmap, uint32_t plugin_id,
+			   uint32_t user_id);
 static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 bool use_total_gres, bitstr_t *core_bitmap,
 				 int core_start_bit, int core_end_bit,
 				 char *gres_name, char *node_name);
 static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
 			     int node_offset, char *gres_name, uint32_t job_id,
-			     char *node_name, bool old_job, uint32_t plugin_id);
+			     char *node_name, bool old_job, uint32_t plugin_id,
+			     uint32_t user_id, bool job_fini);
 static void	_job_state_delete(void *gres_data);
 static void *	_job_state_dup(void *gres_data);
 static void *	_job_state_dup2(void *gres_data, int node_index);
@@ -239,6 +257,15 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 static int	_load_gres_plugin(char *plugin_name,
 				  slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
+static void	_mps_assign_add(uint32_t user_id,
+				gres_job_state_t *job_gres_ptr,
+				const uint32_t node_inx, int gpu_inx);
+static void	_mps_assign_clear(void);
+static void	_mps_assign_rm(uint32_t user_id, gres_job_state_t *job_gres_ptr,
+			       const uint32_t node_inx, int gpu_inx);
+static bool	_mps_assign_test(uint32_t user_id,
+				 gres_job_state_t *job_gres_ptr,
+				 const uint32_t node_inx, int gpu_inx);
 static void	_my_stat(char *file_name);
 static int	_node_config_init(char *node_name, char *orig_config,
 				  slurm_gres_context_t *context_ptr,
@@ -698,6 +725,8 @@ extern int gres_plugin_fini(void)
 {
 	int i, j, rc = SLURM_SUCCESS;
 
+	_mps_assign_clear();
+
 	slurm_mutex_lock(&gres_context_lock);
 	xfree(gres_node_name);
 	if (gres_context_cnt < 0)
@@ -758,7 +787,6 @@ extern int gres_plugin_reconfig(void)
 	char *plugin_names = slurm_get_gres_plugins();
 	bool plugin_change;
 
-
 	slurm_mutex_lock(&gres_context_lock);
 	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
 		gres_debug = true;
@@ -769,7 +797,7 @@ extern int gres_plugin_reconfig(void)
 		plugin_change = true;
 	else
 		plugin_change = false;
-
+	_mps_assign_clear();
 	slurm_mutex_unlock(&gres_context_lock);
 
 	if (plugin_change) {
@@ -6457,6 +6485,145 @@ extern char *gres_plugin_sock_str(List sock_gres_list, int sock_inx)
 	return gres_str;
 }
 
+#if MPS_DEBUG
+/* Log the contents of the MPS assignment table */
+static void _mps_assign_log(void)
+{
+	ListIterator iter;
+	mps_assign_t *mps_assign_ptr;
+	int i;
+
+	if (!mps_table)
+		return;
+	info("+++ MPS ASSIGN DUMP START +++");
+	for (i = 0; i < node_record_count; i++) {
+		if (!mps_table[i])
+			continue;
+		iter = list_iterator_create(mps_table[i]);
+		while ((mps_assign_ptr = (mps_assign_t *)list_next(iter))) {
+			info("NODE_INX:%d GPU_INX:%d USER_ID:%u "
+			     "MPS_COUNT:%"PRIu64" JOB_CNT:%u",
+			     i, mps_assign_ptr->gpu_inx,
+			     mps_assign_ptr->user_id, mps_assign_ptr->mps_count,
+			     mps_assign_ptr->job_count);
+		}
+		list_iterator_destroy(iter);
+	}
+	info("+++ MPS ASSIGN DUMP FINI +++");
+}
+#endif
+
+/* Test if new job can be assigned MPS on a specific node/GPU */
+static bool _mps_assign_test(uint32_t user_id, gres_job_state_t *job_gres_ptr,
+			     const uint32_t node_inx, int gpu_inx)
+{
+	bool rc = true;
+	ListIterator iter;
+	mps_assign_t *mps_assign_ptr;
+
+	if (!mps_table)
+		mps_table = xcalloc(node_record_count, sizeof(List));
+	if (!mps_table[node_inx])
+		return true;	/* No MPS assignments on this node/GPU */
+	iter = list_iterator_create(mps_table[node_inx]);
+	while ((mps_assign_ptr = (mps_assign_t *)list_next(iter))) {
+		if ((mps_assign_ptr->gpu_inx != gpu_inx) ||
+		    (mps_assign_ptr->user_id != user_id))
+			continue;
+		if (mps_assign_ptr->mps_count != job_gres_ptr->gres_per_node)
+			rc = false;	/* Job can not re-use this GPU */
+		break;
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+/* Record starting new job MPS assignment on a specific node/GPU */
+static void _mps_assign_add(uint32_t user_id, gres_job_state_t *job_gres_ptr,
+			    const uint32_t node_inx, int gpu_inx)
+{
+	ListIterator iter;
+	mps_assign_t *mps_assign_ptr;
+	bool recorded = false;
+
+	if (!mps_table)
+		mps_table = xcalloc(node_record_count, sizeof(List));
+	if (mps_table[node_inx]) {
+		iter = list_iterator_create(mps_table[node_inx]);
+		while ((mps_assign_ptr = (mps_assign_t *)list_next(iter))) {
+			if ((mps_assign_ptr->gpu_inx != gpu_inx) ||
+			    (mps_assign_ptr->user_id != user_id) ||
+			    (mps_assign_ptr->mps_count !=
+			     job_gres_ptr->gres_per_node))
+				continue;
+			mps_assign_ptr->job_count++;
+			recorded = true;
+			break;
+		}
+		list_iterator_destroy(iter);
+	} else {
+		mps_table[node_inx] = list_create(_del_mps_assign);
+	}
+	if (!recorded) {
+		mps_assign_ptr = xmalloc(sizeof(mps_assign_t));
+		mps_assign_ptr->job_count = 1;
+		mps_assign_ptr->mps_count = job_gres_ptr->gres_per_node;
+		mps_assign_ptr->gpu_inx = gpu_inx;
+		mps_assign_ptr->user_id = user_id;
+		list_append(mps_table[node_inx], mps_assign_ptr);
+	}
+#if MPS_DEBUG
+	_mps_assign_log();
+#endif
+}
+
+/* Clear the MPS assignment table */
+static void _mps_assign_clear(void)
+{
+	int i;
+
+	if (mps_table) {
+		for (i = 0; i < node_record_count; i++)
+			FREE_NULL_LIST(mps_table[i]);
+		xfree(mps_table);
+	}
+}
+
+/* Record ending job MPS assignment on a specific node/GPU */
+static void _mps_assign_rm(uint32_t user_id, gres_job_state_t *job_gres_ptr,
+			   const uint32_t node_inx, int gpu_inx)
+{
+	ListIterator iter;
+	mps_assign_t *mps_assign_ptr;
+
+	if (!mps_table) {
+		error("%s: mps_table NULL", __func__);
+		return;
+	}
+	if (!mps_table[node_inx]) {
+		error("%s: mps_table underflow", __func__);
+		return;
+	}
+	iter = list_iterator_create(mps_table[node_inx]);
+	while ((mps_assign_ptr = (mps_assign_t *)list_next(iter))) {
+		if ((mps_assign_ptr->gpu_inx != gpu_inx) ||
+		    (mps_assign_ptr->user_id != user_id) ||
+		    (mps_assign_ptr->mps_count != job_gres_ptr->gres_per_node))
+			continue;
+		if (mps_assign_ptr->job_count == 0)
+			error("%s: mps_table underflow", __func__);
+		else
+			mps_assign_ptr->job_count--;
+		if (mps_assign_ptr->job_count == 0)
+			list_delete_item(iter);
+		break;
+	}
+	list_iterator_destroy(iter);
+#if MPS_DEBUG
+	_mps_assign_log();
+#endif
+}
+
 /*
  * Determine how many GRES of a given type can be used by this job on a
  * given node and return a structure with the details. Note that multiple
@@ -6471,9 +6638,10 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 				bool enforce_binding, uint32_t s_p_n,
 				bitstr_t **req_sock_map,
 				uint32_t main_plugin_id, uint32_t alt_plugin_id,
-				gres_node_state_t *alt_node_gres_ptr)
+				gres_node_state_t *alt_node_gres_ptr,
+				uint32_t user_id, const uint32_t node_inx)
 {
-	int i, j, s, c, tot_cores;
+	int i, j, s, c, gpu_inx, tot_cores;
 	sock_gres_t *sock_gres;
 	int64_t add_gres;
 	uint64_t avail_gres, min_gres = 1;
@@ -6491,7 +6659,21 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		    (node_gres_ptr->topo_gres_cnt_alloc[i] >=
 		     node_gres_ptr->topo_gres_cnt_avail[i])) {
 			continue;	/* No GRES remaining */
-		} else if (!use_total_gres && !node_gres_ptr->no_consume) {
+		}
+
+		/*
+		 * A user can not be allocated different MPS counts on the
+		 * same device as they are all serviced by the same MPS
+		 * MPS server with a common percentage value.
+		 */
+		if (main_plugin_id == mps_plugin_id) {
+			gpu_inx = bit_ffs(node_gres_ptr->topo_gres_bitmap[i]);
+			if (!_mps_assign_test(user_id, job_gres_ptr, node_inx,
+					      gpu_inx))
+				continue;
+		}
+
+		if (!use_total_gres && !node_gres_ptr->no_consume) {
 			avail_gres = node_gres_ptr->topo_gres_cnt_avail[i] -
 				     node_gres_ptr->topo_gres_cnt_alloc[i];
 		} else {
@@ -6865,6 +7047,8 @@ static void _sock_gres_log(List sock_gres_list, char *node_name)
  * IN enforce_binding - if true then only use GRES with direct access to cores
  * IN s_p_n           - Expected sockets_per_node (NO_VAL if not limited)
  * OUT req_sock_map   - bitmap of specific requires sockets
+ * IN user_id         - job's user ID
+ * IN node_inx        - index of node to be evaluated
  * RET: List of sock_gres_t entries identifying what resources are available on
  *	each core. Returns NULL if none available. Call FREE_NULL_LIST() to
  *	release memory.
@@ -6874,7 +7058,8 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 				  uint16_t sockets, uint16_t cores_per_sock,
 				  uint32_t job_id, char *node_name,
 				  bool enforce_binding, uint32_t s_p_n,
-				  bitstr_t **req_sock_map)
+				  bitstr_t **req_sock_map, uint32_t user_id,
+				  const uint32_t node_inx)
 {
 	List sock_gres_list = NULL;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -6949,7 +7134,8 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 					job_id, node_name, enforce_binding,
 					local_s_p_n, req_sock_map,
 					job_gres_ptr->plugin_id,
-					alt_plugin_id, alt_node_data_ptr);
+					alt_plugin_id, alt_node_data_ptr,
+					user_id, node_inx);
 		} else if (node_data_ptr->type_cnt) {
 			sock_gres = _build_sock_gres_by_type(job_data_ptr,
 					node_data_ptr, use_total_gres,
@@ -9103,7 +9289,8 @@ extern void gres_plugin_job_clear(List job_gres_list)
 static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		      int node_index, int node_offset, char *gres_name,
 		      uint32_t job_id, char *node_name,
-		      bitstr_t *core_bitmap, uint32_t plugin_id)
+		      bitstr_t *core_bitmap, uint32_t plugin_id,
+		      uint32_t user_id)
 {
 	int j, sz1, sz2;
 	int64_t gres_cnt, i;
@@ -9257,6 +9444,11 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 					bit_set(node_gres_ptr->gres_bit_alloc,i);
 					node_gres_ptr->gres_cnt_alloc +=
 								gres_per_bit;
+					if (plugin_id == mps_plugin_id) {
+						_mps_assign_add(user_id,
+								job_gres_ptr,
+								node_offset, i);
+					}
 				}
 			}
 		}
@@ -9303,6 +9495,12 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			bit_or(node_gres_ptr->gres_bit_alloc,
 			       job_gres_ptr->gres_bit_alloc[node_offset]);
 		}
+		if (plugin_id == mps_plugin_id) {
+			int gpu_inx = bit_ffs(job_gres_ptr->
+					      gres_bit_alloc[node_offset]);
+			_mps_assign_add(user_id, job_gres_ptr,
+					node_offset, gpu_inx);
+		}
 		if (job_mod) {
 			node_gres_ptr->gres_cnt_alloc =
 				bit_set_count(node_gres_ptr->gres_bit_alloc);
@@ -9333,6 +9531,10 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 					    node_gres_ptr, i, job_gres_ptr))
 				continue;
 			bit_set(node_gres_ptr->gres_bit_alloc, i);
+			if (plugin_id == mps_plugin_id) {
+				_mps_assign_add(user_id, job_gres_ptr,
+						node_offset, i);
+			}
 			bit_set(job_gres_ptr->gres_bit_alloc[node_offset], i);
 			node_gres_ptr->gres_cnt_alloc += gres_per_bit;
 			gres_cnt -= gres_per_bit;
@@ -9346,6 +9548,10 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 					    job_gres_ptr))
 				continue;
 			bit_set(node_gres_ptr->gres_bit_alloc, i);
+			if (plugin_id == mps_plugin_id) {
+				_mps_assign_add(user_id, job_gres_ptr,
+						node_offset, i);
+			}
 			bit_set(job_gres_ptr->gres_bit_alloc[node_offset], i);
 			node_gres_ptr->gres_cnt_alloc += gres_per_bit;
 			gres_cnt -= gres_per_bit;
@@ -9359,6 +9565,10 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			if (bit_test(node_gres_ptr->gres_bit_alloc, i))
 				continue;
 			bit_set(node_gres_ptr->gres_bit_alloc, i);
+			if (plugin_id == mps_plugin_id) {
+				_mps_assign_add(user_id, job_gres_ptr,
+						node_offset, i);
+			}
 			bit_set(job_gres_ptr->gres_bit_alloc[node_offset], i);
 			node_gres_ptr->gres_cnt_alloc += gres_per_bit;
 			gres_cnt -= gres_per_bit;
@@ -9544,12 +9754,13 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
  *                  available)
+ * IN user_id     - job's user ID
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				 int node_cnt, int node_index, int node_offset,
 				 uint32_t job_id, char *node_name,
-				 bitstr_t *core_bitmap)
+				 bitstr_t *core_bitmap, uint32_t user_id)
 {
 	int i, rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -9599,7 +9810,7 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				 node_gres_ptr->gres_data, node_cnt, node_index,
 				 node_offset, gres_context[i].gres_name,
 				 job_id, node_name, core_bitmap,
-				 job_gres_ptr->plugin_id);
+				 job_gres_ptr->plugin_id, user_id);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
@@ -9611,7 +9822,8 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 
 static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			int node_offset, char *gres_name, uint32_t job_id,
-			char *node_name, bool old_job, uint32_t plugin_id)
+			char *node_name, bool old_job, uint32_t plugin_id,
+			uint32_t user_id, bool job_fini)
 {
 	int i, j, len, sz1, sz2;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -9659,6 +9871,11 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 				continue;
 			}
 			bit_clear(node_gres_ptr->gres_bit_alloc, i);
+			if (job_fini && (plugin_id == mps_plugin_id)) {
+				_mps_assign_rm(user_id, job_gres_ptr,
+					       node_offset, i);
+			}
+
 			/*
 			 * NOTE: Do not clear bit from
 			 * job_gres_ptr->gres_bit_alloc[node_offset]
@@ -9825,11 +10042,14 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
  *		    registration, the GRES type and topology. This results in
  *		    some incorrect internal bookkeeping, but does not cause
  *		    failures in terms of allocating GRES to jobs.
+ * IN user_id     - job's user ID
+ * IN: job_fini   - job fully terminating on this node (not just a test)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				   int node_offset, uint32_t job_id,
-				   char *node_name, bool old_job)
+				   char *node_name, bool old_job,
+				   uint32_t user_id, bool job_fini)
 {
 	int i, rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -9879,7 +10099,7 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 		rc2 = _job_dealloc(job_gres_ptr->gres_data,
 				   node_gres_ptr->gres_data, node_offset,
 				   gres_name, job_id, node_name, old_job,
-				   job_gres_ptr->plugin_id);
+				   job_gres_ptr->plugin_id, user_id, job_fini);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}

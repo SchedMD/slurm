@@ -164,19 +164,22 @@ extern void log_tres_state(struct node_use_record *node_usage,
 extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec);
 
 /*
- * deallocate resources previously allocated to the given job
+ * Deallocate resources previously allocated to the given job
  * - subtract 'struct job_resources' resources from 'struct part_res_record'
  * - subtract job's memory requirements from 'struct node_res_record'
  *
  * if action = 0 then subtract cores, memory + GRES (running job was terminated)
  * if action = 1 then subtract memory + GRES (suspended job was terminated)
  * if action = 2 then only subtract cores (job is suspended)
+ * IN: job_fini - job fully terminating on this node (not just a test)
+ *
+ * RET SLURM_SUCCESS or error code
  *
  * See also: _add_job_to_res() in select_cons_tres.c
  */
 extern int rm_job_res(struct part_res_record *part_record_ptr,
 		      struct node_use_record *node_usage,
-		      struct job_record *job_ptr, int action);
+		      struct job_record *job_ptr, int action, bool job_fini);
 
 /* Allocate resources for a job now, if possible */
 extern int run_now(struct job_record *job_ptr, bitstr_t *node_bitmap,

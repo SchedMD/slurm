@@ -526,6 +526,7 @@ extern bool job_cleaning(struct job_record *job_ptr)
  * if action = 0 then subtract cores, memory + GRES (running job was terminated)
  * if action = 1 then subtract memory + GRES (suspended job was terminated)
  * if action = 2 then only subtract cores (job is suspended)
+ * IN: job_fini - job fully terminating on this node (not just a test)
  *
  * RET SLURM_SUCCESS or error code
  *
@@ -533,7 +534,7 @@ extern bool job_cleaning(struct job_record *job_ptr)
  */
 extern int rm_job_res(struct part_res_record *part_record_ptr,
 		      struct node_use_record *node_usage,
-		      struct job_record *job_ptr, int action)
+		      struct job_record *job_ptr, int action, bool job_fini)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
 	struct node_record *node_ptr;
@@ -589,7 +590,8 @@ extern int rm_job_res(struct part_res_record *part_record_ptr,
 				gres_list = node_ptr->gres_list;
 			gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
 						n, job_ptr->job_id,
-						node_ptr->name, old_job);
+						node_ptr->name, old_job,
+						job_ptr->user_id, job_fini);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
 		}
 
@@ -5815,7 +5817,8 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
 					job_ptr->job_id, node_ptr->name,
-					enforce_binding, s_p_n, &req_sock_map);
+					enforce_binding, s_p_n, &req_sock_map,
+					job_ptr->user_id, node_i);
 		if (!sock_gres_list)	/* GRES requirement fail */
 			return NULL;
 	}
@@ -6443,7 +6446,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				continue;	/* can't remove job */
 			/* Remove preemptable job now */
 			(void) rm_job_res(future_part, future_usage,
-					  tmp_job_ptr, 0);
+					  tmp_job_ptr, 0, false);
 			bit_or(node_bitmap, orig_node_map);
 			rc = _job_test(job_ptr, node_bitmap, min_nodes,
 				       max_nodes, req_nodes,
@@ -6723,7 +6726,7 @@ extern int will_run_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 				action = 0;	/* remove cores and memory */
 			/* Remove preemptable job now */
 			(void) rm_job_res(future_part, future_usage,
-					  tmp_job_ptr, action);
+					  tmp_job_ptr, action, false);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -6782,7 +6785,7 @@ extern int will_run_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 					first_job_ptr = tmp_job_ptr;
 				last_job_ptr = tmp_job_ptr;
 				(void) rm_job_res(future_part, future_usage,
-						  tmp_job_ptr, 0);
+						  tmp_job_ptr, 0, false);
 				if (rm_job_cnt++ > 200)
 					break;
 				next_job_ptr = list_peek_next(job_iterator);

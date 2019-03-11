@@ -169,7 +169,7 @@ static bool _rem_run_job(struct cr_record *cr_ptr, uint32_t job_id);
 static bool _rem_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
 static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			      struct job_record *job_ptr, char *pre_err,
-			      bool remove_all);
+			      bool remove_all, bool job_fini);
 static int _rm_job_from_one_node(struct job_record *job_ptr,
 				 struct node_record *node_ptr, char *pre_err);
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
@@ -2269,7 +2269,7 @@ fini:	if (rc == SLURM_SUCCESS) {
  */
 static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			      struct job_record *job_ptr, char *pre_err,
-			      bool remove_all)
+			      bool remove_all, bool job_fini)
 {
 	int i, i_first, i_last, node_offset, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
@@ -2358,7 +2358,8 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 				gres_list = node_ptr->gres_list;
 			gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
 						node_offset, job_ptr->job_id,
-						node_ptr->name, old_job);
+						node_ptr->name, old_job,
+						job_ptr->user_id, job_fini);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
 		}
 
@@ -2477,9 +2478,9 @@ static int _job_expand(struct job_record *from_job_ptr,
 	}
 
 	(void) _rm_job_from_nodes(cr_ptr, from_job_ptr, "select_p_job_expand",
-				  true);
+				  true, true);
 	(void) _rm_job_from_nodes(cr_ptr, to_job_ptr,   "select_p_job_expand",
-				  true);
+				  true, true);
 
 	if (to_job_resrcs_ptr->core_bitmap_used) {
 		i = bit_size(to_job_resrcs_ptr->core_bitmap_used);
@@ -2760,7 +2761,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 	else
 		gres_list = node_ptr->gres_list;
 	gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, node_offset,
-				job_ptr->job_id, node_ptr->name, old_job);
+				job_ptr->job_id, node_ptr->name, old_job,
+				job_ptr->user_id, true);
 	gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 	return _decr_node_job_cnt(node_inx, job_ptr, pre_err);
@@ -2841,7 +2843,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
 					      node_cnt, i, node_offset,
 					      job_ptr->job_id, node_ptr->name,
-					      NULL);
+					      NULL, job_ptr->user_id);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
 		}
 
@@ -3113,7 +3115,7 @@ static void _init_node_cr(void)
 						      i, node_offset,
 						      job_ptr->job_id,
 						      node_ptr->name,
-						      NULL);
+						      NULL, job_ptr->user_id);
 			}
 
 			part_cr_ptr = cr_ptr->nodes[i].parts;
@@ -3279,9 +3281,8 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 			    (mode == PREEMPT_MODE_CANCEL))
 				remove_all = true;
 			/* Remove preemptable job now */
-			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
-					   "_run_now",
-					   remove_all);
+			_rm_job_from_nodes(exp_cr, tmp_job_ptr, "_run_now",
+					   remove_all, false);
 			j = _job_count_bitmap(exp_cr, job_ptr,
 					      orig_map, bitmap,
 					      (max_share - 1),
@@ -3452,7 +3453,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				remove_all = true;
 			/* Remove preemptable job now */
 			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
-					   "_will_run_test", remove_all);
+					   "_will_run_test", remove_all, false);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -3483,7 +3484,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		while ((tmp_job_ptr = (struct job_record *)
 			list_next(job_iterator))) {
 			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
-					   "_will_run_test", true);
+					   "_will_run_test", true, false);
 			i = _job_count_bitmap(exp_cr, job_ptr, orig_map,
 					      bitmap, max_run_jobs,
 					      NO_SHARE_LIMIT,
@@ -3833,8 +3834,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	slurm_mutex_lock(&cr_mutex);
 	if (cr_ptr == NULL)
 		_init_node_cr();
-	if (_rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_fini", true) !=
-	    SLURM_SUCCESS)
+	if (_rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_fini", true,
+			       true) != SLURM_SUCCESS)
 		rc = SLURM_ERROR;
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
@@ -3857,7 +3858,8 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 	slurm_mutex_lock(&cr_mutex);
 	if (cr_ptr == NULL)
 		_init_node_cr();
-	rc = _rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_suspend", false);
+	rc = _rm_job_from_nodes(cr_ptr, job_ptr, "select_p_job_suspend", false,
+				false);
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }

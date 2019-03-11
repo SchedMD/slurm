@@ -219,7 +219,8 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 				 struct node_record *node_ptr);
 static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct node_use_record *node_usage,
-			    struct job_record *job_ptr, int action);
+			    struct job_record *job_ptr, int action,
+			    bool job_fini);
 static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t job_node_req,
@@ -857,7 +858,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
 					      job->nhosts, i, n,
 					      job_ptr->job_id, node_ptr->name,
-					      core_bitmap);
+					      core_bitmap, job_ptr->user_id);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
 			FREE_NULL_BITMAP(core_bitmap);
 		}
@@ -1003,9 +1004,9 @@ static int _job_expand(struct job_record *from_job_ptr,
 	}
 
 	(void) _rm_job_from_res(select_part_record, select_node_usage,
-				from_job_ptr, 0);
+				from_job_ptr, 0, true);
 	(void) _rm_job_from_res(select_part_record, select_node_usage,
-				to_job_ptr, 0);
+				to_job_ptr, 0, true);
 
 	if (to_job_resrcs_ptr->core_bitmap_used) {
 		i = bit_size(to_job_resrcs_ptr->core_bitmap_used);
@@ -1175,7 +1176,8 @@ static int _job_expand(struct job_record *from_job_ptr,
  */
 static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 			    struct node_use_record *node_usage,
-			    struct job_record *job_ptr, int action)
+			    struct job_record *job_ptr, int action,
+			    bool job_fini)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
 	struct node_record *node_ptr;
@@ -1225,7 +1227,8 @@ static int _rm_job_from_res(struct part_res_record *part_record_ptr,
 				gres_list = node_ptr->gres_list;
 			gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
 						n, job_ptr->job_id,
-						node_ptr->name, old_job);
+						node_ptr->name, old_job,
+						job_ptr->user_id, job_fini);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
 		}
 
@@ -1377,7 +1380,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 			gres_list = node_ptr->gres_list;
 		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n,
 					job_ptr->job_id, node_ptr->name,
-					old_job);
+					old_job, job_ptr->user_id, true);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
@@ -1639,7 +1642,7 @@ top:	orig_map = bit_copy(save_bitmap);
 				continue;	/* can't remove job */
 			/* Remove preemptable job now */
 			_rm_job_from_res(future_part, future_usage,
-					 tmp_job_ptr, 0);
+					 tmp_job_ptr, 0, false);
 			bit_or(bitmap, orig_map);
 			rc = cr_job_test(job_ptr, bitmap, min_nodes,
 					 max_nodes, req_nodes,
@@ -1900,7 +1903,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				action = 0;	/* remove cores and memory */
 			/* Remove preemptable job now */
 			_rm_job_from_res(future_part, future_usage,
-					 tmp_job_ptr, action);
+					 tmp_job_ptr, action, false);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -1955,7 +1958,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					first_job_ptr = tmp_job_ptr;
 				last_job_ptr = tmp_job_ptr;
 				_rm_job_from_res(future_part, future_usage,
-						 tmp_job_ptr, 0);
+						 tmp_job_ptr, 0, false);
 				if (rm_job_cnt++ > 200)
 					break;
 				next_job_ptr = list_peek_next(job_iterator);
@@ -2462,7 +2465,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	_rm_job_from_res(select_part_record, select_node_usage, job_ptr, 0);
+	_rm_job_from_res(select_part_record, select_node_usage, job_ptr, 0,
+			 true);
 
 	return SLURM_SUCCESS;
 }
@@ -2478,7 +2482,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 		return SLURM_SUCCESS;
 
 	return _rm_job_from_res(select_part_record, select_node_usage,
-				job_ptr, 2);
+				job_ptr, 2, false);
 }
 
 /* See NOTE with select_p_job_suspend above */

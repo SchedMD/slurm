@@ -229,7 +229,8 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 			gres_plugin_job_alloc(job_ptr->gres_list,
 					      node_gres_list, job->nhosts,
 					      i, n, job_ptr->job_id,
-					      node_ptr->name, core_bitmap);
+					      node_ptr->name, core_bitmap,
+					      job_ptr->user_id);
 			gres_plugin_node_state_log(node_gres_list,
 						   node_ptr->name);
 			FREE_NULL_BITMAP(core_bitmap);
@@ -1375,7 +1376,7 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 			gres_list = node_ptr->gres_list;
 		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n,
 					job_ptr->job_id, node_ptr->name,
-					old_job);
+					old_job, job_ptr->user_id, true);
 		gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
@@ -1512,9 +1513,21 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 		return SLURM_ERROR;
 	}
 
+	if (to_job_ptr->gres_list) {	/* Can't reset gres/mps fields today */
+		error("%s: %s: %pJ has allocated GRES",
+		      plugin_type, __func__, to_job_ptr);
+		return SLURM_ERROR;
+	}
+	if (from_job_ptr->gres_list) {	/* Can't reset gres/mps fields today */
+		error("%s: %s: %pJ has allocated GRES",
+		      plugin_type, __func__, from_job_ptr);
+		return SLURM_ERROR;
+	}
+
 	(void) rm_job_res(select_part_record, select_node_usage, from_job_ptr,
-			  0);
-	(void) rm_job_res(select_part_record, select_node_usage, to_job_ptr, 0);
+			  0, true);
+	(void) rm_job_res(select_part_record, select_node_usage, to_job_ptr, 0,
+			  true);
 
 	if (to_job_resrcs_ptr->core_bitmap_used) {
 		i = bit_size(to_job_resrcs_ptr->core_bitmap_used);
@@ -1725,7 +1738,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
-	rm_job_res(select_part_record, select_node_usage, job_ptr, 0);
+	rm_job_res(select_part_record, select_node_usage, job_ptr, 0, true);
 
 	return SLURM_SUCCESS;
 }
@@ -1750,7 +1763,8 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 	if (!indf_susp)
 		return SLURM_SUCCESS;
 
-	return rm_job_res(select_part_record, select_node_usage, job_ptr, 2);
+	return rm_job_res(select_part_record, select_node_usage, job_ptr, 2,
+			  false);
 }
 
 /* See NOTE with select_p_job_suspend() above */

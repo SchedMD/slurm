@@ -830,6 +830,8 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
  * IN enforce_binding - if true then only use GRES with direct access to cores
  * IN s_p_n           - Expected sockets_per_node (NO_VAL if not limited)
  * OUT req_sock_map   - bitmap of specific requires sockets
+ * IN user_id         - job's user ID
+ * IN node_inx        - index of node to be evaluated
  * RET: List of sock_gres_t entries identifying what resources are available on
  *	each core. Returns NULL if none available. Call FREE_NULL_LIST() to
  *	release memory.
@@ -839,7 +841,8 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 				  uint16_t sockets, uint16_t cores_per_sock,
 				  uint32_t job_id, char *node_name,
 				  bool enforce_binding, uint32_t s_p_n,
-				  bitstr_t **req_sock_map);
+				  bitstr_t **req_sock_map, uint32_t user_id,
+				  const uint32_t node_inx);
 
 /*
  * Determine which GRES can be used on this node given the available cores.
@@ -970,12 +973,13 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
  *                  available)
+ * IN user_id     - job's user ID
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				 int node_cnt, int node_index, int node_offset,
 				 uint32_t job_id, char *node_name,
-				 bitstr_t *core_bitmap);
+				 bitstr_t *core_bitmap, uint32_t user_id);
 
 /* Clear any vestigial job gres state. This may be needed on job requeue. */
 extern void gres_plugin_job_clear(List job_gres_list);
@@ -993,11 +997,14 @@ extern void gres_plugin_job_clear(List job_gres_list);
  *		    registration, the GRES type and topology. This results in
  *		    some incorrect internal bookkeeping, but does not cause
  *		    failures in terms of allocating GRES to jobs.
+ * IN user_id     - job's user ID
+ * IN: job_fini   - job fully terminating on this node (not just a test)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				   int node_offset, uint32_t job_id,
-				   char *node_name, bool old_job);
+				   char *node_name, bool old_job,
+				   uint32_t user_id, bool job_fini);
 
 /*
  * Merge one job's gres allocation into another job's gres allocation.
