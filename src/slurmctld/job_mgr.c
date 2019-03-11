@@ -270,6 +270,74 @@ static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
 
+
+static int _job_fail_account(struct job_record *job_ptr, const char *func_name)
+{
+	int rc = 0; // Return number of pending jobs held
+
+	if (IS_JOB_PENDING(job_ptr)) {
+		info("%s: %pJ ineligible due to invalid association",
+		     func_name, job_ptr);
+
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = FAIL_ACCOUNT;
+
+		if (job_ptr->details) {
+			/* reset the job */
+			job_ptr->details->accrue_time = 0;
+			job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
+			job_ptr->details->begin_time = 0;
+			/* Update job with new begin_time. */
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		}
+		rc = 1;
+	}
+
+	/* This job is no longer eligible, so make it so. */
+	if (job_ptr->assoc_ptr) {
+		struct part_record *tmp_part = job_ptr->part_ptr;
+		List tmp_part_list = job_ptr->part_ptr_list;
+		slurmdb_qos_rec_t *tmp_qos = job_ptr->qos_ptr;
+
+		/*
+		 * Force a start so the association doesn't get lost.  Since
+		 * there could be some delay in the start of the job when
+		 * running with the slurmdbd.
+		 */
+		if (!job_ptr->db_index)
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+
+		/*
+		 * Don't call acct_policy_remove_accrue_time() here, the cnt on
+		 * parent associations will be handled correctly by the removal
+		 * of the association.
+		 */
+
+		/*
+		 * Clear ptrs so that only assocation usage is removed.
+		 * Otherwise qos and partition limits will be double accounted
+		 * for when this job finishes. Don't do this for acrrual time,
+		 * it has be on both because the job is ineligible and can't
+		 * accrue time.
+		 */
+		job_ptr->part_ptr = NULL;
+		job_ptr->part_ptr_list = NULL;
+		job_ptr->qos_ptr = NULL;
+
+		acct_policy_remove_job_submit(job_ptr);
+
+		job_ptr->part_ptr = tmp_part;
+		job_ptr->part_ptr_list = tmp_part_list;
+		job_ptr->qos_ptr = tmp_qos;
+
+		job_ptr->assoc_ptr = NULL;
+	}
+
+	job_ptr->assoc_id = 0;
+
+	return rc;
+}
+
 /*
  * Functions used to manage job array responses with a separate return code
  * possible for each task ID
@@ -2261,9 +2329,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				    &job_ptr->assoc_ptr, true) &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 	    && (!IS_JOB_FINISHED(job_ptr))) {
-		info("Holding %pJ with invalid association", job_ptr);
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = FAIL_ACCOUNT;
+		_job_fail_account(job_ptr, __func__);
 	} else {
 		job_ptr->assoc_id = assoc_rec.id;
 		info("Recovered %pJ Assoc=%u", job_ptr, job_ptr->assoc_id);
@@ -16683,32 +16749,7 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id)
 		if (job_ptr->assoc_id != assoc_id)
 			continue;
 
-		/* move up to the parent that should still exist */
-		if (job_ptr->assoc_ptr) {
-			/* Force a start so the association doesn't
-			   get lost.  Since there could be some delay
-			   in the start of the job when running with
-			   the slurmdbd.
-			*/
-			if (!job_ptr->db_index) {
-				jobacct_storage_g_job_start(acct_db_conn,
-							    job_ptr);
-			}
-
-			job_ptr->assoc_ptr =
-				job_ptr->assoc_ptr->usage->parent_assoc_ptr;
-			if (job_ptr->assoc_ptr)
-				job_ptr->assoc_id =
-					job_ptr->assoc_ptr->id;
-		}
-
-		if (IS_JOB_FINISHED(job_ptr))
-			continue;
-
-		info("Association deleted, holding %pJ", job_ptr);
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = FAIL_ACCOUNT;
-		cnt++;
+		cnt += _job_fail_account(job_ptr, __func__);
 	}
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);
@@ -16743,27 +16784,7 @@ extern int job_hold_by_qos_id(uint32_t qos_id)
 		if (job_ptr->qos_id != qos_id)
 			continue;
 
-		/* move up to the parent that should still exist */
-		if (job_ptr->qos_ptr) {
-			/* Force a start so the association doesn't
-			   get lost.  Since there could be some delay
-			   in the start of the job when running with
-			   the slurmdbd.
-			*/
-			if (!job_ptr->db_index) {
-				jobacct_storage_g_job_start(acct_db_conn,
-							    job_ptr);
-			}
-			job_ptr->qos_ptr = NULL;
-		}
-
-		if (IS_JOB_FINISHED(job_ptr))
-			continue;
-
-		info("QOS deleted, holding %pJ", job_ptr);
-		xfree(job_ptr->state_desc);
-		job_ptr->state_reason = FAIL_QOS;
-		cnt++;
+		cnt += _job_fail_qos(job_ptr, __func__);
 	}
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);
@@ -16859,10 +16880,7 @@ extern int send_jobs_to_accounting(void)
 				   &job_ptr->assoc_ptr, false) &&
 			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
 			    && (!IS_JOB_FINISHED(job_ptr))) {
-				info("Holding %pJ with invalid association",
-				     job_ptr);
-				xfree(job_ptr->state_desc);
-				job_ptr->state_reason = FAIL_ACCOUNT;
+				_job_fail_account(job_ptr, __func__);
 				continue;
 			} else
 				job_ptr->assoc_id = assoc_rec.id;
