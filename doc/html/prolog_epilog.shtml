@@ -322,10 +322,10 @@ The value is set only if the gres/mps plugin is configured and the job
 requests those resources.
 Available in Prolog and Epilog only.</li>
 
-<li><b>CUDA_VISIBLE_DEVICE</b>
+<li><b>CUDA_VISIBLE_DEVICES</b>
 Specifies the GPU devices that should be allocated to the job.
-The value is set only if the gres/mps plugin is configured and the job
-requests those resources.
+The value is set only if the gres/gpu or gres/mps plugin is configured and the
+job requests those resources
 Note that the environment variable set for the job may differ from that set for
 the Prolog and Epilog if Slurm is configured to constrain the device files
 visible to a job using Linux cgroup.
@@ -333,8 +333,8 @@ This is because the Prolog and Epilog programs run <u>outside</u> of any Linux
 cgroup while the job runs <u>inside</u> of the cgroup and may thus have a
 different set of visible devices.
 For example, if a job is allocated the device "/dev/nvidia1", then
-<b>CUDA_VISIBLE_DEVICE</b> will be set to a value of "1" in the Prolog and
-Epilog while the job's value of <b>CUDA_VISIBLE_DEVICE</b> will be set to a
+<b>CUDA_VISIBLE_DEVICES</b> will be set to a value of "1" in the Prolog and
+Epilog while the job's value of <b>CUDA_VISIBLE_DEVICES</b> will be set to a
 value of "0" (i.e. the first GPU device visible to the job).
 Available in Prolog and Epilog only.</li>
 

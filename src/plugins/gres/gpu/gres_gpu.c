@@ -663,9 +663,24 @@ extern List get_devices(void)
  * Build record used to set environment variables as appropriate for a job's
  * prolog or epilog based GRES allocated to the job.
  */
-extern gres_epilog_info_t *epilog_build_env(List job_gres_info)
+extern gres_epilog_info_t *epilog_build_env(gres_job_state_t *gres_job_ptr)
 {
-	return NULL;
+	int i;
+	gres_epilog_info_t *epilog_info;
+
+	epilog_info = xmalloc(sizeof(gres_epilog_info_t));
+	epilog_info->node_cnt = gres_job_ptr->node_cnt;
+	epilog_info->gres_bit_alloc = xcalloc(epilog_info->node_cnt,
+					      sizeof(bitstr_t *));
+	for (i = 0; i < epilog_info->node_cnt; i++) {
+		if (gres_job_ptr->gres_bit_alloc &&
+		    gres_job_ptr->gres_bit_alloc[i]) {
+			epilog_info->gres_bit_alloc[i] =
+				bit_copy(gres_job_ptr->gres_bit_alloc[i]);
+		}
+	}
+
+	return epilog_info;
 }
 
 /*
@@ -675,5 +690,63 @@ extern gres_epilog_info_t *epilog_build_env(List job_gres_info)
 extern void epilog_set_env(char ***epilog_env_ptr,
 			   gres_epilog_info_t *epilog_info, int node_inx)
 {
+	int dev_inx_first = -1, dev_inx_last, dev_inx;
+	int env_inx = 0, i;
+	gres_device_t *gres_device;
+	char *dev_num_str = NULL, *sep = "";
+	ListIterator iter;
+
+	xassert(epilog_env_ptr);
+
+	if (!epilog_info)
+		return;
+
+	if (node_inx > epilog_info->node_cnt) {
+		error("%s: %s: bad node index (%d > %u)", plugin_type, __func__,
+		      node_inx, epilog_info->node_cnt);
+		return;
+	}
+
+	if (*epilog_env_ptr) {
+		for (env_inx = 0; (*epilog_env_ptr)[env_inx]; env_inx++)
+			;
+		xrealloc(*epilog_env_ptr, sizeof(char *) * (env_inx + 3));
+	} else {
+		*epilog_env_ptr = xcalloc(3, sizeof(char *));
+	}
+
+	if (epilog_info->gres_bit_alloc &&
+	    epilog_info->gres_bit_alloc[node_inx]) {
+		dev_inx_first = bit_ffs(epilog_info->gres_bit_alloc[node_inx]);
+	}
+	if (dev_inx_first >= 0)
+		dev_inx_last = bit_fls(epilog_info->gres_bit_alloc[node_inx]);
+	else
+		dev_inx_last = -2;
+	for (dev_inx = dev_inx_first; dev_inx <= dev_inx_last; dev_inx++) {
+		if (!bit_test(epilog_info->gres_bit_alloc[node_inx], dev_inx))
+			continue;
+		/* Translate bits to device number, may differ */
+		i = -1;
+		iter = list_iterator_create(gres_devices);
+		while ((gres_device = list_next(iter))) {
+			i++;
+			if (i == dev_inx) {
+				xstrfmtcat(dev_num_str, "%s%d",
+					   sep,gres_device->dev_num);
+				sep = ",";
+				break;
+			}
+		}
+		list_iterator_destroy(iter);
+	}
+	if (dev_num_str) {
+		xstrfmtcat((*epilog_env_ptr)[env_inx++],
+			   "CUDA_VISIBLE_DEVICES=%s", dev_num_str);
+		xstrfmtcat((*epilog_env_ptr)[env_inx++],
+			   "GPU_DEVICE_ORDINAL=%s", dev_num_str);
+		xfree(dev_num_str);
+	}
+
 	return;
 }

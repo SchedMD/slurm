@@ -836,7 +836,7 @@ extern void epilog_set_env(char ***epilog_env_ptr,
 	}
 	if (global_id >= 0) {
 		xstrfmtcat((*epilog_env_ptr)[env_inx++],
-			   "CUDA_VISIBLE_DEVICE=%d", global_id);
+			   "CUDA_VISIBLE_DEVICES=%d", global_id);
 	}
 	if ((global_id >= 0) &&
 	    epilog_info->gres_cnt_node_alloc &&

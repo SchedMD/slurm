@@ -5654,12 +5654,22 @@ extern int gres_plugin_job_alloc_pack(List gres_list, Buf buffer,
 			pack32(magic, buffer);
 			pack32(gres_job_ptr->plugin_id, buffer);
 			pack32(gres_job_ptr->node_cnt, buffer);
-			pack64_array(gres_job_ptr->gres_cnt_node_alloc,
-				     gres_job_ptr->node_cnt, buffer);
-			for (i = 0; i < gres_job_ptr->node_cnt; i++) {
-				pack_bit_str_hex(gres_job_ptr->
-						 gres_bit_alloc[i],
-						 buffer);
+			if (gres_job_ptr->gres_cnt_node_alloc) {
+				pack8((uint8_t) 1, buffer);
+				pack64_array(gres_job_ptr->gres_cnt_node_alloc,
+					     gres_job_ptr->node_cnt, buffer);
+			} else {
+				pack8((uint8_t) 0, buffer);
+			}
+			if (gres_job_ptr->gres_bit_alloc) {
+				pack8((uint8_t) 1, buffer);
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					pack_bit_str_hex(gres_job_ptr->
+							 gres_bit_alloc[i],
+							 buffer);
+				}
+			} else {
+				pack8((uint8_t) 0, buffer);
 			}
 			rec_cnt++;
 		} else {
@@ -5707,6 +5717,7 @@ extern int gres_plugin_job_alloc_unpack(List *gres_list, Buf buffer,
 	int i = 0, rc;
 	uint32_t magic = 0, utmp32 = 0;
 	uint16_t rec_cnt = 0;
+	uint8_t filled = 0;
 	gres_epilog_info_t *gres_job_ptr = NULL;
 
 	safe_unpack16(&rec_cnt, buffer);
@@ -5734,17 +5745,23 @@ extern int gres_plugin_job_alloc_unpack(List *gres_list, Buf buffer,
 			safe_unpack32(&gres_job_ptr->node_cnt, buffer);
 			if (gres_job_ptr->node_cnt > NO_VAL)
 				goto unpack_error;
-			safe_unpack64_array(&gres_job_ptr->gres_cnt_node_alloc,
-					    &utmp32, buffer);
-			safe_xcalloc(gres_job_ptr->gres_bit_alloc,
-				     gres_job_ptr->node_cnt,
-				     sizeof(bitstr_t *));
-			for (i = 0; i < gres_job_ptr->node_cnt; i++) {
-				unpack_bit_str_hex(&gres_job_ptr->
-						   gres_bit_alloc[i],
-						   buffer);
+			safe_unpack8(&filled, buffer);
+			if (filled) {
+				safe_unpack64_array(
+					&gres_job_ptr->gres_cnt_node_alloc,
+					&utmp32, buffer);
 			}
-
+			safe_unpack8(&filled, buffer);
+			if (filled) {
+				safe_xcalloc(gres_job_ptr->gres_bit_alloc,
+					     gres_job_ptr->node_cnt,
+					     sizeof(bitstr_t *));
+				for (i = 0; i < gres_job_ptr->node_cnt; i++) {
+					unpack_bit_str_hex(&gres_job_ptr->
+							   gres_bit_alloc[i],
+							   buffer);
+				}
+			}
 		} else {
 			error("%s: protocol_version %hu not supported",
 			      __func__, protocol_version);

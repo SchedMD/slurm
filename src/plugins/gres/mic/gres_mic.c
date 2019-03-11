@@ -262,7 +262,7 @@ extern void step_hardware_fini(void)
  * Build record used to set environment variables as appropriate for a job's
  * prolog or epilog based GRES allocated to the job.
  */
-extern gres_epilog_info_t *epilog_build_env(List job_gres_info)
+extern gres_epilog_info_t *epilog_build_env(gres_job_state_t *gres_job_ptr)
 {
 	return NULL;
 }
