@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue in gres code to handle a gres cnt of 0.
  -- Don't purge jobs if backfill is running.
  -- Verify job is pending add/removing accrual time.
+ -- Don't abort when the job doesn't have an association that was removed
+    before the job was able to make it to the database.
 
 * Changes in Slurm 18.08.7
 ==========================
