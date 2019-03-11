@@ -12258,82 +12258,91 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	 * If a limit was already exceeded before this update
 	 * request, let's assume it is expected and allow the change to happen.
 	 */
-	if ((new_qos_ptr || new_assoc_ptr || new_part_ptr) &&
-	    !operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
-		uint32_t acct_reason = 0;
-		char *resv_orig = NULL;
-		bool resv_reset = false, min_reset = false, max_reset = false,
-		time_min_reset = false;
-		if (!acct_policy_validate(job_specs, use_part_ptr,
-					  use_assoc_ptr, use_qos_ptr,
-					  &acct_reason, &acct_policy_limit_set,
-					  true)
-		    && !acct_limit_already_exceeded) {
-			info("%s: exceeded association/QOS limit for user %u: %s",
-			     __func__, job_specs->user_id,
-			     job_reason_string(acct_reason));
-			error_code = ESLURM_ACCOUNTING_POLICY;
-			goto fini;
+	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
+		if (!operator &&
+		    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+			uint32_t acct_reason = 0;
+			char *resv_orig = NULL;
+			bool resv_reset = false, min_reset = false,
+				max_reset = false,
+				time_min_reset = false;
+			if (!acct_policy_validate(job_specs, use_part_ptr,
+						  use_assoc_ptr, use_qos_ptr,
+						  &acct_reason,
+						  &acct_policy_limit_set,
+						  true)
+			    && !acct_limit_already_exceeded) {
+				info("%s: exceeded association/QOS limit for user %u: %s",
+				     __func__, job_specs->user_id,
+				     job_reason_string(acct_reason));
+				error_code = ESLURM_ACCOUNTING_POLICY;
+				goto fini;
+			}
+			/*
+			 * We need to set the various parts of job_specs below
+			 * to something since _valid_job_part() will validate
+			 * them.  Note the reservation part is validated in the
+			 * sub call to _part_access_check().
+			 */
+			if (job_specs->min_nodes == NO_VAL) {
+				job_specs->min_nodes = detail_ptr->min_nodes;
+				min_reset = true;
+			}
+			if ((job_specs->max_nodes == NO_VAL) &&
+			    (detail_ptr->max_nodes != 0)) {
+				job_specs->max_nodes = detail_ptr->max_nodes;
+				max_reset = true;
+			}
+
+			if ((job_specs->time_min == NO_VAL) &&
+			    (job_ptr->time_min != 0)) {
+				job_specs->time_min = job_ptr->time_min;
+				time_min_reset = true;
+			}
+
+			/*
+			 * This always gets reset, so don't worry about tracking
+			 * it.
+			 */
+			if (job_specs->time_limit == NO_VAL)
+				job_specs->time_limit = job_ptr->time_limit;
+
+			if (!job_specs->reservation
+			    || job_specs->reservation[0] == '\0') {
+				resv_reset = true;
+				resv_orig = job_specs->reservation;
+				job_specs->reservation = job_ptr->resv_name;
+			}
+
+			if ((error_code = _valid_job_part(
+				     job_specs, uid,
+				     new_req_bitmap_given ?
+				     new_req_bitmap :
+				     job_ptr->details->req_node_bitmap,
+				     use_part_ptr,
+				     job_specs->partition ?
+				     part_ptr_list : job_ptr->part_ptr_list,
+				     use_assoc_ptr, use_qos_ptr)))
+				goto fini;
+
+			if (min_reset)
+				job_specs->min_nodes = NO_VAL;
+			if (max_reset)
+				job_specs->max_nodes = NO_VAL;
+			if (time_min_reset)
+				job_specs->time_min = NO_VAL;
+			if (resv_reset)
+				job_specs->reservation = resv_orig;
+
+			job_specs->time_limit = orig_time_limit;
 		}
-		/*
-		 * We need to set the various parts of job_specs below to
-		 * something since _valid_job_part() will validate them.  Note
-		 * the reservation part is validated in the sub call to
-		 * _part_access_check().
-		 */
-		if (job_specs->min_nodes == NO_VAL) {
-			job_specs->min_nodes = detail_ptr->min_nodes;
-			min_reset = true;
-		}
-		if ((job_specs->max_nodes == NO_VAL) &&
-		    (detail_ptr->max_nodes != 0)) {
-			job_specs->max_nodes = detail_ptr->max_nodes;
-			max_reset = true;
-		}
-
-		if ((job_specs->time_min == NO_VAL) &&
-		    (job_ptr->time_min != 0)) {
-			job_specs->time_min = job_ptr->time_min;
-			time_min_reset = true;
-		}
-
-		/* This always gets reset, so don't worry about tracking it. */
-		if (job_specs->time_limit == NO_VAL)
-			job_specs->time_limit = job_ptr->time_limit;
-
-		if (!job_specs->reservation
-		    || job_specs->reservation[0] == '\0') {
-			resv_reset = true;
-			resv_orig = job_specs->reservation;
-			job_specs->reservation = job_ptr->resv_name;
-		}
-
-		if ((error_code = _valid_job_part(
-			     job_specs, uid,
-			     new_req_bitmap_given ?
-			     new_req_bitmap : job_ptr->details->req_node_bitmap,
-			     use_part_ptr,
-			     job_specs->partition ?
-			     part_ptr_list : job_ptr->part_ptr_list,
-			     use_assoc_ptr, use_qos_ptr)))
-			goto fini;
-
-		if (min_reset)
-			job_specs->min_nodes = NO_VAL;
-		if (max_reset)
-			job_specs->max_nodes = NO_VAL;
-		if (time_min_reset)
-			job_specs->time_min = NO_VAL;
-		if (resv_reset)
-			job_specs->reservation = resv_orig;
-
-		job_specs->time_limit = orig_time_limit;
 
 		/*
 		 * Since we are successful to this point remove the job from the
 		 * old qos/assoc's
 		 */
 		acct_policy_remove_job_submit(job_ptr);
+		acct_policy_remove_accrue_time(job_ptr, false);
 	}
 
 	if (new_qos_ptr) {
