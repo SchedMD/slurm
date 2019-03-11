@@ -64,6 +64,11 @@
 #define SLURM_AUTH_NOBODY 99
 
 /*
+ * Default auth_index value, corresponds to the primary AuthType used.
+ */
+#define AUTH_DEFAULT_INDEX 0
+
+/*
  * Prepare the global context.
  * auth_type IN: authentication mechanism (e.g. "auth/munge") or
  *	NULL to select based upon slurm_get_auth_type() results
@@ -74,6 +79,12 @@ extern int slurm_auth_init(char *auth_type);
  * Destroy global context, free memory.
  */
 extern int slurm_auth_fini(void);
+
+/*
+ * Retrieve the auth_index corresponding to the authentication
+ * plugin used to create a given credential.
+ */
+extern int slurm_auth_index(void *cred);
 
 /*
  * Static bindings for the global authentication context.

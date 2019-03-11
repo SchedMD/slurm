@@ -196,6 +196,27 @@ done:
 }
 
 /*
+ * Retrieve the auth_index corresponding to the authentication
+ * plugin used to create a given credential.
+ *
+ * Note that this works because all plugin credential types
+ * are required to store the auth_index as an int first in their
+ * internal (opaque) structures.
+ *
+ * The cast through cred_wrapper_t then gives us convenient access
+ * to that auth_index value.
+ */
+int slurm_auth_index(void *cred)
+{
+	cred_wrapper_t *wrapper = (cred_wrapper_t *) cred;
+
+	if (wrapper)
+		return wrapper->index;
+
+	return 0;
+}
+
+/*
  * Static bindings for the global authentication context.  The test
  * of the function pointers is omitted here because the global
  * context initialization includes a test for the completeness of
