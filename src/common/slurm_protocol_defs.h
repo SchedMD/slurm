@@ -476,6 +476,11 @@ typedef struct slurm_protocol_config {
 typedef struct slurm_msg {
 	slurm_addr_t address;
 	void *auth_cred;
+	int auth_index;		/* DON'T PACK: zero for normal communication.
+				 * index value copied from incoming connection,
+				 * so that we'll respond with the same auth
+				 * plugin used to connect to us originally.
+				 */
 	uint32_t body_offset; /* DON'T PACK: offset in buffer where body part of
 				 buffer starts. */
 	Buf buffer; /* DON't PACK! ptr to buffer that msg was unpacked from. */

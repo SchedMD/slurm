@@ -3381,6 +3381,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
+	msg->auth_index = slurm_auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = g_slurm_auth_verify(auth_cred, _global_auth_key());
 	} else {
@@ -3651,6 +3652,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
+	msg.auth_index = slurm_auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = g_slurm_auth_verify(auth_cred, _global_auth_key());
 	} else {
@@ -3887,6 +3889,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
+	msg->auth_index = slurm_auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = g_slurm_auth_verify(auth_cred, _global_auth_key());
 	} else {
@@ -4274,6 +4277,7 @@ static void _resp_msg_setup(slurm_msg_t *msg, slurm_msg_t *resp_msg,
 {
 	slurm_msg_t_init(resp_msg);
 	resp_msg->address = msg->address;
+	resp_msg->auth_index = msg->auth_index;
 	resp_msg->conn = msg->conn;
 	resp_msg->data = data;
 	resp_msg->flags = msg->flags;

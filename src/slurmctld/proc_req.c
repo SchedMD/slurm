@@ -660,6 +660,7 @@ extern void response_init(slurm_msg_t *resp, slurm_msg_t *msg)
 {
 	slurm_msg_t_init(resp);
 	resp->address = msg->address;
+	resp->auth_index = msg->auth_index;
 	resp->conn = msg->conn;
 	resp->flags = msg->flags;
 	resp->protocol_version = msg->protocol_version;
