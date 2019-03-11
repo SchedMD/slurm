@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 18.08.7
+==========================
+
 * Changes in Slurm 18.08.6-2
 ============================
  -- Remove deadlock situation when logging and --enable-debug is used.
