@@ -381,6 +381,25 @@ configuration above would be allocated<br>
 18% of the gtx1060 (File=/dev/nvidia0, 200 x 100 / 1100 = 18), or<br>
 20% of the gtx1050 (File=/dev/nvidia0, 200 x 100 / 1000 = 20).</p>
 
+<p>The <code class="commandline">CUDA_DEVICE_ORDER</code> and
+<code class="commandline">CUDA_MPS_ACTIVE_THREAD_PERCENTAGE</code>
+environment variables will also be set in the job's Prolog and Epilog programs,
+which can be used to start and stop MPS servers for the user with the
+appropriate resource limits.
+Note that the environment variable set for the job may differ from that set for
+the Prolog and Epilog if Slurm is configured to constrain the device files
+visible to a job using Linux cgroup.
+This is because the Prolog and Epilog programs run <u>outside</u> of any Linux
+cgroup while the job runs <u>inside</u> of the cgroup and may thus have a
+different set of visible devices.
+For example, if a job is allocated the device "/dev/nvidia1", then
+<code class="commandline">CUDA_VISIBLE_DEVICE</code> will be set to a value of
+"1" in the Prolog and Epilog while the job's value of
+<code class="commandline">CUDA_VISIBLE_DEVICE</code> will be set to a
+value of "0" (i.e. the first GPU device visible to the job).
+For more information see the
+<a href="prolog_epilog.html">Prolog and Epilog Guide</a>.</p>
+
 <p>The <code class="commandline">CUDA_VISIBLE_DEVICES</code>
 and <code class="commandline">CUDA_MPS_ACTIVE_THREAD_PERCENTAGE</code>
 environment variables will also be set for the configured Prolog and Epilog
@@ -419,6 +438,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 6 March 2019</p>
+<p style="text-align: center;">Last modified 11 March 2019</p>
 
 <!--#include virtual="footer.txt"-->
