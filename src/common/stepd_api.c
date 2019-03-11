@@ -237,7 +237,7 @@ static int _stepd_connect_legacy(const char *directory, const char *nodename,
 	buffer = init_buf(0);
 	/* Create an auth credential */
 	auth_info = slurm_get_auth_info();
-	auth_cred = g_slurm_auth_create(auth_info);
+	auth_cred = g_slurm_auth_create(AUTH_DEFAULT_INDEX, auth_info);
 	xfree(auth_info);
 	if (auth_cred == NULL) {
 		error("Creating authentication credential: %m");

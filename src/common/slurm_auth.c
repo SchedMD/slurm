@@ -223,16 +223,16 @@ int slurm_auth_index(void *cred)
  * the API function dispatcher.
  */
 
-void *g_slurm_auth_create(char *auth_info)
+void *g_slurm_auth_create(int index, char *auth_info)
 {
 	cred_wrapper_t *cred;
 
 	if (slurm_auth_init(NULL) < 0)
 		return NULL;
 
-	cred = (*(ops[0].create))(auth_info);
+	cred = (*(ops[index].create))(auth_info);
 	if (cred)
-		cred->index = 0;
+		cred->index = index;
 	return cred;
 }
 

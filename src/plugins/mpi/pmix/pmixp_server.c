@@ -500,7 +500,7 @@ static int _auth_cred_create(Buf buf)
 	char *auth_info = slurm_get_auth_info();
 	int rc = SLURM_SUCCESS;
 
-	auth_cred = g_slurm_auth_create(auth_info);
+	auth_cred = g_slurm_auth_create(AUTH_DEFAULT_INDEX, auth_info);
 	xfree(auth_info);
 	if (!auth_cred) {
 		PMIXP_ERROR("Creating authentication credential: %m");

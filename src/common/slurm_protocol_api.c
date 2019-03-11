@@ -4029,10 +4029,11 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 * wait too long for the incoming message.
 	 */
 	if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
-		auth_cred = g_slurm_auth_create(_global_auth_key());
+		auth_cred = g_slurm_auth_create(msg->auth_index,
+						_global_auth_key());
 	} else {
 		char *auth_info = slurm_get_auth_info();
-		auth_cred = g_slurm_auth_create(auth_info);
+		auth_cred = g_slurm_auth_create(msg->auth_index, auth_info);
 		xfree(auth_info);
 	}
 
@@ -4049,10 +4050,12 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	if (difftime(time(NULL), start_time) >= 60) {
 		(void) g_slurm_auth_destroy(auth_cred);
 		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
-			auth_cred = g_slurm_auth_create(_global_auth_key());
+			auth_cred = g_slurm_auth_create(msg->auth_index,
+							_global_auth_key());
 		} else {
 			char *auth_info = slurm_get_auth_info();
-			auth_cred = g_slurm_auth_create(auth_info);
+			auth_cred = g_slurm_auth_create(msg->auth_index,
+							auth_info);
 			xfree(auth_info);
 		}
 	}
