@@ -786,7 +786,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:A:b:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:P:q:QsS:t:uU:vVw:Wx:";
+	"+a:A:b:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:P:q:QsS:t:uvVw:Wx:";
 char *pos_delimit;
 
 
@@ -1292,7 +1292,6 @@ static void _set_options(int argc, char **argv)
 			sbopt.array_inx = xstrdup(optarg);
 			break;
 		case 'A':
-		case 'U':	/* backwards compatibility */
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;

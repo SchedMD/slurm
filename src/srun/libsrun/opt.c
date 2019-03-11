@@ -275,9 +275,8 @@ struct option long_options[] = {
 #endif
 	{NULL,               0,                 0, 0}
 	};
-char *opt_string = "+A:b:B:c:C:d:D:e:EG:hHi:I::jJ:k::K::lL:m:M:n:N:"
-		   "o:Op:P:q:Qr:sS:t:T:uU:vVw:W:x:XZ";
-
+char *opt_string =
+	"+A:b:B:c:C:d:D:e:EG:hHi:I::jJ:k::K::lL:m:M:n:N:o:Op:P:q:Qr:sS:t:T:uvVw:W:x:XZ";
 
 static slurm_opt_t *_get_first_opt(int pack_offset);
 static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last);
@@ -1356,7 +1355,6 @@ static void _set_options(const int argc, char **argv)
 			exit(error_exit);
 			break;
 		case (int)'A':
-		case (int)'U':	/* backwards compatibility */
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;

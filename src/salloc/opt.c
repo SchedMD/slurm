@@ -708,7 +708,7 @@ static void _set_options(int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:P:q:QsS:t:uU:vVw:W:x:";
+		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:P:q:QsS:t:uvVw:W:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -730,7 +730,6 @@ static void _set_options(int argc, char **argv)
 			exit(error_exit);
 			break;
 		case 'A':
-		case 'U':	/* backwards compatibility */
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
