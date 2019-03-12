@@ -214,7 +214,6 @@ struct option long_options[] = {
 	{"help",             no_argument,       0, LONG_OPT_HELP},
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-	{"launch-cmd",       no_argument,       0, LONG_OPT_LAUNCH_CMD},
 	{"launcher-opts",    required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
 	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
@@ -273,8 +272,6 @@ char *opt_string =
 
 static slurm_opt_t *_get_first_opt(int pack_offset);
 static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last);
-
-static int  _get_task_count(void);
 
 /* Get a decimal integer from arg */
 static int  _get_int(const char *arg, const char *what, bool positive);
@@ -571,21 +568,6 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		if (_verbose)
 			_opt_list();
 
-		if (sropt.launch_cmd) {
-			char *launch_type = slurm_get_launch_type();
-			if (!xstrcmp(launch_type, "launch/slurm")) {
-				error("--launch-cmd option is invalid with %s",
-				      launch_type);
-				xfree(launch_type);
-				exit(1);
-			}
-			xfree(launch_type);
-			/* Massage ntasks value earlier than normal */
-			if (!opt.ntasks_set)
-				opt.ntasks = _get_task_count();
-			launch_g_create_job_step(NULL, 0, NULL, NULL, &opt);
-			exit(0);
-		}
 		if (spank_init_post_opt() < 0) {
 			error("Plugin stack post-option processing failed.");
 			exit(error_exit);
@@ -600,44 +582,6 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	}
 
 	return 1;
-}
-
-static int _get_task_count(void)
-{
-	char *cpus_per_node = NULL, *end_ptr = NULL;
-	int cpu_count, node_count, task_count, total_tasks = 0;
-
-	if (opt.ntasks_per_node != NO_VAL)
-		return (opt.min_nodes * opt.ntasks_per_node);
-	if (opt.cpus_set)
-		cpus_per_node = getenv("SLURM_JOB_CPUS_PER_NODE");
-	if (cpus_per_node) {
-		cpu_count = strtol(cpus_per_node, &end_ptr, 10);
-		task_count = cpu_count / opt.cpus_per_task;
-		while (1) {
-			if ((end_ptr[0] == '(') && (end_ptr[1] == 'x')) {
-				end_ptr += 2;
-				node_count = strtol(end_ptr, &end_ptr, 10);
-				task_count *= node_count;
-				total_tasks += task_count;
-				if (end_ptr[0] == ')')
-					end_ptr++;
-			} else if ((end_ptr[0] == ',') || (end_ptr[0] == 0))
-				total_tasks += task_count;
-			else {
-				error("Invalid value for environment variable "
-				      "SLURM_JOB_CPUS_PER_NODE (%s)",
-				      cpus_per_node);
-				break;
-			}
-			if (end_ptr[0] == ',')
-				end_ptr++;
-			if (end_ptr[0] == 0)
-				break;
-		}
-		return total_tasks;
-	}
-	return opt.min_nodes;
 }
 
 /*
@@ -805,7 +749,6 @@ static void _opt_default(void)
 	sropt.hostfile			= NULL;
 	sropt.exclusive			= false;
 	opt.job_flags			= 0;
-	sropt.launch_cmd		= false;
 	sropt.launcher_opts		= NULL;
 	launch_params = slurm_get_launch_params();
 	if (launch_params && strstr(launch_params, "mem_sort"))
@@ -1659,9 +1602,6 @@ static void _set_options(const int argc, char **argv)
 						  &sropt.cpu_bind_type, 0))
 				exit(error_exit);
 			sropt.cpu_bind_type_set = true;
-			break;
-		case LONG_OPT_LAUNCH_CMD:
-			sropt.launch_cmd = true;
 			break;
 		case LONG_OPT_GPU_BIND:
 			if (!optarg)
@@ -3120,7 +3060,7 @@ static void _usage(void)
 "            [--restart-dir=dir] [--qos=qos] [--time-min=minutes]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
-"            [--launch-cmd] [--launcher-opts=options]\n"
+"            [--launcher-opts=options]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu-bind=...] [--mem-bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
@@ -3192,7 +3132,6 @@ static void _help(void)
 "  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
 "                              non-zero exit code\n"
 "  -l, --label                 prepend task number to lines of stdout/err\n"
-"      --launch-cmd            print external launcher command line if not Slurm\n"
 "      --launcher-opts=        options for the external launcher command if not\n"
 "                              Slurm\n"
 "  -L, --licenses=names        required license, comma separated\n"
