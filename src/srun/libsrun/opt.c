@@ -2271,16 +2271,6 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 		error("--mem and --mem-per-cpu are mutually exclusive.");
 	}
 
-	if (sropt.pty) {
-		char *launch_type = slurm_get_launch_type();
-		if (xstrcmp(launch_type, "launch/slurm")) {
-			error("--pty not currently supported with %s "
-			      "configuration, ignoring option", launch_type);
-			sropt.pty = false;
-		}
-		xfree(launch_type);
-	}
-
 #ifdef HAVE_NATIVE_CRAY
 	/* only fatal on the allocation */
 	if (opt.network && opt.shared && (sropt.jobid == NO_VAL))
