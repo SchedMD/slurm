@@ -323,6 +323,35 @@ static slurm_cli_opt_t slurm_opt_mcs_label = {
 	.reset_func = arg_reset_mcs_label,
 };
 
+static int arg_set_priority(slurm_opt_t *opt, const char *arg)
+{
+	if (!xstrcasecmp(arg, "TOP")) {
+		opt->priority = NO_VAL - 1;
+	} else {
+		long long priority = strtoll(arg, NULL, 10);
+		if (priority < 0) {
+			error("Priority must be >= 0");
+			exit(-1);
+		}
+		if (priority >= NO_VAL) {
+			error("Priority must be < %u", NO_VAL);
+			exit(-1);
+		}
+		opt->priority = priority;
+	}
+
+	return SLURM_SUCCESS;
+}
+COMMON_INT_OPTION_GET_AND_RESET(priority);
+static slurm_cli_opt_t slurm_opt_priority = {
+	.name = "priority",
+	.has_arg = required_argument,
+	.val = LONG_OPT_PRIORITY,
+	.set_func = arg_set_priority,
+	.get_func = arg_get_priority,
+	.reset_func = arg_reset_priority,
+};
+
 COMMON_STRING_OPTION(qos);
 static slurm_cli_opt_t slurm_opt_qos = {
 	.name = "qos",
@@ -339,6 +368,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_constraint,
 	&slurm_opt_gpus,
 	&slurm_opt_mcs_label,
+	&slurm_opt_priority,
 	&slurm_opt_qos,
 	NULL /* END */
 };

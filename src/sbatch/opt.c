@@ -222,7 +222,6 @@ static void _opt_default(bool first_pass)
 		opt.no_kill		= false;
 		xfree(sbopt.ofname);
 		sbopt.parsable		= false;
-		opt.priority		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
 		opt.quiet		= 0;
@@ -718,7 +717,6 @@ static struct option long_options[] = {
 	{"power",         required_argument, 0, LONG_OPT_POWER},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"profile",       required_argument, 0, LONG_OPT_PROFILE},
-	{"priority",      required_argument, 0, LONG_OPT_PRIORITY},
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
@@ -1124,7 +1122,6 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0, i;
-	long long priority;
 	char *tmp;
 
 	struct option *common_options = slurm_option_table_create(long_options,
@@ -1538,25 +1535,6 @@ static void _set_options(int argc, char **argv)
 			opt.nice = (int) tmp_nice;
 			break;
 		}
-		case LONG_OPT_PRIORITY:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (strcasecmp(optarg, "TOP") == 0) {
-				opt.priority = NO_VAL - 1;
-			} else {
-				priority = strtoll(optarg, NULL, 10);
-				if (priority < 0) {
-					error("Priority must be >= 0");
-					exit(error_exit);
-				}
-				if (priority >= NO_VAL) {
-					error("Priority must be < %i", NO_VAL);
-					exit(error_exit);
-				}
-				opt.priority = priority;
-
-			}
-			break;
 		case LONG_OPT_NO_REQUEUE:
 			sbopt.requeue = 0;
 			break;

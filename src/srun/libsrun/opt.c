@@ -224,7 +224,6 @@ struct option long_options[] = {
 	{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"power",            required_argument, 0, LONG_OPT_POWER},
-	{"priority",         required_argument, 0, LONG_OPT_PRIORITY},
 	{"profile",          required_argument, 0, LONG_OPT_PROFILE},
 	{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 	{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
@@ -657,7 +656,6 @@ static void _opt_default(void)
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
 		sropt.preserve_env	= false;
-		opt.priority		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		xfree(sropt.prolog);
 		sropt.prolog		= slurm_get_srun_prolog();
@@ -1806,26 +1804,6 @@ static void _set_options(const int argc, char **argv)
 				}
 			}
 			opt.nice = (int) tmp_nice;
-			break;
-		}
-		case LONG_OPT_PRIORITY: {
-			long long priority;
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (strcasecmp(optarg, "TOP") == 0) {
-				opt.priority = NO_VAL - 1;
-			} else {
-				priority = strtoll(optarg, NULL, 10);
-				if (priority < 0) {
-					error("Priority must be >= 0");
-					exit(error_exit);
-				}
-				if (priority >= NO_VAL) {
-					error("Priority must be < %i", NO_VAL);
-					exit(error_exit);
-				}
-				opt.priority = priority;
-			}
 			break;
 		}
 		case LONG_OPT_MULTI:

@@ -230,7 +230,6 @@ static void _opt_default(void)
 		opt.no_kill		= false;
 		saopt.no_shell		= false;
 		opt.power_flags		= 0;
-		opt.priority		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		opt.quiet		= 0;
 		opt.reboot		= false;
@@ -584,7 +583,6 @@ static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0, i;
 	char *tmp;
-	long long priority;
 	static struct option long_options[] = {
 		{"begin",         required_argument, 0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
@@ -647,7 +645,6 @@ static void _set_options(int argc, char **argv)
 		{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"nice",          optional_argument, 0, LONG_OPT_NICE},
-		{"priority",      required_argument, 0, LONG_OPT_PRIORITY},
 		{"no-bell",       no_argument,       0, LONG_OPT_NO_BELL},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
@@ -1036,24 +1033,6 @@ static void _set_options(int argc, char **argv)
 			opt.nice = (int) tmp_nice;
 			break;
 		}
-		case LONG_OPT_PRIORITY:
-			if (!optarg) { /* CLANG Fix */
-				;
-			} else if (strcasecmp(optarg, "TOP") == 0) {
-				opt.priority = NO_VAL - 1;
-			} else {
-				priority = strtoll(optarg, NULL, 10);
-				if (priority < 0) {
-					error("Priority must be >= 0");
-					exit(error_exit);
-				}
-				if (priority >= NO_VAL) {
-					error("Priority must be < %i", NO_VAL);
-					exit(error_exit);
-				}
-				opt.priority = priority;
-			}
-			break;
 		case LONG_OPT_BELL:
 			saopt.bell = BELL_ALWAYS;
 			break;
