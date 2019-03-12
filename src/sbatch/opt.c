@@ -84,7 +84,6 @@
 #define OPT_DISTRIB	0x08
 #define OPT_MULTI	0x0b
 #define OPT_EXCLUSIVE	0x0c
-#define OPT_OVERCOMMIT	0x0d
 #define OPT_OPEN_MODE	0x0e
 #define OPT_ACCTG_FREQ  0x0f
 #define OPT_NO_REQUEUE  0x10
@@ -264,7 +263,6 @@ static void _opt_default(bool first_pass)
 	opt.ntasks_per_node		= 0;	/* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_set			= false;
-	opt.overcommit			= false;
 	xfree(opt.partition);
 	opt.plane_size			= NO_VAL;
 	opt.power_flags			= 0;
@@ -371,7 +369,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
   {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
-  {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
+  { "SBATCH_OVERCOMMIT", 'O' },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SBATCH_POWER",         OPT_POWER,      NULL,               NULL          },
   {"SBATCH_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
@@ -539,11 +537,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-
-	case OPT_OVERCOMMIT:
-		opt.overcommit = true;
-		break;
-
 	case OPT_OPEN_MODE:
 		if ((val[0] == 'a') || (val[0] == 'A'))
 			sbopt.open_mode = OPEN_MODE_APPEND;
@@ -644,7 +637,6 @@ static struct option long_options[] = {
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
-	{"overcommit",    no_argument,       0, 'O'},
 	{"oversubscribe", no_argument,       0, 's'},
 	{"partition",     required_argument, 0, 'p'},
 	{"quiet",         no_argument,       0, 'Q'},
@@ -1243,9 +1235,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.ofname = xstrdup("/dev/null");
 			else
 				sbopt.ofname = xstrdup(optarg);
-			break;
-		case 'O':
-			opt.overcommit = true;
 			break;
 		case 'p':
 			xfree(opt.partition);

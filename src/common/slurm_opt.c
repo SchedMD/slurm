@@ -445,6 +445,17 @@ static slurm_cli_opt_t slurm_opt_mcs_label = {
 	.reset_func = arg_reset_mcs_label,
 };
 
+COMMON_BOOL_OPTION(overcommit, "overcommit");
+static slurm_cli_opt_t slurm_opt_overcommit = {
+	.name = "overcommit",
+	.has_arg = no_argument,
+	.val = 'O',
+	.set_func = arg_set_overcommit,
+	.get_func = arg_get_overcommit,
+	.reset_func = arg_reset_overcommit,
+	.reset_each_pass = true,
+};
+
 static int arg_set_priority(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "TOP")) {
@@ -559,6 +570,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_hold,
 	&slurm_opt_licenses,
 	&slurm_opt_mcs_label,
+	&slurm_opt_overcommit,
 	&slurm_opt_priority,
 	&slurm_opt_qos,
 	&slurm_opt_reservation,

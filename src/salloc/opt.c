@@ -86,7 +86,6 @@
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
 #define OPT_EXCLUSIVE   0x0d
-#define OPT_OVERCOMMIT  0x0e
 #define OPT_ACCTG_FREQ  0x0f
 #define OPT_GRES_FLAGS  0x10
 #define OPT_MEM_BIND    0x11
@@ -269,7 +268,6 @@ static void _opt_default(void)
 	opt.nodes_set			= false;
 	xfree(opt.nodelist);
 	opt.ntasks_set			= false;
-	opt.overcommit			= false;
 	xfree(opt.partition);
 	opt.plane_size			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
@@ -334,7 +332,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
   {"SALLOC_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
-  {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL          },
+  { "SALLOC_OVERCOMMIT", 'O' },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
   {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
@@ -484,9 +482,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-	case OPT_OVERCOMMIT:
-		opt.overcommit = true;
-		break;
 	case OPT_HINT:
 		opt.hint_env = xstrdup(val);
 		break;
@@ -586,7 +581,6 @@ static void _set_options(int argc, char **argv)
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
-		{"overcommit",    no_argument,       0, 'O'},
 		{"oversubscribe", no_argument,       0, 's'},
 		{"partition",     required_argument, 0, 'p'},
 		{"quiet",         no_argument,       0, 'Q'},
@@ -769,9 +763,6 @@ static void _set_options(int argc, char **argv)
 			if (opt.nodes_set == false) {
 				exit(error_exit);
 			}
-			break;
-		case 'O':
-			opt.overcommit = true;
 			break;
 		case 'p':
 			xfree(opt.partition);
