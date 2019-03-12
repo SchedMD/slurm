@@ -105,10 +105,9 @@ extern int job_submit_plugin_init(void)
 
 	names = submit_plugin_list;
 	while ((type = strtok_r(names, ",", &last))) {
-		xrealloc(ops,
-			 (sizeof(slurm_submit_ops_t) * (g_context_cnt + 1)));
-		xrealloc(g_context,
-			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
+		xrecalloc(ops, g_context_cnt + 1, sizeof(slurm_submit_ops_t));
+		xrecalloc(g_context, g_context_cnt + 1,
+			  sizeof(plugin_context_t *));
 		if (xstrncmp(type, "job_submit/", 11) == 0)
 			type += 11; /* backward compatibility */
 		type = xstrdup_printf("job_submit/%s", type);

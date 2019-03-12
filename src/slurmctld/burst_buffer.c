@@ -139,9 +139,9 @@ extern int bb_g_init(void)
 
 	names = bb_plugin_list;
 	while ((type = strtok_r(names, ",", &last))) {
-		xrealloc(ops, (sizeof(slurm_bb_ops_t) * (g_context_cnt + 1)));
-		xrealloc(g_context,
-			 (sizeof(plugin_context_t *) * (g_context_cnt + 1)));
+		xrecalloc(ops, g_context_cnt + 1, sizeof(slurm_bb_ops_t));
+		xrecalloc(g_context, g_context_cnt + 1,
+			  sizeof(plugin_context_t *));
 		if (xstrncmp(type, "burst_buffer/", 13) == 0)
 			type += 13; /* backward compatibility */
 		type = xstrdup_printf("burst_buffer/%s", type);

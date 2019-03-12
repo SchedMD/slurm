@@ -227,7 +227,7 @@ static int _get_gres_config(struct job_record *job_ptr)
 	int                 *gres_count_ids, *gres_count_vals;
 	int                 *gres_count_ids_loc = NULL;
 	int                 *gres_count_vals_loc = NULL;
-	int                 i, ix, jx, kx, i_first, i_last, rv = 0;
+	int                 ix, jx, kx, i_first, i_last, rv = 0;
 	int                 count    = 0;
 	int                 gres_type_count = 4; /* Guess number GRES types */
 	int                 oldcount = 0;
@@ -282,9 +282,8 @@ static int _get_gres_config(struct job_record *job_ptr)
 			 * associated value found on this node.
 			 */
 			oldcount = count;
-			i = count * sizeof(int);
-			xrealloc(gres_count_ids_loc,  i);
-			xrealloc(gres_count_vals_loc, i);
+			xrecalloc(gres_count_ids_loc, count, sizeof(int));
+			xrecalloc(gres_count_vals_loc, count, sizeof(int));
 		}
 
 		if (gres_list) {
@@ -324,9 +323,12 @@ static int _get_gres_config(struct job_record *job_ptr)
 				 */
 				if (kx >= gres_type_count) {
 					gres_type_count *= 2;
-					i = gres_type_count * sizeof(int);
-					xrealloc(gres_count_ids,  i);
-					xrealloc(gres_count_vals, i);
+					xrecalloc(gres_count_ids,
+						  gres_type_count,
+						  sizeof(int));
+					xrecalloc(gres_count_vals,
+						  gres_type_count,
+						  sizeof(int));
 				}
 				gres_count_ids[kx]   = gres_count_ids_loc[jx];
 				gres_count_vals[kx] += gres_count_vals_loc[jx];
@@ -4366,8 +4368,7 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
 		job_ptr->details->num_tasks = job_ptr->node_cnt *
 			job_ptr->details->ntasks_per_node;
 
-	xrealloc(job_ptr->node_addr,
-		 (sizeof(slurm_addr_t) * job_ptr->node_cnt));
+	xrecalloc(job_ptr->node_addr, job_ptr->node_cnt, sizeof(slurm_addr_t));
 
 #ifdef HAVE_FRONT_END
 	if (new_alloc) {

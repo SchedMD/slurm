@@ -134,9 +134,9 @@ extern int slurm_auth_init(char *auth_type)
 	 * be comma separated, vs. AuthType which can have only one value.
 	 */
 	while (type) {
-		xrealloc(ops, sizeof(slurm_auth_ops_t) * (g_context_num + 1));
-		xrealloc(g_context,
-			 sizeof(plugin_context_t) * (g_context_num + 1));
+		xrecalloc(ops, g_context_num + 1, sizeof(slurm_auth_ops_t));
+		xrecalloc(g_context, g_context_num + 1,
+			  sizeof(plugin_context_t));
 
 		g_context[g_context_num] = plugin_context_create(
 			plugin_type, type, (void **)&ops[g_context_num],
