@@ -605,6 +605,17 @@ static slurm_cli_opt_t slurm_opt_oversubscribe = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(partition);
+static slurm_cli_opt_t slurm_opt_partition = {
+	.name = "partition",
+	.has_arg = required_argument,
+	.val = 'p',
+	.set_func = arg_set_partition,
+	.get_func = arg_get_partition,
+	.reset_func = arg_reset_partition,
+	.reset_each_pass = true,
+};
+
 static int arg_set_priority(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "TOP")) {
@@ -802,6 +813,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mcs_label,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,
+	&slurm_opt_partition,
 	&slurm_opt_priority,
 	&slurm_opt_profile,
 	&slurm_opt_qos,

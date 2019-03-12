@@ -251,7 +251,6 @@ static void _opt_default(bool first_pass)
 	opt.ntasks_per_node		= 0;	/* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_set			= false;
-	xfree(opt.partition);
 	opt.power_flags			= 0;
 	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
@@ -355,7 +354,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
   { "SBATCH_OVERCOMMIT", 'O' },
-  {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  { "SBATCH_PARTITION", 'p' },
   {"SBATCH_POWER",         OPT_POWER,      NULL,               NULL          },
   { "SBATCH_PROFILE", LONG_OPT_PROFILE },
   { "SBATCH_QOS", 'q' },
@@ -589,7 +588,6 @@ static struct option long_options[] = {
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
-	{"partition",     required_argument, 0, 'p'},
 	{"quiet",         no_argument,       0, 'Q'},
 	{"core-spec",     required_argument, 0, 'S'},
 	{"usage",         no_argument,       0, 'u'},
@@ -1167,10 +1165,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.ofname = xstrdup("/dev/null");
 			else
 				sbopt.ofname = xstrdup(optarg);
-			break;
-		case 'p':
-			xfree(opt.partition);
-			opt.partition = xstrdup(optarg);
 			break;
 		case 'Q':
 			/* handled in process_options_first_pass() */

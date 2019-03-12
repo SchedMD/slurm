@@ -257,7 +257,6 @@ static void _opt_default(void)
 	opt.nodes_set			= false;
 	xfree(opt.nodelist);
 	opt.ntasks_set			= false;
-	xfree(opt.partition);
 	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
@@ -319,7 +318,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
   {"SALLOC_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
   { "SALLOC_OVERCOMMIT", 'O' },
-  {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
+  { "SALLOC_PARTITION", 'p' },
   {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
   { "SALLOC_PROFILE", LONG_OPT_PROFILE },
   { "SALLOC_QOS", 'q' },
@@ -543,7 +542,6 @@ static void _set_options(int argc, char **argv)
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
-		{"partition",     required_argument, 0, 'p'},
 		{"quiet",         no_argument,       0, 'Q'},
 		{"core-spec",     required_argument, 0, 'S'},
 		{"usage",         no_argument,       0, 'u'},
@@ -707,10 +705,6 @@ static void _set_options(int argc, char **argv)
 			if (opt.nodes_set == false) {
 				exit(error_exit);
 			}
-			break;
-		case 'p':
-			xfree(opt.partition);
-			opt.partition = xstrdup(optarg);
 			break;
 		case 'Q':
 			opt.quiet++;
