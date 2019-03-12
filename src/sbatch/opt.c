@@ -212,7 +212,7 @@ static void _opt_default(bool first_pass)
 		xfree(opt.account);
 		xfree(opt.acctg_freq);
 		opt.begin		= 0;
-		xfree(opt.c_constraints);
+		xfree(opt.c_constraint);
 		sbopt.ckpt_dir 		= slurm_get_checkpoint_dir();
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
@@ -387,7 +387,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SBATCH_CONSTRAINT",    OPT_STRING,     &opt.constraint,    NULL          },
-  {"SBATCH_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraints, NULL          },
+  {"SBATCH_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraint,  NULL          },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SBATCH_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
@@ -1495,8 +1495,8 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			break;
 		case LONG_OPT_CLUSTER_CONSTRAINT:
-			xfree(opt.c_constraints);
-			opt.c_constraints = xstrdup(optarg);
+			xfree(opt.c_constraint);
+			opt.c_constraint = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
@@ -3178,8 +3178,8 @@ static char *print_constraints(void)
 	if (opt.constraint != NULL)
 		xstrfmtcat(buf, "constraints=`%s' ", opt.constraint);
 
-	if (opt.c_constraints != NULL)
-		xstrfmtcat(buf, "cluster-constraints=`%s' ", opt.c_constraints);
+	if (opt.c_constraint != NULL)
+		xstrfmtcat(buf, "cluster-constraints=`%s' ", opt.c_constraint);
 
 	return buf;
 }

@@ -208,7 +208,7 @@ static void _opt_default(void)
 		xfree(opt.acctg_freq);
 		opt.begin		= 0;
 		saopt.bell		= BELL_AFTER_DELAY;
-		xfree(opt.c_constraints);
+		xfree(opt.c_constraint);
 		xfree(opt.clusters);
 		xfree(opt.comment);
 		opt.cpus_per_gpu	= 0;
@@ -335,7 +335,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SALLOC_CONSTRAINT",    OPT_STRING,     &opt.constraint,    NULL          },
-  {"SALLOC_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraints, NULL          },
+  {"SALLOC_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraint,  NULL          },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SALLOC_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SALLOC_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
@@ -915,8 +915,8 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			break;
 		case LONG_OPT_CLUSTER_CONSTRAINT:
-			xfree(opt.c_constraints);
-			opt.c_constraints = xstrdup(optarg);
+			xfree(opt.c_constraint);
+			opt.c_constraint = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
@@ -1925,8 +1925,8 @@ static char *print_constraints()
 	if (opt.constraint != NULL)
 		xstrfmtcat(buf, "constraints=`%s' ", opt.constraint);
 
-	if (opt.c_constraints != NULL)
-		xstrfmtcat(buf, "cluster-constraints=`%s' ", opt.c_constraints);
+	if (opt.c_constraint != NULL)
+		xstrfmtcat(buf, "cluster-constraints=`%s' ", opt.c_constraint);
 
 	return buf;
 }

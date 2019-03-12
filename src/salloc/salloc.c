@@ -786,7 +786,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->core_spec = opt.core_spec;
 	desc->extra = xstrdup(opt.extra);
 	desc->features = xstrdup(opt.constraint);
-	desc->cluster_features = xstrdup(opt.c_constraints);
+	desc->cluster_features = xstrdup(opt.c_constraint);
 	if (opt.immediate == 1)
 		desc->immediate = 1;
 	if (saopt.default_job_name)
