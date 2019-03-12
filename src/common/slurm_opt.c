@@ -34,7 +34,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <getopt.h>
+
 #include "src/common/log.h"
+#include "src/common/optz.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -269,6 +272,69 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_qos,
 	NULL /* END */
 };
+
+struct option *slurm_option_table_create(struct option *options,
+					 slurm_opt_t *opt)
+{
+	struct option *merged = optz_create();
+
+	optz_append(&merged, options);
+	/*
+	 * Since the initial elements of slurm_cli_opt_t match
+	 * the layout of struct option, we can use this cast to
+	 * avoid needing to make a temporary structure.
+	 */
+	for (int i = 0; common_options[i]; i++) {
+		bool set = true;
+		/*
+		 * Runtime sanity checking for development builds,
+		 * as I cannot find a convenient way to instruct the
+		 * compiler to handle this. So if you make a mistake,
+		 * you'll hit an assertion failure in salloc/srun/sbatch.
+		 *
+		 * If set_func is set, the others must not be:
+		 */
+		xassert((common_options[i]->set_func
+			 && !common_options[i]->set_func_salloc
+			 && !common_options[i]->set_func_sbatch
+			 && !common_options[i]->set_func_srun) ||
+			!common_options[i]->set_func);
+		/*
+		 * These two must always be set:
+		 */
+		xassert(common_options[i]->get_func);
+		xassert(common_options[i]->reset_func);
+
+		/*
+		 * A few options only exist as environment variables, and
+		 * should not be added to the table. They should be marked
+		 * with a NULL name field.
+		 */
+		if (!common_options[i]->name)
+			continue;
+
+		if (common_options[i]->set_func)
+			optz_add(&merged, (struct option *) common_options[i]);
+		else if (opt->salloc_opt && common_options[i]->set_func_salloc)
+			optz_add(&merged, (struct option *) common_options[i]);
+		else if (opt->sbatch_opt && common_options[i]->set_func_sbatch)
+			optz_add(&merged, (struct option *) common_options[i]);
+		else if (opt->srun_opt && common_options[i]->set_func_srun)
+			optz_add(&merged, (struct option *) common_options[i]);
+		else
+			set = false;
+
+		if (set) {
+			/* FIXME: append appropriate characters to optstring */
+		}
+	}
+	return merged;
+}
+
+void slurm_option_table_destroy(struct option *optz)
+{
+	optz_destroy(optz);
+}
 
 int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg)
 {

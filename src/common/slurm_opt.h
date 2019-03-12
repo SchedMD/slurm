@@ -410,6 +410,10 @@ typedef struct slurm_options {
 	uint16_t x11_target_port;	/* target display TCP port on localhost */
 } slurm_opt_t;
 
+extern struct option *slurm_option_table_create(struct option *options,
+						slurm_opt_t *opt);
+extern void slurm_option_table_destroy(struct option *optz);
+
 /*
  * Warning: this will permute the state of a global common_options table,
  * and thus is not thread-safe. The expectation is that it is called from
