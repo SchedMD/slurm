@@ -152,7 +152,6 @@ struct option long_options[] = {
 	{"unbuffered",       no_argument,       0, 'u'},
 	{"verbose",          no_argument,       0, 'v'},
 	{"version",          no_argument,       0, 'V'},
-	{"nodelist",         required_argument, 0, 'w'},
 	{"wait",             required_argument, 0, 'W'},
 	{"exclude",          required_argument, 0, 'x'},
 	{"disable-status",   no_argument,       0, 'X'},
@@ -400,7 +399,6 @@ static slurm_opt_t *_opt_copy(void)
 
 	opt_dup->account = xstrdup(opt.account);
 	opt_dup->acctg_freq = xstrdup(opt.acctg_freq);
-	sropt.alloc_nodelist = NULL;	/* Moved by memcpy */
 	opt_dup->srun_opt->argv = xmalloc(sizeof(char *) * sropt.argc);
 	for (i = 0; i < sropt.argc; i++)
 		opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
@@ -639,7 +637,6 @@ static void _opt_default(void)
 	 * of the job/step. Do not use xfree() as the pointers have been copied.
 	 * See initialize_and_process_args() above.
 	 */
-	sropt.alloc_nodelist		= NULL;
 	sropt.accel_bind_type		= 0;
 	sropt.bcast_file		= NULL;
 	sropt.bcast_flag		= false;
@@ -679,7 +676,6 @@ static void _opt_default(void)
 	sropt.multi_prog_cmds		= 0;
 	opt.network			= NULL;
 	sropt.network_set_env		= false;
-	opt.nodelist			= NULL;
 	opt.nodes_set			= false;
 	sropt.nodes_set_env		= false;
 	sropt.nodes_set_opt		= false;
@@ -771,7 +767,7 @@ env_vars_t env_vars[] = {
 {"SLURM_JOB_ID",        OPT_INT,        &sropt.jobid,       NULL             },
 {"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &sropt.job_name_set_env},
 {"SLURM_JOB_NUM_NODES", OPT_NODES,      NULL,               NULL             },
-{"SLURM_JOB_NODELIST",  OPT_STRING,     &sropt.alloc_nodelist,NULL           },
+  { "SLURM_JOB_NODELIST", LONG_OPT_ALLOC_NODELIST },
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &sropt.kill_bad_exit,NULL            },
 {"SLURM_LABELIO",       OPT_INT,        &sropt.labelio,     NULL             },
 {"SLURM_MEM_PER_GPU",   OPT_MEM_PER_GPU,&opt.mem_per_gpu,  NULL              },
@@ -1319,12 +1315,6 @@ static void _set_options(const int argc, char **argv)
 		case (int)'V':
 			print_slurm_version();
 			exit(0);
-			break;
-		case (int)'w':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.nodelist);
-			opt.nodelist = xstrdup(optarg);
 			break;
 		case (int)'W':
 			if (!optarg)

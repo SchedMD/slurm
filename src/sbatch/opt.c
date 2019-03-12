@@ -243,7 +243,6 @@ static void _opt_default(bool first_pass)
 	opt.mem_per_cpu			= NO_VAL64;
 	opt.pn_min_cpus			= -1;
 	opt.min_nodes			= 1;
-	xfree(opt.nodelist);
 	opt.nodes_set			= false;
 	opt.ntasks			= 1;
 	opt.ntasks_per_core		= NO_VAL;
@@ -593,7 +592,6 @@ static struct option long_options[] = {
 	{"usage",         no_argument,       0, 'u'},
 	{"verbose",       no_argument,       0, 'v'},
 	{"version",       no_argument,       0, 'V'},
-	{"nodelist",      required_argument, 0, 'w'},
 	{"wait",          no_argument,       0, 'W'},
 	{"exclude",       required_argument, 0, 'x'},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
@@ -1176,10 +1174,6 @@ static void _set_options(int argc, char **argv)
 		case 'v':
 		case 'V':
 			/* handled in process_options_first_pass() */
-			break;
-		case 'w':
-			xfree(opt.nodelist);
-			opt.nodelist = xstrdup(optarg);
 			break;
 		case 'W':
 			sbopt.wait = true;

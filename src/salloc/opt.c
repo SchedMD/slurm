@@ -255,7 +255,6 @@ static void _opt_default(void)
 	opt.ntasks_per_core		= NO_VAL;
 	opt.ntasks_per_core_set		= false;
 	opt.nodes_set			= false;
-	xfree(opt.nodelist);
 	opt.ntasks_set			= false;
 	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
@@ -547,7 +546,6 @@ static void _set_options(int argc, char **argv)
 		{"usage",         no_argument,       0, 'u'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
-		{"nodelist",      required_argument, 0, 'w'},
 		{"exclude",       required_argument, 0, 'x'},
 		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
@@ -721,10 +719,6 @@ static void _set_options(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
-			break;
-		case 'w':
-			xfree(opt.nodelist);
-			opt.nodelist = xstrdup(optarg);
 			break;
 		case 'x':
 			xfree(opt.exc_nodes);
