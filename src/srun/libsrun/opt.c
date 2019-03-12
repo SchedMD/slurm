@@ -96,7 +96,6 @@
 #define OPT_MULTI       0x0f
 #define OPT_NSOCKETS    0x10
 #define OPT_NCORES      0x11
-#define OPT_EXCLUSIVE   0x13
 #define OPT_OPEN_MODE   0x14
 #define OPT_ACCTG_FREQ  0x15
 #define OPT_SIGNAL      0x17
@@ -177,7 +176,6 @@ struct option long_options[] = {
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"delay-boot",       required_argument, 0, LONG_OPT_DELAY_BOOT},
 	{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
-	{"exclusive",        optional_argument, 0, LONG_OPT_EXCLUSIVE},
 	{"export",           required_argument, 0, LONG_OPT_EXPORT},
 	{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
@@ -667,12 +665,10 @@ static void _opt_default(void)
 	opt.cpu_freq_gov		= NO_VAL;
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
-	sropt.exclusive			= false;
 	opt.extra_set			= false;
 	opt.hint_env			= NULL;
 	opt.hint_set			= false;
 	sropt.hostfile			= NULL;
-	sropt.exclusive			= false;
 	opt.job_flags			= 0;
 	launch_params = slurm_get_launch_params();
 	if (launch_params && strstr(launch_params, "mem_sort"))
@@ -712,7 +708,6 @@ static void _opt_default(void)
 	sropt.relative_set		= false;
 	opt.req_switch			= -1;
 	sropt.resv_port_cnt		= NO_VAL;
-	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.spank_job_env_size		= 0;
 	opt.spank_job_env		= NULL;
@@ -771,7 +766,7 @@ env_vars_t env_vars[] = {
 {"SLURM_DISABLE_STATUS",OPT_INT,        &sropt.disable_status,NULL           },
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
 {"SLURM_EPILOG",        OPT_STRING,     &sropt.epilog,      NULL             },
-{"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
+  { "SLURM_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
 {"SLURM_EXPORT_ENV",    OPT_STRING,     &sropt.export_env,  NULL             },
   { "SLURM_GPUS", 'G' },
 {"SLURM_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL             },
@@ -969,20 +964,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_NO_KILL:
 		opt.no_kill = true;
 		break;
-	case OPT_EXCLUSIVE:
-		if (val[0] == '\0') {
-			sropt.exclusive = true;
-			opt.shared = JOB_SHARED_NONE;
-		} else if (!xstrcasecmp(val, "user")) {
-			opt.shared = JOB_SHARED_USER;
-		} else if (!xstrcasecmp(val, "mcs")) {
-			opt.shared = JOB_SHARED_MCS;
-		} else {
-			error("\"%s=%s\" -- invalid value, ignoring...",
-			      e->var, val);
-		}
-		break;
-
 	case OPT_EXPORT:
 		xfree(sropt.export_env);
 		sropt.export_env = xstrdup(val);
@@ -1410,19 +1391,6 @@ static void _set_options(const int argc, char **argv)
 			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,
 						     true);
 			break;
-                case LONG_OPT_EXCLUSIVE:
-			if (optarg == NULL) {
-				sropt.exclusive = true;
-				opt.shared = JOB_SHARED_NONE;
-			} else if (!xstrcasecmp(optarg, "user")) {
-				opt.shared = JOB_SHARED_USER;
-			} else if (!xstrcasecmp(optarg, "mcs")) {
-				opt.shared = JOB_SHARED_MCS;
-			} else {
-				error("invalid exclusive option %s", optarg);
-				exit(error_exit);
-			}
-                        break;
 		case LONG_OPT_EXPORT:
 			xfree(sropt.export_env);
 			sropt.export_env = xstrdup(optarg);

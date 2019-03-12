@@ -85,7 +85,6 @@
 #define OPT_CORE        0x06
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
-#define OPT_EXCLUSIVE   0x0d
 #define OPT_ACCTG_FREQ  0x0f
 #define OPT_GRES_FLAGS  0x10
 #define OPT_MEM_BIND    0x11
@@ -265,7 +264,6 @@ static void _opt_default(void)
 	opt.plane_size			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
-	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
@@ -306,7 +304,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SALLOC_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
-  {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
+  { "SALLOC_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   { "SALLOC_GPUS", 'G' },
   {"SALLOC_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
   {"SALLOC_GPU_FREQ",      OPT_STRING,     &opt.gpu_freq,      NULL          },
@@ -462,18 +460,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_NO_KILL:
 		opt.no_kill = true;
 		break;
-	case OPT_EXCLUSIVE:
-		if (val[0] == '\0') {
-			opt.shared = JOB_SHARED_NONE;
-		} else if (!xstrcasecmp(val, "user")) {
-			opt.shared = JOB_SHARED_USER;
-		} else if (!xstrcasecmp(val, "mcs")) {
-			opt.shared = JOB_SHARED_MCS;
-		} else {
-			error("\"%s=%s\" -- invalid value, ignoring...",
-			      e->var, val);
-		}
-		break;
 	case OPT_HINT:
 		opt.hint_env = xstrdup(val);
 		break;
@@ -579,7 +565,6 @@ static void _set_options(int argc, char **argv)
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"cpus-per-gpu",  required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 		{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
-		{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"gpu-bind",      required_argument, 0, LONG_OPT_GPU_BIND},
@@ -785,18 +770,6 @@ static void _set_options(int argc, char **argv)
 			}
 			opt.delay_boot = (uint32_t) i;
 			break;
-                case LONG_OPT_EXCLUSIVE:
-			if (optarg == NULL) {
-				opt.shared = JOB_SHARED_NONE;
-			} else if (!xstrcasecmp(optarg, "user")) {
-				opt.shared = JOB_SHARED_USER;
-			} else if (!xstrcasecmp(optarg, "mcs")) {
-				opt.shared = JOB_SHARED_MCS;
-			} else {
-				error("invalid exclusive option %s", optarg);
-				exit(error_exit);
-			}
-                        break;
 		case LONG_OPT_GPU_BIND:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */

@@ -406,6 +406,56 @@ static slurm_cli_opt_t slurm_opt_dependency = {
 	.reset_func = arg_reset_dependency,
 };
 
+static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
+{
+	if (!arg || !xstrcasecmp(arg, "exclusive")) {
+		if (opt->srun_opt)
+			opt->srun_opt->exclusive = true;
+		opt->shared = JOB_SHARED_NONE;
+	} else if (!xstrcasecmp(arg, "oversubscribe")) {
+		opt->shared = JOB_SHARED_OK;
+	} else if (!xstrcasecmp(arg, "user")) {
+		opt->shared = JOB_SHARED_USER;
+	} else if (!xstrcasecmp(arg, "mcs")) {
+		opt->shared = JOB_SHARED_MCS;
+	} else {
+		error("Invalid --exclusive specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_exclusive(slurm_opt_t *opt)
+{
+	if (opt->shared == JOB_SHARED_NONE)
+		return xstrdup("exclusive");
+	if (opt->shared == JOB_SHARED_OK)
+		return xstrdup("oversubscribe");
+	if (opt->shared == JOB_SHARED_USER)
+		return xstrdup("user");
+	if (opt->shared == JOB_SHARED_MCS)
+		return xstrdup("mcs");
+	if (opt->shared == NO_VAL16)
+		return xstrdup("unset");
+	return NULL;
+}
+/* warning: shared with --oversubscribe below */
+static void arg_reset_shared(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->exclusive = false;
+	opt->shared = NO_VAL16;
+}
+static slurm_cli_opt_t slurm_opt_exclusive = {
+	.name = "exclusive",
+	.has_arg = optional_argument,
+	.val = LONG_OPT_EXCLUSIVE,
+	.set_func = arg_set_exclusive,
+	.get_func = arg_get_exclusive,
+	.reset_func = arg_reset_shared,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(gpus);
 static slurm_cli_opt_t slurm_opt_gpus = {
 	.name = "gpus",
@@ -668,6 +718,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_constraint,
 	&slurm_opt_deadline,
 	&slurm_opt_dependency,
+	&slurm_opt_exclusive,
 	&slurm_opt_gpus,
 	&slurm_opt_gres,
 	&slurm_opt_hold,

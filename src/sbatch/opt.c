@@ -83,7 +83,6 @@
 #define OPT_CORE        0x06
 #define OPT_DISTRIB	0x08
 #define OPT_MULTI	0x0b
-#define OPT_EXCLUSIVE	0x0c
 #define OPT_OPEN_MODE	0x0e
 #define OPT_ACCTG_FREQ  0x0f
 #define OPT_NO_REQUEUE  0x10
@@ -261,7 +260,6 @@ static void _opt_default(bool first_pass)
 	opt.power_flags			= 0;
 	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
-	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
@@ -341,7 +339,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SBATCH_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   {"SBATCH_DISTRIBUTION",  OPT_DISTRIB ,   NULL,               NULL          },
-  {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
+  { "SBATCH_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   {"SBATCH_EXPORT",        OPT_STRING,     &sbopt.export_env,  NULL          },
   {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
   { "SBATCH_GRES", LONG_OPT_GRES },
@@ -508,20 +506,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			exit(error_exit);
 		}
 		break;
-
-	case OPT_EXCLUSIVE:
-		if (val[0] == '\0') {
-			opt.shared = JOB_SHARED_NONE;
-		} else if (!xstrcasecmp(val, "user")) {
-			opt.shared = JOB_SHARED_USER;
-		} else if (!xstrcasecmp(val, "mcs")) {
-			opt.shared = JOB_SHARED_MCS;
-		} else {
-			error("\"%s=%s\" -- invalid value, ignoring...",
-			      e->var, val);
-		}
-		break;
-
 	case OPT_MEM_PER_GPU:
 		opt.mem_per_gpu = str_to_mbytes2(val);
 		if (opt.mem_per_gpu == NO_VAL64) {
@@ -639,7 +623,6 @@ static struct option long_options[] = {
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 	{"cpus-per-gpu",  required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 	{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
-	{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
@@ -1259,18 +1242,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			opt.delay_boot = (uint32_t) i;
-			break;
-		case LONG_OPT_EXCLUSIVE:
-			if (optarg == NULL) {
-				opt.shared = JOB_SHARED_NONE;
-			} else if (!xstrcasecmp(optarg, "user")) {
-				opt.shared = JOB_SHARED_USER;
-			} else if (!xstrcasecmp(optarg, "mcs")) {
-				opt.shared = JOB_SHARED_MCS;
-			} else {
-				error("invalid exclusive option %s", optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_GPU_BIND:
 			if (!optarg)
