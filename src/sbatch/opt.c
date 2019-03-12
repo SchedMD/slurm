@@ -745,10 +745,7 @@ static struct option long_options[] = {
 	{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
 	{"mem-bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
-	{"mincores",      required_argument, 0, LONG_OPT_MINCORES},
 	{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
-	{"minsockets",    required_argument, 0, LONG_OPT_MINSOCKETS},
-	{"minthreads",    required_argument, 0, LONG_OPT_MINTHREADS},
 	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{"nice",          optional_argument, 0, LONG_OPT_NICE},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
@@ -1582,46 +1579,6 @@ static void _set_options(int argc, char **argv)
 				error("invalid mincpus constraint %s", optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_MINCORES:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			verbose("mincores option has been deprecated, use "
-				"cores-per-socket");
-			opt.cores_per_socket = parse_int("mincores",
-							 optarg, true);
-			if (opt.cores_per_socket < 0) {
-				error("invalid mincores constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_MINSOCKETS:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			verbose("minsockets option has been deprecated, use "
-				"sockets-per-node");
-			opt.sockets_per_node = parse_int("minsockets",
-							 optarg, true);
-			if (opt.sockets_per_node < 0) {
-				error("invalid minsockets constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_MINTHREADS:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			verbose("minthreads option has been deprecated, use "
-				"threads-per-core");
-			opt.threads_per_core = parse_int("minthreads",
-							 optarg, true);
-			if (opt.threads_per_core < 0) {
-				error("invalid minthreads constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
-			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_MEM:
 			if (!optarg)

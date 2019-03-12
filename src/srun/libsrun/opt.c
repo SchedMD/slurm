@@ -227,10 +227,7 @@ struct option long_options[] = {
 	{"mem-per-gpu",      required_argument, 0, LONG_OPT_MEM_PER_GPU},
 	{"mem-bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
-	{"mincores",         required_argument, 0, LONG_OPT_MINCORES},
 	{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
-	{"minsockets",       required_argument, 0, LONG_OPT_MINSOCKETS},
-	{"minthreads",       required_argument, 0, LONG_OPT_MINTHREADS},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
@@ -1724,46 +1721,6 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.pn_min_cpus = _get_int(optarg, "mincpus", true);
-			break;
-		case LONG_OPT_MINCORES:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			verbose("mincores option has been deprecated, use "
-				"cores-per-socket");
-			opt.cores_per_socket = _get_int(optarg,
-							"mincores", true);
-			if (opt.cores_per_socket < 0) {
-				error("invalid mincores constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_MINSOCKETS:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			verbose("minsockets option has been deprecated, use "
-				"sockets-per-node");
-			opt.sockets_per_node = _get_int(optarg,
-							"minsockets",true);
-			if (opt.sockets_per_node < 0) {
-				error("invalid minsockets constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_MINTHREADS:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			verbose("minthreads option has been deprecated, use "
-				"threads-per-core");
-			opt.threads_per_core = _get_int(optarg,
-							"minthreads",true);
-			if (opt.threads_per_core < 0) {
-				error("invalid minthreads constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
-			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_MEM:
 			if (!optarg)
