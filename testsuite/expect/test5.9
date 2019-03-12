@@ -166,6 +166,9 @@ if {$got_node != 1} {
 	exit 0
 }
 
+
+lassign [get_node_cpus $test_node] cpu_tot sq_format(cpuspertask)
+
 set socket_cnt 1
 spawn $scontrol show node $test_node
 expect {
@@ -175,10 +178,6 @@ expect {
 	}
 	-re "Sockets=($number)" {
 		set socket_cnt $expect_out(1,string)
-		exp_continue
-	}
-	-re "ThreadsPerCore=($number)" {
-		set sq_format(cpuspertask) $expect_out(1,string)
 		exp_continue
 	}
 	timeout {

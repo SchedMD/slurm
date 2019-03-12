@@ -217,20 +217,7 @@ if {$match != 1} {
 	exit 1
 }
 
-spawn $scontrol show node $node
-expect {
-	-re "ThreadsPerCore=($number)" {
-		set threads $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol is not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+lassign [get_node_cpus $node] num_cputot threads
 
 cancel_job $job_id
 

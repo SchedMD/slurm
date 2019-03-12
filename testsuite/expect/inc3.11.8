@@ -73,19 +73,15 @@ proc inc3_11_8 {} {
 		exit 1
 	}
 
-	set cpu_tot 1
+	lassign [get_node_cpus $host_name] cpu_tot threads_per_core
+
 	set boards  1
 	set sockets 1
 	set cores_per_socket 1
-	set threads_per_core 1
 	spawn $scontrol show node $host_name
 	expect {
 		-re " CoresPerSocket=($number)" {
 			set cores_per_socket $expect_out(1,string)
-			exp_continue
-		}
-		-re " CPUTot=($number)" {
-			set cpu_tot $expect_out(1,string)
 			exp_continue
 		}
 		-re " Sockets=($number)" {
@@ -94,10 +90,6 @@ proc inc3_11_8 {} {
 		}
 		-re " Boards=($number)" {
 			set boards $expect_out(1,string)
-			exp_continue
-		}
-		-re " ThreadsPerCore=($number)" {
-			set threads_per_core $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
