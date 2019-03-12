@@ -636,6 +636,17 @@ static slurm_cli_opt_t slurm_opt_time_min = {
 	.reset_func = arg_reset_time_min,
 };
 
+COMMON_MBYTES_OPTION(pn_min_tmp_disk, "--tmp");
+static slurm_cli_opt_t slurm_opt_tmp = {
+	.name = "tmp",
+	.has_arg = required_argument,
+	.val = LONG_OPT_TMP,
+	.set_func = arg_set_pn_min_tmp_disk,
+	.get_func = arg_get_pn_min_tmp_disk,
+	.reset_func = arg_reset_pn_min_tmp_disk,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(wckey);
 static slurm_cli_opt_t slurm_opt_wckey = {
 	.name = "wckey",
@@ -671,6 +682,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_spread_job,
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
+	&slurm_opt_tmp,
 	&slurm_opt_wckey,
 	NULL /* END */
 };

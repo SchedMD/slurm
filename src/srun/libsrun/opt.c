@@ -224,7 +224,6 @@ struct option long_options[] = {
 	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"thread-spec",      required_argument, 0, LONG_OPT_THREAD_SPEC},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
-	{"tmp",              required_argument, 0, LONG_OPT_TMP},
 	{"uid",              required_argument, 0, LONG_OPT_UID},
 	{"use-min-nodes",    no_argument,       0, LONG_OPT_USE_MIN_NODES},
 	{"usage",            no_argument,       0, LONG_OPT_USAGE},
@@ -708,7 +707,6 @@ static void _opt_default(void)
 	opt.plane_size			= NO_VAL;
 	opt.pn_min_cpus			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
-	opt.pn_min_tmp_disk		= NO_VAL64;
 	opt.power_flags			= 0;
 	sropt.relative			= NO_VAL;
 	sropt.relative_set		= false;
@@ -1528,15 +1526,6 @@ static void _set_options(const int argc, char **argv)
 				sropt.resv_port_cnt = strtol(optarg, NULL, 10);
 			else
 				sropt.resv_port_cnt = 0;
-			break;
-		case LONG_OPT_TMP:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.pn_min_tmp_disk = str_to_mbytes2(optarg);
-			if (opt.pn_min_tmp_disk == NO_VAL64) {
-				error("invalid tmp value %s", optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_JOBID:
 			if (!optarg)

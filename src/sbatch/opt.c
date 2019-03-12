@@ -263,7 +263,6 @@ static void _opt_default(bool first_pass)
 	opt.req_switch			= -1;
 	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
-	opt.pn_min_tmp_disk		= NO_VAL64;
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
 	opt.wait4switch			= -1;
@@ -678,7 +677,6 @@ static struct option long_options[] = {
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
-	{"tmp",           required_argument, 0, LONG_OPT_TMP},
 	{"uid",           required_argument, 0, LONG_OPT_UID},
 	{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
 	{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
@@ -1341,15 +1339,6 @@ static void _set_options(int argc, char **argv)
 			if (opt.mem_per_cpu == NO_VAL64) {
 				error("invalid memory constraint %s",
 				      optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_TMP:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.pn_min_tmp_disk = str_to_mbytes2(optarg);
-			if (opt.pn_min_tmp_disk == NO_VAL64) {
-				error("invalid tmp value %s", optarg);
 				exit(error_exit);
 			}
 			break;
