@@ -255,7 +255,6 @@ static void _opt_default(void)
 	/* All other options must be specified individually for each component
 	 * of the job */
 	xfree(opt.burst_buffer);
-	xfree(opt.constraint);
 	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
@@ -325,8 +324,8 @@ env_vars_t env_vars[] = {
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SALLOC_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
-  {"SALLOC_CONSTRAINT",    OPT_STRING,     &opt.constraint,    NULL          },
   {"SALLOC_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraint,  NULL          },
+  { "SALLOC_CONSTRAINT", 'C' },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SALLOC_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
   {"SALLOC_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
@@ -593,7 +592,6 @@ static void _set_options(int argc, char **argv)
 		{"begin",         required_argument, 0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
-		{"constraint",    required_argument, 0, 'C'},
 		{"cluster-constraint",required_argument, 0, LONG_OPT_CLUSTER_CONSTRAINT},
 		{"dependency",    required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
@@ -736,10 +734,6 @@ static void _set_options(int argc, char **argv)
 			opt.cpus_set = true;
 			opt.cpus_per_task = parse_int("cpus-per-task",
 						      optarg, true);
-			break;
-		case 'C':
-			xfree(opt.constraint);
-			opt.constraint = xstrdup(optarg);
 			break;
 		case 'd':
 			xfree(opt.dependency);

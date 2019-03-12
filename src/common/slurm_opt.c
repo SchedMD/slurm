@@ -282,6 +282,17 @@ static slurm_cli_opt_t slurm_opt_account = {
 	.reset_func = arg_reset_account,
 };
 
+COMMON_STRING_OPTION(constraint);
+static slurm_cli_opt_t slurm_opt_constraint = {
+	.name = "constraint",
+	.has_arg = required_argument,
+	.val = 'C',
+	.set_func = arg_set_constraint,
+	.get_func = arg_get_constraint,
+	.reset_func = arg_reset_constraint,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(qos);
 static slurm_cli_opt_t slurm_opt_qos = {
 	.name = "qos",
@@ -294,6 +305,7 @@ static slurm_cli_opt_t slurm_opt_qos = {
 
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
+	&slurm_opt_constraint,
 	&slurm_opt_qos,
 	NULL /* END */
 };
