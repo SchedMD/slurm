@@ -120,16 +120,39 @@ void *slurm_xcalloc(size_t count, size_t size, bool clear, bool try,
 }
 
 /*
- * "Safe" version of realloc().  Args are different: pass in a pointer to
- * the object to be realloced instead of the object itself.
+ * "Safe" version of realloc() / reallocarray().
+ * Args are different: pass in a pointer to the object to be
+ * realloced instead of the object itself.
  *   item (IN/OUT)	double-pointer to allocated space
+ *   newcount (IN)	requested count
  *   newsize (IN)	requested size
  *   clear (IN)		initialize to zero
  */
-extern void * slurm_xrealloc(void **item, size_t newsize, bool clear,
-			     const char *file, int line, const char *func)
+extern void * slurm_xrecalloc(void **item, size_t count, size_t size,
+			      bool clear, bool try, const char *file,
+			      int line, const char *func)
 {
-	size_t *p = NULL;
+	size_t total_size;
+	size_t count_size;
+	size_t *p;
+
+	if (!size || !count)
+		return NULL;
+
+	/*
+	 * Detect overflow of the size calculation and abort().
+	 * Ensure there is sufficient space for the two header words used to
+	 * store the magic value and the allocation length by dividing by two,
+	 * and because on 32-bit systems, if a 2GB allocation request isn't
+	 * sufficient (which would attempt to allocate 2GB + 8Bytes),
+	 * then we're going to run into other problems anyways.
+	 * (And on 64-bit, if a 2EB + 16Bytes request isn't sufficient...)
+	 */
+	if ((count != 1) && (count > SIZE_MAX / size / 4))
+		goto error;
+
+	count_size = count * size;
+	total_size = count_size + 2 * sizeof(size_t);
 
 	if (*item != NULL) {
 		size_t old_size;
@@ -139,19 +162,17 @@ extern void * slurm_xrealloc(void **item, size_t newsize, bool clear,
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);
 		old_size = p[1];
 
-		p = realloc(p, newsize + 2*sizeof(size_t));
+		p = realloc(p, total_size);
 		if (p == NULL)
 			goto error;
 
-		if (old_size < newsize) {
+		if (old_size < count_size) {
 			char *p_new = (char *)(&p[2]) + old_size;
 			if (clear)
-				memset(p_new, 0, (newsize-old_size));
+				memset(p_new, 0, (count_size - old_size));
 		}
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);
-
 	} else {
-		size_t total_size = newsize + 2 * sizeof(size_t);
 		/* Initalize new memory */
 		if (clear)
 			p = calloc(1, total_size);
@@ -162,11 +183,13 @@ extern void * slurm_xrealloc(void **item, size_t newsize, bool clear,
 		p[0] = XMALLOC_MAGIC;
 	}
 
-	p[1] = newsize;
+	p[1] = count_size;
 	*item = &p[2];
 	return *item;
 
-  error:
+error:
+	if (try)
+		return NULL;
 	log_oom(file, line, func);
 	abort();
 }

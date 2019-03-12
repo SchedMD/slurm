@@ -92,20 +92,24 @@
 #define xfree(__p) \
 	slurm_xfree((void **)&(__p), __FILE__, __LINE__, __func__)
 
+#define xrecalloc(__p, __cnt, __sz) \
+        slurm_xrecalloc((void **)&(__p), __cnt, __sz, true, false, __FILE__, __LINE__, __func__)
+
 #define xrealloc(__p, __sz) \
-        slurm_xrealloc((void **)&(__p), __sz, true, \
-                       __FILE__, __LINE__, __func__)
+        slurm_xrecalloc((void **)&(__p), 1, __sz, true, false, __FILE__, __LINE__, __func__)
+
+#define try_xrealloc(__p, __sz) \
+        slurm_xrecalloc((void **)&(__p), 1, __sz, true, true, __FILE__, __LINE__, __func__)
 
 #define xrealloc_nz(__p, __sz) \
-        slurm_xrealloc((void **)&(__p), __sz, false, \
-                       __FILE__, __LINE__, __func__)
+        slurm_xrecalloc((void **)&(__p), 1, __sz, false, false, __FILE__, __LINE__, __func__)
 
 #define xsize(__p) \
 	slurm_xsize((void *)__p, __FILE__, __LINE__, __func__)
 
 void *slurm_xcalloc(size_t, size_t, bool, bool, const char *, int, const char *);
 void slurm_xfree(void **, const char *, int, const char *);
-void *slurm_xrealloc(void **, size_t, bool, const char *, int, const char *);
+void *slurm_xrecalloc(void **, size_t, size_t, bool, bool, const char *, int, const char *);
 size_t slurm_xsize(void *, const char *, int, const char *);
 
 #endif /* !_XMALLOC_H */
