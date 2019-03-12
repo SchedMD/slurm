@@ -166,7 +166,6 @@ struct option long_options[] = {
 	{"overcommit",       no_argument,       0, 'O'},
 	{"oversubscribe",    no_argument,       0, 's'},
 	{"partition",        required_argument, 0, 'p'},
-	{"qos",		     required_argument, 0, 'q'},
 	{"quiet",            no_argument,       0, 'Q'},
 	{"relative",         required_argument, 0, 'r'},
 	{"core-spec",        required_argument, 0, 'S'},
@@ -673,7 +672,6 @@ static void _opt_default(void)
 		sropt.prolog		= slurm_get_srun_prolog();
 		xfree(sropt.propagate); 	 /* propagate specific rlimits */
 		sropt.quit_on_intr	= false;
-		xfree(opt.qos);
 		opt.quiet		= 0;
 		opt.reboot		= false;
 		xfree(opt.reservation);
@@ -865,7 +863,7 @@ env_vars_t env_vars[] = {
 {"SLURM_POWER",         OPT_POWER,      NULL,               NULL             },
 {"SLURM_PROFILE",       OPT_PROFILE,    NULL,               NULL             },
 {"SLURM_PROLOG",        OPT_STRING,     &sropt.prolog,      NULL             },
-{"SLURM_QOS",           OPT_STRING,     &opt.qos,           NULL             },
+  { "SLURM_QOS", 'q' },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
 {"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
 {"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
@@ -1459,12 +1457,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
-			break;
-		case 'q':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.qos);
-			opt.qos = xstrdup(optarg);
 			break;
 		case (int) 'Q':
 			opt.quiet++;

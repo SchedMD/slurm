@@ -272,7 +272,18 @@ typedef struct {
  * These should be alphabetized by the slurm_cli_opt_t name.
  */
 
+COMMON_STRING_OPTION(qos);
+static slurm_cli_opt_t slurm_opt_qos = {
+	.name = "qos",
+	.has_arg = required_argument,
+	.val = 'q',
+	.set_func = arg_set_qos,
+	.get_func = arg_get_qos,
+	.reset_func = arg_reset_qos,
+};
+
 static slurm_cli_opt_t *common_options[] = {
+	&slurm_opt_qos,
 	NULL /* END */
 };
 

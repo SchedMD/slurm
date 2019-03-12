@@ -229,7 +229,6 @@ static void _opt_default(bool first_pass)
 		opt.priority		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
-		xfree(opt.qos);
 		opt.quiet		= 0;
 		opt.reboot		= false;
 		sbopt.requeue		= NO_VAL;
@@ -392,7 +391,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SBATCH_POWER",         OPT_POWER,      NULL,               NULL          },
   {"SBATCH_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
-  {"SBATCH_QOS",           OPT_STRING,     &opt.qos,           NULL          },
+  { "SBATCH_QOS", 'q' },
   {"SBATCH_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
   {"SBATCH_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
@@ -674,7 +673,6 @@ static struct option long_options[] = {
 	{"overcommit",    no_argument,       0, 'O'},
 	{"oversubscribe", no_argument,       0, 's'},
 	{"partition",     required_argument, 0, 'p'},
-	{"qos",		  required_argument, 0, 'q'},
 	{"quiet",         no_argument,       0, 'Q'},
 	{"core-spec",     required_argument, 0, 'S'},
 	{"time",          required_argument, 0, 't'},
@@ -1323,10 +1321,6 @@ static void _set_options(int argc, char **argv)
 		case 'p':
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
-			break;
-		case 'q':
-			xfree(opt.qos);
-			opt.qos = xstrdup(optarg);
 			break;
 		case 'Q':
 			/* handled in process_options_first_pass() */

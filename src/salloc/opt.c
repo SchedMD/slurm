@@ -236,7 +236,6 @@ static void _opt_default(void)
 		opt.power_flags		= 0;
 		opt.priority		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
-		xfree(opt.qos);
 		opt.quiet		= 0;
 		opt.reboot		= false;
 		opt.time_limit		= NO_VAL;
@@ -356,7 +355,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
   {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
-  {"SALLOC_QOS",           OPT_STRING,     &opt.qos,           NULL          },
+  { "SALLOC_QOS", 'q' },
   {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
@@ -618,7 +617,6 @@ static void _set_options(int argc, char **argv)
 		{"overcommit",    no_argument,       0, 'O'},
 		{"oversubscribe", no_argument,       0, 's'},
 		{"partition",     required_argument, 0, 'p'},
-		{"qos",		  required_argument, 0, 'q'},
 		{"quiet",         no_argument,       0, 'Q'},
 		{"core-spec",     required_argument, 0, 'S'},
 		{"time",          required_argument, 0, 't'},
@@ -851,10 +849,6 @@ static void _set_options(int argc, char **argv)
 		case 'p':
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
-			break;
-		case 'q':
-			xfree(opt.qos);
-			opt.qos = xstrdup(optarg);
 			break;
 		case 'Q':
 			opt.quiet++;
