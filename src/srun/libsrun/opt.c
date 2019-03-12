@@ -172,7 +172,6 @@ struct option long_options[] = {
 	{"qos",		     required_argument, 0, 'q'},
 	{"quiet",            no_argument,       0, 'Q'},
 	{"relative",         required_argument, 0, 'r'},
-	{"share",            no_argument,       0, 's'},
 	{"core-spec",        required_argument, 0, 'S'},
 	{"time",             required_argument, 0, 't'},
 	{"threads",          required_argument, 0, 'T'},

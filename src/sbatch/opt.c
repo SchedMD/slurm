@@ -700,7 +700,6 @@ static struct option long_options[] = {
 	{"partition",     required_argument, 0, 'p'},
 	{"qos",		  required_argument, 0, 'q'},
 	{"quiet",         no_argument,       0, 'Q'},
-	{"share",         no_argument,       0, 's'},
 	{"core-spec",     required_argument, 0, 'S'},
 	{"time",          required_argument, 0, 't'},
 	{"usage",         no_argument,       0, 'u'},
