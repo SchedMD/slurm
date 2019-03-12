@@ -90,7 +90,6 @@
 #define OPT_REQUEUE     0x11
 #define OPT_THREAD_SPEC 0x12
 #define OPT_MEM_BIND    0x13
-#define OPT_WCKEY       0x14
 #define OPT_SIGNAL      0x15
 #define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
@@ -228,7 +227,6 @@ static void _opt_default(bool first_pass)
 		opt.warn_flags		= 0;
 		opt.warn_signal		= 0;
 		opt.warn_time		= 0;
-		xfree(opt.wckey);
 		opt.x11			= 0;
 	}
 
@@ -385,7 +383,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_WAIT",          OPT_BOOL,       &sbopt.wait,        NULL          },
   {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &sbopt.wait_all_nodes,NULL        },
   {"SBATCH_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
-  {"SBATCH_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
+  { "SBATCH_WCKEY", LONG_OPT_WCKEY },
 
   {NULL, 0, NULL, NULL}
 };
@@ -557,10 +555,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_REQUEUE:
 		sbopt.requeue = 1;
 		break;
-	case OPT_WCKEY:
-		xfree(opt.wckey);
-		opt.wckey = xstrdup(val);
-		break;
 	case OPT_SIGNAL:
 		if (get_signal_opts((char *)val, &opt.warn_signal,
 				    &opt.warn_time, &opt.warn_flags)) {
@@ -703,7 +697,6 @@ static struct option long_options[] = {
 	{"uid",           required_argument, 0, LONG_OPT_UID},
 	{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
 	{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
-	{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
 };
@@ -1585,10 +1578,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-			break;
-		case LONG_OPT_WCKEY:
-			xfree(opt.wckey);
-			opt.wckey = xstrdup(optarg);
 			break;
 		case LONG_OPT_CHECKPOINT:
 			xfree(sbopt.ckpt_interval_str);

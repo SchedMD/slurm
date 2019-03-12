@@ -555,6 +555,16 @@ static slurm_cli_opt_t slurm_opt_time_min = {
 	.reset_func = arg_reset_time_min,
 };
 
+COMMON_STRING_OPTION(wckey);
+static slurm_cli_opt_t slurm_opt_wckey = {
+	.name = "wckey",
+	.has_arg = required_argument,
+	.val = LONG_OPT_WCKEY,
+	.set_func = arg_set_wckey,
+	.get_func = arg_get_wckey,
+	.reset_func = arg_reset_wckey,
+};
+
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
 	&slurm_opt_begin,
@@ -576,6 +586,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_reservation,
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
+	&slurm_opt_wckey,
 	NULL /* END */
 };
 

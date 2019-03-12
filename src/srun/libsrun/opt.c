@@ -99,7 +99,6 @@
 #define OPT_EXCLUSIVE   0x13
 #define OPT_OPEN_MODE   0x14
 #define OPT_ACCTG_FREQ  0x15
-#define OPT_WCKEY       0x16
 #define OPT_SIGNAL      0x17
 #define OPT_TIME_VAL    0x18
 #define OPT_CPU_FREQ    0x19
@@ -235,7 +234,6 @@ struct option long_options[] = {
 	{"uid",              required_argument, 0, LONG_OPT_UID},
 	{"use-min-nodes",    no_argument,       0, LONG_OPT_USE_MIN_NODES},
 	{"usage",            no_argument,       0, LONG_OPT_USAGE},
-	{"wckey",            required_argument, 0, LONG_OPT_WCKEY},
 #ifdef WITH_SLURM_X11
 	{"x11",              optional_argument, 0, LONG_OPT_X11},
 #endif
@@ -652,7 +650,6 @@ static void _opt_default(void)
 		opt.warn_flags		= 0;
 		opt.warn_signal		= 0;
 		opt.warn_time		= 0;
-		xfree(opt.wckey);
 		_verbose		= 0;
 	}
 
@@ -841,7 +838,7 @@ env_vars_t env_vars[] = {
 {"SLURM_USE_MIN_NODES", OPT_USE_MIN_NODES, NULL,            NULL             },
 {"SLURM_WAIT",          OPT_INT,        &sropt.max_wait,    NULL             },
 {"SLURM_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL             },
-{"SLURM_WCKEY",         OPT_STRING,     &opt.wckey,         NULL             },
+  { "SLURM_WCKEY", LONG_OPT_WCKEY },
 {"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &sropt.cwd_set   },
 {NULL, 0, NULL, NULL}
 };
@@ -1841,12 +1838,6 @@ static void _set_options(const int argc, char **argv)
 			if (validate_acctg_freq(optarg))
 				exit(1);
 			opt.acctg_freq = xstrdup(optarg);
-			break;
-		case LONG_OPT_WCKEY:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.wckey);
-			opt.wckey = xstrdup(optarg);
 			break;
 		case LONG_OPT_PROFILE:
 			if (!optarg)

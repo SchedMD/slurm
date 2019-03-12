@@ -91,7 +91,6 @@
 #define OPT_MEM_BIND    0x11
 #define OPT_IMMEDIATE   0x12
 #define OPT_POWER       0x13
-#define OPT_WCKEY       0x14
 #define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
@@ -232,7 +231,6 @@ static void _opt_default(void)
 		opt.warn_flags		= 0;
 		opt.warn_signal		= 0;
 		opt.warn_time		= 0;
-		xfree(opt.wckey);
 		opt.x11			= 0;
 	} else if (saopt.default_job_name) {
 		xfree(opt.job_name);
@@ -346,7 +344,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &saopt.wait_all_nodes,NULL          },
   {"SALLOC_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
-  {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
+  { "SALLOC_WCKEY", LONG_OPT_WCKEY },
   {NULL, 0, NULL, NULL}
 };
 
@@ -497,11 +495,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-	case OPT_WCKEY:
-		xfree(opt.wckey);
-		opt.wckey = xstrdup(val);
-		break;
-
 	case OPT_POWER:
 		opt.power_flags = power_flags_id((char *)val);
 		break;
@@ -637,7 +630,6 @@ static void _set_options(int argc, char **argv)
 		{"uid",           required_argument, 0, LONG_OPT_UID},
 		{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
 		{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
-		{"wckey",         required_argument, 0, LONG_OPT_WCKEY},
 #ifdef WITH_SLURM_X11
 		{"x11",           optional_argument, 0, LONG_OPT_X11},
 #endif
@@ -1051,10 +1043,6 @@ static void _set_options(int argc, char **argv)
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
 						  &opt.mem_bind_type))
 				exit(error_exit);
-			break;
-		case LONG_OPT_WCKEY:
-			xfree(opt.wckey);
-			opt.wckey = xstrdup(optarg);
 			break;
 		case LONG_OPT_POWER:
 			opt.power_flags = power_flags_id(optarg);
