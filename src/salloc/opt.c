@@ -224,7 +224,6 @@ static void _opt_default(void)
 		opt.power_flags		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		opt.quiet		= 0;
-		opt.reboot		= false;
 		opt.uid			= getuid();
 		opt.verbose		= 0;
 		saopt.wait_all_nodes	= NO_VAL16;
@@ -616,7 +615,6 @@ static void _set_options(int argc, char **argv)
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"power",         required_argument, 0, LONG_OPT_POWER},
 		{"profile",       required_argument, 0, LONG_OPT_PROFILE},
-		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"spread-job",    no_argument,       0, LONG_OPT_SPREAD_JOB},
@@ -1014,9 +1012,6 @@ static void _set_options(int argc, char **argv)
 			opt.hint_set = true;
 			opt.ntasks_per_core_set  = true;
 			opt.threads_per_core_set = true;
-			break;
-		case LONG_OPT_REBOOT:
-			opt.reboot = true;
 			break;
 		case LONG_OPT_ACCTG_FREQ:
 			xfree(opt.acctg_freq);

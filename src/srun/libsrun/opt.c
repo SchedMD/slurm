@@ -215,7 +215,6 @@ struct option long_options[] = {
 	{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
 	{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
-	{"reboot",           no_argument,       0, LONG_OPT_REBOOT},
 	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 	{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
@@ -637,7 +636,6 @@ static void _opt_default(void)
 		xfree(sropt.propagate); 	 /* propagate specific rlimits */
 		sropt.quit_on_intr	= false;
 		opt.quiet		= 0;
-		opt.reboot		= false;
 		sropt.slurmd_debug	= LOG_LEVEL_QUIET;
 		xfree(sropt.task_epilog);
 		xfree(sropt.task_prolog);
@@ -1783,9 +1781,6 @@ static void _set_options(const int argc, char **argv)
 			opt.hint_set = true;
 			opt.ntasks_per_core_set  = true;
 			opt.threads_per_core_set = true;
-			break;
-		case LONG_OPT_REBOOT:
-			opt.reboot = true;
 			break;
 		case LONG_OPT_GET_USER_ENV:
 			error("--get-user-env is no longer supported in srun, "

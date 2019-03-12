@@ -217,7 +217,6 @@ static void _opt_default(bool first_pass)
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
 		opt.quiet		= 0;
-		opt.reboot		= false;
 		sbopt.requeue		= NO_VAL;
 		sbopt.test_only		= false;
 		opt.uid			= uid;
@@ -681,7 +680,6 @@ static struct option long_options[] = {
 	{"power",         required_argument, 0, LONG_OPT_POWER},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"profile",       required_argument, 0, LONG_OPT_PROFILE},
-	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
@@ -1535,9 +1533,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_BATCH:
 			xfree(sbopt.batch_features);
 			sbopt.batch_features = xstrdup(optarg);
-			break;
-		case LONG_OPT_REBOOT:
-			opt.reboot = true;
 			break;
 		case LONG_OPT_WRAP:
 			/* handled in process_options_first_pass() */

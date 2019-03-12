@@ -519,6 +519,16 @@ static slurm_cli_opt_t slurm_opt_qos = {
 	.reset_func = arg_reset_qos,
 };
 
+COMMON_BOOL_OPTION(reboot, "reboot");
+static slurm_cli_opt_t slurm_opt_reboot = {
+	.name = "reboot",
+	.has_arg = no_argument,
+	.val = LONG_OPT_REBOOT,
+	.set_func = arg_set_reboot,
+	.get_func = arg_get_reboot,
+	.reset_func = arg_reset_reboot,
+};
+
 COMMON_STRING_OPTION(reservation);
 static slurm_cli_opt_t slurm_opt_reservation = {
 	.name = "reservation",
@@ -608,6 +618,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_overcommit,
 	&slurm_opt_priority,
 	&slurm_opt_qos,
+	&slurm_opt_reboot,
 	&slurm_opt_reservation,
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
