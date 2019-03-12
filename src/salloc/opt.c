@@ -372,7 +372,6 @@ env_vars_t env_vars[] = {
   {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
   {"SALLOC_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
-  {"SALLOC_WAIT",          OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &saopt.wait_all_nodes,NULL          },
   {"SALLOC_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
   {"SALLOC_WCKEY",         OPT_STRING,     &opt.wckey,         NULL          },
@@ -637,7 +636,6 @@ static void _set_options(int argc, char **argv)
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{"nodelist",      required_argument, 0, 'w'},
-		{"wait",          required_argument, 0, 'W'},
 		{"exclude",       required_argument, 0, 'x'},
 		{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
@@ -705,7 +703,7 @@ static void _set_options(int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:P:q:QsS:t:uvVw:W:x:";
+		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:P:q:QsS:t:uvVw:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -902,11 +900,6 @@ static void _set_options(int argc, char **argv)
 		case 'w':
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
-			break;
-		case 'W':
-			verbose("wait option has been deprecated, use "
-				"immediate option");
-			opt.immediate = parse_int("wait", optarg, true);
 			break;
 		case 'x':
 			xfree(opt.exc_nodes);
