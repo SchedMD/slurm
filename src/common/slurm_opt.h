@@ -304,7 +304,6 @@ typedef struct slurm_options {
 
 	char *burst_buffer;		/* --bb				*/
 	char *clusters;			/* cluster to run this on. */
-	char *user;			/* local username		*/
 	uid_t uid;			/* local uid			*/
 	gid_t gid;			/* local gid			*/
 	uid_t euid;			/* effective user --uid=user	*/

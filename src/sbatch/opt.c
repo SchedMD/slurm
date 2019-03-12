@@ -265,9 +265,6 @@ static void _opt_default(bool first_pass)
 		opt.time_min		= NO_VAL;
 		opt.uid			= uid;
 		sbopt.umask		= -1;
-		opt.user		= uid_to_string(uid);
-		if (xstrcmp(opt.user, "nobody") == 0)
-			fatal("Invalid user id: %u", uid);
 		sbopt.wait		= false;
 		sbopt.wait_all_nodes	= NO_VAL16;
 		opt.warn_flags		= 0;
@@ -3214,7 +3211,6 @@ static void _opt_list(void)
 	info("defined options for program `%s'", opt.progname);
 	info("----------------- ---------------------");
 
-	info("user              : `%s'", opt.user);
 	info("uid               : %ld", (long) opt.uid);
 	info("gid               : %ld", (long) opt.gid);
 	info("cwd               : %s", opt.cwd);

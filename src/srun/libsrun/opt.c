@@ -515,7 +515,6 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->time_min_str = xstrdup(opt.time_min_str);
 	opt_dup->tres_bind = xstrdup(opt.tres_bind);
 	opt_dup->tres_freq = xstrdup(opt.tres_freq);
-	opt_dup->user = xstrdup(opt.user);
 	opt_dup->wckey = xstrdup(opt.wckey);
 
 	return opt_dup;
@@ -773,10 +772,7 @@ static void _opt_default(void)
 		xfree(opt.tres_per_job);
 		opt.uid			= uid;
 		sropt.unbuffered	= false;
-		opt.user		= uid_to_string(uid);
 		sropt.user_managed_io	= false;
-		if (xstrcmp(opt.user, "nobody") == 0)
-			fatal("Invalid user id: %u", uid);
 		opt.warn_flags		= 0;
 		opt.warn_signal		= 0;
 		opt.warn_time		= 0;
@@ -3004,7 +3000,6 @@ static void _opt_list(void)
 	info("defined options for program `%s'", opt.progname);
 	info("--------------- ---------------------");
 
-	info("user           : `%s'", opt.user);
 	info("uid            : %ld", (long) opt.uid);
 	info("gid            : %ld", (long) opt.gid);
 	info("cwd            : %s", opt.cwd);
