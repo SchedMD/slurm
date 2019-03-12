@@ -703,7 +703,7 @@ static void _set_options(int argc, char **argv)
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
-		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:P:q:QsS:t:uvVw:x:";
+		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:q:QsS:t:uvVw:x:";
 	char *pos_delimit;
 
 	struct option *optz = spank_option_table_create(long_options);
@@ -864,11 +864,6 @@ static void _set_options(int argc, char **argv)
 		case 'p':
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
-			break;
-		case 'P':
-			verbose("-P option is deprecated, use -d instead");
-			xfree(opt.dependency);
-			opt.dependency = xstrdup(optarg);
 			break;
 		case 'q':
 			xfree(opt.qos);

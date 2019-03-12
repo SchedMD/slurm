@@ -783,7 +783,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:A:b:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:P:q:QsS:t:uvVw:Wx:";
+	"+a:A:b:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:q:QsS:t:uvVw:Wx:";
 char *pos_delimit;
 
 
@@ -1451,11 +1451,6 @@ static void _set_options(int argc, char **argv)
 		case 'p':
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
-			break;
-		case 'P':
-			verbose("-P option is deprecated, use -d instead");
-			xfree(opt.dependency);
-			opt.dependency = xstrdup(optarg);
 			break;
 		case 'q':
 			xfree(opt.qos);

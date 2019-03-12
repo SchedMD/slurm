@@ -276,7 +276,7 @@ struct option long_options[] = {
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
-	"+A:b:B:c:C:d:D:e:EG:hHi:I::jJ:k::K::lL:m:M:n:N:o:Op:P:q:Qr:sS:t:T:uvVw:W:x:XZ";
+	"+A:b:B:c:C:d:D:e:EG:hHi:I::jJ:k::K::lL:m:M:n:N:o:Op:q:Qr:sS:t:T:uvVw:W:x:XZ";
 
 static slurm_opt_t *_get_first_opt(int pack_offset);
 static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last);
@@ -1547,13 +1547,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
-			break;
-		case (int)'P':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			verbose("-P option is deprecated, use -d instead");
-			xfree(opt.dependency);
-			opt.dependency = xstrdup(optarg);
 			break;
 		case 'q':
 			if (!optarg)
