@@ -4731,6 +4731,10 @@ static int _select_nodes_parts(struct job_record *job_ptr, bool test_only,
 		job_ptr->state_reason = WAIT_POWER_RESERVED;
 	else if (rc == ESLURM_PARTITION_DOWN)
 		job_ptr->state_reason = WAIT_PART_DOWN;
+	else if (rc == ESLURM_INVALID_QOS)
+		job_ptr->state_reason = FAIL_QOS;
+	else if (rc == ESLURM_INVALID_ACCOUNT)
+		job_ptr->state_reason = FAIL_ACCOUNT;
 
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;
