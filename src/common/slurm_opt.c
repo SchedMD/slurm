@@ -40,6 +40,46 @@
 
 #include "src/common/slurm_opt.h"
 
+/*
+ * This is ugly. But... less ugly than dozens of identical functions handling
+ * variables that are just strings pushed and pulled out of the associated
+ * structures.
+ *
+ * This takes one argument: the desired field in slurm_opt_t.
+ * The function name will be automatically generated as arg_set_##field.
+ */
+#define COMMON_STRING_OPTION(field)	\
+COMMON_STRING_OPTION_SET(field)		\
+COMMON_STRING_OPTION_GET(field)		\
+COMMON_STRING_OPTION_RESET(field)
+#define COMMON_STRING_OPTION_GET_AND_RESET(field)	\
+COMMON_STRING_OPTION_GET(field)				\
+COMMON_STRING_OPTION_RESET(field)
+#define COMMON_STRING_OPTION_SET(field)				\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+__attribute__((nonnull (1)));					\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+{								\
+	xfree(opt->field);					\
+	opt->field = xstrdup(arg);				\
+								\
+	return SLURM_SUCCESS;					\
+}
+#define COMMON_STRING_OPTION_GET(field)				\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+{								\
+	return xstrdup(opt->field);				\
+}
+#define COMMON_STRING_OPTION_RESET(field)			\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+{								\
+	xfree(opt->field);					\
+}
+
 typedef struct {
 	/*
 	 * DO NOT ALTER THESE FIRST FOUR ARGUMENTS
