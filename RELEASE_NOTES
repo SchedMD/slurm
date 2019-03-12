@@ -160,6 +160,7 @@ COMMAND CHANGES (see man pages for details)
    --gpus-per-socket, --gpus-per-task and --mem-per-gpu.
  -- If GRES are associated with specific sockets, identify those sockets in the
     output of "scontrol show node" (e.g. "Gres=gpu:4(S:0)").
+ -- Changed "scontrol reboot" to not default to ALL nodes.
 
 OTHER CHANGES
 =============

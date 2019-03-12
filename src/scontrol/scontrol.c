@@ -741,8 +741,8 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 			 "too many arguments for keyword:%s\n",
 			 tag);
 	} else if ((argc - argc_offset) < 1) {
-		error_code = scontrol_reboot_nodes("ALL", asap, next_state,
-						   reason);
+		exit_code = 1;
+		fprintf(stderr, "Missing node list. Specify ALL|<NodeList>\n");
 	} else {
 		error_code = scontrol_reboot_nodes(argv[argc_offset], asap,
 						   next_state, reason);
@@ -1929,8 +1929,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      ping                     print status of slurmctld daemons.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     reboot [ASAP] [<nodelist>]  reboot the nodes when they become idle.   \n\
-                              By default all nodes are rebooted.           \n\
+     reboot [ASAP] [nextstate=] [reason=] <ALL|nodelist>		   \n\
+			      reboot the nodes when they become idle.      \n\
      reconfigure              re-read configuration files.                 \n\
      release <job_list>       permit specified job to start (see hold)     \n\
      requeue <job_id>         re-queue a batch job                         \n\

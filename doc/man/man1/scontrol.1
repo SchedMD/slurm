@@ -228,8 +228,9 @@ Ping the primary and secondary slurmctld daemon and report if
 they are responding.
 
 .TP
-\fBreboot\fP [ASAP] [nextstate=<RESUME|DOWN>] [reason=<reason>] [\fINodeList\fP]
-Reboot all nodes in the system when they become idle using the
+\fBreboot\fP [ASAP] [nextstate=<RESUME|DOWN>] [reason=<reason>] <\fIALL|\
+NodeList\fP>
+Reboot the nodes in the system when they become idle using the
 \fBRebootProgram\fP as configured in Slurm's slurm.conf file.
 Each node will have the "REBOOT" flag added to its node state.
 After a node reboots and the slurmd daemon starts up again, the
@@ -252,8 +253,7 @@ When using the "nextstate" and "reason" options together the reason will be
 appended with "reboot issued" when the reboot is issued and "reboot complete"
 when the node registers with a "nextstate" of "DOWN".
 The "reason" option sets each node's reason to a user-defined message.
-An optional list of nodes
-to reboot may be specified. By default all nodes are rebooted.
+You must specify either a list of nodes or that ALL nodes are to be rebooted.
 NOTE: By default, this command does not prevent additional jobs from being
 scheduled on any nodes before reboot.
 To do this, you can either use the "ASAP" option or explicitly drain the nodes
