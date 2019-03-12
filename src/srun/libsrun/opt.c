@@ -175,7 +175,6 @@ struct option long_options[] = {
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
-	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
@@ -671,7 +670,6 @@ static void _opt_default(void)
 	sropt.accel_bind_type		= 0;
 	opt.burst_buffer		= NULL;
 	sropt.compress			= 0;
-	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
 	sropt.core_spec_set		= false;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
@@ -1438,9 +1436,6 @@ static void _set_options(const int argc, char **argv)
 		case (int)'Z':
 			sropt.no_alloc = true;
 			uname(&name);
-			break;
-		case LONG_OPT_CONT:
-			opt.contiguous = true;
 			break;
 		case LONG_OPT_CPUS_PER_GPU:
 			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,

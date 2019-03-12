@@ -358,6 +358,17 @@ static slurm_cli_opt_t slurm_opt_constraint = {
 	.reset_each_pass = true,
 };
 
+COMMON_BOOL_OPTION(contiguous, "contiguous");
+static slurm_cli_opt_t slurm_opt_contiguous = {
+	.name = "contiguous",
+	.has_arg = no_argument,
+	.val = LONG_OPT_CONTIGUOUS,
+	.set_func = arg_set_contiguous,
+	.get_func = arg_get_contiguous,
+	.reset_func = arg_reset_contiguous,
+	.reset_each_pass = true,
+};
+
 static int arg_set_deadline(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->deadline = parse_time(arg, 0))) {
@@ -540,6 +551,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_cluster,
 	&slurm_opt_clusters,
 	&slurm_opt_comment,
+	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
 	&slurm_opt_deadline,
 	&slurm_opt_dependency,

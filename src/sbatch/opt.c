@@ -236,7 +236,6 @@ static void _opt_default(bool first_pass)
 	/* All other options must be specified individually for each component
 	 * of the job */
 	xfree(opt.burst_buffer);
-	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.cpu_freq_gov		= NO_VAL;
@@ -662,7 +661,6 @@ static struct option long_options[] = {
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
-	{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 	{"cpus-per-gpu",  required_argument, 0, LONG_OPT_CPUS_PER_GPU},
@@ -1281,9 +1279,6 @@ static void _set_options(int argc, char **argv)
 			opt.exc_nodes = xstrdup(optarg);
 			if (!_valid_node_list(&opt.exc_nodes))
 				exit(error_exit);
-			break;
-		case LONG_OPT_CONT:
-			opt.contiguous = true;
 			break;
 		case LONG_OPT_CPUS_PER_GPU:
 			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,
