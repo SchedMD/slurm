@@ -1543,10 +1543,10 @@ extern int validate_acctg_freq(char *acctg_freq)
 	bool valid;
 	int rc = SLURM_SUCCESS;
 
-	if (!optarg)
+	if (!acctg_freq)
 		return rc;
 
-	tmp = xstrdup(optarg);
+	tmp = xstrdup(acctg_freq);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
 		valid = false;
