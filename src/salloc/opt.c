@@ -242,7 +242,6 @@ static void _opt_default(void)
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
 	saopt.default_job_name		= false;
-	opt.distribution		= SLURM_DIST_UNKNOWN;
 	xfree(opt.hint_env);
 	opt.hint_set			= false;
 	opt.job_flags			= 0;
@@ -261,7 +260,6 @@ static void _opt_default(void)
 	xfree(opt.nodelist);
 	opt.ntasks_set			= false;
 	xfree(opt.partition);
-	opt.plane_size			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
@@ -544,7 +542,6 @@ static void _set_options(int argc, char **argv)
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       optional_argument, 0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
-		{"distribution",  required_argument, 0, 'm'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -697,15 +694,6 @@ static void _set_options(int argc, char **argv)
 				}
 			}
 			saopt.kill_command_signal_set = true;
-			break;
-		case 'm':
-			opt.distribution = verify_dist_type(optarg,
-							    &opt.plane_size);
-			if (opt.distribution == SLURM_DIST_UNKNOWN) {
-				error("distribution type `%s' "
-				      "is not recognized", optarg);
-				exit(error_exit);
-			}
 			break;
 		case 'n':
 			opt.ntasks_set = true;

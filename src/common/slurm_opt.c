@@ -406,6 +406,38 @@ static slurm_cli_opt_t slurm_opt_dependency = {
 	.reset_func = arg_reset_dependency,
 };
 
+static int arg_set_distribution(slurm_opt_t *opt, const char *arg)
+{
+	opt->distribution = verify_dist_type(arg, &opt->plane_size);
+	if (opt->distribution == SLURM_DIST_UNKNOWN) {
+		error("Invalid --distribution specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_distribution(slurm_opt_t *opt)
+{
+	char *dist = xstrdup(format_task_dist_states(opt->distribution));
+	if (opt->distribution == SLURM_DIST_PLANE)
+		xstrfmtcat(dist, "=%u", opt->plane_size);
+	return dist;
+}
+static void arg_reset_distribution(slurm_opt_t *opt)
+{
+	opt->distribution = SLURM_DIST_UNKNOWN;
+	opt->plane_size = NO_VAL;
+}
+static slurm_cli_opt_t slurm_opt_distribution = {
+	.name = "distribution",
+	.has_arg = required_argument,
+	.val = 'm',
+	.set_func = arg_set_distribution,
+	.get_func = arg_get_distribution,
+	.reset_func = arg_reset_distribution,
+	.reset_each_pass = true,
+};
+
 static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 {
 	if (!arg || !xstrcasecmp(arg, "exclusive")) {
@@ -741,6 +773,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_constraint,
 	&slurm_opt_deadline,
 	&slurm_opt_dependency,
+	&slurm_opt_distribution,
 	&slurm_opt_exclusive,
 	&slurm_opt_gpus,
 	&slurm_opt_gres,

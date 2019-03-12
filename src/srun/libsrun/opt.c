@@ -86,7 +86,6 @@
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
 #define OPT_IMMEDIATE   0x03
-#define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
 #define OPT_COMPRESS	0x07
 #define OPT_RESV_PORTS	0x09
@@ -144,7 +143,6 @@ struct option long_options[] = {
 	{"no-kill",          optional_argument, 0, 'k'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"label",            no_argument,       0, 'l'},
-	{"distribution",     required_argument, 0, 'm'},
 	{"ntasks",           required_argument, 0, 'n'},
 	{"nodes",            required_argument, 0, 'N'},
 	{"output",           required_argument, 0, 'o'},
@@ -586,7 +584,6 @@ static void _opt_default(void)
 		sropt.debugger_test	= false;
 		opt.delay_boot		= NO_VAL;
 		sropt.disable_status	= false;
-		opt.distribution	= SLURM_DIST_UNKNOWN;
 		opt.egid		= (gid_t) -1;
 		xfree(sropt.efname);
 		xfree(sropt.epilog);
@@ -699,7 +696,6 @@ static void _opt_default(void)
 	sropt.pack_group		= NULL;
 	sropt.pack_grp_bits		= NULL;
 	opt.partition			= NULL;
-	opt.plane_size			= NO_VAL;
 	opt.pn_min_cpus			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
 	opt.power_flags			= 0;
@@ -763,7 +759,7 @@ env_vars_t env_vars[] = {
 {"SLURM_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL             },
   { "SLURM_DEPENDENCY", 'd' },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &sropt.disable_status,NULL           },
-{"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
+  { "SLURM_DISTRIBUTION", 'm' },
 {"SLURM_EPILOG",        OPT_STRING,     &sropt.epilog,      NULL             },
   { "SLURM_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
 {"SLURM_EXPORT_ENV",    OPT_STRING,     &sropt.export_env,  NULL             },
@@ -869,7 +865,6 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
-	task_dist_states_t dt;
 	int i;
 
 	debug2("now processing env var %s=%s", e->var, val);
@@ -905,18 +900,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_COMPRESS:
 		sropt.compress = parse_compress_type(val);
 		break;
-
-	case OPT_DISTRIB:
-		if (xstrcmp(val, "unknown") == 0)
-			break;	/* ignore it, passed from salloc */
-		dt = verify_dist_type(val, &opt.plane_size);
-		if (dt == SLURM_DIST_UNKNOWN) {
-			error("\"%s=%s\" -- invalid distribution type. "
-			      "ignoring...", e->var, val);
-		} else
-			opt.distribution = dt;
-		break;
-
 	case OPT_CPU_BIND:
 		xfree(sropt.cpu_bind);
 		if (slurm_verify_cpu_bind(val, &sropt.cpu_bind,
@@ -1270,17 +1253,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'l':
 			sropt.labelio = true;
-			break;
-		case (int)'m':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.distribution = verify_dist_type(optarg,
-							     &opt.plane_size);
-			if (opt.distribution == SLURM_DIST_UNKNOWN) {
-				error("distribution type `%s' "
-				      "is not recognized", optarg);
-				exit(error_exit);
-			}
 			break;
 		case (int)'n':
 			if (!optarg)
