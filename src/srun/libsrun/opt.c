@@ -137,7 +137,6 @@ int	_verbose = 0;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"account",          required_argument, 0, 'A'},
 	{"begin",            required_argument, 0, 'b'},
 	{"extra-node-info",  required_argument, 0, 'B'},
 	{"cpus-per-task",    required_argument, 0, 'c'},
@@ -605,7 +604,6 @@ static void _opt_default(void)
 	uid_t uid = getuid();
 
 	if (pass_number == 1) {
-		xfree(opt.account);
 		xfree(opt.acctg_freq);
 		sropt.allocate		= false;
 		opt.begin		= (time_t) 0;
@@ -808,7 +806,7 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
 {"SLURMD_DEBUG",        OPT_INT,        &sropt.slurmd_debug,NULL             },
-{"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL             },
+  { "SLURM_ACCOUNT", 'A' },
 {"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
 {"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
@@ -1262,10 +1260,6 @@ static void _set_options(const int argc, char **argv)
 			fprintf(stderr,
 				"Try \"srun --help\" for more information\n");
 			exit(error_exit);
-			break;
-		case (int)'A':
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
 			break;
                 case 'b':
                         if (!optarg)

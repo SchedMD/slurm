@@ -272,6 +272,16 @@ typedef struct {
  * These should be alphabetized by the slurm_cli_opt_t name.
  */
 
+COMMON_STRING_OPTION(account);
+static slurm_cli_opt_t slurm_opt_account = {
+	.name = "account",
+	.has_arg = required_argument,
+	.val = 'A',
+	.set_func = arg_set_account,
+	.get_func = arg_get_account,
+	.reset_func = arg_reset_account,
+};
+
 COMMON_STRING_OPTION(qos);
 static slurm_cli_opt_t slurm_opt_qos = {
 	.name = "qos",
@@ -283,6 +293,7 @@ static slurm_cli_opt_t slurm_opt_qos = {
 };
 
 static slurm_cli_opt_t *common_options[] = {
+	&slurm_opt_account,
 	&slurm_opt_qos,
 	NULL /* END */
 };

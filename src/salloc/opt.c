@@ -198,7 +198,6 @@ static void _opt_default(void)
 	 * specified on the command line
 	 */
 	if (first_pass) {
-		xfree(opt.account);
 		xfree(opt.acctg_freq);
 		opt.begin		= 0;
 		saopt.bell		= BELL_AFTER_DELAY;
@@ -320,7 +319,7 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-  {"SALLOC_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
+  { "SALLOC_ACCOUNT", 'A' },
   {"SALLOC_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
@@ -591,7 +590,6 @@ static void _set_options(int argc, char **argv)
 	char *tmp;
 	long long priority;
 	static struct option long_options[] = {
-		{"account",       required_argument, 0, 'A'},
 		{"begin",         required_argument, 0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
@@ -708,10 +706,6 @@ static void _set_options(int argc, char **argv)
 			fprintf(stderr, "Try \"salloc --help\" for more "
 				"information\n");
 			exit(error_exit);
-			break;
-		case 'A':
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
 			break;
                 case 'b':
                         if (!optarg)

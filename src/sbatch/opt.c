@@ -184,7 +184,6 @@ static void _opt_default(bool first_pass)
 	 * once specified for one, but will be overwritten with new values if
 	 * specified on the command line */
 	if (first_pass) {
-		xfree(opt.account);
 		xfree(opt.acctg_freq);
 		opt.begin		= 0;
 		xfree(opt.c_constraint);
@@ -351,7 +350,7 @@ struct env_vars {
 
 
 env_vars_t env_vars[] = {
-  {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL          },
+  { "SBATCH_ACCOUNT", 'A' },
   {"SBATCH_ARRAY_INX",     OPT_STRING,     &sbopt.array_inx,   NULL          },
   {"SBATCH_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SBATCH_BATCH",         OPT_STRING,     &sbopt.batch_features, NULL       },
@@ -643,7 +642,6 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
-	{"account",       required_argument, 0, 'A'},
 	{"array",         required_argument, 0, 'a'},
 	{"extra-node-info", required_argument, 0, 'B'},
 	{"begin",	  required_argument, 0, 'b'},
@@ -1157,10 +1155,6 @@ static void _set_options(int argc, char **argv)
 		case 'a':
 			xfree(sbopt.array_inx);
 			sbopt.array_inx = xstrdup(optarg);
-			break;
-		case 'A':
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
 			break;
                 case 'b':
                         if (!optarg)
