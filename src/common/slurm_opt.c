@@ -88,6 +88,23 @@ static void arg_reset_##field(slurm_opt_t *opt)			\
 	opt->field = value;					\
 }
 
+#define COMMON_BOOL_OPTION(field, option)			\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+__attribute__((nonnull (1)));					\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+{								\
+	opt->field = true;					\
+								\
+	return SLURM_SUCCESS;					\
+}								\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+{								\
+	return xstrdup(opt->field ? "set" : "unset");		\
+}								\
+COMMON_OPTION_RESET(field, false)
+
 typedef struct {
 	/*
 	 * DO NOT ALTER THESE FIRST FOUR ARGUMENTS
