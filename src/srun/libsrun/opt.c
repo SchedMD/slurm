@@ -151,7 +151,6 @@ struct option long_options[] = {
 	{"no-kill",          optional_argument, 0, 'k'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"label",            no_argument,       0, 'l'},
-	{"licenses",         required_argument, 0, 'L'},
 	{"cluster",          required_argument, 0, 'M'},
 	{"clusters",         required_argument, 0, 'M'},
 	{"distribution",     required_argument, 0, 'm'},
@@ -711,7 +710,6 @@ static void _opt_default(void)
 	if (launch_params && strstr(launch_params, "mem_sort"))
 		opt.mem_bind_type	|= MEM_BIND_SORT;
 	xfree(launch_params);
-	opt.licenses			= NULL;
 	opt.mail_type			= 0;
 	opt.mail_user			= NULL;
 	sropt.max_threads		= MAX_THREADS;
@@ -1340,12 +1338,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'l':
 			sropt.labelio = true;
-			break;
-		case 'L':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.licenses);
-			opt.licenses = xstrdup(optarg);
 			break;
 		case 'M':
 			if (!optarg)

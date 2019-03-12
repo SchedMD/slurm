@@ -647,7 +647,6 @@ static struct option long_options[] = {
 	{"job-name",      required_argument, 0, 'J'},
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
 	{"no-kill",       optional_argument, 0, 'k'},
-	{"licenses",      required_argument, 0, 'L'},
 	{"distribution",  required_argument, 0, 'm'},
 	{"cluster",       required_argument, 0, 'M'},
 	{"clusters",      required_argument, 0, 'M'},
@@ -1222,10 +1221,6 @@ static void _set_options(int argc, char **argv)
 				opt.no_kill = false;
 			} else
 				opt.no_kill = true;
-			break;
-		case 'L':
-			xfree(opt.licenses);
-			opt.licenses = xstrdup(optarg);
 			break;
 		case 'm':
 			if (!optarg)

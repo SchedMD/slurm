@@ -374,6 +374,17 @@ static slurm_cli_opt_t slurm_opt_gpus = {
 	.reset_func = arg_reset_gpus,
 };
 
+COMMON_STRING_OPTION(licenses);
+static slurm_cli_opt_t slurm_opt_licenses = {
+	.name = "licenses",
+	.has_arg = required_argument,
+	.val = 'L',
+	.set_func = arg_set_licenses,
+	.get_func = arg_get_licenses,
+	.reset_func = arg_reset_licenses,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(mcs_label);
 static slurm_cli_opt_t slurm_opt_mcs_label = {
 	.name = "mcs-label",
@@ -441,6 +452,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_deadline,
 	&slurm_opt_dependency,
 	&slurm_opt_gpus,
+	&slurm_opt_licenses,
 	&slurm_opt_mcs_label,
 	&slurm_opt_priority,
 	&slurm_opt_qos,

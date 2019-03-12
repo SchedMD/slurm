@@ -591,7 +591,6 @@ static void _set_options(int argc, char **argv)
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       optional_argument, 0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
-		{"licenses",      required_argument, 0, 'L'},
 		{"distribution",  required_argument, 0, 'm'},
 		{"cluster",       required_argument, 0, 'M'},
 		{"clusters",      required_argument, 0, 'M'},
@@ -762,10 +761,6 @@ static void _set_options(int argc, char **argv)
 				}
 			}
 			saopt.kill_command_signal_set = true;
-			break;
-		case 'L':
-			xfree(opt.licenses);
-			opt.licenses = xstrdup(optarg);
 			break;
 		case 'm':
 			opt.distribution = verify_dist_type(optarg,
