@@ -325,7 +325,6 @@ typedef struct slurm_options {
 	char *mem_bind;			/* binding map for map/mask_mem	*/
 	bool extra_set;			/* extra node info explicitly set */
 	int time_limit;			/* --time, in minutes		*/
-	char *time_limit_str;		/* --time			*/
 	int time_min;			/* --min-time, in minutes	*/
 	char *partition;		/* --partition			*/
 	uint32_t profile;		/* --profile=[all | none]	*/

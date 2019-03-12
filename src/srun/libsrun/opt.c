@@ -159,7 +159,6 @@ struct option long_options[] = {
 	{"quiet",            no_argument,       0, 'Q'},
 	{"relative",         required_argument, 0, 'r'},
 	{"core-spec",        required_argument, 0, 'S'},
-	{"time",             required_argument, 0, 't'},
 	{"threads",          required_argument, 0, 'T'},
 	{"unbuffered",       no_argument,       0, 'u'},
 	{"verbose",          no_argument,       0, 'v'},
@@ -471,7 +470,6 @@ static slurm_opt_t *_opt_copy(void)
 	opt.spank_job_env = NULL;	/* Moved by memcpy */
 	opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
 	opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
-	opt_dup->time_limit_str = xstrdup(opt.time_limit_str);
 	opt_dup->tres_bind = xstrdup(opt.tres_bind);
 	opt_dup->tres_freq = xstrdup(opt.tres_freq);
 	opt_dup->wckey = xstrdup(opt.wckey);
@@ -651,8 +649,6 @@ static void _opt_default(void)
 		xfree(sropt.task_prolog);
 		sropt.test_only		= false;
 		sropt.test_exec		= false;
-		opt.time_limit		= NO_VAL;
-		xfree(opt.time_limit_str);
 		opt.uid			= uid;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
@@ -845,7 +841,7 @@ env_vars_t env_vars[] = {
 {"SLURM_TASK_PROLOG",   OPT_STRING,     &sropt.task_prolog, NULL             },
 {"SLURM_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL             },
 {"SLURM_THREADS",       OPT_INT,        &sropt.max_threads, NULL             },
-{"SLURM_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL             },
+  { "SLURM_TIMELIMIT", 't' },
 {"SLURM_UNBUFFEREDIO",  OPT_INT,        &sropt.unbuffered,  NULL             },
 {"SLURM_USE_MIN_NODES", OPT_USE_MIN_NODES, NULL,            NULL             },
 {"SLURM_WAIT",          OPT_INT,        &sropt.max_wait,    NULL             },
@@ -1401,12 +1397,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			opt.core_spec = _get_int(optarg, "core_spec", false);
 			sropt.core_spec_set = true;
-			break;
-		case (int)'t':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(optarg);
 			break;
 		case (int)'T':
 			if (!optarg)
@@ -2459,15 +2449,6 @@ static bool _opt_verify(void)
 		      MAX_THREADS);
 	}
 
-	if (opt.time_limit_str) {
-		opt.time_limit = time_str2mins(opt.time_limit_str);
-		if ((opt.time_limit < 0) && (opt.time_limit != INFINITE)) {
-			error("Invalid time limit specification");
-			exit(error_exit);
-		}
-		if (opt.time_limit == 0)
-			opt.time_limit = INFINITE;
-	}
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");
 		exit(error_exit);

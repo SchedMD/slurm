@@ -222,7 +222,6 @@ static void _opt_default(bool first_pass)
 		opt.reboot		= false;
 		sbopt.requeue		= NO_VAL;
 		sbopt.test_only		= false;
-		opt.time_limit		= NO_VAL;
 		opt.uid			= uid;
 		sbopt.umask		= -1;
 		sbopt.wait		= false;
@@ -384,7 +383,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SBATCH_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL          },
   {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
-  {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
+  { "SBATCH_TIMELIMIT", 't' },
   {"SBATCH_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
   {"SBATCH_WAIT",          OPT_BOOL,       &sbopt.wait,        NULL          },
   {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &sbopt.wait_all_nodes,NULL        },
@@ -651,7 +650,6 @@ static struct option long_options[] = {
 	{"partition",     required_argument, 0, 'p'},
 	{"quiet",         no_argument,       0, 'Q'},
 	{"core-spec",     required_argument, 0, 'S'},
-	{"time",          required_argument, 0, 't'},
 	{"usage",         no_argument,       0, 'u'},
 	{"verbose",       no_argument,       0, 'v'},
 	{"version",       no_argument,       0, 'V'},
@@ -1263,10 +1261,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'S':
 			opt.core_spec = parse_int("core_spec", optarg, false);
-			break;
-		case 't':
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(optarg);
 			break;
 		case 'u':
 		case 'v':
@@ -1993,15 +1987,6 @@ static bool _opt_verify(void)
 	if (hl)
 		hostlist_destroy(hl);
 
-	if (opt.time_limit_str) {
-		opt.time_limit = time_str2mins(opt.time_limit_str);
-		if ((opt.time_limit < 0) && (opt.time_limit != INFINITE)) {
-			error("Invalid time limit specification");
-			exit(error_exit);
-		}
-		if (opt.time_limit == 0)
-			opt.time_limit = INFINITE;
-	}
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");
 		exit(error_exit);

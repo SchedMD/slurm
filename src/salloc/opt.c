@@ -227,7 +227,6 @@ static void _opt_default(void)
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		opt.quiet		= 0;
 		opt.reboot		= false;
-		opt.time_limit		= NO_VAL;
 		opt.uid			= getuid();
 		opt.verbose		= 0;
 		saopt.wait_all_nodes	= NO_VAL16;
@@ -346,7 +345,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SALLOC_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL          },
   {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
-  {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL          },
+  { "SALLOC_TIMELIMIT", 't' },
   {"SALLOC_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &saopt.wait_all_nodes,NULL          },
   {"SALLOC_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
@@ -593,7 +592,6 @@ static void _set_options(int argc, char **argv)
 		{"partition",     required_argument, 0, 'p'},
 		{"quiet",         no_argument,       0, 'Q'},
 		{"core-spec",     required_argument, 0, 'S'},
-		{"time",          required_argument, 0, 't'},
 		{"usage",         no_argument,       0, 'u'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
@@ -789,10 +787,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'S':
 			opt.core_spec = parse_int("core_spec", optarg, false);
-			break;
-		case 't':
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(optarg);
 			break;
 		case 'u':
 			_usage();
@@ -1489,15 +1483,6 @@ static bool _opt_verify(void)
 	if (hl)
 		hostlist_destroy(hl);
 
-	if (opt.time_limit_str) {
-		opt.time_limit = time_str2mins(opt.time_limit_str);
-		if ((opt.time_limit < 0) && (opt.time_limit != INFINITE)) {
-			error("Invalid time limit specification");
-			exit(error_exit);
-		}
-		if (opt.time_limit == 0)
-			opt.time_limit = INFINITE;
-	}
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");
 		exit(error_exit);

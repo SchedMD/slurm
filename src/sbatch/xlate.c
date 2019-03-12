@@ -577,8 +577,7 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for cput");
 				exit(error_exit);
 			}
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(temp);
+			slurm_process_option(&opt, 't', temp, false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "file=", 5)) {
 			int end = 0;
@@ -743,8 +742,7 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for pcput");
 				exit(error_exit);
 			}
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(temp);
+			slurm_process_option(&opt, 't', temp, false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "pmem=", 5)) {
 			i+=5;
@@ -783,8 +781,7 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for walltime");
 				exit(error_exit);
 			}
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(temp);
+			slurm_process_option(&opt, 't', temp, false, false);
 			xfree(temp);
 		} else
 			i++;
