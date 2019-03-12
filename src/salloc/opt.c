@@ -216,7 +216,6 @@ static void _opt_default(void)
 		xfree(opt.gpus_per_node);
 		xfree(opt.gpus_per_socket);
 		xfree(opt.gpus_per_task);
-		opt.hold		= false;
 		opt.immediate		= 0;
 		xfree(opt.job_name);
 		saopt.kill_command_signal = SIGTERM;
@@ -585,7 +584,6 @@ static void _set_options(int argc, char **argv)
 		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
 		{"help",          no_argument,       0, 'h'},
-		{"hold",          no_argument,       0, 'H'},
 		{"immediate",     optional_argument, 0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       optional_argument, 0, 'k'},
@@ -728,9 +726,6 @@ static void _set_options(int argc, char **argv)
 		case 'h':
 			_help();
 			exit(0);
-		case 'H':
-			opt.hold = true;
-			break;
 		case 'I':
 			if (optarg)
 				opt.immediate = parse_int("immediate", optarg, true);

@@ -393,6 +393,16 @@ static slurm_cli_opt_t slurm_opt_gpus = {
 	.reset_func = arg_reset_gpus,
 };
 
+COMMON_BOOL_OPTION(hold, "hold");
+static slurm_cli_opt_t slurm_opt_hold = {
+	.name = "hold",
+	.has_arg = no_argument,
+	.val = 'H',
+	.set_func = arg_set_hold,
+	.get_func = arg_get_hold,
+	.reset_func = arg_reset_hold,
+};
+
 COMMON_STRING_OPTION(licenses);
 static slurm_cli_opt_t slurm_opt_licenses = {
 	.name = "licenses",
@@ -473,6 +483,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_deadline,
 	&slurm_opt_dependency,
 	&slurm_opt_gpus,
+	&slurm_opt_hold,
 	&slurm_opt_licenses,
 	&slurm_opt_mcs_label,
 	&slurm_opt_priority,

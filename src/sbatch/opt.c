@@ -210,7 +210,6 @@ static void _opt_default(bool first_pass)
 		xfree(opt.gpus_per_node);
 		xfree(opt.gpus_per_socket);
 		xfree(opt.gpus_per_task);
-		opt.hold		= false;
 		sbopt.ifname		= xstrdup("/dev/null");
 		opt.immediate		= false;
 		opt.mem_per_gpu		= NO_VAL64;
@@ -640,7 +639,6 @@ static struct option long_options[] = {
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
 	{"help",          no_argument,       0, 'h'},
-	{"hold",          no_argument,       0, 'H'},
 	{"input",         required_argument, 0, 'i'},
 	{"immediate",     no_argument,       0, 'I'},
 	{"job-name",      required_argument, 0, 'J'},
@@ -1191,9 +1189,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'h':
 			/* handled in process_options_first_pass() */
-			break;
-		case 'H':
-			opt.hold = true;
 			break;
 		case 'i':
 			if (!optarg)

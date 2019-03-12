@@ -144,7 +144,6 @@ struct option long_options[] = {
 	{"error",            required_argument, 0, 'e'},
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
-	{"hold",             no_argument,       0, 'H'},
 	{"input",            required_argument, 0, 'i'},
 	{"immediate",        optional_argument, 0, 'I'},
 	{"job-name",         required_argument, 0, 'J'},
@@ -623,7 +622,6 @@ static void _opt_default(void)
 		xfree(opt.gpus_per_node);
 		xfree(opt.gpus_per_socket);
 		xfree(opt.gpus_per_task);
-		opt.hold		= false;
 		xfree(sropt.ifname);
 		opt.immediate		= 0;
 		sropt.jobid		= NO_VAL;
@@ -1289,9 +1287,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'E':
 			sropt.preserve_env = true;
-			break;
-		case (int)'H':
-			opt.hold = true;
 			break;
 		case (int)'i':
 			if (!optarg)
