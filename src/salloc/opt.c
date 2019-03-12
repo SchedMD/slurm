@@ -200,7 +200,6 @@ static void _opt_default(void)
 	if (first_pass) {
 		xfree(opt.acctg_freq);
 		saopt.bell		= BELL_AFTER_DELAY;
-		xfree(opt.c_constraint);
 		opt.cpus_per_gpu	= 0;
 		xfree(opt.cwd);
 		opt.delay_boot		= NO_VAL;
@@ -312,9 +311,9 @@ env_vars_t env_vars[] = {
   {"SALLOC_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
+  { "SALLOC_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SALLOC_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
-  {"SALLOC_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraint,  NULL          },
   { "SALLOC_CONSTRAINT", 'C' },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SALLOC_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
@@ -580,7 +579,6 @@ static void _set_options(int argc, char **argv)
 	static struct option long_options[] = {
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
-		{"cluster-constraint",required_argument, 0, LONG_OPT_CLUSTER_CONSTRAINT},
 		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
 		{"help",          no_argument,       0, 'h'},
@@ -818,10 +816,6 @@ static void _set_options(int argc, char **argv)
 			opt.exc_nodes = xstrdup(optarg);
 			if (!_valid_node_list(&opt.exc_nodes))
 				exit(error_exit);
-			break;
-		case LONG_OPT_CLUSTER_CONSTRAINT:
-			xfree(opt.c_constraint);
-			opt.c_constraint = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;

@@ -185,7 +185,6 @@ static void _opt_default(bool first_pass)
 	 * specified on the command line */
 	if (first_pass) {
 		xfree(opt.acctg_freq);
-		xfree(opt.c_constraint);
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
 		opt.cpus_per_gpu	= 0;
@@ -345,9 +344,9 @@ env_vars_t env_vars[] = {
   {"SBATCH_BATCH",         OPT_STRING,     &sbopt.batch_features, NULL       },
   {"SBATCH_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &sbopt.ckpt_interval_str, NULL    },
+  { "SBATCH_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SBATCH_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
-  {"SBATCH_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraint,  NULL          },
   { "SBATCH_CONSTRAINT", 'C' },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
@@ -634,7 +633,6 @@ static struct option long_options[] = {
 	{"array",         required_argument, 0, 'a'},
 	{"extra-node-info", required_argument, 0, 'B'},
 	{"cpus-per-task", required_argument, 0, 'c'},
-	{"cluster-constraint",required_argument,0, LONG_OPT_CLUSTER_CONSTRAINT},
 	{"chdir",         required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
@@ -1291,10 +1289,6 @@ static void _set_options(int argc, char **argv)
 			opt.exc_nodes = xstrdup(optarg);
 			if (!_valid_node_list(&opt.exc_nodes))
 				exit(error_exit);
-			break;
-		case LONG_OPT_CLUSTER_CONSTRAINT:
-			xfree(opt.c_constraint);
-			opt.c_constraint = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;

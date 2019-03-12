@@ -139,7 +139,6 @@ typedef struct env_vars env_vars_t;
 struct option long_options[] = {
 	{"extra-node-info",  required_argument, 0, 'B'},
 	{"cpus-per-task",    required_argument, 0, 'c'},
-	{"cluster-constraint",required_argument,0, LONG_OPT_CLUSTER_CONSTRAINT},
 	{"chdir",            required_argument, 0, 'D'},
 	{"error",            required_argument, 0, 'e'},
 	{"preserve-env",     no_argument,       0, 'E'},
@@ -593,7 +592,6 @@ static void _opt_default(void)
 	if (pass_number == 1) {
 		xfree(opt.acctg_freq);
 		sropt.allocate		= false;
-		xfree(opt.c_constraint);
 		sropt.ckpt_interval		= 0;
 		xfree(sropt.ckpt_interval_str);
 		xfree(sropt.cmd_name);
@@ -787,8 +785,8 @@ env_vars_t env_vars[] = {
 {"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
   { "SLURM_CLUSTERS", 'M' },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
+  { "SLURM_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
-{"SLURM_CLUSTER_CONSTRAINT",OPT_STRING, &opt.c_constraint,  NULL             },
   { "SLURM_CONSTRAINT", 'C' },
 {"SLURM_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL             },
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
@@ -1454,10 +1452,6 @@ static void _set_options(const int argc, char **argv)
 		case (int)'Z':
 			sropt.no_alloc = true;
 			uname(&name);
-			break;
-		case LONG_OPT_CLUSTER_CONSTRAINT:
-			xfree(opt.c_constraint);
-			opt.c_constraint = xstrdup(optarg);
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;

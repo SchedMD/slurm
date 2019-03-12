@@ -308,6 +308,16 @@ static slurm_cli_opt_t slurm_opt_begin = {
 	.reset_func = arg_reset_begin,
 };
 
+COMMON_STRING_OPTION(c_constraint);
+static slurm_cli_opt_t slurm_opt_c_constraint = {
+	.name = "cluster-constraint",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CLUSTER_CONSTRAINT,
+	.set_func = arg_set_c_constraint,
+	.get_func = arg_get_c_constraint,
+	.reset_func = arg_reset_c_constraint,
+};
+
 /* --clusters and --cluster are equivalent */
 COMMON_STRING_OPTION(clusters);
 static slurm_cli_opt_t slurm_opt_clusters = {
@@ -476,6 +486,7 @@ static slurm_cli_opt_t slurm_opt_reservation = {
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
 	&slurm_opt_begin,
+	&slurm_opt_c_constraint,
 	&slurm_opt_cluster,
 	&slurm_opt_clusters,
 	&slurm_opt_comment,
