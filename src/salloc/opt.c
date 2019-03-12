@@ -199,7 +199,6 @@ static void _opt_default(void)
 	 */
 	if (first_pass) {
 		xfree(opt.acctg_freq);
-		opt.begin		= 0;
 		saopt.bell		= BELL_AFTER_DELAY;
 		xfree(opt.c_constraint);
 		xfree(opt.clusters);
@@ -584,7 +583,6 @@ static void _set_options(int argc, char **argv)
 	int opt_char, option_index = 0, max_val = 0, i;
 	char *tmp;
 	static struct option long_options[] = {
-		{"begin",         required_argument, 0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"cluster-constraint",required_argument, 0, LONG_OPT_CLUSTER_CONSTRAINT},
@@ -696,16 +694,6 @@ static void _set_options(int argc, char **argv)
 				"information\n");
 			exit(error_exit);
 			break;
-                case 'b':
-                        if (!optarg)
-                                break;  /* Fix for Coverity false positive */
-                        opt.begin = parse_time(optarg, 0);
-                        if (opt.begin == 0) {
-                                error("Invalid time specification %s",
-                                      optarg);
-                                exit(error_exit);
-                        }
-                        break;
 		case 'B':
 			opt.extra_set = verify_socket_core_thread_count(
 						optarg,

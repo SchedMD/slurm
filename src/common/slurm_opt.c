@@ -38,6 +38,7 @@
 
 #include "src/common/log.h"
 #include "src/common/optz.h"
+#include "src/common/parse_time.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -282,6 +283,31 @@ static slurm_cli_opt_t slurm_opt_account = {
 	.reset_func = arg_reset_account,
 };
 
+static int arg_set_begin(slurm_opt_t *opt, const char *arg)
+{
+	if (!(opt->begin = parse_time(arg, 0))) {
+		error("Invalid --begin specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_begin(slurm_opt_t *opt)
+{
+	char time_str[32];
+	slurm_make_time_str(&opt->begin, time_str, sizeof(time_str));
+	return xstrdup(time_str);
+}
+COMMON_OPTION_RESET(begin, 0);
+static slurm_cli_opt_t slurm_opt_begin = {
+	.name = "begin",
+	.has_arg = required_argument,
+	.val = 'b',
+	.set_func = arg_set_begin,
+	.get_func = arg_get_begin,
+	.reset_func = arg_reset_begin,
+};
+
 COMMON_STRING_OPTION(comment);
 static slurm_cli_opt_t slurm_opt_comment = {
 	.name = "comment",
@@ -364,6 +390,7 @@ static slurm_cli_opt_t slurm_opt_qos = {
 
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
+	&slurm_opt_begin,
 	&slurm_opt_comment,
 	&slurm_opt_constraint,
 	&slurm_opt_gpus,

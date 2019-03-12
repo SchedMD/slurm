@@ -137,7 +137,6 @@ int	_verbose = 0;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"begin",            required_argument, 0, 'b'},
 	{"extra-node-info",  required_argument, 0, 'B'},
 	{"cpus-per-task",    required_argument, 0, 'c'},
 	{"cluster-constraint",required_argument,0, LONG_OPT_CLUSTER_CONSTRAINT},
@@ -601,7 +600,6 @@ static void _opt_default(void)
 	if (pass_number == 1) {
 		xfree(opt.acctg_freq);
 		sropt.allocate		= false;
-		opt.begin		= (time_t) 0;
 		xfree(opt.c_constraint);
 		sropt.ckpt_interval		= 0;
 		xfree(sropt.ckpt_interval_str);
@@ -1251,16 +1249,6 @@ static void _set_options(const int argc, char **argv)
 				"Try \"srun --help\" for more information\n");
 			exit(error_exit);
 			break;
-                case 'b':
-                        if (!optarg)
-                                break;  /* Fix for Coverity false positive */
-                        opt.begin = parse_time(optarg, 0);
-                        if (errno == ESLURM_INVALID_TIME_VALUE) {
-                                error("Invalid time specification %s",
-                                      optarg);
-                                exit(error_exit);
-                        }
-                        break;
 		case (int)'B':
 			opt.extra_set = verify_socket_core_thread_count(
 						optarg,

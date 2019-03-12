@@ -185,7 +185,6 @@ static void _opt_default(bool first_pass)
 	 * specified on the command line */
 	if (first_pass) {
 		xfree(opt.acctg_freq);
-		opt.begin		= 0;
 		xfree(opt.c_constraint);
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
@@ -639,7 +638,6 @@ _process_env_var(env_vars_t *e, const char *val)
 static struct option long_options[] = {
 	{"array",         required_argument, 0, 'a'},
 	{"extra-node-info", required_argument, 0, 'B'},
-	{"begin",	  required_argument, 0, 'b'},
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"cluster-constraint",required_argument,0, LONG_OPT_CLUSTER_CONSTRAINT},
 	{"dependency",    required_argument, 0, 'd'},
@@ -1145,15 +1143,6 @@ static void _set_options(int argc, char **argv)
 			xfree(sbopt.array_inx);
 			sbopt.array_inx = xstrdup(optarg);
 			break;
-                case 'b':
-                        if (!optarg)
-                                break;  /* Fix for Coverity false positive */
-                        opt.begin = parse_time(optarg, 0);
-                        if (opt.begin == 0) {
-                                error("Invalid time specification %s", optarg);
-                                exit(error_exit);
-                        }
-                        break;
 		case 'B':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
