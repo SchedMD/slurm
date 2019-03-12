@@ -153,7 +153,6 @@ struct option long_options[] = {
 	{"hold",             no_argument,       0, 'H'},
 	{"input",            required_argument, 0, 'i'},
 	{"immediate",        optional_argument, 0, 'I'},
-	{"join",             no_argument,       0, 'j'},
 	{"job-name",         required_argument, 0, 'J'},
 	{"no-kill",          optional_argument, 0, 'k'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
@@ -1440,9 +1439,6 @@ static void _set_options(const int argc, char **argv)
 				opt.immediate = strtol(optarg, NULL, 10);
 			else
 				opt.immediate = DEFAULT_IMMEDIATE;
-			break;
-		case (int)'j':
-			/* Vestigial option */
 			break;
 		case (int)'J':
 			if (!optarg)
