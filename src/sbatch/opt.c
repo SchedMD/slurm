@@ -188,7 +188,6 @@ static void _opt_default(bool first_pass)
 		xfree(opt.c_constraint);
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
-		xfree(opt.clusters);
 		opt.cpus_per_gpu	= 0;
 		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
 			error("getcwd failed: %m");
@@ -347,8 +346,8 @@ env_vars_t env_vars[] = {
   {"SBATCH_BATCH",         OPT_STRING,     &sbopt.batch_features, NULL       },
   {"SBATCH_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &sbopt.ckpt_interval_str, NULL    },
-  {"SBATCH_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
-  {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
+  { "SBATCH_CLUSTERS", 'M' },
+  { "SLURM_CLUSTERS", 'M' },
   {"SBATCH_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraint,  NULL          },
   { "SBATCH_CONSTRAINT", 'C' },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
@@ -648,8 +647,6 @@ static struct option long_options[] = {
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
 	{"no-kill",       optional_argument, 0, 'k'},
 	{"distribution",  required_argument, 0, 'm'},
-	{"cluster",       required_argument, 0, 'M'},
-	{"clusters",      required_argument, 0, 'M'},
 	{"tasks",         required_argument, 0, 'n'},
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
@@ -1232,10 +1229,6 @@ static void _set_options(int argc, char **argv)
 				      "is not recognized", optarg);
 				exit(error_exit);
 			}
-			break;
-		case 'M':
-			xfree(opt.clusters);
-			opt.clusters = xstrdup(optarg);
 			break;
 		case 'n':
 			opt.ntasks_set = true;

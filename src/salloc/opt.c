@@ -201,7 +201,6 @@ static void _opt_default(void)
 		xfree(opt.acctg_freq);
 		saopt.bell		= BELL_AFTER_DELAY;
 		xfree(opt.c_constraint);
-		xfree(opt.clusters);
 		opt.cpus_per_gpu	= 0;
 		xfree(opt.cwd);
 		opt.delay_boot		= NO_VAL;
@@ -314,8 +313,8 @@ env_vars_t env_vars[] = {
   {"SALLOC_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
-  {"SALLOC_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
-  {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
+  { "SALLOC_CLUSTERS", 'M' },
+  { "SLURM_CLUSTERS", 'M' },
   {"SALLOC_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraint,  NULL          },
   { "SALLOC_CONSTRAINT", 'C' },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
@@ -592,8 +591,6 @@ static void _set_options(int argc, char **argv)
 		{"no-kill",       optional_argument, 0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
 		{"distribution",  required_argument, 0, 'm'},
-		{"cluster",       required_argument, 0, 'M'},
-		{"clusters",      required_argument, 0, 'M'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -770,10 +767,6 @@ static void _set_options(int argc, char **argv)
 				      "is not recognized", optarg);
 				exit(error_exit);
 			}
-			break;
-		case 'M':
-			xfree(opt.clusters);
-			opt.clusters = xstrdup(optarg);
 			break;
 		case 'n':
 			opt.ntasks_set = true;

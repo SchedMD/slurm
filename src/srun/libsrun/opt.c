@@ -151,8 +151,6 @@ struct option long_options[] = {
 	{"no-kill",          optional_argument, 0, 'k'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"label",            no_argument,       0, 'l'},
-	{"cluster",          required_argument, 0, 'M'},
-	{"clusters",         required_argument, 0, 'M'},
 	{"distribution",     required_argument, 0, 'm'},
 	{"ntasks",           required_argument, 0, 'n'},
 	{"nodes",            required_argument, 0, 'N'},
@@ -599,7 +597,6 @@ static void _opt_default(void)
 		xfree(opt.c_constraint);
 		sropt.ckpt_interval		= 0;
 		xfree(sropt.ckpt_interval_str);
-		xfree(opt.clusters);
 		xfree(sropt.cmd_name);
 		opt.cpus_per_gpu	= 0;
 		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
@@ -790,7 +787,7 @@ env_vars_t env_vars[] = {
 {"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
 {"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
-{"SLURM_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL             },
+  { "SLURM_CLUSTERS", 'M' },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
 {"SLURM_CLUSTER_CONSTRAINT",OPT_STRING, &opt.c_constraint,  NULL             },
@@ -1338,12 +1335,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'l':
 			sropt.labelio = true;
-			break;
-		case 'M':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.clusters);
-			opt.clusters = xstrdup(optarg);
 			break;
 		case (int)'m':
 			if (!optarg)

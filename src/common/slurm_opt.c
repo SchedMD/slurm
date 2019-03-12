@@ -308,6 +308,25 @@ static slurm_cli_opt_t slurm_opt_begin = {
 	.reset_func = arg_reset_begin,
 };
 
+/* --clusters and --cluster are equivalent */
+COMMON_STRING_OPTION(clusters);
+static slurm_cli_opt_t slurm_opt_clusters = {
+	.name = "clusters",
+	.has_arg = required_argument,
+	.val = 'M',
+	.set_func = arg_set_clusters,
+	.get_func = arg_get_clusters,
+	.reset_func = arg_reset_clusters,
+};
+static slurm_cli_opt_t slurm_opt_cluster = {
+	.name = "cluster",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CLUSTER,
+	.set_func = arg_set_clusters,
+	.get_func = arg_get_clusters,
+	.reset_func = arg_reset_clusters,
+};
+
 COMMON_STRING_OPTION(comment);
 static slurm_cli_opt_t slurm_opt_comment = {
 	.name = "comment",
@@ -447,6 +466,8 @@ static slurm_cli_opt_t slurm_opt_reservation = {
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
 	&slurm_opt_begin,
+	&slurm_opt_cluster,
+	&slurm_opt_clusters,
 	&slurm_opt_comment,
 	&slurm_opt_constraint,
 	&slurm_opt_deadline,
