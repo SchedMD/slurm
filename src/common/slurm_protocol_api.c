@@ -4402,7 +4402,7 @@ int slurm_send_rc_err_msg(slurm_msg_t *msg, int rc, char *err_msg)
 	rc_msg.return_code = rc;
 	rc_msg.err_msg     = err_msg;
 
-	_resp_msg_setup(&resp_msg, msg, RESPONSE_SLURM_RC_MSG, &rc_msg);
+	_resp_msg_setup(msg, &resp_msg, RESPONSE_SLURM_RC_MSG, &rc_msg);
 
 	/* send message */
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
@@ -4428,7 +4428,8 @@ int slurm_send_reroute_msg(slurm_msg_t *msg, slurmdb_cluster_rec_t *cluster_rec)
 	/* Don't free the cluster_rec, it's pointing to the actual object. */
 	reroute_msg.working_cluster_rec = cluster_rec;
 
-	_resp_msg_setup(&resp_msg, msg, RESPONSE_SLURM_REROUTE_MSG, &reroute_msg);
+	_resp_msg_setup(msg, &resp_msg, RESPONSE_SLURM_REROUTE_MSG,
+			&reroute_msg);
 
 	/* send message */
 	return slurm_send_node_msg(msg->conn_fd, &resp_msg);
