@@ -1614,8 +1614,6 @@ static void _set_options(const int argc, char **argv)
 		case (int)'Z':
 			sropt.no_alloc = true;
 			uname(&name);
-			if (xstrcasecmp(name.sysname, "AIX") == 0)
-				opt.network = xstrdup("ip");
 			break;
 		case LONG_OPT_CLUSTER_CONSTRAINT:
 			xfree(opt.c_constraint);
