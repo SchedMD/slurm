@@ -183,7 +183,6 @@ struct option long_options[] = {
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
-	{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
@@ -610,7 +609,6 @@ static void _opt_default(void)
 		xfree(sropt.ckpt_interval_str);
 		xfree(opt.clusters);
 		xfree(sropt.cmd_name);
-		xfree(opt.comment);
 		opt.cpus_per_gpu	= 0;
 		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
 			error("getcwd failed: %m");
@@ -1840,12 +1838,6 @@ static void _set_options(const int argc, char **argv)
 		}
 		case LONG_OPT_MULTI:
 			sropt.multi_prog = true;
-			break;
-		case LONG_OPT_COMMENT:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.comment);
-			opt.comment = xstrdup(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)

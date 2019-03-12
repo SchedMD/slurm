@@ -191,7 +191,6 @@ static void _opt_default(bool first_pass)
 		xfree(sbopt.ckpt_interval_str);
 		xfree(opt.clusters);
 		opt.cpus_per_gpu	= 0;
-		xfree(opt.comment);
 		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
 			error("getcwd failed: %m");
 			exit(error_exit);
@@ -682,7 +681,6 @@ static struct option long_options[] = {
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
-	{"comment",       required_argument, 0, LONG_OPT_COMMENT},
 	{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
@@ -1577,10 +1575,6 @@ static void _set_options(int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.profile = acct_gather_profile_from_string(optarg);
-			break;
-		case LONG_OPT_COMMENT:
-			xfree(opt.comment);
-			opt.comment = xstrdup(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)

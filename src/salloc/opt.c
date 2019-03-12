@@ -203,7 +203,6 @@ static void _opt_default(void)
 		saopt.bell		= BELL_AFTER_DELAY;
 		xfree(opt.c_constraint);
 		xfree(opt.clusters);
-		xfree(opt.comment);
 		opt.cpus_per_gpu	= 0;
 		xfree(opt.cwd);
 		opt.deadline		= 0;
@@ -623,7 +622,6 @@ static void _set_options(int argc, char **argv)
 		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
-		{"comment",       required_argument, 0, LONG_OPT_COMMENT},
 		{"contiguous",    no_argument,       0, LONG_OPT_CONT},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
@@ -1071,10 +1069,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_PROFILE:
 			opt.profile = acct_gather_profile_from_string(optarg);
-			break;
-		case LONG_OPT_COMMENT:
-			xfree(opt.comment);
-			opt.comment = xstrdup(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)
