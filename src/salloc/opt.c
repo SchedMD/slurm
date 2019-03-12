@@ -204,7 +204,6 @@ static void _opt_default(void)
 		xfree(opt.clusters);
 		opt.cpus_per_gpu	= 0;
 		xfree(opt.cwd);
-		opt.deadline		= 0;
 		opt.delay_boot		= NO_VAL;
 		xfree(opt.dependency);
 		opt.egid		= (gid_t) -1;
@@ -621,7 +620,6 @@ static void _set_options(int argc, char **argv)
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"cpus-per-gpu",  required_argument, 0, LONG_OPT_CPUS_PER_GPU},
-		{"deadline",      required_argument, 0, LONG_OPT_DEADLINE},
 		{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"exclusive",     optional_argument, 0, LONG_OPT_EXCLUSIVE},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
@@ -856,16 +854,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_CPUS_PER_GPU:
 			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,
 						     true);
-			break;
-		case LONG_OPT_DEADLINE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.deadline = parse_time(optarg, 0);
-			if (errno == ESLURM_INVALID_TIME_VALUE) {
-				error("Invalid deadline specification %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_DELAY_BOOT:
 			i = time_str2secs(optarg);

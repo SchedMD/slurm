@@ -329,6 +329,31 @@ static slurm_cli_opt_t slurm_opt_constraint = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_deadline(slurm_opt_t *opt, const char *arg)
+{
+	if (!(opt->deadline = parse_time(arg, 0))) {
+		error("Invalid --deadline specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_deadline(slurm_opt_t *opt)
+{
+	char time_str[32];
+	slurm_make_time_str(&opt->deadline, time_str, sizeof(time_str));
+	return xstrdup(time_str);
+}
+COMMON_OPTION_RESET(deadline, 0);
+static slurm_cli_opt_t slurm_opt_deadline = {
+	.name = "deadline",
+	.has_arg = required_argument,
+	.val = LONG_OPT_DEADLINE,
+	.set_func = arg_set_deadline,
+	.get_func = arg_get_deadline,
+	.reset_func = arg_reset_deadline,
+};
+
 COMMON_STRING_OPTION(gpus);
 static slurm_cli_opt_t slurm_opt_gpus = {
 	.name = "gpus",
@@ -393,6 +418,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_begin,
 	&slurm_opt_comment,
 	&slurm_opt_constraint,
+	&slurm_opt_deadline,
 	&slurm_opt_gpus,
 	&slurm_opt_mcs_label,
 	&slurm_opt_priority,
