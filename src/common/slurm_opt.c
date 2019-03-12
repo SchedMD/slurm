@@ -313,6 +313,16 @@ static slurm_cli_opt_t slurm_opt_gpus = {
 	.reset_func = arg_reset_gpus,
 };
 
+COMMON_STRING_OPTION(mcs_label);
+static slurm_cli_opt_t slurm_opt_mcs_label = {
+	.name = "mcs-label",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MCS_LABEL,
+	.set_func = arg_set_mcs_label,
+	.get_func = arg_get_mcs_label,
+	.reset_func = arg_reset_mcs_label,
+};
+
 COMMON_STRING_OPTION(qos);
 static slurm_cli_opt_t slurm_opt_qos = {
 	.name = "qos",
@@ -328,6 +338,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_comment,
 	&slurm_opt_constraint,
 	&slurm_opt_gpus,
+	&slurm_opt_mcs_label,
 	&slurm_opt_qos,
 	NULL /* END */
 };

@@ -217,7 +217,6 @@ static void _opt_default(bool first_pass)
 		opt.hold		= false;
 		sbopt.ifname		= xstrdup("/dev/null");
 		opt.immediate		= false;
-		xfree(opt.mcs_label);
 		opt.mem_per_gpu		= NO_VAL64;
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
@@ -703,7 +702,6 @@ static struct option long_options[] = {
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
-	{"mcs-label",     required_argument, 0, LONG_OPT_MCS_LABEL},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
@@ -1504,12 +1502,6 @@ static void _set_options(int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
-			break;
-		case LONG_OPT_MCS_LABEL:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.mcs_label);
-			opt.mcs_label = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_SPEC:
 			if (!optarg)

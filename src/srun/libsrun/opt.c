@@ -208,7 +208,6 @@ struct option long_options[] = {
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
-	{"mcs-label",        required_argument, 0, LONG_OPT_MCS_LABEL},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-gpu",      required_argument, 0, LONG_OPT_MEM_PER_GPU},
@@ -646,7 +645,6 @@ static void _opt_default(void)
 		sropt.kill_bad_exit	= NO_VAL;
 		sropt.labelio		= false;
 		sropt.max_wait		= slurm_get_wait_time();
-		xfree(opt.mcs_label);
 		opt.mem_per_gpu		= NO_VAL64;
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
@@ -1774,12 +1772,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
-			break;
-		case LONG_OPT_MCS_LABEL:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.mcs_label);
-			opt.mcs_label = xstrdup(optarg);
 			break;
 		case LONG_OPT_TASK_PROLOG:
 			if (!optarg)

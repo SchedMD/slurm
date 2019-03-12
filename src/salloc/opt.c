@@ -225,7 +225,6 @@ static void _opt_default(void)
 		xfree(opt.job_name);
 		saopt.kill_command_signal = SIGTERM;
 		saopt.kill_command_signal_set = false;
-		xfree(opt.mcs_label);
 		opt.mem_per_gpu		= NO_VAL64;
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
@@ -641,7 +640,6 @@ static void _set_options(int argc, char **argv)
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
-		{"mcs-label",     required_argument, 0, LONG_OPT_MCS_LABEL},
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
 		{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
@@ -1015,11 +1013,6 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.mail_user);
 			opt.mail_user = xstrdup(optarg);
 			break;
-		case LONG_OPT_MCS_LABEL: {
-			xfree(opt.mcs_label);
-			opt.mcs_label = xstrdup(optarg);
-			break;
-		}
 		case LONG_OPT_NICE: {
 			long long tmp_nice;
 			if (optarg)
