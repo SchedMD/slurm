@@ -228,8 +228,6 @@ static void _opt_default(void)
 		opt.quiet		= 0;
 		opt.reboot		= false;
 		opt.time_limit		= NO_VAL;
-		opt.time_min		= NO_VAL;
-		xfree(opt.time_min_str);
 		opt.uid			= getuid();
 		opt.verbose		= 0;
 		saopt.wait_all_nodes	= NO_VAL16;
@@ -644,7 +642,6 @@ static void _set_options(int argc, char **argv)
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
-		{"time-min",      required_argument, 0, LONG_OPT_TIME_MIN},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"tmp",           required_argument, 0, LONG_OPT_TMP},
 		{"uid",           required_argument, 0, LONG_OPT_UID},
@@ -1090,10 +1087,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			break;
-		case LONG_OPT_TIME_MIN:
-			xfree(opt.time_min_str);
-			opt.time_min_str = xstrdup(optarg);
-			break;
 		case LONG_OPT_GRES:
 			if (!xstrcasecmp(optarg, "help") ||
 			    !xstrcasecmp(optarg, "list")) {
@@ -1504,15 +1497,6 @@ static bool _opt_verify(void)
 		}
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
-	}
-	if (opt.time_min_str) {
-		opt.time_min = time_str2mins(opt.time_min_str);
-		if ((opt.time_min < 0) && (opt.time_min != INFINITE)) {
-			error("Invalid min-time specification");
-			exit(error_exit);
-		}
-		if (opt.time_min == 0)
-			opt.time_min = INFINITE;
 	}
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");

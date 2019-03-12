@@ -234,7 +234,6 @@ struct option long_options[] = {
 	{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"thread-spec",      required_argument, 0, LONG_OPT_THREAD_SPEC},
-	{"time-min",         required_argument, 0, LONG_OPT_TIME_MIN},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"tmp",              required_argument, 0, LONG_OPT_TMP},
 	{"uid",              required_argument, 0, LONG_OPT_UID},
@@ -473,7 +472,6 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
 	opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
 	opt_dup->time_limit_str = xstrdup(opt.time_limit_str);
-	opt_dup->time_min_str = xstrdup(opt.time_min_str);
 	opt_dup->tres_bind = xstrdup(opt.tres_bind);
 	opt_dup->tres_freq = xstrdup(opt.tres_freq);
 	opt_dup->wckey = xstrdup(opt.wckey);
@@ -655,8 +653,6 @@ static void _opt_default(void)
 		sropt.test_exec		= false;
 		opt.time_limit		= NO_VAL;
 		xfree(opt.time_limit_str);
-		opt.time_min		= NO_VAL;
-		xfree(opt.time_min_str);
 		opt.uid			= uid;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
@@ -1893,12 +1889,6 @@ static void _set_options(const int argc, char **argv)
 				exit(error_exit);
 			}
 			break;
-		case LONG_OPT_TIME_MIN:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.time_min_str);
-			opt.time_min_str = xstrdup(optarg);
-			break;
 		case LONG_OPT_GRES:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -2477,15 +2467,6 @@ static bool _opt_verify(void)
 		}
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
-	}
-	if (opt.time_min_str) {
-		opt.time_min = time_str2mins(opt.time_min_str);
-		if ((opt.time_min < 0) && (opt.time_min != INFINITE)) {
-			error("Invalid time-min specification");
-			exit(error_exit);
-		}
-		if (opt.time_min == 0)
-			opt.time_min = INFINITE;
 	}
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");

@@ -327,7 +327,6 @@ typedef struct slurm_options {
 	int time_limit;			/* --time, in minutes		*/
 	char *time_limit_str;		/* --time			*/
 	int time_min;			/* --min-time, in minutes	*/
-	char *time_min_str;		/* --min-time			*/
 	char *partition;		/* --partition			*/
 	uint32_t profile;		/* --profile=[all | none]	*/
 	enum task_dist_states distribution;

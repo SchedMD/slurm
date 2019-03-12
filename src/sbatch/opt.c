@@ -223,7 +223,6 @@ static void _opt_default(bool first_pass)
 		sbopt.requeue		= NO_VAL;
 		sbopt.test_only		= false;
 		opt.time_limit		= NO_VAL;
-		opt.time_min		= NO_VAL;
 		opt.uid			= uid;
 		sbopt.umask		= -1;
 		sbopt.wait		= false;
@@ -711,7 +710,6 @@ static struct option long_options[] = {
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
-	{"time-min",      required_argument, 0, LONG_OPT_TIME_MIN},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"tmp",           required_argument, 0, LONG_OPT_TMP},
 	{"uid",           required_argument, 0, LONG_OPT_UID},
@@ -1628,10 +1626,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			break;
-		case LONG_OPT_TIME_MIN:
-			xfree(opt.time_min_str);
-			opt.time_min_str = xstrdup(optarg);
-			break;
 		case LONG_OPT_GRES:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -2007,15 +2001,6 @@ static bool _opt_verify(void)
 		}
 		if (opt.time_limit == 0)
 			opt.time_limit = INFINITE;
-	}
-	if (opt.time_min_str) {
-		opt.time_min = time_str2mins(opt.time_min_str);
-		if ((opt.time_min < 0) && (opt.time_min != INFINITE)) {
-			error("Invalid time-min specification");
-			exit(error_exit);
-		}
-		if (opt.time_min == 0)
-			opt.time_min = INFINITE;
 	}
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");

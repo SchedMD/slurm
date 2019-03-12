@@ -483,6 +483,31 @@ static slurm_cli_opt_t slurm_opt_reservation = {
 	.reset_func = arg_reset_reservation,
 };
 
+static int arg_set_time_min(slurm_opt_t *opt, const char *arg)
+{
+	int time_min;
+
+	time_min = time_str2mins(arg);
+	if (time_min == NO_VAL) {
+		error("Invalid --time-min specification");
+		exit(-1);
+	} else if (time_min == 0) {
+		time_min = INFINITE;
+	}
+
+	opt->time_min = time_min;
+	return SLURM_SUCCESS;
+}
+COMMON_TIME_DURATION_OPTION_GET_AND_RESET(time_min);
+static slurm_cli_opt_t slurm_opt_time_min = {
+	.name = "time-min",
+	.has_arg = required_argument,
+	.val = LONG_OPT_TIME_MIN,
+	.set_func = arg_set_time_min,
+	.get_func = arg_get_time_min,
+	.reset_func = arg_reset_time_min,
+};
+
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
 	&slurm_opt_begin,
@@ -500,6 +525,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_priority,
 	&slurm_opt_qos,
 	&slurm_opt_reservation,
+	&slurm_opt_time_min,
 	NULL /* END */
 };
 
