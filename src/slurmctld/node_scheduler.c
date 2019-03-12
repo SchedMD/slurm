@@ -224,9 +224,10 @@ static int _get_gres_config(struct job_record *job_ptr)
 	List                gres_list;
 	bitstr_t *	    node_bitmap = job_ptr->node_bitmap;
 	struct node_record* node_ptr;
-	int                 *gres_count_ids, *gres_count_vals;
-	int                 *gres_count_ids_loc = NULL;
-	int                 *gres_count_vals_loc = NULL;
+	uint32_t            *gres_count_ids = NULL;
+	uint32_t            *gres_count_ids_loc = NULL;
+	uint64_t            *gres_count_vals = NULL;
+	uint64_t            *gres_count_vals_loc = NULL;
 	int                 ix, jx, kx, i_first, i_last, rv = 0;
 	int                 count    = 0;
 	int                 gres_type_count = 4; /* Guess number GRES types */
@@ -246,8 +247,8 @@ static int _get_gres_config(struct job_record *job_ptr)
 	if (i_first == -1)      /* job has no nodes */
 		i_last = -2;
 
-	gres_count_ids = xcalloc(gres_type_count, sizeof(int));
-	gres_count_vals = xcalloc(gres_type_count, sizeof(int));
+	gres_count_ids = xcalloc(gres_type_count, sizeof(uint32_t));
+	gres_count_vals = xcalloc(gres_type_count, sizeof(uint64_t));
 
 	/*
 	 * Loop through each node allocated to the job tallying all GRES
@@ -282,8 +283,8 @@ static int _get_gres_config(struct job_record *job_ptr)
 			 * associated value found on this node.
 			 */
 			oldcount = count;
-			xrecalloc(gres_count_ids_loc, count, sizeof(int));
-			xrecalloc(gres_count_vals_loc, count, sizeof(int));
+			xrecalloc(gres_count_ids_loc, count, sizeof(uint32_t));
+			xrecalloc(gres_count_vals_loc, count, sizeof(uint64_t));
 		}
 
 		if (gres_list) {
@@ -325,10 +326,10 @@ static int _get_gres_config(struct job_record *job_ptr)
 					gres_type_count *= 2;
 					xrecalloc(gres_count_ids,
 						  gres_type_count,
-						  sizeof(int));
+						  sizeof(uint32_t));
 					xrecalloc(gres_count_vals,
 						  gres_type_count,
-						  sizeof(int));
+						  sizeof(uint64_t));
 				}
 				gres_count_ids[kx]   = gres_count_ids_loc[jx];
 				gres_count_vals[kx] += gres_count_vals_loc[jx];
@@ -349,7 +350,7 @@ static int _get_gres_config(struct job_record *job_ptr)
 		gres_gresid_to_gresname(gres_count_ids[jx], gres_name,
 					sizeof(gres_name));
 
-		xstrfmtcat(job_ptr->gres_alloc, "%s%s:%d",
+		xstrfmtcat(job_ptr->gres_alloc, "%s%s:%"PRIu64,
 			   sep, gres_name, gres_count_vals[jx]);
 		sep = ",";
 	}

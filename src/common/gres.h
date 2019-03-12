@@ -552,7 +552,8 @@ extern uint64_t gres_plugin_node_config_cnt(List gres_list, char *name);
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_node_count(List gres_list, int arr_len,
-				  int *gres_count_ids, int *gres_count_vals,
+				  uint32_t *gres_count_ids,
+				  uint64_t *gres_count_vals,
 				  int val_type);
 
 /*

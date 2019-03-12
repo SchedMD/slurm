@@ -12689,13 +12689,14 @@ extern char *gres_plugin_job_alloc_count(List gres_list)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_node_count(List gres_list, int arr_len,
-				  int* gres_count_ids, int* gres_count_vals,
+				  uint32_t *gres_count_ids,
+				  uint64_t *gres_count_vals,
 				  int val_type)
 {
 	ListIterator  node_gres_iter;
 	gres_state_t* node_gres_ptr;
 	void*         node_gres_data;
-	uint32_t      val;
+	uint64_t      val;
 	int           rc, ix = 0;
 
 	rc = gres_plugin_init();
