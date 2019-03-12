@@ -519,7 +519,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	if (opt.core_spec != NO_VAL16)
 		desc->core_spec = opt.core_spec;
-	desc->features = xstrdup(opt.constraints);
+	desc->features = xstrdup(opt.constraint);
 	desc->cluster_features = xstrdup(opt.c_constraints);
 	if (opt.job_name)
 		desc->name = xstrdup(opt.job_name);

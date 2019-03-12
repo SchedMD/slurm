@@ -383,7 +383,7 @@ typedef struct slurm_options {
 	int64_t mem_per_gpu;		/* --mem-per-gpu		*/
 	int64_t pn_min_memory;		/* --mem			*/
 	long pn_min_tmp_disk;		/* --tmp			*/
-	char *constraints;		/* --constraints		*/
+	char *constraint;		/* --constraint			*/
 	char *c_constraints;		/* --cluster-constraints	*/
 	char *gres;			/* --gres			*/
 	bool contiguous;		/* --contiguous			*/

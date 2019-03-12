@@ -303,7 +303,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		job->ctx_params.name = opt_local->job_name;
 	else
 		job->ctx_params.name = srun_opt->cmd_name;
-	job->ctx_params.features = opt_local->constraints;
+	job->ctx_params.features = opt_local->constraint;
 
 	if (opt_local->cpus_per_gpu) {
 		xstrfmtcat(job->ctx_params.cpus_per_tres, "gpu:%d",

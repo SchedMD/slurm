@@ -711,7 +711,7 @@ static void _set_step_opts(slurm_opt_t *opt_local)
 	xassert(srun_opt);
 
 	opt_local->time_limit = NO_VAL;/* not applicable for step, only job */
-	xfree(opt_local->constraints);	/* not applicable for this step */
+	xfree(opt_local->constraint);	/* not applicable for this step */
 	if (!srun_opt->job_name_set_cmd && srun_opt->job_name_set_env) {
 		/* use SLURM_JOB_NAME env var */
 		sropt.job_name_set_cmd = true;

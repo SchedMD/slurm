@@ -267,7 +267,7 @@ static void _opt_default(void)
 	/* All other options must be specified individually for each component
 	 * of the job */
 	xfree(opt.burst_buffer);
-	xfree(opt.constraints);
+	xfree(opt.constraint);
 	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
@@ -337,7 +337,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SALLOC_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
-  {"SALLOC_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL          },
+  {"SALLOC_CONSTRAINT",    OPT_STRING,     &opt.constraint,    NULL          },
   {"SALLOC_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraints, NULL          },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SALLOC_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
@@ -764,8 +764,8 @@ static void _set_options(int argc, char **argv)
 						      optarg, true);
 			break;
 		case 'C':
-			xfree(opt.constraints);
-			opt.constraints = xstrdup(optarg);
+			xfree(opt.constraint);
+			opt.constraint = xstrdup(optarg);
 			break;
 		case 'd':
 			xfree(opt.dependency);
@@ -1925,8 +1925,8 @@ static char *print_constraints()
 	if (opt.exc_nodes != NULL)
 		xstrfmtcat(buf, "exclude=%s ", opt.exc_nodes);
 
-	if (opt.constraints != NULL)
-		xstrfmtcat(buf, "constraints=`%s' ", opt.constraints);
+	if (opt.constraint != NULL)
+		xstrfmtcat(buf, "constraints=`%s' ", opt.constraint);
 
 	if (opt.c_constraints != NULL)
 		xstrfmtcat(buf, "cluster-constraints=`%s' ", opt.c_constraints);

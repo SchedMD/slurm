@@ -766,7 +766,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	j->contiguous     = opt_local->contiguous;
 	if (opt_local->core_spec != NO_VAL16)
 		j->core_spec      = opt_local->core_spec;
-	j->features       = opt_local->constraints;
+	j->features       = opt_local->constraint;
 	j->cluster_features = opt_local->c_constraints;
 	if (opt_local->immediate == 1)
 		j->immediate = opt_local->immediate;

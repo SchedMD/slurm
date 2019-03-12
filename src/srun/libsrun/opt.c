@@ -469,7 +469,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->clusters = xstrdup(opt.clusters);
 	opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
 	opt_dup->comment = xstrdup(opt.comment);
-	opt.constraints = NULL;		/* Moved by memcpy */
+	opt.constraint = NULL;		/* Moved by memcpy */
 	opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
 	opt_dup->cwd = xstrdup(opt.cwd);
 	opt_dup->dependency = xstrdup(opt.dependency);
@@ -796,7 +796,7 @@ static void _opt_default(void)
 	sropt.accel_bind_type		= 0;
 	opt.burst_buffer		= NULL;
 	sropt.compress			= 0;
-	opt.constraints			= NULL;
+	opt.constraint			= NULL;
 	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
 	sropt.core_spec_set		= false;
@@ -907,7 +907,7 @@ env_vars_t env_vars[] = {
 {"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
 {"SLURM_CHECKPOINT_DIR",OPT_STRING,     &sropt.ckpt_dir,    NULL             },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
-{"SLURM_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL             },
+{"SLURM_CONSTRAINT",    OPT_STRING,     &opt.constraint,    NULL             },
 {"SLURM_CLUSTER_CONSTRAINT",OPT_STRING, &opt.c_constraints, NULL             },
 {"SLURM_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL             },
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
@@ -1394,8 +1394,8 @@ static void _set_options(const int argc, char **argv)
 			opt.cpus_per_task = tmp_int;
 			break;
 		case (int)'C':
-			xfree(opt.constraints);
-			opt.constraints = xstrdup(optarg);
+			xfree(opt.constraint);
+			opt.constraint = xstrdup(optarg);
 			break;
 		case (int)'d':
 			xfree(opt.dependency);
@@ -2985,8 +2985,8 @@ static char *print_constraints(void)
 	if (opt.exc_nodes != NULL)
 		xstrfmtcat(buf, "exclude=%s ", opt.exc_nodes);
 
-	if (opt.constraints != NULL)
-		xstrfmtcat(buf, "constraints=`%s' ", opt.constraints);
+	if (opt.constraint != NULL)
+		xstrfmtcat(buf, "constraints=`%s' ", opt.constraint);
 
 	if (opt.c_constraints != NULL)
 		xstrfmtcat(buf, "clsuter-constraints=`%s' ", opt.c_constraints);

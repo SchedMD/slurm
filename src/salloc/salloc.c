@@ -785,7 +785,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.core_spec != NO_VAL16)
 		desc->core_spec = opt.core_spec;
 	desc->extra = xstrdup(opt.extra);
-	desc->features = xstrdup(opt.constraints);
+	desc->features = xstrdup(opt.constraint);
 	desc->cluster_features = xstrdup(opt.c_constraints);
 	if (opt.immediate == 1)
 		desc->immediate = 1;

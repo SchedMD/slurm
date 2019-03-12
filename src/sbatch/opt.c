@@ -280,7 +280,7 @@ static void _opt_default(bool first_pass)
 	/* All other options must be specified individually for each component
 	 * of the job */
 	xfree(opt.burst_buffer);
-	xfree(opt.constraints);
+	xfree(opt.constraint);
 	opt.contiguous			= false;
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
@@ -389,7 +389,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &sbopt.ckpt_dir,    NULL          },
   {"SBATCH_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
-  {"SBATCH_CONSTRAINT",    OPT_STRING,     &opt.constraints,   NULL          },
+  {"SBATCH_CONSTRAINT",    OPT_STRING,     &opt.constraint,    NULL          },
   {"SBATCH_CLUSTER_CONSTRAINT", OPT_STRING,&opt.c_constraints, NULL          },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
@@ -1329,8 +1329,8 @@ static void _set_options(int argc, char **argv)
 						      optarg, true);
 			break;
 		case 'C':
-			xfree(opt.constraints);
-			opt.constraints = xstrdup(optarg);
+			xfree(opt.constraint);
+			opt.constraint = xstrdup(optarg);
 			break;
 		case 'd':
 			xfree(opt.dependency);
@@ -2645,10 +2645,10 @@ static void _parse_pbs_resource_list(char *rl)
 			_get_next_pbs_option(rl, &i);
 		} else if (!xstrncmp(rl+i, "proc=", 5)) {
 			i += 5;
-			if (opt.constraints)
-				xstrcat(opt.constraints, ",");
+			if (opt.constraint)
+				xstrcat(opt.constraint, ",");
 			temp = _get_pbs_option_value(rl, &i, ',');
-			xstrcat(opt.constraints, temp);
+			xstrcat(opt.constraint, temp);
 			xfree(temp);
 			_get_next_pbs_option(rl, &i);
 		} else if (!xstrncmp(rl+i, "pvmem=", 6)) {
@@ -3178,8 +3178,8 @@ static char *print_constraints(void)
 	if (opt.exc_nodes != NULL)
 		xstrfmtcat(buf, "exclude=%s ", opt.exc_nodes);
 
-	if (opt.constraints != NULL)
-		xstrfmtcat(buf, "constraints=`%s' ", opt.constraints);
+	if (opt.constraint != NULL)
+		xstrfmtcat(buf, "constraints=`%s' ", opt.constraint);
 
 	if (opt.c_constraints != NULL)
 		xstrfmtcat(buf, "cluster-constraints=`%s' ", opt.c_constraints);
