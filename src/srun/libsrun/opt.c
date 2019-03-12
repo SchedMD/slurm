@@ -146,7 +146,6 @@ struct option long_options[] = {
 	{"error",            required_argument, 0, 'e'},
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
-	{"gpus",             required_argument, 0, 'G'},
 	{"hold",             no_argument,       0, 'H'},
 	{"input",            required_argument, 0, 'i'},
 	{"immediate",        optional_argument, 0, 'I'},
@@ -634,7 +633,6 @@ static void _opt_default(void)
 		xfree(sropt.export_env);
 		opt.euid		= (uid_t) -1;
 		opt.gid			= getgid();
-		xfree(opt.gpus);
 		xfree(opt.gpu_bind);
 		xfree(opt.gpu_freq);
 		xfree(opt.gpus_per_node);
@@ -825,7 +823,7 @@ env_vars_t env_vars[] = {
 {"SLURM_EPILOG",        OPT_STRING,     &sropt.epilog,      NULL             },
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
 {"SLURM_EXPORT_ENV",    OPT_STRING,     &sropt.export_env,  NULL             },
-{"SLURM_GPUS",          OPT_STRING,     &opt.gpus,          NULL             },
+  { "SLURM_GPUS", 'G' },
 {"SLURM_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL             },
 {"SLURM_GPU_FREQ",      OPT_STRING,     &opt.gpu_freq,      NULL             },
 {"SLURM_GPUS_PER_NODE", OPT_STRING,     &opt.gpus_per_node, NULL             },
@@ -1324,10 +1322,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'E':
 			sropt.preserve_env = true;
-			break;
-		case (int)'G':
-			xfree(opt.gpus);
-			opt.gpus = xstrdup(optarg);
 			break;
 		case (int)'H':
 			opt.hold = true;

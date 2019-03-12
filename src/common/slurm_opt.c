@@ -293,6 +293,16 @@ static slurm_cli_opt_t slurm_opt_constraint = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(gpus);
+static slurm_cli_opt_t slurm_opt_gpus = {
+	.name = "gpus",
+	.has_arg = required_argument,
+	.val = 'G',
+	.set_func = arg_set_gpus,
+	.get_func = arg_get_gpus,
+	.reset_func = arg_reset_gpus,
+};
+
 COMMON_STRING_OPTION(qos);
 static slurm_cli_opt_t slurm_opt_qos = {
 	.name = "qos",
@@ -306,6 +316,7 @@ static slurm_cli_opt_t slurm_opt_qos = {
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
 	&slurm_opt_constraint,
+	&slurm_opt_gpus,
 	&slurm_opt_qos,
 	NULL /* END */
 };

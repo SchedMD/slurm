@@ -216,7 +216,6 @@ static void _opt_default(void)
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
-		xfree(opt.gpus);
 		xfree(opt.gpu_bind);
 		xfree(opt.gpu_freq);
 		xfree(opt.gpus_per_node);
@@ -332,7 +331,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SALLOC_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
-  {"SALLOC_GPUS",          OPT_STRING,     &opt.gpus,          NULL          },
+  { "SALLOC_GPUS", 'G' },
   {"SALLOC_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
   {"SALLOC_GPU_FREQ",      OPT_STRING,     &opt.gpu_freq,      NULL          },
   {"SALLOC_GPUS_PER_NODE", OPT_STRING,     &opt.gpus_per_node, NULL          },
@@ -596,7 +595,6 @@ static void _set_options(int argc, char **argv)
 		{"dependency",    required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
-		{"gpus",          required_argument, 0, 'G'},
 		{"help",          no_argument,       0, 'h'},
 		{"hold",          no_argument,       0, 'H'},
 		{"immediate",     optional_argument, 0, 'I'},
@@ -759,10 +757,6 @@ static void _set_options(int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case 'G':
-			xfree(opt.gpus);
-			opt.gpus = xstrdup(optarg);
 			break;
 		case 'h':
 			_help();

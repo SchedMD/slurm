@@ -210,7 +210,6 @@ static void _opt_default(bool first_pass)
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
-		xfree(opt.gpus);
 		xfree(opt.gpu_bind);
 		xfree(opt.gpu_freq);
 		xfree(opt.gpus_per_node);
@@ -370,7 +369,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
   {"SBATCH_GRES",          OPT_STRING,     &opt.gres,          NULL          },
   {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
-  {"SBATCH_GPUS",          OPT_STRING,     &opt.gpus,          NULL          },
+  { "SBATCH_GPUS", 'G' },
   {"SBATCH_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
   {"SBATCH_GPU_FREQ",      OPT_STRING,     &opt.gpu_freq,      NULL          },
   {"SBATCH_GPUS_PER_NODE", OPT_STRING,     &opt.gpus_per_node, NULL          },
@@ -650,7 +649,6 @@ static struct option long_options[] = {
 	{"chdir",         required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
-	{"gpus",          required_argument, 0, 'G'},
 	{"help",          no_argument,       0, 'h'},
 	{"hold",          no_argument,       0, 'H'},
 	{"input",         required_argument, 0, 'i'},
@@ -1222,10 +1220,6 @@ static void _set_options(int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case 'G':
-			xfree(opt.gpus);
-			opt.gpus = xstrdup(optarg);
 			break;
 		case 'h':
 			/* handled in process_options_first_pass() */
