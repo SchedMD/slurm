@@ -250,7 +250,6 @@ static void _opt_default(void)
 	opt.distribution		= SLURM_DIST_UNKNOWN;
 	xfree(opt.hint_env);
 	opt.hint_set			= false;
-	xfree(opt.gres);
 	opt.job_flags			= 0;
 	opt.max_nodes			= 0;
 	xfree(opt.mem_bind);
@@ -319,7 +318,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_GPUS_PER_NODE", OPT_STRING,     &opt.gpus_per_node, NULL          },
   {"SALLOC_GPUS_PER_SOCKET", OPT_STRING,   &opt.gpus_per_socket, NULL        },
   {"SALLOC_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL          },
-  {"SALLOC_GRES",          OPT_STRING,     &opt.gres,          NULL          },
+  { "SALLOC_GRES", LONG_OPT_GRES },
   {"SALLOC_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
   {"SALLOC_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_HINT",          OPT_HINT,       NULL,               NULL          },
@@ -599,7 +598,6 @@ static void _set_options(int argc, char **argv)
 		{"gpus-per-node", required_argument, 0, LONG_OPT_GPUS_PER_NODE},
 		{"gpus-per-socket", required_argument, 0, LONG_OPT_GPUS_PER_SOCKET},
 		{"gpus-per-task", required_argument, 0, LONG_OPT_GPUS_PER_TASK},
-		{"gres",          required_argument, 0, LONG_OPT_GRES},
 		{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
@@ -1054,15 +1052,6 @@ static void _set_options(int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_GRES:
-			if (!xstrcasecmp(optarg, "help") ||
-			    !xstrcasecmp(optarg, "list")) {
-				print_gres_help();
-				exit(0);
-			}
-			xfree(opt.gres);
-			opt.gres = xstrdup(optarg);
 			break;
 		case LONG_OPT_GRES_FLAGS:
 			if (!xstrcasecmp(optarg, "disable-binding")) {

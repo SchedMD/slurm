@@ -39,6 +39,7 @@
 #include "src/common/log.h"
 #include "src/common/optz.h"
 #include "src/common/parse_time.h"
+#include "src/common/proc_args.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -414,6 +415,29 @@ static slurm_cli_opt_t slurm_opt_gpus = {
 	.reset_func = arg_reset_gpus,
 };
 
+static int arg_set_gres(slurm_opt_t *opt, const char *arg)
+{
+	if (!xstrcasecmp(arg, "help") || !xstrcasecmp(arg, "list")) {
+		print_gres_help();
+		exit(0);
+	}
+
+	xfree(opt->gres);
+	opt->gres = xstrdup(arg);
+
+	return SLURM_SUCCESS;
+}
+COMMON_STRING_OPTION_GET_AND_RESET(gres);
+static slurm_cli_opt_t slurm_opt_gres = {
+	.name = "gres",
+	.has_arg = required_argument,
+	.val = LONG_OPT_GRES,
+	.set_func = arg_set_gres,
+	.get_func = arg_get_gres,
+	.reset_func = arg_reset_gres,
+	.reset_each_pass = true,
+};
+
 COMMON_BOOL_OPTION(hold, "hold");
 static slurm_cli_opt_t slurm_opt_hold = {
 	.name = "hold",
@@ -577,6 +601,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_deadline,
 	&slurm_opt_dependency,
 	&slurm_opt_gpus,
+	&slurm_opt_gres,
 	&slurm_opt_hold,
 	&slurm_opt_licenses,
 	&slurm_opt_mcs_label,

@@ -241,7 +241,6 @@ static void _opt_default(bool first_pass)
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
 	opt.distribution		= SLURM_DIST_UNKNOWN;
-	xfree(opt.gres);
 	opt.hint_env			= NULL;
 	opt.hint_set			= false;
 	opt.job_flags			= 0;
@@ -350,7 +349,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL          },
   {"SBATCH_EXPORT",        OPT_STRING,     &sbopt.export_env,  NULL          },
   {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
-  {"SBATCH_GRES",          OPT_STRING,     &opt.gres,          NULL          },
+  { "SBATCH_GRES", LONG_OPT_GRES },
   {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
   { "SBATCH_GPUS", 'G' },
   {"SBATCH_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
@@ -655,7 +654,6 @@ static struct option long_options[] = {
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
-	{"gres",          required_argument, 0, LONG_OPT_GRES},
 	{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"gpu-bind",      required_argument, 0, LONG_OPT_GPU_BIND},
@@ -1592,17 +1590,6 @@ static void _set_options(int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_GRES:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (!xstrcasecmp(optarg, "help") ||
-			    !xstrcasecmp(optarg, "list")) {
-				print_gres_help();
-				exit(0);
-			}
-			xfree(opt.gres);
-			opt.gres = xstrdup(optarg);
 			break;
 		case LONG_OPT_GRES_FLAGS:
 			if (!optarg)

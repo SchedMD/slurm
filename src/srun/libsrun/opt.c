@@ -188,7 +188,6 @@ struct option long_options[] = {
 	{"gpus-per-node",    required_argument, 0, LONG_OPT_GPUS_PER_NODE},
 	{"gpus-per-socket",  required_argument, 0, LONG_OPT_GPUS_PER_SOCKET},
 	{"gpus-per-task",    required_argument, 0, LONG_OPT_GPUS_PER_TASK},
-	{"gres",             required_argument, 0, LONG_OPT_GRES},
 	{"gres-flags",       required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"help",             no_argument,       0, LONG_OPT_HELP},
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
@@ -678,7 +677,6 @@ static void _opt_default(void)
 	opt.cpus_set			= false;
 	sropt.exclusive			= false;
 	opt.extra_set			= false;
-	opt.gres			= NULL;
 	opt.hint_env			= NULL;
 	opt.hint_set			= false;
 	sropt.hostfile			= NULL;
@@ -790,7 +788,7 @@ env_vars_t env_vars[] = {
 {"SLURM_GPUS_PER_NODE", OPT_STRING,     &opt.gpus_per_node, NULL             },
 {"SLURM_GPUS_PER_SOCKET",OPT_STRING,    &opt.gpus_per_socket,NULL            },
 {"SLURM_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL             },
-{"SLURM_GRES",          OPT_STRING,     &opt.gres,          NULL             },
+  { "SLURM_GRES", LONG_OPT_GRES },
 {"SLURM_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL             },
 {"SLURM_HINT",          OPT_HINT,       NULL,               NULL             },
 {"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
@@ -1853,17 +1851,6 @@ static void _set_options(const int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_GRES:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (!xstrcasecmp(optarg, "help") ||
-			    !xstrcasecmp(optarg, "list")) {
-				print_gres_help();
-				exit(0);
-			}
-			xfree(opt.gres);
-			opt.gres = xstrdup(optarg);
 			break;
 		case LONG_OPT_GRES_FLAGS:
 			if (!optarg)
