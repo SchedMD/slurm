@@ -148,7 +148,6 @@ struct option long_options[] = {
 	{"ntasks",           required_argument, 0, 'n'},
 	{"nodes",            required_argument, 0, 'N'},
 	{"output",           required_argument, 0, 'o'},
-	{"oversubscribe",    no_argument,       0, 's'},
 	{"partition",        required_argument, 0, 'p'},
 	{"quiet",            no_argument,       0, 'Q'},
 	{"relative",         required_argument, 0, 'r'},
@@ -1336,9 +1335,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			sropt.relative = _get_int(optarg, "relative", false);
 			sropt.relative_set = true;
-			break;
-		case (int)'s':
-			opt.shared = JOB_SHARED_OK;
 			break;
 		case (int)'S':
 			if (!optarg)

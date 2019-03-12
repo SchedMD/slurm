@@ -531,6 +531,29 @@ static slurm_cli_opt_t slurm_opt_overcommit = {
 	.reset_each_pass = true,
 };
 
+/*
+ * This option is directly tied to --exclusive. Both use the same output
+ * function, and the string arguments are designed to mirror one another.
+ */
+static int arg_set_oversubscribe(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->exclusive = false;
+
+	opt->shared = JOB_SHARED_OK;
+
+	return SLURM_SUCCESS;
+}
+static slurm_cli_opt_t slurm_opt_oversubscribe = {
+	.name = "oversubscribe",
+	.has_arg = no_argument,
+	.val = 's',
+	.set_func = arg_set_oversubscribe,
+	.get_func = arg_get_exclusive,
+	.reset_func = arg_reset_shared,
+	.reset_each_pass = true,
+};
+
 static int arg_set_priority(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "TOP")) {
@@ -725,6 +748,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_licenses,
 	&slurm_opt_mcs_label,
 	&slurm_opt_overcommit,
+	&slurm_opt_oversubscribe,
 	&slurm_opt_priority,
 	&slurm_opt_profile,
 	&slurm_opt_qos,
