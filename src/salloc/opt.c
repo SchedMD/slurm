@@ -687,7 +687,10 @@ static void _set_options(int argc, char **argv)
 		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:q:QsS:t:uvVw:x:";
 	char *pos_delimit;
 
-	struct option *optz = spank_option_table_create(long_options);
+	struct option *common_options = slurm_option_table_create(long_options,
+								  &opt);
+	struct option *optz = spank_option_table_create(common_options);
+	slurm_option_table_destroy(common_options);
 
 	if (!optz) {
 		error("Unable to create options table");

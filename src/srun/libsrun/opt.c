@@ -1167,9 +1167,11 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	char *tmp = NULL;
 	bitstr_t *pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
 	hostlist_t hl;
-	struct option *optz;
+	struct option *common_options, *optz;
 
-	optz = spank_option_table_create(long_options);
+	common_options = slurm_option_table_create(long_options, &opt);
+	optz = spank_option_table_create(common_options);
+	slurm_option_table_destroy(common_options);
 	if (!optz) {
 		error("Unable to create option table");
 		exit(error_exit);
@@ -1241,7 +1243,10 @@ static void _set_options(const int argc, char **argv)
 #ifdef HAVE_PTY_H
 	char *tmp_str;
 #endif
-	struct option *optz = spank_option_table_create(long_options);
+	struct option *common_options = slurm_option_table_create(long_options,
+								  &opt);
+	struct option *optz = spank_option_table_create(common_options);
+	slurm_option_table_destroy(common_options);
 
 	if (!optz) {
 		error("Unable to create option table");

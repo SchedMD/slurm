@@ -772,9 +772,13 @@ char *pos_delimit;
 extern char *process_options_first_pass(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	struct option *optz = spank_option_table_create(long_options);
+	struct option *common_options, *optz;
 	int i, local_argc = 0;
 	char **local_argv, *script_file = NULL;
+
+	common_options = slurm_option_table_create(long_options, &opt);
+	optz = spank_option_table_create(common_options);
+	slurm_option_table_destroy(common_options);
 
 	if (!optz) {
 		error("Unable to create options table");
@@ -1132,7 +1136,10 @@ static void _set_options(int argc, char **argv)
 	long long priority;
 	char *tmp;
 
-	struct option *optz = spank_option_table_create(long_options);
+	struct option *common_options = slurm_option_table_create(long_options,
+								  &opt);
+	struct option *optz = spank_option_table_create(common_options);
+	slurm_option_table_destroy(common_options);
 
 	if (!optz) {
 		error("Unable to create options table");
