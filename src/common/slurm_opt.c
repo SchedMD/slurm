@@ -354,6 +354,16 @@ static slurm_cli_opt_t slurm_opt_deadline = {
 	.reset_func = arg_reset_deadline,
 };
 
+COMMON_STRING_OPTION(dependency);
+static slurm_cli_opt_t slurm_opt_dependency = {
+	.name = "dependency",
+	.has_arg = required_argument,
+	.val = 'd',
+	.set_func = arg_set_dependency,
+	.get_func = arg_get_dependency,
+	.reset_func = arg_reset_dependency,
+};
+
 COMMON_STRING_OPTION(gpus);
 static slurm_cli_opt_t slurm_opt_gpus = {
 	.name = "gpus",
@@ -429,6 +439,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_comment,
 	&slurm_opt_constraint,
 	&slurm_opt_deadline,
+	&slurm_opt_dependency,
 	&slurm_opt_gpus,
 	&slurm_opt_mcs_label,
 	&slurm_opt_priority,

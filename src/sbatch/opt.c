@@ -196,7 +196,6 @@ static void _opt_default(bool first_pass)
 		}
 		opt.cwd			= xstrdup(buf);
 		opt.delay_boot		= NO_VAL;
-		xfree(opt.dependency);
 		opt.egid		= (gid_t) -1;
 		xfree(sbopt.efname);
 		xfree(opt.extra);
@@ -638,7 +637,6 @@ static struct option long_options[] = {
 	{"extra-node-info", required_argument, 0, 'B'},
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"cluster-constraint",required_argument,0, LONG_OPT_CLUSTER_CONSTRAINT},
-	{"dependency",    required_argument, 0, 'd'},
 	{"chdir",         required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
@@ -1162,10 +1160,6 @@ static void _set_options(int argc, char **argv)
 			opt.cpus_set = true;
 			opt.cpus_per_task = parse_int("cpus-per-task",
 						      optarg, true);
-			break;
-		case 'd':
-			xfree(opt.dependency);
-			opt.dependency = xstrdup(optarg);
 			break;
 		case 'D':
 			if (!optarg)
