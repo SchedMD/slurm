@@ -435,7 +435,10 @@ again:
 		 * happen if slurmctld and slurmd are on the same node and
 		 * message aggregation is configured (error is recoverable).
 		 */
-		if (err != EMUNGE_CRED_REPLAYED) {
+		if (err == EMUNGE_CRED_REPLAYED) {
+			debug2("We had a replayed cred, but this is expected in multiple slurmd mode.");
+			err = 0;
+		} else {
 #endif
 			/*
 			 *  Print any valid credential data
@@ -446,13 +449,10 @@ again:
 			if (err == EMUNGE_CRED_REWOUND)
 				error("Check for out of sync clocks");
 			slurm_seterrno(ESLURM_AUTH_CRED_INVALID);
+			goto done;
 #ifdef MULTIPLE_SLURMD
-		} else {
-			debug2("We had a replayed cred, but this is expected in multiple slurmd mode.");
-			err = 0;
 		}
 #endif
-		goto done;
 	}
 
 	/*
