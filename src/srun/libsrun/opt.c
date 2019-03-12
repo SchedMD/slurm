@@ -1560,7 +1560,7 @@ static void _set_options(const int argc, char **argv)
 			sropt.relative_set = true;
 			break;
 		case (int)'s':
-			opt.shared = 1;
+			opt.shared = JOB_SHARED_OK;
 			break;
 		case (int)'S':
 			if (!optarg)

@@ -869,7 +869,7 @@ static void _set_options(int argc, char **argv)
 			opt.quiet++;
 			break;
 		case 's':
-			opt.shared = 1;
+			opt.shared = JOB_SHARED_OK;
 			break;
 		case 'S':
 			opt.core_spec = parse_int("core_spec", optarg, false);

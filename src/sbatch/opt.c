@@ -1456,7 +1456,7 @@ static void _set_options(int argc, char **argv)
 			/* handled in process_options_first_pass() */
 			break;
 		case 's':
-			opt.shared = 1;
+			opt.shared = JOB_SHARED_OK;
 			break;
 		case 'S':
 			opt.core_spec = parse_int("core_spec", optarg, false);
@@ -2108,7 +2108,7 @@ static void _set_bsub_options(int argc, char **argv) {
 						  strlen(optarg), 10);
 			break;
 		case 'x':
-			opt.shared = 0;
+			opt.shared = JOB_SHARED_NONE;
 			break;
 		default:
 			error("Unrecognized command line parameter %c",
