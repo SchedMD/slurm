@@ -99,7 +99,6 @@
 #define OPT_CPU_FREQ      0x1b
 #define OPT_POWER         0x1d
 #define OPT_ARRAY_INX     0x20
-#define OPT_PROFILE       0x21
 #define OPT_HINT	  0x22
 #define OPT_DELAY_BOOT	  0x23
 #define OPT_INT64	  0x24
@@ -213,7 +212,6 @@ static void _opt_default(bool first_pass)
 		opt.no_kill		= false;
 		xfree(sbopt.ofname);
 		sbopt.parsable		= false;
-		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
 		opt.quiet		= 0;
 		sbopt.requeue		= NO_VAL;
@@ -367,7 +365,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_OVERCOMMIT", 'O' },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SBATCH_POWER",         OPT_POWER,      NULL,               NULL          },
-  {"SBATCH_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
+  { "SBATCH_PROFILE", LONG_OPT_PROFILE },
   { "SBATCH_QOS", 'q' },
   {"SBATCH_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
@@ -568,9 +566,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_PROFILE:
-		opt.profile = acct_gather_profile_from_string((char *)val);
-		break;
 	case OPT_CPU_FREQ:
 		if (cpu_freq_verify_cmdline(val, &opt.cpu_freq_min,
 					    &opt.cpu_freq_max, &opt.cpu_freq_gov))
@@ -675,7 +670,6 @@ static struct option long_options[] = {
 	{"parsable",      optional_argument, 0, LONG_OPT_PARSABLE},
 	{"power",         required_argument, 0, LONG_OPT_POWER},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
-	{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
@@ -1446,11 +1440,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_REQUEUE:
 			sbopt.requeue = 1;
-			break;
-		case LONG_OPT_PROFILE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.profile = acct_gather_profile_from_string(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)

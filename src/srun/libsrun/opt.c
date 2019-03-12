@@ -107,7 +107,6 @@
 #define OPT_POWER       0x1c
 #define OPT_THREAD_SPEC 0x1d
 #define OPT_BCAST       0x1e
-#define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
 #define OPT_DELAY_BOOT  0x24
@@ -209,7 +208,6 @@ struct option long_options[] = {
 	{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"power",            required_argument, 0, LONG_OPT_POWER},
-	{"profile",          required_argument, 0, LONG_OPT_PROFILE},
 	{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 	{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
@@ -628,7 +626,6 @@ static void _opt_default(void)
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
 		sropt.preserve_env	= false;
-		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		xfree(sropt.prolog);
 		sropt.prolog		= slurm_get_srun_prolog();
 		xfree(sropt.propagate); 	 /* propagate specific rlimits */
@@ -810,7 +807,7 @@ env_vars_t env_vars[] = {
   { "SLURM_OVERCOMMIT", 'O' },
 {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
 {"SLURM_POWER",         OPT_POWER,      NULL,               NULL             },
-{"SLURM_PROFILE",       OPT_PROFILE,    NULL,               NULL             },
+  { "SLURM_PROFILE", LONG_OPT_PROFILE },
 {"SLURM_PROLOG",        OPT_STRING,     &sropt.prolog,      NULL             },
   { "SLURM_QOS", 'q' },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
@@ -1050,9 +1047,6 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
-		break;
-	case OPT_PROFILE:
-		opt.profile = acct_gather_profile_from_string((char *)val);
 		break;
 	case OPT_POWER:
 		opt.power_flags = power_flags_id((char *)val);
@@ -1826,11 +1820,6 @@ static void _set_options(const int argc, char **argv)
 			if (validate_acctg_freq(optarg))
 				exit(1);
 			opt.acctg_freq = xstrdup(optarg);
-			break;
-		case LONG_OPT_PROFILE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.profile = acct_gather_profile_from_string(optarg);
 			break;
 		case LONG_OPT_SIGNAL:
 			if (!optarg)

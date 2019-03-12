@@ -94,7 +94,6 @@
 #define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
-#define OPT_PROFILE     0x18
 #define OPT_CORE_SPEC   0x19
 #define OPT_HINT	0x1a
 #define OPT_CPU_FREQ    0x1b
@@ -221,7 +220,6 @@ static void _opt_default(void)
 		opt.no_kill		= false;
 		saopt.no_shell		= false;
 		opt.power_flags		= 0;
-		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
 		opt.quiet		= 0;
 		opt.uid			= getuid();
 		opt.verbose		= 0;
@@ -330,7 +328,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_OVERCOMMIT", 'O' },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL          },
   {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
-  {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
+  { "SALLOC_PROFILE", LONG_OPT_PROFILE },
   { "SALLOC_QOS", 'q' },
   {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   { "SALLOC_RESERVATION", LONG_OPT_RESERVATION },
@@ -517,9 +515,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_PROFILE:
-		opt.profile = acct_gather_profile_from_string((char *)val);
-		break;
 	case OPT_CPU_FREQ:
 		if (cpu_freq_verify_cmdline(val, &opt.cpu_freq_min,
 				&opt.cpu_freq_max, &opt.cpu_freq_gov))
@@ -610,7 +605,6 @@ static void _set_options(int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"power",         required_argument, 0, LONG_OPT_POWER},
-		{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
@@ -943,9 +937,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_NO_BELL:
 			saopt.bell = BELL_NEVER;
-			break;
-		case LONG_OPT_PROFILE:
-			opt.profile = acct_gather_profile_from_string(optarg);
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)

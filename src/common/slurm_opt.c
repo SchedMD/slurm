@@ -40,6 +40,7 @@
 #include "src/common/optz.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -509,6 +510,26 @@ static slurm_cli_opt_t slurm_opt_priority = {
 	.reset_func = arg_reset_priority,
 };
 
+static int arg_set_profile(slurm_opt_t *opt, const char *arg)
+{
+	opt->profile = acct_gather_profile_from_string(arg);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_profile(slurm_opt_t *opt)
+{
+	return xstrdup(acct_gather_profile_to_string(opt->profile));
+}
+COMMON_OPTION_RESET(profile, ACCT_GATHER_PROFILE_NOT_SET);
+static slurm_cli_opt_t slurm_opt_profile = {
+	.name = "profile",
+	.has_arg = required_argument,
+	.val = LONG_OPT_PROFILE,
+	.set_func = arg_set_profile,
+	.get_func = arg_get_profile,
+	.reset_func = arg_reset_profile,
+};
+
 COMMON_STRING_OPTION(qos);
 static slurm_cli_opt_t slurm_opt_qos = {
 	.name = "qos",
@@ -643,6 +664,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mcs_label,
 	&slurm_opt_overcommit,
 	&slurm_opt_priority,
+	&slurm_opt_profile,
 	&slurm_opt_qos,
 	&slurm_opt_reboot,
 	&slurm_opt_reservation,
