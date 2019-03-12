@@ -98,7 +98,6 @@
 #define OPT_CORE_SPEC     0x1a
 #define OPT_CPU_FREQ      0x1b
 #define OPT_POWER         0x1d
-#define OPT_SPREAD_JOB    0x1e
 #define OPT_ARRAY_INX     0x20
 #define OPT_PROFILE       0x21
 #define OPT_HINT	  0x22
@@ -374,7 +373,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
   { "SBATCH_RESERVATION", LONG_OPT_RESERVATION },
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
-  {"SBATCH_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL          },
+  { "SBATCH_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
   {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   { "SBATCH_TIMELIMIT", 't' },
   {"SBATCH_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
@@ -560,9 +559,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			exit(error_exit);
 		}
 		break;
-	case OPT_SPREAD_JOB:
-		opt.job_flags |= SPREAD_JOB;
-		break;
 	case OPT_GET_USER_ENV:
 		if (val)
 			_proc_get_user_env((char *)val);
@@ -683,7 +679,6 @@ static struct option long_options[] = {
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
-	{"spread-job",    no_argument,       0, LONG_OPT_SPREAD_JOB},
 	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
@@ -1671,9 +1666,6 @@ static void _set_options(int argc, char **argv)
 				opt.job_flags |= KILL_INV_DEP;
 			if (xstrcasecmp(optarg, "no") == 0)
 				opt.job_flags |= NO_KILL_INV_DEP;
-			break;
-		case LONG_OPT_SPREAD_JOB:
-			opt.job_flags |= SPREAD_JOB;
 			break;
 		case LONG_OPT_USE_MIN_NODES:
 			opt.job_flags |= USE_MIN_NODES;

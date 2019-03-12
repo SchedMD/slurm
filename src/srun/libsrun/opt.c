@@ -110,7 +110,6 @@
 #define OPT_PROFILE     0x20
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
-#define OPT_SPREAD_JOB  0x23
 #define OPT_DELAY_BOOT  0x24
 #define OPT_INT64	0x25
 #define OPT_USE_MIN_NODES 0x26
@@ -220,7 +219,6 @@ struct option long_options[] = {
 	{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 	{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
-	{"spread-job",       no_argument,       0, LONG_OPT_SPREAD_JOB},
 	{"switches",         required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
@@ -819,7 +817,7 @@ env_vars_t env_vars[] = {
 {"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
   { "SLURM_RESERVATION", LONG_OPT_RESERVATION },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
-{"SLURM_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL             },
+  { "SLURM_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
 {"SLURM_STDERRMODE",    OPT_STRING,     &sropt.efname,      NULL             },
@@ -1062,9 +1060,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_THREAD_SPEC:
 		opt.core_spec = _get_int(val, "thread_spec", true) |
 					 CORE_SPEC_THREAD;
-		break;
-	case OPT_SPREAD_JOB:
-		opt.job_flags |= SPREAD_JOB;
 		break;
 	case OPT_DELAY_BOOT:
 		i = time_str2secs(val);
@@ -1904,9 +1899,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_COMPRESS:
 			sropt.compress = parse_compress_type(optarg);
-			break;
-		case LONG_OPT_SPREAD_JOB:
-			opt.job_flags |= SPREAD_JOB;
 			break;
 		case LONG_OPT_DELAY_BOOT:
 			if (!optarg)

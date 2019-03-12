@@ -99,7 +99,6 @@
 #define OPT_HINT	0x1a
 #define OPT_CPU_FREQ    0x1b
 #define OPT_THREAD_SPEC 0x1c
-#define OPT_SPREAD_JOB  0x1d
 #define OPT_DELAY_BOOT	0x1e
 #define OPT_INT64	0x1f
 #define OPT_MEM_PER_GPU   0x20
@@ -336,7 +335,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   { "SALLOC_RESERVATION", LONG_OPT_RESERVATION },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
-  {"SALLOC_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL          },
+  { "SALLOC_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
   {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   { "SALLOC_TIMELIMIT", 't' },
   {"SALLOC_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
@@ -530,9 +529,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.core_spec = parse_int("thread_spec", val, true) |
 					 CORE_SPEC_THREAD;
 		break;
-	case OPT_SPREAD_JOB:
-		opt.job_flags |= SPREAD_JOB;
-		break;
 	case OPT_DELAY_BOOT:
 		i = time_str2secs(val);
 		if (i == NO_VAL)
@@ -617,7 +613,6 @@ static void _set_options(int argc, char **argv)
 		{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
-		{"spread-job",    no_argument,       0, LONG_OPT_SPREAD_JOB},
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
@@ -1101,9 +1096,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_THREAD_SPEC:
 			opt.core_spec = parse_int("thread_spec", optarg, true) |
 				CORE_SPEC_THREAD;
-			break;
-		case LONG_OPT_SPREAD_JOB:
-			opt.job_flags |= SPREAD_JOB;
 			break;
 		case LONG_OPT_USE_MIN_NODES:
 			opt.job_flags |= USE_MIN_NODES;
