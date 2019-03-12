@@ -83,7 +83,6 @@
 #define OPT_CORE        0x06
 #define OPT_MULTI	0x0b
 #define OPT_OPEN_MODE	0x0e
-#define OPT_ACCTG_FREQ  0x0f
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
 #define OPT_THREAD_SPEC 0x12
@@ -178,7 +177,6 @@ static void _opt_default(bool first_pass)
 	 * once specified for one, but will be overwritten with new values if
 	 * specified on the command line */
 	if (first_pass) {
-		xfree(opt.acctg_freq);
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
 		opt.cpus_per_gpu	= 0;
@@ -322,7 +320,7 @@ struct env_vars {
 env_vars_t env_vars[] = {
   { "SBATCH_ACCOUNT", 'A' },
   {"SBATCH_ARRAY_INX",     OPT_STRING,     &sbopt.array_inx,   NULL          },
-  {"SBATCH_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
+  { "SBATCH_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
   {"SBATCH_BATCH",         OPT_STRING,     &sbopt.batch_features, NULL       },
   {"SBATCH_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &sbopt.ckpt_interval_str, NULL    },
@@ -600,7 +598,6 @@ static struct option long_options[] = {
 	{"nodelist",      required_argument, 0, 'w'},
 	{"wait",          no_argument,       0, 'W'},
 	{"exclude",       required_argument, 0, 'x'},
-	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
@@ -1471,12 +1468,6 @@ static void _set_options(int argc, char **argv)
 				error("Invalid --open-mode argument: %s. "
 				      "Ignored", optarg);
 			}
-			break;
-		case LONG_OPT_ACCTG_FREQ:
-			xfree(opt.acctg_freq);
-			if (validate_acctg_freq(optarg))
-				exit(1);
-			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_PROPAGATE:
 			xfree(sbopt.propagate);

@@ -85,7 +85,6 @@
 #define OPT_CORE        0x06
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
-#define OPT_ACCTG_FREQ  0x0f
 #define OPT_GRES_FLAGS  0x10
 #define OPT_MEM_BIND    0x11
 #define OPT_IMMEDIATE   0x12
@@ -193,7 +192,6 @@ static void _opt_default(void)
 	 * specified on the command line
 	 */
 	if (first_pass) {
-		xfree(opt.acctg_freq);
 		saopt.bell		= BELL_AFTER_DELAY;
 		opt.cpus_per_gpu	= 0;
 		xfree(opt.cwd);
@@ -290,7 +288,7 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   { "SALLOC_ACCOUNT", 'A' },
-  {"SALLOC_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL          },
+  { "SALLOC_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
   {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   { "SALLOC_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
@@ -553,7 +551,6 @@ static void _set_options(int argc, char **argv)
 		{"version",       no_argument,       0, 'V'},
 		{"nodelist",      required_argument, 0, 'w'},
 		{"exclude",       required_argument, 0, 'x'},
-		{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
@@ -944,12 +941,6 @@ static void _set_options(int argc, char **argv)
 			opt.hint_set = true;
 			opt.ntasks_per_core_set  = true;
 			opt.threads_per_core_set = true;
-			break;
-		case LONG_OPT_ACCTG_FREQ:
-			xfree(opt.acctg_freq);
-			if (validate_acctg_freq(optarg))
-				exit(1);
-			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_NOSHELL:
 			saopt.no_shell = true;

@@ -96,7 +96,6 @@
 #define OPT_NSOCKETS    0x10
 #define OPT_NCORES      0x11
 #define OPT_OPEN_MODE   0x14
-#define OPT_ACCTG_FREQ  0x15
 #define OPT_SIGNAL      0x17
 #define OPT_TIME_VAL    0x18
 #define OPT_CPU_FREQ    0x19
@@ -160,7 +159,6 @@ struct option long_options[] = {
 	{"disable-status",   no_argument,       0, 'X'},
 	{"no-allocate",      no_argument,       0, 'Z'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
-	{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
 	{"bb",               required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 	{"bbf",              required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
@@ -569,7 +567,6 @@ static void _opt_default(void)
 	uid_t uid = getuid();
 
 	if (pass_number == 1) {
-		xfree(opt.acctg_freq);
 		sropt.allocate		= false;
 		sropt.ckpt_interval		= 0;
 		xfree(sropt.ckpt_interval_str);
@@ -743,7 +740,7 @@ struct env_vars {
 env_vars_t env_vars[] = {
 {"SLURMD_DEBUG",        OPT_INT,        &sropt.slurmd_debug,NULL             },
   { "SLURM_ACCOUNT", 'A' },
-{"SLURM_ACCTG_FREQ",    OPT_STRING,     &opt.acctg_freq,    NULL             },
+  { "SLURM_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
 {"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
   { "SLURM_CLUSTERS", 'M' },
@@ -1737,14 +1734,6 @@ static void _set_options(const int argc, char **argv)
 				error("Invalid --open-mode argument: %s. Ignored",
 				      optarg);
 			}
-			break;
-		case LONG_OPT_ACCTG_FREQ:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.acctg_freq);
-			if (validate_acctg_freq(optarg))
-				exit(1);
-			opt.acctg_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_SIGNAL:
 			if (!optarg)

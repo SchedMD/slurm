@@ -285,6 +285,25 @@ static slurm_cli_opt_t slurm_opt_account = {
 	.reset_func = arg_reset_account,
 };
 
+static int arg_set_acctg_freq(slurm_opt_t *opt, const char *arg)
+{
+	xfree(opt->acctg_freq);
+	opt->acctg_freq = xstrdup(arg);
+	if (validate_acctg_freq(opt->acctg_freq))
+		exit(-1);
+
+	return SLURM_SUCCESS;
+}
+COMMON_STRING_OPTION_GET_AND_RESET(acctg_freq);
+static slurm_cli_opt_t slurm_opt_acctg_freq = {
+	.name = "acctg-freq",
+	.has_arg = required_argument,
+	.val = LONG_OPT_ACCTG_FREQ,
+	.set_func = arg_set_acctg_freq,
+	.get_func = arg_get_acctg_freq,
+	.reset_func = arg_reset_acctg_freq,
+};
+
 static int arg_set_begin(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->begin = parse_time(arg, 0))) {
@@ -764,6 +783,7 @@ static slurm_cli_opt_t slurm_opt_wckey = {
 
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
+	&slurm_opt_acctg_freq,
 	&slurm_opt_begin,
 	&slurm_opt_c_constraint,
 	&slurm_opt_cluster,
