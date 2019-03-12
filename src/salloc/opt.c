@@ -1280,8 +1280,9 @@ static void _set_options(int argc, char **argv)
 				opt.x11 = X11_FORWARD_ALL;
 			break;
 		default:
-			if (spank_process_option(opt_char, optarg) < 0)
-				exit(error_exit);
+			if (slurm_process_option(&opt, opt_char, optarg) < 0)
+				if (spank_process_option(opt_char, optarg) < 0)
+					exit(error_exit);
 		}
 	}
 

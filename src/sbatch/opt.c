@@ -1844,8 +1844,9 @@ static void _set_options(int argc, char **argv)
 			opt.job_flags |= USE_MIN_NODES;
 			break;
 		default:
-			if (spank_process_option(opt_char, optarg) < 0)
-				exit(error_exit);
+			if (slurm_process_option(&opt, opt_char, optarg) < 0)
+				if (spank_process_option(opt_char, optarg) < 0)
+					exit(error_exit);
 		}
 	}
 

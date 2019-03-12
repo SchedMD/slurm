@@ -410,4 +410,12 @@ typedef struct slurm_options {
 	uint16_t x11_target_port;	/* target display TCP port on localhost */
 } slurm_opt_t;
 
+/*
+ * Warning: this will permute the state of a global common_options table,
+ * and thus is not thread-safe. The expectation is that it is called from
+ * within a single thread in salloc/sbatch/srun, and that this restriction
+ * should not be problematic. If it is, please refactor.
+ */
+extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg);
+
 #endif	/* _SLURM_OPT_H_ */
