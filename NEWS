@@ -1,14 +1,17 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 19.05.0pre3
+* Changes in Slurm 19.05.0pre4
 ==============================
- -- Fix RPM packaging for accounting_storage/mysql.
  -- Set CUDA_VISIBLE_DEVICES environment variable in Prolog and Epilog for jobs
     requesting gres/gpu.
  -- Remove '-U' argument - which was deprecated when '-A' was made the single
     character option before the Slurm 2.1 release - as an alternative to
     '--account' for salloc/sbatch/srun.
+
+* Changes in Slurm 19.05.0pre3
+==============================
+ -- Fix RPM packaging for accounting_storage/mysql.
 
 * Changes in Slurm 19.05.0pre2
 ==============================
