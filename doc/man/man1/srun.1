@@ -1094,11 +1094,6 @@ Specify an optional argument of "off" disable the effect of the
 The default action is to terminate the job upon node failure.
 
 .TP
-\fB\-\-launcher\-opts\fR=<\fIoptions\fR>
-Options for the external launcher if using something other than the
-\fIlaunch/slurm\fR plugin. This option applies to step allocations.
-
-.TP
 \fB\-l\fR, \fB\-\-label\fR
 Prepend task number to lines of stdout/err.
 The \fB\-\-label\fR option will prepend lines of output with the remote
@@ -2382,10 +2377,6 @@ be preferable as it avoids moving and storing data that will never be read.
 .PP
 For OS X, the poll() function does not support stdin, so input from
 a terminal is not possible.
-.PP
-For BGQ srun only supports stdin to 1 task running on the system.  By
-default it is taskid 0 but can be changed with the \-i<taskid> as
-described below, or \-\-launcher\-opts="\-\-stdinrank=<taskid>".
 .PP
 This behavior may be changed with the
 \fB\-\-output\fR, \fB\-\-error\fR, and \fB\-\-input\fR

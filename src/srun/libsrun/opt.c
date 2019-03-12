@@ -214,7 +214,6 @@ struct option long_options[] = {
 	{"help",             no_argument,       0, LONG_OPT_HELP},
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-	{"launcher-opts",    required_argument, 0, LONG_OPT_LAUNCHER_OPTS},
 	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 	{"mcs-label",        required_argument, 0, LONG_OPT_MCS_LABEL},
@@ -480,8 +479,6 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->ifname = xstrdup(sropt.ifname);
 	opt_dup->job_name = xstrdup(opt.job_name);
 	opt_dup->srun_opt->ofname = xstrdup(sropt.ofname);
-	opt_dup->srun_opt->launcher_opts = xstrdup(sropt.launcher_opts);
-	sropt.launcher_opts = NULL;	/* Moved by memcpy */
 	opt.licenses = NULL;		/* Moved by memcpy */
 	opt.mail_user = NULL;		/* Moved by memcpy */
 	opt_dup->mcs_label = xstrdup(opt.mcs_label);
@@ -749,7 +746,6 @@ static void _opt_default(void)
 	sropt.hostfile			= NULL;
 	sropt.exclusive			= false;
 	opt.job_flags			= 0;
-	sropt.launcher_opts		= NULL;
 	launch_params = slurm_get_launch_params();
 	if (launch_params && strstr(launch_params, "mem_sort"))
 		opt.mem_bind_type	|= MEM_BIND_SORT;
@@ -2031,12 +2027,6 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.reservation);
 			opt.reservation = xstrdup(optarg);
 			break;
-		case LONG_OPT_LAUNCHER_OPTS:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sropt.launcher_opts);
-			sropt.launcher_opts = xstrdup(optarg);
-			break;
 		case LONG_OPT_CHECKPOINT_DIR:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -3060,7 +3050,6 @@ static void _usage(void)
 "            [--restart-dir=dir] [--qos=qos] [--time-min=minutes]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
-"            [--launcher-opts=options]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu-bind=...] [--mem-bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
@@ -3132,8 +3121,6 @@ static void _help(void)
 "  -K, --kill-on-bad-exit      kill the job if any task terminates with a\n"
 "                              non-zero exit code\n"
 "  -l, --label                 prepend task number to lines of stdout/err\n"
-"      --launcher-opts=        options for the external launcher command if not\n"
-"                              Slurm\n"
 "  -L, --licenses=names        required license, comma separated\n"
 "  -M, --clusters=names        Comma separated list of clusters to issue\n"
 "                              commands to.  Default is current cluster.\n"

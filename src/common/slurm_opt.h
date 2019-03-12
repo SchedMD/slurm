@@ -257,9 +257,6 @@ typedef struct srun_opt {
 	bool job_name_set_env;		/* true if job_name set by env var */
 	int32_t kill_bad_exit;		/* --kill-on-bad-exit		*/
 	bool labelio;			/* --label-output		*/
-	char *launcher_opts;		/* --launcher-opts commands to be sent
-					 * to the external launcher command if
-					 * not Slurm */
 	int32_t max_threads;		/* --threads			*/
 	int max_wait;			/* --wait			*/
 	int msg_timeout;		/* undocumented			*/
