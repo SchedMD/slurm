@@ -413,6 +413,16 @@ static slurm_cli_opt_t slurm_opt_qos = {
 	.reset_func = arg_reset_qos,
 };
 
+COMMON_STRING_OPTION(reservation);
+static slurm_cli_opt_t slurm_opt_reservation = {
+	.name = "reservation",
+	.has_arg = required_argument,
+	.val = LONG_OPT_RESERVATION,
+	.set_func = arg_set_reservation,
+	.get_func = arg_get_reservation,
+	.reset_func = arg_reset_reservation,
+};
+
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
 	&slurm_opt_begin,
@@ -423,6 +433,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mcs_label,
 	&slurm_opt_priority,
 	&slurm_opt_qos,
+	&slurm_opt_reservation,
 	NULL /* END */
 };
 

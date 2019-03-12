@@ -225,7 +225,6 @@ static void _opt_default(bool first_pass)
 		opt.quiet		= 0;
 		opt.reboot		= false;
 		sbopt.requeue		= NO_VAL;
-		xfree(opt.reservation);
 		sbopt.test_only		= false;
 		opt.time_limit		= NO_VAL;
 		opt.time_min		= NO_VAL;
@@ -386,7 +385,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_QOS", 'q' },
   {"SBATCH_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
-  {"SBATCH_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
+  { "SBATCH_RESERVATION", LONG_OPT_RESERVATION },
   {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SBATCH_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL          },
   {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
@@ -715,7 +714,6 @@ static struct option long_options[] = {
 	{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
-	{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
 	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 	{"spread-job",    no_argument,       0, LONG_OPT_SPREAD_JOB},
@@ -1644,10 +1642,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
 			opt.wckey = xstrdup(optarg);
-			break;
-		case LONG_OPT_RESERVATION:
-			xfree(opt.reservation);
-			opt.reservation = xstrdup(optarg);
 			break;
 		case LONG_OPT_CHECKPOINT:
 			xfree(sbopt.ckpt_interval_str);

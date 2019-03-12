@@ -228,7 +228,6 @@ struct option long_options[] = {
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
 	{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
 	{"reboot",           no_argument,       0, LONG_OPT_REBOOT},
-	{"reservation",      required_argument, 0, LONG_OPT_RESERVATION},
 	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 	{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
@@ -659,7 +658,6 @@ static void _opt_default(void)
 		sropt.quit_on_intr	= false;
 		opt.quiet		= 0;
 		opt.reboot		= false;
-		xfree(opt.reservation);
 		sropt.slurmd_debug	= LOG_LEVEL_QUIET;
 		xfree(sropt.task_epilog);
 		xfree(sropt.task_prolog);
@@ -850,7 +848,7 @@ env_vars_t env_vars[] = {
   { "SLURM_QOS", 'q' },
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
 {"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
-{"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
+  { "SLURM_RESERVATION", LONG_OPT_RESERVATION },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
 {"SLURM_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL             },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
@@ -1918,12 +1916,6 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.profile = acct_gather_profile_from_string(optarg);
-			break;
-		case LONG_OPT_RESERVATION:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.reservation);
-			opt.reservation = xstrdup(optarg);
 			break;
 		case LONG_OPT_SIGNAL:
 			if (!optarg)

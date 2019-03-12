@@ -281,7 +281,6 @@ static void _opt_default(void)
 	xfree(opt.partition);
 	opt.plane_size			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
-	xfree(opt.reservation);
 	opt.req_switch			= -1;
 	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
@@ -349,7 +348,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_PROFILE",       OPT_PROFILE,    NULL,               NULL          },
   { "SALLOC_QOS", 'q' },
   {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
-  {"SALLOC_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL          },
+  { "SALLOC_RESERVATION", LONG_OPT_RESERVATION },
   {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
   {"SALLOC_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL          },
   {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
@@ -649,7 +648,6 @@ static void _set_options(int argc, char **argv)
 		{"power",         required_argument, 0, LONG_OPT_POWER},
 		{"profile",       required_argument, 0, LONG_OPT_PROFILE},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
-		{"reservation",   required_argument, 0, LONG_OPT_RESERVATION},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"spread-job",    no_argument,       0, LONG_OPT_SPREAD_JOB},
@@ -1109,10 +1107,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_WCKEY:
 			xfree(opt.wckey);
 			opt.wckey = xstrdup(optarg);
-			break;
-		case LONG_OPT_RESERVATION:
-			xfree(opt.reservation);
-			opt.reservation = xstrdup(optarg);
 			break;
 		case LONG_OPT_POWER:
 			opt.power_flags = power_flags_id(optarg);
