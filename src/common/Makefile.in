@@ -177,7 +177,7 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
 	slurm_acct_gather_energy.lo slurm_acct_gather_profile.lo \
 	slurm_acct_gather_interconnect.lo \
-	slurm_acct_gather_filesystem.lo slurm_jobcomp.lo \
+	slurm_acct_gather_filesystem.lo slurm_jobcomp.lo slurm_opt.lo \
 	slurm_route.lo slurm_time.lo slurm_topology.lo switch.lo \
 	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
 	slurm_step_layout.lo checkpoint.lo job_resources.lo \
@@ -262,7 +262,7 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/slurm_errno.Plo ./$(DEPDIR)/slurm_ext_sensors.Plo \
 	./$(DEPDIR)/slurm_jobacct_gather.Plo \
 	./$(DEPDIR)/slurm_jobcomp.Plo ./$(DEPDIR)/slurm_mcs.Plo \
-	./$(DEPDIR)/slurm_persist_conn.Plo \
+	./$(DEPDIR)/slurm_opt.Plo ./$(DEPDIR)/slurm_persist_conn.Plo \
 	./$(DEPDIR)/slurm_priority.Plo \
 	./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
@@ -665,7 +665,7 @@ libcommon_la_SOURCES = \
 	slurm_acct_gather_interconnect.c slurm_acct_gather_interconnect.h \
 	slurm_acct_gather_filesystem.c slurm_acct_gather_filesystem.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
-	slurm_opt.h			\
+	slurm_opt.c slurm_opt.h		\
 	slurm_route.c slurm_route.h	\
 	slurm_time.c slurm_time.h	\
 	slurm_topology.c slurm_topology.h \
@@ -868,6 +868,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct_gather.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobcomp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_mcs.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_opt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_persist_conn.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_priority.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_api.Plo@am__quote@ # am--include-marker
@@ -1124,6 +1125,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/slurm_jobacct_gather.Plo
 	-rm -f ./$(DEPDIR)/slurm_jobcomp.Plo
 	-rm -f ./$(DEPDIR)/slurm_mcs.Plo
+	-rm -f ./$(DEPDIR)/slurm_opt.Plo
 	-rm -f ./$(DEPDIR)/slurm_persist_conn.Plo
 	-rm -f ./$(DEPDIR)/slurm_priority.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_api.Plo
@@ -1266,6 +1268,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/slurm_jobacct_gather.Plo
 	-rm -f ./$(DEPDIR)/slurm_jobcomp.Plo
 	-rm -f ./$(DEPDIR)/slurm_mcs.Plo
+	-rm -f ./$(DEPDIR)/slurm_opt.Plo
 	-rm -f ./$(DEPDIR)/slurm_persist_conn.Plo
 	-rm -f ./$(DEPDIR)/slurm_priority.Plo
 	-rm -f ./$(DEPDIR)/slurm_protocol_api.Plo
