@@ -87,7 +87,6 @@
 #define OPT_NO_BELL     0x0b
 #define OPT_GRES_FLAGS  0x10
 #define OPT_MEM_BIND    0x11
-#define OPT_IMMEDIATE   0x12
 #define OPT_POWER       0x13
 #define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
@@ -206,7 +205,6 @@ static void _opt_default(void)
 		xfree(opt.gpus_per_node);
 		xfree(opt.gpus_per_socket);
 		xfree(opt.gpus_per_task);
-		opt.immediate		= 0;
 		xfree(opt.job_name);
 		saopt.kill_command_signal = SIGTERM;
 		saopt.kill_command_signal_set = false;
@@ -302,7 +300,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL          },
   { "SALLOC_GRES", LONG_OPT_GRES },
   {"SALLOC_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
-  {"SALLOC_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL          },
+  { "SALLOC_IMMEDIATE", 'I' },
   {"SALLOC_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SALLOC_KILL_CMD",      OPT_KILL_CMD,   NULL,               NULL          },
@@ -433,13 +431,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			exit(error_exit);
 		}
 		break;
-	case OPT_IMMEDIATE:
-		if (val)
-			opt.immediate = strtol(val, NULL, 10);
-		else
-			opt.immediate = DEFAULT_IMMEDIATE;
-		break;
-
 	case OPT_BELL:
 		saopt.bell = BELL_ALWAYS;
 		break;
@@ -524,7 +515,6 @@ static void _set_options(int argc, char **argv)
 		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
 		{"help",          no_argument,       0, 'h'},
-		{"immediate",     optional_argument, 0, 'I'},
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       optional_argument, 0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
@@ -648,12 +638,6 @@ static void _set_options(int argc, char **argv)
 		case 'h':
 			_help();
 			exit(0);
-		case 'I':
-			if (optarg)
-				opt.immediate = parse_int("immediate", optarg, true);
-			else
-				opt.immediate = DEFAULT_IMMEDIATE;
-			break;
 		case 'J':
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);

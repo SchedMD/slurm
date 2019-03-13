@@ -625,6 +625,29 @@ static slurm_cli_opt_t slurm_opt_hold = {
 	.reset_func = arg_reset_hold,
 };
 
+static int arg_set_immediate(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->sbatch_opt)
+		return SLURM_ERROR;
+
+	if (arg)
+		opt->immediate = parse_int("immediate", arg, false);
+	else
+		opt->immediate = DEFAULT_IMMEDIATE;
+
+	return SLURM_SUCCESS;
+}
+COMMON_INT_OPTION_GET_AND_RESET(immediate);
+static slurm_cli_opt_t slurm_opt_immediate = {
+	.name = "immediate",
+	.has_arg = optional_argument,
+	.val = 'I',
+	.set_func_salloc = arg_set_immediate,
+	.set_func_srun = arg_set_immediate,
+	.get_func = arg_get_immediate,
+	.reset_func = arg_reset_immediate,
+};
+
 COMMON_STRING_OPTION(licenses);
 static slurm_cli_opt_t slurm_opt_licenses = {
 	.name = "licenses",
@@ -905,6 +928,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_gpus,
 	&slurm_opt_gres,
 	&slurm_opt_hold,
+	&slurm_opt_immediate,
 	&slurm_opt_licenses,
 	&slurm_opt_mcs_label,
 	&slurm_opt_nodelist,

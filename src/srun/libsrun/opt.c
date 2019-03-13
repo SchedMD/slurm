@@ -85,7 +85,6 @@
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
-#define OPT_IMMEDIATE   0x03
 #define OPT_NODES       0x05
 #define OPT_COMPRESS	0x07
 #define OPT_RESV_PORTS	0x09
@@ -136,7 +135,6 @@ struct option long_options[] = {
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
 	{"input",            required_argument, 0, 'i'},
-	{"immediate",        optional_argument, 0, 'I'},
 	{"job-name",         required_argument, 0, 'J'},
 	{"no-kill",          optional_argument, 0, 'k'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
@@ -589,7 +587,6 @@ static void _opt_default(void)
 		xfree(opt.gpus_per_socket);
 		xfree(opt.gpus_per_task);
 		xfree(sropt.ifname);
-		opt.immediate		= 0;
 		sropt.jobid		= NO_VAL;
 		xfree(opt.job_name);
 		sropt.job_name_set_cmd	= false;
@@ -756,7 +753,6 @@ env_vars_t env_vars[] = {
   { "SLURM_GRES", LONG_OPT_GRES },
 {"SLURM_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL             },
 {"SLURM_HINT",          OPT_HINT,       NULL,               NULL             },
-{"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
 {"SLURM_JOB_ID",        OPT_INT,        &sropt.jobid,       NULL             },
 {"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &sropt.job_name_set_env},
 {"SLURM_JOB_NUM_NODES", OPT_NODES,      NULL,               NULL             },
@@ -963,14 +959,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			exit(error_exit);
 		}
 		break;
-
-	case OPT_IMMEDIATE:
-		if (val)
-			opt.immediate = strtol(val, NULL, 10);
-		else
-			opt.immediate = DEFAULT_IMMEDIATE;
-		break;
-
 	case OPT_MPI:
 		xfree(mpi_type);
 		mpi_type = xstrdup(val);
@@ -1201,12 +1189,6 @@ static void _set_options(const int argc, char **argv)
 				sropt.ifname = xstrdup("/dev/null");
 			else
 				sropt.ifname = xstrdup(optarg);
-			break;
-		case (int)'I':
-			if (optarg)
-				opt.immediate = strtol(optarg, NULL, 10);
-			else
-				opt.immediate = DEFAULT_IMMEDIATE;
 			break;
 		case (int)'J':
 			if (!optarg)
