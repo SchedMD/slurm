@@ -86,7 +86,6 @@
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
 #define OPT_THREAD_SPEC 0x12
-#define OPT_MEM_BIND    0x13
 #define OPT_SIGNAL      0x15
 #define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
@@ -225,8 +224,6 @@ static void _opt_default(bool first_pass)
 	opt.mail_type			= 0;
 	xfree(opt.mail_user);
 	opt.max_nodes			= 0;
-	xfree(opt.mem_bind);
-	opt.mem_bind_type		= 0;
 	opt.mem_per_cpu			= NO_VAL64;
 	opt.pn_min_cpus			= -1;
 	opt.min_nodes			= 1;
@@ -332,7 +329,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL          },
-  {"SBATCH_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
+  { "SBATCH_MEM_BIND", LONG_OPT_MEM_BIND },
   {"SBATCH_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
   {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL          },
   {"SBATCH_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
@@ -450,12 +447,6 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_HINT:
 		opt.hint_env = xstrdup(val);
-		break;
-
-	case OPT_MEM_BIND:
-		if (slurm_verify_mem_bind(val, &opt.mem_bind,
-					  &opt.mem_bind_type))
-			exit(error_exit);
 		break;
 	case OPT_NODES:
 		opt.nodes_set = verify_node_count( val,
@@ -588,7 +579,6 @@ static struct option long_options[] = {
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
-	{"mem-bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
 	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{"nice",          optional_argument, 0, LONG_OPT_NICE},
@@ -1145,13 +1135,6 @@ static void _set_options(int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_MEM_BIND:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
-						  &opt.mem_bind_type))
-				exit(error_exit);
 			break;
 		case LONG_OPT_MINCPU:
 			if (!optarg)

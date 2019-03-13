@@ -86,7 +86,6 @@
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
 #define OPT_GRES_FLAGS  0x10
-#define OPT_MEM_BIND    0x11
 #define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
@@ -229,8 +228,6 @@ static void _opt_default(void)
 	opt.hint_set			= false;
 	opt.job_flags			= 0;
 	opt.max_nodes			= 0;
-	xfree(opt.mem_bind);
-	opt.mem_bind_type		= 0;
 	opt.mem_per_cpu			= NO_VAL64;
 	opt.pn_min_cpus			= -1;
 	opt.min_nodes			= 1;
@@ -296,7 +293,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SALLOC_KILL_CMD",      OPT_KILL_CMD,   NULL,               NULL          },
-  {"SALLOC_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
+  { "SALLOC_MEM_BIND", LONG_OPT_MEM_BIND },
   {"SALLOC_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
   {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
@@ -435,11 +432,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_HINT:
 		opt.hint_env = xstrdup(val);
 		break;
-	case OPT_MEM_BIND:
-		if (slurm_verify_mem_bind(val, &opt.mem_bind,
-					  &opt.mem_bind_type))
-			exit(error_exit);
-		break;
 	case OPT_MEM_PER_GPU:
 		opt.mem_per_gpu = str_to_mbytes2(val);
 		if (opt.mem_per_gpu == NO_VAL64) {
@@ -527,7 +519,6 @@ static void _set_options(int argc, char **argv)
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
 		{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
-		{"mem-bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 		{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"nice",          optional_argument, 0, LONG_OPT_NICE},
@@ -845,11 +836,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-			break;
-		case LONG_OPT_MEM_BIND:
-			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
-						  &opt.mem_bind_type))
-				exit(error_exit);
 			break;
 		case LONG_OPT_SIGNAL:
 			if (get_signal_opts(optarg, &opt.warn_signal,

@@ -90,7 +90,6 @@
 #define OPT_RESV_PORTS	0x09
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
-#define OPT_MEM_BIND    0x0e
 #define OPT_MULTI       0x0f
 #define OPT_NSOCKETS    0x10
 #define OPT_NCORES      0x11
@@ -173,7 +172,6 @@ struct option long_options[] = {
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-gpu",      required_argument, 0, LONG_OPT_MEM_PER_GPU},
-	{"mem-bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -545,7 +543,6 @@ static bool _valid_node_list(char **node_list_pptr)
  */
 static void _opt_default(void)
 {
-	char *launch_params;
 	char buf[MAXPATHLEN + 1];
 	uid_t uid = getuid();
 
@@ -633,17 +630,11 @@ static void _opt_default(void)
 	opt.hint_set			= false;
 	sropt.hostfile			= NULL;
 	opt.job_flags			= 0;
-	launch_params = slurm_get_launch_params();
-	if (launch_params && strstr(launch_params, "mem_sort"))
-		opt.mem_bind_type	|= MEM_BIND_SORT;
-	xfree(launch_params);
 	opt.mail_type			= 0;
 	opt.mail_user			= NULL;
 	sropt.max_threads		= MAX_THREADS;
 	pmi_server_max_threads(sropt.max_threads);
 	opt.max_nodes			= 0;
-	opt.mem_bind			= NULL;
-	opt.mem_bind_type		= 0;
 	opt.mem_per_cpu			= NO_VAL64;
 	opt.min_nodes			= 1;
 	sropt.multi_prog			= false;
@@ -743,7 +734,7 @@ env_vars_t env_vars[] = {
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &sropt.kill_bad_exit,NULL            },
 {"SLURM_LABELIO",       OPT_INT,        &sropt.labelio,     NULL             },
 {"SLURM_MEM_PER_GPU",   OPT_MEM_PER_GPU,&opt.mem_per_gpu,  NULL              },
-{"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL             },
+  { "SLURM_MEM_BIND", LONG_OPT_MEM_BIND },
 {"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
 {"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
@@ -873,13 +864,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		xfree(opt.hint_env);
 		opt.hint_env = xstrdup(val);
 		break;
-	case OPT_MEM_BIND:
-		xfree(opt.mem_bind);
-		if (slurm_verify_mem_bind(val, &opt.mem_bind,
-					  &opt.mem_bind_type))
-			exit(error_exit);
-		break;
-
 	case OPT_NODES:
 		sropt.nodes_set_env = get_resource_arg_range( val ,"OPT_NODES",
 							     &opt.min_nodes,
@@ -1291,14 +1275,6 @@ static void _set_options(const int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_MEM_BIND:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.mem_bind);
-			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
-						  &opt.mem_bind_type))
-				exit(error_exit);
 			break;
 		case LONG_OPT_MINCPUS:
 			if (!optarg)

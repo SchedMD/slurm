@@ -42,6 +42,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_acct_gather_profile.h"
+#include "src/common/slurm_resource_info.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -786,6 +787,46 @@ static slurm_cli_opt_t slurm_opt_mcs_label = {
 	.reset_func = arg_reset_mcs_label,
 };
 
+static int arg_set_mem_bind(slurm_opt_t *opt, const char *arg)
+{
+	xfree(opt->mem_bind);
+	if (slurm_verify_mem_bind(arg, &opt->mem_bind, &opt->mem_bind_type))
+		exit(-1);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_mem_bind(slurm_opt_t *opt)
+{
+	char *tmp;
+	if (!opt->mem_bind_type)
+		return xstrdup("unset");
+	tmp = slurm_xstr_mem_bind_type(opt->mem_bind_type);
+	if (opt->mem_bind)
+		xstrfmtcat(tmp, ":%s", opt->mem_bind);
+	return tmp;
+}
+static void arg_reset_mem_bind(slurm_opt_t *opt)
+{
+	xfree(opt->mem_bind);
+	opt->mem_bind_type = 0;
+
+	if (opt->srun_opt) {
+		char *launch_params = slurm_get_launch_params();
+		if (xstrstr(launch_params, "mem_sort"))
+			opt->mem_bind_type |= MEM_BIND_SORT;
+		xfree(launch_params);
+	}
+}
+static slurm_cli_opt_t slurm_opt_mem_bind = {
+	.name = "mem-bind",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MEM_BIND,
+	.set_func = arg_set_mem_bind,
+	.get_func = arg_get_mem_bind,
+	.reset_func = arg_reset_mem_bind,
+	.reset_each_pass = true,
+};
+
 static int arg_set_nodelist(slurm_opt_t *opt, const char *arg)
 {
 	xfree(opt->nodelist);
@@ -1078,6 +1119,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_immediate,
 	&slurm_opt_licenses,
 	&slurm_opt_mcs_label,
+	&slurm_opt_mem_bind,
 	&slurm_opt_nodelist,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,
