@@ -222,7 +222,6 @@ static void _opt_default(bool first_pass)
 	opt.hint_set			= false;
 	opt.job_flags			= 0;
 	opt.mail_type			= 0;
-	xfree(opt.mail_user);
 	opt.max_nodes			= 0;
 	opt.mem_per_cpu			= NO_VAL64;
 	opt.pn_min_cpus			= -1;
@@ -575,7 +574,6 @@ static struct option long_options[] = {
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
-	{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
@@ -1205,12 +1203,6 @@ static void _set_options(int argc, char **argv)
 				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_MAIL_USER:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.mail_user);
-			opt.mail_user = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_SPEC:
 			if (!optarg)

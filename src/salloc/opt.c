@@ -515,7 +515,6 @@ static void _set_options(int argc, char **argv)
 		{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
-		{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
 		{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
@@ -729,10 +728,6 @@ static void _set_options(int argc, char **argv)
 				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_MAIL_USER:
-			xfree(opt.mail_user);
-			opt.mail_user = xstrdup(optarg);
 			break;
 		case LONG_OPT_NICE: {
 			long long tmp_nice;

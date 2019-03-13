@@ -168,7 +168,6 @@ struct option long_options[] = {
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
-	{"mail-user",        required_argument, 0, LONG_OPT_MAIL_USER},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-gpu",      required_argument, 0, LONG_OPT_MEM_PER_GPU},
@@ -630,8 +629,6 @@ static void _opt_default(void)
 	opt.hint_set			= false;
 	sropt.hostfile			= NULL;
 	opt.job_flags			= 0;
-	opt.mail_type			= 0;
-	opt.mail_user			= NULL;
 	sropt.max_threads		= MAX_THREADS;
 	pmi_server_max_threads(sropt.max_threads);
 	opt.max_nodes			= 0;
@@ -1436,12 +1433,6 @@ static void _set_options(const int argc, char **argv)
 				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_MAIL_USER:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.mail_user);
-			opt.mail_user = xstrdup(optarg);
 			break;
 		case LONG_OPT_TASK_PROLOG:
 			if (!optarg)
