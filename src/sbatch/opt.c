@@ -86,7 +86,6 @@
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
 #define OPT_THREAD_SPEC 0x12
-#define OPT_SIGNAL      0x15
 #define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
 #define OPT_GRES_FLAGS    0x18
@@ -205,9 +204,6 @@ static void _opt_default(bool first_pass)
 		sbopt.umask		= -1;
 		sbopt.wait		= false;
 		sbopt.wait_all_nodes	= NO_VAL16;
-		opt.warn_flags		= 0;
-		opt.warn_signal		= 0;
-		opt.warn_time		= 0;
 		opt.x11			= 0;
 	}
 
@@ -342,7 +338,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
   { "SBATCH_RESERVATION", LONG_OPT_RESERVATION },
-  {"SBATCH_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
+  { "SBATCH_SIGNAL", LONG_OPT_SIGNAL },
   { "SBATCH_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
   {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   { "SBATCH_TIMELIMIT", 't' },
@@ -494,13 +490,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_REQUEUE:
 		sbopt.requeue = 1;
 		break;
-	case OPT_SIGNAL:
-		if (get_signal_opts((char *)val, &opt.warn_signal,
-				    &opt.warn_time, &opt.warn_flags)) {
-			error("Invalid signal specification: %s", val);
-			exit(error_exit);
-		}
-		break;
 	case OPT_GET_USER_ENV:
 		if (val)
 			_proc_get_user_env((char *)val);
@@ -588,7 +577,6 @@ static struct option long_options[] = {
 	{"parsable",      optional_argument, 0, LONG_OPT_PARSABLE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
-	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -1357,16 +1345,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_CHECKPOINT:
 			xfree(sbopt.ckpt_interval_str);
 			sbopt.ckpt_interval_str = xstrdup(optarg);
-			break;
-		case LONG_OPT_SIGNAL:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (get_signal_opts(optarg, &opt.warn_signal,
-					    &opt.warn_time, &opt.warn_flags)) {
-				error("Invalid signal specification: %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_GRES_FLAGS:
 			if (!optarg)

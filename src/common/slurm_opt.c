@@ -1003,6 +1003,36 @@ static slurm_cli_opt_t slurm_opt_reservation = {
 	.reset_func = arg_reset_reservation,
 };
 
+static int arg_set_signal(slurm_opt_t *opt, const char *arg)
+{
+	if (get_signal_opts((char *) arg, &opt->warn_signal,
+			    &opt->warn_time, &opt->warn_flags)) {
+		error("Invalid --signal specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_signal(slurm_opt_t *opt)
+{
+	return signal_opts_to_cmdline(opt->warn_signal, opt->warn_time,
+				      opt->warn_flags);
+}
+static void arg_reset_signal(slurm_opt_t *opt)
+{
+	opt->warn_flags = 0;
+	opt->warn_signal = 0;
+	opt->warn_time = 0;
+}
+static slurm_cli_opt_t slurm_opt_signal = {
+	.name = "signal",
+	.has_arg = required_argument,
+	.val = LONG_OPT_SIGNAL,
+	.set_func = arg_set_signal,
+	.get_func = arg_get_signal,
+	.reset_func = arg_reset_signal,
+};
+
 static int arg_set_spread_job(slurm_opt_t *opt, const char *arg)
 {
 	opt->job_flags |= SPREAD_JOB;
@@ -1142,6 +1172,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_qos,
 	&slurm_opt_reboot,
 	&slurm_opt_reservation,
+	&slurm_opt_signal,
 	&slurm_opt_spread_job,
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,

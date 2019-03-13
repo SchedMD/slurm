@@ -94,7 +94,6 @@
 #define OPT_NSOCKETS    0x10
 #define OPT_NCORES      0x11
 #define OPT_OPEN_MODE   0x14
-#define OPT_SIGNAL      0x17
 #define OPT_TIME_VAL    0x18
 #define OPT_CORE_SPEC   0x1a
 #define OPT_GRES_FLAGS	0x1b
@@ -188,7 +187,6 @@ struct option long_options[] = {
 	{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
 	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
-	{"signal",	     required_argument, 0, LONG_OPT_SIGNAL},
 	{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 	{"switches",         required_argument, 0, LONG_OPT_REQ_SWITCH},
@@ -600,9 +598,6 @@ static void _opt_default(void)
 		opt.uid			= uid;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
-		opt.warn_flags		= 0;
-		opt.warn_signal		= 0;
-		opt.warn_time		= 0;
 		_verbose		= 0;
 	}
 
@@ -753,8 +748,8 @@ env_vars_t env_vars[] = {
 {"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
   { "SLURM_RESERVATION", LONG_OPT_RESERVATION },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
+  { "SLURM_SIGNAL", LONG_OPT_SIGNAL },
   { "SLURM_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
-{"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
 {"SLURM_STDERRMODE",    OPT_STRING,     &sropt.efname,      NULL             },
 {"SLURM_STDINMODE",     OPT_STRING,     &sropt.ifname,      NULL             },
@@ -927,15 +922,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		xfree(mpi_type);
 		mpi_type = xstrdup(val);
 		break;
-
-	case OPT_SIGNAL:
-		if (get_signal_opts((char *)val, &opt.warn_signal,
-				    &opt.warn_time, &opt.warn_flags)) {
-			error("Invalid signal specification: %s", val);
-			exit(error_exit);
-		}
-		break;
-
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
@@ -1582,16 +1568,6 @@ static void _set_options(const int argc, char **argv)
 			else {
 				error("Invalid --open-mode argument: %s. Ignored",
 				      optarg);
-			}
-			break;
-		case LONG_OPT_SIGNAL:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (get_signal_opts(optarg, &opt.warn_signal,
-					    &opt.warn_time, &opt.warn_flags)) {
-				error("Invalid signal specification: %s",
-				      optarg);
-				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_GRES_FLAGS:

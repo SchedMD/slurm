@@ -86,7 +86,6 @@
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
 #define OPT_GRES_FLAGS  0x10
-#define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
 #define OPT_CORE_SPEC   0x19
@@ -208,9 +207,6 @@ static void _opt_default(void)
 		opt.uid			= getuid();
 		opt.verbose		= 0;
 		saopt.wait_all_nodes	= NO_VAL16;
-		opt.warn_flags		= 0;
-		opt.warn_signal		= 0;
-		opt.warn_time		= 0;
 		opt.x11			= 0;
 	} else if (saopt.default_job_name) {
 		xfree(opt.job_name);
@@ -305,7 +301,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_QOS", 'q' },
   {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
   { "SALLOC_RESERVATION", LONG_OPT_RESERVATION },
-  {"SALLOC_SIGNAL",        OPT_SIGNAL,     NULL,               NULL          },
+  { "SALLOC_SIGNAL", LONG_OPT_SIGNAL },
   { "SALLOC_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
   {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
   { "SALLOC_TIMELIMIT", 't' },
@@ -439,13 +435,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-	case OPT_SIGNAL:
-		if (get_signal_opts((char *)val, &opt.warn_signal,
-				    &opt.warn_time, &opt.warn_flags)) {
-			error("Invalid signal specification: %s", val);
-			exit(error_exit);
-		}
-		break;
 	case OPT_KILL_CMD:
 		if (val) {
 			saopt.kill_command_signal = sig_name2num((char *) val);
@@ -526,7 +515,6 @@ static void _set_options(int argc, char **argv)
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
-		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -831,14 +819,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-			break;
-		case LONG_OPT_SIGNAL:
-			if (get_signal_opts(optarg, &opt.warn_signal,
-					    &opt.warn_time, &opt.warn_flags)) {
-				error("Invalid signal specification: %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_GRES_FLAGS:
 			if (!xstrcasecmp(optarg, "disable-binding")) {
