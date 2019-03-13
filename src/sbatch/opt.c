@@ -91,7 +91,6 @@
 #define OPT_CORE_SPEC     0x1a
 #define OPT_ARRAY_INX     0x20
 #define OPT_HINT	  0x22
-#define OPT_DELAY_BOOT	  0x23
 #define OPT_INT64	  0x24
 #define OPT_USE_MIN_NODES 0x25
 #define OPT_MEM_PER_GPU   0x26
@@ -178,7 +177,6 @@ static void _opt_default(bool first_pass)
 			exit(error_exit);
 		}
 		opt.cwd			= xstrdup(buf);
-		opt.delay_boot		= NO_VAL;
 		opt.egid		= (gid_t) -1;
 		xfree(sbopt.efname);
 		xfree(opt.extra);
@@ -305,7 +303,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SBATCH_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
-  {"SBATCH_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
+  { "SBATCH_DELAY_BOOT", LONG_OPT_DELAY_BOOT },
   { "SBATCH_DISTRIBUTION", 'm' },
   { "SBATCH_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   {"SBATCH_EXPORT",        OPT_STRING,     &sbopt.export_env,  NULL          },
@@ -374,7 +372,6 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
-	int i;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -485,14 +482,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_DELAY_BOOT:
-		i = time_str2secs(val);
-		if (i == NO_VAL)
-			error("Invalid SBATCH_DELAY_BOOT argument: %s. Ignored",
-			      val);
-		else
-			opt.delay_boot = (uint32_t) i;
-		break;
 	case OPT_USE_MIN_NODES:
 		opt.job_flags |= USE_MIN_NODES;
 		break;
@@ -536,7 +525,6 @@ static struct option long_options[] = {
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-	{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
@@ -952,7 +940,7 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 
 static void _set_options(int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0, i;
+	int opt_char, option_index = 0, max_val = 0;
 	char *tmp;
 
 	struct option *common_options = slurm_option_table_create(long_options,
@@ -1079,17 +1067,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'W':
 			sbopt.wait = true;
-			break;
-		case LONG_OPT_DELAY_BOOT:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			i = time_str2secs(optarg);
-			if (i == NO_VAL) {
-				error("Invalid delay-boot specification %s",
-				      optarg);
-				exit(error_exit);
-			}
-			opt.delay_boot = (uint32_t) i;
 			break;
 		case LONG_OPT_MEM_PER_GPU:
 			if (!optarg)

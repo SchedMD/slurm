@@ -99,7 +99,6 @@
 #define OPT_BCAST       0x1e
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
-#define OPT_DELAY_BOOT  0x24
 #define OPT_INT64	0x25
 #define OPT_USE_MIN_NODES 0x26
 #define OPT_MEM_PER_GPU   0x27
@@ -155,7 +154,6 @@ struct option long_options[] = {
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
-	{"delay-boot",       required_argument, 0, LONG_OPT_DELAY_BOOT},
 	{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 	{"export",           required_argument, 0, LONG_OPT_EXPORT},
 	{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
@@ -550,7 +548,6 @@ static void _opt_default(void)
 		opt.cwd			= xstrdup(buf);
 		sropt.cwd_set		= false;
 		sropt.debugger_test	= false;
-		opt.delay_boot		= NO_VAL;
 		sropt.disable_status	= false;
 		opt.egid		= (gid_t) -1;
 		xfree(sropt.efname);
@@ -698,7 +695,7 @@ env_vars_t env_vars[] = {
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
   { "SLURM_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SLURM_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
-{"SLURM_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL             },
+  { "SLURM_DELAY_BOOT", LONG_OPT_DELAY_BOOT },
   { "SLURM_DEPENDENCY", 'd' },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &sropt.disable_status,NULL           },
   { "SLURM_DISTRIBUTION", 'm' },
@@ -806,7 +803,6 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
-	int i;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -908,14 +904,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
-		break;
-	case OPT_DELAY_BOOT:
-		i = time_str2secs(val);
-		if (i == NO_VAL)
-			error("Invalid SLURM_DELAY_BOOT argument: %s. Ignored",
-			      val);
-		else
-			opt.delay_boot = (uint32_t) i;
 		break;
 	case OPT_USE_MIN_NODES:
 		opt.job_flags |= USE_MIN_NODES;
@@ -1566,17 +1554,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_COMPRESS:
 			sropt.compress = parse_compress_type(optarg);
-			break;
-		case LONG_OPT_DELAY_BOOT:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			tmp_int = time_str2secs(optarg);
-			if (tmp_int == NO_VAL) {
-				error("Invalid delay-boot specification %s",
-				      optarg);
-				exit(error_exit);
-			}
-			opt.delay_boot = (uint32_t) tmp_int;
 			break;
 		case LONG_OPT_USE_MIN_NODES:
 			opt.job_flags |= USE_MIN_NODES;

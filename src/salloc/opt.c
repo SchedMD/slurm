@@ -89,7 +89,6 @@
 #define OPT_TIME_VAL	0x17
 #define OPT_CORE_SPEC   0x19
 #define OPT_HINT	0x1a
-#define OPT_DELAY_BOOT	0x1e
 #define OPT_INT64	0x1f
 #define OPT_MEM_PER_GPU   0x20
 #define OPT_NO_KILL       0x21
@@ -187,7 +186,6 @@ static void _opt_default(void)
 	if (first_pass) {
 		saopt.bell		= BELL_AFTER_DELAY;
 		xfree(opt.cwd);
-		opt.delay_boot		= NO_VAL;
 		opt.egid		= (gid_t) -1;
 		opt.euid		= (uid_t) -1;
 		xfree(opt.extra);
@@ -273,7 +271,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SALLOC_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
-  {"SALLOC_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
+  { "SALLOC_DELAY_BOOT", LONG_OPT_DELAY_BOOT },
   { "SALLOC_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   { "SALLOC_GPUS", 'G' },
   { "SALLOC_GPU_BIND", LONG_OPT_GPU_BIND },
@@ -337,7 +335,6 @@ static void
 _process_env_var(env_vars_t *e, const char *val)
 {
 	char *end = NULL;
-	int i;
 
 	debug2("now processing env var %s=%s", e->var, val);
 
@@ -436,14 +433,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_DELAY_BOOT:
-		i = time_str2secs(val);
-		if (i == NO_VAL)
-			error("Invalid SALLOC_DELAY_BOOT argument: %s. Ignored",
-			      val);
-		else
-			opt.delay_boot = (uint32_t) i;
-		break;
 	case OPT_USE_MIN_NODES:
 		opt.job_flags |= USE_MIN_NODES;
 		break;
@@ -459,7 +448,7 @@ _process_env_var(env_vars_t *e, const char *val)
 
 static void _set_options(int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0, i;
+	int opt_char, option_index = 0, max_val = 0;
 	char *tmp;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
@@ -481,7 +470,6 @@ static void _set_options(int argc, char **argv)
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-		{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
@@ -614,15 +602,6 @@ static void _set_options(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
-			break;
-		case LONG_OPT_DELAY_BOOT:
-			i = time_str2secs(optarg);
-			if (i == NO_VAL) {
-				error("Invalid delay-boot specification %s",
-				      optarg);
-				exit(error_exit);
-			}
-			opt.delay_boot = (uint32_t) i;
 			break;
 		case LONG_OPT_MEM_PER_GPU:
 			if (!optarg)
