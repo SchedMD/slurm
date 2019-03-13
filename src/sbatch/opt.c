@@ -195,7 +195,6 @@ static void _opt_default(bool first_pass)
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
 		xfree(opt.gpu_bind);
-		xfree(opt.gpu_freq);
 		xfree(opt.gpus_per_node);
 		xfree(opt.gpus_per_socket);
 		xfree(opt.gpus_per_task);
@@ -333,7 +332,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
   { "SBATCH_GPUS", 'G' },
   {"SBATCH_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
-  {"SBATCH_GPU_FREQ",      OPT_STRING,     &opt.gpu_freq,      NULL          },
+  { "SBATCH_GPU_FREQ", LONG_OPT_GPU_FREQ },
   {"SBATCH_GPUS_PER_NODE", OPT_STRING,     &opt.gpus_per_node, NULL          },
   {"SBATCH_GPUS_PER_SOCKET", OPT_STRING,   &opt.gpus_per_socket, NULL        },
   {"SBATCH_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL          },
@@ -594,7 +593,6 @@ static struct option long_options[] = {
 	{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"gpu-bind",      required_argument, 0, LONG_OPT_GPU_BIND},
-	{"gpu-freq",      required_argument, 0, LONG_OPT_GPU_FREQ},
 	{"gpus-per-node", required_argument, 0, LONG_OPT_GPUS_PER_NODE},
 	{"gpus-per-socket", required_argument, 0, LONG_OPT_GPUS_PER_SOCKET},
 	{"gpus-per-task", required_argument, 0, LONG_OPT_GPUS_PER_TASK},
@@ -1163,12 +1161,6 @@ static void _set_options(int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.gpu_bind);
 			opt.gpu_bind = xstrdup(optarg);
-			break;
-		case LONG_OPT_GPU_FREQ:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.gpu_freq);
-			opt.gpu_freq = xstrdup(optarg);
 			break;
 		case LONG_OPT_GPUS_PER_NODE:
 			xfree(opt.gpus_per_node);

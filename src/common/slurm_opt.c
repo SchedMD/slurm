@@ -639,6 +639,16 @@ static slurm_cli_opt_t slurm_opt_extra_node_info = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(gpu_freq);
+static slurm_cli_opt_t slurm_opt_gpu_freq = {
+	.name = "gpu-freq",
+	.has_arg = required_argument,
+	.val = LONG_OPT_GPU_FREQ,
+	.set_func = arg_set_gpu_freq,
+	.get_func = arg_get_gpu_freq,
+	.reset_func = arg_reset_gpu_freq,
+};
+
 COMMON_STRING_OPTION(gpus);
 static slurm_cli_opt_t slurm_opt_gpus = {
 	.name = "gpus",
@@ -983,6 +993,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_exclude,
 	&slurm_opt_exclusive,
 	&slurm_opt_extra_node_info,
+	&slurm_opt_gpu_freq,
 	&slurm_opt_gpus,
 	&slurm_opt_gres,
 	&slurm_opt_hold,
