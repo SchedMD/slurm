@@ -656,7 +656,6 @@ static void _set_options(int argc, char **argv)
 		{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
 		{"mem-bind",      required_argument, 0, LONG_OPT_MEM_BIND},
-		{"mem_bind",      required_argument, 0, LONG_OPT_MEM_BIND},
 		{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"nice",          optional_argument, 0, LONG_OPT_NICE},

@@ -224,7 +224,6 @@ struct option long_options[] = {
 	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-gpu",      required_argument, 0, LONG_OPT_MEM_PER_GPU},
 	{"mem-bind",         required_argument, 0, LONG_OPT_MEM_BIND},
-	{"mem_bind",         required_argument, 0, LONG_OPT_MEM_BIND},
 	{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
