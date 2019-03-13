@@ -931,8 +931,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->spank_job_env_size = opt.spank_job_env_size;
 	}
 
-	if (opt.power_flags)
-		desc->power_flags = opt.power_flags;
+	desc->power_flags = opt.power;
 	if (opt.mcs_label)
 		desc->mcs_label = xstrdup(opt.mcs_label);
 	if (opt.delay_boot != NO_VAL)

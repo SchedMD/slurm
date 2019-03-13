@@ -87,7 +87,6 @@
 #define OPT_NO_BELL     0x0b
 #define OPT_GRES_FLAGS  0x10
 #define OPT_MEM_BIND    0x11
-#define OPT_POWER       0x13
 #define OPT_SIGNAL      0x15
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
@@ -206,7 +205,6 @@ static void _opt_default(void)
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
 		saopt.no_shell		= false;
-		opt.power_flags		= 0;
 		opt.quiet		= 0;
 		opt.uid			= getuid();
 		opt.verbose		= 0;
@@ -305,7 +303,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
   { "SALLOC_OVERCOMMIT", 'O' },
   { "SALLOC_PARTITION", 'p' },
-  {"SALLOC_POWER",         OPT_POWER,      NULL,               NULL          },
+  { "SALLOC_POWER", LONG_OPT_POWER },
   { "SALLOC_PROFILE", LONG_OPT_PROFILE },
   { "SALLOC_QOS", 'q' },
   {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
@@ -449,10 +447,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-	case OPT_POWER:
-		opt.power_flags = power_flags_id((char *)val);
-		break;
-
 	case OPT_SIGNAL:
 		if (get_signal_opts((char *)val, &opt.warn_signal,
 				    &opt.warn_time, &opt.warn_flags)) {
@@ -542,7 +536,6 @@ static void _set_options(int argc, char **argv)
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
-		{"power",         required_argument, 0, LONG_OPT_POWER},
 		{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
@@ -857,9 +850,6 @@ static void _set_options(int argc, char **argv)
 			if (slurm_verify_mem_bind(optarg, &opt.mem_bind,
 						  &opt.mem_bind_type))
 				exit(error_exit);
-			break;
-		case LONG_OPT_POWER:
-			opt.power_flags = power_flags_id(optarg);
 			break;
 		case LONG_OPT_SIGNAL:
 			if (get_signal_opts(optarg, &opt.warn_signal,

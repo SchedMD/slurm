@@ -849,6 +849,29 @@ static slurm_cli_opt_t slurm_opt_partition = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_power(slurm_opt_t *opt, const char *arg)
+{
+	opt->power = power_flags_id(arg);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_power(slurm_opt_t *opt)
+{
+	if (opt->power)
+		return xstrdup(power_flags_str(opt->power));
+	return xstrdup("unset");
+}
+COMMON_OPTION_RESET(power, 0);
+static slurm_cli_opt_t slurm_opt_power = {
+	.name = "power",
+	.has_arg = required_argument,
+	.val = LONG_OPT_POWER,
+	.set_func = arg_set_power,
+	.get_func = arg_get_power,
+	.reset_func = arg_reset_power,
+	.reset_each_pass = true,
+};
+
 static int arg_set_priority(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "TOP")) {
@@ -1059,6 +1082,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,
 	&slurm_opt_partition,
+	&slurm_opt_power,
 	&slurm_opt_priority,
 	&slurm_opt_profile,
 	&slurm_opt_qos,

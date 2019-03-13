@@ -903,8 +903,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->spank_job_env_size = opt_local->spank_job_env_size;
 	}
 
-	if (opt_local->power_flags)
-		j->power_flags = opt_local->power_flags;
+	j->power_flags = opt_local->power;
 	if (opt_local->mcs_label)
 		j->mcs_label = opt_local->mcs_label;
 	j->wait_all_nodes = 1;

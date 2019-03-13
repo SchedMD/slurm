@@ -99,7 +99,6 @@
 #define OPT_TIME_VAL    0x18
 #define OPT_CORE_SPEC   0x1a
 #define OPT_GRES_FLAGS	0x1b
-#define OPT_POWER       0x1c
 #define OPT_THREAD_SPEC 0x1d
 #define OPT_BCAST       0x1e
 #define OPT_EXPORT	0x21
@@ -186,7 +185,6 @@ struct option long_options[] = {
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 	{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
-	{"power",            required_argument, 0, LONG_OPT_POWER},
 	{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 	{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
@@ -665,7 +663,6 @@ static void _opt_default(void)
 	sropt.pack_grp_bits		= NULL;
 	opt.pn_min_cpus			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
-	opt.power_flags			= 0;
 	sropt.relative			= NO_VAL;
 	sropt.relative_set		= false;
 	opt.req_switch			= -1;
@@ -760,7 +757,7 @@ env_vars_t env_vars[] = {
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
   { "SLURM_OVERCOMMIT", 'O' },
   { "SLURM_PARTITION", 'p' },
-{"SLURM_POWER",         OPT_POWER,      NULL,               NULL             },
+  { "SLURM_POWER", LONG_OPT_POWER },
   { "SLURM_PROFILE", LONG_OPT_PROFILE },
 {"SLURM_PROLOG",        OPT_STRING,     &sropt.prolog,      NULL             },
   { "SLURM_QOS", 'q' },
@@ -960,9 +957,6 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
-		break;
-	case OPT_POWER:
-		opt.power_flags = power_flags_id((char *)val);
 		break;
 	case OPT_THREAD_SPEC:
 		opt.core_spec = _get_int(val, "thread_spec", true) |
@@ -1656,11 +1650,6 @@ static void _set_options(const int argc, char **argv)
 				opt.wait4switch = time_str2secs(pos_delimit);
 			}
 			opt.req_switch = _get_int(optarg, "switches", true);
-			break;
-		case LONG_OPT_POWER:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.power_flags = power_flags_id(optarg);
 			break;
 		case LONG_OPT_THREAD_SPEC:
 			if (!optarg)

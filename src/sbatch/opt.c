@@ -93,7 +93,6 @@
 #define OPT_GRES_FLAGS    0x18
 #define OPT_TIME_VAL      0x19
 #define OPT_CORE_SPEC     0x1a
-#define OPT_POWER         0x1d
 #define OPT_ARRAY_INX     0x20
 #define OPT_HINT	  0x22
 #define OPT_DELAY_BOOT	  0x23
@@ -238,7 +237,6 @@ static void _opt_default(bool first_pass)
 	opt.ntasks_per_node		= 0;	/* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_set			= false;
-	opt.power_flags			= 0;
 	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
@@ -342,7 +340,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
   { "SBATCH_OVERCOMMIT", 'O' },
   { "SBATCH_PARTITION", 'p' },
-  {"SBATCH_POWER",         OPT_POWER,      NULL,               NULL          },
+  { "SBATCH_POWER", LONG_OPT_POWER },
   { "SBATCH_PROFILE", LONG_OPT_PROFILE },
   { "SBATCH_QOS", 'q' },
   {"SBATCH_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
@@ -522,9 +520,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_POWER:
-		opt.power_flags = power_flags_id((char *)val);
-		break;
 	case OPT_THREAD_SPEC:
 		opt.core_spec = parse_int("thread_spec", val, false) |
 			CORE_SPEC_THREAD;
@@ -603,7 +598,6 @@ static struct option long_options[] = {
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"parsable",      optional_argument, 0, LONG_OPT_PARSABLE},
-	{"power",         required_argument, 0, LONG_OPT_POWER},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"signal",        required_argument, 0, LONG_OPT_SIGNAL},
@@ -1455,11 +1449,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_PARSABLE:
 			sbopt.parsable = true;
-			break;
-		case LONG_OPT_POWER:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.power_flags = power_flags_id(optarg);
 			break;
 		case LONG_OPT_THREAD_SPEC:
 			if (!optarg)
