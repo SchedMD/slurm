@@ -105,6 +105,30 @@ static char *arg_get_##field(slurm_opt_t *opt)			\
 }								\
 COMMON_OPTION_RESET(field, false)
 
+#define COMMON_INT_OPTION(field, option)			\
+COMMON_INT_OPTION_SET(field, option)				\
+COMMON_INT_OPTION_GET(field)					\
+COMMON_OPTION_RESET(field, 0)
+#define COMMON_INT_OPTION_GET_AND_RESET(field)			\
+COMMON_INT_OPTION_GET(field)					\
+COMMON_OPTION_RESET(field, 0)
+#define COMMON_INT_OPTION_SET(field, option)			\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+__attribute__((nonnull (1)));					\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+{								\
+	opt->field = parse_int(option, arg, true);		\
+								\
+	return SLURM_SUCCESS;					\
+}
+#define COMMON_INT_OPTION_GET(field)				\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+{								\
+	return xstrdup_printf("%d", opt->field);		\
+}
+
 typedef struct {
 	/*
 	 * DO NOT ALTER THESE FIRST FOUR ARGUMENTS
