@@ -191,7 +191,6 @@ static void _opt_default(void)
 		xfree(opt.job_name);
 		saopt.kill_command_signal = SIGTERM;
 		saopt.kill_command_signal_set = false;
-		opt.nice		= NO_VAL;
 		saopt.no_shell		= false;
 		opt.quiet		= 0;
 		opt.uid			= getuid();
@@ -452,7 +451,6 @@ static void _set_options(int argc, char **argv)
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
-		{"nice",          optional_argument, 0, LONG_OPT_NICE},
 		{"no-bell",       no_argument,       0, LONG_OPT_NO_BELL},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
@@ -597,29 +595,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			break;
-		case LONG_OPT_NICE: {
-			long long tmp_nice;
-			if (optarg)
-				tmp_nice = strtoll(optarg, NULL, 10);
-			else
-				tmp_nice = 100;
-			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
-				error("Nice value out of range (+/- %u). Value "
-				      "ignored", NICE_OFFSET - 3);
-				tmp_nice = 0;
-			}
-			if (tmp_nice < 0) {
-				uid_t my_uid = getuid();
-				if ((my_uid != 0) &&
-				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be "
-					      "non-negative, value ignored");
-					tmp_nice = 0;
-				}
-			}
-			opt.nice = (int) tmp_nice;
-			break;
-		}
 		case LONG_OPT_BELL:
 			saopt.bell = BELL_ALWAYS;
 			break;

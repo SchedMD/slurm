@@ -161,7 +161,6 @@ struct option long_options[] = {
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 	{"network",          required_argument, 0, LONG_OPT_NETWORK},
-	{"nice",             optional_argument, 0, LONG_OPT_NICE},
 	{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
@@ -551,7 +550,6 @@ static void _opt_default(void)
 		sropt.max_wait		= slurm_get_wait_time();
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
-		opt.nice		= NO_VAL;
 		sropt.no_alloc		= false;
 		sropt.noshell		= false;
 		xfree(sropt.ofname);
@@ -1312,29 +1310,6 @@ static void _set_options(const int argc, char **argv)
 			xfree(sropt.task_epilog);
 			sropt.task_epilog = xstrdup(optarg);
 			break;
-		case LONG_OPT_NICE: {
-			long long tmp_nice;
-			if (optarg)
-				tmp_nice = strtoll(optarg, NULL, 10);
-			else
-				tmp_nice = 100;
-			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
-				error("Nice value out of range (+/- %u). Value "
-				      "ignored", NICE_OFFSET - 3);
-				tmp_nice = 0;
-			}
-			if (tmp_nice < 0) {
-				uid_t my_uid = getuid();
-				if ((my_uid != 0) &&
-				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be "
-					      "non-negative, value ignored");
-					tmp_nice = 0;
-				}
-			}
-			opt.nice = (int) tmp_nice;
-			break;
-		}
 		case LONG_OPT_MULTI:
 			sropt.multi_prog = true;
 			break;

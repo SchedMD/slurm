@@ -178,7 +178,6 @@ static void _opt_default(bool first_pass)
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
 		sbopt.ifname		= xstrdup("/dev/null");
-		opt.nice		= NO_VAL;
 		xfree(sbopt.ofname);
 		sbopt.parsable		= false;
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
@@ -503,7 +502,6 @@ static struct option long_options[] = {
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"network",       required_argument, 0, LONG_OPT_NETWORK},
-	{"nice",          optional_argument, 0, LONG_OPT_NICE},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -1071,29 +1069,6 @@ static void _set_options(int argc, char **argv)
 			xfree(sbopt.burst_buffer_file);
 			sbopt.burst_buffer_file = _read_file(optarg);
 			break;
-		case LONG_OPT_NICE: {
-			long long tmp_nice;
-			if (optarg)
-				tmp_nice = strtoll(optarg, NULL, 10);
-			else
-				tmp_nice = 100;
-			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
-				error("Nice value out of range (+/- %u). Value "
-				      "ignored", NICE_OFFSET - 3);
-				tmp_nice = 0;
-			}
-			if (tmp_nice < 0) {
-				uid_t my_uid = getuid();
-				if ((my_uid != 0) &&
-				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be "
-					      "non-negative, value ignored");
-					tmp_nice = 0;
-				}
-			}
-			opt.nice = (int) tmp_nice;
-			break;
-		}
 		case LONG_OPT_NO_REQUEUE:
 			sbopt.requeue = 0;
 			break;

@@ -996,6 +996,39 @@ static slurm_cli_opt_t slurm_opt_mincpus = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_nice(slurm_opt_t *opt, const char *arg)
+{
+	long long tmp_nice;
+
+	if (arg)
+		tmp_nice = strtoll(arg, NULL, 10);
+	else
+		tmp_nice = 100;
+
+	if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
+		error("Invalid --nice value, out of range (+/- %u)",
+		      NICE_OFFSET - 3);
+		exit(-1);
+	}
+
+	opt->nice = (int) tmp_nice;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_nice(slurm_opt_t *opt)
+{
+	return xstrdup_printf("%d", opt->nice);
+}
+COMMON_OPTION_RESET(nice, NO_VAL);
+static slurm_cli_opt_t slurm_opt_nice = {
+	.name = "nice",
+	.has_arg = optional_argument,
+	.val = LONG_OPT_NICE,
+	.set_func = arg_set_nice,
+	.get_func = arg_get_nice,
+	.reset_func = arg_reset_nice,
+};
+
 static int arg_set_no_kill(slurm_opt_t *opt, const char *arg)
 {
 	if (!arg || !xstrcasecmp(arg, "set"))
@@ -1408,6 +1441,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mem_per_cpu,
 	&slurm_opt_mem_per_gpu,
 	&slurm_opt_mincpus,
+	&slurm_opt_nice,
 	&slurm_opt_no_kill,
 	&slurm_opt_nodelist,
 	&slurm_opt_overcommit,
