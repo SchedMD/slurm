@@ -1629,6 +1629,12 @@ extern int sacctmgr_list_user(int argc, char **argv)
 						user->name,
 						(curr_inx == field_count));
 					break;
+				case PRINT_PRIO:
+					field->print_routine(
+						field,
+						INFINITE,
+						(curr_inx == field_count));
+					break;
 				default:
 					field->print_routine(
 						field, NULL,

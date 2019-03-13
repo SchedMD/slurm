@@ -839,6 +839,12 @@ extern int sacctmgr_list_account(int argc, char **argv)
 						(curr_inx ==
 						 field_count));
 					break;
+				case PRINT_PRIO:
+					field->print_routine(
+						field,
+						INFINITE,
+						(curr_inx == field_count));
+					break;
 				default:
 					field->print_routine(
 						field, NULL,
