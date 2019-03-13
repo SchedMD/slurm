@@ -85,7 +85,6 @@
 #define OPT_OPEN_MODE	0x0e
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
-#define OPT_THREAD_SPEC 0x12
 #define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
 #define OPT_TIME_VAL      0x19
@@ -338,7 +337,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_RESERVATION", LONG_OPT_RESERVATION },
   { "SBATCH_SIGNAL", LONG_OPT_SIGNAL },
   { "SBATCH_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
-  {"SBATCH_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
+  { "SBATCH_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
   { "SBATCH_TIMELIMIT", 't' },
   {"SBATCH_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
   {"SBATCH_WAIT",          OPT_BOOL,       &sbopt.wait,        NULL          },
@@ -486,10 +485,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_THREAD_SPEC:
-		opt.core_spec = parse_int("thread_spec", val, false) |
-			CORE_SPEC_THREAD;
-		break;
 	case OPT_DELAY_BOOT:
 		i = time_str2secs(val);
 		if (i == NO_VAL)
@@ -566,7 +561,6 @@ static struct option long_options[] = {
 	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
-	{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"uid",           required_argument, 0, LONG_OPT_UID},
 	{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
@@ -1365,13 +1359,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_PARSABLE:
 			sbopt.parsable = true;
-			break;
-		case LONG_OPT_THREAD_SPEC:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.core_spec = parse_int("thread_spec",
-						  optarg, false) |
-				CORE_SPEC_THREAD;
 			break;
 		case LONG_OPT_KILL_INV_DEP:
 			if (!optarg)

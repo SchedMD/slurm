@@ -89,7 +89,6 @@
 #define OPT_TIME_VAL	0x17
 #define OPT_CORE_SPEC   0x19
 #define OPT_HINT	0x1a
-#define OPT_THREAD_SPEC 0x1c
 #define OPT_DELAY_BOOT	0x1e
 #define OPT_INT64	0x1f
 #define OPT_MEM_PER_GPU   0x20
@@ -302,7 +301,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_RESERVATION", LONG_OPT_RESERVATION },
   { "SALLOC_SIGNAL", LONG_OPT_SIGNAL },
   { "SALLOC_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
-  {"SALLOC_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL          },
+  { "SALLOC_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
   { "SALLOC_TIMELIMIT", 't' },
   {"SALLOC_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &saopt.wait_all_nodes,NULL          },
@@ -437,10 +436,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_THREAD_SPEC:
-		opt.core_spec = parse_int("thread_spec", val, true) |
-					 CORE_SPEC_THREAD;
-		break;
 	case OPT_DELAY_BOOT:
 		i = time_str2secs(val);
 		if (i == NO_VAL)
@@ -504,7 +499,6 @@ static void _set_options(int argc, char **argv)
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
-		{"thread-spec",   required_argument, 0, LONG_OPT_THREAD_SPEC},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"uid",           required_argument, 0, LONG_OPT_UID},
 		{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
@@ -831,10 +825,6 @@ static void _set_options(int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = _read_file(optarg);
-			break;
-		case LONG_OPT_THREAD_SPEC:
-			opt.core_spec = parse_int("thread_spec", optarg, true) |
-				CORE_SPEC_THREAD;
 			break;
 		case LONG_OPT_USE_MIN_NODES:
 			opt.job_flags |= USE_MIN_NODES;

@@ -96,7 +96,6 @@
 #define OPT_OPEN_MODE   0x14
 #define OPT_TIME_VAL    0x18
 #define OPT_CORE_SPEC   0x1a
-#define OPT_THREAD_SPEC 0x1d
 #define OPT_BCAST       0x1e
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
@@ -191,7 +190,6 @@ struct option long_options[] = {
 	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 	{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
-	{"thread-spec",      required_argument, 0, LONG_OPT_THREAD_SPEC},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"uid",              required_argument, 0, LONG_OPT_UID},
 	{"use-min-nodes",    no_argument,       0, LONG_OPT_USE_MIN_NODES},
@@ -753,7 +751,7 @@ env_vars_t env_vars[] = {
 {"SLURM_STDOUTMODE",    OPT_STRING,     &sropt.ofname,      NULL             },
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &sropt.task_epilog, NULL             },
 {"SLURM_TASK_PROLOG",   OPT_STRING,     &sropt.task_prolog, NULL             },
-{"SLURM_THREAD_SPEC",   OPT_THREAD_SPEC,NULL,               NULL             },
+  { "SLURM_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
 {"SLURM_THREADS",       OPT_INT,        &sropt.max_threads, NULL             },
   { "SLURM_TIMELIMIT", 't' },
 {"SLURM_UNBUFFEREDIO",  OPT_INT,        &sropt.unbuffered,  NULL             },
@@ -910,10 +908,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
-		break;
-	case OPT_THREAD_SPEC:
-		opt.core_spec = _get_int(val, "thread_spec", true) |
-					 CORE_SPEC_THREAD;
 		break;
 	case OPT_DELAY_BOOT:
 		i = time_str2secs(val);
@@ -1557,12 +1551,6 @@ static void _set_options(const int argc, char **argv)
 				opt.wait4switch = time_str2secs(pos_delimit);
 			}
 			opt.req_switch = _get_int(optarg, "switches", true);
-			break;
-		case LONG_OPT_THREAD_SPEC:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.core_spec = _get_int(optarg, "thread_spec", true) |
-				CORE_SPEC_THREAD;
 			break;
 		case LONG_OPT_ACCEL_BIND:
 			if (!optarg)

@@ -1122,6 +1122,34 @@ static slurm_cli_opt_t slurm_opt_spread_job = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_thread_spec(slurm_opt_t *opt, const char *arg)
+{
+	opt->core_spec = parse_int("--thread-spec", arg, true);
+	opt->core_spec |= CORE_SPEC_THREAD;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_thread_spec(slurm_opt_t *opt)
+{
+	if ((opt->core_spec == NO_VAL16) ||
+	    !(opt->core_spec & CORE_SPEC_THREAD))
+		return xstrdup("unset");
+	return xstrdup_printf("%d", (opt->core_spec & ~CORE_SPEC_THREAD));
+}
+static void arg_reset_thread_spec(slurm_opt_t *opt)
+{
+	opt->core_spec = NO_VAL16;
+}
+static slurm_cli_opt_t slurm_opt_thread_spec = {
+	.name = "thread-spec",
+	.has_arg = required_argument,
+	.val = LONG_OPT_THREAD_SPEC,
+	.set_func = arg_set_thread_spec,
+	.get_func = arg_get_thread_spec,
+	.reset_func = arg_reset_thread_spec,
+	.reset_each_pass = true,
+};
+
 static int arg_set_time_limit(slurm_opt_t *opt, const char *arg)
 {
 	int time_limit;
@@ -1239,6 +1267,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_reservation,
 	&slurm_opt_signal,
 	&slurm_opt_spread_job,
+	&slurm_opt_thread_spec,
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
