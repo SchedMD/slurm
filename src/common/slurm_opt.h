@@ -422,4 +422,10 @@ extern void slurm_option_table_destroy(struct option *optz);
  */
 extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg);
 
+/*
+ * Print all options that have been set through slurm_process_option()
+ * in a form suitable for use with the -v flag to salloc/sbatch/srun.
+ */
+extern void slurm_print_set_options(slurm_opt_t *opt);
+
 #endif	/* _SLURM_OPT_H_ */

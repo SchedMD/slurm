@@ -357,3 +357,26 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg)
 
 	return SLURM_ERROR;
 }
+
+void slurm_print_set_options(slurm_opt_t *opt)
+{
+	if (!opt)
+		fatal("%s: missing slurm_opt_t struct", __func__);
+
+	info("defined options");
+	info("-------------------- --------------------");
+
+	for (int i = 0; common_options[i]; i++) {
+		char *val = NULL;
+
+		if (!common_options[i]->set)
+			continue;
+
+		if (common_options[i]->get_func)
+			val = (common_options[i]->get_func)(opt);
+		info("%-20s: %s", common_options[i]->name, val);
+		xfree(val);
+	}
+	info("-------------------- --------------------");
+	info("end of defined options");
+}
