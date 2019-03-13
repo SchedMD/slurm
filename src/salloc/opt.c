@@ -92,7 +92,6 @@
 #define OPT_INT64	0x1f
 #define OPT_MEM_PER_GPU   0x20
 #define OPT_NO_KILL       0x21
-#define OPT_USE_MIN_NODES 0x23
 
 /*---- global variables, defined in opt.h ----*/
 salloc_opt_t saopt;
@@ -301,7 +300,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
   { "SALLOC_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
   { "SALLOC_TIMELIMIT", 't' },
-  {"SALLOC_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
+  { "SALLOC_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &saopt.wait_all_nodes,NULL          },
   {"SALLOC_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
   { "SALLOC_WCKEY", LONG_OPT_WCKEY },
@@ -433,9 +432,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_USE_MIN_NODES:
-		opt.job_flags |= USE_MIN_NODES;
-		break;
 	default:
 		/*
 		 * assume this was meant to be processed by
@@ -489,7 +485,6 @@ static void _set_options(int argc, char **argv)
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"uid",           required_argument, 0, LONG_OPT_UID},
-		{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
 		{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 #ifdef WITH_SLURM_X11
 		{"x11",           optional_argument, 0, LONG_OPT_X11},
@@ -804,9 +799,6 @@ static void _set_options(int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = _read_file(optarg);
-			break;
-		case LONG_OPT_USE_MIN_NODES:
-			opt.job_flags |= USE_MIN_NODES;
 			break;
 		case LONG_OPT_X11:
 			if (optarg)

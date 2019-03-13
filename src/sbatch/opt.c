@@ -92,7 +92,6 @@
 #define OPT_ARRAY_INX     0x20
 #define OPT_HINT	  0x22
 #define OPT_INT64	  0x24
-#define OPT_USE_MIN_NODES 0x25
 #define OPT_MEM_PER_GPU   0x26
 #define OPT_NO_KILL       0x27
 
@@ -337,7 +336,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
   { "SBATCH_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
   { "SBATCH_TIMELIMIT", 't' },
-  {"SBATCH_USE_MIN_NODES", OPT_USE_MIN_NODES ,NULL,            NULL          },
+  { "SBATCH_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
   {"SBATCH_WAIT",          OPT_BOOL,       &sbopt.wait,        NULL          },
   {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &sbopt.wait_all_nodes,NULL        },
   {"SBATCH_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
@@ -482,9 +481,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_USE_MIN_NODES:
-		opt.job_flags |= USE_MIN_NODES;
-		break;
 	default:
 		/*
 		* assume this was meant to be processed by
@@ -551,7 +547,6 @@ static struct option long_options[] = {
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"uid",           required_argument, 0, LONG_OPT_UID},
-	{"use-min-nodes", no_argument,       0, LONG_OPT_USE_MIN_NODES},
 	{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
@@ -1344,9 +1339,6 @@ static void _set_options(int argc, char **argv)
 				opt.job_flags |= KILL_INV_DEP;
 			if (xstrcasecmp(optarg, "no") == 0)
 				opt.job_flags |= NO_KILL_INV_DEP;
-			break;
-		case LONG_OPT_USE_MIN_NODES:
-			opt.job_flags |= USE_MIN_NODES;
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)

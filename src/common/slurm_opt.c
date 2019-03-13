@@ -1238,6 +1238,32 @@ static slurm_cli_opt_t slurm_opt_tmp = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_use_min_nodes(slurm_opt_t *opt, const char *arg)
+{
+	opt->job_flags |= USE_MIN_NODES;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_use_min_nodes(slurm_opt_t *opt)
+{
+	if (opt->job_flags | USE_MIN_NODES)
+		return xstrdup("set");
+	return xstrdup("unset");
+}
+static void arg_reset_use_min_nodes(slurm_opt_t *opt)
+{
+	opt->job_flags &= ~(USE_MIN_NODES);
+}
+static slurm_cli_opt_t slurm_opt_use_min_nodes = {
+	.name = "use-min-nodes",
+	.has_arg = no_argument,
+	.val = LONG_OPT_USE_MIN_NODES,
+	.set_func = arg_set_use_min_nodes,
+	.get_func = arg_get_use_min_nodes,
+	.reset_func = arg_reset_use_min_nodes,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(wckey);
 static slurm_cli_opt_t slurm_opt_wckey = {
 	.name = "wckey",
@@ -1299,6 +1325,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
+	&slurm_opt_use_min_nodes,
 	&slurm_opt_wckey,
 	NULL /* END */
 };

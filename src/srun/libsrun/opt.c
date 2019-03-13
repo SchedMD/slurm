@@ -100,7 +100,6 @@
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
 #define OPT_INT64	0x25
-#define OPT_USE_MIN_NODES 0x26
 #define OPT_MEM_PER_GPU   0x27
 #define OPT_NO_KILL       0x28
 
@@ -190,7 +189,6 @@ struct option long_options[] = {
 	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"uid",              required_argument, 0, LONG_OPT_UID},
-	{"use-min-nodes",    no_argument,       0, LONG_OPT_USE_MIN_NODES},
 	{"usage",            no_argument,       0, LONG_OPT_USAGE},
 #ifdef WITH_SLURM_X11
 	{"x11",              optional_argument, 0, LONG_OPT_X11},
@@ -752,7 +750,7 @@ env_vars_t env_vars[] = {
 {"SLURM_THREADS",       OPT_INT,        &sropt.max_threads, NULL             },
   { "SLURM_TIMELIMIT", 't' },
 {"SLURM_UNBUFFEREDIO",  OPT_INT,        &sropt.unbuffered,  NULL             },
-{"SLURM_USE_MIN_NODES", OPT_USE_MIN_NODES, NULL,            NULL             },
+  { "SLURM_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
 {"SLURM_WAIT",          OPT_INT,        &sropt.max_wait,    NULL             },
 {"SLURM_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL             },
   { "SLURM_WCKEY", LONG_OPT_WCKEY },
@@ -904,9 +902,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
-		break;
-	case OPT_USE_MIN_NODES:
-		opt.job_flags |= USE_MIN_NODES;
 		break;
 	default:
 		/*
@@ -1554,9 +1549,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_COMPRESS:
 			sropt.compress = parse_compress_type(optarg);
-			break;
-		case LONG_OPT_USE_MIN_NODES:
-			opt.job_flags |= USE_MIN_NODES;
 			break;
 		case LONG_OPT_QUIT_ON_INTR:
 			sropt.quit_on_intr = true;
