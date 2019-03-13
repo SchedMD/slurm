@@ -90,7 +90,6 @@
 #define OPT_CORE_SPEC   0x19
 #define OPT_HINT	0x1a
 #define OPT_INT64	0x1f
-#define OPT_MEM_PER_GPU   0x20
 #define OPT_NO_KILL       0x21
 
 /*---- global variables, defined in opt.h ----*/
@@ -194,7 +193,6 @@ static void _opt_default(void)
 		xfree(opt.job_name);
 		saopt.kill_command_signal = SIGTERM;
 		saopt.kill_command_signal_set = false;
-		opt.mem_per_gpu		= NO_VAL64;
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
 		saopt.no_shell		= false;
@@ -285,7 +283,7 @@ env_vars_t env_vars[] = {
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SALLOC_KILL_CMD",      OPT_KILL_CMD,   NULL,               NULL          },
   { "SALLOC_MEM_BIND", LONG_OPT_MEM_BIND },
-  {"SALLOC_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
+  { "SALLOC_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
   {"SALLOC_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
@@ -411,13 +409,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_HINT:
 		opt.hint_env = xstrdup(val);
 		break;
-	case OPT_MEM_PER_GPU:
-		opt.mem_per_gpu = str_to_mbytes2(val);
-		if (opt.mem_per_gpu == NO_VAL64) {
-			error("\"%s=%s\" -- invalid value, ignoring...",
-			      e->var, val);
-		}
-		break;
 	case OPT_KILL_CMD:
 		if (val) {
 			saopt.kill_command_signal = sig_name2num((char *) val);
@@ -471,7 +462,6 @@ static void _set_options(int argc, char **argv)
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
 		{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
-		{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
 		{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"nice",          optional_argument, 0, LONG_OPT_NICE},
@@ -597,16 +587,6 @@ static void _set_options(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
-			break;
-		case LONG_OPT_MEM_PER_GPU:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.mem_per_gpu = str_to_mbytes2(optarg);
-			if (opt.mem_per_gpu == NO_VAL64) {
-				error("invalid mem-per-gpu constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_MINCPU:
 			opt.pn_min_cpus = parse_int("mincpus", optarg, true);

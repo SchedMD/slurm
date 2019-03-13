@@ -100,7 +100,6 @@
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
 #define OPT_INT64	0x25
-#define OPT_MEM_PER_GPU   0x27
 #define OPT_NO_KILL       0x28
 
 extern char **environ;
@@ -162,7 +161,6 @@ struct option long_options[] = {
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
-	{"mem-per-gpu",      required_argument, 0, LONG_OPT_MEM_PER_GPU},
 	{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -563,7 +561,6 @@ static void _opt_default(void)
 		sropt.kill_bad_exit	= NO_VAL;
 		sropt.labelio		= false;
 		sropt.max_wait		= slurm_get_wait_time();
-		opt.mem_per_gpu		= NO_VAL64;
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
 		opt.nice		= NO_VAL;
@@ -715,7 +712,7 @@ env_vars_t env_vars[] = {
   { "SLURM_JOB_NODELIST", LONG_OPT_ALLOC_NODELIST },
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &sropt.kill_bad_exit,NULL            },
 {"SLURM_LABELIO",       OPT_INT,        &sropt.labelio,     NULL             },
-{"SLURM_MEM_PER_GPU",   OPT_MEM_PER_GPU,&opt.mem_per_gpu,  NULL              },
+  { "SLURM_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   { "SLURM_MEM_BIND", LONG_OPT_MEM_BIND },
 {"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
 {"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
@@ -856,15 +853,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		} else
 			opt.nodes_set = sropt.nodes_set_env;
 		break;
-
-	case OPT_MEM_PER_GPU:
-		opt.mem_per_gpu = str_to_mbytes2(val);
-		if (opt.mem_per_gpu == NO_VAL64) {
-			error("\"%s=%s\" -- invalid value, ignoring...",
-			      e->var, val);
-		}
-		break;
-
 	case OPT_NO_KILL:
 		opt.no_kill = true;
 		break;
@@ -1211,16 +1199,6 @@ static void _set_options(const int argc, char **argv)
 						  &sropt.cpu_bind_type, 0))
 				exit(error_exit);
 			sropt.cpu_bind_type_set = true;
-			break;
-		case LONG_OPT_MEM_PER_GPU:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.mem_per_gpu = str_to_mbytes2(optarg);
-			if (opt.mem_per_gpu == NO_VAL64) {
-				error("invalid mem-per-gpu constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_MINCPUS:
 			if (!optarg)

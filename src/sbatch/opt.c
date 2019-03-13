@@ -92,7 +92,6 @@
 #define OPT_ARRAY_INX     0x20
 #define OPT_HINT	  0x22
 #define OPT_INT64	  0x24
-#define OPT_MEM_PER_GPU   0x26
 #define OPT_NO_KILL       0x27
 
 /*---- global variables, defined in opt.h ----*/
@@ -186,7 +185,6 @@ static void _opt_default(bool first_pass)
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
 		sbopt.ifname		= xstrdup("/dev/null");
-		opt.mem_per_gpu		= NO_VAL64;
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
 		xfree(sbopt.ofname);
@@ -319,7 +317,7 @@ env_vars_t env_vars[] = {
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL          },
   { "SBATCH_MEM_BIND", LONG_OPT_MEM_BIND },
-  {"SBATCH_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
+  { "SBATCH_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL          },
   {"SBATCH_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
   {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
@@ -445,13 +443,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-	case OPT_MEM_PER_GPU:
-		opt.mem_per_gpu = str_to_mbytes2(val);
-		if (opt.mem_per_gpu == NO_VAL64) {
-			error("\"%s=%s\" -- invalid value, ignoring...",
-			      e->var, val);
-		}
-		break;
 	case OPT_OPEN_MODE:
 		if ((val[0] == 'a') || (val[0] == 'A'))
 			sbopt.open_mode = OPEN_MODE_APPEND;
@@ -529,7 +520,6 @@ static struct option long_options[] = {
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
-	{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
 	{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
 	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{"nice",          optional_argument, 0, LONG_OPT_NICE},
@@ -1062,16 +1052,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'W':
 			sbopt.wait = true;
-			break;
-		case LONG_OPT_MEM_PER_GPU:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.mem_per_gpu = str_to_mbytes2(optarg);
-			if (opt.mem_per_gpu == NO_VAL64) {
-				error("invalid mem-per-gpu constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_MINCPU:
 			if (!optarg)
