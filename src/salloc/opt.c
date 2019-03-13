@@ -201,7 +201,6 @@ static void _opt_default(void)
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
 		xfree(opt.gpu_bind);
-		xfree(opt.gpus_per_socket);
 		xfree(opt.gpus_per_task);
 		xfree(opt.job_name);
 		saopt.kill_command_signal = SIGTERM;
@@ -294,7 +293,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
   { "SALLOC_GPU_FREQ", LONG_OPT_GPU_FREQ },
   { "SALLOC_GPUS_PER_NODE", LONG_OPT_GPUS_PER_NODE },
-  {"SALLOC_GPUS_PER_SOCKET", OPT_STRING,   &opt.gpus_per_socket, NULL        },
+  { "SALLOC_GPUS_PER_SOCKET", LONG_OPT_GPUS_PER_SOCKET },
   {"SALLOC_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL          },
   { "SALLOC_GRES", LONG_OPT_GRES },
   {"SALLOC_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
@@ -532,7 +531,6 @@ static void _set_options(int argc, char **argv)
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"gpu-bind",      required_argument, 0, LONG_OPT_GPU_BIND},
-		{"gpus-per-socket", required_argument, 0, LONG_OPT_GPUS_PER_SOCKET},
 		{"gpus-per-task", required_argument, 0, LONG_OPT_GPUS_PER_TASK},
 		{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
@@ -690,10 +688,6 @@ static void _set_options(int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.gpu_bind);
 			opt.gpu_bind = xstrdup(optarg);
-			break;
-		case LONG_OPT_GPUS_PER_SOCKET:
-			xfree(opt.gpus_per_socket);
-			opt.gpus_per_socket = xstrdup(optarg);
 			break;
 		case LONG_OPT_GPUS_PER_TASK:
 			xfree(opt.gpus_per_task);
