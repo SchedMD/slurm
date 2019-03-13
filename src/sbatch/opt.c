@@ -217,7 +217,6 @@ static void _opt_default(bool first_pass)
 	opt.hint_env			= NULL;
 	opt.hint_set			= false;
 	opt.job_flags			= 0;
-	opt.mail_type			= 0;
 	opt.max_nodes			= 0;
 	opt.mem_per_cpu			= NO_VAL64;
 	opt.pn_min_cpus			= -1;
@@ -562,7 +561,6 @@ static struct option long_options[] = {
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
-	{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
@@ -1180,15 +1178,6 @@ static void _set_options(int argc, char **argv)
 			}
 			if (gid_from_string(optarg, &opt.egid) < 0) {
 				error("--gid=\"%s\" invalid", optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_MAIL_TYPE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == INFINITE16) {
-				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
 			break;

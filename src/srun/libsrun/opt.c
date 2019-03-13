@@ -166,7 +166,6 @@ struct option long_options[] = {
 	{"help",             no_argument,       0, LONG_OPT_HELP},
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-	{"mail-type",        required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mem-per-gpu",      required_argument, 0, LONG_OPT_MEM_PER_GPU},
@@ -1410,15 +1409,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = _read_file(optarg);
-			break;
-		case LONG_OPT_MAIL_TYPE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == INFINITE16) {
-				error("--mail-type=%s invalid", optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_TASK_PROLOG:
 			if (!optarg)

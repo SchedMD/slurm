@@ -777,6 +777,31 @@ static slurm_cli_opt_t slurm_opt_licenses = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_mail_type(slurm_opt_t *opt, const char *arg)
+{
+	opt->mail_type |= parse_mail_type(arg);
+	if (opt->mail_type == INFINITE16) {
+		error("Invalid --mail-type specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_mail_type(slurm_opt_t *opt)
+{
+	return xstrdup(print_mail_type(opt->mail_type));
+}
+COMMON_OPTION_RESET(mail_type, 0);
+static slurm_cli_opt_t slurm_opt_mail_type = {
+	.name = "mail-type",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MAIL_TYPE,
+	.set_func = arg_set_mail_type,
+	.get_func = arg_get_mail_type,
+	.reset_func = arg_reset_mail_type,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(mail_user);
 static slurm_cli_opt_t slurm_opt_mail_user = {
 	.name = "mail-user",
@@ -1159,6 +1184,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_hold,
 	&slurm_opt_immediate,
 	&slurm_opt_licenses,
+	&slurm_opt_mail_type,
 	&slurm_opt_mail_user,
 	&slurm_opt_mcs_label,
 	&slurm_opt_mem_bind,

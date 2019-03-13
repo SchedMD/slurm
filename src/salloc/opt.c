@@ -503,7 +503,6 @@ static void _set_options(int argc, char **argv)
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
-		{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
 		{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
 		{"mem-per-gpu",   required_argument, 0, LONG_OPT_MEM_PER_GPU},
@@ -707,13 +706,6 @@ static void _set_options(int argc, char **argv)
 			}
 			if (gid_from_string (optarg, &opt.egid) < 0) {
 				error("--gid=\"%s\" invalid", optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_MAIL_TYPE:
-			opt.mail_type |= parse_mail_type(optarg);
-			if (opt.mail_type == INFINITE16) {
-				error("--mail-type=%s invalid", optarg);
 				exit(error_exit);
 			}
 			break;
