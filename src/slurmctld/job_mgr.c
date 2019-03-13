@@ -7305,7 +7305,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 		if (job_desc->priority != 0)
 			job_desc->priority = NO_VAL;
 		if (job_desc->nice < NICE_OFFSET)
-			job_desc->nice = NICE_OFFSET;
+			return ESLURM_INVALID_NICE;
 	}
 
 	/* AdminComment can only be set by an Admin. */

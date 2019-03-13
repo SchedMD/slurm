@@ -368,6 +368,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Multiple KNL NUMA and/or MCDRAM constraints require use of a heterogeneous job" },
 	{ ESLURM_UNSUPPORTED_GRES,
 	  "Requested GRES option unsupported by configured SelectType plugin" },
+	{ ESLURM_INVALID_NICE,
+	  "Invalid --nice value"				},
 
 	/* slurmd error codes */
 	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,
