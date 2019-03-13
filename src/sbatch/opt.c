@@ -194,7 +194,6 @@ static void _opt_default(bool first_pass)
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
-		xfree(opt.gpu_bind);
 		xfree(opt.gpus_per_task);
 		sbopt.ifname		= xstrdup("/dev/null");
 		opt.mem_per_gpu		= NO_VAL64;
@@ -329,7 +328,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_GRES", LONG_OPT_GRES },
   {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
   { "SBATCH_GPUS", 'G' },
-  {"SBATCH_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
+  { "SBATCH_GPU_BIND", LONG_OPT_GPU_BIND },
   { "SBATCH_GPU_FREQ", LONG_OPT_GPU_FREQ },
   { "SBATCH_GPUS_PER_NODE", LONG_OPT_GPUS_PER_NODE },
   { "SBATCH_GPUS_PER_SOCKET", LONG_OPT_GPUS_PER_SOCKET },
@@ -590,7 +589,6 @@ static struct option long_options[] = {
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
-	{"gpu-bind",      required_argument, 0, LONG_OPT_GPU_BIND},
 	{"gpus-per-task", required_argument, 0, LONG_OPT_GPUS_PER_TASK},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
@@ -1151,12 +1149,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			opt.delay_boot = (uint32_t) i;
-			break;
-		case LONG_OPT_GPU_BIND:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.gpu_bind);
-			opt.gpu_bind = xstrdup(optarg);
 			break;
 		case LONG_OPT_GPUS_PER_TASK:
 			xfree(opt.gpus_per_task);

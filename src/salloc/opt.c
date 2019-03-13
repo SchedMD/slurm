@@ -200,7 +200,6 @@ static void _opt_default(void)
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
-		xfree(opt.gpu_bind);
 		xfree(opt.gpus_per_task);
 		xfree(opt.job_name);
 		saopt.kill_command_signal = SIGTERM;
@@ -290,7 +289,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   { "SALLOC_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   { "SALLOC_GPUS", 'G' },
-  {"SALLOC_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL          },
+  { "SALLOC_GPU_BIND", LONG_OPT_GPU_BIND },
   { "SALLOC_GPU_FREQ", LONG_OPT_GPU_FREQ },
   { "SALLOC_GPUS_PER_NODE", LONG_OPT_GPUS_PER_NODE },
   { "SALLOC_GPUS_PER_SOCKET", LONG_OPT_GPUS_PER_SOCKET },
@@ -530,7 +529,6 @@ static void _set_options(int argc, char **argv)
 		{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
-		{"gpu-bind",      required_argument, 0, LONG_OPT_GPU_BIND},
 		{"gpus-per-task", required_argument, 0, LONG_OPT_GPUS_PER_TASK},
 		{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
@@ -682,12 +680,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			opt.delay_boot = (uint32_t) i;
-			break;
-		case LONG_OPT_GPU_BIND:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.gpu_bind);
-			opt.gpu_bind = xstrdup(optarg);
 			break;
 		case LONG_OPT_GPUS_PER_TASK:
 			xfree(opt.gpus_per_task);

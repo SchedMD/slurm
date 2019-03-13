@@ -166,7 +166,6 @@ struct option long_options[] = {
 	{"export",           required_argument, 0, LONG_OPT_EXPORT},
 	{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
-	{"gpu-bind",         required_argument, 0, LONG_OPT_GPU_BIND},
 	{"gpus-per-task",    required_argument, 0, LONG_OPT_GPUS_PER_TASK},
 	{"gres-flags",       required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"help",             no_argument,       0, LONG_OPT_HELP},
@@ -577,7 +576,6 @@ static void _opt_default(void)
 		xfree(sropt.export_env);
 		opt.euid		= (uid_t) -1;
 		opt.gid			= getgid();
-		xfree(opt.gpu_bind);
 		xfree(opt.gpus_per_task);
 		xfree(sropt.ifname);
 		sropt.jobid		= NO_VAL;
@@ -737,7 +735,7 @@ env_vars_t env_vars[] = {
   { "SLURM_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
 {"SLURM_EXPORT_ENV",    OPT_STRING,     &sropt.export_env,  NULL             },
   { "SLURM_GPUS", 'G' },
-{"SLURM_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL             },
+  { "SLURM_GPU_BIND", LONG_OPT_GPU_BIND },
   { "SLURM_GPU_FREQ", LONG_OPT_GPU_FREQ },
   { "SLURM_GPUS_PER_NODE", LONG_OPT_GPUS_PER_NODE },
   { "SLURM_GPUS_PER_SOCKET", LONG_OPT_GPUS_PER_SOCKET },
@@ -1297,12 +1295,6 @@ static void _set_options(const int argc, char **argv)
 						  &sropt.cpu_bind_type, 0))
 				exit(error_exit);
 			sropt.cpu_bind_type_set = true;
-			break;
-		case LONG_OPT_GPU_BIND:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.gpu_bind);
-			opt.gpu_bind = xstrdup(optarg);
 			break;
 		case LONG_OPT_GPUS_PER_TASK:
 			xfree(opt.gpus_per_task);
