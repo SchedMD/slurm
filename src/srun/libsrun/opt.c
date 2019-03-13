@@ -96,7 +96,6 @@
 #define OPT_OPEN_MODE   0x14
 #define OPT_TIME_VAL    0x18
 #define OPT_CORE_SPEC   0x1a
-#define OPT_GRES_FLAGS	0x1b
 #define OPT_THREAD_SPEC 0x1d
 #define OPT_BCAST       0x1e
 #define OPT_EXPORT	0x21
@@ -162,7 +161,6 @@ struct option long_options[] = {
 	{"export",           required_argument, 0, LONG_OPT_EXPORT},
 	{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
-	{"gres-flags",       required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"help",             no_argument,       0, LONG_OPT_HELP},
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
@@ -716,7 +714,7 @@ env_vars_t env_vars[] = {
   { "SLURM_GPUS_PER_SOCKET", LONG_OPT_GPUS_PER_SOCKET },
   { "SLURM_GPUS_PER_TASK", LONG_OPT_GPUS_PER_TASK },
   { "SLURM_GRES", LONG_OPT_GRES },
-{"SLURM_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL             },
+  { "SLURM_GRES_FLAGS", LONG_OPT_GRES_FLAGS },
 {"SLURM_HINT",          OPT_HINT,       NULL,               NULL             },
 {"SLURM_JOB_ID",        OPT_INT,        &sropt.jobid,       NULL             },
 {"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &sropt.job_name_set_env},
@@ -905,17 +903,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			sropt.open_mode = OPEN_MODE_TRUNCATE;
 		else
 			error("Invalid SLURM_OPEN_MODE: %s. Ignored", val);
-		break;
-	case OPT_GRES_FLAGS:
-		if (!xstrcasecmp(val, "disable-binding")) {
-			opt.job_flags |= GRES_DISABLE_BIND;
-		} else if (!xstrcasecmp(val, "enforce-binding")) {
-			opt.job_flags |= GRES_ENFORCE_BIND;
-		} else {
-			error("Invalid SLURM_GRES_FLAGS specification: %s",
-			      val);
-			exit(error_exit);
-		}
 		break;
 	case OPT_MPI:
 		xfree(mpi_type);
@@ -1558,19 +1545,6 @@ static void _set_options(const int argc, char **argv)
 			else {
 				error("Invalid --open-mode argument: %s. Ignored",
 				      optarg);
-			}
-			break;
-		case LONG_OPT_GRES_FLAGS:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (!xstrcasecmp(optarg, "disable-binding")) {
-				opt.job_flags |= GRES_DISABLE_BIND;
-			} else if (!xstrcasecmp(optarg, "enforce-binding")) {
-				opt.job_flags |= GRES_ENFORCE_BIND;
-			} else {
-				error("Invalid gres-flags specification: %s",
-				      optarg);
-				exit(error_exit);
 			}
 			break;
 		case LONG_OPT_REQ_SWITCH:

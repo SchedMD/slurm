@@ -85,7 +85,6 @@
 #define OPT_CORE        0x06
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
-#define OPT_GRES_FLAGS  0x10
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
 #define OPT_CORE_SPEC   0x19
@@ -284,7 +283,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_GPUS_PER_SOCKET", LONG_OPT_GPUS_PER_SOCKET },
   { "SALLOC_GPUS_PER_TASK", LONG_OPT_GPUS_PER_TASK },
   { "SALLOC_GRES", LONG_OPT_GRES },
-  {"SALLOC_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
+  { "SALLOC_GRES_FLAGS", LONG_OPT_GRES_FLAGS },
   { "SALLOC_IMMEDIATE", 'I' },
   {"SALLOC_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
@@ -405,17 +404,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("invalid node count in env variable, ignoring");
 		}
 		break;
-	case OPT_GRES_FLAGS:
-		if (!xstrcasecmp(val, "disable-binding")) {
-			opt.job_flags |= GRES_DISABLE_BIND;
-		} else if (!xstrcasecmp(val, "enforce-binding")) {
-			opt.job_flags |= GRES_ENFORCE_BIND;
-		} else {
-			error("Invalid SALLOC_GRES_FLAGS specification: %s",
-			      val);
-			exit(error_exit);
-		}
-		break;
 	case OPT_BELL:
 		saopt.bell = BELL_ALWAYS;
 		break;
@@ -501,7 +489,6 @@ static void _set_options(int argc, char **argv)
 		{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
-		{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
 		{"mem-per-cpu",   required_argument, 0, LONG_OPT_MEM_PER_CPU},
@@ -811,17 +798,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NETWORK:
 			xfree(opt.network);
 			opt.network = xstrdup(optarg);
-			break;
-		case LONG_OPT_GRES_FLAGS:
-			if (!xstrcasecmp(optarg, "disable-binding")) {
-				opt.job_flags |= GRES_DISABLE_BIND;
-			} else if (!xstrcasecmp(optarg, "enforce-binding")) {
-				opt.job_flags |= GRES_ENFORCE_BIND;
-			} else {
-				error("Invalid gres-flags specification: %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
 			if (!optarg) /* CLANG Fix */

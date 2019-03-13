@@ -733,6 +733,44 @@ static slurm_cli_opt_t slurm_opt_gres = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
+{
+	/* clear both flag options first */
+	opt->job_flags &= ~(GRES_DISABLE_BIND|GRES_ENFORCE_BIND);
+	if (!xstrcasecmp(arg, "disable-binding")) {
+		opt->job_flags |= GRES_DISABLE_BIND;
+	} else if (!xstrcasecmp(arg, "enforce-binding")) {
+		opt->job_flags |= GRES_ENFORCE_BIND;
+	} else {
+		error("Invalid --gres-flags specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_gres_flags(slurm_opt_t *opt)
+{
+	if (opt->job_flags | GRES_DISABLE_BIND)
+		return xstrdup("disable-binding");
+	else if (opt->job_flags | GRES_ENFORCE_BIND)
+		return xstrdup("enforce-binding");
+	return xstrdup("unset");
+}
+static void arg_reset_gres_flags(slurm_opt_t *opt)
+{
+	opt->job_flags &= ~(GRES_DISABLE_BIND);
+	opt->job_flags &= ~(GRES_ENFORCE_BIND);
+}
+static slurm_cli_opt_t slurm_opt_gres_flags = {
+	.name = "gres-flags",
+	.has_arg = required_argument,
+	.val = LONG_OPT_GRES_FLAGS,
+	.set_func = arg_set_gres_flags,
+	.get_func = arg_get_gres_flags,
+	.reset_func = arg_reset_gres_flags,
+	.reset_each_pass = true,
+};
+
 COMMON_BOOL_OPTION(hold, "hold");
 static slurm_cli_opt_t slurm_opt_hold = {
 	.name = "hold",
@@ -1181,6 +1219,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_gpus_per_socket,
 	&slurm_opt_gpus_per_task,
 	&slurm_opt_gres,
+	&slurm_opt_gres_flags,
 	&slurm_opt_hold,
 	&slurm_opt_immediate,
 	&slurm_opt_licenses,

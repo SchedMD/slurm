@@ -88,7 +88,6 @@
 #define OPT_THREAD_SPEC 0x12
 #define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
-#define OPT_GRES_FLAGS    0x18
 #define OPT_TIME_VAL      0x19
 #define OPT_CORE_SPEC     0x1a
 #define OPT_ARRAY_INX     0x20
@@ -313,7 +312,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_EXPORT",        OPT_STRING,     &sbopt.export_env,  NULL          },
   {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
   { "SBATCH_GRES", LONG_OPT_GRES },
-  {"SBATCH_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL          },
+  { "SBATCH_GRES_FLAGS", LONG_OPT_GRES_FLAGS },
   { "SBATCH_GPUS", 'G' },
   { "SBATCH_GPU_BIND", LONG_OPT_GPU_BIND },
   { "SBATCH_GPU_FREQ", LONG_OPT_GPU_FREQ },
@@ -451,17 +450,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			      e->var, val);
 		}
 		break;
-	case OPT_GRES_FLAGS:
-		if (!xstrcasecmp(val, "disable-binding")) {
-			opt.job_flags |= GRES_DISABLE_BIND;
-		} else if (!xstrcasecmp(val, "enforce-binding")) {
-			opt.job_flags |= GRES_ENFORCE_BIND;
-		} else {
-			error("Invalid SBATCH_GRES_FLAGS specification: %s",
-			      val);
-			exit(error_exit);
-		}
-		break;
 	case OPT_MEM_PER_GPU:
 		opt.mem_per_gpu = str_to_mbytes2(val);
 		if (opt.mem_per_gpu == NO_VAL64) {
@@ -557,7 +545,6 @@ static struct option long_options[] = {
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
-	{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
@@ -1334,19 +1321,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_CHECKPOINT:
 			xfree(sbopt.ckpt_interval_str);
 			sbopt.ckpt_interval_str = xstrdup(optarg);
-			break;
-		case LONG_OPT_GRES_FLAGS:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (!xstrcasecmp(optarg, "disable-binding")) {
-				opt.job_flags |= GRES_DISABLE_BIND;
-			} else if (!xstrcasecmp(optarg, "enforce-binding")) {
-				opt.job_flags |= GRES_ENFORCE_BIND;
-			} else {
-				error("Invalid gres-flags specification: %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
 			if (!optarg)
