@@ -3635,7 +3635,7 @@ extern char *node_state_string_compact(uint32_t inx)
 	return "?";
 }
 
-extern uint16_t power_flags_id(char *power_flags)
+extern uint16_t power_flags_id(const char *power_flags)
 {
 	char *tmp, *tok, *save_ptr = NULL;
 	uint16_t rc = 0;

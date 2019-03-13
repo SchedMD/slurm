@@ -1560,7 +1560,7 @@ extern uint32_t job_state_num(const char *state_name);
 extern char *node_state_string(uint32_t inx);
 extern char *node_state_string_compact(uint32_t inx);
 
-extern uint16_t power_flags_id(char *power_flags);
+extern uint16_t power_flags_id(const char *power_flags);
 extern char    *power_flags_str(uint16_t power_flags);
 
 extern void  private_data_string(uint16_t private_data, char *str, int str_len);
