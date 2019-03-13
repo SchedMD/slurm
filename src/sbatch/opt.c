@@ -675,7 +675,6 @@ static struct option long_options[] = {
 	{"constraint",    required_argument, 0, 'C'},
 	{"dependency",    required_argument, 0, 'd'},
 	{"chdir",         required_argument, 0, 'D'},
-	{"workdir",       required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
 	{"gpus",          required_argument, 0, 'G'},
