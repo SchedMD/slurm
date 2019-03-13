@@ -510,7 +510,6 @@ static void _set_options(int argc, char **argv)
 	int opt_char, option_index = 0, max_val = 0, i;
 	char *tmp;
 	static struct option long_options[] = {
-		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
@@ -593,21 +592,6 @@ static void _set_options(int argc, char **argv)
 			fprintf(stderr, "Try \"salloc --help\" for more "
 				"information\n");
 			exit(error_exit);
-			break;
-		case 'B':
-			opt.extra_set = verify_socket_core_thread_count(
-						optarg,
-						&opt.sockets_per_node,
-						&opt.cores_per_socket,
-						&opt.threads_per_core,
-						NULL);
-
-			if (opt.extra_set == false) {
-				error("invalid resource allocation -B `%s'",
-					optarg);
-				exit(error_exit);
-			}
-			opt.threads_per_core_set = true;
 			break;
 		case 'c':
 			opt.cpus_set = true;

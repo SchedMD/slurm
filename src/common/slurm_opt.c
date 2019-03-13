@@ -582,6 +582,63 @@ static slurm_cli_opt_t slurm_opt_exclusive = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_extra_node_info(slurm_opt_t *opt, const char *arg)
+{
+	cpu_bind_type_t *cpu_bind_type = NULL;
+
+	if (opt->srun_opt)
+		cpu_bind_type = &opt->srun_opt->cpu_bind_type;
+	opt->extra_set = verify_socket_core_thread_count(arg,
+							 &opt->sockets_per_node,
+							 &opt->cores_per_socket,
+							 &opt->threads_per_core,
+							 cpu_bind_type);
+
+	if (!opt->extra_set) {
+		error("Invalid --extra-node-info specification");
+		exit(-1);
+	}
+
+	opt->threads_per_core_set = true;
+	if (opt->srun_opt)
+		opt->srun_opt->cpu_bind_type_set = true;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_extra_node_info(slurm_opt_t *opt)
+{
+	char *tmp = NULL;
+	if (opt->sockets_per_node != NO_VAL)
+		xstrfmtcat(tmp, "%d", opt->sockets_per_node);
+	if (opt->cores_per_socket != NO_VAL)
+		xstrfmtcat(tmp, ":%d", opt->cores_per_socket);
+	if (opt->threads_per_core != NO_VAL)
+		xstrfmtcat(tmp, ":%d", opt->threads_per_core);
+
+	if (!tmp)
+		return xstrdup("unset");
+	return tmp;
+}
+static void arg_reset_extra_node_info(slurm_opt_t *opt)
+{
+	opt->extra_set = false;
+	opt->sockets_per_node = NO_VAL;
+	opt->cores_per_socket = NO_VAL;
+	opt->threads_per_core = NO_VAL;
+	opt->threads_per_core_set = false;
+	if (opt->srun_opt)
+                opt->srun_opt->cpu_bind_type_set = false;
+}
+static slurm_cli_opt_t slurm_opt_extra_node_info = {
+	.name = "extra-node-info",
+	.has_arg = required_argument,
+	.val = 'B',
+	.set_func = arg_set_extra_node_info,
+	.get_func = arg_get_extra_node_info,
+	.reset_func = arg_reset_extra_node_info,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(gpus);
 static slurm_cli_opt_t slurm_opt_gpus = {
 	.name = "gpus",
@@ -925,6 +982,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_distribution,
 	&slurm_opt_exclude,
 	&slurm_opt_exclusive,
+	&slurm_opt_extra_node_info,
 	&slurm_opt_gpus,
 	&slurm_opt_gres,
 	&slurm_opt_hold,

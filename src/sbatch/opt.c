@@ -561,7 +561,6 @@ _process_env_var(env_vars_t *e, const char *val)
 
 static struct option long_options[] = {
 	{"array",         required_argument, 0, 'a'},
-	{"extra-node-info", required_argument, 0, 'B'},
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"chdir",         required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
@@ -1039,23 +1038,6 @@ static void _set_options(int argc, char **argv)
 		case 'a':
 			xfree(sbopt.array_inx);
 			sbopt.array_inx = xstrdup(optarg);
-			break;
-		case 'B':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.extra_set = verify_socket_core_thread_count(
-				optarg,
-				&opt.sockets_per_node,
-				&opt.cores_per_socket,
-				&opt.threads_per_core,
-				NULL);
-
-			if (opt.extra_set == false) {
-				error("invalid resource allocation -B `%s'",
-				      optarg);
-				exit(error_exit);
-			}
-			opt.threads_per_core_set = true;
 			break;
 		case 'c':
 			if (!optarg)
