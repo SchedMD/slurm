@@ -191,7 +191,6 @@ static void _opt_default(void)
 	 */
 	if (first_pass) {
 		saopt.bell		= BELL_AFTER_DELAY;
-		opt.cpus_per_gpu	= 0;
 		xfree(opt.cwd);
 		opt.delay_boot		= NO_VAL;
 		opt.egid		= (gid_t) -1;
@@ -283,7 +282,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_CONSTRAINT", 'C' },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   { "SALLOC_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
-  {"SALLOC_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
+  { "SALLOC_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SALLOC_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   { "SALLOC_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
@@ -524,7 +523,6 @@ static void _set_options(int argc, char **argv)
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-		{"cpus-per-gpu",  required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 		{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
@@ -665,10 +663,6 @@ static void _set_options(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
-			break;
-		case LONG_OPT_CPUS_PER_GPU:
-			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,
-						     true);
 			break;
 		case LONG_OPT_DELAY_BOOT:
 			i = time_str2secs(optarg);

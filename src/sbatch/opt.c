@@ -178,7 +178,6 @@ static void _opt_default(bool first_pass)
 	if (first_pass) {
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
-		opt.cpus_per_gpu	= 0;
 		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
 			error("getcwd failed: %m");
 			exit(error_exit);
@@ -317,7 +316,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_CONSTRAINT", 'C' },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
   { "SBATCH_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
-  {"SBATCH_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
+  { "SBATCH_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SBATCH_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
   { "SBATCH_DISTRIBUTION", 'm' },
@@ -581,7 +580,6 @@ static struct option long_options[] = {
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-	{"cpus-per-gpu",  required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 	{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
@@ -1132,10 +1130,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'W':
 			sbopt.wait = true;
-			break;
-		case LONG_OPT_CPUS_PER_GPU:
-			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,
-						     true);
 			break;
 		case LONG_OPT_DELAY_BOOT:
 			if (!optarg)

@@ -455,6 +455,16 @@ static slurm_cli_opt_t slurm_opt_cpu_freq = {
 	.reset_each_pass = true,
 };
 
+COMMON_INT_OPTION(cpus_per_gpu, "--cpus-per-gpu");
+static slurm_cli_opt_t slurm_opt_cpus_per_gpu = {
+	.name = "cpus-per-gpu",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CPUS_PER_GPU,
+	.set_func = arg_set_cpus_per_gpu,
+	.get_func = arg_get_cpus_per_gpu,
+	.reset_func = arg_reset_cpus_per_gpu,
+};
+
 static int arg_set_deadline(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->deadline = parse_time(arg, 0))) {
@@ -1027,6 +1037,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
 	&slurm_opt_cpu_freq,
+	&slurm_opt_cpus_per_gpu,
 	&slurm_opt_deadline,
 	&slurm_opt_dependency,
 	&slurm_opt_distribution,
