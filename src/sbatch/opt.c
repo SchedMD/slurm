@@ -93,7 +93,6 @@
 #define OPT_GRES_FLAGS    0x18
 #define OPT_TIME_VAL      0x19
 #define OPT_CORE_SPEC     0x1a
-#define OPT_CPU_FREQ      0x1b
 #define OPT_POWER         0x1d
 #define OPT_ARRAY_INX     0x20
 #define OPT_HINT	  0x22
@@ -226,9 +225,6 @@ static void _opt_default(bool first_pass)
 	xfree(opt.burst_buffer);
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
-	opt.cpu_freq_gov		= NO_VAL;
-	opt.cpu_freq_max		= NO_VAL;
-	opt.cpu_freq_min		= NO_VAL;
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
 	opt.hint_env			= NULL;
@@ -326,7 +322,7 @@ env_vars_t env_vars[] = {
   { "SLURM_CLUSTERS", 'M' },
   { "SBATCH_CONSTRAINT", 'C' },
   {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
-  {"SBATCH_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
+  { "SBATCH_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   {"SBATCH_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SBATCH_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
@@ -533,11 +529,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_CPU_FREQ:
-		if (cpu_freq_verify_cmdline(val, &opt.cpu_freq_min,
-					    &opt.cpu_freq_max, &opt.cpu_freq_gov))
-			error("Invalid --cpu-freq argument: %s. Ignored", val);
-		break;
 	case OPT_POWER:
 		opt.power_flags = power_flags_id((char *)val);
 		break;
@@ -598,7 +589,6 @@ static struct option long_options[] = {
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 	{"cpus-per-gpu",  required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 	{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
@@ -1508,15 +1498,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_EXPORT_FILE:
 			xfree(sbopt.export_file);
 			sbopt.export_file = xstrdup(optarg);
-			break;
-		case LONG_OPT_CPU_FREQ:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
-						    &opt.cpu_freq_max,
-						    &opt.cpu_freq_gov))
-				error("Invalid --cpu-freq argument: %s. "
-				      "Ignored", optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
 			if (!optarg)

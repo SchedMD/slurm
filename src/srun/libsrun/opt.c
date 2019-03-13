@@ -98,7 +98,6 @@
 #define OPT_OPEN_MODE   0x14
 #define OPT_SIGNAL      0x17
 #define OPT_TIME_VAL    0x18
-#define OPT_CPU_FREQ    0x19
 #define OPT_CORE_SPEC   0x1a
 #define OPT_GRES_FLAGS	0x1b
 #define OPT_POWER       0x1c
@@ -163,7 +162,6 @@ struct option long_options[] = {
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
-	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 	{"cpus-per-gpu",     required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"delay-boot",       required_argument, 0, LONG_OPT_DELAY_BOOT},
@@ -647,9 +645,6 @@ static void _opt_default(void)
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
 	sropt.cpu_bind_type_set		= false;
-	opt.cpu_freq_min		= NO_VAL;
-	opt.cpu_freq_max		= NO_VAL;
-	opt.cpu_freq_gov		= NO_VAL;
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
 	opt.extra_set			= false;
@@ -743,7 +738,7 @@ env_vars_t env_vars[] = {
 {"SLURM_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL             },
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
-{"SLURM_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL             },
+  { "SLURM_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
 {"SLURM_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL             },
 {"SLURM_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL             },
   { "SLURM_DEPENDENCY", 'd' },
@@ -894,12 +889,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (slurm_verify_cpu_bind(val, &sropt.cpu_bind,
 					  &sropt.cpu_bind_type, 0))
 			exit(error_exit);
-		break;
-
-	case OPT_CPU_FREQ:
-		if (cpu_freq_verify_cmdline(val, &opt.cpu_freq_min,
-				&opt.cpu_freq_max, &opt.cpu_freq_gov))
-			error("Invalid --cpu-freq argument: %s. Ignored", val);
 		break;
 	case OPT_HINT:
 		xfree(opt.hint_env);
@@ -1731,14 +1720,6 @@ static void _set_options(const int argc, char **argv)
 				      optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_CPU_FREQ:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-		        if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
-					&opt.cpu_freq_max, &opt.cpu_freq_gov))
-				error("Invalid --cpu-freq argument: %s. "
-						"Ignored", optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
 			if (!optarg)

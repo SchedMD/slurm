@@ -94,7 +94,6 @@
 #define OPT_TIME_VAL	0x17
 #define OPT_CORE_SPEC   0x19
 #define OPT_HINT	0x1a
-#define OPT_CPU_FREQ    0x1b
 #define OPT_THREAD_SPEC 0x1c
 #define OPT_DELAY_BOOT	0x1e
 #define OPT_INT64	0x1f
@@ -233,9 +232,6 @@ static void _opt_default(void)
 	xfree(opt.burst_buffer);
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
-	opt.cpu_freq_max		= NO_VAL;
-	opt.cpu_freq_gov		= NO_VAL;
-	opt.cpu_freq_min		= NO_VAL;
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
 	saopt.default_job_name		= false;
@@ -293,7 +289,7 @@ env_vars_t env_vars[] = {
   { "SLURM_CLUSTERS", 'M' },
   { "SALLOC_CONSTRAINT", 'C' },
   {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
-  {"SALLOC_CPU_FREQ_REQ",  OPT_CPU_FREQ,   NULL,               NULL          },
+  { "SALLOC_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   {"SALLOC_CPUS_PER_GPU",  OPT_INT,        &opt.cpus_per_gpu,  NULL          },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
   {"SALLOC_DELAY_BOOT",    OPT_DELAY_BOOT, NULL,               NULL          },
@@ -493,11 +489,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
-	case OPT_CPU_FREQ:
-		if (cpu_freq_verify_cmdline(val, &opt.cpu_freq_min,
-				&opt.cpu_freq_max, &opt.cpu_freq_gov))
-			error("Invalid --cpu-freq argument: %s. Ignored", val);
-		break;
 	case OPT_THREAD_SPEC:
 		opt.core_spec = parse_int("thread_spec", val, true) |
 					 CORE_SPEC_THREAD;
@@ -549,7 +540,6 @@ static void _set_options(int argc, char **argv)
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-		{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 		{"cpus-per-gpu",  required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 		{"delay-boot",    required_argument, 0, LONG_OPT_DELAY_BOOT},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
@@ -971,12 +961,6 @@ static void _set_options(int argc, char **argv)
 				exit(1);
 			}
 			saopt.wait_all_nodes = strtol(optarg, NULL, 10);
-			break;
-		case LONG_OPT_CPU_FREQ:
-		        if (cpu_freq_verify_cmdline(optarg, &opt.cpu_freq_min,
-					&opt.cpu_freq_max, &opt.cpu_freq_gov))
-				error("Invalid --cpu-freq argument: %s. "
-						"Ignored", optarg);
 			break;
 		case LONG_OPT_REQ_SWITCH:
 			if (!optarg) /* CLANG Fix */

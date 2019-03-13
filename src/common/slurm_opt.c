@@ -36,6 +36,7 @@
 
 #include <getopt.h>
 
+#include "src/common/cpu_frequency.h"
 #include "src/common/log.h"
 #include "src/common/optz.h"
 #include "src/common/parse_time.h"
@@ -419,6 +420,38 @@ static slurm_cli_opt_t slurm_opt_contiguous = {
 	.set_func = arg_set_contiguous,
 	.get_func = arg_get_contiguous,
 	.reset_func = arg_reset_contiguous,
+	.reset_each_pass = true,
+};
+
+static int arg_set_cpu_freq(slurm_opt_t *opt, const char *arg)
+{
+	if (cpu_freq_verify_cmdline(arg, &opt->cpu_freq_min,
+				    &opt->cpu_freq_max, &opt->cpu_freq_gov)) {
+		error("Invalid --cpu-freq argument");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_cpu_freq(slurm_opt_t *opt)
+{
+	return cpu_freq_to_cmdline(opt->cpu_freq_min,
+				   opt->cpu_freq_max,
+				   opt->cpu_freq_gov);
+}
+static void arg_reset_cpu_freq(slurm_opt_t *opt)
+{
+	opt->cpu_freq_min = NO_VAL;
+	opt->cpu_freq_max = NO_VAL;
+	opt->cpu_freq_gov = NO_VAL;
+}
+static slurm_cli_opt_t slurm_opt_cpu_freq = {
+	.name = "cpu-freq",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CPU_FREQ,
+	.set_func = arg_set_cpu_freq,
+	.get_func = arg_get_cpu_freq,
+	.reset_func = arg_reset_cpu_freq,
 	.reset_each_pass = true,
 };
 
@@ -863,6 +896,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_comment,
 	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
+	&slurm_opt_cpu_freq,
 	&slurm_opt_deadline,
 	&slurm_opt_dependency,
 	&slurm_opt_distribution,
