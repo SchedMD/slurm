@@ -983,6 +983,33 @@ static slurm_cli_opt_t slurm_opt_mem_per_gpu = {
 	.reset_func = arg_reset_mem_per_gpu,
 };
 
+static int arg_set_no_kill(slurm_opt_t *opt, const char *arg)
+{
+	if (!arg || !xstrcasecmp(arg, "set"))
+		opt->no_kill = true;
+	else if (!xstrcasecmp(arg, "off") || !xstrcasecmp(arg, "no"))
+		opt->no_kill = false;
+	else {
+		error("Invalid --no-kill specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_no_kill(slurm_opt_t *opt)
+{
+	return xstrdup(opt->no_kill ? "set" : "unset");
+}
+COMMON_OPTION_RESET(no_kill, false);
+static slurm_cli_opt_t slurm_opt_no_kill = {
+	.name = "no-kill",
+	.has_arg = optional_argument,
+	.val = 'k',
+	.set_func = arg_set_no_kill,
+	.get_func = arg_get_no_kill,
+	.reset_func = arg_reset_no_kill,
+};
+
 static int arg_set_nodelist(slurm_opt_t *opt, const char *arg)
 {
 	xfree(opt->nodelist);
@@ -1367,6 +1394,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mem_bind,
 	&slurm_opt_mem_per_cpu,
 	&slurm_opt_mem_per_gpu,
+	&slurm_opt_no_kill,
 	&slurm_opt_nodelist,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,

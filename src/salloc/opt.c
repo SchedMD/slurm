@@ -90,7 +90,6 @@
 #define OPT_CORE_SPEC   0x19
 #define OPT_HINT	0x1a
 #define OPT_INT64	0x1f
-#define OPT_NO_KILL       0x21
 
 /*---- global variables, defined in opt.h ----*/
 salloc_opt_t saopt;
@@ -193,7 +192,6 @@ static void _opt_default(void)
 		saopt.kill_command_signal = SIGTERM;
 		saopt.kill_command_signal_set = false;
 		opt.nice		= NO_VAL;
-		opt.no_kill		= false;
 		saopt.no_shell		= false;
 		opt.quiet		= 0;
 		opt.uid			= getuid();
@@ -284,7 +282,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
-  {"SALLOC_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
+  { "SALLOC_NO_KILL", 'k' },
   { "SALLOC_OVERCOMMIT", 'O' },
   { "SALLOC_PARTITION", 'p' },
   { "SALLOC_POWER", LONG_OPT_POWER },
@@ -401,9 +399,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_NO_BELL:
 		saopt.bell = BELL_NEVER;
 		break;
-	case OPT_NO_KILL:
-		opt.no_kill = true;
-		break;
 	case OPT_HINT:
 		opt.hint_env = xstrdup(val);
 		break;
@@ -440,7 +435,6 @@ static void _set_options(int argc, char **argv)
 		{"nodefile",      required_argument, 0, 'F'},
 		{"help",          no_argument,       0, 'h'},
 		{"job-name",      required_argument, 0, 'J'},
-		{"no-kill",       optional_argument, 0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
@@ -524,14 +518,6 @@ static void _set_options(int argc, char **argv)
 		case 'J':
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
-			break;
-		case 'k':
-			if (optarg &&
-			    (!xstrcasecmp(optarg, "off") ||
-			     !xstrcasecmp(optarg, "no"))) {
-				opt.no_kill = false;
-			} else
-				opt.no_kill = true;
 			break;
 		case 'K': /* argument is optional */
 			if (optarg) {

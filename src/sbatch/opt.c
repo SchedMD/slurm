@@ -92,7 +92,6 @@
 #define OPT_ARRAY_INX     0x20
 #define OPT_HINT	  0x22
 #define OPT_INT64	  0x24
-#define OPT_NO_KILL       0x27
 
 /*---- global variables, defined in opt.h ----*/
 sbatch_opt_t sbopt;
@@ -180,7 +179,6 @@ static void _opt_default(bool first_pass)
 		opt.gid			= getgid();
 		sbopt.ifname		= xstrdup("/dev/null");
 		opt.nice		= NO_VAL;
-		opt.no_kill		= false;
 		xfree(sbopt.ofname);
 		sbopt.parsable		= false;
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
@@ -312,7 +310,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SBATCH_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL          },
-  {"SBATCH_NO_KILL",       OPT_NO_KILL,    NULL,               NULL          },
+  { "SBATCH_NO_KILL", 'k' },
   {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
   { "SBATCH_OVERCOMMIT", 'O' },
@@ -444,11 +442,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		else
 			error("Invalid SBATCH_OPEN_MODE: %s. Ignored", val);
 		break;
-
-	case OPT_NO_KILL:
-		opt.no_kill = true;
-		break;
-
 	case OPT_NO_REQUEUE:
 		sbopt.requeue = 0;
 		break;
@@ -487,7 +480,6 @@ static struct option long_options[] = {
 	{"input",         required_argument, 0, 'i'},
 	{"job-name",      required_argument, 0, 'J'},
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
-	{"no-kill",       optional_argument, 0, 'k'},
 	{"tasks",         required_argument, 0, 'n'},
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
@@ -985,14 +977,6 @@ static void _set_options(int argc, char **argv)
 		case 'J':
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
-			break;
-		case 'k':
-			if (optarg &&
-			    (!xstrcasecmp(optarg, "off") ||
-			     !xstrcasecmp(optarg, "no"))) {
-				opt.no_kill = false;
-			} else
-				opt.no_kill = true;
 			break;
 		case 'n':
 			opt.ntasks_set = true;
