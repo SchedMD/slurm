@@ -199,7 +199,6 @@ static void _opt_default(void)
 		opt.egid		= (gid_t) -1;
 		opt.euid		= (uid_t) -1;
 		xfree(opt.extra);
-		xfree(opt.exc_nodes);
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
@@ -546,7 +545,6 @@ static void _set_options(int argc, char **argv)
 		{"usage",         no_argument,       0, 'u'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
-		{"exclude",       required_argument, 0, 'x'},
 		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
@@ -719,12 +717,6 @@ static void _set_options(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
-			break;
-		case 'x':
-			xfree(opt.exc_nodes);
-			opt.exc_nodes = xstrdup(optarg);
-			if (!_valid_node_list(&opt.exc_nodes))
-				exit(error_exit);
 			break;
 		case LONG_OPT_CPUS_PER_GPU:
 			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,
@@ -1150,6 +1142,9 @@ static bool _opt_verify(void)
 			exit(error_exit);
 		}
 	}
+
+	if (opt.exclude && !_valid_node_list(&opt.exclude))
+		exit(error_exit);
 
 	if (!opt.nodelist) {
 		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {

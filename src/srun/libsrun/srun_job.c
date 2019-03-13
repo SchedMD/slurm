@@ -231,8 +231,8 @@ extern srun_job_t *job_step_create_allocation(
 	ai->nnodes = alloc_count;
 	hostlist_destroy(hl);
 
-	if (opt_local->exc_nodes) {
-		hostlist_t exc_hl = hostlist_create(opt_local->exc_nodes);
+	if (opt_local->exclude) {
+		hostlist_t exc_hl = hostlist_create(opt_local->exclude);
 		hostlist_t inc_hl = NULL;
 		char *node_name = NULL;
 
@@ -1485,7 +1485,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	if (opt_local->min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt_local->min_nodes);
-		if (opt_local->exc_nodes) {
+		if (opt_local->exclude) {
 			/* When resources are pre-allocated and some nodes
 			 * are explicitly excluded, this error can occur. */
 			error("Are required nodes explicitly excluded?");
@@ -2178,7 +2178,7 @@ static void _step_opt_exclusive(slurm_opt_t *opt_local)
 		error("--relative disabled, incompatible with --exclusive");
 		exit(error_exit);
 	}
-	if (opt_local->exc_nodes) {
+	if (opt_local->exclude) {
 		error("--exclude is incompatible with --exclusive");
 		exit(error_exit);
 	}

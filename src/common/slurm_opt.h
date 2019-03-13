@@ -376,7 +376,7 @@ typedef struct slurm_options {
 	char *gres;			/* --gres			*/
 	bool contiguous;		/* --contiguous			*/
 	char *nodelist;			/* --nodelist=node1,node2,...	*/
-	char *exc_nodes;		/* --exclude=node1,node2,...	*/
+	char *exclude;			/* --exclude=node1,node2,...	*/
 
 	bool reboot;			/* --reboot			*/
 

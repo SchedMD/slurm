@@ -189,7 +189,6 @@ static void _opt_default(bool first_pass)
 		opt.egid		= (gid_t) -1;
 		xfree(sbopt.efname);
 		xfree(opt.extra);
-		xfree(opt.exc_nodes);
 		xfree(sbopt.export_env);
 		xfree(sbopt.export_file);
 		opt.euid		= (uid_t) -1;
@@ -593,7 +592,6 @@ static struct option long_options[] = {
 	{"verbose",       no_argument,       0, 'v'},
 	{"version",       no_argument,       0, 'V'},
 	{"wait",          no_argument,       0, 'W'},
-	{"exclude",       required_argument, 0, 'x'},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
@@ -1178,14 +1176,6 @@ static void _set_options(int argc, char **argv)
 		case 'W':
 			sbopt.wait = true;
 			break;
-		case 'x':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.exc_nodes);
-			opt.exc_nodes = xstrdup(optarg);
-			if (!_valid_node_list(&opt.exc_nodes))
-				exit(error_exit);
-			break;
 		case LONG_OPT_CPUS_PER_GPU:
 			opt.cpus_per_gpu = parse_int("cpus-per-gpu", optarg,
 						     true);
@@ -1632,6 +1622,9 @@ static bool _opt_verify(void)
 	_fullpath(&sbopt.efname, opt.cwd);
 	_fullpath(&sbopt.ifname, opt.cwd);
 	_fullpath(&sbopt.ofname, opt.cwd);
+
+	if (opt.exclude && !_valid_node_list(&opt.exclude))
+		exit(error_exit);
 
 	if (!opt.nodelist) {
 		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {

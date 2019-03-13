@@ -814,7 +814,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->wait4switch = opt.wait4switch;
 
 	desc->req_nodes = xstrdup(opt.nodelist);
-	desc->exc_nodes = xstrdup(opt.exc_nodes);
+	desc->exc_nodes = xstrdup(opt.exclude);
 	desc->partition = xstrdup(opt.partition);
 
 	if (opt.nodes_set) {

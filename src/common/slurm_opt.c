@@ -489,6 +489,16 @@ static slurm_cli_opt_t slurm_opt_distribution = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(exclude);
+static slurm_cli_opt_t slurm_opt_exclude = {
+	.name = "exclude",
+	.has_arg = required_argument,
+	.val = 'x',
+	.set_func = arg_set_exclude,
+	.get_func = arg_get_exclude,
+	.reset_func = arg_reset_exclude,
+};
+
 static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 {
 	if (!arg || !xstrcasecmp(arg, "exclusive")) {
@@ -856,6 +866,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_deadline,
 	&slurm_opt_dependency,
 	&slurm_opt_distribution,
+	&slurm_opt_exclude,
 	&slurm_opt_exclusive,
 	&slurm_opt_gpus,
 	&slurm_opt_gres,

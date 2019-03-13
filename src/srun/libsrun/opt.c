@@ -153,7 +153,6 @@ struct option long_options[] = {
 	{"verbose",          no_argument,       0, 'v'},
 	{"version",          no_argument,       0, 'V'},
 	{"wait",             required_argument, 0, 'W'},
-	{"exclude",          required_argument, 0, 'x'},
 	{"disable-status",   no_argument,       0, 'X'},
 	{"no-allocate",      no_argument,       0, 'Z'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
@@ -416,7 +415,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->dependency = xstrdup(opt.dependency);
 	opt_dup->srun_opt->efname = xstrdup(sropt.efname);
 	opt_dup->srun_opt->epilog = xstrdup(sropt.epilog);
-	opt_dup->exc_nodes = xstrdup(opt.exc_nodes);
+	opt_dup->exclude = xstrdup(opt.exclude);
 	opt_dup->srun_opt->export_env = xstrdup(sropt.export_env);
 	opt_dup->extra = xstrdup(opt.extra);
 	opt.gres = NULL;		/* Moved by memcpy */
@@ -583,7 +582,6 @@ static void _opt_default(void)
 		xfree(sropt.epilog);
 		sropt.epilog		= slurm_get_srun_epilog();
 		xfree(opt.extra);
-		xfree(opt.exc_nodes);
 		xfree(sropt.export_env);
 		opt.euid		= (uid_t) -1;
 		opt.gid			= getgid();
@@ -1321,12 +1319,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			sropt.max_wait = _get_int(optarg, "wait", false);
 			break;
-		case (int)'x':
-			xfree(opt.exc_nodes);
-			opt.exc_nodes = xstrdup(optarg);
-			if (!_valid_node_list(&opt.exc_nodes))
-				exit(error_exit);
-			break;
 		case (int)'X':
 			sropt.disable_status = true;
 			break;
@@ -1991,7 +1983,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (sropt.no_alloc && opt.exc_nodes) {
+	if (sropt.no_alloc && opt.exclude) {
 		error("can not specify --exclude list with -Z, --no-allocate.");
 		verified = false;
 	}
@@ -2001,7 +1993,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (sropt.relative_set && (opt.exc_nodes || opt.nodelist)) {
+	if (sropt.relative_set && (opt.exclude || opt.nodelist)) {
 		error("-r,--relative not allowed with "
 		      "-w,--nodelist or -x,--exclude.");
 		verified = false;
@@ -2029,6 +2021,9 @@ static bool _opt_verify(void)
 		xfree(sropt.cmd_name);
 		sropt.cmd_name = base_name(sropt.argv[0]);
 	}
+
+	if (opt.exclude && !_valid_node_list(&opt.exclude))
+		exit(error_exit);
 
 	if (!opt.nodelist) {
 		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
