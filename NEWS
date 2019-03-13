@@ -8,7 +8,6 @@ documents those changes that are of interest to users and administrators.
  -- Remove '-U' argument - which was deprecated when '-A' was made the single
     character option before the Slurm 2.1 release - as an alternative to
     '--account' for salloc/sbatch/srun.
- -- Show NICE colum in sprio by default.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

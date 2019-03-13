@@ -180,7 +180,6 @@ int main (int argc, char **argv)
 					xstrcat(params.format, " %.10P");
 				if (weight_qos)
 					xstrcat(params.format, " %.10Q");
-				xstrcat(params.format, " %.11N");
 				if (weight_tres)
 					xstrcat(params.format, " %.20T");
 			}
