@@ -491,6 +491,17 @@ static void _create_part_data(void)
 	list_destroy(part_rec_list);
 }
 
+#if _DEBUG
+static char *_node_state_str(uint16_t node_state)
+{
+	if (node_state >= NODE_CR_RESERVED)
+		return "reserved";	/* Exclusive allocation */
+	if (node_state >= NODE_CR_ONE_ROW)
+		return "one_row";	/* Dedicated core for this partition */
+	return "available";		/* Idle or in-use (shared) */
+}
+#endif
+
 static inline void _dump_nodes(void)
 {
 #if _DEBUG
@@ -561,17 +572,6 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 
 	return NODE_CR_ONE_ROW;
 }
-
-#if _DEBUG
-static char *_node_state_str(uint16_t node_state)
-{
-	if (node_state >= NODE_CR_RESERVED)
-		return "reserved";	/* Exclusive allocation */
-	if (node_state >= NODE_CR_ONE_ROW)
-		return "one_row";	/* Dedicated core for this partition */
-	return "available";		/* Idle or in-use (shared) */
-}
-#endif
 
 /*
  * Select resources for advanced reservation
