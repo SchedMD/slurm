@@ -167,7 +167,6 @@ struct option long_options[] = {
 	{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
 	{"gpu-bind",         required_argument, 0, LONG_OPT_GPU_BIND},
-	{"gpus-per-node",    required_argument, 0, LONG_OPT_GPUS_PER_NODE},
 	{"gpus-per-socket",  required_argument, 0, LONG_OPT_GPUS_PER_SOCKET},
 	{"gpus-per-task",    required_argument, 0, LONG_OPT_GPUS_PER_TASK},
 	{"gres-flags",       required_argument, 0, LONG_OPT_GRES_FLAGS},
@@ -580,7 +579,6 @@ static void _opt_default(void)
 		opt.euid		= (uid_t) -1;
 		opt.gid			= getgid();
 		xfree(opt.gpu_bind);
-		xfree(opt.gpus_per_node);
 		xfree(opt.gpus_per_socket);
 		xfree(opt.gpus_per_task);
 		xfree(sropt.ifname);
@@ -743,7 +741,7 @@ env_vars_t env_vars[] = {
   { "SLURM_GPUS", 'G' },
 {"SLURM_GPU_BIND",      OPT_STRING,     &opt.gpu_bind,      NULL             },
   { "SLURM_GPU_FREQ", LONG_OPT_GPU_FREQ },
-{"SLURM_GPUS_PER_NODE", OPT_STRING,     &opt.gpus_per_node, NULL             },
+  { "SLURM_GPUS_PER_NODE", LONG_OPT_GPUS_PER_NODE },
 {"SLURM_GPUS_PER_SOCKET",OPT_STRING,    &opt.gpus_per_socket,NULL            },
 {"SLURM_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL             },
   { "SLURM_GRES", LONG_OPT_GRES },
@@ -1307,10 +1305,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.gpu_bind);
 			opt.gpu_bind = xstrdup(optarg);
-			break;
-		case LONG_OPT_GPUS_PER_NODE:
-			xfree(opt.gpus_per_node);
-			opt.gpus_per_node = xstrdup(optarg);
 			break;
 		case LONG_OPT_GPUS_PER_SOCKET:
 			xfree(opt.gpus_per_socket);

@@ -659,6 +659,16 @@ static slurm_cli_opt_t slurm_opt_gpus = {
 	.reset_func = arg_reset_gpus,
 };
 
+COMMON_STRING_OPTION(gpus_per_node);
+static slurm_cli_opt_t slurm_opt_gpus_per_node = {
+	.name = "gpus-per-node",
+	.has_arg = required_argument,
+	.val = LONG_OPT_GPUS_PER_NODE,
+	.set_func = arg_set_gpus_per_node,
+	.get_func = arg_get_gpus_per_node,
+	.reset_func = arg_reset_gpus_per_node,
+};
+
 static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "help") || !xstrcasecmp(arg, "list")) {
@@ -995,6 +1005,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_extra_node_info,
 	&slurm_opt_gpu_freq,
 	&slurm_opt_gpus,
+	&slurm_opt_gpus_per_node,
 	&slurm_opt_gres,
 	&slurm_opt_hold,
 	&slurm_opt_immediate,
