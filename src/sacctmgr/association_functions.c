@@ -850,7 +850,7 @@ extern int sacctmgr_list_assoc(int argc, char **argv)
 		slurm_addto_char_list(format_list, "Cluster,Account,User,Part");
 		if (!assoc_cond->without_parent_limits)
 			slurm_addto_char_list(format_list,
-					      "Share,GrpJ,GrpTRES,"
+					      "Share,Priority,GrpJ,GrpTRES,"
 					      "GrpS,GrpWall,GrpTRESMins,MaxJ,"
 					      "MaxTRES,MaxTRESPerN,MaxS,MaxW,"
 					      "MaxTRESMins,QOS,DefaultQOS,"
