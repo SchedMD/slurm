@@ -844,7 +844,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		 */
 		j->max_nodes    = opt_local->min_nodes;
 	}
-	if (opt_local->pn_min_cpus != NO_VAL)
+	if (opt_local->pn_min_cpus > -1)
 		j->pn_min_cpus = opt_local->pn_min_cpus;
 	if (opt_local->pn_min_memory != NO_VAL64)
 		j->pn_min_memory = opt_local->pn_min_memory;

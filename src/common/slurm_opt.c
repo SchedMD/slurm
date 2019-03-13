@@ -983,6 +983,19 @@ static slurm_cli_opt_t slurm_opt_mem_per_gpu = {
 	.reset_func = arg_reset_mem_per_gpu,
 };
 
+COMMON_INT_OPTION_SET(pn_min_cpus, "--mincpus");
+COMMON_INT_OPTION_GET(pn_min_cpus);
+COMMON_OPTION_RESET(pn_min_cpus, -1);
+static slurm_cli_opt_t slurm_opt_mincpus = {
+	.name = "mincpus",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MINCPUS,
+	.set_func = arg_set_pn_min_cpus,
+	.get_func = arg_get_pn_min_cpus,
+	.reset_func = arg_reset_pn_min_cpus,
+	.reset_each_pass = true,
+};
+
 static int arg_set_no_kill(slurm_opt_t *opt, const char *arg)
 {
 	if (!arg || !xstrcasecmp(arg, "set"))
@@ -1394,6 +1407,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mem_bind,
 	&slurm_opt_mem_per_cpu,
 	&slurm_opt_mem_per_gpu,
+	&slurm_opt_mincpus,
 	&slurm_opt_no_kill,
 	&slurm_opt_nodelist,
 	&slurm_opt_overcommit,

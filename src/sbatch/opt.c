@@ -203,7 +203,6 @@ static void _opt_default(bool first_pass)
 	opt.hint_set			= false;
 	opt.job_flags			= 0;
 	opt.max_nodes			= 0;
-	opt.pn_min_cpus			= -1;
 	opt.min_nodes			= 1;
 	opt.nodes_set			= false;
 	opt.ntasks			= 1;
@@ -503,7 +502,6 @@ static struct option long_options[] = {
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"mem",           required_argument, 0, LONG_OPT_MEM},
-	{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
 	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{"nice",          optional_argument, 0, LONG_OPT_NICE},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
@@ -1018,15 +1016,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'W':
 			sbopt.wait = true;
-			break;
-		case LONG_OPT_MINCPU:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.pn_min_cpus = parse_int("mincpus", optarg, true);
-			if (opt.pn_min_cpus < 0) {
-				error("invalid mincpus constraint %s", optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_MEM:
 			if (!optarg)

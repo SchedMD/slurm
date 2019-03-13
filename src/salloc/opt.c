@@ -214,7 +214,6 @@ static void _opt_default(void)
 	opt.hint_set			= false;
 	opt.job_flags			= 0;
 	opt.max_nodes			= 0;
-	opt.pn_min_cpus			= -1;
 	opt.min_nodes			= 1;
 	opt.ntasks			= 1;
 	opt.ntasks_per_node		= 0;  /* ntask max limits */
@@ -452,7 +451,6 @@ static void _set_options(int argc, char **argv)
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"mem",           required_argument, 0, LONG_OPT_MEM},
-		{"mincpus",       required_argument, 0, LONG_OPT_MINCPU},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"nice",          optional_argument, 0, LONG_OPT_NICE},
 		{"no-bell",       no_argument,       0, LONG_OPT_NO_BELL},
@@ -560,14 +558,6 @@ static void _set_options(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
-			break;
-		case LONG_OPT_MINCPU:
-			opt.pn_min_cpus = parse_int("mincpus", optarg, true);
-			if (opt.pn_min_cpus < 0) {
-				error("invalid mincpus constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_MEM:
 			if (!optarg)

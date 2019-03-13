@@ -157,7 +157,6 @@ struct option long_options[] = {
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
-	{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
@@ -618,7 +617,6 @@ static void _opt_default(void)
 	opt.ntasks_set			= false;
 	sropt.pack_group		= NULL;
 	sropt.pack_grp_bits		= NULL;
-	opt.pn_min_cpus			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
 	sropt.relative			= NO_VAL;
 	sropt.relative_set		= false;
@@ -1165,11 +1163,6 @@ static void _set_options(const int argc, char **argv)
 						  &sropt.cpu_bind_type, 0))
 				exit(error_exit);
 			sropt.cpu_bind_type_set = true;
-			break;
-		case LONG_OPT_MINCPUS:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.pn_min_cpus = _get_int(optarg, "mincpus", true);
 			break;
 		case LONG_OPT_MEM:
 			if (!optarg)
