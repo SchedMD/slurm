@@ -435,7 +435,7 @@ extern resource_allocation_response_msg_t *
 		 * in the step creation.
 		 */
 		opt_local->pn_min_memory = NO_VAL64;
-		opt_local->mem_per_cpu   = NO_VAL64;
+		opt_local->mem_per_cpu = -1;
 		if (resp->pn_min_memory != NO_VAL64) {
 			if (resp->pn_min_memory & MEM_PER_CPU) {
 				opt_local->mem_per_cpu = (resp->pn_min_memory &
@@ -595,7 +595,7 @@ List allocate_pack_nodes(bool handle_signals)
 			if (opt_local->pn_min_memory != NO_VAL64)
 				opt_local->pn_min_memory =
 					(resp->pn_min_memory & (~MEM_PER_CPU));
-			else if (opt_local->mem_per_cpu != NO_VAL64)
+			else if (opt_local->mem_per_cpu > -1)
 				opt_local->mem_per_cpu =
 					(resp->pn_min_memory & (~MEM_PER_CPU));
 
@@ -848,7 +848,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->pn_min_cpus = opt_local->pn_min_cpus;
 	if (opt_local->pn_min_memory != NO_VAL64)
 		j->pn_min_memory = opt_local->pn_min_memory;
-	else if (opt_local->mem_per_cpu != NO_VAL64)
+	else if (opt_local->mem_per_cpu > -1)
 		j->pn_min_memory = opt_local->mem_per_cpu | MEM_PER_CPU;
 	if (opt_local->pn_min_tmp_disk != NO_VAL64)
 		j->pn_min_tmp_disk = opt_local->pn_min_tmp_disk;

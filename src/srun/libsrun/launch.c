@@ -212,7 +212,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 						  opt_local->ntasks_per_node;
 	job->ctx_params.task_count = opt_local->ntasks;
 
-	if (opt_local->mem_per_cpu != NO_VAL64)
+	if (opt_local->mem_per_cpu > -1)
 		job->ctx_params.pn_min_memory = opt_local->mem_per_cpu |
 						MEM_PER_CPU;
 	else if (opt_local->pn_min_memory != NO_VAL64)

@@ -928,6 +928,17 @@ static slurm_cli_opt_t slurm_opt_mem_bind = {
 	.reset_each_pass = true,
 };
 
+COMMON_MBYTES_OPTION(mem_per_cpu, "--mem-per-cpu");
+static slurm_cli_opt_t slurm_opt_mem_per_cpu = {
+	.name = "mem-per-cpu",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MEM_PER_CPU,
+	.set_func = arg_set_mem_per_cpu,
+	.get_func = arg_get_mem_per_cpu,
+	.reset_func = arg_reset_mem_per_cpu,
+	.reset_each_pass = true,
+};
+
 COMMON_MBYTES_OPTION(mem_per_gpu, "--mem-per-gpu");
 static slurm_cli_opt_t slurm_opt_mem_per_gpu = {
 	.name = "mem-per-gpu",
@@ -1319,6 +1330,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mail_user,
 	&slurm_opt_mcs_label,
 	&slurm_opt_mem_bind,
+	&slurm_opt_mem_per_cpu,
 	&slurm_opt_mem_per_gpu,
 	&slurm_opt_nodelist,
 	&slurm_opt_overcommit,

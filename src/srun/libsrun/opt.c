@@ -160,7 +160,6 @@ struct option long_options[] = {
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mem",              required_argument, 0, LONG_OPT_MEM},
-	{"mem-per-cpu",      required_argument, 0, LONG_OPT_MEM_PER_CPU},
 	{"mincpus",          required_argument, 0, LONG_OPT_MINCPUS},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -614,7 +613,6 @@ static void _opt_default(void)
 	sropt.max_threads		= MAX_THREADS;
 	pmi_server_max_threads(sropt.max_threads);
 	opt.max_nodes			= 0;
-	opt.mem_per_cpu			= NO_VAL64;
 	opt.min_nodes			= 1;
 	sropt.multi_prog			= false;
 	sropt.multi_prog_cmds		= 0;
@@ -714,7 +712,7 @@ env_vars_t env_vars[] = {
 {"SLURM_LABELIO",       OPT_INT,        &sropt.labelio,     NULL             },
   { "SLURM_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   { "SLURM_MEM_BIND", LONG_OPT_MEM_BIND },
-{"SLURM_MEM_PER_CPU",	OPT_INT64,	&opt.mem_per_cpu,   NULL             },
+  { "SLURM_MEM_PER_CPU", LONG_OPT_MEM_PER_CPU },
 {"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
@@ -1211,17 +1209,6 @@ static void _set_options(const int argc, char **argv)
 			opt.pn_min_memory = str_to_mbytes2(optarg);
 			opt.mem_per_cpu = NO_VAL64;
 			if (opt.pn_min_memory == NO_VAL64) {
-				error("invalid memory constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_MEM_PER_CPU:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.mem_per_cpu = str_to_mbytes2(optarg);
-			opt.pn_min_memory = NO_VAL64;
-			if (opt.mem_per_cpu == NO_VAL64) {
 				error("invalid memory constraint %s",
 				      optarg);
 				exit(error_exit);
