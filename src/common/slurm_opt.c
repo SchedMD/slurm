@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include <getopt.h>
+#include <sys/param.h>
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/log.h"
@@ -43,6 +44,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -371,6 +373,38 @@ static slurm_cli_opt_t slurm_opt_c_constraint = {
 	.set_func = arg_set_c_constraint,
 	.get_func = arg_get_c_constraint,
 	.reset_func = arg_reset_c_constraint,
+};
+
+static int arg_set_chdir(slurm_opt_t *opt, const char *arg)
+{
+	if (is_full_path(arg))
+		opt->chdir = xstrdup(arg);
+	else
+		opt->chdir = make_full_path(arg);
+
+	return SLURM_SUCCESS;
+}
+COMMON_STRING_OPTION_GET(chdir);
+static void arg_reset_chdir(slurm_opt_t *opt)
+{
+	char buf[MAXPATHLEN + 1];
+	xfree(opt->chdir);
+	if (opt->salloc_opt)
+		return;
+
+	if (!(getcwd(buf, MAXPATHLEN))) {
+		error("getcwd failed: %m");
+		exit(-1);
+	}
+	opt->chdir = xstrdup(buf);
+}
+static slurm_cli_opt_t slurm_opt_chdir = {
+	.name = "chdir",
+	.has_arg = required_argument,
+	.val = 'D',
+	.set_func = arg_set_chdir,
+	.get_func = arg_get_chdir,
+	.reset_func = arg_reset_chdir,
 };
 
 /* --clusters and --cluster are equivalent */
@@ -1301,6 +1335,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_alloc_nodelist,
 	&slurm_opt_begin,
 	&slurm_opt_c_constraint,
+	&slurm_opt_chdir,
 	&slurm_opt_cluster,
 	&slurm_opt_clusters,
 	&slurm_opt_comment,

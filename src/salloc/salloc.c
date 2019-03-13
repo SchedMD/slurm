@@ -224,8 +224,8 @@ int main(int argc, char **argv)
 		_set_spank_env();
 		if (pack_inx == 0)
 			_set_submit_dir_env();
-		if (opt.cwd && chdir(opt.cwd)) {
-			error("chdir(%s): %m", opt.cwd);
+		if (opt.chdir && chdir(opt.chdir)) {
+			error("chdir(%s): %m", opt.chdir);
 			exit(error_exit);
 		}
 
@@ -864,8 +864,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.qos)
 		desc->qos = xstrdup(opt.qos);
 
-	if (opt.cwd)
-		desc->work_dir = xstrdup(opt.cwd);
+	if (opt.chdir)
+		desc->work_dir = xstrdup(opt.chdir);
 	else if (work_dir)
 		desc->work_dir = xstrdup(work_dir);
 

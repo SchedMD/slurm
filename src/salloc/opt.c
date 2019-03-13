@@ -183,7 +183,6 @@ static void _opt_default(void)
 	 */
 	if (first_pass) {
 		saopt.bell		= BELL_AFTER_DELAY;
-		xfree(opt.cwd);
 		opt.egid		= (gid_t) -1;
 		opt.euid		= (uid_t) -1;
 		xfree(opt.extra);
@@ -438,7 +437,6 @@ static void _set_options(int argc, char **argv)
 	char *tmp;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
-		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
 		{"help",          no_argument,       0, 'h'},
 		{"job-name",      required_argument, 0, 'J'},
@@ -507,15 +505,6 @@ static void _set_options(int argc, char **argv)
 			opt.cpus_set = true;
 			opt.cpus_per_task = parse_int("cpus-per-task",
 						      optarg, true);
-			break;
-		case 'D':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.cwd);
-			if (is_full_path(optarg))
-				opt.cwd = xstrdup(optarg);
-			else
-				opt.cwd = make_full_path(optarg);
 			break;
 		case 'F':
 			xfree(opt.nodelist);

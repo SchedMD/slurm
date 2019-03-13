@@ -161,7 +161,6 @@ static bool _valid_node_list(char **node_list_pptr)
  */
 static void _opt_default(bool first_pass)
 {
-	char buf[MAXPATHLEN + 1];
 	uid_t uid = getuid();
 
 	/* Some options will persist for all components of a heterogeneous job
@@ -170,11 +169,6 @@ static void _opt_default(bool first_pass)
 	if (first_pass) {
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
-		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
-			error("getcwd failed: %m");
-			exit(error_exit);
-		}
-		opt.cwd			= xstrdup(buf);
 		opt.egid		= (gid_t) -1;
 		xfree(sbopt.efname);
 		xfree(opt.extra);
@@ -487,7 +481,6 @@ _process_env_var(env_vars_t *e, const char *val)
 static struct option long_options[] = {
 	{"array",         required_argument, 0, 'a'},
 	{"cpus-per-task", required_argument, 0, 'c'},
-	{"chdir",         required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
 	{"help",          no_argument,       0, 'h'},
@@ -647,7 +640,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 		char *cmd       = sbopt.script_argv[0];
 		int  mode       = R_OK;
 
-		if ((fullpath = search_path(opt.cwd, cmd, false, mode, false))) {
+		if ((fullpath = search_path(opt.chdir, cmd, false, mode, false))) {
 			xfree(sbopt.script_argv[0]);
 			sbopt.script_argv[0] = fullpath;
 		}
@@ -953,15 +946,6 @@ static void _set_options(int argc, char **argv)
 			opt.cpus_set = true;
 			opt.cpus_per_task = parse_int("cpus-per-task",
 						      optarg, true);
-			break;
-		case 'D':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.cwd);
-			if (is_full_path(optarg))
-				opt.cwd = xstrdup(optarg);
-			else
-				opt.cwd = make_full_path(optarg);
 			break;
 		case 'e':
 			if (!optarg)
@@ -1366,9 +1350,9 @@ static bool _opt_verify(void)
 		}
 	}
 
-	_fullpath(&sbopt.efname, opt.cwd);
-	_fullpath(&sbopt.ifname, opt.cwd);
-	_fullpath(&sbopt.ofname, opt.cwd);
+	_fullpath(&sbopt.efname, opt.chdir);
+	_fullpath(&sbopt.ifname, opt.chdir);
+	_fullpath(&sbopt.ofname, opt.chdir);
 
 	if (opt.exclude && !_valid_node_list(&opt.exclude))
 		exit(error_exit);

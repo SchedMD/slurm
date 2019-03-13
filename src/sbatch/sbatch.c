@@ -679,7 +679,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->std_err  = xstrdup(sbopt.efname);
 	desc->std_in   = xstrdup(sbopt.ifname);
 	desc->std_out  = xstrdup(sbopt.ofname);
-	desc->work_dir = xstrdup(opt.cwd);
+	desc->work_dir = xstrdup(opt.chdir);
 	if (sbopt.requeue != NO_VAL)
 		desc->requeue = sbopt.requeue;
 	if (sbopt.open_mode)

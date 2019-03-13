@@ -198,11 +198,11 @@ static void _set_bsub_options(int argc, char **argv) {
 	       != -1) {
 		switch (opt_char) {
 		case 'c':
-			xfree(opt.cwd);
+			xfree(opt.chdir);
 			if (is_full_path(optarg))
-				opt.cwd = xstrdup(optarg);
+				opt.chdir = xstrdup(optarg);
 			else
-				opt.cwd = make_full_path(optarg);
+				opt.chdir = make_full_path(optarg);
 			break;
 		case 'e':
 			xfree(sbopt.efname);

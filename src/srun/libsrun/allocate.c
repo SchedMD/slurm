@@ -828,8 +828,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->comment = opt_local->comment;
 	if (opt_local->qos)
 		j->qos = opt_local->qos;
-	if (opt_local->cwd)
-		j->work_dir = opt_local->cwd;
+	if (opt_local->chdir)
+		j->work_dir = opt_local->chdir;
 
 	if (opt_local->hold)
 		j->priority     = 0;

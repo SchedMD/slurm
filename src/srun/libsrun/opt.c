@@ -121,7 +121,6 @@ int	_verbose = 0;
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
 	{"cpus-per-task",    required_argument, 0, 'c'},
-	{"chdir",            required_argument, 0, 'D'},
 	{"error",            required_argument, 0, 'e'},
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
@@ -381,7 +380,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->comment = xstrdup(opt.comment);
 	opt.constraint = NULL;		/* Moved by memcpy */
 	opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
-	opt_dup->cwd = xstrdup(opt.cwd);
+	opt_dup->chdir = xstrdup(opt.chdir);
 	opt_dup->dependency = xstrdup(opt.dependency);
 	opt_dup->srun_opt->efname = xstrdup(sropt.efname);
 	opt_dup->srun_opt->epilog = xstrdup(sropt.epilog);
@@ -528,7 +527,6 @@ static bool _valid_node_list(char **node_list_pptr)
  */
 static void _opt_default(void)
 {
-	char buf[MAXPATHLEN + 1];
 	uid_t uid = getuid();
 
 	if (pass_number == 1) {
@@ -536,12 +534,6 @@ static void _opt_default(void)
 		sropt.ckpt_interval		= 0;
 		xfree(sropt.ckpt_interval_str);
 		xfree(sropt.cmd_name);
-		if ((getcwd(buf, MAXPATHLEN)) == NULL) {
-			error("getcwd failed: %m");
-			exit(error_exit);
-		}
-		opt.cwd			= xstrdup(buf);
-		sropt.cwd_set		= false;
 		sropt.debugger_test	= false;
 		sropt.disable_status	= false;
 		opt.egid		= (gid_t) -1;
@@ -729,7 +721,7 @@ env_vars_t env_vars[] = {
   { "SLURM_PROFILE", LONG_OPT_PROFILE },
 {"SLURM_PROLOG",        OPT_STRING,     &sropt.prolog,      NULL             },
   { "SLURM_QOS", 'q' },
-{"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
+  { "SLURM_REMOTE_CWD", 'D' },
 {"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
   { "SLURM_RESERVATION", LONG_OPT_RESERVATION },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
@@ -749,7 +741,7 @@ env_vars_t env_vars[] = {
 {"SLURM_WAIT",          OPT_INT,        &sropt.max_wait,    NULL             },
 {"SLURM_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL             },
   { "SLURM_WCKEY", LONG_OPT_WCKEY },
-{"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &sropt.cwd_set   },
+  { "SLURM_WORKING_DIR", 'D' },
 {NULL, 0, NULL, NULL}
 };
 
@@ -1030,16 +1022,6 @@ static void _set_options(const int argc, char **argv)
 			}
 			opt.cpus_set = true;
 			opt.cpus_per_task = tmp_int;
-			break;
-		case (int)'D':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			sropt.cwd_set = true;
-			xfree(opt.cwd);
-			if (is_full_path(optarg))
-				opt.cwd = xstrdup(optarg);
-			else
-				opt.cwd = make_full_path(optarg);
 			break;
 		case (int)'e':
 			if (!optarg)
@@ -1625,36 +1607,36 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	if (sropt.test_exec) {
 		/* Validate command's existence */
 		if (sropt.prolog && xstrcasecmp(sropt.prolog, "none")) {
-			if ((fullpath = search_path(opt.cwd, sropt.prolog,
+			if ((fullpath = search_path(opt.chdir, sropt.prolog,
 						    true, R_OK|X_OK, true)))
 				sropt.prolog = fullpath;
 			else
 				error("prolog '%s' not found in PATH or CWD (%s), or wrong permissions",
-				      sropt.prolog, opt.cwd);
+				      sropt.prolog, opt.chdir);
 		}
 		if (sropt.epilog && xstrcasecmp(sropt.epilog, "none")) {
-			if ((fullpath = search_path(opt.cwd, sropt.epilog,
+			if ((fullpath = search_path(opt.chdir, sropt.epilog,
 						    true, R_OK|X_OK, true)))
 				sropt.epilog = fullpath;
 			else
 				error("epilog '%s' not found in PATH or CWD (%s), or wrong permissions",
-				      sropt.epilog, opt.cwd);
+				      sropt.epilog, opt.chdir);
 		}
 		if (sropt.task_prolog) {
-			if ((fullpath = search_path(opt.cwd, sropt.task_prolog,
+			if ((fullpath = search_path(opt.chdir, sropt.task_prolog,
 						    true, R_OK|X_OK, true)))
 				sropt.task_prolog = fullpath;
 			else
 				error("task-prolog '%s' not found in PATH or CWD (%s), or wrong permissions",
-				      sropt.task_prolog, opt.cwd);
+				      sropt.task_prolog, opt.chdir);
 		}
 		if (sropt.task_epilog) {
-			if ((fullpath = search_path(opt.cwd, sropt.task_epilog,
+			if ((fullpath = search_path(opt.chdir, sropt.task_epilog,
 						    true, R_OK|X_OK, true)))
 				sropt.task_epilog = fullpath;
 			else
 				error("task-epilog '%s' not found in PATH or CWD (%s), or wrong permissions",
-				      sropt.task_epilog, opt.cwd);
+				      sropt.task_epilog, opt.chdir);
 		}
 	}
 
@@ -1664,7 +1646,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	if (!sropt.multi_prog && (sropt.test_exec || sropt.bcast_flag) &&
 	    sropt.argv && sropt.argv[command_pos]) {
 
-		if ((fullpath = search_path(opt.cwd, sropt.argv[command_pos],
+		if ((fullpath = search_path(opt.chdir, sropt.argv[command_pos],
 					    true, X_OK, true))) {
 			xfree(sropt.argv[command_pos]);
 			sropt.argv[command_pos] = fullpath;

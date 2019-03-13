@@ -245,7 +245,6 @@ typedef struct srun_opt {
 	char *cpu_bind;			/* binding map for map/mask_cpu	*/
 	cpu_bind_type_t cpu_bind_type;	/* --cpu-bind			*/
 	bool cpu_bind_type_set;		/* --cpu-bind explicitly set	*/
-	bool cwd_set;			/* --cwd explicitly set		*/
 	bool debugger_test;		/* --debugger-test		*/
 	bool disable_status;		/* --disable-status		*/
 	char *epilog;			/* --epilog			*/
@@ -303,7 +302,7 @@ typedef struct slurm_options {
 	gid_t gid;			/* local gid			*/
 	uid_t euid;			/* effective user --uid=user	*/
 	gid_t egid;			/* effective group --gid=group	*/
-	char *cwd;			/* current working directory	*/
+	char *chdir;			/* --chdir			*/
 	int ntasks;			/* --ntasks			*/
 	bool ntasks_set;		/* ntasks explicitly set	*/
 	int cpus_per_task;		/* --cpus-per-task=n		*/
