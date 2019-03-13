@@ -1005,6 +1005,10 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			}
 			if (prev_cpus != cpus)
 				 continue;
+			if (job_ptr->details->overcommit) {
+				/* We've got all the CPUs that we need */
+				break;
+			}
 			if (!preempt_mode) {
 				/* we're stuck! */
 				char *core_str = NULL, *sock_str = NULL, *sep;
