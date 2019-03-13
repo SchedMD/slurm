@@ -194,7 +194,6 @@ static void _opt_default(bool first_pass)
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
-		xfree(opt.gpus_per_task);
 		sbopt.ifname		= xstrdup("/dev/null");
 		opt.mem_per_gpu		= NO_VAL64;
 		opt.nice		= NO_VAL;
@@ -332,7 +331,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_GPU_FREQ", LONG_OPT_GPU_FREQ },
   { "SBATCH_GPUS_PER_NODE", LONG_OPT_GPUS_PER_NODE },
   { "SBATCH_GPUS_PER_SOCKET", LONG_OPT_GPUS_PER_SOCKET },
-  {"SBATCH_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL          },
+  { "SBATCH_GPUS_PER_TASK", LONG_OPT_GPUS_PER_TASK },
   {"SBATCH_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
   {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL          },
@@ -589,7 +588,6 @@ static struct option long_options[] = {
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
-	{"gpus-per-task", required_argument, 0, LONG_OPT_GPUS_PER_TASK},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
@@ -1149,10 +1147,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			opt.delay_boot = (uint32_t) i;
-			break;
-		case LONG_OPT_GPUS_PER_TASK:
-			xfree(opt.gpus_per_task);
-			opt.gpus_per_task = xstrdup(optarg);
 			break;
 		case LONG_OPT_MEM_PER_GPU:
 			if (!optarg)

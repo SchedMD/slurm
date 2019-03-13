@@ -689,6 +689,16 @@ static slurm_cli_opt_t slurm_opt_gpus_per_socket = {
 	.reset_func = arg_reset_gpus_per_socket,
 };
 
+COMMON_STRING_OPTION(gpus_per_task);
+static slurm_cli_opt_t slurm_opt_gpus_per_task = {
+	.name = "gpus-per-task",
+	.has_arg = required_argument,
+	.val = LONG_OPT_GPUS_PER_TASK,
+	.set_func = arg_set_gpus_per_task,
+	.get_func = arg_get_gpus_per_task,
+	.reset_func = arg_reset_gpus_per_task,
+};
+
 static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "help") || !xstrcasecmp(arg, "list")) {
@@ -1028,6 +1038,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_gpus,
 	&slurm_opt_gpus_per_node,
 	&slurm_opt_gpus_per_socket,
+	&slurm_opt_gpus_per_task,
 	&slurm_opt_gres,
 	&slurm_opt_hold,
 	&slurm_opt_immediate,
