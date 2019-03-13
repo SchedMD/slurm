@@ -47,7 +47,6 @@
 #include <getopt.h>
 #include <limits.h>
 #include <pwd.h>		/* getpwuid   */
-#include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv, strtol, etc. */
 #include <sys/param.h>		/* MAXPATHLEN */

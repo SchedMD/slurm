@@ -46,7 +46,6 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <limits.h>
-#include <stdarg.h>		/* va_start   */
 #include <stdio.h>
 #include <stdlib.h>		/* getenv     */
 #include <sys/param.h>		/* MAXPATHLEN */
