@@ -9775,27 +9775,6 @@ _pack_return_code2_msg(return_code2_msg_t * msg, Buf buffer,
 	packstr(msg->err_msg,    buffer);
 }
 
-/*
- * See print_multi_line_string()
- *
- * Will refactor in 19.05.
- */
-static void _print_multi_line_error_string(char *user_msg)
-{
-	char *line, *buf, *ptrptr = NULL;
-
-	if (!user_msg)
-		return;
-
-	buf = xstrdup(user_msg);
-	line = strtok_r(buf, "\n", &ptrptr);
-	while (line) {
-		error("%s", line);
-		line = strtok_r(NULL, "\n", &ptrptr);
-	}
-	xfree(buf);
-}
-
 /* Log error message, otherwise replicate _unpack_return_code_msg() */
 static int
 _unpack_return_code2_msg(return_code_msg_t ** msg, Buf buffer,
@@ -9812,7 +9791,7 @@ _unpack_return_code2_msg(return_code_msg_t ** msg, Buf buffer,
 	safe_unpack32(&return_code_msg->return_code, buffer);
 	safe_unpackstr_xmalloc(&err_msg, &uint32_tmp, buffer);
 	if (err_msg) {
-		_print_multi_line_error_string(err_msg);
+		print_multi_line_string(err_msg, -1, LOG_LEVEL_ERROR);
 		xfree(err_msg);
 	}
 	return SLURM_SUCCESS;
