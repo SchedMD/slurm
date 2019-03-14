@@ -36,7 +36,6 @@ source ./globals
 set test_id     "17.43"
 set user_name   ""
 set file_in     "test$test_id.input"
-set file_script "test$test_id.bash"
 set file_out    "test$test_id.output"
 set exit_code   0
 
@@ -46,7 +45,7 @@ print_header $test_id
 # Delete left-over stdin/out/err files
 # Build stdin file
 #
-exec $bin_rm -f $file_in $file_script $file_out
+exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "
 #SBATCH --output=/dev/null
 #SBATCH --comment=01234567890123456789012345678901234567890123456789 \
@@ -176,7 +175,7 @@ if {[wait_for_file $file_out] != 0} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_script $file_out
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
