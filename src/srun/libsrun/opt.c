@@ -187,7 +187,7 @@ struct option long_options[] = {
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
-	"+A:b:B:c:C:d:D:e:EG:hHi:I::jJ:k::K::lL:m:M:n:N:o:Op:q:Qr:sS:t:T:uvVw:W:x:XZ";
+	"+A:b:B:c:C:d:D:e:EF:G:hHi:I::jJ:k::K::lL:m:M:n:N:o:Op:q:Qr:sS:t:T:uvVw:W:x:XZ";
 
 static slurm_opt_t *_get_first_opt(int pack_offset);
 static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last);
@@ -1671,6 +1671,17 @@ static bool _opt_verify(void)
 
 	if (opt.exclude && !_valid_node_list(&opt.exclude))
 		exit(error_exit);
+
+	if (opt.nodefile) {
+		char *tmp;
+		xfree(opt.nodelist);
+		if (!(tmp = slurm_read_hostfile(opt.nodefile, 0))) {
+			error("Invalid --nodefile node file");
+			exit(-1);
+		}
+		opt.nodelist = xstrdup(tmp);
+		free(tmp);
+	}
 
 	if (!opt.nodelist) {
 		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {

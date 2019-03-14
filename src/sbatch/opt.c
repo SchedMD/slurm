@@ -472,7 +472,6 @@ static struct option long_options[] = {
 	{"array",         required_argument, 0, 'a'},
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"error",         required_argument, 0, 'e'},
-	{"nodefile",      required_argument, 0, 'F'},
 	{"help",          no_argument,       0, 'h'},
 	{"input",         required_argument, 0, 'i'},
 	{"job-name",      required_argument, 0, 'J'},
@@ -903,7 +902,6 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0;
-	char *tmp;
 
 	struct option *common_options = slurm_option_table_create(long_options,
 								  &opt);
@@ -941,20 +939,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.efname = xstrdup("/dev/null");
 			else
 				sbopt.efname = xstrdup(optarg);
-			break;
-		case 'F':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.nodelist);
-			tmp = slurm_read_hostfile(optarg, 0);
-			if (tmp != NULL) {
-				opt.nodelist = xstrdup(tmp);
-				free(tmp);
-			} else {
-				error("\"%s\" is not a valid node file",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case 'h':
 			/* handled in process_options_first_pass() */
@@ -1292,6 +1276,17 @@ static bool _opt_verify(void)
 
 	if (opt.exclude && !_valid_node_list(&opt.exclude))
 		exit(error_exit);
+
+	if (opt.nodefile) {
+		char *tmp;
+		xfree(opt.nodelist);
+		if (!(tmp = slurm_read_hostfile(opt.nodefile, 0))) {
+			error("Invalid --nodefile node file");
+			exit(-1);
+		}
+		opt.nodelist = xstrdup(tmp);
+		free(tmp);
+	}
 
 	if (!opt.nodelist) {
 		if ((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {

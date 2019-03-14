@@ -803,6 +803,14 @@ variables are always exported to the environment.
 \fIlaunch/slurm\fR, is not used.
 
 .TP
+\fB\-F\fR, \fB\-\-nodefile\fR=<\fInode file\fR>
+Much like \-\-nodelist, but the list is contained in a file of name
+\fInode file\fR.  The node names of the list may also span multiple lines
+in the file.    Duplicate node names in the file will be ignored.
+The order of the node names in the list is not important; the node names
+will be sorted by Slurm.
+
+.TP
 \fB\-\-gid\fR=<\fIgroup\fR>
 If \fBsrun\fR is run as root, and the \fB\-\-gid\fR option is used,
 submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR

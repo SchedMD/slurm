@@ -1082,8 +1082,32 @@ static slurm_cli_opt_t slurm_opt_no_kill = {
 	.reset_func = arg_reset_no_kill,
 };
 
+/*
+ * FIXME: --nodefile and --nodelist options should be mutually exclusive.
+ * Right now they'll overwrite one another; the last to run wins.
+ */
+static int arg_set_nodefile(slurm_opt_t *opt, const char *arg)
+{
+	xfree(opt->nodefile);
+	xfree(opt->nodelist);
+	opt->nodefile = xstrdup(arg);
+
+	return SLURM_SUCCESS;
+}
+COMMON_STRING_OPTION_GET_AND_RESET(nodefile);
+static slurm_cli_opt_t slurm_opt_nodefile = {
+	.name = "nodefile",
+	.has_arg = required_argument,
+	.val = 'F',
+	.set_func = arg_set_nodefile,
+	.get_func = arg_get_nodefile,
+	.reset_func = arg_reset_nodefile,
+	.reset_each_pass = true,
+};
+
 static int arg_set_nodelist(slurm_opt_t *opt, const char *arg)
 {
+	xfree(opt->nodefile);
 	xfree(opt->nodelist);
 	opt->nodelist = xstrdup(arg);
 
@@ -1470,6 +1494,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mincpus,
 	&slurm_opt_nice,
 	&slurm_opt_no_kill,
+	&slurm_opt_nodefile,
 	&slurm_opt_nodelist,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,

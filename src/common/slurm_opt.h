@@ -373,6 +373,7 @@ typedef struct slurm_options {
 	char *c_constraint;		/* --cluster-constraint		*/
 	char *gres;			/* --gres			*/
 	bool contiguous;		/* --contiguous			*/
+	char *nodefile;			/* --nodefile			*/
 	char *nodelist;			/* --nodelist=node1,node2,...	*/
 	char *exclude;			/* --exclude=node1,node2,...	*/
 
