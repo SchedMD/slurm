@@ -73,13 +73,6 @@
 
 #include "src/sbatch/opt.h"
 
-enum wrappers {
-	WRPR_START,
-	WRPR_BSUB,
-	WRPR_PBS,
-	WRPR_CNT
-};
-
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
@@ -138,14 +131,6 @@ static void _opt_default(bool first_pass);
 static bool _opt_batch_script(const char *file, const void *body, int size,
 			      int pack_inx);
 
-/* set options from pbs batch script */
-static bool _opt_wrpr_batch_script(const char *file, const void *body, int size,
-				   int argc, char **argv, int magic);
-
-/* Wrapper functions */
-static void _set_pbs_options(int argc, char **argv);
-static void _set_bsub_options(int argc, char **argv);
-
 /* set options based upon env vars  */
 static void _opt_env(void);
 static void _proc_get_user_env(char *val);
@@ -158,10 +143,7 @@ static bool _opt_verify(void);
 
 static void _process_env_var(env_vars_t *e, const char *val);
 
-static uint16_t _parse_pbs_mail_type(const char *arg);
-
 static void _fullpath(char **filename, const char *cwd);
-static void _parse_pbs_resource_list(char *rl);
 static char *_read_file(char *fname);
 static void _set_options(int argc, char **argv);
 static void _usage(void);
@@ -917,8 +899,8 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 
 	for (i = WRPR_START + 1; i < WRPR_CNT; i++) {
 		/* Convert command from batch script to sbatch command */
-		bool stop = _opt_wrpr_batch_script(file, script_body,
-						   script_size, argc, argv, i);
+		bool stop = xlate_batch_script(file, script_body, script_size,
+					       argc, argv, i);
 
 		if (stop)
 			break;
@@ -939,20 +921,20 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 }
 
 /*
- * _next_line - Interpret the contents of a byte buffer as characters in
- *	a file.  _next_line will find and return the next line in the buffer.
+ * next_line - Interpret the contents of a byte buffer as characters in
+ *	a file. next_line will find and return the next line in the buffer.
  *
  *	If "state" is NULL, it will start at the beginning of the buffer.
- *	_next_line will update the "state" pointer to point at the
+ *	next_line will update the "state" pointer to point at the
  *	spot in the buffer where it left off.
  *
  * IN buf - buffer containing file contents
  * IN size - size of buffer "buf"
- * IN/OUT state - used by _next_line to determine where the last line ended
+ * IN/OUT state - used by next_line to determine where the last line ended
  *
  * RET - xmalloc'ed character string, or NULL if no lines remaining in buf.
  */
-static char *_next_line(const void *buf, int size, void **state)
+extern char *next_line(const void *buf, int size, void **state)
 {
 	char *line;
 	char *current, *ptr;
@@ -977,7 +959,7 @@ static char *_next_line(const void *buf, int size, void **state)
 }
 
 /*
- * _get_argument - scans a line for something that looks like a command line
+ * get_argument - scans a line for something that looks like a command line
  *	argument, and return an xmalloc'ed string containing the argument.
  *	Quotes can be used to group characters, including whitespace.
  *	Quotes can be included in an argument be escaping the quotes,
@@ -988,8 +970,8 @@ static char *_next_line(const void *buf, int size, void **state)
  * RET - xmalloc'ed argument string (may be shorter than "skipped")
  *       or NULL if no arguments remaining
  */
-static char *
-_get_argument(const char *file, int lineno, const char *line, int *skipped)
+extern char *get_argument(const char *file, int lineno, const char *line,
+			  int *skipped)
 {
 	const char *ptr;
 	char *argument = NULL;
@@ -1087,7 +1069,7 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 	argv = xmalloc(sizeof(char *));
 	argv[0] = "sbatch";
 
-	while ((line = _next_line(body, size, &state)) != NULL) {
+	while ((line = next_line(body, size, &state)) != NULL) {
 		lineno++;
 		if (!xstrncmp(line, magic_word1, magic_word_len1))
 			ptr = line + magic_word_len1;
@@ -1129,7 +1111,7 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 			break;
 		}
 
-		while ((option = _get_argument(file, lineno, ptr, &skipped))) {
+		while ((option = get_argument(file, lineno, ptr, &skipped))) {
 			debug2("Found in script, argument \"%s\"", option);
 			argc++;
 			xrealloc(argv, sizeof(char *) * argc);
@@ -1147,110 +1129,6 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 	xfree(argv);
 
 	return more_packs;
-}
-
-/*
- * set wrapper (ie. pbs, bsub) options from batch script
- *
- * Build an argv-style array of options from the script "body",
- * then pass the array to _set_options for() further parsing.
- */
-static bool _opt_wrpr_batch_script(const char *file, const void *body,
-				   int size, int cmd_argc, char **cmd_argv,
-				   int magic)
-{
-	char *magic_word;
-	void (*wrp_func) (int,char**) = NULL;
-	int magic_word_len;
-	int argc;
-	char **argv;
-	void *state = NULL;
-	char *line;
-	char *option;
-	char *ptr;
-	int skipped = 0;
-	int lineno = 0;
-	int non_comments = 0;
-	int i;
-	bool found = false;
-
-	if (ignore_pbs)
-		return false;
-	if (getenv("SBATCH_IGNORE_PBS"))
-		return false;
-	for (i = 0; i < cmd_argc; i++) {
-		if (!xstrcmp(cmd_argv[i], "--ignore-pbs"))
-			return false;
-	}
-
-	/* Check what command it is */
-	switch (magic) {
-	case WRPR_BSUB:
-		magic_word = "#BSUB";
-		wrp_func = _set_bsub_options;
-		break;
-	case WRPR_PBS:
-		magic_word = "#PBS";
-		wrp_func = _set_pbs_options;
-		break;
-
-	default:
-		return false;
-	}
-
-	magic_word_len = strlen(magic_word);
-	/* getopt_long skips over the first argument, so fill it in */
-	argc = 1;
-	argv = xmalloc(sizeof(char *));
-	argv[0] = "sbatch";
-
-	while ((line = _next_line(body, size, &state)) != NULL) {
-		lineno++;
-		if (xstrncmp(line, magic_word, magic_word_len) != 0) {
-			if (line[0] != '#')
-				non_comments++;
-			xfree(line);
-			if (non_comments > 100)
-				break;
-			continue;
-		}
-
-		/* Set found to be true since we found a valid command */
-		found = true;
-		/* this line starts with the magic word */
-		ptr = line + magic_word_len;
-		while ((option = _get_argument(file, lineno, ptr, &skipped))) {
-			debug2("Found in script, argument \"%s\"", option);
-			argc += 1;
-			xrealloc(argv, sizeof(char*) * argc);
-
-			/* Only check the even options here (they are
-			 * the - options) */
-			if (magic == WRPR_BSUB && !(argc%2)) {
-				/* Since Slurm doesn't allow long
-				 * names with a single '-' we must
-				 * translate before hand.
-				 */
-				if (!xstrcmp("-cwd", option)) {
-					xfree(option);
-					option = xstrdup("-c");
-				}
-			}
-
-			argv[argc-1] = option;
-			ptr += skipped;
-		}
-		xfree(line);
-	}
-
-	if ((argc > 0) && (wrp_func != NULL))
-		wrp_func(argc, argv);
-
-	for (i = 1; i < argc; i++)
-		xfree(argv[i]);
-	xfree(argv);
-
-	return found;
 }
 
 static void _set_options(int argc, char **argv)
@@ -2001,639 +1879,6 @@ static void _proc_get_user_env(char *optarg)
 	else if ((end_ptr[0] == 'l') || (end_ptr[0] == 'L'))
 		opt.get_user_env_mode = 2;
 }
-static void _set_bsub_options(int argc, char **argv) {
-
-	int opt_char, option_index = 0;
-	char *bsub_opt_string = "+c:e:J:m:M:n:o:q:W:x";
-	char *tmp_str, *char_ptr;
-
-	struct option bsub_long_options[] = {
-		{"cwd", required_argument, 0, 'c'},
-		{"error_file", required_argument, 0, 'e'},
-		{"job_name", required_argument, 0, 'J'},
-		{"hostname", required_argument, 0, 'm'},
-		{"memory_limit", required_argument, 0, 'M'},
-		{"memory_limit", required_argument, 0, 'M'},
-		{"output_file", required_argument, 0, 'o'},
-		{"queue_name", required_argument, 0, 'q'},
-		{"time", required_argument, 0, 'W'},
-		{"exclusive", no_argument, 0, 'x'},
-		{NULL, 0, 0, 0}
-	};
-
-	optind = 0;
-	while ((opt_char = getopt_long(argc, argv, bsub_opt_string,
-				       bsub_long_options, &option_index))
-	       != -1) {
-		switch (opt_char) {
-		case 'c':
-			xfree(opt.cwd);
-			if (is_full_path(optarg))
-				opt.cwd = xstrdup(optarg);
-			else
-				opt.cwd = make_full_path(optarg);
-			break;
-		case 'e':
-			xfree(sbopt.efname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.efname = xstrdup("/dev/null");
-			else
-				sbopt.efname = xstrdup(optarg);
-			break;
-		case 'J':
-			opt.job_name = xstrdup(optarg);
-			break;
-		case 'm':
-			/* Since BSUB requires a list of space
-			   sperated host we need to replace the spaces
-			   with , */
-			tmp_str = xstrdup(optarg);
-			char_ptr = strstr(tmp_str, " ");
-
-			while (char_ptr != NULL) {
-				*char_ptr = ',';
-				char_ptr = strstr(tmp_str, " ");
-			}
-			opt.nodelist = xstrdup(tmp_str);
-			xfree(tmp_str);
-			break;
-		case 'M':
-			opt.mem_per_cpu = xstrntol(optarg,
-						   NULL, strlen(optarg), 10);
-			break;
-		case 'n':
-			opt.ntasks_set = true;
-			/* Since it is value in bsub to give a min and
-			 * max task count we will only read the max if
-			 * it exists.
-			 */
-			char_ptr = strstr(optarg, ",");
-			if (char_ptr) {
-				char_ptr++;
-				if (!char_ptr[0]) {
-					error("#BSUB -n format not correct "
-					      "given: '%s'",
-					      optarg);
-					exit(error_exit);
-				}
-			} else
-				char_ptr = optarg;
-
-			opt.ntasks =
-				parse_int("number of tasks", char_ptr, true);
-
-			break;
-		case 'o':
-			xfree(sbopt.ofname);
-			sbopt.ofname = xstrdup(optarg);
-			break;
-		case 'q':
-			opt.partition = xstrdup(optarg);
-			break;
-		case 'W':
-			opt.time_limit = xstrntol(optarg, NULL,
-						  strlen(optarg), 10);
-			break;
-		case 'x':
-			opt.shared = JOB_SHARED_NONE;
-			break;
-		default:
-			error("Unrecognized command line parameter %c",
-			      opt_char);
-			exit(error_exit);
-		}
-	}
-
-
-	if (optind < argc) {
-		error("Invalid argument: %s", argv[optind]);
-		exit(error_exit);
-	}
-
-}
-
-static void _set_pbs_options(int argc, char **argv)
-{
-	int opt_char, option_index = 0;
-	char *sep = "";
-	char *pbs_opt_string = "+a:A:c:C:e:hIj:J:k:l:m:M:N:o:p:q:r:S:t:u:v:VW:z";
-
-	struct option pbs_long_options[] = {
-		{"start_time", required_argument, 0, 'a'},
-		{"account", required_argument, 0, 'A'},
-		{"checkpoint", required_argument, 0, 'c'},
-		{"working_dir", required_argument, 0, 'C'},
-		{"error", required_argument, 0, 'e'},
-		{"hold", no_argument, 0, 'h'},
-		{"interactive", no_argument, 0, 'I'},
-		{"join", optional_argument, 0, 'j'},
-		{"job_array", required_argument, 0, 'J'},
-		{"keep", required_argument, 0, 'k'},
-		{"resource_list", required_argument, 0, 'l'},
-		{"mail_options", required_argument, 0, 'm'},
-		{"mail_user_list", required_argument, 0, 'M'},
-		{"job_name", required_argument, 0, 'N'},
-		{"out", required_argument, 0, 'o'},
-		{"priority", required_argument, 0, 'p'},
-		{"destination", required_argument, 0, 'q'},
-		{"rerunable", required_argument, 0, 'r'},
-		{"script_path", required_argument, 0, 'S'},
-		{"array", required_argument, 0, 't'},
-		{"running_user", required_argument, 0, 'u'},
-		{"variable_list", required_argument, 0, 'v'},
-		{"all_env", no_argument, 0, 'V'},
-		{"attributes", required_argument, 0, 'W'},
-		{"no_std", no_argument, 0, 'z'},
-		{NULL, 0, 0, 0}
-	};
-
-	optind = 0;
-	while ((opt_char = getopt_long(argc, argv, pbs_opt_string,
-				       pbs_long_options, &option_index))
-	       != -1) {
-		switch (opt_char) {
-		case 'a':
-			opt.begin = parse_time(optarg, 0);
-			break;
-		case 'A':
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
-			break;
-		case 'c':
-			break;
-		case 'C':
-			break;
-		case 'e':
-			xfree(sbopt.efname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.efname = xstrdup("/dev/null");
-			else
-				sbopt.efname = xstrdup(optarg);
-			break;
-		case 'h':
-			opt.hold = true;
-			break;
-		case 'I':
-			break;
-		case 'j':
-			break;
-		case 'J':
-		case 't':
-			/* PBS Pro uses -J. Torque uses -t. */
-			xfree(sbopt.array_inx);
-			sbopt.array_inx = xstrdup(optarg);
-			break;
-		case 'k':
-			break;
-		case 'l':
-			_parse_pbs_resource_list(optarg);
-			break;
-		case 'm':
-			if (!optarg) /* CLANG Fix */
-				break;
-			opt.mail_type |= _parse_pbs_mail_type(optarg);
-			if (opt.mail_type == INFINITE16) {
-				error("-m=%s invalid", optarg);
-				exit(error_exit);
-			}
-			break;
-		case 'M':
-			xfree(opt.mail_user);
-			opt.mail_user = xstrdup(optarg);
-			break;
-		case 'N':
-			xfree(opt.job_name);
-			opt.job_name = xstrdup(optarg);
-			break;
-		case 'o':
-			xfree(sbopt.ofname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.ofname = xstrdup("/dev/null");
-			else
-				sbopt.ofname = xstrdup(optarg);
-			break;
-		case 'p': {
-			long long tmp_nice;
-			if (optarg)
-				tmp_nice = strtoll(optarg, NULL, 10);
-			else
-				tmp_nice = 100;
-			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
-				error("Nice value out of range (+/- %u). Value "
-				      "ignored", NICE_OFFSET - 3);
-				tmp_nice = 0;
-			}
-			if (tmp_nice < 0) {
-				uid_t my_uid = getuid();
-				if ((my_uid != 0) &&
-				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be "
-					      "non-negative, value ignored");
-					tmp_nice = 0;
-				}
-			}
-			opt.nice = (int) tmp_nice;
-			break;
-		}
-		case 'q':
-			xfree(opt.partition);
-			opt.partition = xstrdup(optarg);
-			break;
-		case 'r':
-			break;
-		case 'S':
-			break;
-		case 'u':
-			break;
-		case 'v':
-			if (sbopt.export_env)
-				sep = ",";
-			/* CLANG false positive */
-			xstrfmtcat(sbopt.export_env, "%s%s", sep, optarg);
-			break;
-		case 'V':
-			break;
-		case 'W':
-			if (!optarg) /* CLANG Fix */
-				break;
-			if (!xstrncasecmp(optarg, "umask=", 6)) {
-				sbopt.umask = strtol(optarg+6, NULL, 0);
-				if ((sbopt.umask < 0) || (sbopt.umask > 0777)) {
-					error("Invalid umask ignored");
-					sbopt.umask = -1;
-				}
-			} else if (!xstrncasecmp(optarg, "depend=", 7)) {
-				xfree(opt.dependency);
-				opt.dependency = xstrdup(optarg+7);
-			} else {
-				verbose("Ignored PBS attributes: %s", optarg);
-			}
-			break;
-		case 'z':
-			break;
-		default:
-			error("Unrecognized command line parameter %c",
-			      opt_char);
-			exit(error_exit);
-		}
-	}
-
-	if (optind < argc) {
-		error("Invalid argument: %s", argv[optind]);
-		exit(error_exit);
-	}
-}
-
-static char *_get_pbs_node_name(char *node_options, int *i)
-{
-	int start = (*i);
-	char *value = NULL;
-
-	while (node_options[*i] &&
-	       (node_options[*i] != '+') &&
-	       (node_options[*i] != ':'))
-		(*i)++;
-
-	value = xmalloc((*i)-start+1);
-	memcpy(value, node_options+start, (*i)-start);
-
-	if (node_options[*i])
-		(*i)++;
-
-	return value;
-}
-
-static void _get_next_pbs_node_part(char *node_options, int *i)
-{
-	while (node_options[*i] &&
-	       (node_options[*i] != '+') &&
-	       (node_options[*i] != ':'))
-		(*i)++;
-	if (node_options[*i])
-		(*i)++;
-}
-
-static void _parse_pbs_nodes_opts(char *node_opts)
-{
-	int i = 0;
-	char *temp = NULL;
-	int ppn = 0;
-	int node_cnt = 0;
-	hostlist_t hl = hostlist_create(NULL);
-
-	while (node_opts[i]) {
-		if (!xstrncmp(node_opts+i, "ppn=", 4)) {
-			i+=4;
-			ppn += strtol(node_opts+i, NULL, 10);
-			_get_next_pbs_node_part(node_opts, &i);
-		} else if (isdigit(node_opts[i])) {
-			node_cnt += strtol(node_opts+i, NULL, 10);
-			_get_next_pbs_node_part(node_opts, &i);
-		} else if (isalpha(node_opts[i])) {
-			temp = _get_pbs_node_name(node_opts, &i);
-			hostlist_push_host(hl, temp);
-			xfree(temp);
-		} else
-			i++;
-
-	}
-
-	if (!node_cnt)
-		node_cnt = 1;
-	else {
-		opt.nodes_set = true;
-		opt.min_nodes = opt.max_nodes = node_cnt;
-	}
-
-	if (ppn) {
-		ppn *= node_cnt;
-		opt.ntasks_set = true;
-		opt.ntasks = ppn;
-	}
-
-	if (hostlist_count(hl) > 0) {
-		xfree(opt.nodelist);
-		opt.nodelist = hostlist_ranged_string_xmalloc(hl);
-	}
-
-	hostlist_destroy(hl);
-}
-
-static void _get_next_pbs_option(char *pbs_options, int *i)
-{
-	while (pbs_options[*i] && pbs_options[*i] != ',')
-		(*i)++;
-	if (pbs_options[*i])
-		(*i)++;
-}
-
-static char *_get_pbs_option_value(char *pbs_options, int *i, char sep)
-{
-	int start = (*i);
-	char *value = NULL;
-
-	while (pbs_options[*i] && pbs_options[*i] != sep)
-		(*i)++;
-	value = xmalloc((*i)-start+1);
-	memcpy(value, pbs_options+start, (*i)-start);
-
-	if (pbs_options[*i])
-		(*i)++;
-
-	return value;
-}
-
-static void _parse_pbs_resource_list(char *rl)
-{
-	int i = 0;
-	int gpus = 0;
-	char *temp = NULL;
-	int pbs_pro_flag = 0;	/* Bits: select:1 ncpus:2 mpiprocs:4 */
-
-	while (rl[i]) {
-		if (!xstrncasecmp(rl+i, "accelerator=", 12)) {
-			i += 12;
-			if (!xstrncasecmp(rl+i, "true", 4) && (gpus < 1))
-				gpus = 1;
-			/* Also see "naccelerators=" below */
-		} else if (!xstrncmp(rl+i, "arch=", 5)) {
-			i+=5;
-			_get_next_pbs_option(rl, &i);
-		} else if (!xstrncmp(rl+i, "cput=", 5)) {
-			i+=5;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (!temp) {
-				error("No value given for cput");
-				exit(error_exit);
-			}
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(temp);
-			xfree(temp);
-		} else if (!xstrncmp(rl+i, "file=", 5)) {
-			int end = 0;
-
-			i+=5;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (!temp) {
-				error("No value given for file");
-				exit(error_exit);
-			}
-			end = strlen(temp) - 1;
-			if (toupper(temp[end]) == 'B') {
-				/* In Torque they do GB or MB on the
-				 * end of size, we just want G or M so
-				 * we will remove the b on the end
-				 */
-				temp[end] = '\0';
-			}
-			opt.pn_min_tmp_disk = str_to_mbytes(temp);
-			if (opt.pn_min_tmp_disk < 0) {
-				error("invalid tmp value %s", temp);
-				exit(error_exit);
-			}
-			xfree(temp);
-		} else if (!xstrncmp(rl+i, "host=", 5)) {
-			i+=5;
-			_get_next_pbs_option(rl, &i);
-		} else if (!xstrncmp(rl+i, "mem=", 4)) {
-			int end = 0;
-
-			i+=4;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (!temp) {
-				error("No value given for mem");
-				exit(error_exit);
-			}
-			end = strlen(temp) - 1;
-			if (toupper(temp[end]) == 'B') {
-				/* In Torque they do GB or MB on the
-				 * end of size, we just want G or M so
-				 * we will remove the b on the end
-				 */
-				temp[end] = '\0';
-			}
-			opt.pn_min_memory = (int) str_to_mbytes(temp);
-			if (opt.pn_min_memory < 0) {
-				error("invalid memory constraint %s", temp);
-				exit(error_exit);
-			}
-
-			xfree(temp);
-		} else if (!xstrncasecmp(rl+i, "mpiprocs=", 9)) {
-			i += 9;
-			temp = _get_pbs_option_value(rl, &i, ':');
-			if (temp) {
-				pbs_pro_flag |= 4;
-				opt.ntasks_per_node = parse_int("mpiprocs",
-								temp, true);
-				xfree(temp);
-			}
-#ifdef HAVE_NATIVE_CRAY
-			/*
-			 * NB: no "mppmem" here since it specifies per-PE memory units,
-			 *     whereas Slurm uses per-node and per-CPU memory units.
-			 */
-		} else if (!xstrncmp(rl + i, "mppdepth=", 9)) {
-			/* Cray: number of CPUs (threads) per processing element */
-			i += 9;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp) {
-				opt.cpus_per_task = parse_int("mppdepth",
-							      temp, false);
-				opt.cpus_set	  = true;
-			}
-			xfree(temp);
-		} else if (!xstrncmp(rl + i, "mppnodes=", 9)) {
-			/* Cray `nodes' variant: hostlist without prefix */
-			i += 9;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (!temp) {
-				error("No value given for mppnodes");
-				exit(error_exit);
-			}
-			xfree(opt.nodelist);
-			opt.nodelist = temp;
-		} else if (!xstrncmp(rl + i, "mppnppn=", 8)) {
-			/* Cray: number of processing elements per node */
-			i += 8;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp)
-				opt.ntasks_per_node = parse_int("mppnppn",
-								temp, true);
-			xfree(temp);
-		} else if (!xstrncmp(rl + i, "mppwidth=", 9)) {
-			/* Cray: task width (number of processing elements) */
-			i += 9;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp) {
-				opt.ntasks = parse_int("mppwidth", temp, true);
-				opt.ntasks_set = true;
-			}
-			xfree(temp);
-#endif /* HAVE_NATIVE_CRAY */
-		} else if (!xstrncasecmp(rl+i, "naccelerators=", 14)) {
-			i += 14;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp) {
-				gpus = parse_int("naccelerators", temp, true);
-				xfree(temp);
-			}
-		} else if (!xstrncasecmp(rl+i, "ncpus=", 6)) {
-			i += 6;
-			temp = _get_pbs_option_value(rl, &i, ':');
-			if (temp) {
-				pbs_pro_flag |= 2;
-				opt.pn_min_cpus = parse_int("ncpus", temp, true);
-				xfree(temp);
-			}
-		} else if (!xstrncmp(rl+i, "nice=", 5)) {
-			long long tmp_nice;
-			i += 5;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp)
-				tmp_nice = strtoll(temp, NULL, 10);
-			else
-				tmp_nice = 100;
-			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
-				error("Nice value out of range (+/- %u). Value "
-				      "ignored", NICE_OFFSET - 3);
-				tmp_nice = 0;
-			}
-			if (tmp_nice < 0) {
-				uid_t my_uid = getuid();
-				if ((my_uid != 0) &&
-				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be "
-					      "non-negative, value ignored");
-					tmp_nice = 0;
-				}
-			}
-			opt.nice = (int) tmp_nice;
-			xfree(temp);
-		} else if (!xstrncmp(rl+i, "nodes=", 6)) {
-			i+=6;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (!temp) {
-				error("No value given for nodes");
-				exit(error_exit);
-			}
-			_parse_pbs_nodes_opts(temp);
-			xfree(temp);
-		} else if (!xstrncmp(rl+i, "opsys=", 6)) {
-			i+=6;
-			_get_next_pbs_option(rl, &i);
-		} else if (!xstrncmp(rl+i, "other=", 6)) {
-			i+=6;
-			_get_next_pbs_option(rl, &i);
-		} else if (!xstrncmp(rl+i, "pcput=", 6)) {
-			i+=6;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (!temp) {
-				error("No value given for pcput");
-				exit(error_exit);
-			}
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(temp);
-			xfree(temp);
-		} else if (!xstrncmp(rl+i, "pmem=", 5)) {
-			i+=5;
-			_get_next_pbs_option(rl, &i);
-		} else if (!xstrncmp(rl+i, "proc=", 5)) {
-			i += 5;
-			if (opt.constraint)
-				xstrcat(opt.constraint, ",");
-			temp = _get_pbs_option_value(rl, &i, ',');
-			xstrcat(opt.constraint, temp);
-			xfree(temp);
-			_get_next_pbs_option(rl, &i);
-		} else if (!xstrncmp(rl+i, "pvmem=", 6)) {
-			i+=6;
-			_get_next_pbs_option(rl, &i);
-		} else if (!xstrncasecmp(rl+i, "select=", 7)) {
-			i += 7;
-			temp = _get_pbs_option_value(rl, &i, ':');
-			if (temp) {
-				pbs_pro_flag |= 1;
-				opt.min_nodes = parse_int("select", temp, true);
-				opt.max_nodes = opt.min_nodes;
-				opt.nodes_set = true;
-				xfree(temp);
-			}
-		} else if (!xstrncmp(rl+i, "software=", 9)) {
-			i+=9;
-			_get_next_pbs_option(rl, &i);
-		} else if (!xstrncmp(rl+i, "vmem=", 5)) {
-			i+=5;
-			_get_next_pbs_option(rl, &i);
-		} else if (!xstrncmp(rl+i, "walltime=", 9)) {
-			i+=9;
-			temp = _get_pbs_option_value(rl, &i, ',');
-			if (!temp) {
-				error("No value given for walltime");
-				exit(error_exit);
-			}
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(temp);
-			xfree(temp);
-		} else
-			i++;
-	}
-
-	if ((pbs_pro_flag == 7) && (opt.pn_min_cpus > opt.ntasks_per_node)) {
-		/* This logic will allocate the proper CPU count on each
-		 * node if the CPU count per node is evenly divisible by
-		 * the task count on each node. Slurm can't handle something
-		 * like cpus_per_node=10 and ntasks_per_node=8 */
-		opt.cpus_per_task = opt.pn_min_cpus / opt.ntasks_per_node;
-		opt.cpus_set = true;
-	}
-	if (gpus > 0) {
-		char *sep = "";
-		if (opt.gres)
-			sep = ",";
-		xstrfmtcat(opt.gres, "%sgpu:%d", sep, gpus);
-	}
-}
 
 /*
  * _opt_verify : perform some post option processing verification
@@ -2962,25 +2207,6 @@ static bool _opt_verify(void)
 			 opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
 
 	return verified;
-}
-
-static uint16_t _parse_pbs_mail_type(const char *arg)
-{
-	uint16_t rc = 0;
-
-	if (strchr(arg, 'b') || strchr(arg, 'B'))
-		rc |= MAIL_JOB_BEGIN;
-	if (strchr(arg, 'e') || strchr(arg, 'E'))
-		rc |= MAIL_JOB_END;
-	if (strchr(arg, 'a') || strchr(arg, 'A'))
-		rc |= MAIL_JOB_FAIL;
-
-	if (strchr(arg, 'n') || strchr(arg, 'N'))
-		rc = 0;
-	else if (!rc)
-		rc = INFINITE16;
-
-	return rc;
 }
 
 /* Functions used by SPANK plugins to read and write job environment

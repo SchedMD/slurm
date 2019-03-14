@@ -7,7 +7,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = sbatch
 
-sbatch_SOURCES = sbatch.c opt.c opt.h
+sbatch_SOURCES = sbatch.c opt.c opt.h xlate.c
 
 convenience_libs = $(LIB_SLURM) $(DL_LIBS)
 sbatch_DEPENDENCIES = $(LIB_SLURM_BUILD)
