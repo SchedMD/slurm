@@ -149,6 +149,11 @@ extern void
 cpu_freq_govlist_to_string(char* buf, uint16_t bufsz, uint32_t govs);
 
 /*
+ * Return an xmalloc()'d string representing the original input to --cpu-freq.
+ */
+extern char *cpu_freq_to_cmdline(uint32_t min, uint32_t max, uint32_t gov);
+
+/*
  * Set environment variables associated with the frequency variables.
  */
 extern int
