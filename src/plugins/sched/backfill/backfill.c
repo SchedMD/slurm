@@ -103,7 +103,7 @@
 #define BF_MAX_JOB_ARRAY_RESV	20
 
 #define SLURMCTLD_THREAD_LIMIT	5
-#define SCHED_TIMEOUT		2000000	/* time in micro-seconds */
+#define YIELD_INTERVAL		2000000	/* time in micro-seconds */
 #define YIELD_SLEEP		500000;	/* time in micro-seconds */
 
 #define MAX_BACKFILL_INTERVAL          10800 /* 3 hours */
@@ -198,8 +198,8 @@ static int max_backfill_job_per_user_part = 0;
 static int max_backfill_jobs_start = 0;
 static bool backfill_continue = false;
 static bool assoc_limit_stop = false;
-static int defer_rpc_cnt = 0;
-static int sched_timeout = SCHED_TIMEOUT;
+static int max_rpc_cnt = 0;
+static int yield_interval = YIELD_INTERVAL;
 static int yield_sleep   = YIELD_SLEEP;
 static List pack_job_list = NULL;
 
@@ -315,8 +315,8 @@ static void _set_job_time_limit(struct job_record *job_ptr, uint32_t new_limit)
 static bool _many_pending_rpcs(void)
 {
 	//info("thread_count = %u", slurmctld_config.server_thread_count);
-	if ((defer_rpc_cnt > 0) &&
-	    (slurmctld_config.server_thread_count >= defer_rpc_cnt))
+	if ((max_rpc_cnt > 0) &&
+	    (slurmctld_config.server_thread_count >= max_rpc_cnt))
 		return true;
 	return false;
 }
@@ -838,15 +838,15 @@ static void _load_config(void)
 
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_yield_interval="))) {
-		sched_timeout = atoi(tmp_ptr + 18);
-		if (sched_timeout <= 0 ||
-		    sched_timeout > MAX_BF_YIELD_INTERVAL) {
+		yield_interval = atoi(tmp_ptr + 18);
+		if ((yield_interval <= 0) ||
+		    (yield_interval > MAX_BF_YIELD_INTERVAL)) {
 			error("Invalid backfill scheduler bf_yield_interval: %d",
-			      sched_timeout);
-			sched_timeout = SCHED_TIMEOUT;
+			      yield_interval);
+			yield_interval = YIELD_INTERVAL;
 		}
 	} else {
-		sched_timeout = SCHED_TIMEOUT;
+		yield_interval = YIELD_INTERVAL;
 	}
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_yield_sleep="))) {
@@ -876,15 +876,15 @@ static void _load_config(void)
 	}
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_cnt=")))
-		defer_rpc_cnt = atoi(tmp_ptr + 12);
+		max_rpc_cnt = atoi(tmp_ptr + 12);
 	else if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_count=")))
-		defer_rpc_cnt = atoi(tmp_ptr + 14);
+		max_rpc_cnt = atoi(tmp_ptr + 14);
 	else
-		defer_rpc_cnt = 0;
-	if (defer_rpc_cnt < 0 || defer_rpc_cnt > MAX_MAX_RPC_CNT) {
+		max_rpc_cnt = 0;
+	if ((max_rpc_cnt < 0) || (max_rpc_cnt > MAX_MAX_RPC_CNT)) {
 		error("Invalid SchedulerParameters max_rpc_cnt: %d",
-		      defer_rpc_cnt);
-		defer_rpc_cnt = 0;
+		      max_rpc_cnt);
+		max_rpc_cnt = 0;
 	}
 
 	xfree(sched_params);
@@ -1008,17 +1008,19 @@ static int _clear_job_start_times(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-/* Return non-zero to break the backfill loop if change in job, node or
- * partition state or the backfill scheduler needs to be stopped. */
+/*
+ * Return non-zero to break the backfill loop if change in job, node or
+ * partition state or the backfill scheduler needs to be stopped.
+ */
 static int _yield_locks(int64_t usec)
 {
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	time_t job_update, node_update, part_update;
 	bool load_config = false;
-	int max_rpc_cnt;
+	int yield_rpc_cnt;
 
-	max_rpc_cnt = MAX((defer_rpc_cnt / 10), 20);
+	yield_rpc_cnt = MAX((max_rpc_cnt / 10), 20);
 	job_update  = last_job_update;
 	node_update = last_node_update;
 	part_update = last_part_update;
@@ -1026,8 +1028,8 @@ static int _yield_locks(int64_t usec)
 	unlock_slurmctld(all_locks);
 	while (!stop_backfill) {
 		bf_sleep_usec += _my_sleep(usec);
-		if ((defer_rpc_cnt == 0) ||
-		    (slurmctld_config.server_thread_count <= max_rpc_cnt))
+		if ((max_rpc_cnt == 0) ||
+		    (slurmctld_config.server_thread_count <= yield_rpc_cnt))
 			break;
 		verbose("backfill: continuing to yield locks, %d RPCs pending",
 			slurmctld_config.server_thread_count);
@@ -1465,9 +1467,9 @@ static int _attempt_backfill(void)
 		    (difftime(time(NULL),orig_sched_start) >= bf_max_time)){
 			break;
 		}
-		if (((defer_rpc_cnt > 0) &&
-		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
-		    (slurm_delta_tv(&start_tv) >= sched_timeout)) {
+		if (((max_rpc_cnt > 0) &&
+		     (slurmctld_config.server_thread_count >= max_rpc_cnt)) ||
+		    (slurm_delta_tv(&start_tv) >= yield_interval)) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
 				END_TIMER;
 				info("backfill: yielding locks after testing "
@@ -1949,9 +1951,9 @@ next_task:
 			break;
 		}
 		test_time_count++;
-		if (((defer_rpc_cnt > 0) &&
-		     (slurmctld_config.server_thread_count >= defer_rpc_cnt)) ||
-		    (slurm_delta_tv(&start_tv) >= sched_timeout)) {
+		if (((max_rpc_cnt > 0) &&
+		     (slurmctld_config.server_thread_count >= max_rpc_cnt)) ||
+		    (slurm_delta_tv(&start_tv) >= yield_interval)) {
 			uint32_t save_job_id = job_ptr->job_id;
 			uint32_t save_time_limit = job_ptr->time_limit;
 			_set_job_time_limit(job_ptr, orig_time_limit);
