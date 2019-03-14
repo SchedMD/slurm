@@ -2827,8 +2827,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			filter_by_node_owner(job_ptr, unavail_bitmap);
 			bit_not(unavail_bitmap);
 			bit_and_not(unavail_bitmap, future_node_bitmap);
-			if (job_ptr->details  &&
-			    job_ptr->details->req_node_bitmap &&
+			if (job_ptr->details->req_node_bitmap &&
 			    bit_overlap(unavail_bitmap,
 					job_ptr->details->req_node_bitmap)) {
 				bit_and(unavail_bitmap,
