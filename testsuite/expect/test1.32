@@ -40,7 +40,6 @@ set exit_code   0
 set file_prog   "test$test_id.prog"
 set matches     0
 set fini_cnt    0
-set poe_flag    0
 set usr1cnt     0
 set usr2cnt     0
 set usr1target	1

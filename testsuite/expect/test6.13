@@ -41,28 +41,6 @@ set file_prog    "test$test_id.prog"
 
 print_header $test_id
 
-set conf_test 0
-log_user 0
-spawn $scontrol show config
-expect {
-	-re "launch/poe" {
-		incr conf_test
-		exp_continue
-	}
-	-re "proctrack/pgid" {
-		incr conf_test
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$conf_test == 2} {
-	send_user "\nWARNING: launch/poe plus proctrack/pgid are incompatible with this test\n"
-	exit 0
-}
-
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.
 #

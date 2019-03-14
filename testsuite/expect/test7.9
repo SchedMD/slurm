@@ -58,11 +58,6 @@ set invalid 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "launch/poe" {
-		send_user "\nWARNING: test incompatible with launch/poe\n"
-		set invalid 1
-		exp_continue
-	}
 	-re "proctrack/cray" {
 		send_user "\nWARNING: test incompatible with proctrack/cray\n"
 		set invalid 1

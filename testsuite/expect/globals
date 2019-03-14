@@ -136,7 +136,6 @@ cset use_pmi	0
 cset upcc       "/usr/bin/xlupc"
 cset oshcc      "/usr/local/bin/oshcc"
 
-cset poe	"/usr/bin/poe"
 cset mpirun	"mpirun"
 cset totalviewcli	"/usr/local/bin/totalviewcli"
 
