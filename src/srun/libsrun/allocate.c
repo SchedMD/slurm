@@ -419,7 +419,8 @@ extern resource_allocation_response_msg_t *
 	}
 
 	if (resp)
-		print_multi_line_string(resp->job_submit_user_msg, -1);
+		print_multi_line_string(resp->job_submit_user_msg,
+					-1, LOG_LEVEL_INFO);
 
 	if (resp && !destroy_job) {
 		/*

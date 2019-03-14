@@ -1610,7 +1610,8 @@ extern int get_cluster_node_offset(char *cluster_name,
  * Each \n will result in a new line.
  * If inx is != -1 it is prepended to the string.
  */
-extern void print_multi_line_string(char *user_msg, int inx);
+extern void print_multi_line_string(char *user_msg, int inx,
+				    log_level_t loglevel);
 
 /* Given a protocol opcode return its string
  * description mapping the slurm_msg_type_t

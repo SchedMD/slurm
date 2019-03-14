@@ -5702,7 +5702,8 @@ extern int get_cluster_node_offset(char *cluster_name,
 	return 0;
 }
 
-extern void print_multi_line_string(char *user_msg, int inx)
+extern void print_multi_line_string(char *user_msg, int inx,
+				    log_level_t log_lvl)
 {
 	char *line, *buf, *ptrptr = NULL;
 
@@ -5713,9 +5714,9 @@ extern void print_multi_line_string(char *user_msg, int inx)
 	line = strtok_r(buf, "\n", &ptrptr);
 	while (line) {
 		if (inx == -1)
-			info("%s", line);
+			log_var(log_lvl, "%s", line);
 		else
-			info("%d: %s", inx, line);
+			log_var(log_lvl, "%d: %s", inx, line);
 		line = strtok_r(NULL, "\n", &ptrptr);
 	}
 	xfree(buf);
