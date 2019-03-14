@@ -284,9 +284,6 @@ static void _opt_env(int pack_offset);
 
 static void _opt_args(int argc, char **argv, int pack_offset);
 
-/* list known options and their settings  */
-static void  _opt_list(void);
-
 /* verify options sanity  */
 static bool _opt_verify(void);
 
@@ -556,7 +553,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			exit(error_exit);
 
 		if (_verbose)
-			_opt_list();
+			slurm_print_set_options(&opt);
 
 		if (spank_init_post_opt() < 0) {
 			error("Plugin stack post-option processing failed.");
@@ -2769,190 +2766,6 @@ extern int   spank_unset_job_env(const char *name)
 	}
 
 	return 0;	/* not found */
-}
-
-/* helper function for printing options
- *
- * warning: returns pointer to memory allocated on the stack.
- */
-static char *print_constraints(void)
-{
-	char *buf = xstrdup("");
-
-	if (opt.pn_min_cpus != NO_VAL)
-		xstrfmtcat(buf, "mincpus-per-node=%d ", opt.pn_min_cpus);
-
-	if (opt.pn_min_memory != NO_VAL64)
-		xstrfmtcat(buf, "mem-per-node=%"PRIu64"M ", opt.pn_min_memory);
-
-	if (opt.mem_per_cpu != NO_VAL64)
-		xstrfmtcat(buf, "mem-per-cpu=%"PRIu64"M ", opt.mem_per_cpu);
-
-	if (opt.pn_min_tmp_disk != NO_VAL64)
-		xstrfmtcat(buf, "tmp-per-node=%"PRIu64" ", opt.pn_min_tmp_disk);
-
-	if (opt.contiguous == true)
-		xstrcat(buf, "contiguous ");
-
-	if (opt.nodelist != NULL)
-		xstrfmtcat(buf, "nodelist=%s ", opt.nodelist);
-
-	if (opt.exc_nodes != NULL)
-		xstrfmtcat(buf, "exclude=%s ", opt.exc_nodes);
-
-	if (opt.constraint != NULL)
-		xstrfmtcat(buf, "constraints=`%s' ", opt.constraint);
-
-	if (opt.c_constraint != NULL)
-		xstrfmtcat(buf, "cluster-constraints=`%s' ", opt.c_constraint);
-
-	return buf;
-}
-
-#define tf_(b) (b == true) ? "true" : "false"
-
-static void _opt_list(void)
-{
-	char *str;
-	int i;
-
-	info("defined options");
-	info("--------------- ---------------------");
-
-	info("uid            : %ld", (long) opt.uid);
-	info("gid            : %ld", (long) opt.gid);
-	info("cwd            : %s", opt.cwd);
-	info("ntasks         : %d %s", opt.ntasks,
-	     opt.ntasks_set ? "(set)" : "(default)");
-	if (opt.cpus_set)
-		info("cpus_per_task  : %d", opt.cpus_per_task);
-	if (opt.max_nodes)
-		info("nodes          : %d-%d", opt.min_nodes, opt.max_nodes);
-	else {
-		info("nodes          : %d %s", opt.min_nodes,
-		     opt.nodes_set ? "(set)" : "(default)");
-	}
-	info("jobid          : %u", sropt.jobid);
-	info("partition      : %s",
-	     opt.partition == NULL ? "default" : opt.partition);
-	info("profile        : `%s'",
-	     acct_gather_profile_to_string(opt.profile));
-	info("job name       : `%s'", opt.job_name);
-	info("reservation    : `%s'", opt.reservation);
-	info("burst_buffer   : `%s'", opt.burst_buffer);
-	info("wckey          : `%s'", opt.wckey);
-	info("cpu_freq_min   : %u", opt.cpu_freq_min);
-	info("cpu_freq_max   : %u", opt.cpu_freq_max);
-	info("cpu_freq_gov   : %u", opt.cpu_freq_gov);
-	if (opt.delay_boot != NO_VAL)
-		info("delay_boot        : %u", opt.delay_boot);
-	info("switches       : %d", opt.req_switch);
-	info("wait-for-switches : %d", opt.wait4switch);
-	info("distribution   : %s", format_task_dist_states(opt.distribution));
-	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
-		info("plane size   : %u", opt.plane_size);
-	info("cpu-bind       : %s (%u)",
-	     sropt.cpu_bind == NULL ? "default" : sropt.cpu_bind, sropt.cpu_bind_type);
-	info("mem-bind       : %s (%u)",
-	     opt.mem_bind == NULL ? "default" : opt.mem_bind, opt.mem_bind_type);
-	info("verbose        : %d", _verbose);
-	info("slurmd_debug   : %d", sropt.slurmd_debug);
-	if (opt.immediate <= 1)
-		info("immediate      : %s", tf_(opt.immediate));
-	else
-		info("immediate      : %d secs", (opt.immediate - 1));
-	info("label output   : %s", tf_(sropt.labelio));
-	info("unbuffered IO  : %s", tf_(sropt.unbuffered));
-	info("overcommit     : %s", tf_(opt.overcommit));
-	info("threads        : %d", sropt.max_threads);
-	if (opt.time_limit == INFINITE)
-		info("time_limit     : INFINITE");
-	else if (opt.time_limit != NO_VAL)
-		info("time_limit     : %d", opt.time_limit);
-	if (opt.time_min != NO_VAL)
-		info("time_min       : %d", opt.time_min);
-	if (sropt.ckpt_interval)
-		info("checkpoint     : %d mins", sropt.ckpt_interval);
-	info("wait           : %d", sropt.max_wait);
-	if (opt.nice)
-		info("nice           : %d", opt.nice);
-	info("account        : %s", opt.account);
-	info("comment        : %s", opt.comment);
-
-	info("dependency     : %s", opt.dependency);
-	if (opt.gres)
-		info("gres           : %s", opt.gres);
-	info("exclusive      : %s", tf_(sropt.exclusive));
-	if (sropt.bcast_file)
-		info("bcast          : %s", sropt.bcast_file);
-	else
-		info("bcast          : %s", tf_(sropt.bcast_flag));
-	info("qos            : %s", opt.qos);
-	if (opt.shared != NO_VAL16)
-		info("oversubscribe  : %u", opt.shared);
-	str = print_constraints();
-	info("constraints    : %s", str);
-	xfree(str);
-	info("reboot         : %s", opt.reboot ? "no" : "yes");
-	info("preserve_env   : %s", tf_(sropt.preserve_env));
-
-	info("network        : %s", opt.network);
-	info("propagate      : %s",
-	     sropt.propagate == NULL ? "NONE" : sropt.propagate);
-	if (opt.begin) {
-		char time_str[32];
-		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
-		info("begin          : %s", time_str);
-	}
-	if (opt.deadline) {
-		char time_str[32];
-		slurm_make_time_str(&opt.deadline, time_str, sizeof(time_str));
-		info("deadline       : %s", time_str);
-	}
-	info("prolog         : %s", sropt.prolog);
-	info("epilog         : %s", sropt.epilog);
-	info("mail_type      : %s", print_mail_type(opt.mail_type));
-	info("mail_user      : %s", opt.mail_user);
-	info("task_prolog    : %s", sropt.task_prolog);
-	info("task_epilog    : %s", sropt.task_epilog);
-	info("multi_prog     : %s", sropt.multi_prog ? "yes" : "no");
-	info("sockets-per-node  : %d", opt.sockets_per_node);
-	info("cores-per-socket  : %d", opt.cores_per_socket);
-	info("threads-per-core  : %d", opt.threads_per_core);
-	info("ntasks-per-node   : %d", opt.ntasks_per_node);
-	info("ntasks-per-socket : %d", opt.ntasks_per_socket);
-	info("ntasks-per-core   : %d", opt.ntasks_per_core);
-	info("plane_size        : %u", opt.plane_size);
-	if (opt.core_spec == NO_VAL16)
-		info("core-spec         : NA");
-	else if (opt.core_spec & CORE_SPEC_THREAD) {
-		info("thread-spec       : %d",
-		     opt.core_spec & (~CORE_SPEC_THREAD));
-	} else
-		info("core-spec         : %d", opt.core_spec);
-	if (sropt.resv_port_cnt != NO_VAL)
-		info("resv_port_cnt     : %d", sropt.resv_port_cnt);
-	info("power             : %s", power_flags_str(opt.power_flags));
-
-	info("cpus-per-gpu      : %d", opt.cpus_per_gpu);
-	info("gpus              : %s", opt.gpus);
-	info("gpu-bind          : %s", opt.gpu_bind);
-	info("gpu-freq          : %s", opt.gpu_freq);
-	info("gpus-per-node     : %s", opt.gpus_per_node);
-	info("gpus-per-socket   : %s", opt.gpus_per_socket);
-	info("gpus-per-task     : %s", opt.gpus_per_task);
-	info("mem-per-gpu       : %"PRIu64, opt.mem_per_gpu);
-
-	str = print_commandline(sropt.argc, sropt.argv);
-	info("remote command    : `%s'", str);
-	xfree(str);
-
-	if (sropt.pack_group)
-		info("pack_group        : %s", sropt.pack_group);
-
-	for (i = 0; i < opt.spank_job_env_size; i++)
-		info("spank_job_env[%d] : %s", i, opt.spank_job_env[i]);
-
 }
 
 /* Read specified file's contents into a buffer.

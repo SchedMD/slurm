@@ -269,7 +269,6 @@ typedef struct {
  */
 
 static slurm_cli_opt_t *common_options[] = {
-	&slurm_opt_qos,
 	NULL /* END */
 };
 
