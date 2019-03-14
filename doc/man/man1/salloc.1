@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "February 2019" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "March 2019" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -759,11 +759,6 @@ them. For example "\-I60" and not "\-I 60".
 Specify a name for the job allocation. The specified name will appear along with
 the job id number when querying running jobs on the system.  The default job
 name is the name of the "command" specified on the command line.
-
-.TP
-\fB\-\-jobid\fR=<\fIjobid\fR>
-Allocate resources as the specified job id.
-NOTE: Only valid for users root and SlurmUser.
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-command\fR[=\fIsignal\fR]
@@ -1694,9 +1689,6 @@ Same as \fB\-\-hint\fR
 .TP
 \fBSALLOC_IMMEDIATE\fR
 Same as \fB\-I, \-\-immediate\fR
-.TP
-\fBSALLOC_JOBID\fR
-Same as \fB\-\-jobid\fR
 .TP
 \fBSALLOC_KILL_CMD\fR
 Same as \fB\-K\fR, \fB\-\-kill\-command\fR

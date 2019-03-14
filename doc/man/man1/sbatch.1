@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "February 2019" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "March 2019" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -856,12 +856,6 @@ Specify a name for the job allocation. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
 is the name of the batch script, or just "sbatch" if the script is
 read on sbatch's standard input.
-
-.TP
-\fB\-\-jobid\fR=<\fIjobid\fR>
-Allocate resources as the specified job id.
-NOTE: Only valid for users root and SlurmUser.
-NOTE: Not valid for federated clusters.
 
 .TP
 \fB\-k\fR, \fB\-\-no\-kill\fR [=off]
@@ -1968,9 +1962,6 @@ Same as \fB\-\-hint\fR
 .TP
 \fBSBATCH_IGNORE_PBS\fR
 Same as \fB\-\-ignore\-pbs\fR
-.TP
-\fBSBATCH_JOBID\fR
-Same as \fB\-\-jobid\fR
 .TP
 \fBSBATCH_JOB_NAME\fR
 Same as \fB\-J, \-\-job\-name\fR

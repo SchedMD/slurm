@@ -85,7 +85,6 @@
 #define OPT_CORE        0x06
 #define OPT_BELL        0x0a
 #define OPT_NO_BELL     0x0b
-#define OPT_JOBID       0x0c
 #define OPT_EXCLUSIVE   0x0d
 #define OPT_OVERCOMMIT  0x0e
 #define OPT_ACCTG_FREQ  0x0f
@@ -278,7 +277,6 @@ static void _opt_default(void)
 	opt.hint_set			= false;
 	xfree(opt.gres);
 	opt.job_flags			= 0;
-	opt.jobid			= NO_VAL;
 	opt.max_nodes			= 0;
 	xfree(opt.mem_bind);
 	opt.mem_bind_type		= 0;
@@ -352,7 +350,6 @@ env_vars_t env_vars[] = {
   {"SALLOC_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL          },
   {"SALLOC_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
-  {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL          },
   {"SALLOC_KILL_CMD",      OPT_KILL_CMD,   NULL,               NULL          },
   {"SALLOC_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
   {"SALLOC_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
@@ -496,11 +493,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 	case OPT_NO_KILL:
 		opt.no_kill = true;
-		break;
-	case OPT_JOBID:
-		info("WARNING: Creating Slurm job allocation from within "
-			"another allocation");
-		info("WARNING: You are attempting to initiate a second job");
 		break;
 	case OPT_EXCLUSIVE:
 		if (val[0] == '\0') {
@@ -657,7 +649,6 @@ static void _set_options(int argc, char **argv)
 		{"gres",          required_argument, 0, LONG_OPT_GRES},
 		{"gres-flags",    required_argument, 0, LONG_OPT_GRES_FLAGS},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
-		{"jobid",         required_argument, 0, LONG_OPT_JOBID},
 		{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 		{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
 		{"mcs-label",     required_argument, 0, LONG_OPT_MCS_LABEL},
@@ -1100,9 +1091,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_NO_BELL:
 			saopt.bell = BELL_NEVER;
-			break;
-		case LONG_OPT_JOBID:
-			opt.jobid = parse_int("jobid", optarg, true);
 			break;
 		case LONG_OPT_PROFILE:
 			opt.profile = acct_gather_profile_from_string(optarg);
@@ -1906,8 +1894,6 @@ static void _opt_list(void)
 	info("job name       : `%s'", opt.job_name);
 	info("reservation    : `%s'", opt.reservation);
 	info("wckey          : `%s'", opt.wckey);
-	if (opt.jobid != NO_VAL)
-		info("jobid          : %u", opt.jobid);
 	if (opt.delay_boot != NO_VAL)
 		info("delay_boot     : %u", opt.delay_boot);
 	info("distribution   : %s", format_task_dist_states(opt.distribution));
@@ -1997,7 +1983,7 @@ static void _usage(void)
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [--immediate[=secs]] [--no-kill] [--overcommit] [-D path]\n"
-"              [--oversubscribe] [-J jobname] [--jobid=id]\n"
+"              [--oversubscribe] [-J jobname]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--licenses=names]\n"
 "              [--clusters=cluster_names]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
@@ -2046,7 +2032,6 @@ static void _help(void)
 "      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
 "  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"
-"      --jobid=id              specify jobid to use\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-command[=signal] signal to send terminating job\n"

@@ -290,8 +290,6 @@ static void _opt_default(bool first_pass)
 	opt.hint_env			= NULL;
 	opt.hint_set			= false;
 	opt.job_flags			= 0;
-	opt.jobid			= NO_VAL;
-	opt.jobid_set			= false;
 	opt.mail_type			= 0;
 	xfree(opt.mail_user);
 	opt.max_nodes			= 0;
@@ -406,7 +404,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_GPUS_PER_TASK", OPT_STRING,     &opt.gpus_per_task, NULL          },
   {"SBATCH_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
-  {"SBATCH_JOBID",         OPT_INT,        &opt.jobid,         NULL          },
   {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL          },
   {"SBATCH_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL          },
   {"SBATCH_MEM_PER_GPU",   OPT_MEM_PER_GPU, &opt.mem_per_gpu,  NULL          },
@@ -733,7 +730,6 @@ static struct option long_options[] = {
 	{"gpus-per-task", required_argument, 0, LONG_OPT_GPUS_PER_TASK},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
-	{"jobid",         required_argument, 0, LONG_OPT_JOBID},
 	{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
 	{"mcs-label",     required_argument, 0, LONG_OPT_MCS_LABEL},
@@ -1605,12 +1601,6 @@ static void _set_options(int argc, char **argv)
 				error("invalid tmp value %s", optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_JOBID:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.jobid = parse_int("jobid", optarg, true);
-			opt.jobid_set = true;
 			break;
 		case LONG_OPT_UID:
 			if (!optarg)
@@ -3174,8 +3164,6 @@ static void _opt_list(void)
 		info("nodes             : %d %s", opt.min_nodes,
 		     opt.nodes_set ? "(set)" : "(default)");
 	}
-	info("jobid             : %u %s", opt.jobid,
-	     opt.jobid_set ? "(set)" : "(default)");
 	info("partition         : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
 	info("profile           : `%s'",
@@ -3280,7 +3268,7 @@ static void _usage(void)
 "              [--input file] [--output file] [--error file]\n"
 "              [--time-min=minutes] [--licenses=names] [--clusters=cluster_names]\n"
 "              [--chdir=directory] [--oversubscibe] [-m dist] [-J jobname]\n"
-"              [--jobid=id] [--verbose] [--gid=group] [--uid=user]\n"
+"              [--verbose] [--gid=group] [--uid=user]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
 "              [--mail-type=type] [--mail-user=user][--nice[=value]] [--wait]\n"
@@ -3334,7 +3322,6 @@ static void _help(void)
 "  -H, --hold                  submit job in held state\n"
 "      --ignore-pbs            Ignore #PBS options in the batch script\n"
 "  -i, --input=in              file for batch script's standard input\n"
-"      --jobid=id              run under already allocated job\n"
 "  -J, --job-name=jobname      name of job\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -L, --licenses=names        required license, comma separated\n"

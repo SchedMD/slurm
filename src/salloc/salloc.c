@@ -917,7 +917,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.job_flags)
 		desc->bitflags |= opt.job_flags;
 	desc->shared = opt.shared;
-	desc->job_id = opt.jobid;
 
 	desc->wait_all_nodes = saopt.wait_all_nodes;
 	if (opt.warn_signal)
