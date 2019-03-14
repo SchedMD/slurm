@@ -140,7 +140,6 @@ struct option long_options[] = {
 	{"disable-status",   no_argument,       0, 'X'},
 	{"no-allocate",      no_argument,       0, 'Z'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
-	{"bb",               required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 	{"bbf",              required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
@@ -577,7 +576,6 @@ static void _opt_default(void)
 	sropt.bcast_file		= NULL;
 	sropt.bcast_flag		= false;
 	sropt.accel_bind_type		= 0;
-	opt.burst_buffer		= NULL;
 	sropt.compress			= 0;
 	opt.core_spec			= NO_VAL16;
 	sropt.core_spec_set		= false;
@@ -656,7 +654,7 @@ env_vars_t env_vars[] = {
   { "SLURM_ACCOUNT", 'A' },
   { "SLURM_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
-{"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
+  { "SLURM_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
   { "SLURM_CLUSTERS", 'M' },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
   { "SLURM_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
@@ -1261,12 +1259,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(sropt.epilog);
 			sropt.epilog = xstrdup(optarg);
-			break;
-		case LONG_OPT_BURST_BUFFER_SPEC:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.burst_buffer);
-			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)

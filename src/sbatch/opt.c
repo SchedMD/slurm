@@ -193,7 +193,6 @@ static void _opt_default(bool first_pass)
 
 	/* All other options must be specified individually for each component
 	 * of the job */
-	xfree(opt.burst_buffer);
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.cpus_per_task		= 0;
@@ -278,7 +277,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_ARRAY_INX",     OPT_STRING,     &sbopt.array_inx,   NULL          },
   { "SBATCH_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
   {"SBATCH_BATCH",         OPT_STRING,     &sbopt.batch_features, NULL       },
-  {"SBATCH_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
+  { "SBATCH_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &sbopt.ckpt_interval_str, NULL    },
   { "SBATCH_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SBATCH_CLUSTERS", 'M' },
@@ -486,7 +485,6 @@ static struct option long_options[] = {
 	{"version",       no_argument,       0, 'V'},
 	{"wait",          no_argument,       0, 'W'},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
-	{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
@@ -1023,12 +1021,6 @@ static void _set_options(int argc, char **argv)
 				error("--gid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_BURST_BUFFER_SPEC:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.burst_buffer);
-			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)

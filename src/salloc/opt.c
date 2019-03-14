@@ -202,7 +202,6 @@ static void _opt_default(void)
 
 	/* All other options must be specified individually for each component
 	 * of the job */
-	xfree(opt.burst_buffer);
 	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.cpus_per_task		= 0;
@@ -251,7 +250,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_ACCOUNT", 'A' },
   { "SALLOC_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
-  {"SALLOC_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
+  { "SALLOC_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
   { "SALLOC_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SALLOC_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
@@ -437,7 +436,6 @@ static void _set_options(int argc, char **argv)
 		{"usage",         no_argument,       0, 'u'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
-		{"bb",            required_argument, 0, LONG_OPT_BURST_BUFFER_SPEC},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"bell",          no_argument,       0, LONG_OPT_BELL},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
@@ -663,12 +661,6 @@ static void _set_options(int argc, char **argv)
 				opt.wait4switch = time_str2secs(pos_delimit);
 			}
 			opt.req_switch = parse_int("switches", optarg, true);
-			break;
-		case LONG_OPT_BURST_BUFFER_SPEC:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.burst_buffer);
-			opt.burst_buffer = xstrdup(optarg);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)

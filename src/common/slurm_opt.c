@@ -365,6 +365,17 @@ static slurm_cli_opt_t slurm_opt_begin = {
 	.reset_func = arg_reset_begin,
 };
 
+COMMON_STRING_OPTION(burst_buffer);
+static slurm_cli_opt_t slurm_opt_bb = {
+	.name = "bb",
+	.has_arg = required_argument,
+	.val = LONG_OPT_BURST_BUFFER_SPEC,
+	.set_func = arg_set_burst_buffer,
+	.get_func = arg_get_burst_buffer,
+	.reset_func = arg_reset_burst_buffer,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(c_constraint);
 static slurm_cli_opt_t slurm_opt_c_constraint = {
 	.name = "cluster-constraint",
@@ -1467,6 +1478,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_acctg_freq,
 	&slurm_opt_alloc_nodelist,
 	&slurm_opt_begin,
+	&slurm_opt_bb,
 	&slurm_opt_c_constraint,
 	&slurm_opt_chdir,
 	&slurm_opt_cluster,
