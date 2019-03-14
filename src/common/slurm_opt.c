@@ -922,6 +922,32 @@ static slurm_cli_opt_t slurm_opt_mcs_label = {
 	.reset_func = arg_reset_mcs_label,
 };
 
+static int arg_set_mem(slurm_opt_t *opt, const char *arg)
+{
+	if ((opt->pn_min_memory = str_to_mbytes2(arg)) == NO_VAL64) {
+		error("Invalid --mem specification");
+		exit(-1);
+	}
+
+	/*
+	 * FIXME: the srun command silently stomps on any --mem-per-cpu
+	 * setting, as it was likely inherited from the env var.
+	 */
+	if (opt->srun_opt)
+		opt->mem_per_cpu = NO_VAL64;
+
+	return SLURM_SUCCESS;
+}
+COMMON_MBYTES_OPTION_GET_AND_RESET(pn_min_memory);
+static slurm_cli_opt_t slurm_opt_mem = {
+	.name = "mem",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MEM,
+	.set_func = arg_set_mem,
+	.get_func = arg_get_pn_min_memory,
+	.reset_func = arg_reset_pn_min_memory,
+};
+
 static int arg_set_mem_bind(slurm_opt_t *opt, const char *arg)
 {
 	xfree(opt->mem_bind);
@@ -1437,6 +1463,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mail_type,
 	&slurm_opt_mail_user,
 	&slurm_opt_mcs_label,
+	&slurm_opt_mem,
 	&slurm_opt_mem_bind,
 	&slurm_opt_mem_per_cpu,
 	&slurm_opt_mem_per_gpu,

@@ -221,7 +221,6 @@ static void _opt_default(void)
 	opt.ntasks_per_core_set		= false;
 	opt.nodes_set			= false;
 	opt.ntasks_set			= false;
-	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
@@ -449,7 +448,6 @@ static void _set_options(int argc, char **argv)
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
-		{"mem",           required_argument, 0, LONG_OPT_MEM},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"no-bell",       no_argument,       0, LONG_OPT_NO_BELL},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
@@ -556,16 +554,6 @@ static void _set_options(int argc, char **argv)
 		case 'V':
 			print_slurm_version();
 			exit(0);
-			break;
-		case LONG_OPT_MEM:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.pn_min_memory = str_to_mbytes2(optarg);
-			if (opt.pn_min_memory == NO_VAL64) {
-				error("invalid memory constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_UID:
 			if (getuid() != 0) {

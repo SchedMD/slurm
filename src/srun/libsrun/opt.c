@@ -156,7 +156,6 @@ struct option long_options[] = {
 	{"help",             no_argument,       0, LONG_OPT_HELP},
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-	{"mem",              required_argument, 0, LONG_OPT_MEM},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
@@ -615,7 +614,6 @@ static void _opt_default(void)
 	opt.ntasks_set			= false;
 	sropt.pack_group		= NULL;
 	sropt.pack_grp_bits		= NULL;
-	opt.pn_min_memory		= NO_VAL64;
 	sropt.relative			= NO_VAL;
 	sropt.relative_set		= false;
 	opt.req_switch			= -1;
@@ -698,7 +696,7 @@ env_vars_t env_vars[] = {
   { "SLURM_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   { "SLURM_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SLURM_MEM_PER_CPU", LONG_OPT_MEM_PER_CPU },
-{"SLURM_MEM_PER_NODE",	OPT_INT64,	&opt.pn_min_memory, NULL             },
+  { "SLURM_MEM_PER_NODE", LONG_OPT_MEM },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
 {"SLURM_NETWORK",       OPT_STRING,     &opt.network,  &sropt.network_set_env},
@@ -1161,17 +1159,6 @@ static void _set_options(const int argc, char **argv)
 						  &sropt.cpu_bind_type, 0))
 				exit(error_exit);
 			sropt.cpu_bind_type_set = true;
-			break;
-		case LONG_OPT_MEM:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.pn_min_memory = str_to_mbytes2(optarg);
-			opt.mem_per_cpu = NO_VAL64;
-			if (opt.pn_min_memory == NO_VAL64) {
-				error("invalid memory constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_MPI:
 			if (!optarg)

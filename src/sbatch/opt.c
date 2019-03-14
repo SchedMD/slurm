@@ -210,7 +210,6 @@ static void _opt_default(bool first_pass)
 	opt.ntasks_per_node		= 0;	/* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_set			= false;
-	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
@@ -500,7 +499,6 @@ static struct option long_options[] = {
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
-	{"mem",           required_argument, 0, LONG_OPT_MEM},
 	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
@@ -1014,16 +1012,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'W':
 			sbopt.wait = true;
-			break;
-		case LONG_OPT_MEM:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.pn_min_memory = str_to_mbytes2(optarg);
-			if (opt.pn_min_memory == NO_VAL64) {
-				error("invalid memory constraint %s",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_UID:
 			if (!optarg)
