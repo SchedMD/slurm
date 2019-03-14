@@ -5825,8 +5825,13 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					job_ptr->job_id, node_ptr->name,
 					enforce_binding, s_p_n, &req_sock_map,
 					job_ptr->user_id, node_i);
-		if (!sock_gres_list)	/* GRES requirement fail */
+		if (!sock_gres_list) {	/* GRES requirement fail */
+#if _DEBUG
+			info("Test fail on node %d: gres_plugin_job_test2",
+			     node_i);
+#endif
 			return NULL;
+		}
 	}
 
 	/* Identify available CPUs */
@@ -5856,6 +5861,10 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	FREE_NULL_BITMAP(req_sock_map);
 	if (!avail_res || (avail_res->max_cpus == 0)) {
 		_free_avail_res(avail_res);
+#if _DEBUG
+		info("Test fail on node %d: _allocate_cores/sockets",
+		     node_i);
+#endif
 		return NULL;
 	}
 
@@ -5874,6 +5883,10 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	}
 	min_cpus_per_node = ntasks_per_node * job_ptr->details->cpus_per_task;
 	if (avail_res->max_cpus < min_cpus_per_node) {
+#if _DEBUG
+		info("Test fail on node %d: max_cpus < min_cpus_per_node (%u < %u)",
+		     node_i, avail_res->max_cpus, min_cpus_per_node);
+#endif
 		_free_avail_res(avail_res);
 		return NULL;
 	}
@@ -5900,6 +5913,10 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 					job_ptr->details->ntasks_per_node,
 					&avail_res->avail_gpus, &near_gpu_cnt);
 		if (rc != 0) {
+#if _DEBUG
+			info("Test fail on node %d: gres_plugin_job_core_filter2",
+			     node_i);
+#endif
 			_free_avail_res(avail_res);
 			return NULL;
 		}
@@ -5965,8 +5982,12 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		}
 	}
 
-	if (cpus == 0)
+	if (cpus == 0) {
+#if _DEBUG
+		info("Test fail on node %d: cpus == 0", node_i);
+#endif
 		bit_clear_all(core_map[node_i]);
+	}
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("%s: %s: %u CPUs on %s(state:%d), mem %"PRIu64"/%"PRIu64,
