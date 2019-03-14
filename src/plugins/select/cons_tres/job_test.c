@@ -284,9 +284,10 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 		return;
 	}
 
-	info("Node:%s Sockets:%u SpecThreads:%u CPUsMin-Max:%u-%u VPUs:%u",
+	info("Node:%s Sockets:%u SpecThreads:%u CPUs:Min-Max,Avail:%u-%u,%u VPUs:%u",
 	     node_name, avail_res->sock_cnt, avail_res->spec_threads,
-	     avail_res->min_cpus, avail_res->max_cpus, avail_res->vpus);
+	     avail_res->min_cpus, avail_res->max_cpus, avail_res->avail_cpus,
+	     avail_res->vpus);
 	gres_info = gres_plugin_sock_str(avail_res->sock_gres_list, -1);
 	if (gres_info) {
 		info("  AnySocket %s", gres_info);
@@ -5968,7 +5969,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		bit_clear_all(core_map[node_i]);
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		info("%s: %s: %u CPUs on %s(%d), mem %"PRIu64"/%"PRIu64,
+		info("%s: %s: %u CPUs on %s(state:%d), mem %"PRIu64"/%"PRIu64,
 		     plugin_type, __func__, cpus,
 		     select_node_record[node_i].node_ptr->name,
 		     node_usage[node_i].node_state,
