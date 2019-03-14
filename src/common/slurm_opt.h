@@ -252,6 +252,7 @@ typedef struct srun_opt {
 	bool exclusive;			/* --exclusive			*/
 	char *export_env;		/* --export			*/
 	char *hostfile;			/* location of hostfile if there is one */
+	uint32_t jobid;			/* --jobid			*/
 	bool job_name_set_cmd;		/* true if job_name set by cmd line option */
 	bool job_name_set_env;		/* true if job_name set by env var */
 	int32_t kill_bad_exit;		/* --kill-on-bad-exit		*/
@@ -342,8 +343,6 @@ typedef struct slurm_options {
 					 * when -m plane=<# of lllp per
 					 * plane> */
 	char *job_name;			/* --job-name			*/
-	uint32_t jobid;			/* --jobid			*/
-	bool jobid_set;			/* jobid explicitly set		*/
 	char *mpi_type;			/* --mpi=type			*/
 	char *dependency;		/* --dependency			*/
 	int nice;			/* --nice			*/

@@ -156,7 +156,7 @@ test1.53   Test of --signal option.
 test1.54   Test of MPMD (--multi-prog option).
 test1.55   Verify srun behaves when its controlling terminal disappears.
 test1.56   Test buffered standard IO with really long lines
-test1.57   Test of srun --jobid for a new job allocation (used by Moab)
+test1.57   DEFUNCT
 test1.58   Test of srun --jobid for an existing job allocation
 test1.59   Test of hostfile logic for job steps
 test1.60   Test of labelling output when writing a file per task or per node

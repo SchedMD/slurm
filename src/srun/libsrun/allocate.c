@@ -388,15 +388,6 @@ extern resource_allocation_response_msg_t *
 
 	j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
 
-	/* Do not re-use existing job id when submitting new job
-	 * from within a running job */
-	if ((j->job_id != NO_VAL) && !opt_local->jobid_set) {
-		info("WARNING: Creating Slurm job allocation from within "
-		     "another allocation");
-		info("WARNING: You are attempting to initiate a second job");
-		if (!opt_local->jobid_set)	/* Let slurmctld set jobid */
-			j->job_id = NO_VAL;
-	}
 	callbacks.ping = _ping_handler;
 	callbacks.timeout = _timeout_handler;
 	callbacks.job_complete = _job_complete_handler;
@@ -496,7 +487,6 @@ relinquish:
 List allocate_pack_nodes(bool handle_signals)
 {
 	resource_allocation_response_msg_t *resp = NULL;
-	bool jobid_log = true;
 	job_desc_msg_t *j, *first_job = NULL;
 	slurm_allocation_callbacks_t callbacks;
 	ListIterator opt_iter, resp_iter;
@@ -521,19 +511,6 @@ List allocate_pack_nodes(bool handle_signals)
 			first_job = j;
 
 		j->origin_cluster = xstrdup(slurmctld_conf.cluster_name);
-
-		/* Do not re-use existing job id when submitting new job
-		 * from within a running job */
-		if ((j->job_id != NO_VAL) && !opt_local->jobid_set) {
-			if (jobid_log) {
-				jobid_log = false;	/* log once */
-				info("WARNING: Creating Slurm job allocation from within "
-				     "another allocation");
-				info("WARNING: You are attempting to initiate a second job");
-			}
-			if (!opt_local->jobid_set) /* Let slurmctld set jobid */
-				j->job_id = NO_VAL;
-		}
 
 		list_append(job_req_list, j);
 	}
@@ -676,12 +653,12 @@ extern List existing_allocation(void)
 	uint32_t old_job_id;
 	List job_resp_list = NULL;
 
-	if (opt.jobid == NO_VAL)
+	if (sropt.jobid == NO_VAL)
 		return NULL;
 
-	old_job_id = (uint32_t) opt.jobid;
+	old_job_id = (uint32_t) sropt.jobid;
 	if (slurm_pack_job_lookup(old_job_id, &job_resp_list) < 0) {
-		if (opt.srun_opt->parallel_debug || opt.jobid_set)
+		if (sropt.parallel_debug)
 			return NULL;    /* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE)
 			error("Slurm job %u has expired", old_job_id);
@@ -880,8 +857,6 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 
 	if (opt_local->hold)
 		j->priority     = 0;
-	if (opt_local->jobid != NO_VAL)
-		j->job_id	= opt_local->jobid;
 	if (opt_local->reboot)
 		j->reboot = 1;
 

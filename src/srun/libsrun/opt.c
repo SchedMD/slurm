@@ -723,8 +723,7 @@ static void _opt_default(void)
 		opt.hold		= false;
 		xfree(sropt.ifname);
 		opt.immediate		= 0;
-		opt.jobid		= NO_VAL;
-		opt.jobid_set		= false;
+		sropt.jobid		= NO_VAL;
 		xfree(opt.job_name);
 		sropt.job_name_set_cmd	= false;
 		sropt.job_name_set_env	= false;
@@ -922,7 +921,7 @@ env_vars_t env_vars[] = {
 {"SLURM_GRES_FLAGS",    OPT_GRES_FLAGS, NULL,               NULL             },
 {"SLURM_HINT",          OPT_HINT,       NULL,               NULL             },
 {"SLURM_IMMEDIATE",     OPT_IMMEDIATE,  NULL,               NULL             },
-{"SLURM_JOB_ID",        OPT_INT,        &opt.jobid,         NULL             },
+{"SLURM_JOB_ID",        OPT_INT,        &sropt.jobid,       NULL             },
 {"SLURM_JOB_NAME",      OPT_STRING,     &opt.job_name,  &sropt.job_name_set_env},
 {"SLURM_JOB_NUM_NODES", OPT_NODES,      NULL,               NULL             },
 {"SLURM_JOB_NODELIST",  OPT_STRING,     &sropt.alloc_nodelist,NULL           },
@@ -1765,8 +1764,7 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_JOBID:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.jobid = _get_int(optarg, "jobid", true);
-			opt.jobid_set = true;
+			sropt.jobid = _get_int(optarg, "jobid", true);
 			break;
 		case LONG_OPT_TIMEO:
 			if (!optarg)
@@ -2290,7 +2288,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 
 #ifdef HAVE_NATIVE_CRAY
 	/* only fatal on the allocation */
-	if (opt.network && opt.shared && (opt.jobid == NO_VAL))
+	if (opt.network && opt.shared && (sropt.jobid == NO_VAL))
 		fatal("Requesting network performance counters requires "
 		      "exclusive access.  Please add the --exclusive option "
 		      "to your request.");
@@ -2957,8 +2955,7 @@ static void _opt_list(void)
 		info("nodes          : %d %s", opt.min_nodes,
 		     opt.nodes_set ? "(set)" : "(default)");
 	}
-	info("jobid          : %u %s", opt.jobid,
-	     opt.jobid_set ? "(set)" : "(default)");
+	info("jobid          : %u", sropt.jobid);
 	info("partition      : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
 	info("profile        : `%s'",

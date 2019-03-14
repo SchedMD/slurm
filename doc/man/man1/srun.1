@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "December 2018" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "March 2019" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1060,9 +1060,8 @@ properly displaying the contents of the slurm_jobacct.log file when the
 \fB\-\-jobid\fR=<\fIjobid\fR>
 Initiate a job step under an already allocated job with job id \fIid\fR.
 Using this option will cause \fBsrun\fR to behave exactly as if the
-SLURM_JOB_ID environment variable was set. This option applies to job and step
+SLURM_JOB_ID environment variable was set. This option applies to step
 allocations.
-NOTE: For job allocations, this is only valid for users root and SlurmUser.
 
 .TP
 \fB\-K\fR, \fB\-\-kill\-on\-bad\-exit\fR[=0|1]
