@@ -2264,6 +2264,11 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		if (mc_ptr->cpus_per_task)
 			i *= mc_ptr->cpus_per_task;
 		*avail_cpus = MIN(*avail_cpus, i);
+		if ((slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+		    avail_core && avail_core[node_inx]) {
+			i = bit_set_count(avail_core[node_inx]);
+			*avail_cpus = MIN(*avail_cpus, i);
+		}
 	}
 }
 
