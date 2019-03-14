@@ -3220,7 +3220,7 @@ extern int slurm_pack_job_lookup(uint32_t jobid, List *resp);
  *
  * NOTE: Returned string must be freed with free().
  */
-extern char *slurm_read_hostfile(char *filename, int n);
+extern char *slurm_read_hostfile(const char *filename, int n);
 
 /*
  * slurm_allocation_msg_thr_create - startup a message handler talking

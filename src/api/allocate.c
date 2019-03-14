@@ -955,7 +955,7 @@ _handle_rc_msg(slurm_msg_t *msg)
  *
  * Returned string must be freed with free().
  */
-char *slurm_read_hostfile(char *filename, int n)
+char *slurm_read_hostfile(const char *filename, int n)
 {
 	FILE *fp = NULL;
 	char in_line[BUFFER_SIZE];	/* input line */
