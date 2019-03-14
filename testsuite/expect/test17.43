@@ -118,13 +118,6 @@ echo 01234567890123456789012345678901234567890123456789\
 exit 0
 "
 
-set cwd "[$bin_pwd]"
-make_bash_script $file_script "
-  cd /tmp
-  $sbatch -N1 --workdir=$cwd -t1 $cwd/$file_in
-  exit 0
-"
-
 #
 # Spawn a sbatch command to verify that the default output file is
 # created and contain the correct contents
