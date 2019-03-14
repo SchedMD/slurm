@@ -386,7 +386,6 @@ EXTRA_DIST = \
 	test17.4			\
 	test17.5			\
 	test17.6			\
-	test17.7			\
 	test17.8			\
 	test17.9			\
 	test17.10			\

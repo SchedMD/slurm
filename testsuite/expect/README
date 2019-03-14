@@ -503,8 +503,6 @@ test17.5   Confirm that sbatch stdout, and stderr options work (--output
 	   and --error option respectively, including use of %j specification)
 test17.6   Confirm that a job executes with the proper task count (--tasks
 	   option).
-test17.7   Confirm that sbatch sets appropriate working directory (--workdir
-	   option)
 test17.8   Confirm that sbatch sets appropriate time limit (--time
 	   option)
 test17.9   Confirm that sbatch sets appropriate job name (--job-name option)
