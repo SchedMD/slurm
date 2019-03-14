@@ -865,6 +865,16 @@ static slurm_cli_opt_t slurm_opt_immediate = {
 	.reset_func = arg_reset_immediate,
 };
 
+COMMON_STRING_OPTION(job_name);
+static slurm_cli_opt_t slurm_opt_job_name = {
+	.name = "job-name",
+	.has_arg = required_argument,
+	.val = 'J',
+	.set_func = arg_set_job_name,
+	.get_func = arg_get_job_name,
+	.reset_func = arg_reset_job_name,
+};
+
 COMMON_STRING_OPTION(licenses);
 static slurm_cli_opt_t slurm_opt_licenses = {
 	.name = "licenses",
@@ -1483,6 +1493,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_gres_flags,
 	&slurm_opt_hold,
 	&slurm_opt_immediate,
+	&slurm_opt_job_name,
 	&slurm_opt_licenses,
 	&slurm_opt_mail_type,
 	&slurm_opt_mail_user,

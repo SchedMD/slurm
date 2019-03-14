@@ -188,7 +188,6 @@ static void _opt_default(void)
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
-		xfree(opt.job_name);
 		saopt.kill_command_signal = SIGTERM;
 		saopt.kill_command_signal_set = false;
 		saopt.no_shell		= false;
@@ -429,7 +428,6 @@ static void _set_options(int argc, char **argv)
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"help",          no_argument,       0, 'h'},
-		{"job-name",      required_argument, 0, 'J'},
 		{"kill-command",  optional_argument, 0, 'K'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
@@ -495,10 +493,6 @@ static void _set_options(int argc, char **argv)
 		case 'h':
 			_help();
 			exit(0);
-		case 'J':
-			xfree(opt.job_name);
-			opt.job_name = xstrdup(optarg);
-			break;
 		case 'K': /* argument is optional */
 			if (optarg) {
 				saopt.kill_command_signal = sig_name2num(optarg);

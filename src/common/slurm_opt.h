@@ -251,8 +251,6 @@ typedef struct srun_opt {
 	char *export_env;		/* --export			*/
 	char *hostfile;			/* location of hostfile if there is one */
 	uint32_t jobid;			/* --jobid			*/
-	bool job_name_set_cmd;		/* true if job_name set by cmd line option */
-	bool job_name_set_env;		/* true if job_name set by env var */
 	int32_t kill_bad_exit;		/* --kill-on-bad-exit		*/
 	bool labelio;			/* --label-output		*/
 	int32_t max_threads;		/* --threads			*/

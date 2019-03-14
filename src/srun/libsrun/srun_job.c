@@ -712,10 +712,6 @@ static void _set_step_opts(slurm_opt_t *opt_local)
 
 	opt_local->time_limit = NO_VAL;/* not applicable for step, only job */
 	xfree(opt_local->constraint);	/* not applicable for this step */
-	if (!srun_opt->job_name_set_cmd && srun_opt->job_name_set_env) {
-		/* use SLURM_JOB_NAME env var */
-		sropt.job_name_set_cmd = true;
-	}
 	if ((srun_opt->core_spec_set || srun_opt->exclusive)
 	    && opt_local->cpus_set) {
 		/* Step gets specified CPU count, which may only part
@@ -1222,9 +1218,9 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			exit(error_exit);
 		}
 #endif
-		if (!sropt.job_name_set_env && sropt.job_name_set_cmd)
+		if (slurm_option_set_by_cli('J'))
 			setenvfs("SLURM_JOB_NAME=%s", opt.job_name);
-		else if (!sropt.job_name_set_env && sropt.argc)
+		else if (!slurm_option_set_by_env('J') && sropt.argc)
 			setenvfs("SLURM_JOB_NAME=%s", sropt.argv[0]);
 
 		if (opt_list) {

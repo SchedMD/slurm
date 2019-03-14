@@ -303,7 +303,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_GPUS_PER_TASK", LONG_OPT_GPUS_PER_TASK },
   {"SBATCH_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
-  {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL          },
+  { "SBATCH_JOB_NAME", 'J' },
   { "SBATCH_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SBATCH_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL          },
@@ -474,7 +474,6 @@ static struct option long_options[] = {
 	{"error",         required_argument, 0, 'e'},
 	{"help",          no_argument,       0, 'h'},
 	{"input",         required_argument, 0, 'i'},
-	{"job-name",      required_argument, 0, 'J'},
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
 	{"tasks",         required_argument, 0, 'n'},
 	{"ntasks",        required_argument, 0, 'n'},
@@ -951,10 +950,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.ifname = xstrdup("/dev/null");
 			else
 				sbopt.ifname = xstrdup(optarg);
-			break;
-		case 'J':
-			xfree(opt.job_name);
-			opt.job_name = xstrdup(optarg);
 			break;
 		case 'n':
 			opt.ntasks_set = true;
