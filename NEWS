@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameters option of bf_hetjob_immediate to attempt to start
     a heterogeneous job as soon as all of its components are determined able to
     do so.
+ -- Fix underflow causing decay thread to exit.
 
 * Changes in Slurm 18.08.6-2
 ============================

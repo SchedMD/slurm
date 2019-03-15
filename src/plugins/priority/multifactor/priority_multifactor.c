@@ -50,6 +50,7 @@
 #endif
 
 #include <fcntl.h>
+#include <float.h>
 #include <limits.h>
 #include <math.h>
 #include <pthread.h>
@@ -1343,10 +1344,10 @@ static void *_decay_thread(void *no_data)
 		if (run_delta <= 0)
 			goto get_usage;
 		real_decay = pow(decay_factor, (double)run_delta);
-#ifdef DBL_MIN
+
 		if (real_decay < DBL_MIN)
 			real_decay = DBL_MIN;
-#endif
+
 		if (priority_debug)
 			info("Decay factor over %g seconds goes "
 			     "from %.15f -> %.15f",
