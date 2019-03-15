@@ -4381,6 +4381,10 @@ extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 	if (!job_ptr->priority)
 		return;
 
+	/* Job has to be pending to accrue time. */
+	if (!IS_JOB_PENDING(job_ptr))
+		return;
+
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
 		fatal_abort("%s: no assoc_ptr", __func__);
@@ -4446,6 +4450,10 @@ extern void acct_policy_remove_accrue_time(struct job_record *job_ptr,
 		return;
 
 	if (!job_ptr->details || !job_ptr->details->accrue_time)
+		return;
+
+	/* Job has to be pending to accrue time. */
+	if (!IS_JOB_PENDING(job_ptr))
 		return;
 
 	if (!assoc_mgr_locked)
