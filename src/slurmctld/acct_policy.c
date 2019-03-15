@@ -111,6 +111,16 @@ static void _get_unique_job_node_cnt(struct job_record *job_ptr,
 				info("%s: %pJ unique allocated node count changed from %"PRIu64" to %"PRIu64,
 				     __func__, job_ptr, init_cnt, *node_cnt);
 		}
+	} else if (job_ptr->details && job_ptr->details->req_node_bitmap &&
+		   grp_node_bitmap) {
+		uint64_t overlap_cnt = bit_overlap(
+			job_ptr->details->req_node_bitmap, grp_node_bitmap);
+		if (overlap_cnt <= *node_cnt) {
+			*node_cnt -=  overlap_cnt;
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_TRES_NODE)
+				info("%s: %pJ unique allocated node count changed from %"PRIu64" to %"PRIu64,
+				     __func__, job_ptr, *node_cnt + overlap_cnt, *node_cnt);
+		}
 	}
 }
 
