@@ -76,6 +76,11 @@ long str_to_mbytes(const char *arg);
  */
 long str_to_mbytes2(const char *arg);
 
+/*
+ * Reverse the above conversion. Returns an xmalloc()'d string.
+ */
+extern char *mbytes2_to_str(int64_t mbytes);
+
 /* verify that a node count in arg is of a known form (count or min-max) */
 bool verify_node_count(const char *arg, int *min_nodes, int *max_nodes);
 
