@@ -147,7 +147,7 @@ proc run_job_test { } {
 
 	# Submit 1 node job
 	set job_id1 0
-	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 -o /dev/null -N1 $file_in
+	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N1 $file_in
 	expect {
                 -re "Submitted batch job ($number)" {
                         set job_id1 $expect_out(1,string)
@@ -198,7 +198,7 @@ proc run_job_test { } {
 
 	# Submit 1 node job EXCLUDING first job's node
 	set job_id2 0
-	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --exclude=$hostname -o /dev/null -N1 $file_in
+	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --exclude=$hostname --mem=10 -o /dev/null -N1 $file_in
 	expect {
                 -re "Submitted batch job ($number)" {
                         set job_id2 $expect_out(1,string)
@@ -221,7 +221,7 @@ proc run_job_test { } {
 
 	# Submit 1 node job INCLUDING first job's node
 	set job_id3 0
-	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --nodelist=$hostname -o /dev/null -N1 $file_in
+	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --nodelist=$hostname --mem=10 -o /dev/null -N1 $file_in
 	expect {
                 -re "Submitted batch job ($number)" {
                         set job_id3 $expect_out(1,string)
@@ -262,7 +262,7 @@ proc run_job_test { } {
 		return
 	}
 	set job_id4 0
-	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 -o /dev/null -N2 $file_in
+	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N2 $file_in
 	expect {
                 -re "Submitted batch job ($number)" {
                         set job_id4 $expect_out(1,string)
