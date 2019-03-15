@@ -293,6 +293,8 @@ static void _opt_default(bool first_pass)
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
 	opt.wait4switch			= -1;
+
+	slurm_reset_all_options(&opt, first_pass);
 }
 
 /* Read specified file's contents into a buffer.

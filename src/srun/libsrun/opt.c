@@ -786,6 +786,8 @@ static void _opt_default(void)
 		pmi_server_max_threads(sropt.max_threads);
 		sropt.msg_timeout		= 15;
 	}
+
+	slurm_reset_all_options(&opt, (pass_number == 1));
 }
 
 /*---[ env var processing ]-----------------------------------------------*/

@@ -299,6 +299,7 @@ static void _opt_default(void)
 	opt.pn_min_tmp_disk		= NO_VAL64;
 	opt.wait4switch			= -1;
 
+	slurm_reset_all_options(&opt, first_pass);
 }
 
 /*---[ env var processing ]-----------------------------------------------*/

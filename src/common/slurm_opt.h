@@ -428,4 +428,8 @@ extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg);
  */
 extern void slurm_print_set_options(slurm_opt_t *opt);
 
+/*
+ * Reset slurm_opt_t settings for a given pass.
+ */
+extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass);
 #endif	/* _SLURM_OPT_H_ */

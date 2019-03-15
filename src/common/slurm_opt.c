@@ -379,3 +379,15 @@ void slurm_print_set_options(slurm_opt_t *opt)
 	info("-------------------- --------------------");
 	info("end of defined options");
 }
+
+extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass)
+{
+	for (int i = 0; common_options[i]; i++) {
+		if (!first_pass && !common_options[i]->reset_each_pass)
+			continue;
+		if (common_options[i]->reset_func) {
+			(common_options[i]->reset_func)(opt);
+			common_options[i]->set = false;
+		}
+	}
+}
