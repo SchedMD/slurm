@@ -80,6 +80,14 @@ static void arg_reset_##field(slurm_opt_t *opt)			\
 	xfree(opt->field);					\
 }
 
+#define COMMON_OPTION_RESET(field, value)			\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+{								\
+	opt->field = value;					\
+}
+
 typedef struct {
 	/*
 	 * DO NOT ALTER THESE FIRST FOUR ARGUMENTS
