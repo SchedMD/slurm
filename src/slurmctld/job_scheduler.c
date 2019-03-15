@@ -1043,8 +1043,7 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		bf_hetjob_prio = 0;
-		if (sched_params &&
-		    (tmp_ptr = strstr(sched_params, "bf_hetjob_prio="))) {
+		if ((tmp_ptr = xstrcasestr(sched_params, "bf_hetjob_prio="))) {
 			tmp_ptr = strtok(tmp_ptr + 15, ",");
 			if (!xstrcasecmp(tmp_ptr, "min"))
 				bf_hetjob_prio |= HETJOB_PRIO_MIN;
