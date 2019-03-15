@@ -2181,14 +2181,14 @@ static bool _opt_verify(void)
 #endif
 
 	if (opt.mem_bind_type && (getenv("SBATCH_MEM_BIND") == NULL)) {
-		char tmp[64];
-		slurm_sprint_mem_bind_type(tmp, opt.mem_bind_type);
+		char *tmp = slurm_xstr_mem_bind_type(opt.mem_bind_type);
 		if (opt.mem_bind) {
 			xstrfmtcat(pack_env.mem_bind, "%s:%s",
 				   tmp, opt.mem_bind);
 		} else {
 			pack_env.mem_bind = xstrdup(tmp);
 		}
+		xfree(tmp);
 	}
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_SORT") == NULL) &&
 	    (opt.mem_bind_type & MEM_BIND_SORT)) {

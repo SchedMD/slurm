@@ -1641,14 +1641,14 @@ static bool _opt_verify(void)
 #endif
 
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND") == NULL)) {
-		char tmp[64];
-		slurm_sprint_mem_bind_type(tmp, opt.mem_bind_type);
+		char *tmp = slurm_xstr_mem_bind_type(opt.mem_bind_type);
 		if (opt.mem_bind) {
 			setenvf(NULL, "SLURM_MEM_BIND", "%s:%s",
 				tmp, opt.mem_bind);
 		} else {
 			setenvf(NULL, "SLURM_MEM_BIND", "%s", tmp);
 		}
+		xfree(tmp);
 	}
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_SORT") == NULL) &&
 	    (opt.mem_bind_type & MEM_BIND_SORT)) {

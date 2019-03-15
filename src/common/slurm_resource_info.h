@@ -44,7 +44,7 @@ void slurm_print_cpu_bind_help(void);
 void slurm_print_mem_bind_help(void);
 
 void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type);
-void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type);
+extern char *slurm_xstr_mem_bind_type(mem_bind_type_t mem_bind_type);
 
 /*
  * verify cpu_bind arguments, set default values as needed

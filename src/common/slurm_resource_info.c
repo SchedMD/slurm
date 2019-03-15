@@ -204,41 +204,38 @@ void slurm_sprint_cpu_bind_type(char *str, cpu_bind_type_t cpu_bind_type)
 }
 
 /*
- * slurm_sprint_mem_bind_type
+ * slurm_xstr_mem_bind_type
  *
  * Given a mem_bind_type, report all flag settings in str
  * IN  - mem_bind_type
  * OUT - str
  */
-void slurm_sprint_mem_bind_type(char *str, mem_bind_type_t mem_bind_type)
+extern char *slurm_xstr_mem_bind_type(mem_bind_type_t mem_bind_type)
 {
-	if (!str)
-		return;
-
-	str[0] = '\0';
+	char *str = NULL;
 
 	if (mem_bind_type & MEM_BIND_VERBOSE)
-		strcat(str, "verbose,");
+		xstrcat(str, "verbose,");
 	if (mem_bind_type & MEM_BIND_PREFER)
-		strcat(str, "prefer,");
+		xstrcat(str, "prefer,");
 	if (mem_bind_type & MEM_BIND_SORT)
-		strcat(str, "sort,");
+		xstrcat(str, "sort,");
 	if (mem_bind_type & MEM_BIND_NONE)
-		strcat(str, "none,");
+		xstrcat(str, "none,");
 	if (mem_bind_type & MEM_BIND_RANK)
-		strcat(str, "rank,");
+		xstrcat(str, "rank,");
 	if (mem_bind_type & MEM_BIND_LOCAL)
-		strcat(str, "local,");
+		xstrcat(str, "local,");
 	if (mem_bind_type & MEM_BIND_MAP)
-		strcat(str, "map_mem,");
+		xstrcat(str, "map_mem,");
 	if (mem_bind_type & MEM_BIND_MASK)
-		strcat(str, "mask_mem,");
+		xstrcat(str, "mask_mem,");
 
-	if (*str) {
+	if (str) {
 		str[strlen(str)-1] = '\0';	/* remove trailing ',' */
-	} else {
-	    	strcat(str, "(null type)");	/* no bits set */
 	}
+
+	return str;
 }
 
 void slurm_print_cpu_bind_help(void)
