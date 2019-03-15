@@ -1386,7 +1386,7 @@ extern char *cpu_freq_to_cmdline(uint32_t min, uint32_t max, uint32_t gov)
 		gov = NO_VAL;
 
 	if ((min == NO_VAL) && (max == NO_VAL) && (gov == NO_VAL))
-		return xstrdup("");
+		return NULL;
 
 	if (min != NO_VAL) {
 		if (min & CPU_FREQ_RANGE_FLAG) {
@@ -1425,7 +1425,7 @@ extern int cpu_freq_set_env(char *var, uint32_t min, uint32_t max,
 			    uint32_t gov)
 {
 	char *bfall = cpu_freq_to_cmdline(min, max, gov);
-	if (setenvf(NULL, var, "%s", bfall)) {
+	if (bfall && setenvf(NULL, var, "%s", bfall)) {
 		xfree(bfall);
 		error("Unable to set %s", var);
 		return SLURM_ERROR;
