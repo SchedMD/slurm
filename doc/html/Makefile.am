@@ -13,7 +13,6 @@ generated_html = \
 	big_sys.html \
 	burst_buffer.html \
 	cgroups.html \
-	checkpoint_blcr.html \
 	checkpoint_plugins.html \
 	classic_fair_share.html \
 	cons_res.html \

@@ -152,7 +152,6 @@ calculation when the Multifactor Job Priority plugin is installed.<br>
 usage across the enterprise.<br>
 <b>srun</b> &mdash; User command to submit a job, get an allocation, and/or
 initiation a parallel job step.<br>
-<b>srun_cr</b> &mdash; Checkpoint/Restart wrapper for srun.<br>
 <b>sshare</b> &mdash; User command to view shares and usage when the Multifactor
 Job Priority plugin is installed.<br>
 <b>sstat</b> &mdash; User command to view detailed statistics about running

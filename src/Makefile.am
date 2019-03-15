@@ -23,7 +23,6 @@ SUBDIRS =		\
 	squeue		\
 	sreport		\
 	srun		\
-	srun_cr		\
 	sshare		\
 	sstat		\
 	strigger	\

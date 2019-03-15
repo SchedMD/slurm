@@ -16,9 +16,6 @@ The major type must be &quot;checkpoint.&quot; The minor type can be any recogni
 abbreviation for the type of checkpoint mechanism.
 We recommend, for example:</p>
 <ul>
-<li><b>blcr</b> &mdash;
-<a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
-Berkeley Lab Checkpoint/Restart (BLCR)</a></li>
 <li><b>none</b> &mdash; No job checkpoint.</li>
 <li><b>ompi</b> &mdash; OpenMPI checkpoint (requires OpenMPI version 1.3 or higher).</li>
 </ul></p>
@@ -35,10 +32,6 @@ If not specified, then the plugin may be loaded by Slurm commands and
 daemons from any version, however this may result in difficult to diagnose
 failures due to changes in the arguments to plugin functions or changes
 in other Slurm functions used by the plugin.</p>
-
-<p>The programmer is urged to study
-<span class="commandline">src/plugins/checkpoint/blcr/checkpoint_blcr.c</span>
-for a sample implementation of a Slurm job checkpoint plugin.</p>
 
 <h2>Data Objects</h2>
 <p>The implementation must maintain (though not necessarily directly export) an

@@ -24,7 +24,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="sh5util.html">sh5util</a></td><td>merge utility for acct_gather_profile plugin.</td></tr>
 <tr><td><a href="squeue.html">squeue</a></td><td>view information about jobs located in the Slurm scheduling queue.</td></tr>
 <tr><td><a href="sreport.html">sreport</a></td><td>Generate reports from the slurm accounting data.</td></tr>
-<tr><td><a href="srun_cr.html">srun_cr</a></td><td>run parallel jobs with checkpoint/restart support</td></tr>
 <tr><td><a href="srun.html">srun</a></td><td>Run parallel jobs</td></tr>
 <tr><td><a href="sshare.html">sshare</a></td><td>Tool for listing the shares of associations to a cluster.</td></tr>
 <tr><td><a href="sstat.html">sstat</a></td><td>Display various status information of a running job/step.</td></tr>

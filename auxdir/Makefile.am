@@ -11,7 +11,6 @@ EXTRA_DIST = \
     test-driver \
     x_ac__system_configuration.m4 \
     x_ac_affinity.m4 \
-    x_ac_blcr.m4 \
     x_ac_bluegene.m4 \
     x_ac_c99.m4 \
     x_ac_cgroup.m4 \

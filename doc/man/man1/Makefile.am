@@ -25,10 +25,6 @@ if BUILD_HDF5
 man1_MANS += sh5util.1
 endif
 
-if WITH_BLCR
-man1_MANS += srun_cr.1
-endif
-
 if BUILD_SVIEW
 man1_MANS += sview.1
 endif
@@ -59,10 +55,6 @@ html_DATA = \
 
 if BUILD_HDF5
 html_DATA += sh5util.html
-endif
-
-if WITH_BLCR
-html_DATA += srun_cr.html
 endif
 
 if BUILD_SVIEW

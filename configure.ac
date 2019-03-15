@@ -351,11 +351,6 @@ AC_SUBST(UTIL_LIBS)
 LIBS="$savedLIBS"
 
 dnl
-dnl Check for compilation of Slurm with BLCR support:
-dnl
-X_AC_BLCR
-
-dnl
 dnl Check for compilation of Slurm with CURL support:
 dnl
 LIBCURL_CHECK_CONFIG
@@ -440,7 +435,6 @@ AC_CONFIG_FILES([Makefile
 		 src/squeue/Makefile
 		 src/srun/Makefile
 		 src/srun/libsrun/Makefile
-		 src/srun_cr/Makefile
 		 src/sshare/Makefile
 		 src/sstat/Makefile
 		 src/strigger/Makefile
@@ -478,9 +472,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/burst_buffer/datawarp/Makefile
 		 src/plugins/burst_buffer/generic/Makefile
 		 src/plugins/checkpoint/Makefile
-		 src/plugins/checkpoint/blcr/Makefile
-		 src/plugins/checkpoint/blcr/cr_checkpoint.sh
-		 src/plugins/checkpoint/blcr/cr_restart.sh
 		 src/plugins/checkpoint/none/Makefile
 		 src/plugins/checkpoint/ompi/Makefile
 		 src/plugins/core_spec/Makefile

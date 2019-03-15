@@ -3,9 +3,6 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Define BLCR installation home */
-#undef BLCR_HOME
-
 /* Define location of cpuset directory */
 #undef CPUSET_DIR
 

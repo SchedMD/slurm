@@ -46,12 +46,10 @@ for the application to manage Kerberos V credentials.</li>
 
 <li><b>Checkpoint/Restart</b></li>
 <ul>
-<li><a href="https://upc-bugs.lbl.gov/blcr/doc/html/">
-<b> BLCR (Berkeley Lab Checkpoint/Restart)</a></b>
 <li><a href="http://dmtcp.sourceforge.net/">
-<b>DMTCP (Distributed MultiThreaded CheckPointing)</a></b>
+<b>DMTCP (Distributed MultiThreaded CheckPointing)</a></b></li>
 <li><a href="https://computation.llnl.gov/project/scr/">
-<b>Scalable Checkpoint/Restart (SCR) for MPI</a></b>
+<b>Scalable Checkpoint/Restart (SCR) for MPI</a></b></li>
 </ul><br>
 
 <li><b>Databases</b> can be used to store accounting information.

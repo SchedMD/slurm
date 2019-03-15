@@ -394,13 +394,6 @@ The system\-initiated checkpoint method to be used for user jobs.
 The slurmctld daemon must be restarted for a change in \fBCheckpointType\fR
 to take effect. Supported values presently include:
 .RS
-.TP 18
-\fBcheckpoint/blcr\fR
-Berkeley Lab Checkpoint Restart (BLCR).
-NOTE: If a file is found at sbin/scch (relative to the Slurm installation
-location), it will be executed upon completion of the checkpoint. This can
-be a script used for managing the checkpoint files.
-NOTE: Slurm's BLCR logic only supports batch jobs.
 .TP
 \fBcheckpoint/none\fR
 no checkpoint support (default)
