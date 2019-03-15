@@ -152,6 +152,17 @@ static char *arg_get_##field(slurm_opt_t *opt)			\
 	return mbytes2_to_str(opt->field);			\
 }
 
+#define COMMON_TIME_DURATION_OPTION_GET_AND_RESET(field)	\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+{								\
+	char time_str[32];					\
+	mins2time_str(opt->field, time_str, sizeof(time_str));	\
+	return xstrdup(time_str);				\
+}								\
+COMMON_OPTION_RESET(field, NO_VAL)
+
 typedef struct {
 	/*
 	 * DO NOT ALTER THESE FIRST FOUR ARGUMENTS
