@@ -72,12 +72,6 @@ Please see the instructions at
 Extensive documentation is available from our home page at
   https://slurm.schedmd.com/slurm.html
 
-PROBLEMS
---------
-
-If you experience problems compiling, installing, or running Slurm, see
-   https://slurm.schedmd.com/help.html
-
 LEGAL
 -----
 
