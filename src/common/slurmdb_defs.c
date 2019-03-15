@@ -372,13 +372,9 @@ extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 		    (!job_cond->step_list || !list_count(job_cond->step_list)))
 			job_cond->usage_start = time(NULL);
 
-		if (!job_cond->usage_end)
-			job_cond->usage_end = job_cond->usage_start ?
-				job_cond->usage_start : time(NULL);
-	} else if (job_cond->step_list && list_count(job_cond->step_list) &&
-		   !job_cond->usage_end) {
-			job_cond->usage_end = time(NULL);
-	} else {
+		if (job_cond->usage_start && !job_cond->usage_end)
+			job_cond->usage_end = job_cond->usage_start;
+	} else if (!job_cond->step_list || !list_count(job_cond->step_list)) {
 		if (!job_cond->usage_start) {
 			struct tm start_tm;
 			job_cond->usage_start = time(NULL);
@@ -393,10 +389,10 @@ extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 				job_cond->usage_start = slurm_mktime(&start_tm);
 			}
 		}
-
-		if (!job_cond->usage_end)
-			job_cond->usage_end = time(NULL);
 	}
+
+	if (!job_cond->usage_end)
+		job_cond->usage_end = time(NULL);
 }
 
 static uint32_t _str_2_qos_flags(char *flags)

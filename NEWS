@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
     do so.
  -- Fix underflow causing decay thread to exit.
  -- Fix main scheduler not considering hetjobs when building the job queue.
+ -- Fix regression for sacct to display old jobs without a start time.
 
 * Changes in Slurm 18.08.6-2
 ============================
