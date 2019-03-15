@@ -134,10 +134,15 @@ char *print_commandline(const int script_argc, char **script_argv);
  * RET 0 on success, -1 on failure */
 int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 		    uint16_t *warn_flags);
+/* Return an xmalloc()'d string representing the original cmdline args */
+extern char *signal_opts_to_cmdline(uint16_t warn_signal, uint16_t warn_time,
+				    uint16_t warn_flags);
 
 /* Convert a signal name to it's numeric equivalent.
  * Return 0 on failure */
 int sig_name2num(char *signal_name);
+/* Return an xmalloc()'d string reversing the above conversion */
+extern char *sig_num2name(int signal);
 
 /*
  * parse_uint16/32/64 - Convert ascii string to a 16/32/64 bit unsigned int.

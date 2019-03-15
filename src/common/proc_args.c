@@ -1163,31 +1163,48 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 	return -1;
 }
 
+extern char *signal_opts_to_cmdline(uint16_t warn_signal, uint16_t warn_time,
+				    uint16_t warn_flags)
+{
+	char *cmdline = NULL;
+
+	if (warn_flags == KILL_JOB_BATCH)
+		xstrcat(cmdline, "B:");
+
+	xstrcat(cmdline, sig_num2name(warn_signal));
+
+	if (warn_time != 60) /* default value above, don't print */
+		xstrfmtcat(cmdline, "@%u", warn_time);
+
+	return cmdline;
+}
+
+static struct {
+	char *name;
+	uint16_t val;
+} signals_mapping[] = {
+	{ "HUP",	SIGHUP	},
+	{ "INT",	SIGINT	},
+	{ "QUIT",	SIGQUIT	},
+	{ "ABRT",	SIGABRT	},
+	{ "KILL",	SIGKILL	},
+	{ "ALRM",	SIGALRM	},
+	{ "TERM",	SIGTERM	},
+	{ "USR1",	SIGUSR1	},
+	{ "USR2",	SIGUSR2	},
+	{ "URG",	SIGURG	},
+	{ "CONT",	SIGCONT	},
+	{ "STOP",	SIGSTOP	},
+	{ "TSTP",	SIGTSTP	},
+	{ "TTIN",	SIGTTIN	},
+	{ "TTOU",	SIGTTOU	},
+	{ NULL,		0	}	/* terminate array */
+};
+
 /* Convert a signal name to it's numeric equivalent.
  * Return 0 on failure */
 int sig_name2num(char *signal_name)
 {
-	struct signal_name_value {
-		char *name;
-		uint16_t val;
-	} signals[] = {
-		{ "HUP",	SIGHUP	},
-		{ "INT",	SIGINT	},
-		{ "QUIT",	SIGQUIT	},
-		{ "ABRT",	SIGABRT	},
-		{ "KILL",	SIGKILL	},
-		{ "ALRM",	SIGALRM	},
-		{ "TERM",	SIGTERM	},
-		{ "USR1",	SIGUSR1	},
-		{ "USR2",	SIGUSR2	},
-		{ "URG",	SIGURG	},
-		{ "CONT",	SIGCONT	},
-		{ "STOP",	SIGSTOP	},
-		{ "TSTP",	SIGTSTP	},
-		{ "TTIN",	SIGTTIN	},
-		{ "TTOU",	SIGTTOU	},
-		{ NULL,		0	}	/* terminate array */
-	};
 	char *ptr;
 	long tmp;
 	int i;
@@ -1208,17 +1225,27 @@ int sig_name2num(char *signal_name)
 		ptr += 3;
 	for (i = 0; ; i++) {
 		int siglen;
-		if (signals[i].name == NULL)
+		if (signals_mapping[i].name == NULL)
 			return 0;
-		siglen = strlen(signals[i].name);
-		if ((!xstrncasecmp(ptr, signals[i].name, siglen)
+		siglen = strlen(signals_mapping[i].name);
+		if ((!xstrncasecmp(ptr, signals_mapping[i].name, siglen)
 		    && xstring_is_whitespace(ptr + siglen))) {
 			/* found the signal name */
-			return signals[i].val;
+			return signals_mapping[i].val;
 		}
 	}
 
 	return 0;	/* not found */
+}
+
+extern char *sig_num2name(int signal)
+{
+	for (int i = 0; signals_mapping[i].name; i++) {
+		if (signal == signals_mapping[i].val)
+			return xstrdup(signals_mapping[i].name);
+	}
+
+	return xstrdup_printf("%d", signal);
 }
 
 /*
