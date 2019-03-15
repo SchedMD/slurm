@@ -12,7 +12,7 @@ documents those changes that are of interest to users and administrators.
     before the job was able to make it to the database.
  -- Set state_reason if select_nodes() fails job for QOS or Account.
  -- Avoid seg_fault on referencing association without a valid_qos bitmap.
- -- If Association is removed on a pending job set that job as ineligible.
+ -- If Association/QOS is removed on a pending job set that job as ineligible.
 
 * Changes in Slurm 18.08.7
 ==========================
