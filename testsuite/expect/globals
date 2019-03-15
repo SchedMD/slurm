@@ -3895,6 +3895,71 @@ proc get_node_cores {node} {
 
 #####################################################################
 #
+# Proc: get_node_cpus
+#
+# Purpose:	Given a node, return its total number of threads we account for.
+#		(not always ThreadsPerCore, but how many threads are in use.
+#               i.e. CPUs=6 CoresPerSocket=6 ThreadsPerCore=2 Socket=1 would
+#               result in only 1 thread we care about instead of the 2 listed.)
+#
+# Input: node - node to get threads from
+#
+# Returns: list of node [ tot_cpus threads ] if retrieved, [ -1 -1 ] otherwise
+#
+#####################################################################
+proc get_node_cpus {node} {
+
+	global scontrol number
+	set nthreads -1
+	set nsockets 0
+	set ncores 0
+	set totcpus -1
+
+	if {[string length $node] == 0} {
+		return [list $totcpus $nthreads]
+	}
+
+	# Get the number of CPUs on a node
+	set my_pid [spawn $scontrol show node $node]
+	expect {
+		-re "CoresPerSocket=($number)" {
+			set ncores $expect_out(1,string)
+			exp_continue
+		}
+		-re "CPUTot=($number)" {
+			set totcpus $expect_out(1,string)
+			exp_continue
+		}
+		-re "Sockets=($number)" {
+			set nsockets $expect_out(1,string)
+			exp_continue
+		}
+		-re "ThreadsPerCore=($number)" {
+			set nthreads $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: scontrol is not responding\n"
+			slow_kill $scontrol_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set core_cnt [expr $nsockets * $ncores]
+	set thread_cnt [expr $ncores * $nthreads]
+	if {$totcpus != $nthreads && $totcpus == $ncores} {
+		send_user "\nNOTE: Cores rather than threads are being allocated\n"
+		set nthreads 1
+	}
+
+	return [list $totcpus $nthreads]
+}
+
+#####################################################################
+#
 # Proc: get_part_total_cores
 #
 # Purpose: Given a partition and/or states, return its total cores

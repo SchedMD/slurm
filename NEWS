@@ -128,6 +128,14 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we set the alloc_node in a resource allocation based on the auth
     plugin instead of the rpc call.
 
+* Changes in Slurm 18.08.7
+==========================
+ -- Set debug statement to debug2 to avoid benign error messages.
+ -- Add SchedulerParameters option of bf_hetjob_immediate to attempt to start
+    a heterogeneous job as soon as all of its components are determined able to
+    do so.
+ -- Fix underflow causing decay thread to exit.
+
 * Changes in Slurm 18.08.6-2
 ============================
  -- Remove deadlock situation when logging and --enable-debug is used.

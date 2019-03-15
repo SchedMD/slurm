@@ -143,6 +143,7 @@ static int sched_pend_thread = 0;
 static bool sched_running = false;
 static struct timeval sched_last = {0, 0};
 static uint32_t max_array_size = NO_VAL;
+static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
 static int sched_min_interval = 2;
 
@@ -1043,7 +1044,8 @@ static int _schedule(uint32_t job_limit)
 		}
 
 		bf_hetjob_prio = 0;
-		if ((tmp_ptr = xstrcasestr(sched_params, "bf_hetjob_prio="))) {
+		if (sched_params &&
+		    (tmp_ptr = strstr(sched_params, "bf_hetjob_prio="))) {
 			tmp_ptr = strtok(tmp_ptr + 15, ",");
 			if (!xstrcasecmp(tmp_ptr, "min"))
 				bf_hetjob_prio |= HETJOB_PRIO_MIN;
@@ -1054,6 +1056,15 @@ static int _schedule(uint32_t job_limit)
 			else
 				error("Invalid SchedulerParameters bf_hetjob_prio: %s",
 				      tmp_ptr);
+		}
+
+		bf_hetjob_immediate = false;
+		if (xstrcasestr(sched_params, "bf_hetjob_immediate"))
+			bf_hetjob_immediate = true;
+
+		if (bf_hetjob_immediate && !bf_hetjob_prio) {
+			bf_hetjob_prio |= HETJOB_PRIO_MIN;
+			info("bf_hetjob_immediate automatically sets bf_hetjob_prio=min");
 		}
 
 		if ((tmp_ptr = xstrcasestr(sched_params,
