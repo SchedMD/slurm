@@ -129,6 +129,29 @@ static char *arg_get_##field(slurm_opt_t *opt)			\
 	return xstrdup_printf("%d", opt->field);		\
 }
 
+#define COMMON_MBYTES_OPTION(field, option)			\
+COMMON_MBYTES_OPTION_SET(field, option)				\
+COMMON_MBYTES_OPTION_GET(field)					\
+COMMON_OPTION_RESET(field, NO_VAL64)
+#define COMMON_MBYTES_OPTION_SET(field, option)			\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+{								\
+	if ((opt->field = str_to_mbytes2(arg)) == NO_VAL64) {	\
+		error("Invalid ##field specification");		\
+		exit(-1);					\
+	}							\
+								\
+        return SLURM_SUCCESS;					\
+}
+#define COMMON_MBYTES_OPTION_GET_AND_RESET(field)		\
+COMMON_MBYTES_OPTION_GET(field)					\
+COMMON_OPTION_RESET(field, NO_VAL64)
+#define COMMON_MBYTES_OPTION_GET(field)				\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+{								\
+	return mbytes2_to_str(opt->field);			\
+}
+
 typedef struct {
 	/*
 	 * DO NOT ALTER THESE FIRST FOUR ARGUMENTS
