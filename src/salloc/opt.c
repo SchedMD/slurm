@@ -577,7 +577,11 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.job_flags |= USE_MIN_NODES;
 		break;
 	default:
-		/* do nothing */
+		/*
+		 * assume this was meant to be processed by
+		 * slurm_process_option() instead.
+		 */
+		slurm_process_option(&opt, e->type, val);
 		break;
 	}
 }
