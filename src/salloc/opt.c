@@ -240,7 +240,6 @@ static void _opt_default(void)
 		opt.power_flags		= 0;
 		opt.priority		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
-		xfree(opt.progname);
 		xfree(opt.qos);
 		opt.quiet		= 0;
 		opt.reboot		= false;
@@ -698,7 +697,6 @@ static void _set_options(int argc, char **argv)
 		exit(error_exit);
 	}
 
-	opt.progname = xbasename(argv[0]);
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
@@ -1873,7 +1871,7 @@ static void _opt_list(void)
 {
 	char *str;
 
-	info("defined options for program `%s'", opt.progname);
+	info("defined options");
 	info("--------------- ---------------------");
 
 	info("uid            : %u", (uint32_t) opt.uid);

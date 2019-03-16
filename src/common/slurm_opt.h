@@ -297,8 +297,6 @@ typedef struct slurm_options {
 	sbatch_opt_t *sbatch_opt;
 	srun_opt_t *srun_opt;
 
-	char *progname;			/* argv[0] of this program or	*/
-
 	char *burst_buffer;		/* --bb				*/
 	char *clusters;			/* cluster to run this on. */
 	uid_t uid;			/* local uid			*/

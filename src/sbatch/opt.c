@@ -796,7 +796,6 @@ extern char *process_options_first_pass(int argc, char **argv)
 			local_argv[local_argc++] = argv[i];
 	}
 
-	opt.progname = xbasename(argv[0]);
 	optind = 0;
 	while ((opt_char = getopt_long(local_argc, local_argv, opt_string,
 				       optz, &option_index)) != -1) {
@@ -2372,7 +2371,7 @@ static void _opt_list(void)
 {
 	char *str;
 
-	info("defined options for program `%s'", opt.progname);
+	info("defined options");
 	info("----------------- ---------------------");
 
 	info("uid               : %ld", (long) opt.uid);

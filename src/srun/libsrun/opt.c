@@ -489,7 +489,6 @@ static slurm_opt_t *_opt_copy(void)
 	sropt.pack_group = NULL;	/* Moved by memcpy */
 	sropt.pack_grp_bits = NULL;	/* Moved by memcpy */
 	opt.partition = NULL;		/* Moved by memcpy */
-	/* NOTE: Do NOT copy "progname", shared by all job components */
 	opt_dup->srun_opt->prolog = xstrdup(sropt.prolog);
 	opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
 	opt_dup->qos = xstrdup(opt.qos);
@@ -684,7 +683,6 @@ static void _opt_default(void)
 		sropt.preserve_env	= false;
 		opt.priority		= 0;
 		opt.profile		= ACCT_GATHER_PROFILE_NOT_SET;
-		xfree(opt.progname);
 		xfree(sropt.prolog);
 		sropt.prolog		= slurm_get_srun_prolog();
 		xfree(sropt.propagate); 	 /* propagate specific rlimits */
@@ -1266,10 +1264,6 @@ static void _set_options(const int argc, char **argv)
 		exit(error_exit);
 	}
 
-	if (opt.progname == NULL)
-		opt.progname = xbasename(argv[0]);
-	else if (pass_number <= 1)
-		error("opt.progname is already set.");
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
@@ -2854,7 +2848,7 @@ static void _opt_list(void)
 	char *str;
 	int i;
 
-	info("defined options for program `%s'", opt.progname);
+	info("defined options");
 	info("--------------- ---------------------");
 
 	info("uid            : %ld", (long) opt.uid);
