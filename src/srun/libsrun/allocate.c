@@ -590,9 +590,6 @@ List allocate_pack_nodes(bool handle_signals)
 			 * pending so overwrite the request with what was
 			 * allocated so we don't have issues when we use them
 			 * in the step creation.
-			 *
-			 * NOTE: pn_min_memory here is an int64, not uint64.
-			 * These operations may have some bizarre side effects
 			 */
 			if (opt_local->pn_min_memory != NO_VAL64)
 				opt_local->pn_min_memory =
@@ -874,7 +871,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->pn_min_memory = opt_local->pn_min_memory;
 	else if (opt_local->mem_per_cpu != NO_VAL64)
 		j->pn_min_memory = opt_local->mem_per_cpu | MEM_PER_CPU;
-	if (opt_local->pn_min_tmp_disk != NO_VAL)
+	if (opt_local->pn_min_tmp_disk != NO_VAL64)
 		j->pn_min_tmp_disk = opt_local->pn_min_tmp_disk;
 	if (opt_local->overcommit) {
 		j->min_cpus    = opt_local->min_nodes;
@@ -970,8 +967,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	}
 	xfmt_tres(&j->tres_per_socket, "gpu", opt.gpus_per_socket);
 	xfmt_tres(&j->tres_per_task,   "gpu", opt.gpus_per_task);
-	if (opt.mem_per_gpu)
-		xstrfmtcat(j->mem_per_tres, "gpu:%"PRIi64, opt.mem_per_gpu);
+	if (opt.mem_per_gpu != NO_VAL64)
+		xstrfmtcat(j->mem_per_tres, "gpu:%"PRIu64, opt.mem_per_gpu);
 
 	return j;
 }

@@ -228,7 +228,7 @@ static void _opt_default(bool first_pass)
 		sbopt.ifname		= xstrdup("/dev/null");
 		opt.immediate		= false;
 		xfree(opt.mcs_label);
-		opt.mem_per_gpu		= 0;
+		opt.mem_per_gpu		= NO_VAL64;
 		opt.nice		= NO_VAL;
 		opt.no_kill		= false;
 		xfree(sbopt.ofname);
@@ -277,7 +277,7 @@ static void _opt_default(bool first_pass)
 	opt.max_nodes			= 0;
 	xfree(opt.mem_bind);
 	opt.mem_bind_type		= 0;
-	opt.mem_per_cpu			= -1;
+	opt.mem_per_cpu			= NO_VAL64;
 	opt.pn_min_cpus			= -1;
 	opt.min_nodes			= 1;
 	xfree(opt.nodelist);
@@ -292,11 +292,11 @@ static void _opt_default(bool first_pass)
 	xfree(opt.partition);
 	opt.plane_size			= NO_VAL;
 	opt.power_flags			= 0;
-	opt.pn_min_memory		= -1;
+	opt.pn_min_memory		= NO_VAL64;
 	opt.req_switch			= -1;
 	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
-	opt.pn_min_tmp_disk		= -1;
+	opt.pn_min_tmp_disk		= NO_VAL64;
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
 	opt.wait4switch			= -1;
@@ -555,8 +555,8 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_MEM_PER_GPU:
-		opt.mem_per_gpu = (int64_t) str_to_mbytes2(val);
-		if (opt.mem_per_gpu < 0) {
+		opt.mem_per_gpu = str_to_mbytes2(val);
+		if (opt.mem_per_gpu == NO_VAL64) {
 			error("\"%s=%s\" -- invalid value, ignoring...",
 			      e->var, val);
 		}
@@ -1426,8 +1426,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MEM_PER_GPU:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.mem_per_gpu = (int64_t) str_to_mbytes2(optarg);
-			if (opt.mem_per_gpu < 0) {
+			opt.mem_per_gpu = str_to_mbytes2(optarg);
+			if (opt.mem_per_gpu == NO_VAL64) {
 				error("invalid mem-per-gpu constraint %s",
 				      optarg);
 				exit(error_exit);
@@ -1452,8 +1452,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MEM:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.pn_min_memory = (int64_t) str_to_mbytes2(optarg);
-			if (opt.pn_min_memory < 0) {
+			opt.pn_min_memory = str_to_mbytes2(optarg);
+			if (opt.pn_min_memory == NO_VAL64) {
 				error("invalid memory constraint %s",
 				      optarg);
 				exit(error_exit);
@@ -1462,8 +1462,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_MEM_PER_CPU:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.mem_per_cpu = (int64_t) str_to_mbytes2(optarg);
-			if (opt.mem_per_cpu < 0) {
+			opt.mem_per_cpu = str_to_mbytes2(optarg);
+			if (opt.mem_per_cpu == NO_VAL64) {
 				error("invalid memory constraint %s",
 				      optarg);
 				exit(error_exit);
@@ -1473,7 +1473,7 @@ static void _set_options(int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.pn_min_tmp_disk = str_to_mbytes2(optarg);
-			if (opt.pn_min_tmp_disk < 0) {
+			if (opt.pn_min_tmp_disk == NO_VAL64) {
 				error("invalid tmp value %s", optarg);
 				exit(error_exit);
 			}
@@ -1987,7 +1987,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if ((opt.pn_min_memory > -1) && (opt.mem_per_cpu > -1)) {
+	if ((opt.pn_min_memory != NO_VAL64) && (opt.mem_per_cpu != NO_VAL64)) {
 		if (opt.pn_min_memory < opt.mem_per_cpu) {
 			info("mem < mem-per-cpu - resizing mem to be equal "
 			     "to mem-per-cpu");
@@ -2320,14 +2320,14 @@ static char *print_constraints(void)
 	if (sbopt.minthreads > 0)
 		xstrfmtcat(buf, "minthreads=%d ", sbopt.minthreads);
 
-	if (opt.pn_min_memory > 0)
-		xstrfmtcat(buf, "mem=%"PRIi64"M ", opt.pn_min_memory);
+	if (opt.pn_min_memory != NO_VAL64)
+		xstrfmtcat(buf, "mem=%"PRIu64"M ", opt.pn_min_memory);
 
-	if (opt.mem_per_cpu > 0)
-		xstrfmtcat(buf, "mem-per-cpu=%"PRIi64"M ", opt.mem_per_cpu);
+	if (opt.mem_per_cpu != NO_VAL64)
+		xstrfmtcat(buf, "mem-per-cpu=%"PRIu64"M ", opt.mem_per_cpu);
 
-	if (opt.pn_min_tmp_disk > 0)
-		xstrfmtcat(buf, "tmp=%ld ", opt.pn_min_tmp_disk);
+	if (opt.pn_min_tmp_disk != NO_VAL64)
+		xstrfmtcat(buf, "tmp=%"PRIu64" ", opt.pn_min_tmp_disk);
 
 	if (opt.contiguous == true)
 		xstrcat(buf, "contiguous ");
@@ -2480,7 +2480,7 @@ static void _opt_list(void)
 	info("gpus-per-node     : %s", opt.gpus_per_node);
 	info("gpus-per-socket   : %s", opt.gpus_per_socket);
 	info("gpus-per-task     : %s", opt.gpus_per_task);
-	info("mem-per-gpu       : %"PRIi64, opt.mem_per_gpu);
+	info("mem-per-gpu       : %"PRIu64, opt.mem_per_gpu);
 }
 
 static void _usage(void)

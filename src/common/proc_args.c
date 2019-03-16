@@ -464,15 +464,18 @@ char *base_name(const char *command)
 	return xstrdup(char_ptr);
 }
 
-static long _str_to_mbytes(const char *arg, int use_gbytes)
+static uint64_t _str_to_mbytes(const char *arg, int use_gbytes)
 {
-	long result;
+	long long result;
 	char *endptr;
 
 	errno = 0;
-	result = strtol(arg, &endptr, 10);
-	if ((errno != 0) && ((result == LONG_MIN) || (result == LONG_MAX)))
-		result = -1;
+	result = strtoll(arg, &endptr, 10);
+	if ((errno != 0) && ((result == LLONG_MIN) || (result == LLONG_MAX)))
+		return NO_VAL64;
+	if (result < 0)
+		return NO_VAL64;
+
 	else if ((endptr[0] == '\0') && (use_gbytes == 1))  /* GB default */
 		result *= 1024;
 	else if (endptr[0] == '\0')	/* MB default */
@@ -486,16 +489,16 @@ static long _str_to_mbytes(const char *arg, int use_gbytes)
 	else if ((endptr[0] == 't') || (endptr[0] == 'T'))
 		result *= (1024 * 1024);
 	else
-		result = -1;
+		return NO_VAL64;
 
-	return result;
+	return (uint64_t) result;
 }
 
 /*
  * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
  * or "T" at end and return the number in mega-bytes. Default units are MB.
  */
-long str_to_mbytes(const char *arg)
+uint64_t str_to_mbytes(const char *arg)
 {
 	return _str_to_mbytes(arg, 0);
 }
@@ -505,7 +508,7 @@ long str_to_mbytes(const char *arg)
  * or "T" at end and return the number in mega-bytes. Default units are GB
  * if "SchedulerParameters=default_gbytes" is configured, otherwise MB.
  */
-long str_to_mbytes2(const char *arg)
+uint64_t str_to_mbytes2(const char *arg)
 {
 	static int use_gbytes = -1;
 
@@ -521,12 +524,14 @@ long str_to_mbytes2(const char *arg)
 	return _str_to_mbytes(arg, use_gbytes);
 }
 
-extern char *mbytes2_to_str(int64_t mbytes)
+extern char *mbytes2_to_str(uint64_t mbytes)
 {
 	int i = 0;
 	char *unit = "MGTP?";
-
 	static int use_gbytes = -1;
+
+	if (mbytes == NO_VAL64)
+		return NULL;
 
 	if (use_gbytes == -1) {
 		char *sched_params = slurm_get_sched_params();
@@ -545,9 +550,9 @@ extern char *mbytes2_to_str(int64_t mbytes)
 
 	/* no need to display the default unit */
 	if ((unit[i] == 'G' && use_gbytes) || (unit[i] == 'M' && !use_gbytes))
-		return xstrdup_printf("%"PRId64, mbytes);
+		return xstrdup_printf("%"PRIu64, mbytes);
 
-	return xstrdup_printf("%"PRId64"%c", mbytes, unit[i]);
+	return xstrdup_printf("%"PRIu64"%c", mbytes, unit[i]);
 }
 
 /* Convert a string into a node count */

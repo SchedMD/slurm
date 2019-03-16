@@ -350,8 +350,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		  opt_local->gpus_per_socket);
 	xfmt_tres(&job->ctx_params.tres_per_task, "gpu",
 		  opt_local->gpus_per_task);
-	if (opt_local->mem_per_gpu) {
-		xstrfmtcat(job->ctx_params.mem_per_tres, "gpu:%"PRIi64,
+	if (opt_local->mem_per_gpu != NO_VAL64) {
+		xstrfmtcat(job->ctx_params.mem_per_tres, "gpu:%"PRIu64,
 			   opt.mem_per_gpu);
 	}
 

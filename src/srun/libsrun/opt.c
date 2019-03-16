@@ -668,7 +668,7 @@ static void _opt_default(void)
 		sropt.labelio		= false;
 		sropt.max_wait		= slurm_get_wait_time();
 		xfree(opt.mcs_label);
-		opt.mem_per_gpu		= 0;
+		opt.mem_per_gpu		= NO_VAL64;
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
 		opt.nice		= NO_VAL;
@@ -777,7 +777,7 @@ static void _opt_default(void)
 	opt.plane_size			= NO_VAL;
 	opt.pn_min_cpus			= NO_VAL;
 	opt.pn_min_memory		= NO_VAL64;
-	opt.pn_min_tmp_disk		= NO_VAL;
+	opt.pn_min_tmp_disk		= NO_VAL64;
 	opt.power_flags			= 0;
 	sropt.relative			= NO_VAL;
 	sropt.relative_set		= false;
@@ -1032,8 +1032,8 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_MEM_PER_GPU:
-		opt.mem_per_gpu = (int64_t) str_to_mbytes2(val);
-		if (opt.mem_per_gpu < 0) {
+		opt.mem_per_gpu = str_to_mbytes2(val);
+		if (opt.mem_per_gpu == NO_VAL64) {
 			error("\"%s=%s\" -- invalid value, ignoring...",
 			      e->var, val);
 		}
@@ -1618,8 +1618,8 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_MEM_PER_GPU:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.mem_per_gpu = (int64_t) str_to_mbytes2(optarg);
-			if (opt.mem_per_gpu < 0) {
+			opt.mem_per_gpu = str_to_mbytes2(optarg);
+			if (opt.mem_per_gpu == NO_VAL64) {
 				error("invalid mem-per-gpu constraint %s",
 				      optarg);
 				exit(error_exit);
@@ -1641,9 +1641,9 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_MEM:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.pn_min_memory = (int64_t) str_to_mbytes2(optarg);
+			opt.pn_min_memory = str_to_mbytes2(optarg);
 			opt.mem_per_cpu = NO_VAL64;
-			if (opt.pn_min_memory < 0) {
+			if (opt.pn_min_memory == NO_VAL64) {
 				error("invalid memory constraint %s",
 				      optarg);
 				exit(error_exit);
@@ -1652,9 +1652,9 @@ static void _set_options(const int argc, char **argv)
 		case LONG_OPT_MEM_PER_CPU:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
-			opt.mem_per_cpu = (int64_t) str_to_mbytes2(optarg);
+			opt.mem_per_cpu = str_to_mbytes2(optarg);
 			opt.pn_min_memory = NO_VAL64;
-			if (opt.mem_per_cpu < 0) {
+			if (opt.mem_per_cpu == NO_VAL64) {
 				error("invalid memory constraint %s",
 				      optarg);
 				exit(error_exit);
@@ -1679,7 +1679,7 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			opt.pn_min_tmp_disk = str_to_mbytes2(optarg);
-			if (opt.pn_min_tmp_disk < 0) {
+			if (opt.pn_min_tmp_disk == NO_VAL64) {
 				error("invalid tmp value %s", optarg);
 				exit(error_exit);
 			}
@@ -2176,7 +2176,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
 	bit_set(sropt.pack_grp_bits, pack_offset);
 
-	if ((opt.pn_min_memory > -1) && (opt.mem_per_cpu > -1)) {
+	if ((opt.pn_min_memory != NO_VAL64) && (opt.mem_per_cpu != NO_VAL64)) {
 		if (opt.pn_min_memory < opt.mem_per_cpu) {
 			info("mem < mem-per-cpu - resizing mem to be equal "
 			     "to mem-per-cpu");
@@ -2805,13 +2805,13 @@ static char *print_constraints(void)
 		xstrfmtcat(buf, "mincpus-per-node=%d ", opt.pn_min_cpus);
 
 	if (opt.pn_min_memory != NO_VAL64)
-		xstrfmtcat(buf, "mem-per-node=%"PRIi64"M ", opt.pn_min_memory);
+		xstrfmtcat(buf, "mem-per-node=%"PRIu64"M ", opt.pn_min_memory);
 
 	if (opt.mem_per_cpu != NO_VAL64)
-		xstrfmtcat(buf, "mem-per-cpu=%"PRIi64"M ", opt.mem_per_cpu);
+		xstrfmtcat(buf, "mem-per-cpu=%"PRIu64"M ", opt.mem_per_cpu);
 
-	if (opt.pn_min_tmp_disk != NO_VAL)
-		xstrfmtcat(buf, "tmp-per-node=%ld ", opt.pn_min_tmp_disk);
+	if (opt.pn_min_tmp_disk != NO_VAL64)
+		xstrfmtcat(buf, "tmp-per-node=%"PRIu64" ", opt.pn_min_tmp_disk);
 
 	if (opt.contiguous == true)
 		xstrcat(buf, "contiguous ");
@@ -2966,7 +2966,7 @@ static void _opt_list(void)
 	info("gpus-per-node     : %s", opt.gpus_per_node);
 	info("gpus-per-socket   : %s", opt.gpus_per_socket);
 	info("gpus-per-task     : %s", opt.gpus_per_task);
-	info("mem-per-gpu       : %"PRIi64, opt.mem_per_gpu);
+	info("mem-per-gpu       : %"PRIu64, opt.mem_per_gpu);
 
 	str = print_commandline(sropt.argc, sropt.argv);
 	info("remote command    : `%s'", str);

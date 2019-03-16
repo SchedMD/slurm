@@ -369,10 +369,10 @@ typedef struct slurm_options {
 	char *gpus_per_task;		/* --gpus_per_task		*/
 
 	int pn_min_cpus;		/* --mincpus			*/
-	int64_t mem_per_cpu;		/* --mem-per-cpu		*/
-	int64_t mem_per_gpu;		/* --mem-per-gpu		*/
-	int64_t pn_min_memory;		/* --mem			*/
-	long pn_min_tmp_disk;		/* --tmp			*/
+	uint64_t mem_per_cpu;		/* --mem-per-cpu		*/
+	uint64_t mem_per_gpu;		/* --mem-per-gpu		*/
+	uint64_t pn_min_memory;		/* --mem			*/
+	uint64_t pn_min_tmp_disk;	/* --tmp			*/
 	char *constraint;		/* --constraint			*/
 	char *c_constraint;		/* --cluster-constraint		*/
 	char *gres;			/* --gres			*/

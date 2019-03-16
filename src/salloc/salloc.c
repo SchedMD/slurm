@@ -876,11 +876,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	/* job constraints */
 	if (opt.pn_min_cpus > -1)
 		desc->pn_min_cpus = opt.pn_min_cpus;
-	if (opt.pn_min_memory > -1)
+	if (opt.pn_min_memory != NO_VAL64)
 		desc->pn_min_memory = opt.pn_min_memory;
-	else if (opt.mem_per_cpu > -1)
+	else if (opt.mem_per_cpu != NO_VAL64)
 		desc->pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
-	if (opt.pn_min_tmp_disk > -1)
+	if (opt.pn_min_tmp_disk != NO_VAL64)
 		desc->pn_min_tmp_disk = opt.pn_min_tmp_disk;
 	if (opt.overcommit) {
 		desc->min_cpus = opt.min_nodes;
@@ -970,8 +970,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	}
 	xfmt_tres(&desc->tres_per_socket, "gpu", opt.gpus_per_socket);
 	xfmt_tres(&desc->tres_per_task,   "gpu", opt.gpus_per_task);
-	if (opt.mem_per_gpu)
-		xstrfmtcat(desc->mem_per_tres, "gpu:%"PRIi64, opt.mem_per_gpu);
+	if (opt.mem_per_gpu != NO_VAL64)
+		xstrfmtcat(desc->mem_per_tres, "gpu:%"PRIu64, opt.mem_per_gpu);
 
 	return 0;
 }
