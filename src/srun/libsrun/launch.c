@@ -332,7 +332,6 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xfree(opt_local->tres_freq);
 	}
 	job->ctx_params.tres_freq = xstrdup(opt_local->tres_freq);
-	job->ctx_params.tres_per_step = xstrdup(opt_local->tres_per_job);
 	xfmt_tres(&job->ctx_params.tres_per_step, "gpu", opt_local->gpus);
 	xfmt_tres(&job->ctx_params.tres_per_node, "gpu",
 		  opt_local->gpus_per_node);

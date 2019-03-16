@@ -255,7 +255,6 @@ struct option long_options[] = {
 	{"thread-spec",      required_argument, 0, LONG_OPT_THREAD_SPEC},
 	{"time-min",         required_argument, 0, LONG_OPT_TIME_MIN},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
-	{"tres-per-job",     required_argument, 0, LONG_OPT_TRES_PER_JOB},
 	{"tmp",              required_argument, 0, LONG_OPT_TMP},
 	{"uid",              required_argument, 0, LONG_OPT_UID},
 	{"use-min-nodes",    no_argument,       0, LONG_OPT_USE_MIN_NODES},
@@ -700,7 +699,6 @@ static void _opt_default(void)
 		xfree(opt.time_limit_str);
 		opt.time_min		= NO_VAL;
 		xfree(opt.time_min_str);
-		xfree(opt.tres_per_job);
 		opt.uid			= uid;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
@@ -2049,14 +2047,6 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.time_min_str);
 			opt.time_min_str = xstrdup(optarg);
 			break;
-		case LONG_OPT_TRES_PER_JOB:
-			/*
-			 * Currently undocumented option.
-			 * For future use and testing cons_tres.
-			 */
-			xfree(opt.tres_per_job);
-			opt.tres_per_job = xstrdup(optarg);
-			break;
 		case LONG_OPT_GRES:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -2977,7 +2967,6 @@ static void _opt_list(void)
 	info("gpus-per-socket   : %s", opt.gpus_per_socket);
 	info("gpus-per-task     : %s", opt.gpus_per_task);
 	info("mem-per-gpu       : %"PRIi64, opt.mem_per_gpu);
-	info("tres-per-job      : %s", opt.tres_per_job);
 
 	str = print_commandline(sropt.argc, sropt.argv);
 	info("remote command    : `%s'", str);
