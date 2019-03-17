@@ -95,7 +95,6 @@
 #define OPT_NCORES      0x11
 #define OPT_OPEN_MODE   0x14
 #define OPT_TIME_VAL    0x18
-#define OPT_CORE_SPEC   0x1a
 #define OPT_BCAST       0x1e
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
@@ -131,7 +130,6 @@ struct option long_options[] = {
 	{"output",           required_argument, 0, 'o'},
 	{"quiet",            no_argument,       0, 'Q'},
 	{"relative",         required_argument, 0, 'r'},
-	{"core-spec",        required_argument, 0, 'S'},
 	{"threads",          required_argument, 0, 'T'},
 	{"unbuffered",       no_argument,       0, 'u'},
 	{"verbose",          no_argument,       0, 'v'},
@@ -577,8 +575,6 @@ static void _opt_default(void)
 	sropt.bcast_flag		= false;
 	sropt.accel_bind_type		= 0;
 	sropt.compress			= 0;
-	opt.core_spec			= NO_VAL16;
-	sropt.core_spec_set		= false;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
@@ -660,7 +656,7 @@ env_vars_t env_vars[] = {
   { "SLURM_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
   { "SLURM_CONSTRAINT", 'C' },
-{"SLURM_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL             },
+  { "SLURM_CORE_SPEC", 'S' },
 {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
   { "SLURM_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
@@ -1091,12 +1087,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			sropt.relative = _get_int(optarg, "relative", false);
 			sropt.relative_set = true;
-			break;
-		case (int)'S':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.core_spec = _get_int(optarg, "core_spec", false);
-			sropt.core_spec_set = true;
 			break;
 		case (int)'T':
 			if (!optarg)

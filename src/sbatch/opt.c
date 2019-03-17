@@ -88,7 +88,6 @@
 #define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
 #define OPT_TIME_VAL      0x19
-#define OPT_CORE_SPEC     0x1a
 #define OPT_ARRAY_INX     0x20
 #define OPT_HINT	  0x22
 #define OPT_INT64	  0x24
@@ -193,7 +192,6 @@ static void _opt_default(bool first_pass)
 
 	/* All other options must be specified individually for each component
 	 * of the job */
-	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
@@ -283,7 +281,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
   { "SBATCH_CONSTRAINT", 'C' },
-  {"SBATCH_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
+  { "SBATCH_CORE_SPEC", 'S' },
   { "SBATCH_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SBATCH_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
   {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
@@ -479,7 +477,6 @@ static struct option long_options[] = {
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
 	{"quiet",         no_argument,       0, 'Q'},
-	{"core-spec",     required_argument, 0, 'S'},
 	{"usage",         no_argument,       0, 'u'},
 	{"verbose",       no_argument,       0, 'v'},
 	{"version",       no_argument,       0, 'V'},
@@ -978,9 +975,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'Q':
 			/* handled in process_options_first_pass() */
-			break;
-		case 'S':
-			opt.core_spec = parse_int("core_spec", optarg, false);
 			break;
 		case 'u':
 		case 'v':

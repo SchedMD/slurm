@@ -469,6 +469,39 @@ static slurm_cli_opt_t slurm_opt_contiguous = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_core_spec(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->core_spec_set = true;
+
+	opt->core_spec = parse_int("--core-spec", arg, false);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_core_spec(slurm_opt_t *opt)
+{
+	if ((opt->core_spec == NO_VAL16) ||
+	    (opt->core_spec & CORE_SPEC_THREAD))
+		return xstrdup("unset");
+	return xstrdup_printf("%d", opt->core_spec);
+}
+static void arg_reset_core_spec(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->core_spec_set = false;
+
+	opt->core_spec = NO_VAL16;
+}
+static slurm_cli_opt_t slurm_opt_core_spec = {
+	.name = "core-spec",
+	.has_arg = required_argument,
+	.val = 'S',
+	.set_func = arg_set_core_spec,
+	.get_func = arg_get_core_spec,
+	.reset_func = arg_reset_core_spec,
+	.reset_each_pass = true,
+};
+
 static int arg_set_cpu_freq(slurm_opt_t *opt, const char *arg)
 {
 	if (cpu_freq_verify_cmdline(arg, &opt->cpu_freq_min,
@@ -1348,6 +1381,7 @@ static slurm_cli_opt_t slurm_opt_spread_job = {
 	.reset_each_pass = true,
 };
 
+/* note this is mutually exclusive with --core-spec above */
 static int arg_set_thread_spec(slurm_opt_t *opt, const char *arg)
 {
 	opt->core_spec = parse_int("--thread-spec", arg, true);
@@ -1362,17 +1396,13 @@ static char *arg_get_thread_spec(slurm_opt_t *opt)
 		return xstrdup("unset");
 	return xstrdup_printf("%d", (opt->core_spec & ~CORE_SPEC_THREAD));
 }
-static void arg_reset_thread_spec(slurm_opt_t *opt)
-{
-	opt->core_spec = NO_VAL16;
-}
 static slurm_cli_opt_t slurm_opt_thread_spec = {
 	.name = "thread-spec",
 	.has_arg = required_argument,
 	.val = LONG_OPT_THREAD_SPEC,
 	.set_func = arg_set_thread_spec,
 	.get_func = arg_get_thread_spec,
-	.reset_func = arg_reset_thread_spec,
+	.reset_func = arg_reset_core_spec,
 	.reset_each_pass = true,
 };
 
@@ -1486,6 +1516,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_comment,
 	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
+	&slurm_opt_core_spec,
 	&slurm_opt_cpu_freq,
 	&slurm_opt_cpus_per_gpu,
 	&slurm_opt_deadline,

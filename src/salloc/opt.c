@@ -87,7 +87,6 @@
 #define OPT_NO_BELL     0x0b
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
-#define OPT_CORE_SPEC   0x19
 #define OPT_HINT	0x1a
 #define OPT_INT64	0x1f
 
@@ -202,7 +201,6 @@ static void _opt_default(void)
 
 	/* All other options must be specified individually for each component
 	 * of the job */
-	opt.core_spec			= NO_VAL16;
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
@@ -255,7 +253,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
   { "SALLOC_CONSTRAINT", 'C' },
-  {"SALLOC_CORE_SPEC",     OPT_INT,        &opt.core_spec,     NULL          },
+  { "SALLOC_CORE_SPEC", 'S' },
   { "SALLOC_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SALLOC_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
   {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
@@ -432,7 +430,6 @@ static void _set_options(int argc, char **argv)
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
 		{"quiet",         no_argument,       0, 'Q'},
-		{"core-spec",     required_argument, 0, 'S'},
 		{"usage",         no_argument,       0, 'u'},
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
@@ -519,9 +516,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'Q':
 			opt.quiet++;
-			break;
-		case 'S':
-			opt.core_spec = parse_int("core_spec", optarg, false);
 			break;
 		case 'u':
 			_usage();
