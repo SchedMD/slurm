@@ -337,23 +337,66 @@ void slurm_option_table_destroy(struct option *optz)
 
 int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg)
 {
-	int i, rc = SLURM_ERROR;
+	int i;
+	const char *setarg = arg;
+	bool set = true;
 
 	if (!opt)
 		fatal("%s: missing slurm_opt_t struct", __func__);
 
 	for (i = 0; common_options[i]; i++) {
-		if (common_options[i]->val == optval) {
-			rc = (common_options[i]->set_func)(opt, arg);
+		if (common_options[i]->val == optval)
 			break;
+	}
+
+	if (!common_options[i])
+		return SLURM_ERROR;
+
+	if (arg) {
+		if (common_options[i]->has_arg == no_argument) {
+			char *end;
+			/*
+			 * Treat these "flag" arguments specially.
+			 * For normal getopt_long() handling, arg is null.
+			 * But for envvars, arg may be set, and will be
+			 * processed by these rules:
+			 * arg == '\0', flag is set
+			 * arg == "yes", flag is set
+			 * arg is a non-zero number, flag is set
+			 * arg is anything else, call reset instead
+			 */
+			if (arg[0] == '\0') {
+				set = true;
+			} else if (!xstrcasecmp(arg, "yes")) {
+				set = true;
+			} else if (strtol(arg, &end, 10) && (*end == '\0')) {
+				set = true;
+			} else {
+				set = false;
+			}
+		} else if (common_options[i]->has_arg == required_argument) {
+			/* no special processing required */
+		} else if (common_options[i]->has_arg == optional_argument) {
+			/*
+			 * If an empty string, convert to null,
+			 * as this will let the envvar processing
+			 * match the normal getopt_long() behavior.
+			 */
+			if (arg[0] == '\0')
+				setarg = NULL;
 		}
 	}
 
-	if (!rc) {
-		common_options[i]->set = true;
+	if (set) {
+		if (!(common_options[i]->set_func)(opt, setarg)) {
+			common_options[i]->set = true;
+			return SLURM_SUCCESS;
+		}
+	} else {
+		(common_options[i]->reset_func)(opt);
+		common_options[i]->set = false;
 		return SLURM_SUCCESS;
 	}
-
 	return SLURM_ERROR;
 }
 
