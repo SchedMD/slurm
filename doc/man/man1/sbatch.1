@@ -248,14 +248,6 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds".
 
 .TP
-\fB\-\-checkpoint\-dir\fR=<\fIdirectory\fR>
-Specifies the directory into which the job or job step's checkpoint should
-be written (used by the checkpoint/blcrm and checkpoint/xlch plugins only).
-The default value is the current working directory.
-Checkpoint files will be of the form "<job_id>.ckpt" for jobs
-and "<job_id>.<step_id>.ckpt" for job steps.
-
-.TP
 \fB\-\-cluster\-constraint\fR=[!]<\fIlist\fR>
 Specifies features that a federated cluster must have to have a sibling job
 submitted to it. Slurm will attempt to submit a sibling job to a cluster if it
@@ -1904,9 +1896,6 @@ Same as \fB\-\-batch\fR
 \fBSBATCH_CHECKPOINT\fR
 Same as \fB\-\-checkpoint\fR
 .TP
-\fBSBATCH_CHECKPOINT_DIR\fR
-Same as \fB\-\-checkpoint\-dir\fR
-.TP
 \fBSBATCH_CLUSTERS\fR or \fBSLURM_CLUSTERS\fR
 Same as \fB\-\-clusters\fR
 .TP
@@ -2093,10 +2082,6 @@ Job array's index step size.
 .TP
 \fBSLURM_ARRAY_JOB_ID\fR
 Job array's master job ID number.
-.TP
-\fBSLURM_CHECKPOINT_IMAGE_DIR\fR
-Directory into which checkpoint images should  be written if specified
-on the execute line.
 .TP
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster on which the job is executing.

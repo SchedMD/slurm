@@ -227,15 +227,6 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds". This option applies to job and step allocations.
 
 .TP
-\fB\-\-checkpoint\-dir\fR=<\fIdirectory\fR>
-Specifies the directory into which the job or job step's checkpoint should
-be written (used by the checkpoint/blcr and checkpoint/xlch plugins only).
-The default value is the current working directory.
-Checkpoint files will be of the form "<job_id>.ckpt" for jobs
-and "<job_id>.<step_id>.ckpt" for job steps. This option applies to job and
-step allocations.
-
-.TP
 \fB\-\-cluster\-constraint\fR=<\fIlist\fR>
 Specifies features that a federated cluster must have to have a sibling job
 submitted to it. Slurm will attempt to submit a sibling job to a cluster if it
@@ -2021,12 +2012,6 @@ Allocate resources for the job from the named reservation. This option applies
 to job allocations.
 
 .TP
-\fB\-\-restart\-dir\fR=<\fIdirectory\fR>
-Specifies the directory from which the job or job step's checkpoint should
-be read (used by the checkpoint/blcrm and checkpoint/xlch plugins only). This
-option applies to job allocations.
-
-.TP
 \fB\-s\fR, \fB\-\-oversubscribe\fR
 The job allocation can over\-subscribe resources with other running jobs.
 The resources to be over\-subscribed can be nodes, sockets, cores, and/or
@@ -2537,9 +2522,6 @@ Same as \fB\-\-bb\fR
 \fBSLURM_CHECKPOINT\fR
 Same as \fB\-\-checkpoint\fR
 .TP
-\fBSLURM_CHECKPOINT_DIR\fR
-Same as \fB\-\-checkpoint\-dir\fR
-.TP
 \fBSLURM_COMPRESS\fR
 Same as \fB\-\-compress\fR
 .TP
@@ -2719,9 +2701,6 @@ for that number of switches. See \fB\-\-switches\fR
 \fBSLURM_RESERVATION\fR
 Same as \fB\-\-reservation\fR
 .TP
-\fBSLURM_RESTART_DIR\fR
-Same as \fB\-\-restart\-dir\fR
-.TP
 \fBSLURM_RESV_PORTS\fR
 Same as \fB\-\-resv\-ports\fR
 .TP
@@ -2801,10 +2780,6 @@ These environment variables are:
 \fBSLURM_*_PACK_GROUP_#\fR
 For a heterogenous job allocation, the environment variables are set separately
 for each component.
-.TP
-\fBSLURM_CHECKPOINT_IMAGE_DIR\fR
-Directory into which checkpoint images should be written
-if specified on the execute line.
 .TP
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster on which the job is executing.

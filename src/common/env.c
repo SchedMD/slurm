@@ -736,12 +736,6 @@ int setup_env(env_t *env, bool preserve_env)
 		error("Can't set SLURM_PTY_WIN_ROW env variable");
 		rc = SLURM_ERROR;
 	}
-	if (env->ckpt_dir
-	&& setenvf(&env->env, "SLURM_CHECKPOINT_IMAGE_DIR", "%s",
-		   env->ckpt_dir)) {
-		error("Can't set SLURM_CHECKPOINT_IMAGE_DIR env variable");
-		rc = SLURM_ERROR;
-	}
 
 	if (env->restart_cnt &&
 	    setenvf(&env->env, "SLURM_RESTART_COUNT", "%u", env->restart_cnt)) {

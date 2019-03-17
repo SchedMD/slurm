@@ -187,7 +187,6 @@ struct option long_options[] = {
 	{"bbf",              required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
-	{"checkpoint-dir",   required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 	{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
@@ -451,7 +450,6 @@ static slurm_opt_t *_opt_copy(void)
 	sropt.bcast_file = NULL;	/* Moved by memcpy */
 	opt.burst_buffer = NULL;	/* Moved by memcpy */
 	opt_dup->c_constraint = xstrdup(opt.c_constraint);
-	opt_dup->srun_opt->ckpt_dir = xstrdup(sropt.ckpt_dir);
 	opt_dup->srun_opt->ckpt_interval_str =
 		xstrdup(sropt.ckpt_interval_str);
 	opt_dup->clusters = xstrdup(opt.clusters);
@@ -492,7 +490,6 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->propagate = xstrdup(sropt.propagate);
 	opt_dup->qos = xstrdup(opt.qos);
 	opt_dup->reservation = xstrdup(opt.reservation);
-	sropt.restart_dir = NULL;	/* Moved by memcpy */
 	opt.spank_job_env = NULL;	/* Moved by memcpy */
 	opt_dup->srun_opt->task_epilog = xstrdup(sropt.task_epilog);
 	opt_dup->srun_opt->task_prolog = xstrdup(sropt.task_prolog);
@@ -622,8 +619,6 @@ static void _opt_default(void)
 		sropt.allocate		= false;
 		opt.begin		= (time_t) 0;
 		xfree(opt.c_constraint);
-		xfree(sropt.ckpt_dir);
-		sropt.ckpt_dir			= slurm_get_checkpoint_dir();
 		sropt.ckpt_interval		= 0;
 		xfree(sropt.ckpt_interval_str);
 		xfree(opt.clusters);
@@ -783,7 +778,6 @@ static void _opt_default(void)
 	sropt.relative_set		= false;
 	opt.req_switch			= -1;
 	sropt.resv_port_cnt		= NO_VAL;
-	sropt.restart_dir		= NULL;
 	opt.shared			= NO_VAL16;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.spank_job_env_size		= 0;
@@ -828,7 +822,6 @@ env_vars_t env_vars[] = {
 {"SLURM_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL             },
 {"SLURM_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL             },
 {"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
-{"SLURM_CHECKPOINT_DIR",OPT_STRING,     &sropt.ckpt_dir,    NULL             },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
 {"SLURM_CONSTRAINT",    OPT_STRING,     &opt.constraint,    NULL             },
 {"SLURM_CLUSTER_CONSTRAINT",OPT_STRING, &opt.c_constraint,  NULL             },
@@ -883,7 +876,6 @@ env_vars_t env_vars[] = {
 {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL             },
 {"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
 {"SLURM_RESERVATION",   OPT_STRING,     &opt.reservation,   NULL             },
-{"SLURM_RESTART_DIR",   OPT_STRING,     &sropt.restart_dir, NULL             },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
 {"SLURM_SPREAD_JOB",    OPT_SPREAD_JOB, NULL,               NULL             },
 {"SLURM_SIGNAL",        OPT_SIGNAL,     NULL,               NULL             },
@@ -2019,18 +2011,6 @@ static void _set_options(const int argc, char **argv)
 			xfree(opt.reservation);
 			opt.reservation = xstrdup(optarg);
 			break;
-		case LONG_OPT_CHECKPOINT_DIR:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sropt.ckpt_dir);
-			sropt.ckpt_dir = xstrdup(optarg);
-			break;
-		case LONG_OPT_RESTART_DIR:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sropt.restart_dir);
-			sropt.restart_dir = xstrdup(optarg);
-			break;
 		case LONG_OPT_SIGNAL:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -2646,9 +2626,6 @@ static bool _opt_verify(void)
 		}
 	}
 
-	if (!sropt.ckpt_dir)
-		sropt.ckpt_dir = xstrdup(opt.cwd);
-
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid))
 		opt.uid = opt.euid;
 
@@ -2895,9 +2872,6 @@ static void _opt_list(void)
 		info("time_min       : %d", opt.time_min);
 	if (sropt.ckpt_interval)
 		info("checkpoint     : %d mins", sropt.ckpt_interval);
-	info("checkpoint_dir : %s", sropt.ckpt_dir);
-	if (sropt.restart_dir)
-		info("restart_dir    : %s", sropt.restart_dir);
 	info("wait           : %d", sropt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);

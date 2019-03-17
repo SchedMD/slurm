@@ -194,7 +194,6 @@ static void _opt_default(bool first_pass)
 		xfree(opt.acctg_freq);
 		opt.begin		= 0;
 		xfree(opt.c_constraint);
-		sbopt.ckpt_dir 		= slurm_get_checkpoint_dir();
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
 		xfree(opt.clusters);
@@ -362,7 +361,6 @@ env_vars_t env_vars[] = {
   {"SBATCH_BATCH",         OPT_STRING,     &sbopt.batch_features, NULL       },
   {"SBATCH_BURST_BUFFER",  OPT_STRING,     &opt.burst_buffer,  NULL          },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &sbopt.ckpt_interval_str, NULL    },
-  {"SBATCH_CHECKPOINT_DIR",OPT_STRING,     &sbopt.ckpt_dir,    NULL          },
   {"SBATCH_CLUSTERS",      OPT_STRING,     &opt.clusters,      NULL          },
   {"SLURM_CLUSTERS",       OPT_STRING,     &opt.clusters,      NULL          },
   {"SBATCH_CONSTRAINT",    OPT_STRING,     &opt.constraint,    NULL          },
@@ -1729,10 +1727,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_CHECKPOINT:
 			xfree(sbopt.ckpt_interval_str);
 			sbopt.ckpt_interval_str = xstrdup(optarg);
-			break;
-		case LONG_OPT_CHECKPOINT_DIR:
-			xfree(sbopt.ckpt_dir);
-			sbopt.ckpt_dir = xstrdup(optarg);
 			break;
 		case LONG_OPT_SIGNAL:
 			if (!optarg)

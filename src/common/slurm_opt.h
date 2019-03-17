@@ -203,7 +203,6 @@ typedef struct sbatch_opt {
 	char *burst_buffer_file;	/* --bbf			*/
 	int ckpt_interval;		/* --checkpoint (int minutes)	*/
 	char *ckpt_interval_str;	/* --checkpoint			*/
-	char *ckpt_dir;			/* --checkpoint-dir		*/
 	char *export_env;		/* --export			*/
 	char *export_file;		/* --export-file=file		*/
 	int minsockets;			/* --minsockets=n		*/
@@ -238,7 +237,6 @@ typedef struct srun_opt {
 	bool bcast_flag;		/* --bcast, copy executable to compute nodes */
 	int ckpt_interval;		/* --checkpoint, in minutes	*/
 	char *ckpt_interval_str;	/* --checkpoint			*/
-	char *ckpt_dir;			/* --checkpoint-dir		*/
 	char *cmd_name;			/* name of command to execute	*/
 	uint16_t compress;		/* --compress (for --bcast option) */
 	bool core_spec_set;		/* core_spec explicitly set	*/

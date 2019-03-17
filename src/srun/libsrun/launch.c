@@ -239,7 +239,6 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job->ctx_params.cpu_freq_gov = opt_local->cpu_freq_gov;
 	job->ctx_params.relative = (uint16_t)srun_opt->relative;
 	job->ctx_params.ckpt_interval = (uint16_t)srun_opt->ckpt_interval;
-	job->ctx_params.ckpt_dir = srun_opt->ckpt_dir;
 	job->ctx_params.exclusive = (uint16_t)srun_opt->exclusive;
 	if (opt_local->immediate == 1)
 		job->ctx_params.immediate = (uint16_t)opt_local->immediate;

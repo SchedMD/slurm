@@ -687,7 +687,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.acctg_freq)
 		desc->acctg_freq = xstrdup(opt.acctg_freq);
 
-	desc->ckpt_dir = sbopt.ckpt_dir;
 	desc->ckpt_interval = (uint16_t) sbopt.ckpt_interval;
 
 	if (opt.spank_job_env_size) {

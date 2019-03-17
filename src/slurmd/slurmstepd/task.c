@@ -388,7 +388,6 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 	job->envtp->mem_bind = xstrdup(job->mem_bind);
 	job->envtp->mem_bind_type = job->mem_bind_type;
 	job->envtp->distribution = -1;
-	job->envtp->ckpt_dir = xstrdup(job->ckpt_dir);
 	job->envtp->batch_flag = job->batch;
 	job->envtp->uid = job->uid;
 	job->envtp->user_name = xstrdup(job->user_name);

@@ -355,7 +355,6 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->envtp->cpu_bind = NULL;
 	job->envtp->mem_bind_type = 0;
 	job->envtp->mem_bind = NULL;
-	job->envtp->ckpt_dir = NULL;
 	if (!msg->resp_port)
 		msg->num_resp_port = 0;
 	if (msg->num_resp_port) {
@@ -519,7 +518,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->cpu_bind = xstrdup(msg->cpu_bind);
 	job->envtp->mem_bind_type = 0;
 	job->envtp->mem_bind = NULL;
-	job->envtp->ckpt_dir = NULL;
 	job->envtp->restart_cnt = msg->restart_cnt;
 
 	if (msg->cpus_per_node)
