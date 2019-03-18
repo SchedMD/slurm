@@ -167,7 +167,6 @@ static void _opt_default(void)
 		opt.euid		= (uid_t) -1;
 		xfree(opt.extra);
 		opt.gid			= getgid();
-		saopt.no_shell		= false;
 		opt.uid			= getuid();
 	} else if (saopt.default_job_name) {
 		xfree(opt.job_name);
@@ -296,7 +295,6 @@ static void _set_options(int argc, char **argv)
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
-		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
@@ -433,9 +431,6 @@ static void _set_options(int argc, char **argv)
 			opt.ntasks_per_core = parse_int("ntasks-per-core",
 							optarg, true);
 			opt.ntasks_per_core_set  = true;
-			break;
-		case LONG_OPT_NOSHELL:
-			saopt.no_shell = true;
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)

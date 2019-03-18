@@ -1299,6 +1299,34 @@ static slurm_cli_opt_t slurm_opt_no_kill = {
 	.reset_func = arg_reset_no_kill,
 };
 
+static int arg_set_no_shell(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->salloc_opt)
+		opt->salloc_opt->no_shell = true;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_no_shell(slurm_opt_t *opt)
+{
+	if (!opt->salloc_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup(opt->salloc_opt->no_shell ? "set" : "unset");
+}
+static void arg_reset_no_shell(slurm_opt_t *opt)
+{
+	if (opt->salloc_opt)
+		opt->salloc_opt->no_shell = false;
+}
+static slurm_cli_opt_t slurm_opt_no_shell = {
+	.name = "no-shell",
+	.has_arg = no_argument,
+	.val = LONG_OPT_NO_SHELL,
+	.set_func_salloc = arg_set_no_shell,
+	.get_func = arg_get_no_shell,
+	.reset_func = arg_reset_no_shell,
+};
+
 /*
  * FIXME: --nodefile and --nodelist options should be mutually exclusive.
  * Right now they'll overwrite one another; the last to run wins.
@@ -1933,6 +1961,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_nice,
 	&slurm_opt_no_bell,
 	&slurm_opt_no_kill,
+	&slurm_opt_no_shell,
 	&slurm_opt_nodefile,
 	&slurm_opt_nodelist,
 	&slurm_opt_overcommit,
