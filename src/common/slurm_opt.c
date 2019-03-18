@@ -387,15 +387,32 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg)
 		}
 	}
 
-	if (set) {
+	if (!set) {
+		(common_options[i]->reset_func)(opt);
+		common_options[i]->set = false;
+		return SLURM_SUCCESS;
+	}
+
+	if (common_options[i]->set_func) {
 		if (!(common_options[i]->set_func)(opt, setarg)) {
 			common_options[i]->set = true;
 			return SLURM_SUCCESS;
 		}
-	} else {
-		(common_options[i]->reset_func)(opt);
-		common_options[i]->set = false;
-		return SLURM_SUCCESS;
+	} else if (opt->salloc_opt && common_options[i]->set_func_salloc) {
+		if (!(common_options[i]->set_func_salloc)(opt, setarg)) {
+			common_options[i]->set = true;
+			return SLURM_SUCCESS;
+		}
+	} else if (opt->sbatch_opt && common_options[i]->set_func_sbatch) {
+		if (!(common_options[i]->set_func_sbatch)(opt, setarg)) {
+			common_options[i]->set = true;
+			return SLURM_SUCCESS;
+		}
+	} else if (opt->srun_opt && common_options[i]->set_func_srun) {
+		if (!(common_options[i]->set_func_srun)(opt, setarg)) {
+			common_options[i]->set = true;
+			return SLURM_SUCCESS;
+		}
 	}
 	return SLURM_ERROR;
 }
