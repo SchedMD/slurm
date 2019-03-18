@@ -111,7 +111,6 @@ int	pass_number = 0;
 time_t	srun_begin_time = 0;
 bool	tres_bind_err_log = true;
 bool	tres_freq_err_log = true;
-int	_verbose = 0;
 
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
@@ -130,7 +129,6 @@ struct option long_options[] = {
 	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
 	{"unbuffered",       no_argument,       0, 'u'},
-	{"verbose",          no_argument,       0, 'v'},
 	{"version",          no_argument,       0, 'V'},
 	{"wait",             required_argument, 0, 'W'},
 	{"disable-status",   no_argument,       0, 'X'},
@@ -462,7 +460,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		if (!_opt_verify())
 			exit(error_exit);
 
-		if (_verbose)
+		if (opt.verbose)
 			slurm_print_set_options(&opt);
 
 		if (spank_init_post_opt() < 0) {
@@ -555,7 +553,6 @@ static void _opt_default(void)
 		opt.uid			= uid;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
-		_verbose		= 0;
 	}
 
 	/*
@@ -943,7 +940,6 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 static void _set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0, tmp_int;
-	int  max_verbose = 0;
 	struct utsname name;
 	bool ntasks_set_opt = false;
 	bool nodes_set_opt = false;
@@ -1076,9 +1072,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'u':
 			sropt.unbuffered = true;
-			break;
-		case (int)'v':
-			max_verbose++;
 			break;
 		case (int)'V':
 			print_slurm_version();
@@ -1365,8 +1358,6 @@ static void _set_options(const int argc, char **argv)
 		}
 	}
 
-	_verbose = MAX(_verbose, max_verbose);
-
 	/* This means --ntasks was read from the environment.  We will override
 	 * it with what the user specified in the hostlist. POE launched
 	 * jobs excluded (they have the SLURM_STARTED_STEP env var set). */
@@ -1531,7 +1522,7 @@ static bool _opt_verify(void)
 		     sropt.slurmd_debug);
 	}
 
-	if (opt.quiet && _verbose) {
+	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}

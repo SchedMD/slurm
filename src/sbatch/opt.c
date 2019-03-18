@@ -77,7 +77,6 @@
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
-#define OPT_DEBUG       0x03
 #define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
@@ -273,7 +272,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_CORE_SPEC", 'S' },
   { "SBATCH_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SBATCH_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
-  {"SBATCH_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
+  { "SBATCH_DEBUG", 'v' },
   { "SBATCH_DELAY_BOOT", LONG_OPT_DELAY_BOOT },
   { "SBATCH_DISTRIBUTION", 'm' },
   { "SBATCH_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
@@ -396,14 +395,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		xfree(sbopt.array_inx);
 		sbopt.array_inx = xstrdup(val);
 		break;
-
-	case OPT_DEBUG:
-		if (val[0] != '\0') {
-			opt.verbose = (int) strtol(val, &end, 10);
-			if (!(end && *end == '\0'))
-				error("%s=%s invalid", e->var, val);
-		}
-		break;
 	case OPT_NODES:
 		opt.nodes_set = verify_node_count( val,
 						   &opt.min_nodes,
@@ -454,7 +445,6 @@ static struct option long_options[] = {
 	{"output",        required_argument, 0, 'o'},
 	{"quiet",         no_argument,       0, 'Q'},
 	{"usage",         no_argument,       0, 'u'},
-	{"verbose",       no_argument,       0, 'v'},
 	{"version",       no_argument,       0, 'V'},
 	{"wait",          no_argument,       0, 'W'},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
@@ -547,9 +537,6 @@ extern char *process_options_first_pass(int argc, char **argv)
 		case 'u':
 			_usage();
 			exit(0);
-		case 'v':
-			opt.verbose++;
-			break;
 		case 'V':
 			print_slurm_version();
 			exit(0);
@@ -946,7 +933,6 @@ static void _set_options(int argc, char **argv)
 			/* handled in process_options_first_pass() */
 			break;
 		case 'u':
-		case 'v':
 		case 'V':
 			/* handled in process_options_first_pass() */
 			break;

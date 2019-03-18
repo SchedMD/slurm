@@ -79,7 +79,6 @@
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
-#define OPT_DEBUG       0x03
 #define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
@@ -181,8 +180,6 @@ static void _opt_default(void)
 		saopt.no_shell		= false;
 		opt.quiet		= 0;
 		opt.uid			= getuid();
-		opt.verbose		= 0;
-		opt.x11			= 0;
 	} else if (saopt.default_job_name) {
 		xfree(opt.job_name);
 	}
@@ -240,7 +237,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_CORE_SPEC", 'S' },
   { "SALLOC_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SALLOC_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
-  {"SALLOC_DEBUG",         OPT_DEBUG,      NULL,               NULL          },
+  { "SALLOC_DEBUG", 'v' },
   { "SALLOC_DELAY_BOOT", LONG_OPT_DELAY_BOOT },
   { "SALLOC_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   { "SALLOC_GPUS", 'G' },
@@ -353,15 +350,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			*((bool *)e->arg) = false;
 		}
 		break;
-
-	case OPT_DEBUG:
-		if (val[0] != '\0') {
-			opt.verbose = (int) strtol(val, &end, 10);
-			if (!(end && *end == '\0'))
-				error("%s=%s invalid", e->var, val);
-		}
-		break;
-
 	case OPT_NODES:
 		opt.nodes_set = verify_node_count( val,
 						   &opt.min_nodes,
@@ -391,7 +379,6 @@ static void _set_options(int argc, char **argv)
 		{"nodes",         required_argument, 0, 'N'},
 		{"quiet",         no_argument,       0, 'Q'},
 		{"usage",         no_argument,       0, 'u'},
-		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
@@ -462,9 +449,6 @@ static void _set_options(int argc, char **argv)
 		case 'u':
 			_usage();
 			exit(0);
-		case 'v':
-			opt.verbose++;
-			break;
 		case 'V':
 			print_slurm_version();
 			exit(0);

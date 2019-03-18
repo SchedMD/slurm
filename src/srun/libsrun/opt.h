@@ -57,7 +57,6 @@
 #define MAX_PACK_COUNT		128
 
 /* global variables relating to user options */
-extern int _verbose;
 
 extern enum modes mode;
 

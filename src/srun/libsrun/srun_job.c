@@ -673,18 +673,18 @@ extern void init_srun(int argc, char **argv,
 	/*
 	 * reinit log with new verbosity (if changed by command line)
 	 */
-	if (logopt && (_verbose || opt.quiet)) {
+	if (logopt && (opt.verbose || opt.quiet)) {
 		/*
 		 * If log level is already increased, only increment the
-		 * level to the difference of _verbose an LOG_LEVEL_INFO
+		 * level to the difference of opt.verbose an LOG_LEVEL_INFO
 		 */
-		if ((_verbose -= (logopt->stderr_level - LOG_LEVEL_INFO)) > 0)
-			logopt->stderr_level += _verbose;
+		if ((opt.verbose -= (logopt->stderr_level - LOG_LEVEL_INFO)) > 0)
+			logopt->stderr_level += opt.verbose;
 		logopt->stderr_level -= opt.quiet;
 		logopt->prefix_level = 1;
 		log_alter(*logopt, 0, NULL);
 	} else
-		_verbose = debug_level;
+		opt.verbose = debug_level;
 
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
@@ -1683,7 +1683,7 @@ static void _print_job_information(resource_allocation_response_msg_t *resp)
 	char *str = NULL;
 	char *sep = "";
 
-	if (!_verbose)
+	if (!opt.verbose)
 		return;
 
 	xstrfmtcat(str, "jobid %u: nodes(%u):`%s', cpu counts: ",
@@ -2010,7 +2010,7 @@ static int _set_umask_env(void)
 {
 	if (!getenv("SRUN_DEBUG")) {	/* do not change current value */
 		/* NOTE: Default debug level is 3 (info) */
-		int log_level = LOG_LEVEL_INFO + _verbose - opt.quiet;
+		int log_level = LOG_LEVEL_INFO + opt.verbose - opt.quiet;
 
 		if (setenvf(NULL, "SRUN_DEBUG", "%d", log_level) < 0)
 			error ("unable to set SRUN_DEBUG in environment");

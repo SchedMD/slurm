@@ -244,7 +244,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		job->ctx_params.immediate = (uint16_t)opt_local->immediate;
 	if (opt_local->time_limit != NO_VAL)
 		job->ctx_params.time_limit = (uint32_t)opt_local->time_limit;
-	job->ctx_params.verbose_level = (uint16_t)_verbose;
+	job->ctx_params.verbose_level = (uint16_t) opt.verbose;
 	if (srun_opt->resv_port_cnt != NO_VAL) {
 		job->ctx_params.resv_port_cnt = (uint16_t)srun_opt->resv_port_cnt;
 	} else {

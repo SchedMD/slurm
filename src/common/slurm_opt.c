@@ -1752,6 +1752,34 @@ static slurm_cli_opt_t slurm_opt_use_min_nodes = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_verbose(slurm_opt_t *opt, const char *arg)
+{
+	/*
+	 * Note that verbose is handled a bit differently. As a cli argument,
+	 * it has no_argument set so repeated 'v' characters can be used.
+	 * As an environment variable though, it will have a numeric value.
+	 * The boolean treatment from slurm_process_option() will still pass
+	 * the string form along to us, which we can parse here into the
+	 * correct value.
+	 */
+	if (!arg)
+		opt->verbose++;
+	else
+		opt->verbose = parse_int("--verbose", arg, false);
+
+	return SLURM_SUCCESS;
+}
+COMMON_INT_OPTION_GET_AND_RESET(verbose);
+static slurm_cli_opt_t slurm_opt_verbose = {
+	.name = "verbose",
+	.has_arg = no_argument,	/* sort of */
+	.val = 'v',
+	.sbatch_early_pass = true,
+	.set_func = arg_set_verbose,
+	.get_func = arg_get_verbose,
+	.reset_func = arg_reset_verbose,
+};
+
 static int arg_set_wait_all_nodes(slurm_opt_t *opt, const char *arg)
 {
 	uint16_t tmp;
@@ -1886,6 +1914,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
 	&slurm_opt_use_min_nodes,
+	&slurm_opt_verbose,
 	&slurm_opt_wait_all_nodes,
 	&slurm_opt_wckey,
 	NULL /* END */
