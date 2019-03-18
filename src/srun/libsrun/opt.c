@@ -128,7 +128,6 @@ struct option long_options[] = {
 	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
 	{"unbuffered",       no_argument,       0, 'u'},
-	{"version",          no_argument,       0, 'V'},
 	{"wait",             required_argument, 0, 'W'},
 	{"disable-status",   no_argument,       0, 'X'},
 	{"no-allocate",      no_argument,       0, 'Z'},
@@ -1067,10 +1066,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case (int)'u':
 			sropt.unbuffered = true;
-			break;
-		case (int)'V':
-			print_slurm_version();
-			exit(0);
 			break;
 		case (int)'W':
 			if (!optarg)

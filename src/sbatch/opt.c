@@ -443,7 +443,6 @@ static struct option long_options[] = {
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
 	{"usage",         no_argument,       0, 'u'},
-	{"version",       no_argument,       0, 'V'},
 	{"wait",          no_argument,       0, 'W'},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
@@ -532,10 +531,6 @@ extern char *process_options_first_pass(int argc, char **argv)
 		case 'u':
 			_usage();
 			exit(0);
-		case 'V':
-			print_slurm_version();
-			exit(0);
-			break;
 		case LONG_OPT_WRAP:
 			xfree(opt.job_name);
 			xfree(sbopt.wrap);
@@ -925,7 +920,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.ofname = xstrdup(optarg);
 			break;
 		case 'u':
-		case 'V':
 			/* handled in process_options_first_pass() */
 			break;
 		case 'W':

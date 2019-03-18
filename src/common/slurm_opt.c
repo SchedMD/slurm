@@ -1797,6 +1797,29 @@ static slurm_cli_opt_t slurm_opt_verbose = {
 	.reset_func = arg_reset_verbose,
 };
 
+static int arg_set_version(slurm_opt_t *opt, const char *arg)
+{
+	print_slurm_version();
+	exit(0);
+}
+static char *arg_get_version(slurm_opt_t *opt)
+{
+	return NULL; /* no op */
+}
+static void arg_reset_version(slurm_opt_t *opt)
+{
+	/* no op */
+}
+static slurm_cli_opt_t slurm_opt_version = {
+	.name = "version",
+	.has_arg = no_argument,
+	.val = 'V',
+	.sbatch_early_pass = true,
+	.set_func = arg_set_version,
+	.get_func = arg_get_version,
+	.reset_func = arg_reset_version,
+};
+
 static int arg_set_wait_all_nodes(slurm_opt_t *opt, const char *arg)
 {
 	uint16_t tmp;
@@ -1933,6 +1956,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_tmp,
 	&slurm_opt_use_min_nodes,
 	&slurm_opt_verbose,
+	&slurm_opt_version,
 	&slurm_opt_wait_all_nodes,
 	&slurm_opt_wckey,
 	NULL /* END */

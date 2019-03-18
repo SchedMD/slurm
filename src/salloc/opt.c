@@ -293,7 +293,6 @@ static void _set_options(int argc, char **argv)
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
 		{"usage",         no_argument,       0, 'u'},
-		{"version",       no_argument,       0, 'V'},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
@@ -360,10 +359,6 @@ static void _set_options(int argc, char **argv)
 		case 'u':
 			_usage();
 			exit(0);
-		case 'V':
-			print_slurm_version();
-			exit(0);
-			break;
 		case LONG_OPT_UID:
 			if (getuid() != 0) {
 				error("--uid only permitted by root user");
