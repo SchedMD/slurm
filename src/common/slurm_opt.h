@@ -316,8 +316,7 @@ typedef struct slurm_options {
 	int ntasks_per_socket;		/* --ntasks-per-socket=n	*/
 	int ntasks_per_core;		/* --ntasks-per-core=n		*/
 	bool ntasks_per_core_set;	/* ntasks-per-core explicitly set */
-	char *hint_env;			/* SLURM_HINT env var setting	*/
-	bool hint_set;			/* --hint set explicitly set	*/
+	char *hint;			/* --hint or SLURM_HINT envvar	*/
 	mem_bind_type_t mem_bind_type;	/* --mem-bind=		*/
 	char *mem_bind;			/* binding map for map/mask_mem	*/
 	bool extra_set;			/* extra node info explicitly set */

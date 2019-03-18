@@ -96,7 +96,6 @@
 #define OPT_OPEN_MODE   0x14
 #define OPT_BCAST       0x1e
 #define OPT_EXPORT	0x21
-#define OPT_HINT	0x22
 #define OPT_INT64	0x25
 
 extern char **environ;
@@ -148,7 +147,6 @@ struct option long_options[] = {
 	{"export",           required_argument, 0, LONG_OPT_EXPORT},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
 	{"help",             no_argument,       0, LONG_OPT_HELP},
-	{"hint",             required_argument, 0, LONG_OPT_HINT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -381,7 +379,6 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->gpus_per_node = xstrdup(opt.gpus_per_node);
 	opt_dup->gpus_per_socket = xstrdup(opt.gpus_per_socket);
 	opt_dup->gpus_per_task = xstrdup(opt.gpus_per_task);
-	opt.hint_env = NULL;		/* Moved by memcpy */
 	sropt.hostfile = NULL;		/* Moved by memcpy */
 	opt_dup->srun_opt->ifname = xstrdup(sropt.ifname);
 	opt_dup->job_name = xstrdup(opt.job_name);
@@ -577,8 +574,6 @@ static void _opt_default(void)
 	sropt.cpu_bind_type_set		= false;
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
-	opt.hint_env			= NULL;
-	opt.hint_set			= false;
 	sropt.hostfile			= NULL;
 	opt.job_flags			= 0;
 	sropt.max_threads		= MAX_THREADS;
@@ -668,7 +663,7 @@ env_vars_t env_vars[] = {
   { "SLURM_GPUS_PER_TASK", LONG_OPT_GPUS_PER_TASK },
   { "SLURM_GRES", LONG_OPT_GRES },
   { "SLURM_GRES_FLAGS", LONG_OPT_GRES_FLAGS },
-{"SLURM_HINT",          OPT_HINT,       NULL,               NULL             },
+  { "SLURM_HINT", LONG_OPT_HINT },
 {"SLURM_JOB_ID",        OPT_INT,        &sropt.jobid,       NULL             },
   { "SLURM_JOB_NAME", 'J' },
 {"SLURM_JOB_NUM_NODES", OPT_NODES,      NULL,               NULL             },
@@ -800,10 +795,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		if (slurm_verify_cpu_bind(val, &sropt.cpu_bind,
 					  &sropt.cpu_bind_type, 0))
 			exit(error_exit);
-		break;
-	case OPT_HINT:
-		xfree(opt.hint_env);
-		opt.hint_env = xstrdup(val);
 		break;
 	case OPT_NODES:
 		sropt.nodes_set_env = get_resource_arg_range( val ,"OPT_NODES",
@@ -1305,22 +1296,6 @@ static void _set_options(const int argc, char **argv)
 						       "ntasks-per-core", true);
 			opt.ntasks_per_core_set  = true;
 			break;
-		case LONG_OPT_HINT:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			/* Keep this logic after other options filled in */
-			if (verify_hint(optarg,
-					&opt.sockets_per_node,
-					&opt.cores_per_socket,
-					&opt.threads_per_core,
-					&opt.ntasks_per_core,
-					&sropt.cpu_bind_type)) {
-				exit(error_exit);
-			}
-			opt.hint_set = true;
-			opt.ntasks_per_core_set  = true;
-			opt.threads_per_core_set = true;
-			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H
 			sropt.pty = true;
@@ -1582,12 +1557,11 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.hint_env &&
-	    (!opt.hint_set &&
-	     ((sropt.cpu_bind_type == CPU_BIND_VERBOSE) ||
-	      !sropt.cpu_bind_type_set) &&
-	     !opt.ntasks_per_core_set && !opt.threads_per_core_set)) {
-		if (verify_hint(opt.hint_env,
+	if (opt.hint &&
+	    ((sropt.cpu_bind_type == CPU_BIND_VERBOSE) ||
+	     !sropt.cpu_bind_type_set) &&
+	    !opt.ntasks_per_core_set && !opt.threads_per_core_set) {
+		if (verify_hint(opt.hint,
 				&opt.sockets_per_node,
 				&opt.cores_per_socket,
 				&opt.threads_per_core,

@@ -961,6 +961,17 @@ static slurm_cli_opt_t slurm_opt_gres_flags = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(hint);
+static slurm_cli_opt_t slurm_opt_hint = {
+	.name = "hint",
+	.has_arg = required_argument,
+	.val = LONG_OPT_HINT,
+	.set_func = arg_set_hint,
+	.get_func = arg_get_hint,
+	.reset_func = arg_reset_hint,
+	.reset_each_pass = true,
+};
+
 COMMON_BOOL_OPTION(hold, "hold");
 static slurm_cli_opt_t slurm_opt_hold = {
 	.name = "hold",
@@ -1836,6 +1847,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_gpus_per_task,
 	&slurm_opt_gres,
 	&slurm_opt_gres_flags,
+	&slurm_opt_hint,
 	&slurm_opt_hold,
 	&slurm_opt_immediate,
 	&slurm_opt_job_name,

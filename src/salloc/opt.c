@@ -83,7 +83,6 @@
 #define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
-#define OPT_HINT	0x1a
 #define OPT_INT64	0x1f
 
 /*---- global variables, defined in opt.h ----*/
@@ -194,8 +193,6 @@ static void _opt_default(void)
 	opt.cpus_per_task		= 0;
 	opt.cpus_set			= false;
 	saopt.default_job_name		= false;
-	xfree(opt.hint_env);
-	opt.hint_set			= false;
 	opt.job_flags			= 0;
 	opt.max_nodes			= 0;
 	opt.min_nodes			= 1;
@@ -255,8 +252,8 @@ env_vars_t env_vars[] = {
   { "SALLOC_GRES", LONG_OPT_GRES },
   { "SALLOC_GRES_FLAGS", LONG_OPT_GRES_FLAGS },
   { "SALLOC_IMMEDIATE", 'I' },
-  {"SALLOC_HINT",          OPT_HINT,       NULL,               NULL          },
-  {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
+  { "SALLOC_HINT", LONG_OPT_HINT },
+  { "SLURM_HINT", LONG_OPT_HINT },
   { "SALLOC_KILL_CMD", 'K' },
   { "SALLOC_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SALLOC_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
@@ -373,9 +370,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("invalid node count in env variable, ignoring");
 		}
 		break;
-	case OPT_HINT:
-		opt.hint_env = xstrdup(val);
-		break;
 	default:
 		/*
 		 * assume this was meant to be processed by
@@ -402,7 +396,6 @@ static void _set_options(int argc, char **argv)
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
-		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -551,20 +544,6 @@ static void _set_options(int argc, char **argv)
 							optarg, true);
 			opt.ntasks_per_core_set  = true;
 			break;
-		case LONG_OPT_HINT:
-			/* Keep after other options filled in */
-			if (verify_hint(optarg,
-					&opt.sockets_per_node,
-					&opt.cores_per_socket,
-					&opt.threads_per_core,
-					&opt.ntasks_per_core,
-					NULL)) {
-				exit(error_exit);
-			}
-			opt.hint_set = true;
-			opt.ntasks_per_core_set  = true;
-			opt.threads_per_core_set = true;
-			break;
 		case LONG_OPT_NOSHELL:
 			saopt.no_shell = true;
 			break;
@@ -677,10 +656,9 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (opt.hint_env &&
-	    (!opt.hint_set && !opt.ntasks_per_core_set &&
-	     !opt.threads_per_core_set)) {
-		if (verify_hint(opt.hint_env,
+	if (opt.hint &&
+	    !opt.ntasks_per_core_set && !opt.threads_per_core_set) {
+		if (verify_hint(opt.hint,
 				&opt.sockets_per_node,
 				&opt.cores_per_socket,
 				&opt.threads_per_core,
