@@ -2043,7 +2043,7 @@ static void _help(void)
 "      --mail-user=user        who to send email notification for job state\n"
 "                              changes\n"
 "      --mcs-label=mcs         mcs label if mcs plugin mcs/group is used\n"
-"  -n, --tasks=N               number of processors required\n"
+"  -n, --ntasks=N              number of processors required\n"
 "      --nice[=value]          decrease scheduling priority by value\n"
 "      --no-bell               do NOT ring the terminal bell\n"
 "      --ntasks-per-node=n     number of tasks to invoke on each node\n"

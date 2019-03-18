@@ -448,7 +448,7 @@ test15.7   Test of processors, memory, and temporary disk space
 	   Also test that priority zero job is not started (--hold option).
 test15.8   Test of immediate allocation option (--immediate option).
 test15.9   Confirm that salloc exit code processing.
-test15.10  Confirm that a job allocates the proper processor count (--tasks)
+test15.10  Confirm that a job allocates the proper processor count (--ntasks)
 test15.11  Test of --nice and --job-name options.
 test15.12  Verify node configuration specification (--constraint option).
 test15.13  Verify the appropriate job environment variables are set
@@ -501,7 +501,7 @@ test17.4   Confirm that as sbatch job executes as the appropriate user and
 	   group.
 test17.5   Confirm that sbatch stdout, and stderr options work (--output
 	   and --error option respectively, including use of %j specification)
-test17.6   Confirm that a job executes with the proper task count (--tasks
+test17.6   Confirm that a job executes with the proper task count (--ntasks
 	   option).
 test17.8   Confirm that sbatch sets appropriate time limit (--time
 	   option)

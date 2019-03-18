@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#          Confirm that a job allocates the proper processor count (--tasks)
+#          Confirm that a job allocates the proper processor count (--ntasks)
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
