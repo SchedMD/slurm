@@ -421,7 +421,7 @@ extern void slurm_option_table_destroy(struct option *optz);
  * should not be problematic. If it is, please refactor.
  */
 extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
-				bool set_by_env);
+				bool set_by_env, bool early_pass);
 
 /*
  * Print all options that have been set through slurm_process_option()

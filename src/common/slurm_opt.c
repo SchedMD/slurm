@@ -247,6 +247,9 @@ typedef struct {
 	bool set;		/* Has the option been set */
 	bool set_by_env;	/* Has the option been set by env var */
 	bool reset_each_pass;	/* Reset on all HetJob passes or only first */
+	bool sbatch_early_pass;	/* For sbatch - run in the early pass. */
+				/* For salloc/srun - this is ignored, and will
+				 * run alongside all other options. */
 	/*
 	 * If set_func is set, it will be used, and the command
 	 * specific versions must not be set.
@@ -337,7 +340,7 @@ void slurm_option_table_destroy(struct option *optz)
 }
 
 int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
-			 bool set_by_env)
+			 bool set_by_env, bool early_pass)
 {
 	int i;
 	const char *setarg = arg;
@@ -353,6 +356,21 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 
 	if (!common_options[i])
 		return SLURM_ERROR;
+
+	/*
+	 * Special handling for the early pass in sbatch.
+	 *
+	 * Some options are handled in the early pass, but most are deferred
+	 * to a later pass, in which case those options are not re-evaluated.
+	 * Environment variables are always evaluated by this though - there
+	 * is no distinction for them of early vs normal passes.
+	 */
+	if (!set_by_env && opt->sbatch_opt) {
+		if (!early_pass && common_options[i]->sbatch_early_pass)
+			return SLURM_SUCCESS;
+		if (early_pass && !common_options[i]->sbatch_early_pass)
+			return SLURM_SUCCESS;
+	}
 
 	if (arg) {
 		if (common_options[i]->has_arg == no_argument) {
