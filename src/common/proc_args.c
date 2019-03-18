@@ -1200,12 +1200,14 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 extern char *signal_opts_to_cmdline(uint16_t warn_signal, uint16_t warn_time,
 				    uint16_t warn_flags)
 {
-	char *cmdline = NULL;
+	char *cmdline = NULL, *sig_name;
 
 	if (warn_flags == KILL_JOB_BATCH)
 		xstrcat(cmdline, "B:");
 
-	xstrcat(cmdline, sig_num2name(warn_signal));
+	sig_name = sig_num2name(warn_signal);
+	xstrcat(cmdline, sig_name);
+	xfree(sig_name);
 
 	if (warn_time != 60) /* default value above, don't print */
 		xstrfmtcat(cmdline, "@%u", warn_time);
