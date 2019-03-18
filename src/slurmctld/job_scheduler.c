@@ -513,9 +513,6 @@ extern List build_job_queue(bool clear_start, bool backfill)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (!backfill && job_ptr->pack_job_id)
-			continue;
-
 		if (IS_JOB_PENDING(job_ptr))
 			acct_policy_handle_accrue_time(job_ptr, false);
 
@@ -2184,11 +2181,8 @@ extern int sort_job_queue2(void *x, void *y)
 	     job_rec2->job_ptr->pack_job_id)) {
 		if ((details = job_rec1->job_ptr->pack_details))
 			has_resv1 = details->any_resv;
-		else {
-			error("%s: %pJ has no pack_details", __func__,
-			      job_rec1->job_ptr);
+		else
 			has_resv1 = (job_rec1->job_ptr->resv_id != 0);
-		}
 	} else
 		has_resv1 = (job_rec1->job_ptr->resv_id != 0);
 
@@ -2197,11 +2191,8 @@ extern int sort_job_queue2(void *x, void *y)
 	     job_rec1->job_ptr->pack_job_id)) {
 		if ((details = job_rec2->job_ptr->pack_details))
 			has_resv2 = details->any_resv;
-		else {
-			error("%s: %pJ has no pack_details", __func__,
-			      job_rec2->job_ptr);
+		else
 			has_resv2 = (job_rec2->job_ptr->resv_id != 0);
-		}
 	} else
 		has_resv2 = (job_rec2->job_ptr->resv_id != 0);
 
@@ -2216,11 +2207,8 @@ extern int sort_job_queue2(void *x, void *y)
 		     job_rec2->job_ptr->pack_job_id)) {
 			if ((details = job_rec1->job_ptr->pack_details))
 				p1 = details->priority_tier;
-			else {
-				error("%s: %pJ has no pack_details", __func__,
-				      job_rec1->job_ptr);
+			else
 				p1 = job_rec1->part_ptr->priority_tier;
-			}
 		} else
 			p1 = job_rec1->part_ptr->priority_tier;
 
@@ -2229,11 +2217,8 @@ extern int sort_job_queue2(void *x, void *y)
 		     job_rec1->job_ptr->pack_job_id)) {
 			if ((details = job_rec2->job_ptr->pack_details))
 				p2 = details->priority_tier;
-			else {
-				error("%s: %pJ has no pack_details", __func__,
-				      job_rec2->job_ptr);
+			else
 				p2 = job_rec2->part_ptr->priority_tier;
-			}
 		} else
 			p2 = job_rec2->part_ptr->priority_tier;
 
@@ -2249,8 +2234,6 @@ extern int sort_job_queue2(void *x, void *y)
 		if ((details = job_rec1->job_ptr->pack_details))
 			p1 = details->priority;
 		else {
-			error("%s: %pJ has no pack_details", __func__,
-			      job_rec1->job_ptr);
 			if (job_rec1->job_ptr->part_ptr_list &&
 			    job_rec1->job_ptr->priority_array)
 				p1 = job_rec1->priority;
@@ -2271,8 +2254,6 @@ extern int sort_job_queue2(void *x, void *y)
 		if ((details = job_rec2->job_ptr->pack_details))
 			p2 = details->priority;
 		else {
-			error("%s: %pJ has no pack_details", __func__,
-			      job_rec2->job_ptr);
 			if (job_rec2->job_ptr->part_ptr_list &&
 			    job_rec2->job_ptr->priority_array)
 				p2 = job_rec2->priority;
