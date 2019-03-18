@@ -635,7 +635,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		* assume this was meant to be processed by
 		 * slurm_process_option() instead.
 		 */
-		slurm_process_option(&opt, e->type, val);
+		slurm_process_option(&opt, e->type, val, true);
 		break;
 	}
 }
@@ -1854,7 +1854,7 @@ static void _set_options(int argc, char **argv)
 			opt.job_flags |= USE_MIN_NODES;
 			break;
 		default:
-			if (slurm_process_option(&opt, opt_char, optarg) < 0)
+			if (slurm_process_option(&opt, opt_char, optarg, false) < 0)
 				if (spank_process_option(opt_char, optarg) < 0)
 					exit(error_exit);
 		}

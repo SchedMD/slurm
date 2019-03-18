@@ -420,7 +420,8 @@ extern void slurm_option_table_destroy(struct option *optz);
  * within a single thread in salloc/sbatch/srun, and that this restriction
  * should not be problematic. If it is, please refactor.
  */
-extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg);
+extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
+				bool set_by_env);
 
 /*
  * Print all options that have been set through slurm_process_option()

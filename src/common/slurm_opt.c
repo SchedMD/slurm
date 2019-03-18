@@ -245,6 +245,7 @@ typedef struct {
 	 * Add new members below here:
 	 */
 	bool set;		/* Has the option been set */
+	bool set_by_env;	/* Has the option been set by env var */
 	bool reset_each_pass;	/* Reset on all HetJob passes or only first */
 	/*
 	 * If set_func is set, it will be used, and the command
@@ -335,7 +336,8 @@ void slurm_option_table_destroy(struct option *optz)
 	optz_destroy(optz);
 }
 
-int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg)
+int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
+			 bool set_by_env)
 {
 	int i;
 	const char *setarg = arg;
@@ -390,27 +392,32 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg)
 	if (!set) {
 		(common_options[i]->reset_func)(opt);
 		common_options[i]->set = false;
+		common_options[i]->set_by_env = false;
 		return SLURM_SUCCESS;
 	}
 
 	if (common_options[i]->set_func) {
 		if (!(common_options[i]->set_func)(opt, setarg)) {
 			common_options[i]->set = true;
+			common_options[i]->set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	} else if (opt->salloc_opt && common_options[i]->set_func_salloc) {
 		if (!(common_options[i]->set_func_salloc)(opt, setarg)) {
 			common_options[i]->set = true;
+			common_options[i]->set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	} else if (opt->sbatch_opt && common_options[i]->set_func_sbatch) {
 		if (!(common_options[i]->set_func_sbatch)(opt, setarg)) {
 			common_options[i]->set = true;
+			common_options[i]->set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	} else if (opt->srun_opt && common_options[i]->set_func_srun) {
 		if (!(common_options[i]->set_func_srun)(opt, setarg)) {
 			common_options[i]->set = true;
+			common_options[i]->set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	}
