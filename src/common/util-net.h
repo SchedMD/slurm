@@ -83,7 +83,7 @@ extern bool is_full_path(const char *);
  * Given a relative path in input make it full relative
  * to the current working directory.
  */
-extern char *make_full_path(char *);
+extern char *make_full_path(const char *);
 
 /* Wrapper functions for name and address resolution routines.
  */
