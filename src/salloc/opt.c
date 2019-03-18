@@ -83,7 +83,6 @@
 #define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
-#define OPT_TIME_VAL	0x17
 #define OPT_HINT	0x1a
 #define OPT_INT64	0x1f
 
@@ -208,11 +207,9 @@ static void _opt_default(void)
 	opt.ntasks_per_core_set		= false;
 	opt.nodes_set			= false;
 	opt.ntasks_set			= false;
-	opt.req_switch			= -1;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
-	opt.wait4switch			= -1;
 
 	slurm_reset_all_options(&opt, first_pass);
 }
@@ -272,7 +269,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_POWER", LONG_OPT_POWER },
   { "SALLOC_PROFILE", LONG_OPT_PROFILE },
   { "SALLOC_QOS", 'q' },
-  {"SALLOC_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
+  { "SALLOC_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
   { "SALLOC_RESERVATION", LONG_OPT_RESERVATION },
   { "SALLOC_SIGNAL", LONG_OPT_SIGNAL },
   { "SALLOC_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
@@ -280,7 +277,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_TIMELIMIT", 't' },
   { "SALLOC_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
   {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &saopt.wait_all_nodes,NULL          },
-  {"SALLOC_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
+  { "SALLOC_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SALLOC_WCKEY", LONG_OPT_WCKEY },
   {NULL, 0, NULL, NULL}
 };
@@ -380,9 +377,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_HINT:
 		opt.hint_env = xstrdup(val);
 		break;
-	case OPT_TIME_VAL:
-		opt.wait4switch = time_str2secs(val);
-		break;
 	default:
 		/*
 		 * assume this was meant to be processed by
@@ -415,7 +409,6 @@ static void _set_options(int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
-		{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"uid",           required_argument, 0, LONG_OPT_UID},
@@ -427,7 +420,6 @@ static void _set_options(int argc, char **argv)
 	};
 	char *opt_string =
 		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:q:QsS:t:uvVw:x:";
-	char *pos_delimit;
 
 	struct option *common_options = slurm_option_table_create(long_options,
 								  &opt);
@@ -587,17 +579,6 @@ static void _set_options(int argc, char **argv)
 				exit(1);
 			}
 			saopt.wait_all_nodes = strtol(optarg, NULL, 10);
-			break;
-		case LONG_OPT_REQ_SWITCH:
-			if (!optarg) /* CLANG Fix */
-				break;
-			pos_delimit = strstr(optarg,"@");
-			if (pos_delimit != NULL) {
-				pos_delimit[0] = '\0';
-				pos_delimit++;
-				opt.wait4switch = time_str2secs(pos_delimit);
-			}
-			opt.req_switch = parse_int("switches", optarg, true);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)

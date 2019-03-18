@@ -94,7 +94,6 @@
 #define OPT_NSOCKETS    0x10
 #define OPT_NCORES      0x11
 #define OPT_OPEN_MODE   0x14
-#define OPT_TIME_VAL    0x18
 #define OPT_BCAST       0x1e
 #define OPT_EXPORT	0x21
 #define OPT_HINT	0x22
@@ -167,7 +166,6 @@ struct option long_options[] = {
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 	{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
-	{"switches",         required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 	{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -602,14 +600,12 @@ static void _opt_default(void)
 	sropt.pack_grp_bits		= NULL;
 	sropt.relative			= NO_VAL;
 	sropt.relative_set		= false;
-	opt.req_switch			= -1;
 	sropt.resv_port_cnt		= NO_VAL;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.spank_job_env_size		= 0;
 	opt.spank_job_env		= NULL;
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
-	opt.wait4switch			= -1;
 
 	/*
 	 * Reset some default values if running under a parallel debugger
@@ -699,7 +695,7 @@ env_vars_t env_vars[] = {
 {"SLURM_PROLOG",        OPT_STRING,     &sropt.prolog,      NULL             },
   { "SLURM_QOS", 'q' },
   { "SLURM_REMOTE_CWD", 'D' },
-{"SLURM_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL             },
+  { "SLURM_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
   { "SLURM_RESERVATION", LONG_OPT_RESERVATION },
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
   { "SLURM_SIGNAL", LONG_OPT_SIGNAL },
@@ -716,7 +712,7 @@ env_vars_t env_vars[] = {
 {"SLURM_UNBUFFEREDIO",  OPT_INT,        &sropt.unbuffered,  NULL             },
   { "SLURM_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
 {"SLURM_WAIT",          OPT_INT,        &sropt.max_wait,    NULL             },
-{"SLURM_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL             },
+  { "SLURM_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SLURM_WCKEY", LONG_OPT_WCKEY },
   { "SLURM_WORKING_DIR", 'D' },
 {NULL, 0, NULL, NULL}
@@ -852,9 +848,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		xfree(mpi_type);
 		mpi_type = xstrdup(val);
 		break;
-	case OPT_TIME_VAL:
-		opt.wait4switch = time_str2secs(val);
-		break;
 	default:
 		/*
 		* assume this was meant to be processed by
@@ -961,7 +954,6 @@ static void _set_options(const int argc, char **argv)
 	int opt_char, option_index = 0, max_val = 0, tmp_int;
 	int  max_verbose = 0;
 	struct utsname name;
-	char *pos_delimit;
 	bool ntasks_set_opt = false;
 	bool nodes_set_opt = false;
 
@@ -1366,17 +1358,6 @@ static void _set_options(const int argc, char **argv)
 				error("Invalid --open-mode argument: %s. Ignored",
 				      optarg);
 			}
-			break;
-		case LONG_OPT_REQ_SWITCH:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			pos_delimit = strstr(optarg,"@");
-			if (pos_delimit != NULL) {
-				pos_delimit[0] = '\0';
-				pos_delimit++;
-				opt.wait4switch = time_str2secs(pos_delimit);
-			}
-			opt.req_switch = _get_int(optarg, "switches", true);
 			break;
 		case LONG_OPT_ACCEL_BIND:
 			if (!optarg)

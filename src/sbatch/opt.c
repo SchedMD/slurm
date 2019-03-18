@@ -86,7 +86,6 @@
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
 #define OPT_EXPORT        0x17
-#define OPT_TIME_VAL      0x19
 #define OPT_ARRAY_INX     0x20
 #define OPT_HINT	  0x22
 #define OPT_INT64	  0x24
@@ -203,11 +202,9 @@ static void _opt_default(bool first_pass)
 	opt.ntasks_per_node		= 0;	/* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_set			= false;
-	opt.req_switch			= -1;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
-	opt.wait4switch			= -1;
 
 	slurm_reset_all_options(&opt, first_pass);
 }
@@ -308,7 +305,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_POWER", LONG_OPT_POWER },
   { "SBATCH_PROFILE", LONG_OPT_PROFILE },
   { "SBATCH_QOS", 'q' },
-  {"SBATCH_REQ_SWITCH",    OPT_INT,        &opt.req_switch,    NULL          },
+  { "SBATCH_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
   {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
   { "SBATCH_RESERVATION", LONG_OPT_RESERVATION },
   { "SBATCH_SIGNAL", LONG_OPT_SIGNAL },
@@ -318,7 +315,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
   {"SBATCH_WAIT",          OPT_BOOL,       &sbopt.wait,        NULL          },
   {"SBATCH_WAIT_ALL_NODES",OPT_INT,        &sbopt.wait_all_nodes,NULL        },
-  {"SBATCH_WAIT4SWITCH",   OPT_TIME_VAL,   NULL,               NULL          },
+  { "SBATCH_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SBATCH_WCKEY", LONG_OPT_WCKEY },
 
   {NULL, 0, NULL, NULL}
@@ -439,9 +436,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_REQUEUE:
 		sbopt.requeue = 1;
 		break;
-	case OPT_TIME_VAL:
-		opt.wait4switch = time_str2secs(val);
-		break;
 	default:
 		/*
 		* assume this was meant to be processed by
@@ -490,7 +484,6 @@ static struct option long_options[] = {
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
-	{"switches",      required_argument, 0, LONG_OPT_REQ_SWITCH},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
@@ -502,8 +495,6 @@ static struct option long_options[] = {
 
 static char *opt_string =
 	"+a:A:b:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:q:QsS:t:uvVw:Wx:";
-char *pos_delimit;
-
 
 /*
  * process_options_first_pass()
@@ -1142,17 +1133,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_EXPORT_FILE:
 			xfree(sbopt.export_file);
 			sbopt.export_file = xstrdup(optarg);
-			break;
-		case LONG_OPT_REQ_SWITCH:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			pos_delimit = strstr(optarg,"@");
-			if (pos_delimit != NULL) {
-				pos_delimit[0] = '\0';
-				pos_delimit++;
-				opt.wait4switch = time_str2secs(pos_delimit);
-			}
-			opt.req_switch = parse_int("switches", optarg, true);
 			break;
 		case LONG_OPT_IGNORE_PBS:
 			ignore_pbs = 1;

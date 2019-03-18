@@ -1533,6 +1533,102 @@ static slurm_cli_opt_t slurm_opt_spread_job = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_switch_req(slurm_opt_t *opt, const char *arg)
+{
+	opt->req_switch = parse_int("--switches", arg, true);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_switch_req(slurm_opt_t *opt)
+{
+	if (opt->req_switch != -1)
+		return xstrdup_printf("%d", opt->req_switch);
+	return xstrdup("unset");
+}
+static void arg_reset_switch_req(slurm_opt_t *opt)
+{
+	opt->req_switch = -1;
+}
+static slurm_cli_opt_t slurm_opt_switch_req = {
+	.name = NULL, /* envvar only */
+	.has_arg = required_argument,
+	.val = LONG_OPT_SWITCH_REQ,
+	.set_func = arg_set_switch_req,
+	.get_func = arg_get_switch_req,
+	.reset_func = arg_reset_switch_req,
+	.reset_each_pass = true,
+};
+
+static int arg_set_switch_wait(slurm_opt_t *opt, const char *arg)
+{
+	opt->wait4switch = time_str2secs(arg);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_switch_wait(slurm_opt_t *opt)
+{
+	char time_str[32];
+	secs2time_str(opt->wait4switch, time_str, sizeof(time_str));
+	return xstrdup_printf("%s", time_str);
+}
+static void arg_reset_switch_wait(slurm_opt_t *opt)
+{
+	opt->req_switch = -1;
+	opt->wait4switch = -1;
+}
+static slurm_cli_opt_t slurm_opt_switch_wait = {
+	.name = NULL, /* envvar only */
+	.has_arg = required_argument,
+	.val = LONG_OPT_SWITCH_WAIT,
+	.set_func = arg_set_switch_wait,
+	.get_func = arg_get_switch_wait,
+	.reset_func = arg_reset_switch_wait,
+	.reset_each_pass = true,
+};
+
+static int arg_set_switches(slurm_opt_t *opt, const char *arg)
+{
+	char *tmparg = xstrdup(arg);
+	char *split = xstrchr(tmparg, '@');
+
+	if (split) {
+		split[0] = '\0';
+		split++;
+		opt->wait4switch = time_str2secs(split);
+	}
+
+	opt->req_switch = parse_int("--switches", tmparg, true);
+
+	xfree(tmparg);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_switches(slurm_opt_t *opt)
+{
+	if (opt->wait4switch != -1) {
+		char time_str[32];
+		secs2time_str(opt->wait4switch, time_str, sizeof(time_str));
+		return xstrdup_printf("%d@%s", opt->req_switch, time_str);
+	}
+	if (opt->req_switch != -1)
+		return xstrdup_printf("%d", opt->req_switch);
+	return xstrdup("unset");
+}
+static void arg_reset_switches(slurm_opt_t *opt)
+{
+	opt->req_switch = -1;
+	opt->wait4switch = -1;
+}
+static slurm_cli_opt_t slurm_opt_switches = {
+	.name = "switches",
+	.has_arg = required_argument,
+	.val = LONG_OPT_SWITCHES,
+	.set_func = arg_set_switches,
+	.get_func = arg_get_switches,
+	.reset_func = arg_reset_switches,
+	.reset_each_pass = true,
+};
+
 /* note this is mutually exclusive with --core-spec above */
 static int arg_set_thread_spec(slurm_opt_t *opt, const char *arg)
 {
@@ -1718,6 +1814,9 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_reservation,
 	&slurm_opt_signal,
 	&slurm_opt_spread_job,
+	&slurm_opt_switch_req,
+	&slurm_opt_switch_wait,
+	&slurm_opt_switches,
 	&slurm_opt_thread_spec,
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
