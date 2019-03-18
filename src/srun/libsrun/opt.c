@@ -126,8 +126,8 @@ extern char **environ;
 int	error_exit = 1;
 int	immediate_exit = 1;
 char *	mpi_type = NULL;
-slurm_opt_t opt;
 srun_opt_t sropt;
+slurm_opt_t opt = { .srun_opt = &sropt };
 List 	opt_list = NULL;
 int	pass_number = 0;
 time_t	srun_begin_time = 0;
@@ -611,9 +611,6 @@ static void _opt_default(void)
 	uid_t uid = getuid();
 
 	if (pass_number == 1) {
-		opt.salloc_opt = NULL;
-		opt.sbatch_opt = NULL;
-		opt.srun_opt = &sropt;
 		xfree(opt.account);
 		xfree(opt.acctg_freq);
 		sropt.allocate		= false;

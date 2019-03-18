@@ -111,8 +111,8 @@
 #define OPT_NO_KILL       0x27
 
 /*---- global variables, defined in opt.h ----*/
-slurm_opt_t opt;
 sbatch_opt_t sbopt;
+slurm_opt_t opt = { .sbatch_opt = &sbopt };
 sbatch_env_t pack_env;
 int   error_exit = 1;
 int   ignore_pbs = 0;
@@ -187,9 +187,6 @@ static void _opt_default(bool first_pass)
 	 * once specified for one, but will be overwritten with new values if
 	 * specified on the command line */
 	if (first_pass) {
-		opt.salloc_opt = NULL;
-		opt.sbatch_opt = &sbopt;
-		opt.srun_opt = NULL;
 		xfree(opt.account);
 		xfree(opt.acctg_freq);
 		opt.begin		= 0;

@@ -109,8 +109,8 @@
 #define OPT_USE_MIN_NODES 0x23
 
 /*---- global variables, defined in opt.h ----*/
-slurm_opt_t opt;
 salloc_opt_t saopt;
+slurm_opt_t opt = { .salloc_opt = &saopt };
 int error_exit = 1;
 bool first_pass = true;
 int immediate_exit = 1;
@@ -199,9 +199,6 @@ static void _opt_default(void)
 	 * specified on the command line
 	 */
 	if (first_pass) {
-		opt.salloc_opt = &saopt;
-		opt.sbatch_opt = NULL;
-		opt.srun_opt = NULL;
 		xfree(opt.account);
 		xfree(opt.acctg_freq);
 		opt.begin		= 0;
