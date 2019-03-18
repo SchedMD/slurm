@@ -303,7 +303,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_JOB_NAME", 'J' },
   { "SBATCH_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SBATCH_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
-  {"SBATCH_NETWORK",       OPT_STRING,     &opt.network,       NULL          },
+  { "SBATCH_NETWORK", LONG_OPT_NETWORK },
   { "SBATCH_NO_KILL", 'k' },
   {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
@@ -492,7 +492,6 @@ static struct option long_options[] = {
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
-	{"network",       required_argument, 0, LONG_OPT_NETWORK},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -1132,10 +1131,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.propagate = xstrdup(optarg);
 			else
 				sbopt.propagate = xstrdup("ALL");
-			break;
-		case LONG_OPT_NETWORK:
-			xfree(opt.network);
-			opt.network = xstrdup(optarg);
 			break;
 		case LONG_OPT_CHECKPOINT:
 			xfree(sbopt.ckpt_interval_str);

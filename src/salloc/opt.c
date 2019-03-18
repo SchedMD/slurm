@@ -270,7 +270,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_KILL_CMD",      OPT_KILL_CMD,   NULL,               NULL          },
   { "SALLOC_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SALLOC_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
-  {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
+  { "SALLOC_NETWORK", LONG_OPT_NETWORK },
   { "SALLOC_NO_BELL", LONG_OPT_NO_BELL },
   { "SALLOC_NO_KILL", 'k' },
   { "SALLOC_OVERCOMMIT", 'O' },
@@ -429,7 +429,6 @@ static void _set_options(int argc, char **argv)
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
-		{"network",       required_argument, 0, LONG_OPT_NETWORK},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -613,10 +612,6 @@ static void _set_options(int argc, char **argv)
 				_proc_get_user_env(optarg);
 			else
 				opt.get_user_env_time = 0;
-			break;
-		case LONG_OPT_NETWORK:
-			xfree(opt.network);
-			opt.network = xstrdup(optarg);
 			break;
 		case LONG_OPT_WAIT_ALL_NODES:
 			if (!optarg) /* CLANG Fix */

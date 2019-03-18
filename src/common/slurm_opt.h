@@ -258,7 +258,6 @@ typedef struct srun_opt {
 	int msg_timeout;		/* undocumented			*/
 	bool multi_prog;		/* multiple programs to execute */
 	int32_t multi_prog_cmds;	/* number of commands in multi prog file */
-	bool network_set_env;		/* true if network set by env var */
 	bool no_alloc;			/* --no-allocate		*/
 	bool nodes_set_env;		/* true if nodes set via SLURM_NNODES */
 	bool nodes_set_opt;		/* true if nodes explicitly set using

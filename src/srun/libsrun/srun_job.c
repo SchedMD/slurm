@@ -1137,7 +1137,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 #ifdef HAVE_NATIVE_CRAY
 				if (opt_local->network &&
 				    !network_error_logged) {
-					if (srun_opt->network_set_env) {
+					if (slurm_option_set_by_env(LONG_OPT_NETWORK)) {
 						debug2("Ignoring SLURM_NETWORK value for a "
 						       "job step within an existing job. "
 						       "Using what was set at job "

@@ -155,7 +155,6 @@ struct option long_options[] = {
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
-	{"network",          required_argument, 0, LONG_OPT_NETWORK},
 	{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
@@ -591,8 +590,6 @@ static void _opt_default(void)
 	opt.min_nodes			= 1;
 	sropt.multi_prog			= false;
 	sropt.multi_prog_cmds		= 0;
-	opt.network			= NULL;
-	sropt.network_set_env		= false;
 	opt.nodes_set			= false;
 	sropt.nodes_set_env		= false;
 	sropt.nodes_set_opt		= false;
@@ -689,7 +686,7 @@ env_vars_t env_vars[] = {
   { "SLURM_MEM_PER_NODE", LONG_OPT_MEM },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
-{"SLURM_NETWORK",       OPT_STRING,     &opt.network,  &sropt.network_set_env},
+  { "SLURM_NETWORK", LONG_OPT_NETWORK },
   { "SLURM_NO_KILL", 'k' },
 {"SLURM_NTASKS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
 {"SLURM_NPROCS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
@@ -1222,14 +1219,6 @@ static void _set_options(const int argc, char **argv)
 			exit(0);
 		case LONG_OPT_TEST_ONLY:
 			sropt.test_only = true;
-			break;
-		case LONG_OPT_NETWORK:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.network);
-			opt.network = xstrdup(optarg);
-			setenv("SLURM_NETWORK", opt.network, 1);
-			sropt.network_set_env = false;
 			break;
 		case LONG_OPT_PROPAGATE:
 			xfree(sropt.propagate);
