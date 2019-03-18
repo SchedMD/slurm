@@ -2203,9 +2203,9 @@ extern void set_env_from_opts(slurm_opt_t *opt, char ***dest, int pack_offset)
 					     pack_offset, "%s",
 					     opt->gpus_per_task);
 	}
-	if (opt->mem_per_gpu) {
+	if (opt->mem_per_gpu != NO_VAL64) {
 		env_array_overwrite_pack_fmt(dest, "SLURM_MEM_PER_GPU",
-					     pack_offset, "%"PRIi64,
+					     pack_offset, "%"PRIu64,
 					     opt->mem_per_gpu);
 	}
 }
