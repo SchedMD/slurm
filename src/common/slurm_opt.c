@@ -954,6 +954,45 @@ static slurm_cli_opt_t slurm_opt_job_name = {
 	.reset_func = arg_reset_job_name,
 };
 
+static int arg_set_kill_command(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->salloc_opt)
+		return SLURM_ERROR;
+
+	/* Optional argument, enables default of SIGTERM if not given. */
+	if (!arg) {
+		opt->salloc_opt->kill_command_signal = SIGTERM;
+		return SLURM_SUCCESS;
+	}
+
+	if (!(opt->salloc_opt->kill_command_signal = sig_name2num(arg))) {
+		error("Invalid --kill-command specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_kill_command(slurm_opt_t *opt)
+{
+	if (!opt->salloc_opt)
+		return NULL;
+
+	return sig_num2name(opt->salloc_opt->kill_command_signal);
+}
+static void arg_reset_kill_command(slurm_opt_t *opt)
+{
+	if (opt->salloc_opt)
+		opt->salloc_opt->kill_command_signal = 0;
+}
+static slurm_cli_opt_t slurm_opt_kill_command = {
+	.name = "kill-command",
+	.has_arg = optional_argument,
+	.val = 'K',
+	.set_func_salloc = arg_set_kill_command,
+	.get_func = arg_get_kill_command,
+	.reset_func = arg_reset_kill_command,
+};
+
 COMMON_STRING_OPTION(licenses);
 static slurm_cli_opt_t slurm_opt_licenses = {
 	.name = "licenses",
@@ -1601,6 +1640,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_hold,
 	&slurm_opt_immediate,
 	&slurm_opt_job_name,
+	&slurm_opt_kill_command,
 	&slurm_opt_licenses,
 	&slurm_opt_mail_type,
 	&slurm_opt_mail_user,

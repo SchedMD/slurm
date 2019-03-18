@@ -83,7 +83,6 @@
 #define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
-#define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
 #define OPT_HINT	0x1a
 #define OPT_INT64	0x1f
@@ -184,8 +183,6 @@ static void _opt_default(void)
 		opt.get_user_env_mode	= -1;
 		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
-		saopt.kill_command_signal = SIGTERM;
-		saopt.kill_command_signal_set = false;
 		saopt.no_shell		= false;
 		opt.quiet		= 0;
 		opt.uid			= getuid();
@@ -267,7 +264,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_IMMEDIATE", 'I' },
   {"SALLOC_HINT",          OPT_HINT,       NULL,               NULL          },
   {"SLURM_HINT",           OPT_HINT,       NULL,               NULL          },
-  {"SALLOC_KILL_CMD",      OPT_KILL_CMD,   NULL,               NULL          },
+  { "SALLOC_KILL_CMD", 'K' },
   { "SALLOC_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SALLOC_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   { "SALLOC_NETWORK", LONG_OPT_NETWORK },
@@ -386,17 +383,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_HINT:
 		opt.hint_env = xstrdup(val);
 		break;
-	case OPT_KILL_CMD:
-		if (val) {
-			saopt.kill_command_signal = sig_name2num((char *) val);
-			if (saopt.kill_command_signal == 0) {
-				error("Invalid signal name %s", val);
-				exit(error_exit);
-			}
-		}
-		saopt.kill_command_signal_set = true;
-		break;
-
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
@@ -416,7 +402,6 @@ static void _set_options(int argc, char **argv)
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"help",          no_argument,       0, 'h'},
-		{"kill-command",  optional_argument, 0, 'K'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -476,16 +461,6 @@ static void _set_options(int argc, char **argv)
 		case 'h':
 			_help();
 			exit(0);
-		case 'K': /* argument is optional */
-			if (optarg) {
-				saopt.kill_command_signal = sig_name2num(optarg);
-				if (saopt.kill_command_signal == 0) {
-					error("Invalid signal name %s", optarg);
-					exit(error_exit);
-				}
-			}
-			saopt.kill_command_signal_set = true;
-			break;
 		case 'n':
 			opt.ntasks_set = true;
 			opt.ntasks =

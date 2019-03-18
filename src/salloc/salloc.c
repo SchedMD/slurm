@@ -1095,7 +1095,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 					killpg(tpgid, SIGHUP);
 			}
 
-			if (saopt.kill_command_signal_set)
+			if (saopt.kill_command_signal)
 				signal = saopt.kill_command_signal;
 #ifdef SALLOC_KILL_CMD
 			else if (is_interactive)
