@@ -1237,7 +1237,7 @@ static struct {
 
 /* Convert a signal name to it's numeric equivalent.
  * Return 0 on failure */
-int sig_name2num(char *signal_name)
+int sig_name2num(const char *signal_name)
 {
 	char *ptr;
 	long tmp;
@@ -1252,7 +1252,7 @@ int sig_name2num(char *signal_name)
 	}
 
 	/* search the array */
-	ptr = signal_name;
+	ptr = (char *) signal_name;
 	while (isspace((int)*ptr))
 		ptr++;
 	if (xstrncasecmp(ptr, "SIG", 3) == 0)

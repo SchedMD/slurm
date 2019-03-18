@@ -145,7 +145,7 @@ extern char *signal_opts_to_cmdline(uint16_t warn_signal, uint16_t warn_time,
 
 /* Convert a signal name to it's numeric equivalent.
  * Return 0 on failure */
-int sig_name2num(char *signal_name);
+int sig_name2num(const char *signal_name);
 /* Return an xmalloc()'d string reversing the above conversion */
 extern char *sig_num2name(int signal);
 
