@@ -103,7 +103,6 @@ static void  _opt_default(void);
 static void  _opt_env(void);
 static void  _opt_args(int argc, char **argv);
 static bool  _opt_verify(void);
-static void  _proc_get_user_env(char *optarg);
 static void  _process_env_var(env_vars_t *e, const char *val);
 static char *_read_file(char *fname);
 static void  _set_options(int argc, char **argv);
@@ -180,8 +179,6 @@ static void _opt_default(void)
 		opt.egid		= (gid_t) -1;
 		opt.euid		= (uid_t) -1;
 		xfree(opt.extra);
-		opt.get_user_env_mode	= -1;
-		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
 		saopt.no_shell		= false;
 		opt.quiet		= 0;
@@ -411,7 +408,6 @@ static void _set_options(int argc, char **argv)
 		{"version",       no_argument,       0, 'V'},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
@@ -582,12 +578,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NOSHELL:
 			saopt.no_shell = true;
 			break;
-		case LONG_OPT_GET_USER_ENV:
-			if (optarg)
-				_proc_get_user_env(optarg);
-			else
-				opt.get_user_env_time = 0;
-			break;
 		case LONG_OPT_WAIT_ALL_NODES:
 			if (!optarg) /* CLANG Fix */
 				break;
@@ -629,25 +619,6 @@ static void _set_options(int argc, char **argv)
 	}
 
 	spank_option_table_destroy(optz);
-}
-
-static void _proc_get_user_env(char *optarg)
-{
-	char *end_ptr;
-
-	if ((optarg[0] >= '0') && (optarg[0] <= '9'))
-		opt.get_user_env_time = strtol(optarg, &end_ptr, 10);
-	else {
-		opt.get_user_env_time = 0;
-		end_ptr = optarg;
-	}
-
-	if ((end_ptr == NULL) || (end_ptr[0] == '\0'))
-		return;
-	if      ((end_ptr[0] == 's') || (end_ptr[0] == 'S'))
-		opt.get_user_env_mode = 1;
-	else if ((end_ptr[0] == 'l') || (end_ptr[0] == 'L'))
-		opt.get_user_env_mode = 2;
 }
 
 /*

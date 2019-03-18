@@ -790,6 +790,56 @@ static slurm_cli_opt_t slurm_opt_extra_node_info = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_get_user_env(slurm_opt_t *opt, const char *arg)
+{
+	char *end_ptr;
+
+	if (!arg) {
+		opt->get_user_env_time = 0;
+		return SLURM_SUCCESS;
+	}
+
+	opt->get_user_env_time = strtol(arg, &end_ptr, 10);
+
+	if (!end_ptr || (end_ptr[0] == '\0'))
+		return SLURM_SUCCESS;
+
+	if ((end_ptr[0] == 's') || (end_ptr[0] == 'S'))
+		opt->get_user_env_mode = 1;
+	else if ((end_ptr[0] == 'l') || (end_ptr[0] == 'L'))
+		opt->get_user_env_mode = 2;
+	else {
+		error("Invalid --get-user-env specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_get_user_env(slurm_opt_t *opt)
+{
+	if (opt->get_user_env_mode == 1)
+		return xstrdup_printf("%dS", opt->get_user_env_time);
+	else if (opt->get_user_env_mode == 2)
+		return xstrdup_printf("%dL", opt->get_user_env_time);
+	else if (opt->get_user_env_time != -1)
+		return xstrdup_printf("%d", opt->get_user_env_time);
+	return NULL;
+}
+static void arg_reset_get_user_env(slurm_opt_t *opt)
+{
+	opt->get_user_env_mode = -1;
+	opt->get_user_env_time = -1;
+}
+static slurm_cli_opt_t slurm_opt_get_user_env = {
+	.name = "get-user-env",
+	.has_arg = optional_argument,
+	.val = LONG_OPT_GET_USER_ENV,
+	.set_func_salloc = arg_set_get_user_env,
+	.set_func_sbatch = arg_set_get_user_env,
+	.get_func = arg_get_get_user_env,
+	.reset_func = arg_reset_get_user_env,
+};
+
 COMMON_STRING_OPTION(gpu_bind);
 static slurm_cli_opt_t slurm_opt_gpu_bind = {
 	.name = "gpu-bind",
@@ -1629,6 +1679,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_exclude,
 	&slurm_opt_exclusive,
 	&slurm_opt_extra_node_info,
+	&slurm_opt_get_user_env,
 	&slurm_opt_gpu_bind,
 	&slurm_opt_gpu_freq,
 	&slurm_opt_gpus,

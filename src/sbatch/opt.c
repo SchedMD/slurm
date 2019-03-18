@@ -85,7 +85,6 @@
 #define OPT_OPEN_MODE	0x0e
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
-#define OPT_GET_USER_ENV  0x16
 #define OPT_EXPORT        0x17
 #define OPT_TIME_VAL      0x19
 #define OPT_ARRAY_INX     0x20
@@ -115,7 +114,6 @@ static bool _opt_batch_script(const char *file, const void *body, int size,
 
 /* set options based upon env vars  */
 static void _opt_env(void);
-static void _proc_get_user_env(char *val);
 
 /* verify options sanity  */
 static bool _opt_verify(void);
@@ -173,8 +171,6 @@ static void _opt_default(bool first_pass)
 		xfree(sbopt.export_env);
 		xfree(sbopt.export_file);
 		opt.euid		= (uid_t) -1;
-		opt.get_user_env_mode	= -1;
-		opt.get_user_env_time	= -1;
 		opt.gid			= getgid();
 		sbopt.ifname		= xstrdup("/dev/null");
 		xfree(sbopt.ofname);
@@ -289,7 +285,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_DISTRIBUTION", 'm' },
   { "SBATCH_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   {"SBATCH_EXPORT",        OPT_STRING,     &sbopt.export_env,  NULL          },
-  {"SBATCH_GET_USER_ENV",  OPT_GET_USER_ENV, NULL,             NULL          },
+  { "SBATCH_GET_USER_ENV", LONG_OPT_GET_USER_ENV },
   { "SBATCH_GRES", LONG_OPT_GRES },
   { "SBATCH_GRES_FLAGS", LONG_OPT_GRES_FLAGS },
   { "SBATCH_GPUS", 'G' },
@@ -443,12 +439,6 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_REQUEUE:
 		sbopt.requeue = 1;
 		break;
-	case OPT_GET_USER_ENV:
-		if (val)
-			_proc_get_user_env((char *)val);
-		else
-			opt.get_user_env_time = 0;
-		break;
 	case OPT_TIME_VAL:
 		opt.wait4switch = time_str2secs(val);
 		break;
@@ -488,7 +478,6 @@ static struct option long_options[] = {
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
-	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"hint",          required_argument, 0, LONG_OPT_HINT},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
@@ -538,6 +527,9 @@ extern char *process_options_first_pass(int argc, char **argv)
 	int i, local_argc = 0;
 	char **local_argv, *script_file = NULL;
 
+	/* initialize option defaults */
+	_opt_default(true);
+
 	common_options = slurm_option_table_create(long_options, &opt);
 	optz = spank_option_table_create(common_options);
 	slurm_option_table_destroy(common_options);
@@ -546,9 +538,6 @@ extern char *process_options_first_pass(int argc, char **argv)
 		error("Unable to create options table");
 		exit(error_exit);
 	}
-
-	/* initialize option defaults */
-	_opt_default(true);
 
 	/* Remove pack job separator and capture all options of interest from
 	 * all job components (e.g. "sbatch -N1 -v : -N2 -v tmp" -> "-vv") */
@@ -1107,12 +1096,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_WRAP:
 			/* handled in process_options_first_pass() */
 			break;
-		case LONG_OPT_GET_USER_ENV:
-			if (optarg)
-				_proc_get_user_env(optarg);
-			else
-				opt.get_user_env_time = 0;
-			break;
 		case LONG_OPT_OPEN_MODE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1196,25 +1179,6 @@ static void _set_options(int argc, char **argv)
 	}
 
 	spank_option_table_destroy(optz);
-}
-
-static void _proc_get_user_env(char *optarg)
-{
-	char *end_ptr;
-
-	if ((optarg[0] >= '0') && (optarg[0] <= '9'))
-		opt.get_user_env_time = strtol(optarg, &end_ptr, 10);
-	else {
-		opt.get_user_env_time = 0;
-		end_ptr = optarg;
-	}
-
-	if ((end_ptr == NULL) || (end_ptr[0] == '\0'))
-		return;
-	if      ((end_ptr[0] == 's') || (end_ptr[0] == 'S'))
-		opt.get_user_env_mode = 1;
-	else if ((end_ptr[0] == 'l') || (end_ptr[0] == 'L'))
-		opt.get_user_env_mode = 2;
 }
 
 /*

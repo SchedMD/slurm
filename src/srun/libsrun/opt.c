@@ -147,7 +147,6 @@ struct option long_options[] = {
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 	{"export",           required_argument, 0, LONG_OPT_EXPORT},
-	{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
 	{"help",             no_argument,       0, LONG_OPT_HELP},
 	{"hint",             required_argument, 0, LONG_OPT_HINT},
@@ -1330,10 +1329,6 @@ static void _set_options(const int argc, char **argv)
 			opt.ntasks_per_core_set  = true;
 			opt.threads_per_core_set = true;
 			break;
-		case LONG_OPT_GET_USER_ENV:
-			error("--get-user-env is no longer supported in srun, "
-			      "use sbatch");
-			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H
 			sropt.pty = true;
@@ -2166,7 +2161,6 @@ static void _help(void)
 "      --epilog=program        run \"program\" after launching job step\n"
 "  -E, --preserve-env          env vars for node and task counts override\n"
 "                              command-line flags\n"
-"      --get-user-env          used by Moab.  See srun man page.\n"
 "      --gres=list             required generic resources\n"
 "      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
