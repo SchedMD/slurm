@@ -480,9 +480,13 @@ static char *_make_tres_str(uint64_t *tres_array)
 		if ((tres_array[i] == NO_VAL64) ||
 		    (tres_array[i] == INFINITE64))
 			continue;
+		/*
+		 * Here we are building a list where 1 is the first TRES.  So we
+		 * will add 1 to i to get the correct TRES id.
+		 */
 		xstrfmtcat(tres_str, "%s%u=%"PRIu64,
 			   tres_str ? "," : "",
-			   i, tres_array[i]);
+			   i+1, tres_array[i]);
 	}
 	return tres_str;
 }

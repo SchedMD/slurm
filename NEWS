@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression for sacct to display old jobs without a start time.
  -- Fix setting correct number of gres topology bits.
  -- Update hetjobs pending state reason when appropriate.
+ -- Fix accounting_storage/filetxt's understanding of TRES.
 
 * Changes in Slurm 18.08.6-2
 ============================
