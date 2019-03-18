@@ -75,15 +75,6 @@
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 
-/* generic OPT_ definitions -- mainly for use with env vars  */
-#define OPT_NONE        0x00
-#define OPT_INT         0x01
-#define OPT_STRING      0x02
-#define OPT_NODES       0x04
-#define OPT_BOOL        0x05
-#define OPT_CORE        0x06
-#define OPT_INT64	0x1f
-
 /*---- global variables, defined in opt.h ----*/
 salloc_opt_t saopt;
 slurm_opt_t opt = { .salloc_opt = &saopt };
@@ -100,7 +91,6 @@ static void  _opt_default(void);
 static void  _opt_env(void);
 static void  _opt_args(int argc, char **argv);
 static bool  _opt_verify(void);
-static void  _process_env_var(env_vars_t *e, const char *val);
 static char *_read_file(char *fname);
 static void  _set_options(int argc, char **argv);
 static void  _usage(void);
@@ -214,15 +204,12 @@ static void _opt_default(void)
  *
  * in order to add a new env var (to be processed like an option):
  *
- * define a new entry into env_vars[], if the option is a simple int
- * or string you may be able to get away with adding a pointer to the
- * option to set. Otherwise, process var based on "type" in _opt_env.
+ * define a new entry into env_vars[], and match to the option used in
+ * slurm_opt.c for slurm_process_option()
  */
 struct env_vars {
 	const char *var;
 	int type;
-	void *arg;
-	void *set_flag;
 };
 
 env_vars_t env_vars[] = {
@@ -272,7 +259,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_WAIT_ALL_NODES", LONG_OPT_WAIT_ALL_NODES },
   { "SALLOC_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SALLOC_WCKEY", LONG_OPT_WCKEY },
-  {NULL, 0, NULL, NULL}
+  { NULL }
 };
 
 
@@ -288,84 +275,13 @@ static void _opt_env(void)
 
 	while (e->var) {
 		if ((val = getenv(e->var)) != NULL)
-			_process_env_var(e, val);
+			slurm_process_option(&opt, e->type, val, true, false);
 		e++;
 	}
 
 	/* Process spank env options */
 	if (spank_process_env_options())
 		exit(error_exit);
-}
-
-
-static void
-_process_env_var(env_vars_t *e, const char *val)
-{
-	char *end = NULL;
-
-	debug2("now processing env var %s=%s", e->var, val);
-
-	if (e->set_flag) {
-		*((bool *) e->set_flag) = true;
-	}
-
-	switch (e->type) {
-	case OPT_STRING:
-		*((char **) e->arg) = xstrdup(val);
-		break;
-	case OPT_INT:
-		if (val[0] != '\0') {
-			*((int *) e->arg) = (int) strtol(val, &end, 10);
-			if (!(end && *end == '\0')) {
-				error("%s=%s invalid. ignoring...",
-				      e->var, val);
-			}
-		}
-		break;
-
-        case OPT_INT64:
-                if (val[0] != '\0') {
-                        *((int64_t *) e->arg) = (int64_t) strtoll(val, &end, 10);
-                        if (!(end && *end == '\0')) {
-                                error("%s=%s invalid. ignoring...",
-                                      e->var, val);
-                        }
-                }
-                break;
-
-	case OPT_BOOL:
-		/* A boolean env variable is true if:
-		 *  - set, but no argument
-		 *  - argument is "yes"
-		 *  - argument is a non-zero number
-		 */
-		if (val[0] == '\0') {
-			*((bool *)e->arg) = true;
-		} else if (xstrcasecmp(val, "yes") == 0) {
-			*((bool *)e->arg) = true;
-		} else if ((strtol(val, &end, 10) != 0)
-			   && end != val) {
-			*((bool *)e->arg) = true;
-		} else {
-			*((bool *)e->arg) = false;
-		}
-		break;
-	case OPT_NODES:
-		opt.nodes_set = verify_node_count( val,
-						   &opt.min_nodes,
-						   &opt.max_nodes );
-		if (opt.nodes_set == false) {
-			error("invalid node count in env variable, ignoring");
-		}
-		break;
-	default:
-		/*
-		 * assume this was meant to be processed by
-		 * slurm_process_option() instead.
-		 */
-		slurm_process_option(&opt, e->type, val, true, false);
-		break;
-	}
 }
 
 static void _set_options(int argc, char **argv)
