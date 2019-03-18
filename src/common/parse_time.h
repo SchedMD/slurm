@@ -53,7 +53,7 @@
  *
  * Invalid input results in message to stderr and return value of zero
  */
-extern time_t parse_time(char *time_str, int past);
+extern time_t parse_time(const char *time_str, int past);
 
 /*
  * slurm_make_time_str - convert time_t to string with a format of
