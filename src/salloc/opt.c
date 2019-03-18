@@ -83,8 +83,6 @@
 #define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
-#define OPT_BELL        0x0a
-#define OPT_NO_BELL     0x0b
 #define OPT_KILL_CMD    0x16
 #define OPT_TIME_VAL	0x17
 #define OPT_HINT	0x1a
@@ -180,7 +178,6 @@ static void _opt_default(void)
 	 * specified on the command line
 	 */
 	if (first_pass) {
-		saopt.bell		= BELL_AFTER_DELAY;
 		opt.egid		= (gid_t) -1;
 		opt.euid		= (uid_t) -1;
 		xfree(opt.extra);
@@ -247,7 +244,7 @@ struct env_vars {
 env_vars_t env_vars[] = {
   { "SALLOC_ACCOUNT", 'A' },
   { "SALLOC_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
-  {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL          },
+  { "SALLOC_BELL", LONG_OPT_BELL },
   { "SALLOC_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
   { "SALLOC_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SALLOC_CLUSTERS", 'M' },
@@ -274,7 +271,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SALLOC_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   {"SALLOC_NETWORK",       OPT_STRING    , &opt.network,       NULL          },
-  {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL          },
+  { "SALLOC_NO_BELL", LONG_OPT_NO_BELL },
   { "SALLOC_NO_KILL", 'k' },
   { "SALLOC_OVERCOMMIT", 'O' },
   { "SALLOC_PARTITION", 'p' },
@@ -386,12 +383,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("invalid node count in env variable, ignoring");
 		}
 		break;
-	case OPT_BELL:
-		saopt.bell = BELL_ALWAYS;
-		break;
-	case OPT_NO_BELL:
-		saopt.bell = BELL_NEVER;
-		break;
 	case OPT_HINT:
 		opt.hint_env = xstrdup(val);
 		break;
@@ -434,13 +425,11 @@ static void _set_options(int argc, char **argv)
 		{"verbose",       no_argument,       0, 'v'},
 		{"version",       no_argument,       0, 'V'},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
-		{"bell",          no_argument,       0, LONG_OPT_BELL},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"hint",          required_argument, 0, LONG_OPT_HINT},
 		{"network",       required_argument, 0, LONG_OPT_NETWORK},
-		{"no-bell",       no_argument,       0, LONG_OPT_NO_BELL},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -554,12 +543,6 @@ static void _set_options(int argc, char **argv)
 				error("--gid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
-			break;
-		case LONG_OPT_BELL:
-			saopt.bell = BELL_ALWAYS;
-			break;
-		case LONG_OPT_NO_BELL:
-			saopt.bell = BELL_NEVER;
 			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)

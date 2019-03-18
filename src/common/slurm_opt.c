@@ -365,6 +365,41 @@ static slurm_cli_opt_t slurm_opt_begin = {
 	.reset_func = arg_reset_begin,
 };
 
+/* Also see --no-bell below */
+static int arg_set_bell(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->salloc_opt)
+		opt->salloc_opt->bell = BELL_ALWAYS;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_bell(slurm_opt_t *opt)
+{
+	if (!opt->salloc_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->salloc_opt->bell == BELL_ALWAYS)
+		return xstrdup("bell-always");
+	else if (opt->salloc_opt->bell == BELL_AFTER_DELAY)
+		return xstrdup("bell-after-delay");
+	else if (opt->salloc_opt->bell == BELL_NEVER)
+		return xstrdup("bell-never");
+	return NULL;
+}
+static void arg_reset_bell(slurm_opt_t *opt)
+{
+	if (opt->salloc_opt)
+		opt->salloc_opt->bell = BELL_AFTER_DELAY;
+}
+static slurm_cli_opt_t slurm_opt_bell = {
+	.name = "bell",
+	.has_arg = no_argument,
+	.val = LONG_OPT_BELL,
+	.set_func_salloc = arg_set_bell,
+	.get_func = arg_get_bell,
+	.reset_func = arg_reset_bell,
+};
+
 COMMON_STRING_OPTION(burst_buffer);
 static slurm_cli_opt_t slurm_opt_bb = {
 	.name = "bb",
@@ -1109,6 +1144,23 @@ static slurm_cli_opt_t slurm_opt_nice = {
 	.reset_func = arg_reset_nice,
 };
 
+/* See --bell above as well */
+static int arg_set_no_bell(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->salloc_opt)
+		opt->salloc_opt->bell = BELL_NEVER;
+
+	return SLURM_SUCCESS;
+}
+static slurm_cli_opt_t slurm_opt_no_bell = {
+	.name = "no-bell",
+	.has_arg = no_argument,
+	.val = LONG_OPT_NO_BELL,
+	.set_func_salloc = arg_set_no_bell,
+	.get_func = arg_get_bell,
+	.reset_func = arg_reset_bell,
+};
+
 static int arg_set_no_kill(slurm_opt_t *opt, const char *arg)
 {
 	if (!arg || !xstrcasecmp(arg, "set"))
@@ -1508,6 +1560,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_acctg_freq,
 	&slurm_opt_alloc_nodelist,
 	&slurm_opt_begin,
+	&slurm_opt_bell,
 	&slurm_opt_bb,
 	&slurm_opt_c_constraint,
 	&slurm_opt_chdir,
@@ -1547,6 +1600,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mem_per_gpu,
 	&slurm_opt_mincpus,
 	&slurm_opt_nice,
+	&slurm_opt_no_bell,
 	&slurm_opt_no_kill,
 	&slurm_opt_nodefile,
 	&slurm_opt_nodelist,
