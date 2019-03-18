@@ -34,6 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <getopt.h>
 #include <sys/param.h>
 
@@ -45,6 +47,7 @@
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/util-net.h"
+#include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -1910,6 +1913,38 @@ static slurm_cli_opt_t slurm_opt_wckey = {
 	.reset_func = arg_reset_wckey,
 };
 
+static int arg_set_x11(slurm_opt_t *opt, const char *arg)
+{
+	if (arg)
+		opt->x11 = x11_str2flags(arg);
+	else
+		opt->x11 = X11_FORWARD_ALL;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_x11(slurm_opt_t *opt)
+{
+	return xstrdup(x11_flags2str(opt->x11));
+}
+COMMON_OPTION_RESET(x11, 0);
+static slurm_cli_opt_t slurm_opt_x11 = {
+#ifdef WITH_SLURM_X11
+	.name = "x11",
+#else
+	/*
+	 * Keep the code paths active, but disables the option name itself
+	 * so the SPANK plugin can claim it.
+	 */
+	.name = NULL,
+#endif
+	.has_arg = optional_argument,
+	.val = LONG_OPT_X11,
+	.set_func_salloc = arg_set_x11,
+	.set_func_srun = arg_set_x11,
+	.get_func = arg_get_x11,
+	.reset_func = arg_reset_x11,
+};
+
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_account,
 	&slurm_opt_acctg_freq,
@@ -1988,6 +2023,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_version,
 	&slurm_opt_wait_all_nodes,
 	&slurm_opt_wckey,
+	&slurm_opt_x11,
 	NULL /* END */
 };
 

@@ -302,9 +302,6 @@ static void _set_options(int argc, char **argv)
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"uid",           required_argument, 0, LONG_OPT_UID},
-#ifdef WITH_SLURM_X11
-		{"x11",           optional_argument, 0, LONG_OPT_X11},
-#endif
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
@@ -437,12 +434,6 @@ static void _set_options(int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(opt.burst_buffer);
 			opt.burst_buffer = _read_file(optarg);
-			break;
-		case LONG_OPT_X11:
-			if (optarg)
-				opt.x11 = x11_str2flags(optarg);
-			else
-				opt.x11 = X11_FORWARD_ALL;
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)

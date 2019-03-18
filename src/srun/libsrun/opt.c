@@ -167,9 +167,6 @@ struct option long_options[] = {
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 	{"uid",              required_argument, 0, LONG_OPT_UID},
 	{"usage",            no_argument,       0, LONG_OPT_USAGE},
-#ifdef WITH_SLURM_X11
-	{"x11",              optional_argument, 0, LONG_OPT_X11},
-#endif
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
@@ -1334,12 +1331,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_QUIT_ON_INTR:
 			sropt.quit_on_intr = true;
-			break;
-		case LONG_OPT_X11:
-			if (optarg)
-				opt.x11 = x11_str2flags(optarg);
-			else
-				opt.x11 = X11_FORWARD_ALL;
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)

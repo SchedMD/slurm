@@ -178,7 +178,6 @@ static void _opt_default(bool first_pass)
 		opt.uid			= uid;
 		sbopt.umask		= -1;
 		sbopt.wait		= false;
-		opt.x11			= 0;
 	}
 
 	/* All other options must be specified individually for each component
