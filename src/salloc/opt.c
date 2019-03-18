@@ -183,7 +183,6 @@ static void _opt_default(void)
 		opt.quiet		= 0;
 		opt.uid			= getuid();
 		opt.verbose		= 0;
-		saopt.wait_all_nodes	= NO_VAL16;
 		opt.x11			= 0;
 	} else if (saopt.default_job_name) {
 		xfree(opt.job_name);
@@ -276,7 +275,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
   { "SALLOC_TIMELIMIT", 't' },
   { "SALLOC_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
-  {"SALLOC_WAIT_ALL_NODES",OPT_INT,        &saopt.wait_all_nodes,NULL          },
+  { "SALLOC_WAIT_ALL_NODES", LONG_OPT_WAIT_ALL_NODES },
   { "SALLOC_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SALLOC_WCKEY", LONG_OPT_WCKEY },
   {NULL, 0, NULL, NULL}
@@ -412,7 +411,6 @@ static void _set_options(int argc, char **argv)
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{"uid",           required_argument, 0, LONG_OPT_UID},
-		{"wait-all-nodes",required_argument, 0, LONG_OPT_WAIT_ALL_NODES},
 #ifdef WITH_SLURM_X11
 		{"x11",           optional_argument, 0, LONG_OPT_X11},
 #endif
@@ -569,16 +567,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_NOSHELL:
 			saopt.no_shell = true;
-			break;
-		case LONG_OPT_WAIT_ALL_NODES:
-			if (!optarg) /* CLANG Fix */
-				break;
-			if ((optarg[0] < '0') || (optarg[0] > '9')) {
-				error("Invalid --wait-all-nodes argument: %s",
-				      optarg);
-				exit(1);
-			}
-			saopt.wait_all_nodes = strtol(optarg, NULL, 10);
 			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)
