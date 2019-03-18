@@ -458,3 +458,22 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass)
 		}
 	}
 }
+
+/*
+ * Was the option set by an env var?
+ */
+extern bool slurm_option_set_by_env(int optval)
+{
+	int i;
+
+	for (i = 0; common_options[i]; i++) {
+		if (common_options[i]->val == optval)
+			break;
+	}
+
+	/* This should not happen... */
+	if (!common_options[i])
+		return false;
+
+	return common_options[i]->set_by_env;
+}
