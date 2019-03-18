@@ -46,6 +46,8 @@
 
 /* convert a --x11 argument into flags */
 uint16_t x11_str2flags(const char *str);
+/* reverse the above */
+const char *x11_flags2str(uint16_t flags);
 
 /*
  * Get local TCP port for X11 from DISPLAY environment variable, alongside an
