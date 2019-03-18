@@ -98,7 +98,7 @@ extern int acct_gather_profile_fini(void);
 extern char *acct_gather_profile_to_string(uint32_t profile);
 
 /* translate string of words to uint32_t filled in with bits set to profile */
-extern uint32_t acct_gather_profile_from_string(char *profile_str);
+extern uint32_t acct_gather_profile_from_string(const char *profile_str);
 
 /* Return true if acct_gather_profile_running flag is set */
 extern bool acct_gather_profile_test(void);

@@ -328,7 +328,7 @@ extern char *acct_gather_profile_to_string(uint32_t profile)
 	return profile_str;
 }
 
-extern uint32_t acct_gather_profile_from_string(char *profile_str)
+extern uint32_t acct_gather_profile_from_string(const char *profile_str)
 {
 	uint32_t profile = ACCT_GATHER_PROFILE_NOT_SET;
 
