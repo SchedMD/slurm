@@ -132,7 +132,6 @@ syn match    	shSlurmOption	contained	'--reservation=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--share'
 syn match    	shSlurmOption	contained	'--signal=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--time=' nextgroup=shSlurmDuration
-syn match    	shSlurmOption	contained	'--tasks-per-node=' nextgroup=shSlurmNumber
 syn match    	shSlurmOption	contained	'--tmp=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--uid=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--nodelist=' nextgroup=shSlurmString

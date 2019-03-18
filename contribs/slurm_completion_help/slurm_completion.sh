@@ -1397,8 +1397,7 @@ _sbatch()
 		       --propagate<limit> --quiet --qos<qos> --reboot\
 		       --requeue --reservation<name> --share --core-spec<num>\
 		       --sicp --signal<signal> --sockets-per-node<sockets>\
-		       --switches<type> --time<time>\
-		       --tasks-per-node<n> --test-only\
+		       --switches<type> --time<time> --test-only\
 		       --threads-per-core<threads> --time-min<time>\
 		       --tmp<MB> --usage --uid=<user> --version --verbose\
 		       --nodelist<node name list> --wait-all-nodes<value>\

@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#          Test of --tasks-per-node option.
+#          Test of --ntasks-per-node option.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -50,7 +50,7 @@ if {[test_front_end]} {
 #
 set task_output 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 --tasks-per-node=$task_num -O -l -t1 $bin_id]
+set srun_pid [spawn $srun -N1 --ntasks-per-node=$task_num -O -l -t1 $bin_id]
 expect {
 	-re "($number): uid=" {
 		incr task_output
