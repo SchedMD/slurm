@@ -1,0 +1,290 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          sacctmgr create qos/account job and then delete account/qos
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC.
+# Written by Nathan Rini <nate@schedmd.com>
+# All rights reserved.
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id     "21.39"
+
+set part_name   "test$test_id\_part"
+set ta1		"test$test_id-account.1"
+set ta2		"test$test_id-account.2"
+set tu1     [get_my_user_name]
+set tq1     "test$test_id-qos.1"
+set tq2     "test$test_id-qos.2"
+
+# account options
+array set acct_1 {}
+set acct(Organization)  "Account_Org_A1"
+set acct(Description)   "Test_Account_A1"
+set acct(Qos) $tq1
+array set acct_2 {}
+set acct(Organization)  "Account_Org_A2"
+set acct(Description)   "Test_Account_A2"
+
+# user options
+array set user_req_1 {}
+set user_req_1(Account) $ta1
+set user_req_1(Qos) "$tq1,$tq2"
+array set user_req_2 {}
+set user_req_2(Account) $ta2
+set user_req_2(Qos) "$tq1,$tq2"
+
+# qos options
+array set qos_1 {}
+set qos_1(Description)   "test qos 1"
+array set qos_2 {}
+set qos_1(Description)   "test qos 2"
+
+set access_err  0
+
+print_header $test_id
+
+proc check_rc { exit_code } {
+	if {$exit_code != 0} {
+		log_error "exiting with exit code $exit_code"
+		exit $exit_code
+	}
+}
+
+#Create test assoc and accounts
+proc create_accounts {} {
+	global ta1 ta2 tq1 tq2 tu1 user_req_1 user_req_2
+	global qos_1 qos_2
+	log_info "create account and QOS"
+
+
+	#Create test assoc and accounts
+	check_rc [add_qos $tq1 [array get qos_1]]
+	check_rc [add_qos $tq2 [array get qos_2]]
+	check_rc [add_acct $ta1 [array get acct_1]]
+	check_rc [add_acct $ta2 [array get acct_2]]
+	check_rc [add_user $tu1 [array get user_req_1]]
+	check_rc [add_user $tu1 [array get user_req_2]]
+}
+
+#Cleanup test assoc and accounts
+proc cleanup_accounts {} {
+	global ta1 ta2 tq1 tq2
+
+	wait_for_account_done $ta1,$ta2
+
+	log_info "remove QOS: $tq1,$tq2"
+	remove_qos $tq1,$tq2
+
+	log_info "remove account: $ta1,$ta2"
+	remove_acct "" $ta1,$ta2
+}
+
+proc endit { exit_code } {
+	global test_id part_name
+
+	wait_for_part_done $part_name
+
+	if {$exit_code == 0} {
+		cleanup_accounts
+		print_success $test_id
+	} else {
+		print_failure $test_id
+	}
+	exit $exit_code
+}
+
+proc test_salloc { qos account num_nodes cmd } {
+	global salloc number part_name
+
+	set rc -12345
+	set job_id 0
+
+	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes]
+	expect {
+		-re "allocation ($number)" {
+			set job_id $expect_out(1,string)
+		}
+		-re "error" {
+			log_warn "salloc job was not submitted"
+			endit 1
+		}
+		timeout {
+			log_error "salloc not responding"
+			endit 1
+		}
+	}
+
+	if { $job_id == 0 } {
+		log_error "submit failure"
+		endit 1
+	}
+
+	return $job_id
+}
+
+proc check_job_reason { job_id state why } {
+	global scontrol alpha_numeric alpha
+
+	set found_why ""
+	set state_found ""
+
+	log_user 0
+	spawn $scontrol show job $job_id
+	expect {
+		-re "State=($alpha)" {
+			set state_found $expect_out(1,string)
+			exp_continue
+		}
+		-re "Reason=($alpha_numeric)" {
+			set found_why $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			log_error "scontrol not responding"
+			endit 1
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+		}
+	}
+
+	log_user 1
+	if { $state_found != $state } {
+		log_error "Job $job_id state found was $state_found, expected $state"
+		endit 1
+	}
+
+	set found_reason 0
+	foreach iwhy $why {
+		if { $found_why == $iwhy } {
+			set found_reason 1
+			break
+		}
+	}
+
+	if { !$found_reason } {
+		log_error "Job $job_id scontrol returned Reason=$found_why instead of Reason='$why'"
+		endit 1
+	}
+
+	log_info "Found jobid $job_id with correct state '$state' and reason '$found_why'"
+	return 0
+}
+
+proc run_test { run_qos } {
+	global scontrol tq1 tq2 ta1 ta2 part_name
+
+	if { $run_qos } {
+		set qos $tq1
+		set acct $ta2
+		set update_line "qos=$tq2"
+		set reason "InvalidQOS"
+	} else {
+		set qos $tq1
+		set acct $ta1
+		set update_line "account=$ta2"
+		set reason "InvalidAccount"
+	}
+
+	set job_id_1 [test_salloc $qos $acct 1 "sleep 10"]
+	set job_id_2 [test_salloc $qos $acct 1 "sleep 10"]
+
+	if { $run_qos } {
+		# remove test qos
+		if { [remove_qos $qos] } {
+			log_info "We hit the race trying to get the job running before it hits the database before we removed the qos.  This can be expected, trying again."
+			wait_for_part_done $part_name
+			return 1
+		}
+	} else {
+		#remove test acct
+		if { [remove_acct "" $acct] } {
+			log_info "We hit the race trying to get the job running before it hits the database before we removed the account.  This can be expected, trying again."
+			wait_for_part_done $part_name
+			return 1
+		}
+	}
+
+	# Verify jobs state and reason
+	check_job_reason $job_id_1 "RUNNING" [list "None"]
+	check_job_reason $job_id_2 "PENDING" [list "$reason"]
+
+	# Update pending job to make it runnable, updating the running job isn't
+	# possible but it tests other code if you are watching the log file
+	spawn $scontrol update jobid=$job_id_1 $update_line
+	spawn $scontrol update jobid=$job_id_2 $update_line
+
+	sleep 1.5
+	# Check reasons after account alter
+	check_job_reason $job_id_1 "RUNNING" [list "None"]
+	check_job_reason $job_id_2 "PENDING" [list "Resources" "None"]
+
+	#cleanup jobs
+	wait_for_part_done $part_name
+
+	return 0
+}
+
+#
+# Check accounting config and bail if not found.
+#
+if { [test_account_storage] == 0 } {
+	log_warn "This test can't be run without a usable AccountStorageType"
+	exit 0
+}
+
+if { [string compare [check_accounting_admin_level] "Administrator"] } {
+	log_warn "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin."
+	exit 0
+}
+
+cleanup_accounts
+create_accounts
+
+delete_part $part_name
+
+if { [create_part $part_name 1] } {
+	exit 1
+}
+
+for {set i 0} {$i < 2} {incr i} {
+	set cnt 0
+	set rc 1
+	# First lets test against removing an account and then qos
+	# from a running and pending job since partition only has 1 so
+	# one of these should run and the second should pend
+	while { $rc && ($cnt < 10) } {
+		set rc [run_test $i]
+		incr cnt
+	}
+	if { $rc } {
+		break
+	}
+}
+
+endit $rc

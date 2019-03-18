@@ -297,7 +297,6 @@ proc cancel_job { job_id } {
 	return [wait_for_job $job_id "DONE"]
 }
 
-
 ################################################################
 #
 # Proc: get_line_cnt
@@ -721,6 +720,153 @@ proc wait_for_job { job_id desired_state } {
 			set sleep_time 10
 		}
 	}
+}
+
+################################################################
+#
+# Proc: wait_for_account_done
+#
+# Purpose:  Cancel jobs on and wait for them to be finished in account(s) given,
+#           exponential back-off 1 to 10 seconds
+#
+# Returns: A non-zero return code indicates a failure.
+#
+# Input: accounts -- The Slurm account(s) we want to wait to be empty.
+#
+# NOTE: We sleep for two seconds before replying that a job is
+# done to give time for I/O completion (stdout/stderr files)
+#
+################################################################
+
+proc wait_for_account_done { accounts } {
+	global scancel squeue max_job_state_delay alpha_numeric_colon
+
+	if { $accounts == "" } {
+		log_error "wait_for_account_done: no account given"
+		return 1
+	}
+
+	log_user 0
+	set account_list [split $accounts ","]
+	foreach item $account_list {
+		spawn $scancel -A $item
+		expect {
+			timeout {
+				send_user "No response from scancel\n"
+			}
+			eof {
+				wait
+			}
+		}
+	}
+
+	set sleep_time  1
+	set my_delay    0
+	while 1 {
+		set found 0
+		spawn $squeue -o Account=%a -h -A$accounts
+		expect {
+			-re "Account=($alpha_numeric_colon)" {
+				set found 1
+				exp_continue;
+			}
+			eof {
+				wait
+			}
+		}
+
+		if { !$found } {
+			log_info "Account(s) $accounts is/are empty"
+			break;
+		}
+
+		if { $my_delay > $max_job_state_delay } {
+			log_error "Timeout waiting for account(s) '$accounts' to be finished"
+			log_user 1
+			return 1
+		}
+
+		exec sleep $sleep_time
+		set my_delay [expr $my_delay + $sleep_time]
+		set sleep_time  [expr $sleep_time * 2]
+		if { $sleep_time > 10 } {
+			set sleep_time 10
+		}
+	}
+	log_user 1
+	return 0
+}
+
+################################################################
+#
+# Proc: wait_for_part_done
+#
+# Purpose:  Cancel jobs on and wait for them to be finished in partition given,
+#           exponential back-off 1 to 10 seconds
+#
+# Returns: A non-zero return code indicates a failure.
+#
+# Input: part -- The Slurm partition we want to wait to be empty.
+#
+# NOTE: We sleep for two seconds before replying that a job is
+# done to give time for I/O completion (stdout/stderr files)
+#
+################################################################
+
+proc wait_for_part_done { part } {
+	global scancel squeue max_job_state_delay alpha_numeric_colon
+
+	if { $part == "" } {
+		log_error "wait_for_part_done: no partition given"
+		return 1
+	}
+
+	log_user 0
+	spawn $scancel -p $part
+	expect {
+		timeout {
+			log_error "wait_for_part_done: No response from scancel"
+		}
+		eof {
+			wait
+		}
+	}
+
+	set sleep_time  1
+	set my_delay    0
+	while 1 {
+		set found 0
+		spawn $squeue -o Part=%P -h -p$part
+		expect {
+			-re "Part=($alpha_numeric_colon)" {
+				set found 1
+				exp_continue;
+			}
+			eof {
+				wait
+			}
+		}
+
+		if { !$found } {
+			log_info "Partition $part is empty"
+			break;
+		}
+
+		if { $my_delay > $max_job_state_delay } {
+			log_error "wait_for_part_done: Timeout waiting for partition '$part' to be finished"
+			log_user 1
+			return 1
+		}
+
+		exec sleep $sleep_time
+		set my_delay [expr $my_delay + $sleep_time]
+		set sleep_time  [expr $sleep_time * 2]
+		if { $sleep_time > 10 } {
+			set sleep_time 10
+		}
+	}
+	log_user 1
+	return 0
 }
 
 ################################################################
@@ -4451,4 +4597,144 @@ proc copy_conf { config_path cwd } {
 			wait
 		}
 	}
+}
+
+################################################################
+#
+# Proc: delete_part
+#
+# Delete partition on system
+#
+# Input part_name - Name of partition to delete
+#
+################################################################
+proc delete_part { part_name } {
+	global scontrol
+
+	# Remove part
+	spawn $scontrol delete partition=$part_name
+	expect {
+		timeout {
+			log_error "scontrol is not responding"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+################################################################
+#
+# Proc: create_part
+#
+# Create partition on system
+#
+# Input part_name - Name of partition to create
+# Input num_nodes_in - Number of nodes of partition to create
+#
+################################################################
+proc create_part { part_name num_nodes_in } {
+	global scontrol srun bin_printenv number alpha_numeric_nodelist
+
+	set nodes ""
+	set num_nodes_out 0
+
+	set found 0
+	spawn $scontrol show partitionname=$part_name
+	expect {
+		-re "PartitionName=$part_name" {
+			set found 1
+			exp_continue
+		}
+		timeout {
+			log_err "scontrol is not responding"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$found == 1} {
+		log_error "there is already a partition $part_name"
+		return 1
+	}
+
+	set def_part [default_partition]
+	if {[string length $def_part] == 0} {
+		log_warn "create_part does not work without a default partition"
+		return 1
+	}
+
+	if { $num_nodes_in } {
+		set num_nodes $num_nodes_in
+	} else {
+		set num_nodes [available_nodes $def_part idle]
+	}
+
+	log_user 0
+	# Get a list of nodes
+	spawn $srun -t1 -N1-$num_nodes $bin_printenv
+	expect {
+		-re "SLURM_JOB_NUM_NODES=($number)" {
+			set num_nodes_out $expect_out(1,string)
+			exp_continue
+		}
+		-re "SLURM_NODELIST=($alpha_numeric_nodelist)" {
+			set nodes $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			log_error "srun is not responding getting number of nodes creating part"
+			return 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {[string length $nodes] == 0} {
+		log_error "did not get a valid node list"
+		return 1
+	} elseif { $num_nodes_out != $num_nodes_in } {
+		log_error "did not get enough nodes ($num_nodes_out != $num_nodes_in) to run test"
+		return 1
+	}
+
+	spawn $scontrol create partitionname=$part_name nodes=$nodes
+	expect {
+		timeout {
+			log_error "scontrol is not responding creating partition"
+			return 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	set found 0
+	spawn $scontrol show partitionname=$part_name
+	expect {
+		-re "PartitionName=$part_name" {
+			set found 1
+			exp_continue
+		}
+		timeout {
+			log_error "scontrol is not responding"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	if { $found == 0 } {
+		log_error "scontrol did not create partition $part_name"
+		return 1
+	}
+	log_user 1
+
+	log_info "Created partition $part_name with $num_nodes_in nodes"
+	return 0
 }
