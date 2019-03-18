@@ -125,7 +125,6 @@ struct option long_options[] = {
 	{"ntasks",           required_argument, 0, 'n'},
 	{"nodes",            required_argument, 0, 'N'},
 	{"output",           required_argument, 0, 'o'},
-	{"quiet",            no_argument,       0, 'Q'},
 	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
 	{"unbuffered",       no_argument,       0, 'u'},
@@ -544,7 +543,6 @@ static void _opt_default(void)
 		sropt.prolog		= slurm_get_srun_prolog();
 		xfree(sropt.propagate); 	 /* propagate specific rlimits */
 		sropt.quit_on_intr	= false;
-		opt.quiet		= 0;
 		sropt.slurmd_debug	= LOG_LEVEL_QUIET;
 		xfree(sropt.task_epilog);
 		xfree(sropt.task_prolog);
@@ -1053,9 +1051,6 @@ static void _set_options(const int argc, char **argv)
 				sropt.ofname = xstrdup("/dev/null");
 			else
 				sropt.ofname = xstrdup(optarg);
-			break;
-		case (int) 'Q':
-			opt.quiet++;
 			break;
 		case (int)'r':
 			if (!optarg)

@@ -168,7 +168,6 @@ static void _opt_default(void)
 		xfree(opt.extra);
 		opt.gid			= getgid();
 		saopt.no_shell		= false;
-		opt.quiet		= 0;
 		opt.uid			= getuid();
 	} else if (saopt.default_job_name) {
 		xfree(opt.job_name);
@@ -293,7 +292,6 @@ static void _set_options(int argc, char **argv)
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
-		{"quiet",         no_argument,       0, 'Q'},
 		{"usage",         no_argument,       0, 'u'},
 		{"version",       no_argument,       0, 'V'},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
@@ -358,9 +356,6 @@ static void _set_options(int argc, char **argv)
 			if (opt.nodes_set == false) {
 				exit(error_exit);
 			}
-			break;
-		case 'Q':
-			opt.quiet++;
 			break;
 		case 'u':
 			_usage();

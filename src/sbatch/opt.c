@@ -173,7 +173,6 @@ static void _opt_default(bool first_pass)
 		xfree(sbopt.ofname);
 		sbopt.parsable		= false;
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
-		opt.quiet		= 0;
 		sbopt.requeue		= NO_VAL;
 		sbopt.test_only		= false;
 		opt.uid			= uid;
@@ -443,7 +442,6 @@ static struct option long_options[] = {
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
-	{"quiet",         no_argument,       0, 'Q'},
 	{"usage",         no_argument,       0, 'u'},
 	{"version",       no_argument,       0, 'V'},
 	{"wait",          no_argument,       0, 'W'},
@@ -530,9 +528,6 @@ extern char *process_options_first_pass(int argc, char **argv)
 		case 'h':
 			_help();
 			exit(0);
-			break;
-		case 'Q':
-			opt.quiet++;
 			break;
 		case 'u':
 			_usage();
@@ -928,9 +923,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.ofname = xstrdup("/dev/null");
 			else
 				sbopt.ofname = xstrdup(optarg);
-			break;
-		case 'Q':
-			/* handled in process_options_first_pass() */
 			break;
 		case 'u':
 		case 'V':

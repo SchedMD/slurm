@@ -1468,6 +1468,23 @@ static slurm_cli_opt_t slurm_opt_qos = {
 	.reset_func = arg_reset_qos,
 };
 
+static int arg_set_quiet(slurm_opt_t *opt, const char *arg)
+{
+	opt->quiet++;
+
+	return SLURM_SUCCESS;
+}
+COMMON_INT_OPTION_GET_AND_RESET(quiet);
+static slurm_cli_opt_t slurm_opt_quiet = {
+	.name = "quiet",
+	.has_arg = no_argument,
+	.val = 'Q',
+	.sbatch_early_pass = true,
+	.set_func = arg_set_quiet,
+	.get_func = arg_get_quiet,
+	.reset_func = arg_reset_quiet,
+};
+
 COMMON_BOOL_OPTION(reboot, "reboot");
 static slurm_cli_opt_t slurm_opt_reboot = {
 	.name = "reboot",
@@ -1902,6 +1919,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_priority,
 	&slurm_opt_profile,
 	&slurm_opt_qos,
+	&slurm_opt_quiet,
 	&slurm_opt_reboot,
 	&slurm_opt_reservation,
 	&slurm_opt_signal,
