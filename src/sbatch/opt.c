@@ -84,7 +84,6 @@
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
 #define OPT_EXPORT        0x17
-#define OPT_ARRAY_INX     0x20
 #define OPT_INT64	  0x24
 
 /*---- global variables, defined in opt.h ----*/
@@ -196,7 +195,7 @@ struct env_vars {
 
 env_vars_t env_vars[] = {
   { "SBATCH_ACCOUNT", 'A' },
-  {"SBATCH_ARRAY_INX",     OPT_STRING,     &sbopt.array_inx,   NULL          },
+  { "SBATCH_ARRAY_INX", 'a' },
   { "SBATCH_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
   {"SBATCH_BATCH",         OPT_STRING,     &sbopt.batch_features, NULL       },
   { "SBATCH_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
@@ -326,11 +325,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			*((bool *)e->arg) = false;
 		}
 		break;
-
-	case OPT_ARRAY_INX:
-		xfree(sbopt.array_inx);
-		sbopt.array_inx = xstrdup(val);
-		break;
 	case OPT_OPEN_MODE:
 		if ((val[0] == 'a') || (val[0] == 'A'))
 			sbopt.open_mode = OPEN_MODE_APPEND;
@@ -360,7 +354,6 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
-	{"array",         required_argument, 0, 'a'},
 	{"error",         required_argument, 0, 'e'},
 	{"input",         required_argument, 0, 'i'},
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
@@ -755,10 +748,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case 'a':
-			xfree(sbopt.array_inx);
-			sbopt.array_inx = xstrdup(optarg);
-			break;
 		case 'e':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
