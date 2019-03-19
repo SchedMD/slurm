@@ -584,6 +584,19 @@ static slurm_cli_opt_t slurm_opt_core_spec = {
 	.reset_each_pass = true,
 };
 
+COMMON_INT_OPTION_SET(cores_per_socket, "--cores-per-socket");
+COMMON_INT_OPTION_GET(cores_per_socket);
+COMMON_OPTION_RESET(cores_per_socket, NO_VAL);
+static slurm_cli_opt_t slurm_opt_cores_per_socket = {
+	.name = "cores-per-socket",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CORESPERSOCKET,
+	.set_func = arg_set_cores_per_socket,
+	.get_func = arg_get_cores_per_socket,
+	.reset_func = arg_reset_cores_per_socket,
+	.reset_each_pass = true,
+};
+
 static int arg_set_cpu_freq(slurm_opt_t *opt, const char *arg)
 {
 	if (cpu_freq_verify_cmdline(arg, &opt->cpu_freq_min,
@@ -1777,6 +1790,19 @@ static slurm_cli_opt_t slurm_opt_signal = {
 	.reset_func = arg_reset_signal,
 };
 
+COMMON_INT_OPTION_SET(sockets_per_node, "--sockets-per-node");
+COMMON_INT_OPTION_GET(sockets_per_node);
+COMMON_OPTION_RESET(sockets_per_node, NO_VAL);
+static slurm_cli_opt_t slurm_opt_sockets_per_node = {
+	.name = "sockets-per-node",
+	.has_arg = required_argument,
+	.val = LONG_OPT_SOCKETSPERNODE,
+	.set_func = arg_set_sockets_per_node,
+	.get_func = arg_get_sockets_per_node,
+	.reset_func = arg_reset_sockets_per_node,
+	.reset_each_pass = true,
+};
+
 static int arg_set_spread_job(slurm_opt_t *opt, const char *arg)
 {
 	opt->job_flags |= SPREAD_JOB;
@@ -2249,6 +2275,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
 	&slurm_opt_core_spec,
+	&slurm_opt_cores_per_socket,
 	&slurm_opt_cpu_freq,
 	&slurm_opt_cpus_per_gpu,
 	&slurm_opt_cpus_per_task,
@@ -2306,6 +2333,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_reboot,
 	&slurm_opt_reservation,
 	&slurm_opt_signal,
+	&slurm_opt_sockets_per_node,
 	&slurm_opt_spread_job,
 	&slurm_opt_switch_req,
 	&slurm_opt_switch_wait,

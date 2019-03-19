@@ -166,11 +166,9 @@ static void _opt_default(void)
 
 	/* All other options must be specified individually for each component
 	 * of the job */
-	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	saopt.default_job_name		= false;
 	opt.job_flags			= 0;
 	opt.ntasks_per_node		= 0;  /* ntask max limits */
-	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 
 	slurm_reset_all_options(&opt, first_pass);
 }
@@ -264,11 +262,9 @@ static void _opt_env(void)
 
 static void _set_options(int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0;
+	int opt_char, option_index = 0;
 	static struct option long_options[] = {
-		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
-		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{NULL,            0,                 0, 0}
 	};
@@ -289,28 +285,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case LONG_OPT_SOCKETSPERNODE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			max_val = 0;
-			get_resource_arg_range( optarg, "sockets-per-node",
-						&opt.sockets_per_node,
-						&max_val, true );
-			if ((opt.sockets_per_node == 1) &&
-			    (max_val == INT_MAX))
-				opt.sockets_per_node = NO_VAL;
-			break;
-		case LONG_OPT_CORESPERSOCKET:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			max_val = 0;
-			get_resource_arg_range( optarg, "cores-per-socket",
-						&opt.cores_per_socket,
-						&max_val, true );
-			if ((opt.cores_per_socket == 1) &&
-			    (max_val == INT_MAX))
-				opt.cores_per_socket = NO_VAL;
-			break;
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = parse_int("ntasks-per-node",
 							optarg, true);

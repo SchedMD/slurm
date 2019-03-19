@@ -90,8 +90,6 @@
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
 #define OPT_MULTI       0x0f
-#define OPT_NSOCKETS    0x10
-#define OPT_NCORES      0x11
 #define OPT_OPEN_MODE   0x14
 #define OPT_BCAST       0x1e
 #define OPT_EXPORT	0x21
@@ -131,7 +129,6 @@ struct option long_options[] = {
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
-	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
@@ -150,7 +147,6 @@ struct option long_options[] = {
 	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 	{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
-	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 	{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 	{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -536,7 +532,6 @@ static void _opt_default(void)
 	sropt.bcast_flag		= false;
 	sropt.accel_bind_type		= 0;
 	sropt.compress			= 0;
-	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
 	sropt.cpu_bind_type_set		= false;
@@ -552,7 +547,6 @@ static void _opt_default(void)
 	sropt.relative			= NO_VAL;
 	sropt.relative_set		= false;
 	sropt.resv_port_cnt		= NO_VAL;
-	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.spank_job_env_size		= 0;
 	opt.spank_job_env		= NULL;
 
@@ -629,13 +623,13 @@ env_vars_t env_vars[] = {
   { "SLURM_MEM_PER_CPU", LONG_OPT_MEM_PER_CPU },
   { "SLURM_MEM_PER_NODE", LONG_OPT_MEM },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
-{"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
+  { "SLURM_NCORES_PER_SOCKET", LONG_OPT_CORESPERSOCKET },
   { "SLURM_NETWORK", LONG_OPT_NETWORK },
   { "SLURM_NO_KILL", 'k' },
   { "SLURM_NPROCS", 'n' },	/* deprecated, should be removed */
 				/* listed first so SLURM_NTASKS overrides */
   { "SLURM_NTASKS", 'n' },
-{"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
+  { "SLURM_NSOCKETS_PER_NODE", LONG_OPT_SOCKETSPERNODE },
 {"SLURM_NTASKS_PER_NODE", OPT_INT,      &opt.ntasks_per_node,NULL            },
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
   { "SLURM_OVERCOMMIT", 'O' },
@@ -881,7 +875,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 
 static void _set_options(const int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0;
+	int opt_char, option_index = 0;
 	struct utsname name;
 
 #ifdef HAVE_PTY_H
@@ -1082,28 +1076,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MULTI:
 			sropt.multi_prog = true;
-			break;
-		case LONG_OPT_SOCKETSPERNODE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			max_val = 0;
-			get_resource_arg_range( optarg, "sockets-per-node",
-						&opt.sockets_per_node,
-						&max_val, true );
-			if ((opt.sockets_per_node == 1) &&
-			    (max_val == INT_MAX))
-				opt.sockets_per_node = NO_VAL;
-			break;
-		case LONG_OPT_CORESPERSOCKET:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			max_val = 0;
-			get_resource_arg_range( optarg, "cores-per-socket",
-						&opt.cores_per_socket,
-						&max_val, true );
-			if ((opt.cores_per_socket == 1) &&
-			    (max_val == INT_MAX))
-				opt.cores_per_socket = NO_VAL;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			if (!optarg)

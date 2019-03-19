@@ -170,10 +170,8 @@ static void _opt_default(bool first_pass)
 
 	/* All other options must be specified individually for each component
 	 * of the job */
-	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.job_flags			= 0;
 	opt.ntasks_per_node		= 0;	/* ntask max limits */
-	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 
 	slurm_reset_all_options(&opt, first_pass);
 }
@@ -372,7 +370,6 @@ static struct option long_options[] = {
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
-	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
@@ -382,7 +379,6 @@ static struct option long_options[] = {
 	{"parsable",      optional_argument, 0, LONG_OPT_PARSABLE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
-	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
@@ -748,7 +744,7 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 
 static void _set_options(int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0;
+	int opt_char, option_index = 0;
 
 	struct option *common_options = slurm_option_table_create(long_options,
 								  &opt);
@@ -803,28 +799,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_REQUEUE:
 			sbopt.requeue = 1;
-			break;
-		case LONG_OPT_SOCKETSPERNODE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			max_val = 0;
-			get_resource_arg_range( optarg, "sockets-per-node",
-						&opt.sockets_per_node,
-						&max_val, true );
-			if ((opt.sockets_per_node == 1) &&
-			    (max_val == INT_MAX))
-				opt.sockets_per_node = NO_VAL;
-			break;
-		case LONG_OPT_CORESPERSOCKET:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			max_val = 0;
-			get_resource_arg_range( optarg, "cores-per-socket",
-						&opt.cores_per_socket,
-						&max_val, true );
-			if ((opt.cores_per_socket == 1) &&
-			    (max_val == INT_MAX))
-				opt.cores_per_socket = NO_VAL;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			if (!optarg)
