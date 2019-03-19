@@ -171,7 +171,6 @@ static void _opt_default(void)
 	opt.job_flags			= 0;
 	opt.ntasks_per_node		= 0;  /* ntask max limits */
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
-	opt.threads_per_core		= NO_VAL; /* requested threads */
 
 	slurm_reset_all_options(&opt, first_pass);
 }
@@ -271,7 +270,6 @@ static void _set_options(int argc, char **argv)
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
-		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
@@ -312,17 +310,6 @@ static void _set_options(int argc, char **argv)
 			if ((opt.cores_per_socket == 1) &&
 			    (max_val == INT_MAX))
 				opt.cores_per_socket = NO_VAL;
-			break;
-		case LONG_OPT_THREADSPERCORE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			max_val = 0;
-			get_resource_arg_range( optarg, "threads-per-core",
-						&opt.threads_per_core,
-						&max_val, true );
-			if ((opt.threads_per_core == 1) &&
-			    (max_val == INT_MAX))
-				opt.threads_per_core = NO_VAL;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = parse_int("ntasks-per-node",

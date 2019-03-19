@@ -1924,6 +1924,19 @@ static slurm_cli_opt_t slurm_opt_thread_spec = {
 	.reset_each_pass = true,
 };
 
+COMMON_INT_OPTION_SET(threads_per_core, "--threads-per-core");
+COMMON_INT_OPTION_GET(threads_per_core);
+COMMON_OPTION_RESET(threads_per_core, NO_VAL);
+static slurm_cli_opt_t slurm_opt_threads_per_core = {
+	.name = "threads-per-core",
+	.has_arg = required_argument,
+	.val = LONG_OPT_THREADSPERCORE,
+	.set_func = arg_set_threads_per_core,
+	.get_func = arg_get_threads_per_core,
+	.reset_func = arg_reset_threads_per_core,
+	.reset_each_pass = true,
+};
+
 static int arg_set_time_limit(slurm_opt_t *opt, const char *arg)
 {
 	int time_limit;
@@ -2298,6 +2311,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_switch_wait,
 	&slurm_opt_switches,
 	&slurm_opt_thread_spec,
+	&slurm_opt_threads_per_core,
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
