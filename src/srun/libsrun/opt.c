@@ -507,7 +507,6 @@ static void _opt_default(void)
 		xfree(sropt.efname);
 		xfree(sropt.epilog);
 		sropt.epilog		= slurm_get_srun_epilog();
-		xfree(opt.extra);
 		xfree(sropt.export_env);
 		xfree(sropt.ifname);
 		sropt.jobid		= NO_VAL;

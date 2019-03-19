@@ -161,7 +161,6 @@ static void _opt_default(void)
 	 * specified on the command line
 	 */
 	if (first_pass) {
-		xfree(opt.extra);
 	} else if (saopt.default_job_name) {
 		xfree(opt.job_name);
 	}

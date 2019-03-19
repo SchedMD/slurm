@@ -158,7 +158,6 @@ static void _opt_default(bool first_pass)
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
 		xfree(sbopt.efname);
-		xfree(opt.extra);
 		xfree(sbopt.export_env);
 		xfree(sbopt.export_file);
 		sbopt.ifname		= xstrdup("/dev/null");
