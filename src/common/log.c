@@ -97,6 +97,7 @@
 ** for details.
  */
 strong_alias(get_log_level,	slurm_get_log_level);
+strong_alias(get_sched_log_level, slurm_get_sched_log_level);
 strong_alias(log_init,		slurm_log_init);
 strong_alias(log_reinit,	slurm_log_reinit);
 strong_alias(log_fini,		slurm_log_fini);
@@ -1436,4 +1437,9 @@ void sched_debug3(const char *fmt, ...)
 extern int get_log_level(void)
 {
 	return highest_log_level;
+}
+
+extern int get_sched_log_level(void)
+{
+	return highest_sched_log_level;
 }

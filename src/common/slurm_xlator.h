@@ -203,6 +203,7 @@
 
 /* log.[ch] functions */
 #define get_log_level		slurm_get_log_level
+#define get_sched_log_level	slurm_get_sched_log_level
 #define	log_init		slurm_log_init
 #define	log_reinit		slurm_log_reinit
 #define	log_fini		slurm_log_fini
