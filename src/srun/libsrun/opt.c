@@ -115,7 +115,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"cpus-per-task",    required_argument, 0, 'c'},
 	{"error",            required_argument, 0, 'e'},
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
@@ -547,8 +546,6 @@ static void _opt_default(void)
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
 	sropt.cpu_bind_type_set		= false;
-	opt.cpus_per_task		= 0;
-	opt.cpus_set			= false;
 	sropt.hostfile			= NULL;
 	opt.job_flags			= 0;
 	sropt.max_threads		= MAX_THREADS;
@@ -619,7 +616,7 @@ env_vars_t env_vars[] = {
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
   { "SLURM_CONSTRAINT", 'C' },
   { "SLURM_CORE_SPEC", 'S' },
-{"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set    },
+  { "SLURM_CPUS_PER_TASK", 'c' },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
   { "SLURM_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SLURM_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
@@ -912,7 +909,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 
 static void _set_options(const int argc, char **argv)
 {
-	int opt_char, option_index = 0, max_val = 0, tmp_int;
+	int opt_char, option_index = 0, max_val = 0;
 	struct utsname name;
 	bool ntasks_set_opt = false;
 	bool nodes_set_opt = false;
@@ -934,16 +931,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case (int)'c':
-			tmp_int = _get_int(optarg, "cpus-per-task", false);
-			if (opt.cpus_set && (tmp_int > opt.cpus_per_task)) {
-				info("Job step's --cpus-per-task value exceeds"
-				     " that of job (%d > %d). Job step may "
-				     "never run.", tmp_int, opt.cpus_per_task);
-			}
-			opt.cpus_set = true;
-			opt.cpus_per_task = tmp_int;
-			break;
 		case (int)'e':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */

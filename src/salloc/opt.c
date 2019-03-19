@@ -167,8 +167,6 @@ static void _opt_default(void)
 	/* All other options must be specified individually for each component
 	 * of the job */
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
-	opt.cpus_per_task		= 0;
-	opt.cpus_set			= false;
 	saopt.default_job_name		= false;
 	opt.job_flags			= 0;
 	opt.max_nodes			= 0;
@@ -278,7 +276,6 @@ static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0;
 	static struct option long_options[] = {
-		{"cpus-per-task", required_argument, 0, 'c'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -308,11 +305,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case 'c':
-			opt.cpus_set = true;
-			opt.cpus_per_task = parse_int("cpus-per-task",
-						      optarg, true);
-			break;
 		case 'n':
 			opt.ntasks_set = true;
 			opt.ntasks =

@@ -626,6 +626,35 @@ static slurm_cli_opt_t slurm_opt_cpus_per_gpu = {
 	.reset_func = arg_reset_cpus_per_gpu,
 };
 
+static int arg_set_cpus_per_task(slurm_opt_t *opt, const char *arg)
+{
+	int old_cpus_per_task = opt->cpus_per_task;
+	opt->cpus_per_task = parse_int("--cpus-per-task", arg, true);
+
+	if (opt->cpus_set && opt->srun_opt &&
+	    (old_cpus_per_task < opt->cpus_per_task))
+		info("Job step's --cpus-per-task value exceeds that of job (%d > %d). Job step may never run.",
+		     opt->cpus_per_task, old_cpus_per_task);
+
+	opt->cpus_set = true;
+	return SLURM_SUCCESS;
+}
+COMMON_INT_OPTION_GET(cpus_per_task);
+static void arg_reset_cpus_per_task(slurm_opt_t *opt)
+{
+	opt->cpus_per_task = 0;
+	opt->cpus_set = false;
+}
+static slurm_cli_opt_t slurm_opt_cpus_per_task = {
+	.name = "cpus-per-task",
+	.has_arg = required_argument,
+	.val = 'c',
+	.set_func = arg_set_cpus_per_task,
+	.get_func = arg_get_cpus_per_task,
+	.reset_func = arg_reset_cpus_per_task,
+	.reset_each_pass = true,
+};
+
 static int arg_set_deadline(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->deadline = parse_time(arg, 0))) {
@@ -2134,6 +2163,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_core_spec,
 	&slurm_opt_cpu_freq,
 	&slurm_opt_cpus_per_gpu,
+	&slurm_opt_cpus_per_task,
 	&slurm_opt_deadline,
 	&slurm_opt_delay_boot,
 	&slurm_opt_dependency,

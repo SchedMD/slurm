@@ -172,8 +172,6 @@ static void _opt_default(bool first_pass)
 	/* All other options must be specified individually for each component
 	 * of the job */
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
-	opt.cpus_per_task		= 0;
-	opt.cpus_set			= false;
 	opt.job_flags			= 0;
 	opt.max_nodes			= 0;
 	opt.min_nodes			= 1;
@@ -386,7 +384,6 @@ _process_env_var(env_vars_t *e, const char *val)
 
 static struct option long_options[] = {
 	{"array",         required_argument, 0, 'a'},
-	{"cpus-per-task", required_argument, 0, 'c'},
 	{"error",         required_argument, 0, 'e'},
 	{"input",         required_argument, 0, 'i'},
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
@@ -796,13 +793,6 @@ static void _set_options(int argc, char **argv)
 		case 'a':
 			xfree(sbopt.array_inx);
 			sbopt.array_inx = xstrdup(optarg);
-			break;
-		case 'c':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.cpus_set = true;
-			opt.cpus_per_task = parse_int("cpus-per-task",
-						      optarg, true);
 			break;
 		case 'e':
 			if (!optarg)
