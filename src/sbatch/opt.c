@@ -116,7 +116,6 @@ static bool _opt_verify(void);
 static void _process_env_var(env_vars_t *e, const char *val);
 
 static void _fullpath(char **filename, const char *cwd);
-static char *_read_file(char *fname);
 static void _set_options(int argc, char **argv);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -190,41 +189,6 @@ static void _opt_default(bool first_pass)
 	opt.threads_per_core_set	= false;
 
 	slurm_reset_all_options(&opt, first_pass);
-}
-
-/* Read specified file's contents into a buffer.
- * Caller must xfree the buffer's contents */
-static char *_read_file(char *fname)
-{
-	int fd, i, offset = 0;
-	struct stat stat_buf;
-	char *file_buf;
-
-	fd = open(fname, O_RDONLY);
-	if (fd < 0) {
-		fatal("Could not open burst buffer specification file %s: %m",
-		      fname);
-	}
-	if (fstat(fd, &stat_buf) < 0) {
-		fatal("Could not stat burst buffer specification file %s: %m",
-		      fname);
-	}
-	file_buf = xmalloc(stat_buf.st_size + 1);
-	while (stat_buf.st_size > offset) {
-		i = read(fd, file_buf + offset, stat_buf.st_size - offset);
-		if (i < 0) {
-			if (errno == EAGAIN)
-				continue;
-			fatal("Could not read burst buffer specification "
-			      "file %s: %m", fname);
-		}
-		if (i == 0)
-			break;	/* EOF */
-		offset += i;
-	}
-	close(fd);
-	file_buf[stat_buf.st_size] = '\0';
-	return file_buf;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -432,7 +396,6 @@ static struct option long_options[] = {
 	{"output",        required_argument, 0, 'o'},
 	{"wait",          no_argument,       0, 'W'},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
-	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
@@ -889,12 +852,6 @@ static void _set_options(int argc, char **argv)
 		case 'W':
 			sbopt.wait = true;
 			break;
-		case LONG_OPT_BURST_BUFFER_FILE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sbopt.burst_buffer_file);
-			sbopt.burst_buffer_file = _read_file(optarg);
-			break;
 		case LONG_OPT_NO_REQUEUE:
 			sbopt.requeue = 0;
 			break;
@@ -1044,6 +1001,15 @@ static bool _opt_verify(void)
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
 	}
+
+	if (opt.burst_buffer && opt.burst_buffer_file) {
+		error("Cannot specify both --burst-buffer and --bbf");
+		exit(error_exit);
+	}
+	/*
+	 * NOTE: this burst_buffer_file processing is intentionally different
+	 * than in salloc/srun, there is not a missing chunk of code here.
+	 */
 
 	if (opt.hint &&
 	    !opt.ntasks_per_core_set && !opt.threads_per_core_set) {

@@ -377,6 +377,16 @@ static slurm_cli_opt_t slurm_opt_alloc_nodelist = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(burst_buffer_file);
+static slurm_cli_opt_t slurm_opt_bbf = {
+	.name = "bbf",
+	.has_arg = required_argument,
+	.val = LONG_OPT_BURST_BUFFER_FILE,
+	.set_func = arg_set_burst_buffer_file,
+	.get_func = arg_get_burst_buffer_file,
+	.reset_func = arg_reset_burst_buffer_file,
+};
+
 static int arg_set_begin(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->begin = parse_time(arg, 0))) {
@@ -2113,6 +2123,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_begin,
 	&slurm_opt_bell,
 	&slurm_opt_bb,
+	&slurm_opt_bbf,
 	&slurm_opt_c_constraint,
 	&slurm_opt_chdir,
 	&slurm_opt_cluster,

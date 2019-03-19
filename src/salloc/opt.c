@@ -90,7 +90,6 @@ static void  _opt_default(void);
 static void  _opt_env(void);
 static void  _opt_args(int argc, char **argv);
 static bool  _opt_verify(void);
-static char *_read_file(char *fname);
 static void  _set_options(int argc, char **argv);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -283,7 +282,6 @@ static void _set_options(int argc, char **argv)
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
-		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -377,12 +375,6 @@ static void _set_options(int argc, char **argv)
 			opt.ntasks_per_core = parse_int("ntasks-per-core",
 							optarg, true);
 			opt.ntasks_per_core_set  = true;
-			break;
-		case LONG_OPT_BURST_BUFFER_FILE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.burst_buffer);
-			opt.burst_buffer = _read_file(optarg);
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
@@ -479,6 +471,20 @@ static bool _opt_verify(void)
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
+	}
+
+	if (opt.burst_buffer && opt.burst_buffer_file) {
+		error("Cannot specify both --burst-buffer and --bbf");
+		exit(error_exit);
+	} else if (opt.burst_buffer_file) {
+		Buf buf = create_mmap_buf(opt.burst_buffer_file);
+		if (!buf) {
+			error("Invalid --bbf specification");
+			exit(error_exit);
+		}
+		opt.burst_buffer = xstrdup(get_buf_data(buf));
+		free_buf(buf);
+		xfree(opt.burst_buffer_file);
 	}
 
 	if (opt.hint &&
@@ -864,41 +870,6 @@ extern int   spank_unset_job_env(const char *name)
 	}
 
 	return 0;	/* not found */
-}
-
-/* Read specified file's contents into a buffer.
- * Caller must xfree the buffer's contents */
-static char *_read_file(char *fname)
-{
-	int fd, i, offset = 0;
-	struct stat stat_buf;
-	char *file_buf;
-
-	fd = open(fname, O_RDONLY);
-	if (fd < 0) {
-		fatal("Could not open burst buffer specification file %s: %m",
-		      fname);
-	}
-	if (fstat(fd, &stat_buf) < 0) {
-		fatal("Could not stat burst buffer specification file %s: %m",
-		      fname);
-	}
-	file_buf = xmalloc(stat_buf.st_size + 1);
-	while (stat_buf.st_size > offset) {
-		i = read(fd, file_buf + offset, stat_buf.st_size - offset);
-		if (i < 0) {
-			if (errno == EAGAIN)
-				continue;
-			fatal("Could not read burst buffer specification "
-			      "file %s: %m", fname);
-		}
-		if (i == 0)
-			break;	/* EOF */
-		offset += i;
-	}
-	close(fd);
-	file_buf[stat_buf.st_size] = '\0';
-	return file_buf;
 }
 
 extern void salloc_usage(void)

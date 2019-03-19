@@ -201,7 +201,6 @@ typedef struct sbatch_opt {
 
 	char *array_inx;		/* --array			*/
 	char *batch_features;		/* --batch			*/
-	char *burst_buffer_file;	/* --bbf			*/
 	int ckpt_interval;		/* --checkpoint (int minutes)	*/
 	char *ckpt_interval_str;	/* --checkpoint			*/
 	char *export_env;		/* --export			*/
@@ -293,6 +292,7 @@ typedef struct slurm_options {
 	srun_opt_t *srun_opt;
 
 	char *burst_buffer;		/* --bb				*/
+	char *burst_buffer_file;	/* --bbf			*/
 	char *clusters;			/* cluster to run this on. */
 	uid_t uid;			/* local uid			*/
 	gid_t gid;			/* local gid			*/

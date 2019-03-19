@@ -132,7 +132,6 @@ struct option long_options[] = {
 	{"disable-status",   no_argument,       0, 'X'},
 	{"no-allocate",      no_argument,       0, 'Z'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
-	{"bbf",              required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
@@ -189,7 +188,6 @@ static void _opt_args(int argc, char **argv, int pack_offset);
 static bool _opt_verify(void);
 
 static void  _process_env_var(env_vars_t *e, const char *val);
-static char *_read_file(char *fname);
 static void  _set_options(const int argc, char **argv);
 static bool  _under_parallel_debugger(void);
 static bool  _valid_node_list(char **node_list_pptr);
@@ -1138,12 +1136,6 @@ static void _set_options(const int argc, char **argv)
 			xfree(sropt.epilog);
 			sropt.epilog = xstrdup(optarg);
 			break;
-		case LONG_OPT_BURST_BUFFER_FILE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(opt.burst_buffer);
-			opt.burst_buffer = _read_file(optarg);
-			break;
 		case LONG_OPT_TASK_PROLOG:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1443,6 +1435,20 @@ static bool _opt_verify(void)
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
+	}
+
+	if (opt.burst_buffer && opt.burst_buffer_file) {
+		error("Cannot specify both --burst-buffer and --bbf");
+		exit(error_exit);
+	} else if (opt.burst_buffer_file) {
+		Buf buf = create_mmap_buf(opt.burst_buffer_file);
+		if (!buf) {
+			error("Invalid --bbf specification");
+			exit(error_exit);
+		}
+		opt.burst_buffer = xstrdup(get_buf_data(buf));
+		free_buf(buf);
+		xfree(opt.burst_buffer_file);
 	}
 
 	if (sropt.no_alloc && !opt.nodelist) {
@@ -1904,41 +1910,6 @@ extern int   spank_unset_job_env(const char *name)
 	}
 
 	return 0;	/* not found */
-}
-
-/* Read specified file's contents into a buffer.
- * Caller must xfree the buffer's contents */
-static char *_read_file(char *fname)
-{
-	int fd, i, offset = 0;
-	struct stat stat_buf;
-	char *file_buf;
-
-	fd = open(fname, O_RDONLY);
-	if (fd < 0) {
-		fatal("Could not open burst buffer specification file %s: %m",
-		      fname);
-	}
-	if (fstat(fd, &stat_buf) < 0) {
-		fatal("Could not stat burst buffer specification file %s: %m",
-		      fname);
-	}
-	file_buf = xmalloc(stat_buf.st_size + 1);
-	while (stat_buf.st_size > offset) {
-		i = read(fd, file_buf + offset, stat_buf.st_size - offset);
-		if (i < 0) {
-			if (errno == EAGAIN)
-				continue;
-			fatal("Could not read burst buffer specification "
-			      "file %s: %m", fname);
-		}
-		if (i == 0)
-			break;	/* EOF */
-		offset += i;
-	}
-	close(fd);
-	file_buf[stat_buf.st_size] = '\0';
-	return file_buf;
 }
 
 /* Determine if srun is under the control of a parallel debugger or not */

@@ -52,6 +52,7 @@
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
+#include "src/common/pack.h"
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
@@ -153,8 +154,21 @@ int main(int argc, char **argv)
 			pack_fini = true;
 		}
 
-		if (sbopt.burst_buffer_file)
-			_add_bb_to_script(&script_body, sbopt.burst_buffer_file);
+		/*
+		 * Note that this handling here is different than in
+		 * salloc/srun. Instead of sending the file contents as the
+		 * burst_buffer field in job_desc_msg_t, it will be spliced
+		 * in to the job script.
+		 */
+		if (opt.burst_buffer_file) {
+			Buf buf = create_mmap_buf(opt.burst_buffer_file);
+			if (!buf) {
+				error("Invalid --bbf specification");
+				exit(error_exit);
+			}
+			_add_bb_to_script(&script_body, get_buf_data(buf));
+			free_buf(buf);
+		}
 
 		if (spank_init_post_opt() < 0) {
 			error("Plugin stack post-option processing failed");
