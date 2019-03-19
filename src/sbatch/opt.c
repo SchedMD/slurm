@@ -161,7 +161,6 @@ static void _opt_default(bool first_pass)
 		sbopt.requeue		= NO_VAL;
 		sbopt.test_only		= false;
 		sbopt.umask		= -1;
-		sbopt.wait		= false;
 	}
 
 	/* All other options must be specified individually for each component
@@ -240,7 +239,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
   { "SBATCH_TIMELIMIT", 't' },
   { "SBATCH_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
-  {"SBATCH_WAIT",          OPT_BOOL,       &sbopt.wait,        NULL          },
+  { "SBATCH_WAIT", 'W' },
   { "SBATCH_WAIT_ALL_NODES", LONG_OPT_WAIT_ALL_NODES },
   { "SBATCH_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SBATCH_WCKEY", LONG_OPT_WCKEY },
@@ -352,7 +351,6 @@ _process_env_var(env_vars_t *e, const char *val)
 
 static struct option long_options[] = {
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
-	{"wait",          no_argument,       0, 'W'},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
@@ -742,9 +740,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case 'W':
-			sbopt.wait = true;
-			break;
 		case LONG_OPT_NO_REQUEUE:
 			sbopt.requeue = 0;
 			break;

@@ -2273,6 +2273,36 @@ static slurm_cli_opt_t slurm_opt_version = {
 	.reset_func = arg_reset_version,
 };
 
+static int arg_set_wait(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->sbatch_opt)
+		return SLURM_ERROR;
+
+	opt->sbatch_opt->wait = true;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_wait(slurm_opt_t *opt)
+{
+	if (!opt->sbatch_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup(opt->sbatch_opt->wait ? "set" : "unset");
+}
+static void arg_reset_wait(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->wait = false;
+}
+static slurm_cli_opt_t slurm_opt_wait = {
+	.name = "wait",
+	.has_arg = no_argument,
+	.val = 'W',
+	.set_func_sbatch = arg_set_wait,
+	.get_func = arg_get_wait,
+	.reset_func = arg_reset_wait,
+};
+
 static int arg_set_wait_all_nodes(slurm_opt_t *opt, const char *arg)
 {
 	uint16_t tmp;
@@ -2463,6 +2493,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_verbose,
 	&slurm_opt_version,
 	&slurm_opt_usage,
+	&slurm_opt_wait,
 	&slurm_opt_wait_all_nodes,
 	&slurm_opt_wckey,
 	&slurm_opt_x11,
