@@ -402,7 +402,7 @@ int main(int argc, char **argv)
 	}
 
 	/* If the requested uid is different than ours, become that uid */
-	if ((getuid() != opt.uid) && (opt.uid != (uid_t) -1)) {
+	if (getuid() != opt.uid) {
 		/* drop extended groups before changing uid/gid */
 		if ((setgroups(0, NULL) < 0)) {
 			error("setgroups: %m");

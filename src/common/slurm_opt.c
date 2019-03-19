@@ -46,6 +46,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/uid.h"
 #include "src/common/util-net.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
@@ -1811,6 +1812,32 @@ static slurm_cli_opt_t slurm_opt_tmp = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_uid(slurm_opt_t *opt, const char *arg)
+{
+	if (getuid() != 0) {
+		error("--uid only permitted by root user");
+		exit(-1);
+	}
+
+	if (uid_from_string(arg, &opt->uid) < 0) {
+		error("Invalid --uid specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+COMMON_INT_OPTION_GET(uid);
+COMMON_OPTION_RESET(uid, getuid());
+static slurm_cli_opt_t slurm_opt_uid = {
+	.name = "uid",
+	.has_arg = required_argument,
+	.val = LONG_OPT_UID,
+	.sbatch_early_pass = true,
+	.set_func = arg_set_uid,
+	.get_func = arg_get_uid,
+	.reset_func = arg_reset_uid,
+};
+
 static int arg_set_use_min_nodes(slurm_opt_t *opt, const char *arg)
 {
 	opt->job_flags |= USE_MIN_NODES;
@@ -2093,6 +2120,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_time_limit,
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
+	&slurm_opt_uid,
 	&slurm_opt_use_min_nodes,
 	&slurm_opt_verbose,
 	&slurm_opt_version,

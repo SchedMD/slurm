@@ -164,7 +164,6 @@ struct option long_options[] = {
 	{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
-	{"uid",              required_argument, 0, LONG_OPT_UID},
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
@@ -499,8 +498,6 @@ static bool _valid_node_list(char **node_list_pptr)
  */
 static void _opt_default(void)
 {
-	uid_t uid = getuid();
-
 	if (pass_number == 1) {
 		sropt.allocate		= false;
 		sropt.ckpt_interval		= 0;
@@ -514,7 +511,6 @@ static void _opt_default(void)
 		sropt.epilog		= slurm_get_srun_epilog();
 		xfree(opt.extra);
 		xfree(sropt.export_env);
-		opt.euid		= (uid_t) -1;
 		opt.gid			= getgid();
 		xfree(sropt.ifname);
 		sropt.jobid		= NO_VAL;
@@ -539,7 +535,6 @@ static void _opt_default(void)
 		xfree(sropt.task_prolog);
 		sropt.test_only		= false;
 		sropt.test_exec		= false;
-		opt.uid			= uid;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
 	}
@@ -1116,22 +1111,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			sropt.msg_timeout =
 				_get_int(optarg, "msg-timeout", true);
-			break;
-		case LONG_OPT_UID:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (getuid() != 0) {
-				error("--uid only permitted by root user");
-				exit(error_exit);
-			}
-			if (opt.euid != (uid_t) -1) {
-				error("duplicate --uid option");
-				exit(error_exit);
-			}
-			if (uid_from_string (optarg, &opt.euid) < 0) {
-				error("--uid=\"%s\" invalid", optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_GID:
 			if (!optarg)
@@ -1818,9 +1797,6 @@ static bool _opt_verify(void)
 			exit(error_exit);
 		}
 	}
-
-	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid))
-		opt.uid = opt.euid;
 
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 		opt.gid = opt.egid;

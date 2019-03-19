@@ -162,10 +162,8 @@ static void _opt_default(void)
 	 */
 	if (first_pass) {
 		opt.egid		= (gid_t) -1;
-		opt.euid		= (uid_t) -1;
 		xfree(opt.extra);
 		opt.gid			= getgid();
-		opt.uid			= getuid();
 	} else if (saopt.default_job_name) {
 		xfree(opt.job_name);
 	}
@@ -297,7 +295,6 @@ static void _set_options(int argc, char **argv)
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
-		{"uid",           required_argument, 0, LONG_OPT_UID},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
@@ -341,20 +338,6 @@ static void _set_options(int argc, char **argv)
 						  &opt.min_nodes,
 						  &opt.max_nodes);
 			if (opt.nodes_set == false) {
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_UID:
-			if (getuid() != 0) {
-				error("--uid only permitted by root user");
-				exit(error_exit);
-			}
-			if (opt.euid != (uid_t) -1) {
-				error("duplicate --uid option");
-				exit(error_exit);
-			}
-			if (uid_from_string (optarg, &opt.euid) < 0) {
-				error("--uid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
 			break;
@@ -597,9 +580,6 @@ static bool _opt_verify(void)
 
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
-
-	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid))
-		opt.uid = opt.euid;
 
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 		opt.gid = opt.egid;

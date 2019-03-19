@@ -151,8 +151,6 @@ static bool _valid_node_list(char **node_list_pptr)
  */
 static void _opt_default(bool first_pass)
 {
-	uid_t uid = getuid();
-
 	/* Some options will persist for all components of a heterogeneous job
 	 * once specified for one, but will be overwritten with new values if
 	 * specified on the command line */
@@ -164,7 +162,6 @@ static void _opt_default(bool first_pass)
 		xfree(opt.extra);
 		xfree(sbopt.export_env);
 		xfree(sbopt.export_file);
-		opt.euid		= (uid_t) -1;
 		opt.gid			= getgid();
 		sbopt.ifname		= xstrdup("/dev/null");
 		xfree(sbopt.ofname);
@@ -172,7 +169,6 @@ static void _opt_default(bool first_pass)
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
 		sbopt.requeue		= NO_VAL;
 		sbopt.test_only		= false;
-		opt.uid			= uid;
 		sbopt.umask		= -1;
 		sbopt.wait		= false;
 	}
@@ -459,7 +455,6 @@ static struct option long_options[] = {
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"threads-per-core", required_argument, 0, LONG_OPT_THREADSPERCORE},
-	{"uid",           required_argument, 0, LONG_OPT_UID},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
 };
@@ -906,22 +901,6 @@ static void _set_options(int argc, char **argv)
 		case 'W':
 			sbopt.wait = true;
 			break;
-		case LONG_OPT_UID:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (getuid() != 0) {
-				error("--uid only permitted by root user");
-				exit(error_exit);
-			}
-			if (opt.euid != (uid_t) -1) {
-				error("duplicate --uid option");
-				exit(error_exit);
-			}
-			if (uid_from_string(optarg, &opt.euid) < 0) {
-				error("--uid=\"%s\" invalid", optarg);
-				exit(error_exit);
-			}
-			break;
 		case LONG_OPT_GID:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1339,9 +1318,6 @@ static bool _opt_verify(void)
 			exit(error_exit);
 		}
 	}
-
-	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid))
-		opt.uid = opt.euid;
 
 	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 		opt.gid = opt.egid;
