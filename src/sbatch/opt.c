@@ -494,12 +494,10 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 					const void *script_body,
 					int script_size)
 {
-	static bool first_pass = true;
 	int i;
 
 	/* initialize option defaults */
-	_opt_default(first_pass);
-	first_pass = false;
+	_opt_default(false);
 
 	/* set options from batch script */
 	*more_packs = _opt_batch_script(file, script_body, script_size,
