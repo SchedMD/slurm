@@ -152,8 +152,6 @@ static void _opt_default(bool first_pass)
 	 * once specified for one, but will be overwritten with new values if
 	 * specified on the command line */
 	if (first_pass) {
-		sbopt.ckpt_interval	= 0;
-		xfree(sbopt.ckpt_interval_str);
 		xfree(sbopt.export_env);
 		xfree(sbopt.export_file);
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
@@ -194,7 +192,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
   { "SBATCH_BATCH", LONG_OPT_BATCH },
   { "SBATCH_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
-  {"SBATCH_CHECKPOINT",    OPT_STRING,     &sbopt.ckpt_interval_str, NULL    },
+  { "SBATCH_CHECKPOINT", LONG_OPT_CHECKPOINT },
   { "SBATCH_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SBATCH_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
@@ -349,8 +347,6 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
-	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
-	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
@@ -764,10 +760,6 @@ static void _set_options(int argc, char **argv)
 			else
 				sbopt.propagate = xstrdup("ALL");
 			break;
-		case LONG_OPT_CHECKPOINT:
-			xfree(sbopt.ckpt_interval_str);
-			sbopt.ckpt_interval_str = xstrdup(optarg);
-			break;
 		case LONG_OPT_EXPORT:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1068,15 +1060,6 @@ static bool _opt_verify(void)
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");
 		exit(error_exit);
-	}
-
-	if (sbopt.ckpt_interval_str) {
-		sbopt.ckpt_interval = time_str2mins(sbopt.ckpt_interval_str);
-		if ((sbopt.ckpt_interval < 0) &&
-		    (sbopt.ckpt_interval != INFINITE)) {
-			error("Invalid checkpoint interval specification");
-			exit(error_exit);
-		}
 	}
 
 	if (sbopt.open_mode) {

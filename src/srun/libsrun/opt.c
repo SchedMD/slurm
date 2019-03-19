@@ -124,7 +124,6 @@ struct option long_options[] = {
 	{"no-allocate",      no_argument,       0, 'Z'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
-	{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
@@ -326,8 +325,6 @@ static slurm_opt_t *_opt_copy(void)
 	sropt.bcast_file = NULL;	/* Moved by memcpy */
 	opt.burst_buffer = NULL;	/* Moved by memcpy */
 	opt_dup->c_constraint = xstrdup(opt.c_constraint);
-	opt_dup->srun_opt->ckpt_interval_str =
-		xstrdup(sropt.ckpt_interval_str);
 	opt_dup->clusters = xstrdup(opt.clusters);
 	opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
 	opt_dup->comment = xstrdup(opt.comment);
@@ -481,8 +478,6 @@ static void _opt_default(void)
 {
 	if (pass_number == 1) {
 		sropt.allocate		= false;
-		sropt.ckpt_interval		= 0;
-		xfree(sropt.ckpt_interval_str);
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
 		sropt.disable_status	= false;
@@ -578,7 +573,7 @@ env_vars_t env_vars[] = {
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
   { "SLURM_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
   { "SLURM_CLUSTERS", 'M' },
-{"SLURM_CHECKPOINT",    OPT_STRING,     &sropt.ckpt_interval_str, NULL       },
+  { "SLURM_CHECKPOINT", LONG_OPT_CHECKPOINT },
   { "SLURM_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
 {"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
   { "SLURM_CONSTRAINT", 'C' },
@@ -1048,10 +1043,6 @@ static void _set_options(const int argc, char **argv)
 			error("--pty not currently supported on this system "
 			      "type, ignoring option");
 #endif
-			break;
-		case LONG_OPT_CHECKPOINT:
-			xfree(sropt.ckpt_interval_str);
-			sropt.ckpt_interval_str = xstrdup(optarg);
 			break;
 		case LONG_OPT_OPEN_MODE:
 			if (!optarg)
@@ -1593,14 +1584,6 @@ static bool _opt_verify(void)
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");
 		exit(error_exit);
-	}
-	if (sropt.ckpt_interval_str) {
-		sropt.ckpt_interval = time_str2mins(sropt.ckpt_interval_str);
-		if ((sropt.ckpt_interval < 0) &&
-		    (sropt.ckpt_interval != INFINITE)) {
-			error("Invalid checkpoint interval specification");
-			exit(error_exit);
-		}
 	}
 
 	if (!mpi_type)

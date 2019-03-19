@@ -520,6 +520,59 @@ static slurm_cli_opt_t slurm_opt_chdir = {
 	.reset_func = arg_reset_chdir,
 };
 
+static int arg_set_ckpt_interval(slurm_opt_t *opt, const char *arg)
+{
+	int tmp;
+
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	tmp = time_str2mins(arg);
+	if ((tmp < 0) && (tmp != INFINITE)) {
+		error("Invalid --checkpoint specification");
+		exit(-1);
+	}
+
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->ckpt_interval = tmp;
+	if (opt->srun_opt)
+		opt->srun_opt->ckpt_interval = tmp;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_ckpt_interval(slurm_opt_t *opt)
+{
+	int tmp;
+	char time_str[32];
+
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->sbatch_opt)
+		tmp = opt->sbatch_opt->ckpt_interval;
+	if (opt->srun_opt)
+		tmp = opt->srun_opt->ckpt_interval;
+
+	mins2time_str(tmp, time_str, sizeof(time_str));
+	return xstrdup(time_str);
+}
+static void arg_reset_ckpt_interval(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->ckpt_interval = 0;
+	if (opt->srun_opt)
+		opt->srun_opt->ckpt_interval = 0;
+}
+static slurm_cli_opt_t slurm_opt_checkpoint = {
+	.name = "checkpoint",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CHECKPOINT,
+	.set_func_sbatch = arg_set_ckpt_interval,
+	.set_func_srun = arg_set_ckpt_interval,
+	.get_func = arg_get_ckpt_interval,
+	.reset_func = arg_reset_ckpt_interval,
+};
+
 /* --clusters and --cluster are equivalent */
 COMMON_STRING_OPTION(clusters);
 static slurm_cli_opt_t slurm_opt_clusters = {
@@ -2484,6 +2537,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_bb,
 	&slurm_opt_bbf,
 	&slurm_opt_c_constraint,
+	&slurm_opt_checkpoint,
 	&slurm_opt_chdir,
 	&slurm_opt_cluster,
 	&slurm_opt_clusters,
