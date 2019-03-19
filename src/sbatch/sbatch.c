@@ -691,7 +691,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	for (i = 0; i < sbopt.script_argc; i++)
 		desc->argv[i] = xstrdup(sbopt.script_argv[i]);
 	desc->std_err  = xstrdup(opt.efname);
-	desc->std_in   = xstrdup(sbopt.ifname);
+	desc->std_in   = xstrdup(opt.ifname);
 	desc->std_out  = xstrdup(sbopt.ofname);
 	desc->work_dir = xstrdup(opt.chdir);
 	if (sbopt.requeue != NO_VAL)

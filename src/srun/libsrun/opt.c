@@ -114,7 +114,6 @@ typedef struct env_vars env_vars_t;
 struct option long_options[] = {
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
-	{"input",            required_argument, 0, 'i'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"label",            no_argument,       0, 'l'},
 	{"output",           required_argument, 0, 'o'},
@@ -350,7 +349,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->gpus_per_socket = xstrdup(opt.gpus_per_socket);
 	opt_dup->gpus_per_task = xstrdup(opt.gpus_per_task);
 	sropt.hostfile = NULL;		/* Moved by memcpy */
-	opt_dup->srun_opt->ifname = xstrdup(sropt.ifname);
+	opt_dup->ifname = xstrdup(opt.ifname);
 	opt_dup->job_name = xstrdup(opt.job_name);
 	opt_dup->srun_opt->ofname = xstrdup(sropt.ofname);
 	opt.licenses = NULL;		/* Moved by memcpy */
@@ -491,7 +490,6 @@ static void _opt_default(void)
 		xfree(sropt.epilog);
 		sropt.epilog		= slurm_get_srun_epilog();
 		xfree(sropt.export_env);
-		xfree(sropt.ifname);
 		sropt.jobid		= NO_VAL;
 		sropt.kill_bad_exit	= NO_VAL;
 		sropt.labelio		= false;
@@ -641,7 +639,7 @@ env_vars_t env_vars[] = {
   { "SLURM_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
   { "SLURM_STDERRMODE", 'e' },
-{"SLURM_STDINMODE",     OPT_STRING,     &sropt.ifname,      NULL             },
+  { "SLURM_STDINMODE", 'i' },
 {"SLURM_STDOUTMODE",    OPT_STRING,     &sropt.ofname,      NULL             },
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &sropt.task_epilog, NULL             },
 {"SLURM_TASK_PROLOG",   OPT_STRING,     &sropt.task_prolog, NULL             },
@@ -893,19 +891,6 @@ static void _set_options(const int argc, char **argv)
 		case (int)'E':
 			sropt.preserve_env = true;
 			break;
-		case (int)'i':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (sropt.pty) {
-				fatal("--input incompatible with --pty option");
-				exit(error_exit);
-			}
-			xfree(sropt.ifname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sropt.ifname = xstrdup("/dev/null");
-			else
-				sropt.ifname = xstrdup(optarg);
-			break;
 		case (int)'K':
 			if (optarg)
 				sropt.kill_bad_exit = strtol(optarg, NULL, 10);
@@ -1062,7 +1047,7 @@ static void _set_options(const int argc, char **argv)
 #ifdef HAVE_PTY_H
 			sropt.pty = true;
 			sropt.unbuffered = true;	/* implicit */
-			if (sropt.ifname)
+			if (opt.ifname)
 				tmp_str = "--input";
 			else if (sropt.ofname)
 				tmp_str = "--output";
