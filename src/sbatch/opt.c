@@ -173,7 +173,6 @@ static void _opt_default(bool first_pass)
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.job_flags			= 0;
 	opt.ntasks_per_node		= 0;	/* ntask max limits */
-	opt.ntasks_per_socket		= NO_VAL;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 
@@ -380,7 +379,6 @@ static struct option long_options[] = {
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
-	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"parsable",      optional_argument, 0, LONG_OPT_PARSABLE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
@@ -849,13 +847,6 @@ static void _set_options(int argc, char **argv)
 			if (opt.ntasks_per_node > 0)
 				pack_env.ntasks_per_node = opt.ntasks_per_node;
 			break;
-		case LONG_OPT_NTASKSPERSOCKET:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.ntasks_per_socket = parse_int("ntasks-per-socket",
-							  optarg, true);
-			pack_env.ntasks_per_socket = opt.ntasks_per_socket;
-			break;
 		case LONG_OPT_BATCH:
 			xfree(sbopt.batch_features);
 			sbopt.batch_features = xstrdup(optarg);
@@ -1184,6 +1175,9 @@ static bool _opt_verify(void)
 
 	if (opt.ntasks_per_core != NO_VAL)
 		pack_env.ntasks_per_core = opt.ntasks_per_core;
+
+	if (opt.ntasks_per_socket != NO_VAL)
+		pack_env.ntasks_per_socket = opt.ntasks_per_socket;
 
 	if (hl)
 		hostlist_destroy(hl);

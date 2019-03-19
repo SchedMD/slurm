@@ -1570,6 +1570,19 @@ static slurm_cli_opt_t slurm_opt_ntasks_per_core = {
 	.reset_each_pass = true,
 };
 
+COMMON_INT_OPTION_SET(ntasks_per_socket, "--ntasks-per-socket");
+COMMON_INT_OPTION_GET(ntasks_per_socket);
+COMMON_OPTION_RESET(ntasks_per_socket, NO_VAL);
+static slurm_cli_opt_t slurm_opt_ntasks_per_socket = {
+	.name = "ntasks-per-socket",
+	.has_arg = required_argument,
+	.val = LONG_OPT_NTASKSPERSOCKET,
+	.set_func = arg_set_ntasks_per_socket,
+	.get_func = arg_get_ntasks_per_socket,
+	.reset_func = arg_reset_ntasks_per_socket,
+	.reset_each_pass = true,
+};
+
 COMMON_BOOL_OPTION(overcommit, "overcommit");
 static slurm_cli_opt_t slurm_opt_overcommit = {
 	.name = "overcommit",
@@ -2268,6 +2281,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_nodes,
 	&slurm_opt_ntasks,
 	&slurm_opt_ntasks_per_core,
+	&slurm_opt_ntasks_per_socket,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,
 	&slurm_opt_partition,

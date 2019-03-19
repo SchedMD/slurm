@@ -141,7 +141,6 @@ struct option long_options[] = {
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
-	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 	{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
@@ -549,7 +548,6 @@ static void _opt_default(void)
 	sropt.multi_prog			= false;
 	sropt.multi_prog_cmds		= 0;
 	opt.ntasks_per_node		= NO_VAL; /* ntask max limits */
-	opt.ntasks_per_socket		= NO_VAL;
 	sropt.pack_group		= NULL;
 	sropt.pack_grp_bits		= NULL;
 	sropt.relative			= NO_VAL;
@@ -1125,13 +1123,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			opt.ntasks_per_node = _get_int(optarg,
 						       "ntasks-per-node", true);
-			break;
-		case LONG_OPT_NTASKSPERSOCKET:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.ntasks_per_socket = _get_int(optarg,
-							 "ntasks-per-socket",
-							 true);
 			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H
