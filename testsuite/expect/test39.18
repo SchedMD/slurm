@@ -382,7 +382,7 @@ if {[have_nvml] == 1} {
 
 # ##############################################################################
 # # Test 0.6 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
-# 	      An array of 20 unsigned longs with all bits set
+# 	       Convert device CPU affinity of 20 ulongs with all bits set
 # ##############################################################################
 
 set arr_len 20
@@ -402,7 +402,7 @@ check_configuration 0.6 $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.8 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
-# 	      An array of 1 unsigned longs with all bits set
+# 	       Convert device CPU affinity of 1 ulong with all bits set
 # ##############################################################################
 
 set arr_len 1
@@ -422,7 +422,7 @@ check_configuration 0.8 $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.10 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
-# 	      An array of 3 unsigned longs with all bits set
+# 		Convert device CPU affinity of 3 ulongs with all bits set
 # ##############################################################################
 
 set arr_len 3
@@ -442,7 +442,7 @@ check_configuration 0.10 $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.12 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
-# 	      An array of the maximum # of CPUs supported 2^15
+# 		Convert device CPU affinity for max # of CPUs supported (2^15)
 # ##############################################################################
 
 set max_cpus [expr pow(2, 15)]
@@ -462,7 +462,7 @@ check_configuration 0.12 $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.14 - Test conversion of NVML-style CPU affinity array to Slurm bitstr
-# 		Check device CPU affinity of all zeros (expect this to fatal)
+# 		Convert device CPU affinity for all zeros (expect this to fatal)
 # ##############################################################################
 
 set gres_conf "AutoDetect=nvml"
@@ -475,7 +475,7 @@ check_configuration 0.14 $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.16 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
-# 	      An array of 1, with only CPU 0 set out of 16 system CPUs
+# 		Convert device CPU affinity for CPU 0 set out of 16 total CPUs
 # ##############################################################################
 
 set gres_conf "AutoDetect=nvml"
@@ -491,7 +491,7 @@ check_configuration 0.16 $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.18 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
-# 	      An array of 1, with CPUs 0-1 set out of 4 system CPUs
+# 		Convert device CPU affinity for CPUs 0-1 set out of 4 total CPUs
 # ##############################################################################
 
 set gres_conf "AutoDetect=nvml"
@@ -507,7 +507,7 @@ check_configuration 0.18 $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.20 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
-# 	      An array of 1, with CPUs 8-15 set out of 16 system CPUs
+# 		Convert device CPU affinity for CPUs 8-15 set out of 16 CPUs
 # ##############################################################################
 
 set gres_conf "AutoDetect=nvml"
@@ -1189,6 +1189,9 @@ if {$exit_code == 0} {
 		}
 	}
 	send_user "\] failed\n"
+	if {$test_minor_in == ""} {
+		send_user "To run an individual sub-test, do `expect test$test_id <sub-test>`\n"
+	}
 
 }
 
