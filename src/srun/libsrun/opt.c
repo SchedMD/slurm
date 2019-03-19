@@ -92,7 +92,6 @@
 #define OPT_MULTI       0x0f
 #define OPT_OPEN_MODE   0x14
 #define OPT_BCAST       0x1e
-#define OPT_EXPORT	0x21
 #define OPT_INT64	0x25
 
 extern char **environ;
@@ -128,7 +127,6 @@ struct option long_options[] = {
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
-	{"export",           required_argument, 0, LONG_OPT_EXPORT},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -482,7 +480,6 @@ static void _opt_default(void)
 		sropt.disable_status	= false;
 		xfree(sropt.epilog);
 		sropt.epilog		= slurm_get_srun_epilog();
-		xfree(sropt.export_env);
 		sropt.jobid		= NO_VAL;
 		sropt.kill_bad_exit	= NO_VAL;
 		sropt.labelio		= false;
@@ -586,7 +583,7 @@ env_vars_t env_vars[] = {
   { "SLURM_DISTRIBUTION", 'm' },
 {"SLURM_EPILOG",        OPT_STRING,     &sropt.epilog,      NULL             },
   { "SLURM_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
-{"SLURM_EXPORT_ENV",    OPT_STRING,     &sropt.export_env,  NULL             },
+  { "SLURM_EXPORT_ENV", LONG_OPT_EXPORT },
   { "SLURM_GPUS", 'G' },
   { "SLURM_GPU_BIND", LONG_OPT_GPU_BIND },
   { "SLURM_GPU_FREQ", LONG_OPT_GPU_FREQ },
@@ -729,11 +726,6 @@ _process_env_var(env_vars_t *e, const char *val)
 					  &sropt.cpu_bind_type, 0))
 			exit(error_exit);
 		break;
-	case OPT_EXPORT:
-		xfree(sropt.export_env);
-		sropt.export_env = xstrdup(val);
-		break;
-
 	case OPT_BCAST:
 		if (val) {
 			xfree(sropt.bcast_file);
@@ -918,10 +910,6 @@ static void _set_options(const int argc, char **argv)
 		case (int)'Z':
 			sropt.no_alloc = true;
 			uname(&name);
-			break;
-		case LONG_OPT_EXPORT:
-			xfree(sropt.export_env);
-			sropt.export_env = xstrdup(optarg);
 			break;
                 case LONG_OPT_BCAST:
 			if (optarg) {

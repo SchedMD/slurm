@@ -83,7 +83,6 @@
 #define OPT_OPEN_MODE	0x0e
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
-#define OPT_EXPORT        0x17
 #define OPT_INT64	  0x24
 
 /*---- global variables, defined in opt.h ----*/
@@ -151,7 +150,6 @@ static void _opt_default(bool first_pass)
 	 * once specified for one, but will be overwritten with new values if
 	 * specified on the command line */
 	if (first_pass) {
-		xfree(sbopt.export_env);
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
 		sbopt.requeue		= NO_VAL;
 		sbopt.umask		= -1;
@@ -217,7 +215,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_DELAY_BOOT", LONG_OPT_DELAY_BOOT },
   { "SBATCH_DISTRIBUTION", 'm' },
   { "SBATCH_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
-  {"SBATCH_EXPORT",        OPT_STRING,     &sbopt.export_env,  NULL          },
+  { "SBATCH_EXPORT", LONG_OPT_EXPORT },
   { "SBATCH_GET_USER_ENV", LONG_OPT_GET_USER_ENV },
   { "SBATCH_GRES", LONG_OPT_GRES },
   { "SBATCH_GRES_FLAGS", LONG_OPT_GRES_FLAGS },
@@ -360,7 +358,6 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
-	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
@@ -771,16 +768,6 @@ static void _set_options(int argc, char **argv)
 			else
 				sbopt.propagate = xstrdup("ALL");
 			break;
-		case LONG_OPT_EXPORT:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sbopt.export_env);
-			sbopt.export_env = xstrdup(optarg);
-			if (!xstrcasecmp(sbopt.export_env, "ALL"))
-				; /* srun ignores "ALL", it is the default */
-			else
-				setenv("SLURM_EXPORT_ENV", sbopt.export_env, 0);
-			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
 				if (spank_process_option(opt_char, optarg) < 0)
@@ -1072,6 +1059,11 @@ static bool _opt_verify(void)
 	}
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
+
+	if (sbopt.export_env && xstrcasecmp(sbopt.export_env, "ALL")) {
+		/* srun ignores "ALL", it is the default */
+		setenv("SLURM_EXPORT_ENV", sbopt.export_env, 0);
+	}
 
 	if (opt.profile)
 		setenvfs("SLURM_PROFILE=%s",
