@@ -196,7 +196,6 @@ typedef struct sbatch_opt {
 
 	char *ifname;			/* input file name		*/
 	char *ofname;			/* output file name		*/
-	char *efname;			/* error file name		*/
 
 	char *array_inx;		/* --array			*/
 	char *batch_features;		/* --batch			*/
@@ -395,6 +394,9 @@ typedef struct slurm_options {
 	char *x11_target;		/* target host, or unix socket	*/
 					/* if x11_target_port == 0	*/
 	uint16_t x11_target_port;	/* target display TCP port on localhost */
+
+	/* used in both sbatch and srun, here for convenience */
+	char *efname;			/* error file name		*/
 } slurm_opt_t;
 
 extern struct option *slurm_option_table_create(struct option *options,

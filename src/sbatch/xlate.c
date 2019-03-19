@@ -205,11 +205,11 @@ static void _set_bsub_options(int argc, char **argv) {
 				opt.chdir = make_full_path(optarg);
 			break;
 		case 'e':
-			xfree(sbopt.efname);
+			xfree(opt.efname);
 			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.efname = xstrdup("/dev/null");
+				opt.efname = xstrdup("/dev/null");
 			else
-				sbopt.efname = xstrdup(optarg);
+				opt.efname = xstrdup(optarg);
 			break;
 		case 'J':
 			opt.job_name = xstrdup(optarg);
@@ -335,11 +335,11 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'C':
 			break;
 		case 'e':
-			xfree(sbopt.efname);
+			xfree(opt.efname);
 			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.efname = xstrdup("/dev/null");
+				opt.efname = xstrdup("/dev/null");
 			else
-				sbopt.efname = xstrdup(optarg);
+				opt.efname = xstrdup(optarg);
 			break;
 		case 'h':
 			opt.hold = true;

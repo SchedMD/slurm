@@ -112,7 +112,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"error",            required_argument, 0, 'e'},
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
 	{"input",            required_argument, 0, 'i'},
@@ -338,7 +337,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
 	opt_dup->chdir = xstrdup(opt.chdir);
 	opt_dup->dependency = xstrdup(opt.dependency);
-	opt_dup->srun_opt->efname = xstrdup(sropt.efname);
+	opt_dup->efname = xstrdup(opt.efname);
 	opt_dup->srun_opt->epilog = xstrdup(sropt.epilog);
 	opt_dup->exclude = xstrdup(opt.exclude);
 	opt_dup->srun_opt->export_env = xstrdup(sropt.export_env);
@@ -489,7 +488,6 @@ static void _opt_default(void)
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
 		sropt.disable_status	= false;
-		xfree(sropt.efname);
 		xfree(sropt.epilog);
 		sropt.epilog		= slurm_get_srun_epilog();
 		xfree(sropt.export_env);
@@ -642,7 +640,7 @@ env_vars_t env_vars[] = {
   { "SLURM_SIGNAL", LONG_OPT_SIGNAL },
   { "SLURM_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
-{"SLURM_STDERRMODE",    OPT_STRING,     &sropt.efname,      NULL             },
+  { "SLURM_STDERRMODE", 'e' },
 {"SLURM_STDINMODE",     OPT_STRING,     &sropt.ifname,      NULL             },
 {"SLURM_STDOUTMODE",    OPT_STRING,     &sropt.ofname,      NULL             },
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &sropt.task_epilog, NULL             },
@@ -892,20 +890,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case (int)'e':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (sropt.pty) {
-				fatal("--error incompatible with --pty "
-				      "option");
-				exit(error_exit);
-			}
-			xfree(sropt.efname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sropt.efname = xstrdup("/dev/null");
-			else
-				sropt.efname = xstrdup(optarg);
-			break;
 		case (int)'E':
 			sropt.preserve_env = true;
 			break;
@@ -1082,7 +1066,7 @@ static void _set_options(const int argc, char **argv)
 				tmp_str = "--input";
 			else if (sropt.ofname)
 				tmp_str = "--output";
-			else if (sropt.efname)
+			else if (opt.efname)
 				tmp_str = "--error";
 			else
 				tmp_str = NULL;

@@ -690,7 +690,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->argv     = xmalloc(sizeof(char *) * sbopt.script_argc);
 	for (i = 0; i < sbopt.script_argc; i++)
 		desc->argv[i] = xstrdup(sbopt.script_argv[i]);
-	desc->std_err  = xstrdup(sbopt.efname);
+	desc->std_err  = xstrdup(opt.efname);
 	desc->std_in   = xstrdup(sbopt.ifname);
 	desc->std_out  = xstrdup(sbopt.ofname);
 	desc->work_dir = xstrdup(opt.chdir);

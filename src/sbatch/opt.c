@@ -154,7 +154,6 @@ static void _opt_default(bool first_pass)
 	if (first_pass) {
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
-		xfree(sbopt.efname);
 		xfree(sbopt.export_env);
 		xfree(sbopt.export_file);
 		sbopt.ifname		= xstrdup("/dev/null");
@@ -354,7 +353,6 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
-	{"error",         required_argument, 0, 'e'},
 	{"input",         required_argument, 0, 'i'},
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
 	{"output",        required_argument, 0, 'o'},
@@ -748,15 +746,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case 'e':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sbopt.efname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.efname = xstrdup("/dev/null");
-			else
-				sbopt.efname = xstrdup(optarg);
-			break;
 		case 'i':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -893,7 +882,7 @@ static bool _opt_verify(void)
 		}
 	}
 
-	_fullpath(&sbopt.efname, opt.chdir);
+	_fullpath(&opt.efname, opt.chdir);
 	_fullpath(&sbopt.ifname, opt.chdir);
 	_fullpath(&sbopt.ofname, opt.chdir);
 

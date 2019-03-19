@@ -1529,8 +1529,8 @@ extern void job_update_io_fnames(srun_job_t *job, slurm_opt_t *opt_local)
 	xassert(srun_opt);
 	job->ifname = fname_create(job, srun_opt->ifname, opt_local->ntasks);
 	job->ofname = fname_create(job, srun_opt->ofname, opt_local->ntasks);
-	job->efname = srun_opt->efname ?
-		      fname_create(job, srun_opt->efname, opt_local->ntasks) :
+	job->efname = opt_local->efname ?
+		      fname_create(job, opt_local->efname, opt_local->ntasks) :
 		      job->ofname;
 }
 
