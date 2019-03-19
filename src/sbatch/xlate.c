@@ -624,7 +624,7 @@ static void _parse_pbs_resource_list(char *rl)
 				temp[end] = '\0';
 			}
 			opt.pn_min_memory = str_to_mbytes(temp);
-			if (opt.pn_min_memory != NO_VAL64) {
+			if (opt.pn_min_memory == NO_VAL64) {
 				error("invalid memory constraint %s", temp);
 				exit(error_exit);
 			}
