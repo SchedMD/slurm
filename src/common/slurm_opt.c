@@ -1583,6 +1583,19 @@ static slurm_cli_opt_t slurm_opt_ntasks_per_core = {
 	.reset_each_pass = true,
 };
 
+COMMON_INT_OPTION_SET(ntasks_per_node, "--ntasks-per-node");
+COMMON_INT_OPTION_GET(ntasks_per_node);
+COMMON_OPTION_RESET(ntasks_per_node, NO_VAL);
+static slurm_cli_opt_t slurm_opt_ntasks_per_node = {
+	.name = "ntasks-per-node",
+	.has_arg = required_argument,
+	.val = LONG_OPT_NTASKSPERNODE,
+	.set_func = arg_set_ntasks_per_node,
+	.get_func = arg_get_ntasks_per_node,
+	.reset_func = arg_reset_ntasks_per_node,
+	.reset_each_pass = true,
+};
+
 COMMON_INT_OPTION_SET(ntasks_per_socket, "--ntasks-per-socket");
 COMMON_INT_OPTION_GET(ntasks_per_socket);
 COMMON_OPTION_RESET(ntasks_per_socket, NO_VAL);
@@ -1922,6 +1935,17 @@ static slurm_cli_opt_t slurm_opt_switches = {
 	.set_func = arg_set_switches,
 	.get_func = arg_get_switches,
 	.reset_func = arg_reset_switches,
+	.reset_each_pass = true,
+};
+
+/* Deprecated form of --ntasks-per-node */
+static slurm_cli_opt_t slurm_opt_tasks_per_node = {
+	.name = "tasks-per-node",
+	.has_arg = required_argument,
+	.val = LONG_OPT_NTASKSPERNODE,
+	.set_func = arg_set_ntasks_per_node,
+	.get_func = arg_get_ntasks_per_node,
+	.reset_func = arg_reset_ntasks_per_node,
 	.reset_each_pass = true,
 };
 
@@ -2321,6 +2345,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_nodes,
 	&slurm_opt_ntasks,
 	&slurm_opt_ntasks_per_core,
+	&slurm_opt_ntasks_per_node,
 	&slurm_opt_ntasks_per_socket,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,
@@ -2338,6 +2363,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_switch_req,
 	&slurm_opt_switch_wait,
 	&slurm_opt_switches,
+	&slurm_opt_tasks_per_node,
 	&slurm_opt_thread_spec,
 	&slurm_opt_threads_per_core,
 	&slurm_opt_time_limit,

@@ -171,7 +171,6 @@ static void _opt_default(bool first_pass)
 	/* All other options must be specified individually for each component
 	 * of the job */
 	opt.job_flags			= 0;
-	opt.ntasks_per_node		= 0;	/* ntask max limits */
 
 	slurm_reset_all_options(&opt, first_pass);
 }
@@ -374,12 +373,10 @@ static struct option long_options[] = {
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
-	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"parsable",      optional_argument, 0, LONG_OPT_PARSABLE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
-	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
@@ -799,14 +796,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_REQUEUE:
 			sbopt.requeue = 1;
-			break;
-		case LONG_OPT_NTASKSPERNODE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.ntasks_per_node = parse_int("ntasks-per-node",
-							optarg, true);
-			if (opt.ntasks_per_node > 0)
-				pack_env.ntasks_per_node = opt.ntasks_per_node;
 			break;
 		case LONG_OPT_BATCH:
 			xfree(sbopt.batch_features);

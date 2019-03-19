@@ -137,7 +137,6 @@ struct option long_options[] = {
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
-	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
@@ -149,7 +148,6 @@ struct option long_options[] = {
 	{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 	{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
-	{"tasks-per-node",   required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 	{NULL,               0,                 0, 0}
 	};
@@ -541,7 +539,6 @@ static void _opt_default(void)
 	pmi_server_max_threads(sropt.max_threads);
 	sropt.multi_prog			= false;
 	sropt.multi_prog_cmds		= 0;
-	opt.ntasks_per_node		= NO_VAL; /* ntask max limits */
 	sropt.pack_group		= NULL;
 	sropt.pack_grp_bits		= NULL;
 	sropt.relative			= NO_VAL;
@@ -630,7 +627,7 @@ env_vars_t env_vars[] = {
 				/* listed first so SLURM_NTASKS overrides */
   { "SLURM_NTASKS", 'n' },
   { "SLURM_NSOCKETS_PER_NODE", LONG_OPT_SOCKETSPERNODE },
-{"SLURM_NTASKS_PER_NODE", OPT_INT,      &opt.ntasks_per_node,NULL            },
+  { "SLURM_NTASKS_PER_NODE", LONG_OPT_NTASKSPERNODE },
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
   { "SLURM_OVERCOMMIT", 'O' },
   { "SLURM_PARTITION", 'p' },
@@ -1076,12 +1073,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_MULTI:
 			sropt.multi_prog = true;
-			break;
-		case LONG_OPT_NTASKSPERNODE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.ntasks_per_node = _get_int(optarg,
-						       "ntasks-per-node", true);
 			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H

@@ -168,7 +168,6 @@ static void _opt_default(void)
 	 * of the job */
 	saopt.default_job_name		= false;
 	opt.job_flags			= 0;
-	opt.ntasks_per_node		= 0;  /* ntask max limits */
 
 	slurm_reset_all_options(&opt, first_pass);
 }
@@ -264,8 +263,6 @@ static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	static struct option long_options[] = {
-		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
-		{"tasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string =
@@ -285,10 +282,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case LONG_OPT_NTASKSPERNODE:
-			opt.ntasks_per_node = parse_int("ntasks-per-node",
-							optarg, true);
-			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
 				if (spank_process_option(opt_char, optarg) < 0)
