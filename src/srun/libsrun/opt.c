@@ -561,7 +561,6 @@ static void _opt_default(void)
 	opt.spank_job_env_size		= 0;
 	opt.spank_job_env		= NULL;
 	opt.threads_per_core		= NO_VAL; /* requested threads */
-	opt.threads_per_core_set	= false;
 
 	/*
 	 * Reset some default values if running under a parallel debugger
@@ -1122,7 +1121,6 @@ static void _set_options(const int argc, char **argv)
 			if ((opt.threads_per_core == 1) &&
 			    (max_val == INT_MAX))
 				opt.threads_per_core = NO_VAL;
-			opt.threads_per_core_set = true;
 			break;
 		case LONG_OPT_NTASKSPERNODE:
 			if (!optarg)
@@ -1414,7 +1412,7 @@ static bool _opt_verify(void)
 	    ((sropt.cpu_bind_type == CPU_BIND_VERBOSE) ||
 	     !sropt.cpu_bind_type_set) &&
 	    (opt.ntasks_per_core == NO_VAL) &&
-	    !opt.threads_per_core_set) {
+	    (opt.threads_per_core == NO_VAL)) {
 		if (verify_hint(opt.hint,
 				&opt.sockets_per_node,
 				&opt.cores_per_socket,

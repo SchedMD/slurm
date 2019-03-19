@@ -826,7 +826,6 @@ static int arg_set_extra_node_info(slurm_opt_t *opt, const char *arg)
 		exit(-1);
 	}
 
-	opt->threads_per_core_set = true;
 	if (opt->srun_opt)
 		opt->srun_opt->cpu_bind_type_set = true;
 
@@ -852,7 +851,6 @@ static void arg_reset_extra_node_info(slurm_opt_t *opt)
 	opt->sockets_per_node = NO_VAL;
 	opt->cores_per_socket = NO_VAL;
 	opt->threads_per_core = NO_VAL;
-	opt->threads_per_core_set = false;
 	if (opt->srun_opt)
                 opt->srun_opt->cpu_bind_type_set = false;
 }

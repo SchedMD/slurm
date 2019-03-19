@@ -305,7 +305,6 @@ typedef struct slurm_options {
 	int cores_per_socket;		/* --cores-per-socket=n		*/
 	uint32_t job_flags;		/* --kill_invalid_dep, --gres-flags */
 	int threads_per_core;		/* --threads-per-core=n		*/
-	bool threads_per_core_set;	/* --threads-per-core explicitly set */
 	int ntasks_per_node;		/* --ntasks-per-node=n		*/
 	int ntasks_per_socket;		/* --ntasks-per-socket=n	*/
 	int ntasks_per_core;		/* --ntasks-per-core=n		*/
