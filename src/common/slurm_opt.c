@@ -1773,6 +1773,36 @@ static slurm_cli_opt_t slurm_opt_oversubscribe = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_parsable(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->sbatch_opt)
+		return SLURM_ERROR;
+
+	opt->sbatch_opt->parsable = true;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_parsable(slurm_opt_t *opt)
+{
+	if (!opt->sbatch_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup(opt->sbatch_opt->parsable ? "set" : "unset");
+}
+static void arg_reset_parsable(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->parsable = false;
+}
+static slurm_cli_opt_t slurm_opt_parsable = {
+	.name = "parsable",
+	.has_arg = no_argument,
+	.val = LONG_OPT_PARSABLE,
+	.set_func_sbatch = arg_set_parsable,
+	.get_func = arg_get_parsable,
+	.reset_func = arg_reset_parsable,
+};
+
 COMMON_STRING_OPTION(partition);
 static slurm_cli_opt_t slurm_opt_partition = {
 	.name = "partition",
@@ -2515,6 +2545,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_output,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,
+	&slurm_opt_parsable,
 	&slurm_opt_partition,
 	&slurm_opt_power,
 	&slurm_opt_priority,
