@@ -63,6 +63,12 @@
 #define FREQS_SIZE	512
 #define FREQS_CONCISE	5 // This must never be smaller than 5, or error
 
+#define GPU_LOW		((unsigned int) -1)
+#define GPU_MEDIUM	((unsigned int) -2)
+#define GPU_HIGH_M1	((unsigned int) -3)
+#define GPU_HIGH	((unsigned int) -4)
+
+static bitstr_t	*saved_gpus = NULL;
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -155,12 +161,6 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
 		      __func__);
 }
 
-#define GPU_LOW		((unsigned int) -1)
-#define GPU_MEDIUM	((unsigned int) -2)
-#define GPU_HIGH_M1	((unsigned int) -3)
-#define GPU_HIGH	((unsigned int) -4)
-
-static bitstr_t	*saved_gpus = NULL;
 
 /*
  * Initialize the NVML library. This takes a few seconds
@@ -1537,8 +1537,6 @@ extern char *gpu_p_test_cpu_conv(char *cpu_range)
 
 	// Convert from bitstr_t to cpu range str
 	result = bit_fmt_full(cpu_aff_mac_bitstr);
-
-	// TODO: Test converting CPU range from machine to abstract format?
 
 	bit_free(cpu_aff_mac_bitstr);
 	return result;
