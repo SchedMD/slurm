@@ -176,6 +176,8 @@ static int _file_inx(char *fname)
 {
 	int i, len, mult = 1, num, val = 0;
 
+	if (!fname)
+		return 0;
 	len = strlen(fname);
 	if (len == 0)
 		return val;
@@ -313,6 +315,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		List tmp_list = NULL;
 		gres_slurmd_conf_t *sys_record;
 
+		debug2("FastSchedule == 1, we are checking the gpus found on the system against those defined in gres.conf");
 		if (!gres_list_system)
 			return;
 
@@ -414,7 +417,7 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 		tok = strtok_r(buffer, "|", &save_ptr);
 		while (tok) {
 			// Leave value as null and continue
-			if (tok[0] == '_' || xstrcmp(tok, "(null)") == 0) {
+			if (xstrcmp(tok, "(null)") == 0) {
 				i++;
 				tok = strtok_r(NULL, "|", &save_ptr);
 				continue;
