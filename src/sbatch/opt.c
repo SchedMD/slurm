@@ -157,12 +157,10 @@ static void _opt_default(bool first_pass)
 	if (first_pass) {
 		sbopt.ckpt_interval	= 0;
 		xfree(sbopt.ckpt_interval_str);
-		opt.egid		= (gid_t) -1;
 		xfree(sbopt.efname);
 		xfree(opt.extra);
 		xfree(sbopt.export_env);
 		xfree(sbopt.export_file);
-		opt.gid			= getgid();
 		sbopt.ifname		= xstrdup("/dev/null");
 		xfree(sbopt.ofname);
 		sbopt.parsable		= false;
@@ -441,7 +439,6 @@ static struct option long_options[] = {
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
-	{"gid",           required_argument, 0, LONG_OPT_GID},
 	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
@@ -901,22 +898,6 @@ static void _set_options(int argc, char **argv)
 		case 'W':
 			sbopt.wait = true;
 			break;
-		case LONG_OPT_GID:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (getuid() != 0) {
-				error("--gid only permitted by root user");
-				exit(error_exit);
-			}
-			if (opt.egid != (gid_t) -1) {
-				error("duplicate --gid option");
-				exit(error_exit);
-			}
-			if (gid_from_string(optarg, &opt.egid) < 0) {
-				error("--gid=\"%s\" invalid", optarg);
-				exit(error_exit);
-			}
-			break;
 		case LONG_OPT_BURST_BUFFER_FILE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1318,9 +1299,6 @@ static bool _opt_verify(void)
 			exit(error_exit);
 		}
 	}
-
-	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
-		opt.gid = opt.egid;
 
 	if (sbopt.open_mode) {
 		/* Propage mode to spawned job using environment variable */

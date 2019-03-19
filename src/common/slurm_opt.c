@@ -844,6 +844,32 @@ static slurm_cli_opt_t slurm_opt_get_user_env = {
 	.reset_func = arg_reset_get_user_env,
 };
 
+static int arg_set_gid(slurm_opt_t *opt, const char *arg)
+{
+	if (getuid() != 0) {
+		error("--gid only permitted by root user");
+		exit(-1);
+	}
+
+	if (gid_from_string(arg, &opt->gid) < 0) {
+		error("Invalid --gid specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+COMMON_INT_OPTION_GET(gid);
+COMMON_OPTION_RESET(gid, getgid());
+static slurm_cli_opt_t slurm_opt_gid = {
+	.name = "gid",
+	.has_arg = required_argument,
+	.val = LONG_OPT_GID,
+	.sbatch_early_pass = true,
+	.set_func = arg_set_gid,
+	.get_func = arg_get_gid,
+	.reset_func = arg_reset_gid,
+};
+
 COMMON_STRING_OPTION(gpu_bind);
 static slurm_cli_opt_t slurm_opt_gpu_bind = {
 	.name = "gpu-bind",
@@ -2071,6 +2097,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_exclusive,
 	&slurm_opt_extra_node_info,
 	&slurm_opt_get_user_env,
+	&slurm_opt_gid,
 	&slurm_opt_gpu_bind,
 	&slurm_opt_gpu_freq,
 	&slurm_opt_gpus,

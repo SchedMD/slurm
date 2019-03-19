@@ -296,7 +296,6 @@ typedef struct slurm_options {
 	char *clusters;			/* cluster to run this on. */
 	uid_t uid;			/* local uid			*/
 	gid_t gid;			/* local gid			*/
-	gid_t egid;			/* effective group --gid=group	*/
 	char *chdir;			/* --chdir			*/
 	int ntasks;			/* --ntasks			*/
 	bool ntasks_set;		/* ntasks explicitly set	*/

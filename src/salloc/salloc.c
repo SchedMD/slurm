@@ -327,7 +327,7 @@ int main(int argc, char **argv)
 	 */
 	if (is_interactive)
 		atexit(_reset_input_mode);
-	if (opt.gid != (gid_t) -1) {
+	if (opt.gid != getgid()) {
 		if (setgid(opt.gid) < 0) {
 			error("setgid: %m");
 			exit(error_exit);

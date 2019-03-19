@@ -141,7 +141,6 @@ struct option long_options[] = {
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 	{"export",           required_argument, 0, LONG_OPT_EXPORT},
-	{"gid",              required_argument, 0, LONG_OPT_GID},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -505,13 +504,11 @@ static void _opt_default(void)
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
 		sropt.disable_status	= false;
-		opt.egid		= (gid_t) -1;
 		xfree(sropt.efname);
 		xfree(sropt.epilog);
 		sropt.epilog		= slurm_get_srun_epilog();
 		xfree(opt.extra);
 		xfree(sropt.export_env);
-		opt.gid			= getgid();
 		xfree(sropt.ifname);
 		sropt.jobid		= NO_VAL;
 		sropt.kill_bad_exit	= NO_VAL;
@@ -1111,22 +1108,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			sropt.msg_timeout =
 				_get_int(optarg, "msg-timeout", true);
-			break;
-		case LONG_OPT_GID:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (getuid() != 0) {
-				error("--gid only permitted by root user");
-				exit(error_exit);
-			}
-			if (opt.egid != (gid_t) -1) {
-				error("duplicate --gid option");
-				exit(error_exit);
-			}
-			if (gid_from_string (optarg, &opt.egid) < 0) {
-				error("--gid=\"%s\" invalid", optarg);
-				exit(error_exit);
-			}
 			break;
 		case LONG_OPT_DEBUG_SLURMD:
 			if (!optarg)
@@ -1797,9 +1778,6 @@ static bool _opt_verify(void)
 			exit(error_exit);
 		}
 	}
-
-	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
-		opt.gid = opt.egid;
 
 	if (!mpi_type)
 		mpi_type = slurm_get_mpi_default();

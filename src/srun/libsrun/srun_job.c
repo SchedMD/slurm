@@ -1567,7 +1567,7 @@ static int _become_user (void)
 		return (0);
 	}
 
-	if ((opt.egid != (gid_t) -1) && (setgid (opt.egid) < 0)) {
+	if ((opt.gid != getgid()) && (setgid(opt.gid) < 0)) {
 		xfree(user);
 		return (error ("setgid: %m"));
 	}

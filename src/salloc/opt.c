@@ -161,9 +161,7 @@ static void _opt_default(void)
 	 * specified on the command line
 	 */
 	if (first_pass) {
-		opt.egid		= (gid_t) -1;
 		xfree(opt.extra);
-		opt.gid			= getgid();
 	} else if (saopt.default_job_name) {
 		xfree(opt.job_name);
 	}
@@ -288,7 +286,6 @@ static void _set_options(int argc, char **argv)
 		{"nodes",         required_argument, 0, 'N'},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
-		{"gid",           required_argument, 0, LONG_OPT_GID},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 		{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
@@ -338,20 +335,6 @@ static void _set_options(int argc, char **argv)
 						  &opt.min_nodes,
 						  &opt.max_nodes);
 			if (opt.nodes_set == false) {
-				exit(error_exit);
-			}
-			break;
-		case LONG_OPT_GID:
-			if (getuid() != 0) {
-				error("--gid only permitted by root user");
-				exit(error_exit);
-			}
-			if (opt.egid != (gid_t) -1) {
-				error("duplicate --gid option");
-				exit(error_exit);
-			}
-			if (gid_from_string (optarg, &opt.egid) < 0) {
-				error("--gid=\"%s\" invalid", optarg);
 				exit(error_exit);
 			}
 			break;
@@ -580,9 +563,6 @@ static bool _opt_verify(void)
 
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
-
-	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
-		opt.gid = opt.egid;
 
 	if ((saopt.no_shell == false) && (command_argc == 0)) {
 		_salloc_default_command(&command_argc, &command_argv);
