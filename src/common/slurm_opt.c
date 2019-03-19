@@ -920,6 +920,16 @@ static slurm_cli_opt_t slurm_opt_exclusive = {
 	.reset_each_pass = true,
 };
 
+COMMON_SBATCH_STRING_OPTION(export_file);
+static slurm_cli_opt_t slurm_opt_export_file = {
+	.name = "export-file",
+	.has_arg = required_argument,
+	.val = LONG_OPT_EXPORT_FILE,
+	.set_func_sbatch = arg_set_export_file,
+	.get_func = arg_get_export_file,
+	.reset_func = arg_reset_export_file,
+};
+
 static int arg_set_extra_node_info(slurm_opt_t *opt, const char *arg)
 {
 	cpu_bind_type_t *cpu_bind_type = NULL;
@@ -2630,6 +2640,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_error,
 	&slurm_opt_exclude,
 	&slurm_opt_exclusive,
+	&slurm_opt_export_file,
 	&slurm_opt_extra_node_info,
 	&slurm_opt_get_user_env,
 	&slurm_opt_gid,

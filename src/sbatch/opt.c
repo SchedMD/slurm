@@ -152,7 +152,6 @@ static void _opt_default(bool first_pass)
 	 * specified on the command line */
 	if (first_pass) {
 		xfree(sbopt.export_env);
-		xfree(sbopt.export_file);
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
 		sbopt.requeue		= NO_VAL;
 		sbopt.umask		= -1;
@@ -362,7 +361,6 @@ _process_env_var(env_vars_t *e, const char *val)
 
 static struct option long_options[] = {
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
-	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
@@ -782,10 +780,6 @@ static void _set_options(int argc, char **argv)
 				; /* srun ignores "ALL", it is the default */
 			else
 				setenv("SLURM_EXPORT_ENV", sbopt.export_env, 0);
-			break;
-		case LONG_OPT_EXPORT_FILE:
-			xfree(sbopt.export_file);
-			sbopt.export_file = xstrdup(optarg);
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
