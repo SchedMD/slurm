@@ -1800,6 +1800,43 @@ static slurm_cli_opt_t slurm_opt_use_min_nodes = {
 	.reset_each_pass = true,
 };
 
+/*
+ * Dummy function implementations, should be overridden by versions within the
+ * respective commands at runtime.
+ */
+extern void salloc_usage(void) {}
+extern void sbatch_usage(void) {}
+extern void srun_usage(void) {}
+static int arg_set_usage(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->salloc_opt)
+		salloc_usage();
+	else if (opt->sbatch_opt)
+		sbatch_usage();
+	else if (opt->srun_opt)
+		srun_usage();
+
+	exit(0);
+	return SLURM_SUCCESS;
+}
+static char *arg_get_usage(slurm_opt_t *opt)
+{
+	return NULL; /* no op */
+}
+static void arg_reset_usage(slurm_opt_t *opt)
+{
+	/* no op */
+}
+static slurm_cli_opt_t slurm_opt_usage = {
+	.name = "usage",
+	.has_arg = no_argument,
+	.val = LONG_OPT_USAGE,
+	.sbatch_early_pass = true,
+	.set_func = arg_set_usage,
+	.get_func = arg_get_usage,
+	.reset_func = arg_reset_usage,
+};
+
 static int arg_set_verbose(slurm_opt_t *opt, const char *arg)
 {
 	/*
@@ -2021,6 +2058,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_use_min_nodes,
 	&slurm_opt_verbose,
 	&slurm_opt_version,
+	&slurm_opt_usage,
 	&slurm_opt_wait_all_nodes,
 	&slurm_opt_wckey,
 	&slurm_opt_x11,

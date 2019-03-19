@@ -93,7 +93,6 @@ static void  _opt_args(int argc, char **argv);
 static bool  _opt_verify(void);
 static char *_read_file(char *fname);
 static void  _set_options(int argc, char **argv);
-static void  _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -291,7 +290,6 @@ static void _set_options(int argc, char **argv)
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
-		{"usage",         no_argument,       0, 'u'},
 		{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"gid",           required_argument, 0, LONG_OPT_GID},
@@ -351,9 +349,6 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 			}
 			break;
-		case 'u':
-			_usage();
-			exit(0);
 		case LONG_OPT_UID:
 			if (getuid() != 0) {
 				error("--uid only permitted by root user");
@@ -958,7 +953,7 @@ static char *_read_file(char *fname)
 	return file_buf;
 }
 
-static void _usage(void)
+extern void salloc_usage(void)
 {
  	printf(
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
@@ -1123,7 +1118,7 @@ static void _help(void)
 "\n"
 "Help options:\n"
 "  -h, --help                  show this help message\n"
-"  -u, --usage                 display brief usage message\n"
+"      --usage                 display brief usage message\n"
 "\n"
 "Other options:\n"
 "  -V, --version               output version information and exit\n"

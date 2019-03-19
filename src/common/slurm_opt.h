@@ -440,4 +440,11 @@ extern bool slurm_option_set_by_cli(int optval);
  */
 extern bool slurm_option_set_by_env(int optval);
 
+/*
+ * Pull these back in from the appropriate commands:
+ */
+extern void salloc_usage(void);
+extern void sbatch_usage(void);
+extern void srun_usage(void);
+
 #endif	/* _SLURM_OPT_H_ */

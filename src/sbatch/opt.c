@@ -120,7 +120,6 @@ static void _process_env_var(env_vars_t *e, const char *val);
 static void _fullpath(char **filename, const char *cwd);
 static char *_read_file(char *fname);
 static void _set_options(int argc, char **argv);
-static void _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -441,7 +440,6 @@ static struct option long_options[] = {
 	{"ntasks",        required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
-	{"usage",         no_argument,       0, 'u'},
 	{"wait",          no_argument,       0, 'W'},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"bbf",           required_argument, 0, LONG_OPT_BURST_BUFFER_FILE},
@@ -527,9 +525,6 @@ extern char *process_options_first_pass(int argc, char **argv)
 			_help();
 			exit(0);
 			break;
-		case 'u':
-			_usage();
-			exit(0);
 		case LONG_OPT_WRAP:
 			xfree(opt.job_name);
 			xfree(sbopt.wrap);
@@ -917,9 +912,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.ofname = xstrdup("/dev/null");
 			else
 				sbopt.ofname = xstrdup(optarg);
-			break;
-		case 'u':
-			/* handled in process_options_first_pass() */
 			break;
 		case 'W':
 			sbopt.wait = true;
@@ -1530,7 +1522,7 @@ static void _fullpath(char **filename, const char *cwd)
 	*filename = ptr;
 }
 
-static void _usage(void)
+extern void sbatch_usage(void)
 {
 	printf(
 "Usage: sbatch [-N nnodes] [-n ntasks]\n"
@@ -1710,7 +1702,7 @@ static void _help(void)
 #endif
 "Help options:\n"
 "  -h, --help                  show this help message\n"
-"  -u, --usage                 display brief usage message\n"
+"      --usage                 display brief usage message\n"
 "\n"
 "Other options:\n"
 "  -V, --version               output version information and exit\n"
