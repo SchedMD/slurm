@@ -494,13 +494,12 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 	*more_packs = _opt_batch_script(file, script_body, script_size,
 				        pack_inx);
 
-	for (i = WRPR_START + 1; i < WRPR_CNT; i++) {
+	for (i = WRPR_START + 1; !sbopt.ignore_pbs && i < WRPR_CNT; i++) {
 		/* Convert command from batch script to sbatch command */
-		bool stop = xlate_batch_script(file, script_body, script_size,
-					       argc, argv, i);
-
-		if (stop)
+		if (xlate_batch_script(file, script_body, script_size, i)) {
+			/* Only translate one type of job options at most. */
 			break;
+		}
 	}
 
 	/* set options from env vars */

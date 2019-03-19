@@ -75,8 +75,7 @@ static void _parse_pbs_resource_list(char *rl);
  * then pass the array to _set_*_options for further parsing.
  */
 extern bool xlate_batch_script(const char *file, const void *body,
-			       int size, int cmd_argc, char **cmd_argv,
-			       int magic)
+			       int size, int magic)
 {
 	char *magic_word;
 	void (*wrp_func) (int,char**) = NULL;
@@ -92,9 +91,6 @@ extern bool xlate_batch_script(const char *file, const void *body,
 	int non_comments = 0;
 	int i;
 	bool found = false;
-
-	if (sbopt.ignore_pbs)
-		return false;
 
 	/* Check what command it is */
 	switch (magic) {
