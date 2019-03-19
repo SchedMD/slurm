@@ -93,8 +93,7 @@ extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
 	return rc;
 }
 
-int
-uid_from_string (char *name, uid_t *uidp)
+int uid_from_string(const char *name, uid_t *uidp)
 {
 	struct passwd pwd, *result;
 	char buffer[PW_BUF_SIZE], *p = NULL;
@@ -259,8 +258,7 @@ static int _getgrgid_r (gid_t gid, struct group *grp, char *buf,
 	return rc;
 }
 
-int
-gid_from_string (char *name, gid_t *gidp)
+int gid_from_string(const char *name, gid_t *gidp)
 {
 	struct group grp, *result;
 	char buffer[PW_BUF_SIZE], *p = NULL;
