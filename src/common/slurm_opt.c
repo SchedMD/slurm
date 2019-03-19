@@ -283,6 +283,39 @@ typedef struct {
  * These should be alphabetized by the slurm_cli_opt_t name.
  */
 
+static int arg_set__unknown_(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->salloc_opt)
+		fprintf(stderr,
+			"Try \"salloc --help\" for more information\n");
+	else if (opt->sbatch_opt)
+		fprintf(stderr,
+			"Try \"sbatch --help\" for more information\n");
+	else if (opt->srun_opt)
+		fprintf(stderr,
+			"Try \"srun --help\" for more information\n");
+
+	exit(-1);
+	return SLURM_SUCCESS;
+}
+static char *arg_get__unknown_(slurm_opt_t *opt)
+{
+	return NULL; /* no op */
+}
+static void arg_reset__unknown_(slurm_opt_t *opt)
+{
+	/* no op */
+}
+static slurm_cli_opt_t slurm_opt__unknown_ = {
+	.name = NULL,
+	.has_arg = no_argument,
+	.val = '?',
+	.sbatch_early_pass = true,
+	.set_func = arg_set__unknown_,
+	.get_func = arg_get__unknown_,
+	.reset_func = arg_reset__unknown_,
+};
+
 COMMON_STRING_OPTION(account);
 static slurm_cli_opt_t slurm_opt_account = {
 	.name = "account",
@@ -2073,6 +2106,7 @@ static slurm_cli_opt_t slurm_opt_x11 = {
 };
 
 static slurm_cli_opt_t *common_options[] = {
+	&slurm_opt__unknown_,
 	&slurm_opt_account,
 	&slurm_opt_acctg_freq,
 	&slurm_opt_alloc_nodelist,

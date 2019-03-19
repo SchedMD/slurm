@@ -311,12 +311,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
-
-		case '?':
-			fprintf(stderr, "Try \"salloc --help\" for more "
-				"information\n");
-			exit(error_exit);
-			break;
 		case 'c':
 			opt.cpus_set = true;
 			opt.cpus_per_task = parse_int("cpus-per-task",

@@ -869,11 +869,6 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case '?':
-			fprintf(stderr,
-				"Try \"srun --help\" for more information\n");
-			exit(error_exit);
-			break;
 		case LONG_OPT_PACK_GROUP:
 			xfree(sropt.pack_group);
 			sropt.pack_group = xstrdup(optarg);
@@ -942,11 +937,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case (int)'?':
-			fprintf(stderr,
-				"Try \"srun --help\" for more information\n");
-			exit(error_exit);
-			break;
 		case (int)'c':
 			tmp_int = _get_int(optarg, "cpus-per-task", false);
 			if (opt.cpus_set && (tmp_int > opt.cpus_per_task)) {

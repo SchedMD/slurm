@@ -505,11 +505,6 @@ extern char *process_options_first_pass(int argc, char **argv)
 	while ((opt_char = getopt_long(local_argc, local_argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case '?':
-			fprintf(stderr,
-				"Try \"sbatch --help\" for more information\n");
-			exit(error_exit);
-			break;
 		case LONG_OPT_WRAP:
 			xfree(opt.job_name);
 			xfree(sbopt.wrap);
@@ -836,9 +831,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case '?':
-			/* handled in process_options_first_pass() */
-			break;
 		case 'a':
 			xfree(sbopt.array_inx);
 			sbopt.array_inx = xstrdup(optarg);
