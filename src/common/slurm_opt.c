@@ -387,6 +387,16 @@ static slurm_cli_opt_t slurm_opt_array = {
 	.reset_func = arg_reset_array_inx,
 };
 
+COMMON_SBATCH_STRING_OPTION(batch_features);
+static slurm_cli_opt_t slurm_opt_batch = {
+	.name = "batch",
+	.has_arg = required_argument,
+	.val = LONG_OPT_BATCH,
+	.set_func_sbatch = arg_set_batch_features,
+	.get_func = arg_get_batch_features,
+	.reset_func = arg_reset_batch_features,
+};
+
 COMMON_STRING_OPTION(burst_buffer_file);
 static slurm_cli_opt_t slurm_opt_bbf = {
 	.name = "bbf",
@@ -2438,6 +2448,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_acctg_freq,
 	&slurm_opt_alloc_nodelist,
 	&slurm_opt_array,
+	&slurm_opt_batch,
 	&slurm_opt_begin,
 	&slurm_opt_bell,
 	&slurm_opt_bb,

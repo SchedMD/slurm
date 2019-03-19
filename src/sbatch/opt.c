@@ -193,7 +193,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_ACCOUNT", 'A' },
   { "SBATCH_ARRAY_INX", 'a' },
   { "SBATCH_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
-  {"SBATCH_BATCH",         OPT_STRING,     &sbopt.batch_features, NULL       },
+  { "SBATCH_BATCH", LONG_OPT_BATCH },
   { "SBATCH_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
   {"SBATCH_CHECKPOINT",    OPT_STRING,     &sbopt.ckpt_interval_str, NULL    },
   { "SBATCH_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
@@ -350,7 +350,6 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
-	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
@@ -744,10 +743,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_REQUEUE:
 			sbopt.requeue = 1;
-			break;
-		case LONG_OPT_BATCH:
-			xfree(sbopt.batch_features);
-			sbopt.batch_features = xstrdup(optarg);
 			break;
 		case LONG_OPT_WRAP:
 			/* handled in process_options_first_pass() */
