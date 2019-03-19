@@ -150,7 +150,6 @@ static void _opt_default(bool first_pass)
 	 * once specified for one, but will be overwritten with new values if
 	 * specified on the command line */
 	if (first_pass) {
-		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
 		sbopt.requeue		= NO_VAL;
 		sbopt.umask		= -1;
 	}
@@ -360,7 +359,6 @@ _process_env_var(env_vars_t *e, const char *val)
 static struct option long_options[] = {
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
-	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
@@ -760,13 +758,6 @@ static void _set_options(int argc, char **argv)
 				error("Invalid --open-mode argument: %s. "
 				      "Ignored", optarg);
 			}
-			break;
-		case LONG_OPT_PROPAGATE:
-			xfree(sbopt.propagate);
-			if (optarg)
-				sbopt.propagate = xstrdup(optarg);
-			else
-				sbopt.propagate = xstrdup("ALL");
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)

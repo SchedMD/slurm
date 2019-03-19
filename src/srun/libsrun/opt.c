@@ -134,7 +134,6 @@ struct option long_options[] = {
 	{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
-	{"propagate",        optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
 	{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
 	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
@@ -494,7 +493,6 @@ static void _opt_default(void)
 		sropt.preserve_env	= false;
 		xfree(sropt.prolog);
 		sropt.prolog		= slurm_get_srun_prolog();
-		xfree(sropt.propagate); 	 /* propagate specific rlimits */
 		sropt.quit_on_intr	= false;
 		sropt.slurmd_debug	= LOG_LEVEL_QUIET;
 		xfree(sropt.task_epilog);
@@ -970,13 +968,6 @@ static void _set_options(const int argc, char **argv)
 			sropt.max_threads     = 1;
 			pmi_server_max_threads(sropt.max_threads);
 			sropt.msg_timeout     = 15;
-			break;
-		case LONG_OPT_PROPAGATE:
-			xfree(sropt.propagate);
-			if (optarg)
-				sropt.propagate = xstrdup(optarg);
-			else
-				sropt.propagate = xstrdup("ALL");
 			break;
 		case LONG_OPT_PROLOG:
 			if (!optarg)

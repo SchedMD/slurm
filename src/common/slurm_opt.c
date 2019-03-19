@@ -2021,6 +2021,51 @@ static slurm_cli_opt_t slurm_opt_profile = {
 	.reset_func = arg_reset_profile,
 };
 
+static int arg_set_propagate(slurm_opt_t *opt, const char *arg)
+{
+	const char *tmp = arg;
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (!tmp)
+		tmp = "ALL";
+
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->propagate = xstrdup(tmp);
+	if (opt->srun_opt)
+		opt->srun_opt->propagate = xstrdup(tmp);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_propagate(slurm_opt_t *opt)
+{
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->sbatch_opt)
+		return xstrdup(opt->sbatch_opt->propagate);
+	if (opt->srun_opt)
+		return xstrdup(opt->srun_opt->propagate);
+
+	return NULL;
+}
+static void arg_reset_propagate(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt)
+		xfree(opt->sbatch_opt->propagate);
+	if (opt->srun_opt)
+		xfree(opt->srun_opt->propagate);
+}
+static slurm_cli_opt_t slurm_opt_propagate = {
+	.name = "propagate",
+	.has_arg = optional_argument,
+	.val = LONG_OPT_PROPAGATE,
+	.set_func_sbatch = arg_set_propagate,
+	.set_func_srun = arg_set_propagate,
+	.get_func = arg_get_propagate,
+	.reset_func = arg_reset_propagate,
+};
+
 COMMON_STRING_OPTION(qos);
 static slurm_cli_opt_t slurm_opt_qos = {
 	.name = "qos",
@@ -2732,6 +2777,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_power,
 	&slurm_opt_priority,
 	&slurm_opt_profile,
+	&slurm_opt_propagate,
 	&slurm_opt_qos,
 	&slurm_opt_quiet,
 	&slurm_opt_reboot,
