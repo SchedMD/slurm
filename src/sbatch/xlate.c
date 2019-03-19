@@ -255,8 +255,8 @@ static void _set_bsub_options(int argc, char **argv) {
 
 			break;
 		case 'o':
-			xfree(sbopt.ofname);
-			sbopt.ofname = xstrdup(optarg);
+			xfree(opt.ofname);
+			opt.ofname = xstrdup(optarg);
 			break;
 		case 'q':
 			opt.partition = xstrdup(optarg);
@@ -377,11 +377,11 @@ static void _set_pbs_options(int argc, char **argv)
 			opt.job_name = xstrdup(optarg);
 			break;
 		case 'o':
-			xfree(sbopt.ofname);
+			xfree(opt.ofname);
 			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.ofname = xstrdup("/dev/null");
+				opt.ofname = xstrdup("/dev/null");
 			else
-				sbopt.ofname = xstrdup(optarg);
+				opt.ofname = xstrdup(optarg);
 			break;
 		case 'p': {
 			long long tmp_nice;

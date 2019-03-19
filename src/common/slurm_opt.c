@@ -1669,6 +1669,31 @@ static slurm_cli_opt_t slurm_opt_ntasks_per_socket = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_ofname(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	xfree(opt->ofname);
+	if (!xstrcasecmp(arg, "none"))
+		opt->ofname = xstrdup("/dev/null");
+	else
+		opt->ofname = xstrdup(arg);
+
+	return SLURM_SUCCESS;
+}
+COMMON_STRING_OPTION_GET(ofname);
+COMMON_STRING_OPTION_RESET(ofname);
+static slurm_cli_opt_t slurm_opt_output = {
+	.name = "output",
+	.has_arg = required_argument,
+	.val = 'o',
+	.set_func_sbatch = arg_set_ofname,
+	.set_func_srun = arg_set_ofname,
+	.get_func = arg_get_ofname,
+	.reset_func = arg_reset_ofname,
+};
+
 COMMON_BOOL_OPTION(overcommit, "overcommit");
 static slurm_cli_opt_t slurm_opt_overcommit = {
 	.name = "overcommit",
@@ -2410,6 +2435,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_ntasks_per_core,
 	&slurm_opt_ntasks_per_node,
 	&slurm_opt_ntasks_per_socket,
+	&slurm_opt_output,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,
 	&slurm_opt_partition,

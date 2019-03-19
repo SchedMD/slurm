@@ -116,7 +116,6 @@ struct option long_options[] = {
 	{"preserve-slurm-env", no_argument,     0, 'E'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"label",            no_argument,       0, 'l'},
-	{"output",           required_argument, 0, 'o'},
 	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
 	{"unbuffered",       no_argument,       0, 'u'},
@@ -351,7 +350,6 @@ static slurm_opt_t *_opt_copy(void)
 	sropt.hostfile = NULL;		/* Moved by memcpy */
 	opt_dup->ifname = xstrdup(opt.ifname);
 	opt_dup->job_name = xstrdup(opt.job_name);
-	opt_dup->srun_opt->ofname = xstrdup(sropt.ofname);
 	opt.licenses = NULL;		/* Moved by memcpy */
 	opt.mail_user = NULL;		/* Moved by memcpy */
 	opt_dup->mcs_label = xstrdup(opt.mcs_label);
@@ -359,6 +357,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->mpi_type = xstrdup(opt.mpi_type);
 	opt.network = NULL;		/* Moved by memcpy */
 	opt.nodelist = NULL;		/* Moved by memcpy */
+	opt_dup->ofname = xstrdup(opt.ofname);
 	sropt.pack_group = NULL;	/* Moved by memcpy */
 	sropt.pack_grp_bits = NULL;	/* Moved by memcpy */
 	opt.partition = NULL;		/* Moved by memcpy */
@@ -498,7 +497,6 @@ static void _opt_default(void)
 		sropt.msg_timeout		= slurm_get_msg_timeout();
 		sropt.no_alloc		= false;
 		sropt.noshell		= false;
-		xfree(sropt.ofname);
 		sropt.open_mode		= 0;
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
@@ -640,7 +638,7 @@ env_vars_t env_vars[] = {
 {"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
   { "SLURM_STDERRMODE", 'e' },
   { "SLURM_STDINMODE", 'i' },
-{"SLURM_STDOUTMODE",    OPT_STRING,     &sropt.ofname,      NULL             },
+  { "SLURM_STDOUTMODE", 'o' },
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &sropt.task_epilog, NULL             },
 {"SLURM_TASK_PROLOG",   OPT_STRING,     &sropt.task_prolog, NULL             },
   { "SLURM_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
@@ -900,20 +898,6 @@ static void _set_options(const int argc, char **argv)
 		case (int)'l':
 			sropt.labelio = true;
 			break;
-		case (int)'o':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (sropt.pty) {
-				error("--output incompatible with --pty "
-				      "option");
-				exit(error_exit);
-			}
-			xfree(sropt.ofname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sropt.ofname = xstrdup("/dev/null");
-			else
-				sropt.ofname = xstrdup(optarg);
-			break;
 		case (int)'r':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1049,7 +1033,7 @@ static void _set_options(const int argc, char **argv)
 			sropt.unbuffered = true;	/* implicit */
 			if (opt.ifname)
 				tmp_str = "--input";
-			else if (sropt.ofname)
+			else if (opt.ofname)
 				tmp_str = "--output";
 			else if (opt.efname)
 				tmp_str = "--error";
