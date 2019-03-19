@@ -99,10 +99,10 @@ static log_level_t log_lvl              = LOG_LEVEL_QUIET;
  *
  * This function accounts for the endianess of the machine.
  *
- * cpu_set_bitstr: An bitstr_t preallocated via the bit_alloc command to
- * 		   be bitstr_size bits wide.
- * cpu_set: The cpu_set array returned by nvmlDeviceGetCpuAffinity()
- * cpu_set_size: The size of the cpu_set array
+ * cpu_set_bitstr: (IN/OUT) A preallocated bitstr_t via bit_alloc() that is
+ * 		   bitstr_size bits wide. This will get filled in.
+ * cpu_set:	   (IN) The cpu_set array returned by nvmlDeviceGetCpuAffinity()
+ * cpu_set_size:   (IN) The size of the cpu_set array
  */
 static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
 				unsigned long *cpu_set,
@@ -148,9 +148,11 @@ static void _set_cpu_set_bitstr(bitstr_t *cpu_set_bitstr,
 		}
 	}
 
-	// If this isn't -1, then something went horribly wrong
-	if (bit_cur != -1)
-		fatal("%s: bit_cur(%d) != -1", __func__, bit_cur);
+	xassert(bit_cur == -1);
+	// If NVML gave us an empty CPU affinity, then something is very wrong
+	if (bit_set_count(cpu_set_bitstr) == 0)
+		fatal("%s: cpu_set_bitstr is empty! No CPU affinity for device",
+		      __func__);
 }
 
 #define GPU_LOW		((unsigned int) -1)
