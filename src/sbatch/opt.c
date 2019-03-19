@@ -91,7 +91,6 @@ sbatch_opt_t sbopt;
 slurm_opt_t opt = { .sbatch_opt = &sbopt };
 sbatch_env_t pack_env;
 int   error_exit = 1;
-int   ignore_pbs = 0;
 bool  is_pack_job = false;
 
 /*---- forward declarations of static functions  ----*/
@@ -184,6 +183,22 @@ struct env_vars {
 	void *set_flag;
 };
 
+env_vars_t early_env_vars[] = {
+  { "SBATCH_IGNORE_PBS", LONG_OPT_IGNORE_PBS },
+  { NULL }
+};
+
+static void _opt_early_env(void)
+{
+	char *val = NULL;
+	env_vars_t *e = early_env_vars;
+
+	while (e->var) {
+		if ((val = getenv(e->var)))
+			slurm_process_option(&opt, e->type, val, true, false);
+		e++;
+	}
+}
 
 env_vars_t env_vars[] = {
   { "SBATCH_ACCOUNT", 'A' },
@@ -348,7 +363,6 @@ _process_env_var(env_vars_t *e, const char *val)
 static struct option long_options[] = {
 	{"export",        required_argument, 0, LONG_OPT_EXPORT},
 	{"export-file",   required_argument, 0, LONG_OPT_EXPORT_FILE},
-	{"ignore-pbs",    no_argument,       0, LONG_OPT_IGNORE_PBS},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
@@ -393,6 +407,8 @@ extern char *process_options_first_pass(int argc, char **argv)
 		error("Unable to create options table");
 		exit(error_exit);
 	}
+
+	_opt_early_env();
 
 	/* Remove pack job separator and capture all options of interest from
 	 * all job components (e.g. "sbatch -N1 -v : -N2 -v tmp" -> "-vv") */
@@ -771,9 +787,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_EXPORT_FILE:
 			xfree(sbopt.export_file);
 			sbopt.export_file = xstrdup(optarg);
-			break;
-		case LONG_OPT_IGNORE_PBS:
-			ignore_pbs = 1;
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)

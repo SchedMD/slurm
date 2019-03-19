@@ -199,6 +199,7 @@ typedef struct sbatch_opt {
 	int ckpt_interval;		/* --checkpoint (int minutes)	*/
 	char *export_env;		/* --export			*/
 	char *export_file;		/* --export-file=file		*/
+	bool ignore_pbs;		/* --ignore-pbs			*/
 	int minsockets;			/* --minsockets=n		*/
 	int mincores;			/* --mincores=n			*/
 	int minthreads;			/* --minthreads=n		*/

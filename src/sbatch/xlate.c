@@ -93,14 +93,8 @@ extern bool xlate_batch_script(const char *file, const void *body,
 	int i;
 	bool found = false;
 
-	if (ignore_pbs)
+	if (sbopt.ignore_pbs)
 		return false;
-	if (getenv("SBATCH_IGNORE_PBS"))
-		return false;
-	for (i = 0; i < cmd_argc; i++) {
-		if (!xstrcmp(cmd_argv[i], "--ignore-pbs"))
-			return false;
-	}
 
 	/* Check what command it is */
 	switch (magic) {

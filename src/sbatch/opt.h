@@ -78,7 +78,6 @@ extern slurm_opt_t opt;
 extern sbatch_opt_t sbopt;
 extern sbatch_env_t pack_env;
 extern int   error_exit;
-extern int   ignore_pbs;
 extern bool  is_pack_job;
 
 /*

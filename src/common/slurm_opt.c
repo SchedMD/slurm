@@ -1230,6 +1230,37 @@ static slurm_cli_opt_t slurm_opt_hold = {
 	.reset_func = arg_reset_hold,
 };
 
+static int arg_set_get_ignore_pbs(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->sbatch_opt)
+		return SLURM_ERROR;
+
+	opt->sbatch_opt->ignore_pbs = true;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_get_ignore_pbs(slurm_opt_t *opt)
+{
+	if (!opt->sbatch_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup(opt->sbatch_opt->ignore_pbs ? "set" : "unset");
+}
+static void arg_reset_get_ignore_pbs(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->ignore_pbs = false;
+}
+static slurm_cli_opt_t slurm_opt_ignore_pbs = {
+	.name = "ignore-pbs",
+	.has_arg = no_argument,
+	.val = LONG_OPT_IGNORE_PBS,
+	.sbatch_early_pass = true,
+	.set_func_sbatch = arg_set_get_ignore_pbs,
+	.get_func = arg_get_get_ignore_pbs,
+	.reset_func = arg_reset_get_ignore_pbs,
+};
+
 static int arg_set_immediate(slurm_opt_t *opt, const char *arg)
 {
 	if (opt->sbatch_opt)
@@ -2613,6 +2644,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_help,
 	&slurm_opt_hint,
 	&slurm_opt_hold,
+	&slurm_opt_ignore_pbs,
 	&slurm_opt_immediate,
 	&slurm_opt_input,
 	&slurm_opt_job_name,
