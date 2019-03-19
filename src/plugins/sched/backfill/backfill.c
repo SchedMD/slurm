@@ -1554,6 +1554,12 @@ static int _attempt_backfill(void)
 		 */
 		_pack_start_set(job_ptr, (now + YEAR_SECONDS), NO_VAL);
 
+		if (job_ptr->pack_job_id &&
+		    (job_ptr->state_reason == WAIT_NO_REASON)) {
+			xfree(job_ptr->state_desc);
+			job_ptr->state_reason = WAIT_RESOURCES;
+		}
+
 		if (!_job_runnable_now(job_ptr))
 			continue;
 		if (!part_ptr)
