@@ -140,7 +140,6 @@ struct option long_options[] = {
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
-	{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 	{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"ntasks-per-socket",required_argument, 0, LONG_OPT_NTASKSPERSOCKET},
 	{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
@@ -549,7 +548,6 @@ static void _opt_default(void)
 	pmi_server_max_threads(sropt.max_threads);
 	sropt.multi_prog			= false;
 	sropt.multi_prog_cmds		= 0;
-	opt.ntasks_per_core		= NO_VAL;
 	opt.ntasks_per_node		= NO_VAL; /* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	sropt.pack_group		= NULL;
@@ -1134,12 +1132,6 @@ static void _set_options(const int argc, char **argv)
 			opt.ntasks_per_socket = _get_int(optarg,
 							 "ntasks-per-socket",
 							 true);
-			break;
-		case LONG_OPT_NTASKSPERCORE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.ntasks_per_core = _get_int(optarg,
-						       "ntasks-per-core", true);
 			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H

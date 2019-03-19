@@ -1557,6 +1557,19 @@ static slurm_cli_opt_t slurm_opt_ntasks = {
 	.reset_each_pass = true,
 };
 
+COMMON_INT_OPTION_SET(ntasks_per_core, "--ntasks-per-core");
+COMMON_INT_OPTION_GET(ntasks_per_core);
+COMMON_OPTION_RESET(ntasks_per_core, NO_VAL);
+static slurm_cli_opt_t slurm_opt_ntasks_per_core = {
+	.name = "ntasks-per-core",
+	.has_arg = required_argument,
+	.val = LONG_OPT_NTASKSPERCORE,
+	.set_func = arg_set_ntasks_per_core,
+	.get_func = arg_get_ntasks_per_core,
+	.reset_func = arg_reset_ntasks_per_core,
+	.reset_each_pass = true,
+};
+
 COMMON_BOOL_OPTION(overcommit, "overcommit");
 static slurm_cli_opt_t slurm_opt_overcommit = {
 	.name = "overcommit",
@@ -2254,6 +2267,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_nodelist,
 	&slurm_opt_nodes,
 	&slurm_opt_ntasks,
+	&slurm_opt_ntasks_per_core,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,
 	&slurm_opt_partition,
