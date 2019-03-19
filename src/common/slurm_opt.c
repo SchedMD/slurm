@@ -1264,6 +1264,41 @@ static slurm_cli_opt_t slurm_opt_kill_command = {
 	.reset_func = arg_reset_kill_command,
 };
 
+static int arg_set_kill_on_invalid_dep(slurm_opt_t *opt, const char *arg)
+{
+	if (!xstrcasecmp(arg, "yes"))
+		opt->job_flags |= KILL_INV_DEP;
+	else if (!xstrcasecmp(arg, "no"))
+		opt->job_flags |= NO_KILL_INV_DEP;
+	else {
+		error("Invalid --kill-on-invalid-dep specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_kill_on_invalid_dep(slurm_opt_t *opt)
+{
+	if (opt->job_flags & KILL_INV_DEP)
+		return xstrdup("yes");
+	else if (opt->job_flags & NO_KILL_INV_DEP)
+		return xstrdup("no");
+	return xstrdup("unset");
+}
+static void arg_reset_kill_on_invalid_dep(slurm_opt_t *opt)
+{
+	opt->job_flags &= ~KILL_INV_DEP;
+	opt->job_flags &= ~NO_KILL_INV_DEP;
+}
+static slurm_cli_opt_t slurm_opt_kill_on_invalid_dep = {
+	.name = "kill-on-invalid-dep",
+	.has_arg = required_argument,
+	.val = LONG_OPT_KILL_INV_DEP,
+	.set_func_sbatch = arg_set_kill_on_invalid_dep,
+	.get_func = arg_get_kill_on_invalid_dep,
+	.reset_func = arg_reset_kill_on_invalid_dep,
+};
+
 COMMON_STRING_OPTION(licenses);
 static slurm_cli_opt_t slurm_opt_licenses = {
 	.name = "licenses",
@@ -2444,6 +2479,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_input,
 	&slurm_opt_job_name,
 	&slurm_opt_kill_command,
+	&slurm_opt_kill_on_invalid_dep,
 	&slurm_opt_licenses,
 	&slurm_opt_mail_type,
 	&slurm_opt_mail_user,

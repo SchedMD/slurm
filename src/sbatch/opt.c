@@ -350,7 +350,6 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
-	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
 	{"checkpoint",    required_argument, 0, LONG_OPT_CHECKPOINT},
 	{"checkpoint-dir",required_argument, 0, LONG_OPT_CHECKPOINT_DIR},
@@ -798,14 +797,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_PARSABLE:
 			sbopt.parsable = true;
-			break;
-		case LONG_OPT_KILL_INV_DEP:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (xstrcasecmp(optarg, "yes") == 0)
-				opt.job_flags |= KILL_INV_DEP;
-			if (xstrcasecmp(optarg, "no") == 0)
-				opt.job_flags |= NO_KILL_INV_DEP;
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
