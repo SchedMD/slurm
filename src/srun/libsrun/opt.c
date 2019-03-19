@@ -550,7 +550,6 @@ static void _opt_default(void)
 	sropt.multi_prog			= false;
 	sropt.multi_prog_cmds		= 0;
 	opt.ntasks_per_core		= NO_VAL;
-	opt.ntasks_per_core_set 	= false;
 	opt.ntasks_per_node		= NO_VAL; /* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	sropt.pack_group		= NULL;
@@ -1143,7 +1142,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			opt.ntasks_per_core = _get_int(optarg,
 						       "ntasks-per-core", true);
-			opt.ntasks_per_core_set  = true;
 			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H
@@ -1415,7 +1413,8 @@ static bool _opt_verify(void)
 	if (opt.hint &&
 	    ((sropt.cpu_bind_type == CPU_BIND_VERBOSE) ||
 	     !sropt.cpu_bind_type_set) &&
-	    !opt.ntasks_per_core_set && !opt.threads_per_core_set) {
+	    (opt.ntasks_per_core == NO_VAL) &&
+	    !opt.threads_per_core_set) {
 		if (verify_hint(opt.hint,
 				&opt.sockets_per_node,
 				&opt.cores_per_socket,

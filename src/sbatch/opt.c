@@ -173,7 +173,6 @@ static void _opt_default(bool first_pass)
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.job_flags			= 0;
 	opt.ntasks_per_core		= NO_VAL;
-	opt.ntasks_per_core_set		= false;
 	opt.ntasks_per_node		= 0;	/* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
@@ -867,7 +866,6 @@ static void _set_options(int argc, char **argv)
 			opt.ntasks_per_core = parse_int("ntasks-per-core",
 							optarg, true);
 			pack_env.ntasks_per_core = opt.ntasks_per_core;
-			opt.ntasks_per_core_set = true;
 			break;
 		case LONG_OPT_BATCH:
 			xfree(sbopt.batch_features);
@@ -966,7 +964,8 @@ static bool _opt_verify(void)
 	 */
 
 	if (opt.hint &&
-	    !opt.ntasks_per_core_set && !opt.threads_per_core_set) {
+	    (opt.ntasks_per_core == NO_VAL) &&
+	    !opt.threads_per_core_set) {
 		if (verify_hint(opt.hint,
 				&opt.sockets_per_node,
 				&opt.cores_per_socket,

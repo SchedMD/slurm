@@ -172,7 +172,6 @@ static void _opt_default(void)
 	opt.ntasks_per_node		= 0;  /* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_per_core		= NO_VAL;
-	opt.ntasks_per_core_set		= false;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
@@ -342,7 +341,6 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NTASKSPERCORE:
 			opt.ntasks_per_core = parse_int("ntasks-per-core",
 							optarg, true);
-			opt.ntasks_per_core_set  = true;
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
@@ -456,7 +454,8 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.hint &&
-	    !opt.ntasks_per_core_set && !opt.threads_per_core_set) {
+	    (opt.ntasks_per_core == NO_VAL) &&
+	    !opt.threads_per_core_set) {
 		if (verify_hint(opt.hint,
 				&opt.sockets_per_node,
 				&opt.cores_per_socket,
