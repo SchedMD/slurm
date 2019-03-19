@@ -2162,6 +2162,49 @@ static slurm_cli_opt_t slurm_opt_tasks_per_node = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_test_only(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->test_only = true;
+	if (opt->srun_opt)
+		opt->srun_opt->test_only = true;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_test_only(slurm_opt_t *opt)
+{
+	bool tmp;
+
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->sbatch_opt)
+		tmp = opt->sbatch_opt->test_only;
+	if (opt->srun_opt)
+		tmp = opt->srun_opt->test_only;
+
+	return xstrdup(tmp ? "set" : "unset");
+}
+static void arg_reset_test_only(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->test_only = false;
+	if (opt->srun_opt)
+		opt->srun_opt->test_only = false;
+}
+static slurm_cli_opt_t slurm_opt_test_only = {
+	.name = "test-only",
+	.has_arg = no_argument,
+	.val = LONG_OPT_TEST_ONLY,
+	.set_func_sbatch = arg_set_test_only,
+	.set_func_srun = arg_set_test_only,
+	.get_func = arg_get_test_only,
+	.reset_func = arg_reset_test_only,
+};
+
 /* note this is mutually exclusive with --core-spec above */
 static int arg_set_thread_spec(slurm_opt_t *opt, const char *arg)
 {
@@ -2615,6 +2658,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_switch_wait,
 	&slurm_opt_switches,
 	&slurm_opt_tasks_per_node,
+	&slurm_opt_test_only,
 	&slurm_opt_thread_spec,
 	&slurm_opt_threads_per_core,
 	&slurm_opt_time_limit,

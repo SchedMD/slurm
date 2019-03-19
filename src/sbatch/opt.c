@@ -156,7 +156,6 @@ static void _opt_default(bool first_pass)
 		xfree(sbopt.export_file);
 		xfree(sbopt.propagate); 	 /* propagate specific rlimits */
 		sbopt.requeue		= NO_VAL;
-		sbopt.test_only		= false;
 		sbopt.umask		= -1;
 	}
 
@@ -354,7 +353,6 @@ static struct option long_options[] = {
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
-	{"test-only",     no_argument,       0, LONG_OPT_TEST_ONLY},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
 };
@@ -776,9 +774,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_IGNORE_PBS:
 			ignore_pbs = 1;
-			break;
-		case LONG_OPT_TEST_ONLY:
-			sbopt.test_only = true;
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)

@@ -144,7 +144,6 @@ struct option long_options[] = {
 	{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 	{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
 	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
-	{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
@@ -503,7 +502,6 @@ static void _opt_default(void)
 		sropt.slurmd_debug	= LOG_LEVEL_QUIET;
 		xfree(sropt.task_epilog);
 		xfree(sropt.task_prolog);
-		sropt.test_only		= false;
 		sropt.test_exec		= false;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
@@ -984,9 +982,6 @@ static void _set_options(const int argc, char **argv)
 			sropt.max_threads     = 1;
 			pmi_server_max_threads(sropt.max_threads);
 			sropt.msg_timeout     = 15;
-			break;
-		case LONG_OPT_TEST_ONLY:
-			sropt.test_only = true;
 			break;
 		case LONG_OPT_PROPAGATE:
 			xfree(sropt.propagate);
