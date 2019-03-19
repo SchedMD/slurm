@@ -77,7 +77,6 @@
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
-#define OPT_NODES       0x04
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
 #define OPT_MULTI	0x0b
@@ -173,15 +172,10 @@ static void _opt_default(bool first_pass)
 	 * of the job */
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	opt.job_flags			= 0;
-	opt.max_nodes			= 0;
-	opt.min_nodes			= 1;
-	opt.nodes_set			= false;
-	opt.ntasks			= 1;
 	opt.ntasks_per_core		= NO_VAL;
 	opt.ntasks_per_core_set		= false;
 	opt.ntasks_per_node		= 0;	/* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
-	opt.ntasks_set			= false;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
@@ -345,15 +339,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		xfree(sbopt.array_inx);
 		sbopt.array_inx = xstrdup(val);
 		break;
-	case OPT_NODES:
-		opt.nodes_set = verify_node_count( val,
-						   &opt.min_nodes,
-						   &opt.max_nodes );
-		if (opt.nodes_set == false) {
-			error("\"%s=%s\" -- invalid node count. ignoring...",
-			      e->var, val);
-		}
-		break;
 	case OPT_OPEN_MODE:
 		if ((val[0] == 'a') || (val[0] == 'A'))
 			sbopt.open_mode = OPEN_MODE_APPEND;
@@ -387,9 +372,6 @@ static struct option long_options[] = {
 	{"error",         required_argument, 0, 'e'},
 	{"input",         required_argument, 0, 'i'},
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
-	{"tasks",         required_argument, 0, 'n'},
-	{"ntasks",        required_argument, 0, 'n'},
-	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
 	{"wait",          no_argument,       0, 'W'},
 	{"batch",         required_argument, 0, LONG_OPT_BATCH},
@@ -811,24 +793,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.ifname = xstrdup("/dev/null");
 			else
 				sbopt.ifname = xstrdup(optarg);
-			break;
-		case 'n':
-			opt.ntasks_set = true;
-			opt.ntasks =
-				parse_int("number of tasks", optarg, true);
-			break;
-		case 'N':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.nodes_set =
-				verify_node_count(optarg,
-						  &opt.min_nodes,
-						  &opt.max_nodes);
-			if (opt.nodes_set == false) {
-				error("invalid node count `%s'",
-				      optarg);
-				exit(error_exit);
-			}
 			break;
 		case 'o':
 			if (!optarg)

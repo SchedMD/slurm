@@ -169,15 +169,10 @@ static void _opt_default(void)
 	opt.cores_per_socket		= NO_VAL; /* requested cores */
 	saopt.default_job_name		= false;
 	opt.job_flags			= 0;
-	opt.max_nodes			= 0;
-	opt.min_nodes			= 1;
-	opt.ntasks			= 1;
 	opt.ntasks_per_node		= 0;  /* ntask max limits */
 	opt.ntasks_per_socket		= NO_VAL;
 	opt.ntasks_per_core		= NO_VAL;
 	opt.ntasks_per_core_set		= false;
-	opt.nodes_set			= false;
-	opt.ntasks_set			= false;
 	opt.sockets_per_node		= NO_VAL; /* requested sockets */
 	opt.threads_per_core		= NO_VAL; /* requested threads */
 	opt.threads_per_core_set	= false;
@@ -276,9 +271,6 @@ static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0, max_val = 0;
 	static struct option long_options[] = {
-		{"tasks",         required_argument, 0, 'n'},
-		{"ntasks",        required_argument, 0, 'n'},
-		{"nodes",         required_argument, 0, 'N'},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 		{"ntasks-per-core",  required_argument, 0, LONG_OPT_NTASKSPERCORE},
 		{"ntasks-per-node",  required_argument, 0, LONG_OPT_NTASKSPERNODE},
@@ -305,22 +297,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case 'n':
-			opt.ntasks_set = true;
-			opt.ntasks =
-				parse_int("number of tasks", optarg, true);
-			break;
-		case 'N':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			opt.nodes_set =
-				verify_node_count(optarg,
-						  &opt.min_nodes,
-						  &opt.max_nodes);
-			if (opt.nodes_set == false) {
-				exit(error_exit);
-			}
-			break;
 		case LONG_OPT_SOCKETSPERNODE:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */

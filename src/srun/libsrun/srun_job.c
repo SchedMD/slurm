@@ -63,6 +63,7 @@
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/uid.h"
@@ -1091,8 +1092,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					merge_nodelist = false;
 					list_append(used_resp_list, resp);
 				}
-				if (srun_opt->nodes_set_env  &&
-				    !srun_opt->nodes_set_opt &&
+				if (slurm_option_set_by_env('N') &&
 				    (opt_local->min_nodes > resp->node_cnt)) {
 					/*
 					 * This signifies the job used the
@@ -1103,9 +1103,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					 * size
 					 */
 					if (!node_cnt_error_logged) {
-						error("SLURM_NNODES environment variable "
-						      "conflicts with allocated "
-						      "node count (%u != %u).",
+						error("SLURM_JOB_NUM_NODES environment variable conflicts with allocated node count (%u != %u).",
 						      opt_local->min_nodes,
 						      resp->node_cnt);
 						node_cnt_error_logged = true;
@@ -2189,16 +2187,15 @@ static int _validate_relative(resource_allocation_response_msg_t *resp,
 	if (srun_opt->relative_set &&
 	    ((srun_opt->relative + opt_local->min_nodes)
 	     > resp->node_cnt)) {
-		if (srun_opt->nodes_set_opt) {
+		if (slurm_option_set_by_cli('N')) {
 			/* -N command line option used */
 			error("--relative and --nodes option incompatible "
 			      "with count of allocated nodes (%d+%d>%d)",
 			      srun_opt->relative,
 			      opt_local->min_nodes,
 			      resp->node_cnt);
-		} else {		/* SLURM_NNODES option used */
-			error("--relative and SLURM_NNODES option incompatible "
-			      "with count of allocated nodes (%d+%d>%d)",
+		} else {		/* SLURM_JOB_NUM_NODES option used */
+			error("--relative and SLURM_JOB_NUM_NODES option incompatible with count of allocated nodes (%d+%d>%d)",
 			      srun_opt->relative,
 			      opt_local->min_nodes,
 			      resp->node_cnt);

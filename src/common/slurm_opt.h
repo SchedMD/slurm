@@ -258,9 +258,6 @@ typedef struct srun_opt {
 	bool multi_prog;		/* multiple programs to execute */
 	int32_t multi_prog_cmds;	/* number of commands in multi prog file */
 	bool no_alloc;			/* --no-allocate		*/
-	bool nodes_set_env;		/* true if nodes set via SLURM_NNODES */
-	bool nodes_set_opt;		/* true if nodes explicitly set using
-					   command line option */
 	bool noshell;			/* --no-shell			*/
 	uint8_t open_mode;		/* --open-mode=append|truncate	*/
 	char *pack_group;		/* --pack-group			*/
