@@ -160,14 +160,10 @@ static void _opt_default(void)
 	 * specified on the command line
 	 */
 	if (first_pass) {
-	} else if (saopt.default_job_name) {
-		xfree(opt.job_name);
 	}
 
 	/* All other options must be specified individually for each component
 	 * of the job */
-	saopt.default_job_name		= false;
-	opt.job_flags			= 0;
 
 	slurm_reset_all_options(&opt, first_pass);
 }
@@ -470,14 +466,8 @@ static bool _opt_verify(void)
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
-	if ((saopt.no_shell == false) && (command_argc == 0)) {
+	if ((saopt.no_shell == false) && (command_argc == 0))
 		_salloc_default_command(&command_argc, &command_argv);
-		if (!opt.job_name)
-			saopt.default_job_name = true;
-	}
-
-	if ((opt.job_name == NULL) && (command_argc > 0))
-		opt.job_name = base_name(command_argv[0]);
 
 	/* check for realistic arguments */
 	if (opt.ntasks <= 0) {

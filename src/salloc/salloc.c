@@ -107,7 +107,7 @@ static pid_t _fork_command(char **command);
 static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
-static void _match_job_name(List job_req_list, char *job_name);
+static void _match_job_name(job_desc_msg_t *desc_last, List job_req_list);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
 static void _pending_callback(uint32_t job_id);
 static void _ping_handler(srun_ping_msg_t *msg);
@@ -277,9 +277,7 @@ int main(int argc, char **argv)
 		fatal("%s: desc is NULL", __func__);
 		exit(error_exit);    /* error already logged */
 	}
-	_match_job_name(job_req_list, opt.job_name);
-	if (!job_req_list)
-		desc->bitflags &= (~JOB_SALLOC_FLAG);
+	_match_job_name(desc, job_req_list);
 
 	/*
 	 * Job control for interactive salloc sessions: only if ...
@@ -702,27 +700,27 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 /* Copy job name from last component to all pack job components unless
  * explicitly set. The default value comes from _salloc_default_command()
  * and is "sh". */
-static void _match_job_name(List job_req_list, char *job_name)
+static void _match_job_name(job_desc_msg_t *desc_last, List job_req_list)
 {
-	int cnt, i = 1;
 	ListIterator iter;
 	job_desc_msg_t *desc = NULL;
+	char *name;
+
+	if (!desc_last)
+		return;
+
+	if (!desc_last->name && command_argv)
+		desc_last->name = xstrdup(xbasename(command_argv[0]));
+	name = desc_last->name;
 
 	if (!job_req_list)
 		return;
 
-	cnt = list_count(job_req_list);
-	if (cnt < 2)
-		return;
-
 	iter = list_iterator_create(job_req_list);
-	while ((desc = list_next(iter))) {
-		if ((i++ < cnt) && (desc->bitflags & JOB_SALLOC_FLAG)) {
-			xfree(desc->name);
-			desc->name = xstrdup(job_name);
-		}
-		desc->bitflags &= (~JOB_SALLOC_FLAG);
-	}
+	while ((desc = list_next(iter)))
+		if (!desc->name)
+			desc->name = xstrdup(name);
+
 	list_iterator_destroy(iter);
 }
 
@@ -790,8 +788,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->cluster_features = xstrdup(opt.c_constraint);
 	if (opt.immediate == 1)
 		desc->immediate = 1;
-	if (saopt.default_job_name)
-		desc->bitflags |= JOB_SALLOC_FLAG;
 	desc->name = xstrdup(opt.job_name);
 	desc->reservation = xstrdup(opt.reservation);
 	desc->profile  = opt.profile;

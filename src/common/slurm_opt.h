@@ -181,7 +181,6 @@ enum {
  */
 typedef struct salloc_opt {
 	bell_flag_t bell;		/* --bell, --no-bell		*/
-	bool default_job_name;		/* set if no command or job name specified */
 	int kill_command_signal;	/* --kill-command		*/
 	bool no_shell;			/* --no-shell			*/
 	uint16_t wait_all_nodes;	/* --wait-nodes-ready=val	*/
