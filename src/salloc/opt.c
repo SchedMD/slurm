@@ -86,7 +86,6 @@ int immediate_exit = 1;
 
 typedef struct env_vars env_vars_t;
 
-static void  _opt_default(void);
 static void  _opt_env(void);
 static void  _opt_args(int argc, char **argv);
 static bool  _opt_verify(void);
@@ -106,7 +105,7 @@ static void  _set_options(int argc, char **argv);
 extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
 	/* initialize option defaults */
-	_opt_default();
+	slurm_reset_all_options(&opt, first_pass);
 
 	/* initialize options with env vars */
 	_opt_env();
@@ -147,25 +146,6 @@ static bool _valid_node_list(char **node_list_pptr)
 	}
 
 	return verify_node_list(node_list_pptr, opt.distribution, count);
-}
-
-/*
- * _opt_default(): used by initialize_and_process_args to set defaults
- */
-static void _opt_default(void)
-{
-	/*
-	 * Some options will persist for all components of a heterogeneous job
-	 * once specified for one, but will be overwritten with new values if
-	 * specified on the command line
-	 */
-	if (first_pass) {
-	}
-
-	/* All other options must be specified individually for each component
-	 * of the job */
-
-	slurm_reset_all_options(&opt, first_pass);
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -258,14 +238,10 @@ static void _opt_env(void)
 static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	static struct option long_options[] = {
-		{NULL,            0,                 0, 0}
-	};
 	char *opt_string =
 		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:q:QsS:t:uvVw:x:";
 
-	struct option *common_options = slurm_option_table_create(long_options,
-								  &opt);
+	struct option *common_options = slurm_option_table_create(NULL, &opt);
 	struct option *optz = spank_option_table_create(common_options);
 	slurm_option_table_destroy(common_options);
 
@@ -276,13 +252,10 @@ static void _set_options(int argc, char **argv)
 
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
-				      optz, &option_index)) != -1) {
-		switch (opt_char) {
-		default:
-			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
-				if (spank_process_option(opt_char, optarg) < 0)
-					exit(error_exit);
-		}
+				       optz, &option_index)) != -1) {
+		if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
+			if (spank_process_option(opt_char, optarg) < 0)
+				exit(error_exit);
 	}
 
 	spank_option_table_destroy(optz);
