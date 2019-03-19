@@ -142,7 +142,6 @@ struct option long_options[] = {
 	{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 	{"export",           required_argument, 0, LONG_OPT_EXPORT},
 	{"gid",              required_argument, 0, LONG_OPT_GID},
-	{"help",             no_argument,       0, LONG_OPT_HELP},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -179,8 +178,6 @@ static int  _get_int(const char *arg, const char *what, bool positive);
 
 static bitstr_t *_get_pack_group(const int argc, char **argv,
 				 int default_pack_offset, bool *opt_found);
-
-static void  _help(void);
 
 /* fill in default options  */
 static void _opt_default(void);
@@ -1170,10 +1167,6 @@ static void _set_options(const int argc, char **argv)
 			pmi_server_max_threads(sropt.max_threads);
 			sropt.msg_timeout     = 15;
 			break;
-		case 'h':
-		case LONG_OPT_HELP:
-			_help();
-			exit(0);
 		case LONG_OPT_TEST_ONLY:
 			sropt.test_only = true;
 			break;
@@ -2048,7 +2041,7 @@ extern void srun_usage(void)
 
 }
 
-static void _help(void)
+extern void srun_help(void)
 {
 	slurm_ctl_conf_t *conf;
 

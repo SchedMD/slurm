@@ -100,8 +100,6 @@ bool  is_pack_job = false;
 
 typedef struct env_vars env_vars_t;
 
-static void  _help(void);
-
 /* fill in default options  */
 static void _opt_default(bool first_pass);
 
@@ -433,7 +431,6 @@ static struct option long_options[] = {
 	{"array",         required_argument, 0, 'a'},
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"error",         required_argument, 0, 'e'},
-	{"help",          no_argument,       0, 'h'},
 	{"input",         required_argument, 0, 'i'},
 	{"kill-on-invalid-dep", required_argument, 0, LONG_OPT_KILL_INV_DEP},
 	{"tasks",         required_argument, 0, 'n'},
@@ -520,10 +517,6 @@ extern char *process_options_first_pass(int argc, char **argv)
 			fprintf(stderr,
 				"Try \"sbatch --help\" for more information\n");
 			exit(error_exit);
-			break;
-		case 'h':
-			_help();
-			exit(0);
 			break;
 		case LONG_OPT_WRAP:
 			xfree(opt.job_name);
@@ -873,9 +866,6 @@ static void _set_options(int argc, char **argv)
 				sbopt.efname = xstrdup("/dev/null");
 			else
 				sbopt.efname = xstrdup(optarg);
-			break;
-		case 'h':
-			/* handled in process_options_first_pass() */
 			break;
 		case 'i':
 			if (!optarg)
@@ -1552,7 +1542,7 @@ extern void sbatch_usage(void)
 "              executable [args...]\n");
 }
 
-static void _help(void)
+extern void sbatch_help(void)
 {
 	slurm_ctl_conf_t *conf;
 

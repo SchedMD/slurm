@@ -106,7 +106,6 @@ enum {
 	LONG_OPT_GPUS_PER_TASK,
 	LONG_OPT_GRES,
 	LONG_OPT_GRES_FLAGS,
-	LONG_OPT_HELP,
 	LONG_OPT_HINT,
 	LONG_OPT_IGNORE_PBS,
 	LONG_OPT_JOBID,
@@ -443,6 +442,9 @@ extern bool slurm_option_set_by_env(int optval);
 /*
  * Pull these back in from the appropriate commands:
  */
+extern void salloc_help(void);
+extern void sbatch_help(void);
+extern void srun_help(void);
 extern void salloc_usage(void);
 extern void sbatch_usage(void);
 extern void srun_usage(void);

@@ -964,6 +964,43 @@ static slurm_cli_opt_t slurm_opt_gres_flags = {
 	.reset_each_pass = true,
 };
 
+/*
+ * Dummy function implementations, should be overridden by versions within the
+ * respective commands at runtime.
+ */
+extern void salloc_help(void) {}
+extern void sbatch_help(void) {}
+extern void srun_help(void) {}
+static int arg_set_help(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->salloc_opt)
+		salloc_help();
+	else if (opt->sbatch_opt)
+		sbatch_help();
+	else if (opt->srun_opt)
+		srun_help();
+
+	exit(0);
+	return SLURM_SUCCESS;
+}
+static char *arg_get_help(slurm_opt_t *opt)
+{
+	return NULL; /* no op */
+}
+static void arg_reset_help(slurm_opt_t *opt)
+{
+	/* no op */
+}
+static slurm_cli_opt_t slurm_opt_help = {
+	.name = "help",
+	.has_arg = no_argument,
+	.val = 'h',
+	.sbatch_early_pass = true,
+	.set_func = arg_set_help,
+	.get_func = arg_get_help,
+	.reset_func = arg_reset_help,
+};
+
 COMMON_STRING_OPTION(hint);
 static slurm_cli_opt_t slurm_opt_hint = {
 	.name = "hint",
@@ -2015,6 +2052,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_gpus_per_task,
 	&slurm_opt_gres,
 	&slurm_opt_gres_flags,
+	&slurm_opt_help,
 	&slurm_opt_hint,
 	&slurm_opt_hold,
 	&slurm_opt_immediate,

@@ -86,7 +86,6 @@ int immediate_exit = 1;
 
 typedef struct env_vars env_vars_t;
 
-static void  _help(void);
 static void  _opt_default(void);
 static void  _opt_env(void);
 static void  _opt_args(int argc, char **argv);
@@ -286,7 +285,6 @@ static void _set_options(int argc, char **argv)
 	int opt_char, option_index = 0, max_val = 0;
 	static struct option long_options[] = {
 		{"cpus-per-task", required_argument, 0, 'c'},
-		{"help",          no_argument,       0, 'h'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -330,9 +328,6 @@ static void _set_options(int argc, char **argv)
 			opt.cpus_per_task = parse_int("cpus-per-task",
 						      optarg, true);
 			break;
-		case 'h':
-			_help();
-			exit(0);
 		case 'n':
 			opt.ntasks_set = true;
 			opt.ntasks =
@@ -981,7 +976,7 @@ extern void salloc_usage(void)
 "              [command [args...]]\n");
 }
 
-static void _help(void)
+extern void salloc_help(void)
 {
 	slurm_ctl_conf_t *conf;
 
