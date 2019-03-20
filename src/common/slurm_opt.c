@@ -140,6 +140,35 @@ static char *arg_get_##field(slurm_opt_t *opt)			\
 }								\
 COMMON_OPTION_RESET(field, false)
 
+#define COMMON_SRUN_BOOL_OPTION(field)				\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+__attribute__((nonnull (1)));					\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+{								\
+	if (!opt->srun_opt)					\
+		return SLURM_ERROR;				\
+								\
+	opt->srun_opt->field = true;				\
+								\
+	return SLURM_SUCCESS;					\
+}								\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+{								\
+	if (!opt->srun_opt)					\
+		return xstrdup("invalid-context");		\
+								\
+	return xstrdup(opt->srun_opt->field ? "set" : "unset");	\
+}								\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+{								\
+	if (opt->srun_opt)					\
+		opt->srun_opt->field = false;			\
+}
+
 #define COMMON_INT_OPTION(field, option)			\
 COMMON_INT_OPTION_SET(field, option)				\
 COMMON_INT_OPTION_GET(field)					\
