@@ -106,8 +106,6 @@ static void _opt_env(void);
 /* verify options sanity  */
 static bool _opt_verify(void);
 
-static void _process_env_var(env_vars_t *e, const char *val);
-
 static void _fullpath(char **filename, const char *cwd);
 static void _set_options(int argc, char **argv);
 
@@ -149,10 +147,6 @@ static void _opt_default(bool first_pass)
 	if (first_pass) {
 		sbopt.umask		= -1;
 	}
-
-	/* All other options must be specified individually for each component
-	 * of the job */
-	opt.job_flags			= 0;
 
 	slurm_reset_all_options(&opt, first_pass);
 }
@@ -246,8 +240,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_WAIT_ALL_NODES", LONG_OPT_WAIT_ALL_NODES },
   { "SBATCH_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SBATCH_WCKEY", LONG_OPT_WCKEY },
-
-  {NULL, 0, NULL, NULL}
+  { NULL }
 };
 
 
@@ -263,7 +256,7 @@ static void _opt_env(void)
 
 	while (e->var) {
 		if ((val = getenv(e->var)) != NULL)
-			_process_env_var(e, val);
+			slurm_process_option(&opt, e->type, val, true, false);
 		e++;
 	}
 
@@ -272,74 +265,7 @@ static void _opt_env(void)
 		exit(error_exit);
 }
 
-static void
-_process_env_var(env_vars_t *e, const char *val)
-{
-	char *end = NULL;
-
-	debug2("now processing env var %s=%s", e->var, val);
-
-	if (e->set_flag) {
-		*((bool *) e->set_flag) = true;
-	}
-
-	switch (e->type) {
-	case OPT_STRING:
-		*((char **) e->arg) = xstrdup(val);
-		break;
-	case OPT_INT:
-		if (val[0] != '\0') {
-			*((int *) e->arg) = (int) strtol(val, &end, 10);
-			if (!(end && *end == '\0')) {
-				error("%s=%s invalid. ignoring...",
-				      e->var, val);
-			}
-		}
-		break;
-
-        case OPT_INT64:
-                if (val[0] != '\0') {
-                        *((int64_t *) e->arg) = (int64_t) strtoll(val, &end, 10);
-                        if (!(end && *end == '\0')) {
-                                error("%s=%s invalid. ignoring...",
-                                      e->var, val);
-                        }
-                }
-                break;
-
-	case OPT_BOOL:
-		/* A boolean env variable is true if:
-		 *  - set, but no argument
-		 *  - argument is "yes"
-		 *  - argument is a non-zero number
-		 */
-		if (val[0] == '\0') {
-			*((bool *)e->arg) = true;
-		} else if (xstrcasecmp(val, "yes") == 0) {
-			*((bool *)e->arg) = true;
-		} else if ((strtol(val, &end, 10) != 0)
-			   && end != val) {
-			*((bool *)e->arg) = true;
-		} else {
-			*((bool *)e->arg) = false;
-		}
-		break;
-	default:
-		/*
-		* assume this was meant to be processed by
-		 * slurm_process_option() instead.
-		 */
-		slurm_process_option(&opt, e->type, val, true, false);
-		break;
-	}
-}
-
-
 /*---[ command line option processing ]-----------------------------------*/
-
-static struct option long_options[] = {
-	{NULL,            0,                 0, 0}
-};
 
 static char *opt_string =
 	"+a:A:b:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:q:QsS:t:uvVw:Wx:";
@@ -369,7 +295,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 	/* initialize option defaults */
 	_opt_default(true);
 
-	common_options = slurm_option_table_create(long_options, &opt);
+	common_options = slurm_option_table_create(NULL, &opt);
 	optz = spank_option_table_create(common_options);
 	slurm_option_table_destroy(common_options);
 
@@ -695,8 +621,7 @@ static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 
-	struct option *common_options = slurm_option_table_create(long_options,
-								  &opt);
+	struct option *common_options = slurm_option_table_create(NULL, &opt);
 	struct option *optz = spank_option_table_create(common_options);
 	slurm_option_table_destroy(common_options);
 
@@ -708,12 +633,9 @@ static void _set_options(int argc, char **argv)
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
-		switch (opt_char) {
-		default:
-			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
-				if (spank_process_option(opt_char, optarg) < 0)
-					exit(error_exit);
-		}
+		if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
+			if (spank_process_option(opt_char, optarg) < 0)
+				exit(error_exit);
 	}
 
 	spank_option_table_destroy(optz);
