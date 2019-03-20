@@ -2749,11 +2749,12 @@ This option applies only to \fBSchedulerType=sched/backfill\fR.
 The default value is the value of bf_interval (which defaults to 30 seconds).
 Default: bf_interval value (def. 30 sec), Min: 1, Max: 3600 (1h).
 NOTE: If bf_interval is short and bf_max_time is large, this may cause locks
-to be acquired too frequently and starve serving RPCs. It's advisable if using
-this parameter to set max_rpc_cnt high enough that scheduling isn't always
-disabled, and low enough that the interactive workload can get through in a
-reasonable period of time. max_rpc_cnt needs to be below 256 (the default RPC
-thread limit). Running around the middle (150) may give you good results.
+to be acquired too frequently and starve out other serviced RPCs. It's
+advisable if using this parameter to set max_rpc_cnt high enough that
+scheduling isn't always disabled, and low enough that the interactive
+workload can get through in a reasonable period of time. max_rpc_cnt needs to
+be below 256 (the default RPC thread limit). Running around the middle (150)
+may give you good results.
 .TP
 \fBbf_min_age_reserve=#\fR
 The backfill and main scheduling logic will not reserve resources for pending
@@ -2935,8 +2936,8 @@ new jobs less frequently.
 If a value is set, then a value of 10 or higher is recommended.
 NOTE: The maximum number of threads (MAX_SERVER_THREADS) is internally set to
 256 and defines the number of served RPCs at a given time. Setting max_rpc_cnt
-to more than 256 will be only useful to let backfill to continue schedule work
-after locks has been yield (i.e. each 2 seconds) iff there are a maximum of
+to more than 256 will be only useful to let backfill continue scheduling work
+after locks have been yielded (i.e. each 2 seconds) if there are a maximum of
 MAX(max_rpc_cnt/10, 20) RPCs in the queue. i.e. max_rpc_cnt=1000, the scheduler
 will be allowed to continue after yielding locks only when there are less than
 or equal to 100 pending RPCs.
