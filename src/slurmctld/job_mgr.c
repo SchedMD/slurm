@@ -11236,7 +11236,8 @@ static bool _top_priority(struct job_record *job_ptr, uint32_t pack_job_offset)
 				job_ptr->state_reason = WAIT_HELD;
 				xfree(job_ptr->state_desc);
 			}
-		} else if (job_ptr->state_reason == WAIT_NO_REASON) {
+		} else if (job_ptr->state_reason == WAIT_NO_REASON &&
+			   pack_job_offset == NO_VAL) {
 			job_ptr->state_reason = WAIT_PRIORITY;
 			xfree(job_ptr->state_desc);
 		}

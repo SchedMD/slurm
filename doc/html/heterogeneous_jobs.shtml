@@ -646,7 +646,8 @@ basis.</p>
 
 <p>Scheduling of heterogeneous jobs is performed only by the sched/backfill
 plugin and all heterogeneous job components are either all scheduled at the same
-time or deferred.
+time or deferred. The pending reason of heterogeneous jobs isn't set until
+backfill evaluation.
 In order to ensure the timely initiation of both heterogeneous and
 non-heterogeneous jobs, the backfill scheduler alternates between two different
 modes on each iteration.

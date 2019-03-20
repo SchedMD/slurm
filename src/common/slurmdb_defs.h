@@ -55,7 +55,9 @@
 /* This is used to point out constants that exist in the
  * TRES records.  This should be the same order as
  * the enum pointing out the order in the array that is defined in
- * src/slurmctld/slurmctld.h
+ * src/slurmctld/slurmctld.h.  If this changes please also update
+ * src/plugins/accounting_storage/filetxt/accounting_storage_filetxt.c
+ * acct_storage_p_get_tres() to reflect things as it is static.
  */
 typedef enum {
 	TRES_CPU = 1,

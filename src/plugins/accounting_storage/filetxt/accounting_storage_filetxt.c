@@ -503,7 +503,51 @@ extern List acct_storage_p_get_config(void *db_conn, char *config_name)
 extern List acct_storage_p_get_tres(void *db_conn, uid_t uid,
 				      slurmdb_tres_cond_t *tres_cond)
 {
-	return NULL;
+	slurmdb_tres_rec_t *tres_rec;
+	List ret_list = list_create(slurmdb_destroy_tres_rec);
+
+	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+	list_append(ret_list, tres_rec);
+	tres_rec->id = TRES_CPU;
+	tres_rec->type = xstrdup("cpu");
+
+	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+	list_append(ret_list, tres_rec);
+	tres_rec->id = TRES_MEM;
+	tres_rec->type = xstrdup("mem");
+
+	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+	list_append(ret_list, tres_rec);
+	tres_rec->id = TRES_ENERGY;
+	tres_rec->type = xstrdup("energy");
+
+	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+	list_append(ret_list, tres_rec);
+	tres_rec->id = TRES_NODE;
+	tres_rec->type = xstrdup("node");
+
+	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+	list_append(ret_list, tres_rec);
+	tres_rec->id = TRES_BILLING;
+	tres_rec->type = xstrdup("billing");
+
+	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+	list_append(ret_list, tres_rec);
+	tres_rec->id = TRES_FS_DISK;
+	tres_rec->type = xstrdup("fs");
+	tres_rec->name = xstrdup("disk");
+
+	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+	list_append(ret_list, tres_rec);
+	tres_rec->id = TRES_VMEM;
+	tres_rec->type = xstrdup("vmem");
+
+	tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
+	list_append(ret_list, tres_rec);
+	tres_rec->id = TRES_PAGES;
+	tres_rec->type = xstrdup("pages");
+
+	return ret_list;
 }
 
 extern List acct_storage_p_get_assocs(void *db_conn, uid_t uid,

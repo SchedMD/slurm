@@ -135,6 +135,12 @@ documents those changes that are of interest to users and administrators.
     a heterogeneous job as soon as all of its components are determined able to
     do so.
  -- Fix underflow causing decay thread to exit.
+ -- Fix main scheduler not considering hetjobs when building the job queue.
+ -- Fix regression for sacct to display old jobs without a start time.
+ -- Fix setting correct number of gres topology bits.
+ -- Update hetjobs pending state reason when appropriate.
+ -- Fix accounting_storage/filetxt's understanding of TRES.
+ -- Set Accrue time when not enforcing limits.
 
 * Changes in Slurm 18.08.6-2
 ============================
