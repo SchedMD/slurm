@@ -117,7 +117,6 @@ struct option long_options[] = {
 	{"threads",          required_argument, 0, 'T'},
 	{"unbuffered",       no_argument,       0, 'u'},
 	{"wait",             required_argument, 0, 'W'},
-	{"disable-status",   no_argument,       0, 'X'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
@@ -466,7 +465,6 @@ static void _opt_default(void)
 		sropt.allocate		= false;
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
-		sropt.disable_status	= false;
 		sropt.jobid		= NO_VAL;
 		sropt.kill_bad_exit	= NO_VAL;
 		sropt.labelio		= false;
@@ -557,7 +555,7 @@ env_vars_t env_vars[] = {
   { "SLURM_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
   { "SLURM_DELAY_BOOT", LONG_OPT_DELAY_BOOT },
   { "SLURM_DEPENDENCY", 'd' },
-{"SLURM_DISABLE_STATUS",OPT_INT,        &sropt.disable_status,NULL           },
+  { "SLURM_DISABLE_STATUS", 'X' },
   { "SLURM_DISTRIBUTION", 'm' },
   { "SLURM_EPILOG", LONG_OPT_EPILOG },
   { "SLURM_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
@@ -872,9 +870,6 @@ static void _set_options(const int argc, char **argv)
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
 			sropt.max_wait = _get_int(optarg, "wait", false);
-			break;
-		case (int)'X':
-			sropt.disable_status = true;
 			break;
                 case LONG_OPT_BCAST:
 			if (optarg) {

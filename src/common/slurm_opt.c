@@ -838,6 +838,16 @@ static slurm_cli_opt_t slurm_opt_dependency = {
 	.reset_func = arg_reset_dependency,
 };
 
+COMMON_SRUN_BOOL_OPTION(disable_status);
+static slurm_cli_opt_t slurm_opt_disable_status = {
+	.name = "disable-status",
+	.has_arg = no_argument,
+	.val = 'X',
+	.set_func_srun = arg_set_disable_status,
+	.get_func = arg_get_disable_status,
+	.reset_func = arg_reset_disable_status,
+};
+
 static int arg_set_distribution(slurm_opt_t *opt, const char *arg)
 {
 	opt->distribution = verify_dist_type(arg, &opt->plane_size);
@@ -3000,6 +3010,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_deadline,
 	&slurm_opt_delay_boot,
 	&slurm_opt_dependency,
+	&slurm_opt_disable_status,
 	&slurm_opt_distribution,
 	&slurm_opt_epilog,
 	&slurm_opt_error,
