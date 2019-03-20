@@ -192,7 +192,6 @@ struct option long_options[] = {
 	{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
-	{"cpu_bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"cpu-freq",         required_argument, 0, LONG_OPT_CPU_FREQ},
 	{"cpus-per-gpu",     required_argument, 0, LONG_OPT_CPUS_PER_GPU},
 	{"deadline",         required_argument, 0, LONG_OPT_DEADLINE},
