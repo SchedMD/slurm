@@ -317,25 +317,22 @@ static void _set_pbs_options(int argc, char **argv)
 
 		switch (opt_char) {
 		case 'a':
-			opt.begin = parse_time(optarg, 0);
+			xlate_val = 'b';
+			xlate_arg = xstrdup(optarg);
 			break;
+		/* These options all have a direct correspondance. */
 		case 'A':
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
+		case 'e':
+		case 'o':
+			xlate_val = opt_char;
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'c':
 			break;
 		case 'C':
 			break;
-		case 'e':
-			xfree(opt.efname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				opt.efname = xstrdup("/dev/null");
-			else
-				opt.efname = xstrdup(optarg);
-			break;
 		case 'h':
-			opt.hold = true;
+			xlate_val = 'H';
 			break;
 		case 'I':
 			break;
@@ -344,8 +341,8 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'J':
 		case 't':
 			/* PBS Pro uses -J. Torque uses -t. */
-			xfree(sbopt.array_inx);
-			sbopt.array_inx = xstrdup(optarg);
+			xlate_val = 'a';
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'k':
 			break;
@@ -362,46 +359,20 @@ static void _set_pbs_options(int argc, char **argv)
 			}
 			break;
 		case 'M':
-			xfree(opt.mail_user);
-			opt.mail_user = xstrdup(optarg);
+			xlate_val = LONG_OPT_MAIL_USER;
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'N':
-			xfree(opt.job_name);
-			opt.job_name = xstrdup(optarg);
+			xlate_val = 'J';
+			xlate_arg = xstrdup(optarg);
 			break;
-		case 'o':
-			xfree(opt.ofname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				opt.ofname = xstrdup("/dev/null");
-			else
-				opt.ofname = xstrdup(optarg);
+		case 'p':
+			xlate_val = LONG_OPT_NICE;
+			xlate_arg = xstrdup(optarg);
 			break;
-		case 'p': {
-			long long tmp_nice;
-			if (optarg)
-				tmp_nice = strtoll(optarg, NULL, 10);
-			else
-				tmp_nice = 100;
-			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
-				error("Nice value out of range (+/- %u). Value "
-				      "ignored", NICE_OFFSET - 3);
-				tmp_nice = 0;
-			}
-			if (tmp_nice < 0) {
-				uid_t my_uid = getuid();
-				if ((my_uid != 0) &&
-				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be "
-					      "non-negative, value ignored");
-					tmp_nice = 0;
-				}
-			}
-			opt.nice = (int) tmp_nice;
-			break;
-		}
 		case 'q':
-			xfree(opt.partition);
-			opt.partition = xstrdup(optarg);
+			xlate_val = 'p';
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'r':
 			break;
@@ -410,10 +381,11 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'u':
 			break;
 		case 'v':
-			if (sbopt.export_env)
-				sep = ",";
-			/* CLANG false positive */
-			xstrfmtcat(sbopt.export_env, "%s%s", sep, optarg);
+			xlate_val = LONG_OPT_EXPORT;
+			xlate_arg = xstrdup(sbopt.export_env);
+			if (xlate_arg)
+				xstrcat(xlate_arg, ",");
+			xstrcat(xlate_arg, optarg);
 			break;
 		case 'V':
 			break;
@@ -424,8 +396,8 @@ static void _set_pbs_options(int argc, char **argv)
 				xlate_val = LONG_OPT_UMASK;
 				xlate_arg = xstrdup(optarg+6);
 			} else if (!xstrncasecmp(optarg, "depend=", 7)) {
-				xfree(opt.dependency);
-				opt.dependency = xstrdup(optarg+7);
+				xlate_val = 'd';
+				xlate_arg = xstrdup(optarg+7);
 			} else {
 				verbose("Ignored PBS attributes: %s", optarg);
 			}
