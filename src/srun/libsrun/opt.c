@@ -131,7 +131,6 @@ struct option long_options[] = {
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
-	{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
 	{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
 	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
@@ -486,8 +485,6 @@ static void _opt_default(void)
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
 		sropt.preserve_env	= false;
-		xfree(sropt.prolog);
-		sropt.prolog		= slurm_get_srun_prolog();
 		sropt.quit_on_intr	= false;
 		sropt.slurmd_debug	= LOG_LEVEL_QUIET;
 		sropt.test_exec		= false;
@@ -608,7 +605,7 @@ env_vars_t env_vars[] = {
   { "SLURM_PARTITION", 'p' },
   { "SLURM_POWER", LONG_OPT_POWER },
   { "SLURM_PROFILE", LONG_OPT_PROFILE },
-{"SLURM_PROLOG",        OPT_STRING,     &sropt.prolog,      NULL             },
+  { "SLURM_PROLOG", LONG_OPT_PROLOG },
   { "SLURM_QOS", 'q' },
   { "SLURM_REMOTE_CWD", 'D' },
   { "SLURM_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
@@ -953,12 +950,6 @@ static void _set_options(const int argc, char **argv)
 			pmi_server_max_threads(sropt.max_threads);
 			sropt.msg_timeout     = 15;
 			break;
-		case LONG_OPT_PROLOG:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sropt.prolog);
-			sropt.prolog = xstrdup(optarg);
-			break;
 		case LONG_OPT_EPILOG:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1207,6 +1198,9 @@ static bool _opt_verify(void)
 		      "-w,--nodelist or -x,--exclude.");
 		verified = false;
 	}
+
+	if (!sropt.prolog)
+		sropt.prolog = slurm_get_srun_prolog();
 
 	/*
 	 * This means --ntasks was read from the environment.

@@ -2149,6 +2149,16 @@ static slurm_cli_opt_t slurm_opt_profile = {
 	.reset_func = arg_reset_profile,
 };
 
+COMMON_SRUN_STRING_OPTION(prolog);
+static slurm_cli_opt_t slurm_opt_prolog = {
+	.name = "prolog",
+	.has_arg = required_argument,
+	.val = LONG_OPT_PROLOG,
+	.set_func_srun = arg_set_prolog,
+	.get_func = arg_get_prolog,
+	.reset_func = arg_reset_prolog,
+};
+
 static int arg_set_propagate(slurm_opt_t *opt, const char *arg)
 {
 	const char *tmp = arg;
@@ -2997,6 +3007,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_power,
 	&slurm_opt_priority,
 	&slurm_opt_profile,
+	&slurm_opt_prolog,
 	&slurm_opt_propagate,
 	&slurm_opt_qos,
 	&slurm_opt_quiet,
