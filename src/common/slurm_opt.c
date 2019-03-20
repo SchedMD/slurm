@@ -2425,6 +2425,16 @@ static slurm_cli_opt_t slurm_opt_switches = {
 	.reset_each_pass = true,
 };
 
+COMMON_SRUN_STRING_OPTION(task_prolog);
+static slurm_cli_opt_t slurm_opt_task_prolog = {
+	.name = "task-prolog",
+	.has_arg = required_argument,
+	.val = LONG_OPT_TASK_PROLOG,
+	.set_func_srun = arg_set_task_prolog,
+	.get_func = arg_get_task_prolog,
+	.reset_func = arg_reset_task_prolog,
+};
+
 /* Deprecated form of --ntasks-per-node */
 static slurm_cli_opt_t slurm_opt_tasks_per_node = {
 	.name = "tasks-per-node",
@@ -2989,6 +2999,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_switch_req,
 	&slurm_opt_switch_wait,
 	&slurm_opt_switches,
+	&slurm_opt_task_prolog,
 	&slurm_opt_tasks_per_node,
 	&slurm_opt_test_only,
 	&slurm_opt_thread_spec,

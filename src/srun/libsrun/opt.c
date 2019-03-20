@@ -138,7 +138,6 @@ struct option long_options[] = {
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 	{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 	{"task-epilog",      required_argument, 0, LONG_OPT_TASK_EPILOG},
-	{"task-prolog",      required_argument, 0, LONG_OPT_TASK_PROLOG},
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
@@ -493,7 +492,6 @@ static void _opt_default(void)
 		sropt.quit_on_intr	= false;
 		sropt.slurmd_debug	= LOG_LEVEL_QUIET;
 		xfree(sropt.task_epilog);
-		xfree(sropt.task_prolog);
 		sropt.test_exec		= false;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
@@ -625,7 +623,7 @@ env_vars_t env_vars[] = {
   { "SLURM_STDINMODE", 'i' },
   { "SLURM_STDOUTMODE", 'o' },
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &sropt.task_epilog, NULL             },
-{"SLURM_TASK_PROLOG",   OPT_STRING,     &sropt.task_prolog, NULL             },
+  { "SLURM_TASK_PROLOG", LONG_OPT_TASK_PROLOG },
   { "SLURM_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
 {"SLURM_THREADS",       OPT_INT,        &sropt.max_threads, NULL             },
   { "SLURM_TIMELIMIT", 't' },
@@ -968,12 +966,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			xfree(sropt.epilog);
 			sropt.epilog = xstrdup(optarg);
-			break;
-		case LONG_OPT_TASK_PROLOG:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sropt.task_prolog);
-			sropt.task_prolog = xstrdup(optarg);
 			break;
 		case LONG_OPT_TASK_EPILOG:
 			if (!optarg)
