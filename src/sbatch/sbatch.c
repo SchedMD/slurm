@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 		exit(error_exit);
 	}
 
-	print_multi_line_string(resp->job_submit_user_msg, -1);
+	print_multi_line_string(resp->job_submit_user_msg, -1, LOG_LEVEL_INFO);
 
 	if (!quiet) {
 		if (!sbopt.parsable) {

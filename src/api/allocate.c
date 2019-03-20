@@ -243,7 +243,8 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			/* no, we need to wait for a response */
 
 			/* print out any user messages before we wait. */
-			print_multi_line_string(resp->job_submit_user_msg, -1);
+			print_multi_line_string(resp->job_submit_user_msg,
+						-1, LOG_LEVEL_INFO);
 
 			job_id = resp->job_id;
 			slurm_free_resource_allocation_response_msg(resp);
@@ -395,7 +396,8 @@ static void _pack_alloc_test(List resp, uint32_t *node_cnt, uint32_t *job_id)
 		pack_node_cnt += alloc->node_cnt;
 		if (pack_job_id == 0)
 			pack_job_id = alloc->job_id;
-		print_multi_line_string(alloc->job_submit_user_msg, inx);
+		print_multi_line_string(alloc->job_submit_user_msg,
+					inx, LOG_LEVEL_INFO);
 		inx++;
 	}
 	list_iterator_destroy(iter);
@@ -558,7 +560,8 @@ int slurm_job_will_run(job_desc_msg_t *req)
 
 	if (will_run_resp)
 		print_multi_line_string(
-			will_run_resp->job_submit_user_msg, -1);
+			will_run_resp->job_submit_user_msg,
+			-1, LOG_LEVEL_INFO);
 
 	if ((rc == 0) && will_run_resp) {
 		slurm_make_time_str(&will_run_resp->start_time,
@@ -635,7 +638,8 @@ extern int slurm_pack_job_will_run(List job_req_list)
 
 		if (will_run_resp)
 			print_multi_line_string(
-				will_run_resp->job_submit_user_msg, inx);
+				will_run_resp->job_submit_user_msg,
+				inx, LOG_LEVEL_INFO);
 
 		if ((rc == SLURM_SUCCESS) && will_run_resp) {
 			if (first_job_id == 0)

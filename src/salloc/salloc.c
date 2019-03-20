@@ -457,7 +457,8 @@ int main(int argc, char **argv)
 		/* Allocation granted to regular job */
 		my_job_id = alloc->job_id;
 
-		print_multi_line_string(alloc->job_submit_user_msg, -1);
+		print_multi_line_string(alloc->job_submit_user_msg,
+					-1, LOG_LEVEL_INFO);
 		info("Granted job allocation %u", my_job_id);
 
 		if (_proc_alloc(alloc) != SLURM_SUCCESS)
