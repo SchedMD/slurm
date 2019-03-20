@@ -1689,6 +1689,41 @@ static slurm_cli_opt_t slurm_opt_no_kill = {
 	.reset_func = arg_reset_no_kill,
 };
 
+/* see --requeue below as well */
+static int arg_set_no_requeue(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->sbatch_opt)
+		return SLURM_ERROR;
+
+	opt->sbatch_opt->requeue = 0;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_requeue(slurm_opt_t *opt)
+{
+	if (!opt->sbatch_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->sbatch_opt->requeue == NO_VAL)
+		return xstrdup("unset");
+	else if (opt->sbatch_opt->requeue == 0)
+		return xstrdup("no-requeue");
+	return xstrdup("requeue");
+}
+static void arg_reset_requeue(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->requeue = NO_VAL;
+}
+static slurm_cli_opt_t slurm_opt_no_requeue = {
+	.name = "no-requeue",
+	.has_arg = no_argument,
+	.val = LONG_OPT_NO_REQUEUE,
+	.set_func_sbatch = arg_set_no_requeue,
+	.get_func = arg_get_requeue,
+	.reset_func = arg_reset_requeue,
+};
+
 static int arg_set_no_shell(slurm_opt_t *opt, const char *arg)
 {
 	if (opt->salloc_opt)
@@ -2159,6 +2194,25 @@ static slurm_cli_opt_t slurm_opt_reboot = {
 	.set_func = arg_set_reboot,
 	.get_func = arg_get_reboot,
 	.reset_func = arg_reset_reboot,
+};
+
+static int arg_set_requeue(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->sbatch_opt)
+		return SLURM_ERROR;
+
+	opt->sbatch_opt->requeue = 1;
+
+	return SLURM_SUCCESS;
+}
+/* arg_get_requeue and arg_reset_requeue defined before with --no-requeue */
+static slurm_cli_opt_t slurm_opt_requeue = {
+	.name = "requeue",
+	.has_arg = no_argument,
+	.val = LONG_OPT_REQUEUE,
+	.set_func_sbatch = arg_set_requeue,
+	.get_func = arg_get_requeue,
+	.reset_func = arg_reset_requeue,
 };
 
 COMMON_STRING_OPTION(reservation);
@@ -2820,6 +2874,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_no_bell,
 	&slurm_opt_no_kill,
 	&slurm_opt_no_shell,
+	&slurm_opt_no_requeue,
 	&slurm_opt_nodefile,
 	&slurm_opt_nodelist,
 	&slurm_opt_nodes,
@@ -2840,6 +2895,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_qos,
 	&slurm_opt_quiet,
 	&slurm_opt_reboot,
+	&slurm_opt_requeue,
 	&slurm_opt_reservation,
 	&slurm_opt_signal,
 	&slurm_opt_sockets_per_node,

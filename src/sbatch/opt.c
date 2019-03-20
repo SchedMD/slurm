@@ -80,8 +80,6 @@
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
 #define OPT_MULTI	0x0b
-#define OPT_NO_REQUEUE  0x10
-#define OPT_REQUEUE     0x11
 #define OPT_INT64	  0x24
 
 /*---- global variables, defined in opt.h ----*/
@@ -149,7 +147,6 @@ static void _opt_default(bool first_pass)
 	 * once specified for one, but will be overwritten with new values if
 	 * specified on the command line */
 	if (first_pass) {
-		sbopt.requeue		= NO_VAL;
 		sbopt.umask		= -1;
 	}
 
@@ -230,7 +227,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   { "SBATCH_NETWORK", LONG_OPT_NETWORK },
   { "SBATCH_NO_KILL", 'k' },
-  {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
+  { "SBATCH_NO_REQUEUE", LONG_OPT_NO_REQUEUE },
   { "SBATCH_OPEN_MODE", LONG_OPT_OPEN_MODE },
   { "SBATCH_OVERCOMMIT", 'O' },
   { "SBATCH_PARTITION", 'p' },
@@ -238,7 +235,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_PROFILE", LONG_OPT_PROFILE },
   { "SBATCH_QOS", 'q' },
   { "SBATCH_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
-  {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL          },
+  { "SBATCH_REQUEUE", LONG_OPT_REQUEUE },
   { "SBATCH_RESERVATION", LONG_OPT_RESERVATION },
   { "SBATCH_SIGNAL", LONG_OPT_SIGNAL },
   { "SBATCH_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
@@ -327,13 +324,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			*((bool *)e->arg) = false;
 		}
 		break;
-	case OPT_NO_REQUEUE:
-		sbopt.requeue = 0;
-		break;
-
-	case OPT_REQUEUE:
-		sbopt.requeue = 1;
-		break;
 	default:
 		/*
 		* assume this was meant to be processed by
@@ -348,8 +338,6 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
-	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
-	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
 };
@@ -728,12 +716,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case LONG_OPT_NO_REQUEUE:
-			sbopt.requeue = 0;
-			break;
-		case LONG_OPT_REQUEUE:
-			sbopt.requeue = 1;
-			break;
 		case LONG_OPT_WRAP:
 			/* handled in process_options_first_pass() */
 			break;
