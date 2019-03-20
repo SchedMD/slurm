@@ -2140,6 +2140,16 @@ static slurm_cli_opt_t slurm_opt_power = {
 	.reset_each_pass = true,
 };
 
+COMMON_SRUN_BOOL_OPTION(preserve_env);
+static slurm_cli_opt_t slurm_opt_preserve_env = {
+	.name = "preserve-env",
+	.has_arg = no_argument,
+	.val = 'E',
+	.set_func_srun = arg_set_preserve_env,
+	.get_func = arg_get_preserve_env,
+	.reset_func = arg_reset_preserve_env,
+};
+
 static int arg_set_priority(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "TOP")) {
@@ -3089,6 +3099,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_parsable,
 	&slurm_opt_partition,
 	&slurm_opt_power,
+	&slurm_opt_preserve_env,
 	&slurm_opt_priority,
 	&slurm_opt_profile,
 	&slurm_opt_prolog,

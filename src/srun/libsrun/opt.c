@@ -109,8 +109,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"preserve-env",     no_argument,       0, 'E'},
-	{"preserve-slurm-env", no_argument,     0, 'E'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
@@ -471,7 +469,6 @@ static void _opt_default(void)
 		sropt.noshell		= false;
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
-		sropt.preserve_env	= false;
 		sropt.test_exec		= false;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
@@ -834,9 +831,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case (int)'E':
-			sropt.preserve_env = true;
-			break;
 		case (int)'K':
 			if (optarg)
 				sropt.kill_bad_exit = strtol(optarg, NULL, 10);
