@@ -132,7 +132,6 @@ struct option long_options[] = {
 	{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
 	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
-	{"slurmd-debug",     required_argument, 0, LONG_OPT_DEBUG_SLURMD},
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
@@ -480,7 +479,6 @@ static void _opt_default(void)
 		sropt.pty			= false;
 		sropt.preserve_env	= false;
 		sropt.quit_on_intr	= false;
-		sropt.slurmd_debug	= LOG_LEVEL_QUIET;
 		sropt.test_exec		= false;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
@@ -544,7 +542,6 @@ struct env_vars {
 };
 
 env_vars_t env_vars[] = {
-{"SLURMD_DEBUG",        OPT_INT,        &sropt.slurmd_debug,NULL             },
   { "SLURM_ACCOUNT", 'A' },
   { "SLURM_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
 {"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
@@ -622,6 +619,7 @@ env_vars_t env_vars[] = {
   { "SLURM_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SLURM_WCKEY", LONG_OPT_WCKEY },
   { "SLURM_WORKING_DIR", 'D' },
+  { "SLURMD_DEBUG", LONG_OPT_SLURMD_DEBUG },
 {NULL, 0, NULL, NULL}
 };
 
@@ -920,15 +918,6 @@ static void _set_options(const int argc, char **argv)
 				break;	/* Fix for Coverity false positive */
 			sropt.msg_timeout =
 				_get_int(optarg, "msg-timeout", true);
-			break;
-		case LONG_OPT_DEBUG_SLURMD:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (isdigit(optarg[0]))
-				sropt.slurmd_debug =
-					_get_int(optarg, "slurmd-debug", false);
-			else
-				sropt.slurmd_debug = log_string2num(optarg);
 			break;
 		case LONG_OPT_DEBUG_TS:
 			sropt.debugger_test    = true;

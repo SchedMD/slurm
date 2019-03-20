@@ -2320,6 +2320,36 @@ static slurm_cli_opt_t slurm_opt_signal = {
 	.reset_func = arg_reset_signal,
 };
 
+static int arg_set_slurmd_debug(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->slurmd_debug = log_string2num(arg);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_slurmd_debug(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup(log_num2string(opt->srun_opt->slurmd_debug));
+}
+static void arg_reset_slurmd_debug(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->slurmd_debug = LOG_LEVEL_QUIET;
+}
+static slurm_cli_opt_t slurm_opt_slurmd_debug = {
+	.name = "slurmd-debug",
+	.has_arg = required_argument,
+	.val = LONG_OPT_SLURMD_DEBUG,
+	.set_func_srun = arg_set_slurmd_debug,
+	.get_func = arg_get_slurmd_debug,
+	.reset_func = arg_reset_slurmd_debug,
+};
+
 COMMON_INT_OPTION_SET(sockets_per_node, "--sockets-per-node");
 COMMON_INT_OPTION_GET(sockets_per_node);
 COMMON_OPTION_RESET(sockets_per_node, NO_VAL);
@@ -3037,6 +3067,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_requeue,
 	&slurm_opt_reservation,
 	&slurm_opt_signal,
+	&slurm_opt_slurmd_debug,
 	&slurm_opt_sockets_per_node,
 	&slurm_opt_spread_job,
 	&slurm_opt_switch_req,
