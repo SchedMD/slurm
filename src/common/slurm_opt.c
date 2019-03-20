@@ -1690,6 +1690,16 @@ static slurm_cli_opt_t slurm_opt_nice = {
 	.reset_func = arg_reset_nice,
 };
 
+COMMON_SRUN_BOOL_OPTION(no_alloc);
+static slurm_cli_opt_t slurm_opt_no_allocate = {
+	.name = "no-allocate",
+	.has_arg = no_argument,
+	.val = 'Z',
+	.set_func_srun = arg_set_no_alloc,
+	.get_func = arg_get_no_alloc,
+	.reset_func = arg_reset_no_alloc,
+};
+
 /* See --bell above as well */
 static int arg_set_no_bell(slurm_opt_t *opt, const char *arg)
 {
@@ -2998,6 +3008,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mincpus,
 	&slurm_opt_network,
 	&slurm_opt_nice,
+	&slurm_opt_no_allocate,
 	&slurm_opt_no_bell,
 	&slurm_opt_no_kill,
 	&slurm_opt_no_shell,
