@@ -2425,6 +2425,16 @@ static slurm_cli_opt_t slurm_opt_switches = {
 	.reset_each_pass = true,
 };
 
+COMMON_SRUN_STRING_OPTION(task_epilog);
+static slurm_cli_opt_t slurm_opt_task_epilog = {
+	.name = "task-epilog",
+	.has_arg = required_argument,
+	.val = LONG_OPT_TASK_EPILOG,
+	.set_func_srun = arg_set_task_epilog,
+	.get_func = arg_get_task_epilog,
+	.reset_func = arg_reset_task_epilog,
+};
+
 COMMON_SRUN_STRING_OPTION(task_prolog);
 static slurm_cli_opt_t slurm_opt_task_prolog = {
 	.name = "task-prolog",
@@ -2999,6 +3009,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_switch_req,
 	&slurm_opt_switch_wait,
 	&slurm_opt_switches,
+	&slurm_opt_task_epilog,
 	&slurm_opt_task_prolog,
 	&slurm_opt_tasks_per_node,
 	&slurm_opt_test_only,
