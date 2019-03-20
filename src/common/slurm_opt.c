@@ -129,6 +129,41 @@ static void arg_reset_##field(slurm_opt_t *opt)			\
 		xfree(opt->sbatch_opt->field);			\
 }
 
+#define COMMON_SRUN_STRING_OPTION(field)	\
+COMMON_SRUN_STRING_OPTION_SET(field)		\
+COMMON_SRUN_STRING_OPTION_GET(field)		\
+COMMON_SRUN_STRING_OPTION_RESET(field)
+#define COMMON_SRUN_STRING_OPTION_SET(field)			\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+__attribute__((nonnull (1)));					\
+static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
+{								\
+	if (!opt->srun_opt)					\
+		return SLURM_ERROR;				\
+								\
+	xfree(opt->srun_opt->field);				\
+	opt->srun_opt->field = xstrdup(arg);			\
+								\
+	return SLURM_SUCCESS;					\
+}
+#define COMMON_SRUN_STRING_OPTION_GET(field)			\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static char *arg_get_##field(slurm_opt_t *opt)			\
+{								\
+	if (!opt->srun_opt)					\
+		return xstrdup("invalid-context");		\
+	return xstrdup(opt->srun_opt->field);			\
+}
+#define COMMON_SRUN_STRING_OPTION_RESET(field)			\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+__attribute__((nonnull));					\
+static void arg_reset_##field(slurm_opt_t *opt)			\
+{								\
+	if (opt->srun_opt)					\
+		xfree(opt->srun_opt->field);			\
+}
+
 #define COMMON_OPTION_RESET(field, value)			\
 static void arg_reset_##field(slurm_opt_t *opt)			\
 __attribute__((nonnull));					\
