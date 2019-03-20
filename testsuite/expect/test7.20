@@ -1,0 +1,364 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose:  Test lua JobSubmitPlugin
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC
+# Written by Nathan Rini
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+source ./globals_accounting
+
+set test_id		"7.20"
+set test_lua_reject	"test$test_id\_scripts/reject.lua"
+set test_lua_pass	"test$test_id\_scripts/pass.lua"
+set exit_code		 0
+set cwd			"[$bin_pwd]"
+
+set ta1	    "test$test_id-account.1"
+set tu1     [get_my_user_name]
+set tq1     "test$test_id-qos.1"
+set tq2     "test$test_id-qos.2"
+
+# account options
+array set acct_1 {}
+set acct(Organization)  "Account_Org_A1"
+set acct(Description)   "Test_Account_A1"
+set acct(Qos) $tq1
+
+# user options
+array set user_req_1 {}
+set user_req_1(Account) $ta1
+set user_req_1(Qos) "$tq1,$tq2"
+
+# qos options
+array set qos_1 {}
+set qos_1(Description)	  "test_qos_1"
+set qos_1(flags)          "denyonlimit"
+set qos_1(maxtresperuser) "cpu=1"
+array set qos_2 {}
+set qos_2(Description)    "test_qos_2"
+
+set access_err  0
+
+set timeout $max_job_delay
+print_header $test_id
+
+#Create test assoc and accounts
+proc create_accounts {} {
+	global ta1 tq1 tq2 tu1 user_req_1 qos_1 qos_2
+	log_info "create account and QOS"
+
+	#Create test assoc and accounts
+	check_rc [add_qos $tq1 [array get qos_1]]
+	check_rc [add_qos $tq2 [array get qos_2]]
+	check_rc [add_acct $ta1 [array get acct_1]]
+	check_rc [add_user $tu1 [array get user_req_1]]
+}
+
+#Cleanup test assoc and accounts
+proc cleanup_accounts {} {
+	global ta1 tq1 tq2
+
+	#wait_for_account_done $ta1,$ta2
+
+	log_info "remove QOS: $tq1, $tq2"
+	remove_qos $tq1,$tq2
+
+	log_info "remove account: $ta1"
+	remove_acct "" $ta1
+}
+
+proc do_copy { src dst } {
+	global bin_cp
+	set rc 12345
+
+	if { [file exists $dst ] } {
+		spawn unlink $dst
+	}
+	if { [file exists $src ] } {
+		spawn $bin_cp -v $src $dst
+		expect {
+			timeout {
+				log_error "$file was not copied"
+				exit 1
+			}
+			eof {
+				lassign [wait] pid spawnid os_error_flag rc
+			}
+		}
+
+		if { $rc != 0 } {
+			log_error "$file was not copied: $rc"
+			endit $rc
+		}
+	} else {
+		log_info "skipping backup of non-existant $file"
+	}
+}
+
+proc take_backup { file } {
+	global cwd bin_cp
+	set bfile [lindex [file split $file] end]
+	log_info "Taking backup of $file -> $bfile"
+
+	if { [file exists $cwd/$bfile ] } {
+		exec unlink $cwd/$bfile
+	}
+	if { [file exists $file ] } {
+		do_copy $file $cwd/$bfile.orig
+	} else {
+		log_info "skipping backup of non-existant $file"
+	}
+}
+
+proc restore_backup { file } {
+	global cwd bin_cp
+	set bfile [lindex [file split $file] end]
+
+	if { [file exists $cwd/$bfile.orig ] } {
+		if { [file exists $file ] } {
+			spawn unlink $file
+		}
+
+		do_copy $cwd/$bfile.orig $file
+	} else {
+		log_info "skipping restore of non-existant $file"
+	}
+
+	if { [file exists $cwd/$bfile.orig ] } {
+		exec unlink $cwd/$bfile.orig
+	}
+}
+
+proc endit { exit_code } {
+	global test_id config_dir
+
+	if {$exit_code == 0} {
+		cleanup_accounts
+		restore_backup $config_dir/job_submit.lua
+		restore_backup $config_dir/slurm.conf
+		reconfigure
+
+		print_success $test_id
+	} else {
+		log_error "exiting with exit code $exit_code"
+	}
+
+	exit $exit_code
+}
+
+proc check_rc { exit_code } {
+	if {$exit_code != 0} {
+		log_error "exiting with exit code $exit_code"
+		exit $exit_code
+	}
+}
+
+proc test_bin_pass { bin args count } {
+	global salloc ta1 tq2 srun number
+
+	set got_init 0
+	set got_sub1 0
+	set got_sub2 0
+	set got_sub3 0
+	set rc -12345
+
+	eval spawn $bin [join $args " "]
+	expect {
+		-re "^(srun|salloc|sbatch): initialized\r\n" {
+			incr got_init
+			exp_continue
+		}
+		# salloc: 0: submit1
+		-re "^(srun|salloc|sbatch): ($number: |)submit1\r\n" {
+			incr got_sub1
+			exp_continue
+		}
+		-re "^(srun|salloc|sbatch): ($number: |)submit2\r\n" {
+			incr got_sub2
+			exp_continue
+		}
+		-re "^(srun|salloc|sbatch): ($number: |)submit3\r\n" {
+			incr got_sub3
+			exp_continue
+		}
+		timeout {
+			log_error "$bin not responding"
+			if {$job_id != 0} {
+				cancel_job $job_id
+			}
+			slow_kill [expr 0 - $salloc_pid]
+			endit 1
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+		}
+	}
+
+	log_info "$bin rc:$rc init:$got_init sub1:$got_sub1 sub2:$got_sub2 sub3:$got_sub3 expected:$count"
+
+	if {$rc != 0 || $got_sub1 != $count || $got_sub2 != $count ||
+		$got_sub3 != $count} {
+			log_error "Invalid $bin response"
+			endit 1
+	}
+}
+
+proc test_bin_fail { bin args count } {
+	global ta1 tq1 tq2 srun number
+
+	set got_init 0
+	set got_sub1 0
+	set got_sub2 0
+	set got_sub3 0
+	set rc -12345
+
+	eval spawn $bin [join $args " "]
+	expect {
+		-re "^(srun|salloc|sbatch): error: initialized\r\n" {
+			incr got_init
+			exp_continue
+		}
+		#srun: error: submit1\r\n
+		#salloc: error: 0: submit1\r\n
+		-re "^(srun|salloc|sbatch): error: ($number: |)submit1\r\n" {
+			incr got_sub1
+			exp_continue
+		}
+		-re "^(srun|salloc|sbatch): error: ($number: |)submit2\r\n" {
+			incr got_sub2
+			exp_continue
+		}
+		-re "^(srun|salloc|sbatch): error: ($number: |)submit3\r\n" {
+			incr got_sub3
+			exp_continue
+		}
+		timeout {
+			log_error "$bin not responding"
+			if {$job_id != 0} {
+				cancel_job $job_id
+			}
+			slow_kill [expr 0 - $salloc_pid]
+			endit 1
+		}
+		eof {
+			lassign [wait] pid spawnid os_error_flag rc
+		}
+	}
+
+	log_info "$bin rc:$rc init:$got_init sub1:$got_sub1 sub2:$got_sub2 sub3:$got_sub3 expected:$count"
+
+	if {$rc == 0 || $got_sub1 != $count || $got_sub2 != $count ||
+		$got_sub3 != $count} {
+			log_error "Invalid $bin response"
+			endit 1
+	}
+}
+
+if { [test_account_storage] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
+	exit 0
+} elseif { [test_enforce_limits] == 0 } {
+	send_user "\nWARNING: This test can't be run without a usable AccountingStorageEnforce\n"
+	exit 0
+}
+if { [test_limits_enforced] == 0 } {
+	send_user "\nWARNING: This test can't be run without enforcing limits\n"
+	exit 0
+}
+
+set config_dir ""
+log_user 0
+spawn $scontrol show config
+expect {
+	-re "SLURM_CONF *= (\\S+)$end_of_line" {
+		set config_dir [file dirname $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		log_error "scontrol is not responding"
+		endit 1
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+if { $config_dir == "" } {
+		log_error "scontrol did not provide SLURM_CONF"
+		exit 1
+}
+
+cleanup_accounts
+create_accounts
+
+take_backup $config_dir/job_submit.lua
+take_backup $config_dir/slurm.conf
+
+# Activate lua plugin
+exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_echo "JobSubmitPlugins=lua" >> $config_dir/slurm.conf
+reconfigure
+
+do_copy $test_lua_reject $config_dir/job_submit.lua
+# Sleep for 1 second to make sure that modify time is different from last copy.
+sleep 1
+file mtime $config_dir/job_submit.lua [timestamp]
+
+# Check that all job types are rejected
+test_bin_fail $salloc {-A $ta1 --qos $tq2 -n5 "/bin/true"} 1
+test_bin_fail $salloc {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1
+test_bin_fail $srun {-A $ta1 --qos $tq2 -n5 /bin/true} 1
+test_bin_fail $srun {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1
+
+do_copy $test_lua_pass $config_dir/job_submit.lua
+# Sleep for 1 second to make sure that modify time is different from last copy.
+sleep 1
+file mtime $config_dir/job_submit.lua [timestamp]
+
+# Check that passing works
+test_bin_pass $salloc {-A $ta1 --qos $tq2 -n5 "/bin/true"} 1
+test_bin_pass $salloc {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 3
+test_bin_pass $srun {-A $ta1 --qos $tq2 -n5 /bin/true} 1
+test_bin_pass $srun {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 3
+test_bin_pass $sbatch {-W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 1
+test_bin_pass $sbatch {-W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 1
+test_bin_pass $sbatch {-W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 3
+
+# Check that messages are still sent with failing QOS but passing filter
+test_bin_fail $salloc {-A $ta1 --qos $tq1 -n5 "/bin/true"} 1
+test_bin_fail $salloc {-A $ta1 --qos $tq1 -n5 : -n3 : -n1 "/bin/true"} 1
+test_bin_fail $srun {-A $ta1 --qos $tq1 -n5 /bin/true} 1
+test_bin_fail $srun {-A $ta1 --qos $tq1 -n5 : -n3 : -n1 /bin/true} 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq1 -n5 --wrap /bin/true} 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq1 -n5 --array 10 --wrap /bin/true} 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap /bin/true} 3
+
+check_rc $exit_code
+
+endit 0
