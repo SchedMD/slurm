@@ -466,19 +466,22 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 	if (!node_cnt)
 		node_cnt = 1;
 	else {
-		opt.nodes_set = true;
-		opt.min_nodes = opt.max_nodes = node_cnt;
+		char *nodes = xstrdup_printf("%d", node_cnt);
+		slurm_process_option(&opt, 'N', nodes, false, false);
+		xfree(nodes);
 	}
 
 	if (ppn) {
+		char *ntasks;
 		ppn *= node_cnt;
-		opt.ntasks_set = true;
-		opt.ntasks = ppn;
+		ntasks = xstrdup_printf("%d", ppn);
+		slurm_process_option(&opt, 'n', ntasks, false, false);
 	}
 
 	if (hostlist_count(hl) > 0) {
-		xfree(opt.nodelist);
-		opt.nodelist = hostlist_ranged_string_xmalloc(hl);
+		char *nodelist = hostlist_ranged_string_xmalloc(hl);
+		slurm_process_option(&opt, 'w', nodelist, false, false);
+		xfree(nodelist);
 	}
 
 	hostlist_destroy(hl);
@@ -550,11 +553,8 @@ static void _parse_pbs_resource_list(char *rl)
 				 */
 				temp[end] = '\0';
 			}
-			opt.pn_min_tmp_disk = str_to_mbytes(temp);
-			if (opt.pn_min_tmp_disk != NO_VAL64) {
-				error("invalid tmp value %s", temp);
-				exit(error_exit);
-			}
+			slurm_process_option(&opt, LONG_OPT_TMP, temp,
+					     false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "host=", 5)) {
 			i+=5;
@@ -576,20 +576,17 @@ static void _parse_pbs_resource_list(char *rl)
 				 */
 				temp[end] = '\0';
 			}
-			opt.pn_min_memory = str_to_mbytes(temp);
-			if (opt.pn_min_memory == NO_VAL64) {
-				error("invalid memory constraint %s", temp);
-				exit(error_exit);
-			}
-
+			slurm_process_option(&opt, LONG_OPT_MEM, temp,
+					     false, false);
 			xfree(temp);
 		} else if (!xstrncasecmp(rl+i, "mpiprocs=", 9)) {
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 4;
-				opt.ntasks_per_node = parse_int("mpiprocs",
-								temp, true);
+				slurm_process_option(&opt,
+						     LONG_OPT_NTASKSPERNODE,
+						     temp, false, false);
 				xfree(temp);
 			}
 #ifdef HAVE_NATIVE_CRAY
@@ -602,9 +599,8 @@ static void _parse_pbs_resource_list(char *rl)
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
-				opt.cpus_per_task = parse_int("mppdepth",
-							      temp, false);
-				opt.cpus_set	  = true;
+				slurm_process_option(&opt, 'c', temp,
+						     false, false);
 			}
 			xfree(temp);
 		} else if (!xstrncmp(rl + i, "mppnodes=", 9)) {
@@ -615,31 +611,31 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for mppnodes");
 				exit(error_exit);
 			}
-			xfree(opt.nodelist);
-			opt.nodelist = temp;
+			slurm_process_option(&opt, 'w', temp, false, false);
 		} else if (!xstrncmp(rl + i, "mppnppn=", 8)) {
 			/* Cray: number of processing elements per node */
 			i += 8;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp)
-				opt.ntasks_per_node = parse_int("mppnppn",
-								temp, true);
+				slurm_process_option(&opt,
+						     LONG_OPT_NTASKSPERNODE,
+						     temp, false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl + i, "mppwidth=", 9)) {
 			/* Cray: task width (number of processing elements) */
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp) {
-				opt.ntasks = parse_int("mppwidth", temp, true);
-				opt.ntasks_set = true;
-			}
+			if (temp)
+				slurm_process_option(&opt, 'n', temp,
+						     false, false);
 			xfree(temp);
 #endif /* HAVE_NATIVE_CRAY */
 		} else if (!xstrncasecmp(rl+i, "naccelerators=", 14)) {
 			i += 14;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
-				gpus = parse_int("naccelerators", temp, true);
+				slurm_process_option(&opt, 'G', temp,
+						     false, false);
 				xfree(temp);
 			}
 		} else if (!xstrncasecmp(rl+i, "ncpus=", 6)) {
@@ -647,32 +643,15 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 2;
-				opt.pn_min_cpus = parse_int("ncpus", temp, true);
+				slurm_process_option(&opt, LONG_OPT_MINCPUS,
+						     temp, false, false);
 				xfree(temp);
 			}
 		} else if (!xstrncmp(rl+i, "nice=", 5)) {
-			long long tmp_nice;
 			i += 5;
 			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp)
-				tmp_nice = strtoll(temp, NULL, 10);
-			else
-				tmp_nice = 100;
-			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
-				error("Nice value out of range (+/- %u). Value "
-				      "ignored", NICE_OFFSET - 3);
-				tmp_nice = 0;
-			}
-			if (tmp_nice < 0) {
-				uid_t my_uid = getuid();
-				if ((my_uid != 0) &&
-				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be "
-					      "non-negative, value ignored");
-					tmp_nice = 0;
-				}
-			}
-			opt.nice = (int) tmp_nice;
+			slurm_process_option(&opt, LONG_OPT_NICE, temp,
+					     false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "nodes=", 6)) {
 			i+=6;
@@ -703,10 +682,10 @@ static void _parse_pbs_resource_list(char *rl)
 			_get_next_pbs_option(rl, &i);
 		} else if (!xstrncmp(rl+i, "proc=", 5)) {
 			i += 5;
-			if (opt.constraint)
-				xstrcat(opt.constraint, ",");
 			temp = _get_pbs_option_value(rl, &i, ',');
-			xstrcat(opt.constraint, temp);
+			if (opt.constraint)
+				xstrfmtcat(temp, ",%s", opt.constraint);
+			slurm_process_option(&opt, 'C', temp, false, false);
 			xfree(temp);
 			_get_next_pbs_option(rl, &i);
 		} else if (!xstrncmp(rl+i, "pvmem=", 6)) {
@@ -717,9 +696,7 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 1;
-				opt.min_nodes = parse_int("select", temp, true);
-				opt.max_nodes = opt.min_nodes;
-				opt.nodes_set = true;
+				slurm_process_option(&opt, 'N', temp, false, false);
 				xfree(temp);
 			}
 		} else if (!xstrncmp(rl+i, "software=", 9)) {
@@ -746,14 +723,18 @@ static void _parse_pbs_resource_list(char *rl)
 		 * node if the CPU count per node is evenly divisible by
 		 * the task count on each node. Slurm can't handle something
 		 * like cpus_per_node=10 and ntasks_per_node=8 */
-		opt.cpus_per_task = opt.pn_min_cpus / opt.ntasks_per_node;
-		opt.cpus_set = true;
+		int cpus_per_task = opt.pn_min_cpus / opt.ntasks_per_node;
+		temp = xstrdup_printf("%d", cpus_per_task);
+		slurm_process_option(&opt, 'c', temp, false, false);
+		xfree(temp);
 	}
 	if (gpus > 0) {
-		char *sep = "";
 		if (opt.gres)
-			sep = ",";
-		xstrfmtcat(opt.gres, "%sgpu:%d", sep, gpus);
+			temp = xstrdup_printf("%s,gpu:%d", opt.gres, gpus);
+		else
+			temp = xstrdup_printf("gpu:%d", gpus);
+		slurm_process_option(&opt, LONG_OPT_GRES, temp, false, false);
+		xfree(temp);
 	}
 }
 
