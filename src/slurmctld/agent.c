@@ -1529,6 +1529,7 @@ static void _agent_defer(void)
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&defer_mutex);
 	if (defer_list) {
+		List tmp_list = NULL;
 		/* first try to find a new (never tried) record */
 		while ((queued_req_ptr = list_pop(defer_list))) {
 			agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
@@ -1554,7 +1555,17 @@ static void _agent_defer(void)
 						list_create(_list_delete_retry);
 				list_append(retry_list, queued_req_ptr);
 				slurm_mutex_unlock(&retry_mutex);
+			} else if (rc == 1) {
+				if (!tmp_list)
+					tmp_list =
+						list_create(_list_delete_retry);
+				list_append(tmp_list, (void *)queued_req_ptr);
 			}
+		}
+
+		if (tmp_list) {
+			list_transfer(defer_list, tmp_list);
+			FREE_NULL_LIST(tmp_list);
 		}
 	}
 
