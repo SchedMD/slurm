@@ -93,9 +93,6 @@ bool  is_pack_job = false;
 
 typedef struct env_vars env_vars_t;
 
-/* fill in default options  */
-static void _opt_default(bool first_pass);
-
 /* set options from batch script */
 static bool _opt_batch_script(const char *file, const void *body, int size,
 			      int pack_inx);
@@ -134,20 +131,6 @@ static bool _valid_node_list(char **node_list_pptr)
 	}
 
 	return verify_node_list(node_list_pptr, opt.distribution, count);
-}
-
-/*
- * _opt_default(): used by initialize_and_process_args to set defaults
- */
-static void _opt_default(bool first_pass)
-{
-	/* Some options will persist for all components of a heterogeneous job
-	 * once specified for one, but will be overwritten with new values if
-	 * specified on the command line */
-	if (first_pass) {
-	}
-
-	slurm_reset_all_options(&opt, first_pass);
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -292,7 +275,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 	char **local_argv, *script_file = NULL;
 
 	/* initialize option defaults */
-	_opt_default(true);
+	slurm_reset_all_options(&opt, true);
 
 	common_options = slurm_option_table_create(NULL, &opt);
 	optz = spank_option_table_create(common_options);
@@ -316,11 +299,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 	optind = 0;
 	while ((opt_char = getopt_long(local_argc, local_argv, opt_string,
 				       optz, &option_index)) != -1) {
-		switch (opt_char) {
-		default:
-			slurm_process_option(&opt, opt_char, optarg, true, true);
-			break;
-		}
+		slurm_process_option(&opt, opt_char, optarg, true, true);
 	}
 	spank_option_table_destroy(optz);
 
@@ -377,7 +356,7 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 	int i;
 
 	/* initialize option defaults */
-	_opt_default(false);
+	slurm_reset_all_options(&opt, false);
 
 	/* set options from batch script */
 	*more_packs = _opt_batch_script(file, script_body, script_size,
