@@ -312,6 +312,9 @@ static void _set_pbs_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, pbs_opt_string,
 				       pbs_long_options, &option_index))
 	       != -1) {
+		int xlate_val = 0;
+		char *xlate_arg = NULL;
+
 		switch (opt_char) {
 		case 'a':
 			opt.begin = parse_time(optarg, 0);
@@ -437,6 +440,11 @@ static void _set_pbs_options(int argc, char **argv)
 			      opt_char);
 			exit(error_exit);
 		}
+
+		if (xlate_val)
+			slurm_process_option(&opt, xlate_val, xlate_arg,
+					     false, false);
+		xfree(xlate_arg);
 	}
 
 	if (optind < argc) {
