@@ -1884,7 +1884,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 						     set_cnt * sizeof(char *));
 		if (gres_data->gres_bit_alloc)
 			gres_data->gres_bit_alloc = bit_realloc(
-				gres_data->gres_bit_alloc, set_cnt);
+				gres_data->gres_bit_alloc, gres_cnt);
 		gres_data->topo_cnt = set_cnt;
 
 		iter = list_iterator_create(gres_conf_list);
@@ -1940,7 +1940,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			gres_data->topo_gres_bitmap[i] = bit_alloc(gres_cnt);
 			gres_data->topo_gres_cnt_alloc[i] = 0;
 			for (j = 0; j < gres_slurmd_conf->count; j++) {
-				if (gres_inx >= set_cnt) {
+				if (gres_inx >= gres_cnt) {
 					/* Ignore excess GRES on node */
 					break;
 				}
