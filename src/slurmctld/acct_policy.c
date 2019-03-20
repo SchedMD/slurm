@@ -4112,14 +4112,25 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
-	/* check to see if we are enforcing limits */
-	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
-		return SLURM_SUCCESS;
-
 	details_ptr = job_ptr->details;
 	if (!details_ptr) {
 		error("%s: no details", __func__);
 		return SLURM_ERROR;
+	}
+
+	if (sched_update != slurmctld_conf.last_update)
+		priority_flags = slurm_get_priority_flags();
+
+	/*
+	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
+	 * submit_time.  Accrue limits don't work with this flag.
+	 * Always set it when not enforcing limits.
+	 */
+	if ((priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS) ||
+	    !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+		if (!details_ptr->accrue_time)
+			details_ptr->accrue_time = details_ptr->submit_time;
+		return SLURM_SUCCESS;
 	}
 
 	/* If Job is held don't accrue time */
@@ -4134,19 +4145,6 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 	if (!assoc_ptr) {
 		fatal_abort("%s: no assoc_ptr", __func__);
 		return SLURM_ERROR;
-	}
-
-	if (sched_update != slurmctld_conf.last_update)
-		priority_flags = slurm_get_priority_flags();
-
-	/*
-	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
-	 * submit_time.  Accrue limits don't work with this flag.
-	 */
-	if (priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS) {
-		if (!details_ptr->accrue_time)
-			details_ptr->accrue_time = details_ptr->submit_time;
-		return SLURM_SUCCESS;
 	}
 
 	if (!assoc_mgr_locked)
