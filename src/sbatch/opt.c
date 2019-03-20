@@ -80,7 +80,6 @@
 #define OPT_BOOL        0x05
 #define OPT_CORE        0x06
 #define OPT_MULTI	0x0b
-#define OPT_OPEN_MODE	0x0e
 #define OPT_NO_REQUEUE  0x10
 #define OPT_REQUEUE     0x11
 #define OPT_INT64	  0x24
@@ -232,7 +231,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_NETWORK", LONG_OPT_NETWORK },
   { "SBATCH_NO_KILL", 'k' },
   {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL          },
-  {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL          },
+  { "SBATCH_OPEN_MODE", LONG_OPT_OPEN_MODE },
   { "SBATCH_OVERCOMMIT", 'O' },
   { "SBATCH_PARTITION", 'p' },
   { "SBATCH_POWER", LONG_OPT_POWER },
@@ -328,14 +327,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			*((bool *)e->arg) = false;
 		}
 		break;
-	case OPT_OPEN_MODE:
-		if ((val[0] == 'a') || (val[0] == 'A'))
-			sbopt.open_mode = OPEN_MODE_APPEND;
-		else if ((val[0] == 't') || (val[0] == 'T'))
-			sbopt.open_mode = OPEN_MODE_TRUNCATE;
-		else
-			error("Invalid SBATCH_OPEN_MODE: %s. Ignored", val);
-		break;
 	case OPT_NO_REQUEUE:
 		sbopt.requeue = 0;
 		break;
@@ -358,7 +349,6 @@ _process_env_var(env_vars_t *e, const char *val)
 
 static struct option long_options[] = {
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
-	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
@@ -746,18 +736,6 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_WRAP:
 			/* handled in process_options_first_pass() */
-			break;
-		case LONG_OPT_OPEN_MODE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if ((optarg[0] == 'a') || (optarg[0] == 'A'))
-				sbopt.open_mode = OPEN_MODE_APPEND;
-			else if ((optarg[0] == 't') || (optarg[0] == 'T'))
-				sbopt.open_mode = OPEN_MODE_TRUNCATE;
-			else {
-				error("Invalid --open-mode argument: %s. "
-				      "Ignored", optarg);
-			}
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)

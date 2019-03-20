@@ -1849,6 +1849,64 @@ static slurm_cli_opt_t slurm_opt_ntasks_per_socket = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_open_mode(slurm_opt_t *opt, const char *arg)
+{
+	uint8_t tmp = 0;
+
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (arg && (arg[0] == 'a' || arg[0] == 'A'))
+		tmp = OPEN_MODE_APPEND;
+	else if (arg && (arg[0] == 't' || arg[0] == 'T'))
+		tmp = OPEN_MODE_TRUNCATE;
+	else {
+		error("Invalid --open-mode specification");
+		exit(-1);
+	}
+
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->open_mode = tmp;
+	if (opt->srun_opt)
+		opt->srun_opt->open_mode = tmp;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_open_mode(slurm_opt_t *opt)
+{
+	uint8_t tmp = 0;
+	if (!opt->sbatch_opt && !opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->sbatch_opt)
+		tmp = opt->sbatch_opt->open_mode;
+	if (opt->srun_opt)
+		tmp = opt->srun_opt->open_mode;
+
+	if (tmp == OPEN_MODE_APPEND)
+		return xstrdup("a");
+	if (tmp == OPEN_MODE_TRUNCATE)
+		return xstrdup("t");
+
+	return NULL;
+}
+static void arg_reset_open_mode(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->open_mode = 0;
+	if (opt->srun_opt)
+		opt->srun_opt->open_mode = 0;
+}
+static slurm_cli_opt_t slurm_opt_open_mode = {
+	.name = "open-mode",
+	.has_arg = required_argument,
+	.val = LONG_OPT_OPEN_MODE,
+	.set_func_sbatch = arg_set_open_mode,
+	.set_func_srun = arg_set_open_mode,
+	.get_func = arg_get_open_mode,
+	.reset_func = arg_reset_open_mode,
+};
+
 static int arg_set_ofname(slurm_opt_t *opt, const char *arg)
 {
 	if (!opt->sbatch_opt && !opt->srun_opt)
@@ -2769,6 +2827,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_ntasks_per_core,
 	&slurm_opt_ntasks_per_node,
 	&slurm_opt_ntasks_per_socket,
+	&slurm_opt_open_mode,
 	&slurm_opt_output,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,

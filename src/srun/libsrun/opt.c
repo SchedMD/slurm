@@ -90,7 +90,6 @@
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
 #define OPT_MULTI       0x0f
-#define OPT_OPEN_MODE   0x14
 #define OPT_BCAST       0x1e
 #define OPT_INT64	0x25
 
@@ -131,7 +130,6 @@ struct option long_options[] = {
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
-	{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"prolog",           required_argument, 0, LONG_OPT_PROLOG},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
@@ -487,7 +485,6 @@ static void _opt_default(void)
 		sropt.msg_timeout		= slurm_get_msg_timeout();
 		sropt.no_alloc		= false;
 		sropt.noshell		= false;
-		sropt.open_mode		= 0;
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
 		sropt.preserve_env	= false;
@@ -610,7 +607,7 @@ env_vars_t env_vars[] = {
   { "SLURM_NTASKS", 'n' },
   { "SLURM_NSOCKETS_PER_NODE", LONG_OPT_SOCKETSPERNODE },
   { "SLURM_NTASKS_PER_NODE", LONG_OPT_NTASKSPERNODE },
-{"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
+  { "SLURM_OPEN_MODE", LONG_OPT_OPEN_MODE },
   { "SLURM_OVERCOMMIT", 'O' },
   { "SLURM_PARTITION", 'p' },
   { "SLURM_POWER", LONG_OPT_POWER },
@@ -737,15 +734,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			sropt.resv_port_cnt = strtol(val, NULL, 10);
 		else
 			sropt.resv_port_cnt = 0;
-		break;
-
-	case OPT_OPEN_MODE:
-		if ((val[0] == 'a') || (val[0] == 'A'))
-			sropt.open_mode = OPEN_MODE_APPEND;
-		else if ((val[0] == 't') || (val[0] == 'T'))
-			sropt.open_mode = OPEN_MODE_TRUNCATE;
-		else
-			error("Invalid SLURM_OPEN_MODE: %s. Ignored", val);
 		break;
 	case OPT_MPI:
 		xfree(mpi_type);
@@ -1017,18 +1005,6 @@ static void _set_options(const int argc, char **argv)
 			error("--pty not currently supported on this system "
 			      "type, ignoring option");
 #endif
-			break;
-		case LONG_OPT_OPEN_MODE:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if ((optarg[0] == 'a') || (optarg[0] == 'A'))
-				sropt.open_mode = OPEN_MODE_APPEND;
-			else if ((optarg[0] == 't') || (optarg[0] == 'T'))
-				sropt.open_mode = OPEN_MODE_TRUNCATE;
-			else {
-				error("Invalid --open-mode argument: %s. Ignored",
-				      optarg);
-			}
 			break;
 		case LONG_OPT_ACCEL_BIND:
 			if (!optarg)
