@@ -2616,7 +2616,7 @@ extern char *log_num2string(uint16_t inx)
 }
 
 /* Convert log level string to equivalent number */
-extern uint16_t log_string2num(char *name)
+extern uint16_t log_string2num(const char *name)
 {
 	if (name == NULL)
 		return NO_VAL16;

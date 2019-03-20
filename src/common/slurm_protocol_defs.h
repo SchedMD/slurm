@@ -1537,7 +1537,7 @@ extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);
 
 extern char *log_num2string(uint16_t inx);
-extern uint16_t log_string2num(char *name);
+extern uint16_t log_string2num(const char *name);
 
 /* Translate a burst buffer numeric value to its equivalent state string */
 extern char *bb_state_string(uint16_t state);
