@@ -112,7 +112,6 @@ struct option long_options[] = {
 	{"preserve-env",     no_argument,       0, 'E'},
 	{"preserve-slurm-env", no_argument,     0, 'E'},
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
-	{"label",            no_argument,       0, 'l'},
 	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
 	{"unbuffered",       no_argument,       0, 'u'},
@@ -467,7 +466,6 @@ static void _opt_default(void)
 		sropt.debugger_test	= false;
 		sropt.jobid		= NO_VAL;
 		sropt.kill_bad_exit	= NO_VAL;
-		sropt.labelio		= false;
 		sropt.max_wait		= slurm_get_wait_time();
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
@@ -574,7 +572,7 @@ env_vars_t env_vars[] = {
   { "SLURM_JOB_NODELIST", LONG_OPT_ALLOC_NODELIST },
   { "SLURM_JOB_NUM_NODES", 'N' },
 {"SLURM_KILL_BAD_EXIT", OPT_INT,        &sropt.kill_bad_exit,NULL            },
-{"SLURM_LABELIO",       OPT_INT,        &sropt.labelio,     NULL             },
+  { "SLURM_LABELIO", 'l' },
   { "SLURM_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   { "SLURM_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SLURM_MEM_PER_CPU", LONG_OPT_MEM_PER_CPU },
@@ -846,9 +844,6 @@ static void _set_options(const int argc, char **argv)
 				sropt.kill_bad_exit = strtol(optarg, NULL, 10);
 			else
 				sropt.kill_bad_exit = 1;
-			break;
-		case (int)'l':
-			sropt.labelio = true;
 			break;
 		case (int)'r':
 			if (!optarg)
