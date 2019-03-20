@@ -166,14 +166,13 @@ static void _set_bsub_options(int argc, char **argv) {
 
 	int opt_char, option_index = 0;
 	char *bsub_opt_string = "+c:e:J:m:M:n:o:q:W:x";
-	char *tmp_str, *char_ptr;
+	char *char_ptr;
 
 	struct option bsub_long_options[] = {
 		{"cwd", required_argument, 0, 'c'},
 		{"error_file", required_argument, 0, 'e'},
 		{"job_name", required_argument, 0, 'J'},
 		{"hostname", required_argument, 0, 'm'},
-		{"memory_limit", required_argument, 0, 'M'},
 		{"memory_limit", required_argument, 0, 'M'},
 		{"output_file", required_argument, 0, 'o'},
 		{"queue_name", required_argument, 0, 'q'},
@@ -186,45 +185,37 @@ static void _set_bsub_options(int argc, char **argv) {
 	while ((opt_char = getopt_long(argc, argv, bsub_opt_string,
 				       bsub_long_options, &option_index))
 	       != -1) {
+		int xlate_val = 0;
+		char *xlate_arg = NULL;
+
 		switch (opt_char) {
 		case 'c':
-			xfree(opt.chdir);
-			if (is_full_path(optarg))
-				opt.chdir = xstrdup(optarg);
-			else
-				opt.chdir = make_full_path(optarg);
+			xlate_val = 'D';
+			xlate_arg = xstrdup(optarg);
 			break;
+		/* These options all have a direct correspondance. */
 		case 'e':
-			xfree(opt.efname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				opt.efname = xstrdup("/dev/null");
-			else
-				opt.efname = xstrdup(optarg);
-			break;
 		case 'J':
-			opt.job_name = xstrdup(optarg);
+		case 'o':
+			xlate_val = opt_char;
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'm':
-			/* Since BSUB requires a list of space
-			   sperated host we need to replace the spaces
-			   with , */
-			tmp_str = xstrdup(optarg);
-			char_ptr = strstr(tmp_str, " ");
-
-			while (char_ptr != NULL) {
+			xlate_val = 'w';
+			xlate_arg = xstrdup(optarg);
+			/*
+			 * Since BSUB uses a list of space separated hosts,
+			 * we need to replace the spaces with commas.
+			 */
+			while ((char_ptr = strstr(xlate_arg, " ")))
 				*char_ptr = ',';
-				char_ptr = strstr(tmp_str, " ");
-			}
-			opt.nodelist = xstrdup(tmp_str);
-			xfree(tmp_str);
 			break;
 		case 'M':
-			opt.mem_per_cpu = xstrntol(optarg,
-						   NULL, strlen(optarg), 10);
+			xlate_val = LONG_OPT_MEM_PER_CPU;
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'n':
-			opt.ntasks_set = true;
-			/* Since it is value in bsub to give a min and
+			/* Since it is valid in bsub to give a min and
 			 * max task count we will only read the max if
 			 * it exists.
 			 */
@@ -240,29 +231,31 @@ static void _set_bsub_options(int argc, char **argv) {
 			} else
 				char_ptr = optarg;
 
-			opt.ntasks =
-				parse_int("number of tasks", char_ptr, true);
+			xlate_val = 'n';
+			xlate_arg = xstrdup(char_ptr);
 
 			break;
-		case 'o':
-			xfree(opt.ofname);
-			opt.ofname = xstrdup(optarg);
-			break;
 		case 'q':
-			opt.partition = xstrdup(optarg);
+			xlate_val = 'p';
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'W':
-			opt.time_limit = xstrntol(optarg, NULL,
-						  strlen(optarg), 10);
+			xlate_val = 't';
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'x':
-			opt.shared = JOB_SHARED_NONE;
+			xlate_val = LONG_OPT_EXCLUSIVE;
 			break;
 		default:
 			error("Unrecognized command line parameter %c",
 			      opt_char);
 			exit(error_exit);
 		}
+
+		if (xlate_val)
+			slurm_process_option(&opt, xlate_val, xlate_arg,
+					     false, false);
+		xfree(xlate_arg);
 	}
 
 
