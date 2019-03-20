@@ -466,7 +466,6 @@ static void _opt_default(void)
 		sropt.max_wait		= slurm_get_wait_time();
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
-		sropt.noshell		= false;
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
 		sropt.test_exec		= false;

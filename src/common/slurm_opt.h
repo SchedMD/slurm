@@ -253,7 +253,6 @@ typedef struct srun_opt {
 	bool multi_prog;		/* multiple programs to execute */
 	int32_t multi_prog_cmds;	/* number of commands in multi prog file */
 	bool no_alloc;			/* --no-allocate		*/
-	bool noshell;			/* --no-shell			*/
 	uint8_t open_mode;		/* --open-mode=append|truncate	*/
 	char *pack_group;		/* --pack-group			*/
 	bitstr_t *pack_grp_bits;	/* --pack-group in bitmap form	*/
