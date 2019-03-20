@@ -421,11 +421,8 @@ static void _set_pbs_options(int argc, char **argv)
 			if (!optarg) /* CLANG Fix */
 				break;
 			if (!xstrncasecmp(optarg, "umask=", 6)) {
-				sbopt.umask = strtol(optarg+6, NULL, 0);
-				if ((sbopt.umask < 0) || (sbopt.umask > 0777)) {
-					error("Invalid umask ignored");
-					sbopt.umask = -1;
-				}
+				xlate_val = LONG_OPT_UMASK;
+				xlate_arg = xstrdup(optarg+6);
 			} else if (!xstrncasecmp(optarg, "depend=", 7)) {
 				xfree(opt.dependency);
 				opt.dependency = xstrdup(optarg+7);

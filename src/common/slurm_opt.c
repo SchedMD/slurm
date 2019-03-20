@@ -2569,6 +2569,46 @@ static slurm_cli_opt_t slurm_opt_uid = {
 	.reset_func = arg_reset_uid,
 };
 
+/*
+ * This is not exposed as an argument in sbatch, but is used
+ * in xlate.c to translate a PBS option.
+ */
+static int arg_set_umask(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->sbatch_opt)
+		return SLURM_ERROR;
+
+	opt->sbatch_opt->umask = strtol(arg, NULL, 0);
+
+	if ((opt->sbatch_opt->umask < 0) || (opt->sbatch_opt->umask > 0777)) {
+		error("Invalid -W umask= specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_umask(slurm_opt_t *opt)
+{
+	if (!opt->sbatch_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup_printf("0%o", opt->sbatch_opt->umask);
+}
+static void arg_reset_umask(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt)
+		opt->sbatch_opt->umask = -1;
+}
+static slurm_cli_opt_t slurm_opt_umask = {
+	.name = NULL, /* only for use through xlate.c */
+	.has_arg = no_argument,
+	.val = LONG_OPT_UMASK,
+	.set_func_sbatch = arg_set_umask,
+	.get_func = arg_get_umask,
+	.reset_func = arg_reset_umask,
+	.reset_each_pass = true,
+};
+
 static int arg_set_use_min_nodes(slurm_opt_t *opt, const char *arg)
 {
 	opt->job_flags |= USE_MIN_NODES;
@@ -2925,6 +2965,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_use_min_nodes,
 	&slurm_opt_verbose,
 	&slurm_opt_version,
+	&slurm_opt_umask,
 	&slurm_opt_usage,
 	&slurm_opt_wait,
 	&slurm_opt_wait_all_nodes,

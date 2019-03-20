@@ -145,7 +145,6 @@ static void _opt_default(bool first_pass)
 	 * once specified for one, but will be overwritten with new values if
 	 * specified on the command line */
 	if (first_pass) {
-		sbopt.umask		= -1;
 	}
 
 	slurm_reset_all_options(&opt, first_pass);
