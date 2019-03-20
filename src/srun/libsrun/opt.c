@@ -130,7 +130,6 @@ struct option long_options[] = {
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
 	{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
-	{"restart-dir",      required_argument, 0, LONG_OPT_RESTART_DIR},
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 	{NULL,               0,                 0, 0}
 	};
