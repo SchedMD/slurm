@@ -2538,7 +2538,8 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	/* may exit() if an error with the multi_prog script */
 	(void) launch_g_handle_multi_prog_verify(command_pos, &opt);
 
-	if (!sropt.multi_prog && (sropt.test_exec || sropt.bcast_flag)) {
+	if (!sropt.multi_prog && (sropt.test_exec || sropt.bcast_flag) &&
+	    sropt.argv && sropt.argv[command_pos]) {
 
 		if ((fullpath = search_path(opt.cwd, sropt.argv[command_pos],
 					    true, X_OK, true))) {
