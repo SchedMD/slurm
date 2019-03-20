@@ -2271,6 +2271,16 @@ static slurm_cli_opt_t slurm_opt_quiet = {
 	.reset_func = arg_reset_quiet,
 };
 
+COMMON_SRUN_BOOL_OPTION(quit_on_intr);
+static slurm_cli_opt_t slurm_opt_quit_on_interrupt = {
+	.name = "quit-on-interrupt",
+	.has_arg = no_argument,
+	.val = LONG_OPT_QUIT_ON_INTR,
+	.set_func_srun = arg_set_quit_on_intr,
+	.get_func = arg_get_quit_on_intr,
+	.reset_func = arg_reset_quit_on_intr,
+};
+
 COMMON_BOOL_OPTION(reboot, "reboot");
 static slurm_cli_opt_t slurm_opt_reboot = {
 	.name = "reboot",
@@ -3085,6 +3095,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_propagate,
 	&slurm_opt_qos,
 	&slurm_opt_quiet,
+	&slurm_opt_quit_on_interrupt,
 	&slurm_opt_reboot,
 	&slurm_opt_requeue,
 	&slurm_opt_reservation,

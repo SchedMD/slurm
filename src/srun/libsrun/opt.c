@@ -127,7 +127,6 @@ struct option long_options[] = {
 	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
-	{"quit-on-interrupt",no_argument,       0, LONG_OPT_QUIT_ON_INTR},
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 	{NULL,               0,                 0, 0}
 	};
@@ -473,7 +472,6 @@ static void _opt_default(void)
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
 		sropt.preserve_env	= false;
-		sropt.quit_on_intr	= false;
 		sropt.test_exec		= false;
 		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
@@ -956,9 +954,6 @@ static void _set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_COMPRESS:
 			sropt.compress = parse_compress_type(optarg);
-			break;
-		case LONG_OPT_QUIT_ON_INTR:
-			sropt.quit_on_intr = true;
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
