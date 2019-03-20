@@ -172,6 +172,7 @@ static uint32_t bf_min_prio_reserve = 0;
 static List deadlock_global_list;
 static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
+static uint32_t job_start_cnt = 0;
 static int max_backfill_job_cnt = 100;
 static int max_backfill_job_per_assoc = 0;
 static int max_backfill_job_per_part = 0;
@@ -1317,7 +1318,7 @@ static int _attempt_backfill(void)
 	bool already_counted;
 	uint32_t reject_array_job_id = 0;
 	struct part_record *reject_array_part = NULL;
-	uint32_t job_start_cnt = 0, start_time;
+	uint32_t start_time;
 	time_t config_update = slurmctld_conf.last_update;
 	time_t part_update = last_part_update;
 	struct timeval start_tv;
@@ -1339,6 +1340,7 @@ static int _attempt_backfill(void)
 		  NO_LOCK, NO_LOCK, NO_LOCK };
 
 	bf_sleep_usec = 0;
+	job_start_cnt = 0;
 
 	if (!fed_mgr_sibs_synced()) {
 		debug("backfill: %s returning, federation siblings not synced yet",
@@ -2452,7 +2454,9 @@ skip_start:
 			_pack_start_set(job_ptr, job_ptr->start_time,
 					comp_time_limit);
 			_set_job_time_limit(job_ptr, orig_time_limit);
-			if (bf_hetjob_immediate)
+			if (bf_hetjob_immediate &&
+			    (!max_backfill_jobs_start ||
+			     (job_start_cnt < max_backfill_jobs_start)))
 				_pack_start_test(node_space,
 						 job_ptr->pack_job_id);
 		}
@@ -2657,7 +2661,9 @@ skip_start:
 			       &tmp_preempt_in_progress);
 
 	_job_pack_deadlock_fini();
-	if (!bf_hetjob_immediate)
+	if (!bf_hetjob_immediate &&
+	    (!max_backfill_jobs_start ||
+	     (job_start_cnt < max_backfill_jobs_start)))
 		_pack_start_test(node_space, 0);
 
 	xfree(bf_part_jobs);
@@ -3532,12 +3538,23 @@ static void _pack_start_test_single(node_space_map_t *node_space,
 			     map->pack_job_id);
 		}
 		_pack_kill_now(map);
+	} else {
+		job_start_cnt += list_count(map->pack_job_list);
+		if (max_backfill_jobs_start &&
+		    (job_start_cnt >= max_backfill_jobs_start)) {
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: bf_max_job_start limit of %d reached",
+				     max_backfill_jobs_start);
+		}
 	}
+
 }
 
 static int _pack_start_test_list(void *map, void *node_space)
 {
-	_pack_start_test_single(node_space, map, false);
+	if (!max_backfill_jobs_start ||
+	    (job_start_cnt < max_backfill_jobs_start))
+		_pack_start_test_single(node_space, map, false);
 
 	return SLURM_SUCCESS;
 }
