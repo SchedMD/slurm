@@ -338,7 +338,6 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
-	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
 };
 
@@ -393,12 +392,6 @@ extern char *process_options_first_pass(int argc, char **argv)
 	while ((opt_char = getopt_long(local_argc, local_argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case LONG_OPT_WRAP:
-			xfree(opt.job_name);
-			xfree(sbopt.wrap);
-			opt.job_name = xstrdup("wrap");
-			sbopt.wrap = xstrdup(optarg);
-			break;
 		default:
 			slurm_process_option(&opt, opt_char, optarg, true, true);
 			break;
@@ -716,9 +709,6 @@ static void _set_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case LONG_OPT_WRAP:
-			/* handled in process_options_first_pass() */
-			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
 				if (spank_process_option(opt_char, optarg) < 0)
@@ -839,7 +829,9 @@ static bool _opt_verify(void)
 	if (opt.cpus_set && (opt.pn_min_cpus < opt.cpus_per_task))
 		opt.pn_min_cpus = opt.cpus_per_task;
 
-	if ((opt.job_name == NULL) && (sbopt.script_argc > 0))
+	if (!opt.job_name && sbopt.wrap)
+		opt.job_name = xstrdup("wrap");
+	else if (!opt.job_name && (sbopt.script_argc > 0))
 		opt.job_name = base_name(sbopt.script_argv[0]);
 	if (opt.job_name)
 		setenv("SLURM_JOB_NAME", opt.job_name, 1);

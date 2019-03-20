@@ -2775,6 +2775,17 @@ static slurm_cli_opt_t slurm_opt_wckey = {
 	.reset_func = arg_reset_wckey,
 };
 
+COMMON_SBATCH_STRING_OPTION(wrap);
+static slurm_cli_opt_t slurm_opt_wrap = {
+	.name = "wrap",
+	.has_arg = required_argument,
+	.val = LONG_OPT_WRAP,
+	.sbatch_early_pass = true,
+	.set_func_sbatch = arg_set_wrap,
+	.get_func = arg_get_wrap,
+	.reset_func = arg_reset_wrap,
+};
+
 static int arg_set_x11(slurm_opt_t *opt, const char *arg)
 {
 	if (arg)
@@ -2918,6 +2929,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_wait,
 	&slurm_opt_wait_all_nodes,
 	&slurm_opt_wckey,
+	&slurm_opt_wrap,
 	&slurm_opt_x11,
 	NULL /* END */
 };
