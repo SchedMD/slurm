@@ -65,7 +65,7 @@
 static void _set_pbs_options(int argc, char **argv);
 static void _set_bsub_options(int argc, char **argv);
 
-static uint16_t _parse_pbs_mail_type(const char *arg);
+static char *_xlate_pbs_mail_type(const char *arg);
 static void _parse_pbs_resource_list(char *rl);
 
 /*
@@ -276,7 +276,6 @@ static void _set_bsub_options(int argc, char **argv) {
 static void _set_pbs_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	char *sep = "";
 	char *pbs_opt_string = "+a:A:c:C:e:hIj:J:k:l:m:M:N:o:p:q:r:S:t:u:v:VW:z";
 
 	struct option pbs_long_options[] = {
@@ -350,13 +349,8 @@ static void _set_pbs_options(int argc, char **argv)
 			_parse_pbs_resource_list(optarg);
 			break;
 		case 'm':
-			if (!optarg) /* CLANG Fix */
-				break;
-			opt.mail_type |= _parse_pbs_mail_type(optarg);
-			if (opt.mail_type == INFINITE16) {
-				error("-m=%s invalid", optarg);
-				exit(error_exit);
-			}
+			xlate_val = LONG_OPT_MAIL_TYPE;
+			xlate_arg = _xlate_pbs_mail_type(optarg);
 			break;
 		case 'M':
 			xlate_val = LONG_OPT_MAIL_USER;
@@ -770,21 +764,21 @@ static void _parse_pbs_resource_list(char *rl)
 	}
 }
 
-static uint16_t _parse_pbs_mail_type(const char *arg)
+static char *_xlate_pbs_mail_type(const char *arg)
 {
-	uint16_t rc = 0;
+	char *xlated = NULL;
 
 	if (strchr(arg, 'b') || strchr(arg, 'B'))
-		rc |= MAIL_JOB_BEGIN;
+		xstrfmtcat(xlated, "%sBEGIN", (xlated ? "," : ""));
 	if (strchr(arg, 'e') || strchr(arg, 'E'))
-		rc |= MAIL_JOB_END;
+		xstrfmtcat(xlated, "%sEND", (xlated ? "," : ""));
 	if (strchr(arg, 'a') || strchr(arg, 'A'))
-		rc |= MAIL_JOB_FAIL;
+		xstrfmtcat(xlated, "%sFAIL", (xlated ? "," : ""));
 
-	if (strchr(arg, 'n') || strchr(arg, 'N'))
-		rc = 0;
-	else if (!rc)
-		rc = INFINITE16;
+	if (strchr(arg, 'n') || strchr(arg, 'N')) {
+		xfree(xlated);
+		xlated = xstrdup("NONE");
+	}
 
-	return rc;
+	return xlated;
 }
