@@ -125,7 +125,6 @@ struct option long_options[] = {
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
-	{"epilog",           required_argument, 0, LONG_OPT_EPILOG},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -472,8 +471,6 @@ static void _opt_default(void)
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
 		sropt.disable_status	= false;
-		xfree(sropt.epilog);
-		sropt.epilog		= slurm_get_srun_epilog();
 		sropt.jobid		= NO_VAL;
 		sropt.kill_bad_exit	= NO_VAL;
 		sropt.labelio		= false;
@@ -569,7 +566,7 @@ env_vars_t env_vars[] = {
   { "SLURM_DEPENDENCY", 'd' },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &sropt.disable_status,NULL           },
   { "SLURM_DISTRIBUTION", 'm' },
-{"SLURM_EPILOG",        OPT_STRING,     &sropt.epilog,      NULL             },
+  { "SLURM_EPILOG", LONG_OPT_EPILOG },
   { "SLURM_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   { "SLURM_EXPORT_ENV", LONG_OPT_EXPORT },
   { "SLURM_GPUS", 'G' },
@@ -950,12 +947,6 @@ static void _set_options(const int argc, char **argv)
 			pmi_server_max_threads(sropt.max_threads);
 			sropt.msg_timeout     = 15;
 			break;
-		case LONG_OPT_EPILOG:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sropt.epilog);
-			sropt.epilog = xstrdup(optarg);
-			break;
 		case LONG_OPT_MULTI:
 			sropt.multi_prog = true;
 			break;
@@ -1199,6 +1190,8 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (!sropt.epilog)
+		sropt.epilog = slurm_get_srun_epilog();
 	if (!sropt.prolog)
 		sropt.prolog = slurm_get_srun_prolog();
 
