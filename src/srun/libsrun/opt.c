@@ -112,7 +112,6 @@ struct option long_options[] = {
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
-	{"unbuffered",       no_argument,       0, 'u'},
 	{"wait",             required_argument, 0, 'W'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
@@ -469,7 +468,6 @@ static void _opt_default(void)
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
 		sropt.test_exec		= false;
-		sropt.unbuffered	= false;
 		sropt.user_managed_io	= false;
 	}
 
@@ -602,7 +600,7 @@ env_vars_t env_vars[] = {
   { "SLURM_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
 {"SLURM_THREADS",       OPT_INT,        &sropt.max_threads, NULL             },
   { "SLURM_TIMELIMIT", 't' },
-{"SLURM_UNBUFFEREDIO",  OPT_INT,        &sropt.unbuffered,  NULL             },
+  { "SLURM_UNBUFFEREDIO", 'u' },
   { "SLURM_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
 {"SLURM_WAIT",          OPT_INT,        &sropt.max_wait,    NULL             },
   { "SLURM_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
@@ -848,9 +846,6 @@ static void _set_options(const int argc, char **argv)
 			sropt.max_threads =
 				_get_int(optarg, "max_threads", true);
 			pmi_server_max_threads(sropt.max_threads);
-			break;
-		case (int)'u':
-			sropt.unbuffered = true;
 			break;
 		case (int)'W':
 			if (!optarg)

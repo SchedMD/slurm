@@ -2764,6 +2764,16 @@ static slurm_cli_opt_t slurm_opt_umask = {
 	.reset_each_pass = true,
 };
 
+COMMON_SRUN_BOOL_OPTION(unbuffered);
+static slurm_cli_opt_t slurm_opt_unbuffered = {
+	.name = "unbuffered",
+	.has_arg = no_argument,
+	.val = 'u',
+	.set_func_srun = arg_set_unbuffered,
+	.get_func = arg_get_unbuffered,
+	.reset_func = arg_reset_unbuffered,
+};
+
 static int arg_set_use_min_nodes(slurm_opt_t *opt, const char *arg)
 {
 	opt->job_flags |= USE_MIN_NODES;
@@ -3127,6 +3137,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_time_min,
 	&slurm_opt_tmp,
 	&slurm_opt_uid,
+	&slurm_opt_unbuffered,
 	&slurm_opt_use_min_nodes,
 	&slurm_opt_verbose,
 	&slurm_opt_version,
