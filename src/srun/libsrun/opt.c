@@ -88,7 +88,6 @@
 #define OPT_RESV_PORTS	0x09
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
-#define OPT_MULTI       0x0f
 #define OPT_BCAST       0x1e
 #define OPT_INT64	0x25
 
@@ -121,7 +120,6 @@ struct option long_options[] = {
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
-	{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
 	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
@@ -488,7 +486,6 @@ static void _opt_default(void)
 	opt.job_flags			= 0;
 	sropt.max_threads		= MAX_THREADS;
 	pmi_server_max_threads(sropt.max_threads);
-	sropt.multi_prog			= false;
 	sropt.multi_prog_cmds		= 0;
 	sropt.pack_group		= NULL;
 	sropt.pack_grp_bits		= NULL;
@@ -591,7 +588,7 @@ env_vars_t env_vars[] = {
 {"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
   { "SLURM_SIGNAL", LONG_OPT_SIGNAL },
   { "SLURM_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
-{"SLURM_SRUN_MULTI",    OPT_MULTI,      NULL,               NULL             },
+  { "SLURM_SRUN_MULTI", LONG_OPT_MULTI },
   { "SLURM_STDERRMODE", 'e' },
   { "SLURM_STDINMODE", 'i' },
   { "SLURM_STDOUTMODE", 'o' },
@@ -902,9 +899,6 @@ static void _set_options(const int argc, char **argv)
 			sropt.max_threads     = 1;
 			pmi_server_max_threads(sropt.max_threads);
 			sropt.msg_timeout     = 15;
-			break;
-		case LONG_OPT_MULTI:
-			sropt.multi_prog = true;
 			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H

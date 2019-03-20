@@ -1666,6 +1666,16 @@ static slurm_cli_opt_t slurm_opt_mincpus = {
 	.reset_each_pass = true,
 };
 
+COMMON_SRUN_BOOL_OPTION(multi_prog);
+static slurm_cli_opt_t slurm_opt_multi_prog = {
+	.name = "multi-prog",
+	.has_arg = no_argument,
+	.val = LONG_OPT_MULTI,
+	.set_func_srun = arg_set_multi_prog,
+	.get_func = arg_get_multi_prog,
+	.reset_func = arg_reset_multi_prog,
+};
+
 COMMON_STRING_OPTION(network);
 static slurm_cli_opt_t slurm_opt_network = {
 	.name = "network",
@@ -3088,6 +3098,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mem_per_cpu,
 	&slurm_opt_mem_per_gpu,
 	&slurm_opt_mincpus,
+	&slurm_opt_multi_prog,
 	&slurm_opt_network,
 	&slurm_opt_nice,
 	&slurm_opt_no_allocate,
