@@ -210,6 +210,10 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		my_state &= (~NODE_STATE_POWER_SAVE);
 		power_str = "+POWER";
 	}
+	if (my_state & NODE_STATE_POWERING_DOWN) {
+		my_state &= (~NODE_STATE_POWERING_DOWN);
+		power_str = "+POWERING_DOWN";
+	}
 	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 				  SELECT_NODEDATA_SUBCNT,
 				  NODE_STATE_ALLOCATED,

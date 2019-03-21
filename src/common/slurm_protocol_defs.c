@@ -3295,6 +3295,7 @@ extern char *node_state_string(uint32_t inx)
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool powered_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
+	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
 
 	if (maint_flag) {
 		if (drain_flag ||
@@ -3326,6 +3327,8 @@ extern char *node_state_string(uint32_t inx)
 				return "DRAINING@";
 			if (power_up_flag)
 				return "DRAINING#";
+			if (powering_down_flag)
+				return "DRAINING%";
 			if (powered_down_flag)
 				return "DRAINING~";
 			if (no_resp_flag)
@@ -3338,6 +3341,8 @@ extern char *node_state_string(uint32_t inx)
 				return "DRAINED@";
 			if (power_up_flag)
 				return "DRAINED#";
+			if (powering_down_flag)
+				return "DRAINED%";
 			if (powered_down_flag)
 				return "DRAINED~";
 			if (no_resp_flag)
@@ -3359,6 +3364,8 @@ extern char *node_state_string(uint32_t inx)
 
 	if (inx == NODE_STATE_CANCEL_REBOOT)
 		return "CANCEL_REBOOT";
+	if (inx == NODE_STATE_POWERING_DOWN)
+		return "POWERING_DOWN";
 	if (inx == NODE_STATE_POWER_SAVE)
 		return "POWER_DOWN";
 	if (inx == NODE_STATE_POWER_UP)
@@ -3370,6 +3377,8 @@ extern char *node_state_string(uint32_t inx)
 			return "DOWN@";
 		if (power_up_flag)
 			return "DOWN#";
+		if (powering_down_flag)
+			return "DOWN%";
 		if (powered_down_flag)
 			return "DOWN~";
 		if (no_resp_flag)
@@ -3384,6 +3393,8 @@ extern char *node_state_string(uint32_t inx)
 			return "ALLOCATED@";
 		if (power_up_flag)
 			return "ALLOCATED#";
+		if (powering_down_flag)
+			return "ALLOCATED%";
 		if (powered_down_flag)
 			return "ALLOCATED~";
 		if (no_resp_flag)
@@ -3399,6 +3410,8 @@ extern char *node_state_string(uint32_t inx)
 			return "COMPLETING@";
 		if (power_up_flag)
 			return "COMPLETING#";
+		if (powering_down_flag)
+			return "COMPLETING%";
 		if (powered_down_flag)
 			return "COMPLETING~";
 		if (no_resp_flag)
@@ -3412,6 +3425,8 @@ extern char *node_state_string(uint32_t inx)
 			return "IDLE@";
 		if (power_up_flag)
 			return "IDLE#";
+		if (powering_down_flag)
+			return "IDLE%";
 		if (powered_down_flag)
 			return "IDLE~";
 		if (no_resp_flag)
@@ -3429,6 +3444,8 @@ extern char *node_state_string(uint32_t inx)
 			return "MIXED@";
 		if (power_up_flag)
 			return "MIXED#";
+		if (powering_down_flag)
+			return "MIXED%";
 		if (powered_down_flag)
 			return "MIXED~";
 		if (no_resp_flag)
@@ -3442,6 +3459,8 @@ extern char *node_state_string(uint32_t inx)
 			return "FUTURE@";
 		if (power_up_flag)
 			return "FUTURE#";
+		if (powering_down_flag)
+			return "FUTURE%";
 		if (powered_down_flag)
 			return "FUTURE~";
 		if (no_resp_flag)
@@ -3471,6 +3490,7 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool powered_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
+	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
 
 	inx = (inx & NODE_STATE_BASE);
 
@@ -3503,6 +3523,8 @@ extern char *node_state_string_compact(uint32_t inx)
 				return "DRNG@";
 			if (power_up_flag)
 				return "DRNG#";
+			if (powering_down_flag)
+				return "DRNG%";
 			if (powered_down_flag)
 				return "DRNG~";
 			if (no_resp_flag)
@@ -3515,6 +3537,8 @@ extern char *node_state_string_compact(uint32_t inx)
 				return "DRAIN@";
 			if (power_up_flag)
 				return "DRAIN#";
+			if (powering_down_flag)
+				return "DRAIN%";
 			if (powered_down_flag)
 				return "DRAIN~";
 			if (no_resp_flag)
@@ -3536,6 +3560,8 @@ extern char *node_state_string_compact(uint32_t inx)
 
 	if (inx == NODE_STATE_CANCEL_REBOOT)
 		return "CANC_R";
+	if (inx == NODE_STATE_POWERING_DOWN)
+		return "POWRNG_DN";
 	if (inx == NODE_STATE_POWER_SAVE)
 		return "POW_DN";
 	if (inx == NODE_STATE_POWER_UP)
@@ -3547,6 +3573,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "DOWN@";
 		if (power_up_flag)
 			return "DOWN#";
+		if (powering_down_flag)
+			return "DOWN%";
 		if (powered_down_flag)
 			return "DOWN~";
 		if (no_resp_flag)
@@ -3561,6 +3589,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "ALLOC@";
 		if (power_up_flag)
 			return "ALLOC#";
+		if (powering_down_flag)
+			return "ALLOC%";
 		if (powered_down_flag)
 			return "ALLOC~";
 		if (no_resp_flag)
@@ -3576,6 +3606,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "COMP@";
 		if (power_up_flag)
 			return "COMP#";
+		if (powering_down_flag)
+			return "COMP%";
 		if (powered_down_flag)
 			return "COMP~";
 		if (no_resp_flag)
@@ -3589,6 +3621,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "IDLE@";
 		if (power_up_flag)
 			return "IDLE#";
+		if (powering_down_flag)
+			return "IDLE%";
 		if (powered_down_flag)
 			return "IDLE~";
 		if (no_resp_flag)
@@ -3606,6 +3640,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "MIX@";
 		if (power_up_flag)
 			return "MIX#";
+		if (powering_down_flag)
+			return "MIX%";
 		if (powered_down_flag)
 			return "MIX~";
 		if (no_resp_flag)
@@ -3619,6 +3655,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "FUTR@";
 		if (power_up_flag)
 			return "FUTR#";
+		if (powering_down_flag)
+			return "FUTR%";
 		if (powered_down_flag)
 			return "FUTR~";
 		if (no_resp_flag)

@@ -440,6 +440,7 @@ extern int load_all_node_state ( bool state_only )
 	 			     (node_state & NODE_STATE_POWER_UP))) {
 					node_state &= (~NODE_STATE_POWER_SAVE);
 					node_state &= (~NODE_STATE_POWER_UP);
+					node_state &= (~NODE_STATE_POWERING_DOWN);
 					if (hs)
 						hostset_insert(hs, node_name);
 					else
@@ -2717,6 +2718,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
 		node_ptr->node_state &= (~NODE_STATE_REBOOT);
+		node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
 		if (!is_node_in_maint_reservation(node_inx))
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
 
