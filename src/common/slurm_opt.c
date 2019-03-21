@@ -2928,6 +2928,36 @@ static slurm_cli_opt_t slurm_opt_wait = {
 	.reset_func = arg_reset_wait,
 };
 
+static int arg_set_wait_srun(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->max_wait = parse_int("--wait", arg, false);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_wait_srun(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup_printf("%d", opt->srun_opt->max_wait);
+}
+static void arg_reset_wait_srun(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->max_wait = slurm_get_wait_time();
+}
+static slurm_cli_opt_t slurm_opt_wait_srun = {
+	.name = "wait",
+	.has_arg = required_argument,
+	.val = 'W',
+	.set_func_srun = arg_set_wait_srun,
+	.get_func = arg_get_wait_srun,
+	.reset_func = arg_reset_wait_srun,
+};
+
 static int arg_set_wait_all_nodes(slurm_opt_t *opt, const char *arg)
 {
 	uint16_t tmp;
@@ -3156,6 +3186,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_usage,
 	&slurm_opt_wait,
 	&slurm_opt_wait_all_nodes,
+	&slurm_opt_wait_srun,
 	&slurm_opt_wckey,
 	&slurm_opt_wrap,
 	&slurm_opt_x11,

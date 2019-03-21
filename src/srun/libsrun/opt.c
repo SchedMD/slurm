@@ -111,7 +111,6 @@ struct option long_options[] = {
 	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
-	{"wait",             required_argument, 0, 'W'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
@@ -460,7 +459,6 @@ static void _opt_default(void)
 		sropt.debugger_test	= false;
 		sropt.jobid		= NO_VAL;
 		sropt.kill_bad_exit	= NO_VAL;
-		sropt.max_wait		= slurm_get_wait_time();
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
 		sropt.parallel_debug	= false;
@@ -599,7 +597,7 @@ env_vars_t env_vars[] = {
   { "SLURM_TIMELIMIT", 't' },
   { "SLURM_UNBUFFEREDIO", 'u' },
   { "SLURM_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
-{"SLURM_WAIT",          OPT_INT,        &sropt.max_wait,    NULL             },
+  { "SLURM_WAIT", 'W' },
   { "SLURM_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SLURM_WCKEY", LONG_OPT_WCKEY },
   { "SLURM_WORKING_DIR", 'D' },
@@ -843,11 +841,6 @@ static void _set_options(const int argc, char **argv)
 			sropt.max_threads =
 				_get_int(optarg, "max_threads", true);
 			pmi_server_max_threads(sropt.max_threads);
-			break;
-		case (int)'W':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			sropt.max_wait = _get_int(optarg, "wait", false);
 			break;
                 case LONG_OPT_BCAST:
 			if (optarg) {
