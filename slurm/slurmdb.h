@@ -1141,6 +1141,8 @@ typedef struct {
 	uint64_t *tres_run_mins; /* array of how many TRES mins are
 				  * allocated currently, currently this doesn't
 				  * do anything and isn't set up. */
+	bitstr_t *node_bitmap;	/* Bitmap of allocated nodes */
+	uint16_t *node_job_cnt;	/* Count of jobs allocated on each node */
 	uint32_t uid; /* If limits for a user this is the users uid */
 } slurmdb_used_limits_t;
 

@@ -1325,6 +1325,8 @@ extern void slurmdb_destroy_used_limits(void *object)
 
 	if (slurmdb_used_limits) {
 		xfree(slurmdb_used_limits->acct);
+		FREE_NULL_BITMAP(slurmdb_used_limits->node_bitmap);
+		xfree(slurmdb_used_limits->node_job_cnt);
 		xfree(slurmdb_used_limits->tres);
 		xfree(slurmdb_used_limits->tres_run_mins);
 		xfree(slurmdb_used_limits);

@@ -448,6 +448,13 @@ static void _clear_qos_used_limit_list(List used_limit_list, uint32_t tres_cnt)
 	while ((used_limits = list_next(itr))) {
 		used_limits->accrue_cnt = 0;
 		used_limits->jobs = 0;
+		if (used_limits->node_bitmap)
+			bit_nclear(used_limits->node_bitmap, 0,
+			         (node_record_count - 1));
+		if (used_limits->node_job_cnt) {
+			memset(used_limits->node_job_cnt, 0,
+			       sizeof(uint16_t) * node_record_count);
+		}
 		used_limits->submit_jobs = 0;
 		for (i=0; i<tres_cnt; i++) {
 			used_limits->tres[i] = 0;
@@ -481,6 +488,13 @@ static int _clear_used_qos_info(slurmdb_qos_rec_t *qos)
 	qos->usage->accrue_cnt = 0;
 	qos->usage->grp_used_jobs  = 0;
 	qos->usage->grp_used_submit_jobs = 0;
+	if (qos->usage->grp_node_bitmap)
+		bit_nclear(qos->usage->grp_node_bitmap, 0,
+		         (node_record_count - 1));
+	if (qos->usage->grp_node_job_cnt) {
+		memset(qos->usage->grp_node_job_cnt, 0,
+		       sizeof(uint16_t) * node_record_count);
+	}
 	for (i=0; i<qos->usage->tres_cnt; i++) {
 		qos->usage->grp_used_tres[i] = 0;
 		qos->usage->grp_used_tres_run_secs[i] = 0;

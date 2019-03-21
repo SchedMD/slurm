@@ -741,6 +741,18 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 			&qos_ptr->usage->grp_node_bitmap,
 			&qos_ptr->usage->grp_node_job_cnt,
 			&qos_ptr->usage->grp_used_tres[TRES_ARRAY_NODE]);
+
+		_add_usage_node_bitmap(
+			job_ptr,
+			&used_limits->node_bitmap,
+			&used_limits->node_job_cnt,
+			&used_limits->tres[TRES_ARRAY_NODE]);
+
+		_add_usage_node_bitmap(
+			job_ptr,
+			&used_limits_a->node_bitmap,
+			&used_limits_a->node_job_cnt,
+			&used_limits_a->tres[TRES_ARRAY_NODE]);
 		break;
 	case ACCT_POLICY_JOB_FINI:
 		/*
@@ -815,6 +827,18 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 			qos_ptr->usage->grp_node_bitmap,
 			qos_ptr->usage->grp_node_job_cnt,
 			&qos_ptr->usage->grp_used_tres[TRES_ARRAY_NODE]);
+
+		_rm_usage_node_bitmap(
+			job_ptr,
+			used_limits->node_bitmap,
+			used_limits->node_job_cnt,
+			&used_limits->tres[TRES_ARRAY_NODE]);
+
+		_rm_usage_node_bitmap(
+			job_ptr,
+			used_limits_a->node_bitmap,
+			used_limits_a->node_job_cnt,
+			&used_limits_a->tres[TRES_ARRAY_NODE]);
 		break;
 	default:
 		error("acct_policy: qos unknown type %d", type);
@@ -993,7 +1017,6 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				&assoc_ptr->usage->
 				grp_used_tres[TRES_ARRAY_NODE]);
 
-//			_add_assoc_node_bitmap(job_ptr, assoc_ptr->usage);
 			for (i = 0; i < slurmctld_tres_cnt; i++) {
 				if (i == TRES_ARRAY_ENERGY)
 					continue;
@@ -2102,7 +2125,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 {
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
-	uint64_t orig_node_cnt, new_node_cnt;
+	uint64_t orig_node_cnt;
 	slurmdb_used_limits_t *used_limits = NULL, *used_limits_a = NULL;
 	bool safe_limits = false;
 	int rc = true, i, tres_pos = 0;
@@ -2202,7 +2225,6 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
 	_get_unique_job_node_cnt(job_ptr, qos_ptr->usage->grp_node_bitmap,
 				 &tres_req_cnt[TRES_ARRAY_NODE]);
-	new_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->grp_tres_ctld,	qos_out_ptr->grp_tres_ctld,
@@ -2373,11 +2395,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	}
 
 	orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
-	/*
-	 * FIXME: this new_node_cnt is based off the total qos, not the per
-	 * account.
-	 */
-	tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
+	_get_unique_job_node_cnt(job_ptr, used_limits_a->node_bitmap,
+				 &tres_req_cnt[TRES_ARRAY_NODE]);
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->max_tres_pa_ctld, qos_out_ptr->max_tres_pa_ctld,
@@ -2428,11 +2447,8 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	}
 
 	orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
-	/*
-	 * FIXME: this new_node_cnt is based off the total qos, not the per
-	 * user.
-	 */
-	tres_req_cnt[TRES_ARRAY_NODE] = new_node_cnt;
+	_get_unique_job_node_cnt(job_ptr, used_limits->node_bitmap,
+				 &tres_req_cnt[TRES_ARRAY_NODE]);
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos,
 		qos_ptr->max_tres_pu_ctld, qos_out_ptr->max_tres_pu_ctld,
