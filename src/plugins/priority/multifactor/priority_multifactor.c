@@ -544,6 +544,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 	priority_factors_object_t pre_factors;
 	uint64_t tmp_64;
 	double tmp_tres = 0.0;
+	char *multi_part_str = NULL;
 
 	if (job_ptr->direct_set_prio && (job_ptr->priority > 0)) {
 		if (job_ptr->prio_factors) {
@@ -673,11 +674,17 @@ static uint32_t _get_priority_internal(time_t start_time,
 				job_ptr->priority_array[i] =
 					(uint32_t) priority_part;
 			}
-			debug("Job %u has more than one partition (%s)(%u)",
-			      job_ptr->job_id, part_ptr->name,
-			      job_ptr->priority_array[i]);
+			if (priority_debug) {
+				xstrfmtcat(multi_part_str, multi_part_str ?
+					   ", %s=%u" : "%s=%u", part_ptr->name,
+					   job_ptr->priority_array[i]);
+			}
 			i++;
 		}
+		if (priority_debug && multi_part_str)
+			info("%pJ multi-partition priorities: %s",
+			     job_ptr, multi_part_str);
+		xfree(multi_part_str);
 		list_iterator_destroy(part_iterator);
 	}
 
