@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     character option before the Slurm 2.1 release - as an alternative to
     '--account' for salloc/sbatch/srun.
  -- Remove direct BLCR support and srun_cr.
+ -- Make slurm_print_node_table only print a node's slurmd version if it is
+    different to the one reported by slurm_load_ctl_conf.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
