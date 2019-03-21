@@ -490,7 +490,9 @@ set fake_gpus_conf "
 tesla|0|~zero|(null)|${dev}1
 "
 set expected_output ""
-check_configuration 0.14 $gres_conf $fake_gpus_conf $expected_output
+set err_msgs "fatal:"
+set expected_errs 1
+check_configuration 0.14 $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 0.16 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
