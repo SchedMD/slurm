@@ -350,8 +350,18 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 		fatal("%s: missing slurm_opt_t struct", __func__);
 
 	for (i = 0; common_options[i]; i++) {
-		if (common_options[i]->val == optval)
-			break;
+		if (common_options[i]->val != optval)
+			continue;
+
+		/* Check that this is a valid match. */
+		if (!common_options[i]->set_func &&
+		    !(opt->salloc_opt && common_options[i]->set_func_salloc) &&
+		    !(opt->sbatch_opt && common_options[i]->set_func_sbatch) &&
+		    !(opt->srun_opt && common_options[i]->set_func_srun))
+			continue;
+
+		/* Match found */
+		break;
 	}
 
 	if (!common_options[i])
