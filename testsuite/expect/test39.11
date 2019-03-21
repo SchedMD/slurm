@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test --tres-per-job option with GRES of craynetwork (no topology)
+#          Test GRES options with craynetwork (no topology)
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -99,46 +99,49 @@ if {$match != $gres_target} {
 	set exit_code 1
 }
 
-#
-# Test --tres-per-job options using multiple nodes
-#
-send_user "\n\nTEST: --tres-per-job=craynetwork:# option\n"
-set match 0
-set node_cnt 0
-set timeout $max_job_delay
-if {$craynetwork_count > 1 && $nb_nodes > 1} {
-	set gres_target [expr $craynetwork_count * 2 - 1]
-	set node_target 2
-} else {
-	set gres_target $craynetwork_count
-	set node_target 1
-}
-set srun_pid [spawn $srun --tres-per-job=craynetwork:$gres_target -N $node_target -t1 -J "test$test_id" -l ./$file_in]
-expect {
-	-re "NumNodes=($number)" {
-		set node_cnt $expect_out(1,string)
-		exp_continue
+if {0} {
+# OPTION REMOVED, LIKELY ON A TEMPORARY BASIS
+	#
+	# Test --tres-per-job options using multiple nodes
+	#
+	send_user "\n\nTEST: --tres-per-job=craynetwork:# option\n"
+	set match 0
+	set node_cnt 0
+	set timeout $max_job_delay
+	if {$craynetwork_count > 1 && $nb_nodes > 1} {
+		set gres_target [expr $craynetwork_count * 2 - 1]
+		set node_target 2
+	} else {
+		set gres_target $craynetwork_count
+		set node_target 1
 	}
-	-re "craynetwork.CNT:($number)" {
-		incr match $expect_out(1,string)
-		exp_continue
+	set srun_pid [spawn $srun --tres-per-job=craynetwork:$gres_target -N $node_target -t1 -J "test$test_id" -l ./$file_in]
+	expect {
+		-re "NumNodes=($number)" {
+			set node_cnt $expect_out(1,string)
+			exp_continue
+		}
+		-re "craynetwork.CNT:($number)" {
+			incr match $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+	if {$node_cnt != $node_target} {
+		send_user "\nFAILURE: srun node count failure ($node_cnt != $node_target)\n"
 		set exit_code 1
 	}
-	eof {
-		wait
+	if {$match != $gres_target} {
+		send_user "\nFAILURE: srun --gres-per-job failure ($match != $gres_target)\n"
+		set exit_code 1
 	}
-}
-if {$node_cnt != $node_target} {
-	send_user "\nFAILURE: srun node count failure ($node_cnt != $node_target)\n"
-	set exit_code 1
-}
-if {$match != $gres_target} {
-	send_user "\nFAILURE: srun --gres-per-job failure ($match != $gres_target)\n"
-	set exit_code 1
 }
 
 if {$exit_code == 0} {
