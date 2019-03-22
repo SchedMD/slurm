@@ -266,23 +266,14 @@ static void _opt_env(void)
  */
 extern char *process_options_first_pass(int argc, char **argv)
 {
-	int opt_char, option_index = 0;
-	char *opt_string = NULL;
-	struct option *common_options, *optz;
 	int i, local_argc = 0;
 	char **local_argv, *script_file = NULL;
+	int opt_char, option_index = 0;
+	char *opt_string = NULL;
+	struct option *optz = slurm_option_table_create(&opt, &opt_string);
 
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, true);
-
-	common_options = slurm_option_table_create(&opt, &opt_string);
-	optz = spank_option_table_create(common_options);
-	slurm_option_table_destroy(common_options);
-
-	if (!optz) {
-		error("Unable to create options table");
-		exit(error_exit);
-	}
 
 	_opt_early_env();
 
@@ -299,7 +290,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 				       optz, &option_index)) != -1) {
 		slurm_process_option(&opt, opt_char, optarg, true, true);
 	}
-	spank_option_table_destroy(optz);
+	slurm_option_table_destroy(optz);
 
 	if ((local_argc > optind) && (sbopt.wrap != NULL)) {
 		error("Script arguments not permitted with --wrap option");
@@ -597,16 +588,7 @@ static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	char *opt_string = NULL;
-	struct option *common_options, *optz;
-
-	common_options = slurm_option_table_create(&opt, &opt_string);
-	optz = spank_option_table_create(common_options);
-	slurm_option_table_destroy(common_options);
-
-	if (!optz) {
-		error("Unable to create options table");
-		exit(error_exit);
-	}
+	struct option *optz = slurm_option_table_create(&opt, &opt_string);
 
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
@@ -616,7 +598,7 @@ static void _set_options(int argc, char **argv)
 				exit(error_exit);
 	}
 
-	spank_option_table_destroy(optz);
+	slurm_option_table_destroy(optz);
 }
 
 /*

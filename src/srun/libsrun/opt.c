@@ -589,15 +589,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	bitstr_t *pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
 	hostlist_t hl;
 	char *opt_string = NULL;
-	struct option *common_options, *optz;
-
-	common_options = slurm_option_table_create(&opt, &opt_string);
-	optz = spank_option_table_create(common_options);
-	slurm_option_table_destroy(common_options);
-	if (!optz) {
-		error("Unable to create option table");
-		exit(error_exit);
-	}
+	struct option *optz = slurm_option_table_create(&opt, &opt_string);
 
 	*opt_found = false;
 	optind = 0;
@@ -605,7 +597,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 				       optz, &option_index)) != -1) {
 		slurm_process_option(&opt, opt_char, optarg, false, true);
 	}
-	spank_option_table_destroy(optz);
+	slurm_option_table_destroy(optz);
 
 	*opt_found = (sropt.pack_group);
 
@@ -649,16 +641,7 @@ static void _set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	char *opt_string = NULL;
-	struct option *common_options, *optz;
-
-	common_options = slurm_option_table_create(&opt, &opt_string);
-	optz = spank_option_table_create(common_options);
-	slurm_option_table_destroy(common_options);
-
-	if (!optz) {
-		error("Unable to create option table");
-		exit(error_exit);
-	}
+	struct option *optz = slurm_option_table_create(&opt, &opt_string);
 
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
@@ -668,7 +651,7 @@ static void _set_options(const int argc, char **argv)
 				exit(error_exit);
 	}
 
-	spank_option_table_destroy(optz);
+	slurm_option_table_destroy(optz);
 }
 
 /*

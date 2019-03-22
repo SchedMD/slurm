@@ -43,6 +43,7 @@
 #include "src/common/log.h"
 #include "src/common/optz.h"
 #include "src/common/parse_time.h"
+#include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_acct_gather_profile.h"
 #include "src/common/slurm_resource_info.h"
@@ -3656,7 +3657,7 @@ static slurm_cli_opt_t *common_options[] = {
 struct option *slurm_option_table_create(slurm_opt_t *opt,
 					 char **opt_string)
 {
-	struct option *merged = optz_create();
+	struct option *optz = optz_create(), *spanked;
 
 	*opt_string = xstrdup("+");
 
@@ -3695,13 +3696,13 @@ struct option *slurm_option_table_create(slurm_opt_t *opt,
 			continue;
 
 		if (common_options[i]->set_func)
-			optz_add(&merged, (struct option *) common_options[i]);
+			optz_add(&optz, (struct option *) common_options[i]);
 		else if (opt->salloc_opt && common_options[i]->set_func_salloc)
-			optz_add(&merged, (struct option *) common_options[i]);
+			optz_add(&optz, (struct option *) common_options[i]);
 		else if (opt->sbatch_opt && common_options[i]->set_func_sbatch)
-			optz_add(&merged, (struct option *) common_options[i]);
+			optz_add(&optz, (struct option *) common_options[i]);
 		else if (opt->srun_opt && common_options[i]->set_func_srun)
-			optz_add(&merged, (struct option *) common_options[i]);
+			optz_add(&optz, (struct option *) common_options[i]);
 		else
 			set = false;
 
@@ -3713,7 +3714,11 @@ struct option *slurm_option_table_create(slurm_opt_t *opt,
 				xstrcat(*opt_string, "::");
 		}
 	}
-	return merged;
+
+	spanked = spank_option_table_create(optz);
+	optz_destroy(optz);
+
+	return spanked;
 }
 
 void slurm_option_table_destroy(struct option *optz)
