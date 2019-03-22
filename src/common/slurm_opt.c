@@ -1940,6 +1940,36 @@ static slurm_cli_opt_t slurm_opt_mpi = {
 	.reset_func = arg_reset_mpi_type,
 };
 
+static int arg_set_msg_timeout(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->msg_timeout = parse_int("--msg-timeout", arg, true);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_msg_timeout(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup_printf("%d", opt->srun_opt->msg_timeout);
+}
+static void arg_reset_msg_timeout(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->msg_timeout = slurm_get_msg_timeout();
+}
+static slurm_cli_opt_t slurm_opt_msg_timeout = {
+	.name = "msg-timeout",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MSG_TIMEOUT,
+	.set_func_srun = arg_set_msg_timeout,
+	.get_func = arg_get_msg_timeout,
+	.reset_func = arg_reset_msg_timeout,
+};
+
 COMMON_SRUN_BOOL_OPTION(multi_prog);
 static slurm_cli_opt_t slurm_opt_multi_prog = {
 	.name = "multi-prog",
@@ -3479,6 +3509,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mem_per_gpu,
 	&slurm_opt_mincpus,
 	&slurm_opt_mpi,
+	&slurm_opt_msg_timeout,
 	&slurm_opt_multi_prog,
 	&slurm_opt_network,
 	&slurm_opt_nice,

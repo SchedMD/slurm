@@ -96,7 +96,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 struct option long_options[] = {
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
-	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
 	{NULL,               0,                 0, 0}
@@ -106,9 +105,6 @@ char *opt_string =
 
 static slurm_opt_t *_get_first_opt(int pack_offset);
 static slurm_opt_t *_get_next_opt(int pack_offset, slurm_opt_t *opt_last);
-
-/* Get a decimal integer from arg */
-static int  _get_int(const char *arg, const char *what, bool positive);
 
 static bitstr_t *_get_pack_group(const int argc, char **argv,
 				 int default_pack_offset, bool *opt_found);
@@ -433,8 +429,6 @@ static void _opt_default(void)
 		sropt.allocate		= false;
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
-		/* Default launch msg timeout           */
-		sropt.msg_timeout		= slurm_get_msg_timeout();
 		sropt.parallel_debug	= false;
 		sropt.pty			= false;
 		sropt.test_exec		= false;
@@ -604,18 +598,6 @@ static void _opt_env(int pack_offset)
 }
 
 /*
- *  Get a decimal integer from arg.
- *
- *  Returns the integer on success, exits program on failure.
- *
- */
-static int
-_get_int(const char *arg, const char *what, bool positive)
-{
-	return parse_int(what, arg, positive);
-}
-
-/*
  * If --pack-group option found, return a bitmap representing their IDs
  * argc IN - Argument count
  * argv IN - Arguments
@@ -712,12 +694,6 @@ static void _set_options(const int argc, char **argv)
 		switch (opt_char) {
 		case LONG_OPT_PACK_GROUP:
 			/* Already parsed in _get_pack_group() */
-			break;
-		case LONG_OPT_TIMEO:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			sropt.msg_timeout =
-				_get_int(optarg, "msg-timeout", true);
 			break;
 		case LONG_OPT_DEBUG_TS:
 			sropt.debugger_test    = true;
