@@ -2016,12 +2016,12 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		}
 		rc = EINVAL;
 	}
-	if ((set_cnt > gres_data->gres_cnt_config) && (fast_schedule != 0)) {
+	if ((gres_cnt > gres_data->gres_cnt_config) && (fast_schedule != 0)) {
 		debug("%s: %s: Ignoring excess count on node %s (%"
 		      PRIu64" > %"PRIu64")",
-		      __func__, context_ptr->gres_type, node_name, set_cnt,
+		      __func__, context_ptr->gres_type, node_name, gres_cnt,
 		      gres_data->gres_cnt_config);
-		set_cnt = gres_data->gres_cnt_config;
+		gres_cnt = gres_data->gres_cnt_config;
 	}
 	if (gres_data->gres_cnt_found != gres_cnt) {
 		if (gres_data->gres_cnt_found != NO_VAL64) {
@@ -2059,11 +2059,11 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 	if (!updated_config)
 		return rc;
-	if ((set_cnt > gres_data->gres_cnt_config) && (fast_schedule == 2)) {
+	if ((gres_cnt > gres_data->gres_cnt_config) && (fast_schedule == 2)) {
 		info("%s: %s: count on node %s inconsistent with slurmctld count (%"PRIu64" != %"PRIu64")",
 		     __func__, context_ptr->gres_type, node_name,
-		     set_cnt, gres_data->gres_cnt_config);
-		set_cnt = gres_data->gres_cnt_config;	/* Ignore excess GRES */
+		     gres_cnt, gres_data->gres_cnt_config);
+		gres_cnt = gres_data->gres_cnt_config;	/* Ignore excess GRES */
 	}
 	if ((set_cnt == 0) && (set_cnt != gres_data->topo_cnt)) {
 		/* Need to clear topology info */
@@ -2210,14 +2210,14 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				/* If running jobs recovered then already set */
 				if (!gres_data->topo_gres_bitmap[i]) {
 					gres_data->topo_gres_bitmap[i] =
-						bit_alloc(set_cnt);
+						bit_alloc(gres_cnt);
 					bit_set(gres_data->topo_gres_bitmap[i],
 						gres_inx);
 				}
 				gres_inx++;
 			} else {
 				gres_data->topo_gres_bitmap[i] =
-					bit_alloc(set_cnt);
+					bit_alloc(gres_cnt);
 				for (j = 0; j < gres_slurmd_conf->count; j++) {
 					if (gres_inx >= gres_cnt) {
 						/* Ignore excess GRES on node */
@@ -2318,7 +2318,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if (has_file) {
 		uint64_t gres_bits;
 		if (_shared_gres(context_ptr->plugin_id)) {
-			gres_bits = set_cnt;
+			gres_bits = gres_cnt;
 		} else {
 			if (gres_data->gres_cnt_avail > MAX_GRES_BITMAP) {
 				error("%s: %s has \"File\" plus very large \"Count\" "
