@@ -371,6 +371,11 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		if (argc_off)
 			*argc_off = optind;
 
+		if (cli_filter_plugin_pre_submit(&opt)) {
+			error("cli_filter plugin terminated with error");
+			exit(error_exit);
+		}
+
 		if (!_opt_verify())
 			exit(error_exit);
 

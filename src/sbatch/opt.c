@@ -378,6 +378,11 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 	/* set options from command line */
 	*argc_off = _set_options(argc, argv);
 
+	if (cli_filter_plugin_pre_submit(&opt)) {
+		error("cli_filter plugin terminated with error");
+		exit(error_exit);
+	}
+
 	if (!_opt_verify())
 		exit(error_exit);
 

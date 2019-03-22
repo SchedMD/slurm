@@ -288,6 +288,11 @@ static void _opt_args(int argc, char **argv)
 		command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 	}
 
+	if (cli_filter_plugin_pre_submit(&opt)) {
+		error("cli_filter plugin terminated with error");
+		exit(error_exit);
+	}
+
 	if (!_opt_verify())
 		exit(error_exit);
 }
