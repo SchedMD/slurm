@@ -496,6 +496,44 @@ static slurm_cli_opt_t slurm_opt_bbf = {
 	.reset_func = arg_reset_burst_buffer_file,
 };
 
+static int arg_set_bcast(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->bcast_flag = true;
+	opt->srun_opt->bcast_file = xstrdup(arg);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_bcast(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->srun_opt->bcast_flag && !opt->srun_opt->bcast_file)
+		return xstrdup("set");
+	else if (opt->srun_opt->bcast_flag)
+		return xstrdup(opt->srun_opt->bcast_file);
+	return NULL;
+}
+static void arg_reset_bcast(slurm_opt_t *opt)
+{
+	if (opt->srun_opt) {
+		opt->srun_opt->bcast_flag = false;
+		xfree(opt->srun_opt->bcast_file);
+	}
+}
+static slurm_cli_opt_t slurm_opt_bcast = {
+	.name = "bcast",
+	.has_arg = optional_argument,
+	.val = LONG_OPT_BCAST,
+	.set_func_srun = arg_set_bcast,
+	.get_func = arg_get_bcast,
+	.reset_func = arg_reset_bcast,
+	.reset_each_pass = true,
+};
+
 static int arg_set_begin(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->begin = parse_time(arg, 0))) {
@@ -3226,6 +3264,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_alloc_nodelist,
 	&slurm_opt_array,
 	&slurm_opt_batch,
+	&slurm_opt_bcast,
 	&slurm_opt_begin,
 	&slurm_opt_bell,
 	&slurm_opt_bb,

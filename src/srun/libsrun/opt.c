@@ -88,7 +88,6 @@
 #define OPT_RESV_PORTS	0x09
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
-#define OPT_BCAST       0x1e
 #define OPT_INT64	0x25
 
 extern char **environ;
@@ -108,7 +107,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
@@ -467,8 +465,6 @@ static void _opt_default(void)
 	 * of the job/step. Do not use xfree() as the pointers have been copied.
 	 * See initialize_and_process_args() above.
 	 */
-	sropt.bcast_file		= NULL;
-	sropt.bcast_flag		= false;
 	sropt.compress			= 0;
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
@@ -515,7 +511,7 @@ struct env_vars {
 env_vars_t env_vars[] = {
   { "SLURM_ACCOUNT", 'A' },
   { "SLURM_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
-{"SLURM_BCAST",         OPT_BCAST,      NULL,               NULL             },
+  { "SLURM_BCAST", LONG_OPT_BCAST },
   { "SLURM_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
   { "SLURM_CLUSTERS", 'M' },
   { "SLURM_CHECKPOINT", LONG_OPT_CHECKPOINT },
@@ -677,14 +673,6 @@ _process_env_var(env_vars_t *e, const char *val)
 					  &sropt.cpu_bind_type, 0))
 			exit(error_exit);
 		break;
-	case OPT_BCAST:
-		if (val) {
-			xfree(sropt.bcast_file);
-			sropt.bcast_file = xstrdup(val);
-		}
-		sropt.bcast_flag = true;
-		break;
-
 	case OPT_RESV_PORTS:
 		if (val)
 			sropt.resv_port_cnt = strtol(val, NULL, 10);
@@ -812,13 +800,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-                case LONG_OPT_BCAST:
-			if (optarg) {
-				xfree(sropt.bcast_file);
-				sropt.bcast_file = xstrdup(optarg);
-			}
-			sropt.bcast_flag = true;
-                        break;
                 case LONG_OPT_CPU_BIND:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
