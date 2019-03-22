@@ -273,8 +273,6 @@ typedef struct srun_opt {
 	bool test_exec;			/* test_exec set		*/
 	bool test_only;			/* --test-only			*/
 	bool unbuffered;		/* --unbuffered			*/
-	bool user_managed_io;		/* 0 for "normal" IO,		*/
-					/* 1 for "user manged" IO	*/
 } srun_opt_t;
 
 typedef struct slurm_options {

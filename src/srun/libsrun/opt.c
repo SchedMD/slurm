@@ -430,7 +430,6 @@ static void _opt_default(void)
 		sropt.debugger_test	= false;
 		sropt.parallel_debug	= false;
 		sropt.test_exec		= false;
-		sropt.user_managed_io	= false;
 	}
 
 	/*
