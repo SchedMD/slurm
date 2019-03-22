@@ -56,16 +56,19 @@ extern salloc_opt_t saopt;
 extern int error_exit;		/* exit code for slurm errors */
 extern int immediate_exit;	/* exit code for --immediate option & busy */
 
-/* process options:
+/*
+ * process options:
  * 1. set defaults
  * 2. update options with env vars
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  *
- * argc IN - Count of elements in argv
- * argv IN - Array of elements to parse
- * argc_off OUT - Offset of first non-parsable element  */
-extern int initialize_and_process_args(int argc, char **argv, int *argc_off);
+ * argc      IN - Count of elements in argv
+ * argv      IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element
+ * pack_inx  IN - offset of job pack
+ */
+extern int initialize_and_process_args(int argc, char **argv, int *argc_off, int pack_inx);
 
 /* set options based upon commandline args */
 void set_options(const int argc, char **argv);

@@ -87,12 +87,13 @@ extern int cli_filter_plugin_setup_defaults(slurm_opt_t *opt, bool early);
  *		  cannot change, but OK to mutate some of the values within
  *		  the dereferenced memory using the appropriate argset
  *		  functions.
+ * IN offset	- hetjob offset (0 for first pack, 1 for second, and so on)
  * RETURNs	- SLURM_SUCCESS if cli_filter processing should allow the
  *				CLI to continue execution
  *		- SLURM_ERROR   if any condition is determined that should
  *				cease processing of the CLI
  */
-extern int cli_filter_plugin_pre_submit(slurm_opt_t *opt);
+extern int cli_filter_plugin_pre_submit(slurm_opt_t *opt, int offset);
 
 /*
  * Execute the post_submit() function in each cli filter plugin.
@@ -102,8 +103,11 @@ extern int cli_filter_plugin_pre_submit(slurm_opt_t *opt);
  * strings interface may not be stable. Instead this is meant to be used
  * primarily for logging purposes using data collected from the pre_submit()
  * hook.
+ * IN offset	- hetjob offset (0 for first pack, 1 for second, and so on)
  * IN jobid	- job identifier back from the controller.
+ * IN stepid	- step identifier (NOVAL if not set)
  */
-extern void cli_filter_plugin_post_submit(uint32_t jobid);
+extern void cli_filter_plugin_post_submit(int offset, uint32_t jobid,
+					  uint32_t stepid);
 
 #endif /* !_CLI_FILTER_H */

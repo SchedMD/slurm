@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 	for (pack_inx = 0; !pack_fini; pack_inx++) {
 		pack_argc_off = -1;
 		if (initialize_and_process_args(pack_argc, pack_argv,
-						&pack_argc_off) < 0) {
+						&pack_argc_off, pack_inx) < 0) {
 			error("salloc parameter parsing");
 			exit(error_exit);
 		}

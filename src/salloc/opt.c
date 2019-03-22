@@ -88,7 +88,7 @@ int immediate_exit = 1;
 typedef struct env_vars env_vars_t;
 
 static void  _opt_env(void);
-static void  _opt_args(int argc, char **argv);
+static void  _opt_args(int argc, char **argv, int pack_offset);
 static bool  _opt_verify(void);
 static void  _set_options(int argc, char **argv);
 
@@ -100,10 +100,13 @@ static void  _set_options(int argc, char **argv);
  * 3. update options with commandline args
  * 4. perform some verification that options are reasonable
  *
- * argc IN - Count of elements in argv
- * argv IN - Array of elements to parse
- * argc_off OUT - Offset of first non-parsable element  */
-extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
+ * argc      IN - Count of elements in argv
+ * argv      IN - Array of elements to parse
+ * argc_off OUT - Offset of first non-parsable element
+ * pack_inx  IN - offset of job pack
+ */
+extern int initialize_and_process_args(int argc, char **argv, int *argc_off,
+				       int pack_inx)
 {
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, first_pass);
@@ -120,7 +123,7 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 	_opt_env();
 
 	/* initialize options with argv */
-	_opt_args(argc, argv);
+	_opt_args(argc, argv, pack_inx);
 	if (argc_off)
 		*argc_off = optind;
 
@@ -262,7 +265,7 @@ static void _set_options(int argc, char **argv)
 /*
  * _opt_args() : set options via commandline args and popt
  */
-static void _opt_args(int argc, char **argv)
+static void _opt_args(int argc, char **argv, int pack_offset)
 {
 	int i;
 	char **rest = NULL;
@@ -288,7 +291,7 @@ static void _opt_args(int argc, char **argv)
 		command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 	}
 
-	if (cli_filter_plugin_pre_submit(&opt)) {
+	if (cli_filter_plugin_pre_submit(&opt, pack_offset)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
 	}
