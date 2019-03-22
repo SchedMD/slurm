@@ -832,6 +832,45 @@ static slurm_cli_opt_t slurm_opt_cores_per_socket = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_cpu_bind(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (slurm_verify_cpu_bind(arg, &opt->srun_opt->cpu_bind,
+				  &opt->srun_opt->cpu_bind_type, 0))
+		exit(-1);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_cpu_bind(slurm_opt_t *opt)
+{
+	char tmp[100];
+
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	slurm_sprint_cpu_bind_type(tmp, opt->srun_opt->cpu_bind_type);
+
+	return xstrdup(tmp);
+}
+static void arg_reset_cpu_bind(slurm_opt_t *opt)
+{
+	if (opt->srun_opt) {
+		xfree(opt->srun_opt->cpu_bind);
+		opt->srun_opt->cpu_bind_type = 0;
+	}
+}
+static slurm_cli_opt_t slurm_opt_cpu_bind = {
+	.name = "cpu-bind",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CPU_BIND,
+	.set_func_srun = arg_set_cpu_bind,
+	.get_func = arg_get_cpu_bind,
+	.reset_func = arg_reset_cpu_bind,
+	.reset_each_pass = true,
+};
+
 static int arg_set_cpu_freq(slurm_opt_t *opt, const char *arg)
 {
 	if (cpu_freq_verify_cmdline(arg, &opt->cpu_freq_min,
@@ -1170,9 +1209,6 @@ static int arg_set_extra_node_info(slurm_opt_t *opt, const char *arg)
 		exit(-1);
 	}
 
-	if (opt->srun_opt)
-		opt->srun_opt->cpu_bind_type_set = true;
-
 	return SLURM_SUCCESS;
 }
 static char *arg_get_extra_node_info(slurm_opt_t *opt)
@@ -1195,8 +1231,6 @@ static void arg_reset_extra_node_info(slurm_opt_t *opt)
 	opt->sockets_per_node = NO_VAL;
 	opt->cores_per_socket = NO_VAL;
 	opt->threads_per_core = NO_VAL;
-	if (opt->srun_opt)
-                opt->srun_opt->cpu_bind_type_set = false;
 }
 static slurm_cli_opt_t slurm_opt_extra_node_info = {
 	.name = "extra-node-info",
@@ -3315,6 +3349,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_constraint,
 	&slurm_opt_core_spec,
 	&slurm_opt_cores_per_socket,
+	&slurm_opt_cpu_bind,
 	&slurm_opt_cpu_freq,
 	&slurm_opt_cpus_per_gpu,
 	&slurm_opt_cpus_per_task,

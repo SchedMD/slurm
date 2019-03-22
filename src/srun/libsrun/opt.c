@@ -86,7 +86,6 @@
 #define OPT_STRING      0x02
 #define OPT_RESV_PORTS	0x09
 #define OPT_MPI         0x0c
-#define OPT_CPU_BIND    0x0d
 #define OPT_INT64	0x25
 
 extern char **environ;
@@ -106,7 +105,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"mpi",              required_argument, 0, LONG_OPT_MPI},
@@ -463,9 +461,6 @@ static void _opt_default(void)
 	 * of the job/step. Do not use xfree() as the pointers have been copied.
 	 * See initialize_and_process_args() above.
 	 */
-	sropt.cpu_bind			= NULL;
-	sropt.cpu_bind_type		= 0;
-	sropt.cpu_bind_type_set		= false;
 	sropt.hostfile			= NULL;
 	opt.job_flags			= 0;
 	sropt.multi_prog_cmds		= 0;
@@ -517,7 +512,7 @@ env_vars_t env_vars[] = {
   { "SLURM_CONSTRAINT", 'C' },
   { "SLURM_CORE_SPEC", 'S' },
   { "SLURM_CPUS_PER_TASK", 'c' },
-{"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
+  { "SLURM_CPU_BIND", LONG_OPT_CPU_BIND },
   { "SLURM_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
   { "SLURM_CPUS_PER_GPU", LONG_OPT_CPUS_PER_GPU },
   { "SLURM_DELAY_BOOT", LONG_OPT_DELAY_BOOT },
@@ -660,12 +655,6 @@ _process_env_var(env_vars_t *e, const char *val)
 			}
 		}
 		break;
-	case OPT_CPU_BIND:
-		xfree(sropt.cpu_bind);
-		if (slurm_verify_cpu_bind(val, &sropt.cpu_bind,
-					  &sropt.cpu_bind_type, 0))
-			exit(error_exit);
-		break;
 	case OPT_RESV_PORTS:
 		if (val)
 			sropt.resv_port_cnt = strtol(val, NULL, 10);
@@ -793,15 +782,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-                case LONG_OPT_CPU_BIND:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(sropt.cpu_bind);
-			if (slurm_verify_cpu_bind(optarg, &sropt.cpu_bind,
-						  &sropt.cpu_bind_type, 0))
-				exit(error_exit);
-			sropt.cpu_bind_type_set = true;
-			break;
 		case LONG_OPT_MPI:
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1076,8 +1056,7 @@ static bool _opt_verify(void)
 	}
 
 	if (opt.hint &&
-	    ((sropt.cpu_bind_type == CPU_BIND_VERBOSE) ||
-	     !sropt.cpu_bind_type_set) &&
+	    (!(sropt.cpu_bind_type & ~CPU_BIND_VERBOSE)) &&
 	    (opt.ntasks_per_core == NO_VAL) &&
 	    (opt.threads_per_core == NO_VAL)) {
 		if (verify_hint(opt.hint,

@@ -238,7 +238,6 @@ typedef struct srun_opt {
 	bool core_spec_set;		/* core_spec explicitly set	*/
 	char *cpu_bind;			/* binding map for map/mask_cpu	*/
 	cpu_bind_type_t cpu_bind_type;	/* --cpu-bind			*/
-	bool cpu_bind_type_set;		/* --cpu-bind explicitly set	*/
 	bool debugger_test;		/* --debugger-test		*/
 	bool disable_status;		/* --disable-status		*/
 	char *epilog;			/* --epilog			*/
