@@ -292,7 +292,6 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->gpus_per_node = xstrdup(opt.gpus_per_node);
 	opt_dup->gpus_per_socket = xstrdup(opt.gpus_per_socket);
 	opt_dup->gpus_per_task = xstrdup(opt.gpus_per_task);
-	sropt.hostfile = NULL;		/* Moved by memcpy */
 	opt_dup->ifname = xstrdup(opt.ifname);
 	opt_dup->job_name = xstrdup(opt.job_name);
 	opt.licenses = NULL;		/* Moved by memcpy */
@@ -437,7 +436,6 @@ static void _opt_default(void)
 	 * of the job/step. Do not use xfree() as the pointers have been copied.
 	 * See initialize_and_process_args() above.
 	 */
-	sropt.hostfile			= NULL;
 	opt.job_flags			= 0;
 	sropt.multi_prog_cmds		= 0;
 	sropt.pack_group		= NULL;
@@ -963,8 +961,6 @@ static bool _opt_verify(void)
 			}
 			opt.distribution &= SLURM_DIST_STATE_FLAGS;
 			opt.distribution |= SLURM_DIST_ARBITRARY;
-			xfree(sropt.hostfile);
-			sropt.hostfile = xstrdup(opt.nodelist);
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
 				      "hostfile");
@@ -975,9 +971,6 @@ static bool _opt_verify(void)
 			}
 		}
 	} else {
-		xfree(sropt.hostfile);
-		if (strstr(opt.nodelist, "/"))
-			sropt.hostfile = xstrdup(opt.nodelist);
 		if (!_valid_node_list(&opt.nodelist))
 			exit(error_exit);
 	}

@@ -243,7 +243,6 @@ typedef struct srun_opt {
 	char *epilog;			/* --epilog			*/
 	bool exclusive;			/* --exclusive			*/
 	char *export_env;		/* --export			*/
-	char *hostfile;			/* location of hostfile if there is one */
 	uint32_t jobid;			/* --jobid			*/
 	int32_t kill_bad_exit;		/* --kill-on-bad-exit		*/
 	bool labelio;			/* --label-output		*/
