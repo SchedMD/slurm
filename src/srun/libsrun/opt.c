@@ -424,7 +424,6 @@ static bool _valid_node_list(char **node_list_pptr)
 static void _opt_default(void)
 {
 	if (pass_number == 1) {
-		sropt.allocate		= false;
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
 		sropt.parallel_debug	= false;

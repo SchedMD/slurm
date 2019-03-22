@@ -228,7 +228,6 @@ typedef struct srun_opt {
 	char *efname;			/* error file name		*/
 
 	uint16_t accel_bind_type;	/* --accel-bind			*/
-	bool allocate;			/* --allocate			*/
 	char *alloc_nodelist;		/* grabbed from the environment	*/
 	char *bcast_file;		/* --bcast, copy executable to compute nodes */
 	bool bcast_flag;		/* --bcast, copy executable to compute nodes */
