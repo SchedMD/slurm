@@ -97,7 +97,6 @@ bool	tres_freq_err_log = true;
 struct option long_options[] = {
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
-	{"pty",              no_argument,       0, LONG_OPT_PTY},
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
@@ -430,7 +429,6 @@ static void _opt_default(void)
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
 		sropt.parallel_debug	= false;
-		sropt.pty			= false;
 		sropt.test_exec		= false;
 		sropt.user_managed_io	= false;
 	}
@@ -675,9 +673,6 @@ static void _set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 
-#ifdef HAVE_PTY_H
-	char *tmp_str;
-#endif
 	struct option *common_options = slurm_option_table_create(long_options,
 								  &opt);
 	struct option *optz = spank_option_table_create(common_options);
@@ -703,28 +698,6 @@ static void _set_options(const int argc, char **argv)
 			sropt.max_threads     = 1;
 			pmi_server_max_threads(sropt.max_threads);
 			sropt.msg_timeout     = 15;
-			break;
-		case LONG_OPT_PTY:
-#ifdef HAVE_PTY_H
-			sropt.pty = true;
-			sropt.unbuffered = true;	/* implicit */
-			if (opt.ifname)
-				tmp_str = "--input";
-			else if (opt.ofname)
-				tmp_str = "--output";
-			else if (opt.efname)
-				tmp_str = "--error";
-			else
-				tmp_str = NULL;
-			if (tmp_str) {
-				error("%s incompatible with --pty option",
-				      tmp_str);
-				exit(error_exit);
-			}
-#else
-			error("--pty not currently supported on this system "
-			      "type, ignoring option");
-#endif
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
@@ -1245,6 +1218,19 @@ static bool _opt_verify(void)
 
 	if (!opt.job_name)
 		opt.job_name = xstrdup(sropt.cmd_name);
+
+	if (sropt.pty) {
+#ifdef HAVE_PTY_H
+		sropt.unbuffered = true;	/* implicit */
+		if (opt.efname ||opt.ifname || opt.ofname) {
+			error("--error/--input/--output are incompatible with --pty");
+			exit(error_exit);
+		}
+#else
+		error("--pty not currently supported on this system type, ignoring option");
+		sropt.pty = false;
+#endif
+	}
 
 	if (opt.x11) {
 		x11_get_display(&opt.x11_target_port, &opt.x11_target);

@@ -2568,6 +2568,16 @@ static slurm_cli_opt_t slurm_opt_propagate = {
 	.reset_func = arg_reset_propagate,
 };
 
+COMMON_SRUN_BOOL_OPTION(pty);
+static slurm_cli_opt_t slurm_opt_pty = {
+	.name = "pty",
+	.has_arg = no_argument,
+	.val = LONG_OPT_PTY,
+	.set_func_srun = arg_set_pty,
+	.get_func = arg_get_pty,
+	.reset_func = arg_reset_pty,
+};
+
 COMMON_STRING_OPTION(qos);
 static slurm_cli_opt_t slurm_opt_qos = {
 	.name = "qos",
@@ -3537,6 +3547,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_profile,
 	&slurm_opt_prolog,
 	&slurm_opt_propagate,
+	&slurm_opt_pty,
 	&slurm_opt_qos,
 	&slurm_opt_quiet,
 	&slurm_opt_quit_on_interrupt,
