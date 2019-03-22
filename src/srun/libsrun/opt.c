@@ -108,7 +108,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
@@ -485,8 +484,6 @@ static void _opt_default(void)
 	sropt.multi_prog_cmds		= 0;
 	sropt.pack_group		= NULL;
 	sropt.pack_grp_bits		= NULL;
-	sropt.relative			= NO_VAL;
-	sropt.relative_set		= false;
 	sropt.resv_port_cnt		= NO_VAL;
 	opt.spank_job_env_size		= 0;
 	opt.spank_job_env		= NULL;
@@ -821,12 +818,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case (int)'r':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			sropt.relative = _get_int(optarg, "relative", false);
-			sropt.relative_set = true;
-			break;
 		case (int)'T':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
@@ -1111,12 +1102,12 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if (sropt.no_alloc && sropt.relative_set) {
+	if (sropt.no_alloc && (sropt.relative != NO_VAL)) {
 		error("do not specify -r,--relative with -Z,--no-allocate.");
 		verified = false;
 	}
 
-	if (sropt.relative_set && (opt.exclude || opt.nodelist)) {
+	if ((sropt.relative != NO_VAL) && (opt.exclude || opt.nodelist)) {
 		error("-r,--relative not allowed with "
 		      "-w,--nodelist or -x,--exclude.");
 		verified = false;

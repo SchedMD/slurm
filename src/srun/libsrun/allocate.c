@@ -372,7 +372,7 @@ extern resource_allocation_response_msg_t *
 
 	xassert(srun_opt);
 
-	if (srun_opt->relative_set && srun_opt->relative)
+	if (srun_opt->relative != NO_VAL)
 		fatal("--relative option invalid for job allocation request");
 
 	if ((j = _job_desc_msg_create_from_opts(&opt)) == NULL)
@@ -503,7 +503,7 @@ List allocate_pack_nodes(bool handle_signals)
 		xassert(srun_opt);
 		if (!first_opt)
 			first_opt = opt_local;
-		if (srun_opt->relative_set && srun_opt->relative)
+		if (srun_opt->relative != NO_VAL)
 			fatal("--relative option invalid for job allocation request");
 
 		if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL)

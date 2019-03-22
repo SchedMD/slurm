@@ -2347,6 +2347,37 @@ static slurm_cli_opt_t slurm_opt_reboot = {
 	.reset_func = arg_reset_reboot,
 };
 
+static int arg_set_relative(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->relative = parse_int("--relative", arg, false);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_relative(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup_printf("%d", opt->srun_opt->relative);
+}
+static void arg_reset_relative(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->relative = NO_VAL;
+}
+static slurm_cli_opt_t slurm_opt_relative = {
+	.name = "relative",
+	.has_arg = required_argument,
+	.val = 'r',
+	.set_func_srun = arg_set_relative,
+	.get_func = arg_get_relative,
+	.reset_func = arg_reset_relative,
+	.reset_each_pass = true,
+};
+
 static int arg_set_requeue(slurm_opt_t *opt, const char *arg)
 {
 	if (!opt->sbatch_opt)
@@ -3196,6 +3227,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_quiet,
 	&slurm_opt_quit_on_interrupt,
 	&slurm_opt_reboot,
+	&slurm_opt_relative,
 	&slurm_opt_requeue,
 	&slurm_opt_reservation,
 	&slurm_opt_signal,

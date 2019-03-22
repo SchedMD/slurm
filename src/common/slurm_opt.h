@@ -264,7 +264,6 @@ typedef struct srun_opt {
 	bool pty;			/* --pty			*/
 	bool quit_on_intr;		/* --quit-on-interrupt		*/
 	int relative;			/* --relative			*/
-	bool relative_set;
 	char *restart_dir;		/* --restart			*/
 	int resv_port_cnt;		/* --resv_ports			*/
 	int slurmd_debug;		/* --slurmd-debug		*/

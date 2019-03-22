@@ -2168,7 +2168,7 @@ static void _step_opt_exclusive(slurm_opt_t *opt_local)
 		error("--ntasks must be set with --exclusive");
 		exit(error_exit);
 	}
-	if (srun_opt->relative_set) {
+	if (srun_opt->relative != NO_VAL) {
 		error("--relative disabled, incompatible with --exclusive");
 		exit(error_exit);
 	}
@@ -2184,7 +2184,7 @@ static int _validate_relative(resource_allocation_response_msg_t *resp,
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	xassert(srun_opt);
 
-	if (srun_opt->relative_set &&
+	if ((srun_opt->relative != NO_VAL) &&
 	    ((srun_opt->relative + opt_local->min_nodes)
 	     > resp->node_cnt)) {
 		if (slurm_option_set_by_cli('N')) {
