@@ -2391,6 +2391,38 @@ static slurm_cli_opt_t slurm_opt_oversubscribe = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_pack_group(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	xfree(opt->srun_opt->pack_group);
+	opt->srun_opt->pack_group = xstrdup(arg);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_pack_group(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup(opt->srun_opt->pack_group);
+}
+static void arg_reset_pack_group(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		xfree(opt->srun_opt->pack_group);
+}
+static slurm_cli_opt_t slurm_opt_pack_group = {
+	.name = "pack-group",
+	.has_arg = required_argument,
+	.val = LONG_OPT_PACK_GROUP,
+	.srun_early_pass = true,
+	.set_func_srun = arg_set_pack_group,
+	.get_func = arg_get_pack_group,
+	.reset_func = arg_reset_pack_group,
+};
+
 static int arg_set_parsable(slurm_opt_t *opt, const char *arg)
 {
 	if (!opt->sbatch_opt)
@@ -3540,6 +3572,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_output,
 	&slurm_opt_overcommit,
 	&slurm_opt_oversubscribe,
+	&slurm_opt_pack_group,
 	&slurm_opt_parsable,
 	&slurm_opt_partition,
 	&slurm_opt_power,

@@ -96,7 +96,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 struct option long_options[] = {
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
-	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
@@ -620,14 +619,11 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
-		switch (opt_char) {
-		case LONG_OPT_PACK_GROUP:
-			xfree(sropt.pack_group);
-			sropt.pack_group = xstrdup(optarg);
-			*opt_found = true;
-		}
+		slurm_process_option(&opt, opt_char, optarg, false, true);
 	}
 	spank_option_table_destroy(optz);
+
+	*opt_found = (sropt.pack_group);
 
 	if (*opt_found == false) {
 		bit_set(pack_grp_bits, default_pack_offset);
@@ -683,9 +679,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case LONG_OPT_PACK_GROUP:
-			/* Already parsed in _get_pack_group() */
-			break;
 		case LONG_OPT_DEBUG_TS:
 			sropt.debugger_test    = true;
 			/* make other parameters look like debugger
