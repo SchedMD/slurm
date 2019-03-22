@@ -94,9 +94,6 @@ bool	tres_bind_err_log = true;
 bool	tres_freq_err_log = true;
 
 /*---- forward declarations of static variables and functions  ----*/
-struct option long_options[] = {
-	{NULL,               0,                 0, 0}
-	};
 char *opt_string =
 	"+A:b:B:c:C:d:D:e:EF:G:hHi:I::jJ:k::K::lL:m:M:n:N:o:Op:q:Qr:sS:t:T:uvVw:W:x:XZ";
 
@@ -595,7 +592,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 	hostlist_t hl;
 	struct option *common_options, *optz;
 
-	common_options = slurm_option_table_create(long_options, &opt);
+	common_options = slurm_option_table_create(NULL, &opt);
 	optz = spank_option_table_create(common_options);
 	slurm_option_table_destroy(common_options);
 	if (!optz) {
@@ -653,7 +650,7 @@ static void _set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 
-	struct option *common_options = slurm_option_table_create(long_options,
+	struct option *common_options = slurm_option_table_create(NULL,
 								  &opt);
 	struct option *optz = spank_option_table_create(common_options);
 	slurm_option_table_destroy(common_options);
@@ -666,12 +663,9 @@ static void _set_options(const int argc, char **argv)
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
-		switch (opt_char) {
-		default:
-			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
-				if (spank_process_option(opt_char, optarg) < 0)
-					exit(error_exit);
-		}
+		if (slurm_process_option(&opt, opt_char, optarg, false, false))
+			if (spank_process_option(opt_char, optarg) < 0)
+				exit(error_exit);
 	}
 
 	spank_option_table_destroy(optz);
