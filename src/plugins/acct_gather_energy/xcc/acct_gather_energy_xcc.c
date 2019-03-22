@@ -1026,8 +1026,6 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			       "EnergyIPMIDriverDevice", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.driver_type,
 			       "EnergyIPMIDriverType", tbl);
-		s_p_get_uint32(&slurm_ipmi_conf.driver_type,
-			       "EnergyIPMIDriverType", tbl);
 		s_p_get_uint32(&slurm_ipmi_conf.freq,
 			       "EnergyIPMIFrequency", tbl);
 		if ((int)slurm_ipmi_conf.freq <= 0)
