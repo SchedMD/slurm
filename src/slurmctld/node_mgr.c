@@ -242,6 +242,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
 	pack_time(dump_node_ptr->boot_req_time, buffer);
+	pack_time(dump_node_ptr->last_response, buffer);
 	pack16  (dump_node_ptr->protocol_version, buffer);
 	packstr (dump_node_ptr->mcs_label, buffer);
 	(void) gres_plugin_node_state_pack(dump_node_ptr->gres_list, buffer,
@@ -292,7 +293,7 @@ extern int load_all_node_state ( bool state_only )
 	uint64_t real_memory;
 	uint32_t tmp_disk, name_len;
 	uint32_t reason_uid = NO_VAL;
-	time_t boot_req_time = 0, reason_time = 0;
+	time_t boot_req_time = 0, reason_time = 0, last_response = 0;
 	List gres_list = NULL;
 	struct node_record *node_ptr;
 	time_t time_stamp, now = time(NULL);
@@ -367,6 +368,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack32 (&reason_uid,  buffer);
 			safe_unpack_time (&reason_time, buffer);
 			safe_unpack_time (&boot_req_time, buffer);
+			safe_unpack_time(&last_response, buffer);
 			safe_unpack16 (&obj_protocol_version, buffer);
 			safe_unpackstr_xmalloc (&mcs_label, &name_len, buffer);
 			if (gres_plugin_node_state_unpack(
@@ -643,7 +645,6 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->threads       = threads;
 			node_ptr->real_memory   = real_memory;
 			node_ptr->tmp_disk      = tmp_disk;
-			node_ptr->last_response = (time_t) 0;
 			xfree(node_ptr->mcs_label);
 			node_ptr->mcs_label	= mcs_label;
 			mcs_label		= NULL; /* Nothing to free */
@@ -662,13 +663,19 @@ extern int load_all_node_state ( bool state_only )
 							node_name);
 			}
 
-			if (node_ptr->node_state & NODE_STATE_POWER_UP) {
-				/* last_response value not saved,
-				 * make best guess */
-				node_ptr->last_response = now +
+			node_ptr->last_response = last_response;
+			if (!node_ptr->last_response) {
+				/*
+				 * last_response value not saved, make best
+				 * guess.
+				 */
+				if (IS_NODE_POWER_UP(node_ptr))
+					node_ptr->last_response = now +
 						slurmctld_conf.resume_timeout;
-			} else
-				node_ptr->last_response = (time_t) 0;
+				else if (IS_NODE_POWERING_DOWN(node_ptr))
+					node_ptr->last_response = now +
+						slurmctld_conf.suspend_timeout;
+			}
 
 			if (obj_protocol_version &&
 			    (obj_protocol_version != NO_VAL16))
