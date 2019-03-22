@@ -52,6 +52,7 @@
 
 #define DEFAULT_IMMEDIATE	1
 #define DEFAULT_BELL_DELAY	10
+#define SRUN_MAX_THREADS	60
 
 typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
 

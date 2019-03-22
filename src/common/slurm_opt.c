@@ -1592,6 +1592,40 @@ static slurm_cli_opt_t slurm_opt_mail_user = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_max_threads(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->max_threads = parse_int("--threads", arg, true);
+
+	if (opt->srun_opt->max_threads > SRUN_MAX_THREADS)
+		error("Thread value --threads=%d exceeds recommended limit of %d",
+		      opt->srun_opt->max_threads, SRUN_MAX_THREADS);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_max_threads(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup_printf("%d", opt->srun_opt->max_threads);
+}
+static void arg_reset_max_threads(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->max_threads = SRUN_MAX_THREADS;
+}
+static slurm_cli_opt_t slurm_opt_max_threads = {
+	.name = "threads",
+	.has_arg = required_argument,
+	.val = 'T',
+	.set_func_srun = arg_set_max_threads,
+	.get_func = arg_get_max_threads,
+	.reset_func = arg_reset_max_threads,
+};
+
 COMMON_STRING_OPTION(mcs_label);
 static slurm_cli_opt_t slurm_opt_mcs_label = {
 	.name = "mcs-label",
@@ -3190,6 +3224,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_licenses,
 	&slurm_opt_mail_type,
 	&slurm_opt_mail_user,
+	&slurm_opt_max_threads,
 	&slurm_opt_mcs_label,
 	&slurm_opt_mem,
 	&slurm_opt_mem_bind,

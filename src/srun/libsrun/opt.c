@@ -108,7 +108,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"threads",          required_argument, 0, 'T'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
@@ -479,8 +478,6 @@ static void _opt_default(void)
 	sropt.cpu_bind_type_set		= false;
 	sropt.hostfile			= NULL;
 	opt.job_flags			= 0;
-	sropt.max_threads		= MAX_THREADS;
-	pmi_server_max_threads(sropt.max_threads);
 	sropt.multi_prog_cmds		= 0;
 	sropt.pack_group		= NULL;
 	sropt.pack_grp_bits		= NULL;
@@ -588,7 +585,7 @@ env_vars_t env_vars[] = {
   { "SLURM_TASK_EPILOG", LONG_OPT_TASK_EPILOG },
   { "SLURM_TASK_PROLOG", LONG_OPT_TASK_PROLOG },
   { "SLURM_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
-{"SLURM_THREADS",       OPT_INT,        &sropt.max_threads, NULL             },
+  { "SLURM_THREADS", 'T' },
   { "SLURM_TIMELIMIT", 't' },
   { "SLURM_UNBUFFEREDIO", 'u' },
   { "SLURM_USE_MIN_NODES", LONG_OPT_USE_MIN_NODES },
@@ -818,13 +815,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case (int)'T':
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			sropt.max_threads =
-				_get_int(optarg, "max_threads", true);
-			pmi_server_max_threads(sropt.max_threads);
-			break;
                 case LONG_OPT_BCAST:
 			if (optarg) {
 				xfree(sropt.bcast_file);
@@ -1214,6 +1204,8 @@ static bool _opt_verify(void)
 		hostlist_destroy(hl);
 	}
 
+	pmi_server_max_threads(sropt.max_threads);
+
 	/*
 	 * now if max is set make sure we have <= max_nodes in the
 	 * nodelist but only if it isn't arbitrary since the user has
@@ -1415,15 +1407,6 @@ static bool _opt_verify(void)
 
 	if (hl)
 		hostlist_destroy(hl);
-
-	if (sropt.max_threads <= 0) {	/* set default */
-		error("Thread value invalid, reset to 1");
-		sropt.max_threads = 1;
-		pmi_server_max_threads(sropt.max_threads);
-	} else if (sropt.max_threads > MAX_THREADS) {
-		error("Thread value exceeds defined limit, reset to %d",
-		      MAX_THREADS);
-	}
 
 	if ((opt.deadline) && (opt.begin) && (opt.deadline < opt.begin)) {
 		error("Incompatible begin and deadline time specification");
