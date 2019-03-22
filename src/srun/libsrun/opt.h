@@ -61,7 +61,6 @@ extern enum modes mode;
 
 extern int	error_exit;	/* exit code for slurm errors */
 extern int	immediate_exit;	/* exit code for --imediate option & busy */
-extern char *	mpi_type;
 extern slurm_opt_t opt;
 extern srun_opt_t sropt;
 extern List	opt_list;

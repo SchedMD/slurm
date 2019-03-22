@@ -85,7 +85,6 @@
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
 #define OPT_RESV_PORTS	0x09
-#define OPT_MPI         0x0c
 #define OPT_INT64	0x25
 
 extern char **environ;
@@ -93,7 +92,6 @@ extern char **environ;
 /*---- global variables, defined in opt.h ----*/
 int	error_exit = 1;
 int	immediate_exit = 1;
-char *	mpi_type = NULL;
 srun_opt_t sropt;
 slurm_opt_t opt = { .srun_opt = &sropt };
 List 	opt_list = NULL;
@@ -107,7 +105,6 @@ typedef struct env_vars env_vars_t;
 struct option long_options[] = {
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
-	{"mpi",              required_argument, 0, LONG_OPT_MPI},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
@@ -318,7 +315,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt.mail_user = NULL;		/* Moved by memcpy */
 	opt_dup->mcs_label = xstrdup(opt.mcs_label);
 	opt.mem_bind = NULL;		/* Moved by memcpy */
-	opt_dup->mpi_type = xstrdup(opt.mpi_type);
+	opt_dup->srun_opt->mpi_type = xstrdup(sropt.mpi_type);
 	opt.network = NULL;		/* Moved by memcpy */
 	opt.nodelist = NULL;		/* Moved by memcpy */
 	opt_dup->ofname = xstrdup(opt.ofname);
@@ -541,7 +538,7 @@ env_vars_t env_vars[] = {
   { "SLURM_MEM_BIND", LONG_OPT_MEM_BIND },
   { "SLURM_MEM_PER_CPU", LONG_OPT_MEM_PER_CPU },
   { "SLURM_MEM_PER_NODE", LONG_OPT_MEM },
-{"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
+  { "SLURM_MPI_TYPE", LONG_OPT_MPI },
   { "SLURM_NCORES_PER_SOCKET", LONG_OPT_CORESPERSOCKET },
   { "SLURM_NETWORK", LONG_OPT_NETWORK },
   { "SLURM_NO_KILL", 'k' },
@@ -661,10 +658,6 @@ _process_env_var(env_vars_t *e, const char *val)
 		else
 			sropt.resv_port_cnt = 0;
 		break;
-	case OPT_MPI:
-		xfree(mpi_type);
-		mpi_type = xstrdup(val);
-		break;
 	default:
 		/*
 		* assume this was meant to be processed by
@@ -782,12 +775,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case LONG_OPT_MPI:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			xfree(mpi_type);
-			mpi_type = xstrdup(optarg);
-			break;
 		case LONG_OPT_PACK_GROUP:
 			/* Already parsed in _get_pack_group() */
 			break;
@@ -892,8 +879,8 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 
 	command_args = sropt.argc;
 
-	if (!xstrcmp(mpi_type, "list"))
-		(void) mpi_hook_client_init(mpi_type);
+	if (!xstrcmp(sropt.mpi_type, "list"))
+		(void) mpi_hook_client_init(sropt.mpi_type);
 	if (!rest && !sropt.test_only)
 		fatal("No command given to execute.");
 
@@ -1348,11 +1335,11 @@ static bool _opt_verify(void)
 		exit(error_exit);
 	}
 
-	if (!mpi_type)
-		mpi_type = slurm_get_mpi_default();
-	if (mpi_hook_client_init(mpi_type) == SLURM_ERROR) {
+	if (!sropt.mpi_type)
+		sropt.mpi_type = slurm_get_mpi_default();
+	if (mpi_hook_client_init(sropt.mpi_type) == SLURM_ERROR) {
 		error("invalid MPI type '%s', --mpi=list for acceptable types",
-		      mpi_type);
+		      sropt.mpi_type);
 		exit(error_exit);
 	}
 

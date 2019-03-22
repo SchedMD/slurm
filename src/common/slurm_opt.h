@@ -250,6 +250,7 @@ typedef struct srun_opt {
 	int32_t max_threads;		/* --threads			*/
 	int max_wait;			/* --wait			*/
 	int msg_timeout;		/* undocumented			*/
+	char *mpi_type;			/* --mpi=type			*/
 	bool multi_prog;		/* multiple programs to execute */
 	int32_t multi_prog_cmds;	/* number of commands in multi prog file */
 	bool no_alloc;			/* --no-allocate		*/
@@ -315,7 +316,6 @@ typedef struct slurm_options {
 					 * when -m plane=<# of lllp per
 					 * plane> */
 	char *job_name;			/* --job-name			*/
-	char *mpi_type;			/* --mpi=type			*/
 	char *dependency;		/* --dependency			*/
 	int nice;			/* --nice			*/
 	uint32_t priority;		/* --priority			*/

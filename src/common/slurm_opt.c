@@ -1897,6 +1897,16 @@ static slurm_cli_opt_t slurm_opt_mincpus = {
 	.reset_each_pass = true,
 };
 
+COMMON_SRUN_STRING_OPTION(mpi_type);
+static slurm_cli_opt_t slurm_opt_mpi = {
+	.name = "mpi",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MPI,
+	.set_func_srun = arg_set_mpi_type,
+	.get_func = arg_get_mpi_type,
+	.reset_func = arg_reset_mpi_type,
+};
+
 COMMON_SRUN_BOOL_OPTION(multi_prog);
 static slurm_cli_opt_t slurm_opt_multi_prog = {
 	.name = "multi-prog",
@@ -3396,6 +3406,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mem_per_cpu,
 	&slurm_opt_mem_per_gpu,
 	&slurm_opt_mincpus,
+	&slurm_opt_mpi,
 	&slurm_opt_multi_prog,
 	&slurm_opt_network,
 	&slurm_opt_nice,
