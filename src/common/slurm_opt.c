@@ -729,6 +729,41 @@ static slurm_cli_opt_t slurm_opt_comment = {
 	.reset_func = arg_reset_comment,
 };
 
+static int arg_set_compress(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->compress = parse_compress_type(arg);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_compress(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->srun_opt->compress == COMPRESS_LZ4)
+		return xstrdup("lz4");
+	if (opt->srun_opt->compress == COMPRESS_ZLIB)
+		return xstrdup("zlib");
+	return xstrdup("none");
+}
+static void arg_reset_compress(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->compress = COMPRESS_OFF;
+}
+static slurm_cli_opt_t slurm_opt_compress = {
+	.name = "compress",
+	.has_arg = optional_argument,
+	.val = LONG_OPT_COMPRESS,
+	.set_func_srun = arg_set_compress,
+	.get_func = arg_get_compress,
+	.reset_func = arg_reset_compress,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(constraint);
 static slurm_cli_opt_t slurm_opt_constraint = {
 	.name = "constraint",
@@ -3275,6 +3310,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_cluster,
 	&slurm_opt_clusters,
 	&slurm_opt_comment,
+	&slurm_opt_compress,
 	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
 	&slurm_opt_core_spec,

@@ -84,7 +84,6 @@
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
-#define OPT_COMPRESS	0x07
 #define OPT_RESV_PORTS	0x09
 #define OPT_MPI         0x0c
 #define OPT_CPU_BIND    0x0d
@@ -107,7 +106,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
@@ -465,7 +463,6 @@ static void _opt_default(void)
 	 * of the job/step. Do not use xfree() as the pointers have been copied.
 	 * See initialize_and_process_args() above.
 	 */
-	sropt.compress			= 0;
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
 	sropt.cpu_bind_type_set		= false;
@@ -516,7 +513,7 @@ env_vars_t env_vars[] = {
   { "SLURM_CLUSTERS", 'M' },
   { "SLURM_CHECKPOINT", LONG_OPT_CHECKPOINT },
   { "SLURM_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
-{"SLURM_COMPRESS",      OPT_COMPRESS,   NULL,               NULL             },
+  { "SLURM_COMPRESS", LONG_OPT_COMPRESS },
   { "SLURM_CONSTRAINT", 'C' },
   { "SLURM_CORE_SPEC", 'S' },
   { "SLURM_CPUS_PER_TASK", 'c' },
@@ -662,10 +659,6 @@ _process_env_var(env_vars_t *e, const char *val)
 				      e->var, val);
 			}
 		}
-		break;
-
-	case OPT_COMPRESS:
-		sropt.compress = parse_compress_type(val);
 		break;
 	case OPT_CPU_BIND:
 		xfree(sropt.cpu_bind);
@@ -865,9 +858,6 @@ static void _set_options(const int argc, char **argv)
 			error("--pty not currently supported on this system "
 			      "type, ignoring option");
 #endif
-			break;
-		case LONG_OPT_COMPRESS:
-			sropt.compress = parse_compress_type(optarg);
 			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
