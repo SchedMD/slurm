@@ -95,7 +95,6 @@ bool	tres_freq_err_log = true;
 
 /*---- forward declarations of static variables and functions  ----*/
 struct option long_options[] = {
-	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
@@ -424,8 +423,6 @@ static void _opt_default(void)
 {
 	if (pass_number == 1) {
 		xfree(sropt.cmd_name);
-		sropt.debugger_test	= false;
-		sropt.parallel_debug	= false;
 		sropt.test_exec		= false;
 	}
 
@@ -440,15 +437,6 @@ static void _opt_default(void)
 	sropt.pack_grp_bits		= NULL;
 	opt.spank_job_env_size		= 0;
 	opt.spank_job_env		= NULL;
-
-	/*
-	 * Reset some default values if running under a parallel debugger
-	 */
-	if ((sropt.parallel_debug = _under_parallel_debugger())) {
-		sropt.max_threads		= 1;
-		pmi_server_max_threads(sropt.max_threads);
-		sropt.msg_timeout		= 15;
-	}
 
 	slurm_reset_all_options(&opt, (pass_number == 1));
 }
@@ -679,15 +667,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case LONG_OPT_DEBUG_TS:
-			sropt.debugger_test    = true;
-			/* make other parameters look like debugger
-			 * is really attached */
-			sropt.parallel_debug   = true;
-			sropt.max_threads     = 1;
-			pmi_server_max_threads(sropt.max_threads);
-			sropt.msg_timeout     = 15;
-			break;
 		default:
 			if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
 				if (spank_process_option(opt_char, optarg) < 0)
@@ -981,6 +960,20 @@ static bool _opt_verify(void)
 			opt.min_nodes = opt.max_nodes = hostlist_count(hl);
 		}
 		hostlist_destroy(hl);
+	}
+
+	/*
+	 * Handle special settings for parallel debugging.
+	 */
+	if (sropt.debugger_test || _under_parallel_debugger())
+		sropt.parallel_debug = true;
+
+	if (sropt.parallel_debug) {
+		/* Set --threads 1 */
+		slurm_process_option(&opt, 'T', "1", false, false);
+		/* Set --msg-timeout 15 */
+		slurm_process_option(&opt, LONG_OPT_MSG_TIMEOUT, "1",
+				     false, false);
 	}
 
 	pmi_server_max_threads(sropt.max_threads);

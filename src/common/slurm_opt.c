@@ -968,6 +968,36 @@ static slurm_cli_opt_t slurm_opt_deadline = {
 	.reset_func = arg_reset_deadline,
 };
 
+static int arg_set_debugger_test(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->debugger_test = true;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_debugger_test(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return NULL;
+
+	return xstrdup(opt->srun_opt->debugger_test ? "set" : "unset");
+}
+static void arg_reset_debugger_test(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->debugger_test = false;
+}
+static slurm_cli_opt_t slurm_opt_debugger_test = {
+	.name = "debugger-test",
+	.has_arg = no_argument,
+	.val = LONG_OPT_DEBUGGER_TEST,
+	.set_func_srun = arg_set_debugger_test,
+	.get_func = arg_get_debugger_test,
+	.reset_func = arg_reset_debugger_test,
+};
+
 static int arg_set_delay_boot(slurm_opt_t *opt, const char *arg)
 {
 	if ((opt->delay_boot = time_str2secs(arg)) == NO_VAL) {
@@ -3508,6 +3538,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_cpus_per_gpu,
 	&slurm_opt_cpus_per_task,
 	&slurm_opt_deadline,
+	&slurm_opt_debugger_test,
 	&slurm_opt_delay_boot,
 	&slurm_opt_dependency,
 	&slurm_opt_disable_status,

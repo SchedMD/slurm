@@ -540,7 +540,7 @@ extern int launch_p_setup_srun_opt(char **rest, slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	xassert(srun_opt);
-	if (srun_opt->debugger_test && srun_opt->parallel_debug)
+	if (srun_opt->debugger_test)
 		MPIR_being_debugged = 1;
 
 	/*
