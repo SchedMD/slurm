@@ -49,8 +49,13 @@ You might have the following account stack in sshd:</p>
 account    required      pam_nologin.so
 account    include       password-auth
 ...
-account    required      pam_slurm_adopt.so
+-account    required      pam_slurm_adopt.so
 </pre>
+
+<p>Note the "-" before the account entry for pam_slurm_adopt. It allows
+PAM to fail gracefully if the pam_slurm_adopt.so file is not found. If Slurm
+is on a shared filesystem, such as NFS, then this is suggested to avoid being
+locked out of a node while the shared filesystem is mounting or down.</p>
 
 <p>pam_slurm_adopt must be used with the task/cgroup plugin.
 The pam_systemd module will conflict with pam_slurm_adopt, so you need to
