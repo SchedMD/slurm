@@ -351,6 +351,60 @@ static slurm_cli_opt_t slurm_opt__unknown_ = {
 	.reset_func = arg_reset__unknown_,
 };
 
+static int arg_set_accel_bind_type(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (strchr(arg, 'v'))
+		opt->srun_opt->accel_bind_type |= ACCEL_BIND_VERBOSE;
+	if (strchr(arg, 'g'))
+		opt->srun_opt->accel_bind_type |= ACCEL_BIND_CLOSEST_GPU;
+	if (strchr(arg, 'm'))
+		opt->srun_opt->accel_bind_type |= ACCEL_BIND_CLOSEST_MIC;
+	if (strchr(arg, 'n'))
+		opt->srun_opt->accel_bind_type |= ACCEL_BIND_CLOSEST_NIC;
+
+	if (!opt->srun_opt->accel_bind_type) {
+		error("Invalid --accel-bind specification");
+		exit(-1);
+	}
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_accel_bind_type(slurm_opt_t *opt)
+{
+	char *tmp = NULL;
+
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->srun_opt->accel_bind_type & ACCEL_BIND_VERBOSE)
+		xstrcat(tmp, "v");
+	if (opt->srun_opt->accel_bind_type & ACCEL_BIND_CLOSEST_GPU)
+		xstrcat(tmp, "g");
+	if (opt->srun_opt->accel_bind_type & ACCEL_BIND_CLOSEST_MIC)
+		xstrcat(tmp, "m");
+	if (opt->srun_opt->accel_bind_type & ACCEL_BIND_CLOSEST_NIC)
+		xstrcat(tmp, "n");
+
+	return tmp;
+}
+static void arg_reset_accel_bind_type(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->accel_bind_type = 0;
+}
+static slurm_cli_opt_t slurm_opt_accel_bind = {
+	.name = "accel-bind",
+	.has_arg = required_argument,
+	.val = LONG_OPT_ACCEL_BIND,
+	.set_func_srun = arg_set_accel_bind_type,
+	.get_func = arg_get_accel_bind_type,
+	.reset_func = arg_reset_accel_bind_type,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(account);
 static slurm_cli_opt_t slurm_opt_account = {
 	.name = "account",
@@ -3166,6 +3220,7 @@ static slurm_cli_opt_t slurm_opt_x11 = {
 
 static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt__unknown_,
+	&slurm_opt_accel_bind,
 	&slurm_opt_account,
 	&slurm_opt_acctg_freq,
 	&slurm_opt_alloc_nodelist,

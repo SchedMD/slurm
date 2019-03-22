@@ -108,7 +108,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
 	{"bcast",            optional_argument, 0, LONG_OPT_BCAST},
 	{"compress",         optional_argument, 0, LONG_OPT_COMPRESS},
 	{"cpu-bind",         required_argument, 0, LONG_OPT_CPU_BIND},
@@ -468,10 +467,8 @@ static void _opt_default(void)
 	 * of the job/step. Do not use xfree() as the pointers have been copied.
 	 * See initialize_and_process_args() above.
 	 */
-	sropt.accel_bind_type		= 0;
 	sropt.bcast_file		= NULL;
 	sropt.bcast_flag		= false;
-	sropt.accel_bind_type		= 0;
 	sropt.compress			= 0;
 	sropt.cpu_bind			= NULL;
 	sropt.cpu_bind_type		= 0;
@@ -887,18 +884,6 @@ static void _set_options(const int argc, char **argv)
 			error("--pty not currently supported on this system "
 			      "type, ignoring option");
 #endif
-			break;
-		case LONG_OPT_ACCEL_BIND:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			if (strchr(optarg, 'v'))
-				sropt.accel_bind_type |= ACCEL_BIND_VERBOSE;
-			if (strchr(optarg, 'g'))
-				sropt.accel_bind_type |= ACCEL_BIND_CLOSEST_GPU;
-			if (strchr(optarg, 'm'))
-				sropt.accel_bind_type |= ACCEL_BIND_CLOSEST_MIC;
-			if (strchr(optarg, 'n'))
-				sropt.accel_bind_type |= ACCEL_BIND_CLOSEST_NIC;
 			break;
 		case LONG_OPT_COMPRESS:
 			sropt.compress = parse_compress_type(optarg);
