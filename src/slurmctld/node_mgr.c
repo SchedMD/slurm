@@ -342,7 +342,39 @@ extern int load_all_node_state ( bool state_only )
 	while (remaining_buf (buffer) > 0) {
 		uint32_t base_state;
 		uint16_t obj_protocol_version = NO_VAL16;
-		if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+			safe_unpackstr_xmalloc (&node_hostname,
+							    &name_len, buffer);
+			safe_unpackstr_xmalloc (&reason,    &name_len, buffer);
+			safe_unpackstr_xmalloc (&features,  &name_len, buffer);
+			safe_unpackstr_xmalloc (&features_act,&name_len,buffer);
+			safe_unpackstr_xmalloc (&gres,      &name_len, buffer);
+			safe_unpackstr_xmalloc (&cpu_spec_list,
+							    &name_len, buffer);
+			safe_unpack32 (&next_state,  buffer);
+			safe_unpack32 (&node_state,  buffer);
+			safe_unpack32 (&cpu_bind,    buffer);
+			safe_unpack16 (&cpus,        buffer);
+			safe_unpack16 (&boards,     buffer);
+			safe_unpack16 (&sockets,     buffer);
+			safe_unpack16 (&cores,       buffer);
+			safe_unpack16 (&core_spec_cnt, buffer);
+			safe_unpack16 (&threads,     buffer);
+			safe_unpack64 (&real_memory, buffer);
+			safe_unpack32 (&tmp_disk,    buffer);
+			safe_unpack32 (&reason_uid,  buffer);
+			safe_unpack_time (&reason_time, buffer);
+			safe_unpack_time (&boot_req_time, buffer);
+			safe_unpack16 (&obj_protocol_version, buffer);
+			safe_unpackstr_xmalloc (&mcs_label, &name_len, buffer);
+			if (gres_plugin_node_state_unpack(
+				    &gres_list, buffer, node_name,
+				    protocol_version) != SLURM_SUCCESS)
+				goto unpack_error;
+			base_state = node_state & NODE_STATE_BASE;
+		} else if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
 			safe_unpackstr_xmalloc (&comm_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
 			safe_unpackstr_xmalloc (&node_hostname,
