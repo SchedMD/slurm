@@ -97,7 +97,6 @@
 #define OPT_MULTI       0x0f
 #define OPT_NSOCKETS    0x10
 #define OPT_NCORES      0x11
-#define OPT_NTHREADS    0x12
 #define OPT_EXCLUSIVE   0x13
 #define OPT_OPEN_MODE   0x14
 #define OPT_ACCTG_FREQ  0x15
@@ -861,7 +860,6 @@ env_vars_t env_vars[] = {
 {"SLURM_NPROCS",        OPT_INT,        &opt.ntasks,        &opt.ntasks_set  },
 {"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
 {"SLURM_NTASKS_PER_NODE", OPT_INT,      &opt.ntasks_per_node,NULL            },
-{"SLURM_NTHREADS_PER_CORE",OPT_NTHREADS,NULL,               NULL             },
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
 {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL             },
