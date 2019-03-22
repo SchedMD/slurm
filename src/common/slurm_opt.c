@@ -1464,6 +1464,42 @@ static slurm_cli_opt_t slurm_opt_kill_command = {
 	.reset_func = arg_reset_kill_command,
 };
 
+static int arg_set_kill_on_bad_exit(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (!arg) {
+		opt->srun_opt->kill_bad_exit = 1;
+		return SLURM_SUCCESS;
+	}
+
+	opt->srun_opt->kill_bad_exit = parse_int("--kill-on-bad-exit",
+						 arg, false);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_kill_on_bad_exit(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return NULL;
+
+	return xstrdup_printf("%d", opt->srun_opt->kill_bad_exit);
+}
+static void arg_reset_kill_on_bad_exit(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->kill_bad_exit = NO_VAL;
+}
+static slurm_cli_opt_t slurm_opt_kill_on_bad_exit = {
+	.name = "kill-on-bad-exit",
+	.has_arg = optional_argument,
+	.val = 'K',
+	.set_func_srun = arg_set_kill_on_bad_exit,
+	.get_func = arg_get_kill_on_bad_exit,
+	.reset_func = arg_reset_kill_on_bad_exit,
+};
+
 static int arg_set_kill_on_invalid_dep(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "yes"))
@@ -3117,6 +3153,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_input,
 	&slurm_opt_job_name,
 	&slurm_opt_kill_command,
+	&slurm_opt_kill_on_bad_exit,
 	&slurm_opt_kill_on_invalid_dep,
 	&slurm_opt_label,
 	&slurm_opt_licenses,

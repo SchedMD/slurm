@@ -108,7 +108,6 @@ bool	tres_freq_err_log = true;
 /*---- forward declarations of static variables and functions  ----*/
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
-	{"kill-on-bad-exit", optional_argument, 0, 'K'},
 	{"relative",         required_argument, 0, 'r'},
 	{"threads",          required_argument, 0, 'T'},
 	{"accel-bind",       required_argument, 0, LONG_OPT_ACCEL_BIND},
@@ -458,7 +457,6 @@ static void _opt_default(void)
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
 		sropt.jobid		= NO_VAL;
-		sropt.kill_bad_exit	= NO_VAL;
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
 		sropt.parallel_debug	= false;
@@ -558,7 +556,7 @@ env_vars_t env_vars[] = {
   { "SLURM_JOB_NAME", 'J' },
   { "SLURM_JOB_NODELIST", LONG_OPT_ALLOC_NODELIST },
   { "SLURM_JOB_NUM_NODES", 'N' },
-{"SLURM_KILL_BAD_EXIT", OPT_INT,        &sropt.kill_bad_exit,NULL            },
+  { "SLURM_KILL_BAD_EXIT", 'K' },
   { "SLURM_LABELIO", 'l' },
   { "SLURM_MEM_PER_GPU", LONG_OPT_MEM_PER_GPU },
   { "SLURM_MEM_BIND", LONG_OPT_MEM_BIND },
@@ -823,12 +821,6 @@ static void _set_options(const int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		switch (opt_char) {
-		case (int)'K':
-			if (optarg)
-				sropt.kill_bad_exit = strtol(optarg, NULL, 10);
-			else
-				sropt.kill_bad_exit = 1;
-			break;
 		case (int)'r':
 			if (!optarg)
 				break;	/* Fix for Coverity false positive */
