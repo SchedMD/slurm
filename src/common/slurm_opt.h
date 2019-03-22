@@ -435,6 +435,11 @@ extern void slurm_print_set_options(slurm_opt_t *opt);
 extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass);
 
 /*
+ * Was the option set by a cli argument?
+ */
+extern bool slurm_option_set_by_cli(int optval);
+
+/*
  * Was the option set by an env var?
  */
 extern bool slurm_option_set_by_env(int optval);
