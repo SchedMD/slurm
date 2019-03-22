@@ -80,12 +80,6 @@
 #include "multi_prog.h"
 #include "opt.h"
 
-/* generic OPT_ definitions -- mainly for use with env vars  */
-#define OPT_NONE        0x00
-#define OPT_INT         0x01
-#define OPT_STRING      0x02
-#define OPT_INT64	0x25
-
 extern char **environ;
 
 /*---- global variables, defined in opt.h ----*/
@@ -100,7 +94,6 @@ bool	tres_bind_err_log = true;
 bool	tres_freq_err_log = true;
 
 /*---- forward declarations of static variables and functions  ----*/
-typedef struct env_vars env_vars_t;
 struct option long_options[] = {
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -131,7 +124,6 @@ static void _opt_args(int argc, char **argv, int pack_offset);
 /* verify options sanity  */
 static bool _opt_verify(void);
 
-static void  _process_env_var(env_vars_t *e, const char *val);
 static void  _set_options(const int argc, char **argv);
 static bool  _under_parallel_debugger(void);
 static bool  _valid_node_list(char **node_list_pptr);
@@ -485,12 +477,10 @@ static void _opt_default(void)
  * or string you may be able to get away with adding a pointer to the
  * option to set. Otherwise, process var based on "type" in _opt_env.
  */
-struct env_vars {
+typedef struct {
 	const char *var;
 	int type;
-	void *arg;
-	void *set_flag;
-};
+} env_vars_t;
 
 env_vars_t env_vars[] = {
   { "SLURM_ACCOUNT", 'A' },
@@ -571,7 +561,7 @@ env_vars_t env_vars[] = {
   { "SLURM_WCKEY", LONG_OPT_WCKEY },
   { "SLURM_WORKING_DIR", 'D' },
   { "SLURMD_DEBUG", LONG_OPT_SLURMD_DEBUG },
-{NULL, 0, NULL, NULL}
+  { NULL }
 };
 
 
@@ -587,14 +577,15 @@ static void _opt_env(int pack_offset)
 
 	while (e->var) {
 		if ((val = getenv(e->var)))
-			_process_env_var(e, val);
+			slurm_process_option(&opt, e->type, val, true, false);
 		if ((pack_offset >= 0) &&
 		    strcmp(e->var, "SLURM_JOBID") &&
 		    strcmp(e->var, "SLURM_JOB_ID")) {
 			snprintf(key, sizeof(key), "%s_PACK_GROUP_%d",
 				 e->var, pack_offset);
 			if ((val = getenv(key)))
-				_process_env_var(e, val);
+				slurm_process_option(&opt, e->type, val,
+						     true, false);
 		}
 		e++;
 	}
@@ -610,51 +601,6 @@ static void _opt_env(int pack_offset)
 	/* Process spank env options */
 	if (spank_process_env_options())
 		exit(error_exit);
-}
-
-
-static void
-_process_env_var(env_vars_t *e, const char *val)
-{
-	char *end = NULL;
-
-	debug2("now processing env var %s=%s", e->var, val);
-
-	if (e->set_flag) {
-		*((bool *) e->set_flag) = true;
-	}
-
-	switch (e->type) {
-	case OPT_STRING:
-		*((char **) e->arg) = xstrdup(val);
-		break;
-	case OPT_INT:
-		if (val[0] != '\0') {
-			*((int *) e->arg) = (int) strtol(val, &end, 10);
-			if (!(end && *end == '\0')) {
-				error("%s=%s invalid. ignoring...",
-				      e->var, val);
-			}
-		}
-		break;
-
-	case OPT_INT64:
-		if (val[0] != '\0') {
-			*((int64_t *) e->arg) = (int64_t) strtoll(val, &end, 10);
-			if (!(end && *end == '\0')) {
-				error("%s=%s invalid. ignoring...",
-				      e->var, val);
-			}
-		}
-		break;
-	default:
-		/*
-		* assume this was meant to be processed by
-		 * slurm_process_option() instead.
-		 */
-		slurm_process_option(&opt, e->type, val, true, false);
-		break;
-	}
 }
 
 /*
