@@ -205,7 +205,7 @@ proc test_part {acct qos part qos_con } {
 
 	set sub_job 0
 
-	spawn $srun -I2 -A $acct --qos $qos -p $part true
+	spawn $srun -I5 -A $acct --qos $qos -p $part true
 	expect {
 		-re "error" {
 			if { $qos_con == 1 } {

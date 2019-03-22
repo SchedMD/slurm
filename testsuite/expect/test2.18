@@ -171,7 +171,7 @@ proc test_part { acct part acct_con } {
 
 	set sub_job 0
 
-	spawn $srun -I2 -A $acct -p $part true
+	spawn $srun -I5 -A $acct -p $part true
 	expect {
 		-re "error" {
 			if { $acct_con == 1 } {
