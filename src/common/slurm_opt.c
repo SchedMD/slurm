@@ -296,6 +296,7 @@ typedef struct {
 	bool sbatch_early_pass;	/* For sbatch - run in the early pass. */
 				/* For salloc/srun - this is ignored, and will
 				 * run alongside all other options. */
+	bool srun_early_pass;	/* For srun - run in the early pass. */
 	/*
 	 * If set_func is set, it will be used, and the command
 	 * specific versions must not be set.
@@ -3691,6 +3692,11 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 		if (!early_pass && common_options[i]->sbatch_early_pass)
 			return SLURM_SUCCESS;
 		if (early_pass && !common_options[i]->sbatch_early_pass)
+			return SLURM_SUCCESS;
+	} else if (!set_by_env && opt->srun_opt) {
+		if (!early_pass && common_options[i]->srun_early_pass)
+			return SLURM_SUCCESS;
+		if (early_pass && !common_options[i]->srun_early_pass)
 			return SLURM_SUCCESS;
 	}
 
