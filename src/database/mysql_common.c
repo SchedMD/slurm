@@ -284,6 +284,13 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 	 * to work they will have to downgrade mysql to <= 5.7.3 to make things
 	 * work correctly or manually edit the database to get things to work.
 	 */
+	/*
+	 * `query` is compared against the current table_defs_table.definition
+	 * and run if they are different. `correct_query` is inserted into the
+	 * table, so it must be what future `query` schemas will be.
+	 * In other words, `query` transitions the table to the new schema,
+	 * `correct_query` represents the new schema
+	 */
 	query = xstrdup_printf("alter table %s", table_name);
 	correct_query = xstrdup(query);
 	START_TIMER;
@@ -361,10 +368,9 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		if (temp[end]) {
 			end++;
 			primary_key = xstrndup(temp, end);
-			if (old_primary) {
+			if (old_primary)
 				xstrcat(query, " drop primary key,");
-				xstrcat(correct_query, " drop primary key,");
-			}
+			xstrcat(correct_query, " drop primary key,");
 			xstrfmtcat(query, " add %s,",  primary_key);
 			xstrfmtcat(correct_query, " add %s,",  primary_key);
 
@@ -372,10 +378,34 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		}
 	}
 
-	if ((temp = strstr(ending, "unique index ("))) {
+	if ((temp = strstr(ending, "unique index"))) {
 		int open = 0, close = 0;
-		int end = 0;
+		/* sizeof includes NULL, and end should start 1 back */
+		int end = sizeof("unique index") - 2;
+		char *udex_name = NULL, *name_marker = NULL;
 		while (temp[end++]) {
+			/*
+			 * Extracts the index name, which is given explicitly
+			 * or is the name of the first field included in the
+			 * index.
+			 * "unique index indexname (field1, field2)"
+			 * "unique index (indexname, field2)"
+			 * indexname is started by the first non '(' or ' '
+			 *     after "unique index"
+			 * indexname is terminated by '(' ')' ' ' or ','
+			 */
+			if (name_marker) {
+				if (!udex_name && (temp[end] == '(' ||
+						   temp[end] == ')' ||
+						   temp[end] == ' ' ||
+						   temp[end] == ','))
+					udex_name = xstrndup(name_marker,
+						temp + end - name_marker);
+			} else if (temp[end] != '(' && temp[end] != ' ') {
+				name_marker = temp + end;
+			}
+
+			/* find the end of the parenthetical expression */
 			if (temp[end] == '(')
 				open++;
 			else if (temp[end] == ')')
@@ -388,12 +418,9 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 		if (temp[end]) {
 			end++;
 			unique_index = xstrndup(temp, end);
-			if (old_index) {
-				xstrfmtcat(query, " drop index %s,",
-					   old_index);
-				xstrfmtcat(correct_query, " drop index %s,",
-					   old_index);
-			}
+			if (old_index)
+				xstrfmtcat(query, " drop index %s,", old_index);
+			xstrfmtcat(correct_query, " drop index %s,", udex_name);
 			xstrfmtcat(query, " add %s,", unique_index);
 			xstrfmtcat(correct_query, " add %s,", unique_index);
 			xfree(unique_index);
@@ -436,15 +463,12 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 			if (db_key) {
 				xstrfmtcat(query,
 					   " drop key %s,", db_key->name);
-				xstrfmtcat(correct_query,
-					   " drop key %s,", db_key->name);
 				_destroy_db_key(db_key);
-			} else {
-				xstrfmtcat(correct_query,
-					   " drop key %s,", new_key_name);
+			} else
 				info("adding %s to table %s",
 				     new_key, table_name);
-			}
+			xstrfmtcat(correct_query,
+				   " drop key %s,", new_key_name);
 
 			xstrfmtcat(query, " add %s,",  new_key);
 			xstrfmtcat(correct_query, " add %s,",  new_key);
