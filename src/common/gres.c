@@ -1990,7 +1990,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				 slurm_gres_context_t *context_ptr)
 {
 	int cpus_config = 0, i, j, gres_inx, rc = SLURM_SUCCESS;
-	uint64_t gres_cnt, set_cnt = 0;
+	uint64_t gres_cnt, topo_cnt = 0;
 	bool cpu_config_err = false, updated_config = false;
 	gres_node_state_t *gres_data;
 	ListIterator iter;
@@ -2005,7 +2005,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if (gres_data->node_feature)
 		return rc;
 
-	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &set_cnt);
+	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &topo_cnt);
 	if ((gres_data->gres_cnt_config > gres_cnt) && (fast_schedule == 1)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
@@ -2065,7 +2065,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		     gres_cnt, gres_data->gres_cnt_config);
 		gres_cnt = gres_data->gres_cnt_config;	/* Ignore excess GRES */
 	}
-	if ((set_cnt == 0) && (set_cnt != gres_data->topo_cnt)) {
+	if ((topo_cnt == 0) && (topo_cnt != gres_data->topo_cnt)) {
 		/* Need to clear topology info */
 		xfree(gres_data->topo_gres_cnt_alloc);
 		xfree(gres_data->topo_gres_cnt_avail);
@@ -2084,12 +2084,12 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		xfree(gres_data->topo_core_bitmap);
 		xfree(gres_data->topo_type_id);
 		xfree(gres_data->topo_type_name);
-		gres_data->topo_cnt = set_cnt;
+		gres_data->topo_cnt = topo_cnt;
 	}
 
 	has_file = context_ptr->config_flags & GRES_CONF_HAS_FILE;
 	has_type = context_ptr->config_flags & GRES_CONF_HAS_TYPE;
-	if (has_file && (set_cnt != gres_data->topo_cnt)) {
+	if (has_file && (topo_cnt != gres_data->topo_cnt)) {
 		/*
 		 * Need to rebuild topology info.
 		 * Resize the data structures here.
@@ -2097,10 +2097,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		rebuild_topo = true;
 		gres_data->topo_gres_cnt_alloc =
 			xrealloc(gres_data->topo_gres_cnt_alloc,
-				 set_cnt * sizeof(uint64_t));
+				 topo_cnt * sizeof(uint64_t));
 		gres_data->topo_gres_cnt_avail =
 			xrealloc(gres_data->topo_gres_cnt_avail,
-				 set_cnt * sizeof(uint64_t));
+				 topo_cnt * sizeof(uint64_t));
 		for (i = 0; i < gres_data->topo_cnt; i++) {
 			if (gres_data->topo_gres_bitmap) {
 				FREE_NULL_BITMAP(gres_data->
@@ -2114,18 +2114,18 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		}
 		gres_data->topo_gres_bitmap =
 			xrealloc(gres_data->topo_gres_bitmap,
-				 set_cnt * sizeof(bitstr_t *));
+				 topo_cnt * sizeof(bitstr_t *));
 		gres_data->topo_core_bitmap =
 			xrealloc(gres_data->topo_core_bitmap,
-				 set_cnt * sizeof(bitstr_t *));
+				 topo_cnt * sizeof(bitstr_t *));
 		gres_data->topo_type_id = xrealloc(gres_data->topo_type_id,
-						   set_cnt * sizeof(uint32_t));
+						   topo_cnt * sizeof(uint32_t));
 		gres_data->topo_type_name = xrealloc(gres_data->topo_type_name,
-						     set_cnt * sizeof(char *));
+						     topo_cnt * sizeof(char *));
 		if (gres_data->gres_bit_alloc)
 			gres_data->gres_bit_alloc = bit_realloc(
 				gres_data->gres_bit_alloc, gres_cnt);
-		gres_data->topo_cnt = set_cnt;
+		gres_data->topo_cnt = topo_cnt;
 	} else if (_shared_gres(context_ptr->plugin_id) && gres_data->topo_cnt){
 		/*
 		 * Need to rebuild topology info to recover state after
