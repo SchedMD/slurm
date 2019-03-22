@@ -392,8 +392,8 @@ typedef struct slurm_options {
 	char *ofname;			/* output file name		*/
 } slurm_opt_t;
 
-extern struct option *slurm_option_table_create(struct option *options,
-						slurm_opt_t *opt);
+extern struct option *slurm_option_table_create(slurm_opt_t *opt,
+						char **opt_string);
 extern void slurm_option_table_destroy(struct option *optz);
 
 /*

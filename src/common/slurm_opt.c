@@ -3653,12 +3653,13 @@ static slurm_cli_opt_t *common_options[] = {
 	NULL /* END */
 };
 
-struct option *slurm_option_table_create(struct option *options,
-					 slurm_opt_t *opt)
+struct option *slurm_option_table_create(slurm_opt_t *opt,
+					 char **opt_string)
 {
 	struct option *merged = optz_create();
 
-	optz_append(&merged, options);
+	*opt_string = xstrdup("+");
+
 	/*
 	 * Since the initial elements of slurm_cli_opt_t match
 	 * the layout of struct option, we can use this cast to
@@ -3704,8 +3705,12 @@ struct option *slurm_option_table_create(struct option *options,
 		else
 			set = false;
 
-		if (set) {
-			/* FIXME: append appropriate characters to optstring */
+		if (set && (common_options[i]->val < LONG_OPT_ENUM_START)) {
+			xstrfmtcat(*opt_string, "%c", common_options[i]->val);
+			if (common_options[i]->has_arg == required_argument)
+				xstrcat(*opt_string, ":");
+			if (common_options[i]->has_arg == optional_argument)
+				xstrcat(*opt_string, "::");
 		}
 	}
 	return merged;

@@ -249,9 +249,6 @@ static void _opt_env(void)
 
 /*---[ command line option processing ]-----------------------------------*/
 
-static char *opt_string =
-	"+a:A:b:B:c:C:d:D:e:F:G:hHi:IJ:k::L:m:M:n:N:o:Op:q:QsS:t:uvVw:Wx:";
-
 /*
  * process_options_first_pass()
  *
@@ -270,6 +267,7 @@ static char *opt_string =
 extern char *process_options_first_pass(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
+	char *opt_string = NULL;
 	struct option *common_options, *optz;
 	int i, local_argc = 0;
 	char **local_argv, *script_file = NULL;
@@ -277,7 +275,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, true);
 
-	common_options = slurm_option_table_create(NULL, &opt);
+	common_options = slurm_option_table_create(&opt, &opt_string);
 	optz = spank_option_table_create(common_options);
 	slurm_option_table_destroy(common_options);
 
@@ -598,9 +596,11 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
+	char *opt_string = NULL;
+	struct option *common_options, *optz;
 
-	struct option *common_options = slurm_option_table_create(NULL, &opt);
-	struct option *optz = spank_option_table_create(common_options);
+	common_options = slurm_option_table_create(&opt, &opt_string);
+	optz = spank_option_table_create(common_options);
 	slurm_option_table_destroy(common_options);
 
 	if (!optz) {

@@ -237,12 +237,12 @@ static void _opt_env(void)
 
 static void _set_options(int argc, char **argv)
 {
+	char *opt_string = NULL;
 	int opt_char, option_index = 0;
-	char *opt_string =
-		"+A:b:B:c:C:d:D:F:G:hHI::J:k::K::L:m:M:n:N:Op:q:QsS:t:uvVw:x:";
+	struct option *common_options, *optz;
 
-	struct option *common_options = slurm_option_table_create(NULL, &opt);
-	struct option *optz = spank_option_table_create(common_options);
+	common_options = slurm_option_table_create(&opt, &opt_string);
+	optz = spank_option_table_create(common_options);
 	slurm_option_table_destroy(common_options);
 
 	if (!optz) {
