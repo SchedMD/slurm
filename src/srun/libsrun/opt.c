@@ -84,7 +84,6 @@
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
-#define OPT_RESV_PORTS	0x09
 #define OPT_INT64	0x25
 
 extern char **environ;
@@ -108,7 +107,6 @@ struct option long_options[] = {
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
-	{"resv-ports",       optional_argument, 0, LONG_OPT_RESV_PORTS},
 	{NULL,               0,                 0, 0}
 	};
 char *opt_string =
@@ -463,7 +461,6 @@ static void _opt_default(void)
 	sropt.multi_prog_cmds		= 0;
 	sropt.pack_group		= NULL;
 	sropt.pack_grp_bits		= NULL;
-	sropt.resv_port_cnt		= NO_VAL;
 	opt.spank_job_env_size		= 0;
 	opt.spank_job_env		= NULL;
 
@@ -557,7 +554,7 @@ env_vars_t env_vars[] = {
   { "SLURM_REMOTE_CWD", 'D' },
   { "SLURM_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
   { "SLURM_RESERVATION", LONG_OPT_RESERVATION },
-{"SLURM_RESV_PORTS",    OPT_RESV_PORTS, NULL,               NULL             },
+  { "SLURM_RESV_PORTS", LONG_OPT_RESV_PORTS },
   { "SLURM_SIGNAL", LONG_OPT_SIGNAL },
   { "SLURM_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
   { "SLURM_SRUN_MULTI", LONG_OPT_MULTI },
@@ -651,12 +648,6 @@ _process_env_var(env_vars_t *e, const char *val)
 				      e->var, val);
 			}
 		}
-		break;
-	case OPT_RESV_PORTS:
-		if (val)
-			sropt.resv_port_cnt = strtol(val, NULL, 10);
-		else
-			sropt.resv_port_cnt = 0;
 		break;
 	default:
 		/*
@@ -777,12 +768,6 @@ static void _set_options(const int argc, char **argv)
 		switch (opt_char) {
 		case LONG_OPT_PACK_GROUP:
 			/* Already parsed in _get_pack_group() */
-			break;
-		case LONG_OPT_RESV_PORTS:
-			if (optarg)
-				sropt.resv_port_cnt = strtol(optarg, NULL, 10);
-			else
-				sropt.resv_port_cnt = 0;
 			break;
 		case LONG_OPT_JOBID:
 			if (!optarg)

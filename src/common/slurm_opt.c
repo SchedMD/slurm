@@ -2612,6 +2612,44 @@ static slurm_cli_opt_t slurm_opt_reservation = {
 	.reset_func = arg_reset_reservation,
 };
 
+static int arg_set_resv_port_cnt(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	if (!arg)
+		opt->srun_opt->resv_port_cnt = 0;
+	else
+		opt->srun_opt->resv_port_cnt = parse_int("--resv-port",
+							 arg, false);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_resv_port_cnt(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->srun_opt->resv_port_cnt == NO_VAL)
+		return xstrdup("unset");
+
+	return xstrdup_printf("%d", opt->srun_opt->resv_port_cnt);
+}
+static void arg_reset_resv_port_cnt(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->resv_port_cnt = NO_VAL;
+}
+static slurm_cli_opt_t slurm_opt_resv_ports = {
+	.name = "resv-ports",
+	.has_arg = optional_argument,
+	.val = LONG_OPT_RESV_PORTS,
+	.set_func_srun = arg_set_resv_port_cnt,
+	.get_func = arg_get_resv_port_cnt,
+	.reset_func = arg_reset_resv_port_cnt,
+	.reset_each_pass = true,
+};
+
 static int arg_set_signal(slurm_opt_t *opt, const char *arg)
 {
 	if (get_signal_opts((char *) arg, &opt->warn_signal,
@@ -3441,6 +3479,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_relative,
 	&slurm_opt_requeue,
 	&slurm_opt_reservation,
+	&slurm_opt_resv_ports,
 	&slurm_opt_signal,
 	&slurm_opt_slurmd_debug,
 	&slurm_opt_sockets_per_node,
