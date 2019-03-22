@@ -3405,7 +3405,6 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 	bitstr_t **switch_node_bitmap = NULL;	/* nodes on this switch */
 	int       *switch_node_cnt = NULL;	/* total nodes on switch */
 	int       *switch_required = NULL;	/* set if has required node */
-	uint64_t  *switch_weight = NULL;	/* node scheduling weight */
 	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t  *req_nodes_bitmap   = NULL;	/* required node bitmap */
 	bitstr_t  *req2_nodes_bitmap  = NULL;	/* required+lowest prio nodes */
@@ -3581,7 +3580,6 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 	switch_node_bitmap = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
 	switch_node_cnt    = xmalloc(sizeof(int)        * switch_record_cnt);
 	switch_required    = xmalloc(sizeof(int)        * switch_record_cnt);
-	switch_weight      = xmalloc(sizeof(uint64_t)   * switch_record_cnt);
 
 	if (!req_nodes_bitmap)
 		nw = list_peek(node_weight_list);
@@ -4032,7 +4030,6 @@ fini:	FREE_NULL_LIST(best_gres);
 	xfree(switch_node_bitmap);
 	xfree(switch_node_cnt);
 	xfree(switch_required);
-	xfree(switch_weight);
 	return rc;
 }
 
@@ -4049,7 +4046,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 	bitstr_t **switch_node_bitmap = NULL;	/* nodes on this switch */
 	int       *switch_node_cnt = NULL;	/* total nodes on switch */
 	int       *switch_required = NULL;	/* set if has required node */
-	uint64_t  *switch_weight = NULL;	/* node scheduling weight */
 	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t  *req_nodes_bitmap   = NULL;	/* required node bitmap */
 	bitstr_t  *req2_nodes_bitmap  = NULL;	/* required+lowest prio nodes */
@@ -4219,7 +4215,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 	switch_node_bitmap = xmalloc(sizeof(bitstr_t *) * switch_record_cnt);
 	switch_node_cnt    = xmalloc(sizeof(int)        * switch_record_cnt);
 	switch_required    = xmalloc(sizeof(int)        * switch_record_cnt);
-	switch_weight      = xmalloc(sizeof(uint64_t)   * switch_record_cnt);
 
 	if (!req_nodes_bitmap)
 		nw = list_peek(node_weight_list);
@@ -4617,7 +4612,6 @@ fini:	FREE_NULL_LIST(best_gres);
 	xfree(switch_node_bitmap);
 	xfree(switch_node_cnt);
 	xfree(switch_required);
-	xfree(switch_weight);
 	return rc;
 }
 
