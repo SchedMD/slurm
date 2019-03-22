@@ -593,9 +593,7 @@ static void _set_options(int argc, char **argv)
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
-		if (slurm_process_option(&opt, opt_char, optarg, false, false) < 0)
-			if (spank_process_option(opt_char, optarg) < 0)
-				exit(error_exit);
+		slurm_process_option(&opt, opt_char, optarg, false, false);
 	}
 
 	slurm_option_table_destroy(optz);
