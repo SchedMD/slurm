@@ -103,7 +103,6 @@ bool	tres_freq_err_log = true;
 typedef struct env_vars env_vars_t;
 struct option long_options[] = {
 	{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
-	{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 	{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
 	{"pack-group",       required_argument, 0, LONG_OPT_PACK_GROUP},
 	{"pty",              no_argument,       0, LONG_OPT_PTY},
@@ -442,7 +441,6 @@ static void _opt_default(void)
 		sropt.allocate		= false;
 		xfree(sropt.cmd_name);
 		sropt.debugger_test	= false;
-		sropt.jobid		= NO_VAL;
 		/* Default launch msg timeout           */
 		sropt.msg_timeout		= slurm_get_msg_timeout();
 		sropt.parallel_debug	= false;
@@ -525,7 +523,7 @@ env_vars_t env_vars[] = {
   { "SLURM_GRES", LONG_OPT_GRES },
   { "SLURM_GRES_FLAGS", LONG_OPT_GRES_FLAGS },
   { "SLURM_HINT", LONG_OPT_HINT },
-{"SLURM_JOB_ID",        OPT_INT,        &sropt.jobid,       NULL             },
+  { "SLURM_JOB_ID", LONG_OPT_JOBID },
   { "SLURM_JOB_NAME", 'J' },
   { "SLURM_JOB_NODELIST", LONG_OPT_ALLOC_NODELIST },
   { "SLURM_JOB_NUM_NODES", 'N' },
@@ -768,11 +766,6 @@ static void _set_options(const int argc, char **argv)
 		switch (opt_char) {
 		case LONG_OPT_PACK_GROUP:
 			/* Already parsed in _get_pack_group() */
-			break;
-		case LONG_OPT_JOBID:
-			if (!optarg)
-				break;	/* Fix for Coverity false positive */
-			sropt.jobid = _get_int(optarg, "jobid", true);
 			break;
 		case LONG_OPT_TIMEO:
 			if (!optarg)

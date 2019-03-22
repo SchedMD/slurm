@@ -1576,6 +1576,39 @@ static slurm_cli_opt_t slurm_opt_input = {
 	.reset_func = arg_reset_ifname,
 };
 
+static int arg_set_jobid(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->jobid = parse_int("--jobid", arg, true);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_jobid(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return NULL;
+
+	if (opt->srun_opt->jobid == NO_VAL)
+		return xstrdup("unset");
+
+	return xstrdup_printf("%d", opt->srun_opt->jobid);
+}
+static void arg_reset_jobid(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->jobid = NO_VAL;
+}
+static slurm_cli_opt_t slurm_opt_jobid = {
+	.name = "jobid",
+	.has_arg = required_argument,
+	.val = LONG_OPT_JOBID,
+	.set_func_srun = arg_set_jobid,
+	.get_func = arg_get_jobid,
+	.reset_func = arg_reset_jobid,
+};
+
 COMMON_STRING_OPTION(job_name);
 static slurm_cli_opt_t slurm_opt_job_name = {
 	.name = "job-name",
@@ -3429,6 +3462,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_ignore_pbs,
 	&slurm_opt_immediate,
 	&slurm_opt_input,
+	&slurm_opt_jobid,
 	&slurm_opt_job_name,
 	&slurm_opt_kill_command,
 	&slurm_opt_kill_on_bad_exit,
