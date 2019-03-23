@@ -50,6 +50,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/pack.h"
@@ -88,7 +89,7 @@ int main(int argc, char **argv)
 	char *script_body;
 	char **pack_argv;
 	int script_size = 0, pack_argc, pack_argc_off = 0, pack_inx;
-	int i, rc = SLURM_SUCCESS, retries = 0;
+	int i, rc = SLURM_SUCCESS, retries = 0, pack_limit = 0;
 	bool pack_fini = false;
 	List job_env_list = NULL, job_req_list = NULL;
 	sbatch_env_t *local_env = NULL;
@@ -219,6 +220,7 @@ int main(int argc, char **argv)
 			list_append(job_req_list, desc);
 		}
 	}
+	pack_limit = pack_inx;
 	if (!desc) {	/* For CLANG false positive */
 		error("Internal parsing error");
 		exit(1);
@@ -315,6 +317,10 @@ int main(int argc, char **argv)
 	}
 
 	print_multi_line_string(resp->job_submit_user_msg, -1, LOG_LEVEL_INFO);
+
+	/* run cli_filter post_submit */
+	for (i = 0; i < pack_limit; i++)
+		cli_filter_plugin_post_submit(i, resp->job_id, NO_VAL);
 
 	if (!quiet) {
 		if (!sbopt.parsable) {

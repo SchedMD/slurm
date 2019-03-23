@@ -53,6 +53,7 @@
 #include <unistd.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/cli_filter.h"
 #include "src/common/cbuf.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
@@ -147,6 +148,7 @@ static void _shepherd_notify(int shepherd_fd);
 static int  _shepherd_spawn(srun_job_t *job, List srun_job_list,
 			     bool got_alloc);
 static void *_srun_signal_mgr(void *no_data);
+static void _srun_cli_filter_post_submit(uint32_t jobid, uint32_t stepid);
 static void _step_opt_exclusive(slurm_opt_t *opt_local);
 static int  _validate_relative(resource_allocation_response_msg_t *resp,
 			       slurm_opt_t *opt_local);
@@ -1318,6 +1320,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		*p_job = (void *) srun_job_list;
 	else
 		*p_job = (void *) job;
+
+        _srun_cli_filter_post_submit(my_job_id, job->stepid);
 }
 
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
@@ -2216,4 +2220,25 @@ static void _call_spank_fini(void)
 {
 	if (-1 != shepherd_fd)
 		spank_fini(NULL);
+}
+
+/*
+ * Run cli_filter_post_submit on all opt structures
+ * Convenience function since this might need to run in two spots
+ */
+static void _srun_cli_filter_post_submit(uint32_t jobid, uint32_t stepid)
+{
+	static bool post_submit_ran = false;
+	int idx = 0, components = 1;
+
+	if (post_submit_ran)
+		return;
+
+	if (opt_list)
+		components = list_count(opt_list);
+
+	for (idx = 0; idx < components; idx++)
+		cli_filter_plugin_post_submit(idx, jobid, stepid);
+
+	post_submit_ran = true;
 }

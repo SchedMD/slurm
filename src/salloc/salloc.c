@@ -57,6 +57,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
 #include "src/common/plugstack.h"
@@ -100,6 +101,8 @@ static bool suspend_flag = false;
 static uint32_t my_job_id = 0;
 static time_t last_timeout = 0;
 static struct termios saved_tty_attributes;
+static int pack_limit = 0;
+static bool _cli_filter_post_submit_run = false;
 
 static void _exit_on_signal(int signo);
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
@@ -122,6 +125,7 @@ static void _signal_while_allocating(int signo);
 static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
+static void _salloc_cli_filter_post_submit(uint32_t jobid, uint32_t stepid);
 
 bool salloc_shutdown = false;
 /* Signals that are considered terminal before resource allocation. */
@@ -273,6 +277,7 @@ int main(int argc, char **argv)
 		if (!first_job)
 			first_job = desc;
 	}
+	pack_limit = pack_inx;
 	if (!desc) {
 		fatal("%s: desc is NULL", __func__);
 		exit(error_exit);    /* error already logged */
@@ -462,6 +467,8 @@ int main(int argc, char **argv)
 		if (_proc_alloc(alloc) != SLURM_SUCCESS)
 			goto relinquish;
 	}
+
+	_salloc_cli_filter_post_submit(my_job_id, NO_VAL);
 
 	after = time(NULL);
 	if ((saopt.bell == BELL_ALWAYS) ||
@@ -1032,6 +1039,25 @@ static void _pending_callback(uint32_t job_id)
 {
 	info("Pending job allocation %u", job_id);
 	my_job_id = job_id;
+
+	/* call cli_filter post_submit here so it runs while allocating */
+	_salloc_cli_filter_post_submit(my_job_id, NO_VAL);
+}
+
+/*
+ * Run cli_filter_post_submit on all opt structures
+ * Convenience function since this might need to run in two spots
+ * uses a static bool to prevent multiple executions
+ */
+static void _salloc_cli_filter_post_submit(uint32_t jobid, uint32_t stepid)
+{
+	int idx = 0;
+	if (_cli_filter_post_submit_run)
+		return;
+	for (idx = 0; idx < pack_limit; idx++)
+		cli_filter_plugin_post_submit(idx, jobid, stepid);
+
+	_cli_filter_post_submit_run = true;
 }
 
 static void _exit_on_signal(int signo)
