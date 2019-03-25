@@ -2210,14 +2210,14 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				/* If running jobs recovered then already set */
 				if (!gres_data->topo_gres_bitmap[i]) {
 					gres_data->topo_gres_bitmap[i] =
-						bit_alloc(gres_cnt);
+						bit_alloc(topo_cnt);
 					bit_set(gres_data->topo_gres_bitmap[i],
 						gres_inx);
 				}
 				gres_inx++;
 			} else {
 				gres_data->topo_gres_bitmap[i] =
-					bit_alloc(gres_cnt);
+					bit_alloc(topo_cnt);
 				for (j = 0; j < gres_slurmd_conf->count; j++) {
 					if (gres_inx >= gres_cnt) {
 						/* Ignore excess GRES on node */
@@ -2318,7 +2318,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if (has_file) {
 		uint64_t gres_bits;
 		if (_shared_gres(context_ptr->plugin_id)) {
-			gres_bits = gres_cnt;
+			gres_bits = topo_cnt;
 		} else {
 			if (gres_data->gres_cnt_avail > MAX_GRES_BITMAP) {
 				error("%s: %s has \"File\" plus very large \"Count\" "
