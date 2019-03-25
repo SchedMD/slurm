@@ -6108,8 +6108,13 @@ static avail_res_t **_select_nodes(struct job_record *job_ptr,
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	avail_res_t **avail_res_array;
 
-	if (bit_set_count(node_bitmap) < min_nodes)
+	if (bit_set_count(node_bitmap) < min_nodes) {
+#if _DEBUG
+		info("%s: AvailNodes < MinNodes (%u < %u)", __func__,
+		     bit_set_count(node_bitmap), min_nodes);
+#endif
 		return NULL;
+}
 
 	_log_select_maps("_select_nodes/enter", node_bitmap, avail_core);
 	/* Determine resource availability on each node for pending job */
