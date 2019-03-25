@@ -1302,14 +1302,12 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	uint64_t save_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
-	struct job_details *details_ptr;
+	struct job_details *details_ptr = job_ptr->details;
 	struct part_res_record *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
 	int i, i_first, i_last;
 	avail_res_t **avail_res_array, **avail_res_array_tmp;
 	gres_mc_data_t *tres_mc_ptr;
-
-	details_ptr = job_ptr->details;
 
 	free_job_resources(&job_ptr->job_resrcs);
 
@@ -5231,7 +5229,8 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	uint16_t cpu_count = 0, cpu_cnt = 0, part_cpu_limit = 0xffff;
 	uint16_t si, cps, avail_cpus = 0, num_tasks = 0;
 	uint32_t c;
-	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
+	struct job_details *details_ptr = job_ptr->details;
+	uint16_t cpus_per_task = details_ptr->cpus_per_task;
 	uint16_t free_core_count = 0, spec_threads = 0;
 	uint16_t i, j, sockets    = select_node_record[node_i].tot_sockets;
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
@@ -5250,14 +5249,14 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	memset(used_cores, 0, sockets * sizeof(uint16_t));
 	memset(used_cpu_array, 0, sockets * sizeof(uint32_t));
 
-	if (entire_sockets_only && job_ptr->details->whole_node &&
-	    (job_ptr->details->core_spec != NO_VAL16)) {
+	if (entire_sockets_only && details_ptr->whole_node &&
+	    (details_ptr->core_spec != NO_VAL16)) {
 		/* Ignore specialized cores when allocating "entire" socket */
 		entire_sockets_only = false;
 	}
-	if (job_ptr->details && job_ptr->details->mc_ptr) {
+	if (details_ptr->mc_ptr) {
 		uint32_t threads_per_socket;
-		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
+		multi_core_data_t *mc_ptr = details_ptr->mc_ptr;
 		if (mc_ptr->cores_per_socket != NO_VAL16) {
 			min_cores = mc_ptr->cores_per_socket;
 		}
@@ -5293,18 +5292,18 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	/*
 	 * These are the job parameters that we must respect:
 	 *
-	 *   job_ptr->details->mc_ptr->cores_per_socket (cr_core|cr_socket)
+	 *   details_ptr->mc_ptr->cores_per_socket (cr_core|cr_socket)
 	 *	- min # of cores per socket to allocate to this job
-	 *   job_ptr->details->mc_ptr->sockets_per_node (cr_core|cr_socket)
+	 *   details_ptr->mc_ptr->sockets_per_node (cr_core|cr_socket)
 	 *	- min # of sockets per node to allocate to this job
-	 *   job_ptr->details->mc_ptr->ntasks_per_core (cr_core|cr_socket)
+	 *   details_ptr->mc_ptr->ntasks_per_core (cr_core|cr_socket)
 	 *	- number of tasks to launch per core
-	 *   job_ptr->details->mc_ptr->ntasks_per_socket (cr_core|cr_socket)
+	 *   details_ptr->mc_ptr->ntasks_per_socket (cr_core|cr_socket)
 	 *	- number of tasks to launch per socket
 	 *
-	 *   job_ptr->details->ntasks_per_node (all cr_types)
+	 *   details_ptr->ntasks_per_node (all cr_types)
 	 *	- total number of tasks to launch on this node
-	 *   job_ptr->details->cpus_per_task (all cr_types)
+	 *   details_ptr->cpus_per_task (all cr_types)
 	 *	- number of cpus to allocate per task
 	 *
 	 * These are the hardware constraints:
@@ -5430,8 +5429,7 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	 */
 	avail_cpus = 0;
 	num_tasks = 0;
-	threads_per_core = vpus_per_core(job_ptr->details, node_i);
-
+	threads_per_core = vpus_per_core(details_ptr, node_i);
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;
 		if ((tmp == 0) && req_sock_map && bit_test(req_sock_map, i)) {
@@ -5450,8 +5448,8 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	 * If job requested exclusive rights to the node don't do the min
 	 * here since it will make it so we don't allocate the entire node.
 	 */
-	if (job_ptr->details->ntasks_per_node && job_ptr->details->share_res)
-		num_tasks = MIN(num_tasks, job_ptr->details->ntasks_per_node);
+	if (details_ptr->ntasks_per_node && details_ptr->share_res)
+		num_tasks = MIN(num_tasks, details_ptr->ntasks_per_node);
 
 	if (cpus_per_task < 2) {
 		avail_cpus = num_tasks;
@@ -5473,11 +5471,11 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		avail_cpus = num_tasks * cpus_per_task;
 	}
 
-	if ((job_ptr->details->ntasks_per_node &&
-	     (num_tasks < job_ptr->details->ntasks_per_node) &&
-	     (job_ptr->details->overcommit == 0)) ||
-	    (job_ptr->details->pn_min_cpus &&
-	     (avail_cpus < job_ptr->details->pn_min_cpus))) {
+	if ((details_ptr->ntasks_per_node &&
+	     (num_tasks < details_ptr->ntasks_per_node) &&
+	     (details_ptr->overcommit == 0)) ||
+	    (details_ptr->pn_min_cpus &&
+	     (avail_cpus < details_ptr->pn_min_cpus))) {
 		/* insufficient resources on this node */
 		num_tasks = 0;
 		goto fini;
@@ -5559,8 +5557,8 @@ fini:
 		cpu_count = 0;
 	}
 
-	if ((job_ptr->details->core_spec != NO_VAL16) &&
-	    (job_ptr->details->core_spec & CORE_SPEC_THREAD) &&
+	if ((details_ptr->core_spec != NO_VAL16) &&
+	    (details_ptr->core_spec & CORE_SPEC_THREAD) &&
 	    ((select_node_record[node_i].threads == 1) ||
 	     (select_node_record[node_i].threads ==
 	      select_node_record[node_i].vpus))) {
@@ -5569,7 +5567,7 @@ fini:
 		 * allocates by core, the thread specialization count occupies
 		 * a full core
 		 */
-		c = job_ptr->details->core_spec & (~CORE_SPEC_THREAD);
+		c = details_ptr->core_spec & (~CORE_SPEC_THREAD);
 		if (((cpu_count + c) <= select_node_record[node_i].cpus))
 			;
 		else if (cpu_count > c)
