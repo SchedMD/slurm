@@ -4348,6 +4348,12 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	/* clear where actual siblings were */
 	job_ptr->fed_details->siblings_active = 0;
 
+	slurm_mutex_lock(&fed_job_list_mutex);
+	if (!(job_info = _find_fed_job_info(job_ptr->job_id))) {
+		error("%s: failed to find fed job info for fed %pJ",
+		      __func__, job_ptr);
+	}
+
 	/* don't submit siblings for jobs that are held */
 	if (job_ptr->priority == 0) {
 		job_ptr->job_state &= (~JOB_REQUEUE_FED);
@@ -4356,7 +4362,10 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 
 		/* clear cluster lock */
 		job_ptr->fed_details->cluster_lock = 0;
+		if (job_info)
+			job_info->cluster_lock = 0;
 
+		slurm_mutex_unlock(&fed_job_list_mutex);
 		return SLURM_SUCCESS;
 	}
 
@@ -4375,9 +4384,6 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	_prepare_submit_siblings(job_ptr,
 				 job_ptr->fed_details->siblings_viable);
 
-	/* clear cluster lock */
-	job_ptr->fed_details->cluster_lock = 0;
-
 	job_ptr->job_state &= (~JOB_REQUEUE_FED);
 
 	if (!(job_ptr->fed_details->siblings_viable &
@@ -4386,15 +4392,14 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 	else
 		job_ptr->job_state &= ~JOB_REVOKED;
 
-	slurm_mutex_lock(&fed_job_list_mutex);
-	if ((job_info = _find_fed_job_info(job_ptr->job_id))) {
+	/* clear cluster lock */
+	job_ptr->fed_details->cluster_lock = 0;
+	if (job_info) {
+		job_info->cluster_lock = 0;
 		job_info->siblings_viable =
 			job_ptr->fed_details->siblings_viable;
 		job_info->siblings_active =
 			job_ptr->fed_details->siblings_active;
-	} else {
-		error("%s: failed to find fed job info for fed %pJ",
-		      __func__, job_ptr);
 	}
 	slurm_mutex_unlock(&fed_job_list_mutex);
 

@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix printing duplicate error messages of jobs rejected by job submit plugin.
  -- Fix printing of job submit plugin messages of het jobs without pack id.
  -- Fix memory leak in group_cache.c
+ -- Fix jobs stuck from FedJobLock when requeueing in a federation
 
 * Changes in Slurm 18.08.7
 ==========================
