@@ -5875,6 +5875,8 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 			job_ptr->job_state |= JOB_REQUEUE_HOLD;
 			job_ptr->state_reason = WAIT_MAX_REQUEUE;
 			job_ptr->batch_flag = 1;
+			debug("%s: Holding %pJ, repeated requeue failures",
+			      __func__, job_ptr);
 			job_ptr->priority = 0;
 		}
 	} else if (IS_JOB_PENDING(job_ptr) && job_ptr->details &&
@@ -15713,6 +15715,8 @@ static int _job_suspend_op(struct job_record *job_ptr, uint16_t op,
 	/* perform the operation */
 	if (op == SUSPEND_JOB) {
 		if (IS_JOB_SUSPENDED(job_ptr) && indf_susp) {
+			debug("%s: Holding %pJ, re-suspend operation",
+			      __func__, job_ptr);
 			job_ptr->priority = 0;	/* Prevent gang sched resume */
 			return SLURM_SUCCESS;
 		}
@@ -15724,6 +15728,8 @@ static int _job_suspend_op(struct job_record *job_ptr, uint16_t op,
 		_suspend_job(job_ptr, op, indf_susp);
 		job_ptr->job_state = JOB_SUSPENDED;
 		if (indf_susp) {    /* Job being manually suspended, not gang */
+			debug("%s: Holding %pJ, suspend operation",
+			      __func__, job_ptr);
 			job_ptr->priority = 0;
 			(void) gs_job_fini(job_ptr);
 		}
@@ -16247,17 +16253,20 @@ reply:
 		xfree(job_ptr->state_desc);
 		job_ptr->state_desc =
 			xstrdup("job requeued in special exit state");
+		debug("%s: Holding %pJ, special exit", __func__, job_ptr);
 		job_ptr->priority = 0;
 	}
 	if (flags & JOB_REQUEUE_HOLD) {
 		job_ptr->state_reason = WAIT_HELD_USER;
 		xfree(job_ptr->state_desc);
-		if (flags & JOB_LAUNCH_FAILED)
+		if (flags & JOB_LAUNCH_FAILED) {
 			job_ptr->state_desc
 				= xstrdup("launch failed requeued held");
-		else
+		} else {
 			job_ptr->state_desc
 				= xstrdup("job requeued in held state");
+		}
+		debug("%s: Holding %pJ, requeue-hold exit", __func__, job_ptr);
 		job_ptr->priority = 0;
 	}
 
@@ -17684,14 +17693,18 @@ extern bool job_hold_requeue(struct job_record *job_ptr)
 	/* clear signal sent flag on requeue */
 	job_ptr->warn_flags &= ~WARN_SENT;
 
-	/* Test if user wants to requeue the job
-	 * in hold or with a special exit value.  */
+	/*
+	 * Test if user wants to requeue the job
+	 * in hold or with a special exit value. 
+	 */
 	if (state & JOB_SPECIAL_EXIT) {
-		/* JOB_SPECIAL_EXIT means requeue the
-		 * the job, put it on hold and display
-		 * it as JOB_SPECIAL_EXIT.  */
+		/*
+		 * JOB_SPECIAL_EXIT means requeue the the job,
+		 * put it on hold and display state as JOB_SPECIAL_EXIT.
+		 */
 		job_ptr->job_state |= JOB_SPECIAL_EXIT;
 		job_ptr->state_reason = WAIT_HELD_USER;
+		debug("%s: Holding %pJ, special exit", __func__, job_ptr);
 		job_ptr->priority = 0;
 	}
 

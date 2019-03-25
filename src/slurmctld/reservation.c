@@ -2817,6 +2817,8 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 			xstrfmtcat(job_ptr->state_desc,
 				   "Reservation %s was deleted",
 				    resv_ptr->name);
+			debug("%s: Holding %pJ, reservation %s was deleted",
+			      __func__, job_ptr, resv_ptr->name);
 			job_ptr->priority = 0;	/* Hold job */
 		}
 	}
@@ -4995,8 +4997,11 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 				if ((now > resv_ptr->end_time) ||
 				    ((job_ptr->details) &&
 				     (job_ptr->details->begin_time >
-				      resv_ptr->end_time)))
+				      resv_ptr->end_time))) {
+					debug("%s: Holding %pJ, expired reservation %s",
+					      __func__, job_ptr, resv_ptr->name);
 					job_ptr->priority = 0;	/* admin hold */
+				}
 				return ESLURM_RESERVATION_INVALID;
 			}
 			if (job_ptr->details->req_node_bitmap &&
