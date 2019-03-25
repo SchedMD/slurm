@@ -535,6 +535,9 @@ struct job_details {
 	uint16_t mem_bind_type;		/* see mem_bind_type_t */
 	uint32_t min_cpus;		/* minimum number of cpus */
 	uint32_t orig_min_cpus;		/* requested value of min_cpus */
+	int min_gres_cpu;		/* Minimum CPU count per node required
+					 * to satisfy GRES requirements,
+					 * not saved/restored, but rebuilt */
 	uint32_t min_nodes;		/* minimum number of nodes */
 	uint32_t nice;			/* requested priority change,
 					 * NICE_OFFSET == no change */
