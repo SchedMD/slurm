@@ -843,8 +843,11 @@ extern void epilog_set_env(char ***epilog_env_ptr,
 	    epilog_info->gres_cnt_node_alloc[node_inx]) {
 		gres_per_node = epilog_info->gres_cnt_node_alloc[node_inx];
 		count_on_dev = _get_dev_count(global_id);
-		percentage = (gres_per_node * 100) / count_on_dev;
-		percentage = MAX(percentage, 1);
+		if (count_on_dev > 0) {
+			percentage = (gres_per_node * 100) / count_on_dev;
+			percentage = MAX(percentage, 1);
+		} else
+			percentage = 0;
 		xstrfmtcat((*epilog_env_ptr)[env_inx++],
 			   "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE=%"PRIu64,
 			   percentage);
