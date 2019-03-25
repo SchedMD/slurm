@@ -838,7 +838,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	if (mysql_db_create_table(mysql_conn, tres_table,
 				  tres_table_fields,
 				  ", primary key (id), "
-				  "unique index (type(42), name(42))) "
+				  "unique index udex (type(42), name(42))) "
 				  "auto_increment=1001")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
@@ -975,14 +975,14 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	if (mysql_db_create_table(mysql_conn, res_table,
 				  res_table_fields,
 				  ", primary key (id), "
-				  "unique index (name(42), server(42), type))")
+				  "unique index udex (name(42), server(42), type))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if (mysql_db_create_table(mysql_conn, clus_res_table,
 				  clus_res_table_fields,
 				  ", primary key (res_id, cluster(42)), "
-				  "unique index (res_id, cluster(42)))")
+				  "unique index udex (res_id, cluster(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -990,7 +990,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	if (mysql_db_create_table(mysql_conn, qos_table,
 				  qos_table_fields,
 				  ", primary key (id), "
-				  "unique index (name(42)))")
+				  "unique index udex (name(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 	else {
@@ -1213,7 +1213,7 @@ extern int create_cluster_assoc_table(
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  assoc_table_fields,
 				  ", primary key (id_assoc), "
-				  "unique index (user(42), acct(42), "
+				  "unique index udex (user(42), acct(42), "
 				  "`partition`(42)), "
 				  "key lft (lft), key account (acct(42)))")
 	    == SLURM_ERROR)
@@ -1540,7 +1540,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (mysql_db_create_table(mysql_conn, table_name,
 				  wckey_table_fields,
 				  ", primary key (id_wckey), "
-				  " unique index (wckey_name(42), "
+				  " unique index udex (wckey_name(42), "
 				  "user(42)))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
