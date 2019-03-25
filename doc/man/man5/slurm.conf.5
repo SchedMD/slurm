@@ -1564,6 +1564,15 @@ aggregation are the node registration, batch script completion,
 step completion, and epilog complete messages.
 .br
 .br
+Since the aggregation node address is set resolving the hostname at slurmd
+start in each node, using this feature in non-flat networks is not possible.
+For example, if slurmctld is in a different subnetwork than compute
+nodes and node addresses are resolved differently the controller than in the
+compute nodes, you may face communication issues. In some cases it may be
+useful to set CommunicationParameters=NoInAddrAny to make all daemons
+communicate through the same network.
+.br
+.br
 The format for this parameter is as follows:
 .RE
 .RS
