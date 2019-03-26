@@ -2207,6 +2207,7 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 {
 	int alloc_tasks = 0;
 	uint32_t min_tasks_this_node = 0, max_tasks_this_node = 0;
+	struct job_details *details_ptr = job_ptr->details;
 
 	rem_nodes = MIN(rem_nodes, 1);	/* If range of node counts */
 	if (mc_ptr->ntasks_per_node) {
@@ -2224,21 +2225,19 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 		min_tasks_this_node = mc_ptr->ntasks_per_core;
 		max_tasks_this_node = mc_ptr->ntasks_per_core *
 				      select_node_record[node_inx].tot_cores;
-	} else if (job_ptr->details && (job_ptr->details->max_nodes == 1)) {
-		if ((job_ptr->details->num_tasks == NO_VAL) ||
-		    (job_ptr->details->num_tasks == 0)) {
+	} else if (details_ptr && (details_ptr->max_nodes == 1)) {
+		if ((details_ptr->num_tasks == NO_VAL) ||
+		    (details_ptr->num_tasks == 0)) {
 			min_tasks_this_node = 1;
 			max_tasks_this_node = NO_VAL;
 		} else {
-			min_tasks_this_node = job_ptr->details->num_tasks;
-			max_tasks_this_node = job_ptr->details->num_tasks;
+			min_tasks_this_node = details_ptr->num_tasks;
+			max_tasks_this_node = details_ptr->num_tasks;
 		}
-	} else if (job_ptr->details &&
-		   ((job_ptr->details->num_tasks == 1) ||
-		    ((job_ptr->details->num_tasks ==
-		      job_ptr->details->min_nodes) &&
-		     (job_ptr->details->num_tasks ==
-		      job_ptr->details->max_nodes)))) {
+	} else if (details_ptr &&
+		   ((details_ptr->num_tasks == 1) ||
+		    ((details_ptr->num_tasks == details_ptr->min_nodes) &&
+		     (details_ptr->num_tasks == details_ptr->max_nodes)))) {
 		min_tasks_this_node = 1;
 		max_tasks_this_node = 1;
 	} else {
@@ -2247,7 +2246,7 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	}
 	/* Determine how many tasks can be started on this node */
 	if (mc_ptr->cpus_per_task &&
-	    (!job_ptr->details || !job_ptr->details->overcommit)) {
+	    (!details_ptr || !details_ptr->overcommit)) {
 		alloc_tasks = avail_res_array[node_inx]->avail_cpus /
 			      mc_ptr->cpus_per_task;
 		if (alloc_tasks < min_tasks_this_node)
@@ -2265,8 +2264,14 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				rem_nodes, enforce_binding, first_pass,
 				avail_core[node_inx]);
 	}
-	if (max_tasks_this_node == 0)
+	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;
+	} else if ((slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+		   ((mc_ptr->ntasks_per_core == INFINITE16) ||
+		    (mc_ptr->ntasks_per_core == 0)) &&
+		   (details_ptr->min_gres_cpu == 0)) {
+		*avail_cpus = bit_set_count(avail_core[node_inx]);
+	}
 }
 
 /*
