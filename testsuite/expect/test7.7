@@ -153,6 +153,11 @@ proc test_alloc_size { task_cnt } {
 
 print_header $test_id
 
+if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+	send_user "\nWARNING: This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE\n"
+	exit 0
+}
+
 set select_type [test_select_type]
 set partition [default_partition]
 set total_cpus [get_total_cpus $partition]

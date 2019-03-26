@@ -33,9 +33,14 @@ proc inc21_30_10 { } {
 	set job_id1 0
 	set job_id2 0
 	set target_time [expr $grpcpurunmin_num / 4]
+	set time_limit [expr $target_time - 3]
+	if {$time_limit < 1} {
+		send_user "\nInvalid time limit. (Within: inc21.30.10)\n"
+		return
+	}
 
 # There may be some GrpCPUmins data left from previous jobs, so use less than the limit
-	spawn $salloc --account=$acct -n4 -t[expr $target_time - 3] $srun $bin_sleep 10
+	spawn $salloc --account=$acct -n4 --time=$time_limit $srun $bin_sleep 10
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
