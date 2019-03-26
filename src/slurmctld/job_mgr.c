@@ -13268,6 +13268,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		   && (job_ptr->state_reason != WAIT_RESV_DELETED)
 		   && job_ptr->state_reason != WAIT_MAX_REQUEUE) {
 		job_ptr->state_reason = WAIT_NO_REASON;
+		xfree(job_ptr->state_desc);
 	}
 
 	if (job_specs->reboot != NO_VAL16) {
