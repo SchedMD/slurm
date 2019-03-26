@@ -226,7 +226,7 @@ static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			      int gres_name_colon_len);
 static uint32_t	_get_task_cnt_node(uint32_t **tasks_per_node_socket,
 				   int node_inx, int sock_cnt);
-static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *set_cnt);
+static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt);
 static int	_gres_find_id(void *x, void *key);
 static int	_gres_find_job_by_key(void *x, void *key);
 static int	_gres_find_step_by_key(void *x, void *key);
@@ -1866,20 +1866,20 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 /*
  * Determine gres availability on some node
  * plugin_id IN - plugin number to search for
- * set_cnt OUT - count of gres.conf records of this id found by slurmd
- *		 (each can have different topology)
+ * topo_cnt OUT - count of gres.conf records of this ID found by slurmd
+ *		  (each can have different topology)
  * RET - total number of gres available of this ID on this node in (sum
  *	 across all records of this ID)
  */
-static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *set_cnt)
+static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	uint32_t cpu_set_cnt = 0, rec_cnt = 0;
 	uint64_t gres_cnt = 0;
 
-	xassert(set_cnt);
-	*set_cnt = 0;
+	xassert(topo_cnt);
+	*topo_cnt = 0;
 	if (gres_conf_list == NULL)
 		return gres_cnt;
 
@@ -1894,7 +1894,7 @@ static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *set_cnt)
 	}
 	list_iterator_destroy(iter);
 	if (cpu_set_cnt)
-		*set_cnt = rec_cnt;
+		*topo_cnt = rec_cnt;
 	return gres_cnt;
 }
 
