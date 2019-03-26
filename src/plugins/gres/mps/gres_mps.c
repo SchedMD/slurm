@@ -146,6 +146,11 @@ static List _build_gpu_list(List gres_list)
 		while ((f_name = hostlist_shift(hl))) {
 			gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
 			gpu_record->config_flags = gres_record->config_flags;
+			if (gres_record->type_name) {
+				gpu_record->config_flags |=
+					GRES_CONF_HAS_TYPE;
+			}
+			gpu_record->count = 1;
 			gpu_record->cpu_cnt = gres_record->cpu_cnt;
 			gpu_record->cpus = xstrdup(gres_record->cpus);
 			if (gres_record->cpus_bitmap) {
@@ -153,12 +158,15 @@ static List _build_gpu_list(List gres_list)
 					bit_copy(gres_record->cpus_bitmap);
 			}
 			gpu_record->file = xstrdup(f_name);
+			gpu_record->links = xstrdup(gres_record->links);
 			gpu_record->name = xstrdup(gres_record->name);
+			gpu_record->plugin_id = gres_record->plugin_id;
 			gpu_record->type_name = xstrdup(gres_record->type_name);
 			list_append(gpu_list, gpu_record);
 			free(f_name);
 		}
 		hostlist_destroy(hl);
+		(void) list_delete_item(itr);
 	}
 	list_iterator_destroy(itr);
 
@@ -274,6 +282,9 @@ static void _distribute_count(List gres_conf_list, List gpu_conf_list,
 		mps_record->plugin_id = gres_plugin_build_id("mps");
 		mps_record->type_name = xstrdup(gpu_record->type_name);
 		list_append(gres_conf_list, mps_record);
+
+		list_append(gres_conf_list, gpu_record);
+		(void) list_remove(gpu_itr);
 	}
 	list_iterator_destroy(gpu_itr);
 }
@@ -286,7 +297,7 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 	gres_slurmd_conf_t *gpu_record, *mps_record;
 
 	/*
-	 * If gres/mps has Count, but no File specification and there are more
+	 * If gres/mps has Count, but no File specification and there is more
 	 * than one gres/gpu record, then evenly distribute gres/mps Count
 	 * evenly over all gres/gpu file records
 	 */
@@ -351,6 +362,8 @@ static void _merge_lists(List gres_conf_list, List gpu_conf_list,
 			mps_record->type_name = xstrdup(gpu_record->type_name);
 			list_append(gres_conf_list, mps_record);
 		}
+		list_append(gres_conf_list, gpu_record);
+		(void) list_remove(gpu_itr);
 	}
 	list_iterator_destroy(gpu_itr);
 
