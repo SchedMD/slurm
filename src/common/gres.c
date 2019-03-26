@@ -7435,6 +7435,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 bool first_pass,
 					 bitstr_t *avail_core)
 {
+	static uint16_t select_type_param = NO_VAL16;
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
 	gres_job_state_t *job_specs;
@@ -7700,8 +7701,20 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	xfree(avail_cores_per_sock);
 	xfree(req_sock);
 
-	*avail_cpus = MIN(*avail_cpus,
-			  (*max_tasks_this_node * mc_ptr->cpus_per_task));
+
+	if (select_type_param == NO_VAL16)
+		select_type_param = slurm_get_select_type_param();
+	if ((mc_ptr->cpus_per_task > 1) ||
+	    ((select_type_param & CR_ONE_TASK_PER_CORE) == 0)) {
+		/*
+		 * Only adjust *avail_cpus for the maximum task count if
+		 * cpus_per_task is explicitly set. There is currently no way
+		 * to tell if cpus_per_task==1 is explicitly set by the job
+		 * when SelectTypeParameters includes CR_ONE_TASK_PER_CORE.
+		 */
+		*avail_cpus = MIN(*avail_cpus,
+				  *max_tasks_this_node * mc_ptr->cpus_per_task);
+	}
 }
 
 /*

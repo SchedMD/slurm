@@ -1038,11 +1038,11 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				job_ptr->priority = 0;
 				job_ptr->state_reason = WAIT_HELD;
 				error("%s: %s: sync loop not progressing, holding %pJ, "
-				      "tried to use %u CPUs on node %s core_map:%s avoided_sockets:%s",
+				      "tried to use %u CPUs on node %s core_map:%s avoided_sockets:%s vpus:%u",
 				      plugin_type, __func__, job_ptr,
 				      orig_cpu_cnt,
 				      select_node_record[n].node_ptr->name,
-				      core_str, sock_str);
+				      core_str, sock_str, vpus);
 				xfree(core_str);
 				xfree(sock_str);
 			}

@@ -937,7 +937,10 @@ extern int vpus_per_core(struct job_details *details, int node_inx)
 	uint16_t pu_per_core = 0xffff;	/* Usable CPUs per core */
 	uint16_t vpus_per_core = select_node_record[node_inx].vpus;
 
-	if (details && details->mc_ptr) {
+	if ((slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+	    (details->min_gres_cpu > 0)) {
+		/* May override default of 1 CPU per core */
+	} else if (details && details->mc_ptr) {
 		multi_core_data_t *mc_ptr = details->mc_ptr;
 		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
@@ -950,8 +953,8 @@ extern int vpus_per_core(struct job_details *details, int node_inx)
 			pu_per_core = mc_ptr->threads_per_core;
 		}
 	}
-
 	vpus_per_core = MIN(vpus_per_core, pu_per_core);
+
 	return vpus_per_core;
 }
 
@@ -1297,7 +1300,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t **free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
 	bitstr_t **avail_cores, **free_cores;
 	bool test_only;
-	uint32_t sockets_per_node = 0;
+	uint32_t sockets_per_node = 1;
 	uint32_t c, j, n, csize, total_cpus;
 	uint64_t save_mem = 0;
 	int32_t build_cnt;
@@ -1341,6 +1344,14 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		    (mc_ptr->sockets_per_node > 1))
 			details_ptr->min_cpus *= mc_ptr->sockets_per_node;
 	}
+
+        if (details_ptr->mc_ptr &&
+            details_ptr->mc_ptr->sockets_per_node)
+                sockets_per_node = details_ptr->mc_ptr->sockets_per_node;
+        details_ptr->min_gres_cpu = gres_plugin_job_min_cpu_node(
+                                        sockets_per_node,
+                                        details_ptr->ntasks_per_node,
+                                        job_ptr->gres_list);
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("%s: %s: evaluating %pJ on %u nodes",
@@ -2254,20 +2265,8 @@ static void _select_cores(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 				rem_nodes, enforce_binding, first_pass,
 				avail_core[node_inx]);
 	}
-
-	if (max_tasks_this_node == 0) {
+	if (max_tasks_this_node == 0)
 		*avail_cpus = 0;
-	} else if (max_tasks_this_node != NO_VAL) {
-		int i = max_tasks_this_node;
-		if (mc_ptr->cpus_per_task)
-			i *= mc_ptr->cpus_per_task;
-		*avail_cpus = MIN(*avail_cpus, i);
-		if ((slurmctld_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
-		    avail_core && avail_core[node_inx]) {
-			i = bit_set_count(avail_core[node_inx]);
-			*avail_cpus = MIN(*avail_cpus, i);
-		}
-	}
 }
 
 /*
@@ -2319,7 +2318,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	struct job_details *details_ptr = job_ptr->details;
 	bitstr_t *req_map = details_ptr->req_node_bitmap;
 	bool enforce_binding = false;
-	uint32_t sockets_per_node = 1;
 	uint16_t *avail_cpu_per_node = NULL;
 
 	xassert(node_map);
@@ -2334,14 +2332,6 @@ static int _eval_nodes(struct job_record *job_ptr, gres_mc_data_t *mc_ptr,
 	if ((details_ptr->req_node_bitmap) &&
 	    (!bit_super_set(details_ptr->req_node_bitmap, node_map)))
 		return error_code;
-
-	if (details_ptr->mc_ptr &&
-	    details_ptr->mc_ptr->sockets_per_node)
-		sockets_per_node = details_ptr->mc_ptr->sockets_per_node;
-	details_ptr->min_gres_cpu = gres_plugin_job_min_cpu_node(
-					sockets_per_node,
-					job_ptr->details->ntasks_per_node,
-					job_ptr->gres_list);
 
 	if (job_ptr->bit_flags & SPREAD_JOB) {
 		/* Spread the job out over many nodes */
@@ -5526,14 +5516,17 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 			 */
 			if (avail_cpus >= threads_per_core) {
 				int used;
-				if ((ntasks_per_core == 1) &&
-				    (cpus_per_task > threads_per_core)) {
+				if ((slurmctld_conf.select_type_param &
+				     CR_ONE_TASK_PER_CORE) &&
+				   (details_ptr->min_gres_cpu > 0)) {
+					used = threads_per_core;
+				} else if ((ntasks_per_core == 1) &&
+					   (cpus_per_task > threads_per_core)) {
 					used = MIN(tmp_cpt, threads_per_core);
 				} else
 					used = threads_per_core;
 				avail_cpus -= used;
 				cpu_count  += used;
-
 				if (tmp_cpt <= used)
 					tmp_cpt = cpus_per_task;
 				else
