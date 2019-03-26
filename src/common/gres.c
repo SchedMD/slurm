@@ -1990,7 +1990,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				 slurm_gres_context_t *context_ptr)
 {
 	int cpus_config = 0, i, j, gres_inx, rc = SLURM_SUCCESS;
-	uint64_t gres_cnt, topo_cnt = 0;
+	uint64_t dev_cnt, gres_cnt, topo_cnt = 0;
 	bool cpu_config_err = false, updated_config = false;
 	gres_node_state_t *gres_data;
 	ListIterator iter;
@@ -2089,6 +2089,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 
 	has_file = context_ptr->config_flags & GRES_CONF_HAS_FILE;
 	has_type = context_ptr->config_flags & GRES_CONF_HAS_TYPE;
+	if (_shared_gres(context_ptr->plugin_id))
+		dev_cnt = topo_cnt;
+	else
+		dev_cnt = gres_cnt;
 	if (has_file && (topo_cnt != gres_data->topo_cnt)) {
 		/*
 		 * Need to rebuild topology info.
@@ -2124,7 +2128,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 						     topo_cnt * sizeof(char *));
 		if (gres_data->gres_bit_alloc)
 			gres_data->gres_bit_alloc = bit_realloc(
-				gres_data->gres_bit_alloc, gres_cnt);
+				gres_data->gres_bit_alloc, dev_cnt);
 		gres_data->topo_cnt = topo_cnt;
 	} else if (_shared_gres(context_ptr->plugin_id) && gres_data->topo_cnt){
 		/*
@@ -2210,16 +2214,16 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				/* If running jobs recovered then already set */
 				if (!gres_data->topo_gres_bitmap[i]) {
 					gres_data->topo_gres_bitmap[i] =
-						bit_alloc(topo_cnt);
+						bit_alloc(dev_cnt);
 					bit_set(gres_data->topo_gres_bitmap[i],
 						gres_inx);
 				}
 				gres_inx++;
 			} else {
 				gres_data->topo_gres_bitmap[i] =
-					bit_alloc(topo_cnt);
+					bit_alloc(dev_cnt);
 				for (j = 0; j < gres_slurmd_conf->count; j++) {
-					if (gres_inx >= topo_cnt) {
+					if (gres_inx >= dev_cnt) {
 						/* Ignore excess GRES on node */
 						break;
 					}
@@ -2334,12 +2338,12 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		if (gres_bits) {
 			if (gres_data->gres_bit_alloc == NULL) {
 				gres_data->gres_bit_alloc =
-					bit_alloc(gres_bits);
+					bit_alloc(dev_cnt);
 			} else if (gres_bits != bit_size(
 					   gres_data->gres_bit_alloc)) {
 				gres_data->gres_bit_alloc =
 					bit_realloc(gres_data->gres_bit_alloc,
-						    gres_bits);
+						    dev_cnt);
 			}
 		}
 	}
