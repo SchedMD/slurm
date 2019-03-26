@@ -2219,7 +2219,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				gres_data->topo_gres_bitmap[i] =
 					bit_alloc(topo_cnt);
 				for (j = 0; j < gres_slurmd_conf->count; j++) {
-					if (gres_inx >= gres_cnt) {
+					if (gres_inx >= topo_cnt) {
 						/* Ignore excess GRES on node */
 						break;
 					}
