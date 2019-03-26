@@ -54,7 +54,11 @@
 #include "src/common/pack.h"
 #include "src/common/xstring.h"
 
-/* main - slurmctld main function, start various threads and process RPCs */
+/*
+ * main - slurmctld main function, start various threads and process RPCs
+ * test7.17.prog <TRES_PER_NODE> <CONFIG_DIR_HEAD> <CONFIG_SUB_DIR> <CPU_COUNT>
+ * 
+ */
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -80,7 +84,7 @@ int main(int argc, char *argv[])
 	strcpy(config_dir, argv[2]);
 	strcpy(config_dir,strcat(config_dir, "/test7.17_configs"));
 	strcpy(test, strcat(config_dir, argv[3]));
-	strcpy(slurm_conf,strcat(test, "/slurm.conf"));
+	strcpy(slurm_conf, strcat(test, "/slurm.conf"));
 
 	/* Enable detailed logging for now */
 	opts.stderr_level = LOG_LEVEL_DEBUG;
@@ -96,7 +100,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	setenv("SLURM_CONFIG_DIR",config_dir, 1);
+	setenv("SLURM_CONFIG_DIR", config_dir, 1);
 
 	cpu_count = strtol(argv[4], NULL, 10);
 	node_name = "test_node";
