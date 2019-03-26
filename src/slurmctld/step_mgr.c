@@ -4466,17 +4466,25 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
 	agent_args->node_count++;
 #else
-	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-			continue;
-		if (agent_args->protocol_version >
-		    node_record_table_ptr[i].protocol_version)
-			agent_args->protocol_version =
-				node_record_table_ptr[i].protocol_version;
-		hostlist_push_host(agent_args->hostlist,
-			node_record_table_ptr[i].name);
-		agent_args->node_count++;
+	if (step_ptr->step_node_bitmap) {
+		agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+		for (i = 0; i < node_record_count; i++) {
+			if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+				continue;
+			if (agent_args->protocol_version >
+			    node_record_table_ptr[i].protocol_version) {
+				agent_args->protocol_version =
+					node_record_table_ptr[i].
+					protocol_version;
+			}
+			hostlist_push_host(agent_args->hostlist,
+					   node_record_table_ptr[i].name);
+			agent_args->node_count++;
+		}
+	} else {
+		/* Could happen on node failure */
+		info("%s: %pJ Step %u has NULL node_bitmap", __func__,
+		     job_ptr, step_ptr->step_id);
 	}
 #endif
 
