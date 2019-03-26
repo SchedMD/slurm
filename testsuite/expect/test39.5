@@ -30,17 +30,19 @@
 ############################################################################
 source ./globals
 
-set test_id     "39.5"
-set exit_code   0
-set file_in1     "test$test_id.input1"
-set file_in2     "test$test_id.input2"
+set test_id        "39.5"
+set exit_code      0
+set file_in1       "test$test_id.input1"
+set file_in2       "test$test_id.input2"
 set number_commas  "\[0-9_,\]+"
+set one_task_pc    0
 
 proc get_node_config {} {
-	global cpus_per_socket sockets_per_node test_id
+	global cores_per_socket cpus_per_node cpus_per_socket sockets_per_node test_id
 	global exit_code file_in1 max_job_delay number srun scontrol
 
-	set cpus_tot 1
+	set cores_per_socket 1
+	set cpus_per_node 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
 	make_bash_script $file_in1 "$scontrol show node \$SLURM_JOB_NODENAME"
@@ -48,8 +50,12 @@ proc get_node_config {} {
 	log_user 0
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gres=gpu:1 -n1 -t1 -J "test$test_id" $file_in1]
 	expect {
+		-re "CoresPerSocket=($number)" {
+			set cores_per_socket $expect_out(1,string)
+			exp_continue
+		}
 		-re "CPUTot=($number)" {
-			set cpus_tot $expect_out(1,string)
+			set cpus_per_node $expect_out(1,string)
 			exp_continue
 		}
 		-re "Sockets=($number)" {
@@ -66,7 +72,7 @@ proc get_node_config {} {
 		}
 	}
 	log_user 1
-	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+	set cpus_per_socket [expr $cpus_per_node / $sockets_per_node]
 }
 
 proc multi_socket_gres { gres_string } {
@@ -143,6 +149,10 @@ if {$gpu_cnt < 0} {
 if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
 	exit 0
+}
+# Determine what the selecttype param is
+if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+	set one_task_pc 1
 }
 get_node_config
 send_user "\nGPU count is $gpu_cnt\n"
@@ -313,7 +323,14 @@ if {$gpu_cnt > 1} {
 } else {
 	set use_gpus_per_node $gpu_cnt
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node -t1 -J "test$test_id" -l ./$file_in1]
+set total_cores [expr $cores_per_socket * $sockets_per_node]
+if {$one_task_pc && $cpus_per_node > $total_cores} {
+	set ntasks_per_core [expr $cpus_per_node / $total_cores]
+	set extra_opt "--ntasks-per-core=$ntasks_per_core"
+} else {
+	set extra_opt "-t1"
+}
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node $extra_opt -t1 -J "test$test_id" -l ./$file_in1]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]

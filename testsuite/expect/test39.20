@@ -44,6 +44,7 @@ set exit_code      0
 set file_in        "test$test_id.input"
 set file_out1      "test$test_id.output1"
 set file_out2      "test$test_id.output2"
+set one_task_pc    0
 set user           [get_my_user_name]
 
 proc setup { gpu_limit } {
@@ -78,10 +79,11 @@ proc cleanup { } {
 }
 
 proc get_node_config {} {
-	global cpus_per_socket sockets_per_node test_id
+	global cores_per_socket cpus_per_node cpus_per_socket sockets_per_node test_id
 	global exit_code file_in max_job_delay number srun scontrol
 
-	set cpus_tot 1
+	set cores_per_socket 1
+	set cpus_per_node 1
 	set sockets_per_node 1
 	set cpus_per_socket 1
 	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
@@ -89,8 +91,12 @@ proc get_node_config {} {
 	log_user 0
 	set srun_pid [spawn $srun -n1 -t1 -J "test$test_id" $file_in]
 	expect {
+		-re "CoresPerSocket=($number)" {
+			set cores_per_socket $expect_out(1,string)
+			exp_continue
+		}
 		-re "CPUTot=($number)" {
-			set cpus_tot $expect_out(1,string)
+			set cpus_per_node $expect_out(1,string)
 			exp_continue
 		}
 		-re "Sockets=($number)" {
@@ -107,7 +113,7 @@ proc get_node_config {} {
 		}
 	}
 	log_user 1
-	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+	set cpus_per_socket [expr $cpus_per_node / $sockets_per_node]
 }
 
 print_header $test_id
@@ -143,6 +149,9 @@ if {![string compare $select_type "cons_tres"] ||
 } else {
 	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
 	exit 0
+}
+if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+	set one_task_pc 1
 }
 
 set def_part_name [default_partition]
@@ -369,12 +378,20 @@ if {$exit_code != 0} {
 #
 send_user "\n\nTEST 3: --gpus-per-task option by job (first job over limit, second job under limit)\n"
 
+set total_cores [expr $cores_per_socket * $sockets_per_node]
+if {$one_task_pc && $cpus_per_node > $total_cores} {
+	set ntasks_per_core [expr $cpus_per_node / $total_cores]
+	set extra_opt "--ntasks-per-core=$ntasks_per_core"
+} else {
+	set extra_opt "-t1"
+}
+
 set timeout $max_job_delay
 exec $bin_rm -f $file_out1  $file_out2
 set gpu_good_cnt $gpu_limit
 set gpu_fail_cnt [expr $gpu_limit + 1]
 set job_id1 0
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_fail_cnt -t1 -o $file_out1 -J "test$test_id" ./$file_in
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_fail_cnt $extra_opt -t1 -o $file_out1 -J "test$test_id" ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -394,7 +411,7 @@ if {$job_id1 == 0} {
 }
 
 set job_id2 0
-spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_good_cnt -t1 -o $file_out2 -J "test$test_id" ./$file_in
+spawn $sbatch --account=$acct --gres=craynetwork:0 --gpus-per-task=1 -n$gpu_good_cnt $extra_opt -t1 -o $file_out2 -J "test$test_id" ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
