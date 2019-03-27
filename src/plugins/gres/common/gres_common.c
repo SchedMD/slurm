@@ -253,16 +253,19 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 
 	if (bit_alloc) {
 		len = bit_size(bit_alloc);
-		if (len != list_count(gres_devices)) {
-			error("%s: gres list is not equal to the number of gres_devices.  This should never happen.",
-			      __func__);
-			return;
-		}
-
 		i = -1;
 		itr = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(itr))) {
 			i++;
+			if (i >= len) {
+				/*
+				 * This can happen if GRES count in slurm.conf
+				 * and gres.conf differ and FastSchedule!= 0
+				 */
+				error("%s: gres_list size different from count of gres_devices",
+				      __func__);
+				break;
+			}
 			if (!bit_test(bit_alloc, i))
 				continue;
 			if (reset) {
