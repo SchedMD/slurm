@@ -8307,7 +8307,6 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 		for (t = 0; t < node_specs->topo_cnt; t++) {
 			if (node_specs->topo_gres_cnt_alloc    &&
 			    node_specs->topo_gres_cnt_avail    &&
-			    node_specs->topo_gres_cnt_avail[t] &&
 			    ((node_specs->topo_gres_cnt_avail[t] -
 			      node_specs->topo_gres_cnt_alloc[t]) <
 			     gres_per_bit))
