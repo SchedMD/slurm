@@ -528,7 +528,6 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid)
 	}
 
 	switch (req) {
-	case REQUEST_SIGNAL_PROCESS_GROUP:	/* Defunct */
 	case REQUEST_SIGNAL_TASK_LOCAL:		/* Defunct */
 	case REQUEST_SIGNAL_TASK_GLOBAL:	/* Defunct */
 	case REQUEST_SIGNAL_CONTAINER:
