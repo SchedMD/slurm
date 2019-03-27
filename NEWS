@@ -145,6 +145,7 @@ documents those changes that are of interest to users and administrators.
  -- Set Accrue time when not enforcing limits.
  -- Fix srun segfault when requesting a hetjob with test_exec or bcast options.
  -- Hide multipart priorities log message behind Priority debug flag.
+ -- sched/backfill - Make hetjobs sensitive to bf_max_job_start.
 
 * Changes in Slurm 18.08.6-2
 ============================

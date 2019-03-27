@@ -334,6 +334,11 @@ configurations or severe degradation in performance with other configurations.
 Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
 job without releasing its CPUs for allocation to other jobs and would be a
 preferable mechanism in many cases.
+If performing system maintenance you may want to use suspend/resume in the
+following way. Before suspending set all nodes to draining or set all
+partitions to down so that no new jobs can be scheduled. Then suspend
+jobs. Once maintenance is done resume jobs then resume nodes and/or set all
+partitions back to up.
 Use with caution.
 
 .TP
@@ -445,6 +450,8 @@ User processes must stop on receipt of SIGSTOP signal and resume
 upon receipt of SIGCONT for this operation to be effective.
 Not all architectures and configurations support job suspension.
 If a suspended job is requeued, it will be placed in a held state.
+The time a job is suspended will not count against a job's time limit.
+Only an operator, administrator, SlurmUser, or root can suspend jobs.
 
 .TP
 \fBtakeover\fP

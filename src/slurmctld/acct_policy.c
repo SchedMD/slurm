@@ -4366,13 +4366,18 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 
 	/*
 	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
-	 * submit_time.  Accrue limits don't work with this flag.
-	 * Always set it when not enforcing limits.
+	 * submit_time (Not begin).  Accrue limits don't work with this flag.
 	 */
-	if ((priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS) ||
-	    !(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+	if (priority_flags & PRIORITY_FLAGS_ACCRUE_ALWAYS) {
 		if (!details_ptr->accrue_time)
 			details_ptr->accrue_time = details_ptr->submit_time;
+		return SLURM_SUCCESS;
+	}
+
+	/* Always set accrue_time to begin time when not enforcing limits. */
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+		if (!details_ptr->accrue_time)
+			details_ptr->accrue_time = details_ptr->begin_time;
 		return SLURM_SUCCESS;
 	}
 
