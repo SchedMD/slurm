@@ -425,6 +425,7 @@ static int _mysql_make_table_current(mysql_conn_t *mysql_conn, char *table_name,
 			xstrfmtcat(correct_query, " add %s,", unique_index);
 			xfree(unique_index);
 		}
+		xfree(udex_name);
 	}
 	xfree(old_index);
 
