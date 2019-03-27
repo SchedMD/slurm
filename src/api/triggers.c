@@ -62,6 +62,7 @@ extern int slurm_set_trigger (trigger_info_t *trigger_set)
 	/*
 	 * Request message:
 	 */
+	memset(&req, 0, sizeof(req));
 	req.record_count  = 1;
 	req.trigger_array = trigger_set;
 	msg.msg_type      = REQUEST_TRIGGER_SET;
@@ -91,6 +92,7 @@ extern int slurm_clear_trigger (trigger_info_t *trigger_clear)
 	/*
 	 * Request message:
 	 */
+	memset(&req, 0, sizeof(req));
 	req.record_count  = 1;
 	req.trigger_array = trigger_clear;
 	msg.msg_type      = REQUEST_TRIGGER_CLEAR;
@@ -121,6 +123,7 @@ extern int slurm_get_triggers (trigger_info_msg_t ** trigger_get)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
+	memset(&req, 0, sizeof(req));
 	req.record_count  = 0;
 	req.trigger_array = NULL;
 	req_msg.msg_type  = REQUEST_TRIGGER_GET;
@@ -162,7 +165,7 @@ extern int slurm_pull_trigger (trigger_info_t *trigger_pull)
 	 * Request message:
 	 */
 	slurm_msg_t_init(&msg);
-	memset(&req, 0, sizeof(trigger_info_msg_t));
+	memset(&req, 0, sizeof(req));
 	req.record_count  = 1;
 	req.trigger_array = trigger_pull;
 	msg.msg_type      = REQUEST_TRIGGER_PULL;

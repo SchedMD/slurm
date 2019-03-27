@@ -868,10 +868,11 @@ re_send:
 extern int slurm_allocation_lookup(uint32_t jobid,
 				   resource_allocation_response_msg_t **info)
 {
-	job_alloc_info_msg_t req = {0};
+	job_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
+	memset(&req, 0, sizeof(req));
 	req.job_id = jobid;
 	req.req_cluster  = slurmctld_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
@@ -914,10 +915,11 @@ extern int slurm_allocation_lookup(uint32_t jobid,
  */
 extern int slurm_pack_job_lookup(uint32_t jobid, List *info)
 {
-	job_alloc_info_msg_t req = {0};
+	job_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
+	memset(&req, 0, sizeof(req));
 	req.job_id = jobid;
 	req.req_cluster  = slurmctld_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
@@ -966,6 +968,7 @@ extern int slurm_sbcast_lookup(uint32_t job_id, uint32_t pack_job_offset,
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
+	memset(&req, 0, sizeof(req));
 	req.job_id = job_id;
 	req.pack_job_offset = pack_job_offset;
 	req.step_id = step_id;

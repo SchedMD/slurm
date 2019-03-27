@@ -708,6 +708,7 @@ extern int slurm_load_node(time_t update_time, node_info_msg_t **resp,
 	}
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.last_update  = update_time;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_NODE_INFO;
@@ -740,6 +741,7 @@ extern int slurm_load_node2(time_t update_time, node_info_msg_t **resp,
 	node_info_request_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.last_update  = update_time;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_NODE_INFO;
@@ -764,6 +766,7 @@ extern int slurm_load_node_single(node_info_msg_t **resp, char *node_name,
 	node_info_single_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.node_name    = node_name;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_NODE_INFO_SINGLE;
@@ -785,6 +788,7 @@ extern int slurm_load_node_single2(node_info_msg_t **resp, char *node_name,
 	node_info_single_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.node_name    = node_name;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_NODE_INFO_SINGLE;
@@ -850,6 +854,7 @@ extern int slurm_get_node_energy(char *host, uint16_t delta,
 		xfree(this_addr);
 	}
 
+	memset(&req, 0, sizeof(req));
 	req.delta        = delta;
 	req_msg.msg_type = REQUEST_ACCT_GATHER_ENERGY;
 	req_msg.data     = &req;

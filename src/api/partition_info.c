@@ -577,6 +577,7 @@ extern int slurm_load_partitions(time_t update_time,
 	}
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.last_update  = update_time;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_PARTITION_INFO;
@@ -610,6 +611,7 @@ extern int slurm_load_partitions2(time_t update_time,
 	part_info_request_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 
 	req.last_update  = update_time;
 	req.show_flags   = show_flags;

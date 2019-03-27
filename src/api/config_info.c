@@ -1798,6 +1798,7 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
+	memset(&req, 0, sizeof(req));
 	req.last_update  = update_time;
 	req_msg.msg_type = REQUEST_BUILD_INFO;
 	req_msg.data     = &req;

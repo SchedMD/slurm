@@ -58,6 +58,7 @@ extern int slurm_complete_job (uint32_t job_id, uint32_t job_return_code)
 	complete_job_allocation_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.job_id       = job_id;
 	req.job_rc       = job_return_code;
 	req_msg.msg_type = REQUEST_COMPLETE_JOB_ALLOCATION;

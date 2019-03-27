@@ -1332,6 +1332,7 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 	/*
 	 * enqueue a test message, which would be ignored by the slurmstepd
 	 */
+	memset(&header, 0, sizeof(header));
 	header.type = SLURM_IO_CONNECTION_TEST;
 	header.gtaskid = 0;  /* Unused */
 	header.ltaskid = 0;  /* Unused */

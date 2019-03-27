@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     account changed.
  -- Restore "sreport -T ALL" functionality.
  -- Correctly typecast signals being sent through the api.
+ -- Properly initialize a few structures in the api.
 
 * Changes in Slurm 18.08.7
 ==========================

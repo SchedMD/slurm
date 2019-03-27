@@ -202,6 +202,7 @@ slurm_set_debugflags (uint64_t debug_flags_plus, uint64_t debug_flags_minus)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
+	memset(&req, 0, sizeof(req));
 	req.debug_flags_minus = debug_flags_minus;
 	req.debug_flags_plus  = debug_flags_plus;
 	req_msg.msg_type = REQUEST_SET_DEBUG_FLAGS;
@@ -241,6 +242,7 @@ slurm_set_debug_level (uint32_t debug_level)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
+	memset(&req, 0, sizeof(req));
 	req.debug_level  = debug_level;
 	req_msg.msg_type = REQUEST_SET_DEBUG_LEVEL;
 	req_msg.data     = &req;
@@ -279,6 +281,7 @@ slurm_set_schedlog_level (uint32_t schedlog_level)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
+	memset(&req, 0, sizeof(req));
 	req.debug_level  = schedlog_level;
 	req_msg.msg_type = REQUEST_SET_SCHEDLOG_LEVEL;
 	req_msg.data     = &req;
@@ -316,6 +319,7 @@ extern int slurm_set_fs_dampeningfactor (uint16_t factor)
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
+	memset(&req, 0, sizeof(req));
 	req.dampening_factor  = factor;
 	req_msg.msg_type = REQUEST_SET_FS_DAMPENING_FACTOR;
 	req_msg.data     = &req;

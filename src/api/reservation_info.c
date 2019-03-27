@@ -188,6 +188,7 @@ extern int slurm_load_reservations (time_t update_time,
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
+	memset(&req, 0, sizeof(req));
         req.last_update  = update_time;
         req_msg.msg_type = REQUEST_RESERVATION_INFO;
         req_msg.data     = &req;

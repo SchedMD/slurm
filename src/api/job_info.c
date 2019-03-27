@@ -1234,7 +1234,7 @@ extern int slurm_job_batch_script(FILE *out, uint32_t jobid)
 	slurm_msg_t_init(&req);
 	slurm_msg_t_init(&resp);
 
-	memset(&msg, 0, sizeof(job_id_msg_t));
+	memset(&msg, 0, sizeof(msg));
 	msg.job_id = jobid;
 	req.msg_type = REQUEST_BATCH_SCRIPT;
 	req.data = &msg;
@@ -1272,7 +1272,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 		 uint16_t show_flags)
 {
 	slurm_msg_t req_msg;
-	job_info_request_msg_t req = {0};
+	job_info_request_msg_t req;
 	char *cluster_name = NULL;
 	void *ptr = NULL;
 	slurmdb_federation_rec_t *fed;
@@ -1295,6 +1295,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr,
 	}
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.last_update  = update_time;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO;
@@ -1330,7 +1331,7 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 				uint16_t show_flags)
 {
 	slurm_msg_t req_msg;
-	job_user_id_msg_t req = {0};
+	job_user_id_msg_t req;
 	char *cluster_name = NULL;
 	void *ptr = NULL;
 	slurmdb_federation_rec_t *fed;
@@ -1346,6 +1347,7 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
 	}
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.show_flags   = show_flags;
 	req.user_id      = user_id;
 	req_msg.msg_type = REQUEST_JOB_USER_INFO;
@@ -1382,7 +1384,7 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 		uint16_t show_flags)
 {
 	slurm_msg_t req_msg;
-	job_id_msg_t req = {0};
+	job_id_msg_t req;
 	char *cluster_name = NULL;
 	void *ptr = NULL;
 	slurmdb_federation_rec_t *fed;
@@ -1397,7 +1399,7 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 		}
 	}
 
-	memset(&req, 0, sizeof(job_id_msg_t));
+	memset(&req, 0, sizeof(req));
 	slurm_msg_t_init(&req_msg);
 	req.job_id       = job_id;
 	req.show_flags   = show_flags;
@@ -1466,6 +1468,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		xfree(this_addr);
 	}
 
+	memset(&req, 0, sizeof(req));
 	req.job_pid      = job_pid;
 	req_msg.msg_type = REQUEST_JOB_ID;
 	req_msg.data     = &req;
@@ -1560,7 +1563,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	int rc;
 	slurm_msg_t resp_msg;
 	slurm_msg_t req_msg;
-	job_alloc_info_msg_t job_msg = {0};
+	job_alloc_info_msg_t job_msg;
 	srun_timeout_msg_t *timeout_msg;
 	time_t now = time(NULL);
 	static uint32_t jobid_cache = 0;
@@ -1597,6 +1600,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 		return SLURM_SUCCESS;
 	}
 
+	memset(&job_msg, 0, sizeof(job_msg));
 	job_msg.job_id     = jobid;
 	req_msg.msg_type   = REQUEST_JOB_END_TIME;
 	req_msg.data       = &job_msg;
@@ -1647,7 +1651,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	slurm_msg_t_init(&req);
 	slurm_msg_t_init(&resp);
 
-	memset(&msg, 0, sizeof(job_id_msg_t));
+	memset(&msg, 0, sizeof(msg));
 	msg.job_id   = job_id;
 	req.msg_type = REQUEST_JOB_READY;
 	req.data     = &msg;
@@ -2159,7 +2163,7 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 		show_flags &= (~SHOW_FEDERATION);
 	}
 
-	memset(&factors_req, 0, sizeof(priority_factors_request_msg_t));
+	memset(&factors_req, 0, sizeof(factors_req));
 	factors_req.job_id_list = job_id_list;
 	factors_req.partitions  = partitions;
 	factors_req.uid_list    = uid_list;
