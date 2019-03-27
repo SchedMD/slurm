@@ -6691,7 +6691,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		/*
 		 * A user can not be allocated different MPS counts on the
 		 * same device as they are all serviced by the same MPS
-		 * MPS server with a common percentage value.
+		 * server with a common percentage value.
 		 */
 		if (main_plugin_id == mps_plugin_id) {
 			gpu_inx = bit_ffs(node_gres_ptr->topo_gres_bitmap[i]);
@@ -8339,7 +8339,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	}
 
 	/* Select available GRES with any resources */
-	for (t = 0; (t < node_specs->topo_cnt) && (alloc_gres_cnt == 0); t++){
+	for (t = 0; (t < node_specs->topo_cnt) && (alloc_gres_cnt == 0); t++) {
 		if (node_specs->topo_gres_cnt_alloc    &&
 		    node_specs->topo_gres_cnt_avail    &&
 		    node_specs->topo_gres_cnt_avail[t])
