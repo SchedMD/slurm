@@ -39,6 +39,8 @@ set nodename_base	"tux"
 set nodename		"${nodename_base}0"
 set nodename_diff	"${nodename_base}1"
 set test_ulong_prog	"test$test_id.ulong"
+set file_in		"test$test_id.bash"
+set file_out		"test$test_id.out"
 set fast_schedule	-1
 # Assume unsigned long is 64 bits unless overwritten
 set ulong_bits  64
@@ -138,7 +140,9 @@ expect {
 send_user "sizeof(unsigned long) = $ulong_bits\n"
 
 
-# Sees if $test_prog actual output matches expected output
+#
+# Tests if $test_prog actual output matches expected output
+# NOTE: The output strings are sorted so the order of lines is irrelevant
 #
 # test_minor -		The minor test number (39.18.X). If global variable
 # 			"$test_minor_in" is set, then run only that test.
@@ -151,10 +155,11 @@ send_user "sizeof(unsigned long) = $ulong_bits\n"
 # 			"fatal:" in the output. Defaults to 0.
 # 			If errs are expected, output_expected should likely be
 # 			"".
+#
 set failed_tests [list]
 proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0}} {
 	global cfgpath nodename test_prog alpha_numeric_special exit_code test_minor_in
-	global test_id failed_tests use_valgrind
+	global test_id failed_tests use_valgrind bin_sort file_in file_out
 
 	# Skip all tests not specified by the tester; force string comparison
 	if {$test_minor_in != "" && [string compare "$test_minor" "$test_minor_in"] != 0} {
@@ -168,12 +173,18 @@ proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {e
 	generate_file $fake_gpus_conf $cfgpath/fake_gpus.conf
 
 	if {$use_valgrind} {
-		spawn valgrind --tool=memcheck --error-limit=no --leak-check=full --show-reachable=yes --max-stackframe=16777216 --num-callers=20 --child-silent-after-fork=yes --track-origins=yes ./$test_prog "$cfgpath" "$nodename"
+		make_bash_script $file_in "
+valgrind --tool=memcheck --error-limit=no --leak-check=full --show-reachable=yes --max-stackframe=16777216 --num-callers=20 --child-silent-after-fork=yes --track-origins=yes ./$test_prog \"$cfgpath\" \"$nodename\" >./$file_out 2>&1
+$bin_sort <./$file_out
+rm -rf ./$file_out
 	} else {
-		spawn ./$test_prog "$cfgpath" "$nodename"
+		make_bash_script $file_in "
+./$test_prog \"$cfgpath\" \"$nodename\" >./$file_out 2>&1
+$bin_sort <./$file_out
+rm -rf ./$file_out"
 	}
 
-	set output_actual ""
+	set sorted_actual ""
 	set errs_actual 0
 	set ignore_err_msgs 0
 	# Doing a regex on an empty string stalls expect. So don't do it.
@@ -181,14 +192,16 @@ proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {e
 		set err_msgs "bogus"
 		set ignore_err_msgs 1
 	}
+	log_user 0
+	spawn ./$file_in
 	send_user "Waiting on output\n"
 	expect {
 		-re "(GRES_PARSABLE$alpha_numeric_special)" {
-			if {$output_actual == ""} {
-				set output_actual "\n"
+			if {$sorted_actual == ""} {
+				set sorted_actual "\n"
 			}
-			# Append to actual output
-			set output_actual "$output_actual$expect_out(1,string)\n"
+			# Append string
+			set sorted_actual "$sorted_actual$expect_out(1,string)\n"
 			exp_continue
 		}
 		-re "$err_msgs" {
@@ -206,10 +219,33 @@ proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {e
 		}
 	}
 
+	set sorted_expected ""
+	make_bash_script $file_in "/bin/echo \"$output_expected\" | $bin_sort"
+	spawn ./$file_in
+	expect {
+		-re "(GRES_PARSABLE$alpha_numeric_special)" {
+			if {$sorted_expected == ""} {
+				set sorted_expected "\n"
+			}
+			# Append string
+			set sorted_expected "$sorted_expected$expect_out(1,string)\n"
+			exp_continue
+		}
+		timeout {
+			send_user "FAILURE: No response from $test_prog\n"
+			set failed 1
+		}
+		eof {
+			wait
+		}
+	}
+	file delete ./$file_in
+	log_user 1
+
 	# Check the output with what is expected
-	send_user "Actual: $output_actual\n"
-	if {$output_actual != $output_expected} {
-		send_user "Expected: $output_expected\n"
+	send_user "Actual (sorted): $sorted_actual\n"
+	if {$sorted_actual != $sorted_expected} {
+		send_user "Expected (sorted): $sorted_expected\n"
 		log_error "Expected output does not match actual output for sub-test $test_minor"
 		set failed 1
 	} else {
