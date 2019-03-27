@@ -2219,6 +2219,12 @@ static int _node_config_validate(char *node_name, char *orig_config,
 						gres_inx);
 				}
 				gres_inx++;
+			} else if (dev_cnt == 0) {
+				/*
+				 * Slurmd found GRES, but slurmctld can't use
+				 * them. Avoid creating zero-size bitmaps.
+				 */
+				has_file = false;
 			} else {
 				gres_data->topo_gres_bitmap[i] =
 					bit_alloc(dev_cnt);
