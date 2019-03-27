@@ -587,8 +587,11 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		xfree(perc_env);
 	} else if (gres_per_node && mps_info) {
 		count_on_dev = _get_dev_count(global_id);
-		percentage = (gres_per_node * 100) / count_on_dev;
-		percentage = MAX(percentage, 1);
+		if (count_on_dev > 0) {
+			percentage = (gres_per_node * 100) / count_on_dev;
+			percentage = MAX(percentage, 1);
+		} else
+			percentage = 0;
 		snprintf(perc_str, sizeof(perc_str), "%"PRIu64, percentage);
 		env_array_overwrite(env_ptr,
 				    "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE",
