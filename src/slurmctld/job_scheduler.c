@@ -632,7 +632,7 @@ extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
 			 * completing jobs is not required */
 			if (!eff_cg_bitmap)
 				break;
-			else
+			else if (job_ptr->part_ptr)
 				bit_or(eff_cg_bitmap,
 				       job_ptr->part_ptr->node_bitmap);
 		}
