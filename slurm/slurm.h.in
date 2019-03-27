@@ -3366,10 +3366,9 @@ typedef struct job_step_kill_msg {
 	char *sibling;
 } job_step_kill_msg_t;
 
-/* NOTE: Only 8 bits available for kill flags. kill_tasks_msg_t->signal is
- * uint32_t and only 12 bits are used for the signal. These flags are << 24
- * leaving 8 bits for flags.
- * See _signal_batch_job() controller and _rpc_signal_tasks() in slurmd. */
+/*
+ * NOTE:  See _signal_batch_job() controller and _rpc_signal_tasks() in slurmd.
+ */
 #define KILL_JOB_BATCH	 0x0001	/* signal batch shell only */
 #define KILL_JOB_ARRAY	 0x0002	/* kill all elements of a job array */
 #define KILL_STEPS_ONLY	 0x0004	/* Do not signal batch script */

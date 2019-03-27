@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't reset a FAIL_QOS or FAIL_ACCOUNT job reason until the qos or
     account changed.
  -- Restore "sreport -T ALL" functionality.
+ -- Correctly typecast signals being sent through the api.
 
 * Changes in Slurm 18.08.7
 ==========================

@@ -851,7 +851,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	/* common to all tasks */
 	msg.job_id      = ctx->job_id;
 	msg.job_step_id = ctx->step_resp->job_step_id;
-	msg.signal      = (uint32_t) signo;
+	msg.signal      = (uint16_t) signo;
 
 	slurm_mutex_lock(&sls->lock);
 

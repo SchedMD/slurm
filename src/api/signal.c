@@ -127,7 +127,8 @@ static int _signal_job_step(const job_step_info_t *step,
 	/* same remote procedure call for each node */
 	rpc.job_id = step->job_id;
 	rpc.job_step_id = step->step_id;
-	rpc.signal = (uint32_t)signal;
+	rpc.signal = signal;
+
 	rc = _local_send_recv_rc_msgs(allocation->node_list,
 				      REQUEST_SIGNAL_TASKS, &rpc);
 	return rc;
@@ -220,7 +221,7 @@ slurm_signal_job (uint32_t job_id, uint16_t signal)
 
 	/* same remote procedure call for each node */
 	rpc.job_id = job_id;
-	rpc.signal = (uint32_t)signal;
+	rpc.signal = signal;
 	rpc.flags = KILL_STEPS_ONLY;
 
 	rc = _local_send_recv_rc_msgs(alloc_info->node_list,
