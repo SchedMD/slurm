@@ -333,7 +333,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: scontrol failed to find all job steps\n"
+	send_user "\nFAILURE: scontrol failed to find job step $job_id1.$step_id\n"
 	end_it 1
 }
 
