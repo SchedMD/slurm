@@ -62,6 +62,9 @@ documents those changes that are of interest to users and administrators.
     and periodically every PriorityCalcPeriod.
  -- Rename Cray plugins cray_aries in preperation for Cray/Shasta.
  -- Allow Het Jobs to work on a Cray.
+ -- Add new cli_filter plugin type to permit sites to build plugins to log,
+    modify, or reject CLI options within the salloc/sbatch/srun commands
+    themselves.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

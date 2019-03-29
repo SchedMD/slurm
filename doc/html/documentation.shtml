@@ -111,6 +111,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="accounting_storageplugins.html">Accounting Storage Plugin Programmer Guide</a></li>
 <li><a href="authplugins.html">Authentication Plugin Programmer Guide</a></li>
 <li><a href="bb_plugins.html">Burst Buffer Plugin Programmer Guide</a></li>
+<li><a href="cli_filter_plugins.html">Command Line Program Policy Plugin Programmer Guide</a></li>
 <li><a href="core_spec_plugins.html">Core Specialization Plugin Programmer Guide</a></li>
 <li><a href="cred_plugins.html">Credential Plugin Programmer Guide</a></li>
 <li><a href="acct_gather_energy_plugins.html">Energy Accounting Plugin Programmer Guide</a></li>

@@ -15,6 +15,7 @@ generated_html = \
 	cgroups.html \
 	checkpoint_plugins.html \
 	classic_fair_share.html \
+	cli_filter_plugins.html \
 	cons_res.html \
 	cons_res_share.html \
 	containers.html \

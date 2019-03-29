@@ -1,0 +1,163 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">cli_filter Plugin API</a></h1>
+
+<h2>Overview</h2>
+<p>This document describes Slurm cli_filter plugins and the API that
+defines them. It is intended as a resource to programmers wishing to write
+their own Slurm cli_filter plugins.</p>
+
+<p> The purpose of the cli_filter plugins is to provide programmatic hooks
+during the execution of the <b>salloc</b>, <b>sbatch</b>, and <b>srun</b>
+command line interface (CLI) programs. Three hooks are defined:
+<ul>
+<li><b>setup_defaults</b> &mdash; Called before any option processing is done,
+<i>per job-pack</i>, allowing a plugin to replace default option values.</li>
+<li><b>pre_submit</b> &mdash; Called after option processing <i>per job-pack</i>
+but before any communication is made with the slurm controller. This location
+is ideal for policy enforcement because the plugin can read all the options
+supplied by the user (as well as the environment) - thus invalid job requests
+can be stopped before they ever reach the slurmctld.</li>
+<li><b>post_submit</b> &mdash; Called after the jobid (and, in the case of
+<b>srun</b>, after the stepid) is generated, and typically before or in
+parallel with job execution.  In combination with data collected in the
+pre_submit() hook, this is an ideal location for logging activity.</li>
+</p>
+
+<p>
+cli_filter plugins vary from the <a href="job_submit_plugins.html">job_submit
+plugin</a> as it is entirely executed client-side, whereas job_submit is
+processed server-side (within the slurm controller). The benefit of the
+cli_filter is that it has access to all command line options in a simple and
+consistent interface as well as being safer to run disruptive operations
+(e.g., quota checks or other long running operations you might want to use
+for integrating policy decisions), which can be problematic if run from the
+controller. The disadvantage of the cli_filter is that it must not be relied
+upon for security purposes as an enterprising user can circumvent it simply
+by providing loading an alternate slurm.conf with the CliFilterPlugins option
+disabled. If you plan to use the cli_filter for managing policies, you should
+also configure a job_submit plugin to reinforce those policies.</p>
+
+<p>Slurm cli_filter plugins must conform to the
+Slurm Plugin API with the following specifications:</p>
+
+<p><span class="commandline">const char
+plugin_name[]="<i>full&nbsp;text&nbsp;name</i>"</span>
+<p style="margin-left:.2in">
+A free-formatted ASCII text string that identifies the plugin.
+
+<p><span class="commandline">const char
+plugin_type[]="<i>major/minor</i>"</span><br>
+<p style="margin-left:.2in">
+The major type must be &quot;cli_filter.&quot;
+The minor type can be any suitable name for the type of job submission package.
+We include samples in the Slurm distribution for
+<ul>
+<li><b>none</b> &mdash; An empty plugin with no actions taken, a useful starting
+template for a new plugin.</li>
+</ul>
+
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loaded by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
+<p>Slurm can be configured to use multiple cli_filter plugins if desired,
+however the lua plugin will only execute one lua script named "cli_filter.lua"
+located in the default script directory (typically the subdirectory "etc" of
+the installation directory).</p>
+
+
+<h2>API Functions</h2>
+<p>All of the following functions are required. Functions which are not
+implemented must be stubbed.
+
+<p class="commandline">int init(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is loaded, before any other functions are
+  called. Put global initialization here.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.</p>
+
+<p class="commandline">void fini(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is removed. Clear any allocated storage here.
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+
+<p><b>Note</b>: These init and fini functions are not the same as those
+described in the <span class="commandline">dlopen (3)</span> system library.
+The C run-time system co-opts those symbols for its own initialization.
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
+<span class="commandline">fini()</span> is called before the system's
+<span class="commandline">_fini()</span>.</p>
+
+<p class="commandline">int setup_defaults(slurm_opt_t *options, bool early)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the salloc, sbatch, or srun command line interface
+(CLI) programs shortly before processing any options from the environment,
+command line, or script (#SBATCH). The hook may be run multiple times per job-pack,
+once for an early pass (if implemented by the CLI), and again for the main pass.
+The options and early arguments are meant to be passed to <b>slurm_option_set()</b>
+which will set the option if it is in the appropriate pass. Failures to set
+an option may be a symptom of trying to set the option on the wrong pass. Given
+that you should not return SLURM_ERROR simply because of a failure to set an option.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">options</span>
+(input) slurm option data structure; meant to be passed to the slurm_option_* API
+within <i>src/common/slurm_opt.h</i>.<br>
+<span class="commandline">early</span>
+(input) boolean indicating if this is the early pass or not; meant to be passed to
+the slurm_option_* API within <i>src/common/slurm_opt.h</i>.<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure, will terminate execution
+of the CLI.
+
+<p class="commandline">int pre_submit(slurm_opt_t *options, int pack_offset)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the CLI after option processing but before any
+communication with the slurmctld is made.  This is after all setup_defaults()
+hooks are executed (for the current job-pack), environment variables processed,
+command line options and #SBATCH directives interpreted. <b>pre_submit()</b> is
+called before any parts of the data structure are rewritten, so it is safe to
+both read and write or unset any options from the plugin that you desire.
+Note that post_submit() cannot safely read (or write) the options, so you should
+save any state for logging in post_submit() during pre_submit(). This function is
+called once per job pack.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">options</span>
+(input/output) the job allocation request specifications.<br>
+<span class="commandline">pack_offset</span>
+(input) integer value for the current pack offset; should be used as a key when
+storing data for communication between pre_submit() and post_submit().<br>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+<span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+<span class="commandline">SLURM_ERROR</span> on failure, will terminate execution
+of the CLI.
+
+<p class="commandline">void post_submit(int pack_offset, uint32_t jobid, uint32_t stepid)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+This function is called by the CLI after a jobid (and, if srun, a stepid) has
+been assigned by the controller.  It is no longer safe to read or write to the
+options data structure, so it has been removed from this function.  You should
+save any state you need in pre_submit() using pack_offset as a key and access
+it here.  This function is called once per job-pack.
+<p style="margin-left:.2in"><b>Arguments</b>: <br>
+<span class="commandline">options</span>
+<span class="commandline">pack_offset</span>
+(input) integer value for the current pack offset; should be used as a key when
+storing data for communication between pre_submit() and post_submit().<br>
+<span class="commandline">jobid</span>
+(input) job id of the job<br>
+<span class="commandline">stepid</span>
+(input) step id of the job if appropriate, NO_VAL otherwise<br>
+
+<p style="text-align:center;">Last modified 29 April 2019</p>
+
+<!--#include virtual="footer.txt"-->
