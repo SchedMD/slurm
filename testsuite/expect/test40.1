@@ -49,6 +49,7 @@ if {$mps_cnt < 1} {
 	exit 0
 }
 if {$mps_cnt < 100} {
+#	This could be a legitimate configuration for testing purposes, but not likley for production use
 	send_user "\nFAILURE: MPS per GPU is unexpectedly low ($mps_cnt < 100). Check your configuration\n"
 	set exit_code 1
 }
