@@ -70,7 +70,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#define _DEBUG			0
 #define MAX_SHUTDOWN_DELAY	10	/* seconds to wait for child procs
 					 * to exit after daemon shutdown
 					 * request, then orphan or kill proc */
@@ -87,6 +86,7 @@ pthread_mutex_t power_mutex = PTHREAD_MUTEX_INITIALIZER;
 bool power_save_config = false;
 bool power_save_enabled = false;
 bool power_save_started = false;
+bool power_save_debug = false;
 
 int idle_time, suspend_rate, resume_timeout, resume_rate, suspend_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
@@ -247,11 +247,12 @@ static int _pick_exc_nodes(void *x, void *arg)
 		bit_or(*orig_exc_nodes, exc_node_cnt_bitmap);
 		FREE_NULL_BITMAP(exc_node_cnt_bitmap);
 	}
-#if _DEBUG
-	char *tmp = bitmap2node_name(*orig_exc_nodes);
-	info("power_save module, excluded nodes %s", tmp);
-	xfree(tmp);
-#endif
+
+	if (power_save_debug) {
+		char *tmp = bitmap2node_name(*orig_exc_nodes);
+		info("power_save module, excluded nodes %s", tmp);
+		xfree(tmp);
+	}
 
 	return 0;
 }
@@ -293,12 +294,12 @@ static void _do_power_work(time_t now)
 			xfree(part_list);
 		}
 
-		if (exc_node_bitmap) {
+		if (exc_node_bitmap && power_save_debug) {
 			char *tmp = bitmap2node_name(exc_node_bitmap);
 			info("power_save module, excluded nodes %s", tmp);
 			xfree(tmp);
 		}
-		if (partial_node_list) {
+		if (partial_node_list && power_save_debug) {
 			(void) list_for_each(partial_node_list,
 					     _list_part_node_lists, NULL);
 
@@ -456,7 +457,7 @@ static void _do_power_work(time_t now)
 		}
 	}
 	FREE_NULL_BITMAP(avoid_node_bitmap);
-	if (((now - last_log) > 600) && (susp_total > 0)) {
+	if (power_save_debug && ((now - last_log) > 600) && (susp_total > 0)) {
 		info("Power save mode: %d nodes", susp_total);
 		last_log = now;
 	}
@@ -585,8 +586,10 @@ extern int power_job_reboot(struct job_record *job_ptr)
 			job_ptr->bit_flags |= NODE_REBOOT;
 			pid = _run_prog(resume_prog, nodes, reboot_features,
 					job_ptr->job_id);
-			info("%s: pid %d reboot nodes %s features %s",
-			     __func__, (int) pid, nodes, reboot_features);
+			if (power_save_debug)
+				info("%s: pid %d reboot nodes %s features %s",
+				     __func__, (int) pid, nodes,
+				     reboot_features);
 		} else {
 			error("%s: bitmap2nodename", __func__);
 			rc = SLURM_ERROR;
@@ -603,8 +606,9 @@ extern int power_job_reboot(struct job_record *job_ptr)
 			job_ptr->bit_flags |= NODE_REBOOT;
 			pid = _run_prog(resume_prog, nodes, NULL,
 					job_ptr->job_id);
-			info("%s: pid %d reboot nodes %s",
-			     __func__, (int) pid, nodes);
+			if (power_save_debug)
+				info("%s: pid %d reboot nodes %s",
+				     __func__, (int) pid, nodes);
 		} else {
 			error("%s: bitmap2nodename", __func__);
 			rc = SLURM_ERROR;
@@ -648,8 +652,9 @@ static void _re_wake(void)
 		nodes = bitmap2node_name(wake_node_bitmap);
 		if (nodes) {
 			pid_t pid = _run_prog(resume_prog, nodes, NULL, 0);
-			info("power_save: pid %d rewaking nodes %s",
-			     (int) pid, nodes);
+			if (power_save_debug)
+				info("power_save: pid %d rewaking nodes %s",
+				     (int) pid, nodes);
 		} else
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
@@ -660,31 +665,25 @@ static void _re_wake(void)
 static void _do_failed_nodes(char *hosts)
 {
 	pid_t pid = _run_prog(resume_fail_prog, hosts, NULL, 0);
-#if _DEBUG
-	info("power_save: pid %d handle failed nodes %s", (int)pid, hosts);
-#else
-	verbose("power_save: pid %d handle failed nodes %s", (int)pid, hosts);
-#endif
+	if (power_save_debug)
+		info("power_save: pid %d handle failed nodes %s",
+		     (int)pid, hosts);
 }
 
 static void _do_resume(char *host)
 {
 	pid_t pid = _run_prog(resume_prog, host, NULL, 0);
-#if _DEBUG
-	info("power_save: pid %d waking nodes %s", (int) pid, host);
-#else
-	verbose("power_save: pid %d waking nodes %s", (int) pid, host);
-#endif
+	if (power_save_debug)
+		info("power_save: pid %d waking nodes %s",
+		     (int) pid, host);
 }
 
 static void _do_suspend(char *host)
 {
 	pid_t pid = _run_prog(suspend_prog, host, NULL, 0);
-#if _DEBUG
-	info("power_save: pid %d suspending nodes %s", (int) pid, host);
-#else
-	verbose("power_save: pid %d suspending nodes %s", (int) pid, host);
-#endif
+	if (power_save_debug)
+		info("power_save: pid %d suspending nodes %s",
+		     (int) pid, host);
 }
 
 /* run a suspend or resume program
@@ -751,7 +750,7 @@ static void _reap_procs(void)
 			continue;
 
 		delay = difftime(time(NULL), proc_track->child_time);
-		if (delay > max_timeout) {
+		if (power_save_debug && (delay > max_timeout)) {
 			info("power_save: program %d ran for %d sec",
 			     (int) proc_track->child_pid, delay);
 		}
@@ -824,11 +823,11 @@ static void _shutdown_power(void)
 			_kill_procs();
 			break;
 		} else if (i == 2) {
-			info("power_save: waiting for %d processes to "
-			     "complete", proc_cnt);
+			info("power_save: waiting for %d processes to complete",
+			     proc_cnt);
 		} else if (i % 5 == 0) {
-			debug("power_save: waiting for %d processes to "
-			      "complete", proc_cnt);
+			debug("power_save: waiting for %d processes to complete",
+			      proc_cnt);
 		}
 		sleep(1);
 	}
@@ -910,6 +909,11 @@ static int _init_power_config(void)
 		test_config_rc = 1;
 		return -1;
 	}
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_POWER_SAVE)
+		power_save_debug = true;
+	else
+		power_save_debug = false;
 
 	if (resume_fail_prog && !_valid_prog(resume_fail_prog)) {
 		/* error's already reported in _valid_prog() */

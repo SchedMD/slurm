@@ -5306,6 +5306,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Power");
 	}
+	if (debug_flags & DEBUG_FLAG_POWER_SAVE) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "PowerSave");
+	}
 	if (debug_flags & DEBUG_FLAG_PRIO) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5491,6 +5496,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_CPU_FREQ;
 		else if (xstrcasecmp(tok, "Power") == 0)
 			(*flags_out) |= DEBUG_FLAG_POWER;
+		else if (xstrcasecmp(tok, "PowerSave") == 0)
+			(*flags_out) |= DEBUG_FLAG_POWER_SAVE;
 		else if (xstrcasecmp(tok, "TimeCray") == 0)
 			(*flags_out) |= DEBUG_FLAG_TIME_CRAY;
 		else {

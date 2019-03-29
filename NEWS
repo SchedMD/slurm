@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
       SuspendTimeout.
  -- Add idle_on_node_suspend SlurmctldParameter to make nodes idle regardless
     of state when suspended.
+ -- Add PowerSave DebugFlag for Suspend/Resume debugging.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
