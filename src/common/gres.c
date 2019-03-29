@@ -226,7 +226,8 @@ static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			      int gres_name_colon_len);
 static uint32_t	_get_task_cnt_node(uint32_t **tasks_per_node_socket,
 				   int node_inx, int sock_cnt);
-static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt);
+static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
+				  int *config_type_cnt);
 static int	_gres_find_id(void *x, void *key);
 static int	_gres_find_job_by_key(void *x, void *key);
 static int	_gres_find_step_by_key(void *x, void *key);
@@ -1864,21 +1865,27 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 }
 
 /*
- * Determine gres availability on some node
+ * Determine GRES availability on some node
  * plugin_id IN - plugin number to search for
  * topo_cnt OUT - count of gres.conf records of this ID found by slurmd
  *		  (each can have different topology)
- * RET - total number of gres available of this ID on this node in (sum
+ * config_type_cnt OUT - Count of records for this GRES found in configuration,
+ *		  each of this represesents a different Type of of GRES with
+ *		  with this name (e.g. GPU model)
+ * RET - total number of GRES available of this ID on this node in (sum
  *	 across all records of this ID)
  */
-static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt)
+static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
+				  int *config_type_cnt)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	uint32_t cpu_set_cnt = 0, rec_cnt = 0;
 	uint64_t gres_cnt = 0;
 
+	xassert(config_type_cnt);
 	xassert(topo_cnt);
+	*config_type_cnt = 0;
 	*topo_cnt = 0;
 	if (gres_conf_list == NULL)
 		return gres_cnt;
@@ -1893,6 +1900,7 @@ static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt)
 			cpu_set_cnt++;
 	}
 	list_iterator_destroy(iter);
+	*config_type_cnt = rec_cnt;
 	if (cpu_set_cnt)
 		*topo_cnt = rec_cnt;
 	return gres_cnt;
@@ -1983,6 +1991,48 @@ static void _links_str2array(char *links, char *node_name,
 	}
 }
 
+static bool _valid_gres_types(char *gres_name, gres_node_state_t *gres_data,
+			      char **reason_down)
+{
+	bool rc = true;
+	uint64_t gres_cnt_found = 0, gres_sum;
+	int topo_inx, type_inx;
+
+	if ((gres_data->type_cnt == 0) || (gres_data->topo_cnt == 0))
+		return rc;
+
+	for (type_inx = 0; type_inx < gres_data->type_cnt; type_inx++) {
+		gres_cnt_found = 0;
+		for (topo_inx = 0; topo_inx < gres_data->topo_cnt; topo_inx++) {
+			if (gres_data->topo_type_id[topo_inx] !=
+			    gres_data->type_id[type_inx])
+				continue;
+			gres_sum = gres_cnt_found +
+				   gres_data->topo_gres_cnt_avail[topo_inx];
+			if (gres_sum > gres_data->type_cnt_avail[type_inx]) {
+				gres_data->topo_gres_cnt_avail[topo_inx] -=
+					(gres_sum -
+					 gres_data->type_cnt_avail[type_inx]);
+				gres_sum = 0;
+			}
+			gres_cnt_found +=
+				gres_data->topo_gres_cnt_avail[topo_inx];
+		}
+		if (gres_cnt_found < gres_data->type_cnt_avail[type_inx]) {
+			rc = false;
+			break;
+		}
+	}
+	if (!rc && reason_down && (*reason_down == NULL)) {
+		xstrfmtcat(*reason_down,
+			   "%s:%s count too low (%"PRIu64" < %"PRIu64")",
+			   gres_name, gres_data->type_name[type_inx],
+			   gres_cnt_found, gres_data->type_cnt_avail[type_inx]);
+	}
+
+	return rc;
+}
+
 static int _node_config_validate(char *node_name, char *orig_config,
 				 char **new_config, gres_state_t *gres_ptr,
 				 int cpu_cnt, int core_cnt, int sock_cnt,
@@ -1990,6 +2040,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				 slurm_gres_context_t *context_ptr)
 {
 	int cpus_config = 0, i, j, gres_inx, rc = SLURM_SUCCESS;
+	int config_type_cnt = 0;
 	uint64_t dev_cnt, gres_cnt, topo_cnt = 0;
 	bool cpu_config_err = false, updated_config = false;
 	gres_node_state_t *gres_data;
@@ -2005,7 +2056,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	if (gres_data->node_feature)
 		return rc;
 
-	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &topo_cnt);
+	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &topo_cnt,
+				     &config_type_cnt);
 	if ((gres_data->gres_cnt_config > gres_cnt) && (fast_schedule == 1)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
@@ -2354,8 +2406,11 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		}
 	}
 
-	if ((fast_schedule == 1) &&
-	    (gres_data->gres_cnt_found < gres_data->gres_cnt_config)) {
+	if ((config_type_cnt > 1) && (fast_schedule > 0) &&
+	    !_valid_gres_types(context_ptr->gres_type, gres_data, reason_down)){
+		rc = EINVAL;
+	} else if ((fast_schedule == 1) &&
+		   (gres_data->gres_cnt_found < gres_data->gres_cnt_config)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
 				   "%s count too low (%"PRIu64" < %"PRIu64")",
