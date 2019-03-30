@@ -8951,7 +8951,7 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 		cpu_cnt = job_ptr->job_resrcs->cpus[offset];
 	}
 	if (cpu_cnt > job_ptr->cpu_cnt) {
-		error("job_update_tres_cnt: cpu_cnt underflow (%d > %u)on %pJ",
+		error("%s: cpu_cnt underflow (%d > %u) on %pJ", __func__,
 		      cpu_cnt, job_ptr->cpu_cnt, job_ptr);
 		job_ptr->cpu_cnt = 0;
 		rc = SLURM_ERROR;
@@ -11499,7 +11499,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
-	/* This means we are in the middle of requesting the db_inx from the
+	/*
+	 * This means we are in the middle of requesting the db_inx from the
 	 * database. So we can't update right now.  You should try again outside
 	 * the job_write lock in a second or so.
 	 */
@@ -11508,10 +11509,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	operator = validate_operator(uid);
 	if (job_specs->burst_buffer) {
-		/* burst_buffer contents are validated at job submit time and
+		/*
+		 * burst_buffer contents are validated at job submit time and
 		 * data is possibly being staged at later times. It can not
 		 * be changed except to clear the value on a completed job and
-		 * purge the record in order to recover from a failure mode */
+		 * purge the record in order to recover from a failure mode
+		 */
 		if (IS_JOB_COMPLETED(job_ptr) && operator &&
 		    (job_specs->burst_buffer[0] == '\0')) {
 			xfree(job_ptr->burst_buffer);
@@ -11563,8 +11566,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	user_admin_prio_factor = job_specs->admin_prio_factor;
 
 	if (job_specs->user_id == NO_VAL) {
-		/* Used by job_submit/lua to find default partition and
-		 * access control logic below to validate partition change */
+		/*
+		 * Used by job_submit/lua to find default partition and
+		 * access control logic below to validate partition change
+		 */
 		job_specs->user_id = job_ptr->user_id;
 	}
 	error_code = job_submit_plugin_modify(job_specs, job_ptr,
@@ -11661,8 +11666,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	 */
 	if (job_specs->partition &&
 	    !xstrcmp(job_specs->partition, job_ptr->partition)) {
-		sched_debug("update_job: new partition identical to old partition %pJ",
-			    job_ptr);
+		sched_debug("%s: new partition identical to old partition %pJ",
+			    __func__, job_ptr);
 		xfree(job_specs->partition);
 	} else if (job_specs->partition) {
 		if (!IS_JOB_PENDING(job_ptr)) {
@@ -11680,8 +11685,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_PARTITION_NOT_AVAIL;
 		else if (!part_ptr_list &&
 			 !xstrcmp(new_part_ptr->name, job_ptr->partition)) {
-			sched_debug("update_job: 2 new partition identical to old partition %pJ",
-				    job_ptr);
+			sched_debug("%s: 2 new partition identical to old partition %pJ",
+				    __func__, job_ptr);
 			xfree(job_specs->partition);
 			new_part_ptr = NULL;
 		}
@@ -11702,8 +11707,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				error_code = errno;
 			else if (new_assoc_ptr == job_ptr->assoc_ptr) {
 				new_assoc_ptr = NULL;
-				sched_debug("update_job: new association identical to old association %u",
-					    job_ptr->job_id);
+				sched_debug("%s: new association identical to old association %u",
+					    __func__, job_ptr->job_id);
 			}
 
 			/*
@@ -11740,8 +11745,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			operator, &qos_rec, &error_code, false);
 		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
 			if (job_ptr->qos_ptr == new_qos_ptr) {
-				sched_debug("update_job: new QOS identical to old QOS %pJ",
-					    job_ptr);
+				sched_debug("%s: new QOS identical to old QOS %pJ",
+					    __func__, job_ptr);
 				new_qos_ptr = NULL;
 			} else if (!IS_JOB_PENDING(job_ptr)) {
 				error_code = ESLURM_JOB_NOT_PENDING;
@@ -11774,8 +11779,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		 * for lack of other field in the job request to use
 		 */
 		if (!permit_job_shrink()) {
-			error("request to shrink %pJ denied by configuration",
-			      job_ptr);
+			error("%s: request to shrink %pJ denied by configuration",
+			      __func__, job_ptr);
 			error_code = ESLURM_NOT_SUPPORTED;
 			goto fini;
 		} else if ((job_specs->req_nodes[0] == '\0') ||
@@ -11783,16 +11788,16 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				     false, &new_req_bitmap) ||
 		    !bit_super_set(new_req_bitmap, job_ptr->node_bitmap) ||
 		    (job_ptr->details && job_ptr->details->expanding_jobid)) {
-			sched_info("Invalid node list (%s) for %pJ update",
-				   job_specs->req_nodes, job_ptr);
+			sched_info("%s: Invalid node list (%s) for %pJ update",
+				   __func__, job_specs->req_nodes, job_ptr);
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto fini;
 		} else if (new_req_bitmap) {
 			int i, i_first, i_last;
 			struct node_record *node_ptr;
 			bitstr_t *rem_nodes;
-			sched_info("update_job: setting nodes to %s for %pJ",
-				   job_specs->req_nodes, job_ptr);
+			sched_info("%s: setting nodes to %s for %pJ",
+				   __func__, job_specs->req_nodes, job_ptr);
 			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
 			if (i_first >= 0)
@@ -11839,8 +11844,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else {
 			if (node_name2bitmap(job_specs->req_nodes, false,
 					     &new_req_bitmap)) {
-				sched_info("Invalid node list for job_update: %s",
-					   job_specs->req_nodes);
+				sched_info("%s: Invalid node list for job_update: %s",
+					   __func__, job_specs->req_nodes);
 				FREE_NULL_BITMAP(new_req_bitmap);
 				error_code = ESLURM_INVALID_NODE_NAME;
 			} else
@@ -11855,8 +11860,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->reservation
 	    && (!xstrcmp(job_specs->reservation, job_ptr->resv_name) ||
 		(!job_ptr->resv_name && job_specs->reservation[0] == '\0'))) {
-		sched_debug("update_job: new reservation identical to old reservation %pJ",
-			    job_ptr);
+		sched_debug("%s: new reservation identical to old reservation %pJ",
+			    __func__, job_ptr);
 	} else if (job_specs->reservation) {
 		if (!IS_JOB_PENDING(job_ptr) && !IS_JOB_RUNNING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
@@ -11879,8 +11884,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			 */
 			new_resv_ptr = tmp_job_rec.resv_ptr;
 
-			/* Make sure this job isn't using a partition or QOS
-			 * that requires it to be in a reservation. */
+			/*
+			 * Make sure this job isn't using a partition or QOS
+			 * that requires it to be in a reservation.
+			 */
 			if ((error_code == SLURM_SUCCESS) && !new_resv_ptr) {
 				if (use_part_ptr
 				    && use_part_ptr->flags & PART_FLAG_REQ_RESV)
@@ -11943,8 +11950,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 						&job_specs->sockets_per_node,
 						&job_specs->cpus_per_task,
 						&gres_list))) {
-			sched_info("update_job: invalid GRES for %pJ",
-				   job_ptr);
+			sched_info("%s: invalid GRES for %pJ",
+				   __func__, job_ptr);
 			goto fini;
 		}
 		if (job_specs->num_tasks == detail_ptr->num_tasks)
@@ -12037,8 +12044,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->licenses && !xstrcmp(job_specs->licenses,
 					    job_ptr->licenses)) {
-		sched_debug("update_job: new licenses identical to old licenses \"%s\"",
-			    job_ptr->licenses);
+		sched_debug("%s: new licenses identical to old licenses \"%s\"",
+			    __func__, job_ptr->licenses);
 		xfree(job_specs->licenses);
 	} else if (job_specs->licenses) {
 		bool valid, pending = IS_JOB_PENDING(job_ptr);
@@ -12048,8 +12055,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 						&valid);
 
 		if (!valid) {
-			sched_info("update_job: invalid licenses: %s",
-				   job_specs->licenses);
+			sched_info("%s: invalid licenses: %s",
+				   __func__, job_specs->licenses);
 			error_code = ESLURM_INVALID_LICENSES;
 		}
 	}
@@ -12059,8 +12066,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->exc_nodes && detail_ptr &&
 	    !xstrcmp(job_specs->exc_nodes, detail_ptr->exc_nodes)) {
-		sched_debug("update_job: new exc_nodes identical to old exc_nodes %s",
-			    job_specs->exc_nodes);
+		sched_debug("%s: new exc_nodes identical to old exc_nodes %s",
+			    __func__, job_specs->exc_nodes);
 	} else if (job_specs->exc_nodes) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -12070,8 +12077,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else {
 			if (node_name2bitmap(job_specs->exc_nodes, false,
 					     &exc_bitmap)) {
-				sched_error("update_job: Invalid node list for update of %pJ: %s",
-					    job_ptr, job_specs->exc_nodes);
+				sched_error("%s: Invalid node list for update of %pJ: %s",
+					    __func__, job_ptr,
+					    job_specs->exc_nodes);
 				FREE_NULL_BITMAP(exc_bitmap);
 				error_code = ESLURM_INVALID_NODE_NAME;
 			}
@@ -12081,8 +12089,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					xstrdup(job_specs->exc_nodes);
 				FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
 				detail_ptr->exc_node_bitmap = exc_bitmap;
-				sched_info("update_job: setting exc_nodes to %s for %pJ",
-					   job_specs->exc_nodes, job_ptr);
+				sched_info("%s: setting exc_nodes to %s for %pJ",
+					   __func__, job_specs->exc_nodes, job_ptr);
 			}
 		}
 	}
@@ -12097,41 +12105,42 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	    (job_specs->min_nodes > job_ptr->node_cnt) &&
 	    !permit_job_expansion() &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
-		info("Change of size for %pJ not supported", job_ptr);
+		info("%s: Change of size for %pJ not supported",  __func__,
+		     job_ptr);
 		error_code = ESLURM_NOT_SUPPORTED;
 		goto fini;
 	}
 
 	if (job_specs->req_switch != NO_VAL) {
 		job_ptr->req_switch = job_specs->req_switch;
-		info("Change of switches to %u %pJ",
-		     job_specs->req_switch, job_ptr);
+		info("%s: Change of switches to %u %pJ",
+		     __func__, job_specs->req_switch, job_ptr);
 	}
 	if (job_specs->wait4switch != NO_VAL) {
 		job_ptr->wait4switch = _max_switch_wait(job_specs->wait4switch);
-		info("Change of switch wait to %u secs %pJ",
-		     job_ptr->wait4switch, job_ptr);
+		info("%s: Change of switch wait to %u secs %pJ",
+		     __func__, job_ptr->wait4switch, job_ptr);
 	}
 
 	if (job_specs->admin_comment) {
 		if (!validate_super_user(uid)) {
-			error("Attempt to change admin_comment for %pJ",
-			      job_ptr);
+			error("%s: Attempt to change admin_comment for %pJ",
+			      __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		} else {
 			xfree(job_ptr->admin_comment);
 			job_ptr->admin_comment =
 				xstrdup(job_specs->admin_comment);
-			info("update_job: setting admin_comment to %s for %pJ",
-			     job_ptr->admin_comment, job_ptr);
+			info("%s: setting admin_comment to %s for %pJ",
+			     __func__, job_ptr->admin_comment, job_ptr);
 		}
 	}
 
 	if (job_specs->comment) {
 		xfree(job_ptr->comment);
 		job_ptr->comment = xstrdup(job_specs->comment);
-		info("update_job: setting comment to %s for %pJ",
-		     job_ptr->comment, job_ptr);
+		info("%s: setting comment to %s for %pJ",
+		     __func__, job_ptr->comment, job_ptr);
 	}
 
 	if (error_code != SLURM_SUCCESS)
@@ -12271,14 +12280,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 		detail_ptr->req_node_bitmap = new_req_bitmap;
 		new_req_bitmap = NULL;
-		sched_info("update_job: setting req_nodes to %s for %pJ",
-			   job_specs->req_nodes, job_ptr);
+		sched_info("%s: setting req_nodes to %s for %pJ",
+			   __func__, job_specs->req_nodes, job_ptr);
 	}
 
 	if (new_resv_ptr) {
 		job_ptr->resv_name = xstrdup(new_resv_ptr->name);
 		job_ptr->resv_ptr = new_resv_ptr;
-		sched_info("update_job: setting reservation to %s for %pJ",
+		sched_info("%s: setting reservation to %s for %pJ", __func__,
 			   job_ptr->resv_name, job_ptr);
 		update_accounting = true;
 	} else if (job_specs->reservation &&
@@ -12287,8 +12296,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		xfree(job_ptr->resv_name);
 		job_ptr->resv_id    = 0;
 		job_ptr->resv_ptr   = NULL;
-		sched_info("update_job: setting reservation to '' for %pJ",
-			   job_ptr);
+		sched_info("%s: setting reservation to '' for %pJ",
+			   __func__, job_ptr);
 		update_accounting = true;
 	}
 
@@ -12328,18 +12337,20 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 
 	if (save_min_cpus && (detail_ptr->min_cpus != save_min_cpus)) {
-		info("update_job: setting min_cpus from %u to %u for %pJ",
-		     save_min_cpus, detail_ptr->min_cpus, job_ptr);
+		info("%s: setting min_cpus from %u to %u for %pJ",
+		     __func__, save_min_cpus, detail_ptr->min_cpus, job_ptr);
 		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
 			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
 		detail_ptr->orig_min_cpus = job_specs->min_cpus;
 		update_accounting = true;
 	}
 	if (save_max_cpus && (detail_ptr->max_cpus != save_max_cpus)) {
-		info("update_job: setting max_cpus from %u to %u for %pJ",
-		     save_max_cpus, detail_ptr->max_cpus, job_ptr);
-		/* Always use the acct_policy_limit_set.* since if set by a
-		 * super user it be set correctly */
+		info("%s: setting max_cpus from %u to %u for %pJ",
+		     __func__, save_max_cpus, detail_ptr->max_cpus, job_ptr);
+		/*
+		 * Always use the acct_policy_limit_set.* since if set by a
+		 * super user it be set correctly
+		 */
 		job_ptr->limit_set.tres[TRES_ARRAY_CPU] =
 			acct_policy_limit_set.tres[TRES_ARRAY_CPU];
 		detail_ptr->orig_max_cpus = job_specs->max_cpus;
@@ -12354,8 +12365,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else {
 			detail_ptr->pn_min_cpus = job_specs->pn_min_cpus;
 			detail_ptr->orig_pn_min_cpus = job_specs->pn_min_cpus;
-			info("update_job: setting pn_min_cpus to %u for %pJ",
-			     job_specs->pn_min_cpus, job_ptr);
+			info("%s: setting pn_min_cpus to %u for %pJ",
+			     __func__, job_specs->pn_min_cpus, job_ptr);
 		}
 	}
 
@@ -12386,8 +12397,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else if (job_specs->min_nodes < 1) {
-			info("update_job: min_nodes < 1 for %pJ",
-			     job_ptr);
+			info("%s: min_nodes < 1 for %pJ", __func__, job_ptr);
 			error_code = ESLURM_INVALID_NODE_COUNT;
 		} else {
 			/* Resize of pending job */
@@ -12405,7 +12415,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	}
 	if ((save_min_nodes || save_max_nodes) && detail_ptr->max_nodes &&
 	    (detail_ptr->max_nodes < detail_ptr->min_nodes)) {
-		info("update_job: max_nodes < min_nodes (%u < %u) for %pJ",
+		info("%s: max_nodes < min_nodes (%u < %u) for %pJ", __func__,
 		     detail_ptr->max_nodes, detail_ptr->min_nodes,
 		     job_ptr);
 		error_code = ESLURM_INVALID_NODE_COUNT;
@@ -12422,17 +12432,19 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		goto fini;
 
 	if (save_min_nodes && (save_min_nodes!= detail_ptr->min_nodes)) {
-		info("update_job: setting min_nodes from %u to %u for %pJ",
+		info("%s: setting min_nodes from %u to %u for %pJ", __func__,
 		     save_min_nodes, detail_ptr->min_nodes, job_ptr);
 		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		update_accounting = true;
 	}
 	if (save_max_nodes && (save_max_nodes != detail_ptr->max_nodes)) {
-		info("update_job: setting max_nodes from %u to %u for %pJ",
+		info("%s: setting max_nodes from %u to %u for %pJ", __func__,
 		     save_max_nodes, detail_ptr->max_nodes, job_ptr);
-		/* Always use the acct_policy_limit_set.* since if set by a
-		 * super user it be set correctly */
+		/*
+		 * Always use the acct_policy_limit_set.* since if set by a
+		 * super user it be set correctly
+		 */
 		job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
 			acct_policy_limit_set.tres[TRES_ARRAY_NODE];
 		update_accounting = true;
@@ -12445,8 +12457,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_BAD_TASK_COUNT;
 		else {
 			detail_ptr->num_tasks = job_specs->num_tasks;
-			info("update_job: setting num_tasks to %u for %pJ",
-			     job_specs->num_tasks, job_ptr);
+			info("%s: setting num_tasks to %u for %pJ",
+			     __func__, job_specs->num_tasks, job_ptr);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -12456,8 +12468,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if (IS_JOB_FINISHED(job_ptr) || job_ptr->preempt_time)
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->time_limit == job_specs->time_limit) {
-			sched_debug("update_job: new time limit identical to old time limit %pJ",
-				    job_ptr);
+			sched_debug("%s: new time limit identical to old time limit %pJ",
+				    __func__, job_ptr);
 		} else if (operator ||
 			   (job_ptr->time_limit > job_specs->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
@@ -12474,8 +12486,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					job_ptr->end_time = now +
 						(365 * 24 * 60 * 60);
 				} else {
-					/* Update end_time based upon change
-					 * to preserve suspend time info */
+					/*
+					 * Update end_time based upon change
+					 * to preserve suspend time info
+					 */
 					job_ptr->end_time = job_ptr->end_time +
 						((job_ptr->time_limit -
 						  old_time) * 60);
@@ -12488,25 +12502,29 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				}
 				job_ptr->end_time_exp = job_ptr->end_time;
 			}
-			sched_info("update_job: setting time_limit to %u for %pJ",
-				   job_specs->time_limit, job_ptr);
-			/* Always use the acct_policy_limit_set.*
-			 * since if set by a super user it be set correctly */
+			sched_info("%s: setting time_limit to %u for %pJ",
+				   __func__, job_specs->time_limit, job_ptr);
+			/*
+			 * Always use the acct_policy_limit_set.*
+			 * since if set by a super user it be set correctly
+			 */
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else if (IS_JOB_PENDING(job_ptr) && job_ptr->part_ptr &&
 			   (job_ptr->part_ptr->max_time >=
 			    job_specs->time_limit)) {
 			job_ptr->time_limit = job_specs->time_limit;
-			sched_info("update_job: setting time_limit to %u for %pJ",
-				   job_specs->time_limit, job_ptr);
-			/* Always use the acct_policy_limit_set.*
-			 * since if set by a super user it be set correctly */
+			sched_info("%s: setting time_limit to %u for %pJ",
+				   __func__, job_specs->time_limit, job_ptr);
+			/*
+			 * Always use the acct_policy_limit_set.*
+			 * since if set by a super user it be set correctly
+			 */
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
-			sched_info("Attempt to increase time limit for %pJ",
-				   job_ptr);
+			sched_info("%s: Attempt to increase time limit for %pJ",
+				   __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -12515,14 +12533,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if ((job_specs->time_min != NO_VAL) && IS_JOB_PENDING(job_ptr)) {
 		if (job_specs->time_min > job_ptr->time_limit) {
-			info("update_job: attempt to set TimeMin > TimeLimit "
-			     "(%u > %u)",
-			     job_specs->time_min, job_ptr->time_limit);
+			info("%s: attempt to set TimeMin > TimeLimit (%u > %u)",
+			     __func__, job_specs->time_min, job_ptr->time_limit);
 			error_code = ESLURM_INVALID_TIME_LIMIT;
 		} else if (job_ptr->time_min != job_specs->time_min) {
 			job_ptr->time_min = job_specs->time_min;
-			info("update_job: setting TimeMin to %u for %pJ",
-			     job_specs->time_min, job_ptr);
+			info("%s: setting TimeMin to %u for %pJ",
+			     __func__, job_specs->time_min, job_ptr);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -12530,9 +12547,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->end_time) {
 		if (!IS_JOB_RUNNING(job_ptr) || job_ptr->preempt_time) {
-			/* We may want to use this for deadline scheduling
+			/*
+			 * We may want to use this for deadline scheduling
 			 * at some point in the future. For now only reset
-			 * the time limit of running jobs. */
+			 * the time limit of running jobs.
+			 */
 			error_code = ESLURM_JOB_NOT_RUNNING;
 		} else if (job_specs->end_time < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
@@ -12541,15 +12560,15 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			int delta_t  = job_specs->end_time - job_ptr->end_time;
 			job_ptr->end_time = job_specs->end_time;
 			job_ptr->time_limit += (delta_t+30)/60; /* Sec->min */
-			sched_info("update_job: setting time_limit to %u for %pJ",
-				   job_ptr->time_limit, job_ptr);
+			sched_info("%s: setting time_limit to %u for %pJ",
+				   __func__, job_ptr->time_limit, job_ptr);
 			/* Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly */
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
-			sched_info("Attempt to extend end time for %pJ",
-				   job_ptr);
+			sched_info("%s: Attempt to extend end time for %pJ",
+				   __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -12563,15 +12582,17 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if (operator) {
 			/* update deadline */
 			job_ptr->deadline = job_specs->deadline;
-			sched_info("update_job: setting deadline to %s for %pJ",
-				   time_str, job_ptr);
-			/* Always use the acct_policy_limit_set.*
-			 * since if set by a super user it be set correctly */
+			sched_info("%s: setting deadline to %s for %pJ",
+				   __func__, time_str, job_ptr);
+			/*
+			 * Always use the acct_policy_limit_set.*
+			 * since if set by a super user it be set correctly
+			 */
 			job_ptr->limit_set.time = acct_policy_limit_set.time;
 			update_accounting = true;
 		} else {
-			sched_info("Attempt to extend end time for %pJ",
-				   job_ptr);
+			sched_info("%s: Attempt to extend end time for %pJ",
+				   __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -12580,14 +12601,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->delay_boot != NO_VAL) {
 		job_ptr->delay_boot = job_specs->delay_boot;
-		sched_info("update_job: setting delay_boot to %u for %pJ",
-			   job_specs->delay_boot, job_ptr);
+		sched_info("%s: setting delay_boot to %u for %pJ",
+			   __func__, job_specs->delay_boot, job_ptr);
 	}
 
 	if ((job_specs->requeue != NO_VAL16) && detail_ptr) {
 		detail_ptr->requeue = MIN(job_specs->requeue, 1);
-		sched_info("update_job: setting requeue to %u for %pJ",
-			   job_specs->requeue, job_ptr);
+		sched_info("%s: setting requeue to %u for %pJ",
+			   __func__, job_specs->requeue, job_ptr);
 	}
 
 	if (job_specs->priority != NO_VAL) {
@@ -12618,8 +12639,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			_release_job(job_ptr, uid);
 		} else if ((job_ptr->priority == 0) &&
 			   (job_specs->priority != INFINITE)) {
-			info("ignore priority reset request on held %pJ",
-			     job_ptr);
+			info("%s: ignore priority reset request on held %pJ",
+			     __func__, job_ptr);
 			error_code = ESLURM_JOB_HELD;
 		} else if (operator ||
 			 (job_ptr->priority > job_specs->priority)) {
@@ -12683,15 +12704,16 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	} else if (job_ptr->state_reason == FAIL_BAD_CONSTRAINTS) {
-		/* We need to check if the state is BadConstraints here since we
+		/*
+		 * We need to check if the state is BadConstraints here since we
 		 * are altering the job the bad constraint might have gone
 		 * away.  If it did the priority (0) wouldn't get reset so the
 		 * job would just go into JobAdminHeld otherwise.
 		 */
 		job_ptr->direct_set_prio = 0;
 		set_job_prio(job_ptr);
-		sched_debug("update: job request changed somehow, removing the bad constraints to reevaluate %pJ uid %u",
-			    job_ptr, uid);
+		sched_debug("%s: job request changed somehow, removing the bad constraints to reevaluate %pJ uid %u",
+			    __func__, job_ptr, uid);
 		job_ptr->state_reason = WAIT_NO_REASON;
 	}
 
@@ -12703,10 +12725,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->details &&
 			 (job_ptr->details->nice == job_specs->nice))
-			sched_debug("update_job: new nice identical to old nice %pJ",
-				    job_ptr);
+			sched_debug("%s: new nice identical to old nice %pJ",
+				    __func__, job_ptr);
 		else if (job_ptr->direct_set_prio && job_ptr->priority != 0)
-			info("ignore nice set request on %pJ", job_ptr);
+			info("%s: ignore nice set request on %pJ",
+			     __func__, job_ptr);
 		else if (operator || (job_specs->nice >= NICE_OFFSET)) {
 			if (!xstrcmp(slurmctld_conf.priority_type,
 			             "priority/basic")) {
@@ -12714,15 +12737,16 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				new_prio += job_ptr->details->nice;
 				new_prio -= job_specs->nice;
 				job_ptr->priority = MAX(new_prio, 2);
-				sched_info("update_job: nice changed from %u to %u, setting priority to %u for %pJ",
-					   job_ptr->details->nice,
+				sched_info("%s: nice changed from %u to %u, setting priority to %u for %pJ",
+					   __func__, job_ptr->details->nice,
 					   job_specs->nice,
 					   job_ptr->priority, job_ptr);
 			}
 			job_ptr->details->nice = job_specs->nice;
 			update_accounting = true;
 		} else {
-			sched_error("Attempt to modify nice for %pJ", job_ptr);
+			sched_error("%s: Attempt to modify nice for %pJ",
+				    __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -12734,8 +12758,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (job_specs->pn_min_memory
 			   == detail_ptr->pn_min_memory) {
-			sched_debug("update_job: new memory limit identical to old limit for %pJ",
-				    job_ptr);
+			sched_debug("%s: new memory limit identical to old limit for %pJ",
+				    __func__, job_ptr);
 		} else {
 			char *entity;
 			if (job_specs->pn_min_memory == MEM_PER_CPU) {
@@ -12751,14 +12775,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			detail_ptr->orig_pn_min_memory =
 					job_specs->pn_min_memory;
 			job_ptr->bit_flags |= JOB_MEM_SET;
-			sched_info("update_job: setting min_memory_%s to %"PRIu64" for %pJ",
-				   entity,
+			sched_info("%s: setting min_memory_%s to %"PRIu64" for %pJ",
+				   __func__, entity,
 				   (job_specs->pn_min_memory & (~MEM_PER_CPU)),
 				   job_ptr);
-			info("sched: update_job: setting min_memory_%s to %"
-			     ""PRIu64" for job_id %u", entity,
-			     (job_specs->pn_min_memory & (~MEM_PER_CPU)),
-			     job_ptr->job_id);
+			sched_info("%s: setting min_memory_%s to %"PRIu64
+				   " for job_id %u", __func__, entity,
+				   (job_specs->pn_min_memory & (~MEM_PER_CPU)),
+				   job_ptr->job_id);
 			/*
 			 * Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly
@@ -12777,8 +12801,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			detail_ptr->pn_min_tmp_disk =
 				job_specs->pn_min_tmp_disk;
 
-			sched_info("update_job: setting job_min_tmp_disk to %u for %pJ",
-				   job_specs->pn_min_tmp_disk, job_ptr);
+			sched_info("%s: setting job_min_tmp_disk to %u for %pJ",
+				   __func__, job_specs->pn_min_tmp_disk,
+				   job_ptr);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -12790,8 +12815,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			goto fini;
 		} else {
 			mc_ptr->sockets_per_node = job_specs->sockets_per_node;
-			sched_info("update_job: setting sockets_per_node to %u for %pJ",
-				   job_specs->sockets_per_node, job_ptr);
+			sched_info("%s: setting sockets_per_node to %u for %pJ",
+				   __func__, job_specs->sockets_per_node,
+				   job_ptr);
 		}
 	}
 
@@ -12801,8 +12827,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			goto fini;
 		} else {
 			mc_ptr->cores_per_socket = job_specs->cores_per_socket;
-			sched_info("update_job: setting cores_per_socket to %u for %pJ",
-				   job_specs->cores_per_socket, job_ptr);
+			sched_info("%s: setting cores_per_socket to %u for %pJ",
+				   __func__, job_specs->cores_per_socket,
+				   job_ptr);
 		}
 	}
 
@@ -12812,8 +12839,9 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			goto fini;
 		} else {
 			mc_ptr->threads_per_core = job_specs->threads_per_core;
-			sched_info("update_job: setting threads_per_core to %u for %pJ",
-				   job_specs->threads_per_core, job_ptr);
+			sched_info("%s: setting threads_per_core to %u for %pJ",
+				   __func__, job_specs->threads_per_core,
+				   job_ptr);
 		}
 	}
 
@@ -12821,8 +12849,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (!operator) {
-			sched_error("Attempt to change sharing for %pJ",
-				    job_ptr);
+			sched_error("%s: Attempt to change sharing for %pJ",
+				    __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		} else {
 			if (job_specs->shared) {
@@ -12831,8 +12859,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			} else {
 				detail_ptr->share_res = 0;
 			}
-			sched_info("update_job: setting shared to %u for %pJ",
-				   job_specs->shared, job_ptr);
+			sched_info("%s: setting shared to %u for %pJ",
+				   __func__, job_specs->shared, job_ptr);
 		}
 	}
 	if (error_code != SLURM_SUCCESS)
@@ -12844,11 +12872,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if (operator
 			 || (detail_ptr->contiguous > job_specs->contiguous)) {
 			detail_ptr->contiguous = job_specs->contiguous;
-			sched_info("update_job: setting contiguous to %u for %pJ",
-				   job_specs->contiguous, job_ptr);
+			sched_info("%s: setting contiguous to %u for %pJ",
+				   __func__, job_specs->contiguous, job_ptr);
 		} else {
-			sched_error("Attempt to add contiguous for %pJ",
-				    job_ptr);
+			sched_error("%s: Attempt to add contiguous for %pJ",
+				    __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -12863,13 +12891,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				detail_ptr->core_spec = NO_VAL16;
 			else
 				detail_ptr->core_spec = job_specs->core_spec;
-			sched_info("update_job: setting core_spec to %u for %pJ",
-				   detail_ptr->core_spec, job_ptr);
+			sched_info("%s: setting core_spec to %u for %pJ",
+				   __func__, detail_ptr->core_spec, job_ptr);
 			if (detail_ptr->core_spec != NO_VAL16)
 				detail_ptr->whole_node = 1;
 		} else {
-			sched_error("Attempt to modify core_spec for %pJ",
-				    job_ptr);
+			sched_error("%s Attempt to modify core_spec for %pJ",
+				    __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -12878,8 +12906,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->features && detail_ptr &&
 	    !xstrcmp(job_specs->features, detail_ptr->features)) {
-		sched_debug("update_job: new features identical to old features %s",
-			    job_specs->features);
+		sched_debug("%s: new features identical to old features %s",
+			    __func__, job_specs->features);
 	} else if (job_specs->features) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -12889,20 +12917,22 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			detail_ptr->features = xstrdup(job_specs->features);
 			detail_ptr->feature_list = NULL;
 			if (build_feature_list(job_ptr)) {
-				sched_info("update_job: invalid features(%s) for %pJ",
-					   job_specs->features, job_ptr);
+				sched_info("%s: invalid features(%s) for %pJ",
+					   __func__, job_specs->features,
+					   job_ptr);
 				FREE_NULL_LIST(detail_ptr->feature_list);
 				detail_ptr->features = old_features;
 				detail_ptr->feature_list = old_list;
 				error_code = ESLURM_INVALID_FEATURE;
 			} else {
-				sched_info("update_job: setting features to %s for %pJ",
-					   job_specs->features, job_ptr);
+				sched_info("%s: setting features to %s for %pJ",
+					   __func__, job_specs->features,
+					   job_ptr);
 				xfree(old_features);
 				FREE_NULL_LIST(old_list);
 			}
 		} else {
-			sched_info("update_job: cleared features for %pJ",
+			sched_info("%s: cleared features for %pJ", __func__,
 				   job_ptr);
 			xfree(detail_ptr->features);
 			FREE_NULL_LIST(detail_ptr->feature_list);
@@ -12965,7 +12995,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			job_ptr->mem_per_tres = job_specs->mem_per_tres;
 			job_specs->mem_per_tres = NULL;
 		}
-		sched_info("update_job: setting %sfor %pJ", tmp, job_ptr);
+		sched_info("%s: setting %sfor %pJ", __func__, tmp, job_ptr);
 		xfree(tmp);
 		FREE_NULL_LIST(job_ptr->gres_list);
 		job_ptr->gres_list = gres_list;
@@ -12980,22 +13010,22 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_FINISHED;
 			goto fini;
 		} else if (!xstrcmp(job_specs->name, job_ptr->name)) {
-			sched_debug("update_job: new name identical to old name %pJ",
-				    job_ptr);
+			sched_debug("%s: new name identical to old name %pJ",
+				    __func__, job_ptr);
 		} else {
 			xfree(job_ptr->name);
 			job_ptr->name = xstrdup(job_specs->name);
 
-			sched_info("update_job: setting name to %s for %pJ",
-				   job_ptr->name, job_ptr);
+			sched_info("%s: setting name to %s for %pJ",
+				   __func__, job_ptr->name, job_ptr);
 			update_accounting = true;
 		}
 	}
 
 	if (job_specs->std_out && detail_ptr &&
 	    !xstrcmp(job_specs->std_out, detail_ptr->std_out)) {
-		sched_debug("update_job: new std_out identical to old std_out %s",
-			    job_specs->std_out);
+		sched_debug("%s: new std_out identical to old std_out %s",
+			    __func__, job_specs->std_out);
 	} else if (job_specs->std_out) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -13009,15 +13039,14 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->wckey
 	    && !xstrcmp(job_specs->wckey, job_ptr->wckey)) {
-		sched_debug("update_job: new wckey identical to old wckey %pJ",
-			    job_ptr);
+		sched_debug("%s: new wckey identical to old wckey %pJ",
+			    __func__, job_ptr);
 	} else if (job_specs->wckey) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
-			int rc = update_job_wckey("update_job",
-						  job_ptr,
-						  job_specs->wckey);
+			int rc = update_job_wckey((char *) __func__,
+						  job_ptr, job_specs->wckey);
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
 			else
@@ -13029,8 +13058,10 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if ((job_specs->min_nodes != NO_VAL) &&
 	    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))) {
-		/* Use req_nodes to change the nodes associated with a running
-		 * for lack of other field in the job request to use */
+		/*
+		 * Use req_nodes to change the nodes associated with a running
+		 * for lack of other field in the job request to use
+		 */
 		if ((job_specs->min_nodes == 0) && (job_ptr->node_cnt > 0) &&
 		    job_ptr->details && job_ptr->details->expanding_jobid) {
 			struct job_record *expand_job_ptr;
@@ -13039,28 +13070,28 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			expand_job_ptr = find_job_record(job_ptr->details->
 							 expanding_jobid);
 			if (expand_job_ptr == NULL) {
-				info("Invalid node count (%u) for %pJ update, JobId=%u to expand not found",
-				     job_specs->min_nodes, job_ptr,
+				info("%s: Invalid node count (%u) for %pJ update, JobId=%u to expand not found",
+				     __func__, job_specs->min_nodes, job_ptr,
 				     job_ptr->details->expanding_jobid);
 				error_code = ESLURM_INVALID_JOB_ID;
 				goto fini;
 			}
 			if (IS_JOB_SUSPENDED(job_ptr) ||
 			    IS_JOB_SUSPENDED(expand_job_ptr)) {
-				info("Can not expand %pJ from %pJ, job is suspended",
-				     expand_job_ptr, job_ptr);
+				info("%s: Can not expand %pJ from %pJ, job is suspended",
+				     __func__, expand_job_ptr, job_ptr);
 				error_code = ESLURM_JOB_SUSPENDED;
 				goto fini;
 			}
 			if ((job_ptr->step_list != NULL) &&
 			    (list_count(job_ptr->step_list) != 0)) {
-				info("Attempt to merge %pJ with active steps into %pJ",
-				     job_ptr, expand_job_ptr);
+				info("%s: Attempt to merge %pJ with active steps into %pJ",
+				     __func__, job_ptr, expand_job_ptr);
 				error_code = ESLURMD_STEP_EXISTS;
 				goto fini;
 			}
-			sched_info("killing %pJ and moving all resources to %pJ",
-				   job_ptr, expand_job_ptr);
+			sched_info("%s: killing %pJ and moving all resources to %pJ",
+				   __func__, job_ptr, expand_job_ptr);
 			job_pre_resize_acctg(job_ptr);
 			job_pre_resize_acctg(expand_job_ptr);
 			_send_job_kill(job_ptr);
@@ -13104,23 +13135,23 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if ((job_specs->min_nodes == 0) ||
 			   (job_specs->min_nodes > job_ptr->node_cnt) ||
 			   job_ptr->details->expanding_jobid) {
-			sched_info("Invalid node count (%u) for %pJ update",
-				   job_specs->min_nodes, job_ptr);
+			sched_info("%s: Invalid node count (%u) for %pJ update",
+				   __func__, job_specs->min_nodes, job_ptr);
 			error_code = ESLURM_INVALID_NODE_COUNT;
 			goto fini;
 		} else if (job_specs->min_nodes == job_ptr->node_cnt) {
-			debug2("No change in node count update for %pJ",
-			       job_ptr);
+			debug2("%s: No change in node count update for %pJ",
+			       __func__, job_ptr);
 		} else if (!permit_job_shrink()) {
-			error("request to shrink %pJ denied by configuration",
-			      job_ptr);
+			error("%s: request to shrink %pJ denied by configuration",
+			      __func__, job_ptr);
 			error_code = ESLURM_NOT_SUPPORTED;
 			goto fini;
 		} else {
 			int i, i_first, i_last, total;
 			struct node_record *node_ptr;
 			bitstr_t *rem_nodes;
-			sched_info("update_job: set node count to %u for %pJ",
+			sched_info("%s: set node count to %u for %pJ", __func__,
 				   job_specs->min_nodes, job_ptr);
 			job_pre_resize_acctg(job_ptr);
 			i_first = bit_ffs(job_ptr->node_bitmap);
@@ -13149,8 +13180,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			bit_free(rem_nodes);
 			(void) gs_job_start(job_ptr);
 			job_post_resize_acctg(job_ptr);
-			sched_info("update_job: set nodes to %s for %pJ",
-				   job_ptr->nodes, job_ptr);
+			sched_info("%s: set nodes to %s for %pJ",
+				   __func__, job_ptr->nodes, job_ptr);
 			/*
 			 * Since job_post_resize_acctg() will restart
 			 * things don't do it again.
@@ -13168,11 +13199,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else if (operator) {
 			detail_ptr->ntasks_per_node =
 				job_specs->ntasks_per_node;
-			sched_info("update_job: setting ntasks_per_node to %u for %pJ",
-				   job_specs->ntasks_per_node, job_ptr);
+			sched_info("%s: setting ntasks_per_node to %u for %pJ",
+				   __func__, job_specs->ntasks_per_node, job_ptr);
 		} else {
-			sched_error("Not super user: ignore ntasks_per_node change for job %pJ",
-				    job_ptr);
+			sched_error("%s: Not super user: ignore ntasks_per_node change for job %pJ",
+				    __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -13186,11 +13217,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if (operator) {
 			detail_ptr->mc_ptr->ntasks_per_socket =
 				job_specs->ntasks_per_socket;
-			sched_info("update_job: setting ntasks_per_socket to %u for %pJ",
-				   job_specs->ntasks_per_socket, job_ptr);
+			sched_info("%s: setting ntasks_per_socket to %u for %pJ",
+				   __func__, job_specs->ntasks_per_socket,
+				   job_ptr);
 		} else {
-			sched_error("Not super user: ignore ntasks_per_socket change for %pJ",
-				    job_ptr);
+			sched_error("%s: Not super user: ignore ntasks_per_socket change for %pJ",
+				    __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -13209,7 +13241,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			else {
 				job_ptr->details->orig_dependency =
 					xstrdup(job_ptr->details->dependency);
-				sched_info("update_job: setting dependency to %s for %pJ",
+				sched_info("%s: setting dependency to %s for %pJ",
+					   __func__,
 					   job_ptr->details->dependency,
 					   job_ptr);
 			}
@@ -13221,9 +13254,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->begin_time) {
 		if (IS_JOB_PENDING(job_ptr) && detail_ptr) {
 			char time_str[32];
-			/* Make sure this time is current, it does no good for
+			/*
+			 * Make sure this time is current, it does no good for
 			 * accounting to say this job could have started before
-			 * now */
+			 * now
+			 */
 			if (job_specs->begin_time < now)
 				job_specs->begin_time = now;
 
@@ -13232,11 +13267,11 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				update_accounting = true;
 				slurm_make_time_str(&detail_ptr->begin_time,
 						    time_str, sizeof(time_str));
-				sched_info("update_job: setting begin to %s for %pJ",
-					   time_str, job_ptr);
+				sched_info("%s: setting begin to %s for %pJ",
+					   __func__, time_str, job_ptr);
 			} else
-				sched_debug("update_job: new begin time identical to old begin time %pJ",
-					    job_ptr);
+				sched_debug("%s: new begin time identical to old begin time %pJ",
+					    __func__, job_ptr);
 		} else {
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
@@ -13248,30 +13283,34 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
 			license_list = NULL;
-			sched_info("update_job: changing licenses from '%s' to '%s' for pending %pJ",
-				   job_ptr->licenses, job_specs->licenses,
-				   job_ptr);
+			sched_info("%s: changing licenses from '%s' to '%s' for pending %pJ",
+				   __func__, job_ptr->licenses,
+				   job_specs->licenses, job_ptr);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
 		} else if (IS_JOB_RUNNING(job_ptr) &&
 			   (operator || (license_list == NULL))) {
-			/* NOTE: This can result in oversubscription of
-			 * licenses */
+			/*
+			 * NOTE: This can result in oversubscription of
+			 * licenses
+			 */
 			license_job_return(job_ptr);
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
 			license_list = NULL;
-			sched_info("update_job: changing licenses from '%s' to '%s' for running %pJ",
-				   job_ptr->licenses, job_specs->licenses,
-				   job_ptr);
+			sched_info("%s: changing licenses from '%s' to '%s' for running %pJ",
+				   __func__, job_ptr->licenses,
+				   job_specs->licenses, job_ptr);
 			xfree(job_ptr->licenses);
 			job_ptr->licenses = xstrdup(job_specs->licenses);
 			license_job_get(job_ptr);
 		} else {
-			/* licenses are valid, but job state or user not
-			 * allowed to make changes */
-			sched_info("update_job: could not change licenses for %pJ",
-				   job_ptr);
+			/*
+			 * licenses are valid, but job state or user not
+			 * allowed to make changes
+			 */
+			sched_info("%s: could not change licenses for %pJ",
+				   __func__, job_ptr);
 			error_code = ESLURM_JOB_NOT_PENDING_NOR_RUNNING;
 			FREE_NULL_LIST(license_list);
 		}
@@ -13314,8 +13353,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_JOB_NOT_PENDING;
 			goto fini;
 		} else {
-			sched_info("update_job: setting reboot to %u for %pJ",
-				   job_specs->reboot, job_ptr);
+			sched_info("%s: setting reboot to %u for %pJ",
+				   __func__, job_specs->reboot, job_ptr);
 			if (job_specs->reboot == 0)
 				job_ptr->reboot = 0;
 			else
@@ -13325,18 +13364,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	if (job_specs->network && !xstrcmp(job_specs->network,
 					   job_ptr->network)) {
-		sched_debug("update_job: new network identical to old network %s",
-			    job_ptr->network);
+		sched_debug("%s: new network identical to old network %s",
+			    __func__, job_ptr->network);
 	} else if (job_specs->network) {
 		xfree(job_ptr->network);
 		if (!strlen(job_specs->network)
 		    || !xstrcmp(job_specs->network, "none")) {
-			sched_info("update_job: clearing Network option for %pJ",
-				   job_ptr);
+			sched_info("%s: clearing Network option for %pJ",
+				   __func__, job_ptr);
 		} else {
 			job_ptr->network = xstrdup(job_specs->network);
-			sched_info("update_job: setting Network to %s for %pJ",
-				   job_ptr->network, job_ptr);
+			sched_info("%s: setting Network to %s for %pJ",
+				   __func__, job_ptr->network, job_ptr);
 			select_g_select_jobinfo_set(
 				job_ptr->select_jobinfo,
 				SELECT_JOBDATA_NETWORK,
@@ -13350,8 +13389,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			goto fini;
 		}
 
-		info("update_job: setting fed_siblings from %"PRIu64" to %"PRIu64" for %pJ",
-		     job_ptr->fed_details->siblings_viable,
+		info("%s: setting fed_siblings from %"PRIu64" to %"PRIu64" for %pJ",
+		     __func__, job_ptr->fed_details->siblings_viable,
 		     job_specs->fed_siblings_viable, job_ptr);
 
 		job_ptr->fed_details->siblings_viable =
@@ -13366,13 +13405,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->cpus_per_tres);
 		if (!strlen(job_specs->cpus_per_tres)) {
-			sched_info("update_job: clearing CpusPerTres option for %pJ",
-				   job_ptr);
+			sched_info("%s: clearing CpusPerTres option for %pJ",
+				   __func__, job_ptr);
 		} else {
 			job_ptr->cpus_per_tres =
 				xstrdup(job_specs->cpus_per_tres);
-			sched_info("update_job: setting CpusPerTres to %s for %pJ",
-				   job_ptr->cpus_per_tres, job_ptr);
+			sched_info("%s: setting CpusPerTres to %s for %pJ",
+				   __func__, job_ptr->cpus_per_tres, job_ptr);
 		}
 	}
 
@@ -13383,13 +13422,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->mem_per_tres);
 		if (!strlen(job_specs->mem_per_tres)) {
-			sched_info("update_job: clearing MemPerTres option for %pJ",
-				   job_ptr);
+			sched_info("%s: clearing MemPerTres option for %pJ",
+				   __func__, job_ptr);
 		} else {
 			job_ptr->mem_per_tres =
 				xstrdup(job_specs->mem_per_tres);
-			sched_info("update_job: setting MemPerTres to %s for %pJ",
-				   job_ptr->mem_per_tres, job_ptr);
+			sched_info("%s: setting MemPerTres to %s for %pJ",
+				   __func__, job_ptr->mem_per_tres, job_ptr);
 		}
 	}
 
@@ -13400,12 +13439,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_bind);
 		if (!strlen(job_specs->tres_bind)) {
-			sched_info("update_job: clearing TresBind option for %pJ",
-				   job_ptr);
+			sched_info("%s: clearing TresBind option for %pJ",
+				   __func__, job_ptr);
 		} else {
 			job_ptr->tres_bind = xstrdup(job_specs->tres_bind);
-			sched_info("update_job: setting TresBind to %s for %pJ",
-				   job_ptr->tres_bind, job_ptr);
+			sched_info("%s: setting TresBind to %s for %pJ",
+				   __func__, job_ptr->tres_bind, job_ptr);
 		}
 	}
 
@@ -13416,12 +13455,12 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_freq);
 		if (!strlen(job_specs->tres_freq)) {
-			sched_info("update_job: clearing TresFreq option for %pJ",
-				   job_ptr);
+			sched_info("%s: clearing TresFreq option for %pJ",
+				   __func__, job_ptr);
 		} else {
 			job_ptr->tres_freq = xstrdup(job_specs->tres_freq);
-			sched_info("update_job: setting TresFreq to %s for %pJ",
-				   job_ptr->tres_freq, job_ptr);
+			sched_info("%s: setting TresFreq to %s for %pJ",
+				   __func__, job_ptr->tres_freq, job_ptr);
 		}
 	}
 
@@ -13432,13 +13471,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_per_job);
 		if (!strlen(job_specs->tres_per_job)) {
-			sched_info("update_job: clearing TresPerJob option for %pJ",
-				   job_ptr);
+			sched_info("%s: clearing TresPerJob option for %pJ",
+				   __func__, job_ptr);
 		} else {
 			job_ptr->tres_per_job =
 					xstrdup(job_specs->tres_per_job);
-			sched_info("update_job: setting TresPerJob to %s for %pJ",
-				   job_ptr->tres_per_job, job_ptr);
+			sched_info("%s: setting TresPerJob to %s for %pJ",
+				   __func__, job_ptr->tres_per_job, job_ptr);
 		}
 	}
 	if (job_specs->tres_per_node) {
@@ -13448,13 +13487,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_per_node);
 		if (!strlen(job_specs->tres_per_node)) {
-			sched_info("update_job: clearing TresPerNode option for %pJ",
-				   job_ptr);
+			sched_info("%s: clearing TresPerNode option for %pJ",
+				   __func__, job_ptr);
 		} else {
 			job_ptr->tres_per_node =
 					xstrdup(job_specs->tres_per_node);
-			sched_info("update_job: setting TresPerNode to %s for %pJ",
-				   job_ptr->tres_per_node, job_ptr);
+			sched_info("%s: setting TresPerNode to %s for %pJ",
+				   __func__, job_ptr->tres_per_node, job_ptr);
 		}
 	}
 
@@ -13465,13 +13504,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_per_socket);
 		if (!strlen(job_specs->tres_per_socket)) {
-			sched_info("update_job: clearing TresPerSocket option for %pJ",
-				   job_ptr);
+			sched_info("%s: clearing TresPerSocket option for %pJ",
+				   __func__, job_ptr);
 		} else {
 			job_ptr->tres_per_socket =
 				xstrdup(job_specs->tres_per_socket);
-			sched_info("update_job: setting TresPerSocket to %s for %pJ",
-				   job_ptr->tres_per_socket, job_ptr);
+			sched_info("%s: setting TresPerSocket to %s for %pJ",
+				   __func__, job_ptr->tres_per_socket, job_ptr);
 		}
 	}
 
@@ -13482,13 +13521,13 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 		xfree(job_ptr->tres_per_task);
 		if (!strlen(job_specs->tres_per_task)) {
-			sched_info("update_job: clearing TresPerTask option for %pJ",
-				   job_ptr);
+			sched_info("%s: clearing TresPerTask option for %pJ",
+				   __func__, job_ptr);
 		} else {
 			job_ptr->tres_per_task =
 				xstrdup(job_specs->tres_per_task);
-			sched_info("update_job: setting TresPerTask to %s for %pJ",
-				   job_ptr->tres_per_task, job_ptr);
+			sched_info("%s: setting TresPerTask to %s for %pJ",
+				   __func__, job_ptr->tres_per_task, job_ptr);
 		}
 	}
 
@@ -13498,16 +13537,16 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	 */
 	if (user_admin_prio_factor != NO_VAL) {
 		if (!operator) {
-			error("Attempt to change AdminPrioFactor for %pJ",
-			      job_ptr);
+			error("%s: Attempt to change AdminPrioFactor for %pJ",
+			      __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
 			job_specs->admin_prio_factor = NO_VAL;
 		} else
 			job_specs->admin_prio_factor = user_admin_prio_factor;
 	}
 	if (job_specs->admin_prio_factor != NO_VAL) {
-		sched_info("update_job: setting AdinPrioFactor to %u for %pJ",
-			   job_specs->admin_prio_factor, job_ptr);
+		sched_info("%s: setting AdinPrioFactor to %u for %pJ",
+			   __func__, job_specs->admin_prio_factor, job_ptr);
 		job_ptr->admin_prio_factor = job_specs->admin_prio_factor;
 	}
 
@@ -13544,7 +13583,7 @@ fini:
 	FREE_NULL_LIST(gres_list);
 	FREE_NULL_LIST(license_list);
 	if (update_accounting) {
-		info("updating accounting");
+		info("%s: updating accounting",  __func__);
 		/* Update job record in accounting to reflect changes */
 		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	}
