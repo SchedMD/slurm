@@ -38,6 +38,12 @@ support node addressing that can change.</p>
 See the slurm.conf man page for more details about these options.
 Some general Slurm configuration parameters that are of interest include:
 <dl>
+<dt><b>CommunicationParameters=NoAddrCache</b>
+<dd> By default, Slurm will cache a node's network address after successfully
+establishing the node's network address. This option disables the cache and
+Slurm will look up the node's network address each time a connection is made.
+This is useful, for example, in a cloud environment where the node addresses
+come and go out of DNS.
 <dt><b>ResumeFailProgram</b>
 <dd>The program that will be executed when nodes fail to resume by
 <b>ResumeTimeout</b>. The argument to the program will be the names of the
