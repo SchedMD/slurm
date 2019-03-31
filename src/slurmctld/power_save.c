@@ -358,7 +358,8 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |=   NODE_STATE_POWER_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, i);
-			bit_clear(avail_node_bitmap, i);
+			if (!alloc_booting_nodes)
+				bit_clear(avail_node_bitmap, i);
 			node_ptr->boot_req_time = now;
 			node_ptr->last_response = now + resume_timeout;
 			bit_set(booting_node_bitmap, i);
@@ -526,7 +527,8 @@ extern int power_job_reboot(struct job_record *job_ptr)
 		boot_node_bitmap = node_features_reboot(job_ptr);
 	if (boot_node_bitmap == NULL) {
 		/* At minimum, the powered down nodes require reboot */
-		if (bit_overlap(power_node_bitmap, job_ptr->node_bitmap)) {
+		if (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) ||
+		    bit_overlap(booting_node_bitmap, job_ptr->node_bitmap)) {
 			job_ptr->job_state |= JOB_CONFIGURING;
 			job_ptr->bit_flags |= NODE_REBOOT;
 		}

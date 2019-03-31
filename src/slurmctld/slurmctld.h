@@ -213,6 +213,7 @@ enum {
 	TRES_ARRAY_TOTAL_CNT
 };
 
+extern bool  alloc_booting_nodes;
 extern time_t	last_proc_req_start;
 extern diag_stats_t slurmctld_diag_stats;
 extern slurmctld_config_t slurmctld_config;

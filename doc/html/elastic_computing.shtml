@@ -55,6 +55,11 @@ configured <b>SlurmdTimeout</b> value with an updated BootTime, the node will
 be placed in a DOWN state and the job requesting the node will be requeued.
 If the node isn't actually rebooted (i.e. when multiple-slurmd is configured)
 starting slurmd with "-b" option might be useful.
+<dt><b>SchedulerParameters=alloc_booting_nodes</b>
+<dd>If set, then nodes that are booting are allowed to allocated. By default, a
+node that is booting is not eligible to be scheduled. In a cloud environment,
+the default may not be ideal because it can lead to more resources being
+created than needed.
 <dt><b>SelectType</b>
 <dd>Generally must be "select/linear".
 If Slurm is configured to allocate individual CPUs to jobs rather than whole

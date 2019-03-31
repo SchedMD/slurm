@@ -27,6 +27,8 @@ documents those changes that are of interest to users and administrators.
  -- Add idle_on_node_suspend SlurmctldParameter to make nodes idle regardless
     of state when suspended.
  -- Add PowerSave DebugFlag for Suspend/Resume debugging.
+ -- Add alloc_booting_nodes SchedulerParameter to allow jobs to be placed on
+    booting nodes.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
