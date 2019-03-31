@@ -117,6 +117,12 @@ HIGHLIGHTS
  -- Add priorities to assocations.
  -- Added NO_NORMAL_[ALL|ASSOC|PART|QOS|TRES] PriorityFlags to not normalize
     associated factors.
+ -- Cloud/PowerSave Improvements:
+    - Better repsonsiveness to resuming and suspending.
+    - Powering down nodes not eligible to be allocated until after
+      SuspendTimeout.
+    - Powering down nodes put in "Powering Down / %" state until after
+      SuspendTimeout.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
