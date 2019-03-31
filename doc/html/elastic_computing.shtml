@@ -65,6 +65,15 @@ slurmctld daemon is started, one must allocate whole nodes to jobs rather
 than individual processors.
 The use of "select/cons_res" requires each node to have a CPU count set and
 the node eventually selected must have at least that number of CPUs.
+<dt><b>SlurmctldParameters=cloud_dns</b>
+<dd>By default, Slurm expects that the network addresses for cloud nodes won't
+won't be known until creation of the node and that Slurm will be notified of
+the node's address (e.g. scontrol update nodename=&lt;name&gt;
+nodeaddr=&lt;addr&gt;). Since Slurm communications rely on the node
+configuration found in the slurm.conf, Slurm will tell the client command,
+after waiting for all nodes to boot, each node's ip address. However, in
+environments where the nodes are in DNS, this step can be avoided by
+configuring this option.
 <dt><b>SuspendExcNodes</b>
 <dd>Nodes not subject to suspend/resume logic. This may be used to avoid
 suspending and resuming nodes which are not in the cloud. Alternately the
