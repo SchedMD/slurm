@@ -39,9 +39,10 @@ print_header $test_id
 # Try to get allocation with bad credential
 #
 proc alloc_job { } {
-	global env salloc bin_bash number
+	global env salloc bin_bash number max_job_delay
 	set env(SLURM_MUNGE_AUTH_FAIL_TEST) 1
 	set job_id 0
+	set timeout $max_job_delay
 	set salloc_pid [spawn $salloc -N1 $bin_bash]
 	expect {
 		-re "Granted job allocation ($number)" {
@@ -55,10 +56,8 @@ proc alloc_job { } {
 		}
 		timeout {
 			send_user "\nFAILURE: salloc not responding\n"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
 			slow_kill [expr 0 - $salloc_pid]
+			cancel_job $job_id
 			exit 1
 		}
 		eof {
