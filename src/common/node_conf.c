@@ -199,8 +199,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 #endif	/* MULTIPLE_SLURMD */
 #endif	/* HAVE_FRONT_END */
 	if ((port_count != alias_count) && (port_count > 1)) {
-		error("Port count must equal that of NodeName "
-		      "records or there must be no more than one (%u != %u)",
+		error("Port count must equal that of NodeName records or there must be no more than one (%u != %u)",
 		      port_count, alias_count);
 		goto cleanup;
 	}
@@ -230,10 +229,8 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 				fatal("Invalid Port %s", node_ptr->port_str);
 			port = port_int;
 		}
-		/* find_node_record locks this to get the
-		 * alias so we need to unlock */
-		node_rec = find_node_record2(alias);
 
+		node_rec = find_node_record2(alias);
 		if (node_rec == NULL) {
 			node_rec = create_node_record(config_ptr, alias);
 			if ((state_val != NO_VAL) &&
@@ -735,7 +732,7 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 	struct node_record *node_ptr;
 
 	if ((name == NULL) || (name[0] == '\0')) {
-		info("find_node_record passed NULL name");
+		info("%s: passed NULL node name", __func__);
 		return NULL;
 	}
 

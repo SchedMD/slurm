@@ -606,7 +606,7 @@ extern int gres_plugin_init(void)
 
 	/* Ensure that plugin_id is valid and unique */
 	for (i = 0; i < gres_context_cnt; i++) {
-		for (j = i+1; j < gres_context_cnt; j++) {
+		for (j = i + 1; j < gres_context_cnt; j++) {
 			if (gres_context[i].plugin_id !=
 			    gres_context[j].plugin_id)
 				continue;
@@ -1304,7 +1304,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 
 	gres_conf_file = get_extra_conf_path("gres.conf");
 	if (stat(gres_conf_file, &config_stat) < 0) {
-		error("can't stat gres.conf file %s, assuming zero resource counts",
+		info("can't stat gres.conf file (%s), using slurm.conf data",
 		      gres_conf_file);
 		xfree(gres_conf_file);
 		return _no_gres_conf(&node_conf);

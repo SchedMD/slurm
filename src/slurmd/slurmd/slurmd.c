@@ -860,9 +860,10 @@ _read_config(void)
 	/* node_name may already be set from a command line parameter */
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_nodename(conf->hostname);
-	/* if we didn't match the form of the hostname already
-	 * stored in conf->hostname, check to see if we match any
-	 * valid aliases */
+	/*
+	 * If we didn't match the form of the hostname already stored in
+	 * conf->hostname, check to see if we match any valid aliases
+	 */
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_aliased_nodename();
 
@@ -1523,8 +1524,10 @@ _slurmd_init(void)
 	 */
 	slurm_conf_init(conf->conffile);
 	init_node_conf();
-	/* slurm_select_init() must be called before
-	 * build_all_nodeline_info() to be called with proper argument. */
+	/*
+	 * slurm_select_init() must be called before
+	 * build_all_nodeline_info() to be called with proper argument.
+	 */
 	if (slurm_select_init(1) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	build_all_nodeline_info(true, 0, false);
