@@ -1626,6 +1626,10 @@ extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 		return -1;
 	}
 	if (!bit_test(job_resrcs_ptr->node_bitmap, node_inx)) {
+		/*
+		 * This could happen if a job shrinks and epilog completes on
+		 * node no longer in this job's allocation
+		 */
 		char node_str[128];
 		bit_fmt(node_str, sizeof(node_str),job_resrcs_ptr->node_bitmap);
 		error("%s: Invalid node_inx:%d node_bitmap:%s", __func__,
