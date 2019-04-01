@@ -1404,12 +1404,17 @@ static void _update_job_size(uint32_t job_id)
 	FILE *resize_csh = NULL, *resize_sh = NULL;
 
 	if (!getenv("SLURM_JOBID"))
-		return;		/*No job environment here to update */
+		return;		/* No job environment here to update */
 
 	if (slurm_allocation_lookup(job_id, &alloc_info) !=
 	    SLURM_SUCCESS) {
-		slurm_perror("slurm_allocation_lookup");
-		return;
+		if (slurm_get_errno() != ESLURM_ALREADY_DONE) {
+			slurm_perror("slurm_allocation_lookup");
+			return;
+		}
+		/* Job size reset to zero, not an error */
+		alloc_info = xmalloc(sizeof(resource_allocation_response_msg_t));
+		alloc_info->node_list = xstrdup("");
 	}
 
 	xstrfmtcat(fname_csh, "slurm_job_%u_resize.csh", job_id);
