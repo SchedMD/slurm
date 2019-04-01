@@ -3135,12 +3135,18 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				depends = true;
 		} else
 			failure = true;
-		if (failure)
-			break;
-		else if (clear_dep) {
+		if (failure) {
+			if ((dep_ptr->depend_flags & SLURM_FLAGS_OR) &&
+			    list_peek_next(depend_iter)) {
+				failure = false;
+				depends = true;
+			} else
+				break;
+		} else if (clear_dep) {
 			rebuild_str = true;
 			if (dep_ptr->depend_flags & SLURM_FLAGS_OR) {
 				or_satisfied = true;
+				depends = false;
 				break;
 			}
 			list_delete_item(depend_iter);
