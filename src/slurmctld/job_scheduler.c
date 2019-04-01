@@ -3136,6 +3136,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		} else
 			failure = true;
 		if (failure) {
+			job_ptr->bit_flags |= INVALID_DEPEND;
 			if ((dep_ptr->depend_flags & SLURM_FLAGS_OR) &&
 			    list_peek_next(depend_iter)) {
 				failure = false;
@@ -3143,12 +3144,18 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			} else
 				break;
 		} else if (clear_dep) {
-			rebuild_str = true;
 			if (dep_ptr->depend_flags & SLURM_FLAGS_OR) {
 				or_satisfied = true;
 				depends = false;
+				job_ptr->bit_flags &= ~INVALID_DEPEND;
+				if (job_ptr->state_reason == WAIT_DEP_INVALID) {
+					job_ptr->state_reason = WAIT_NO_REASON;
+					xfree(job_ptr->state_desc);
+				}
 				break;
 			}
+			if (!(job_ptr->bit_flags & INVALID_DEPEND))
+				rebuild_str = true;
 			list_delete_item(depend_iter);
 		}
 	}

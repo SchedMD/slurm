@@ -13141,6 +13141,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
 			else {
+				job_ptr->bit_flags &= ~INVALID_DEPEND;
 				job_ptr->details->orig_dependency =
 					xstrdup(job_ptr->details->dependency);
 				sched_info("update_job: setting dependency to %s for %pJ",
