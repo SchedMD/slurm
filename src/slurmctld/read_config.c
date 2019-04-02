@@ -145,7 +145,7 @@ static int  _update_preempt(uint16_t old_enable_preempt);
 /*
  * Setup the global response_cluster_rec
  */
-static void _set_response_cluster_rec()
+static void _set_response_cluster_rec(void)
 {
 	if (response_cluster_rec)
 		return;
@@ -161,6 +161,18 @@ static void _set_response_cluster_rec()
 	}
 	response_cluster_rec->control_port = slurmctld_conf.slurmctld_port;
 	response_cluster_rec->rpc_version = SLURM_PROTOCOL_VERSION;
+}
+
+/*
+ * Free the global response_cluster_rec
+ */
+extern void cluster_rec_free(void)
+{
+	if (response_cluster_rec) {
+		xfree(response_cluster_rec->control_host);
+		xfree(response_cluster_rec->name);
+		xfree(response_cluster_rec);
+	}
 }
 
 /* Verify that Slurm directories are secure, not world writable */

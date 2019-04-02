@@ -48,6 +48,11 @@ extern void accounts_list_build(char *accounts, char ***accounts_array);
 extern void accounts_list_free(char ***accounts_array);
 
 /*
+ * Free the global response_cluster_rec
+ */
+extern void cluster_rec_free(void);
+
+/*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
  * IN recover - replace job, node and/or partition data with latest
