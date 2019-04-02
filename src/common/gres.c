@@ -10457,30 +10457,31 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
 
-	if (!job_gres_list)
-		return;
-
 	(void) gres_plugin_init();
 
 	slurm_mutex_lock(&gres_context_lock);
-	gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_ptr = list_next(gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
-			error("%s: gres not found in context.  This should never happen",
-			      __func__);
-			continue;
-		}
-
-		if (!gres_context[i].ops.job_set_env)
+	for (i=0; i<gres_context_cnt; i++) {
+		if (gres_context[i].ops.job_set_env == NULL)
 			continue;	/* No plugin to call */
-		(*(gres_context[i].ops.job_set_env))
-			(job_env_ptr, gres_ptr->gres_data, node_inx);
+		if (job_gres_list) {
+			gres_iter = list_iterator_create(job_gres_list);
+			while ((gres_ptr = (gres_state_t *)
+				list_next(gres_iter))) {
+				if (gres_ptr->plugin_id !=
+				    gres_context[i].plugin_id)
+					continue;
+				(*(gres_context[i].ops.job_set_env))
+					(job_env_ptr, gres_ptr->gres_data,
+					 node_inx);
+				break;
+			}
+			list_iterator_destroy(gres_iter);
+		}
+		if(gres_ptr == NULL) { /* No data found */
+			(*(gres_context[i].ops.job_set_env))
+				(job_env_ptr, NULL, node_inx);
+		}
 	}
-	list_iterator_destroy(gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
@@ -11963,9 +11964,6 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 	char *sep, *map_gpu = NULL, *mask_gpu = NULL;
 	bitstr_t *usable_gres = NULL;
 
-	if (step_gres_list == NULL)
-		return;
-
 	if (!bind_gpu && tres_bind && (sep = strstr(tres_bind, "gpu:"))) {
 		sep += 4;
 		if (!strncasecmp(sep, "closest", 7))
@@ -11978,18 +11976,7 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 
 	(void) gres_plugin_init();
 	slurm_mutex_lock(&gres_context_lock);
-	gres_iter = list_iterator_create(step_gres_list);
-	while ((gres_ptr = list_next(gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id == gres_context[i].plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
-			error("%s: gres not found in context.  This should never happen",
-			      __func__);
-			continue;
-		}
-
+	for (i = 0; i < gres_context_cnt; i++) {
 		if (!gres_context[i].ops.step_set_env)
 			continue;	/* No plugin to call */
 		if (bind_gpu || bind_mic || bind_nic || map_gpu || mask_gpu) {
@@ -12004,12 +11991,14 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 					usable_gres = _get_usable_gres(i);
 				else
 					continue;
-			} else if (!xstrcmp(gres_context[i].gres_name, "mic")) {
+			} else if (!xstrcmp(gres_context[i].gres_name,
+					    "mic")) {
 				if (bind_mic)
 					usable_gres = _get_usable_gres(i);
 				else
 					continue;
-			} else if (!xstrcmp(gres_context[i].gres_name, "nic")) {
+			} else if (!xstrcmp(gres_context[i].gres_name,
+					    "nic")) {
 				if (bind_nic)
 					usable_gres = _get_usable_gres(i);
 				else
@@ -12017,24 +12006,46 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 			} else {
 				continue;
 			}
-
 		}
-
-		if (accel_bind_type || tres_bind) {
-			(*(gres_context[i].ops.step_reset_env))
-				(job_env_ptr,
-				 gres_ptr->gres_data,
-				 usable_gres);
-		} else {
-			(*(gres_context[i].ops.step_set_env))
-				(job_env_ptr, gres_ptr->gres_data, tres_freq,
-				 local_proc_id);
+		if (step_gres_list) {
+			gres_iter = list_iterator_create(step_gres_list);
+			while ((gres_ptr = (gres_state_t *)
+				list_next(gres_iter))) {
+				if (gres_ptr->plugin_id !=
+				    gres_context[i].plugin_id)
+					continue;
+				if (accel_bind_type || tres_bind) {
+					(*(gres_context[i].ops.step_reset_env))
+						(job_env_ptr,
+						 gres_ptr->gres_data,
+						 usable_gres);
+				} else {
+					(*(gres_context[i].ops.step_set_env))
+						(job_env_ptr,
+						 gres_ptr->gres_data,
+						 tres_freq,
+						 local_proc_id);
+				}
+				break;
+			}
+			list_iterator_destroy(gres_iter);
+		}
+		if (gres_ptr == NULL) { /* No data fond */
+			if (accel_bind_type || tres_bind) {
+				(*(gres_context[i].ops.step_reset_env))
+					(job_env_ptr, NULL, NULL); /* Fixme */
+			} else {
+				(*(gres_context[i].ops.step_set_env))
+					(job_env_ptr,
+					 NULL,
+					 NULL, /* Fixme */
+					 0); /* Fixme */
+			}
 		}
 		FREE_NULL_BITMAP(usable_gres);
 	}
-	list_iterator_destroy(gres_iter);
-
 	slurm_mutex_unlock(&gres_context_lock);
+	FREE_NULL_BITMAP(usable_gres);
 }
 
 static void _step_state_log(void *gres_data, uint32_t job_id, uint32_t step_id,
