@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove direct BLCR support and srun_cr.
  -- Make slurm_print_node_table only print a node's slurmd version if it is
     different to the one reported by slurm_load_ctl_conf.
+ -- Call gres plugin environment setup even if gres not requested in job.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

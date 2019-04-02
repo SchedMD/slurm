@@ -10456,6 +10456,7 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
+	bool found;
 
 	(void) gres_plugin_init();
 
@@ -10463,6 +10464,7 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 	for (i=0; i<gres_context_cnt; i++) {
 		if (gres_context[i].ops.job_set_env == NULL)
 			continue;	/* No plugin to call */
+		found = false;
 		if (job_gres_list) {
 			gres_iter = list_iterator_create(job_gres_list);
 			while ((gres_ptr = (gres_state_t *)
@@ -10473,11 +10475,17 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 				(*(gres_context[i].ops.job_set_env))
 					(job_env_ptr, gres_ptr->gres_data,
 					 node_inx);
-				break;
+				found = true;
 			}
 			list_iterator_destroy(gres_iter);
 		}
-		if(gres_ptr == NULL) { /* No data found */
+		/*
+		 * We call the job_set_env of the gres even if this one is not
+		 * requested in the job. This may be convenient on certain
+		 * plugins, i.e. setting an env variable to say the GRES is not
+		 * available.
+		 */
+		if (!found) {
 			(*(gres_context[i].ops.job_set_env))
 				(job_env_ptr, NULL, node_inx);
 		}
@@ -11963,6 +11971,7 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 	bool bind_mic = accel_bind_type & ACCEL_BIND_CLOSEST_MIC;
 	char *sep, *map_gpu = NULL, *mask_gpu = NULL;
 	bitstr_t *usable_gres = NULL;
+	bool found;
 
 	if (!bind_gpu && tres_bind && (sep = strstr(tres_bind, "gpu:"))) {
 		sep += 4;
@@ -12007,6 +12016,7 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 				continue;
 			}
 		}
+		found = false;
 		if (step_gres_list) {
 			gres_iter = list_iterator_create(step_gres_list);
 			while ((gres_ptr = (gres_state_t *)
@@ -12026,11 +12036,11 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 						 tres_freq,
 						 local_proc_id);
 				}
-				break;
+				found = true;
 			}
 			list_iterator_destroy(gres_iter);
 		}
-		if (gres_ptr == NULL) { /* No data fond */
+		if (!found) { /* No data fond */
 			if (accel_bind_type || tres_bind) {
 				(*(gres_context[i].ops.step_reset_env))
 					(job_env_ptr, NULL, NULL); /* Fixme */
