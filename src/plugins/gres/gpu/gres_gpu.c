@@ -500,6 +500,7 @@ extern int init(void)
 extern int fini(void)
 {
 	debug("%s: unloading %s", __func__, plugin_name);
+	gpu_plugin_fini();
 	FREE_NULL_LIST(gres_devices);
 
 	return SLURM_SUCCESS;
