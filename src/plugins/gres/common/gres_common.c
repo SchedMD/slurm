@@ -310,9 +310,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		 */
 		debug("%s: unable to set env vars, no device files configured",
 		      __func__);
-	} else if (!*global_list) {
-		xstrcat(*global_list, "NoDevFiles");
-		xstrcat(*local_list, "NoDevFiles");
 	}
 
 	if (gres_per_node) {
