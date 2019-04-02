@@ -476,7 +476,7 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	FREE_NULL_LIST(mps_info);
 
 	if (debug_flags & DEBUG_FLAG_GRES)
-		log_lvl = LOG_LEVEL_INFO;
+		log_lvl = LOG_LEVEL_VERBOSE;
 	else
 		log_lvl = LOG_LEVEL_DEBUG;
 

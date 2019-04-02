@@ -531,7 +531,7 @@ extern int node_config_load(List gres_conf_list,
 		gres_list_system = gpu_g_get_system_gpu_list(node_config);
 
 	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
-		log_lvl = LOG_LEVEL_INFO;
+		log_lvl = LOG_LEVEL_VERBOSE;
 	else
 		log_lvl = LOG_LEVEL_DEBUG;
 	if (gres_list_system) {
