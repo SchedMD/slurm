@@ -1,17 +1,27 @@
 .TH "gres.conf" "5" "Slurm Configuration File" "March 2019" "Slurm Configuration File"
 
 .SH "NAME"
-gres.conf \- Slurm configuration file for generic resource management.
+gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
 
 .SH "DESCRIPTION"
 \fBgres.conf\fP is an ASCII file which describes the configuration
-of generic resources on each compute node. Each node must contain a
-gres.conf file if generic resources are to be scheduled by Slurm.
+of Generic RESource (GRES) on each compute node.
+If the GRES information in the slurm.conf file does not fully describe those
+resources, then a gres.conf file should be included on each compute node.
 The file location can be modified at system build time using the
 DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
 environment variable. The file will always be located in the
 same directory as the \fBslurm.conf\fP file. If generic resource counts are
-set by the gres plugin function node_config_load(), this file may be optional.
+set by the GRES plugin function node_config_load(), this file may be optional.
+
+.LP
+If the GRES information in the slurm.conf file fully describes those resources
+(i.e. no "Cores", "File" or "Links" specification is required for that GRES
+type or that information is automatically detected), that information may be
+omitted from the gres.conf file and only the configuration information in the
+slurm.conf file will be used.
+The gres.conf file may be omitted completely if the configuration information
+in the slurm.conf file fully describes all GRES.
 
 .LP
 Parameter names are case insensitive.
@@ -200,7 +210,7 @@ If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024)
 .br
 # Slurm's Generic Resource (GRES) configuration file
 .br
-## Define GPU devices with MPS support
+# Define GPU devices with MPS support
 .br
 ##################################################################
 .br
@@ -220,7 +230,7 @@ Name=mps Count=100  File=/dev/nvidia1 COREs=2,3
 .br
 # Slurm's Generic Resource (GRES) configuration file
 .br
-## Overwrite system defaults and explicitly configure three GPUs
+# Overwrite system defaults and explicitly configure three GPUs
 .br
 ##################################################################
 .br
@@ -239,7 +249,7 @@ Name=gpu Type=tesla  File=/dev/nvidia3 COREs=2,3
 .br
 # Slurm's Generic Resource (GRES) configuration file
 .br
-## Use a single gres.conf file for all compute nodes \- positive method
+# Use a single gres.conf file for all compute nodes \- positive method
 .br
 ##################################################################
 .br
@@ -256,6 +266,19 @@ NodeName=tux3  Name=gpu File=/dev/nvidia[0,2\-3]
 NodeName=tux[4\-15]  Name=gpu File=/dev/nvidia[0\-3]
 .br
 
+.LP
+.br
+##################################################################
+.br
+# Slurm's Generic Resource (GRES) configuration file
+.br
+# Use NVML to gather GPU configuration infomation
+.br
+# Information about all other GRES gathered from slurm.conf
+.br
+##################################################################
+.br
+AutoDetect=nvml
 
 .SH "COPYING"
 Copyright (C) 2010 The Regents of the University of California.

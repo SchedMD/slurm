@@ -361,12 +361,15 @@ extern char *gres_plugin_name_filter(char *orig_gres, char *nodes);
  */
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
- * IN cpu_cnt - Number of CPUs on configured on this node
+ * IN cpu_cnt - Number of CPUs configured on this node
  * IN node_name - Name of this node
+ * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
  * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct, if available
  * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct, if available
+ * NOTE: Called from slurmd and slurmstepd
  */
 extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
+					List gres_list,
 					void *xcpuinfo_abs_to_mac,
 					void *xcpuinfo_mac_to_abs);
 

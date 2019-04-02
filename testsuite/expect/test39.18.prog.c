@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 	// Override where Slurm looks for conf files
 	setenv("SLURM_CONF", slurm_conf, 1);
 
-	rc = gres_plugin_node_config_load(4, node_name, NULL, NULL);
+	rc = gres_plugin_node_config_load(4, node_name, NULL, NULL, NULL);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("FAILURE: gres_plugin_node_config_load");
 		exit(1);

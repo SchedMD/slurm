@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
     different to the one reported by slurm_load_ctl_conf.
  -- Call gres plugin environment setup even if gres not requested in job.
  -- Do not set CUDA_VISIBLE_DEVICES=NoDevFiles when no gres requested.
+ -- If GRES configuration data is unavailable from gres.conf, then use the
+    node's "Gres=" information slurm.conf. This will eliminate or minimize the
+    gres.conf file in many situations.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

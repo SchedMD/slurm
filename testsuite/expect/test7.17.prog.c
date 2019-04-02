@@ -104,7 +104,8 @@ int main(int argc, char *argv[])
 
 	cpu_count = strtol(argv[4], NULL, 10);
 	node_name = "test_node";
-	rc = gres_plugin_node_config_load(cpu_count, node_name, NULL, NULL);
+	rc = gres_plugin_node_config_load(cpu_count, node_name, NULL, NULL,
+					  NULL);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("failure: gres_plugin_node_config_load");
 		exit(1);

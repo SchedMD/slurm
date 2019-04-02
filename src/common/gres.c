@@ -1231,48 +1231,110 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 	list_iterator_destroy(iter);
 }
 
-/*
- * No gres.conf file found.
- * Initialize gres table with zero counts of all resources.
- * Counts can be altered by node_config_load() in the gres plugin.
- */
-static int _no_gres_conf(node_config_load_t *node_conf)
+static int _find_gres_conf_by_plugin_id(void *x, void *key)
 {
-	int i, rc = SLURM_SUCCESS;
-	gres_slurmd_conf_t *p;
+	gres_slurmd_conf_t *gres_conf = (gres_slurmd_conf_t *) x;
+	slurm_gres_context_t *gres_context = (slurm_gres_context_t *) key;
+	if (gres_conf->plugin_id == gres_context->plugin_id)
+		return 1;
+	return 0;
+}
 
-	slurm_mutex_lock(&gres_context_lock);
-	FREE_NULL_LIST(gres_conf_list);
-	gres_conf_list = list_create(destroy_gres_slurmd_conf);
-	for (i = 0; ((i < gres_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		p = xmalloc(sizeof(gres_slurmd_conf_t));
-		p->cpu_cnt	= node_conf->cpu_cnt;
-		p->name		= xstrdup(gres_context[i].gres_name);
-		p->plugin_id	= gres_context[i].plugin_id;
-		list_append(gres_conf_list, p);
-		/*
-		 * If there is no plugin specific shared
-		 * library, the exported methods are NULL.
-		 */
-		if (gres_context[i].ops.node_config_load) {
-			rc = (*(gres_context[i].ops.node_config_load))
-				(gres_conf_list, node_conf);
-		}
+static void _add_gres_config(List gres_conf_list, gres_state_t *gres_ptr,
+			     slurm_gres_context_t *gres_context,
+			     node_config_load_t *node_conf)
+{
+	gres_slurmd_conf_t *gres_conf;
+	gres_node_state_t *node_gres_ptr;
+	int i;
+
+	if (!gres_ptr) {
+		gres_conf = xmalloc(sizeof(gres_slurmd_conf_t));
+		gres_conf->cpu_cnt = node_conf->cpu_cnt;
+		gres_conf->name = xstrdup(gres_context->gres_name);
+		gres_conf->plugin_id = gres_context->plugin_id;
+		list_append(gres_conf_list, gres_conf);
+		return;
 	}
-	slurm_mutex_unlock(&gres_context_lock);
 
-	return rc;
+	node_gres_ptr = (gres_node_state_t *) gres_ptr->gres_data;
+	if (node_gres_ptr->type_cnt == 0) {
+		gres_conf = xmalloc(sizeof(gres_slurmd_conf_t));
+		gres_conf->count = node_gres_ptr->gres_cnt_config;
+		gres_conf->cpu_cnt = node_conf->cpu_cnt;
+		gres_conf->name = xstrdup(gres_context->gres_name);
+		gres_conf->plugin_id = gres_context->plugin_id;
+		list_append(gres_conf_list, gres_conf);
+		return;
+	}
+
+	for (i = 0; i < node_gres_ptr->type_cnt; i++) {
+		gres_conf = xmalloc(sizeof(gres_slurmd_conf_t));
+		gres_conf->config_flags = GRES_CONF_HAS_TYPE;
+		gres_conf->count = node_gres_ptr->type_cnt_avail[i];
+		gres_conf->cpu_cnt = node_conf->cpu_cnt;
+		gres_conf->name = xstrdup(gres_context->gres_name);
+		gres_conf->plugin_id = gres_context->plugin_id;
+		gres_conf->type_name = xstrdup(node_gres_ptr->type_name[i]);
+		list_append(gres_conf_list, gres_conf);
+	}
+}
+
+/*
+ * Merge GRES configuration from slurm.conf into that from gres.conf.
+ * Any configuration information from gres.conf takes precidence.
+ * If no configuration found, build a record with zero count
+ */
+static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
+			  List slurm_conf_list)
+{
+	int i;
+	gres_state_t *gres_ptr;
+	ListIterator iter;
+	bool found;
+
+	for (i = 0; i < gres_context_cnt; i++) {
+		/* Determine if configuration already gathered from gres.conf */
+		if (list_find_first(gres_conf_list,
+				    _find_gres_conf_by_plugin_id,
+				    &gres_context[i])) {
+			continue;
+		}
+
+		/* Copy GRES configuration from slurm.conf, if found */
+		if (slurm_conf_list) {
+			found = false;
+			iter = list_iterator_create(slurm_conf_list);
+			while ((gres_ptr = (gres_state_t *) list_next(iter))) {
+				if (gres_ptr->plugin_id !=
+				    gres_context[i].plugin_id)
+					continue;
+				found = true;
+				_add_gres_config(gres_conf_list, gres_ptr,
+						 &gres_context[i], node_conf);
+			}
+			list_iterator_destroy(iter);
+			if (found)
+				continue;
+		}
+
+		/* Add GRES record with zero count */
+		_add_gres_config(gres_conf_list, NULL, &gres_context[i],
+				 node_conf);
+	}
 }
 
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
  * IN cpu_cnt - Number of CPUs configured on this node
  * IN node_name - Name of this node
+ * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
  * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct, if available
  * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct, if available
  * NOTE: Called from slurmd and slurmstepd
  */
 extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
+					List gres_list,
 					void *xcpuinfo_abs_to_mac,
 					void *xcpuinfo_mac_to_abs)
 {
@@ -1302,46 +1364,46 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	if (gres_context_cnt == 0)
 		return SLURM_SUCCESS;
 
-	gres_conf_file = get_extra_conf_path("gres.conf");
-	if (stat(gres_conf_file, &config_stat) < 0) {
-		info("can't stat gres.conf file (%s), using slurm.conf data",
-		      gres_conf_file);
-		xfree(gres_conf_file);
-		return _no_gres_conf(&node_conf);
-	}
-
-	slurm_mutex_lock(&gres_context_lock);
-	if (xstrcmp(gres_node_name, node_name)) {
-		xfree(gres_node_name);
-		gres_node_name = xstrdup(node_name);
-	}
-
-	gres_cpu_cnt = cpu_cnt;
-	tbl = s_p_hashtbl_create(_gres_options);
-	if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
-		fatal("error opening/reading %s", gres_conf_file);
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(destroy_gres_slurmd_conf);
-
-	if (s_p_get_string(&autodetect_string, "Autodetect", tbl)) {
-		if (xstrcasestr(autodetect_string, "nvml"))
-			autodetect_types |= GRES_AUTODETECT_NVML;
-		xfree(autodetect_string);
-	}
-
-	if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
-		for (i = 0; i < count; i++) {
-			list_append(gres_conf_list, gres_array[i]);
-			gres_array[i] = NULL;
+	gres_conf_file = get_extra_conf_path("gres.conf");
+	if (stat(gres_conf_file, &config_stat) < 0) {
+		info("Can not stat gres.conf file (%s), using slurm.conf data",
+		      gres_conf_file);
+	} else {
+		slurm_mutex_lock(&gres_context_lock);
+		if (xstrcmp(gres_node_name, node_name)) {
+			xfree(gres_node_name);
+			gres_node_name = xstrdup(node_name);
 		}
-	}
-	if (s_p_get_array((void ***) &gres_array, &count, "NodeName", tbl)) {
-		for (i = 0; i < count; i++) {
-			list_append(gres_conf_list, gres_array[i]);
-			gres_array[i] = NULL;
+
+		gres_cpu_cnt = cpu_cnt;
+		tbl = s_p_hashtbl_create(_gres_options);
+		if (s_p_parse_file(tbl, NULL, gres_conf_file, false) == SLURM_ERROR)
+			fatal("error opening/reading %s", gres_conf_file);
+
+		if (s_p_get_string(&autodetect_string, "Autodetect", tbl)) {
+			if (xstrcasestr(autodetect_string, "nvml"))
+				autodetect_types |= GRES_AUTODETECT_NVML;
+			xfree(autodetect_string);
 		}
+
+		if (s_p_get_array((void ***) &gres_array, &count, "Name", tbl)) {
+			for (i = 0; i < count; i++) {
+				list_append(gres_conf_list, gres_array[i]);
+				gres_array[i] = NULL;
+			}
+		}
+		if (s_p_get_array((void ***) &gres_array, &count, "NodeName", tbl)) {
+			for (i = 0; i < count; i++) {
+				list_append(gres_conf_list, gres_array[i]);
+				gres_array[i] = NULL;
+			}
+		}
+		s_p_hashtbl_destroy(tbl);
 	}
-	s_p_hashtbl_destroy(tbl);
+	xfree(gres_conf_file);
+	_merge_config(&node_conf, gres_conf_list, gres_list);
 
 	for (i = 0; i < gres_context_cnt; i++) {
 		_validate_config(&gres_context[i]);
@@ -1355,7 +1417,6 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
 	slurm_mutex_unlock(&gres_context_lock);
 
-	xfree(gres_conf_file);
 	return rc;
 }
 

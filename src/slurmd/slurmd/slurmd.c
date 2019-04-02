@@ -1079,6 +1079,8 @@ static void
 _reconfigure(void)
 {
 	uint32_t cpu_cnt;
+	struct node_record *node_rec;
+	List gres_list = NULL;
 
 	_reconfig = 0;
 	slurm_conf_reinit(conf->conffile);
@@ -1123,8 +1125,20 @@ _reconfigure(void)
 	(void) switch_g_reconfig();
 	container_g_reconfig();
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
-	(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL,
-					    (void *)&xcpuinfo_mac_to_abs);
+
+	init_node_conf();
+	build_all_nodeline_info(true, 0);
+	build_all_frontend_info(true);
+	node_rec = find_node_record2(conf->node_name);
+	if (node_rec && node_rec->config_ptr) {
+		(void) gres_plugin_init_node_config(conf->node_name,
+						    node_rec->config_ptr->gres,
+						    &gres_list);
+	}
+	(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name, gres_list,
+					    NULL, (void *)&xcpuinfo_mac_to_abs);
+	FREE_NULL_LIST(gres_list);
+
 	send_registration_msg(SLURM_SUCCESS, false);
 
 	/* reconfigure energy */
@@ -1428,7 +1442,7 @@ _process_cmdline(int ac, char **av)
 		(void) gres_plugin_init();
 		(void) gres_plugin_node_config_load(
 					1024,	/* Do not need real CPU count */
-					conf->node_name, NULL,
+					conf->node_name, NULL, NULL,
 					(void *)&xcpuinfo_mac_to_abs);
 		exit(0);
 	}
@@ -1509,6 +1523,9 @@ _slurmd_init(void)
 	struct rlimit rlim;
 	struct stat stat_buf;
 	uint32_t cpu_cnt;
+	struct node_record *node_rec;
+	List gres_list = NULL;
+	int rc;
 
 	/*
 	 * Process commandline arguments first, since one option may be
@@ -1563,10 +1580,16 @@ _slurmd_init(void)
 
 	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
-
-	if (gres_plugin_node_config_load(cpu_cnt, conf->node_name, NULL,
-					 (void *)&xcpuinfo_mac_to_abs)
-	    != SLURM_SUCCESS)
+	node_rec = find_node_record2(conf->node_name);
+	if (node_rec && node_rec->config_ptr) {
+		(void) gres_plugin_init_node_config(conf->node_name,
+						    node_rec->config_ptr->gres,
+						    &gres_list);
+	}
+	rc = gres_plugin_node_config_load(cpu_cnt, conf->node_name, gres_list,
+					  NULL, (void *)&xcpuinfo_mac_to_abs);
+	FREE_NULL_LIST(gres_list);
+	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (slurm_topo_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;

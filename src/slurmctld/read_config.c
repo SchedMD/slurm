@@ -1739,7 +1739,7 @@ static void _gres_reconfig(bool reconfig)
 			 */
 			gres_plugin_node_config_load(
 				node_ptr->config_ptr->cpus, node_ptr->name,
-				NULL, NULL);
+				NULL, NULL, NULL);
 			gres_plugin_node_config_validate(
 				node_ptr->name, node_ptr->config_ptr->gres,
 				&node_ptr->gres, &node_ptr->gres_list,

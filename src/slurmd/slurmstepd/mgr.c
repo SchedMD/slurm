@@ -1243,6 +1243,7 @@ job_manager(stepd_step_rec_t *job)
 	    job->tres_freq)) {
 		info("Running gres_plugin_node_config_load()!");
 		(void) gres_plugin_node_config_load(conf->cpus, conf->node_name,
+						NULL,
 						(void *)&xcpuinfo_abs_to_mac,
 						(void *)&xcpuinfo_mac_to_abs);
 	}
