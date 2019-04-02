@@ -67,7 +67,7 @@ proc inc21_21_good { test_type limit } {
 
 	set matches 0
 	spawn $srun -v -t1 $add [lindex $limit 0][lindex $limit 1] \
-	    --account=$ta -I $bin_id
+	    --account=$ta $bin_id
 	expect {
 		-re "launching ($number)" {
 			set job_id $expect_out(1,string)
