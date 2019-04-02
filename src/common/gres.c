@@ -1563,18 +1563,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/*
- * Delete an element placed on gres_list by _node_config_validate()
- * free associated memory
- */
-static void _gres_node_list_delete(void *list_element)
+static void _gres_node_state_delete(gres_node_state_t *gres_node_ptr)
 {
 	int i;
-	gres_state_t *gres_ptr;
-	gres_node_state_t *gres_node_ptr;
 
-	gres_ptr = (gres_state_t *) list_element;
-	gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
 	FREE_NULL_BITMAP(gres_node_ptr->gres_bit_alloc);
 	xfree(gres_node_ptr->gres_used);
 	if (gres_node_ptr->links_cnt) {
@@ -1603,6 +1595,20 @@ static void _gres_node_list_delete(void *list_element)
 	xfree(gres_node_ptr->type_id);
 	xfree(gres_node_ptr->type_name);
 	xfree(gres_node_ptr);
+}
+
+/*
+ * Delete an element placed on gres_list by _node_config_validate()
+ * free associated memory
+ */
+static void _gres_node_list_delete(void *list_element)
+{
+	gres_state_t *gres_ptr;
+	gres_node_state_t *gres_node_ptr;
+
+	gres_ptr = (gres_state_t *) list_element;
+	gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
+	_gres_node_state_delete(gres_node_ptr);
 	xfree(gres_ptr);
 }
 
@@ -2656,7 +2662,7 @@ static int _node_reconfig_test(char *node_name, char *new_gres,
 		      new_gres_data->gres_cnt_config);
 		rc = ESLURM_INVALID_GRES;
 	}
-	xfree(new_gres_data);
+	_gres_node_state_delete(new_gres_data);
 
 	return rc;
 }
