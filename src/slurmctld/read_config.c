@@ -582,7 +582,7 @@ static int _build_all_nodeline_info(void)
 	int rc, rc2;
 
 	/* Load the node table here */
-	rc = build_all_nodeline_info(false, slurmctld_tres_cnt, true);
+	rc = build_all_nodeline_info(false, slurmctld_tres_cnt);
 	rc2 = build_all_frontend_info(false);
 	rc = MAX(rc, rc2);
 

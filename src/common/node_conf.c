@@ -525,16 +525,17 @@ extern int build_all_frontend_info (bool is_slurmd_context)
  * IN set_bitmap - if true then set node_bitmap in config record (used by
  *		    slurmd), false is used by slurmctld and testsuite
  * IN tres_cnt - number of TRES configured on system (used on controller side)
- * IN in_slurmctld - true if being run from slurmctld daemon
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt,
-				   bool in_slurmctld)
+extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	struct config_record *config_ptr = NULL;
 	int count;
 	int i, rc, max_rc = SLURM_SUCCESS;
+	bool in_daemon;
+
+	in_daemon = run_in_daemon("slurmctld,slurmd");
 
 	count = slurm_conf_nodename_array(&ptr_array);
 	if (count == 0)
@@ -569,8 +570,7 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt,
 		config_ptr->weight = node->weight;
 		if (node->feature && node->feature[0])
 			config_ptr->feature = xstrdup(node->feature);
-		if (in_slurmctld) {
-			/* In slurmctld */
+		if (in_daemon) {
 			config_ptr->gres = gres_plugin_name_filter(node->gres,
 							       node->nodenames);
 		}
