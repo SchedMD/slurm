@@ -92,7 +92,7 @@ proc inc21_21_good { test_type limit } {
 	}
 
 	if { $matches != 1 } {
-		send_user "\nFAILURE: job dion't launch with correct limit "
+		send_user "\nFAILURE: job did not launch with correct limit "
 		print_err $test_type "inc21_21_good"
 		set exit_code 1
 	}
