@@ -2133,12 +2133,23 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (difftime(now, last_purge_job_time) >= purge_job_interval) {
-			now = time(NULL);
-			last_purge_job_time = now;
-			debug2("Performing purge of old job records");
-			lock_slurmctld(job_write_lock);
-			purge_old_job();
-			unlock_slurmctld(job_write_lock);
+			/*
+			 * If backfill is running, it will have a List of
+			 * job_record pointers which could include this
+			 * job. Skip over in that case to prevent
+			 * _attempt_backfill() from potentially dereferencing an
+			 * invalid pointer.
+			 */
+			slurm_mutex_lock(&check_bf_running_lock);
+			if (!slurmctld_diag_stats.bf_active) {
+				now = time(NULL);
+				last_purge_job_time = now;
+				debug2("Performing purge of old job records");
+				lock_slurmctld(job_write_lock);
+				purge_old_job();
+				unlock_slurmctld(job_write_lock);
+			}
+			slurm_mutex_unlock(&check_bf_running_lock);
 		}
 
 		job_limit = NO_VAL;
