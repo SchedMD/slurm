@@ -5835,6 +5835,7 @@ static void _epilog_list_del(void *x)
 			FREE_NULL_BITMAP(epilog_info->gres_bit_alloc[i]);
 		xfree(epilog_info->gres_bit_alloc);
 	}
+	xfree(epilog_info->gres_cnt_node_alloc);
 	xfree(epilog_info->node_list);
 	xfree(epilog_info);
 }
