@@ -5815,6 +5815,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		info("Test fail on node %d: _allocate_cores/sockets",
 		     node_i);
 #endif
+		FREE_NULL_LIST(sock_gres_list);
 		return NULL;
 	}
 
@@ -5837,6 +5838,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 		info("Test fail on node %d: max_cpus < min_cpus_per_node (%u < %u)",
 		     node_i, avail_res->max_cpus, min_cpus_per_node);
 #endif
+		FREE_NULL_LIST(sock_gres_list);
 		_free_avail_res(avail_res);
 		return NULL;
 	}
