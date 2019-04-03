@@ -9095,6 +9095,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					xcalloc(node_cnt, sizeof(bitstr_t *));
 			}
 			gres_cnt = _get_gres_node_cnt(node_specs, node_inx);
+			FREE_NULL_BITMAP(job_specs->gres_bit_select[i]);
 			job_specs->gres_bit_select[i] = bit_alloc(gres_cnt);
 			job_specs->gres_cnt_node_select[i] = 0;
 
