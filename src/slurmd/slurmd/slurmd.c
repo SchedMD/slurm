@@ -385,9 +385,11 @@ main (int argc, char **argv)
        	return 0;
 }
 
-/* Spawn a thread to make sure we send at least one registration message to
+/*
+ * Spawn a thread to make sure we send at least one registration message to
  * slurmctld. If slurmctld restarts, it will request another registration
- * message. */
+ * message.
+ */
 static void *
 _registration_engine(void *arg)
 {
@@ -397,8 +399,7 @@ _registration_engine(void *arg)
 		if ((sent_reg_time == (time_t) 0) &&
 		    (send_registration_msg(SLURM_SUCCESS, true) !=
 		     SLURM_SUCCESS)) {
-			debug("Unable to register with slurm controller, "
-			      "retrying");
+			debug("Unable to register with slurm controller, retrying");
 		} else if (_shutdown || sent_reg_time) {
 			break;
 		}
