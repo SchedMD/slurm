@@ -3334,6 +3334,7 @@ static void *_node_state_dup(void *gres_data)
 			new_gres->links_cnt[i] = xmalloc(j);
 			memcpy(new_gres->links_cnt[i],gres_ptr->links_cnt[i],j);
 		}
+		new_gres->link_len = gres_ptr->link_len;
 	}
 
 	if (gres_ptr->topo_cnt) {
