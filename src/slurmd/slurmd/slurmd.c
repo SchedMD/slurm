@@ -220,7 +220,8 @@ static void      _wait_for_all_threads(int secs);
  * "configure --enable-memory-leak-debug" then execute
  *
  * $ valgrind --tool=memcheck --leak-check=yes --num-callers=40 \
- *   --leak-resolution=high --suppressions=<DIR>/hwloc/hwloc-valgrind.supp \
+ *   --leak-resolution=high --child-silent-after-fork=yes \
+ *   --suppressions=<DIR>/hwloc/hwloc-valgrind.supp \
  *   ./slurmd -Dc >valg.slurmd.out 2>&1
  *
  * Then exercise the slurmctld functionality before executing
@@ -1785,17 +1786,6 @@ cleanup:
 	return SLURM_SUCCESS;
 }
 
-/**************************************************************************\
- * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
- * "configure --enable-memory-leak-debug" then execute
- * $ valgrind --tool=memcheck --leak-check=yes --num-callers=8 \
- *   --leak-resolution=med ./slurmd -Dc >valg.slurmd.out 2>&1
- *
- * Then exercise the slurmd functionality before executing
- * > scontrol shutdown
- *
- * All allocated memory should be freed
-\**************************************************************************/
 static int
 _slurmd_fini(void)
 {
