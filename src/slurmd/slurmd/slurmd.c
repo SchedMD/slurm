@@ -422,6 +422,8 @@ _msg_engine(void)
 		if (_reconfig) {
 			verbose("got reconfigure request");
 			_wait_for_all_threads(5); /* Wait for RPCs to finish */
+			if (_shutdown)
+				break;
 			_reconfigure();
 		}
 		if (_update_log)
