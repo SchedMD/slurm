@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- If GRES configuration data is unavailable from gres.conf, then use the
     node's "Gres=" information slurm.conf. This will eliminate or minimize the
     gres.conf file in many situations.
+ -- Fix checking IPMI XCC raw command response length.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

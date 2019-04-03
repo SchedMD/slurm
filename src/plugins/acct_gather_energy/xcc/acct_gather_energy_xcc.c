@@ -83,6 +83,7 @@ slurmd_conf_t *conf = NULL;
 
 #define XCC_FLAG_NONE 0x00000000
 #define XCC_FLAG_FAKE 0x00000001
+#define XCC_EXPECTED_RSPLEN 16 /* Must match cmd_rq[] response expectations */
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -466,8 +467,9 @@ static xcc_raw_single_data_t *_read_ipmi_values(void)
 
         debug3("ipmi_cmd_raw: %s", ipmi_ctx_errormsg(ipmi_ctx));
 
-        if (rs_len < 0) {
-		error("Invalid ipmi response length");
+        if (rs_len != XCC_EXPECTED_RSPLEN) {
+		error("Invalid ipmi response length for XCC raw command: "
+		      "%d bytes, expected %d", rs_len, XCC_EXPECTED_RSPLEN);
 		return NULL;
 	}
 
