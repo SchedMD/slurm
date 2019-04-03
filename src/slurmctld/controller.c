@@ -146,10 +146,8 @@
  * to display the stack where the eventual leaks may be.
  * It is always best to test with and without --enable-memory-leak-debug.
  *
- * The OpenSSL code produces a bunch of errors related to use of
- *    non-initialized memory use.
- * The _keyvalue_regex_init() function will generate two blocks "definitely
- *    lost", both of size zero. We haven't bothered to address this.
+ * On some systems _keyvalue_regex_init() will generate two blocks "definitely
+ *    lost", both of size zero.
  * On some systems dlopen() will generate a small number of "definitely
  *    lost" blocks that are not cleared by dlclose().
  * On some systems, pthread_create() will generated a small number of

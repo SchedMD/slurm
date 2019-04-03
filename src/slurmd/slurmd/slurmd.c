@@ -215,6 +215,36 @@ static void      _usr_handler(int);
 static int       _validate_and_convert_cpu_list(void);
 static void      _wait_for_all_threads(int secs);
 
+/**************************************************************************\
+ * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
+ * "configure --enable-memory-leak-debug" then execute
+ *
+ * $ valgrind --tool=memcheck --leak-check=yes --num-callers=40 \
+ *   --leak-resolution=high --suppressions=<DIR>/hwloc/hwloc-valgrind.supp \
+ *   ./slurmd -Dc >valg.slurmd.out 2>&1
+ *
+ * Then exercise the slurmctld functionality before executing
+ * > scontrol shutdown
+ *
+ * Note that --enable-memory-leak-debug will cause the daemon to
+ * unload the shared objects at exit thus preventing valgrind
+ * to display the stack where the eventual leaks may be.
+ * It is always best to test with and without --enable-memory-leak-debug.
+ *
+ * The HWLOC library generates quite a few memory leaks unless the following
+ *    option is added to the valgrind execute line:
+ *    --suppressions=<INSTALL_DIR>/share/hwloc/hwloc-valgrind.supp
+ * On some systems _keyvalue_regex_init() will generate two blocks "definitely
+ *    lost", both of size zero.
+ * On some systems dlopen() will generate a small number of "definitely
+ *    lost" blocks that are not cleared by dlclose().
+ * On some systems, pthread_create() will generated a small number of
+ *    "possibly lost" blocks.
+ * Otherwise the report should be free of errors. Remember to reset
+ *    MEMORY_LEAK_DEBUG to 0 for production use (non-seamless backup
+ *    controller use).
+\**************************************************************************/
+
 int
 main (int argc, char **argv)
 {
