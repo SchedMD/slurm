@@ -154,6 +154,9 @@ documents those changes that are of interest to users and administrators.
  -- Hide multipart priorities log message behind Priority debug flag.
  -- sched/backfill - Make hetjobs sensitive to bf_max_job_start.
  -- Fix slurmctld segfault due to job's partition pointer NULL dereference.
+ -- Fix issue with OR'ed job dependencies.
+ -- Add new job's bit_flags of INVALID_DEPEND to prevent rebuilding a job's
+    dependency string when it has at least one invalid and purged dependency.
 
 * Changes in Slurm 18.08.6-2
 ============================

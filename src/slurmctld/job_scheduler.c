@@ -1187,6 +1187,7 @@ static int _schedule(uint32_t job_limit)
 			    (job_ptr->state_reason != WAIT_NODE_NOT_AVAIL))
 				continue;
 			job_ptr->state_reason = WAIT_FRONT_END;
+			xfree(job_ptr->state_desc);
 		}
 		list_iterator_destroy(job_iterator);
 
@@ -2745,20 +2746,16 @@ extern int test_job_dependency(struct job_record *job_ptr)
 					depends = true;
 				else if (!array_complete)
 					clear_dep = true;
-				else {
+				else
 					failure = true;
-					break;
-				}
 			} else if (dep_ptr->depend_type ==
 				   SLURM_DEPEND_AFTER_OK) {
 				if (!array_completed)
 					depends = true;
 				else if (array_complete)
 					clear_dep = true;
-				else {
+				else
 					failure = true;
-					break;
-				}
 			} else if (dep_ptr->depend_type ==
 				   SLURM_DEPEND_AFTER_CORRESPOND) {
 				if ((job_ptr->array_task_id == NO_VAL) ||
@@ -2774,10 +2771,8 @@ extern int test_job_dependency(struct job_record *job_ptr)
 						depends = true;
 					else if (IS_JOB_COMPLETE(dcjob_ptr))
 						clear_dep = true;
-					else {
+					else
 						failure = true;
-						break;
-					}
 				} else {
 					if (!array_completed)
 						depends = true;
@@ -2787,10 +2782,8 @@ extern int test_job_dependency(struct job_record *job_ptr)
 						 (job_ptr->array_task_id ==
 						  NO_VAL)) {
 						depends = true;
-					} else {
+					} else
 						failure = true;
-						break;
-					}
 				}
 			}
 
@@ -2811,42 +2804,35 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				depends = true;
 			else if (!IS_JOB_COMPLETE(djob_ptr))
 				clear_dep = true;
-			else {
+			else
 				failure = true;
-				break;
-			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
 			if (!IS_JOB_COMPLETED(djob_ptr))
 				depends = true;
 			else if (IS_JOB_COMPLETE(djob_ptr))
 				clear_dep = true;
-			else {
+			else
 				failure = true;
-				break;
-			}
 		} else if (dep_ptr->depend_type ==
 			   SLURM_DEPEND_AFTER_CORRESPOND) {
 			if (!IS_JOB_COMPLETED(djob_ptr))
 				depends = true;
 			else if (IS_JOB_COMPLETE(djob_ptr))
 				clear_dep = true;
-			else {
+			else
 				failure = true;
-				break;
-			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND) {
 			time_t now = time(NULL);
 			if (IS_JOB_PENDING(djob_ptr)) {
 				depends = true;
-			} else if (IS_JOB_COMPLETED(djob_ptr)) {
-				failure = true;
-				break;
-			} else if ((djob_ptr->end_time != 0) &&
+			} else if (IS_JOB_COMPLETED(djob_ptr))
+					failure = true;
+			else if ((djob_ptr->end_time != 0) &&
 				   (djob_ptr->end_time > now)) {
 				job_ptr->time_limit = djob_ptr->end_time - now;
 				job_ptr->time_limit /= 60;  /* sec to min */
 			}
-			if (job_ptr->details && djob_ptr->details) {
+			if (!failure && job_ptr->details && djob_ptr->details) {
 				job_ptr->details->share_res =
 					djob_ptr->details->share_res;
 				job_ptr->details->whole_node =
@@ -2860,12 +2846,27 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				depends = true;
 		} else
 			failure = true;
-		if (clear_dep) {
-			rebuild_str = true;
+		if (failure) {
+			job_ptr->bit_flags |= INVALID_DEPEND;
+			if ((dep_ptr->depend_flags & SLURM_FLAGS_OR) &&
+			    list_peek_next(depend_iter)) {
+				failure = false;
+				depends = true;
+			} else
+				break;
+		} else if (clear_dep) {
 			if (dep_ptr->depend_flags & SLURM_FLAGS_OR) {
 				or_satisfied = true;
+				depends = false;
+				job_ptr->bit_flags &= ~INVALID_DEPEND;
+				if (job_ptr->state_reason == WAIT_DEP_INVALID) {
+					job_ptr->state_reason = WAIT_NO_REASON;
+					xfree(job_ptr->state_desc);
+				}
 				break;
 			}
+			if (!(job_ptr->bit_flags & INVALID_DEPEND))
+				rebuild_str = true;
 			list_delete_item(depend_iter);
 		}
 	}
