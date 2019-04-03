@@ -6674,6 +6674,11 @@ static bool _mps_assign_test(uint32_t user_id, gres_job_state_t *job_gres_ptr,
 
 	if (!mps_table)
 		mps_table = xcalloc(node_record_count, sizeof(List));
+	if (node_inx >= node_record_count) {
+		error("%s: Invalid node index (%u >= %d)", __func__,
+		      node_inx, node_record_count);
+		return true;
+	}
 	if (!mps_table[node_inx])
 		return true;	/* No MPS assignments on this node/GPU */
 	iter = list_iterator_create(mps_table[node_inx]);
@@ -6699,6 +6704,11 @@ static void _mps_assign_add(uint32_t user_id, gres_job_state_t *job_gres_ptr,
 
 	if (!mps_table)
 		mps_table = xcalloc(node_record_count, sizeof(List));
+	if (node_inx >= node_record_count) {
+		error("%s: Invalid node index (%u >= %d)", __func__,
+		      node_inx, node_record_count);
+		return;
+	}
 	if (mps_table[node_inx]) {
 		iter = list_iterator_create(mps_table[node_inx]);
 		while ((mps_assign_ptr = (mps_assign_t *)list_next(iter))) {
@@ -6749,6 +6759,11 @@ static void _mps_assign_rm(uint32_t user_id, gres_job_state_t *job_gres_ptr,
 
 	if (!mps_table) {
 		error("%s: mps_table NULL", __func__);
+		return;
+	}
+	if (node_inx >= node_record_count) {
+		error("%s: Invalid node index (%u >= %d)", __func__,
+		      node_inx, node_record_count);
 		return;
 	}
 	if (!mps_table[node_inx]) {
