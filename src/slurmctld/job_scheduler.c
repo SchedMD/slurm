@@ -1464,6 +1464,7 @@ static int _schedule(uint32_t job_limit)
 			    (job_ptr->state_reason != WAIT_NODE_NOT_AVAIL))
 				continue;
 			job_ptr->state_reason = WAIT_FRONT_END;
+			xfree(job_ptr->state_desc);
 		}
 		list_iterator_destroy(job_iterator);
 
