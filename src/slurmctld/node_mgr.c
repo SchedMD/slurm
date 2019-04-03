@@ -3666,8 +3666,10 @@ find_first_node_record (bitstr_t *node_bitmap)
 		return &node_record_table_ptr[inx];
 }
 
-/* msg_to_slurmd - send given msg_type (REQUEST_RECONFIGURE or
- * REQUEST_SHUTDOWN) to every slurmd, no args */
+/*
+ * msg_to_slurmd - send given msg_type (REQUEST_RECONFIGURE or REQUEST_SHUTDOWN)
+ * to every slurmd
+ */
 void msg_to_slurmd (slurm_msg_type_t msg_type)
 {
 	int i;

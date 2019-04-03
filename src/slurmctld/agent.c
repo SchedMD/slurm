@@ -352,8 +352,10 @@ void *agent(void *args)
 					&agent_info_ptr->thread_mutex);
 		}
 
-		/* create thread specific data, NOTE: freed from
-		 *      _thread_per_group_rpc() */
+		/*
+		 * create thread specific data,
+		 * NOTE: freed from _thread_per_group_rpc()
+		 */
 		task_specific_ptr = _make_task_data(agent_info_ptr, i);
 
 		slurm_thread_create_detached(&thread_ptr[i].thread,

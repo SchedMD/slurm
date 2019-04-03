@@ -848,13 +848,17 @@ int main(int argc, char **argv)
 
 #ifdef MEMORY_LEAK_DEBUG
 {
-	/* This should purge all allocated memory,   *\
-	\*   Anything left over represents a leak.   */
+	/*
+	 * This should purge all allocated memory.
+	 *  Anything left over represents a leak.
+	 */
 
 
-	/* Give running agents a chance to complete and free memory.
-	 * Wait up to 60 seconds. */
-	for (i=0; i<60; i++) {
+	/*
+	 * Give running agents a chance to complete and free memory.
+	 * Wait up to 6 seconds.
+	 */
+	for (i = 0; i < 60; i++) {
 		agent_purge();
 		usleep(100000);
 		cnt = get_agent_count();

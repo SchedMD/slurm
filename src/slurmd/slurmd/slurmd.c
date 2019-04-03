@@ -524,13 +524,15 @@ _service_connection(void *arg)
 	if ((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg, 0))
 	   != SLURM_SUCCESS) {
 		error("service_connection: slurm_receive_msg: %m");
-		/* if this fails we need to make sure the nodes we forward
-		   to are taken care of and sent back. This way the control
-		   also has a better idea what happened to us */
+		/*
+		 * if this fails we need to make sure the nodes we forward
+		 * to are taken care of and sent back. This way the control
+		 * also has a better idea what happened to us
+		 */
 		slurm_send_rc_msg(msg, rc);
 		goto cleanup;
 	}
-	debug2("got this type of message %d", msg->msg_type);
+	debug2("Start processing RPC: %s", rpc_num2string(msg->msg_type));
 
 	if (msg->msg_type != MESSAGE_COMPOSITE)
 		slurmd_req(msg);
@@ -541,6 +543,7 @@ cleanup:
 
 	xfree(con->cli_addr);
 	xfree(con);
+	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
 	slurm_free_msg(msg);
 	_decrement_thd_count();
 	return NULL;
