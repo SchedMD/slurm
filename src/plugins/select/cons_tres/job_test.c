@@ -3995,7 +3995,11 @@ fini:	FREE_NULL_LIST(best_gres);
 	xfree(avail_cpu_per_node);
 	xfree(switch_cpu_cnt);
 	xfree(switch_gres);
-	xfree(switch_node_bitmap);
+	if (switch_node_bitmap) {
+		for (i = 0; i < switch_record_cnt; i++)
+			FREE_NULL_BITMAP(switch_node_bitmap[i]);
+		xfree(switch_node_bitmap);
+	}
 	xfree(switch_node_cnt);
 	xfree(switch_required);
 	return rc;
@@ -4570,7 +4574,11 @@ fini:	FREE_NULL_LIST(best_gres);
 	xfree(avail_cpu_per_node);
 	xfree(switch_cpu_cnt);
 	xfree(switch_gres);
-	xfree(switch_node_bitmap);
+	if (switch_node_bitmap) {
+		for (i = 0; i < switch_record_cnt; i++)
+			FREE_NULL_BITMAP(switch_node_bitmap[i]);
+		xfree(switch_node_bitmap);
+	}
 	xfree(switch_node_cnt);
 	xfree(switch_required);
 	return rc;
