@@ -184,6 +184,7 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 
 out:
 	ngids = entry->ngids;
+	xfree(*gids);
 	*gids = copy_gids(entry->ngids, entry->gids);
 
 	slurm_mutex_unlock(&gids_mutex);

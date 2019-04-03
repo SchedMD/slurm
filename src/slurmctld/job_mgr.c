@@ -9226,6 +9226,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->cpus_per_tres);
 	free_job_fed_details(&job_ptr->fed_details);
 	free_job_resources(&job_ptr->job_resrcs);
+	xfree(job_ptr->gids);
 	xfree(job_ptr->gres_alloc);
 	_clear_job_gres_details(job_ptr);
 	xfree(job_ptr->gres_req);
