@@ -567,7 +567,7 @@ extern List license_validate(char *licenses, bool validate_configured,
 			debug("License name requested (%s) does not exist",
 			      license_entry->name);
 			if (!validate_existing) {
-				list_remove(iter);
+				list_delete_item(iter);
 				continue;
 			}
 			*valid = false;
