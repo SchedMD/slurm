@@ -1092,6 +1092,7 @@ extern void slurmdbd_free_job_start_msg(void *in)
 	if (msg) {
 		xfree(msg->account);
 		xfree(msg->array_task_str);
+		xfree(msg->constraints);
 		xfree(msg->gres_alloc);
 		xfree(msg->gres_req);
 		xfree(msg->gres_used);
