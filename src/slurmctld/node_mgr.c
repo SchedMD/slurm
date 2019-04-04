@@ -2110,6 +2110,7 @@ static int _update_node_gres(char *node_names, char *gres)
 		overlap2 = bit_set_count(config_ptr->node_bitmap);
 		if (overlap1 == 0) {
 			/* No nodes actually changed in this configuration */
+			FREE_NULL_BITMAP(tmp_bitmap);
 		} else if (overlap1 == overlap2) {
 			/* All nodes changes in this configuration */
 			xfree(config_ptr->gres);
@@ -2158,7 +2159,7 @@ static int _update_node_gres(char *node_names, char *gres)
 		change_node_str = bitmap2node_name(changed_node_bitmap);
 		info("%s: nodes %s gres set to: %s", __func__,
 		     change_node_str, gres);
-		xfree(changed_node_bitmap);
+		FREE_NULL_BITMAP(changed_node_bitmap);
 	}
 
 	return rc;
