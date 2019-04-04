@@ -1936,6 +1936,14 @@ static void *_slurmctld_background(void *no_data)
 	/* Locks: Read job and node */
 	slurmctld_lock_t job_node_read_lock = {
 		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	/*
+	 * purge_old_job modifes jobs and reads conf info. It can also
+	 * call re_kill_job(), which can modify nodes and reads fed info.
+	 */
+	slurmctld_lock_t purge_job_locks = {
+		.conf = READ_LOCK, .job = WRITE_LOCK,
+		.node = WRITE_LOCK, .fed = READ_LOCK
+	};
 
 	/* Let the dust settle before doing work */
 	now = time(NULL);
@@ -2155,9 +2163,9 @@ static void *_slurmctld_background(void *no_data)
 				now = time(NULL);
 				last_purge_job_time = now;
 				debug2("Performing purge of old job records");
-				lock_slurmctld(job_write_lock);
+				lock_slurmctld(purge_job_locks);
 				purge_old_job();
-				unlock_slurmctld(job_write_lock);
+				unlock_slurmctld(purge_job_locks);
 			}
 			slurm_mutex_unlock(&check_bf_running_lock);
 		}
