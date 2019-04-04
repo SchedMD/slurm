@@ -184,6 +184,7 @@ typedef struct mps_assign {
 	uint32_t user_id;	/* User with MPS allocation on this GPU */
 } mps_assign_t;
 List *mps_table = NULL;	/* List of mps_assign_t records, one per node */
+int mps_table_size = 0;
 
 void _del_mps_assign(void *x)
 {
@@ -6673,10 +6674,10 @@ static bool _mps_assign_test(uint32_t user_id, gres_job_state_t *job_gres_ptr,
 	mps_assign_t *mps_assign_ptr;
 
 	if (!mps_table)
-		mps_table = xcalloc(node_record_count, sizeof(List));
-	if (node_inx >= node_record_count) {
+		return true;	/* No MPS assignments yet on any node */
+	if (node_inx >= mps_table_size) {
 		error("%s: Invalid node index (%u >= %d)", __func__,
-		      node_inx, node_record_count);
+		      node_inx, mps_table_size);
 		return true;
 	}
 	if (!mps_table[node_inx])
@@ -6702,11 +6703,13 @@ static void _mps_assign_add(uint32_t user_id, gres_job_state_t *job_gres_ptr,
 	mps_assign_t *mps_assign_ptr;
 	bool recorded = false;
 
-	if (!mps_table)
+	if (!mps_table) {
 		mps_table = xcalloc(node_record_count, sizeof(List));
-	if (node_inx >= node_record_count) {
+		mps_table_size = node_record_count;
+	}
+	if (node_inx >= mps_table_size) {
 		error("%s: Invalid node index (%u >= %d)", __func__,
-		      node_inx, node_record_count);
+		      node_inx, mps_table_size);
 		return;
 	}
 	if (mps_table[node_inx]) {
@@ -6744,9 +6747,10 @@ static void _mps_assign_clear(void)
 	int i;
 
 	if (mps_table) {
-		for (i = 0; i < node_record_count; i++)
+		for (i = 0; i < mps_table_size; i++)
 			FREE_NULL_LIST(mps_table[i]);
 		xfree(mps_table);
+		mps_table_size = 0;
 	}
 }
 
@@ -6761,9 +6765,9 @@ static void _mps_assign_rm(uint32_t user_id, gres_job_state_t *job_gres_ptr,
 		error("%s: mps_table NULL", __func__);
 		return;
 	}
-	if (node_inx >= node_record_count) {
+	if (node_inx >= mps_table_size) {
 		error("%s: Invalid node index (%u >= %d)", __func__,
-		      node_inx, node_record_count);
+		      node_inx, mps_table_size);
 		return;
 	}
 	if (!mps_table[node_inx]) {
