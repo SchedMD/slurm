@@ -2565,12 +2565,12 @@ static void _add_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 		used_limits_u2->accrue_cnt += cnt;
 
 	while (assoc_ptr) {
-		assoc_ptr->usage->accrue_cnt += cnt;
-		/* info("adding it to %u(%s/%s/%s) %p %d", */
+		/* info("adding it to %u(%s/%s/%s) %p %d %d", */
 		/*      assoc_ptr->id, assoc_ptr->acct, */
 		/*      assoc_ptr->user, assoc_ptr->partition, */
 		/*      assoc_ptr->usage, */
-		/*      assoc_ptr->usage->accrue_cnt); */
+		/*      assoc_ptr->usage->accrue_cnt, cnt); */
+		assoc_ptr->usage->accrue_cnt += cnt;
 		/* now go up the hierarchy */
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
@@ -2655,7 +2655,7 @@ static void _remove_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 
 	while (assoc_ptr) {
 		if (assoc_ptr->usage->accrue_cnt >= cnt) {
-			/* info("removing it to %u(%s/%s/%s) %p %d %d", */
+			/* info("removing it from %u(%s/%s/%s) %p %d %d", */
 			/*      assoc_ptr->id, assoc_ptr->acct, */
 			/*      assoc_ptr->user, assoc_ptr->partition, */
 			/*      assoc_ptr->usage, */
