@@ -10733,6 +10733,8 @@ void purge_old_job(void)
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
+	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	if ((purge_job_count = list_count(purge_files_list)))
 		debug("%s: job file deletion is falling behind, "
