@@ -1365,6 +1365,7 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	if (gres_context_cnt == 0)
 		return SLURM_SUCCESS;
 
+	slurm_mutex_lock(&gres_context_lock);
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = list_create(destroy_gres_slurmd_conf);
 	gres_conf_file = get_extra_conf_path("gres.conf");
@@ -1372,7 +1373,6 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		info("Can not stat gres.conf file (%s), using slurm.conf data",
 		      gres_conf_file);
 	} else {
-		slurm_mutex_lock(&gres_context_lock);
 		if (xstrcmp(gres_node_name, node_name)) {
 			xfree(gres_node_name);
 			gres_node_name = xstrdup(node_name);
