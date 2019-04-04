@@ -102,7 +102,7 @@ extern int slurm_auth_init(char *auth_type)
 {
 	int retval = SLURM_SUCCESS;
 	char *auth_alt_types = NULL, *list = NULL;
-	char *auth_plugin_type, *type, *last = NULL;
+	char *auth_plugin_type = NULL, *type, *last = NULL;
 	char *plugin_type = "auth";
 
 	if (init_run && (g_context_num > 0))
