@@ -5734,7 +5734,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	uint64_t avail_mem = NO_VAL64, req_mem;
 	int cpu_alloc_size, i, rc;
 	struct node_record *node_ptr = node_record_table_ptr + node_i;
-	List gres_list;
+	List node_gres_list;
 	bitstr_t *part_core_map_ptr = NULL, *req_sock_map = NULL;
 	avail_res_t *avail_res = NULL;
 	List sock_gres_list = NULL;
@@ -5753,9 +5753,9 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	if (part_core_map)
 		part_core_map_ptr = part_core_map[node_i];
 	if (node_usage[node_i].gres_list)
-		gres_list = node_usage[node_i].gres_list;
+		node_gres_list = node_usage[node_i].gres_list;
 	else
-		gres_list = node_ptr->gres_list;
+		node_gres_list = node_ptr->gres_list;
 
 	if (job_ptr->gres_list) {
 		/* Identify available GRES and adjacent cores */
@@ -5767,9 +5767,8 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 			bit_set_all(core_map[node_i]);
 		}
 		sock_gres_list = gres_plugin_job_test2(
-					job_ptr->gres_list,
-					gres_list, test_only,
-					core_map[node_i],
+					job_ptr->gres_list, node_gres_list,
+					test_only, core_map[node_i],
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
 					job_ptr->job_id, node_ptr->name,
