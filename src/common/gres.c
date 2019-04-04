@@ -7220,7 +7220,7 @@ static void _sock_gres_log(List sock_gres_list, char *node_name)
  * IN user_id         - job's user ID
  * IN node_inx        - index of node to be evaluated
  * RET: List of sock_gres_t entries identifying what resources are available on
- *	each core. Returns NULL if none available. Call FREE_NULL_LIST() to
+ *	each socket. Returns NULL if none available. Call FREE_NULL_LIST() to
  *	release memory.
  */
 extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,

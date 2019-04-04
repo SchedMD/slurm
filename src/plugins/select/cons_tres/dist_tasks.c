@@ -667,7 +667,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 		rem_tasks = rem_cpus / job_ptr->details->cpus_per_task;
 		if (rem_tasks == 0)
 			continue;
-		for (t = 0; ((t < rem_tasks) && (tid < maxtasks)); t++){
+		for (t = 0; ((t < rem_tasks) && (tid < maxtasks)); t++) {
 			if (!over_subscribe &&
 			    ((avail_cpus[n] - job_res->cpus[n]) <
 			     job_ptr->details->cpus_per_task))
