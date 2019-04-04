@@ -8787,6 +8787,14 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 		}
 	}
 	xfree(links_cnt);
+
+	if (total_gres_cnt < total_gres_goal) {
+		/* Something bad happened on task layout for this GRES type */
+		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u "
+		      "(%"PRIu64" < %"PRIu64")",  __func__,
+		      sock_gres->gres_name, job_id, node_inx,
+		      total_gres_cnt, total_gres_goal);
+	}
 }
 
 /* Build array to identify task count for each node-socket pair */
