@@ -288,7 +288,7 @@ static int _add_job_to_res(struct job_record *job_ptr, int action)
 		for (i = 0; i < p_ptr->num_rows; i++) {
 			if (!can_job_fit_in_row(job, &(p_ptr->row[i])))
 				continue;
-			debug3("cons%s_tres: %s: adding %pJ to part %s row %u",
+			debug3("%s: %s: adding %pJ to part %s row %u",
 			      	plugin_type, __func__, job_ptr,
 			       p_ptr->part_ptr->name, i);
 			add_job_to_row(job, &(p_ptr->row[i]));
