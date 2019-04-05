@@ -401,6 +401,62 @@ if {$error_time > $max_time_error} {
 	send_user "\nSUCCESS: sacct elapsed time discrepancy of $error_time secs\n"
 }
 
+set total_cpu 0
+spawn $sacct --noheader -P --job=$job_id.$step_id --format totalcpu
+# Ignore the milliseconds portion
+expect {
+	-re "($number):(\[0-9\])(\[0-9\])" {
+		set mins $expect_out(1,string)
+		set sec_ten $expect_out(2,string)
+		set sec_one $expect_out(3,string)
+		set secs [expr $sec_ten * 10 + $sec_one]
+		set total_cpu [expr ($mins * 60) + $secs]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$total_cpu > $sleep_time} {
+	send_user "\nFAILURE: sacct reported an impossible TotalCPU time of $total_cpu secs\n"
+	send_user "  Has to be less than $sleep_time secs!\n"
+	set exit_code 1
+} else {
+	send_user "\nSUCCESS: sacct TotalCPU time looks reasonable ($total_cpu seconds)\n"
+}
+
+set min_cpu 0
+spawn $sacct --noheader -P --job=$job_id.$step_id --format mincpu
+expect {
+	-re "($number):($number):(\[0-9\])(\[0-9\])" {
+		set hours $expect_out(1,string)
+		set mins $expect_out(2,string)
+		set sec_ten $expect_out(3,string)
+		set sec_one $expect_out(4,string)
+		set secs [expr $sec_ten * 10 + $sec_one]
+		set min_cpu [expr ($hours * 3600) + ($mins * 60) + $secs]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sacct not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$min_cpu > $sleep_time} {
+	send_user "\nFAILURE: sacct reported an impossible MinCPU time of $min_cpu secs\n"
+	send_user "  Has to be less than $sleep_time secs!\n"
+	set exit_code 1
+} else {
+	send_user "\nSUCCESS: sacct MinCPU time looks reasonable ($min_cpu seconds)\n"
+}
+
 if {[_get_mem $sacct] != 0} {
 	set exit_code 1
 }
