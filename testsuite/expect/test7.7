@@ -165,6 +165,9 @@ set select_type_param [get_select_type_params $partition]
 if {![string compare $select_type "linear"]} {
 	set alloc_unit_str "NODE"
 	set alloc_unit_num 1
+} elseif { [default_part_exclusive] == 1} {
+	set alloc_unit_str "NODE"
+	set alloc_unit_num 1
 } elseif { [string first "CR_SOCKET" $select_type_param] != -1} {
 	set alloc_unit_str "SOCKET"
 	set alloc_unit_num 2
