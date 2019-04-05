@@ -1439,7 +1439,7 @@ static int _schedule(uint32_t job_limit)
 	}
 
 	if (!fed_mgr_sibs_synced()) {
-		sched_debug("schedule() returning, federation siblings not synced yet");
+		sched_info("schedule() returning, federation siblings not synced yet");
 		goto out;
 	}
 
