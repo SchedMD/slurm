@@ -65,6 +65,15 @@
 #include "opt.h"
 #include "launch.h"
 
+#if defined HAVE_REAL_CRAY
+/*
+ * On Cray installations, the libjob headers are not automatically installed
+ * by default, while libjob.so always is, and kernels are > 2.6. Hence it is
+ * simpler to just duplicate the single declaration here.
+ */
+extern uint64_t job_getjid(pid_t pid);
+#endif
+
 #define MAX_ALLOC_WAIT	60	/* seconds */
 #define MIN_ALLOC_WAIT	5	/* seconds */
 #define MAX_RETRIES	10
