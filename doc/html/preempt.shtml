@@ -16,7 +16,7 @@ resources if so configured in newer versions of Slurm.
 </P>
 <P>
 The job's partition priority or its Quality Of Service (QOS) can be used to
-identify the which jobs can preempt or be preempted by other jobs.
+identify which jobs can preempt or be preempted by other jobs.
 Slurm offers the ability to configure the preemption mechanism used on a per
 partition or per QOS basis.
 For example, jobs in a low priority queue may get requeued,
@@ -40,7 +40,7 @@ plugin should be configured to track the amount of memory used by each job to
 ensure that memory page swapping does not occur. When <I>select/linear</I> is
 chosen, we recommend setting <I>SelectTypeParameter=CR_Memory</I>. When
 <I>select/cons_res</I> is chosen, we recommend including Memory as a resource
-(ex. <I>SelectTypeParameter=CR_Core_Memory</I>).
+(e.g. <I>SelectTypeParameter=CR_Core_Memory</I>).
 <BR><B>NOTE:</B> Unless <I>PreemptMode=SUSPEND,GANG</I> these memory management
 parameters are not critical.
 </LI>
@@ -76,7 +76,7 @@ each job to ensure that the job does not exceed its requested amount of memory.
 If you wish to enable additional enforcement of memory limits, configure job
 accounting with the <I>JobAcctGatherType</I> and <I>JobAcctGatherFrequency</I>
 parameters. When accounting is enabled and a job exceeds its configured memory
-limits, it will be canceled in order to prevent it from adversely effecting
+limits, it will be canceled in order to prevent it from adversely affecting
 other jobs sharing the same resources.
 <BR><B>NOTE:</B> Unless <I>PreemptMode=SUSPEND,GANG</I> these memory management
 parameters are not critical.
@@ -85,7 +85,7 @@ parameters are not critical.
 <B>PreemptMode</B>: Specifies the mechanism used to preempt low priority jobs.
 The PreemptMode should be specified for the cluster as a whole, although
 different values can be configured on each partition when
-<I>PreemptType=preempt/partition_prio</I>. Note that when specified 
+<I>PreemptType=preempt/partition_prio</I>. Note that when specified
 on a partition, a compatible mode must also be specified system-wide;
 specifically if a PreemptMode is set to SUSPEND for any partition, then
 the system-wide PreemptMode must include the GANG and SUSPEND parameters so the
@@ -115,7 +115,7 @@ gang scheduling or job preemption with suspension.</LI>
 </UL>
 </LI>
 <LI>
-<B>PreemptType</B>: Configure to the desired mechanism used to identify
+<B>PreemptType</B>: Configure the desired mechanism used to identify
 which jobs can preempt other jobs.
 <UL>
 <LI><I>preempt/none</I> indicates that jobs will not preempt each other
@@ -153,12 +153,13 @@ max_share value is 4. In order to preempt jobs (and not gang schedule them),
 always set max_share to 1. To allow up to 2 jobs from this partition to be
 allocated to a common resource (and gang scheduled), set
 <I>OverSubscribe=FORCE:2</I>.
-NOTE: <I>PreemptType=QOS</I> will permit one additional job to be run
+<BR><B>NOTE:</B> <I>PreemptType=QOS</I> will permit one additional job to be run
 on the partition if started due to job preemption. For example, a configuration
 of <I>OverSubscribe=FORCE:1</I> will only permit one job per resources normally,
 but a second job can be started if done so through preemption based upon QOS.
 The use of <I>PreemptType=QOS</I> and <I>PreemptType=Suspend</I> only applies
-with <I>SelectType=cons_res</I>.
+with <I>SelectType=cons_res</I> in versions 18.08 and older or with
+<I>SelectType=cons_tres</I> in version 19.05.
 </LI>
 </UL>
 <P>
@@ -453,6 +454,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 20 September 2017</p>
+<p style="text-align:center;">Last modified 1 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
