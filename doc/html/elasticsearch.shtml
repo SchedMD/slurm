@@ -39,10 +39,9 @@ PREFIX/include (default PREFIX is curl-config path or $PATH).
 </pre>
 </p>
 
-<p>The Elasticsearch instance should be running and reachable from the
-<a href="slurm.conf.html#OPT_ControlMachine">ControlMachine</a> and from the
-<a href="slurm.conf.html#OPT_BackupController">BackupController</a>
-(if configured). Refer to the <a href="https://www.elastic.co/">Elasticsearch
+<p>The Elasticsearch instance should be running and reachable from the multiple
+<a href="slurm.conf.html#OPT_SlurmctldAddr">SlurmctldHost</a> configured.
+Refer to the <a href="https://www.elastic.co/">Elasticsearch
 Official Documentation</a> for further details on setup and configuration.
 
 <p>There are three <a href="slurm.conf.html">slurm.conf</a> options related to
@@ -134,6 +133,6 @@ restored.</p>
 <p>The Elasticsearch plugin was created as part of Alejandro Sanchez's
 <a href="https://upcommons.upc.edu/handle/2117/79252">Master's Thesis</a>.</p>
 
-<p style="text-align:center;">Last modified 6 June 2018</p>
+<p style="text-align:center;">Last modified 5 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
