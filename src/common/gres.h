@@ -911,6 +911,12 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 bitstr_t *avail_core);
 
 /*
+ * Return the maximum number of tasks that can be started on a node with
+ * sock_gres_list (per-socket GRES details for some node)
+ */
+extern uint32_t gres_plugin_get_task_limit(List sock_gres_list);
+
+/*
  * Make final GRES selection for the job
  * sock_gres_list IN - per-socket GRES details, one record per allocated node
  * job_id IN - job ID for logging
@@ -925,6 +931,12 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					uint8_t overcommit,
 					gres_mc_data_t *tres_mc_ptr,
 					struct node_record *node_table_ptr);
+
+/*
+ * Determine if job GRES specification includes a tres-per-task specification
+ * RET TRUE if any GRES requested by the job include a tres-per-task option
+ */
+extern bool gres_plugin_job_tres_per_task(List job_gres_list);
 
 /*
  * Determine if the job GRES specification includes a mem-per-tres specification

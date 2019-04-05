@@ -7871,6 +7871,31 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 }
 
 /*
+ * Return the maximum number of tasks that can be started on a node with
+ * sock_gres_list (per-socket GRES details for some node)
+ */
+extern uint32_t gres_plugin_get_task_limit(List sock_gres_list)
+{
+	ListIterator sock_gres_iter;
+	sock_gres_t *sock_gres;
+	uint32_t max_tasks = NO_VAL;
+	uint64_t task_limit;
+
+	sock_gres_iter = list_iterator_create(sock_gres_list);
+	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
+		xassert(sock_gres->job_specs);
+		if (sock_gres->job_specs->gres_per_task == 0)
+			continue;
+		task_limit = sock_gres->total_cnt /
+			     sock_gres->job_specs->gres_per_task;
+		max_tasks = MIN(max_tasks, task_limit);
+	}
+	list_iterator_destroy(sock_gres_iter);
+
+	return max_tasks;
+}
+
+/*
  * Return count of sockets allocated to this job on this node
  * job_res IN - job resource allocation
  * node_inx IN - global node index
@@ -9205,6 +9230,33 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 	_free_tasks_per_node_sock(tasks_per_node_socket, node_cnt);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Determine if job GRES specification includes a tres-per-task specification
+ * RET TRUE if any GRES requested by the job include a tres-per-task option
+ */
+extern bool gres_plugin_job_tres_per_task(List job_gres_list)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_data_ptr;
+	bool have_gres_per_task = false;
+
+	if (!job_gres_list)
+		return false;
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+		if (job_data_ptr->gres_per_task == 0)
+			continue;
+		have_gres_per_task = true;
+		break;
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return have_gres_per_task;
 }
 
 /*

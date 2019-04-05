@@ -1311,6 +1311,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	int i, i_first, i_last;
 	avail_res_t **avail_res_array, **avail_res_array_tmp;
 	gres_mc_data_t *tres_mc_ptr;
+	List *node_gres_list = NULL, *sock_gres_list = NULL;
+	uint32_t *gres_task_limit = NULL;
 
 	free_job_resources(&job_ptr->job_resrcs);
 
@@ -1979,28 +1981,52 @@ alloc_job:
 		i_last  = bit_fls(job_res->node_bitmap);
 	else
 		i_last = -2;
-	error_code = cr_dist(job_ptr, cr_type, preempt_mode, avail_cores);
 	if (job_ptr->gres_list && (error_code == SLURM_SUCCESS)) {
 		struct node_record *node_ptr;
-		List *node_gres_list = NULL, *sock_gres_list = NULL;
-		node_gres_list = xmalloc(sizeof(List) * job_res->nhosts);
-		sock_gres_list = xmalloc(sizeof(List) * job_res->nhosts);
+		bool have_gres_per_task, task_limit_set = false;
+
+		/*
+		 * Determine if any job gres_per_task specification here
+		 * to avoid calling gres_plugin_get_task_limit unless needed
+		 */
+		have_gres_per_task = gres_plugin_job_tres_per_task(
+						job_ptr->gres_list);
+		if (have_gres_per_task) {
+			gres_task_limit = xcalloc(job_res->nhosts,
+						  sizeof(uint32_t));
+		}
+		node_gres_list = xcalloc(job_res->nhosts, sizeof(List));
+		sock_gres_list = xcalloc(job_res->nhosts, sizeof(List));
 		for (i = i_first, j = 0; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
+			if (have_gres_per_task) {
+				gres_task_limit[j] = gres_plugin_get_task_limit(
+							avail_res_array[i]->
+							sock_gres_list);
+				if (gres_task_limit[j] != NO_VAL)
+					task_limit_set = true;
+			}
 			node_ptr = node_record_table_ptr + i;
 			node_gres_list[j] = node_ptr->gres_list;
 			sock_gres_list[j] = avail_res_array[i]->sock_gres_list;
 			j++;
 		}
+		if (!task_limit_set)
+			xfree(gres_task_limit);
+	}
+	error_code = cr_dist(job_ptr, cr_type, preempt_mode, avail_cores,
+			     gres_task_limit);
+	if (job_ptr->gres_list && (error_code == SLURM_SUCCESS)) {
 		error_code = gres_plugin_job_core_filter4(sock_gres_list,
 						job_ptr->job_id, job_res,
 						job_ptr->details->overcommit,
 						tres_mc_ptr,
 						node_record_table_ptr);
-		xfree(node_gres_list);
-		xfree(sock_gres_list);
 	}
+	xfree(gres_task_limit);
+	xfree(node_gres_list);
+	xfree(sock_gres_list);
 	xfree(tres_mc_ptr);
 	_free_avail_res_array(avail_res_array);
 	free_core_array(&avail_cores);

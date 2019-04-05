@@ -68,7 +68,10 @@ static void _clear_spec_cores(struct job_record *job_ptr,
 static int _cmp_int_ascend(const void *a, const void *b);
 static int _cmp_int_descend(const void *a, const void *b);
 static int _cmp_sock(const void *a, const void *b);
-static int _compute_plane_dist(struct job_record *job_ptr);
+static int _compute_c_b_task_dist(struct job_record *job_ptr,
+				  uint32_t *gres_task_limit);
+static int _compute_plane_dist(struct job_record *job_ptr,
+			       uint32_t *gres_task_limit);
 static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 				    const uint16_t cr_type, bool preempt_mode);
 static void _gen_combs(int *comb_list, int n, int k);
@@ -562,6 +565,17 @@ static int _cmp_sock(const void *a, const void *b)
 	return (sockets_core_cnt[*(int*)b] - sockets_core_cnt[*(int*)a]);
 }
 
+/* Return true if more tasks can be allocated for this job on this node */
+static bool _tres_tasks_avail(uint32_t *gres_task_limit,
+			      job_resources_t *job_res, uint32_t node_offset)
+{
+	if (!gres_task_limit || !job_res)
+		return true;
+	if (gres_task_limit[node_offset] > job_res->tasks_per_node[node_offset])
+		return true;
+	return false;
+}
+
 /*
  * _compute_task_c_b_task_dist - compute the number of tasks on each
  * of the node for the cyclic and block distribution. We need to do
@@ -576,9 +590,12 @@ static int _cmp_sock(const void *a, const void *b)
  *
  * IN/OUT job_ptr - pointer to job being scheduled. The per-node
  *                  job_res->cpus array is recomputed here.
- *
+ * IN gres_task_limit - array of task limits based upon job's GRES specification
+ *			offset based upon bits set in
+ *			job_ptr->job_resrcs->node_bitmap
  */
-static int _compute_c_b_task_dist(struct job_record *job_ptr)
+static int _compute_c_b_task_dist(struct job_record *job_ptr,
+				  uint32_t *gres_task_limit)
 {
 	bool over_subscribe = false;
 	uint32_t n, tid, t, maxtasks, l;
@@ -588,6 +605,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	char *err_msg = NULL;
 	uint16_t *vpus;
 	bool space_remaining = false;
+	bool test_tres_tasks = true;
 	int i, i_first, i_last, rem_cpus, rem_tasks;
 
 	if (!job_res)
@@ -648,6 +666,7 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	tid = 0;
 	for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 		if (avail_cpus[n] || over_subscribe) {
+			/* Ignore gres_task_limit for first task per node */
 			tid++;
 			job_res->tasks_per_node[n]++;
 			for (l = 0; l < job_ptr->details->cpus_per_task; l++) {
@@ -671,6 +690,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 			if (!over_subscribe &&
 			    ((avail_cpus[n] - job_res->cpus[n]) <
 			     job_ptr->details->cpus_per_task))
+				break;
+			if (!_tres_tasks_avail(gres_task_limit, job_res, n))
 				break;
 			tid++;
 			job_res->tasks_per_node[n]++;
@@ -711,6 +732,9 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 				    ((avail_cpus[n] - job_res->cpus[n]) <
 				     job_ptr->details->cpus_per_task))
 					break;
+				if (!_tres_tasks_avail(gres_task_limit,
+						       job_res, n))
+					break;
 				tid++;
 				job_res->tasks_per_node[n]++;
 				for (l = 0; l < job_ptr->details->cpus_per_task;
@@ -736,23 +760,32 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr)
 	 * across nodes
 	 */
 	while (tid < maxtasks) {
+		bool more_tres_tasks = false;
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
+			if (test_tres_tasks &&
+			    !_tres_tasks_avail(gres_task_limit, job_res, n))
+				continue;
+			more_tres_tasks = true;
 			tid++;
 			job_res->tasks_per_node[n]++;
 		}
+		if (!more_tres_tasks)
+			test_tres_tasks = false;
 	}
 
 	return SLURM_SUCCESS;
 }
 
 /* distribute blocks (planes) of tasks cyclically */
-static int _compute_plane_dist(struct job_record *job_ptr)
+static int _compute_plane_dist(struct job_record *job_ptr,
+			       uint32_t *gres_task_limit)
 {
 	bool over_subscribe = false;
 	uint32_t n, i, p, tid, maxtasks, l;
 	uint16_t *avail_cpus, plane_size = 1;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool log_over_subscribe = true;
+	bool test_tres_tasks = true;
 
 	if (!job_res || !job_res->cpus || !job_res->nhosts) {
 		error("%s: %s: invalid allocation for %pJ",
@@ -768,7 +801,6 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 
 	if (job_ptr->details && job_ptr->details->mc_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
-
 	if (plane_size <= 0) {
 		error("%s: %s: invalid plane_size", plugin_type, __func__);
 		return SLURM_ERROR;
@@ -791,7 +823,13 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 			log_over_subscribe = false;	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
+			bool more_tres_tasks = false;
 			for (p = 0; p < plane_size && (tid < maxtasks); p++) {
+				if (test_tres_tasks &&
+				    !_tres_tasks_avail(gres_task_limit,
+						       job_res, n))
+					continue;
+				more_tres_tasks = true;
 				if ((job_res->cpus[n] < avail_cpus[n]) ||
 				    over_subscribe) {
 					tid++;
@@ -805,6 +843,8 @@ static int _compute_plane_dist(struct job_record *job_ptr)
 					}
 				}
 			}
+			if (!more_tres_tasks)
+				test_tres_tasks = false;
 			if (job_res->cpus[n] < avail_cpus[n])
 				space_remaining = true;
 		}
@@ -1320,9 +1360,12 @@ static inline void _log_select_maps(char *loc, struct job_record *job_ptr)
  * IN preempt_mode - true if testing with simulated preempted jobs
  * IN core_array - system-wide bitmap of cores originally available to
  *		the job, only used to identify specialized cores
+ * IN gres_task_limit - array of task limits based upon job GRES specification,
+ *		offset based upon bits set in job_ptr->job_resrcs->node_bitmap
  */
 extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
-		   bool preempt_mode, bitstr_t **core_array)
+		   bool preempt_mode, bitstr_t **core_array,
+		   uint32_t *gres_task_limit)
 {
 	int error_code;
 
@@ -1363,12 +1406,12 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
 	    SLURM_DIST_PLANE) {
 		/* Perform plane distribution on the job_resources_t struct */
-		error_code = _compute_plane_dist(job_ptr);
+		error_code = _compute_plane_dist(job_ptr, gres_task_limit);
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 	} else {
 		/* Perform cyclic distribution on the job_resources_t struct */
-		error_code = _compute_c_b_task_dist(job_ptr);
+		error_code = _compute_c_b_task_dist(job_ptr, gres_task_limit);
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 	}
