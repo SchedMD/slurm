@@ -2037,9 +2037,9 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (difftime(now, last_resv_time) >= 5) {
+			lock_slurmctld(node_write_lock);
 			now = time(NULL);
 			last_resv_time = now;
-			lock_slurmctld(node_write_lock);
 			if (set_node_maint_mode(false) > 0)
 				queue_job_scheduler();
 			unlock_slurmctld(node_write_lock);
@@ -2047,18 +2047,18 @@ static void *_slurmctld_background(void *no_data)
 
 		if (difftime(now, last_no_resp_msg_time) >=
 		    no_resp_msg_interval) {
+			lock_slurmctld(node_write_lock2);
 			now = time(NULL);
 			last_no_resp_msg_time = now;
-			lock_slurmctld(node_write_lock2);
 			node_no_resp_msg();
 			unlock_slurmctld(node_write_lock2);
 		}
 
 		if (difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) {
+			lock_slurmctld(job_write_lock);
 			now = time(NULL);
 			last_timelimit_time = now;
 			debug2("Testing job time limits and checkpoints");
-			lock_slurmctld(job_write_lock);
 			job_time_limit();
 			job_resv_check();
 			step_checkpoint();
@@ -2073,6 +2073,7 @@ static void *_slurmctld_background(void *no_data)
 		    (difftime(now, last_health_check_time) >=
 		     slurmctld_conf.health_check_interval) &&
 		    is_ping_done()) {
+			lock_slurmctld(node_write_lock);
 			if (slurmctld_conf.health_check_node_state &
 			     HEALTH_CHECK_CYCLE) {
 				/* Call run_health_check() on each cycle */
@@ -2080,7 +2081,6 @@ static void *_slurmctld_background(void *no_data)
 				now = time(NULL);
 				last_health_check_time = now;
 			}
-			lock_slurmctld(node_write_lock);
 			run_health_check();
 			unlock_slurmctld(node_write_lock);
 		}
@@ -2089,9 +2089,9 @@ static void *_slurmctld_background(void *no_data)
 		    (difftime(now, last_acct_gather_node_time) >=
 		     slurmctld_conf.acct_gather_node_freq) &&
 		    is_ping_done()) {
+			lock_slurmctld(node_write_lock);
 			now = time(NULL);
 			last_acct_gather_node_time = now;
-			lock_slurmctld(node_write_lock);
 			update_nodes_acct_gather_data();
 			unlock_slurmctld(node_write_lock);
 		}
@@ -2100,19 +2100,19 @@ static void *_slurmctld_background(void *no_data)
 		    (difftime(now, last_ext_sensors_time) >=
 		     slurmctld_conf.ext_sensors_freq) &&
 		    is_ping_done()) {
+			lock_slurmctld(node_write_lock);
 			now = time(NULL);
 			last_ext_sensors_time = now;
-			lock_slurmctld(node_write_lock);
 			ext_sensors_g_update_component_data();
 			unlock_slurmctld(node_write_lock);
 		}
 
 		if (((difftime(now, last_ping_node_time) >= ping_interval) ||
 		     ping_nodes_now) && is_ping_done()) {
+			lock_slurmctld(node_write_lock);
 			now = time(NULL);
 			last_ping_node_time = now;
 			ping_nodes_now = false;
-			lock_slurmctld(node_write_lock);
 			ping_nodes();
 			unlock_slurmctld(node_write_lock);
 		}
@@ -2120,18 +2120,18 @@ static void *_slurmctld_background(void *no_data)
 		if (slurmctld_conf.inactive_limit &&
 		    ((now - last_ping_srun_time) >=
 		     (slurmctld_conf.inactive_limit / 3))) {
+			lock_slurmctld(job_read_lock);
 			now = time(NULL);
 			last_ping_srun_time = now;
 			debug2("Performing srun ping");
-			lock_slurmctld(job_read_lock);
 			srun_ping();
 			unlock_slurmctld(job_read_lock);
 		}
 
 		if (want_nodes_reboot && (now > last_reboot_msg_time)) {
+			lock_slurmctld(node_write_lock);
 			now = time(NULL);
 			last_reboot_msg_time = now;
-			lock_slurmctld(node_write_lock);
 			_queue_reboot_msg();
 			unlock_slurmctld(node_write_lock);
 		}
@@ -2142,9 +2142,9 @@ static void *_slurmctld_background(void *no_data)
 		if (slurmctld_conf.group_time &&
 		    (difftime(now, last_group_time)
 		     >= slurmctld_conf.group_time)) {
+			lock_slurmctld(part_write_lock);
 			now = time(NULL);
 			last_group_time = now;
-			lock_slurmctld(part_write_lock);
 			load_part_uid_allow_list(slurmctld_conf.group_force);
 			unlock_slurmctld(part_write_lock);
 			group_cache_cleanup();
@@ -2160,10 +2160,10 @@ static void *_slurmctld_background(void *no_data)
 			 */
 			slurm_mutex_lock(&check_bf_running_lock);
 			if (!slurmctld_diag_stats.bf_active) {
+				lock_slurmctld(purge_job_locks);
 				now = time(NULL);
 				last_purge_job_time = now;
 				debug2("Performing purge of old job records");
-				lock_slurmctld(purge_job_locks);
 				purge_old_job();
 				unlock_slurmctld(purge_job_locks);
 			}
@@ -2189,9 +2189,9 @@ static void *_slurmctld_background(void *no_data)
 			slurm_mutex_unlock(&sched_cnt_mutex);
 		}
 		if (job_limit != NO_VAL) {
+			lock_slurmctld(job_write_lock2);
 			now = time(NULL);
 			last_sched_time = now;
-			lock_slurmctld(job_write_lock2);
 			bb_g_load_state(false);	/* May alter job nice/prio */
 			unlock_slurmctld(job_write_lock2);
 			if (schedule(job_limit))
@@ -2207,9 +2207,9 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (difftime(now, last_trigger) > TRIGGER_INTERVAL) {
+			lock_slurmctld(job_node_read_lock);
 			now = time(NULL);
 			last_trigger = now;
-			lock_slurmctld(job_node_read_lock);
 			trigger_process();
 			unlock_slurmctld(job_node_read_lock);
 		}
