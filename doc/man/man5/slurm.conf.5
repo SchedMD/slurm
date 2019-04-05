@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "March 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "April 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -884,8 +884,9 @@ The default value is 2 seconds.
 
 .TP
 \fBGresTypes\fR
-A comma delimited list of generic resources to be managed.
-These generic resources may have an associated plugin available to provide
+A comma delimited list of generic resources to be managed (e.g.
+\fIGresTypes=gpu,mps\fR).
+These resources may have an associated GRES plugin of the same name providing
 additional functionality.
 No generic resources are managed by default.
 Ensure this parameter is consistent across all nodes in the cluster for

@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "March 2019" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "April 2019" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -11,8 +11,7 @@ resources, then a gres.conf file should be included on each compute node.
 The file location can be modified at system build time using the
 DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
 environment variable. The file will always be located in the
-same directory as the \fBslurm.conf\fP file. If generic resource counts are
-set by the GRES plugin function node_config_load(), this file may be optional.
+same directory as the \fBslurm.conf\fP file.
 
 .LP
 If the GRES information in the slurm.conf file fully describes those resources
@@ -32,7 +31,7 @@ Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
-CUDA Multi-Process Service (MPS) provides a mechanism where GPUs can be
+CUDA Multi\-Process Service (MPS) provides a mechanism where GPUs can be
 shared by multiple jobs, where each job is allocated some percentage of the
 GPU's resources.
 GPUs to be made available for MPS must be identified in the \fBslurm.conf\fP
@@ -48,9 +47,14 @@ not be available as a gres/mps.
 Likewise, once a GPU has been allocated as a gres/mps resource it will
 not be available as a gres/gpu.
 
+
 .LP
 \fBNOTE:\fP Slurm support for gres/mps requires the use of the select/cons_tres
 plugin.
+
+.LP
+For more information on GRES scheduling, see
+\fIhttps://slurm.schedmd.com/gres.html\fR.
 
 .LP
 The overall configuration parameters available include:
@@ -58,7 +62,8 @@ The overall configuration parameters available include:
 .TP
 \fBAutoDetect\fR
 Comma separated list of the types of GRES to auto detect.  Valid options are
-'nvml'.  This is needed to use any outside system to configure GRES.
+.\" Escape `'` at the beginning of a line
+\'nvml'.  This is needed to use any outside system to configure GRES.
 
 .TP
 \fBCount\fR
@@ -66,6 +71,7 @@ Number of resources of this type available on this node.
 The default value is set to the number of \fBFile\fR values specified (if any),
 otherwise the default value is one. A suffix of "K", "M", "G", "T" or "P" may be
 used to multiply the number by 1024, 1048576, 1073741824, etc. respectively.
+For example: "Count=10G".
 
 .TP
 \fBCores\fR
@@ -77,21 +83,23 @@ While Slurm can track and assign resources at the CPU or thread level, its
 scheduling algorithms used to co\-allocate GRES devices with CPUs operates at a
 socket or NUMA level.
 Therefore it is not possible to preferentially assign GRES with different
-specific CPUs on the sane NUMA or socket and this option should be used to
-identify all cores on some socket
+specific CPUs on the same NUMA or socket and this option should be used to
+identify all cores on some socket.
+
+
 Multiple cores may be specified using a comma delimited list or a range may be
 specified using a "\-" separator (e.g. "0,1,2,3" or "0\-3").
-If the \fBCores\fR configuration option is specified and a job is submitted
-with the \fB\-\-gres-flags=enforce\-binding\fR option then only the identified
-cores can be allocated with each generic resource; which will tend to improve
-performance of jobs, but slow the allocation of resources to them.
+If a job specifies \fB\-\-gres\-flags=enforce\-binding\fR, then only the
+identified cores can be allocated with each generic resource. This will tend to
+improve performance of jobs, but delay the allocation of resources to them.
 If specified and a job is \fInot\fR submitted with the
-\fB\-\-gres-flags=enforce\-binding\fR option the identified cores will be
+\fB\-\-gres\-flags=enforce\-binding\fR option the identified cores will be
 preferred for scheduled with each generic resource.
-If \fB\-\-gres-flags=disable\-binding\fR is specified, then any core can be
+
+If \fB\-\-gres\-flags=disable\-binding\fR is specified, then any core can be
 used with the resources, which also increases the speed of Slurm's
 scheduling algorithm but can degrade the application performance.
-The \fB\-\-gres-flags=disable\-binding\fR option is currently required to use
+The \fB\-\-gres\-flags=disable\-binding\fR option is currently required to use
 more CPUs than are bound to a GRES (i.e. if a GPU is bound to the CPUs on one
 socket, but resources on more than one socket are required to run the job).
 If any core can be effectively used with the resources, then do not specify the
@@ -119,26 +127,26 @@ in "lstopo \-l" command output.
 .TP
 \fBFile\fR
 Fully qualified pathname of the device files associated with a resource.
-The file name parsing logic includes support for simple regular expressions as
-shown in the example.
+The name can include a numeric range suffix to be interpreted by Slurm
+(e.g. \fIFile=/dev/nvidia[0\-3]\fR).
+
+
 This field is generally required if enforcement of generic resource
-allocations is to be supported (i.e. prevents a users from making
+allocations is to be supported (i.e. prevents users from making
 use of resources allocated to a different user).
+Enforcement of the file allocation relies upon Linux Control Groups (cgroups)
+and Slurm's task/cgroup plugin, which will place the allocated files into
+the job's cgroup and prevent use of other files.
+Please see Slurm's Cgroups Guide for more
+information: \fIhttps://slurm.schedmd.com/cgroups.html\fR.
+
 If \fBFile\fR is specified then \fBCount\fR must be either set to the number
 of file names specified or not set (the default value is the number of files
 specified).
-Slurm must track the utilization of each individual device If device file
-names are specified, which involves more overhead than just tracking the
-device counts.
-Use the \fBFile\fR parameter only if the \fBCount\fR is not sufficient for
-tracking purposes.
-
-Except in the case of MPS support, if \fBFile\fR is specified then \fBCount\fR
-must be either set to the number of file names specified or not set (the
-default value is the number of files specified).
-In the case of MPS support, each GPU would be identifed by name using the
-\fBFile\fR parameter and \fBCount\fR would specify the number of MPS entries
-that would correspond to that GPU; typically 100 or some multiple of 100.
+The exception to this is MPS. For MPS, each GPU would be identified by device
+file using the \fBFile\fR parameter and \fBCount\fR would specify the number of
+MPS entries that would correspond to that GPU (typically 100 or some multiple of
+100).
 
 NOTE: If you specify the \fBFile\fR parameter for a resource on some node,
 the option must be specified on all nodes and Slurm will track the assignment
@@ -163,8 +171,8 @@ If specified, then this line can only contain a single GRES device (i.e. can
 only contain a single file via \fBFile\fR).
 
 
-This is an optional value and is typically automatically determined
-autodetecting the NVIDIA NVML library.
+This is an optional value and is usually automatically determined if
+\fBAutoDetect\fR is enabled.
 A typical use case would be to identify GPUs having NVLink connectivity.
 Note that for GPUs, the minor number assigned by the OS and used in the device
 file (i.e. the X in \fI/dev/nvidiaX\fR) is not necessarily the same as the
@@ -174,13 +182,17 @@ ID and then numbering them starting from the smallest bus ID.
 .TP
 \fBName\fR
 Name of the generic resource. Any desired name may be used.
+The name must match a value in \fBGresTypes\fR in \fIslurm.conf\fR.
 Each generic resource has an optional plugin which can provide
-resource\-specific options.
+resource\-specific functionality.
 Generic resources that currently include an optional plugin are:
 .RS
 .TP
 \fBgpu\fR
 Graphics Processing Unit
+.TP
+\fBmps\fR
+CUDA Multi\-Process Service (MPS)
 .TP
 \fBnic\fR
 Network Interface Card
@@ -199,8 +211,9 @@ the example below.
 
 .TP
 \fBType\fR
-An arbitrary string identifying the type of device.
-For example, a particular model of GPU.
+An optional arbitrary string identifying the type of device.
+For example, this might be used to identify a specific model of GPU, which users
+can then specify in a job request.
 If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024).
 
 .SH "EXAMPLES"
@@ -272,7 +285,7 @@ NodeName=tux[4\-15]  Name=gpu File=/dev/nvidia[0\-3]
 .br
 # Slurm's Generic Resource (GRES) configuration file
 .br
-# Use NVML to gather GPU configuration infomation
+# Use NVML to gather GPU configuration information
 .br
 # Information about all other GRES gathered from slurm.conf
 .br

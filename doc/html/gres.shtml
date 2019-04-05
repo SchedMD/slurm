@@ -25,124 +25,43 @@ Intel&reg; Many Integrated Core (MIC) processors.</P>
 <P>Slurm supports no generic resources in the default configuration.
 One must explicitly specify which resources are to be managed in the
 <I>slurm.conf</I> configuration file. The configuration parameters of
-interest are:</P>
+interest are <B>GresTypes</B> and <B>Gres</B>.
+</P>
 
-<UL>
-<LI><B>GresTypes</B> a comma delimited list of generic resources to be
-managed (e.g. <I>GresTypes=gpu,mps</I>). This name may be that of an
-optional plugin providing additional control over the resources.</LI>
-<LI><B>Gres</B> the generic resource configuration details in the format<br>
-&lt;name&gt;[:&lt;type&gt;][:no_consume]:&lt;number&gt;[K|M|G]<br>
-The first field is the resource name, which matches the GresType configuration
-parameter name.
-The optional type field might be used to identify a model of that generic
-resource.
-A generic resource can also be specified as non-consumable (i.e. multiple
-jobs can use the same generic resource) with the optional field ":no_consume".
-The final field must specify a generic resource count.
-A suffix of "K", "M" or "G" may be used to multiply the count by 1024,
-1048576 or 1073741824 respectively.
-By default a node has no generic resources.</LI>
-</UL>
+<P>
+For more details, see <a href="slurm.conf.html#OPT_GresTypes">GresTypes</a> and <a href="slurm.conf.html#OPT_Gres_1">Gres</a> in the <I>slurm.conf</I> man page.
+</P>
 
 <P>Note that the GRES specification for each node works in the same fashion
 as the other resources managed. Depending upon the value of the
 <I>FastSchedule</I> parameter, nodes which are found to have fewer resources
 than configured will be placed in a DOWN state.</P>
 
-<P>Sample slurm.conf file:</P>
+<P>Snippet from an example <I>slurm.conf</I> file:</P>
 <PRE>
-# Configure support for our four GPUs
+# Configure support for our four GPUs (with MPS), plus bandwidth
 GresTypes=gpu,mps,bandwidth
 NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,mps:400,bandwidth:lustre:no_consume:4G
 </PRE>
 
 <P>Each compute node with generic resources typically contain a <I>gres.conf</I>
 file describing which resources are available on the node, their count,
-associated device files and cores which should be used with those resources.
-In the case of GPUs, and the <I>gres.conf</I> AutoDetect variable
-contains <I>nvml</I> and that nvml lib is installed and was present during Slurm
-configuration, their configuration will be automatically gathered using the NVML
-library.
+associated device files and cores which should be used with those resources.</P>
+
+<P>In the case of GPUs, if AutoDetect=nvml in <I>gres.conf</I> and the NVML
+library is installed on the node and was present during Slurm
+configuration, the missing configuration details will be automatically gathered
+using the NVML library.
 Configuration information about all other generic resource must explicitly be
 described in the <I>gres.conf</I> file.
-The configuration parameters available are:</P>
+</P>
 
-<UL>
-<LI><B>Name</B> name of a generic resource (must match <B>GresTypes</B>
-values in <I>slurm.conf</I>).</LI>
+<P>
+To view available <I>gres.conf</I> configuration parameters, see the <a href="gres.conf.html">gres.conf man page</a>.
+</P>
 
-<LI><B>Count</B> Number of resources of this type available on this node.
-The default value is set to the number of <B>File</B> values specified (if any),
-otherwise the default value is one. A suffix of "K", "M" or "G" may be used
-to multiply the number by 1024, 1048576 or 1073741824 respectively
-(e.g. "Count=10G"). Note that Count is a 32-bit field and the maximum value
-is 4,294,967,295.</LI>
 
-<LI><B>Cores</B>
-Specify the first thread CPU index numbers for the specific cores which can
-use this resource.
-For example, it may be strongly preferable
-to use specific cores with specific devices (e.g. on a NUMA
-architecture). Multiple cores may be specified using a comma
-delimited list or a range may be specified using a "-" separator
-(e.g. "0,1,2,3" or "0-3").
-<B>If specified, then only the identified cores can be allocated with each generic
-resource; an attempt to use other cores will not be honored.</B>
-If not specified, then any core can be used with the resources, which also
-increases the speed of Slurm's scheduling algorithm.
-If any core can be effectively used with the resources, then do not specify the
-Cores option for improved speed in the Slurm scheduling logic.
-
-<B>NOTE:</B> If your cores contain multiple threads only list the first thread
-of each core. The logic is such that it uses core instead of thread scheduling
-per GRES. Also note that since Slurm must be able to perform resource
-management on heterogeneous clusters having various core ID numbering schemes,
-an abstract index will be used instead of the physical core index. That
-abstract id may not correspond to your physical core number.
-Basically Slurm starts numbering from 0 to n, being 0 the id of the first
-processing unit (core or thread if HT is enabled) on the first socket,
-first core and maybe first thread, and then continuing sequentially to the
-next thread, core, and socket. The numbering generally coincides with the
-processing unit logical number (PU L#) seen in lstopo output.
-
-<LI><B>File</B> Fully qualified pathname of the device files associated with a
-resource.
-The name can include a numeric range suffix to be interpreted by Slurm
-(e.g. <I>File=/dev/nvidia[0-3]</I>).
-This field is generally required if enforcement of generic resource
-allocations are to be supported (i.e. prevents a user from making
-use of resources allocated to a different user).
-Enforcement of the file allocation relies upon Linux Control Groups (cgroups)
-and Slurm's task/cgroup plugin, which will place the allocated files into
-the job's cgroup and prevent use of other files.
-Please see Slurm's <a href="cgroups.html">Cgroups Guide</a> for more
-information.<br>
-Except in the case of MPS support, if <B>File</B> is specified then <B>Count</B>
-must be either set to the number of file names specified or not set (the
-default value is the number of files specified).
-In the case of MPS support, each GPU would be identifed by name using the
-<B>File</B> parameter and <B>Count</B> would specify the number of MPS entries
-that would correspond to that GPU; typically 100 or some multiple of 100.
-<br>
-NOTE: If you specify the <B>File</B> parameter for a resource on some node,
-the option must be specified on all nodes and Slurm will track the assignment
-of each specific resource on each node. Otherwise Slurm will only track a
-count of allocated resources rather than the state of each individual device
-file.
-<br>
-NOTE: Drain a node before changing the count of records with <B>File</B>
-parameters (i.e. if you want to add or remove GPUs from a node's configuration).
-Failure to do so will result in any job using those GRES being aborted.</LI>
-
-<LI><B>Type</B> Optionally specify the device type. For example, this might
-be used to identify a specific model of GPU, which users can then specify
-in their job request.
-If <B>Type</B> is specified, then <B>Count</B> is limited in size (currently 1024).
-</LI>
-</UL>
-
-<P>Sample gres.conf file:</P>
+<P>Example <I>gres.conf</I> file:</P>
 <PRE>
 # Configure support for four GPUs (with MPS), plus bandwidth
 AutoDetect=nvml
@@ -448,6 +367,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 11 March 2019</p>
+<p style="text-align: center;">Last modified 4 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
