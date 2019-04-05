@@ -250,47 +250,58 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 	return 0;
 }
 
-static int _is_a_lwp(uint32_t pid) {
+static int _is_a_lwp(uint32_t pid)
+{
+	char *filename = NULL;
+	char bf[4096];
+	int fd, attempts = 1;
+	ssize_t n;
+	char *tgids = NULL;
+	pid_t tgid = -1;
 
-	FILE		*status_fp = NULL;
-	char		proc_status_file[256];
-	uint32_t        tgid;
-	int             rc;
+	xstrfmtcat(filename, "/proc/%u/status", pid);
 
-	if (snprintf(proc_status_file, 256, "/proc/%d/status",pid) > 256) {
-		debug("jobacct_gather_linux: unable to build proc_status "
-		      "fpath");
-		return -1;
-	}
-	if (!(status_fp = fopen(proc_status_file, "r"))) {
-		debug3("jobacct_gather_linux: unable to open %s",
-		       proc_status_file);
-		return -1;
-	}
-
-
-	do {
-		rc = fscanf(status_fp,
-			    "Name:\t%*s\n%*[ \ta-zA-Z0-9:()]\nTgid:\t%d\n",
-			    &tgid);
-	} while (rc < 0 && errno == EINTR);
-	fclose(status_fp);
-
-	/* unable to read /proc/[pid]/status content */
-	if (rc != 1) {
-		debug3("jobacct_gather_linux: unable to read requested "
-		       "pattern in %s", proc_status_file);
+	fd = open(filename, O_RDONLY);
+	if (fd < 0) {
+		error("%s: open() %s failed: %m", __func__, filename);
+		xfree(filename);
 		return -1;
 	}
 
-	/* if tgid differs from pid, this is a LWP (Thread POSIX) */
-	if ((uint32_t) tgid != (uint32_t) pid) {
-		debug3("jobacct_gather_linux: pid=%d is a lightweight process",
-		       tgid);
-		return 1;
+again:
+	n = read(fd, bf, sizeof(bf) - 1);
+	if (n == -1 && (errno == EINTR || errno == EAGAIN) && attempts < 100) {
+		attempts++;
+		goto again;
+	}
+	if (n <= 0) {
+		error("%s: %d read() attempts on %s failed: %m", __func__,
+		      attempts, filename);
+		close(fd);
+		xfree(filename);
+		return -1;
+	}
+	bf[n] = '\0';
+	close(fd);
+	xfree(filename);
+
+	tgids = xstrstr(bf, "Tgid:");
+
+	if (tgids) {
+		tgids += 5; /* strlen("Tgid:") */
+		tgid = atoi(tgids);
 	} else
-		return 0;
+		error("%s: Tgid: string not found for pid=%u", __func__, pid);
 
+	if (pid != (uint32_t)tgid) {
+		debug3("%s: pid=%u != tgid=%u is a lightweight process",
+		       __func__, pid, tgid);
+		return 1;
+	} else {
+		debug3("%s: pid=%u == tgid=%u is the leader LWP",
+		       __func__, pid, tgid);
+		return 0;
+	}
 }
 
 /* _get_process_data_line() - get line of data from /proc/<pid>/stat

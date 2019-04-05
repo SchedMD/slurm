@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     node's "Gres=" information slurm.conf. This will eliminate or minimize the
     gres.conf file in many situations.
  -- Fix checking IPMI XCC raw command response length.
+ -- jobacct_gather/common - improve lightweight process identification.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
