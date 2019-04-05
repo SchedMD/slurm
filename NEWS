@@ -157,6 +157,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with OR'ed job dependencies.
  -- Add new job's bit_flags of INVALID_DEPEND to prevent rebuilding a job's
     dependency string when it has at least one invalid and purged dependency.
+ -- Promote federation unsynced siblings log message from debug to info.
 
 * Changes in Slurm 18.08.6-2
 ============================

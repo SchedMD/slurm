@@ -1509,8 +1509,8 @@ static int _attempt_backfill(void)
 	job_start_cnt = 0;
 
 	if (!fed_mgr_sibs_synced()) {
-		debug("backfill: %s returning, federation siblings not synced yet",
-		      __func__);
+		info("backfill: %s returning, federation siblings not synced yet",
+		     __func__);
 		return SLURM_SUCCESS;
 	}
 
