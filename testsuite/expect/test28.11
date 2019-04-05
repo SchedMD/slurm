@@ -42,8 +42,6 @@ set file_script "test$test_id.sh"
 set config_path ""
 set cwd "[$bin_pwd]"
 
-print_header $test_id
-
 proc cleanup { } {
 	global exit_code file_script reconfigure bin_cp cwd config_path
 	send_user "\nChanging slurm.conf back\n"
@@ -84,6 +82,13 @@ proc get_single_node_feature { } {
 		}
 	}
 	return $ret_features
+}
+
+print_header $test_id
+
+if {[test_super_user] != 1} {
+	send_user "\nWARNING: This test must be run as SlurmUser or root\n"
+	exit 0
 }
 
 set config_path [get_conf_path]
