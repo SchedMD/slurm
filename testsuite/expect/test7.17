@@ -38,10 +38,9 @@ print_header $test_id
 
 if {[test_cray]} {
 #	Many Cray-specific changes required in slurm.conf test files
-        send_user "\nWARNING: This test can not run on a Cray system\n"
-        exit $exit_code
+	send_user "\nWARNING: This test can not run on a Cray system\n"
+	exit $exit_code
 }
-
 
 #
 # Delete left-over programs and rebuild them
