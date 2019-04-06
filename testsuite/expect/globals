@@ -1790,9 +1790,9 @@ proc test_cray { } {
 
 	log_user 0
 	set cray 0
-	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SwitchType"
 	expect {
-		"select/cray" {
+		"switch/cray" {
 			set cray 1
 			exp_continue
 		}
