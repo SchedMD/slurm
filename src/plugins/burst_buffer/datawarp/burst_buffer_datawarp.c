@@ -4369,9 +4369,8 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			rc++;
 		} else if (buf_ptr->state != BB_STATE_PENDING) {
 			;	/* Nothing to do */
-		} else if (buf_ptr->flags != BB_FLAG_BB_OP) {
-			;	/* Not processed using dw_wlm_cli */
-		} else if (buf_ptr->create) {	/* Create the buffer */
+		} else if ((buf_ptr->flags == BB_FLAG_BB_OP) &&
+			   buf_ptr->create) {	/* Create the buffer */
 			bb_alloc = bb_find_name_rec(buf_ptr->name,
 						    job_ptr->user_id,
 						    &bb_state);
@@ -4426,7 +4425,8 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 
 			slurm_thread_create_detached(NULL, _create_persistent,
 						     create_args);
-		} else if (buf_ptr->destroy && job_ready) {
+		} else if ((buf_ptr->flags == BB_FLAG_BB_OP) &&
+			   buf_ptr->destroy && job_ready) {
 			/* Delete the buffer */
 			bb_alloc = bb_find_name_rec(buf_ptr->name,
 						    job_ptr->user_id,
@@ -4466,11 +4466,15 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 
 			slurm_thread_create_detached(NULL, _destroy_persistent,
 						     create_args);
-		} else if (buf_ptr->destroy) {
+		} else if ((buf_ptr->flags == BB_FLAG_BB_OP) &&
+			   buf_ptr->destroy) {
 			rc++;
-		} else {
-			/* Buffer used, not created or destroyed.
-			 * Just check for existence */
+		} else if ((buf_ptr->flags != BB_FLAG_BB_OP) &&
+			   buf_ptr->use) {
+			/*
+			 * Persistent buffer not created or destroyed, but used.
+			 * Just check for existence
+			 */
 			bb_alloc = bb_find_name_rec(buf_ptr->name,
 						    job_ptr->user_id,
 						    &bb_state);
