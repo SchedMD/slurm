@@ -101,7 +101,7 @@ send_user "\n\n"
 set matches 0
 spawn $scontrol show dwstat configurations
 expect {
-	-re "conf *state *inst *type *access_type activs" {
+	-re "conf *state *inst *type *activs" {
 		set matches 1
 		exp_continue
 	}

@@ -9,11 +9,11 @@ if [ $# == 0 ]; then
 fi
 
 if [ $1 == "configurations" ]; then
-   echo '  conf state inst    type access_type activs'
-   echo '   715 CA---  753 scratch      stripe      1'
-   echo '   716 CA---  754 scratch      stripe      1'
-   echo '   759 D--T-  807 scratch      stripe      0'
-   echo '   760 CA---  808 scratch      stripe      1'
+   echo '  conf state inst    type activs'
+   echo '   715 CA---  753 scratch      1'
+   echo '   716 CA---  754 scratch      1'
+   echo '   759 D--T-  807 scratch      0'
+   echo '   760 CA---  808 scratch      1'
    exit 0
 fi
 
