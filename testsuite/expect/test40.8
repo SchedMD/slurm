@@ -171,15 +171,17 @@ if {[wait_for_file $file_out] == 0} {
 		send_user "\nFAILURE: CUDA output not as expected ($matches != 6)\n"
 		set exit_code 1
 	}
-	set delta_t [expr abs($run_time1 - $run_time2)]
-	set percent_time_diff [expr ($delta_t * 100) / $run_time1]
-	if {$percent_time_diff > 20} {
-		send_user "\nFAILURE: CUDA MPS jobs appear to have not run in parallel\n"
-		send_user "FAILURE: Run time difference was $percent_time_diff percent\n"
-		set exit_code 1	
-	} else {
-		send_user "\nCUDA MPS jobs do appear to have not run in parallel\n"
-		send_user "Run time difference was $percent_time_diff percent\n"
+	if {$run_time1 > 0} {
+		set delta_t [expr abs($run_time1 - $run_time2)]
+		set percent_time_diff [expr ($delta_t * 100) / $run_time1]
+		if {$percent_time_diff > 20} {
+			send_user "\nFAILURE: CUDA MPS jobs appear to have not run in parallel\n"
+			send_user "FAILURE: Run time difference was $percent_time_diff percent\n"
+			set exit_code 1	
+		} else {
+			send_user "\nCUDA MPS jobs do appear to have not run in parallel\n"
+			send_user "Run time difference was $percent_time_diff percent\n"
+		}
 	}
 } else {
 	set exit_code 1
