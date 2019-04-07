@@ -1066,6 +1066,8 @@ EXTRA_DIST = \
 	test39.18.ulong.c		\
 	test39.19			\
 	test39.20			\
+	test39.21			\
+	test39.21.prog.cu		\
 	test40.1			\
 	test40.2			\
 	test40.3			\
