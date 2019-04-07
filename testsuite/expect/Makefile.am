@@ -666,7 +666,9 @@ EXTRA_DIST = \
 	test40.4			\
 	test40.5			\
 	test40.6			\
-	test40.7
+	test40.7			\
+	test40.8			\
+	test40.8.prog.cu
 
 distclean-local:
 	rm -rf *error *output
