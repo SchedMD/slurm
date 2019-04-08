@@ -1284,14 +1284,11 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		nvmlDevice_t device;
 		nvmlPciInfo_t pci_info = {{0}};
 
-		// Initialize to null
-		device_lut[i] = NULL;
-
 		if (!_nvml_get_handle(i, &device))
 			continue;
+
 		_nvml_get_device_pci_info(device, &pci_info);
-		if (pci_info.busId)
-			device_lut[i] = xstrdup(pci_info.busId);
+		device_lut[i] = xstrdup(pci_info.busId);
 	}
 
 	/*
