@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Sample Prolog to start and quit the MPS server as needed
+# NOTE: This is only a sample and may need modification for your environment
+#
+
+# If job requires MPS, start server as needed
+if [ -n "${CUDA_VISIBLE_DEVICES}" ] &&
+   [ -n "${CUDA_MPS_ACTIVE_THREAD_PERCENTAGE}" ]; then
+	nvidia-cuda-mps-control -d && echo "MPS control daemon started"
+	sleep 1
+	nvidia-cuda-mps-control start_server -uid $SLURM_JOB_UID && echo "MPS server started for $SLURM_JOB_UID"
+fi
+
+# If job requires full GPU (device 0), quit MPS server as needed
+if [ -n "${CUDA_VISIBLE_DEVICES}" ] &&
+   [ ${CUDA_VISIBLE_DEVICES} -eq 0 ] &&
+   [ -z "${CUDA_MPS_ACTIVE_THREAD_PERCENTAGE}" ]; then
+	# Determine if MPS server is running
+	ps aux | grep nvidia-cuda-mps-control | grep -v grep > /dev/null
+	if [ $? -eq 0 ]; then
+		echo "Stopping MPS control daemon"
+		# Reset GPU mode to default
+		nvidia-smi -c 0
+		# Quit MPS server daemon
+		echo quit | nvidia-cuda-mps-control
+		# Test for presence of MPS zombie process
+		ps aux | grep nvidia-cuda-mps | grep -v grep > /dev/null
+		if [ $? -eq 0 ]; then
+			logger "`hostname` Slurm Epilog: MPS refusing to quit! Downing node"
+			scontrol update nodename=${SLURMD_NODENAME} State=DOWN Reason="MPS not quitting"
+		fi
+		# Check GPU sanity, simple check
+		nvidia-smi > /dev/null
+		if [ $? -ne 0 ]; then
+			logger "`hostname` Slurm Epilog: GPU not operational! Downing node"
+			scontrol update nodename=${SLURMD_NODENAME} State=DOWN Reason="GPU not operational"
+		fi
+	fi
+fi
+
+exit 0
