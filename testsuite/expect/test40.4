@@ -124,10 +124,10 @@ if {$mps_cnt < 0} {
 	exit 1
 }
 if {$mps_cnt < 100} {
-	send_user "\nWARNING: This test requires 100 or more MPS in the default partition\n"
+	send_user "\nWARNING: This test requires 100 or more MPS per node in the default partition\n"
 	exit 0
 }
-send_user "MPS per GPU is $mps_cnt\n"
+send_user "MPS count is $mps_cnt\n"
 
 # Remove any vestigial test account
 cleanup

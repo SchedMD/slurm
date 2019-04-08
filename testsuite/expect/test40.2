@@ -63,10 +63,10 @@ if {$mps_cnt < 1} {
 }
 if {$mps_cnt < 100} {
 #	This could be a legitimate configuration for testing purposes, but not likley for production use
-	send_user "\nFAILURE: MPS per GPU is unexpectedly low ($mps_cnt < 100). Check your configuration\n"
+	send_user "\nFAILURE: MPS count per node is unexpectedly low ($mps_cnt < 100). Check your configuration\n"
 	set exit_code 1
 }
-send_user "\nMPS per GPU count is $mps_cnt\n"
+send_user "\nMPS count is $mps_cnt\n"
 
 set constrain_devices [test_constrain_devices]
 if {$constrain_devices} {

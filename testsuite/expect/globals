@@ -4533,7 +4533,7 @@ proc get_gpu_count { node_count } {
 #
 # Proc: get_mps_count
 #
-# For a given node count, returns number of MPS resources per GPU on
+# For a given node count, returns number of MPS resources on
 # those "node_count" nodes with the highest values
 #
 ################################################################
@@ -4548,22 +4548,6 @@ proc get_mps_count { node_count } {
 	spawn $sinfo -N -p$def_part -oGRES=%G -h
 	expect {
 		-re "GRES=($alpha_numeric_colon_paren)" {
-			set gpu_count 0
-			set parts [split $expect_out(1,string) ",/"]
-			while 1 {
-				set gpu_found [lsearch $parts "gpu*"]
-				if { $gpu_found == -1 } break
-
-				set parts2 [split [lindex $parts $gpu_found] ":(/"]
-				set col [lsearch -regexp $parts2 ^$number$]
-				if { $col == -1 } {
-					incr gpu_count
-				} else {
-					set gpu_count [expr $gpu_count + [lindex $parts2 $col]]
-				}
-				set parts [lreplace $parts $gpu_found $gpu_found]
-			}
-
 			set mps_count 0
 			set parts [split $expect_out(1,string) ",/"]
 			while 1 {
@@ -4580,8 +4564,8 @@ proc get_mps_count { node_count } {
 				set parts [lreplace $parts $mps_found $mps_found]
 			}
 
-			if {$gpu_count > 0 && $mps_count > 0} {
-				lappend mps_per_gpu [expr $mps_count / $gpu_count]
+			if {$mps_count > 0} {
+				lappend mps_per_node $mps_count
 				incr node_inx
 			}
 			exp_continue
@@ -4595,7 +4579,7 @@ proc get_mps_count { node_count } {
 	if {$node_inx < $node_count} {
 		return 0
 	}
-	set count [lindex [lsort -decreasing -integer $mps_per_gpu] [expr $node_count - 1]]
+	set count [lindex [lsort -decreasing -integer $mps_per_node] [expr $node_count - 1]]
 	return $count
 }
 
@@ -4617,22 +4601,6 @@ proc get_mps_node_count { } {
 	spawn $sinfo -N -p$def_part -oGRES=%G -h
 	expect {
 		-re "GRES=($alpha_numeric_colon_paren)" {
-			set gpu_count 0
-			set parts [split $expect_out(1,string) ",/"]
-			while 1 {
-				set gpu_found [lsearch $parts "gpu*"]
-				if { $gpu_found == -1 } break
-
-				set parts2 [split [lindex $parts $gpu_found] ":(/"]
-				set col [lsearch -regexp $parts2 ^$number$]
-				if { $col == -1 } {
-					incr gpu_count
-				} else {
-					set gpu_count [expr $gpu_count + [lindex $parts2 $col]]
-				}
-				set parts [lreplace $parts $gpu_found $gpu_found]
-			}
-
 			set mps_count 0
 			set parts [split $expect_out(1,string) ",/"]
 			while 1 {
@@ -4649,7 +4617,7 @@ proc get_mps_node_count { } {
 				set parts [lreplace $parts $mps_found $mps_found]
 			}
 
-			if {$gpu_count > 0 && $mps_count > 0} {
+			if {$mps_count > 0} {
 				incr node_inx
 			}
 			exp_continue

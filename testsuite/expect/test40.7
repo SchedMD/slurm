@@ -64,15 +64,15 @@ if {$mps_cnt < 0} {
 	exit 1
 }
 if {$mps_cnt < 1} {
-	send_user "\nWARNING: This test requires 1 or more MPS in the default partition\n"
+	send_user "\nWARNING: This test requires 1 or more MPS per node in the default partition\n"
 	exit 0
 }
 if {$mps_cnt < 100} {
 #	This could be a legitimate configuration for testing purposes, but not likley for production use
-	send_user "\nFAILURE: MPS per GPU is unexpectedly low ($mps_cnt < 100). Check your configuration\n"
+	send_user "\nFAILURE: MPS per node is unexpectedly low ($mps_cnt < 100). Check your configuration\n"
 	set exit_code 1
 }
-send_user "\nMPS per GPU count is $mps_cnt\n"
+send_user "\nMPS count per node is $mps_cnt\n"
 
 make_bash_script $file_in1 "
 echo HOST:\$SLURMD_NODENAME
