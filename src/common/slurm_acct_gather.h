@@ -52,6 +52,8 @@ typedef struct acct_gather_data {
 } acct_gather_data_t;
 
 extern int acct_gather_conf_init(void);
+extern int acct_gather_write_conf(int fd);
+extern int acct_gather_read_conf(int fd);
 extern int acct_gather_conf_destroy(void);
 
 /* don't forget to free this */

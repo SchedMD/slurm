@@ -531,6 +531,9 @@ _init_from_slurmd(int sock, char **argv,
 	if (xcgroup_read_conf(sock) != SLURM_SUCCESS)
 		fatal("Failed to read cgroup conf from slurmd");
 
+	/* receive acct_gather conf from slurmd */
+	if (acct_gather_read_conf(sock) != SLURM_SUCCESS)
+		fatal("Failed to read acct_gather conf from slurmd");
 
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
