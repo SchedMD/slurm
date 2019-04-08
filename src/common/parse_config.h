@@ -623,6 +623,22 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 
 
 /*
+ * Given an "options" array, pack the key, type of options along with values and
+ * op of the hashtbl.
+ *
+ * Primarily for sending a table across the network so you don't have to read a
+ * file in.
+ */
+extern Buf s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
+			   const s_p_options_t options[],
+			   const uint32_t cnt);
+
+/*
+ * Given a buffer, unpack key, type, op and value into a hashtbl.
+ */
+extern s_p_hashtbl_t *s_p_unpack_hashtbl(Buf buffer);
+
+/*
  * copy options onto the end of full_options
  * IN/OUT full_options
  * IN options

@@ -2166,6 +2166,175 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
 	}
 }
 
+/*
+ * Given an "options" array, pack the key, type of options along with values and
+ * op of the hashtbl.
+ *
+ * Primarily for sending a table across the network so you don't have to read a
+ * file in.
+ */
+extern Buf s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
+			   const s_p_options_t options[],
+			   const uint32_t cnt)
+{
+	Buf buffer = init_buf(0);
+	s_p_values_t *p;
+	int i;
+
+	pack32(cnt, buffer);
+
+	for (i = 0; i < cnt; i++) {
+		p = _conf_hashtbl_lookup(hashtbl, options[i].key);
+
+		xassert(p);
+
+		pack16((uint16_t)options[i].type, buffer);
+		packstr(options[i].key, buffer);
+
+		pack16((uint16_t)p->operator, buffer);
+		pack32((uint32_t)p->data_count, buffer);
+
+		if (!p->data_count)
+			continue;
+
+		switch (options[i].type) {
+		case S_P_STRING:
+		case S_P_PLAIN_STRING:
+			packstr((char *)p->data, buffer);
+			break;
+		case S_P_UINT32:
+		case S_P_LONG:
+			pack32(*(uint32_t *)p->data, buffer);
+			break;
+		case S_P_UINT16:
+			pack16(*(uint16_t *)p->data, buffer);
+			break;
+		case S_P_UINT64:
+			pack64(*(uint64_t *)p->data, buffer);
+			break;
+		case S_P_BOOLEAN:
+			packbool(*(bool *)p->data, buffer);
+			break;
+		case S_P_FLOAT:
+			packfloat(*(float *)p->data, buffer);
+			break;
+		case S_P_DOUBLE:
+			packdouble(*(double *)p->data, buffer);
+			break;
+		case S_P_LONG_DOUBLE:
+			packlongdouble(*(long double *)p->data, buffer);
+			break;
+		case S_P_IGNORE:
+			break;
+		default:
+			fatal("%s: unsupported pack type %d",
+			      __func__, options[i].type);
+			break;
+		}
+	}
+
+	return buffer;
+}
+
+/*
+ * Given a buffer, unpack key, type, op and value into a hashtbl.
+ */
+extern s_p_hashtbl_t *s_p_unpack_hashtbl(Buf buffer)
+{
+	s_p_values_t *value = NULL;
+	s_p_hashtbl_t *hashtbl = NULL;
+	int i;
+	bool bool_tmp;
+	uint16_t uint16_tmp;
+	uint32_t cnt, uint32_tmp;
+	uint64_t uint64_tmp;
+	float float_tmp;
+	double double_tmp;
+	long double ldouble_tmp;
+	char *tmp_char;
+
+	safe_unpack32(&cnt, buffer);
+
+	hashtbl = xcalloc(CONF_HASH_LEN, sizeof(s_p_values_t *));
+
+	for (i = 0; i < cnt; i++) {
+		value = xmalloc(sizeof(s_p_values_t));
+
+		safe_unpack16(&uint16_tmp, buffer);
+		value->type = uint16_tmp;
+		safe_unpackstr_xmalloc(&value->key, &uint32_tmp, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		value->operator = uint16_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		value->data_count = uint32_tmp;
+
+		_conf_hashtbl_insert(hashtbl, value);
+
+		if (!value->data_count)
+			continue;
+
+		switch (value->type) {
+		case S_P_STRING:
+		case S_P_PLAIN_STRING:
+			safe_unpackstr_xmalloc(&tmp_char, &uint32_tmp, buffer);
+			value->data = tmp_char;
+			break;
+		case S_P_UINT32:
+			safe_unpack32(&uint32_tmp, buffer);
+			value->data = xmalloc(sizeof(uint32_t));
+			*(uint32_t *)value->data = uint32_tmp;
+			break;
+		case S_P_LONG:
+			safe_unpack32(&uint32_tmp, buffer);
+			value->data = xmalloc(sizeof(long));
+			*(long *)value->data = (long)uint32_tmp;
+			break;
+		case S_P_UINT16:
+			safe_unpack16(&uint16_tmp, buffer);
+			value->data = xmalloc(sizeof(uint16_t));
+			*(uint16_t *)value->data = uint16_tmp;
+			break;
+		case S_P_UINT64:
+			safe_unpack64(&uint64_tmp, buffer);
+			value->data = xmalloc(sizeof(uint64_t));
+			*(uint64_t *)value->data = uint64_tmp;
+			break;
+		case S_P_BOOLEAN:
+			safe_unpackbool(&bool_tmp, buffer);
+			value->data = xmalloc(sizeof(bool));
+			*(bool *)value->data = bool_tmp;
+			break;
+		case S_P_FLOAT:
+			safe_unpackfloat(&float_tmp, buffer);
+			value->data = xmalloc(sizeof(float));
+			*(float *)value->data = float_tmp;
+			break;
+		case S_P_DOUBLE:
+			safe_unpackdouble(&double_tmp, buffer);
+			value->data = xmalloc(sizeof(double));
+			*(double *)value->data = double_tmp;
+			break;
+		case S_P_LONG_DOUBLE:
+			safe_unpacklongdouble(&ldouble_tmp, buffer);
+			value->data = xmalloc(sizeof(long double));
+			*(long double *)value->data = ldouble_tmp;
+			break;
+		case S_P_IGNORE:
+			break;
+		default:
+			fatal("%s: unsupported pack type %d",
+			      __func__, value->type);
+			break;
+		}
+	}
+
+	return hashtbl;
+unpack_error:
+	s_p_hashtbl_destroy(hashtbl);
+	error("%s: failed", __func__);
+	return NULL;
+}
+
 extern void transfer_s_p_options(s_p_options_t **full_options,
 				 s_p_options_t *options,
 				 int *full_options_cnt)
