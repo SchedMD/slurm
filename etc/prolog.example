@@ -7,6 +7,7 @@
 # If job requires MPS, start server as needed
 if [ -n "${CUDA_VISIBLE_DEVICES}" ] &&
    [ -n "${CUDA_MPS_ACTIVE_THREAD_PERCENTAGE}" ]; then
+	unset CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
 	nvidia-cuda-mps-control -d && echo "MPS control daemon started"
 	sleep 1
 	nvidia-cuda-mps-control start_server -uid $SLURM_JOB_UID && echo "MPS server started for $SLURM_JOB_UID"
