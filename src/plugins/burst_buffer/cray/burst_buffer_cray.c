@@ -205,7 +205,8 @@ struct bb_total_size {
 	uint64_t capacity;
 };
 
-static void	_add_bb_to_script(char **script_body, char *burst_buffer_file);
+static void	_add_bb_to_script(char **script_body,
+				  const char *burst_buffer_file);
 static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
 			      bool job_ready);
 static void	_apply_limits(void);
@@ -2945,10 +2946,12 @@ fini:	xfree(access);
 }
 
 /* Insert the contents of "burst_buffer_file" into "script_body" */
-static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
+static void  _add_bb_to_script(char **script_body,
+			       const char *burst_buffer_file)
 {
 	char *orig_script = *script_body;
 	char *new_script, *sep, save_char;
+	char *bb_opt = NULL;
 	int i;
 
 	if (!burst_buffer_file || (burst_buffer_file[0] == '\0'))
@@ -2959,15 +2962,17 @@ static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
 		return;
 	}
 
-	i = strlen(burst_buffer_file) - 1;
-	if (burst_buffer_file[i] != '\n')	/* Append new line as needed */
-		xstrcat(burst_buffer_file, "\n");
+	bb_opt = xstrdup(burst_buffer_file);
+	i = strlen(bb_opt) - 1;
+	if (bb_opt[i] != '\n')	/* Append new line as needed */
+		xstrcat(bb_opt, "\n");
 
 	if (orig_script[0] != '#') {
 		/* Prepend burst buffer file */
-		new_script = xstrdup(burst_buffer_file);
+		new_script = xstrdup(bb_opt);
 		xstrcat(new_script, orig_script);
 		*script_body = new_script;
+		xfree(bb_opt);
 		return;
 	}
 
@@ -2976,16 +2981,18 @@ static void  _add_bb_to_script(char **script_body, char *burst_buffer_file)
 		save_char = sep[1];
 		sep[1] = '\0';
 		new_script = xstrdup(orig_script);
-		xstrcat(new_script, burst_buffer_file);
+		xstrcat(new_script, bb_opt);
 		sep[1] = save_char;
 		xstrcat(new_script, sep + 1);
 		*script_body = new_script;
+		xfree(bb_opt);
 		return;
 	} else {
 		new_script = xstrdup(orig_script);
 		xstrcat(new_script, "\n");
-		xstrcat(new_script, burst_buffer_file);
+		xstrcat(new_script, bb_opt);
 		*script_body = new_script;
+		xfree(bb_opt);
 		return;
 	}
 }
