@@ -9348,6 +9348,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	uint64_t gres_per_bit = 1;
 	bool log_cnt_err = true;
 	char *log_type;
+	bool shared_gres = false, use_busy_dev = false;
 
 	/*
 	 * Validate data structures. Either job_gres_data->node_cnt and
@@ -9361,7 +9362,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	if (node_gres_ptr->no_consume)
 		return SLURM_SUCCESS;
 
-	if (_shared_gres(plugin_id))
+	if (_shared_gres(plugin_id)) {
+		shared_gres = true;
 		gres_per_bit = job_gres_ptr->gres_per_node;
 
 	if (job_gres_ptr->type_name && !job_gres_ptr->type_name[0])
@@ -9485,7 +9487,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			for (i = 0; i < gres_cnt; i++) {
 				if (bit_test(job_gres_ptr->
 					     gres_bit_alloc[node_offset], i) &&
-				    ((gres_per_bit > 1) ||
+				    (shared_gres ||
 				     !bit_test(node_gres_ptr->gres_bit_alloc,
 					       i))) {
 					bit_set(node_gres_ptr->gres_bit_alloc,i);
@@ -9517,7 +9519,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 				job_gres_ptr->gres_bit_select[node_index], sz2);
 		}
 
-		if ((gres_per_bit == 1) &&
+		if (!shared_gres &&
 		    bit_overlap(job_gres_ptr->gres_bit_select[node_index],
 				node_gres_ptr->gres_bit_alloc)) {
 			error("gres/%s: job %u node %s gres bitmap overlap",
@@ -9656,7 +9658,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			len = MIN(len, node_gres_ptr->gres_cnt_config);
 		}
 
-		if ((node_gres_ptr->topo_cnt == 0) && (gres_per_bit > 1)) {
+		if ((node_gres_ptr->topo_cnt == 0) && shared_gres) {
 			/*
 			 * Need to add node topo arrays for slurmctld restart
 			 * and job state recovery (with GRES counts per topo)
