@@ -241,7 +241,7 @@ first component. We refer to this as the "heterogeneous job leader".</li>
 <li><i>pack_job_id_set</i>: Regular expression identifying all <i>job_id</i>
 values associated with the job.</li>
 <li><i>pack_job_offset</i>: A unique sequence number applied to each component
-of the heterogeneous job. The first component will have a <i>>pack_job_offset</i>
+of the heterogeneous job. The first component will have a <i>pack_job_offset</i>
 value of 0, the next a value of 1, etc.</li>
 </ul>
 
@@ -711,6 +711,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 18 October 2018</p>
+<p style="text-align:center;">Last modified 9 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
