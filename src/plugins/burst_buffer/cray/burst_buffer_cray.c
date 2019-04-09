@@ -2971,6 +2971,7 @@ static void  _add_bb_to_script(char **script_body,
 		/* Prepend burst buffer file */
 		new_script = xstrdup(bb_opt);
 		xstrcat(new_script, orig_script);
+		xfree(*script_body);
 		*script_body = new_script;
 		xfree(bb_opt);
 		return;
@@ -2984,6 +2985,7 @@ static void  _add_bb_to_script(char **script_body,
 		xstrcat(new_script, bb_opt);
 		sep[1] = save_char;
 		xstrcat(new_script, sep + 1);
+		xfree(*script_body);
 		*script_body = new_script;
 		xfree(bb_opt);
 		return;
@@ -2991,6 +2993,7 @@ static void  _add_bb_to_script(char **script_body,
 		new_script = xstrdup(orig_script);
 		xstrcat(new_script, "\n");
 		xstrcat(new_script, bb_opt);
+		xfree(*script_body);
 		*script_body = new_script;
 		xfree(bb_opt);
 		return;

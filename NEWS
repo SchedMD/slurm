@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     dependency string when it has at least one invalid and purged dependency.
  -- Promote federation unsynced siblings log message from debug to info.
  -- burst_buffer/cray - fix slurmctld SIGABRT due to illegal read/writes.
+ -- burst_buffer/cray - fix memory leak due to unfreed job script content.
 
 * Changes in Slurm 18.08.6-2
 ============================
