@@ -226,7 +226,8 @@ static int	_job_alloc(void *job_gres_data, void *node_gres_data,
 static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 bool use_total_gres, bitstr_t *core_bitmap,
 				 int core_start_bit, int core_end_bit,
-				 char *gres_name, char *node_name);
+				 char *gres_name, char *node_name,
+				 uint32_t plugin_id);
 static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
 			     int node_offset, char *gres_name, uint32_t job_id,
 			     char *node_name, bool old_job, uint32_t plugin_id,
@@ -6073,16 +6074,25 @@ static void _validate_gres_node_cores(gres_node_state_t *node_gres_ptr,
 static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 bool use_total_gres, bitstr_t *core_bitmap,
 				 int core_start_bit, int core_end_bit,
-				 char *gres_name, char *node_name)
+				 char *gres_name, char *node_name,
+				 uint32_t plugin_id)
 {
 	int i, j, core_ctld;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	bitstr_t *avail_core_bitmap = NULL;
+	bool use_busy_dev = false;
 
 	if (!node_gres_ptr->topo_cnt || !core_bitmap ||	/* No topology info */
 	    !job_gres_ptr->gres_per_node)		/* No job GRES */
 		return;
+
+	if (!use_total_gres &&
+	    (plugin_id == mps_plugin_id) &&
+	    (node_gres_ptr->gres_cnt_alloc != 0)) {
+		/* We must use the ONE already active GRES of this type */
+		use_busy_dev = true;
+	}
 
 	/* Determine which specific cores can be used */
 	avail_core_bitmap = bit_copy(core_bitmap);
@@ -6093,6 +6103,9 @@ static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 		if (!use_total_gres &&
 		    (node_gres_ptr->topo_gres_cnt_alloc[i] >=
 		     node_gres_ptr->topo_gres_cnt_avail[i]))
+			continue;
+		if (use_busy_dev &&
+		    (node_gres_ptr->topo_gres_cnt_alloc[i] == 0))
 			continue;
 		if (job_gres_ptr->type_name &&
 		    (!node_gres_ptr->topo_type_name[i] ||
@@ -6131,9 +6144,17 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 	bitstr_t *alloc_core_bitmap = NULL;
 	bitstr_t *avail_core_bitmap = NULL;
 	bool shared_gres = _shared_gres(plugin_id);
+	bool use_busy_dev = false;
 
 	if (node_gres_ptr->no_consume)
 		use_total_gres = true;
+
+	if (!use_total_gres &&
+	    (plugin_id == mps_plugin_id) &&
+	    (node_gres_ptr->gres_cnt_alloc != 0)) {
+		/* We must use the ONE already active GRES of this type */
+		use_busy_dev = true;
+	}
 
 	if (job_gres_ptr->gres_per_node && node_gres_ptr->topo_cnt &&
 	    *topo_set) {
@@ -6156,6 +6177,9 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			    (!node_gres_ptr->topo_type_name[i] ||
 			     (node_gres_ptr->topo_type_id[i] !=
 			      job_gres_ptr->type_id)))
+				continue;
+			if (use_busy_dev &&
+			    (node_gres_ptr->topo_gres_cnt_alloc[i] == 0))
 				continue;
 			if (!node_gres_ptr->topo_core_bitmap[i]) {
 				gres_avail += node_gres_ptr->
@@ -6237,6 +6261,9 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				      sizeof(uint32_t));
 		for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
 			if (node_gres_ptr->topo_gres_cnt_avail[i] == 0)
+				continue;
+			if (use_busy_dev &&
+			    (node_gres_ptr->topo_gres_cnt_alloc[i] == 0))
 				continue;
 			if (!use_total_gres &&
 			    (node_gres_ptr->topo_gres_cnt_alloc[i] >=
@@ -6452,7 +6479,8 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 					 node_gres_ptr->gres_data,
 					 use_total_gres, core_bitmap,
 					 core_start_bit, core_end_bit,
-					 gres_context[i].gres_name, node_name);
+					 gres_context[i].gres_name, node_name,
+					 job_gres_ptr->plugin_id);
 			break;
 		}
 	}
@@ -6632,6 +6660,14 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 	int64_t add_gres;
 	uint64_t avail_gres, min_gres = 1;
 	bool match = false;
+	bool use_busy_dev = false;
+
+	if (!use_total_gres &&
+	    (main_plugin_id == mps_plugin_id) &&
+	    (node_gres_ptr->gres_cnt_alloc != 0)) {
+		/* We must use the ONE already active GRES of this type */
+		use_busy_dev = true;
+	}
 
 	sock_gres = xmalloc(sizeof(sock_gres_t));
 	sock_gres->sock_cnt = sockets;
@@ -6641,6 +6677,9 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		if (job_gres_ptr->type_name &&
 		    (job_gres_ptr->type_id != node_gres_ptr->topo_type_id[i]))
 			continue;	/* Wrong type_model */
+		if (use_busy_dev &&
+		    (node_gres_ptr->topo_gres_cnt_alloc[i] == 0))
+			continue;
 		if (!use_total_gres && !node_gres_ptr->no_consume &&
 		    (node_gres_ptr->topo_gres_cnt_alloc[i] >=
 		     node_gres_ptr->topo_gres_cnt_avail[i])) {
@@ -8230,6 +8269,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	gres_node_state_t *node_specs;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
 	uint64_t gres_per_bit;
+	bool use_busy_dev = false;
 
 	job_specs = sock_gres->job_specs;
 	gres_per_bit = job_specs->gres_per_node;
@@ -8266,6 +8306,12 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 		}
 	}
 
+	if ((sock_gres->plugin_id == mps_plugin_id) &&
+	    (node_specs->gres_cnt_alloc != 0)) {
+		/* We must use the ONE already active GRES of this type */
+		use_busy_dev = true;
+	}
+
 	/*
 	 * Now pick specific GRES for these sockets.
 	 * First: Try to select a GRES local to allocated socket with
@@ -8277,6 +8323,9 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 		if (!used_sock[s])
 			continue;
 		for (t = 0; t < node_specs->topo_cnt; t++) {
+			if (use_busy_dev &&
+			    (node_specs->topo_gres_cnt_alloc[t] == 0))
+				continue;
 			if (node_specs->topo_gres_cnt_alloc    &&
 			    node_specs->topo_gres_cnt_avail    &&
 			    ((node_specs->topo_gres_cnt_avail[t] -
@@ -8297,6 +8346,9 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 
 	/* Select available GRES with sufficient resources */
 	for (t = 0; (t < node_specs->topo_cnt) && (alloc_gres_cnt == 0); t++) {
+		if (use_busy_dev &&
+		    (node_specs->topo_gres_cnt_alloc[t] == 0))
+			continue;
 		if (node_specs->topo_gres_cnt_alloc    &&
 		    node_specs->topo_gres_cnt_avail    &&
 		    node_specs->topo_gres_cnt_avail[t] &&
@@ -9365,6 +9417,12 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	if (_shared_gres(plugin_id)) {
 		shared_gres = true;
 		gres_per_bit = job_gres_ptr->gres_per_node;
+	}
+	if ((plugin_id == mps_plugin_id) &&
+	    (node_gres_ptr->gres_cnt_alloc != 0)) {
+		/* We must use the ONE already active GRES of this type */
+		use_busy_dev = true;
+	}
 
 	if (job_gres_ptr->type_name && !job_gres_ptr->type_name[0])
 		xfree(job_gres_ptr->type_name);
@@ -9612,6 +9670,9 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			     (job_gres_ptr->type_id !=
 			      node_gres_ptr->topo_type_id[i])))
 				continue;
+			if (use_busy_dev &&
+			    (node_gres_ptr->topo_gres_cnt_alloc[i] == 0))
+				continue;
 			sz1 = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
 			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
 
@@ -9705,6 +9766,9 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			 * in terms of allocating GRES to jobs.
 			 */
 			for (j = 0; j < node_gres_ptr->topo_cnt; j++) {
+				if (use_busy_dev &&
+				    (node_gres_ptr->topo_gres_cnt_alloc[j] == 0))
+					continue;
 				if (node_gres_ptr->topo_gres_bitmap &&
 				    node_gres_ptr->topo_gres_bitmap[j] &&
 				    bit_test(node_gres_ptr->topo_gres_bitmap[j],
