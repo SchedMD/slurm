@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - fix slurmctld SIGABRT due to illegal read/writes.
  -- burst_buffer/cray - fix memory leak due to unfreed job script content.
  -- node_features/knl_cray - fix script_argv use-after-free.
+ -- burst_buffer/cray - fix script_argv use-after-free.
 
 * Changes in Slurm 18.08.6-2
 ============================

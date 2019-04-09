@@ -3944,7 +3944,6 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		    bb_state.bb_config.debug_flag)
 			info("%s: paths ran for %s", __func__, TIME_STR);
 		_log_script_argv(script_argv, resp_msg);
-		free_command_argv(script_argv);
 #if 1
 		//FIXME: Cray API returning "job_file_valid True" but exit 1 in some cases
 		if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
@@ -3957,11 +3956,13 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			      __func__, job_ptr, status, resp_msg);
 			xfree(resp_msg);
 			rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+			free_command_argv(script_argv);
 			goto fini;
 		} else {
 			_update_job_env(job_ptr, path_file);
 			xfree(resp_msg);
 		}
+		free_command_argv(script_argv);
 
 		/* Setup "pre_run" operation */
 		pre_run_argv = xmalloc(sizeof(char *) * 12);
