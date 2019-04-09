@@ -976,6 +976,11 @@ static int _schedule(uint32_t job_limit)
 		xfree(sched_type);
 		xfree(prio_type);
 
+		if (xstrcasestr(sched_params, "alloc_booting_nodes"))
+			alloc_booting_nodes = true;
+		else
+			alloc_booting_nodes = false;
+
 		if (xstrcasestr(sched_params, "assoc_limit_stop"))
 			assoc_limit_stop = true;
 		else
@@ -1208,7 +1213,8 @@ static int _schedule(uint32_t job_limit)
 	failed_parts = xmalloc(sizeof(struct part_record *) * part_cnt);
 	failed_resv = xmalloc(sizeof(struct slurmctld_resv*) * MAX_FAILED_RESV);
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
-	bit_and_not(avail_node_bitmap, booting_node_bitmap);
+	if (!alloc_booting_nodes)
+		bit_and_not(avail_node_bitmap, booting_node_bitmap);
 	bit_or(avail_node_bitmap, rs_node_bitmap);
 
 	/* Avoid resource fragmentation if important */

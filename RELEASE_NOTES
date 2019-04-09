@@ -117,6 +117,12 @@ HIGHLIGHTS
  -- Add priorities to assocations.
  -- Added NO_NORMAL_[ALL|ASSOC|PART|QOS|TRES] PriorityFlags to not normalize
     associated factors.
+ -- Cloud/PowerSave Improvements:
+    - Better repsonsiveness to resuming and suspending.
+    - Powering down nodes not eligible to be allocated until after
+      SuspendTimeout.
+    - Powering down nodes put in "Powering Down / %" state until after
+      SuspendTimeout.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
@@ -142,6 +148,10 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Add GPU scheduling options to slurm.conf, available both globally and
     per-partition: DefCpusPerGPU and DefMemPerGPU.
  -- Add PriorityWeightAssoc to control association priority factor of a job.
+ -- Add idle_on_node_suspend SlurmctldParameter to make nodes idle regardless
+    of state when suspended.
+ -- Add alloc_booting_nodes SchedulerParameter to allow jobs to be placed on
+    booting nodes.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

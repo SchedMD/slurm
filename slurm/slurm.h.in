@@ -859,6 +859,7 @@ enum node_states {
 #define NODE_STATE_MAINT      0x00008000 /* node in maintenance reservation */
 #define NODE_STATE_REBOOT     0x00010000 /* node reboot requested */
 #define NODE_STATE_CANCEL_REBOOT 0x00020000 /* cancel pending reboot */
+#define NODE_STATE_POWERING_DOWN 0x00040000 /* node is powering down */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t
@@ -2571,6 +2572,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_FEDR         0x0001000000000000 /* Federation debug */
 #define DEBUG_FLAG_HETERO_JOBS  0x0002000000000000 /* Heterogeneous job debug */
 #define DEBUG_FLAG_ACCRUE       0x0004000000000000 /* Accrue counters debug */
+#define DEBUG_FLAG_POWER_SAVE   0x0008000000000000 /* Power Save debug */
 
 #define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
 #define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */

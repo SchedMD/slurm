@@ -600,6 +600,9 @@ Do not log when the slurm.conf files differs between Slurm daemons
 \fBPower\fR
 Power management plugin
 .TP
+\fBPowerSave\fR
+Power save (suspend/resume programs) details
+.TP
 \fBPriority\fR
 Job prioritization
 .TP
@@ -2557,6 +2560,12 @@ The interpretation of this parameter varies by \fBSchedulerType\fR.
 Multiple options may be comma separated.
 .RS
 .TP
+\fBalloc_booting_nodes\fR
+If set, then nodes that are booting are allowed to allocated. By default, a
+node that is booting is not eligible to be scheduled. In a cloud environment,
+the default may not be ideal because it can lead to more resources being
+created than needed.
+.TP
 \fBallow_zero_lic\fR
 If set, then job submissions requesting more than configured licenses won't be
 rejected.
@@ -3455,6 +3464,10 @@ Since Slurm communications rely on the node configuration found in the
 slurm.conf, Slurm will tell the client command, after waiting for all nodes to
 boot, each node's ip address. However, in environments where the nodes are in
 DNS, this step can be avoided by configuring this option.
+.TP
+\fBidle_on_node_suspend\fR Mark nodes as idle, regardless of current state,
+when suspending nodes with \fISuspendProgram\fB so that nodes will be eligible
+to be resumed at a later time.
 .RE
 
 .TP
