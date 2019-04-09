@@ -610,9 +610,13 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	}
 
 	if (local_list) {
-		env_array_overwrite(env_ptr, "CUDA_VISIBLE_DEVICES",
-				    local_list);
-		env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL", local_list);
+		/*
+		 * CUDA_VISIBLE_DEVICES is relative to the MPS server.
+		 * With only one GPU under the control of MPS, the device
+		 * number will always be "0".
+		 */
+		env_array_overwrite(env_ptr, "CUDA_VISIBLE_DEVICES", "0");
+		env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL", "0");
 		xfree(local_list);
 		*already_seen = true;
 	}
