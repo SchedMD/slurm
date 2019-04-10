@@ -4034,6 +4034,10 @@ end_node_set:
 			rc = ESLURM_NODES_BUSY;
 		} else {
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
+			debug2("%s: setting %pJ to \"%s\" (%s)",
+			       __func__, job_ptr,
+			       job_reason_string(job_ptr->state_reason),
+			       slurm_strerror(rc));
 		}
 		FREE_NULL_BITMAP(reboot_bitmap);
 		return rc;

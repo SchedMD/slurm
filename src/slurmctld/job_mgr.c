@@ -4846,6 +4846,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
 			job_completion_logger(job_ptr, false);
+			error("%s: setting %pJ to \"%s\"",
+			      __func__, job_ptr,
+			      job_reason_string(job_ptr->state_reason));
 		}
 		return error_code;
 	}
@@ -4897,12 +4900,27 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = now;
 		job_completion_logger(job_ptr, false);
-		if (!independent)
+		if (!independent) {
+			debug2("%s: setting %pJ to \"%s\" due to dependency (%s)",
+			       __func__, job_ptr,
+			       job_reason_string(job_ptr->state_reason),
+			       slurm_strerror(ESLURM_DEPENDENCY));
 			return ESLURM_DEPENDENCY;
-		else if (too_fragmented)
+		}
+		else if (too_fragmented) {
+			debug2("%s: setting %pJ to \"%s\" due to fragmentation (%s)",
+			       __func__, job_ptr,
+			       job_reason_string(job_ptr->state_reason),
+			       slurm_strerror(ESLURM_FRAGMENTATION));
 			return ESLURM_FRAGMENTATION;
-		else
+		}
+		else {
+			debug2("%s: setting %pJ to \"%s\" because it's not top priority (%s)",
+			       __func__, job_ptr,
+			       job_reason_string(job_ptr->state_reason),
+			       slurm_strerror(ESLURM_NOT_TOP_PRIORITY));
 			return ESLURM_NOT_TOP_PRIORITY;
+		}
 	}
 
 	if (will_run && resp) {
@@ -4973,6 +4991,10 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
 			job_completion_logger(job_ptr, false);
+			debug2("%s: setting %pJ to \"%s\" because it cannot be immediately allocated (%s)",
+			       __func__, job_ptr,
+			       job_reason_string(job_ptr->state_reason),
+			       slurm_strerror(error_code));
 		} else {	/* job remains queued */
 			if ((error_code == ESLURM_NODES_BUSY) ||
 			    (error_code == ESLURM_BURST_BUFFER_WAIT) ||
@@ -4993,6 +5015,10 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		xfree(job_ptr->state_desc);
 		job_ptr->start_time = job_ptr->end_time = now;
 		job_completion_logger(job_ptr, false);
+		debug2("%s: setting %pJ to \"%s\" due to a flaw in the job request (%s)",
+		       __func__, job_ptr,
+		       job_reason_string(job_ptr->state_reason),
+		       slurm_strerror(error_code));
 		return error_code;
 	}
 

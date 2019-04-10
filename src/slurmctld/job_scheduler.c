@@ -1750,6 +1750,10 @@ skip_start:
 			xfree(job_ptr->state_desc);
 			job_ptr->start_time = job_ptr->end_time = now;
 			job_ptr->priority = 0;
+			debug2("%s: setting %pJ to \"%s\" (%s)",
+			       __func__, job_ptr,
+			       job_reason_string(job_ptr->state_reason),
+			       slurm_strerror(error_code));
 		}
 
 		if (job_ptr->details && job_ptr->details->req_node_bitmap &&
