@@ -99,15 +99,6 @@ int parse_select_type_param(char *select_type_parameters, uint16_t *param)
 			*param |= CR_CORE_DEFAULT_DIST_BLOCK;
 		} else if (!xstrcasecmp(str_parameters, "CR_LLN")) {
 			*param |= CR_LLN;
-		} else if (!xstrcasecmp(str_parameters, "NHC_Absolutely_No")) {
-			*param |= CR_NHC_ABSOLUTELY_NO;
-			*param |= CR_NHC_STEP_NO;
-			*param |= CR_NHC_NO;
-		} else if (!xstrcasecmp(str_parameters, "NHC_No")) {
-			*param |= CR_NHC_STEP_NO;
-			*param |= CR_NHC_NO;
-		} else if (!xstrcasecmp(str_parameters, "NHC_No_Steps")) {
-			*param |= CR_NHC_STEP_NO;
 		} else if (!xstrcasecmp(str_parameters, "CR_PACK_NODES")) {
 			*param |= CR_PACK_NODES;
 		} else {
@@ -168,19 +159,6 @@ extern char *select_type_param_string(uint16_t select_type_param)
 		if (select_str[0])
 			strcat(select_str, ",");
 		strcat(select_str, "OTHER_CONS_TRES");
-	}
-	if (select_type_param & CR_NHC_ABSOLUTELY_NO) {
-		if (select_str[0])
-			strcat(select_str, ",");
-		strcat(select_str, "NHC_ABSOLUTELY_NO");
-	} else if (select_type_param & CR_NHC_NO) {
-		if (select_str[0])
-			strcat(select_str, ",");
-		strcat(select_str, "NHC_NO");
-	} else if (select_type_param & CR_NHC_STEP_NO) {
-		if (select_str[0])
-			strcat(select_str, ",");
-		strcat(select_str, "NHC_STEP_NO");
 	}
 	if (select_type_param & CR_ONE_TASK_PER_CORE) {
 		if (select_str[0])

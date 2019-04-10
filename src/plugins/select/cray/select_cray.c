@@ -97,15 +97,6 @@ struct select_nodeinfo {
 };
 
 typedef struct {
-	uint64_t apid;
-	uint32_t exit_code;
-	bool is_step;	/* true if step, false if job */
-	uint32_t jobid;
-	char *nodelist;
-	uint32_t user_id;
-} nhc_info_t;
-
-typedef struct {
 	uint64_t id;
 	uint32_t job_cnt;
 	bitstr_t *node_bitmap;
@@ -157,10 +148,6 @@ static bitstr_t *blade_nodes_running_npc = NULL;
 static uint32_t blade_cnt = 0;
 static pthread_mutex_t blade_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t last_npc_update;
-
-static int active_post_nhc_cnt = 0;
-static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 
 static bool scheduling_disabled = false; //Backup running on external cray node?
 
@@ -242,147 +229,6 @@ uint32_t plugin_id		= SELECT_PLUGIN_CRAY_LINEAR;
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo);
-
-static int _run_nhc(nhc_info_t *nhc_info)
-{
-	if (scheduling_disabled)
-		return 0;
-
-	if (slurmctld_conf.select_type_param & CR_NHC_ABSOLUTELY_NO) {
-		error("%s: disabled by NHC_Absolutely_No setting, skipping.",
-		      __func__);
-		return 0;
-	}
-
-#ifdef HAVE_NATIVE_CRAY
-	int argc = 13, status = 1, wait_rc, i = 0;
-	char *argv[argc];
-	pid_t cpid;
-	char *jobid_char = NULL, *apid_char = NULL, *nodelist_nids = NULL;
-	char *exit_char = NULL, *user_char = NULL;
-	DEF_TIMERS;
-
-	START_TIMER;
-
-	apid_char = xstrdup_printf("%"PRIu64"", nhc_info->apid);
-	exit_char = xstrdup_printf("%u", nhc_info->exit_code);
-	jobid_char = xstrdup_printf("%u", nhc_info->jobid);
-	user_char = xstrdup_printf("%u", nhc_info->user_id);
-	nodelist_nids = cray_nodelist2nids(NULL, nhc_info->nodelist);
-
-	argv[i++] = "/opt/cray/nodehealth/default/bin/xtcleanup_after";
-	argv[i++] = "-a";
-	argv[i++] = apid_char;
-	argv[i++] = "-e";
-	argv[i++] = exit_char;
-	argv[i++] = "-r";
-	argv[i++] = jobid_char;
-	argv[i++] = "-u";
-	argv[i++] = user_char;
-	argv[i++] = "-m";
-	argv[i++] = nhc_info->is_step ? "application" : "reservation";
-	argv[i++] = nodelist_nids;
-	argv[i++] = NULL;
-
-	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		if (nhc_info->is_step)
-			info("Calling NHC for jobid %u and apid %"PRIu64" "
-			     "on nodes %s(%s) exit code %u",
-			     nhc_info->jobid, nhc_info->apid,
-			     nhc_info->nodelist, nodelist_nids,
-			     nhc_info->exit_code);
-		else
-			info("Calling NHC for jobid %u and apid %"PRIu64" "
-			     "on nodes %s(%s)",
-			     nhc_info->jobid, nhc_info->apid,
-			     nhc_info->nodelist, nodelist_nids);
-	}
-
-	if (!nhc_info->nodelist || !nodelist_nids) {
-		/* already done */
-		goto fini;
-	}
-
-	if ((cpid = fork()) < 0) {
-		error("_run_nhc fork error: %m");
-		goto fini;
-	}
-	if (cpid == 0) {
-		setpgid(0, 0);
-		execvp(argv[0], argv);
-		exit(127);
-	}
-
-	while (1) {
-		wait_rc = waitpid(cpid, &status, 0);
-		if (wait_rc < 0) {
-			if (errno == EINTR)
-				continue;
-			error("_run_nhc waitpid error: %m");
-			break;
-		} else if (wait_rc > 0) {
-			killpg(cpid, SIGKILL);	/* kill children too */
-			break;
-		}
-	}
-	END_TIMER;
-	if (status != 0) {
-		error("_run_nhc jobid %u and apid %"PRIu64" exit "
-		      "status %u:%u took: %s",
-		      nhc_info->jobid, nhc_info->apid, WEXITSTATUS(status),
-		      WTERMSIG(status), TIME_STR);
-	} else if ((debug_flags &
-		    (DEBUG_FLAG_SELECT_TYPE | DEBUG_FLAG_TIME_CRAY)) ||
-		   (DELTA_TIMER > 60000000)) {	/* log if over one minute */
-		info("_run_nhc jobid %u and apid %"PRIu64" completion took: %s",
-		     nhc_info->jobid, nhc_info->apid, TIME_STR);
-	}
-fini:
-	xfree(apid_char);
-	xfree(exit_char);
-	xfree(jobid_char);
-	xfree(user_char);
-	xfree(nodelist_nids);
-
-	return status;
-
-#elif HAVE_CRAY_NETWORK
-	/* NHC not supported, but don't sleep before return. */
-	return 0;
-
-#else
-	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		if (nhc_info->is_step) {
-			info("simulating call to NHC for step %u.%u "
-			     "and apid %"PRIu64" on nodes %s",
-			     nhc_info->jobid,
-			     SLURM_ID_HASH_STEP_ID(nhc_info->apid),
-			     nhc_info->apid, nhc_info->nodelist);
-		} else {
-			info("simulating call to NHC for job %u "
-			     "and apid %"PRIu64" on nodes %s",
-			     nhc_info->jobid, nhc_info->apid,
-			     nhc_info->nodelist);
-		}
-	}
-
-	/* simulate sleeping */
-	sleep(1);
-	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		if (nhc_info->is_step) {
-			info("NHC for step %u.%u and apid %"PRIu64" completed",
-			     nhc_info->jobid,
-			     SLURM_ID_HASH_STEP_ID(nhc_info->apid),
-			     nhc_info->apid);
-		} else {
-			info("NHC for job %u and apid %"PRIu64" completed",
-			     nhc_info->jobid, nhc_info->apid);
-		}
-	}
-
-	return 0;
-#endif
-}
 
 #ifdef HAVE_NATIVE_CRAY
 /*
@@ -845,49 +691,6 @@ static void _stop_aeld_thread(void)
 }
 #endif
 
-static void _remove_job_from_blades(select_jobinfo_t *jobinfo)
-{
-	int i;
-
-	slurm_mutex_lock(&blade_mutex);
-	for (i=0; i<blade_cnt; i++) {
-		if (!bit_test(jobinfo->blade_map, i))
-			continue;
-		blade_array[i].job_cnt--;
-		if ((int32_t)blade_array[i].job_cnt < 0) {
-			error("blade %d job_cnt underflow", i);
-			blade_array[i].job_cnt = 0;
-		}
-
-		if (jobinfo->npc == NPC_SYS) {
-			bit_nclear(blade_nodes_running_npc, 0,
-				   node_record_count-1);
-		} else if (jobinfo->npc) {
-			bit_not(blade_nodes_running_npc);
-			bit_or(blade_nodes_running_npc,
-			       blade_array[i].node_bitmap);
-			bit_not(blade_nodes_running_npc);
-		}
-	}
-
-	if (jobinfo->npc)
-		last_npc_update = time(NULL);
-
-	slurm_mutex_unlock(&blade_mutex);
-}
-
-static void _remove_step_from_blades(struct step_record *step_ptr)
-{
-	select_jobinfo_t *jobinfo = step_ptr->job_ptr->select_jobinfo->data;
-	select_jobinfo_t *step_jobinfo = step_ptr->select_jobinfo->data;
-
-	if (jobinfo->used_blades) {
-		bit_not(jobinfo->used_blades);
-		bit_or(jobinfo->used_blades, step_jobinfo->blade_map);
-		bit_not(jobinfo->used_blades);
-	}
-}
-
 static void _free_blade(blade_info_t *blade_info)
 {
 	FREE_NULL_BITMAP(blade_info->node_bitmap);
@@ -976,213 +779,6 @@ static void _set_job_running_restore(select_jobinfo_t *jobinfo)
 
 	if (jobinfo->npc)
 		last_npc_update = time(NULL);
-}
-
-/* These functions prevent the fini's of jobs and steps from keeping
- * the slurmctld write locks constantly set after the nhc is ran,
- * which can prevent other RPCs and system functions from being
- * processed. For example, a steady stream of step or job completions
- * can prevent squeue from responding or jobs from being scheduled. */
-static void _throttle_start(void)
-{
-	slurm_mutex_lock(&throttle_mutex);
-	while (1) {
-		if (active_post_nhc_cnt == 0) {
-			active_post_nhc_cnt++;
-			break;
-		}
-		slurm_cond_wait(&throttle_cond, &throttle_mutex);
-	}
-	slurm_mutex_unlock(&throttle_mutex);
-	usleep(100);
-}
-static void _throttle_fini(void)
-{
-	slurm_mutex_lock(&throttle_mutex);
-	active_post_nhc_cnt--;
-	slurm_cond_broadcast(&throttle_cond);
-	slurm_mutex_unlock(&throttle_mutex);
-}
-
-/* Wait until the epilog has completed on all nodes and burst buffer stage-out
- * is complete */
-static void _wait_job_completed(uint32_t job_id, struct job_record *job_ptr)
-{
-	bool fini = false;
-	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
-	while (!fini) {
-		lock_slurmctld(job_read_lock);
-		if ((job_ptr->magic  != JOB_MAGIC) ||
-		    (job_ptr->job_id != job_id)    ||
-		    (!IS_JOB_COMPLETING(job_ptr) &&
-		     (bb_g_job_test_post_run(job_ptr) != 0)))
-			fini = true;
-		unlock_slurmctld(job_read_lock);
-		if (!fini)
-			sleep(1);
-	}
-}
-
-static void *_job_fini(void *args)
-{
-	struct job_record *job_ptr = (struct job_record *)args;
-	nhc_info_t nhc_info;
-
-	/* Locks: Write job, write node */
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
-	if (!job_ptr) {
-		error("_job_fini: no job ptr given, this should never happen");
-		return NULL;
-	}
-
-	memset(&nhc_info, 0, sizeof(nhc_info_t));
-	lock_slurmctld(job_read_lock);
-	nhc_info.jobid = job_ptr->job_id;
-	nhc_info.nodelist = xstrdup(job_ptr->nodes);
-	nhc_info.exit_code = 1; /* hard code to 1 to always run */
-	nhc_info.user_id = job_ptr->user_id;
-	unlock_slurmctld(job_read_lock);
-
-	_wait_job_completed(nhc_info.jobid, job_ptr);
-
-	/* run NHC */
-	_run_nhc(&nhc_info);
-	/***********/
-	xfree(nhc_info.nodelist);
-
-	_throttle_start();
-	lock_slurmctld(job_write_lock);
-	if (job_ptr->magic == JOB_MAGIC) {
-		select_jobinfo_t *jobinfo = NULL;
-
-		jobinfo = job_ptr->select_jobinfo->data;
-
-		/* free resources on the job if not released before */
-		if (jobinfo->released == 0)
-			other_job_fini(job_ptr);
-
-		_remove_job_from_blades(jobinfo);
-		jobinfo->cleaning |= CLEANING_COMPLETE;
-	} else
-		error("_job_fini: job %u had a bad magic, "
-		      "this should never happen", nhc_info.jobid);
-
-	unlock_slurmctld(job_write_lock);
-	_throttle_fini();
-
-	return NULL;
-}
-
-static void *_step_fini(void *args)
-{
-	struct step_record *step_ptr = (struct step_record *)args;
-	select_jobinfo_t *jobinfo = NULL;
-	nhc_info_t nhc_info;
-
-	/* Locks: Write job, write node */
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
-	if (!step_ptr) {
-		error("%s: no step_ptr given, this should never happen",
-		      __func__);
-		return NULL;
-	}
-	if (!step_ptr->job_ptr) {
-		error("%s: step_ptr->job_ptr is NULL, this should never happen",
-		      __func__);
-		return NULL;
-	}
-
-	lock_slurmctld(job_read_lock);
-	memset(&nhc_info, 0, sizeof(nhc_info_t));
-	nhc_info.jobid = step_ptr->job_ptr->job_id;
-	jobinfo = step_ptr->select_jobinfo->data;
-	if (IS_CLEANING_COMPLETE(jobinfo)) {
-		debug("%s: NHC previously run for %pS",
-		      __func__, step_ptr);
-		unlock_slurmctld(job_read_lock);
-	} else if (step_ptr->step_id == SLURM_EXTERN_CONT) {
-		debug2("%s: %pS complete, no NHC", __func__, step_ptr);
-		unlock_slurmctld(job_read_lock);
-	} else {
-		/* Run application NHC */
-		nhc_info.is_step = true;
-		nhc_info.apid = SLURM_ID_HASH(step_ptr->job_ptr->job_id,
-					      step_ptr->step_id);
-
-		/*
-		 * If we are killing the step it is usually because we
-		 * can't kill it normally.  So NHC will start before
-		 * the step ends.  Setting the exit_code to SIGKILL
-		 * will make NHC do extra tests hopefully helping the
-		 * unkillable process(es).
-		 */
-		if (jobinfo->killing)
-			nhc_info.exit_code = SIGKILL;
-		else
-			nhc_info.exit_code = step_ptr->exit_code;
-
-		nhc_info.user_id = step_ptr->job_ptr->user_id;
-
-		if (!step_ptr->step_layout ||
-		    !step_ptr->step_layout->node_list) {
-			if (step_ptr->job_ptr)
-				nhc_info.nodelist =
-					xstrdup(step_ptr->job_ptr->nodes);
-		} else {
-			nhc_info.nodelist =
-				xstrdup(step_ptr->step_layout->node_list);
-		}
-		unlock_slurmctld(job_read_lock);
-
-		_run_nhc(&nhc_info);
-		xfree(nhc_info.nodelist);
-	}
-
-	/* NHC has completed, release the step's resources */
-	_throttle_start();
-	lock_slurmctld(job_write_lock);
-	if (step_ptr->job_ptr->job_id != nhc_info.jobid) {
-		error("%s: For some reason we don't have a valid job_ptr for "
-		      "job %u APID %"PRIu64".  This should never happen.",
-		      __func__, nhc_info.jobid, nhc_info.apid);
-	} else if (!step_ptr->step_node_bitmap) {
-		error("%s: For some reason we don't have a step_node_bitmap "
-		      "for job %u APID %"PRIu64".  "
-		      "If this is at startup and the step's nodes changed "
-		      "this is expected.  Otherwise this should never happen.",
-		      __func__, nhc_info.jobid, nhc_info.apid);
-
-		/* This should be the only cleanup needed */
-		jobinfo = step_ptr->select_jobinfo->data;
-
-		_remove_step_from_blades(step_ptr);
-		jobinfo->cleaning |= CLEANING_COMPLETE;
-
-		delete_step_record(step_ptr->job_ptr, step_ptr->step_id);
-	} else {
-		other_step_finish(step_ptr, false);
-
-		jobinfo = step_ptr->select_jobinfo->data;
-
-		_remove_step_from_blades(step_ptr);
-		jobinfo->cleaning |= CLEANING_COMPLETE;
-		/* free resources on the job */
-		post_job_step(step_ptr);
-	}
-	unlock_slurmctld(job_write_lock);
-	_throttle_fini();
-
-	return NULL;
 }
 
 static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
@@ -1574,37 +1170,6 @@ extern int select_p_job_init(List job_list)
 			    IS_JOB_RUNNING(job_ptr))
 				_set_job_running_restore(jobinfo);
 
-			if (!(slurmctld_conf.select_type_param & CR_NHC_STEP_NO)
-			    && job_ptr->step_list
-			    && list_count(job_ptr->step_list)) {
-				ListIterator itr_step = list_iterator_create(
-					job_ptr->step_list);
-				struct step_record *step_ptr;
-				while ((step_ptr = list_next(itr_step))) {
-					jobinfo =step_ptr->select_jobinfo->data;
-					if (jobinfo &&
-					    IS_CLEANING_STARTED(jobinfo) &&
-					    !IS_CLEANING_COMPLETE(jobinfo)) {
-						jobinfo->cleaning |=
-							CLEANING_STARTED;
-						slurm_thread_create_detached(NULL,
-									     _step_fini,
-									     step_ptr);
-					}
-				}
-				list_iterator_destroy(itr_step);
-			}
-
-			if (!(slurmctld_conf.select_type_param & CR_NHC_NO)) {
-				jobinfo = job_ptr->select_jobinfo->data;
-				if (jobinfo &&
-				    IS_CLEANING_STARTED(jobinfo) &&
-				    !IS_CLEANING_COMPLETE(jobinfo)) {
-					slurm_thread_create_detached(NULL,
-								     _job_fini,
-								     job_ptr);
-				}
-			}
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 			/* As applicable, rerun CCM prologue during recovery */
 			if ((ccm_config.ccm_enabled) &&
@@ -1974,8 +1539,6 @@ extern int select_p_job_mem_confirm(struct job_record *job_ptr)
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
-	select_jobinfo_t *jobinfo = job_ptr->select_jobinfo->data;
-
 #if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	/* Create a thread to run the CCM epilog for a CCM partition */
 	if (ccm_config.ccm_enabled) {
@@ -1984,30 +1547,8 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 		}
 	}
 #endif
-	if (slurmctld_conf.select_type_param & CR_NHC_NO) {
-		debug3("NHC_No set, not running NHC after allocations");
-		other_job_fini(job_ptr);
-		return SLURM_SUCCESS;
-	}
 
-	if (IS_CLEANING_STARTED(jobinfo)) {
-		error("%s: Cleaning flag already set for %pJ, this should never happen",
-		      __func__, job_ptr);
-	} else if (IS_CLEANING_COMPLETE(jobinfo)) {
-		error("%s: Cleaned flag already set for %pJ, this should never happen",
-		      __func__, job_ptr);
-	} else if (!job_ptr->nodes) {
-		/*
-		 * Job with no compute resource allocation,
-		 * only burst buffer operations
-		 */
-		debug3("No blade allocation for %pJ", job_ptr);
-		other_job_fini(job_ptr);
-	} else {
-		jobinfo->cleaning |= CLEANING_STARTED;
-		slurm_thread_create_detached(NULL, _job_fini, job_ptr);
-	}
-
+	other_job_fini(job_ptr);
 	return SLURM_SUCCESS;
 }
 
@@ -2147,15 +1688,12 @@ extern int select_p_step_start(struct step_record *step_ptr)
 
 extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 {
-	select_jobinfo_t *jobinfo;
-	DEF_TIMERS;
-
-	START_TIMER;
 #ifdef HAVE_NATIVE_CRAY
 	if (aeld_running) {
 		_update_app(step_ptr, ALPSC_EV_END);
 	}
 #endif
+
 	/* Send step to db since the step could be deleted by post_job_step()
 	 * before the step is completed and sent to the db (handled in
 	 * _internal_step_complete() in step_mgr.c). post_job_step is called
@@ -2167,54 +1705,9 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 	if (killing_step)
 		jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
-	/* If we are killing the step we want to run the NHC all the
-	 * time because it will log backtraces of unkillable
-	 * processes, so just do it.
-	 */
-	if (!killing_step &&
-	    (slurmctld_conf.select_type_param & CR_NHC_STEP_NO)) {
-		debug3("NHC_No_Steps set not running NHC on steps.");
-		other_step_finish(step_ptr, killing_step);
-		/* free resources on the job */
-		post_job_step(step_ptr);
-		if (debug_flags & DEBUG_FLAG_TIME_CRAY)
-			INFO_LINE("call took: %s", TIME_STR);
-		return SLURM_SUCCESS;
-	}
-
-#if 0
-	/* The NHC needs to be ran after each step even if the job is about to
-	 * run the NHC for the allocation.  The NHC developers feel this is
-	 * needed.  If it ever changes just use this below code. */
-	else if (IS_JOB_COMPLETING(step_ptr->job_ptr) ||
-		 IS_JOB_FINISHED(step_ptr->job_ptr)) {
-		debug3("step completion %pS was received after job allocation is already completing, no extra NHC needed.",
-		      step_ptr);
-		other_step_finish(step_ptr, killing_step);
-		/* free resources on the job */
-		post_job_step(step_ptr);
-		return SLURM_SUCCESS;
-	}
-#endif
-
-	jobinfo = step_ptr->select_jobinfo->data;
-	if (!jobinfo) {
-		error("%s: %pS lacks jobinfo", __func__, step_ptr);
-	} else if (IS_CLEANING_STARTED(jobinfo)) {
-		verbose("%s: Cleaning flag already set for %pS",
-			__func__, step_ptr);
-	} else if (IS_CLEANING_COMPLETE(jobinfo)) {
-		verbose("%s: Cleaned flag already set for %pS",
-			__func__, step_ptr);
-	} else {
-		jobinfo->killing = killing_step;
-		jobinfo->cleaning |= CLEANING_STARTED;
-		slurm_thread_create_detached(NULL, _step_fini, step_ptr);
-	}
-
-	END_TIMER;
-	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
-		INFO_LINE("call took: %s", TIME_STR);
+	other_step_finish(step_ptr, killing_step);
+	/* free resources on the job */
+	post_job_step(step_ptr);
 
 	return SLURM_SUCCESS;
 }
