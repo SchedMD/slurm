@@ -909,12 +909,12 @@ static char *_load_mcdram_type(int cache_pct)
 			resp_msg[i-1] = '\0';
 	}
 	_log_script_argv(script_argv, resp_msg);
-	_free_script_argv(script_argv);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: %s %s %s status:%u response:%s", __func__,
 		      script_argv[0], script_argv[1], script_argv[2],
 		      status, resp_msg);
 	}
+	_free_script_argv(script_argv);
 	return resp_msg;
 }
 
@@ -970,12 +970,12 @@ static char *_load_numa_type(char *type)
 			resp_msg[i-1] = '\0';
 	}
 	_log_script_argv(script_argv, resp_msg);
-	_free_script_argv(script_argv);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("%s: %s %s %s status:%u response:%s", __func__,
 		      script_argv[0], script_argv[1], script_argv[2],
 		      status, resp_msg);
 	}
+	_free_script_argv(script_argv);
 	return resp_msg;
 }
 
