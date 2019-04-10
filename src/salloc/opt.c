@@ -1807,7 +1807,7 @@ static char *_read_file(char *fname)
 		fatal("Could not stat burst buffer specification file %s: %m",
 		      fname);
 	}
-	file_buf = xmalloc(stat_buf.st_size);
+	file_buf = xmalloc(stat_buf.st_size + 1);
 	while (stat_buf.st_size > offset) {
 		i = read(fd, file_buf + offset, stat_buf.st_size - offset);
 		if (i < 0) {
@@ -1821,6 +1821,7 @@ static char *_read_file(char *fname)
 		offset += i;
 	}
 	close(fd);
+	file_buf[stat_buf.st_size] = '\0';
 	return file_buf;
 }
 

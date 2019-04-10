@@ -500,7 +500,7 @@ static char *_read_file(const char *f_name)
 		return NULL;
 	}
 	f_size = f_stat.st_size;
-	buf = xmalloc(f_size);
+	buf = xmalloc(f_size + 1);
 	while (offset < f_size) {
 		rd_size = read(fd, buf+offset, f_size-offset);
 		if (rd_size < 0) {
@@ -512,6 +512,7 @@ static char *_read_file(const char *f_name)
 		offset += rd_size;
 	}
 	close(fd);
+	buf[f_size] = '\0';
 	return buf;
 }
 
