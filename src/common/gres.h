@@ -267,6 +267,7 @@ typedef struct gres_step_state {
 
 /* Per-socket GRES availability information for scheduling purposes */
 typedef struct sock_gres {	/* GRES availability by socket */
+	bitstr_t *bits_any_sock;/* Per-socket GRES bitmap of this name & type */
 	bitstr_t **bits_by_sock;/* Per-socket GRES bitmap of this name & type */
 	uint64_t cnt_any_sock;	/* GRES count unconstrained by cores */
 	uint64_t *cnt_by_sock;	/* Per-socket GRES count of this name & type */
