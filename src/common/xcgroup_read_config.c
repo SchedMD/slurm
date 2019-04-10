@@ -63,6 +63,7 @@
 pthread_mutex_t xcgroup_config_read_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static slurm_cgroup_conf_t slurm_cgroup_conf;
+static Buf cg_conf_buf = NULL;
 static bool slurm_cgroup_conf_inited = false;
 static bool slurm_cgroup_conf_exist = true;
 
@@ -349,6 +350,13 @@ extern slurm_cgroup_conf_t *xcgroup_get_slurm_cgroup_conf(void)
 	if (!slurm_cgroup_conf_inited) {
 		memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
 		_read_slurm_cgroup_conf_int();
+		/*
+		 * Initialize and pack cgroup.conf info into a buffer that can
+		 * be used by slurmd to send to stepd every time, instead of
+		 * re-packing every time we want to send to slurmsetpd
+		 */
+		cg_conf_buf = init_buf(0);
+		_pack_cgroup_conf(&slurm_cgroup_conf, cg_conf_buf);
 		slurm_cgroup_conf_inited = true;
 	}
 
@@ -489,6 +497,7 @@ extern void xcgroup_reconfig_slurm_cgroup_conf(void)
 
 	if (slurm_cgroup_conf_inited) {
 		_clear_slurm_cgroup_conf(&slurm_cgroup_conf);
+		FREE_NULL_BUFFER(cg_conf_buf);
 		slurm_cgroup_conf_inited = false;
 	}
 	(void)xcgroup_get_slurm_cgroup_conf();
@@ -500,25 +509,21 @@ extern void xcgroup_reconfig_slurm_cgroup_conf(void)
 extern int xcgroup_write_conf(int fd)
 {
 	int len;
-	slurm_cgroup_conf_t *cg_conf;
-	Buf buffer = init_buf(0);
 
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
-	_pack_cgroup_conf(cg_conf, buffer);
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	if (!slurm_cgroup_conf_inited)
+		(void)xcgroup_get_slurm_cgroup_conf();
 
-	len = get_buf_offset(buffer);
+	len = get_buf_offset(cg_conf_buf);
 	safe_write(fd, &len, sizeof(int));
-	safe_write(fd, get_buf_data(buffer), len);
-	FREE_NULL_BUFFER(buffer);
+	safe_write(fd, get_buf_data(cg_conf_buf), len);
 
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 	return 0;
 
 rwfail:
-	FREE_NULL_BUFFER(buffer);
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 	return -1;
-
 }
 
 extern int xcgroup_read_conf(int fd)
@@ -561,6 +566,7 @@ extern void xcgroup_fini_slurm_cgroup_conf(void)
 	if (slurm_cgroup_conf_inited) {
 		_clear_slurm_cgroup_conf(&slurm_cgroup_conf);
 		slurm_cgroup_conf_inited = false;
+		FREE_NULL_BUFFER(cg_conf_buf);
 	}
 
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
