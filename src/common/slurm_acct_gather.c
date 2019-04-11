@@ -167,6 +167,7 @@ extern int acct_gather_write_conf(int fd)
 	return 0;
 
 rwfail:
+	slurm_mutex_unlock(&conf_mutex);
 	return -1;
 }
 
