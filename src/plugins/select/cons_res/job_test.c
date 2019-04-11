@@ -3910,9 +3910,32 @@ alloc_job:
 		} else if (save_mem)		/* Memory per node */
 			needed_mem = save_mem;
 		else {				/* Allocate all node memory */
+			needed_mem = avail_mem;
+			if (!test_only && (node_usage[i].alloc_memory > 0)) {
+				if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+					info("%s: node %s has already alloc_memory=%"PRIu64". %pJ can't allocate all node memory",
+					     __func__,
+					     select_node_record[i].
+					     node_ptr->name,
+					     node_usage[i].alloc_memory,
+					     job_ptr);
+				error_code = SLURM_ERROR;
+				break;
+			}
 			if ((j == 0) || (lowest_mem > avail_mem))
 				lowest_mem = avail_mem;
-			needed_mem = avail_mem;
+		}
+		if (!test_only && save_mem) {
+			if (node_usage[i].alloc_memory > avail_mem) {
+				error("%s: node %s memory is already overallocated (%"PRIu64" > %"PRIu64"). %pJ can't allocate any node memory",
+				      __func__,
+				      select_node_record[i].node_ptr->name,
+				      node_usage[i].alloc_memory, avail_mem,
+				      job_ptr);
+				error_code = SLURM_ERROR;
+				break;
+			}
+			avail_mem -= node_usage[i].alloc_memory;
 		}
 		if (needed_mem > avail_mem) {
 			if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
