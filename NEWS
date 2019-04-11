@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Add alloc_booting_nodes SchedulerParameter to allow jobs to be placed on
     booting nodes.
  -- Changed "scontrol reboot" to not default to ALL nodes.
+ -- Changed "scontrol completing" to include two new fields - EndTime and
+    CompletingTime.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

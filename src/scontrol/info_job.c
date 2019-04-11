@@ -195,6 +195,8 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	node_info_t *node_info;
 	hostlist_t comp_nodes, down_nodes;
 	char *node_buf;
+	char time_str[32];
+	time_t completing_time = 0;
 
 	comp_nodes = hostlist_create(NULL);
 	down_nodes = hostlist_create(NULL);
@@ -218,6 +220,13 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 	}
 
 	fprintf(stdout, "JobId=%u ", job_ptr->job_id);
+
+	slurm_make_time_str(&job_ptr->end_time, time_str, sizeof(time_str));
+	fprintf(stdout, "EndTime=%s ", time_str);
+
+	completing_time = time(NULL) - job_ptr->end_time;
+	secs2time_str(completing_time, time_str, sizeof(time_str));
+	fprintf(stdout, "CompletingTime=%s ", time_str);
 
 	node_buf = hostlist_ranged_string_xmalloc(comp_nodes);
 	if (node_buf && node_buf[0])
