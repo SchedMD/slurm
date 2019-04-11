@@ -3902,22 +3902,34 @@ alloc_job:
 	for (i = first, j = 0; i <= last; i++) {
 		if (!bit_test(job_res->node_bitmap, i))
 			continue;
+		avail_mem = select_node_record[i].real_memory -
+				select_node_record[i].mem_spec_limit;
 		if (save_mem & MEM_PER_CPU) {	/* Memory per CPU */
 			needed_mem = job_res->cpus[j] *
 					(save_mem & (~MEM_PER_CPU));
 		} else if (save_mem)		/* Memory per node */
 			needed_mem = save_mem;
 		else {				/* Allocate all node memory */
-			avail_mem = select_node_record[i].real_memory -
-				    select_node_record[i].mem_spec_limit;
 			if ((j == 0) || (lowest_mem > avail_mem))
 				lowest_mem = avail_mem;
 			needed_mem = avail_mem;
 		}
+		if (needed_mem > avail_mem) {
+			if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+				info("%s: %pJ would overallocate node %s memory (%"PRIu64" > %"PRIu64")",
+				     __func__, job_ptr,
+				     select_node_record[i].node_ptr->name,
+				     needed_mem,
+				     avail_mem);
+			error_code = SLURM_ERROR;
+			break;
+		}
 		job_res->memory_allocated[j] = needed_mem;
 		j++;
 	}
-	if (save_mem == 0)
+	if (error_code == SLURM_ERROR)
+		free_job_resources(&job_ptr->job_resrcs);
+	else if (save_mem == 0)
 		details_ptr->pn_min_memory = lowest_mem;
 
 	return error_code;

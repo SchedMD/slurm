@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - fix script_argv use-after-free.
  -- Fix invalid reads of size 1 due to non null-terminated string reads.
  -- Add extra debug2 logs to identify why BadConstraints reason is set.
+ -- cons_res/job_test - prevent a job from overallocating a node memory.
 
 * Changes in Slurm 18.08.6-2
 ============================
