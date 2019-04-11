@@ -3189,7 +3189,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t *free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
 	bool test_only;
 	uint32_t c, j, k, n, csize, total_cpus;
-	uint64_t save_mem = 0;
+	uint64_t save_mem = 0, avail_mem = 0, lowest_mem = 0, needed_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
 	struct job_details *details_ptr;
@@ -3893,35 +3893,32 @@ alloc_job:
 
 	/* load memory allocated array */
 	save_mem = details_ptr->pn_min_memory;
-	if (save_mem & MEM_PER_CPU) {
-		/* memory is per-cpu */
-		save_mem &= (~MEM_PER_CPU);
-		for (i = 0; i < job_res->nhosts; i++) {
-			job_res->memory_allocated[i] = job_res->cpus[i] *
-						       save_mem;
-		}
-	} else if (save_mem) {
-		/* memory is per-node */
-		for (i = 0; i < job_res->nhosts; i++) {
-			job_res->memory_allocated[i] = save_mem;
-		}
-	} else {	/* --mem=0, allocate job all memory on node */
-		uint64_t avail_mem, lowest_mem = 0;
-		first = bit_ffs(job_res->node_bitmap);
-		if (first != -1)
-			last  = bit_fls(job_res->node_bitmap);
-		else
-			last = first - 1;
-		for (i = first, j = 0; i <= last; i++) {
-			if (!bit_test(job_res->node_bitmap, i))
-				continue;
+
+	first = bit_ffs(job_res->node_bitmap);
+	if (first != -1)
+		last = bit_fls(job_res->node_bitmap);
+	else
+		last = first - 1;
+	for (i = first, j = 0; i <= last; i++) {
+		if (!bit_test(job_res->node_bitmap, i))
+			continue;
+		if (save_mem & MEM_PER_CPU) {	/* Memory per CPU */
+			needed_mem = job_res->cpus[j] *
+					(save_mem & (~MEM_PER_CPU));
+		} else if (save_mem)		/* Memory per node */
+			needed_mem = save_mem;
+		else {				/* Allocate all node memory */
 			avail_mem = select_node_record[i].real_memory -
 				    select_node_record[i].mem_spec_limit;
 			if ((j == 0) || (lowest_mem > avail_mem))
 				lowest_mem = avail_mem;
-			job_res->memory_allocated[j++] = avail_mem;
+			needed_mem = avail_mem;
 		}
-		details_ptr->pn_min_memory = lowest_mem;
+		job_res->memory_allocated[j] = needed_mem;
+		j++;
 	}
+	if (save_mem == 0)
+		details_ptr->pn_min_memory = lowest_mem;
+
 	return error_code;
 }
