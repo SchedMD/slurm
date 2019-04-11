@@ -2435,6 +2435,7 @@ skip_start:
 				/* Can start earlier in different partition */
 				job_ptr->start_time = orig_start_time;
 			}
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			continue;
 		}
 
@@ -2467,6 +2468,7 @@ skip_start:
 				/* Can start earlier in different partition */
 				job_ptr->start_time = orig_start_time;
 			}
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			continue;
 		}
 
@@ -2494,6 +2496,7 @@ skip_start:
 				     max_backfill_job_per_assoc,
 				     max_backfill_job_cnt);
 			}
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			break;
 		}
 
@@ -2515,8 +2518,10 @@ skip_start:
 			goto TRY_LATER;
 		}
 
-		if (_job_pack_deadlock_test(job_ptr))
+		if (_job_pack_deadlock_test(job_ptr)) {
+			_set_job_time_limit(job_ptr, orig_time_limit);
 			continue;
+		}
 
 		/*
 		 * Add reservation to scheduling table if appropriate
@@ -2564,6 +2569,7 @@ skip_start:
 					info("backfill: adding reservation for %pJ blocked by acct_policy_job_runnable_post_select",
 					     job_ptr);
 				}
+				_set_job_time_limit(job_ptr, orig_time_limit);
 				continue;
 			}
 			assoc_mgr_unlock(&locks);
@@ -2579,8 +2585,10 @@ skip_start:
 			if (_check_bf_usage(
 				    job_ptr->part_ptr->bf_data->resv_usage,
 				    bf_job_part_count_reserve,
-				    orig_sched_start))
+				    orig_sched_start)) {
+				_set_job_time_limit(job_ptr, orig_time_limit);
 				continue;
+			}
 			job_ptr->part_ptr->bf_data->resv_usage->count++;
 		}
 
