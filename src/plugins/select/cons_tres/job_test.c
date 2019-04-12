@@ -1302,7 +1302,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bool test_only;
 	uint32_t sockets_per_node = 1;
 	uint32_t c, j, n, csize, total_cpus;
-	uint64_t save_mem = 0;
+	uint64_t save_mem = 0, avail_mem = 0, needed_mem = 0, lowest_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
 	struct job_details *details_ptr = job_ptr->details;
@@ -1313,6 +1313,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	gres_mc_data_t *tres_mc_ptr;
 	List *node_gres_list = NULL, *sock_gres_list = NULL;
 	uint32_t *gres_task_limit = NULL;
+	char *nodename = NULL;
 
 	free_job_resources(&job_ptr->job_resrcs);
 
@@ -2100,39 +2101,76 @@ alloc_job:
 
 	/* load memory allocated array */
 	save_mem = details_ptr->pn_min_memory;
+	i_first = bit_ffs(job_res->node_bitmap);
+	if (i_first != -1)
+		i_last = bit_fls(job_res->node_bitmap);
+	else
+		i_last = -2;
 	if (!(job_ptr->bit_flags & JOB_MEM_SET) &&
 	    gres_plugin_job_mem_set(job_ptr->gres_list, job_res)) {
 		debug("%pJ memory set via GRES limit", job_ptr);
-	} else if (save_mem & MEM_PER_CPU) {
-		/* memory is per-cpu */
-		save_mem &= (~MEM_PER_CPU);
-		for (i = 0; i < job_res->nhosts; i++) {
-			job_res->memory_allocated[i] = job_res->cpus[i] *
-						       save_mem;
-		}
-	} else if (save_mem) {
-		/* memory is per-node */
-		for (i = 0; i < job_res->nhosts; i++) {
-			job_res->memory_allocated[i] = save_mem;
-		}
-	} else {	/* --mem=0, allocate job all memory on node */
-		uint64_t avail_mem, lowest_mem = 0;
-		i_first = bit_ffs(job_res->node_bitmap);
-		if (i_first != -1)
-			i_last  = bit_fls(job_res->node_bitmap);
-		else
-			i_last = -2;
+	} else {
 		for (i = i_first, j = 0; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
+			nodename = select_node_record[i].node_ptr->name;
 			avail_mem = select_node_record[i].real_memory -
 				    select_node_record[i].mem_spec_limit;
-			if ((j == 0) || (lowest_mem > avail_mem))
-				lowest_mem = avail_mem;
-			job_res->memory_allocated[j++] = avail_mem;
+			if (save_mem & MEM_PER_CPU) {	/* Memory per CPU */
+				needed_mem = job_res->cpus[j] *
+					     (save_mem & (~MEM_PER_CPU));
+			} else if (save_mem) {		/* Memory per node */
+				needed_mem = save_mem;
+			} else {		/* Allocate all node memory */
+				needed_mem = avail_mem;
+				if (!test_only &&
+				    (node_usage[i].alloc_memory > 0)) {
+					if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+						error("%s: node %s has already alloc_memory=%"
+						      PRIu64". %pJ can't allocate all node memory",
+						      __func__, nodename,
+						      node_usage[i].alloc_memory,
+						      job_ptr);
+					error_code = SLURM_ERROR;
+					break;
+				}
+				if ((j == 0) || (lowest_mem > avail_mem))
+					lowest_mem = avail_mem;
+			}
+			if (!test_only && save_mem) {
+				if (node_usage[i].alloc_memory > avail_mem) {
+					if (select_debug_flags &
+					    DEBUG_FLAG_SELECT_TYPE) {
+						error("%s: node %s memory is already overallocated (%"
+						      PRIu64" > %"PRIu64
+						      "). %pJ can't allocate any node memory",
+						      __func__, nodename,
+						      node_usage[i].alloc_memory,
+						      avail_mem, job_ptr);
+					}
+					error_code = SLURM_ERROR;
+					break;
+				}
+				avail_mem -= node_usage[i].alloc_memory;
+			}
+			if (needed_mem > avail_mem) {
+				if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+					error("%s: %pJ would overallocate node %s memory (%"
+					      PRIu64" > %"PRIu64")",
+					     __func__, job_ptr, nodename,
+					     needed_mem, avail_mem);
+				}
+				error_code = SLURM_ERROR;
+				break;
+			}
+			job_res->memory_allocated[j] = needed_mem;
+			j++;
 		}
-		details_ptr->pn_min_memory = lowest_mem;
+		if (save_mem == 0)
+			details_ptr->pn_min_memory = lowest_mem;
 	}
+	if (error_code == SLURM_ERROR)
+		free_job_resources(&job_ptr->job_resrcs);
 
 	return error_code;
 }

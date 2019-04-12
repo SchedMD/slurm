@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
  -- Changed "scontrol reboot" to not default to ALL nodes.
  -- Changed "scontrol completing" to include two new fields - EndTime and
     CompletingTime.
+ -- select/cons_tres - prevent job from overallocating a node memory.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
