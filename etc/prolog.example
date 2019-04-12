@@ -11,11 +11,13 @@ MPS_DEV_ID_FILE="/var/run/mps_dev_id"
 #MPS_CMD_DIR="/usr/bin/"
 #SLURM_CMD_DIR="/usr/bin"
 
-# If job requires MPS, write device ID to file, start server as needed
+# If job requires MPS then write device ID to file and start server as needed
 if [ -n "${CUDA_VISIBLE_DEVICES}" ] &&
    [ -n "${CUDA_MPS_ACTIVE_THREAD_PERCENTAGE}" ]; then
 	echo ${CUDA_VISIBLE_DEVICES} >${MPS_DEV_ID_FILE}
 	unset CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
+	export CUDA_MPS_PIPE_DIRECTORY=/tmp/nvidia-mps_${CUDA_VISIBLE_DEVICES}
+	export CUDA_MPS_LOG_DIRECTORY=/tmp/nvidia-log_${CUDA_VISIBLE_DEVICES}
 	${MPS_CMD_DIR}nvidia-cuda-mps-control -d && echo "MPS control daemon started"
 	sleep 1
 	${MPS_CMD_DIR}nvidia-cuda-mps-control start_server -uid $SLURM_JOB_UID && echo "MPS server started for $SLURM_JOB_UID"
