@@ -358,6 +358,13 @@ allocated<br>
 18% of the gtx1060 (File=/dev/nvidia0, 200 x 100 / 1100 = 18), or<br>
 20% of the gtx1050 (File=/dev/nvidia0, 200 x 100 / 1000 = 20).</p>
 
+<p>An alternate mode of operation would be to permit jobs to be allocated whole
+GPUs then trigger the starting of an MPS server based upon comments in the job.
+For example, if a job is allocated whole GPUs then search for a comment of
+"mps-per-gpu" or "mps-per-node" in the job (using the "scontrol show job"
+command) and use that as a basis for starting one MPS daemon per GPU or across
+all GPUs repectively.</p>
+
 <p>Please consult the
 <a href="https://docs.nvidia.com/deploy/pdf/CUDA_Multi_Process_Service_Overview.pdf">
 NVIDIA Multi-Process Service documentation</a> for more information about MPS.</p>
@@ -390,6 +397,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 11 April 2019</p>
+<p style="text-align: center;">Last modified 12 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
