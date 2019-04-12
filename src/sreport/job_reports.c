@@ -845,7 +845,7 @@ static int _run_report(int type, int argc, char **argv)
 	list_iterator_destroy(itr2);
 	if (tres_cnt > 1) {
 		fprintf(stderr,
-		        " Job report only support a single --tres type.\n"
+		        " Job report only supports a single --tres type.\n"
 			" Generate a separate report for each TRES type.\n");
 		exit_code = 1;
 		goto end_it;
