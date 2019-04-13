@@ -4713,7 +4713,7 @@ extern time_t acct_policy_get_preemptable_time(struct job_record *job_ptr)
 	xassert(verify_lock(JOB_LOCK, READ_LOCK));
 	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 	min1 = (qos_ptr_1) ? qos_ptr_1->preempt_exempt_time : INFINITE;
 	min2 = (qos_ptr_2) ? qos_ptr_2->preempt_exempt_time : INFINITE;
 	conf_min = slurmctld_conf.preempt_exempt_time;

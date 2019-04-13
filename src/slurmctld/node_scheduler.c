@@ -1076,6 +1076,59 @@ static void _filter_by_node_feature(struct job_record *job_ptr,
 	}
 }
 
+static void _find_qos_grp_node_bitmap(struct job_record *job_ptr,
+				      slurmdb_qos_rec_t *qos_ptr,
+				      bitstr_t **grp_node_bitmap,
+				      bool *per_grp_limit,
+				      bool *per_user_limit,
+				      bool *per_acct_limit)
+{
+	slurmdb_used_limits_t *used_limits = NULL;
+
+	if (!qos_ptr || !qos_ptr->usage)
+		return;
+
+	if (!*per_grp_limit &&
+	    qos_ptr->usage->grp_node_bitmap &&
+	    (qos_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64)) {
+		*per_grp_limit = true;
+		*grp_node_bitmap = bit_copy(qos_ptr->usage->grp_node_bitmap);
+	}
+
+	if (!*per_user_limit &&
+	    (qos_ptr->max_tres_pu_ctld[TRES_ARRAY_NODE] != INFINITE64)) {
+		*per_user_limit = true;
+		used_limits = acct_policy_get_user_used_limits(
+			&qos_ptr->usage->user_limit_list,
+			job_ptr->user_id);
+		if (used_limits && used_limits->node_bitmap) {
+			if (*grp_node_bitmap)
+				bit_or(*grp_node_bitmap,
+				       used_limits->node_bitmap);
+			else
+				*grp_node_bitmap =
+					bit_copy(used_limits->node_bitmap);
+		}
+	}
+
+	if (!*per_acct_limit &&
+	    job_ptr->assoc_ptr &&
+	    (qos_ptr->max_tres_pa_ctld[TRES_ARRAY_NODE] != INFINITE64)) {
+		*per_acct_limit = true;
+		used_limits = acct_policy_get_acct_used_limits(
+			&qos_ptr->usage->acct_limit_list,
+			job_ptr->assoc_ptr->acct);
+		if (used_limits && used_limits->node_bitmap) {
+			if (*grp_node_bitmap)
+				bit_or(*grp_node_bitmap,
+				       used_limits->node_bitmap);
+			else
+				*grp_node_bitmap =
+					bit_copy(used_limits->node_bitmap);
+		}
+	}
+}
+
 /*
  * For a given job, return a bitmap of nodes to be preferred in it's allocation
  * to minimize the overall node count for the association or partition closest
@@ -1084,44 +1137,47 @@ static void _filter_by_node_feature(struct job_record *job_ptr,
 static bitstr_t *_find_grp_node_bitmap(struct job_record *job_ptr)
 {
 	bitstr_t *grp_node_bitmap = NULL;
-	slurmdb_assoc_rec_t *assoc_ptr;
-	slurmdb_qos_rec_t *qos_ptr;
-	int32_t min_nodes = INT32_MAX;
-	int tmp;
+	slurmdb_qos_rec_t *qos_ptr1 = NULL, *qos_ptr2 = NULL;
+	bool per_acct_limit = false, per_user_limit = false,
+		per_grp_limit = false;
+	assoc_mgr_lock_t qos_read_locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK };
+	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
 
-	qos_ptr = job_ptr->part_ptr->qos_ptr;
-	if (qos_ptr && qos_ptr->usage && qos_ptr->usage->grp_node_bitmap &&
-	    qos_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64) {
-		grp_node_bitmap =  qos_ptr->usage-> grp_node_bitmap;
-		min_nodes = qos_ptr->grp_tres_ctld[TRES_ARRAY_NODE] -
-			    qos_ptr->usage->grp_used_tres[TRES_ARRAY_NODE];
-	}
+	/* check to see if we are enforcing associations */
+	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
+		return NULL;
 
-	qos_ptr = job_ptr->qos_ptr;
-	if (qos_ptr && qos_ptr->usage && qos_ptr->usage->grp_node_bitmap &&
-	    qos_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64) {
-		tmp  = qos_ptr->grp_tres_ctld[TRES_ARRAY_NODE] -
-		       qos_ptr->usage->grp_used_tres[TRES_ARRAY_NODE];
-		if (tmp < min_nodes) {
-			min_nodes = tmp;
-			grp_node_bitmap = qos_ptr->usage->grp_node_bitmap;
-		}
-	}
+	assoc_mgr_lock(&qos_read_locks);
 
-	assoc_ptr = job_ptr->assoc_ptr;
-	while (assoc_ptr && assoc_ptr->usage) {
+	acct_policy_set_qos_order(job_ptr, &qos_ptr1, &qos_ptr2);
+
+	_find_qos_grp_node_bitmap(job_ptr, qos_ptr1, &grp_node_bitmap,
+				  &per_grp_limit,
+				  &per_user_limit,
+				  &per_acct_limit);
+
+	_find_qos_grp_node_bitmap(job_ptr, qos_ptr2, &grp_node_bitmap,
+				  &per_grp_limit,
+				  &per_user_limit,
+				  &per_acct_limit);
+
+	while (assoc_ptr && assoc_ptr->usage && !per_grp_limit) {
 		if (assoc_ptr->usage->grp_node_bitmap &&
 		    (assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64)) {
-			tmp  = assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE] -
-			       assoc_ptr->usage->grp_used_tres[TRES_ARRAY_NODE];
-			if (tmp < min_nodes) {
-				min_nodes = tmp;
-				grp_node_bitmap =
-					assoc_ptr->usage->grp_node_bitmap;
-			}
+			per_grp_limit = true;
+			if (grp_node_bitmap)
+				bit_or(grp_node_bitmap,
+				       assoc_ptr->usage->grp_node_bitmap);
+			else
+				grp_node_bitmap = bit_copy(assoc_ptr->usage->
+							   grp_node_bitmap);
+			break;
 		}
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
+
+	assoc_mgr_unlock(&qos_read_locks);
 
 	return grp_node_bitmap;
 }
@@ -3690,8 +3746,6 @@ static int _build_node_list(struct job_record *job_ptr,
 	bool resv_overlap = false;
 	bitstr_t *node_maps[NM_TYPES] = { NULL, NULL, NULL, NULL, NULL, NULL };
 	bitstr_t *reboot_bitmap = NULL;
-	assoc_mgr_lock_t job_read_locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 
 	if (job_ptr->resv_name) {
 		/*
@@ -4112,9 +4166,15 @@ end_node_set:
 			break;
 		}
 	}
-	assoc_mgr_lock(&job_read_locks);
+
 	grp_node_bitmap = _find_grp_node_bitmap(job_ptr);
+
 	if (grp_node_bitmap) {
+#if _DEBUG
+		char node_bitstr[64];
+		bit_fmt(node_bitstr, sizeof(node_bitstr), grp_node_bitmap);
+		info("%s:  _find_grp_node_bitmap() grp_node_bitmap:%s", __func__, node_bitstr);
+#endif
 		for (i = (node_set_inx-1); i >= 0; i--) {
 			qos_cnt = bit_overlap(node_set_ptr[i].my_bitmap,
 						grp_node_bitmap);
@@ -4153,8 +4213,8 @@ end_node_set:
 				break;
 			}
 		}
+		FREE_NULL_BITMAP(grp_node_bitmap);
 	}
-	assoc_mgr_unlock(&job_read_locks);
 	FREE_NULL_BITMAP(reboot_bitmap);
 	*node_set_size = node_set_inx;
 	*node_set_pptr = node_set_ptr;
