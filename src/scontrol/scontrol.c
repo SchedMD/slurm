@@ -1576,6 +1576,7 @@ static void _delete_it(int argc, char **argv)
 	/* First identify the entity type to delete */
 	if (xstrncasecmp(tag, "PartitionName", MAX(tag_len, 3)) == 0) {
 		delete_part_msg_t part_msg;
+		memset(&part_msg, 0, sizeof(part_msg));
 		part_msg.name = val;
 		if (slurm_delete_partition(&part_msg)) {
 			char errmsg[64];
@@ -1584,6 +1585,7 @@ static void _delete_it(int argc, char **argv)
 		}
 	} else if (xstrncasecmp(tag, "ReservationName", MAX(tag_len, 3)) == 0) {
 		reservation_name_msg_t   res_msg;
+		memset(&res_msg, 0, sizeof(res_msg));
 		res_msg.name = val;
 		if (slurm_delete_reservation(&res_msg)) {
 			char errmsg[64];

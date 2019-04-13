@@ -572,6 +572,7 @@ static int _suspend_job(struct job_record *job_ptr)
 	int rc;
 	suspend_msg_t msg;
 
+	memset(&msg, 0, sizeof(msg));
 	msg.job_id = job_ptr->job_id;
 	msg.job_id_str = NULL;
 	msg.op = SUSPEND_JOB;
@@ -593,6 +594,7 @@ static void _resume_job(struct job_record *job_ptr)
 	int rc;
 	suspend_msg_t msg;
 
+	memset(&msg, 0, sizeof(msg));
 	msg.job_id = job_ptr->job_id;
 	msg.job_id_str = NULL;
 	msg.op = RESUME_JOB;
@@ -648,12 +650,12 @@ static void _preempt_job_dequeue(void)
 			}
 		} else if (preempt_mode == PREEMPT_MODE_CHECKPOINT) {
 			checkpoint_msg_t ckpt_msg;
-			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
+			memset(&ckpt_msg, 0, sizeof(ckpt_msg));
 			ckpt_msg.op	   = CHECK_REQUEUE;
 			ckpt_msg.job_id    = job_ptr->job_id;
 			rc = job_checkpoint(&ckpt_msg, 0, -1, NO_VAL16);
 			if (rc == ESLURM_NOT_SUPPORTED) {
-				memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
+				memset(&ckpt_msg, 0, sizeof(ckpt_msg));
 				ckpt_msg.op	   = CHECK_VACATE;
 				ckpt_msg.job_id    = job_ptr->job_id;
 				rc = job_checkpoint(&ckpt_msg, 0, -1, NO_VAL16);

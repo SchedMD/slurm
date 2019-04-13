@@ -1490,7 +1490,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		if (container_g_create(req->job_id))
 			error("container_g_create(%u): %m", req->job_id);
 
-		memset(&job_env, 0, sizeof(job_env_t));
+		memset(&job_env, 0, sizeof(job_env));
 
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->job_step_id;
@@ -1901,6 +1901,7 @@ static int _notify_slurmctld_prolog_fini(
 	complete_prolog_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.job_id	= job_id;
 	req.prolog_rc	= prolog_return_code;
 
@@ -2203,7 +2204,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		/* signal just in case the batch rpc got here before we did */
 		slurm_cond_broadcast(&conf->prolog_running_cond);
 		slurm_mutex_unlock(&prolog_mutex);
-		memset(&job_env, 0, sizeof(job_env_t));
+		memset(&job_env, 0, sizeof(job_env));
 
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0;	/* not available */
@@ -2384,7 +2385,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
-		memset(&job_env, 0, sizeof(job_env_t));
+		memset(&job_env, 0, sizeof(job_env));
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
@@ -2656,6 +2657,7 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 	slurm_msg_t_init(&resp_msg);
 	int rc, rc2;
 
+	memset(&resp, 0, sizeof(resp));
 	resp.job_id       = job_id;
 	resp.job_step_id  = step_id;
 	resp.range_first  = 0;
@@ -2871,6 +2873,7 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 
 	/* NOTE: Batch jobs may have no srun to get this message */
 	slurm_msg_t_init(&msg);
+	memset(&notify_req, 0, sizeof(notify_req));
 	notify_req.job_id      = job_id;
 	notify_req.job_step_id = step_id;
 	notify_req.message     = "Exceeded job memory limit";
@@ -2878,7 +2881,7 @@ _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	msg.data        = &notify_req;
 	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 
-	memset(&kill_req, 0, sizeof(job_step_kill_msg_t));
+	memset(&kill_req, 0, sizeof(kill_req));
 	kill_req.job_id      = job_id;
 	kill_req.job_step_id = step_id;
 	kill_req.signal      = SIGKILL;
@@ -3174,7 +3177,7 @@ _rpc_acct_gather_update(slurm_msg_t *msg)
 		/* Update node energy usage data */
 		acct_gather_energy_g_update_node_energy();
 
-		memset(&acct_msg, 0, sizeof(acct_gather_node_resp_msg_t));
+		memset(&acct_msg, 0, sizeof(acct_msg));
 		acct_msg.node_name = conf->node_name;
 		acct_msg.sensor_cnt = 1;
 		acct_msg.energy = acct_gather_energy_alloc(acct_msg.sensor_cnt);
@@ -3233,7 +3236,7 @@ _rpc_acct_gather_energy(slurm_msg_t *msg)
 		if ((now - last_poll) > req->delta)
 			data_type = ENERGY_DATA_JOULES_TASK;
 
-		memset(&acct_msg, 0, sizeof(acct_gather_node_resp_msg_t));
+		memset(&acct_msg, 0, sizeof(acct_msg));
 		acct_msg.sensor_cnt = sensor_cnt;
 		acct_msg.energy = acct_gather_energy_alloc(acct_msg.sensor_cnt);
 
@@ -5124,7 +5127,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 
 	save_cred_state(conf->vctx);
 
-	memset(&job_env, 0, sizeof(job_env_t));
+	memset(&job_env, 0, sizeof(job_env));
 
 	job_env.jobid = req->job_id;
 	job_env.node_list = req->nodes;
@@ -5227,7 +5230,7 @@ _rpc_terminate_batch_job(uint32_t job_id, uint32_t user_id, char *node_name)
 
 	save_cred_state(conf->vctx);
 
-	memset(&job_env, 0, sizeof(job_env_t));
+	memset(&job_env, 0, sizeof(job_env));
 
 	job_env.jobid = job_id;
 	job_env.node_list = node_name;
@@ -5567,7 +5570,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 
 	save_cred_state(conf->vctx);
 
-	memset(&job_env, 0, sizeof(job_env_t));
+	memset(&job_env, 0, sizeof(job_env));
 
 	job_env.jobid = req->job_id;
 	job_env.node_list = req->nodes;
@@ -6012,6 +6015,7 @@ static void *_prolog_timer(void *x)
 	slurm_msg_t_init(&msg);
 	snprintf(srun_msg, sizeof(srun_msg), "Prolog hung on node %s",
 		 conf->node_name);
+	memset(&notify_req, 0, sizeof(notify_req));
 	notify_req.job_id	= timer_struct->job_id;
 	notify_req.job_step_id	= NO_VAL;
 	notify_req.message	= srun_msg;

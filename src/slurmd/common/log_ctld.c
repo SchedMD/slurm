@@ -53,6 +53,7 @@ extern int log_ctld(uint16_t level, char *string)
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
+	memset(&req, 0, sizeof(req));
 	req.level = level;
 	req.string = string;
 	req_msg.msg_type = REQUEST_EVENT_LOG;

@@ -356,6 +356,7 @@ static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
 	char ip_src_str[INET6_ADDRSTRLEN];
 	char node_name[MAXHOSTNAMELEN];
 
+	memset(&req, 0, sizeof(req));
 	memcpy((void *)&req.ip_src, (void *)&conn->ip_src, 16);
 	memcpy((void *)&req.ip_dst, (void *)&conn->ip_dst, 16);
 	req.port_src = conn->port_src;
@@ -424,7 +425,7 @@ static int _try_rpc(pam_handle_t *pamh, struct passwd *pwd)
 	rc = _rpc_network_callerid(&conn, pwd->pw_name, &job_id);
 	if (rc == SLURM_SUCCESS) {
 		step_loc_t stepd;
-		memset(&stepd, 0, sizeof(step_loc_t));
+		memset(&stepd, 0, sizeof(stepd));
 		/* We only need the jobid and stepid filled in here
 		   all the rest isn't needed for the adopt.
 		*/
