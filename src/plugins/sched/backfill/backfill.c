@@ -1589,7 +1589,7 @@ static int _attempt_backfill(void)
 	bit_clear_all(bf_ignore_node_bitmap);
 
 	while (1) {
-		uint32_t bf_job_id, bf_array_task_id, bf_job_priority,
+		uint32_t bf_array_task_id, bf_job_priority,
 			prio_reserve;
 		bool get_boot_time = false;
 
@@ -1602,7 +1602,6 @@ static int _attempt_backfill(void)
 
 		job_ptr          = job_queue_rec->job_ptr;
 		part_ptr         = job_queue_rec->part_ptr;
-		bf_job_id        = job_queue_rec->job_id;
 		bf_job_priority  = job_queue_rec->priority;
 		bf_array_task_id = job_queue_rec->array_task_id;
 		xfree(job_queue_rec);
@@ -1644,12 +1643,6 @@ static int _attempt_backfill(void)
 			START_TIMER;
 		}
 
-		/* With bf_continue configured, the original job could have
-		 * been cancelled and purged. Validate pointer here. */
-		if ((job_ptr->magic  != JOB_MAGIC) ||
-		    (job_ptr->job_id != bf_job_id)) {
-			continue;
-		}
 		if ((job_ptr->array_task_id != bf_array_task_id) &&
 		    (bf_array_task_id == NO_VAL)) {
 			/* Job array element started in other partition,
@@ -1967,7 +1960,6 @@ next_task:
 		if (((max_rpc_cnt > 0) &&
 		     (slurmctld_config.server_thread_count >= max_rpc_cnt)) ||
 		    (slurm_delta_tv(&start_tv) >= yield_interval)) {
-			uint32_t save_job_id = job_ptr->job_id;
 			uint32_t save_time_limit = job_ptr->time_limit;
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			if (debug_flags & DEBUG_FLAG_BACKFILL) {
@@ -2002,12 +1994,8 @@ next_task:
 
 			/*
 			 * With bf_continue configured, the original job could
-			 * have been scheduled or cancelled and purged.
-			 * Revalidate job the record here.
+			 * have been scheduled. Revalidate the job record here.
 			 */
-			if ((job_ptr->magic  != JOB_MAGIC) ||
-			    (job_ptr->job_id != save_job_id))
-				continue;
 			if (!_job_runnable_now(job_ptr))
 				continue;
 			if (!avail_front_end(job_ptr))
@@ -3182,14 +3170,8 @@ static bool _pack_job_full(pack_job_map_t *map)
 	ListIterator iter;
 	bool rc = true;
 
-	/*
-	 * With bf_continue configured, the original job could have
-	 * been cancelled and purged. Validate job record here.
-	 */
 	pack_job_ptr = find_job_record(map->pack_job_id);
-	if (!pack_job_ptr || (pack_job_ptr->magic != JOB_MAGIC) ||
-	    (pack_job_ptr->pack_job_id != map->pack_job_id) ||
-	    !pack_job_ptr->pack_job_list ||
+	if (!pack_job_ptr || !pack_job_ptr->pack_job_list ||
 	    (!IS_JOB_RUNNING(pack_job_ptr) &&
 	     !_job_runnable_now(pack_job_ptr))) {
 		return false;
