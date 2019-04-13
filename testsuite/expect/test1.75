@@ -89,12 +89,14 @@ proc sub_job { freq } {
 
 	foreach option [array names this_freq] {
 		send_user "\n======= TESTING FREQUENCY/GOVERNOR $option =======\n"
+		set skip false
 		set job_id 0
 		set srun_pid [spawn $srun -t1 --cpu-freq=$option -n$threads -w$node ./$file_id]
 		expect {
 			-re "not allowed" {
 				if {[string first $option $avail_governors] == -1} {
 					send_user "\nThis error is expected, no worries\n"
+					set skip true
 				} else {
 					send_user "\nFAILURE: This CPU frequency should be valid\n"
 					set exit_code 1
@@ -112,6 +114,10 @@ proc sub_job { freq } {
 			eof {
 				wait
 			}
+		}
+		if {$skip} {
+			set this_freq($option) -1
+			continue
 		}
 		if {$job_id == 0} {
 			send_user "\nFAILURE: srun did not submit job\b"
@@ -194,7 +200,7 @@ if {[wait_for_file $file_out] == 0} {
         }
 }
 if {$userspace_governor == 0} {
-	send_user "\nWARNING: Node configuration prevents directly control over CPU frequency\n"
+	send_user "\nWARNING: Node configuration prevents direct control over CPU frequency\n"
 	exec $bin_rm -f $file_id $file_in $file_out
 	exit 0
 }
