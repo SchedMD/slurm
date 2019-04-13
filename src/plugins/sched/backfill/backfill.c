@@ -933,8 +933,6 @@ static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2)
 		slurmctld_diag_stats.bf_cycle_max = slurmctld_diag_stats.
 						    bf_cycle_last;
 	}
-
-	slurmctld_diag_stats.bf_active = 0;
 }
 
 static int _list_find_all(void *x, void *key)
@@ -993,6 +991,11 @@ extern void *backfill_agent(void *args)
 			short_sleep = true;
 			continue;
 		}
+
+		slurm_mutex_lock(&check_bf_running_lock);
+		slurmctld_diag_stats.bf_active = 1;
+		slurm_mutex_unlock(&check_bf_running_lock);
+
 		lock_slurmctld(all_locks);
 		if ((backfill_cnt++ % 2) == 0)
 			_pack_start_clear();
@@ -1000,6 +1003,11 @@ extern void *backfill_agent(void *args)
 		last_backfill_time = time(NULL);
 		(void) bb_g_job_try_stage_in();
 		unlock_slurmctld(all_locks);
+
+		slurm_mutex_lock(&check_bf_running_lock);
+		slurmctld_diag_stats.bf_active = 0;
+		slurm_mutex_unlock(&check_bf_running_lock);
+
 		short_sleep = false;
 	}
 	FREE_NULL_LIST(pack_job_list);
@@ -1552,7 +1560,6 @@ static int _attempt_backfill(void)
 	slurmctld_diag_stats.bf_last_depth = 0;
 	slurmctld_diag_stats.bf_last_depth_try = 0;
 	slurmctld_diag_stats.bf_when_last_cycle = now;
-	slurmctld_diag_stats.bf_active = 1;
 
 	node_space = xmalloc(sizeof(node_space_map_t) *
 			     (max_backfill_job_cnt * 2 + 1));

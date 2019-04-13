@@ -158,6 +158,7 @@ documents those changes that are of interest to users and administrators.
  -- Update "xauth list" to use the same 10000ms timeout as the other xauth
     commands.
  -- Fix issue in gres code to handle a gres cnt of 0.
+ -- Don't purge jobs if backfill is running.
 
 * Changes in Slurm 18.08.7
 ==========================

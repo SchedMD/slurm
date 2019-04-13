@@ -1521,6 +1521,8 @@ Slurm's active database. Set the values of \fBMaxJobCount\fR and
 to ensure the slurmctld daemon does not exhaust
 its memory or other resources. The default value is 300 seconds.
 A value of zero prevents any job record purging.
+Jobs are not purged during a backfill cycle, so it can take longer than
+MinJobAge seconds to purge a job if using the backfill scheduling plugin.
 In order to eliminate some possible race conditions, the minimum non\-zero
 value for \fBMinJobAge\fR recommended is 2.
 
