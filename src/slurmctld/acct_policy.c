@@ -504,44 +504,6 @@ static int _get_tres_state_reason(int tres_pos, int unk_reason)
 	return unk_reason;
 }
 
-static void _set_qos_order(struct job_record *job_ptr,
-			   slurmdb_qos_rec_t **qos_ptr_1,
-			   slurmdb_qos_rec_t **qos_ptr_2)
-{
-	xassert(job_ptr);
-	xassert(qos_ptr_1);
-	xassert(qos_ptr_2);
-
-	/* Initialize incoming pointers */
-	*qos_ptr_1 = NULL;
-	*qos_ptr_2 = NULL;
-
-	if (job_ptr->qos_ptr) {
-		if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr) {
-			/* If the job's QOS has the flag to over ride the
-			 * partition then use that otherwise use the
-			 * partition's QOS as the king.
-			 */
-			if (job_ptr->qos_ptr->flags & QOS_FLAG_OVER_PART_QOS) {
-				*qos_ptr_1 = job_ptr->qos_ptr;
-				*qos_ptr_2 = job_ptr->part_ptr->qos_ptr;
-			} else {
-				*qos_ptr_1 = job_ptr->part_ptr->qos_ptr;
-				*qos_ptr_2 = job_ptr->qos_ptr;
-			}
-
-			/* No reason to look at the same QOS twice, actually
-			 * we never want to do that ;). */
-			if (*qos_ptr_1 == *qos_ptr_2)
-				*qos_ptr_2 = NULL;
-		} else
-			*qos_ptr_1 = job_ptr->qos_ptr;
-	} else if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr)
-		*qos_ptr_1 = job_ptr->part_ptr->qos_ptr;
-
-	return;
-}
-
 static int _find_used_limits_for_acct(void *x, void *key)
 {
 	slurmdb_used_limits_t *used_limits = (slurmdb_used_limits_t *)x;
@@ -553,38 +515,6 @@ static int _find_used_limits_for_acct(void *x, void *key)
 	return 0;
 }
 
-/* Checks for record in *user_limit_list of user_id if
- * *user_limit_list doesn't exist it will create it, if the user_id
- * record doesn't exist it will add it to the list.
- * In all cases the user record is returned.
- */
-static slurmdb_used_limits_t *_get_acct_used_limits(
-	List *acct_limit_list, char *acct)
-{
-	slurmdb_used_limits_t *used_limits;
-
-	xassert(acct_limit_list);
-
-	if (!*acct_limit_list)
-		*acct_limit_list = list_create(slurmdb_destroy_used_limits);
-
-	if (!(used_limits = list_find_first(*acct_limit_list,
-					    _find_used_limits_for_acct,
-					    acct))) {
-		int i = sizeof(uint64_t) * slurmctld_tres_cnt;
-
-		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
-		used_limits->acct = xstrdup(acct);
-
-		used_limits->tres = xmalloc(i);
-		used_limits->tres_run_mins = xmalloc(i);
-
-		list_append(*acct_limit_list, used_limits);
-	}
-
-	return used_limits;
-}
-
 static int _find_used_limits_for_user(void *x, void *key)
 {
 	slurmdb_used_limits_t *used_limits = (slurmdb_used_limits_t *)x;
@@ -594,38 +524,6 @@ static int _find_used_limits_for_user(void *x, void *key)
 		return 1;
 
 	return 0;
-}
-
-/* Checks for record in *user_limit_list of user_id if
- * *user_limit_list doesn't exist it will create it, if the user_id
- * record doesn't exist it will add it to the list.
- * In all cases the user record is returned.
- */
-static slurmdb_used_limits_t *_get_user_used_limits(
-	List *user_limit_list, uint32_t user_id)
-{
-	slurmdb_used_limits_t *used_limits;
-
-	xassert(user_limit_list);
-
-	if (!*user_limit_list)
-		*user_limit_list = list_create(slurmdb_destroy_used_limits);
-
-	if (!(used_limits = list_find_first(*user_limit_list,
-					    _find_used_limits_for_user,
-					    &user_id))) {
-		int i = sizeof(uint64_t) * slurmctld_tres_cnt;
-
-		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
-		used_limits->uid = user_id;
-
-		used_limits->tres = xmalloc(i);
-		used_limits->tres_run_mins = xmalloc(i);
-
-		list_append(*user_limit_list, used_limits);
-	}
-
-	return used_limits;
 }
 
 static bool _valid_job_assoc(struct job_record *job_ptr)
@@ -666,11 +564,13 @@ static void _qos_adjust_limit_usage(int type, struct job_record *job_ptr,
 	if (!qos_ptr || !job_ptr->assoc_ptr)
 		return;
 
-	used_limits_a =	_get_acct_used_limits(&qos_ptr->usage->acct_limit_list,
-					      job_ptr->assoc_ptr->acct);
+	used_limits_a =	acct_policy_get_acct_used_limits(
+		&qos_ptr->usage->acct_limit_list,
+		job_ptr->assoc_ptr->acct);
 
-	used_limits = _get_user_used_limits(&qos_ptr->usage->user_limit_list,
-					    job_ptr->user_id);
+	used_limits = acct_policy_get_user_used_limits(
+		&qos_ptr->usage->user_limit_list,
+		job_ptr->user_id);
 
 	switch (type) {
 	case ACCT_POLICY_ADD_SUBMIT:
@@ -985,7 +885,7 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 			FREE_NULL_LIST(part_qos_list);
 		}
 
-		_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+		acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 		_qos_adjust_limit_usage(type, job_ptr, qos_ptr_1,
 					used_tres_run_secs, job_cnt);
@@ -1868,7 +1768,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	if ((qos_out_ptr->max_submit_jobs_pa == INFINITE) &&
 	    (qos_ptr->max_submit_jobs_pa != INFINITE)) {
 		slurmdb_used_limits_t *used_limits =
-			_get_acct_used_limits(
+			acct_policy_get_acct_used_limits(
 				&qos_ptr->usage->acct_limit_list,
 				assoc_ptr->acct);
 
@@ -1891,7 +1791,7 @@ static int _qos_policy_validate(job_desc_msg_t *job_desc,
 	if ((qos_out_ptr->max_submit_jobs_pu == INFINITE) &&
 	    (qos_ptr->max_submit_jobs_pu != INFINITE)) {
 		slurmdb_used_limits_t *used_limits =
-			_get_user_used_limits(
+			acct_policy_get_user_used_limits(
 				&qos_ptr->usage->user_limit_list,
 				job_desc->user_id);
 
@@ -1965,11 +1865,13 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 
 	wall_mins = qos_ptr->usage->grp_used_wall / 60;
 
-	used_limits_a =	_get_acct_used_limits(&qos_ptr->usage->acct_limit_list,
-					      assoc_ptr->acct);
+	used_limits_a =	acct_policy_get_acct_used_limits(
+		&qos_ptr->usage->acct_limit_list,
+		assoc_ptr->acct);
 
-	used_limits = _get_user_used_limits(&qos_ptr->usage->user_limit_list,
-					    job_ptr->user_id);
+	used_limits = acct_policy_get_user_used_limits(
+		&qos_ptr->usage->user_limit_list,
+		job_ptr->user_id);
 
 
 	/* we don't need to check grp_tres_mins here */
@@ -2153,11 +2055,13 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
 	}
 
-	used_limits_a =	_get_acct_used_limits(&qos_ptr->usage->acct_limit_list,
-					      assoc_ptr->acct);
+	used_limits_a =	acct_policy_get_acct_used_limits(
+		&qos_ptr->usage->acct_limit_list,
+		assoc_ptr->acct);
 
-	used_limits = _get_user_used_limits(&qos_ptr->usage->user_limit_list,
-					    job_ptr->user_id);
+	used_limits = acct_policy_get_user_used_limits(
+		&qos_ptr->usage->user_limit_list,
+		job_ptr->user_id);
 
 	tres_usage = _validate_tres_usage_limits_for_qos(
 		&tres_pos, qos_ptr->grp_tres_mins_ctld,
@@ -2688,7 +2592,7 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
 
 	assoc_mgr_lock(&locks);
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	_qos_alter_job(job_ptr, qos_ptr_1,
 		       used_tres_run_secs, new_used_tres_run_secs);
@@ -3269,7 +3173,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 	assoc_mgr_lock(&locks);
 	job_rec.qos_ptr = qos_ptr;
 	job_rec.part_ptr = part_ptr;
-	_set_qos_order(&job_rec, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(&job_rec, &qos_ptr_1, &qos_ptr_2);
 	assoc_mgr_unlock(&locks);
 	rc = _acct_policy_validate(job_desc, part_ptr, assoc_in,
 				   qos_ptr_1, qos_ptr_2, reason,
@@ -3332,7 +3236,7 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 	while ((job_ptr1 = (struct job_record *) list_next(iter1))) {
 		qos_ptr_1 = NULL;
 		qos_ptr_2 = NULL;
-		_set_qos_order(job_ptr1, &qos_ptr_1, &qos_ptr_2);
+		acct_policy_set_qos_order(job_ptr1, &qos_ptr_1, &qos_ptr_2);
 		job_limit1 = xmalloc(sizeof(pack_limits_t));
 		job_limit1->assoc_ptr = job_ptr1->assoc_ptr;
 		job_limit1->job_ptr   = job_ptr1;
@@ -3467,7 +3371,7 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
 
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	/* check the first QOS setting it's values in the qos_rec */
 	if (qos_ptr_1 &&
@@ -3710,7 +3614,7 @@ extern bool acct_policy_job_runnable_post_select(
 
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	/* check the first QOS setting it's values in the qos_rec */
 	if (qos_ptr_1 &&
@@ -4005,7 +3909,7 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
 
 	assoc_mgr_lock(&locks);
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	if (qos_ptr_1) {
 		uint64_t max_nodes_pj =
@@ -4211,7 +4115,7 @@ extern bool acct_policy_job_time_out(struct job_record *job_ptr)
 
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	assoc =	job_ptr->assoc_ptr;
 
@@ -4399,22 +4303,22 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	if (qos_ptr_1) {
-		used_limits_a1 = _get_acct_used_limits(
+		used_limits_a1 = acct_policy_get_acct_used_limits(
 			&qos_ptr_1->usage->acct_limit_list,
 			assoc_ptr->acct);
-		used_limits_u1 = _get_user_used_limits(
+		used_limits_u1 = acct_policy_get_user_used_limits(
 				&qos_ptr_1->usage->user_limit_list,
 				job_ptr->user_id);
 	}
 
 	if (qos_ptr_2) {
-		used_limits_a2 = _get_acct_used_limits(
+		used_limits_a2 = acct_policy_get_acct_used_limits(
 			&qos_ptr_2->usage->acct_limit_list,
 			assoc_ptr->acct);
-		used_limits_u2 = _get_user_used_limits(
+		used_limits_u2 = acct_policy_get_user_used_limits(
 				&qos_ptr_2->usage->user_limit_list,
 				job_ptr->user_id);
 	}
@@ -4642,22 +4546,22 @@ extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	if (qos_ptr_1) {
-		used_limits_a1 = _get_acct_used_limits(
+		used_limits_a1 = acct_policy_get_acct_used_limits(
 			&qos_ptr_1->usage->acct_limit_list,
 			assoc_ptr->acct);
-		used_limits_u1 = _get_user_used_limits(
+		used_limits_u1 = acct_policy_get_user_used_limits(
 				&qos_ptr_1->usage->user_limit_list,
 				job_ptr->user_id);
 	}
 
 	if (qos_ptr_2) {
-		used_limits_a2 = _get_acct_used_limits(
+		used_limits_a2 = acct_policy_get_acct_used_limits(
 			&qos_ptr_2->usage->acct_limit_list,
 			assoc_ptr->acct);
-		used_limits_u2 = _get_user_used_limits(
+		used_limits_u2 = acct_policy_get_user_used_limits(
 				&qos_ptr_2->usage->user_limit_list,
 				job_ptr->user_id);
 	}
@@ -4713,22 +4617,23 @@ extern void acct_policy_remove_accrue_time(struct job_record *job_ptr,
 		      __func__, job_ptr);
 		goto end_it;
 	}
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	if (qos_ptr_1) {
-		used_limits_a1 = _get_acct_used_limits(
+		used_limits_a1 = acct_policy_get_acct_used_limits(
 			&qos_ptr_1->usage->acct_limit_list,
 			assoc_ptr->acct);
-		used_limits_u1 = _get_user_used_limits(
+		used_limits_u1 = acct_policy_get_user_used_limits(
 				&qos_ptr_1->usage->user_limit_list,
 				job_ptr->user_id);
 	}
 
 	if (qos_ptr_2) {
-		used_limits_a2 = _get_acct_used_limits(
+		used_limits_a2 = acct_policy_get_acct_used_limits(
 			&qos_ptr_2->usage->acct_limit_list,
 			assoc_ptr->acct);
-		used_limits_u2 = _get_user_used_limits(
+		used_limits_u2 = acct_policy_get_user_used_limits(
 				&qos_ptr_2->usage->user_limit_list,
 				job_ptr->user_id);
 	}
@@ -4783,7 +4688,7 @@ extern uint32_t acct_policy_get_prio_thresh(struct job_record *job_ptr,
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	acct_policy_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	if (qos_ptr_1)
 		_get_prio_thresh(&prio_thresh, qos_ptr_1->min_prio_thresh);
@@ -4836,3 +4741,109 @@ extern bool acct_policy_is_job_preempt_exempt(struct job_record *job_ptr)
 	return now < preempt_time;
 }
 
+extern void acct_policy_set_qos_order(struct job_record *job_ptr,
+				      slurmdb_qos_rec_t **qos_ptr_1,
+				      slurmdb_qos_rec_t **qos_ptr_2)
+{
+	xassert(job_ptr);
+	xassert(qos_ptr_1);
+	xassert(qos_ptr_2);
+
+	/* Initialize incoming pointers */
+	*qos_ptr_1 = NULL;
+	*qos_ptr_2 = NULL;
+
+	if (job_ptr->qos_ptr) {
+		if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr) {
+			/*
+			 * If the job's QOS has the flag to over ride the
+			 * partition then use that otherwise use the
+			 * partition's QOS as the king.
+			 */
+			if (job_ptr->qos_ptr->flags & QOS_FLAG_OVER_PART_QOS) {
+				*qos_ptr_1 = job_ptr->qos_ptr;
+				*qos_ptr_2 = job_ptr->part_ptr->qos_ptr;
+			} else {
+				*qos_ptr_1 = job_ptr->part_ptr->qos_ptr;
+				*qos_ptr_2 = job_ptr->qos_ptr;
+			}
+
+			/*
+			 * No reason to look at the same QOS twice, actually
+			 * we never want to do that ;).
+			 */
+			if (*qos_ptr_1 == *qos_ptr_2)
+				*qos_ptr_2 = NULL;
+		} else
+			*qos_ptr_1 = job_ptr->qos_ptr;
+	} else if (job_ptr->part_ptr && job_ptr->part_ptr->qos_ptr)
+		*qos_ptr_1 = job_ptr->part_ptr->qos_ptr;
+
+	return;
+}
+
+/*
+ * Checks for record in *user_limit_list of user_id if
+ * *user_limit_list doesn't exist it will create it, if the user_id
+ * record doesn't exist it will add it to the list.
+ * In all cases the user record is returned.
+ */
+extern slurmdb_used_limits_t *acct_policy_get_acct_used_limits(
+	List *acct_limit_list, char *acct)
+{
+	slurmdb_used_limits_t *used_limits;
+
+	xassert(acct_limit_list);
+
+	if (!*acct_limit_list)
+		*acct_limit_list = list_create(slurmdb_destroy_used_limits);
+
+	if (!(used_limits = list_find_first(*acct_limit_list,
+					    _find_used_limits_for_acct,
+					    acct))) {
+		int i = sizeof(uint64_t) * slurmctld_tres_cnt;
+
+		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
+		used_limits->acct = xstrdup(acct);
+
+		used_limits->tres = xmalloc(i);
+		used_limits->tres_run_mins = xmalloc(i);
+
+		list_append(*acct_limit_list, used_limits);
+	}
+
+	return used_limits;
+}
+
+/*
+ * Checks for record in *user_limit_list of user_id if
+ * *user_limit_list doesn't exist it will create it, if the user_id
+ * record doesn't exist it will add it to the list.
+ * In all cases the user record is returned.
+ */
+extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
+	List *user_limit_list, uint32_t user_id)
+{
+	slurmdb_used_limits_t *used_limits;
+
+	xassert(user_limit_list);
+
+	if (!*user_limit_list)
+		*user_limit_list = list_create(slurmdb_destroy_used_limits);
+
+	if (!(used_limits = list_find_first(*user_limit_list,
+					    _find_used_limits_for_user,
+					    &user_id))) {
+		int i = sizeof(uint64_t) * slurmctld_tres_cnt;
+
+		used_limits = xmalloc(sizeof(slurmdb_used_limits_t));
+		used_limits->uid = user_id;
+
+		used_limits->tres = xmalloc(i);
+		used_limits->tres_run_mins = xmalloc(i);
+
+		list_append(*user_limit_list, used_limits);
+	}
+
+	return used_limits;
+}

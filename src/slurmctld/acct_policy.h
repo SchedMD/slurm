@@ -187,4 +187,14 @@ extern time_t acct_policy_get_preemptable_time(struct job_record *job_ptr);
  */
 extern bool acct_policy_is_job_preempt_exempt(struct job_record *job_ptr);
 
+extern void acct_policy_set_qos_order(struct job_record *job_ptr,
+				      slurmdb_qos_rec_t **qos_ptr_1,
+				      slurmdb_qos_rec_t **qos_ptr_2);
+
+extern slurmdb_used_limits_t *acct_policy_get_acct_used_limits(
+	List *acct_limit_list, char *acct);
+
+extern slurmdb_used_limits_t *acct_policy_get_user_used_limits(
+	 List *user_limit_list, uint32_t user_id);
+
 #endif /* !_HAVE_ACCT_POLICY_H */
