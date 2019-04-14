@@ -33,6 +33,11 @@ documents those changes that are of interest to users and administrators.
  -- Changed "scontrol completing" to include two new fields - EndTime and
     CompletingTime.
  -- select/cons_tres - prevent job from overallocating a node memory.
+ -- Refactor CLI option parsing for salloc/sbatch/srun into a central set of
+    functions in src/common/slurm_opt.c. Note that this new option parsing can
+    be stricter in a few specific situations - places that used to ignore
+    invalid options and still submit/launch a job or job step may return an
+    error() and refuse to proceed instead.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
