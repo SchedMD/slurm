@@ -260,6 +260,7 @@ static slurm_opt_t *_opt_copy(void)
 
 	opt_dup->account = xstrdup(opt.account);
 	opt_dup->acctg_freq = xstrdup(opt.acctg_freq);
+	opt_dup->srun_opt->alloc_nodelist = xstrdup(sropt.alloc_nodelist);
 	opt_dup->srun_opt->argv = xmalloc(sizeof(char *) * sropt.argc);
 	for (i = 0; i < sropt.argc; i++)
 		opt_dup->srun_opt->argv[i] = xstrdup(sropt.argv[i]);
