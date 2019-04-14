@@ -68,15 +68,15 @@ make_bash_script $file_in "
 set matches 0
 spawn $sbatch -N1 --output=none $file_in
 expect {
-	-re "verbose *: 4" {
-		incr matches
-		exp_continue
-	}
-	-re "time_limit *: 3" {
-		incr matches
-		exp_continue
-	}
 	-re "account *: $account" {
+		incr matches
+		exp_continue
+	}
+	-re "time *: 00:03:00" {
+		incr matches
+		exp_continue
+	}
+	-re "verbose *: 4" {
 		incr matches
 		exp_continue
 	}

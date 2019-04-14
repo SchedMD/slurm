@@ -107,7 +107,7 @@ static pid_t _fork_command(char **command);
 static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
-static void _match_job_name(List job_req_list, char *job_name);
+static void _match_job_name(job_desc_msg_t *desc_last, List job_req_list);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
 static void _pending_callback(uint32_t job_id);
 static void _ping_handler(srun_ping_msg_t *msg);
@@ -224,8 +224,8 @@ int main(int argc, char **argv)
 		_set_spank_env();
 		if (pack_inx == 0)
 			_set_submit_dir_env();
-		if (opt.cwd && chdir(opt.cwd)) {
-			error("chdir(%s): %m", opt.cwd);
+		if (opt.chdir && chdir(opt.chdir)) {
+			error("chdir(%s): %m", opt.chdir);
 			exit(error_exit);
 		}
 
@@ -277,9 +277,7 @@ int main(int argc, char **argv)
 		fatal("%s: desc is NULL", __func__);
 		exit(error_exit);    /* error already logged */
 	}
-	_match_job_name(job_req_list, opt.job_name);
-	if (!job_req_list)
-		desc->bitflags &= (~JOB_SALLOC_FLAG);
+	_match_job_name(desc, job_req_list);
 
 	/*
 	 * Job control for interactive salloc sessions: only if ...
@@ -327,7 +325,7 @@ int main(int argc, char **argv)
 	 */
 	if (is_interactive)
 		atexit(_reset_input_mode);
-	if (opt.gid != (gid_t) -1) {
+	if (opt.gid != getgid()) {
 		if (setgid(opt.gid) < 0) {
 			error("setgid: %m");
 			exit(error_exit);
@@ -402,7 +400,7 @@ int main(int argc, char **argv)
 	}
 
 	/* If the requested uid is different than ours, become that uid */
-	if ((getuid() != opt.uid) && (opt.uid != (uid_t) -1)) {
+	if (getuid() != opt.uid) {
 		/* drop extended groups before changing uid/gid */
 		if ((setgroups(0, NULL) < 0)) {
 			error("setgroups: %m");
@@ -702,27 +700,27 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 /* Copy job name from last component to all pack job components unless
  * explicitly set. The default value comes from _salloc_default_command()
  * and is "sh". */
-static void _match_job_name(List job_req_list, char *job_name)
+static void _match_job_name(job_desc_msg_t *desc_last, List job_req_list)
 {
-	int cnt, i = 1;
 	ListIterator iter;
 	job_desc_msg_t *desc = NULL;
+	char *name;
+
+	if (!desc_last)
+		return;
+
+	if (!desc_last->name && command_argv)
+		desc_last->name = xstrdup(xbasename(command_argv[0]));
+	name = desc_last->name;
 
 	if (!job_req_list)
 		return;
 
-	cnt = list_count(job_req_list);
-	if (cnt < 2)
-		return;
-
 	iter = list_iterator_create(job_req_list);
-	while ((desc = list_next(iter))) {
-		if ((i++ < cnt) && (desc->bitflags & JOB_SALLOC_FLAG)) {
-			xfree(desc->name);
-			desc->name = xstrdup(job_name);
-		}
-		desc->bitflags &= (~JOB_SALLOC_FLAG);
-	}
+	while ((desc = list_next(iter)))
+		if (!desc->name)
+			desc->name = xstrdup(name);
+
 	list_iterator_destroy(iter);
 }
 
@@ -790,8 +788,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->cluster_features = xstrdup(opt.c_constraint);
 	if (opt.immediate == 1)
 		desc->immediate = 1;
-	if (saopt.default_job_name)
-		desc->bitflags |= JOB_SALLOC_FLAG;
 	desc->name = xstrdup(opt.job_name);
 	desc->reservation = xstrdup(opt.reservation);
 	desc->profile  = opt.profile;
@@ -814,7 +810,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->wait4switch = opt.wait4switch;
 
 	desc->req_nodes = xstrdup(opt.nodelist);
-	desc->exc_nodes = xstrdup(opt.exc_nodes);
+	desc->exc_nodes = xstrdup(opt.exclude);
 	desc->partition = xstrdup(opt.partition);
 
 	if (opt.nodes_set) {
@@ -864,8 +860,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.qos)
 		desc->qos = xstrdup(opt.qos);
 
-	if (opt.cwd)
-		desc->work_dir = xstrdup(opt.cwd);
+	if (opt.chdir)
+		desc->work_dir = xstrdup(opt.chdir);
 	else if (work_dir)
 		desc->work_dir = xstrdup(work_dir);
 
@@ -931,8 +927,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->spank_job_env_size = opt.spank_job_env_size;
 	}
 
-	if (opt.power_flags)
-		desc->power_flags = opt.power_flags;
+	desc->power_flags = opt.power;
 	if (opt.mcs_label)
 		desc->mcs_label = xstrdup(opt.mcs_label);
 	if (opt.delay_boot != NO_VAL)
@@ -1096,7 +1091,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 					killpg(tpgid, SIGHUP);
 			}
 
-			if (saopt.kill_command_signal_set)
+			if (saopt.kill_command_signal)
 				signal = saopt.kill_command_signal;
 #ifdef SALLOC_KILL_CMD
 			else if (is_interactive)

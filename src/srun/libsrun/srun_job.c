@@ -63,6 +63,7 @@
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/uid.h"
@@ -231,8 +232,8 @@ extern srun_job_t *job_step_create_allocation(
 	ai->nnodes = alloc_count;
 	hostlist_destroy(hl);
 
-	if (opt_local->exc_nodes) {
-		hostlist_t exc_hl = hostlist_create(opt_local->exc_nodes);
+	if (opt_local->exclude) {
+		hostlist_t exc_hl = hostlist_create(opt_local->exclude);
 		hostlist_t inc_hl = NULL;
 		char *node_name = NULL;
 
@@ -673,18 +674,18 @@ extern void init_srun(int argc, char **argv,
 	/*
 	 * reinit log with new verbosity (if changed by command line)
 	 */
-	if (logopt && (_verbose || opt.quiet)) {
+	if (logopt && (opt.verbose || opt.quiet)) {
 		/*
 		 * If log level is already increased, only increment the
-		 * level to the difference of _verbose an LOG_LEVEL_INFO
+		 * level to the difference of opt.verbose an LOG_LEVEL_INFO
 		 */
-		if ((_verbose -= (logopt->stderr_level - LOG_LEVEL_INFO)) > 0)
-			logopt->stderr_level += _verbose;
+		if ((opt.verbose -= (logopt->stderr_level - LOG_LEVEL_INFO)) > 0)
+			logopt->stderr_level += opt.verbose;
 		logopt->stderr_level -= opt.quiet;
 		logopt->prefix_level = 1;
 		log_alter(*logopt, 0, NULL);
 	} else
-		_verbose = debug_level;
+		opt.verbose = debug_level;
 
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
@@ -712,10 +713,6 @@ static void _set_step_opts(slurm_opt_t *opt_local)
 
 	opt_local->time_limit = NO_VAL;/* not applicable for step, only job */
 	xfree(opt_local->constraint);	/* not applicable for this step */
-	if (!srun_opt->job_name_set_cmd && srun_opt->job_name_set_env) {
-		/* use SLURM_JOB_NAME env var */
-		sropt.job_name_set_cmd = true;
-	}
 	if ((srun_opt->core_spec_set || srun_opt->exclusive)
 	    && opt_local->cpus_set) {
 		/* Step gets specified CPU count, which may only part
@@ -1095,8 +1092,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					merge_nodelist = false;
 					list_append(used_resp_list, resp);
 				}
-				if (srun_opt->nodes_set_env  &&
-				    !srun_opt->nodes_set_opt &&
+				if (slurm_option_set_by_env('N') &&
 				    (opt_local->min_nodes > resp->node_cnt)) {
 					/*
 					 * This signifies the job used the
@@ -1107,9 +1103,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					 * size
 					 */
 					if (!node_cnt_error_logged) {
-						error("SLURM_NNODES environment variable "
-						      "conflicts with allocated "
-						      "node count (%u != %u).",
+						error("SLURM_JOB_NUM_NODES environment variable conflicts with allocated node count (%u != %u).",
 						      opt_local->min_nodes,
 						      resp->node_cnt);
 						node_cnt_error_logged = true;
@@ -1141,7 +1135,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 #ifdef HAVE_NATIVE_CRAY
 				if (opt_local->network &&
 				    !network_error_logged) {
-					if (srun_opt->network_set_env) {
+					if (slurm_option_set_by_env(LONG_OPT_NETWORK)) {
 						debug2("Ignoring SLURM_NETWORK value for a "
 						       "job step within an existing job. "
 						       "Using what was set at job "
@@ -1222,9 +1216,9 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			exit(error_exit);
 		}
 #endif
-		if (!sropt.job_name_set_env && sropt.job_name_set_cmd)
+		if (slurm_option_set_by_cli('J'))
 			setenvfs("SLURM_JOB_NAME=%s", opt.job_name);
-		else if (!sropt.job_name_set_env && sropt.argc)
+		else if (!slurm_option_set_by_env('J') && sropt.argc)
 			setenvfs("SLURM_JOB_NAME=%s", sropt.argv[0]);
 
 		if (opt_list) {
@@ -1485,7 +1479,7 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 	if (opt_local->min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt_local->min_nodes);
-		if (opt_local->exc_nodes) {
+		if (opt_local->exclude) {
 			/* When resources are pre-allocated and some nodes
 			 * are explicitly excluded, this error can occur. */
 			error("Are required nodes explicitly excluded?");
@@ -1533,10 +1527,10 @@ extern void job_update_io_fnames(srun_job_t *job, slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	xassert(srun_opt);
-	job->ifname = fname_create(job, srun_opt->ifname, opt_local->ntasks);
-	job->ofname = fname_create(job, srun_opt->ofname, opt_local->ntasks);
-	job->efname = srun_opt->efname ?
-		      fname_create(job, srun_opt->efname, opt_local->ntasks) :
+	job->ifname = fname_create(job, opt_local->ifname, opt_local->ntasks);
+	job->ofname = fname_create(job, opt_local->ofname, opt_local->ntasks);
+	job->efname = opt_local->efname ?
+		      fname_create(job, opt_local->efname, opt_local->ntasks) :
 		      job->ofname;
 }
 
@@ -1571,7 +1565,7 @@ static int _become_user (void)
 		return (0);
 	}
 
-	if ((opt.egid != (gid_t) -1) && (setgid (opt.egid) < 0)) {
+	if ((opt.gid != getgid()) && (setgid(opt.gid) < 0)) {
 		xfree(user);
 		return (error ("setgid: %m"));
 	}
@@ -1687,7 +1681,7 @@ static void _print_job_information(resource_allocation_response_msg_t *resp)
 	char *str = NULL;
 	char *sep = "";
 
-	if (!_verbose)
+	if (!opt.verbose)
 		return;
 
 	xstrfmtcat(str, "jobid %u: nodes(%u):`%s', cpu counts: ",
@@ -2014,7 +2008,7 @@ static int _set_umask_env(void)
 {
 	if (!getenv("SRUN_DEBUG")) {	/* do not change current value */
 		/* NOTE: Default debug level is 3 (info) */
-		int log_level = LOG_LEVEL_INFO + _verbose - opt.quiet;
+		int log_level = LOG_LEVEL_INFO + opt.verbose - opt.quiet;
 
 		if (setenvf(NULL, "SRUN_DEBUG", "%d", log_level) < 0)
 			error ("unable to set SRUN_DEBUG in environment");
@@ -2174,11 +2168,11 @@ static void _step_opt_exclusive(slurm_opt_t *opt_local)
 		error("--ntasks must be set with --exclusive");
 		exit(error_exit);
 	}
-	if (srun_opt->relative_set) {
+	if (srun_opt->relative != NO_VAL) {
 		error("--relative disabled, incompatible with --exclusive");
 		exit(error_exit);
 	}
-	if (opt_local->exc_nodes) {
+	if (opt_local->exclude) {
 		error("--exclude is incompatible with --exclusive");
 		exit(error_exit);
 	}
@@ -2190,19 +2184,18 @@ static int _validate_relative(resource_allocation_response_msg_t *resp,
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	xassert(srun_opt);
 
-	if (srun_opt->relative_set &&
+	if ((srun_opt->relative != NO_VAL) &&
 	    ((srun_opt->relative + opt_local->min_nodes)
 	     > resp->node_cnt)) {
-		if (srun_opt->nodes_set_opt) {
+		if (slurm_option_set_by_cli('N')) {
 			/* -N command line option used */
 			error("--relative and --nodes option incompatible "
 			      "with count of allocated nodes (%d+%d>%d)",
 			      srun_opt->relative,
 			      opt_local->min_nodes,
 			      resp->node_cnt);
-		} else {		/* SLURM_NNODES option used */
-			error("--relative and SLURM_NNODES option incompatible "
-			      "with count of allocated nodes (%d+%d>%d)",
+		} else {		/* SLURM_JOB_NUM_NODES option used */
+			error("--relative and SLURM_JOB_NUM_NODES option incompatible with count of allocated nodes (%d+%d>%d)",
 			      srun_opt->relative,
 			      opt_local->min_nodes,
 			      resp->node_cnt);

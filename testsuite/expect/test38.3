@@ -132,7 +132,7 @@ set id_regex "\[0-9,-\]+"
 # first set (pack job leader).
 spawn $scontrol show job $job_id
 expect {
-	-re "JobId=$job_id\\s+PackJobId=$job_id\\s+PackJobOffset=0\\s+JobName=\\w*sh\\s+PackJobIdSet=($id_regex)" {
+	-re "JobId=$job_id\\s+PackJobId=$job_id\\s+PackJobOffset=0\\s+JobName=sleep\\s+PackJobIdSet=($id_regex)" {
 		incr matches
 		set id_set $expect_out(1,string)
 		exp_continue

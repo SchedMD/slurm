@@ -78,7 +78,6 @@ extern slurm_opt_t opt;
 extern sbatch_opt_t sbopt;
 extern sbatch_env_t pack_env;
 extern int   error_exit;
-extern int   ignore_pbs;
 extern bool  is_pack_job;
 
 /*
@@ -134,6 +133,5 @@ extern char *next_line(const void *buf, int size, void **state);
 
 /* Translate #BSUB and #PBS directives in job script */
 extern bool xlate_batch_script(const char *file, const void *body,
-			       int size, int cmd_argc, char **cmd_argv,
-			       int magic);
+			       int size, int magic);
 #endif	/* _HAVE_OPT_H */

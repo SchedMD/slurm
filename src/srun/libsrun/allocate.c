@@ -372,7 +372,7 @@ extern resource_allocation_response_msg_t *
 
 	xassert(srun_opt);
 
-	if (srun_opt->relative_set && srun_opt->relative)
+	if (srun_opt->relative != NO_VAL)
 		fatal("--relative option invalid for job allocation request");
 
 	if ((j = _job_desc_msg_create_from_opts(&opt)) == NULL)
@@ -435,7 +435,7 @@ extern resource_allocation_response_msg_t *
 		 * in the step creation.
 		 */
 		opt_local->pn_min_memory = NO_VAL64;
-		opt_local->mem_per_cpu   = NO_VAL64;
+		opt_local->mem_per_cpu = -1;
 		if (resp->pn_min_memory != NO_VAL64) {
 			if (resp->pn_min_memory & MEM_PER_CPU) {
 				opt_local->mem_per_cpu = (resp->pn_min_memory &
@@ -503,7 +503,7 @@ List allocate_pack_nodes(bool handle_signals)
 		xassert(srun_opt);
 		if (!first_opt)
 			first_opt = opt_local;
-		if (srun_opt->relative_set && srun_opt->relative)
+		if (srun_opt->relative != NO_VAL)
 			fatal("--relative option invalid for job allocation request");
 
 		if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL)
@@ -595,7 +595,7 @@ List allocate_pack_nodes(bool handle_signals)
 			if (opt_local->pn_min_memory != NO_VAL64)
 				opt_local->pn_min_memory =
 					(resp->pn_min_memory & (~MEM_PER_CPU));
-			else if (opt_local->mem_per_cpu != NO_VAL64)
+			else if (opt_local->mem_per_cpu > -1)
 				opt_local->mem_per_cpu =
 					(resp->pn_min_memory & (~MEM_PER_CPU));
 
@@ -765,7 +765,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		return NULL;
 	}
 	j->extra = opt_local->extra;
-	j->exc_nodes      = opt_local->exc_nodes;
+	j->exc_nodes      = opt_local->exclude;
 	j->partition      = opt_local->partition;
 	j->min_nodes      = opt_local->min_nodes;
 	if (opt_local->sockets_per_node != NO_VAL)
@@ -828,8 +828,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->comment = opt_local->comment;
 	if (opt_local->qos)
 		j->qos = opt_local->qos;
-	if (opt_local->cwd)
-		j->work_dir = opt_local->cwd;
+	if (opt_local->chdir)
+		j->work_dir = opt_local->chdir;
 
 	if (opt_local->hold)
 		j->priority     = 0;
@@ -844,11 +844,11 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		 */
 		j->max_nodes    = opt_local->min_nodes;
 	}
-	if (opt_local->pn_min_cpus != NO_VAL)
+	if (opt_local->pn_min_cpus > -1)
 		j->pn_min_cpus = opt_local->pn_min_cpus;
 	if (opt_local->pn_min_memory != NO_VAL64)
 		j->pn_min_memory = opt_local->pn_min_memory;
-	else if (opt_local->mem_per_cpu != NO_VAL64)
+	else if (opt_local->mem_per_cpu > -1)
 		j->pn_min_memory = opt_local->mem_per_cpu | MEM_PER_CPU;
 	if (opt_local->pn_min_tmp_disk != NO_VAL64)
 		j->pn_min_tmp_disk = opt_local->pn_min_tmp_disk;
@@ -903,8 +903,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->spank_job_env_size = opt_local->spank_job_env_size;
 	}
 
-	if (opt_local->power_flags)
-		j->power_flags = opt_local->power_flags;
+	j->power_flags = opt_local->power;
 	if (opt_local->mcs_label)
 		j->mcs_label = opt_local->mcs_label;
 	j->wait_all_nodes = 1;

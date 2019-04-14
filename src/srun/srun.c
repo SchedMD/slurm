@@ -661,7 +661,7 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 		params->dst_fname = xstrdup(srun_opt->bcast_file);
 	} else {
 		xstrfmtcat(params->dst_fname, "%s/slurm_bcast_%u.%u",
-			   opt_local->cwd, job->jobid, job->stepid);
+			   opt_local->chdir, job->jobid, job->stepid);
 	}
 	params->fanout = 0;
 	params->job_id = job->jobid;

@@ -212,7 +212,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 						  opt_local->ntasks_per_node;
 	job->ctx_params.task_count = opt_local->ntasks;
 
-	if (opt_local->mem_per_cpu != NO_VAL64)
+	if (opt_local->mem_per_cpu > -1)
 		job->ctx_params.pn_min_memory = opt_local->mem_per_cpu |
 						MEM_PER_CPU;
 	else if (opt_local->pn_min_memory != NO_VAL64)
@@ -244,7 +244,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		job->ctx_params.immediate = (uint16_t)opt_local->immediate;
 	if (opt_local->time_limit != NO_VAL)
 		job->ctx_params.time_limit = (uint32_t)opt_local->time_limit;
-	job->ctx_params.verbose_level = (uint16_t)_verbose;
+	job->ctx_params.verbose_level = (uint16_t) opt.verbose;
 	if (srun_opt->resv_port_cnt != NO_VAL) {
 		job->ctx_params.resv_port_cnt = (uint16_t)srun_opt->resv_port_cnt;
 	} else {
@@ -298,7 +298,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	job->ctx_params.node_list = opt_local->nodelist;
 	job->ctx_params.network = opt_local->network;
 	job->ctx_params.no_kill = opt_local->no_kill;
-	if (srun_opt->job_name_set_cmd && opt_local->job_name)
+	if (slurm_option_set_by_cli('J'))
 		job->ctx_params.name = opt_local->job_name;
 	else
 		job->ctx_params.name = srun_opt->cmd_name;

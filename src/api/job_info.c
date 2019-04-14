@@ -221,7 +221,7 @@ extern void slurm_get_job_stdin(char *buf, int buf_size, job_info_t * job_ptr)
 	else if (job_ptr->batch_flag == 0)
 		snprintf(buf, buf_size, "%s", "");
 	else
-		snprintf(buf, buf_size, "%s", "StdIn=/dev/null");
+		snprintf(buf, buf_size, "%s", "/dev/null");
 }
 
 /* Given a job record pointer, return its stdout path in buf */

@@ -97,11 +97,20 @@ set matches 0
 set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
 #exp_internal 1
 expect {
-	-re "ntasks$whitespace: ($number) \\(set\\)" {
-		set cpu_count $expect_out(1,string)
-		set cpus_per_node [expr $cpu_count / $node_cnt]
-		if { $cpus_per_node != $ppn_cnt } {
-			send_user "\nFAILURE: PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node\n"
+	-re "mem$whitespace: ($number)G" {
+		set mem $expect_out(1,string)
+		if { $mem * 1024 != $min_mem } {
+			send_user "\nFAILURE: Min memory is different ($mem) than requested ($min_mem)\n"
+			set exit_code 1
+		} else {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "mem$whitespace: ($number)" {
+		set mem $expect_out(1,string)
+		if { $mem != $min_mem } {
+			send_user "\nFAILURE: Min memory is different ($mem) than requested ($min_mem)\n"
 			set exit_code 1
 		} else {
 			incr matches
@@ -118,10 +127,11 @@ expect {
 		}
 		exp_continue
 	}
-	-re "mem=($number)" {
-		set mem $expect_out(1,string)
-		if { $mem != $min_mem } {
-			send_user "\nFAILURE: Min memory is different ($mem) than requested ($min_mem)\n"
+	-re "ntasks$whitespace: ($number)" {
+		set cpu_count $expect_out(1,string)
+		set cpus_per_node [expr $cpu_count / $node_cnt]
+		if { $cpus_per_node != $ppn_cnt } {
+			send_user "\nFAILURE: PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node\n"
 			set exit_code 1
 		} else {
 			incr matches

@@ -65,7 +65,7 @@
 static void _set_pbs_options(int argc, char **argv);
 static void _set_bsub_options(int argc, char **argv);
 
-static uint16_t _parse_pbs_mail_type(const char *arg);
+static char *_xlate_pbs_mail_type(const char *arg);
 static void _parse_pbs_resource_list(char *rl);
 
 /*
@@ -75,8 +75,7 @@ static void _parse_pbs_resource_list(char *rl);
  * then pass the array to _set_*_options for further parsing.
  */
 extern bool xlate_batch_script(const char *file, const void *body,
-			       int size, int cmd_argc, char **cmd_argv,
-			       int magic)
+			       int size, int magic)
 {
 	char *magic_word;
 	void (*wrp_func) (int,char**) = NULL;
@@ -92,15 +91,6 @@ extern bool xlate_batch_script(const char *file, const void *body,
 	int non_comments = 0;
 	int i;
 	bool found = false;
-
-	if (ignore_pbs)
-		return false;
-	if (getenv("SBATCH_IGNORE_PBS"))
-		return false;
-	for (i = 0; i < cmd_argc; i++) {
-		if (!xstrcmp(cmd_argv[i], "--ignore-pbs"))
-			return false;
-	}
 
 	/* Check what command it is */
 	switch (magic) {
@@ -176,14 +166,13 @@ static void _set_bsub_options(int argc, char **argv) {
 
 	int opt_char, option_index = 0;
 	char *bsub_opt_string = "+c:e:J:m:M:n:o:q:W:x";
-	char *tmp_str, *char_ptr;
+	char *char_ptr;
 
 	struct option bsub_long_options[] = {
 		{"cwd", required_argument, 0, 'c'},
 		{"error_file", required_argument, 0, 'e'},
 		{"job_name", required_argument, 0, 'J'},
 		{"hostname", required_argument, 0, 'm'},
-		{"memory_limit", required_argument, 0, 'M'},
 		{"memory_limit", required_argument, 0, 'M'},
 		{"output_file", required_argument, 0, 'o'},
 		{"queue_name", required_argument, 0, 'q'},
@@ -196,45 +185,37 @@ static void _set_bsub_options(int argc, char **argv) {
 	while ((opt_char = getopt_long(argc, argv, bsub_opt_string,
 				       bsub_long_options, &option_index))
 	       != -1) {
+		int xlate_val = 0;
+		char *xlate_arg = NULL;
+
 		switch (opt_char) {
 		case 'c':
-			xfree(opt.cwd);
-			if (is_full_path(optarg))
-				opt.cwd = xstrdup(optarg);
-			else
-				opt.cwd = make_full_path(optarg);
+			xlate_val = 'D';
+			xlate_arg = xstrdup(optarg);
 			break;
+		/* These options all have a direct correspondance. */
 		case 'e':
-			xfree(sbopt.efname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.efname = xstrdup("/dev/null");
-			else
-				sbopt.efname = xstrdup(optarg);
-			break;
 		case 'J':
-			opt.job_name = xstrdup(optarg);
+		case 'o':
+			xlate_val = opt_char;
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'm':
-			/* Since BSUB requires a list of space
-			   sperated host we need to replace the spaces
-			   with , */
-			tmp_str = xstrdup(optarg);
-			char_ptr = strstr(tmp_str, " ");
-
-			while (char_ptr != NULL) {
+			xlate_val = 'w';
+			xlate_arg = xstrdup(optarg);
+			/*
+			 * Since BSUB uses a list of space separated hosts,
+			 * we need to replace the spaces with commas.
+			 */
+			while ((char_ptr = strstr(xlate_arg, " ")))
 				*char_ptr = ',';
-				char_ptr = strstr(tmp_str, " ");
-			}
-			opt.nodelist = xstrdup(tmp_str);
-			xfree(tmp_str);
 			break;
 		case 'M':
-			opt.mem_per_cpu = xstrntol(optarg,
-						   NULL, strlen(optarg), 10);
+			xlate_val = LONG_OPT_MEM_PER_CPU;
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'n':
-			opt.ntasks_set = true;
-			/* Since it is value in bsub to give a min and
+			/* Since it is valid in bsub to give a min and
 			 * max task count we will only read the max if
 			 * it exists.
 			 */
@@ -250,29 +231,31 @@ static void _set_bsub_options(int argc, char **argv) {
 			} else
 				char_ptr = optarg;
 
-			opt.ntasks =
-				parse_int("number of tasks", char_ptr, true);
+			xlate_val = 'n';
+			xlate_arg = xstrdup(char_ptr);
 
 			break;
-		case 'o':
-			xfree(sbopt.ofname);
-			sbopt.ofname = xstrdup(optarg);
-			break;
 		case 'q':
-			opt.partition = xstrdup(optarg);
+			xlate_val = 'p';
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'W':
-			opt.time_limit = xstrntol(optarg, NULL,
-						  strlen(optarg), 10);
+			xlate_val = 't';
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'x':
-			opt.shared = JOB_SHARED_NONE;
+			xlate_val = LONG_OPT_EXCLUSIVE;
 			break;
 		default:
 			error("Unrecognized command line parameter %c",
 			      opt_char);
 			exit(error_exit);
 		}
+
+		if (xlate_val)
+			slurm_process_option(&opt, xlate_val, xlate_arg,
+					     false, false);
+		xfree(xlate_arg);
 	}
 
 
@@ -286,7 +269,6 @@ static void _set_bsub_options(int argc, char **argv) {
 static void _set_pbs_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
-	char *sep = "";
 	char *pbs_opt_string = "+a:A:c:C:e:hIj:J:k:l:m:M:N:o:p:q:r:S:t:u:v:VW:z";
 
 	struct option pbs_long_options[] = {
@@ -322,27 +304,27 @@ static void _set_pbs_options(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, pbs_opt_string,
 				       pbs_long_options, &option_index))
 	       != -1) {
+		int xlate_val = 0;
+		char *xlate_arg = NULL;
+
 		switch (opt_char) {
 		case 'a':
-			opt.begin = parse_time(optarg, 0);
+			xlate_val = 'b';
+			xlate_arg = xstrdup(optarg);
 			break;
+		/* These options all have a direct correspondance. */
 		case 'A':
-			xfree(opt.account);
-			opt.account = xstrdup(optarg);
+		case 'e':
+		case 'o':
+			xlate_val = opt_char;
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'c':
 			break;
 		case 'C':
 			break;
-		case 'e':
-			xfree(sbopt.efname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.efname = xstrdup("/dev/null");
-			else
-				sbopt.efname = xstrdup(optarg);
-			break;
 		case 'h':
-			opt.hold = true;
+			xlate_val = 'H';
 			break;
 		case 'I':
 			break;
@@ -351,8 +333,8 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'J':
 		case 't':
 			/* PBS Pro uses -J. Torque uses -t. */
-			xfree(sbopt.array_inx);
-			sbopt.array_inx = xstrdup(optarg);
+			xlate_val = 'a';
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'k':
 			break;
@@ -360,55 +342,24 @@ static void _set_pbs_options(int argc, char **argv)
 			_parse_pbs_resource_list(optarg);
 			break;
 		case 'm':
-			if (!optarg) /* CLANG Fix */
-				break;
-			opt.mail_type |= _parse_pbs_mail_type(optarg);
-			if (opt.mail_type == INFINITE16) {
-				error("-m=%s invalid", optarg);
-				exit(error_exit);
-			}
+			xlate_val = LONG_OPT_MAIL_TYPE;
+			xlate_arg = _xlate_pbs_mail_type(optarg);
 			break;
 		case 'M':
-			xfree(opt.mail_user);
-			opt.mail_user = xstrdup(optarg);
+			xlate_val = LONG_OPT_MAIL_USER;
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'N':
-			xfree(opt.job_name);
-			opt.job_name = xstrdup(optarg);
+			xlate_val = 'J';
+			xlate_arg = xstrdup(optarg);
 			break;
-		case 'o':
-			xfree(sbopt.ofname);
-			if (xstrcasecmp(optarg, "none") == 0)
-				sbopt.ofname = xstrdup("/dev/null");
-			else
-				sbopt.ofname = xstrdup(optarg);
+		case 'p':
+			xlate_val = LONG_OPT_NICE;
+			xlate_arg = xstrdup(optarg);
 			break;
-		case 'p': {
-			long long tmp_nice;
-			if (optarg)
-				tmp_nice = strtoll(optarg, NULL, 10);
-			else
-				tmp_nice = 100;
-			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
-				error("Nice value out of range (+/- %u). Value "
-				      "ignored", NICE_OFFSET - 3);
-				tmp_nice = 0;
-			}
-			if (tmp_nice < 0) {
-				uid_t my_uid = getuid();
-				if ((my_uid != 0) &&
-				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be "
-					      "non-negative, value ignored");
-					tmp_nice = 0;
-				}
-			}
-			opt.nice = (int) tmp_nice;
-			break;
-		}
 		case 'q':
-			xfree(opt.partition);
-			opt.partition = xstrdup(optarg);
+			xlate_val = 'p';
+			xlate_arg = xstrdup(optarg);
 			break;
 		case 'r':
 			break;
@@ -417,10 +368,11 @@ static void _set_pbs_options(int argc, char **argv)
 		case 'u':
 			break;
 		case 'v':
-			if (sbopt.export_env)
-				sep = ",";
-			/* CLANG false positive */
-			xstrfmtcat(sbopt.export_env, "%s%s", sep, optarg);
+			xlate_val = LONG_OPT_EXPORT;
+			xlate_arg = xstrdup(sbopt.export_env);
+			if (xlate_arg)
+				xstrcat(xlate_arg, ",");
+			xstrcat(xlate_arg, optarg);
 			break;
 		case 'V':
 			break;
@@ -428,14 +380,11 @@ static void _set_pbs_options(int argc, char **argv)
 			if (!optarg) /* CLANG Fix */
 				break;
 			if (!xstrncasecmp(optarg, "umask=", 6)) {
-				sbopt.umask = strtol(optarg+6, NULL, 0);
-				if ((sbopt.umask < 0) || (sbopt.umask > 0777)) {
-					error("Invalid umask ignored");
-					sbopt.umask = -1;
-				}
+				xlate_val = LONG_OPT_UMASK;
+				xlate_arg = xstrdup(optarg+6);
 			} else if (!xstrncasecmp(optarg, "depend=", 7)) {
-				xfree(opt.dependency);
-				opt.dependency = xstrdup(optarg+7);
+				xlate_val = 'd';
+				xlate_arg = xstrdup(optarg+7);
 			} else {
 				verbose("Ignored PBS attributes: %s", optarg);
 			}
@@ -447,6 +396,11 @@ static void _set_pbs_options(int argc, char **argv)
 			      opt_char);
 			exit(error_exit);
 		}
+
+		if (xlate_val)
+			slurm_process_option(&opt, xlate_val, xlate_arg,
+					     false, false);
+		xfree(xlate_arg);
 	}
 
 	if (optind < argc) {
@@ -512,19 +466,22 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 	if (!node_cnt)
 		node_cnt = 1;
 	else {
-		opt.nodes_set = true;
-		opt.min_nodes = opt.max_nodes = node_cnt;
+		char *nodes = xstrdup_printf("%d", node_cnt);
+		slurm_process_option(&opt, 'N', nodes, false, false);
+		xfree(nodes);
 	}
 
 	if (ppn) {
+		char *ntasks;
 		ppn *= node_cnt;
-		opt.ntasks_set = true;
-		opt.ntasks = ppn;
+		ntasks = xstrdup_printf("%d", ppn);
+		slurm_process_option(&opt, 'n', ntasks, false, false);
 	}
 
 	if (hostlist_count(hl) > 0) {
-		xfree(opt.nodelist);
-		opt.nodelist = hostlist_ranged_string_xmalloc(hl);
+		char *nodelist = hostlist_ranged_string_xmalloc(hl);
+		slurm_process_option(&opt, 'w', nodelist, false, false);
+		xfree(nodelist);
 	}
 
 	hostlist_destroy(hl);
@@ -577,8 +534,7 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for cput");
 				exit(error_exit);
 			}
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(temp);
+			slurm_process_option(&opt, 't', temp, false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "file=", 5)) {
 			int end = 0;
@@ -597,11 +553,8 @@ static void _parse_pbs_resource_list(char *rl)
 				 */
 				temp[end] = '\0';
 			}
-			opt.pn_min_tmp_disk = str_to_mbytes(temp);
-			if (opt.pn_min_tmp_disk != NO_VAL64) {
-				error("invalid tmp value %s", temp);
-				exit(error_exit);
-			}
+			slurm_process_option(&opt, LONG_OPT_TMP, temp,
+					     false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "host=", 5)) {
 			i+=5;
@@ -623,20 +576,17 @@ static void _parse_pbs_resource_list(char *rl)
 				 */
 				temp[end] = '\0';
 			}
-			opt.pn_min_memory = str_to_mbytes(temp);
-			if (opt.pn_min_memory == NO_VAL64) {
-				error("invalid memory constraint %s", temp);
-				exit(error_exit);
-			}
-
+			slurm_process_option(&opt, LONG_OPT_MEM, temp,
+					     false, false);
 			xfree(temp);
 		} else if (!xstrncasecmp(rl+i, "mpiprocs=", 9)) {
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 4;
-				opt.ntasks_per_node = parse_int("mpiprocs",
-								temp, true);
+				slurm_process_option(&opt,
+						     LONG_OPT_NTASKSPERNODE,
+						     temp, false, false);
 				xfree(temp);
 			}
 #ifdef HAVE_NATIVE_CRAY
@@ -649,9 +599,8 @@ static void _parse_pbs_resource_list(char *rl)
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
-				opt.cpus_per_task = parse_int("mppdepth",
-							      temp, false);
-				opt.cpus_set	  = true;
+				slurm_process_option(&opt, 'c', temp,
+						     false, false);
 			}
 			xfree(temp);
 		} else if (!xstrncmp(rl + i, "mppnodes=", 9)) {
@@ -662,31 +611,31 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for mppnodes");
 				exit(error_exit);
 			}
-			xfree(opt.nodelist);
-			opt.nodelist = temp;
+			slurm_process_option(&opt, 'w', temp, false, false);
 		} else if (!xstrncmp(rl + i, "mppnppn=", 8)) {
 			/* Cray: number of processing elements per node */
 			i += 8;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp)
-				opt.ntasks_per_node = parse_int("mppnppn",
-								temp, true);
+				slurm_process_option(&opt,
+						     LONG_OPT_NTASKSPERNODE,
+						     temp, false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl + i, "mppwidth=", 9)) {
 			/* Cray: task width (number of processing elements) */
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp) {
-				opt.ntasks = parse_int("mppwidth", temp, true);
-				opt.ntasks_set = true;
-			}
+			if (temp)
+				slurm_process_option(&opt, 'n', temp,
+						     false, false);
 			xfree(temp);
 #endif /* HAVE_NATIVE_CRAY */
 		} else if (!xstrncasecmp(rl+i, "naccelerators=", 14)) {
 			i += 14;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
-				gpus = parse_int("naccelerators", temp, true);
+				slurm_process_option(&opt, 'G', temp,
+						     false, false);
 				xfree(temp);
 			}
 		} else if (!xstrncasecmp(rl+i, "ncpus=", 6)) {
@@ -694,32 +643,15 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 2;
-				opt.pn_min_cpus = parse_int("ncpus", temp, true);
+				slurm_process_option(&opt, LONG_OPT_MINCPUS,
+						     temp, false, false);
 				xfree(temp);
 			}
 		} else if (!xstrncmp(rl+i, "nice=", 5)) {
-			long long tmp_nice;
 			i += 5;
 			temp = _get_pbs_option_value(rl, &i, ',');
-			if (temp)
-				tmp_nice = strtoll(temp, NULL, 10);
-			else
-				tmp_nice = 100;
-			if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
-				error("Nice value out of range (+/- %u). Value "
-				      "ignored", NICE_OFFSET - 3);
-				tmp_nice = 0;
-			}
-			if (tmp_nice < 0) {
-				uid_t my_uid = getuid();
-				if ((my_uid != 0) &&
-				    (my_uid != slurm_get_slurm_user_id())) {
-					error("Nice value must be "
-					      "non-negative, value ignored");
-					tmp_nice = 0;
-				}
-			}
-			opt.nice = (int) tmp_nice;
+			slurm_process_option(&opt, LONG_OPT_NICE, temp,
+					     false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "nodes=", 6)) {
 			i+=6;
@@ -743,18 +675,17 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for pcput");
 				exit(error_exit);
 			}
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(temp);
+			slurm_process_option(&opt, 't', temp, false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "pmem=", 5)) {
 			i+=5;
 			_get_next_pbs_option(rl, &i);
 		} else if (!xstrncmp(rl+i, "proc=", 5)) {
 			i += 5;
-			if (opt.constraint)
-				xstrcat(opt.constraint, ",");
 			temp = _get_pbs_option_value(rl, &i, ',');
-			xstrcat(opt.constraint, temp);
+			if (opt.constraint)
+				xstrfmtcat(temp, ",%s", opt.constraint);
+			slurm_process_option(&opt, 'C', temp, false, false);
 			xfree(temp);
 			_get_next_pbs_option(rl, &i);
 		} else if (!xstrncmp(rl+i, "pvmem=", 6)) {
@@ -765,9 +696,7 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 1;
-				opt.min_nodes = parse_int("select", temp, true);
-				opt.max_nodes = opt.min_nodes;
-				opt.nodes_set = true;
+				slurm_process_option(&opt, 'N', temp, false, false);
 				xfree(temp);
 			}
 		} else if (!xstrncmp(rl+i, "software=", 9)) {
@@ -783,8 +712,7 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for walltime");
 				exit(error_exit);
 			}
-			xfree(opt.time_limit_str);
-			opt.time_limit_str = xstrdup(temp);
+			slurm_process_option(&opt, 't', temp, false, false);
 			xfree(temp);
 		} else
 			i++;
@@ -795,32 +723,36 @@ static void _parse_pbs_resource_list(char *rl)
 		 * node if the CPU count per node is evenly divisible by
 		 * the task count on each node. Slurm can't handle something
 		 * like cpus_per_node=10 and ntasks_per_node=8 */
-		opt.cpus_per_task = opt.pn_min_cpus / opt.ntasks_per_node;
-		opt.cpus_set = true;
+		int cpus_per_task = opt.pn_min_cpus / opt.ntasks_per_node;
+		temp = xstrdup_printf("%d", cpus_per_task);
+		slurm_process_option(&opt, 'c', temp, false, false);
+		xfree(temp);
 	}
 	if (gpus > 0) {
-		char *sep = "";
 		if (opt.gres)
-			sep = ",";
-		xstrfmtcat(opt.gres, "%sgpu:%d", sep, gpus);
+			temp = xstrdup_printf("%s,gpu:%d", opt.gres, gpus);
+		else
+			temp = xstrdup_printf("gpu:%d", gpus);
+		slurm_process_option(&opt, LONG_OPT_GRES, temp, false, false);
+		xfree(temp);
 	}
 }
 
-static uint16_t _parse_pbs_mail_type(const char *arg)
+static char *_xlate_pbs_mail_type(const char *arg)
 {
-	uint16_t rc = 0;
+	char *xlated = NULL;
 
 	if (strchr(arg, 'b') || strchr(arg, 'B'))
-		rc |= MAIL_JOB_BEGIN;
+		xstrfmtcat(xlated, "%sBEGIN", (xlated ? "," : ""));
 	if (strchr(arg, 'e') || strchr(arg, 'E'))
-		rc |= MAIL_JOB_END;
+		xstrfmtcat(xlated, "%sEND", (xlated ? "," : ""));
 	if (strchr(arg, 'a') || strchr(arg, 'A'))
-		rc |= MAIL_JOB_FAIL;
+		xstrfmtcat(xlated, "%sFAIL", (xlated ? "," : ""));
 
-	if (strchr(arg, 'n') || strchr(arg, 'N'))
-		rc = 0;
-	else if (!rc)
-		rc = INFINITE16;
+	if (strchr(arg, 'n') || strchr(arg, 'N')) {
+		xfree(xlated);
+		xlated = xstrdup("NONE");
+	}
 
-	return rc;
+	return xlated;
 }

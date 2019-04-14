@@ -52,6 +52,7 @@
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
+#include "src/common/pack.h"
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
@@ -153,8 +154,21 @@ int main(int argc, char **argv)
 			pack_fini = true;
 		}
 
-		if (sbopt.burst_buffer_file)
-			_add_bb_to_script(&script_body, sbopt.burst_buffer_file);
+		/*
+		 * Note that this handling here is different than in
+		 * salloc/srun. Instead of sending the file contents as the
+		 * burst_buffer field in job_desc_msg_t, it will be spliced
+		 * in to the job script.
+		 */
+		if (opt.burst_buffer_file) {
+			Buf buf = create_mmap_buf(opt.burst_buffer_file);
+			if (!buf) {
+				error("Invalid --bbf specification");
+				exit(error_exit);
+			}
+			_add_bb_to_script(&script_body, get_buf_data(buf));
+			free_buf(buf);
+		}
 
 		if (spank_init_post_opt() < 0) {
 			error("Plugin stack post-option processing failed");
@@ -528,7 +542,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->req_nodes = xstrdup(opt.nodelist);
 	desc->extra = xstrdup(opt.extra);
-	desc->exc_nodes = xstrdup(opt.exc_nodes);
+	desc->exc_nodes = xstrdup(opt.exclude);
 	desc->partition = xstrdup(opt.partition);
 	desc->profile = opt.profile;
 	if (opt.licenses)
@@ -676,10 +690,10 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->argv     = xmalloc(sizeof(char *) * sbopt.script_argc);
 	for (i = 0; i < sbopt.script_argc; i++)
 		desc->argv[i] = xstrdup(sbopt.script_argv[i]);
-	desc->std_err  = xstrdup(sbopt.efname);
-	desc->std_in   = xstrdup(sbopt.ifname);
-	desc->std_out  = xstrdup(sbopt.ofname);
-	desc->work_dir = xstrdup(opt.cwd);
+	desc->std_err  = xstrdup(opt.efname);
+	desc->std_in   = xstrdup(opt.ifname);
+	desc->std_out  = xstrdup(opt.ofname);
+	desc->work_dir = xstrdup(opt.chdir);
 	if (sbopt.requeue != NO_VAL)
 		desc->requeue = sbopt.requeue;
 	if (sbopt.open_mode)
@@ -706,8 +720,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.wait4switch >= 0)
 		desc->wait4switch = opt.wait4switch;
 
-	if (opt.power_flags)
-		desc->power_flags = opt.power_flags;
+	desc->power_flags = opt.power;
 	if (opt.job_flags)
 		desc->bitflags = opt.job_flags;
 	if (opt.mcs_label)

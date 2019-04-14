@@ -52,6 +52,7 @@
 
 #define DEFAULT_IMMEDIATE	1
 #define DEFAULT_BELL_DELAY	10
+#define SRUN_MAX_THREADS	60
 
 typedef enum {BELL_NEVER, BELL_AFTER_DELAY, BELL_ALWAYS} bell_flag_t;
 
@@ -69,6 +70,7 @@ enum {
 	LONG_OPT_ENUM_START = 0x100,
 	LONG_OPT_ACCEL_BIND,
 	LONG_OPT_ACCTG_FREQ,
+	LONG_OPT_ALLOC_NODELIST,
 	LONG_OPT_BATCH,
 	LONG_OPT_BCAST,
 	LONG_OPT_BELL,
@@ -77,18 +79,18 @@ enum {
 	LONG_OPT_BURST_BUFFER_SPEC,
 	LONG_OPT_CHECKPOINT,
 	LONG_OPT_CHECKPOINT_DIR,
+	LONG_OPT_CLUSTER,
 	LONG_OPT_CLUSTER_CONSTRAINT,
 	LONG_OPT_COMMENT,
 	LONG_OPT_COMPRESS,
-	LONG_OPT_CONT,
+	LONG_OPT_CONTIGUOUS,
 	LONG_OPT_CORE,
 	LONG_OPT_CORESPERSOCKET,
 	LONG_OPT_CPU_BIND,
 	LONG_OPT_CPU_FREQ,
 	LONG_OPT_CPUS_PER_GPU,
 	LONG_OPT_DEADLINE,
-	LONG_OPT_DEBUG_SLURMD,
-	LONG_OPT_DEBUG_TS,
+	LONG_OPT_DEBUGGER_TEST,
 	LONG_OPT_DELAY_BOOT,
 	LONG_OPT_EPILOG,
 	LONG_OPT_EXCLUSIVE,
@@ -104,7 +106,6 @@ enum {
 	LONG_OPT_GPUS_PER_TASK,
 	LONG_OPT_GRES,
 	LONG_OPT_GRES_FLAGS,
-	LONG_OPT_HELP,
 	LONG_OPT_HINT,
 	LONG_OPT_IGNORE_PBS,
 	LONG_OPT_JOBID,
@@ -120,18 +121,18 @@ enum {
 	LONG_OPT_MEM_PER_CPU,
 	LONG_OPT_MEM_PER_GPU,
 	LONG_OPT_MINCORES,
-	LONG_OPT_MINCPU,
 	LONG_OPT_MINCPUS,
 	LONG_OPT_MINSOCKETS,
 	LONG_OPT_MINTHREADS,
 	LONG_OPT_MLOADER_IMAGE,
 	LONG_OPT_MPI,
+	LONG_OPT_MSG_TIMEOUT,
 	LONG_OPT_MULTI,
 	LONG_OPT_NETWORK,
 	LONG_OPT_NICE,
 	LONG_OPT_NO_BELL,
 	LONG_OPT_NO_REQUEUE,
-	LONG_OPT_NOSHELL,
+	LONG_OPT_NO_SHELL,
 	LONG_OPT_NTASKSPERCORE,
 	LONG_OPT_NTASKSPERNODE,
 	LONG_OPT_NTASKSPERSOCKET,
@@ -147,24 +148,27 @@ enum {
 	LONG_OPT_QUIT_ON_INTR,
 	LONG_OPT_RAMDISK_IMAGE,
 	LONG_OPT_REBOOT,
-	LONG_OPT_REQ_SWITCH,
 	LONG_OPT_REQUEUE,
 	LONG_OPT_RESERVATION,
 	LONG_OPT_RESTART_DIR,
 	LONG_OPT_RESV_PORTS,
 	LONG_OPT_SIGNAL,
+	LONG_OPT_SLURMD_DEBUG,
 	LONG_OPT_SOCKETSPERNODE,
 	LONG_OPT_SPREAD_JOB,
+	LONG_OPT_SWITCH_REQ,
+	LONG_OPT_SWITCH_WAIT,
+	LONG_OPT_SWITCHES,
 	LONG_OPT_TASK_EPILOG,
 	LONG_OPT_TASK_PROLOG,
 	LONG_OPT_TEST_ONLY,
 	LONG_OPT_THREAD_SPEC,
 	LONG_OPT_THREADSPERCORE,
 	LONG_OPT_TIME_MIN,
-	LONG_OPT_TIMEO,
 	LONG_OPT_TMP,
 	LONG_OPT_TRES_PER_JOB,
 	LONG_OPT_UID,
+	LONG_OPT_UMASK,
 	LONG_OPT_USAGE,
 	LONG_OPT_USE_MIN_NODES,
 	LONG_OPT_WAIT_ALL_NODES,
@@ -179,9 +183,7 @@ enum {
  */
 typedef struct salloc_opt {
 	bell_flag_t bell;		/* --bell, --no-bell		*/
-	bool default_job_name;		/* set if no command or job name specified */
 	int kill_command_signal;	/* --kill-command		*/
-	bool kill_command_signal_set;
 	bool no_shell;			/* --no-shell			*/
 	uint16_t wait_all_nodes;	/* --wait-nodes-ready=val	*/
 } salloc_opt_t;
@@ -194,17 +196,12 @@ typedef struct sbatch_opt {
 	int script_argc;
 	char **script_argv;
 
-	char *ifname;			/* input file name		*/
-	char *ofname;			/* output file name		*/
-	char *efname;			/* error file name		*/
-
 	char *array_inx;		/* --array			*/
 	char *batch_features;		/* --batch			*/
-	char *burst_buffer_file;	/* --bbf			*/
 	int ckpt_interval;		/* --checkpoint (int minutes)	*/
-	char *ckpt_interval_str;	/* --checkpoint			*/
 	char *export_env;		/* --export			*/
 	char *export_file;		/* --export-file=file		*/
+	bool ignore_pbs;		/* --ignore-pbs			*/
 	int minsockets;			/* --minsockets=n		*/
 	int mincores;			/* --mincores=n			*/
 	int minthreads;			/* --minthreads=n		*/
@@ -231,41 +228,30 @@ typedef struct srun_opt {
 	char *efname;			/* error file name		*/
 
 	uint16_t accel_bind_type;	/* --accel-bind			*/
-	bool allocate;			/* --allocate			*/
 	char *alloc_nodelist;		/* grabbed from the environment	*/
 	char *bcast_file;		/* --bcast, copy executable to compute nodes */
 	bool bcast_flag;		/* --bcast, copy executable to compute nodes */
 	int ckpt_interval;		/* --checkpoint, in minutes	*/
-	char *ckpt_interval_str;	/* --checkpoint			*/
 	char *cmd_name;			/* name of command to execute	*/
 	uint16_t compress;		/* --compress (for --bcast option) */
 	bool core_spec_set;		/* core_spec explicitly set	*/
 	char *cpu_bind;			/* binding map for map/mask_cpu	*/
 	cpu_bind_type_t cpu_bind_type;	/* --cpu-bind			*/
-	bool cpu_bind_type_set;		/* --cpu-bind explicitly set	*/
-	bool cwd_set;			/* --cwd explicitly set		*/
 	bool debugger_test;		/* --debugger-test		*/
 	bool disable_status;		/* --disable-status		*/
 	char *epilog;			/* --epilog			*/
 	bool exclusive;			/* --exclusive			*/
 	char *export_env;		/* --export			*/
-	char *hostfile;			/* location of hostfile if there is one */
 	uint32_t jobid;			/* --jobid			*/
-	bool job_name_set_cmd;		/* true if job_name set by cmd line option */
-	bool job_name_set_env;		/* true if job_name set by env var */
 	int32_t kill_bad_exit;		/* --kill-on-bad-exit		*/
 	bool labelio;			/* --label-output		*/
 	int32_t max_threads;		/* --threads			*/
 	int max_wait;			/* --wait			*/
 	int msg_timeout;		/* undocumented			*/
+	char *mpi_type;			/* --mpi=type			*/
 	bool multi_prog;		/* multiple programs to execute */
 	int32_t multi_prog_cmds;	/* number of commands in multi prog file */
-	bool network_set_env;		/* true if network set by env var */
 	bool no_alloc;			/* --no-allocate		*/
-	bool nodes_set_env;		/* true if nodes set via SLURM_NNODES */
-	bool nodes_set_opt;		/* true if nodes explicitly set using
-					   command line option */
-	bool noshell;			/* --no-shell			*/
 	uint8_t open_mode;		/* --open-mode=append|truncate	*/
 	char *pack_group;		/* --pack-group			*/
 	bitstr_t *pack_grp_bits;	/* --pack-group in bitmap form	*/
@@ -277,7 +263,6 @@ typedef struct srun_opt {
 	bool pty;			/* --pty			*/
 	bool quit_on_intr;		/* --quit-on-interrupt		*/
 	int relative;			/* --relative			*/
-	bool relative_set;
 	char *restart_dir;		/* --restart			*/
 	int resv_port_cnt;		/* --resv_ports			*/
 	int slurmd_debug;		/* --slurmd-debug		*/
@@ -286,8 +271,6 @@ typedef struct srun_opt {
 	bool test_exec;			/* test_exec set		*/
 	bool test_only;			/* --test-only			*/
 	bool unbuffered;		/* --unbuffered			*/
-	bool user_managed_io;		/* 0 for "normal" IO,		*/
-					/* 1 for "user manged" IO	*/
 } srun_opt_t;
 
 typedef struct slurm_options {
@@ -296,12 +279,11 @@ typedef struct slurm_options {
 	srun_opt_t *srun_opt;
 
 	char *burst_buffer;		/* --bb				*/
+	char *burst_buffer_file;	/* --bbf			*/
 	char *clusters;			/* cluster to run this on. */
 	uid_t uid;			/* local uid			*/
 	gid_t gid;			/* local gid			*/
-	uid_t euid;			/* effective user --uid=user	*/
-	gid_t egid;			/* effective group --gid=group	*/
-	char *cwd;			/* current working directory	*/
+	char *chdir;			/* --chdir			*/
 	int ntasks;			/* --ntasks			*/
 	bool ntasks_set;		/* ntasks explicitly set	*/
 	int cpus_per_task;		/* --cpus-per-task=n		*/
@@ -313,20 +295,15 @@ typedef struct slurm_options {
 	int cores_per_socket;		/* --cores-per-socket=n		*/
 	uint32_t job_flags;		/* --kill_invalid_dep, --gres-flags */
 	int threads_per_core;		/* --threads-per-core=n		*/
-	bool threads_per_core_set;	/* --threads-per-core explicitly set */
 	int ntasks_per_node;		/* --ntasks-per-node=n		*/
 	int ntasks_per_socket;		/* --ntasks-per-socket=n	*/
 	int ntasks_per_core;		/* --ntasks-per-core=n		*/
-	bool ntasks_per_core_set;	/* ntasks-per-core explicitly set */
-	char *hint_env;			/* SLURM_HINT env var setting	*/
-	bool hint_set;			/* --hint set explicitly set	*/
+	char *hint;			/* --hint or SLURM_HINT envvar	*/
 	mem_bind_type_t mem_bind_type;	/* --mem-bind=		*/
 	char *mem_bind;			/* binding map for map/mask_mem	*/
 	bool extra_set;			/* extra node info explicitly set */
 	int time_limit;			/* --time, in minutes		*/
-	char *time_limit_str;		/* --time			*/
 	int time_min;			/* --min-time, in minutes	*/
-	char *time_min_str;		/* --min-time			*/
 	char *partition;		/* --partition			*/
 	uint32_t profile;		/* --profile=[all | none]	*/
 	enum task_dist_states distribution;
@@ -335,7 +312,6 @@ typedef struct slurm_options {
 					 * when -m plane=<# of lllp per
 					 * plane> */
 	char *job_name;			/* --job-name			*/
-	char *mpi_type;			/* --mpi=type			*/
 	char *dependency;		/* --dependency			*/
 	int nice;			/* --nice			*/
 	uint32_t priority;		/* --priority			*/
@@ -375,8 +351,9 @@ typedef struct slurm_options {
 	char *c_constraint;		/* --cluster-constraint		*/
 	char *gres;			/* --gres			*/
 	bool contiguous;		/* --contiguous			*/
+	char *nodefile;			/* --nodefile			*/
 	char *nodelist;			/* --nodelist=node1,node2,...	*/
-	char *exc_nodes;		/* --exclude=node1,node2,...	*/
+	char *exclude;			/* --exclude=node1,node2,...	*/
 
 	bool reboot;			/* --reboot			*/
 
@@ -397,7 +374,7 @@ typedef struct slurm_options {
 	uint32_t cpu_freq_min;		/* Minimum cpu frequency	*/
 	uint32_t cpu_freq_max;		/* Maximum cpu frequency	*/
 	uint32_t cpu_freq_gov;		/* cpu frequency governor	*/
-	uint8_t power_flags;		/* Power management options	*/
+	uint8_t power;			/* power management flags	*/
 	char *mcs_label;		/* mcs label			*/
 	time_t deadline;		/* ---deadline			*/
 	uint32_t delay_boot;		/* --delay-boot			*/
@@ -408,6 +385,55 @@ typedef struct slurm_options {
 	char *x11_target;		/* target host, or unix socket	*/
 					/* if x11_target_port == 0	*/
 	uint16_t x11_target_port;	/* target display TCP port on localhost */
+
+	/* used in both sbatch and srun, here for convenience */
+	char *efname;			/* error file name		*/
+	char *ifname;			/* input file name		*/
+	char *ofname;			/* output file name		*/
 } slurm_opt_t;
+
+extern struct option *slurm_option_table_create(slurm_opt_t *opt,
+						char **opt_string);
+extern void slurm_option_table_destroy(struct option *optz);
+
+/*
+ * Warning: this will permute the state of a global common_options table,
+ * and thus is not thread-safe. The expectation is that it is called from
+ * within a single thread in salloc/sbatch/srun, and that this restriction
+ * should not be problematic. If it is, please refactor.
+ */
+extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
+				bool set_by_env, bool early_pass);
+
+/*
+ * Print all options that have been set through slurm_process_option()
+ * in a form suitable for use with the -v flag to salloc/sbatch/srun.
+ */
+extern void slurm_print_set_options(slurm_opt_t *opt);
+
+/*
+ * Reset slurm_opt_t settings for a given pass.
+ */
+extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass);
+
+/*
+ * Was the option set by a cli argument?
+ */
+extern bool slurm_option_set_by_cli(int optval);
+
+/*
+ * Was the option set by an env var?
+ */
+extern bool slurm_option_set_by_env(int optval);
+
+/*
+ * Pull these back in from the appropriate commands:
+ */
+extern void salloc_help(void);
+extern void sbatch_help(void);
+extern void srun_help(void);
+extern void salloc_usage(void);
+extern void sbatch_usage(void);
+extern void srun_usage(void);
 
 #endif	/* _SLURM_OPT_H_ */

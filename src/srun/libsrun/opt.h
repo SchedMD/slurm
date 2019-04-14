@@ -53,17 +53,14 @@
 #include "src/common/slurm_opt.h"
 
 #define DEFAULT_IMMEDIATE	1
-#define MAX_THREADS		60
 #define MAX_PACK_COUNT		128
 
 /* global variables relating to user options */
-extern int _verbose;
 
 extern enum modes mode;
 
 extern int	error_exit;	/* exit code for slurm errors */
 extern int	immediate_exit;	/* exit code for --imediate option & busy */
-extern char *	mpi_type;
 extern slurm_opt_t opt;
 extern srun_opt_t sropt;
 extern List	opt_list;
