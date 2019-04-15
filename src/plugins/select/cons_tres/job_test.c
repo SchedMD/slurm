@@ -2166,7 +2166,7 @@ alloc_job:
 			job_res->memory_allocated[j] = needed_mem;
 			j++;
 		}
-		if (save_mem == 0)
+		if ((error_code != SLURM_ERROR) && (save_mem == 0))
 			details_ptr->pn_min_memory = lowest_mem;
 	}
 	if (error_code == SLURM_ERROR)
