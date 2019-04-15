@@ -38,6 +38,9 @@ documents those changes that are of interest to users and administrators.
     be stricter in a few specific situations - places that used to ignore
     invalid options and still submit/launch a job or job step may return an
     error() and refuse to proceed instead.
+ -- Add preempt_send_user_signal SlurmctldParameter option to send user
+    signal (e.g. --signal=<SIG_NUM>) at preemption if it hasn't already been
+    sent.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

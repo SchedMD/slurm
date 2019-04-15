@@ -214,6 +214,7 @@ enum {
 };
 
 extern bool  alloc_booting_nodes;
+extern bool  preempt_send_user_signal;
 extern time_t	last_proc_req_start;
 extern diag_stats_t slurmctld_diag_stats;
 extern slurmctld_config_t slurmctld_config;
@@ -2780,7 +2781,8 @@ extern void check_reboot_nodes();
  * Send warning signal to job before end time.
  *
  * IN job_ptr - job to send warn signal to.
+ * IN ignore_time - If set, ignore the warn time and just send it.
  */
-extern void send_job_warn_signal(struct job_record *job_ptr);
+extern void send_job_warn_signal(struct job_record *job_ptr, bool ignore_time);
 
 #endif /* !_HAVE_SLURMCTLD_H */

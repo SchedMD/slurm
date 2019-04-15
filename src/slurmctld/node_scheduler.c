@@ -2373,6 +2373,18 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 	uint16_t mode;
 	int job_cnt = 0, rc;
 	checkpoint_msg_t ckpt_msg;
+	static time_t sched_update = 0;
+
+	if (sched_update != slurmctld_conf.last_update) {
+		char *ctld_params = slurm_get_slurmctld_params();
+
+		preempt_send_user_signal = false;
+		if (xstrcasestr(ctld_params, "preempt_send_user_signal"))
+			preempt_send_user_signal = true;
+
+		xfree(ctld_params);
+		sched_update = slurmctld_conf.last_update;
+	}
 
 	iter = list_iterator_create(preemptee_job_list);
 	while ((job_ptr = (struct job_record *) list_next(iter))) {
@@ -2385,6 +2397,8 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			if (slurm_job_check_grace(job_ptr, preemptor_ptr)
 			    == SLURM_SUCCESS)
 				continue;
+			if (preempt_send_user_signal)
+				send_job_warn_signal(job_ptr, true);
 			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted %pJ has been killed to reclaim resources for %pJ",
@@ -2414,6 +2428,8 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			job_cnt++;
 			if (!kill_pending)
 				continue;
+			if (preempt_send_user_signal)
+				send_job_warn_signal(job_ptr, true);
 			rc = job_requeue(0, job_ptr->job_id, NULL, true, 0);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted %pJ has been requeued to reclaim resources for %pJ",
@@ -2435,6 +2451,8 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 				== SLURM_SUCCESS))
 				continue;
 
+			if (preempt_send_user_signal)
+				send_job_warn_signal(job_ptr, true);
 			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("%s: preempted %pJ had to be killed",

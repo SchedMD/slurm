@@ -82,7 +82,11 @@ static void _preempt_signal(struct job_record *job_ptr, uint32_t grace_time)
 
 	/* Signal the job at the beginning of preemption GraceTime */
 	job_signal(job_ptr, SIGCONT, 0, 0, 0);
-	job_signal(job_ptr, SIGTERM, 0, 0, 0);
+	if (preempt_send_user_signal && job_ptr->warn_signal &&
+	    !(job_ptr->warn_flags & WARN_SENT))
+		send_job_warn_signal(job_ptr, true);
+	else
+		job_signal(job_ptr, SIGTERM, 0, 0, 0);
 }
 
 extern int slurm_job_check_grace(struct job_record *job_ptr,

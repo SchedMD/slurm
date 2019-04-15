@@ -8762,7 +8762,7 @@ void job_time_limit(void)
 		 * time_check before the next job is tested
 		 */
 		if (job_ptr->preempt_time) {
-			send_job_warn_signal(job_ptr);
+			send_job_warn_signal(job_ptr, false);
 
 			if (job_ptr->end_time <= now) {
 				last_job_update = now;
@@ -8791,7 +8791,7 @@ void job_time_limit(void)
 			goto time_check;
 		}
 		if (job_ptr->time_limit != INFINITE) {
-			send_job_warn_signal(job_ptr);
+			send_job_warn_signal(job_ptr, false);
 			if ((job_ptr->mail_type & MAIL_JOB_TIME100) &&
 			    (now >= job_ptr->end_time)) {
 				job_ptr->mail_type &= (~MAIL_JOB_TIME100);
@@ -18426,13 +18426,16 @@ extern void update_job_limit_set_tres(uint16_t **limits_pptr)
  * Send warning signal to job before end time.
  *
  * IN job_ptr - job to send warn signal to.
+ * IN ignore_time - If set, ignore the warn time and just send it.
  */
-extern void send_job_warn_signal(struct job_record *job_ptr)
+extern void send_job_warn_signal(struct job_record *job_ptr, bool ignore_time)
 {
-	if ((job_ptr->warn_time) &&
-	    (!(job_ptr->warn_flags & WARN_SENT)) &&
-	    ((job_ptr->warn_time + PERIODIC_TIMEOUT + time(NULL)) >=
-	     job_ptr->end_time)) {
+	if (job_ptr->warn_signal &&
+	    !(job_ptr->warn_flags & WARN_SENT) &&
+	    (ignore_time ||
+	     (job_ptr->warn_time &&
+	      ((job_ptr->warn_time + PERIODIC_TIMEOUT + time(NULL)) >=
+	        job_ptr->end_time)))) {
 		/*
 		 * If --signal B option was not specified,
 		 * signal only the steps but not the batch step.

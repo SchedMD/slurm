@@ -164,6 +164,7 @@ log_options_t sched_log_opts = SCHEDLOG_OPTS_INITIALIZER;
 
 /* Global variables */
 bool    alloc_booting_nodes = false;
+bool    preempt_send_user_signal = false;
 int	accounting_enforce = 0;
 int	association_based_accounting = 0;
 void *	acct_db_conn = NULL;

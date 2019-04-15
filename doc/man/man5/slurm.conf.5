@@ -3458,6 +3458,11 @@ DNS, this step can be avoided by configuring this option.
 \fBidle_on_node_suspend\fR Mark nodes as idle, regardless of current state,
 when suspending nodes with \fISuspendProgram\fB so that nodes will be eligible
 to be resumed at a later time.
+.TP
+\fBpreempt_send_user_signal\fR Send the user signal (e.g. --signal=<sig_num>)
+at preemption time even if the signal time hasn't been reached. In the case of
+a gracetime preemption the user signal will be sent if the user signal has been
+specified and not sent, otherwise a SIGTERM will be sent to the tasks.
 .RE
 
 .TP

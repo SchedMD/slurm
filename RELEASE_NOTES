@@ -157,6 +157,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     of state when suspended.
  -- Add alloc_booting_nodes SchedulerParameter to allow jobs to be placed on
     booting nodes.
+ -- Add preempt_send_user_signal SlurmctldParameter option to send user
+    signal (e.g. --signal=<SIG_NUM>) at preemption if it hasn't already been
+    sent.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
