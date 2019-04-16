@@ -1641,6 +1641,8 @@ typedef struct job_info {
 	uint8_t power_flags;	/* power management flags,
 				 * see SLURM_POWER_FLAGS_ */
 	time_t preempt_time;	/* preemption signal time */
+	time_t preemptable_time;/* job becomes preemptable from
+				 *  PreemptExemptTime */
 	time_t pre_sus_time;	/* time job ran prior to last suspend */
 	uint32_t priority;	/* relative priority of the job,
 				 * 0=held, 1=required nodes DOWN/DRAINED */
@@ -2738,6 +2740,7 @@ typedef struct slurm_ctl_conf {
 	char *plugstack;        /* pathname to plugin stack config file */
 	char *power_parameters;	/* power management parameters */
 	char *power_plugin;	/* power management plugin type */
+	uint32_t preempt_exempt_time; /* Time before jobs are preemptable */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	char *preempt_type;	/* job preemption selection plugin */
 	uint32_t priority_decay_hl; /* priority decay half life in

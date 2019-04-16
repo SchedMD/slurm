@@ -1011,10 +1011,16 @@ baseboard, socket and core).
 Unconstrained values may be shown as "0" or "*".
 .ad
 .TP
+\fIPreemptEligibleTime\fP
+Time the job becomes eligible for preemption. Modified by PreemptExemptTime,
+either from the global option in slurm.conf or the job QOS. This is hidden if
+the job has not started or if PreemptMode=OFF.
+.TP
 \fIPreemptTime\fP
 Time at which job was signaled that it was selected for preemption.
 (Meaningful only for PreemptMode=CANCEL and the partition or QOS
-with which the job is associated has a GraceTime value designated.)
+with which the job is associated has a GraceTime value designated.) This is
+hidden if the job has not started or if PreemptMode=OFF.
 .TP
 \fIPreSusTime\fP
 Time the job ran prior to last suspend.

@@ -172,6 +172,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->max_submit_jobs_pu = INFINITE;
 		if (qos->max_wall_pj == NO_VAL)
 			qos->max_wall_pj = INFINITE;
+		if (qos->preempt_exempt_time == NO_VAL)
+			qos->preempt_exempt_time = INFINITE;
 		if (qos->preempt_mode == NO_VAL16)
 			qos->preempt_mode = 0;
 		if (qos->priority == NO_VAL)
@@ -417,6 +419,17 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			xstrcat(*extra, ", preempt=''");
 		}
 		xfree(preempt_val);
+	}
+
+	if (qos->preempt_exempt_time == INFINITE) {
+		xstrcat(*cols, ", preempt_exempt_time");
+		xstrfmtcat(*vals, ", NULL");
+		xstrfmtcat(*extra, ", preempt_exempt_time=NULL");
+	} else if (qos->preempt_exempt_time != NO_VAL) {
+		xstrcat(*cols, ", preempt_exempt_time");
+		xstrfmtcat(*vals, ", %u", qos->preempt_exempt_time);
+		xstrfmtcat(*extra, ", preempt_exempt_time=%u",
+			   qos->preempt_exempt_time);
 	}
 
 	if ((qos->preempt_mode != NO_VAL16)
@@ -964,6 +977,8 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 			list_iterator_destroy(new_preempt_itr);
 		}
 
+		qos_rec->preempt_exempt_time = qos->preempt_exempt_time;
+
 		qos_rec->usage_factor = qos->usage_factor;
 		qos_rec->usage_thres = qos->usage_thres;
 
@@ -1239,6 +1254,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"max_wall_duration_per_job",
 		"substr(preempt, 1, length(preempt) - 1)",
 		"preempt_mode",
+		"preempt_exempt_time",
 		"priority",
 		"usage_factor",
 		"usage_thres",
@@ -1274,6 +1290,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_MWPJ,
 		QOS_REQ_PREE,
 		QOS_REQ_PREEM,
+		QOS_REQ_PREXMPT,
 		QOS_REQ_PRIO,
 		QOS_REQ_UF,
 		QOS_REQ_UT,
@@ -1480,6 +1497,11 @@ empty:
 		}
 		if (row[QOS_REQ_PREEM])
 			qos->preempt_mode = slurm_atoul(row[QOS_REQ_PREEM]);
+		if (row[QOS_REQ_PREXMPT])
+			qos->preempt_exempt_time =
+				slurm_atoul(row[QOS_REQ_PREXMPT]);
+		else
+			qos->preempt_exempt_time = INFINITE;
 		if (row[QOS_REQ_PRIO])
 			qos->priority = slurm_atoul(row[QOS_REQ_PRIO]);
 

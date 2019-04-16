@@ -684,6 +684,18 @@ static int _set_rec(int *start, int argc, char **argv,
 				set = 1;
 			else
 				exit_code = 1;
+		} else if (!xstrncasecmp(argv[i], "PreemptExemptTime",
+					 MAX(command_len, 8))) {
+			int seconds = time_str2secs(argv[i]+end);
+			if (seconds != NO_VAL) {
+				qos->preempt_exempt_time = seconds;
+				set = 1;
+			} else {
+				exit_code=1;
+				fprintf(stderr,
+					" Bad PreemptExemptTime format: %s\n",
+					argv[i]);
+			}
 		} else if (!xstrncasecmp(argv[i], "Priority",
 					 MAX(command_len, 3))) {
 			if (get_uint(argv[i]+end, &qos->priority,
@@ -945,7 +957,8 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 		return SLURM_ERROR;
 	} else if (!list_count(format_list)) {
 		slurm_addto_char_list(format_list,
-				      "Name,Prio,GraceT,Preempt,PreemptM,"
+				      "Name,Prio,GraceT,"
+				      "Preempt,PreemptE,PreemptM,"
 				      "Flags%40,UsageThres,UsageFactor,"
 				      "GrpTRES,GrpTRESMins,GrpTRESRunMins,"
 				      "GrpJ,GrpS,GrpW,"
@@ -1249,6 +1262,15 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 					tmp_char,
 					(curr_inx == field_count));
 				xfree(tmp_char);
+				break;
+			}
+			case PRINT_PRXMPT:
+			{
+				uint64_t tmp64;
+				tmp64 = (uint64_t) qos->preempt_exempt_time;
+				tmp64 = (tmp64 == INFINITE) ? INFINITE64 : tmp64;
+				field->print_routine(field, tmp64,
+						     (curr_inx == field_count));
 				break;
 			}
 			case PRINT_PRIO:

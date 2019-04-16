@@ -4798,3 +4798,41 @@ extern uint32_t acct_policy_get_prio_thresh(struct job_record *job_ptr,
 
 	return prio_thresh;
 }
+
+extern time_t acct_policy_get_preemptable_time(struct job_record *job_ptr)
+{
+	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
+	uint32_t min1, min2, conf_min;
+	time_t start = job_ptr->start_time;
+	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+
+	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
+	min1 = (qos_ptr_1) ? qos_ptr_1->preempt_exempt_time : INFINITE;
+	min2 = (qos_ptr_2) ? qos_ptr_2->preempt_exempt_time : INFINITE;
+	conf_min = slurmctld_conf.preempt_exempt_time;
+
+	/* priority: min1 > min2 > conf_min. INFINITE means none. */
+	if (min1 != INFINITE)
+		return start + min1;
+	else if (min2 != INFINITE)
+		return start + min2;
+	else if (conf_min != INFINITE)
+		return start + conf_min;
+	else
+		return start;
+}
+
+extern bool acct_policy_is_job_preempt_exempt(struct job_record *job_ptr)
+{
+	time_t now = time(0);
+
+	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
+	assoc_mgr_lock(&locks);
+	time_t preempt_time = acct_policy_get_preemptable_time(job_ptr);
+	assoc_mgr_unlock(&locks);
+
+	return now < preempt_time;
+}
+

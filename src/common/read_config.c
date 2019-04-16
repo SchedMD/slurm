@@ -301,6 +301,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"PowerPlugin", S_P_STRING},
 	{"PreemptMode", S_P_STRING},
 	{"PreemptType", S_P_STRING},
+	{"PreemptExemptTime", S_P_STRING},
 	{"PriorityDecayHalfLife", S_P_STRING},
 	{"PriorityCalcPeriod", S_P_STRING},
 	{"PriorityFavorSmall", S_P_BOOLEAN},
@@ -4245,6 +4246,17 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			      hashtbl);
 	if (!s_p_get_string(&conf->power_plugin, "PowerPlugin", hashtbl))
 		conf->power_plugin = xstrdup(DEFAULT_POWER_PLUGIN);
+
+	if (s_p_get_string(&temp_str, "PreemptExemptTime", hashtbl)) {
+		uint32_t exempt_time = time_str2secs(temp_str);
+		if (exempt_time == NO_VAL) {
+			error("PreemptExemptTime=%s invalid", temp_str);
+			xfree(temp_str);
+			return SLURM_ERROR;
+		}
+		conf->preempt_exempt_time = exempt_time;
+		xfree(temp_str);
+	}
 
 	if (s_p_get_string(&temp_str, "PreemptMode", hashtbl)) {
 		conf->preempt_mode = preempt_mode_num(temp_str);

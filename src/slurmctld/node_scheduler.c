@@ -2462,6 +2462,9 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 				     __func__, job_ptr, slurm_strerror(rc));
 			}
 		}
+
+		if (rc == SLURM_SUCCESS)
+			job_ptr->preempt_time = time(NULL);
 	}
 	list_iterator_destroy(iter);
 

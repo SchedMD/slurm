@@ -539,24 +539,36 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	xstrcat(out, line_end);
 
-	/****** Line 10 ******/
-	if (job_ptr->preempt_time == 0)
-		xstrcat(out, "PreemptTime=None ");
-	else {
-		slurm_make_time_str(&job_ptr->preempt_time, time_str, sizeof(time_str));
-		xstrfmtcat(out, "PreemptTime=%s ", time_str);
+	/****** Line ******/
+	/*
+	 * only print this line if preemption is enabled and job started
+	 * 	see src/slurmctld/job_mgr.c:pack_job, 'preemptable'
+	 */
+	if (job_ptr->preemptable_time) {
+		slurm_make_time_str(&job_ptr->preemptable_time,
+				    time_str, sizeof(time_str));
+		xstrfmtcat(out, "PreemptEligibleTime=%s ", time_str);
+
+		if (job_ptr->preempt_time == 0)
+			xstrcat(out, "PreemptTime=None");
+		else {
+			slurm_make_time_str(&job_ptr->preempt_time, time_str,
+					    sizeof(time_str));
+			xstrfmtcat(out, "PreemptTime=%s", time_str);
+		}
+
+		xstrcat(out, line_end);
 	}
 
+	/****** Line 10 ******/
 	if (job_ptr->suspend_time) {
 		slurm_make_time_str(&job_ptr->suspend_time, time_str, sizeof(time_str));
 		xstrfmtcat(out, "SuspendTime=%s ", time_str);
 	} else
 		xstrcat(out, "SuspendTime=None ");
 
-	xstrfmtcat(out, "SecsPreSuspend=%ld", (long int)job_ptr->pre_sus_time);
-	xstrcat(out, line_end);
+	xstrfmtcat(out, "SecsPreSuspend=%ld ", (long int)job_ptr->pre_sus_time);
 
-	/****** Line ******/
 	slurm_make_time_str(&job_ptr->last_sched_eval, time_str,
 			    sizeof(time_str));
 	xstrfmtcat(out, "LastSchedEval=%s", time_str);

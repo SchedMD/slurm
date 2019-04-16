@@ -654,6 +654,12 @@ static print_field_t *_get_print_field(char *object)
 		field->name = xstrdup("Preempt");
 		field->len = 10;
 		field->print_routine = sacctmgr_print_qos_bitstr;
+	} else if (!xstrncasecmp("PreemptExemptTime", object,
+				 MAX(command_len, 8))) {
+		field->type = PRINT_PRXMPT;
+		field->name = xstrdup("PreemptExemptTime");
+		field->len = 19;
+		field->print_routine = print_fields_time_from_secs;
 	} else if (!xstrncasecmp("Priority", object, MAX(command_len, 3))) {
 		field->type = PRINT_PRIO;
 		field->name = xstrdup("Priority");
@@ -2146,7 +2152,7 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 		char *temp_char = get_qos_complete_str(g_qos_list,
 						       qos->preempt_list);
 		if (temp_char) {
-			printf("  Preempt          = %s\n", temp_char);
+			printf("  Preempt                  = %s\n", temp_char);
 			xfree(temp_char);
 		}
 	}
@@ -2154,6 +2160,16 @@ extern void sacctmgr_print_qos_limits(slurmdb_qos_rec_t *qos)
 	if (qos->preempt_mode && (qos->preempt_mode != NO_VAL16)) {
 		printf("  PreemptMode              = %s\n",
 		       preempt_mode_string(qos->preempt_mode));
+	}
+
+	if (qos->preempt_exempt_time == INFINITE) {
+		printf("  PreemptExemptTime        = NONE\n");
+	} else if (qos->preempt_exempt_time != NO_VAL) {
+		char time_buf[32];
+		secs2time_str((time_t) qos->preempt_exempt_time, time_buf,
+			      sizeof(time_buf));
+		printf("  PreemptExemptTime        = %s\n",
+	       		time_buf);
 	}
 
 	if (qos->priority == INFINITE)

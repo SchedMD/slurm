@@ -568,6 +568,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "grp_wall", "int default NULL" },
 		{ "preempt", "text not null default ''" },
 		{ "preempt_mode", "int default 0" },
+		{ "preempt_exempt_time", "int unsigned default NULL" },
 		{ "priority", "int unsigned default 0" },
 		{ "usage_factor", "double default 1.0 not null" },
 		{ "usage_thres", "double default NULL" },
@@ -2165,6 +2166,7 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				   "grp_tres_run_mins=DEFAULT, "
 				   "grp_wall=DEFAULT, "
 				   "preempt=DEFAULT, "
+				   "preempt_exempt_time=DEFAULT, "
 				   "priority=DEFAULT, "
 				   "usage_factor=DEFAULT, "
 				   "usage_thres=DEFAULT "

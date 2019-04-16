@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "June 2018" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "February 2019" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -1293,6 +1293,15 @@ Possible values are "Cluster" (meaning use cluster default), "Cancel",
 "Checkpoint" and "Requeue".  This option is not compatible with
 PreemptMode=OFF or PreemptMode=SUSPEND (i.e. preempted jobs must be removed
 from the resources).
+
+.TP
+\fIPreemptExemptTime\fP
+Specifies a minimum run time for jobs of this QOS before they are considered for
+preemption. This QOS option takes precedence over the global
+\fIPreemptExemptTime\fP. Setting to -1 disables the option, allowing another
+QOS or the global option to take effect. Setting to 0 indicates no minimum run
+time and supersedes the lower priority QOS (see \fIOverPartQOS\fP) and/or the
+global option in slurm.conf.
 
 .TP
 \fIPriority\fP

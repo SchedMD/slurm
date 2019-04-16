@@ -4678,6 +4678,10 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 			if (object->preempt_mode != NO_VAL16)
 				rec->preempt_mode = object->preempt_mode;
 
+			if (object->preempt_exempt_time != NO_VAL)
+				rec->preempt_exempt_time =
+					object->preempt_exempt_time;
+
 			if (object->priority != NO_VAL) {
 				if (rec->priority == g_qos_max_priority)
 					redo_priority = 2;

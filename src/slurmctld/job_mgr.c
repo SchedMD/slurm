@@ -10014,6 +10014,16 @@ void pack_job(struct job_record *dump_job_ptr, uint16_t show_flags, Buf buffer,
 			} else
 				packnull(buffer);
 		}
+
+		if (IS_JOB_STARTED(dump_job_ptr) &&
+		    (slurmctld_conf.preempt_mode != PREEMPT_MODE_OFF) &&
+		    (slurm_job_preempt_mode(dump_job_ptr) != PREEMPT_MODE_OFF)) {
+			time_t preemptable = acct_policy_get_preemptable_time(
+						dump_job_ptr);
+			pack_time(preemptable, buffer);
+		} else {
+			pack_time(0, buffer);
+		}
 		assoc_mgr_unlock(&locks);
 
 		packstr(dump_job_ptr->licenses, buffer);
