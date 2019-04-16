@@ -1450,9 +1450,9 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 }
 static char *arg_get_gres_flags(slurm_opt_t *opt)
 {
-	if (opt->job_flags | GRES_DISABLE_BIND)
+	if (opt->job_flags & GRES_DISABLE_BIND)
 		return xstrdup("disable-binding");
-	else if (opt->job_flags | GRES_ENFORCE_BIND)
+	else if (opt->job_flags & GRES_ENFORCE_BIND)
 		return xstrdup("enforce-binding");
 	return xstrdup("unset");
 }
