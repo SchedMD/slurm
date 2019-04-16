@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
     sent.
  -- Add PreemptExemptTime parameter to slurm.conf and QOS to guarantee a
     minimum runtime before preemption.
+ -- Set job's preempt time for non-grace time preemptions.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
