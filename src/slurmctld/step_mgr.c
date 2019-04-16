@@ -2422,7 +2422,12 @@ step_create(job_step_create_request_msg_t *step_specs,
 	uint32_t max_tasks;
 	char *mpi_params;
 	uint32_t jobid;
+	slurm_step_layout_t *step_layout = NULL;
+	bool tmp_step_layout_used = false;
 
+#ifdef HAVE_NATIVE_CRAY
+	slurm_step_layout_t tmp_step_layout;
+#endif
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
 	if (job_ptr == NULL)
@@ -2769,27 +2774,65 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 
 #ifdef HAVE_NATIVE_CRAY
-	if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL))
+	if (job_ptr->pack_job_id && (job_ptr->pack_job_id != NO_VAL)) {
 		jobid = job_ptr->pack_job_id;
-	else
+
+		/*
+		 * We only want to set up the Aries switch for the first
+		 * job with all the nodes in the total allocation along
+		 * with that node count.
+		 */
+		if (job_ptr->job_id == job_ptr->pack_job_id) {
+			struct job_record *het_job_ptr;
+			hostlist_t hl = hostlist_create(NULL);
+			ListIterator itr = list_iterator_create(
+				job_ptr->pack_job_list);
+
+			while ((het_job_ptr = list_next(itr)))
+				hostlist_push(hl, het_job_ptr->nodes);
+			list_iterator_destroy(itr);
+
+			hostlist_uniq(hl);
+
+			memset(&tmp_step_layout, 0, sizeof(tmp_step_layout));
+			step_layout = &tmp_step_layout;
+			step_layout->node_list =
+				hostlist_ranged_string_xmalloc(hl);
+			step_layout->node_cnt = hostlist_count(hl);
+			hostlist_destroy(hl);
+			tmp_step_layout_used = true;
+		} else
+			step_layout = NULL;
+	} else {
+		step_layout = step_ptr->step_layout;
 		jobid = job_ptr->job_id;
+	}
 #else
+	step_layout = step_ptr->step_layout;
 	jobid = job_ptr->job_id;
 #endif
 
-	if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
-				   jobid,
-				   step_ptr->step_id) < 0)
-		fatal("%s: switch_g_alloc_jobinfo error", __func__);
+	if (step_layout) {
+		if (switch_g_alloc_jobinfo(&step_ptr->switch_job,
+					   jobid,
+					   step_ptr->step_id) < 0)
+			fatal("%s: switch_g_alloc_jobinfo error", __func__);
 
-	if (switch_g_build_jobinfo(step_ptr->switch_job,
-				   step_ptr->step_layout,
-				   step_ptr->network) < 0) {
-		delete_step_record (job_ptr, step_ptr->step_id);
-		if (errno == ESLURM_INTERCONNECT_BUSY)
-			return errno;
-		return ESLURM_INTERCONNECT_FAILURE;
+		if (switch_g_build_jobinfo(step_ptr->switch_job,
+					   step_layout,
+					   step_ptr->network) < 0) {
+			delete_step_record (job_ptr, step_ptr->step_id);
+			if (tmp_step_layout_used)
+				xfree(step_layout->node_list);
+			if (errno == ESLURM_INTERCONNECT_BUSY)
+				return errno;
+			return ESLURM_INTERCONNECT_FAILURE;
+		}
 	}
+
+	if (tmp_step_layout_used)
+		xfree(step_layout->node_list);
+
 	step_alloc_lps(step_ptr);
 
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
