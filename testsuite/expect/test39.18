@@ -32,7 +32,7 @@ source ./globals
 
 set test_id		"39.18"
 set exit_code		0
-set fs1_err		"error: This GPU record was in gres.conf, but not found on the system"
+set fs1_err		"error: This GPU record was in gres.conf, but not found on the system."
 set test_prog		"test$test_id.prog"
 set cfgdir		"test${test_id}_configs"
 set cfgpath		"[pwd]/$cfgdir"

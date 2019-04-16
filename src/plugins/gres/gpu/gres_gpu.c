@@ -309,13 +309,13 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	list_iterator_destroy(itr);
 
 	if (fast_schedule == 0) {
-		debug2("FastSchedule == 0, we are only delivering gpus found on the system, ignoring those defined in gres.conf");
+		debug2("FastSchedule == 0, we are only delivering GPUs found on the system, ignoring those defined in gres.conf");
 		gres_list_gpu = gres_list_system;
 	} else if (fast_schedule == 1) {
 		List tmp_list = NULL;
 		gres_slurmd_conf_t *sys_record;
 
-		debug2("FastSchedule == 1, we are checking the gpus found on the system against those defined in gres.conf");
+		debug2("FastSchedule == 1, we are checking the GPUs found on the system against those defined in gres.conf");
 		if (!gres_list_system)
 			return;
 
@@ -334,8 +334,8 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 			}
 
 			if (!sys_record) {
+				error("This GPU record was in gres.conf, but not found on the system.");
 				print_gres_conf(gres_record, LOG_LEVEL_ERROR);
-				error("Above record was in the gres.conf, but not found on the system.");
 			}
 			destroy_gres_slurmd_conf(gres_record);
 		}
