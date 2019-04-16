@@ -4519,6 +4519,21 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		    (conf->prolog_flags & PROLOG_FLAG_CONTAIN)) {
 			fatal("PrologFlags invalid combination: NoHold cannot be combined with Contain and/or X11");
 		}
+		if ((conf->prolog_flags & PROLOG_FLAG_CONTAIN)) {
+			/* X11 is incompatible with proctrack/linuxproc */
+			if (conf->prolog_flags & PROLOG_FLAG_X11 &&
+			    !xstrcmp(conf->proctrack_type,
+				     "proctrack/linuxproc"))
+				fatal("Invalid combination: PrologFlags=X11 cannot be combined with proctrack/linuxproc");
+			/*
+			 * proctrack/cray or proctrack/cgroup are required for
+			 * pam_slurm_adopt, but don't fatal if using a different
+			 * proctrack plugin.
+			 */
+			if (xstrcmp(conf->proctrack_type, "proctrack/cgroup") &&
+			    xstrcmp(conf->proctrack_type, "proctrack/cray"))
+				error("WARNING: If using PrologFlags=Contain for pam_slurm_adopt, either proctrack/cgroup or proctrack/cray is required.");
+		}
 		if (conf->prolog_flags & PROLOG_FLAG_NOHOLD) {
 			conf->prolog_flags |= PROLOG_FLAG_ALLOC;
 		}

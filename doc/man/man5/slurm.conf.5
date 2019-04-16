@@ -2199,8 +2199,9 @@ mode is enabled.
 At job allocation time, use the ProcTrack plugin to create a job container
 on all allocated compute nodes.
 This container may be used for user processes not launched under Slurm control,
-for example the PAM module may place processes launch through a direct user
-login into this container.
+for example pam_slurm_adopt may place processes launched through a direct user
+login into this container. If using pam_slurm_adopt, then ProcTrackType must be
+set to either \fBproctrack/cgroup\fR or \fBproctrack/cray\fR.
 Setting the Contain implicitly sets the Alloc flag.
 .TP
 \fBNoHold\fR
@@ -2218,6 +2219,7 @@ a significant penalty to job throughput on each node.
 .TP
 \fBX11\fR
 Enable Slurm's built-in X11 forwarding capabilities.
+This is incompatible with \fBProctrackType=proctrack/linuxproc\fR.
 Setting the X11 flag implicitly enables both Contain and Alloc flags as well.
 .RE
 
