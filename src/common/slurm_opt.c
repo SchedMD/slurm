@@ -2868,7 +2868,7 @@ static int arg_set_spread_job(slurm_opt_t *opt, const char *arg)
 }
 static char *arg_get_spread_job(slurm_opt_t *opt)
 {
-	if (opt->job_flags | SPREAD_JOB)
+	if (opt->job_flags & SPREAD_JOB)
 		return xstrdup("set");
 	return xstrdup("unset");
 }
