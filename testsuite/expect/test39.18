@@ -41,7 +41,6 @@ set nodename_diff	"${nodename_base}1"
 set test_ulong_prog	"test$test_id.ulong"
 set file_in		"test$test_id.bash"
 set file_out		"test$test_id.out"
-set fast_schedule	-1
 # Assume unsigned long is 64 bits unless overwritten
 set ulong_bits  64
 
@@ -77,8 +76,8 @@ proc generate_file {text filepath} {
 }
 
 # Create or overwrite the slurm.conf file used by the test runner program
-proc create_slurm_conf {} {
-	global fast_schedule test_id cfgpath
+proc create_slurm_conf {fast_schedule} {
+	global test_id cfgpath
 	# Contain slurm.conf data to this file
 	# This is all we need to trigger loading the GRES GPU plugin
 	set slurm_conf "
@@ -155,13 +154,16 @@ send_user "sizeof(unsigned long) = $ulong_bits\n"
 # 			"$test_minor_in" is set, then run only that test.
 # gres_conf -		The gres.conf to use.
 # fake_gpus_conf -	The fake_gpus.conf to use. This file tells Slurm to
-# 			pretend to have devices detected by system.
+# 			pretend to have devices detected by system, in effect
+# 			emulating the result of AutoDetect=nvml.
 # output_expected -	The expected "GRES_PARSABLE" output.
 # err_msgs (optional) -	The error message regex to look for. Use | for multiple.
-# errs_expected (optional) - The number of times you expect to see "error:" or
-# 			"fatal:" in the output. Defaults to 0.
-# 			If errs are expected, output_expected should likely be
-# 			"".
+# 			If using with $output_expected, it will only reliably
+# 			match if $err_msgs appear BEFORE lines with
+# 			GRES_PARSABLE.
+# errs_expected (optional) - The number of times you expect to see $err_msgs in
+# 			the output. Defaults to 0. If this number isn't hit,
+# 			then the test will fail.
 #
 set failed_tests [list]
 proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0}} {
@@ -201,20 +203,30 @@ rm -rf ./$file_out"
 	}
 	log_user 0
 	spawn ./$file_in
-	send_user "Waiting on output\n"
+
+
+	# Note that $err_msgs is checked before GRES_PARSABLE. This is to
+	# prevent expect from throwing away $err_msgs if it comes before
+	# GRES_PARSABLE in the same stdout chunk that expect is processing.
+	# When expect matches something in a chunk, if exp_continue is called,
+	# it throws away everything before the match and then continues
+	# searching in the chunk.
+	# So we are making the brittle assumption that all $err_msgs will come
+	# before any GRES_PARSABLE lines.
 	expect {
+		-re "($err_msgs)" {
+			send_user "Found '$err_msgs'\n"
+			if {$ignore_err_msgs == 0} {
+				incr errs_actual
+			}
+			exp_continue
+		}
 		-re "(GRES_PARSABLE$alpha_numeric_special)" {
 			if {$sorted_actual == ""} {
 				set sorted_actual "\n"
 			}
 			# Append string
 			set sorted_actual "$sorted_actual$expect_out(1,string)\n"
-			exp_continue
-		}
-		-re "$err_msgs" {
-			if {$ignore_err_msgs == 0} {
-				incr errs_actual
-			}
 			exp_continue
 		}
 		timeout {
@@ -310,8 +322,7 @@ rm -rf ./$file_out"
 # Tests for FastSchedule = 0
 # ------------------------------------------------------------------------------
 # ##############################################################################
-set fast_schedule 0
-create_slurm_conf
+create_slurm_conf 0
 
 # ##############################################################################
 # # Test 0.2 - Empty gres.conf
@@ -375,9 +386,12 @@ check_configuration 0.4 $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# The following tests are NVML-specific
-# Only execute them if HAVE_NVML = 1 in config.h
-# Make sure that AutoDetect=nvml is in ad-hoc gres.conf, or test prog will fatal
+# The following tests are NVML-specific.
+# They will only execute if HAVE_NVML = 1 in config.h.
+# In fake_gpus_conf, a CPU range starting with `~` will trigger the GPU plugin's
+# gpu_p_test_cpu_conv(). In order for this to exercise gpu/nvml-specific code,
+# explicitly specify `AutoDetect=nvml` in the ad-hoc gres.conf. If not,
+# gpu/generic will be used and CPU ranges will be set to null, failing the tests
 # ##############################################################################
 
 if {[have_nvml] == 1} {
@@ -542,8 +556,7 @@ check_configuration 0.20 $gres_conf $fake_gpus_conf $expected_output
 # Tests for FastSchedule = 1
 # ------------------------------------------------------------------------------
 # ##############################################################################
-set fast_schedule 1
-create_slurm_conf
+create_slurm_conf 1
 
 # TODO: Test out this functionality!
 
@@ -553,8 +566,7 @@ create_slurm_conf
 # Tests for FastSchedule = 2
 # ------------------------------------------------------------------------------
 # ##############################################################################
-set fast_schedule 2
-create_slurm_conf
+create_slurm_conf 2
 
 
 
