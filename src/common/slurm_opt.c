@@ -3414,7 +3414,7 @@ static int arg_set_wait_all_nodes(slurm_opt_t *opt, const char *arg)
 
 	tmp = parse_int("--wait-all-nodes", arg, false);
 
-	if ((tmp < 0) || (tmp > 1)) {
+	if (tmp > 1) {
 		error("Invalid --wait-all-nodes specification");
 		exit(-1);
 	}
