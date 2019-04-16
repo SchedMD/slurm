@@ -2202,7 +2202,6 @@ This container may be used for user processes not launched under Slurm control,
 for example the PAM module may place processes launch through a direct user
 login into this container.
 Setting the Contain implicitly sets the Alloc flag.
-You must set ProctrackType=proctrack/cgroup when using the Contain flag.
 .TP
 \fBNoHold\fR
 If set, the Alloc flag should also be set.  This will allow for salloc to not
