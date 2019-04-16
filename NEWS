@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- Restore "sreport -T ALL" functionality.
  -- Correctly typecast signals being sent through the api.
  -- Properly initialize structures throughout Slurm.
+ -- Sync "numtask" squeue format option for jobs and steps to "numtasks".
 
 * Changes in Slurm 18.08.7
 ==========================

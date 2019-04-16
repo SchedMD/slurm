@@ -966,7 +966,8 @@ extern int parse_long_format( char* format_long )
 							     field_size,
 							     right_justify,
 							     suffix);
-			else if (!xstrcasecmp(token, "numtask"))
+			else if (!xstrncasecmp(token, "numtasks",
+					       strlen("numtask")))
 				step_format_add_num_tasks( params.format_list,
 							   field_size,
 							   right_justify,
@@ -1193,7 +1194,8 @@ extern int parse_long_format( char* format_long )
 							  field_size,
 							  right_justify,
 							  suffix  );
-			else if (!xstrcasecmp(token, "numtasks"))
+			else if (!xstrncasecmp(token, "numtasks",
+					       strlen("numtask")))
 				job_format_add_num_tasks( params.format_list,
 							  field_size,
 							  right_justify,

@@ -56,6 +56,8 @@ set sq_format(stdout)        $file_out
 set sq_format(stdin)         /dev/null
 # numcpus
 set sq_format(numcpus)       1
+# numtasks
+set sq_format(numtasks)      "DUMMY"
 # numnodes
 set sq_format(numnodes)      1
 # timelimit
@@ -292,6 +294,11 @@ expect {
 		incr match 1
 		exp_continue
 	}
+	-re "Tasks=($number)" {
+		set sq_format(numtasks) $expect_out(1,string)
+		incr match 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: scontrol is not responding\n"
 		set exit_code 1
@@ -300,7 +307,7 @@ expect {
 		wait
 	}
 }
-if {$match != 1} {
+if {$match != 2} {
 	send_user "\nFAILURE: scontrol did not provide correct job values ($match != 1)\n"
 	set exit_code 1
 }
@@ -377,8 +384,8 @@ set sq_step_format(stepstate)   "DUMMY"
 set sq_step_format(network)     "DUMMY"
 # numcpus
 set sq_step_format(numcpus)     $sq_format(numcpus)
-# numtask
-set sq_step_format(numtask)     "DUMMY"
+# numtasks
+set sq_step_format(numtasks)    "DUMMY"
 # username
 set sq_step_format(username)    $sq_format(username)
 
@@ -396,7 +403,7 @@ expect {
 		exp_continue
 	}
 	-re "Tasks=($number)" {
-		set sq_step_format(numtask) $expect_out(1,string)
+		set sq_step_format(numtasks) $expect_out(1,string)
 		incr match 1
 		exp_continue
 	}
