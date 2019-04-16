@@ -3472,6 +3472,10 @@ to be resumed at a later time.
 at preemption time even if the signal time hasn't been reached. In the case of
 a gracetime preemption the user signal will be sent if the user signal has been
 specified and not sent, otherwise a SIGTERM will be sent to the tasks.
+.TP
+\fBreboot_from_controller\fR Run the \fBRebootProgram\fR from the controller
+instead of on the slurmds. The RebootProgram will be passed a comma-separated
+list of nodes to reboot.
 .RE
 
 .TP

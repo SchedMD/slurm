@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
     minimum runtime before preemption.
  -- Set job's preempt time for non-grace time preemptions.
  -- Add sinfo format option to show used gres.
+ -- Add reboot_from_controller SlurmctldParameter to allow RebootProgram to be
+    run from the controller instead of the slurmds.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

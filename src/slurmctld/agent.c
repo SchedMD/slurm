@@ -177,6 +177,7 @@ typedef struct mail_info {
 static void _agent_defer(void);
 static void _agent_retry(int min_wait, bool wait_too);
 static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
+static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr);
 static int  _signal_defer(queued_request_t *queued_req_ptr);
 static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type);
 static void _list_delete_retry(void *retry_entry);
@@ -249,6 +250,8 @@ void *agent(void *args)
 	time_t begin_time;
 	bool spawn_retry_agent = false;
 	int rpc_thread_cnt;
+	static time_t sched_update = 0;
+	static bool reboot_from_ctld = false;
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "agent", NULL, NULL, NULL) < 0) {
@@ -262,6 +265,21 @@ void *agent(void *args)
 	     list_count(retry_list));
 #endif
 	slurm_mutex_lock(&agent_cnt_mutex);
+
+#if defined HAVE_NATIVE_CRAY
+	reboot_from_ctld = true;
+#else
+	if (sched_update != slurmctld_conf.last_update) {
+		char *ctld_params = slurm_get_slurmctld_params();
+
+		reboot_from_ctld = false;
+		if (xstrcasestr(ctld_params, "reboot_from_controller"))
+			reboot_from_ctld = true;
+		xfree(ctld_params);
+
+		sched_update = slurmctld_conf.last_update;
+	}
+#endif
 
 	rpc_thread_cnt = 2 + MIN(agent_arg_ptr->node_count, AGENT_THREAD_COUNT);
 	while (1) {
@@ -283,56 +301,11 @@ void *agent(void *args)
 	if (_valid_agent_arg(agent_arg_ptr))
 		goto cleanup;
 
-#if defined HAVE_NATIVE_CRAY
-	if (agent_arg_ptr->msg_type == REQUEST_REBOOT_NODES) {
-		char *argv[3], *pname;
-		pid_t child;
-		int i, rc, status = 0;
-
-		if (!agent_arg_ptr->hostlist) {
-			error("%s: hostlist is NULL", __func__);
-			goto cleanup;
-		}
-		if (!slurmctld_conf.reboot_program) {
-			error("%s: RebootProgram is NULL", __func__);
-			goto cleanup;
-		}
-
-		pname = strrchr(slurmctld_conf.reboot_program, '/');
-		if (pname)
-			argv[0] = pname + 1;
-		else
-			argv[0] = slurmctld_conf.reboot_program;
-		argv[1] = hostlist_deranged_string_xmalloc(
-					agent_arg_ptr->hostlist);
-		argv[2] = NULL;
-
-		child = fork();
-		if (child == 0) {
-			for (i = 0; i < 1024; i++)
-				(void) close(i);
-			(void) setpgid(0, 0);
-			(void) execv(slurmctld_conf.reboot_program, argv);
-			exit(1);
-		} else if (child < 0) {
-			error("fork: %m");
-		} else {
-			(void) waitpid(child, &status, 0);
-			if (WIFEXITED(status)) {
-				rc = WEXITSTATUS(status);
-				if (rc != 0) {
-					error("RebootProgram exit status of %d",
-					      rc);
-				}
-			} else if (WIFSIGNALED(status)) {
-				error("RebootProgram signaled: %s",
-				      strsignal(WTERMSIG(status)));
-			}
-		}
-		xfree(argv[1]);
+	if (reboot_from_ctld &&
+	    (agent_arg_ptr->msg_type == REQUEST_REBOOT_NODES)) {
+		_reboot_from_ctld(agent_arg_ptr);
 		goto cleanup;
 	}
-#endif
 
 	/* initialize the agent data structures */
 	agent_info_ptr = _make_agent_info(agent_arg_ptr);
@@ -2232,4 +2205,52 @@ extern int retry_list_size(void)
 	if (retry_list == NULL)
 		return 0;
 	return list_count(retry_list);
+}
+
+static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
+{
+	char *argv[3], *pname;
+	pid_t child;
+	int i, rc, status = 0;
+
+	if (!agent_arg_ptr->hostlist) {
+		error("%s: hostlist is NULL", __func__);
+		return;
+	}
+	if (!slurmctld_conf.reboot_program) {
+		error("%s: RebootProgram is NULL", __func__);
+		return;
+	}
+
+	pname = strrchr(slurmctld_conf.reboot_program, '/');
+	if (pname)
+		argv[0] = pname + 1;
+	else
+		argv[0] = slurmctld_conf.reboot_program;
+	argv[1] = hostlist_deranged_string_xmalloc(agent_arg_ptr->hostlist);
+	argv[2] = NULL;
+
+	child = fork();
+	if (child == 0) {
+		for (i = 0; i < 1024; i++)
+			(void) close(i);
+		(void) setpgid(0, 0);
+		(void) execv(slurmctld_conf.reboot_program, argv);
+		exit(1);
+	} else if (child < 0) {
+		error("fork: %m");
+	} else {
+		(void) waitpid(child, &status, 0);
+		if (WIFEXITED(status)) {
+			rc = WEXITSTATUS(status);
+			if (rc != 0) {
+				error("RebootProgram exit status of %d",
+				      rc);
+			}
+		} else if (WIFSIGNALED(status)) {
+			error("RebootProgram signaled: %s",
+			      strsignal(WTERMSIG(status)));
+		}
+	}
+	xfree(argv[1]);
 }

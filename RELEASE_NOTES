@@ -162,6 +162,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     sent.
  -- Add PreemptExemptTime parameter to slurm.conf and QOS to guarantee a
     minimum runtime before preemption.
+ -- Add reboot_from_controller SlurmctldParameter to allow RebootProgram to be
+    run from the controller instead of the slurmds.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
