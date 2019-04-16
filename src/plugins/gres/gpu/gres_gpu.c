@@ -339,6 +339,13 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 			}
 			destroy_gres_slurmd_conf(gres_record);
 		}
+
+		if (list_count(gres_list_system) > 0) {
+			error("These GPUs were found on the system, but are being ignored because they were not configured in gres.conf:");
+			print_gres_list(gres_list_system, LOG_LEVEL_ERROR);
+
+		}
+
 		list_iterator_destroy(itr);
 		FREE_NULL_LIST(gres_list_conf_single);
 		gres_list_conf_single = tmp_list;
