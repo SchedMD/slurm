@@ -1525,8 +1525,6 @@ static srun_job_t *_job_create_structure(allocation_info_t *ainfo,
 
 extern void job_update_io_fnames(srun_job_t *job, slurm_opt_t *opt_local)
 {
-	srun_opt_t *srun_opt = opt_local->srun_opt;
-	xassert(srun_opt);
 	job->ifname = fname_create(job, opt_local->ifname, opt_local->ntasks);
 	job->ofname = fname_create(job, opt_local->ofname, opt_local->ntasks);
 	job->efname = opt_local->efname ?
