@@ -3239,7 +3239,7 @@ static int arg_set_use_min_nodes(slurm_opt_t *opt, const char *arg)
 }
 static char *arg_get_use_min_nodes(slurm_opt_t *opt)
 {
-	if (opt->job_flags | USE_MIN_NODES)
+	if (opt->job_flags & USE_MIN_NODES)
 		return xstrdup("set");
 	return xstrdup("unset");
 }
