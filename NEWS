@@ -164,6 +164,15 @@ documents those changes that are of interest to users and administrators.
     commands.
  -- Fix issue in gres code to handle a gres cnt of 0.
  -- Don't purge jobs if backfill is running.
+ -- Verify job is pending add/removing accrual time.
+ -- Don't abort when the job doesn't have an association that was removed
+    before the job was able to make it to the database.
+ -- Set state_reason if select_nodes() fails job for QOS or Account.
+ -- Avoid seg_fault on referencing association without a valid_qos bitmap.
+ -- If Association/QOS is removed on a pending job set that job as ineligible.
+ -- When changing a jobs account/qos always make sure you remove the old limits.
+ -- Don't reset a FAIL_QOS or FAIL_ACCOUNT job reason until the qos or
+    account changed.
 
 * Changes in Slurm 18.08.7
 ==========================

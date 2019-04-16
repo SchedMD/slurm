@@ -2780,7 +2780,6 @@ static void _add_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 		used_limits_u2->accrue_cnt += cnt;
 
 	while (assoc_ptr) {
-		assoc_ptr->usage->accrue_cnt += cnt;
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_ACCRUE) {
 			info("assoc_id %u(%s/%s/%s/%p) added %d count %d",
 			     assoc_ptr->id, assoc_ptr->acct,
@@ -2788,6 +2787,7 @@ static void _add_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 			     assoc_ptr->usage, cnt,
 			     assoc_ptr->usage->accrue_cnt);
 		}
+		assoc_ptr->usage->accrue_cnt += cnt;
 		/* now go up the hierarchy */
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
@@ -2883,7 +2883,6 @@ static void _remove_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 
 	while (assoc_ptr) {
 		if (assoc_ptr->usage->accrue_cnt >= cnt) {
-			assoc_ptr->usage->accrue_cnt -= cnt;
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_ACCRUE) {
 				info("assoc_id %u(%s/%s/%s/%p) removed %d count %d",
 				     assoc_ptr->id, assoc_ptr->acct,
@@ -2891,6 +2890,7 @@ static void _remove_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 				     assoc_ptr->usage, cnt,
 				     assoc_ptr->usage->accrue_cnt);
 			}
+			assoc_ptr->usage->accrue_cnt -= cnt;
 		} else {
 			error("%s: assoc_id %u(%s/%s/%s) accrue_cnt underflow",
 			      __func__, assoc_ptr->id,
@@ -4391,7 +4391,8 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
-		fatal_abort("%s: no assoc_ptr", __func__);
+		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
+		      __func__, job_ptr);
 		return SLURM_ERROR;
 	}
 
@@ -4508,7 +4509,8 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 	if ((max_jobs_accrue == INFINITE) ||
 	    (create_cnt && (!job_ptr->array_recs ||
 			    !job_ptr->array_recs->task_cnt))) {
-		if (!details_ptr->accrue_time) {
+		if (!details_ptr->accrue_time &&
+		    job_ptr->details->begin_time) {
 			/*
 			 * If no limit and begin_time hasn't happened yet
 			 * then set accrue_time to now.
@@ -4626,9 +4628,14 @@ extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 	if (!job_ptr->priority)
 		return;
 
+	/* Job has to be pending to accrue time. */
+	if (!IS_JOB_PENDING(job_ptr))
+		return;
+
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
-		fatal_abort("%s: no assoc_ptr", __func__);
+		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
+		      __func__, job_ptr);
 		return;
 	}
 
@@ -4693,15 +4700,19 @@ extern void acct_policy_remove_accrue_time(struct job_record *job_ptr,
 	if (!job_ptr->details || !job_ptr->details->accrue_time)
 		return;
 
+	/* Job has to be pending to accrue time. */
+	if (!IS_JOB_PENDING(job_ptr))
+		return;
+
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
-		fatal_abort("%s: no assoc_ptr", __func__);
+		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
+		      __func__, job_ptr);
 		goto end_it;
 	}
-
 	_set_qos_order(job_ptr, &qos_ptr_1, &qos_ptr_2);
 
 	if (qos_ptr_1) {
@@ -4764,7 +4775,8 @@ extern uint32_t acct_policy_get_prio_thresh(struct job_record *job_ptr,
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	if (!assoc_ptr) {
-		fatal_abort("%s: no assoc_ptr", __func__);
+		debug("%s: no assoc_ptr, this usually means the association was removed right after the job (%pJ) was started, but didn't make it to the database before it was removed.",
+		      __func__, job_ptr);
 		return 0;
 	}
 
