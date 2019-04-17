@@ -235,7 +235,7 @@ proc sacct_job { soption job_id} {
 				set not_support 1
 				exp_continue
 			}
-			-re "JobID.JobName.Partition.MaxVMSize" {
+			-re "JobID.JobIDRaw.JobName.Partition.MaxVMSize" {
 				if {$debug} {send_user "\nmatch3\n"}
 				incr matches
 				exp_continue
@@ -434,8 +434,6 @@ proc sacct_job { soption job_id} {
 		}
 		return $matches
 	}
-
-
 }
 
 ################################################################
@@ -631,14 +629,14 @@ if {$job_id == 0} {
 	}
 
 	set matches [sacct_job l $job_id]
-	if {$matches != 7} {
-		send_user "\nFAILURE: sacct --allusers failed ($matches != 7)\n"
+	if {$matches != 8} {
+		send_user "\nFAILURE: sacct -l failed ($matches != 8)\n"
 		set exit_code 1
 	}
 
 	set matches [sacct_job -long $job_id]
-	if {$matches != 7} {
-		send_user "\nFAILURE: sacct -l failed ($matches != 7)\n"
+	if {$matches != 8} {
+		send_user "\nFAILURE: sacct --long failed ($matches != 8)\n"
 		set exit_code 1
 	}
 
