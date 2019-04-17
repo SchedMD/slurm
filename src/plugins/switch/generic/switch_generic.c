@@ -418,6 +418,17 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 int switch_p_duplicate_jobinfo(switch_jobinfo_t *source,
 			       switch_jobinfo_t **dest)
 {
+	sw_gen_step_info_t *gen_step_info;
+
+	if (debug_flags & DEBUG_FLAG_SWITCH)
+		info("switch_p_alloc_jobinfo() starting");
+	/* FIXME: If this is ever needed please flesh this out! */
+
+	xassert(source);
+	switch_p_alloc_jobinfo((switch_jobinfo_t **)&gen_step_info,
+			       NO_VAL, NO_VAL);
+	*dest = (switch_jobinfo_t *) gen_step_info;
+
 	return SLURM_SUCCESS;
 }
 
