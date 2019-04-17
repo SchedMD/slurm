@@ -2801,8 +2801,29 @@ step_create(job_step_create_request_msg_t *step_specs,
 			step_layout->node_cnt = hostlist_count(hl);
 			hostlist_destroy(hl);
 			tmp_step_layout_used = true;
-		} else
+		} else {
+			/* assume that job offset 0 has already run! */
+			struct step_record *het_step_ptr;
+			struct job_record *het_job_ptr =
+				find_job_pack_record(job_ptr->pack_job_id, 0);
+			ListIterator itr =
+				list_iterator_create(het_job_ptr->step_list);
+
+			while ((het_step_ptr = list_next(itr)))
+				if (het_step_ptr->step_id == step_ptr->step_id)
+					break;
+			list_iterator_destroy(itr);
+
+			if (het_step_ptr)
+				switch_g_duplicate_jobinfo(
+					het_step_ptr->switch_job,
+					&step_ptr->switch_job);
+			/*
+			 * Prevent switch_g_build_jobinfo from getting a new
+			 * cookie below.
+			 */
 			step_layout = NULL;
+		}
 	} else {
 		step_layout = step_ptr->step_layout;
 		jobid = job_ptr->job_id;

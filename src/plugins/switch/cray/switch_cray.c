@@ -232,6 +232,30 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *source,
 				      switch_jobinfo_t **dest)
 {
+	slurm_cray_jobinfo_t *new;
+	slurm_cray_jobinfo_t *old = (slurm_cray_jobinfo_t *) source;
+
+	xassert(old);
+
+	new = xmalloc(sizeof(slurm_cray_jobinfo_t));
+	memcpy(new, old, sizeof(slurm_cray_jobinfo_t));
+
+	if (old->num_cookies) {
+		int i;
+		new->cookie_ids = xcalloc(old->num_cookies, sizeof(uint32_t));
+		memcpy(new->cookie_ids, old->cookie_ids,
+		       sizeof(uint32_t) * old->num_cookies);
+		new->cookies = xcalloc(old->num_cookies, sizeof(char *));
+		for (i = 0; i < old->num_cookies; i++)
+			new->cookies[i] = xstrdup(old->cookies[i]);
+	}
+
+	if (old->num_ptags) {
+		new->ptags = xcalloc(old->num_ptags, sizeof(int));
+		memcpy(new->ptags, old->ptags, sizeof(int) * old->num_ptags);
+	}
+
+	*dest = (switch_jobinfo_t *) new;
 	return SLURM_SUCCESS;
 }
 
