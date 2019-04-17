@@ -229,6 +229,12 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	return SLURM_SUCCESS;
 }
 
+extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *source,
+				      switch_jobinfo_t **dest)
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  *
  */

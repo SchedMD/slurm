@@ -62,6 +62,8 @@ typedef struct slurm_switch_ops {
 	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
 					    slurm_step_layout_t *step_layout,
 					    char *network);
+	int          (*duplicate_jobinfo) ( switch_jobinfo_t *source,
+					    switch_jobinfo_t **dest);
 	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
 	int          (*pack_jobinfo)      ( switch_jobinfo_t *jobinfo,
 					    Buf buffer,
@@ -139,6 +141,7 @@ static const char *syms[] = {
 	"switch_p_libstate_restore",
 	"switch_p_alloc_jobinfo",
 	"switch_p_build_jobinfo",
+	"switch_p_duplicate_jobinfo",
 	"switch_p_free_jobinfo",
 	"switch_p_pack_jobinfo",
 	"switch_p_unpack_jobinfo",
@@ -212,6 +215,16 @@ static int _load_plugins(void *x, void *arg)
 	}
 
 	return 0;
+}
+
+static dynamic_plugin_data_t *_create_dynamic_plugin_data(uint32_t plugin_id)
+{
+	dynamic_plugin_data_t *jobinfo_ptr = NULL;
+
+	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
+	jobinfo_ptr->plugin_id = plugin_id;
+
+	return jobinfo_ptr;
 }
 
 extern int switch_init(bool only_default)
@@ -346,8 +359,7 @@ extern int  switch_g_alloc_jobinfo(dynamic_plugin_data_t **jobinfo,
 	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
-	jobinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	jobinfo_ptr->plugin_id = switch_context_default;
+	jobinfo_ptr = _create_dynamic_plugin_data(switch_context_default);
 	*jobinfo    = jobinfo_ptr;
 
 	return (*(ops[jobinfo_ptr->plugin_id].alloc_jobinfo))
@@ -371,6 +383,22 @@ extern int  switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
 		plugin_id = switch_context_default;
 
 	return (*(ops[plugin_id].build_jobinfo))(data, step_layout, network);
+}
+
+extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,
+				       dynamic_plugin_data_t **dest)
+{
+	dynamic_plugin_data_t *dest_ptr = NULL;
+	uint32_t plugin_id = source->plugin_id;
+
+	if ( switch_init(0) < 0 )
+		return SLURM_ERROR;
+
+	dest_ptr = _create_dynamic_plugin_data(plugin_id);
+	*dest = dest_ptr;
+
+	return (*(ops[plugin_id].duplicate_jobinfo))(
+		source->data, (switch_jobinfo_t **)&dest_ptr->data);
 }
 
 extern void switch_g_free_jobinfo(dynamic_plugin_data_t *jobinfo)

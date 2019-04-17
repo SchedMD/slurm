@@ -415,6 +415,12 @@ int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	return SLURM_SUCCESS;
 }
 
+int switch_p_duplicate_jobinfo(switch_jobinfo_t *source,
+			       switch_jobinfo_t **dest)
+{
+	return SLURM_SUCCESS;
+}
+
 void switch_p_free_jobinfo(switch_jobinfo_t *switch_job)
 {
 	sw_gen_step_info_t *gen_step_info = (sw_gen_step_info_t *) switch_job;

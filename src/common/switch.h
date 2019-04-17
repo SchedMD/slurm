@@ -119,6 +119,15 @@ extern int  switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
 				   slurm_step_layout_t *step_layout,
 				   char *network);
 
+/* duplicate a job's switch credential
+ * IN  source  - storage for a switch job credential
+ * OUT dest    - pointer to NULL at beginning, will point to storage for
+ *               duplicated switch job credential
+ * NOTE: storage must be freed using g_switch_g_free_jobinfo
+ */
+extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,
+				       dynamic_plugin_data_t **dest);
+
 /* free storage previously allocated for a switch job credential
  * IN jobinfo  - the switch job credential to be freed
  */
