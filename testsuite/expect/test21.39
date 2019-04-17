@@ -37,9 +37,9 @@ set test_id     "21.39"
 set part_name   "test$test_id\_part"
 set ta1		"test$test_id-account.1"
 set ta2		"test$test_id-account.2"
-set tu1     [get_my_user_name]
-set tq1     "test$test_id-qos.1"
-set tq2     "test$test_id-qos.2"
+set tu1		[get_my_user_name]
+set tq1		"test$test_id-qos.1"
+set tq2		"test$test_id-qos.2"
 
 # account options
 array set acct_1 {}
@@ -75,14 +75,14 @@ proc check_rc { exit_code } {
 	}
 }
 
-#Create test assoc and accounts
+# Create test assoc and accounts
 proc create_accounts {} {
 	global ta1 ta2 tq1 tq2 tu1 user_req_1 user_req_2
 	global qos_1 qos_2
 	log_info "create account and QOS"
 
 
-	#Create test assoc and accounts
+	# Create test assoc and accounts
 	check_rc [add_qos $tq1 [array get qos_1]]
 	check_rc [add_qos $tq2 [array get qos_2]]
 	check_rc [add_acct $ta1 [array get acct_1]]
@@ -91,7 +91,7 @@ proc create_accounts {} {
 	check_rc [add_user $tu1 [array get user_req_2]]
 }
 
-#Cleanup test assoc and accounts
+# Cleanup test assoc and accounts
 proc cleanup_accounts {} {
 	global ta1 ta2 tq1 tq2
 
@@ -222,7 +222,7 @@ proc run_test { run_qos } {
 			return 1
 		}
 	} else {
-		#remove test acct
+		# remove test acct
 		if { [remove_acct "" $acct] } {
 			log_info "We hit the race trying to get the job running before it hits the database before we removed the account.  This can be expected, trying again."
 			wait_for_part_done $part_name
@@ -244,7 +244,7 @@ proc run_test { run_qos } {
 	check_job_reason $job_id_1 "RUNNING" [list "None"]
 	check_job_reason $job_id_2 "PENDING" [list "Resources" "None"]
 
-	#cleanup jobs
+	# Cleanup jobs
 	wait_for_part_done $part_name
 
 	return 0
