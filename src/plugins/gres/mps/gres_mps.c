@@ -256,7 +256,28 @@ static List _build_mps_list(List gres_list)
 	return mps_list;
 }
 
-/* Distributed MPS Count to records on original list */
+/*
+ * Count of gres/mps records is zero, remove them from GRES list sent to
+ * slurmctld daemon.
+ */
+static void _remove_mps_recs(List gres_list)
+{
+	ListIterator itr;
+	gres_slurmd_conf_t *gres_record;
+
+	if (gres_list == NULL)
+		return;
+
+	itr = list_iterator_create(gres_list);
+	while ((gres_record = list_next(itr))) {
+		if (!xstrcmp(gres_record->name, "mps")) {
+			(void) list_delete_item(itr);
+		}
+	}
+	list_iterator_destroy(itr);
+}
+
+/* Distribute MPS Count to records on original list */
 static void _distribute_count(List gres_conf_list, List gpu_conf_list,
 			      uint64_t count)
 {
@@ -435,8 +456,9 @@ static void _mps_conf_del(void *x)
 	xfree(x);
 }
 
-static void _build_mps_dev_info(List gres_conf_list)
+static uint64_t _build_mps_dev_info(List gres_conf_list)
 {
+	uint64_t mps_count = 0;
 	uint32_t mps_plugin_id = gres_plugin_build_id("mps");
 	gres_slurmd_conf_t *gres_conf;
 	mps_dev_info_t *mps_conf;
@@ -451,8 +473,10 @@ static void _build_mps_dev_info(List gres_conf_list)
 		mps_conf->count = gres_conf->count;
 		mps_conf->id = _compute_local_id(gres_conf->file);
 		list_append(mps_info, mps_conf);
+		mps_count += gres_conf->count;
 	}
 	list_iterator_destroy(iter);
+	return mps_count;
 }
 
 /*
@@ -510,7 +534,8 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
-	_build_mps_dev_info(gres_conf_list);
+	if (_build_mps_dev_info(gres_conf_list) == 0)
+		_remove_mps_recs(gres_conf_list);
 
 	log_var(log_lvl, "%s: Final gres.conf list:", plugin_name);
 	print_gres_list(gres_conf_list, log_lvl);

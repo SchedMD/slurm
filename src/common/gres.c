@@ -2796,20 +2796,13 @@ static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 
 	gpu_gres_data = gpu_gres_ptr->gres_data;
 	mps_gres_data = mps_gres_ptr->gres_data;
+
 	gpu_cnt = gpu_gres_data->gres_cnt_avail;
 	if (mps_gres_data->gres_bit_alloc) {
 		if (gpu_cnt == bit_size(mps_gres_data->gres_bit_alloc))
 			return;		/* No change for gres/mps */
 	} else if (gpu_cnt == 0)
 		return;			/* Still no GPUs */
-
-	if (!mps_gres_data->gres_bit_alloc) {
-		mps_gres_data->gres_bit_alloc = bit_alloc(gpu_cnt);
-	} else {
-		mps_gres_data->gres_bit_alloc =
-				bit_realloc(mps_gres_data->gres_bit_alloc,
-					    gpu_cnt);
-	}
 
 	/* Free any excess gres/mps topo records */
 	for (i = gpu_cnt; i < mps_gres_data->topo_cnt; i++) {
@@ -2818,6 +2811,20 @@ static void _sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 		if (mps_gres_data->topo_gres_bitmap)
 			FREE_NULL_BITMAP(mps_gres_data->topo_gres_bitmap[i]);
 		xfree(mps_gres_data->topo_type_name[i]);
+	}
+
+	if (mps_gres_data->gres_cnt_avail == 0) {
+		/* No gres/mps on this node */
+		mps_gres_data->topo_cnt = 0;
+		return;
+	}
+
+	if (!mps_gres_data->gres_bit_alloc) {
+		mps_gres_data->gres_bit_alloc = bit_alloc(gpu_cnt);
+	} else {
+		mps_gres_data->gres_bit_alloc =
+				bit_realloc(mps_gres_data->gres_bit_alloc,
+					    gpu_cnt);
 	}
 
 	/* Add any additional required gres/mps topo records */
