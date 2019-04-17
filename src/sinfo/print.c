@@ -624,6 +624,19 @@ int _print_gres(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_gres_used(sinfo_data_t * sinfo_data, int width,
+		     bool right_justify, char *suffix)
+{
+	if (sinfo_data)
+		_print_str(sinfo_data->gres_used, width, right_justify, true);
+	else
+		_print_str("GRES_USED", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_groups(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {

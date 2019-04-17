@@ -997,6 +997,12 @@ static int _parse_long_format (char* format_long)
 					 field_size,
 					 right_justify,
 					 suffix );
+		} else if (!xstrcasecmp(token, "gresused")) {
+			params.match_flags.gres_used_flag = true;
+			format_add_gres_used( params.format_list,
+					 field_size,
+					 right_justify,
+					 suffix );
 		} else if (!xstrcasecmp(token, "maxcpuspernode")) {
 			params.match_flags.max_cpus_per_node_flag = true;
 			format_add_max_cpus_per_node( params.format_list,
@@ -1306,6 +1312,8 @@ void _print_options( void )
 	printf("groups_flag     = %s\n", params.match_flags.groups_flag ?
 					"true" : "false");
 	printf("gres_flag       = %s\n", params.match_flags.gres_flag ?
+			"true" : "false");
+	printf("gres_used_flag  = %s\n", params.match_flags.gres_used_flag ?
 			"true" : "false");
 	printf("job_size_flag   = %s\n", params.match_flags.job_size_flag ?
 					"true" : "false");

@@ -291,6 +291,10 @@ static List _query_server(bool clear_old)
 	}
 	old_part_ptr = new_part_ptr;
 
+	/* GRES used is only populated on nodes with detail flag */
+	if (params.match_flags.gres_used_flag)
+		show_flags |= SHOW_DETAIL;
+
 	if (old_node_ptr) {
 		if (clear_old)
 			old_node_ptr->last_update = 0;
@@ -759,6 +763,11 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		return false;
 
 	if (sinfo_ptr->nodes &&
+	    params.match_flags.gres_used_flag &&
+	    (xstrcmp(node_ptr->gres_used, sinfo_ptr->gres_used)))
+		return false;
+
+	if (sinfo_ptr->nodes &&
 	    params.match_flags.reason_flag &&
 	    (xstrcmp(node_ptr->reason, sinfo_ptr->reason)))
 		return false;
@@ -933,6 +942,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->features   = node_ptr->features;
 		sinfo_ptr->features_act = node_ptr->features_act;
 		sinfo_ptr->gres       = node_ptr->gres;
+		sinfo_ptr->gres_used  = node_ptr->gres_used;
 		sinfo_ptr->reason     = node_ptr->reason;
 		sinfo_ptr->reason_time= node_ptr->reason_time;
 		sinfo_ptr->reason_uid = node_ptr->reason_uid;

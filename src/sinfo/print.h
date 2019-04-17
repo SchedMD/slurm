@@ -94,6 +94,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_groups)
 #define format_add_gres(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_gres)
+#define format_add_gres_used(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_gres_used)
 #define format_add_memory(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_memory)
 #define format_add_node_address(list,wid,right,suffix) \
@@ -190,6 +192,8 @@ int _print_features_act(sinfo_data_t * sinfo_data, int width,
 int _print_groups(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_gres(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_gres_used(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_memory(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
