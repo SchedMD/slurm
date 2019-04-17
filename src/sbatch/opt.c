@@ -104,7 +104,7 @@ static void _opt_env(void);
 static bool _opt_verify(void);
 
 static void _fullpath(char **filename, const char *cwd);
-static void _set_options(int argc, char **argv);
+static int _set_options(int argc, char **argv);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -363,8 +363,7 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 	_opt_env();
 
 	/* set options from command line */
-	_set_options(argc, argv);
-	*argc_off = optind;
+	*argc_off = _set_options(argc, argv);
 
 	if (!_opt_verify())
 		exit(error_exit);
@@ -574,8 +573,10 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 		xfree(line);
 	}
 
-	if (argc > 0)
-		_set_options(argc, argv);
+	if (argc > 0 && (i = _set_options(argc, argv)) < argc) {
+		error("Invalid directive found in batch script: %s", argv[i]);
+		exit(-1);
+	}
 
 	for (i = 1; i < argc; i++)
 		xfree(argv[i]);
@@ -584,7 +585,7 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 	return more_packs;
 }
 
-static void _set_options(int argc, char **argv)
+static int _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	char *opt_string = NULL;
@@ -597,6 +598,7 @@ static void _set_options(int argc, char **argv)
 	}
 
 	slurm_option_table_destroy(optz);
+	return optind;
 }
 
 /*

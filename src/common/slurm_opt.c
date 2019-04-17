@@ -347,7 +347,6 @@ static slurm_cli_opt_t slurm_opt__unknown_ = {
 	.name = NULL,
 	.has_arg = no_argument,
 	.val = '?',
-	.sbatch_early_pass = true,
 	.set_func = arg_set__unknown_,
 	.get_func = arg_get__unknown_,
 	.reset_func = arg_reset__unknown_,
