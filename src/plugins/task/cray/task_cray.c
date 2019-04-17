@@ -317,17 +317,21 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	uint64_t apid;
 	uint32_t jobid;
 	uint32_t taskid;
+	uint32_t offset;
 	DEF_TIMERS;
 
 	START_TIMER;
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
 		jobid = job->pack_jobid;
-	else
+		offset = job->pack_task_offset;
+	} else {
 		jobid = job->jobid;
-	taskid = job->pack_task_offset + job->task[job->envtp->localid]->gtid;
+		offset = 0;
+	}
+	taskid = offset + job->task[job->envtp->localid]->gtid;
 
 	apid = SLURM_ID_HASH(jobid, job->stepid);
-	debug2("%s: %u.%u, apid %"PRIu64", task %d", __func__,
+	debug2("%s: %u.%u, apid %"PRIu64", task %u", __func__,
 	       job->jobid, job->stepid, apid, taskid);
 
 	/*
@@ -335,7 +339,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	 * variable.
 	 */
 	rc = env_array_overwrite_fmt(&job->env, ALPS_APP_PE_ENV,
-				     "%d", taskid);
+				     "%u", taskid);
 	if (rc == 0) {
 		CRAY_ERR("Failed to set env variable %s", ALPS_APP_PE_ENV);
 		return SLURM_ERROR;
@@ -660,17 +664,21 @@ static int _check_status_file(stepd_step_rec_t *job,
 	int rv, fd;
 	uint32_t jobid;
 	uint32_t taskid;
+	uint32_t offset;
 
 	// We only need to special case termination with exit(0)
 	// srun already handles abnormal exit conditions fine
 	if (!WIFEXITED(task->estatus) || (WEXITSTATUS(task->estatus) != 0))
 		return SLURM_SUCCESS;
 
-	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
 		jobid = job->pack_jobid;
-	else
+		offset = job->pack_task_offset;
+	} else {
 		jobid = job->jobid;
-	taskid = job->pack_task_offset + task->gtid;
+		offset = 0;
+	}
+	taskid = offset + task->gtid;
 
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
