@@ -1784,8 +1784,7 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_data,
 	}
 
 	if (!gres_data->gres_bit_alloc)
-		gres_data->gres_bit_alloc =
-			bit_alloc(gres_data->gres_cnt_avail);
+		gres_data->gres_bit_alloc = bit_alloc(gres_bits);
 	else if (gres_bits != bit_size(gres_data->gres_bit_alloc))
 		gres_data->gres_bit_alloc =
 			bit_realloc(gres_data->gres_bit_alloc, gres_bits);
