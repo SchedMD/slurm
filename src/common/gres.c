@@ -2078,7 +2078,7 @@ static bool _valid_gres_types(char *gres_name, gres_node_state_t *gres_data,
 static void _gres_bit_alloc_resize(gres_node_state_t *gres_data,
 				   uint64_t gres_bits)
 {
-	if (!gres_bits) {
+	if (!gres_bits || (gres_data->gres_cnt_avail == 0)) {
 		FREE_NULL_BITMAP(gres_data->gres_bit_alloc);
 		return;
 	}
