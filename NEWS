@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Add sinfo format option to show used gres.
  -- Add reboot_from_controller SlurmctldParameter to allow RebootProgram to be
     run from the controller instead of the slurmds.
+ -- Fix increasing of job size when extern steps exist.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
