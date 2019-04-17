@@ -27,21 +27,20 @@ JOBID PARTITION   NAME   USER  ST   TIME NODES BP_LIST(REASON)
 11945    pdebug   aJob  juser   R   6:36   128 dusk000[16-31]
 </PRE>
 
-<p>The following Slurm client commands now offer the "-M, --clusters="
+<p>Most of the Slurm client commands offer the "-M, --clusters="
 option which provides the ability to communicate to and from a comma
-separated list of clusters:
-<ol><b>sacct, sbatch, scancel, scontrol, sinfo, smap, sprio, squeue,
-sshare,</b> and <b>strigger</b></ol>
+separated list of clusters.</p>
 
-<b>salloc, srun,</b> and <b>sstat</b> are cluster specific commands
-and do not offer the "-M, --clusters=" option.</p>
+<p>When <b>sbatch</b>, <b>salloc</b> or <b>srun</b> is invoked with a cluster
+list, Slurm will immediately submit the job to the cluster that offers the
+earliest start time subject its queue of pending and running jobs.  Slurm will
+make no subsequent effort to migrate the job to a different cluster (from the
+list) whose resources become available when running jobs finish before their
+scheduled end times.</p>
 
-<p>When <b>sbatch</b> is invoked with a cluster list, Slurm will
-immediately submit the job to the cluster that offers the earliest
-start time subject its queue of pending and running jobs.  Slurm will
-make no subsequent effort to migrate the job to a different cluster
-(from the list) whose resources become available when running jobs
-finish before their scheduled end times.</p>
+<p><b>NOTE:</b> In order for <b>salloc</b> or <b>srun</b> to work with the "-M,
+--clusters" option in a multi-cluster environment, the compute nodes must be
+accessible to and from the submission host.</p>
 
 <h2>Multi-Cluster Configuration</h2>
 <p>The multi-cluster functionality requires the use of the slurmDBD.
@@ -56,6 +55,10 @@ See <a href="accounting.html">accounting</a> for details.</p>
 option will become active for all of the clusters listed by the
 <b>"sacctmgr show clusters"</b> command.</p>
 
-<p style="text-align:center;">Last modified 15 April 2015</p>
+<p>
+See also the <a href="federation.html">Slurm Federated Scheduling Guide<a/>.
+</p>
+
+<p style="text-align:center;">Last modified 16 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
