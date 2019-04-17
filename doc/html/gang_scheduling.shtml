@@ -51,7 +51,7 @@ with jobs, the resource selection plugin should be configured to track the
 amount of memory used by each job to ensure that memory page swapping does
 not occur. When <I>select/linear</I> is chosen, we recommend setting
 <I>SelectTypeParameter=CR_Memory</I>. When <I>select/cons_res</I> is
-chosen, we recommend including Memory as a resource (ex.
+chosen, we recommend including Memory as a resource (e.g.
 <I>SelectTypeParameter=CR_Core_Memory</I>).
 </LI>
 <LI>
@@ -74,7 +74,7 @@ configured to limit each job's memory use or accounting must be enabled
 using the <I>JobAcctGatherType</I> and <I>JobAcctGatherFrequency</I>
 parameters. If accounting is enabled and a job exceeds its configured
 memory limits, it will be canceled in order to prevent it from
-adversely effecting other jobs sharing the same resources.
+adversely affecting other jobs sharing the same resources.
 </LI>
 <LI>
 <B>PreemptMode</B>: set the <I>GANG</I> option.
@@ -505,7 +505,7 @@ its CPUs for allocation to other jobs.
 Resuming a previously suspended job may result in multiple jobs being
 allocated the same CPUs, which could trigger gang scheduling of jobs.
 Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
-job without releasing its CPUs for allocaiton to other jobs and would be a
+job without releasing its CPUs for allocation to other jobs and would be a
 preferable mechanism in many cases.</P>
 
 <p style="text-align:center;">Last modified 31 March 2016</p>

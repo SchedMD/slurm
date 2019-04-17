@@ -3456,8 +3456,8 @@ be set to root to permit these triggers to work. See the \fBstrigger\fR man
 page for additional details.
 .TP
 \fBcloud_dns\fR
-By default, Slurm expects that the network addresses for cloud nodes won't
-won't be known until creation of the node and that Slurm will be notified of the
+By default, Slurm expects that the network address for a cloud node won't
+be known until the creation of the node and that Slurm will be notified of the
 node's address (e.g. \fBscontrol update nodename=<name> nodeaddr=<addr>\fR).
 Since Slurm communications rely on the node configuration found in the
 slurm.conf, Slurm will tell the client command, after waiting for all nodes to
