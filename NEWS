@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
     heterogeneous job component.
  -- Do not set "(null)" for SLURM_JOB_CONSTRAINTS when no constraints are set
     in PrologSlurmctld/EpilogSlurmctld.
+ -- Add SRUN_EXPORT_ENV as an input environment variable to srun.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

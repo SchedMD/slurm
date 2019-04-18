@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "March 2019" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "April 2019" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -2594,6 +2594,9 @@ This can be used by a script to distinguish application exit codes from
 various Slurm error conditions.
 Also see \fBSLURM_EXIT_ERROR\fR.
 .TP
+\fBSLURM_EXPORT_ENV\fR
+Same as \-\-export\fR
+.TP
 \fBSLURM_GPUS\fR
 Same as \fB\-G, \-\-gpus\fR
 .TP
@@ -2778,6 +2781,9 @@ Same as \fB\-W, \-\-wckey\fR
 .TP
 \fBSLURM_WORKING_DIR\fR
 \fB\-D, \-\-chdir\fR
+.TP
+\fBSRUN_EXPORT_ENV\fR
+Same as \-\-export\fR, and will override any setting for \fBSRUN_EXPORT_ENV\fR.
 
 
 .SH "OUTPUT ENVIRONMENT VARIABLES"
