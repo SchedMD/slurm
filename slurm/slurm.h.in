@@ -1960,6 +1960,7 @@ typedef struct {
 	uint32_t pack_jobid;	/* pack job ID or NO_VAL */
 	uint32_t pack_nnodes;	/* total task count for entire pack job */
 	uint32_t pack_ntasks;	/* total task count for entire pack job */
+	uint32_t pack_step_cnt;	/* total step count for entire pack job */
 	uint16_t *pack_task_cnts; /* Number of tasks on each node in pack job */
 	uint32_t **pack_tids;	/* Task IDs on each node in pack job */
 	uint32_t pack_offset;	/* Pack job offset or NO_VAL */

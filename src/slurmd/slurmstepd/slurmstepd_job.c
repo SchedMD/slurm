@@ -306,6 +306,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->array_job_id  = msg->job_id;
 	job->array_task_id = NO_VAL;
 	job->node_offset = msg->node_offset;	/* Used for env vars */
+	job->pack_step_cnt = msg->pack_step_cnt;
 	job->pack_jobid  = msg->pack_jobid;	/* Used for env vars */
 	job->pack_nnodes = msg->pack_nnodes;	/* Used for env vars */
 	if (msg->pack_nnodes && msg->pack_ntasks && msg->pack_task_cnts) {
@@ -467,6 +468,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->stepid  = msg->step_id;
 	job->array_job_id  = msg->array_job_id;
 	job->array_task_id = msg->array_task_id;
+	job->pack_step_cnt = NO_VAL;
 	job->pack_jobid  = NO_VAL;	/* Used to set env vars */
 	job->pack_nnodes = NO_VAL;	/* Used to set env vars */
 	job->pack_ntasks = NO_VAL;	/* Used to set env vars */

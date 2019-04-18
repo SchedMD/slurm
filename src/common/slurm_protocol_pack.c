@@ -10092,6 +10092,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		}
 		pack32(msg->pack_ntasks, buffer);
 		pack32(msg->pack_offset, buffer);
+		pack32(msg->pack_step_cnt, buffer);
 		pack32(msg->pack_task_offset, buffer);
 		packstr(msg->pack_node_list, buffer);
 		pack32(msg->ntasks, buffer);
@@ -10383,6 +10384,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		}
 		safe_unpack32(&msg->pack_ntasks, buffer);
 		safe_unpack32(&msg->pack_offset, buffer);
+		safe_unpack32(&msg->pack_step_cnt, buffer);
 		safe_unpack32(&msg->pack_task_offset, buffer);
 		safe_unpackstr_xmalloc(&msg->pack_node_list, &uint32_tmp,
 				       buffer);

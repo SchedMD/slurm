@@ -146,6 +146,7 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr)
 	ptr->pack_nnodes  = NO_VAL;
 	ptr->pack_ntasks  = NO_VAL;
 	ptr->pack_offset  = NO_VAL;
+	ptr->pack_step_cnt = NO_VAL;
 	ptr->pack_task_offset = NO_VAL;
 }
 
@@ -258,6 +259,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
 	launch.node_offset = params->node_offset;
+	launch.pack_step_cnt = params->pack_step_cnt;
 	launch.pack_jobid  = params->pack_jobid;
 	launch.pack_nnodes = params->pack_nnodes;
 	launch.pack_ntasks = params->pack_ntasks;
@@ -454,6 +456,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.spank_job_env_size = params->spank_job_env_size;
 	launch.cred = ctx->step_resp->cred;
 	launch.job_step_id = ctx->step_resp->job_step_id;
+	launch.pack_step_cnt = params->pack_step_cnt;
 	launch.pack_jobid  = params->pack_jobid;
 	launch.pack_nnodes = params->pack_nnodes;
 	launch.pack_ntasks = params->pack_ntasks;
