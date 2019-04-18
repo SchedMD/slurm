@@ -3203,6 +3203,19 @@ static int _prepare_submit_siblings(struct job_record *job_ptr,
 	if (!(job_desc = copy_job_record_to_job_desc(job_ptr)))
 		return SLURM_ERROR;
 
+	/*
+	 * Since job_ptr could have had defaults filled on the origin cluster,
+	 * clear these before sibling submission if default flag is set
+	 */
+	if (job_desc->bitflags & USE_DEFAULT_ACCT)
+		xfree(job_desc->account);
+	if (job_desc->bitflags & USE_DEFAULT_PART)
+		xfree(job_desc->partition);
+	if (job_desc->bitflags & USE_DEFAULT_QOS)
+		xfree(job_desc->qos);
+	if (job_desc->bitflags & USE_DEFAULT_WCKEY)
+		xfree(job_desc->wckey);
+
 	/* Have to pack job_desc into a buffer. _submit_sibling_jobs will pack
 	 * the job_desc according to each sibling's rpc_version. */
 	slurm_msg_t_init(&msg);
