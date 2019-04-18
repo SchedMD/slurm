@@ -110,6 +110,7 @@
 #include "src/slurmd/common/set_oomadj.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
+#include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/common/xcpuinfo.h"
 
@@ -135,6 +136,7 @@ uint32_t *fini_job_id = NULL;
 pthread_mutex_t fini_job_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t tres_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  tres_cond      = PTHREAD_COND_INITIALIZER;
+Buf slurmd_buf = NULL;
 
 /*
  * count of active threads
@@ -1104,7 +1106,12 @@ _read_config(void)
 	conf->task_plugin_param = cf->task_plugin_param;
 	conf->health_check_interval = cf->health_check_interval;
 
+	FREE_NULL_BUFFER(conf->buf);
+	conf->buf = init_buf(0);
+	pack_slurmd_conf_lite(conf, conf->buf);
+
 	slurm_mutex_unlock(&conf->config_mutex);
+
 	slurm_conf_unlock();
 
 	cgroup_mem_confinement = xcgroup_mem_cgroup_job_confinement();
@@ -1304,6 +1311,7 @@ _destroy_conf(void)
 		xfree(conf->auth_info);
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
+		FREE_NULL_BUFFER(conf->buf);
 		xfree(conf->cluster_name);
 		xfree(conf->conffile);
 		xfree(conf->cpu_spec_list);
