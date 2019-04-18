@@ -188,6 +188,7 @@ documents those changes that are of interest to users and administrators.
  -- When changing a jobs account/qos always make sure you remove the old limits.
  -- Don't reset a FAIL_QOS or FAIL_ACCOUNT job reason until the qos or
     account changed.
+ -- Restore "sreport -T ALL" functionality.
 
 * Changes in Slurm 18.08.7
 ==========================

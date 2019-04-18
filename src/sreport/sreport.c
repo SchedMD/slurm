@@ -373,7 +373,7 @@ static void _build_tres_list(void)
 			else
 				node_tres = true;
 		}
-		if (tok) {
+		if (tok || !xstrcasecmp(tres_str, "ALL")) {
 			slurmdb_tres_rec_t *tres2 =
 				slurmdb_copy_tres_rec(tres);
 			list_append(tres_list, tres2);
