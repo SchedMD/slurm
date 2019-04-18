@@ -107,9 +107,8 @@ proc cleanup_accounts {} {
 proc endit { exit_code } {
 	global test_id part_name
 
-	wait_for_part_done $part_name
-
 	if {$exit_code == 0} {
+		wait_for_part_done $part_name
 		cleanup_accounts
 		print_success $test_id
 	} else {
