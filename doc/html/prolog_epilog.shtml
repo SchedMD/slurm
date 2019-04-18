@@ -325,7 +325,7 @@ Available in Prolog and Epilog only.</li>
 <li><b>CUDA_VISIBLE_DEVICES</b>
 Specifies the GPU devices that should be allocated to the job.
 The value is set only if the gres/gpu or gres/mps plugin is configured and the
-job requests those resources
+job requests those resources.
 Note that the environment variable set for the job may differ from that set for
 the Prolog and Epilog if Slurm is configured to constrain the device files
 visible to a job using Linux cgroup.
@@ -398,9 +398,9 @@ Available in EpilogSlurmctld only.</li>
 
 <li><b>SLURM_JOB_EXIT_CODE2</b>
 The exit code of the job script (or salloc). The value has the format
-<exit>:<sig>. The first number is the exit code, typically as set by the
-exit() function. The second number of the signal that caused the process to
-terminante if it was terminated by a signal.
+&lt;exit&gt;:&lt;sig&gt;. The first number is the exit code, typically as set
+by the exit() function. The second number is the signal that caused the process
+to terminate if it was terminated by a signal.
 Available in EpilogSlurmctld only.</li>
 
 <li><b>SLURM_JOB_GID</b>
@@ -443,8 +443,8 @@ User name of the job's wckey (if any).
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 </ul>
 
-<p>Plugins functions are may also be useful to execute logic at various well
-defined points.</p>
+<p>Plugin functions may also be useful to execute logic at various well-defined
+points.</p>
 
 <p><a href="spank.html">SPANK</a> is another mechanism that may be useful
 to invoke logic in the user commands, slurmd daemon, and slurmstepd daemon.</p>
