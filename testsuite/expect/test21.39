@@ -281,6 +281,11 @@ for {set i 0} {$i < 2} {incr i} {
 	while { $rc && ($cnt < 10) } {
 		set rc [run_test $i]
 		incr cnt
+
+		if {$cnt == 10 && $rc} {
+			log_info "Unable to catch time window. Skipping test."
+			endit 0
+		}
 	}
 	if { $rc } {
 		break
