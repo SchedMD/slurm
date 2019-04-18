@@ -8,6 +8,20 @@ We welcome code contributions and patches, but **we do not accept Pull Requests
 through GitHub at this time.** Please submit patches as attachments to new
 bugs under the "C - Contributions" severity level.
 
+TARGET RELEASES
+---------------
+Changes involving adding new functionality, functional changes to the command
+line tools (either in adding new options, or changing the output formats), any
+RPC protocol changes or state file format modifications, and similar work is
+only considered for inclusion on the master branch (which will become the next
+stable Slurm release).
+
+Bug fixes themselves are considered for inclusion on the most recent stable
+release, although may be deferred to the next major release at the reviewers'
+discretion.
+
+All contributed patches are subject to review by SchedMD.
+
 CODING GUIDELINES
 -----------------
 Slurm loosely follows the Linux Kernel style guidelines
