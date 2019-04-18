@@ -474,6 +474,7 @@ static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
 	return (0);
 
 rwfail:
+	slurm_mutex_unlock(&cf->config_mutex);
 	return (-1);
 }
 
