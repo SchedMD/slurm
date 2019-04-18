@@ -987,9 +987,20 @@ static pid_t _fork_command(char **command)
 
 	pid = fork();
 	if (pid < 0) {
-		error("fork failed: %m");
+		error("%s: fork failed: %m",
+		      __func__);
 	} else if (pid == 0) {
 		/* child */
+		char *cwd = opt.chdir ? opt.chdir : work_dir;
+		char *cpath = search_path(cwd, command[0], true, X_OK, true);
+
+		xassert(cwd);
+		if (!cpath) {
+			error("%s: Unable to find command \"%s\"",
+			      __func__, command[0]);
+			exit(error_exit);
+		}
+
 		setpgid(getpid(), 0);
 
 		/*
@@ -1005,10 +1016,12 @@ static pid_t _fork_command(char **command)
 		xsignal(SIGTTIN, SIG_DFL);
 		xsignal(SIGTTOU, SIG_DFL);
 
-		execvp(command[0], command);
+		execvp(cpath, command);
 
 		/* should only get here if execvp failed */
-		error("Unable to exec command \"%s\"", command[0]);
+		error("%s: Unable to exec command \"%s\": %m",
+		      __func__, cpath);
+		xfree(cpath);
 		exit(error_exit);
 	}
 	/* parent returns */

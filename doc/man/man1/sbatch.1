@@ -53,6 +53,10 @@ If script starts with a "/", then path is considered absolute.
 If script is in current working directory.
 .IP \n+[step].
 If script can be resolved through PATH. See \fBpath_resolution\fR(7).
+.P
+Current working directory is the calling process working directory unless the
+\fB\-\-chdir\fR argument is passed, which will override the current working
+directory.
 
 .SH "OPTIONS"
 .LP

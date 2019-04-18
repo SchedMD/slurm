@@ -54,7 +54,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "Unable to exec command" {
+	-re "Unable to exec command|Unable to find command" {
 		send_user "\nNo worries, this error is expected\n"
 		set matches 1
 		exp_continue

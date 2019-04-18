@@ -53,6 +53,12 @@ current working directory / command
 If command starts with a "/", then path is considered absolute.
 .IP \n+[step].
 If command can be resolved through PATH. See \fBpath_resolution\fR(7).
+.IP \n+[step].
+If command is in current working directory.
+.P
+Current working directory is the calling process working directory unless the
+\fB\-\-chdir\fR argument is passed, which will override the current working
+directory.
 
 .SH "OPTIONS"
 .LP
