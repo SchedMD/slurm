@@ -146,6 +146,19 @@ proc test_salloc { qos account num_nodes cmd } {
 	return $job_id
 }
 
+proc check_job_reason_retry { job_id state why } {
+	set rc 1
+	set cnt 0
+	while { $rc && ($cnt < 10) } {
+		set rc [check_job_reason $job_id $state $why]
+		incr cnt
+		if {$rc} {
+			after [expr {$cnt * 1000}]
+		}
+	}
+	check_rc $rc
+}
+
 proc check_job_reason { job_id state why } {
 	global scontrol alpha_numeric alpha
 
@@ -175,7 +188,7 @@ proc check_job_reason { job_id state why } {
 	log_user 1
 	if { $state_found != $state } {
 		log_error "Job $job_id state found was $state_found, expected $state"
-		endit 1
+		return 1
 	}
 
 	set found_reason 0
@@ -189,7 +202,7 @@ proc check_job_reason { job_id state why } {
 	if { !$found_reason } {
 		set reason_list [join $why "|"]
 		log_error "Job $job_id scontrol returned Reason=$found_why instead of Reason=\"$reason_list\""
-		endit 1
+		return 1
 	}
 
 	log_info "Found jobid $job_id with correct state '$state' and reason '$found_why'"
@@ -231,8 +244,10 @@ proc run_test { run_qos } {
 	}
 
 	# Verify jobs state and reason
-	check_job_reason $job_id_1 "RUNNING" [list "None"]
-	check_job_reason $job_id_2 "PENDING" [list "$reason"]
+
+
+	check_job_reason_retry $job_id_1 "RUNNING" [list "None"]
+	check_job_reason_retry $job_id_2 "PENDING" [list "$reason"]
 
 	# Update pending job to make it runnable, updating the running job isn't
 	# possible but it tests other code if you are watching the log file
@@ -241,8 +256,8 @@ proc run_test { run_qos } {
 
 	sleep 1.5
 	# Check reasons after account alter
-	check_job_reason $job_id_1 "RUNNING" [list "None"]
-	check_job_reason $job_id_2 "PENDING" [list "Resources" "None"]
+	check_job_reason_retry $job_id_1 "RUNNING" [list "None"]
+	check_job_reason_retry $job_id_2 "PENDING" [list "Resources" "None"]
 
 	# Cleanup jobs
 	wait_for_part_done $part_name
