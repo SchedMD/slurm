@@ -150,7 +150,7 @@ proc check_job_reason_retry { job_id state why } {
 	set rc 1
 	set cnt 0
 	while { $rc && ($cnt < 10) } {
-		set rc [check_job_reason $job_id $state $why]
+		set rc [check_job_reason $job_id $state $why [expr {$cnt == 9}]]
 		incr cnt
 		if {$rc} {
 			after [expr {$cnt * 1000}]
@@ -159,7 +159,7 @@ proc check_job_reason_retry { job_id state why } {
 	check_rc $rc
 }
 
-proc check_job_reason { job_id state why } {
+proc check_job_reason { job_id state why fail_hard } {
 	global scontrol alpha_numeric alpha
 
 	set found_why ""
@@ -187,7 +187,13 @@ proc check_job_reason { job_id state why } {
 
 	log_user 1
 	if { $state_found != $state } {
-		log_error "Job $job_id state found was $state_found, expected $state"
+		set msg "Job $job_id state found was $state_found, expected $state"
+		if { $fail_hard} {
+			log_error $msg
+			endit 1
+		} else {
+			log_info $msg
+		}
 		return 1
 	}
 
@@ -201,7 +207,13 @@ proc check_job_reason { job_id state why } {
 
 	if { !$found_reason } {
 		set reason_list [join $why "|"]
-		log_error "Job $job_id scontrol returned Reason=$found_why instead of Reason=\"$reason_list\""
+		set msg "Job $job_id scontrol returned Reason=$found_why instead of Reason=\"$reason_list\""
+		if { $fail_hard} {
+			log_error $msg
+			endit 1
+		} else {
+			log_info $msg
+		}
 		return 1
 	}
 
