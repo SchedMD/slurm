@@ -188,7 +188,8 @@ proc check_job_reason { job_id state why } {
 	}
 
 	if { !$found_reason } {
-		log_error "Job $job_id scontrol returned Reason=$found_why instead of Reason='$why'"
+		set reason_list [join $why "|"]
+		log_error "Job $job_id scontrol returned Reason=$found_why instead of Reason=\"$reason_list\""
 		endit 1
 	}
 
