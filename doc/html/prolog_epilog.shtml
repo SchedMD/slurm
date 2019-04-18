@@ -4,7 +4,8 @@
 
 <p>Slurm supports a multitude of prolog and epilog programs.
 Note that for security reasons, these programs do not have a search path set.
-Either specify fully qualified path names in the program or set the "PATH"
+Either specify fully qualified path names in the program or set the
+<span class="commandline">PATH</span>
 environment variable.
 The first table below identifies what prologs and epilogs are available for job
 allocations, when and where they run.</p>
@@ -309,9 +310,12 @@ runs on every node of an allocation when the allocation is released.</p>
 <p>The task prolog is executed with the same environment as the user tasks to
 be initiated. The standard output of that program is read and processed as
 follows:<br>
-<i>export name=value</i> sets an environment variable for the user task<br>
-<i>unset name</i> clears an environment variable from the user task<br>
-<i>print ...</i> writes to the task's standard output.</p>
+<span class="commandline">export name=value</span>
+sets an environment variable for the user task<br>
+<span class="commandline">unset name</span>
+clears an environment variable from the user task<br>
+<span class="commandline">print ...</span>
+writes to the task's standard output.</p>
 
 <p>Unless otherwise specified, these environment variables are available
 to all of the programs.</p>
@@ -333,8 +337,9 @@ This is because the Prolog and Epilog programs run <u>outside</u> of any Linux
 cgroup while the job runs <u>inside</u> of the cgroup and may thus have a
 different set of visible devices.
 For example, if a job is allocated the device "/dev/nvidia1", then
-<b>CUDA_VISIBLE_DEVICES</b> will be set to a value of "1" in the Prolog and
-Epilog while the job's value of <b>CUDA_VISIBLE_DEVICES</b> will be set to a
+<span class="commandline">CUDA_VISIBLE_DEVICES</span> will be set to a value of
+"1" in the Prolog and Epilog while the job's value of
+<span class="commandline">CUDA_VISIBLE_DEVICES</span> will be set to a
 value of "0" (i.e. the first GPU device visible to the job).
 Available in Prolog and Epilog only.</li>
 
@@ -342,16 +347,20 @@ Available in Prolog and Epilog only.</li>
 If this job is part of a job array, this will be set to the job ID.
 Otherwise it will not be set.
 To reference this specific task of a job array, combine
-SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
-(e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
+<span class="commandline">SLURM_ARRAY_JOB_ID</span> with
+<span class="commandline">SLURM_ARRAY_TASK_ID</span>
+(e.g. <span class="commandline">scontrol update
+${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...</span>);
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 
 <li><b>SLURM_ARRAY_TASK_ID</b>
 If this job is part of a job array, this will be set to the task ID.
 Otherwise it will not be set.
 To reference this specific task of a job array, combine
-SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
-(e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
+<span class="commandline">SLURM_ARRAY_JOB_ID</span> with
+<span class="commandline">SLURM_ARRAY_TASK_ID</span>
+(e.g. <span class="commandline">scontrol update
+${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...</span>);
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 
 <li><b>SLURM_ARRAY_TASK_MAX</b>
@@ -393,14 +402,17 @@ Available in EpilogSlurmctld only.</li>
 
 <li><b>SLURM_JOB_EXIT_CODE</b>
 The exit code of the job script (or salloc). The value is the status
-as returned by the wait() system call (See wait(2))
+as returned by the <span class="commandline">wait()</span> system call
+(See <span class="commandline">wait(2)</span>).
 Available in EpilogSlurmctld only.</li>
 
 <li><b>SLURM_JOB_EXIT_CODE2</b>
 The exit code of the job script (or salloc). The value has the format
-&lt;exit&gt;:&lt;sig&gt;. The first number is the exit code, typically as set
-by the exit() function. The second number is the signal that caused the process
-to terminate if it was terminated by a signal.
+<span class="commandline">&lt;exit&gt;:&lt;sig&gt;</span>.
+The first number is the exit code, typically as set by the
+<span class="commandline">exit()</span> function.
+The second number is the signal that caused the process to
+terminate if it was terminated by a signal.
 Available in EpilogSlurmctld only.</li>
 
 <li><b>SLURM_JOB_GID</b>
@@ -423,7 +435,8 @@ Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 
 <li><b>SLURM_JOB_NODELIST</b>
 Nodes assigned to job. A Slurm hostlist expression.
-"scontrol show hostnames" can be used to convert this to a
+<span class="commandline">scontrol show hostnames</span>
+can be used to convert this to a
 list of individual host names.
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 
