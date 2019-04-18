@@ -913,6 +913,7 @@ static slurm_cli_opt_t slurm_opt_cpus_per_gpu = {
 	.set_func = arg_set_cpus_per_gpu,
 	.get_func = arg_get_cpus_per_gpu,
 	.reset_func = arg_reset_cpus_per_gpu,
+	.reset_each_pass = true,
 };
 
 static int arg_set_cpus_per_task(slurm_opt_t *opt, const char *arg)
@@ -1358,6 +1359,7 @@ static slurm_cli_opt_t slurm_opt_gpu_bind = {
 	.set_func = arg_set_gpu_bind,
 	.get_func = arg_get_gpu_bind,
 	.reset_func = arg_reset_gpu_bind,
+	.reset_each_pass = true,
 };
 
 COMMON_STRING_OPTION(gpu_freq);
@@ -1368,6 +1370,7 @@ static slurm_cli_opt_t slurm_opt_gpu_freq = {
 	.set_func = arg_set_gpu_freq,
 	.get_func = arg_get_gpu_freq,
 	.reset_func = arg_reset_gpu_freq,
+	.reset_each_pass = true,
 };
 
 COMMON_STRING_OPTION(gpus);
@@ -1378,6 +1381,7 @@ static slurm_cli_opt_t slurm_opt_gpus = {
 	.set_func = arg_set_gpus,
 	.get_func = arg_get_gpus,
 	.reset_func = arg_reset_gpus,
+	.reset_each_pass = true,
 };
 
 COMMON_STRING_OPTION(gpus_per_node);
@@ -1388,6 +1392,7 @@ static slurm_cli_opt_t slurm_opt_gpus_per_node = {
 	.set_func = arg_set_gpus_per_node,
 	.get_func = arg_get_gpus_per_node,
 	.reset_func = arg_reset_gpus_per_node,
+	.reset_each_pass = true,
 };
 
 COMMON_STRING_OPTION(gpus_per_socket);
@@ -1398,6 +1403,7 @@ static slurm_cli_opt_t slurm_opt_gpus_per_socket = {
 	.set_func = arg_set_gpus_per_socket,
 	.get_func = arg_get_gpus_per_socket,
 	.reset_func = arg_reset_gpus_per_socket,
+	.reset_each_pass = true,
 };
 
 COMMON_STRING_OPTION(gpus_per_task);
@@ -1408,6 +1414,7 @@ static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 	.set_func = arg_set_gpus_per_task,
 	.get_func = arg_get_gpus_per_task,
 	.reset_func = arg_reset_gpus_per_task,
+	.reset_each_pass = true,
 };
 
 static int arg_set_gres(slurm_opt_t *opt, const char *arg)
@@ -1947,6 +1954,7 @@ static slurm_cli_opt_t slurm_opt_mem_per_gpu = {
 	.set_func = arg_set_mem_per_gpu,
 	.get_func = arg_get_mem_per_gpu,
 	.reset_func = arg_reset_mem_per_gpu,
+	.reset_each_pass = true,
 };
 
 COMMON_INT_OPTION_SET(pn_min_cpus, "--mincpus");

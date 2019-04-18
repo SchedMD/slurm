@@ -48,6 +48,8 @@ documents those changes that are of interest to users and administrators.
  -- Add reboot_from_controller SlurmctldParameter to allow RebootProgram to be
     run from the controller instead of the slurmds.
  -- Fix increasing of job size when extern steps exist.
+ -- Reset GPU-related arguments to salloc/sbatch/srun for each separate
+    heterogeneous job component.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
