@@ -780,7 +780,7 @@ slurm_step_launch(slurm_step_ctx_t *ctx, HV *params, HV *callbacks=NULL)
 				set_slcb(callbacks);
 				cb = &slcb;
 			}
-			RETVAL = slurm_step_launch(ctx, &lp, cb, -1);
+			RETVAL = slurm_step_launch(ctx, &lp, cb);
 			free_slurm_step_launch_params_memory(&lp);
 		}
 	OUTPUT:
