@@ -2136,6 +2136,8 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 			job->env = job->envtp->env;
 			env_array_free(tmp_env);
 
+			setenvf(&job->env, "SLURM_SCRIPT_CONTEXT",
+				"epilog_task");
 			if (job->task_epilog) {
 				_run_script_as_user("user task_epilog",
 						    job->task_epilog,

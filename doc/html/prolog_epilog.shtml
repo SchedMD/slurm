@@ -451,6 +451,21 @@ User ID of the job's owner.</li>
 <li><b>SLURM_JOB_USER</b>
 User name of the job's owner.</li>
 
+<li><b>SLURM_SCRIPT_CONTEXT</b>
+Identifies which epilog or prolog program is currently running.
+The value is one of the following:
+<ul>
+<li><span class="commandline">prolog_slurmctld</span></li>
+<li><span class="commandline">epilog_slurmctld</span></li>
+<li><span class="commandline">prolog_slurmd</span></li>
+<li><span class="commandline">epilog_slurmd</span></li>
+<li><span class="commandline">prolog_task</span></li>
+<li><span class="commandline">epilog_task</span></li>
+<li><span class="commandline">prolog_srun</span></li>
+<li><span class="commandline">epilog_srun</span></li>
+</ul>
+</li>
+
 <li><b>SLURM_WCKEY</b>
 User name of the job's wckey (if any).
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>

@@ -3700,6 +3700,9 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 			job_ptr->derived_ec);
 		setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
 		setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u", job_ptr->exit_code);
+		setenvf(&my_env, "SLURM_SCRIPT_CONTEXT", "epilog_slurmctld");
+	} else {
+		setenvf(&my_env, "SLURM_SCRIPT_CONTEXT", "prolog_slurmctld");
 	}
 
 	if (job_ptr->array_task_id != NO_VAL) {

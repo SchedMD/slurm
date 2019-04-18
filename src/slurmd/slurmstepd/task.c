@@ -216,6 +216,8 @@ _run_script_and_set_env(const char *name, const char *path,
 	if (cpid == 0) {
 		char *argv[2];
 
+		setenvf(&job->env, "SLURM_SCRIPT_CONTEXT", "prolog_task");
+
 		argv[0] = xstrdup(path);
 		argv[1] = NULL;
 		if (dup2(pfd[1], 1) == -1)

@@ -153,7 +153,7 @@ typedef struct {
 } job_env_t;
 
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
-static char **_build_env(job_env_t *job_env);
+static char **_build_env(job_env_t *job_env, bool is_epilog);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static void _free_job_env(job_env_t *env_ptr);
@@ -5696,7 +5696,7 @@ done:
 }
 
 /* NOTE: call _destroy_env() to free returned value */
-static char **_build_env(job_env_t *job_env)
+static char **_build_env(job_env_t *job_env, bool is_epilog)
 {
 	char **env = xmalloc(sizeof(char *));
 	bool user_name_set = 0;
@@ -5748,6 +5748,12 @@ static char **_build_env(job_env_t *job_env)
 
 	if (job_env->partition)
 		setenvf(&env, "SLURM_JOB_PARTITION", "%s", job_env->partition);
+
+	if (is_epilog) {
+		setenvf(&env, "SLURM_SCRIPT_CONTEXT", "epilog_slurmd");
+	} else {
+		setenvf(&env, "SLURM_SCRIPT_CONTEXT", "prolog_slurmd");
+	}
 
 	return env;
 }
@@ -5921,7 +5927,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	bool script_lock = false;
 	char **my_env;
 
-	my_env = _build_env(job_env);
+	my_env = _build_env(job_env, false);
 	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
 	if (cred) {
 		slurm_cred_arg_t cred_arg;
@@ -5930,6 +5936,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 			cred_arg.job_constraints);
 		slurm_cred_free_args(&cred_arg);
 	}
+
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
@@ -5998,7 +6005,7 @@ _run_epilog(job_env_t *job_env)
 	static uint16_t timeout;
 	int error_code, diff_time;
 	char *my_epilog;
-	char **my_env = _build_env(job_env);
+	char **my_env = _build_env(job_env, true);
 	bool script_lock = false;
 
 	if (msg_timeout == 0)
