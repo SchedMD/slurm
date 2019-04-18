@@ -800,15 +800,15 @@ test39.#   Test of job select/cons_tres and --gpu options.
 test39.1   Test full set of sbatch --gpu options and scontrol show job
 test39.2   Test full set of salloc --gpu options and scontrol show job
 test39.3   Test full set of srun --gpu options and scontrol show step
-test39.4   Test some invalid combintations of --gpu options
-test39.5   Test some valid combintations of srun --gpu options
+test39.4   Test some invalid combinations of --gpu options
+test39.5   Test some valid combinations of srun --gpu options
 test39.6   Ensure job requesting GPUs on multiple sockets gets CPUs on them
 test39.7   Test --cpus-per-gpu option
 test39.8   Test --gpu-bind options
 test39.9   Test --gpu-freq options
 test39.10  Test --mem-per-gpu option
 test39.11  Test GRES options with craynetwork (no topology)
-test39.12  Test some valid combintations of srun --gpu and non-GPU GRES options
+test39.12  Test some valid combinations of srun --gpu and non-GPU GRES options
 test39.13  Validate proper GRES operation under heavy load (many jobs)
 test39.14  Increase size of job with allocated GPUs
 test39.15  Test --gpus-per-tres with --overcommit option
