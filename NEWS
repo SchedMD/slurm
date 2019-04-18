@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix printf format string error on FreeBSD.
  -- Fix parsing of delay_boot in controller when additional arguments follow it.
  -- Fix --ntasks-per-node in cons_tres.
+ -- Fix array tasks getting same reject reason.
 
 * Changes in Slurm 19.05.4
 ==========================

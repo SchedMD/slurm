@@ -223,4 +223,20 @@ extern int test_job_dependency(struct job_record *job_ptr);
  */
 extern int update_job_dependency(struct job_record *job_ptr, char *new_depend);
 
+/*
+ * When an array job is rejected for some reason, the remaining array tasks will
+ * get skipped by both the main scheduler and the backfill scheduler (it's an
+ * optimization). Hence, their reasons should match the reason of the first job.
+ * This function sets those reasons.
+ *
+ * job_ptr		(IN) The current job being evaluated, after it has gone
+ * 			through the scheduling loop.
+ * reject_array_job	(IN) A pointer to the first job (array task) in the most
+ * 			recently rejected array job. If job_ptr belongs to the
+ * 			same array as reject_array_job, then set job_ptr's
+ * 			reason to match reject_array_job.
+ */
+extern void fill_array_reasons(struct job_record *job_ptr,
+			       struct job_record *reject_arr_job);
+
 #endif /* !_JOB_SCHEDULER_H */
