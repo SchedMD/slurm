@@ -608,9 +608,9 @@ extern int clusteracct_storage_g_fini_ctld(void *db_conn,
  */
 extern int jobacct_storage_job_start_direct(void *db_conn,
 					    struct job_record *job_ptr);
-
 /*
- * load into the storage the start of a job
+ * load into the storage information about a job,
+ * typically when it begins execution, but possibly earlier
  */
 extern int jobacct_storage_g_job_start(void *db_conn,
 				       struct job_record *job_ptr);
