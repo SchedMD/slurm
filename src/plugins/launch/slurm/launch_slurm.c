@@ -821,9 +821,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_start_time = time(NULL);
 	if (first_launch) {
 		if (slurm_step_launch(job->step_ctx, &launch_params,
-				      &callbacks,
-				      srun_opt->pack_step_cnt)
-				!= SLURM_SUCCESS) {
+				      &callbacks) != SLURM_SUCCESS) {
 			rc = errno;
 			*local_global_rc = errno;
 			error("Application launch failed: %m");

@@ -3567,8 +3567,7 @@ extern void slurm_step_launch_params_t_init(slurm_step_launch_params_t *ptr);
  */
 extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 			     const slurm_step_launch_params_t *params,
-			     const slurm_step_launch_callbacks_t *callbacks,
-			     int pack_job_cnt);
+			     const slurm_step_launch_callbacks_t *callbacks);
 
 /*
  * slurm_step_launch_add - Add tasks to a step that was already started
