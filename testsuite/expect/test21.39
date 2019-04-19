@@ -151,6 +151,9 @@ proc check_job_reason_retry { job_id state why } {
 	set cnt 0
 	while { $rc && ($cnt < 10) } {
 		set rc [check_job_reason $job_id $state $why [expr {$cnt == 9}]]
+		if {$rc < 0} {
+			break
+		}
 		incr cnt
 		if {$rc} {
 			after [expr {$cnt * 1000}]
@@ -184,15 +187,17 @@ proc check_job_reason { job_id state why fail_hard } {
 			lassign [wait] pid spawnid os_error_flag rc
 		}
 	}
-
 	log_user 1
+
 	if { $state_found != $state } {
 		set msg "Job $job_id state found was $state_found, expected $state"
-		if { $fail_hard} {
+		if { $fail_hard } {
 			log_error $msg
 			endit 1
-		} else {
-			log_info $msg
+		}
+		log_info $msg
+		if { $state_found == "COMPLETED" } {
+			return -1
 		}
 		return 1
 	}
