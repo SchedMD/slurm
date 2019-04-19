@@ -123,7 +123,7 @@ proc test_salloc { qos account num_nodes sleep_time } {
 	set rc -12345
 	set job_id 0
 
-	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes $bin_sleep $sleep_time]
+	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes -t1 $bin_sleep $sleep_time]
 	expect {
 		-re "allocation ($number)" {
 			set job_id $expect_out(1,string)
