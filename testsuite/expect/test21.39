@@ -117,13 +117,13 @@ proc endit { exit_code } {
 	exit $exit_code
 }
 
-proc test_salloc { qos account num_nodes cmd } {
-	global salloc number part_name
+proc test_salloc { qos account num_nodes sleep_time } {
+	global bin_sleep salloc number part_name
 
 	set rc -12345
 	set job_id 0
 
-	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes]
+	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes $bin_sleep $sleep_time]
 	expect {
 		-re "allocation ($number)" {
 			set job_id $expect_out(1,string)
@@ -241,8 +241,8 @@ proc run_test { run_qos } {
 		set reason "InvalidAccount"
 	}
 
-	set job_id_1 [test_salloc $qos $acct 1 "sleep 10"]
-	set job_id_2 [test_salloc $qos $acct 1 "sleep 10"]
+	set job_id_1 [test_salloc $qos $acct 1 10]
+	set job_id_2 [test_salloc $qos $acct 1 10]
 
 	if { $run_qos } {
 		# remove test qos
