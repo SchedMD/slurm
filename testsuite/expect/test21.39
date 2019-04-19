@@ -261,8 +261,6 @@ proc run_test { run_qos } {
 	}
 
 	# Verify jobs state and reason
-
-
 	check_job_reason_retry $job_id_1 "RUNNING" [list "None"]
 	check_job_reason_retry $job_id_2 "PENDING" [list "$reason"]
 
@@ -271,7 +269,7 @@ proc run_test { run_qos } {
 	spawn $scontrol update jobid=$job_id_1 $update_line
 	spawn $scontrol update jobid=$job_id_2 $update_line
 
-	sleep 1.5
+	sleep 5
 	# Check reasons after account alter
 	check_job_reason_retry $job_id_1 "RUNNING" [list "None"]
 	check_job_reason_retry $job_id_2 "PENDING" [list "Resources" "None"]
