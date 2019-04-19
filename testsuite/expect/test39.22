@@ -1,0 +1,112 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SLURM functionality
+#          Test heterogeneous job GPU allocations.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC
+# Written by Morris Jette
+#
+# This file is part of SLURM, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# SLURM is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with SLURM; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+############################################################################
+source ./globals
+
+set test_id        "39.22"
+set exit_code      0
+set file_in1       "test$test_id.input1"
+set file_in2       "test$test_id.input2"
+set number_commas  "\[0-9_,\]+"
+
+print_header $test_id
+
+set select_type [test_select_type]
+if {![string compare $select_type "cons_tres"] ||
+    (![string compare $select_type "cray"] && [test_select_type_params "other_cons_tres"])} {
+	send_user "\nValid configuration, using select/cons_tres\n"
+} else {
+	send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
+	exit 0
+}
+if {[test_front_end]} {
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit $exit_code
+}
+
+set def_part_name [default_partition]
+set nb_nodes [get_node_cnt_in_part $def_part_name]
+if {$nb_nodes < 2} {
+	send_user "\nWARNING: This test requires 2 or more nodes in the default partition\n"
+	exit 0
+}
+set nb_nodes 2
+set gpu_cnt [get_gpu_count $nb_nodes]
+if {$gpu_cnt < 0} {
+	send_user "\nFAILURE: Error getting GPU count\n"
+	exit 1
+}
+if {$gpu_cnt < 1} {
+	send_user "\nWARNING: This test requires 1 or more GPUs in the default partition\n"
+	exit 0
+}
+
+#
+# Build input script files
+#
+make_bash_script $file_in1 "$scontrol -dd show job \$SLURM_JOB_ID
+$srun --pack-group=0,1 -l ./$file_in2
+exit 0"
+
+make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES"
+
+set timeout $max_job_delay
+set match   0
+set salloc_pid [spawn $salloc --gpus=$gpu_cnt --nodes=1 -t1 -J "test$test_id" : --gpus=1 --nodes=1 ./$file_in1]
+expect {
+	-re "($number): HOST:($alpha_numeric_under) CUDA_VISIBLE_DEVICES:($number_commas)" {
+		set gpu_alloc [cuda_count $expect_out(3,string)]
+		if {$expect_out(1,string) == 0 && $gpu_alloc == $gpu_cnt} {
+			incr match
+		}
+		if {$expect_out(1,string) == 1 && $gpu_alloc == 1} {
+			incr match
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: salloc not responding\n"
+		slow_kill $salloc_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != 2} {
+	send_user "\nFAILURE: Invalid heterogeneous job output ($match != 2)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in1 $file_in2
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code

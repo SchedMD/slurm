@@ -660,6 +660,7 @@ EXTRA_DIST = \
 	test39.20			\
 	test39.21			\
 	test39.21.prog.cu		\
+	test39.22			\
 	test40.1			\
 	test40.2			\
 	test40.3			\
