@@ -316,6 +316,7 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 	int rc;
 	uint64_t apid;
 	uint32_t jobid;
+	uint32_t taskid;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -323,16 +324,18 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		jobid = job->pack_jobid;
 	else
 		jobid = job->jobid;
+	taskid = job->pack_task_offset + job->task[job->envtp->localid]->gtid;
+
 	apid = SLURM_ID_HASH(jobid, job->stepid);
 	debug2("%s: %u.%u, apid %"PRIu64", task %d", __func__,
-	       job->jobid, job->stepid, apid, job->envtp->procid);
+	       job->jobid, job->stepid, apid, taskid);
 
 	/*
 	 * Send the rank to the application's PMI layer via an environment
 	 * variable.
 	 */
 	rc = env_array_overwrite_fmt(&job->env, ALPS_APP_PE_ENV,
-				     "%d", job->envtp->procid);
+				     "%d", taskid);
 	if (rc == 0) {
 		CRAY_ERR("Failed to set env variable %s", ALPS_APP_PE_ENV);
 		return SLURM_ERROR;
@@ -656,6 +659,7 @@ static int _check_status_file(stepd_step_rec_t *job,
 	char status;
 	int rv, fd;
 	uint32_t jobid;
+	uint32_t taskid;
 
 	// We only need to special case termination with exit(0)
 	// srun already handles abnormal exit conditions fine
@@ -666,6 +670,7 @@ static int _check_status_file(stepd_step_rec_t *job,
 		jobid = job->pack_jobid;
 	else
 		jobid = job->jobid;
+	taskid = job->pack_task_offset + task->gtid;
 
 	// Get the lli file name
 	snprintf(llifile, sizeof(llifile), LLI_STATUS_FILE,
@@ -720,7 +725,7 @@ static int _check_status_file(stepd_step_rec_t *job,
 
 		verbose("step %u.%u task %u exited without calling "
 			"PMI_Finalize()",
-			job->jobid, job->stepid, task->gtid);
+			job->jobid, job->stepid, taskid);
 	}
 	return SLURM_SUCCESS;
 }
