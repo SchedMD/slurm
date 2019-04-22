@@ -369,17 +369,21 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 * Generic Query assuming that -S and -E are properly set in
 		 * slurmdb_job_cond_def_start_end
 		 *
-		 * (job eligible)         &&
-		 * (( time_start && -S < time_start) ||
-		 *  (!time_start && job eligible))   &&
+		 * (job eligible)                                   &&
+		 * (( time_start &&              (-S < time_start)) ||
+		 *  (!time_start &&  time_end && (-S < time_end))   || -> Cancel before start
+		 *  (!time_start && !time_end && (state = PD) ))    && -> Still PD
 		 * (-E > time_eligible)
 		 */
 		xstrfmtcat(*extra,
 			   "(t1.time_eligible && "
-			   "(( t1.time_start && %d < t1.time_start) || "
-			   "(!t1.time_start && t1.time_eligible)) && "
+			   "(( t1.time_start && (%d < t1.time_start)) || "
+			   " (!t1.time_start &&  t1.time_end && (%d < t1.time_end)) || "
+			   " (!t1.time_start && !t1.time_end && (t1.state=%d))) && "
 			   "(%d > t1.time_eligible))",
 			   start,
+			   start,
+			   base_state,
 			   end);
 		break;
 	case JOB_SUSPENDED:
