@@ -31,6 +31,7 @@ documents those changes that are of interest to users and administrators.
  -- Limit records per single SQL statement when loading archived data.
  -- Fix unnecessary reloading of job submit plugins.
  -- Allow job submit plugins to be turned on/off with a reconfigure.
+ -- Fix segfault when loading/unloading Lua job submit plugin multiple times.
 
 * Changes in Slurm 18.08.7
 ==========================

@@ -1752,7 +1752,11 @@ int init(void)
 
 int fini(void)
 {
-	lua_close (L);
+	if (L) {
+		lua_close(L);
+		L = NULL;
+		lua_script_last_loaded = 0;
+	}
 	return SLURM_SUCCESS;
 }
 
