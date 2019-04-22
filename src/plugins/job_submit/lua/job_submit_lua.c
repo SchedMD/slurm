@@ -1681,7 +1681,11 @@ static int _load_script(void)
 	/*
 	 *  Initilize lua
 	 */
-	L = luaL_newstate();
+	if ((L = luaL_newstate()) == NULL) {
+		error("%s: luaL_newstate() failed to allocate.", __func__);
+		return SLURM_ERROR;
+	}
+
 	luaL_openlibs(L);
 	if (luaL_loadfile(L, lua_script_path)) {
 		if (L_orig) {
