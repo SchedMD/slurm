@@ -1675,8 +1675,11 @@ static int _load_script(void)
 	}
 	
 	if (st.st_mtime <= lua_script_last_loaded) {
+		debug3("%s: skipping loading Lua script: %s", __func__,
+		       lua_script_path);
 		return SLURM_SUCCESS;
 	}
+	debug3("%s: loading Lua script: %s", __func__, lua_script_path);
 
 	/*
 	 *  Initilize lua
@@ -1790,6 +1793,7 @@ int init(void)
 int fini(void)
 {
 	if (L) {
+		debug3("%s: Unloading Lua script", __func__);
 		lua_close(L);
 		L = NULL;
 		lua_script_last_loaded = 0;
