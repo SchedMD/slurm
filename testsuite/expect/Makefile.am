@@ -284,6 +284,8 @@ EXTRA_DIST = \
 	test7.18			\
 	test7.18.prog.c			\
 	test7.19			\
+	test7.20			\
+	test7.20.prog.c			\
 	test9.1				\
 	test9.2				\
 	test9.3				\

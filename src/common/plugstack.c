@@ -2024,6 +2024,20 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 		else
 			*p2uint32 = 0;
 		break;
+	case S_JOB_ARRAY_ID:
+		p2uint32 = va_arg(vargs, uint32_t *);
+		if (spank->stack->type == S_TYPE_REMOTE)
+			*p2uint32 = slurmd_job->array_job_id;
+		else
+			*p2uint32 = 0;
+		break;
+	case S_JOB_ARRAY_TASK_ID:
+		p2uint32 = va_arg(vargs, uint32_t *);
+		if (spank->stack->type == S_TYPE_REMOTE)
+			*p2uint32 = slurmd_job->array_task_id;
+		else
+			*p2uint32 = 0;
+		break;
 	case S_JOB_NNODES:
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank->stack->type == S_TYPE_LOCAL) {
