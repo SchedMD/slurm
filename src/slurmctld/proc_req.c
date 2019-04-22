@@ -1626,8 +1626,10 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	 * need the job submit plugin value to build the resource allocation
 	 * response in the call to build_alloc_msg.
 	 */
-	if (err_msg)
-		job_submit_user_msg = xstrdup(err_msg);
+	if (err_msg) {
+		job_submit_user_msg = err_msg;
+		err_msg = NULL;
+	}
 
 #if HAVE_ALPS_CRAY
 	/*
@@ -4086,8 +4088,10 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	 * need the job submit plugin value to build the resource allocation
 	 * response in the call to build_alloc_msg.
 	 */
-	if (err_msg)
-		job_submit_user_msg = xstrdup(err_msg);
+	if (err_msg) {
+		job_submit_user_msg = err_msg;
+		err_msg = NULL;
+	}
 
 	if (error_code) {
 		reject_job = true;
@@ -4309,8 +4313,10 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	 * to build the resource allocation response in the call to
 	 * build_alloc_msg.
 	 */
-	if (err_msg)
-		job_submit_user_msg = xstrdup(err_msg);
+	if (err_msg) {
+		job_submit_user_msg = err_msg;
+		err_msg = NULL;
+	}
 
 	/* Create new job allocations */
 	submit_job_list = list_create(NULL);
