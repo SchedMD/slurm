@@ -1764,7 +1764,7 @@ static int _load_script(void)
 
 	if (L_orig)
 		lua_close(L_orig);
-	lua_script_last_loaded = time(NULL);
+	lua_script_last_loaded = st.st_mtime;
 	return SLURM_SUCCESS;
 }
 
