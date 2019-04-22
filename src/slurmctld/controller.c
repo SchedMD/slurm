@@ -802,6 +802,7 @@ int main(int argc, char **argv)
 		 * since it could wait a while waiting for spawned
 		 * processes to exit */
 		pthread_join(slurmctld_config.thread_id_power, NULL);
+		slurmctld_config.thread_id_power = (pthread_t) 0;
 
 		/* stop the heartbeat last */
 		heartbeat_stop();
