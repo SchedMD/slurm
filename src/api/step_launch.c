@@ -268,6 +268,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.pack_offset = params->pack_offset;
 	launch.pack_task_offset = params->pack_task_offset;
 	launch.pack_task_cnts = params->pack_task_cnts;
+	launch.pack_tids = params->pack_tids;
 	launch.pack_node_list = params->pack_node_list;
 	if (params->env == NULL) {
 		/*
@@ -465,6 +466,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.pack_offset = params->pack_offset;
 	launch.pack_task_offset = params->pack_task_offset;
 	launch.pack_task_cnts = params->pack_task_cnts;
+	launch.pack_tids = params->pack_tids;
 	launch.pack_node_list = params->pack_node_list;
 	if (params->env == NULL) {
 		/*

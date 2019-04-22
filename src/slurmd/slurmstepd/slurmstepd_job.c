@@ -314,6 +314,18 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		i = sizeof(uint16_t) * msg->pack_nnodes;
 		job->pack_task_cnts = xmalloc(i);
 		memcpy(job->pack_task_cnts, msg->pack_task_cnts, i);
+		if (msg->pack_tids) {
+			/* pack_tids == NULL if request from pre-v19.05 srun */
+			job->pack_tids = xcalloc(msg->pack_nnodes,
+						 sizeof(uint32_t *));
+			for (i = 0; i < msg->pack_nnodes; i++) {
+				size_t j;
+				j = sizeof(uint32_t) * job->pack_task_cnts[i];
+				job->pack_tids[i] = xcalloc(job->pack_task_cnts[i],
+							    sizeof(uint32_t));
+				memcpy(job->pack_tids[i], msg->pack_tids[i], j);
+			}
+		}
 	}
 	job->pack_offset = msg->pack_offset;	/* Used for env vars & labels */
 	job->pack_task_offset = msg->pack_task_offset;	/* Used for env vars & labels */
@@ -602,6 +614,13 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	eio_handle_destroy(job->msg_handle);
 	xfree(job->node_name);
 	mpmd_free(job);
+	xfree(job->pack_task_cnts);
+	if ((job->pack_nnodes != NO_VAL) && job->pack_tids) {
+		/* pack_tids == NULL if request from pre-v19.05 srun */
+		for (i = 0; i < job->pack_nnodes; i++)
+			xfree(job->pack_tids[i]);
+		xfree(job->pack_tids);
+	}
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
 	xfree(job->job_alloc_cores);

@@ -10086,7 +10086,17 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->node_offset, buffer);
 		pack32(msg->pack_jobid, buffer);
 		pack32(msg->pack_nnodes, buffer);
-		if (msg->pack_nnodes != NO_VAL) {
+		if ((msg->pack_nnodes != NO_VAL) && msg->pack_tids) {
+			/* pack_tids == NULL if request from pre-v19.05 srun */
+			pack8((uint8_t) 1, buffer);
+			for (i = 0; i < msg->pack_nnodes; i++) {
+				pack16(msg->pack_task_cnts[i], buffer);
+				pack32_array(msg->pack_tids[i],
+					     (uint32_t) msg->pack_task_cnts[i],
+					     buffer);
+			}
+		} else if (msg->pack_nnodes != NO_VAL) {
+			pack8((uint8_t) 0, buffer);
 			pack16_array(msg->pack_task_cnts, msg->pack_nnodes,
 				     buffer);
 		}
@@ -10356,6 +10366,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 					    Buf buffer,
 					    uint16_t protocol_version)
 {
+	uint8_t uint8_tmp = NO_VAL8;
 	uint32_t uint32_tmp = 0;
 	launch_tasks_request_msg_t *msg;
 	int i = 0;
@@ -10376,7 +10387,23 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->node_offset, buffer);
 		safe_unpack32(&msg->pack_jobid, buffer);
 		safe_unpack32(&msg->pack_nnodes, buffer);
-		if (msg->pack_nnodes != NO_VAL) {
+		if (msg->pack_nnodes != NO_VAL)
+			safe_unpack8(&uint8_tmp, buffer);
+		if ((msg->pack_nnodes != NO_VAL) && (uint8_tmp == 1)) {
+			/* pack_tids == NULL if request from pre-v19.05 srun */
+			safe_xcalloc(msg->pack_task_cnts, msg->pack_nnodes,
+				     sizeof(uint16_t));
+			safe_xcalloc(msg->pack_tids, msg->pack_nnodes,
+				     sizeof(uint32_t *));
+			for (i = 0; i < msg->pack_nnodes; i++) {
+				safe_unpack16(&msg->pack_task_cnts[i], buffer);
+				safe_unpack32_array(&msg->pack_tids[i],
+						    &uint32_tmp,
+						    buffer);
+				if (msg->pack_task_cnts[i] != uint32_tmp)
+					goto unpack_error;
+			}
+		} else if (msg->pack_nnodes != NO_VAL) {
 			safe_unpack16_array(&msg->pack_task_cnts,
 					    &uint32_tmp, buffer);
 			if (uint32_tmp != msg->pack_nnodes)
