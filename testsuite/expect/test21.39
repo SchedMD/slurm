@@ -105,9 +105,12 @@ proc cleanup_accounts {} {
 }
 
 proc endit { exit_code } {
-	global test_id part_name
+	global config_dir cwd bin_cp test_id part_name
 
 	wait_for_part_done $part_name
+
+	exec $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
+	reconfigure
 
 	if {$exit_code == 0} {
 		cleanup_accounts
@@ -118,13 +121,13 @@ proc endit { exit_code } {
 	exit $exit_code
 }
 
-proc test_salloc { qos account num_nodes cmd } {
-	global salloc number part_name
+proc test_salloc { qos account num_nodes } {
+	global salloc number part_name bin_bash
 
 	set rc -12345
 	set job_id 0
 
-	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes]
+	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes $bin_bash]
 	expect {
 		-re "allocation ($number)" {
 			set job_id $expect_out(1,string)
@@ -211,8 +214,8 @@ proc run_test { run_qos } {
 		set reason "InvalidAccount"
 	}
 
-	set job_id_1 [test_salloc $qos $acct 1 "sleep 10"]
-	set job_id_2 [test_salloc $qos $acct 1 "sleep 10"]
+	set job_id_1 [test_salloc $qos $acct 1]
+	set job_id_2 [test_salloc $qos $acct 1]
 
 	if { $run_qos } {
 		# remove test qos
@@ -239,7 +242,7 @@ proc run_test { run_qos } {
 	spawn $scontrol update jobid=$job_id_1 $update_line
 	spawn $scontrol update jobid=$job_id_2 $update_line
 
-	sleep 1.5
+	sleep 5
 	# Check reasons after account alter
 	check_job_reason $job_id_1 "RUNNING" [list "None"]
 	check_job_reason $job_id_2 "PENDING" [list "Resources" "None"]
@@ -266,10 +269,24 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 cleanup_accounts
 create_accounts
 
+# Get the location of the slurm.conf file
+set config_dir [get_conf_path]
+
+#
+# Copy slurm.conf file
+#
+set cwd [$bin_pwd]
+copy_conf $config_dir $cwd
+
+# Comment out PrologFlags in the slurm.conf
+exec $bin_sed -i {s/^\(PrologFlags=\)/#\1/gI} $config_dir/slurm.conf
+
+reconfigure
+
 delete_part $part_name
 
 if { [create_part $part_name 1] } {
-	exit 1
+	endit 1
 }
 
 for {set i 0} {$i < 2} {incr i} {
