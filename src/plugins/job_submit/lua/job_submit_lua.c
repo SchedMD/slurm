@@ -1805,7 +1805,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 	int rc = SLURM_ERROR;
 	slurm_mutex_lock (&lua_lock);
 
-	(void) _load_script();
+	if ((rc = _load_script()))
+		goto out;
 
 	/*
 	 *  All lua script functions should have been verified during
