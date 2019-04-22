@@ -152,7 +152,7 @@ static uint32_t prevflags;    /* Priority Flags before _internal_setup() resets
 static time_t g_last_ran = 0; /* when the last poll ran */
 static double decay_factor = 1; /* The decay factor when decaying time. */
 
-/* variables defined in prirority_multifactor.h */
+/* variables defined in priority_multifactor.h */
 bool priority_debug = 0;
 
 static void _priority_p_set_assoc_usage_debug(slurmdb_assoc_rec_t *assoc);
