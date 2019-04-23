@@ -168,6 +168,17 @@ void * list_find_first (List l, ListFindF f, void *key);
  *    to be unique (according to the function [f]).
  */
 
+void * list_remove_first (List l, ListFindF f, void *key);
+/*
+ *  Traverses list [l] using [f] to match each item with [key].
+ *  Returns a ptr to the first item for which the function [f]
+ *    returns non-zero and removes it from the list, or NULL if no such item is
+ *    found.
+ *  Note: This function differs from list_remove() in that it does not require
+ *    a list iterator; it should only be used when all list items are known
+ *    to be unique (according to the function [f]).
+ */
+
 int list_delete_all (List l, ListFindF f, void *key);
 /*
  *  Traverses list [l] using [f] to match each item with [key].

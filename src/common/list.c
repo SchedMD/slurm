@@ -370,6 +370,34 @@ list_find_first (List l, ListFindF f, void *key)
 	return v;
 }
 
+/* list_remove_first()
+ */
+void *
+list_remove_first (List l, ListFindF f, void *key)
+{
+	ListNode *pp;
+	void *v = NULL;
+
+	assert(l != NULL);
+	assert(f != NULL);
+	assert(key != NULL);
+	slurm_mutex_lock(&l->mutex);
+	assert(l->magic == LIST_MAGIC);
+
+	pp = &l->head;
+	while (*pp) {
+		if (f((*pp)->data, key)) {
+			v = list_node_destroy(l, pp);
+			break;
+		} else {
+			pp = &(*pp)->next;
+		}
+	}
+	slurm_mutex_unlock(&l->mutex);
+
+	return v;
+}
+
 /* list_delete_all()
  */
 int
