@@ -105,7 +105,7 @@ proc cleanup_accounts {} {
 }
 
 proc endit { exit_code } {
-	global config_dir cwd bin_cp test_id part_name
+	global config_dir cwd bin_cp bin_rm test_id part_name
 
 	wait_for_part_done $part_name
 
@@ -114,6 +114,7 @@ proc endit { exit_code } {
 
 	if {$exit_code == 0} {
 		cleanup_accounts
+		exec $bin_rm -f $cwd/slurm.conf.orig
 		print_success $test_id
 	} else {
 		print_failure $test_id
