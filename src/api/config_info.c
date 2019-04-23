@@ -1180,6 +1180,16 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->priority_params);
 	list_append(ret_list, key_pair);
 
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("PrioritySiteFactorParameters");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->site_factor_params);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("PrioritySiteFactorPlugin");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->site_factor_plugin);
+	list_append(ret_list, key_pair);
+
 	if (xstrcmp(slurm_ctl_conf_ptr->priority_type, "priority/basic") == 0) {
 		key_pair = xmalloc(sizeof(config_key_pair_t));
 		key_pair->name = xstrdup("PriorityType");

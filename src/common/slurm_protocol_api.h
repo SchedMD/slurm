@@ -334,6 +334,18 @@ char *slurm_get_priority_params(void);
  */
 uint16_t slurm_get_priority_reset_period(void);
 
+/* slurm_get_priority_site_factor_params
+ * returns the site_factor_params value from slurmctld_conf object
+ * RET char *    - site_factor_params, MUST be xfreed by caller
+ */
+char *slurm_get_priority_site_factor_params(void);
+
+/* slurm_get_priority_site_factor_plugin
+ * returns the site_factor_plugin value from slurmctld_conf object
+ * RET char *    - site_factor_plugin, MUST be xfreed by caller
+ */
+char *slurm_get_priority_site_factor_plugin(void);
+
 /* slurm_get_priority_type
  * returns the priority type from slurmctld_conf object
  * RET char *    - priority type, MUST be xfreed by caller

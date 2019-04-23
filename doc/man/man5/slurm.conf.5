@@ -1938,6 +1938,17 @@ or days\-hr).  The default value is 7\-0 (7 days).
 Arbitrary string used by the PriorityType plugin.
 
 .TP
+\fBPrioritySiteFactorParameters\fR
+Arbitrary string used by the PrioritySiteFactorPlugin plugin.
+
+.TP
+\fBPrioritySiteFactorPlugin\fR
+The specifies an optional plugin to be used alongside "priority/multifactor",
+which is meant to initially set and continuously update the SiteFactor
+priority factor.
+The default value is "site_factor/none".
+
+.TP
 \fBPriorityType\fR
 This specifies the plugin to be used in establishing a job's scheduling
 priority. Supported values are "priority/basic" (jobs are prioritized

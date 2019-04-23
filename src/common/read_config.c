@@ -310,6 +310,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"PriorityUsageResetPeriod", S_P_STRING},
 	{"PriorityType", S_P_STRING},
 	{"PriorityFlags", S_P_STRING},
+	{"PrioritySiteFactorParameters", S_P_STRING},
+	{"PrioritySiteFactorPlugin", S_P_STRING},
 	{"PriorityWeightAge", S_P_UINT32},
 	{"PriorityWeightAssoc", S_P_UINT32},
 	{"PriorityWeightFairshare", S_P_UINT32},
@@ -4412,6 +4414,13 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			return SLURM_ERROR;
 		}
 	}
+
+	(void) s_p_get_string(&conf->site_factor_params,
+			      "PrioritySiteFactorParameters", hashtbl);
+
+	if (!s_p_get_string(&conf->site_factor_plugin,
+			    "PrioritySiteFactorPlugin", hashtbl))
+		conf->site_factor_plugin = xstrdup(DEFAULT_SITE_FACTOR_PLUGIN);
 
 	if (!s_p_get_string(&conf->priority_type, "PriorityType", hashtbl))
 		conf->priority_type = xstrdup(DEFAULT_PRIORITY_TYPE);
