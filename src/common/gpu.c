@@ -38,7 +38,6 @@
 
 #include "src/common/gpu.h"
 #include "src/common/plugin.h"
-#include "src/common/plugrack.h"
 
 /* Gres symbols provided by the plugin */
 typedef struct slurm_ops {

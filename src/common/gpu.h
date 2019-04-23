@@ -38,7 +38,6 @@
 #define _GPU_PLUGIN_H
 
 #include "slurm/slurm.h"
-#include "slurm/slurm_errno.h"
 #include "src/common/gres.h"
 
 extern int gpu_plugin_init(void);
