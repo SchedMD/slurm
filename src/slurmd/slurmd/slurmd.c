@@ -1105,10 +1105,6 @@ _read_config(void)
 	conf->task_plugin_param = cf->task_plugin_param;
 	conf->health_check_interval = cf->health_check_interval;
 
-	FREE_NULL_BUFFER(conf->buf);
-	conf->buf = init_buf(0);
-	pack_slurmd_conf_lite(conf, conf->buf);
-
 	slurm_mutex_unlock(&conf->config_mutex);
 
 	slurm_conf_unlock();
@@ -1116,6 +1112,19 @@ _read_config(void)
 	cgroup_mem_confinement = xcgroup_mem_cgroup_job_confinement();
 	if (slurmctld_conf.job_acct_oom_kill && cgroup_mem_confinement)
 		fatal("Jobs memory is being constrained by both TaskPlugin cgroup and JobAcctGather plugin. This enables two incompatible memory enforcement mechanisms, one of them must be disabled.");
+}
+
+/*
+ * Build a slurmd configuration buffer _once_ for sending to slurmstepd
+ * This must happen after all configuration is available, including topology
+ */
+static void _build_conf_buf(void)
+{
+	slurm_mutex_lock(&conf->config_mutex);
+	FREE_NULL_BUFFER(conf->buf);
+	conf->buf = init_buf(0);
+	pack_slurmd_conf_lite(conf, conf->buf);
+	slurm_mutex_unlock(&conf->config_mutex);
 }
 
 static void
@@ -1135,6 +1144,7 @@ _reconfigure(void)
 	 */
 	slurm_topo_build_config();
 	_set_topo_info();
+	_build_conf_buf();
 	route_g_reconfigure();
 	cpu_freq_reconfig();
 
@@ -1647,7 +1657,7 @@ _slurmd_init(void)
 	rehash_node();
 	slurm_topo_build_config();
 	_set_topo_info();
-
+	_build_conf_buf();
 	route_init(conf->node_name);
 
 	/*
