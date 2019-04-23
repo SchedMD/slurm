@@ -57,6 +57,9 @@ documents those changes that are of interest to users and administrators.
  -- Add S_JOB_ARRAY_ID and S_JOB_ARRAY_TASK_ID to spank_get_item().
  -- Change container_{g,p}_add_pid() to container_{g,p}_join() and remove the
     'pid_t pid' argument.
+ -- Add new site_factor plugin type to permit sites to build plugins to set
+    and modify the site priority factor value both initially on job submission,
+    and periodically every PriorityCalcPeriod.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

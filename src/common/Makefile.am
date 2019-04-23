@@ -130,6 +130,7 @@ libcommon_la_SOURCES = 			\
 	x11_util.c x11_util.h		\
 	half_duplex.c half_duplex.h	\
 	state_control.c state_control.h	\
+	site_factor.c site_factor.h	\
 	tres_bind.c tres_bind.h		\
 	tres_frequency.c tres_frequency.h
 

@@ -60,6 +60,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/parse_time.h"
+#include "src/common/site_factor.h"
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_priority.h"
 #include "src/common/slurm_time.h"
@@ -1364,15 +1365,23 @@ static void *_decay_thread(void *no_data)
 			break;
 		}
 
+		lock_slurmctld(job_write_lock);
+
 		if (!(flags & PRIORITY_FLAGS_FAIR_TREE)) {
-			lock_slurmctld(job_write_lock);
 			list_for_each(
 				job_list,
 				(ListForF) _decay_apply_new_usage_and_weighted_factors,
 				&start_time
 				);
-			unlock_slurmctld(job_write_lock);
 		}
+
+		/*
+		 * Give the site_factor plugin a chance to update the
+		 * admin_prio_factor value if desired.
+		 */
+		site_factor_g_update();
+
+		unlock_slurmctld(job_write_lock);
 
 	get_usage:
 		if (flags & PRIORITY_FLAGS_FAIR_TREE)
@@ -1791,6 +1800,8 @@ int init ( void )
 
 	xfree(temp);
 
+	site_factor_plugin_init();
+
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -1817,12 +1828,22 @@ int fini ( void )
 	if (decay_handler_thread)
 		pthread_join(decay_handler_thread, NULL);
 
+	site_factor_plugin_fini();
+
 	return SLURM_SUCCESS;
 }
 
 extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 {
-	uint32_t priority = _get_priority_internal(time(NULL), job_ptr);
+	uint32_t priority;
+
+	/*
+	 * Run this first so any change to admin_prio_factor will be
+	 * included in the summation done inside _get_priority_internal().
+	 */
+	site_factor_g_set(job_ptr);
+
+	priority = _get_priority_internal(time(NULL), job_ptr);
 
 	debug2("initial priority for job %u is %u", job_ptr->job_id, priority);
 
@@ -1856,6 +1877,9 @@ extern void priority_p_reconfig(bool assoc_clear)
 	 */
 	if (assoc_clear)
 		_init_grp_used_cpu_run_secs(g_last_ran);
+
+	site_factor_g_reconfig();
+
 	debug2("%s reconfigured", plugin_name);
 
 	return;

@@ -27,6 +27,7 @@ SUBDIRS = \
 	route			\
 	sched			\
 	select			\
+	site_factor		\
 	slurmctld		\
 	switch			\
 	task			\
