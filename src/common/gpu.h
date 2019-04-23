@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  gpu.c - driver for gpu plugin
+ *  gpu.h - driver for gpu plugin
  *****************************************************************************
  *  Copyright (C) 2019 SchedMD LLC
  *  Written by Danny Auble <da@schedmd.com>
