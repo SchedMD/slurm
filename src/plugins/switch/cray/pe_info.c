@@ -256,8 +256,9 @@ static int *_get_cmd_map(local_step_rec_t *step_rec)
 			}
 		}
 	} else if (step_rec->stepd_step_rec->pack_jobid != NO_VAL) {
-		/* FIXME set a different cmd value per pack */
 		memset(cmd_map, 0, size);
+		for (pe = 0; pe < step_rec->ntasks; pe++)
+			cmd_map[pe] = step_rec->stepd_step_rec->pack_tid_offsets[pe];
 	} else {
 		// Only one program, index 0
 		memset(cmd_map, 0, size);
@@ -368,8 +369,7 @@ static int _get_cmd_index(stepd_step_rec_t *job)
 		CRAY_ERR("No command found on this node");
 		return -1;
 	} else if (job->pack_jobid != NO_VAL) {
-		/* FIXME return appropriate command idx for job pack */
-		return 0;
+		return job->pack_offset;
 	}
 
 	// Not an MPMD job, the one command has index 0
