@@ -2150,15 +2150,17 @@ static void _install_fork_handlers(void)
 static int _set_topo_info(void)
 {
 	int rc;
-	char * addr, * pattern;
+	char *addr = NULL, *pattern = NULL;
 
+	slurm_mutex_lock(&conf->config_mutex);
 	rc = slurm_topo_get_node_addr(conf->node_name, &addr, &pattern);
-	if ( rc == SLURM_SUCCESS ) {
+	if (rc == SLURM_SUCCESS) {
 		xfree(conf->node_topo_addr);
 		xfree(conf->node_topo_pattern);
 		conf->node_topo_addr = addr;
 		conf->node_topo_pattern = pattern;
 	}
+	slurm_mutex_unlock(&conf->config_mutex);
 
 	return rc;
 }
