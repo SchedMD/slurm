@@ -110,11 +110,11 @@ proc endit { exit_code } {
 	wait_for_part_done $part_name
 
 	exec $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
+	exec $bin_rm -f $cwd/slurm.conf.orig
 	reconfigure
 
 	if {$exit_code == 0} {
 		cleanup_accounts
-		exec $bin_rm -f $cwd/slurm.conf.orig
 		print_success $test_id
 	} else {
 		print_failure $test_id
