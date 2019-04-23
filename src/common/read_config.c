@@ -4632,7 +4632,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->slurm_user_id = my_uid;
 		}
 	}
-#ifdef HAVE_REAL_CRAY
+#ifdef HAVE_NATIVE_CRAY
 	/*
 	 * When running on Native Cray the SlurmUser must be root
 	 * to access the needed libraries.
