@@ -1523,12 +1523,22 @@ send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
 		 * message to avoid it getting lost. Was saved off earlier.
 		 */
 		for (inx = 0; inx < pack_cnt; inx++) {
+			char *line = NULL, *last = NULL;
+
 			if (!job_submit_user_msg[inx])
 				continue;
 
-			xstrfmtcat(aggregate_user_msg, "%s%d: %s",
-				   (aggregate_user_msg ? "\n" : ""),
-				    inx, job_submit_user_msg[inx]);
+			/*
+			 * Break apart any combined sentences and tag with index
+			 */
+			line = strtok_r(job_submit_user_msg[inx], "\n", &last);
+			while (line) {
+				xstrfmtcat(aggregate_user_msg, "%s%d: %s",
+					   (aggregate_user_msg ? "\n" : ""),
+					    inx, line);
+
+				line = strtok_r(NULL, "\n", &last);
+			}
 		}
 		if (aggregate_user_msg) {
 			char *tmp_err_msg = err_msg;
