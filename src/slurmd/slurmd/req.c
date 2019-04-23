@@ -1680,13 +1680,13 @@ static int _open_as_other(char *path_name, int flags, int mode,
 
 	close(pipe[1]);
 
-	/* container_g_add_pid needs to be called in the
+	/* container_g_join needs to be called in the
 	 * forked process part of the fork to avoid a race
 	 * condition where if this process makes a file or
 	 * detacts itself from a child before we add the pid
 	 * to the container in the parent of the fork. */
-	if (container_g_add_pid(jobid, uid)) {
-		error("%s container_g_add_pid(%u): %m", __func__, jobid);
+	if (container_g_join(jobid, uid)) {
+		error("%s container_g_join(%u): %m", __func__, jobid);
 		exit(SLURM_ERROR);
 	}
 
@@ -5814,15 +5814,15 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 			(char *) mode,
 			NULL };
 
-		/* container_g_add_pid needs to be called in the
+		/* container_g_join needs to be called in the
 		   forked process part of the fork to avoid a race
 		   condition where if this process makes a file or
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
-		if (container_g_add_pid(job_id, getuid())
+		if (container_g_join(job_id, getuid())
 		    != SLURM_SUCCESS)
-			error("container_g_add_pid(%u): %m", job_id);
+			error("container_g_join(%u): %m", job_id);
 
 		if (dup2 (pfds[0], STDIN_FILENO) < 0)
 			fatal ("dup2: %m");

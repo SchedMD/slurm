@@ -210,15 +210,15 @@ static int _call_external_program(stepd_step_rec_t *job)
 		char *argv[2];
 		char buf[16];
 
-		/* container_g_add_pid needs to be called in the
+		/* container_g_join needs to be called in the
 		   forked process part of the fork to avoid a race
 		   condition where if this process makes a file or
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
-		if (container_g_add_pid(recorded_jobid, getuid())
+		if (container_g_join(recorded_jobid, getuid())
 		    != SLURM_SUCCESS)
-			error("container_g_add_pid(%u): %m", recorded_jobid);
+			error("container_g_join(%u): %m", recorded_jobid);
 
 		snprintf(buf, 16, "%u", recorded_jobid);
 		setenv("SLURM_JOBID", buf, 1);

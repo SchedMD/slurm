@@ -2822,16 +2822,16 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 		struct priv_state sprivs;
 		char *argv[2];
 
-		/* container_g_add_pid needs to be called in the
+		/* container_g_join needs to be called in the
 		   forked process part of the fork to avoid a race
 		   condition where if this process makes a file or
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
 		if ((job->jobid != 0) &&	/* Ignore system processes */
-		    (container_g_add_pid(job->jobid, job->uid)
+		    (container_g_join(job->jobid, job->uid)
 		     != SLURM_SUCCESS))
-			error("container_g_add_pid(%u): %m", job->jobid);
+			error("container_g_join(%u): %m", job->jobid);
 
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;

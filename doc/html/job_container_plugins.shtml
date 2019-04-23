@@ -107,19 +107,6 @@ Process tracking container value as set by the proctrack plugin.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int container_p_add_pid(uint32_t job_id, uid_t uid);</p>
-<p style="margin-left:.2in"><b>Description</b>: Add a specific process ID
-to a given job's container. The process is first placed into a process tracking
-container (PAGG).</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input)
-Job ID.<br>
-<span class="commandline"> uid</span>&nbsp; &nbsp;&nbsp;(input)
-Owning user ID.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
-
 <p class="commandline">int container_p_delete (uint32_t job_id);</p>
 <p style="margin-left:.2in"><b>Description</b>: Destroy or otherwise
 invalidate a job container.
@@ -128,6 +115,19 @@ needed.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
 <span class="commandline"> job_id</span> &nbsp;&nbsp; (input)
 Job ID.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
+<p class="commandline">int container_p_join(uint32_t job_id, uid_t uid);</p>
+<p style="margin-left:.2in"><b>Description</b>: Add this process
+to a given job's container. The process is first placed into a process tracking
+container (PAGG).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input)
+Job ID.<br>
+<span class="commandline"> uid</span>&nbsp; &nbsp;&nbsp;(input)
+Owning user ID.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>

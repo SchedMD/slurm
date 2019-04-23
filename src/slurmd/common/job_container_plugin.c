@@ -49,7 +49,7 @@
 typedef struct job_container_ops {
 	int	(*container_p_create)	(uint32_t job_id);
 	int	(*container_p_add_cont)	(uint32_t job_id, uint64_t cont_id);
-	int	(*container_p_add_pid)	(uint32_t job_id, uid_t uid);
+	int	(*container_p_join)	(uint32_t job_id, uid_t uid);
 	int	(*container_p_delete)	(uint32_t job_id);
 	int	(*container_p_restore)	(char *dir_name, bool recover);
 	void	(*container_p_reconfig)	(void);
@@ -62,7 +62,7 @@ typedef struct job_container_ops {
 static const char *syms[] = {
 	"container_p_create",
 	"container_p_add_cont",
-	"container_p_add_pid",
+	"container_p_join",
 	"container_p_delete",
 	"container_p_restore",
 	"container_p_reconfig",
@@ -195,7 +195,7 @@ extern int container_g_create(uint32_t job_id)
  * A proctrack container will be generated containing the process
  * before container_g_add_cont() is called (see below).
  */
-extern int container_g_add_pid(uint32_t job_id, uid_t uid)
+extern int container_g_join(uint32_t job_id, uid_t uid)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -204,7 +204,7 @@ extern int container_g_add_pid(uint32_t job_id, uid_t uid)
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].container_p_add_pid))(job_id, uid);
+		rc = (*(ops[i].container_p_join))(job_id, uid);
 	}
 
 	return rc;
