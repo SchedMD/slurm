@@ -52,7 +52,7 @@ typedef struct slurm_ops {
 
 /*
  * These strings must be kept in the same order as the fields
- * declared for slurm_ext_sensors_ops_t.
+ * declared for slurm_ops_t.
  */
 static const char *syms[] = {
 	"gpu_p_reconfig",
