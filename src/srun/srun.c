@@ -357,6 +357,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 	bool need_mpir = false;
 	uint16_t *tmp_task_cnt = NULL, *pack_task_cnts = NULL;
 	uint32_t **tmp_tids = NULL, **pack_tids = NULL;
+	uint32_t *pack_tid_offsets = NULL;
 
 	launch_type = slurm_get_launch_type();
 	if (launch_type && strstr(launch_type, "slurm"))
@@ -384,6 +385,14 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			(void) slurm_step_ctx_get(job->step_ctx,
 						  SLURM_STEP_CTX_TASKS,
 						  &tmp_task_cnt);
+			xrealloc(pack_tid_offsets,
+				 sizeof(uint32_t) * total_ntasks);
+
+			for (i = total_ntasks - job->ntasks;
+			     i < total_ntasks;
+			     i++)
+				pack_tid_offsets[i] = job->pack_offset;
+
 			if (!tmp_task_cnt) {
 				fatal("%s: job %u has NULL task array",
 				      __func__, job->jobid);
@@ -435,6 +444,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			mpir_init(total_ntasks);
 
 		opt_iter = list_iterator_create(opt_list);
+
+		/* copy aggregated pack data back into each sub-job */
 		while ((opt_local = list_next(opt_iter))) {
 			srun_opt_t *srun_opt = opt_local->srun_opt;
 			xassert(srun_opt);
@@ -460,15 +471,21 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			job->pack_node_list = xstrdup(pack_node_list);
 			if ((pack_step_cnt > 1) && pack_task_cnts) {
 				xassert(node_offset == job->pack_nnodes);
-				job->pack_task_cnts = xmalloc(sizeof(uint16_t) *
-							      job->pack_nnodes);
+				job->pack_task_cnts = xcalloc(job->pack_nnodes,
+							      sizeof(uint16_t));
 				memcpy(job->pack_task_cnts, pack_task_cnts,
 				       sizeof(uint16_t) * job->pack_nnodes);
-				job->pack_tids = xmalloc(sizeof(uint32_t *) *
-							 job->pack_nnodes);
+				job->pack_tids = xcalloc(job->pack_nnodes,
+							 sizeof(uint32_t *));
 				memcpy(job->pack_tids, pack_tids,
 				       sizeof(uint32_t *) * job->pack_nnodes);
+
+				job->pack_tid_offsets = xcalloc(
+					total_ntasks, sizeof(uint32_t));
+				memcpy(job->pack_tid_offsets, pack_tid_offsets,
+				       sizeof(uint32_t) * total_ntasks);
 			}
+
 			opts = xmalloc(sizeof(_launch_app_data_t));
 			opts->got_alloc   = got_alloc;
 			opts->job         = job;
@@ -483,6 +500,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		}
 		xfree(pack_node_list);
 		xfree(pack_task_cnts);
+		xfree(pack_tid_offsets);
 		list_iterator_destroy(job_iter);
 		list_iterator_destroy(opt_iter);
 		slurm_mutex_lock(&step_mutex);
@@ -493,24 +511,30 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		if (first_job)
 			fini_srun(first_job, got_alloc, &global_rc, 0);
 	} else {
+		int i;
 		if (need_mpir)
 			mpir_init(job->ntasks);
 		if (job->pack_jobid && (job->pack_jobid != NO_VAL)) {
 			(void) slurm_step_ctx_get(job->step_ctx,
 						  SLURM_STEP_CTX_TASKS,
 						  &tmp_task_cnt);
-			job->pack_task_cnts = xmalloc(sizeof(uint16_t) *
-						      job->pack_nnodes);
+			job->pack_task_cnts = xcalloc(job->pack_nnodes,
+						      sizeof(uint16_t));
 			memcpy(job->pack_task_cnts, tmp_task_cnt,
 			       sizeof(uint16_t) * job->pack_nnodes);
 			(void) slurm_step_ctx_get(job->step_ctx,
 						  SLURM_STEP_CTX_TIDS,
 						  &tmp_tids);
-			job->pack_tids = xmalloc(sizeof(uint32_t *) *
-						 job->pack_nnodes);
+			job->pack_tids = xcalloc(job->pack_nnodes,
+						 sizeof(uint32_t *));
 			memcpy(job->pack_tids, tmp_tids,
 			       sizeof(uint32_t *) * job->pack_nnodes);
 			job->pack_node_list = xstrdup(job->nodelist);
+
+			job->pack_tid_offsets = xcalloc(
+				total_ntasks, sizeof(uint32_t));
+			for (i = 0; i < job->ntasks; i++)
+				job->pack_tid_offsets[i] = job->pack_offset;
 		}
 		opts = xmalloc(sizeof(_launch_app_data_t));
 		opts->got_alloc   = got_alloc;

@@ -10101,6 +10101,9 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 				     buffer);
 		}
 		pack32(msg->pack_ntasks, buffer);
+		if (msg->pack_ntasks != NO_VAL)
+			for (i = 0; i < msg->pack_ntasks; i++)
+				pack32(msg->pack_tid_offsets[i], buffer);
 		pack32(msg->pack_offset, buffer);
 		pack32(msg->pack_step_cnt, buffer);
 		pack32(msg->pack_task_offset, buffer);
@@ -10410,6 +10413,13 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 				goto unpack_error;
 		}
 		safe_unpack32(&msg->pack_ntasks, buffer);
+		if (msg->pack_ntasks != NO_VAL) {
+			safe_xcalloc(msg->pack_tid_offsets, msg->pack_ntasks,
+				     sizeof(uint32_t));
+			for (i = 0; i < msg->pack_ntasks; i++)
+				safe_unpack32(&msg->pack_tid_offsets[i],
+					      buffer);
+		}
 		safe_unpack32(&msg->pack_offset, buffer);
 		safe_unpack32(&msg->pack_step_cnt, buffer);
 		safe_unpack32(&msg->pack_task_offset, buffer);

@@ -273,9 +273,9 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	slurm_cond_init(&job->state_cond, NULL);
 	slurm_mutex_init(&job->state_mutex);
 	job->node_tasks	= msg->tasks_to_launch[nodeid];
-	i = sizeof(uint16_t) * msg->nnodes;
-	job->task_cnts  = xmalloc(i);
-	memcpy(job->task_cnts, msg->tasks_to_launch, i);
+	job->task_cnts  = xcalloc(msg->nnodes, sizeof(uint16_t));
+	memcpy(job->task_cnts, msg->tasks_to_launch,
+	       sizeof(uint16_t) * msg->nnodes);
 	job->ntasks	= msg->ntasks;
 	job->jobid	= msg->job_id;
 	job->stepid	= msg->job_step_id;
@@ -311,24 +311,33 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->pack_nnodes = msg->pack_nnodes;	/* Used for env vars */
 	if (msg->pack_nnodes && msg->pack_ntasks && msg->pack_task_cnts) {
 		job->pack_ntasks = msg->pack_ntasks;	/* Used for env vars */
-		i = sizeof(uint16_t) * msg->pack_nnodes;
-		job->pack_task_cnts = xmalloc(i);
-		memcpy(job->pack_task_cnts, msg->pack_task_cnts, i);
+		job->pack_task_cnts = xcalloc(msg->pack_nnodes,
+					      sizeof(uint16_t));
+		memcpy(job->pack_task_cnts, msg->pack_task_cnts,
+		       sizeof(uint16_t) * msg->pack_nnodes);
 		if (msg->pack_tids) {
 			/* pack_tids == NULL if request from pre-v19.05 srun */
 			job->pack_tids = xcalloc(msg->pack_nnodes,
 						 sizeof(uint32_t *));
 			for (i = 0; i < msg->pack_nnodes; i++) {
-				size_t j;
-				j = sizeof(uint32_t) * job->pack_task_cnts[i];
-				job->pack_tids[i] = xcalloc(job->pack_task_cnts[i],
-							    sizeof(uint32_t));
-				memcpy(job->pack_tids[i], msg->pack_tids[i], j);
+				job->pack_tids[i] =
+					xcalloc(job->pack_task_cnts[i],
+						sizeof(uint32_t));
+				memcpy(job->pack_tids[i], msg->pack_tids[i],
+				       sizeof(uint32_t) *
+				       job->pack_task_cnts[i]);
 			}
+		}
+		if (msg->pack_tid_offsets) {
+			job->pack_tid_offsets = xcalloc(job->pack_ntasks,
+							sizeof(uint32_t));
+			memcpy(job->pack_tid_offsets, msg->pack_tid_offsets,
+			       job->pack_ntasks * sizeof(uint32_t));
 		}
 	}
 	job->pack_offset = msg->pack_offset;	/* Used for env vars & labels */
-	job->pack_task_offset = msg->pack_task_offset;	/* Used for env vars & labels */
+	job->pack_task_offset = msg->pack_task_offset;	/* Used for env vars &
+							 * labels */
 	job->pack_node_list = xstrdup(msg->pack_node_list);
 	for (i = 0; i < msg->envc; i++) {
 		/*                         1234567890123456789 */
@@ -621,6 +630,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 			xfree(job->pack_tids[i]);
 		xfree(job->pack_tids);
 	}
+	xfree(job->pack_tid_offsets);
 	xfree(job->task_prolog);
 	xfree(job->task_epilog);
 	xfree(job->job_alloc_cores);
