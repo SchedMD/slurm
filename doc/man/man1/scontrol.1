@@ -593,10 +593,6 @@ changed automatically as changes made by the Administrators are allowed to
 violate these restrictions.
 
 .TP
-\fIAdminPrioFactor\fP=<account>
-Specify the job's admin priority factor in the range of +/\-2147483645.
-Only privileged users can modify the value.
-.TP
 \fIAccount\fP=<account>
 Account name to be changed for this job's resource use.
 Value may be cleared with blank data value, "Account=".
@@ -880,6 +876,10 @@ Reset the job's accrue time value to 0 meaning it will loose any time
 previously accrued for priority.  Helpful if you have a large queue of jobs
 already in the queue and want to start limiting how many jobs can accrue time
 without waiting for the queue to flush out.
+.TP
+\fISiteFactor\fP=<account>
+Specify the job's admin priority factor in the range of +/\-2147483645.
+Only privileged users can modify the value.
 .TP
 \fIStdOut\fP=<filepath>
 Set the batch job's stdout file path.

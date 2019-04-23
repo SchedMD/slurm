@@ -584,7 +584,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		+ job_ptr->prio_factors->priority_part
 		+ job_ptr->prio_factors->priority_qos
 		+ tmp_tres
-		+ (double)(((int64_t)job_ptr->prio_factors->priority_admin)
+		+ (double)(((int64_t)job_ptr->prio_factors->priority_site)
 			   - NICE_OFFSET)
 		- (double)(((int64_t)job_ptr->prio_factors->nice)
 			   - NICE_OFFSET);
@@ -639,7 +639,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 				 + job_ptr->prio_factors->priority_qos
 				 + part_tres
 				 + (double)
-				   (((int64_t)job_ptr->prio_factors->priority_admin)
+				   (((int64_t)job_ptr->prio_factors->priority_site)
 				    - NICE_OFFSET)
 				 - (double)
 				   (((int64_t)job_ptr->prio_factors->nice)
@@ -683,11 +683,10 @@ static uint32_t _get_priority_internal(time_t start_time,
 		double *pre_tres_factors = pre_factors.priority_tres;
 		assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 					   READ_LOCK, NO_LOCK, NO_LOCK };
-		int64_t priority_admin =
-			(((int64_t)job_ptr->prio_factors->priority_admin) -
+		int64_t priority_site =
+			(((int64_t)job_ptr->prio_factors->priority_site) -
 			 NICE_OFFSET);
 
-		info("Admin priority is %"PRId64, priority_admin);
 		info("Weighted Age priority is %f * %u = %.2f",
 		     pre_factors.priority_age, weight_age,
 		     job_ptr->prio_factors->priority_age);
@@ -706,6 +705,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		info("Weighted QOS priority is %f * %u = %.2f",
 		     pre_factors.priority_qos, weight_qos,
 		     job_ptr->prio_factors->priority_qos);
+		info("Site priority is %"PRId64, priority_site);
 
 		if (weight_tres && pre_tres_factors && post_tres_factors) {
 			assoc_mgr_lock(&locks);
@@ -722,7 +722,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 
 		info("Job %u priority: %"PRId64" + %2.f + %.2f + %.2f + %.2f + %.2f + %.2f + %2.f - %"PRId64" = %.2f",
 		     job_ptr->job_id,
-		     priority_admin,
+		     priority_site,
 		     job_ptr->prio_factors->priority_age,
 		     job_ptr->prio_factors->priority_assoc,
 		     job_ptr->prio_factors->priority_fs,
@@ -1377,7 +1377,7 @@ static void *_decay_thread(void *no_data)
 
 		/*
 		 * Give the site_factor plugin a chance to update the
-		 * admin_prio_factor value if desired.
+		 * site_factor value if desired.
 		 */
 		site_factor_g_update();
 
@@ -1838,7 +1838,7 @@ extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
 	uint32_t priority;
 
 	/*
-	 * Run this first so any change to admin_prio_factor will be
+	 * Run this first so any change to site_factor will be
 	 * included in the summation done inside _get_priority_internal().
 	 */
 	site_factor_g_set(job_ptr);
@@ -2202,7 +2202,7 @@ extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
 			job_ptr->part_ptr->norm_priority;
 	}
 
-	job_ptr->prio_factors->priority_admin = job_ptr->admin_prio_factor;
+	job_ptr->prio_factors->priority_site = job_ptr->site_factor;
 
 	if (job_ptr->assoc_ptr && weight_assoc)
 		job_ptr->prio_factors->priority_assoc =

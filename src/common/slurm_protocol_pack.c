@@ -2767,13 +2767,13 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 		pack32(object->job_id, buffer);
 		pack32(object->user_id, buffer);
 
-		pack32(object->priority_admin, buffer);
 		packdouble(object->priority_age, buffer);
 		packdouble(object->priority_assoc, buffer);
 		packdouble(object->priority_fs, buffer);
 		packdouble(object->priority_js, buffer);
 		packdouble(object->priority_part, buffer);
 		packdouble(object->priority_qos, buffer);
+		pack32(object->priority_site, buffer);
 
 		packdouble_array(object->priority_tres, object->tres_cnt,
 				 buffer);
@@ -2837,13 +2837,13 @@ static int _unpack_priority_factors_object(void **object, Buf buffer,
 		safe_unpack32(&object_ptr->job_id, buffer);
 		safe_unpack32(&object_ptr->user_id, buffer);
 
-		safe_unpack32(&object_ptr->priority_admin, buffer);
 		safe_unpackdouble(&object_ptr->priority_age, buffer);
 		safe_unpackdouble(&object_ptr->priority_assoc, buffer);
 		safe_unpackdouble(&object_ptr->priority_fs, buffer);
 		safe_unpackdouble(&object_ptr->priority_js, buffer);
 		safe_unpackdouble(&object_ptr->priority_part, buffer);
 		safe_unpackdouble(&object_ptr->priority_qos, buffer);
+		safe_unpack32(&object_ptr->priority_site, buffer);
 
 		safe_unpackdouble_array(&object_ptr->priority_tres, &tmp32,
 					buffer);
@@ -5832,7 +5832,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpackstr_xmalloc(&job->partition, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->admin_comment, &uint32_tmp,buffer);
-		safe_unpack32(&job->admin_prio_factor, buffer);
+		safe_unpack32(&job->site_factor, buffer);
 		safe_unpackstr_xmalloc(&job->network, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_features, &uint32_tmp,
@@ -8466,7 +8466,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 
 	/* load the data values */
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
-		pack32(job_desc_ptr->admin_prio_factor, buffer);
+		pack32(job_desc_ptr->site_factor, buffer);
 		packstr(job_desc_ptr->batch_features, buffer);
 		packstr(job_desc_ptr->cluster_features, buffer);
 		packstr(job_desc_ptr->clusters, buffer);
@@ -8902,7 +8902,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		*job_desc_buffer_ptr = job_desc_ptr;
 
 		/* load the data values */
-		safe_unpack32(&job_desc_ptr->admin_prio_factor, buffer);
+		safe_unpack32(&job_desc_ptr->site_factor, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->batch_features,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->cluster_features,

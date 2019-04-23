@@ -1374,7 +1374,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *account;		/* charge to specified account */
 	char *acctg_freq;	/* accounting polling intervals (seconds) */
 	char *admin_comment;	/* administrator's arbitrary comment (update only) */
-	uint32_t admin_prio_factor; /* factor to consider in priority */
 	char *alloc_node;	/* node making resource allocation request
 				 * NOTE: Normally set by slurm_submit* or
 				 * slurm_allocate* function */
@@ -1482,6 +1481,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 if job needs exclusive access to the node,
 				 * or NO_VAL to accept the system default.
 				 * SHARED_FORCE to eliminate user control. */
+	uint32_t site_factor;	/* factor to consider in priority */
 	char **spank_job_env;	/* environment variables for job prolog/epilog
 				 * scripts as set by SPANK plugins */
 	uint32_t spank_job_env_size; /* element count in spank_env */
@@ -1555,7 +1555,6 @@ typedef struct job_info {
 	char *account;		/* charge to specified account */
 	time_t accrue_time;	/* time job is eligible for running */
 	char *admin_comment;	/* administrator's arbitrary comment */
-	uint32_t admin_prio_factor; /* factor to consider in priority */
 	char    *alloc_node;	/* local node making resource alloc */
 	uint32_t alloc_sid;	/* local sid making resource alloc */
 	void *array_bitmap;	/* NOTE: set on unpack */
@@ -1665,6 +1664,7 @@ typedef struct job_info {
 						*/
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint16_t show_flags;	/* conveys level of details requested */
+	uint32_t site_factor;	/* factor to consider in priority */
 	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node; /* sockets per node required by job  */
 	time_t start_time;	/* time execution begins, actual or expected */
@@ -1706,13 +1706,13 @@ typedef struct priority_factors_object {
 	char *partition;
 	uint32_t user_id;
 
-	uint32_t priority_admin;
 	double	 priority_age;
 	double	 priority_assoc;
 	double	 priority_fs;
 	double	 priority_js;
 	double	 priority_part;
 	double	 priority_qos;
+	uint32_t priority_site;
 
 	double   *priority_tres;/* tres priorities with weights applied. */
 	uint32_t  tres_cnt;     /* number of configured tres' on system. */

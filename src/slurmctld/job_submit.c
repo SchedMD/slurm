@@ -226,7 +226,7 @@ extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
 	START_TIMER;
 
 	/* Set to NO_VAL so that it can only be set by the job submit plugin. */
-	job_desc->admin_prio_factor = NO_VAL;
+	job_desc->site_factor = NO_VAL;
 
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&g_context_lock);
@@ -262,7 +262,7 @@ extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
 	START_TIMER;
 
 	/* Set to NO_VAL so that it can only be set by the job submit plugin. */
-	job_desc->admin_prio_factor = NO_VAL;
+	job_desc->site_factor = NO_VAL;
 
 	rc = job_submit_plugin_init();
 	slurm_mutex_lock(&g_context_lock);

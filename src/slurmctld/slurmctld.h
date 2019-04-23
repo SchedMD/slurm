@@ -649,7 +649,6 @@ struct job_record {
 					/* DO NOT ALPHABETIZE */
 	char    *account;		/* account number to charge */
 	char    *admin_comment;		/* administrator's arbitrary comment */
-	uint32_t admin_prio_factor;	/* factor to consider in priority */
 	char	*alias_list;		/* node name to address aliases */
 	char    *alloc_node;		/* local node making resource alloc */
 	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */
@@ -817,6 +816,7 @@ struct job_record {
 	char *resp_host;		/* host for srun communications */
 	char *sched_nodes;		/* list of nodes scheduled for job */
 	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
+	uint32_t site_factor;		/* factor to consider in priority */
 	char **spank_job_env;		/* environment variables for job prolog
 					 * and epilog scripts as set by SPANK
 					 * plugins */

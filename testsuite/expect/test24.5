@@ -1,6 +1,6 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of setting and viewing AdminPrioFactor
+# Purpose: Test of setting and viewing SiteFactor
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -163,7 +163,7 @@ proc update_job { jobid prio {error ""} } {
 
 	set matches 0
 
-	spawn $scontrol update jobid=$jobid adminpriofactor=$prio
+	spawn $scontrol update jobid=$jobid sitefactor=$prio
 	set tmp_re ".*"
 	if {$error != ""} {
 		set tmp_re $error
@@ -209,7 +209,7 @@ sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 2147483645" 1
 update_job $jobid2 -2147483645
 sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 -2147483645" 1
 
-update_job $jobid2 2147483646 "scontrol: error: AdminPrioFactor value out of range"
-update_job $jobid2 -2147483646 "scontrol: error: AdminPrioFactor value out of range"
+update_job $jobid2 2147483646 "scontrol: error: SiteFactor value out of range"
+update_job $jobid2 -2147483646 "scontrol: error: SiteFactor value out of range"
 
 end_it 0

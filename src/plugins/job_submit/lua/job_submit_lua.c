@@ -296,13 +296,6 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushstring (L, job_ptr->account);
 	} else if (!xstrcmp(name, "admin_comment")) {
 		lua_pushstring (L, job_ptr->admin_comment);
-	} else if (!xstrcmp(name, "admin_prio_factor")) {
-		if (job_ptr->admin_prio_factor == NO_VAL)
-			lua_pushnumber(L, job_ptr->admin_prio_factor);
-		else
-			lua_pushnumber(L,
-				       (((int64_t)job_ptr->admin_prio_factor)
-					- NICE_OFFSET));
 	} else if (!xstrcmp(name, "array_task_cnt")) {
 		if (job_ptr->array_recs)
 			lua_pushnumber (L, job_ptr->array_recs->task_cnt);
@@ -412,6 +405,13 @@ static int _job_rec_field(const struct job_record *job_ptr,
 		lua_pushnumber (L, job_ptr->reboot);
 	} else if (!xstrcmp(name, "req_switch")) {
 		lua_pushnumber (L, job_ptr->req_switch);
+	} else if (!xstrcmp(name, "site_factor")) {
+		if (job_ptr->site_factor == NO_VAL)
+			lua_pushnumber(L, job_ptr->site_factor);
+		else
+			lua_pushnumber(L,
+				       (((int64_t)job_ptr->site_factor)
+					- NICE_OFFSET));
 	} else if (!xstrcmp(name, "spank_job_env")) {
 		if ((job_ptr->spank_job_env_size == 0) ||
 		    (job_ptr->spank_job_env == NULL)) {
@@ -740,13 +740,6 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->acctg_freq);
 	} else if (!xstrcmp(name, "admin_comment")) {
 		lua_pushstring (L, job_desc->admin_comment);
-	} else if (!xstrcmp(name, "admin_prio_factor")) {
-		if (job_desc->admin_prio_factor == NO_VAL)
-			lua_pushnumber(L, job_desc->admin_prio_factor);
-		else
-			lua_pushnumber(L,
-				       (((int64_t)job_desc->admin_prio_factor)
-					- NICE_OFFSET));
 	} else if (!xstrcmp(name, "alloc_node")) {
 		lua_pushstring (L, job_desc->alloc_node);
 	} else if (!xstrcmp(name, "argc")) {
@@ -892,6 +885,13 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 		lua_pushstring (L, job_desc->script);
 	} else if (!xstrcmp(name, "shared")) {
 		lua_pushnumber (L, job_desc->shared);
+	} else if (!xstrcmp(name, "site_factor")) {
+		if (job_desc->site_factor == NO_VAL)
+			lua_pushnumber(L, job_desc->site_factor);
+		else
+			lua_pushnumber(L,
+				       (((int64_t)job_desc->site_factor)
+					- NICE_OFFSET));
 	} else if (!xstrcmp(name, "sockets_per_board")) {
 		lua_pushnumber (L, job_desc->sockets_per_board);
 	} else if (!xstrcmp(name, "sockets_per_node")) {
@@ -1006,11 +1006,6 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->admin_comment);
 		if (strlen(value_str))
 			job_desc->admin_comment = xstrdup(value_str);
-	} else if (!xstrcmp(name, "admin_prio_factor")) {
-		job_desc->admin_prio_factor = luaL_checknumber(L, 3);
-		if (job_desc->admin_prio_factor != NO_VAL)
-			job_desc->admin_prio_factor =
-				NICE_OFFSET + job_desc->admin_prio_factor;
 	} else if (!xstrcmp(name, "array_inx")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->array_inx);
@@ -1172,6 +1167,11 @@ static int _set_job_req_field(lua_State *L)
 			job_desc->script = xstrdup(value_str);
 	} else if (!xstrcmp(name, "shared")) {
 		job_desc->shared = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "site_factor")) {
+		job_desc->site_factor = luaL_checknumber(L, 3);
+		if (job_desc->site_factor != NO_VAL)
+			job_desc->site_factor =
+				NICE_OFFSET + job_desc->site_factor;
 	} else if (!xstrcmp(name, "sockets_per_node")) {
 		job_desc->sockets_per_node = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "std_err")) {

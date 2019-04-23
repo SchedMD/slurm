@@ -54,7 +54,6 @@
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
 	memset(job_desc_msg, 0, sizeof(job_desc_msg_t));
-	job_desc_msg->admin_prio_factor = NO_VAL;
 	job_desc_msg->alloc_sid		= NO_VAL;
 	job_desc_msg->contiguous	= NO_VAL16;
 	job_desc_msg->core_spec		= NO_VAL16;
@@ -88,6 +87,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->requeue		= NO_VAL16;
 	job_desc_msg->req_switch	= NO_VAL;
 	job_desc_msg->shared		= NO_VAL16;
+	job_desc_msg->site_factor	= NO_VAL;
 	job_desc_msg->sockets_per_node	= NO_VAL16;
 	job_desc_msg->task_dist		= NO_VAL;
 	job_desc_msg->threads_per_core	= NO_VAL16;

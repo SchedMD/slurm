@@ -235,7 +235,7 @@ proc update_job { jobid prio {error ""} } {
 
 	set matches 0
 
-	spawn $scontrol update jobid=$jobid adminpriofactor=$prio
+	spawn $scontrol update jobid=$jobid sitefactor=$prio
 	set tmp_re ".*"
 	if {$error != ""} {
 		set tmp_re $error

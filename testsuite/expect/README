@@ -657,7 +657,7 @@ test24.1   multifactor plugin algo test
 test24.2   sshare h, n, p, P, v, and V options.
 test24.3   multifactor plugin algo test for fairshare=parent
 test24.4   Test of Fair Tree multifactor
-test24.5   Test AdminPrioFactor
+test24.5   Test SiteFactor
 test24.6   Test non-normalized factors
 test24.7   Test normalized factors
 
