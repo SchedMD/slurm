@@ -1,16 +1,21 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Meetings</h1>
-<p><b>Slurm User Group Meeting 2018</b><br>
-25-26 September 2018<br>
-Madrid, Spain<br>
-Host: <a href="http://www.ciemat.es">CIEMAT</a></p>
-<p><a href="slurm_ug_cfp.html">Call for Abstracts: Due 29 June 2018</a></p>
-<p><a href="slurm_ug_agenda.html">Meeting agenda, registration information, etc.</a></p>
+<p><b>Slurm User Group Meeting 2019</b><br>
+17-18 September 2019<br>
+Salt Lake City, Utah, USA<br>
+Host: <a href="https://www.chpc.utah.edu/">University of Utah</a></p>
+<!-- <p><a href="slurm_ug_cfp.html">Call for Abstracts: Due 29 June 2018</a></p>-->
+<!-- <p><a href="slurm_ug_agenda.html">Meeting agenda, registration information, etc.</a></p> -->
 <!-- <p><a href="slurm_ug_agenda.html#hotels">Meeting hotels</a></p> -->
 
 <br>
 <h2>Previous Meetings</h2>
+
+<p><b>Slurm User Group Meeting 2018</b><br>
+25-26 September 2018<br>
+Madrid, Spain<br>
+Host: <a href="http://www.ciemat.es">CIEMAT</a></p>
 
 <p><b>Slurm User Group Meeting 2017</b><br>
 24-26 September 2017<br>

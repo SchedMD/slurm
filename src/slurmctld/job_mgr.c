@@ -1475,7 +1475,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 				   .tres = READ_LOCK,
 				   .user = READ_LOCK };
 
-	memset(&limit_set, 0, sizeof(acct_policy_limit_set_t));
+	memset(&limit_set, 0, sizeof(limit_set));
 	limit_set.tres = xcalloc(slurmctld_tres_cnt, sizeof(uint16_t));
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
@@ -2393,7 +2393,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	_add_job_hash(job_ptr);
 	_add_job_array_hash(job_ptr);
 
-	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+	memset(&assoc_rec, 0, sizeof(assoc_rec));
 
 	/*
 	 * For speed and accurracy we will first see if we once had an
@@ -2447,7 +2447,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 
 	if (!job_finished && job_ptr->qos_id &&
 	    (job_ptr->state_reason != FAIL_ACCOUNT)) {
-		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+		memset(&qos_rec, 0, sizeof(qos_rec));
 		qos_rec.id = job_ptr->qos_id;
 		job_ptr->qos_ptr = _determine_and_validate_qos(
 			job_ptr->resv_name, job_ptr->assoc_ptr,
@@ -6500,7 +6500,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 			 * currently can't deal with partition based
 			 * associations.
 			 */
-			memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+			memset(&assoc_rec, 0, sizeof(assoc_rec));
 			if (assoc_ptr) {
 				assoc_rec.acct      = assoc_ptr->acct;
 				assoc_rec.partition = part_ptr_tmp->name;
@@ -6877,7 +6877,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	uint32_t user_submit_priority, acct_reason = 0;
 	acct_policy_limit_set_t acct_policy_limit_set;
 
-	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
+	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set));
 	acct_policy_limit_set.tres = xcalloc(slurmctld_tres_cnt,
 					     sizeof(uint16_t));
 
@@ -6941,7 +6941,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
-	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+	memset(&assoc_rec, 0, sizeof(assoc_rec));
 	assoc_rec.acct      = job_desc->account;
 	assoc_rec.partition = part_ptr->name;
 	assoc_rec.uid       = job_desc->user_id;
@@ -6981,7 +6981,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		job_desc->account = xstrdup(assoc_rec.acct);
 
 	/* This must be done after we have the assoc_ptr set */
-	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+	memset(&qos_rec, 0, sizeof(qos_rec));
 	qos_rec.name = job_desc->qos;
 
 	qos_ptr = _determine_and_validate_qos(
@@ -7985,7 +7985,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			/* get the default wckey for this user since none was
 			 * given */
 			slurmdb_user_rec_t user_rec;
-			memset(&user_rec, 0, sizeof(slurmdb_user_rec_t));
+			memset(&user_rec, 0, sizeof(user_rec));
 			user_rec.uid = job_desc->user_id;
 			assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 					       accounting_enforce, NULL, false);
@@ -8003,7 +8003,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		} else if (job_desc->wckey) {
 			slurmdb_wckey_rec_t wckey_rec, *wckey_ptr = NULL;
 
-			memset(&wckey_rec, 0, sizeof(slurmdb_wckey_rec_t));
+			memset(&wckey_rec, 0, sizeof(wckey_rec));
 			wckey_rec.uid       = job_desc->user_id;
 			wckey_rec.name      = job_desc->wckey;
 
@@ -11498,7 +11498,7 @@ static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
 {
 	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
 
-	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+	memset(&assoc_rec, 0, sizeof(assoc_rec));
 
 	if (job_desc->partition) {
 		struct part_record *part_ptr = NULL;
@@ -11748,7 +11748,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set_t));
+	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set));
 	acct_policy_limit_set.tres = tres;
 
 	if (operator) {
@@ -11898,7 +11898,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		else
 			resv_name = job_ptr->resv_name;
 
-		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+		memset(&qos_rec, 0, sizeof(qos_rec));
 
 		/* If the qos is blank that means we want the default */
 		if (job_specs->qos[0])
@@ -16097,6 +16097,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = protocol_version;
 		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		memset(&rc_msg, 0, sizeof(rc_msg));
 		rc_msg.return_code = rc;
 		resp_msg.data      = &rc_msg;
 		slurm_send_node_msg(conn_fd, &resp_msg);
@@ -16985,6 +16986,7 @@ reply:	FREE_NULL_LIST(top_job_list);
 		slurm_msg_t_init(&resp_msg);
 		resp_msg.protocol_version = protocol_version;
 		resp_msg.msg_type  = RESPONSE_SLURM_RC;
+		memset(&rc_msg, 0, sizeof(rc_msg));
 		rc_msg.return_code = rc;
 		resp_msg.data      = &rc_msg;
 		slurm_send_node_msg(conn_fd, &resp_msg);
@@ -17009,6 +17011,7 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	if (!job_ptr)
 		return ESLURM_INVALID_JOB_ID;
 
+	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));
 	timeout_msg->job_id  = time_req_msg->job_id;
 	timeout_msg->step_id = NO_VAL;
 	timeout_msg->timeout = job_ptr->end_time;
@@ -17127,7 +17130,7 @@ extern int update_job_wckey(char *module, struct job_record *job_ptr,
 		return ESLURM_JOB_NOT_PENDING;
 	}
 
-	memset(&wckey_rec, 0, sizeof(slurmdb_wckey_rec_t));
+	memset(&wckey_rec, 0, sizeof(wckey_rec));
 	wckey_rec.uid       = job_ptr->user_id;
 	wckey_rec.name      = new_wckey;
 	if (assoc_mgr_fill_in_wckey(acct_db_conn, &wckey_rec,
@@ -17186,7 +17189,7 @@ extern int send_jobs_to_accounting(void)
 		if (!job_ptr->assoc_id) {
 			slurmdb_assoc_rec_t assoc_rec;
 			memset(&assoc_rec, 0,
-			       sizeof(slurmdb_assoc_rec_t));
+			       sizeof(assoc_rec));
 			assoc_rec.acct      = job_ptr->account;
 			if (job_ptr->part_ptr)
 				assoc_rec.partition = job_ptr->part_ptr->name;
@@ -17338,6 +17341,7 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 		(void) slurm_send_node_msg(conn_fd, &resp_msg);
 	} else {
 		return_code_msg_t rc_msg;
+		memset(&rc_msg, 0, sizeof(rc_msg));
 		rc_msg.return_code = rc;
 		resp_msg.msg_type  = RESPONSE_SLURM_RC;
 		resp_msg.data      = &rc_msg;
@@ -17745,6 +17749,7 @@ extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid, int conn_fd,
  reply:
 	slurm_msg_t_init(&resp_msg);
 	resp_msg.protocol_version = protocol_version;
+	memset(&rc_msg, 0, sizeof(rc_msg));
 	rc_msg.return_code = rc;
 	resp_msg.msg_type  = RESPONSE_SLURM_RC;
 	resp_msg.data      = &rc_msg;

@@ -850,9 +850,10 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	int retry_cnt = 0;
 
 	/* common to all tasks */
+	memset(&msg, 0, sizeof(msg));
 	msg.job_id      = ctx->job_id;
 	msg.job_step_id = ctx->step_resp->job_step_id;
-	msg.signal      = (uint32_t) signo;
+	msg.signal      = (uint16_t) signo;
 
 	slurm_mutex_lock(&sls->lock);
 
@@ -1663,7 +1664,7 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	slurm_cond_broadcast(&sls->cond);
 	slurm_mutex_unlock(&sls->lock);
 
-	memset(&msg, 0, sizeof(step_complete_msg_t));
+	memset(&msg, 0, sizeof(msg));
 	msg.job_id = ctx->job_id;
 	msg.job_step_id = ctx->step_resp->job_step_id;
 

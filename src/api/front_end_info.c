@@ -205,6 +205,7 @@ slurm_load_front_end (time_t update_time, front_end_info_msg_t **resp)
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
+	memset(&req, 0, sizeof(req));
 	req.last_update  = update_time;
 	req_msg.msg_type = REQUEST_FRONT_END_INFO;
 	req_msg.data     = &req;

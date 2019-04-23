@@ -55,6 +55,7 @@ static int _suspend_op(uint16_t op, uint32_t job_id)
 	slurm_msg_t req_msg;
 
 	slurm_msg_t_init(&req_msg);
+	memset(&sus_req, 0, sizeof(sus_req));
 	sus_req.op         = op;
 	sus_req.job_id     = job_id;
 	sus_req.job_id_str = NULL;
@@ -106,6 +107,7 @@ static int _suspend_op2(uint16_t op, char *job_id_str,
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
+	memset(&sus_req, 0, sizeof(sus_req));
 	sus_req.op         = op;
 	sus_req.job_id     = NO_VAL;
 	sus_req.job_id_str = job_id_str;
@@ -176,6 +178,7 @@ extern int slurm_requeue(uint32_t job_id, uint32_t flags)
 
 	slurm_msg_t_init(&req_msg);
 
+	memset(&requeue_req, 0, sizeof(requeue_req));
 	requeue_req.job_id	= job_id;
 	requeue_req.job_id_str	= NULL;
 	requeue_req.flags	= flags;
@@ -215,6 +218,7 @@ extern int slurm_requeue2(char *job_id_str, uint32_t flags,
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
+	memset(&requeue_req, 0, sizeof(requeue_req));
 	requeue_req.job_id	= NO_VAL;
 	requeue_req.job_id_str	= job_id_str;
 	requeue_req.flags	= flags;

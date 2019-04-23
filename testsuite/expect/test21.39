@@ -37,9 +37,9 @@ set test_id     "21.39"
 set part_name   "test$test_id\_part"
 set ta1		"test$test_id-account.1"
 set ta2		"test$test_id-account.2"
-set tu1		[get_my_user_name]
-set tq1		"test$test_id-qos.1"
-set tq2		"test$test_id-qos.2"
+set tu1     [get_my_user_name]
+set tq1     "test$test_id-qos.1"
+set tq2     "test$test_id-qos.2"
 
 # account options
 array set acct_1 {}
@@ -105,10 +105,14 @@ proc cleanup_accounts {} {
 }
 
 proc endit { exit_code } {
-	global test_id part_name
+	global config_dir cwd bin_cp test_id part_name
+
+	wait_for_part_done $part_name
+
+	exec $bin_cp -v $cwd/slurm.conf.orig $config_dir/slurm.conf
+	reconfigure
 
 	if {$exit_code == 0} {
-		wait_for_part_done $part_name
 		cleanup_accounts
 		print_success $test_id
 	} else {
@@ -117,13 +121,13 @@ proc endit { exit_code } {
 	exit $exit_code
 }
 
-proc test_salloc { qos account num_nodes sleep_time } {
-	global bin_sleep salloc number part_name
+proc test_salloc { qos account num_nodes } {
+	global salloc number part_name bin_bash
 
 	set rc -12345
 	set job_id 0
 
-	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes -t1 $bin_sleep $sleep_time]
+	set my_pid [spawn $salloc -p$part_name --exclusive -q$qos -A$account -N$num_nodes $bin_bash]
 	expect {
 		-re "allocation ($number)" {
 			set job_id $expect_out(1,string)
@@ -146,23 +150,7 @@ proc test_salloc { qos account num_nodes sleep_time } {
 	return $job_id
 }
 
-proc check_job_reason_retry { job_id state why } {
-	set rc 1
-	set cnt 0
-	while { $rc && ($cnt < 10) } {
-		set rc [check_job_reason $job_id $state $why [expr {$cnt == 9}]]
-		if {$rc < 0} {
-			break
-		}
-		incr cnt
-		if {$rc} {
-			after [expr {$cnt * 1000}]
-		}
-	}
-	check_rc $rc
-}
-
-proc check_job_reason { job_id state why fail_hard } {
+proc check_job_reason { job_id state why } {
 	global scontrol alpha_numeric alpha
 
 	set found_why ""
@@ -187,19 +175,11 @@ proc check_job_reason { job_id state why fail_hard } {
 			lassign [wait] pid spawnid os_error_flag rc
 		}
 	}
-	log_user 1
 
+	log_user 1
 	if { $state_found != $state } {
-		set msg "Job $job_id state found was $state_found, expected $state"
-		if { $fail_hard } {
-			log_error $msg
-			endit 1
-		}
-		log_info $msg
-		if { $state_found == "COMPLETED" } {
-			return -1
-		}
-		return 1
+		log_error "Job $job_id state found was $state_found, expected $state"
+		endit 1
 	}
 
 	set found_reason 0
@@ -211,15 +191,8 @@ proc check_job_reason { job_id state why fail_hard } {
 	}
 
 	if { !$found_reason } {
-		set reason_list [join $why "|"]
-		set msg "Job $job_id scontrol returned Reason=$found_why instead of Reason=\"$reason_list\""
-		if { $fail_hard} {
-			log_error $msg
-			endit 1
-		} else {
-			log_info $msg
-		}
-		return 1
+		log_error "Job $job_id scontrol returned Reason=$found_why instead of Reason='$why'"
+		endit 1
 	}
 
 	log_info "Found jobid $job_id with correct state '$state' and reason '$found_why'"
@@ -241,8 +214,8 @@ proc run_test { run_qos } {
 		set reason "InvalidAccount"
 	}
 
-	set job_id_1 [test_salloc $qos $acct 1 10]
-	set job_id_2 [test_salloc $qos $acct 1 10]
+	set job_id_1 [test_salloc $qos $acct 1]
+	set job_id_2 [test_salloc $qos $acct 1]
 
 	if { $run_qos } {
 		# remove test qos
@@ -252,7 +225,7 @@ proc run_test { run_qos } {
 			return 1
 		}
 	} else {
-		# remove test acct
+		#remove test acct
 		if { [remove_acct "" $acct] } {
 			log_info "We hit the race trying to get the job running before it hits the database before we removed the account.  This can be expected, trying again."
 			wait_for_part_done $part_name
@@ -261,8 +234,8 @@ proc run_test { run_qos } {
 	}
 
 	# Verify jobs state and reason
-	check_job_reason_retry $job_id_1 "RUNNING" [list "None"]
-	check_job_reason_retry $job_id_2 "PENDING" [list "$reason"]
+	check_job_reason $job_id_1 "RUNNING" [list "None"]
+	check_job_reason $job_id_2 "PENDING" [list "$reason"]
 
 	# Update pending job to make it runnable, updating the running job isn't
 	# possible but it tests other code if you are watching the log file
@@ -271,10 +244,10 @@ proc run_test { run_qos } {
 
 	sleep 5
 	# Check reasons after account alter
-	check_job_reason_retry $job_id_1 "RUNNING" [list "None"]
-	check_job_reason_retry $job_id_2 "PENDING" [list "Resources" "None"]
+	check_job_reason $job_id_1 "RUNNING" [list "None"]
+	check_job_reason $job_id_2 "PENDING" [list "Resources" "None"]
 
-	# Cleanup jobs
+	#cleanup jobs
 	wait_for_part_done $part_name
 
 	return 0
@@ -296,10 +269,24 @@ if { [string compare [check_accounting_admin_level] "Administrator"] } {
 cleanup_accounts
 create_accounts
 
+# Get the location of the slurm.conf file
+set config_dir [get_conf_path]
+
+#
+# Copy slurm.conf file
+#
+set cwd [$bin_pwd]
+copy_conf $config_dir $cwd
+
+# Comment out PrologFlags in the slurm.conf
+exec $bin_sed -i {s/^\(PrologFlags=\)/#\1/gI} $config_dir/slurm.conf
+
+reconfigure
+
 delete_part $part_name
 
 if { [create_part $part_name 1] } {
-	exit 1
+	endit 1
 }
 
 for {set i 0} {$i < 2} {incr i} {
@@ -311,11 +298,6 @@ for {set i 0} {$i < 2} {incr i} {
 	while { $rc && ($cnt < 10) } {
 		set rc [run_test $i]
 		incr cnt
-
-		if {$cnt == 10 && $rc} {
-			log_info "Unable to catch time window. Skipping test."
-			endit 0
-		}
 	}
 	if { $rc } {
 		break

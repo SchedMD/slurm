@@ -294,6 +294,7 @@ slurm_top_job(char *job_id_str)
 	slurm_msg_t req_msg;
 
 	slurm_msg_t_init(&req_msg);
+	memset(&top_job_req, 0, sizeof(top_job_req));
 	top_job_req.job_id_str = job_id_str;
 	req_msg.msg_type       = REQUEST_TOP_JOB;
 	req_msg.data           = &top_job_req;

@@ -254,6 +254,7 @@ int  slurm_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	else
 		gethostname_short(hostname, sizeof(hostname));
 
+	memset(&data, 0, sizeof(data));
 	data.task_id = pmi_rank;
 	data.size = pmi_size;
 	data.port = port;

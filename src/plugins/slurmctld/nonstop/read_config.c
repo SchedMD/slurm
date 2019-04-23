@@ -352,7 +352,7 @@ extern void create_hot_spare_resv(void)
 		for (i = 0; i < hot_spare_info_cnt; i++) {
 			if (hot_spare_info[i].part_ptr != part_ptr)
 				continue;
-			memset(&resv_msg, 0, sizeof(resv_desc_msg_t));
+			memset(&resv_msg, 0, sizeof(resv_msg));
 			node_cnt[0] = hot_spare_info[i].node_cnt;
 			node_cnt[1] = 0;
 			resv_msg.duration	= 356 * 24 * 60 * 60;
@@ -379,6 +379,7 @@ extern void create_hot_spare_resv(void)
 		}
 		if ((i >= hot_spare_info_cnt) && find_resv_name(resv_name)) {
 			info("Deleting vestigial reservation %s", resv_name);
+			memset(&delete_resv_msg, 0, sizeof(delete_resv_msg));
 			delete_resv_msg.name = resv_name;
 			(void) delete_resv(&delete_resv_msg);
 		}

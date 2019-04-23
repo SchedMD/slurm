@@ -635,6 +635,7 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 	debug3("sending task exit msg for %d tasks status %d oom %d",
 	       n, status, job->oom_error);
 
+	memset(&msg, 0, sizeof(msg));
 	msg.task_id_list	= tid;
 	msg.num_tasks		= n;
 	if (job->oom_error)
@@ -744,7 +745,7 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 		if (last == -1)
 			last = 0;
 	}
-	memset(&msg, 0, sizeof(step_complete_msg_t));
+	memset(&msg, 0, sizeof(msg));
 	msg.job_id = job->jobid;
 	msg.job_step_id = job->stepid;
 	msg.range_first = first;
@@ -2365,7 +2366,7 @@ extern int stepd_drain_node(char *reason)
 	slurm_msg_t req_msg;
 	update_node_msg_t update_node_msg;
 
-	memset(&update_node_msg, 0, sizeof(update_node_msg_t));
+	memset(&update_node_msg, 0, sizeof(update_node_msg));
 	update_node_msg.node_names = conf->node_name;
 	update_node_msg.node_state = NODE_STATE_DRAIN;
 	update_node_msg.reason = reason;
@@ -2484,6 +2485,7 @@ _send_complete_batch_script_msg(stepd_step_rec_t *job, int err, int status)
 	if (conf->msg_aggr_window_msgs > 1)
 		msg_to_ctld = false;
 
+	memset(&req, 0, sizeof(req));
 	req.job_id	= job->jobid;
 	if (job->oom_error)
 		req.job_rc = SIG_OOM;

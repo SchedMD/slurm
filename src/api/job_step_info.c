@@ -472,7 +472,7 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 {
 	int rc;
 	slurm_msg_t req_msg;
-	job_step_info_request_msg_t req = {0};
+	job_step_info_request_msg_t req;
 	slurmdb_federation_rec_t *fed;
 	char *cluster_name = NULL;
 	void *ptr = NULL;
@@ -490,6 +490,7 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	}
 
 	slurm_msg_t_init(&req_msg);
+	memset(&req, 0, sizeof(req));
 	req.last_update  = update_time;
 	req.job_id       = job_id;
 	req.step_id      = step_id;
@@ -526,6 +527,7 @@ slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
 
 	req.msg_type = REQUEST_STEP_LAYOUT;
 	req.data = &data;
+	memset(&data, 0, sizeof(data));
 	data.job_id = job_id;
 	data.step_id = step_id;
 
@@ -600,7 +602,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 
 	slurm_msg_t_init(&req_msg);
 
-	memset(&req, 0, sizeof(job_step_id_msg_t));
+	memset(&req, 0, sizeof(req));
 	resp_out->job_id = req.job_id = job_id;
 	resp_out->step_id = req.step_id = step_id;
 
@@ -716,7 +718,7 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
 
 	slurm_msg_t_init(&req_msg);
 
-	memset(&req, 0, sizeof(job_step_id_msg_t));
+	memset(&req, 0, sizeof(req));
         resp_out->job_id = req.job_id = job_id;
 	resp_out->step_id = req.step_id = step_id;
 

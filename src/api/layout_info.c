@@ -73,6 +73,7 @@ extern int slurm_load_layout (char *layout_type, char *entities, char *type,
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
 
+	memset(&req, 0, sizeof(req));
 	req.layout_type  = layout_type;
 	req.entities     = entities;
 	req.type         = type;

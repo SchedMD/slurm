@@ -424,6 +424,7 @@ inline static void _slurm_rpc_control_status(slurm_msg_t * msg)
 	response_msg.msg_type = RESPONSE_CONTROL_STATUS;
 	response_msg.data = &data;
 	response_msg.data_size = sizeof(control_status_msg_t);
+	memset(&data, 0, sizeof(data));
 	data.backup_inx = backup_inx;
 	data.control_time = (time_t) 0;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
@@ -710,7 +711,7 @@ static void *_trigger_slurmctld_event(void *arg)
 {
 	trigger_info_t ti;
 
-	memset(&ti, 0, sizeof(trigger_info_t));
+	memset(&ti, 0, sizeof(ti));
 	ti.res_id = "*";
 	ti.res_type = TRIGGER_RES_TYPE_SLURMCTLD;
 	ti.trig_type = TRIGGER_TYPE_BU_CTLD_RES_OP;
