@@ -138,7 +138,7 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
-		if (container_g_add_pid(job_id, getpid(), getuid())
+		if (container_g_add_pid(job_id, getuid())
 		    != SLURM_SUCCESS)
 			error("container_g_add_pid(%u): %m", job_id);
 

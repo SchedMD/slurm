@@ -1685,7 +1685,7 @@ static int _open_as_other(char *path_name, int flags, int mode,
 	 * condition where if this process makes a file or
 	 * detacts itself from a child before we add the pid
 	 * to the container in the parent of the fork. */
-	if (container_g_add_pid(jobid, getpid(), uid)) {
+	if (container_g_add_pid(jobid, uid)) {
 		error("%s container_g_add_pid(%u): %m", __func__, jobid);
 		exit(SLURM_ERROR);
 	}
@@ -5820,7 +5820,7 @@ _run_spank_job_script (const char *mode, char **env, uint32_t job_id, uid_t uid)
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
-		if (container_g_add_pid(job_id, getpid(), getuid())
+		if (container_g_add_pid(job_id, getuid())
 		    != SLURM_SUCCESS)
 			error("container_g_add_pid(%u): %m", job_id);
 

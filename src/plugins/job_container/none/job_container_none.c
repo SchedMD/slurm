@@ -112,7 +112,7 @@ extern int container_p_add_cont(uint32_t job_id, uint64_t cont_id)
 }
 
 /* Add a process to a job container, create the proctrack container to add */
-extern int container_p_add_pid(uint32_t job_id, pid_t pid, uid_t uid)
+extern int container_p_add_pid(uint32_t job_id, uid_t uid)
 {
 	return SLURM_SUCCESS;
 }

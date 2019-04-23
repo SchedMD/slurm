@@ -216,7 +216,7 @@ static int _call_external_program(stepd_step_rec_t *job)
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
-		if (container_g_add_pid(recorded_jobid, getpid(), getuid())
+		if (container_g_add_pid(recorded_jobid, getuid())
 		    != SLURM_SUCCESS)
 			error("container_g_add_pid(%u): %m", recorded_jobid);
 

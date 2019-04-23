@@ -107,15 +107,13 @@ Process tracking container value as set by the proctrack plugin.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int container_p_add_pid (uint32_t job_id, pid_t pid, uid_t uid);</p>
+<p class="commandline">int container_p_add_pid(uint32_t job_id, uid_t uid);</p>
 <p style="margin-left:.2in"><b>Description</b>: Add a specific process ID
 to a given job's container. The process is first placed into a process tracking
 container (PAGG).</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input)
 Job ID.<br>
-<span class="commandline"> pid</span>&nbsp; &nbsp;&nbsp;(input)
-Process ID.<br>
 <span class="commandline"> uid</span>&nbsp; &nbsp;&nbsp;(input)
 Owning user ID.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
@@ -139,6 +137,6 @@ to indicate the reason for failure.</p>
 especially the value of the DebugFlags with respect to JobContainer.</p>
 
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 22 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
