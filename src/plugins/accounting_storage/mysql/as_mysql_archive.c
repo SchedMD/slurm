@@ -543,7 +543,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 			       char *arch_dir, uint32_t archive_period,
 			       char *sql_table, uint32_t usage_info);
 
-static int high_buffer_size = (1024 * 1024);
+static uint32_t high_buffer_size = (1024 * 1024);
 
 static void _pack_local_event(local_event_t *object,
 			      uint16_t rpc_version, Buf buffer)

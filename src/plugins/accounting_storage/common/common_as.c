@@ -883,7 +883,7 @@ extern int archive_write_file(Buf buffer, char *cluster_name,
 	int fd = 0;
 	int rc = SLURM_SUCCESS;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
-	static int high_buffer_size = (1024 * 1024);
+	static uint32_t high_buffer_size = (1024 * 1024);
 	static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
 	xassert(buffer);
@@ -905,7 +905,8 @@ extern int archive_write_file(Buf buffer, char *cluster_name,
 		error("Can't save archive, create file %s error %m", new_file);
 		rc = SLURM_ERROR;
 	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		int amount;
+		uint32_t pos = 0, nwrite = get_buf_offset(buffer);
 		char *data = (char *)get_buf_data(buffer);
 		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
