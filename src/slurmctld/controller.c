@@ -88,6 +88,7 @@
 #include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
 #include "src/common/timers.h"
+#include "src/common/track_script.h"
 #include "src/common/uid.h"
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xsignal.h"
@@ -785,6 +786,10 @@ int main(int argc, char **argv)
 		slurmctld_config.thread_id_sig  = (pthread_t) 0;
 		slurmctld_config.thread_id_rpc  = (pthread_t) 0;
 		slurmctld_config.thread_id_save = (pthread_t) 0;
+
+		/* kill all scripts running by the slurmctld */
+		track_script_flush();
+
 		bb_g_fini();
 		power_g_fini();
 		slurm_mcs_fini();
@@ -909,6 +914,7 @@ int main(int argc, char **argv)
 	slurm_conf_destroy();
 	slurm_api_clear_config();
 	cluster_rec_free();
+	track_script_fini();
 	usleep(500000);
 }
 #else
@@ -982,6 +988,7 @@ static void  _init_config(void)
 	slurmctld_config.thread_id_main = pthread_self();
 	slurmctld_config.scheduling_disabled  = false;
 	slurmctld_config.submissions_disabled = false;
+	track_script_init();
 	slurm_mutex_init(&slurmctld_config.thread_count_lock);
 	slurm_cond_init(&slurmctld_config.thread_count_cond, NULL);
 	slurmctld_config.thread_id_main    = (pthread_t) 0;

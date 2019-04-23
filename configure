@@ -1029,12 +1029,6 @@ PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
 CHECK_CFLAGS
 CHECK_LIBS
-GLIB_CFLAGS
-GLIB_LIBS
-GLIB_GENMARSHAL
-GOBJECT_QUERY
-GLIB_MKENUMS
-GLIB_COMPILE_RESOURCES
 lua_CFLAGS
 lua_LIBS'
 
@@ -1792,17 +1786,6 @@ Some influential environment variables:
   CHECK_CFLAGS
               C compiler flags for CHECK, overriding pkg-config
   CHECK_LIBS  linker flags for CHECK, overriding pkg-config
-  GLIB_CFLAGS C compiler flags for GLIB, overriding pkg-config
-  GLIB_LIBS   linker flags for GLIB, overriding pkg-config
-  GLIB_GENMARSHAL
-              value of glib_genmarshal for glib-2.0, overriding pkg-config
-  GOBJECT_QUERY
-              value of gobject_query for glib-2.0, overriding pkg-config
-  GLIB_MKENUMS
-              value of glib_mkenums for glib-2.0, overriding pkg-config
-  GLIB_COMPILE_RESOURCES
-              value of glib_compile_resources for gio-2.0, overriding
-              pkg-config
   lua_CFLAGS  C compiler flags for lua, overriding pkg-config
   lua_LIBS    linker flags for lua, overriding pkg-config
 
@@ -21982,9 +21965,6 @@ if test -d "/opt/gnome/lib64/pkgconfig"; then
     PKG_CONFIG_PATH="/opt/gnome/lib64/pkgconfig/:$PKG_CONFIG_PATH"
 fi
 
-
-
-
 # Check whether --enable-glibtest was given.
 if test "${enable_glibtest+set}" = set; then :
   enableval=$enable_glibtest;
@@ -21993,8 +21973,7 @@ else
 fi
 
 
-  min_glib_version=2.7.1
-  pkg_config_args="glib-2.0 >= $min_glib_version"
+  pkg_config_args=glib-2.0
   for module in . gthread
   do
       case "$module" in
@@ -22144,171 +22123,7 @@ fi
     PKG_CONFIG=no
   fi
 
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for GLIB" >&5
-$as_echo_n "checking for GLIB... " >&6; }
-
-if test -n "$GLIB_CFLAGS"; then
-    pkg_cv_GLIB_CFLAGS="$GLIB_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\$pkg_config_args\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "$pkg_config_args") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_GLIB_CFLAGS=`$PKG_CONFIG --cflags "$pkg_config_args" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$GLIB_LIBS"; then
-    pkg_cv_GLIB_LIBS="$GLIB_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"\$pkg_config_args\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "$pkg_config_args") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_GLIB_LIBS=`$PKG_CONFIG --libs "$pkg_config_args" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        GLIB_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$pkg_config_args" 2>&1`
-        else
-	        GLIB_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$pkg_config_args" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$GLIB_PKG_ERRORS" >&5
-
-	:
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	:
-else
-	GLIB_CFLAGS=$pkg_cv_GLIB_CFLAGS
-	GLIB_LIBS=$pkg_cv_GLIB_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-	:
-fi
-
-
-if test -n "$GLIB_GENMARSHAL"; then
-    pkg_cv_GLIB_GENMARSHAL="$GLIB_GENMARSHAL"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"glib-2.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "glib-2.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_GLIB_GENMARSHAL=`$PKG_CONFIG --variable="glib_genmarshal" "glib-2.0" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-GLIB_GENMARSHAL=$pkg_cv_GLIB_GENMARSHAL
-
-if test "x$GLIB_GENMARSHAL" = x""; then :
-
-fi
-
-if test -n "$GOBJECT_QUERY"; then
-    pkg_cv_GOBJECT_QUERY="$GOBJECT_QUERY"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"glib-2.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "glib-2.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_GOBJECT_QUERY=`$PKG_CONFIG --variable="gobject_query" "glib-2.0" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-GOBJECT_QUERY=$pkg_cv_GOBJECT_QUERY
-
-if test "x$GOBJECT_QUERY" = x""; then :
-
-fi
-
-if test -n "$GLIB_MKENUMS"; then
-    pkg_cv_GLIB_MKENUMS="$GLIB_MKENUMS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"glib-2.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "glib-2.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_GLIB_MKENUMS=`$PKG_CONFIG --variable="glib_mkenums" "glib-2.0" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-GLIB_MKENUMS=$pkg_cv_GLIB_MKENUMS
-
-if test "x$GLIB_MKENUMS" = x""; then :
-
-fi
-
-if test -n "$GLIB_COMPILE_RESOURCES"; then
-    pkg_cv_GLIB_COMPILE_RESOURCES="$GLIB_COMPILE_RESOURCES"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"gio-2.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "gio-2.0") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_GLIB_COMPILE_RESOURCES=`$PKG_CONFIG --variable="glib_compile_resources" "gio-2.0" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-GLIB_COMPILE_RESOURCES=$pkg_cv_GLIB_COMPILE_RESOURCES
-
-if test "x$GLIB_COMPILE_RESOURCES" = x""; then :
-
-fi
-
+  min_glib_version=2.7.1
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GLIB - version >= $min_glib_version" >&5
 $as_echo_n "checking for GLIB - version >= $min_glib_version... " >&6; }
 
@@ -22327,6 +22142,13 @@ $as_echo_n "checking for GLIB - version >= $min_glib_version... " >&6; }
   fi
 
   if test x"$no_glib" = x ; then
+    GLIB_GENMARSHAL=`$PKG_CONFIG --variable=glib_genmarshal glib-2.0`
+    GOBJECT_QUERY=`$PKG_CONFIG --variable=gobject_query glib-2.0`
+    GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
+    GLIB_COMPILE_RESOURCES=`$PKG_CONFIG --variable=glib_compile_resources gio-2.0`
+
+    GLIB_CFLAGS=`$PKG_CONFIG --cflags $pkg_config_args`
+    GLIB_LIBS=`$PKG_CONFIG --libs $pkg_config_args`
     glib_config_major_version=`$PKG_CONFIG --modversion glib-2.0 | \
            sed 's/\([0-9]*\).\([0-9]*\).\([0-9]*\)/\1/'`
     glib_config_minor_version=`$PKG_CONFIG --modversion glib-2.0 | \
@@ -22488,6 +22310,12 @@ rm -f core conftest.err conftest.$ac_objext \
      GLIB_COMPILE_RESOURCES=""
      ac_glib_test="no"
   fi
+
+
+
+
+
+
   rm -f conf.glibtest
 
 

@@ -45,6 +45,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <inttypes.h>		/* for uint16_t, uint32_t definitions */
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
@@ -54,7 +55,7 @@
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
+#include "src/common/list.h"
 #include "src/common/run_command.h"
 
 static int shutdown = 0;
@@ -99,10 +100,12 @@ static int _tot_wait (struct timeval *start_time)
  * script_args IN - Arguments to the script
  * max_wait IN - Maximum time to wait in milliseconds,
  *		 -1 for no limit (asynchronous)
+ * tid IN - thread we are called from
  * status OUT - Job exit code
  * Return stdout+stderr of spawned program, value must be xfreed. */
 extern char *run_command(char *script_type, char *script_path,
-			   char **script_argv, int max_wait, int *status)
+			 char **script_argv, int max_wait,
+			 pthread_t tid, int *status)
 {
 	int i, new_wait, resp_size = 0, resp_offset = 0;
 	pid_t cpid;
@@ -180,6 +183,8 @@ extern char *run_command(char *script_type, char *script_path,
 		resp = xmalloc(resp_size);
 		close(pfd[1]);
 		gettimeofday(&tstart, NULL);
+		if (tid)
+			track_script_reset_cpid(tid, cpid);
 		while (1) {
 			if (shutdown) {
 				error("%s: killing %s operation on shutdown",
@@ -236,8 +241,11 @@ extern char *run_command(char *script_type, char *script_path,
 		child_proc_count--;
 		slurm_mutex_unlock(&proc_count_mutex);
 	} else {
+		if (tid)
+			track_script_reset_cpid(tid, cpid);
 		waitpid(cpid, status, 0);
 	}
+
 	return resp;
 }
 

@@ -1450,6 +1450,7 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 	stage_args_t *stage_args;
 	int hash_inx = job_ptr->job_id % 10;
 	int rc = SLURM_SUCCESS;
+	pthread_t tid;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 	(void) mkdir(hash_dir, 0700);
@@ -1510,7 +1511,7 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 	stage_args->args1   = setup_argv;
 	stage_args->args2   = data_in_argv;
 
-	slurm_thread_create_detached(NULL, _start_stage_in, stage_args);
+	slurm_thread_create(&tid, _start_stage_in, stage_args);
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -1561,7 +1562,7 @@ static void _update_system_comment(struct job_record *job_ptr, char *operation,
 
 static void *_start_stage_in(void *x)
 {
-	stage_args_t *stage_args;
+	stage_args_t *stage_args = (stage_args_t *) x;
 	char **setup_argv, **size_argv, **data_in_argv;
 	char *resp_msg = NULL, *resp_msg2 = NULL, *op = NULL;
 	uint64_t real_size = 0;
@@ -1573,8 +1574,9 @@ static void *_start_stage_in(void *x)
 	bb_job_t *bb_job;
 	bool get_real_size = false;
 	DEF_TIMERS;
+	track_script_rec_t *track_script_rec =
+		track_script_rec_add(stage_args->job_id, 0, pthread_self());
 
-	stage_args = (stage_args_t *) x;
 	setup_argv   = stage_args->args1;
 	data_in_argv = stage_args->args2;
 
@@ -1586,10 +1588,29 @@ static void *_start_stage_in(void *x)
 	START_TIMER;
 	resp_msg = run_command("setup",
 			       bb_state.bb_config.get_sys_state,
-			       setup_argv, timeout, &status);
+			       setup_argv, timeout, pthread_self(),
+			       &status);
 	END_TIMER;
 	info("%s: setup for job JobId=%u ran for %s",
 	     __func__, stage_args->job_id, TIME_STR);
+
+	if (track_script_broadcast(track_script_rec, status)) {
+		/* I was killed by slurmtrack, bail out right now */
+		info("%s: setup for JobId=%u terminated by slurmctld",
+		     __func__, stage_args->job_id);
+		free_command_argv(setup_argv);
+		free_command_argv(data_in_argv);
+		xfree(resp_msg);
+		xfree(stage_args->pool);
+		xfree(stage_args);
+		/*
+		 * Don't need to free track_script_rec here,
+		 * it is handled elsewhere since it still being tracked.
+		 */
+		return NULL;
+	}
+	track_script_reset_cpid(pthread_self(), 0);
+
 	_log_script_argv(setup_argv, resp_msg);
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
@@ -1600,6 +1621,7 @@ static void *_start_stage_in(void *x)
 	 */
 	bb_limit_rem(stage_args->user_id, stage_args->bb_size, stage_args->pool,
 		     &bb_state);
+
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		trigger_burst_buffer();
 		error("%s: setup for JobId=%u status:%u response:%s",
@@ -1643,14 +1665,33 @@ static void *_start_stage_in(void *x)
 		else
 			timeout = DEFAULT_STATE_IN_TIMEOUT * 1000;
 		xfree(resp_msg);
+
 		op = "dws_data_in";
 		START_TIMER;
 		resp_msg = run_command("dws_data_in",
 				       bb_state.bb_config.get_sys_state,
-				       data_in_argv, timeout, &status);
+				       data_in_argv, timeout, pthread_self(),
+				       &status);
 		END_TIMER;
 		info("%s: dws_data_in for JobId=%u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
+		if (track_script_broadcast(track_script_rec, status)) {
+			/* I was killed by slurmtrack, bail out right now */
+			info("%s: dws_data_in for JobId=%u terminated by slurmctld",
+			     __func__, stage_args->job_id);
+			free_command_argv(setup_argv);
+			free_command_argv(data_in_argv);
+			xfree(resp_msg);
+			xfree(stage_args->pool);
+			xfree(stage_args);
+			/*
+			 * Don't need to free track_script_rec here,
+			 * it is handled elsewhere since it still being tracked.
+			 */
+			return NULL;
+		}
+		track_script_reset_cpid(pthread_self(), 0);
+
 		_log_script_argv(data_in_argv, resp_msg);
 		if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 		    !strstr(resp_msg, "No matching session")) {
@@ -1685,13 +1726,35 @@ static void *_start_stage_in(void *x)
 		START_TIMER;
 		resp_msg2 = run_command("real_size",
 				        bb_state.bb_config.get_sys_state,
-				        size_argv, timeout, &status);
+				        size_argv, timeout, pthread_self(),
+					&status);
 		END_TIMER;
 		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 		    bb_state.bb_config.debug_flag)
 			info("%s: real_size ran for %s", __func__, TIME_STR);
+
+		if (track_script_broadcast(track_script_rec, status)) {
+			/* I was killed by slurmtrack, bail out right now */
+			info("%s: real_size for JobId=%u terminated by slurmctld",
+			     __func__, stage_args->job_id);
+			free_command_argv(setup_argv);
+			free_command_argv(data_in_argv);
+			xfree(resp_msg);
+			xfree(resp_msg2);
+			free_command_argv(size_argv);
+			xfree(stage_args->pool);
+			xfree(stage_args);
+			/*
+			 * Don't need to free track_script_rec here,
+			 * it is handled elsewhere since it still being tracked.
+			 */
+			return NULL;
+		}
+		track_script_reset_cpid(pthread_self(), 0);
+
 		/* Use resp_msg2 to preserve resp_msg for error message below */
 		_log_script_argv(size_argv, resp_msg2);
+
 		if (WIFEXITED(status) && (WEXITSTATUS(status) != 0) &&
 		    resp_msg2 &&
 		    (strncmp(resp_msg2, "invalid function", 16) == 0)) {
@@ -1781,6 +1844,9 @@ static void *_start_stage_in(void *x)
 	free_command_argv(data_in_argv);
 	xfree(stage_args->pool);
 	xfree(stage_args);
+
+	track_script_remove(pthread_self());
+
 	return NULL;
 }
 
@@ -1790,6 +1856,7 @@ static int _queue_stage_out(bb_job_t *bb_job)
 	char **post_run_argv, **data_out_argv;
 	stage_args_t *stage_args;
 	int hash_inx = bb_job->job_id % 10, rc = SLURM_SUCCESS;
+	pthread_t tid;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, bb_job->job_id);
@@ -1819,7 +1886,7 @@ static int _queue_stage_out(bb_job_t *bb_job)
 	stage_args->timeout = bb_state.bb_config.stage_out_timeout;
 	stage_args->user_id = bb_job->user_id;
 
-	slurm_thread_create_detached(NULL, _start_stage_out, stage_args);
+	slurm_thread_create(&tid, _start_stage_out, stage_args);
 
 	xfree(hash_dir);
 	xfree(job_dir);
@@ -1828,7 +1895,7 @@ static int _queue_stage_out(bb_job_t *bb_job)
 
 static void *_start_stage_out(void *x)
 {
-	stage_args_t *stage_args;
+	stage_args_t *stage_args = (stage_args_t *)x;
 	char **post_run_argv, **data_out_argv, *resp_msg = NULL, *op = NULL;
 	int rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_write_lock =
@@ -1836,9 +1903,10 @@ static void *_start_stage_out(void *x)
 	struct job_record *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
-	DEF_TIMERS;
+	DEF_TIMERS
+	track_script_rec_t *track_script_rec =
+		track_script_rec_add(stage_args->job_id, 0, pthread_self());
 
-	stage_args = (stage_args_t *) x;
 	data_out_argv = stage_args->args1;
 	post_run_argv = stage_args->args2;
 
@@ -1850,13 +1918,32 @@ static void *_start_stage_out(void *x)
 	START_TIMER;
 	resp_msg = run_command("dws_post_run",
 			       bb_state.bb_config.get_sys_state,
-			       post_run_argv, timeout, &status);
+			       post_run_argv, timeout, pthread_self(),
+			       &status);
 	END_TIMER;
 	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
 	    bb_state.bb_config.debug_flag) {
 		info("%s: dws_post_run for JobId=%u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
 	}
+
+	if (track_script_broadcast(track_script_rec, status)) {
+		/* I was killed by slurmtrack, bail out right now */
+		info("%s: dws_post_run for JobId=%u terminated by slurmctld",
+		     __func__, stage_args->job_id);
+		free_command_argv(post_run_argv);
+		free_command_argv(data_out_argv);
+		xfree(resp_msg);
+		xfree(stage_args->pool);
+		xfree(stage_args);
+		/*
+		 * Don't need to free track_script_rec here,
+		 * it is handled elsewhere since it still being tracked.
+		 */
+		return NULL;
+	}
+	track_script_reset_cpid(pthread_self(), 0);
+
 	_log_script_argv(post_run_argv, resp_msg);
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(stage_args->job_id);
@@ -1896,13 +1983,32 @@ static void *_start_stage_out(void *x)
 		xfree(resp_msg);
 		resp_msg = run_command("dws_data_out",
 				       bb_state.bb_config.get_sys_state,
-				       data_out_argv, timeout, &status);
+				       data_out_argv, timeout, pthread_self(),
+				       &status);
 		END_TIMER;
 		if ((DELTA_TIMER > 1000000) ||	/* 10 secs */
 		    bb_state.bb_config.debug_flag) {
 			info("%s: dws_data_out for JobId=%u ran for %s",
 			     __func__, stage_args->job_id, TIME_STR);
 		}
+
+		if (track_script_broadcast(track_script_rec, status)) {
+			/* I was killed by slurmtrack, bail out right now */
+			info("%s: dws_data_out for JobId=%u terminated by slurmctld",
+			     __func__, stage_args->job_id);
+			free_command_argv(post_run_argv);
+			free_command_argv(data_out_argv);
+			xfree(resp_msg);
+			xfree(stage_args->pool);
+			xfree(stage_args);
+			/*
+			 * Don't need to free track_script_rec here,
+			 * it is handled elsewhere since it still being tracked.
+			 */
+			return NULL;
+		}
+		track_script_reset_cpid(pthread_self(), 0);
+
 		_log_script_argv(data_out_argv, resp_msg);
 		if ((!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) &&
 		    !strstr(resp_msg, "No matching session")) {
@@ -1986,6 +2092,9 @@ static void *_start_stage_out(void *x)
 	free_command_argv(post_run_argv);
 	free_command_argv(data_out_argv);
 	xfree(stage_args);
+
+	track_script_remove(pthread_self());
+
 	return NULL;
 }
 
@@ -1996,6 +2105,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	char **teardown_argv;
 	stage_args_t *teardown_args;
 	int fd, hash_inx = job_id % 10;
+	pthread_t tid;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d", state_save_loc, hash_inx);
 	xstrfmtcat(job_script, "%s/job.%u/script", hash_dir, job_id);
@@ -2035,7 +2145,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	teardown_args->timeout = bb_state.bb_config.other_timeout;
 	teardown_args->args1   = teardown_argv;
 
-	slurm_thread_create_detached(NULL, _start_teardown, teardown_args);
+	slurm_thread_create(&tid, _start_teardown, teardown_args);
 
 	xfree(hash_dir);
 	xfree(job_script);
@@ -2044,7 +2154,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 static void *_start_teardown(void *x)
 {
 	static uint32_t previous_job_id = 0;
-	stage_args_t *teardown_args;
+	stage_args_t *teardown_args = (stage_args_t *)x;
 	char **teardown_argv, *resp_msg = NULL;
 	int status = 0, timeout;
 	struct job_record *job_ptr;
@@ -2055,8 +2165,10 @@ static void *_start_teardown(void *x)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
 	bool hurry;
+	track_script_rec_t *track_script_rec =
+		track_script_rec_add(teardown_args->job_id, 0,
+				      pthread_self());
 
-	teardown_args = (stage_args_t *) x;
 	teardown_argv = teardown_args->args1;
 
 	if (previous_job_id == teardown_args->job_id)
@@ -2070,10 +2182,27 @@ static void *_start_teardown(void *x)
 		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
 	resp_msg = run_command("teardown",
 			       bb_state.bb_config.get_sys_state,
-			       teardown_argv, timeout, &status);
+			       teardown_argv, timeout, pthread_self(),
+			       &status);
 	END_TIMER;
 	info("%s: teardown for JobId=%u ran for %s",
 	     __func__, teardown_args->job_id, TIME_STR);
+
+	if (track_script_broadcast(track_script_rec, status)) {
+		/* I was killed by slurmtrack, bail out right now */
+		info("%s: teardown for JobId=%u terminated by slurmctld",
+		     __func__, teardown_args->job_id);
+		xfree(resp_msg);
+		free_command_argv(teardown_argv);
+		xfree(teardown_args);
+		/*
+		 * Don't need to free track_script_rec here,
+		 * it is handled elsewhere since it still being tracked.
+		 */
+		return NULL;
+	}
+	/* track_script_reset_cpid(pthread_self(), 0); */
+
 	_log_script_argv(teardown_argv, resp_msg);
 
 	/*
@@ -2169,6 +2298,9 @@ static void *_start_teardown(void *x)
 	xfree(resp_msg);
 	free_command_argv(teardown_argv);
 	xfree(teardown_args);
+
+	track_script_remove(pthread_self());
+
 	return NULL;
 }
 
@@ -3177,7 +3309,7 @@ extern char *bb_p_get_status(uint32_t argc, char **argv)
 	for (i = 0; i < argc; i++)
 		script_argv[i + 1] = argv[i];
 	status_resp = run_command("dwstat", bb_state.bb_config.get_sys_status,
-				  script_argv, 2000, &status);
+				  script_argv, 2000, 0, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		xfree(status_resp);
 		status_resp = xstrdup("Error running dwstat\n");
@@ -3527,7 +3659,7 @@ extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
 	START_TIMER;
 	resp_msg = run_command("job_process",
 			       bb_state.bb_config.get_sys_state,
-			       script_argv, timeout, &status);
+			       script_argv, timeout, 0, &status);
 	END_TIMER;
 	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 	    bb_state.bb_config.debug_flag)
@@ -3844,6 +3976,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 	uint32_t timeout;
 	bool do_pre_run, set_exec_host;
 	DEF_TIMERS;
+	pthread_t tid;
 
 	if ((job_ptr->burst_buffer == NULL) ||
 	    (job_ptr->burst_buffer[0] == '\0'))
@@ -3938,7 +4071,8 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 		START_TIMER;
 		resp_msg = run_command("paths",
 				       bb_state.bb_config.get_sys_state,
-				       script_argv, timeout, &status);
+				       script_argv, timeout, 0,
+				       &status);
 		END_TIMER;
 		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 		    bb_state.bb_config.debug_flag)
@@ -4004,8 +4138,7 @@ extern int bb_p_job_begin(struct job_record *job_ptr)
 			job_ptr->job_state |= JOB_CONFIGURING;
 		}
 
-		slurm_thread_create_detached(NULL, _start_pre_run,
-					     pre_run_args);
+		slurm_thread_create(&tid, _start_pre_run, pre_run_args);
 	}
 
 fini:
@@ -4052,6 +4185,8 @@ static void *_start_pre_run(void *x)
 	uint32_t timeout;
 	bool hold_job = false, nodes_ready = false;
 	DEF_TIMERS;
+	track_script_rec_t *track_script_rec =
+		track_script_rec_add(pre_run_args->job_id, 0, pthread_self());
 
 	/* Wait for node boot to complete */
 	while (!nodes_ready) {
@@ -4059,6 +4194,7 @@ static void *_start_pre_run(void *x)
 		job_ptr = find_job_record(pre_run_args->job_id);
 		if (!job_ptr || IS_JOB_COMPLETED(job_ptr)) {
 			unlock_slurmctld(job_read_lock);
+			track_script_remove(pthread_self());
 			return NULL;
 		}
 		if (test_job_nodes_ready(job_ptr))
@@ -4076,8 +4212,24 @@ static void *_start_pre_run(void *x)
 	START_TIMER;
 	resp_msg = run_command("dws_pre_run",
 			       bb_state.bb_config.get_sys_state,
-			       pre_run_args->args, timeout, &status);
+			       pre_run_args->args, timeout, pthread_self(),
+			       &status);
 	END_TIMER;
+
+	if (track_script_broadcast(track_script_rec, status)) {
+		/* I was killed by slurmtrack, bail out right now */
+		info("%s: dws_pre_run for JobId=%u terminated by slurmctld",
+		     __func__, pre_run_args->job_id);
+		xfree(resp_msg);
+		free_command_argv(pre_run_args->args);
+		xfree(pre_run_args);
+		/*
+		 * Don't need to free track_script_rec here,
+		 * it is handled elsewhere since it still being tracked.
+		 */
+		return NULL;
+	}
+	/* track_script_reset_cpid(pthread_self(), 0); */
 
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
@@ -4129,6 +4281,9 @@ static void *_start_pre_run(void *x)
 	xfree(resp_msg);
 	free_command_argv(pre_run_args->args);
 	xfree(pre_run_args);
+
+	track_script_remove(pthread_self());
+
 	return NULL;
 }
 
@@ -4371,6 +4526,7 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 	bb_buf_t *buf_ptr;
 	bb_alloc_t *bb_alloc;
 	int i, hash_inx, rc = 0;
+	pthread_t tid;
 
 	xassert(bb_job);
 	for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
@@ -4434,8 +4590,8 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			create_args->type = xstrdup(buf_ptr->type);
 			create_args->user_id = job_ptr->user_id;
 
-			slurm_thread_create_detached(NULL, _create_persistent,
-						     create_args);
+			slurm_thread_create(&tid, _create_persistent,
+					    create_args);
 		} else if ((buf_ptr->flags == BB_FLAG_BB_OP) &&
 			   buf_ptr->destroy && job_ready) {
 			/* Delete the buffer */
@@ -4475,8 +4631,8 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 			create_args->name = xstrdup(buf_ptr->name);
 			create_args->user_id = job_ptr->user_id;
 
-			slurm_thread_create_detached(NULL, _destroy_persistent,
-						     create_args);
+			slurm_thread_create(&tid, _destroy_persistent,
+					    create_args);
 		} else if ((buf_ptr->flags == BB_FLAG_BB_OP) &&
 			   buf_ptr->destroy) {
 			rc++;
@@ -4614,6 +4770,8 @@ static void *_create_persistent(void *x)
 	int i, status = 0;
 	uint32_t timeout;
 	DEF_TIMERS;
+	track_script_rec_t *track_script_rec =
+		track_script_rec_add(create_args->job_id, 0, pthread_self());
 
 	script_argv = xcalloc(20, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -4649,12 +4807,28 @@ static void *_create_persistent(void *x)
 	START_TIMER;
 	resp_msg = run_command("create_persistent",
 			       bb_state.bb_config.get_sys_state,
-			       script_argv, timeout, &status);
+			       script_argv, timeout, pthread_self(),
+			       &status);
 	_log_script_argv(script_argv, resp_msg);
 	free_command_argv(script_argv);
 	END_TIMER;
 	info("create_persistent of %s ran for %s",
 	     create_args->name, TIME_STR);
+
+	if (track_script_broadcast(track_script_rec, status)) {
+		/* I was killed by slurmtrack, bail out right now */
+		info("%s: create_persistent for JobId=%u terminated by slurmctld",
+		     __func__, create_args->job_id);
+		xfree(resp_msg);
+		_free_create_args(create_args);
+		/*
+		 * Don't need to free track_script_rec here,
+		 * it is handled elsewhere since it still being tracked.
+		 */
+		return NULL;
+	}
+	/* track_script_reset_cpid(pthread_self(), 0); */
+
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		trigger_burst_buffer();
 		error("%s: For JobId=%u Name=%s status:%u response:%s",
@@ -4748,6 +4922,9 @@ static void *_create_persistent(void *x)
 	}
 	xfree(resp_msg);
 	_free_create_args(create_args);
+
+	track_script_remove(pthread_self());
+
 	return NULL;
 }
 
@@ -4763,6 +4940,8 @@ static void *_destroy_persistent(void *x)
 	int status = 0;
 	uint32_t timeout;
 	DEF_TIMERS;
+	track_script_rec_t *track_script_rec =
+		track_script_rec_add(destroy_args->job_id, 0, pthread_self());
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_alloc = bb_find_name_rec(destroy_args->name, destroy_args->user_id,
@@ -4791,12 +4970,28 @@ static void *_destroy_persistent(void *x)
 	START_TIMER;
 	resp_msg = run_command("destroy_persistent",
 			       bb_state.bb_config.get_sys_state,
-			       script_argv, timeout, &status);
+			       script_argv, timeout, pthread_self(),
+			       &status);
 	_log_script_argv(script_argv, resp_msg);
 	free_command_argv(script_argv);
 	END_TIMER;
 	info("destroy_persistent of %s ran for %s",
 	     destroy_args->name, TIME_STR);
+
+	if (track_script_broadcast(track_script_rec, status)) {
+		/* I was killed by slurmtrack, bail out right now */
+		info("%s: destroy_persistent for JobId=%u terminated by slurmctld",
+		     __func__, destroy_args->job_id);
+		xfree(resp_msg);
+		_free_create_args(destroy_args);
+		/*
+		 * Don't need to free track_script_rec here,
+		 * it is handled elsewhere since it still being tracked.
+		 */
+		return NULL;
+	}
+	/* track_script_reset_cpid(pthread_self(), 0); */
+
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		trigger_burst_buffer();
 		error("%s: destroy_persistent for JobId=%u Name=%s status:%u response:%s",
@@ -4850,6 +5045,9 @@ static void *_destroy_persistent(void *x)
 	}
 	xfree(resp_msg);
 	_free_create_args(destroy_args);
+
+	track_script_remove(pthread_self());
+
 	return NULL;
 }
 
@@ -4876,7 +5074,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	START_TIMER;
 	resp_msg = run_command("show_configurations",
 			       state_ptr->bb_config.get_sys_state,
-			       script_argv, timeout, &status);
+			       script_argv, timeout, 0, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_configurations ran for %s", __func__, TIME_STR);
@@ -4944,7 +5142,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	START_TIMER;
 	resp_msg = run_command("show_instances",
 			       state_ptr->bb_config.get_sys_state,
-			       script_argv, timeout, &status);
+			       script_argv, timeout, 0, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_instances ran for %s", __func__, TIME_STR);
@@ -5011,7 +5209,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	START_TIMER;
 	resp_msg = run_command("pools",
 			       state_ptr->bb_config.get_sys_state,
-			       script_argv, timeout, &status);
+			       script_argv, timeout, 0, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag) {
 		/* Only log pools data if different to limit volume of logs */
@@ -5076,7 +5274,7 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	START_TIMER;
 	resp_msg = run_command("show_sessions",
 			       state_ptr->bb_config.get_sys_state,
-			       script_argv, timeout, &status);
+			       script_argv, timeout, 0, &status);
 	END_TIMER;
 	if (bb_state.bb_config.debug_flag)
 		debug("%s: show_sessions ran for %s", __func__, TIME_STR);

@@ -69,6 +69,7 @@
 #include "src/common/strlcpy.h"
 #include "src/common/parse_time.h"
 #include "src/common/timers.h"
+#include "src/common/track_script.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
@@ -107,6 +108,7 @@ typedef struct epilog_arg {
 } epilog_arg_t;
 
 typedef struct wait_boot_arg {
+	uint32_t job_id;
 	struct job_record *job_ptr;
 	bitstr_t *node_bitmap;
 } wait_boot_arg_t;
@@ -3647,6 +3649,7 @@ next_part:
 extern void epilog_slurmctld(struct job_record *job_ptr)
 {
 	epilog_arg_t *epilog_arg;
+	pthread_t tid;
 
 	if ((slurmctld_conf.epilog_slurmctld == NULL) ||
 	    (slurmctld_conf.epilog_slurmctld[0] == '\0'))
@@ -3663,7 +3666,7 @@ extern void epilog_slurmctld(struct job_record *job_ptr)
 	epilog_arg->my_env = _build_env(job_ptr, true);
 
 	job_ptr->epilog_running = true;
-	slurm_thread_create_detached(NULL, _run_epilog, epilog_arg);
+	slurm_thread_create(&tid, _run_epilog, epilog_arg);
 }
 
 static char **_build_env(struct job_record *job_ptr, bool is_epilog)
@@ -3817,6 +3820,7 @@ static void *_run_epilog(void *arg)
 	int i, status, wait_rc;
 	char *argv[2];
 	uint16_t tm;
+	track_script_rec_t *track_script_rec;
 
 	argv[0] = epilog_arg->epilog_slurmctld;
 	argv[1] = NULL;
@@ -3833,6 +3837,10 @@ static void *_run_epilog(void *arg)
 		exit(127);
 	}
 
+	/* Start tracking this new process */
+	track_script_rec = track_script_rec_add(epilog_arg->job_id, cpid,
+						pthread_self());
+
 	/* Prolog and epilog use the same timeout
 	 */
 	tm = slurm_get_prolog_timeout();
@@ -3847,7 +3855,18 @@ static void *_run_epilog(void *arg)
 			break;
 		}
 	}
-	if (status != 0) {
+
+	if (track_script_broadcast(track_script_rec, status)) {
+		info("epilog_slurmctld JobId=%u epilog killed by signal %u",
+		     epilog_arg->job_id, WTERMSIG(status));
+
+		xfree(epilog_arg->epilog_slurmctld);
+		for (i=0; epilog_arg->my_env[i]; i++)
+			xfree(epilog_arg->my_env[i]);
+		xfree(epilog_arg->my_env);
+		xfree(epilog_arg);
+		return NULL;
+	} else if (status != 0) {
 		error("epilog_slurmctld JobId=%u epilog exit status %u:%u",
 		      epilog_arg->job_id, WEXITSTATUS(status),
 		      WTERMSIG(status));
@@ -3874,6 +3893,12 @@ fini:	lock_slurmctld(job_write_lock);
 		xfree(epilog_arg->my_env[i]);
 	xfree(epilog_arg->my_env);
 	xfree(epilog_arg);
+
+	/*
+	 * Use pthread_self here instead of track_script_rec->tid to avoid any
+	 * potential for race.
+	 */
+	track_script_remove(pthread_self());
 	return NULL;
 }
 
@@ -3983,6 +4008,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	char *nodes, *reboot_features = NULL;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 	wait_boot_arg_t *wait_boot_arg;
+	pthread_t tid;
 
 	if ((job_ptr->details == NULL) || (job_ptr->node_bitmap == NULL))
 		return SLURM_SUCCESS;
@@ -4005,6 +4031,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	}
 
 	wait_boot_arg = xmalloc(sizeof(wait_boot_arg_t));
+	wait_boot_arg->job_id = job_ptr->job_id;
 	wait_boot_arg->job_ptr = job_ptr;
 	wait_boot_arg->node_bitmap = bit_alloc(node_record_count);
 
@@ -4114,7 +4141,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 	}
 
 	job_ptr->details->prolog_running++;
-	slurm_thread_create_detached(NULL, _wait_boot, wait_boot_arg);
+	slurm_thread_create(&tid, _wait_boot, wait_boot_arg);
 	FREE_NULL_BITMAP(boot_node_bitmap);
 	FREE_NULL_BITMAP(feature_node_bitmap);
 
@@ -4139,6 +4166,11 @@ static void *_wait_boot(void *arg)
 	uint32_t save_job_id = job_ptr->job_id;
 	bool job_timeout = false;
 
+	/*
+	 * This adds the process to the list, we don't need the return pointer
+	 */
+	(void)track_script_rec_add(wait_boot_arg->job_id, 0, pthread_self());
+
 	do {
 		sleep(5);
 		total_node_cnt = wait_node_cnt = 0;
@@ -4148,6 +4180,7 @@ static void *_wait_boot(void *arg)
 			error("JobId=%u vanished while waiting for node boot",
 			      save_job_id);
 			unlock_slurmctld(job_write_lock);
+			track_script_remove(pthread_self());
 			return NULL;
 		}
 		if (IS_JOB_PENDING(job_ptr) ||	/* Job requeued or killed */
@@ -4156,6 +4189,7 @@ static void *_wait_boot(void *arg)
 			verbose("%pJ no longer waiting for node boot",
 				job_ptr);
 			unlock_slurmctld(job_write_lock);
+			track_script_remove(pthread_self());
 			return NULL;
 		}
 		for (i = 0, node_ptr = node_record_table_ptr;
@@ -4192,7 +4226,7 @@ static void *_wait_boot(void *arg)
 
 	FREE_NULL_BITMAP(wait_boot_arg->node_bitmap);
 	xfree(arg);
-
+	track_script_remove(pthread_self());
 	return NULL;
 }
 #endif
@@ -4204,6 +4238,8 @@ static void *_wait_boot(void *arg)
  */
 extern void prolog_slurmctld(struct job_record *job_ptr)
 {
+	pthread_t tid;
+
 	if ((slurmctld_conf.prolog_slurmctld == NULL) ||
 	    (slurmctld_conf.prolog_slurmctld[0] == '\0'))
 		return;
@@ -4218,7 +4254,7 @@ extern void prolog_slurmctld(struct job_record *job_ptr)
 		job_ptr->job_state |= JOB_CONFIGURING;
 	}
 
-	slurm_thread_create_detached(NULL, _run_prolog, job_ptr);
+	slurm_thread_create(&tid, _run_prolog, job_ptr);
 }
 
 static void *_run_prolog(void *arg)
@@ -4236,12 +4272,15 @@ static void *_run_prolog(void *arg)
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
 	uint16_t tm;
+	track_script_rec_t *track_script_rec;
 
 	lock_slurmctld(config_read_lock);
+	job_id = job_ptr->job_id;
+
 	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
 	argv[1] = NULL;
 	my_env = _build_env(job_ptr, false);
-	job_id = job_ptr->job_id;
+
 	if (job_ptr->node_bitmap) {
 		node_bitmap = bit_copy(job_ptr->node_bitmap);
 		for (i = 0, node_ptr = node_record_table_ptr;
@@ -4266,6 +4305,10 @@ static void *_run_prolog(void *arg)
 		exit(127);
 	}
 
+	/* Start tracking this new process */
+	track_script_rec = track_script_rec_add(job_ptr->job_id,
+						cpid, pthread_self());
+
 	tm = slurm_get_prolog_timeout();
 	while (1) {
 		wait_rc = waitpid_timeout(__func__, cpid, &status, tm);
@@ -4279,7 +4322,17 @@ static void *_run_prolog(void *arg)
 		}
 	}
 
-	if (status != 0) {
+	if (track_script_broadcast(track_script_rec, status)) {
+		info("prolog_slurmctld JobId=%u prolog killed by signal %u",
+		     job_id, WTERMSIG(status));
+
+		xfree(argv[0]);
+		for (i=0; my_env[i]; i++)
+			xfree(my_env[i]);
+		xfree(my_env);
+		FREE_NULL_BITMAP(node_bitmap);
+		return NULL;
+	} else if (status != 0) {
 		bool kill_job = false;
 		slurmctld_lock_t job_write_lock = {
 			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
@@ -4340,6 +4393,11 @@ fini:	xfree(argv[0]);
 	unlock_slurmctld(config_read_lock);
 	FREE_NULL_BITMAP(node_bitmap);
 
+	/*
+	 * Use pthread_self here instead of track_script_rec->tid to avoid any
+	 * potential for race.
+	 */
+	track_script_remove(pthread_self());
 	return NULL;
 }
 

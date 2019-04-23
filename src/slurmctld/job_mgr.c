@@ -78,6 +78,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"
 #include "src/common/timers.h"
+#include "src/common/track_script.h"
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xassert.h"
@@ -6104,8 +6105,11 @@ static int _job_complete(struct job_record *job_ptr, uid_t uid, bool requeue,
 		deallocate_nodes(job_ptr, false, suspended, false);
 	}
 
-	info("%s: %pJ done", __func__, job_ptr);
+	/* Check for and cleanup stuck scripts */
+	if (job_ptr->details && job_ptr->details->prolog_running)
+		track_script_flush_job(job_ptr->job_id);
 
+	info("%s: %pJ done", __func__, job_ptr);
 	return SLURM_SUCCESS;
 }
 
