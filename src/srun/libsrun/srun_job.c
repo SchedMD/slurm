@@ -1213,7 +1213,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		xfree(pack_nodelist);
 	} else {
 		/* Combined job allocation and job step launch */
-#if defined HAVE_FRONT_END && (!defined HAVE_REAL_CRAY)
+#if defined HAVE_FRONT_END
 		uid_t my_uid = getuid();
 		if ((my_uid != 0) &&
 		    (my_uid != slurm_get_slurm_user_id())) {
