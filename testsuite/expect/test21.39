@@ -75,14 +75,14 @@ proc check_rc { exit_code } {
 	}
 }
 
-#Create test assoc and accounts
+# Create test assoc and accounts
 proc create_accounts {} {
 	global ta1 ta2 tq1 tq2 tu1 user_req_1 user_req_2
 	global qos_1 qos_2
 	log_info "create account and QOS"
 
 
-	#Create test assoc and accounts
+	# Create test assoc and accounts
 	check_rc [add_qos $tq1 [array get qos_1]]
 	check_rc [add_qos $tq2 [array get qos_2]]
 	check_rc [add_acct $ta1 [array get acct_1]]
@@ -91,7 +91,7 @@ proc create_accounts {} {
 	check_rc [add_user $tu1 [array get user_req_2]]
 }
 
-#Cleanup test assoc and accounts
+# Cleanup test assoc and accounts
 proc cleanup_accounts {} {
 	global ta1 ta2 tq1 tq2
 
@@ -105,7 +105,7 @@ proc cleanup_accounts {} {
 }
 
 proc endit { exit_code } {
-	global config_dir cwd bin_cp test_id part_name
+	global config_dir cwd bin_cp bin_rm test_id part_name
 
 	wait_for_part_done $part_name
 
@@ -114,6 +114,7 @@ proc endit { exit_code } {
 
 	if {$exit_code == 0} {
 		cleanup_accounts
+		exec $bin_rm -f $cwd/slurm.conf.orig
 		print_success $test_id
 	} else {
 		print_failure $test_id
