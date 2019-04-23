@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Sync "numtask" squeue format option for jobs and steps to "numtasks".
  -- Fix sacct -PD to avoid CA before start jobs.
  -- Fix potential deadlock with backup slurmctld.
+ -- Fixed issue with jobs not appearing in sacct after dependency satisfied.
 
 * Changes in Slurm 18.08.7
 ==========================
