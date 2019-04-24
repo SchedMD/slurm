@@ -269,28 +269,28 @@ if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 }
 
 # Other common variables
-set alpha                "\[a-zA-Z\]+"
-set alpha_cap            "\[A-Z\]+"
-set alpha_comma_slash    "\[a-zA-Z/,\]+"
-set alpha_comma_slash_under "\[a-zA-Z/,/_\]+"
-set alpha_numeric        "\[a-zA-Z0-9\]+"
-set alpha_numeric_special "\[a-zA-Z0-9_,=\\.\\(\\)\\\[\\\]\\\/\:\\-\|\]+"
-set alpha_numeric_colon  "\[a-zA-Z0-9_,\:\-\]+"
-set alpha_numeric_comma_eq  "\[a-zA-Z0-9_,=\-\]+"
-set alpha_numeric_comma  "\[a-zA-Z0-9_,\-\]+"
-set alpha_numeric_under  "\[a-zA-Z0-9_\-\]+"
-set alpha_under          "\[A-Z_\]+"
-set alpha_under_slash    "\[a-zA-Z/_\]+"
-set digit                "\[0-9\]"
+set alpha                "\\S+"
+set alpha_cap            "\\S+"
+set alpha_comma_slash    "\\S+"
+set alpha_comma_slash_under "\\S+"
+set alpha_numeric        "\\S+"
+set alpha_numeric_special "\\S\\\/\:\\-\|\]+"
+set alpha_numeric_colon  "\\S+"
+set alpha_numeric_comma_eq  "\\S+"
+set alpha_numeric_comma  "\\S+"
+set alpha_numeric_under  "\\S+"
+set alpha_under          "\\S+"
+set alpha_under_slash    "\\S+"
+set digit                "\\d"
 set end_of_line          "\[\r\n\]"
-set float                "\[0-9\]+\\.?\[0-9\]*"
-set number               "\[0-9\]+"
-set format_time          "\[0-9\]+\\:\[0-9\]+\\:\[0-9\]+"
-set number_with_suffix   "\[0-9\]+\[KM\]*"
+set float                "\\d+\\.?\\d*"
+set number               "\\d+"
+set format_time          "\\d+\\:\\d+\\:\\d+"
+set number_with_suffix   "\\d+\[KM\]*"
 set slash                "/"
-set whitespace		 "\[ \t\n\r\f\v\]+"
-set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_comma\]?\\\]?"
-set controlmachine_regex "\[a-zA-Z0-9,\-\.\]+"
+set whitespace		 "\\s+"
+set alpha_numeric_nodelist "\\S+"
+set controlmachine_regex "\\S+"
 # Any characters except ( , : newline
 set no_delim             "\[^(,:\r\n\]"
 set no_delim_slash       "\[^(,:/\r\n\]"
@@ -3401,11 +3401,13 @@ proc get_control_machine { } {
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
 		-re "ControlMachine *= ($controlmachine_regex)" {
-			set control_machine $expect_out(1,string)
+			set par_idx [expr [string last "(" $expect_out(1,string)] -1]
+			set control_machine [string range $expect_out(1,string) 0 $par_idx]
 			exp_continue
 		}
 		-re "SlurmctldHost.0. *= ($controlmachine_regex)" {
-			set control_machine $expect_out(1,string)
+			set par_idx [expr [string last "(" $expect_out(1,string)] -1]
+			set control_machine [string range $expect_out(1,string) 0 $par_idx]
 			exp_continue
 		}
 		timeout {
