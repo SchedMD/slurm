@@ -122,13 +122,14 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			(*update_cnt_ptr)++;
 		}
 		else if (xstrncasecmp(tag, "MaxNodes", MAX(taglen, 4)) == 0) {
+			min = 1;
 			if ((xstrcasecmp(val,"UNLIMITED") == 0) ||
-			    (xstrcasecmp(val,"INFINITE") == 0))
+			    (xstrcasecmp(val,"INFINITE") == 0)) {
 				part_msg_ptr->max_nodes = INFINITE;
-			else {
-				min = 1;
-				get_resource_arg_range(val,
-					"MaxNodes", &min, &max, true);
+			} else if (!get_resource_arg_range(val, "MaxNodes",
+							   &min, &max, false)) {
+				exit_code = 1;
+			} else {
 				part_msg_ptr->max_nodes = min;
 			}
 			(*update_cnt_ptr)++;
