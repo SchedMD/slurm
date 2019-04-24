@@ -277,16 +277,20 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 			else if ((names[i] == '\"') || (names[i] == '\''))
 				names[i] = '`';
 			else if (names[i] == '[')
-			       /* Make sure there is a open bracket. This
+			       /*
+				* Make sure there is a open bracket. This
 				* check is to allow comma sperated notation
-				* within the bracket ie. linux[0-1,2]  */
+				* within the bracket (e.g. "linux[0-1,2]").
+				*/
 				first_brack = true;
 			else if (names[i] == ',' && !first_brack) {
 				/* Check that the string before , was
 				 * not a [] notation value */
 				if (!brack_not) {
-					/* If there is a comma at the end just
-					 * ignore it */
+					/*
+					 * If there is a comma at the end just
+					 * ignore it
+					 */
 					if (!names[i+1])
 						break;
 
@@ -294,10 +298,11 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 							(i-start));
 					//info("got %s %d", name, i-start);
 
-					/* If we get a duplicate remove the
+					/*
+					 * If we get a duplicate remove the
 					 * first one and tack this on the end.
 					 * This is needed for get associations
-					 * with qos.
+					 * with QOS.
 					 */
 					if (list_find(itr,
 						      slurm_find_char_in_list,
@@ -324,8 +329,10 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					}
 				} else {
 					brack_not = false;
-					/* Skip over the , so it is
-					 * not included in the char list */
+					/*
+					 * Skip over the "," so it is
+					 * not included in the char list
+					 */
 					start = ++i;
 				}
 			} else if (names[i] == ']') {
@@ -344,11 +351,12 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 						xstrdup((tmp_this_node_name =
 						hostlist_shift (host_list))))) {
 						free(tmp_this_node_name);
-						/* If we get a duplicate
+						/*
+						 * If we get a duplicate
 						 * remove the first one and tack
 						 * this on the end. This is
 						 * needed for get associations
-						 * with qos.
+						 * with QOS.
 						 */
 						if (list_find(
 							itr,
@@ -376,10 +384,10 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 		/* check for empty strings user='' etc */
 		if ((cnt == list_count(char_list)) || (i - start)) {
 			name = xstrndup(names+start, (i-start));
-			/* If we get a duplicate remove the
-			 * first one and tack this on the end.
-			 * This is needed for get associations
-			 * with qos.
+			/*
+			 * If we get a duplicate remove the first one and
+			 * tack this on the end. This is needed for get
+			 * associations with QOS.
 			 */
 			if (list_find(itr, slurm_find_char_in_list, name)) {
 				list_delete_item(itr);
