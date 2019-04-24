@@ -678,8 +678,6 @@ CRAY_JOB_LDFLAGS
 CRAY_JOB_CPPFLAGS
 HAVE_CRAY_NETWORK_FALSE
 HAVE_CRAY_NETWORK_TRUE
-HAVE_REAL_CRAY_FALSE
-HAVE_REAL_CRAY_TRUE
 HAVE_NATIVE_CRAY_FALSE
 HAVE_NATIVE_CRAY_TRUE
 BUILD_SVIEW_FALSE
@@ -22672,7 +22670,6 @@ fi
 
 
   ac_have_native_cray="yes"
-  ac_have_real_cray="no"
   ac_have_cray_network="no"
   ac_really_no_cray="no"
 
@@ -22700,7 +22697,6 @@ fi
   if test "$ac_really_no_cray" = "yes"; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Ignoring any potential Cray system" >&5
 $as_echo "$as_me: Ignoring any potential Cray system" >&6;}
-    ac_have_real_cray="no"
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a Cray XT or XE system" >&5
 $as_echo_n "checking whether this is a Cray XT or XE system... " >&6; }
@@ -22906,13 +22902,9 @@ $as_echo "Running on a system with a Cray Aries network" >&6; }
     fi
 
     if test "$ac_have_native_cray" = "yes"; then
-      ac_have_real_cray="yes"
       ac_have_native_cray="yes"
 
 $as_echo "#define HAVE_NATIVE_CRAY 1" >>confdefs.h
-
-
-$as_echo "#define HAVE_REAL_CRAY 1" >>confdefs.h
 
     elif test "$ac_have_cray_network" = "yes"; then
       ac_have_cray_network="yes"
@@ -22934,14 +22926,6 @@ $as_echo "#define HAVE_CRAY_NETWORK 1" >>confdefs.h
 else
   HAVE_NATIVE_CRAY_TRUE='#'
   HAVE_NATIVE_CRAY_FALSE=
-fi
-
-   if test "$ac_have_real_cray" = "yes"; then
-  HAVE_REAL_CRAY_TRUE=
-  HAVE_REAL_CRAY_FALSE='#'
-else
-  HAVE_REAL_CRAY_TRUE='#'
-  HAVE_REAL_CRAY_FALSE=
 fi
 
    if test "$ac_have_cray_network" = "yes"; then
@@ -24814,10 +24798,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_NATIVE_CRAY_TRUE}" && test -z "${HAVE_NATIVE_CRAY_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_NATIVE_CRAY\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_REAL_CRAY_TRUE}" && test -z "${HAVE_REAL_CRAY_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_REAL_CRAY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CRAY_NETWORK_TRUE}" && test -z "${HAVE_CRAY_NETWORK_FALSE}"; then

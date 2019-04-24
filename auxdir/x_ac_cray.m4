@@ -24,7 +24,6 @@
 AC_DEFUN([X_AC_CRAY],
 [
   ac_have_native_cray="yes"
-  ac_have_real_cray="no"
   ac_have_cray_network="no"
   ac_really_no_cray="no"
 
@@ -49,7 +48,6 @@ AC_DEFUN([X_AC_CRAY],
 
   if test "$ac_really_no_cray" = "yes"; then
     AC_MSG_NOTICE([Ignoring any potential Cray system])
-    ac_have_real_cray="no"
   else
     AC_MSG_CHECKING([whether this is a Cray XT or XE system])
 
@@ -169,10 +167,8 @@ AC_DEFUN([X_AC_CRAY],
     fi
 
     if test "$ac_have_native_cray" = "yes"; then
-      ac_have_real_cray="yes"
       ac_have_native_cray="yes"
       AC_DEFINE(HAVE_NATIVE_CRAY, 1, [Define to 1 for running on a Cray Aries system])
-      AC_DEFINE(HAVE_REAL_CRAY,   1, [Define to 1 for running on a real Cray system])
     elif test "$ac_have_cray_network" = "yes"; then
       ac_have_cray_network="yes"
       AC_DEFINE(HAVE_3D,            1, [Define to 1 if 3-dimensional architecture])
@@ -182,7 +178,6 @@ AC_DEFUN([X_AC_CRAY],
   fi
 
   AM_CONDITIONAL(HAVE_NATIVE_CRAY, test "$ac_have_native_cray" = "yes")
-  AM_CONDITIONAL(HAVE_REAL_CRAY, test "$ac_have_real_cray" = "yes")
   AM_CONDITIONAL(HAVE_CRAY_NETWORK, test "$ac_have_cray_network" = "yes")
 
   AC_SUBST(CRAY_JOB_CPPFLAGS)

@@ -218,9 +218,6 @@
 /* Define if you are compiling with readline. */
 #undef HAVE_READLINE
 
-/* Define to 1 for running on a real Cray system */
-#undef HAVE_REAL_CRAY
-
 /* Define to 1 if you have the `sched_setaffinity' function. */
 #undef HAVE_SCHED_SETAFFINITY
 
