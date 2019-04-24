@@ -799,7 +799,7 @@ static int _compute_plane_dist(struct job_record *job_ptr,
 	if (job_ptr->details->cpus_per_task > 1)
 		 maxtasks = maxtasks / job_ptr->details->cpus_per_task;
 
-	if (job_ptr->details && job_ptr->details->mc_ptr)
+	if (job_ptr->details->mc_ptr)
 		plane_size = job_ptr->details->mc_ptr->plane_size;
 	if (plane_size <= 0) {
 		error("%s: %s: invalid plane_size", plugin_type, __func__);
