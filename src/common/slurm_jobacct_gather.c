@@ -984,7 +984,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 		jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM] = *uint64;
 		break;
 	default:
-		debug("jobacct_g_set_setinfo data_type %d invalid", type);
+		debug("%s: data_type %d invalid", __func__, type);
 	}
 
 	return rc;
@@ -1044,7 +1044,7 @@ extern int jobacctinfo_getinfo(
 		*uint64 = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
 		break;
 	default:
-		debug("jobacct_g_set_getinfo data_type %d invalid", type);
+		debug("%s: data_type %d invalid", __func__, type);
 	}
 	return rc;
 
