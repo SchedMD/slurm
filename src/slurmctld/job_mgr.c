@@ -11651,6 +11651,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	bool tres_changed = false;
 	int tres_pos;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
+	bool tres_req_cnt_set = false;
 	List gres_list = NULL;
 	List license_list = NULL;
 	List part_ptr_list = NULL;
@@ -11807,6 +11808,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 
 	memcpy(tres_req_cnt, job_ptr->tres_req_cnt, sizeof(tres_req_cnt));
 	job_specs->tres_req_cnt = tres_req_cnt;
+	tres_req_cnt_set = true;
 
 	acct_limit_already_exceeded = false;
 
@@ -13738,7 +13740,7 @@ fini:
 	FREE_NULL_BITMAP(new_req_bitmap);
 	FREE_NULL_LIST(part_ptr_list);
 
-	if (error_code == SLURM_SUCCESS) {
+	if ((error_code == SLURM_SUCCESS) && tres_req_cnt_set) {
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++) {
 			if (!tres_req_cnt[tres_pos] ||
 			    (tres_req_cnt[tres_pos] ==
