@@ -2345,7 +2345,8 @@ static char *_make_batch_script(batch_job_launch_msg_t *msg, char *path)
 		goto error;
 	}
 
-	output = mmap(0, length, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+	/* Leave space for terminating '\0' */
+	output = mmap(0, length + 1, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
 	if (output == MAP_FAILED) {
 		error("%s: mmap failed", __func__);
 		close(fd);
