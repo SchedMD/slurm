@@ -141,7 +141,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 	else if (cr_type & CR_CORE)
 		alloc_cores = true;
 
-	if (job_ptr->details && job_ptr->details->mc_ptr) {
+	if (job_ptr->details->mc_ptr) {
 		multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
