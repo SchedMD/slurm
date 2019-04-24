@@ -342,14 +342,14 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 				//info("got %s %d", name, i-start);
 
 				if ((host_list = hostlist_create(name))) {
-					/* FIXME: hostlist_shift returns
-					 * a malloc'd string, but we need
-					 * an xmalloc'd string to add to the
-					 * list. cleanup when hostlist uses
-					 * xmalloc */
-					while ((this_node_name =
-						xstrdup((tmp_this_node_name =
-						hostlist_shift (host_list))))) {
+					while ((tmp_this_node_name =
+						hostlist_shift(host_list))) {
+						/*
+						 * Move from malloc-ed to
+						 * xmalloc-ed memory
+						 */
+						this_node_name =
+						    xstrdup(tmp_this_node_name);
 						free(tmp_this_node_name);
 						/*
 						 * If we get a duplicate
