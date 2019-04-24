@@ -48,13 +48,13 @@ int run_test(spank_t sp, const char *caller)
 {
 	uint32_t job_id, array_job_id, array_task_id, step_id;
 	FILE *fp = NULL;
-	int rc;
+	int rc, i;
 	job_info_msg_t *job_info = NULL;
 	errno = 0;
 
 	if (!opt_out_file)
 		return -1;
-	for (int i = 0; (i < 10) && !fp; i++)
+	for (i = 0; (i < 10) && !fp; i++)
 		fp = fopen(opt_out_file, "a");
 	if (!fp)
 		return -1;
@@ -82,7 +82,7 @@ int run_test(spank_t sp, const char *caller)
 	if (rc)
 		return rc;
 
-	for (uint32_t i = 0; i < job_info->record_count; ++i) {
+	for (i = 0; i < job_info->record_count; ++i) {
 		slurm_job_info_t *job = job_info->job_array + i;
 
 		fprintf(fp, "%s load_job: step_id=%u job_id=%u array_job_id=%u array_task_id=%u\n",
