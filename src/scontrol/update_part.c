@@ -147,8 +147,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable Default values "
-					"are YES and NO");
+				error("Acceptable Default values are YES and NO");
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
@@ -161,8 +160,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable DisableRootJobs values "
-					"are YES and NO");
+				error("Acceptable DisableRootJobs values are YES and NO");
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
@@ -175,8 +173,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable ExclusiveUser values "
-					"are YES and NO");
+				error("Acceptable ExclusiveUser values are YES and NO");
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
@@ -189,8 +186,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable Hidden values "
-					"are YES and NO");
+				error("Acceptable Hidden values are YES and NO");
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
@@ -203,8 +199,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable LLN values "
-					"are YES and NO");
+				error("Acceptable LLN values are YES and NO");
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
@@ -217,8 +212,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable RootOnly values "
-					"are YES and NO");
+				error("Acceptable RootOnly values are YES and NO");
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
@@ -231,8 +225,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable ReqResv values "
-					"are YES and NO");
+				error("Acceptable ReqResv values are YES and NO");
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
@@ -274,8 +267,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			} else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable OverSubscribe values are "
-					"NO, EXCLUSIVE, YES:#, and FORCE:#");
+				error("Acceptable OverSubscribe values are NO, EXCLUSIVE, YES:#, and FORCE:#");
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
@@ -340,8 +332,7 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 			else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
-				error("Acceptable State values "
-					"are UP, DOWN, DRAIN and INACTIVE");
+				error("Acceptable State values are UP, DOWN, DRAIN and INACTIVE");
 				return SLURM_ERROR;
 			}
 			(*update_cnt_ptr)++;
@@ -430,8 +421,8 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 		}
 		else {
 			exit_code = 1;
-			error("Update of this parameter is not "
-			      "supported: %s\n", argv[i]);
+			error("Update of this parameter is not supported: %s\n",
+			      argv[i]);
 			error("Request aborted");
 			return SLURM_ERROR;
 		}
