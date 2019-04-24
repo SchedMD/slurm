@@ -181,7 +181,7 @@ The section titled "Job Accounting Fields" describes these fields.
 .TP
 \f3\-E \fP\f2end_time\fP\fP\f3,\fP \f3\-\-endtime\fP\f3=\fP\f2end_time\fP
 .IP
-Select eligible jobs in any state before the specified time.  If states are
+Select jobs in any state before the specified time.  If states are
 given with the \-s option return jobs in this state before this period.
 See the \fBDEFAULT TIME WINDOW\fR for more details.
 
@@ -238,7 +238,10 @@ Space characters are not permitted in this list.
 NOTE: A step id of 'batch' will display the information about the
 batch step.
 .IP
-The default is to display information on all jobs.
+By default sacct shows only jobs with Eligible time, but with this
+option the non-eligible will be also shown.
+NOTE: If --state is also specified, as non-eligible are not PD,
+then non-eligible jobs will not be displayed.
 See the \fBDEFAULT TIME WINDOW\fR for details about how this option
 changes the default \-S and \-E options.
 
@@ -377,7 +380,7 @@ will default to 'now'. See the \fBDEFAULT TIME WINDOW\fR for more details.
 
 .TP
 \f3\-S\fP\f3,\fP \f3\-\-starttime\fP
-Select eligible jobs in any state after the specified time. Default is 00:00:00
+Select jobs in any state after the specified time. Default is 00:00:00
 of the
 current day, unless the '\-s' or '\-j' options are used. If the '\-s' option is
 used, then the default is 'now'. If states are given with the '\-s' option then

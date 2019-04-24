@@ -375,17 +375,21 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 * Generic Query assuming that -S and -E are properly set in
 		 * slurmdb_job_cond_def_start_end
 		 *
-		 * (job eligible)         &&
-		 * (( time_start && -S < time_start) ||
-		 *  (!time_start && job eligible))   &&
+		 * (job eligible)                                   &&
+		 * (( time_start &&              (-S < time_start)) ||
+		 *  (!time_start &&  time_end && (-S < time_end))   || -> Cancel before start
+		 *  (!time_start && !time_end && (state = PD) ))    && -> Still PD
 		 * (-E > time_eligible)
 		 */
 		xstrfmtcat(*extra,
 			   "(t1.time_eligible && "
-			   "(( t1.time_start && %d < t1.time_start) || "
-			   "(!t1.time_start && t1.time_eligible)) && "
+			   "(( t1.time_start && (%d < t1.time_start)) || "
+			   " (!t1.time_start &&  t1.time_end && (%d < t1.time_end)) || "
+			   " (!t1.time_start && !t1.time_end && (t1.state=%d))) && "
 			   "(%d > t1.time_eligible))",
 			   start,
+			   start,
+			   base_state,
 			   end);
 		break;
 	case JOB_SUSPENDED:
@@ -1636,9 +1640,24 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 	}
 
 	if (!job_cond->state_list || !list_count(job_cond->state_list)) {
-		/* Only do this (default of all eligible jobs) if no
-		   state is given */
-		if (job_cond->usage_start) {
+		/*
+		 * There's an explicit list of jobs, so don't hide
+		 * non-eligible ones. Assuming that
+		 * slurmdb_job_cond_def_start_end is already called.
+		 * Else handle normal time query of only eligible jobs
+		 */
+		if (job_cond->step_list && list_count(job_cond->step_list)) {
+			if (*extra)
+				xstrcat(*extra, " && (");
+			else
+				xstrcat(*extra, " where (");
+
+			xstrfmtcat(*extra,
+			           "(t1.time_submit <= %ld) && "
+				   "(t1.time_end >= %ld || t1.time_end = 0))",
+			           job_cond->usage_end,
+				   job_cond->usage_start);
+		} else if (job_cond->usage_start) {
 			if (*extra)
 				xstrcat(*extra, " && (");
 			else

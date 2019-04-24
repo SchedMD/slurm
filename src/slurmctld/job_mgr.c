@@ -15506,6 +15506,11 @@ extern bool job_independent(struct job_record *job_ptr, int will_run)
 	if ((detail_ptr && (detail_ptr->begin_time == 0) &&
 	    (job_ptr->priority != 0))) {
 		detail_ptr->begin_time = now;
+		/*
+		 * Send begin time to the database if it is already there, or it
+		 * won't get there until the job starts.
+		 */
+		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
 	} else if (job_ptr->state_reason == WAIT_TIME) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);

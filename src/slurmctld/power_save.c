@@ -1029,7 +1029,7 @@ static void *_init_power_save(void *arg)
 
 	if (power_save_config && !power_save_enabled) {
 		debug("power_save mode not enabled");
-		return NULL;
+		goto fini;
 	}
 
 	resume_node_bitmap  = bit_alloc(node_record_count);
@@ -1080,6 +1080,7 @@ fini:	_clear_power_config();
 	list_destroy(proc_track_list);
 	proc_track_list = NULL;
 	power_save_enabled = false;
+	power_save_started = false;
 	slurm_cond_signal(&power_cond);
 	slurm_mutex_unlock(&power_mutex);
 	pthread_exit(NULL);
