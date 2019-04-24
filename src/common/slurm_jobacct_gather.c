@@ -940,7 +940,12 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 
 	switch (type) {
 	case JOBACCT_DATA_TOTAL:
-		_copy_tres_usage(&jobacct, send);
+		if (!jobacct) {
+			/* Avoid possible memory leak from _copy_tres_usage() */
+			error("%s: \'jobacct\' argument is NULL", __func__);
+			rc = SLURM_ERROR;
+		} else
+			_copy_tres_usage(&jobacct, send);
 		break;
 	case JOBACCT_DATA_PIPE:
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
