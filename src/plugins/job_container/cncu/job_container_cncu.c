@@ -422,8 +422,8 @@ extern int container_p_delete(uint32_t job_id)
 #ifdef HAVE_NATIVE_CRAY
 	rid_t resv_id = job_id;
 	DEF_TIMERS;
+	int rc;
 #endif
-	int rc = 0;
 	int i, found = -1;
 	bool job_id_change = false;
 
@@ -451,12 +451,14 @@ extern int container_p_delete(uint32_t job_id)
 	} else
 		END_TIMER3("container_p_delete: job_end_reservation took",
 			   3000000);
-#endif
 	if (rc == 0)
 		return SLURM_SUCCESS;
-
 	if ((errno == ENOENT) || (errno == EINPROGRESS) || (errno == EALREADY))
 		return SLURM_SUCCESS;	/* Not fatal error */
 	error("%s: delete(%u): %m", plugin_type, job_id);
 	return SLURM_ERROR;
+#else
+	return SLURM_SUCCESS;
+#endif
+
 }
