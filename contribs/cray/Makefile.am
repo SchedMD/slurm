@@ -8,9 +8,6 @@ AUTOMAKE_OPTIONS = foreign
 
 if HAVE_NATIVE_CRAY
 sbin_SCRIPTS = slurmconfgen.py
-endif
-
-if HAVE_REAL_CRAY
 noinst_DATA = opt_modulefiles_slurm
 endif
 
