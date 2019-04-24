@@ -673,7 +673,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 {
 	int fstatus = SLURM_ERROR;
 	xcgroup_t memory_cg;
-	uint32_t jobid = job->jobid;
+	uint32_t jobid;
 	uint32_t stepid = job->stepid;
 	uid_t uid = job->uid;
 	gid_t gid = job->gid;
@@ -698,6 +698,10 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	xfree(slurm_cgpath);
 
 	/* build job cgroup relative path if no set (should not be) */
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
 	if (*job_cgroup_path == '\0') {
 		if (snprintf(job_cgroup_path,PATH_MAX,"%s/job_%u",
 			      user_cgroup_path, jobid) >= PATH_MAX) {
@@ -848,6 +852,7 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 	char step_str[20];
 	uint64_t stop_msg;
 	ssize_t ret;
+	uint32_t jobid;
 
 	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
 	    != XCGROUP_SUCCESS) {
@@ -860,15 +865,17 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 		goto fail_xcgroup_lock;
 	}
 
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
 	if (job->stepid == SLURM_BATCH_SCRIPT)
-		snprintf(step_str, sizeof(step_str), "%u.batch",
-			 job->jobid);
+		snprintf(step_str, sizeof(step_str), "%u.batch", jobid);
 	else if (job->stepid == SLURM_EXTERN_CONT)
-		snprintf(step_str, sizeof(step_str), "%u.extern",
-			 job->jobid);
+		snprintf(step_str, sizeof(step_str), "%u.extern", jobid);
 	else
 		snprintf(step_str, sizeof(step_str), "%u.%u",
-			 job->jobid, job->stepid);
+			 jobid, job->stepid);
 
 	if (failcnt_non_zero(&step_memory_cg, "memory.memsw.failcnt")) {
 		/*
@@ -888,10 +895,10 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 
 	if (failcnt_non_zero(&job_memory_cg, "memory.memsw.failcnt")) {
 		info("Job %u hit memory+swap limit at least once during execution. This may or may not result in some failure.",
-		     job->jobid);
+		     jobid);
 	} else if (failcnt_non_zero(&job_memory_cg, "memory.failcnt")) {
 		info("Job %u hit memory limit at least once during execution. This may or may not result in some failure.",
-		     job->jobid);
+		     jobid);
 	}
 
 	if (!oom_thread_created) {

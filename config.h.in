@@ -27,19 +27,10 @@
 /* Define to 1 if 3-dimensional architecture */
 #undef HAVE_3D
 
-/* Define to 1 for Cray XT/XE systems using ALPS */
-#undef HAVE_ALPS_CRAY
-
-/* Define to 1 for emulating a Cray XT/XE system using ALPS */
-#undef HAVE_ALPS_CRAY_EMULATION
-
-/* Define to 1 if running against an ALPS emulation */
-#undef HAVE_ALPS_EMULATION
-
 /* Define to 1 if you have the `cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 
-/* Define to 1 for systems with a Cray network */
+/* Define to 1 for systems with a Cray Aries network */
 #undef HAVE_CRAY_NETWORK
 
 /* Define to 1 if you have the <curses.h> header file. */
@@ -164,7 +155,7 @@
 /* Define to 1 if using MySQL libaries */
 #undef HAVE_MYSQL
 
-/* Define to 1 for running on a Cray in native mode without ALPS */
+/* Define to 1 for running on a Cray Aries system */
 #undef HAVE_NATIVE_CRAY
 
 /* Define to 1 if alpscomm functions new to CLE 5.2UP01 are defined */

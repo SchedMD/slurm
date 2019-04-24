@@ -820,6 +820,12 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 			list_iterator_destroy(opt_iter);
 		return rc;
 	} else if (job) {
+		if (pack_jobid) {
+			job->pack_jobid  = pack_jobid;
+			job->pack_nnodes = job->nhosts;
+			job->pack_ntasks = job->ntasks;
+			job->pack_task_offset = 0;
+		}
 		return create_job_step(job, use_all_cpus, &opt);
 	} else {
 		return -1;
@@ -1078,16 +1084,16 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		resp_iter = list_iterator_create(job_resp_list);
 		while ((resp = list_next(resp_iter))) {
 			bool merge_nodelist = true;
+			if (my_job_id == 0) {
+				my_job_id = resp->job_id;
+				if (resp->working_cluster_rec)
+					slurm_setup_remote_working_cluster(resp);
+			}
 			_print_job_information(resp);
 			(void) get_next_opt(-2);
 			while ((opt_local = get_next_opt(pack_offset))) {
 				srun_opt_t *srun_opt = opt_local->srun_opt;
 				xassert(srun_opt);
-				if (my_job_id == 0) {
-					my_job_id = resp->job_id;
-					if (resp->working_cluster_rec)
-						slurm_setup_remote_working_cluster(resp);
-				}
 				if (merge_nodelist) {
 					merge_nodelist = false;
 					list_append(used_resp_list, resp);
@@ -1190,12 +1196,11 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		}
 		if (i == 1)
 			FREE_NULL_LIST(srun_job_list);	/* Just use "job" */
-		if (srun_job_list && (list_count(srun_job_list) > 1) &&
-		    opt_list && (list_count(opt_list) > 1) && my_job_id) {
-			pack_jobid = my_job_id;
-		}
-		if (list_count(job_resp_list) > 1)
+		if (list_count(job_resp_list) > 1) {
+			if (my_job_id)
+				pack_jobid = my_job_id;
 			pack_nodelist = _compress_pack_nodelist(used_resp_list);
+		}
 		list_destroy(used_resp_list);
 		if (_create_job_step(job, false, srun_job_list, pack_jobid,
 				     pack_nodelist) < 0) {

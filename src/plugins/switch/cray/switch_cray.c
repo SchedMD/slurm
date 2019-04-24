@@ -229,6 +229,36 @@ extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 	return SLURM_SUCCESS;
 }
 
+extern int switch_p_duplicate_jobinfo(switch_jobinfo_t *source,
+				      switch_jobinfo_t **dest)
+{
+	slurm_cray_jobinfo_t *new;
+	slurm_cray_jobinfo_t *old = (slurm_cray_jobinfo_t *) source;
+
+	xassert(old);
+
+	new = xmalloc(sizeof(slurm_cray_jobinfo_t));
+	memcpy(new, old, sizeof(slurm_cray_jobinfo_t));
+
+	if (old->num_cookies) {
+		int i;
+		new->cookie_ids = xcalloc(old->num_cookies, sizeof(uint32_t));
+		memcpy(new->cookie_ids, old->cookie_ids,
+		       sizeof(uint32_t) * old->num_cookies);
+		new->cookies = xcalloc(old->num_cookies, sizeof(char *));
+		for (i = 0; i < old->num_cookies; i++)
+			new->cookies[i] = xstrdup(old->cookies[i]);
+	}
+
+	if (old->num_ptags) {
+		new->ptags = xcalloc(old->num_ptags, sizeof(int));
+		memcpy(new->ptags, old->ptags, sizeof(int) * old->num_ptags);
+	}
+
+	*dest = (switch_jobinfo_t *) new;
+	return SLURM_SUCCESS;
+}
+
 /*
  *
  */
@@ -435,6 +465,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	int control_nid = 0, num_branches = 0;
 	struct sockaddr_in control_soc;
 	alpsc_branchInfo_t alpsc_branch_info;
+	uint32_t jobid;
 #endif
 
 #if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
@@ -460,7 +491,11 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 
 #ifdef HAVE_NATIVE_CRAY
 	// Attach to the cncu container
-	rc = alpsc_attach_cncu_container(&err_msg, job->jobid, job->cont_id);
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+	rc = alpsc_attach_cncu_container(&err_msg, jobid, job->cont_id);
 	ALPSC_CN_DEBUG("alpsc_attach_cncu_container");
 	if (rc != 1) {
 		return SLURM_ERROR;

@@ -676,16 +676,10 @@ CRAY_SELECT_LDFLAGS
 CRAY_SELECT_CPPFLAGS
 CRAY_JOB_LDFLAGS
 CRAY_JOB_CPPFLAGS
-HAVE_ALPS_CRAY_EMULATION_FALSE
-HAVE_ALPS_CRAY_EMULATION_TRUE
-HAVE_ALPS_EMULATION_FALSE
-HAVE_ALPS_EMULATION_TRUE
 HAVE_CRAY_NETWORK_FALSE
 HAVE_CRAY_NETWORK_TRUE
 HAVE_REAL_CRAY_FALSE
 HAVE_REAL_CRAY_TRUE
-HAVE_ALPS_CRAY_FALSE
-HAVE_ALPS_CRAY_TRUE
 HAVE_NATIVE_CRAY_FALSE
 HAVE_NATIVE_CRAY_TRUE
 BUILD_SVIEW_FALSE
@@ -984,9 +978,6 @@ with_ucx
 enable_x11
 enable_glibtest
 enable_gtktest
-with_alps_emulation
-enable_cray_emulation
-enable_native_cray
 enable_cray_network
 enable_really_no_cray
 with_cray_dir
@@ -1684,9 +1675,6 @@ Optional Features:
   --disable-x11           disable internal X11 support
   --disable-glibtest      do not try to compile and run a test GLIB program
   --disable-gtktest       do not try to compile and run a test GTK+ program
-  --enable-alps-cray-emulation
-                          Run Slurm in an emulated Cray mode
-  --disable-native-cray   Use ALPS instead of run Slurm natively on a Cray
   --enable-cray-network   Run Slurm on a non-Cray system with a Cray network
   --enable-really-no-cray Disable cray support for eslogin machines
   --disable-optimizations disable optimizations (sets -O0)
@@ -1748,8 +1736,6 @@ Optional Packages:
   --with-freeipmi=PATH    Specify path to freeipmi installation
   --with-rrdtool=PATH     Specify path to rrdtool-devel installation
   --with-ucx=PATH         Build with Unified Communication X library support
-  --with-alps-emulation   Run Slurm against an emulated ALPS system - requires
-                          option cray.conf [default=no]
   --with-cray_dir=PATH    Specify path to Cray file installation - /opt/cray
                           by default
   --with-datawarp=PATH    Specify path to DataWarp installation
@@ -22686,43 +22672,9 @@ fi
 
 
   ac_have_native_cray="yes"
-  ac_have_alps_cray="no"
   ac_have_real_cray="no"
-  ac_have_alps_emulation="no"
-  ac_have_alps_cray_emulation="no"
   ac_have_cray_network="no"
   ac_really_no_cray="no"
-
-
-# Check whether --with-alps-emulation was given.
-if test "${with_alps_emulation+set}" = set; then :
-  withval=$with_alps_emulation; test "$withval" = no || ac_have_alps_emulation=yes
-else
-  ac_have_alps_emulation=no
-fi
-
-
-  # Check whether --enable-cray-emulation was given.
-if test "${enable_cray_emulation+set}" = set; then :
-  enableval=$enable_cray_emulation;  case "$enableval" in
-	yes) ac_have_alps_cray_emulation="yes" ac_have_native_cray="no" ;;
-	 no) ac_have_alps_cray_emulation="no"  ;;
-	  *) as_fn_error $? "bad value \"$enableval\" for --enable-alps-cray-emulation" "$LINENO" 5  ;;
-      esac
-
-fi
-
-
-  # Check whether --enable-native-cray was given.
-if test "${enable_native_cray+set}" = set; then :
-  enableval=$enable_native_cray;  case "$enableval" in
-	yes) ac_have_native_cray="yes" ;;
-	 no) ac_have_native_cray="no"  ;;
-	  *) as_fn_error $? "bad value \"$enableval\" for --disable-native-cray" "$LINENO" 5  ;;
-      esac
-
-fi
-
 
   # Check whether --enable-cray-network was given.
 if test "${enable_cray_network+set}" = set; then :
@@ -22748,38 +22700,7 @@ fi
   if test "$ac_really_no_cray" = "yes"; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: Ignoring any potential Cray system" >&5
 $as_echo "$as_me: Ignoring any potential Cray system" >&6;}
-    ac_have_alps_cray="no"
     ac_have_real_cray="no"
-  elif test "$ac_have_alps_emulation" = "yes"; then
-    ac_have_alps_cray="yes"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: Running A ALPS Cray system against an ALPS emulation" >&5
-$as_echo "$as_me: Running A ALPS Cray system against an ALPS emulation" >&6;}
-
-$as_echo "#define HAVE_ALPS_EMULATION 1" >>confdefs.h
-
-
-  elif test "$ac_have_alps_cray_emulation" = "yes"; then
-    ac_have_alps_cray="yes"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: Running in Cray emulation mode" >&5
-$as_echo "$as_me: Running in Cray emulation mode" >&6;}
-
-$as_echo "#define HAVE_ALPS_CRAY_EMULATION 1" >>confdefs.h
-
-
-  elif test "$ac_have_native_cray" = "no" && test "$ac_have_cray_network" = "no" ; then
-    # Check for a Cray-specific file:
-    #  * older XT systems use an /etc/xtrelease file
-    #  * newer XT/XE systems use an /etc/opt/cray/release/xtrelease file
-    #  * both have an /etc/xthostname
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a Cray XT or XE system running on ALPS or ALPS simulator" >&5
-$as_echo_n "checking whether this is a Cray XT or XE system running on ALPS or ALPS simulator... " >&6; }
-
-    if test -f /etc/xtrelease || test -d /etc/opt/cray/release; then
-      ac_have_alps_cray="yes"
-      ac_have_real_cray="yes"
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_have_alps_cray" >&5
-$as_echo "$ac_have_alps_cray" >&6; }
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a Cray XT or XE system" >&5
 $as_echo_n "checking whether this is a Cray XT or XE system... " >&6; }
@@ -22976,11 +22897,11 @@ $as_echo "Unable to locate Cray APIs (usually in /opt/cray/alpscomm and /opt/cra
       ac_have_native_cray="no"
     else
       if test "$ac_have_native_cray" = "yes"; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Running on a Cray system in native mode without ALPS" >&5
-$as_echo "Running on a Cray system in native mode without ALPS" >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Running on a Cray Aries system" >&5
+$as_echo "Running on a Cray Aries system" >&6; }
       elif test "$ac_have_cray_network" = "yes"; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Running on a system with a Cray network" >&5
-$as_echo "Running on a system with a Cray network" >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Running on a system with a Cray Aries network" >&5
+$as_echo "Running on a system with a Cray Aries network" >&6; }
       fi
     fi
 
@@ -23007,150 +22928,12 @@ $as_echo "#define HAVE_CRAY_NETWORK 1" >>confdefs.h
     fi
   fi
 
-
-  if test "$ac_have_alps_cray" = "yes"; then
-    # libexpat is always required for the XML-RPC interface, but it is only
-    # needed in the select plugin, so set it up here instead of everywhere.
-    ac_fn_c_check_header_mongrel "$LINENO" "expat.h" "ac_cv_header_expat_h" "$ac_includes_default"
-if test "x$ac_cv_header_expat_h" = xyes; then :
-
-else
-  as_fn_error $? "Cray BASIL requires expat headers/rpm" "$LINENO" 5
-fi
-
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XML_ParserCreate in -lexpat" >&5
-$as_echo_n "checking for XML_ParserCreate in -lexpat... " >&6; }
-if ${ac_cv_lib_expat_XML_ParserCreate+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lexpat  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char XML_ParserCreate ();
-int
-main ()
-{
-return XML_ParserCreate ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_expat_XML_ParserCreate=yes
-else
-  ac_cv_lib_expat_XML_ParserCreate=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_expat_XML_ParserCreate" >&5
-$as_echo "$ac_cv_lib_expat_XML_ParserCreate" >&6; }
-if test "x$ac_cv_lib_expat_XML_ParserCreate" = xyes; then :
-  CRAY_SELECT_LDFLAGS="$CRAY_SELECT_LDFLAGS -lexpat"
-else
-  as_fn_error $? "Cray BASIL requires libexpat.so (i.e. libexpat1-dev)" "$LINENO" 5
-fi
-
-
-    if test "$ac_have_real_cray" = "yes"; then
-      # libjob is needed, but we don't want to put it on the LIBS line here.
-      # If we are on a native system it is handled elsewhere, and on a hybrid
-      # we only need this in libsrun.
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for job_getjid in -ljob" >&5
-$as_echo_n "checking for job_getjid in -ljob... " >&6; }
-if ${ac_cv_lib_job_job_getjid+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ljob  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char job_getjid ();
-int
-main ()
-{
-return job_getjid ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_job_job_getjid=yes
-else
-  ac_cv_lib_job_job_getjid=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_job_job_getjid" >&5
-$as_echo "$ac_cv_lib_job_job_getjid" >&6; }
-if test "x$ac_cv_lib_job_job_getjid" = xyes; then :
-  CRAY_JOB_LDFLAGS="$CRAY_JOB_LDFLAGS -ljob"
-else
-  as_fn_error $? "Need cray-job (usually in /opt/cray/job/default)" "$LINENO" 5
-fi
-
-
-$as_echo "#define HAVE_REAL_CRAY 1" >>confdefs.h
-
-    fi
-
-    if test -z "$MYSQL_CFLAGS" || test -z "$MYSQL_LIBS"; then
-      as_fn_error $? "Cray BASIL requires the cray-MySQL-devel-enterprise rpm" "$LINENO" 5
-    fi
-
-    # Used by X_AC_DEBUG to set default SALLOC_RUN_FOREGROUND value to 1
-    x_ac_salloc_background=no
-
-
-$as_echo "#define HAVE_3D 1" >>confdefs.h
-
-
-$as_echo "#define SYSTEM_DIMENSIONS 3" >>confdefs.h
-
-
-$as_echo "#define HAVE_FRONT_END 1" >>confdefs.h
-
-
-$as_echo "#define HAVE_ALPS_CRAY 1" >>confdefs.h
-
-
-$as_echo "#define SALLOC_KILL_CMD 1" >>confdefs.h
-
-  fi
-
    if test "$ac_have_native_cray" = "yes"; then
   HAVE_NATIVE_CRAY_TRUE=
   HAVE_NATIVE_CRAY_FALSE='#'
 else
   HAVE_NATIVE_CRAY_TRUE='#'
   HAVE_NATIVE_CRAY_FALSE=
-fi
-
-   if test "$ac_have_alps_cray" = "yes"; then
-  HAVE_ALPS_CRAY_TRUE=
-  HAVE_ALPS_CRAY_FALSE='#'
-else
-  HAVE_ALPS_CRAY_TRUE='#'
-  HAVE_ALPS_CRAY_FALSE=
 fi
 
    if test "$ac_have_real_cray" = "yes"; then
@@ -23167,22 +22950,6 @@ fi
 else
   HAVE_CRAY_NETWORK_TRUE='#'
   HAVE_CRAY_NETWORK_FALSE=
-fi
-
-   if test "$ac_have_alps_emulation" = "yes"; then
-  HAVE_ALPS_EMULATION_TRUE=
-  HAVE_ALPS_EMULATION_FALSE='#'
-else
-  HAVE_ALPS_EMULATION_TRUE='#'
-  HAVE_ALPS_EMULATION_FALSE=
-fi
-
-   if test "$ac_have_alps_cray_emulation" = "yes"; then
-  HAVE_ALPS_CRAY_EMULATION_TRUE=
-  HAVE_ALPS_CRAY_EMULATION_FALSE='#'
-else
-  HAVE_ALPS_CRAY_EMULATION_TRUE='#'
-  HAVE_ALPS_CRAY_EMULATION_FALSE=
 fi
 
 
@@ -25049,24 +24816,12 @@ if test -z "${HAVE_NATIVE_CRAY_TRUE}" && test -z "${HAVE_NATIVE_CRAY_FALSE}"; th
   as_fn_error $? "conditional \"HAVE_NATIVE_CRAY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${HAVE_ALPS_CRAY_TRUE}" && test -z "${HAVE_ALPS_CRAY_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_ALPS_CRAY\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${HAVE_REAL_CRAY_TRUE}" && test -z "${HAVE_REAL_CRAY_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_REAL_CRAY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CRAY_NETWORK_TRUE}" && test -z "${HAVE_CRAY_NETWORK_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CRAY_NETWORK\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_ALPS_EMULATION_TRUE}" && test -z "${HAVE_ALPS_EMULATION_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_ALPS_EMULATION\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${HAVE_ALPS_CRAY_EMULATION_TRUE}" && test -z "${HAVE_ALPS_CRAY_EMULATION_FALSE}"; then
-  as_fn_error $? "conditional \"HAVE_ALPS_CRAY_EMULATION\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_NETLOC_TRUE}" && test -z "${HAVE_NETLOC_FALSE}"; then

@@ -1267,9 +1267,19 @@ cpu_freq_reset(stepd_step_rec_t *job)
 {
 	int i, rc, fd;
 	char freq_detail[100];
+	uint32_t jobid;
 
 	if ((!cpu_freq_count) || (!cpufreq))
 		return;
+
+#ifdef HAVE_NATIVE_CRAY
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+#else
+	jobid = job->jobid;
+#endif
 
 	for (i = 0; i < cpu_freq_count; i++) {
 		if (cpufreq[i].new_frequency == NO_VAL
@@ -1278,7 +1288,7 @@ cpu_freq_reset(stepd_step_rec_t *job)
 		    && cpufreq[i].new_governor[0] == '\0')
 			continue; /* Nothing to reset on this CPU */
 
-		fd = _test_cpu_owner_lock(i, job->jobid);
+		fd = _test_cpu_owner_lock(i, jobid);
 		if (fd < 0)
 			continue;
 

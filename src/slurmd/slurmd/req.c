@@ -144,6 +144,7 @@ typedef struct {
 	uint32_t jobid;
 	uint32_t step_id;
 	char *node_list;
+	uint32_t pack_jobid;
 	char *partition;
 	char *resv_id;
 	char **spank_job_env;
@@ -1495,12 +1496,21 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		int rc;
 		job_env_t job_env;
 		List job_gres_list, epi_env_gres_list;
+		uint32_t jobid;
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
-		if (container_g_create(req->job_id))
+#ifdef HAVE_NATIVE_CRAY
+		if (req->pack_jobid && (req->pack_jobid != NO_VAL))
+			jobid = req->pack_jobid;
+		else
+			jobid = req->job_id;
+#else
+		jobid = req->job_id;
+#endif
+		if (container_g_create(jobid))
 			error("container_g_create(%u): %m", req->job_id);
 
 		memset(&job_env, 0, sizeof(job_env));
@@ -1515,6 +1525,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->job_step_id;
 		job_env.node_list = req->complete_nodelist;
+		job_env.pack_jobid = req->pack_jobid;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
@@ -1737,10 +1748,20 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 	char *err_name = NULL, *path_name = NULL;
 	int fd;
 	int flags = (O_CREAT|O_APPEND|O_WRONLY);
+	uint32_t jobid;
+
+#ifdef HAVE_NATIVE_CRAY
+	if (req->pack_jobid && (req->pack_jobid != NO_VAL))
+		jobid = req->pack_jobid;
+	else
+		jobid = req->job_id;
+#else
+	jobid = req->job_id;
+#endif
 
 	path_name = fname_create2(req);
 	if ((fd = _open_as_other(path_name, flags, 0644,
-				 req->job_id, req->uid, req->gid,
+				 jobid, req->uid, req->gid,
 				 req->ngids, req->gids)) == -1) {
 		error("Unable to open %s: Permission denied", path_name);
 		xfree(path_name);
@@ -2072,6 +2093,10 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 	launch_req->nnodes		= req->nnodes;
 	launch_req->ntasks		= req->nnodes;
 	launch_req->ofname		= "/dev/null";
+
+	launch_req->pack_jobid		= req->pack_job_id;
+	launch_req->pack_nnodes		= NO_VAL;
+
 	launch_req->partition		= req->partition;
 	launch_req->spank_job_env_size	= req->spank_job_env_size;
 	launch_req->spank_job_env	= req->spank_job_env;
@@ -2186,6 +2211,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	job_env_t job_env;
 	bool     first_job_run;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uint32_t jobid;
 
 	if (req == NULL)
 		return;
@@ -2229,12 +2255,23 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = 0;	/* not available */
 		job_env.node_list = req->nodes;
+		job_env.pack_jobid = req->pack_job_id;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
 		job_env.uid = req->uid;
 		job_env.user_name = req->user_name;
-		if ((rc = container_g_create(req->job_id)))
+
+#ifdef HAVE_NATIVE_CRAY
+		if (req->pack_job_id && (req->pack_job_id != NO_VAL))
+			jobid = req->pack_job_id;
+		else
+			jobid = req->job_id;
+#else
+		jobid = req->job_id;
+#endif
+
+		if ((rc = container_g_create(jobid)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, false);
@@ -2397,6 +2434,8 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 	if (first_job_run) {
 		job_env_t job_env;
 		List job_gres_list, epi_env_gres_list;
+		uint32_t jobid;
+
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
 		slurm_mutex_unlock(&prolog_mutex);
@@ -2424,7 +2463,17 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		/*
 	 	 * Run job prolog on this node
 	 	 */
-		if ((rc = container_g_create(req->job_id)))
+
+#ifdef HAVE_NATIVE_CRAY
+		if (req->pack_jobid && (req->pack_jobid != NO_VAL))
+			jobid = req->pack_jobid;
+		else
+			jobid = req->job_id;
+#else
+		jobid = req->job_id;
+#endif
+
+		if ((rc = container_g_create(jobid)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, true);
@@ -4170,7 +4219,14 @@ static int _rpc_file_bcast(slurm_msg_t *msg)
 	if (!cred_arg)
 		return ESLURMD_INVALID_JOB_CREDENTIAL;
 
+#ifdef HAVE_NATIVE_CRAY
+	if (cred_arg->pack_jobid && (cred_arg->pack_jobid != NO_VAL))
+		key.job_id = cred_arg->pack_jobid;
+	else
+		key.job_id = cred_arg->job_id;
+#else
 	key.job_id = cred_arg->job_id;
+#endif
 
 #if 0
 	info("last_block=%u force=%u modes=%o",
@@ -5074,6 +5130,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	job_env_t       job_env;
 	int		node_id = 0;
+	uint32_t        jobid;
 
 	debug("_rpc_abort_job, uid = %d", uid);
 	/*
@@ -5147,7 +5204,16 @@ _rpc_abort_job(slurm_msg_t *msg)
 	_run_epilog(&job_env);
 	_free_job_env(&job_env);
 
-	if (container_g_delete(req->job_id))
+#ifdef HAVE_NATIVE_CRAY
+	if (req->pack_jobid && (req->pack_jobid != NO_VAL))
+		jobid = req->pack_jobid;
+	else
+		jobid = req->job_id;
+#else
+	jobid = req->job_id;
+#endif
+
+	if (container_g_delete(jobid))
 		error("container_g_delete(%u): %m", req->job_id);
 	_launch_complete_rm(req->job_id);
 }
@@ -5246,6 +5312,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	int		delay;
 	int		node_id = 0;
 	job_env_t       job_env;
+	uint32_t        jobid;
 
 	debug("_rpc_terminate_job, uid = %d", uid);
 	/*
@@ -5258,6 +5325,16 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
+
+	/* Use this when dealing with the job container */
+#ifdef HAVE_NATIVE_CRAY
+	if (req->pack_jobid && (req->pack_jobid != NO_VAL))
+		jobid = req->pack_jobid;
+	else
+		jobid = req->job_id;
+#else
+	jobid = req->job_id;
+#endif
 
 	task_g_slurmd_release_resources(req->job_id);
 
@@ -5402,7 +5479,8 @@ _rpc_terminate_job(slurm_msg_t *msg)
 			 * ESLURMD_KILL_JOB_ALREADY_COMPLETE reply above */
 			_epilog_complete(req->job_id, rc);
 		}
-		if (container_g_delete(req->job_id))
+
+		if (container_g_delete(jobid))
 			error("container_g_delete(%u): %m", req->job_id);
 		_launch_complete_rm(req->job_id);
 		return;
@@ -5473,7 +5551,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		rc = ESLURMD_EPILOG_FAILED;
 	} else
 		debug("completed epilog for jobid %u", req->job_id);
-	if (container_g_delete(req->job_id))
+	if (container_g_delete(jobid))
 		error("container_g_delete(%u): %m", req->job_id);
 	_launch_complete_rm(req->job_id);
 
@@ -5747,7 +5825,12 @@ static char **_build_env(job_env_t *job_env, bool is_epilog)
 		xfree(job_env->user_name);
 
 	setenvf(&env, "SLURM_JOBID", "%u", job_env->jobid);
+
+	if (job_env->pack_jobid && (job_env->pack_jobid != NO_VAL))
+		setenvf(&env, "SLURM_PACK_JOB_ID", "%u", job_env->pack_jobid);
+
 	setenvf(&env, "SLURM_UID", "%u", job_env->uid);
+
 	if (job_env->node_list)
 		setenvf(&env, "SLURM_NODELIST", "%s", job_env->node_list);
 
@@ -5932,6 +6015,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	bool prolog_fini = false;
 	bool script_lock = false;
 	char **my_env;
+	uint32_t jobid;
 
 	my_env = _build_env(job_env, false);
 	setenvf(&my_env, "SLURM_STEP_ID", "%u", job_env->step_id);
@@ -5968,11 +6052,20 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 
 	START_TIMER;
 
+#ifdef HAVE_NATIVE_CRAY
+	if (job_env->pack_jobid && (job_env->pack_jobid != NO_VAL))
+		jobid = job_env->pack_jobid;
+	else
+		jobid = job_env->jobid;
+#else
+	jobid = job_env->jobid;
+#endif
+
 	if (timeout == NO_VAL16) {
-		rc = _run_job_script("prolog", my_prolog, job_env->jobid,
+		rc = _run_job_script("prolog", my_prolog, jobid,
 				     -1, my_env, job_env->uid);
 	} else {
-		rc = _run_job_script("prolog", my_prolog, job_env->jobid,
+		rc = _run_job_script("prolog", my_prolog, jobid,
 				     timeout, my_env, job_env->uid);
 	}
 	END_TIMER;
@@ -6013,6 +6106,7 @@ _run_epilog(job_env_t *job_env)
 	char *my_epilog;
 	char **my_env = _build_env(job_env, true);
 	bool script_lock = false;
+	uint32_t jobid;
 
 	if (msg_timeout == 0)
 		msg_timeout = slurm_get_msg_timeout();
@@ -6031,11 +6125,20 @@ _run_epilog(job_env_t *job_env)
 		script_lock = true;
 	}
 
+#ifdef HAVE_NATIVE_CRAY
+	if (job_env->pack_jobid && (job_env->pack_jobid != NO_VAL))
+		jobid = job_env->pack_jobid;
+	else
+		jobid = job_env->jobid;
+#else
+	jobid = job_env->jobid;
+#endif
+
 	if (timeout == NO_VAL16)
-		error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
+		error_code = _run_job_script("epilog", my_epilog, jobid,
 					     -1, my_env, job_env->uid);
 	else
-		error_code = _run_job_script("epilog", my_epilog, job_env->jobid,
+		error_code = _run_job_script("epilog", my_epilog, jobid,
 					     timeout, my_env, job_env->uid);
 
 	xfree(my_epilog);

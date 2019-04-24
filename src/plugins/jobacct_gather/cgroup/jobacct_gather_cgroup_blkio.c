@@ -116,9 +116,12 @@
 /* 	job = jobacct_id->job; */
 /* 	uid = job->uid; */
 /* 	gid = job->gid; */
-/* 	jobid = job->jobid; */
 /* 	stepid = job->stepid; */
 /* 	taskid = jobacct_id->taskid; */
+/*	if (job->pack_jobid && (job->pack_jobid != NO_VAL)) */
+/*		jobid = job->pack_jobid; */
+/*	else */
+/*		jobid = job->jobid; */
 
 /* 	/\* create slurm root cg in this cg namespace *\/ */
 /* 	slurm_cgpath = jobacct_cgroup_create_slurm_cg(&blkio_ns); */

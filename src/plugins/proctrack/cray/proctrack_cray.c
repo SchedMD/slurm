@@ -211,6 +211,7 @@ int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 #ifdef HAVE_NATIVE_CRAY
 	char fname[64];
 	int fd;
+	uint32_t jobid;
 #endif
 	int count = 0;
 
@@ -248,7 +249,11 @@ try_again:
 
 #ifdef HAVE_NATIVE_CRAY
 	// Set apid for this pid
-	if (job_setapid(pid, SLURM_ID_HASH(job->jobid, job->stepid)) == -1) {	//
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
+	if (job_setapid(pid, SLURM_ID_HASH(jobid, job->stepid)) == -1) {
 		error("Failed to set pid %d apid: %m", pid);
 		return SLURM_ERROR;
 	}

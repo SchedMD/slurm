@@ -201,9 +201,12 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 	job = jobacct_id->job;
 	uid = job->uid;
 	gid = job->gid;
-	jobid = job->jobid;
 	stepid = job->stepid;
 	taskid = jobacct_id->taskid;
+	if (job->pack_jobid && (job->pack_jobid != NO_VAL))
+		jobid = job->pack_jobid;
+	else
+		jobid = job->jobid;
 
 	if (taskid >= max_task_id)
 		max_task_id = taskid;

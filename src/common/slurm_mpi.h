@@ -51,6 +51,7 @@ typedef void mpi_plugin_client_state_t;
 typedef struct {
 	uint32_t jobid;
 	uint32_t pack_jobid;	/* pack job leader or NO_VAL */
+	uint32_t pack_task_offset;   /* Task offset within pack job or NO_VAL */
 	uint32_t stepid;
 	slurm_step_layout_t *step_layout;
 } mpi_plugin_client_info_t;
