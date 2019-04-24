@@ -185,7 +185,6 @@ proctrack_cray_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(proctrack_cray_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
-@HAVE_REAL_CRAY_TRUE@am_proctrack_cray_la_rpath = -rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -496,8 +495,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = - -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(CRAY_JOB_CPPFLAGS)
-@HAVE_REAL_CRAY_TRUE@PROC_PLUG = proctrack_cray.la
-pkglib_LTLIBRARIES = $(PROC_PLUG)
+pkglib_LTLIBRARIES = proctrack_cray.la
 proctrack_cray_la_SOURCES = proctrack_cray.c
 proctrack_cray_la_LDFLAGS = $(PLUGIN_FLAGS) $(CRAY_JOB_LDFLAGS)
 all: all-am
@@ -570,7 +568,7 @@ clean-pkglibLTLIBRARIES:
 	}
 
 proctrack_cray.la: $(proctrack_cray_la_OBJECTS) $(proctrack_cray_la_DEPENDENCIES) $(EXTRA_proctrack_cray_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(proctrack_cray_la_LINK) $(am_proctrack_cray_la_rpath) $(proctrack_cray_la_OBJECTS) $(proctrack_cray_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(proctrack_cray_la_LINK) -rpath $(pkglibdir) $(proctrack_cray_la_OBJECTS) $(proctrack_cray_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
