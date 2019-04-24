@@ -1634,6 +1634,7 @@ rwfail:	if (lock_set) {
 		slurm_cond_signal(&step_complete.cond);
 		slurm_mutex_unlock(&step_complete.lock);
 	}
+	xfree(buf);	/* In case of failure before moving to "buffer" */
 	FREE_NULL_BUFFER(buffer);
 	return SLURM_ERROR;
 }
