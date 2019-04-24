@@ -9796,8 +9796,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			}
 		}
 		type_array_updated = true;
-	} else if (job_gres_ptr->gres_bit_alloc &&
-		   job_gres_ptr->gres_bit_alloc[node_offset]) {
+	} else if (job_gres_ptr->gres_bit_alloc[node_offset]) {
 		int len;	/* length of the gres bitmap on this node */
 		len = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
 		if (!node_gres_ptr->topo_gres_cnt_alloc) {
