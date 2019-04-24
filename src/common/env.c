@@ -1942,7 +1942,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	char cmdstr[256], *env_loc = NULL;
 	char *stepd_path = NULL;
-	int fildes[2], found, fval, len, rc, timeleft;
+	int fd1, fd2, fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
 	pid_t child;
 	struct timeval begin, now;
@@ -1993,11 +1993,11 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		setenv("ENVIRONMENT", "BATCH", 1);
 		setpgid(0, 0);
 		close(0);
-		if (open("/dev/null", O_RDONLY) == -1)
+		if ((fd1 = open("/dev/null", O_RDONLY)) == -1)
 			error("%s: open(/dev/null): %m", __func__);
 		dup2(fildes[1], 1);
 		close(2);
-		if (open("/dev/null", O_WRONLY) == -1)
+		if ((fd2 = open("/dev/null", O_WRONLY)) == -1)
 			error("%s: open(/dev/null): %m", __func__);
 		if      (mode == 1)
 			execl(SUCMD, "su", username, "-c", cmdstr, NULL);
@@ -2010,6 +2010,10 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 			execl(SUCMD, "su", "-", username, "-c", cmdstr, NULL);
 #endif
 		}
+		if (fd1 >= 0)	/* Avoid Coverity resource leak notification */
+			(void) close(fd1);
+		if (fd2 >= 0)	/* Avoid Coverity resource leak notification */
+			(void) close(fd2);
 		exit(1);
 	}
 
