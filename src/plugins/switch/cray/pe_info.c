@@ -149,6 +149,12 @@ static int _setup_local_step_rec(local_step_rec_t *step_rec,
 	xassert(step_rec);
 	xassert(job);
 
+	if ((job->pack_jobid != NO_VAL) && !job->pack_tids) {
+		/* pack_tids == NULL if request from pre-v19.05 srun */
+		CRAY_ERR("Old version of srun does not support heterogeneous jobs");
+		return SLURM_ERROR;
+	}
+
 	memset(step_rec, 0, sizeof(local_step_rec_t));
 
 	step_rec->stepd_step_rec = job;
