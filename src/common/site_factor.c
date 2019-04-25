@@ -93,6 +93,7 @@ extern int site_factor_plugin_init(void)
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
+	xfree(type);
 
 	return retval;
 }
