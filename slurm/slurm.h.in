@@ -2573,6 +2573,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_HETERO_JOBS  0x0002000000000000 /* Heterogeneous job debug */
 #define DEBUG_FLAG_ACCRUE       0x0004000000000000 /* Accrue counters debug */
 #define DEBUG_FLAG_POWER_SAVE   0x0008000000000000 /* Power Save debug */
+#define DEBUG_FLAG_AGENT	0x0010000000000000 /* RPC Agent debug */
 
 #define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
 #define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */

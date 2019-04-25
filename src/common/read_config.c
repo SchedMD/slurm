@@ -5162,6 +5162,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Accrue");
 	}
+	if (debug_flags & DEBUG_FLAG_AGENT) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Agent");
+	}
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5423,6 +5428,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 	while (tok) {
 		if (xstrcasecmp(tok, "Accrue") == 0)
 			(*flags_out) |= DEBUG_FLAG_ACCRUE;
+		else if (xstrcasecmp(tok, "Agent") == 0)
+			(*flags_out) |= DEBUG_FLAG_AGENT;
 		else if (xstrcasecmp(tok, "Backfill") == 0)
 			(*flags_out) |= DEBUG_FLAG_BACKFILL;
 		else if (xstrcasecmp(tok, "BackfillMap") == 0)
