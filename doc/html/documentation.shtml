@@ -132,6 +132,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="acct_gather_profile_plugins.html">Profile Accounting Plugin Programmer Guide</a></li>
 <li><a href="selectplugins.html">Resource Selection Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.html">Scheduler Plugin Programmer Guide</a></li>
+<li><a href="site_factor.html">Site Factor (Priority) Plugin Programmer Guide</a></li>
 <li><a href="slurmctld_plugstack.html">Slurmctld Generic Plugin Programmer Guide</a></li>
 <li><a href="switchplugins.html">Switch (Interconnect) Plugin Programmer Guide</a></li>
 <li><a href="taskplugins.html">Task Plugin Programmer Guide</a></li>
@@ -140,6 +141,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 7 January 2019</p>
+<p style="text-align:center;">Last modified 24 April 2019</p>
 
 <!--#include virtual="footer.txt"-->

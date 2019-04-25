@@ -91,6 +91,7 @@ generated_html = \
 	schedplugins.html \
 	select_design.html \
 	selectplugins.html \
+	site_factor.html \
 	slurm.html \
 	slurmctld_plugstack.html \
 	slurm_ug_agenda.html \

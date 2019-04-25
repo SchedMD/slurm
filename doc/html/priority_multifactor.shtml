@@ -7,13 +7,13 @@
 <LI> <a href=#intro>Introduction</a>
 <LI> <a href=#mfjppintro>Multi-factor Job Priority Plugin</a>
 <LI> <a href=#general>Job Priority Factors In General</a>
-<LI> <a href=#admin>Admin Factor</a>
 <LI> <a href=#age>Age Factor</a>
 <LI> <a href=#assoc>Association Factor</a>
 <LI> <a href=#jobsize>Job Size Factor</a>
 <LI> <a href=#nice>Nice Factor</a>
 <LI> <a href=#partition>Partition Factor</a>
 <LI> <a href=#qos>Quality of Service (QOS) Factor</a>
+<LI> <a href=#site>Site Factor</a>
 <LI> <a href=#tres>TRES Factors</a>
 <LI> <a href=#fairshare>Fairshare Factor</a>
 <LI> <a href=#sprio>The <i>sprio</i> utility</a>
@@ -37,8 +37,6 @@
 influence job priority:</P>
 
 <DL>
-<DT> Admin
-<DD> a factor dictated by an administrator
 <DT> Age
 <DD> the length of time a job has been waiting in the queue, eligible to be scheduled
 <DT> Association
@@ -53,6 +51,8 @@ influence job priority:</P>
 <DD> a factor associated with each node partition
 <DT> QOS
 <DD> a factor associated with each Quality Of Service
+<DT> Site 
+<DD> a factor dictated by an administrator or a site-developed job_submit or site_factor plugin
 <DT> TRES
 <DD> each TRES Type has it's own factor for a job which represents the number of
 requested/allocated TRES Type in a given partition
@@ -71,7 +71,7 @@ requested/allocated TRES Type in a given partition
 <P> The job's priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm.conf file.  Job priority can be expressed as:</P>
 <PRE>
 Job_priority =
-	admin_factor +
+	site_factor +
 	(PriorityWeightAge) * (age_factor) +
 	(PriorityWeightAssoc) * (assoc_factor) +
 	(PriorityWeightFairshare) * (fair-share_factor) +
@@ -101,13 +101,6 @@ Job_priority =
   jobs would have the same fair-share priority. Therefore, set the
   weights high enough to avoid this scenario, starting around 1000 or
   so for those factors you want to make predominant.</P>
-
-<a name=admin>
-<h2>Admin Factor</h2></a>
-
-<P> The admin factor is a factor that can be set either using scontrol or
-through a job submit plugin. An example use case, might be a job submit plugin
-that sets a specific priority based on how many resources are requested.</P>
 
 <a name=age>
 <h2>Age Factor</h2></a>
@@ -167,6 +160,14 @@ partition factor.</P>
 number, the greater the job priority will be for jobs that request
 this QOS.  This priority value is then normalized to the highest
 priority of all the QOS's to become the QOS factor.</P>
+
+<a name=site>
+<h2>Site Factor</h2></a>
+
+<P> The site factor is a factor that can be set either using scontrol,
+through a job_submit or site_factor plugin. An example use case, might be a
+job_submit plugin
+that sets a specific priority based on how many resources are requested.</P>
 
 <a name=tres>
 <h2>TRES Factors</h2></a>

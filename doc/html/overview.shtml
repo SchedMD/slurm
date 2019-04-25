@@ -142,6 +142,11 @@ building block approach. These plugins presently include:
   Plugin used to determine the resources used for a job allocation.
 </li>
 
+<li><a href="site_factor.html">Site Factor (Priority)</a>:
+  Assigns a specific site_factor component of a job's multifactor priority to
+  jobs upon submission and on an ongoing basis (e.g. as they age).
+</li>
+
 <li><a href="switchplugins.html">Switch or interconnect</a>:
   Plugin to interface with a switch or interconnect.
   For most systems (ethernet or infiniband) this is not needed.
@@ -232,6 +237,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 7 January 2019</p>
+<p style="text-align:center;">Last modified 24 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
