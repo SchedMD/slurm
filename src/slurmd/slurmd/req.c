@@ -713,17 +713,17 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 	int to_slurmd[2] = {-1, -1};
 
 	if (pipe(to_stepd) < 0 || pipe(to_slurmd) < 0) {
-		error("_forkexec_slurmstepd pipe failed: %m");
+		error("%s: pipe failed: %m", __func__);
 		return SLURM_ERROR;
 	}
 
 	if (_add_starting_step(type, req)) {
-		error("_forkexec_slurmstepd failed in _add_starting_step: %m");
+		error("%s: failed in _add_starting_step: %m", __func__);
 		return SLURM_ERROR;
 	}
 
 	if ((pid = fork()) < 0) {
-		error("_forkexec_slurmstepd: fork: %m");
+		error("%s: fork: %m", __func__);
 		close(to_stepd[0]);
 		close(to_stepd[1]);
 		close(to_slurmd[0]);
@@ -879,12 +879,11 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		 * Child forks and exits
 		 */
 		if (setsid() < 0) {
-			error("_forkexec_slurmstepd: setsid: %m");
+			error("%s: setsid: %m", __func__);
 			failed = 1;
 		}
 		if ((pid = fork()) < 0) {
-			error("_forkexec_slurmstepd: "
-			      "Unable to fork grandchild: %m");
+			error("%s: Unable to fork grandchild: %m", __func__);
 			failed = 2;
 		} else if (pid > 0) { /* child */
 			exit(0);
