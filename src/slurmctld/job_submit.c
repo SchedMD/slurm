@@ -189,8 +189,7 @@ extern int job_submit_plugin_reconfig(void)
 		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
-	if (plugin_names && submit_plugin_list &&
-	    xstrcmp(plugin_names, submit_plugin_list))
+	if (xstrcmp(plugin_names, submit_plugin_list))
 		plugin_change = true;
 	else
 		plugin_change = false;

@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- accounting_storage/mysql - fix memory leak in the archive load logic.
  -- Limit records per single SQL statement when loading archived data.
  -- Fix unnecessary reloading of job submit plugins.
+ -- Allow job submit plugins to be turned on/off with a reconfigure.
 
 * Changes in Slurm 18.08.7
 ==========================
