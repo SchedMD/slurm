@@ -49,7 +49,7 @@ AC_DEFUN([X_AC_CRAY],
   if test "$ac_really_no_cray" = "yes"; then
     AC_MSG_NOTICE([Ignoring any potential Cray system])
   else
-    AC_MSG_CHECKING([whether this is a Cray XT or XE system])
+    AC_MSG_CHECKING([whether this is a Cray system])
 
     _x_ac_cray_job_dir="job/default"
     _x_ac_cray_alpscomm_dir="alpscomm/default"

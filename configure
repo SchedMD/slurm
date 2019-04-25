@@ -22698,8 +22698,8 @@ fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: Ignoring any potential Cray system" >&5
 $as_echo "$as_me: Ignoring any potential Cray system" >&6;}
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a Cray XT or XE system" >&5
-$as_echo_n "checking whether this is a Cray XT or XE system... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether this is a Cray system" >&5
+$as_echo_n "checking whether this is a Cray system... " >&6; }
 
     _x_ac_cray_job_dir="job/default"
     _x_ac_cray_alpscomm_dir="alpscomm/default"
