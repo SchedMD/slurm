@@ -260,7 +260,7 @@ void *agent(void *args)
 #endif
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-		info("%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%s backlog_size=%d",
+		info("%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%s retry_list_size=%d",
 		     __func__, agent_cnt, agent_thread_cnt,
 		     rpc_num2string(agent_arg_ptr->msg_type),
 		     retry_list_size());
@@ -1442,7 +1442,7 @@ extern void agent_init(void)
 extern void agent_trigger(int min_wait, bool mail_too)
 {
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-		info("%s: pending_wait_time=%d->%d mail_too=%c->%c Agent_cnt=%d agent_thread_cnt=%d backlog_size=%d",
+		info("%s: pending_wait_time=%d->%d mail_too=%c->%c Agent_cnt=%d agent_thread_cnt=%d retry_list_size=%d",
 		     __func__, pending_wait_time, min_wait,
 		     mail_too ?  'T' : 'F',
 		     pending_mail ? 'T' : 'F',
@@ -1608,7 +1608,7 @@ static void _agent_retry(int min_wait, bool mail_too)
 		     (difftime(now, last_msg_time) > 300)) ||
 		    ((list_size > 0) &&
 		     (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT))) {
-			/* Note sizable backlog of work */
+			/* Note sizable backlog (retry_list_size()) of work */
 			retry_iter = list_iterator_create(retry_list);
 			while ((queued_req_ptr = list_next(retry_iter))) {
 				agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
