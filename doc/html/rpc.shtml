@@ -7,10 +7,11 @@
 <p>Slurm uses RPCs (Remote Procedure Calls) to communicate between
 daemons and commands.
 The format of many RPCs change between major Slurm releases
-(the first two release digits designates the major and the last one the micro,
-17.02.7 is major=17.02, micro=7, and changes in the micro number
+(the first two number designate the major release, and the last one the
+maintenance release level, 17.02.7 is major=17.02, maintenance=7, and changes
+in the maintenance release (also known as the "micro") value
 indicate bug fixes since the previous release, while changes in the
-major number indicate fundamental changes in logic).
+major version indicate fundamental changes in logic).
 The reason for format changes is typically new fields being added for new
 Slurm capabilities.
 Slurm communications support the most current release plus the two previous
@@ -100,6 +101,6 @@ if (protocol_version >= SLURM_15_08_PROTOCOL_VERSION) {
 }
 </pre>
 
-<p style="text-align:center;">Last modified 7 November 2017</p>
+<p style="text-align:center;">Last modified 26 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
