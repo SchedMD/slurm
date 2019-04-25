@@ -260,9 +260,10 @@ void *agent(void *args)
 #endif
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-		info("%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%d backlog_size=%d",
+		info("%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%s backlog_size=%d",
 		     __func__, agent_cnt, agent_thread_cnt,
-		     agent_arg_ptr->msg_type, list_count(retry_list));
+		     rpc_num2string(agent_arg_ptr->msg_type),
+		     list_count(retry_list));
 	}
 	slurm_mutex_lock(&agent_cnt_mutex);
 
@@ -486,8 +487,8 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-			info("%s: sending msg_type %u to nodes %s",
-			     __func__, agent_arg_ptr->msg_type,
+			info("%s: sending msg_type %s to nodes %s",
+			     __func__, rpc_num2string(agent_arg_ptr->msg_type),
 			     thread_ptr[thr_count].nodelist);
 
 		}
