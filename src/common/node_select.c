@@ -399,9 +399,8 @@ extern int select_running_linear_based(void)
 		return 0;
 
 	switch (*(ops[select_context_default].plugin_id)) {
-	case 102: // select/linear
-	case 104: // select/alps -> linear
-	case 107: // select/cray -> linear
+	case SELECT_PLUGIN_LINEAR: // select/linear
+	case SELECT_PLUGIN_CRAY_LINEAR: // select/cray -> linear
 		rc = 1;
 		break;
 	default:
