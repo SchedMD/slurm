@@ -447,7 +447,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/accounting_storage/none/Makefile
 		 src/plugins/accounting_storage/slurmdbd/Makefile
 		 src/plugins/acct_gather_energy/Makefile
-		 src/plugins/acct_gather_energy/cray/Makefile
+		 src/plugins/acct_gather_energy/cray_aries/Makefile
 		 src/plugins/acct_gather_energy/rapl/Makefile
 		 src/plugins/acct_gather_energy/ibmaem/Makefile
 		 src/plugins/acct_gather_energy/ipmi/Makefile
@@ -475,7 +475,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/checkpoint/none/Makefile
 		 src/plugins/checkpoint/ompi/Makefile
 		 src/plugins/core_spec/Makefile
-		 src/plugins/core_spec/cray/Makefile
+		 src/plugins/core_spec/cray_aries/Makefile
 		 src/plugins/core_spec/none/Makefile
 		 src/plugins/cred/Makefile
 		 src/plugins/cred/munge/Makefile
@@ -508,7 +508,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/job_container/none/Makefile
 		 src/plugins/job_submit/Makefile
 		 src/plugins/job_submit/all_partitions/Makefile
-		 src/plugins/job_submit/cray/Makefile
+		 src/plugins/job_submit/cray_aries/Makefile
 		 src/plugins/job_submit/defaults/Makefile
 		 src/plugins/job_submit/logging/Makefile
 		 src/plugins/job_submit/lua/Makefile
@@ -528,7 +528,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/node_features/knl_generic/Makefile
 		 src/plugins/power/Makefile
 		 src/plugins/power/common/Makefile
-		 src/plugins/power/cray/Makefile
+		 src/plugins/power/cray_aries/Makefile
 		 src/plugins/power/none/Makefile
 		 src/plugins/preempt/Makefile
 		 src/plugins/preempt/none/Makefile
@@ -538,7 +538,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/priority/basic/Makefile
 		 src/plugins/priority/multifactor/Makefile
 		 src/plugins/proctrack/Makefile
-		 src/plugins/proctrack/cray/Makefile
+		 src/plugins/proctrack/cray_aries/Makefile
 		 src/plugins/proctrack/cgroup/Makefile
 		 src/plugins/proctrack/pgid/Makefile
 		 src/plugins/proctrack/linuxproc/Makefile
@@ -552,7 +552,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cons_tres/Makefile
-		 src/plugins/select/cray/Makefile
+		 src/plugins/select/cray_aries/Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/select/other/Makefile
 		 src/plugins/site_factor/Makefile
@@ -560,7 +560,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/slurmctld/Makefile
 		 src/plugins/slurmctld/nonstop/Makefile
 		 src/plugins/switch/Makefile
-		 src/plugins/switch/cray/Makefile
+		 src/plugins/switch/cray_aries/Makefile
 		 src/plugins/switch/generic/Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/mpi/Makefile
@@ -571,7 +571,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/cgroup/Makefile
-		 src/plugins/task/cray/Makefile
+		 src/plugins/task/cray_aries/Makefile
 		 src/plugins/task/none/Makefile
 		 src/plugins/topology/Makefile
 		 src/plugins/topology/3d_torus/Makefile

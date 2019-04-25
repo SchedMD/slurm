@@ -470,7 +470,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = cray rapl ibmaem ipmi none xcc
+SUBDIRS = cray_aries rapl ibmaem ipmi none xcc
 all: all-recursive
 
 .SUFFIXES:

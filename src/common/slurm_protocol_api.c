@@ -2857,7 +2857,7 @@ void slurm_set_select_type_param(uint16_t select_type_param)
 	}
 }
 
-/** Return true if (remote) system runs Cray XT/XE */
+/** Return true if (remote) system runs Cray Aries */
 bool is_cray_select_type(void)
 {
 	bool result = false;
@@ -2865,7 +2865,7 @@ bool is_cray_select_type(void)
 	if (slurmdbd_conf) {
 	} else {
 		slurm_ctl_conf_t *conf = slurm_conf_lock();
-		result = xstrcasecmp(conf->select_type, "select/cray") == 0;
+		result = !xstrcasecmp(conf->select_type, "select/cray_aries");
 		slurm_conf_unlock();
 	}
 	return result;

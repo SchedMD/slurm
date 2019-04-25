@@ -49,7 +49,7 @@ AC_DEFUN([X_AC_CRAY],
   if test "$ac_really_no_cray" = "yes"; then
     AC_MSG_NOTICE([Ignoring any potential Cray system])
   else
-    AC_MSG_CHECKING([whether this is a Cray XT or XE system])
+    AC_MSG_CHECKING([whether this is a Cray system])
 
     _x_ac_cray_job_dir="job/default"
     _x_ac_cray_alpscomm_dir="alpscomm/default"
@@ -128,13 +128,7 @@ AC_DEFUN([X_AC_CRAY],
 	  [have_cray_files="yes"],
 	  [AC_MSG_ERROR(There is a problem linking to the Cray API)])
 
-        # See if we have 5.2UP01 alpscomm functions
-        AC_SEARCH_LIBS([alpsc_pre_suspend],
-	  [alpscomm_cn],
-	  [AC_DEFINE(HAVE_NATIVE_CRAY_GA, 1,
-	  [Define to 1 if alpscomm functions new to CLE 5.2UP01 are defined])])
-
-      elif test "$ac_have_cray_network" = "yes"; then
+       elif test "$ac_have_cray_network" = "yes"; then
         AC_LINK_IFELSE(
           [AC_LANG_PROGRAM(
             [[#include <alpscomm_sn.h>

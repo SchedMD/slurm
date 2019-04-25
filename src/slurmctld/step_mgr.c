@@ -251,26 +251,6 @@ static void _build_pending_step(struct job_record *job_ptr,
 
 }
 
-/*
- * Invoke post_job_step except if select/cray is used. In that plugin
- * post_job_step() is invoked after Node Health Check completes
- */
-static void _post_job_step(struct step_record *step_ptr)
-{
-#if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-	static int select_cray_plugin = -1;
-
-	if (select_cray_plugin == -1) {
-		if (!xstrcmp(slurmctld_conf.select_type, "select/cray"))
-			select_cray_plugin = 1;
-		else
-			select_cray_plugin = 0;
-	}
-	if (select_cray_plugin == 0)
-		post_job_step(step_ptr);
-#endif
-}
-
 static void _internal_step_complete(struct job_record *job_ptr,
 				    struct step_record *step_ptr)
 {
@@ -319,7 +299,7 @@ static void _internal_step_complete(struct job_record *job_ptr,
 
 	step_ptr->state |= JOB_COMPLETING;
 	select_g_step_finish(step_ptr, false);
-	_post_job_step(step_ptr);
+	post_job_step(step_ptr);
 }
 
 /*
@@ -2111,9 +2091,6 @@ static void _dump_step_layout(struct step_record *step_ptr)
 
 static void _step_dealloc_lps(struct step_record *step_ptr)
 {
-#if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-	static bool cray_simulate_logged = false;
-#endif
 	struct job_record  *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int cpus_alloc;
@@ -2159,13 +2136,6 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 			      job_resrcs_ptr->cpus_used[job_node_inx],
 			      cpus_alloc, job_node_inx);
 			job_resrcs_ptr->cpus_used[job_node_inx] = 0;
-#if !defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
-			if (!cray_simulate_logged) {
-				error("Remember to comment out post_job_step() "
-				      "call in slurmctld/step_mgr.c");
-				cray_simulate_logged = true;
-			}
-#endif
 		}
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
 			uint64_t mem_use = step_ptr->pn_min_memory;

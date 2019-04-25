@@ -145,6 +145,22 @@ configuration files will be required before upgrading to this release.
     health of the individual compute nodes. The SelectTypeParameters options
     of NHC_ABSOLUTELY_NO, NHC_NO_STEPS, and NHC_NO have been removed as well.
 
+ -- All other Cray plugins have been renamed to cray_aries, namely ...
+
+      acct_gather_energy/cray
+      core_spec/cray
+      job_submit/cray
+      power/cray
+      proctrack/cray
+      select/cray
+      switch/cray
+      task/cray
+
+      all are now cray_aries.  You will need to update your slurm.conf to
+      reflect these changes.
+
+ -- Heterogeneous jobs are now possible on a Cray.
+
 RPMBUILD CHANGES
 ================
 

@@ -4047,7 +4047,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 #if defined(HAVE_NATIVE_CRAY)
 	if (conf->mpi_params == NULL ||
 	    strstr(conf->mpi_params, "ports=") == NULL) {
-		error("MpiParams=ports= is required on native Cray systems");
+		error("MpiParams=ports= is required on Cray/Aries systems");
 		return SLURM_ERROR;
 	}
 #endif
@@ -4467,8 +4467,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->proctrack_type = xstrdup(DEFAULT_PROCTRACK_TYPE);
 	}
 #ifdef HAVE_NATIVE_CRAY
-	if (xstrcmp(conf->proctrack_type, "proctrack/cray")) {
-		error("On a native Cray ProctrackType=proctrack/cray "
+	if (xstrcmp(conf->proctrack_type, "proctrack/cray_aries")) {
+		error("On a Cray/Aries ProctrackType=proctrack/cray_aries "
 		      "is required");
 		return SLURM_ERROR;
 	}
@@ -4647,7 +4647,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 * to access the needed libraries.
 	 */
 	if (conf->slurm_user_id != 0) {
-		error("Cray requires SlurmUser=root (default), but have '%s'.",
+		error("Cray/Aries requires SlurmUser=root (default), but have '%s'.",
 			conf->slurm_user_name);
 		return SLURM_ERROR;
 	}
@@ -4934,9 +4934,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 					return SLURM_ERROR;
 				}
 			} else if (xstrcasecmp(tok, "SlurmdOffSpec") == 0) {
-				if (xstrcasestr(conf->task_plugin, "cray")) {
-					error("TaskPluginParam=SlurmdOffSpec "
-					      "invalid with TaskPlugin=task/cray");
+				if (xstrcasestr(conf->task_plugin,
+						"cray_aries")) {
+					error("TaskPluginParam=SlurmdOffSpec invalid with TaskPlugin=task/cray_aries");
 					return SLURM_ERROR;
 				}
 				conf->task_plugin_param |= SLURMD_OFF_SPEC;
