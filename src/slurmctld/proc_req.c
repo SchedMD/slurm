@@ -4290,11 +4290,6 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		job_desc_msg->pack_job_offset = pack_job_offset;
 		error_code = validate_job_create_req(job_desc_msg, uid,
 						     &err_msg);
-		if (error_code != SLURM_SUCCESS) {
-			reject_job = true;
-			break;
-		}
-
 		if (err_msg) {
 			char *save_ptr = NULL, *tok;
 			tok = strtok_r(err_msg, "\n", &save_ptr);
@@ -4308,6 +4303,12 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			}
 			xfree(err_msg);
 		}
+
+		if (error_code != SLURM_SUCCESS) {
+			reject_job = true;
+			break;
+		}
+
 		pack_job_offset++;
 	}
 	list_iterator_destroy(iter);
