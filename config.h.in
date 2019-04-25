@@ -158,9 +158,6 @@
 /* Define to 1 for running on a Cray Aries system */
 #undef HAVE_NATIVE_CRAY
 
-/* Define to 1 if alpscomm functions new to CLE 5.2UP01 are defined */
-#undef HAVE_NATIVE_CRAY_GA
-
 /* Define to 1 if you have the <ncurses.h> header file. */
 #undef HAVE_NCURSES_H
 

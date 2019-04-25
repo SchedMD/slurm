@@ -468,7 +468,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	uint32_t jobid;
 #endif
 
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	char *npc = "none";
 	int access = ALPSC_NET_PERF_CTR_NONE;
 #endif
@@ -591,7 +591,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 		sw_job->num_ptags = num_ptags;
 	}
 
-#if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	// Write the IAA file
 	rc = write_iaa_file(job, sw_job, sw_job->ptags, sw_job->num_ptags,
 			    &alpsc_pe_info);
@@ -601,7 +601,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 	}
 #endif
 
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	/*
 	 * If there is reserved access to network performance counters,
 	 * configure the appropriate access permission in the kernel.
@@ -764,7 +764,7 @@ extern int switch_p_job_fini(switch_jobinfo_t *jobinfo)
 	}
 #endif
 
-#if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	// Remove the IAA file
 	unlink_iaa_file(job);
 #endif
@@ -979,7 +979,7 @@ extern int switch_p_job_step_pre_suspend(stepd_step_rec_t *job)
 	info("switch_p_job_step_pre_suspend(job %u.%u)",
 		job->jobid, job->stepid);
 #endif
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *jobinfo = job->switch_job ?
 		(slurm_cray_jobinfo_t *)job->switch_job->data : NULL;
 	char *err_msg = NULL;
@@ -1007,7 +1007,7 @@ extern int switch_p_job_step_post_suspend(stepd_step_rec_t *job)
 	info("switch_p_job_step_post_suspend(job %u.%u)",
 		job->jobid, job->stepid);
 #endif
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
 	int rc;
 	DEF_TIMERS;
@@ -1032,7 +1032,7 @@ extern int switch_p_job_step_pre_resume(stepd_step_rec_t *job)
 	info("switch_p_job_step_pre_resume(job %u.%u)",
 		job->jobid, job->stepid);
 #endif
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	slurm_cray_jobinfo_t *jobinfo = job->switch_job ?
 		(slurm_cray_jobinfo_t *)job->switch_job->data : NULL;
 	char *err_msg = NULL;
@@ -1060,7 +1060,7 @@ extern int switch_p_job_step_post_resume(stepd_step_rec_t *job)
 	info("switch_p_job_step_post_resume(job %u.%u)",
 		job->jobid, job->stepid);
 #endif
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
 	int rc;
 	DEF_TIMERS;

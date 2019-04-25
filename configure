@@ -22794,67 +22794,7 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
-        # See if we have 5.2UP01 alpscomm functions
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing alpsc_pre_suspend" >&5
-$as_echo_n "checking for library containing alpsc_pre_suspend... " >&6; }
-if ${ac_cv_search_alpsc_pre_suspend+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char alpsc_pre_suspend ();
-int
-main ()
-{
-return alpsc_pre_suspend ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' alpscomm_cn; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_alpsc_pre_suspend=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_alpsc_pre_suspend+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_alpsc_pre_suspend+:} false; then :
-
-else
-  ac_cv_search_alpsc_pre_suspend=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_alpsc_pre_suspend" >&5
-$as_echo "$ac_cv_search_alpsc_pre_suspend" >&6; }
-ac_res=$ac_cv_search_alpsc_pre_suspend
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-$as_echo "#define HAVE_NATIVE_CRAY_GA 1" >>confdefs.h
-
-fi
-
-
-      elif test "$ac_have_cray_network" = "yes"; then
+       elif test "$ac_have_cray_network" = "yes"; then
         cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <alpscomm_sn.h>

@@ -157,7 +157,7 @@ extern int set_job_env(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job);
 extern void print_jobinfo(slurm_cray_jobinfo_t *job);
 
 // Implemented in iaa.c
-#if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 extern int write_iaa_file(stepd_step_rec_t *job, slurm_cray_jobinfo_t *sw_job,
 		   int *ptags, int num_ptags, alpsc_peInfo_t *alpsc_pe_info);
 extern void unlink_iaa_file(slurm_cray_jobinfo_t *job);
@@ -169,7 +169,7 @@ extern int lease_cookies(slurm_cray_jobinfo_t *job, int32_t *nodes,
 			 int32_t num_nodes);
 extern int track_cookies(slurm_cray_jobinfo_t *job);
 extern int release_cookies(slurm_cray_jobinfo_t *job);
-#endif /* HAVE_NATIVE_CRAY_GA || HAVE_CRAY_NETWORK */
+#endif /* HAVE_NATIVE_CRAY || HAVE_CRAY_NETWORK */
 
 /**********************************************************
  * Macros

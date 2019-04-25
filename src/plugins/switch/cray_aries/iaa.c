@@ -37,7 +37,7 @@
 
 #include "switch_cray_aries.h"
 
-#if defined(HAVE_NATIVE_CRAY_GA) || defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 
 #include "src/common/xstring.h"
 

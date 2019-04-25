@@ -151,7 +151,7 @@ static time_t last_npc_update;
 
 static bool scheduling_disabled = false; //Backup running on external cray node?
 
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 static size_t topology_num_nodes = 0;
 static alpsc_topology_t *topology = NULL;
 #endif
@@ -851,7 +851,7 @@ unpack_error:
 extern int init ( void )
 {
 	DEF_TIMERS;
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	char *err_msg = NULL;
 #endif
 
@@ -884,7 +884,7 @@ extern int init ( void )
 			scheduling_disabled = true;
 		}
 
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 		else if (alpsc_get_topology(&err_msg, &topology,
 					    &topology_num_nodes))
 			fatal("Running backup on an external node requires "
@@ -912,7 +912,7 @@ extern int fini ( void )
 		_free_blade(&blade_array[i]);
 	xfree(blade_array);
 
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	if (topology)
 		free(topology);
 #endif
@@ -1234,7 +1234,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	START_TIMER;
 
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 	int nn, end_nn, last_nn = 0;
 	bool found = 0;
 	char *err_msg = NULL;
@@ -1294,7 +1294,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 			nodeinfo->nid = atoll(nid_char);
 		}
 
-#if defined(HAVE_NATIVE_CRAY_GA) && !defined(HAVE_CRAY_NETWORK)
+#if defined(HAVE_NATIVE_CRAY) && !defined(HAVE_CRAY_NETWORK)
 		end_nn = topology_num_nodes;
 
 	start_again:
