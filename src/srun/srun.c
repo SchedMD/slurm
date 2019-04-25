@@ -469,7 +469,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			step_cnt++;
 			slurm_mutex_unlock(&step_mutex);
 			job->pack_node_list = xstrdup(pack_node_list);
-			if ((pack_step_cnt > 1) && pack_task_cnts) {
+			if ((pack_step_cnt > 1) && pack_task_cnts &&
+			    pack_tid_offsets) {
 				xassert(node_offset == job->pack_nnodes);
 				job->pack_task_cnts = xcalloc(job->pack_nnodes,
 							      sizeof(uint16_t));
