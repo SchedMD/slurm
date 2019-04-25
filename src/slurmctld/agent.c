@@ -1605,8 +1605,10 @@ static void _agent_retry(int min_wait, bool mail_too)
 		uint32_t msg_type[5] = {0, 0, 0, 0, 0};
 		int i = 0, list_size;
 		list_size = list_count(retry_list);
-		if ((list_size > 100) &&
-		    (difftime(now, last_msg_time) > 300)) {
+		if (((list_size > 100) &&
+		     (difftime(now, last_msg_time) > 300)) ||
+		    ((list_size > 0) &&
+		     (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT))) {
 			/* Note sizable backlog of work */
 			info("slurmctld: agent retry_list size is %d",
 			     list_size);
