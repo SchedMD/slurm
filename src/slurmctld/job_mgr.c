@@ -11609,27 +11609,6 @@ extern bool permit_job_shrink(void)
 	return permit_job_shrink;
 }
 
-/* Return TRUE if step list contains any user steps (excludes "extern" step) */
-static bool _active_user_step(List step_list)
-{
-	struct step_record *step_ptr;
-	ListIterator iter;
-	bool rc = false;
-
-	if (step_list == NULL)
-		return false;
-	iter = list_iterator_create(step_list);
-	while ((step_ptr = (struct step_record *) list_next(iter))) {
-		if (step_ptr->step_id == SLURM_EXTERN_CONT)
-			continue;
-		rc = true;
-		break;
-	}
-	list_iterator_destroy(iter);
-
-	return rc;
-}
-
 static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		       uid_t uid)
 {
@@ -13268,7 +13247,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				error_code = ESLURM_JOB_SUSPENDED;
 				goto fini;
 			}
-			if (_active_user_step(job_ptr->step_list)) {
+			if ((job_ptr->step_list != NULL) &&
+			    (list_count(job_ptr->step_list) != 0)) {
 				info("%s: Attempt to merge %pJ with active steps into %pJ",
 				     __func__, job_ptr, expand_job_ptr);
 				error_code = ESLURMD_STEP_EXISTS;
