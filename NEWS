@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
     and modify the site priority factor value both initially on job submission,
     and periodically every PriorityCalcPeriod.
  -- Rename Cray plugins cray_aries in preperation for Cray/Shasta.
+ -- Allow Het Jobs to work on a Cray.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

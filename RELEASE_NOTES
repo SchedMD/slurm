@@ -158,6 +158,9 @@ configuration files will be required before upgrading to this release.
 
       all are now cray_aries.  You will need to update your slurm.conf to
       reflect these changes.
+
+ -- Heterogeneous jobs are now possible on a Cray.
+
 RPMBUILD CHANGES
 ================
 
