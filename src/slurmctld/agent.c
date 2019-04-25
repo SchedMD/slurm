@@ -1603,15 +1603,12 @@ static void _agent_retry(int min_wait, bool mail_too)
 	if (retry_list) {
 		static time_t last_msg_time = (time_t) 0;
 		uint32_t msg_type[5] = {0, 0, 0, 0, 0};
-		int i = 0, list_size;
-		list_size = list_count(retry_list);
+		int i = 0, list_size = list_count(retry_list);
 		if (((list_size > 100) &&
 		     (difftime(now, last_msg_time) > 300)) ||
 		    ((list_size > 0) &&
 		     (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT))) {
 			/* Note sizable backlog of work */
-			info("slurmctld: agent retry_list size is %d",
-			     list_size);
 			retry_iter = list_iterator_create(retry_list);
 			while ((queued_req_ptr = list_next(retry_iter))) {
 				agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
@@ -1620,8 +1617,8 @@ static void _agent_retry(int min_wait, bool mail_too)
 					break;
 			}
 			list_iterator_destroy(retry_iter);
-			info("   retry_list msg_type=%s,%s,%s,%s,%s",
-			     rpc_num2string(msg_type[0]),
+			info("   retry_list retry_list_size:%d msg_type=%s,%s,%s,%s,%s",
+			     list_size, rpc_num2string(msg_type[0]),
 			     rpc_num2string(msg_type[1]),
 			     rpc_num2string(msg_type[2]),
 			     rpc_num2string(msg_type[3]),
