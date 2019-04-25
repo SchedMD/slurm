@@ -1514,9 +1514,10 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			_kill_job_on_msg_fail(pack_job_id);
 		list_destroy(resp);
 	} else {
-		char *aggregate_user_msg = NULL;
+		char *aggregate_user_msg;
 
 send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
+		aggregate_user_msg = NULL;
 
 		/*
 		 * If job is rejected, add the job submit message to the error
