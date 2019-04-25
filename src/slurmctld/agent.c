@@ -315,8 +315,13 @@ void *agent(void *args)
 	slurm_thread_create(&thread_wdog, _wdog, agent_info_ptr);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
-		info("%s: got %d threads to send out", __func__,
-		     agent_info_ptr->thread_count);
+		info("%s: New agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
+		     __func__, agent_info_ptr->thread_count,
+		     agent_info_ptr->threads_active,
+		     agent_info_ptr->retry ? 'T' : 'F',
+		     agent_info_ptr->get_reply ? 'T' : 'F',
+		     rpc_num2string(agent_arg_ptr->msg_type),
+		     agent_info_ptr->protocol_version);
 	}
 	/* start all the other threads (up to AGENT_THREAD_COUNT active) */
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
