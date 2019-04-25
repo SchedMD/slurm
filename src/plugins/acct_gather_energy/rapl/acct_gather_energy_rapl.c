@@ -236,7 +236,6 @@ static void _hardware(void)
 {
 	char buf[1024];
 	FILE *fd;
-	int cpu = 0, pkg = 0;
 
 	if ((fd = fopen("/proc/cpuinfo", "r")) == NULL) {
 		fatal("%s: error on open(/proc/cpuinfo): %m", plugin_name);
@@ -244,14 +243,19 @@ static void _hardware(void)
 	}
 
 	while (fgets(buf, 1024, fd)) {
-		if (xstrncmp(buf, "processor", sizeof("processor") - 1) == 0) {
+		int cpu = -1, pkg = -1;
+		if (!xstrncmp(buf, "processor", sizeof("processor") - 1)) {
 			sscanf(buf, "processor\t: %d", &cpu);
 			continue;
 		}
 		if (!xstrncmp(buf, "physical id", sizeof("physical id") - 1)) {
 			sscanf(buf, "physical id\t: %d", &pkg);
 
-			if ((pkg < 0) || (pkg >= MAX_PKGS)) {
+			if (cpu < 0) {
+				error("%s: No processor ID found", plugin_name);
+			} else if (pkg < 0) {
+				error("%s: No physical ID found", plugin_name);
+			} else if (pkg >= MAX_PKGS) {
 				fatal("%s: Configured for up to %d sockets and you have %d.  "
 				      "Update src/plugins/acct_gather_energy/"
 				      "rapl/acct_gather_energy_rapl.h "
