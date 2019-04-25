@@ -1426,6 +1426,15 @@ extern void agent_init(void)
  */
 extern void agent_trigger(int min_wait, bool mail_too)
 {
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
+		info("%s: pending_wait_time=%d->%d mail_too=%c->%c Agent_cnt=%d agent_thread_cnt=%d backlog_size=%d",
+		     __func__, pending_wait_time, min_wait,
+		     mail_too ?  'T' : 'F',
+		     pending_mail ? 'T' : 'F',
+		     agent_cnt, agent_thread_cnt,
+		     list_count(retry_list));
+	}
+
 	slurm_mutex_lock(&pending_mutex);
 	if ((pending_wait_time == NO_VAL16) ||
 	    (pending_wait_time >  min_wait))
