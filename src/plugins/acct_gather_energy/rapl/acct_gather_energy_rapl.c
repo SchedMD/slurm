@@ -237,11 +237,8 @@ static void _hardware(void)
 	char buf[1024];
 	FILE *fd;
 
-	if ((fd = fopen("/proc/cpuinfo", "r")) == NULL) {
-		fatal("%s: error on open(/proc/cpuinfo): %m", plugin_name);
-		return;		/* To avoid Coverity error */
-	}
-
+	if ((fd = fopen("/proc/cpuinfo", "r")) == 0)
+		fatal("RAPL: error on attempt to open /proc/cpuinfo");
 	while (fgets(buf, 1024, fd)) {
 		int cpu = -1, pkg = -1;
 		if (!xstrncmp(buf, "processor", sizeof("processor") - 1)) {
