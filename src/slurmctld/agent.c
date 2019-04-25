@@ -1603,9 +1603,12 @@ static void _agent_retry(int min_wait, bool mail_too)
 					break;
 			}
 			list_iterator_destroy(retry_iter);
-			info("   retry_list msg_type=%u,%u,%u,%u,%u",
-				msg_type[0], msg_type[1], msg_type[2],
-				msg_type[3], msg_type[4]);
+			info("   retry_list msg_type=%s,%s,%s,%s,%s",
+			     rpc_num2string(msg_type[0]),
+			     rpc_num2string(msg_type[1]),
+			     rpc_num2string(msg_type[2]),
+			     rpc_num2string(msg_type[3]),
+			     rpc_num2string(msg_type[4]));
 			last_msg_time = now;
 		}
 	}
