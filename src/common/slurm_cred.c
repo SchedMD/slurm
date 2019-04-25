@@ -774,15 +774,11 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->sockets_per_node);
 }
 
-int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
+static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 {
-	xassert(cred != NULL);
-	xassert(arg  != NULL);
+	xassert(cred);
+	xassert(arg);
 
-	/*
-	 * set arguments to cred contents
-	 */
-	slurm_mutex_lock(&cred->mutex);
 	arg->jobid    = cred->jobid;
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
@@ -817,7 +813,18 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->job_constraints = xstrdup(cred->job_constraints);
 	arg->job_nhosts      = cred->job_nhosts;
 	arg->job_hostlist    = xstrdup(cred->job_hostlist);
+}
 
+int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
+{
+	xassert(cred != NULL);
+	xassert(arg  != NULL);
+
+	/*
+	 * set arguments to cred contents
+	 */
+	slurm_mutex_lock(&cred->mutex);
+	_copy_cred_to_arg(cred, arg);
 	slurm_mutex_unlock(&cred->mutex);
 
 	return SLURM_SUCCESS;
@@ -893,43 +900,7 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 
 	slurm_mutex_unlock(&ctx->mutex);
 
-	/*
-	 * set arguments to cred contents
-	 */
-	arg->jobid    = cred->jobid;
-	arg->stepid   = cred->stepid;
-	arg->uid      = cred->uid;
-	arg->gid      = cred->gid;
-	arg->pw_name = xstrdup(cred->pw_name);
-	arg->pw_gecos = xstrdup(cred->pw_shell);
-	arg->pw_dir = xstrdup(cred->pw_dir);
-	arg->pw_shell = xstrdup(cred->pw_shell);
-	arg->ngids = cred->ngids;
-	arg->gids = copy_gids(cred->ngids, cred->gids);
-	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
-	arg->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
-	arg->job_core_spec  = cred->job_core_spec;
-	arg->job_mem_limit  = cred->job_mem_limit;
-	arg->step_mem_limit = cred->step_mem_limit;
-	arg->step_hostlist  = xstrdup(cred->step_hostlist);
-	arg->x11            = cred->x11;
-	arg->job_core_bitmap = bit_copy(cred->job_core_bitmap);
-	arg->step_core_bitmap = bit_copy(cred->step_core_bitmap);
-	arg->cores_per_socket = xcalloc(cred->core_array_size,
-					sizeof(uint16_t));
-	memcpy(arg->cores_per_socket, cred->cores_per_socket,
-	       (sizeof(uint16_t) * cred->core_array_size));
-	arg->sockets_per_node = xcalloc(cred->core_array_size,
-					sizeof(uint16_t));
-	memcpy(arg->sockets_per_node, cred->sockets_per_node,
-	       (sizeof(uint16_t) * cred->core_array_size));
-	arg->sock_core_rep_count = xcalloc(cred->core_array_size,
-					   sizeof(uint32_t));
-	memcpy(arg->sock_core_rep_count, cred->sock_core_rep_count,
-	       (sizeof(uint32_t) * cred->core_array_size));
-	arg->job_constraints = xstrdup(cred->job_constraints);
-	arg->job_nhosts      = cred->job_nhosts;
-	arg->job_hostlist    = xstrdup(cred->job_hostlist);
+	_copy_cred_to_arg(cred, arg);
 
 	slurm_mutex_unlock(&cred->mutex);
 
