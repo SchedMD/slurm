@@ -11030,7 +11030,7 @@ void reset_job_bitmaps(void)
 			job_fail = true;
 		}
 
-		if (!job_fail &&
+		if (!job_fail && job_ptr->job_resrcs &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
 		    gres_plugin_job_revalidate2(job_ptr->job_id,
 					job_ptr->gres_list,
