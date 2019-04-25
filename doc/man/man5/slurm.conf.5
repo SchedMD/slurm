@@ -1841,6 +1841,13 @@ include "minutes", "minutes:seconds", "hours:minutes:seconds", "days\-hours",
 "days\-hours:minutes", and "days\-hours:minutes:seconds".
 
 .TP
+\fBPriorityCalcPeriod\fR
+The period of time in minutes in which the half-life decay will be
+re-calculated.
+Applicable only if PriorityType=priority/multifactor.
+The default value is 5 (minutes).
+
+.TP
 \fBPriorityDecayHalfLife\fR
 This controls how long prior resource use is considered in determining
 how over\- or under\-serviced an association is (user, bank account and
@@ -1853,13 +1860,6 @@ set to 0 \fBPriorityUsageResetPeriod\fR must be set to some interval.
 Applicable only if PriorityType=priority/multifactor.
 The unit is a time string (i.e. min, hr:min:00, days\-hr:min:00,
 or days\-hr).  The default value is 7\-0 (7 days).
-
-.TP
-\fBPriorityCalcPeriod\fR
-The period of time in minutes in which the half-life decay will be
-re-calculated.
-Applicable only if PriorityType=priority/multifactor.
-The default value is 5 (minutes).
 
 .TP
 \fBPriorityFavorSmall\fR
@@ -1925,10 +1925,6 @@ the job's size divided by it's time limit.
 .RE
 
 .TP
-\fBPriorityParameters\fR
-Arbitrary string used by the PriorityType plugin.
-
-.TP
 \fBPriorityMaxAge\fR
 Specifies the job age which will be given the maximum age factor in computing
 priority. For example, a value of 30 minutes would result in all jobs over
@@ -1936,6 +1932,34 @@ priority. For example, a value of 30 minutes would result in all jobs over
 Applicable only if PriorityType=priority/multifactor.
 The unit is a time string (i.e. min, hr:min:00, days\-hr:min:00,
 or days\-hr).  The default value is 7\-0 (7 days).
+
+.TP
+\fBPriorityParameters\fR
+Arbitrary string used by the PriorityType plugin.
+
+.TP
+\fBPriorityType\fR
+This specifies the plugin to be used in establishing a job's scheduling
+priority. Supported values are "priority/basic" (jobs are prioritized
+by order of arrival), "priority/multifactor" (jobs are prioritized based
+upon size, age, fair\-share of allocation, etc).
+Also see \fBPriorityFlags\fR for configuration options.
+The default value is "priority/basic".
+
+.RS
+.nr step 1 1
+When not FIFO scheduling, jobs are prioritized in the following order:
+.IP \n[step]. 3
+Jobs that can preempt
+.IP \n+[step].
+Jobs with an advanced reservation
+.IP \n+[step].
+Partition Priority Tier
+.IP \n+[step].
+Job Priority
+.IP \n+[step].
+Job Id
+.RE
 
 .TP
 \fBPriorityUsageResetPeriod\fR
@@ -1971,31 +1995,6 @@ Cleared on the first day of each quarter at time 00:00.
 \fBYEARLY\fR
 Cleared on the first day of each year at time 00:00.
 .RE
-
-.TP
-\fBPriorityType\fR
-This specifies the plugin to be used in establishing a job's scheduling
-priority. Supported values are "priority/basic" (jobs are prioritized
-by order of arrival), "priority/multifactor" (jobs are prioritized based
-upon size, age, fair\-share of allocation, etc).
-Also see \fBPriorityFlags\fR for configuration options.
-The default value is "priority/basic".
-
-.RS
-.nr step 1 1
-When not FIFO scheduling, jobs are prioritized in the following order:
-.IP \n[step]. 3
-Jobs that can preempt
-.IP \n+[step].
-Jobs with an advanced reservation
-.IP \n+[step].
-Partition Priority Tier
-.IP \n+[step].
-Job Priority
-.IP \n+[step].
-Job Id
-.RE
-
 
 .TP
 \fBPriorityWeightAge\fR
