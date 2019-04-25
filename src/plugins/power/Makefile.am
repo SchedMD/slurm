@@ -1,3 +1,3 @@
 # Makefile for power management plugins
 
-SUBDIRS = common cray none
+SUBDIRS = common cray_aries none

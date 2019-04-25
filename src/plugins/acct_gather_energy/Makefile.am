@@ -1,3 +1,3 @@
 # Makefile for accounting gather energy plugins
 
-SUBDIRS = cray rapl ibmaem ipmi none xcc
+SUBDIRS = cray_aries rapl ibmaem ipmi none xcc

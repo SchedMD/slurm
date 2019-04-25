@@ -144,7 +144,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_SCHED_TIME_SLICE    30
 #define DEFAULT_SCHEDTYPE           "sched/backfill"
 #if defined HAVE_NATIVE_CRAY
-#  define DEFAULT_SELECT_TYPE       "select/cray"
+#  define DEFAULT_SELECT_TYPE       "select/cray_aries"
 #else
 #  define DEFAULT_SELECT_TYPE       "select/linear"
 #endif
@@ -163,7 +163,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_SUSPEND_TIME        0
 #define DEFAULT_SUSPEND_TIMEOUT     30
 #if defined HAVE_NATIVE_CRAY
-#  define DEFAULT_SWITCH_TYPE         "switch/cray"
+#  define DEFAULT_SWITCH_TYPE         "switch/cray_aries"
 #else
 #  define DEFAULT_SWITCH_TYPE         "switch/none"
 #endif

@@ -252,7 +252,7 @@ static void _build_pending_step(struct job_record *job_ptr,
 }
 
 /*
- * Invoke post_job_step except if select/cray is used. In that plugin
+ * Invoke post_job_step except if select/cray_aries is used. In that plugin
  * post_job_step() is invoked after Node Health Check completes
  */
 static void _post_job_step(struct step_record *step_ptr)
@@ -261,7 +261,7 @@ static void _post_job_step(struct step_record *step_ptr)
 	static int select_cray_plugin = -1;
 
 	if (select_cray_plugin == -1) {
-		if (!xstrcmp(slurmctld_conf.select_type, "select/cray"))
+		if (!xstrcmp(slurmctld_conf.select_type, "select/cray_aries"))
 			select_cray_plugin = 1;
 		else
 			select_cray_plugin = 0;

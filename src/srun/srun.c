@@ -165,7 +165,7 @@ static bool _enable_pack_steps(void)
 		enabled = true;
 	else {
 		char *select_type = slurm_get_select_type();
-		if (select_type && strstr(select_type, "cray"))
+		if (select_type && strstr(select_type, "cray_aries"))
 			enabled = false;
 		xfree(select_type);
 	}

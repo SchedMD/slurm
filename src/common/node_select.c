@@ -131,13 +131,13 @@ static char *_plugin_id2name(int plugin_id)
 	if (plugin_id == SELECT_PLUGIN_SERIAL)
 		return "serial";
 	if (plugin_id == SELECT_PLUGIN_CRAY_LINEAR)
-		return "cray+linear";
+		return "cray_aries+linear";
 	if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES)
-		return "cray+cons_res";
+		return "cray_aries+cons_res";
 	if (plugin_id == SELECT_PLUGIN_CONS_TRES)
 		return "cons_tres";
 	if (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES)
-		return "cray+cons_tres";
+		return "cray_aries+cons_tres";
 	snprintf(id_str, sizeof(id_str), "%d", plugin_id);
 	return id_str;
 }
@@ -197,10 +197,10 @@ extern int slurm_select_init(bool only_default)
 		/* just ignore warnings here */
 	} else {
 #ifdef HAVE_NATIVE_CRAY
-		if (xstrcasecmp(select_type, "select/cray")) {
-			error("%s is incompatible with a native Cray system.",
+		if (xstrcasecmp(select_type, "select/cray_aries")) {
+			error("%s is incompatible with a Cray/Aries system.",
 			      select_type);
-			fatal("Use SelectType=select/cray");
+			fatal("Use SelectType=select/cray_aries");
 		}
 #else
 		/* if (!xstrcasecmp(select_type, "select/cray")) { */
@@ -320,7 +320,7 @@ again:
 		    ((plugin_id == SELECT_PLUGIN_CRAY_CONS_RES)  ||
 		     (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) ||
 		     (plugin_id == SELECT_PLUGIN_CRAY_LINEAR))) {
-			char *type = "select", *name = "select/cray";
+			char *type = "select", *name = "select/cray_aries";
 			uint16_t save_params = slurm_get_select_type_param();
 			uint16_t params[2];
 			int cray_plugin_id[2], cray_offset;
