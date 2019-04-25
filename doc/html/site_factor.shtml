@@ -1,0 +1,104 @@
+<!--#include virtual="header.txt"-->
+
+<h1><a name="top">Slurm Priority Site Factor Plugin API</a></h1>
+
+<h2>Overview</h2>
+<p> This document describes Slurm site_factor plugins and the API that defines
+them. It is intended as a resource to programmers wishing to write their own
+Slurm site_factor plugins.</p>
+
+<p>Slurm site_factor plugins are Slurm plugins that implement the Slurm
+site_factor API described herein. They are designed to provide the site a
+way to build a custom multifactor priority factor, and will only be loaded
+and operation alongside
+<span class="commandline">PriorityType=priority/multifactor</span>.</p>
+
+<p>The plugins are meant to set and update the
+<span class="commandline">site_factor</span> value in the
+<span class="commandline">struct job_record</span> corresponding to a given job.
+Note that the <span class="commandline">site_factor</span> itself is an
+unsigned integer, but uses <span class="commandline">NICE_OFFSET</span> as
+an offset to allow the value to be positive or negative. The plugin itself
+must add <span class="commandline">NICE_OFFSET</span> to the value stored to
+<span class="commandline">site_factor</span> for proper operation, otherwise
+the value itself will be extremely negative, and the job priority will likely
+drop to 1. (The lowest value that does not correspond to a held job.)</p>
+
+<p>Plugins must conform to the Slurm Plugin API with the following
+specifications:</p>
+
+<p><span class="commandline">const char plugin_type[]="<i>major/minor</i>"</span><br>
+The major type must be &quot;site_factor&quot; The minor type can be any
+recognizable abbreviation for the specific plugin.</p>
+
+
+<p><span class="commandline">const char plugin_name[]</span><br>
+Some descriptive name for the plugin.
+There is no requirement with respect to its format.</p>
+<p><span class="commandline">const uint32_t plugin_version</span><br>
+If specified, identifies the version of Slurm used to build this plugin and
+any attempt to load the plugin from a different version of Slurm will result
+in an error.
+If not specified, then the plugin may be loadeed by Slurm commands and
+daemons from any version, however this may result in difficult to diagnose
+failures due to changes in the arguments to plugin functions or changes
+in other Slurm functions used by the plugin.</p>
+
+<h2>API Functions</h2>
+<p>The following functions must appear. Functions which are not implemented
+must be stubbed, or the plugin will fail to load.</p>
+
+<p class="commandline">int init(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is loaded, before any other functions are
+  called. Put global initialization here.
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+  <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
+  <span class="commandline">SLURM_ERROR</span> on failure.</p>
+
+<p class="commandline">void fini(void)
+<p style="margin-left:.2in"><b>Description</b>:<br>
+  Called when the plugin is removed. Clear any allocated storage here.
+<p style="margin-left:.2in"><b>Returns</b>: None.</p>
+
+<p><b>Note</b>: These init and fini functions are not the same as those
+described in the <span class="commandline">dlopen (3)</span> system library.
+The C run-time system co-opts those symbols for its own initialization.
+The system <span class="commandline">_init()</span> is called before the Slurm
+<span class="commandline">init()</span>, and the Slurm
+<span class="commandline">fini()</span> is called before the system's
+<span class="commandline">_fini()</span>.</p>
+
+<p class="commandline">void site_factor_p_reconfig(void)</p>
+<p style="margin-left:.2in"><b>Description</b>: Refresh the plugin's
+configuration. Called whenever slurmctld is reconfigured.</p>
+<p style="margin-left:.2in"><b>Returns</b>: void</p>
+
+<p class="commandline">void site_factor_p_set(struct job_record *job_ptr)</p>
+<p style="margin-left:.2in"><b>Description</b>: Sets the site_priority of the job, if desired.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline">job_ptr</span> (input) pointer to the job record.</p>
+<p style="margin-left:.2in"><b>Returns</b>: void</p>
+
+<p class="commandline">void site_factor_p_update(void)</p>
+<p style="margin-left:.2in"><b>Description</b>: Handle periodic updates to
+all site_priority values in the job_list. Called every </p>
+<p style="margin-left:.2in"><b>Returns</b>: void</p>
+
+<h2>Parameters</h2>
+<p>These parameters can be used in the slurm.conf to configure the
+plugin and the frequency at which to gather information about running jobs.</p>
+<dl>
+<dt><span class="commandline">PrioritySiteFactorParameters</span></dt>
+<dd>Optional parameters for the site_factor plugin. Interpretation of any
+value is left to the site_factor plugin itself.</dd>
+<dt><span class="commandline">PrioritySiteFactorPlugin</span></dt>
+<dd>Specifies which plugin should be used.</dd>
+<dt><span class="commandline">PriorityCalcPeriod</span></dt>
+<dd>Interval between calls to
+<span class="commandline">site_factor_p_update()</span></dd>
+</dl>
+
+<p style="text-align:center;">Last modified 24 April 2019</p>
+
+<!--#include virtual="footer.txt"-->
