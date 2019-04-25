@@ -60,6 +60,7 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
+#include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -245,6 +246,7 @@ static bool init_run = false;
 static time_t cred_restart_time = (time_t) 0;
 static List sbcast_cache_list = NULL;
 static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
+static bool enable_nss_slurm = false;
 
 /*
  * Static prototypes:
@@ -299,7 +301,7 @@ static void _sbcast_cache_del(void *x);
 
 static int _slurm_cred_init(void)
 {
-	char	*auth_info, *tok;
+	char *auth_info, *tok, *launch_params;
 	char    *plugin_type = "cred";
 	char	*type = NULL;
 	int	retval = SLURM_SUCCESS;
@@ -317,6 +319,12 @@ static int _slurm_cred_init(void)
 			}
 		xfree(auth_info);
 		}
+	}
+
+	if ((launch_params = slurm_get_launch_params())) {
+		if (xstrcasestr(launch_params, "enable_nss_slurm"))
+			enable_nss_slurm = true;
+		xfree(launch_params);
 	}
 
 	slurm_mutex_lock( &g_context_lock );
@@ -557,10 +565,6 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->stepid = arg->stepid;
 	cred->uid    = arg->uid;
 	cred->gid    = arg->gid;
-	cred->pw_name = xstrdup(arg->pw_name);
-	cred->pw_gecos = xstrdup(arg->pw_gecos);
-	cred->pw_dir = xstrdup(arg->pw_dir);
-	cred->pw_shell = xstrdup(arg->pw_shell);
 	cred->ngids = arg->ngids;
 	cred->gids = copy_gids(arg->ngids, arg->gids);
 	cred->job_core_spec   = arg->job_core_spec;
@@ -603,6 +607,26 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->job_nhosts      = arg->job_nhosts;
 	cred->job_hostlist    = xstrdup(arg->job_hostlist);
 	cred->ctime  = time(NULL);
+
+	if (enable_nss_slurm) {
+		struct passwd pwd, *result;
+		char buffer[PW_BUF_SIZE];
+
+		int rc = slurm_getpwuid_r(arg->uid, &pwd, buffer,
+					  PW_BUF_SIZE, &result);
+		if (rc || !result) {
+			error("%s: getpwuid failed for uid=%u",
+			      __func__, arg->uid);
+			goto fail;
+		}
+		cred->pw_name = xstrdup(result->pw_name);
+		cred->pw_gecos = xstrdup(result->pw_gecos);
+		cred->pw_dir = xstrdup(result->pw_dir);
+		cred->pw_shell = xstrdup(result->pw_shell);
+	} else {
+		/* fall back to older send_gids behavior */
+		cred->pw_name = xstrdup(arg->pw_name);
+	}
 
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
