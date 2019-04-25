@@ -314,7 +314,10 @@ void *agent(void *args)
 	/* start the watchdog thread */
 	slurm_thread_create(&thread_wdog, _wdog, agent_info_ptr);
 
-	debug2("got %d threads to send out", agent_info_ptr->thread_count);
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
+		info("%s: got %d threads to send out", __func__,
+		     agent_info_ptr->thread_count);
+	}
 	/* start all the other threads (up to AGENT_THREAD_COUNT active) */
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		/* wait until "room" for another thread */
@@ -524,8 +527,10 @@ static void _update_wdog_state(thd_t *thread_ptr,
 	case DSH_ACTIVE:
 		thd_comp->work_done = false;
 		if (thread_ptr->end_time <= thd_comp->now) {
-			debug3("agent thread %lu timed out",
-			       (unsigned long) thread_ptr->thread);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
+				info("%s: agent thread %lu timed out", __func__,
+				     (unsigned long) thread_ptr->thread);
+			}
 			if (pthread_kill(thread_ptr->thread, SIGUSR1) == ESRCH)
 				*state = DSH_NO_RESP;
 			else
@@ -629,8 +634,11 @@ static void *_wdog(void *args)
 		xfree(thread_ptr[i].nodelist);
 	}
 
-	if (thd_comp.max_delay)
-		debug2("agent maximum delay %d seconds", thd_comp.max_delay);
+	if (thd_comp.max_delay &&
+	    (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)) {
+		info("%s: agent maximum delay %d seconds", __func__,
+		     thd_comp.max_delay);
+	}
 
 	slurm_mutex_unlock(&agent_ptr->thread_mutex);
 	return (void *) NULL;
@@ -1132,8 +1140,10 @@ static void *_thread_per_group_rpc(void *args)
 			/* Not indicative of a real error */
 		case ESLURMD_JOB_NOTRUNNING:
 			/* Not indicative of a real error */
-			debug2("RPC to node %s failed, job not running",
-			       ret_data_info->node_name);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
+				info("%s: RPC to node %s failed, job not running",
+				     __func__, ret_data_info->node_name);
+			}
 			thread_state = DSH_DONE;
 			break;
 		default:
@@ -1217,7 +1227,8 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 
 	itr = list_iterator_create(thread_ptr->ret_list);
 	while ((ret_data_info = list_next(itr))) {
-		debug2("got err of %d", ret_data_info->err);
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
+			info("%s: got err of %d", __func__, ret_data_info->err);
 		if (ret_data_info->err != DSH_NO_RESP)
 			continue;
 
