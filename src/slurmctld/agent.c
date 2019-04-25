@@ -259,11 +259,11 @@ void *agent(void *args)
 	}
 #endif
 
-#if 0
-	info("Agent_cnt=%d agent_thread_cnt=%d with msg_type=%d backlog_size=%d",
-	     agent_cnt, agent_thread_cnt, agent_arg_ptr->msg_type,
-	     list_count(retry_list));
-#endif
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
+		info("%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%d backlog_size=%d",
+		     __func__, agent_cnt, agent_thread_cnt,
+		     agent_arg_ptr->msg_type, list_count(retry_list));
+	}
 	slurm_mutex_lock(&agent_cnt_mutex);
 
 	if (sched_update != slurmctld_conf.last_update) {
@@ -485,10 +485,12 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		thread_ptr[thr_count].nodelist =
 			hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
-#if 0
-		info("sending msg_type %u to nodes %s",
-		     agent_arg_ptr->msg_type, thread_ptr[thr_count].nodelist);
-#endif
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
+			info("%s: sending msg_type %u to nodes %s",
+			     __func__, agent_arg_ptr->msg_type,
+			     thread_ptr[thr_count].nodelist);
+
+		}
 		thr_count++;
 	}
 	xfree(span);
@@ -903,10 +905,12 @@ static void *_thread_per_group_rpc(void *args)
 
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
-#if 0
-	info("%s: sending %s to %s", __func__, rpc_num2string(msg_type),
-	     thread_ptr->nodelist);
-#endif
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
+		info("%s: sending %s to %s", __func__, rpc_num2string(msg_type),
+		     thread_ptr->nodelist);
+	}
+
 	if (task_ptr->get_reply) {
 		if (thread_ptr->addr) {
 			msg.address = *thread_ptr->addr;
