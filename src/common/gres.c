@@ -2054,7 +2054,6 @@ static bool _valid_gres_types(char *gres_name, gres_node_state_t *gres_data,
 				gres_data->topo_gres_cnt_avail[topo_inx] -=
 					(gres_sum -
 					 gres_data->type_cnt_avail[type_inx]);
-				gres_sum = 0;
 			}
 			gres_cnt_found +=
 				gres_data->topo_gres_cnt_avail[topo_inx];
