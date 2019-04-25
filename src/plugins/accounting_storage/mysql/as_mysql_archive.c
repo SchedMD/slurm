@@ -3135,7 +3135,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 		break;
 	case PURGE_JOB:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "time_submit < %ld && time_end != 0 "
+				       "time_submit <= %ld && time_end != 0 "
 				       "order by time_submit asc LIMIT %d",
 				       cols, cluster_name, job_table,
 				       period_end, MAX_PURGE_LIMIT);
