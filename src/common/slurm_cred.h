@@ -141,7 +141,7 @@ typedef struct {
 	uint32_t  stepid;
 	uid_t uid;
 	gid_t gid;
-	char *user_name;
+	char *pw_name;
 	char *pw_gecos;
 	char *pw_dir;
 	char *pw_shell;

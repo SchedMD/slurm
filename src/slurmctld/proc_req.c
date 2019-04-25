@@ -1086,7 +1086,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 		if (!job_ptr->user_name)
 			job_ptr->user_name = uid_to_string_or_null(job_ptr->user_id);
 		/* this may still be null, in which case the client will handle */
-		cred_arg.user_name = job_ptr->user_name; /* avoid extra copy */
+		cred_arg.pw_name = job_ptr->user_name; /* avoid extra copy */
 		/* lookup and send extended gids list */
 		if (!job_ptr->ngids || !job_ptr->gids)
 			job_ptr->ngids = group_cache_lookup(job_ptr->user_id,

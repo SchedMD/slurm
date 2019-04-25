@@ -1044,8 +1044,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	}
 
 	xfree(req->user_name);
-	if (arg.user_name)
-		req->user_name = xstrdup(arg.user_name);
+	if (arg.pw_name)
+		req->user_name = xstrdup(arg.pw_name);
 	else
 		req->user_name = uid_to_string(req->uid);
 
