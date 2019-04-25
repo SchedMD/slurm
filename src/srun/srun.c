@@ -526,8 +526,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 			       sizeof(uint32_t *) * job->pack_nnodes);
 			job->pack_node_list = xstrdup(job->nodelist);
 
-			job->pack_tid_offsets = xcalloc(
-				total_ntasks, sizeof(uint32_t));
+			job->pack_tid_offsets = xcalloc(job->ntasks,
+							sizeof(uint32_t));
 			for (i = 0; i < job->ntasks; i++)
 				job->pack_tid_offsets[i] = job->pack_offset;
 		}
