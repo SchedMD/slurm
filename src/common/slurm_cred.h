@@ -142,6 +142,9 @@ typedef struct {
 	uid_t uid;
 	gid_t gid;
 	char *user_name;
+	char *pw_gecos;
+	char *pw_dir;
+	char *pw_shell;
 	int ngids;
 	gid_t *gids;
 
