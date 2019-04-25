@@ -361,6 +361,16 @@ void *agent(void *args)
 	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 
       cleanup:
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
+		info("%s: end agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
+		     __func__, agent_info_ptr->thread_count,
+		     agent_info_ptr->threads_active,
+		     agent_info_ptr->retry ? 'T' : 'F',
+		     agent_info_ptr->get_reply ? 'T' : 'F',
+		     rpc_num2string(agent_arg_ptr->msg_type),
+		     agent_info_ptr->protocol_version);
+	}
+
 	_purge_agent_args(agent_arg_ptr);
 
 	if (agent_info_ptr) {
