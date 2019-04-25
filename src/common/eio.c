@@ -175,6 +175,7 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	xassert(obj);
 	xassert(obj->ops->handle_msg);
 
+	bzero(&addr, sizeof(struct sockaddr_in));      /* Prevent CLANG error */
 	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
 			    (socklen_t *)&len)) < 0) {
 		if (errno == EINTR)
