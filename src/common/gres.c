@@ -8417,7 +8417,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 	}
 
 	/* Select available GRES with any resources */
-	for (t = 0; t < node_specs->topo_cnt; t++) {
+	for (t = 0; (t < node_specs->topo_cnt) && (alloc_gres_cnt == 0); t++) {
 		if (node_specs->topo_gres_cnt_alloc    &&
 		    node_specs->topo_gres_cnt_avail    &&
 		    node_specs->topo_gres_cnt_avail[t])
@@ -8425,7 +8425,6 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 		bit_set(job_specs->gres_bit_select[node_inx], t);
 		job_specs->gres_cnt_node_select[node_inx] += gres_per_bit;
 		alloc_gres_cnt += gres_per_bit;
-		break;
 	}
 
 	xfree(used_sock);
