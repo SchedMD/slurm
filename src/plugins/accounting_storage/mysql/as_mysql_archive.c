@@ -3419,9 +3419,11 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 					    arch_cond->archive_dir,
 					    tmp_archive_period,
 					    sql_table, usage_info);
-			if (!rc) /* no records archived */
-				continue;
-			else if (rc == SLURM_ERROR)
+			if (!rc) { /* no records archived */
+				error("%s: No records archived for %s before %ld but we found some records",
+				      __func__, sql_table, tmp_end);
+				return SLURM_ERROR;
+			} else if (rc == SLURM_ERROR)
 				return rc;
 		}
 
