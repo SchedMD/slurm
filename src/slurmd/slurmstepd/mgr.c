@@ -2338,16 +2338,13 @@ static char *_make_batch_script(batch_job_launch_msg_t *msg, char *path)
 		goto error;
 	}
 
+	/*
+	 * lseek() plus the following write() ensure the file is created
+	 * as the appropriate length.
+	 */
 	if (lseek(fd, length - 1, SEEK_SET) == -1) {
 		error("%s: lseek to %d failed on `%s`: %m",
 		      __func__, length, script);
-		close(fd);
-		goto error;
-	}
-
-	output = mmap(0, length, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
-	if (output == MAP_FAILED) {
-		error("%s: mmap failed", __func__);
 		close(fd);
 		goto error;
 	}
@@ -2356,6 +2353,13 @@ static char *_make_batch_script(batch_job_launch_msg_t *msg, char *path)
 		error("%s: write failed", __func__);
 		if (errno == ENOSPC)
 			stepd_drain_node("SlurmdSpoolDir is full");
+		close(fd);
+		goto error;
+	}
+
+	output = mmap(0, length, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+	if (output == MAP_FAILED) {
+		error("%s: mmap failed", __func__);
 		close(fd);
 		goto error;
 	}
