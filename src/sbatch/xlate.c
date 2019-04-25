@@ -342,6 +342,8 @@ static void _set_pbs_options(int argc, char **argv)
 			_parse_pbs_resource_list(optarg);
 			break;
 		case 'm':
+			if (!optarg) /* CLANG Fix */
+				break;
 			xlate_val = LONG_OPT_MAIL_TYPE;
 			xlate_arg = _xlate_pbs_mail_type(optarg);
 			break;
