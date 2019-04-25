@@ -1724,8 +1724,6 @@ extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
 		jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
 	other_step_finish(step_ptr, killing_step);
-	/* free resources on the job */
-	post_job_step(step_ptr);
 
 	return SLURM_SUCCESS;
 }
