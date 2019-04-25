@@ -263,7 +263,7 @@ void *agent(void *args)
 		info("%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%s backlog_size=%d",
 		     __func__, agent_cnt, agent_thread_cnt,
 		     rpc_num2string(agent_arg_ptr->msg_type),
-		     list_count(retry_list));
+		     retry_list_size());
 	}
 	slurm_mutex_lock(&agent_cnt_mutex);
 
@@ -1432,7 +1432,7 @@ extern void agent_trigger(int min_wait, bool mail_too)
 		     mail_too ?  'T' : 'F',
 		     pending_mail ? 'T' : 'F',
 		     agent_cnt, agent_thread_cnt,
-		     list_count(retry_list));
+		     retry_list_size());
 	}
 
 	slurm_mutex_lock(&pending_mutex);
