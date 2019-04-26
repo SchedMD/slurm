@@ -138,7 +138,6 @@ typedef struct slurmctld_config {
 	int	daemonize;
 	char    node_name_long[MAX_SLURM_NAME];
 	char    node_name_short[MAX_SLURM_NAME];
-	bool	send_groups_in_cred;
 	bool	resume_backup;
 	bool    scheduling_disabled;
 	int	server_thread_count;

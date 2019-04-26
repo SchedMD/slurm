@@ -2284,6 +2284,15 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 	sbcast_cred->gids = copy_gids(arg->ngids, arg->gids);
 	sbcast_cred->nodes = xstrdup(arg->nodes);
 
+	if (enable_send_gids) {
+		/* this may still be null, in which case slurmd will handle */
+		sbcast_cred->user_name = uid_to_string_or_null(arg->uid);
+		/* lookup and send extended gids list */
+		sbcast_cred->ngids = group_cache_lookup(arg->uid, arg->gid,
+							sbcast_cred->user_name,
+							&sbcast_cred->gids);
+	}
+
 	buffer = init_buf(4096);
 	_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
 	rc = (*(ops.cred_sign))(
