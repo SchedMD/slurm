@@ -528,8 +528,16 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 
 			job->pack_tid_offsets = xcalloc(job->ntasks,
 							sizeof(uint32_t));
-			for (i = 0; i < job->ntasks; i++)
-				job->pack_tid_offsets[i] = job->pack_offset;
+			if (job->pack_offset) {
+				/*
+				 * Only starting one hetjob component,
+				 * pack_offset should be zero
+				 */
+				for (i = 0; i < job->ntasks; i++) {
+					job->pack_tid_offsets[i] =
+						job->pack_offset;
+				}
+			}
 		}
 		opts = xmalloc(sizeof(_launch_app_data_t));
 		opts->got_alloc   = got_alloc;
