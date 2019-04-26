@@ -179,6 +179,7 @@ struct slurm_job_credential {
 				 * credential. if 0, these will need to
 				 * be fetched locally instead. */
 	gid_t *gids;		/* extended group ids for user		*/
+	char **gr_names;	/* array of group names matching gids	*/
 
 	uint64_t  job_mem_limit;/* MB of memory reserved per node OR
 				 * real memory per CPU | MEM_PER_CPU,
@@ -567,6 +568,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->gid    = arg->gid;
 	cred->ngids = arg->ngids;
 	cred->gids = copy_gids(arg->ngids, arg->gids);
+	cred->gr_names = copy_gr_names(arg->ngids, arg->gr_names);
 	cred->job_core_spec   = arg->job_core_spec;
 	cred->job_gres_list   = gres_plugin_job_state_dup(arg->job_gres_list);
 	cred->step_gres_list  = gres_plugin_step_state_dup(arg->step_gres_list);
@@ -623,6 +625,16 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 		cred->pw_gecos = xstrdup(result->pw_gecos);
 		cred->pw_dir = xstrdup(result->pw_dir);
 		cred->pw_shell = xstrdup(result->pw_shell);
+
+		cred->ngids = group_cache_lookup(arg->uid, arg->gid,
+						 arg->pw_name, &cred->gids);
+		if (cred->ngids) {
+			cred->gr_names = xcalloc(cred->ngids, sizeof(char *));
+			for (int i = 0; i < cred->ngids; i++) {
+				cred->gr_names[i] =
+					gid_to_string(cred->gids[i]);
+			}
+		}
 	} else {
 		/* fall back to older send_gids behavior */
 		cred->pw_name = xstrdup(arg->pw_name);
@@ -669,6 +681,7 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->pw_shell = xstrdup(cred->pw_shell);
 	rcred->ngids = cred->ngids;
 	rcred->gids = copy_gids(cred->ngids, cred->gids);
+	rcred->gr_names = copy_gr_names(cred->ngids, cred->gr_names);
 	rcred->job_core_spec  = cred->job_core_spec;
 	rcred->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	rcred->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
@@ -726,6 +739,7 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->pw_shell = xstrdup(arg->pw_shell);
 	cred->ngids = arg->ngids;
 	cred->gids = copy_gids(arg->ngids, arg->gids);
+	cred->gr_names = copy_gr_names(arg->ngids, arg->gr_names);
 	cred->job_core_spec  = arg->job_core_spec;
 	cred->job_mem_limit  = arg->job_mem_limit;
 	cred->step_mem_limit = arg->step_mem_limit;
@@ -786,6 +800,9 @@ void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->pw_dir);
 	xfree(arg->pw_shell);
 	xfree(arg->gids);
+	for (int i = 0; arg->gr_names && i < arg->ngids; i++)
+		xfree(arg->gr_names[i]);
+	xfree(arg->gr_names);
 	FREE_NULL_BITMAP(arg->job_core_bitmap);
 	FREE_NULL_BITMAP(arg->step_core_bitmap);
 	xfree(arg->cores_per_socket);
@@ -813,6 +830,7 @@ static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->pw_shell = xstrdup(cred->pw_shell);
 	arg->ngids = cred->ngids;
 	arg->gids = copy_gids(cred->ngids, cred->gids);
+	arg->gr_names = copy_gr_names(cred->ngids, cred->gr_names);
 	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
 	arg->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
 	arg->job_core_spec  = cred->job_core_spec;
@@ -953,6 +971,9 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	xfree(cred->pw_dir);
 	xfree(cred->pw_shell);
 	xfree(cred->gids);
+	for (int i = 0; cred->gr_names && i < cred->ngids; i++)
+		xfree(cred->gr_names[i]);
+	xfree(cred->gr_names);
 	FREE_NULL_BITMAP(cred->job_core_bitmap);
 	FREE_NULL_BITMAP(cred->step_core_bitmap);
 	xfree(cred->cores_per_socket);
@@ -1336,6 +1357,12 @@ slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&cred->pw_shell, &len, buffer);
 		safe_unpack32_array(&cred->gids, &u32_ngids, buffer);
 		cred->ngids = u32_ngids;
+		safe_unpackstr_array(&cred->gr_names, &u32_ngids, buffer);
+		if (u32_ngids && cred->ngids != u32_ngids) {
+			error("%s: mismatch on gr_names array, %u != %u",
+			      __func__, u32_ngids, cred->ngids);
+			goto unpack_error;
+		}
 		if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
 						 cred->jobid, protocol_version)
 		    != SLURM_SUCCESS)
@@ -1721,6 +1748,11 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 {
 	uint32_t cred_uid = (uint32_t) cred->uid;
 	uint32_t tot_core_cnt = 0;
+	/*
+	 * The gr_names array is optional. If the array exists the length
+	 * must match that of the gids array.
+	 */
+	uint32_t gr_names_cnt = (cred->gr_names) ? cred->ngids : 0;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		pack32(cred->jobid, buffer);
@@ -1732,6 +1764,7 @@ _pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 		packstr(cred->pw_dir, buffer);
 		packstr(cred->pw_shell, buffer);
 		pack32_array(cred->gids, cred->ngids, buffer);
+		packstr_array(cred->gr_names, gr_names_cnt, buffer);
 
 		(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
 						  cred->jobid, false,

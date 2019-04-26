@@ -251,3 +251,17 @@ extern gid_t *copy_gids(int ngids, gid_t *gids)
 
 	return result;
 }
+
+extern char **copy_gr_names(int ngids, char **gr_names)
+{
+	char **result;
+
+	if (!ngids || !gr_names)
+		return NULL;
+
+	result = xcalloc(ngids, sizeof(char *));
+	for (int i = 0; i < ngids; i++)
+		result[i] = xstrdup(gr_names[i]);
+
+	return result;
+}

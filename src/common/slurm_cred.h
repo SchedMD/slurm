@@ -147,6 +147,7 @@ typedef struct {
 	char *pw_shell;
 	int ngids;
 	gid_t *gids;
+	char **gr_names;
 
 	/* job_core_bitmap and step_core_bitmap cover the same set of nodes,
 	 * namely the set of nodes allocated to the job. The core and socket
