@@ -1124,6 +1124,8 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		packstr(object->fed.name, buffer);
 		pack32(object->fed.id, buffer);
 		pack32(object->fed.state, buffer);
+		pack8((uint8_t)object->fed.sync_recvd, buffer);
+		pack8((uint8_t)object->fed.sync_sent, buffer);
 
 		pack32(object->flags, buffer);
 
@@ -1286,6 +1288,10 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->fed.id, buffer);
 		safe_unpack32(&object_ptr->fed.state, buffer);
+		safe_unpack8(&uint8_tmp, buffer);
+		object_ptr->fed.sync_recvd = uint8_tmp;
+		safe_unpack8(&uint8_tmp, buffer);
+		object_ptr->fed.sync_sent = uint8_tmp;
 
 		safe_unpack32(&object_ptr->flags, buffer);
 
