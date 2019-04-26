@@ -236,6 +236,30 @@ _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
 	xfree(t);
 }
 
+static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *job)
+{
+	slurm_cred_arg_t cred_arg;
+	slurm_cred_get_args(cred, &cred_arg);
+
+	/*
+	 * This may have been filed in already from batch_job_launch_msg_t
+	 * or launch_tasks_request_msg_t.
+	 */
+	if (!job->user_name) {
+		job->user_name = cred_arg.pw_name;
+		cred_arg.pw_name = NULL;
+	}
+
+	job->pw_gecos = cred_arg.pw_gecos;
+	cred_arg.pw_gecos = NULL;
+	job->pw_dir = cred_arg.pw_dir;
+	cred_arg.pw_dir = NULL;
+	job->pw_shell = cred_arg.pw_shell;
+	cred_arg.pw_shell = NULL;
+
+	slurm_cred_free_args(&cred_arg);
+}
+
 /* create a slurmd job structure from a launch tasks message */
 extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 					       uint16_t protocol_version)
@@ -285,6 +309,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->user_name	= xstrdup(msg->user_name);
 	job->ngids = (int) msg->ngids;
 	job->gids = copy_gids(msg->ngids, msg->gids);
+	_slurm_cred_to_step_rec(msg->cred, job);
 
 	job->cwd	= xstrdup(msg->cwd);
 	job->task_dist	= msg->task_dist;
@@ -504,6 +529,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->user_name	= xstrdup(msg->user_name);
 	job->ngids = (int) msg->ngids;
 	job->gids = copy_gids(msg->ngids, msg->gids);
+	_slurm_cred_to_step_rec(msg->cred, job);
 
 	job->profile    = msg->profile;
 
@@ -618,6 +644,9 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	xfree(job->cpu_bind);
 	xfree(job->cwd);
 	xfree(job->envtp);
+	xfree(job->pw_gecos);
+	xfree(job->pw_dir);
+	xfree(job->pw_shell);
 	xfree(job->gids);
 	xfree(job->mem_bind);
 	eio_handle_destroy(job->msg_handle);

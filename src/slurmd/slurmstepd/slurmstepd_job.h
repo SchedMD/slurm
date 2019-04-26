@@ -169,6 +169,10 @@ typedef struct {
 	dynamic_plugin_data_t *switch_job; /* switch-specific job information     */
 	uid_t         uid;     /* user id for job                           */
 	char          *user_name;
+	/* fields from the launch cred used to support nss_slurm	    */
+	char *pw_gecos;
+	char *pw_dir;
+	char *pw_shell;
 	gid_t         gid;     /* group ID for job                          */
 	int           ngids;   /* length of the following gids array        */
 	gid_t        *gids;    /* array of gids for user specified in uid   */
