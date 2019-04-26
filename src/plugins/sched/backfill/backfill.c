@@ -1501,7 +1501,7 @@ static int _attempt_backfill(void)
 	uint32_t test_array_job_id = 0;
 	uint32_t test_array_count = 0;
 	uint32_t job_no_reserve;
-	bool resv_overlap = false;
+	bool is_job_array_head, resv_overlap = false;
 	uint8_t save_share_res = 0, save_whole_node = 0;
 	int test_fini;
 	uint32_t qos_flags = 0;
@@ -1810,6 +1810,11 @@ static int _attempt_backfill(void)
 
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
+
+		if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
+			is_job_array_head = true;
+		else
+			is_job_array_head = false;
 
 next_task:
 		/*
@@ -2400,11 +2405,15 @@ skip_start:
 					}
 					break;
 				}
-				if (job_ptr->array_task_id != NO_VAL) {
+				if (is_job_array_head &&
+				    (job_ptr->array_task_id != NO_VAL)) {
 					/* Try starting next task of job array */
 					job_ptr = find_job_record(job_ptr->
 								  array_job_id);
-					if (job_ptr && IS_JOB_PENDING(job_ptr))
+					if (job_ptr &&
+					    IS_JOB_PENDING(job_ptr) &&
+					    (bb_g_job_test_stage_in(
+						    job_ptr, false) == 1))
 						goto next_task;
 				}
 				continue;

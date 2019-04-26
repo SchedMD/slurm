@@ -67,6 +67,10 @@
 					       this then archive by month to
 					       handle large datasets. */
 
+#ifndef RECORDS_PER_PASS
+#define RECORDS_PER_PASS 1000	/* Records per single sql statement. */
+#endif /* RECORDS_PER_PASS */
+
 typedef struct {
 	char *cluster_nodes;
 	char *node_name;
@@ -652,7 +656,7 @@ static int _unpack_local_job(local_job_t *object,
 			     uint16_t rpc_version, Buf buffer)
 {
 	uint32_t tmp32;
-	char *tmp_char;
+	char *tmp_char = NULL;
 
 	memset(object, 0, sizeof(local_job_t));
 
@@ -834,9 +838,9 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
-		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
-		if (object->req_mem) {
-			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+		unpackstr_ptr(&tmp_char, &tmp32, buffer);
+		if (tmp_char) {
+			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
 			    (tmp_uint64 < 0x100000000)) {
 				/*
@@ -848,7 +852,6 @@ static int _unpack_local_job(local_job_t *object,
 				 */
 				tmp_uint64 &= (~0x80000000);
 				tmp_uint64 |= MEM_PER_CPU;
-				xfree(object->req_mem);
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
 			}
@@ -891,9 +894,9 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
-		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
-		if (object->req_mem) {
-			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+		unpackstr_ptr(&tmp_char, &tmp32, buffer);
+		if (tmp_char) {
+			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
 			    (tmp_uint64 < 0x100000000)) {
 				/*
@@ -905,7 +908,6 @@ static int _unpack_local_job(local_job_t *object,
 				 */
 				tmp_uint64 &= (~0x80000000);
 				tmp_uint64 |= MEM_PER_CPU;
-				xfree(object->req_mem);
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
 			}
@@ -948,9 +950,9 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
-		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
-		if (object->req_mem) {
-			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+		unpackstr_ptr(&tmp_char, &tmp32, buffer);
+		if (tmp_char) {
+			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
 			    (tmp_uint64 < 0x100000000)) {
 				/*
@@ -962,7 +964,6 @@ static int _unpack_local_job(local_job_t *object,
 				 */
 				tmp_uint64 &= (~0x80000000);
 				tmp_uint64 |= MEM_PER_CPU;
-				xfree(object->req_mem);
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
 			}
@@ -1004,9 +1005,9 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
-		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
-		if (object->req_mem) {
-			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+		unpackstr_ptr(&tmp_char, &tmp32, buffer);
+		if (tmp_char) {
+			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
 			    (tmp_uint64 < 0x100000000)) {
 				/*
@@ -1018,7 +1019,6 @@ static int _unpack_local_job(local_job_t *object,
 				 */
 				tmp_uint64 &= (~0x80000000);
 				tmp_uint64 |= MEM_PER_CPU;
-				xfree(object->req_mem);
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
 			}
@@ -2468,6 +2468,10 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.tres_alloc_str,
 			   object.tres_req_str);
 
+		if (rpc_version >= SLURMDBD_2_6_VERSION &&
+		    rpc_version <= SLURM_17_02_PROTOCOL_VERSION)
+			xfree(object.req_mem);
+
 		if (rpc_version < SLURM_15_08_PROTOCOL_VERSION) {
 			xfree(object.tres_alloc_str);
 			xfree(object.tres_req_str);
@@ -3670,6 +3674,10 @@ extern int as_mysql_jobacct_process_archive_load(
 	time_t buf_time;
 	uint16_t type = 0, ver = 0, period = 0;
 	uint32_t data_size = 0, rec_cnt = 0, tmp32 = 0;
+	uint32_t rec_cnt_total = 0, rec_cnt_left = 0, pass_cnt = 0;
+
+	/* Ensure that the connection is not set in autocommit mode. */
+	xassert(mysql_conn->rollback);
 
 	if (!arch_rec) {
 		error("We need a slurmdb_archive_rec to load anything.");
@@ -3768,9 +3776,21 @@ extern int as_mysql_jobacct_process_archive_load(
 	if (!rec_cnt) {
 		error("we didn't get any records from this file of type '%s'",
 		      slurmdbd_msg_type_2_str(type, 0));
-		FREE_NULL_BUFFER(buffer);
 		goto got_sql;
 	}
+
+	rec_cnt_left = rec_cnt;
+	rec_cnt_total = rec_cnt;
+pass:
+	rec_cnt = MIN(rec_cnt_left, RECORDS_PER_PASS);
+
+	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
+		DB_DEBUG(mysql_conn->conn, "%s: Pass %u: loaded %u/%u records. Attempting partial load %u.",
+			 __func__, pass_cnt, rec_cnt_total - rec_cnt_left,
+			 rec_cnt_total, rec_cnt);
+
+	rec_cnt_left -= rec_cnt;
+	pass_cnt++;
 
 	switch (type) {
 	case DBD_GOT_EVENTS:
@@ -3793,12 +3813,14 @@ extern int as_mysql_jobacct_process_archive_load(
 		break;
 	case DBD_GOT_ASSOC_USAGE:
 	case DBD_GOT_WCKEY_USAGE:
-		safe_unpack16(&period, buffer);
+		if (pass_cnt == 0)
+			safe_unpack16(&period, buffer);
 		data = _load_usage(ver, buffer, cluster_name, type, period,
 				   rec_cnt);
 		break;
 	case DBD_GOT_CLUSTER_USAGE:
-		safe_unpack16(&period, buffer);
+		if (pass_cnt == 0)
+			safe_unpack16(&period, buffer);
 		data = _load_cluster_usage(ver, buffer, cluster_name, period,
 					   rec_cnt);
 		break;
@@ -3806,23 +3828,36 @@ extern int as_mysql_jobacct_process_archive_load(
 		error("Unknown type '%u' to load from archive", type);
 		break;
 	}
-	FREE_NULL_BUFFER(buffer);
 
 got_sql:
 	if (!data) {
 		error("No data to load");
-		return SLURM_ERROR;
+		error_code = SLURM_ERROR;
+		goto cleanup;
 	}
-	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
+	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE &&
+	    debug_flags & DEBUG_FLAG_DB_QUERY)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", data);
 	error_code = mysql_db_query_check_after(mysql_conn, data);
 	xfree(data);
 	if (error_code != SLURM_SUCCESS) {
 unpack_error:
 		error("Couldn't load old data");
-		FREE_NULL_BUFFER(buffer);
-		return SLURM_ERROR;
+		goto cleanup;
 	}
 
-	return SLURM_SUCCESS;
+	if (rec_cnt_left)
+		goto pass;
+
+cleanup:
+	FREE_NULL_BUFFER(buffer);
+
+	if (error_code)
+		error("%s: failure loading archive: %s", __func__,
+		      slurm_strerror(error_code));
+	else if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
+		DB_DEBUG(mysql_conn->conn, "%s: archive loaded successfully.",
+			 __func__);
+
+	return error_code;
 }

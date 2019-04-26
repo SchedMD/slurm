@@ -205,6 +205,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix potential deadlock with backup slurmctld.
  -- Fixed issue with jobs not appearing in sacct after dependency satisfied.
  -- Fix showing non-eligible jobs when asking with -j and not -s.
+ -- Fix issue with backfill scheduler scheduling tasks of an array
+    when not the head job.
+ -- accounting_storage/mysql - fix SIGABRT in the archive load logic.
+ -- accounting_storage/mysql - fix memory leak in the archive load logic.
+ -- Limit records per single SQL statement when loading archived data.
 
 * Changes in Slurm 18.08.7
 ==========================
