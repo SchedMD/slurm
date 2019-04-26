@@ -142,7 +142,16 @@ static void _add_usage_node_bitmap(struct job_record *job_ptr,
 	xassert(grp_used_tres);
 
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
-		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
+		if (IS_JOB_PENDING(job_ptr) && job_ptr->pack_job_id) {
+			/*
+			 * Hetjobs reach here as part of testing before any
+			 * resource allocation. See _pack_job_limit_check()
+			 * in src/plugins/sched/backfill/backfill.c
+			 */
+		} else {
+			error("%s: %pJ lacks allocated node bitmap", __func__,
+			      job_ptr);
+		}
 		return;
 	}
 	if (*grp_node_bitmap)
@@ -183,7 +192,16 @@ static void _rm_usage_node_bitmap(struct job_record *job_ptr,
 	xassert(grp_used_tres);
 
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
-		error("%s: %pJ lacks allocated node bitmap", __func__, job_ptr);
+		if (IS_JOB_PENDING(job_ptr) && job_ptr->pack_job_id) {
+			/*
+			 * Hetjobs reach here as part of testing before any
+			 * resource allocation. See _pack_job_limit_check()
+			 * in src/plugins/sched/backfill/backfill.c
+			 */
+		} else {
+			error("%s: %pJ lacks allocated node bitmap", __func__,
+			      job_ptr);
+		}
 		return;
 	}
 	if (!grp_node_bitmap) {
