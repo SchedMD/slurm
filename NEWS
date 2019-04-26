@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with backfill scheduler scheduling tasks of an array
     when not the head job.
  -- accounting_storage/mysql - fix SIGABRT in the archive load logic.
+ -- accounting_storage/mysql - fix memory leak in the archive load logic.
 
 * Changes in Slurm 18.08.7
 ==========================

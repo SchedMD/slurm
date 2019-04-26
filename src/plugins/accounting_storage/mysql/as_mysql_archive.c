@@ -639,7 +639,7 @@ static int _unpack_local_job(local_job_t *object,
 			     uint16_t rpc_version, Buf buffer)
 {
 	uint32_t tmp32;
-	char *tmp_char;
+	char *tmp_char = NULL;
 
 	memset(object, 0, sizeof(local_job_t));
 
@@ -775,9 +775,9 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
-		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
-		if (object->req_mem) {
-			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+		unpackstr_ptr(&tmp_char, &tmp32, buffer);
+		if (tmp_char) {
+			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
 			    (tmp_uint64 < 0x100000000)) {
 				/*
@@ -831,9 +831,9 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
-		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
-		if (object->req_mem) {
-			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+		unpackstr_ptr(&tmp_char, &tmp32, buffer);
+		if (tmp_char) {
+			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
 			    (tmp_uint64 < 0x100000000)) {
 				/*
@@ -887,9 +887,9 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
-		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
-		if (object->req_mem) {
-			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+		unpackstr_ptr(&tmp_char, &tmp32, buffer);
+		if (tmp_char) {
+			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
 			    (tmp_uint64 < 0x100000000)) {
 				/*
@@ -942,9 +942,9 @@ static int _unpack_local_job(local_job_t *object,
 		unpackstr_ptr(&object->priority, &tmp32, buffer);
 		unpackstr_ptr(&object->qos, &tmp32, buffer);
 		unpackstr_ptr(&object->req_cpus, &tmp32, buffer);
-		unpackstr_ptr(&object->req_mem, &tmp32, buffer);
-		if (object->req_mem) {
-			uint64_t tmp_uint64 = slurm_atoull(object->req_mem);
+		unpackstr_ptr(&tmp_char, &tmp32, buffer);
+		if (tmp_char) {
+			uint64_t tmp_uint64 = slurm_atoull(tmp_char);
 			if ((tmp_uint64 & 0x80000000) &&
 			    (tmp_uint64 < 0x100000000)) {
 				/*
@@ -2398,6 +2398,10 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.work_dir,
 			   object.tres_alloc_str,
 			   object.tres_req_str);
+
+		if (rpc_version >= SLURMDBD_2_6_VERSION &&
+		    rpc_version <= SLURM_17_02_PROTOCOL_VERSION)
+			xfree(object.req_mem);
 
 		if (rpc_version < SLURM_15_08_PROTOCOL_VERSION) {
 			xfree(object.tres_alloc_str);
