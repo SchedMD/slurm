@@ -725,6 +725,55 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 	}
 }
 
+extern void scontrol_getent_passwd(const char *node_name)
+{
+	List steps = NULL;
+	ListIterator itr = NULL;
+	step_loc_t *stepd;
+	int fd;
+	struct passwd *pwd = NULL;
+
+	if (!(steps = stepd_available(NULL, node_name))) {
+		fprintf(stderr, "No steps found on this node\n");
+		return;
+	}
+
+	itr = list_iterator_create(steps);
+	while ((stepd = list_next(itr))) {
+		fd = stepd_connect(NULL, node_name, stepd->jobid,
+				   stepd->stepid,
+				   &stepd->protocol_version);
+
+		if (fd < 0)
+			continue;
+		pwd = stepd_getpw(fd, stepd->protocol_version,
+				  GETPW_MATCH_ALL, 0, NULL);
+
+		if (!pwd)
+			continue;
+
+		if (stepd->stepid == SLURM_EXTERN_CONT)
+			printf("JobId=%u.Extern:\n", stepd->jobid);
+		else if (stepd->stepid == SLURM_BATCH_SCRIPT)
+			printf("JobId=%u.Batch:\n", stepd->jobid);
+		else
+			printf("JobId=%u.%u:\n", stepd->jobid, stepd->stepid);
+
+		printf("%s:%s:%u:%u:%s:%s:%s\n\n",
+		       pwd->pw_name, pwd->pw_passwd, pwd->pw_uid, pwd->pw_gid,
+		       pwd->pw_gecos, pwd->pw_dir, pwd->pw_shell);
+
+		xfree(pwd->pw_name);
+		xfree(pwd->pw_passwd);
+		xfree(pwd->pw_gecos);
+		xfree(pwd->pw_dir);
+		xfree(pwd->pw_shell);
+		xfree(pwd);
+	}
+	list_iterator_destroy(itr);
+	FREE_NULL_LIST(steps);
+}
+
 /*
  * scontrol_print_hosts - given a node list expression, return
  *	a list of nodes, one per line

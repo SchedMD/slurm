@@ -1476,6 +1476,8 @@ static int _process_command (int argc, char **argv)
 			scontrol_list_pids (argc == 1 ? NULL : argv[1],
 					    argc <= 2 ? NULL : argv[2]);
 		}
+	} else if (!xstrncasecmp(tag, "getent", MAX(tag_len, 6))) {
+		scontrol_getent_passwd(argc == 1 ? NULL : argv[1]);
 	}
 	else if (xstrncasecmp(tag, "notify", MAX(tag_len, 1)) == 0) {
 		if (argc < 3) {
