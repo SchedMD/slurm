@@ -602,17 +602,17 @@ adev0: scontrol shutdown
 
 <h2><a name="upgrade"></a>Upgrades</h2>
 
-<p>Background: The Slurm version numbers contain three digits which represent
-the major and micro release numbers. The combination of the first and second
-digits in the version designate the major release. The third digit in the
-version designates the micro release (e.g. 17.02.9 is major=17.02, micro=9).
-The major release number indicates the last two digits in the year of release
-followed by the month of release.
-Thus version 17.02.x was initially released in Feb 2017.
+<p>Background: The Slurm version number contains three period-separated numbers
+that represent both the major Slurm release and maintenance release level.
+The first two parts combine together to represent the major release, and match
+the year and month of that major release. The third number in the version
+designates a specific maintenance level:
+year.month.maintenance-release (e.g. 17.11.5 is major Slurm release 17.11, and
+maintenance version 5).
+Thus version 17.11.x was initially released in November 2017.
 Changes in the RPCs (remote procedure calls) and state files will only be made
-if the major release number changes, which typically happens
-about once every nine months or so.
-A list of most recent major Slurm releases is shown below.</p>
+if the major release number changes, which typically happens about every nine
+months. A list of most recent major Slurm releases is shown below.</p>
 <ul>
 <li>16.05.x  (Released May 2016)</li>
 <li>17.02.x  (Released February 2017)</li>
@@ -628,8 +628,8 @@ releases (e.g. a version 17.11.x SlurmDBD will support slurmctld daemons and
 commands with a version of 17.11.x, 17.02.x or 16.05.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
-Changes in the micro release number generally represent only bug fixes,
-but may also include very minor enhancements.</p>
+Changes in the mainenance release number generally represent only bug fixes,
+but may also include minor enhancements.</p>
 
 <p>If the SlurmDBD daemon is used, it must be at the same or higher major
 release number as the Slurmctld daemons.
@@ -728,6 +728,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 5 April 2019</p>
+<p style="text-align:center;">Last modified 26 April 2019</p>
 
 <!--#include virtual="footer.txt"-->
