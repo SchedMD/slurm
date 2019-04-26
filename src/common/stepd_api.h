@@ -227,6 +227,8 @@ extern int stepd_get_x11_display(int fd, uint16_t protocol_version,
 extern struct passwd *stepd_getpw(int fd, uint16_t protocol_version,
 				  int mode, uid_t uid, const char *name);
 
+extern void xfree_struct_passwd(struct passwd *pwd);
+
 /*
  * Return the process ID of the slurmstepd.
  */

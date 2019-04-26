@@ -156,19 +156,6 @@ static struct passwd *_pw_internal(int mode, uid_t uid, const char *name)
 	return pwd;
 }
 
-static void _xfree_struct_passwd(struct passwd *pwd)
-{
-	if (!pwd)
-		return;
-
-	xfree(pwd->pw_name);
-	xfree(pwd->pw_passwd);
-	xfree(pwd->pw_gecos);
-	xfree(pwd->pw_dir);
-	xfree(pwd->pw_shell);
-	xfree(pwd);
-}
-
 static int _internal_getpw(int mode, uid_t uid, const char *name,
 			   struct passwd *pwd, char *buf, size_t buflen,
 			   struct passwd **result)
@@ -188,7 +175,7 @@ static int _internal_getpw(int mode, uid_t uid, const char *name,
 	/* need space for an extra five NUL characters */
 	if ((len_name + len_passwd + len_gecos + len_dir + len_shell + 5)
 	    > buflen) {
-		_xfree_struct_passwd(rpc_result);
+		xfree_struct_passwd(rpc_result);
 		return ERANGE;
 	}
 
@@ -215,7 +202,7 @@ static int _internal_getpw(int mode, uid_t uid, const char *name,
 	pwd->pw_shell = buf;
 
 	*result = pwd;
-	_xfree_struct_passwd(rpc_result);
+	xfree_struct_passwd(rpc_result);
 	return NSS_STATUS_SUCCESS;
 }
 

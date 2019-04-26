@@ -763,12 +763,7 @@ extern void scontrol_getent_passwd(const char *node_name)
 		       pwd->pw_name, pwd->pw_passwd, pwd->pw_uid, pwd->pw_gid,
 		       pwd->pw_gecos, pwd->pw_dir, pwd->pw_shell);
 
-		xfree(pwd->pw_name);
-		xfree(pwd->pw_passwd);
-		xfree(pwd->pw_gecos);
-		xfree(pwd->pw_dir);
-		xfree(pwd->pw_shell);
-		xfree(pwd);
+		xfree_struct_passwd(pwd);
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(steps);

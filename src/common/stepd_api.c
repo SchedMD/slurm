@@ -74,6 +74,7 @@ strong_alias(stepd_get_uid, slurm_stepd_get_uid);
 strong_alias(stepd_add_extern_pid, slurm_stepd_add_extern_pid);
 strong_alias(stepd_get_x11_display, slurm_stepd_get_x11_display);
 strong_alias(stepd_getpw, slurm_stepd_getpw);
+strong_alias(xfree_struct_passwd, slurm_xfree_struct_passwd);
 
 static bool
 _slurm_authorized_user()
@@ -896,13 +897,21 @@ extern struct passwd *stepd_getpw(int fd, uint16_t protocol_version,
 	return pwd;
 
 rwfail:
+	xfree_struct_passwd(pwd);
+	return NULL;
+}
+
+extern void xfree_struct_passwd(struct passwd *pwd)
+{
+	if (!pwd)
+		return;
+
 	xfree(pwd->pw_name);
 	xfree(pwd->pw_passwd);
 	xfree(pwd->pw_gecos);
 	xfree(pwd->pw_dir);
 	xfree(pwd->pw_shell);
 	xfree(pwd);
-	return NULL;
 }
 
 /*
