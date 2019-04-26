@@ -789,7 +789,6 @@ static int _unpack_local_job(local_job_t *object,
 				 */
 				tmp_uint64 &= (~0x80000000);
 				tmp_uint64 |= MEM_PER_CPU;
-				xfree(object->req_mem);
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
 			}
@@ -846,7 +845,6 @@ static int _unpack_local_job(local_job_t *object,
 				 */
 				tmp_uint64 &= (~0x80000000);
 				tmp_uint64 |= MEM_PER_CPU;
-				xfree(object->req_mem);
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
 			}
@@ -903,7 +901,6 @@ static int _unpack_local_job(local_job_t *object,
 				 */
 				tmp_uint64 &= (~0x80000000);
 				tmp_uint64 |= MEM_PER_CPU;
-				xfree(object->req_mem);
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
 			}
@@ -959,7 +956,6 @@ static int _unpack_local_job(local_job_t *object,
 				 */
 				tmp_uint64 &= (~0x80000000);
 				tmp_uint64 |= MEM_PER_CPU;
-				xfree(object->req_mem);
 				object->req_mem = xstrdup_printf("%"PRIu64,
 								 tmp_uint64);
 			}
