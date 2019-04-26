@@ -3708,7 +3708,6 @@ extern int as_mysql_jobacct_process_archive_load(
 	if (!rec_cnt) {
 		error("we didn't get any records from this file of type '%s'",
 		      slurmdbd_msg_type_2_str(type, 0));
-		FREE_NULL_BUFFER(buffer);
 		goto got_sql;
 	}
 
@@ -3765,8 +3764,8 @@ pass:
 got_sql:
 	if (!data) {
 		error("No data to load");
-		FREE_NULL_BUFFER(buffer);
-		return SLURM_ERROR;
+		error_code = SLURM_ERROR;
+		goto cleanup;
 	}
 	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", data);
@@ -3775,13 +3774,13 @@ got_sql:
 	if (error_code != SLURM_SUCCESS) {
 unpack_error:
 		error("Couldn't load old data");
-		FREE_NULL_BUFFER(buffer);
-		return SLURM_ERROR;
+		goto cleanup;
 	}
 
 	if (rec_cnt_left)
 		goto pass;
 
+cleanup:
 	FREE_NULL_BUFFER(buffer);
-	return SLURM_SUCCESS;
+	return error_code;
 }
