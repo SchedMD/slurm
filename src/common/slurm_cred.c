@@ -248,6 +248,7 @@ static time_t cred_restart_time = (time_t) 0;
 static List sbcast_cache_list = NULL;
 static int cred_expire = DEFAULT_EXPIRATION_WINDOW;
 static bool enable_nss_slurm = false;
+static bool enable_send_gids = true;
 
 /*
  * Static prototypes:
@@ -325,6 +326,8 @@ static int _slurm_cred_init(void)
 	if ((launch_params = slurm_get_launch_params())) {
 		if (xstrcasestr(launch_params, "enable_nss_slurm"))
 			enable_nss_slurm = true;
+		else if (xstrcasestr(launch_params, "disable_send_gids"))
+			enable_send_gids = false;
 		xfree(launch_params);
 	}
 
@@ -610,7 +613,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->job_hostlist    = xstrdup(arg->job_hostlist);
 	cred->ctime  = time(NULL);
 
-	if (enable_nss_slurm) {
+	if (enable_nss_slurm || enable_send_gids) {
 		struct passwd pwd, *result;
 		char buffer[PW_BUF_SIZE];
 
@@ -628,6 +631,9 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 
 		cred->ngids = group_cache_lookup(arg->uid, arg->gid,
 						 arg->pw_name, &cred->gids);
+	}
+
+	if (enable_nss_slurm) {
 		if (cred->ngids) {
 			cred->gr_names = xcalloc(cred->ngids, sizeof(char *));
 			for (int i = 0; i < cred->ngids; i++) {
@@ -635,9 +641,6 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 					gid_to_string(cred->gids[i]);
 			}
 		}
-	} else {
-		/* fall back to older send_gids behavior */
-		cred->pw_name = xstrdup(arg->pw_name);
 	}
 
 	slurm_mutex_lock(&ctx->mutex);
