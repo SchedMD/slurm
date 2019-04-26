@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #include <arpa/inet.h>
+#include <grp.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -725,13 +726,14 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 	}
 }
 
-extern void scontrol_getent_passwd(const char *node_name)
+extern void scontrol_getent(const char *node_name)
 {
 	List steps = NULL;
 	ListIterator itr = NULL;
 	step_loc_t *stepd;
 	int fd;
 	struct passwd *pwd = NULL;
+	struct group **grps = NULL;
 
 	if (!(steps = stepd_available(NULL, node_name))) {
 		fprintf(stderr, "No steps found on this node\n");
@@ -753,17 +755,34 @@ extern void scontrol_getent_passwd(const char *node_name)
 			continue;
 
 		if (stepd->stepid == SLURM_EXTERN_CONT)
-			printf("JobId=%u.Extern:\n", stepd->jobid);
+			printf("JobId=%u.Extern:\nUser:\n", stepd->jobid);
 		else if (stepd->stepid == SLURM_BATCH_SCRIPT)
-			printf("JobId=%u.Batch:\n", stepd->jobid);
+			printf("JobId=%u.Batch:\nUser:\n", stepd->jobid);
 		else
-			printf("JobId=%u.%u:\n", stepd->jobid, stepd->stepid);
+			printf("JobId=%u.%u:\nUser:\n",
+			       stepd->jobid, stepd->stepid);
 
-		printf("%s:%s:%u:%u:%s:%s:%s\n\n",
+		printf("%s:%s:%u:%u:%s:%s:%s\nGroups:\n",
 		       pwd->pw_name, pwd->pw_passwd, pwd->pw_uid, pwd->pw_gid,
 		       pwd->pw_gecos, pwd->pw_dir, pwd->pw_shell);
 
 		xfree_struct_passwd(pwd);
+
+		grps = stepd_getgr(fd, stepd->protocol_version,
+				   GETGR_MATCH_ALWAYS, 0, NULL);
+		if (!grps) {
+			printf("\n");
+			continue;
+		}
+
+		for (int i = 0; grps[i]; i++) {
+			printf("%s:%s:%u:%s\n",
+			       grps[i]->gr_name, grps[i]->gr_passwd,
+			       grps[i]->gr_gid,
+			       (grps[i]->gr_mem) ? grps[i]->gr_mem[0] : "");
+		}
+		xfree_struct_group_array(grps);
+		printf("\n");
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(steps);
