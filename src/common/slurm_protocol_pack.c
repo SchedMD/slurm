@@ -8373,6 +8373,7 @@ _pack_sib_msg(sib_msg_t *sib_msg_ptr, Buf buffer, uint16_t protocol_version)
 		packstr(sib_msg_ptr->resp_host, buffer);
 		pack32(sib_msg_ptr->req_uid, buffer);
 		pack16(sib_msg_ptr->sib_msg_type, buffer);
+		packstr(sib_msg_ptr->submit_host, buffer);
 
 		/* add already packed data_buffer to buffer */
 		if (sib_msg_ptr->data_buffer &&
@@ -8456,6 +8457,8 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, Buf buffer,
 				       buffer);
 		safe_unpack32(&sib_msg_ptr->req_uid, buffer);
 		safe_unpack16(&sib_msg_ptr->sib_msg_type, buffer);
+		safe_unpackstr_xmalloc(&sib_msg_ptr->submit_host, &tmp_uint32,
+				       buffer);
 
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {

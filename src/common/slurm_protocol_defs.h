@@ -1306,6 +1306,7 @@ typedef struct {
 				   passed to a remote then the uid will be the
 				   user and not the SlurmUser. */
 	uint16_t sib_msg_type; /* fed_job_update_type */
+	char    *submit_host;   /* node job was submitted from */
 } sib_msg_t;
 
 typedef struct {
