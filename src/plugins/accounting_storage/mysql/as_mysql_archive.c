@@ -3785,5 +3785,13 @@ unpack_error:
 
 cleanup:
 	FREE_NULL_BUFFER(buffer);
+
+	if (error_code)
+		error("%s: failure loading archive: %s", __func__,
+		      slurm_strerror(error_code));
+	else if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
+		DB_DEBUG(mysql_conn->conn, "%s: archive loaded successfully.",
+			 __func__);
+
 	return error_code;
 }
