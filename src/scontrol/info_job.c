@@ -747,7 +747,7 @@ extern void scontrol_getent_passwd(const char *node_name)
 		if (fd < 0)
 			continue;
 		pwd = stepd_getpw(fd, stepd->protocol_version,
-				  GETPW_MATCH_ALL, 0, NULL);
+				  GETPW_MATCH_ALWAYS, 0, NULL);
 
 		if (!pwd)
 			continue;

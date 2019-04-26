@@ -83,8 +83,9 @@ typedef enum {
 } slurmstepd_state_t;
 
 typedef enum {
-	GETPW_MATCH_USER = 0,
-	GETPW_MATCH_ALL,
+	GETPW_MATCH_USER_AND_PID = 0,	/* user must match, pid must belong */
+	GETPW_MATCH_ALWAYS,		/* always return */
+	GETPW_MATCH_PID,		/* only pid must belong */
 } stepd_getpw_mode_t;
 
 typedef struct {

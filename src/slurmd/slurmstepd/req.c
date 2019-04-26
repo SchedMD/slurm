@@ -79,7 +79,8 @@
 #include "src/slurmd/common/task_plugin.h"
 
 static void *_handle_accept(void *arg);
-static int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid);
+static int _handle_request(int fd, stepd_step_rec_t *job,
+			   uid_t uid, pid_t remote_pid);
 static int _handle_state(int fd, stepd_step_rec_t *job);
 static int _handle_info(int fd, stepd_step_rec_t *job);
 static int _handle_mem_limits(int fd, stepd_step_rec_t *job);
@@ -93,7 +94,7 @@ static void *_wait_extern_pid(void *args);
 static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid);
 static int _handle_add_extern_pid(int fd, stepd_step_rec_t *job);
 static int _handle_x11_display(int fd, stepd_step_rec_t *job);
-static int _handle_getpw(int fd, stepd_step_rec_t *job);
+static int _handle_getpw(int fd, stepd_step_rec_t *job, pid_t remote_pid);
 static int _handle_daemon_pid(int fd, stepd_step_rec_t *job);
 static int _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid);
@@ -416,6 +417,7 @@ static void *_handle_accept(void *arg)
 	Buf buffer = NULL;
 	int rc;
 	uid_t uid;
+	pid_t remote_pid = NO_VAL;
 
 	debug3("%s: entering (new thread)", __func__);
 	xfree(arg);
@@ -472,6 +474,7 @@ static void *_handle_accept(void *arg)
 
 		rc = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &ucred, &len);
 		uid = ucred.uid;
+		remote_pid = ucred.pid;
 #endif
 		if (rc)
 			goto fail;
@@ -488,7 +491,7 @@ static void *_handle_accept(void *arg)
 	safe_write(fd, &rc, sizeof(int));
 
 	while (1) {
-		rc = _handle_request(fd, job, uid);
+		rc = _handle_request(fd, job, uid, remote_pid);
 		if (rc != SLURM_SUCCESS)
 			break;
 	}
@@ -513,7 +516,7 @@ rwfail:
 }
 
 
-int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid)
+int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	int req;
@@ -617,7 +620,7 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid)
 		break;
 	case REQUEST_GETPW:
 		debug("Handling REQUEST_GETPW");
-		rc = _handle_getpw(fd, job);
+		rc = _handle_getpw(fd, job, remote_pid);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -1369,12 +1372,13 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_getpw(int fd, stepd_step_rec_t *job)
+static int _handle_getpw(int fd, stepd_step_rec_t *job, pid_t remote_pid)
 {
 	uid_t uid;
 	int mode = 0;
 	int len = 0;
 	char *name = NULL;
+	bool pid_match, user_match = false;
 	int found = 0;
 
 	safe_read(fd, &mode, sizeof(int));
@@ -1385,10 +1389,18 @@ static int _handle_getpw(int fd, stepd_step_rec_t *job)
 		safe_read(fd, name, len);
 	}
 
-	if (mode == GETPW_MATCH_ALL)
-		found = 1;
-	else if ((len && !xstrcmp(name, job->user_name)) ||
-	    (!len && (uid == job->uid)))
+	pid_match = proctrack_g_has_pid(job->cont_id, remote_pid);
+
+	if (uid == job->uid)
+		user_match = true;
+	else if (!xstrcmp(name, job->user_name))
+		user_match = true;
+
+	if (mode == GETPW_MATCH_USER_AND_PID)
+		found = (user_match && pid_match);
+	else if (mode == GETPW_MATCH_PID)
+		found = pid_match;
+	else if (mode == GETPW_MATCH_ALWAYS)
 		found = 1;
 
 	if (!job->user_name || !job->pw_gecos ||

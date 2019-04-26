@@ -222,7 +222,7 @@ static int _internal_getpw(int mode, uid_t uid, const char *name,
 int _nss_slurm_getpwnam_r(const char *name, struct passwd *pwd,
 			  char *buf, size_t buflen, struct passwd **result)
 {
-	return _internal_getpw(GETPW_MATCH_USER, NO_VAL, name, pwd,
+	return _internal_getpw(GETPW_MATCH_USER_AND_PID, NO_VAL, name, pwd,
 			       buf, buflen, result);
 
 }
@@ -230,7 +230,7 @@ int _nss_slurm_getpwnam_r(const char *name, struct passwd *pwd,
 int _nss_slurm_getpwuid_r(uid_t uid, struct passwd *pwd,
 			  char *buf, size_t buflen, struct passwd **result)
 {
-	return _internal_getpw(GETPW_MATCH_USER, uid, NULL, pwd,
+	return _internal_getpw(GETPW_MATCH_USER_AND_PID, uid, NULL, pwd,
 			       buf, buflen, result);
 }
 
@@ -253,7 +253,7 @@ int _nss_slurm_getpwent_r(struct passwd *pwd, char *buf, size_t buflen,
 		return NSS_STATUS_NOTFOUND;
 	entry_fetched = 1;
 
-	return _internal_getpw(GETPW_MATCH_ALL, NO_VAL, NULL, pwd,
+	return _internal_getpw(GETPW_MATCH_PID, NO_VAL, NULL, pwd,
 			     buf, buflen, result);
 }
 
