@@ -440,6 +440,7 @@
 #define stepd_get_uid			slurm_stepd_get_uid
 #define stepd_add_extern_pid		slurm_stepd_add_extern_pid
 #define stepd_get_x11_display		slurm_stepd_get_x11_display
+#define stepd_getpw			slurm_stepd_getpw
 
 /* xcgroup_read_config.[ch] */
 #define xcgroup_config_read_mutex       slurm_xcgroup_config_read_mutex

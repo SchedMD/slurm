@@ -93,6 +93,7 @@ static void *_wait_extern_pid(void *args);
 static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid);
 static int _handle_add_extern_pid(int fd, stepd_step_rec_t *job);
 static int _handle_x11_display(int fd, stepd_step_rec_t *job);
+static int _handle_getpw(int fd, stepd_step_rec_t *job);
 static int _handle_daemon_pid(int fd, stepd_step_rec_t *job);
 static int _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid);
@@ -613,6 +614,10 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid)
 	case REQUEST_X11_DISPLAY:
 		debug("Handling REQUEST_X11_DISPLAY");
 		rc = _handle_x11_display(fd, job);
+		break;
+	case REQUEST_GETPW:
+		debug("Handling REQUEST_GETPW");
+		rc = _handle_getpw(fd, job);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -1361,6 +1366,70 @@ static int _handle_x11_display(int fd, stepd_step_rec_t *job)
 	debug("Leaving _handle_get_x11_display");
 	return SLURM_SUCCESS;
 rwfail:
+	return SLURM_ERROR;
+}
+
+static int _handle_getpw(int fd, stepd_step_rec_t *job)
+{
+	uid_t uid;
+	int mode = 0;
+	int len = 0;
+	char *name = NULL;
+	int found = 0;
+
+	safe_read(fd, &mode, sizeof(int));
+	safe_read(fd, &uid, sizeof(uid_t));
+	safe_read(fd, &len, sizeof(int));
+	if (len) {
+		name = xmalloc(len + 1); /* add room for NUL */
+		safe_read(fd, name, len);
+	}
+
+	if (mode == GETPW_MATCH_ALL)
+		found = 1;
+	else if ((len && !xstrcmp(name, job->user_name)) ||
+	    (!len && (uid == job->uid)))
+		found = 1;
+
+	if (!job->user_name || !job->pw_gecos ||
+	    !job->pw_dir || !job->pw_shell) {
+		error("%s: incomplete data, ignoring request", __func__);
+		found = 0;
+	}
+
+	safe_write(fd, &found, sizeof(int));
+
+	if (!found)
+		return SLURM_SUCCESS;
+
+	len = strlen(job->user_name);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, job->user_name, len);
+
+	len = 1;
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, "x", len);
+
+	safe_write(fd, &job->uid, sizeof(uid_t));
+	safe_write(fd, &job->gid, sizeof(gid_t));
+
+	len = strlen(job->pw_gecos);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, job->pw_gecos, len);
+
+	len = strlen(job->pw_dir);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, job->pw_dir, len);
+
+	len = strlen(job->pw_shell);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, job->pw_shell, len);
+
+	debug2("Leaving %s", __func__);
+	return SLURM_SUCCESS;
+
+rwfail:
+	xfree(name);
 	return SLURM_ERROR;
 }
 

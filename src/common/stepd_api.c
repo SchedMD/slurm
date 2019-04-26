@@ -73,6 +73,7 @@ strong_alias(stepd_connect, slurm_stepd_connect);
 strong_alias(stepd_get_uid, slurm_stepd_get_uid);
 strong_alias(stepd_add_extern_pid, slurm_stepd_add_extern_pid);
 strong_alias(stepd_get_x11_display, slurm_stepd_get_x11_display);
+strong_alias(stepd_getpw, slurm_stepd_getpw);
 
 static bool
 _slurm_authorized_user()
@@ -835,6 +836,73 @@ extern int stepd_get_x11_display(int fd, uint16_t protocol_version,
 
 rwfail:
 	return 0;
+}
+
+/*
+ *
+ */
+extern struct passwd *stepd_getpw(int fd, uint16_t protocol_version,
+				  int mode, uid_t uid, const char *name)
+{
+	int req = REQUEST_GETPW;
+	int found = 0;
+	int len = 0;
+	struct passwd *pwd = xmalloc(sizeof(struct passwd));
+
+	safe_write(fd, &req, sizeof(int));
+
+	safe_write(fd, &mode, sizeof(int));
+
+	safe_write(fd, &uid, sizeof(uid_t));
+	if (name) {
+		len = strlen(name);
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, name, len);
+	} else {
+		safe_write(fd, &len, sizeof(int));
+	}
+
+	safe_read(fd, &found, sizeof(int));
+
+	if (!found) {
+		xfree(pwd);
+		return NULL;
+	}
+
+	safe_read(fd, &len, sizeof(int));
+	pwd->pw_name = xmalloc(len + 1);
+	safe_read(fd, pwd->pw_name, len);
+
+	safe_read(fd, &len, sizeof(int));
+	pwd->pw_passwd = xmalloc(len + 1);
+	safe_read(fd, pwd->pw_passwd, len);
+
+	safe_read(fd, &pwd->pw_uid, sizeof(uid_t));
+	safe_read(fd, &pwd->pw_gid, sizeof(gid_t));
+
+	safe_read(fd, &len, sizeof(int));
+	pwd->pw_gecos = xmalloc(len + 1);
+	safe_read(fd, pwd->pw_gecos, len);
+
+	safe_read(fd, &len, sizeof(int));
+	pwd->pw_dir = xmalloc(len + 1);
+	safe_read(fd, pwd->pw_dir, len);
+
+	safe_read(fd, &len, sizeof(int));
+	pwd->pw_shell = xmalloc(len + 1);
+	safe_read(fd, pwd->pw_shell, len);
+
+	debug("Leaving %s", __func__);
+	return pwd;
+
+rwfail:
+	xfree(pwd->pw_name);
+	xfree(pwd->pw_passwd);
+	xfree(pwd->pw_gecos);
+	xfree(pwd->pw_dir);
+	xfree(pwd->pw_shell);
+	xfree(pwd);
+	return NULL;
 }
 
 /*

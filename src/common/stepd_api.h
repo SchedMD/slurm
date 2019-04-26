@@ -72,6 +72,7 @@ typedef enum {
 	REQUEST_STEP_NODEID,
 	REQUEST_ADD_EXTERN_PID,
 	REQUEST_X11_DISPLAY,
+	REQUEST_GETPW,
 } step_msg_t;
 
 typedef enum {
@@ -80,6 +81,11 @@ typedef enum {
 	SLURMSTEPD_STEP_RUNNING,
 	SLURMSTEPD_STEP_ENDING
 } slurmstepd_state_t;
+
+typedef enum {
+	GETPW_MATCH_USER = 0,
+	GETPW_MATCH_ALL,
+} stepd_getpw_mode_t;
 
 typedef struct {
 	uid_t uid;
@@ -212,6 +218,13 @@ extern int stepd_add_extern_pid(int fd, uint16_t protocol_version, pid_t pid);
  */
 extern int stepd_get_x11_display(int fd, uint16_t protocol_version,
 				 char **xauthority);
+
+/*
+ * Get the 'struct passwd' info for the user running this job step iff
+ * the cluster is running with enable_nss_slurm.
+ */
+extern struct passwd *stepd_getpw(int fd, uint16_t protocol_version,
+				  int mode, uid_t uid, const char *name);
 
 /*
  * Return the process ID of the slurmstepd.
