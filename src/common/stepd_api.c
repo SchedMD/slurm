@@ -184,7 +184,8 @@ _step_connect(const char *directory, const char *nodename,
 		/* Can indicate race condition at step termination */
 		debug("%s: connect() failed dir %s node %s step %u.%u %m",
 		      __func__, directory, nodename, jobid, stepid);
-		if (errno == ECONNREFUSED) {
+		if (errno == ECONNREFUSED &&
+		    (!getuid() || getuid() == slurm_get_slurmd_user_id())) {
 			_handle_stray_socket(name);
 			if (stepid == SLURM_BATCH_SCRIPT)
 				_handle_stray_script(directory, jobid);
