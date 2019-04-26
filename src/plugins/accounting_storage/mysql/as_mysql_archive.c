@@ -66,6 +66,10 @@
 					       this then archive by month to
 					       handle large datasets. */
 
+#ifndef RECORDS_PER_PASS
+#define RECORDS_PER_PASS 1000	/* Records per single sql statement. */
+#endif /* RECORDS_PER_PASS */
+
 typedef struct {
 	char *cluster_nodes;
 	char *node_name;
@@ -3605,6 +3609,7 @@ extern int as_mysql_jobacct_process_archive_load(
 	time_t buf_time;
 	uint16_t type = 0, ver = 0, period = 0;
 	uint32_t data_size = 0, rec_cnt = 0, tmp32 = 0;
+	uint32_t rec_cnt_total = 0, rec_cnt_left = 0, pass_cnt = 0;
 
 	if (!arch_rec) {
 		error("We need a slurmdb_archive_rec to load anything.");
@@ -3707,6 +3712,19 @@ extern int as_mysql_jobacct_process_archive_load(
 		goto got_sql;
 	}
 
+	rec_cnt_left = rec_cnt;
+	rec_cnt_total = rec_cnt;
+pass:
+	rec_cnt = MIN(rec_cnt_left, RECORDS_PER_PASS);
+
+	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
+		DB_DEBUG(mysql_conn->conn, "%s: Pass %u: loaded %u/%u records. Attempting partial load %u.",
+			 __func__, pass_cnt, rec_cnt_total - rec_cnt_left,
+			 rec_cnt_total, rec_cnt);
+
+	rec_cnt_left -= rec_cnt;
+	pass_cnt++;
+
 	switch (type) {
 	case DBD_GOT_EVENTS:
 		data = _load_events(ver, buffer, cluster_name, rec_cnt);
@@ -3728,12 +3746,14 @@ extern int as_mysql_jobacct_process_archive_load(
 		break;
 	case DBD_GOT_ASSOC_USAGE:
 	case DBD_GOT_WCKEY_USAGE:
-		safe_unpack16(&period, buffer);
+		if (pass_cnt == 0)
+			safe_unpack16(&period, buffer);
 		data = _load_usage(ver, buffer, cluster_name, type, period,
 				   rec_cnt);
 		break;
 	case DBD_GOT_CLUSTER_USAGE:
-		safe_unpack16(&period, buffer);
+		if (pass_cnt == 0)
+			safe_unpack16(&period, buffer);
 		data = _load_cluster_usage(ver, buffer, cluster_name, period,
 					   rec_cnt);
 		break;
@@ -3741,11 +3761,11 @@ extern int as_mysql_jobacct_process_archive_load(
 		error("Unknown type '%u' to load from archive", type);
 		break;
 	}
-	FREE_NULL_BUFFER(buffer);
 
 got_sql:
 	if (!data) {
 		error("No data to load");
+		FREE_NULL_BUFFER(buffer);
 		return SLURM_ERROR;
 	}
 	if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
@@ -3759,5 +3779,9 @@ unpack_error:
 		return SLURM_ERROR;
 	}
 
+	if (rec_cnt_left)
+		goto pass;
+
+	FREE_NULL_BUFFER(buffer);
 	return SLURM_SUCCESS;
 }
