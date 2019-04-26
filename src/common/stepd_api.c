@@ -41,6 +41,7 @@
 #define _GNU_SOURCE
 
 #include <dirent.h>
+#include <grp.h>
 #include <inttypes.h>
 #include <regex.h>
 #include <signal.h>
@@ -75,6 +76,8 @@ strong_alias(stepd_add_extern_pid, slurm_stepd_add_extern_pid);
 strong_alias(stepd_get_x11_display, slurm_stepd_get_x11_display);
 strong_alias(stepd_getpw, slurm_stepd_getpw);
 strong_alias(xfree_struct_passwd, slurm_xfree_struct_passwd);
+strong_alias(stepd_getgr, slurm_stepd_getgr);
+strong_alias(xfree_struct_group_array, slurm_xfree_struct_group_array);
 
 static bool
 _slurm_authorized_user()
@@ -912,6 +915,79 @@ extern void xfree_struct_passwd(struct passwd *pwd)
 	xfree(pwd->pw_dir);
 	xfree(pwd->pw_shell);
 	xfree(pwd);
+}
+
+extern struct group **stepd_getgr(int fd, uint16_t protocol_version,
+				  int mode, gid_t gid, const char *name)
+{
+	int req = REQUEST_GETGR;
+	int found = 0;
+	int len = 0;
+	struct group **grps = NULL;
+
+	safe_write(fd, &req, sizeof(int));
+
+	safe_write(fd, &mode, sizeof(int));
+
+	safe_write(fd, &gid, sizeof(gid_t));
+	if (name) {
+		len = strlen(name);
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, name, len);
+	} else {
+		safe_write(fd, &len, sizeof(int));
+	}
+
+	safe_read(fd, &found, sizeof(int));
+
+	if (!found)
+		return NULL;
+
+	/* Add space for NULL termination of the array */
+	grps = xcalloc(found + 1, sizeof(struct group *));
+
+	for (int i = 0; i < found; i++) {
+		grps[i] = xmalloc(sizeof(struct group));
+
+		safe_read(fd, &len, sizeof(int));
+		grps[i]->gr_name = xmalloc(len + 1);
+		safe_read(fd, grps[i]->gr_name, len);
+
+		safe_read(fd, &len, sizeof(int));
+		grps[i]->gr_passwd = xmalloc(len + 1);
+		safe_read(fd, grps[i]->gr_passwd, len);
+
+		safe_read(fd, &grps[i]->gr_gid, sizeof(gid_t));
+
+		/*
+		 * In the current implementation, we define each group to
+		 * only have a single member - that of the user running the
+		 * job. (Since gr_mem is a NULL terminated array, allocate
+		 * space for two elements.)
+		 */
+		grps[i]->gr_mem = xcalloc(2, sizeof(char *));
+		safe_read(fd, &len, sizeof(int));
+		grps[i]->gr_mem[0] = xmalloc(len + 1);
+		safe_read(fd, grps[i]->gr_mem[0], len);
+	}
+	debug("Leaving %s", __func__);
+	return grps;
+
+rwfail:
+	xfree_struct_group_array(grps);
+	return NULL;
+}
+
+extern void xfree_struct_group_array(struct group **grps)
+{
+	for (int i = 0; grps && grps[i]; i++) {
+		xfree(grps[i]->gr_name);
+		xfree(grps[i]->gr_passwd);
+		xfree(grps[i]->gr_mem[0]);
+		xfree(grps[i]->gr_mem);
+		xfree(grps[i]);
+	}
+	xfree(grps);
 }
 
 /*

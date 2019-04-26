@@ -175,6 +175,7 @@ typedef struct {
 	char *pw_shell;
 	gid_t         gid;     /* group ID for job                          */
 	int           ngids;   /* length of the following gids array        */
+	char **gr_names;
 	gid_t        *gids;    /* array of gids for user specified in uid   */
 	bool           aborted;    /* true if already aborted               */
 	bool           batch;      /* true if this is a batch job           */

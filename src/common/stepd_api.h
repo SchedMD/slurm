@@ -73,6 +73,7 @@ typedef enum {
 	REQUEST_ADD_EXTERN_PID,
 	REQUEST_X11_DISPLAY,
 	REQUEST_GETPW,
+	REQUEST_GETGR,
 } step_msg_t;
 
 typedef enum {
@@ -87,6 +88,12 @@ typedef enum {
 	GETPW_MATCH_ALWAYS,		/* always return */
 	GETPW_MATCH_PID,		/* only pid must belong */
 } stepd_getpw_mode_t;
+
+typedef enum {
+	GETGR_MATCH_GROUP_AND_PID = 0,	/* user must match, pid must belong */
+	GETGR_MATCH_ALWAYS,		/* always return */
+	GETGR_MATCH_PID,		/* only pid must belong */
+} stepd_getgr_mode_t;
 
 typedef struct {
 	uid_t uid;
@@ -228,6 +235,18 @@ extern struct passwd *stepd_getpw(int fd, uint16_t protocol_version,
 				  int mode, uid_t uid, const char *name);
 
 extern void xfree_struct_passwd(struct passwd *pwd);
+
+/*
+ * Get the 'struct group' info for the user running this job step iff
+ * the cluster is running with enable_nss_slurm.
+ *
+ * Returns a NULL-terminated array of 'struct group' elements, with all
+ * fields allocated with xmalloc().
+ */
+extern struct group **stepd_getgr(int fd, uint16_t protocol_version,
+				  int mode, gid_t gid, const char *name);
+
+extern void xfree_struct_group_array(struct group **grp);
 
 /*
  * Return the process ID of the slurmstepd.

@@ -257,6 +257,9 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *job)
 	job->pw_shell = cred_arg.pw_shell;
 	cred_arg.pw_shell = NULL;
 
+	job->gr_names = cred_arg.gr_names;
+	cred_arg.gr_names = NULL;
+
 	slurm_cred_free_args(&cred_arg);
 }
 

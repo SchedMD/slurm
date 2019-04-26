@@ -95,6 +95,7 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid);
 static int _handle_add_extern_pid(int fd, stepd_step_rec_t *job);
 static int _handle_x11_display(int fd, stepd_step_rec_t *job);
 static int _handle_getpw(int fd, stepd_step_rec_t *job, pid_t remote_pid);
+static int _handle_getgr(int fd, stepd_step_rec_t *job, pid_t remote_pid);
 static int _handle_daemon_pid(int fd, stepd_step_rec_t *job);
 static int _handle_notify_job(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_suspend(int fd, stepd_step_rec_t *job, uid_t uid);
@@ -621,6 +622,10 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, pid_t remote_pid)
 	case REQUEST_GETPW:
 		debug("Handling REQUEST_GETPW");
 		rc = _handle_getpw(fd, job, remote_pid);
+		break;
+	case REQUEST_GETGR:
+		debug("Handling REQUEST_GETGR");
+		rc = _handle_getgr(fd, job, remote_pid);
 		break;
 	default:
 		error("Unrecognized request: %d", req);
@@ -1436,6 +1441,91 @@ static int _handle_getpw(int fd, stepd_step_rec_t *job, pid_t remote_pid)
 	len = strlen(job->pw_shell);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, job->pw_shell, len);
+
+	debug2("Leaving %s", __func__);
+	return SLURM_SUCCESS;
+
+rwfail:
+	xfree(name);
+	return SLURM_ERROR;
+}
+
+static int _send_one_struct_group(int fd, stepd_step_rec_t *job, int offset)
+{
+	int len;
+
+	if (!job->gr_names[offset])
+		goto rwfail;
+	len = strlen(job->gr_names[offset]);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, job->gr_names[offset], len);
+
+	len = 1;
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, "x", len);
+
+	safe_write(fd, &job->gids[offset], sizeof(gid_t));
+
+	len = strlen(job->user_name);
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, job->user_name, len);
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
+static int _handle_getgr(int fd, stepd_step_rec_t *job, pid_t remote_pid)
+{
+	gid_t gid;
+	int mode = 0;
+	int len = 0;
+	char *name = NULL;
+	int offset = 0;
+	bool pid_match;
+	int found = 0;
+
+	safe_read(fd, &mode, sizeof(int));
+	safe_read(fd, &gid, sizeof(gid_t));
+	safe_read(fd, &len, sizeof(int));
+	if (len) {
+		name = xmalloc(len + 1); /* add room for NUL */
+		safe_read(fd, name, len);
+	}
+
+	pid_match = proctrack_g_has_pid(job->cont_id, remote_pid);
+
+	if (!job->ngids || !job->gids) {
+		error("%s: incomplete data, ignoring request", __func__);
+	} else if (mode == GETGR_MATCH_GROUP_AND_PID ) {
+		while (offset < job->ngids) {
+			if (gid == job->gids[offset])
+				break;
+			if (!xstrcmp(name, job->gr_names[offset]))
+				break;
+		}
+		if (offset < job->ngids)
+			found = 1;
+	} else if (mode == GETGR_MATCH_PID) {
+		found = pid_match ? job->ngids : 0;
+	} else if (mode == GETGR_MATCH_ALWAYS) {
+		found = job->ngids;
+	}
+
+	safe_write(fd, &found, sizeof(int));
+
+	if (!found)
+		return SLURM_SUCCESS;
+
+	if (mode == GETGR_MATCH_GROUP_AND_PID) {
+		if (_send_one_struct_group(fd, job, offset))
+			goto rwfail;
+	} else {
+		for (int i = 0; i < job->ngids; i++) {
+			if (_send_one_struct_group(fd, job, i))
+				goto rwfail;
+		}
+	}
 
 	debug2("Leaving %s", __func__);
 	return SLURM_SUCCESS;
