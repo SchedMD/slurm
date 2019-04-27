@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include <fcntl.h>
+#include <grp.h>
 #include <nss.h>
 #include <pwd.h>
 #include <stdio.h>
@@ -247,4 +248,131 @@ int _nss_slurm_getpwent_r(struct passwd *pwd, char *buf, size_t buflen,
 int _nss_slurm_endpwent(void)
 {
 	return NSS_STATUS_SUCCESS;
+}
+
+static struct group **_gr_internal(int mode, gid_t uid, const char *name)
+{
+	List steps = NULL;
+	ListIterator itr = NULL;
+	step_loc_t *stepd;
+	int fd;
+	struct group **grps = NULL;
+
+	if (_load_config())
+		return NULL;
+	/*
+	 * Both arguments to stepd_available() must be provided, otherwise
+	 * it will internally try to load the Slurm config to sort it out.
+	 */
+	if (!(steps = stepd_available(spool, node))) {
+		fprintf(stderr, "error retrieving Slurm step info\n");
+		return NULL;
+	}
+
+	itr = list_iterator_create(steps);
+        while ((stepd = list_next(itr))) {
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid,
+				   &stepd->protocol_version);
+
+		if (fd < 0)
+			continue;
+
+		if ((grps = stepd_getgr(fd, stepd->protocol_version,
+				        mode, uid, name)))
+			break;
+	}
+	list_iterator_destroy(itr);
+	FREE_NULL_LIST(steps);
+
+	return grps;
+}
+
+static int _internal_getgr(int mode, gid_t gid, const char *name,
+			   struct group *grp, char *buf, size_t buflen,
+			   struct group **result)
+{
+	int len_name, len_passwd, len_mem = 0;
+	struct group **rpc_results = NULL;
+	int i = 0;
+
+	if (!(rpc_results = _gr_internal(mode, gid, name)))
+		return NSS_STATUS_NOTFOUND;
+
+	len_name = strlen(rpc_results[i]->gr_name);
+	len_passwd = strlen(rpc_results[i]->gr_passwd);
+	/*
+	 * In the current implementation only a single member is returned.
+	 */
+	if (rpc_results[i]->gr_mem)
+		len_mem = strlen(rpc_results[i]->gr_mem[0]);
+
+	/*
+	 * Need space for an extra 3 NUL characters.
+	 * Plus space for the (char *) array for gr_mem, which we're
+	 * simplifying as (3 * sizeof(char *)) to account for potential buffer
+	 * alignment issues.
+	 */
+	if ((len_name + len_passwd + len_mem + 3)
+	    > buflen) {
+		xfree_struct_group_array(rpc_results);
+		return ERANGE;
+	}
+
+	strncpy(buf, rpc_results[i]->gr_name, len_name + 1);
+	grp->gr_name = buf;
+	buf += len_name + 1;
+
+	strncpy(buf, rpc_results[i]->gr_passwd, len_passwd + 1);
+	grp->gr_passwd = buf;
+	buf += len_passwd + 1;
+
+	grp->gr_gid = rpc_results[i]->gr_gid;
+
+	if (rpc_results[i]->gr_mem) {
+		char *gr_mem_ptr = buf;
+		char **mem_array_start;
+
+		strncpy(buf, rpc_results[i]->gr_mem[0], len_mem + 1);
+		buf += len_mem + 1;
+		/*
+		 * Storing a NULL-terminated array of (char **) into a (char *)
+		 * is awkward due to the alignment issues. The casting tricks
+		 * below attempt to handle this.
+		 *
+		 * As the current implementation only returns a single group
+		 * member, we have only two elements to populate - the actual
+		 * member, plus the NULL termination. The calculation for space
+		 * required is (3 * sizeof(char *)) to account for possible
+		 * mis-alignment of the buffer, which we resolve by skipping
+		 * ahead of the last buffer position by sizeof(char *) and
+		 * letting the (char **) cast then round down into the previous
+		 * word somewhere.
+		 */
+		mem_array_start = (char **) buf + sizeof(char *);
+		mem_array_start[0] = gr_mem_ptr;
+		mem_array_start[1] = NULL;
+
+		grp->gr_mem = mem_array_start;
+	} else
+		grp->gr_mem = NULL;
+
+	*result = grp;
+	xfree_struct_group_array(rpc_results);
+	return NSS_STATUS_SUCCESS;
+}
+
+int _nss_slurm_getgrnam_r(const char *name, struct group *pwd,
+			  char *buf, size_t buflen, struct group **result)
+{
+	return _internal_getgr(GETGR_MATCH_GROUP_AND_PID, NO_VAL, name, pwd,
+			       buf, buflen, result);
+
+}
+
+int _nss_slurm_getgrgid_r(gid_t gid, struct group *pwd,
+			  char *buf, size_t buflen, struct group **result)
+{
+	return _internal_getgr(GETGR_MATCH_GROUP_AND_PID, gid, NULL, pwd,
+			       buf, buflen, result);
 }
