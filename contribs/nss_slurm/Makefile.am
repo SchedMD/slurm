@@ -4,10 +4,10 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -fPIC -I$(top_srcdir) -I$(top_srcdir)/src/common
-PLUGIN_FLAGS = --export-dynamic -version-info 2:0:0
+AM_CPPFLAGS = -fPIC -I$(top_srcdir)/src/common
+PLUGIN_FLAGS = --export-dynamic -shrext .so.2 -avoid-version
 
-pkglib_LTLIBRARIES = libnss_slurm.la
+lib_LTLIBRARIES = libnss_slurm.la
 
 libnss_slurm_la_SOURCES = libnss_slurm.c
 
