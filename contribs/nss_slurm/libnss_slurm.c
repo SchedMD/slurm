@@ -288,24 +288,39 @@ static struct group **_gr_internal(int mode, gid_t uid, const char *name)
 	return grps;
 }
 
+static int next_gr_entry = 0;
+static struct group **gr_rpc_results = NULL;
+
 static int _internal_getgr(int mode, gid_t gid, const char *name,
 			   struct group *grp, char *buf, size_t buflen,
 			   struct group **result)
 {
 	int len_name, len_passwd, len_mem = 0;
-	struct group **rpc_results = NULL;
 	int i = 0;
 
-	if (!(rpc_results = _gr_internal(mode, gid, name)))
+	/*
+	 * GETGR_MATCH_PID is used by getgrent, and can have multiple results
+	 * to iterate through. next_gr_entry > 0 indicates we've already
+	 * fetched those records, and just need to continue returning them.
+	 */
+	if ((mode == GETGR_MATCH_PID) && (next_gr_entry > 0)) {
+		if (!gr_rpc_results || !gr_rpc_results[next_gr_entry]) {
+			/* No records left, must have finished */
+			return NSS_STATUS_NOTFOUND;
+		}
+
+		/* Fetching next record */
+		i = next_gr_entry;
+	} else if (!(gr_rpc_results = _gr_internal(mode, gid, name)))
 		return NSS_STATUS_NOTFOUND;
 
-	len_name = strlen(rpc_results[i]->gr_name);
-	len_passwd = strlen(rpc_results[i]->gr_passwd);
+	len_name = strlen(gr_rpc_results[i]->gr_name);
+	len_passwd = strlen(gr_rpc_results[i]->gr_passwd);
 	/*
 	 * In the current implementation only a single member is returned.
 	 */
-	if (rpc_results[i]->gr_mem)
-		len_mem = strlen(rpc_results[i]->gr_mem[0]);
+	if (gr_rpc_results[i]->gr_mem)
+		len_mem = strlen(gr_rpc_results[i]->gr_mem[0]);
 
 	/*
 	 * Need space for an extra 3 NUL characters.
@@ -315,25 +330,25 @@ static int _internal_getgr(int mode, gid_t gid, const char *name,
 	 */
 	if ((len_name + len_passwd + len_mem + 3)
 	    > buflen) {
-		xfree_struct_group_array(rpc_results);
+		xfree_struct_group_array(gr_rpc_results);
 		return ERANGE;
 	}
 
-	strncpy(buf, rpc_results[i]->gr_name, len_name + 1);
+	strncpy(buf, gr_rpc_results[i]->gr_name, len_name + 1);
 	grp->gr_name = buf;
 	buf += len_name + 1;
 
-	strncpy(buf, rpc_results[i]->gr_passwd, len_passwd + 1);
+	strncpy(buf, gr_rpc_results[i]->gr_passwd, len_passwd + 1);
 	grp->gr_passwd = buf;
 	buf += len_passwd + 1;
 
-	grp->gr_gid = rpc_results[i]->gr_gid;
+	grp->gr_gid = gr_rpc_results[i]->gr_gid;
 
-	if (rpc_results[i]->gr_mem) {
+	if (gr_rpc_results[i]->gr_mem) {
 		char *gr_mem_ptr = buf;
 		char **mem_array_start;
 
-		strncpy(buf, rpc_results[i]->gr_mem[0], len_mem + 1);
+		strncpy(buf, gr_rpc_results[i]->gr_mem[0], len_mem + 1);
 		buf += len_mem + 1;
 		/*
 		 * Storing a NULL-terminated array of (char **) into a (char *)
@@ -358,7 +373,16 @@ static int _internal_getgr(int mode, gid_t gid, const char *name,
 		grp->gr_mem = NULL;
 
 	*result = grp;
-	xfree_struct_group_array(rpc_results);
+	if (mode != GETGR_MATCH_PID) {
+		xfree_struct_group_array(gr_rpc_results);
+		gr_rpc_results = NULL;
+	} else {
+		next_gr_entry++;
+		if (!gr_rpc_results[next_gr_entry]) {
+			xfree_struct_group_array(gr_rpc_results);
+			gr_rpc_results = NULL;
+		}
+	}
 	return NSS_STATUS_SUCCESS;
 }
 
@@ -375,4 +399,29 @@ int _nss_slurm_getgrgid_r(gid_t gid, struct group *pwd,
 {
 	return _internal_getgr(GETGR_MATCH_GROUP_AND_PID, gid, NULL, pwd,
 			       buf, buflen, result);
+}
+
+int _nss_slurm_setgrent(void)
+{
+	xfree_struct_group_array(gr_rpc_results);
+	gr_rpc_results = NULL;
+	next_gr_entry = 0;
+
+	return NSS_STATUS_SUCCESS;
+}
+
+int _nss_slurm_getgrent_r(struct group *grp, char *buf, size_t buflen,
+			  struct group **result)
+{
+	return _internal_getgr(GETGR_MATCH_PID, NO_VAL, NULL, grp,
+			       buf, buflen, result);
+}
+
+int _nss_slurm_endgrent(void)
+{
+	xfree_struct_group_array(gr_rpc_results);
+	gr_rpc_results = NULL;
+	next_gr_entry = 0;
+
+	return NSS_STATUS_SUCCESS;
 }
