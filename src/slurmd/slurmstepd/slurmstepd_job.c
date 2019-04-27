@@ -257,6 +257,9 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *job)
 	job->pw_shell = cred_arg.pw_shell;
 	cred_arg.pw_shell = NULL;
 
+	job->ngids = cred_arg.ngids;
+	job->gids = cred_arg.gids;
+	cred_arg.gids = NULL;
 	job->gr_names = cred_arg.gr_names;
 	cred_arg.gr_names = NULL;
 
@@ -310,9 +313,17 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->uid	= (uid_t) msg->uid;
 	job->gid	= (gid_t) msg->gid;
 	job->user_name	= xstrdup(msg->user_name);
-	job->ngids = (int) msg->ngids;
-	job->gids = copy_gids(msg->ngids, msg->gids);
 	_slurm_cred_to_step_rec(msg->cred, job);
+	/*
+	 * Favor the group info in the launch cred if available - for 19.05+
+	 * this is where it is managed, not in launch_tasks_request_msg_t.
+	 * For older versions, or for when send_gids is disabled, fall back
+	 * to the launch_tasks_request_msg_t info if necessary.
+	 */
+	if (!job->ngids) {
+		job->ngids = (int) msg->ngids;
+		job->gids = copy_gids(msg->ngids, msg->gids);
+	}
 
 	job->cwd	= xstrdup(msg->cwd);
 	job->task_dist	= msg->task_dist;
@@ -530,9 +541,17 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->uid	= (uid_t) msg->uid;
 	job->gid	= (gid_t) msg->gid;
 	job->user_name	= xstrdup(msg->user_name);
-	job->ngids = (int) msg->ngids;
-	job->gids = copy_gids(msg->ngids, msg->gids);
 	_slurm_cred_to_step_rec(msg->cred, job);
+	/*
+	 * Favor the group info in the launch cred if available - for 19.05+
+	 * this is where it is managed, not in batch_job_launch_msg_t.
+	 * For older versions, or for when send_gids is disabled, fall back
+	 * to the batch_job_launch_msg_t info if necessary.
+	 */
+	if (!job->ngids) {
+		job->ngids = (int) msg->ngids;
+		job->gids = copy_gids(msg->ngids, msg->gids);
+	}
 
 	job->profile    = msg->profile;
 
