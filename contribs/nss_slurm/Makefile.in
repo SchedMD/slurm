@@ -176,16 +176,17 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-nss_slurm_la_DEPENDENCIES = $(top_builddir)/src/api/libslurm.la
-am_nss_slurm_la_OBJECTS = nss_slurm.lo
-nss_slurm_la_OBJECTS = $(am_nss_slurm_la_OBJECTS)
+libnss_slurm_la_DEPENDENCIES = $(top_builddir)/src/api/libslurm.la
+am_libnss_slurm_la_OBJECTS = libnss_slurm.lo
+libnss_slurm_la_OBJECTS = $(am_libnss_slurm_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-nss_slurm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(nss_slurm_la_LDFLAGS) $(LDFLAGS) -o $@
+libnss_slurm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libnss_slurm_la_LDFLAGS) $(LDFLAGS) \
+	-o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -201,7 +202,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/nss_slurm.Plo
+am__depfiles_remade = ./$(DEPDIR)/libnss_slurm.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -221,8 +222,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(nss_slurm_la_SOURCES)
-DIST_SOURCES = $(nss_slurm_la_SOURCES)
+SOURCES = $(libnss_slurm_la_SOURCES)
+DIST_SOURCES = $(libnss_slurm_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -495,16 +496,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -fPIC -I$(top_srcdir) -I$(top_srcdir)/src/common
-# -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
-PLUGIN_FLAGS = -module --export-dynamic -avoid-version
-nss_lib = nss_slurm.la
-pkglib_LTLIBRARIES = $(nss_lib)
-current = $(SLURM_API_CURRENT)
-age = $(SLURM_API_AGE)
-rev = $(SLURM_API_REVISION)
-nss_slurm_la_SOURCES = nss_slurm.c
-nss_slurm_la_LIBADD = $(top_builddir)/src/api/libslurm.la
-nss_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
+PLUGIN_FLAGS = --export-dynamic -version-info 2:0:0
+pkglib_LTLIBRARIES = libnss_slurm.la
+libnss_slurm_la_SOURCES = libnss_slurm.c
+libnss_slurm_la_LIBADD = $(top_builddir)/src/api/libslurm.la
+libnss_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -574,8 +570,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-nss_slurm.la: $(nss_slurm_la_OBJECTS) $(nss_slurm_la_DEPENDENCIES) $(EXTRA_nss_slurm_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(nss_slurm_la_LINK) -rpath $(pkglibdir) $(nss_slurm_la_OBJECTS) $(nss_slurm_la_LIBADD) $(LIBS)
+libnss_slurm.la: $(libnss_slurm_la_OBJECTS) $(libnss_slurm_la_DEPENDENCIES) $(EXTRA_libnss_slurm_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libnss_slurm_la_LINK) -rpath $(pkglibdir) $(libnss_slurm_la_OBJECTS) $(libnss_slurm_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -583,7 +579,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nss_slurm.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libnss_slurm.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -746,7 +742,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/nss_slurm.Plo
+		-rm -f ./$(DEPDIR)/libnss_slurm.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -792,7 +788,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/nss_slurm.Plo
+		-rm -f ./$(DEPDIR)/libnss_slurm.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -832,7 +828,7 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 
 force:
-$(nss_slurm_la_LIBADD) : force
+$(libnss_slurm_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE)
 #	Don't specify basename or version.map files in src/api will not be built
 #	@cd `dirname $@` && $(MAKE) `basename $@`
