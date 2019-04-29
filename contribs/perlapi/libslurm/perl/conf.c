@@ -64,9 +64,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if (conf->checkpoint_type)
 		STORE_FIELD(hv, conf, checkpoint_type, charp);
 
-	if (conf->core_spec_plugin)
-		STORE_FIELD(hv, conf, core_spec_plugin, charp);
-
 	if (conf->cluster_name)
 		STORE_FIELD(hv, conf, cluster_name, charp);
 
@@ -81,6 +78,9 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	for (i = 0; i < conf->control_cnt; i++)
 		av_store(av, i, newSVpv(conf->control_machine[i], 0));
 	hv_store_sv(hv, "control_machine", newRV_noinc((SV*)av));
+
+	if (conf->core_spec_plugin)
+		STORE_FIELD(hv, conf, core_spec_plugin, charp);
 
 	STORE_FIELD(hv, conf, cpu_freq_def, uint32_t);
 
@@ -430,7 +430,6 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, bb_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, boot_time, time_t, TRUE);
 	FETCH_FIELD(hv, conf, checkpoint_type, charp, FALSE);
-	FETCH_FIELD(hv, conf, core_spec_plugin, charp, FALSE);
 	FETCH_FIELD(hv, conf, cluster_name, charp, FALSE);
 	FETCH_FIELD(hv, conf, complete_wait, uint16_t, TRUE);
 
@@ -465,6 +464,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, control_addr[1], charp, FALSE);
 	FETCH_FIELD(hv, conf, control_machine[1], charp, FALSE);
 
+	FETCH_FIELD(hv, conf, core_spec_plugin, charp, FALSE);
 	FETCH_FIELD(hv, conf, cpu_freq_def, uint32_t, FALSE);
 	FETCH_FIELD(hv, conf, cred_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, debug_flags, uint64_t, TRUE);
