@@ -562,18 +562,6 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	struct job_record *job_ptr;
 	struct step_record *step_ptr;
 	int rc = SLURM_SUCCESS;
-	static bool notify_slurmd = true;
-	static int notify_srun = -1;
-	static bool front_end = false;
-
-	if (notify_srun == -1) {
-		/* do this for all but slurm (poe, aprun, etc...) */
-		if (xstrcmp(slurmctld_conf.launch_type, "launch/slurm")) {
-			notify_srun = 1;
-			notify_slurmd = false;
-		} else
-			notify_srun = 0;
-	}
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -617,8 +605,6 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		if (rc != SLURM_SUCCESS)
 			return rc;
 	}
-	if (notify_srun)
-		srun_step_signal(step_ptr, signal);
 
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL) {
@@ -626,14 +612,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		srun_step_complete(step_ptr);
 	}
 
-#ifdef HAVE_FRONT_END
-	front_end = true;
-#endif
-	/* Never signal tasks on a front_end system if we aren't
-	 * suppose to notify the slurmd (i.e. BGQ and Cray) */
-	if (front_end && !notify_slurmd) {
-	} else if ((signal == SIGKILL) || notify_slurmd)
-		signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
+	signal_step_tasks(step_ptr, signal, REQUEST_SIGNAL_TASKS);
 
 	return SLURM_SUCCESS;
 }
