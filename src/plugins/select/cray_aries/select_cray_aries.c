@@ -130,7 +130,7 @@ extern int node_record_count __attribute__((weak_import));
 extern time_t last_node_update __attribute__((weak_import));
 extern int slurmctld_primary __attribute__((weak_import));
 extern void *acct_db_conn  __attribute__((weak_import));
-extern bool ignore_state_errors __attribute__((weak_import)) = true;
+extern bool ignore_state_errors __attribute__((weak_import));
 #else
 slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;
