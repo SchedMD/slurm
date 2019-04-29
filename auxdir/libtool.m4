@@ -4063,7 +4063,8 @@ _LT_EOF
   if AC_TRY_EVAL(ac_compile); then
     # Now try to grab the symbols.
     nlist=conftest.nm
-    if AC_TRY_EVAL(NM conftest.$ac_objext \| "$lt_cv_sys_global_symbol_pipe" \> $nlist) && test -s "$nlist"; then
+    $ECHO "$as_me:$LINENO: $NM conftest.$ac_objext | $lt_cv_sys_global_symbol_pipe > $nlist" >&AS_MESSAGE_LOG_FD
+    if eval "$NM" conftest.$ac_objext \| "$lt_cv_sys_global_symbol_pipe" \> $nlist 2>&AS_MESSAGE_LOG_FD && test -s "$nlist"; then
       # Try sorting and uniquifying the output.
       if sort "$nlist" | uniq > "$nlist"T; then
 	mv -f "$nlist"T "$nlist"
@@ -4701,6 +4702,12 @@ m4_if([$1], [CXX], [
       ecc*)
 	_LT_TAGVAR(lt_prog_compiler_wl, $1)='-Wl,'
 	_LT_TAGVAR(lt_prog_compiler_pic, $1)='-KPIC'
+	_LT_TAGVAR(lt_prog_compiler_static, $1)='-static'
+        ;;
+      # flang / f18. f95 an alias for gfortran or flang on Debian
+      flang* | f18* | f95*)
+	_LT_TAGVAR(lt_prog_compiler_wl, $1)='-Wl,'
+	_LT_TAGVAR(lt_prog_compiler_pic, $1)='-fPIC'
 	_LT_TAGVAR(lt_prog_compiler_static, $1)='-static'
         ;;
       # icc used to be incompatible with GCC.
