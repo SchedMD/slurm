@@ -149,14 +149,15 @@ extern void slurm_print_federation(void *ptr)
 
 		features = slurm_char_list_to_xstr(cluster->fed.feature_list);
 		tmp_str = slurmdb_cluster_fed_states_str(cluster->fed.state);
-		printf("%-*s %s:%s:%d ID:%d FedState:%s Features:%s PersistConnSend/Recv:%s/%s\n",
+		printf("%-*s %s:%s:%d ID:%d FedState:%s Features:%s PersistConnSend/Recv:%s/%s Synced:%s\n",
 		       left_col_size, "Sibling:", cluster->name,
 		       cluster->control_host ? cluster->control_host : "",
 		       cluster->control_port,
 		       cluster->fed.id, (tmp_str ? tmp_str : ""),
 		       features ? features : "",
 		       cluster->fed.send ? "Yes" : "No",
-		       cluster->fed.recv ? "Yes" : "No");
+		       cluster->fed.recv ? "Yes" : "No",
+		       cluster->fed.sync_recvd ? "Yes" : "No");
 
 		xfree(features);
 	}
