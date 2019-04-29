@@ -317,6 +317,11 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, select_type, charp);
 	STORE_FIELD(hv, conf, select_type_param, uint16_t);
 
+	if (conf->site_factor_params)
+		STORE_FIELD(hv, conf, site_factor_params, charp);
+	if (conf->site_factor_plugin)
+		STORE_FIELD(hv, conf, site_factor_plugin, charp);
+
 	if (conf->slurm_conf)
 		STORE_FIELD(hv, conf, slurm_conf, charp);
 
