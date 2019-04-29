@@ -22,6 +22,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --prefix		%_prefix path		install path for commands, libraries, etc.
 # --with cray		%_with_cray 1		build for a Native-Slurm Cray system
 # --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
+# --with slurmsmwd      %_with_slurmsmwd 1      build slurmsmwd
 # --without debug	%_without_debug 1	don't compile with debugging symbols
 # --with hdf5		%_with_hdf5 path	require hdf5 support
 # --with hwloc		%_with_hwloc 1		require hwloc support
@@ -36,6 +37,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 #  Options that are off by default (enable with --with <opt>)
 %bcond_with cray
 %bcond_with cray_network
+%bcond_with slurmsmwd
 %bcond_with multiple_slurmd
 %bcond_with ucx
 
@@ -287,7 +289,7 @@ running on the node, or any user who has allocated resources on the node
 according to the Slurm
 %endif
 
-%if %{with cray}
+%if %{with slurmsmwd}
 %package slurmsmwd
 Summary: support daemons and software for the Cray SMW
 Group: System Environment/Base
@@ -358,17 +360,21 @@ install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
    mkdir -p %{buildroot}/opt/modulefiles/slurm
    test -f contribs/cray/opt_modulefiles_slurm &&
       install -D -m644 contribs/cray/opt_modulefiles_slurm %{buildroot}/opt/modulefiles/slurm/%{version}-%{rel}
-   install -D -m644 contribs/cray/slurmsmwd/slurmsmwd.service %{buildroot}/%{_unitdir}/slurmsmwd.service
    echo -e '#%Module\nset ModulesVersion "%{version}-%{rel}"' > %{buildroot}/opt/modulefiles/slurm/.version
 %else
    rm -f contribs/cray/opt_modulefiles_slurm
-   rm -f contribs/cray/slurmsmwd/slurmsmwd.service
    rm -f %{buildroot}/%{_sysconfdir}/plugstack.conf.template
    rm -f %{buildroot}/%{_sysconfdir}/slurm.conf.template
    rm -f %{buildroot}/%{_sbindir}/capmc_suspend
    rm -f %{buildroot}/%{_sbindir}/capmc_resume
    rm -f %{buildroot}/%{_sbindir}/slurmconfgen.py
+%endif
+
+%if %{with slurmsmwd}
+   install -D -m644 contribs/cray/slurmsmwd/slurmsmwd.service %{buildroot}/%{_unitdir}/slurmsmwd.service
+%else
    rm -f %{buildroot}/%{_sbindir}/slurmsmwd
+   rm -f contribs/cray/slurmsmwd/slurmsmwd.service
 %endif
 
 install -D -m644 etc/cgroup.conf.example %{buildroot}/%{_sysconfdir}/cgroup.conf.example
@@ -611,7 +617,7 @@ rm -rf %{buildroot}
 %endif
 #############################################################################
 
-%if %{with cray}
+%if %{with slurmsmwd}
 %files slurmsmwd
 %{_sbindir}/slurmsmwd
 %{_unitdir}/slurmsmwd.service
