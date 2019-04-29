@@ -50,10 +50,12 @@
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
 extern struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern List job_list __attribute__((weak_import));
 #else
 slurmctld_config_t slurmctld_config;
 bitstr_t *idle_node_bitmap;
 struct node_record *node_record_table_ptr;
+List job_list;
 #endif
 
 typedef struct avail_res {	/* Per-node resource availability */
