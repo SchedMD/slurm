@@ -171,6 +171,11 @@ configuration files will be required before upgrading to this release.
 
  -- Heterogeneous jobs are now possible on a Cray.
 
+ -- The slurmsmwd package has been split off from the main Cray RPM build
+    process, and is available with the new --with slurmsmwd build option.
+    Note that slurmsmwd builds need to be generated separately from the main
+    installation.
+
 RPMBUILD CHANGES
 ================
 

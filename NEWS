@@ -71,6 +71,9 @@ documents those changes that are of interest to users and administrators.
  -- PMIx - use the Tree-based collective for empty fence operations.
  -- PMIx - replace use of the non-standard PMIX_VAL_SET macro with the
     standardized PMIX_VALUE_LOAD macro.
+ -- slurm.spec - change --without cray option to set configure option of
+    --enable-really-no-cray.
+ -- slurm.spec - add new --with slurmsmwd option.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
