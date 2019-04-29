@@ -99,6 +99,16 @@
 #include "job_test.h"
 #include "select_cons_res.h"
 
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined (__APPLE__)
+extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
+#else
+bitstr_t *idle_node_bitmap;
+#endif
+
 /* Enables module specific debugging */
 #define _DEBUG 0
 
