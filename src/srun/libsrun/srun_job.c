@@ -1321,7 +1321,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	else
 		*p_job = (void *) job;
 
-        _srun_cli_filter_post_submit(my_job_id, job->stepid);
+	if (job)
+	        _srun_cli_filter_post_submit(my_job_id, job->stepid);
 }
 
 extern void pre_launch_srun_job(srun_job_t *job, bool slurm_started,
