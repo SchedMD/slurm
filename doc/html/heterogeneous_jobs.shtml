@@ -107,7 +107,7 @@ A list of propagated options follows.</p>
 <p>The task distribution specification applies separately within each job
 component. Consider for example a heterogeneous job with each component being
 allocated 4 CPUs on 2 nodes. In our example, job component zero is allocated
-2 CPUs on node "nid00001" and 2 CPUs on node "nid00002". Job component zero is
+2 CPUs on node "nid00001" and 2 CPUs on node "nid00002". Job component one is
 allocated 2 CPUs on node "nid00003" and 2 CPUs on node "nid00004". A task
 distribution of "cyclic" will distribute the first 4 tasks in a cyclic fashion
 on nodes "nid00001" and "nid00002", then distribute the next 4 tasks in a cyclic
