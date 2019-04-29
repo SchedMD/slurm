@@ -54,6 +54,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -349,6 +350,11 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 		/* initialize option defaults */
 		_opt_default();
+		if (cli_filter_plugin_setup_defaults(&opt,
+						     (pass_number == 1))) {
+			error("cli_filter plugin terminated with error");
+			exit(error_exit);
+		}
 		if (opt_found || (i > 0)) {
 			xstrfmtcat(sropt.pack_group, "%d", i);
 			sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);

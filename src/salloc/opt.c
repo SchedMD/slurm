@@ -56,6 +56,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -106,6 +107,14 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 {
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, first_pass);
+
+	/* cli_filter plugins can change the defaults */
+	if (first_pass) {
+		if (cli_filter_plugin_setup_defaults(&opt, false)) {
+			error("cli_filter plugin terminated with error");
+			exit(error_exit);
+		}
+	}
 
 	/* initialize options with env vars */
 	_opt_env();

@@ -55,6 +55,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -275,6 +276,12 @@ extern char *process_options_first_pass(int argc, char **argv)
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, true);
 
+	/* cli_filter plugins can change the defaults */
+	if (cli_filter_plugin_setup_defaults(&opt, true)) {
+		error("cli_filter plugin terminated with error");
+		exit(error_exit);
+	}
+
 	_opt_early_env();
 
 	/* Remove pack job separator and capture all options of interest from
@@ -346,6 +353,12 @@ extern void process_options_second_pass(int argc, char **argv, int *argc_off,
 
 	/* initialize option defaults */
 	slurm_reset_all_options(&opt, false);
+
+	/* cli_filter plugins can change the defaults */
+	if (cli_filter_plugin_setup_defaults(&opt, false)) {
+		error("cli_filter plugin terminated with error");
+		exit(error_exit);
+	}
 
 	/* set options from batch script */
 	*more_packs = _opt_batch_script(file, script_body, script_size,
