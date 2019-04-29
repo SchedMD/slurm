@@ -112,8 +112,11 @@ HIGHLIGHTS
  -- Remove select/serial plugin.
  -- Changed the default fair share algorithm to "fair tree". To disable this
     and revert to "classic" fair share you must set PriorityFlags=NO_FAIR_TREE.
- -- Add AdminPrioFactor to job to set an administrator priority factor for a
+ -- Add Site Factor to job to set an administrator priority factor for a
     job. Can be set by scontrol or by a job submit plugin.
+ -- Alternatively, the new Site Factor for priority can be set and updated
+    through a new site_factor plugin interface. This plugin can be used to set
+    this factor at job submission time, and update it every PriorityCalcPeriod.
  -- Add priorities to assocations.
  -- Added NO_NORMAL_[ALL|ASSOC|PART|QOS|TRES] PriorityFlags to not normalize
     associated factors.
