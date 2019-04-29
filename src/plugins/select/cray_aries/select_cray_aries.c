@@ -877,7 +877,7 @@ extern int init ( void )
 		ccm_get_config();
 	}
 #endif
-	if (!slurmctld_primary && run_in_daemon("slurmctld")) {
+	if (run_in_daemon("slurmctld") && !slurmctld_primary) {
 		START_TIMER;
 		if (slurmctld_config.scheduling_disabled) {
 			info("Scheduling disabled on backup");
