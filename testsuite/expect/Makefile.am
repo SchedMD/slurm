@@ -2,13 +2,6 @@
 AUTOMAKE_OPTIONS = foreign
 
 EXTRA_DIST = \
-	mpi-testscripts/allred.c	\
-	mpi-testscripts/allred_timed.c	\
-	mpi-testscripts/alltoall.c	\
-	mpi-testscripts/alltoall_timed.c	\
-	mpi-testscripts/barrier_timed.c	\
-	mpi-testscripts/Makefile	\
-	mpi-testscripts/script.slurm.sh	\
 	globals				\
 	globals_accounting		\
 	README				\
