@@ -3121,6 +3121,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	sib_msg.fed_siblings = job_desc->fed_siblings_viable;
 	sib_msg.job_id       = job_desc->job_id;
 	sib_msg.resp_host    = job_desc->resp_host;
+	sib_msg.submit_host  = job_desc->alloc_node;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_SIB_MSG;
@@ -4930,6 +4931,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	job_desc_msg_t *job_desc      = sib_msg->data;
 	job_desc->job_id              = sib_msg->job_id;
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
+	job_desc->alloc_node          = sib_msg->submit_host;
 	if (interactive_job)
 		job_desc->resp_host = xstrdup(sib_msg->resp_host);
 
