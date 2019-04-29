@@ -475,6 +475,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/checkpoint/Makefile
 		 src/plugins/checkpoint/none/Makefile
 		 src/plugins/checkpoint/ompi/Makefile
+		 src/plugins/cli_filter/Makefile
+		 src/plugins/cli_filter/none/Makefile
 		 src/plugins/core_spec/Makefile
 		 src/plugins/core_spec/cray_aries/Makefile
 		 src/plugins/core_spec/none/Makefile

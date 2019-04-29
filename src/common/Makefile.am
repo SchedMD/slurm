@@ -131,6 +131,7 @@ libcommon_la_SOURCES = 			\
 	half_duplex.c half_duplex.h	\
 	state_control.c state_control.h	\
 	site_factor.c site_factor.h	\
+	cli_filter.c cli_filter.h	\
 	tres_bind.c tres_bind.h		\
 	tres_frequency.c tres_frequency.h
 
