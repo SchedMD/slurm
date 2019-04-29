@@ -4026,3 +4026,34 @@ extern bool slurm_option_reset(slurm_opt_t *opt, const char *name)
 	common_options[i]->set = false;
 	return true;
 }
+
+/*
+ * Function for iterating through all the common option data structure
+ * and returning (via parameter arguments) the name and value of each
+ * set slurm option.
+ *
+ * IN opt	- option data structure being interpreted
+ * OUT name	- xmalloc()'d string with the option name
+ * OUT value	- xmalloc()'d string with the option value
+ * IN/OUT state	- internal state, should be set to 0 for the first call
+ * RETURNS      - true if name/value set; false if no more options
+ */
+extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
+				      char **value, size_t *state)
+{
+	size_t limit = sizeof(common_options) / sizeof(slurm_cli_opt_t *);
+	if (*state > limit)
+		return false;
+
+	while (common_options[*state] && (*state < limit) &&
+	       (!common_options[*state]->set || !common_options[*state]->name))
+		(*state)++;
+
+	if (*state < limit && common_options[*state]) {
+		*name = xstrdup(common_options[*state]->name);
+		*value = common_options[*state]->get_func(opt);
+		(*state)++;
+		return true;
+	}
+	return false;
+}
