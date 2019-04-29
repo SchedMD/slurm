@@ -4042,7 +4042,7 @@ extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 				      char **value, size_t *state)
 {
 	size_t limit = sizeof(common_options) / sizeof(slurm_cli_opt_t *);
-	if (*state > limit)
+	if (*state >= limit)
 		return false;
 
 	while (common_options[*state] && (*state < limit) &&
