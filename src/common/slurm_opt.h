@@ -427,6 +427,27 @@ extern bool slurm_option_set_by_cli(int optval);
 extern bool slurm_option_set_by_env(int optval);
 
 /*
+ * Get option value by common option name.
+ */
+extern char *slurm_option_get(slurm_opt_t *opt, const char *name);
+
+/*
+ * Is option set? Discover by common option name.
+ */
+extern bool slurm_option_isset(slurm_opt_t *opt, const char *name);
+
+/*
+ * Replace option value by common option name.
+ */
+extern int slurm_option_set(slurm_opt_t *opt, const char *name,
+			    const char *value, bool early);
+
+/*
+ * Reset option by common option name.
+ */
+extern bool slurm_option_reset(slurm_opt_t *opt, const char *name);
+
+/*
  * Pull these back in from the appropriate commands:
  */
 extern void salloc_help(void);
