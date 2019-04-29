@@ -350,11 +350,16 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 		/* initialize option defaults */
 		_opt_default();
-		if (cli_filter_plugin_setup_defaults(&opt,
-						     (pass_number == 1))) {
-			error("cli_filter plugin terminated with error");
-			exit(error_exit);
+
+		/* do not set adjust defaults in an active allocation */
+		if (!getenv("SLURM_JOB_ID")) {
+			bool first = (pass_number == 1);
+			if (cli_filter_plugin_setup_defaults(&opt, first)) {
+				error("cli_filter plugin terminated with error");
+				exit(error_exit);
+			}
 		}
+
 		if (opt_found || (i > 0)) {
 			xstrfmtcat(sropt.pack_group, "%d", i);
 			sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
