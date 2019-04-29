@@ -510,6 +510,9 @@ extern int task_g_add_pid(pid_t pid)
 extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
 				   int statval)
 {
+#if defined(__APPLE__)
+	fatal("%s: not supported on macOS", __func__);
+#else
 	char *bind_type, *action, *status, *units;
 	char mstr[1 + CPU_SETSIZE / 4];
 	int task_gid = job->envtp->procid;
@@ -570,10 +573,14 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
 			task_cpuset_to_str(mask, mstr),
 			action,
 			status);
+#endif
 }
 
 extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
 {
+#if defined(__APPLE__)
+	fatal("%s: not supported on macOS", __func__);
+#else
 	int base;
 	char *ptr = str;
 	char *ret = NULL;
@@ -594,10 +601,14 @@ extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str)
 	}
 	*ptr = '\0';
 	return ret ? ret : ptr - 1;
+#endif
 }
 
 extern int task_str_to_cpuset(cpu_set_t *mask, const char* str)
 {
+#if defined(__APPLE__)
+	fatal("%s: not supported on macOS", __func__);
+#else
 	int len = strlen(str);
 	const char *ptr = str + len - 1;
 	int base = 0;
@@ -625,4 +636,5 @@ extern int task_str_to_cpuset(cpu_set_t *mask, const char* str)
 	}
 
 	return 0;
+#endif
 }
