@@ -115,8 +115,6 @@ struct spank_plugin {
  *  SPANK Plugin options
  */
 
-#define SPANK_OPTION_ENV_PREFIX "_SLURM_SPANK_OPTION_"
-
 struct spank_plugin_opt {
 	struct spank_option *opt;   /* Copy of plugin option info           */
 	struct spank_plugin *plugin;/* Link back to plugin structure        */

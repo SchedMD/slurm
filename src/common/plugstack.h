@@ -47,6 +47,8 @@
 #include "src/common/job_options.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+#define SPANK_OPTION_ENV_PREFIX "_SLURM_SPANK_OPTION_"
+
 struct spank_launcher_job_info {
 	uid_t       uid;
 	gid_t       gid;
