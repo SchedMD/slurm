@@ -69,6 +69,10 @@ NOTE: Limit pam_slurm_adopt to run only in the sshd context by default, for
       used to restore the old behavior of always performing the adopt logic
       regardless of the PAM application context.
 
+NOTE: pam_slurm_adopt will now inject the SLURM_JOB_ID environment variable
+      into adopted processes. Any srun command launched inside a shell will
+      automatically launch within that job allocation.
+
 NOTE: The --quiet flag in sbatch will now suppress the printing of
       "Submitted batch job %u" and "Submitted batch job %u on cluster %s".
 

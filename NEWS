@@ -66,6 +66,8 @@ documents those changes that are of interest to users and administrators.
  -- Allocate nodes that are booting. Previously, nodes that were being booted
     were off limits for allocation. This caused more nodes to be booted than
     needed in a cloud environment.
+ -- pam_slurm_adopt - inject SLURM_JOB_ID environment variable into adopted
+    processes.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
