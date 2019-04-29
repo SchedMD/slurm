@@ -2251,7 +2251,8 @@ static bool _is_core_spec_cray(void)
 static int _core_spec_init(void)
 {
 #if defined(__APPLE__)
-	fatal("%s: not supported on macOS", __func__);
+	error("%s: not supported on macOS", __func__);
+	return SLURM_SUCCESS;
 #else
 	int i, rval;
 	pid_t pid;
