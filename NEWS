@@ -27,8 +27,6 @@ documents those changes that are of interest to users and administrators.
  -- Add idle_on_node_suspend SlurmctldParameter to make nodes idle regardless
     of state when suspended.
  -- Add PowerSave DebugFlag for Suspend/Resume debugging.
- -- Add alloc_booting_nodes SchedulerParameter to allow jobs to be placed on
-    booting nodes.
  -- Changed "scontrol reboot" to not default to ALL nodes.
  -- Changed "scontrol completing" to include two new fields - EndTime and
     CompletingTime.
@@ -65,6 +63,9 @@ documents those changes that are of interest to users and administrators.
  -- Add new cli_filter plugin type to permit sites to build plugins to log,
     modify, or reject CLI options within the salloc/sbatch/srun commands
     themselves.
+ -- Allocate nodes that are booting. Previously, nodes that were being booted
+    were off limits for allocation. This caused more nodes to be booted than
+    needed in a cloud environment.
 
 * Changes in Slurm 19.05.0pre3
 ==============================

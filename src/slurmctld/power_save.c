@@ -358,8 +358,6 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |=   NODE_STATE_POWER_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, i);
-			if (!alloc_booting_nodes)
-				bit_clear(avail_node_bitmap, i);
 			node_ptr->boot_req_time = now;
 			node_ptr->last_response = now + resume_timeout;
 			bit_set(booting_node_bitmap, i);

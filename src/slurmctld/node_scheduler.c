@@ -1273,8 +1273,6 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 	if (!save_avail_node_bitmap)
 		save_avail_node_bitmap = bit_copy(avail_node_bitmap);
-	if (!alloc_booting_nodes)
-		bit_and_not(avail_node_bitmap, booting_node_bitmap);
 	save_share_node_bitmap = bit_copy(share_node_bitmap);
 	filter_by_node_owner(job_ptr, share_node_bitmap);
 

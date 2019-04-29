@@ -2592,12 +2592,6 @@ The interpretation of this parameter varies by \fBSchedulerType\fR.
 Multiple options may be comma separated.
 .RS
 .TP
-\fBalloc_booting_nodes\fR
-If set, then nodes that are booting are allowed to allocated. By default, a
-node that is booting is not eligible to be scheduled. In a cloud environment,
-the default may not be ideal because it can lead to more resources being
-created than needed.
-.TP
 \fBallow_zero_lic\fR
 If set, then job submissions requesting more than configured licenses won't be
 rejected.
