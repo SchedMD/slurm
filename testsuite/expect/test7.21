@@ -33,7 +33,7 @@
 ############################################################################
 source ./globals
 
-set test_id			"7.20"
+set test_id			"7.21"
 set cwd				"[$bin_pwd]"
 set exit_code	    0
 set file_in         "${cwd}/test${test_id}.in"

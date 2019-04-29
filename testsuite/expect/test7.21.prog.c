@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  prog7.20.prog.c - SPANK plugin for testing purposes
+ *  prog7.21.prog.c - SPANK plugin for testing purposes
  *****************************************************************************
  *  Copyright (C) 2018-2019 SchedMD LLC
  *  Copyright (C) 2008-2009 Lawrence Livermore National Security.
