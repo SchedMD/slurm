@@ -6,6 +6,9 @@ function slurm_job_submit(job_desc, part_list, submit_uid)
 	slurm.log_user("submit1")
 	slurm.log_user("submit2")
 	slurm.log_user("submit3")
+    if (job_desc.name == "pass") then
+        return slurm.SUCCESS
+    end
 	return slurm.ERROR
 end
 

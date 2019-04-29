@@ -176,7 +176,7 @@ proc check_rc { exit_code } {
 	}
 }
 
-proc test_bin_pass { bin args count } {
+proc test_bin_pass { bin args het_job count } {
 	global salloc ta1 tq2 srun number
 
 	set got_init 0
@@ -193,15 +193,21 @@ proc test_bin_pass { bin args count } {
 		}
 		# salloc: 0: submit1
 		-re "^(srun|salloc|sbatch): ($number: |)submit1\r\n" {
-			incr got_sub1
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub1
+			}
 			exp_continue
 		}
 		-re "^(srun|salloc|sbatch): ($number: |)submit2\r\n" {
-			incr got_sub2
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub2
+			}
 			exp_continue
 		}
 		-re "^(srun|salloc|sbatch): ($number: |)submit3\r\n" {
-			incr got_sub3
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub3
+			}
 			exp_continue
 		}
 		timeout {
@@ -219,14 +225,16 @@ proc test_bin_pass { bin args count } {
 
 	log_info "$bin rc:$rc init:$got_init sub1:$got_sub1 sub2:$got_sub2 sub3:$got_sub3 expected:$count"
 
-	if {$rc != 0 || $got_sub1 != $count || $got_sub2 != $count ||
-		$got_sub3 != $count} {
+	if {($rc != 0) ||
+	    ($got_sub1 != $count) ||
+	    ($got_sub2 != $count) ||
+	    ($got_sub3 != $count)} {
 			log_error "Invalid $bin response"
 			endit 1
 	}
 }
 
-proc test_bin_fail { bin args count } {
+proc test_bin_fail { bin args het_job count } {
 	global ta1 tq1 tq2 srun number
 
 	set got_init 0
@@ -244,15 +252,21 @@ proc test_bin_fail { bin args count } {
 		#srun: error: submit1\r\n
 		#salloc: error: 0: submit1\r\n
 		-re "^(srun|salloc|sbatch): error: ($number: |)submit1\r\n" {
-			incr got_sub1
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub1
+			}
 			exp_continue
 		}
 		-re "^(srun|salloc|sbatch): error: ($number: |)submit2\r\n" {
-			incr got_sub2
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub2
+			}
 			exp_continue
 		}
 		-re "^(srun|salloc|sbatch): error: ($number: |)submit3\r\n" {
-			incr got_sub3
+			if {!$het_job || $expect_out(2,string) != ""} {
+				incr got_sub3
+			}
 			exp_continue
 		}
 		timeout {
@@ -270,8 +284,10 @@ proc test_bin_fail { bin args count } {
 
 	log_info "$bin rc:$rc init:$got_init sub1:$got_sub1 sub2:$got_sub2 sub3:$got_sub3 expected:$count"
 
-	if {$rc == 0 || $got_sub1 != $count || $got_sub2 != $count ||
-		$got_sub3 != $count} {
+	if {($rc == 0) ||
+	    ($got_sub1 != $count) ||
+	    ($got_sub2 != $count) ||
+	    ($got_sub3 != $count)} {
 			log_error "Invalid $bin response"
 			endit 1
 	}
@@ -328,13 +344,14 @@ sleep 1
 file mtime $config_dir/job_submit.lua [timestamp]
 
 # Check that all job types are rejected
-test_bin_fail $salloc {-A $ta1 --qos $tq2 -n5 "/bin/true"} 1
-test_bin_fail $salloc {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1
-test_bin_fail $srun {-A $ta1 --qos $tq2 -n5 /bin/true} 1
-test_bin_fail $srun {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1
-test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 1
-test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 1
-test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1
+test_bin_fail $salloc {-A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
+test_bin_fail $salloc {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 1
+test_bin_fail $srun {-A $ta1 --qos $tq2 -n5 /bin/true} 0 1
+test_bin_fail $srun {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq2 -n1 -J pass : -n3 -J error : -n5 --wrap /bin/true} 1 2
 
 do_copy $test_lua_pass $config_dir/job_submit.lua
 # Sleep for 1 second to make sure that modify time is different from last copy.
@@ -342,22 +359,22 @@ sleep 1
 file mtime $config_dir/job_submit.lua [timestamp]
 
 # Check that passing works
-test_bin_pass $salloc {-A $ta1 --qos $tq2 -n5 "/bin/true"} 1
-test_bin_pass $salloc {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 3
-test_bin_pass $srun {-A $ta1 --qos $tq2 -n5 /bin/true} 1
-test_bin_pass $srun {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 3
-test_bin_pass $sbatch {-W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 1
-test_bin_pass $sbatch {-W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 1
-test_bin_pass $sbatch {-W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 3
+test_bin_pass $salloc {-A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
+test_bin_pass $salloc {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 3
+test_bin_pass $srun {-A $ta1 --qos $tq2 -n5 /bin/true} 0 1
+test_bin_pass $srun {-A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 3
+test_bin_pass $sbatch {-W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
+test_bin_pass $sbatch {-W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
+test_bin_pass $sbatch {-W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
 
 # Check that messages are still sent with failing QOS but passing filter
-test_bin_fail $salloc {-A $ta1 --qos $tq1 -n5 "/bin/true"} 1
-test_bin_fail $salloc {-A $ta1 --qos $tq1 -n5 : -n3 : -n1 "/bin/true"} 1
-test_bin_fail $srun {-A $ta1 --qos $tq1 -n5 /bin/true} 1
-test_bin_fail $srun {-A $ta1 --qos $tq1 -n5 : -n3 : -n1 /bin/true} 1
-test_bin_fail $sbatch {-W -A $ta1 --qos $tq1 -n5 --wrap /bin/true} 1
-test_bin_fail $sbatch {-W -A $ta1 --qos $tq1 -n5 --array 10 --wrap /bin/true} 1
-test_bin_fail $sbatch {-W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap /bin/true} 3
+test_bin_fail $salloc {-A $ta1 --qos $tq1 -n5 "/bin/true"} 0 1
+test_bin_fail $salloc {-A $ta1 --qos $tq1 -n5 : -n3 : -n1 "/bin/true"} 1 1
+test_bin_fail $srun {-A $ta1 --qos $tq1 -n5 /bin/true} 0 1
+test_bin_fail $srun {-A $ta1 --qos $tq1 -n5 : -n3 : -n1 /bin/true} 1 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq1 -n5 --wrap /bin/true} 0 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq1 -n5 --array 10 --wrap /bin/true} 0 1
+test_bin_fail $sbatch {-W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
 
 check_rc $exit_code
 
