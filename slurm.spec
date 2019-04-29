@@ -30,12 +30,14 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with numa		%_with_numa 1		require NUMA support
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
 # --without x11		%_without_x11 1		disable internal X11 support
+# --with ucx		%_with_ucx path		require ucx support
 # --with pmix		%_with_pmix path	require pmix support
 
 #  Options that are off by default (enable with --with <opt>)
 %bcond_with cray
 %bcond_with cray_network
 %bcond_with multiple_slurmd
+%bcond_with ucx
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
@@ -121,6 +123,11 @@ BuildRequires: numactl-devel
 %if %{with pmix}
 BuildRequires: pmix
 %global pmix %(rpm -q pmix --qf "%{VERSION}")
+%endif
+
+%if %{with ucx}
+BuildRequires: ucx-devel
+%global ucx_version %(rpm -q ucx-devel --qf "%{VERSION}")
 %endif
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
@@ -210,6 +217,9 @@ Group: System Environment/Base
 Requires: %{name}%{?_isa} = %{version}-%{release}
 %if %{with pmix}
 Requires: pmix = %{pmix_version}
+%endif
+%if %{with ucx}
+Requires: ucx = %{ucx_version}
 %endif
 %description slurmd
 Slurm compute node daemon. Used to launch jobs on compute nodes
@@ -309,6 +319,7 @@ notifies slurm about failed nodes.
 	%{?_with_hdf5} \
 	%{?_with_shared_libslurm} \
 	%{?_without_x11:--disable-x11} \
+	%{?_with_ucx} \
 	%{?_with_cflags}
 
 make %{?_smp_mflags}
