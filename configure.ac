@@ -7,6 +7,7 @@ AC_INIT(slurm, m4_esyscmd([perl -ne 'print,exit if s/^\s*VERSION:\s*(\d*.\d*).\S
 AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR([auxdir])
+AC_CONFIG_MACRO_DIR([auxdir])
 AC_CANONICAL_TARGET([])
 
 dnl the is a generic flag to avoid building things
