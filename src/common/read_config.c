@@ -211,6 +211,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"CheckpointType", S_P_STRING},
 	{"ChosLoc", S_P_STRING},
 	{"CoreSpecPlugin", S_P_STRING},
+	{"CliFilterPlugins", S_P_STRING},
 	{"ClusterName", S_P_STRING},
 	{"CommunicationParameters", S_P_STRING},
 	{"CompleteWait", S_P_UINT16},
@@ -2853,6 +2854,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_params);
 	xfree (ctl_conf_ptr->job_ckpt_dir);
+	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->job_comp_host);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
@@ -2969,6 +2971,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->batch_start_timeout	= 0;
 	xfree (ctl_conf_ptr->bb_type);
 	xfree (ctl_conf_ptr->checkpoint_type);
+	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->comm_params);
 	ctl_conf_ptr->complete_wait		= NO_VAL16;
@@ -3633,6 +3636,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->checkpoint_type, "CheckpointType", hashtbl))
 		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);
+
+	(void) s_p_get_string(&conf->cli_filter_plugins, "CliFilterPlugins",
+			      hashtbl);
 
 	if (s_p_get_string(&temp_str, "CpuFreqDef", hashtbl)) {
 		if (cpu_freq_verify_def(temp_str, &conf->cpu_freq_def)) {

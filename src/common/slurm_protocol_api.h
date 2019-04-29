@@ -108,6 +108,13 @@ int slurm_get_auth_ttl(void);
  */
 uint16_t slurm_get_batch_start_timeout(void);
 
+/* slurm_get_cli_filter_plugins
+ * get cli_filter_plugins from slurmctld_conf object from
+ * slurmctld_conf object
+ * RET char *   - cli_filter_plugins, MUST be xfreed by caller
+ */
+char *slurm_get_cli_filter_plugins(void);
+
 /*
  * slurm_get_control_cnt
  * RET Count of SlurmctldHost records from slurm.conf

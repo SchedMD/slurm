@@ -6386,6 +6386,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack_key_pair_list(build_ptr->cgroup_conf, protocol_version,
 				   buffer);
 		packstr(build_ptr->checkpoint_type, buffer);
+		packstr(build_ptr->cli_filter_plugins, buffer);
 		packstr(build_ptr->cluster_name, buffer);
 		packstr(build_ptr->comm_params, buffer);
 		pack16(build_ptr->complete_wait, buffer);
@@ -7238,6 +7239,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&build_ptr->checkpoint_type,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->cli_filter_plugins,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->cluster_name,
 				       &uint32_tmp, buffer);

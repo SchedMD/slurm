@@ -64,6 +64,9 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if (conf->checkpoint_type)
 		STORE_FIELD(hv, conf, checkpoint_type, charp);
 
+	if (conf->cli_filter_plugins)
+		STORE_FIELD(hv, conf, cli_filter_plugins, charp);
+
 	if (conf->cluster_name)
 		STORE_FIELD(hv, conf, cluster_name, charp);
 
@@ -430,6 +433,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, bb_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, boot_time, time_t, TRUE);
 	FETCH_FIELD(hv, conf, checkpoint_type, charp, FALSE);
+	FETCH_FIELD(hv, conf, cli_filter_plugins, charp, FALSE);
 	FETCH_FIELD(hv, conf, cluster_name, charp, FALSE);
 	FETCH_FIELD(hv, conf, complete_wait, uint16_t, TRUE);
 

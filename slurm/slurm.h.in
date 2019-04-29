@@ -2639,6 +2639,7 @@ typedef struct slurm_ctl_conf {
 	time_t boot_time;	/* time slurmctld last booted */
 	void *cgroup_conf;	/* cgroup support config file */
 	char *checkpoint_type;	/* checkpoint plugin type */
+	char *cli_filter_plugins; /* List of cli_filter plugins to use */
 	char *core_spec_plugin;	/* core specialization plugin name */
 	char *cluster_name;     /* general name of the entire cluster */
 	char *comm_params;     /* Communication parameters */
