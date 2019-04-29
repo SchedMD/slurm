@@ -751,8 +751,10 @@ extern void scontrol_getent(const char *node_name)
 		pwd = stepd_getpw(fd, stepd->protocol_version,
 				  GETPW_MATCH_ALWAYS, 0, NULL);
 
-		if (!pwd)
+		if (!pwd) {
+			close(fd);
 			continue;
+		}
 
 		if (stepd->stepid == SLURM_EXTERN_CONT)
 			printf("JobId=%u.Extern:\nUser:\n", stepd->jobid);
@@ -771,6 +773,7 @@ extern void scontrol_getent(const char *node_name)
 		grps = stepd_getgr(fd, stepd->protocol_version,
 				   GETGR_MATCH_ALWAYS, 0, NULL);
 		if (!grps) {
+			close(fd);
 			printf("\n");
 			continue;
 		}
@@ -781,6 +784,7 @@ extern void scontrol_getent(const char *node_name)
 			       grps[i]->gr_gid,
 			       (grps[i]->gr_mem) ? grps[i]->gr_mem[0] : "");
 		}
+		close(fd);
 		xfree_struct_group_array(grps);
 		printf("\n");
 	}
