@@ -1513,12 +1513,22 @@ send_msg:	info("%s: %s ", __func__, slurm_strerror(error_code));
 		 * message to avoid it getting lost. Was saved off earlier.
 		 */
 		for (inx = 0; inx < pack_cnt; inx++) {
+			char *line = NULL, *last = NULL;
+
 			if (!job_submit_user_msg[inx])
 				continue;
 
-			xstrfmtcat(aggregate_user_msg, "%s%d: %s",
-				   (aggregate_user_msg ? "\n" : ""),
-				    inx, job_submit_user_msg[inx]);
+			/*
+			 * Break apart any combined sentences and tag with index
+			 */
+			line = strtok_r(job_submit_user_msg[inx], "\n", &last);
+			while (line) {
+				xstrfmtcat(aggregate_user_msg, "%s%d: %s",
+					   (aggregate_user_msg ? "\n" : ""),
+					    inx, line);
+
+				line = strtok_r(NULL, "\n", &last);
+			}
 		}
 		if (aggregate_user_msg) {
 			char *tmp_err_msg = err_msg;
@@ -1622,8 +1632,10 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	 * need the job submit plugin value to build the resource allocation
 	 * response in the call to build_alloc_msg.
 	 */
-	if (err_msg)
-		job_submit_user_msg = xstrdup(err_msg);
+	if (err_msg) {
+		job_submit_user_msg = err_msg;
+		err_msg = NULL;
+	}
 
 	if (error_code) {
 		reject_job = true;
@@ -3909,8 +3921,10 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	 * need the job submit plugin value to build the resource allocation
 	 * response in the call to build_alloc_msg.
 	 */
-	if (err_msg)
-		job_submit_user_msg = xstrdup(err_msg);
+	if (err_msg) {
+		job_submit_user_msg = err_msg;
+		err_msg = NULL;
+	}
 
 	if (error_code) {
 		reject_job = true;
@@ -4094,11 +4108,6 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		job_desc_msg->pack_job_offset = pack_job_offset;
 		error_code = validate_job_create_req(job_desc_msg, uid,
 						     &err_msg);
-		if (error_code != SLURM_SUCCESS) {
-			reject_job = true;
-			break;
-		}
-
 		if (err_msg) {
 			char *save_ptr = NULL, *tok;
 			tok = strtok_r(err_msg, "\n", &save_ptr);
@@ -4112,6 +4121,12 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 			}
 			xfree(err_msg);
 		}
+
+		if (error_code != SLURM_SUCCESS) {
+			reject_job = true;
+			break;
+		}
+
 		pack_job_offset++;
 	}
 	list_iterator_destroy(iter);
@@ -4128,8 +4143,10 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	 * to build the resource allocation response in the call to
 	 * build_alloc_msg.
 	 */
-	if (err_msg)
-		job_submit_user_msg = xstrdup(err_msg);
+	if (err_msg) {
+		job_submit_user_msg = err_msg;
+		err_msg = NULL;
+	}
 
 	/* Create new job allocations */
 	submit_job_list = list_create(NULL);

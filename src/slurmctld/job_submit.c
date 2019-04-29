@@ -87,7 +87,7 @@ static bool init_run = false;
 extern int job_submit_plugin_init(void)
 {
 	int rc = SLURM_SUCCESS;
-	char *last = NULL, *names;
+	char *last = NULL, *tmp_plugin_list, *names;
 	char *plugin_type = "job_submit";
 	char *type;
 
@@ -103,7 +103,8 @@ extern int job_submit_plugin_init(void)
 	if ((submit_plugin_list == NULL) || (submit_plugin_list[0] == '\0'))
 		goto fini;
 
-	names = submit_plugin_list;
+	tmp_plugin_list = xstrdup(submit_plugin_list);
+	names = tmp_plugin_list;
 	while ((type = strtok_r(names, ",", &last))) {
 		xrecalloc(ops, g_context_cnt + 1, sizeof(slurm_submit_ops_t));
 		xrecalloc(g_context, g_context_cnt + 1,
@@ -127,6 +128,7 @@ extern int job_submit_plugin_init(void)
 		names = NULL; /* for next strtok_r() iteration */
 	}
 	init_run = true;
+	xfree(tmp_plugin_list);
 
 fini:
 	slurm_mutex_unlock(&g_context_lock);
@@ -186,8 +188,7 @@ extern int job_submit_plugin_reconfig(void)
 		return rc;
 
 	slurm_mutex_lock(&g_context_lock);
-	if (plugin_names && submit_plugin_list &&
-	    xstrcmp(plugin_names, submit_plugin_list))
+	if (xstrcmp(plugin_names, submit_plugin_list))
 		plugin_change = true;
 	else
 		plugin_change = false;
