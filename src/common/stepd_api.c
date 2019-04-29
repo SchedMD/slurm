@@ -74,6 +74,7 @@ strong_alias(stepd_connect, slurm_stepd_connect);
 strong_alias(stepd_get_uid, slurm_stepd_get_uid);
 strong_alias(stepd_add_extern_pid, slurm_stepd_add_extern_pid);
 strong_alias(stepd_get_x11_display, slurm_stepd_get_x11_display);
+strong_alias(stepd_get_info, slurm_stepd_get_info);
 strong_alias(stepd_getpw, slurm_stepd_getpw);
 strong_alias(xfree_struct_passwd, slurm_xfree_struct_passwd);
 strong_alias(stepd_getgr, slurm_stepd_getgr);
