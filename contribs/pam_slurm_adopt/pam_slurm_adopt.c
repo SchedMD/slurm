@@ -135,6 +135,13 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 
 	rc = stepd_add_extern_pid(fd, stepd->protocol_version, pid);
 
+	if (rc == PAM_SUCCESS) {
+		char *env;
+		env = xstrdup_printf("SLURM_JOB_ID=%u", stepd->jobid);
+		pam_putenv(pamh, env);
+		xfree(env);
+	}
+
 	if ((rc == PAM_SUCCESS) && !opts.disable_x11) {
 		int display;
 		char *xauthority;
