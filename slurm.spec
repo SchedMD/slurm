@@ -30,6 +30,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --with numa		%_with_numa 1		require NUMA support
 # --without pam		%_without_pam 1		don't require pam-devel RPM to be installed
 # --without x11		%_without_x11 1		disable internal X11 support
+# --with pmix		%_with_pmix path	require pmix support
 
 #  Options that are off by default (enable with --with <opt>)
 %bcond_with cray
@@ -44,6 +45,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with lua
 %bcond_with numa
 %bcond_with x11
+%bcond_with pmix
 
 # Use debug by default on all systems
 %bcond_without debug
@@ -114,6 +116,11 @@ BuildRequires: libnuma-devel
 %else
 BuildRequires: numactl-devel
 %endif
+%endif
+
+%if %{with pmix}
+BuildRequires: pmix
+%global pmix %(rpm -q pmix --qf "%{VERSION}")
 %endif
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
@@ -201,6 +208,9 @@ to launch jobs.
 Summary: Slurm compute node daemon
 Group: System Environment/Base
 Requires: %{name}%{?_isa} = %{version}-%{release}
+%if %{with pmix}
+Requires: pmix = %{pmix_version}
+%endif
 %description slurmd
 Slurm compute node daemon. Used to launch jobs on compute nodes
 
