@@ -360,7 +360,6 @@ void *agent(void *args)
 	}
 	slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 
-      cleanup:
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
 		info("%s: end agent thread_count:%d threads_active:%d retry:%c get_reply:%c msg_type:%s protocol_version:%hu",
 		     __func__, agent_info_ptr->thread_count,
@@ -371,6 +370,7 @@ void *agent(void *args)
 		     agent_info_ptr->protocol_version);
 	}
 
+cleanup:
 	_purge_agent_args(agent_arg_ptr);
 
 	if (agent_info_ptr) {
