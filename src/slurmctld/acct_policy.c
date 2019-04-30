@@ -2045,7 +2045,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 			job_ptr->state_reason =
 				WAIT_QOS_MAX_WALL_PER_JOB;
 			debug2("%pJ being held, time limit %u exceeds QOS max wall pj %u",
-			       job_ptr, job_ptr->time_limit, time_limit);
+			       job_ptr, time_limit, qos_out_ptr->max_wall_pj);
 			rc = false;
 			goto end_it;
 		}
