@@ -580,8 +580,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/jobcomp_mysql.so            &&
 
 LIST=./plugins.files
 touch $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_cray.so  &&
-   echo %{_libdir}/slurm/acct_gather_energy_cray.so  >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_cray_aries.so &&
+   echo %{_libdir}/slurm/acct_gather_energy_cray_aries.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ibmaem.so &&
    echo %{_libdir}/slurm/acct_gather_energy_ibmaem.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ipmi.so  &&
@@ -612,8 +612,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/node_features_knl_cray.so   &&
    echo %{_libdir}/slurm/node_features_knl_cray.so   >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/node_features_knl_generic.so &&
    echo %{_libdir}/slurm/node_features_knl_generic.so   >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/power_cray.so               &&
-   echo %{_libdir}/slurm/power_cray.so               >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/power_cray_aries.so         &&
+   echo %{_libdir}/slurm/power_cray_aries.so         >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/select_bluegene.so          &&
    echo %{_libdir}/slurm/select_bluegene.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so            &&
@@ -624,14 +624,14 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_cncu.so       &&
    echo %{_libdir}/slurm/job_container_cncu.so       >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/job_container_none.so       &&
    echo %{_libdir}/slurm/job_container_none.so       >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cray.so                &&
-   echo %{_libdir}/slurm/task_cray.so                >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_cray_aries.so          &&
+   echo %{_libdir}/slurm/task_cray_aries.so          >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/slurmctld_nonstop.so        &&
    echo %{_libdir}/slurm/slurmctld_nonstop.so        >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_cray.so              &&
-   echo %{_libdir}/slurm/switch_cray.so              >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_cray.so           &&
-   echo %{_libdir}/slurm/proctrack_cray.so           >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/switch_cray_aries.so        &&
+   echo %{_libdir}/slurm/switch_cray_aries.so        >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_cray_aries.so     &&
+   echo %{_libdir}/slurm/proctrack_cray_aries.so     >> $LIST
 
 LIST=./pam.files
 touch $LIST
@@ -789,14 +789,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/burst_buffer_generic.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
-%{_libdir}/slurm/core_spec_cray.so
+%{_libdir}/slurm/core_spec_cray_aries.so
 %{_libdir}/slurm/core_spec_none.so
 %{_libdir}/slurm/ext_sensors_none.so
 %{_libdir}/slurm/gres_gpu.so
 %{_libdir}/slurm/gres_mic.so
 %{_libdir}/slurm/gres_nic.so
 %{_libdir}/slurm/job_submit_all_partitions.so
-%{_libdir}/slurm/job_submit_cray.so
+%{_libdir}/slurm/job_submit_cray_aries.so
 %{_libdir}/slurm/job_submit_require_timelimit.so
 %{_libdir}/slurm/job_submit_throttle.so
 %{_libdir}/slurm/jobacct_gather_cgroup.so
@@ -831,7 +831,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
-%{_libdir}/slurm/select_cray.so
+%{_libdir}/slurm/select_cray_aries.so
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/select_serial.so
