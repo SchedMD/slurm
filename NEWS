@@ -229,6 +229,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix segfault when loading/unloading Lua job submit plugin multiple times.
  -- Fix printing duplicate error messages of jobs rejected by job submit plugin.
  -- Fix printing of job submit plugin messages of het jobs without pack id.
+ -- Fix memory leak in group_cache.c
 
 * Changes in Slurm 18.08.7
 ==========================
