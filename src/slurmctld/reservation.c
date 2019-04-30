@@ -4547,9 +4547,15 @@ static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
 	tmp_spec = xstrdup(bb_spec);
 	tok = strtok_r(tmp_spec, ",", &end_ptr);
 	while (tok) {
+		/*
+		 * Translate "cray" to "datawarp" for backwards compatibility.
+		 */
 		if (!xstrncmp(tok, "cray:", 5)) {
-			plugin = "cray";
+			plugin = "datawarp";
 			tok += 5;
+		} else if (!xstrncmp(tok, "datawarp:", 9)) {
+			plugin = "datawarp";
+			tok +=9;
 		} else if (!xstrncmp(tok, "generic:", 8)) {
 			plugin = "generic";
 			tok += 8;

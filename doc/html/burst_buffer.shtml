@@ -28,7 +28,7 @@ This support is provided using a plugin mechanism so that a various burst
 buffer infrastructures may be easily configured.
 Two plugins are provided initially:</p>
 <ol>
-<li><b>cray</b> - Uses Cray APIs to perform underlying management functions</li>
+<li><b>datawarp</b> - Uses Cray APIs to perform underlying management functions</li>
 <li><b>generic</b> - Uses system administrator defined scripts to perform
 underlying management functions, currently under development</li>
 </ol>
@@ -69,9 +69,9 @@ BurstBufferType=burst_buffer/generic
 file.
 If multiple burst buffer plugins are configured, an independent configuration
 file can be specified for each plugin with a file name including the plugin name.
-For example files named "burst_buffer_cray.conf" and
-"burst_buffer_generic.conf" can be used independently by the cray and generic
-burst buffer plugins respectively.
+For example files named "burst_buffer_datawarp.conf" and
+"burst_buffer_generic.conf" can be used independently by the datawarp and
+generic burst buffer plugins respectively.
 This file can contain information about who can or can not use burst buffers,
 timeouts, and paths of scripts used to perform various functions, etc.
 <a href="resource_limits.html">TRES limits</a> can be configured to establish
@@ -319,7 +319,8 @@ $ scontrol show dwstat configurations
 <i>BurstBuffer</i> option.
 The argument consists of four elements:<br>
 [plugin:][pool:]#[units]<br><br>
-<i>plugin</i> is the burst buffer plugin name, currently either "cray" or "generic".
+<i>plugin</i> is the burst buffer plugin name, currently either "datawarp" or
+"generic".
 If no plugin is specified, the reservation applies to all configured burst
 buffer plugins.<br><br>
 <i>pool</i> specifies a Cray generic burst buffer resource pool.
@@ -338,15 +339,15 @@ Some examples follow.</p>
 <pre>
 $ scontrol create reservation starttime=now duration=60 \
   users=alan flags=any_nodes \
-  burstbuffer=cray:100G,generic:20G
+  burstbuffer=datawarp:100G,generic:20G
 
 $ scontrol create reservation StartTime=noon duration=60 \
   users=brenda NodeCnt=8 \
-  BurstBuffer=cray:20G
+  BurstBuffer=datawarp:20G
 
 $ scontrol create reservation StartTime=16:00 duration=60 \
   users=joseph flags=any_nodes \
-  BurstBuffer=cray:pool_test:4G
+  BurstBuffer=datawarp:pool_test:4G
 </pre>
 
 <h2><a name="dependencies">Job Dependencies</a></h2>

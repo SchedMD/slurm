@@ -1656,7 +1656,8 @@ not possible to also explicitly specify allowed accounts.
 Specification of burst buffer resources which are to be reserved.
 "buffer_spec" consists of four elements:
 [plugin:][type:]#[units]
-"plugin" is the burst buffer plugin name, currently either "cray" or "generic".
+"plugin" is the burst buffer plugin name, currently either "datawar" or
+"generic".
 If no plugin is specified, the reservation applies to all configured burst
 buffer plugins.
 "type" specifies a Cray generic burst buffer resource, for example "nodes".
@@ -1664,7 +1665,7 @@ if "type" is not specified, the number is a measure of storage space.
 The "units" may be "N" (nodes), "K|KiB", "M|MiB", "G|GiB", "T|TiB", "P|PiB"
 (for powers of 1024) and "KB", "MB", "GB", "TB", "PB" (for powers of 1000).
 The default units are bytes for reservations of storage space.
-For example "BurstBuffer=cray:2TB" (reserve 2TB of storage plus
+For example "BurstBuffer=datawarp:2TB" (reserve 2TB of storage plus
 3 nodes from the Cray plugin) or
 "BurstBuffer=100GB" (reserve 100 GB of storage from all configured burst buffer
 plugins).
