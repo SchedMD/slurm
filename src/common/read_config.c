@@ -2831,6 +2831,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->bb_type);
 	FREE_NULL_LIST(ctl_conf_ptr->cgroup_conf);
 	xfree (ctl_conf_ptr->checkpoint_type);
+	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
 	for (i = 0; i < ctl_conf_ptr->control_cnt; i++) {
 		xfree(ctl_conf_ptr->control_addr[i]);
@@ -2854,7 +2855,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_params);
 	xfree (ctl_conf_ptr->job_ckpt_dir);
-	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->job_comp_host);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
