@@ -1317,6 +1317,11 @@ accounts.
 .TP
 \fIUsageFactor\fP
 Usage factor when running with this QOS.
+(i.e. .5 would make it use only half the time as normal in accounting and 2
+would make it use twice as much.) This only applies to the internal wall TRES
+usage used for limits and determining priority in the slurmctld and doesn't
+modify the real usage in the database. The usage factor only applies to the
+jobs QOS and not the partition QOS, and partition QOS limits (if configured).
 
 .TP
 \fIUsageThreshold\fP

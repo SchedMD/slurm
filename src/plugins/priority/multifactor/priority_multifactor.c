@@ -941,6 +941,7 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 
 	assoc_mgr_lock(&locks);
 	while ((job_ptr = list_next(itr))) {
+		double usage_factor = 1.0;
 		if (priority_debug)
 			debug2("job: %u", job_ptr->job_id);
 
@@ -956,10 +957,15 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 		if (job_ptr->start_time > last_ran)
 			continue;
 
+		/* apply usage factor */
+		if (job_ptr->qos_ptr &&
+		    (job_ptr->qos_ptr->usage_factor >= 0))
+			usage_factor = job_ptr->qos_ptr->usage_factor;
+		usage_factor *= (double)(last_ran - job_ptr->start_time);
+
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			tres_run_delta[i] =
-				(uint64_t)(last_ran - job_ptr->start_time) *
-				job_ptr->tres_alloc_cnt[i];
+				job_ptr->tres_alloc_cnt[i] * usage_factor;
 		}
 
 		_handle_tres_run_secs(tres_run_delta, job_ptr);
@@ -1091,6 +1097,8 @@ static int _apply_new_usage(struct job_record *job_ptr,
 		run_decay  *= qos->usage_factor;
 		real_nodecay *= qos->usage_factor;
 		run_nodecay  *= qos->usage_factor;
+
+		tres_time_delta *= qos->usage_factor;
 	}
 	if (job_ptr->tres_alloc_cnt) {
 		for (i=0; i<slurmctld_tres_cnt; i++) {

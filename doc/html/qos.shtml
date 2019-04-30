@@ -154,7 +154,9 @@ reasons, where {TRES} is some type of trackable resource).
   (i.e. .5 would make it use only half the time as normal in
   accounting and 2 would make it use twice as much.) This only applies to the
   internal wall TRES usage used for limits and determining priority in the
-  slurmctld and doesn't modify the real usage in the database.
+  slurmctld and doesn't modify the real usage in the database. The usage factor
+  only applies to the jobs QOS and not the partition QOS, and partition QOS
+  limits (if configured).
 <li><b>UsageThreshold</b>
 A float representing the lowest fairshare of an association allowable
 to run a job.  If an association falls below this threshold and has

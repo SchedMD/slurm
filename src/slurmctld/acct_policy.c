@@ -792,6 +792,10 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		priority_g_job_end(job_ptr);
 	else if (type == ACCT_POLICY_JOB_BEGIN) {
 		uint64_t time_limit_secs = (uint64_t)job_ptr->time_limit * 60;
+		/* take into account usage factor */
+		if (job_ptr->qos_ptr &&
+		    (job_ptr->qos_ptr->usage_factor >= 0))
+			time_limit_secs *= job_ptr->qos_ptr->usage_factor;
 		for (i = 0; i < slurmctld_tres_cnt; i++) {
 			if (i == TRES_ARRAY_ENERGY)
 				continue;
@@ -1930,6 +1934,13 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 					MIN(qos_ptr->grp_wall,
 					    qos_ptr->max_wall_pj),
 					&job_ptr->limit_set.time);
+
+			if ((job_ptr->qos_ptr &&
+			     (job_ptr->qos_ptr->usage_factor >= 0)) &&
+			    ((time_limit != INFINITE) ||
+			     (job_ptr->qos_ptr->usage_factor < 1.0))) {
+				time_limit *= job_ptr->qos_ptr->usage_factor;
+			}
 		}
 
 		qos_out_ptr->grp_wall = qos_ptr->grp_wall;
@@ -2020,6 +2031,13 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 					&job_ptr->limit_set.time);
 		}
 
+		if ((job_ptr->qos_ptr &&
+		     (job_ptr->qos_ptr->usage_factor >= 0)) &&
+		    ((time_limit != INFINITE) ||
+		     (job_ptr->qos_ptr->usage_factor < 1.0))) {
+			time_limit *= job_ptr->qos_ptr->usage_factor;
+		}
+
 		qos_out_ptr->max_wall_pj = qos_ptr->max_wall_pj;
 
 		if (time_limit > qos_out_ptr->max_wall_pj) {
@@ -2027,7 +2045,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 			job_ptr->state_reason =
 				WAIT_QOS_MAX_WALL_PER_JOB;
 			debug2("%pJ being held, time limit %u exceeds QOS max wall pj %u",
-			       job_ptr, job_ptr->time_limit, time_limit);
+			       job_ptr, time_limit, qos_out_ptr->max_wall_pj);
 			rc = false;
 			goto end_it;
 		}
@@ -2051,6 +2069,7 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	int rc = true, i, tres_pos = 0;
 	acct_policy_tres_usage_t tres_usage;
 	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
+	double usage_factor = 1.0;
 
 	if (!qos_ptr || !qos_out_ptr || !assoc_ptr)
 		return rc;
@@ -2066,11 +2085,24 @@ static int _qos_job_runnable_post_select(struct job_record *job_ptr,
 	/* clang needs this memset to avoid a warning */
 	memset(tres_run_mins, 0, sizeof(tres_run_mins));
 	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
+	if (job_ptr->qos_ptr &&
+	    (job_ptr->qos_ptr->usage_factor >= 0))
+		usage_factor = job_ptr->qos_ptr->usage_factor;
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		tres_run_mins[i] =
 			qos_ptr->usage->grp_used_tres_run_secs[i] / 60;
 		tres_usage_mins[i] =
 			(uint64_t)(qos_ptr->usage->usage_tres_raw[i] / 60.0);
+
+		/*
+		 * Clear usage if factor is 0 so that jobs can run. Otherwise
+		 * multiplying can cause more jobs to be run than the limit
+		 * allows (e.g. usagefactor=.5).
+		 */
+		if (usage_factor == 0.0) {
+			tres_run_mins[i] *= usage_factor;
+			tres_usage_mins[i] *= usage_factor;
+		}
 	}
 
 	used_limits_a =	acct_policy_get_acct_used_limits(
@@ -3457,6 +3489,15 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
 						MIN(assoc_ptr->grp_wall,
 						    assoc_ptr->max_wall_pj),
 						&job_ptr->limit_set.time);
+
+				/* Account for usage factor */
+				if ((job_ptr->qos_ptr &&
+				     (job_ptr->qos_ptr->usage_factor >= 0)) &&
+				    ((time_limit != INFINITE) ||
+				     (job_ptr->qos_ptr->usage_factor < 1.0))) {
+					time_limit *=
+						job_ptr->qos_ptr->usage_factor;
+				}
 			}
 
 			if (wall_mins >= assoc_ptr->grp_wall) {
@@ -3525,6 +3566,15 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
 						job_ptr->part_ptr->max_time,
 						assoc_ptr->max_wall_pj,
 						&job_ptr->limit_set.time);
+
+				/* Account for usage factor */
+				if ((job_ptr->qos_ptr &&
+				     (job_ptr->qos_ptr->usage_factor >= 0)) &&
+				    ((time_limit != INFINITE) ||
+				     (job_ptr->qos_ptr->usage_factor < 1.0))) {
+					time_limit *=
+						job_ptr->qos_ptr->usage_factor;
+				}
 			}
 
 			if (time_limit > assoc_ptr->max_wall_pj) {
@@ -3570,6 +3620,7 @@ extern bool acct_policy_job_runnable_post_select(
 	bool safe_limits = false;
 	int i, tres_pos = 0;
 	acct_policy_tres_usage_t tres_usage;
+	double usage_factor = 1.0;
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
@@ -3613,14 +3664,17 @@ extern bool acct_policy_job_runnable_post_select(
 	memset(tres_usage_mins, 0, sizeof(tres_usage_mins));
 	memset(job_tres_time_limit, 0, sizeof(job_tres_time_limit));
 
-	/*
-	 * time_limit may be NO_VAL if the partition does not have
-	 * a DefaultTime, in which case the partition max_time should
-	 * be used instead
-	 */
 	time_limit = job_ptr->time_limit;
 	_set_time_limit(&time_limit, job_ptr->part_ptr->max_time,
 			job_ptr->part_ptr->default_time, NULL);
+
+	if ((job_ptr->qos_ptr &&
+	     (job_ptr->qos_ptr->usage_factor >= 0)) &&
+	    ((time_limit != INFINITE) ||
+	     (job_ptr->qos_ptr->usage_factor < 1.0))) {
+		usage_factor = job_ptr->qos_ptr->usage_factor;
+		time_limit *= usage_factor;
+	}
 
 	for (i=0; i<slurmctld_tres_cnt; i++)
 		job_tres_time_limit[i] = (uint64_t)time_limit * tres_req_cnt[i];
@@ -3657,6 +3711,16 @@ extern bool acct_policy_job_runnable_post_select(
 			tres_run_mins[i] =
 				assoc_ptr->usage->grp_used_tres_run_secs[i] /
 				60;
+
+			/*
+			 * Clear usage if factor is 0 so that jobs can run.
+			 * Otherwise multiplying can cause more jobs to be run
+			 * than the limit allows (e.g. usagefactor=.5).
+			 */
+			if (usage_factor == 0.0) {
+				tres_usage_mins[i] *= usage_factor;
+				tres_run_mins[i] *= usage_factor;
+			}
 		}
 
 #if _DEBUG
