@@ -1632,8 +1632,10 @@ static int _init_tres(void)
 			tres_rec->name = xstrdup(temp_char+3);
 			if (!tres_rec->name)
 				fatal("Burst Buffer type tres need to have a "
-				      "name, (i.e. bb/cray).  You gave %s",
+				      "name, (i.e. bb/datawarp).  You gave %s",
 				      temp_char);
+			else if (!xstrcmp(tres_rec->name, "cray"))
+				fatal("The Burst Buffer tres 'bb/cray' changed to 'bb/datawarp'.  Please alter AccountingStorageTRES in your slurm.conf and restart.");
 		} else if (!xstrncasecmp(temp_char, "gres/", 5)) {
 			tres_rec->type[4] = '\0';
 			tres_rec->name = xstrdup(temp_char+5);

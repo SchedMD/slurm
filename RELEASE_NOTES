@@ -179,6 +179,10 @@ configuration files will be required before upgrading to this release.
     Note that slurmsmwd builds need to be generated separately from the main
     installation.
 
+ -- In your slurm.conf AccountingStorageTRES with bb/cray will need to be
+    changed to bb/datawarp.
+    This will happen automatically in the database - very quick.
+
 RPMBUILD CHANGES
 ================
 
