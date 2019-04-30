@@ -148,18 +148,20 @@ static int _group_cache_lookup_internal(gids_cache_needle_t *needle, gid_t **gid
 		 */
 		entry->ngids = xsize(entry->gids) / sizeof(gid_t);
 	} else {
-		if (!needle->username)
-			needle->username = uid_to_string(needle->uid);
-		debug2("%s: no entry found for %s",
-		       __func__, needle->username);
 		/* no result, allocate and add to list */
 		entry = xmalloc(sizeof(gids_cache_t));
-		entry->username = xstrdup(needle->username);
+		if (!needle->username)
+			entry->username = uid_to_string(needle->uid);
+		else
+			entry->username = xstrdup(needle->username);
 		entry->uid = needle->uid;
 		entry->gid = needle->gid;
 		entry->ngids = NGROUPS_START;
 		entry->gids = xmalloc(sizeof(gid_t) * entry->ngids);
 		list_prepend(gids_cache_list, entry);
+
+		debug2("%s: no entry found for %s",
+		       __func__, entry->username);
 	}
 
 	entry->expiration = needle->now + slurmctld_conf.group_time;
