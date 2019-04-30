@@ -2909,6 +2909,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
 	FREE_NULL_LIST(ctl_conf_ptr->select_conf_key_pairs);
+	xfree (ctl_conf_ptr->site_factor_plugin);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
 	xfree (ctl_conf_ptr->slurmctld_addr);

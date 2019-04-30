@@ -705,6 +705,7 @@ extern int load_all_node_state ( bool state_only )
 		xfree (node_hostname);
 		xfree (node_name);
 		xfree(reason);
+		xfree(cpu_spec_list);
 	}
 
 fini:	info("Recovered state of %d nodes", node_cnt);
