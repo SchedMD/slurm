@@ -161,6 +161,7 @@ static void _set_response_cluster_rec(void)
 	}
 	response_cluster_rec->control_port = slurmctld_conf.slurmctld_port;
 	response_cluster_rec->rpc_version = SLURM_PROTOCOL_VERSION;
+	response_cluster_rec->plugin_id_select = select_get_plugin_id();
 }
 
 /*

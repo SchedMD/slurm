@@ -60,6 +60,7 @@
 #include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
+#include "src/common/node_select.h"
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
@@ -687,11 +688,12 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 		slurm_setup_remote_working_cluster(alloc);
 
 		/* set env for srun's to find the right cluster */
-		setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d",
+		setenvf(NULL, "SLURM_WORKING_CLUSTER", "%s:%s:%d:%d:%d",
 			working_cluster_rec->name,
 			working_cluster_rec->control_host,
 			working_cluster_rec->control_port,
-			working_cluster_rec->rpc_version);
+			working_cluster_rec->rpc_version,
+			select_get_plugin_id());
 	}
 
 	if (!_wait_nodes_ready(alloc)) {

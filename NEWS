@@ -76,6 +76,7 @@ documents those changes that are of interest to users and administrators.
  -- slurm.spec - add new --with slurmsmwd option.
  -- pmi2: add mutex locking to all API calls to ensure thread-safety.
  -- Fix QOS usage factor to apply to TRES time limits and usage.
+ -- Fix multi-cluster srun's with Select/Cray and other_cons_res.
 
 * Changes in Slurm 19.05.0pre3
 ==============================
