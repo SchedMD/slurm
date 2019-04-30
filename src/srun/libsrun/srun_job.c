@@ -1978,14 +1978,7 @@ static int _set_rlimit_env(void)
 	/*
 	 *  Now increase NOFILE to the max available for this srun
 	 */
-	if (getrlimit (RLIMIT_NOFILE, rlim) < 0)
-		return (error ("getrlimit (RLIMIT_NOFILE): %m"));
-
-	if (rlim->rlim_cur < rlim->rlim_max) {
-		rlim->rlim_cur = rlim->rlim_max;
-		if (setrlimit (RLIMIT_NOFILE, rlim) < 0)
-			return (error ("Unable to increase max no. files: %m"));
-	}
+	rlimits_maximize_nofile();
 
 	return rc;
 }

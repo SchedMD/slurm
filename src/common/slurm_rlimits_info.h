@@ -60,4 +60,11 @@ extern int parse_rlimits( char *rlimits_str, int propagate_flag );
 
 extern void print_rlimits( void );
 
+/*
+ * Max out the RLIMIT_NOFILE setting.
+ *
+ * Handled through this so cross-platform issues can be isolated.
+ */
+extern void rlimits_maximize_nofile(void);
+
 #endif /*__SLURM_RLIMITS_INFO_H__*/

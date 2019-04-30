@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/param.h>	/* for OPEN_MAX on macOS */
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -195,5 +196,23 @@ extern void print_rlimits(void)
 			printf("SLURM_RLIMIT_%s=%lu\n", rli->name,
 			       (unsigned long) rlp.rlim_cur);
 		}
+	}
+}
+
+extern void rlimits_maximize_nofile(void)
+{
+	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0)
+		error("getrlimit(RLIMIT_NOFILE): %m");
+
+	if (rlim.rlim_cur < rlim.rlim_max) {
+#if defined(__APPLE__)
+		rlim.rlim_cur = MIN(OPEN_MAX, rlim.rlim_max);
+#else
+		rlim.rlim_cur = rlim.rlim_max;
+#endif
+		if (setrlimit(RLIMIT_NOFILE, &rlim) < 0)
+			error("Unable to increase maximum number of open files: %m");
 	}
 }

@@ -60,6 +60,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -398,10 +399,7 @@ static void  _init_config(void)
 {
 	struct rlimit rlim;
 
-	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
-		rlim.rlim_cur = rlim.rlim_max;
-		(void) setrlimit(RLIMIT_NOFILE, &rlim);
-	}
+	rlimits_maximize_nofile();
 	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
 		(void) setrlimit(RLIMIT_CORE, &rlim);

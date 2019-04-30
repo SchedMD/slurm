@@ -93,6 +93,7 @@
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_route.h"
 #include "src/common/slurm_topology.h"
 #include "src/common/stepd_api.h"
@@ -1692,14 +1693,12 @@ _slurmd_init(void)
 		}
 	}
 
-	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
-		rlim.rlim_cur = rlim.rlim_max;
-		setrlimit(RLIMIT_NOFILE, &rlim);
-	}
 	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
 		setrlimit(RLIMIT_CORE, &rlim);
 	}
+
+	rlimits_maximize_nofile();
 
 	/*
 	 * Create a context for verifying slurm job credentials
