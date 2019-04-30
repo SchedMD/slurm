@@ -926,21 +926,20 @@ proc wait_for_step { step_id } {
 # Purpose:  Wait for previously submitted Slurm jobs to finish of a
 #           certain name. Iterates every $poll_interval seconds.
 #
-# Returns: A non-zero return code indicates a failure.
+# Returns: -1 on failure, 0 if all jobs are done, and the remaining job count
+#          if not all jobs are done after $wait_for_all_jobs_iterations
+#          iterations.
 #
 # Input: job_name   -- The name of job to wait for.
 #
 ################################################################
-# Wait up to 900 seconds for all jobs to terminate
-# Return 0 if all jobs done, remainin job count otherwise
 proc wait_for_all_jobs { job_name } {
 	global scancel squeue bin_sleep wait_for_all_jobs_iterations poll_interval
 
 	set matches 0
-	set last_matches 0
 	set timeout 30
 
-	send_user "Waiting for all jobs to terminate\n"
+	log_info "Waiting for all jobs to terminate"
 	for {set inx 0} {$inx < $wait_for_all_jobs_iterations} {incr inx} {
 		log_user 0
 		set matches 0
@@ -954,7 +953,7 @@ proc wait_for_all_jobs { job_name } {
 				set matches -1
 			}
 			timeout {
-				send_user "No response from squeue\n"
+				log_info "No response from squeue"
 				set matches -1
 			}
 			eof {
@@ -963,18 +962,11 @@ proc wait_for_all_jobs { job_name } {
 		}
 		log_user 1
 		if {$matches == 0} {
-			send_user "All jobs complete\n"
+			log_info "All jobs complete"
 			break
 		}
 		if {$matches > 0} {
-			send_user "  $matches jobs remaining\n"
-#			Moab can slow throughput down a lot,
-#			so don't return here
-#			if {$matches == $last_matches} {
-#				send_user "Running jobs hung\n"
-#				break
-#			}
-#			set last_matches $matches
+			log_info "  $matches jobs remaining"
 			exec sleep $poll_interval
 		}
 		if {$matches == -1} {
@@ -985,7 +977,7 @@ proc wait_for_all_jobs { job_name } {
 		spawn $scancel -n $job_name
 		expect {
 			timeout {
-				send_user "No response from scancel\n"
+				log_warning "No response from scancel"
 			}
 			eof {
 				wait
