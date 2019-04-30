@@ -1368,6 +1368,22 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			break;
 		}
 
+		/*
+		 * Old versions of Slurm don't work with het jobs and Cray
+		 * This can be removed 2 versions after 19.05.
+		 */
+		if ((msg->protocol_version < SLURM_19_05_PROTOCOL_VERSION) &&
+		    ((job_desc_msg->select_jobinfo->plugin_id ==
+		      SELECT_PLUGIN_CRAY_LINEAR) ||
+		     (job_desc_msg->select_jobinfo->plugin_id ==
+		      SELECT_PLUGIN_CRAY_CONS_RES) ||
+		     (job_desc_msg->select_jobinfo->plugin_id ==
+		      SELECT_PLUGIN_CRAY_CONS_TRES))) {
+			err_msg = xstrdup("Het jobs from old Slurm versions are not possible");
+			error_code = SLURM_PROTOCOL_VERSION_ERROR;
+			break;
+		}
+
 		/* use the credential to validate where we came from */
 		if (hostname) {
 			xfree(job_desc_msg->alloc_node);
