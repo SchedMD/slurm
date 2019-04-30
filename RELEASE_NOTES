@@ -150,6 +150,9 @@ configuration files will be required before upgrading to this release.
     (If your burst_buffer configuration file is named burst_buffer.conf,
     you will not need to rename it.)
 
+    If you have "bb/cray" listed in AccountingStorageTRES, you must also update
+    this to "bb/datawarp".
+
  -- Support for the Cray NHC subsystem has been removed. Sites should use a
     Cray-provided replacement Epilog script as a replacement to validate the
     health of the individual compute nodes. The SelectTypeParameters options
