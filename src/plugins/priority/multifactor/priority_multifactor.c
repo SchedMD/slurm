@@ -1375,6 +1375,12 @@ static void *_decay_thread(void *no_data)
 
 		lock_slurmctld(job_write_lock);
 
+		/*
+		 * Give the site_factor plugin a chance to update the
+		 * site_factor value if desired.
+		 */
+		site_factor_g_update();
+
 		if (!(flags & PRIORITY_FLAGS_FAIR_TREE)) {
 			list_for_each(
 				job_list,
@@ -1382,12 +1388,6 @@ static void *_decay_thread(void *no_data)
 				&start_time
 				);
 		}
-
-		/*
-		 * Give the site_factor plugin a chance to update the
-		 * site_factor value if desired.
-		 */
-		site_factor_g_update();
 
 		unlock_slurmctld(job_write_lock);
 
