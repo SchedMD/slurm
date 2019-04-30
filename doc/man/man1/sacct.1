@@ -10,7 +10,8 @@ Slurm job accounting log or Slurm database
 .SH "DESCRIPTION"
 .PP
 Accounting information for jobs invoked with Slurm are either logged
-in the job accounting log file or saved to the Slurm database.
+in the job accounting log file or saved to the Slurm database, as
+configured with the AccountingStorageType parameter.
 .PP
 The \f3sacct\fP command displays job accounting data stored in the job
 accounting log file or Slurm database in a variety of forms for your
@@ -27,6 +28,13 @@ For the non\-root user, the \f3sacct\fP command limits the display of
 job accounting data to jobs that were launched with their own user
 identifier (UID) by default.  Data for other users can be displayed
 with the \f3\-\-allusers\fP, \f3\-\-user\fP, or \f3\-\-uid\fP options.
+.PP
+Elapsed time fields are presented as
+[days-]hours:minutes:seconds[.microseconds]. Only 'CPU' fields will
+ever have microseconds.
+.PP
+The default input file is the file named in the
+\f3AccountingStorageLoc\fP parameter in slurm.conf.
 .TP "7"
 \f3Note: \fP\c
 If designated, the slurmdbd.conf option PrivateData may further
@@ -43,7 +51,7 @@ needed, it is recommended that a database type of accounting storage be
 configured.
 .TP
 \f3Note: \fP\c
-The content's of Slurm's database are maintained in lower case. This may
+The contents of Slurm's database are maintained in lower case. This may
 result in some \f3sacct\fP output differing from that of other Slurm commands.
 .TP
 \f3Note: \fP\c
@@ -53,13 +61,6 @@ gather and report incomplete information for these calls;
 \f3sacct\fP reports values of 0 for this missing data. See your systems
 \f2getrusage (3)\fP man page for information about which data are
 actually available on your system.
-.IP
-Elapsed time fields are presented as
-[days-]hours:minutes:seconds[.microseconds].  Only 'CPU' fields will
-ever have microseconds.
-.IP
-The default input file is the file named in the
-\f3AccountingStorageLoc\fP parameter in slurm.conf.
 
 .SH "OPTIONS"
 
@@ -100,7 +101,7 @@ Does not support federated cluster information (local data only).
 \f3\-\-delimiter\f3=\fP\f2characters\fP
 ASCII characters used to separate the fields when specifying
 the \f3\-p\fP or \f3\-P\fP options. The default delimiter
-is a '|'. This options is ignored if \f3\-p\fP or \f3\-P\fP options
+is a '|'. This option is ignored if \f3\-p\fP or \f3\-P\fP options
 are not specified.
 
 .TP
@@ -124,6 +125,7 @@ is specified.
 \f3\-e\fP\f3,\fP \f3\-\-helpformat\fP
 .IP
 Print a list of fields that can be specified with the \f3\-\-format\fP option.
+
 .IP
 .RS
 .PP
@@ -158,17 +160,16 @@ TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
 TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
 User                UserCPU             WCKey               WCKeyID
 WorkDir
-
-NOTE: When using with Ave[RSS|VM]Size or their values in
-TRESUsageIn[Ave|Tot].  They represent the average/total of the highest
-watermarks over all ranks in the step.  When using sstat they represent the
-average/total at the moment the command was ran.
-
-NOTE: TRESUsage*Min* values represent the lowest highwater mark in the step.
-
 .ft 1
 .fi
 .RE
+.IP
+NOTE: When using with Ave[RSS|VM]Size or their values in
+TRESUsageIn[Ave|Tot].  They represent the average/total of the highest
+watermarks over all ranks in the step.  When using sstat they represent the
+average/total at the moment the command was run.
+.IP
+NOTE: TRESUsage*Min* values represent the lowest highwater mark in the step.
 .IP
 The section titled "Job Accounting Fields" describes these fields.
 
@@ -203,9 +204,9 @@ file. Only applicable when running the filetxt plugin.
 .TP
 \f3\-g \fP\f2gid_list\fP\f3, \-\-gid=\fP\f2gid_list\fP \f3\-\-group=\fP\f2group_list\fP
 Displays the statistics only for the jobs started with the GID
-or the GROUP specified by the \f2gid_list\fP or the\f2group_list\fP operand, which is a comma\-separated
+or the GROUP specified by the \f2gid_list\fP or the \f2group_list\fP operand, which is a comma\-separated
 list.  Space characters are not allowed.
-Default is no restrictions.\&.
+Default is no restrictions.
 
 .TP
 \f3\-h\fP\f3,\fP \f3\-\-help\fP
@@ -350,7 +351,7 @@ jobs not currently running.
 See the \fBJOB STATE CODES\fR section below for a list of state designators.
 Multiple state names may be specified using comma separators. Either the short
 or long form of the state name may be used (e.g. \f3CA\fP or \f3CANCELLED\fP)
-and the name is case insensitive (e.g. \f3ca\fP and \f3CA\fP both work).
+and the name is case insensitive (i.e. \f3ca\fP and \f3CA\fP both work).
 
 NOTE: Note for a job to be selected in the PENDING state it must have
 "EligibleTime" in the requested time interval or different from "Unknown". The
@@ -521,12 +522,11 @@ reflects the jobs' real energy consumption.
 
 .TP
 \f3CPUTime\fP
-Formatted (Elapsed time * CPU) count used by a job or step.
+Time used (Elapsed time * CPU count) by a job or step in HH:MM:SS format.
 
 .TP
 \f3CPUTimeRAW\fP
-Unlike above non formatted (Elapsed time * CPU) count for a job or step.
-Units are cpu-seconds.
+Time used (Elapsed time * CPU count) by a job or step in cpu-seconds.
 
 .TP
 \f3DerivedExitCode\fP
@@ -566,7 +566,7 @@ seconds
 
 .TP
 \f3Eligible\fP
-When the job became eligible to run.
+When the job became eligible to run in the same format as \f3End\fP.
 
 .TP
 \f3End\fP
@@ -589,15 +589,25 @@ The group name of the user who ran the job.
 
 .TP
 \f3JobID\fP
-The number of the job or job step.
-It is in the form:
-\f2job.jobstep\fP\c
+The identification number of the job or job step.
+.IP
+Regular jobs are in the form:
+.IP
+\f2JobID[.JobStep]\fP\c
+.IP
+Array jobs are in the form:
+.IP
+\f2ArrayJobID_ArrayTaskID\fP\c
+.IP
+Heterogeneous jobs are in the form:
+.IP
+\f2PackJobID+PackJobOffset\fP\c
 \&.
 
 .TP
 \f3JobIDRaw\fP
-In case of job array print the JobId instead of the ArrayJobId.
-For non job arrays the output is the JobId in the format \f2job.jobstep\fP\c
+The identification number of the job or job step.  Prints the JobID in the
+form \f2JobID[.JobStep]\fP\c for regular, heterogeneous and array jobs.
 \&.
 
 .TP
@@ -688,9 +698,7 @@ The task ID where the mincpu occurred.
 
 .TP
 \f3NCPUS\fP
-Count of allocated CPUs. Equivalent to \f3AllocCPUS\fP
-
-Total number of CPUs allocated to the job.
+Total number of CPUs allocated to the job.  Equivalent to \f3AllocCPUS\fP.
 
 .TP
 \f3NodeList\fP
@@ -719,7 +727,7 @@ Name of Quality of Service.
 
 .TP
 \f3QOSRAW\fP
-Id of Quality of Service.
+Numeric id of Quality of Service.
 
 .TP
 \f3ReqCPUFreq\fP
@@ -728,7 +736,7 @@ Note: This value applies only to a job step. No value is reported for the job.
 
 .TP
 \f3ReqCPUS\fP
-Required CPUs.
+Number of requested CPUs.
 
 .TP
 \f3ReqGRES\fP
@@ -762,15 +770,17 @@ Reservation Id.
 \f3Reserved\fP
 How much wall clock time was used as reserved time for this job.  This is
 derived from how long a job was waiting from eligible time to when it
-actually started.
+actually started.  Format is the same as \f3Elapsed\fP.
 
 .TP
 \f3ResvCPU\fP
-Formatted time for how long (cpu secs) a job was reserved for.
+How many CPU seconds were used as reserved time for this job.  Format is
+the same as \f3Elapsed\fP.
 
 .TP
 \f3ResvCPURAW\fP
-Reserved CPUs in second format, not formatted.
+How many CPU seconds were used as reserved time for this job.  Format is
+in processor seconds.
 
 .TP
 \f3Start\fP
@@ -792,14 +802,12 @@ from RUNNING.
 
 NOTE: The RUNNING state will return any jobs completed (cancelled or otherwise)
 in the time period requested as the job was also RUNNING durning that time.  If
-you are only looking for job that finished please choose the appropriate
+you are only looking for jobs that finished, please choose the appropriate
 state(s) without the RUNNING state.
 
 .TP
 \f3Submit\fP
-The  time and date stamp (in localtime) the job was submitted.
-The format of the output is identical to that of the \f3End\fP
-field.
+The time the job was submitted in the same format as \f3End\fP.
 
 NOTE: If a job is requeued, the submit time is reset.  To obtain the
 original submit time it is necessary to use the \-D or \-\-duplicate option
@@ -807,30 +815,30 @@ to display all duplicate entries for a job.
 
 .TP
 \f3Suspended\fP
-How long the job was suspended for.
+The amount of time a job or job step was suspended. Format is the same
+as \f2Elapsed\fP.
 
 .TP
 \f3SystemCPU\fP
-The amount of system CPU time used by the job or job step.  The format
-of the output is identical to that of the \f3Elapsed\fP field.
+The amount of system CPU time used by the job or job step. Format
+is the same as \f3Elapsed\fP.
 
 NOTE: SystemCPU provides a measure of the task's parent process and
 does not include CPU time of child processes.
 
 .TP
 \f3Timelimit\fP
-What the timelimit was/is for the job.
+What the timelimit was/is for the job. Format is the same as \f3Elapsed\fP.
 
 .TP
 \f3TimelimitRaw\fP
-What the timelimit was/is for the job, not formatted.
+What the timelimit was/is for the job. Format is in number of minutes.
 
 .TP
 \f3TotalCPU\fP
 The sum of the SystemCPU and UserCPU time used by the job or job step.
 The total CPU time of the job may exceed the job's elapsed time for
-jobs that include multiple job steps.  The format of the output is
-identical to that of the \f3Elapsed\fP field.
+jobs that include multiple job steps. Format is the same as \f3Elapsed\fP.
 
 NOTE: TotalCPU provides a measure of the task's parent process and
 does not include CPU time of child processes.
@@ -885,8 +893,8 @@ The user name of the user who ran the job.
 
 .TP
 \f3UserCPU\fP
-The amount of user CPU time used by the job or job step.  The format
-of the output is identical to that of the \f3Elapsed\fP field.
+The amount of user CPU time used by the job or job step. Format is the same as
+\f3Elapsed\fP.
 
 NOTE: UserCPU provides a measure of the task's parent process and does
 not include CPU time of child processes.
@@ -953,8 +961,8 @@ Job terminated upon reaching its time limit.
 
 .SH "DEFAULT TIME WINDOW"
 .PP
-The options \-\-starttime and \-\-endtime define the time window in
-between \fBsacct\fR is going to search. For historical and practical
+The options \-\-starttime and \-\-endtime define the time window between
+which \fBsacct\fR is going to search. For historical and practical
 reasons their default values (i.e. the default time window)
 depends on other options: \-\-jobs and \-\-state.
 
@@ -974,7 +982,7 @@ Defaults to Now.
 \f3WITH \fB\-\-jobs\fR AND WITHOUT \fB\-\-state\fR\fP specified:
 .RS
 .IP\fB\-\-\-starttime\fR
-Dfaults to Epoch 0.
+Defaults to Epoch 0.
 .IP\fB\-\-\-endtime\fR
 Defaults to Now.
 .RE
