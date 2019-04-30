@@ -83,11 +83,15 @@
 
 extern char **environ;
 
+static void _help(void);
+static void _usage(void);
+
 /*---- global variables, defined in opt.h ----*/
 int	error_exit = 1;
 int	immediate_exit = 1;
 srun_opt_t sropt;
-slurm_opt_t opt = { .srun_opt = &sropt };
+slurm_opt_t opt =
+	{ .srun_opt = &sropt, .help_func = _help, .usage_func = _usage };
 List 	opt_list = NULL;
 int	pass_number = 0;
 time_t	srun_begin_time = 0;
@@ -1335,7 +1339,7 @@ static bool _under_parallel_debugger (void)
 	return (MPIR_being_debugged != 0);
 }
 
-extern void srun_usage(void)
+static void _usage(void)
 {
  	printf(
 "Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
@@ -1372,7 +1376,7 @@ extern void srun_usage(void)
 
 }
 
-extern void srun_help(void)
+static void _help(void)
 {
 	slurm_ctl_conf_t *conf;
 

@@ -76,9 +76,13 @@
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
 
+static void _help(void);
+static void _usage(void);
+
 /*---- global variables, defined in opt.h ----*/
 salloc_opt_t saopt;
-slurm_opt_t opt = { .salloc_opt = &saopt };
+slurm_opt_t opt =
+	{ .salloc_opt = &saopt, .help_func = _help, .usage_func = _usage };
 int error_exit = 1;
 bool first_pass = true;
 int immediate_exit = 1;
@@ -748,7 +752,7 @@ extern int   spank_unset_job_env(const char *name)
 	return 0;	/* not found */
 }
 
-extern void salloc_usage(void)
+static void _usage(void)
 {
  	printf(
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
@@ -776,7 +780,7 @@ extern void salloc_usage(void)
 "              [command [args...]]\n");
 }
 
-extern void salloc_help(void)
+static void _help(void)
 {
 	slurm_ctl_conf_t *conf;
 

@@ -1477,21 +1477,12 @@ static slurm_cli_opt_t slurm_opt_gres_flags = {
 	.reset_each_pass = true,
 };
 
-/*
- * Dummy function implementations, should be overridden by versions within the
- * respective commands at runtime.
- */
-extern void salloc_help(void) {}
-extern void sbatch_help(void) {}
-extern void srun_help(void) {}
 static int arg_set_help(slurm_opt_t *opt, const char *arg)
 {
-	if (opt->salloc_opt)
-		salloc_help();
-	else if (opt->sbatch_opt)
-		sbatch_help();
-	else if (opt->srun_opt)
-		srun_help();
+	if (opt->help_func)
+		(opt->help_func)();
+	else
+		error("Could not find --help message");
 
 	exit(0);
 	return SLURM_SUCCESS;
@@ -3264,21 +3255,12 @@ static slurm_cli_opt_t slurm_opt_use_min_nodes = {
 	.reset_each_pass = true,
 };
 
-/*
- * Dummy function implementations, should be overridden by versions within the
- * respective commands at runtime.
- */
-extern void salloc_usage(void) {}
-extern void sbatch_usage(void) {}
-extern void srun_usage(void) {}
 static int arg_set_usage(slurm_opt_t *opt, const char *arg)
 {
-	if (opt->salloc_opt)
-		salloc_usage();
-	else if (opt->sbatch_opt)
-		sbatch_usage();
-	else if (opt->srun_opt)
-		srun_usage();
+	if (opt->usage_func)
+		(opt->usage_func)();
+	else
+		error("Could not find --usage message");
 
 	exit(0);
 	return SLURM_SUCCESS;

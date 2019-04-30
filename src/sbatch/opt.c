@@ -83,9 +83,13 @@
 #define OPT_MULTI	0x0b
 #define OPT_INT64	  0x24
 
+static void _help(void);
+static void _usage(void);
+
 /*---- global variables, defined in opt.h ----*/
 sbatch_opt_t sbopt;
-slurm_opt_t opt = { .sbatch_opt = &sbopt };
+slurm_opt_t opt =
+	{ .sbatch_opt = &sbopt, .help_func = _help, .usage_func = _usage };
 sbatch_env_t pack_env;
 int   error_exit = 1;
 bool  is_pack_job = false;
@@ -1064,7 +1068,7 @@ static void _fullpath(char **filename, const char *cwd)
 	*filename = ptr;
 }
 
-extern void sbatch_usage(void)
+static void _usage(void)
 {
 	printf(
 "Usage: sbatch [-N nnodes] [-n ntasks]\n"
@@ -1094,7 +1098,7 @@ extern void sbatch_usage(void)
 "              executable [args...]\n");
 }
 
-extern void sbatch_help(void)
+static void _help(void)
 {
 	slurm_ctl_conf_t *conf;
 

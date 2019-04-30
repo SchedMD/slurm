@@ -278,6 +278,9 @@ typedef struct slurm_options {
 	sbatch_opt_t *sbatch_opt;
 	srun_opt_t *srun_opt;
 
+	void (*help_func)(void);	/* Print --help info		*/
+	void (*usage_func)(void);	/* Print --usage info		*/
+
 	char *burst_buffer;		/* --bb				*/
 	char *burst_buffer_file;	/* --bbf			*/
 	char *clusters;			/* cluster to run this on. */
@@ -460,15 +463,5 @@ extern bool slurm_option_reset(slurm_opt_t *opt, const char *name);
  */
 extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 				      char **value, size_t *state);
-
-/*
- * Pull these back in from the appropriate commands:
- */
-extern void salloc_help(void);
-extern void sbatch_help(void);
-extern void srun_help(void);
-extern void salloc_usage(void);
-extern void sbatch_usage(void);
-extern void srun_usage(void);
 
 #endif	/* _SLURM_OPT_H_ */
