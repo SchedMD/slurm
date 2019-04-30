@@ -225,6 +225,12 @@ cset max_stress_tasks 4
 #
 cset sleep_error_message "(invalid time interval)|(bad character in argument)|(usage: sleep seconds)"
 
+#
+# The poll interval (how many seconds to sleep between polls in functions like
+# wait_for_file and wait_for_job)
+#
+cset poll_interval 1
+
 # Force LANG, as the expect tests aren't localized
 set ::env(LANG)          "en_US.UTF-8"
 
@@ -585,7 +591,7 @@ proc print_header { test_id } {
 # Purpose:  Wait for the specified file to exist and have a
 #           non-zero size. Note that if JobFileAppend=0 is
 #           configured, a file can exist and be purged then
-#           be re-created.
+#           be re-created. Polls every $poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -594,15 +600,16 @@ proc print_header { test_id } {
 ################################################################
 
 proc wait_for_file { file_name } {
-	global bin_sleep max_file_delay
+	global bin_sleep max_file_delay poll_interval
 
-	for {set my_delay 0} {$my_delay <= $max_file_delay} {incr my_delay} {
+	for {set my_delay 0} {$my_delay <= $max_file_delay} \
+	                     {set my_delay [expr $my_delay + $poll_interval]} {
 		if {[file exists $file_name]} {
 #			Add small delay for I/O buffering
 			exec $bin_sleep 1
 			return 0
 		}
-		exec $bin_sleep 1
+		exec $bin_sleep $poll_interval
 #
 #		Expect may fail to load current NFS info.
 #		Use the ls command to load current info.
@@ -626,7 +633,7 @@ proc wait_for_file { file_name } {
 # Proc: wait_for_job
 #
 # Purpose:  Wait for a previously submitted Slurm job to reach
-# the desired state, exponential back-off 1 to 10 seconds
+# the desired state. Polls every $poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -645,7 +652,7 @@ proc wait_for_file { file_name } {
 ################################################################
 
 proc wait_for_job { job_id desired_state } {
-	global scontrol max_job_state_delay
+	global scontrol max_job_state_delay poll_interval
 
 	# First verify that desired_state is supported
 	switch $desired_state {
@@ -664,7 +671,6 @@ proc wait_for_job { job_id desired_state } {
 		return 1
 	}
 
-	set sleep_time  1
 	set my_delay    0
 	while 1 {
 		set fd [open "|$scontrol -o show job $job_id"]
@@ -733,12 +739,8 @@ proc wait_for_job { job_id desired_state } {
 			return 1
 		}
 
-		exec sleep $sleep_time
-		set my_delay [expr $my_delay + $sleep_time]
-		set sleep_time  [expr $sleep_time * 2]
-		if { $sleep_time > 10 } {
-			set sleep_time 10
-		}
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 }
 
@@ -746,8 +748,8 @@ proc wait_for_job { job_id desired_state } {
 #
 # Proc: wait_for_account_done
 #
-# Purpose:  Cancel jobs on and wait for them to be finished in account(s) given,
-#           exponential back-off 1 to 10 seconds
+# Purpose:  Cancel jobs on and wait for them to be finished in account(s) given.
+#           Polls every $poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -759,7 +761,7 @@ proc wait_for_job { job_id desired_state } {
 ################################################################
 
 proc wait_for_account_done { accounts } {
-	global scancel squeue max_job_state_delay alpha_numeric_colon
+	global scancel squeue max_job_state_delay alpha_numeric_colon poll_interval
 
 	if { $accounts == "" } {
 		log_error "wait_for_account_done: no account given"
@@ -780,7 +782,6 @@ proc wait_for_account_done { accounts } {
 		}
 	}
 
-	set sleep_time  1
 	set my_delay    0
 	while 1 {
 		set found 0
@@ -806,12 +807,8 @@ proc wait_for_account_done { accounts } {
 			return 1
 		}
 
-		exec sleep $sleep_time
-		set my_delay [expr $my_delay + $sleep_time]
-		set sleep_time  [expr $sleep_time * 2]
-		if { $sleep_time > 10 } {
-			set sleep_time 10
-		}
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 	log_user 1
 	return 0
@@ -821,8 +818,8 @@ proc wait_for_account_done { accounts } {
 #
 # Proc: wait_for_part_done
 #
-# Purpose:  Cancel jobs on and wait for them to be finished in partition given,
-#           exponential back-off 1 to 10 seconds
+# Purpose:  Cancel jobs on and wait for them to be finished in partition given.
+#           Polls every $poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -834,7 +831,7 @@ proc wait_for_account_done { accounts } {
 ################################################################
 
 proc wait_for_part_done { part } {
-	global scancel squeue max_job_state_delay alpha_numeric_colon
+	global scancel squeue max_job_state_delay alpha_numeric_colon poll_interval
 
 	if { $part == "" } {
 		log_error "wait_for_part_done: no partition given"
@@ -852,7 +849,6 @@ proc wait_for_part_done { part } {
 		}
 	}
 
-	set sleep_time  1
 	set my_delay    0
 	while 1 {
 		set found 0
@@ -878,12 +874,8 @@ proc wait_for_part_done { part } {
 			return 1
 		}
 
-		exec sleep $sleep_time
-		set my_delay [expr $my_delay + $sleep_time]
-		set sleep_time  [expr $sleep_time * 2]
-		if { $sleep_time > 10 } {
-			set sleep_time 10
-		}
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 	log_user 1
 	return 0
@@ -893,8 +885,8 @@ proc wait_for_part_done { part } {
 #
 # Proc: wait_for_step
 #
-# Purpose: Wait for a job step to be found, exponential back-off
-# 1 to 10 seconds
+# Purpose: Wait for a job step to be found.
+#          Polls every $poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -904,8 +896,7 @@ proc wait_for_part_done { part } {
 ################################################################
 
 proc wait_for_step { step_id } {
-	global scontrol max_job_state_delay
-	set sleep_time  1
+	global scontrol max_job_state_delay poll_interval
 	set my_delay    0
 	while 1 {
 		set fd [open "|$scontrol -o show step $step_id"]
@@ -922,13 +913,9 @@ proc wait_for_step { step_id } {
 			return 1
 		}
 
-		send_user "Step $step_id not done yet waiting for $sleep_time seconds\n"
-		exec sleep $sleep_time
-		set my_delay [expr $my_delay + $sleep_time]
-		set sleep_time  [expr $sleep_time * 2]
-		if { $sleep_time > 10 } {
-			set sleep_time 10
-		}
+		send_user "Step $step_id not done yet waiting for $poll_interval seconds\n"
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
 	}
 }
 
@@ -937,30 +924,22 @@ proc wait_for_step { step_id } {
 # Proc: wait_for_all_jobs
 #
 # Purpose:  Wait for previously submitted Slurm jobs to finish of a
-# certain name, if incr_sleep is set exponential back-off 1 to 10 seconds
+#           certain name. Iterates every $poll_interval seconds.
 #
 # Returns: A non-zero return code indicates a failure.
 #
 # Input: job_name   -- The name of job to wait for.
-#        incr_sleep -- To exponentially back-off or not
-#
 #
 ################################################################
 # Wait up to 900 seconds for all jobs to terminate
 # Return 0 if all jobs done, remainin job count otherwise
-proc wait_for_all_jobs { job_name incr_sleep } {
-	global scancel squeue bin_sleep wait_for_all_jobs_iterations
+proc wait_for_all_jobs { job_name } {
+	global scancel squeue bin_sleep wait_for_all_jobs_iterations poll_interval
 
 	set matches 0
-	set my_delay    0
 	set last_matches 0
 	set timeout 30
 
-	if {$incr_sleep == 0} {
-		set sleep_time  0.2
-	} else {
-		set sleep_time  1
-	}
 	send_user "Waiting for all jobs to terminate\n"
 	for {set inx 0} {$inx < $wait_for_all_jobs_iterations} {incr inx} {
 		log_user 0
@@ -996,14 +975,7 @@ proc wait_for_all_jobs { job_name incr_sleep } {
 #				break
 #			}
 #			set last_matches $matches
-			exec sleep $sleep_time
-			set my_delay [expr $my_delay + $sleep_time]
-			if { $incr_sleep } {
-				set sleep_time  [expr $sleep_time * 2]
-				if { $sleep_time > 10 } {
-					set sleep_time 10
-				}
-			}
+			exec sleep $poll_interval
 		}
 		if {$matches == -1} {
 			break
@@ -3631,7 +3603,7 @@ proc job_submit_all_partitions { } {
 # Proc: wait_for_node
 #
 # Purpose: Wait for a certain number of nodes in a partition to
-#          reach a certain state.
+#          reach a certain state. Polls every $poll_interval seconds.
 #
 # Returns: 1 on failure.
 #
@@ -3642,7 +3614,7 @@ proc wait_for_node {partition state num_nodes} {
 	set cnt       0
 	set rt        0
 
-	global sinfo number
+	global sinfo number poll_interval
 
 	while {$done != 1 && $wait_time < 3} {
 
@@ -3667,7 +3639,7 @@ proc wait_for_node {partition state num_nodes} {
 			set done 1
 		} else {
 			send_user "partition $partition has $cnt nodes idle and we want $num_nodes\n"
-			sleep 3
+			sleep $poll_interval
 			incr wait_time 1
 		}
 	}
