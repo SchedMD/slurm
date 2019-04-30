@@ -262,6 +262,11 @@ static int *_get_cmd_map(local_step_rec_t *step_rec)
 			}
 		}
 	} else if (step_rec->stepd_step_rec->pack_jobid != NO_VAL) {
+		if (!step_rec->stepd_step_rec->pack_tid_offsets) {
+			CRAY_ERR("Missing pack_tid_offsets for HetJob");
+			xfree(cmd_map);
+			return NULL;
+		}
 		memset(cmd_map, 0, size);
 		for (pe = 0; pe < step_rec->ntasks; pe++)
 			cmd_map[pe] = step_rec->stepd_step_rec->pack_tid_offsets[pe];
