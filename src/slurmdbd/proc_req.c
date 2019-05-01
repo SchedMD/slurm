@@ -145,8 +145,6 @@ static int   _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 			       uint32_t *uid);
 static int   _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid);
-static int   _init_conn(slurmdbd_conn_t *slurmdbd_conn,
-			persist_msg_t *msg, Buf *out_buffer, uint32_t *uid);
 static int   _fini_conn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			Buf *out_buffer);
 static int   _job_complete(slurmdbd_conn_t *slurmdbd_conn,
@@ -398,9 +396,6 @@ proc_req(void *conn, persist_msg_t *msg,
 	case DBD_FLUSH_JOBS:
 		rc = _flush_jobs(slurmdbd_conn,
 				 msg, out_buffer, uid);
-		break;
-	case DBD_INIT:
-		rc = _init_conn(slurmdbd_conn, msg, out_buffer, uid);
 		break;
 	case DBD_FINI:
 		rc = _fini_conn(slurmdbd_conn, msg, out_buffer);
@@ -1805,30 +1800,6 @@ static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 end_it:
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment, DBD_FLUSH_JOBS);
-	return rc;
-}
-
-static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
-		      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
-{
-	dbd_init_msg_t *init_msg = msg->data;
-	persist_init_req_msg_t persist_init;
-	char *comment = NULL;
-	int rc = SLURM_SUCCESS;
-
-	memset(&persist_init, 0, sizeof(persist_init_req_msg_t));
-	persist_init.cluster_name = init_msg->cluster_name;
-	persist_init.version = init_msg->version;
-	persist_init.uid = init_msg->uid;
-
-	rc = _handle_init_msg(slurmdbd_conn, &persist_init, uid);
-
-	if (rc != SLURM_SUCCESS)
-		comment = slurm_strerror(rc);
-
-	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
-						rc, comment, DBD_INIT);
-
 	return rc;
 }
 

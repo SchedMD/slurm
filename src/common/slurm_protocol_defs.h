@@ -209,13 +209,6 @@ typedef enum {
 	REQUEST_SET_FS_DAMPENING_FACTOR,
 	RESPONSE_NODE_REGISTRATION,
 
-	DBD_MESSAGES_START = 1400, /* We can't replace this with
-				    * REQUEST_PERSIST_INIT since DBD_INIT is
-				    * packed in a way we can't tell the
-				    * protocol_version without unpacking
-				    * multiple variables. 2 versions after
-				    * 17.02 we can probably replace if someone
-				    * remembers */
 	PERSIST_RC = 1433, /* To mirror the DBD_RC this is replacing */
 	/* Don't make any messages in this range as this is what the DBD uses
 	 * unless mirroring */

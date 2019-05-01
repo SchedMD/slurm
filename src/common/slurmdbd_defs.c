@@ -53,8 +53,6 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 {
 	if (!msg_type) {
 		return NO_VAL;
-	} else if (!xstrcasecmp(msg_type, "Init")) {
-		return DBD_INIT;
 	} else if (!xstrcasecmp(msg_type, "Fini")) {
 		return DBD_FINI;
 	} else if (!xstrcasecmp(msg_type, "Add Accounts")) {
@@ -242,12 +240,6 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 	static char unk_str[64];
 
 	switch (msg_type) {
-	case DBD_INIT:
-		if (get_enum) {
-			return "DBD_INIT";
-		} else
-			return "Init";
-		break;
 	case DBD_FINI:
 		if (get_enum) {
 			return "DBD_FINI";
@@ -909,9 +901,6 @@ extern void slurmdbd_free_msg(slurmdbd_msg_t *msg)
 	case DBD_GOT_WCKEY_USAGE:
 		slurmdbd_free_usage_msg(msg->data, msg->msg_type);
 		break;
-	case DBD_INIT:
-		slurmdbd_free_init_msg(msg->data);
-		break;
 	case DBD_FINI:
 		slurmdbd_free_fini_msg(msg->data);
 		break;
@@ -1057,14 +1046,6 @@ extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 		}
 		if (msg->cond)
 			(*(my_destroy))(msg->cond);
-		xfree(msg);
-	}
-}
-
-extern void slurmdbd_free_init_msg(dbd_init_msg_t *msg)
-{
-	if (msg) {
-		xfree(msg->cluster_name);
 		xfree(msg);
 	}
 }

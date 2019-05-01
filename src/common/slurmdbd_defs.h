@@ -49,7 +49,7 @@
 /* Slurm DBD message types */
 /* ANY TIME YOU ADD TO THIS LIST UPDATE THE CONVERSION FUNCTIONS! */
 typedef enum {
-	DBD_INIT = 1400,	/* Connection initialization		*/
+	DEFUNCT_DBD_INIT = 1400,/* Connection initialization		*/
 	DBD_FINI,       	/* Connection finalization		*/
 	DBD_ADD_ACCOUNTS,       /* Add new account to the mix           */
 	DBD_ADD_ACCOUNT_COORDS, /* Add new coordinatior to an account   */
@@ -409,7 +409,6 @@ extern void slurmdbd_free_msg(slurmdbd_msg_t *msg);
 extern void slurmdbd_free_rec_msg(dbd_rec_msg_t *msg, slurmdbd_msg_type_t type);
 extern void slurmdbd_free_cond_msg(dbd_cond_msg_t *msg,
 				   slurmdbd_msg_type_t type);
-extern void slurmdbd_free_init_msg(dbd_init_msg_t *msg);
 extern void slurmdbd_free_fini_msg(dbd_fini_msg_t *msg);
 extern void slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
 extern void slurmdbd_free_job_start_msg(void *in);

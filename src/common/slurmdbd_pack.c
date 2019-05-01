@@ -367,39 +367,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_init_msg(dbd_init_msg_t *msg,
-			   uint16_t rpc_version, Buf buffer)
-{
-	pack16(msg->version, buffer);
-
-	/* Adding anything to this needs to happen after the version
-	   since this is where the reciever gets the version from. */
-	packstr(msg->cluster_name, buffer);
-}
-
-static int _unpack_init_msg(dbd_init_msg_t **msg,
-			    uint16_t rpc_version, Buf buffer)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t tmp32;
-
-	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
-
-	*msg = msg_ptr;
-
-	safe_unpack16(&msg_ptr->version, buffer);
-	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &tmp32, buffer);
-
-	return rc;
-
-unpack_error:
-	slurmdbd_free_init_msg(msg_ptr);
-	*msg = NULL;
-	if (rc == SLURM_SUCCESS)
-		rc = SLURM_ERROR;
-	return rc;
-}
-
 static void _pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 				   uint16_t rpc_version, Buf buffer)
 {
@@ -1507,10 +1474,6 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req, uint16_t rpc_version)
 			(dbd_usage_msg_t *)req->data, rpc_version,
 			req->msg_type, buffer);
 		break;
-	case DBD_INIT:
-		_pack_init_msg((dbd_init_msg_t *)req->data, rpc_version,
-			       buffer);
-		break;
 	case DBD_FINI:
 		slurmdbd_pack_fini_msg((dbd_fini_msg_t *)req->data,
 				       rpc_version, buffer);
@@ -1711,10 +1674,6 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp,
 		rc = slurmdbd_unpack_usage_msg(
 			(dbd_usage_msg_t **)&resp->data, rpc_version,
 			resp->msg_type, buffer);
-		break;
-	case DBD_INIT:
-		rc = _unpack_init_msg((dbd_init_msg_t **)&resp->data,
-				      rpc_version, buffer);
 		break;
 	case DBD_FINI:
 		rc = slurmdbd_unpack_fini_msg((dbd_fini_msg_t **)&resp->data,
