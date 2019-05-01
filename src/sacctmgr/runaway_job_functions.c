@@ -36,6 +36,9 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 
+/* Max runaway jobs per single sql statement. */
+#define RUNAWAY_JOBS_PER_PASS 1000
+
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_job_cond_t *job_cond,
 		     List format_list)
@@ -290,6 +293,7 @@ cleanup:
 extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 {
 	List runaway_jobs = NULL;
+	List process_jobs = list_create(slurmdb_destroy_job_rec);
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	char *cluster_str;
@@ -332,7 +336,12 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 
 	_print_runaway_jobs(format_list, runaway_jobs);
 
-	rc = slurmdb_jobs_fix_runaway(db_conn, runaway_jobs);
+	while (!rc && list_transfer_max(process_jobs, runaway_jobs,
+					RUNAWAY_JOBS_PER_PASS)) {
+		rc = slurmdb_jobs_fix_runaway(db_conn, process_jobs);
+		list_flush(process_jobs);
+	}
+
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check(ask_msg))
 			slurmdb_connection_commit(db_conn, 1);
@@ -345,6 +354,7 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 		      slurm_strerror(rc));
 
 	FREE_NULL_LIST(runaway_jobs);
+	FREE_NULL_LIST(process_jobs);
 
 	return rc;
 }
