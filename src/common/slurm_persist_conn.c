@@ -718,13 +718,8 @@ extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment, persist_msg->msg_type);
 		xfree(comment);
-	}
-	/* 2 versions after 17.02 code refering to DBD_INIT can be removed as it
-	   will no longer be suppported.
-	*/
-	else if (first &&
-		 (persist_msg->msg_type != REQUEST_PERSIST_INIT) &&
-		 (persist_msg->msg_type != DBD_INIT)) {
+	} else if (first &&
+		   (persist_msg->msg_type != REQUEST_PERSIST_INIT)) {
 		comment = "Initial RPC not REQUEST_PERSIST_INIT";
 		error("CONN:%u %s type (%d)",
 		      persist_conn->fd, comment, persist_msg->msg_type);
@@ -733,8 +728,7 @@ extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
 			persist_conn, rc, comment,
 			REQUEST_PERSIST_INIT);
 	} else if (!first &&
-		   ((persist_msg->msg_type == REQUEST_PERSIST_INIT) ||
-		    (persist_msg->msg_type == DBD_INIT))) {
+		   (persist_msg->msg_type == REQUEST_PERSIST_INIT)) {
 		comment = "REQUEST_PERSIST_INIT sent after connection established";
 		error("CONN:%u %s", persist_conn->fd, comment);
 		rc = EINVAL;
@@ -1071,13 +1065,9 @@ extern void slurm_persist_free_init_req_msg(persist_init_req_msg_t *msg)
 extern void slurm_persist_pack_rc_msg(
 	persist_rc_msg_t *msg, Buf buffer, uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->comment, buffer);
 		pack16(msg->flags, buffer);
-		pack32(msg->rc, buffer);
-		pack16(msg->ret_info, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		packstr(msg->comment, buffer);
 		pack32(msg->rc, buffer);
 		pack16(msg->ret_info, buffer);
 	} else {
@@ -1095,13 +1085,9 @@ extern int slurm_persist_unpack_rc_msg(
 
 	*msg = msg_ptr;
 
-	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
 		safe_unpack16(&msg_ptr->flags, buffer);
-		safe_unpack32(&msg_ptr->rc, buffer);
-		safe_unpack16(&msg_ptr->ret_info, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->rc, buffer);
 		safe_unpack16(&msg_ptr->ret_info, buffer);
 	} else {

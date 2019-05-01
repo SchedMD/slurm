@@ -305,22 +305,6 @@ static void _acct_kill_step(void)
 	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 }
 
-static void _pack_jobacct_id(jobacct_id_t *jobacct_id,
-			     uint16_t rpc_version, Buf buffer)
-{
-	if (jobacct_id) {
-		pack32((uint32_t) jobacct_id->nodeid, buffer);
-		pack16((uint16_t) jobacct_id->taskid, buffer);
-	} else {
-		pack32(NO_VAL, buffer);
-		/*
-		 * This pack is not used in modern code, so leave
-		 * it NO_VAL16.
-		 */
-		pack16(NO_VAL16, buffer);
-	}
-}
-
 static bool _jobacct_shutdown_test(void)
 {
 	bool rc;
@@ -1068,8 +1052,6 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			     Buf buffer)
 {
 	bool no_pack;
-	uint64_t tmp_uint64;
-	double tmp_dbl;
 
 	no_pack = (!plugin_polling && (protocol_type != PROTOCOL_TYPE_DBD));
 
@@ -1080,7 +1062,7 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 
 	pack8((uint8_t) 1, buffer);
 
-	if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
 		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
 		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
@@ -1122,137 +1104,6 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 			     jobacct->tres_count, buffer);
 		pack64_array(jobacct->tres_usage_out_tot,
 			     jobacct->tres_count, buffer);
-	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		jobacct_id_t jobacct_id;
-		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
-		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
-
-		if ((tmp_uint64 = jobacct->tres_usage_in_max[TRES_ARRAY_VMEM])
-		    == INFINITE64)
-			tmp_uint64 = 0;
-		else
-			tmp_uint64 /= KB_ADJ;
-		pack64(tmp_uint64, buffer);
-
-		if ((tmp_uint64 = jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM])
-		    == INFINITE64)
-			tmp_uint64 = 0;
-		else
-			tmp_uint64 /= KB_ADJ;
-		pack64(tmp_uint64, buffer);
-
-		if ((tmp_uint64 = jobacct->tres_usage_in_max[TRES_ARRAY_MEM])
-		    == INFINITE64)
-			tmp_uint64 = 0;
-		else
-			tmp_uint64 /= KB_ADJ;
-		pack64(tmp_uint64, buffer);
-
-		if ((tmp_uint64 = jobacct->tres_usage_in_tot[TRES_ARRAY_MEM])
-		    == INFINITE64)
-			tmp_uint64 = 0;
-		else
-			tmp_uint64 /= KB_ADJ;
-		pack64(tmp_uint64, buffer);
-
-		if ((tmp_uint64 = jobacct->tres_usage_in_max[TRES_ARRAY_PAGES])
-		    == INFINITE64)
-			tmp_uint64 = 0;
-		pack64(tmp_uint64, buffer);
-
-		if ((tmp_uint64 = jobacct->tres_usage_in_tot[TRES_ARRAY_PAGES])
-		    == INFINITE64)
-			tmp_uint64 = 0;
-		pack64(tmp_uint64, buffer);
-
-		if ((tmp_uint64 = jobacct->tres_usage_in_min[TRES_ARRAY_CPU])
-		    == INFINITE64)
-			tmp_uint64 = 0;
-		else
-			tmp_uint64 /= CPU_TIME_ADJ;
-		pack32((uint32_t)tmp_uint64, buffer);
-
-		if ((tmp_uint64 = jobacct->tres_usage_in_tot[TRES_ARRAY_CPU])
-		    == INFINITE64)
-			tmp_uint64 = 0;
-		else
-			tmp_uint64 /= CPU_TIME_ADJ;
-		packdouble((double)tmp_uint64, buffer);
-
-		pack32((uint32_t)jobacct->act_cpufreq, buffer);
-		pack64((uint64_t)jobacct->energy.consumed_energy, buffer);
-
-		if ((tmp_uint64 =
-		     jobacct->tres_usage_in_max[TRES_ARRAY_FS_DISK])
-		    == INFINITE64)
-			tmp_dbl = 0;
-		else
-			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
-		packdouble(tmp_dbl, buffer);
-
-		if ((tmp_uint64 =
-		     jobacct->tres_usage_in_tot[TRES_ARRAY_FS_DISK])
-		    == INFINITE64)
-			tmp_dbl = 0;
-		else
-			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
-		packdouble(tmp_dbl, buffer);
-
-		if ((tmp_uint64 =
-		     jobacct->tres_usage_out_max[TRES_ARRAY_FS_DISK])
-		    == INFINITE64)
-			tmp_dbl = 0;
-		else
-			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
-		packdouble(tmp_dbl, buffer);
-
-		if ((tmp_uint64 =
-		     jobacct->tres_usage_out_tot[TRES_ARRAY_FS_DISK])
-		    == INFINITE64)
-			tmp_dbl = 0;
-		else
-			tmp_dbl = (double)tmp_uint64 / MB_ADJ;
-		packdouble(tmp_dbl, buffer);
-
-		jobacct_id.nodeid =
-			jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_VMEM];
-		jobacct_id.taskid =
-			jobacct->tres_usage_in_max_taskid[TRES_ARRAY_VMEM];
-		_pack_jobacct_id(&jobacct_id, rpc_version, buffer);
-
-		jobacct_id.nodeid =
-			jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_MEM];
-		jobacct_id.taskid =
-			jobacct->tres_usage_in_max_taskid[TRES_ARRAY_MEM];
-		_pack_jobacct_id(&jobacct_id, rpc_version, buffer);
-
-		jobacct_id.nodeid =
-			jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_PAGES];
-		jobacct_id.taskid =
-			jobacct->tres_usage_in_max_taskid[TRES_ARRAY_PAGES];
-		_pack_jobacct_id(&jobacct_id, rpc_version, buffer);
-
-		jobacct_id.nodeid =
-			jobacct->tres_usage_in_min_nodeid[TRES_ARRAY_CPU];
-		jobacct_id.taskid =
-			jobacct->tres_usage_in_min_taskid[TRES_ARRAY_CPU];
-		_pack_jobacct_id(&jobacct_id, rpc_version, buffer);
-
-		jobacct_id.nodeid =
-			jobacct->tres_usage_in_max_nodeid[TRES_ARRAY_FS_DISK];
-		jobacct_id.taskid =
-			jobacct->tres_usage_in_max_taskid[TRES_ARRAY_FS_DISK];
-		_pack_jobacct_id(&jobacct_id, rpc_version,
-			buffer);
-
-		jobacct_id.nodeid =
-			jobacct->tres_usage_out_max_nodeid[TRES_ARRAY_FS_DISK];
-		jobacct_id.taskid =
-			jobacct->tres_usage_out_max_taskid[TRES_ARRAY_FS_DISK];
-		_pack_jobacct_id(&jobacct_id, rpc_version,
-			buffer);
 	} else {
 		info("jobacctinfo_pack version %u not supported", rpc_version);
 		return;
@@ -1282,7 +1133,7 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 		_free_tres_usage(*jobacct);
 	}
 
-	if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
@@ -1329,94 +1180,6 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
 				    &uint32_tmp, buffer);
 		safe_unpack64_array(&(*jobacct)->tres_usage_out_tot,
 				    &uint32_tmp, buffer);
-	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		double tmp_double;
-		uint32_t tmp_uint32;
-		uint16_t tmp_uint16;
-
-		_init_tres_usage(*jobacct, NULL, TRES_ARRAY_TOTAL_CNT);
-
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->user_cpu_sec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->user_cpu_usec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->sys_cpu_sec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->sys_cpu_usec = uint32_tmp;
-
-		safe_unpack64(&(*jobacct)->tres_usage_in_max[TRES_ARRAY_VMEM],
-			      buffer);
-		safe_unpack64(&(*jobacct)->tres_usage_in_tot[TRES_ARRAY_VMEM],
-			      buffer);
-		safe_unpack64(&(*jobacct)->tres_usage_in_max[TRES_ARRAY_MEM],
-			      buffer);
-		safe_unpack64(&(*jobacct)->tres_usage_in_tot[TRES_ARRAY_MEM],
-			      buffer);
-		safe_unpack64(&(*jobacct)->tres_usage_in_max[TRES_ARRAY_PAGES],
-			      buffer);
-		safe_unpack64(&(*jobacct)->tres_usage_in_tot[TRES_ARRAY_PAGES],
-			      buffer);
-
-		safe_unpack32(&tmp_uint32, buffer);
-		(*jobacct)->tres_usage_in_min[TRES_ARRAY_CPU] = tmp_uint32;
-		safe_unpackdouble(&tmp_double, buffer);
-		(*jobacct)->tres_usage_in_tot[TRES_ARRAY_CPU] = tmp_double;
-
-		safe_unpack32(&(*jobacct)->act_cpufreq, buffer);
-		safe_unpack64(&(*jobacct)->energy.consumed_energy, buffer);
-
-		safe_unpackdouble(&tmp_double, buffer);
-		(*jobacct)->tres_usage_in_max[TRES_ARRAY_FS_DISK] =
-			tmp_double * 1024 * 1024;
-		safe_unpackdouble(&tmp_double, buffer);
-		(*jobacct)->tres_usage_in_tot[TRES_ARRAY_FS_DISK] =
-			tmp_double * 1024 * 1024;
-
-		safe_unpackdouble(&tmp_double, buffer);
-		(*jobacct)->tres_usage_out_tot[TRES_ARRAY_FS_DISK] =
-			tmp_double * 1024 * 1024;
-		safe_unpackdouble(&tmp_double, buffer);
-		(*jobacct)->tres_usage_out_tot[TRES_ARRAY_FS_DISK] =
-			tmp_double * 1024 * 1024;
-
-		safe_unpack32(&tmp_uint32, buffer);
-		(*jobacct)->tres_usage_in_max_nodeid[TRES_ARRAY_VMEM] =
-			tmp_uint32;
-		safe_unpack16(&tmp_uint16, buffer);
-		(*jobacct)->tres_usage_in_max_taskid[TRES_ARRAY_VMEM] =
-			tmp_uint16;
-		safe_unpack32(&tmp_uint32, buffer);
-		(*jobacct)->tres_usage_in_max_nodeid[TRES_ARRAY_MEM] =
-			tmp_uint32;
-		safe_unpack16(&tmp_uint16, buffer);
-		(*jobacct)->tres_usage_in_max_taskid[TRES_ARRAY_MEM] =
-			tmp_uint16;
-		safe_unpack32(&tmp_uint32, buffer);
-		(*jobacct)->tres_usage_in_max_nodeid[TRES_ARRAY_PAGES] =
-			tmp_uint32;
-		safe_unpack16(&tmp_uint16, buffer);
-		(*jobacct)->tres_usage_in_max_taskid[TRES_ARRAY_PAGES] =
-			tmp_uint16;
-		safe_unpack32(&tmp_uint32, buffer);
-		(*jobacct)->tres_usage_in_min_nodeid[TRES_ARRAY_CPU] =
-			tmp_uint32;
-		safe_unpack16(&tmp_uint16, buffer);
-		(*jobacct)->tres_usage_in_min_taskid[TRES_ARRAY_CPU] =
-			tmp_uint16;
-		safe_unpack32(&tmp_uint32, buffer);
-		(*jobacct)->tres_usage_in_max_nodeid[TRES_ARRAY_FS_DISK] =
-			tmp_uint32;
-		safe_unpack16(&tmp_uint16, buffer);
-		(*jobacct)->tres_usage_in_max_taskid[TRES_ARRAY_FS_DISK] =
-			tmp_uint16;
-
-		safe_unpack32(&tmp_uint32, buffer);
-		(*jobacct)->tres_usage_out_max_nodeid[TRES_ARRAY_FS_DISK] =
-			tmp_uint32;
-		safe_unpack16(&tmp_uint16, buffer);
-		(*jobacct)->tres_usage_out_max_taskid[TRES_ARRAY_FS_DISK] =
-			tmp_uint16;
 	} else {
 		info("jobacctinfo_unpack version %u not supported",
 		     rpc_version);

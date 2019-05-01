@@ -1816,21 +1816,6 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
 
-	/* 2 versions After 17.02 this can go away since dbd_init_msg_t is going
-	 * away with it.
-	 */
-
-	if ((init_msg->version < SLURM_MIN_PROTOCOL_VERSION) ||
-	    (init_msg->version > SLURM_PROTOCOL_VERSION)) {
-		comment = "Incompatible RPC version";
-		error("Incompatible RPC version received "
-		      "(%u not between %d and %d)",
-		      init_msg->version,
-		      SLURM_MIN_PROTOCOL_VERSION, SLURM_PROTOCOL_VERSION);
-		rc = SLURM_PROTOCOL_VERSION_ERROR;
-		goto end_it;
-	}
-
 	memset(&persist_init, 0, sizeof(persist_init_req_msg_t));
 	persist_init.cluster_name = init_msg->cluster_name;
 	persist_init.version = init_msg->version;
@@ -1840,7 +1825,6 @@ static int _init_conn(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (rc != SLURM_SUCCESS)
 		comment = slurm_strerror(rc);
-end_it:
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment, DBD_INIT);

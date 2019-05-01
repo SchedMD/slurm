@@ -209,8 +209,7 @@ time_t get_last_heartbeat(int *server_inx)
 		value = 0;
 	}
 	if (read(fd, &inx, sizeof(uint64_t)) != sizeof(uint64_t)) {
-		/* Information not available before Slurm version 18.08 */
-		debug("%s: heartbeat read failed from %s.",
+		error("%s: heartbeat read failed from %s.",
 		      __func__, file);
 	} else if (server_inx) {
 		*server_inx = NTOH_uint64(inx);

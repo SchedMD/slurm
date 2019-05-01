@@ -142,14 +142,8 @@ static List _build_license_list(char *licenses, bool *valid)
 				*valid = false;
 				break;
 			}
-			/*
-			 * The '*' was still in use internally until 18.08, so
-			 * the check for '*' must stay until 20.02 at least.
-			 *
-			 * ':' is used as a separator in version 2.5 or later
-			 * '*' is used as a separator in version 2.4 or earlier
-			 */
-			if ((token[i] == ':') || (token[i] == '*')) {
+
+			if (token[i] == ':') {
 				token[i++] = '\0';
 				num = (int32_t)strtol(&token[i], &end_num, 10);
 				if (*end_num != '\0')

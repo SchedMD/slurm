@@ -478,13 +478,10 @@ stepd_signal_container(int fd, uint16_t protocol_version, int signal, int flags,
 	int errnum = 0;
 
 	safe_write(fd, &req, sizeof(int));
-	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &signal, sizeof(int));
 		safe_write(fd, &flags, sizeof(int));
 		safe_write(fd, &req_uid, sizeof(uid_t));
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_write(fd, &signal, sizeof(int));
-		safe_write(fd, &flags, sizeof(int));
 	} else {
 		error("%s: invalid protocol_version %u",
 		      __func__, protocol_version);
@@ -516,20 +513,15 @@ stepd_attach(int fd, uint16_t protocol_version,
 	int req = REQUEST_ATTACH;
 	int rc = SLURM_SUCCESS;
 
-	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_write(fd, &req, sizeof(int));
 		safe_write(fd, ioaddr, sizeof(slurm_addr_t));
 		safe_write(fd, respaddr, sizeof(slurm_addr_t));
 		safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
 		safe_write(fd, &protocol_version, sizeof(uint16_t));
-	} else {
-		int proto = protocol_version;
-		safe_write(fd, &req, sizeof(int));
-		safe_write(fd, ioaddr, sizeof(slurm_addr_t));
-		safe_write(fd, respaddr, sizeof(slurm_addr_t));
-		safe_write(fd, job_cred_sig, SLURM_IO_KEY_SIZE);
-		safe_write(fd, &proto, sizeof(int));
-	}
+	} else
+		goto rwfail;
+
 	/* Receive the return code */
 	safe_read(fd, &rc, sizeof(int));
 
@@ -828,7 +820,7 @@ extern int stepd_get_x11_display(int fd, uint16_t protocol_version,
 	 */
 	safe_read(fd, &display, sizeof(int));
 
-	if (protocol_version >= SLURM_18_08_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_read(fd, &len, sizeof(int));
 		if (len) {
 			*xauthority = xmalloc(len);

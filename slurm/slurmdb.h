@@ -211,19 +211,13 @@ enum cluster_fed_states {
 #define SLURMDB_CLASS_BASE      0x00ff
 
 /* Cluster flags */
-#define CLUSTER_FLAG_BG     0x00000001 /* This is a bluegene cluster */
-				       /* Removed v18.08 */
-#define CLUSTER_FLAG_BGL    0x00000002 /* This is a bluegene/l cluster */
-				       /* Removed v17.02 */
-#define CLUSTER_FLAG_BGP    0x00000004 /* This is a bluegene/p cluster */
-				       /* Removed v17.02 */
-#define CLUSTER_FLAG_BGQ    0x00000008 /* This is a bluegene/q cluster */
-				       /* Removed v18.08 */
-#define CLUSTER_FLAG_SC     0x00000010 /* This is a sun constellation cluster */
-				       /* Removed v16.05 */
-#define CLUSTER_FLAG_XCPU   0x00000020 /* This has xcpu, removed v15.08 */
-#define CLUSTER_FLAG_AIX    0x00000040 /* This is an aix cluster */
-				       /* Removed v17.02 */
+#define CLUSTER_FLAG_A1     0x00000001 /* UNUSED */
+#define CLUSTER_FLAG_A2     0x00000002 /* UNUSED */
+#define CLUSTER_FLAG_A3     0x00000004 /* UNUSED */
+#define CLUSTER_FLAG_A4     0x00000008 /* UNUSED */
+#define CLUSTER_FLAG_A5     0x00000010 /* UNUSED */
+#define CLUSTER_FLAG_A6     0x00000020 /* UNUSED */
+#define CLUSTER_FLAG_A7     0x00000040 /* UNUSED */
 #define CLUSTER_FLAG_MULTSD 0x00000080 /* This cluster is multiple slurmd */
 #define CLUSTER_FLAG_CRAYXT 0x00000100 /* This cluster is a ALPS cray
 					* Removed v19.05 */

@@ -41,12 +41,6 @@
 
 #include "accounting_storage_mysql.h"
 
-/* See bug 4553 */
-extern List bad_tres_list;
-
-/* Fill in the bad_tres_list with anything from bug 4553 */
-extern int as_mysql_convert_get_bad_tres(mysql_conn_t *mysql_conn);
-
 /* Functions for converting tables before they are created in new schema */
 extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn);
 

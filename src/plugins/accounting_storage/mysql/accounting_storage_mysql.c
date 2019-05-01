@@ -844,11 +844,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	/* This has to run on both backup as well as primary */
-	if ((rc = as_mysql_convert_get_bad_tres(mysql_conn)) != SLURM_SUCCESS) {
-		error("issue getting bad tres");
-		return rc;
-	} else if (!backup_dbd) {
+	if (!backup_dbd) {
 		/* We always want CPU to be the first one, so create
 		   it now.  We also add MEM here, the others tres
 		   are site specific and could vary.  None but CPU
@@ -2636,37 +2632,8 @@ extern int init(void)
 		verbose("%s failed", plugin_name);
 		if (mysql_db_rollback(mysql_conn))
 			error("rollback failed");
-		/*
-		 * Turns out if you create a table after a change you can not
-		 * rollback.  This rolls back the potential changes we need to
-		 * deal with again on convert failure.
-		 */
-		if (bad_tres_list) {
-			char *query = NULL;
-			slurmdb_tres_rec_t *tres_rec;
-			ListIterator itr = list_iterator_create(bad_tres_list);
-
-			while ((tres_rec = list_next(itr))) {
-				xstrfmtcat(query,
-					   "update %s set id=%u where id=%u;",
-					   tres_table, tres_rec->id,
-					   tres_rec->rec_count);
-			}
-			list_iterator_destroy(itr);
-
-			/*
-			 * Ignore the return of these 2 mysql functions.  We
-			 * have already failed here so if these fail we can't do
-			 * much about it.  We will just go with whatever the
-			 * orignal rc was that got us here.
-			 */
-			(void)mysql_db_query(mysql_conn, query);
-			xfree(query);
-			(void)mysql_db_commit(mysql_conn);
-		}
 	}
 
-	FREE_NULL_LIST(bad_tres_list);
 	destroy_mysql_conn(mysql_conn);
 
 	return rc;

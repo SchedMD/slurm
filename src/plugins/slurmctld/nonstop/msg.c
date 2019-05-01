@@ -58,7 +58,7 @@
 
 /* This version string is defined at configure time of libsmd. The
  * META of libsmd needs to reflect this version. */
-char *version_string = "VERSION:18.08";
+char *version_string = "VERSION:20.02";
 
 /* When a remote socket closes on AIX, we have seen poll() return EAGAIN
  * indefinitely for a pending write request. Rather than locking up
