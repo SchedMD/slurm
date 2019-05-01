@@ -1031,16 +1031,10 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		goto fail;
 	}
 
-	if (arg.gid != NO_VAL && arg.gid != req->gid) {
+	if (arg.gid != req->gid) {
 		error("job %u credential created for gid %u, expected %u",
 		      arg.jobid, arg.gid, req->gid);
 		goto fail;
-	} else if (arg.gid == NO_VAL) {
-		/*
-		 * The pre-17.11 RPC format did not have gid, so populate
-		 * it off of the auth header instead.
-		 */
-		req->gid = auth_gid;
 	}
 
 	xfree(req->user_name);
