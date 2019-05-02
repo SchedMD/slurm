@@ -479,8 +479,8 @@ static long _str_to_mbytes(const char *arg, int use_gbytes)
 	if ((errno != 0) && ((result == LONG_MIN) || (result == LONG_MAX)))
 		return NO_VAL64;
     if (result < 0)
-        return NO_VAL_64
-        
+        return NO_VAL64;
+
 	else if ((endptr[0] == '\0') && (use_gbytes == 2))  /* B default */
 		result = ( ((result + 1023) / 1024) + 1023 ) / 1024;	/* round up */
 	else if ((endptr[0] == '\0') && (use_gbytes == 1))  /* GB default */
