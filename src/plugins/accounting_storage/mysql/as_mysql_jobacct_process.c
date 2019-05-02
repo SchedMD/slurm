@@ -583,7 +583,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 	   easy to look for duplicates, it is also easy to sort the
 	   resized jobs.
 	*/
-	xstrcat(query, " group by id_job, time_submit desc");
+	xstrcat(query, " order by id_job, time_submit desc");
 
 	if (debug_flags & DEBUG_FLAG_DB_JOB)
 		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
