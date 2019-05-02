@@ -89,7 +89,9 @@ extern int site_factor_plugin_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+
 	init_run = true;
+	debug2("%s: plugin %s loaded", __func__, type);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
