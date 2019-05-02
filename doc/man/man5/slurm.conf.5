@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "February 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "May 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -115,6 +115,10 @@ NULL.  Also see \fBDefaultStoragePass\fR.
 \fBAccountingStoragePort\fR
 The listening port of the accounting storage database server.
 Only used for database type storage plugins, ignored otherwise.
+The default value is SLURMDBD_PORT as established at system
+build time. If no value is explicitly specified, it will be set to 6819.
+This value must be equal to the \fBDbdPort\fR parameter in the
+slurmdbd.conf file.
 Also see \fBDefaultStoragePort\fR.
 
 .TP
