@@ -2977,11 +2977,11 @@ extern int fed_mgr_add_sibling_conn(slurm_persist_conn_t *persist_conn,
 	/* Preserve the persist_conn so that the cluster can get the remote
 	 * side's hostname and port to talk back to if it doesn't have it yet.
 	 * See _open_controller_conn().
-	 * Don't lock the the cluster's lock here because a (almost)deadlock
+	 * Don't lock the cluster's lock here because a (almost)deadlock
 	 * could occur if this cluster is opening a connection to the remote
 	 * cluster at the same time the remote cluster is connecting to this
 	 * cluster since the both sides will have the mutex locked in order to
-	 * send/recv. If it did happen the the connection will eventually
+	 * send/recv. If it did happen the connection will eventually
 	 * timeout and resolved itself. */
 	cluster->fed.recv = persist_conn;
 

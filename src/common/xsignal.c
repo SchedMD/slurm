@@ -89,7 +89,7 @@ _sigmask(int how, sigset_t *set, sigset_t *oset)
 
 /*
  *  Fill in the sigset_t with the list of signals in the
- *   the (zero-terminated) array of signals `sigarray.'
+ *  (zero-terminated) array of signals `sigarray.'
  */
 int
 xsignal_sigset_create(int sigarray[], sigset_t *setp)
