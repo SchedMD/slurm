@@ -531,6 +531,38 @@ uint64_t str_to_mbytes2(const char *arg)
 	return _str_to_mbytes(arg, use_gbytes);
 }
 
+extern char *mbytes2_to_str(uint64_t mbytes)
+{
+    int i = 0;
+    char *unit = "MGTP?";
+    static int use_gbytes = -1;
+
+    if (mbytes == NO_VAL64)
+        return NULL;
+
+    if (use_gbytes == -1) {
+        char *sched_params = slurm_get_sched_params();
+        if (xstrcasestr(sched_params, "default_gbytes"))
+            use_gbytes = 1;
+        else
+            use_gbytes = 0;
+        xfree(sched_params);
+    }
+
+    for (i = 0; unit[i] != '?'; i++) {
+        if (mbytes && (mbytes % 1024))
+            break;
+        mbytes /= 1024;
+    }
+
+    /* no need to display the default unit */
+    if ((unit[i] == 'G' && use_gbytes) || (unit[i] == 'M' && !use_gbytes))
+        return xstrdup_printf("%"PRIu64, mbytes);
+
+    return xstrdup_printf("%"PRIu64"%c", mbytes, unit[i]);
+}
+
+
 /*
  * str_to_mbytes_pbs(): verify that arg is numeric with optional "K", "M", "G"
  * or "T" at end and return the number in mega-bytes. Default units are B.
