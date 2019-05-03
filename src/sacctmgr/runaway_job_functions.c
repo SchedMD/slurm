@@ -334,5 +334,7 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 		error("Failed to fix runaway job: %s\n",
 		      slurm_strerror(rc));
 
+	FREE_NULL_LIST(runaway_jobs);
+
 	return rc;
 }
