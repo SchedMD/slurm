@@ -2300,7 +2300,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
         node_inx = _get_node_inx(req->nodes);
         job_env.job_node_cpus = (node_inx >= 0 ? req->job_node_cpus[node_inx] : 0);
 
-		if ((rc = container_g_create(job_id)))
+		if ((rc = container_g_create(jobid)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, false);
@@ -5874,7 +5874,7 @@ static char **_build_env(job_env_t *job_env, bool is_epilog)
 
     setenvf(&env, "SLURM_JOB_NODE_CPUS", "%d", job_env->job_node_cpus);
     setenvf(&env, "SLURM_ACTUAL_NODE_CPUS", "%d", conf->actual_cpus);
-    
+
 	return env;
 }
 
