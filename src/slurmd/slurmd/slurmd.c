@@ -1600,10 +1600,7 @@ _slurmd_init(void)
 	 */
 	slurm_conf_init(conf->conffile);
 	init_node_conf();
-	/*
-	 * slurm_select_init() must be called before
-	 * build_all_nodeline_info() to be called with proper argument.
-	 */
+
 	if (slurm_select_init(1) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (gres_plugin_init() != SLURM_SUCCESS)

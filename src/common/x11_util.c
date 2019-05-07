@@ -113,7 +113,11 @@ extern void x11_get_display(uint16_t *port, char **target)
 
 	if (display[0] == ':') {
 		struct stat st;
+		char *screen_period;
 		*port = 0;
+		screen_period = strchr(display, '.');
+		if (screen_period)
+			*screen_period = '\0';
 		xstrfmtcat(*target, "/tmp/.X11-unix/X%s", display + 1);
 		xfree(display);
 		if (stat(*target, &st) != 0) {

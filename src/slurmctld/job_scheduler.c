@@ -1159,11 +1159,14 @@ static int _schedule(uint32_t job_limit)
 		     sched_min_interval);
 	}
 
+	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	if ((defer_rpc_cnt > 0) &&
 	    (slurmctld_config.server_thread_count >= defer_rpc_cnt)) {
 		sched_debug("schedule() returning, too many RPCs");
+		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 		goto out;
 	}
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 
 	if (!fed_mgr_sibs_synced()) {
 		sched_info("schedule() returning, federation siblings not synced yet");
@@ -1424,11 +1427,16 @@ next_task:
 				    job_depth);
 			break;
 		}
+
+		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 		if ((defer_rpc_cnt > 0) &&
 		    (slurmctld_config.server_thread_count >= defer_rpc_cnt)) {
 			sched_debug("schedule() returning, too many RPCs");
+			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 			break;
 		}
+		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
 		if (job_limits_check(&job_ptr, false) != WAIT_NO_REASON) {
 			/* should never happen */
 			continue;
@@ -1837,11 +1845,13 @@ fail_this_part:	if (fail_by_part) {
 	}
 	xfree(sched_part_ptr);
 	xfree(sched_part_jobs);
+	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	if ((slurmctld_config.server_thread_count >= 150) &&
 	    (defer_rpc_cnt == 0)) {
 		sched_info("%d pending RPCs at cycle end, consider configuring max_rpc_cnt",
 			   slurmctld_config.server_thread_count);
 	}
+	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2("schedule");
 

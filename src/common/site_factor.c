@@ -36,6 +36,10 @@
 
 #include "src/common/plugin.h"
 #include "src/common/site_factor.h"
+#include "src/common/timers.h"
+
+#define SITE_FACTOR_TIMER 50000			/* 50 milliseconds */
+#define SITE_FACTOR_TIMER_RECONFIG 500000	/* 500 milliseconds */
 
 /* Symbols provided by the plugin */
 typedef struct slurm_ops {
@@ -89,7 +93,9 @@ extern int site_factor_plugin_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+
 	init_run = true;
+	debug2("%s: plugin %s loaded", __func__, type);
 
 done:
 	slurm_mutex_unlock(&g_context_lock);
@@ -116,21 +122,35 @@ extern int site_factor_plugin_fini(void)
 
 extern void site_factor_g_reconfig(void)
 {
+	DEF_TIMERS;
+
 	if (site_factor_plugin_init() < 0)
 		return;
+
+	START_TIMER;
 	(*(ops.reconfig))();
+	END_TIMER3(__func__, SITE_FACTOR_TIMER_RECONFIG);
 }
 
 extern void site_factor_g_set(struct job_record *job_ptr)
 {
+	DEF_TIMERS;
 	if (site_factor_plugin_init() < 0)
 		return;
+
+	START_TIMER;
 	(*(ops.set))(job_ptr);
+	END_TIMER3(__func__, SITE_FACTOR_TIMER);
 }
 
 extern void site_factor_g_update(void)
 {
+	DEF_TIMERS;
+
 	if (site_factor_plugin_init() < 0)
 		return;
+
+	START_TIMER;
 	(*(ops.update))();
+	END_TIMER3(__func__, SITE_FACTOR_TIMER);
 }
