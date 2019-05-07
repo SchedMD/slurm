@@ -26,9 +26,9 @@
 ############################################################################
 
 # Test GrpNode limit
-proc inc21_30_1 {} {
+proc inc21_30_1 { wait_reason } {
 
-	global srun salloc acct bin_sleep number grn_num
+	global srun salloc acct bin_sleep number grn_num check_reason
 	global exit_code
 
 	send_user "\nStarting GrpNode limit test (Within: inc21.30.1)\n\n"
@@ -87,6 +87,11 @@ proc inc21_30_1 {} {
 	} else {
 		# checks the state of the job
 		check_job_state $job_id2 PENDING
+	}
+
+	if {![check_reason $job_id2 $wait_reason]} {
+		send_user "\nFAILURE: Bad job wait reason. (Within: inc21.30.1)\n"
+		set exit_code 1
 	}
 
 	# Cancels remaining jobs

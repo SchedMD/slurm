@@ -26,7 +26,7 @@
 ############################################################################
 
 # Test MaxJobs limit
-proc inc21_30_7 {} {
+proc inc21_30_7 { wait_reason } {
 
 	global salloc scontrol srun acct alpha bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code maxjobs_num
 
@@ -75,7 +75,7 @@ proc inc21_30_7 {} {
 			spawn $scontrol show job $job_id($inx)
 			expect {
 				-re "Reason=($alpha)" {
-					if {[string compare $expect_out(1,string) "QOSMaxJobsPerUserLimit"]} {
+					if {[string compare $expect_out(1,string) $wait_reason]} {
 						send_user "\nFAILURE: Job $inx $job_id($inx) was suppose to start but it didn't, limit was $check_num? (Within: inc21.30.7)\n"
 						set exit_code 1
 					} else {

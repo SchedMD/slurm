@@ -5110,3 +5110,27 @@ proc create_part { part_name num_nodes_in } {
 	log_info "Created partition $part_name with $num_nodes_in nodes"
 	return 0
 }
+
+proc check_reason { job_id reason } {
+	global squeue
+
+	set found 0
+	spawn $squeue -j $job_id --noheader -o "%r"
+	expect {
+		-re "$reason" {
+			set found 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue not responding\n"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$found == 0} {
+		log_error "Job $job_id should have a wait reason of $reason"
+	}
+	return $found
+}

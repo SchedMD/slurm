@@ -25,7 +25,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
-proc inc21_30_16 { } {
+proc inc21_30_16 { wait_reason } {
 
 	global salloc srun acct number bin_sleep maxnodespu_num exit_code
 
@@ -83,6 +83,12 @@ proc inc21_30_16 { } {
 		send_user "\nFAILURE: Job was not submitted (Within: inc21.30.16)\n"
 		set exit_code 1
 	} else {
+
+		if {![check_reason $job_id $wait_reason]} {
+		send_user "\nFAILURE: Bad job wait reason. (Within: inc21.30.16)\n"
+			set exit_code 1
+		}
+
 		# Cancel job
 		cancel_job $job_id
 	}

@@ -26,7 +26,7 @@
 ############################################################################
 
 # Test MaxCpus limits
-proc inc21_30_5 {} {
+proc inc21_30_5 { wait_reason } {
 
 	global salloc acct number srun bin_sleep maxcpu_num
 	global test_node exit_code
@@ -78,6 +78,11 @@ proc inc21_30_5 {} {
 		eof {
 			wait
 		}
+	}
+
+	if {![check_reason $job_id1 $wait_reason]} {
+		send_user "\nFAILURE: Bad job wait reason. (Within: inc21.30.5)\n"
+		set exit_code 1
 	}
 
 	# Cancels remaining jobs

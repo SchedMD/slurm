@@ -33,7 +33,7 @@ proc inc21_34_2 { qostest } {
 	set job_id2 0
 	set timeout 120
 
-	# Since wall is a decayed variable lets reset it to make sure the test
+	# Since wall is a decayed variable, reset it to make sure the test
 	# gets exactly what we would expect.
 	reset_qos_usage "" $qostest
 
@@ -64,7 +64,7 @@ proc inc21_34_2 { qostest } {
 		send_user "\nFAILURE: job was not submitted\n"
 		set exit_code 1
 	} else {
-		# For for job 1 to finish so that we can test wall time limit
+		# Wait for job 1 to finish so that we can test wall time limit
 		wait_for_job $job_id1 DONE
 	}
 

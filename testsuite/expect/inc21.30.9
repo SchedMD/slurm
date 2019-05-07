@@ -26,7 +26,7 @@
 ############################################################################
 
 # Test GrpCPUmins
-proc inc21_30_9 { } {
+proc inc21_30_9 { wait_reason } {
 	global salloc srun nthreads acct bin_sleep grpcpumin_num number
 	global totcpus test_node qostest exit_code
 
@@ -90,6 +90,11 @@ proc inc21_30_9 { } {
 		eof {
 			wait
 		}
+	}
+
+	if {![check_reason $job_id2 $wait_reason]} {
+		send_user "\nFAILURE: Bad job wait reason. (Within: inc21.30.9)\n"
+		set exit_code 1
 	}
 
 	cancel_job $job_id2

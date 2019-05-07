@@ -25,7 +25,7 @@
 ############################################################################
 
 # Test GrpCpus
-proc inc21_30_2 {} {
+proc inc21_30_2 { wait_reason } {
 
 	global srun salloc acct bin_sleep jobmatch job_id1 job_id2 number
 	global grcpu_num test_node exit_code
@@ -87,6 +87,11 @@ proc inc21_30_2 {} {
 
 	# Checks the state of the job
 	check_job_state $job_id2 PENDING
+
+	if {![check_reason $job_id2 $wait_reason]} {
+		send_user "\nFAILURE: Bad job wait reason. (Within: inc21.30.2)\n"
+		set exit_code 1
+	}
 
 	# Cancels remaining jobs
 	cancel_job $job_id1

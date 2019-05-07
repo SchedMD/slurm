@@ -26,7 +26,7 @@
 ############################################################################
 
 # Test GrpJob limits
-proc inc21_30_3 {} {
+proc inc21_30_3 { wait_reason } {
 
 	global salloc scontrol srun acct alpha bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grjobs_num
 
@@ -75,7 +75,7 @@ proc inc21_30_3 {} {
 			spawn $scontrol show job $job_id($inx)
 			expect {
 				-re "Reason=($alpha)" {
-					if {[string compare $expect_out(1,string) "QOSGrpJobsLimit"]} {
+					if {[string compare $expect_out(1,string) $wait_reason]} {
 						send_user "\nFAILURE: Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num? (Within: inc21.30.3)\n"
 						set exit_code 1
 					} else {
