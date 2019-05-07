@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Add timers to new site_factor plugin APIs to warn of slow-running plugins,
     which can lead to issues with throughput and responsiveness.
  -- X11 forwarding - ignore screen value for local DISPLAY.
+ -- Add missing locks protecting slurmctld_config.server_thread_count access.
 
 * Changes in Slurm 19.05.0rc1
 =============================
