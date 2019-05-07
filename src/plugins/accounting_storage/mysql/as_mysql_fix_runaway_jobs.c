@@ -194,7 +194,7 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 		goto bail;
 	}
 
-	/* Set rollup to the the last day of the previous month of the first
+	/* Set rollup to the last day of the previous month of the first
 	 * runaway job */
 	rc = _first_job_roll_up(mysql_conn, first_job->start);
 	if (rc != SLURM_SUCCESS)

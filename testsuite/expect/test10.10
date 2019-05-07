@@ -46,7 +46,7 @@ if {[file exists $smap] == 0} {
 }
 
 #
-# Check the the --noheader option in smap
+# Check the --noheader option in smap
 # in curses format.
 #
 set timeout 10

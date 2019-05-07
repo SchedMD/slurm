@@ -3356,7 +3356,7 @@ static void *_purge_files_thread(void *no_data)
 	 * There is a potential race condition if the job numbers have
 	 * wrapped between _purge_thread removing the state files and
 	 * get_next_job_id trying to re-assign it. This is mitigated
-	 * the the call to _dup_job_file_test() in job_mgr.c ensuring
+	 * the call to _dup_job_file_test() in job_mgr.c ensuring
 	 * there is no existing directory for an id before assigning it.
 	 */
 
