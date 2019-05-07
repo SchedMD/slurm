@@ -184,17 +184,37 @@ static void _print_runaway_jobs(List format_list, List jobs)
 	list_iterator_destroy(itr);
 }
 
+/*
+ * Remove job from run away list if it is a currently known job to slurmctld.
+ */
+static int _purge_known_jobs(void *x, void *key)
+{
+	job_info_msg_t *clus_jobs = (job_info_msg_t *) key;
+	slurmdb_job_rec_t *db_job = (slurmdb_job_rec_t *) x;
+
+	if (clus_jobs->record_count > 0) {
+		job_info_t *clus_job  = clus_jobs->job_array;
+		for (int i = 0; i < clus_jobs->record_count; i++, clus_job++) {
+			if ((db_job->jobid == clus_job->job_id) &&
+			    (db_job->submit == clus_job->submit_time)) {
+				debug5("%s: matched known JobId=%u SubmitTime=%"PRIu64,
+				       __func__, db_job->jobid, db_job->submit);
+				return true;
+			}
+		}
+	}
+
+	debug5("%s: runaway job found JobId=%u SubmitTime=%"PRIu64,
+	       __func__, db_job->jobid, db_job->submit);
+
+	return false;
+}
+
 static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 {
-	int i = 0;
-	bool job_runaway = true;
 	List db_jobs_list = NULL;
-	ListIterator    db_jobs_itr  = NULL;
-	job_info_t     *clus_job     = NULL;
 	job_info_msg_t *clus_jobs    = NULL;
-	slurmdb_job_rec_t  *db_job   = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
-	List runaway_jobs = NULL;
 	List cluster_list;
 
 	job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
@@ -256,25 +276,9 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 		return NULL;
 	}
 
-	runaway_jobs = list_create(NULL);
-	db_jobs_itr = list_iterator_create(db_jobs_list);
-	while ((db_job = list_next(db_jobs_itr))) {
-		job_runaway = true;
-		for (i = 0, clus_job = clus_jobs->job_array;
-		     i < clus_jobs->record_count; i++, clus_job++) {
-			if ((db_job->jobid == clus_job->job_id) &&
-			    (db_job->submit == clus_job->submit_time)) {
-				job_runaway = false;
-				break;
-			}
-		}
+	list_delete_all(db_jobs_list, _purge_known_jobs, clus_jobs);
 
-		if (job_runaway)
-			list_append(runaway_jobs, db_job);
-	}
-	list_iterator_destroy(db_jobs_itr);
-
-	return runaway_jobs;
+	return db_jobs_list;
 }
 
 /*
