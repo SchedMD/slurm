@@ -2728,7 +2728,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 #endif
 
 #if defined HAVE_NATIVE_CRAY
-	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	if (LOTS_OF_AGENTS || (slurmctld_config.server_thread_count >= 128)) {
 		/*
 		 * Don't start more steps if system is very busy right now.
@@ -2736,10 +2735,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		 * with job write lock set.
 		 */
 		slurm_send_rc_msg(msg, EAGAIN);
-		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 		return;
 	}
-	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 #endif
 
 	_throttle_start(&active_rpc_cnt);
