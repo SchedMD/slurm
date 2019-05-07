@@ -215,7 +215,7 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 	List db_jobs_list = NULL;
 	job_info_msg_t *clus_jobs = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
-	List cluster_list;
+	List cluster_list = NULL;
 
 	job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 	job_cond->flags |= JOBCOND_FLAG_RUNAWAY | JOBCOND_FLAG_NO_TRUNC;
@@ -239,7 +239,7 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 
 	if (!db_jobs_list) {
 		error("No job list returned");
-		return NULL;
+		goto cleanup;
 	} else if (!list_count(db_jobs_list))
 		return db_jobs_list; /* Just return now since we don't
 				      * have any run away jobs, no
@@ -251,16 +251,15 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 					    &cluster_cond);
 	if (!cluster_list) {
 		error("No cluster list returned.");
-		return NULL;
+		goto cleanup;
 	} else if (!list_count(cluster_list)) {
 		error("Cluster %s is unknown",
 		      (char *)list_peek(job_cond->cluster_list));
-		return NULL;
+		goto cleanup;
 	} else if (list_count(cluster_list) != 1) {
 		error("slurmdb_clusters_get didn't return exactly one cluster (%d)!  This should never happen.",
 		      list_count(cluster_list));
-		FREE_NULL_LIST(cluster_list);
-		return NULL;
+		goto cleanup;
 	}
 
 	working_cluster_rec = list_peek(cluster_list);
@@ -269,16 +268,22 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 	    !working_cluster_rec->control_port) {
 		error("Slurmctld running on cluster %s is not up, can't check running jobs",
 		      working_cluster_rec->name);
-		return NULL;
+		goto cleanup;
 	}
 	if (slurm_load_jobs((time_t)NULL, &clus_jobs, 0)) {
 		error("Failed to get jobs from requested clusters: %m");
-		return NULL;
+		goto cleanup;
 	}
 
 	list_delete_all(db_jobs_list, _purge_known_jobs, clus_jobs);
 
 	return db_jobs_list;
+
+cleanup:
+	FREE_NULL_LIST(db_jobs_list);
+	FREE_NULL_LIST(cluster_list);
+
+	return NULL;
 }
 
 /*
