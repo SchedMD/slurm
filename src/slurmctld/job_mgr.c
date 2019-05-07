@@ -17867,7 +17867,7 @@ extern bool job_hold_requeue(struct job_record *job_ptr)
 	 */
 	if (state & JOB_SPECIAL_EXIT) {
 		/*
-		 * JOB_SPECIAL_EXIT means requeue the the job,
+		 * JOB_SPECIAL_EXIT means requeue the job,
 		 * put it on hold and display state as JOB_SPECIAL_EXIT.
 		 */
 		job_ptr->job_state |= JOB_SPECIAL_EXIT;

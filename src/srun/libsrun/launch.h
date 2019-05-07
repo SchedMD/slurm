@@ -168,7 +168,7 @@ extern int launch_g_step_wait(srun_job_t *job, bool got_alloc,
 extern int launch_g_step_terminate(void);
 
 /*
- * launch_g_print_status() displays the the status of the job step.
+ * launch_g_print_status() displays the status of the job step.
  */
 extern void launch_g_print_status(void);
 

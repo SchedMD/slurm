@@ -5532,7 +5532,7 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		int task_cpus  = task_cores * threads_per_core;
 		/* find out how many tasks can fit on a node */
 		int tasks = avail_cpus / task_cpus;
-		/* how many cpus the the job would use on the node */
+		/* how many cpus the job would use on the node */
 		avail_cpus = tasks * task_cpus;
 		/* subtract out the extra cpus. */
 		avail_cpus -= (tasks * (task_cpus - cpus_per_task));

@@ -3129,7 +3129,7 @@ static time_t _pack_start_find(struct job_record *job_ptr, time_t now)
 
 /*
  * Record the earliest that a pack job component can start. If it can be
- * started in multiple partitions, we only record the the earliest start time
+ * started in multiple partitions, we only record the earliest start time
  * for the job in any partition.
  */
 static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
