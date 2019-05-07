@@ -319,8 +319,10 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 
 	slurmdb_destroy_job_cond(job_cond);
 
-	if (!runaway_jobs)
+	if (!runaway_jobs) {
+		xfree(cluster_str);
 		return SLURM_ERROR;
+	}
 
 	if (!list_count(runaway_jobs)) {
 		printf("Runaway Jobs: No runaway jobs found on cluster %s\n",
@@ -328,8 +330,8 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 		xfree(cluster_str);
 		return SLURM_SUCCESS;
 	}
-
 	xfree(cluster_str);
+
 	_print_runaway_jobs(format_list, runaway_jobs);
 
 	rc = slurmdb_jobs_fix_runaway(db_conn, runaway_jobs);
