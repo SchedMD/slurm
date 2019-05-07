@@ -5483,3 +5483,27 @@ proc get_node_config { {desired_gpus 1} } {
 	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
 	return $node_found
 }
+
+proc check_reason { job_id reason } {
+	global squeue
+
+	set found 0
+	spawn $squeue -j $job_id --noheader -o "%r"
+	expect {
+		-re "$reason" {
+			set found 1
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: squeue not responding\n"
+		}
+		eof {
+			wait
+		}
+	}
+
+	if {$found == 0} {
+		log_error "Job $job_id should have a wait reason of $reason"
+	}
+	return $found
+}

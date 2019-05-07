@@ -303,7 +303,7 @@ add_qos $job_qos ""
 
 # create a tmp partition to use for testing
 spawn $scontrol create partitionname=$test_part qos=$part_qos tresbillingweights=cpu=$tres_cpu_mult default=yes \
-    nodes=[available_nodes_hostnames $def_part]
+    nodes=ALL
 expect {
 	timeout {
 		send_user "\nFAILURE: scontrol is not responding\n"

@@ -70,7 +70,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_1
+	inc21_30_1 "QOSGrpNodeLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -87,7 +87,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_2
+	inc21_30_2 "QOSGrpCpuLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -103,7 +103,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_3
+	inc21_30_3 "QOSGrpJobsLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -135,7 +135,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_5
+	inc21_30_5 "QOSMaxCpuPerJobLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -151,7 +151,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_6
+	inc21_30_6 "QOSMaxNodePerJobLimit|PartitionConfig"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -167,7 +167,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_7
+	inc21_30_7 "QOSMaxJobsPerUserLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -199,8 +199,8 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_34_1 $part_qos
-	if {$exit_code != 0 } {
+	inc21_34_1 $part_qos "QOSGrpCPUMinutesLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -217,8 +217,8 @@ proc part_test { } {
 		mod_qos $part_qos [array get mod_part_qos]
 		mod_qos $job_qos [array get mod_job_qos]
 		sleep $time_spacing
-		inc21_30_10
-		if {$exit_code != 0 } {
+		inc21_30_10 "QOSGrpCPURunMinutesLimit"
+		if {$exit_code != 0} {
 			cleanup
 			exit 1
 		}
@@ -234,8 +234,8 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_11
-	if {$exit_code != 0 } {
+	inc21_30_11 "QOSGrpMemLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -253,7 +253,7 @@ proc part_test { } {
 		mod_qos $job_qos [array get mod_job_qos]
 		sleep $time_spacing
 		inc21_34_2 $part_qos
-		if {$exit_code != 0 } {
+		if {$exit_code != 0} {
 			cleanup
 			exit 1
 		}
@@ -269,8 +269,8 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_13
-	if {$exit_code != 0 } {
+	inc21_30_13 "QOSMaxCpuMinutesPerJobLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -285,8 +285,8 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_14
-	if {$exit_code != 0 } {
+	inc21_30_14 "QOSMaxWallDurationPerJobLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -306,8 +306,8 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_15
-	if {$exit_code != 0 } {
+	inc21_30_15 "QOSMaxCpuPerUserLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 
@@ -323,8 +323,8 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_16
-	if {$exit_code != 0 } {
+	inc21_30_16 "QOSMaxNodePerUserLimit|PartitionConfig"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -340,7 +340,7 @@ proc part_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
 	inc21_30_17
-	if {$exit_code != 0 } {
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -358,7 +358,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_2
+	inc21_30_2 "QOSGrpBilling"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -375,8 +375,8 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_34_1 $part_qos
-	if {$exit_code != 0 } {
+	inc21_34_1 $part_qos "QOSGrpBillingMinutes"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -394,8 +394,8 @@ proc part_test { } {
 		mod_qos $part_qos [array get mod_part_qos]
 		mod_qos $job_qos [array get mod_job_qos]
 		sleep $time_spacing
-		inc21_30_10
-		if {$exit_code != 0 } {
+		inc21_30_10 "QOSGrpBillingRunMinutes"
+		if {$exit_code != 0} {
 			cleanup
 			exit 1
 		}
@@ -412,7 +412,7 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_5
+	inc21_30_5 "QOSMaxBillingPerJob"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -428,8 +428,8 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_13
-	if {$exit_code != 0 } {
+	inc21_30_13 "QOSMaxBillingMinutesPerJob"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -448,11 +448,10 @@ proc part_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_15
-	if {$exit_code != 0 } {
+	inc21_30_15 "QOSMaxBillingPerUser"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
-
 	}
 	set mod_job_qos(MaxTRESPerUser=billing) "-1"
 	set mod_part_qos(MaxTRESPerUser=billing) "-1"
@@ -487,7 +486,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_1
+	inc21_30_1 "QOSGrpNodeLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -504,7 +503,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_2
+	inc21_30_2 "QOSGrpCpuLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -520,7 +519,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_3
+	inc21_30_3 "QOSGrpJobsLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -552,7 +551,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_5
+	inc21_30_5 "QOSMaxCpuPerJobLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -568,7 +567,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_6
+	inc21_30_6 "QOSMaxNodePerJobLimit|PartitionConfig"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -584,7 +583,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_7
+	inc21_30_7 "QOSMaxJobsPerUserLimit"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -616,8 +615,8 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_34_1 $job_qos
-	if {$exit_code != 0 } {
+	inc21_34_1 $job_qos "QOSGrpCPUMinutesLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -634,8 +633,8 @@ proc qos_test { } {
 		mod_qos $job_qos [array get mod_job_qos]
 		mod_qos $part_qos [array get mod_part_qos]
 		sleep $time_spacing
-		inc21_30_10
-		if {$exit_code != 0 } {
+		inc21_30_10  "QOSGrpCPURunMinutesLimit"
+		if {$exit_code != 0} {
 			cleanup
 			exit 1
 		}
@@ -651,8 +650,8 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_11
-	if {$exit_code != 0 } {
+	inc21_30_11 "QOSGrpMemLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -670,7 +669,7 @@ proc qos_test { } {
 		mod_qos $part_qos [array get mod_part_qos]
 		sleep $time_spacing
 		inc21_34_2 $job_qos
-		if {$exit_code != 0 } {
+		if {$exit_code != 0} {
 			cleanup
 			exit 1
 		}
@@ -686,8 +685,8 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_13
-	if {$exit_code != 0 } {
+	inc21_30_13 "QOSMaxCpuMinutesPerJobLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -702,8 +701,8 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_14
-	if {$exit_code != 0 } {
+	inc21_30_14 "QOSMaxWallDurationPerJobLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -724,11 +723,10 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_15
-	if {$exit_code != 0 } {
+	inc21_30_15 "QOSMaxCpuPerUserLimit"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
-
 	}
 	set mod_job_qos(MaxCpusPerUser) "-1"
 	set mod_part_qos(MaxCpusPerUser) "-1"
@@ -741,8 +739,8 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_16
-	if {$exit_code != 0 } {
+	inc21_30_16 "QOSMaxNodesPerUserLimit|PartitionConfig"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -758,7 +756,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
 	inc21_30_17
-	if {$exit_code != 0 } {
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -776,7 +774,7 @@ proc qos_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_2
+	inc21_30_2 "QOSGrpBilling"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -793,8 +791,8 @@ proc qos_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_34_1 $job_qos
-	if {$exit_code != 0 } {
+	inc21_34_1 $job_qos "QOSGrpBillingMinutes"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -812,8 +810,8 @@ proc qos_test { } {
 		mod_qos $part_qos [array get mod_part_qos]
 		mod_qos $job_qos [array get mod_job_qos]
 		sleep $time_spacing
-		inc21_30_10
-		if {$exit_code != 0 } {
+		inc21_30_10  "QOSGrpBillingRunMinutes"
+		if {$exit_code != 0} {
 			cleanup
 			exit 1
 		}
@@ -830,7 +828,7 @@ proc qos_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_5
+	inc21_30_5 "QOSMaxBillingPerJob"
 	if {$exit_code != 0} {
 		cleanup
 		exit 1
@@ -846,8 +844,8 @@ proc qos_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_13
-	if {$exit_code != 0 } {
+	inc21_30_13 "QOSMaxBillingMinutesPerJob"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
 	}
@@ -866,11 +864,10 @@ proc qos_test { } {
 	mod_qos $part_qos [array get mod_part_qos]
 	mod_qos $job_qos [array get mod_job_qos]
 	sleep $time_spacing
-	inc21_30_15
-	if {$exit_code != 0 } {
+	inc21_30_15 "QOSMaxBillingPerUser"
+	if {$exit_code != 0} {
 		cleanup
 		exit 1
-
 	}
 	set mod_job_qos(MaxTRESPerUser=billing) "-1"
 	set mod_part_qos(MaxTRESPerUser=billing) "-1"
