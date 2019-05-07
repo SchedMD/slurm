@@ -213,7 +213,7 @@ static int _purge_known_jobs(void *x, void *key)
 static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 {
 	List db_jobs_list = NULL;
-	job_info_msg_t *clus_jobs    = NULL;
+	job_info_msg_t *clus_jobs = NULL;
 	slurmdb_cluster_cond_t cluster_cond;
 	List cluster_list;
 
