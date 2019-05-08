@@ -11,6 +11,10 @@ documents those changes that are of interest to users and administrators.
     which can lead to issues with throughput and responsiveness.
  -- X11 forwarding - ignore screen value for local DISPLAY.
  -- Add missing locks protecting slurmctld_config.server_thread_count access.
+ -- Fix jobs stuck from FedJobLock when requeueing in a federation
+ -- Fix requeueing job in a federation of clusters with differing associations
+ -- sacctmgr - free memory before exiting in 'sacctmgr show runaway'.
+ -- Fix seff showing memory overflow when steps tres mem usage is 0.
 
 * Changes in Slurm 19.05.0rc1
 =============================
@@ -242,6 +246,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix printing duplicate error messages of jobs rejected by job submit plugin.
  -- Fix printing of job submit plugin messages of het jobs without pack id.
  -- Fix memory leak in group_cache.c
+ -- Fix jobs stuck from FedJobLock when requeueing in a federation
+ -- Fix requeueing job in a federation of clusters with differing associations
+ -- sacctmgr - free memory before exiting in 'sacctmgr show runaway'.
+ -- Fix seff showing memory overflow when steps tres mem usage is 0.
 
 * Changes in Slurm 18.08.7
 ==========================
