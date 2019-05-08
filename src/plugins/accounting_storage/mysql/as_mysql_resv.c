@@ -93,8 +93,8 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 
 	if (resv->flags != NO_VAL) {
 		xstrcat(*cols, ", flags");
-		xstrfmtcat(*vals, ", %u", resv->flags);
-		xstrfmtcat(*extra, ", flags=%u", resv->flags);
+		xstrfmtcat(*vals, ", %u", (uint16_t)resv->flags);
+		xstrfmtcat(*extra, ", flags=%u", (uint16_t)resv->flags);
 	}
 
 	if (resv->name) {
