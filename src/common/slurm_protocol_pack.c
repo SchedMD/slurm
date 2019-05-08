@@ -5644,6 +5644,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		      "%hu not supported", protocol_version);
 		goto unpack_error;
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -7254,6 +7255,16 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 {
 	if (job_desc_ptr->script_buf)
 		job_desc_ptr->script = ((Buf) job_desc_ptr->script_buf)->head;
+
+	/* Set bitflags saying we did or didn't request the below */
+	if (!job_desc_ptr->account)
+		job_desc_ptr->bitflags |= USE_DEFAULT_ACCT;
+	if (!job_desc_ptr->partition)
+		job_desc_ptr->bitflags |= USE_DEFAULT_PART;
+	if (!job_desc_ptr->qos)
+		job_desc_ptr->bitflags |= USE_DEFAULT_QOS;
+	if (!job_desc_ptr->wckey)
+		job_desc_ptr->bitflags |= USE_DEFAULT_WCKEY;
 
 	/* load the data values */
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
