@@ -316,8 +316,15 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	safe_unpack32(&_size, buf);					\
 	if (_size != NO_VAL) {						\
 		safe_unpackstr_xmalloc(&tmp_str, &_tmp_uint32, buf);	\
-		*bitmap = bit_alloc(_size);				\
-		bit_unfmt_hexmask(*bitmap, tmp_str);			\
+		if (_size) {						\
+			*bitmap = bit_alloc(_size);			\
+			if (bit_unfmt_hexmask(*bitmap, tmp_str)) {	\
+				FREE_NULL_BITMAP(*bitmap);		\
+				xfree(tmp_str);				\
+				goto unpack_error;			\
+			}						\
+		} else							\
+			*bitmap = NULL;					\
 		xfree(tmp_str);						\
 	} else								\
 		*bitmap = NULL;						\
