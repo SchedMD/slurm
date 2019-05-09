@@ -503,7 +503,7 @@ In addition, the "SLURM_JOB_ID" environment variable will contain the job ID
 of the heterogeneous job leader and "SLURM_PACK_SIZE" will contain the number of
 components in the job. If using srun with a single specific pack group (for
 instance --pack-group=1) "SLURM_JOB_ID" will contain the job ID of that specific
-component, behaving like a regular (non hetjob). For example:</p>
+component, behaving like a regular (non-heterogeneous job). For example:</p>
 <pre>
 $ salloc -N1 : -N2 bash
 salloc: Pending job allocation 11741
