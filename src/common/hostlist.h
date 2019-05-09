@@ -238,6 +238,10 @@ char * hostlist_nth(hostlist_t hl, int n);
 char * hostlist_shift_dims(hostlist_t hl, int dims);
 char * hostlist_shift(hostlist_t hl);
 
+/*
+ * Compares the first hostrange of two hostlists.
+ */
+int hostlist_cmp_first(hostlist_t hl1, hostlist_t hl2);
 
 /* hostlist_pop_range():
  *

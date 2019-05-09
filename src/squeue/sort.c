@@ -465,14 +465,16 @@ static int _sort_by_node_list(char *nodes1, char *nodes2)
 {
 	int diff = 0;
 	hostlist_t hostlist1, hostlist2;
+#if	PURE_ALPHA_SORT
 	char *val1, *val2;
 	char *ptr1, *ptr2;
-#if	PURE_ALPHA_SORT == 0
-	int inx;
 #endif
-
 	hostlist1 = hostlist_create(nodes1);
 	hostlist_sort(hostlist1);
+	hostlist2 = hostlist_create(nodes2);
+	hostlist_sort(hostlist2);
+
+#if	PURE_ALPHA_SORT
 	val1 = hostlist_shift(hostlist1);
 	if (val1)
 		ptr1 = val1;
@@ -480,8 +482,6 @@ static int _sort_by_node_list(char *nodes1, char *nodes2)
 		ptr1 = "";
 	hostlist_destroy(hostlist1);
 
-	hostlist2 = hostlist_create(nodes2);
-	hostlist_sort(hostlist2);
 	val2 = hostlist_shift(hostlist2);
 	if (val2)
 		ptr2 = val2;
@@ -489,33 +489,22 @@ static int _sort_by_node_list(char *nodes1, char *nodes2)
 		ptr2 = "";
 	hostlist_destroy(hostlist2);
 
-#if	PURE_ALPHA_SORT
 	diff = xstrcmp(ptr1, ptr2);
-#else
-	for (inx = 0; ; inx++) {
-		if (ptr1[inx] == ptr2[inx]) {
-			if (ptr1[inx] == '\0')
-				break;
-			continue;
-		}
-		if ((isdigit((int)ptr1[inx])) &&
-		    (isdigit((int)ptr2[inx]))) {
-			int num1, num2;
-			num1 = atoi(ptr1 + inx);
-			num2 = atoi(ptr2 + inx);
-			diff = num1 - num2;
-		} else
-			diff = xstrcmp(ptr1, ptr2);
-		break;
-	}
-#endif
 	if (val1)
 		free(val1);
 	if (val2)
 		free(val2);
+#else
+	/*
+	 * The hostlist in sinfo_data_t should each only have one hostrange, and
+	 * each hostrange should only have one node name/host name
+	 */
+	diff = hostlist_cmp_first(hostlist1, hostlist2);
+#endif
 
 	if (reverse_order)
 		diff = -diff;
+
 	return diff;
 }
 

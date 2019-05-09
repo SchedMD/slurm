@@ -111,6 +111,7 @@ strong_alias(hostlist_shift,		slurm_hostlist_shift);
 strong_alias(hostlist_shift_dims,	slurm_hostlist_shift_dims);
 strong_alias(hostlist_shift_range,	slurm_hostlist_shift_range);
 strong_alias(hostlist_sort,		slurm_hostlist_sort);
+strong_alias(hostlist_cmp_first,	slurm_hostlist_cmp_first);
 strong_alias(hostlist_uniq,		slurm_hostlist_uniq);
 strong_alias(hostset_copy,		slurm_hostset_copy);
 strong_alias(hostset_count,		slurm_hostset_count);
@@ -793,6 +794,11 @@ static hostrange_t hostrange_delete_host(hostrange_t hr, unsigned long n)
 	return new;
 }
 
+extern int hostlist_cmp_first(hostlist_t hl1, hostlist_t hl2)
+{
+	return hostrange_cmp(hl1->hr[0], hl2->hr[0]);
+}
+
 /* hostrange_cmp() is used to sort hostrange objects. It will
  * sort based on the following (in order):
  *  o result of xstrcmp on prefixes
@@ -813,7 +819,6 @@ static int hostrange_cmp(hostrange_t h1, hostrange_t h2)
 
 	return retval;
 }
-
 
 /* compare the prefixes of two hostrange objects.
  * returns:

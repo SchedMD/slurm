@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Add scontrol write config <filename> option.
  -- Increase maximum number of hostlist ranges from 64k to 256k.
  -- Don't acquire unneeded locks in slurmctld _run_prolog thread.
+ -- Fix sinfo/squeue sort by nodename/nodeaddr/hostname.
 
 * Changes in Slurm 19.05.2
 ==========================
