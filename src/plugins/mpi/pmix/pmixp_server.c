@@ -1530,7 +1530,6 @@ static volatile int _pmixp_pp_count = 0;
 
 static volatile int _pmixp_pp_warmup = 0;
 static volatile int _pmixp_pp_iters = 0;
-static volatile int _pmixp_pp_iter_count = 0;
 static double _pmixp_pp_start = 0;
 
 int pmixp_server_pp_count(void)
