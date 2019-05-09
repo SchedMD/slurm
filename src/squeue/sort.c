@@ -92,6 +92,8 @@ static int _sort_step_by_time_limit(void *void1, void *void2);
 static int _sort_step_by_time_used(void *void1, void *void2);
 static int _sort_step_by_user_id(void *void1, void *void2);
 static int _sort_step_by_user_name(void *void1, void *void2);
+static int _sort_by_node_list(char *nodes1, char *nodes2);
+
 
 static time_t now;
 
@@ -447,9 +449,21 @@ static int _sort_job_by_name(void *void1, void *void2)
 
 static int _sort_job_by_node_list(void *void1, void *void2)
 {
+	job_info_t *job1, *job2;
+	_get_job_info_from_void(&job1, &job2, void1, void2);
+	return _sort_by_node_list(job1->nodes, job2->nodes);
+}
+
+static int _sort_step_by_node_list(void *void1, void *void2)
+{
+	job_step_info_t *step1, *step2;
+	_get_step_info_from_void(&step1, &step2, void1, void2);
+	return _sort_by_node_list(step1->nodes, step2->nodes);
+}
+
+static int _sort_by_node_list(char *nodes1, char *nodes2)
+{
 	int diff = 0;
-	job_info_t *job1;
-	job_info_t *job2;
 	hostlist_t hostlist1, hostlist2;
 	char *val1, *val2;
 	char *ptr1, *ptr2;
@@ -457,9 +471,7 @@ static int _sort_job_by_node_list(void *void1, void *void2)
 	int inx;
 #endif
 
-	_get_job_info_from_void(&job1, &job2, void1, void2);
-
-	hostlist1 = hostlist_create(job1->nodes);
+	hostlist1 = hostlist_create(nodes1);
 	hostlist_sort(hostlist1);
 	val1 = hostlist_shift(hostlist1);
 	if (val1)
@@ -468,7 +480,7 @@ static int _sort_job_by_node_list(void *void1, void *void2)
 		ptr1 = "";
 	hostlist_destroy(hostlist1);
 
-	hostlist2 = hostlist_create(job2->nodes);
+	hostlist2 = hostlist_create(nodes2);
 	hostlist_sort(hostlist2);
 	val2 = hostlist_shift(hostlist2);
 	if (val2)
@@ -901,69 +913,6 @@ static int _sort_step_by_id(void *void1, void *void2)
 	diff = _diff_uint32(step1->job_id, step2->job_id);
 	if (diff == 0)
 		diff = _diff_uint32(step1->step_id, step2->step_id);
-
-	if (reverse_order)
-		diff = -diff;
-	return diff;
-}
-
-static int _sort_step_by_node_list(void *void1, void *void2)
-{
-	int diff = 0;
-	job_step_info_t *step1;
-	job_step_info_t *step2;
-
-	hostlist_t hostlist1, hostlist2;
-	char *val1, *val2;
-	char *ptr1, *ptr2;
-#if	PURE_ALPHA_SORT == 0
-	int inx;
-#endif
-
-	_get_step_info_from_void(&step1, &step2, void1, void2);
-
-	hostlist1 = hostlist_create(step1->nodes);
-	hostlist_sort(hostlist1);
-	val1 = hostlist_shift(hostlist1);
-	if (val1)
-		ptr1 = val1;
-	else
-		ptr1 = "";
-	hostlist_destroy(hostlist1);
-
-	hostlist2 = hostlist_create(step2->nodes);
-	hostlist_sort(hostlist2);
-	val2 = hostlist_shift(hostlist2);
-	if (val2)
-		ptr2 = val2;
-	else
-		ptr2 = "";
-	hostlist_destroy(hostlist2);
-
-#if	PURE_ALPHA_SORT
-	diff = xstrcmp(ptr1, ptr2);
-#else
-	for (inx = 0; ; inx++) {
-		if (ptr1[inx] == ptr2[inx]) {
-			if (ptr1[inx] == '\0')
-				break;
-			continue;
-		}
-		if ((isdigit((int)ptr1[inx])) &&
-		    (isdigit((int)ptr2[inx]))) {
-			int num1, num2;
-			num1 = atoi(ptr1 + inx);
-			num2 = atoi(ptr2 + inx);
-			diff = num1 - num2;
-		} else
-			diff = xstrcmp(ptr1, ptr2);
-		break;
-	}
-#endif
-	if (val1)
-		free(val1);
-	if (val2)
-		free(val2);
 
 	if (reverse_order)
 		diff = -diff;
