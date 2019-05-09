@@ -1418,16 +1418,41 @@ int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 		} else {			/* not a valid hex digit */
 		    	current = 0;
 			rc = -1;
+			break;
 		}
 
-		if ((current & 1) && (bit_index   < bitsize))
-			bit_set(bitmap, bit_index);
-		if ((current & 2) && (bit_index+1 < bitsize))
-			bit_set(bitmap, bit_index+1);
-		if ((current & 4) && (bit_index+2 < bitsize))
-			bit_set(bitmap, bit_index+2);
-		if ((current & 8) && (bit_index+3 < bitsize))
-			bit_set(bitmap, bit_index+3);
+		if (current & 1) {
+			if (bit_index < bitsize)
+				bit_set(bitmap, bit_index);
+			else {
+				rc = -1;
+				break;
+			}
+		}
+		if (current & 2) {
+			if ((bit_index + 1) < bitsize)
+				bit_set(bitmap, bit_index + 1);
+			else {
+				rc = -1;
+				break;
+			}
+		}
+		if (current & 4) {
+			if ((bit_index + 2) < bitsize)
+				bit_set(bitmap, bit_index + 2);
+			else {
+				rc = -1;
+				break;
+			}
+		}
+		if (current & 8) {
+			if ((bit_index + 3) < bitsize)
+				bit_set(bitmap, bit_index + 3);
+			else {
+				rc = -1;
+				break;
+			}
+		}
 		len--;
 		curpos--;
 		bit_index+=4;
