@@ -221,6 +221,7 @@ test1.112  Test of --deadline and --begin option and time not changed
 test1.113  Test of --use-min-nodes option.
 test1.114  Test of srun --spread-job option.
 test1.115  Test of srun not hanging on ignored stdin.
+test1.116  Extended MPI functionality tests via srun.
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
