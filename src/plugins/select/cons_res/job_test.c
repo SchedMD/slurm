@@ -1389,6 +1389,15 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 					/* first required node in set */
 					consec_req[consec_index] = i;
 				}
+				/*
+				 * This could result in 0, but if the user
+				 * requested nodes here we will still give
+				 * them and then the step layout will sort
+				 * things out.
+				 */
+				_cpus_to_use(&avail_cpus, rem_cpus,
+					     min_rem_nodes, details_ptr,
+					     &cpu_cnt[i], i, cr_type);
 				total_cpus += avail_cpus;
 				rem_cpus   -= avail_cpus;
 				rem_nodes--;
