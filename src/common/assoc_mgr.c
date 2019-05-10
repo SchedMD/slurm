@@ -1056,10 +1056,8 @@ static int _post_user_list(List user_list)
 		if (!user->default_wckey)
 			user->default_wckey = xstrdup("");
 		if (uid_from_string (user->name, &pw_uid) < 0) {
-			if (slurmdbd_conf)
-				debug("post user: couldn't get a "
-				      "uid for user %s",
-				      user->name);
+			debug("%s: couldn't get a uid for user: %s",
+			      __func__, user->name);
 			user->uid = NO_VAL;
 		} else
 			user->uid = pw_uid;
