@@ -1441,5 +1441,5 @@ extern int get_log_level(void)
 
 extern int get_sched_log_level(void)
 {
-	return highest_sched_log_level;
+	return MAX(highest_log_level, highest_sched_log_level);
 }

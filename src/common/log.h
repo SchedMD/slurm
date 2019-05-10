@@ -233,6 +233,10 @@ extern void log_set_debug_flags(void);
  * For example, if LOG_LEVEL_INFO is returned, we know that all verbose and
  * debug type messages will be ignored. */
 extern int get_log_level(void);
+
+/*
+ * Returns the greater of the sched_log_level or the log_level.
+ */
 extern int get_sched_log_level(void);
 
 /*
