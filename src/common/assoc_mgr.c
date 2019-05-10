@@ -2499,7 +2499,9 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 		else
 			return SLURM_SUCCESS;
 	}
-	debug3("found correct association");
+	debug3("%s: found correct association of user=%s(%u), acct=%s, cluster=%s, partition=%s to assoc=%u acct=%s",
+	       __func__, assoc->user, assoc->uid, assoc->acct, assoc->cluster,
+	       assoc->partition, ret_assoc->id, ret_assoc->acct);
 	if (assoc_pptr)
 		*assoc_pptr = ret_assoc;
 
