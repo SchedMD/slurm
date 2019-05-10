@@ -1047,7 +1047,9 @@ static int _post_user_list(List user_list)
 {
 	slurmdb_user_rec_t *user = NULL;
 	ListIterator itr = list_iterator_create(user_list);
-	//START_TIMER;
+	DEF_TIMERS;
+
+	START_TIMER;
 	while ((user = list_next(itr))) {
 		uid_t pw_uid;
 		/* Just to make sure we have a default_wckey since it
@@ -1063,6 +1065,7 @@ static int _post_user_list(List user_list)
 			user->uid = pw_uid;
 	}
 	list_iterator_destroy(itr);
+	END_TIMER2(__func__);
 	return SLURM_SUCCESS;
 }
 
