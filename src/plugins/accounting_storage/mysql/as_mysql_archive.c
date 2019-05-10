@@ -553,7 +553,7 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 			       char *arch_dir, uint32_t archive_period,
 			       char *sql_table, uint32_t usage_info);
 
-static int high_buffer_size = (1024 * 1024);
+static uint32_t high_buffer_size = (1024 * 1024);
 
 static void _pack_local_event(local_event_t *object,
 			      uint16_t rpc_version, Buf buffer)
@@ -3185,31 +3185,32 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_TXN:
 		query = xstrdup_printf("select %s from \"%s\" where "
 				       "timestamp <= %ld && cluster='%s' "
-				       "order by timestamp asc",
+				       "order by timestamp asc LIMIT %d",
 				       cols, sql_table,
-				       period_end, cluster_name);
+				       period_end, cluster_name,
+				       MAX_PURGE_LIMIT);
 		break;
 	case PURGE_USAGE:
 	case PURGE_CLUSTER_USAGE:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "time_start <= %ld "
-				       "order by time_start asc",
+				       "order by time_start asc LIMIT %d",
 				       cols, cluster_name, sql_table,
-				       period_end);
+				       period_end, MAX_PURGE_LIMIT);
 		break;
 	case PURGE_JOB:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
-				       "time_submit < %ld && time_end != 0 "
-				       "order by time_submit asc",
+				       "time_submit <= %ld && time_end != 0 "
+				       "order by time_submit asc LIMIT %d",
 				       cols, cluster_name, job_table,
-				       period_end);
+				       period_end, MAX_PURGE_LIMIT);
 		break;
 	default:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "time_start <= %ld && time_end != 0 "
-				       "order by time_start asc",
+				       "order by time_start asc LIMIT %d",
 				       cols, cluster_name, sql_table,
-				       period_end);
+				       period_end, MAX_PURGE_LIMIT);
 		break;
 	}
 
@@ -3452,11 +3453,12 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		return SLURM_ERROR;
 	}
 
-	do {
+	/* continue archive/purge until no records in the period are found */
+	while (1) {
 		rc = _get_oldest_record(mysql_conn, cluster_name, sql_table,
 					purge_type, col_name,
 					curr_end, &record_start);
-		if (!rc) /* no purgeable records found */
+		if (!rc) /* no purgeable records found - base case */
 			break;
 		else if (rc == SLURM_ERROR)
 			return rc;
@@ -3475,55 +3477,69 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 			debug("Purging %s_%s before %ld",
 			      cluster_name, sql_table, tmp_end);
 
+		/* Do archive */
 		if (SLURMDB_PURGE_ARCHIVE_SET(purge_attr)) {
 			rc = _archive_table(purge_type, mysql_conn,
 					    cluster_name, tmp_end,
 					    arch_cond->archive_dir,
 					    tmp_archive_period,
 					    sql_table, usage_info);
-			if (!rc) /* no records archived */
-				continue;
-			else if (rc == SLURM_ERROR)
+			if (!rc) { /* no records archived */
+				error("%s: No records archived for %s before %ld but we found some records",
+				      __func__, sql_table, tmp_end);
+				return SLURM_ERROR;
+			} else if (rc == SLURM_ERROR)
 				return rc;
 		}
 
+		/*
+		 * The purge query should have the same where clause as the
+		 * archive query. The order by is very important so we get
+		 * records in the same order as we do when archiving, since we
+		 * only want to delete records that have been archived (if
+		 * archiving is enabled).
+		 */
 		switch (purge_type) {
 		case PURGE_TXN:
 			query = xstrdup_printf(
 				"delete from \"%s\" where "
-				"%s <= %ld && cluster='%s' LIMIT %d",
-				sql_table, col_name,
-				tmp_end, cluster_name, MAX_PURGE_LIMIT);
+				"%s <= %ld && cluster='%s' order by %s asc LIMIT %d",
+				sql_table, col_name, tmp_end, cluster_name,
+				col_name, MAX_PURGE_LIMIT);
 			break;
 		case PURGE_USAGE:
 		case PURGE_CLUSTER_USAGE:
 			query = xstrdup_printf(
 				"delete from \"%s_%s\" where "
-				"%s <= %ld LIMIT %d",
+				"%s <= %ld order by %s asc LIMIT %d",
 				cluster_name, sql_table, col_name,
-				tmp_end, MAX_PURGE_LIMIT);
+				tmp_end, col_name, MAX_PURGE_LIMIT);
 			break;
 		default:
 			query = xstrdup_printf(
 				"delete from \"%s_%s\" where "
-				"%s <= %ld && time_end != 0 LIMIT %d",
+				"%s <= %ld && time_end != 0 order by %s asc LIMIT %d",
 				cluster_name, sql_table, col_name,
-				tmp_end, MAX_PURGE_LIMIT);
+				tmp_end, col_name, MAX_PURGE_LIMIT);
 			break;
 		}
 		if (debug_flags & DEBUG_FLAG_DB_ARCHIVE)
 			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
 
-		while ((rc = mysql_db_delete_affected_rows(
+		/*
+		 * Don't loop this query, just do it once, since we are only
+		 * archiving and purging MAX_PURGE_LIMIT rows at a time.
+		 * mysql_db_delete_affected_rows will return < 0 on failure or
+		 * 0 if no records are affected.
+		 */
+		if ((rc = mysql_db_delete_affected_rows(
 				mysql_conn, query)) > 0) {
 			/* Commit here every time since this could create a huge
 			 * transaction.
 			 */
-			if (mysql_db_commit(mysql_conn)) {
+			if ((rc = mysql_db_commit(mysql_conn)))
 				error("Couldn't commit cluster (%s) purge",
 				      cluster_name);
-				break;
-			}
 		}
 
 		xfree(query);
@@ -3536,7 +3552,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 			      cluster_name);
 			break;
 		}
-	} while (tmp_end < curr_end);
+	}
 
 	return SLURM_SUCCESS;
 }

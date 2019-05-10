@@ -2219,7 +2219,13 @@ all suspend data removed will be lost permanently.
 
 .TP
 \fIArchive Load\fP
-Load in to the database previously archived data.
+Load in to the database previously archived data. The archive file will not be
+loaded if the records already exist in the database - therefore, trying to load
+an archive file more than once will result in an error. When this data is again
+archived and purged from the database, if the old archive file is still in the
+directory ArchiveDir, a new archive file will be created (see ArchiveDir in the
+slurmdbd.conf man page), so the old file will not be overwritten and these files
+will have duplicate records.
 
 .TP
 \fIFile=\fP

@@ -250,6 +250,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix requeueing job in a federation of clusters with differing associations
  -- sacctmgr - free memory before exiting in 'sacctmgr show runaway'.
  -- Fix seff showing memory overflow when steps tres mem usage is 0.
+ -- Upon archive file name collision, create new archive file instead of
+    overwriting the old one to prevent lost records.
+ -- Limit archive files to 50000 records per file so that archiving large
+    databases will succeed.
 
 * Changes in Slurm 18.08.7
 ==========================

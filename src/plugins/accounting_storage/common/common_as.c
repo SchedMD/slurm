@@ -834,6 +834,12 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 	struct tm time_tm;
 	char start_char[32];
 	char end_char[32];
+	char name[PATH_MAX];
+	char fullname[PATH_MAX];
+	struct stat buf;
+	uint32_t num = 2;
+	uint32_t size_left = PATH_MAX - 1;
+	uint32_t size;
 
 	slurm_localtime_r((time_t *)&period_start, &time_tm);
 	time_tm.tm_sec = 0;
@@ -869,10 +875,27 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 		 time_tm.tm_min,
 		 time_tm.tm_sec);
 
-	/* write the buffer to file */
-	return xstrdup_printf("%s/%s_%s_archive_%s_%s",
-			      arch_dir, cluster_name, arch_type,
-			      start_char, end_char);
+	size = snprintf(name, size_left, "%s/%s_%s_archive_%s_%s",
+			arch_dir, cluster_name, arch_type,
+			start_char, end_char);
+	if (size >= size_left) {
+		fatal("%s: file name would be larger than the max allowed file length of %u bytes, cannot archive file. This should never happen.",
+		      __func__, PATH_MAX);
+	}
+	size_left -= size;
+
+	/* If the file already exists, generate a new file name. */
+	strncpy(fullname, name, PATH_MAX);
+	while (!stat(fullname, &buf)) {
+		size = snprintf(fullname, size_left, "%s.%u", name, num++);
+		if (size >= size_left) {
+			error("%s: file name would be larger than the max allowed file lenght of %u bytes, cannot archive file. This should never happen.",
+			      __func__, PATH_MAX);
+			return NULL;
+		}
+	}
+
+	return xstrdup(fullname);
 }
 
 extern int archive_write_file(Buf buffer, char *cluster_name,
@@ -882,8 +905,7 @@ extern int archive_write_file(Buf buffer, char *cluster_name,
 {
 	int fd = 0;
 	int rc = SLURM_SUCCESS;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
-	static int high_buffer_size = (1024 * 1024);
+	char *new_file = NULL;
 	static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
 	xassert(buffer);
@@ -891,23 +913,25 @@ extern int archive_write_file(Buf buffer, char *cluster_name,
 	slurm_mutex_lock(&local_file_lock);
 
 	/* write the buffer to file */
-	reg_file = _make_archive_name(period_start, period_end,
+	new_file = _make_archive_name(period_start, period_end,
 				      cluster_name, arch_dir,
 				      arch_type, archive_period);
+	if (!new_file) {
+		error("%s: Unable to make archive file name.", __func__);
+		return SLURM_ERROR;
+	}
 
 	debug("Storing %s archive for %s at %s",
-	      arch_type, cluster_name, reg_file);
-	old_file = xstrdup_printf("%s.old", reg_file);
-	new_file = xstrdup_printf("%s.new", reg_file);
+	      arch_type, cluster_name, new_file);
 
 	fd = creat(new_file, 0600);
 	if (fd < 0) {
 		error("Can't save archive, create file %s error %m", new_file);
 		rc = SLURM_ERROR;
 	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		int amount;
+		uint32_t pos = 0, nwrite = get_buf_offset(buffer);
 		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
 			amount = write(fd, &data[pos], nwrite);
 			if ((amount < 0) && (errno != EINTR)) {
@@ -922,19 +946,6 @@ extern int archive_write_file(Buf buffer, char *cluster_name,
 		close(fd);
 	}
 
-	if (rc)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("Link(%s, %s): %m", reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("Link(%s, %s): %m", new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
 	xfree(new_file);
 	slurm_mutex_unlock(&local_file_lock);
 
