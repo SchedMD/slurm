@@ -1944,9 +1944,11 @@ alloc_job:
 			if (!bit_test(free_cores[n], j))
 				continue;
 			if (c >= csize)	{
-				error("%s: %s core_bitmap index error on node %s",
+				error("%s: %s core_bitmap index error on node %s "
+				      "(NODE_INX:%d, C_SIZE:%u)",
 				      plugin_type, __func__,
-				      select_node_record[n].node_ptr->name);
+				      select_node_record[n].node_ptr->name,
+				      n, csize);
 				drain_nodes(select_node_record[n].node_ptr->name,
 					    "Bad core count", getuid());
 				_free_avail_res_array(avail_res_array);
