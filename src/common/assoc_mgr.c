@@ -2471,10 +2471,9 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn,
 		if (!assoc->cluster)
 			assoc->cluster = assoc_mgr_cluster_name;
 	}
-/* 	info("looking for assoc of user=%s(%u), acct=%s, " */
-/* 	     "cluster=%s, partition=%s", */
-/* 	     assoc->user, assoc->uid, assoc->acct, */
-/* 	     assoc->cluster, assoc->partition); */
+	debug5("%s: looking for assoc of user=%s(%u), acct=%s, cluster=%s, partition=%s",
+	       __func__, assoc->user, assoc->uid, assoc->acct, assoc->cluster,
+	       assoc->partition);
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
