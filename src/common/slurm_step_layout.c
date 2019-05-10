@@ -667,14 +667,25 @@ static int _task_layout_block(slurm_step_layout_t *step_layout, uint16_t *cpus)
 static int _task_layout_cyclic(slurm_step_layout_t *step_layout,
 			       uint16_t *cpus)
 {
-	int i, j, taskid = 0;
+	int i, j, max_over_subscribe = 0, taskid = 0, total_cpus = 0;
 	bool over_subscribe = false;
+
+	for (i = 0; i < step_layout->node_cnt; i++)
+		total_cpus += cpus[i];
+	if (total_cpus < step_layout->task_cnt) {
+		over_subscribe = true;
+		i = step_layout->task_cnt - total_cpus;
+		max_over_subscribe = (i + step_layout->node_cnt - 1) /
+				     step_layout->node_cnt;
+	}
 
 	for (j=0; taskid<step_layout->task_cnt; j++) {   /* cycle counter */
 		bool space_remaining = false;
 		for (i=0; ((i<step_layout->node_cnt)
 			   && (taskid<step_layout->task_cnt)); i++) {
-			if ((j<cpus[i]) || over_subscribe) {
+			if ((j < cpus[i]) ||
+			    (over_subscribe &&
+			     (j < (cpus[i] + max_over_subscribe)))) {
 				xrealloc(step_layout->tids[i], sizeof(uint32_t)
 					 * (step_layout->tasks[i] + 1));
 
