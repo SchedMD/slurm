@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
     in a cyclic fashion first and then extra tasks placed on nodes with more
     CPUs. Previously all CPUs would be fully allocated in a cyclic fashion,
     then excess tasks distributed evenly across all allocated nodes.
+ -- In select/cons_tres: Only allocate 1 CPU per node with the --overcommit
+    option.
 
 * Changes in Slurm 19.05.0rc1
 =============================

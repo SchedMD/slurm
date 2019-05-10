@@ -711,6 +711,8 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr,
 	 * tasks on node 0, 7 tasks on node 1, and 6 tasks on node 2.  It should
 	 * launch 8 tasks on node, 8 tasks on node 1, and 4 tasks on node 2.
 	 */
+	if (job_ptr->details->overcommit && (job_ptr->tres_per_task == 0))
+		maxtasks = 0;	/* Allocate have one_task_per_node */
 	for (i = 0; tid < maxtasks; i++) {
 		bool space_remaining = false;
 		if (over_subscribe && log_over_subscribe) {
@@ -1368,6 +1370,7 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		   uint32_t *gres_task_limit)
 {
 	int error_code;
+	bool one_task_per_node = false;
 
 	/*
 	 * Zero size jobs are supported for the creation and deletion of
@@ -1402,9 +1405,11 @@ extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
 		return SLURM_SUCCESS;
 	}
 
+	if (job_ptr->details->overcommit && (job_ptr->tres_per_task == 0))
+		one_task_per_node = true;
 	_log_select_maps("cr_dist/start", job_ptr);
-	if ((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
-	    SLURM_DIST_PLANE) {
+	if (((job_ptr->details->task_dist & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_PLANE) && !one_task_per_node) {
 		/* Perform plane distribution on the job_resources_t struct */
 		error_code = _compute_plane_dist(job_ptr, gres_task_limit);
 		if (error_code != SLURM_SUCCESS)
