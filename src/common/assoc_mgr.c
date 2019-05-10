@@ -2645,7 +2645,8 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 			return SLURM_SUCCESS;
 	}
 
-	debug3("found correct user");
+	debug3("%s: found correct user: %s(%u)",
+	       __func__, found_user->name, found_user->uid);
 	if (user_pptr)
 		*user_pptr = found_user;
 
