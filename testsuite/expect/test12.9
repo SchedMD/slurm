@@ -146,10 +146,12 @@ if {[expect_extern_step]} {
 }
 
 #
-# Wait for last job to complete
+# Wait for both jobs to complete
 #
-if {[wait_for_job $array2_job_id "DONE"] != 0} {
+if {[wait_for_job $array1_job_id "DONE"] || [wait_for_job $array2_job_id "DONE"]} {
 	send_user "\nFAILURE: waiting for jobs to complete\n"
+	cancel_job $array1_job_id
+	cancel_job $array2_job_id
 	exit 1
 }
 
@@ -167,4 +169,4 @@ run_sacct "$array1_job_id,$array2_job_id\_3" [expr $expected_steps * 6] $expecte
 run_sacct "$array1_job_id\_2,$array2_job_id" $expected_steps [expr $expected_steps * 6]
 
 send_user "\nSUCCESS\n"
-exit 0
+exit $exit_code
