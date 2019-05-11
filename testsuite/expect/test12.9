@@ -101,7 +101,7 @@ set array1_job_id 0
 set array2_job_id 0
 set timeout $max_job_delay
 
-spawn $sbatch -N1 --array=0-5 --output=/dev/null --wrap=exit
+spawn $sbatch -N1 --array=0-5 --output=/dev/null -t1 --wrap=exit
 expect {
 	-re "Submitted batch job ($number)" {
 		set array1_job_id $expect_out(1,string)
@@ -120,7 +120,7 @@ expect {
 	}
 }
 
-eval spawn $sbatch -N1 --array=0-5 --output=/dev/null --wrap=exit
+eval spawn $sbatch -N1 --array=0-5 --output=/dev/null -t1 --wrap=exit
 expect {
 	-re "Submitted batch job ($number)" {
 		set array2_job_id $expect_out(1,string)
