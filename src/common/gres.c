@@ -6802,6 +6802,11 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 				    !bit_test(node_gres_ptr->topo_core_bitmap[i],
 					      j))
 					continue;
+				if (!node_gres_ptr->topo_gres_bitmap[i]) {
+					error("%s: topo_gres_bitmap NULL on node %s",
+					      __func__, node_name);
+					continue;
+				}
 				if (!sock_gres->bits_by_sock[s]) {
 					sock_gres->bits_by_sock[s] =
 						bit_copy(node_gres_ptr->
