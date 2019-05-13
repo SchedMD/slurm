@@ -2194,7 +2194,16 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		dev_cnt = topo_cnt;
 	else
 		dev_cnt = gres_cnt;
-	if (has_file && (topo_cnt != gres_data->topo_cnt)) {
+	if (has_file && (topo_cnt != gres_data->topo_cnt) && (dev_cnt == 0)) {
+		/*
+		 * Clear any vestigial GRES node state info.
+		 */
+		_gres_node_state_delete_topo(gres_data);
+
+		xfree(gres_data->gres_bit_alloc);
+
+		gres_data->topo_cnt = 0;
+	} else if (has_file && (topo_cnt != gres_data->topo_cnt)) {
 		/*
 		 * Need to rebuild topology info.
 		 * Resize the data structures here.

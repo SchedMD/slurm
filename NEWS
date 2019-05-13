@@ -82,6 +82,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak in pmi2.
  -- MySQL - Fix minor memory leak when quering suspended jobs fails.
  -- Fix seff human readable memory string for values below a megabyte.
+ -- Avoid slurmctld abort if GRES defined in gres.conf, but not in the node
+    configuration of slurm.conf.
 
 * Changes in Slurm 19.05.0rc1
 =============================
