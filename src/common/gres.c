@@ -6672,6 +6672,9 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 	bool match = false;
 	bool use_busy_dev = false;
 
+	if (node_gres_ptr->gres_cnt_avail == 0)
+		return NULL;
+
 	if (!use_total_gres &&
 	    (main_plugin_id == mps_plugin_id) &&
 	    (node_gres_ptr->gres_cnt_alloc != 0)) {
