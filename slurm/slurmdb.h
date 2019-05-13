@@ -739,7 +739,7 @@ typedef struct {
 	char *reason;           /* reason node is in state during time
 				   period (only set in a node event) */
 	uint32_t reason_uid;    /* uid of that who set the reason */
-	uint16_t state;         /* State of node during time
+	uint32_t state;         /* State of node during time
 				   period (only set in a node event) */
 	char *tres_str;         /* TRES touched by this event */
 } slurmdb_event_rec_t;

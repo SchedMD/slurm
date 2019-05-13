@@ -1812,7 +1812,7 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 			pack_time(0, buffer);
 			packnull(buffer);
 			pack32(NO_VAL, buffer);
-			pack16(NO_VAL16, buffer);
+			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			return;
 		}
@@ -1825,7 +1825,7 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 		pack_time(object->period_end, buffer);
 		packstr(object->reason, buffer);
 		pack32(object->reason_uid, buffer);
-		pack16(object->state, buffer);
+		pack32(object->state, buffer);
 		packstr(object->tres_str, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -1862,6 +1862,7 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 				    Buf buffer)
 {
 	uint32_t uint32_tmp;
+	uint16_t uint16_tmp;
 	slurmdb_event_rec_t *object_ptr = xmalloc(sizeof(slurmdb_event_rec_t));
 
 	xassert(buffer);
@@ -1882,7 +1883,7 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&object_ptr->reason,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->reason_uid, buffer);
-		safe_unpack16(&object_ptr->state, buffer);
+		safe_unpack32(&object_ptr->state, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->tres_str,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -1898,7 +1899,8 @@ extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&object_ptr->reason,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&object_ptr->reason_uid, buffer);
-		safe_unpack16(&object_ptr->state, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		object_ptr->state = uint16_tmp;
 		safe_unpackstr_xmalloc(&object_ptr->tres_str,
 				       &uint32_tmp, buffer);
 	} else {
