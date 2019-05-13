@@ -6145,11 +6145,13 @@ extern int assoc_mgr_set_missing_uids()
 			if (object->name && (object->uid == NO_VAL)) {
 				if (uid_from_string(
 					    object->name, &pw_uid) < 0) {
-					debug3("refresh user couldn't get "
-					       "a uid for user %s",
-					       object->name);
-				} else
+					debug3("%s: refresh user couldn't get uid for user %s",
+					       __func__, object->name);
+				} else {
+					debug5("%s: found uid %u for user %s",
+					       __func__, pw_uid, object->name);
 					object->uid = pw_uid;
+				}
 			}
 		}
 		list_iterator_destroy(itr);
