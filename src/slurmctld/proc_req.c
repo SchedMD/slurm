@@ -3569,8 +3569,10 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		error("Security violation, RECONFIGURE RPC from uid=%d", uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
-	if (in_progress || slurmctld_config.shutdown_time)
+	if (in_progress || slurmctld_config.shutdown_time) {
 		error_code = EINPROGRESS;
+		debug5("%s: already in progress: skipping", __func__);
+	}
 
 	/* do RPC call */
 	if (error_code == SLURM_SUCCESS) {
