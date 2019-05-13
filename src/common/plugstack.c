@@ -709,7 +709,7 @@ static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
 	case SPANK_EXIT:
 		return (sp->ops.exit);
 	default:
-		error ("Unhandled spank function type=%d\n", type);
+		error("Unhandled spank function type=%d", type);
 		return (NULL);
 	}
 	return (NULL);
@@ -1736,7 +1736,7 @@ int spank_clear_remote_options_env (char **env)
 				char name[1024];
 				memcpy (name, *ep, end - *ep);
 				name [end - *ep] = '\0';
-				debug ("unsetenv (%s)\n", name);
+				debug("unsetenv (%s)", name);
 				unsetenvp (env, name);
 			}
 		}

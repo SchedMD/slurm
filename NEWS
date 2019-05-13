@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
     overwriting the old one to prevent lost records.
  -- Limit archive files to 50000 records per file so that archiving large
     databases will succeed.
+ -- Remove stray newlines in SPANK plugin error messages.
 
 * Changes in Slurm 18.08.7
 ==========================
