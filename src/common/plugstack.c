@@ -1163,8 +1163,10 @@ static int _do_option_cb(struct spank_plugin_opt *opt, const char *arg)
 	 *  Set optarg and "found" so that option will be forwarded
 	 *    to remote side.
 	 */
-	if (opt->opt->has_arg)
+	if (opt->opt->has_arg) {
+		xfree(opt->optarg);
 		opt->optarg = xstrdup(arg);
+	}
 	opt->found = 1;
 	opt->set = true;
 
