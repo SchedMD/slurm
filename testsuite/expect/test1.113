@@ -47,7 +47,7 @@ if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 # On Cray systems, give some time for NHC to complete for previous jobs
 set select_type [test_select_type]
 if {![string compare $select_type "cons_tres"] ||
-    (![string compare $select_type "cray"] && [test_select_type_params "other_cons_tres"])} {
+    (![string compare $select_type "cray_aries"] && [test_select_type_params "other_cons_tres"])} {
         sleep 2
 }
 
