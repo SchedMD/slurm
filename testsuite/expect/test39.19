@@ -445,11 +445,13 @@ exec $bin_rm -f $file_out
 
 if {$sockets_with_gpus >= 2} {
 	set nb_sockets 2
+	set cpus_per_task $cpus_per_socket
 } else {
 	set nb_sockets 1
+	set cpus_per_task 1
 }
 set job_id 0
-spawn $sbatch --gres=craynetwork:0 --gpus-per-socket=1 -N$nb_nodes --sockets-per-node=$nb_sockets -t1 -o $file_out -J "test$test_id" ./$file_in1
+spawn $sbatch --gres=craynetwork:0 --gpus-per-socket=1 -N$nb_nodes  --ntasks=$nb_nodes --sockets-per-node=$nb_sockets --cpus-per-task=$cpus_per_task -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -617,11 +619,13 @@ exec $bin_rm -f $file_out
 
 if {$sockets_with_gpus >= 2} {
 	set nb_sockets 2
+	set cpus_per_task $cpus_per_socket
 } else {
 	set nb_sockets 1
+	set cpus_per_task 1
 }
 set job_id 0
-spawn $sbatch --gres=craynetwork:0 --gpus-per-socket=1 -N$nb_nodes --sockets-per-node=$nb_sockets -t1 -o $file_out -J "test$test_id" ./$file_in1
+spawn $sbatch --gres=craynetwork:0 --gpus-per-socket=1 -N$nb_nodes  --ntasks=$nb_nodes --sockets-per-node=$nb_sockets --cpus-per-task=$cpus_per_task -t1 -o $file_out -J "test$test_id" ./$file_in1
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)

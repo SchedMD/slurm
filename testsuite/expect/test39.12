@@ -292,7 +292,12 @@ if {$match_gpu != $expected_gpus} {
 send_user "\n\nTEST: --gpus-per-socket option\n"
 set match_craynetwork 0
 set match_gpu 0
-set srun_pid [spawn $srun --gres=craynetwork --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --ntasks-per-socket=1 --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in]
+if {$sockets_with_gpus > 1} {
+	set cpus_per_task $cpus_per_socket
+} else {
+	set cpus_per_task 1
+}
+set srun_pid [spawn $srun --gres=craynetwork --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodes=$nb_nodes --ntasks=$nb_nodes --cpus-per-task=$cpus_per_task -t1 -J "test$test_id" -l ./$file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match_gpu [cuda_count $expect_out(1,string)]
@@ -321,7 +326,7 @@ if {$match_craynetwork < 1} {
 }
 set expected_gpus [expr $sockets_with_gpus * $nb_nodes]
 if {$match_gpu != $expected_gpus} {
-	send_user "\nFAILURE: srun --gpus-per-task failure ($match_gpu != $expected_gpus)\n"
+	send_user "\nFAILURE: srun --gpus-per-socket failure ($match_gpu != $expected_gpus)\n"
 	set exit_code 1
 }
 
