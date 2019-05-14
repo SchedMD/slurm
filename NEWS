@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     association job limit multiple times.
  -- Comment out documentation for the incomplete and currently unusable
     burst_buffer/generic plugin.
+ -- Add new error ESLURM_INVALID_TIME_MIN_LIMIT to make note when a time_min
+    limit is invalid based on timelimit.
 
 * Changes in Slurm 19.05.0
 ==========================

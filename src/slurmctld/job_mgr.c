@@ -12653,8 +12653,18 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		} else if (operator ||
 			   (job_ptr->time_limit > job_specs->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
+			uint32_t use_time_min = job_specs->time_min != NO_VAL ?
+				job_specs->time_min : job_ptr->time_min;
 			if (old_time == INFINITE)	/* one year in mins */
 				old_time = (365 * 24 * 60);
+			if (job_specs->time_limit < use_time_min) {
+				sched_info("%s: attempt to set time_limit < time_min (%u < %u)",
+					   __func__,
+					   job_specs->time_limit,
+					   use_time_min);
+				error_code = ESLURM_INVALID_TIME_MIN_LIMIT;
+				goto fini;
+			}
 			acct_policy_alter_job(job_ptr, job_specs->time_limit);
 			job_ptr->time_limit = job_specs->time_limit;
 			if (IS_JOB_RUNNING(job_ptr) ||
