@@ -62,7 +62,6 @@ documents those changes that are of interest to users and administrators.
  -- In multi-node systems make sure GRES are found on node when not bound to
     specific sockets.
  -- Fix gres-per-task logic for gres not bound to sockets.
- -- Simplify check for a job that is pending and completing at the same time.
  -- Fix issue when --gpus plus --cpus-per-gres was forcing socket binding
     unnecessarily.
  -- Change event table's state column to handle 32bits.
