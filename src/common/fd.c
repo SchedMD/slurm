@@ -48,6 +48,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/timers.h"
 #include "src/common/xassert.h"
 
 /*
@@ -215,11 +216,13 @@ extern int wait_fd_readable(int fd, int time_limit)
 extern int fsync_and_close(int fd, const char *file_type)
 {
 	int rc = 0, retval, pos;
+	DEF_TIMERS;
 
 	/*
 	 * Slurm state save files are commonly stored on shared filesystems,
 	 * so lets give fsync() three tries to sync the data to disk.
 	 */
+	START_TIMER;
 	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
 		retval = fsync(fd);
 		if (retval && (errno != EINTR)) {
@@ -227,9 +230,11 @@ extern int fsync_and_close(int fd, const char *file_type)
 			      file_type);
 		}
 	}
+	END_TIMER2("fsync_and_close:fsync");
 	if (retval)
 		rc = retval;
 
+	START_TIMER;
 	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
 		retval = close(fd);
 		if (retval && (errno != EINTR)) {
@@ -237,6 +242,7 @@ extern int fsync_and_close(int fd, const char *file_type)
 			      file_type);
 		}
 	}
+	END_TIMER2("fsync_and_close:close");
 	if (retval)
 		rc = retval;
 
