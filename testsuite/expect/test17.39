@@ -39,10 +39,9 @@ set exit_code     0
 
 print_header $test_id
 
-set select_type [test_select_type]
 set def_part_name [default_partition]
 set nb_nodes [get_node_cnt_in_part $def_part_name]
-if {![string compare $select_type "linear"]} {
+if {[test_linear]} {
 	if {$nb_nodes < 2} {
 		send_user "\nWARNING: This test is incompatible with select/linear and only one node\n"
 		exit $exit_code
