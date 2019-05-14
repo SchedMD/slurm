@@ -429,11 +429,18 @@ extern int select_running_linear_based(void)
  */
 extern int select_g_state_save(char *dir_name)
 {
+	DEF_TIMERS;
+	int rc;
+
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
 
-	return (*(ops[select_context_default].state_save))
+	START_TIMER;
+	rc = (*(ops[select_context_default].state_save))
 		(dir_name);
+	END_TIMER2(__func__);
+
+	return rc;
 }
 
 /*
