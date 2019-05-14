@@ -2216,6 +2216,85 @@ proc get_select_type_params { partition } {
 
 ################################################################
 #
+# Proc: test_linear
+#
+# Purpose: Determine if system is configured with linear plugin.
+#
+# Returns 1 if configured, 0 otherwise
+#
+################################################################
+proc test_linear { } {
+	global scontrol number
+
+	log_user 0
+	set select_type [test_select_type]
+
+	if {![string compare $select_type "linear"]} {
+		return 1
+	} elseif {![string compare $select_type "cray_aries"] &&
+		  ![test_select_type_params "other_cons_res"] &&
+		  ![test_select_type_params "other_cons_tres"]} {
+		return 1
+	}
+	log_user 1
+
+	return 0
+}
+
+################################################################
+#
+# Proc: test_cons_res
+#
+# Purpose: Determine if system is configured with cons_res plugin.
+#
+# Returns 1 if configured, 0 otherwise
+#
+################################################################
+proc test_cons_res { } {
+	global scontrol number
+
+	log_user 0
+	set select_type [test_select_type]
+
+	if {![string compare $select_type "cons_res"]} {
+		return 1
+	} elseif {![string compare $select_type "cray_aries"] &&
+		  [test_select_type_params "other_cons_res"]} {
+		return 1
+	}
+	log_user 1
+
+	return 0
+}
+
+################################################################
+#
+# Proc: test_cons_tres
+#
+# Purpose: Determine if system is configured with cons_tres plugin.
+#
+# Returns 1 if configured, 0 otherwise
+#
+################################################################
+proc test_cons_tres { } {
+	global scontrol number
+
+	log_user 0
+	set select_type [test_select_type]
+
+	if {![string compare $select_type "cons_tres"]} {
+		return 1
+	} elseif {![string compare $select_type "cray_aries"] &&
+		  [test_select_type_params "other_cons_tres"]} {
+		return 1
+	}
+	log_user 1
+
+	return 0
+}
+
+################################################################
+#
 # Proc: get_total_cpus
 #
 # Purpose: Return the TotalCPUs count for a given partition
