@@ -156,14 +156,11 @@ proc thread_spec_job {task node thread_spec exp_nodes} {
 
 print_header $test_id
 
-set select_type [test_select_type]
-if {![string compare $select_type "linear"]} {
-	send_user "\nWARNING: This test is incompatible with select/$select_type\n"
-	exit 0
-} elseif {![string compare $select_type "cray_aries"] && ![test_select_type_params "other_cons_res"]} {
+if {[test_linear]} {
 	send_user "\nWARNING: This test is incompatible with select/linear\n"
 	exit 0
 }
+
 if {[test_select_type_params "CR_SOCKET"]} {
 	send_user "\nWARNING: This test is incompatible with CR_SOCKET allocations\n"
 	exit 0

@@ -221,8 +221,7 @@ proc _test_limits { } {
 
 }
 
-set select_type [test_select_type]
-if {![string compare $select_type "linear"]} {
+if {[test_linear]} {
 	set def_part_name [default_partition]
 	set nb_nodes [get_node_cnt_in_part $def_part_name]
 	if {$nb_nodes < 2} {

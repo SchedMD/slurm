@@ -49,8 +49,8 @@ set exit_code     0
 
 print_header $test_id
 
-if {[test_select_type] != "cons_res"} {
-	send_user "\nWARNING: test is only compatible with a config of SelectType=select/cons_res\n"
+if {[test_linear]} {
+	send_user "\nWARNING: test is not compatible with a config of SelectType=select/linear\n"
 	exit $exit_code
 }
 if {[is_super_user] == 0} {

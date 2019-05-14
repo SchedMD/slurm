@@ -83,9 +83,7 @@ if {[slurmd_user_root] == 0} {
 }
 print_time
 
-set select_type [test_select_type]
-if {![string compare $select_type "cons_tres"] ||
-    (![string compare $select_type "cray_aries"] && [test_select_type_params "other_cons_tres"])} {
+if {[test_cons_tres]} {
         send_user "\nValid configuration, using select/cons_tres\n"
 } else {
         send_user "\nWARNING: This test is only compatible with select/cons_tres\n"
