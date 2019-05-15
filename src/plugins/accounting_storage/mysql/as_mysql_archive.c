@@ -2230,7 +2230,7 @@ _load_events(uint16_t rpc_version, Buf buffer, char *cluster_name,
 		xstrcat(format, ", '%s'");
 	}
 	xstrcat(insert, ") values ");
-	xstrcat(format, ");");
+	xstrcat(format, ")");
 
 	for (i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_event_t));
