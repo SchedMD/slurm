@@ -831,19 +831,17 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 				char *cluster_name, char *arch_dir,
 				char *arch_type, uint32_t archive_period)
 {
+	char *name = NULL, *fullname = NULL;
 	struct tm time_tm;
-	char start_char[32];
-	char end_char[32];
-	char name[PATH_MAX];
-	char fullname[PATH_MAX];
 	struct stat buf;
 	uint32_t num = 2;
-	uint32_t size_left = PATH_MAX - 1;
-	uint32_t size;
 
 	slurm_localtime_r((time_t *)&period_start, &time_tm);
 	time_tm.tm_sec = 0;
 	time_tm.tm_min = 0;
+
+	xstrfmtcat(name, "%s/%s_%s_archive_", arch_dir, cluster_name,
+		   arch_type);
 
 	/* set up the start time based off the period we are purging */
 	if (SLURMDB_PURGE_IN_HOURS(archive_period)) {
@@ -854,48 +852,29 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 		time_tm.tm_mday = 1;
 	}
 
-	snprintf(start_char, sizeof(start_char),
-		 "%4.4u-%2.2u-%2.2u"
-		 "T%2.2u:%2.2u:%2.2u",
-		 (time_tm.tm_year + 1900),
-		 (time_tm.tm_mon+1),
-		 time_tm.tm_mday,
-		 time_tm.tm_hour,
-		 time_tm.tm_min,
-		 time_tm.tm_sec);
+	/* Add start time to file name. */
+	xstrfmtcat(name, "%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u_",
+		   (time_tm.tm_year + 1900), (time_tm.tm_mon + 1),
+		   time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
+		   time_tm.tm_sec);
 
 	slurm_localtime_r((time_t *)&period_end, &time_tm);
-	snprintf(end_char, sizeof(end_char),
-		 "%4.4u-%2.2u-%2.2u"
-		 "T%2.2u:%2.2u:%2.2u",
-		 (time_tm.tm_year + 1900),
-		 (time_tm.tm_mon+1),
-		 time_tm.tm_mday,
-		 time_tm.tm_hour,
-		 time_tm.tm_min,
-		 time_tm.tm_sec);
-
-	size = snprintf(name, size_left, "%s/%s_%s_archive_%s_%s",
-			arch_dir, cluster_name, arch_type,
-			start_char, end_char);
-	if (size >= size_left) {
-		fatal("%s: file name would be larger than the max allowed file length of %u bytes, cannot archive file. This should never happen.",
-		      __func__, PATH_MAX);
-	}
-	size_left -= size;
+	/* Add end time to file name. */
+	xstrfmtcat(name, "%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
+		   (time_tm.tm_year + 1900), (time_tm.tm_mon + 1),
+		   time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
+		   time_tm.tm_sec);
 
 	/* If the file already exists, generate a new file name. */
-	strncpy(fullname, name, PATH_MAX);
+	fullname = xstrdup(name);
+
 	while (!stat(fullname, &buf)) {
-		size = snprintf(fullname, size_left, "%s.%u", name, num++);
-		if (size >= size_left) {
-			error("%s: file name would be larger than the max allowed file lenght of %u bytes, cannot archive file. This should never happen.",
-			      __func__, PATH_MAX);
-			return NULL;
-		}
+		xfree(fullname);
+		xstrfmtcat(fullname, "%s.%u", name, num++);
 	}
 
-	return xstrdup(fullname);
+	xfree(name);
+	return fullname;
 }
 
 extern int archive_write_file(Buf buffer, char *cluster_name,
