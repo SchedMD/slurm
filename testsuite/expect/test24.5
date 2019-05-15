@@ -133,27 +133,10 @@ proc sub_job { cpu_cnt state } {
 	return $jobid
 }
 
+
 proc sprio_args { args regex match_cnt } {
-	global number float sprio
-	set matches 0
-
-	spawn $sprio {*}$args
-	expect {
-		-re $regex {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			log_error "sprio not responding"
-			end_it 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != $match_cnt} {
-		log_error "sprio $args failed to match '$regex' $match_cnt times"
+	global sprio
+	if {[wait_for_command $sprio $args $regex $match_cnt]} {
 		end_it 1
 	}
 }
