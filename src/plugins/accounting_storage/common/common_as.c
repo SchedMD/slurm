@@ -833,7 +833,6 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 {
 	char *name = NULL, *fullname = NULL;
 	struct tm time_tm;
-	struct stat buf;
 	uint32_t num = 2;
 
 	slurm_localtime_r((time_t *)&period_start, &time_tm);
@@ -868,7 +867,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 	/* If the file already exists, generate a new file name. */
 	fullname = xstrdup(name);
 
-	while (!stat(fullname, &buf)) {
+	while (!access(fullname, F_OK)) {
 		xfree(fullname);
 		xstrfmtcat(fullname, "%s.%u", name, num++);
 	}
