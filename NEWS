@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - free memory before exiting in 'sacctmgr show runaway'.
  -- Fix seff showing memory overflow when steps tres mem usage is 0.
  -- Fix memory leaks in 'sacctmgr show runawayjobs'.
+ -- Fix potential deadlock in nss_slurm.
 
 * Changes in Slurm 19.05.0rc1
 =============================
@@ -259,6 +260,7 @@ documents those changes that are of interest to users and administrators.
  -- Limit archive files to 50000 records per file so that archiving large
     databases will succeed.
  -- Remove stray newlines in SPANK plugin error messages.
+ -- Fix archive loading events.
 
 * Changes in Slurm 18.08.7
 ==========================

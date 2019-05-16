@@ -2290,7 +2290,7 @@ _load_events(uint16_t rpc_version, Buf buffer, char *cluster_name,
 		xstrcat(format, ", '%s'");
 	}
 	xstrcat(insert, ") values ");
-	xstrcat(format, ");");
+	xstrcat(format, ")");
 
 	for (i=0; i<rec_cnt; i++) {
 		memset(&object, 0, sizeof(local_event_t));
@@ -3807,7 +3807,6 @@ pass:
 			 rec_cnt_total, rec_cnt);
 
 	rec_cnt_left -= rec_cnt;
-	pass_cnt++;
 
 	switch (type) {
 	case DBD_GOT_EVENTS:
@@ -3863,8 +3862,10 @@ unpack_error:
 		goto cleanup;
 	}
 
-	if (rec_cnt_left)
+	if (rec_cnt_left) {
+		pass_cnt++;
 		goto pass;
+	}
 
 cleanup:
 	FREE_NULL_BUFFER(buffer);
