@@ -111,6 +111,9 @@ static void _free_cluster_cond_members(slurmdb_cluster_cond_t *cluster_cond)
 	if (cluster_cond) {
 		FREE_NULL_LIST(cluster_cond->cluster_list);
 		FREE_NULL_LIST(cluster_cond->federation_list);
+		FREE_NULL_LIST(cluster_cond->format_list);
+		FREE_NULL_LIST(cluster_cond->plugin_id_select_list);
+		FREE_NULL_LIST(cluster_cond->rpc_version_list);
 	}
 }
 
