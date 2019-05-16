@@ -13479,7 +13479,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			FREE_NULL_LIST(license_list);
 		}
 
-		update_accounting = 1;
+		update_accounting = true;
 	}
 	if (error_code != SLURM_SUCCESS)
 		goto fini;
