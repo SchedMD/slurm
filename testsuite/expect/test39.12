@@ -297,6 +297,10 @@ if {$sockets_with_gpus > 1} {
 } else {
 	set cpus_per_task 1
 }
+# Every node requires at least 1 GPU
+if {$use_gpus_per_job < $nb_nodes} {
+	set nb_nodes $use_gpus_per_job
+}
 set srun_pid [spawn $srun --gres=craynetwork --gpus-per-socket=1 --sockets-per-node=$sockets_with_gpus --nodes=$nb_nodes --ntasks=$nb_nodes --cpus-per-task=$cpus_per_task -t1 -J "test$test_id" -l ./$file_in]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {

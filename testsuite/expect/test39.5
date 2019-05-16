@@ -197,6 +197,10 @@ if {$tot_gpus > 1} {
 } else {
 	set use_gpus_per_job $tot_gpus
 }
+# Every node requires at least 1 GPU
+if {$use_gpus_per_job < $nb_nodes} {
+	set nb_nodes $use_gpus_per_job
+}
 set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
