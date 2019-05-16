@@ -3741,7 +3741,6 @@ pass:
 			 rec_cnt_total, rec_cnt);
 
 	rec_cnt_left -= rec_cnt;
-	pass_cnt++;
 
 	switch (type) {
 	case DBD_GOT_EVENTS:
@@ -3797,8 +3796,10 @@ unpack_error:
 		goto cleanup;
 	}
 
-	if (rec_cnt_left)
+	if (rec_cnt_left) {
+		pass_cnt++;
 		goto pass;
+	}
 
 cleanup:
 	FREE_NULL_BUFFER(buffer);
