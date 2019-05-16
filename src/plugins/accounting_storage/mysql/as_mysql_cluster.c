@@ -1402,7 +1402,6 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 
 	row = mysql_fetch_row(result);
 	if (row && (node_ptr->node_state == slurm_atoul(row[0])) &&
-	    my_reason && row[1] &&
 	    !xstrcasecmp(my_reason, row[1])) {
 		if (debug_flags & DEBUG_FLAG_DB_EVENT)
 			DB_DEBUG(mysql_conn->conn,
