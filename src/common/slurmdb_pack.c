@@ -1166,9 +1166,6 @@ unpack_error:
 extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 				   Buf buffer)
 {
-	ListIterator itr = NULL;
-	uint32_t count = NO_VAL;
-	char *tmp_info = NULL;
 	slurmdb_assoc_rec_t *object = (slurmdb_assoc_rec_t *)in;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
@@ -1258,18 +1255,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		packstr(object->partition, buffer);
 		pack32(object->priority, buffer);
 
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->qos_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->qos_list, buffer);
 
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
@@ -1360,18 +1346,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 		pack32(object->parent_id, buffer);
 		packstr(object->partition, buffer);
 
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->qos_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->qos_list, buffer);
 
 		pack32(object->rgt, buffer);
 		pack32(object->uid, buffer);
