@@ -2634,6 +2634,7 @@ skip_start:
 			/* Can start earlier in different partition */
 			job_ptr->start_time = orig_start_time;
 		}
+		_set_job_time_limit(job_ptr, orig_time_limit);
 		if (job_ptr->array_recs) {
 			/* Try making reservation for next task of job array */
 			if (test_array_job_id != job_ptr->array_job_id) {
