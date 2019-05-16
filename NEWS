@@ -62,6 +62,7 @@ documents those changes that are of interest to users and administrators.
     for completing job.
  -- Fix jobs getting on nodes with "scontrol reboot asap".
  -- Record node reboot events to database.
+ -- Fix node reboot failure message getting to event table.
 
 * Changes in Slurm 18.08.7
 ==========================

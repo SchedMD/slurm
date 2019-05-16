@@ -4092,10 +4092,6 @@ extern void check_reboot_nodes()
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
 			char *timeout_msg = "reboot timed out";
 
-			set_node_down_ptr(node_ptr, NULL);
-			node_ptr->node_state &= (~NODE_STATE_REBOOT);
-			node_ptr->node_state &= (~NODE_STATE_DRAIN);
-
 			if ((node_ptr->next_state != NO_VAL) &&
 			    node_ptr->reason) {
 				xstrfmtcat(node_ptr->reason, " : %s",
@@ -4106,6 +4102,13 @@ extern void check_reboot_nodes()
 			}
 			node_ptr->reason_time = now;
 			node_ptr->reason_uid = slurmctld_conf.slurm_user_id;
+
+			/*
+			 * Remove states now so that event state shows as DOWN.
+			 */
+			node_ptr->node_state &= (~NODE_STATE_REBOOT);
+			node_ptr->node_state &= (~NODE_STATE_DRAIN);
+			set_node_down_ptr(node_ptr, NULL);
 
 			bit_clear(rs_node_bitmap, i);
 		}
