@@ -6104,9 +6104,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void slurmdb_pack_selected_step(slurmdb_selected_step_t *step,
-				       uint16_t protocol_version, Buf buffer)
+extern void slurmdb_pack_selected_step(void *in, uint16_t protocol_version,
+				       Buf buffer)
 {
+	slurmdb_selected_step_t *step = (slurmdb_selected_step_t *) in;
+
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step->array_task_id, buffer);
 		pack32(step->jobid, buffer);

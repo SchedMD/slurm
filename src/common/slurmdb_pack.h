@@ -197,8 +197,8 @@ extern void slurmdb_pack_reservation_cond(void *in,
 extern int slurmdb_unpack_reservation_cond(void **object,
 					   uint16_t protocol_version,
 					   Buf buffer);
-extern void slurmdb_pack_selected_step(slurmdb_selected_step_t *step,
-				       uint16_t protocol_version, Buf buffer);
+extern void slurmdb_pack_selected_step(void *in, uint16_t protocol_version,
+				       Buf buffer);
 extern int slurmdb_unpack_selected_step(slurmdb_selected_step_t **step,
 					uint16_t protocol_version, Buf buffer);
 extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
