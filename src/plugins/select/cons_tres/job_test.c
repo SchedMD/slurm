@@ -1944,9 +1944,11 @@ alloc_job:
 			if (!bit_test(free_cores[n], j))
 				continue;
 			if (c >= csize)	{
-				error("%s: %s core_bitmap index error on node %s",
+				error("%s: %s core_bitmap index error on node %s "
+				      "(NODE_INX:%d, C_SIZE:%u)",
 				      plugin_type, __func__,
-				      select_node_record[n].node_ptr->name);
+				      select_node_record[n].node_ptr->name,
+				      n, csize);
 				drain_nodes(select_node_record[n].node_ptr->name,
 					    "Bad core count", getuid());
 				_free_avail_res_array(avail_res_array);
@@ -5532,7 +5534,7 @@ static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 		int task_cpus  = task_cores * threads_per_core;
 		/* find out how many tasks can fit on a node */
 		int tasks = avail_cpus / task_cpus;
-		/* how many cpus the the job would use on the node */
+		/* how many cpus the job would use on the node */
 		avail_cpus = tasks * task_cpus;
 		/* subtract out the extra cpus. */
 		avail_cpus -= (tasks * (task_cpus - cpus_per_task));

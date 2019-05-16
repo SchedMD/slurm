@@ -549,7 +549,7 @@ extern int resv_utilization(int argc, char **argv)
 
 		tres_itr = list_iterator_create(resv_tres_list);
 		while ((resv_tres = list_next(tres_itr))) {
-			/* see if it is in the the requested tres list */
+			/* see if it is in the requested tres list */
 			if (!(req_tres = list_find_first(
 						req_tres_list,
 						slurmdb_find_tres_in_list,

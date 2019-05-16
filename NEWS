@@ -3,6 +3,20 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.0rc2
 =============================
+ -- Fix deprecated group by clause to use order by.
+ -- NVML - Git rid of unneeded * when passing nvmlDevice_t to functions.
+ -- NVML - Fix clang warning about unneeded variable initialization.
+ -- NVML - remove unneeded {}.
+ -- Add timers to new site_factor plugin APIs to warn of slow-running plugins,
+    which can lead to issues with throughput and responsiveness.
+ -- X11 forwarding - ignore screen value for local DISPLAY.
+ -- Add missing locks protecting slurmctld_config.server_thread_count access.
+ -- Fix jobs stuck from FedJobLock when requeueing in a federation
+ -- Fix requeueing job in a federation of clusters with differing associations
+ -- sacctmgr - free memory before exiting in 'sacctmgr show runaway'.
+ -- Fix seff showing memory overflow when steps tres mem usage is 0.
+ -- Fix memory leaks in 'sacctmgr show runawayjobs'.
+ -- Fix potential deadlock in nss_slurm.
 
 * Changes in Slurm 19.05.0rc1
 =============================
@@ -236,6 +250,15 @@ documents those changes that are of interest to users and administrators.
  -- Fix printing duplicate error messages of jobs rejected by job submit plugin.
  -- Fix printing of job submit plugin messages of het jobs without pack id.
  -- Fix memory leak in group_cache.c
+ -- Fix jobs stuck from FedJobLock when requeueing in a federation
+ -- Fix requeueing job in a federation of clusters with differing associations
+ -- sacctmgr - free memory before exiting in 'sacctmgr show runaway'.
+ -- Fix seff showing memory overflow when steps tres mem usage is 0.
+ -- Upon archive file name collision, create new archive file instead of
+    overwriting the old one to prevent lost records.
+ -- Limit archive files to 50000 records per file so that archiving large
+    databases will succeed.
+ -- Remove stray newlines in SPANK plugin error messages.
 
 * Changes in Slurm 18.08.7
 ==========================
@@ -7250,7 +7273,7 @@ documents those changes that are of interest to users and administrators.
     run more than 256 jobs per node.
  -- sched/backfill: Improve accuracy of expected job start with respect to
     reservations.
- -- sinfo partition field size will be set the the length of the longest
+ -- sinfo partition field size will be set the length of the longest
     partition name by default.
  -- Make it so the parse_time will return a valid 0 if given epoch time and
     set errno == ESLURM_INVALID_TIME_VALUE on error instead.
@@ -7954,7 +7977,7 @@ documents those changes that are of interest to users and administrators.
     is set in slurm.conf. Patch from Don Albert, Bull.
  -- Added new sbatch option "--export-file" as needed for latest version of
     Moab. Patch from Phil Eckert, LLNL.
- -- Fix for sacct printing CPUTime(RAW) where the the is greater than a 32 bit
+ -- Fix for sacct printing CPUTime(RAW) where the is greater than a 32 bit
     number.
  -- Fix bug in --switch option with topology resulting in bad switch count use.
     Patch from Alejandro Lucero Palau (Barcelona Supercomputer Center).

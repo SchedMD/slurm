@@ -18,6 +18,7 @@ Lead Slurm developers are:
 <li>Felip Moll (SchedMD)</li>
 <li>Ben Roberts (SchedMD)</li>
 <li>Alejandro (Alex) Sanchez (SchedMD)</li>
+<li>Marcin Stolarek (SchedMD)</li>
 <li>Chad Vizino (SchedMD)</li>
 <li>Tim Wickberg (SchedMD)</li>
 </ul>
@@ -192,6 +193,7 @@ Lead Slurm developers are:
 <li>Mark Nelson (IBM)</li>
 <li>Jessica Nettelblad (UPPMAX)</li>
 <li>Ole H. Nielsen (Technical University of Denmark)</li>
+<li>Bas Nijholt (Delft University of Technology)</li>
 <li>Jim Nordby (Cray)</li>
 <li>Michal Novotny (Masaryk University, Czech Republic)</li>
 <br>
@@ -280,6 +282,6 @@ Lead Slurm developers are:
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 22 September 2017</p>
+<p style="text-align:center;">Last modified 7 May 2019</p>
 
 <!--#include virtual="footer.txt"-->

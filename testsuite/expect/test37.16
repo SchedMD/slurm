@@ -483,7 +483,7 @@ squeue "$fedc2" "8" $r2
 squeue "$fedc3" "7" $r3
 
 #check db
-# Test that job4 is marked REVOKED on the the removed cluster (fed1) and still
+# Test that job4 is marked REVOKED on the removed cluster (fed1) and still
 # pending on the other clusters.
 set matches 0
 

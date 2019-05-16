@@ -139,7 +139,7 @@ void* entity_get_data_ref(const entity_t* entity, const char* key);
 
 /*
  * entity_set_data - copy the content of the input buffer up to the requested
- *       size into the the buffer associated to a particular key of an entity
+ *       size into the buffer associated to a particular key of an entity
  *       (note that the entity key value's buffer is allocated internally if
  *       necessary)
  *

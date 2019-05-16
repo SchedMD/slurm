@@ -81,9 +81,11 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			       (uint32_t) last_proc_req_start);
 			pack_time(last_proc_req_start, buffer);
 
+			slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 			debug3("pack_all_stat: server_thread_count = %u",
 			       slurmctld_config.server_thread_count);
 			pack32(slurmctld_config.server_thread_count, buffer);
+			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 
 			agent_queue_size = retry_list_size();
 			pack32(agent_queue_size, buffer);
@@ -145,9 +147,11 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			       (uint32_t) last_proc_req_start);
 			pack_time(last_proc_req_start, buffer);
 
+			slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 			debug3("pack_all_stat: server_thread_count = %u",
 			       slurmctld_config.server_thread_count);
 			pack32(slurmctld_config.server_thread_count, buffer);
+			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 
 			agent_queue_size = retry_list_size();
 			pack32(agent_queue_size, buffer);

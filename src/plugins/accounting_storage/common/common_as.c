@@ -831,13 +831,16 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 				char *cluster_name, char *arch_dir,
 				char *arch_type, uint32_t archive_period)
 {
+	char *name = NULL, *fullname = NULL;
 	struct tm time_tm;
-	char start_char[32];
-	char end_char[32];
+	uint32_t num = 2;
 
 	slurm_localtime_r((time_t *)&period_start, &time_tm);
 	time_tm.tm_sec = 0;
 	time_tm.tm_min = 0;
+
+	xstrfmtcat(name, "%s/%s_%s_archive_", arch_dir, cluster_name,
+		   arch_type);
 
 	/* set up the start time based off the period we are purging */
 	if (SLURMDB_PURGE_IN_HOURS(archive_period)) {
@@ -848,31 +851,29 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 		time_tm.tm_mday = 1;
 	}
 
-	snprintf(start_char, sizeof(start_char),
-		 "%4.4u-%2.2u-%2.2u"
-		 "T%2.2u:%2.2u:%2.2u",
-		 (time_tm.tm_year + 1900),
-		 (time_tm.tm_mon+1),
-		 time_tm.tm_mday,
-		 time_tm.tm_hour,
-		 time_tm.tm_min,
-		 time_tm.tm_sec);
+	/* Add start time to file name. */
+	xstrfmtcat(name, "%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u_",
+		   (time_tm.tm_year + 1900), (time_tm.tm_mon + 1),
+		   time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
+		   time_tm.tm_sec);
 
 	slurm_localtime_r((time_t *)&period_end, &time_tm);
-	snprintf(end_char, sizeof(end_char),
-		 "%4.4u-%2.2u-%2.2u"
-		 "T%2.2u:%2.2u:%2.2u",
-		 (time_tm.tm_year + 1900),
-		 (time_tm.tm_mon+1),
-		 time_tm.tm_mday,
-		 time_tm.tm_hour,
-		 time_tm.tm_min,
-		 time_tm.tm_sec);
+	/* Add end time to file name. */
+	xstrfmtcat(name, "%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
+		   (time_tm.tm_year + 1900), (time_tm.tm_mon + 1),
+		   time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
+		   time_tm.tm_sec);
 
-	/* write the buffer to file */
-	return xstrdup_printf("%s/%s_%s_archive_%s_%s",
-			      arch_dir, cluster_name, arch_type,
-			      start_char, end_char);
+	/* If the file already exists, generate a new file name. */
+	fullname = xstrdup(name);
+
+	while (!access(fullname, F_OK)) {
+		xfree(fullname);
+		xstrfmtcat(fullname, "%s.%u", name, num++);
+	}
+
+	xfree(name);
+	return fullname;
 }
 
 extern int archive_write_file(Buf buffer, char *cluster_name,
@@ -882,8 +883,7 @@ extern int archive_write_file(Buf buffer, char *cluster_name,
 {
 	int fd = 0;
 	int rc = SLURM_SUCCESS;
-	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
-	static int high_buffer_size = (1024 * 1024);
+	char *new_file = NULL;
 	static pthread_mutex_t local_file_lock = PTHREAD_MUTEX_INITIALIZER;
 
 	xassert(buffer);
@@ -891,23 +891,25 @@ extern int archive_write_file(Buf buffer, char *cluster_name,
 	slurm_mutex_lock(&local_file_lock);
 
 	/* write the buffer to file */
-	reg_file = _make_archive_name(period_start, period_end,
+	new_file = _make_archive_name(period_start, period_end,
 				      cluster_name, arch_dir,
 				      arch_type, archive_period);
+	if (!new_file) {
+		error("%s: Unable to make archive file name.", __func__);
+		return SLURM_ERROR;
+	}
 
 	debug("Storing %s archive for %s at %s",
-	      arch_type, cluster_name, reg_file);
-	old_file = xstrdup_printf("%s.old", reg_file);
-	new_file = xstrdup_printf("%s.new", reg_file);
+	      arch_type, cluster_name, new_file);
 
 	fd = creat(new_file, 0600);
 	if (fd < 0) {
 		error("Can't save archive, create file %s error %m", new_file);
 		rc = SLURM_ERROR;
 	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		int amount;
+		uint32_t pos = 0, nwrite = get_buf_offset(buffer);
 		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
 			amount = write(fd, &data[pos], nwrite);
 			if ((amount < 0) && (errno != EINTR)) {
@@ -922,19 +924,6 @@ extern int archive_write_file(Buf buffer, char *cluster_name,
 		close(fd);
 	}
 
-	if (rc)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		if (link(reg_file, old_file))
-			debug4("Link(%s, %s): %m", reg_file, old_file);
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file))
-			debug4("Link(%s, %s): %m", new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
 	xfree(new_file);
 	slurm_mutex_unlock(&local_file_lock);
 

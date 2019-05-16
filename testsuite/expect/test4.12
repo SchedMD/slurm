@@ -394,10 +394,7 @@ if {!$inode_procs} {
 send_user "found idle node $inode_name with $inode_procs processors\n"
 
 # figure out the select plugin we are using
-set select_type [test_select_type]
-if {![string compare $select_type "cray"]} {
-	set smallest $inode_procs
-} elseif {![string compare $select_type "linear"]} {
+if {[test_linear]} {
 	 set smallest $inode_procs
 } else {
 	if {$part_exclusive == 1} {

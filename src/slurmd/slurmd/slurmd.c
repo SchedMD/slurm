@@ -887,10 +887,12 @@ _read_config(void)
 		conf->logfile = xstrdup(cf->slurmd_logfile);
 
 #ifndef HAVE_FRONT_END
-	if (!xstrcmp(cf->select_type, "select/cons_res"))
+	if (!xstrcmp(cf->select_type, "select/cons_res") ||
+	    !xstrcmp(cf->select_type, "select/cons_tres"))
 		cr_flag = true;
 	if (!xstrcmp(cf->select_type, "select/cray_aries") &&
-	    (cf->select_type_param & CR_OTHER_CONS_RES))
+	    ((cf->select_type_param & CR_OTHER_CONS_RES) ||
+	     (cf->select_type_param & CR_OTHER_CONS_TRES)))
 		cr_flag = true;
 
 	if (cf->preempt_mode & PREEMPT_MODE_GANG)
@@ -1600,10 +1602,7 @@ _slurmd_init(void)
 	 */
 	slurm_conf_init(conf->conffile);
 	init_node_conf();
-	/*
-	 * slurm_select_init() must be called before
-	 * build_all_nodeline_info() to be called with proper argument.
-	 */
+
 	if (slurm_select_init(1) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	if (gres_plugin_init() != SLURM_SUCCESS)

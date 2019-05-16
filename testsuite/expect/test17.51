@@ -223,7 +223,7 @@ if {$found == 0} {
 set found 0
 #test sacct if accounting, wait a few seconds for accounting data to reach DB
 if { [test_account_storage] != 0 } {
-	sleep 3
+	sleep 5
 	spawn $sacct -j $job_id --noheader -o "mcslabel"
 	expect {
 		-re "$user_name" {

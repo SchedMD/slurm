@@ -255,6 +255,11 @@ set controlmachine_regex "\[a-zA-Z0-9,\-\.\]+"
 cset super_user     0
 cset super_user_set 0
 
+#
+# Global variable used in multiple functions in "globals" file
+#
+set gpu_sock_list {}
+
 ################################################################
 #
 # Proc: print_time
@@ -2207,6 +2212,85 @@ proc get_select_type_params { partition } {
 	log_user 1
 
 	return $params
+}
+
+################################################################
+#
+# Proc: test_linear
+#
+# Purpose: Determine if system is configured with linear plugin.
+#
+# Returns 1 if configured, 0 otherwise
+#
+################################################################
+proc test_linear { } {
+	global scontrol number
+
+	log_user 0
+	set select_type [test_select_type]
+
+	if {![string compare $select_type "linear"]} {
+		return 1
+	} elseif {![string compare $select_type "cray_aries"] &&
+		  ![test_select_type_params "other_cons_res"] &&
+		  ![test_select_type_params "other_cons_tres"]} {
+		return 1
+	}
+	log_user 1
+
+	return 0
+}
+
+################################################################
+#
+# Proc: test_cons_res
+#
+# Purpose: Determine if system is configured with cons_res plugin.
+#
+# Returns 1 if configured, 0 otherwise
+#
+################################################################
+proc test_cons_res { } {
+	global scontrol number
+
+	log_user 0
+	set select_type [test_select_type]
+
+	if {![string compare $select_type "cons_res"]} {
+		return 1
+	} elseif {![string compare $select_type "cray_aries"] &&
+		  [test_select_type_params "other_cons_res"]} {
+		return 1
+	}
+	log_user 1
+
+	return 0
+}
+
+################################################################
+#
+# Proc: test_cons_tres
+#
+# Purpose: Determine if system is configured with cons_tres plugin.
+#
+# Returns 1 if configured, 0 otherwise
+#
+################################################################
+proc test_cons_tres { } {
+	global scontrol number
+
+	log_user 0
+	set select_type [test_select_type]
+
+	if {![string compare $select_type "cons_tres"]} {
+		return 1
+	} elseif {![string compare $select_type "cray_aries"] &&
+		  [test_select_type_params "other_cons_tres"]} {
+		return 1
+	}
+	log_user 1
+
+	return 0
 }
 
 ################################################################
@@ -4673,6 +4757,142 @@ proc get_gpu_count { node_count } {
 	}
 	set count [lindex [lsort -decreasing -integer $gpu_count] [expr $node_count - 1]]
 	return $count
+}
+
+################################################################
+# Subroutine used by get_gpu_socket_count
+# Add a socket index to the array gpu_sock_list if not already
+# on the list.
+################################################################
+proc _set_gpu_socket_inx { sock_inx } {
+	global gpu_sock_list
+
+	if {$sock_inx == -1} {
+		set gpu_sock_list [lreplace $gpu_sock_list 0 99]
+	}
+
+	set sock_cnt [llength $gpu_sock_list]
+	for {set i 0} {$i < $sock_cnt} {incr i} {
+		if {[lindex $gpu_sock_list $i] == $sock_inx} {
+			return
+		}
+	}
+	lappend gpu_sock_list $sock_inx
+}
+
+################################################################
+# Subroutine used by get_gpu_socket_count
+# Add a socket index to the array gpu_sock_list if not already
+# on the list.
+################################################################
+proc _set_gpu_socket_range { sock_first_inx sock_last_inx } {
+	global gpu_sock_list
+
+	if {$sock_inx == -1} {
+		set gpu_sock_list [lreplace $gpu_sock_list 0 99]
+	}
+
+	set sock_cnt [llength $gpu_sock_list]
+	for {set s $sock_first_inx} {$s <= $sock_last_inx} {incr s} {
+		set found 0
+		for {set i 0} {$i < $sock_cnt} {incr i} {
+			if {[lindex $gpu_sock_list $i] == $s} {
+				set found 1
+				break
+			}
+		}
+		if {$found == 0} {
+			lappend gpu_sock_list $s
+		}
+	}
+}
+
+################################################################
+#
+# Proc: get_gpu_socket_count
+#
+# Given a per-node GPU count, return the number of sockets with
+# GPUs on a node with the given per-node GPU count.
+# If the sockets_per_node has a value of 1 then just return 1
+# rather than determine the count (for performance reasons).
+#
+################################################################
+proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
+	global alpha_numeric_under bin_rm number scontrol srun
+	global gpu_sock_list
+	set sockets_with_gpus 1
+	set file_in "test_get_gpu_socket_count.input"
+
+	if {$sockets_per_node == 1} {
+		return 1
+	}
+
+	log_user 0
+	_set_gpu_socket_inx -1
+	make_bash_script $file_in "$scontrol show node \$SLURMD_NODENAME"
+	spawn $srun -N1 --gres=gpu:$gpu_cnt $file_in
+	expect {
+		-re "gpu:${number}.S:($number)-($number)" {
+			_set_gpu_socket_range $expect_out(1,string) $expect_out(2,string)
+			exp_continue
+		}
+		-re "gpu:${alpha_numeric_under}:${number}.S:($number),($number),($number),($number)" {
+			D $expect_out(1,string)
+			_set_gpu_socket_inx $expect_out(2,string)
+			_set_gpu_socket_inx $expect_out(3,string)
+			_set_gpu_socket_inx $expect_out(4,string)
+			exp_continue
+		}
+		-re "gpu:${alpha_numeric_under}:${number}.S:($number),($number),($number)" {
+			_set_gpu_socket_inx $expect_out(1,string)
+			_set_gpu_socket_inx $expect_out(2,string)
+			_set_gpu_socket_inx $expect_out(3,string)
+			exp_continue
+		}
+		-re "gpu:${alpha_numeric_under}:${number}.S:($number),($number)" {
+			_set_gpu_socket_inx $expect_out(1,string)
+			_set_gpu_socket_inx $expect_out(2,string)
+			exp_continue
+		}
+		-re "gpu:${alpha_numeric_under}:${number}.S:($number)" {
+			_set_gpu_socket_inx $expect_out(1,string)
+			exp_continue
+		}
+		-re "gpu:${number}.S:($number),($number),($number),($number)" {
+			_set_gpu_socket_inx $expect_out(1,string)
+			_set_gpu_socket_inx $expect_out(2,string)
+			_set_gpu_socket_inx $expect_out(3,string)
+			_set_gpu_socket_inx $expect_out(4,string)
+			exp_continue
+		}
+		-re "gpu:${number}.S:($number),($number),($number)" {
+			_set_gpu_socket_inx $expect_out(1,string)
+			_set_gpu_socket_inx $expect_out(2,string)
+			_set_gpu_socket_inx $expect_out(3,string)
+			exp_continue
+		}
+		-re "gpu:${number}.S:($number),($number)" {
+			_set_gpu_socket_inx $expect_out(1,string)
+			_set_gpu_socket_inx $expect_out(2,string)
+			exp_continue
+		}
+		-re "gpu:${number}.S:($number)" {
+			_set_gpu_socket_inx $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	exec $bin_rm -f $file_in
+
+	set sock_cnt [llength $gpu_sock_list]
+	if {$sock_cnt > 1} {
+		set sockets_with_gpus $sock_cnt
+	}
+
+	return $sockets_with_gpus
 }
 
 ################################################################

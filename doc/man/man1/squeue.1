@@ -499,7 +499,7 @@ Prints whether the batch flag has been set.
 .TP
 \fBbatchhost\fR
 Executing (batch) host. For an allocated session, this is the host on which
-the session is executing (i.e. the node from which the the \fBsrun\fR or the
+the session is executing (i.e. the node from which the \fBsrun\fR or the
 \fBsalloc\fR command was executed). For a batch job, this is the node executing
 the batch script. In the case of a typical Linux cluster, this would be the
 compute node zero of the allocation. In the case of a Cray ALPS
@@ -715,7 +715,7 @@ reflect the current number of CPUs allocated.
 Number of nodes allocated to the job or the minimum number of nodes
 required by a pending job. The actual number of nodes allocated to a pending
 job may exceed this number if the job specified a node range count (e.g.
-minimum and maximum node counts) or the the job specifies a processor
+minimum and maximum node counts) or the job specifies a processor
 count instead of a node count and the cluster contains nodes with varying
 processor counts. As a job is completing this number will reflect the
 current number of nodes allocated.

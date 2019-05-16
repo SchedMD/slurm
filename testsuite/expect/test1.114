@@ -90,7 +90,7 @@ proc run_spread_job { task_cnt } {
 
 print_header $test_id
 
-if {[test_select_type] != "cons_res"} {
+if {![test_cons_res]} {
 	send_user "\nWARNING: test is only compatible with a config of SelectType=select/cons_res\n"
 	exit 0
 }

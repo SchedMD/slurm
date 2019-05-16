@@ -34,6 +34,11 @@ element is set to true.  Default is /tmp.  The format for this files name is
 .na
 $ArchiveDir/$ClusterName_$ArchiveObject_archive_$BeginTimeStamp_$endTimeStamp
 .ad
+We limit archive files to 50000 records per file. If more than 50000 records
+exist during that time period, they will be written to a new file.  Subsequent
+archive files during the same time period will have ".<number>" appended
+to the file, for example .2, with the number increasing by one for each file in
+the same time period.
 
 .TP
 \fBArchiveEvents\fR
