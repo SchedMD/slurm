@@ -3200,7 +3200,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t *free_cores_tmp = NULL,  *node_bitmap_tmp = NULL;
 	bitstr_t *free_cores_tmp2 = NULL, *node_bitmap_tmp2 = NULL;
 	bool test_only;
-	uint32_t c, j, k, n, csize, total_cpus;
+	uint32_t c, j, k, n, c_alloc = 0, c_size, total_cpus;
 	uint64_t save_mem = 0, avail_mem = 0, lowest_mem = 0, needed_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
@@ -3780,8 +3780,10 @@ alloc_job:
 	/* total up all cpus and load the core_bitmap */
 	total_cpus = 0;
 	c = 0;
-	csize = bit_size(job_res->core_bitmap);
-
+	if (job_res->core_bitmap)
+		c_size = bit_size(job_res->core_bitmap);
+	else
+		c_size = 0;
 	for (i = 0, n = 0; n < cr_node_cnt; n++) {
 		if (bit_test(node_bitmap, n) == 0)
 			continue;
@@ -3789,7 +3791,7 @@ alloc_job:
 		k = cr_get_coremap_offset(n + 1);
 		for (; j < k; j++, c++) {
 			if (bit_test(free_cores, j)) {
-				if (c >= csize)	{
+				if (c >= c_size) {
 					error("cons_res: cr_job_test "
 					      "core_bitmap index error on "
 					      "node %s",
@@ -3804,6 +3806,7 @@ alloc_job:
 					return SLURM_ERROR;
 				}
 				bit_set(job_res->core_bitmap, c);
+				c_alloc++;
 			}
 		}
 
@@ -3823,7 +3826,7 @@ alloc_job:
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("cons_res: cr_job_test: %pJ ncpus %u cbits %u/%u nbits %u",
 		     job_ptr, job_res->ncpus, bit_set_count(free_cores),
-		     bit_set_count(job_res->core_bitmap), job_res->nhosts);
+		     c_alloc, job_res->nhosts);
 	}
 	FREE_NULL_BITMAP(free_cores);
 
