@@ -57,6 +57,24 @@ static uint32_t _list_count_null(List l)
 	return count;
 }
 
+static void _pack_list_of_str(List l, Buf buffer)
+{
+	uint32_t count = NO_VAL;
+	ListIterator itr = NULL;
+	char *str;
+
+	if (l)
+		count = list_count(l);
+
+	pack32(count, buffer);
+	if (count && (count != NO_VAL)) {
+		itr = list_iterator_create(l);
+		while ((str = list_next(itr)))
+			packstr(str, buffer);
+		list_iterator_destroy(itr);
+	}
+}
+
 static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 				uint16_t protocol_version, Buf buffer)
 {
@@ -811,19 +829,8 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		pack32(object->control_port, buffer);
 		pack16(object->dimensions, buffer);
 
-		if (object->fed.feature_list)
-			count = list_count(object->fed.feature_list);
-		else
-			count = NO_VAL;
+		_pack_list_of_str(object->fed.feature_list, buffer);
 
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			char *tmp_feature;
-			itr = list_iterator_create(object->fed.feature_list);
-			while ((tmp_feature = list_next(itr)))
-				packstr(tmp_feature, buffer);
-			list_iterator_destroy(itr);
-		}
 		packstr(object->fed.name, buffer);
 		pack32(object->fed.id, buffer);
 		pack32(object->fed.state, buffer);
@@ -895,19 +902,8 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		pack32(object->control_port, buffer);
 		pack16(object->dimensions, buffer);
 
-		if (object->fed.feature_list)
-			count = list_count(object->fed.feature_list);
-		else
-			count = NO_VAL;
+		_pack_list_of_str(object->fed.feature_list, buffer);
 
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			char *tmp_feature;
-			itr = list_iterator_create(object->fed.feature_list);
-			while ((tmp_feature = list_next(itr)))
-				packstr(tmp_feature, buffer);
-			list_iterator_destroy(itr);
-		}
 		packstr(object->fed.name, buffer);
 		pack32(object->fed.id, buffer);
 		pack32(object->fed.state, buffer);
@@ -1990,10 +1986,7 @@ unpack_error:
 
 extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer)
 {
-	ListIterator itr = NULL;
 	slurmdb_qos_rec_t *object = (slurmdb_qos_rec_t *)in;
-	uint32_t count = NO_VAL;
-	char *tmp_info = NULL;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		if (!object) {
@@ -2076,18 +2069,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer
 
 		pack_bit_str_hex(object->preempt_bitstr, buffer);
 
-		if (object->preempt_list)
-			count = list_count(object->preempt_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->preempt_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->preempt_list, buffer);
 
 		pack16(object->preempt_mode, buffer);
 		pack32(object->preempt_exempt_time, buffer);
@@ -2175,18 +2157,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer
 
 		pack_bit_str_hex(object->preempt_bitstr, buffer);
 
-		if (object->preempt_list)
-			count = list_count(object->preempt_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->preempt_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->preempt_list, buffer);
 
 		pack16(object->preempt_mode, buffer);
 		pack32(object->priority, buffer);
@@ -3079,9 +3050,6 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t protocol_version,
 				   Buf buffer)
 {
 	slurmdb_tres_cond_t *object = (slurmdb_tres_cond_t *)in;
-	ListIterator itr = NULL;
-	uint32_t count;
-	char *tmp_info = NULL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -3095,59 +3063,10 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t protocol_version,
 		}
 
 		pack64(object->count, buffer);
-
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->id_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->name_list)
-			count = list_count(object->name_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->name_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->type_list)
-			count = list_count(object->type_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->type_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->id_list, buffer);
+		_pack_list_of_str(object->name_list, buffer);
+		_pack_list_of_str(object->type_list, buffer);
 		pack16(object->with_deleted, buffer);
 	}
 }
@@ -3299,10 +3218,7 @@ extern int slurmdb_unpack_tres_rec(void **object, uint16_t protocol_version,
 
 extern void slurmdb_pack_user_cond(void *in, uint16_t protocol_version, Buf buffer)
 {
-	char *tmp_info = NULL;
-	ListIterator itr = NULL;
 	slurmdb_user_cond_t *object = (slurmdb_user_cond_t *)in;
-	uint32_t count = NO_VAL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -3323,32 +3239,8 @@ extern void slurmdb_pack_user_cond(void *in, uint16_t protocol_version, Buf buff
 		slurmdb_pack_assoc_cond(object->assoc_cond,
 					protocol_version, buffer);
 
-		if (object->def_acct_list)
-			count = list_count(object->def_acct_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->def_acct_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->def_wckey_list)
-			count = list_count(object->def_wckey_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->def_wckey_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->def_acct_list, buffer);
+		_pack_list_of_str(object->def_wckey_list, buffer);
 
 		pack16(object->with_assocs, buffer);
 		pack16(object->with_coords, buffer);
@@ -3421,10 +3313,7 @@ unpack_error:
 extern void slurmdb_pack_account_cond(void *in, uint16_t protocol_version,
 				      Buf buffer)
 {
-	char *tmp_info = NULL;
-	ListIterator itr = NULL;
 	slurmdb_account_cond_t *object = (slurmdb_account_cond_t *)in;
-	uint32_t count = NO_VAL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -3440,33 +3329,8 @@ extern void slurmdb_pack_account_cond(void *in, uint16_t protocol_version,
 		slurmdb_pack_assoc_cond(object->assoc_cond,
 					protocol_version, buffer);
 
-		count = NO_VAL;
-		if (object->description_list)
-			count = list_count(object->description_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->description_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->organization_list)
-			count = list_count(object->organization_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->organization_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->description_list, buffer);
+		_pack_list_of_str(object->organization_list, buffer);
 
 		pack16(object->with_assocs, buffer);
 		pack16(object->with_coords, buffer);
@@ -3530,10 +3394,7 @@ unpack_error:
 extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
 				      Buf buffer)
 {
-	char *tmp_info = NULL;
-	ListIterator itr = NULL;
 	slurmdb_cluster_cond_t *object = (slurmdb_cluster_cond_t *)in;
-	uint32_t count = NO_VAL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -3553,73 +3414,14 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
 
 		pack16(object->classification, buffer);
 
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->federation_list)
-			count = list_count(object->federation_list);
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->federation_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->cluster_list, buffer);
+		_pack_list_of_str(object->federation_list, buffer);
 
 		pack32(object->flags, buffer);
 
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->plugin_id_select_list)
-			count = list_count(object->plugin_id_select_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(
-				object->plugin_id_select_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->rpc_version_list)
-			count = list_count(object->rpc_version_list);
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(
-				object->rpc_version_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->plugin_id_select_list, buffer);
+		_pack_list_of_str(object->rpc_version_list, buffer);
 
 		pack_time(object->usage_end, buffer);
 		pack_time(object->usage_start, buffer);
@@ -3733,10 +3535,7 @@ unpack_error:
 extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
 					 Buf buffer)
 {
-	char *tmp_info = NULL;
-	ListIterator itr = NULL;
 	slurmdb_federation_cond_t *object = (slurmdb_federation_cond_t *)in;
-	uint32_t count = NO_VAL;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -3747,45 +3546,9 @@ extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		/* cluster_list */
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		/* federation_list */
-		if (object->federation_list)
-			count = list_count(object->federation_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->federation_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->cluster_list, buffer);
+		_pack_list_of_str(object->federation_list, buffer);
+		_pack_list_of_str(object->format_list, buffer);
 
 		pack16(object->with_deleted, buffer);
 	}
@@ -3862,10 +3625,6 @@ unpack_error:
 extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 				    Buf buffer)
 {
-	char *tmp_info = NULL;
-	uint32_t count = NO_VAL;
-
-	ListIterator itr = NULL;
 	slurmdb_assoc_cond_t *object = (slurmdb_assoc_cond_t *)in;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -3899,132 +3658,22 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (object->acct_list)
-			count = list_count(object->acct_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->acct_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->def_qos_id_list)
-			count = list_count(object->def_qos_id_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->def_qos_id_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->id_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
+		_pack_list_of_str(object->acct_list, buffer);
+		_pack_list_of_str(object->cluster_list, buffer);
+		_pack_list_of_str(object->def_qos_id_list, buffer);
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->id_list, buffer);
 
 		pack16(object->only_defs, buffer);
 
-		if (object->partition_list)
-			count = list_count(object->partition_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->partition_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->parent_acct_list)
-			count = list_count(object->parent_acct_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->parent_acct_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->qos_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->partition_list, buffer);
+		_pack_list_of_str(object->parent_acct_list, buffer);
+		_pack_list_of_str(object->qos_list, buffer);
 
 		pack_time(object->usage_end, buffer);
 		pack_time(object->usage_start, buffer);
 
-		if (object->user_list)
-			count = list_count(object->user_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->user_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->user_list, buffer);
 
 		pack16(object->with_usage, buffer);
 		pack16(object->with_deleted, buffer);
@@ -4194,10 +3843,6 @@ unpack_error:
 extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 				    Buf buffer)
 {
-	char *tmp_info = NULL;
-	uint32_t count = NO_VAL;
-
-	ListIterator itr = NULL;
 	slurmdb_event_cond_t *object = (slurmdb_event_cond_t *)in;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -4216,86 +3861,21 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->cluster_list, buffer);
 
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
 		pack16(object->event_type, buffer);
 
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->node_list)
-			count = list_count(object->node_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->node_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->node_list, buffer);
 
 		pack_time(object->period_end, buffer);
 		pack_time(object->period_start, buffer);
 
-		if (object->reason_list)
-			count = list_count(object->reason_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->reason_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->reason_uid_list)
-			count = list_count(object->reason_uid_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->reason_uid_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->state_list)
-			count = list_count(object->state_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->state_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->reason_list, buffer);
+		_pack_list_of_str(object->reason_uid_list, buffer);
+		_pack_list_of_str(object->state_list, buffer);
 	}
 }
 
@@ -4409,10 +3989,8 @@ unpack_error:
 extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 				  Buf buffer)
 {
-	char *tmp_info = NULL;
 	slurmdb_selected_step_t *job = NULL;
 	uint32_t count = NO_VAL;
-
 	ListIterator itr = NULL;
 	slurmdb_job_cond_t *object = (slurmdb_job_cond_t *)in;
 
@@ -4449,53 +4027,10 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (object->acct_list)
-			count = list_count(object->acct_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->acct_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->associd_list)
-			count = list_count(object->associd_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->associd_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->constraint_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->constraint_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->acct_list, buffer);
+		_pack_list_of_str(object->associd_list, buffer);
+		_pack_list_of_str(object->cluster_list, buffer);
+		_pack_list_of_str(object->constraint_list, buffer);
 
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
@@ -4503,106 +4038,18 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 		pack32((uint32_t)object->exitcode, buffer);
 		pack32(object->flags, buffer);
 
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->groupid_list)
-			count = list_count(object->groupid_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->groupid_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->jobname_list)
-			count = list_count(object->jobname_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->jobname_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->groupid_list, buffer);
+		_pack_list_of_str(object->jobname_list, buffer);
 
 		pack32(object->nodes_max, buffer);
 		pack32(object->nodes_min, buffer);
 
-		if (object->partition_list)
-			count = list_count(object->partition_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->partition_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->qos_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->reason_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->reason_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->resv_list)
-			count = list_count(object->resv_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->resv_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->resvid_list)
-			count = list_count(object->resvid_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->resvid_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->partition_list, buffer);
+		_pack_list_of_str(object->qos_list, buffer);
+		_pack_list_of_str(object->reason_list, buffer);
+		_pack_list_of_str(object->resv_list, buffer);
+		_pack_list_of_str(object->resvid_list, buffer);
 
 		count = _list_count_null(object->step_list);
 		pack32(count, buffer);
@@ -4616,18 +4063,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			list_iterator_destroy(itr);
 		}
 
-		if (object->state_list)
-			count = list_count(object->state_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->state_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->state_list, buffer);
 
 		pack32(object->timelimit_max, buffer);
 		pack32(object->timelimit_min, buffer);
@@ -4636,31 +4072,8 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 
 		packstr(object->used_nodes, buffer);
 
-		if (object->userid_list)
-			count = list_count(object->userid_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->userid_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->wckey_list)
-			count = list_count(object->wckey_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->wckey_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->userid_list, buffer);
+		_pack_list_of_str(object->wckey_list, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);	/* count(acct_list) */
@@ -4691,139 +4104,26 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (object->acct_list)
-			count = list_count(object->acct_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->acct_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->associd_list)
-			count = list_count(object->associd_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->associd_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->acct_list, buffer);
+		_pack_list_of_str(object->associd_list, buffer);
+		_pack_list_of_str(object->cluster_list, buffer);
 
 		pack32(object->cpus_max, buffer);
 		pack32(object->cpus_min, buffer);
 		pack32((uint32_t)object->exitcode, buffer);
 		pack32(object->flags, buffer);
 
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->groupid_list)
-			count = list_count(object->groupid_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->groupid_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->jobname_list)
-			count = list_count(object->jobname_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->jobname_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->groupid_list, buffer);
+		_pack_list_of_str(object->jobname_list, buffer);
 
 		pack32(object->nodes_max, buffer);
 		pack32(object->nodes_min, buffer);
 
-		if (object->partition_list)
-			count = list_count(object->partition_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->partition_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->qos_list)
-			count = list_count(object->qos_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->qos_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->resv_list)
-			count = list_count(object->resv_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->resv_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->resvid_list)
-			count = list_count(object->resvid_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->resvid_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->partition_list, buffer);
+		_pack_list_of_str(object->qos_list, buffer);
+		_pack_list_of_str(object->resv_list, buffer);
+		_pack_list_of_str(object->resvid_list, buffer);
 
 		count = _list_count_null(object->step_list);
 		pack32(count, buffer);
@@ -4837,18 +4137,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 			list_iterator_destroy(itr);
 		}
 
-		if (object->state_list)
-			count = list_count(object->state_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->state_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->state_list, buffer);
 
 		pack32(object->timelimit_max, buffer);
 		pack32(object->timelimit_min, buffer);
@@ -4857,31 +4146,8 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 
 		packstr(object->used_nodes, buffer);
 
-		if (object->userid_list)
-			count = list_count(object->userid_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->userid_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->wckey_list)
-			count = list_count(object->wckey_list);
-		else
-			count = NO_VAL;
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->wckey_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->userid_list, buffer);
+		_pack_list_of_str(object->wckey_list, buffer);
 	}
 }
 
@@ -5787,9 +5053,6 @@ unpack_error:
 extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 				  Buf buffer)
 {
-	uint32_t count = NO_VAL;
-	char *tmp_info = NULL;
-	ListIterator itr = NULL;
 	slurmdb_qos_cond_t *object = (slurmdb_qos_cond_t *)in;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -5803,53 +5066,10 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (object->description_list)
-			count = list_count(object->description_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->description_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->id_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->name_list)
-			count = list_count(object->name_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->name_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->description_list, buffer);
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->id_list, buffer);
+		_pack_list_of_str(object->name_list, buffer);
 
 		pack16(object->preempt_mode, buffer);
 		pack16(object->with_deleted, buffer);
@@ -5936,9 +5156,6 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 					  Buf buffer)
 {
 	slurmdb_reservation_cond_t *object = (slurmdb_reservation_cond_t *)in;
-	uint32_t count = NO_VAL;
-	ListIterator itr = NULL;
-	char *tmp_info = NULL;
 
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		if (!object) {
@@ -5954,56 +5171,13 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->cluster_list, buffer);
 
 		pack32(object->flags, buffer);
 
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->id_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->name_list)
-			count = list_count(object->name_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->name_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->id_list, buffer);
+		_pack_list_of_str(object->name_list, buffer);
 
 		packstr(object->nodes, buffer);
 		pack_time(object->time_end, buffer);
@@ -6023,56 +5197,13 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->cluster_list, buffer);
 
 		pack32(object->flags, buffer);
 
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-		else
-			count = NO_VAL;
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->id_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->name_list)
-			count = list_count(object->name_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->name_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->id_list, buffer);
+		_pack_list_of_str(object->name_list, buffer);
 
 		packstr(object->nodes, buffer);
 		pack_time(object->time_end, buffer);
@@ -6350,10 +5481,7 @@ unpack_error:
 extern void slurmdb_pack_res_cond(void *in, uint16_t protocol_version,
 				  Buf buffer)
 {
-	char *tmp_info = NULL;
-	ListIterator itr = NULL;
 	slurmdb_res_cond_t *object = (slurmdb_res_cond_t *)in;
-	uint32_t count;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -6373,97 +5501,18 @@ extern void slurmdb_pack_res_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		count = _list_count_null(object->cluster_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->description_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->description_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->cluster_list, buffer);
+		_pack_list_of_str(object->description_list, buffer);
 
 		pack32(object->flags, buffer);
 
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->id_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->id_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->manager_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->manager_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->name_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->name_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->percent_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->percent_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->server_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->server_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->type_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->type_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->id_list, buffer);
+		_pack_list_of_str(object->manager_list, buffer);
+		_pack_list_of_str(object->name_list, buffer);
+		_pack_list_of_str(object->percent_list, buffer);
+		_pack_list_of_str(object->server_list, buffer);
+		_pack_list_of_str(object->type_list, buffer);
 
 		pack16(object->with_deleted, buffer);
 		pack16(object->with_clusters, buffer);
@@ -6621,9 +5670,6 @@ unpack_error:
 extern void slurmdb_pack_txn_cond(void *in, uint16_t protocol_version,
 				  Buf buffer)
 {
-	uint32_t count = NO_VAL;
-	char *tmp_info = NULL;
-	ListIterator itr = NULL;
 	slurmdb_txn_cond_t *object = (slurmdb_txn_cond_t *)in;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -6641,120 +5687,20 @@ extern void slurmdb_pack_txn_cond(void *in, uint16_t protocol_version,
 			pack16(0, buffer);
 			return;
 		}
-		if (object->acct_list)
-			count = list_count(object->acct_list);
 
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->acct_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->action_list)
-			count = list_count(object->action_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->action_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->actor_list)
-			count = list_count(object->actor_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->actor_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->id_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->info_list)
-			count = list_count(object->info_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->info_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->name_list)
-			count = list_count(object->name_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->name_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		_pack_list_of_str(object->acct_list, buffer);
+		_pack_list_of_str(object->action_list, buffer);
+		_pack_list_of_str(object->actor_list, buffer);
+		_pack_list_of_str(object->cluster_list, buffer);
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->id_list, buffer);
+		_pack_list_of_str(object->info_list, buffer);
+		_pack_list_of_str(object->name_list, buffer);
 
 		pack_time(object->time_end, buffer);
 		pack_time(object->time_start, buffer);
-		if (object->user_list)
-			count = list_count(object->user_list);
 
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->user_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->user_list, buffer);
 
 		pack16(object->with_assoc_info, buffer);
 	}
@@ -6905,10 +5851,6 @@ unpack_error:
 extern void slurmdb_pack_wckey_cond(void *in, uint16_t protocol_version,
 				    Buf buffer)
 {
-	char *tmp_info = NULL;
-	uint32_t count = NO_VAL;
-
-	ListIterator itr = NULL;
 	slurmdb_wckey_cond_t *object = (slurmdb_wckey_cond_t *)in;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -6930,70 +5872,17 @@ extern void slurmdb_pack_wckey_cond(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (object->cluster_list)
-			count = list_count(object->cluster_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->format_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->format_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
-
-		if (object->id_list)
-			count = list_count(object->id_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->id_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-		}
-		count = NO_VAL;
-
-		if (object->name_list)
-			count = list_count(object->name_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->name_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		count = NO_VAL;
+		_pack_list_of_str(object->cluster_list, buffer);
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->id_list, buffer);
+		_pack_list_of_str(object->name_list, buffer);
 
 		pack16(object->only_defs, buffer);
 
 		pack_time(object->usage_end, buffer);
 		pack_time(object->usage_start, buffer);
 
-		if (object->user_list)
-			count = list_count(object->user_list);
-
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->user_list);
-			while ((tmp_info = list_next(itr))) {
-				packstr(tmp_info, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		_pack_list_of_str(object->user_list, buffer);
 
 		pack16(object->with_usage, buffer);
 		pack16(object->with_deleted, buffer);
