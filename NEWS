@@ -18,6 +18,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leaks in 'sacctmgr show runawayjobs'.
  -- Fix potential deadlock in nss_slurm.
  -- Fix memory leaks due to incomplete slurmdb_cluster_cond_t destructor.
+ -- Alter reservation flags column in slurmdbd to use uint64_t instead of
+    uint16_t to ensure all current flags are saved correctly. Older releases
+    unfortunately could not store details for newer flags (using bits 17-32)
+    due to this field being silently truncated.
 
 * Changes in Slurm 19.05.0rc1
 =============================
