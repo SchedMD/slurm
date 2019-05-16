@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent slurmctld from potential segfault after job_start_data() called
     for completing job.
  -- Fix jobs getting on nodes with "scontrol reboot asap".
+ -- Record node reboot events to database.
 
 * Changes in Slurm 18.08.7
 ==========================

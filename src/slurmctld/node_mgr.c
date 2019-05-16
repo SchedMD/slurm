@@ -3945,9 +3945,10 @@ void make_node_idle(struct node_record *node_ptr,
 		       __func__, job_ptr, node_ptr->name);
 		node_ptr->last_idle = now;
 		trigger_node_drained(node_ptr);
-		clusteracct_storage_g_node_down(acct_db_conn,
-						node_ptr, now, NULL,
-						slurmctld_conf.slurm_user_id);
+		if (!IS_NODE_REBOOT(node_ptr))
+			clusteracct_storage_g_node_down(acct_db_conn,
+							node_ptr, now, NULL,
+							slurmctld_conf.slurm_user_id);
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
