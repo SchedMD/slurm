@@ -48,15 +48,6 @@
 #define KB_ADJ 1024
 #define MB_ADJ 1048576
 
-static uint32_t _list_count_null(List l)
-{
-	uint32_t count = NO_VAL;
-
-	if (l)
-		count = list_count(l);
-	return count;
-}
-
 static void _pack_list_of_str(List l, Buf buffer)
 {
 	uint32_t count = NO_VAL;
@@ -251,12 +242,7 @@ unpack_error:
 extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 				  Buf buffer)
 {
-	ListIterator itr = NULL;
 	slurmdb_user_rec_t *object = (slurmdb_user_rec_t *)in;
-	uint32_t count = NO_VAL;
-	slurmdb_coord_rec_t *coord = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
-	slurmdb_wckey_rec_t *wckey = NULL;
 
 	xassert(buffer);
 
@@ -276,27 +262,11 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 
 		pack16(object->admin_level, buffer);
 
-		count = _list_count_null(object->assoc_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->assoc_list);
-			while ((assoc = list_next(itr))) {
-				slurmdb_pack_assoc_rec(assoc, protocol_version,
-						       buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->assoc_list, slurmdb_pack_assoc_rec,
+				buffer, protocol_version);
 
-		count = _list_count_null(object->coord_accts);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->coord_accts);
-			while ((coord = list_next(itr))) {
-				slurmdb_pack_coord_rec(coord,
-						       protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->coord_accts, slurmdb_pack_coord_rec,
+				buffer, protocol_version);
 
 		packstr(object->default_acct, buffer);
 		packstr(object->default_wckey, buffer);
@@ -305,16 +275,8 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 
 		pack32(object->uid, buffer);
 
-		count = _list_count_null(object->wckey_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->wckey_list);
-			while ((wckey = list_next(itr))) {
-				slurmdb_pack_wckey_rec(wckey, protocol_version,
-						       buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->wckey_list, slurmdb_pack_wckey_rec,
+				buffer, protocol_version);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -480,11 +442,7 @@ unpack_error:
 extern void slurmdb_pack_account_rec(void *in, uint16_t protocol_version,
 				     Buf buffer)
 {
-	slurmdb_coord_rec_t *coord = NULL;
-	ListIterator itr = NULL;
-	uint32_t count = NO_VAL;
 	slurmdb_account_rec_t *object = (slurmdb_account_rec_t *)in;
-	slurmdb_assoc_rec_t *assoc = NULL;
 
 	xassert(buffer);
 
@@ -498,27 +456,10 @@ extern void slurmdb_pack_account_rec(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		count = _list_count_null(object->assoc_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->assoc_list);
-			while ((assoc = list_next(itr))) {
-				slurmdb_pack_assoc_rec(assoc, protocol_version,
-						       buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
-		count = _list_count_null(object->coordinators);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->coordinators);
-			while ((coord = list_next(itr))) {
-				slurmdb_pack_coord_rec(coord,
-						       protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->assoc_list, slurmdb_pack_assoc_rec,
+				buffer, protocol_version);
+		slurm_pack_list(object->coordinators, slurmdb_pack_coord_rec,
+				buffer, protocol_version);
 
 		packstr(object->description, buffer);
 		packstr(object->name, buffer);
@@ -1113,9 +1054,6 @@ unpack_error:
 extern void slurmdb_pack_federation_rec(void *in, uint16_t protocol_version,
 					Buf buffer)
 {
-	uint32_t count   = NO_VAL;
-	ListIterator itr = NULL;
-	slurmdb_cluster_rec_t *tmp_cluster = NULL;
 	slurmdb_federation_rec_t *object = (slurmdb_federation_rec_t *)in;
 
 	xassert(buffer);
@@ -1129,17 +1067,8 @@ extern void slurmdb_pack_federation_rec(void *in, uint16_t protocol_version,
 		packstr(object->name, buffer);
 		pack32(object->flags, buffer);
 
-		count = _list_count_null(object->cluster_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->cluster_list);
-			while ((tmp_cluster = list_next(itr))) {
-				slurmdb_pack_cluster_rec(tmp_cluster,
-							 protocol_version,
-							 buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->cluster_list, slurmdb_pack_cluster_rec,
+				buffer, protocol_version);
 	} else {
 		error("%s: protocol_version %hu not supported.",
 		      __func__, protocol_version);
@@ -2563,9 +2492,6 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 					 Buf buffer)
 {
 	slurmdb_reservation_rec_t *object = (slurmdb_reservation_rec_t *)in;
-	uint32_t count = NO_VAL;
-	ListIterator itr;
-	slurmdb_tres_rec_t *tres_rec;
 
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		if (!object) {
@@ -2597,17 +2523,9 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 		pack_time(object->time_start_prev, buffer);
 		packstr(object->tres_str, buffer);
 
-		count = _list_count_null(object->tres_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->tres_list);
-			while ((tres_rec = list_next(itr))) {
-				slurmdb_pack_tres_rec(tres_rec,
-						      protocol_version,
-						      buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->tres_list, slurmdb_pack_tres_rec,
+				buffer, protocol_version);
+
 		packdouble(object->unused_wall, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
@@ -2639,16 +2557,9 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 		pack_time(object->time_start_prev, buffer);
 		packstr(object->tres_str, buffer);
 
-		count = _list_count_null(object->tres_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->tres_list);
-			while ((tres_rec = list_next(itr))) {
-				slurmdb_pack_tres_rec(
-					tres_rec, protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->tres_list, slurmdb_pack_tres_rec,
+				buffer, protocol_version);
+
 		packdouble(object->unused_wall, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -2745,9 +2656,6 @@ unpack_error:
 extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version, Buf buffer)
 {
 	slurmdb_res_rec_t *object = (slurmdb_res_rec_t *)in;
-	uint32_t count = NO_VAL;
-	slurmdb_clus_res_rec_t *clus_res;
-	ListIterator itr;
 
 	if (!object) {
 		pack32(NO_VAL, buffer); // clus_res_list
@@ -2765,15 +2673,8 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version, Buf buffer
 		return;
 	}
 
-	count = _list_count_null(object->clus_res_list);
-	pack32(count, buffer);
-	if (count && (count != NO_VAL)) {
-		itr = list_iterator_create(object->clus_res_list);
-		while ((clus_res = list_next(itr)))
-			slurmdb_pack_clus_res_rec(
-				clus_res, protocol_version, buffer);
-		list_iterator_destroy(itr);
-	}
+	slurm_pack_list(object->clus_res_list, slurmdb_pack_clus_res_rec,
+			buffer, protocol_version);
 
 	if (object->clus_res_rec) {
 		pack32(0, buffer); /* anything not NO_VAL */
@@ -2912,9 +2813,6 @@ unpack_error:
 extern void slurmdb_pack_wckey_rec(void *in, uint16_t protocol_version,
 				   Buf buffer)
 {
-	slurmdb_accounting_rec_t *slurmdb_info = NULL;
-	ListIterator itr = NULL;
-	uint32_t count = NO_VAL;
 	slurmdb_wckey_rec_t *object = (slurmdb_wckey_rec_t *)in;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -2933,16 +2831,9 @@ extern void slurmdb_pack_wckey_rec(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		count = _list_count_null(object->accounting_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->accounting_list);
-			while ((slurmdb_info = list_next(itr))) {
-				slurmdb_pack_accounting_rec(
-					slurmdb_info, protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->accounting_list,
+				slurmdb_pack_accounting_rec,
+				buffer, protocol_version);
 
 		packstr(object->cluster, buffer);
 
@@ -3989,9 +3880,6 @@ unpack_error:
 extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 				  Buf buffer)
 {
-	slurmdb_selected_step_t *job = NULL;
-	uint32_t count = NO_VAL;
-	ListIterator itr = NULL;
 	slurmdb_job_cond_t *object = (slurmdb_job_cond_t *)in;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
@@ -4051,17 +3939,8 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 		_pack_list_of_str(object->resv_list, buffer);
 		_pack_list_of_str(object->resvid_list, buffer);
 
-		count = _list_count_null(object->step_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->step_list);
-			while ((job = list_next(itr))) {
-				slurmdb_pack_selected_step(job,
-							   protocol_version,
-							   buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->step_list, slurmdb_pack_selected_step,
+				buffer, protocol_version);
 
 		_pack_list_of_str(object->state_list, buffer);
 
@@ -4125,17 +4004,8 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 		_pack_list_of_str(object->resv_list, buffer);
 		_pack_list_of_str(object->resvid_list, buffer);
 
-		count = _list_count_null(object->step_list);
-		pack32(count, buffer);
-		if (count && (count != NO_VAL)) {
-			itr = list_iterator_create(object->step_list);
-			while ((job = list_next(itr))) {
-				slurmdb_pack_selected_step(job,
-							   protocol_version,
-							   buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->step_list, slurmdb_pack_selected_step,
+				buffer, protocol_version);
 
 		_pack_list_of_str(object->state_list, buffer);
 
