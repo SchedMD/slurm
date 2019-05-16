@@ -148,6 +148,8 @@ static void _add_usage_node_bitmap(struct job_record *job_ptr,
 			 * resource allocation. See _pack_job_limit_check()
 			 * in src/plugins/sched/backfill/backfill.c
 			 */
+		} else if (job_ptr->node_cnt == 0) {
+			/* Zero size jobs OK to create/destroy burst buffers */
 		} else {
 			error("%s: %pJ lacks allocated node bitmap", __func__,
 			      job_ptr);
@@ -198,6 +200,8 @@ static void _rm_usage_node_bitmap(struct job_record *job_ptr,
 			 * resource allocation. See _pack_job_limit_check()
 			 * in src/plugins/sched/backfill/backfill.c
 			 */
+		} else if (job_ptr->node_cnt == 0) {
+			/* Zero size jobs OK to create/destroy burst buffers */
 		} else {
 			error("%s: %pJ lacks allocated node bitmap", __func__,
 			      job_ptr);
