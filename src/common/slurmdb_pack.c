@@ -713,9 +713,6 @@ unpack_error:
 extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 				     Buf buffer)
 {
-	slurmdb_cluster_accounting_rec_t *slurmdb_info = NULL;
-	ListIterator itr = NULL;
-	uint32_t count = NO_VAL;
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)in;
 	slurm_persist_conn_t *persist_conn;
 
@@ -750,20 +747,9 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (!object->accounting_list ||
-		    !(count = list_count(object->accounting_list)))
-			count = NO_VAL;
-
-		pack32(count, buffer);
-
-		if (count != NO_VAL) {
-			itr = list_iterator_create(object->accounting_list);
-			while ((slurmdb_info = list_next(itr))) {
-				slurmdb_pack_cluster_accounting_rec(
-					slurmdb_info, protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->accounting_list,
+				slurmdb_pack_cluster_accounting_rec,
+				buffer, protocol_version);
 
 		pack16(object->classification, buffer);
 		packstr(object->control_host, buffer);
@@ -823,20 +809,9 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (!object->accounting_list ||
-		    !(count = list_count(object->accounting_list)))
-			count = NO_VAL;
-
-		pack32(count, buffer);
-
-		if (count != NO_VAL) {
-			itr = list_iterator_create(object->accounting_list);
-			while ((slurmdb_info = list_next(itr))) {
-				slurmdb_pack_cluster_accounting_rec(
-					slurmdb_info, protocol_version, buffer);
-			}
-			list_iterator_destroy(itr);
-		}
+		slurm_pack_list(object->accounting_list,
+				slurmdb_pack_cluster_accounting_rec,
+				buffer, protocol_version);
 
 		pack16(object->classification, buffer);
 		packstr(object->control_host, buffer);
@@ -1191,7 +1166,6 @@ unpack_error:
 extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 				   Buf buffer)
 {
-	slurmdb_accounting_rec_t *slurmdb_info = NULL;
 	ListIterator itr = NULL;
 	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
@@ -1243,22 +1217,9 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (!object->accounting_list ||
-		    !(count = list_count(object->accounting_list)))
-			count = NO_VAL;
-
-		pack32(count, buffer);
-
-		if (count != NO_VAL) {
-			itr = list_iterator_create(object->accounting_list);
-			while ((slurmdb_info = list_next(itr))) {
-				slurmdb_pack_accounting_rec(slurmdb_info,
-							    protocol_version,
-							    buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
+		slurm_pack_list(object->accounting_list,
+				slurmdb_pack_accounting_rec,
+				buffer, protocol_version);
 
 		packstr(object->acct, buffer);
 		packstr(object->cluster, buffer);
@@ -1359,22 +1320,9 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 			return;
 		}
 
-		if (!object->accounting_list ||
-		    !(count = list_count(object->accounting_list)))
-			count = NO_VAL;
-
-		pack32(count, buffer);
-
-		if (count != NO_VAL) {
-			itr = list_iterator_create(object->accounting_list);
-			while ((slurmdb_info = list_next(itr))) {
-				slurmdb_pack_accounting_rec(slurmdb_info,
-							    protocol_version,
-							    buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-
+		slurm_pack_list(object->accounting_list,
+				slurmdb_pack_accounting_rec,
+				buffer, protocol_version);
 
 		packstr(object->acct, buffer);
 		packstr(object->cluster, buffer);
