@@ -1586,7 +1586,7 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg)
 			outflags |= RESERVE_FLAG_NO_HOLD_JOBS;
 		} else {
 			error("Error parsing flags %s.  %s", flagstr, msg);
-			return 0xffffffff;
+			return INFINITE64;
 		}
 
 		if (*curr == ',') {

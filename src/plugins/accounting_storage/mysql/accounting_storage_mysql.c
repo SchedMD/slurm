@@ -1327,7 +1327,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "id_resv", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0 not null" },
 		{ "assoclist", "text not null default ''" },
-		{ "flags", "smallint unsigned default 0 not null" },
+		{ "flags", "bigint unsigned default 0 not null" },
 		{ "nodelist", "text not null default ''" },
 		{ "node_inx", "text not null default ''" },
 		{ "resv_name", "text not null" },

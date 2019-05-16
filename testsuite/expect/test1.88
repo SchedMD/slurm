@@ -55,8 +55,8 @@ if {[file executable $mpicc] == 0} {
 	exit 0
 }
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit 0
 }
 
 #
@@ -87,24 +87,40 @@ if {![file exists $test_prog]} {
 file delete $file_out $file_err
 
 #
+# OpenMPI can only run in multi-slurmd mode if no more than one node has
+# more than one task. Individual nodes with more than one task use shared
+# memory for communications and if more than one node is doing that, their
+# shared memory use collides. That means these MPI tests will work if five
+# nodes or more are available, otherwise some tests will fail. See test1.117
+# for a variation of this test that will work with OpenMPI and multi-slurmd
+# mode.
+#
+if {[test_multiple_slurmd]} {
+	send_user "\nWARNING: This test is limited with multiple slurmd systems\n"
+	set tasks_over_nodes 1
+} else {
+	set tasks_over_nodes 2
+}
+#
 # Build input script file
 #
 make_bash_script $file_in "
   $bin_date
-  $bin_echo test1_N3_n6_cyclic
-  $srun -n6 --distribution=cyclic -t1 ./$test_prog
+
+  env | grep SLURM_JOB_NUM_NODES
+  TASKS=\$((SLURM_JOB_NUM_NODES+$tasks_over_nodes))
+  echo MPI_TASKS=\$TASKS
+
+  $bin_echo test1_cyclic
+  $srun -n \$TASKS --distribution=cyclic -t1 ./$test_prog
 
   $bin_date
-  $bin_echo test2_n6_block
-  $srun -n6 --distribution=block -t1 ./$test_prog
+  $bin_echo test2_block
+  $srun -n \$TASKS --distribution=block -t1 ./$test_prog
 
   $bin_date
-  $bin_echo test3_n4_cyclic
-  $srun -n4 -N1-4 --distribution=cyclic -t1 ./$test_prog
-
-  $bin_date
-  $bin_echo test4_n4_block
-  $srun -n4 -N1-4 --distribution=block -t1  ./$test_prog
+  $bin_echo test3_one_node
+  $srun -n \$TASKS -N1 -O -t1 ./$test_prog
 
   $bin_date
   $bin_echo TEST_COMPLETE
@@ -115,7 +131,7 @@ make_bash_script $file_in "
 #
 set timeout $max_job_delay
 set no_start 0
-set sbatch_pid [spawn $sbatch -N1-6 -n6 --output=$file_out --error=$file_err -t2 $file_in]
+set sbatch_pid [spawn $sbatch -N1-6 -n8 --output=$file_out --error=$file_err -t2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -163,28 +179,42 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Check for desired output in stdout
 #
-set expected_msg [expr 6 + 6 + 4 + 4]
-set expected_sum [expr 30 + 30 + 12 + 12]
 if {[wait_for_file $file_out] == 0} {
 	set complete 0
 	set matches  0
+	set node_cnt 0
+	set task_cnt 0
 	set rank_sum 0
 	spawn $bin_cat $file_out
 	expect {
-                -re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
+		-re "SLURM_JOB_NUM_NODES=($number)" {
+			set node_cnt $expect_out(1,string)
+			exp_continue
+		}
+		-re "MPI_TASKS=($number)" {
+			set task_cnt $expect_out(1,string)
+			exp_continue
+		}
+		-re "Rank.($number). on $alpha_numeric_under just received msg from Rank ($number)" {
 			incr rank_sum $expect_out(1,string)
 			incr rank_sum $expect_out(2,string)
 			incr matches
-                        exp_continue
-                }
+			exp_continue
+		}
 		-re "TEST_COMPLETE" {
 			incr complete
 			exp_continue
 		}
-                eof {
+		eof {
 			wait
-                }
-        }
+		}
+	}
+	set expected_msg [expr $task_cnt * 3]
+	set expected_sum 0
+	for {set i 1} {$i < $task_cnt} {incr i} {
+		incr expected_sum $i
+	}
+	set expected_sum [expr $expected_sum * 6]
 	if {$matches == 0} {
 		send_user "\nFAILURE: No MPI communications occurred\n"
 		send_user "  The version of MPI you are using may be incompatible "

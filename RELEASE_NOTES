@@ -183,6 +183,9 @@ configuration files will be required before upgrading to this release.
     changed to bb/datawarp.
     This will happen automatically in the database - very quick.
 
+ -- The option "--enable-native-cray" option to the configure program has been
+    removed. That is now the default mode of operation on Cray systems.
+
 RPMBUILD CHANGES
 ================
 
