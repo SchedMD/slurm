@@ -55,8 +55,8 @@ if {[file executable $mpicc] == 0} {
 	exit 0
 }
 if {[test_front_end]} {
-        send_user "\nWARNING: This test is incompatible with front-end systems\n"
-        exit 0
+	send_user "\nWARNING: This test is incompatible with front-end systems\n"
+	exit 0
 }
 
 #
@@ -175,16 +175,16 @@ if {[wait_for_file $file_out] == 0} {
 			incr rank_sum $expect_out(1,string)
 			incr rank_sum $expect_out(2,string)
 			incr matches
-                        exp_continue
-                }
+			exp_continue
+		}
 		-re "TEST_COMPLETE" {
 			incr complete
 			exp_continue
 		}
-                eof {
+		eof {
 			wait
-                }
-        }
+		}
+	}
 	if {$matches == 0} {
 		send_user "\nFAILURE: No MPI communications occurred\n"
 		send_user "  The version of MPI you are using may be incompatible "
