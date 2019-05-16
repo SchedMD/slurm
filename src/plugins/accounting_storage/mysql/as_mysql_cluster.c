@@ -1380,7 +1380,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("select state, reason from \"%s_%s\" where "
+	query = xstrdup_printf("select state, reason, time_start from \"%s_%s\" where "
 			       "time_end=0 and node_name='%s';",
 			       mysql_conn->cluster_name, event_table,
 			       node_ptr->name);
@@ -1412,6 +1412,32 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		mysql_free_result(result);
 		return SLURM_SUCCESS;
 	}
+
+	if (row && (event_time == slurm_atoul(row[2]))) {
+		/*
+		 * If you are clean-restarting the controller over and over
+		 * again you could get records that are duplicates in the
+		 * database. If this is the case we will zero out the time_end
+		 * we are just filled in. This will cause the last time to be
+		 * erased from the last restart, but if you are restarting
+		 * things this often the pervious one didn't mean anything
+		 * anyway. This way we only get one for the last time we let it
+		 * run.
+		 */
+		query = xstrdup_printf(
+			"update \"%s_%s\" set reason='%s' where "
+			"time_start=%ld and node_name='%s';",
+			mysql_conn->cluster_name, event_table,
+			my_reason, event_time, node_ptr->name);
+		if (debug_flags & DEBUG_FLAG_DB_EVENT)
+			DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+		rc = mysql_db_query(mysql_conn, query);
+		xfree(query);
+
+		mysql_free_result(result);
+		return SLURM_SUCCESS;
+	}
+
 	mysql_free_result(result);
 
 	if (debug_flags & DEBUG_FLAG_DB_EVENT)
@@ -1425,20 +1451,11 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		"time_end=0 and node_name='%s';",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
-	/* If you are clean-restarting the controller over and over again you
-	 * could get records that are duplicates in the database.  If
-	 * this is the case we will zero out the time_end we are
-	 * just filled in.  This will cause the last time to be erased
-	 * from the last restart, but if you are restarting things
-	 * this often the pervious one didn't mean anything anyway.
-	 * This way we only get one for the last time we let it run.
-	 */
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" "
 		   "(node_name, state, tres, time_start, "
 		   "reason, reason_uid) "
-		   "values ('%s', %u, '%s', %ld, '%s', %u) "
-		   "on duplicate key update time_end=0;",
+		   "values ('%s', %u, '%s', %ld, '%s', %u);",
 		   mysql_conn->cluster_name, event_table,
 		   node_ptr->name, node_ptr->node_state,
 		   node_ptr->tres_str, event_time, my_reason, reason_uid);
