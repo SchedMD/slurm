@@ -1397,6 +1397,9 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 	else
 		my_reason = node_ptr->reason;
 
+	if (!my_reason)
+		my_reason = "";
+
 	row = mysql_fetch_row(result);
 	if (row && (node_ptr->node_state == slurm_atoul(row[0])) &&
 	    my_reason && row[1] &&
