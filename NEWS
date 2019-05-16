@@ -60,6 +60,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacctmgr --parsable2 output for reservations and tres.
  -- Prevent slurmctld from potential segfault after job_start_data() called
     for completing job.
+ -- Fix jobs getting on nodes with "scontrol reboot asap".
 
 * Changes in Slurm 18.08.7
 ==========================
