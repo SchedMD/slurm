@@ -619,8 +619,13 @@ static void *_agent(void *x)
 		    (difftime(time(NULL), fail_time) >= 10)) {
 			/* The connection to Slurm DBD is not open */
 			_open_slurmdbd_conn(1);
-			if (slurmdbd_conn->fd < 0)
+			if (slurmdbd_conn->fd < 0) {
 				fail_time = time(NULL);
+
+				if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
+					info("%s: slurmdbd disconnected with agent_count=%d",
+					     __func__, list_count(agent_list));
+			}
 		}
 
 		slurm_mutex_lock(&agent_lock);
