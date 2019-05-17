@@ -119,6 +119,12 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 	case PERSIST_RC:
 		msg = resp.data;
 		rc = msg->rc;
+
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
+			info("%s: msg_type:PERSIST_RC return_code:%s ret_info:%hu flags=%#x comment:%s",
+			     __func__, slurm_strerror(rc), msg->ret_info,
+			     msg->flags, msg->comment);
+
 		if (rc != SLURM_SUCCESS) {
 			if (msg->ret_info == DBD_REGISTER_CTLD &&
 			    slurm_get_accounting_storage_enforce()) {
