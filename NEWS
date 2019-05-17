@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.02.0pre1
 ==============================
+ -- Avoid possible race when 2 conf files are read at the same exact time.
 
 * Changes in Slurm 19.05.0rc2
 =============================
