@@ -984,6 +984,12 @@ end_it:
 	slurm_cond_signal(&slurmdbd_cond);
 	slurm_mutex_unlock(&slurmdbd_lock);
 
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
+		info("%s: msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
+		     __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+		     rpc_version, rc,
+		     slurmdbd_msg_type_2_str(resp->msg_type, 1));
+
 	return rc;
 }
 
