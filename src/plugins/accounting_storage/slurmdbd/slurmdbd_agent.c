@@ -608,8 +608,13 @@ static void *_agent(void *x)
 	while (*slurmdbd_conn->shutdown == 0) {
 		/* START_TIMER; */
 		slurm_mutex_lock(&slurmdbd_lock);
-		if (halt_agent)
+		if (halt_agent) {
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
+				info("%s: slurmdbd agent halt with agent_count=%d",
+				     __func__, list_count(agent_list));
+
 			slurm_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
+		}
 
 		if ((slurmdbd_conn->fd < 0) &&
 		    (difftime(time(NULL), fail_time) >= 10)) {
