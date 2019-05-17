@@ -599,6 +599,12 @@ static void *_agent(void *x)
 	xsignal(SIGUSR1, _sig_handler);
 	xsignal_unblock(sigarray);
 
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
+		info("%s: slurmdbd agent_count=%d with msg_type=%s",
+		     __func__,
+		     agent_list ? list_count(agent_list) : 0,
+		     slurmdbd_msg_type_2_str(list_req.msg_type, 1));
+
 	while (*slurmdbd_conn->shutdown == 0) {
 		/* START_TIMER; */
 		slurm_mutex_lock(&slurmdbd_lock);
