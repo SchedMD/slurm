@@ -488,6 +488,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	agent_arg_t *agent_args = NULL;
 	int down_node_cnt = 0;
 	struct node_record *node_ptr;
+	job_resources_t *job_resrcs_ptr;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #endif
@@ -528,7 +529,9 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 					    job_ptr->spank_job_env);
 	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
-	kill_job->job_node_cpus = job_ptr->cpus;
+	job_resrcs_ptr = job_ptr->job_resrcs;
+    kill_job->nnodes = job_resrcs_ptr->nhosts;
+	kill_job->job_node_cpus = job_resrcs_ptr->cpus;
 
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
