@@ -954,7 +954,8 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
 		error("slurmdbd: Sending message type %s: %d: %s",
-		      rpc_num2string(req->msg_type), rc, slurm_strerror(rc));
+		      slurmdbd_msg_type_2_str(req->msg_type, 1), rc,
+		      slurm_strerror(rc));
 		goto end_it;
 	}
 
