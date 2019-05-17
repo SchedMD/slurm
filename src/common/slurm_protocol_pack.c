@@ -4746,6 +4746,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer, uint16_t protocol_version)
 					     protocol_version);
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
 			      buffer);
+		pack
 		pack_time(msg->start_time, buffer);
 		pack32(msg->step_id,  buffer);
 		pack_time(msg->time, buffer);

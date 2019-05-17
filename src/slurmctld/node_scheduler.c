@@ -528,6 +528,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 					    job_ptr->spank_job_env);
 	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
+	kill_job->job_node_cpus = job_resrcs_ptr->cpus;
 
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&

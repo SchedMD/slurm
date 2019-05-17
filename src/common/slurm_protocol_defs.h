@@ -980,6 +980,7 @@ typedef struct kill_job_msg {
 	time_t   start_time;	/* time of job start, track job requeue */
 	uint32_t step_id;
 	time_t   time;		/* slurmctld's time of request */
+	uint16_t *job_node_cpus; /* Number of CPUs required on the nodes for the job */
 } kill_job_msg_t;
 
 typedef struct job_time_msg {

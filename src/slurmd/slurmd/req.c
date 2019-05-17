@@ -2298,6 +2298,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 #endif
 
         node_inx = _get_node_inx(req->nodes);
+		debug("_rpc_prolog: _get_node_inx returned %d", node_inx);
         job_env.job_node_cpus = (node_inx >= 0 ? req->job_node_cpus[node_inx] : 0);
 
 		if ((rc = container_g_create(jobid)))
@@ -5340,6 +5341,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	int             nsteps = 0;
 	int		delay;
 	int		node_id = 0;
+	int node_inx = -1;
 	job_env_t       job_env;
 	uint32_t        jobid;
 
@@ -5565,6 +5567,10 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	job_env.spank_job_env = req->spank_job_env;
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.uid = req->job_uid;
+	
+    node_inx = _get_node_inx(req->nodes);
+    job_env.job_node_cpus = (node_inx >= 0 ? req->job_node_cpus[node_inx] : 0);
+    debug2("Setting job_env.job_cpu_nodes to %d", job_env.job_node_cpus);
 
 	rc = _run_epilog(&job_env);
 	_free_job_env(&job_env);
