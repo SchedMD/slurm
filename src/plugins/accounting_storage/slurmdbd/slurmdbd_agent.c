@@ -106,6 +106,12 @@ static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 	case DBD_ID_RC:
 		id_msg = resp.data;
 		rc = id_msg->return_code;
+
+		if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
+			info("%s: msg_type:DBD_ID_RC return_code:%s JobId=%u db_index=%"PRIu64,
+			     __func__, slurm_strerror(rc), id_msg->job_id,
+			     id_msg->db_index);
+
 		slurmdbd_free_id_rc_msg(id_msg);
 		if (rc != SLURM_SUCCESS)
 			error("slurmdbd: DBD_ID_RC is %d", rc);
