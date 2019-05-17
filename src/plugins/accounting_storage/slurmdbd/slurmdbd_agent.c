@@ -741,6 +741,11 @@ static void *_agent(void *x)
 
 	slurm_mutex_lock(&agent_lock);
 	_save_dbd_state();
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
+		info("%s: slurmdbd agent ending with agent_count=%d",
+		     __func__, list_count(agent_list));
+
 	FREE_NULL_LIST(agent_list);
 	slurm_mutex_unlock(&agent_lock);
 	return NULL;
