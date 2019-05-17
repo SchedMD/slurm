@@ -1048,6 +1048,11 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 		slurm_persist_free_rc_msg(msg);
 	}
 
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
+		info("%s: msg_type:%s protocol_version:%hu return_code:%d",
+		     __func__, slurmdbd_msg_type_2_str(req->msg_type, 1),
+		     rpc_version, rc);
+
 	return rc;
 }
 
@@ -1062,6 +1067,13 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	int cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
 	static int max_agent_queue = 0;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
+		info("%s: msg_type:%s protocol_version:%hu agent_count:%d",
+		     __func__,
+		     slurmdbd_msg_type_2_str(req->msg_type, 1),
+		     rpc_version,
+		     agent_list ? list_count(agent_list) : 0);
 
 	/*
 	 * Whatever our max job count is multiplied by 2 plus node count
