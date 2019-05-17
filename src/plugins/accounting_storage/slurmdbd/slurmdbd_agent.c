@@ -633,8 +633,9 @@ static void *_agent(void *x)
 					     &abs_time);
 			slurm_mutex_unlock(&agent_lock);
 			continue;
-		} else if ((cnt > 0) && ((cnt % 100) == 0))
-			info("slurmdbd: agent queue size %u", cnt);
+		} else if (((cnt > 0) && ((cnt % 100) == 0)) ||
+			   (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT))
+			info("slurmdbd: agent_count:%d", cnt);
 		/* Leave item on the queue until processing complete */
 		if (agent_list) {
 			int handle_agent_count = 1000;
