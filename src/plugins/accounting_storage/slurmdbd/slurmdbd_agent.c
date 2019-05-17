@@ -633,6 +633,9 @@ static void *_agent(void *x)
 		if ((cnt == 0) || (slurmdbd_conn->fd < 0) ||
 		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
 			slurm_mutex_unlock(&slurmdbd_lock);
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
+				info("%s: slurmdbd agent sleeping with agent_count=%d",
+				     __func__, list_count(agent_list));
 			abs_time.tv_sec  = time(NULL) + 10;
 			abs_time.tv_nsec = 0;
 			slurm_cond_timedwait(&agent_cond, &agent_lock,
