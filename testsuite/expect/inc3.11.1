@@ -36,6 +36,7 @@ proc inc3_11_1 {} {
 	global def_partition exit_code
 	global part_cores part_node part_node_cnt part_node_cores
 	global res_name user_name
+	global heterogeneous
 
 	# TEST 1
 	# Make a list of lists with a series of parameters to test.  All the tests
@@ -93,7 +94,7 @@ proc inc3_11_1 {} {
 	{StartTime=now   Duration=5   Nodes=$def_node   User=$user_name  Flags=Maint Flags=ignore_jobs}
 "
 	#{StartTime=now   Duration=5   NodeCnt=10 CoreCnt=11  User=$user_name}
-	if {$cons_res_actived == 1} {
+	if {$cons_res_actived == 1 && $heterogeneous == 0} {
 		set more_goodtests "StartTime=now Duration=5 NodeCnt=$part_node_cnt CoreCnt=$corecnt User=$user_name"
 		lappend goodtests $more_goodtests
 	}
