@@ -156,12 +156,12 @@ proc restore_backup { file } {
 proc endit { exit_code } {
 	global test_id config_dir
 
-	if {$exit_code == 0} {
-		cleanup_accounts
-		restore_backup $config_dir/job_submit.lua
-		restore_backup $config_dir/slurm.conf
-		reconfigure
+	cleanup_accounts
+	restore_backup $config_dir/job_submit.lua
+	restore_backup $config_dir/slurm.conf
+	reconfigure
 
+	if {$exit_code == 0} {
 		print_success $test_id
 	} else {
 		log_error "exiting with exit code $exit_code"
