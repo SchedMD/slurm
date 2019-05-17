@@ -600,11 +600,11 @@ static void *_agent(void *x)
 	int sigarray[] = {SIGUSR1, 0};
 	slurmdbd_msg_t list_req;
 	dbd_list_msg_t list_msg;
+	DEF_TIMERS;
 
 	list_req.msg_type = DBD_SEND_MULT_MSG;
 	list_req.data = &list_msg;
 	memset(&list_msg, 0, sizeof(dbd_list_msg_t));
-	/* DEF_TIMERS; */
 
 	/* Prepare to catch SIGUSR1 to interrupt pending
 	 * I/O and terminate in a timely fashion. */
@@ -617,7 +617,6 @@ static void *_agent(void *x)
 		     slurmdbd_msg_type_2_str(list_req.msg_type, 1));
 
 	while (*slurmdbd_conn->shutdown == 0) {
-		/* START_TIMER; */
 		slurm_mutex_lock(&slurmdbd_lock);
 		if (halt_agent) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
@@ -627,6 +626,7 @@ static void *_agent(void *x)
 			slurm_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
 		}
 
+		START_TIMER;
 		if ((slurmdbd_conn->fd < 0) &&
 		    (difftime(time(NULL), fail_time) >= 10)) {
 			/* The connection to Slurm DBD is not open */
@@ -645,6 +645,7 @@ static void *_agent(void *x)
 		if ((cnt == 0) || (slurmdbd_conn->fd < 0) ||
 		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
 			slurm_mutex_unlock(&slurmdbd_lock);
+			END_TIMER2("slurmdbd agent: sleep");
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
 				info("%s: slurmdbd agent sleeping with agent_count=%d",
 				     __func__, list_count(agent_list));
@@ -691,6 +692,7 @@ static void *_agent(void *x)
 				slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
 
+			END_TIMER2("slurmdbd agent: empty buffer");
 			continue;
 		}
 
@@ -701,6 +703,7 @@ static void *_agent(void *x)
 		if (rc != SLURM_SUCCESS) {
 			if (*slurmdbd_conn->shutdown) {
 				slurm_mutex_unlock(&slurmdbd_lock);
+				END_TIMER2("slurmdbd agent: shutdown");
 				break;
 			}
 			error("slurmdbd: Failure sending message: %d: %m", rc);
@@ -711,6 +714,7 @@ static void *_agent(void *x)
 			if (rc == EAGAIN) {
 				if (*slurmdbd_conn->shutdown) {
 					slurm_mutex_unlock(&slurmdbd_lock);
+					END_TIMER2("slurmdbd agent: EAGAIN on shutdown");
 					break;
 				}
 				error("slurmdbd: Failure with "
@@ -751,8 +755,7 @@ static void *_agent(void *x)
 			fail_time = time(NULL);
 		}
 		slurm_mutex_unlock(&agent_lock);
-		/* END_TIMER; */
-		/* info("at the end with %s", TIME_STR); */
+		END_TIMER2("slurmdbd agent: full loop");
 	}
 
 	slurm_mutex_lock(&agent_lock);
