@@ -961,8 +961,8 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 
 	buffer = slurm_persist_recv_msg(slurmdbd_conn);
 	if (buffer == NULL) {
-		error("slurmdbd: Getting response to message type %u",
-		      req->msg_type);
+		error("slurmdbd: Getting response to message type: %s",
+		      slurmdbd_msg_type_2_str(req->msg_type, 1));
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
