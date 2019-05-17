@@ -71,45 +71,67 @@ proc get_node_config {} {
 }
 
 proc multi_socket_gres { gres_string } {
+	set offset 0
 	set multi_found 0
+	set sock0_found 0
+	set sock1_found 0
+	set socks_found 0
 	set gres_char "x"
 
-	set start [string first "gpu" $gres_string]
-	if {$start == -1} {
-		return 0
-	}
-	set len [string length $gres_string]
-	for {set char_inx [expr $start + 3]} {$char_inx < $len} {incr char_inx} {
-		set gres_char [string index $gres_string $char_inx]
-		if {[string match "," $gres_char]} {
+	while {1} {
+		set start [string first "gpu" $gres_string $offset]
+		if {$start == -1} {
 			return 0
 		}
-		if {![string match "(" $gres_char]} {
-			continue
-		}
-		incr char_inx
-		if {$char_inx >= $len} {
-			break
-		}
-		set gres_char [string index $gres_string $char_inx]
-		if {![string match "S" $gres_char]} {
-			break
-		}
-		incr char_inx
-		if {$char_inx >= $len} {
-			break
-		}
-		set gres_char [string index $gres_string $char_inx]
-		if {![string match ":" $gres_char]} {
-			break
-		}
-		for {incr char_inx} {$char_inx < $len} {incr char_inx} {
+		set offset [expr $start + 1]
+		set len [string length $gres_string]
+		for {set char_inx [expr $start + 3]} {$char_inx < $len} {incr char_inx} {
 			set gres_char [string index $gres_string $char_inx]
-			if {[string match "-" $gres_char] || [string match ";" $gres_char]} {
-				return 1
-			}
 			if {[string match "," $gres_char]} {
-				return 0
+				break
+			}
+			if {![string match "(" $gres_char]} {
+				continue
+			}
+			incr char_inx
+			if {$char_inx >= $len} {
+				break
+			}
+			set gres_char [string index $gres_string $char_inx]
+			if {![string match "S" $gres_char]} {
+				break
+			}
+			incr char_inx
+			if {$char_inx >= $len} {
+				break
+			}
+			set gres_char [string index $gres_string $char_inx]
+			if {![string match ":" $gres_char]} {
+				break
+			}
+			for {incr char_inx} {$char_inx < $len} {incr char_inx} {
+				set gres_char [string index $gres_string $char_inx]
+				if {[string match ")" $gres_char]} {
+					break;
+				}
+				if {[string match "-" $gres_char] || [string match "," $gres_char]} {
+					return 1
+				}
+				if {[string match "0" $gres_char]} {
+					if {$sock0_found != 0} {
+						incr socks_found
+						set sock0_found 1
+					}
+				}
+				if {[string match "1" $gres_char]} {
+					if {$sock1_found != 0} {
+						incr socks_found
+						set sock1_found 1
+					}
+				}
+			}
+			if {$socks_found > 1} {
+				return 1
 			}
 		}
 	}
