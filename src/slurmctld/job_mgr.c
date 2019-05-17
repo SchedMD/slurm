@@ -6652,7 +6652,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		info("%s: job's min time greater than "
 		     "partition's (%u > %u)",
 		     __func__, job_desc->time_min, max_time);
-		rc = ESLURM_INVALID_TIME_LIMIT;
+		rc = ESLURM_INVALID_TIME_MIN_LIMIT;
 		goto fini;
 	}
 	if ((job_desc->time_limit != NO_VAL) &&
@@ -6674,7 +6674,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		info("%s: job's min_time greater time limit "
 		     "(%u > %u)",
 		     __func__, job_desc->time_min, job_desc->time_limit);
-		rc = ESLURM_INVALID_TIME_LIMIT;
+		rc = ESLURM_INVALID_TIME_MIN_LIMIT;
 		goto fini;
 	}
 	if ((job_desc->deadline) && (job_desc->deadline != NO_VAL)) {
@@ -6694,7 +6694,7 @@ static int _valid_job_part(job_desc_msg_t * job_desc,
 		    (job_desc->deadline < (now + job_desc->time_min * 60))) {
 			info("%s: job's min_time greater than deadline (%u > %s)",
 			     __func__, job_desc->time_min, time_str_deadline);
-			rc = ESLURM_INVALID_TIME_LIMIT;
+			rc = ESLURM_INVALID_TIME_MIN_LIMIT;
 			goto fini;
 		}
 		if ((job_desc->time_min == 0) && (job_desc->time_limit) &&
@@ -6769,6 +6769,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		       job_ptr, part_ptr->name, slurm_strerror(rc));
 		switch (rc) {
 		case ESLURM_INVALID_TIME_LIMIT:
+		case ESLURM_INVALID_TIME_MIN_LIMIT:
 			if (job_ptr->limit_set.time != ADMIN_SET_LIMIT)
 				fail_reason = WAIT_PART_TIME_LIMIT;
 			break;
@@ -12714,7 +12715,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		if (job_specs->time_min > job_ptr->time_limit) {
 			info("%s: attempt to set TimeMin > TimeLimit (%u > %u)",
 			     __func__, job_specs->time_min, job_ptr->time_limit);
-			error_code = ESLURM_INVALID_TIME_LIMIT;
+			error_code = ESLURM_INVALID_TIME_MIN_LIMIT;
 		} else if (job_ptr->time_min != job_specs->time_min) {
 			job_ptr->time_min = job_specs->time_min;
 			info("%s: setting TimeMin to %u for %pJ",
