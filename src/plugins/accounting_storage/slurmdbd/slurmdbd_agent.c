@@ -49,6 +49,7 @@
 #define DBD_MAGIC		0xDEAD3219
 #define MAX_AGENT_QUEUE		10000
 #define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
+#define DEBUG_PRINT_MAX_MSG_TYPES 10
 
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
@@ -591,6 +592,52 @@ static void _sig_handler(int signal)
 {
 }
 
+static int _print_agent_list_msg_type(void *x, void *arg)
+{
+	Buf buffer = (Buf) x;
+	char *mlist = (char *) arg;
+	uint16_t msg_type;
+	uint32_t offset = get_buf_offset(buffer);
+
+	if (offset < 2)
+		return SLURM_ERROR;
+	set_buf_offset(buffer, 0);
+	(void) unpack16(&msg_type, buffer);	/* checked by offset */
+	set_buf_offset(buffer, offset);
+
+	xstrfmtcat(mlist, "%s%s", (mlist[0] ? ", " : ""),
+		   slurmdbd_msg_type_2_str(msg_type, 1));
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Prints an info line listing msg types of the dbd agent list
+ */
+static void _print_agent_list_msg_types(void)
+{
+	/* pre-allocate a large enough buffer to handle most lists */
+	char *mlist = xmalloc(2048);
+	int processed, max_msgs = DEBUG_PRINT_MAX_MSG_TYPES;
+
+	if ((processed = list_for_each_max(agent_list, &max_msgs,
+					   _print_agent_list_msg_type,
+					   mlist)) < 0) {
+		error("%s: unable to create msg type list", __func__);
+		xfree(mlist);
+		return;
+	}
+
+	/* append "..." to indicate there are further unprinted messages */
+	if (max_msgs)
+		xstrcat(mlist, ", ...");
+
+	info("%s: slurmdbd agent_count=%d msg_types_agent_list:%s",
+	     __func__, (processed + max_msgs), mlist);
+
+	xfree(mlist);
+}
+
 static void *_agent(void *x)
 {
 	int cnt, rc;
@@ -753,6 +800,12 @@ static void *_agent(void *x)
 			}
 
 			fail_time = time(NULL);
+
+			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT) {
+				info("%s: slurmdbd agent failed with rc:%d",
+				     __func__, rc);
+				_print_agent_list_msg_types();
+			}
 		}
 		slurm_mutex_unlock(&agent_lock);
 		END_TIMER2("slurmdbd agent: full loop");
