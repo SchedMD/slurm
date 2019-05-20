@@ -421,6 +421,8 @@ expect {
 		incr match
 		if {$match == 1} {
 			set hostname $expect_out(1,string)
+		} elseif {[test_front_end]} {
+			send_user "\nDuplicate SLURMD_HOSTNAME in front-end mode as expected\n"
 		} elseif {[string compare $hostname $expect_out(1,string)] == 0} {
 			send_user "\nFAILURE: Two tasks ran on same node ($hostname))\n"
 			set exit_code 1
@@ -445,135 +447,137 @@ if {$match != $node_cnt} {
 # Make sure that gres/gpu and gres/mps jobs either do not share the same GPU
 # or run at different times
 #
-send_user "\n\n==== TEST 7 ====\n"
-set target_job [expr $mps_cnt / 2]
-make_bash_script $file_in1 "
-echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
-$scontrol -dd show job \$SLURM_JOB_ID
-$sbatch --gres=mps:$target_job -w \$SLURMD_NODENAME -n1 -t1 -o $file_out2 -J test$test_id $file_in2
-sleep 30
-exit 0"
+if {[test_front_end] == 0} {
+	send_user "\n\n==== TEST 7 ====\n"
+	set target_job [expr $mps_cnt / 2]
+	make_bash_script $file_in1 "
+	echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
+	$scontrol -dd show job \$SLURM_JOB_ID
+	$sbatch --gres=mps:$target_job -w \$SLURMD_NODENAME -n1 -t1 -o $file_out2 -J test$test_id $file_in2
+	sleep 30
+	exit 0"
 
-make_bash_script $file_in2 "
-echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
-$scontrol -dd show job \$SLURM_JOB_ID
-$squeue --name=test$test_id --noheader --state=r --format=\"jobid=%i state=%T\"
-exit 0"
+	make_bash_script $file_in2 "
+	echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:\$CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
+	$scontrol -dd show job \$SLURM_JOB_ID
+	$squeue --name=test$test_id --noheader --state=r --format=\"jobid=%i state=%T\"
+	exit 0"
 
-exec $bin_rm -f $file_out1 $file_out2
-set job_id1 0
-set sbatch_pid [spawn $sbatch --gres=gpu:1 -n1 -t1 -o $file_out1 -J "test$test_id" $file_in1]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-sleep 30
-if {[wait_for_job $job_id1 "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id1 did not complete\n"
-	cancel_job $job_id1
-	set exit_code 1
-}
-if {[wait_for_file $file_out1] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
-}
-set dev1 -1
-set job_id2 0
-set match 0
-spawn $bin_cat $file_out1
-expect {
-	-re "CUDA_VISIBLE_DEVICES:($number)" {
-		incr match
-		exp_continue
-	}
-	-re "gpu.IDX:($number)" {
-		set dev1 $expect_out(1,string)
-		exp_continue
-	}
-	-re "Submitted batch job ($number)" {
-		set job_id2 $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$match == 0} {
-	send_user "\nFAILURE: CUDA_VISIBLE_DEVICES not set\n"
-	set exit_code 1
-}
-if {$dev1 == -1} {
-	send_user "\nFAILURE: GPU device index not found\n"
-	set exit_code 1
-}
-if {$job_id2 == 0} {
-	send_user "\nFAILURE: Failed to submit second job\n"
-	set exit_code 1
-}
-
-send_user "\n\n"
-if {[wait_for_job $job_id2 "DONE"] != 0} {
-	send_user "\nFAILURE: job $job_id2 did not complete\n"
-	cancel_job $job_id2
-	set exit_code 1
-}
-if {[wait_for_file $file_out2] != 0} {
-	send_user "\nFAILURE: no output file\n"
-	exit 1
-}
-set dev2 -1
-set match 0
-set running 0
-spawn $bin_cat $file_out2
-expect {
-	-re "CUDA_VISIBLE_DEVICES:($number)" {
-		incr match
-		if {$match == 1} {
-			set dev2 $expect_out(1,string)
+	exec $bin_rm -f $file_out1 $file_out2
+	set job_id1 0
+	set sbatch_pid [spawn $sbatch --gres=gpu:1 -n1 -t1 -o $file_out1 -J "test$test_id" $file_in1]
+	expect {
+		-re "Submitted batch job ($number)" {
+			set job_id1 $expect_out(1,string)
+			exp_continue
 		}
-		exp_continue
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	-re "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
-		incr match
-		exp_continue
-	}
-	-re "mps.IDX:($number)" {
-		set dev1 $expect_out(1,string)} {
-		exp_continue
-	}
-	-re "jobid=$job_id1 state=RUNNING" {
-		set running 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$match != 2} {
-	send_user "\nFAILURE: CUDA_VISIBLE_DEVICES or CUDA_MPS_ACTIVE_THREAD_PERCENTAGE not set\n"
-	set exit_code 1
-}
-if {$dev2 == -1} {
-	send_user "\nFAILURE: GPU device index not found\n"
-	set exit_code 1
-} elseif {$dev1 == $dev2} {
-	if {$running == 0} {
-		send_user "\nThe jobs are using the same GPU ($dev1) and running at different times, which is fine\n"
-	} else {
-		send_user "\nFAILURE: The jobs are using the same GPU ($dev1) and running at the same time\n"
+	sleep 30
+	if {[wait_for_job $job_id1 "DONE"] != 0} {
+		send_user "\nFAILURE: job $job_id1 did not complete\n"
+		cancel_job $job_id1
 		set exit_code 1
 	}
-} else {
-	send_user "\nThe jobs are using different GPUs ($dev1 != $dev2), which is fine\n"
+	if {[wait_for_file $file_out1] != 0} {
+		send_user "\nFAILURE: no output file\n"
+		exit 1
+	}
+	set dev1 -1
+	set job_id2 0
+	set match 0
+	spawn $bin_cat $file_out1
+	expect {
+		-re "CUDA_VISIBLE_DEVICES:($number)" {
+			incr match
+			exp_continue
+		}
+		-re "gpu.IDX:($number)" {
+			set dev1 $expect_out(1,string)
+			exp_continue
+		}
+		-re "Submitted batch job ($number)" {
+			set job_id2 $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$match == 0} {
+		send_user "\nFAILURE: CUDA_VISIBLE_DEVICES not set\n"
+		set exit_code 1
+	}
+	if {$dev1 == -1} {
+		send_user "\nFAILURE: GPU device index not found\n"
+		set exit_code 1
+	}
+	if {$job_id2 == 0} {
+		send_user "\nFAILURE: Failed to submit second job\n"
+		set exit_code 1
+	}
+
+	send_user "\n\n"
+	if {[wait_for_job $job_id2 "DONE"] != 0} {
+		send_user "\nFAILURE: job $job_id2 did not complete\n"
+		cancel_job $job_id2
+		set exit_code 1
+	}
+	if {[wait_for_file $file_out2] != 0} {
+		send_user "\nFAILURE: no output file\n"
+		exit 1
+	}
+	set dev2 -1
+	set match 0
+	set running 0
+	spawn $bin_cat $file_out2
+	expect {
+		-re "CUDA_VISIBLE_DEVICES:($number)" {
+			incr match
+			if {$match == 1} {
+				set dev2 $expect_out(1,string)
+			}
+			exp_continue
+		}
+		-re "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
+			incr match
+			exp_continue
+		}
+		-re "mps.IDX:($number)" {
+			set dev1 $expect_out(1,string)} {
+			exp_continue
+		}
+		-re "jobid=$job_id1 state=RUNNING" {
+			set running 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$match != 2} {
+		send_user "\nFAILURE: CUDA_VISIBLE_DEVICES or CUDA_MPS_ACTIVE_THREAD_PERCENTAGE not set\n"
+		set exit_code 1
+	}
+	if {$dev2 == -1} {
+		send_user "\nFAILURE: GPU device index not found\n"
+		set exit_code 1
+	} elseif {$dev1 == $dev2} {
+		if {$running == 0} {
+			send_user "\nThe jobs are using the same GPU ($dev1) and running at different times, which is fine\n"
+		} else {
+			send_user "\nFAILURE: The jobs are using the same GPU ($dev1) and running at the same time\n"
+			set exit_code 1
+		}
+	} else {
+		send_user "\nThe jobs are using different GPUs ($dev1 != $dev2), which is fine\n"
+	}
 }
 
 #
