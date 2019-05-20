@@ -4493,7 +4493,9 @@ proc test_pack_step { } {
 			wait
 		}
 	}
-	if {$version_major >= 18} {
+	if {$version_major >= 19} {
+		set pack_step 1
+	} elseif {$version_major >= 18} {
 		set pack_step 1
 		spawn $scontrol show config
 		expect {

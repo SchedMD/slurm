@@ -2444,6 +2444,12 @@ typedef struct will_run_response_msg {
 #define RESERVE_FLAG_REPLACE_DOWN	0x40000000	/* Replace DOWN or
 							 * DRAINED nodes */
 #define RESERVE_FLAG_NO_PURGE_COMP	0x80000000	/* Clear PURGE flag */
+/*
+ * NOTE: slurmdb_reservation_rec_t used to communicate with slurmdbd uses
+ * an uint32_t to store the flag (vs. uint64_t in slurmctld_resv_t used in
+ * slurmctld), so any additional flags in 19.05 will not be captured by the
+ * database.
+ */
 
 typedef struct resv_core_spec {
 	char *node_name;	/* Name of reserved node */
