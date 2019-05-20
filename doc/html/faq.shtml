@@ -1777,8 +1777,10 @@ core location directories.</p>
 
 <p> NOTE: On a diskless node depending on the core_pattern or if
 /var/spool/abrt is pointing to an in-memory filespace like tmpfs, if the job
-caused an OOM the generation of the core may fill-up your machine's memory and
-hung it. It is encouraged then to make coredumps go to a persistend storage.
+caused an OOM, then the generation of the core may fill-up your machine's
+memory and hung it. It is encouraged then to make coredumps go to a persistent
+storage. Be careful of multiple nodes writting a core dump to a shared
+filesystem since it may cause a significant impact on it.
 </p>
 
 <b>Other exceptions:</b>
