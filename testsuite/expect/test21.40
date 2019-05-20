@@ -177,7 +177,7 @@ proc run_job_test { } {
 	set hostname 0
 	spawn $scontrol show job $job_id1
 	expect {
-                -re "BatchHost=($alpha_numeric_under)" {
+                -re "NodeList=($alpha_numeric_under)" {
                         set hostname $expect_out(1,string)
                         exp_continue
                 }
