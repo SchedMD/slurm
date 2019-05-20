@@ -177,7 +177,7 @@ proc check_rc { exit_code } {
 	}
 }
 
-proc test_bin_pass { bin args het_job count } {
+proc test_bin_pass { num bin args het_job count } {
 	global job_name salloc ta1 tq2 srun number
 
 	set got_init 0
@@ -186,6 +186,7 @@ proc test_bin_pass { bin args het_job count } {
 	set got_sub3 0
 	set rc -12345
 
+	send_user "\n\n**** TEST PASS $num ****\n"
 	eval spawn $bin [join $args " "]
 	expect {
 		-re "^(srun|salloc|sbatch): initialized\r\n" {
@@ -235,7 +236,7 @@ proc test_bin_pass { bin args het_job count } {
 	}
 }
 
-proc test_bin_fail { bin args het_job count } {
+proc test_bin_fail { num bin args het_job count } {
 	global job_name ta1 tq1 tq2 srun number
 
 	set got_init 0
@@ -244,6 +245,7 @@ proc test_bin_fail { bin args het_job count } {
 	set got_sub3 0
 	set rc -12345
 
+	send_user "\n\n**** TEST FAIL $num ****\n"
 	eval spawn $bin [join $args " "]
 	expect {
 		-re "^(srun|salloc|sbatch): error: initialized\r\n" {
@@ -345,14 +347,14 @@ sleep 1
 file mtime $config_dir/job_submit.lua [timestamp]
 
 # Check that all job types are rejected
-test_bin_fail $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
-test_bin_fail $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 1
-test_bin_fail $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 /bin/true} 0 1
-test_bin_fail $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 1
-test_bin_fail $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
-test_bin_fail $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
-test_bin_fail $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 1
-test_bin_fail $sbatch {-t1 -J $job_name --comment=PASS -o /dev/null -W -A $ta1 --qos $tq2 -n1 : --comment=ERROR -n3 : --comment=ERROR -n5 --wrap /bin/true} 1 2
+test_bin_fail "R1" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
+test_bin_fail "R2" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 1
+test_bin_fail "R3" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 /bin/true} 0 1
+test_bin_fail "R4" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 1
+test_bin_fail "R5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
+test_bin_fail "R6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
+test_bin_fail "R7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 1
+test_bin_fail "R8" $sbatch {-t1 -J $job_name --comment=PASS -o /dev/null -W -A $ta1 --qos $tq2 -n1 : --comment=ERROR -n3 : --comment=ERROR -n5 --wrap /bin/true} 1 2
 
 do_copy $test_lua_pass $config_dir/job_submit.lua
 # Sleep for 1 second to make sure that modify time is different from last copy.
@@ -360,22 +362,22 @@ sleep 1
 file mtime $config_dir/job_submit.lua [timestamp]
 
 # Check that passing works
-test_bin_pass $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
-test_bin_pass $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 3
-test_bin_pass $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 /bin/true} 0 1
-test_bin_pass $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 3
-test_bin_pass $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
-test_bin_pass $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
-test_bin_pass $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
+test_bin_pass "P1" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 "/bin/true"} 0 1
+test_bin_pass "P2" $salloc {-t1 -J $job_name -A $ta1 --qos $tq2 -n5 : -n3 : -n1 "/bin/true"} 1 3
+test_bin_pass "P3" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 /bin/true} 0 1
+test_bin_pass "P4" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq2 -n5 : -n3 : -n1 /bin/true} 1 3
+test_bin_pass "P5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --wrap /bin/true} 0 1
+test_bin_pass "P6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 --array 10 --wrap /bin/true} 0 1
+test_bin_pass "P7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
 
 # Check that messages are still sent with failing QOS but passing filter
-test_bin_fail $salloc {-t1 -J $job_name -A $ta1 --qos $tq1 -n5 "/bin/true"} 0 1
-test_bin_fail $salloc {-t1 -J $job_name -A $ta1 --qos $tq1 -n5 : -n3 : -n1 "/bin/true"} 1 1
-test_bin_fail $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq1 -n5 /bin/true} 0 1
-test_bin_fail $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq1 -n5 : -n3 : -n1 /bin/true} 1 1
-test_bin_fail $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --wrap /bin/true} 0 1
-test_bin_fail $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --array 10 --wrap /bin/true} 0 1
-test_bin_fail $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
+test_bin_fail "F1" $salloc {-t1 -J $job_name -A $ta1 --qos $tq1 -n5 "/bin/true"} 0 1
+test_bin_fail "F2" $salloc {-t1 -J $job_name -A $ta1 --qos $tq1 -n5 : -n3 : -n1 "/bin/true"} 1 1
+test_bin_fail "F3" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq1 -n5 /bin/true} 0 1
+test_bin_fail "F4" $srun {-t1 -J $job_name --mpi=none -A $ta1 --qos $tq1 -n5 : -n3 : -n1 /bin/true} 1 1
+test_bin_fail "F5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --wrap /bin/true} 0 1
+test_bin_fail "F6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --array 10 --wrap /bin/true} 0 1
+test_bin_fail "F7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
 
 check_rc $exit_code
 
