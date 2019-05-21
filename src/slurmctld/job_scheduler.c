@@ -760,7 +760,7 @@ static bool _all_partition_priorities_same(void)
  */
 extern int schedule(uint32_t job_limit)
 {
-	static int sched_job_limit = -1;
+	static uint32_t sched_job_limit = NO_VAL;
 	int job_count = 0;
 	struct timeval now;
 	long delta_t;
@@ -778,12 +778,14 @@ extern int schedule(uint32_t job_limit)
 		delta_t +=  now.tv_usec - sched_last.tv_usec;
 	}
 
+	if (job_limit == NO_VAL)
+		job_limit = 0;			/* use system default */
 	slurm_mutex_lock(&sched_mutex);
-	if (sched_job_limit == 0)
+	if (sched_job_limit == INFINITE)
 		;				/* leave unlimited */
-	else if (job_limit == 0)
-		sched_job_limit = 0;		/* set unlimited */
-	else if (sched_job_limit == -1)
+	else if (job_limit == INFINITE)
+		sched_job_limit = INFINITE;	/* set unlimited */
+	else if (sched_job_limit == NO_VAL)
 		sched_job_limit = job_limit;	/* set initial value */
 	else
 		sched_job_limit += job_limit;	/* test more jobs */
@@ -795,7 +797,7 @@ extern int schedule(uint32_t job_limit)
 		sched_last.tv_usec = now.tv_usec;
 		sched_running = true;
 		job_limit = sched_job_limit;
-		sched_job_limit = -1;
+		sched_job_limit = NO_VAL;
 		slurm_mutex_unlock(&sched_mutex);
 
 		job_count = _schedule(job_limit);
@@ -844,7 +846,7 @@ static void *_sched_agent(void *args)
 			break;
 	}
 
-	job_cnt = schedule(1);
+	job_cnt = schedule(0);
 	slurm_mutex_lock(&sched_mutex);
 	sched_pend_thread = 0;
 	slurm_mutex_unlock(&sched_mutex);
