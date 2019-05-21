@@ -2105,17 +2105,18 @@ alloc_job:
 	if (!(cr_type & CR_MEMORY))
 		return error_code;
 
-	/* load memory allocated array */
-	save_mem = details_ptr->pn_min_memory;
-	i_first = bit_ffs(job_res->node_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(job_res->node_bitmap);
-	else
-		i_last = -2;
 	if (!(job_ptr->bit_flags & JOB_MEM_SET) &&
 	    gres_plugin_job_mem_set(job_ptr->gres_list, job_res)) {
 		debug("%pJ memory set via GRES limit", job_ptr);
 	} else {
+		/* load memory allocated array */
+		save_mem = details_ptr->pn_min_memory;
+		i_first = bit_ffs(job_res->node_bitmap);
+		if (i_first != -1)
+			i_last = bit_fls(job_res->node_bitmap);
+		else
+			i_last = -2;
+
 		for (i = i_first, j = 0; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
