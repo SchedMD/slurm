@@ -942,7 +942,7 @@ Another significant difference is in fault tolerance.
 Failures involving sbatch jobs typically result in the job being requeued
 and executed again, while failures involving srun typically result in an
 error message being generated with the expectation that the user will respond
-in an appropriate fashion.</p> 
+in an appropriate fashion.</p>
 
 <p><a name="squeue_color"><b>32. Can squeue output be color coded?</b></a><br>
 The squeue command output is not color coded, but other tools can be used to
@@ -1697,33 +1697,33 @@ simple first-login script that configures the virtual cluster for me.</p>
 
 <p><a name="core_dump"><b>39. If a Slurm daemon core dumps, where can I find the
 core file?</b></a></br>
-<p>For <i>slurmctld</i>, if started with -D option then the core file will be 
-written to the current working directory. If <i>SlurmctldLogFile</i> is an 
-absolute path, the core file will be written to this directory. Otherwise the 
-core file will be written to the <i>StateSaveLocation</i>, or "/var/tmp/" as a 
+<p>For <i>slurmctld</i>, if started with -D option then the core file will be
+written to the current working directory. If <i>SlurmctldLogFile</i> is an
+absolute path, the core file will be written to this directory. Otherwise the
+core file will be written to the <i>StateSaveLocation</i>, or "/var/tmp/" as a
 last resort.<br>
-SlurmUser must have write permission on the directories. If none of the above 
+SlurmUser must have write permission on the directories. If none of the above
 directories have write permission for SlurmUser, no core file will be produced.
-For testing purposes the command "scontrol abort" can be used to abort the 
+For testing purposes the command "scontrol abort" can be used to abort the
 slurmctld daemon and generate a core file.
 
-<p>For <i>slurmd</i>, if started with -D option then the core file will be 
-written to the current working directory. If <i>SlurmdLogFile</i> is an 
-absolute path, the core file will be written to the this directory. 
+<p>For <i>slurmd</i>, if started with -D option then the core file will be
+written to the current working directory. If <i>SlurmdLogFile</i> is an
+absolute path, the core file will be written to the this directory.
 Otherwise the core file will be written to the <i>SlurmdSpoolDir</i>, or
 "/var/tmp/" as a last resort.<br>
-If none of the above directories can be written, no core file will be produced. 
+If none of the above directories can be written, no core file will be produced.
 </p>
 
 <p>For <i>slurmstepd</i>, the core file will depend upon when the failure
-occurs. If it is running in a privileged phase it will be on the same location 
-as that described above for the slurmd daemon. If it is running on an 
+occurs. If it is running in a privileged phase it will be on the same location
+as that described above for the slurmd daemon. If it is running on an
 unprivileged phase, it will be in spawned job's working directory.</p>
 
 
 <p>Nevertheless, in some operating systems this can vary:
-<br>I.e. in RHEL the event 
-may be captured by abrt daemon and generated in the defined abrt configured 
+<br>I.e. in RHEL the event
+may be captured by abrt daemon and generated in the defined abrt configured
 dump location (i.e. /var/spool/abrt).<br>In Cray XC ATP
 (Abnormal Termination Processing) daemon acts the same way, if it is enabled.
 </p>
@@ -1731,10 +1731,10 @@ dump location (i.e. /var/spool/abrt).<br>In Cray XC ATP
 <p>Normally, distributions need some more tweaking in order to allow the core
 files to be generated correctly.</p>
 
-<p>slurmstepd uses the setuid() (set user ID) function to escalate 
-privileges. It is possible that in certain systems and for security policies, 
+<p>slurmstepd uses the setuid() (set user ID) function to escalate
+privileges. It is possible that in certain systems and for security policies,
 this causes the core files not to be generated.
-<br>To allow the generation in such systems you usually must enable the 
+<br>To allow the generation in such systems you usually must enable the
 suid_dumpable kernel parameter:</p>
 
 Set:<br>
@@ -1744,7 +1744,7 @@ or<br>
 or set it permanently in sysctl.conf<br>
  fs.suid_dumpable = 2<br><br>
 
-<p>The value of 2, "suidsafe", makes any binary which normally not be dumped is 
+<p>The value of 2, "suidsafe", makes any binary which normally not be dumped is
 dumped readable by root only.<br>This allows the end user to remove such a dump
 but not access it directly. For security reasons core dumps in this mode will
 not overwrite one another or other files.<br> This mode is appropriate when
@@ -1754,11 +1754,11 @@ administrators are attempting to debug problems in a normal environment.</p>
 
 <pre>sysctl kernel.core_pattern=/tmp/core.%e.%p</pre>
 
-<p>We recommend reading your distribution's documentation on about the 
+<p>We recommend reading your distribution's documentation on about the
 configuration of this parameters.</p>
 
 
-<p>It is also usually needed to configure the system core limits, since it can be 
+<p>It is also usually needed to configure the system core limits, since it can be
 set to 0.</p>
 <pre>
 ]$ grep core /etc/security/limits.conf
@@ -1766,26 +1766,26 @@ set to 0.</p>
 *               hard    core            unlimited
 *               soft    core            unlimited
 </pre>
-<p>In some systems it is not enough to set a hard limit, you must set also a 
+<p>In some systems it is not enough to set a hard limit, you must set also a
 soft limit.</p>
 
 <p>Also, for generating the limits in userspace, the
 <i>PropagateResourceLimits=CORE</i> parameter in slurm.conf could be needed.</p>
 
-<p>Be also sure to give SlurmUser the appropriate permissions to write in the 
+<p>Be also sure to give SlurmUser the appropriate permissions to write in the
 core location directories.</p>
 
 <p> NOTE: On a diskless node depending on the core_pattern or if
 /var/spool/abrt is pointing to an in-memory filespace like tmpfs, if the job
-caused an OOM, then the generation of the core may fill-up your machine's
-memory and hung it. It is encouraged then to make coredumps go to a persistent
+caused an OOM, then the generation of the core may fill up your machine's
+memory and hang it. It is encouraged then to make coredumps go to a persistent
 storage. Be careful of multiple nodes writting a core dump to a shared
-filesystem since it may cause a significant impact on it.
+filesystem since it may significantly impact it.
 </p>
 
 <b>Other exceptions:</b>
 
-<p>On Centos 6, also set "ProcessUnpackaged = yes" in the file 
+<p>On Centos 6, also set "ProcessUnpackaged = yes" in the file
 /etc/abrt/abrt-action-save-package-data.conf.
 
 <p>On RHEL6, also set "DAEMON_COREFILE_LIMIT=unlimited" in the file
@@ -2336,6 +2336,6 @@ cray_netroot_preload.settings.load.data.compute.size_limit: 0
 accessed files within jobs.</p>
 
 
-<p style="text-align:center;">Last modified 05 February 2019</p>
+<p style="text-align:center;">Last modified 21 May 2019</p>
 
 <!--#include virtual="footer.txt"-->
