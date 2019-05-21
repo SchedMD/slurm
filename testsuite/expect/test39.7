@@ -36,39 +36,6 @@ set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 set timeout $max_job_delay
 
-proc get_node_config {} {
-	global cpus_per_socket sockets_per_node
-	global exit_code file_in max_job_delay number srun scontrol
-
-	set cpus_tot 1
-	set sockets_per_node 1
-	set cpus_per_socket 1
-	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
-	set timeout $max_job_delay
-	log_user 0
-	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 ./$file_in]
-	expect {
-		-re "CPUTot=($number)" {
-			set cpus_tot $expect_out(1,string)
-			exp_continue
-		}
-		-re "Sockets=($number)" {
-			set sockets_per_node $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			slow_kill $srun_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
-}
-
 proc run_gpu_per_job { cpus_per_gpu } {
 	global exit_code file_in number srun test_id timeout
 

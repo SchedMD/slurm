@@ -34,32 +34,6 @@ set test_id     "39.10"
 set exit_code   0
 set file_in     "test$test_id.input"
 
-proc get_node_config {} {
-	global exit_code file_in max_job_delay number srun scontrol
-	global mem_size
-
-	set mem_size 1
-	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
-	set timeout $max_job_delay
-	log_user 0
-	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 ./$file_in]
-	expect {
-		-re "RealMemory=($number)" {
-			set mem_size $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			slow_kill $srun_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-}
-
 proc run_gpu_per_job { mem_per_gpu } {
 	global exit_code file_in number srun test_id
 

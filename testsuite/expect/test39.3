@@ -34,39 +34,6 @@ set test_id     "39.3"
 set exit_code   0
 set file_in     "test$test_id.input"
 
-proc get_node_config {} {
-	global cpus_per_socket sockets_per_node gpu_cnt
-	global exit_code file_in max_job_delay number srun scontrol
-
-	set cpus_tot 1
-	set sockets_per_node 1
-	set cpus_per_socket 1
-	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODENAME"
-	set timeout $max_job_delay
-	log_user 0
-	set srun_pid [spawn $srun --gres=gpu:$gpu_cnt -n1 -t1 $file_in]
-	expect {
-		-re "CPUTot=($number)" {
-			set cpus_tot $expect_out(1,string)
-			exp_continue
-		}
-		-re "Sockets=($number)" {
-			set sockets_per_node $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			slow_kill $srun_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
-}
-
 print_header $test_id
 
 if {[test_cons_tres]} {
