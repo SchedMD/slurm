@@ -39,17 +39,6 @@
 #include "select_cons_tres.h"
 
 /*
- * Add job resource allocation to record of resources allocated to all nodes
- * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT sys_resrcs_ptr - bitmap array (one per node) of available cores,
- *			   allocated as needed
- * RET 1 on success, 0 otherwise
- * NOTE: Patterned after add_job_to_cores() in src/common/job_resources.c
- */
-extern void add_job_res(job_resources_t *job_resrcs_ptr,
-			bitstr_t ***sys_resrcs_ptr);
-
-/*
  * Add job resource use to the partition data structure
  */
 extern void add_job_to_row(struct job_resources *job,
@@ -141,16 +130,6 @@ extern bool is_preemptable(struct job_record *job_ptr,
  * the select/cons_res plugin data structures.
  */
 extern bool job_cleaning(struct job_record *job_ptr);
-
-/*
- * Test if job can fit into the given set of core_bitmaps
- * IN job_resrcs_ptr - resources allocated to a job
- * IN sys_resrcs_ptr - bitmap array (one per node) of available cores
- * RET 1 on success, 0 otherwise
- * NOTE: Patterned after job_fits_into_cores() in src/common/job_resources.c
- */
-extern int job_fit_test(job_resources_t *job_resrcs_ptr,
-			bitstr_t **sys_resrcs_ptr);
 
 extern void log_tres_state(struct node_use_record *node_usage,
 			   struct part_res_record *part_record_ptr);
