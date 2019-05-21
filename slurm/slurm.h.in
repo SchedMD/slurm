@@ -1048,6 +1048,7 @@ enum ctx_keys {
 #define USE_DEFAULT_PART   0x04000000	/* Job submitted to default partition */
 #define USE_DEFAULT_QOS    0x08000000	/* Job submitted with default QOS */
 #define USE_DEFAULT_WCKEY  0x10000000	/* Job submitted with default WCKEY */
+#define JOB_DEPENDENT      0x20000000	/* Job dependent or invalid depend */
 
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
 #define X11_FORWARD_BATCH	0x0002  /* only the batch node */

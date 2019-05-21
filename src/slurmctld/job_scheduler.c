@@ -2977,8 +2977,10 @@ extern int test_job_dependency(struct job_record *job_ptr)
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL) ||
-	    (list_count(job_ptr->details->depend_list) == 0))
+	    (list_count(job_ptr->details->depend_list) == 0)) {
+		job_ptr->bit_flags &= ~JOB_DEPENDENT;
 		return 0;
+	}
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
@@ -3178,6 +3180,11 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		results = 2;
 	else if (depends)
 		results = 1;
+
+	if (results)
+		job_ptr->bit_flags |= JOB_DEPENDENT;
+	else
+		job_ptr->bit_flags &= ~JOB_DEPENDENT;
 
 	return results;
 }
