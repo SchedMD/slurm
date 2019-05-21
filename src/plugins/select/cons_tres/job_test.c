@@ -2122,10 +2122,10 @@ alloc_job:
 				continue;
 			nodename = select_node_record[i].node_ptr->name;
 			avail_mem = select_node_record[i].real_memory -
-				    select_node_record[i].mem_spec_limit;
+				select_node_record[i].mem_spec_limit;
 			if (save_mem & MEM_PER_CPU) {	/* Memory per CPU */
 				needed_mem = job_res->cpus[j] *
-					     (save_mem & (~MEM_PER_CPU));
+					(save_mem & (~MEM_PER_CPU));
 			} else if (save_mem) {		/* Memory per node */
 				needed_mem = save_mem;
 			} else {		/* Allocate all node memory */
