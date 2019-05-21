@@ -2222,10 +2222,7 @@ next_task:
 				job_ptr->start_time = 0;
 				goto TRY_LATER;
 			}
-			if (orig_start_time != 0)  /* Can start in other part */
-				job_ptr->start_time = orig_start_time;
-			else
-				job_ptr->start_time = 0;
+			job_ptr->start_time = orig_start_time;
 			continue;	/* not runable in this partition */
 		}
 
@@ -2364,11 +2361,7 @@ skip_start:
 			    (rc == ESLURM_POWER_NOT_AVAIL) ||
 			    (rc == ESLURM_POWER_RESERVED)) {
 				/* Unknown future start time, just skip job */
-				if (orig_start_time != 0) {
-					/* Can start in different partition */
-					job_ptr->start_time = orig_start_time;
-				} else
-					job_ptr->start_time = 0;
+				job_ptr->start_time = orig_start_time;
 				_set_job_time_limit(job_ptr, orig_time_limit);
 				continue;
 			} else if (rc == ESLURM_ACCOUNTING_POLICY) {
