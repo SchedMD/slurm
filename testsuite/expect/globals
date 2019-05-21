@@ -5333,6 +5333,70 @@ proc create_part { part_name num_nodes_in } {
 	return 0
 }
 
+################################################################
+#
+# Proc: get_node_config
+#
+# Determine the configuration of a node containing at least 1 GPU
+#
+# Set the following global variables
+# cores_per_socket - Cores per socet
+# cpus_per_socket - CPUs per socket
+# cpus_tot - Total count of CPUs on the node
+# exit_code - Set to 1 on failure
+# hostname - Name of the node referenced
+# mem_size - Real memory size
+# sockets_per_node - Sockets per node
+#
+################################################################
+proc get_node_config { } {
+	global cores_per_socket cpus_per_socket sockets_per_node mem_size
+	global hostname exit_code file_in max_job_delay number srun scontrol
+	global alpha_numeric_nodelist
+
+	set cpus_tot 1
+	set hostname "UNKNOWN"
+	set mem_size 1
+	set sockets_per_node 1
+	set cpus_per_socket 1
+	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODELIST"
+	set timeout $max_job_delay
+	log_user 0
+	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 ./$file_in]
+	expect {
+		-re "NodeName=($alpha_numeric_nodelist)" {
+			set hostname $expect_out(1,string)
+			exp_continue
+		}
+		-re "CoresPerSocket=($number)" {
+			set cores_per_socket $expect_out(1,string)
+			exp_continue
+		}
+		-re "CPUTot=($number)" {
+			set cpus_tot $expect_out(1,string)
+			exp_continue
+		}
+		-re "RealMemory=($number)" {
+			set mem_size $expect_out(1,string)
+			exp_continue
+		}
+		-re "Sockets=($number)" {
+			set sockets_per_node $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
+}
+
 proc check_reason { job_id reason } {
 	global squeue
 

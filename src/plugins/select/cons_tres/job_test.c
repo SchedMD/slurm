@@ -2105,26 +2105,27 @@ alloc_job:
 	if (!(cr_type & CR_MEMORY))
 		return error_code;
 
-	/* load memory allocated array */
-	save_mem = details_ptr->pn_min_memory;
-	i_first = bit_ffs(job_res->node_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(job_res->node_bitmap);
-	else
-		i_last = -2;
 	if (!(job_ptr->bit_flags & JOB_MEM_SET) &&
 	    gres_plugin_job_mem_set(job_ptr->gres_list, job_res)) {
 		debug("%pJ memory set via GRES limit", job_ptr);
 	} else {
+		/* load memory allocated array */
+		save_mem = details_ptr->pn_min_memory;
+		i_first = bit_ffs(job_res->node_bitmap);
+		if (i_first != -1)
+			i_last = bit_fls(job_res->node_bitmap);
+		else
+			i_last = -2;
+
 		for (i = i_first, j = 0; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
 			nodename = select_node_record[i].node_ptr->name;
 			avail_mem = select_node_record[i].real_memory -
-				    select_node_record[i].mem_spec_limit;
+				select_node_record[i].mem_spec_limit;
 			if (save_mem & MEM_PER_CPU) {	/* Memory per CPU */
 				needed_mem = job_res->cpus[j] *
-					     (save_mem & (~MEM_PER_CPU));
+					(save_mem & (~MEM_PER_CPU));
 			} else if (save_mem) {		/* Memory per node */
 				needed_mem = save_mem;
 			} else {		/* Allocate all node memory */
@@ -2132,11 +2133,10 @@ alloc_job:
 				if (!test_only &&
 				    (node_usage[i].alloc_memory > 0)) {
 					if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-						error("%s: node %s has already alloc_memory=%"
-						      PRIu64". %pJ can't allocate all node memory",
-						      __func__, nodename,
-						      node_usage[i].alloc_memory,
-						      job_ptr);
+						info("%s: node %s has already alloc_memory=%"PRIu64". %pJ can't allocate all node memory",
+						     __func__, nodename,
+						     node_usage[i].alloc_memory,
+						     job_ptr);
 					error_code = SLURM_ERROR;
 					break;
 				}
@@ -2145,15 +2145,10 @@ alloc_job:
 			}
 			if (!test_only && save_mem) {
 				if (node_usage[i].alloc_memory > avail_mem) {
-					if (select_debug_flags &
-					    DEBUG_FLAG_SELECT_TYPE) {
-						error("%s: node %s memory is already overallocated (%"
-						      PRIu64" > %"PRIu64
-						      "). %pJ can't allocate any node memory",
-						      __func__, nodename,
-						      node_usage[i].alloc_memory,
-						      avail_mem, job_ptr);
-					}
+					error("%s: node %s memory is already overallocated (%"PRIu64" > %"PRIu64"). %pJ can't allocate any node memory",
+					      __func__, nodename,
+					      node_usage[i].alloc_memory,
+					      avail_mem, job_ptr);
 					error_code = SLURM_ERROR;
 					break;
 				}
@@ -2161,8 +2156,7 @@ alloc_job:
 			}
 			if (needed_mem > avail_mem) {
 				if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-					error("%s: %pJ would overallocate node %s memory (%"
-					      PRIu64" > %"PRIu64")",
+					info("%s: %pJ would overallocate node %s memory (%"PRIu64" > %"PRIu64")",
 					     __func__, job_ptr, nodename,
 					     needed_mem, avail_mem);
 				}

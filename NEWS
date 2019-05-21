@@ -39,6 +39,15 @@ documents those changes that are of interest to users and administrators.
     --nodelist options.
  -- Fix DefMemPer[CPU|Node] assignment on multi-partition job requests.
  -- Fix wrongly setting start_time to 0 for multi-part jobs.
+ -- Upon archive file name collision, create new archive file instead of
+    overwriting the old one to prevent lost records.
+ -- Limit archive files to 50000 records per file so that archiving large
+    databases will succeed.
+ -- Remove stray newlines in SPANK plugin error messages.
+ -- Fix archive loading events.
+ -- In select/cons_res: Only allocate 1 CPU per node with the --overcommit and
+    --nodelist options.
+ -- Fix main scheduler from potentially not running through whole queue.
 
 * Changes in Slurm 19.05.0rc1
 =============================
@@ -282,6 +291,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix archive loading events.
  -- In select/cons_res: Only allocate 1 CPU per node with the --overcommit and
     --nodelist options.
+ -- Fix main scheduler from potentially not running through whole queue.
 
 * Changes in Slurm 18.08.7
 ==========================
@@ -310,6 +320,9 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/cray - fix script_argv use-after-free.
  -- Fix invalid reads of size 1 due to non null-terminated string reads.
  -- Add extra debug2 logs to identify why BadConstraints reason is set.
+ -- cons_res/job_test - prevent a job from overallocating a node memory.
+ -- cons_res/job_test - fix to consider a node's current allocated memory when
+    testing a job's memory request.
 
 * Changes in Slurm 18.08.6-2
 ============================
