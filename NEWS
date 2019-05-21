@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- In select/cons_res: Only allocate 1 CPU per node with the --overcommit and
     --nodelist options.
  -- Fix main scheduler from potentially not running through whole queue.
+ -- Fix variable initiation to avoid slurmctld abort.
 
 * Changes in Slurm 19.05.0rc1
 =============================

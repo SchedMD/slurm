@@ -1031,7 +1031,7 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 {
 	int i, i_first, i_last;
 	int c, c_job, c_off = 0, c_max;
-	int rep_inx = 0, rep_offset = -1;
+	int rep_inx = 0, rep_offset = 0;
 	bitstr_t **core_array;
 
 	if (!job_resrcs_ptr->core_bitmap)
@@ -1080,10 +1080,11 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 			}
 			continue;	/* Move to next node */
 		}
-		rep_offset++;
-		if (rep_offset > job_resrcs_ptr->sock_core_rep_count[rep_inx]) {
-			rep_offset = 0;
+		if (rep_offset >= job_resrcs_ptr->sock_core_rep_count[rep_inx]){
+			rep_offset = 1;
 			rep_inx++;
+		} else {
+			rep_offset++;
 		}
 		c_job = job_resrcs_ptr->sockets_per_node[rep_inx] *
 			job_resrcs_ptr->cores_per_socket[rep_inx];
