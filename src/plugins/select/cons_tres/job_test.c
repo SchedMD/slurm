@@ -2133,11 +2133,10 @@ alloc_job:
 				if (!test_only &&
 				    (node_usage[i].alloc_memory > 0)) {
 					if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-						error("%s: node %s has already alloc_memory=%"
-						      PRIu64". %pJ can't allocate all node memory",
-						      __func__, nodename,
-						      node_usage[i].alloc_memory,
-						      job_ptr);
+						info("%s: node %s has already alloc_memory=%"PRIu64". %pJ can't allocate all node memory",
+						     __func__, nodename,
+						     node_usage[i].alloc_memory,
+						     job_ptr);
 					error_code = SLURM_ERROR;
 					break;
 				}
@@ -2146,15 +2145,10 @@ alloc_job:
 			}
 			if (!test_only && save_mem) {
 				if (node_usage[i].alloc_memory > avail_mem) {
-					if (select_debug_flags &
-					    DEBUG_FLAG_SELECT_TYPE) {
-						error("%s: node %s memory is already overallocated (%"
-						      PRIu64" > %"PRIu64
-						      "). %pJ can't allocate any node memory",
-						      __func__, nodename,
-						      node_usage[i].alloc_memory,
-						      avail_mem, job_ptr);
-					}
+					error("%s: node %s memory is already overallocated (%"PRIu64" > %"PRIu64"). %pJ can't allocate any node memory",
+					      __func__, nodename,
+					      node_usage[i].alloc_memory,
+					      avail_mem, job_ptr);
 					error_code = SLURM_ERROR;
 					break;
 				}
@@ -2162,8 +2156,7 @@ alloc_job:
 			}
 			if (needed_mem > avail_mem) {
 				if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-					error("%s: %pJ would overallocate node %s memory (%"
-					      PRIu64" > %"PRIu64")",
+					info("%s: %pJ would overallocate node %s memory (%"PRIu64" > %"PRIu64")",
 					     __func__, job_ptr, nodename,
 					     needed_mem, avail_mem);
 				}
