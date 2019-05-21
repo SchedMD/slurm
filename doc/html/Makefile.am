@@ -62,6 +62,7 @@ generated_html = \
 	mpiplugins.html \
 	multi_cluster.html \
 	news.html \
+	nss_slurm.html \
 	node_features_plugins.html \
 	overview.html \
 	pam_slurm_adopt.html \

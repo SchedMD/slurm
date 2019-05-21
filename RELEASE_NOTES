@@ -113,6 +113,7 @@ HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res
     with an entirely new code base and far greater GPU scheduling flexibility.
+ -- Add new nss_slurm capability.
  -- Remove select/serial plugin.
  -- Changed the default fair share algorithm to "fair tree". To disable this
     and revert to "classic" fair share you must set PriorityFlags=NO_FAIR_TREE.

@@ -2998,7 +2998,7 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
 					    topo_core_bitmap[j]) {
 						bit_or(core_map,
 						       gres_node_state->
-						       topo_core_bitmap[i]);
+						       topo_core_bitmap[j]);
 					} else if (gres_node_state->
 						   topo_core_bitmap[j]) {
 						core_map = bit_copy(

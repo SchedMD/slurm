@@ -6545,7 +6545,12 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		 * were already initialized above to call _part_access_check, as
 		 * well as the memset for job_desc.
 		 */
-		job_desc.pn_min_memory = detail_ptr->orig_pn_min_memory;
+		if (job_ptr->bit_flags & JOB_MEM_SET)
+			job_desc.pn_min_memory = detail_ptr->orig_pn_min_memory;
+		else if (part_ptr && part_ptr->def_mem_per_cpu)
+			job_desc.pn_min_memory = part_ptr->def_mem_per_cpu;
+		else
+			job_desc.pn_min_memory = slurmctld_conf.def_mem_per_cpu;
 		if (detail_ptr->orig_cpus_per_task == NO_VAL16)
 			job_desc.cpus_per_task = 1;
 		else

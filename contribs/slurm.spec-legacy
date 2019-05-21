@@ -589,10 +589,14 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_ipmi.so  &&
    echo %{_libdir}/slurm/acct_gather_energy_ipmi.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_rapl.so  &&
    echo %{_libdir}/slurm/acct_gather_energy_rapl.so  >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_energy_xcc.so  &&
+   echo %{_libdir}/slurm/acct_gather_energy_xcc.so  >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_interconnect_ofed.so &&
    echo %{_libdir}/slurm/acct_gather_interconnect_ofed.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_hdf5.so &&
    echo %{_libdir}/slurm/acct_gather_profile_hdf5.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/acct_gather_profile_influxdb.so &&
+   echo %{_libdir}/slurm/acct_gather_profile_influxdb.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/burst_buffer_datawarp.so    &&
    echo %{_libdir}/slurm/burst_buffer_datawarp.so    >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/ext_sensors_rrd.so          &&

@@ -2514,12 +2514,13 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 			find_step_record(job_ptr, SLURM_BATCH_SCRIPT);
 		if (!step_ptr) {
 			if (msg->protocol_version >=
-			    SLURM_19_05_PROTOCOL_VERSION)
-				error("%s: Could not for batch step for %pJ, this should never happen.",
+			    SLURM_19_05_PROTOCOL_VERSION) {
+				error("%s: Could not find batch step for %pJ, this should never happen",
 				      __func__, job_ptr);
-			else
-				debug2("%s: Batch step complete from old version of Slurm recieved for job %pJ.",
+			} else {
+				debug2("%s: Batch step complete from old version of Slurm recieved for job %pJ",
 				       __func__, job_ptr);
+			}
 			step_ptr = build_batch_step(job_ptr);
 		}
 

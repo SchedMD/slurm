@@ -191,7 +191,7 @@ proc sacct_job { soption job_id} {
 	set exit_code   0
 	set matches     0
 	set not_support 0
-	set total_opts "$sacct -$soption -X -p -j $job_id"
+	set total_opts "$sacct -$soption -X -p --starttime=00:00 -j $job_id"
 
 	send_user "\n"
 

@@ -947,8 +947,10 @@ send_user "\n\n==========Test OR within parenthesis==========\n"
 sub_job_or_paren 4 0
 
 # Test batch host
-send_user "\n\n==========Test batch host==========\n"
-sub_batch_host 3
+if {[test_front_end] == 0} {
+	send_user "\n\n==========Test batch host==========\n"
+	sub_batch_host 3
+}
 
 # Reset node features and remove test part
 send_user "\n\n==========Clean Up==========\n"
