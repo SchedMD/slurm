@@ -1592,7 +1592,10 @@ List of TRES in the reservation.
 
 .TP
 \fIUnusedWall\fP
-Wall clock time in seconds unused by any job.
+Wall clock time in seconds unused by any job. A job's allocated usage is its
+run time multiplied by the ratio of its CPUs to the total number of CPUs in the
+reservation. For example, a job using all the CPUs in the reservation running
+for 1 minute would reduce unused_wall by 1 minute.
 
 
 .SH "SPECIFICATIONS FOR RESOURCE"
