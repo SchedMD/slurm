@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- In select/cons_res: Only allocate 1 CPU per node with the --overcommit and
     --nodelist options.
  -- Fix DefMemPer[CPU|Node] assignment on multi-partition job requests.
+ -- Fix wrongly setting start_time to 0 for multi-part jobs.
 
 * Changes in Slurm 19.05.0rc1
 =============================

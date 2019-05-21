@@ -2109,12 +2109,11 @@ next_task:
 
 			/* Job can not start until too far in the future */
 			_set_job_time_limit(job_ptr, orig_time_limit);
-			job_ptr->start_time = 0;
-			if ((orig_start_time != 0) &&
-			    (orig_start_time < job_ptr->start_time)) {
-				/* Can start earlier in different partition */
-				job_ptr->start_time = orig_start_time;
-			}
+			/*
+			 * Use orig_start_time if job can't
+			 * start in different partition it will be 0
+			 */
+			job_ptr->start_time = orig_start_time;
 			continue;
 		}
 
