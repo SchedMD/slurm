@@ -1305,7 +1305,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t **avail_cores, **free_cores;
 	bool test_only;
 	uint32_t sockets_per_node = 1;
-	uint32_t c, j, n, csize, total_cpus;
+	uint32_t c, j, n, c_alloc = 0, c_size, total_cpus;
 	uint64_t save_mem = 0, avail_mem = 0, needed_mem = 0, lowest_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
@@ -1935,7 +1935,10 @@ alloc_job:
 	/* total up all CPUs and load the core_bitmap */
 	total_cpus = 0;
 	c = 0;
-	csize = bit_size(job_res->core_bitmap);
+	if (job_res->core_bitmap)
+		c_size = bit_size(job_res->core_bitmap);
+	else
+		c_size = 0;
 	i_first = bit_ffs(node_bitmap);
 	for (i = 0, n = i_first; n < select_node_cnt; n++) {
 		if (!bit_test(node_bitmap, n))
@@ -1943,12 +1946,12 @@ alloc_job:
 		for (j = 0; j < select_node_record[n].tot_cores; j++, c++) {
 			if (!bit_test(free_cores[n], j))
 				continue;
-			if (c >= csize)	{
+			if (c >= c_size) {
 				error("%s: %s core_bitmap index error on node %s "
 				      "(NODE_INX:%d, C_SIZE:%u)",
 				      plugin_type, __func__,
 				      select_node_record[n].node_ptr->name,
-				      n, csize);
+				      n, c_size);
 				drain_nodes(select_node_record[n].node_ptr->name,
 					    "Bad core count", getuid());
 				_free_avail_res_array(avail_res_array);
@@ -1957,6 +1960,7 @@ alloc_job:
 				return SLURM_ERROR;
 			}
 			bit_set(job_res->core_bitmap, c);
+			c_alloc++;
 		}
 		total_cpus += job_res->cpus[i];
 		i++;
@@ -1976,8 +1980,7 @@ alloc_job:
 		info("%s: %s: %pJ ncpus %u cbits %u/%u nbits %u",
 		     plugin_type, __func__, job_ptr,
 		     job_res->ncpus, count_core_array_set(free_cores),
-		     bit_set_count(job_res->core_bitmap),
-		     job_res->nhosts);
+		     c_alloc, job_res->nhosts);
 	}
 	free_core_array(&free_cores);
 
