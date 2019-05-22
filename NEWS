@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix variable initiation to avoid slurmctld abort.
  -- In partition preemption, sort preemptor jobs only if they overlap a
     preemtable partition.
+ -- cons_tres/dist_tasks - fix variable usage in cyclic distribution.
 
 * Changes in Slurm 19.05.0rc1
 =============================
