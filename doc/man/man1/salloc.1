@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "February 2019" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "May 2019" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -1692,7 +1692,8 @@ Same as \fB\-\-mem\fR
 Set to count of components in heterogeneous job.
 .TP
 \fBSLURM_SUBMIT_DIR\fR
-The directory from which \fBsalloc\fR was invoked.
+The directory from which \fBsalloc\fR was invoked or, if applicable, the
+directory specified by the \fB\-D, \-\-chdir\fR option.
 .TP
 \fBSLURM_SUBMIT_HOST\fR
 The hostname of the computer from which \fBsalloc\fR was invoked.
