@@ -5351,10 +5351,11 @@ proc create_part { part_name num_nodes_in } {
 ################################################################
 proc get_node_config { } {
 	global cores_per_socket cpus_per_socket sockets_per_node mem_size
-	global hostname exit_code file_in max_job_delay number srun scontrol
-	global alpha_numeric_nodelist
+	global hostname exit_code max_job_delay number srun scontrol
+	global alpha_numeric_nodelist bin_rm
 
 	set cpus_tot 1
+	set file_in  "test_gloabls"
 	set hostname "UNKNOWN"
 	set mem_size 1
 	set sockets_per_node 1
@@ -5393,6 +5394,7 @@ proc get_node_config { } {
 			wait
 		}
 	}
+	exec $bin_rm -f $file_in
 	log_user 1
 	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
 }
