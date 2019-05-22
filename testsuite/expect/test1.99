@@ -202,7 +202,7 @@ if {[wait_for_job $tmp_id "RUNNING"] != 0} {
 set match 0
 spawn $srun -t1 sleep 10
 expect {
-	-re "ohmygosh all ports in range" {
+	-re "all ports in range" {
 		set match 1
 		send_user "\nThis error is expected, do not worry\n"
 		exp_continue
