@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacctmgr --parsable2 output for reservations and tres.
  -- In multi-node systems make sure GRES are found on node when not bound to
     specific sockets.
+ -- Fix gres-per-task logic for gres not bound to sockets.
 
 * Changes in Slurm 19.05.0rc1
 =============================

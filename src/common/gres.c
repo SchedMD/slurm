@@ -9098,7 +9098,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					job_specs->gres_cnt_node_select[i] *=
 						_get_task_cnt_node(
 						tasks_per_node_socket, i,
-						sock_gres->sock_cnt);
+						node_table_ptr[i].sockets);
 				} else if (job_specs->gres_per_job) {
 					job_specs->gres_cnt_node_select[i] =
 						_get_job_cnt(sock_gres,
