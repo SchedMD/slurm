@@ -72,11 +72,15 @@ if {[string compare $host_0 ""] == 0} {
 }
 
 #
-# Submit a job with 32 thread fanout
+# Submit a job with up to 32 thread fanout (Slurm limit is 60)
 #
 set host_0      ""
-set timeout $max_job_delay
-set srun_pid [spawn $srun -N$node_cnt -n$task_num -O -l --threads=$task_num -t1 $bin_printenv SLURMD_NODENAME]
+if {$task_num <= 32} {
+	set thread_cnt $task_num
+} else {
+	set thread_cnt 32
+}
+set srun_pid [spawn $srun -N$node_cnt -n$task_num -O -l --threads=$thread_cnt -t1 $bin_printenv SLURMD_NODENAME]
 expect {
 	-re "Memory required by task is not available" {
 		send_user "\nWARNING: DefMemPerTask is configured too high for this test\n"
