@@ -48,6 +48,9 @@ documents those changes that are of interest to users and administrators.
  -- In partition preemption, sort preemptor jobs only if they overlap a
     preemtable partition.
  -- cons_tres/dist_tasks - fix variable usage in cyclic distribution.
+ -- cons_res/job_test - prevent a job from overallocating a node memory.
+ -- cons_res/job_test - fix to consider a node's current allocated memory when
+    testing a job's memory request.
 
 * Changes in Slurm 19.05.0rc1
 =============================
