@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "March 2019" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "May 2019" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -2219,7 +2219,8 @@ explicitly requeued, this will be sent to the number of times
 the job has been restarted.
 .TP
 \fBSLURM_SUBMIT_DIR\fR
-The directory from which \fBsbatch\fR was invoked.
+The directory from which \fBsbatch\fR was invoked or, if applicable, the
+directory specified by the \fB\-D, \-\-chdir\fR option.
 .TP
 \fBSLURM_SUBMIT_HOST\fR
 The hostname of the computer from which \fBsbatch\fR was invoked.
