@@ -5309,7 +5309,7 @@ int sock_bind_range(int s, uint16_t *range, bool local)
 		--count;
 	} while (count > 0);
 
-	error("%s: ohmygosh all ports in range (%d, %d) exhausted",
+	error("%s: all ports in range (%u, %u) exhausted, cannot establish listening port",
 	      __func__, min, max);
 
 	return -1;
