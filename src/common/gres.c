@@ -6063,6 +6063,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 {
 	int i, j, core_size, core_ctld, top_inx = -1;
 	uint64_t gres_avail = 0, gres_max = 0, gres_total, gres_tmp;
+	uint64_t min_gres_node = 0;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
 	uint32_t *cores_addnt = NULL; /* Additional cores avail from this GRES */
@@ -6083,8 +6084,14 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		use_busy_dev = true;
 	}
 
-	if (job_gres_ptr->gres_per_node && node_gres_ptr->topo_cnt &&
-	    *topo_set) {
+	/* Determine minimum GRES count needed on this node */
+	if (job_gres_ptr->gres_per_job)
+		min_gres_node = 1;
+	min_gres_node = MAX(min_gres_node, job_gres_ptr->gres_per_node);
+	min_gres_node = MAX(min_gres_node, job_gres_ptr->gres_per_socket);
+	min_gres_node = MAX(min_gres_node, job_gres_ptr->gres_per_task);
+
+	if (min_gres_node && node_gres_ptr->topo_cnt && *topo_set) {
 		/*
 		 * Need to determine how many GRES available for these
 		 * specific cores
@@ -6141,16 +6148,16 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		}
 		if (shared_gres)
 			gres_avail = gres_max;
-		if (job_gres_ptr->gres_per_node > gres_avail)
-			return (uint32_t) 0;	/* insufficient, GRES to use */
+		if (min_gres_node > gres_avail)
+			return (uint32_t) 0;	/* insufficient GRES avail */
 		return NO_VAL;
-	} else if (job_gres_ptr->gres_per_node && node_gres_ptr->topo_cnt) {
+	} else if (min_gres_node && node_gres_ptr->topo_cnt) {
 		/* Need to determine which specific cores can be used */
 		gres_avail = node_gres_ptr->gres_cnt_avail;
 		if (!use_total_gres)
 			gres_avail -= node_gres_ptr->gres_cnt_alloc;
-		if (job_gres_ptr->gres_per_node > gres_avail)
-			return (uint32_t) 0;	/* insufficient, GRES to use */
+		if (min_gres_node > gres_avail)
+			return (uint32_t) 0;	/* insufficient GRES avail */
 
 		core_ctld = core_end_bit - core_start_bit + 1;
 		if (core_bitmap) {
@@ -6221,7 +6228,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		/* Pick the topology entries with the most cores available */
 		gres_avail = 0;
 		gres_total = 0;
-		while (gres_avail < job_gres_ptr->gres_per_node) {
+		while (gres_avail < min_gres_node) {
 			top_inx = -1;
 			for (j = 0; j < node_gres_ptr->topo_cnt; j++) {
 				if ((gres_avail == 0) || (cores_avail[j] == 0) ||
@@ -6241,7 +6248,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 					top_inx = j;
 			}
 			if ((top_inx < 0) || (cores_avail[top_inx] == 0)) {
-				if (gres_total < job_gres_ptr->gres_per_node)
+				if (gres_total < min_gres_node)
 					core_cnt = 0;
 				break;
 			}
@@ -6295,7 +6302,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			}
 		}
 		if (shared_gres && (top_inx >= 0) &&
-		    (gres_avail >= job_gres_ptr->gres_per_node)) {
+		    (gres_avail >= min_gres_node)) {
 			if (!node_gres_ptr->topo_core_bitmap[top_inx]) {
 				bit_nset(alloc_core_bitmap, 0, core_ctld - 1);
 			} else {
@@ -6338,15 +6345,15 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		if (!use_total_gres)
 			gres_tmp -= node_gres_ptr->gres_cnt_alloc;
 		gres_avail = MIN(gres_avail, gres_tmp);
-		if (job_gres_ptr->gres_per_node > gres_avail)
-			return (uint32_t) 0;	/* insufficient, GRES to use */
+		if (min_gres_node > gres_avail)
+			return (uint32_t) 0;	/* insufficient GRES avail */
 		return NO_VAL;
 	} else {
 		gres_avail = node_gres_ptr->gres_cnt_avail;
 		if (!use_total_gres)
 			gres_avail -= node_gres_ptr->gres_cnt_alloc;
-		if (job_gres_ptr->gres_per_node > gres_avail)
-			return (uint32_t) 0;	/* insufficient, GRES to use */
+		if (min_gres_node > gres_avail)
+			return (uint32_t) 0;	/* insufficient GRES avail */
 		return NO_VAL;
 	}
 }
