@@ -49,7 +49,7 @@ set step_mem_opt "--comment=no_mem"
 spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
 expect {
 	-re "MEMORY" {
-		set job_mem_opt  "--mem-per-cpu=256"
+		set job_mem_opt  "--mem-per-cpu=64"
 		set step_mem_opt "--mem-per-cpu=2"
 		exp_continue
 	}
