@@ -1,5 +1,5 @@
 /*****************************************************************************\
- **  mpi_pmix.c - Main plugin callbacks for PMIx support in SLURM
+ **  mpi_pmix.c - Main plugin callbacks for PMIx support in Slurm
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
  *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.

@@ -100,7 +100,7 @@ sub AUTOLOAD {
 #require XSLoader;
 #XSLoader::load('Slurmdb', $VERSION);
 
-# XSLoader will not work for SLURM because it does not honour dl_load_flags.
+# XSLoader will not work for Slurm because it does not honour dl_load_flags.
 require DynaLoader;
 push @ISA, 'DynaLoader';
 bootstrap Slurmdb $VERSION;
@@ -124,7 +124,7 @@ Slurmdb - Perl extension for slurmdb library
 
 =head1 DESCRIPTION
 
-A traditional Perl module that contains XSUBs of the SLURM Database API.
+A traditional Perl module that contains XSUBs of the Slurm Database API.
 
 =head2 EXPORT
 
@@ -147,11 +147,11 @@ Don Lipari, <lt>lipari@llnl.gov<gt>
  Written by Don Lipari
  CODE-OCEC-09-009. All rights reserved.
 
- This file is part of SLURM, a resource management program.  For
+ This file is part of Slurm, a resource management program.  For
  details, see <https://slurm.schedmd.com/>.  Please also
  read the included file: DISCLAIMER.
 
- SLURM is free software; you can redistribute it and/or modify it
+ Slurm is free software; you can redistribute it and/or modify it
  under the terms of the GNU General Public License as published by the
  Free Software Foundation; either version 2 of the License, or (at
  your option) any later version.
@@ -168,13 +168,13 @@ Don Lipari, <lt>lipari@llnl.gov<gt>
  delete this exception statement from all source files in the program,
  then also delete it here.
 
- SLURM is distributed in the hope that it will be useful, but WITHOUT
+ Slurm is distributed in the hope that it will be useful, but WITHOUT
  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  for more details.
 
  You should have received a copy of the GNU General Public License
- along with SLURM; if not, write to the Free Software Foundation,
+ along with Slurm; if not, write to the Free Software Foundation,
  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 =cut

@@ -191,10 +191,10 @@ if [ -z "$_SGATHER_SPAWNED" ]; then
   verbose 1 "dest        = $_SGATHER_DEST"
   verbose 1 "-----------------------------"
 
-  # check whether we're within a SLURM job
+  # check whether we're within a Slurm job
   #
   if [ -z $SLURM_JOBID ]; then
-    echo "$0: error: Command only valid from within SLURM job" >&2
+    echo "$0: error: Command only valid from within Slurm job" >&2
     exit 1
   fi
 

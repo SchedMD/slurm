@@ -136,7 +136,7 @@ static void _general_proc_info(List lresp)
 {
 	pmix_info_t *kvp;
 	bool flag = 0;
-	/* TODO: how can we get this information in SLURM?
+	/* TODO: how can we get this information in Slurm?
 	 * PMIXP_ALLOC_KEY(kvp, PMIX_CPUSET);
 	 * PMIX_VAL_SET(&kvp->value, string, "");
 	 * list_append(lresp, kvp);
