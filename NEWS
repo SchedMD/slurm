@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- cons_res/job_test - prevent a job from overallocating a node memory.
  -- cons_res/job_test - fix to consider a node's current allocated memory when
     testing a job's memory request.
+ -- Fix issue where multi-node job steps on cloud nodes wouldn't finish cleaning
+    up until the end of the job (rather than the end of the step).
 
 * Changes in Slurm 19.05.0rc1
 =============================
