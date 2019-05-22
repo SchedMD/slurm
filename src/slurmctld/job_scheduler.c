@@ -3181,10 +3181,12 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	else if (depends)
 		results = 1;
 
-	if (results)
+	if (results) {
 		job_ptr->bit_flags |= JOB_DEPENDENT;
-	else
+		acct_policy_remove_accrue_time(job_ptr, false);
+	} else {
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
+	}
 
 	return results;
 }

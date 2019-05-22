@@ -7101,6 +7101,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->start_protocol_ver = protocol_version;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
+	job_ptr->bit_flags |= JOB_DEPENDENT;
 	job_ptr->last_sched_eval = time(NULL);
 
 	part_ptr_list = NULL;
@@ -13321,6 +13322,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				sched_info("update_job: setting dependency to %s for %pJ",
 					   job_ptr->details->dependency,
 					   job_ptr);
+				job_independent(job_ptr, 0);
 			}
 		}
 	}
