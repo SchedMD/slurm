@@ -105,6 +105,10 @@ expect {
 		set matches 1
 		exp_continue
 	}
+	-re "no scratch, cache, swap configurations" {
+		set matches 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
@@ -123,6 +127,10 @@ set matches 0
 spawn $scontrol show dwstat sessions
 expect {
 	-re "sess *state *token *creator *owner *created *expiration *nodes" {
+		set matches 1
+		exp_continue
+	}
+	-re "no sessions" {
 		set matches 1
 		exp_continue
 	}
