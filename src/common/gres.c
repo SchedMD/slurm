@@ -7616,7 +7616,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				break;	/* Sufficient GRES */
 		}
 
-		if (job_specs->cpus_per_gres)
+		if (!enforce_binding && first_pass) {
+			/* Allow any GRES with any CPUs for now */
+			cpus_per_gres = 0;
+		} else if (job_specs->cpus_per_gres)
 			cpus_per_gres = job_specs->cpus_per_gres;
 		else
 			cpus_per_gres = job_specs->def_cpus_per_gres;

@@ -63,6 +63,8 @@ documents those changes that are of interest to users and administrators.
     specific sockets.
  -- Fix gres-per-task logic for gres not bound to sockets.
  -- Simplify check for a job that is pending and completing at the same time.
+ -- Fix issue when --gpus plus --cpus-per-gres was forcing socket binding
+    unnecessarily.
 
 * Changes in Slurm 19.05.0rc1
 =============================
