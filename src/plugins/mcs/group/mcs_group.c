@@ -170,8 +170,8 @@ static int _check_and_load_params(void)
 		/* no | in param : just one group */
 		if (mcs_params_specific != NULL) {
 			if (gid_from_string(mcs_params_specific, &gid ) != 0 ) {
-				info("mcs: Only one invalid group : %s. "
-				"ondemand, ondemandselect set", groups_names);
+				info("mcs: Only one invalid group : %s. ondemand, ondemandselect set",
+				     mcs_params_specific);
 				nb_mcs_groups = 0;
 				array_mcs_parameter = xmalloc(nb_mcs_groups *
 							      sizeof(uint32_t));
@@ -186,9 +186,7 @@ static int _check_and_load_params(void)
 			}
 		} else {
 			/* no group */
-			info("mcs: no group in MCSParameters : %s. "
-			     "ondemand, ondemandselect set",
-			     mcs_params_specific);
+			info("mcs: no group in MCSParameters. ondemand, ondemandselect set");
 			nb_mcs_groups = 0;
 			array_mcs_parameter = xmalloc(nb_mcs_groups *
 						      sizeof(uint32_t));

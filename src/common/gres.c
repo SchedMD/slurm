@@ -327,7 +327,7 @@ static int _gres_find_name_internal(char *name, char *key, uint32_t plugin_id)
 		}
 
 		if (!name) {
-			debug("%s: couldn't find name (%s)", __func__, name);
+			debug("%s: couldn't find name", __func__);
 			return 0;
 		}
 	}

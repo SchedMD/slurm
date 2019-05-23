@@ -4223,8 +4223,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		debug3("   kill_on_node_fail=%ld script=%.40s...",
 		       kill_on_node_fail, job_specs->script);
 	else
-		debug3("   kill_on_node_fail=%ld script=%s",
-		       kill_on_node_fail, job_specs->script);
+		debug3("   kill_on_node_fail=%ld script=(null)",
+		       kill_on_node_fail);
 
 	if (job_specs->argc == 1)
 		debug3("   argv=\"%s\"",
