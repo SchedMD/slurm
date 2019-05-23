@@ -311,6 +311,7 @@ documents those changes that are of interest to users and administrators.
  -- Add new job bit_flags of JOB_DEPENDENT.
  -- Make it so dependent jobs reset the AccrueTime and do not count against any
     AccrueTime limits.
+ -- Fix sacctmgr --parsable2 output for reservations and tres.
 
 * Changes in Slurm 18.08.7
 ==========================
