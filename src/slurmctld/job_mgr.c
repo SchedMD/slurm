@@ -3963,8 +3963,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		debug3("   kill_on_node_fail=%ld script=%.40s...",
 		       kill_on_node_fail, job_specs->script);
 	else
-		debug3("   kill_on_node_fail=%ld script=%s",
-		       kill_on_node_fail, job_specs->script);
+		debug3("   kill_on_node_fail=%ld script=(null)",
+		       kill_on_node_fail);
 
 	if (job_specs->argc == 1)
 		debug3("   argv=\"%s\"",
@@ -6879,6 +6879,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->start_protocol_ver = protocol_version;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
+	job_ptr->bit_flags |= JOB_DEPENDENT;
 	job_ptr->last_sched_eval = time(NULL);
 
 	part_ptr_list = NULL;
@@ -12953,6 +12954,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					   __func__,
 					   job_ptr->details->dependency,
 					   job_ptr);
+				job_independent(job_ptr, 0);
 			}
 		}
 	}

@@ -58,6 +58,11 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where multi-node job steps on cloud nodes wouldn't finish cleaning
     up until the end of the job (rather than the end of the step).
  -- Fix packing pack_jobid in an sbcast.
+ -- Fix GCC 9 compiler warnings.
+ -- Add new job bit_flags of JOB_DEPENDENT.
+ -- Make it so dependent jobs reset the AccrueTime and do not count against any
+    AccrueTime limits.
+ -- Fix sacctmgr --parsable2 output for reservations and tres.
 
 * Changes in Slurm 19.05.0rc1
 =============================
@@ -308,6 +313,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where multi-node job steps on cloud nodes wouldn't finish cleaning
     up until the end of the job (rather than the end of the step).
  -- Fix issue with a 17.11 sbcast call to a 18.08 daemon.
+ -- Add new job bit_flags of JOB_DEPENDENT.
+ -- Make it so dependent jobs reset the AccrueTime and do not count against any
+    AccrueTime limits.
+ -- Fix sacctmgr --parsable2 output for reservations and tres.
 
 * Changes in Slurm 18.08.7
 ==========================

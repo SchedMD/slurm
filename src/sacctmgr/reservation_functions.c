@@ -248,19 +248,20 @@ int sacctmgr_list_reservation(int argc, char **argv)
 	/* For each reservation prints the data structure members
 	 */
         while ((reservation = list_next(itr))) {
+		int curr_inx = 1;
 		while ((field = list_next(itr2))) {
 			switch (field->type) {
 			case PRINT_ASSOC_NAME:
 				field->print_routine(
 					field,
 					reservation->assocs,
-					field_count);
+					(curr_inx == field_count));
 				break;
 			case PRINT_CLUSTER:
 				field->print_routine(
 					field,
 					reservation->cluster,
-					field_count);
+					(curr_inx == field_count));
 				break;
 			case PRINT_FLAGS:
 				tmp_char = reservation_flags_string(
@@ -268,42 +269,42 @@ int sacctmgr_list_reservation(int argc, char **argv)
 				field->print_routine(
 					field,
 					tmp_char,
-					field_count);
+					(curr_inx == field_count));
 				xfree(tmp_char);
 				break;
 			case PRINT_ID:
 				field->print_routine(field,
 						     reservation->id,
-						     field_count);
+						     (curr_inx == field_count));
 				break;
 			case PRINT_NAME:
 				field->print_routine(field,
 						     reservation->name,
-						     field_count);
+						     (curr_inx == field_count));
 				break;
 			case PRINT_NODENAME:
 				field->print_routine(
 					field,
 					reservation->nodes,
-					field_count);
+					(curr_inx == field_count));
 				break;
 			case PRINT_NODEINX:
 				field->print_routine(
 					field,
 					reservation->node_inx,
-					field_count);
+					(curr_inx == field_count));
 				break;
 			case PRINT_TIMEEND:
 				field->print_routine(
 					field,
 					reservation->time_end,
-					field_count);
+					(curr_inx == field_count));
 				break;
 			case PRINT_TIMESTART:
 				field->print_routine(
 					field,
 					reservation->time_start,
-					field_count);
+					(curr_inx == field_count));
 				break;
 			case PRINT_TRES:
 				sacctmgr_initialize_g_tres_list();
@@ -314,16 +315,17 @@ int sacctmgr_list_reservation(int argc, char **argv)
 					0, NULL);
 				field->print_routine(field,
 						     tmp_char,
-						     field_count);
+						     (curr_inx == field_count));
 				xfree(tmp_char);
 				break;
 			case PRINT_UNUSED:
 				field->print_routine(
 					field,
 					reservation->unused_wall,
-					field_count);
+					(curr_inx == field_count));
 				break;
 			}
+			curr_inx++;
 		}
 		list_iterator_reset(itr2);
 		printf("\n");
