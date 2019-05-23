@@ -305,6 +305,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where multi-node job steps on cloud nodes wouldn't finish cleaning
     up until the end of the job (rather than the end of the step).
  -- Fix issue with a 17.11 sbcast call to a 18.08 daemon.
+ -- Add new job bit_flags of JOB_DEPENDENT.
+ -- Make it so dependent jobs reset the AccrueTime and do not count against any
+    AccrueTime limits.
 
 * Changes in Slurm 18.08.7
 ==========================
