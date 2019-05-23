@@ -1435,7 +1435,7 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		xfree(query);
 
 		mysql_free_result(result);
-		return SLURM_SUCCESS;
+		return rc;
 	}
 
 	mysql_free_result(result);
