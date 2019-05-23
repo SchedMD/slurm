@@ -66,6 +66,12 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue when --gpus plus --cpus-per-gres was forcing socket binding
     unnecessarily.
  -- Change event table's state column to handle 32bits.
+ -- Prevent slurmctld from potential segfault after job_start_data() called
+    for completing job.
+ -- Fix jobs getting on nodes with "scontrol reboot asap".
+ -- Record node reboot events to database.
+ -- Fix node reboot failure message getting to event table.
+ -- Don't write "(null)" to event table when no event reason exists.
 
 * Changes in Slurm 19.05.0rc1
 =============================
@@ -320,6 +326,12 @@ documents those changes that are of interest to users and administrators.
  -- Make it so dependent jobs reset the AccrueTime and do not count against any
     AccrueTime limits.
  -- Fix sacctmgr --parsable2 output for reservations and tres.
+ -- Prevent slurmctld from potential segfault after job_start_data() called
+    for completing job.
+ -- Fix jobs getting on nodes with "scontrol reboot asap".
+ -- Record node reboot events to database.
+ -- Fix node reboot failure message getting to event table.
+ -- Don't write "(null)" to event table when no event reason exists.
 
 * Changes in Slurm 18.08.7
 ==========================

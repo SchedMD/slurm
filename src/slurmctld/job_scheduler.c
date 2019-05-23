@@ -3459,7 +3459,13 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
-	if ((job_ptr->details == NULL) || (!IS_JOB_PENDING(job_ptr)))
+	/*
+	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
+	 * into account the COMPLETING FLAG which we need to since we don't want
+	 * to schedule a requeued job until it is actually done completing
+	 * the first time.
+	 */
+	if ((job_ptr->details == NULL) || (job_ptr->job_state != JOB_PENDING))
 		return ESLURM_DISABLED;
 
 	if (job_ptr->part_ptr_list) {
