@@ -1273,8 +1273,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	time_t now = time(NULL);
 
 	if (update_node_msg->node_names == NULL ) {
-		info("update_node: invalid node name  %s",
-		       update_node_msg -> node_names );
+		info("%s: invalid node name", __func__);
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
