@@ -627,7 +627,7 @@ extern int switch_p_job_init(stepd_step_rec_t *job)
 
 	/*
 	 * Some of the input parameters for alpsc_write_placement_file do not
-	 * apply for SLURM.  These parameters will be given zero values.
+	 * apply for Slurm.  These parameters will be given zero values.
 	 * They are
 	 *  int control_nid
 	 *  struct sockaddr_in control_soc

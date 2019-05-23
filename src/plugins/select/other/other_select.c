@@ -3,7 +3,7 @@
  *
  *  NOTE: The node selection plugin itself is intimately tied to slurmctld
  *  functions and data structures. Some related functions (e.g. data structure
- *  un/packing, environment variable setting) are required by most SLURM
+ *  un/packing, environment variable setting) are required by most Slurm
  *  commands. Since some of these commands must be executed on the BlueGene
  *  front-end nodes, the functions they require are here rather than within
  *  the plugin. This is because functions required by the plugin can not be

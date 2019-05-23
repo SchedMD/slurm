@@ -1194,7 +1194,7 @@ head2 SLURM ERRNO
 
 =back
 
-=head3 socket specific SLURM communications error
+=head3 socket specific Slurm communications error
 
 =over 2
 
@@ -1248,7 +1248,7 @@ Slurm
 
 =head1 AUTHOR
 
-This library is created by Hongjia Cao, E<lt>hjcao(AT)nudt.edu.cnE<gt> and Danny Auble, E<lt>da(AT)llnl.govE<gt>. It is distributed with SLURM.
+This library is created by Hongjia Cao, E<lt>hjcao(AT)nudt.edu.cnE<gt> and Danny Auble, E<lt>da(AT)llnl.govE<gt>. It is distributed with Slurm.
 
 =head1 COPYRIGHT AND LICENSE
 

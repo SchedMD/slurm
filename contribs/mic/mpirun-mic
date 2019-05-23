@@ -1,6 +1,6 @@
 #!/bin/bash
 # **************************************************************************
-# Function:  Wrapper that helps launching Intel MPI jobs within SLURM
+# Function:  Wrapper that helps launching Intel MPI jobs within Slurm
 #            using MICs in native mode.
 #            mpiexec.hydra needs passwordless ssh access to all involved nodes
 # Version:   0.4
@@ -151,7 +151,7 @@ done
 
 
 ### prepare the environment
-# If not under SLURM just run on the local system, but still we must be on a compute node..
+# If not under Slurm just run on the local system, but still we must be on a compute node..
 if [[ -z "$SLURM_PROCID" ]] ; then
     SLURM_PROCID=0
 fi

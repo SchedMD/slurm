@@ -320,7 +320,7 @@ static int _resources_set(char ***env)
 	if (!p) {
 		p = getenvp(*env, PMIXP_JOB_NODES_ENV_DEP);
 		if (!p) {
-			/* shouldn't happen if we are under SLURM! */
+			/* shouldn't happen if we are under Slurm! */
 			PMIXP_ERROR_NO(ENOENT,
 				       "Neither of nodelist environment variables: %s OR %s was found!",
 				       PMIXP_JOB_NODES_ENV,

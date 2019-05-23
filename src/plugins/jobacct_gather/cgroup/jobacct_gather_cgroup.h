@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2011 Bull.
  *  Written by Martin Perry, <martin.perry@bull.com>, who borrowed heavily
- *  from other parts of SLURM
+ *  from other parts of Slurm
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.

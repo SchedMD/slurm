@@ -12,7 +12,7 @@
  *
  *  This file is part of pam_slurm, a PAM module for restricting access to
  *  the compute nodes within a cluster based on information obtained from
- *  Simple Linux Utility for Resource Managment (SLURM).  For details, see
+ *  Simple Linux Utility for Resource Managment (Slurm).  For details, see
  *  <http://www.llnl.gov/linux/slurm/>.
  *
  *  pam_slurm is free software; you can redistribute it and/or modify it
@@ -229,7 +229,7 @@ _parse_args(struct _options *opts, int argc, const char **argv)
 }
 
 /*
- *  Return 1 if 'hostname' is a member of 'str', a SLURM-style host list as
+ *  Return 1 if 'hostname' is a member of 'str', a Slurm-style host list as
  *  returned by Slurm database queries, else 0.  The 'str' argument is
  *  truncated to the base prefix as a side-effect.
  */
@@ -366,7 +366,7 @@ _slurm_match_allocation(uid_t uid)
 
 /*
  *  Sends a message to the application informing the user
- *  that access was denied due to SLURM.
+ *  that access was denied due to Slurm.
  */
 static void
 _send_denial_msg(pam_handle_t *pamh, struct _options *opts,

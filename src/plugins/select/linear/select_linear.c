@@ -3576,7 +3576,7 @@ extern int fini ( void )
 }
 
 /*
- * The remainder of this file implements the standard SLURM
+ * The remainder of this file implements the standard Slurm
  * node selection API.
  */
 
