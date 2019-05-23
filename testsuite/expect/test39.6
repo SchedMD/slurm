@@ -167,8 +167,8 @@ expect {
 	}
 	-re "CPU_IDs=($controlmachine_regex)" {
 		if {$multi_socket != 0 && [string first , $expect_out(1,string)] == -1} {
-			send_user "\nFAILURE: allocated CPUs do not appear to span multiple sockets\n"
-			set exit_code 1
+			send_user "\WARNING: Allocated CPUs do not appear to span multiple sockets.\n"
+			send_user "\WARNING: This is fine if every GPU is bound to ALL sockets.\n"
 		}
 		exp_continue
 	}
