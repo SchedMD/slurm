@@ -55,6 +55,9 @@ documents those changes that are of interest to users and administrators.
     up until the end of the job (rather than the end of the step).
  -- Fix packing pack_jobid in an sbcast.
  -- Fix GCC 9 compiler warnings.
+ -- Add new job bit_flags of JOB_DEPENDENT.
+ -- Make it so dependent jobs reset the AccrueTime and do not count against any
+    AccrueTime limits.
 
 * Changes in Slurm 19.05.0rc1
 =============================
