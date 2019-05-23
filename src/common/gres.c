@@ -6681,7 +6681,6 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 	sock_gres->bits_by_sock = xcalloc(sockets, sizeof(bitstr_t *));
 	sock_gres->cnt_by_sock = xcalloc(sockets, sizeof(uint64_t));
 	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
-		bool use_all_sockets = false;
 		if (job_gres_ptr->type_name &&
 		    (job_gres_ptr->type_id != node_gres_ptr->topo_type_id[i]))
 			continue;	/* Wrong type_model */
@@ -6725,34 +6724,8 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		    (avail_gres > sock_gres->max_node_gres))
 			sock_gres->max_node_gres = avail_gres;
 
-		/*
-		 * If some GRES is available on every socket,
-		 * treat like no topo_core_bitmap is specified
-		 */
-		tot_cores = sockets * cores_per_sock;
-		if (node_gres_ptr->topo_core_bitmap &&
-		    node_gres_ptr->topo_core_bitmap[i]) {
-			use_all_sockets = true;
-			for (s = 0; s < sockets; s++) {
-				bool use_this_socket = false;
-				for (c = 0; c < cores_per_sock; c++) {
-					j = (s * cores_per_sock) + c;
-					if (bit_test(node_gres_ptr->
-						     topo_core_bitmap[i], j)) {
-						use_this_socket = true;
-						break;
-					}
-				}
-				if (!use_this_socket) {
-					use_all_sockets = false;
-					break;
-				}
-			}
-		}
-
 		if (!node_gres_ptr->topo_core_bitmap ||
-		    !node_gres_ptr->topo_core_bitmap[i] ||
-		    use_all_sockets) {
+		    !node_gres_ptr->topo_core_bitmap[i]) {
 			/*
 			 * Not constrained by core, but only specific
 			 * GRES may be available (save their bitmap)
@@ -6772,6 +6745,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		}
 
 		/* Constrained by core */
+		tot_cores = sockets * cores_per_sock;
 		if (core_bitmap)
 			tot_cores = MIN(tot_cores, bit_size(core_bitmap));
 		if (node_gres_ptr->topo_core_bitmap[i]) {
