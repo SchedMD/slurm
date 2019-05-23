@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
  -- Record node reboot events to database.
  -- Fix node reboot failure message getting to event table.
  -- Don't write "(null)" to event table when no event reason exists.
+ -- Fix invalid memory read in cons_tres.
 
 * Changes in Slurm 19.05.0rc1
 =============================
