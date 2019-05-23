@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where multi-node job steps on cloud nodes wouldn't finish cleaning
     up until the end of the job (rather than the end of the step).
  -- Fix packing pack_jobid in an sbcast.
+ -- Fix GCC 9 compiler warnings.
 
 * Changes in Slurm 19.05.0rc1
 =============================
