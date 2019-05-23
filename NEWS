@@ -76,6 +76,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid flooding slurmctld and logging when prolog complete RPC errors occur.
  -- Fix slurmctld node_scheduler's feature_bitmap memory leak.
  -- Fatal when reading config if Alloc flag configured on FrontEnd mode.
+ -- Modifications needed to run Federations with clusters running
+    different select/switch plugins.
 
 * Changes in Slurm 19.05.0rc1
 =============================

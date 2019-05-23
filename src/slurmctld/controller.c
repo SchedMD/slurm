@@ -496,7 +496,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize authentication plugin");
 		}
 	}
-	if (slurm_select_init(1) != SLURM_SUCCESS) {
+	if (slurm_select_init(0) != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize node selection plugin");
 			test_config_rc = 1;
