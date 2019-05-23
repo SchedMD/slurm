@@ -4771,6 +4771,7 @@ proc _set_gpu_socket_inx { sock_inx } {
 
 	if {$sock_inx == -1} {
 		set gpu_sock_list [lreplace $gpu_sock_list 0 99]
+		return
 	}
 
 	set sock_cnt [llength $gpu_sock_list]
@@ -4839,7 +4840,7 @@ proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
 			exp_continue
 		}
 		-re "gpu:${alpha_numeric_under}:${number}.S:($number),($number),($number),($number)" {
-			D $expect_out(1,string)
+			_set_gpu_socket_inx $expect_out(1,string)
 			_set_gpu_socket_inx $expect_out(2,string)
 			_set_gpu_socket_inx $expect_out(3,string)
 			_set_gpu_socket_inx $expect_out(4,string)
