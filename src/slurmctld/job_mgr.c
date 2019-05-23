@@ -6726,8 +6726,9 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	part_ptr = job_ptr->part_ptr;
 	qos_ptr = job_ptr->qos_ptr;
 	assoc_ptr = job_ptr->assoc_ptr;
-	if (!detail_ptr) {
-		fatal_abort("%pJ has NULL details_ptr", job_ptr);
+	if (!detail_ptr || !part_ptr) {
+		fatal_abort("%pJ has NULL details_ptr and/or part_ptr",
+			    job_ptr);
 		return WAIT_NO_REASON;	/* To prevent CLANG error */
 	}
 
@@ -6813,7 +6814,7 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		 */
 		if (job_ptr->bit_flags & JOB_MEM_SET)
 			job_desc.pn_min_memory = detail_ptr->orig_pn_min_memory;
-		else if (part_ptr && part_ptr->def_mem_per_cpu)
+		else if (part_ptr->def_mem_per_cpu)
 			job_desc.pn_min_memory = part_ptr->def_mem_per_cpu;
 		else
 			job_desc.pn_min_memory = slurmctld_conf.def_mem_per_cpu;
