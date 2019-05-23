@@ -59,6 +59,8 @@ documents those changes that are of interest to users and administrators.
  -- Make it so dependent jobs reset the AccrueTime and do not count against any
     AccrueTime limits.
  -- Fix sacctmgr --parsable2 output for reservations and tres.
+ -- In multi-node systems make sure GRES are found on node when not bound to
+    specific sockets.
 
 * Changes in Slurm 19.05.0rc1
 =============================
