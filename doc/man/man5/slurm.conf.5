@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "May 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -115,6 +115,10 @@ NULL.  Also see \fBDefaultStoragePass\fR.
 \fBAccountingStoragePort\fR
 The listening port of the accounting storage database server.
 Only used for database type storage plugins, ignored otherwise.
+The default value is SLURMDBD_PORT as established at system
+build time. If no value is explicitly specified, it will be set to 6819.
+This value must be equal to the \fBDbdPort\fR parameter in the
+slurmdbd.conf file.
 Also see \fBDefaultStoragePort\fR.
 
 .TP
@@ -2801,6 +2805,10 @@ scheduling isn't always disabled, and low enough that the interactive
 workload can get through in a reasonable period of time. max_rpc_cnt needs to
 be below 256 (the default RPC thread limit). Running around the middle (150)
 may give you good results.
+NOTE: When increasing the amount of time spent in the backfill scheduling cycle,
+Slurm can be prevented from responding to client requests in a timely manner.
+To address this you can use \fBmax_rpc_cnt\fR to specify a number of queued RPCs
+before the scheduler stops to respond to these requests.
 .TP
 \fBbf_min_age_reserve=#\fR
 The backfill and main scheduling logic will not reserve resources for pending
@@ -2988,6 +2996,11 @@ MAX(max_rpc_cnt/10, 20) RPCs in the queue. i.e. max_rpc_cnt=1000, the scheduler
 will be allowed to continue after yielding locks only when there are less than
 or equal to 100 pending RPCs.
 Default: 0 (option disabled), Min: 0, Max: 1000.
+The default value is zero, which disables this option.
+If a value is set, then a value of 10 or higher is recommended. It may require
+some tuning for each system, but needs to be high enough that scheduling isn't
+always disabled, and low enough that requests can get through in a reasonable
+period of time.
 .TP
 \fBmax_sched_time=#\fR
 How long, in seconds, that the main scheduling loop will execute for before

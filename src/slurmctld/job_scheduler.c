@@ -285,7 +285,13 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 	time_t now = time(NULL);
 
 	xassert(job_ptr->magic == JOB_MAGIC);
-	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
+
+	/*
+	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
+	 * into account the COMPLETING FLAG which is valid, but not
+	 * always set yet when the step exits normally.
+	 */
+	if (job_ptr->job_state != JOB_PENDING)
 		return false;
 
 	if (IS_JOB_REVOKED(job_ptr))
@@ -3453,7 +3459,13 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
-	if ((job_ptr->details == NULL) || (!IS_JOB_PENDING(job_ptr)))
+	/*
+	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
+	 * into account the COMPLETING FLAG which we need to since we don't want
+	 * to schedule a requeued job until it is actually done completing
+	 * the first time.
+	 */
+	if ((job_ptr->details == NULL) || (job_ptr->job_state != JOB_PENDING))
 		return ESLURM_DISABLED;
 
 	if (job_ptr->part_ptr_list) {
