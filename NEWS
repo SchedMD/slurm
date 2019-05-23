@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
     testing a job's memory request.
  -- Fix issue where multi-node job steps on cloud nodes wouldn't finish cleaning
     up until the end of the job (rather than the end of the step).
+ -- Fix packing pack_jobid in an sbcast.
 
 * Changes in Slurm 19.05.0rc1
 =============================
@@ -306,6 +307,7 @@ documents those changes that are of interest to users and administrators.
     testing a job's memory request.
  -- Fix issue where multi-node job steps on cloud nodes wouldn't finish cleaning
     up until the end of the job (rather than the end of the step).
+ -- Fix issue with a 17.11 sbcast call to a 18.08 daemon.
 
 * Changes in Slurm 18.08.7
 ==========================

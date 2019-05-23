@@ -70,7 +70,7 @@ if {$gpu_cnt < 1} {
 # Build input script files
 #
 make_bash_script $file_in1 "$scontrol -dd show job \$SLURM_JOB_ID
-$srun --pack-group=0,1 -l ./$file_in2
+$srun --mpi=none --pack-group=0,1 -l ./$file_in2
 exit 0"
 
 make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES"
