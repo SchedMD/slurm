@@ -1598,6 +1598,25 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _gres_node_state_delete_topo(gres_node_state_t *gres_node_ptr)
+{
+	int i;
+
+	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
+		if (gres_node_ptr->topo_gres_bitmap)
+			FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
+		if (gres_node_ptr->topo_core_bitmap)
+			FREE_NULL_BITMAP(gres_node_ptr->topo_core_bitmap[i]);
+		xfree(gres_node_ptr->topo_type_name[i]);
+	}
+	xfree(gres_node_ptr->topo_gres_bitmap);
+	xfree(gres_node_ptr->topo_core_bitmap);
+	xfree(gres_node_ptr->topo_gres_cnt_alloc);
+	xfree(gres_node_ptr->topo_gres_cnt_avail);
+	xfree(gres_node_ptr->topo_type_id);
+	xfree(gres_node_ptr->topo_type_name);
+}
+
 static void _gres_node_state_delete(gres_node_state_t *gres_node_ptr)
 {
 	int i;
@@ -1609,19 +1628,9 @@ static void _gres_node_state_delete(gres_node_state_t *gres_node_ptr)
 			xfree(gres_node_ptr->links_cnt[i]);
 		xfree(gres_node_ptr->links_cnt);
 	}
-	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
-		if (gres_node_ptr->topo_core_bitmap)
-			FREE_NULL_BITMAP(gres_node_ptr->topo_core_bitmap[i]);
-		if (gres_node_ptr->topo_gres_bitmap)
-			FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
-		xfree(gres_node_ptr->topo_type_name[i]);
-	}
-	xfree(gres_node_ptr->topo_core_bitmap);
-	xfree(gres_node_ptr->topo_gres_bitmap);
-	xfree(gres_node_ptr->topo_gres_cnt_alloc);
-	xfree(gres_node_ptr->topo_gres_cnt_avail);
-	xfree(gres_node_ptr->topo_type_id);
-	xfree(gres_node_ptr->topo_type_name);
+
+	_gres_node_state_delete_topo(gres_node_ptr);
+
 	for (i = 0; i < gres_node_ptr->type_cnt; i++) {
 		xfree(gres_node_ptr->type_name[i]);
 	}
@@ -2174,23 +2183,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 	if ((topo_cnt == 0) && (topo_cnt != gres_data->topo_cnt)) {
 		/* Need to clear topology info */
-		xfree(gres_data->topo_gres_cnt_alloc);
-		xfree(gres_data->topo_gres_cnt_avail);
-		for (i = 0; i < gres_data->topo_cnt; i++) {
-			if (gres_data->topo_gres_bitmap) {
-				FREE_NULL_BITMAP(gres_data->
-						 topo_gres_bitmap[i]);
-			}
-			if (gres_data->topo_core_bitmap) {
-				FREE_NULL_BITMAP(gres_data->
-						 topo_core_bitmap[i]);
-			}
-			xfree(gres_data->topo_type_name[i]);
-		}
-		xfree(gres_data->topo_gres_bitmap);
-		xfree(gres_data->topo_core_bitmap);
-		xfree(gres_data->topo_type_id);
-		xfree(gres_data->topo_type_name);
+		_gres_node_state_delete_topo(gres_data);
+
 		gres_data->topo_cnt = topo_cnt;
 	}
 
