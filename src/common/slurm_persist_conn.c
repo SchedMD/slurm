@@ -829,7 +829,7 @@ extern int slurm_persist_send_msg(
 	if (rc == -1) {
 	re_open:
 		if (retry_cnt++ > 3)
-			return EAGAIN;
+			return SLURM_COMMUNICATIONS_SEND_ERROR;
 		/* if errno is ACCESS_DENIED do not try to reopen to
 		   connection just return that */
 		if (errno == ESLURM_ACCESS_DENIED)
