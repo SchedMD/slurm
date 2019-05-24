@@ -828,12 +828,13 @@ extern int slurm_persist_send_msg(
 	rc = slurm_persist_conn_writeable(persist_conn);
 	if (rc == -1) {
 	re_open:
-		if (retry_cnt++ > 3)
-			return SLURM_COMMUNICATIONS_SEND_ERROR;
 		/* if errno is ACCESS_DENIED do not try to reopen to
 		   connection just return that */
 		if (errno == ESLURM_ACCESS_DENIED)
 			return ESLURM_ACCESS_DENIED;
+
+		if (retry_cnt++ > 3)
+			return SLURM_COMMUNICATIONS_SEND_ERROR;
 
 		if (persist_conn->flags & PERSIST_FLAG_RECONNECT) {
 			slurm_persist_conn_reopen(persist_conn, true);
