@@ -47,6 +47,7 @@
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
@@ -215,6 +216,19 @@ static int _load_plugins(void *x, void *arg)
 	}
 
 	return 0;
+}
+
+static bool _running_in_slurmctld(void)
+{
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmctld");
+	}
+
+	return run;
 }
 
 static dynamic_plugin_data_t *_create_dynamic_plugin_data(uint32_t plugin_id)
@@ -472,6 +486,17 @@ extern int switch_g_unpack_jobinfo(dynamic_plugin_data_t **jobinfo, Buf buffer,
 	     ((switch_jobinfo_t **)&jobinfo_ptr->data, buffer,
 	      protocol_version))
 		goto unpack_error;
+
+	/*
+	 * Free nodeinfo_ptr if it is different from local cluster as it is not
+	 * relevant to this cluster.
+	 */
+	if ((jobinfo_ptr->plugin_id != switch_context_default) &&
+	    _running_in_slurmctld()) {
+		switch_g_free_jobinfo(jobinfo_ptr);
+		*jobinfo = _create_dynamic_plugin_data(switch_context_default);
+	}
+
 
 	return SLURM_SUCCESS;
 
