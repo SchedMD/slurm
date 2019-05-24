@@ -1495,8 +1495,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				FREE_NULL_BITMAP(tmp_node_set_ptr[i].
 						 my_bitmap);
 			}
-			if (error_code != SLURM_SUCCESS)
+			if (error_code != SLURM_SUCCESS) {
+				FREE_NULL_BITMAP(feature_bitmap);
 				break;
+			}
 			if (feature_bitmap) {
 				if (feat_ptr->op_code == FEATURE_OP_XAND)
 					has_xand = true;

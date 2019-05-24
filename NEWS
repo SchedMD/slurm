@@ -79,6 +79,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix invalid memory read in cons_tres.
  -- Fix minor memory leak when clearing runaway jobs.
  -- Avoid flooding slurmctld and logging when prolog complete RPC errors occur.
+ -- Fix slurmctld node_scheduler's feature_bitmap memory leak.
 
 * Changes in Slurm 19.05.0rc1
 =============================
