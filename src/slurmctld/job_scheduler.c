@@ -4269,16 +4269,19 @@ static void *_run_prolog(void *arg)
 	pid_t cpid;
 	int i, rc, status, wait_rc;
 	char *argv[2], **my_env;
-	/* Locks: Read config; Write jobs, nodes */
-	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+	slurmctld_lock_t node_write_lock = {
+		.conf = READ_LOCK, .job = READ_LOCK,
+		.node = WRITE_LOCK, .fed = READ_LOCK };
+	slurmctld_lock_t job_write_lock = {
+		.conf = NO_LOCK, .job = WRITE_LOCK,
+		.node = WRITE_LOCK, .fed = READ_LOCK };
 	bitstr_t *node_bitmap = NULL;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
 	uint16_t tm;
 	track_script_rec_t *track_script_rec;
 
-	lock_slurmctld(config_read_lock);
+	lock_slurmctld(node_write_lock);
 	job_id = job_ptr->job_id;
 
 	argv[0] = xstrdup(slurmctld_conf.prolog_slurmctld);
@@ -4295,7 +4298,7 @@ static void *_run_prolog(void *arg)
 			node_ptr->last_response = now + resume_timeout;
 		}
 	}
-	unlock_slurmctld(config_read_lock);
+	unlock_slurmctld(node_write_lock);
 
 	if ((cpid = fork()) < 0) {
 		error("prolog_slurmctld fork error: %m");
@@ -4338,10 +4341,12 @@ static void *_run_prolog(void *arg)
 		return NULL;
 	} else if (status != 0) {
 		bool kill_job = false;
-		slurmctld_lock_t job_write_lock = {
-			NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 		error("prolog_slurmctld JobId=%u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(status), WTERMSIG(status));
+		/*
+		 * Node write lock is also required since job_requeue may call
+		 * deallocate_nodes(). The lock is implicit in job_write_lock.
+		 */
 		lock_slurmctld(job_write_lock);
 		if ((rc = job_requeue(0, job_id, NULL, false, 0))) {
 			info("unable to requeue JobId=%u: %s", job_id,
@@ -4367,7 +4372,7 @@ fini:	xfree(argv[0]);
 	for (i=0; my_env[i]; i++)
 		xfree(my_env[i]);
 	xfree(my_env);
-	lock_slurmctld(config_read_lock);
+	lock_slurmctld(job_write_lock);
 	if (job_ptr->job_id != job_id) {
 		error("prolog_slurmctld JobId=%u pointer invalid", job_id);
 		job_ptr = find_job_record(job_id);
@@ -4394,7 +4399,7 @@ fini:	xfree(argv[0]);
 				(~NODE_STATE_POWER_UP);
 		}
 	}
-	unlock_slurmctld(config_read_lock);
+	unlock_slurmctld(job_write_lock);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	/*
