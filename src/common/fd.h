@@ -119,4 +119,10 @@ extern int wait_fd_readable(int fd, int time_limit);
  */
 extern int fsync_and_close(int fd, const char *file_type);
 
+/*
+ * Sets err to socket error
+ * or returns SLURM_ERROR on error
+ * */
+int fd_get_socket_error(int fd, int *err);
+
 #endif /* !_FD_H */

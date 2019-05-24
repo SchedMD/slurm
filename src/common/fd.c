@@ -39,11 +39,16 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
+
+#include "slurm/slurm_errno.h"
 
 #include "src/common/macros.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/xassert.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
@@ -51,7 +56,7 @@
  */
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
-
+strong_alias(fd_get_socket_error, slurm_fd_get_socket_error);
 
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
@@ -121,6 +126,18 @@ int fd_release_lock(int fd)
 pid_t fd_is_read_lock_blocked(int fd)
 {
 	return(fd_test_lock(fd, F_RDLCK));
+}
+
+int fd_get_socket_error(int fd, int *err)
+{
+	socklen_t errlen = sizeof(err);
+
+	xassert(fd >= 0);
+
+	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &errlen))
+		return errno;
+	else
+		return SLURM_SUCCESS;
 }
 
 static int fd_get_lock(int fd, int cmd, int type)
