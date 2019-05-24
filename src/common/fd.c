@@ -45,9 +45,9 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/macros.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/xassert.h"
 
 /*
