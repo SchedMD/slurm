@@ -80,6 +80,7 @@ documents those changes that are of interest to users and administrators.
     different select/switch plugins.
  -- Fix Clang errors for zero initializing struct with nested arrays.
  -- Fix minor memory leak in pmi2.
+ -- MySQL - Fix minor memory leak when quering suspended jobs fails.
 
 * Changes in Slurm 19.05.0rc1
 =============================
