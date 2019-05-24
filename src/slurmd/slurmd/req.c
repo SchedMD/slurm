@@ -2319,6 +2319,12 @@ static void _rpc_prolog(slurm_msg_t *msg)
 			alt_rc = _launch_job_fail(req->job_id, rc);
 			send_registration_msg(rc, false);
 		}
+
+		if (alt_rc != SLURM_SUCCESS) {
+			info("%s: Retrying prolog complete RPC for JobId=%u [sleeping %us]",
+			     __func__, req->job_id, RETRY_DELAY);
+			sleep(RETRY_DELAY);
+		}
 	}
 }
 

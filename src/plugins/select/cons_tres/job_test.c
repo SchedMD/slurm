@@ -709,7 +709,8 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 		num_jobs += p_ptr->row[i].num_jobs;
 	}
 	if (num_jobs == 0) {
-		clear_core_array(p_ptr->row[i].row_bitmap);
+		for (i = 0; i < p_ptr->num_rows; i++)
+			clear_core_array(p_ptr->row[i].row_bitmap);
 		return;
 	}
 
