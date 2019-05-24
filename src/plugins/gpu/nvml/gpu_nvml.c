@@ -1138,9 +1138,10 @@ static char *_nvml_get_nvlink_remote_pcie(nvmlDevice_t device,
 					  unsigned int lane)
 {
 	nvmlPciInfo_t pci_info;
+	nvmlReturn_t nvml_rc;
+
 	memset(&pci_info, 0, sizeof(pci_info));
-	nvmlReturn_t nvml_rc = nvmlDeviceGetNvLinkRemotePciInfo(device, lane,
-								&pci_info);
+	nvml_rc = nvmlDeviceGetNvLinkRemotePciInfo(device, lane, &pci_info);
 	if (nvml_rc != NVML_SUCCESS) {
 		error("NVML: Failed to get PCI info of endpoint device for lane"
 		      " %d: %s", lane, nvmlErrorString(nvml_rc));

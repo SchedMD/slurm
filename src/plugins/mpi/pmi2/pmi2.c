@@ -617,6 +617,7 @@ handle_pmi2_cmd(int fd, int lrank)
 		 * for good measure.
 		 */
 		_handle_finalize(fd, 0, NULL);
+		xfree(buf);
 		return SLURM_ERROR;
 	}
 

@@ -758,6 +758,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 					      query, 0))) {
 					FREE_NULL_LIST(job_list);
 					job_list = NULL;
+					xfree(query);
 					break;
 				}
 				xfree(query);
