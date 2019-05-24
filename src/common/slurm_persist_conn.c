@@ -793,8 +793,12 @@ extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
 		}
 		if (ufds.revents & POLLERR) {
 			if (_comm_fail_log(persist_conn)) {
-				error("%s: persistent connection %d experienced an error: %m",
-				      __func__, persist_conn->fd);
+				if (fd_get_socket_error(persist_conn->fd, &errno))
+					error("%s: unable to get error for persistent connection %d: %m",
+					      __func__, persist_conn->fd);
+				else
+					error("%s: persistent connection %d experienced an error: %m",
+					      __func__, persist_conn->fd);
 			}
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
