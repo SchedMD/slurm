@@ -285,13 +285,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 	time_t now = time(NULL);
 
 	xassert(job_ptr->magic == JOB_MAGIC);
-
-	/*
-	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
-	 * into account the COMPLETING FLAG which is valid, but not
-	 * always set yet when the step exits normally.
-	 */
-	if (job_ptr->job_state != JOB_PENDING)
+	if (!IS_JOB_PENDING(job_ptr) || IS_JOB_COMPLETING(job_ptr))
 		return false;
 
 	if (IS_JOB_REVOKED(job_ptr))
