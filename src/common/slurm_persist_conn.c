@@ -766,7 +766,7 @@ extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
-			error("poll: %m");
+			error("%s: poll error: %m", __func__);
 			return -1;
 		}
 		if (rc == 0)
@@ -780,26 +780,29 @@ extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
 		 */
 		if (ufds.revents & POLLHUP ||
 		    (recv(persist_conn->fd, &temp, 1, 0) == 0)) {
-			debug2("persistent connection is closed");
+			debug2("%s: persistent connection %d is closed for writes",
+			       __func__, persist_conn->fd);
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
 			return -1;
 		}
 		if (ufds.revents & POLLNVAL) {
-			error("persistent connection is invalid");
+			error("%s: persistent connection %d is invalid",
+			      __func__, persist_conn->fd);
 			return 0;
 		}
 		if (ufds.revents & POLLERR) {
 			if (_comm_fail_log(persist_conn)) {
-				error("persistent connection experienced an error: %m");
+				error("%s: persistent connection %d experienced an error: %m",
+				      __func__, persist_conn->fd);
 			}
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
 			return 0;
 		}
 		if ((ufds.revents & POLLOUT) == 0) {
-			error("persistent connection %d events %d",
-			      persist_conn->fd, ufds.revents);
+			error("%s: persistent connection %d events %d",
+			      __func__, persist_conn->fd, ufds.revents);
 			return 0;
 		}
 		/* revents == POLLOUT */
