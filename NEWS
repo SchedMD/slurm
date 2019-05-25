@@ -343,6 +343,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't write "(null)" to event table when no event reason exists.
  -- Fix minor memory leak when clearing runaway jobs.
  -- Avoid flooding slurmctld and logging when prolog complete RPC errors occur.
+ -- Fix GCC 9 compiler warnings.
 
 * Changes in Slurm 18.08.7
 ==========================
