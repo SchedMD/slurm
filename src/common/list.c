@@ -47,6 +47,7 @@
 #include "list.h"
 #include "log.h"
 #include "macros.h"
+#include "xassert.h"
 #include "xmalloc.h"
 
 /*
@@ -60,6 +61,7 @@ strong_alias(list_count,	slurm_list_count);
 strong_alias(list_append,	slurm_list_append);
 strong_alias(list_append_list,	slurm_list_append_list);
 strong_alias(list_transfer,	slurm_list_transfer);
+strong_alias(list_transfer_max,	slurm_list_transfer_max);
 strong_alias(list_prepend,	slurm_list_prepend);
 strong_alias(list_find_first,	slurm_list_find_first);
 strong_alias(list_delete_all,	slurm_list_delete_all);
@@ -303,28 +305,42 @@ list_append_list (List l, List sub)
 	return n;
 }
 
-/* list_transfer()
+/*
+ *  Pops off list [sub] to [l] with maximum number of entries.
+ *  Set max = 0 to transfer all entries.
+ *  Note: list [l] must have the same destroy function as list [sub].
+ *  Note: list [sub] may be returned empty, but not destroyed.
+ *  Returns a count of the number of items added to list [l].
  */
-int
-list_transfer (List l, List sub)
+int list_transfer_max(List l, List sub, int max)
 {
 	void *v;
 	int n = 0;
 
-	assert(l != NULL);
-	assert(sub != NULL);
-	assert(l->fDel == sub->fDel);
-	while((v = list_pop(sub))) {
-		if (list_append(l, v))
-			n++;
-		else {
-			if (l->fDel)
-				l->fDel(v);
-			break;
-		}
+	xassert(l);
+	xassert(sub);
+	xassert(l->magic == LIST_MAGIC);
+	xassert(sub->magic == LIST_MAGIC);
+	xassert(l->fDel == sub->fDel);
+
+	while ((!max || n <= max) && (v = list_pop(sub))) {
+		list_append(l, v);
+		n++;
 	}
 
 	return n;
+}
+
+/*
+ *  Pops off list [sub] to [l].
+ *  Set max = 0 to transfer all entries.
+ *  Note: list [l] must have the same destroy function as list [sub].
+ *  Note: list [sub] will be returned empty, but not destroyed.
+ *  Returns a count of the number of items added to list [l].
+ */
+int list_transfer(List l, List sub)
+{
+	return list_transfer_max(l, sub, 0);
 }
 
 /* list_prepend()

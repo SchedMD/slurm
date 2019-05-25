@@ -152,6 +152,15 @@ int list_transfer (List l, List sub);
  *  Returns a count of the number of items added to list [l].
  */
 
+/*
+ *  Pops off list [sub] to [l] with maximum number of entries.
+ *  Set max = -1 to transfer all entries.
+ *  Note: list [l] must have the same destroy function as list [sub].
+ *  Note: list [sub] may be returned empty, but not destroyed.
+ *  Returns a count of the number of items added to list [l].
+ */
+int list_transfer_max(List l, List sub, int max);
+
 void * list_prepend (List l, void *x);
 /*
  *  Inserts data [x] at the beginning of list [l].
