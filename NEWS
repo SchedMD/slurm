@@ -67,6 +67,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor memory leak when clearing runaway jobs.
  -- Avoid flooding slurmctld and logging when prolog complete RPC errors occur.
  -- Fix GCC 9 compiler warnings.
+ -- Fix seff human readable memory string for values below a megabyte.
 
 * Changes in Slurm 18.08.7
 ==========================
