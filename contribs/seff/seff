@@ -225,8 +225,8 @@ sub kbytes2str {
     my $mul = 1024;
 
     my $exp = int(log($kbytes) / log($mul));
-    my @pre = qw/ M G T P E /;
-    my $pre = $pre[$exp-1];
+    my @pre = qw/ K M G T P E /;
+    my $pre = $pre[$exp];
 
     return sprintf("%.2f %sB", ($kbytes / pow($mul, $exp)), $pre ? $pre : "");
 }
