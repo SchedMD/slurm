@@ -5076,7 +5076,8 @@ extern int job_signal(struct job_record *job_ptr, uint16_t signal,
 		job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
 
 		/* build_cg_bitmap() not needed, job already completing */
-		verbose("%s: of requeuing %pJ successful", __func__, job_ptr);
+		verbose("%s: %u of requeuing %pJ successful",
+			__func__, signal, job_ptr);
 		return SLURM_SUCCESS;
 	}
 
@@ -5119,7 +5120,8 @@ extern int job_signal(struct job_record *job_ptr, uint16_t signal,
 		 * are removed or when the job is canceled from the origin.
 		 */
 		fed_mgr_job_complete(job_ptr, 0, now);
-		verbose("%s: of pending %pJ successful", __func__, job_ptr);
+		verbose("%s: %u of pending %pJ successful",
+			__func__, signal, job_ptr);
 		return SLURM_SUCCESS;
 	}
 
