@@ -108,6 +108,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix seff human readable memory string for values below a megabyte.
  -- Avoid slurmctld abort if GRES defined in gres.conf, but not in the node
     configuration of slurm.conf.
+ -- Calculate task count for job with --gpus-per-task option, but no explicit
+    task count.
 
 * Changes in Slurm 19.05.0rc1
 =============================
