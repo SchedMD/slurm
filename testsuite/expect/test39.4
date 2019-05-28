@@ -179,7 +179,7 @@ expect {
 # Specify gpus-per-task, but no task count
 #
 send_user "\n\n==== TEST 6 ====\n"
-spawn $sbatch --gpus-per-task=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
+spawn $sbatch --gpus-per-task=1 -N1-4 --output=/dev/null -t1 --wrap $bin_hostname
 expect {
 	-re "Submitted batch job ($number)" {
 		cancel_job $expect_out(1,string)
