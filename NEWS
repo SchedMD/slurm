@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 19.05.0rc2
-=============================
+* Changes in Slurm 19.05.0
+==========================
  -- Fix deprecated group by clause to use order by.
  -- NVML - Git rid of unneeded * when passing nvmlDevice_t to functions.
  -- NVML - Fix clang warning about unneeded variable initialization.
