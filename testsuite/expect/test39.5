@@ -263,6 +263,77 @@ if {$match != $expected_gpus} {
 	set exit_code 1
 }
 
+#
+# Test --gpus-per-task option without task count
+#
+send_user "\n\nTEST: --gpus-per-task option, part 2 (implicit task count)\n"
+if {$cpus_per_node > 1} {
+	set use_tasks_per_node 2
+} else {
+	set use_tasks_per_node 1
+}
+if {$gpu_cnt > 1} {
+	set use_gpus_per_node [expr ($gpu_cnt - 1) / $use_tasks_per_node]
+} else {
+	set use_gpus_per_node [expr $gpu_cnt / $use_tasks_per_node]
+}
+if {$use_gpus_per_node == 0} {
+	set use_tasks_per_node 1
+	set use_gpus_per_node $gpu_cnt
+}
+set match 0
+set srun_pid [spawn $srun --gpus-per-task=1 --tasks-per-node=$use_tasks_per_node -N $nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set expected_gpus [expr $nb_nodes * $use_tasks_per_node * $use_tasks_per_node]
+if {$match != $expected_gpus} {
+	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
+	set exit_code 1
+}
+
+#
+# Test --gpus-per-task option without task count
+#
+send_user "\n\nTEST: --gpus-per-task option, part 3 (implicit task count)\n"
+if {$gpu_cnt > 1} {
+	set use_gpus_per_node [expr $gpu_cnt - 1]
+} else {
+	set use_gpus_per_node $gpu_cnt
+}
+set match 0
+set srun_pid [spawn $srun --gpus-per-task=$use_gpus_per_node -N $nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set expected_gpus [expr $nb_nodes * $use_gpus_per_node]
+if {$match != $expected_gpus} {
+	send_user "\nFAILURE: srun --gpus-per-task failure ($match != $expected_gpus)\n"
+	set exit_code 1
+}
+
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in1 $file_in2
 	send_user "\nSUCCESS\n"
