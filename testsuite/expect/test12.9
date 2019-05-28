@@ -60,7 +60,7 @@ proc run_sacct { jobs exp_match_1 exp_match_2 } {
 	set expected_matches [expr $exp_match_1 + $exp_match_2]
 
 	# Now test sacct
-	spawn $sacct --noheader -j $jobs
+	spawn $sacct --noheader --starttime=00:00 -j $jobs
 	expect {
 		-re "$array1_job_id" {
 			incr matches_1
