@@ -224,22 +224,14 @@ int main (int argc, char **argv)
 		}
 	}
 
-	if (req_msg.acct_list && list_count(req_msg.acct_list)) {
-		if (verbosity) {
-			fprintf(stderr, "Accounts requested:\n");
-			ListIterator itr = list_iterator_create(req_msg.acct_list);
-			while ((temp = list_next(itr)))
-				fprintf(stderr, "\t: %s\n", temp);
-			list_iterator_destroy(itr);
-		}
-	} else {
-		if (req_msg.acct_list
-		   && list_count(req_msg.acct_list)) {
-			FREE_NULL_LIST(req_msg.acct_list);
-		}
-		if (verbosity)
-			fprintf(stderr, "Accounts requested:\n\t: all\n");
-
+	if (verbosity && req_msg.acct_list && list_count(req_msg.acct_list)) {
+		ListIterator itr = list_iterator_create(req_msg.acct_list);
+		fprintf(stderr, "Accounts requested:\n");
+		while ((temp = list_next(itr)))
+			fprintf(stderr, "\t: %s\n", temp);
+		list_iterator_destroy(itr);
+	} else if (verbosity) {
+		fprintf(stderr, "Accounts requested:\n\t: all\n");
 	}
 
 	if (clusters)
