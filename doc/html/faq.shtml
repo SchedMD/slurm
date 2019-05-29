@@ -1870,11 +1870,10 @@ probably also want to maintain a common slurm.conf file on all nodes. The
 following procedure is recommended:
 <ol>
 <li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
+<li>Stop all slurmd daemons on all nodes (e.g. "systemctl stop slurmd" on all nodes)</li>
 <li>Update the slurm.conf file on all nodes in the cluster</li>
+<li>Start the slurmd daemons on all nodes (e.g. "systemctl start slurmd" on all nodes)</li>
 <li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
-<li>Start the slurmd daemons on the new nodes (e.g. "systemctl start slurmd" on those nodes)</li>
-<li>Have all slurmd daemons read the new configuration file (e.g.
-"scontrol reconfig", no need to restart the daemons)</li>
 </ol>
 
 NOTE: Jobs submitted with srun, and that are waiting for an allocation,
