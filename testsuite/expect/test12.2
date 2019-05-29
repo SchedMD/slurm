@@ -329,7 +329,7 @@ sleep 10
 #
 # Report basic sacct info
 #
-spawn $sacct --noheader -P --job=$job_id.$step_id --format jobid,jobname,state,exitcode
+spawn $sacct --noheader -P --job=$job_id.$step_id --format jobid,jobname,state,exitcode --starttime=00:00
 expect {
 	-re "$job_id\.$step_id" {
 		incr matches
@@ -372,7 +372,7 @@ if {$matches < 4} {
 #   expected integer but got "08" (looks like invalid octal number)
 #
 set elapsed_time 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --format elapsed
+spawn $sacct --noheader -P --job=$job_id.$step_id --format elapsed  --starttime=00:00
 expect {
 	-re "($number):($number):(\[0-9\])(\[0-9\])" {
 		set hours $expect_out(1,string)
@@ -402,7 +402,7 @@ if {$error_time > $max_time_error} {
 }
 
 set total_cpu 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --format totalcpu
+spawn $sacct --noheader -P --job=$job_id.$step_id --format totalcpu --starttime=00:00
 # Ignore the milliseconds portion
 expect {
 	-re "($number):(\[0-9\])(\[0-9\])" {
@@ -430,7 +430,7 @@ if {$total_cpu > $sleep_time} {
 }
 
 set min_cpu 0
-spawn $sacct --noheader -P --job=$job_id.$step_id --format mincpu
+spawn $sacct --noheader -P --job=$job_id.$step_id --format mincpu --starttime=00:00
 expect {
 	-re "($number):($number):(\[0-9\])(\[0-9\])" {
 		set hours $expect_out(1,string)

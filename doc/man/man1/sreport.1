@@ -1,4 +1,4 @@
-.TH sreport "1" "Slurm Commands" "April 2017" "Slurm Commands"
+.TH sreport "1" "Slurm Commands" "May 2019" "Slurm Commands"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -214,11 +214,49 @@ grouping multiple wckey by user into one, but displaying them
 on separate lines.
 .TP
 .B cluster Utilization
-This report will display total usage divided by Allocated, Down,
-Idle, and Reserved time for selected clusters.  Reserved time
-refers to time that a job was waiting for resources after the job
-had become eligible.  If the value is not of importance for you
-the number should be grouped with idle time.
+This report will display total usage divided amongst Allocated, Down,
+Planned Down, Idle, and Reserved time for selected clusters.
+.RS
+.IP Allocated 13
+Time that nodes were in use with active jobs or an active reservation.
+This does not include reservations created with the MAINT or IGNORE_JOBS
+flags.
+.IP Down
+Time that nodes were marked as Down or time that slurmctld was not
+responding (assuming TrackSlurmctldDown is set in slurmdbd.conf).
+.IP Idle
+Time where nodes had no active jobs or reservations.
+.IP Overcommited
+Time that the nodes were over allocated, either with the \fB-O,
+--overcommit\fP flag at submission time or \fBOverSubscribe\fP set to
+FORCE in the slurm.conf. This time is not counted against the total
+reported time.
+.IP PlannedDown
+Time that nodes were in use by a reservation created with the MAINT flag
+but not the IGNORE_JOBS flag.
+.IP Reserved
+Time that a node spent idle with eligible jobs in the queue that were
+unable to start due to time or size constraints. If this value is
+not of importance for you then the number can be grouped with idle time.
+.IP TresCount
+Configured number of TRES' on the reported nodes. See also the
+\fBTresName\fP field.
+.RE
+.RS 7
+
+Note: Reservations created with the IGNORE_JOBS flag are not tracked
+in the Cluster Utilization report due to the fact that allowing any
+current/active jobs to continue to run in the reservation introduces the
+possibility for them to be accounted for incorrectly.
+.RE
+.RS
+
+Note: The default view for the "Cluster Utilization" report includes the
+following fields: Cluster, Allocated, Down, PlannedDown, Idle, Reserved,
+Reported. You can include additional fields like OverCommitted and TresCount
+fields with the \fBFormat\fP option. The TresName will also be included if
+using the \fB\-T,  \-\-tres <tres_names>\fR option.
+.RE
 .TP
 .B cluster WCKeyUtilizationByUser
 This report will display wckey utilization sorted by WCKey name for
@@ -421,7 +459,8 @@ Cluster, Login, Proper, TresCount, Used, Wckey
 .in 10
 Utilization:
 .in 14
-Allocated, Cluster, Down, Idle, Overcommited, PlannedDown, Reported, Reserved, TresCount, TresName
+Allocated, Cluster, Down, Idle, Overcommited, PlannedDown, Reported, Reserved,
+TresCount, TresName
 
 .TP
 \fBFORMAT OPTIONS FOR JOB REPORTS\fP
