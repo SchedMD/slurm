@@ -239,6 +239,8 @@ int main (int argc, char **argv)
 	else
 		exit_code = _single_cluster(&req_msg);
 
+	FREE_NULL_LIST(req_msg.acct_list);
+	FREE_NULL_LIST(req_msg.user_list);
 	exit(exit_code);
 }
 
