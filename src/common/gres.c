@@ -3997,12 +3997,6 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			return -1;
 	}
 
-	/* gres_per_task requires task count specification */
-	if (job_gres_data->gres_per_task) {
-		if (*num_tasks == NO_VAL)
-			return -1;
-	}
-
 	/*
 	 * Ensure gres_per_job is multiple of gres_per_node
 	 * Ensure node count is consistent with GRES parameters
