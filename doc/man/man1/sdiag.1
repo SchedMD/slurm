@@ -1,4 +1,4 @@
-.TH sdiag "1" "Slurm Commands" "November 2018" "Slurm Commands"
+.TH sdiag "1" "Slurm Commands" "May 2019" "Slurm Commands"
 
 .SH "NAME"
 .LP
@@ -88,7 +88,7 @@ Number of jobs running at the given time of the time stamp above.
 Time stamp of when the running job count was taken.
 
 .LP
-The second block of information is related to main scheduling algorithm based
+The next block of information is related to main scheduling algorithm based
 on jobs priorities. A scheduling cycle implies to get the job_write_lock lock,
 then trying to get resources for jobs pending, starting from the most priority
 one and going in descendent order. Once a job can not get the resources the
@@ -101,16 +101,17 @@ Time in microseconds for last scheduling cycle.
 
 .TP
 \fBMax cycle\fR
-Time in microseconds for the maximum scheduling cycle since last reset.
+Maximum time in microseconds for any scheduling cycle since last reset.
 
 .TP
 \fBTotal cycles\fR
-Number of scheduling cycles since last reset. Scheduling is done in
-periodically and when a job is submitted or a job is completed.
+Total run time in microseconds for all scheduling cycles since last reset.
+Scheduling is performed periodically and (depending upon configuration)
+when a job is submitted or a job is completed.
 
 .TP
 \fBMean cycle\fR
-Mean of scheduling cycles since last reset
+Mean time in microseconds for all scheduling cycles since last reset.
 
 .TP
 \fBMean depth cycle\fR
@@ -118,19 +119,14 @@ Mean of cycle depth. Depth means number of jobs processed in a scheduling cycle.
 
 .TP
 \fBCycles per minute\fR
-Counter of scheduling executions per minute
+Counter of scheduling executions per minute.
 
 .TP
 \fBLast queue length\fR
 Length of jobs pending queue.
 
-.TP
-\fBLatency for 1000 calls to gettimeofday()\fR
-Latency of 1000 calls to the gettimeofday() syscall in microseconds,
-as measured at controller startup.
-
 .LP
-The third block of information is related to backfilling scheduling algorithm.
+The next block of information is related to backfilling scheduling algorithm.
 A backfilling scheduling cycle implies to get locks for jobs, nodes and
 partitions objects then trying to get resources for jobs pending. Jobs are
 processed based on priorities. If a job can not get resources the algorithm
@@ -158,48 +154,49 @@ last Slurm start.
 
 .TP
 \fBTotal cycles\fR
-Number of scheduling cycles since last reset
+Number of backfill scheduling cycles since last reset
 
 .TP
 \fBLast cycle when\fR
-Time when last execution cycle happened in format
+Time when last backfill scheduling cycle happened in the format
 "weekday Month MonthDay hour:minute.seconds year"
 
 .TP
 \fBLast cycle\fR
-Time in microseconds of last backfilling cycle.
-It counts only execution time removing sleep time inside a scheduling cycle
-when it takes too much time.
+Time in microseconds of last backfill scheduling cycle.
+It counts only execution time, removing sleep time inside a scheduling cycle
+when it executes for an extended period time.
 Note that locks are released during the sleep time so that other work can
 proceed.
 
 .TP
 \fBMax cycle\fR
-Time in microseconds of maximum backfilling cycle execution since last reset.
-It counts only execution time removing sleep time inside a scheduling cycle
-when it takes too much time.
+Time in microseconds of maximum backfill scheduling cycle execution since last reset.
+It counts only execution time, removing sleep time inside a scheduling cycle
+when it executes for an extended period time.
 Note that locks are released during the sleep time so that other work can
 proceed.
 
 .TP
 \fBMean cycle\fR
-Mean of backfilling scheduling cycles in microseconds since last reset
-
+Mean time in microseconds of backfilling scheduling cycles since last reset.
 
 .TP
 \fBLast depth cycle\fR
 Number of processed jobs during last backfilling scheduling cycle. It counts
-every process even if it has no option to execute due to dependencies or limits.
+every job even if that job can not be started due to dependencies or limits.
 
 .TP
 \fBLast depth cycle (try sched)\fR
 Number of processed jobs during last backfilling scheduling cycle. It counts
-only processes with a chance to run waiting for available resources. These
-jobs are which makes the backfilling algorithm heavier.
+only jobs with a chance to start using available resources. These
+jobs consume more scheduling time than jobs which are found can not be started
+due to dependencies or limits.
 
 .TP
 \fBDepth Mean\fR
-Mean of processed jobs during backfilling scheduling cycles since last reset.
+Mean count of jobs processed during all backfilling scheduling cycles since last
+reset.
 Jobs which are found to be ineligible to run when examined by the backfill
 scheduler are not counted (e.g. jobs submitted to multiple partitions and
 already started, jobs which have reached a QOS or account limit such as
@@ -212,21 +209,26 @@ The subset of Depth Mean that the backfill scheduler attempted to schedule.
 .TP
 \fBLast queue length\fR
 Number of jobs pending to be processed by backfilling algorithm.
-A job once for each partition it requested.
+A job is counted once for each partition it is queued to use.
 A pending job array will normally be counted as one job (tasks of a job array
 which have already been started/requeued or individually modified will already
 have individual job records and are each counted as a separate job).
 
 .TP
 \fBQueue length Mean\fR
-Mean of jobs pending to be processed by backfilling algorithm.
+Mean count of jobs pending to be processed by backfilling algorithm.
 A job once for each partition it requested.
 A pending job array will normally be counted as one job (tasks of a job array
 which have already been started/requeued or individually modified will already
 have individual job records and are each counted as a separate job).
 
+.TP
+\fBLatency for 1000 calls to gettimeofday()\fR
+Latency of 1000 calls to the gettimeofday() syscall in microseconds,
+as measured at controller startup.
+
 .LP
-The fourth and fifth blocks of information report the most frequently issued
+The next blocks of information report the most frequently issued
 remote procedure calls (RPCs), calls made for the Slurmctld daemon to perform
 some action.
 The fourth block reports the RPCs issued by message type.
@@ -294,7 +296,7 @@ The location of the Slurm configuration file.
 .SH "COPYING"
 Copyright (C) 2010-2011 Barcelona Supercomputing Center.
 .br
-Copyright (C) 2010\-2017 SchedMD LLC.
+Copyright (C) 2010\-2019 SchedMD LLC.
 .LP
 Slurm is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free

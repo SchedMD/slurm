@@ -252,7 +252,7 @@ send_user "\n\nTEST 2: --gpus-per-node option by job (first job over limit, seco
 
 set timeout $max_job_delay
 exec $bin_rm -f $file_out1  $file_out2
-set gpu_good_cnt [expr ($gpu_limit + $nb_nodes - 1) / $nb_nodes]
+set gpu_good_cnt [expr $gpu_limit / $nb_nodes]
 if {$nb_nodes == 1} {
 	set gpu_fail_cnt [expr $gpu_limit + 1]
 } else {

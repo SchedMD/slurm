@@ -165,7 +165,7 @@ if {$match_gpu != $expected_gpus} {
 	set exit_code 1
 }
 
-if {$use_gpus_per_job > 2} {
+if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 	send_user "\n\nTEST: --gpus option, part 2\n"
 	set match_craynetwork 0
 	set match_gpu 0
