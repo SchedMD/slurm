@@ -330,11 +330,16 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		goto end_it;
 	}
 	if (!(row = mysql_fetch_row(result))) {
-		rc = SLURM_ERROR;
 		mysql_free_result(result);
-		error("There is no reservation by id %u, "
-		      "time_start %ld, and cluster '%s'", resv->id,
-		      resv->time_start_prev, resv->cluster);
+		error("%s: There is no reservation by id %u, time_start %ld, and cluster '%s', creating it",
+		      __func__, resv->id, resv->time_start_prev, resv->cluster);
+		/*
+		 * Don't set the time_start to time_start_prev as we have no
+		 * idea what the reservation looked like at that time.  Doing so
+		 * will also mess up future updates.
+		 */
+		/* resv->time_start = resv->time_start_prev; */
+		rc = as_mysql_add_resv(mysql_conn, resv);
 		goto end_it;
 	}
 

@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- srun - restore the --cpu_bind option to srun.
  -- Add UsageFactorSafe QOS flag to control applying UsageFactor at
     submission/scheduling time.
+ -- Create missing reservations on DBD_MODIFY_RESV.
 
 * Changes in Slurm 19.05.0
 ==========================
