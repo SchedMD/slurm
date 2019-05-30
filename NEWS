@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Change GRES type set by gpu/gpu_nvml plugin to be more specific - based
     on device name instead of brand name.
  -- cli_filter - fix logic error with option lookup functions.
+ -- Fix bad testing of NodeFeatures debug flag in contribs/cray.
 
 * Changes in Slurm 19.05.1-2
 ============================
