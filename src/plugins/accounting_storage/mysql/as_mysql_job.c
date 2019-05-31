@@ -640,8 +640,8 @@ no_rollup_change:
 		if (!(job_ptr->db_index = mysql_db_insert_ret_id(
 			      mysql_conn, query))) {
 			if (!reinit) {
-				error("It looks like the storage has gone "
-				      "away trying to reconnect");
+				error("%s: It looks like the storage has gone away trying to reconnect",
+				      __func__);
 				/* reconnect */
 				check_connection(mysql_conn);
 				reinit = 1;
