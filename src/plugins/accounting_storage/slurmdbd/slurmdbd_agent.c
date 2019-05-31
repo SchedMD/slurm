@@ -38,6 +38,8 @@
 \*****************************************************************************/
 
 #include "src/common/slurm_xlator.h"
+
+#include "src/common/fd.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -472,7 +474,7 @@ static void _save_dbd_state(void)
 end_it:
 	if (fd >= 0) {
 		verbose("slurmdbd: saved %d pending RPCs", wrote);
-		(void) close(fd);
+		fsync_and_close(fd, "dbd.messages");
 	}
 	xfree(dbd_fname);
 }
