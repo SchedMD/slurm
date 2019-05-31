@@ -232,6 +232,7 @@ set ::env(LANG)          "en_US.UTF-8"
 set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"
 set alpha_comma_slash    "\[a-zA-Z/,\]+"
+set alpha_comma_slash_under "\[a-zA-Z/,/_\]+"
 set alpha_numeric        "\[a-zA-Z0-9\]+"
 set alpha_numeric_special "\[a-zA-Z0-9_,=\\.\\(\\)\\\[\\\]\\\/\:\\-\|\]+"
 set alpha_numeric_colon  "\[a-zA-Z0-9_,\:\-\]+"
@@ -1254,13 +1255,13 @@ proc test_topology { } {
 #
 ################################################################
 proc get_affinity_types { } {
-	global scontrol alpha_comma_slash
+	global scontrol alpha_comma_slash_under
 
 	log_user 0
 	set affinity ""
 	spawn $scontrol show config
 	expect {
-		-re "TaskPlugin *= ($alpha_comma_slash)" {
+		-re "TaskPlugin *= ($alpha_comma_slash_under)" {
 			set parts [split $expect_out(1,string) ",/"]
 			while 1 {
 				set task_found [lsearch $parts "task"]
@@ -1275,6 +1276,7 @@ proc get_affinity_types { } {
 		}
 	}
 	log_user 1
+
 	return $affinity
 }
 
@@ -1288,13 +1290,13 @@ proc get_affinity_types { } {
 #
 ################################################################
 proc get_affinity_params { } {
-	global scontrol alpha_comma_slash
+	global scontrol alpha_comma_slash_under
 
 	log_user 0
 	set params ""
 	spawn $scontrol show config
 	expect {
-		-re "TaskPluginParam *= ($alpha_comma_slash)" {
+		-re "TaskPluginParam *= ($alpha_comma_slash_under)" {
 			set params $expect_out(1,string)
 			exp_continue
 		}
