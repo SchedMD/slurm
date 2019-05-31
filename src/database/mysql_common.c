@@ -972,8 +972,8 @@ extern uint64_t mysql_db_insert_ret_id(mysql_conn_t *mysql_conn, char *query)
 		new_id = mysql_insert_id(mysql_conn->db_conn);
 		if (!new_id) {
 			/* should have new id */
-			error("We should have gotten a new id: %s",
-			      mysql_error(mysql_conn->db_conn));
+			error("%s: We should have gotten a new id: %s",
+			      __func__, mysql_error(mysql_conn->db_conn));
 		}
 	}
 	slurm_mutex_unlock(&mysql_conn->lock);
