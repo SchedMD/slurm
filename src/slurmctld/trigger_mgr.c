@@ -51,6 +51,7 @@
 #include <sys/types.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_protocol_defs.h"
