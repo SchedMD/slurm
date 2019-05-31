@@ -53,6 +53,7 @@
 #include <time.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/fd.h"
 #include "src/common/gres.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"

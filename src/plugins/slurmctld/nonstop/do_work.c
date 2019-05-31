@@ -49,6 +49,7 @@
 
 #include "src/common/slurm_xlator.h"	/* Must be first */
 #include "src/common/bitstring.h"
+#include "src/common/fd.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
 #include "src/common/node_conf.h"

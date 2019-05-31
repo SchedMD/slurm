@@ -189,3 +189,39 @@ extern int wait_fd_readable(int fd, int time_limit)
 		}
 	}
 }
+
+/*
+ * fsync() then close() a file.
+ * Execute fsync() and close() multiple times if necessary and log failures
+ * RET 0 on success or -1 on error
+ */
+extern int fsync_and_close(int fd, const char *file_type)
+{
+	int rc = 0, retval, pos;
+
+	/*
+	 * Slurm state save files are commonly stored on shared filesystems,
+	 * so lets give fsync() three tries to sync the data to disk.
+	 */
+	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
+		retval = fsync(fd);
+		if (retval && (errno != EINTR)) {
+			error("fsync() error writing %s state save file: %m",
+			      file_type);
+		}
+	}
+	if (retval)
+		rc = retval;
+
+	for (retval = 1, pos = 1; retval && pos < 4; pos++) {
+		retval = close(fd);
+		if (retval && (errno != EINTR)) {
+			error("close () error on %s state save file: %m",
+			      file_type);
+		}
+	}
+	if (retval)
+		rc = retval;
+
+	return rc;
+}
