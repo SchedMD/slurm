@@ -133,34 +133,21 @@ print_header $test_id
 #
 # Test if gres/gpu is configured
 #
-log_user 0
-set gres_gpu 0
-spawn $scontrol show config
-expect {
-	-re "GresTypes *= \[a-zA-Z0-9_\,\-\]*gpu" {
-		set gres_gpu 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$gres_gpu != 1} {
+set gpu_cnt [get_gpu_count 1]
+if {$gpu_cnt < 1} {
 	send_user "\nWARNING: This test can not be run without gres/gpu configured\n"
 	exit $exit_code
 }
-
+send_user "\n GPUs:$gpu_cnt\n"
 #
 # Spawn a job via srun to print environment variables and
 # check count GPU devices allocated
 #
-if {[run_gpu_test 1 ] != 0} {
-	incr exit_code
-} elseif {[run_gpu_test 2 ] != 0} {
-	incr exit_code
-} elseif {[run_gpu_test 3 ] != 0} {
-	incr exit_code
+for {set inx 1} {$inx <= $gpu_cnt && $inx <= 3} {incr inx} {
+	if {[run_gpu_test $inx ] != 0} {
+		incr exit_code
+		break
+	}
 }
 
 #
