@@ -131,6 +131,8 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack32(slurmctld_diag_stats.bf_depth_sum, buffer);
 			pack32(slurmctld_diag_stats.bf_depth_try_sum, buffer);
 			pack32(slurmctld_diag_stats.bf_queue_len_sum, buffer);
+			pack32(slurmctld_diag_stats.bf_table_size, buffer);
+			pack32(slurmctld_diag_stats.bf_table_size_sum, buffer);
 
 			pack32(slurmctld_diag_stats.bf_active, buffer);
 			pack32(slurmctld_diag_stats.backfilled_pack_jobs,
@@ -237,6 +239,7 @@ extern void reset_stats(int level)
 	slurmctld_diag_stats.bf_depth_try_sum = 0;
 	slurmctld_diag_stats.bf_queue_len = 0;
 	slurmctld_diag_stats.bf_queue_len_sum = 0;
+	slurmctld_diag_stats.bf_table_size_sum = 0;
 	slurmctld_diag_stats.bf_cycle_max = 0;
 	slurmctld_diag_stats.bf_last_depth = 0;
 	slurmctld_diag_stats.bf_last_depth_try = 0;

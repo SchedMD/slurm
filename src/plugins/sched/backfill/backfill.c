@@ -212,7 +212,8 @@ static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val);
 static int  _attempt_backfill(void);
 static int  _clear_job_start_times(void *x, void *arg);
 static int  _clear_qos_blocked_times(void *x, void *arg);
-static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2);
+static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
+			   int node_space_recs);
 static uint32_t _get_job_max_tl(struct job_record *job_ptr, time_t now,
 				node_space_map_t *node_space);
 static bool _hetjob_any_resv(struct job_record *het_leader);
@@ -917,8 +918,10 @@ extern void backfill_reconfig(void)
 /* Update backfill scheduling statistics
  * IN tv1 - start time
  * IN tv2 - end (current) time
+ * IN node_space_recs - count of records in resouces/time table being tested
  */
-static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2)
+static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
+			   int node_space_recs)
 {
 	uint32_t delta_t, real_time;
 
@@ -939,6 +942,8 @@ static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2)
 		slurmctld_diag_stats.bf_cycle_max = slurmctld_diag_stats.
 						    bf_cycle_last;
 	}
+	slurmctld_diag_stats.bf_table_size = node_space_recs;
+	slurmctld_diag_stats.bf_table_size_sum += node_space_recs;
 }
 
 static int _list_find_all(void *x, void *key)
@@ -2674,7 +2679,7 @@ skip_start:
 	FREE_NULL_LIST(job_queue);
 
 	gettimeofday(&bf_time2, NULL);
-	_do_diag_stats(&bf_time1, &bf_time2);
+	_do_diag_stats(&bf_time1, &bf_time2, node_space_recs);
 	if (debug_flags & DEBUG_FLAG_BACKFILL) {
 		END_TIMER;
 		info("backfill: completed testing %u(%d) jobs, %s",

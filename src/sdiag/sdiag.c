@@ -183,6 +183,11 @@ static int _print_stats(void)
 		printf("\tQueue length mean: %u\n",
 		       buf->bf_queue_len_sum / buf->bf_cycle_counter);
 	}
+	printf("\tLast table size: %u\n", buf->bf_table_size);
+	if (buf->bf_cycle_counter > 0) {
+		printf("\tMean table size: %u\n",
+		       buf->bf_table_size_sum / buf->bf_cycle_counter);
+	}
 
 	printf("\nLatency for 1000 calls to gettimeofday(): %d microseconds\n",
 	       buf->gettimeofday_latency);

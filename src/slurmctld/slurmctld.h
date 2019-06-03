@@ -180,18 +180,20 @@ typedef struct diag_stats {
 	uint32_t backfilled_jobs;
 	uint32_t last_backfilled_jobs;
 	uint32_t backfilled_pack_jobs;
+	uint32_t bf_active;
 	uint32_t bf_cycle_counter;
 	uint32_t bf_cycle_last;
 	uint32_t bf_cycle_max;
 	uint64_t bf_cycle_sum;
-	uint32_t bf_last_depth;
-	uint32_t bf_last_depth_try;
 	uint32_t bf_depth_sum;
 	uint32_t bf_depth_try_sum;
+	uint32_t bf_last_depth;
+	uint32_t bf_last_depth_try;
 	uint32_t bf_queue_len;
 	uint32_t bf_queue_len_sum;
+	uint32_t bf_table_size;
+	uint32_t bf_table_size_sum;
 	time_t   bf_when_last_cycle;
-	uint32_t bf_active;
 
 	uint32_t latency;
 } diag_stats_t;

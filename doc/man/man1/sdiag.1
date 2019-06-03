@@ -1,4 +1,4 @@
-.TH sdiag "1" "Slurm Commands" "May 2019" "Slurm Commands"
+.TH sdiag "1" "Slurm Commands" "June 2019" "Slurm Commands"
 
 .SH "NAME"
 .LP
@@ -221,6 +221,18 @@ A job once for each partition it requested.
 A pending job array will normally be counted as one job (tasks of a job array
 which have already been started/requeued or individually modified will already
 have individual job records and are each counted as a separate job).
+
+.TP
+\fBLast table size\fR
+Count of different time slots tested by the backfill scheduler in its last
+iteration.
+
+.TP
+\fBMean table size\fR
+Mean count of different time slots tested by the backfill scheduler.
+Larger counts increase the time required for the backfill operation.
+The table size is influenced by many schuling parameters, including:
+bf_min_age_reserve, bf_min_prio_reserve, bf_resolution, and bf_window.
 
 .TP
 \fBLatency for 1000 calls to gettimeofday()\fR

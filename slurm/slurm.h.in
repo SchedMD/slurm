@@ -2997,6 +2997,8 @@ typedef struct stats_info_response_msg {
 	uint32_t bf_depth_try_sum;
 	uint32_t bf_queue_len;
 	uint32_t bf_queue_len_sum;
+	uint32_t bf_table_size;
+	uint32_t bf_table_size_sum;
 	time_t   bf_when_last_cycle;
 	uint32_t bf_active;
 

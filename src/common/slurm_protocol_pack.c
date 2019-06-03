@@ -12200,6 +12200,8 @@ static int  _unpack_stats_response_msg(stats_info_response_msg_t **msg_ptr,
 			safe_unpack32(&msg->bf_depth_sum,	buffer);
 			safe_unpack32(&msg->bf_depth_try_sum,	buffer);
 			safe_unpack32(&msg->bf_queue_len_sum,	buffer);
+			safe_unpack32(&msg->bf_table_size,	buffer);
+			safe_unpack32(&msg->bf_table_size_sum,	buffer);
 
 			safe_unpack32(&msg->bf_active,		buffer);
 			safe_unpack32(&msg->bf_backfilled_pack_jobs, buffer);
