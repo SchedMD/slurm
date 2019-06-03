@@ -155,7 +155,6 @@ try_again:
 			errno = 0;
 			goto end_it;
 		}
-		error("mysql_query failed: %d %s\n%s", errno, err_str, query);
 		if (errno == ER_LOCK_DEADLOCK) {
 			/*
 			 * Mysql detected a deadlock and we should retry
@@ -189,6 +188,7 @@ try_again:
 			      "You will need to call 'mysqladmin flush-hosts' "
 			      "to regain connectivity.");
 		}
+		error("mysql_query failed: %d %s\n%s", errno, err_str, query);
 		rc = SLURM_ERROR;
 	}
 end_it:
