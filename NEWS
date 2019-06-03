@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
     never reroll from Unix epoch.
  -- Display submit time when running sacctmgr show runawayjobs and add format
     option to display eligible time.
+ -- jobcomp/elasticsearch - fix minor race related to JobCompLoc setup.
 
 * Changes in Slurm 19.05.0
 ==========================

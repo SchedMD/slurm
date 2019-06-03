@@ -135,6 +135,8 @@ char *save_state_file = "elasticsearch_state";
 char *index_type = "/slurm/jobcomp";
 char *log_url = NULL;
 
+static pthread_cond_t location_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t location_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t pend_jobs_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t job_handler_thread;
@@ -860,7 +862,14 @@ extern void *_process_jobs(void *x)
 {
 	ListIterator iter;
 	struct job_node *jnode = NULL;
+	struct timespec ts = {0, 0};
 	time_t now;
+
+	/* Wait for slurm_jobcomp_set_location log_url setup. */
+	slurm_mutex_lock(&location_mutex);
+	ts.tv_sec = time(NULL) + INDEX_RETRY_INTERVAL;
+	slurm_cond_timedwait(&location_cond, &location_mutex, &ts);
+	slurm_mutex_unlock(&location_mutex);
 
 	while (!thread_shutdown) {
 		int success_cnt = 0, fail_cnt = 0, wait_retry_cnt = 0;
@@ -962,6 +971,10 @@ extern int slurm_jobcomp_set_location(char *location)
 		curl_easy_cleanup(curl_handle);
 	}
 	curl_global_cleanup();
+
+	slurm_mutex_lock(&location_mutex);
+	slurm_cond_broadcast(&location_cond);
+	slurm_mutex_unlock(&location_mutex);
 
 	return rc;
 }
