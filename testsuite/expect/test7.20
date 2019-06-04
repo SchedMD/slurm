@@ -188,6 +188,7 @@ proc test_bin_pass { num bin args het_job count } {
 
 	send_user "\n\n**** TEST PASS $num ****\n"
 	eval spawn $bin [join $args " "]
+	set pid [exp_pid]
 	expect {
 		-re "^(srun|salloc|sbatch): initialized\r\n" {
 			incr got_init
@@ -214,10 +215,7 @@ proc test_bin_pass { num bin args het_job count } {
 		}
 		timeout {
 			log_error "$bin not responding"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
-			slow_kill [expr 0 - $salloc_pid]
+			slow_kill [expr 0 - $pid]
 			endit 1
 		}
 		eof {
@@ -247,6 +245,7 @@ proc test_bin_fail { num bin args het_job count } {
 
 	send_user "\n\n**** TEST FAIL $num ****\n"
 	eval spawn $bin [join $args " "]
+	set pid [exp_pid]
 	expect {
 		-re "^(srun|salloc|sbatch): error: initialized\r\n" {
 			incr got_init
@@ -274,10 +273,7 @@ proc test_bin_fail { num bin args het_job count } {
 		}
 		timeout {
 			log_error "$bin not responding"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
-			slow_kill [expr 0 - $salloc_pid]
+			slow_kill [expr 0 - $pid]
 			endit 1
 		}
 		eof {
