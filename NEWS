@@ -5,6 +5,9 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- Avoid possible race when 2 conf files are read at the same exact time.
  -- Add last and mean backfill table size to sdiag output.
+ -- Add support for additional job submit environment variables:
+    SALLOC_MEM_PER_CPU, SALLOC_MEM_PER_NODE, SBATCH_MEM_PER_CPU and
+    SBATCH_MEM_PER_NODE.
 
 * Changes in Slurm 19.05.1
 ==========================
