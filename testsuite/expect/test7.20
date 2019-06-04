@@ -131,7 +131,7 @@ proc take_backup { file } {
 	if { [file exists $file ] } {
 		do_copy $file $cwd/$bfile.orig
 	} else {
-		log_info "skipping backup of non-existant $file"
+		log_info "skipping backup of non-existent $file"
 	}
 }
 
@@ -146,7 +146,7 @@ proc restore_backup { file } {
 
 		do_copy $cwd/$bfile.orig $file
 	} else {
-		log_info "skipping restore of non-existant $file"
+		log_info "skipping restore of non-existent $file"
 	}
 
 	if { [file exists $cwd/$bfile.orig ] } {
