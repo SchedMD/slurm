@@ -4918,6 +4918,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+	bool held_user = false;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -4992,6 +4993,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	 */
 	if (job_ptr->priority == NO_VAL)
 		set_job_prio(job_ptr);
+
+	if (job_ptr->state_reason == WAIT_HELD_USER)
+		held_user = true;
 
 	if (independent &&
 	    (license_job_test(job_ptr, time(NULL), true) != SLURM_SUCCESS))
@@ -5082,6 +5086,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		last_job_update = now;
 	}
 
+	if (held_user)
+		job_ptr->state_reason = WAIT_HELD_USER;
        /*
 	* Moved this (_create_job_array) here to handle when a job
 	* array is submitted since we

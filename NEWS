@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- accounting_storage/mysql - fix incorrect function names in error messages.
  -- accounting_storage/slurmdbd - trigger an fsync() on the dbd.messages state
     file to ensure it is committed to disk properly.
+ -- Avoid JobHeldUser state reason from being updated at allocation time.
 
 * Changes in Slurm 19.05.0
 ==========================
