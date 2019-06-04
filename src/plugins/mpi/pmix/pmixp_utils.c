@@ -363,7 +363,8 @@ int pmixp_stepd_send(const char *nodelist, const char *address,
 
 		/* wait with constantly increasing delay */
 		struct timespec ts =
-		{(delay / 1000), ((delay % 1000) * 1000000)};
+		{(delay / MSEC_IN_SEC),
+		 ((delay % MSEC_IN_SEC) * NSEC_IN_MSEC)};
 		nanosleep(&ts, NULL);
 		delay *= 2;
 	}
@@ -460,7 +461,8 @@ int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 
 		/* wait with constantly increasing delay */
 		struct timespec ts =
-		{(delay / 1000), ((delay % 1000) * 1000000)};
+		{(delay / MSEC_IN_SEC),
+		 ((delay % MSEC_IN_SEC) * NSEC_IN_MSEC)};
 		nanosleep(&ts, NULL);
 		delay *= 2;
 	}

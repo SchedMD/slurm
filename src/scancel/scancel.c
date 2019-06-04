@@ -661,7 +661,7 @@ static void _add_delay(void)
 		target_resp_time = slurm_get_msg_timeout() / 4;
 		target_resp_time = MAX(target_resp_time, 3);
 		target_resp_time = MIN(target_resp_time, 5);
-		target_resp_time *= 1000000;
+		target_resp_time *= USEC_IN_SEC;
 		debug("%s: target response time = %d", __func__,
 		      target_resp_time);
 	}
@@ -672,7 +672,7 @@ static void _add_delay(void)
 	}
 
 	/* Maximum delay of 1 second. Start at 10 msec with Fibonacci backoff */
-	my_delay = MIN((delay_time + previous_delay), 1000000);
+	my_delay = MIN((delay_time + previous_delay), USEC_IN_SEC);
 	previous_delay = delay_time;
 	delay_time = my_delay;
 	slurm_mutex_unlock(&max_delay_lock);

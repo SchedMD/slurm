@@ -161,6 +161,13 @@
 #define YEAR_MINUTES (365 * 24 * 60)
 #define YEAR_SECONDS (365 * 24 * 60 * 60)
 
+/* Read as 'how many X are in a Y' */
+#define MSEC_IN_SEC 1000
+#define USEC_IN_SEC 1000000
+#define NSEC_IN_SEC 1000000000
+#define NSEC_IN_USEC 1000
+#define NSEC_IN_MSEC 1000000
+
 #define SLURMD_REG_FLAG_STARTUP  0x0001
 #define SLURMD_REG_FLAG_RESP     0x0002
 

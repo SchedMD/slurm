@@ -3548,12 +3548,15 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 
 	if (timeout <= 0)
 		/* convert secs to msec */
-		timeout  = slurm_get_msg_timeout() * 1000;
+		timeout  = slurm_get_msg_timeout() * MSEC_IN_SEC;
 
-	else if (timeout > (slurm_get_msg_timeout() * 10000)) {
+	else if (timeout > (slurm_get_msg_timeout() * MSEC_IN_SEC * 10)) {
+		/* consider 10x the timeout to be very long */
 		debug("%s: You are receiving a message with very long "
-		      "timeout of %d seconds", __func__, (timeout/1000));
-	} else if (timeout < 1000) {
+		      "timeout of %d seconds", __func__,
+		      (timeout / MSEC_IN_SEC));
+	} else if (timeout < MSEC_IN_SEC) {
+		/* consider a less than 1 second to be very short */
 		error("%s: You are receiving a message with a very short "
 		      "timeout of %d msecs", __func__, timeout);
 	}

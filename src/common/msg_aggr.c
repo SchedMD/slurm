@@ -209,11 +209,12 @@ static void * _msg_aggregation_sender(void *arg)
 
 		/* A msg has been collected; start new window */
 		gettimeofday(&now, NULL);
-		timeout.tv_sec = now.tv_sec + (msg_collection.window / 1000);
-		timeout.tv_nsec = (now.tv_usec * 1000) +
-			(1000000 * (msg_collection.window % 1000));
-		timeout.tv_sec += timeout.tv_nsec / 1000000000;
-		timeout.tv_nsec %= 1000000000;
+		timeout.tv_sec = now.tv_sec +
+			(msg_collection.window / MSEC_IN_SEC);
+		timeout.tv_nsec = (now.tv_usec * NSEC_IN_USEC) +
+			(NSEC_IN_MSEC * (msg_collection.window % MSEC_IN_SEC));
+		timeout.tv_sec += timeout.tv_nsec / NSEC_IN_SEC;
+		timeout.tv_nsec %= NSEC_IN_SEC;
 
 		slurm_cond_timedwait(&msg_collection.cond,
 				     &msg_collection.mutex, &timeout);

@@ -1819,8 +1819,9 @@ static void *_ume_agent(void *args)
 		if (shutdown_time)
 			break;
 		/* Sleep before retry */
-		req.tv_sec  =  ume_check_interval / 1000000;
-		req.tv_nsec = (ume_check_interval % 1000000) * 1000;
+		req.tv_sec  =  ume_check_interval / USEC_IN_SEC;
+		req.tv_nsec = (ume_check_interval % USEC_IN_SEC) *
+			      NSEC_IN_USEC;
 		(void) nanosleep(&req, NULL);
 	}
 

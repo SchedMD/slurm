@@ -262,7 +262,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 				debug("Waited %f sec and still waiting: next sleep for %f sec",
 				      cur_delay, cur_sleep);
 			}
-			usleep(1000000 * cur_sleep);
+			usleep(USEC_IN_SEC * cur_sleep);
 			cur_delay += cur_sleep;
 		}
 

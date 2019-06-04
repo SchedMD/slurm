@@ -203,7 +203,7 @@ static uint64_t _time_str2num(char *time_str)
 		      &year, &month, &day, &hour, &min, &sec, &u_sec, &unk);
 	if (args >= 6) {
 		total_usecs  = (((hour * 60) + min) * 60) + sec;
-		total_usecs *= 1000000;
+		total_usecs *= USEC_IN_SEC;
 		total_usecs += u_sec;
 	}
 
@@ -1116,7 +1116,7 @@ static void _get_node_energy_counter(void)
 			node_ptr->power->current_watts = 0;
 	}
 	usecs_day  = 24 * 60 * 60;
-	usecs_day *= 1000000;
+	usecs_day *= USEC_IN_SEC;
 	for (i = 0; i < num_ent; i++) {
 		for (j = 0; j < ents[i].node_cnt; j++) {
 			node_ptr = find_node_record2(ents[i].node_name[j]);

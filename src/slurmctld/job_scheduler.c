@@ -774,7 +774,7 @@ extern int schedule(uint32_t job_limit)
 	} else if (sched_running) {
 		delta_t = 0;
 	} else {
-		delta_t  = (now.tv_sec  - sched_last.tv_sec) * 1000000;
+		delta_t  = (now.tv_sec  - sched_last.tv_sec) * USEC_IN_SEC;
 		delta_t +=  now.tv_usec - sched_last.tv_usec;
 	}
 
@@ -840,7 +840,7 @@ static void *_sched_agent(void *args)
 		if (sched_running)
 			continue;
 		gettimeofday(&now, NULL);
-		delta_t  = (now.tv_sec  - sched_last.tv_sec) * 1000000;
+		delta_t  = (now.tv_sec  - sched_last.tv_sec) * USEC_IN_SEC;
 		delta_t +=  now.tv_usec - sched_last.tv_usec;
 		if (delta_t >= sched_min_interval)
 			break;

@@ -974,9 +974,9 @@ extern void *backfill_agent(void *args)
 	pack_job_list = list_create(_pack_map_del);
 	while (!stop_backfill) {
 		if (short_sleep)
-			_my_sleep(1000000);
+			_my_sleep(USEC_IN_SEC);
 		else
-			_my_sleep((int64_t) backfill_interval * 1000000);
+			_my_sleep((int64_t) backfill_interval * USEC_IN_SEC);
 		if (stop_backfill)
 			break;
 

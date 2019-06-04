@@ -6433,7 +6433,7 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 		if (sched_timeout == 0) {
 			sched_timeout = MAX(time_limit, 1);
 			sched_timeout = MIN(sched_timeout, 2);
-			sched_timeout *= 1000000;
+			sched_timeout *= USEC_IN_SEC;
 		}
 		xfree(sched_params);
 		config_update = slurmctld_conf.last_update;
