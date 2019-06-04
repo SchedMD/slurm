@@ -34,6 +34,7 @@ set test_id		"7.20"
 set test_lua_reject	"test$test_id\_scripts/reject.lua"
 set test_lua_pass	"test$test_id\_scripts/pass.lua"
 set exit_code		 0
+set exit_code_skip	 -123123
 set cwd			"[$bin_pwd]"
 set job_name		"test$test_id"
 
@@ -154,14 +155,17 @@ proc restore_backup { file } {
 }
 
 proc endit { exit_code } {
-	global test_id config_dir
+	global test_id config_dir exit_code_skip
 
 	cleanup_accounts
 	restore_backup $config_dir/job_submit.lua
 	restore_backup $config_dir/slurm.conf
 	reconfigure
 
-	if {$exit_code == 0} {
+	if {$exit_code == $exit_code_skip} {
+		send_user "\nWARNING: Unable to run test with available nodes\n"
+		exit 0
+	} elseif {$exit_code == 0} {
 		print_success $test_id
 	} else {
 		log_error "exiting with exit code $exit_code"
@@ -331,6 +335,12 @@ create_accounts
 
 take_backup $config_dir/job_submit.lua
 take_backup $config_dir/slurm.conf
+
+# Verify cluster is able to run largest test job
+if { [catch {exec $srun -t1 -I -J $job_name --mpi=none --ntasks-per-node=5 -N 3 /bin/true} msg] } {
+	send_user "\nSystem availability test failed: $::errorCode -- $::errorInfo -- $msg\n"
+	endit $exit_code_skip
+}
 
 # Activate lua plugin
 exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
