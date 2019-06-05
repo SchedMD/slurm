@@ -2466,6 +2466,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		job_env.jobid = req->job_id;
 		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
+		job_env.pack_jobid = req->pack_jobid;
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;

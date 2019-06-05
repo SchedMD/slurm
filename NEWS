@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Display submit time when running sacctmgr show runawayjobs and add format
     option to display eligible time.
  -- jobcomp/elasticsearch - fix minor race related to JobCompLoc setup.
+ -- For HetJobs, ensure SLURM_PACK_JOB_ID is set regardless of whether
+    PrologFlags=Alloc is enabled.
 
 * Changes in Slurm 19.05.0
 ==========================
