@@ -1,5 +1,5 @@
 The list of things that has to be done in future
 
-1. Retrieve cpusets from SLURM and pass it to the application.
+1. Retrieve cpusets from Slurm and pass it to the application.
 2. Implement MPI dynamics.
 3. ...

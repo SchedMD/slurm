@@ -1135,8 +1135,6 @@ static void _find_qos_grp_node_bitmap(struct job_record *job_ptr,
 
 /*
  * For a given job, return a bitmap of nodes to be preferred in it's allocation
- * to minimize the overall node count for the association or partition closest
- * to it's GrpNode limit.
  */
 static bitstr_t *_find_grp_node_bitmap(struct job_record *job_ptr)
 {
@@ -1501,8 +1499,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				FREE_NULL_BITMAP(tmp_node_set_ptr[i].
 						 my_bitmap);
 			}
-			if (error_code != SLURM_SUCCESS)
+			if (error_code != SLURM_SUCCESS) {
+				FREE_NULL_BITMAP(feature_bitmap);
 				break;
+			}
 			if (feature_bitmap) {
 				if (feat_ptr->op_code == FEATURE_OP_XAND)
 					has_xand = true;

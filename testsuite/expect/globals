@@ -232,6 +232,7 @@ set ::env(LANG)          "en_US.UTF-8"
 set alpha                "\[a-zA-Z\]+"
 set alpha_cap            "\[A-Z\]+"
 set alpha_comma_slash    "\[a-zA-Z/,\]+"
+set alpha_comma_slash_under "\[a-zA-Z/,/_\]+"
 set alpha_numeric        "\[a-zA-Z0-9\]+"
 set alpha_numeric_special "\[a-zA-Z0-9_,=\\.\\(\\)\\\[\\\]\\\/\:\\-\|\]+"
 set alpha_numeric_colon  "\[a-zA-Z0-9_,\:\-\]+"
@@ -1254,13 +1255,13 @@ proc test_topology { } {
 #
 ################################################################
 proc get_affinity_types { } {
-	global scontrol alpha_comma_slash
+	global scontrol alpha_comma_slash_under
 
 	log_user 0
 	set affinity ""
 	spawn $scontrol show config
 	expect {
-		-re "TaskPlugin *= ($alpha_comma_slash)" {
+		-re "TaskPlugin *= ($alpha_comma_slash_under)" {
 			set parts [split $expect_out(1,string) ",/"]
 			while 1 {
 				set task_found [lsearch $parts "task"]
@@ -1275,6 +1276,7 @@ proc get_affinity_types { } {
 		}
 	}
 	log_user 1
+
 	return $affinity
 }
 
@@ -1288,13 +1290,13 @@ proc get_affinity_types { } {
 #
 ################################################################
 proc get_affinity_params { } {
-	global scontrol alpha_comma_slash
+	global scontrol alpha_comma_slash_under
 
 	log_user 0
 	set params ""
 	spawn $scontrol show config
 	expect {
-		-re "TaskPluginParam *= ($alpha_comma_slash)" {
+		-re "TaskPluginParam *= ($alpha_comma_slash_under)" {
 			set params $expect_out(1,string)
 			exp_continue
 		}
@@ -4771,6 +4773,7 @@ proc _set_gpu_socket_inx { sock_inx } {
 
 	if {$sock_inx == -1} {
 		set gpu_sock_list [lreplace $gpu_sock_list 0 99]
+		return
 	}
 
 	set sock_cnt [llength $gpu_sock_list]
@@ -4839,7 +4842,7 @@ proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
 			exp_continue
 		}
 		-re "gpu:${alpha_numeric_under}:${number}.S:($number),($number),($number),($number)" {
-			D $expect_out(1,string)
+			_set_gpu_socket_inx $expect_out(1,string)
 			_set_gpu_socket_inx $expect_out(2,string)
 			_set_gpu_socket_inx $expect_out(3,string)
 			_set_gpu_socket_inx $expect_out(4,string)
@@ -5331,4 +5334,70 @@ proc create_part { part_name num_nodes_in } {
 
 	log_info "Created partition $part_name with $num_nodes_in nodes"
 	return 0
+}
+
+################################################################
+#
+# Proc: get_node_config
+#
+# Determine the configuration of a node containing at least 1 GPU
+#
+# Set the following global variables
+# cores_per_socket - Cores per socet
+# cpus_per_socket - CPUs per socket
+# cpus_tot - Total count of CPUs on the node
+# exit_code - Set to 1 on failure
+# hostname - Name of the node referenced
+# mem_size - Real memory size
+# sockets_per_node - Sockets per node
+#
+################################################################
+proc get_node_config { } {
+	global cores_per_socket cpus_per_socket sockets_per_node mem_size
+	global hostname exit_code max_job_delay number srun scontrol
+	global alpha_numeric_nodelist bin_rm
+
+	set cpus_tot 1
+	set file_in  "test_gloabls"
+	set hostname "UNKNOWN"
+	set mem_size 1
+	set sockets_per_node 1
+	set cpus_per_socket 1
+	make_bash_script $file_in "$scontrol show node \$SLURM_JOB_NODELIST"
+	set timeout $max_job_delay
+	log_user 0
+	set srun_pid [spawn $srun --gres=gpu:1 -n1 -t1 ./$file_in]
+	expect {
+		-re "NodeName=($alpha_numeric_nodelist)" {
+			set hostname $expect_out(1,string)
+			exp_continue
+		}
+		-re "CoresPerSocket=($number)" {
+			set cores_per_socket $expect_out(1,string)
+			exp_continue
+		}
+		-re "CPUTot=($number)" {
+			set cpus_tot $expect_out(1,string)
+			exp_continue
+		}
+		-re "RealMemory=($number)" {
+			set mem_size $expect_out(1,string)
+			exp_continue
+		}
+		-re "Sockets=($number)" {
+			set sockets_per_node $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	exec $bin_rm -f $file_in
+	log_user 1
+	set cpus_per_socket [expr $cpus_tot / $sockets_per_node]
 }

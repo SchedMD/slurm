@@ -1495,7 +1495,7 @@ static int _handle_getgr(int fd, stepd_step_rec_t *job, pid_t remote_pid)
 
 	pid_match = proctrack_g_has_pid(job->cont_id, remote_pid);
 
-	if (!job->ngids || !job->gids) {
+	if (!job->ngids || !job->gids || !job->gr_names) {
 		error("%s: incomplete data, ignoring request", __func__);
 	} else if (mode == GETGR_MATCH_GROUP_AND_PID ) {
 		while (offset < job->ngids) {

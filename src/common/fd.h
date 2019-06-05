@@ -112,4 +112,11 @@ extern int wait_fd_readable(int fd, int time_limit);
 /* Wait for a file descriptor to be readable (up to time_limit seconds).
  * Return 0 when readable or -1 on error */
 
+/*
+ * fsync() then close() a file.
+ * Execute fsync() and close() multiple times if necessary and log failures
+ * RET 0 on success or -1 on error
+ */
+extern int fsync_and_close(int fd, const char *file_type);
+
 #endif /* !_FD_H */

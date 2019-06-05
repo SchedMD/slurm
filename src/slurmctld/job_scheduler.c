@@ -760,7 +760,7 @@ static bool _all_partition_priorities_same(void)
  */
 extern int schedule(uint32_t job_limit)
 {
-	static int sched_job_limit = -1;
+	static uint32_t sched_job_limit = NO_VAL;
 	int job_count = 0;
 	struct timeval now;
 	long delta_t;
@@ -778,12 +778,14 @@ extern int schedule(uint32_t job_limit)
 		delta_t +=  now.tv_usec - sched_last.tv_usec;
 	}
 
+	if (job_limit == NO_VAL)
+		job_limit = 0;			/* use system default */
 	slurm_mutex_lock(&sched_mutex);
-	if (sched_job_limit == 0)
+	if (sched_job_limit == INFINITE)
 		;				/* leave unlimited */
-	else if (job_limit == 0)
-		sched_job_limit = 0;		/* set unlimited */
-	else if (sched_job_limit == -1)
+	else if (job_limit == INFINITE)
+		sched_job_limit = INFINITE;	/* set unlimited */
+	else if (sched_job_limit == NO_VAL)
 		sched_job_limit = job_limit;	/* set initial value */
 	else
 		sched_job_limit += job_limit;	/* test more jobs */
@@ -795,7 +797,7 @@ extern int schedule(uint32_t job_limit)
 		sched_last.tv_usec = now.tv_usec;
 		sched_running = true;
 		job_limit = sched_job_limit;
-		sched_job_limit = -1;
+		sched_job_limit = NO_VAL;
 		slurm_mutex_unlock(&sched_mutex);
 
 		job_count = _schedule(job_limit);
@@ -844,7 +846,7 @@ static void *_sched_agent(void *args)
 			break;
 	}
 
-	job_cnt = schedule(1);
+	job_cnt = schedule(0);
 	slurm_mutex_lock(&sched_mutex);
 	sched_pend_thread = 0;
 	slurm_mutex_unlock(&sched_mutex);
@@ -2680,8 +2682,10 @@ extern int test_job_dependency(struct job_record *job_ptr)
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL) ||
-	    (list_count(job_ptr->details->depend_list) == 0))
+	    (list_count(job_ptr->details->depend_list) == 0)) {
+		job_ptr->bit_flags &= ~JOB_DEPENDENT;
 		return 0;
+	}
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
@@ -2882,6 +2886,13 @@ extern int test_job_dependency(struct job_record *job_ptr)
 		results = 2;
 	else if (depends)
 		results = 1;
+
+	if (results) {
+		job_ptr->bit_flags |= JOB_DEPENDENT;
+		acct_policy_remove_accrue_time(job_ptr, false);
+	} else {
+		job_ptr->bit_flags &= ~JOB_DEPENDENT;
+	}
 
 	return results;
 }
@@ -3442,7 +3453,13 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
-	if ((job_ptr->details == NULL) || (!IS_JOB_PENDING(job_ptr)))
+	/*
+	 * NOTE: Do not use IS_JOB_PENDING since that doesn't take
+	 * into account the COMPLETING FLAG which we need to since we don't want
+	 * to schedule a requeued job until it is actually done completing
+	 * the first time.
+	 */
+	if ((job_ptr->details == NULL) || (job_ptr->job_state != JOB_PENDING))
 		return ESLURM_DISABLED;
 
 	if (job_ptr->part_ptr_list) {

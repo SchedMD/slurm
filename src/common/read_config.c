@@ -4539,6 +4539,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (conf->prolog_flags & PROLOG_FLAG_NOHOLD) {
 			conf->prolog_flags |= PROLOG_FLAG_ALLOC;
 		}
+#ifdef HAVE_FRONT_END
+		if (conf->prolog_flags & PROLOG_FLAG_ALLOC) {
+			/* Batch job launches will fail without enhancements */
+			fatal("PrologFlags=alloc not supported on FrontEnd configurations");
+		}
+#endif
 		xfree(temp_str);
 	} else { /* Default: no Prolog Flags are set */
 		conf->prolog_flags = 0;

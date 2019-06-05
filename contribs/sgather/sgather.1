@@ -1,13 +1,13 @@
 .TH SGATHER "1" "October 2013" "sgather 1.0" "ZIH Slurm extensions"
 
 .SH "NAME"
-sgather \- transmit a file from the nodes allocated to a SLURM job.
+sgather \- transmit a file from the nodes allocated to a Slurm job.
 
 .SH "SYNOPSIS"
 \fBsgather\fR [\-rikCFpvV] SOURCE DEST
 
 .SH "DESCRIPTION"
-\fBsgather\fR is used to transmit a file from all nodes allocated to the currently active SLURM job. This command should only be executed from within a SLURM batch job or within the shell spawned after a SLURM job's resource allocation. \fBSOURCE\fR should be the fully qualified pathname for the file copy to be fetched from each node. \fBSOURCE\fR should be on a file system local to that node. \fBDEST\fR is the name of the file to be created on the current node where the source node name will be appended. Note that parallel file systems \fImay\fR provide better performance than \fBsgather\fR can provide, although performance will vary by file size, degree of parallelism, and network type.
+\fBsgather\fR is used to transmit a file from all nodes allocated to the currently active Slurm job. This command should only be executed from within a Slurm batch job or within the shell spawned after a Slurm job's resource allocation. \fBSOURCE\fR should be the fully qualified pathname for the file copy to be fetched from each node. \fBSOURCE\fR should be on a file system local to that node. \fBDEST\fR is the name of the file to be created on the current node where the source node name will be appended. Note that parallel file systems \fImay\fR provide better performance than \fBsgather\fR can provide, although performance will vary by file size, degree of parallelism, and network type.
 
 .SH "OPTIONS"
 .TP
@@ -70,7 +70,7 @@ these settings.)
 
 .SH "EXAMPLE"
 
-Using a batch script, execute a program that produces \fB/tmp/my.data\fR on all nodes allocated to the SLURM job and then transmit these files to the batch node.
+Using a batch script, execute a program that produces \fB/tmp/my.data\fR on all nodes allocated to the Slurm job and then transmit these files to the batch node.
 
 .nf
 > cat my.job

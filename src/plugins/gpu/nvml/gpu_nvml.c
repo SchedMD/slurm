@@ -1137,9 +1137,11 @@ static void _nvml_get_device_affinity(nvmlDevice_t device, unsigned int size,
 static char *_nvml_get_nvlink_remote_pcie(nvmlDevice_t device,
 					  unsigned int lane)
 {
-	nvmlPciInfo_t pci_info = {0};
-	nvmlReturn_t nvml_rc = nvmlDeviceGetNvLinkRemotePciInfo(device, lane,
-								&pci_info);
+	nvmlPciInfo_t pci_info;
+	nvmlReturn_t nvml_rc;
+
+	memset(&pci_info, 0, sizeof(pci_info));
+	nvml_rc = nvmlDeviceGetNvLinkRemotePciInfo(device, lane, &pci_info);
 	if (nvml_rc != NVML_SUCCESS) {
 		error("NVML: Failed to get PCI info of endpoint device for lane"
 		      " %d: %s", lane, nvmlErrorString(nvml_rc));
@@ -1259,6 +1261,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	char driver[NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE];
 	char version[NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE];
 	char **device_lut;
+	nvmlPciInfo_t pci_info;
 
 	_nvml_init();
 	_nvml_get_driver(driver, NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE);
@@ -1282,11 +1285,11 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	 */
 	for (i = 0; i < device_count; ++i) {
 		nvmlDevice_t device;
-		nvmlPciInfo_t pci_info = {0};
 
 		if (!_nvml_get_handle(i, &device))
 			continue;
 
+		memset(&pci_info, 0, sizeof(pci_info));
 		_nvml_get_device_pci_info(device, &pci_info);
 		device_lut[i] = xstrdup(pci_info.busId);
 	}
@@ -1302,7 +1305,6 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		bitstr_t *cpu_aff_mac_bitstr = NULL;
 		char *cpu_aff_mac_range = NULL;
 		char *cpu_aff_abs_range = NULL;
-		nvmlPciInfo_t pci_info = {0};
 		char *device_file = NULL;
 		char *nvlinks = NULL;
 		char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
@@ -1315,6 +1317,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 					 NULL, NULL, NULL);
 			continue;
 		}
+
+		memset(&pci_info, 0, sizeof(pci_info));
 		_nvml_get_device_name(device, device_name,
 				      NVML_DEVICE_NAME_BUFFER_SIZE);
 		_nvml_get_device_uuid(device, uuid,

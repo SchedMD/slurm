@@ -2109,12 +2109,11 @@ next_task:
 
 			/* Job can not start until too far in the future */
 			_set_job_time_limit(job_ptr, orig_time_limit);
-			job_ptr->start_time = 0;
-			if ((orig_start_time != 0) &&
-			    (orig_start_time < job_ptr->start_time)) {
-				/* Can start earlier in different partition */
-				job_ptr->start_time = orig_start_time;
-			}
+			/*
+			 * Use orig_start_time if job can't
+			 * start in different partition it will be 0
+			 */
+			job_ptr->start_time = orig_start_time;
 			continue;
 		}
 
@@ -2223,10 +2222,7 @@ next_task:
 				job_ptr->start_time = 0;
 				goto TRY_LATER;
 			}
-			if (orig_start_time != 0)  /* Can start in other part */
-				job_ptr->start_time = orig_start_time;
-			else
-				job_ptr->start_time = 0;
+			job_ptr->start_time = orig_start_time;
 			continue;	/* not runable in this partition */
 		}
 
@@ -2365,11 +2361,7 @@ skip_start:
 			    (rc == ESLURM_POWER_NOT_AVAIL) ||
 			    (rc == ESLURM_POWER_RESERVED)) {
 				/* Unknown future start time, just skip job */
-				if (orig_start_time != 0) {
-					/* Can start in different partition */
-					job_ptr->start_time = orig_start_time;
-				} else
-					job_ptr->start_time = 0;
+				job_ptr->start_time = orig_start_time;
 				_set_job_time_limit(job_ptr, orig_time_limit);
 				continue;
 			} else if (rc == ESLURM_ACCOUNTING_POLICY) {
@@ -2634,6 +2626,7 @@ skip_start:
 			/* Can start earlier in different partition */
 			job_ptr->start_time = orig_start_time;
 		}
+		_set_job_time_limit(job_ptr, orig_time_limit);
 		if (job_ptr->array_recs) {
 			/* Try making reservation for next task of job array */
 			if (test_array_job_id != job_ptr->array_job_id) {

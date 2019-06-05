@@ -51,7 +51,7 @@ static int      _get_info(shares_request_msg_t *shares_req,
 static int      _addto_name_char_list(List char_list, char *names, bool gid);
 static int 	_single_cluster(shares_request_msg_t *req_msg);
 static int 	_multi_cluster(shares_request_msg_t *req_msg);
-static char *   _convert_to_name(int id, bool gid);
+static char *   _convert_to_name(uint32_t id, bool is_gid);
 static void     _print_version( void );
 static void	_usage(void);
 static void     _help_format_msg(void);
@@ -360,7 +360,8 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 					memcpy(name, names+start, (i-start));
 					//info("got %s %d", name, i-start);
 					if (isdigit((int) *name)) {
-						int id = atoi(name);
+						uint32_t id = strtoul(name,
+								      NULL, 10);
 						xfree(name);
 						name = _convert_to_name(
 							id, gid);
@@ -395,7 +396,7 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 			memcpy(name, names+start, (i-start));
 
 			if (isdigit((int) *name)) {
-				int id = atoi(name);
+				uint32_t id = strtoul(name, NULL, 10);
 				xfree(name);
 				name = _convert_to_name(id, gid);
 			}
@@ -416,21 +417,21 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 	return count;
 }
 
-static char *_convert_to_name(int id, bool gid)
+static char *_convert_to_name(uint32_t id, bool is_gid)
 {
 	char *name = NULL;
 
-	if (gid) {
+	if (is_gid) {
 		struct group *grp;
-		if (!(grp=getgrgid(id))) {
-			fprintf(stderr, "Invalid group id: %s\n", name);
+		if (!(grp = getgrgid((gid_t) id))) {
+			fprintf(stderr, "Invalid group id: %u\n", id);
 			exit(1);
 		}
 		name = xstrdup(grp->gr_name);
 	} else {
 		struct passwd *pwd;
-		if (!(pwd=getpwuid(id))) {
-			fprintf(stderr, "Invalid user id: %s\n", name);
+		if (!(pwd = getpwuid((uid_t) id))) {
+			fprintf(stderr, "Invalid user id: %u\n", id);
 			exit(1);
 		}
 		name = xstrdup(pwd->pw_name);

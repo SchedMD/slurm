@@ -88,6 +88,10 @@ relinquished to the cloud.
 <dt><b>SuspendTime</b>
 <dd>The time interval that a node will be left idle before a request is made to
 relinquish it. Units are seconds.
+<dt><b>TCPTimeout</b>
+<dd>Time permitted for TCP connections to be established. This value may need
+to be increased from the default (2 seconds) to account for latency between
+your local site and machines in the cloud.
 <dt><b>TreeWidth</b>
 <dd>Since the slurmd daemons are not aware of the network addresses of other
 nodes in the cloud, the slurmd daemons on each node should be sent messages

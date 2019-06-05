@@ -496,7 +496,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize authentication plugin");
 		}
 	}
-	if (slurm_select_init(1) != SLURM_SUCCESS) {
+	if (slurm_select_init(0) != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize node selection plugin");
 			test_config_rc = 1;
@@ -1857,6 +1857,10 @@ static void _queue_reboot_msg(void)
 		if ((node_ptr->next_state != NO_VAL) && node_ptr->reason &&
 		    !xstrstr(node_ptr->reason, "reboot issued"))
 			xstrcat(node_ptr->reason, " : reboot issued");
+
+		clusteracct_storage_g_node_down(acct_db_conn, node_ptr, now,
+						NULL,
+						slurmctld_conf.slurm_user_id);
 	}
 	if (reboot_agent_args != NULL) {
 		hostlist_uniq(reboot_agent_args->hostlist);

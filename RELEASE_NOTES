@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 19.05
-16 August 2018
+28 May 2019
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -32,16 +32,18 @@ NOTE: Cray/ALPS support has been removed.
 
 NOTE: Built-in BLCR support has been removed.
 
-NOTE: The proctrack/sgi_job plugin has been removed.
-
-NOTE: The crypto/openssl plugin has been removed.
-
 NOTE: The CryptoType option has been renamed to CredType, and the crypto/munge
       plugin has been renamed to cred/munge.
+
+NOTE: The crypto/openssl plugin has been removed.
 
 NOTE: The launch/poe plugin has been removed.
 
 NOTE: The proctrack/lua plugin has been removed.
+
+NOTE: The proctrack/sgi_job plugin has been removed.
+
+NOTE: The select/serial plugin has been removed.
 
 NOTE: The switch/nrt plugin has been removed.
 
@@ -51,7 +53,7 @@ NOTE: slurmd and slurmctld will now fatal if two incompatible mechanisms for
       JobAcctGatherParams=OverMemoryKill, which could cause problems when a
       task is killed by one of them while the other is at the same time
       managing that task. The NoOverMemoryKill setting has been deprecated in
-      favour of OverMemoryKill, since now the default is *NOT* to have any
+      favor of OverMemoryKill, since now the default is *NOT* to have any
       memory enforcement mechanism.
 
 NOTE: MemLimitEnforce parameter has been removed and the functionality that
@@ -76,7 +78,7 @@ NOTE: pam_slurm_adopt will now inject the SLURM_JOB_ID environment variable
 NOTE: The --quiet flag in sbatch will now suppress the printing of
       "Submitted batch job %u" and "Submitted batch job %u on cluster %s".
 
-NOTE: Sreport report 'job SizesByAccount' and 'job SizesByAccountAndWckey'
+NOTE: sreport reports 'job SizesByAccount' and 'job SizesByAccountAndWckey'
       have been changed and now will default to report the root account totals
       if no Accounts= are specified. If specified, the requested accounts will
       now be displayed instead of the ones in a lower level in the tree.
@@ -112,8 +114,8 @@ NOTE: X11 Forwarding - the behavior of X11Parameters=use_raw_hostname is now
 HIGHLIGHTS
 ==========
  -- Add select/cons_tres plugin, which offers similar functionality to cons_res
-    with an entirely new code base and far greater GPU scheduling flexibility.
- -- Remove select/serial plugin.
+    with far greater GPU scheduling flexibility.
+ -- Add new nss_slurm capability.
  -- Changed the default fair share algorithm to "fair tree". To disable this
     and revert to "classic" fair share you must set PriorityFlags=NO_FAIR_TREE.
  -- Add Site Factor to job to set an administrator priority factor for a
@@ -121,11 +123,11 @@ HIGHLIGHTS
  -- Alternatively, the new Site Factor for priority can be set and updated
     through a new site_factor plugin interface. This plugin can be used to set
     this factor at job submission time, and update it every PriorityCalcPeriod.
- -- Add priorities to assocations.
+ -- Add priorities to associations.
  -- Added NO_NORMAL_[ALL|ASSOC|PART|QOS|TRES] PriorityFlags to not normalize
     associated factors.
  -- Cloud/PowerSave Improvements:
-    - Better repsonsiveness to resuming and suspending.
+    - Better responsiveness to resuming and suspending.
     - Powering down nodes not eligible to be allocated until after
       SuspendTimeout.
     - Powering down nodes put in "Powering Down / %" state until after
@@ -139,7 +141,7 @@ SPECIAL NOTES FOR CRAY SYSTEMS
 The 19.05 release includes some major restructuring for Cray systems in
 particular. This work is being done in anticipation of the next generation
 of Cray system software, and is meant to clarify which configuration options
-and plugin are used on exising Rhine/Redwood (aka Cray XC systems) using
+and plugin are used on existing Rhine/Redwood (aka Cray XC systems) using
 the Aries interconnect. Changes to your slurm.conf, and other associated
 configuration files will be required before upgrading to this release.
 
@@ -186,9 +188,6 @@ configuration files will be required before upgrading to this release.
  -- The option "--enable-native-cray" option to the configure program has been
     removed. That is now the default mode of operation on Cray systems.
 
-RPMBUILD CHANGES
-================
-
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
  -- Add GPU scheduling options to slurm.conf, available both globally and
@@ -214,6 +213,3 @@ COMMAND CHANGES (see man pages for details)
  -- Changed "scontrol reboot" to not default to ALL nodes.
  -- Changed "scontrol completing" to include two new fields on each line:
     EndTime and CompletingTime.
-
-OTHER CHANGES
-=============

@@ -1,8 +1,15 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 19.05.0rc2
-=============================
+* Changes in Slurm 19.05.1
+==========================
+ -- accounting_storage/mysql - fix incorrect function names in error messages.
+ -- accounting_storage/slurmdbd - trigger an fsync() on the dbd.messages state
+    file to ensure it is committed to disk properly.
+ -- Avoid JobHeldUser state reason from being updated at allocation time.
+
+* Changes in Slurm 19.05.0
+==========================
  -- Fix deprecated group by clause to use order by.
  -- NVML - Git rid of unneeded * when passing nvmlDevice_t to functions.
  -- NVML - Fix clang warning about unneeded variable initialization.
@@ -33,6 +40,57 @@ documents those changes that are of interest to users and administrators.
     option.
  -- In select/cons_res: Only allocate 1 CPU per node with the --overcommit and
     --nodelist options.
+ -- Fix DefMemPer[CPU|Node] assignment on multi-partition job requests.
+ -- Fix wrongly setting start_time to 0 for multi-part jobs.
+ -- Upon archive file name collision, create new archive file instead of
+    overwriting the old one to prevent lost records.
+ -- Limit archive files to 50000 records per file so that archiving large
+    databases will succeed.
+ -- Remove stray newlines in SPANK plugin error messages.
+ -- Fix archive loading events.
+ -- In select/cons_res: Only allocate 1 CPU per node with the --overcommit and
+    --nodelist options.
+ -- Fix main scheduler from potentially not running through whole queue.
+ -- Fix variable initiation to avoid slurmctld abort.
+ -- In partition preemption, sort preemptor jobs only if they overlap a
+    preemtable partition.
+ -- cons_tres/dist_tasks - fix variable usage in cyclic distribution.
+ -- cons_res/job_test - prevent a job from overallocating a node memory.
+ -- cons_res/job_test - fix to consider a node's current allocated memory when
+    testing a job's memory request.
+ -- Fix issue where multi-node job steps on cloud nodes wouldn't finish cleaning
+    up until the end of the job (rather than the end of the step).
+ -- Fix packing pack_jobid in an sbcast.
+ -- Fix GCC 9 compiler warnings.
+ -- Add new job bit_flags of JOB_DEPENDENT.
+ -- Make it so dependent jobs reset the AccrueTime and do not count against any
+    AccrueTime limits.
+ -- Fix sacctmgr --parsable2 output for reservations and tres.
+ -- In multi-node systems make sure GRES are found on node when not bound to
+    specific sockets.
+ -- Fix gres-per-task logic for gres not bound to sockets.
+ -- Fix issue when --gpus plus --cpus-per-gres was forcing socket binding
+    unnecessarily.
+ -- Change event table's state column to handle 32bits.
+ -- Prevent slurmctld from potential segfault after job_start_data() called
+    for completing job.
+ -- Fix jobs getting on nodes with "scontrol reboot asap".
+ -- Record node reboot events to database.
+ -- Fix node reboot failure message getting to event table.
+ -- Don't write "(null)" to event table when no event reason exists.
+ -- Fix invalid memory read in cons_tres.
+ -- Fix minor memory leak when clearing runaway jobs.
+ -- Avoid flooding slurmctld and logging when prolog complete RPC errors occur.
+ -- Fix slurmctld node_scheduler's feature_bitmap memory leak.
+ -- Fatal when reading config if Alloc flag configured on FrontEnd mode.
+ -- Modifications needed to run Federations with clusters running
+    different select/switch plugins.
+ -- Fix Clang errors for zero initializing struct with nested arrays.
+ -- Fix minor memory leak in pmi2.
+ -- MySQL - Fix minor memory leak when quering suspended jobs fails.
+ -- Fix seff human readable memory string for values below a megabyte.
+ -- Avoid slurmctld abort if GRES defined in gres.conf, but not in the node
+    configuration of slurm.conf.
 
 * Changes in Slurm 19.05.0rc1
 =============================
@@ -278,6 +336,27 @@ documents those changes that are of interest to users and administrators.
  -- Fix archive loading events.
  -- In select/cons_res: Only allocate 1 CPU per node with the --overcommit and
     --nodelist options.
+ -- Fix main scheduler from potentially not running through whole queue.
+ -- cons_res/job_test - prevent a job from overallocating a node memory.
+ -- cons_res/job_test - fix to consider a node's current allocated memory when
+    testing a job's memory request.
+ -- Fix issue where multi-node job steps on cloud nodes wouldn't finish cleaning
+    up until the end of the job (rather than the end of the step).
+ -- Fix issue with a 17.11 sbcast call to a 18.08 daemon.
+ -- Add new job bit_flags of JOB_DEPENDENT.
+ -- Make it so dependent jobs reset the AccrueTime and do not count against any
+    AccrueTime limits.
+ -- Fix sacctmgr --parsable2 output for reservations and tres.
+ -- Prevent slurmctld from potential segfault after job_start_data() called
+    for completing job.
+ -- Fix jobs getting on nodes with "scontrol reboot asap".
+ -- Record node reboot events to database.
+ -- Fix node reboot failure message getting to event table.
+ -- Don't write "(null)" to event table when no event reason exists.
+ -- Fix minor memory leak when clearing runaway jobs.
+ -- Avoid flooding slurmctld and logging when prolog complete RPC errors occur.
+ -- Fix GCC 9 compiler warnings.
+ -- Fix seff human readable memory string for values below a megabyte.
 
 * Changes in Slurm 18.08.7
 ==========================

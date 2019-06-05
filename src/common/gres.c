@@ -363,7 +363,7 @@ static int _gres_find_name_internal(char *name, char *key, uint32_t plugin_id)
 		}
 
 		if (!name) {
-			debug("%s: couldn't find name (%s)", __func__, name);
+			debug("%s: couldn't find name", __func__);
 			return 0;
 		}
 	}
@@ -1598,6 +1598,25 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _gres_node_state_delete_topo(gres_node_state_t *gres_node_ptr)
+{
+	int i;
+
+	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
+		if (gres_node_ptr->topo_gres_bitmap)
+			FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
+		if (gres_node_ptr->topo_core_bitmap)
+			FREE_NULL_BITMAP(gres_node_ptr->topo_core_bitmap[i]);
+		xfree(gres_node_ptr->topo_type_name[i]);
+	}
+	xfree(gres_node_ptr->topo_gres_bitmap);
+	xfree(gres_node_ptr->topo_core_bitmap);
+	xfree(gres_node_ptr->topo_gres_cnt_alloc);
+	xfree(gres_node_ptr->topo_gres_cnt_avail);
+	xfree(gres_node_ptr->topo_type_id);
+	xfree(gres_node_ptr->topo_type_name);
+}
+
 static void _gres_node_state_delete(gres_node_state_t *gres_node_ptr)
 {
 	int i;
@@ -1609,19 +1628,9 @@ static void _gres_node_state_delete(gres_node_state_t *gres_node_ptr)
 			xfree(gres_node_ptr->links_cnt[i]);
 		xfree(gres_node_ptr->links_cnt);
 	}
-	for (i = 0; i < gres_node_ptr->topo_cnt; i++) {
-		if (gres_node_ptr->topo_core_bitmap)
-			FREE_NULL_BITMAP(gres_node_ptr->topo_core_bitmap[i]);
-		if (gres_node_ptr->topo_gres_bitmap)
-			FREE_NULL_BITMAP(gres_node_ptr->topo_gres_bitmap[i]);
-		xfree(gres_node_ptr->topo_type_name[i]);
-	}
-	xfree(gres_node_ptr->topo_core_bitmap);
-	xfree(gres_node_ptr->topo_gres_bitmap);
-	xfree(gres_node_ptr->topo_gres_cnt_alloc);
-	xfree(gres_node_ptr->topo_gres_cnt_avail);
-	xfree(gres_node_ptr->topo_type_id);
-	xfree(gres_node_ptr->topo_type_name);
+
+	_gres_node_state_delete_topo(gres_node_ptr);
+
 	for (i = 0; i < gres_node_ptr->type_cnt; i++) {
 		xfree(gres_node_ptr->type_name[i]);
 	}
@@ -2174,23 +2183,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 	if ((topo_cnt == 0) && (topo_cnt != gres_data->topo_cnt)) {
 		/* Need to clear topology info */
-		xfree(gres_data->topo_gres_cnt_alloc);
-		xfree(gres_data->topo_gres_cnt_avail);
-		for (i = 0; i < gres_data->topo_cnt; i++) {
-			if (gres_data->topo_gres_bitmap) {
-				FREE_NULL_BITMAP(gres_data->
-						 topo_gres_bitmap[i]);
-			}
-			if (gres_data->topo_core_bitmap) {
-				FREE_NULL_BITMAP(gres_data->
-						 topo_core_bitmap[i]);
-			}
-			xfree(gres_data->topo_type_name[i]);
-		}
-		xfree(gres_data->topo_gres_bitmap);
-		xfree(gres_data->topo_core_bitmap);
-		xfree(gres_data->topo_type_id);
-		xfree(gres_data->topo_type_name);
+		_gres_node_state_delete_topo(gres_data);
+
 		gres_data->topo_cnt = topo_cnt;
 	}
 
@@ -2200,7 +2194,16 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		dev_cnt = topo_cnt;
 	else
 		dev_cnt = gres_cnt;
-	if (has_file && (topo_cnt != gres_data->topo_cnt)) {
+	if (has_file && (topo_cnt != gres_data->topo_cnt) && (dev_cnt == 0)) {
+		/*
+		 * Clear any vestigial GRES node state info.
+		 */
+		_gres_node_state_delete_topo(gres_data);
+
+		xfree(gres_data->gres_bit_alloc);
+
+		gres_data->topo_cnt = 0;
+	} else if (has_file && (topo_cnt != gres_data->topo_cnt)) {
 		/*
 		 * Need to rebuild topology info.
 		 * Resize the data structures here.
@@ -6669,6 +6672,9 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 	bool match = false;
 	bool use_busy_dev = false;
 
+	if (node_gres_ptr->gres_cnt_avail == 0)
+		return NULL;
+
 	if (!use_total_gres &&
 	    (main_plugin_id == mps_plugin_id) &&
 	    (node_gres_ptr->gres_cnt_alloc != 0)) {
@@ -6681,6 +6687,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 	sock_gres->bits_by_sock = xcalloc(sockets, sizeof(bitstr_t *));
 	sock_gres->cnt_by_sock = xcalloc(sockets, sizeof(uint64_t));
 	for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+		bool use_all_sockets = false;
 		if (job_gres_ptr->type_name &&
 		    (job_gres_ptr->type_id != node_gres_ptr->topo_type_id[i]))
 			continue;	/* Wrong type_model */
@@ -6724,8 +6731,34 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		    (avail_gres > sock_gres->max_node_gres))
 			sock_gres->max_node_gres = avail_gres;
 
+		/*
+		 * If some GRES is available on every socket,
+		 * treat like no topo_core_bitmap is specified
+		 */
+		tot_cores = sockets * cores_per_sock;
+		if (node_gres_ptr->topo_core_bitmap &&
+		    node_gres_ptr->topo_core_bitmap[i]) {
+			use_all_sockets = true;
+			for (s = 0; s < sockets; s++) {
+				bool use_this_socket = false;
+				for (c = 0; c < cores_per_sock; c++) {
+					j = (s * cores_per_sock) + c;
+					if (bit_test(node_gres_ptr->
+						     topo_core_bitmap[i], j)) {
+						use_this_socket = true;
+						break;
+					}
+				}
+				if (!use_this_socket) {
+					use_all_sockets = false;
+					break;
+				}
+			}
+		}
+
 		if (!node_gres_ptr->topo_core_bitmap ||
-		    !node_gres_ptr->topo_core_bitmap[i]) {
+		    !node_gres_ptr->topo_core_bitmap[i] ||
+		    use_all_sockets) {
 			/*
 			 * Not constrained by core, but only specific
 			 * GRES may be available (save their bitmap)
@@ -6745,7 +6778,6 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		}
 
 		/* Constrained by core */
-		tot_cores = sockets * cores_per_sock;
 		if (core_bitmap)
 			tot_cores = MIN(tot_cores, bit_size(core_bitmap));
 		if (node_gres_ptr->topo_core_bitmap[i]) {
@@ -6773,6 +6805,11 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 				    !bit_test(node_gres_ptr->topo_core_bitmap[i],
 					      j))
 					continue;
+				if (!node_gres_ptr->topo_gres_bitmap[i]) {
+					error("%s: topo_gres_bitmap NULL on node %s",
+					      __func__, node_name);
+					continue;
+				}
 				if (!sock_gres->bits_by_sock[s]) {
 					sock_gres->bits_by_sock[s] =
 						bit_copy(node_gres_ptr->
@@ -7590,7 +7627,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				break;	/* Sufficient GRES */
 		}
 
-		if (job_specs->cpus_per_gres)
+		if (!enforce_binding && first_pass) {
+			/* Allow any GRES with any CPUs for now */
+			cpus_per_gres = 0;
+		} else if (job_specs->cpus_per_gres)
 			cpus_per_gres = job_specs->cpus_per_gres;
 		else
 			cpus_per_gres = job_specs->def_cpus_per_gres;
@@ -9072,7 +9112,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					job_specs->gres_cnt_node_select[i] *=
 						_get_task_cnt_node(
 						tasks_per_node_socket, i,
-						sock_gres->sock_cnt);
+						node_table_ptr[i].sockets);
 				} else if (job_specs->gres_per_job) {
 					job_specs->gres_cnt_node_select[i] =
 						_get_job_cnt(sock_gres,

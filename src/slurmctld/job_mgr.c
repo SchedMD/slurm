@@ -4229,8 +4229,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		debug3("   kill_on_node_fail=%ld script=%.40s...",
 		       kill_on_node_fail, job_specs->script);
 	else
-		debug3("   kill_on_node_fail=%ld script=%s",
-		       kill_on_node_fail, job_specs->script);
+		debug3("   kill_on_node_fail=%ld script=(null)",
+		       kill_on_node_fail);
 
 	if (job_specs->argc == 1)
 		debug3("   argv=\"%s\"",
@@ -4918,6 +4918,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
+	bool held_user = false;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -4992,6 +4993,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	 */
 	if (job_ptr->priority == NO_VAL)
 		set_job_prio(job_ptr);
+
+	if (job_ptr->state_reason == WAIT_HELD_USER)
+		held_user = true;
 
 	if (independent &&
 	    (license_job_test(job_ptr, time(NULL), true) != SLURM_SUCCESS))
@@ -5082,6 +5086,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		last_job_update = now;
 	}
 
+	if (held_user)
+		job_ptr->state_reason = WAIT_HELD_USER;
        /*
 	* Moved this (_create_job_array) here to handle when a job
 	* array is submitted since we
@@ -5342,7 +5348,8 @@ extern int job_signal(struct job_record *job_ptr, uint16_t signal,
 		job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
 
 		/* build_cg_bitmap() not needed, job already completing */
-		verbose("%s: of requeuing %pJ successful", __func__, job_ptr);
+		verbose("%s: %u of requeuing %pJ successful",
+			__func__, signal, job_ptr);
 		return SLURM_SUCCESS;
 	}
 
@@ -5385,7 +5392,8 @@ extern int job_signal(struct job_record *job_ptr, uint16_t signal,
 		 * are removed or when the job is canceled from the origin.
 		 */
 		fed_mgr_job_complete(job_ptr, 0, now);
-		verbose("%s: of pending %pJ successful", __func__, job_ptr);
+		verbose("%s: %u of pending %pJ successful",
+			__func__, signal, job_ptr);
 		return SLURM_SUCCESS;
 	}
 
@@ -6726,8 +6734,9 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 	part_ptr = job_ptr->part_ptr;
 	qos_ptr = job_ptr->qos_ptr;
 	assoc_ptr = job_ptr->assoc_ptr;
-	if (!detail_ptr) {
-		fatal_abort("%pJ has NULL details_ptr", job_ptr);
+	if (!detail_ptr || !part_ptr) {
+		fatal_abort("%pJ has NULL details_ptr and/or part_ptr",
+			    job_ptr);
 		return WAIT_NO_REASON;	/* To prevent CLANG error */
 	}
 
@@ -6811,7 +6820,12 @@ extern int job_limits_check(struct job_record **job_pptr, bool check_min_time)
 		 * were already initialized above to call _part_access_check, as
 		 * well as the memset for job_desc.
 		 */
-		job_desc.pn_min_memory = detail_ptr->orig_pn_min_memory;
+		if (job_ptr->bit_flags & JOB_MEM_SET)
+			job_desc.pn_min_memory = detail_ptr->orig_pn_min_memory;
+		else if (part_ptr->def_mem_per_cpu)
+			job_desc.pn_min_memory = part_ptr->def_mem_per_cpu;
+		else
+			job_desc.pn_min_memory = slurmctld_conf.def_mem_per_cpu;
 		if (detail_ptr->orig_cpus_per_task == NO_VAL16)
 			job_desc.cpus_per_task = 1;
 		else
@@ -7139,6 +7153,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->start_protocol_ver = protocol_version;
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->part_ptr_list = part_ptr_list;
+	job_ptr->bit_flags |= JOB_DEPENDENT;
 	job_ptr->last_sched_eval = time(NULL);
 
 	part_ptr_list = NULL;
@@ -13409,6 +13424,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					   __func__,
 					   job_ptr->details->dependency,
 					   job_ptr);
+				job_independent(job_ptr, 0);
 			}
 		}
 	}

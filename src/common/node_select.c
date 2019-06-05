@@ -163,6 +163,19 @@ static int _load_plugins(void *x, void *arg)
 	return 0;
 }
 
+static bool _running_in_slurmctld(void)
+{
+	static bool set = false;
+	static bool run = false;
+
+	if (!set) {
+		set = 1;
+		run = run_in_daemon("slurmctld");
+	}
+
+	return run;
+}
+
 extern int select_char2coord(char coord)
 {
 	if ((coord >= '0') && (coord <= '9'))
@@ -766,44 +779,12 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
-		for (i = 0; i < select_context_cnt; i++) {
-			if (*(ops[i].plugin_id) == plugin_id) {
-				nodeinfo_ptr->plugin_id = i;
-				break;
-			}
-		}
-		if (i >= select_context_cnt) {
-			/*
-			 * cons_res and cons_tres have equivalent pack logic,
-			 * so we can switch without a cold-start
-			 */
-			bool retry = false;
-			if (plugin_id == SELECT_PLUGIN_CONS_RES) {
-				plugin_id = SELECT_PLUGIN_CONS_TRES;
-				retry = true;
-			} else if (plugin_id == SELECT_PLUGIN_CONS_TRES) {
-				plugin_id = SELECT_PLUGIN_CONS_RES;
-				retry = true;
-			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
-				plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
-				retry = true;
-			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) {
-				plugin_id = SELECT_PLUGIN_CRAY_CONS_RES;
-				retry = true;
-			}
-			if (retry) {
-				for (i = 0; i < select_context_cnt; i++) {
-					if (*(ops[i].plugin_id) == plugin_id) {
-						nodeinfo_ptr->plugin_id = i;
-						break;
-					}
-				}
-			}
-		}
-		if (i >= select_context_cnt) {
+		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
 			error("%s: select plugin %s not found", __func__,
 			      _plugin_id2name(plugin_id));
 			goto unpack_error;
+		} else {
+			 nodeinfo_ptr->plugin_id = i;
 		}
 	} else {
 		nodeinfo_ptr->plugin_id = select_context_default;
@@ -816,6 +797,16 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 	   ((select_nodeinfo_t **)&nodeinfo_ptr->data, buffer,
 	    protocol_version) != SLURM_SUCCESS)
 		goto unpack_error;
+
+	/*
+	 * Free nodeinfo_ptr if it is different from local cluster as it is not
+	 * relevant to this cluster.
+	 */
+	if ((nodeinfo_ptr->plugin_id != select_context_default) &&
+	    _running_in_slurmctld()) {
+		select_g_select_nodeinfo_free(nodeinfo_ptr);
+		*nodeinfo = select_g_select_nodeinfo_alloc();
+	}
 
 	return SLURM_SUCCESS;
 
@@ -1057,45 +1048,12 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 		int i;
 		uint32_t plugin_id;
 		safe_unpack32(&plugin_id, buffer);
-		for (i = 0; i < select_context_cnt; i++) {
-			if (*(ops[i].plugin_id) == plugin_id) {
-				jobinfo_ptr->plugin_id = i;
-				break;
-			}
-		}
-		if (i >= select_context_cnt) {
-			/*
-			 * cons_res and cons_tres have equivalent pack logic,
-			 * so we can switch without a cold-start
-			 */
-			bool retry = false;
-			if (plugin_id == SELECT_PLUGIN_CONS_RES) {
-				plugin_id = SELECT_PLUGIN_CONS_TRES;
-				retry = true;
-			} else if (plugin_id == SELECT_PLUGIN_CONS_TRES) {
-				plugin_id = SELECT_PLUGIN_CONS_RES;
-				retry = true;
-			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
-				plugin_id = SELECT_PLUGIN_CRAY_CONS_TRES;
-				retry = true;
-			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES) {
-				plugin_id = SELECT_PLUGIN_CRAY_CONS_RES;
-				retry = true;
-			}
-			if (retry) {
-				for (i = 0; i < select_context_cnt; i++) {
-					if (*(ops[i].plugin_id) == plugin_id) {
-						jobinfo_ptr->plugin_id = i;
-						break;
-					}
-				}
-			}
-		}
-		if (i >= select_context_cnt) {
+		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
 			error("%s: select plugin %s not found", __func__,
 			      _plugin_id2name(plugin_id));
 			goto unpack_error;
-		}
+		} else
+			jobinfo_ptr->plugin_id = i;
 	} else {
 		jobinfo_ptr->plugin_id = select_context_default;
 		error("%s: protocol_version %hu not supported", __func__,
@@ -1107,6 +1065,16 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 		((select_jobinfo_t **)&jobinfo_ptr->data, buffer,
 		 protocol_version) != SLURM_SUCCESS)
 		goto unpack_error;
+
+	/*
+	 * Free jobinfo_ptr if it is different from local cluster as it is not
+	 * relevant to this cluster.
+	 */
+	if ((jobinfo_ptr->plugin_id != select_context_default) &&
+	    _running_in_slurmctld()) {
+		select_g_select_jobinfo_free(jobinfo_ptr);
+		*jobinfo = select_g_select_jobinfo_alloc();
+	}
 
 	return SLURM_SUCCESS;
 

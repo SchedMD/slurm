@@ -38,6 +38,8 @@
 \*****************************************************************************/
 
 #include "src/common/slurm_xlator.h"
+
+#include "src/common/fd.h"
 #include "src/common/slurmdbd_pack.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -472,7 +474,7 @@ static void _save_dbd_state(void)
 end_it:
 	if (fd >= 0) {
 		verbose("slurmdbd: saved %d pending RPCs", wrote);
-		(void) close(fd);
+		fsync_and_close(fd, "dbd.messages");
 	}
 	xfree(dbd_fname);
 }
@@ -951,8 +953,8 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 	rc = slurm_persist_send_msg(slurmdbd_conn, buffer);
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
-		error("slurmdbd: Sending message type %s: %d: %m",
-		      rpc_num2string(req->msg_type), rc);
+		error("slurmdbd: Sending message type %s: %d: %s",
+		      rpc_num2string(req->msg_type), rc, slurm_strerror(rc));
 		goto end_it;
 	}
 

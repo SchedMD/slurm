@@ -183,7 +183,7 @@ static void _make_time_str (time_t *time, char *string, int size)
 #if USE_ISO8601
 		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format,
 		 * NOTE: This is expected to break Maui, Moab and LSF
-		 * schedulers management of SLURM. */
+		 * schedulers management of Slurm. */
 		snprintf(string, size,
 			"%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
 			(time_tm.tm_year + 1900), (time_tm.tm_mon+1),

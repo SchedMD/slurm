@@ -148,6 +148,8 @@ static void _add_usage_node_bitmap(struct job_record *job_ptr,
 			 * resource allocation. See _pack_job_limit_check()
 			 * in src/plugins/sched/backfill/backfill.c
 			 */
+		} else if (job_ptr->node_cnt == 0) {
+			/* Zero size jobs OK to create/destroy burst buffers */
 		} else {
 			error("%s: %pJ lacks allocated node bitmap", __func__,
 			      job_ptr);
@@ -198,6 +200,8 @@ static void _rm_usage_node_bitmap(struct job_record *job_ptr,
 			 * resource allocation. See _pack_job_limit_check()
 			 * in src/plugins/sched/backfill/backfill.c
 			 */
+		} else if (job_ptr->node_cnt == 0) {
+			/* Zero size jobs OK to create/destroy burst buffers */
 		} else {
 			error("%s: %pJ lacks allocated node bitmap", __func__,
 			      job_ptr);
@@ -4367,8 +4371,8 @@ extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
 		return SLURM_SUCCESS;
 	}
 
-	/* If Job is held don't accrue time */
-	if (!job_ptr->priority)
+	/* If Job is held or dependent don't accrue time */
+	if (!job_ptr->priority || (job_ptr->bit_flags & JOB_DEPENDENT))
 		return SLURM_SUCCESS;
 
 	/* No accrue_time and the job isn't pending, bail */
@@ -4610,8 +4614,8 @@ extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return;
 
-	/* If Job is held don't accrue time */
-	if (!job_ptr->priority)
+	/* If Job is held or dependent don't accrue time */
+	if (!job_ptr->priority || (job_ptr->bit_flags & JOB_DEPENDENT))
 		return;
 
 	/* Job has to be pending to accrue time. */

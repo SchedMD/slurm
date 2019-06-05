@@ -569,9 +569,15 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		max_depth = 0;
 	} else if ((type == LAUNCH_TASKS) &&
 		   (((launch_tasks_request_msg_t *)req)->alias_list)) {
-		/* In the cloud, each task talks directly to the slurmctld
-		 * since node addressing is abnormal */
-		rank = 0;
+		/*
+		 * In the cloud, each task talks directly to the slurmctld
+		 * since node addressing is abnormal. Setting parent_rank = -1
+		 * is sufficient to force slurmstepd to talk directly to the
+		 * slurmctld - see _one_step_complete_msg. We need to make sure
+		 * to set rank to the actual rank so that the slurmctld will
+		 * properly clean up all nodes.
+		 */
+		rank = hostset_find(step_hset, conf->node_name);
 		parent_rank = -1;
 		children = 0;
 		depth = 0;
@@ -2349,6 +2355,12 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		if (rc != SLURM_SUCCESS) {
 			alt_rc = _launch_job_fail(req->job_id, rc);
 			send_registration_msg(rc, false);
+		}
+
+		if (alt_rc != SLURM_SUCCESS) {
+			info("%s: Retrying prolog complete RPC for JobId=%u [sleeping %us]",
+			     __func__, req->job_id, RETRY_DELAY);
+			sleep(RETRY_DELAY);
 		}
 	}
 }

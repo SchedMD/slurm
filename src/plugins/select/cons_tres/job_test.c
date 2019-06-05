@@ -4,11 +4,11 @@
  *  Copyright (C) 2018 SchedMD LLC
  *  Derived in large part from select/cons_res plugin
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
- *  SLURM is free software; you can redistribute it and/or modify it under
+ *  Slurm is free software; you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
@@ -24,13 +24,13 @@
  *  version.  If you delete this exception statement from all source files in
  *  the program, then also delete it here.
  *
- *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  *  details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
@@ -57,6 +57,12 @@ bitstr_t *idle_node_bitmap;
 struct node_record *node_record_table_ptr;
 List job_list;
 #endif
+
+typedef enum {
+	HANDLE_JOB_RES_ADD,
+	HANDLE_JOB_RES_REM,
+	HANDLE_JOB_RES_TEST
+} handle_job_res_t;
 
 typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t avail_cpus;	/* Count of available CPUs */
@@ -88,6 +94,8 @@ typedef struct topo_weight_info {
 } topo_weight_info_t;
 
 /* Local functions */
+static void _add_job_res(job_resources_t *job_resrcs_ptr,
+			 bitstr_t ***sys_resrcs_ptr);
 static void _block_whole_nodes(bitstr_t *node_bitmap,
 			       bitstr_t **orig_core_bitmap,
 			       bitstr_t **new_core_bitmap);
@@ -156,9 +164,14 @@ static avail_res_t **_get_res_avail(struct job_record *job_ptr,
 				    uint16_t cr_type, bool test_only,
 				    bitstr_t **part_core_map);
 static time_t _guess_job_end(struct job_record * job_ptr, time_t now);
+static int _handle_job_res(job_resources_t *job_resrcs_ptr,
+			   bitstr_t ***sys_resrcs_ptr,
+			   handle_job_res_t type);
 static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
 			 int sharing_only, struct part_record *my_part_ptr,
 			 bool qos_preemptor);
+static int _job_fit_test(job_resources_t *job_resrcs_ptr,
+			 bitstr_t **sys_resrcs_ptr);
 static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes,
 		     uint32_t req_nodes, int mode, uint16_t cr_type,
@@ -312,65 +325,6 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 }
 
 /*
- * Add job resource allocation to record of resources allocated to all nodes
- * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT sys_resrcs_ptr - bitmap array (one per node) of available cores,
- *			   allocated as needed
- * RET 1 on success, 0 otherwise
- * NOTE: Patterned after add_job_to_cores() in src/common/job_resources.c
- */
-extern void add_job_res(job_resources_t *job_resrcs_ptr,
-			bitstr_t ***sys_resrcs_ptr)
-{
-	int i, i_first, i_last;
-	int c, c_job, c_off = 0, c_max;
-	int rep_inx = 0, rep_offset = -1;
-	bitstr_t **local_resrcs_ptr;
-
-	if (!job_resrcs_ptr->core_bitmap)
-		return;
-
-	/* add the job to the row_bitmap */
-	if (*sys_resrcs_ptr == NULL) {
-		local_resrcs_ptr = xmalloc(sizeof(bitstr_t *) * select_node_cnt);
-		*sys_resrcs_ptr = local_resrcs_ptr;
-		for (i = 0; i < select_node_cnt; i++) {
-			local_resrcs_ptr[i] =
-				bit_alloc(select_node_record[i].tot_cores);
-		}
-	} else
-		local_resrcs_ptr = *sys_resrcs_ptr;
-
-	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(job_resrcs_ptr->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
-			continue;
-		if (job_resrcs_ptr->whole_node) {
-			bit_set_all(local_resrcs_ptr[i]);
-			continue;
-		}
-		rep_offset++;
-		if (rep_offset > job_resrcs_ptr->sock_core_rep_count[rep_inx]) {
-			rep_offset = 0;
-			rep_inx++;
-		}
-		c_job = job_resrcs_ptr->sockets_per_node[rep_inx] *
-			job_resrcs_ptr->cores_per_socket[rep_inx];
-		c_max = MIN(select_node_record[i].tot_cores, c_job);
-		for (c = 0; c < c_max; c++) {
-			if (!bit_test(job_resrcs_ptr->core_bitmap, c_off + c))
-				continue;
-			bit_set(local_resrcs_ptr[i], c);
-		}
-		c_off += c_job;
-	}
-}
-
-/*
  * Add job resource use to the partition data structure
  */
 extern void add_job_to_row(struct job_resources *job,
@@ -381,7 +335,7 @@ extern void add_job_to_row(struct job_resources *job,
 		/* if no jobs, clear the existing row_bitmap first */
 		clear_core_array(r_ptr->row_bitmap);
 	}
-	add_job_res(job, &r_ptr->row_bitmap);
+	_add_job_res(job, &r_ptr->row_bitmap);
 
 	/*  add the job to the job_list */
 	if (r_ptr->num_jobs >= r_ptr->job_list_size) {
@@ -741,8 +695,8 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 			} else { /* totally rebuild the bitmap */
 				clear_core_array(this_row->row_bitmap);
 				for (j = 0; j < this_row->num_jobs; j++) {
-					add_job_res(this_row->job_list[j],
-						    &this_row->row_bitmap);
+					_add_job_res(this_row->job_list[j],
+						     &this_row->row_bitmap);
 				}
 			}
 		}
@@ -755,7 +709,8 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 		num_jobs += p_ptr->row[i].num_jobs;
 	}
 	if (num_jobs == 0) {
-		clear_core_array(p_ptr->row[i].row_bitmap);
+		for (i = 0; i < p_ptr->num_rows; i++)
+			clear_core_array(p_ptr->row[i].row_bitmap);
 		return;
 	}
 
@@ -857,7 +812,7 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 			if (p_ptr->row[i].num_jobs == 0)
 				continue;
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
-				add_job_res(p_ptr->row[i].job_list[j],
+				_add_job_res(p_ptr->row[i].job_list[j],
 					     &p_ptr->row[i].row_bitmap);
 			}
 		}
@@ -913,7 +868,7 @@ extern int can_job_fit_in_row(struct job_resources *job,
 	if ((r_ptr->num_jobs == 0) || !r_ptr->row_bitmap)
 		return 1;
 
-	return job_fit_test(job, r_ptr->row_bitmap);
+	return _job_fit_test(job, r_ptr->row_bitmap);
 }
 
 /* Sort jobs by start time, then size (CPU count) */
@@ -1054,68 +1009,39 @@ static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
  * RET 1 on success, 0 otherwise
  * NOTE: Patterned after job_fits_into_cores() in src/common/job_resources.c
  */
-extern int job_fit_test(job_resources_t *job_resrcs_ptr,
-			bitstr_t **sys_resrcs_ptr)
+static int _job_fit_test(job_resources_t *job_resrcs_ptr,
+			 bitstr_t **sys_resrcs_ptr)
 {
-	int i, i_first, i_last;
-	int c, c_job, c_off = 0, c_max;
-	int rep_inx = 0, rep_offset = -1;
-
 	if (!sys_resrcs_ptr)
 		return 1;			/* Success */
 
-	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(job_resrcs_ptr->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
-			continue;
-		if (job_resrcs_ptr->whole_node) {
-			if (!sys_resrcs_ptr[i] ||
-			    bit_ffs(sys_resrcs_ptr[i]) == -1)
-				return 1;	/* Success */
-			return 0;		/* Whole node conflict */
-		}
-		rep_offset++;
-		if (rep_offset > job_resrcs_ptr->sock_core_rep_count[rep_inx]) {
-			rep_offset = 0;
-			rep_inx++;
-		}
-		c_job = job_resrcs_ptr->sockets_per_node[rep_inx] *
-			job_resrcs_ptr->cores_per_socket[rep_inx];
-		c_max = MIN(select_node_record[i].tot_cores, c_job);
-		for (c = 0; c < c_max; c++) {
-			if (!bit_test(job_resrcs_ptr->core_bitmap, c_off + c))
-				continue;
-			if (bit_test(sys_resrcs_ptr[i], c))
-				return 0;	/* Core conflict on this node */
-		}
-		c_off += c_job;
-	}
-	return 1;
+	return _handle_job_res(job_resrcs_ptr, &sys_resrcs_ptr,
+			       HANDLE_JOB_RES_TEST);
 }
 
 /*
- * Remove job resource allocation to record of resources allocated to all nodes
+ * Handle job resource allocation to record of resources allocated to all nodes
  * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
+ * IN/OUT sys_resrcs_ptr - bitmap of available CPUs, allocate as needed
+ * IN type - add/rem/test
  * RET 1 on success, 0 otherwise
  */
-static void _rm_job_res(job_resources_t *job_resrcs_ptr,
-			bitstr_t ***sys_resrcs_ptr)
+static int _handle_job_res(job_resources_t *job_resrcs_ptr,
+			   bitstr_t ***sys_resrcs_ptr,
+			   handle_job_res_t type)
 {
 	int i, i_first, i_last;
 	int c, c_job, c_off = 0, c_max;
-	int rep_inx = 0, rep_offset = -1;
+	int rep_inx = 0, rep_offset = 0;
 	bitstr_t **core_array;
 
 	if (!job_resrcs_ptr->core_bitmap)
-		return;
+		return 1;
 
-	/* remove the job from the row_bitmap */
+	/* create row_bitmap data structure as needed */
 	if (*sys_resrcs_ptr == NULL) {
+		if (type == HANDLE_JOB_RES_TEST)
+			return 1;
 		core_array = xmalloc(sizeof(bitstr_t *) * select_node_cnt);
 		*sys_resrcs_ptr = core_array;
 		for (i = 0; i < select_node_cnt; i++) {
@@ -1134,18 +1060,32 @@ static void _rm_job_res(job_resources_t *job_resrcs_ptr,
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
 		if (job_resrcs_ptr->whole_node) {
-			if (core_array[i]) {
-				bit_clear_all(core_array[i]);
-			} else {
-				error("%s: %s: core_array[%d] is NULL",
-				      plugin_type, __func__, i);
+			if (!core_array[i]) {
+				if (type != HANDLE_JOB_RES_TEST)
+					error("%s: %s: core_array[%d] is NULL %d",
+					      plugin_type, __func__, i, type);
+				continue;	/* Move to next node */
 			}
-			continue;
+
+			switch (type) {
+			case HANDLE_JOB_RES_ADD:
+				bit_set_all(core_array[i]);
+				break;
+			case HANDLE_JOB_RES_REM:
+				bit_clear_all(core_array[i]);
+				break;
+			case HANDLE_JOB_RES_TEST:
+				if (bit_ffs(core_array[i]) != -1)
+					return 0; /* Whole node conflict */
+				break;
+			}
+			continue;	/* Move to next node */
 		}
-		rep_offset++;
-		if (rep_offset > job_resrcs_ptr->sock_core_rep_count[rep_inx]) {
-			rep_offset = 0;
+		if (rep_offset >= job_resrcs_ptr->sock_core_rep_count[rep_inx]){
+			rep_offset = 1;
 			rep_inx++;
+		} else {
+			rep_offset++;
 		}
 		c_job = job_resrcs_ptr->sockets_per_node[rep_inx] *
 			job_resrcs_ptr->cores_per_socket[rep_inx];
@@ -1153,15 +1093,55 @@ static void _rm_job_res(job_resources_t *job_resrcs_ptr,
 		for (c = 0; c < c_max; c++) {
 			if (!bit_test(job_resrcs_ptr->core_bitmap, c_off + c))
 				continue;
-			if (core_array[i]) {
+			if (!core_array[i]) {
+				if (type != HANDLE_JOB_RES_TEST)
+					error("%s: %s: core_array[%d] is NULL %d",
+					      plugin_type, __func__, i, type);
+				continue;	/* Move to next node */
+			}
+			switch (type) {
+			case HANDLE_JOB_RES_ADD:
+				bit_set(core_array[i], c);
+				break;
+			case HANDLE_JOB_RES_REM:
 				bit_clear(core_array[i], c);
-			} else {
-				error("%s: %s: core_array[%d] is NULL",
-				      plugin_type, __func__, i);
+				break;
+			case HANDLE_JOB_RES_TEST:
+				if (bit_test(core_array[i], c))
+					return 0;    /* Core conflict on node */
+				break;
 			}
 		}
 		c_off += c_job;
 	}
+	return 1;
+}
+
+/*
+ * Add job resource allocation to record of resources allocated to all nodes
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT sys_resrcs_ptr - bitmap array (one per node) of available cores,
+ *			   allocated as needed
+ * NOTE: Patterned after add_job_to_cores() in src/common/job_resources.c
+ */
+static void _add_job_res(job_resources_t *job_resrcs_ptr,
+			 bitstr_t ***sys_resrcs_ptr)
+{
+	(void)_handle_job_res(job_resrcs_ptr, sys_resrcs_ptr,
+			      HANDLE_JOB_RES_ADD);
+}
+
+
+/*
+ * Remove job resource allocation to record of resources allocated to all nodes
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
+ */
+static void _rm_job_res(job_resources_t *job_resrcs_ptr,
+			bitstr_t ***sys_resrcs_ptr)
+{
+	(void)_handle_job_res(job_resrcs_ptr, sys_resrcs_ptr,
+			      HANDLE_JOB_RES_REM);
 }
 
 /*
@@ -1305,7 +1285,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t **avail_cores, **free_cores;
 	bool test_only;
 	uint32_t sockets_per_node = 1;
-	uint32_t c, j, n, csize, total_cpus;
+	uint32_t c, j, n, c_alloc = 0, c_size, total_cpus;
 	uint64_t save_mem = 0, avail_mem = 0, needed_mem = 0, lowest_mem = 0;
 	int32_t build_cnt;
 	job_resources_t *job_res;
@@ -1935,7 +1915,10 @@ alloc_job:
 	/* total up all CPUs and load the core_bitmap */
 	total_cpus = 0;
 	c = 0;
-	csize = bit_size(job_res->core_bitmap);
+	if (job_res->core_bitmap)
+		c_size = bit_size(job_res->core_bitmap);
+	else
+		c_size = 0;
 	i_first = bit_ffs(node_bitmap);
 	for (i = 0, n = i_first; n < select_node_cnt; n++) {
 		if (!bit_test(node_bitmap, n))
@@ -1943,12 +1926,12 @@ alloc_job:
 		for (j = 0; j < select_node_record[n].tot_cores; j++, c++) {
 			if (!bit_test(free_cores[n], j))
 				continue;
-			if (c >= csize)	{
+			if (c >= c_size) {
 				error("%s: %s core_bitmap index error on node %s "
 				      "(NODE_INX:%d, C_SIZE:%u)",
 				      plugin_type, __func__,
 				      select_node_record[n].node_ptr->name,
-				      n, csize);
+				      n, c_size);
 				drain_nodes(select_node_record[n].node_ptr->name,
 					    "Bad core count", getuid());
 				_free_avail_res_array(avail_res_array);
@@ -1957,6 +1940,7 @@ alloc_job:
 				return SLURM_ERROR;
 			}
 			bit_set(job_res->core_bitmap, c);
+			c_alloc++;
 		}
 		total_cpus += job_res->cpus[i];
 		i++;
@@ -1976,8 +1960,7 @@ alloc_job:
 		info("%s: %s: %pJ ncpus %u cbits %u/%u nbits %u",
 		     plugin_type, __func__, job_ptr,
 		     job_res->ncpus, count_core_array_set(free_cores),
-		     bit_set_count(job_res->core_bitmap),
-		     job_res->nhosts);
+		     c_alloc, job_res->nhosts);
 	}
 	free_core_array(&free_cores);
 
@@ -2105,26 +2088,27 @@ alloc_job:
 	if (!(cr_type & CR_MEMORY))
 		return error_code;
 
-	/* load memory allocated array */
-	save_mem = details_ptr->pn_min_memory;
-	i_first = bit_ffs(job_res->node_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(job_res->node_bitmap);
-	else
-		i_last = -2;
 	if (!(job_ptr->bit_flags & JOB_MEM_SET) &&
 	    gres_plugin_job_mem_set(job_ptr->gres_list, job_res)) {
 		debug("%pJ memory set via GRES limit", job_ptr);
 	} else {
+		/* load memory allocated array */
+		save_mem = details_ptr->pn_min_memory;
+		i_first = bit_ffs(job_res->node_bitmap);
+		if (i_first != -1)
+			i_last = bit_fls(job_res->node_bitmap);
+		else
+			i_last = -2;
+
 		for (i = i_first, j = 0; i <= i_last; i++) {
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
 			nodename = select_node_record[i].node_ptr->name;
 			avail_mem = select_node_record[i].real_memory -
-				    select_node_record[i].mem_spec_limit;
+				select_node_record[i].mem_spec_limit;
 			if (save_mem & MEM_PER_CPU) {	/* Memory per CPU */
 				needed_mem = job_res->cpus[j] *
-					     (save_mem & (~MEM_PER_CPU));
+					(save_mem & (~MEM_PER_CPU));
 			} else if (save_mem) {		/* Memory per node */
 				needed_mem = save_mem;
 			} else {		/* Allocate all node memory */
@@ -2132,11 +2116,10 @@ alloc_job:
 				if (!test_only &&
 				    (node_usage[i].alloc_memory > 0)) {
 					if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-						error("%s: node %s has already alloc_memory=%"
-						      PRIu64". %pJ can't allocate all node memory",
-						      __func__, nodename,
-						      node_usage[i].alloc_memory,
-						      job_ptr);
+						info("%s: node %s has already alloc_memory=%"PRIu64". %pJ can't allocate all node memory",
+						     __func__, nodename,
+						     node_usage[i].alloc_memory,
+						     job_ptr);
 					error_code = SLURM_ERROR;
 					break;
 				}
@@ -2145,15 +2128,10 @@ alloc_job:
 			}
 			if (!test_only && save_mem) {
 				if (node_usage[i].alloc_memory > avail_mem) {
-					if (select_debug_flags &
-					    DEBUG_FLAG_SELECT_TYPE) {
-						error("%s: node %s memory is already overallocated (%"
-						      PRIu64" > %"PRIu64
-						      "). %pJ can't allocate any node memory",
-						      __func__, nodename,
-						      node_usage[i].alloc_memory,
-						      avail_mem, job_ptr);
-					}
+					error("%s: node %s memory is already overallocated (%"PRIu64" > %"PRIu64"). %pJ can't allocate any node memory",
+					      __func__, nodename,
+					      node_usage[i].alloc_memory,
+					      avail_mem, job_ptr);
 					error_code = SLURM_ERROR;
 					break;
 				}
@@ -2161,8 +2139,7 @@ alloc_job:
 			}
 			if (needed_mem > avail_mem) {
 				if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-					error("%s: %pJ would overallocate node %s memory (%"
-					      PRIu64" > %"PRIu64")",
+					info("%s: %pJ would overallocate node %s memory (%"PRIu64" > %"PRIu64")",
 					     __func__, job_ptr, nodename,
 					     needed_mem, avail_mem);
 				}

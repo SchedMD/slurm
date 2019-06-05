@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "March 2019" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "May 2019" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -1806,12 +1806,6 @@ the sbatch-generated wrapper script is used.
 \fB\-x\fR, \fB\-\-exclude\fR=<\fInode name list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
 
-.TP
-\fB\-\-x11\fR[=<\fIall\fR|\fIbatch\fR|\fIfirst\fR|\fIlast\fR>]
-Sets up X11 forwarding on all, batch host, first or last node(s) of the
-allocation. This option is only enabled if Slurm was compiled with X11 support
-and PrologFlags=x11 is defined in the slurm.conf. Default is \fIbatch\fR.
-
 .SH \fBfilename pattern\fR
 .PP
 \fBsbatch\fR allows for a filename pattern to contain one or more replacement
@@ -2219,7 +2213,8 @@ explicitly requeued, this will be sent to the number of times
 the job has been restarted.
 .TP
 \fBSLURM_SUBMIT_DIR\fR
-The directory from which \fBsbatch\fR was invoked.
+The directory from which \fBsbatch\fR was invoked or, if applicable, the
+directory specified by the \fB\-D, \-\-chdir\fR option.
 .TP
 \fBSLURM_SUBMIT_HOST\fR
 The hostname of the computer from which \fBsbatch\fR was invoked.

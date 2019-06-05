@@ -120,8 +120,14 @@ extern int build_job_resources(job_resources_t *job_resrcs,
 		job_resrcs->sock_core_rep_count[sock_inx]++;
 		core_cnt += (cores * socks);
 	}
-	job_resrcs->core_bitmap      = bit_alloc(core_cnt);
-	job_resrcs->core_bitmap_used = bit_alloc(core_cnt);
+	if (core_cnt) {
+		/*
+		 * A zero size job (for burst buffer create/destroy only)
+		 * will have no bitmaps.
+		 */
+		job_resrcs->core_bitmap = bit_alloc(core_cnt);
+		job_resrcs->core_bitmap_used = bit_alloc(core_cnt);
+	}
 	return SLURM_SUCCESS;
 }
 

@@ -182,24 +182,29 @@ int sacctmgr_list_tres(int argc, char **argv)
 	/* For each tres prints the data structure members
 	 */
 	while ((tres = list_next(itr))) {
+		int curr_inx = 1;
 		while ((field = list_next(itr2))) {
 			switch (field->type) {
 				case PRINT_NAME:
 					field->print_routine(field,
 							     tres->name,
-							     field_count);
+							     (curr_inx ==
+							      field_count));
 					break;
 				case PRINT_ID:
 					field->print_routine(field,
 							     tres->id,
-							     field_count);
+							     (curr_inx ==
+							      field_count));
 					break;
 				case PRINT_TYPE:
 					field->print_routine(field,
 							     tres->type,
-							     field_count);
+							     (curr_inx ==
+							      field_count));
 					break;
 			}
+			curr_inx++;
 		}
 		list_iterator_reset(itr2);
 		printf("\n");
