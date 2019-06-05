@@ -217,6 +217,7 @@ proc run_test { run_qos } {
 
 	set job_id_1 [test_salloc $qos $acct 1]
 	set job_id_2 [test_salloc $qos $acct 1]
+	check_rc [wait_for_job $job_id_1 "RUNNING"]
 
 	if { $run_qos } {
 		# remove test qos
