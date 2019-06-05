@@ -67,19 +67,19 @@ set access_err  0
 set timeout $max_job_delay
 print_header $test_id
 
-#Create test assoc and accounts
+# Create test assoc and accounts
 proc create_accounts {} {
 	global ta1 tq1 tq2 tu1 user_req_1 qos_1 qos_2
 	log_info "create account and QOS"
 
-	#Create test assoc and accounts
+	# Create test assoc and accounts
 	check_rc [add_qos $tq1 [array get qos_1]]
 	check_rc [add_qos $tq2 [array get qos_2]]
 	check_rc [add_acct $ta1 [array get acct_1]]
 	check_rc [add_user $tu1 [array get user_req_1]]
 }
 
-#Cleanup test assoc and accounts
+# Cleanup test assoc and accounts
 proc cleanup_accounts {} {
 	global ta1 tq1 tq2
 
@@ -326,8 +326,8 @@ expect {
 }
 log_user 1
 if { $config_dir == "" } {
-		log_error "scontrol did not provide SLURM_CONF"
-		exit 1
+	log_error "scontrol did not provide SLURM_CONF"
+	exit 1
 }
 
 cleanup_accounts
