@@ -34,6 +34,7 @@ set test_id		"7.20"
 set test_lua_reject	"test$test_id\_scripts/reject.lua"
 set test_lua_pass	"test$test_id\_scripts/pass.lua"
 set exit_code		 0
+set exit_code_skip	 -123123
 set cwd			"[$bin_pwd]"
 set job_name		"test$test_id"
 
@@ -66,19 +67,19 @@ set access_err  0
 set timeout $max_job_delay
 print_header $test_id
 
-#Create test assoc and accounts
+# Create test assoc and accounts
 proc create_accounts {} {
 	global ta1 tq1 tq2 tu1 user_req_1 qos_1 qos_2
 	log_info "create account and QOS"
 
-	#Create test assoc and accounts
+	# Create test assoc and accounts
 	check_rc [add_qos $tq1 [array get qos_1]]
 	check_rc [add_qos $tq2 [array get qos_2]]
 	check_rc [add_acct $ta1 [array get acct_1]]
 	check_rc [add_user $tu1 [array get user_req_1]]
 }
 
-#Cleanup test assoc and accounts
+# Cleanup test assoc and accounts
 proc cleanup_accounts {} {
 	global ta1 tq1 tq2
 
@@ -130,7 +131,7 @@ proc take_backup { file } {
 	if { [file exists $file ] } {
 		do_copy $file $cwd/$bfile.orig
 	} else {
-		log_info "skipping backup of non-existant $file"
+		log_info "skipping backup of non-existent $file"
 	}
 }
 
@@ -145,7 +146,7 @@ proc restore_backup { file } {
 
 		do_copy $cwd/$bfile.orig $file
 	} else {
-		log_info "skipping restore of non-existant $file"
+		log_info "skipping restore of non-existent $file"
 	}
 
 	if { [file exists $cwd/$bfile.orig ] } {
@@ -154,14 +155,17 @@ proc restore_backup { file } {
 }
 
 proc endit { exit_code } {
-	global test_id config_dir
+	global test_id config_dir exit_code_skip
 
 	cleanup_accounts
 	restore_backup $config_dir/job_submit.lua
 	restore_backup $config_dir/slurm.conf
 	reconfigure
 
-	if {$exit_code == 0} {
+	if {$exit_code == $exit_code_skip} {
+		send_user "\nWARNING: Unable to run test with available nodes\n"
+		exit 0
+	} elseif {$exit_code == 0} {
 		print_success $test_id
 	} else {
 		log_error "exiting with exit code $exit_code"
@@ -188,6 +192,7 @@ proc test_bin_pass { num bin args het_job count } {
 
 	send_user "\n\n**** TEST PASS $num ****\n"
 	eval spawn $bin [join $args " "]
+	set pid [exp_pid]
 	expect {
 		-re "^(srun|salloc|sbatch): initialized\r\n" {
 			incr got_init
@@ -214,10 +219,7 @@ proc test_bin_pass { num bin args het_job count } {
 		}
 		timeout {
 			log_error "$bin not responding"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
-			slow_kill [expr 0 - $salloc_pid]
+			slow_kill [expr 0 - $pid]
 			endit 1
 		}
 		eof {
@@ -247,6 +249,7 @@ proc test_bin_fail { num bin args het_job count } {
 
 	send_user "\n\n**** TEST FAIL $num ****\n"
 	eval spawn $bin [join $args " "]
+	set pid [exp_pid]
 	expect {
 		-re "^(srun|salloc|sbatch): error: initialized\r\n" {
 			incr got_init
@@ -274,10 +277,7 @@ proc test_bin_fail { num bin args het_job count } {
 		}
 		timeout {
 			log_error "$bin not responding"
-			if {$job_id != 0} {
-				cancel_job $job_id
-			}
-			slow_kill [expr 0 - $salloc_pid]
+			slow_kill [expr 0 - $pid]
 			endit 1
 		}
 		eof {
@@ -308,6 +308,29 @@ if { [test_limits_enforced] == 0 } {
 	exit 0
 }
 
+# Verify cluster is able to run largest test job
+set got_uid 0
+set srun_pid [spawn $srun -t1 -J $job_name --mpi=none --ntasks-per-node=5 -N 3 $bin_id]
+expect {
+	-re "(uid=.*\n)" {
+		set got_uid 1
+		exp_continue
+	}
+
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 0
+	}
+	eof {
+		wait
+	}
+}
+if { $got_uid == 0 } {
+	send_user "\nWARNING: System too small for test\n"
+	exit 0
+}
+
 set config_dir ""
 log_user 0
 spawn $scontrol show config
@@ -326,8 +349,8 @@ expect {
 }
 log_user 1
 if { $config_dir == "" } {
-		log_error "scontrol did not provide SLURM_CONF"
-		exit 1
+	log_error "scontrol did not provide SLURM_CONF"
+	exit 1
 }
 
 cleanup_accounts
@@ -338,7 +361,7 @@ take_backup $config_dir/slurm.conf
 
 # Activate lua plugin
 exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
-exec $bin_echo "JobSubmitPlugins=lua" >> $config_dir/slurm.conf
+exec $bin_echo "\n### test7.20 additions####\nJobSubmitPlugins=lua" >> $config_dir/slurm.conf
 reconfigure
 
 do_copy $test_lua_reject $config_dir/job_submit.lua
