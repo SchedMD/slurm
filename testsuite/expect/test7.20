@@ -308,6 +308,29 @@ if { [test_limits_enforced] == 0 } {
 	exit 0
 }
 
+# Verify cluster is able to run largest test job
+set got_uid 0
+set srun_pid [spawn $srun -t1 -J $job_name --mpi=none --ntasks-per-node=5 -N 3 $bin_id]
+expect {
+	-re "(uid=.*\n)" {
+		set got_uid 1
+		exp_continue
+	}
+
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 0
+	}
+	eof {
+		wait
+	}
+}
+if { $got_uid == 0 } {
+	send_user "\nWARNING: System too small for test\n"
+	exit 0
+}
+
 set config_dir ""
 log_user 0
 spawn $scontrol show config
@@ -335,12 +358,6 @@ create_accounts
 
 take_backup $config_dir/job_submit.lua
 take_backup $config_dir/slurm.conf
-
-# Verify cluster is able to run largest test job
-if { [catch {exec $srun -t1 -I -J $job_name --mpi=none --ntasks-per-node=5 -N 3 /bin/true} msg] } {
-	send_user "\nSystem availability test failed: $::errorCode -- $::errorInfo -- $msg\n"
-	endit $exit_code_skip
-}
 
 # Activate lua plugin
 exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
