@@ -186,7 +186,7 @@ proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {e
 		make_bash_script $file_in "
 valgrind --tool=memcheck --error-limit=no --leak-check=full --show-reachable=yes --max-stackframe=16777216 --num-callers=20 --child-silent-after-fork=yes --track-origins=yes ./$test_prog \"$cfgpath\" \"$nodename\" >./$file_out 2>&1
 $bin_sort <./$file_out
-rm -rf ./$file_out
+rm -rf ./$file_out"
 	} else {
 		make_bash_script $file_in "
 ./$test_prog \"$cfgpath\" \"$nodename\" >./$file_out 2>&1
