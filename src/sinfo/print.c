@@ -366,6 +366,21 @@ format_add_function(List list, int width, bool right, char *suffix,
 	return SLURM_SUCCESS;
 }
 
+int
+format_prepend_function(List list, int width, bool right, char *suffix,
+			int (*function) (sinfo_data_t *, int, bool, char*))
+{
+	sinfo_format_t *tmp =
+		(sinfo_format_t *) xmalloc(sizeof(sinfo_format_t));
+	tmp->function = function;
+	tmp->width = width;
+	tmp->right_justify = right;
+	tmp->suffix = suffix;
+	list_prepend(list, tmp);
+
+	return SLURM_SUCCESS;
+}
+
 static void _set_node_field_size(List sinfo_list)
 {
 	char *tmp = NULL;

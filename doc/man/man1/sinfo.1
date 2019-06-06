@@ -97,8 +97,13 @@ This is ignored if the \fB\-\-format\fR option is specified.
 .TP
 \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
 Specify the information to be displayed using an \fBsinfo\fR
-format string. Format strings transparently used by \fBsinfo\fR
-when running with various options are
+format string.
+If the command is executed in an federated cluster environment and information
+about more than one cluster is to be displayed and the \fB\-h, \-\-noheader\fR
+option is used, then the cluster name will be displayed before the default
+output formats shown below.
+Format strings transparently used by \fBsinfo\fR when running with various
+options are
 .RS
 .TP 15
 .I "default"

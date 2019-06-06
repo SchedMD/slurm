@@ -320,35 +320,40 @@ extern void parse_command_line(int argc, char **argv)
 	}
 
 	if ( params.format == NULL ) {
+		params.def_format = true;
 		if ( params.summarize ) {
+			long_form = true;
 			params.part_field_flag = true;	/* compute size later */
-			params.format = "%9P %.5a %.10l %.16F  %N";
+			params.format = "partition:9 ,available:.5 ,time:.10 ,nodeaiot:.16 ,nodelist:0";
 		} else if ( params.node_flag ) {
+			long_form = true;
 			params.node_field_flag = true;	/* compute size later */
 			params.part_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-			  "%N %.6D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20E" :
-			  "%N %.6D %.9P %6t";
+			  "nodelist:0 ,nodes:.6 ,partition:.9 ,statelong:.11 ,cpus:4 ,socketcorethread:.8 ,memory:.6 ,disk:.8 ,weight:.6 ,features:.8 ,reason:20" :
+			  "nodelist:0 ,nodes:.6 ,partition:.9 ,statecompact:6";
 
 		} else if (params.list_reasons) {
+			long_form = true;
 			params.format = params.long_output ?
-			  "%20E %12U %19H %6t %N" :
-			  "%20E %9u %19H %N";
+			  "reason:20 ,userlong:12 ,timestamp:19 ,statecompact:6 ,nodelist:0" :
+			  "reason:20 ,user:9 ,timestamp:19 ,nodelist:0";
 
 		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
 			params.format = xstrdup(env_val);
 
-
 		} else if (params.fed) {
+			long_form = true;
 			params.part_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-			  "%9P %8V %.5a %.10l %.10s %.4r %.8h %.10g %.6D %.11T %N" :
-			  "%9P %8V %.5a %.10l %.6D %.6t %N";
+			  "partition:9 ,cluster:8 ,available:.5 ,time:.10 ,size:.10 ,root:.4 ,oversubscribe:.8 ,groups:.10 ,nodes:.6 ,statelong:.11 ,nodelist:0" :
+			  "partition:9 ,cluster:8 ,available:.5 ,time:.10 ,nodes:.6 ,statecompact:.6 ,nodelist:0";
 		} else {
+			long_form = true;
 			params.part_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-			  "%9P %.5a %.10l %.10s %.4r %.8h %.10g %.6D %.11T %N" :
-			  "%9P %.5a %.10l %.6D %.6t %N";
+			  "partition:9 ,available:.5 ,time:.10 ,size:.10 ,root:.4 ,oversubscribe:.8 ,groups:.10 ,nodes:.6 ,statelong:.11 ,nodelist:0" :
+			  "partition:9 ,available:.5 ,time:.10 ,nodes:.6 ,statecompact:.6 ,nodelist:0";
 		}
 	}
 

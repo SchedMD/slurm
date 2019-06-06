@@ -61,11 +61,11 @@ int max_line_size;
 /*************
  * Functions *
  *************/
-static int  _get_info(bool clear_old);
+static int  _get_info(bool clear_old, bool log_cluster_name);
 static int  _get_window_width( void );
 static void _print_date( void );
 static int  _multi_cluster(List clusters);
-static int  _print_job ( bool clear_old );
+static int  _print_job(bool clear_old, bool log_cluster_name);
 static int  _print_job_steps( bool clear_old );
 
 int
@@ -92,7 +92,7 @@ main (int argc, char **argv)
 			_print_date ();
 
 		if (!params.clusters) {
-			if (_get_info(false))
+			if (_get_info(false, false))
 				error_code = 1;
 		} else if (_multi_cluster(params.clusters) != 0)
 			error_code = 1;
@@ -113,17 +113,21 @@ main (int argc, char **argv)
 static int _multi_cluster(List clusters)
 {
 	ListIterator itr;
-	bool first = true;
+	bool log_cluster_name = false, first = true;
 	int rc = 0, rc2;
 
+	if ((list_count(clusters) > 1) && params.no_header)
+		log_cluster_name = true;
 	itr = list_iterator_create(clusters);
 	while ((working_cluster_rec = list_next(itr))) {
-		if (first)
-			first = false;
-		else
-			printf("\n");
-		printf("CLUSTER: %s\n", working_cluster_rec->name);
-		rc2 = _get_info(true);
+		if (!params.no_header) {
+			if (first)
+				first = false;
+			else
+				printf("\n");
+			printf("CLUSTER: %s\n", working_cluster_rec->name);
+		}
+		rc2 = _get_info(true, log_cluster_name);
 		rc = MAX(rc, rc2);
 	}
 	list_iterator_destroy(itr);
@@ -131,12 +135,12 @@ static int _multi_cluster(List clusters)
 	return rc;
 }
 
-static int _get_info(bool clear_old)
+static int _get_info(bool clear_old, bool log_cluster_name )
 {
 	if ( params.step_flag )
 		return _print_job_steps( clear_old );
 	else
-		return _print_job( clear_old );
+		return _print_job(clear_old, log_cluster_name);
 }
 
 /* get_window_width - return the size of the window STDOUT goes to */
@@ -164,8 +168,7 @@ _get_window_width( void )
 
 
 /* _print_job - print the specified job's information */
-static int
-_print_job ( bool clear_old )
+static int _print_job(bool clear_old, bool log_cluster_name)
 {
 	static job_info_msg_t *old_job_ptr;
 	job_info_msg_t *new_job_ptr = NULL;
@@ -235,12 +238,18 @@ _print_job ( bool clear_old )
 	}
 
 	if (!params.format && !params.format_long) {
+		if (log_cluster_name)
+			xstrcat(params.format_long, "cluster:10 ,");
 		if (params.long_list) {
-			xstrcat(params.format,
-				"%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R");
+			xstrcat(params.format_long,
+				"jobarrayid:.18 ,partition:.10 ,username:.9 ,"
+				"state:.9 ,timeused:.11 ,timelimit:.10 ,"
+				"numnodes:.7 ,reasonlist:0");
 		} else {
-			xstrcat(params.format,
-				"%.18i %.9P %.8j %.8u %.2t %.10M %.6D %R");
+			xstrcat(params.format_long,
+				"jobarrayid:.18 ,partition:.10 ,username:.9 ,"
+				"statecompact:.3 ,timeused:.11 ,"
+				"numnodes:.7 ,reasonlist:0");
 		}
 	}
 
