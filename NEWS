@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix GCC 9 compiler warnings.
  -- Fix seff human readable memory string for values below a megabyte.
  -- Fix dump/load of rejected heterogeneous jobs.
+ -- For heterogeneous jobs, do not count the each component against the QOS or
+    association job limit multiple times.
 
 * Changes in Slurm 18.08.7
 ==========================
