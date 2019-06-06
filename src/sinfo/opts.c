@@ -1249,7 +1249,7 @@ static void
 _parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
 		   char **suffix)
 {
-	char *ptr;
+	char *end_ptr = NULL, *ptr;
 
 	xassert(token);
 	ptr = strchr(token, ':');
@@ -1261,7 +1261,9 @@ _parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
 		} else {
 			*right_justify = false;
 		}
-		*field_size = atoi(ptr + 1);
+		*field_size = strtol(ptr + 1, &end_ptr, 10);
+		if (end_ptr[0] != '\0')
+			*suffix = xstrdup(end_ptr);
 	} else {
 		*right_justify = false;
 		*field_size = 20;
