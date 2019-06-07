@@ -1071,6 +1071,8 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 			packnull(buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
+			pack8(0, buffer);
+			pack8(0, buffer);
 
 			pack32(NO_VAL, buffer);
 
