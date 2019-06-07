@@ -3331,7 +3331,12 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 			list_iterator_destroy(iter2);
 			if (job_cnt > 1) {
 				job_desc.array_bitmap = bit_alloc(job_cnt);
-				bit_nset(job_desc.array_bitmap, 0, job_cnt - 1);
+				/*
+				 * SET NO BITS. Make this look like zero jobs
+				 * are being added. The job count was already
+				 * validated when each individual component of
+				 * the heterogeneous job was created.
+				*/
 				rc = _acct_policy_validate(&job_desc,
 						job_ptr1->part_ptr,
 						job_limit1->assoc_ptr,

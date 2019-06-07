@@ -8764,6 +8764,7 @@ void job_time_limit(void)
 			last_job_update = now;
 		}
 
+		/* Don't enforce time limits for configuring pack jobs */
 		if (_pack_configuring_test(job_ptr))
 			continue;
 
