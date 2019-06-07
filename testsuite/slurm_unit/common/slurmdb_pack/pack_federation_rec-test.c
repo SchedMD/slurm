@@ -32,7 +32,7 @@ START_TEST(invalid_protocol)
 }
 END_TEST
 
-START_TEST(pack_1711_null_federation_rec)
+START_TEST(pack_back2_null_federation_rec)
 {
 	int rc;
 	Buf buf = init_buf(1024);
@@ -51,7 +51,7 @@ START_TEST(pack_1711_null_federation_rec)
 }
 END_TEST
 
-START_TEST(pack_1711_federation_rec)
+START_TEST(pack_back2_federation_rec)
 {
 	int rc;
 
@@ -87,7 +87,7 @@ START_TEST(pack_1711_federation_rec)
 END_TEST
 
 
-START_TEST(pack_1711_federation_rec_empty_list)
+START_TEST(pack_back2_federation_rec_empty_list)
 {
 	int rc;
 
@@ -115,7 +115,7 @@ START_TEST(pack_1711_federation_rec_empty_list)
 END_TEST
 
 
-START_TEST(pack_1808_null_federation_rec)
+START_TEST(pack_back1_null_federation_rec)
 {
 	int rc;
 	Buf buf = init_buf(1024);
@@ -134,7 +134,7 @@ START_TEST(pack_1808_null_federation_rec)
 }
 END_TEST
 
-START_TEST(pack_1808_federation_rec)
+START_TEST(pack_back1_federation_rec)
 {
 	int rc;
 
@@ -170,7 +170,7 @@ START_TEST(pack_1808_federation_rec)
 END_TEST
 
 
-START_TEST(pack_1808_federation_rec_empty_list)
+START_TEST(pack_back1_federation_rec_empty_list)
 {
 	int rc;
 
@@ -208,13 +208,13 @@ Suite* suite(void)
 	Suite* s = suite_create("Pack slurmdb_federation_rec_t");
 	TCase* tc_core = tcase_create("Pack slurmdb_federation_rec_t");
 	tcase_add_test(tc_core, invalid_protocol);
-	tcase_add_test(tc_core, pack_1711_federation_rec);
-	tcase_add_test(tc_core, pack_1711_null_federation_rec);
-	tcase_add_test(tc_core, pack_1711_federation_rec_empty_list);
+	tcase_add_test(tc_core, pack_back2_federation_rec);
+	tcase_add_test(tc_core, pack_back2_null_federation_rec);
+	tcase_add_test(tc_core, pack_back2_federation_rec_empty_list);
 
-	tcase_add_test(tc_core, pack_1808_federation_rec);
-	tcase_add_test(tc_core, pack_1808_null_federation_rec);
-	tcase_add_test(tc_core, pack_1808_federation_rec_empty_list);
+	tcase_add_test(tc_core, pack_back1_federation_rec);
+	tcase_add_test(tc_core, pack_back1_null_federation_rec);
+	tcase_add_test(tc_core, pack_back1_federation_rec_empty_list);
 
 	suite_add_tcase(s, tc_core);
 	return s;
