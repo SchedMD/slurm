@@ -68,6 +68,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid flooding slurmctld and logging when prolog complete RPC errors occur.
  -- Fix GCC 9 compiler warnings.
  -- Fix seff human readable memory string for values below a megabyte.
+ -- Fix dump/load of rejected heterogeneous jobs.
 
 * Changes in Slurm 18.08.7
 ==========================
