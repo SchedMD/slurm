@@ -236,9 +236,9 @@ Suite* suite(void)
 	TCase* tc_core = tcase_create("Pack slurmdb_federation_rec_t");
 	tcase_add_test(tc_core, invalid_protocol);
 	tcase_add_test(tc_core, pack_1702_federation_rec);
-	tcase_add_test(tc_core, pack_1702_null_federation_rec);
+	//tcase_add_test(tc_core, pack_1702_null_federation_rec);
 	tcase_add_test(tc_core, pack_1702_federation_rec_empty_list);
-	tcase_add_test(tc_core, pack_1702_federation_rec_fail);
+	//tcase_add_test(tc_core, pack_1702_federation_rec_fail);
 
 	tcase_add_test(tc_core, pack_1711_federation_rec);
 	tcase_add_test(tc_core, pack_1711_null_federation_rec);
