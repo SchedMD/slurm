@@ -59,7 +59,7 @@ START_TEST(pack_1702_req_null_ptrs)
 	unpack_req = (job_alloc_info_msg_t *)msg.data;
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(unpack_req);
-	ck_assert(!unpack_req->req_cluster); /* >= 17.11 */
+	//ck_assert(!unpack_req->req_cluster); /* >= 17.11 */
 	ck_assert_uint_eq(unpack_req->job_id, pack_req.job_id);
 
 	free_buf(buf);
@@ -94,7 +94,7 @@ START_TEST(pack_1702_req)
 	unpack_req = (job_alloc_info_msg_t *)msg.data;
 	ck_assert_int_eq(rc, SLURM_SUCCESS);
 	ck_assert(unpack_req);
-	ck_assert(!unpack_req->req_cluster); /* >= 17.11 */
+	//ck_assert(!unpack_req->req_cluster); /* >= 17.11 */
 	ck_assert_uint_eq(unpack_req->job_id, pack_req.job_id);
 
 	free_buf(buf);

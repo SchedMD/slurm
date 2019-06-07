@@ -49,12 +49,11 @@ typedef struct hashable_st {
 	uint32_t idn;
 } hashable_t;
 
-const char* hashable_identify(void* voiditem)
+void hashable_identify(void* voiditem, const char** key, uint32_t* key_len)
 {
 	hashable_t* item = (hashable_t*)voiditem;
-	if (!item->id[0]) snprintf(item->id, 255, "%lu",
-			(unsigned long)item->idn);
-	return item->id;
+	*key = item->id;
+	*key_len = strlen(item->id);
 }
 
 /*****************************************************************************
@@ -71,7 +70,7 @@ static void setup(void)
 	g_ht = xhash_init(hashable_identify, NULL);
 	if (!g_ht) return; /* fatal error, will be detected by test cases */
 	for (i = 0; i < g_hashableslen; ++i) {
-		g_hashables[i].id[0] = 0;
+		snprintf(g_hashables[i].id, sizeof(g_hashables[i].id), "%d", i);
 		g_hashables[i].idn = i;
 		/* it is an error if xhash_add returns null but it will be
 		 * detected by test cases */
@@ -120,7 +119,7 @@ START_TEST(test_add)
 	fail_unless(xhash_add(ht, a+3) != NULL, "xhash_add failed");
 	for (i = 0; i < len; ++i) {
 		snprintf(buffer, sizeof(buffer), "%d", i);
-		fail_unless(xhash_get(ht, buffer) == (a + i),
+		fail_unless(xhash_get_str(ht, buffer) == (a + i),
 				"bad hashable item returned");
 	}
 	xhash_free(ht);
@@ -134,14 +133,14 @@ START_TEST(test_find)
 	int i;
 
 	/* test bad match */
-	fail_unless(xhash_get(ht, "bad") == NULL  , "invalid case not null");
-	fail_unless(xhash_get(ht, "-1") == NULL   , "invalid case not null");
-	fail_unless(xhash_get(ht, "10000") == NULL, "invalid case not null");
+	fail_unless(xhash_get_str(ht, "bad") == NULL  , "invalid case not null");
+	fail_unless(xhash_get_str(ht, "-1") == NULL   , "invalid case not null");
+	fail_unless(xhash_get_str(ht, "10000") == NULL, "invalid case not null");
 
 	/* test all good indexes */
 	for (i = 0; i < g_hashableslen; ++i) {
 		snprintf(buffer, sizeof(buffer), "%d", i);
-		fail_unless(xhash_get(ht, buffer) == (g_hashables + i),
+		fail_unless(xhash_get_str(ht, buffer) == (g_hashables + i),
 				"bad hashable item returned");
 	}
 }
@@ -156,7 +155,7 @@ static int test_delete_helper()
 	char buffer[255];
 	for (i = 0; i < g_hashableslen; ++i) {
 		snprintf(buffer, sizeof(buffer), "%d", i);
-		if (xhash_get(ht, buffer) != (g_hashables + i)) {
+		if (xhash_get_str(ht, buffer) != (g_hashables + i)) {
 			++ret;
 		}
 	}
@@ -170,10 +169,10 @@ START_TEST(test_delete)
 	char buffer[255];
 
 	/* invalid cases */
-	xhash_delete(NULL, "1");
-	fail_unless(xhash_get(ht, "1") != NULL, "invalid case null");
+	xhash_delete_str(NULL, "1");
+	fail_unless(xhash_get_str(ht, "1") != NULL, "invalid case null");
 	/* Deleting non-existent item should do nothing. */
-	xhash_delete(ht, NULL);
+	xhash_delete(ht, NULL, 0);
 	fail_unless(xhash_count(ht) == g_hashableslen,
 			"invalid delete has been done");
 	result = test_delete_helper();
@@ -182,17 +181,17 @@ START_TEST(test_delete)
 			result);
 
 	/* test correct deletion */
-	xhash_delete(ht, "10");
-	fail_unless(xhash_get(ht, "10") == NULL, "item not deleted");
+	xhash_delete_str(ht, "10");
+	fail_unless(xhash_get_str(ht, "10") == NULL, "item not deleted");
 	fail_unless(xhash_count(ht) == (g_hashableslen-1), "bad count");
 	/* left edge */
-	xhash_delete(ht, "0");
-	fail_unless(xhash_get(ht, "0") == NULL, "item not deleted");
+	xhash_delete_str(ht, "0");
+	fail_unless(xhash_get_str(ht, "0") == NULL, "item not deleted");
 	fail_unless(xhash_count(ht) == (g_hashableslen-2), "bad count");
 	/* right edge */
 	snprintf(buffer, sizeof(buffer), "%u", (g_hashableslen-2));
-	xhash_delete(ht, buffer);
-	fail_unless(xhash_get(ht, "0") == NULL, "item not deleted");
+	xhash_delete_str(ht, buffer);
+	fail_unless(xhash_get_str(ht, "0") == NULL, "item not deleted");
 	fail_unless(xhash_count(ht) == (g_hashableslen-3), "bad count");
 
 	result = test_delete_helper();
