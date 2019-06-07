@@ -116,37 +116,43 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name variable2_exp
 
 # Test -V
 set subtest_name "Test -V"
-run_qsub [make_random_var_name] $variable1_value [make_random_var_name] $variable2_value "-V" ""
+set var1_name [make_random_var_name]
+set var2_name "${var1_name}_2"
+run_qsub $var1_name $variable1_value $var2_name $variable2_value "-V" ""
+unset var1_name var2_name
 
 # Test -V w/sbatch --export=NONE
 set subtest_name "Test -V w/sbatch --export=NONE"
-run_qsub [make_random_var_name] $variable1_value [make_random_var_name] $variable2_value "-V" "#SBATCH --export=NONE"
+set var1_name [make_random_var_name]
+set var2_name "${var1_name}_2"
+run_qsub $var1_name $variable1_value $var2_name $variable2_value "-V" "#SBATCH --export=NONE"
+unset var1_name var2_name
 
 # Test -V, -v var
 set subtest_name "Test -V, -v var"
 set var1_name [make_random_var_name]
-set var2_name [make_random_var_name]
+set var2_name "${var1_name}_2"
 run_qsub $var1_name $variable1_value $var2_name $variable2_value "-V -v $var1_name" "" 
 unset var1_name var2_name
 
 # Test -V, -v var w/sbatch --export=NONE
 set subtest_name "Test -V, -v var w/sbatch --export=NONE"
 set var1_name [make_random_var_name]
-set var2_name [make_random_var_name]
+set var2_name "${var1_name}_2"
 run_qsub $var1_name $variable1_value $var2_name $variable2_value "-V -v $var1_name" "#SBATCH --export=NONE" 
 unset var1_name var2_name
 
 # Test -V, -v var=val
 set subtest_name "Test -V, -v var=val"
 set var1_name [make_random_var_name]
-set var2_name [make_random_var_name]
+set var2_name "${var1_name}_2"
 run_qsub $var1_name "LETITGOOO" $var2_name $variable2_value "-V -v $var1_name=LETITGOOO" ""
 unset var1_name var2_name
 
 # Test -V, -v var=val w/sbatch --export=NONE
 set subtest_name "Test -V, -v var=val w/sbatch --export=NONE"
 set var1_name [make_random_var_name]
-set var2_name [make_random_var_name]
+set var2_name "${var1_name}_2"
 run_qsub $var1_name "LETITGOOO" $var2_name $variable2_value "-V -v $var1_name=LETITGOOO" "#SBATCH --export=NONE"
 
 send_user "\nSUCCESS\n"
