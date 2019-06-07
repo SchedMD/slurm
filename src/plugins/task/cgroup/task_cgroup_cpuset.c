@@ -716,8 +716,10 @@ static int _task_cgroup_cpuset_dist_cyclic(
 			} else
 				s_ix++;
 #if HWLOC_API_VERSION >= 0x00020000
-			if (allowed_cpuset_alloc)
+			if (allowed_cpuset_alloc) {
 				hwloc_bitmap_free(allowed_cpuset);
+				allowed_cpuset_alloc = false;
+			}
 #endif
 		}
 		/* if it succeeds, switch to the next task, starting
