@@ -118,6 +118,9 @@ static uint64_t *rpc_user_time = NULL;
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
 
+static void         _create_pack_job_id_set(hostset_t jobid_hostset,
+					    uint32_t pack_job_offset,
+					    char **pack_job_id_set);
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int          _is_prolog_finished(uint32_t job_id);
@@ -1290,6 +1293,34 @@ static void _exclude_pack_nodes(List job_req_list)
 	xfree(req_nodes);
 }
 
+/*
+ * _create_pack_job_id_set - Obtain the pack_job_id_set
+ * pack_job_id_set OUT - allocated in the function and must be xfreed
+ *                       be the caller.
+ */
+static void _create_pack_job_id_set(hostset_t jobid_hostset,
+				    uint32_t pack_job_offset,
+				    char **pack_job_id_set)
+{
+	int buf_size = pack_job_offset * 16;
+	char *tmp_str = xmalloc(buf_size);
+	char *tmp_offset = tmp_str;
+
+	if (!jobid_hostset)
+		return;
+
+	hostset_ranged_string(jobid_hostset, buf_size, tmp_str);
+	if (tmp_str[0] == '[') {
+		tmp_offset = strchr(tmp_str, ']');
+		if (tmp_offset)
+			tmp_offset[0] = '\0';
+		tmp_offset = tmp_str + 1;
+	}
+
+	*pack_job_id_set = xstrdup(tmp_offset);
+	xfree(tmp_str);
+}
+
 /* _slurm_rpc_allocate_pack: process RPC to allocate a pack job resources */
 static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 {
@@ -1316,6 +1347,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	slurm_addr_t resp_addr;
 	char resp_host[16];
 	uint16_t port;	/* dummy value */
+	char *pack_job_id_set = NULL;
 
 	START_TIMER;
 
@@ -1467,30 +1499,29 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		error_code = ESLURM_ACCOUNTING_POLICY;
         }
 
+	/* Set the pack_job_id_set */
+	_create_pack_job_id_set(jobid_hostset, pack_job_offset,
+				&pack_job_id_set);
+
+	if (first_job_ptr)
+		first_job_ptr->pack_job_list = submit_job_list;
+	iter = list_iterator_create(submit_job_list);
+	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
+	}
+	list_iterator_destroy(iter);
+	xfree(pack_job_id_set);
+
 	if (error_code) {
 		/* Cancel remaining job records */
 		(void) list_for_each(submit_job_list, _pack_job_cancel, NULL);
-		if (first_job_ptr)
-			first_job_ptr->pack_job_list = submit_job_list;
-		else
+		if (!first_job_ptr)
 			FREE_NULL_LIST(submit_job_list);
 	} else {
 		ListIterator iter;
-		int buf_size = pack_job_offset * 16;
-		char *tmp_str = xmalloc(buf_size);
-		char *tmp_offset = tmp_str;
-		first_job_ptr->pack_job_list = submit_job_list;
-		hostset_ranged_string(jobid_hostset, buf_size, tmp_str);
-		if (tmp_str[0] == '[') {
-			tmp_offset = strchr(tmp_str, ']');
-			if (tmp_offset)
-				tmp_offset[0] = '\0';
-			tmp_offset = tmp_str + 1;
-		}
 		inx = 0;
 		iter = list_iterator_create(submit_job_list);
 		while ((job_ptr = (struct job_record *) list_next(iter))) {
-			job_ptr->pack_job_id_set = xstrdup(tmp_offset);
 			if (!resp)
 				resp = list_create(_del_alloc_pack_msg);
 			list_append(resp,
@@ -1503,7 +1534,6 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 			}
 		}
 		list_iterator_destroy(iter);
-		xfree(tmp_str);
 	}
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);
@@ -4060,6 +4090,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	List submit_job_list = NULL;
 	hostset_t jobid_hostset = NULL;
 	char tmp_str[32];
+	char *pack_job_id_set = NULL;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_SUBMIT_BATCH_PACK_JOB from uid=%d",
@@ -4252,29 +4283,21 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		reject_job = true;
 	}
 
-	if (!reject_job) {
-		int buf_size = pack_job_offset * 16;
-		char *tmp_str = xmalloc(buf_size);
-		char *tmp_offset = tmp_str;
+	_create_pack_job_id_set(jobid_hostset, pack_job_offset,
+				&pack_job_id_set);
+	if (first_job_ptr)
 		first_job_ptr->pack_job_list = submit_job_list;
-		hostset_ranged_string(jobid_hostset, buf_size, tmp_str);
-		if (tmp_str[0] == '[') {
-			tmp_offset = strchr(tmp_str, ']');
-			if (tmp_offset)
-				tmp_offset[0] = '\0';
-			tmp_offset = tmp_str + 1;
+
+	iter = list_iterator_create(submit_job_list);
+	while ((job_ptr = (struct job_record *) list_next(iter))) {
+		job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
+		if ((error_code == SLURM_SUCCESS) &&
+		    (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS)) {
+			info("Submit %pJ", job_ptr);
 		}
-		iter = list_iterator_create(submit_job_list);
-		while ((job_ptr = (struct job_record *) list_next(iter))) {
-			job_ptr->pack_job_id_set = xstrdup(tmp_offset);
-			if (slurmctld_conf.debug_flags &
-			    DEBUG_FLAG_HETERO_JOBS) {
-				info("Submit %pJ", job_ptr);
-			}
-		}
-		list_iterator_destroy(iter);
-		xfree(tmp_str);
 	}
+	list_iterator_destroy(iter);
+	xfree(pack_job_id_set);
 
 	unlock_slurmctld(job_write_lock);
 	_throttle_fini(&active_rpc_cnt);

@@ -15,6 +15,9 @@ documents those changes that are of interest to users and administrators.
  -- accounting_storage/slurmdbd - trigger an fsync() on the dbd.messages state
     file to ensure it is committed to disk properly.
  -- Avoid JobHeldUser state reason from being updated at allocation time.
+ -- Fix dump/load of rejected heterogeneous jobs.
+ -- For heterogeneous jobs, do not count the each component against the QOS or
+    association job limit multiple times.
 
 * Changes in Slurm 19.05.0
 ==========================
@@ -363,6 +366,9 @@ documents those changes that are of interest to users and administrators.
  -- Avoid flooding slurmctld and logging when prolog complete RPC errors occur.
  -- Fix GCC 9 compiler warnings.
  -- Fix seff human readable memory string for values below a megabyte.
+ -- Fix dump/load of rejected heterogeneous jobs.
+ -- For heterogeneous jobs, do not count the each component against the QOS or
+    association job limit multiple times.
 
 * Changes in Slurm 18.08.7
 ==========================

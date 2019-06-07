@@ -995,9 +995,13 @@ static int _test_pack_used(void *x, void *arg)
 	return 0;
 }
 
-/* Validate heterogeneous jobs
+/*
+ * Validate heterogeneous jobs
+ *
  * Make sure that every active (not yet complete) job has all of its components
- * and they are all in the same state. Also rebuild pack_job_list */
+ * and they are all in the same state. Also rebuild pack_job_list.
+ * If pack job is corrupted, aborts and removes it from job_list.
+ */
 static void _validate_pack_jobs(void)
 {
 	ListIterator job_iterator;
@@ -1011,6 +1015,20 @@ static void _validate_pack_jobs(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		/* Checking for corrupted job pack components */
+		if (job_ptr->pack_job_offset != 0) {
+			pack_job_ptr = find_job_record(job_ptr->pack_job_id);
+			if (!pack_job_ptr) {
+				error("Could not find pack leader (JobId=%u) of %pJ. Aborting and removing job as it is corrupted.",
+				      job_ptr->pack_job_id, job_ptr);
+				_abort_job(job_ptr, JOB_FAILED, FAIL_SYSTEM,
+					   "invalid pack_job_id_set");
+				if (list_delete_item(job_iterator) != 1)
+					error("Not able to remove the job.");
+				continue;
+			}
+		}
+
 		if ((job_ptr->pack_job_id == 0) ||
 		    (job_ptr->pack_job_offset != 0))
 			continue;
@@ -1022,10 +1040,12 @@ static void _validate_pack_jobs(void)
 		hs = hostset_create(job_id_str);
 		xfree(job_id_str);
 		if (!hs) {
-			error("%pJ has invalid pack_job_id_set(%s)",
+			error("%pJ has invalid pack_job_id_set(%s). Aborting and removing job as it is corrupted.",
 			      job_ptr, job_ptr->pack_job_id_set);
 			_abort_job(job_ptr, JOB_FAILED, FAIL_SYSTEM,
 				   "invalid pack_job_id_set");
+			if (list_delete_item(job_iterator) != 1)
+				error("Not able to remove the job.");
 			continue;
 		}
 		job_ptr->pack_job_list = list_create(NULL);
