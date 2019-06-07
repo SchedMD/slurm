@@ -61,7 +61,7 @@
 
 #define PATH_TO_CPU	"/sys/devices/system/cpu/"
 #define LINE_LEN	100
-#define FREQ_LIST_MAX	32
+#define FREQ_LIST_MAX	64
 #define GOV_NAME_LEN	24
 
 #define GOV_CONSERVATIVE	0x01
