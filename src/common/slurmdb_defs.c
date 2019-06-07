@@ -2746,7 +2746,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
  *   <integer>                defaults to Months
  *   <integer>Months
  *   <integer>Days
- *   <integer>H
+ *   <integer>Hours
  *
  * output:
  *   SLURMDB_PURGE_MONTHS | <integer>  if input is in Months
