@@ -526,6 +526,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 {
 #if HWLOC_API_VERSION >= 0x00020000
 	hwloc_bitmap_t allowed_cpuset;
+	bool allowed_cpuset_alloc = false;
 #endif
 	hwloc_obj_t obj;
 	uint32_t  s_ix;		/* socket index */
@@ -648,6 +649,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 #if HWLOC_API_VERSION >= 0x00020000
 			if (obj) {
 				allowed_cpuset = hwloc_bitmap_alloc();
+				allowed_cpuset_alloc = true;
 				hwloc_bitmap_and(allowed_cpuset,
 						 global_allowed_cpuset,
 						 obj->cpuset);
@@ -714,7 +716,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 			} else
 				s_ix++;
 #if HWLOC_API_VERSION >= 0x00020000
-			if (obj)
+			if (allowed_cpuset_alloc)
 				hwloc_bitmap_free(allowed_cpuset);
 #endif
 		}
