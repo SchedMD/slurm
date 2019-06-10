@@ -53,7 +53,7 @@ print_header $test_id
 ############################################################################
 
 proc sacct_query {jobname sacct_args expected_job {expected_err false}} {
-	global sacct number ntest
+	global sacct ntest
 
 	set job_found false
 	set err_found false
@@ -197,10 +197,6 @@ if { [test_account_storage] == 0 } {
 
 
 ############################################################################
-
-global squeue sacct
-global bin_sleep bin_date
-global number
 
 set failures 0
 
