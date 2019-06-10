@@ -1061,25 +1061,25 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		if (!object) {
-			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);		/* count */
 			pack16(0, buffer);
 			packnull(buffer);
 			pack32(0, buffer);
 			pack16(1, buffer);
 
-			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);		/* count */
 			packnull(buffer);
 			pack32(0, buffer);
 			pack32(0, buffer);
 			pack8(0, buffer);
 			pack8(0, buffer);
 
-			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);		/* flags */
 
 			packnull(buffer);
 			packnull(buffer);
 
-			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);		/* plugin_id_select */
 
 			slurmdb_pack_assoc_rec(NULL, protocol_version, buffer);
 
