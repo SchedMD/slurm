@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix dump/load of rejected heterogeneous jobs.
  -- For heterogeneous jobs, do not count the each component against the QOS or
     association job limit multiple times.
+ -- Comment out documentation for the incomplete and currently unusable
+    burst_buffer/generic plugin.
 
 * Changes in Slurm 19.05.0
 ==========================
