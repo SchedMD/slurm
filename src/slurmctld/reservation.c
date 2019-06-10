@@ -5187,7 +5187,17 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			    (res2_ptr->end_time   <= job_start_time) ||
 			    (!res2_ptr->full_nodes))
 				continue;
-			if (bit_overlap_any(*node_bitmap, res2_ptr->node_bitmap)) {
+			if (bit_overlap_any(*node_bitmap,
+					    res2_ptr->node_bitmap)) {
+				if (slurmctld_conf.debug_flags &
+				    DEBUG_FLAG_RESERVATION)
+					info("%s: reservation %s overlaps %s with %u nodes",
+					       __func__,
+					       resv_ptr->name,
+					       res2_ptr->name,
+					       bit_overlap(*node_bitmap,
+							   res2_ptr->
+								node_bitmap));
 				*resv_overlap = true;
 				bit_and_not(*node_bitmap,res2_ptr->node_bitmap);
 			}
