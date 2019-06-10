@@ -224,7 +224,7 @@ exec $bin_sleep 2
 # Test job will depend on it to test non-eligible
 #
 set def_node [get_idle_node_in_part [default_partition]]
-set pid_queue [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+set pid_depend [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set jobid_dependent $expect_out(1,string)
@@ -232,7 +232,7 @@ expect {
 	}
 	timeout {
 		log_error "$sbatch not responding."
-		slow_kill $pid_batch
+		slow_kill $pid_depend
 		incr failures
 	}
 	eof {
@@ -259,7 +259,7 @@ expect {
 	}
 	timeout {
 		log_error "$sbatch not responding."
-		slow_kill $pid_batch
+		slow_kill $pid_queue
 		incr failures
 	}
 	eof {
