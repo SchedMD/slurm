@@ -125,6 +125,12 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 		goto bail;
 	}
 
+	if (!first_job->submit) {
+		error("Runaway jobs all have time_submit=0, something is wrong! Aborting fix runaway jobs");
+		rc = SLURM_ERROR;
+		goto bail;
+	}
+
 	if (check_connection(mysql_conn) != SLURM_SUCCESS) {
 		rc = ESLURM_DB_CONNECTION;
 		goto bail;
