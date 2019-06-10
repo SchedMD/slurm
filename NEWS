@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     coming from an alloc node of NULL.
  -- Prevent partial-load of plugins which can leave certain interfaces in
     an inconsistent state.
+ -- Remove stray __USE_GNU macro definitions from source.
 
 * Changes in Slurm 19.05.1-2
 ============================
