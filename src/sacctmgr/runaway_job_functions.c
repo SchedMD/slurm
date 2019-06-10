@@ -97,7 +97,7 @@ static void _print_runaway_jobs(List format_list, List jobs)
 			format_list = list_create(slurm_destroy_char);
 		slurm_addto_char_list(
 			format_list,
-			"ID%-12,Name,Part,Cluster,State%10,Start,End");
+			"ID%-12,Name,Part,Cluster,State%10,Submit,Start,End");
 	}
 
 	print_fields_list = sacctmgr_process_format_list(format_list);
@@ -156,6 +156,18 @@ static void _print_runaway_jobs(List format_list, List jobs)
 				field->print_routine(
 					field,
 					job->end,
+					(curr_inx == field_count));
+				break;
+			case PRINT_TIMESUBMIT:
+				field->print_routine(
+					field,
+					job->submit,
+					(curr_inx == field_count));
+				break;
+			case PRINT_TIMEELIGIBLE:
+				field->print_routine(
+					field,
+					job->eligible,
 					(curr_inx == field_count));
 				break;
 			default:
@@ -288,8 +300,8 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 			"latest out of the start, eligible, or submit times, "
 			"and set the state to completed.\n"
 			"Once corrected, this will trigger the rollup to "
-			"reroll usage from before the oldest "
-			"runaway job.)\n\n";
+			"reroll usage from before the earliest submit time "
+			"of all the runaway jobs.)\n\n";
 
 
 	for (i=0; i<argc; i++) {

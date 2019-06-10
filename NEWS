@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix SchedulerParameter bf_min_prio_reserve error when not the last parameter
  -- When fixing runaway jobs, change to reroll from earliest submit time, and
     never reroll from Unix epoch.
+ -- Display submit time when running sacctmgr show runawayjobs and add format
+    option to display eligible time.
 
 * Changes in Slurm 19.05.0
 ==========================
