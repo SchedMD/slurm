@@ -1079,6 +1079,22 @@ static void _validate_pack_jobs(void)
 	list_for_each(job_list, _test_pack_used, NULL);
 }
 
+/* Log an error if SlurmdUser is not root and any cgroup plugin is used */
+static void _test_cgroup_plugin_use(void)
+{
+	char *plugins;
+
+	plugins = slurm_get_task_plugin();
+	if (xstrstr(plugins, "cgroup"))
+		error("task/cgroup plugin will not work unless SlurmdUser is root");
+	xfree(plugins);
+
+	plugins = slurm_get_proctrack_type();
+	if (xstrstr(plugins, "cgroup"))
+		error("proctrack/cgroup plugin will not work unless SlurmdUser is root");
+	xfree(plugins);
+}
+
 /*
  * read_slurm_conf - load the slurm configuration from the configured file.
  * read_slurm_conf can be called more than once if so desired.
@@ -1171,6 +1187,9 @@ int read_slurm_conf(int recover, bool reconfig)
 		info("Memory enforcing by using JobAcctGather's mechanism is discouraged, task/cgroup is recommended where available.");
 	else if (!cgroup_mem_confinement)
 		info("No memory enforcing mechanism configured.");
+
+	if (slurm_get_slurmd_user_id() != 0)
+		_test_cgroup_plugin_use();
 
 	if (layouts_init() != SLURM_SUCCESS) {
 		if (test_config) {
