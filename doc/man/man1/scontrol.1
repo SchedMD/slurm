@@ -958,6 +958,8 @@ precede the time and equal sign with a "+" or "\-" to increment or decrement the
 current time limit (e.g. "TimeLimit+=30"). In order to increment or decrement
 the current time limit, the \fIJobId\fP specification must precede the
 \fITimeLimit\fP specification.
+Note that incrementing or decrementing the time limit for a job array is only
+allowed before the job array has been split into more than one job record.
 Only the Slurm administrator or root can increase job's TimeLimit.
 
 .TP
