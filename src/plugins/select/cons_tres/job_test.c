@@ -5774,7 +5774,8 @@ extern uint64_t get_def_mem_per_gpu(List job_defaults_list)
  * IN node_i        - index of node to be evaluated
  * IN s_p_n         - Expected sockets_per_node (NO_VAL if not limited)
  * IN cr_type       - Consumable Resource setting
- * IN test_only     - ignore allocated memory check
+ * IN test_only     - Determine if job could ever run, ignore allocated memory
+ *		      check
  * IN will_run      - Determining when a pending job can start
  * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
  *                     partition or NULL if don't care
@@ -6059,7 +6060,8 @@ static void _set_gpu_defaults(struct job_record *job_ptr)
  * IN/OUT: core_map  - per-node bitmaps of available cores
  * IN: cr_node_cnt   - total number of nodes in the cluster
  * IN: cr_type       - resource type
- * IN: test_only     - ignore allocated memory check
+ * IN: test_only     - Determine if job could ever run, ignore allocated memory
+ *		       check
  * IN: will_run      - Determining when a pending job can start
  * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
  *                     partition or NULL if don't care
@@ -6104,7 +6106,8 @@ static avail_res_t **_get_res_avail(struct job_record *job_ptr,
  * IN/OUT: node_bitmap - bitmap of available nodes / bitmap of selected nodes
  * IN/OUT: avail_core - available/selected cores
  * IN: cr_type      - resource type
- * IN: test_only    - ignore allocated memory check
+ * IN: test_only     - Determine if job could ever run, ignore allocated memory
+ *		       check
  * IN: will_run      - Determining when a pending job can start
  * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
  *                     partition or NULL if don't care
