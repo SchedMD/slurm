@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Add new error ESLURM_INVALID_TIME_MIN_LIMIT to make note when a time_min
     limit is invalid based on timelimit.
  -- Correct slurmdb cluster record pack with NULL pointer input.
+ -- Clearer error message for ESLURM_INVALID_TIME_MIN_LIMIT.
 
 * Changes in Slurm 19.05.0
 ==========================

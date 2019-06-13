@@ -371,7 +371,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_NICE,
 	  "Invalid --nice value"				},
 	{ ESLURM_INVALID_TIME_MIN_LIMIT,
-	  "Invalid time_min specification (exceeds job's time or other limits)"},
+	  "Invalid time-min specification (exceeds job's time or other limits)"},
 
 	/* slurmd error codes */
 	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,
