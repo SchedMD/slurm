@@ -818,12 +818,10 @@ static void _load_config(void)
 
 	bf_min_prio_reserve = 0;
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_min_prio_reserve="))) {
-		char *end_ptr = NULL;
 		unsigned long long int min_prio;
 		tmp_ptr += 20;
-		min_prio = strtoull(tmp_ptr, &end_ptr, 10);
-		if ((min_prio > MAX_BF_MIN_PRIO_RESERVE) ||
-		    (end_ptr[0] != '\0')) {
+		min_prio = strtoull(tmp_ptr, NULL, 10);
+		if (!min_prio || min_prio > MAX_BF_MIN_PRIO_RESERVE) {
 			error("Invalid SchedulerParameters bf_min_prio_reserve: %llu",
 			      min_prio);
 		} else {
