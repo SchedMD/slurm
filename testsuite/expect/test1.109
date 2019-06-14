@@ -43,7 +43,7 @@ set timeout [expr $max_job_delay + 1]
 set invalid_tl 0
 set srun_pid [spawn $srun -v --begin now+5 --deadline now+600 --time-min 11 $bin_sleep 1]
 expect {
-	-re "Requested time limit is invalid" {
+	-re "Invalid time-min specification" {
 		set invalid_tl 1
 		exp_continue
 	}

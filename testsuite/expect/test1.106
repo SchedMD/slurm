@@ -43,7 +43,7 @@ set timeout $max_job_delay
 set time_error 0
 set srun_pid [spawn $srun -v -N1 --deadline now+1hour --time-min 120 $bin_sleep 1]
 expect {
-	-re "Requested time limit is invalid" {
+	-re "Invalid time-min specification" {
 		set time_error 1
 		exp_continue
 	}
@@ -66,7 +66,7 @@ if {$job_id != 0} {
 	exit 1
 }
 if {$time_error == 0} {
-	send_user "\nFAILURE: No time limit error\n"
+	send_user "\nFAILURE: No time-min limit error\n"
 	set exit_code 1
 } else {
 	send_user "\nTime limit error expected, no worries\n"

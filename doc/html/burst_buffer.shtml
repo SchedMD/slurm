@@ -26,11 +26,11 @@ Another typical use case is for persist storage, not associated with any
 specific job.
 This support is provided using a plugin mechanism so that a various burst
 buffer infrastructures may be easily configured.
-Two plugins are provided initially:</p>
+<!--Two plugins are-->One plugin is provided currently:</p>
 <ol>
 <li><b>datawarp</b> - Uses Cray APIs to perform underlying management functions</li>
-<li><b>generic</b> - Uses system administrator defined scripts to perform
-underlying management functions, currently under development</li>
+<!--<li><b>generic</b> - Uses system administrator defined scripts to perform
+underlying management functions, currently under development</li>-->
 </ol>
 <p>Additional plugins may be provided in future releases of Slurm.</p>
 
@@ -61,17 +61,19 @@ use in a production system.</p>
 
 <pre>
 # Excerpt of example slurm.conf file
-BurstBufferType=burst_buffer/generic
+BurstBufferType=burst_buffer/datawarp
 # DebugFlags=BurstBuffer # Commented out
 </pre>
 
 <p>Burst buffer specific options should be defined in a <i>burst_buffer.conf</i>
 file.
+<!--
 If multiple burst buffer plugins are configured, an independent configuration
 file can be specified for each plugin with a file name including the plugin name.
 For example files named "burst_buffer_datawarp.conf" and
 "burst_buffer_generic.conf" can be used independently by the datawarp and
 generic burst buffer plugins respectively.
+-->
 This file can contain information about who can or can not use burst buffers,
 timeouts, and paths of scripts used to perform various functions, etc.
 <a href="resource_limits.html">TRES limits</a> can be configured to establish
@@ -80,6 +82,7 @@ The size of a job's burst buffer requirements can be used as a factor in
 setting the job priority as described in the
 <a href="priority_multifactor.html">multifactor priority</a> document.</p>
 
+<!--
 <p>Note that sample scripts for performing burst buffer operations for the
 burst_buffer/generic plugin are included with the Slurm distribution.
 These scripts were intended for Slurm development and testing purposes and
@@ -108,6 +111,7 @@ StartStageOut=/usr/local/slurm/15.08/sbin/SSO
 StopStageIn=/usr/local/slurm/15.08/sbin/PSI
 StopStageOut=/usr/local/slurm/15.08/sbin/PSO
 </pre>
+-->
 
 <p><b>Note for Cray systems:</b> The JSON-C library must be installed in order
 to build Slurm's burst_buffer/datawarp plugin, which must parse JSON format data.
@@ -330,7 +334,7 @@ if "type" is not specified, the number is a measure of storage space.<br><br>
 default units are bytes for reservations of storage space.
 NOTE: Usually Slurm interprets KB, MB, GB, TB, PB, TB units as powers of 1024,
 but for Burst Buffers size specifications Slurm supports both IEC/SI formats.
-This is because the CRAY API for supports both formats.<br><br>
+This is because the Cray DataWarp API supports both formats.<br><br>
 
 Jobs using this reservation are not restricted to these burst buffer resources,
 but may use these reserved resources plus any which are generally available.
@@ -362,6 +366,6 @@ The second job can be made to wait for the first job's stage out operation to
 complete using the "afterburstbuffer" dependency option (e.g.
 "sbatch --dependency=afterburstbuffer:123 ...").</p>
 
-<p style="text-align:center;">Last modified 7 March 2019</p>
+<p style="text-align:center;">Last modified 10 June 2019</p>
 
 <!--#include virtual="footer.txt"-->
