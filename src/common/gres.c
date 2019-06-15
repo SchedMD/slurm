@@ -143,7 +143,10 @@ typedef struct slurm_gres_ops {
 						int node_inx );
 } slurm_gres_ops_t;
 
-/* Gres plugin context, one for each gres type */
+/*
+ * Gres plugin context, one for each gres type.
+ * Add to gres_context through _add_gres_context().
+ */
 typedef struct slurm_gres_context {
 	plugin_handle_t	cur_plugin;
 	uint8_t		config_flags;		/* See GRES_CONF_* in gres.h */
@@ -192,6 +195,7 @@ static volatile uint32_t autodetect_types = GRES_AUTODETECT_NONE;
 static uint32_t select_plugin_type = NO_VAL;
 
 /* Local functions */
+static void _add_gres_context(char *gres_name);
 static gres_node_state_t *
 		_build_gres_node_state(void);
 static void	_build_node_gres_str(List *gres_list, char **gres_str,
@@ -489,6 +493,25 @@ static int _unload_gres_plugin(slurm_gres_context_t *plugin_context)
 }
 
 /*
+ * Add new gres context to gres_context array and load the plugin.
+ * Must hold gres_context_lock before calling.
+ */
+static void _add_gres_context(char *gres_name)
+{
+	xrealloc(gres_context,
+		 (sizeof(slurm_gres_context_t) * (gres_context_cnt + 1)));
+	(void) _load_gres_plugin(gres_name, gres_context + gres_context_cnt);
+	/*
+	 * Ignore return code, as we will still support the gres with or
+	 * without the plugin.
+	 */
+	gres_context[gres_context_cnt].gres_name = xstrdup(gres_name);
+	gres_context[gres_context_cnt].plugin_id =
+		gres_plugin_build_id(gres_name);
+	gres_context_cnt++;
+}
+
+/*
  * Initialize the GRES plugins.
  *
  * Returns a Slurm errno.
@@ -562,20 +585,7 @@ extern int gres_plugin_init(void)
 			error("Duplicate plugin %s ignored",
 			      gres_context[i].gres_type);
 		} else {
-			xrealloc(gres_context, (sizeof(slurm_gres_context_t) *
-				 (gres_context_cnt + 1)));
-			(void) _load_gres_plugin(one_name,
-						 gres_context +
-						 gres_context_cnt);
-			/*
-			 * Ignore return code.
-			 * Proceed to support gres even without the plugin
-			 */
-			gres_context[gres_context_cnt].gres_name =
-				xstrdup(one_name);
-			gres_context[gres_context_cnt].plugin_id =
-				gres_plugin_build_id(one_name);
-			gres_context_cnt++;
+			_add_gres_context(one_name);
 		}
 		one_name = strtok_r(NULL, ",", &last);
 	}
@@ -631,14 +641,7 @@ extern void gres_plugin_add(char *gres_name)
 			goto fini;
 	}
 
-	xrealloc(gres_context,
-		 (sizeof(slurm_gres_context_t) * (gres_context_cnt + 1)));
-	(void) _load_gres_plugin(gres_name, gres_context + gres_context_cnt);
-	/* Ignore return code. Support gres even without the plugin */
-	gres_context[gres_context_cnt].gres_name = xstrdup(gres_name);
-	gres_context[gres_context_cnt].plugin_id =
-		gres_plugin_build_id(gres_name);
-	gres_context_cnt++;
+	_add_gres_context(gres_name);
 fini:	slurm_mutex_unlock(&gres_context_lock);
 }
 
