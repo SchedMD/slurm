@@ -498,8 +498,8 @@ static int _unload_gres_plugin(slurm_gres_context_t *plugin_context)
  */
 static void _add_gres_context(char *gres_name)
 {
-	xrealloc(gres_context,
-		 (sizeof(slurm_gres_context_t) * (gres_context_cnt + 1)));
+	xrecalloc(gres_context, (gres_context_cnt + 1),
+		  sizeof(slurm_gres_context_t));
 	(void) _load_gres_plugin(gres_name, gres_context + gres_context_cnt);
 	/*
 	 * Ignore return code, as we will still support the gres with or
