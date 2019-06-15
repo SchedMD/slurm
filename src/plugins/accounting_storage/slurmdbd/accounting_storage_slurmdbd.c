@@ -2976,7 +2976,8 @@ extern int jobacct_storage_p_archive_load(void *db_conn,
 		}
 		slurm_persist_free_rc_msg(msg);
 	} else {
-		error("unknown return for archive_load");
+		error("%s: unknown return msg_type for archive_load: %s(%u)",
+		      __func__, rpc_num2string(resp.msg_type), resp.msg_type);
 		rc = SLURM_ERROR;
 	}
 
