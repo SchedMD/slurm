@@ -2963,7 +2963,8 @@ extern int jobacct_storage_p_archive_load(void *db_conn,
 	rc = send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_ARCHIVE_LOAD failure: %m");
+		error("slurmdbd: DBD_ARCHIVE_LOAD failure: %s",
+		      slurm_strerror(rc));
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		rc = msg->rc;
