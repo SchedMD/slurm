@@ -61,9 +61,13 @@ Requires: munge
 
 %{?systemd_requires}
 BuildRequires: systemd
-BuildRequires: munge-devel munge-libs
-BuildRequires: python
 BuildRequires: readline-devel
+BuildRequires: munge-devel munge-libs
+%if 0%{el8}
+BuildRequires: python3
+%else
+BuildRequires: python
+%endif
 Obsoletes: slurm-lua slurm-munge slurm-plugins
 
 # fake systemd support when building rpms on other platforms
