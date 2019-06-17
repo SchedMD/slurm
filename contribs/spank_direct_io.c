@@ -25,7 +25,7 @@
  * --direct-io. These options will set a SPANK_DIRECT_IO environment variable
  * for the job's Prolog and Epilog scripts. If neither option (or their
  * corresponding environment variables) are set, then SPANK_DIRECT_IO
- * will not exist. NOTE: Command line options take precidence over the 
+ * will not exist. NOTE: Command line options take precedence over the
  * environment variables.
  *
  * --cache-io  or SLURM_CACHE_IO  env var will set SPANK_DIRECT_IO=0

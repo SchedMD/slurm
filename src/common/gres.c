@@ -1256,7 +1256,7 @@ static void _add_gres_config(List gres_conf_list, gres_state_t *gres_ptr,
 
 /*
  * Merge GRES configuration from slurm.conf into that from gres.conf.
- * Any configuration information from gres.conf takes precidence.
+ * Any configuration information from gres.conf takes precedence.
  * If no configuration found, build a record with zero count
  */
 static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
