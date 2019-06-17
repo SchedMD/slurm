@@ -13533,7 +13533,7 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 	/*
 	 * If the first record already exists and has a count of 0 then
 	 * overwrite it.
-	 * This is a placeholder record created in gres.c#_no_gres_conf()
+	 * This is a placeholder record created in _merge_config()
 	 */
 	gpu_record = list_next(itr);
 	if (gpu_record && (gpu_record->count == 0))
