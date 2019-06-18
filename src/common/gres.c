@@ -1486,10 +1486,11 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name)
 		}
 
 		if (slurm_get_debug_flags() & DEBUG_FLAG_GRES) {
-			info("Node:%s Gres:%s Type:%s Flags:%u CPU_IDs:%s CPU#:%u Count:%"
+			info("Node:%s Gres:%s Type:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"
 			     PRIu64" Links:%s",
-			     node_name, tmp_name, tmp_type, config_flags,
-			     tmp_cpus, cpu_cnt, count64, tmp_links);
+			     node_name, tmp_name, tmp_type,
+			     gres_flags2str(config_flags), tmp_cpus, cpu_cnt,
+			     count64, tmp_links);
 			}
 		if (config_flags & GRES_CONF_OLD_FILE) {
 			/* Old RPC, possibly with "Type=" */
