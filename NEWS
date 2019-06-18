@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
     if OverTimeLimit is Unlimited.
  -- Remove premature call to get system gpus before querying fake gpus that
     should override the real.
+ -- Fix segfault in epilog_set_env() when gres_devices is NULL.
 
 * Changes in Slurm 19.05.0
 ==========================
