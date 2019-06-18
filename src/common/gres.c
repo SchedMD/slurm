@@ -13501,7 +13501,7 @@ extern void destroy_gres_slurmd_conf(void *x)
  */
 extern char *gres_flags2str(uint8_t config_flags)
 {
-	static char flag_str[64];
+	static char flag_str[128];
 	char *sep = "";
 
 	flag_str[0] = '\0';
