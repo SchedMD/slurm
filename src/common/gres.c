@@ -992,7 +992,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 					 * (deprecated, use Cores) */
 		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
 		{"File",  S_P_STRING},	/* Path to Gres device */
-		{"Files",  S_P_STRING},	/* Path to Gres device */
+		{"Files", S_P_STRING},	/* Path to Gres device */
 		{"Link",  S_P_STRING},	/* Communication link IDs */
 		{"Links", S_P_STRING},	/* Communication link IDs */
 		{"Name",  S_P_STRING},	/* Gres name */
