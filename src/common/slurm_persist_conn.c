@@ -942,7 +942,8 @@ extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 		msg_read = read(persist_conn->fd, (msg + offset),
 				(msg_size - offset));
 		if (msg_read <= 0) {
-			error("Persistent Conn: read: %m");
+			error("%s: read of fd %u failed: %m",
+			      __func__, persist_conn->fd);
 			break;
 		}
 		offset += msg_read;
