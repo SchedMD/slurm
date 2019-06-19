@@ -924,7 +924,8 @@ extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 	/* We don't error check for an upper limit here
 	 * since size could possibly be massive */
 	if (msg_size < 2) {
-		error("Persistent Conn: Invalid msg_size (%u)", msg_size);
+		error("%s: Invalid msg_size: %u bytes",
+		      __func__, msg_size);
 		goto endit;
 	}
 
