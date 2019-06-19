@@ -148,8 +148,12 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 			      __func__, persist_conn->fd);
 			return false;
 		}
-		if (rc == 0)
+		if (rc == 0) {
+			debug("%s: poll for fd %d timeout after %d msecs of total wait %d msecs.",
+			      __func__, persist_conn->fd, time_left,
+			      persist_conn->timeout);
 			return false;
+		}
 		if ((ufds.revents & POLLHUP) &&
 		    ((ufds.revents & POLLIN) == 0)) {
 			debug2("persistent connection closed");
