@@ -139,8 +139,11 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 		if (*persist_conn->shutdown)
 			return false;
 		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
+			if ((errno == EINTR) || (errno == EAGAIN)) {
+				debug3("%s: retrying poll for fd %d: %m",
+					__func__, persist_conn->fd);
 				continue;
+			}
 			error("%s: poll error for fd %d: %m",
 			      __func__, persist_conn->fd);
 			return false;
