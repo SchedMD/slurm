@@ -156,20 +156,23 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 		}
 		if ((ufds.revents & POLLHUP) &&
 		    ((ufds.revents & POLLIN) == 0)) {
-			debug2("persistent connection closed");
+			debug2("%s: persistent connection for fd %d closed",
+			       __func__, persist_conn->fd);
 			return false;
 		}
 		if (ufds.revents & POLLNVAL) {
-			error("persistent connection is invalid");
+			error("%s: persistent connection for fd %d is invalid",
+			       __func__, persist_conn->fd);
 			return false;
 		}
 		if (ufds.revents & POLLERR) {
-			error("persistent connection experienced an error");
+			error("%s: persistent connection for fd %d experienced an error",
+			       __func__, persist_conn->fd);
 			return false;
 		}
 		if ((ufds.revents & POLLIN) == 0) {
-			error("persistent connection %d events %d",
-			      persist_conn->fd, ufds.revents);
+			error("%s: persistent connection for fd %d events %d",
+			      __func__, persist_conn->fd, ufds.revents);
 			return false;
 		}
 		/* revents == POLLIN */
