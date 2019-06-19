@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Correct slurmdb cluster record pack with NULL pointer input.
  -- Clearer error message for ESLURM_INVALID_TIME_MIN_LIMIT.
  -- Fix SchedulerParameter bf_min_prio_reserve error when not the last parameter
+ -- When fixing runaway jobs, change to reroll from earliest submit time, and
+    never reroll from Unix epoch.
 
 * Changes in Slurm 19.05.0
 ==========================

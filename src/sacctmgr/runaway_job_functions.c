@@ -106,7 +106,7 @@ static void _print_runaway_jobs(List format_list, List jobs)
 	print_fields_header(print_fields_list);
 	field_count = list_count(print_fields_list);
 
-	list_sort(jobs, slurmdb_job_sort_by_start_time);
+	list_sort(jobs, slurmdb_job_sort_by_submit_time);
 
 	itr = list_iterator_create(jobs);
 	field_itr = list_iterator_create(print_fields_list);
