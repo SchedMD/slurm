@@ -950,8 +950,8 @@ extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 	}
 	if (msg_size != offset) {
 		if (!(*persist_conn->shutdown)) {
-			error("Persistent Conn: only read %zd of %d bytes",
-			      offset, msg_size);
+			error("%s: only read %zd of %d bytes",
+			      __func__, offset, msg_size);
 		}	/* else in shutdown mode */
 		xfree(msg);
 		goto endit;
