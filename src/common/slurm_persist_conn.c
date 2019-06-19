@@ -171,8 +171,8 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 			return false;
 		}
 		if ((ufds.revents & POLLIN) == 0) {
-			error("%s: persistent connection for fd %d events %d",
-			      __func__, persist_conn->fd, ufds.revents);
+			error("%s: persistent connection for fd %d missing POLLIN flag with revents 0x%"PRIx64,
+			      __func__, persist_conn->fd, (uint64_t) ufds.revents);
 			return false;
 		}
 		if (ufds.revents == POLLIN) {
