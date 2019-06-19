@@ -4488,3 +4488,18 @@ extern void slurmdb_destroy_slurmdb_stats(slurmdb_stats_t *stats)
 	slurmdb_free_slurmdb_stats_members(stats);
 	xfree(stats);
 }
+
+/*
+ * Comparator for sorting jobs by start time.
+ */
+extern int slurmdb_job_sort_by_start_time(void *v1, void *v2)
+{
+	time_t time1 = (*(slurmdb_job_rec_t **)v1)->start;
+	time_t time2 = (*(slurmdb_job_rec_t **)v2)->start;
+
+	if (time1 < time2)
+		return -1;
+	else if (time1 > time2)
+		return 1;
+	return 0;
+}

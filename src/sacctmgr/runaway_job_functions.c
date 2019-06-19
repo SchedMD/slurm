@@ -78,20 +78,6 @@ static int _set_cond(int *start, int argc, char **argv,
 	return set;
 }
 
-
-static int _job_sort_by_start_time(void *void1, void * void2)
-{
-	time_t start1 = (*(slurmdb_job_rec_t **)void1)->start;
-	time_t start2 = (*(slurmdb_job_rec_t **)void2)->start;
-
-	if (start1 < start2)
-		return -1;
-	else if (start1 > start2)
-		return 1;
-	else
-		return 0;
-}
-
 static void _print_runaway_jobs(List format_list, List jobs)
 {
 	char outbuf[FORMAT_STRING_SIZE];
@@ -120,7 +106,7 @@ static void _print_runaway_jobs(List format_list, List jobs)
 	print_fields_header(print_fields_list);
 	field_count = list_count(print_fields_list);
 
-	list_sort(jobs, _job_sort_by_start_time);
+	list_sort(jobs, slurmdb_job_sort_by_start_time);
 
 	itr = list_iterator_create(jobs);
 	field_itr = list_iterator_create(print_fields_list);
