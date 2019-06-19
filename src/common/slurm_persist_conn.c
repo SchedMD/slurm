@@ -175,9 +175,13 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 			      __func__, persist_conn->fd, ufds.revents);
 			return false;
 		}
-		/* revents == POLLIN */
-		errno = 0;
-		return true;
+		if (ufds.revents == POLLIN) {
+			errno = 0;
+			return true;
+		}
+
+		fatal_abort("%s: poll returned unexpected revents: 0x%"PRIx64,
+			    __func__, (uint64_t) ufds.revents);
 	}
 	return false;
 }
