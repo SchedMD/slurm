@@ -911,8 +911,11 @@ extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 		return NULL;
 	}
 
-	if (!_conn_readable(persist_conn))
+	if (!_conn_readable(persist_conn)) {
+		log_flag(NET, "%s: Unable to read from file descriptor (%d)",
+			 __func__, persist_conn->fd);
 		goto endit;
+	}
 
 	msg_read = read(persist_conn->fd, &nw_size, sizeof(nw_size));
 	if (msg_read != sizeof(nw_size)) {
