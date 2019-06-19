@@ -915,8 +915,11 @@ extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 		goto endit;
 
 	msg_read = read(persist_conn->fd, &nw_size, sizeof(nw_size));
-	if (msg_read != sizeof(nw_size))
+	if (msg_read != sizeof(nw_size)) {
+		log_flag(NET, "%s: Unable to read message size: only read %zd bytes of expected %zu.",
+			 __func__, msg_read, sizeof(nw_size));
 		goto endit;
+	}
 	msg_size = ntohl(nw_size);
 	/* We don't error check for an upper limit here
 	 * since size could possibly be massive */
