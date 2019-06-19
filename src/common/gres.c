@@ -1331,6 +1331,12 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs
 	};
 
+	if (cpu_cnt == 0) {
+		error("%s: Invalid cpu_cnt of 0 for node %s",
+		      __func__, node_name);
+		return SLURM_ERROR;
+	}
+
 	if (xcpuinfo_abs_to_mac)
 		xcpuinfo_ops.xcpuinfo_abs_to_mac = xcpuinfo_abs_to_mac;
 
