@@ -141,7 +141,8 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
-			error("poll: %m");
+			error("%s: poll error for fd %d: %m",
+			      __func__, persist_conn->fd);
 			return false;
 		}
 		if (rc == 0)
