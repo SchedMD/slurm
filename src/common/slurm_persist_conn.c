@@ -921,9 +921,8 @@ extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 		goto endit;
 	}
 	msg_size = ntohl(nw_size);
-	/* We don't error check for an upper limit here
-	 * since size could possibly be massive */
-	if (msg_size < 2) {
+	/* Sanity check size is not too small or the max possible */
+	if ((msg_size == INFINITE) || (msg_size == NO_VAL) || (msg_size < 2)) {
 		error("%s: Invalid msg_size: %u bytes",
 		      __func__, msg_size);
 		goto endit;
