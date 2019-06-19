@@ -48,6 +48,8 @@
 #include "pmixp_dconn_ucx.h"
 #include "pmixp_client.h"
 
+#include <pmix_server.h>
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -83,6 +85,8 @@ const char plugin_type[] = "mpi/pmix_v1";
 const char plugin_type[] = "mpi/pmix_v2";
 #elif (HAVE_PMIX_VER == 3)
 const char plugin_type[] = "mpi/pmix_v3";
+#elif (HAVE_PMIX_VER == 4)
+const char plugin_type[] = "mpi/pmix_v4";
 #endif
 
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
@@ -104,6 +108,10 @@ static void *_libpmix_open(void)
 	xstrfmtcat(full_path, "%s/", PMIXP_V1_LIBPATH);
 #elif defined PMIXP_V2_LIBPATH
 	xstrfmtcat(full_path, "%s/", PMIXP_V2_LIBPATH);
+#elif defined PMIXP_V3_LIBPATH
+    xstrfmtcat(full_path, "%s/", PMIXP_V3_LIBPATH);
+#elif defined PMIXP_V4_LIBPATH
+    xstrfmtcat(full_path, "%s/", PMIXP_V4_LIBPATH);
 #endif
 	xstrfmtcat(full_path, "libpmix.so");
 	lib_plug = dlopen(full_path, RTLD_LAZY | RTLD_GLOBAL);
@@ -196,15 +204,61 @@ extern int p_mpi_hook_slurmstepd_task(
 	return SLURM_SUCCESS;
 }
 
+typedef struct {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    bool done;
+    pmix_status_t status;
+    pmix_info_t *info;
+    size_t ninfo;
+    pmix_op_cbfunc_t cbfunc;
+    void *cbdata;
+} setup_app_lock_t;
+
+static void setup_app_cbfunc(
+    pmix_status_t status,
+    pmix_info_t info[], size_t ninfo,
+    void *provided_cbdata,
+    pmix_op_cbfunc_t cbfunc, void *cbdata)
+{
+    setup_app_lock_t *lock = (setup_app_lock_t*)provided_cbdata;
+
+    /* protect the struct */
+    slurm_mutex_lock(&lock->mutex);
+
+    /* transfer the returned values */
+    lock->status = status;
+    lock->info = info;
+    lock->ninfo = ninfo;
+    lock->cbfunc = cbfunc;
+    lock->cbdata = cbdata;
+
+    /* release the waiting function */
+    lock->done = true;
+    slurm_cond_broadcast(&lock->cond);
+    slurm_mutex_unlock(&lock->mutex);
+}
+
 extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 	const mpi_plugin_client_info_t *job, char ***env)
 {
 	static pthread_mutex_t setup_mutex = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_cond_t setup_cond  = PTHREAD_COND_INITIALIZER;
+    static setup_app_lock_t setup_app_lock = {
+        .mutex = PTHREAD_MUTEX_INITIALIZER,
+        .cond = PTHREAD_COND_INITIALIZER,
+        .done = false,
+        .status = PMIX_ERROR,
+        .info = NULL,
+        .ninfo = 0,
+        .cbfunc = NULL,
+        .cbdata = NULL
+    };
 	static char *mapping = NULL;
 	static bool setup_done = false;
 	uint32_t nnodes, ntasks, **tids;
 	uint16_t *task_cnt;
+    pmix_status_t rc;
 
 	PMIXP_DEBUG("setup process mapping in srun");
 	if ((job->pack_jobid == NO_VAL) || (job->pack_task_offset == 0)) {
@@ -213,6 +267,26 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 		task_cnt = job->step_layout->tasks;
 		tids = job->step_layout->tids;
 		mapping = pack_process_mapping(nnodes, ntasks, task_cnt, tids);
+
+        PMIXP_DEBUG("setup application data in srun");
+        rc = PMIx_server_setup_application(pmixp_info_namespace(),
+                                           NULL, 0,
+                                           setup_app_cbfunc, &setup_app_lock);
+        if (PMIX_SUCCESS == rc) {
+            slurm_mutex_lock(&setup_app_lock.mutex);
+            while (!setup_app_lock.done)
+                slurm_cond_wait(&setup_app_lock.cond, &setup_app_lock.mutex);
+            slurm_mutex_unlock(&setup_app_lock.mutex);
+            /* pack the data for transmission */
+
+            /* callback the server library to release the data */
+            if (NULL != setup_app_lock.cbfunc) {
+                setup_app_lock.cbfunc(PMIX_SUCCESS, setup_app_lock.cbdata);
+            }
+        } else {
+            PMIXP_DEBUG("setup application failed");
+        }
+
 		slurm_mutex_lock(&setup_mutex);
 		setup_done = true;
 		slurm_cond_broadcast(&setup_cond);
