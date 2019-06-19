@@ -966,8 +966,12 @@ endit:
 	 * listen long enough for this response.
 	 */
 	if (!(*persist_conn->shutdown) &&
-	    persist_conn->flags & PERSIST_FLAG_RECONNECT)
+	    (persist_conn->flags & PERSIST_FLAG_RECONNECT)) {
+		log_flag(NET, "%s: reopening persistent connection after error",
+			 __func__);
+
 		slurm_persist_conn_reopen(persist_conn, true);
+	}
 
 	return NULL;
 }
