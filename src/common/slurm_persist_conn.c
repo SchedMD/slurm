@@ -137,7 +137,7 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 			time_left = -1;
 		rc = poll(&ufds, 1, time_left);
 		if (*persist_conn->shutdown)
-			return false;
+			break;
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN)) {
 				debug3("%s: retrying poll for fd %d: %m",
@@ -183,6 +183,9 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 		fatal_abort("%s: poll returned unexpected revents: 0x%"PRIx64,
 			    __func__, (uint64_t) ufds.revents);
 	}
+
+	debug("%s: shutdown request detected for fd %d",
+	      __func__, persist_conn->fd);
 	return false;
 }
 
