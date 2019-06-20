@@ -5785,9 +5785,9 @@ See the \fBlogrotate\fR man page for more details.
 	size=5M
 	create 640 slurm root
 	postrotate
-		pkill --signal SIGUSR2 slurmctld
-		pkill --signal SIGUSR2 slurmd
-		pkill --signal SIGUSR2 slurmdbd
+		pkill -x --signal SIGUSR2 slurmctld
+		pkill -x --signal SIGUSR2 slurmd
+		pkill -x --signal SIGUSR2 slurmdbd
 		exit 0
 	endscript
 }
