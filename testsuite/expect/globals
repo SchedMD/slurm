@@ -4735,7 +4735,6 @@ proc get_gpu_count { node_count } {
 			while 1 {
 				set gpu_found [lsearch $parts "gpu*"]
 				if { $gpu_found == -1 } break
-
 				set parts2 [split [lindex $parts $gpu_found] ":(/"]
 
 				set col [lsearch -regexp $parts2 ^$number$]
@@ -4744,9 +4743,11 @@ proc get_gpu_count { node_count } {
 				} else {
 					set count [expr $count + [lindex $parts2 $col]]
 				}
+				set parts [lreplace $parts $gpu_found $gpu_found]
+			}
+			if { $count } {
 				incr node_inx
 				lappend gpu_count $count
-				set parts [lreplace $parts $gpu_found $gpu_found]
 			}
 			exp_continue
 		}
