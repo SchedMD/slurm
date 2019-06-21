@@ -129,29 +129,7 @@ struct select_nodeinfo {
 };
 
 /* Global variables */
-bool       backfill_busy_nodes	= false;
-int        bf_window_scale	= 0;
-uint16_t   cr_type		= CR_CPU; /* cr_type is overwritten in init() */
-uint64_t   def_cpu_per_gpu	= 0;
-uint64_t   def_mem_per_gpu	= 0;
-int        gang_mode		= -1;
-bool       have_dragonfly	= false;
-bool       pack_serial_at_end	= false;
-bool       preempt_by_part	= false;
-bool       preempt_by_qos	= false;
-int        preempt_reorder_cnt	= 1;
-bool       preempt_strict_order = false;
-uint16_t   priority_flags	= 0;
-uint64_t   select_debug_flags	= 0;
-uint16_t   select_fast_schedule	= 0;
-int        select_node_cnt	= 0;
-struct node_res_record *select_node_record	= NULL;
-struct node_use_record *select_node_usage	= NULL;
-struct part_res_record *select_part_record	= NULL;
-bool       select_state_initializing = true;
-bool       spec_cores_first	= false;
 bitstr_t **spec_core_res	= NULL;
-bool       topo_optional	= false;
 
 /* Global functions */
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);

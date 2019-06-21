@@ -174,28 +174,6 @@ const uint32_t plugin_id      = SELECT_PLUGIN_CONS_RES;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
-uint16_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
-
-bool     backfill_busy_nodes  = false;
-bool     have_dragonfly       = false;
-bool     pack_serial_at_end   = false;
-bool     preempt_by_part      = false;
-bool     preempt_by_qos       = false;
-uint16_t priority_flags       = 0;
-uint64_t select_debug_flags   = 0;
-uint16_t select_fast_schedule = 0;
-bool     spec_cores_first     = false;
-bool     topo_optional        = false;
-
-struct part_res_record *select_part_record = NULL;
-struct node_res_record *select_node_record = NULL;
-struct node_use_record *select_node_usage  = NULL;
-static bool select_state_initializing = true;
-static int select_node_cnt = 0;
-static int preempt_reorder_cnt = 1;
-static bool preempt_strict_order = false;
-static int  bf_window_scale      = 0;
-
 struct select_nodeinfo {
 	uint16_t magic;		/* magic number */
 	uint16_t alloc_cpus;

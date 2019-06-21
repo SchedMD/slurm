@@ -62,36 +62,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-/* per-node resource data */
-struct node_res_record {
-	struct node_record *node_ptr;	/* ptr to the actual node */
-	uint16_t cpus;			/* count of logical processors configured */
-	uint32_t cume_cores;		/* total cores for all nodes through us */
-	uint16_t boards; 		/* count of boards configured */
-	uint16_t sockets;		/* count of sockets per board configured */
-	uint16_t cores;			/* count of cores per socket configured */
-	uint16_t threads;		/* count of hyperthreads per core */
-	uint16_t tot_cores;		/* total cores per node */
-	uint16_t tot_sockets;		/* total sockets per node */
-	uint16_t vpus;			/* count of virtual processors configure
-					 * this could be the physical threads
-					 * count or could be the core count if
-					 * the node's cpu count matches the
-					 * core count */
-	uint64_t real_memory;		/* MB of real memory configured */
-	uint64_t mem_spec_limit;	/* MB of specialized/system memory */
-};
-
-/* per-node resource usage record */
-struct node_use_record {
-	uint64_t alloc_memory;		/* real memory reserved by already
-					 * scheduled jobs */
-	List gres_list;			/* list of gres_node_state_t records as
-					 * defined in in src/common/gres.h.
-					 * Local data used only in state copy
-					 * to emulate future node state */
-	uint16_t node_state;		/* see node_cr_state comments */
-};
+#include "../cons_common/cons_common.h"
 
 /* a partition's per-row core allocation bitmap arrays (1 bitmap per node) */
 struct part_row_data {
@@ -102,39 +73,8 @@ struct part_row_data {
 	uint32_t num_jobs;		/* Number of occupied entries in job_list array */
 };
 
-/* partition core allocation bitmap arrays (1 bitmap per node) */
-struct part_res_record {
-	struct part_res_record *next;	/* Ptr to next part_res_record */
-	uint16_t num_rows;		/* Number of elements in "row" array */
-	struct part_record *part_ptr;   /* controller part record pointer */
-	struct part_row_data *row;	/* array of rows containing jobs */
-};
-
 /* Global variables */
-extern bool	backfill_busy_nodes;
-extern int	bf_window_scale;
-extern uint16_t	cr_type;
-extern uint64_t def_cpu_per_gpu;
-extern uint64_t def_mem_per_gpu;
-extern int	gang_mode;
-extern bool	have_dragonfly;
-extern bool	pack_serial_at_end;
-extern const char *plugin_type;
-extern int	preempt_reorder_cnt;
-extern bool	preempt_strict_order;
-extern bool	preempt_by_part;
-extern bool	preempt_by_qos;
-extern uint16_t	priority_flags;
-extern uint64_t	select_debug_flags;
-extern uint16_t	select_fast_schedule;
-extern int	select_node_cnt;
-extern struct node_res_record *select_node_record;
-extern struct node_use_record *select_node_usage;
-extern struct part_res_record *select_part_record;
-extern bool	select_state_initializing;
-extern bool	spec_cores_first;
 extern bitstr_t **spec_core_res;
-extern bool	topo_optional;
 
 /* Delete the given select_node_record and select_node_usage arrays */
 extern void cr_destroy_node_data(struct node_use_record *node_usage,
