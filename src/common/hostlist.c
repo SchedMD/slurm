@@ -178,7 +178,7 @@ extern void * lsd_nomem_error(char *file, int line, char *mesg);
 #define MAX_RANGE    (64*1024)    /* 64K Hosts */
 
 /* max number of ranges that will be processed between brackets */
-#define MAX_RANGES   (64*1024)    /* 64K Hosts */
+#define MAX_RANGES   (256*1024)    /* 256K ranks */
 
 /* size of internal hostname buffer (+ some slop), hostnames will probably
  * be truncated if longer than MAXHOSTNAMELEN */

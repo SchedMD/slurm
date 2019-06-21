@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- NodeName configurations with CPUs != Sockets*Cores or
     Sockets*Cores*Threads will be rejected with fatal.
  -- Add scontrol write config <filename> option.
+ -- Increase maximum number of hostlist ranges from 64k to 256k.
 
 * Changes in Slurm 19.05.2
 ==========================
