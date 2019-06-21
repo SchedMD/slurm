@@ -13,3 +13,8 @@ select_cons_res_la_SOURCES =  select_cons_res.c select_cons_res.h \
                               dist_tasks.c dist_tasks.h \
 			      job_test.c job_test.h
 select_cons_res_la_LDFLAGS = $(PLUGIN_FLAGS)
+select_cons_res_la_LIBADD = ../cons_common/libcons_common.la
+
+force:
+$(select_cons_res_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`

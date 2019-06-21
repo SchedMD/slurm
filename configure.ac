@@ -562,6 +562,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/builtin/Makefile
 		 src/plugins/sched/hold/Makefile
 		 src/plugins/select/Makefile
+		 src/plugins/select/cons_common/Makefile
 		 src/plugins/select/cons_res/Makefile
 		 src/plugins/select/cons_tres/Makefile
 		 src/plugins/select/cray_aries/Makefile

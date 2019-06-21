@@ -174,7 +174,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-select_cons_tres_la_LIBADD =
+select_cons_tres_la_DEPENDENCIES = ../cons_common/libcons_common.la
 am_select_cons_tres_la_OBJECTS = dist_tasks.lo job_test.lo \
 	select_cons_tres.lo
 select_cons_tres_la_OBJECTS = $(am_select_cons_tres_la_OBJECTS)
@@ -505,6 +505,7 @@ select_cons_tres_la_SOURCES = dist_tasks.c dist_tasks.h	\
 				select_cons_tres.c select_cons_tres.h
 
 select_cons_tres_la_LDFLAGS = $(PLUGIN_FLAGS)
+select_cons_tres_la_LIBADD = ../cons_common/libcons_common.la
 all: all-am
 
 .SUFFIXES:
@@ -836,6 +837,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(select_cons_tres_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
