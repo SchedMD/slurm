@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "May 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "June 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -5785,18 +5785,13 @@ See the \fBlogrotate\fR man page for more details.
 	size=5M
 	create 640 slurm root
 	postrotate
-		for daemon in $(/usr/bin/scontrol show daemons)
-		do
-			killall -SIGUSR2 $daemon
-		done
+		pkill -x --signal SIGUSR2 slurmctld
+		pkill -x --signal SIGUSR2 slurmd
+		pkill -x --signal SIGUSR2 slurmdbd
+		exit 0
 	endscript
 }
 .fi
-.LP
-NOTE: slurmdbd daemon isn't listed in the output of 'scontrol show daemons', so
-a separate logrotate config should be used to send a SIGUSR2 signal to it.
-.LP
-
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

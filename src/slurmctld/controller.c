@@ -2684,12 +2684,14 @@ static void _usage(char *prog_name)
 #endif
 #if (DEFAULT_DAEMONIZE != 0)
 	fprintf(stderr, "  -D      "
-			"\tRun daemon in foreground.\n");
+			"\tRun daemon in foreground, with logging copied to stdout.\n");
 #endif
 	fprintf(stderr, "  -f file "
 			"\tUse specified file for slurmctld configuration.\n");
 	fprintf(stderr, "  -h      "
 			"\tPrint this help message.\n");
+	fprintf(stderr, "  -i      "
+			"\tIgnore errors found while reading in state files on startup.\n");
 	fprintf(stderr, "  -L logfile "
 			"\tLog messages to the specified file.\n");
 	fprintf(stderr, "  -n value "

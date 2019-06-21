@@ -4,7 +4,7 @@
 
 <p>This document contains Slurm administrator information specifically
 for clusters containing 1,024 nodes or more.
-Large system currently managed by Slurm include
+Large systems currently managed by Slurm include
 Tianhe-2 (at the National University of Defense Technology in China with
 16,000 compute nodes and 3.1 million cores) and
 Sequoia (IBM Bluegene/Q at Lawrence Livermore National Laboratory with
@@ -12,7 +12,7 @@ Sequoia (IBM Bluegene/Q at Lawrence Livermore National Laboratory with
 Slurm operation on systems orders of magnitude larger has been validated
 using emulation.
 Getting optimal performance at that scale does require some tuning and
-this document should help you off to a good start.
+this document should help get you off to a good start.
 A working knowledge of Slurm should be considered a prerequisite
 for this material.</p>
 
@@ -20,7 +20,7 @@ for this material.</p>
 
 <p>Times below are for execution of an MPI program printing "Hello world" and
 exiting and includes the time for processing output. Your performance may
-vary due to differences hardware, software, and configuration.</p>
+vary due to differences in hardware, software, and configuration.</p>
 <ul>
 <li>1,966,080 tasks on 122,880 compute nodes of a BlueGene/Q: 322 seconds</li>
 <li>30,000 tasks on 15,000 compute nodes of a Linux cluster: 30 seconds</li>
@@ -39,8 +39,8 @@ directly into these files
 The maximum number of concurrently open files.
 We recommend a limit of at least 32,832.</li>
 <li><b>/proc/sys/net/ipv4/tcp_max_syn_backlog</b>:
-Maximum number of remembered connection requests, which are still did not
-receive an acknowledgment from connecting client.
+Maximum number of remembered connection requests, which still have not
+received an acknowledgment from the connecting client.
 The default value is 1024 for systems with more than 128Mb of memory, and 128
 for low memory machines. If server suffers of overload, try to increase this
 number.</li>
@@ -100,7 +100,7 @@ and avoid <i>select/cons_res</i>.</p>
 node periodically sampling data.
 This data collection will take compute cycles away from the application
 inducing what is known as <i>system noise</i>.
-For large parallel applications, this system noise can detract for
+For large parallel applications, this system noise can detract from
 application scalability.
 For optimal application performance, disabling job accounting
 is best (<i>jobacct_gather/none</i>).
@@ -108,7 +108,7 @@ Consider use of job completion records (<i>JobCompType</i>) for accounting
 purposes as this entails far less overhead.
 If job accounting is required, configure the sampling interval
 to a relatively large size (e.g. <i>JobAcctGatherFrequency=300</i>).
-Some experimentation may also be required to deal with collisions
+Some experimentation may be required to deal with collisions
 on data transmission.</p>
 
 <h2>Node Configuration</h2>
@@ -191,6 +191,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 14 June 2018</p>
+<p style="text-align:center;">Last modified 17 June 2019</p>
 
 <!--#include virtual="footer.txt"-->

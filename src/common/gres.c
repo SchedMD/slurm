@@ -3985,12 +3985,6 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			return -1;
 	}
 
-	/* gres_per_task requires task count specification */
-	if (job_gres_data->gres_per_task) {
-		if (*num_tasks == NO_VAL)
-			return -1;
-	}
-
 	/*
 	 * Ensure gres_per_job is multiple of gres_per_node
 	 * Ensure node count is consistent with GRES parameters
@@ -4408,6 +4402,15 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 	if (!cpus_per_tres && !tres_per_job && !tres_per_node &&
 	    !tres_per_socket && !tres_per_task && !mem_per_tres)
 		return SLURM_SUCCESS;
+
+	if (tres_per_task && (*num_tasks == NO_VAL) &&
+	    (*min_nodes != NO_VAL) && (*min_nodes == *max_nodes)) {
+		/* Implicitly set task count */
+		if (*ntasks_per_node != NO_VAL16)
+			*num_tasks = *min_nodes * *ntasks_per_node;
+		else if (*cpus_per_task == NO_VAL16)
+			*num_tasks = *min_nodes;
+	}
 
 	if ((rc = gres_plugin_init()) != SLURM_SUCCESS)
 		return rc;

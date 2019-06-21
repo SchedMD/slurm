@@ -4488,3 +4488,26 @@ extern void slurmdb_destroy_slurmdb_stats(slurmdb_stats_t *stats)
 	slurmdb_free_slurmdb_stats_members(stats);
 	xfree(stats);
 }
+
+/*
+ * Comparator for sorting jobs by submit time. 0 (unknown) submit time
+ * is mapped to INFINITE
+ */
+extern int slurmdb_job_sort_by_submit_time(void *v1, void *v2)
+{
+	time_t time1 = (*(slurmdb_job_rec_t **)v1)->submit;
+	time_t time2 = (*(slurmdb_job_rec_t **)v2)->submit;
+
+	/*
+	 * Sanity check submits should never be 0, but if somehow that does
+	 * happen treat it as the highest number.
+	 */
+	time1 = time1 ? time1 : INFINITE;
+	time2 = time2 ? time2 : INFINITE;
+
+	if (time1 < time2)
+		return -1;
+	else if (time1 > time2)
+		return 1;
+	return 0;
+}

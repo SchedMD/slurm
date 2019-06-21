@@ -25,6 +25,13 @@ documents those changes that are of interest to users and administrators.
  -- Correct slurmdb cluster record pack with NULL pointer input.
  -- Clearer error message for ESLURM_INVALID_TIME_MIN_LIMIT.
  -- Fix SchedulerParameter bf_min_prio_reserve error when not the last parameter
+ -- When fixing runaway jobs, change to reroll from earliest submit time, and
+    never reroll from Unix epoch.
+ -- Display submit time when running sacctmgr show runawayjobs and add format
+    option to display eligible time.
+ -- jobcomp/elasticsearch - fix minor race related to JobCompLoc setup.
+ -- For HetJobs, ensure SLURM_PACK_JOB_ID is set regardless of whether
+    PrologFlags=Alloc is enabled.
 
 * Changes in Slurm 19.05.0
 ==========================
@@ -109,6 +116,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix seff human readable memory string for values below a megabyte.
  -- Avoid slurmctld abort if GRES defined in gres.conf, but not in the node
     configuration of slurm.conf.
+ -- Calculate task count for job with --gpus-per-task option, but no explicit
+    task count.
 
 * Changes in Slurm 19.05.0rc1
 =============================

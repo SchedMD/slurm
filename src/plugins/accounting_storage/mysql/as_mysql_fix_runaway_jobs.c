@@ -36,19 +36,7 @@
 
 #include "as_mysql_fix_runaway_jobs.h"
 #include "src/common/list.h"
-
-static int _job_sort_by_start_time(void *void1, void * void2)
-{
-	time_t start1 = (*(slurmdb_job_rec_t **)void1)->start;
-	time_t start2 = (*(slurmdb_job_rec_t **)void2)->start;
-
-	if (start1 < start2)
-		return -1;
-	else if (start1 > start2)
-		return 1;
-	else
-		return 0;
-}
+#include "src/common/slurmdb_defs.h"
 
 static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 {
@@ -128,11 +116,17 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 		goto bail;
 	}
 
-	list_sort(runaway_jobs, _job_sort_by_start_time);
+	list_sort(runaway_jobs, slurmdb_job_sort_by_submit_time);
 
 	if (!(first_job = list_peek(runaway_jobs))) {
 		error("%s: List of runaway jobs to fix is unexpectedly empty",
 		      __func__);
+		rc = SLURM_ERROR;
+		goto bail;
+	}
+
+	if (!first_job->submit) {
+		error("Runaway jobs all have time_submit=0, something is wrong! Aborting fix runaway jobs");
 		rc = SLURM_ERROR;
 		goto bail;
 	}
@@ -197,7 +191,7 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	/* Set rollup to the last day of the previous month of the first
 	 * runaway job */
-	rc = _first_job_roll_up(mysql_conn, first_job->start);
+	rc = _first_job_roll_up(mysql_conn, first_job->submit);
 	if (rc != SLURM_SUCCESS)
 		error("Failed to fix runaway jobs");
 
