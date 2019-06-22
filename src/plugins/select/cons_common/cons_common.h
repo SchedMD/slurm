@@ -39,6 +39,22 @@
 
 #include "src/slurmctld/slurmctld.h"
 
+/* a partition's per-row core allocation bitmap arrays (1 bitmap per node) */
+struct part_row_data {
+	bitstr_t *first_row_bitmap;	/* Pointer to first element in
+					 * row_bitmap */
+	struct job_resources **job_list;/* List of jobs in this row */
+	uint32_t job_list_size;		/* Size of job_list array */
+	uint32_t num_jobs;		/* Number of occupied entries in
+					 * job_list array */
+	bitstr_t **row_bitmap;		/* contains core bitmap for all jobs in
+					 * this row, one bitstr_t for each node
+					 * In cons_res only the first ptr is
+					 * used.
+					 */
+	int row_bitmap_size;            /* size of row_bitmap array */
+};
+
 /* partition core allocation bitmap arrays (1 bitmap per node) */
 struct part_res_record {
 	struct part_res_record *next; /* Ptr to next part_res_record */
@@ -120,5 +136,52 @@ extern int common_cpus_per_core(struct job_details *details, int node_inx);
 /* Delete the given select_node_record and select_node_usage arrays */
 extern void common_destroy_node_data(struct node_use_record *node_usage,
 				     struct node_res_record *node_data);
+
+/* Delete the given list of partition data */
+extern void common_destroy_part_data(struct part_res_record *this_ptr);
+
+/* Delete the given partition row data */
+extern void common_destroy_row_data(
+	struct part_row_data *row, uint16_t num_rows);
+
+/* Determine how many cpus per core we can use */
+extern int common_cpus_per_core(struct job_details *details, int node_inx);
+
+/*
+ * Add job resource use to the partition data structure
+ */
+extern void common_add_job_to_row(struct job_resources *job,
+				  struct part_row_data *r_ptr);
+
+/*
+ * allocate resources to the given job
+ * - add 'struct job_resources' resources to 'struct part_res_record'
+ * - add job's memory requirements to 'struct node_res_record'
+ *
+ * if action = 0 then add cores, memory + GRES (starting new job)
+ * if action = 1 then add memory + GRES (adding suspended job at restart)
+ * if action = 2 then only add cores (suspended job is resumed)
+ *
+ *
+ * See also: rm_job_res() in job_test.c
+ */
+extern int common_add_job_to_res(struct job_record *job_ptr, int action);
+
+/* Log contents of partition structure */
+extern void common_dump_parts(struct part_res_record *p_ptr);
+
+/* Clear all elements the row_bitmap of the row */
+extern void common_clear_row_bitmap(struct part_row_data *r_ptr);
+
+/* sort the rows of a partition from "most allocated" to "least allocated" */
+extern void common_sort_part_rows(struct part_res_record *p_ptr);
+
+/* Create a duplicate part_res_record list */
+extern struct part_res_record *common_dup_part_data(
+	struct part_res_record *orig_ptr);
+
+/* Create a duplicate part_row_data struct */
+extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
+						 uint16_t num_rows);
 
 #endif /* _CONS_COMMON_H */

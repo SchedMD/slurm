@@ -64,28 +64,7 @@
 
 #include "../cons_common/cons_common.h"
 
-/* a partition's per-row core allocation bitmap arrays (1 bitmap per node) */
-struct part_row_data {
-	bitstr_t **row_bitmap;		/* contains core bitmap for all jobs in
-					 * this row, one bitstr_t for each node */
-	struct job_resources **job_list;/* List of jobs in this row */
-	uint32_t job_list_size;		/* Size of job_list array */
-	uint32_t num_jobs;		/* Number of occupied entries in job_list array */
-};
-
 /* Global variables */
 extern bitstr_t **spec_core_res;
-
-/* Delete the given list of partition data */
-extern void cr_destroy_part_data(struct part_res_record *this_ptr);
-
-/* Delete the given partition row data */
-extern void cr_destroy_row_data(struct part_row_data *row, uint16_t num_rows);
-
-/* sort the rows of a partition from "most allocated" to "least allocated" */
-extern void cr_sort_part_rows(struct part_res_record *p_ptr);
-
-/* Log contents of partition structure */
-extern void dump_parts(struct part_res_record *p_ptr);
 
 #endif /* !_CONS_TRES_H */

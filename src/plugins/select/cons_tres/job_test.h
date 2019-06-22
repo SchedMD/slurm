@@ -39,12 +39,6 @@
 #include "select_cons_tres.h"
 
 /*
- * Add job resource use to the partition data structure
- */
-extern void add_job_to_row(struct job_resources *job,
-			   struct part_row_data *r_ptr);
-
-/*
  * Build an empty array of bitmaps, one per node
  * Use free_core_array() to release returned memory
  */
@@ -133,6 +127,10 @@ extern bool job_cleaning(struct job_record *job_ptr);
 
 extern void log_tres_state(struct node_use_record *node_usage,
 			   struct part_res_record *part_record_ptr);
+
+extern void add_job_to_res(job_resources_t *job_resrcs_ptr,
+			   struct part_row_data *r_ptr,
+			   const uint16_t *bits_per_node);
 
 /*
  * Bit a core bitmap array of available cores

@@ -797,10 +797,10 @@ static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
 		if (!p_ptr->row)
 			continue;
 		for (r = 0; r < num_rows; r++) {
-			if (!p_ptr->row[r].row_bitmap)
+			if (!p_ptr->row[r].first_row_bitmap)
 				continue;
 			for (i = cpu_begin; i < cpu_end; i++) {
-				if (bit_test(p_ptr->row[r].row_bitmap, i))
+				if (bit_test(p_ptr->row[r].first_row_bitmap, i))
 					return 1;
 			}
 		}
@@ -3386,16 +3386,17 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		if (!p_ptr->row)
 			continue;
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (!p_ptr->row[i].row_bitmap)
+			if (!p_ptr->row[i].first_row_bitmap)
 				continue;
-			bit_and_not(free_cores, p_ptr->row[i].row_bitmap);
+			bit_and_not(free_cores, p_ptr->row[i].first_row_bitmap);
 			if (p_ptr->part_ptr != job_ptr->part_ptr)
 				continue;
 			if (part_core_map) {
-				bit_or(part_core_map, p_ptr->row[i].row_bitmap);
+				bit_or(part_core_map,
+				       p_ptr->row[i].first_row_bitmap);
 			} else {
 				part_core_map = bit_copy(p_ptr->row[i].
-							 row_bitmap);
+							 first_row_bitmap);
 			}
 		}
 	}
@@ -3476,9 +3477,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			if (!p_ptr->row)
 				continue;
 			for (i = 0; i < p_ptr->num_rows; i++) {
-				if (!p_ptr->row[i].row_bitmap)
+				if (!p_ptr->row[i].first_row_bitmap)
 					continue;
-				bit_and_not(free_cores, p_ptr->row[i].row_bitmap);
+				bit_and_not(free_cores, p_ptr->row[i].
+					    first_row_bitmap);
 			}
 		}
 	}
@@ -3519,9 +3521,9 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		if (!p_ptr->row)
 			continue;
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (!p_ptr->row[i].row_bitmap)
+			if (!p_ptr->row[i].first_row_bitmap)
 				continue;
-			bit_and_not(free_cores, p_ptr->row[i].row_bitmap);
+			bit_and_not(free_cores, p_ptr->row[i].first_row_bitmap);
 		}
 	}
 
@@ -3549,10 +3551,10 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			if (!p_ptr->row)
 				continue;
 			for (i = 0; i < p_ptr->num_rows; i++) {
-				if (!p_ptr->row[i].row_bitmap)
+				if (!p_ptr->row[i].first_row_bitmap)
 					continue;
 				bit_and_not(free_cores_tmp,
-					    p_ptr->row[i].row_bitmap);
+					    p_ptr->row[i].first_row_bitmap);
 			}
 			if (job_ptr->details->whole_node == 1) {
 				_block_whole_nodes(node_bitmap_tmp, avail_cores,
@@ -3623,18 +3625,18 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	}
 
 	if ((jp_ptr->num_rows > 1) && !preempt_by_qos)
-		cr_sort_part_rows(jp_ptr);	/* Preserve row order for QOS */
+		common_sort_part_rows(jp_ptr);	/* Preserve row order for QOS */
 	c = jp_ptr->num_rows;
 	if (preempt_by_qos && !qos_preemptor)
 		c--;				/* Do not use extra row */
 	if (preempt_by_qos && (job_node_req != NODE_CR_AVAILABLE))
 		c = 1;
 	for (i = 0; i < c; i++) {
-		if (!jp_ptr->row[i].row_bitmap)
+		if (!jp_ptr->row[i].first_row_bitmap)
 			break;
 		bit_copybits(node_bitmap, orig_map);
 		bit_copybits(free_cores, avail_cores);
-		bit_and_not(free_cores, jp_ptr->row[i].row_bitmap);
+		bit_and_not(free_cores, jp_ptr->row[i].first_row_bitmap);
 
 		if (job_ptr->details->whole_node == 1)
 			_block_whole_nodes(node_bitmap, avail_cores,
@@ -3656,7 +3658,7 @@ extern int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			info("cons_res: cr_job_test: test 4 fail - row %i", i);
 	}
 
-	if ((i < c) && !jp_ptr->row[i].row_bitmap) {
+	if ((i < c) && !jp_ptr->row[i].first_row_bitmap) {
 		/* we've found an empty row, so use it */
 		bit_copybits(node_bitmap, orig_map);
 		bit_copybits(free_cores, avail_cores);

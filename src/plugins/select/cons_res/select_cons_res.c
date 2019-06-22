@@ -188,7 +188,6 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Procedure Declarations */
-static int _add_job_to_res(struct job_record *job_ptr, int action);
 static int _job_expand(struct job_record *from_job_ptr,
 		       struct job_record *to_job_ptr);
 static int _rm_job_from_one_node(struct job_record *job_ptr,
@@ -269,8 +268,8 @@ static void _dump_part(struct part_res_record *p_ptr)
 
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		char str[64]; /* print first 64 bits of bitmaps */
-		if (p_ptr->row[i].row_bitmap) {
-			bit_fmt(str, sizeof(str), p_ptr->row[i].row_bitmap);
+		if (p_ptr->row[i].first_row_bitmap) {
+			bit_fmt(str, sizeof(str), p_ptr->row[i].first_row_bitmap);
 		} else {
 			sprintf(str, "[no row_bitmap]");
 		}
@@ -289,61 +288,6 @@ static void _dump_state(struct part_res_record *p_ptr)
 	}
 	return;
 }
-
-/* Helper function for _dup_part_data: create a duplicate part_row_data array */
-static struct part_row_data *_dup_row_data(struct part_row_data *orig_row,
-					   uint16_t num_rows)
-{
-	struct part_row_data *new_row;
-	int i;
-
-	if (num_rows == 0 || !orig_row)
-		return NULL;
-
-	new_row = xcalloc(num_rows, sizeof(struct part_row_data));
-	for (i = 0; i < num_rows; i++) {
-		new_row[i].num_jobs = orig_row[i].num_jobs;
-		new_row[i].job_list_size = orig_row[i].job_list_size;
-		if (orig_row[i].row_bitmap)
-			new_row[i].row_bitmap = bit_copy(orig_row[i].
-							 row_bitmap);
-		if (new_row[i].job_list_size == 0)
-			continue;
-		/* copy the job list */
-		new_row[i].job_list = xcalloc(new_row[i].job_list_size,
-					      sizeof(struct job_resources *));
-		memcpy(new_row[i].job_list, orig_row[i].job_list,
-		       (sizeof(struct job_resources *) * new_row[i].num_jobs));
-	}
-	return new_row;
-}
-
-
-/* Create a duplicate part_res_record list */
-static struct part_res_record *_dup_part_data(struct part_res_record *orig_ptr)
-{
-	struct part_res_record *new_part_ptr, *new_ptr;
-
-	if (orig_ptr == NULL)
-		return NULL;
-
-	new_part_ptr = xmalloc(sizeof(struct part_res_record));
-	new_ptr = new_part_ptr;
-
-	while (orig_ptr) {
-		new_ptr->part_ptr = orig_ptr->part_ptr;
-		new_ptr->num_rows = orig_ptr->num_rows;
-		new_ptr->row = _dup_row_data(orig_ptr->row,
-					     orig_ptr->num_rows);
-		if (orig_ptr->next) {
-			new_ptr->next = xmalloc(sizeof(struct part_res_record));
-			new_ptr = new_ptr->next;
-		}
-		orig_ptr = orig_ptr->next;
-	}
-	return new_part_ptr;
-}
-
 
 /* Create a duplicate part_res_record list */
 static struct node_use_record *_dup_node_usage(struct node_use_record *orig_ptr)
@@ -370,32 +314,6 @@ static struct node_use_record *_dup_node_usage(struct node_use_record *orig_ptr)
 	return new_use_ptr;
 }
 
-/* delete the given row data */
-static void _destroy_row_data(struct part_row_data *row, uint16_t num_rows) {
-	uint16_t i;
-	for (i = 0; i < num_rows; i++) {
-		FREE_NULL_BITMAP(row[i].row_bitmap);
-		xfree(row[i].job_list);
-	}
-	xfree(row);
-}
-
-/* delete the given list of partition data */
-static void _destroy_part_data(struct part_res_record *this_ptr)
-{
-	while (this_ptr) {
-		struct part_res_record *tmp = this_ptr;
-		this_ptr = this_ptr->next;
-		tmp->part_ptr = NULL;
-
-		if (tmp->row) {
-			_destroy_row_data(tmp->row, tmp->num_rows);
-			tmp->row = NULL;
-		}
-		xfree(tmp);
-	}
-}
-
 static int _sort_part_prio(void *x, void *y)
 {
 	struct part_res_record *part1 = *(struct part_res_record **) x;
@@ -417,7 +335,7 @@ static void _create_part_data(void)
 	struct part_res_record *this_ptr, *last_ptr = NULL;
 	int num_parts;
 
-	_destroy_part_data(select_part_record);
+	common_destroy_part_data(select_part_record);
 	select_part_record = NULL;
 
 	num_parts = list_count(part_list);
@@ -468,95 +386,33 @@ static int _cr_job_list_sort(void *x, void *y)
 	return (int) SLURM_DIFFTIME(job1_ptr->end_time, job2_ptr->end_time);
 }
 
-
-static void _add_job_to_row(struct job_resources *job,
-			    struct part_row_data *r_ptr)
+static void _add_job_to_cores(job_resources_t *job_resrcs_ptr,
+			      struct part_row_data *r_ptr,
+			      const uint16_t *bits_per_node)
 {
-	/* add the job to the row_bitmap */
-	if (r_ptr->row_bitmap && r_ptr->num_jobs == 0) {
-		/* if no jobs, clear the existing row_bitmap first */
-		uint32_t size = bit_size(r_ptr->row_bitmap);
-		bit_nclear(r_ptr->row_bitmap, 0, size-1);
+	if (!r_ptr->row_bitmap) {
+		r_ptr->row_bitmap_size = 1;
+		r_ptr->row_bitmap = xcalloc(r_ptr->row_bitmap_size,
+					    sizeof(bitstr_t *));
 	}
-	add_job_to_cores(job, &(r_ptr->row_bitmap), cr_node_num_cores);
-
-	/*  add the job to the job_list */
-	if (r_ptr->num_jobs >= r_ptr->job_list_size) {
-		r_ptr->job_list_size += 8;
-		xrealloc(r_ptr->job_list, r_ptr->job_list_size *
-			 sizeof(struct job_resources *));
-	}
-	r_ptr->job_list[r_ptr->num_jobs++] = job;
+	add_job_to_cores(job_resrcs_ptr, &r_ptr->row_bitmap[0], bits_per_node);
+	r_ptr->first_row_bitmap = r_ptr->row_bitmap[0];
 }
-
 
 /* test for conflicting core_bitmap bits */
 static int _can_job_fit_in_row(struct job_resources *job,
 			       struct part_row_data *r_ptr)
 {
-	if ((r_ptr->num_jobs == 0) || !r_ptr->row_bitmap)
+	if ((r_ptr->num_jobs == 0) || !r_ptr->first_row_bitmap)
 		return 1;
 
-	return job_fits_into_cores(job, r_ptr->row_bitmap, cr_node_num_cores);
+	return job_fits_into_cores(job, r_ptr->first_row_bitmap,
+				   cr_node_num_cores);
 }
-
-
-/* helper script for cr_sort_part_rows() */
-static void _swap_rows(struct part_row_data *a, struct part_row_data *b)
-{
-	struct part_row_data tmprow;
-
-	tmprow.row_bitmap    = a->row_bitmap;
-	tmprow.num_jobs      = a->num_jobs;
-	tmprow.job_list      = a->job_list;
-	tmprow.job_list_size = a->job_list_size;
-
-	a->row_bitmap    = b->row_bitmap;
-	a->num_jobs      = b->num_jobs;
-	a->job_list      = b->job_list;
-	a->job_list_size = b->job_list_size;
-
-	b->row_bitmap    = tmprow.row_bitmap;
-	b->num_jobs      = tmprow.num_jobs;
-	b->job_list      = tmprow.job_list;
-	b->job_list_size = tmprow.job_list_size;
-
-	return;
-}
-
-
-/* sort the rows of a partition from "most allocated" to "least allocated" */
-extern void cr_sort_part_rows(struct part_res_record *p_ptr)
-{
-	uint32_t i, j, b;
-	uint32_t a[p_ptr->num_rows];
-
-	if (!p_ptr->row)
-		return;
-
-	for (i = 0; i < p_ptr->num_rows; i++) {
-		if (p_ptr->row[i].row_bitmap)
-			a[i] = bit_set_count(p_ptr->row[i].row_bitmap);
-		else
-			a[i] = 0;
-	}
-	for (i = 0; i < p_ptr->num_rows; i++) {
-		for (j = i+1; j < p_ptr->num_rows; j++) {
-			if (a[j] > a[i]) {
-				b = a[j];
-				a[j] = a[i];
-				a[i] = b;
-				_swap_rows(&(p_ptr->row[i]), &(p_ptr->row[j]));
-			}
-		}
-	}
-	return;
-}
-
 
 /*
  * _build_row_bitmaps: A job has been removed from the given partition,
- *                     so the row_bitmap(s) need to be reconstructed.
+ *                     so the first_row_bitmap(s) need to be reconstructed.
  *                     Optimize the jobs into the least number of rows,
  *                     and make the lower rows as dense as possible.
  *
@@ -576,23 +432,23 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 	if (p_ptr->num_rows == 1) {
 		this_row = &(p_ptr->row[0]);
 		if (this_row->num_jobs == 0) {
-			if (this_row->row_bitmap) {
-				size = bit_size(this_row->row_bitmap);
-				bit_nclear(this_row->row_bitmap, 0, size-1);
+			if (this_row->first_row_bitmap) {
+				size = bit_size(this_row->first_row_bitmap);
+				bit_nclear(this_row->first_row_bitmap, 0, size-1);
 			}
 		} else {
 			if (job_ptr) { /* just remove the job */
 				xassert(job_ptr->job_resrcs);
 				remove_job_from_cores(job_ptr->job_resrcs,
-						      &(this_row->row_bitmap),
+						      &(this_row->first_row_bitmap),
 						      cr_node_num_cores);
 			} else { /* totally rebuild the bitmap */
-				size = bit_size(this_row->row_bitmap);
-				bit_nclear(this_row->row_bitmap, 0, size-1);
+				size = bit_size(this_row->first_row_bitmap);
+				bit_nclear(this_row->first_row_bitmap, 0, size-1);
 				for (j = 0; j < this_row->num_jobs; j++) {
-					add_job_to_cores(this_row->job_list[j],
-							 &(this_row->row_bitmap),
-							 cr_node_num_cores);
+					_add_job_to_cores(this_row->job_list[j],
+							  this_row,
+							  cr_node_num_cores);
 				}
 			}
 		}
@@ -605,10 +461,10 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 		num_jobs += p_ptr->row[i].num_jobs;
 	}
 	if (num_jobs == 0) {
-		size = bit_size(p_ptr->row[0].row_bitmap);
+		size = bit_size(p_ptr->row[0].first_row_bitmap);
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (p_ptr->row[i].row_bitmap) {
-				bit_nclear(p_ptr->row[i].row_bitmap, 0,
+			if (p_ptr->row[i].first_row_bitmap) {
+				bit_nclear(p_ptr->row[i].first_row_bitmap, 0,
 					   size-1);
 			}
 		}
@@ -617,18 +473,18 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("DEBUG: _build_row_bitmaps (before):");
-		_dump_part(p_ptr);
+		common_dump_parts(p_ptr);
 	}
 	debug3("cons_res: build_row_bitmaps reshuffling %u jobs", num_jobs);
 
 	/* make a copy, in case we cannot do better than this */
-	orig_row = _dup_row_data(p_ptr->row, p_ptr->num_rows);
+	orig_row = common_dup_row_data(p_ptr->row, p_ptr->num_rows);
 	if (orig_row == NULL)
 		return;
 
 	/* get row_bitmap size from first row (we can safely assume that the
 	 * first row_bitmap exists because there exists at least one job. */
-	size = bit_size(p_ptr->row[0].row_bitmap);
+	size = bit_size(p_ptr->row[0].first_row_bitmap);
 
 	/* create a master job list and clear out ALL row data */
 	ss = xcalloc(num_jobs, sizeof(struct sort_support));
@@ -643,8 +499,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 			x++;
 		}
 		p_ptr->row[i].num_jobs = 0;
-		if (p_ptr->row[i].row_bitmap) {
-			bit_nclear(p_ptr->row[i].row_bitmap, 0, size-1);
+		if (p_ptr->row[i].first_row_bitmap) {
+			bit_nclear(p_ptr->row[i].first_row_bitmap, 0, size-1);
 		}
 	}
 
@@ -682,13 +538,14 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 			if (_can_job_fit_in_row(ss[j].tmpjobs,
 						&(p_ptr->row[i]))) {
 				/* job fits in row, so add it */
-				_add_job_to_row(ss[j].tmpjobs,&(p_ptr->row[i]));
+				common_add_job_to_row(ss[j].tmpjobs,
+						      &(p_ptr->row[i]));
 				ss[j].tmpjobs = NULL;
 				break;
 			}
 		}
 		/* job should have been added, so shuffle the rows */
-		cr_sort_part_rows(p_ptr);
+		common_sort_part_rows(p_ptr);
 	}
 
 	/* test for dangling jobs */
@@ -704,35 +561,35 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("DEBUG: _build_row_bitmaps (post-algorithm):");
-			_dump_part(p_ptr);
+			common_dump_parts(p_ptr);
 		}
 
-		_destroy_row_data(p_ptr->row, p_ptr->num_rows);
+		common_destroy_row_data(p_ptr->row, p_ptr->num_rows);
 		p_ptr->row = orig_row;
 		orig_row = NULL;
 
 		/* still need to rebuild row_bitmaps */
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (p_ptr->row[i].row_bitmap)
-				bit_nclear(p_ptr->row[i].row_bitmap, 0,
+			if (p_ptr->row[i].first_row_bitmap)
+				bit_nclear(p_ptr->row[i].first_row_bitmap, 0,
 					   size-1);
 			if (p_ptr->row[i].num_jobs == 0)
 				continue;
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
-				add_job_to_cores(p_ptr->row[i].job_list[j],
-						 &(p_ptr->row[i].row_bitmap),
-						 cr_node_num_cores);
+				_add_job_to_cores(p_ptr->row[i].job_list[j],
+						  &p_ptr->row[i],
+						  cr_node_num_cores);
 			}
 		}
 	}
 
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		info("DEBUG: _build_row_bitmaps (after):");
-		_dump_part(p_ptr);
+		common_dump_parts(p_ptr);
 	}
 
 	if (orig_row)
-		_destroy_row_data(orig_row, p_ptr->num_rows);
+		common_destroy_row_data(orig_row, p_ptr->num_rows);
 	xfree(ss);
 
 	return;
@@ -765,145 +622,6 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 	 * back. The goal is to pack the lower rows and "bubble up" clear
 	 * bits to the higher rows.
 	 */
-}
-
-
-/* allocate resources to the given job
- * - add 'struct job_resources' resources to 'struct part_res_record'
- * - add job's memory requirements to 'struct node_res_record'
- *
- * if action = 0 then add cores, memory + GRES (starting new job)
- * if action = 1 then add memory + GRES (adding suspended job)
- * if action = 2 then only add cores (suspended job is resumed)
- */
-static int _add_job_to_res(struct job_record *job_ptr, int action)
-{
-	struct job_resources *job = job_ptr->job_resrcs;
-	struct node_record *node_ptr;
-	struct part_res_record *p_ptr;
-	List gres_list;
-	int i, i_first, i_last, n;
-	bitstr_t *core_bitmap;
-
-	if (!job || !job->core_bitmap) {
-		error("%s: %pJ has no job_resrcs info",
-		      __func__, job_ptr);
-		return SLURM_ERROR;
-	}
-
-	debug3("%s: %s: %pJ act %d", plugin_type, __func__, job_ptr, action);
-
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		_dump_job_res(job);
-
-	i_first = bit_ffs(job->node_bitmap);
-	if (i_first == -1)
-		i_last = -2;
-	else
-		i_last = bit_fls(job->node_bitmap);
-	for (i = i_first, n = -1; i <= i_last; i++) {
-		if (!bit_test(job->node_bitmap, i))
-			continue;
-		n++;
-		if (job->cpus[n] == 0)
-			continue;  /* node lost by job resize */
-
-		node_ptr = select_node_record[i].node_ptr;
-		if (action != 2) {
-			if (select_node_usage[i].gres_list)
-				gres_list = select_node_usage[i].gres_list;
-			else
-				gres_list = node_ptr->gres_list;
-			core_bitmap = copy_job_resources_node(job, n);
-			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
-					      job->nhosts, i, n,
-					      job_ptr->job_id, node_ptr->name,
-					      core_bitmap, job_ptr->user_id);
-			gres_plugin_node_state_log(gres_list, node_ptr->name);
-			FREE_NULL_BITMAP(core_bitmap);
-		}
-
-		if (action != 2) {
-			if (job->memory_allocated[n] == 0)
-				continue;	/* node lost by job resizing */
-			select_node_usage[i].alloc_memory +=
-				job->memory_allocated[n];
-			if ((select_node_usage[i].alloc_memory >
-			     select_node_record[i].real_memory)) {
-				error("%s: node %s memory is overallocated (%"PRIu64") for %pJ",
-				      plugin_type, node_ptr->name,
-				      select_node_usage[i].alloc_memory,
-				      job_ptr);
-			}
-		}
-		if ((powercap_get_cluster_current_cap() != 0) &&
-		    (which_power_layout() == 2)) {
-			adapt_layouts(job, job_ptr->details->cpu_freq_max, n,
-				      node_ptr->name, true);
-		}
-	}
-	
-	if (action != 2) {
-		gres_build_job_details(job_ptr->gres_list,
-				       &job_ptr->gres_detail_cnt,
-				       &job_ptr->gres_detail_str);
-	}
-
-	/* add cores */
-	if (action != 1) {
-		for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
-			if (p_ptr->part_ptr == job_ptr->part_ptr)
-				break;
-		}
-		if (!p_ptr) {
-			char *part_name;
-			if (job_ptr->part_ptr)
-				part_name = job_ptr->part_ptr->name;
-			else
-				part_name = job_ptr->partition;
-			error("cons_res: could not find cr partition %s",
-			      part_name);
-			return SLURM_ERROR;
-		}
-		if (!p_ptr->row) {
-			p_ptr->row = xcalloc(p_ptr->num_rows,
-					     sizeof(struct part_row_data));
-		}
-
-		/* find a row to add this job */
-		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (!_can_job_fit_in_row(job, &(p_ptr->row[i])))
-				continue;
-			debug3("%s: adding %pJ to part %s row %u",
-			       plugin_type, job_ptr, p_ptr->part_ptr->name, i);
-			_add_job_to_row(job, &(p_ptr->row[i]));
-			break;
-		}
-		if (i >= p_ptr->num_rows) {
-			/* Job started or resumed and it's allocated resources
-			 * are already in use by some other job. Typically due
-			 * to manually resuming a job. */
-			error("%s: job overflow: could not find idle resources for %pJ",
-			      plugin_type, job_ptr);
-			/* No row available to record this job */
-		}
-		/* update the node state */
-		for (i = i_first, n = -1; i <= i_last; i++) {
-			if (bit_test(job->node_bitmap, i)) {
-				n++;
-				if (job->cpus[n] == 0)
-					continue;  /* node lost by job resize */
-				select_node_usage[i].node_state +=
-					job->node_req;
-			}
-		}
-		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-			info("DEBUG: _add_job_to_res (after):");
-			_dump_part(p_ptr);
-		}
-	}
-
-	return SLURM_SUCCESS;
 }
 
 static job_resources_t *_create_job_resources(int node_cnt)
@@ -1120,7 +838,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	xfree(from_job_resrcs_ptr->nodes);
 	from_job_resrcs_ptr->nodes = xstrdup("");
 
-	(void) _add_job_to_res(to_job_ptr, 0);
+	(void) common_add_job_to_res(to_job_ptr, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -1575,7 +1293,7 @@ top:	orig_map = bit_copy(save_bitmap);
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
 		preempt_mode = true;
-		future_part = _dup_part_data(select_part_record);
+		future_part = common_dup_part_data(select_part_record);
 		if (future_part == NULL) {
 			FREE_NULL_BITMAP(orig_map);
 			FREE_NULL_BITMAP(save_bitmap);
@@ -1583,7 +1301,7 @@ top:	orig_map = bit_copy(save_bitmap);
 		}
 		future_usage = _dup_node_usage(select_node_usage);
 		if (future_usage == NULL) {
-			_destroy_part_data(future_part);
+			common_destroy_part_data(future_part);
 			FREE_NULL_BITMAP(orig_map);
 			FREE_NULL_BITMAP(save_bitmap);
 			return SLURM_ERROR;
@@ -1662,7 +1380,7 @@ top:	orig_map = bit_copy(save_bitmap);
 			}
 			FREE_NULL_BITMAP(orig_map);
 			list_iterator_destroy(job_iterator);
-			_destroy_part_data(future_part);
+			common_destroy_part_data(future_part);
 			common_destroy_node_data(future_usage, NULL);
 			goto top;
 		}
@@ -1697,7 +1415,7 @@ top:	orig_map = bit_copy(save_bitmap);
 			}
 		}
 
-		_destroy_part_data(future_part);
+		common_destroy_part_data(future_part);
 		common_destroy_node_data(future_usage, NULL);
 	}
 	FREE_NULL_BITMAP(orig_map);
@@ -1806,14 +1524,14 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Job is still pending. Simulate termination of jobs one at a time
 	 * to determine when and where the job can start. */
-	future_part = _dup_part_data(select_part_record);
+	future_part = common_dup_part_data(select_part_record);
 	if (future_part == NULL) {
 		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
 	future_usage = _dup_node_usage(select_node_usage);
 	if (future_usage == NULL) {
-		_destroy_part_data(future_part);
+		common_destroy_part_data(future_part);
 		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
@@ -1982,7 +1700,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	FREE_NULL_LIST(cr_job_list);
-	_destroy_part_data(future_part);
+	common_destroy_part_data(future_part);
 	common_destroy_node_data(future_usage, NULL);
 	FREE_NULL_BITMAP(orig_map);
 	return rc;
@@ -2028,6 +1746,9 @@ extern int init(void)
 
 	priority_flags = slurm_get_priority_flags();
 
+	cons_common_callbacks.add_job_to_res = _add_job_to_cores;
+	cons_common_callbacks.can_job_fit_in_row = _can_job_fit_in_row;
+
 	return SLURM_SUCCESS;
 }
 
@@ -2036,7 +1757,7 @@ extern int fini(void)
 	common_destroy_node_data(select_node_usage, select_node_record);
 	select_node_record = NULL;
 	select_node_usage = NULL;
-	_destroy_part_data(select_part_record);
+	common_destroy_part_data(select_part_record);
 	select_part_record = NULL;
 	cr_fini_global_core_data();
 
@@ -2446,7 +2167,7 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 	if (!indf_susp)
 		return SLURM_SUCCESS;
 
-	return _add_job_to_res(job_ptr, 2);
+	return common_add_job_to_res(job_ptr, 2);
 }
 
 
@@ -2574,15 +2295,15 @@ extern int select_p_select_nodeinfo_set_all(void)
 		if (!p_ptr->row)
 			continue;
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (!p_ptr->row[i].row_bitmap)
+			if (!p_ptr->row[i].first_row_bitmap)
 				continue;
 			if (!alloc_core_bitmap) {
 				alloc_core_bitmap =
-					bit_copy(p_ptr->row[i].row_bitmap);
+					bit_copy(p_ptr->row[i].first_row_bitmap);
 			} else if (bit_size(alloc_core_bitmap) ==
-				   bit_size(p_ptr->row[i].row_bitmap)) {
+				   bit_size(p_ptr->row[i].first_row_bitmap)) {
 				bit_or(alloc_core_bitmap,
-				       p_ptr->row[i].row_bitmap);
+				       p_ptr->row[i].first_row_bitmap);
 			}
 		}
 	}
@@ -2673,12 +2394,12 @@ extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 	xassert(job_ptr->magic == JOB_MAGIC);
 
 	if (IS_JOB_RUNNING(job_ptr))
-		rc = _add_job_to_res(job_ptr, 0);
+		rc = common_add_job_to_res(job_ptr, 0);
 	else if (IS_JOB_SUSPENDED(job_ptr)) {
 		if (job_ptr->priority == 0)
-			rc = _add_job_to_res(job_ptr, 1);
+			rc = common_add_job_to_res(job_ptr, 1);
 		else	/* Gang schedule suspend */
-			rc = _add_job_to_res(job_ptr, 0);
+			rc = common_add_job_to_res(job_ptr, 0);
 	} else
 		return SLURM_SUCCESS;
 	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
@@ -2882,13 +2603,13 @@ extern int select_p_reconfigure(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)) {
 			/* add the job */
-			_add_job_to_res(job_ptr, 0);
+			common_add_job_to_res(job_ptr, 0);
 		} else if (IS_JOB_SUSPENDED(job_ptr)) {
 			/* add the job in a suspended state */
 			if (job_ptr->priority == 0)
-				(void) _add_job_to_res(job_ptr, 1);
+				(void) common_add_job_to_res(job_ptr, 1);
 			else	/* Gang schedule suspend */
-				(void) _add_job_to_res(job_ptr, 0);
+				(void) common_add_job_to_res(job_ptr, 0);
 		} else if (_job_cleaning(job_ptr)) {
 			cleaning_job_cnt++;
 			run_time = (int) difftime(now, job_ptr->end_time);
@@ -2898,14 +2619,14 @@ extern int select_p_reconfigure(void)
 				/* If/when NHC completes, it will release
 				 * resources that are not marked as allocated
 				 * to this job without line below. */
-				//_add_job_to_res(job_ptr, 0);
+				//common_add_job_to_res(job_ptr, 0);
 				uint16_t released = 1;
 				select_g_select_jobinfo_set(
 					               job_ptr->select_jobinfo,
 					               SELECT_JOBDATA_RELEASED,
 					               &released);
 			} else {
-				_add_job_to_res(job_ptr, 0);
+				common_add_job_to_res(job_ptr, 0);
 			}
 		}
 	}
@@ -3592,4 +3313,3 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 
 	return avail_nodes_bitmap;
 }
-

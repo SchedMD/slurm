@@ -66,16 +66,6 @@
 
 #include "../cons_common/cons_common.h"
 
-/* a partition's per-row CPU allocation data */
-struct part_row_data {
-	bitstr_t *row_bitmap;		/* contains core bitmap for all jobs in
-					 * this row */
-	struct job_resources **job_list;/* List of jobs in this row */
-	uint32_t job_list_size;		/* Size of job_list array */
-	uint32_t num_jobs;		/* Number of occupied entries in job_list array */
-};
-
-extern void cr_sort_part_rows(struct part_res_record *p_ptr);
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
 
 #endif /* !_CONS_RES_H */
