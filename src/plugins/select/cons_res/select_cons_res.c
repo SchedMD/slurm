@@ -469,22 +469,6 @@ static int _cr_job_list_sort(void *x, void *y)
 }
 
 
-/* delete the given select_node_record and select_node_usage arrays */
-static void _destroy_node_data(struct node_use_record *node_usage,
-			       struct node_res_record *node_data)
-{
-	int i;
-
-	xfree(node_data);
-	if (node_usage) {
-		for (i = 0; i < select_node_cnt; i++) {
-			FREE_NULL_LIST(node_usage[i].gres_list);
-		}
-		xfree(node_usage);
-	}
-}
-
-
 static void _add_job_to_row(struct job_resources *job,
 			    struct part_row_data *r_ptr)
 {
@@ -1679,7 +1663,7 @@ top:	orig_map = bit_copy(save_bitmap);
 			FREE_NULL_BITMAP(orig_map);
 			list_iterator_destroy(job_iterator);
 			_destroy_part_data(future_part);
-			_destroy_node_data(future_usage, NULL);
+			common_destroy_node_data(future_usage, NULL);
 			goto top;
 		}
 		list_iterator_destroy(job_iterator);
@@ -1714,7 +1698,7 @@ top:	orig_map = bit_copy(save_bitmap);
 		}
 
 		_destroy_part_data(future_part);
-		_destroy_node_data(future_usage, NULL);
+		common_destroy_node_data(future_usage, NULL);
 	}
 	FREE_NULL_BITMAP(orig_map);
 	FREE_NULL_BITMAP(save_bitmap);
@@ -1999,7 +1983,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	FREE_NULL_LIST(cr_job_list);
 	_destroy_part_data(future_part);
-	_destroy_node_data(future_usage, NULL);
+	common_destroy_node_data(future_usage, NULL);
 	FREE_NULL_BITMAP(orig_map);
 	return rc;
 }
@@ -2049,7 +2033,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	_destroy_node_data(select_node_usage, select_node_record);
+	common_destroy_node_data(select_node_usage, select_node_record);
 	select_node_record = NULL;
 	select_node_usage = NULL;
 	_destroy_part_data(select_part_record);
@@ -2183,7 +2167,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_fast_schedule = slurm_get_fast_schedule();
 	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
 
-	_destroy_node_data(select_node_usage, select_node_record);
+	common_destroy_node_data(select_node_usage, select_node_record);
 	select_node_cnt  = node_cnt;
 	select_node_record = xcalloc(node_cnt,
 				     sizeof(struct node_res_record));

@@ -6532,7 +6532,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 			FREE_NULL_BITMAP(orig_node_map);
 			list_iterator_destroy(job_iterator);
 			cr_destroy_part_data(future_part);
-			cr_destroy_node_data(future_usage, NULL);
+			common_destroy_node_data(future_usage, NULL);
 			goto top;
 		}
 		list_iterator_destroy(job_iterator);
@@ -6569,7 +6569,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 		}
 
 		cr_destroy_part_data(future_part);
-		cr_destroy_node_data(future_usage, NULL);
+		common_destroy_node_data(future_usage, NULL);
 	}
 	FREE_NULL_BITMAP(orig_node_map);
 	FREE_NULL_BITMAP(save_node_map);
@@ -6878,7 +6878,7 @@ extern int will_run_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 
 	FREE_NULL_LIST(cr_job_list);
 	cr_destroy_part_data(future_part);
-	cr_destroy_node_data(future_usage, NULL);
+	common_destroy_node_data(future_usage, NULL);
 	FREE_NULL_BITMAP(orig_map);
 
 	return rc;

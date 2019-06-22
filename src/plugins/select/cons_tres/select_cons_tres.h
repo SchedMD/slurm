@@ -76,10 +76,6 @@ struct part_row_data {
 /* Global variables */
 extern bitstr_t **spec_core_res;
 
-/* Delete the given select_node_record and select_node_usage arrays */
-extern void cr_destroy_node_data(struct node_use_record *node_usage,
-				 struct node_res_record *node_data);
-
 /* Delete the given list of partition data */
 extern void cr_destroy_part_data(struct part_res_record *this_ptr);
 

@@ -36,6 +36,11 @@
 
 #include "cons_common.h"
 
+#include "src/common/xstring.h"
+#include "src/common/gres.h"
+
+#include "src/slurmctld/powercapping.h"
+
 /* init common global variables */
 bool     backfill_busy_nodes  = false;
 int      bf_window_scale      = 0;
@@ -78,4 +83,19 @@ extern int common_cpus_per_core(struct job_details *details, int node_inx)
 
 	threads_per_core = MIN(threads_per_core, ncpus_per_core);
 	return threads_per_core;
+}
+
+/* Delete the given select_node_record and select_node_usage arrays */
+extern void common_destroy_node_data(struct node_use_record *node_usage,
+				     struct node_res_record *node_data)
+{
+	int i;
+
+	xfree(node_data);
+	if (node_usage) {
+		for (i = 0; i < select_node_cnt; i++) {
+			FREE_NULL_LIST(node_usage[i].gres_list);
+		}
+		xfree(node_usage);
+	}
 }

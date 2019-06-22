@@ -117,4 +117,8 @@ extern struct node_use_record *select_node_usage;
 /* Determine how many cpus per core we can use */
 extern int common_cpus_per_core(struct job_details *details, int node_inx);
 
+/* Delete the given select_node_record and select_node_usage arrays */
+extern void common_destroy_node_data(struct node_use_record *node_usage,
+				     struct node_res_record *node_data);
+
 #endif /* _CONS_COMMON_H */

@@ -921,7 +921,7 @@ extern int fini(void)
 		info("%s shutting down ...", plugin_type);
 	else
 		verbose("%s shutting down ...", plugin_type);
-	cr_destroy_node_data(select_node_usage, select_node_record);
+	common_destroy_node_data(select_node_usage, select_node_record);
 	select_node_record = NULL;
 	select_node_usage = NULL;
 	cr_destroy_part_data(select_part_record);
@@ -1042,7 +1042,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_fast_schedule = slurm_get_fast_schedule();
 	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
 
-	cr_destroy_node_data(select_node_usage, select_node_record);
+	common_destroy_node_data(select_node_usage, select_node_record);
 	select_node_cnt = node_cnt;
 	select_node_record = xcalloc(node_cnt,
 				     sizeof(struct node_res_record));
@@ -2642,22 +2642,6 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 
 	return avail_nodes_bitmap;
 }
-
-/* Delete the given select_node_record and select_node_usage arrays */
-extern void cr_destroy_node_data(struct node_use_record *node_usage,
-				 struct node_res_record *node_data)
-{
-	int i;
-
-	xfree(node_data);
-	if (node_usage) {
-		for (i = 0; i < select_node_cnt; i++) {
-			FREE_NULL_LIST(node_usage[i].gres_list);
-		}
-		xfree(node_usage);
-	}
-}
-
 
 /* Delete the given list of partition data */
 extern void cr_destroy_part_data(struct part_res_record *this_ptr)
