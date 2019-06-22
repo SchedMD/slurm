@@ -77,6 +77,5 @@ struct part_row_data {
 
 extern void cr_sort_part_rows(struct part_res_record *p_ptr);
 extern uint32_t cr_get_coremap_offset(uint32_t node_index);
-extern int cr_cpus_per_core(struct job_details *details, int node_inx);
 
 #endif /* !_CONS_RES_H */

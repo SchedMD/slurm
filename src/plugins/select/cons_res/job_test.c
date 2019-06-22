@@ -452,7 +452,7 @@ static uint16_t _allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
 	 */
 	avail_cpus = 0;
 	num_tasks = 0;
-	threads_per_core = cr_cpus_per_core(job_ptr->details, node_i);
+	threads_per_core = common_cpus_per_core(job_ptr->details, node_i);
 
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;
@@ -1269,7 +1269,7 @@ static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
 		return;
 
 	resv_cpus = MAX((rem_nodes - 1), 0);
-	resv_cpus *= cr_cpus_per_core(details_ptr, node_inx);
+	resv_cpus *= common_cpus_per_core(details_ptr, node_inx);
 	if (cr_type & CR_SOCKET)
 		resv_cpus *= select_node_record[node_inx].cores;
 	rem_cpus -= resv_cpus;

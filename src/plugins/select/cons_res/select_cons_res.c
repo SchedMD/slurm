@@ -3609,25 +3609,3 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 	return avail_nodes_bitmap;
 }
 
-extern int cr_cpus_per_core(struct job_details *details, int node_inx)
-{
-	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
-	uint16_t threads_per_core = select_node_record[node_inx].vpus;
-
-	if (details && details->mc_ptr) {
-		multi_core_data_t *mc_ptr = details->mc_ptr;
-		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
-		    (mc_ptr->ntasks_per_core)) {
-			ncpus_per_core = MIN(threads_per_core,
-					     (mc_ptr->ntasks_per_core *
-					      details->cpus_per_task));
-		}
-		if ((mc_ptr->threads_per_core != NO_VAL16) &&
-		    (mc_ptr->threads_per_core <  ncpus_per_core)) {
-			ncpus_per_core = mc_ptr->threads_per_core;
-		}
-	}
-
-	threads_per_core = MIN(threads_per_core, ncpus_per_core);
-	return threads_per_core;
-}

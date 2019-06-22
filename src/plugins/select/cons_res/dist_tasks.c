@@ -404,7 +404,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
 			fatal("cons_res: _block_sync_core_bitmap index error");
 
 		cpus  = job_res->cpus[i];
-		vpus = cr_cpus_per_core(job_ptr->details, n);
+		vpus = common_cpus_per_core(job_ptr->details, n);
 
 		/* compute still required cores on the node */
 		req_cores = cpus / vpus;
@@ -758,7 +758,7 @@ static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
 			continue;
 		sockets = select_node_record[n].sockets;
 		cps     = select_node_record[n].cores;
-		vpus    = cr_cpus_per_core(job_ptr->details, n);
+		vpus    = common_cpus_per_core(job_ptr->details, n);
 
 		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			info("DEBUG: %pJ node %s vpus %u cpus %u",

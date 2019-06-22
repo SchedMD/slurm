@@ -114,5 +114,7 @@ extern struct part_res_record *select_part_record;
 extern struct node_res_record *select_node_record;
 extern struct node_use_record *select_node_usage;
 
+/* Determine how many cpus per core we can use */
+extern int common_cpus_per_core(struct job_details *details, int node_inx);
 
 #endif /* _CONS_COMMON_H */
