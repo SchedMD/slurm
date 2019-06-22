@@ -39,6 +39,7 @@
 /* init common global variables */
 bool     backfill_busy_nodes  = false;
 int      bf_window_scale      = 0;
+cons_common_callbacks_t cons_common_callbacks = {0};
 uint16_t cr_type              = CR_CPU; /* cr_type is overwritten in init() */
 bool     gang_mode            = false;
 bool     have_dragonfly       = false;
