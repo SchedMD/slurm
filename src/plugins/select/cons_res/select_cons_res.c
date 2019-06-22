@@ -169,7 +169,7 @@ slurmctld_config_t slurmctld_config;
  * (major.minor.micro combined into a single number).
  */
 const char plugin_name[] = "Consumable Resources (CR) Node Selection plugin";
-const char plugin_type[] = "select/cons_res";
+const char *plugin_type = "select/cons_res";
 const uint32_t plugin_id      = SELECT_PLUGIN_CONS_RES;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t pstate_version = 7;	/* version control on saved state */

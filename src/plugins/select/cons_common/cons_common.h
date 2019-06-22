@@ -97,6 +97,7 @@ extern uint16_t select_fast_schedule;
 extern int      select_node_cnt;
 extern bool     spec_cores_first;
 extern bool     topo_optional;
+extern const char *plugin_type;
 
 extern struct part_res_record *select_part_record;
 extern struct node_res_record *select_node_record;
