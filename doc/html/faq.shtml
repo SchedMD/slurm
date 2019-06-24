@@ -127,7 +127,8 @@
 <li><a href="#health_check">Why doesn't the <i>HealthCheckProgram</i>
   execute on DOWN nodes?</a></li>
 <li><a href="#batch_lost">What is the meaning of the error
-  &quot;Batch JobId=# missing from master node, killing it&quot;?</a></li>
+  &quot;Batch JobId=# missing from batch node &lt;node&gt; (not found
+  BatchStartTime after startup)&quot;?</a></li>
 <li><a href="#accept_again">What does the message
   &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
   indicate?</a></li>
@@ -1559,7 +1560,8 @@ that <i>HealthCheckProgram</i> gets executed on nodes that are DOWN
 in Slurm.
 
 <p><a name="batch_lost"><b>30. What is the meaning of the error
-&quot;Batch JobId=# missing from master node, killing it&quot;?</b></a><br>
+&quot;Batch JobId=# missing from batch node &lt;node&gt; (not found
+  BatchStartTime after startup)&quot;?</b></a><br>
 A shell is launched on node zero of a job's allocation to execute
 the submitted program. The <i>slurmd</i> daemon executing on each compute
 node will periodically report to the <i>slurmctld</i> what programs it
@@ -1567,9 +1569,7 @@ is executing. If a batch program is expected to be running on some
 node (i.e. node zero of the job's allocation) and is not found, the
 message above will be logged and the job canceled. This typically is
 associated with exhausting memory on the node or some other critical
-failure that cannot be recovered from. The equivalent message in
-earlier releases of Slurm is
-&quot;Master node lost JobId=#, killing it&quot;.
+failure that cannot be recovered from.
 
 <p><a name="accept_again"><b>31. What does the message
 &quot;srun: error: Unable to accept connection: Resources temporarily unavailable&quot;
