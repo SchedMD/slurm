@@ -4336,7 +4336,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else
 		conf->priority_favor_small = 0;
 
-	conf->priority_flags = 0;
+	conf->priority_flags = PRIORITY_FLAGS_FAIR_TREE;
 	if (s_p_get_string(&temp_str, "PriorityFlags", hashtbl)) {
 		if (xstrcasestr(temp_str, "ACCRUE_ALWAYS"))
 			conf->priority_flags |= PRIORITY_FLAGS_ACCRUE_ALWAYS;
@@ -4345,10 +4345,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		if (xstrcasestr(temp_str, "CALCULATE_RUNNING"))
 			conf->priority_flags |= PRIORITY_FLAGS_CALCULATE_RUNNING;
 
-		if (xstrcasestr(temp_str, "DEPTH_OBLIVIOUS"))
+		if (xstrcasestr(temp_str, "DEPTH_OBLIVIOUS")) {
 			conf->priority_flags |= PRIORITY_FLAGS_DEPTH_OBLIVIOUS;
-		else if (!xstrcasestr(temp_str, "NO_FAIR_TREE"))
-			conf->priority_flags |= PRIORITY_FLAGS_FAIR_TREE;
+			conf->priority_flags &= ~PRIORITY_FLAGS_FAIR_TREE;
+		} else if (xstrcasestr(temp_str, "NO_FAIR_TREE"))
+			conf->priority_flags &= ~PRIORITY_FLAGS_FAIR_TREE;
 
 		if (xstrcasestr(temp_str, "INCR_ONLY"))
 			conf->priority_flags |= PRIORITY_FLAGS_INCR_ONLY;
