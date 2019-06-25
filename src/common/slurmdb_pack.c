@@ -64,7 +64,39 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		if (!stats) {
+			packdouble(0, buffer);
+
+			pack64(0, buffer);
+
+			for (i=0; i<16; i++) {
+				packnull(buffer);
+			}
+			return;
+		}
+
+		packdouble(stats->act_cpufreq, buffer);
+
+		pack64(stats->consumed_energy, buffer);
+
+		packstr(stats->tres_usage_in_ave, buffer);
+		packstr(stats->tres_usage_in_max, buffer);
+		packstr(stats->tres_usage_in_max_nodeid, buffer);
+		packstr(stats->tres_usage_in_max_taskid, buffer);
+		packstr(stats->tres_usage_in_min, buffer);
+		packstr(stats->tres_usage_in_min_nodeid, buffer);
+		packstr(stats->tres_usage_in_min_taskid, buffer);
+		packstr(stats->tres_usage_in_tot, buffer);
+		packstr(stats->tres_usage_out_ave, buffer);
+		packstr(stats->tres_usage_out_max, buffer);
+		packstr(stats->tres_usage_out_max_nodeid, buffer);
+		packstr(stats->tres_usage_out_max_taskid, buffer);
+		packstr(stats->tres_usage_out_min, buffer);
+		packstr(stats->tres_usage_out_min_nodeid, buffer);
+		packstr(stats->tres_usage_out_min_taskid, buffer);
+		packstr(stats->tres_usage_out_tot, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!stats) {
 			packdouble(0, buffer);
 
@@ -110,7 +142,44 @@ static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
 	xassert(stats);
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackdouble(&stats->act_cpufreq, buffer);
+
+		safe_unpack64(&stats->consumed_energy, buffer);
+
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_ave,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_max,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_max_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_max_taskid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_min,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_min_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_min_taskid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_in_tot,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_ave,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_max,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_max_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_max_taskid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_min,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_min_nodeid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_min_taskid,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&stats->tres_usage_out_tot,
+				       &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackdouble(&stats->act_cpufreq, buffer);
 
 		safe_unpack64(&stats->consumed_energy, buffer);
