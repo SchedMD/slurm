@@ -445,6 +445,7 @@ static int _set_cond(int *start, int argc, char **argv,
 
 extern int sacctmgr_archive_dump(int argc, char **argv)
 {
+	char *warning = NULL;
 	int rc = SLURM_SUCCESS;
 	slurmdb_archive_cond_t *arch_cond =
 		xmalloc(sizeof(slurmdb_archive_cond_t));
@@ -540,20 +541,19 @@ extern int sacctmgr_archive_dump(int argc, char **argv)
 		}
 	}
 
-	rc = slurmdb_archive(db_conn, arch_cond);
-	if (rc == SLURM_SUCCESS) {
-		if (commit_check("Would you like to commit changes?")) {
-			slurmdb_connection_commit(db_conn, 1);
-		} else {
-			printf(" Changes Discarded\n");
-			slurmdb_connection_commit(db_conn, 0);
+	warning = "This may result in loss of accounting database records (if Purge* options enabled).\nAre you sure you want to continue?";
+	if (commit_check(warning)) {
+		rc = slurmdb_archive(db_conn, arch_cond);
+		if (rc != SLURM_SUCCESS) {
+			exit_code = 1;
+			fprintf(stderr, " Problem dumping archive: %s\n",
+				slurm_strerror(rc));
+			rc = SLURM_ERROR;
 		}
 	} else {
-		exit_code = 1;
-		fprintf(stderr, " Problem dumping archive: %s\n",
-			slurm_strerror(rc));
-		rc = SLURM_ERROR;
+		printf(" Changes Discarded\n");
 	}
+
 	slurmdb_destroy_archive_cond(arch_cond);
 
 	return rc;
