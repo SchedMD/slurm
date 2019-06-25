@@ -18,8 +18,8 @@ Local licenses are local to the cluster using the
 <li><b>Remote Licenses:</b>
 Remote licenses are served by the database and are configured using the
 <it>sacctmgr</it> command. Remote licenses are dynamic in nature as upon running
-the <it>sacctmgr</it> the <it>slurmdbd</it> updates all clusters the licenses
-are assigned to.
+the <it>sacctmgr</it> command, the <it>slurmdbd</it> updates all clusters the
+licenses are assigned to.
 </li>
 </ul>
 
@@ -226,9 +226,9 @@ to the slurmctld daemon.
 It is possible for sites to write a script that detects global license counter
 changes due to new licenses being added, or old licenses being removed, and
 updates Slurm. Should the license count decrease, the running jobs will not be
-affected only the dispatch of new job will reflect the new license count.</p>
+affected, only the dispatch of new jobs will reflect the new license count.</p>
 
 
-<p style="text-align:center;">Last modified 2 February 2015</p>
+<p style="text-align:center;">Last modified 25 June 2019</p>
 
 <!--#include virtual="footer.txt"-->
