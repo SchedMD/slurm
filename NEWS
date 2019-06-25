@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove premature call to get system gpus before querying fake gpus that
     should override the real.
  -- Fix segfault in epilog_set_env() when gres_devices is NULL.
+ -- Fix (un)supported states in sacct.
 
 * Changes in Slurm 19.05.0
 ==========================
