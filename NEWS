@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't acquire unneeded locks in slurmctld _run_prolog thread.
  -- Fix sinfo/squeue sort by nodename/nodeaddr/hostname.
  -- Optimize getting wckey and associations usage.
+ -- Keep SLURM_MPI_TYPE variable in srun when not set to 'none'.
 
 * Changes in Slurm 19.05.3
 ==========================
