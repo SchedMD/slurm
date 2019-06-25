@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
     PrologFlags=Alloc is enabled.
  -- Fix PriorityFlags regression with the mutation of FAIR_TREE to NO_FAIR_TREE.
  -- select/cons_res - fix debug flag SelectType handling in select_p_job_test.
+ -- Fix sacctmgr archive dump commit confirmation.
 
 * Changes in Slurm 19.05.0
 ==========================
