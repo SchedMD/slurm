@@ -2296,16 +2296,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 {
 	int rc = EINVAL;
 	uint16_t job_node_req;
-	static bool debug_cpu_bind = false, debug_check = false;
 
 	xassert(bitmap);
 
 	debug2("%s for %pJ", __func__, job_ptr);
-	if (!debug_check) {
-		debug_check = true;
-		if (slurm_get_debug_flags() & DEBUG_FLAG_SELECT_TYPE)
-			debug_cpu_bind = true;
-	}
 
 	if (!job_ptr->details)
 		return EINVAL;
@@ -2347,15 +2341,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	} else
 		fatal("select_p_job_test: Mode %d is invalid", mode);
 
-	if (select_debug_flags & DEBUG_FLAG_CPU_BIND) {
+	if ((select_debug_flags & DEBUG_FLAG_CPU_BIND) ||
+	    (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
 		if (job_ptr->job_resrcs)
 			log_job_resources(job_ptr);
 		else {
 			info("no job_resources info for %pJ rc=%d",
 			     job_ptr, rc);
 		}
-	} else if (debug_cpu_bind && job_ptr->job_resrcs) {
-		log_job_resources(job_ptr);
 	}
 
 	return rc;

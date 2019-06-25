@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- For HetJobs, ensure SLURM_PACK_JOB_ID is set regardless of whether
     PrologFlags=Alloc is enabled.
  -- Fix PriorityFlags regression with the mutation of FAIR_TREE to NO_FAIR_TREE.
+ -- select/cons_res - fix debug flag SelectType handling in select_p_job_test.
 
 * Changes in Slurm 19.05.0
 ==========================
