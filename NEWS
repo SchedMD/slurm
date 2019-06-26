@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Cray - fix template generator with update cray_aries plugin names.
  -- accounting_storage/slurmdbd - provide additional detail in several error
     messages.
+ -- Backfill - If a job has a time_limit guess the end time of a job better
+    if OverTimeLimit is Unlimited.
 
 * Changes in Slurm 19.05.0
 ==========================
