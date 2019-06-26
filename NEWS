@@ -28,7 +28,6 @@ documents those changes that are of interest to users and administrators.
  -- select/cons_res - fix debug flag SelectType handling in select_p_job_test.
  -- Fix sacctmgr archive dump commit confirmation.
  -- Prevent extra resources from being allocated when combining certain flags.
- -- Fix build with --enable-front-end configure option.
 
 * Changes in Slurm 19.05.0
 ==========================
