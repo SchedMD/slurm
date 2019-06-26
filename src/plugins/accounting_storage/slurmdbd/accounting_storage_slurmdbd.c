@@ -2963,7 +2963,8 @@ extern int jobacct_storage_p_archive_load(void *db_conn,
 	rc = send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_ARCHIVE_LOAD failure: %m");
+		error("slurmdbd: DBD_ARCHIVE_LOAD failure: %s",
+		      slurm_strerror(rc));
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		rc = msg->rc;
@@ -2976,7 +2977,8 @@ extern int jobacct_storage_p_archive_load(void *db_conn,
 		}
 		slurm_persist_free_rc_msg(msg);
 	} else {
-		error("unknown return for archive_load");
+		error("%s: unknown return msg_type for archive_load: %s(%u)",
+		      __func__, rpc_num2string(resp.msg_type), resp.msg_type);
 		rc = SLURM_ERROR;
 	}
 

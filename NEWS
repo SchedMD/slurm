@@ -35,6 +35,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix PriorityFlags regression with the mutation of FAIR_TREE to NO_FAIR_TREE.
  -- select/cons_res - fix debug flag SelectType handling in select_p_job_test.
  -- Fix sacctmgr archive dump commit confirmation.
+ -- Prevent extra resources from being allocated when combining certain flags.
+ -- Cray - fix template generator with update cray_aries plugin names.
+ -- accounting_storage/slurmdbd - provide additional detail in several error
+    messages.
 
 * Changes in Slurm 19.05.0
 ==========================

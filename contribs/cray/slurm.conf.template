@@ -14,7 +14,7 @@ ControlMachine=sdb
 #
 AuthType=auth/munge
 #CheckpointType=checkpoint/none
-CoreSpecPlugin=cray
+CoreSpecPlugin=cray_aries
 CredType=cred/munge
 #DisableRootJobs=NO
 EnforcePartLimits=any
@@ -31,7 +31,7 @@ JobContainerType=job_container/cncu
 #JobCredentialPublicCertificate=
 #JobFileAppend=0
 #JobRequeue=1
-JobSubmitPlugins=cray
+JobSubmitPlugins=cray_aries
 KillOnBadExit=1
 LaunchParameters=send_gids
 #LaunchType=launch/slurm
@@ -45,7 +45,7 @@ MpiParams=ports=20000-32767
 #PluginDir=
 #PlugStackConfig=
 #PrivateData=jobs
-ProctrackType=proctrack/cray
+ProctrackType=proctrack/cray_aries
 #Prolog=
 #PrologSlurmctld=
 #PropagatePrioProcess=0
@@ -66,9 +66,9 @@ SlurmUser=root
 #SrunEpilog=
 #SrunProlog=
 StateSaveLocation=/var/spool/slurm
-SwitchType=switch/cray
+SwitchType=switch/cray_aries
 #TaskEpilog=
-TaskPlugin=task/cray,task/affinity,task/cgroup
+TaskPlugin=task/cray_aries,task/affinity,task/cgroup
 #TaskPluginParam=
 #TaskProlog=
 TopologyPlugin=topology/none
@@ -105,7 +105,7 @@ FastSchedule=0
 MaxMemPerCPU={maxmem}
 #SchedulerTimeSlice=30
 SchedulerType=sched/backfill
-SelectType=select/cray
+SelectType=select/cray_aries
 SelectTypeParameters=CR_CORE_Memory,other_cons_res
 #
 #

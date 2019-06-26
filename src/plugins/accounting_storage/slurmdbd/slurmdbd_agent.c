@@ -961,14 +961,15 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
 		error("slurmdbd: Sending message type %s: %d: %s",
-		      rpc_num2string(req->msg_type), rc, slurm_strerror(rc));
+		      slurmdbd_msg_type_2_str(req->msg_type, 1), rc,
+		      slurm_strerror(rc));
 		goto end_it;
 	}
 
 	buffer = slurm_persist_recv_msg(slurmdbd_conn);
 	if (buffer == NULL) {
-		error("slurmdbd: Getting response to message type %u",
-		      req->msg_type);
+		error("slurmdbd: Getting response to message type: %s",
+		      slurmdbd_msg_type_2_str(req->msg_type, 1));
 		rc = SLURM_ERROR;
 		goto end_it;
 	}

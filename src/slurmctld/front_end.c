@@ -45,6 +45,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/node_conf.h"

@@ -482,7 +482,7 @@ to take effect.
 Acceptable values at present include:
 .RS
 .TP 20
-\fBcore_spec/cray\fR
+\fBcore_spec/cray_aries\fR
 used only for Cray systems
 .TP
 \fBcore_spec/none\fR
@@ -1675,19 +1675,19 @@ power consumption data (old data may be used until new data is available from
 the underlying infrastructure and values below 10 seconds are not recommended
 for Cray systems).
 The default value is 30 seconds.
-Supported by the power/cray plugin.
+Supported by the power/cray_aries plugin.
 .TP
 \fBcapmc_path=\fR
 Specifies the absolute path of the capmc command.
 The default value is "/opt/cray/capmc/default/bin/capmc".
-Supported by the power/cray plugin.
+Supported by the power/cray_aries plugin.
 .TP
 \fBcap_watts=#\fR
 Specifies the total power limit to be established across all compute nodes
 managed by Slurm.
 A value of 0 sets every compute node to have an unlimited cap.
 The default value is 0.
-Supported by the power/cray plugin.
+Supported by the power/cray_aries plugin.
 .TP
 \fBdecrease_rate=#\fR
 Specifies the maximum rate of change in the power cap for a node where the
@@ -1696,12 +1696,12 @@ actual power usage is below the power cap by an amount greater than
 Value represents a percentage of the difference between a node's minimum and
 maximum power consumption.
 The default value is 50 percent.
-Supported by the power/cray plugin.
+Supported by the power/cray_aries plugin.
 .TP
 \fBget_timeout=#\fR
 Amount of time allowed to get power state information in milliseconds.
 The default value is 5,000 milliseconds or 5 seconds.
-Supported by the power/cray plugin and represents the time allowed for the
+Supported by the power/cray_aries plugin and represents the time allowed for the
 capmc command to respond to various "get" options.
 .TP
 \fBincrease_rate=#\fR
@@ -1710,7 +1710,7 @@ actual power usage is within \fBupper_threshold\fR (see below) of the power cap.
 Value represents a percentage of the difference between a node's minimum and
 maximum power consumption.
 The default value is 20 percent.
-Supported by the power/cray plugin.
+Supported by the power/cray_aries plugin.
 .TP
 \fBjob_level\fR
 All nodes associated with every job will have the same power cap, to the extent
@@ -1728,14 +1728,15 @@ Specify a lower power consumption threshold.
 If a node's current power consumption is below this percentage of its current
 cap, then its power cap will be reduced.
 The default value is 90 percent.
-Supported by the power/cray plugin.
+Supported by the power/cray_aries plugin.
 .TP
 \fBrecent_job=#\fR
 If a job has started or resumed execution (from suspend) on a compute node
 within this number of seconds from the current time, the node's power cap will
 be increased to the maximum.
 The default value is 300 seconds.
-Supported by the power/cray plugin.
+Supported by the power/cray_aries plugin.
+
 .TP
 \fBset_timeout=#\fR
 Amount of time allowed to set power state information in milliseconds.
@@ -1747,21 +1748,21 @@ capmc command to respond to various "set" options.
 Specifies the power limit to be set on every compute nodes managed by Slurm.
 Every node gets this same power cap and there is no variation through time
 based upon actual power usage on the node.
-Supported by the power/cray plugin.
+Supported by the power/cray_aries plugin.
 .TP
 \fBupper_threshold=#\fR
 Specify an upper power consumption threshold.
 If a node's current power consumption is above this percentage of its current
 cap, then its power cap will be increased to the extent possible.
 The default value is 95 percent.
-Supported by the power/cray plugin.
+Supported by the power/cray_aries plugin.
 .RE
 
 .TP
 \fBPowerPlugin\fR
 Identifies the plugin used for system power management.
 Currently supported plugins include:
-\fBcray\fR and
+\fBcray_aries\fR and
 \fBnone\fR.
 Changes to this value require restarting Slurm daemons to take effect.
 More information about system power management is available here
@@ -2147,7 +2148,7 @@ Acceptable values at present include:
 which uses linux cgroups to constrain and track processes, and is the default.
 NOTE: see "man cgroup.conf" for configuration details
 .TP
-\fBproctrack/cray\fR
+\fBproctrack/cray_aries\fR
 which uses Cray proprietary process tracking
 .TP
 \fBproctrack/linuxproc\fR
@@ -2205,7 +2206,7 @@ on all allocated compute nodes.
 This container may be used for user processes not launched under Slurm control,
 for example pam_slurm_adopt may place processes launched through a direct user
 login into this container. If using pam_slurm_adopt, then ProcTrackType must be
-set to either \fBproctrack/cgroup\fR or \fBproctrack/cray\fR.
+set to either \fBproctrack/cgroup\fR or \fBproctrack/cray_aries\fR.
 Setting the Contain implicitly sets the Alloc flag.
 .TP
 \fBNoHold\fR
@@ -2629,8 +2630,8 @@ This will tend to leave currently idle resources available for backfilling
 longer running jobs, but may result in allocations having less than optimal
 network topology.
 This option is currently only supported by the select/cons_res and
-select/cons_tres plugins (or select/cray with SelectTypeParameters set to
-"OTHER_CONS_RES" or "OTHER_CONS_TRES", which layers the select/cray plugin
+select/cons_tres plugins (or select/cray_aries with SelectTypeParameters set to
+"OTHER_CONS_RES" or "OTHER_CONS_TRES", which layers the select/cray_aries plugin
 over the select/cons_res or select/cons_tres plugin respectively).
 .TP
 \fBbf_continue\fR
@@ -3218,9 +3219,9 @@ Note that whole nodes can be allocated to jobs for selected
 partitions by using the \fIOverSubscribe=Exclusive\fR option.
 See the partition \fBOverSubscribe\fR parameter for more information.
 .TP
-\fBselect/cray\fR
+\fBselect/cray_aries\fR
 for a Cray system.
-The default value is "select/cray" for all Cray systems.
+The default value is "select/cray_aries" for all Cray systems.
 .TP
 \fBselect/linear\fR
 for allocation of entire nodes assuming a one\-dimensional array of nodes in
@@ -3251,22 +3252,22 @@ The only supported options for \fBSelectType=select/linear\fR are
 prevents memory over subscription with job preemption or gang scheduling.
 By default \fBSelectType=select/linear\fR allocates whole nodes to jobs without
 considering their memory consumption.
-By default \fBSelectType=select/cons_res\fR, \fBSelectType=select/cray\fR,
+By default \fBSelectType=select/cons_res\fR, \fBSelectType=select/cray_aries\fR,
 and \fBSelectType=select/cons_tres\fR, use
 \fBCR_CPU\fR, which allocates CPU (threads)
 to jobs without considering their memory consumption.
 .RS
 .TP
-The following options are supported for \fBSelectType=select/cray\fR:
+The following options are supported for \fBSelectType=select/cray_aries\fR:
 .RS
 .TP
 \fBOTHER_CONS_RES\fR
-Layer the select/cons_res plugin under the select/cray plugin, the default is
+Layer the select/cons_res plugin under the select/cray_aries plugin, the default is
 to layer on select/linear.  This also allows all the options available for
 \fBSelectType=select/cons_res\fR.
 .TP
 \fBOTHER_CONS_TRES\fR
-Layer the select/cons_tres plugin under the select/cray plugin, the default is
+Layer the select/cons_tres plugin under the select/cray_aries plugin, the default is
 to layer on select/linear.  This also allows all the options available for
 \fBSelectType=select/cons_tres\fR.
 .RE
@@ -3915,7 +3916,7 @@ More information is available at the Slurm web site
 Identifies the type of switch or interconnect used for application
 communications.
 Acceptable values include
-"switch/cray" for Cray systems,
+"switch/cray_aries" for Cray systems,
 "switch/none" for switches not requiring special processing for job launch
 or termination (Ethernet, and InfiniBand) and
 The default value is "switch/none".
@@ -3964,11 +3965,11 @@ task/cgroup) and uses the task/cgroup plugin to fence tasks into the specified
 resources, thus combining the best of both pieces.
 
 \fBNOTE:\fR For CRAY systems only: task/cgroup must be used with, and listed
-\fBafter\fR task/cray in TaskPlugin. The task/affinity plugin can be listed
+\fBafter\fR task/cray_aries in TaskPlugin. The task/affinity plugin can be listed
 everywhere, but the previous constrain must be satisfied. So for CRAY systems,
 a configuration like this is recommended:
 
-TaskPlugin=task/affinity,task/cray,task/cgroup
+TaskPlugin=task/affinity,task/cray_aries,task/cgroup
 
 .TP
 \fBTaskPluginParam\fR
@@ -4022,7 +4023,7 @@ If specialized cores or CPUs are identified for the node (i.e. the
 then Slurm daemons running on the compute node (i.e. slurmd and slurmstepd)
 should run outside of those resources (i.e. specialized resources are
 completely unavailable to Slurm daemons and jobs spawned by Slurm).
-This option may not be used with the \fBtask/cray\fR plugin.
+This option may not be used with the \fBtask/cray_aries\fR plugin.
 .TP
 \fBVerbose\fR
 Verbosely report binding before tasks run.
