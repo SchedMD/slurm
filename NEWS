@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
     will-run test.
  -- Cray - fix contribs slurm.conf.j2 with updated cray_aries plugin names.
  -- job_submit/lua - fix problem where nil was expected for min_mem_per_cpu.
+ -- Fix extra, unaccounted TRESRunMins usage created by heterogeneous jobs when
+    running with the priority/multifactor plugin.
 
 * Changes in Slurm 19.05.2
 ==========================
