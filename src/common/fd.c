@@ -64,7 +64,7 @@ static pid_t fd_test_lock(int fd, int type);
 
 void fd_set_close_on_exec(int fd)
 {
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
 		error("fcntl(F_SETFD) failed: %m");
@@ -73,7 +73,7 @@ void fd_set_close_on_exec(int fd)
 
 void fd_set_noclose_on_exec(int fd)
 {
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	if (fcntl(fd, F_SETFD, 0) < 0)
 		error("fcntl(F_SETFD) failed: %m");
@@ -84,7 +84,7 @@ void fd_set_nonblocking(int fd)
 {
 	int fval;
 
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	if ((fval = fcntl(fd, F_GETFL, 0)) < 0)
 		error("fcntl(F_GETFL) failed: %m");
@@ -97,7 +97,7 @@ void fd_set_blocking(int fd)
 {
 	int fval;
 
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	if ((fval = fcntl(fd, F_GETFL, 0)) < 0)
 		error("fcntl(F_GETFL) failed: %m");
@@ -144,7 +144,7 @@ static int fd_get_lock(int fd, int cmd, int type)
 {
 	struct flock lock;
 
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	lock.l_type = type;
 	lock.l_start = 0;
@@ -159,7 +159,7 @@ static pid_t fd_test_lock(int fd, int type)
 {
 	struct flock lock;
 
-	assert(fd >= 0);
+	xassert(fd >= 0);
 
 	lock.l_type = type;
 	lock.l_start = 0;
