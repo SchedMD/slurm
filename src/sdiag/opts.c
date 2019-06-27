@@ -43,15 +43,12 @@
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
 
+#include "sdiag.h"
+
 #define OPT_LONG_USAGE 0x101
 
 static void  _help( void );
 static void  _usage( void );
-
-extern int  sdiag_param;
-extern bool sort_by_id;
-extern bool sort_by_time;
-extern bool sort_by_time2;
 
 /*
  * parse_command_line, fill in params data structure with data
@@ -72,27 +69,31 @@ extern void parse_command_line(int argc, char **argv)
 		{NULL,		0,		0,	0}
 	};
 
+	/* default options */
+	params.mode = STAT_COMMAND_GET;
+	params.sort = SORT_COUNT;
+
 	while ((opt_char = getopt_long(argc, argv, "ahirtTV", long_options,
 				       &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'a':
-				sdiag_param = STAT_COMMAND_GET;
+				params.mode = STAT_COMMAND_GET;
 				break;
 			case (int)'h':
 				_help();
 				exit(0);
 				break;
 			case (int)'i':
-				sort_by_id = true;
+				params.sort = SORT_ID;
 				break;
 			case (int)'r':
-				sdiag_param = STAT_COMMAND_RESET;
+				params.mode = STAT_COMMAND_RESET;
 				break;
 			case (int)'t':
-				sort_by_time = true;
+				params.sort = SORT_TIME;
 				break;
 			case (int)'T':
-				sort_by_time2 = true;
+				params.sort = SORT_TIME2;
 				break;
 			case (int) 'V':
 				print_slurm_version();

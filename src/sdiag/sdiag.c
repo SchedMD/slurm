@@ -48,13 +48,12 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "sdiag.h"
+
 /********************
  * Global Variables *
  ********************/
-int sdiag_param = STAT_COMMAND_GET;
-bool sort_by_id    = false;
-bool sort_by_time  = false;
-bool sort_by_time2 = false;
+struct sdiag_parameters params;
 
 stats_info_response_msg_t *buf;
 uint32_t *rpc_type_ave_time = NULL, *rpc_user_ave_time = NULL;
@@ -73,7 +72,7 @@ int main(int argc, char **argv)
 	slurm_conf_init(NULL);
 	parse_command_line(argc, argv);
 
-	if (sdiag_param == STAT_COMMAND_RESET) {
+	if (params.mode == STAT_COMMAND_RESET) {
 		req.command_id = STAT_COMMAND_RESET;
 		rc = slurm_reset_statistics((stats_info_request_msg_t *)&req);
 		if (rc == SLURM_SUCCESS)
@@ -245,7 +244,7 @@ static void _sort_rpc(void)
 	rpc_type_ave_time = xmalloc(sizeof(uint32_t) * buf->rpc_type_size);
 	rpc_user_ave_time = xmalloc(sizeof(uint32_t) * buf->rpc_user_size);
 
-	if (sort_by_id) {
+	if (params.sort == SORT_ID) {
 		for (i = 0; i < buf->rpc_type_size; i++) {
 			for (j = i+1; j < buf->rpc_type_size; j++) {
 				if (buf->rpc_type_id[i] <= buf->rpc_type_id[j])
@@ -284,7 +283,7 @@ static void _sort_rpc(void)
 						       buf->rpc_user_cnt[i];
 			}
 		}
-	} else if (sort_by_time) {
+	} else if (params.sort == SORT_TIME) {
 		for (i = 0; i < buf->rpc_type_size; i++) {
 			for (j = i+1; j < buf->rpc_type_size; j++) {
 				if (buf->rpc_type_time[i] >= buf->rpc_type_time[j])
@@ -323,7 +322,7 @@ static void _sort_rpc(void)
 						       buf->rpc_user_cnt[i];
 			}
 		}
-	} else if (sort_by_time2) {
+	} else if (params.sort == SORT_TIME2) {
 		for (i = 0; i < buf->rpc_type_size; i++) {
 			if (buf->rpc_type_cnt[i]) {
 				rpc_type_ave_time[i] = buf->rpc_type_time[i] /
