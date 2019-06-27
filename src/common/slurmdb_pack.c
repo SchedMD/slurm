@@ -5861,6 +5861,7 @@ extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
 		pack16_array(stats_ptr->rollup_count, i, buffer);
 		pack64_array(stats_ptr->rollup_time, i, buffer);
 		pack64_array(stats_ptr->rollup_max_time, i, buffer);
+		pack64_array(stats_ptr->rollup_timestamp, i, buffer);
 
 		/* RPC type statistics */
 		for (i = 0; i < stats_ptr->type_cnt; i++) {
@@ -5936,6 +5937,10 @@ extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
 		if (uint32_tmp != 3)
 			goto unpack_error;
 		safe_unpack64_array(&stats_ptr->rollup_max_time, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != 3)
+			goto unpack_error;
+		safe_unpack64_array(&stats_ptr->rollup_timestamp, &uint32_tmp,
 				    buffer);
 		if (uint32_tmp != 3)
 			goto unpack_error;
