@@ -3230,6 +3230,9 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 		rpc_stats.rollup_max_time[i] =
 			MAX(rpc_stats.rollup_max_time[i],
 			    rollup_stats.rollup_time[i]);
+		if (rollup_stats.rollup_timestamp[i])
+			rpc_stats.rollup_timestamp[i] =
+				rollup_stats.rollup_timestamp[i];
 	}
 	slurm_mutex_unlock(&rpc_mutex);
 
