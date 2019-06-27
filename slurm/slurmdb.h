@@ -1304,13 +1304,15 @@ typedef struct {
 #define ROLLUP_COUNT	3
 typedef struct rollup_stats {
 	uint32_t rollup_time[ROLLUP_COUNT];
+	uint64_t rollup_timestamp[ROLLUP_COUNT];
 } rollup_stats_t;
 
 typedef struct {
 	uint16_t *rollup_count;		/* Length should be ROLLUP_COUNT */
 	uint64_t *rollup_time;		/* Length should be ROLLUP_COUNT */
 	uint64_t *rollup_max_time;	/* Length should be ROLLUP_COUNT */
-
+	uint64_t *rollup_timestamp;	/* Unix timestamp of last rollup.
+					 * Length should be ROLLUP_COUNT. */
 	uint32_t type_cnt;		/* Length of rpc_type arrays */
 	uint16_t *rpc_type_id;		/* RPC type */
 	uint32_t *rpc_type_cnt;		/* count of RPCs processed */

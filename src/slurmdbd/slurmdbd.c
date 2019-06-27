@@ -355,6 +355,7 @@ static void _init_dbd_stats(void)
 		xmalloc(sizeof(uint64_t) * ROLLUP_COUNT);
 	rpc_stats.rollup_max_time =
 		xmalloc(sizeof(uint64_t) * ROLLUP_COUNT);
+	rpc_stats.rollup_timestamp = xcalloc(sizeof(uint64_t), ROLLUP_COUNT);
 
 	rpc_stats.type_cnt = 200;  /* Capture info for first 200 RPC types */
 	rpc_stats.rpc_type_id   =
@@ -381,6 +382,7 @@ static void _free_dbd_stats(void)
 	xfree(rpc_stats.rollup_count);
 	xfree(rpc_stats.rollup_time);
 	xfree(rpc_stats.rollup_max_time);
+	xfree(rpc_stats.rollup_timestamp);
 
 	rpc_stats.type_cnt = 0;
 	xfree(rpc_stats.rpc_type_id);
