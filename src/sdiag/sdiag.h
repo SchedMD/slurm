@@ -41,6 +41,7 @@
 struct sdiag_parameters {
 	int mode;
 	int sort;
+	List clusters;
 };
 
 typedef enum {

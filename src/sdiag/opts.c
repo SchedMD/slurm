@@ -50,6 +50,18 @@
 static void  _help( void );
 static void  _usage( void );
 
+static void _opt_env(void)
+{
+	char *env_val;
+
+	if ((env_val = getenv("SLURM_CLUSTERS"))) {
+		if (!(params.clusters = slurmdb_get_info_cluster(env_val))) {
+			print_db_notok(env_val, 1);
+			exit(1);
+		}
+	}
+}
+
 /*
  * parse_command_line, fill in params data structure with data
  */
@@ -62,6 +74,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"help",	no_argument,	0,	'h'},
 		{"reset",	no_argument,	0,	'r'},
 		{"sort-by-id",	no_argument,	0,	'i'},
+		{"cluster",     required_argument, 0,   'M'},
+		{"clusters",    required_argument, 0,   'M'},
 		{"sort-by-time",no_argument,	0,	't'},
 		{"sort-by-time2",no_argument,	0,	'T'},
 		{"usage",	no_argument,	0,	OPT_LONG_USAGE},
@@ -73,7 +87,10 @@ extern void parse_command_line(int argc, char **argv)
 	params.mode = STAT_COMMAND_GET;
 	params.sort = SORT_COUNT;
 
-	while ((opt_char = getopt_long(argc, argv, "ahirtTV", long_options,
+	/* get defaults from environment */
+	_opt_env();
+
+	while ((opt_char = getopt_long(argc, argv, "ahiM:rtTV", long_options,
 				       &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'a':
@@ -85,6 +102,14 @@ extern void parse_command_line(int argc, char **argv)
 				break;
 			case (int)'i':
 				params.sort = SORT_ID;
+				break;
+			case (int)'M':
+				if (params.clusters)
+					FREE_NULL_LIST(params.clusters);
+				if (!(params.clusters = slurmdb_get_info_cluster(optarg))) {
+					print_db_notok(optarg, 0);
+					exit(1);
+				}
 				break;
 			case (int)'r':
 				params.mode = STAT_COMMAND_RESET;
@@ -105,6 +130,13 @@ extern void parse_command_line(int argc, char **argv)
 				break;
 		}
 	}
+
+	if (params.clusters) {
+		if (list_count(params.clusters) > 1) {
+			fatal("Only one cluster can be used at a time with sdiag");
+		}
+		working_cluster_rec = list_peek(params.clusters);
+	}
 }
 
 
@@ -120,6 +152,7 @@ Usage: sdiag [OPTIONS]\n\
   -a              all statistics\n\
   -r              reset statistics\n\
 \nHelp options:\n\
+  --cluster       direct the request to a specific cluster\n\
   --help          show this help message\n\
   --sort-by-id    sort RPCs by id\n\
   --sort-by-time  sort RPCs by total run time\n\
