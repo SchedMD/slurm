@@ -82,6 +82,7 @@ static void *_cluster_rollup_usage(void *arg)
 	time_t month_start;
 	time_t month_end;
 	long rollup_time[ROLLUP_COUNT];
+	time_t rollup_timestamp[ROLLUP_COUNT];
 	DEF_TIMERS;
 
 	char *update_req_inx[] = {
@@ -92,6 +93,7 @@ static void *_cluster_rollup_usage(void *arg)
 
 	memset(&mysql_conn, 0, sizeof(mysql_conn_t));
 	memset(rollup_time, 0, sizeof(long) * ROLLUP_COUNT);
+	memset(rollup_timestamp, 0, sizeof(rollup_timestamp));
 	mysql_conn.rollback = 1;
 	mysql_conn.conn = local_rollup->mysql_conn->conn;
 	slurm_mutex_init(&mysql_conn.lock);
@@ -128,6 +130,11 @@ static void *_cluster_rollup_usage(void *arg)
 			last_hour = slurm_atoul(row[ROLLUP_HOUR]);
 			last_day = slurm_atoul(row[ROLLUP_DAY]);
 			last_month = slurm_atoul(row[ROLLUP_MONTH]);
+
+			/* only record timestamps if db provided */
+			rollup_timestamp[ROLLUP_HOUR] = last_hour;
+			rollup_timestamp[ROLLUP_DAY] = last_day;
+			rollup_timestamp[ROLLUP_MONTH] = last_month;
 			mysql_free_result(result);
 		} else {
 			time_t now = time(NULL);
@@ -298,6 +305,7 @@ static void *_cluster_rollup_usage(void *arg)
 			 "hourly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
 		rollup_time[ROLLUP_HOUR] += DELTA_TIMER;
+		rollup_timestamp[ROLLUP_HOUR] = hour_end;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
@@ -313,6 +321,7 @@ static void *_cluster_rollup_usage(void *arg)
 			 "daily_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
 		rollup_time[ROLLUP_DAY] += DELTA_TIMER;
+		rollup_timestamp[ROLLUP_DAY] = day_end;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
@@ -328,6 +337,7 @@ static void *_cluster_rollup_usage(void *arg)
 			 "monthly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
 		rollup_time[ROLLUP_MONTH] += DELTA_TIMER;
+		rollup_timestamp[ROLLUP_MONTH] = month_end;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
 	}
@@ -395,6 +405,10 @@ end_it:
 		for (i = 0; i < ROLLUP_COUNT; i++) {
 			local_rollup->rollup_stats->rollup_time[i] +=
 				rollup_time[i];
+
+			if (rollup_timestamp[i])
+				local_rollup->rollup_stats->rollup_time[i] =
+					rollup_timestamp[i];
 		}
 	}
 	if ((rc != SLURM_SUCCESS) && ((*local_rollup->rc) == SLURM_SUCCESS))
