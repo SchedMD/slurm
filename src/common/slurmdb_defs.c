@@ -2321,6 +2321,20 @@ extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list)
 	return rc;
 }
 
+extern const char *rollup_interval_to_string(int interval)
+{
+	switch (interval) {
+	case ROLLUP_HOUR:
+		return "Hour";
+	case ROLLUP_DAY:
+		return "Day";
+	case ROLLUP_MONTH:
+		return "Month";
+	default:
+		return "Unknown";
+	}
+}
+
 extern int set_qos_bitstr_from_string(bitstr_t *valid_qos, char *names)
 {
 	int rc = SLURM_SUCCESS;

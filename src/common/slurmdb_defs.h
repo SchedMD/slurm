@@ -161,6 +161,8 @@ extern char *get_qos_complete_str(List qos_list, List num_qos_list);
 extern char *get_classification_str(uint16_t classification);
 extern uint16_t str_2_classification(char *classification);
 
+extern const char *rollup_interval_to_string(int interval);
+
 extern char *slurmdb_problem_str_get(uint16_t problem);
 extern uint16_t str_2_slurmdb_problem(char *problem);
 
