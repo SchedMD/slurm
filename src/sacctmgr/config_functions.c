@@ -178,7 +178,14 @@ extern int sacctmgr_list_stats(int argc, char **argv)
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
-	printf("Rollup statistics\n");
+	printf("Last rollups completed\n");
+	for (i = 0; i < ROLLUP_COUNT; i++) {
+		printf("\t%-10s %"PRIu64"\n",
+		       rollup_interval_to_string(i),
+		       buf->rollup_time[i]);
+	}
+
+	printf("\nRollup statistics\n");
 	for (i = 0; i < ROLLUP_COUNT; i++) {
 		roll_ave = buf->rollup_time[i];
 		if (buf->rollup_count[i] > 1)
