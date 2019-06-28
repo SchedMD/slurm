@@ -624,10 +624,7 @@ static void *_agent(void *x)
 		}
 
 		slurm_mutex_lock(&agent_lock);
-		if (agent_list && slurmdbd_conn->fd)
-			cnt = list_count(agent_list);
-		else
-			cnt = 0;
+		cnt = list_count(agent_list);
 		if ((cnt == 0) || (slurmdbd_conn->fd < 0) ||
 		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
 			slurm_mutex_unlock(&slurmdbd_lock);
