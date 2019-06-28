@@ -39,7 +39,7 @@ accounting.</p>
 <p>The specific resources to be used for specialization may be identified using
 the <i>CPUSpecList</i> configuration parameter associated with each node in
 the <i>slurm.conf</i> file.
-Note that the <i>core_spec/cray</i> does not currently support identification of
+Note that the <i>core_spec/cray_aries</i> does not currently support identification of
 specific cores, so that plugin should not be used in conjunction with the
 <i>CPUSpecList</i> configuration parameter, even on Cray systems.
 If <i>CoreSpecCount</i> is configured, but not <i>CPUSpecList</i>, the cores
@@ -81,8 +81,8 @@ job allocation request options, especially --cores-per-socket.</p>
 <p>There are two fundamentally different mechanisms for core specialization;
 one for Cray systems and a different model for other systems.</p>
 
-<p>For Cray systems, configure <i>SelectType=select/cray</i> and
-<i>CoreSpecPlugin=core_spec/cray</i>.
+<p>For Cray systems, configure <i>SelectType=select/cray_aries</i> and
+<i>CoreSpecPlugin=core_spec/cray_aries</i>.
 By default, no resources will be reserved for system use.
 The user must explicitly set a specialized core count as described above.</p>
 

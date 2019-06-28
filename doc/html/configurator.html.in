@@ -462,7 +462,7 @@ Mark node DOWN if registers with fewer resources.<BR>
 <H2>Interconnect</H2>
 Define the node interconnect used.<BR>
 Select one value for <B>SwitchType</B>:<BR>
-<input type="radio" name="switch_type" value="cray"> <B>Cray</B>: Cray proprietary interconnect<BR>
+<input type="radio" name="switch_type" value="cray_aries"> <B>Cray XC</B>: Cray XC proprietary interconnect<BR>
 <input type="radio" name="switch_type" value="none" checked> <B>None</B>: No special
 handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
 <P>
@@ -487,7 +487,7 @@ Select one value for <B>ProctrackType</B>:<BR>
 <input type="radio" name="proctrack_type" value="cgroup" checked> <B>Cgroup</B>:  Use
 Linux <i>cgroup</i> to create a job container and track processes.
 Build a <i>cgroup.conf</i> file as well<BR>
-<input type="radio" name="proctrack_type" value="cray"> <B>Cray</B>: Cray proprietary process tracking<BR>
+<input type="radio" name="proctrack_type" value="cray_aries"> <B>Cray XC</B>: Cray XC proprietary process tracking<BR>
 <input type="radio" name="proctrack_type" value="linuxproc"> <B>LinuxProc</B>: Use
 parent process ID records, processes can escape from Slurm control<BR>
 <input type="radio" name="proctrack_type" value="pgid"> <B>Pgid</B>: Use Unix
@@ -500,13 +500,13 @@ Define resource (node) selection algorithm to be used.<BR>
 Select one value for <B>SelectType</B>:<BR>
 <input type="radio" name="select_type" value="cons_res" checked>
 <B>Cons_res</B>: Allocate individual processors and memory<BR>
-<input type="radio" name="select_type" value="cray">
-<B>Cray</B>: Cray systems running native Slurm without ALPS<BR>
+<input type="radio" name="select_type" value="cray_aries">
+<B>Cray XC</B>: Cray XC systems running native Slurm without ALPS<BR>
 <input type="radio" name="select_type" value="linear">
 <B>Linear</B>: Node-base
 resource allocation, does not manage individual processor allocation<BR>
 <DL>
-<DT><B>SelectTypeParameters</B> (As used by <I>SelectType=cons_res or cray</I> only):
+<DT><B>SelectTypeParameters</B> (Not supported by <I>SelectType=select/linear</I>):
     <DD> Note: The -E extension for sockets, cores, and threads
 	are ignored within the node allocation mechanism
 	when CR_CPU or CR_CPU_MEMORY is selected.
@@ -544,7 +544,7 @@ Define a task launch plugin. This may be used to
 provide resource management within a node (e.g. pinning
 tasks to specific processors).
 Select one value for <B>TaskPlugin</B>:<BR>
-<input type="radio" name="task_plugin" value="cray"> <B>Cray</B>: Cray proprietary
+<input type="radio" name="task_plugin" value="cray_aries"> <B>Cray XC</B>: Cray XC proprietary
 task launch<BR>
 <input type="radio" name="task_plugin" value="none"> <B>None</B>: No task launch actions<BR>
 <input type="radio" name="task_plugin" value="affinity" checked> <B>Affinity</B>:

@@ -20,7 +20,7 @@ abbreviation for the type of node selection algorithm. We recommend, for example
 memory, etc. within nodes. This plugin is recommended for systems with
 many non-parallel programs sharing nodes. For more information see
 <a href=cons_res.html>Consumable Resources in Slurm</a>.</li>
-<li><b>cray</b> &mdash; Cray XE and XT system node selector. Note that this
+<li><b>cray_aries</b> &mdash; Cray XE and XT system node selector. Note that this
 plugin not only selects the nodes for a job, but performs some initialization
 and termination functions for the job. This plugin also serves as a wrapper
 for the <i>select/linear</i> plugin which enforces various limits and

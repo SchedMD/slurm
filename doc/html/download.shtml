@@ -344,7 +344,7 @@ easy and elegantly manner.
 </ul></li><br>
 
 <li><a name="json"><b>JSON</b></a><br>
-Some Slurm plugins (burst_buffer/datawarp and power/cray) plugins
+Some Slurm plugins (burst_buffer/datawarp and power/cray_aries) plugins
 parse JSON format data.
 These plugins are designed to make use of the JSON-C library for this purpose.
 Instructions for the build are as follows:
