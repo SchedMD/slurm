@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
     messages.
  -- Backfill - If a job has a time_limit guess the end time of a job better
     if OverTimeLimit is Unlimited.
+ -- Remove premature call to get system gpus before querying fake gpus that
+    should override the real.
 
 * Changes in Slurm 19.05.0
 ==========================
