@@ -63,6 +63,107 @@ struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
 
+/* Global variables */
+static uint64_t   def_cpu_per_gpu	= 0;
+static uint64_t   def_mem_per_gpu	= 0;
+static int        preempt_reorder_cnt	= 1;
+static bool       preempt_strict_order = false;
+static bool       select_state_initializing = true;
+
+static char *_node_state_str(uint16_t node_state)
+{
+	if (node_state >= NODE_CR_RESERVED)
+		return "reserved";	/* Exclusive allocation */
+	if (node_state >= NODE_CR_ONE_ROW)
+		return "one_row";	/* Dedicated core for this partition */
+	return "available";		/* Idle or in-use (shared) */
+}
+
+static inline void _dump_nodes(void)
+{
+	struct node_record *node_ptr;
+	List gres_list;
+	int i;
+
+	if (!(select_debug_flags & DEBUG_FLAG_SELECT_TYPE))
+		return;
+
+	for (i = 0; i < select_node_cnt; i++) {
+		node_ptr = select_node_record[i].node_ptr;
+		info("Node:%s Boards:%u SocketsPerBoard:%u CoresPerSocket:%u ThreadsPerCore:%u TotalCores:%u CumeCores:%u TotalCPUs:%u PUsPerCore:%u AvailMem:%"PRIu64" AllocMem:%"PRIu64" State:%s(%d)",
+		     node_ptr->name,
+		     select_node_record[i].boards,
+		     select_node_record[i].sockets,
+		     select_node_record[i].cores,
+		     select_node_record[i].threads,
+		     select_node_record[i].tot_cores,
+		     select_node_record[i].cume_cores,
+		     select_node_record[i].cpus,
+		     select_node_record[i].vpus,
+		     select_node_record[i].real_memory,
+		     select_node_usage[i].alloc_memory,
+		     _node_state_str(select_node_usage[i].node_state),
+		     select_node_usage[i].node_state);
+
+		if (select_node_usage[i].gres_list)
+			gres_list = select_node_usage[i].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		if (gres_list)
+			gres_plugin_node_state_log(gres_list, node_ptr->name);
+	}
+}
+
+/* (re)create the global select_part_record array */
+static void _create_part_data(void)
+{
+	List part_rec_list = NULL;
+	ListIterator part_iterator;
+	struct part_record *p_ptr;
+	struct part_res_record *this_ptr, *last_ptr = NULL;
+	int num_parts;
+
+	common_destroy_part_data(select_part_record);
+	select_part_record = NULL;
+
+	num_parts = list_count(part_list);
+	if (!num_parts)
+		return;
+	info("%s: preparing for %d partitions", plugin_type, num_parts);
+
+	part_rec_list = list_create(NULL);
+	part_iterator = list_iterator_create(part_list);
+	while ((p_ptr = list_next(part_iterator))) {
+		this_ptr = xmalloc(sizeof(struct part_res_record));
+		this_ptr->part_ptr = p_ptr;
+		this_ptr->num_rows = p_ptr->max_share;
+		if (this_ptr->num_rows & SHARED_FORCE)
+			this_ptr->num_rows &= (~SHARED_FORCE);
+		if (preempt_by_qos)	/* Add row for QOS preemption */
+			this_ptr->num_rows++;
+		/* SHARED=EXCLUSIVE sets max_share = 0 */
+		if (this_ptr->num_rows < 1)
+			this_ptr->num_rows = 1;
+		/* we'll leave the 'row' array blank for now */
+		this_ptr->row = NULL;
+		list_append(part_rec_list, this_ptr);
+	}
+	list_iterator_destroy(part_iterator);
+
+	/* Sort the select_part_records by priority */
+	list_sort(part_rec_list, _sort_part_prio);
+	part_iterator = list_iterator_create(part_rec_list);
+	while ((this_ptr = list_next(part_iterator))) {
+		if (last_ptr)
+			last_ptr->next = this_ptr;
+		else
+			select_part_record = this_ptr;
+		last_ptr = this_ptr;
+	}
+	list_iterator_destroy(part_iterator);
+	list_destroy(part_rec_list);
+}
+
 /* helper script for common_sort_part_rows() */
 static void _swap_rows(struct part_row_data *a, struct part_row_data *b)
 {
@@ -528,4 +629,131 @@ extern void common_fini(void)
 	common_destroy_part_data(select_part_record);
 	select_part_record = NULL;
 	cr_fini_global_core_data();
+}
+
+extern int common_node_init(struct node_record *node_ptr, int node_cnt)
+{
+	char *preempt_type, *sched_params, *tmp_ptr;
+	uint32_t cume_cores = 0;
+	int i;
+
+	info("%s: %s", plugin_type, __func__);
+	if ((cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) == 0) {
+		fatal("Invalid SelectTypeParameters: %s (%u), "
+		      "You need at least CR_(CPU|CORE|SOCKET)*",
+		      select_type_param_string(cr_type), cr_type);
+	}
+	if (node_ptr == NULL) {
+		error("select_p_node_init: node_ptr == NULL");
+		return SLURM_ERROR;
+	}
+	if (node_cnt < 0) {
+		error("select_p_node_init: node_cnt < 0");
+		return SLURM_ERROR;
+	}
+
+	sched_params = slurm_get_sched_params();
+	if (xstrcasestr(sched_params, "preempt_strict_order"))
+		preempt_strict_order = true;
+	else
+		preempt_strict_order = false;
+	if ((tmp_ptr = xstrcasestr(sched_params, "preempt_reorder_count="))) {
+		preempt_reorder_cnt = atoi(tmp_ptr + 22);
+		if (preempt_reorder_cnt < 0) {
+			error("Invalid SchedulerParameters preempt_reorder_count: %d",
+			      preempt_reorder_cnt);
+			preempt_reorder_cnt = 1;	/* Use default value */
+		}
+	}
+        if ((tmp_ptr = xstrcasestr(sched_params, "bf_window_linear="))) {
+		bf_window_scale = atoi(tmp_ptr + 17);
+		if (bf_window_scale <= 0) {
+			error("Invalid SchedulerParameters bf_window_linear: %d",
+			      bf_window_scale);
+			bf_window_scale = 0;		/* Use default value */
+		}
+	} else
+		bf_window_scale = 0;
+
+	if (xstrcasestr(sched_params, "pack_serial_at_end"))
+		pack_serial_at_end = true;
+	else
+		pack_serial_at_end = false;
+	if (xstrcasestr(sched_params, "spec_cores_first"))
+		spec_cores_first = true;
+	else
+		spec_cores_first = false;
+	if (xstrcasestr(sched_params, "bf_busy_nodes"))
+		backfill_busy_nodes = true;
+	else
+		backfill_busy_nodes = false;
+	xfree(sched_params);
+
+	preempt_type = slurm_get_preempt_type();
+	preempt_by_part = false;
+	preempt_by_qos = false;
+	if (preempt_type) {
+		if (xstrcasestr(preempt_type, "partition"))
+			preempt_by_part = true;
+		if (xstrcasestr(preempt_type, "qos"))
+			preempt_by_qos = true;
+		xfree(preempt_type);
+	}
+
+	/* initial global core data structures */
+	select_state_initializing = true;
+	select_fast_schedule = slurm_get_fast_schedule();
+	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
+
+	common_destroy_node_data(select_node_usage, select_node_record);
+	select_node_cnt = node_cnt;
+	select_node_record = xcalloc(node_cnt,
+				     sizeof(struct node_res_record));
+	select_node_usage  = xcalloc(node_cnt,
+				     sizeof(struct node_use_record));
+
+	for (i = 0; i < select_node_cnt; i++) {
+		select_node_record[i].node_ptr = &node_ptr[i];
+		select_node_record[i].mem_spec_limit =
+			node_ptr[i].mem_spec_limit;
+		if (select_fast_schedule) {
+			struct config_record *config_ptr;
+			config_ptr = node_ptr[i].config_ptr;
+			select_node_record[i].cpus    = config_ptr->cpus;
+			select_node_record[i].boards  = config_ptr->boards;
+			select_node_record[i].sockets = config_ptr->sockets;
+			select_node_record[i].cores   = config_ptr->cores;
+			select_node_record[i].threads = config_ptr->threads;
+			select_node_record[i].vpus    = config_ptr->threads;
+			select_node_record[i].real_memory =
+				config_ptr->real_memory;
+		} else {
+			select_node_record[i].cpus    = node_ptr[i].cpus;
+			select_node_record[i].boards  = node_ptr[i].boards;
+			select_node_record[i].sockets = node_ptr[i].sockets;
+			select_node_record[i].cores   = node_ptr[i].cores;
+			select_node_record[i].threads = node_ptr[i].threads;
+			select_node_record[i].vpus    = node_ptr[i].threads;
+			select_node_record[i].real_memory =
+				node_ptr[i].real_memory;
+		}
+		select_node_record[i].tot_sockets =
+			select_node_record[i].boards *
+			select_node_record[i].sockets;
+		select_node_record[i].tot_cores =
+			select_node_record[i].tot_sockets *
+			select_node_record[i].cores;
+		cume_cores += select_node_record[i].tot_cores;
+		select_node_record[i].cume_cores = cume_cores;
+		if (select_node_record[i].tot_cores >=
+		    select_node_record[i].cpus)
+			select_node_record[i].vpus = 1;
+		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
+		gres_plugin_node_state_dealloc_all(
+			select_node_record[i].node_ptr->gres_list);
+	}
+	_create_part_data();
+	_dump_nodes();
+
+	return SLURM_SUCCESS;
 }

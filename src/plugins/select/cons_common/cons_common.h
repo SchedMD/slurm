@@ -187,4 +187,19 @@ extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
 
 extern void common_init(void);
 extern void common_fini(void);
+
+/* This is Part 1 of a 4-part procedure which can be found in
+ * src/slurmctld/read_config.c. The whole story goes like this:
+ *
+ * Step 1: common_node_init          : initializes the global node arrays
+ * Step 2: common_state_restore      : NO-OP - nothing to restore
+ * Step 3: common_job_init           : NO-OP - nothing to initialize
+ * Step 4: common_select_nodeinfo_set: called from reset_job_bitmaps() with
+ *                                     each valid recovered job_ptr AND from
+ *                                     select_nodes(), this procedure adds
+ *                                     job data to the 'select_part_record'
+ *                                     global array
+ */
+extern int common_node_init(struct node_record *node_ptr, int node_cnt);
+
 #endif /* _CONS_COMMON_H */

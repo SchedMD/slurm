@@ -140,8 +140,6 @@ static int _add_job_to_res(struct job_record *job_ptr, int action);
 static bitstr_t *_array_to_core_bitmap(bitstr_t **core_res);
 static bitstr_t **_core_bitmap_to_array(bitstr_t *core_bitmap);
 static struct multi_core_data * _create_default_mc(void);
-static void _create_part_data(void);
-static inline void _dump_nodes(void);
 static uint16_t _get_job_node_req(struct job_record *job_ptr);
 static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 				   uint32_t node_cnt, uint32_t *core_cnt,
@@ -149,7 +147,6 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 				  uint32_t node_cnt, uint32_t *core_cnt,
 				  bitstr_t ***exc_cores);
-static int  _sort_part_prio(void *x, void *y);
 static void _spec_core_filter(bitstr_t **avail_cores);
 
 /* Translate system-wide core bitmap to per-node core bitmap array */
@@ -267,56 +264,6 @@ static struct multi_core_data * _create_default_mc(void)
 	/* Other fields initialized to zero by xmalloc */
 
 	return mc_ptr;
-}
-
-/* (re)create the global select_part_record array */
-static void _create_part_data(void)
-{
-	List part_rec_list = NULL;
-	ListIterator part_iterator;
-	struct part_record *p_ptr;
-	struct part_res_record *this_ptr, *last_ptr = NULL;
-	int num_parts;
-
-	common_destroy_part_data(select_part_record);
-	select_part_record = NULL;
-
-	num_parts = list_count(part_list);
-	if (!num_parts)
-		return;
-	info("%s: preparing for %d partitions", plugin_type, num_parts);
-
-	part_rec_list = list_create(NULL);
-	part_iterator = list_iterator_create(part_list);
-	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
-		this_ptr = xmalloc(sizeof(struct part_res_record));
-		this_ptr->part_ptr = p_ptr;
-		this_ptr->num_rows = p_ptr->max_share;
-		if (this_ptr->num_rows & SHARED_FORCE)
-			this_ptr->num_rows &= (~SHARED_FORCE);
-		if (preempt_by_qos)	/* Add row for QOS preemption */
-			this_ptr->num_rows++;
-		/* SHARED=EXCLUSIVE sets max_share = 0 */
-		if (this_ptr->num_rows < 1)
-			this_ptr->num_rows = 1;
-		/* we'll leave the 'row' array blank for now */
-		this_ptr->row = NULL;
-		list_append(part_rec_list, this_ptr);
-	}
-	list_iterator_destroy(part_iterator);
-
-	/* Sort the select_part_records by priority */
-	list_sort(part_rec_list, _sort_part_prio);
-	part_iterator = list_iterator_create(part_rec_list);
-	while ((this_ptr = (struct part_res_record *)list_next(part_iterator))){
-		if (last_ptr)
-			last_ptr->next = this_ptr;
-		else
-			select_part_record = this_ptr;
-		last_ptr = this_ptr;
-	}
-	list_iterator_destroy(part_iterator);
-	list_destroy(part_rec_list);
 }
 
 #if _DEBUG
@@ -710,18 +657,6 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 	return picked_node_bitmap;
 }
 
-static int _sort_part_prio(void *x, void *y)
-{
-	struct part_res_record *part1 = *(struct part_res_record **) x;
-	struct part_res_record *part2 = *(struct part_res_record **) y;
-
-	if (part1->part_ptr->priority_tier > part2->part_ptr->priority_tier)
-		return -1;
-	if (part1->part_ptr->priority_tier < part2->part_ptr->priority_tier)
-		return 1;
-	return 0;
-}
-
 /* Clear from avail_cores all specialized cores */
 static void _spec_core_filter(bitstr_t **avail_cores)
 {
@@ -793,129 +728,7 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
  */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	char *preempt_type, *sched_params, *tmp_ptr;
-	uint32_t cume_cores = 0;
-	int i;
-
-	info("%s: %s", plugin_type, __func__);
-	if ((cr_type & (CR_CPU | CR_CORE | CR_SOCKET)) == 0) {
-		fatal("Invalid SelectTypeParameters: %s (%u), "
-		      "You need at least CR_(CPU|CORE|SOCKET)*",
-		      select_type_param_string(cr_type), cr_type);
-	}
-	if (node_ptr == NULL) {
-		error("select_p_node_init: node_ptr == NULL");
-		return SLURM_ERROR;
-	}
-	if (node_cnt < 0) {
-		error("select_p_node_init: node_cnt < 0");
-		return SLURM_ERROR;
-	}
-
-	sched_params = slurm_get_sched_params();
-	if (xstrcasestr(sched_params, "preempt_strict_order"))
-		preempt_strict_order = true;
-	else
-		preempt_strict_order = false;
-	if ((tmp_ptr = xstrcasestr(sched_params, "preempt_reorder_count="))) {
-		preempt_reorder_cnt = atoi(tmp_ptr + 22);
-		if (preempt_reorder_cnt < 0) {
-			error("Invalid SchedulerParameters preempt_reorder_count: %d",
-			      preempt_reorder_cnt);
-			preempt_reorder_cnt = 1;	/* Use default value */
-		}
-	}
-        if ((tmp_ptr = xstrcasestr(sched_params, "bf_window_linear="))) {
-		bf_window_scale = atoi(tmp_ptr + 17);
-		if (bf_window_scale <= 0) {
-			error("Invalid SchedulerParameters bf_window_linear: %d",
-			      bf_window_scale);
-			bf_window_scale = 0;		/* Use default value */
-		}
-	} else
-		bf_window_scale = 0;
-
-	if (xstrcasestr(sched_params, "pack_serial_at_end"))
-		pack_serial_at_end = true;
-	else
-		pack_serial_at_end = false;
-	if (xstrcasestr(sched_params, "spec_cores_first"))
-		spec_cores_first = true;
-	else
-		spec_cores_first = false;
-	if (xstrcasestr(sched_params, "bf_busy_nodes"))
-		backfill_busy_nodes = true;
-	else
-		backfill_busy_nodes = false;
-	xfree(sched_params);
-
-	preempt_type = slurm_get_preempt_type();
-	preempt_by_part = false;
-	preempt_by_qos = false;
-	if (preempt_type) {
-		if (xstrcasestr(preempt_type, "partition"))
-			preempt_by_part = true;
-		if (xstrcasestr(preempt_type, "qos"))
-			preempt_by_qos = true;
-		xfree(preempt_type);
-	}
-
-	/* initial global core data structures */
-	select_state_initializing = true;
-	select_fast_schedule = slurm_get_fast_schedule();
-	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
-
-	common_destroy_node_data(select_node_usage, select_node_record);
-	select_node_cnt = node_cnt;
-	select_node_record = xcalloc(node_cnt,
-				     sizeof(struct node_res_record));
-	select_node_usage  = xcalloc(node_cnt,
-				     sizeof(struct node_use_record));
-
-	for (i = 0; i < select_node_cnt; i++) {
-		select_node_record[i].node_ptr = &node_ptr[i];
-		select_node_record[i].mem_spec_limit =
-				node_ptr[i].mem_spec_limit;
-		if (select_fast_schedule) {
-			struct config_record *config_ptr;
-			config_ptr = node_ptr[i].config_ptr;
-			select_node_record[i].cpus    = config_ptr->cpus;
-			select_node_record[i].boards  = config_ptr->boards;
-			select_node_record[i].sockets = config_ptr->sockets;
-			select_node_record[i].cores   = config_ptr->cores;
-			select_node_record[i].threads = config_ptr->threads;
-			select_node_record[i].vpus    = config_ptr->threads;
-			select_node_record[i].real_memory =
-					config_ptr->real_memory;
-		} else {
-			select_node_record[i].cpus    = node_ptr[i].cpus;
-			select_node_record[i].boards  = node_ptr[i].boards;
-			select_node_record[i].sockets = node_ptr[i].sockets;
-			select_node_record[i].cores   = node_ptr[i].cores;
-			select_node_record[i].threads = node_ptr[i].threads;
-			select_node_record[i].vpus    = node_ptr[i].threads;
-			select_node_record[i].real_memory =
-					node_ptr[i].real_memory;
-		}
-		select_node_record[i].tot_sockets =
-				select_node_record[i].boards *
-				select_node_record[i].sockets;
-		select_node_record[i].tot_cores =
-				select_node_record[i].tot_sockets *
-				select_node_record[i].cores;
-		cume_cores += select_node_record[i].tot_cores;
-		select_node_record[i].cume_cores = cume_cores;
-		if (select_node_record[i].tot_cores >=
-		    select_node_record[i].cpus)
-			select_node_record[i].vpus = 1;
-		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
-		gres_plugin_node_state_dealloc_all(
-				select_node_record[i].node_ptr->gres_list);
-	}
-	_create_part_data();
-	_dump_nodes();
-
-	return SLURM_SUCCESS;
+	return common_node_init(node_ptr, node_cnt);
 }
 
 /* Unused for this plugin */
