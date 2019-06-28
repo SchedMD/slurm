@@ -97,14 +97,55 @@ struct node_use_record {
 	uint16_t node_state;	      /* see node_cr_state comments */
 };
 
+typedef struct avail_res {	/* Per-node resource availability */
+	uint16_t avail_cpus;	/* Count of available CPUs */
+	uint16_t avail_gpus;	/* Count of available GPUs */
+	uint16_t avail_res_cnt;	/* Count of available CPUs + GPUs */
+	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
+	uint16_t max_cpus;	/* Maximum available CPUs */
+	uint16_t min_cpus;	/* Minimum allocated CPUs */
+	uint16_t sock_cnt;	/* Number of sockets on this node */
+	List sock_gres_list;	/* Per-socket GRES availability, sock_gres_t */
+	uint16_t spec_threads;	/* Specialized threads to be reserved */
+	uint16_t vpus;		/* Virtual processors (CPUs) per core */
+} avail_res_t;
+
+
 typedef struct {
-	void (*add_job_to_res) (job_resources_t *job_resrcs_ptr,
-				struct part_row_data *r_ptr,
-				const uint16_t *bits_per_node);
+	void (*add_job_to_res)(job_resources_t *job_resrcs_ptr,
+			       struct part_row_data *r_ptr,
+			       const uint16_t *bits_per_node);
 	/* can_job_fit_row - function to test for conflicting core bitmap
 	 * elements */
-	int (*can_job_fit_in_row) (struct job_resources *job,
-				   struct part_row_data *r_ptr);
+	int (*can_job_fit_in_row)(struct job_resources *job,
+				  struct part_row_data *r_ptr);
+	avail_res_t *(*can_job_run_on_node)(struct job_record *job_ptr,
+					    bitstr_t **core_map,
+					    const uint32_t node_i,
+					    uint32_t s_p_n,
+					    struct node_use_record *node_usage,
+					    uint16_t cr_type,
+					    bool test_only,
+					    bitstr_t **part_core_map);
+	int (*choose_nodes)(struct job_record *job_ptr, bitstr_t *node_map,
+			    bitstr_t **avail_core, uint32_t min_nodes,
+			    uint32_t max_nodes, uint32_t req_nodes,
+			    avail_res_t **avail_res_array, uint16_t cr_type,
+			    bool prefer_alloc_nodes,
+			    gres_mc_data_t *tres_mc_ptr);
+	int (*verify_node_state)(struct part_res_record *cr_part_ptr,
+				 struct job_record *job_ptr,
+				 bitstr_t *node_bitmap,
+				 uint16_t cr_type,
+				 struct node_use_record *node_usage,
+				 enum node_cr_state job_node_req,
+				 bitstr_t **exc_cores, bool qos_preemptor);
+	bitstr_t **(*mark_avail_cores)(bitstr_t *node_map, uint16_t core_spec);
+	int (*cr_dist)(struct job_record *job_ptr, const uint16_t cr_type,
+		       bool preempt_mode, bitstr_t **core_array,
+		       uint32_t *gres_task_limit);
+	void (*build_row_bitmaps)(struct part_res_record *p_ptr,
+				  struct job_record *job_ptr);
 } cons_common_callbacks_t;
 
 /* Global common variables */
@@ -144,6 +185,9 @@ extern void common_destroy_part_data(struct part_res_record *this_ptr);
 extern void common_destroy_row_data(
 	struct part_row_data *row, uint16_t num_rows);
 
+extern void common_free_avail_res(avail_res_t *avail_res);
+extern void common_free_avail_res_array(avail_res_t **avail_res_array);
+
 /* Determine how many cpus per core we can use */
 extern int common_cpus_per_core(struct job_details *details, int node_inx);
 
@@ -163,9 +207,28 @@ extern void common_add_job_to_row(struct job_resources *job,
  * if action = 2 then only add cores (suspended job is resumed)
  *
  *
- * See also: rm_job_res() in job_test.c
+ * See also: common_rm_job_res()
  */
 extern int common_add_job_to_res(struct job_record *job_ptr, int action);
+
+/*
+ * Deallocate resources previously allocated to the given job
+ * - subtract 'struct job_resources' resources from 'struct part_res_record'
+ * - subtract job's memory requirements from 'struct node_res_record'
+ *
+ * if action = 0 then subtract cores, memory + GRES (running job was terminated)
+ * if action = 1 then subtract memory + GRES (suspended job was terminated)
+ * if action = 2 then only subtract cores (job is suspended)
+ * IN: job_fini - job fully terminating on this node (not just a test)
+ *
+ * RET SLURM_SUCCESS or error code
+ *
+ * See also: common_add_job_to_res()
+ */
+extern int common_rm_job_res(struct part_res_record *part_record_ptr,
+			     struct node_use_record *node_usage,
+			     struct job_record *job_ptr, int action,
+			     bool job_fini);
 
 /* Log contents of partition structure */
 extern void common_dump_parts(struct part_res_record *p_ptr);
@@ -201,5 +264,77 @@ extern int common_reconfig(void);
  *                                     global array
  */
 extern int common_node_init(struct node_record *node_ptr, int node_cnt);
+
+/* Determine if a job can ever run */
+extern int common_test_only(struct job_record *job_ptr, bitstr_t *node_bitmap,
+			    uint32_t min_nodes, uint32_t max_nodes,
+			    uint32_t req_nodes, uint16_t job_node_req);
+
+/*
+ * Determine where and when the job at job_ptr can begin execution by updating
+ * a scratch cr_record structure to reflect each job terminating at the
+ * end of its time limit and use this to show where and when the job at job_ptr
+ * will begin execution. Used by Slurm's sched/backfill plugin.
+ */
+extern int common_will_run_test(struct job_record *job_ptr,
+				bitstr_t *node_bitmap,
+				uint32_t min_nodes, uint32_t max_nodes,
+				uint32_t req_nodes, uint16_t job_node_req,
+				List preemptee_candidates,
+				List *preemptee_job_list,
+				bitstr_t **exc_core_bitmap);
+
+/* Allocate resources for a job now, if possible */
+extern int common_run_now(struct job_record *job_ptr, bitstr_t *node_bitmap,
+			  uint32_t min_nodes, uint32_t max_nodes,
+			  uint32_t req_nodes, uint16_t job_node_req,
+			  List preemptee_candidates, List *preemptee_job_list,
+			  bitstr_t **exc_cores);
+
+/*
+ * common_allocate_cores - Given the job requirements, determine which cores
+ *                   from the given node can be allocated (if any) to this
+ *                   job. Returns the number of cpus that can be used by
+ *                   this node AND a bitmap of the selected cores.
+ *
+ * IN job_ptr       - pointer to job requirements
+ * IN/OUT core_map  - core_bitmap of available cores on this node
+ * IN part_core_map - bitmap of cores already allocated on this partition/node
+ * IN node_i        - index of node to be evaluated
+ * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
+ * IN cpu_type      - if true, allocate CPUs rather than cores
+ * IN req_sock_map - OPTIONAL bitmap of required sockets
+ * RET resource availability structure, call _free_avail_res() to free
+ */
+extern avail_res_t *common_allocate_cores(struct job_record *job_ptr,
+					  bitstr_t *core_map,
+					  bitstr_t *part_core_map,
+					  const uint32_t node_i,
+					  int *cpu_alloc_size,
+					  bool cpu_type,
+					  bitstr_t *req_sock_map);
+
+/*
+ * common_allocate_sockets - Given the job requirements, determine which sockets
+ *                     from the given node can be allocated (if any) to this
+ *                     job. Returns the number of cpus that can be used by
+ *                     this node AND a core-level bitmap of the selected
+ *                     sockets.
+ *
+ * IN job_ptr       - pointer to job requirements
+ * IN/OUT core_map  - core_bitmap of available cores on this node
+ * IN part_core_map - bitmap of cores already allocated on this partition/node
+ * IN node_i        - index of node to be evaluated
+ * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
+ * IN req_sock_map - OPTIONAL bitmap of required sockets
+ * RET resource availability structure, call _free_avail_res() to free
+ */
+extern avail_res_t *common_allocate_sockets(struct job_record *job_ptr,
+					    bitstr_t *core_map,
+					    bitstr_t *part_core_map,
+					    const uint32_t node_i,
+					    int *cpu_alloc_size,
+					    bitstr_t *req_sock_map);
+
 
 #endif /* _CONS_COMMON_H */

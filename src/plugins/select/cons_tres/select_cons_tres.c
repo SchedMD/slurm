@@ -137,7 +137,6 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Local functions */
-static int _add_job_to_res(struct job_record *job_ptr, int action);
 static bitstr_t *_array_to_core_bitmap(bitstr_t **core_res);
 static bitstr_t **_core_bitmap_to_array(bitstr_t *core_bitmap);
 static struct multi_core_data * _create_default_mc(void);
@@ -678,6 +677,12 @@ extern int init(void)
 
 	cons_common_callbacks.add_job_to_res = add_job_to_res;
 	cons_common_callbacks.can_job_fit_in_row = can_job_fit_in_row;
+	cons_common_callbacks.can_job_run_on_node = can_job_run_on_node;
+	cons_common_callbacks.choose_nodes = choose_nodes;
+	cons_common_callbacks.verify_node_state = verify_node_state;
+	cons_common_callbacks.mark_avail_cores = mark_avail_cores;
+	cons_common_callbacks.cr_dist = cr_dist;
+	cons_common_callbacks.build_row_bitmaps = build_row_bitmaps;
 
 	return SLURM_SUCCESS;
 }
@@ -850,20 +855,24 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	}
 
 	if (mode == SELECT_MODE_WILL_RUN) {
-		rc = will_run_test(job_ptr, node_bitmap, min_nodes, max_nodes,
-				   req_nodes, job_node_req,
-				   preemptee_candidates, preemptee_job_list,
-				   exc_cores);
+		rc = common_will_run_test(job_ptr, node_bitmap, min_nodes,
+					  max_nodes,
+					  req_nodes, job_node_req,
+					  preemptee_candidates,
+					  preemptee_job_list,
+					  exc_cores);
 	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		rc = test_only(job_ptr, node_bitmap, min_nodes, max_nodes,
-			       req_nodes, job_node_req);
+		rc = common_test_only(job_ptr, node_bitmap, min_nodes,
+				      max_nodes, req_nodes, job_node_req);
 	} else if (mode == SELECT_MODE_RUN_NOW) {
-		rc = run_now(job_ptr, node_bitmap, min_nodes, max_nodes,
-			     req_nodes, job_node_req, preemptee_candidates,
-			     preemptee_job_list, exc_cores);
+		rc = common_run_now(job_ptr, node_bitmap, min_nodes, max_nodes,
+				    req_nodes, job_node_req,
+				    preemptee_candidates,
+				    preemptee_job_list, exc_cores);
 	} else {
 		/* Should never get here */
-		error("%s: %s: Mode %d is invalid", plugin_type, __func__, mode);
+		error("%s: %s: Mode %d is invalid",
+		      plugin_type, __func__, mode);
 		free_core_array(&exc_cores);
 		return EINVAL;
 	}
@@ -1133,9 +1142,9 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 		return SLURM_ERROR;
 	}
 
-	(void) rm_job_res(select_part_record, select_node_usage, from_job_ptr,
+	(void) common_rm_job_res(select_part_record, select_node_usage, from_job_ptr,
 			  0, true);
-	(void) rm_job_res(select_part_record, select_node_usage, to_job_ptr, 0,
+	(void) common_rm_job_res(select_part_record, select_node_usage, to_job_ptr, 0,
 			  true);
 
 	if (to_job_resrcs_ptr->core_bitmap_used) {
@@ -1347,7 +1356,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
-	rm_job_res(select_part_record, select_node_usage, job_ptr, 0, true);
+	common_rm_job_res(select_part_record, select_node_usage, job_ptr, 0, true);
 
 	return SLURM_SUCCESS;
 }
@@ -1372,7 +1381,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 	if (!indf_susp)
 		return SLURM_SUCCESS;
 
-	return rm_job_res(select_part_record, select_node_usage, job_ptr, 2,
+	return common_rm_job_res(select_part_record, select_node_usage, job_ptr, 2,
 			  false);
 }
 

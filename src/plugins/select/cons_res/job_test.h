@@ -56,16 +56,70 @@
 #include "src/common/slurm_resource_info.h"
 #include "src/slurmctld/slurmctld.h"
 
+#include "../cons_common/cons_common.h"
 
-/* _job_test - does most of the real work for select_p_job_test(), which
- *	pretty much just handles load-leveling and max_share logic */
-int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
-		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
-		int mode, uint16_t cr_type,
-		enum node_cr_state job_node_req, uint32_t cr_node_cnt,
-		struct part_res_record *cr_part_ptr,
-		struct node_use_record *node_usage, bitstr_t *exc_core_bitmap,
-		bool prefer_alloc_nodes, bool qos_preemptor, bool preempt_mode);
+/*
+ * _can_job_run_on_node - Given the job requirements, determine which
+ *                        resources from the given node (if any) can be
+ *                        allocated to this job. Returns the number of
+ *                        cpus that can be used by this node and a bitmap
+ *                        of available resources for allocation.
+ *       NOTE: This process does NOT support overcommitting resources
+ *
+ * IN job_ptr       - pointer to job requirements
+ * IN/OUT core_map  - core_bitmap of available cores
+ * IN node_i        - index of node to be evaluated
+ * IN s_p_n         - Expected sockets_per_node (NO_VAL if not known)
+ * IN cr_type       - Consumable Resource setting
+ * IN test_only     - ignore allocated memory check
+ *
+ * NOTE: The returned cpu_count may be less than the number of set bits in
+ *       core_map for the given node. The cr_dist functions will determine
+ *       which bits to deselect from the core_map to match the cpu_count.
+ */
+extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
+					bitstr_t **core_map,
+					const uint32_t node_i,
+					uint32_t s_p_n,
+					struct node_use_record *node_usage,
+					uint16_t cr_type,
+					bool test_only,
+					bitstr_t **part_core_map);
+
+/*
+ * Determine which of these nodes are usable by this job
+ *
+ * Remove nodes from node_bitmap that don't have enough memory or gres to
+ * support the job.
+ *
+ * Return SLURM_ERROR if a required node can't be used.
+ *
+ * if node_state = NODE_CR_RESERVED, clear node_bitmap (if node is required
+ *                                   then should we return NODE_BUSY!?!)
+ *
+ * if node_state = NODE_CR_ONE_ROW, then this node can only be used by
+ *                                  another NODE_CR_ONE_ROW job
+ *
+ * if node_state = NODE_CR_AVAILABLE AND:
+ *  - job_node_req = NODE_CR_RESERVED, then we need idle nodes
+ *  - job_node_req = NODE_CR_ONE_ROW, then we need idle or non-sharing nodes
+ */
+extern int verify_node_state(struct part_res_record *cr_part_ptr,
+			     struct job_record *job_ptr,
+			     bitstr_t *node_bitmap,
+			     uint16_t cr_type,
+			     struct node_use_record *node_usage,
+			     enum node_cr_state job_node_req,
+			     bitstr_t **exc_cores, bool qos_preemptor);
+
+/* this is an intermediary step between _select_nodes and _eval_nodes
+ * to tackle the knapsack problem. This code incrementally removes nodes
+ * with low cpu counts for the job and re-evaluates each result */
+extern int choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
+			bitstr_t **avail_core, uint32_t min_nodes,
+			uint32_t max_nodes, uint32_t req_nodes,
+			avail_res_t **avail_res_array, uint16_t cr_type,
+			bool prefer_alloc_nodes, gres_mc_data_t *tres_mc_ptr);
 
 /*
  * Given an available node_bitmap, return a corresponding available core_bitmap,
@@ -76,6 +130,6 @@ int cr_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
  * RET bitmap of cores available for use by this job or reservation
  * NOTE: Call bit_free() on return value to avoid memory leak.
  */
-extern bitstr_t *make_core_bitmap(bitstr_t *node_map, uint16_t core_spec);
+extern bitstr_t **make_core_bitmap(bitstr_t *node_map, uint16_t core_spec);
 
 #endif /* !_CR_JOB_TEST_H */

@@ -50,6 +50,7 @@
  *		the job, only used to identify specialized cores
  */
 extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
-		   bool preempt_mode, bitstr_t *avail_core_bitmap);
+		   bool preempt_mode, bitstr_t **core_array,
+		   uint32_t *gres_task_limit);
 
 #endif /* !_CONS_RES_DIST_TASKS_H */

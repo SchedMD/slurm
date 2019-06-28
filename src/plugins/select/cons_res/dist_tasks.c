@@ -1018,9 +1018,14 @@ static void _clear_spec_cores(struct job_record *job_ptr,
  *		the job, only used to identify specialized cores
  */
 extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
-		   bool preempt_mode, bitstr_t *avail_core_bitmap)
+		   bool preempt_mode, bitstr_t **core_array,
+		   uint32_t *gres_task_limit)
 {
 	int error_code, cr_cpu = 1;
+	bitstr_t *avail_core_bitmap = NULL;
+
+	if (core_array && *core_array)
+		avail_core_bitmap = *core_array;
 
 	if (job_ptr->details->core_spec != NO_VAL16) {
 		/* The job has been allocated all non-specialized cores,
