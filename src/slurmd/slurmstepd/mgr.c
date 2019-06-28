@@ -2333,21 +2333,9 @@ static char *_make_batch_script(batch_job_launch_msg_t *msg, char *path)
 		goto error;
 	}
 
-	/*
-	 * lseek() plus the following write() ensure the file is created
-	 * as the appropriate length.
-	 */
-	if (lseek(fd, length - 1, SEEK_SET) == -1) {
-		error("%s: lseek to %d failed on `%s`: %m",
+	if (ftruncate(fd, length) == -1) {
+		error("%s: ftruncate to %d failed on `%s`: %m",
 		      __func__, length, script);
-		close(fd);
-		goto error;
-	}
-
-	if (write(fd, "", 1) == -1) {
-		error("%s: write failed", __func__);
-		if (errno == ENOSPC)
-			stepd_drain_node("SlurmdSpoolDir is full");
 		close(fd);
 		goto error;
 	}
