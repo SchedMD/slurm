@@ -48,6 +48,7 @@
 #include "src/common/xstring.h"
 #include "select_cons_tres.h"
 #include "job_test.h"
+#include "dist_tasks.h"
 
 #define _DEBUG 0	/* Enables module specific debugging */
 #define NODEINFO_MAGIC 0x8a5d

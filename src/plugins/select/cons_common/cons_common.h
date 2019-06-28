@@ -37,6 +37,7 @@
 #ifndef _CONS_COMMON_H
 #define _CONS_COMMON_H
 
+#include "core_array.h"
 #include "src/common/gres.h"
 #include "src/slurmctld/slurmctld.h"
 

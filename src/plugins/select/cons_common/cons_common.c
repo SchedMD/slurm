@@ -52,6 +52,7 @@
 bool     backfill_busy_nodes  = false;
 int      bf_window_scale      = 0;
 cons_common_callbacks_t cons_common_callbacks = {0};
+int      core_array_size      = 1;
 uint16_t cr_type              = CR_CPU; /* cr_type is overwritten in init() */
 bool     gang_mode            = false;
 bool     have_dragonfly       = false;
@@ -783,9 +784,13 @@ extern int common_node_init(struct node_record *node_ptr, int node_cnt)
 
 	common_destroy_node_data(select_node_usage, select_node_record);
 	select_node_cnt = node_cnt;
-	select_node_record = xcalloc(node_cnt,
+
+	if (is_cons_tres)
+		core_array_size = select_node_cnt;
+
+	select_node_record = xcalloc(select_node_cnt,
 				     sizeof(struct node_res_record));
-	select_node_usage  = xcalloc(node_cnt,
+	select_node_usage  = xcalloc(select_node_cnt,
 				     sizeof(struct node_use_record));
 
 	for (i = 0; i < select_node_cnt; i++) {

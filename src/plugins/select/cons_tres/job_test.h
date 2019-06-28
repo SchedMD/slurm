@@ -39,10 +39,7 @@
 #include "select_cons_tres.h"
 
 /*
- * Build an empty array of bitmaps, one per node
- * Use free_core_array() to release returned memory
  */
-extern bitstr_t **build_core_array(void);
 
 /*
  * build_row_bitmaps: A job has been removed from the given partition,
@@ -60,62 +57,12 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 extern int can_job_fit_in_row(struct job_resources *job,
 			      struct part_row_data *r_ptr);
 
-/* Clear all elements of an array of bitmaps, one per node */
-extern void clear_core_array(bitstr_t **core_array);
-
-/*
- * Copy an array of bitmaps, one per node
- * Use free_core_array() to release returned memory
- */
-extern bitstr_t **copy_core_array(bitstr_t **core_array);
 
 /*
  * Return the number of usable logical processors by a given job on
  * some specified node. Returns 0xffff if no limit.
  */
 extern int vpus_per_core(struct job_details *details, int node_inx);
-
-/*
- * Return count of set bits in array of bitmaps, one per node
- */
-extern int count_core_array_set(bitstr_t **core_array);
-
-/*
- * Set row_bitmap1 to core_array1 & core_array2
- */
-extern void core_array_and(bitstr_t **core_array1, bitstr_t **core_array2);
-
-/*
- * Set row_bitmap1 to core_array1 & !core_array2
- * In other words, any bit set in row_bitmap2 is cleared from row_bitmap1
- */
-extern void core_array_and_not(bitstr_t **core_array1, bitstr_t **core_array2);
-
-/*
- * Set row_bitmap1 to core_array1 | core_array2
- */
-extern void core_array_or(bitstr_t **core_array1, bitstr_t **core_array2);
-
-/* Free an array of bitmaps, one per node */
-extern void free_core_array(bitstr_t ***core_array);
-
-/*
- * Get configured DefCpuPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t get_def_cpu_per_gpu(List job_defaults_list);
-
-/*
- * Get configured DefMemPerGPU information from a list
- * (either global or per partition list)
- * Returns NO_VAL64 if configuration parameter not set
- */
-extern uint64_t get_def_mem_per_gpu(List job_defaults_list);
-
-/* Return TRUE if identified job is preemptable */
-extern bool is_preemptable(struct job_record *job_ptr,
-			   List preemptee_candidates);
 
 /*
  * Return true if job is in the processing of cleaning up.

@@ -9,4 +9,5 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 noinst_LTLIBRARIES = libcons_common.la
 libcons_common_la_SOURCES =    \
-	cons_common.c cons_common.h
+	cons_common.c cons_common.h \
+	core_array.c core_array.h
