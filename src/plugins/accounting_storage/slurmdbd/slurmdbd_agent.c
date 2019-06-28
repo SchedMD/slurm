@@ -432,7 +432,7 @@ static void _save_dbd_state(void)
 	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0) {
 		error("slurmdbd: Creating state save file %s", dbd_fname);
-	} else if (agent_list && list_count(agent_list)) {
+	} else if (list_count(agent_list)) {
 		char curr_ver_str[10];
 		snprintf(curr_ver_str, sizeof(curr_ver_str),
 			 "VER%d", SLURM_PROTOCOL_VERSION);
@@ -601,8 +601,7 @@ static void *_agent(void *x)
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
 		info("%s: slurmdbd agent_count=%d with msg_type=%s",
-		     __func__,
-		     agent_list ? list_count(agent_list) : 0,
+		     __func__, list_count(agent_list),
 		     slurmdbd_msg_type_2_str(list_req.msg_type, 1));
 
 	while (*slurmdbd_conn->shutdown == 0) {
@@ -1082,8 +1081,7 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		info("%s: msg_type:%s protocol_version:%hu agent_count:%d",
 		     __func__,
 		     slurmdbd_msg_type_2_str(req->msg_type, 1),
-		     rpc_version,
-		     agent_list ? list_count(agent_list) : 0);
+		     rpc_version, list_count(agent_list));
 
 	/*
 	 * Whatever our max job count is multiplied by 2 plus node count
@@ -1154,7 +1152,5 @@ extern bool slurmdbd_conn_active(void)
 
 extern int slurmdbd_agent_queue_count(void)
 {
-	if (!agent_list)
-		return 0;
 	return list_count(agent_list);
 }
