@@ -738,29 +738,7 @@ static void _spec_core_filter(bitstr_t **avail_cores)
  */
 extern int init(void)
 {
-	char *topo_param;
-
-	cr_type = slurmctld_conf.select_type_param;
-	if (cr_type)
-		verbose("%s loaded with argument %u", plugin_type, cr_type);
-
-	select_debug_flags = slurm_get_debug_flags();
-
-	if (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)
-		gang_mode = 1;
-	else
-		gang_mode = 0;
-
-	topo_param = slurm_get_topology_param();
-	if (topo_param) {
-		if (xstrcasestr(topo_param, "dragonfly"))
-			have_dragonfly = true;
-		if (xstrcasestr(topo_param, "TopoOptional"))
-			topo_optional = true;
-		xfree(topo_param);
-	}
-
-	priority_flags = slurm_get_priority_flags();
+	common_init();
 
 	cons_common_callbacks.add_job_to_res = add_job_to_res;
 	cons_common_callbacks.can_job_fit_in_row = can_job_fit_in_row;

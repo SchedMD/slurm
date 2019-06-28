@@ -483,3 +483,30 @@ extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
 	}
 	return new_row;
 }
+
+extern void common_init(void)
+{
+	char *topo_param;
+
+	cr_type = slurmctld_conf.select_type_param;
+	if (cr_type)
+		verbose("%s loaded with argument %u", plugin_type, cr_type);
+
+	select_debug_flags = slurm_get_debug_flags();
+
+	topo_param = slurm_get_topology_param();
+	if (topo_param) {
+		if (xstrcasestr(topo_param, "dragonfly"))
+			have_dragonfly = true;
+		if (xstrcasestr(topo_param, "TopoOptional"))
+			topo_optional = true;
+		xfree(topo_param);
+	}
+
+	priority_flags = slurm_get_priority_flags();
+
+	if (slurm_get_preempt_mode() & PREEMPT_MODE_GANG)
+		gang_mode = true;
+	else
+		gang_mode = false;
+}
