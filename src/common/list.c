@@ -248,14 +248,17 @@ list_is_empty (List l)
 	return (n == 0);
 }
 
-/* list_count()
+/*
+ * Return the number of items in list [l].
+ * If [l] is NULL, return 0.
  */
-int
-list_count (List l)
+int list_count(List l)
 {
 	int n;
 
-	assert(l != NULL);
+	if (!l)
+		return 0;
+
 	slurm_mutex_lock(&l->mutex);
 	assert(l->magic == LIST_MAGIC);
 	n = l->count;

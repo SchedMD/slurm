@@ -121,11 +121,11 @@ int list_is_empty (List l);
  *  Returns non-zero if list [l] is empty; o/w returns zero.
  */
 
-int list_count (List l);
 /*
- *  Returns the number of items in list [l].
+ * Return the number of items in list [l].
+ * If [l] is NULL, return 0.
  */
-
+int list_count(List l);
 
 /***************************
  *  List Access Functions  *
