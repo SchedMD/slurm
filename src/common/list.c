@@ -157,8 +157,6 @@ static ListIterator list_iterator_alloc (void);
 static void list_iterator_free (ListIterator i);
 static void * list_alloc_aux (int size, void *pfreelist);
 static void list_free_aux (void *x, void *pfreelist);
-static void *_list_pop_locked(List l);
-static void *_list_append_locked(List l, void *x);
 
 #ifndef NDEBUG
 static int _list_mutex_is_locked (pthread_mutex_t *mutex);
@@ -276,7 +274,7 @@ list_append (List l, void *x)
 	xassert(x != NULL);
 	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
-	v = _list_append_locked(l, x);
+	v = _list_node_create(l, l->tail, x);
 	slurm_mutex_unlock(&l->mutex);
 
 	return v;
@@ -544,7 +542,7 @@ list_sort(List l, ListCmpF f)
 	v = xmalloc(lsize * sizeof(char *));
 
 	n = 0;
-	while ((e = _list_pop_locked(l))) {
+	while ((e = _list_node_destroy(l, &l->head))) {
 		v[n] = e;
 		++n;
 	}
@@ -552,7 +550,7 @@ list_sort(List l, ListCmpF f)
 	qsort(v, n, sizeof(char *), (__compar_fn_t)f);
 
 	for (n = 0; n < lsize; n++) {
-		_list_append_locked(l, v[n]);
+		v = _list_node_create(l, l->tail, v[n]);
 	}
 
 	xfree(v);
@@ -580,7 +578,7 @@ list_pop (List l)
 	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
 
-	v = _list_pop_locked(l);
+	v = _list_node_destroy(l, &l->head);
 	slurm_mutex_unlock(&l->mutex);
 
 	return v;
@@ -1026,33 +1024,3 @@ _list_mutex_is_locked (pthread_mutex_t *mutex)
 	return(rc == EBUSY ? 1 : 0);
 }
 #endif /* !NDEBUG */
-
-/* _list_pop_locked
- *
- * Pop an item from the list assuming the
- * the list is already locked.
- */
-static void *
-_list_pop_locked(List l)
-{
-	void *v;
-
-	v = _list_node_destroy(l, &l->head);
-
-	return v;
-}
-
-/* _list_append_locked()
- *
- * Append an item to the list. The function assumes
- * the list is already locked.
- */
-static void *
-_list_append_locked(List l, void *x)
-{
-	void *v;
-
-	v = _list_node_create(l, l->tail, x);
-
-	return v;
-}
