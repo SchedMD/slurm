@@ -386,6 +386,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix dump/load of rejected heterogeneous jobs.
  -- For heterogeneous jobs, do not count the each component against the QOS or
     association job limit multiple times.
+ -- slurmdbd - avoid reservation flag column corruption with the use of newer
+    flags, instead preserve the older flag fields that we can still fit in the
+    smallint field, and discard the rest.
 
 * Changes in Slurm 18.08.7
 ==========================
