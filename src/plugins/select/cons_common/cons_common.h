@@ -185,6 +185,7 @@ extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
 
 extern void common_init(void);
 extern void common_fini(void);
+extern int common_reconfig(void);
 
 /* This is Part 1 of a 4-part procedure which can be found in
  * src/slurmctld/read_config.c. The whole story goes like this:

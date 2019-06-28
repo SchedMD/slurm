@@ -77,6 +77,24 @@ static int        preempt_reorder_cnt	= 1;
 static bool       preempt_strict_order = false;
 static bool       select_state_initializing = true;
 
+/*
+ * Return true if job is in the processing of cleaning up.
+ * This is used for Cray systems to indicate the Node Health Check (NHC)
+ * is still running. Until NHC completes, the job's resource use persists
+ * the select/cons_res plugin data structures.
+ */
+static bool _job_cleaning(struct job_record *job_ptr)
+{
+	uint16_t cleaning = 0;
+
+	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING,
+				    &cleaning);
+	if (cleaning)
+		return true;
+	return false;
+}
+
 static char *_node_state_str(uint16_t node_state)
 {
 	if (node_state >= NODE_CR_RESERVED)
@@ -171,6 +189,57 @@ static void _create_part_data(void)
 	list_destroy(part_rec_list);
 }
 
+/*
+ * Get configured DefCpuPerGPU information from a list
+ * (either global or per partition list)
+ * Returns NO_VAL64 if configuration parameter not set
+ */
+static uint64_t _get_def_cpu_per_gpu(List job_defaults_list)
+{
+	uint64_t cpu_per_gpu = NO_VAL64;
+	ListIterator iter;
+	job_defaults_t *job_defaults;
+
+	if (!job_defaults_list)
+		return cpu_per_gpu;
+
+	iter = list_iterator_create(job_defaults_list);
+	while ((job_defaults = (job_defaults_t *) list_next(iter))) {
+		if (job_defaults->type == JOB_DEF_CPU_PER_GPU) {
+			cpu_per_gpu = job_defaults->value;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return cpu_per_gpu;
+}
+
+/*
+ * Get configured DefMemPerGPU information from a list
+ * (either global or per partition list)
+ * Returns NO_VAL64 if configuration parameter not set
+ */
+static uint64_t _get_def_mem_per_gpu(List job_defaults_list)
+{
+	uint64_t mem_per_gpu = NO_VAL64;
+	ListIterator iter;
+	job_defaults_t *job_defaults;
+
+	if (!job_defaults_list)
+		return mem_per_gpu;
+
+	iter = list_iterator_create(job_defaults_list);
+	while ((job_defaults = (job_defaults_t *) list_next(iter))) {
+		if (job_defaults->type == JOB_DEF_MEM_PER_GPU) {
+			mem_per_gpu = job_defaults->value;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return mem_per_gpu;
+}
 /* helper script for common_sort_part_rows() */
 static void _swap_rows(struct part_row_data *a, struct part_row_data *b)
 {
@@ -761,6 +830,74 @@ extern int common_node_init(struct node_record *node_ptr, int node_cnt)
 	}
 	_create_part_data();
 	_dump_nodes();
+
+	return SLURM_SUCCESS;
+}
+
+extern int common_reconfig(void)
+{
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	int cleaning_job_cnt = 0, rc = SLURM_SUCCESS, run_time;
+	time_t now = time(NULL);
+
+	info("%s: reconfigure", plugin_type);
+	select_debug_flags = slurm_get_debug_flags();
+
+	if (is_cons_tres) {
+		def_cpu_per_gpu = 0;
+		def_mem_per_gpu = 0;
+		if (slurmctld_conf.job_defaults_list) {
+			def_cpu_per_gpu = _get_def_cpu_per_gpu(
+				slurmctld_conf.job_defaults_list);
+			def_mem_per_gpu = _get_def_mem_per_gpu(
+				slurmctld_conf.job_defaults_list);
+		}
+	}
+
+	rc = common_node_init(node_record_table_ptr, node_record_count);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	/* reload job data */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (IS_JOB_RUNNING(job_ptr)) {
+			/* add the job */
+			common_add_job_to_res(job_ptr, 0);
+		} else if (IS_JOB_SUSPENDED(job_ptr)) {
+			/* add the job in a suspended state */
+			if (job_ptr->priority == 0)
+				(void) common_add_job_to_res(job_ptr, 1);
+			else	/* Gang schedule suspend */
+				(void) common_add_job_to_res(job_ptr, 0);
+		} else if (_job_cleaning(job_ptr)) {
+			cleaning_job_cnt++;
+			run_time = (int) difftime(now, job_ptr->end_time);
+			if (run_time >= 300) {
+				info("%pJ NHC hung for %d secs, releasing resources now, may underflow later",
+				     job_ptr, run_time);
+				/* If/when NHC completes, it will release
+				 * resources that are not marked as allocated
+				 * to this job without line below. */
+				//common_add_job_to_res(job_ptr, 0);
+				uint16_t released = 1;
+				select_g_select_jobinfo_set(
+					               job_ptr->select_jobinfo,
+					               SELECT_JOBDATA_RELEASED,
+					               &released);
+			} else {
+				common_add_job_to_res(job_ptr, 0);
+			}
+		}
+	}
+	list_iterator_destroy(job_iterator);
+	select_state_initializing = false;
+
+	if (cleaning_job_cnt) {
+		info("%d jobs are in cleaning state (running Node Health Check)",
+		     cleaning_job_cnt);
+	}
 
 	return SLURM_SUCCESS;
 }
