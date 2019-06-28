@@ -37,6 +37,7 @@
 #ifndef _CONS_COMMON_H
 #define _CONS_COMMON_H
 
+#include "src/common/gres.h"
 #include "src/slurmctld/slurmctld.h"
 
 /* a partition's per-row core allocation bitmap arrays (1 bitmap per node) */

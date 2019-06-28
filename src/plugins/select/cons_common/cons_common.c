@@ -34,12 +34,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
+#include "src/common/slurm_xlator.h"
+
 #include "cons_common.h"
 
-#include "src/common/xstring.h"
 #include "src/common/gres.h"
+#include "src/common/node_select.h"
+#include "src/common/slurm_selecttype_info.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmctld/powercapping.h"
+#include "src/slurmctld/preempt.h"
 
 /* init common global variables */
 bool     backfill_busy_nodes  = false;
