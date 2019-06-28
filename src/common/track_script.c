@@ -44,6 +44,9 @@
 #include "src/common/track_script.h"
 
 static List track_script_thd_list = NULL;
+static pthread_mutex_t flush_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
+static int flush_cnt = 0;
 
 static void _track_script_rec_destroy(void *arg)
 {
@@ -72,11 +75,12 @@ static void _kill_script(track_script_rec_t *r)
  * this will make the caller thread to finalize, so wait also for it to
  * avoid any zombies.
  */
-static void _track_script_rec_cleanup(track_script_rec_t *r)
+static void *_track_script_rec_cleanup(void *arg)
 {
 	int rc = 1;
 	struct timeval tvnow;
 	struct timespec abs;
+	track_script_rec_t *r = (track_script_rec_t *)arg;
 
 	debug("script for jobid=%u found running, tid=%lu, force ending.",
 	      r->job_id, (unsigned long)r->tid);
@@ -105,6 +109,18 @@ static void _track_script_rec_cleanup(track_script_rec_t *r)
 		pthread_cancel(r->tid);
 
 	pthread_join(r->tid, NULL);
+
+	slurm_mutex_lock(&flush_mutex);
+	flush_cnt++;
+	slurm_cond_signal(&flush_cond);
+	slurm_mutex_unlock(&flush_mutex);
+
+	return NULL;
+}
+
+static void _make_cleanup_thread(track_script_rec_t *r)
+{
+	slurm_thread_create_detached(NULL, _track_script_rec_cleanup, r);
 }
 
 static int _flush_job(void *r, void *x)
@@ -159,10 +175,38 @@ extern void track_script_init(void)
 
 extern void track_script_flush(void)
 {
+	int count;
+	List tmp_list = list_create(_track_script_rec_destroy);
+
+	/*
+	 * Transfer list within mutex and work off of copy to prevent race
+	 * condition of track_script_remove() removing track_script_rec_t while
+	 * in cleanup thread.
+	 */
+	slurm_mutex_lock(&flush_mutex);
+
+	list_transfer(tmp_list, track_script_thd_list);
+
+	count = list_count(tmp_list);
+	if (!count) {
+		slurm_mutex_unlock(&flush_mutex);
+		return;
+	}
+
+	flush_cnt = 0;
 	/* kill all scripts we are tracking */
-	(void) list_for_each(track_script_thd_list,
-			     (ListForF)_track_script_rec_cleanup, NULL);
-	(void) list_flush(track_script_thd_list);
+	(void) list_for_each(tmp_list,
+			     (ListForF)_make_cleanup_thread, NULL);
+
+	while (flush_cnt < count) {
+		slurm_cond_wait(&flush_cond, &flush_mutex);
+		debug("%s: got %d scripts out of %d flushed",
+		      __func__, flush_cnt, count);
+	}
+
+	FREE_NULL_LIST(tmp_list);
+	slurm_mutex_unlock(&flush_mutex);
+
 }
 
 extern void track_script_flush_job(uint32_t job_id)
