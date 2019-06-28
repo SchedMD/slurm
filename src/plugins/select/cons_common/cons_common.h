@@ -186,4 +186,5 @@ extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
 						 uint16_t num_rows);
 
 extern void common_init(void);
+extern void common_fini(void);
 #endif /* _CONS_COMMON_H */

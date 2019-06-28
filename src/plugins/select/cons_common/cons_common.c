@@ -514,3 +514,18 @@ extern void common_init(void)
 	if (plugin_id == SELECT_PLUGIN_CONS_TRES)
 		is_cons_tres = true;
 }
+
+extern void common_fini(void)
+{
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("%s shutting down ...", plugin_type);
+	else
+		verbose("%s shutting down ...", plugin_type);
+
+	common_destroy_node_data(select_node_usage, select_node_record);
+	select_node_record = NULL;
+	select_node_usage = NULL;
+	common_destroy_part_data(select_part_record);
+	select_part_record = NULL;
+	cr_fini_global_core_data();
+}

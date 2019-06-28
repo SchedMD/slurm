@@ -1738,15 +1738,7 @@ extern int init(void)
 
 extern int fini(void)
 {
-	common_destroy_node_data(select_node_usage, select_node_record);
-	select_node_record = NULL;
-	select_node_usage = NULL;
-	common_destroy_part_data(select_part_record);
-	select_part_record = NULL;
-	cr_fini_global_core_data();
-
-	if (cr_type)
-		verbose("%s shutting down ...", plugin_name);
+	common_fini();
 
 	return SLURM_SUCCESS;
 }
