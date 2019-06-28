@@ -37,7 +37,6 @@
 
 #include "config.h"
 
-#include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -950,15 +949,13 @@ list_iterator_free (ListIterator i)
 	list_free_aux(i, &list_free_iterators);
 }
 
-/* list_alloc_aux()
+/*
+ * Allocates an object of [size] bytes from the freelist [*pfreelist].
+ * Memory is added to the freelist in chunks of size LIST_ALLOC.
+ * Returns a ptr to the object.
  */
-static void *
-list_alloc_aux (int size, void *pfreelist)
+static void *list_alloc_aux(int size, void *pfreelist)
 {
-/*  Allocates an object of [size] bytes from the freelist [*pfreelist].
- *  Memory is added to the freelist in chunks of size LIST_ALLOC.
- *  Returns a ptr to the object, or NULL if the memory request fails.
- */
 	void **px;
 	void **pfree = pfreelist;
 	void **plast;
@@ -967,21 +964,18 @@ list_alloc_aux (int size, void *pfreelist)
 	xassert(size >= sizeof(void *));
 	xassert(pfreelist != NULL);
 	xassert(LIST_ALLOC > 0);
-	slurm_mutex_lock(&list_free_lock);
 
+	slurm_mutex_lock(&list_free_lock);
 	if (!*pfree) {
-		if ((*pfree = xmalloc(LIST_ALLOC * size))) {
-			px = *pfree;
-			plast = (void **) ((char *) *pfree + ((LIST_ALLOC - 1) * size));
-			while (px < plast)
-				*px = (char *) px + size, px = *px;
-			*plast = NULL;
-		}
+		*pfree = xcalloc(LIST_ALLOC, size);
+		px = *pfree;
+		plast = (void **) ((char *) *pfree + ((LIST_ALLOC - 1) * size));
+		while (px < plast)
+			*px = (char *) px + size, px = *px;
+		*plast = NULL;
 	}
-	if ((px = *pfree))
-		*pfree = *px;
-	else
-		errno = ENOMEM;
+	px = *pfree;
+	*pfree = *px;
 	slurm_mutex_unlock(&list_free_lock);
 
 	return px;
