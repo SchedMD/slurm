@@ -48,6 +48,7 @@ cons_common_callbacks_t cons_common_callbacks = {0};
 uint16_t cr_type              = CR_CPU; /* cr_type is overwritten in init() */
 bool     gang_mode            = false;
 bool     have_dragonfly       = false;
+bool     is_cons_tres         = false;
 bool     pack_serial_at_end   = false;
 bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
@@ -509,4 +510,7 @@ extern void common_init(void)
 		gang_mode = true;
 	else
 		gang_mode = false;
+
+	if (plugin_id == SELECT_PLUGIN_CONS_TRES)
+		is_cons_tres = true;
 }
