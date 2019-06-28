@@ -147,8 +147,8 @@ typedef struct listNode * ListNode;
  *  Prototypes  *
  ****************/
 
-static void * list_node_create (List l, ListNode *pp, void *x);
-static void * list_node_destroy (List l, ListNode *pp);
+static void *_list_node_create(List l, ListNode *pp, void *x);
+static void *_list_node_destroy(List l, ListNode *pp);
 static List list_alloc (void);
 static void list_free (List l);
 static ListNode list_node_alloc (void);
@@ -356,7 +356,7 @@ list_prepend (List l, void *x)
 	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
 
-	v = list_node_create(l, &l->head, x);
+	v = _list_node_create(l, &l->head, x);
 	slurm_mutex_unlock(&l->mutex);
 
 	return v;
@@ -404,7 +404,7 @@ list_remove_first (List l, ListFindF f, void *key)
 	pp = &l->head;
 	while (*pp) {
 		if (f((*pp)->data, key)) {
-			v = list_node_destroy(l, pp);
+			v = _list_node_destroy(l, pp);
 			break;
 		} else {
 			pp = &(*pp)->next;
@@ -432,7 +432,7 @@ list_delete_all (List l, ListFindF f, void *key)
 	pp = &l->head;
 	while (*pp) {
 		if (f((*pp)->data, key)) {
-			if ((v = list_node_destroy(l, pp))) {
+			if ((v = _list_node_destroy(l, pp))) {
 				if (l->fDel)
 					l->fDel(v);
 				n++;
@@ -487,7 +487,7 @@ list_flush (List l)
 
 	pp = &l->head;
 	while (*pp) {
-		if ((v = list_node_destroy(l, pp))) {
+		if ((v = _list_node_destroy(l, pp))) {
 			if (l->fDel)
 				l->fDel(v);
 			n++;
@@ -510,7 +510,7 @@ list_push (List l, void *x)
 	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
 
-	v = list_node_create(l, &l->head, x);
+	v = _list_node_create(l, &l->head, x);
 	slurm_mutex_unlock(&l->mutex);
 
 	return v;
@@ -615,7 +615,7 @@ list_enqueue (List l, void *x)
 	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
 
-	v = list_node_create(l, l->tail, x);
+	v = _list_node_create(l, l->tail, x);
 	slurm_mutex_unlock(&l->mutex);
 
 	return v;
@@ -632,7 +632,7 @@ list_dequeue (List l)
 	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
 
-	v = list_node_destroy(l, &l->head);
+	v = _list_node_destroy(l, &l->head);
 	slurm_mutex_unlock(&l->mutex);
 
 	return v;
@@ -758,7 +758,7 @@ list_insert (ListIterator i, void *x)
 	slurm_mutex_lock(&i->list->mutex);
 	xassert(i->list->magic == LIST_MAGIC);
 
-	v = list_node_create(i->list, i->prev, x);
+	v = _list_node_create(i->list, i->prev, x);
 	slurm_mutex_unlock(&i->list->mutex);
 
 	return v;
@@ -794,7 +794,7 @@ list_remove (ListIterator i)
 	xassert(i->list->magic == LIST_MAGIC);
 
 	if (*i->prev != i->pos)
-		v = list_node_destroy(i->list, i->prev);
+		v = _list_node_destroy(i->list, i->prev);
 	slurm_mutex_unlock(&i->list->mutex);
 
 	return v;
@@ -819,16 +819,14 @@ list_delete_item (ListIterator i)
 	return 0;
 }
 
-/* list_node_create()
+/*
+ * Inserts data pointed to by [x] into list [l] after [pp],
+ * the address of the previous node's "next" ptr.
+ * Returns a ptr to data [x], or NULL if insertion fails.
+ * This routine assumes the list is already locked upon entry.
  */
-static void *
-list_node_create (List l, ListNode *pp, void *x)
+static void *_list_node_create(List l, ListNode *pp, void *x)
 {
-/*  Inserts data pointed to by [x] into list [l] after [pp],
- *    the address of the previous node's "next" ptr.
- *  Returns a ptr to data [x], or NULL if insertion fails.
- *  This routine assumes the list is already locked upon entry.
- */
 	ListNode p;
 	ListIterator i;
 
@@ -859,16 +857,14 @@ list_node_create (List l, ListNode *pp, void *x)
 	return x;
 }
 
-/* list_node_destroy()
- *
+/*
  * Removes the node pointed to by [*pp] from from list [l],
  * where [pp] is the address of the previous node's "next" ptr.
  * Returns the data ptr associated with list item being removed,
  * or NULL if [*pp] points to the NULL element.
  * This routine assumes the list is already locked upon entry.
  */
-static void *
-list_node_destroy (List l, ListNode *pp)
+static void *_list_node_destroy(List l, ListNode *pp)
 {
 	void *v;
 	ListNode p;
@@ -1041,7 +1037,7 @@ _list_pop_locked(List l)
 {
 	void *v;
 
-	v = list_node_destroy(l, &l->head);
+	v = _list_node_destroy(l, &l->head);
 
 	return v;
 }
@@ -1056,7 +1052,7 @@ _list_append_locked(List l, void *x)
 {
 	void *v;
 
-	v = list_node_create(l, l->tail, x);
+	v = _list_node_create(l, l->tail, x);
 
 	return v;
 }
