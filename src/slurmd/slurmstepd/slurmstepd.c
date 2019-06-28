@@ -137,7 +137,6 @@ main (int argc, char **argv)
 
 	/* fork handlers cause mutexes on some global data structures
 	 * to be re-initialized after the fork. */
-	list_install_fork_handlers();
 	slurm_conf_install_fork_handlers();
 
 	/* sets job->msg_handle and job->msgid */

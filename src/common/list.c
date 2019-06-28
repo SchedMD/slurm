@@ -79,35 +79,18 @@ strong_alias(list_insert,	slurm_list_insert);
 strong_alias(list_find,		slurm_list_find);
 strong_alias(list_remove,	slurm_list_remove);
 strong_alias(list_delete_item,	slurm_list_delete_item);
-strong_alias(list_install_fork_handlers, slurm_list_install_fork_handlers);
-
 
 /***************
  *  Constants  *
  ***************/
-
-/**************************************************************************\
- * To test for memory leaks associated with the use of list functions (not
- * necessarily within the list module), set MEMORY_LEAK_DEBUG to 1 using
- * "configure --enable-memory-leak" then execute
- * > valgrind --tool=memcheck --leak-check=yes --num-callers=6
- *    --leak-resolution=med [slurmctld | slurmd] -D
- *
- * Do not leave MEMORY_LEAK_DEBUG set for production use
- *
- * When MEMORY_LEAK_DEBUG is set to 1, the cache is disabled. Each memory
- * request will be satisified with a separate xmalloc request. When the
- * memory is no longer required, it is immeditately freed. This means
- * valgrind can identify where exactly any leak associated with the use
- * of the list functions originates.
-\**************************************************************************/
-#ifdef MEMORY_LEAK_DEBUG
-#  define LIST_ALLOC 1
-#else
-#  define LIST_ALLOC 128
-#endif
 #define LIST_MAGIC 0xDEADBEEF
 
+#define list_alloc() xmalloc(sizeof(struct xlist))
+#define list_free(_l) xfree(l)
+#define list_node_alloc() xmalloc(sizeof(struct listNode))
+#define list_node_free(_p) xfree(_p)
+#define list_iterator_alloc() xmalloc(sizeof(struct listIterator))
+#define list_iterator_free(_i) xfree(_i)
 
 /****************
  *  Data Types  *
@@ -149,30 +132,12 @@ typedef struct listNode * ListNode;
 
 static void *_list_node_create(List l, ListNode *pp, void *x);
 static void *_list_node_destroy(List l, ListNode *pp);
-static List list_alloc (void);
-static void list_free (List l);
-static ListNode list_node_alloc (void);
-static void list_node_free (ListNode p);
-static ListIterator list_iterator_alloc (void);
-static void list_iterator_free (ListIterator i);
-static void * list_alloc_aux (int size, void *pfreelist);
-static void list_free_aux (void *x, void *pfreelist);
 static void *_list_pop_locked(List l);
 static void *_list_append_locked(List l, void *x);
 
 #ifndef NDEBUG
 static int _list_mutex_is_locked (pthread_mutex_t *mutex);
 #endif
-
-/***************
- *  Variables  *
- ***************/
-
-static List list_free_lists = NULL;
-static ListNode list_free_nodes = NULL;
-static ListIterator list_free_iterators = NULL;
-
-static pthread_mutex_t list_free_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /***************
  *  Functions  *
@@ -895,122 +860,6 @@ static void *_list_node_destroy(List l, ListNode *pp)
 	list_node_free(p);
 
 	return v;
-}
-
-/* list_alloc()
- */
-static List
-list_alloc (void)
-{
-	return(list_alloc_aux(sizeof(struct xlist), &list_free_lists));
-}
-
-/* list_free()
- */
-static void
-list_free (List l)
-{
-	list_free_aux(l, &list_free_lists);
-}
-
-/* list_node_alloc()
- */
-static ListNode
-list_node_alloc (void)
-{
-	return(list_alloc_aux(sizeof(struct listNode), &list_free_nodes));
-}
-
-/* list_node_free()
- */
-static void
-list_node_free (ListNode p)
-{
-	list_free_aux(p, &list_free_nodes);
-}
-
-/* list_iterator_alloc()
- */
-static ListIterator
-list_iterator_alloc (void)
-{
-	return(list_alloc_aux(sizeof(struct listIterator), &list_free_iterators));
-}
-
-/* list_iterator_free()
- */
-static void
-list_iterator_free (ListIterator i)
-{
-	list_free_aux(i, &list_free_iterators);
-}
-
-/*
- * Allocates an object of [size] bytes from the freelist [*pfreelist].
- * Memory is added to the freelist in chunks of size LIST_ALLOC.
- * Returns a ptr to the object.
- */
-static void *list_alloc_aux(int size, void *pfreelist)
-{
-	void **px;
-	void **pfree = pfreelist;
-	void **plast;
-
-	xassert(sizeof(char) == 1);
-	xassert(size >= sizeof(void *));
-	xassert(pfreelist != NULL);
-	xassert(LIST_ALLOC > 0);
-
-	slurm_mutex_lock(&list_free_lock);
-	if (!*pfree) {
-		*pfree = xcalloc(LIST_ALLOC, size);
-		px = *pfree;
-		plast = (void **) ((char *) *pfree + ((LIST_ALLOC - 1) * size));
-		while (px < plast)
-			*px = (char *) px + size, px = *px;
-		*plast = NULL;
-	}
-	px = *pfree;
-	*pfree = *px;
-	slurm_mutex_unlock(&list_free_lock);
-
-	return px;
-}
-
-/* list_free_aux()
- */
-static void
-list_free_aux (void *x, void *pfreelist)
-{
-/*  Frees the object [x], returning it to the freelist [*pfreelist].
- */
-#ifdef MEMORY_LEAK_DEBUG
-	xfree(x);
-#else
-	void **px = x;
-	void **pfree = pfreelist;
-
-	xassert(x != NULL);
-	xassert(pfreelist != NULL);
-	slurm_mutex_lock(&list_free_lock);
-
-	*px = *pfree;
-	*pfree = px;
-
-	slurm_mutex_unlock(&list_free_lock);
-#endif
-}
-
-static void
-list_reinit_mutexes (void)
-{
-	slurm_mutex_init(&list_free_lock);
-}
-
-void list_install_fork_handlers (void)
-{
-	if (pthread_atfork(NULL, NULL, &list_reinit_mutexes))
-		fatal("cannot install list atfork handler");
 }
 
 #ifndef NDEBUG

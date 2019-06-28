@@ -329,11 +329,4 @@ int list_delete_item (ListIterator i);
  *    (ie, '1' if the item was removed, and '0' otherwise).
  */
 
-void list_install_fork_handlers (void);
-/*
- *  Install pthread_atfork() handlers.
- *   These handlers will ensure that any mutexes internal to the list
- *   functions are in a proper state after a fork.
- */
-
 #endif /* !LSD_LIST_H */

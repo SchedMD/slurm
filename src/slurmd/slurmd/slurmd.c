@@ -383,7 +383,6 @@ main (int argc, char **argv)
 	info("%s started on %s", slurm_prog_name, time_stamp);
 
 	_install_fork_handlers();
-	list_install_fork_handlers();
 	slurm_conf_install_fork_handlers();
 	record_launched_jobs();
 
