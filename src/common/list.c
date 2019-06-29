@@ -481,6 +481,13 @@ list_push (List l, void *x)
 	return v;
 }
 
+/*
+ * Handle translation between ListCmpF and signature required by qsort.
+ * glibc has this as __compar_fn_t, but that's non-standard so we define
+ * our own instead.
+ */
+typedef int (*ConstListCmpF) (__const void *, __const void *);
+
 /* list_sort()
  *
  * This function uses the libC qsort().
@@ -514,7 +521,7 @@ list_sort(List l, ListCmpF f)
 		++n;
 	}
 
-	qsort(v, n, sizeof(char *), (__compar_fn_t)f);
+	qsort(v, n, sizeof(char *), (ConstListCmpF)f);
 
 	for (n = 0; n < lsize; n++) {
 		_list_append_locked(l, v[n]);
