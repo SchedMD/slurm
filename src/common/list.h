@@ -101,7 +101,7 @@ typedef int (*ListForF) (void *x, void *arg);
 
 List list_create (ListDelF f);
 /*
- *  Creates and returns a new empty list, or lsd_nomem_error() on failure.
+ *  Creates and returns a new empty list.
  *  The deletion function [f] is used to deallocate memory used by items
  *    in the list; if this is NULL, memory associated with these items
  *    will not be freed when the list is destroyed.
@@ -134,7 +134,7 @@ int list_count(List l);
 void * list_append (List l, void *x);
 /*
  *  Inserts data [x] at the end of list [l].
- *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
+ *  Returns the data's ptr.
  */
 
 int list_append_list (List l, List sub);
@@ -164,7 +164,7 @@ int list_transfer_max(List l, List sub, int max);
 void * list_prepend (List l, void *x);
 /*
  *  Inserts data [x] at the beginning of list [l].
- *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
+ *  Returns the data's ptr.
  */
 
 void * list_find_first (List l, ListFindF f, void *key);
@@ -227,7 +227,7 @@ void list_sort (List l, ListCmpF f);
 void * list_push (List l, void *x);
 /*
  *  Pushes data [x] onto the top of stack [l].
- *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
+ *  Returns the data's ptr.
  */
 
 void * list_pop (List l);
@@ -250,7 +250,7 @@ void * list_peek (List l);
 void * list_enqueue (List l, void *x);
 /*
  *  Enqueues data [x] at the tail of queue [l].
- *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
+ *  Returns the data's ptr.
  */
 
 void * list_dequeue (List l);
@@ -267,7 +267,7 @@ void * list_dequeue (List l);
 ListIterator list_iterator_create (List l);
 /*
  *  Creates and returns a list iterator for non-destructively traversing
- *    list [l], or lsd_nomem_error() on failure.
+ *    list [l].
  */
 
 void list_iterator_reset (ListIterator i);
@@ -301,7 +301,7 @@ void * list_insert (ListIterator i, void *x);
  *  Inserts data [x] immediately before the last item returned via list
  *    iterator [i]; once the list iterator reaches the end of the list,
  *    insertion is made at the list's end.
- *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
+ *  Returns the data's ptr.
  */
 
 void * list_find (ListIterator i, ListFindF f, void *key);

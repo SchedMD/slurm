@@ -1216,7 +1216,7 @@ typedef int (*ListForF) (void *x, void *arg);
 /* slurm_list_append():
  *
  *  Inserts data [x] at the end of list [l].
- *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
+ *  Returns the data's ptr.
  */
 extern void *slurm_list_append(List l, void *x);
 
@@ -1228,7 +1228,7 @@ extern int slurm_list_count(List l);
 
 /* slurm_list_create():
  *
- *  Creates and returns a new empty list, or lsd_nomem_error() on failure.
+ *  Creates and returns a new empty list.
  *  The deletion function [f] is used to deallocate memory used by items
  *    in the list; if this is NULL, memory associated with these items
  *    will not be freed when the list is destroyed.
@@ -1264,7 +1264,7 @@ extern int slurm_list_is_empty(List l);
 
 /*
  *  Creates and returns a list iterator for non-destructively traversing
- *    list [l], or lsd_nomem_error() on failure.
+ *    list [l].
  */
 extern ListIterator slurm_list_iterator_create(List l);
 
