@@ -39,6 +39,7 @@
 #include "src/common/slurm_xlator.h"
 
 #include "cons_common.h"
+#include "dist_tasks.h"
 
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
@@ -1992,8 +1993,8 @@ alloc_job:
 		if (!task_limit_set)
 			xfree(gres_task_limit);
 	}
-	error_code = (*cons_common_callbacks.cr_dist)(
-		job_ptr, cr_type, preempt_mode, avail_cores, gres_task_limit);
+	error_code = dist_tasks(job_ptr, cr_type, preempt_mode,
+				avail_cores, gres_task_limit);
 	if (is_cons_tres &&
 	    job_ptr->gres_list && (error_code == SLURM_SUCCESS)) {
 		error_code = gres_plugin_job_core_filter4(

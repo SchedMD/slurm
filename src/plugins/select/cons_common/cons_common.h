@@ -141,11 +141,10 @@ typedef struct {
 				 enum node_cr_state job_node_req,
 				 bitstr_t **exc_cores, bool qos_preemptor);
 	bitstr_t **(*mark_avail_cores)(bitstr_t *node_map, uint16_t core_spec);
-	int (*cr_dist)(struct job_record *job_ptr, const uint16_t cr_type,
-		       bool preempt_mode, bitstr_t **core_array,
-		       uint32_t *gres_task_limit);
 	void (*build_row_bitmaps)(struct part_res_record *p_ptr,
 				  struct job_record *job_ptr);
+	int (*dist_tasks_compute_c_b)(struct job_record *job_ptr,
+				      uint32_t *gres_task_limit);
 } cons_common_callbacks_t;
 
 /* Global common variables */
@@ -336,5 +335,8 @@ extern avail_res_t *common_allocate_sockets(struct job_record *job_ptr,
 					    int *cpu_alloc_size,
 					    bitstr_t *req_sock_map);
 
+
+/* Enable detailed logging of cr_dist() node and core bitmaps */
+extern void common_log_select_maps(char *loc, struct job_record *job_ptr);
 
 #endif /* _CONS_COMMON_H */

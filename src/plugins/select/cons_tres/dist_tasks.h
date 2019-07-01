@@ -39,45 +39,24 @@
 #include "select_cons_tres.h"
 
 /*
- * To effectively deal with heterogeneous nodes, we fake a cyclic
- * distribution to figure out how many cores are needed on each node.
+ * dist_tasks_compute_c_b - compute the number of tasks on each
+ * of the node for the cyclic and block distribution. We need to do
+ * this in the case of consumable resources so that we have an exact
+ * count for the needed hardware resources which will be used later to
+ * update the different used resources per node structures.
  *
- * This routine is a slightly modified "version" of the routine
- * _task_layout_block in src/common/dist_tasks.c. We do not need to
- * assign tasks to job->hostid[] and job->tids[][] at this point so
- * the core allocation is the same for cyclic and block.
+ * The most common case is when we have more resources than needed. In
+ * that case we just "take" what we need and "release" the remaining
+ * resources for other jobs. In the case where we oversubscribe the
+ * processing units (PUs) we keep the initial set of resources.
  *
- * For the consumable resources support we need to determine what
- * "node/Core/thread"-tuplets will be allocated for a given job.
- * In the past we assumed that we only allocated one task per PU
- * (processing unit, the lowest allocatable logical processor,
- * core or thread depending upon configuration) and didn't allow
- * the use of overcommit. We have changed this philosophy and are now
- * allowing people to overcommit their resources and expect the system
- * administrator to enable the task/affinity plug-in which will then
- * bind all of a job's tasks to its allocated resources thereby
- * avoiding interference between co-allocated running jobs.
- *
- * In the consumable resources environment we need to determine the
- * layout schema within slurmctld.
- *
- * We have a core_bitmap of all available cores. All we're doing here
- * is removing cores that are not needed based on the task count, and
- * the choice of cores to remove is based on the distribution:
- * - "cyclic" removes cores "evenly", starting from the last socket,
- * - "block" removes cores from the "last" socket(s)
- * - "plane" removes cores "in chunks"
- *
- * IN job_ptr - job to be allocated resources
- * IN cr_type - allocation type (sockets, cores, etc.)
- * IN preempt_mode - true if testing with simulated preempted jobs
- * IN core_array - system-wide bitmap of cores originally available to
- *		the job, only used to identify specialized cores
- * IN gres_task_limit - array of task limits based upon job GRES specification,
- *		offset based upon bits set in job_ptr->job_resrcs->node_bitmap
+ * IN/OUT job_ptr - pointer to job being scheduled. The per-node
+ *                  job_res->cpus array is recomputed here.
+ * IN gres_task_limit - array of task limits based upon job's GRES specification
+ *			offset based upon bits set in
+ *			job_ptr->job_resrcs->node_bitmap
  */
-extern int cr_dist(struct job_record *job_ptr, const uint16_t cr_type,
-		   bool preempt_mode, bitstr_t **core_array,
-		   uint32_t *gres_task_limit);
+extern int dist_tasks_compute_c_b(struct job_record *job_ptr,
+				  uint32_t *gres_task_limit);
 
 #endif /* !_CONS_TRES_DIST_TASKS_H */

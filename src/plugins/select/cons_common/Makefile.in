@@ -147,7 +147,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libcons_common_la_LIBADD =
-am_libcons_common_la_OBJECTS = cons_common.lo core_array.lo
+am_libcons_common_la_OBJECTS = cons_common.lo core_array.lo \
+	dist_tasks.lo
 libcons_common_la_OBJECTS = $(am_libcons_common_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -169,7 +170,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cons_common.Plo \
-	./$(DEPDIR)/core_array.Plo
+	./$(DEPDIR)/core_array.Plo ./$(DEPDIR)/dist_tasks.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -469,7 +470,8 @@ AM_CPPFLAGS = -I$(top_srcdir)
 noinst_LTLIBRARIES = libcons_common.la
 libcons_common_la_SOURCES = \
 	cons_common.c cons_common.h \
-	core_array.c core_array.h
+	core_array.c core_array.h \
+	dist_tasks.c dist_tasks.h
 
 all: all-am
 
@@ -527,6 +529,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cons_common.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core_array.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -689,6 +692,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/cons_common.Plo
 	-rm -f ./$(DEPDIR)/core_array.Plo
+	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -736,6 +740,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/cons_common.Plo
 	-rm -f ./$(DEPDIR)/core_array.Plo
+	-rm -f ./$(DEPDIR)/dist_tasks.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
