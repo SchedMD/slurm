@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.3
 ==========================
+ -- Fix missing check from conversion of cray -> cray_aries.
 
 * Changes in Slurm 19.05.2
 ==========================

@@ -1,4 +1,4 @@
-# Makefile for proctrack/cray plugin
+# Makefile for proctrack/cray_aries plugin
 
 AUTOMAKE_OPTIONS = foreign
 
