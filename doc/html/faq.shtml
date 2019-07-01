@@ -1877,9 +1877,8 @@ probably also want to maintain a common slurm.conf file on all nodes. The
 following procedure is recommended:
 <ol>
 <li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
-<li>Stop all slurmd daemons on all nodes (e.g. "systemctl stop slurmd" on all nodes)</li>
 <li>Update the slurm.conf file on all nodes in the cluster</li>
-<li>Start the slurmd daemons on all nodes (e.g. "systemctl start slurmd" on all nodes)</li>
+<li>Restart the slurmd daemons on all nodes (e.g. "systemctl start slurmd" on all nodes)</li>
 <li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
 </ol>
 
@@ -2335,6 +2334,6 @@ cray_netroot_preload.settings.load.data.compute.size_limit: 0
 accessed files within jobs.</p>
 
 
-<p style="text-align:center;">Last modified 21 May 2019</p>
+<p style="text-align:center;">Last modified 1 July 2019</p>
 
 <!--#include virtual="footer.txt"-->
