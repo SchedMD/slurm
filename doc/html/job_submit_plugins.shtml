@@ -206,7 +206,7 @@ Then just build and install Slurm with that new code.
 Building a new plugin outside of the Slurm distribution is possible, but
 far more complex.
 It also requires access to a multitude of Slurm header files as shown in the
-proceedure below.</p>
+procedure below.</p>
 
 <a name="job_modify_manualbuild">
 <ol>
