@@ -891,7 +891,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	if (old_resv_ptr->flags != resv_ptr->flags)
 		resv.flags = resv_ptr->flags;
 	else
-		resv.flags = NO_VAL;
+		resv.flags = NO_VAL64;
 
 	if (old_resv_ptr->node_list && resv_ptr->node_list) {
 		if (xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list))

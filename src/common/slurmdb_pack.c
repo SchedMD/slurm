@@ -2420,7 +2420,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 		if (!object) {
 			packnull(buffer);
 			packnull(buffer);
-			pack32(NO_VAL, buffer);
+			pack64(NO_VAL64, buffer);
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			packnull(buffer);
@@ -2436,7 +2436,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 
 		packstr(object->assocs, buffer);
 		packstr(object->cluster, buffer);
-		pack32(object->flags, buffer);
+		pack64(object->flags, buffer);
 		pack32(object->id, buffer);
 		packstr(object->name, buffer);
 		packstr(object->nodes, buffer);
@@ -2470,7 +2470,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 
 		packstr(object->assocs, buffer);
 		packstr(object->cluster, buffer);
-		pack32(object->flags, buffer);
+		pack32((uint32_t)object->flags, buffer);
 		pack32(object->id, buffer);
 		packstr(object->name, buffer);
 		packstr(object->nodes, buffer);
@@ -2507,7 +2507,7 @@ extern int slurmdb_unpack_reservation_rec(void **object,
 				       buffer);
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&object_ptr->flags, buffer);
+		safe_unpack64(&object_ptr->flags, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
@@ -2533,11 +2533,16 @@ extern int slurmdb_unpack_reservation_rec(void **object,
 		}
 		safe_unpackdouble(&object_ptr->unused_wall, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t flags;
 		safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&object_ptr->flags, buffer);
+		safe_unpack32(&flags, buffer);
+		if (flags == NO_VAL)
+			object_ptr->flags = NO_VAL64;
+		else
+			object_ptr->flags = flags;
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->nodes, &uint32_tmp, buffer);
@@ -4955,7 +4960,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
-			pack32(0, buffer);
+			pack64(0, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -4968,7 +4973,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 
 		_pack_list_of_str(object->cluster_list, buffer);
 
-		pack32(object->flags, buffer);
+		pack64(object->flags, buffer);
 
 		_pack_list_of_str(object->format_list, buffer);
 		_pack_list_of_str(object->id_list, buffer);
@@ -4994,7 +4999,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 
 		_pack_list_of_str(object->cluster_list, buffer);
 
-		pack32(object->flags, buffer);
+		pack32((uint32_t)object->flags, buffer);
 
 		_pack_list_of_str(object->format_list, buffer);
 		_pack_list_of_str(object->id_list, buffer);
@@ -5033,7 +5038,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 			}
 		}
 
-		safe_unpack32(&object_ptr->flags, buffer);
+		safe_unpack64(&object_ptr->flags, buffer);
 
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
@@ -5077,6 +5082,7 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 		safe_unpack_time(&object_ptr->time_start, buffer);
 		safe_unpack16(&object_ptr->with_usage, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t flags;
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
 			goto unpack_error;
@@ -5090,7 +5096,11 @@ extern int slurmdb_unpack_reservation_cond(void **object,
 			}
 		}
 
-		safe_unpack32(&object_ptr->flags, buffer);
+		safe_unpack32(&flags, buffer);
+		if (flags == NO_VAL)
+			object_ptr->flags = NO_VAL64;
+		else
+			 object_ptr->flags = flags;
 
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)

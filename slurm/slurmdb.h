@@ -1015,7 +1015,7 @@ typedef struct {
 typedef struct {
 	List cluster_list; /* cluster reservations are on list of
 			    * char * */
-	uint32_t flags; /* flags for reservation. */
+	uint64_t flags; /* flags for reservation. */
 	List format_list;/* list of char * */
 	List id_list;   /* ids of reservations. list of char * */
 	List name_list; /* name of reservations. list of char * */
@@ -1028,7 +1028,7 @@ typedef struct {
 typedef struct {
 	char *assocs; /* comma separated list of associations */
 	char *cluster; /* cluster reservation is for */
-	uint32_t flags; /* flags for reservation. */
+	uint64_t flags; /* flags for reservation. */
 	uint32_t id;   /* id of reservation. */
 	char *name; /* name of reservation */
 	char *nodes; /* list of nodes in reservation */

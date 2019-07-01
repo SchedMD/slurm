@@ -91,10 +91,10 @@ static int _setup_resv_limits(slurmdb_reservation_rec_t *resv,
 		xstrfmtcat(*extra, ", assoclist='%s'", resv->assocs+start);
 	}
 
-	if (resv->flags != NO_VAL) {
+	if (resv->flags != NO_VAL64) {
 		xstrcat(*cols, ", flags");
-		xstrfmtcat(*vals, ", %u", resv->flags);
-		xstrfmtcat(*extra, ", flags=%u", resv->flags);
+		xstrfmtcat(*vals, ", %"PRIu64, resv->flags);
+		xstrfmtcat(*extra, ", flags=%"PRIu64, resv->flags);
 	}
 
 	if (resv->name) {
@@ -356,7 +356,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	if (start > resv->time_start) {
 		error("There is newer record for reservation with id %u, drop modification request:",
 		      resv->id);
-		error("assocs:'%s', cluster:'%s', flags:%u, id:%u, name:'%s', nodes:'%s', nodes_inx:'%s', time_end:%ld, time_start:%ld, time_start_prev:%ld, tres_str:'%s', unused_wall:%f",
+		error("assocs:'%s', cluster:'%s', flags:%"PRIu64", id:%u, name:'%s', nodes:'%s', nodes_inx:'%s', time_end:%ld, time_start:%ld, time_start_prev:%ld, tres_str:'%s', unused_wall:%f",
 		      resv->assocs, resv->cluster, resv->flags, resv->id,
 		      resv->name, resv->nodes, resv->node_inx, resv->time_end,
 		      resv->time_start, resv->time_start_prev, resv->tres_str,
@@ -382,10 +382,10 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	else if (row[RESV_ASSOCS] && row[RESV_ASSOCS][0])
 		resv->assocs = xstrdup(row[RESV_ASSOCS]);
 
-	if (resv->flags != NO_VAL)
+	if (resv->flags != NO_VAL64)
 		set = 1;
 	else
-		resv->flags = slurm_atoul(row[RESV_FLAGS]);
+		resv->flags = slurm_atoull(row[RESV_FLAGS]);
 
 	if (resv->nodes)
 		set = 1;
@@ -664,7 +664,7 @@ empty:
 		resv->nodes = xstrdup(row[RESV_REQ_NODES]);
 		resv->time_start = start;
 		resv->time_end = slurm_atoul(row[RESV_REQ_END]);
-		resv->flags = slurm_atoul(row[RESV_REQ_FLAGS]);
+		resv->flags = slurm_atoull(row[RESV_REQ_FLAGS]);
 		resv->tres_str = xstrdup(row[RESV_REQ_TRES]);
 		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
 	}
