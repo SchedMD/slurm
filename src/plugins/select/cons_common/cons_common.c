@@ -2106,7 +2106,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 
 	bitstr_t *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t *picked_node_bitmap;
-	uint32_t *core_cnt, flags;
+	uint32_t *core_cnt;
 	bitstr_t **exc_core_bitmap = NULL, **picked_core_bitmap;
 	int32_t prev_rem_cores, rem_cores = 0, rem_cores_save, rem_nodes;
 	uint32_t cores_per_node = 1;	/* Minimum cores per node to consider */
@@ -2127,7 +2127,6 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		exc_core_bitmap = core_bitmap_to_array(*core_bitmap);
 
 	core_cnt = resv_desc_ptr->core_cnt;
-	flags = resv_desc_ptr->flags;
 
 	if (core_cnt) {
 		/*
@@ -2140,7 +2139,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 			avail_node_bitmap, exc_core_bitmap);
 	}
 
-	if ((flags & RESERVE_FLAG_FIRST_CORES) && core_cnt) {
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_FIRST_CORES) && core_cnt) {
 		/* Reservation request with "Flags=first_cores CoreCnt=#" */
 		avail_nodes_bitmap = (*cons_common_callbacks.pick_first_cores)(
 			avail_node_bitmap,

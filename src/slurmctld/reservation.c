@@ -148,7 +148,7 @@ static int  _get_core_resrcs(slurmctld_resv_t *resv_ptr);
 static uint32_t _get_job_duration(job_record_t *job_ptr, bool reboot);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
-static bool _job_overlap(time_t start_time, uint32_t flags,
+static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name);
 static int _job_resv_check(void *x, void *arg);
 static List _list_dup(List license_list);
@@ -187,7 +187,7 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr);
 static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			  slurmctld_resv_t *old_resv_ptr);
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
-			     uint32_t flags, bool reset_all);
+			     uint64_t flags, bool reset_all);
 static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
@@ -508,7 +508,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 		snprintf(watts_str, sizeof(watts_str), "%u",
 			 resv_ptr->resv_watts);
 	}
-	if (resv_ptr->flags != NO_VAL)
+	if (resv_ptr->flags != NO_VAL64)
 		flag_str = reservation_flags_string(resv_ptr->flags);
 
 	if (resv_ptr->duration == NO_VAL)
@@ -907,7 +907,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	if ((resv_ptr->start_time < now)
 	    && (resv.assocs
 		|| resv.nodes
-		|| (resv.flags != NO_VAL)
+		|| (resv.flags != NO_VAL64)
 		|| resv.tres_str)) {
 		resv_ptr->start_time_prev = resv_ptr->start_time;
 		resv_ptr->start_time = now;
@@ -1679,7 +1679,7 @@ unpack_error:
  * resv_name IN - Name of existing reservation or NULL
  * RET true if overlap
  */
-static bool _job_overlap(time_t start_time, uint32_t flags,
+static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name)
 {
 	ListIterator job_iterator;
@@ -1995,7 +1995,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 					  (resv_desc_ptr->duration * 60);
 	} else
 		resv_desc_ptr->end_time = INFINITE;
-	if (resv_desc_ptr->flags == NO_VAL)
+	if (resv_desc_ptr->flags == NO_VAL64)
 		resv_desc_ptr->flags = 0;
 	else {
 		resv_desc_ptr->flags &= RESERVE_FLAG_MAINT    |
@@ -2347,7 +2347,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_backup = _copy_resv(resv_ptr);
 
 	/* Process the request */
-	if (resv_desc_ptr->flags != NO_VAL) {
+	if (resv_desc_ptr->flags != NO_VAL64) {
 		if (resv_desc_ptr->flags & RESERVE_FLAG_FLEX)
 			resv_ptr->flags |= RESERVE_FLAG_FLEX;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_FLEX)
@@ -2557,7 +2557,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->duration = YEAR_SECONDS / 60;
 		resv_ptr->end_time = resv_ptr->start_time_first + YEAR_SECONDS;
 	} else if (resv_desc_ptr->duration != NO_VAL) {
-		if (resv_desc_ptr->flags == NO_VAL)
+		if (resv_desc_ptr->flags == NO_VAL64)
 			resv_ptr->duration = resv_desc_ptr->duration;
 		else if (resv_desc_ptr->flags & RESERVE_FLAG_DUR_PLUS)
 			resv_ptr->duration += resv_desc_ptr->duration;
@@ -5653,7 +5653,7 @@ extern void update_part_nodes_in_resv(part_record_t *part_ptr)
 }
 
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
-			     uint32_t flags, bool reset_all)
+			     uint64_t flags, bool reset_all)
 {
 	int i, i_first, i_last;
 	node_record_t *node_ptr;

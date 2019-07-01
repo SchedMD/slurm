@@ -1891,6 +1891,9 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 		safe_unpack_time(&tmp_ptr->end_time,   buffer);
 		safe_unpack32(&tmp_ptr->duration,      buffer);
 		safe_unpack64(&tmp_ptr->flags,         buffer);
+		if ((protocol_version < SLURM_20_02_PROTOCOL_VERSION) &&
+		    (tmp_ptr->flags == NO_VAL))
+			tmp_ptr->flags = NO_VAL64;
 		safe_unpack32_array(&tmp_ptr->node_cnt, &uint32_tmp, buffer);
 		if (uint32_tmp > NO_VAL)
 			goto unpack_error;
