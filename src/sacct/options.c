@@ -297,7 +297,35 @@ static int _addto_reason_char_list(List char_list, char *names)
 	return count;
 }
 
+static bool _supported_state(uint32_t state_num)
+{
+	/* Not all state and state flags are accounted */
+	switch(state_num) {
+	case JOB_PENDING:
+	case JOB_RUNNING:
+	case JOB_SUSPENDED:
+	case JOB_COMPLETE:
+	case JOB_CANCELLED:
+	case JOB_FAILED:
+	case JOB_TIMEOUT:
+	case JOB_NODE_FAIL:
+	case JOB_PREEMPTED:
+	case JOB_BOOT_FAIL:
+	case JOB_DEADLINE:
+	case JOB_OOM:
+	case JOB_REQUEUE:
+	case JOB_RESIZING:
+	case JOB_REVOKED:
+		return true;
+		break;
+	default:
+		return false;
+		break;
+	}
+}
+
 /* returns number of objects added to list */
+/* also checks if states are supported by sacct and fatals if not */
 static int _addto_state_char_list(List char_list, char *names)
 {
 	int i = 0, start = 0;
@@ -334,6 +362,8 @@ static int _addto_state_char_list(List char_list, char *names)
 					c = job_state_num(name);
 					if (c == NO_VAL)
 						fatal("unrecognized job state value %s", name);
+					if (!_supported_state(c))
+						fatal("job state %s is not supported / accounted", name);
 					xfree(name);
 					name = xstrdup_printf("%d", c);
 
@@ -368,6 +398,8 @@ static int _addto_state_char_list(List char_list, char *names)
 			if (c == NO_VAL)
 				fatal("unrecognized job state value '%s'",
 				      name);
+			if (!_supported_state(c))
+				fatal("job state %s is not supported / accounted", name);
 			xfree(name);
 			name = xstrdup_printf("%d", c);
 

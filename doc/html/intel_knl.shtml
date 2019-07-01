@@ -296,7 +296,7 @@ the node's MCDRAM and/or NUMA mode prior to reboot).</p>
 when the node is next booted. If the syscfg program is used to modify the MCDRAM
 or NUMA mode of a node, but it is not rebooted, then Slurm will be making
 scheduling decisions based upon incorrect state information. If you want to
-change node state information outside of Slurm then use the following proceedure:
+change node state information outside of Slurm then use the following procedure:
 <ol>
 <li>Drain the nodes of interest</li>
 <li>Change their MCDRAM and/or NUMA mode</li>

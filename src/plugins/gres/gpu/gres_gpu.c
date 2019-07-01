@@ -534,8 +534,6 @@ extern int node_config_load(List gres_conf_list,
 		FREE_NULL_LIST(gres_devices);
 	}
 
-	gpu_g_get_system_gpu_list(node_config);
-
 	gres_list_system = _get_system_gpu_list_fake();
 	// Only query real system devices if there is no fake override
 	if (!gres_list_system)
@@ -710,6 +708,9 @@ extern void epilog_set_env(char ***epilog_env_ptr,
 	xassert(epilog_env_ptr);
 
 	if (!epilog_info)
+		return;
+
+	if (!gres_devices)
 		return;
 
 	if (node_inx > epilog_info->node_cnt) {

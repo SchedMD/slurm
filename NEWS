@@ -39,6 +39,12 @@ documents those changes that are of interest to users and administrators.
  -- Cray - fix template generator with update cray_aries plugin names.
  -- accounting_storage/slurmdbd - provide additional detail in several error
     messages.
+ -- Backfill - If a job has a time_limit guess the end time of a job better
+    if OverTimeLimit is Unlimited.
+ -- Remove premature call to get system gpus before querying fake gpus that
+    should override the real.
+ -- Fix segfault in epilog_set_env() when gres_devices is NULL.
+ -- Fix (un)supported states in sacct.
 
 * Changes in Slurm 19.05.0
 ==========================
@@ -392,6 +398,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix dump/load of rejected heterogeneous jobs.
  -- For heterogeneous jobs, do not count the each component against the QOS or
     association job limit multiple times.
+ -- slurmdbd - avoid reservation flag column corruption with the use of newer
+    flags, instead preserve the older flag fields that we can still fit in the
+    smallint field, and discard the rest.
 
 * Changes in Slurm 18.08.7
 ==========================

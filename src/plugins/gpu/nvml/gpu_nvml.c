@@ -1263,6 +1263,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	char **device_lut;
 	nvmlPciInfo_t pci_info;
 
+	xassert(node_config->xcpuinfo_mac_to_abs);
+
 	_nvml_init();
 	_nvml_get_driver(driver, NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE);
 	_nvml_get_version(version, NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE);

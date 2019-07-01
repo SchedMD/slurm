@@ -361,14 +361,6 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		return;
 	}
 
-	switch(state) {
-	case JOB_RESIZING:
-	case JOB_REQUEUE:
-		break;
-	default:
-		base_state = state & JOB_STATE_BASE;
-	}
-
 	switch(base_state) {
 	case JOB_PENDING:
 		/*
@@ -424,23 +416,27 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 	case JOB_TIMEOUT:
 	case JOB_NODE_FAIL:
 	case JOB_PREEMPTED:
+	case JOB_BOOT_FAIL:
 	case JOB_DEADLINE:
-	default:
-		xstrfmtcat(*extra, "(t1.state='%u' && (t1.time_end && ",
-			   base_state);
-		if (start) {
-			if (!end) {
-				xstrfmtcat(*extra, "(t1.time_end >= %d)))",
-					   start);
-			} else {
-				xstrfmtcat(*extra,
-					   "(t1.time_end between %d and %d)))",
-					   start, end);
-			}
-		} else if (end) {
-			xstrfmtcat(*extra, "(t1.time_end <= %d)))", end);
-		}
+	case JOB_OOM:
+	case JOB_REQUEUE:
+	case JOB_RESIZING:
+	case JOB_REVOKED:
+		/*
+		 * Query assuming that -S and -E are properly set in
+		 * slurmdb_job_cond_def_start_end
+		 *
+		 * Job ending *in* the time window with the specified state.
+		 */
+		xstrfmtcat(*extra,
+		           "(t1.state='%u' && (t1.time_end && "
+		           "(t1.time_end between %d and %d)))",
+		           base_state, start, end);
 		break;
+	default:
+		error("Unsupported state requested: %s",
+		      job_state_string(base_state));
+		xstrfmtcat(*extra, "(t1.state='%u')", base_state);
 	}
 
 	return;
