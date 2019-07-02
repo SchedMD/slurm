@@ -113,7 +113,7 @@ static int _create_mpi_dir(void)
 	}
 	xfree(mpidir);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*
