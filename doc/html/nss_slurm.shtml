@@ -81,8 +81,8 @@ projecta:x:1001:tim
 
 <h2><a name="NSS_SLURM_CONFIG">NSS Slurm Configuration</a></h2>
 
-<p>nss_slurm has a separate optional configuration file &mdash;
-<b>/etc/nss_slurm.conf</b> &mdash;. This configuration file is only needed if:
+<p>nss_slurm has an optional configuration file &mdash;
+<b>/etc/nss_slurm.conf</b>. This configuration file is only needed if:
 <ul>
 <li>The node's hostname does not match the NodeName, in which case you must
 explicitly set the NodeName option.</li>
@@ -96,10 +96,10 @@ at this time.</p>
 <h2><a name="INITIAL_TESTING">Initial Testing</a></h2>
 
 Before enabling NSS Slurm directly on the node, you should use the
-<b>-s slurm</b> option to <b>getent</b> within a newly launch job step
+<b>-s slurm</b> option to <b>getent</b> within a newly launched job step
 to verify that the rest of the setup has been completed successfully. The
 <b>-s</b> option to getent allows it to query a specific database &mdash;
-even if it has not been enabled by default through the system
+even if it has not been enabled by default through the system's
 <b>nsswitch.conf</b>. Note that nss_slurm only responds to requests from
 processes within the job step itself &mdash; you must launch the getent
 command within a job step to see any data returned.</p>
@@ -148,6 +148,6 @@ lookup requests &mdash; generally for info related to the user themselves,
 which is the only information nss_slurm will be able to provide &mdash; and
 overwhelm the underlying directory services.</p>
 
-<p style="text-align:center;">Last modified 21 May 2019</p>
+<p style="text-align:center;">Last modified 2 July 2019</p>
 
 <!--#include virtual="footer.txt"-->
