@@ -139,10 +139,6 @@
 /* Define to 1 if you have 'lz4' library (-llz4) */
 #undef HAVE_LZ4
 
-/* Define to 1 if your system has a GNU libc compatible `malloc' function, and
-   to 0 otherwise. */
-#undef HAVE_MALLOC
-
 /* Define to 1 if you have the <mcheck.h> header file. */
 #undef HAVE_MCHECK_H
 
@@ -582,6 +578,3 @@
 
 /* Define curl_free() as free() if our version of curl lacks curl_free. */
 #undef curl_free
-
-/* Define to rpl_malloc if the replacement function should be used. */
-#undef malloc
