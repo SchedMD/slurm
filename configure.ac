@@ -155,7 +155,6 @@ AX_GCC_BUILTIN(__builtin_popcountll)
 
 dnl checks for library functions.
 dnl
-AC_FUNC_MALLOC
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS( \
    fdatasync \
