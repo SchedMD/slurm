@@ -1078,7 +1078,7 @@ extern int env_array_for_job(char ***dest,
 					     desc->overcommit);
 	}
 
-	/* Add default task counst for srun, if not already set */
+	/* Add default task counts for srun, if not already set */
 	if (desc->bitflags & JOB_NTASKS_SET) {
 		env_array_overwrite_pack_fmt(dest, "SLURM_NTASKS", pack_offset,
 					     "%d", desc->num_tasks);

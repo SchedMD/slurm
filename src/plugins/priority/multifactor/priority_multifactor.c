@@ -448,8 +448,7 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
 		priority_fs = job_assoc->usage->fs_factor;
 		if (priority_debug) {
-			info("Fairhare priority of job %u for user %s in acct"
-			     " %s is %f",
+			info("Fairshare priority of job %u for user %s in acct %s is %f",
 			     job_ptr->job_id, job_assoc->user, job_assoc->acct,
 			     priority_fs);
 		}
