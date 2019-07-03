@@ -3202,7 +3202,7 @@ end_it:
  * exceeding any association or QOS limit.
  * job_desc IN - job descriptor being submitted
  * part_ptr IN - pointer to (one) partition to which the job is being submitted
- * assoc_in IN - pointer to assocation to which the job is being submitted
+ * assoc_in IN - pointer to association to which the job is being submitted
  * qos_ptr IN - pointer to QOS to which the job is being submitted
  * state_reason OUT - if non-NULL, set to reason for rejecting the job
  * acct_policy_limit_set IN/OUT - limits set for the job, pre-allocated storage
@@ -3243,14 +3243,14 @@ static void _pack_list_del(void *x)
 /*
  * acct_policy_validate_pack - validate that a pack job as a whole (all
  * components at once) can be satisfied without exceeding any association
- * limit. Build a list of every job's assocation and QOS information then combine
- * usage information for every job sharing an assocation and test that against
+ * limit. Build a list of every job's association and QOS information then combine
+ * usage information for every job sharing an association and test that against
  * the appropriate limit.
  *
  * NOTE: This test is imperfect. Each job actually has up to 3 sets of limits
- * to test (assocation, job QOS and partition QOS). Ideally each would be tested
+ * to test (association, job QOS and partition QOS). Ideally each would be tested
  * independently, but that is complicated due to QOS limits overriding the
- * assocation limits and the ability to have 3 sets of limits for each job.
+ * association limits and the ability to have 3 sets of limits for each job.
  * This only tests the association limit for each pack job component based
  * upon that component's job and partition QOS.
  *
@@ -3283,7 +3283,7 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 	acct_policy_limit_set.tres =
 		xmalloc(sizeof(uint16_t) * slurmctld_tres_cnt);
 
-	/* Build list of QOS, assocation, and job pointers */
+	/* Build list of QOS, association, and job pointers */
 	pack_limit_list = list_create(_pack_list_del);
 	iter1 = list_iterator_create(submit_job_list);
 	assoc_mgr_lock(&locks);
