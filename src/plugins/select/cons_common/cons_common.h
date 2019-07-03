@@ -339,4 +339,41 @@ extern avail_res_t *common_allocate_sockets(struct job_record *job_ptr,
 /* Enable detailed logging of cr_dist() node and core bitmaps */
 extern void common_log_select_maps(char *loc, struct job_record *job_ptr);
 
+/*
+ * common_job_test - Given a specification of scheduling requirements,
+ *	identify the nodes which "best" satisfy the request.
+ * 	"best" is defined as either a minimal number of consecutive nodes
+ *	or if sharing resources then sharing them with a job of similar size.
+ * IN/OUT job_ptr - pointer to job being considered for initiation,
+ *                  set's start_time when job expected to start
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to
+ *	satisfy the request are cleared, other left set
+ * IN min_nodes - minimum count of nodes
+ * IN req_nodes - requested (or desired) count of nodes
+ * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN mode - SELECT_MODE_RUN_NOW   (0): try to schedule job now
+ *           SELECT_MODE_TEST_ONLY (1): test if job can ever run
+ *           SELECT_MODE_WILL_RUN  (2): determine when and where job can run
+ * IN preemptee_candidates - List of pointers to jobs which can be preempted.
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
+ *		jobs to be preempted to initiate the pending job. Not set
+ *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
+ * RET zero on success, EINVAL otherwise
+ * globals (passed via select_p_node_init):
+ *	node_record_count - count of nodes configured
+ *	node_record_table_ptr - pointer to global node table
+ * NOTE: the job information that is considered for scheduling includes:
+ *	req_node_bitmap: bitmap of specific nodes required by the job
+ *	contiguous: allocated nodes must be sequentially located
+ *	num_cpus: minimum number of processors required by the job
+ * NOTE: bitmap must be a superset of req_nodes at the time that
+ *	select_p_job_test is called
+ */
+extern int common_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
+			   uint32_t min_nodes, uint32_t max_nodes,
+			   uint32_t req_nodes, uint16_t mode,
+			   List preemptee_candidates,
+			   List *preemptee_job_list,
+			   bitstr_t **exc_cores);
+
 #endif /* _CONS_COMMON_H */

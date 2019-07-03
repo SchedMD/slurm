@@ -139,8 +139,6 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 /* Local functions */
 static bitstr_t *_array_to_core_bitmap(bitstr_t **core_res);
 static bitstr_t **_core_bitmap_to_array(bitstr_t *core_bitmap);
-static struct multi_core_data * _create_default_mc(void);
-static uint16_t _get_job_node_req(struct job_record *job_ptr);
 static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 				   uint32_t node_cnt, uint32_t *core_cnt,
 				   bitstr_t ***exc_cores);
@@ -251,101 +249,6 @@ static bitstr_t *_array_to_core_bitmap(bitstr_t **core_array)
 #endif
 
 	return core_bitmap;
-}
-
-static struct multi_core_data * _create_default_mc(void)
-{
-	struct multi_core_data *mc_ptr;
-
-	mc_ptr = xmalloc(sizeof(struct multi_core_data));
-	mc_ptr->sockets_per_node = NO_VAL16;
-	mc_ptr->cores_per_socket = NO_VAL16;
-	mc_ptr->threads_per_core = NO_VAL16;
-	/* Other fields initialized to zero by xmalloc */
-
-	return mc_ptr;
-}
-
-#if _DEBUG
-static char *_node_state_str(uint16_t node_state)
-{
-	if (node_state >= NODE_CR_RESERVED)
-		return "reserved";	/* Exclusive allocation */
-	if (node_state >= NODE_CR_ONE_ROW)
-		return "one_row";	/* Dedicated core for this partition */
-	return "available";		/* Idle or in-use (shared) */
-}
-#endif
-
-static inline void _dump_nodes(void)
-{
-#if _DEBUG
-	struct node_record *node_ptr;
-	List gres_list;
-	int i;
-
-	for (i = 0; i < select_node_cnt; i++) {
-		node_ptr = select_node_record[i].node_ptr;
-		info("Node:%s Boards:%u SocketsPerBoard:%u CoresPerSocket:%u "
-		     "ThreadsPerCore:%u TotalCores:%u CumeCores:%u TotalCPUs:%u "
-		     "PUsPerCore:%u AvailMem:%"PRIu64" AllocMem:%"PRIu64" State:%s(%d)",
-		     node_ptr->name,
-		     select_node_record[i].boards,
-		     select_node_record[i].sockets,
-		     select_node_record[i].cores,
-		     select_node_record[i].threads,
-		     select_node_record[i].tot_cores,
-		     select_node_record[i].cume_cores,
-		     select_node_record[i].cpus,
-		     select_node_record[i].vpus,
-		     select_node_record[i].real_memory,
-		     select_node_usage[i].alloc_memory,
-		     _node_state_str(select_node_usage[i].node_state),
-		     select_node_usage[i].node_state);
-
-		if (select_node_usage[i].gres_list)
-			gres_list = select_node_usage[i].gres_list;
-		else
-			gres_list = node_ptr->gres_list;
-		if (gres_list)
-			gres_plugin_node_state_log(gres_list, node_ptr->name);
-	}
-#endif
-}
-
-static inline void _dump_parts(struct part_res_record *p_ptr)
-{
-#if _DEBUG
-	/* dump partition data */
-	for (; p_ptr; p_ptr = p_ptr->next) {
-		common_dump_parts(p_ptr);
-	}
-#endif
-}
-
-/*
- * Determine the node requirements for the job:
- * - does the job need exclusive nodes? (NODE_CR_RESERVED)
- * - run on overcommitted/time-sliced resources? (NODE_CR_AVAILABLE)
- * - run on dedicated cores (NODE_CR_ONE_ROW)
- */
-static uint16_t _get_job_node_req(struct job_record *job_ptr)
-{
-	int max_share = job_ptr->part_ptr->max_share;
-
-	if (max_share == 0)		    /* Partition Shared=EXCLUSIVE */
-		return NODE_CR_RESERVED;
-
-	/* Partition is Shared=FORCE */
-	if (max_share & SHARED_FORCE)
-		return NODE_CR_AVAILABLE;
-
-	if ((max_share > 1) && (job_ptr->details->share_res == 1)) {
-		/* part allows sharing, and the user has requested it */
-		return NODE_CR_AVAILABLE;
-	}
-
-	return NODE_CR_ONE_ROW;
 }
 
 /*
@@ -772,10 +675,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 			     List *preemptee_job_list,
 			     bitstr_t *exc_core_bitmap)
 {
-	int i, rc = EINVAL;
-	uint16_t job_node_req;
+	int rc;
 	bitstr_t **exc_cores;
-	char tmp[128];
 
 	xassert(node_bitmap);
 	debug2("%s: %s: evaluating %pJ", plugin_type, __func__, job_ptr);
@@ -789,6 +690,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	exc_cores = _core_bitmap_to_array(exc_core_bitmap);
 #if _DEBUG
 	if (exc_cores) {
+		int i;
+		char tmp[128];
 		for (i = 0; i < select_node_cnt; i++) {
 			if (!exc_cores[i])
 				continue;
@@ -799,99 +702,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	}
 #endif
 
-	if (slurm_get_use_spec_resources() == 0)
-		job_ptr->details->core_spec = NO_VAL16;
-	if ((job_ptr->details->core_spec != NO_VAL16) &&
-	    (job_ptr->details->whole_node != 1)) {
-		info("%s: %s: Setting Exclusive mode for %pJ with CoreSpec=%u",
-		      plugin_type, __func__, job_ptr,
-		      job_ptr->details->core_spec);
-		job_ptr->details->whole_node = 1;
-	}
+	rc = common_job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
+			     req_nodes, mode, preemptee_candidates,
+			     preemptee_job_list, exc_cores);
 
-	if (!job_ptr->details->mc_ptr)
-		job_ptr->details->mc_ptr = _create_default_mc();
-	job_node_req = _get_job_node_req(job_ptr);
-
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		char *node_mode = "Unknown", *alloc_mode = "Unknown";
-		char *core_list = NULL, *node_list, *sep = "";
-		if (job_node_req == NODE_CR_RESERVED)
-			node_mode = "Exclusive";
-		else if (job_node_req == NODE_CR_AVAILABLE)
-			node_mode = "OverCommit";
-		else if (job_node_req == NODE_CR_ONE_ROW)
-			node_mode = "Normal";
-		if (mode == SELECT_MODE_WILL_RUN)
-			alloc_mode = "Will_Run";
-		else if (mode == SELECT_MODE_TEST_ONLY)
-			alloc_mode = "Test_Only";
-		else if (mode == SELECT_MODE_RUN_NOW)
-			alloc_mode = "Run_Now";
-		info("%s: %s: %pJ node_mode:%s alloc_mode:%s",
-		     plugin_type, __func__, job_ptr, node_mode, alloc_mode);
-		if (exc_cores) {
-			for (i = 0; i < select_node_cnt; i++) {
-				if (!exc_cores[i])
-					continue;
-				bit_fmt(tmp, sizeof(tmp), exc_cores[i]);
-				xstrfmtcat(core_list, "%snode[%d]:%s", sep, i,
-					   tmp);
-				sep = ",";
-			}
-		} else {
-			core_list = xstrdup("NONE");
-		}
-		node_list = bitmap2node_name(node_bitmap);
-		info("%s: %s: node_list:%s exc_cores:%s", plugin_type, __func__,
-		     node_list, core_list);
-		xfree(node_list);
-		xfree(core_list);
-		info("%s: %s: nodes: min:%u max:%u requested:%u avail:%u",
-		     plugin_type, __func__, min_nodes, max_nodes, req_nodes,
-		     bit_set_count(node_bitmap));
-		_dump_nodes();
-		_dump_parts(select_part_record);
-	}
-
-	if (mode == SELECT_MODE_WILL_RUN) {
-		rc = common_will_run_test(job_ptr, node_bitmap, min_nodes,
-					  max_nodes,
-					  req_nodes, job_node_req,
-					  preemptee_candidates,
-					  preemptee_job_list,
-					  exc_cores);
-	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		rc = common_test_only(job_ptr, node_bitmap, min_nodes,
-				      max_nodes, req_nodes, job_node_req);
-	} else if (mode == SELECT_MODE_RUN_NOW) {
-		rc = common_run_now(job_ptr, node_bitmap, min_nodes, max_nodes,
-				    req_nodes, job_node_req,
-				    preemptee_candidates,
-				    preemptee_job_list, exc_cores);
-	} else {
-		/* Should never get here */
-		error("%s: %s: Mode %d is invalid",
-		      plugin_type, __func__, mode);
-		free_core_array(&exc_cores);
-		return EINVAL;
-	}
-
-	if ((select_debug_flags & DEBUG_FLAG_CPU_BIND) ||
-	    (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
-		if (job_ptr->job_resrcs) {
-			if (rc != SLURM_SUCCESS) {
-				info("%s: %s: error:%s", plugin_type, __func__,
-				     slurm_strerror(rc));
-			}
-			log_job_resources(job_ptr);
-			gres_plugin_job_state_log(job_ptr->gres_list,
-						  job_ptr->job_id);
-		} else {
-			info("%s: %s: no job_resources info for %pJ rc=%d",
-			     plugin_type, __func__, job_ptr, rc);
-		}
-	}
 	free_core_array(&exc_cores);
 
 	return rc;

@@ -115,6 +115,42 @@ static int _cr_job_list_sort(void *x, void *y)
 	return (int) SLURM_DIFFTIME(job1_ptr->end_time, job2_ptr->end_time);
 }
 
+static struct multi_core_data * _create_default_mc(void)
+{
+	struct multi_core_data *mc_ptr;
+
+	mc_ptr = xmalloc(sizeof(struct multi_core_data));
+	mc_ptr->sockets_per_node = NO_VAL16;
+	mc_ptr->cores_per_socket = NO_VAL16;
+	mc_ptr->threads_per_core = NO_VAL16;
+	/* Other fields initialized to zero by xmalloc */
+
+	return mc_ptr;
+}
+
+/* Determine the node requirements for the job:
+ * - does the job need exclusive nodes? (NODE_CR_RESERVED)
+ * - can the job run on shared nodes?   (NODE_CR_ONE_ROW)
+ * - can the job run on overcommitted resources? (NODE_CR_AVAILABLE)
+ */
+static uint16_t _get_job_node_req(struct job_record *job_ptr)
+{
+	int max_share = job_ptr->part_ptr->max_share;
+
+	if (max_share == 0)		    /* Partition Shared=EXCLUSIVE */
+		return NODE_CR_RESERVED;
+
+	/* Partition is Shared=FORCE */
+	if (max_share & SHARED_FORCE)
+		return NODE_CR_AVAILABLE;
+
+	if ((max_share > 1) && (job_ptr->details->share_res == 1))
+		/* part allows sharing, and the user has requested it */
+		return NODE_CR_AVAILABLE;
+
+	return NODE_CR_ONE_ROW;
+}
+
 /*
  * Return true if job is in the processing of cleaning up.
  * This is used for Cray systems to indicate the Node Health Check (NHC)
@@ -3532,4 +3568,142 @@ extern avail_res_t *common_allocate_sockets(struct job_record *job_ptr,
 {
 	return _allocate_sc(job_ptr, core_map, part_core_map, node_i,
 			    cpu_alloc_size, true, req_sock_map);
+}
+
+/*
+ * common_job_test - Given a specification of scheduling requirements,
+ *	identify the nodes which "best" satisfy the request.
+ * 	"best" is defined as either a minimal number of consecutive nodes
+ *	or if sharing resources then sharing them with a job of similar size.
+ * IN/OUT job_ptr - pointer to job being considered for initiation,
+ *                  set's start_time when job expected to start
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to
+ *	satisfy the request are cleared, other left set
+ * IN min_nodes - minimum count of nodes
+ * IN req_nodes - requested (or desired) count of nodes
+ * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN mode - SELECT_MODE_RUN_NOW   (0): try to schedule job now
+ *           SELECT_MODE_TEST_ONLY (1): test if job can ever run
+ *           SELECT_MODE_WILL_RUN  (2): determine when and where job can run
+ * IN preemptee_candidates - List of pointers to jobs which can be preempted.
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
+ *		jobs to be preempted to initiate the pending job. Not set
+ *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
+ * IN exc_cores - Cores to be excluded for use (in advanced reservation)
+ * RET zero on success, EINVAL otherwise
+ * globals (passed via select_p_node_init):
+ *	node_record_count - count of nodes configured
+ *	node_record_table_ptr - pointer to global node table
+ * NOTE: the job information that is considered for scheduling includes:
+ *	req_node_bitmap: bitmap of specific nodes required by the job
+ *	contiguous: allocated nodes must be sequentially located
+ *	num_cpus: minimum number of processors required by the job
+ * NOTE: bitmap must be a superset of req_nodes at the time that
+ *	select_p_job_test is called
+ */
+extern int common_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
+			   uint32_t min_nodes, uint32_t max_nodes,
+			   uint32_t req_nodes, uint16_t mode,
+			   List preemptee_candidates,
+			   List *preemptee_job_list,
+			   bitstr_t **exc_cores)
+{
+	int i, rc = EINVAL;
+	uint16_t job_node_req;
+	char tmp[128];
+
+	if (slurm_get_use_spec_resources() == 0)
+		job_ptr->details->core_spec = NO_VAL16;
+	if ((job_ptr->details->core_spec != NO_VAL16) &&
+	    (job_ptr->details->whole_node != 1)) {
+		info("%s: %s: Setting Exclusive mode for %pJ with CoreSpec=%u",
+		      plugin_type, __func__, job_ptr,
+		      job_ptr->details->core_spec);
+		job_ptr->details->whole_node = 1;
+	}
+
+	if (!job_ptr->details->mc_ptr)
+		job_ptr->details->mc_ptr = _create_default_mc();
+	job_node_req = _get_job_node_req(job_ptr);
+
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		char *node_mode = "Unknown", *alloc_mode = "Unknown";
+		char *core_list = NULL, *node_list, *sep = "";
+		if (job_node_req == NODE_CR_RESERVED)
+			node_mode = "Exclusive";
+		else if (job_node_req == NODE_CR_AVAILABLE)
+			node_mode = "OverCommit";
+		else if (job_node_req == NODE_CR_ONE_ROW)
+			node_mode = "Normal";
+		if (mode == SELECT_MODE_WILL_RUN)
+			alloc_mode = "Will_Run";
+		else if (mode == SELECT_MODE_TEST_ONLY)
+			alloc_mode = "Test_Only";
+		else if (mode == SELECT_MODE_RUN_NOW)
+			alloc_mode = "Run_Now";
+		info("%s: %s: %pJ node_mode:%s alloc_mode:%s",
+		     plugin_type, __func__, job_ptr, node_mode, alloc_mode);
+		if (exc_cores) {
+			for (i = 0; i < core_array_size; i++) {
+				if (!exc_cores[i])
+					continue;
+				bit_fmt(tmp, sizeof(tmp), exc_cores[i]);
+				xstrfmtcat(core_list, "%snode[%d]:%s", sep, i,
+					   tmp);
+				sep = ",";
+			}
+		} else {
+			core_list = xstrdup("NONE");
+		}
+		node_list = bitmap2node_name(node_bitmap);
+		info("%s: %s: node_list:%s exc_cores:%s", plugin_type, __func__,
+		     node_list, core_list);
+		xfree(node_list);
+		xfree(core_list);
+		info("%s: %s: nodes: min:%u max:%u requested:%u avail:%u",
+		     plugin_type, __func__, min_nodes, max_nodes, req_nodes,
+		     bit_set_count(node_bitmap));
+		_dump_nodes();
+	}
+
+	if (mode == SELECT_MODE_WILL_RUN) {
+		rc = common_will_run_test(job_ptr, node_bitmap, min_nodes,
+					  max_nodes,
+					  req_nodes, job_node_req,
+					  preemptee_candidates,
+					  preemptee_job_list,
+					  exc_cores);
+	} else if (mode == SELECT_MODE_TEST_ONLY) {
+		rc = common_test_only(job_ptr, node_bitmap, min_nodes,
+				      max_nodes, req_nodes, job_node_req);
+	} else if (mode == SELECT_MODE_RUN_NOW) {
+		rc = common_run_now(job_ptr, node_bitmap, min_nodes, max_nodes,
+				    req_nodes, job_node_req,
+				    preemptee_candidates,
+				    preemptee_job_list, exc_cores);
+	} else {
+		/* Should never get here */
+		error("%s: %s: Mode %d is invalid",
+		      plugin_type, __func__, mode);
+		return EINVAL;
+	}
+
+	if ((select_debug_flags & DEBUG_FLAG_CPU_BIND) ||
+	    (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
+		if (job_ptr->job_resrcs) {
+			if (rc != SLURM_SUCCESS) {
+				info("%s: %s: error:%s", plugin_type, __func__,
+				     slurm_strerror(rc));
+			}
+			log_job_resources(job_ptr);
+			if (is_cons_tres)
+				gres_plugin_job_state_log(job_ptr->gres_list,
+							  job_ptr->job_id);
+		} else {
+			info("%s: %s: no job_resources info for %pJ rc=%d",
+			     plugin_type, __func__, job_ptr, rc);
+		}
+	}
+
+	return rc;
 }
