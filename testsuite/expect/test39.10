@@ -194,7 +194,7 @@ if {$gpu_cnt > 1} {
 }
 
 #
-# Test heterogenous GPU allocation (2 GPUs on one node, 1 GPU on another node)
+# Test heterogeneous GPU allocation (2 GPUs on one node, 1 GPU on another node)
 #
 if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	set gpu_target 3
