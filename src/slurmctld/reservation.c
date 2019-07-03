@@ -2940,7 +2940,7 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 	pack32(resv_packed, buffer);
 	pack_time(now, buffer);
 
-	/* Create this list once since it will not change durning this call. */
+	/* Create this list once since it will not change during this call. */
 	if ((slurmctld_conf.private_data & PRIVATE_DATA_RESERVATIONS)
 	    && !validate_operator(uid)) {
 		slurmdb_assoc_rec_t assoc;

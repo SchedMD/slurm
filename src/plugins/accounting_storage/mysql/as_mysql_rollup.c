@@ -1356,7 +1356,7 @@ extern int as_mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 
 			/*
 			 * Now figure out there was a disconnected
-			 * slurmctld durning this job.
+			 * slurmctld during this job.
 			 */
 			list_iterator_reset(c_itr);
 			while ((loc_c_usage = list_next(c_itr))) {
