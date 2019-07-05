@@ -1995,8 +1995,7 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node)
  	if (part_ptr->allow_alloc_nodes == NULL)
  		return 1;	/* all allocating nodes allowed */
  	if (alloc_node == NULL)
- 		return 1;	/* if no allocating node defined
-				 * let it go */
+		return 0;	/* if no allocating node deny */
 
  	hostlist_t hl = hostlist_create(part_ptr->allow_alloc_nodes);
  	status=hostlist_find(hl,alloc_node);
