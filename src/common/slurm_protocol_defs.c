@@ -4642,6 +4642,9 @@ extern void slurm_free_bb_status_resp_msg(bb_status_resp_msg_t *msg)
 
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
+	if (!data)
+		return SLURM_SUCCESS;
+
 	/* this message was never loaded */
 	if ((uint16_t)type == NO_VAL16)
 		return SLURM_SUCCESS;
