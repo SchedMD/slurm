@@ -107,8 +107,6 @@
 #include "dist_tasks.h"
 #include "job_test.h"
 
-#define NODEINFO_MAGIC 0x82aa
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -139,6 +137,7 @@ const char *plugin_type = "select/cons_res";
 const uint32_t plugin_id      = SELECT_PLUGIN_CONS_RES;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t pstate_version = 7;	/* version control on saved state */
+const uint16_t nodeinfo_magic = 0x82aa;
 
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
@@ -1112,7 +1111,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 
-	nodeinfo->magic = NODEINFO_MAGIC;
+	nodeinfo->magic = nodeinfo_magic;
 
 	return nodeinfo;
 }
@@ -1120,7 +1119,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
 	if (nodeinfo) {
-		if (nodeinfo->magic != NODEINFO_MAGIC) {
+		if (nodeinfo->magic != nodeinfo_magic) {
 			error("select_p_select_nodeinfo_free: "
 			      "nodeinfo magic bad");
 			return EINVAL;
@@ -1288,8 +1287,8 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		return SLURM_ERROR;
 	}
 
-	if (nodeinfo->magic != NODEINFO_MAGIC) {
-		error("get_nodeinfo: jobinfo magic bad");
+	if (nodeinfo->magic != nodeinfo_magic) {
+		error("%s: jobinfo magic bad", __func__);
 		return SLURM_ERROR;
 	}
 

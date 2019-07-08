@@ -165,6 +165,7 @@ extern uint16_t cr_type;
 extern bool     gang_mode;
 extern bool     have_dragonfly;
 extern bool     is_cons_tres;
+extern const uint16_t nodeinfo_magic;
 extern bool     pack_serial_at_end;
 extern const uint32_t plugin_id;
 extern const char *plugin_type;

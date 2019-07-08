@@ -83,6 +83,7 @@ const char *plugin_type = "select/cons_tres";
 const uint32_t plugin_id      = SELECT_PLUGIN_CONS_TRES;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t pstate_version = 7;	/* version control on saved state */
+const uint16_t nodeinfo_magic = 0x8a5d;
 
 /* Global variables */
 bitstr_t **spec_core_res	= NULL;
@@ -1252,7 +1253,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 {
 	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
 
-	nodeinfo->magic = NODEINFO_MAGIC;
+	nodeinfo->magic = nodeinfo_magic;
 
 	return nodeinfo;
 }
@@ -1260,7 +1261,7 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 {
 	if (nodeinfo) {
-		if (nodeinfo->magic != NODEINFO_MAGIC) {
+		if (nodeinfo->magic != nodeinfo_magic) {
 			error("%s: nodeinfo magic bad", __func__);
 			return EINVAL;
 		}
@@ -1444,7 +1445,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 		return SLURM_ERROR;
 	}
 
-	if (nodeinfo->magic != NODEINFO_MAGIC) {
+	if (nodeinfo->magic != nodeinfo_magic) {
 		error("%s: jobinfo magic bad", __func__);
 		return SLURM_ERROR;
 	}
