@@ -110,6 +110,15 @@ typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t vpus;		/* Virtual processors (CPUs) per core */
 } avail_res_t;
 
+struct select_nodeinfo {
+	uint16_t magic;		/* magic number */
+	uint16_t alloc_cpus;
+	uint64_t alloc_memory;
+	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
+					   NOT PACKED */
+	char     *tres_alloc_fmt_str;	/* formatted str of allocated tres */
+	double    tres_alloc_weighted;	/* weighted number of tres allocated. */
+};
 
 typedef struct {
 	void (*add_job_to_res)(job_resources_t *job_resrcs_ptr,

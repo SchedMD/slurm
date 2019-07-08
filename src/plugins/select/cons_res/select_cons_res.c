@@ -140,16 +140,6 @@ const uint32_t plugin_id      = SELECT_PLUGIN_CONS_RES;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t pstate_version = 7;	/* version control on saved state */
 
-struct select_nodeinfo {
-	uint16_t magic;		/* magic number */
-	uint16_t alloc_cpus;
-	uint64_t alloc_memory;
-	uint64_t *tres_alloc_cnt;	/* array of tres counts allocated.
-					   NOT PACKED */
-	char     *tres_alloc_fmt_str;	/* formatted str of allocated tres */
-	double    tres_alloc_weighted;	/* weighted number of tres allocated. */
-};
-
 extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
