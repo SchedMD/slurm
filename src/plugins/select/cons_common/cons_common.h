@@ -386,4 +386,8 @@ extern int common_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			   List *preemptee_job_list,
 			   bitstr_t **exc_cores);
 
+extern int common_nodeinfo_get(select_nodeinfo_t *nodeinfo,
+			       enum select_nodedata_type dinfo,
+			       enum node_states state,
+			       void *data);
 #endif /* _CONS_COMMON_H */

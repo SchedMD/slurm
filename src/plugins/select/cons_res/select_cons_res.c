@@ -1275,48 +1275,7 @@ extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 					enum node_states state,
 					void *data)
 {
-	int rc = SLURM_SUCCESS;
-	uint16_t *uint16 = (uint16_t *) data;
-	uint64_t *uint64 = (uint64_t *) data;
-	char **tmp_char = (char **) data;
-	double *tmp_double = (double *) data;
-	select_nodeinfo_t **select_nodeinfo = (select_nodeinfo_t **) data;
-
-	if (nodeinfo == NULL) {
-		error("get_nodeinfo: nodeinfo not set");
-		return SLURM_ERROR;
-	}
-
-	if (nodeinfo->magic != nodeinfo_magic) {
-		error("%s: jobinfo magic bad", __func__);
-		return SLURM_ERROR;
-	}
-
-	switch (dinfo) {
-	case SELECT_NODEDATA_SUBCNT:
-		if (state == NODE_STATE_ALLOCATED)
-			*uint16 = nodeinfo->alloc_cpus;
-		else
-			*uint16 = 0;
-		break;
-	case SELECT_NODEDATA_PTR:
-		*select_nodeinfo = nodeinfo;
-		break;
-	case SELECT_NODEDATA_MEM_ALLOC:
-		*uint64 = nodeinfo->alloc_memory;
-		break;
-	case SELECT_NODEDATA_TRES_ALLOC_FMT_STR:
-		*tmp_char = xstrdup(nodeinfo->tres_alloc_fmt_str);
-		break;
-	case SELECT_NODEDATA_TRES_ALLOC_WEIGHTED:
-		*tmp_double = nodeinfo->tres_alloc_weighted;
-		break;
-	default:
-		error("Unsupported option %d for get_nodeinfo.", dinfo);
-		rc = SLURM_ERROR;
-		break;
-	}
-	return rc;
+	return common_nodeinfo_get(nodeinfo, dinfo, state, data);
 }
 
 extern int select_p_select_jobinfo_alloc(void)
