@@ -2504,10 +2504,33 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		 * do not allow changing the default account
 		 */
 		if (is_coord && (object->is_def == 1)) {
-			error("Coordinator %s(%d) tried to change the default account of user %s to account %s",
-			      user_name, uid, object->user, object->acct);
-			rc = ESLURM_ACCESS_DENIED;
-			break;
+			char *query = NULL;
+			/* Check if there is already a default account. */
+			xstrfmtcat(query, "select id_assoc from \"%s_%s\" "
+				   "where user='%s' && acct!='%s' && is_def=1 "
+				   "&& deleted=0;",
+				   object->cluster, assoc_table,
+				   object->user, object->acct);
+			if (debug_flags & DEBUG_FLAG_DB_ASSOC)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			if (!(result = mysql_db_query_ret(mysql_conn,
+							  query, 1))) {
+				xfree(query);
+				rc = SLURM_ERROR;
+				break;
+			}
+
+			xfree(query);
+			rc = mysql_num_rows(result);
+			mysql_free_result(result);
+
+			if (rc) {
+				error("Coordinator %s(%d) tried to change the default account of user %s to account %s.  This is only allowed on initial user creation.",
+				      user_name, uid, object->user,
+				      object->acct);
+				rc = ESLURM_ACCESS_DENIED;
+				break;
+			}
 		}
 
 		if (is_coord && _check_coord_qos(mysql_conn, object->cluster,
@@ -2986,7 +3009,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 end_it:
 
-	if (rc != SLURM_ERROR) {
+	if (rc == SLURM_SUCCESS) {
 		_make_sure_users_have_default(mysql_conn, added_user_list);
 		FREE_NULL_LIST(added_user_list);
 
