@@ -314,7 +314,7 @@ static int _job_fail_account(struct job_record *job_ptr, const char *func_name)
 		 */
 
 		/*
-		 * Clear ptrs so that only assocation usage is removed.
+		 * Clear ptrs so that only association usage is removed.
 		 * Otherwise qos and partition limits will be double accounted
 		 * for when this job finishes. Don't do this for acrrual time,
 		 * it has be on both because the job is ineligible and can't

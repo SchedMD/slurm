@@ -82,7 +82,7 @@ extern void acct_policy_alter_job(struct job_record *job_ptr,
  * exceeding any association or QOS limit.
  * job_desc IN - job descriptor being submitted
  * part_ptr IN - pointer to (one) partition to which the job is being submitted
- * assoc_in IN - pointer to assocation to which the job is being submitted
+ * assoc_in IN - pointer to association to which the job is being submitted
  * qos_ptr IN - pointer to QOS to which the job is being submitted
  * state_reason OUT - if non-NULL, set to reason for rejecting the job
  * acct_policy_limit_set IN/OUT - limits set for the job, pre-allocated storage

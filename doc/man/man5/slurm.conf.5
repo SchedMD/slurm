@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "June 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "July 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -74,8 +74,8 @@ If nojobs is set Slurm will not account for any jobs or steps on the system,
 like wise if nosteps is set Slurm will not account for any steps ran limits
 will still be enforced.
 
-If safe is enforced a job will only be launched against an association or qos
-that has a GrpCPUMins limit set if the job will be able to run to completion.
+If safe is enforced, a job will only be launched against an association or qos
+that has a GrpTRESMins limit set if the job will be able to run to completion.
 Without this option set, jobs will be launched as long as their usage
 hasn't reached the cpu-minutes limit which can lead to jobs being
 launched but then killed when the limit is reached.
@@ -2736,7 +2736,7 @@ submitted to.
 The maximum number of jobs per user association to attempt starting with the
 backfill scheduler.
 This setting is similar to \fBbf_max_job_user\fR but is handy if a user
-has multiple assocations equating to basically different users.
+has multiple associations equating to basically different users.
 One can set this limit to prevent users from flooding the backfill
 queue with jobs that cannot start and that prevent jobs from other users
 to start.

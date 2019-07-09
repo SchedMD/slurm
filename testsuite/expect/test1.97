@@ -358,7 +358,7 @@ check_cpu_all [array get nodes] [array get tasks] $ncpuspt
 
 if {!$sys_homo} {
 	# Submit job with lowest cpu count of the 3 nodes and set tasks to 1
-	# less the number of cpus (This test only works on heterogenous systems)
+	# less the number of cpus (This test only works on heterogeneous systems)
 	submit_cpu [expr ($cputot/$ncpuspt) - 1] $ncpuspt
 	check_cpu_off [array get nodes] [array get tasks] $ncpuspt
 }

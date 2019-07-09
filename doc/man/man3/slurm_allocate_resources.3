@@ -280,7 +280,7 @@ queued until the partition's limits are changed and resources are available.
 Always release the response message when no longer required using the function
 \fBslurm_free_submit_response_msg\fR.
 .LP
-\fBslurm_submit_batch_pack_job\fR Submit a heterogenous job for later execution. Note that if
+\fBslurm_submit_batch_pack_job\fR Submit a heterogeneous job for later execution. Note that if
 the job's requested node count or time allocation are outside of the partition's
 limits then a job entry will be created, a warning indication will be placed in
 the \fIerror_code\fP field of the response message, and the job will be left

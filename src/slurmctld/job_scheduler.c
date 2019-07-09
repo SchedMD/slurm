@@ -3008,7 +3008,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 
 	if (select_hetero == -1) {
 		/*
-		 * Determine if the select plugin supports heterogenous
+		 * Determine if the select plugin supports heterogeneous
 		 * GRES allocations (count differ by node): 1=yes, 0=no
 		 */
 		char *select_type = slurm_get_select_type();
