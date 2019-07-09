@@ -871,6 +871,23 @@ static slurm_cli_opt_t slurm_opt_cpu_bind = {
 	.reset_func = arg_reset_cpu_bind,
 	.reset_each_pass = true,
 };
+/*
+ * OpenMPI hard-coded --cpu_bind as part of their mpirun/mpiexec launch
+ * scripting for a long time, and thus we're stuck supporting this deprecated
+ * version indefinitely.
+ *
+ * Keep this after the preferred --cpu-bind handling so cli_filter sees that
+ * and not this form.
+ */
+static slurm_cli_opt_t slurm_opt_cpu_underscore_bind = {
+	.name = "cpu_bind",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CPU_BIND,
+	.set_func_srun = arg_set_cpu_bind,
+	.get_func = arg_get_cpu_bind,
+	.reset_func = arg_reset_cpu_bind,
+	.reset_each_pass = true,
+};
 
 static int arg_set_cpu_freq(slurm_opt_t *opt, const char *arg)
 {
@@ -3524,6 +3541,7 @@ static slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_core_spec,
 	&slurm_opt_cores_per_socket,
 	&slurm_opt_cpu_bind,
+	&slurm_opt_cpu_underscore_bind,
 	&slurm_opt_cpu_freq,
 	&slurm_opt_cpus_per_gpu,
 	&slurm_opt_cpus_per_task,
