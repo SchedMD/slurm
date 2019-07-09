@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
  -- Add UsageFactorSafe QOS flag to control applying UsageFactor at
     submission/scheduling time.
  -- Create missing reservations on DBD_MODIFY_RESV.
+ -- Add error message when attempting to update association manager and object
+    doesn't exist.
 
 * Changes in Slurm 19.05.0
 ==========================
