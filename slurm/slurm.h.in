@@ -2964,6 +2964,7 @@ typedef struct stats_info_response_msg {
 	uint32_t server_thread_count;
 	uint32_t agent_queue_size;
 	uint32_t agent_count;
+	uint32_t agent_thread_count;
 	uint32_t dbd_agent_queue_size;
 	uint32_t gettimeofday_latency;
 

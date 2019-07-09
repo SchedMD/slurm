@@ -55,6 +55,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 	int parts_packed;
 	int agent_queue_size;
 	int agent_count;
+	int agent_thread_count;
 	int slurmdbd_queue_size;
 	time_t now = time(NULL);
 
@@ -90,6 +91,8 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			pack32(agent_queue_size, buffer);
 			agent_count = get_agent_count();
 			pack32(agent_count, buffer);
+			agent_thread_count = get_agent_thread_count();
+			pack32(agent_thread_count, buffer);
 			pack32(slurmdbd_queue_size, buffer);
 			pack32(slurmctld_diag_stats.latency, buffer);
 
