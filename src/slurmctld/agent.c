@@ -1784,6 +1784,17 @@ extern int get_agent_count(void)
 	return cnt;
 }
 
+extern int get_agent_thread_count(void)
+{
+	int cnt;
+
+	slurm_mutex_lock(&agent_cnt_mutex);
+	cnt = agent_thread_cnt;
+	slurm_mutex_unlock(&agent_cnt_mutex);
+
+	return cnt;
+}
+
 static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 {
 	if (agent_arg_ptr == NULL)

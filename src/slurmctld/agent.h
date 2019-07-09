@@ -98,6 +98,9 @@ extern void agent_purge (void);
 /* get_agent_count - find out how many active agents we have */
 extern int get_agent_count(void);
 
+/* get_agent_thread_count - get count of threads spawned by agents */
+extern int get_agent_thread_count(void);
+
 /* agent_pack_pending_rpc_stats - pack counts of pending RPCs into a buffer */
 extern void agent_pack_pending_rpc_stats(Buf buffer);
 
