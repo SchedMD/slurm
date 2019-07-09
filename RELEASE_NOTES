@@ -1,5 +1,4 @@
-RELEASE NOTES FOR SLURM VERSION 19.05
-28 May 2019
+RELEASE NOTES FOR SLURM VERSION 20.02
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -7,209 +6,27 @@ If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 NOTE: If using a backup DBD you must start the primary first to do any
 database conversion, the backup will not start until this has happened.
 
-The 19.05 slurmdbd will work with Slurm daemons of version 17.11 and above.
+The 20.02 slurmdbd will work with Slurm daemons of version 18.08 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
 
-Slurm can be upgraded from version 17.11 or 18.08 to version 19.05 without loss
+Slurm can be upgraded from version 18.08 or 19.05 to version 20.02 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
-NOTE: The slurmctld is now set to fatal if there are any problems with
-      any state files.  To avoid this use the new '-i' flag.
-
-NOTE: systemd services files are installed automatically, but not enabled.
-      You will need to manually enable them on the appropriate systems:
-      - Controller: systemctl enable slurmctld
-      - Database: systemctl enable slurmdbd
-      - Compute Nodes: systemctl enable slurmd
-
-NOTE: Cray/ALPS support has been removed.
-
-NOTE: Built-in BLCR support has been removed.
-
-NOTE: The CryptoType option has been renamed to CredType, and the crypto/munge
-      plugin has been renamed to cred/munge.
-
-NOTE: The crypto/openssl plugin has been removed.
-
-NOTE: The launch/poe plugin has been removed.
-
-NOTE: The proctrack/lua plugin has been removed.
-
-NOTE: The proctrack/sgi_job plugin has been removed.
-
-NOTE: The select/serial plugin has been removed.
-
-NOTE: The switch/nrt plugin has been removed.
-
-NOTE: slurmd and slurmctld will now fatal if two incompatible mechanisms for
-      enforcing memory limits are set. This makes incompatible the use of
-      task/cgroup memory limit enforcing (Constrain[RAM|Swap]Space=yes) with
-      JobAcctGatherParams=OverMemoryKill, which could cause problems when a
-      task is killed by one of them while the other is at the same time
-      managing that task. The NoOverMemoryKill setting has been deprecated in
-      favor of OverMemoryKill, since now the default is *NOT* to have any
-      memory enforcement mechanism.
-
-NOTE: MemLimitEnforce parameter has been removed and the functionality that
-      was provided with it has been merged into a JobAcctGatherParams. It
-      may be enabled by setting JobAcctGatherParams=OverMemoryKill, so now
-      job and steps killing by OOM is enabled from the same place.
-
-NOTE: SLURM_FAILURE, SLURM_SOCKET_ERROR, SLURM_PROTOCOL_SUCCESS, and
-      SLURM_PROTOCOL_ERROR been removed please update to SLURM_SUCCESS or
-      SLURM_ERROR as appropriate.
-
-NOTE: Limit pam_slurm_adopt to run only in the sshd context by default, for
-      security reasons. A new module option 'service=<name>' can be used to
-      allow a different PAM applications to work. The option 'service=*' can be
-      used to restore the old behavior of always performing the adopt logic
-      regardless of the PAM application context.
-
-NOTE: pam_slurm_adopt will now inject the SLURM_JOB_ID environment variable
-      into adopted processes. Any srun command launched inside a shell will
-      automatically launch within that job allocation.
-
-NOTE: The --quiet flag in sbatch will now suppress the printing of
-      "Submitted batch job %u" and "Submitted batch job %u on cluster %s".
-
-NOTE: sreport reports 'job SizesByAccount' and 'job SizesByAccountAndWckey'
-      have been changed and now will default to report the root account totals
-      if no Accounts= are specified. If specified, the requested accounts will
-      now be displayed instead of the ones in a lower level in the tree.
-      Old behavior can still be invoked using the new option 'AcctAsParent'.
-      Perl API functions have been adapted removing the '_top_' in the
-      respective signatures. The new parameter have also been added.
-
-NOTE: libslurmdb has been merged into libslurm.  If functionality is needed
-      from libslurmdb please just link to libslurm.
-
-NOTE: 32-bit builds have been deprecated. Use --enable-deprecated to continue
-      building on 32-bit systems.
-
-NOTE: Expansion of running jobs has been disabled. A new SchedulerParameter of
-      permit_job_expansion has been added for sites that wish to re-enable it.
-
-NOTE: The version field of a node registration message now records the major
-      and minor version of slurmd. This changes the data displayed in sinfo,
-      sview, scontrol show node and the API.
-
-NOTE: The X11 forwarding code has been revamped, and no longer relies on
-      libssh2 to function. However, support for --x11 alongside sbatch has
-      been removed, as the new forwarding code relies on the allocating
-      salloc or srun command to process the forwarding.
-
-NOTE: X11 Forwarding - the behavior of X11Parameters=local_xauthority is now
-      the default, and that option is ignored. A new option of "home_xauthority"
-      has been option to revert to the pre-19.05 behavior if desired.
-
-NOTE: X11 Forwarding - the behavior of X11Parameters=use_raw_hostname is now
-      the default, and that option is ignored.
 
 HIGHLIGHTS
 ==========
- -- Add select/cons_tres plugin, which offers similar functionality to cons_res
-    with far greater GPU scheduling flexibility.
- -- Add new nss_slurm capability.
- -- Changed the default fair share algorithm to "fair tree". To disable this
-    and revert to "classic" fair share you must set PriorityFlags=NO_FAIR_TREE.
- -- Add Site Factor to job to set an administrator priority factor for a
-    job. Can be set by scontrol or by a job submit plugin.
- -- Alternatively, the new Site Factor for priority can be set and updated
-    through a new site_factor plugin interface. This plugin can be used to set
-    this factor at job submission time, and update it every PriorityCalcPeriod.
- -- Add priorities to associations.
- -- Added NO_NORMAL_[ALL|ASSOC|PART|QOS|TRES] PriorityFlags to not normalize
-    associated factors.
- -- Cloud/PowerSave Improvements:
-    - Better responsiveness to resuming and suspending.
-    - Powering down nodes not eligible to be allocated until after
-      SuspendTimeout.
-    - Powering down nodes put in "Powering Down / %" state until after
-      SuspendTimeout.
- -- Allocate nodes that are booting. Previously, nodes that were being booted
-    were off limits for allocation. This caused more nodes to be booted than
-    needed in a cloud environment.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
-The 19.05 release includes some major restructuring for Cray systems in
-particular. This work is being done in anticipation of the next generation
-of Cray system software, and is meant to clarify which configuration options
-and plugin are used on existing Rhine/Redwood (aka Cray XC systems) using
-the Aries interconnect. Changes to your slurm.conf, and other associated
-configuration files will be required before upgrading to this release.
-
- -- The burst_buffer/cray plugin has been renamed to burst_buffer/datawarp.
-    You will need to update your BurstBufferType in slurm.conf with the
-    updated name, and rename your burst_buffer_cray.conf configuration
-    file to burst_buffer_datawarp.conf as part of your upgrade.
-    (If your burst_buffer configuration file is named burst_buffer.conf,
-    you will not need to rename it.)
-
-    If you have "bb/cray" listed in AccountingStorageTRES, you must also update
-    this to "bb/datawarp".
-
- -- Support for the Cray NHC subsystem has been removed. Sites should use a
-    Cray-provided replacement Epilog script as a replacement to validate the
-    health of the individual compute nodes. The SelectTypeParameters options
-    of NHC_ABSOLUTELY_NO, NHC_NO_STEPS, and NHC_NO have been removed as well.
-
- -- All other Cray plugins have been renamed to cray_aries, namely ...
-
-      acct_gather_energy/cray
-      core_spec/cray
-      job_submit/cray
-      power/cray
-      proctrack/cray
-      select/cray
-      switch/cray
-      task/cray
-
-      all are now cray_aries.  You will need to update your slurm.conf to
-      reflect these changes.
-
- -- Heterogeneous jobs are now possible on a Cray.
-
- -- The slurmsmwd package has been split off from the main Cray RPM build
-    process, and is available with the new --with slurmsmwd build option.
-    Note that slurmsmwd builds need to be generated separately from the main
-    installation.
-
- -- In your slurm.conf AccountingStorageTRES with bb/cray will need to be
-    changed to bb/datawarp.
-    This will happen automatically in the database - very quick.
-
- -- The option "--enable-native-cray" option to the configure program has been
-    removed. That is now the default mode of operation on Cray systems.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- Add GPU scheduling options to slurm.conf, available both globally and
-    per-partition: DefCpusPerGPU and DefMemPerGPU.
- -- Add PriorityWeightAssoc to control association priority factor of a job.
- -- Add idle_on_node_suspend SlurmctldParameter to make nodes idle regardless
-    of state when suspended.
- -- Add preempt_send_user_signal SlurmctldParameter option to send user
-    signal (e.g. --signal=<SIG_NUM>) at preemption if it hasn't already been
-    sent.
- -- Add PreemptExemptTime parameter to slurm.conf and QOS to guarantee a
-    minimum runtime before preemption.
- -- Add reboot_from_controller SlurmctldParameter to allow RebootProgram to be
-    run from the controller instead of the slurmds.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Add GPU scheduling options for salloc, sbatch and srun:
-   --cpus-per-gpu, -G/--gpus, --gpu-bind, --gpu-freq, --gpus-per-node,
-   --gpus-per-socket, --gpus-per-task and --mem-per-gpu.
- -- If GRES are associated with specific sockets, identify those sockets in the
-    output of "scontrol show node" (e.g. "Gres=gpu:4(S:0)").
- -- Changed "scontrol reboot" to not default to ALL nodes.
- -- Changed "scontrol completing" to include two new fields on each line:
-    EndTime and CompletingTime.
