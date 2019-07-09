@@ -1939,7 +1939,10 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 					    qos_ptr->max_wall_pj),
 					&job_ptr->limit_set.time);
 
+			/* Account for usage factor, if necessary */
 			if ((job_ptr->qos_ptr &&
+			     (job_ptr->qos_ptr->flags &&
+			      QOS_FLAG_USAGE_FACTOR_SAFE) &&
 			     (job_ptr->qos_ptr->usage_factor >= 0)) &&
 			    ((time_limit != INFINITE) ||
 			     (job_ptr->qos_ptr->usage_factor < 1.0))) {
@@ -2035,7 +2038,10 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 					&job_ptr->limit_set.time);
 		}
 
+		/* Account for usage factor, if necessary */
 		if ((job_ptr->qos_ptr &&
+		     (job_ptr->qos_ptr->flags &
+		      QOS_FLAG_USAGE_FACTOR_SAFE) &&
 		     (job_ptr->qos_ptr->usage_factor >= 0)) &&
 		    ((time_limit != INFINITE) ||
 		     (job_ptr->qos_ptr->usage_factor < 1.0))) {
@@ -3499,8 +3505,10 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
 						    assoc_ptr->max_wall_pj),
 						&job_ptr->limit_set.time);
 
-				/* Account for usage factor */
+				/* Account for usage factor, if necessary */
 				if ((job_ptr->qos_ptr &&
+				     (job_ptr->qos_ptr->flags &
+				      QOS_FLAG_USAGE_FACTOR_SAFE) &&
 				     (job_ptr->qos_ptr->usage_factor >= 0)) &&
 				    ((time_limit != INFINITE) ||
 				     (job_ptr->qos_ptr->usage_factor < 1.0))) {
@@ -3576,8 +3584,10 @@ extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
 						assoc_ptr->max_wall_pj,
 						&job_ptr->limit_set.time);
 
-				/* Account for usage factor */
+				/* Account for usage factor, if necessary */
 				if ((job_ptr->qos_ptr &&
+				     (job_ptr->qos_ptr->flags &
+				      QOS_FLAG_USAGE_FACTOR_SAFE) &&
 				     (job_ptr->qos_ptr->usage_factor >= 0)) &&
 				    ((time_limit != INFINITE) ||
 				     (job_ptr->qos_ptr->usage_factor < 1.0))) {
@@ -3677,12 +3687,14 @@ extern bool acct_policy_job_runnable_post_select(
 	_set_time_limit(&time_limit, job_ptr->part_ptr->max_time,
 			job_ptr->part_ptr->default_time, NULL);
 
-	if ((job_ptr->qos_ptr &&
-	     (job_ptr->qos_ptr->usage_factor >= 0)) &&
-	    ((time_limit != INFINITE) ||
-	     (job_ptr->qos_ptr->usage_factor < 1.0))) {
+	if (job_ptr->qos_ptr) {
 		usage_factor = job_ptr->qos_ptr->usage_factor;
-		time_limit *= usage_factor;
+
+		if ((usage_factor >= 0) &&
+		    (job_ptr->qos_ptr->flags & QOS_FLAG_USAGE_FACTOR_SAFE) &&
+		    ((time_limit != INFINITE) || (usage_factor < 1.0))) {
+			time_limit *= usage_factor;
+		}
 	}
 
 	for (i=0; i<slurmctld_tres_cnt; i++)

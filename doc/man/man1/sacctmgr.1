@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "February 2019" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "July 2019" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -1170,6 +1170,11 @@ GrpWall limits can be increased or the QOS RawUsage value reset to 0
 (zero) to again allow jobs submitted with this QOS to be queued (if
 DenyOnLimit is set) or run (pending with QOSGrp{TRES}MinutesLimit
 or QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
+.TP
+\fIUsageFactorSafe\fP
+If set, and \fIAccountingStorageEnforce\fR includes \fISafe\fR, jobs will only
+be able to run if the job can run to completion with the \fIUsageFactor\fR
+applied.
 .RE
 
 .TP
@@ -1316,12 +1321,7 @@ accounts.
 
 .TP
 \fIUsageFactor\fP
-Usage factor when running with this QOS.
-(i.e. .5 would make it use only half the time as normal in accounting and 2
-would make it use twice as much.) This only applies to the internal wall TRES
-usage used for limits and determining priority in the slurmctld and doesn't
-modify the real usage in the database. The usage factor only applies to the
-jobs QOS and not the partition QOS, and partition QOS limits (if configured).
+Usage factor when running with this QOS. See below for more details.
 
 .TP
 \fIUsageThreshold\fP
@@ -1497,13 +1497,33 @@ To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
 \fIUsageFactor\fP
-Usage factor when running with this QOS.  This is a float that is factored into
-the priority time calculations of running jobs.  e.g. if the usagefactor of a
-QOS was 2 for every TRESBillingUnit second a job ran it would count for 2.
-Also if the usagefactor was .5, every second would only count for half
-of the time.  Setting this value to 0 will make it so that running
-jobs will not add time to fairshare or association/qos limits.  To
-clear a previously set value use the modify command with a new value of \-1.
+A float that is factored into a job’s TRES usage (e.g. RawUsage, TRESMins,
+TRESRunMins). For example, if the usagefactor was 2, for every TRESBillingUnit
+second a job ran it would count for 2. If the usagefactor was .5, every second
+would only count for half of the time. A setting of 0 would add no timed usage
+from the job.
+
+The usage factor only applies to the job's QOS and not the partition QOS.
+
+If the \fIUsageFactorSafe\fR flag \fIis\fR set and
+\fIAccountingStorageEnforce\fR includes \fISafe\fR, jobs will only be
+able to run if the job can run to completion with the \fIUsageFactor\fR
+applied.
+
+If the \fIUsageFactorSafe\fR flag is \fInot\fR set and
+\fIAccountingStorageEnforce\fR includes \fISafe\fR, a job will be able to
+be scheduled without the \fIUsageFactor\fR applied and will be able to run
+without being killed due to limits.
+
+If the \fIUsageFactorSafe\fR flag is \fInot\fR set and
+\fIAccountingStorageEnforce\fR does not include \fISafe\fR, a job will be
+able to be scheduled without the \fIUsageFactor\fR applied and could be killed
+due to limits.
+
+See \fIAccountingStorageEnforce\fR in slurm.conf man page.
+
+Default is 1. To clear a previously set value use the modify command with a new
+value of -1.
 
 .SH "SPECIFICATIONS FOR RESERVATIONS"
 

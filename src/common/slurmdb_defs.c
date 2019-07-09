@@ -427,6 +427,9 @@ static uint32_t _str_2_qos_flags(char *flags)
 	if (xstrcasestr(flags, "NoDecay"))
 		return QOS_FLAG_NO_DECAY;
 
+	if (xstrcasestr(flags, "UsageFactorSafe"))
+		return QOS_FLAG_USAGE_FACTOR_SAFE;
+
 	return 0;
 }
 
@@ -1935,6 +1938,8 @@ extern char *slurmdb_qos_flags_str(uint32_t flags)
 		xstrcat(qos_flags, "RequiresReservation,");
 	if (flags & QOS_FLAG_NO_DECAY)
 		xstrcat(qos_flags, "NoDecay,");
+	if (flags & QOS_FLAG_USAGE_FACTOR_SAFE)
+		xstrcat(qos_flags, "UsageFactorSafe,");
 
 	if (qos_flags)
 		qos_flags[strlen(qos_flags)-1] = '\0';

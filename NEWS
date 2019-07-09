@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix (un)supported states in sacct.
  -- Adjust build system to no longer use the AC_FUNC_MALLOC autoconf macro.
  -- srun - restore the --cpu_bind option to srun.
+ -- Add UsageFactorSafe QOS flag to control applying UsageFactor at
+    submission/scheduling time.
 
 * Changes in Slurm 19.05.0
 ==========================
