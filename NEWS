@@ -329,6 +329,9 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we set the alloc_node in a resource allocation based on the auth
     plugin instead of the rpc call.
 
+* Changes in Slurm 18.08.9
+==========================
+
 * Changes in Slurm 18.08.8
 ==========================
  -- Update "xauth list" to use the same 10000ms timeout as the other xauth
