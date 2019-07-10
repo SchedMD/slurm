@@ -41,6 +41,7 @@
 #include "cons_common.h"
 #include "dist_tasks.h"
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_selecttype_info.h"
@@ -3844,4 +3845,153 @@ extern int common_job_ready(struct job_record *job_ptr)
 	}
 
 	return READY_NODE_STATE;
+}
+
+extern int common_nodeinfo_set_all(void)
+{
+	static time_t last_set_all = 0;
+	struct part_res_record *p_ptr;
+	struct node_record *node_ptr = NULL;
+	int i, n;
+	uint32_t alloc_cpus, alloc_cores, node_cores, node_cpus, node_threads;
+	uint32_t node_boards, node_sockets, total_node_cores;
+	bitstr_t **alloc_core_bitmap = NULL;
+	List gres_list;
+
+	/*
+	 * only set this once when the last_node_update is newer than
+	 * the last time we set things up.
+	 */
+	if (last_set_all && (last_node_update < last_set_all)) {
+		debug2("%s: Node data hasn't changed since %ld", __func__,
+		       (long)last_set_all);
+		return SLURM_NO_CHANGE_IN_DATA;
+	}
+	last_set_all = last_node_update;
+
+	/*
+	 * Build core bitmap array representing all cores allocated to all
+	 * active jobs (running or preempted jobs)
+	 */
+	for (p_ptr = select_part_record; p_ptr; p_ptr = p_ptr->next) {
+		if (!p_ptr->row)
+			continue;
+		for (i = 0; i < p_ptr->num_rows; i++) {
+			if (!p_ptr->row[i].row_bitmap)
+				continue;
+			if (!alloc_core_bitmap) {
+				alloc_core_bitmap =
+				 	copy_core_array(
+						p_ptr->row[i].row_bitmap);
+			} else {
+				core_array_or(alloc_core_bitmap,
+					      p_ptr->row[i].row_bitmap);
+			}
+		}
+	}
+
+	for (n = 0, node_ptr = node_record_table_ptr;
+	     n < select_node_cnt; n++, node_ptr++) {
+		select_nodeinfo_t *nodeinfo = NULL;
+		/*
+		 * We have to use the '_g_' here to make sure we get the
+		 * correct data to work on.  i.e. select/cray calls this plugin
+		 * and has it's own struct.
+		 */
+		select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
+					     SELECT_NODEDATA_PTR, 0,
+					     (void *)&nodeinfo);
+		if (!nodeinfo) {
+			error("%s: no nodeinfo returned from structure",
+			      __func__);
+			continue;
+		}
+
+		if (slurmctld_conf.fast_schedule) {
+			node_boards  = node_ptr->config_ptr->boards;
+			node_sockets = node_ptr->config_ptr->sockets;
+			node_cores   = node_ptr->config_ptr->cores;
+			node_cpus    = node_ptr->config_ptr->cpus;
+			node_threads = node_ptr->config_ptr->threads;
+		} else {
+			node_boards  = node_ptr->boards;
+			node_sockets = node_ptr->sockets;
+			node_cores   = node_ptr->cores;
+			node_cpus    = node_ptr->cpus;
+			node_threads = node_ptr->threads;
+		}
+
+		if (is_cons_tres) {
+			if (alloc_core_bitmap && alloc_core_bitmap[n])
+				alloc_cores = bit_set_count(
+					alloc_core_bitmap[n]);
+			else
+				alloc_cores = 0;
+
+			total_node_cores =
+				node_boards * node_sockets * node_cores;
+		} else {
+			int start = cr_get_coremap_offset(n);
+			int end = cr_get_coremap_offset(n + 1);
+			if (alloc_core_bitmap)
+				alloc_cores = bit_set_count_range(
+					*alloc_core_bitmap,
+					start, end);
+			else
+				alloc_cores = 0;
+
+			total_node_cores = end - start;
+		}
+
+		/*
+		 * Administrator could resume suspended jobs and oversubscribe
+		 * cores, avoid reporting more cores in use than configured
+		 */
+		if (alloc_cores > total_node_cores)
+			alloc_cpus = total_node_cores;
+		else
+			alloc_cpus = alloc_cores;
+
+		/*
+		 * The minimum allocatable unit may a core, so scale by thread
+		 * count up to the proper CPU count as needed
+		 */
+		if (total_node_cores < node_cpus)
+			alloc_cpus *= node_threads;
+		nodeinfo->alloc_cpus = alloc_cpus;
+
+		if (select_node_record) {
+			nodeinfo->alloc_memory =
+				select_node_usage[n].alloc_memory;
+		} else {
+			nodeinfo->alloc_memory = 0;
+		}
+
+		/* Build allocated TRES info */
+		if (!nodeinfo->tres_alloc_cnt)
+			nodeinfo->tres_alloc_cnt = xcalloc(slurmctld_tres_cnt,
+							   sizeof(uint64_t));
+		nodeinfo->tres_alloc_cnt[TRES_ARRAY_CPU] = alloc_cpus;
+		nodeinfo->tres_alloc_cnt[TRES_ARRAY_MEM] =
+			nodeinfo->alloc_memory;
+		if (select_node_usage[n].gres_list)
+			gres_list = select_node_usage[n].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		gres_set_node_tres_cnt(gres_list, nodeinfo->tres_alloc_cnt,
+				       false);
+
+		xfree(nodeinfo->tres_alloc_fmt_str);
+		nodeinfo->tres_alloc_fmt_str =
+			assoc_mgr_make_tres_str_from_array(
+						nodeinfo->tres_alloc_cnt,
+						TRES_STR_CONVERT_UNITS, false);
+		nodeinfo->tres_alloc_weighted =
+			assoc_mgr_tres_weighted(nodeinfo->tres_alloc_cnt,
+					node_ptr->config_ptr->tres_weights,
+					priority_flags, false);
+	}
+	free_core_array(&alloc_core_bitmap);
+
+	return SLURM_SUCCESS;
 }
