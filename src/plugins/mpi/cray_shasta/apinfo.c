@@ -288,32 +288,48 @@ static pals_pe_t *_setup_pals_pes(int ntasks, int nnodes, uint16_t *task_cnts,
  * Return an array of pals_cmd_t structures.
  */
 static pals_cmd_t *_setup_pals_cmds(int ncmds, int ntasks, int nnodes,
-				    int cpus_per_task, uint32_t *tid_offsets)
+				    int cpus_per_task, pals_pe_t *pes)
 {
 	pals_cmd_t *cmds;
-	int i, j;
+	int peidx, cmdidx, nodeidx, max_ppn;
+	int **cmd_ppn;
 
-	cmds = xmalloc(ncmds * sizeof(pals_cmd_t));
-	for (i = 0; i < ncmds; i++) {
-		// For non-MPMD apps, npes = ntasks
-		if (ncmds == 1 || tid_offsets == NULL) {
-			cmds[i].npes = ntasks;
-		} else {
-			// Count number of PEs using the task offsets
-			cmds[i].npes = 0;
-			for (j = 0; j < ntasks; j++) {
-				if (tid_offsets[j] == i) {
-					cmds[i].npes++;
-				}
-			}
-		}
-
-		// We don't have access to per-command values for these,
-		// so set them all to the same value.
-		cmds[i].cpus_per_pe = cpus_per_task;
-		cmds[i].pes_per_node = ntasks / nnodes;
+	// Allocate and initialize arrays
+	cmds = xcalloc(ncmds, sizeof(pals_cmd_t));
+	cmd_ppn = xmalloc(ncmds * sizeof(int *));
+	for (cmdidx = 0; cmdidx < ncmds; cmdidx++) {
+		cmd_ppn[cmdidx] = xcalloc(nnodes, sizeof(int));
 	}
 
+	// Count number of PEs for each command/node
+	for (peidx = 0; peidx < ntasks; peidx++) {
+		cmdidx = pes[peidx].cmdidx;
+		nodeidx = pes[peidx].nodeidx;
+		if (cmdidx >= 0 && cmdidx < ncmds && nodeidx >= 0 &&
+		    nodeidx < nnodes) {
+			cmd_ppn[cmdidx][nodeidx]++;
+		}
+	}
+
+	// Fill in command information
+	for (cmdidx = 0; cmdidx < ncmds; cmdidx++) {
+		// NOTE: we don't know each job's depth for a heterogeneous job
+		cmds[cmdidx].cpus_per_pe = cpus_per_task;
+
+		// Find the total PEs and max PEs/node for this command
+		max_ppn = 0;
+		for (nodeidx = 0; nodeidx < nnodes; nodeidx++) {
+			cmds[cmdidx].npes += cmd_ppn[cmdidx][nodeidx];
+			if (cmd_ppn[cmdidx][nodeidx] > max_ppn) {
+				max_ppn = cmd_ppn[cmdidx][nodeidx];
+			}
+		}
+		xfree(cmd_ppn[cmdidx]);
+
+		cmds[cmdidx].pes_per_node = max_ppn;
+	}
+
+	xfree(cmd_ppn);
 	return cmds;
 }
 
@@ -483,9 +499,8 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 
 	// Get information to write
 	_build_header(&hdr, ncmds, ntasks, nnodes);
-	cmds = _setup_pals_cmds(ncmds, ntasks, nnodes, job->cpus_per_task,
-				tid_offsets);
 	pes = _setup_pals_pes(ntasks, nnodes, task_cnts, tids, tid_offsets);
+	cmds = _setup_pals_cmds(ncmds, ntasks, nnodes, job->cpus_per_task, pes);
 
 	// Create the file
 	fd = _open_apinfo(job);
