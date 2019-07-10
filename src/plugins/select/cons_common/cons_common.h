@@ -54,7 +54,6 @@ struct part_row_data {
 					 * In cons_res only the first ptr is
 					 * used.
 					 */
-	int row_bitmap_size;            /* size of row_bitmap array */
 };
 
 /* partition core allocation bitmap arrays (1 bitmap per node) */
@@ -241,9 +240,6 @@ extern int common_rm_job_res(struct part_res_record *part_record_ptr,
 
 /* Log contents of partition structure */
 extern void common_dump_parts(struct part_res_record *p_ptr);
-
-/* Clear all elements the row_bitmap of the row */
-extern void common_clear_row_bitmap(struct part_row_data *r_ptr);
 
 /* sort the rows of a partition from "most allocated" to "least allocated" */
 extern void common_sort_part_rows(struct part_res_record *p_ptr);

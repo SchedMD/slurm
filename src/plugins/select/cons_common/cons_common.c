@@ -2243,16 +2243,10 @@ extern void common_destroy_part_data(struct part_res_record *this_ptr)
 extern void common_destroy_row_data(
 	struct part_row_data *row, uint16_t num_rows)
 {
-	uint32_t r, n;
+	uint32_t r;
 
 	for (r = 0; r < num_rows; r++) {
-		if (row[r].row_bitmap) {
-			xassert(row[r].row_bitmap_size);
-
-			for (n = 0; n < row[r].row_bitmap_size; n++)
-				FREE_NULL_BITMAP(row[r].row_bitmap[n]);
-			xfree(row[r].row_bitmap);
-		}
+		free_core_array(&row[r].row_bitmap);
 		xfree(row[r].job_list);
 	}
 
@@ -2328,7 +2322,7 @@ extern void common_add_job_to_row(struct job_resources *job,
 	/* add the job to the row_bitmap */
 	if (r_ptr->row_bitmap && (r_ptr->num_jobs == 0)) {
 		/* if no jobs, clear the existing row_bitmap first */
-		common_clear_row_bitmap(r_ptr);
+		clear_core_array(r_ptr->row_bitmap);
 	}
 
 	(*cons_common_callbacks.add_job_to_res)(job, r_ptr, cr_node_num_cores);
@@ -2694,6 +2688,8 @@ extern void common_dump_parts(struct part_res_record *p_ptr)
 	info("part:%s rows:%u prio:%u ", p_ptr->part_ptr->name, p_ptr->num_rows,
 	     p_ptr->part_ptr->priority_tier);
 
+	xassert(core_array_size);
+
 	if (!p_ptr->row)
 		return;
 
@@ -2705,9 +2701,7 @@ extern void common_dump_parts(struct part_res_record *p_ptr)
 		if (!p_ptr->row[r].row_bitmap)
 			continue;
 
-		xassert(p_ptr->row[r].row_bitmap_size);
-
-		for (n = 0; n < p_ptr->row[r].row_bitmap_size; n++) {
+		for (n = 0; n < core_array_size; n++) {
 			if (!p_ptr->row[r].row_bitmap[n] ||
 			    !bit_set_count(p_ptr->row[r].row_bitmap[n]))
 				continue;
@@ -2721,24 +2715,6 @@ extern void common_dump_parts(struct part_res_record *p_ptr)
 		}
 		info(" row:%u num_jobs:%u: %s", r, p_ptr->row[r].num_jobs, tmp);
 		xfree(tmp);
-	}
-}
-
-/* Clear all elements the row_bitmap of the row */
-extern void common_clear_row_bitmap(struct part_row_data *r_ptr)
-{
-	int n;
-
-	xassert(r_ptr);
-
-	if (!r_ptr->row_bitmap)
-		return;
-
-	xassert(r_ptr->row_bitmap_size);
-
-	for (n = 0; n < r_ptr->row_bitmap_size; n++) {
-		if (r_ptr->row_bitmap[n])
-			bit_clear_all(r_ptr->row_bitmap[n]);
 	}
 }
 
@@ -2756,9 +2732,7 @@ extern void common_sort_part_rows(struct part_res_record *p_ptr)
 		if (!p_ptr->row[r].row_bitmap)
 			continue;
 
-		xassert(p_ptr->row[r].row_bitmap_size);
-
-		for (n = 0; n < p_ptr->row[r].row_bitmap_size; n++) {
+		for (n = 0; n < core_array_size; n++) {
 			if (!p_ptr->row[r].row_bitmap[n])
 				continue;
 			a[r] += bit_set_count(p_ptr->row[r].row_bitmap[n]);
@@ -2820,14 +2794,8 @@ extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
 		new_row[i].num_jobs = orig_row[i].num_jobs;
 		new_row[i].job_list_size = orig_row[i].job_list_size;
 		if (orig_row[i].row_bitmap) {
-			xassert(orig_row[i].row_bitmap_size);
-
-			new_row[i].row_bitmap =
-				xcalloc(orig_row[i].row_bitmap_size,
-					sizeof(bitstr_t *));
-			new_row[i].row_bitmap_size =
-				orig_row[i].row_bitmap_size;
-			for (n = 0; n < orig_row[i].row_bitmap_size; n++) {
+			new_row[i].row_bitmap = build_core_array();
+			for (n = 0; n < core_array_size; n++) {
 				if (!orig_row[i].row_bitmap[n])
 					continue;
 				new_row[i].row_bitmap[n] =

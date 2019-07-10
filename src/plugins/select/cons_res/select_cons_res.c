@@ -169,11 +169,9 @@ static void _add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			      struct part_row_data *r_ptr,
 			      const uint16_t *bits_per_node)
 {
-	if (!r_ptr->row_bitmap) {
-		r_ptr->row_bitmap_size = 1;
-		r_ptr->row_bitmap = xcalloc(r_ptr->row_bitmap_size,
-					    sizeof(bitstr_t *));
-	}
+	if (!r_ptr->row_bitmap)
+		r_ptr->row_bitmap = build_core_array();
+
 	add_job_to_cores(job_resrcs_ptr, &r_ptr->row_bitmap[0], bits_per_node);
 	r_ptr->first_row_bitmap = r_ptr->row_bitmap[0];
 }

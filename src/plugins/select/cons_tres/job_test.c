@@ -453,9 +453,6 @@ extern int can_job_fit_in_row(struct job_resources *job,
 	if ((r_ptr->num_jobs == 0) || !r_ptr->row_bitmap)
 		return 1;
 
-	if (!r_ptr->row_bitmap_size)
-		r_ptr->row_bitmap_size = select_node_cnt;
-
 	return _job_fit_test(job, r_ptr->row_bitmap);
 }
 
@@ -621,10 +618,6 @@ extern void add_job_to_res(job_resources_t *job_resrcs_ptr,
 			   struct part_row_data *r_ptr,
 			   const uint16_t *bits_per_node)
 {
-
-	if (!r_ptr->row_bitmap_size)
-		r_ptr->row_bitmap_size = select_node_cnt;
-
 	_add_job_res(job_resrcs_ptr, &r_ptr->row_bitmap);
 }
 
