@@ -392,4 +392,7 @@ extern int common_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			       enum select_nodedata_type dinfo,
 			       enum node_states state,
 			       void *data);
+
+extern int common_nodeinfo_set(struct job_record *job_ptr);
+
 #endif /* _CONS_COMMON_H */

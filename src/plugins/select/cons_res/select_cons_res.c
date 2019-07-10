@@ -1252,22 +1252,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 {
-	int rc;
-	xassert(job_ptr);
-	xassert(job_ptr->magic == JOB_MAGIC);
-
-	if (IS_JOB_RUNNING(job_ptr))
-		rc = common_add_job_to_res(job_ptr, 0);
-	else if (IS_JOB_SUSPENDED(job_ptr)) {
-		if (job_ptr->priority == 0)
-			rc = common_add_job_to_res(job_ptr, 1);
-		else	/* Gang schedule suspend */
-			rc = common_add_job_to_res(job_ptr, 0);
-	} else
-		return SLURM_SUCCESS;
-	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
-
-	return rc;
+	return common_nodeinfo_set(job_ptr);
 }
 
 extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
