@@ -127,10 +127,10 @@ static char *		state_save_loc = NULL;
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-extern int accounting_enforce __attribute__((weak_import));
+extern uint16_t accounting_enforce __attribute__((weak_import));
 extern void *acct_db_conn  __attribute__((weak_import));
 #else
-int accounting_enforce = 0;
+uint16_t accounting_enforce = 0;
 void *acct_db_conn = NULL;
 #endif
 

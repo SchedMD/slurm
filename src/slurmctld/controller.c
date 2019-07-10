@@ -166,7 +166,7 @@ log_options_t sched_log_opts = SCHEDLOG_OPTS_INITIALIZER;
 
 /* Global variables */
 bool    preempt_send_user_signal = false;
-int	accounting_enforce = 0;
+uint16_t accounting_enforce = 0;
 int	association_based_accounting = 0;
 void *	acct_db_conn = NULL;
 int	backup_inx;
