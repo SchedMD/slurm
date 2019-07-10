@@ -1531,43 +1531,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 
 extern int select_p_update_node_config(int index)
 {
-	if (index >= select_node_cnt) {
-		error("%s: index too large (%d > %d)", __func__, index,
-		      select_node_cnt);
-		return SLURM_ERROR;
-	}
-
-	/*
-	 * Socket and core count can be changed when KNL node reboots in a
-	 * different NUMA configuration
-	 */
-	if ((select_fast_schedule == 1) &&
-	    (select_node_record[index].sockets !=
-	     select_node_record[index].node_ptr->config_ptr->sockets) &&
-	    (select_node_record[index].cores !=
-	     select_node_record[index].node_ptr->config_ptr->cores) &&
-	    ((select_node_record[index].sockets *
-	      select_node_record[index].cores) ==
-	     (select_node_record[index].node_ptr->sockets *
-	      select_node_record[index].node_ptr->cores))) {
-		select_node_record[index].cores =
-			select_node_record[index].node_ptr->config_ptr->cores;
-		select_node_record[index].sockets =
-			select_node_record[index].node_ptr->config_ptr->sockets;
-		select_node_record[index].tot_sockets =
-			select_node_record[index].boards *
-			select_node_record[index].sockets;
-	}
-
-	if (select_fast_schedule)
-		return SLURM_SUCCESS;
-
-	select_node_record[index].real_memory =
-		select_node_record[index].node_ptr->real_memory;
-	select_node_record[index].mem_spec_limit =
-		select_node_record[index].node_ptr->mem_spec_limit;
-
-	return SLURM_SUCCESS;
+	return common_update_node_config(index);
 }
 
 /* Unused for this plugin */

@@ -3742,6 +3742,46 @@ extern int common_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	return rc;
 }
 
+extern int common_update_node_config(int index)
+{
+	if (index >= select_node_cnt) {
+		error("%s: index too large (%d > %d)", __func__, index,
+		      select_node_cnt);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Socket and core count can be changed when KNL node reboots in a
+	 * different NUMA configuration
+	 */
+	if ((select_fast_schedule == 1) &&
+	    (select_node_record[index].sockets !=
+	     select_node_record[index].node_ptr->config_ptr->sockets) &&
+	    (select_node_record[index].cores !=
+	     select_node_record[index].node_ptr->config_ptr->cores) &&
+	    ((select_node_record[index].sockets *
+	      select_node_record[index].cores) ==
+	     (select_node_record[index].node_ptr->sockets *
+	      select_node_record[index].node_ptr->cores))) {
+		select_node_record[index].cores =
+			select_node_record[index].node_ptr->config_ptr->cores;
+		select_node_record[index].sockets =
+			select_node_record[index].node_ptr->config_ptr->sockets;
+		/* tot_sockets should be the same */
+		/* tot_cores should be the same */
+	}
+
+	if (select_fast_schedule)
+		return SLURM_SUCCESS;
+
+	select_node_record[index].real_memory =
+		select_node_record[index].node_ptr->real_memory;
+	select_node_record[index].mem_spec_limit =
+		select_node_record[index].node_ptr->mem_spec_limit;
+
+	return SLURM_SUCCESS;
+}
+
 extern int common_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 			       enum select_nodedata_type dinfo,
 			       enum node_states state,
