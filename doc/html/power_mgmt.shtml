@@ -37,17 +37,17 @@ Currently valid options are:
   the underlying infrastructure and values below 10 seconds are not recommended
   for Cray systems).
   The default value is 30 seconds.
-  Supported by the power/cray plugin.</li>
+  Supported by the power/cray_aries plugin.</li>
 <li><b>capmc_path=/...</b> -
   Specifies the absolute path of the <b>capmc</b> command.
   The default value is "/opt/cray/capmc/default/bin/capmc".
-  Supported by the power/cray plugin.</li>
+  Supported by the power/cray_aries plugin.</li>
 <li><b>cap_watts=#[KW|MW]</b> -
   Specifies the total power limit to be established across all compute nodes
   managed by Slurm.
   A value of 0 sets every compute node to have an unlimited cap.
   The default value is 0.
-  Supported by the power/cray plugin.</li>
+  Supported by the power/cray_aries plugin.</li>
 <li><b>decrease_rate=#</b> -
   Specifies the maximum rate of change in the power cap for a node where the
   actual power usage is below the power cap by an amount greater than
@@ -55,14 +55,14 @@ Currently valid options are:
   Value represents a percentage of the difference between a node's minimum and
   maximum power consumption.
   The default value is 50 percent.
-  Supported by the power/cray plugin.</li>
+  Supported by the power/cray_aries plugin.</li>
 <li><b>increase_rate=#</b> -
   Specifies the maximum rate of change in the power cap for a node where the
   actual power usage is within upper_threshold (see below) of the power cap.
   Value represents a percentage of the difference between a node's minimum and
   maximum power consumption.
   The default value is 20 percent.
-  Supported by the power/cray plugin.</li>
+  Supported by the power/cray_aries plugin.</li>
 <li><b>job_level</b> -
   All compute nodes associated with every job will be assigned the same power
   cap.
@@ -79,25 +79,25 @@ Currently valid options are:
   If a node's current power consumption is below this percentage of its current
   cap, then its power cap will be reduced.
   The default value is 90 percent.
-  Supported by the power/cray plugin.</li>
+  Supported by the power/cray_aries plugin.</li>
 <li><b>recent_job=#</b> -
   If a job has started or resumed execution (from suspend) on a compute node
   within this number of seconds from the current time, the node's power cap will
   be increased to the maximum.
   The default value is 300 seconds.
-  Supported by the power/cray plugin.</li>
+  Supported by the power/cray_aries plugin.</li>
 <li><b>set_watts=#</b> -
   Specifies the power limit to be set on every compute nodes managed by Slurm.
   Every node gets this same power cap and there is no variation through time
   based upon actual power usage on the node.
-  Supported by the power/cray plugin.</li>
+  Supported by the power/cray_aries plugin.</li>
 <li><b>upper_threshold=#</b> -
   Specify an upper power consumption threshold.
   If a node's current power consumption is above this percentage of its current
   cap, then its power cap will be increased to the extent possible.
   A node's power cap will also be increased if a job is newly started on it.
   The default value is 95 percent.
-  Supported by the power/cray plugin.</li>
+  Supported by the power/cray_aries plugin.</li>
 </ul></li>
 
 <li><b>PowerPlugin</b>:
@@ -106,8 +106,8 @@ Changes to this value require restarting Slurm daemons to take effect.
 By default, no power plugin is loaded.
 Currently valid options are:
 <ul>
-<li><b>power/cray</b> -
-   Used for Cray systems with power monitoring and management
+<li><b>power/cray_aries</b> -
+   Used for Cray XC systems with power monitoring and management
    functionality included as part of System Management Workstation (SMW)
    7.0.UP03.</li>
 <li><b>power/none</b> - No power management support.</li>
@@ -115,7 +115,7 @@ Currently valid options are:
 </ul>
 
 <p><b>Note for Cray systems:</b> The JSON-C library must be installed in order
-to build Slurm's power/cray plugin, which must parse JSON format data.
+to build Slurm's power/cray_aries plugin, which must parse JSON format data.
 See Slurm's <a href="download.html#json">JSON installation information</a>
 for details.</p>
 

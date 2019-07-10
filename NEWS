@@ -9,6 +9,9 @@ documents those changes that are of interest to users and administrators.
     SALLOC_MEM_PER_CPU, SALLOC_MEM_PER_NODE, SBATCH_MEM_PER_CPU and
     SBATCH_MEM_PER_NODE.
 
+* Changes in Slurm 19.05.2
+==========================
+
 * Changes in Slurm 19.05.1
 ==========================
  -- accounting_storage/mysql - fix incorrect function names in error messages.
@@ -50,6 +53,10 @@ documents those changes that are of interest to users and administrators.
  -- Add UsageFactorSafe QOS flag to control applying UsageFactor at
     submission/scheduling time.
  -- Create missing reservations on DBD_MODIFY_RESV.
+ -- Add error message when attempting to update association manager and object
+    doesn't exist.
+ -- Fix security issue in accounting_storage/mysql plugin on archive file loads
+    by always escaping strings within the slurmdbd. CVE-2019-12838.
 
 * Changes in Slurm 19.05.0
 ==========================
@@ -333,6 +340,9 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we set the alloc_node in a resource allocation based on the auth
     plugin instead of the rpc call.
 
+* Changes in Slurm 18.08.9
+==========================
+
 * Changes in Slurm 18.08.8
 ==========================
  -- Update "xauth list" to use the same 10000ms timeout as the other xauth
@@ -406,6 +416,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmdbd - avoid reservation flag column corruption with the use of newer
     flags, instead preserve the older flag fields that we can still fit in the
     smallint field, and discard the rest.
+ -- Fix security issue in accounting_storage/mysql plugin on archive file loads
+    by always escaping strings within the slurmdbd. CVE-2019-12838.
 
 * Changes in Slurm 18.08.7
 ==========================

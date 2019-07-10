@@ -3694,6 +3694,9 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 		switch(update->type) {
 		case SLURMDB_MODIFY_ASSOC:
 			if (!rec) {
+				error("SLURMDB_MODIFY_ASSOC: assoc %u(%s, %s, %s) not found, unable to update.",
+				     object->id, object->acct,
+				     object->user, object->partition);
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -4205,6 +4208,8 @@ extern int assoc_mgr_update_wckeys(slurmdb_update_object_t *update, bool locked)
 		switch(update->type) {
 		case SLURMDB_MODIFY_WCKEY:
 			if (!rec) {
+				error("SLURMDB_MODIFY_WCKEY: wckey %u(%s) not found, unable to update.",
+				     object->id, object->name);
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -4295,6 +4300,9 @@ extern int assoc_mgr_update_users(slurmdb_update_object_t *update, bool locked)
 		switch(update->type) {
 		case SLURMDB_MODIFY_USER:
 			if (!rec) {
+				error("SLURMDB_MODIFY_USER: user %s not found, unable to update.",
+				      object->old_name ?
+				      object->old_name : object->name);
 				rc = SLURM_ERROR;
 				break;
 			}
@@ -4455,6 +4463,8 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 			break;
 		case SLURMDB_MODIFY_QOS:
 			if (!rec) {
+				error("SLURMDB_MODIFY_QOS: qos %u(%s) not found, unable to update.",
+				      object->id, object->name);
 				rc = SLURM_ERROR;
 				break;
 			}

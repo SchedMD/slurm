@@ -332,9 +332,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	FREE_NULL_BITMAP(b);				\
 } while (0)
 
-#define unpackstr_ptr		                        \
-        unpackmem_ptr
-
 #define unpackstr_malloc	                        \
         unpackmem_malloc
 
