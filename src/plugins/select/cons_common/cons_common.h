@@ -395,4 +395,6 @@ extern int common_job_ready(struct job_record *job_ptr);
 
 extern int common_nodeinfo_set_all(void);
 
+extern int common_job_mem_confirm(struct job_record *job_ptr);
+
 #endif /* _CONS_COMMON_H */
