@@ -145,8 +145,6 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 /* Procedure Declarations */
 static int _job_expand(struct job_record *from_job_ptr,
 		       struct job_record *to_job_ptr);
-static int _rm_job_from_one_node(struct job_record *job_ptr,
-				 struct node_record *node_ptr);
 static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **core_bitmap);
 
 struct sort_support {
@@ -154,16 +152,6 @@ struct sort_support {
 	struct job_resources *tmpjobs;
 };
 static int _compare_support(const void *, const void *);
-
-static void _dump_job_res(struct job_resources *job) {
-	char str[64];
-
-	if (job->core_bitmap)
-		bit_fmt(str, sizeof(str), job->core_bitmap);
-	else
-		sprintf(str, "[no core_bitmap]");
-	info("DEBUG: Dump job_resources: nhosts %u cb %s", job->nhosts, str);
-}
 
 static void _add_job_to_cores(job_resources_t *job_resrcs_ptr,
 			      struct part_row_data *r_ptr,
@@ -620,132 +608,6 @@ static int _job_expand(struct job_record *from_job_ptr,
 	return SLURM_SUCCESS;
 }
 
-static int _rm_job_from_one_node(struct job_record *job_ptr,
-				 struct node_record *node_ptr)
-{
-	struct part_res_record *part_record_ptr = select_part_record;
-	struct node_use_record *node_usage = select_node_usage;
-	struct job_resources *job = job_ptr->job_resrcs;
-	struct part_res_record *p_ptr;
-	int first_bit, last_bit;
-	int i, node_inx, n;
-	List gres_list;
-	bool old_job = false;
-
-	if (!job || !job->core_bitmap) {
-		error("%s: %s: %pJ has no job_resrcs info",
-		      plugin_type, __func__, job_ptr);
-		return SLURM_ERROR;
-	}
-
-	debug3("%s: %s: %pJ node %s",
-	       plugin_type, __func__, job_ptr, node_ptr->name);
-	if (job_ptr->start_time < slurmctld_config.boot_time)
-		old_job = true;
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
-		_dump_job_res(job);
-
-	/* subtract memory */
-	node_inx  = node_ptr - node_record_table_ptr;
-	first_bit = bit_ffs(job->node_bitmap);
-	last_bit  = bit_fls(job->node_bitmap);
-	for (i = first_bit, n = 0; i <= last_bit; i++) {
-		if (!bit_test(job->node_bitmap, i))
-			continue;
-		if (i != node_inx) {
-			n++;
-			continue;
-		}
-
-		if (job->cpus[n] == 0) {
-			info("attempt to remove node %s from %pJ again",
-			     node_ptr->name, job_ptr);
-			return SLURM_SUCCESS;
-		}
-
-		if (node_usage[i].gres_list)
-			gres_list = node_usage[i].gres_list;
-		else
-			gres_list = node_ptr->gres_list;
-		gres_plugin_job_dealloc(job_ptr->gres_list, gres_list, n,
-					job_ptr->job_id, node_ptr->name,
-					old_job, job_ptr->user_id, true);
-		gres_plugin_node_state_log(gres_list, node_ptr->name);
-
-		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
-			error("%s: node %s memory is underallocated (%"PRIu64"-%"PRIu64") for %pJ",
-			      plugin_type, node_ptr->name,
-			      node_usage[i].alloc_memory,
-			      job->memory_allocated[n], job_ptr);
-			node_usage[i].alloc_memory = 0;
-		} else
-			node_usage[i].alloc_memory -= job->memory_allocated[n];
-
-		extract_job_resources_node(job, n);
-
-		break;
-	}
-
-	if (IS_JOB_SUSPENDED(job_ptr))
-		return SLURM_SUCCESS;	/* No cores allocated to the job now */
-
-	/* subtract cores, reconstruct rows with remaining jobs */
-	if (!job_ptr->part_ptr) {
-		error("%s: removed %pJ does not have a partition assigned",
-		      plugin_type, job_ptr);
-		return SLURM_ERROR;
-	}
-
-	for (p_ptr = part_record_ptr; p_ptr; p_ptr = p_ptr->next) {
-		if (p_ptr->part_ptr == job_ptr->part_ptr)
-			break;
-	}
-	if (!p_ptr) {
-		error("%s: removed %pJ could not find part %s",
-		      plugin_type, job_ptr, job_ptr->part_ptr->name);
-		return SLURM_ERROR;
-	}
-
-	if (!p_ptr->row)
-		return SLURM_SUCCESS;
-
-	/* look for the job in the partition's job_list */
-	n = 0;
-	for (i = 0; i < p_ptr->num_rows; i++) {
-		uint32_t j;
-		for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
-			if (p_ptr->row[i].job_list[j] != job)
-				continue;
-			debug3("%s: found %pJ in part %s row %u",
-			       plugin_type, job_ptr, p_ptr->part_ptr->name, i);
-			/* found job - we're done, don't actually remove */
-			n = 1;
-			i = p_ptr->num_rows;
-			break;
-		}
-	}
-	if (n == 0) {
-		error("%s: could not find %pJ in partition %s",
-		      plugin_type, job_ptr, p_ptr->part_ptr->name);
-		return SLURM_ERROR;
-	}
-
-
-	/* some node of job removed from core-bitmap, so refresh CR bitmaps */
-	_build_row_bitmaps(p_ptr, NULL);
-
-	/* Adjust the node_state of the node removed from this job.
-	 * If all cores are now available, set node_state = NODE_CR_AVAILABLE */
-	if (node_usage[node_inx].node_state >= job->node_req) {
-		node_usage[node_inx].node_state -= job->node_req;
-	} else {
-		error("cons_res:_rm_job_from_one_node: node_state miscount");
-		node_usage[node_inx].node_state = NODE_CR_AVAILABLE;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 static int
 _compare_support(const void *v, const void *v1)
 {
@@ -912,11 +774,7 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
 {
-	xassert(job_ptr);
-	xassert(job_ptr->magic == JOB_MAGIC);
-
-	_rm_job_from_one_node(job_ptr, node_ptr);
-	return SLURM_SUCCESS;
+	return common_job_resized(job_ptr, node_ptr);
 }
 
 extern int select_p_job_expand(struct job_record *from_job_ptr,
