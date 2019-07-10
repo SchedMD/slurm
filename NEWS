@@ -74,6 +74,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmdbd - avoid reservation flag column corruption with the use of newer
     flags, instead preserve the older flag fields that we can still fit in the
     smallint field, and discard the rest.
+ -- Fix security issue in accounting_storage/mysql plugin on archive file loads
+    by always escaping strings within the slurmdbd. CVE-2019-12838.
 
 * Changes in Slurm 18.08.7
 ==========================
