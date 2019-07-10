@@ -908,28 +908,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 /* Determine if allocated nodes are usable (powered up) */
 extern int select_p_job_ready(struct job_record *job_ptr)
 {
-	int i, i_first, i_last;
-	struct node_record *node_ptr;
-
-	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
-		/* Gang scheduling might suspend job immediately */
-		return 0;
-	}
-
-	if ((job_ptr->node_bitmap == NULL) ||
-	    ((i_first = bit_ffs(job_ptr->node_bitmap)) == -1))
-		return READY_NODE_STATE;
-	i_last  = bit_fls(job_ptr->node_bitmap);
-
-	for (i = i_first; i <= i_last; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		node_ptr = node_record_table_ptr + i;
-		if (IS_NODE_POWER_SAVE(node_ptr) || IS_NODE_POWER_UP(node_ptr))
-			return 0;
-	}
-
-	return READY_NODE_STATE;
+	return common_job_ready(job_ptr);
 }
 
 extern int select_p_job_resized(struct job_record *job_ptr,
