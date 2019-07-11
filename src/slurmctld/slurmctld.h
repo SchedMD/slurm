@@ -1053,13 +1053,6 @@ extern void abort_job_on_node(uint32_t job_id, struct job_record *job_ptr,
 extern void abort_job_on_nodes(struct job_record *job_ptr,
 			       bitstr_t *node_bitmap);
 
-/*
- * allocated_session_in_use - check if an interactive session is already running
- * IN new_alloc - allocation (alloc_node:alloc_sid) to test for
- * Returns true if an interactive session of the same node:sid already exists.
- */
-extern bool allocated_session_in_use(job_desc_msg_t *new_alloc);
-
 /* set the tres_req_str and tres_req_fmt_str for the job.  assoc_mgr_locked
  * is set if the assoc_mgr read lock is already set.
  */
