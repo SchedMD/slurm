@@ -43,12 +43,18 @@
 
 #define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20] = ""; long delta_t;
 #define START_TIMER	gettimeofday(&tv1, NULL)
-#define END_TIMER	gettimeofday(&tv2, NULL); \
-	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0, &delta_t)
-#define END_TIMER2(from) gettimeofday(&tv2, NULL); \
-	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, 0, &delta_t)
-#define END_TIMER3(from, limit) gettimeofday(&tv2, NULL); \
-	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, limit, &delta_t)
+#define END_TIMER do {							\
+	gettimeofday(&tv2, NULL);					\
+	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0, &delta_t);	\
+} while (0)
+#define END_TIMER2(from) do {						\
+	gettimeofday(&tv2, NULL);					\
+	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, 0, &delta_t);	\
+} while (0)
+#define END_TIMER3(from, limit) do {					\
+	gettimeofday(&tv2, NULL);					\
+	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, limit, &delta_t); \
+} while (0)
 #define DELTA_TIMER	delta_t
 #define TIME_STR 	tv_str
 
