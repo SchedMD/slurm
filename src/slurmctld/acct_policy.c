@@ -1941,7 +1941,7 @@ static int _qos_job_runnable_pre_select(struct job_record *job_ptr,
 
 			/* Account for usage factor, if necessary */
 			if ((job_ptr->qos_ptr &&
-			     (job_ptr->qos_ptr->flags &&
+			     (job_ptr->qos_ptr->flags &
 			      QOS_FLAG_USAGE_FACTOR_SAFE) &&
 			     (job_ptr->qos_ptr->usage_factor >= 0)) &&
 			    ((time_limit != INFINITE) ||

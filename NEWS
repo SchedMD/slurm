@@ -12,6 +12,11 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 19.05.2
 ==========================
 
+* Changes in Slurm 19.05.1-2
+============================
+ -- Fix mistake in QOS time limit calculations for UsageFactor != 0 with any
+    combination of flags set.
+
 * Changes in Slurm 19.05.1
 ==========================
  -- accounting_storage/mysql - fix incorrect function names in error messages.
