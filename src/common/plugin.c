@@ -219,6 +219,14 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	return EPLUGIN_SUCCESS;
 }
 
+/*
+ * Load plugin and setup linking
+ * IN type_name - name of plugin
+ * IN n_syms - number of pointers in ptrs
+ * IN names - pointer list of symbols to link
+ * IN ptr - list of pointers to set with pointers given in names
+ * RET opaque ptr to handler or PLUGIN_INVALID_HANDLE on error
+ */
 plugin_handle_t
 plugin_load_and_link(const char *type_name, int n_syms,
 		     const char *names[], void *ptrs[])
