@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow sacctmgr to add users to WCKeys without having TrackWCKey set in the
     slurm.conf.
  -- Allow sacctmgr to delete WCKeys from users.
+ -- Change GRES type set by gpu/gpu_nvml plugin to be more specific - based
+    on device name instead of brand name.
 
 * Changes in Slurm 19.05.1-2
 ============================

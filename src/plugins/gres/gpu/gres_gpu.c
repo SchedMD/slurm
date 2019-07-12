@@ -140,6 +140,110 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	}
 }
 
+/*
+ * Sort gres/gpu records by descending length of type_name. If length is equal,
+ * sort by ascending type_name. If still equal, sort by ascending file name.
+ */
+static int _sort_gpu_by_type_name(void *x, void *y)
+{
+	gres_slurmd_conf_t *gres_record1 = *(gres_slurmd_conf_t **)x;
+	gres_slurmd_conf_t *gres_record2 = *(gres_slurmd_conf_t **)y;
+	int val1, val2, ret;
+
+	if (!gres_record1->type_name && !gres_record2->type_name)
+		return 0;
+
+	if (gres_record1->type_name && !gres_record2->type_name)
+		return 1;
+
+	if (!gres_record1->type_name && gres_record2->type_name)
+		return -1;
+
+	val1 = strlen(gres_record1->type_name);
+	val2 = strlen(gres_record2->type_name);
+	/*
+	 * By default, qsort orders in ascending order (smallest first). We want
+	 * descending order (longest first), so invert order by negating.
+	 */
+	ret = -(val1 - val2);
+
+	/* Sort by type name value if type name length is equal */
+	if (ret == 0)
+		ret = xstrcmp(gres_record1->type_name, gres_record2->type_name);
+
+	/* Sort by file name if type name value is equal */
+	if (ret == 0)
+		ret = xstrcmp(gres_record1->file, gres_record2->file);
+
+	return ret;
+}
+
+/*
+ * Find the first conf_gres record (x) with a GRES type that is a substring
+ * of the GRES type of sys_gres (key).
+ */
+extern int _find_type_in_gres_list(void *x, void *key)
+{
+	gres_slurmd_conf_t *conf_gres = (gres_slurmd_conf_t *)x;
+	char *sys_gres_type = (char *)key;
+
+	if (!conf_gres)
+		return 0;
+
+	if (xstrcasestr(sys_gres_type, conf_gres->type_name))
+		return 1;
+	else
+		return 0;
+}
+
+/*
+ * Sync the GRES type of each device detected on the system (gres_list_system)
+ * to its corresponding GRES type specified in gres.conf (or slurm.conf, if not
+ * specified in gres.conf). In effect, the sys GRES type will be overwritten to
+ * match the corresponding conf GRES type.
+ *
+ * NOTE: gres_list_system will be sorted in descending order by type_name
+ * length, and gres_list_conf will have its items mangled (count).
+ */
+static void _sync_gres_types(List gres_list_system, List gres_list_conf)
+{
+	gres_slurmd_conf_t *sys_gres, *conf_gres;
+	ListIterator itr;
+
+	/*
+	 * Sort conf and sys gres lists by longest GRES type to shortest, so we
+	 * can avoid issues if e.g. `k20m` and `k20m1` are both specified.
+	 */
+	list_sort(gres_list_conf, _sort_gpu_by_type_name);
+	list_sort(gres_list_system, _sort_gpu_by_type_name);
+
+	/* Only match devices if the conf gres count isn't exceeded */
+	itr = list_iterator_create(gres_list_system);
+	while ((sys_gres = list_next(itr))) {
+		conf_gres = list_find_first(gres_list_conf,
+					    _find_type_in_gres_list,
+					    sys_gres->type_name);
+		if (!conf_gres) {
+			debug("Could not find a configuration record with a GRES type substring that matches system device `%s`. Setting system GRES type to NULL",
+			      sys_gres->type_name);
+			xfree(sys_gres->type_name);
+			continue;
+		} else if (conf_gres->count <= 0) {
+			debug("System device `%s` exceeds the configured count for GRES type `%s`. Setting GRES type to NULL",
+			      sys_gres->type_name, conf_gres->type_name);
+			xfree(sys_gres->type_name);
+			continue;
+		} else {
+			/* Overwrite sys_gres type name to match conf_gres */
+			xfree(sys_gres->type_name);
+			sys_gres->type_name = xstrdup(conf_gres->type_name);
+			/* Avoid matching more system devices than configured */
+			conf_gres->count--;
+		}
+	}
+	list_iterator_destroy(itr);
+}
+
 /* Check a gres.conf gres to one we found on the system */
 static int _match_gres(gres_slurmd_conf_t *conf_gres,
 		       gres_slurmd_conf_t *sys_gres)
@@ -307,6 +411,12 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 		hostlist_destroy(hl);
 	}
 	list_iterator_destroy(itr);
+
+	/*
+	 * If conf GRES type matches matches a substring in sys GRES type, then
+	 * overwrite sys GRES type with conf GRES type
+	 */
+	_sync_gres_types(gres_list_system, gres_list_conf);
 
 	if (fast_schedule == 0) {
 		debug2("FastSchedule == 0, we are only delivering GPUs found on the system, ignoring those defined in gres.conf");
