@@ -320,8 +320,13 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 			      AF_INET, (void *)&h_buf, sizeof(h_buf), &h_err);
 	if (he)
 		hostname = xstrdup(he->h_name);
-	else
+	else {
+		slurm_addr_t addr = { .sin_addr.s_addr = cred->addr.s_addr };
+		uint16_t port;
 		error("%s: Lookup failed: %s", __func__, host_strerror(h_err));
+		hostname = xmalloc(16);
+		slurm_get_ip_str(&addr, &port, hostname, 16);
+	}
 
 	return hostname;
 }
