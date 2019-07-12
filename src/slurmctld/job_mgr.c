@@ -9139,18 +9139,17 @@ static void _list_delete_job(void *job_entry)
 
 
 /*
- * list_find_job_id - find specific job_id entry in the job list,
- *	see common/list.h for documentation, key is job_id_ptr
- * global- job_list - the global partition list
+ * find specific job_id entry in the job list, key is job_id_ptr
  */
-extern int list_find_job_id(void *job_entry, void *key)
+static int _list_find_job_id(void *job_entry, void *key)
 {
+	struct job_record *job_ptr = (struct job_record *) job_entry;
 	uint32_t *job_id_ptr = (uint32_t *) key;
 
-	if (((struct job_record *) job_entry)->job_id == *job_id_ptr)
+	if (job_ptr->job_id == *job_id_ptr)
 		return 1;
-	else
-		return 0;
+
+	return 0;
 }
 
 /*
@@ -10437,7 +10436,7 @@ void purge_old_job(void)
 extern int purge_job_record(uint32_t job_id)
 {
 	int count = 0;
-	count = list_delete_all(job_list, &list_find_job_id, (void *)&job_id);
+	count = list_delete_all(job_list, _list_find_job_id, (void *)&job_id);
 	if (count) {
 		last_job_update = time(NULL);
 		slurm_mutex_lock(&purge_thread_lock);

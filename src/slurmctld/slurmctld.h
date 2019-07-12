@@ -1842,13 +1842,6 @@ extern int list_find_feature(void *feature_entry, void *key);
 extern int list_find_part (void *part_entry, void *key);
 
 /*
- * list_find_job_id - find specific job_id entry in the job list,
- *	see common/list.h for documentation, key is job_id_ptr
- * global- job_list - the global partition list
- */
-extern int list_find_job_id(void *job_entry, void *key);
-
-/*
  * load_all_job_state - load the job state from file, recover from last
  *	checkpoint. Execute this after loading the configuration file data.
  * RET 0 or error code
