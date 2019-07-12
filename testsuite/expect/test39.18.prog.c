@@ -42,20 +42,29 @@ int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	int rc;
-	char *node_name = argv[2];
+	char *etc_dir = NULL;
+	char *node_name = NULL;
+	char *slurm_conf_gres_str = NULL;
 	char *slurm_conf = NULL;
 	char *gres_conf = NULL;
 	char *fake_gpus_conf = NULL;
 	struct stat stat_buf;
+	List gres_list = NULL;
 
-	if (argc != 3) {
+	if (argc < 3 || argc > 4) {
 		printf("FAILURE: Not enough or too many arguments!\n");
 		exit(1);
 	}
 
-	xstrfmtcat(slurm_conf, "%s/%s", argv[1], "slurm.conf");
-	xstrfmtcat(gres_conf, "%s/%s", argv[1], "gres.conf");
-	xstrfmtcat(fake_gpus_conf, "%s/%s", argv[1], "fake_gpus.conf");
+	etc_dir = argv[1];
+	node_name = argv[2];
+	if (argc >= 4) {
+		slurm_conf_gres_str = argv[3];
+	}
+
+	xstrfmtcat(slurm_conf, "%s/%s", etc_dir, "slurm.conf");
+	xstrfmtcat(gres_conf, "%s/%s", etc_dir, "gres.conf");
+	xstrfmtcat(fake_gpus_conf, "%s/%s", etc_dir, "fake_gpus.conf");
 
 	if (stat(slurm_conf, &stat_buf) != 0) {
 		printf("FAILURE: Could not find slurm_conf file at %s\n",
@@ -83,7 +92,16 @@ int main(int argc, char *argv[])
 	// Override where Slurm looks for conf files
 	setenv("SLURM_CONF", slurm_conf, 1);
 
-	rc = gres_plugin_node_config_load(4, node_name, NULL, NULL, NULL);
+	// Initialize GRES info (from slurm.conf)
+	rc = gres_plugin_init_node_config(node_name, slurm_conf_gres_str,
+					  &gres_list);
+	if (rc != SLURM_SUCCESS) {
+		slurm_perror("FAILURE: gres_plugin_init_node_config");
+		exit(1);
+	}
+
+	rc = gres_plugin_node_config_load(4, node_name, gres_list, NULL, NULL);
+	FREE_NULL_LIST(gres_list);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("FAILURE: gres_plugin_node_config_load");
 		exit(1);
