@@ -269,9 +269,16 @@ plugin_load_and_link(const char *type_name, int n_syms,
 					xfree(file_name);
 					break;
 				} else {
-					(void) dlclose(plug);
-					err = EPLUGIN_MISSING_SYMBOL;
-					plug = PLUGIN_INVALID_HANDLE;
+					/*
+					 * Plugin loading failed part way
+					 * through loading, it is unknown what
+					 * actually happened but now process
+					 * memory is suspect and we are going to
+					 * abort since this should only ever
+					 * happen during development.
+					 */
+					fatal("%s: Plugin loading failed due to missing symbols. Plugin is corrupted.",
+					      __func__);
 				}
 			} else
 				plug = PLUGIN_INVALID_HANDLE;

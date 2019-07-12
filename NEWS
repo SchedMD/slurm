@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
     association with any account.
  -- If only allowing particular alloc nodes in a partition, deny any request
     coming from an alloc node of NULL.
+ -- Prevent partial-load of plugins which can leave certain interfaces in
+    an inconsistent state.
 
 * Changes in Slurm 19.05.1-2
 ============================
