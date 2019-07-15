@@ -254,21 +254,6 @@ extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
 
 extern void common_init(void);
 extern void common_fini(void);
-extern int common_reconfig(void);
-
-/* This is Part 1 of a 4-part procedure which can be found in
- * src/slurmctld/read_config.c. The whole story goes like this:
- *
- * Step 1: common_node_init          : initializes the global node arrays
- * Step 2: common_state_restore      : NO-OP - nothing to restore
- * Step 3: common_job_init           : NO-OP - nothing to initialize
- * Step 4: common_select_nodeinfo_set: called from reset_job_bitmaps() with
- *                                     each valid recovered job_ptr AND from
- *                                     select_nodes(), this procedure adds
- *                                     job data to the 'select_part_record'
- *                                     global array
- */
-extern int common_node_init(struct node_record *node_ptr, int node_cnt);
 
 /* Determine if a job can ever run */
 extern int common_test_only(struct job_record *job_ptr, bitstr_t *node_bitmap,
@@ -341,10 +326,6 @@ extern avail_res_t *common_allocate_sockets(struct job_record *job_ptr,
 					    int *cpu_alloc_size,
 					    bitstr_t *req_sock_map);
 
-
-/* Enable detailed logging of cr_dist() node and core bitmaps */
-extern void common_log_select_maps(char *loc, struct job_record *job_ptr);
-
 /*
  * common_job_test - Given a specification of scheduling requirements,
  *	identify the nodes which "best" satisfy the request.
@@ -381,23 +362,5 @@ extern int common_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			   List preemptee_candidates,
 			   List *preemptee_job_list,
 			   bitstr_t **exc_cores);
-
-extern int common_update_node_config(int index);
-
-extern int common_nodeinfo_get(select_nodeinfo_t *nodeinfo,
-			       enum select_nodedata_type dinfo,
-			       enum node_states state,
-			       void *data);
-
-extern int common_nodeinfo_set(struct job_record *job_ptr);
-
-extern int common_job_ready(struct job_record *job_ptr);
-
-extern int common_nodeinfo_set_all(void);
-
-extern int common_job_mem_confirm(struct job_record *job_ptr);
-
-extern int common_job_resized(struct job_record *job_ptr,
-			      struct node_record *node_ptr);
 
 #endif /* _CONS_COMMON_H */

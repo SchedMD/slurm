@@ -579,22 +579,7 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
 	return false;
 }
 
-/* This is Part 1 of a 4-part procedure which can be found in
- * src/slurmctld/read_config.c. The whole story goes like this:
- *
- * Step 1: select_g_node_init          : initializes the global node arrays
- * Step 2: select_g_state_restore      : NO-OP - nothing to restore
- * Step 3: select_g_job_init           : NO-OP - nothing to initialize
- * Step 4: select_g_select_nodeinfo_set: called from reset_job_bitmaps() with
- *                                       each valid recovered job_ptr AND from
- *                                       select_nodes(), this procedure adds
- *                                       job data to the 'select_part_record'
- *                                       global array
- */
-extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
-{
-	return common_node_init(node_ptr, node_cnt);
-}
+/* select_p_node_init() in cons_common */
 
 /* Unused for this plugin */
 extern int select_p_block_init(List part_list)
@@ -673,17 +658,9 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-/* Determine if allocated nodes are usable (powered up) */
-extern int select_p_job_ready(struct job_record *job_ptr)
-{
-	return common_job_ready(job_ptr);
-}
+/* select_p_job_ready() in cons_common */
 
-extern int select_p_job_resized(struct job_record *job_ptr,
-				struct node_record *node_ptr)
-{
-	return common_job_resized(job_ptr, node_ptr);
-}
+/* select_p_job_resized() in cons_common */
 
 static job_resources_t *_create_job_resources(int node_cnt)
 {
@@ -923,10 +900,7 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_mem_confirm(struct job_record *job_ptr)
-{
-	return common_job_mem_confirm(job_ptr);
-}
+/* select_p_job_mem_confirm() in cons_common */
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
@@ -1081,23 +1055,11 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_nodeinfo_set_all(void)
-{
-	return common_nodeinfo_set_all();
-}
+/* select_p_select_nodeinfo_set_all() in cons_common */
 
-extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
-{
-	return common_nodeinfo_set(job_ptr);
-}
+/* select_p_select_nodeinfo_set() in cons_common */
 
-extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
-					enum select_nodedata_type dinfo,
-					enum node_states state,
-					void *data)
-{
-	return common_nodeinfo_get(nodeinfo, dinfo, state, data);
-}
+/* select_p_select_nodeinfo_get() in cons_common */
 
 /* Unused for this plugin */
 extern int select_p_select_jobinfo_alloc(void)
@@ -1192,10 +1154,7 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 	return rc;
 }
 
-extern int select_p_update_node_config(int index)
-{
-	return common_update_node_config(index);
-}
+/* select_p_update_node_config() in cons_common */
 
 /* Unused for this plugin */
 extern int select_p_update_node_state(struct node_record *node_ptr)
@@ -1203,10 +1162,7 @@ extern int select_p_update_node_state(struct node_record *node_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_reconfigure(void)
-{
-	return common_reconfig();
-}
+/* select_p_reconfigure() in cons_common */
 
 extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 				    uint32_t node_cnt,

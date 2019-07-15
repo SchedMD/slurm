@@ -2872,7 +2872,19 @@ extern void common_fini(void)
 	cr_fini_global_core_data();
 }
 
-extern int common_node_init(struct node_record *node_ptr, int node_cnt)
+/* This is Part 1 of a 4-part procedure which can be found in
+ * src/slurmctld/read_config.c. The whole story goes like this:
+ *
+ * Step 1: select_g_node_init          : initializes the global node arrays
+ * Step 2: select_g_state_restore      : NO-OP - nothing to restore
+ * Step 3: select_g_job_init           : NO-OP - nothing to initialize
+ * Step 4: select_g_select_nodeinfo_set: called from reset_job_bitmaps() with
+ *                                       each valid recovered job_ptr AND from
+ *                                       select_nodes(), this procedure adds
+ *                                       job data to the 'select_part_record'
+ *                                       global array
+ */
+extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 	char *preempt_type, *sched_params, *tmp_ptr;
 	uint32_t cume_cores = 0;
@@ -3003,7 +3015,7 @@ extern int common_node_init(struct node_record *node_ptr, int node_cnt)
 	return SLURM_SUCCESS;
 }
 
-extern int common_reconfig(void)
+extern int select_p_reconfigure(void)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -3024,7 +3036,7 @@ extern int common_reconfig(void)
 		}
 	}
 
-	rc = common_node_init(node_record_table_ptr, node_record_count);
+	rc = select_p_node_init(node_record_table_ptr, node_record_count);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -3723,7 +3735,7 @@ extern int common_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	return rc;
 }
 
-extern int common_update_node_config(int index)
+extern int select_p_update_node_config(int index)
 {
 	if (index >= select_node_cnt) {
 		error("%s: index too large (%d > %d)", __func__, index,
@@ -3763,10 +3775,10 @@ extern int common_update_node_config(int index)
 	return SLURM_SUCCESS;
 }
 
-extern int common_nodeinfo_get(select_nodeinfo_t *nodeinfo,
-			       enum select_nodedata_type dinfo,
-			       enum node_states state,
-			       void *data)
+extern int select_p_select_nodeinfo_get(select_nodeinfo_t *nodeinfo,
+					enum select_nodedata_type dinfo,
+					enum node_states state,
+					void *data)
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
@@ -3812,7 +3824,7 @@ extern int common_nodeinfo_get(select_nodeinfo_t *nodeinfo,
 	return rc;
 }
 
-extern int common_nodeinfo_set(struct job_record *job_ptr)
+extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
 {
 	int rc;
 
@@ -3834,7 +3846,7 @@ extern int common_nodeinfo_set(struct job_record *job_ptr)
 	return rc;
 }
 
-extern int common_job_ready(struct job_record *job_ptr)
+extern int select_p_job_ready(struct job_record *job_ptr)
 {
 	int i, i_first, i_last;
 	struct node_record *node_ptr;
@@ -3859,7 +3871,7 @@ extern int common_job_ready(struct job_record *job_ptr)
 	return READY_NODE_STATE;
 }
 
-extern int common_nodeinfo_set_all(void)
+extern int select_p_select_nodeinfo_set_all(void)
 {
 	static time_t last_set_all = 0;
 	struct part_res_record *p_ptr;
@@ -4008,7 +4020,7 @@ extern int common_nodeinfo_set_all(void)
 	return SLURM_SUCCESS;
 }
 
-extern int common_job_mem_confirm(struct job_record *job_ptr)
+extern int select_p_job_mem_confirm(struct job_record *job_ptr)
 {
 	int i_first, i_last, i, offset;
 	uint64_t avail_mem, lowest_mem = 0;
@@ -4044,8 +4056,8 @@ extern int common_job_mem_confirm(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int common_job_resized(struct job_record *job_ptr,
-			      struct node_record *node_ptr)
+extern int select_p_job_resized(struct job_record *job_ptr,
+				struct node_record *node_ptr)
 {
 	struct part_res_record *part_record_ptr = select_part_record;
 	struct node_use_record *node_usage = select_node_usage;
