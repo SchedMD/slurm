@@ -99,7 +99,7 @@
  *   | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 | Core_0 | Core_1 |
  *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
  *
- * If a job changes size (reliquishes nodes), the node_bitmap will remain
+ * If a job changes size (relinquishes nodes), the node_bitmap will remain
  * unchanged, but cpus, cpus_used, cpus_array_*, and memory_used will be 
  * updated (e.g. cpus and mem_used on that node cleared).
  */
