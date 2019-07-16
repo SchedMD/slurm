@@ -21810,6 +21810,11 @@ else
   WITH_CGROUP_FALSE=
 fi
 
+  if test x$with_cgroup = xyes; then
+
+$as_echo "#define WITH_CGROUP 1" >>confdefs.h
+
+  fi
 
 
 #

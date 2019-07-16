@@ -561,6 +561,9 @@
 /* Define the project's version. */
 #undef VERSION
 
+/* Building with Linux cgroup support */
+#undef WITH_CGROUP
+
 /* Using internal Slurm X11 support */
 #undef WITH_SLURM_X11
 
