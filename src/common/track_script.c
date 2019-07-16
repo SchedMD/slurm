@@ -36,6 +36,7 @@
 
 #include <signal.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
