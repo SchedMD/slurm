@@ -357,6 +357,33 @@ err_exit:
 	return;
 }
 
+/*
+ * Estimate the size of a buffer capable of holding the proc map for this job.
+ * PMIx proc map string format:
+ *
+ *    xx,yy,...,zz;ll,mm,...,nn;...;aa,bb,...,cc;
+ *    - n0 ranks -;- n1 ranks -;...;- nX ranks -;
+ *
+ * To roughly estimate the size of the string we leverage the following
+ * dependency: for any rank \in [0; nspace->ntasks - 1]
+ *     num_digits_10(rank) <= num_digits_10(nspace->ntasks)
+ *
+ * So we can say that the cumulative number "digits_cnt" of all symbols
+ * comprising all rank numbers in the namespace is:
+ *     digits_size <= num_digits_10(nspace->ntasks) * nspace->ntasks
+ * Every rank is followed either by a comma, a semicolon, or the terminating
+ * '\0', thus each rank requires at most num_digits_10(nspace_ntasks) + 1.
+ * So we need at most: (num_digits_10(nspace->ntasks) + 1) * nspace->ntasks.
+ *
+ * Considering a 1.000.000 core system with 64PPN.
+ * The size of the intermediate buffer will be:
+ * - num_digits_10(1.000.000) = 7
+ * - (7 + 1) * 1.000.000 ~= 8MB
+ */
+static size_t _proc_map_buffer_size(uint32_t ntasks)
+{
+	return (pmixp_count_digits_base10(ntasks) + 1) * ntasks;
+}
 
 static int _set_mapsinfo(List lresp)
 {
@@ -376,6 +403,9 @@ static int _set_mapsinfo(List lresp)
 	PMIXP_KVP_CREATE(kvp, PMIX_NODE_MAP, regexp, PMIX_STRING);
 	regexp = NULL;
 	list_append(lresp, kvp);
+
+	/* Preallocate the buffer to avoid constant xremalloc() calls. */
+	map = xmalloc(_proc_map_buffer_size(nsptr->ntasks));
 
 	for (i = 0; i < count; i++) {
 		char *sep = "";
