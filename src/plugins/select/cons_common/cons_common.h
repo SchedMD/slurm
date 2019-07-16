@@ -175,13 +175,6 @@ extern struct part_res_record *select_part_record;
 extern struct node_res_record *select_node_record;
 extern struct node_use_record *select_node_usage;
 
-/* Delete the given select_node_record and select_node_usage arrays */
-extern void common_destroy_node_data(struct node_use_record *node_usage,
-				     struct node_res_record *node_data);
-
-/* Delete the given list of partition data */
-extern void common_destroy_part_data(struct part_res_record *this_ptr);
-
 /* Delete the given partition row data */
 extern void common_destroy_row_data(
 	struct part_row_data *row, uint16_t num_rows);
@@ -236,10 +229,6 @@ extern void common_dump_parts(struct part_res_record *p_ptr);
 
 /* sort the rows of a partition from "most allocated" to "least allocated" */
 extern void common_sort_part_rows(struct part_res_record *p_ptr);
-
-/* Create a duplicate part_res_record list */
-extern struct part_res_record *common_dup_part_data(
-	struct part_res_record *orig_ptr);
 
 /* Create a duplicate part_row_data struct */
 extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,

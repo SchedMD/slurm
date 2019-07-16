@@ -114,6 +114,63 @@ static int        preempt_reorder_cnt	= 1;
 static bool       preempt_strict_order = false;
 static bool       select_state_initializing = true;
 
+/* Delete the given select_node_record and select_node_usage arrays */
+static void _destroy_node_data(struct node_use_record *node_usage,
+				     struct node_res_record *node_data)
+{
+	int i;
+
+	xfree(node_data);
+	if (node_usage) {
+		for (i = 0; i < select_node_cnt; i++) {
+			FREE_NULL_LIST(node_usage[i].gres_list);
+		}
+		xfree(node_usage);
+	}
+}
+
+/* Delete the given list of partition data */
+static void _destroy_part_data(struct part_res_record *this_ptr)
+{
+	while (this_ptr) {
+		struct part_res_record *tmp = this_ptr;
+		this_ptr = this_ptr->next;
+		tmp->part_ptr = NULL;
+
+		if (tmp->row) {
+			common_destroy_row_data(tmp->row, tmp->num_rows);
+			tmp->row = NULL;
+		}
+		xfree(tmp);
+	}
+}
+
+/* Create a duplicate part_res_record list */
+static struct part_res_record *_dup_part_data(
+	struct part_res_record *orig_ptr)
+{
+	struct part_res_record *new_part_ptr, *new_ptr;
+
+	if (orig_ptr == NULL)
+		return NULL;
+
+	new_part_ptr = xmalloc(sizeof(struct part_res_record));
+	new_ptr = new_part_ptr;
+
+	while (orig_ptr) {
+		new_ptr->part_ptr = orig_ptr->part_ptr;
+		new_ptr->num_rows = orig_ptr->num_rows;
+		new_ptr->row = common_dup_row_data(orig_ptr->row,
+						   orig_ptr->num_rows);
+		if (orig_ptr->next) {
+			new_ptr->next = xmalloc(sizeof(struct part_res_record));
+			new_ptr = new_ptr->next;
+		}
+		orig_ptr = orig_ptr->next;
+	}
+	return new_part_ptr;
+}
+
 /* helper script for common_sort_part_rows() */
 static void _swap_rows(struct part_row_data *a, struct part_row_data *b)
 {
@@ -795,7 +852,7 @@ static void _create_part_data(void)
 	struct part_res_record *this_ptr, *last_ptr = NULL;
 	int num_parts;
 
-	common_destroy_part_data(select_part_record);
+	_destroy_part_data(select_part_record);
 	select_part_record = NULL;
 
 	num_parts = list_count(part_list);
@@ -2464,37 +2521,6 @@ alloc_job:
 	return error_code;
 }
 
-/* Delete the given select_node_record and select_node_usage arrays */
-extern void common_destroy_node_data(struct node_use_record *node_usage,
-				     struct node_res_record *node_data)
-{
-	int i;
-
-	xfree(node_data);
-	if (node_usage) {
-		for (i = 0; i < select_node_cnt; i++) {
-			FREE_NULL_LIST(node_usage[i].gres_list);
-		}
-		xfree(node_usage);
-	}
-}
-
-/* Delete the given list of partition data */
-extern void common_destroy_part_data(struct part_res_record *this_ptr)
-{
-	while (this_ptr) {
-		struct part_res_record *tmp = this_ptr;
-		this_ptr = this_ptr->next;
-		tmp->part_ptr = NULL;
-
-		if (tmp->row) {
-			common_destroy_row_data(tmp->row, tmp->num_rows);
-			tmp->row = NULL;
-		}
-		xfree(tmp);
-	}
-}
-
 /* Delete the given partition row data */
 extern void common_destroy_row_data(
 	struct part_row_data *row, uint16_t num_rows)
@@ -3009,32 +3035,6 @@ extern void common_sort_part_rows(struct part_res_record *p_ptr)
 	return;
 }
 
-/* Create a duplicate part_res_record list */
-extern struct part_res_record *common_dup_part_data(
-	struct part_res_record *orig_ptr)
-{
-	struct part_res_record *new_part_ptr, *new_ptr;
-
-	if (orig_ptr == NULL)
-		return NULL;
-
-	new_part_ptr = xmalloc(sizeof(struct part_res_record));
-	new_ptr = new_part_ptr;
-
-	while (orig_ptr) {
-		new_ptr->part_ptr = orig_ptr->part_ptr;
-		new_ptr->num_rows = orig_ptr->num_rows;
-		new_ptr->row = common_dup_row_data(orig_ptr->row,
-						   orig_ptr->num_rows);
-		if (orig_ptr->next) {
-			new_ptr->next = xmalloc(sizeof(struct part_res_record));
-			new_ptr = new_ptr->next;
-		}
-		orig_ptr = orig_ptr->next;
-	}
-	return new_part_ptr;
-}
-
 /* Create a duplicate part_row_data struct */
 extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
 						 uint16_t num_rows)
@@ -3107,10 +3107,10 @@ extern void common_fini(void)
 	else
 		verbose("%s shutting down ...", plugin_type);
 
-	common_destroy_node_data(select_node_usage, select_node_record);
+	_destroy_node_data(select_node_usage, select_node_record);
 	select_node_record = NULL;
 	select_node_usage = NULL;
-	common_destroy_part_data(select_part_record);
+	_destroy_part_data(select_part_record);
 	select_part_record = NULL;
 	cr_fini_global_core_data();
 }
@@ -3201,7 +3201,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_fast_schedule = slurm_get_fast_schedule();
 	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
 
-	common_destroy_node_data(select_node_usage, select_node_record);
+	_destroy_node_data(select_node_usage, select_node_record);
 	select_node_cnt = node_cnt;
 
 	if (is_cons_tres)
@@ -3403,14 +3403,14 @@ extern int common_will_run_test(struct job_record *job_ptr,
 	 * Job is still pending. Simulate termination of jobs one at a time
 	 * to determine when and where the job can start.
 	 */
-	future_part = common_dup_part_data(select_part_record);
+	future_part = _dup_part_data(select_part_record);
 	if (future_part == NULL) {
 		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
 	future_usage = _dup_node_usage(select_node_usage);
 	if (future_usage == NULL) {
-		common_destroy_part_data(future_part);
+		_destroy_part_data(future_part);
 		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
@@ -3583,8 +3583,8 @@ extern int common_will_run_test(struct job_record *job_ptr,
 	}
 
 	FREE_NULL_LIST(cr_job_list);
-	common_destroy_part_data(future_part);
-	common_destroy_node_data(future_usage, NULL);
+	_destroy_part_data(future_part);
+	_destroy_node_data(future_usage, NULL);
 	FREE_NULL_BITMAP(orig_map);
 
 	return rc;
@@ -3650,7 +3650,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
 		preempt_mode = true;
-		future_part = common_dup_part_data(select_part_record);
+		future_part = _dup_part_data(select_part_record);
 		if (future_part == NULL) {
 			FREE_NULL_BITMAP(orig_node_map);
 			FREE_NULL_BITMAP(save_node_map);
@@ -3658,7 +3658,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 		}
 		future_usage = _dup_node_usage(select_node_usage);
 		if (future_usage == NULL) {
-			common_destroy_part_data(future_part);
+			_destroy_part_data(future_part);
 			FREE_NULL_BITMAP(orig_node_map);
 			FREE_NULL_BITMAP(save_node_map);
 			return SLURM_ERROR;
@@ -3741,8 +3741,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 			}
 			FREE_NULL_BITMAP(orig_node_map);
 			list_iterator_destroy(job_iterator);
-			common_destroy_part_data(future_part);
-			common_destroy_node_data(future_usage, NULL);
+			_destroy_part_data(future_part);
+			_destroy_node_data(future_usage, NULL);
 			goto top;
 		}
 		list_iterator_destroy(job_iterator);
@@ -3778,8 +3778,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 			}
 		}
 
-		common_destroy_part_data(future_part);
-		common_destroy_node_data(future_usage, NULL);
+		_destroy_part_data(future_part);
+		_destroy_node_data(future_usage, NULL);
 	}
 	FREE_NULL_BITMAP(orig_node_map);
 	FREE_NULL_BITMAP(save_node_map);
