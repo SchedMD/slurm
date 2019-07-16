@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
     not including those that don't belong to the job partition.
  -- Set a more appropriate ESLURM_RESERVATION_MAINT job state reason for jobs
     requesting feature(s) and required nodes are in a maintenance reservation.
+ -- Fix logic to better handle maintenance reservations.
 
 * Changes in Slurm 19.05.2
 ==========================
