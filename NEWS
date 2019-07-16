@@ -14,7 +14,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix loading fed state by backup on subsequent takeovers.
  -- Add missing job read lock when loading fed job state.
  -- Add missing fed_job_info jobs if fed state is lost.
- -- Do not build cgroup plugins on FreeBSD or NetBSD.
+ -- Do not build cgroup plugins on FreeBSD or NetBSD, and use proctrack/pgid
+    by default instead.
 
 * Changes in Slurm 19.05.1-2
 ============================
