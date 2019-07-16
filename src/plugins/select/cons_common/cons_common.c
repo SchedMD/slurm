@@ -116,7 +116,7 @@ static bool       select_state_initializing = true;
 
 /* Delete the given select_node_record and select_node_usage arrays */
 static void _destroy_node_data(struct node_use_record *node_usage,
-				     struct node_res_record *node_data)
+			       struct node_res_record *node_data)
 {
 	int i;
 
@@ -146,8 +146,7 @@ static void _destroy_part_data(struct part_res_record *this_ptr)
 }
 
 /* Create a duplicate part_res_record list */
-static struct part_res_record *_dup_part_data(
-	struct part_res_record *orig_ptr)
+static struct part_res_record *_dup_part_data(struct part_res_record *orig_ptr)
 {
 	struct part_res_record *new_part_ptr, *new_ptr;
 
@@ -4668,5 +4667,309 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 
 	(void) common_add_job_to_res(to_job_ptr, 0);
 
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_state_save(char *dir_name)
+{
+	/* nothing to save */
+	return SLURM_SUCCESS;
+}
+
+/* This is Part 2 of a 4-part procedure which can be found in
+ * src/slurmctld/read_config.c. See select_p_node_init for the
+ * whole story.
+ */
+extern int select_p_state_restore(char *dir_name)
+{
+	/* nothing to restore */
+	return SLURM_SUCCESS;
+}
+
+/* This is Part 3 of a 4-part procedure which can be found in
+ * src/slurmctld/read_config.c. See select_p_node_init for the
+ * whole story.
+ */
+extern int select_p_job_init(List job_list)
+{
+	/* nothing to initialize for jobs */
+	return SLURM_SUCCESS;
+}
+
+/* This plugin does not generate a node ranking. */
+extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
+{
+	return false;
+}
+
+extern int select_p_block_init(List part_list)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_job_begin(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_job_signal(struct job_record *job_ptr, int signal)
+{
+	xassert(job_ptr);
+	xassert(job_ptr->magic == JOB_MAGIC);
+
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_job_fini(struct job_record *job_ptr)
+{
+	xassert(job_ptr);
+	xassert(job_ptr->magic == JOB_MAGIC);
+
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
+		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+
+	common_rm_job_res(select_part_record, select_node_usage,
+			  job_ptr, 0, true);
+
+	return SLURM_SUCCESS;
+}
+
+/* NOTE: This function is not called with gang scheduling because it
+ * needs to track how many jobs are running or suspended on each node.
+ * This sum is compared with the partition's Shared parameter */
+extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
+{
+	xassert(job_ptr);
+	xassert(job_ptr->magic == JOB_MAGIC);
+
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		if (indf_susp)
+			info("%s: %s: %pJ indf_susp", plugin_type, __func__,
+			     job_ptr);
+		else
+			info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	}
+
+	if (!indf_susp)
+		return SLURM_SUCCESS;
+
+	return common_rm_job_res(select_part_record, select_node_usage,
+				 job_ptr, 2, false);
+}
+
+/* See NOTE with select_p_job_suspend() above */
+extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
+{
+	xassert(job_ptr);
+	xassert(job_ptr->magic == JOB_MAGIC);
+
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		if (indf_susp)
+			info("%s: %s: %pJ indf_susp", plugin_type, __func__,
+			     job_ptr);
+		else
+			info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
+	}
+	if (!indf_susp)
+		return SLURM_SUCCESS;
+
+	return common_add_job_to_res(job_ptr, 2);
+}
+
+extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
+					  select_jobinfo_t *jobinfo,
+					  uint32_t node_count,
+					  bitstr_t **avail_nodes)
+{
+	return NULL;
+}
+
+/* Unused for this plugin */
+extern int select_p_step_start(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Unused for this plugin */
+extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
+					 Buf buffer,
+					 uint16_t protocol_version)
+{
+	select_nodeinfo_t *nodeinfo_empty = NULL;
+
+	if (!nodeinfo) {
+		/*
+		 * We should never get here,
+		 * but avoid abort with bad data structures
+		 */
+		error("%s: nodeinfo is NULL", __func__);
+		nodeinfo_empty = xmalloc(sizeof(select_nodeinfo_t));
+		nodeinfo = nodeinfo_empty;
+	}
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack16(nodeinfo->alloc_cpus, buffer);
+		pack64(nodeinfo->alloc_memory, buffer);
+		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
+		packdouble(nodeinfo->tres_alloc_weighted, buffer);
+	}
+	xfree(nodeinfo_empty);
+
+	return SLURM_SUCCESS;
+}
+
+extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
+{
+	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(select_nodeinfo_t));
+
+	nodeinfo->magic = nodeinfo_magic;
+
+	return nodeinfo;
+}
+
+extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
+{
+	if (nodeinfo) {
+		if (nodeinfo->magic != nodeinfo_magic) {
+			error("%s: nodeinfo magic bad", __func__);
+			return EINVAL;
+		}
+		xfree(nodeinfo->tres_alloc_cnt);
+		xfree(nodeinfo->tres_alloc_fmt_str);
+		xfree(nodeinfo);
+	}
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
+					   Buf buffer,
+					   uint16_t protocol_version)
+{
+	uint32_t uint32_tmp;
+	select_nodeinfo_t *nodeinfo_ptr = NULL;
+
+	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
+	*nodeinfo = nodeinfo_ptr;
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
+		safe_unpack64(&nodeinfo_ptr->alloc_memory, buffer);
+		safe_unpackstr_xmalloc(&nodeinfo_ptr->tres_alloc_fmt_str,
+				       &uint32_tmp, buffer);
+		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: error unpacking here", __func__);
+	select_p_select_nodeinfo_free(nodeinfo_ptr);
+	*nodeinfo = NULL;
+
+	return SLURM_ERROR;
+}
+
+/* Unused for this plugin */
+extern int select_p_select_jobinfo_alloc(void)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Unused for this plugin */
+extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Unused for this plugin */
+extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
+				       enum select_jobdata_type data_type,
+				       void *data)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Unused for this plugin */
+extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
+				       enum select_jobdata_type data_type,
+				       void *data)
+{
+	return SLURM_ERROR;
+}
+
+/* Unused for this plugin */
+extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
+{
+	return NULL;
+}
+
+/* Unused for this plugin */
+extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+					uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Unused for this plugin */
+extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo,
+					  Buf buffer,
+					  uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+/* Unused for this plugin */
+extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
+					    char *buf, size_t size, int mode)
+{
+	if (buf && size) {
+		buf[0] = '\0';
+		return buf;
+	}
+	return NULL;
+}
+
+/* Unused for this plugin */
+extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
+					     int mode)
+{
+	return NULL;
+}
+
+extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
+					 struct job_record *job_ptr,
+					 void *data)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t *tmp_32 = (uint32_t *) data;
+	List *tmp_list = (List *) data;
+
+	switch (info) {
+	case SELECT_CR_PLUGIN:
+		*tmp_32 = is_cons_tres ?
+			SELECT_TYPE_CONS_TRES : SELECT_TYPE_CONS_RES;
+		break;
+	case SELECT_CONFIG_INFO:
+		*tmp_list = NULL;
+		break;
+	case SELECT_SINGLE_JOB_TEST:
+		*tmp_32 = is_cons_tres ? 1 : 0;
+		break;
+	default:
+		error("%s: info type %d invalid", __func__, info);
+		rc = SLURM_ERROR;
+		break;
+	}
+	return rc;
+}
+
+/* Unused for this plugin */
+extern int select_p_update_node_state(struct node_record *node_ptr)
+{
 	return SLURM_SUCCESS;
 }

@@ -434,45 +434,17 @@ extern int fini(void)
  * node selection API.
  */
 
-extern int select_p_state_save(char *dir_name)
-{
-	/* nothing to save */
-	return SLURM_SUCCESS;
-}
+/* select_p_state_save() in cons_common */
 
-/* This is Part 2 of a 4-part procedure which can be found in
- * src/slurmctld/read_config.c. See select_p_node_init for the
- * whole story.
- */
-extern int select_p_state_restore(char *dir_name)
-{
-	/* nothing to restore */
-	return SLURM_SUCCESS;
-}
+/* select_p_state_restore() in cons_common */
 
-/* This is Part 3 of a 4-part procedure which can be found in
- * src/slurmctld/read_config.c. See select_p_node_init for the
- * whole story.
- */
-extern int select_p_job_init(List job_list)
-{
-	/* nothing to initialize for jobs */
-	return SLURM_SUCCESS;
-}
+/* select_p_job_init() in cons_common */
 
-/* This plugin does not generate a node ranking. */
-extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
-{
-	return false;
-}
+/* select_p_node_ranking() in cons_common */
 
 /* select_p_node_init() in cons_common */
 
-extern int select_p_block_init(List part_list)
-{
-	return SLURM_SUCCESS;
-}
-
+/* select_p_block_init() in cons_common */
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements,
@@ -523,10 +495,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			       preemptee_job_list, &exc_core_bitmap);
 }
 
-extern int select_p_job_begin(struct job_record *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
+/* select_p_job_begin() in cons_common */
 
 /* select_p_job_ready() in cons_common */
 
@@ -534,150 +503,29 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 
 /* select_p_job_expand() in cons_common */
 
-extern int select_p_job_signal(struct job_record *job_ptr, int signal)
-{
-	xassert(job_ptr);
-	xassert(job_ptr->magic == JOB_MAGIC);
-
-	return SLURM_SUCCESS;
-}
+/* select_p_job_signal() in cons_common */
 
 /* select_p_job_mem_confirm() in cons_common */
 
-extern int select_p_job_fini(struct job_record *job_ptr)
-{
-	xassert(job_ptr);
-	xassert(job_ptr->magic == JOB_MAGIC);
+/* select_p_job_fini() in cons_common */
 
-	common_rm_job_res(select_part_record, select_node_usage, job_ptr, 0,
-			  true);
+/* select_p_job_suspend() in cons_common */
 
-	return SLURM_SUCCESS;
-}
+/* select_p_job_resume() in cons_common */
 
-/* NOTE: This function is not called with gang scheduling because it
- * needs to track how many jobs are running or suspended on each node.
- * This sum is compared with the partition's Shared parameter */
-extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
-{
-	xassert(job_ptr);
+/* select_p_step_pick_nodes() in cons_common */
 
-	if (!indf_susp)
-		return SLURM_SUCCESS;
+/* select_p_step_start() in cons_common */
 
-	return common_rm_job_res(select_part_record, select_node_usage,
-				 job_ptr, 2, false);
-}
+/* select_p_step_finish() in cons_common */
 
-/* See NOTE with select_p_job_suspend above */
-extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
-{
-	xassert(job_ptr);
+/* select_p_select_nodeinfo_pack() in cons_common */
 
-	if (!indf_susp)
-		return SLURM_SUCCESS;
+/* select_p_select_nodeinfo_unpack() in cons_common */
 
-	return common_add_job_to_res(job_ptr, 2);
-}
+/* select_p_select_nodeinfo_alloc() in cons_common */
 
-
-extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
-					  select_jobinfo_t *jobinfo,
-					  uint32_t node_count,
-					  bitstr_t **avail_nodes)
-{
-	return NULL;
-}
-
-extern int select_p_step_start(struct step_record *step_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer,
-					 uint16_t protocol_version)
-{
-	select_nodeinfo_t *nodeinfo_empty = NULL;
-
-	if (!nodeinfo) {
-		/*
-		 * We should never get here,
-		 * but avoid abort with bad data structures
-		 */
-		error("%s: nodeinfo is NULL", __func__);
-		nodeinfo_empty = xmalloc(sizeof(select_nodeinfo_t));
-		nodeinfo = nodeinfo_empty;
-	}
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16(nodeinfo->alloc_cpus, buffer);
-		pack64(nodeinfo->alloc_memory, buffer);
-		packstr(nodeinfo->tres_alloc_fmt_str, buffer);
-		packdouble(nodeinfo->tres_alloc_weighted, buffer);
-	}
-	xfree(nodeinfo_empty);
-
-	return SLURM_SUCCESS;
-}
-
-extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   Buf buffer,
-					   uint16_t protocol_version)
-{
-	uint32_t uint32_tmp;
-	select_nodeinfo_t *nodeinfo_ptr = NULL;
-
-	nodeinfo_ptr = select_p_select_nodeinfo_alloc();
-	*nodeinfo = nodeinfo_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack16(&nodeinfo_ptr->alloc_cpus, buffer);
-		safe_unpack64(&nodeinfo_ptr->alloc_memory, buffer);
-		safe_unpackstr_xmalloc(&nodeinfo_ptr->tres_alloc_fmt_str,
-				       &uint32_tmp, buffer);
-		safe_unpackdouble(&nodeinfo_ptr->tres_alloc_weighted, buffer);
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	error("select_nodeinfo_unpack: error unpacking here");
-	select_p_select_nodeinfo_free(nodeinfo_ptr);
-	*nodeinfo = NULL;
-
-	return SLURM_ERROR;
-}
-
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void)
-{
-	select_nodeinfo_t *nodeinfo = xmalloc(sizeof(struct select_nodeinfo));
-
-	nodeinfo->magic = nodeinfo_magic;
-
-	return nodeinfo;
-}
-
-extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
-{
-	if (nodeinfo) {
-		if (nodeinfo->magic != nodeinfo_magic) {
-			error("select_p_select_nodeinfo_free: "
-			      "nodeinfo magic bad");
-			return EINVAL;
-		}
-		nodeinfo->magic = 0;
-		xfree(nodeinfo->tres_alloc_cnt);
-		xfree(nodeinfo->tres_alloc_fmt_str);
-		xfree(nodeinfo);
-	}
-	return SLURM_SUCCESS;
-}
+/* select_p_select_nodeinfo_free() in cons_common */
 
 /* select_p_select_nodeinfo_set_all() in cons_common */
 
@@ -685,97 +533,29 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 
 /* select_p_select_nodeinfo_get() in cons_common */
 
-extern int select_p_select_jobinfo_alloc(void)
-{
-	return SLURM_SUCCESS;
-}
+/* select_p_select_jobinfo_alloc() in cons_common */
 
-extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
-{
-	return SLURM_SUCCESS;
-}
+/* select_p_select_jobinfo_free() in cons_common */
 
-extern int select_p_select_jobinfo_set(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	return SLURM_SUCCESS;
-}
+/* select_p_select_jobinfo_set() in cons_common */
 
-extern int select_p_select_jobinfo_get(select_jobinfo_t *jobinfo,
-				       enum select_jobdata_type data_type,
-				       void *data)
-{
-	return SLURM_ERROR;
-}
+/* select_p_select_jobinfo_get() in cons_common */
 
-extern select_jobinfo_t *select_p_select_jobinfo_copy(
-	select_jobinfo_t *jobinfo)
-{
-	return NULL;
-}
+/* select_p_select_jobinfo_copy() in cons_common */
 
-extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
-					uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
+/* select_p_select_jobinfo_pack() in cons_common */
 
-extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo,
-					  Buf buffer,
-					  uint16_t protocol_version)
-{
-	return SLURM_SUCCESS;
-}
+/* select_p_select_jobinfo_unpack() in cons_common */
 
-extern char *select_p_select_jobinfo_sprint(select_jobinfo_t *jobinfo,
-					    char *buf, size_t size, int mode)
-{
-	if (buf && size) {
-		buf[0] = '\0';
-		return buf;
-	} else
-		return NULL;
-}
+/* select_p_select_jobinfo_sprint() in cons_common */
 
-extern char *select_p_select_jobinfo_xstrdup(
-	select_jobinfo_t *jobinfo, int mode)
-{
-	return NULL;
-}
+/* select_p_select_jobinfo_xstrdup() in cons_common */
 
-extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
-					 struct job_record *job_ptr,
-					 void *data)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t *tmp_32 = (uint32_t *) data;
-	List *tmp_list = (List *) data;
-
-	switch (info) {
-	case SELECT_CR_PLUGIN:
-		*tmp_32 = SELECT_TYPE_CONS_RES;
-		break;
-	case SELECT_CONFIG_INFO:
-		*tmp_list = NULL;
-		break;
-	case SELECT_SINGLE_JOB_TEST:
-		*tmp_32 = 0;
-		break;
-	default:
-		error("%s: info type %d invalid", __func__, info);
-		rc = SLURM_ERROR;
-		break;
-	}
-	return rc;
-}
+/* select_p_get_info_from_plugin() in cons_common */
 
 /* select_p_update_node_config() in cons_common */
 
-extern int select_p_update_node_state(struct node_record *node_ptr)
-{
-	return SLURM_SUCCESS;
-}
+/* select_p_update_node_state() in cons_common */
 
 /* select_p_reconfigure() in cons_common */
 
