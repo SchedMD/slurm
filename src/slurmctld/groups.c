@@ -41,7 +41,6 @@
 
 /* needed for getgrent_r */
 #define _GNU_SOURCE
-#define   __USE_GNU
 
 #include <grp.h>
 #include <pthread.h>

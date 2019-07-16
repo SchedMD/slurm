@@ -37,12 +37,6 @@
 #  include "config.h"
 #endif
 
-#define _GNU_SOURCE
-
-#ifndef __USE_GNU
-#  define  __USE_GNU
-#endif
-
 #ifdef HAVE_NUMA
 #  include <numa.h>
 #endif

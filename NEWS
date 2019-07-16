@@ -14,6 +14,11 @@ documents those changes that are of interest to users and administrators.
  -- Wrap END_TIMER{,2,3} macro definition in "do {} while (0)" block.
  -- Allow account coordinators to add users who don't already have an
     association with any account.
+ -- If only allowing particular alloc nodes in a partition, deny any request
+    coming from an alloc node of NULL.
+ -- Prevent partial-load of plugins which can leave certain interfaces in
+    an inconsistent state.
+ -- Remove stray __USE_GNU macro definitions from source.
 
 * Changes in Slurm 19.05.1-2
 ============================

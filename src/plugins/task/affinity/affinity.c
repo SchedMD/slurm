@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "affinity.h"
 
 /* Older versions of sched.h (ie. Centos5) don't include CPU_OR. */
