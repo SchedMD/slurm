@@ -47,6 +47,7 @@ HIGHLIGHTS
  -- sbcast - add new BcastAddr option to NodeName lines to allow sbcast traffic
     to flow over an alternate network path.
  -- Added auth/jwt plugin, and 'scontrol token' subcommand.
+ -- PMIx - improve performance of proc map generation.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

@@ -73,6 +73,7 @@ documents those changes that are of interest to users and administrators.
     to flow over an alternate network path.
  -- Add auth/jwt plugin.
  -- Add new 'scontrol token' subcommand.
+ -- PMIx - improve performance of proc map generation.
 
 * Changes in Slurm 19.05.6
 ==========================

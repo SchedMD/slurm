@@ -361,7 +361,7 @@ err_exit:
 static int _set_mapsinfo(List lresp)
 {
 	pmix_info_t *kvp;
-	char *regexp, *input;
+	char *regexp, *input, *map = NULL, *pos = NULL;
 	pmixp_namespace_t *nsptr = pmixp_nspaces_local();
 	hostlist_t hl = nsptr->hl;
 	int rc, i, j;
@@ -377,28 +377,25 @@ static int _set_mapsinfo(List lresp)
 	regexp = NULL;
 	list_append(lresp, kvp);
 
-	input = NULL;
 	for (i = 0; i < count; i++) {
+		char *sep = "";
 		/* for each node - run through all tasks and
 		 * record taskid's that reside on this node
 		 */
 		int first = 1;
 		for (j = 0; j < nsptr->ntasks; j++) {
 			if (nsptr->task_map[j] == i) {
-				if (first) {
-					first = 0;
-				} else {
-					xstrfmtcat(input, ",");
-				}
-				xstrfmtcat(input, "%u", j);
+				xstrfmtcatat(map, &pos, "%s%u",
+					     sep, j);
+				sep = ",";
 			}
 		}
 		if (i < (count - 1)) {
-			xstrfmtcat(input, ";");
+			xstrfmtcatat(map, &pos, ";");
 		}
 	}
-	rc = PMIx_generate_ppn(input, &regexp);
-	xfree(input);
+	rc = PMIx_generate_ppn(map, &regexp);
+	xfree(map);
 	if (PMIX_SUCCESS != rc) {
 		return SLURM_ERROR;
 	}
