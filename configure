@@ -21794,8 +21794,8 @@ fi
 
 
 
-  case "$host" in
-  *-darwin*)
+  case ${host_os} in
+  darwin* | freebsd* | netbsd* )
     with_cgroup=no
     ;;
   *)

@@ -12,8 +12,8 @@
 
 AC_DEFUN([X_AC_CGROUP],
 [
-  case "$host" in
-  *-darwin*)
+  case ${host_os} in
+  darwin* | freebsd* | netbsd* )
     with_cgroup=no
     ;;
   *)
