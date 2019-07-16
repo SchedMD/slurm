@@ -340,7 +340,7 @@ proc check_restart_cnt { file cnt } {
 
 spawn $bin_id -un
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set user_name $expect_out(1,string)
 	}
 	eof {

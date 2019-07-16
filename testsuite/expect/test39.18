@@ -45,10 +45,10 @@ set mismatch_err	"error: This GPU specified in \\\[slurm\\\|gres\\\].conf has mi
 set no_name_err		"error: Invalid GRES data, no type name"
 set parse_err		"error: Parse error in file"
 set links_err		"error: gres.conf: Ignoring invalid Link"
-set conf_mismatch_err	"WARNING: A line in gres.conf for GRES $alpha_numeric_colon has $number more configured than expected in slurm.conf"
+set conf_mismatch_err	"WARNING: A line in gres.conf for GRES $re_word_str has $number more configured than expected in slurm.conf"
 set slurm_conf_type_err	"GRES in slurm.conf have a type while others do not"
-set gres_conf_type_err	"fatal: gres.conf for $alpha_under_slash, some records have \"Type=\" specification while others do not"
-set gres_conf_file_err	"fatal: gres.conf for $alpha_under_slash, some records have \"File\" specification while others do not"
+set gres_conf_type_err	"fatal: gres.conf for $re_word_str, some records have \"Type=\" specification while others do not"
+set gres_conf_file_err	"fatal: gres.conf for $re_word_str, some records have \"File\" specification while others do not"
 
 set debug_mode 0
 # set debug_mode 1
@@ -185,7 +185,7 @@ log_debug "Sizeof(unsigned long) = $ulong_bits"
 #
 set failed_tests [list]
 proc check_configuration {test_minor slurm_conf_gres gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} } {
-	global cfgpath nodename test_prog alpha_numeric_special exit_code test_minor_in
+	global cfgpath nodename test_prog re_word_str exit_code test_minor_in
 	global test_id failed_tests use_valgrind bin_sort file_in file_out
 	global bin_cat debug_mode
 
@@ -229,7 +229,7 @@ rm -rf ./$file_out"
 	}
 	spawn ./$file_in
 	expect {
-		-re "(GRES_PARSABLE$alpha_numeric_special)" {
+		-re "(GRES_PARSABLE$re_word_str)" {
 			if {$sorted_actual == ""} {
 				set sorted_actual "\n"
 			}
@@ -284,7 +284,7 @@ rm -rf ./$file_out"
 	make_bash_script $file_in "/bin/echo \"$output_expected\" | $bin_sort"
 	spawn ./$file_in
 	expect {
-		-re "(GRES_PARSABLE$alpha_numeric_special)" {
+		-re "(GRES_PARSABLE$re_word_str)" {
 			if {$sorted_expected == ""} {
 				set sorted_expected "\n"
 			}

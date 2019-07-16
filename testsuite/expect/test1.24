@@ -46,7 +46,7 @@ expect {
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}

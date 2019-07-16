@@ -65,7 +65,7 @@ log_user 0
 set licenses ""
 spawn $scontrol show config
 expect {
-	-re "Licenses *= ($alpha_numeric_under)" {
+	-re "Licenses *= ($re_word_str)" {
 		set licenses $expect_out(1,string)
 		exp_continue
 	}

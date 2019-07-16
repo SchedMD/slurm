@@ -79,7 +79,7 @@ set percentage -1
 set target_job  [expr $mps_cnt / 2]
 set srun_pid [spawn $srun --gres=mps:$target_job -n1 -t1 -J "test$test_id" $file_in1]
 expect {
-	-re "HOST:($alpha_numeric_under)" {
+	-re "HOST:($re_word_str)" {
 		incr matches
 		set host $expect_out(1,string)
 		exp_continue
@@ -407,7 +407,7 @@ set match 0
 set hostname "NO_VAL"
 set srun_pid [spawn $srun --gres=mps:$target_job -N$node_cnt -t1 -J "test$test_id" $file_in1]
 expect {
-	-re "HOST:($alpha_numeric_under)" {
+	-re "HOST:($re_word_str)" {
 		incr match
 		if {$match == 1} {
 			set hostname $expect_out(1,string)

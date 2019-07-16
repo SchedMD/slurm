@@ -142,7 +142,7 @@ set user_name [get_my_user_name]
 set account_name "NOT_SET"
 spawn $bin_bash -c "exec $sacctmgr -nP list user user=$user_name format=defaultaccount"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set account_name $expect_out(1,string)
 		exp_continue
 	}
@@ -234,7 +234,7 @@ set found 0
 set node 0
 spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set node $expect_out(1,string)
 		log_debug "Node for this job : $node"
 		set found 1
@@ -347,7 +347,7 @@ set found 0
 set node 0
 spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set node $expect_out(1,string)
 		log_debug "Node for this job : $node"
 		set found 1

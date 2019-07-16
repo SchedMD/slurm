@@ -73,7 +73,7 @@ log_info "---Checking SrunPortRange in slurm.conf and scontrol show conf---"
 set slurm_conf_range ""
 spawn  $bin_grep -i SrunPortRange $config_file
 expect {
-	-nocase -re "SrunPortRange=($alpha_numeric_under)" {
+	-nocase -re "SrunPortRange=($re_word_str)" {
 		set slurm_conf_range $expect_out(1,string)
 		exp_continue
 	}
@@ -89,7 +89,7 @@ expect {
 set show_config_range ""
 spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SrunPortRange"
 expect {
-	-re "SrunPortRange *=* ($alpha_numeric_under)" {
+	-re "SrunPortRange *=* ($re_word_str)" {
 		set show_config_range $expect_out(1,string)
 		exp_continue
 	}

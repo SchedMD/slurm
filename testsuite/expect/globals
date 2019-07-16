@@ -269,18 +269,7 @@ if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 }
 
 # Other common variables
-set alpha                "\\S+"
-set alpha_cap            "\\S+"
-set alpha_comma_slash    "\\S+"
-set alpha_comma_slash_under "\\S+"
-set alpha_numeric        "\\S+"
-set alpha_numeric_special "\\S\\\/\:\\-\|\]+"
-set alpha_numeric_colon  "\\S+"
-set alpha_numeric_comma_eq  "\\S+"
-set alpha_numeric_comma  "\\S+"
-set alpha_numeric_under  "\\S+"
-set alpha_under          "\\S+"
-set alpha_under_slash    "\\S+"
+set re_word_str          "\\S+"
 set digit                "\\d"
 set end_of_line          "\[\r\n\]"
 set float                "\\d+\\.?\\d*"
@@ -289,7 +278,6 @@ set format_time          "\\d+\\:\\d+\\:\\d+"
 set number_with_suffix   "\\d+\[KM\]*"
 set slash                "/"
 set whitespace		 "\\s+"
-set alpha_numeric_nodelist "\\S+"
 set controlmachine_regex "\\S+"
 # Any characters except ( , : newline
 set no_delim             "\[^(,:\r\n\]"
@@ -634,14 +622,14 @@ proc get_my_id {} {
 ################################################################
 
 proc get_my_user_name {  } {
-	global bin_id alpha alpha_numeric
+	global bin_id re_word_str
 
 	set user_name -1
 
 	log_user 0
 	spawn $bin_id -nu
 	expect {
-		-re "($alpha_numeric|$alpha)" {
+		-re "($re_word_str)" {
 			set user_name $expect_out(1,string)
 			exp_continue
 		}
@@ -989,7 +977,7 @@ proc wait_for_job { job_id desired_state {het_job 0}} {
 ################################################################
 
 proc wait_for_account_done { accounts } {
-	global scancel squeue max_job_state_delay alpha_numeric_colon poll_interval
+	global scancel squeue max_job_state_delay re_word_str poll_interval
 
 	if { $accounts == "" } {
 		log_error "wait_for_account_done: no account given"
@@ -1015,7 +1003,7 @@ proc wait_for_account_done { accounts } {
 		set found 0
 		spawn $squeue -o Account=%a -h -A$accounts
 		expect {
-			-re "Account=($alpha_numeric_colon)" {
+			-re "Account=($re_word_str)" {
 				set found 1
 				exp_continue;
 			}
@@ -1059,7 +1047,7 @@ proc wait_for_account_done { accounts } {
 ################################################################
 
 proc wait_for_part_done { part } {
-	global scancel squeue max_job_state_delay alpha_numeric_colon poll_interval
+	global scancel squeue max_job_state_delay re_word_str poll_interval
 
 	if { $part == "" } {
 		log_error "wait_for_part_done: no partition given"
@@ -1082,7 +1070,7 @@ proc wait_for_part_done { part } {
 		set found 0
 		spawn $squeue -o Part=%P -h -p$part
 		expect {
-			-re "Part=($alpha_numeric_colon)" {
+			-re "Part=($re_word_str)" {
 				set found 1
 				exp_continue;
 			}
@@ -1232,7 +1220,7 @@ proc wait_for_all_jobs { job_name } {
 ################################################################
 proc wait_job_reason { job_id {desired_state "PENDING"}
 		       {desired_reason_list ""} } {
-	global scontrol alpha max_job_state_delay poll_interval
+	global scontrol re_word_str max_job_state_delay poll_interval
 	set final_state "COMPLETED CANCELLED FAILED TIMEOUT DEADLINE
 	                 OUT_OF_MEMORY"
 
@@ -1245,7 +1233,7 @@ proc wait_job_reason { job_id {desired_state "PENDING"}
 		set has_reason 1
 		spawn $scontrol show job $job_id
 		expect {
-			-re "JobState=($alpha) Reason=(\\S+)" {
+			-re "JobState=($re_word_str) Reason=(\\S+)" {
 				set job_state $expect_out(1,string)
 				set job_reason $expect_out(2,string)
 			}
@@ -1398,13 +1386,13 @@ proc test_limits_enforced { } {
 #
 ################################################################
 proc test_enforce_part_limits { } {
-	global alpha scontrol
+	global re_word_str scontrol
 
 	log_user 0
 	set enforced "UNKNOWN"
 	spawn $scontrol show config
 	expect {
-		-re "EnforcePartLimits *= ($alpha)" {
+		-re "EnforcePartLimits *= ($re_word_str)" {
 			set enforced $expect_out(1,string)
 			exp_continue
 		}
@@ -1543,13 +1531,13 @@ proc test_topology { } {
 #
 ################################################################
 proc get_affinity_types { } {
-	global scontrol alpha_comma_slash_under
+	global scontrol re_word_str
 
 	log_user 0
 	set affinity ""
 	spawn $scontrol show config
 	expect {
-		-re "TaskPlugin *= ($alpha_comma_slash_under)" {
+		-re "TaskPlugin *= ($re_word_str)" {
 			set parts [split $expect_out(1,string) ",/"]
 			while 1 {
 				set task_found [lsearch $parts "task"]
@@ -1578,13 +1566,13 @@ proc get_affinity_types { } {
 #
 ################################################################
 proc get_affinity_params { } {
-	global scontrol alpha_comma_slash_under
+	global scontrol re_word_str
 
 	log_user 0
 	set params ""
 	spawn $scontrol show config
 	expect {
-		-re "TaskPluginParam *= ($alpha_comma_slash_under)" {
+		-re "TaskPluginParam *= ($re_word_str)" {
 			set params $expect_out(1,string)
 			exp_continue
 		}
@@ -1634,13 +1622,13 @@ proc test_constrain_devices { } {
 #
 ################################################################
 proc get_mps_count_by_index { index hostname } {
-	global slurmd number alpha_numeric_special
+	global slurmd number re_word_str
 
 	log_user 0
 	set count 0
 	spawn $slurmd -G -N $hostname
 	expect {
-		-re "Gres Name=mps Type=$alpha_numeric_special Count=($number) Index=$index" {
+		-re "Gres Name=mps Type=$re_word_str Count=($number) Index=$index" {
 			set count $expect_out(1,string)
 			exp_continue
 		}
@@ -1719,13 +1707,13 @@ proc get_bb_persistent { } {
 #
 ################################################################
 proc get_bb_types { } {
-	global scontrol alpha_under_slash
+	global scontrol re_word_str
 
 	log_user 0
 	set bb_types ""
 	spawn $scontrol show config
 	expect {
-		-re "BurstBufferType *= ($alpha_under_slash)" {
+		-re "BurstBufferType *= ($re_word_str)" {
 			set parts [split $expect_out(1,string) ",/"]
 			while 1 {
 				set task_found [lsearch $parts "burst_buffer"]
@@ -1754,13 +1742,13 @@ proc get_bb_types { } {
 #
 ################################################################
 proc get_cpu_governors { } {
-	global scontrol alpha_numeric_comma
+	global scontrol re_word_str
 
 	log_user 0
 	set governors ""
 	spawn $scontrol show config
 	expect {
-		-re "CpuFreqGovernors *= ($alpha_numeric_comma)" {
+		-re "CpuFreqGovernors *= ($re_word_str)" {
 			set governors $expect_out(1,string)
 			exp_continue
 		}
@@ -1807,7 +1795,7 @@ proc test_cpu_affinity { } {
 #
 ################################################################
 proc test_cpu_affinity_or_cgroup { } {
-	global scontrol alpha
+	global scontrol re_word_str
 
 	log_user 0
 
@@ -1843,7 +1831,7 @@ proc test_cpu_affinity_or_cgroup { } {
 #
 ################################################################
 proc test_mem_affinity { } {
-	global scontrol alpha
+	global scontrol re_word_str
 
 	log_user 0
 
@@ -1935,13 +1923,13 @@ proc test_account_storage { } {
 ################################################################
 
 proc test_enforce_limits { } {
-	global alpha_numeric_comma scontrol
+	global re_word_str scontrol
 
 	log_user 0
 	set enforce_limits 0
 	spawn $scontrol show config
 	expect {
-		-re "AccountingStorageEnforce *= ($alpha_numeric_comma)" {
+		-re "AccountingStorageEnforce *= ($re_word_str)" {
 			if {[string first "safe" $expect_out(1,string)] != -1 } {
 				set enforce_limits 1
 			}
@@ -2009,13 +1997,13 @@ proc test_allow_spec_resc { } {
 ################################################################
 
 proc test_enforce_safe_set { } {
-	global alpha_numeric_comma scontrol
+	global re_word_str scontrol
 
 	log_user 0
 	set enforce_limits 0
 	spawn $scontrol show config
 	expect {
-		-re "AccountingStorageEnforce *= ($alpha_numeric_comma)" {
+		-re "AccountingStorageEnforce *= ($re_word_str)" {
 			if {[string first "safe" $expect_out(1,string)] != -1 } {
 				set enforce_limits 1
 			}
@@ -2042,13 +2030,13 @@ proc test_enforce_safe_set { } {
 ################################################################
 
 proc test_enforce_qos_set { } {
-	global alpha_numeric_comma scontrol
+	global re_word_str scontrol
 
 	log_user 0
 	set enforce_limits 0
 	spawn $scontrol show config
 	expect {
-		-re "AccountingStorageEnforce *= ($alpha_numeric_comma)" {
+		-re "AccountingStorageEnforce *= ($re_word_str)" {
 			if {[string first "qos" $expect_out(1,string)] != -1 } {
 				set enforce_limits 1
 			}
@@ -2172,7 +2160,7 @@ proc get_min_job_age {} {
 ################################################################
 
 proc get_default_acct { user } {
-	global sacctmgr alpha_numeric_under bin_id
+	global sacctmgr re_word_str bin_id
 
 	log_user 0
 	set def_acct ""
@@ -2183,7 +2171,7 @@ proc get_default_acct { user } {
 
 	spawn $sacctmgr -n list -P user $user format="DefaultAccount"
 	expect {
-		-re "($alpha_numeric_under)" {
+		-re "($re_word_str)" {
 			set def_acct $expect_out(1,string)
 			exp_continue
 		}
@@ -2297,13 +2285,13 @@ proc test_cray { } {
 ################################################################
 
 proc test_launch_type { } {
-	global scontrol bin_bash bin_grep alpha_numeric_under
+	global scontrol bin_bash bin_grep re_word_str
 
 	log_user 0
 	set type ""
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep LaunchType"
 	expect {
-		-re "launch/($alpha_numeric_under)" {
+		-re "launch/($re_word_str)" {
 			set type $expect_out(1,string)
 			exp_continue
 		}
@@ -2327,7 +2315,7 @@ proc test_launch_type { } {
 ################################################################
 
 proc test_launch_test_exec { } {
-	global scontrol bin_bash bin_grep alpha_numeric_under
+	global scontrol bin_bash bin_grep re_word_str
 
 	log_user 0
 	set test_exec 0
@@ -2358,20 +2346,20 @@ proc test_launch_test_exec { } {
 ################################################################
 
 proc test_node_features_plugin { } {
-	global scontrol bin_bash bin_grep alpha_numeric_under
+	global scontrol bin_bash bin_grep re_word_str
 
 	log_user 0
 	set type ""
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep NodeFeaturesPlugins"
 	expect {
-		-re "node_features/($alpha_numeric_under)" {
+		-re "node_features/($re_word_str)" {
 			set type $expect_out(1,string)
 			exp_continue
 		}
 		-re "null" {
 			exp_continue
 		}
-		-re "($alpha_numeric_under)" {
+		-re "($re_word_str)" {
 			set type $expect_out(1,string)
 			exp_continue
 		}
@@ -2477,13 +2465,13 @@ proc get_cycle_count { } {
 ################################################################
 
 proc test_select_type { } {
-	global scontrol bin_bash bin_grep alpha_numeric_under
+	global scontrol bin_bash bin_grep re_word_str
 
 	log_user 0
 	set type ""
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
 	expect {
-		-re "select/($alpha_numeric_under)" {
+		-re "select/($re_word_str)" {
 			set type $expect_out(1,string)
 			exp_continue
 		}
@@ -2507,7 +2495,7 @@ proc test_select_type { } {
 #
 ################################################################
 proc get_select_type_params { partition } {
-	global scontrol bin_bash bin_grep alpha_numeric_comma
+	global scontrol bin_bash bin_grep re_word_str
 
 	log_user 0
 	set params ""
@@ -2517,7 +2505,7 @@ proc get_select_type_params { partition } {
 			-re "SelectTypeParameters *= *NONE" {
 				exp_continue
 			}
-			-re "SelectTypeParameters *= *($alpha_numeric_comma)" {
+			-re "SelectTypeParameters *= *($re_word_str)" {
 				set params $expect_out(1,string)
 				exp_continue
 			}
@@ -2529,7 +2517,7 @@ proc get_select_type_params { partition } {
 	if { [string compare params ""] } {
 		spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
 		expect {
-			-re "SelectTypeParameters *= *($alpha_numeric_comma)" {
+			-re "SelectTypeParameters *= *($re_word_str)" {
 				set params $expect_out(1,string)
 				exp_continue
 			}
@@ -2632,7 +2620,7 @@ proc test_cons_tres { } {
 #
 ################################################################
 proc get_total_cpus {} {
-	global sinfo scontrol alpha_numeric_nodelist
+	global sinfo scontrol re_word_str
 
 	set partition [default_partition]
 	set cpu_cnt 0
@@ -2642,7 +2630,7 @@ proc get_total_cpus {} {
 
 	spawn $sinfo -h -o "%P %N" -p $partition --state=idle
 	expect {
-		-re "$partition\\* ($alpha_numeric_nodelist)" {
+		-re "$partition\\* ($re_word_str)" {
 			set def_hostlist $expect_out(1,string)
 			exp_continue
 		}
@@ -2680,14 +2668,14 @@ proc get_total_cpus {} {
 ################################################################
 
 proc test_scheduler_params { type } {
-	global scontrol bin_bash bin_grep alpha_numeric_comma_eq
+	global scontrol bin_bash bin_grep re_word_str
 
 	log_user 0
 	set ret 0
 	set params ""
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SchedulerParameters"
 	expect {
-		-re "SchedulerParameters *= *($alpha_numeric_comma_eq)" {
+		-re "SchedulerParameters *= *($re_word_str)" {
 			set params $expect_out(1,string)
 			exp_continue
 		}
@@ -2723,14 +2711,14 @@ proc test_scheduler_params { type } {
 ################################################################
 
 proc test_select_type_params { type } {
-	global scontrol bin_bash bin_grep alpha_numeric_comma
+	global scontrol bin_bash bin_grep re_word_str
 
 	log_user 0
 	set ret 0
 	set params ""
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
 	expect {
-		-re "SelectTypeParameters *= *($alpha_numeric_comma)" {
+		-re "SelectTypeParameters *= *($re_word_str)" {
 			set params $expect_out(1,string)
 			exp_continue
 		}
@@ -2795,7 +2783,7 @@ proc test_root_user { } {
 ################################################################
 
 proc test_super_user { } {
-	global alpha_numeric_under bin_id number scontrol super_user super_user_set
+	global re_word_str bin_id number scontrol super_user super_user_set
 
 	if {$super_user_set != 0} {
 		return $super_user
@@ -2820,7 +2808,7 @@ proc test_super_user { } {
 	spawn $scontrol show config
 	set slurm_user ""
 	expect {
-		-re "SlurmUser *= ($alpha_numeric_under).($number)" {
+		-re "SlurmUser *= ($re_word_str)\[\(\]($number)\[\)\]" {
 			set slurm_user $expect_out(1,string)
 			exp_continue
 		}
@@ -3123,7 +3111,7 @@ proc get_suffix { hostname } {
 ################################################################
 
 proc is_super_user { } {
-	global alpha_numeric_under bin_id scontrol
+	global re_word_str bin_id scontrol
 
 	log_user 0
 	set user_name [get_my_user_name]
@@ -3157,7 +3145,7 @@ proc is_super_user { } {
 #
 ################################################################
 proc check_acct_associations { } {
-	global sacctmgr number alpha_numeric_under exit_code
+	global sacctmgr number re_word_str exit_code
 
 	set rc 1
 	log_user 0
@@ -3167,7 +3155,7 @@ proc check_acct_associations { } {
 	#
 	set s_pid [spawn $sacctmgr -n -p list assoc wopi wopl withd format=lft,rgt,cluster]
 	expect {
-	       -re "($number)\\|($number)\\|($alpha_numeric_under)\\|" {
+	       -re "($number)\\|($number)\\|($re_word_str)\\|" {
 		      # Here we are checking if we have duplicates and
 		      # setting up an array to check for holes later
 
@@ -3273,18 +3261,18 @@ proc get_job_acct_freq { } {
 #
 ################################################################
 proc get_job_acct_type { } {
-	global scontrol alpha
+	global scontrol re_word_str
 
 	log_user 0
 	set gather_type "none"
 
 	spawn $scontrol show config
 	expect {
-		-re "JobAcctGatherType *= jobacct_gather/($alpha)" {
+		-re "JobAcctGatherType *= jobacct_gather/($re_word_str)" {
 			set gather_type $expect_out(1,string)
 			exp_continue
 		}
-		-re "JobAcctGatherType *= ($alpha)" {
+		-re "JobAcctGatherType *= ($re_word_str)" {
 			set gather_type $expect_out(1,string)
 			exp_continue
 		}
@@ -3307,7 +3295,7 @@ proc get_job_acct_type { } {
 #
 ################################################################
 proc check_accounting_admin_level { } {
-	global sacctmgr alpha alpha_numeric_under bin_id exit_code
+	global sacctmgr re_word_str re_word_str bin_id exit_code
 
 	set admin_level ""
 	set user_name ""
@@ -3330,7 +3318,7 @@ proc check_accounting_admin_level { } {
 	#
 	set s_pid [spawn $sacctmgr -n -P list user $user_name format=admin]
 	expect {
-		-re "($alpha)" {
+		-re "($re_word_str)" {
 		      set admin_level $expect_out(1,string)
 		      exp_continue
 	       }
@@ -3357,7 +3345,7 @@ proc check_accounting_admin_level { } {
 #
 ################################################################
 proc get_cluster_name { } {
-	global scontrol alpha_numeric_under exit_code
+	global scontrol re_word_str exit_code
 	#
 	# Use scontrol to find the cluster name
 	#
@@ -3365,7 +3353,7 @@ proc get_cluster_name { } {
 	set cluster_name ""
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
-		-re "ClusterName *= ($alpha_numeric_under)" {
+		-re "ClusterName *= ($re_word_str)" {
 			set cluster_name $expect_out(1,string)
 			exp_continue
 		}
@@ -3392,7 +3380,7 @@ proc get_cluster_name { } {
 #
 ################################################################
 proc get_control_machine { } {
-	global scontrol controlmachine_regex exit_code
+	global scontrol re_word_str exit_code
 	#
 	# Use scontrol to find the ControlMachine
 	#
@@ -3400,12 +3388,12 @@ proc get_control_machine { } {
 	set control_machine ""
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
-		-re "ControlMachine *= ($controlmachine_regex)" {
+		-re "ControlMachine *= ($re_word_str)" {
 			set par_idx [expr [string last "(" $expect_out(1,string)] -1]
 			set control_machine [string range $expect_out(1,string) 0 $par_idx]
 			exp_continue
 		}
-		-re "SlurmctldHost.0. *= ($controlmachine_regex)" {
+		-re "SlurmctldHost.0. *= ($re_word_str)" {
 			set par_idx [expr [string last "(" $expect_out(1,string)] -1]
 			set control_machine [string range $expect_out(1,string) 0 $par_idx]
 			exp_continue
@@ -3505,7 +3493,7 @@ proc get_node_cnt_in_part { partition } {
 ################################################################
 
 proc get_idle_node_in_part { partition } {
-	global scontrol sinfo alpha_numeric_nodelist alpha_numeric_under
+	global scontrol sinfo re_word_str
 
 	log_user 0
 	set host_list ""
@@ -3514,7 +3502,7 @@ proc get_idle_node_in_part { partition } {
 		-re "not found" {
 			log_error "partition $partition doesn't exist"
 		}
-		-re "NAME=($alpha_numeric_nodelist)" {
+		-re "NAME=($re_word_str)" {
 			set host_list $expect_out(1,string)
 		}
 		timeout {
@@ -3528,7 +3516,7 @@ proc get_idle_node_in_part { partition } {
 	set node_name ""
 	spawn $scontrol show hostname $host_list
 	expect {
-		-re "($alpha_numeric_under)" {
+		-re "($re_word_str)" {
 			set node_name $expect_out(1,string)
 		}
 		timeout {
@@ -3871,13 +3859,13 @@ proc get_fs_damping_factor { } {
 ################################################################
 
 proc slurmctld_plug_stack_nonstop { } {
-	global scontrol alpha_numeric_comma exit_code
+	global scontrol re_word_str exit_code
 
 	log_user 0
 	set nonstop_enforce 0
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
-		-re "SlurmctldPlugstack *= ($alpha_numeric_comma)" {
+		-re "SlurmctldPlugstack *= ($re_word_str)" {
 			if {[string first $expect_out(1,string) "nonstop"] != -1} {
 				set nonstop_enforce 1
 			}
@@ -3908,13 +3896,13 @@ proc slurmctld_plug_stack_nonstop { } {
 ################################################################
 
 proc job_submit_all_partitions { } {
-	global scontrol alpha_numeric_comma exit_code
+	global scontrol re_word_str exit_code
 
 	log_user 0
 	set all_partitions 0
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
-		-re "JobSubmitPlugins *= ($alpha_numeric_comma)" {
+		-re "JobSubmitPlugins *= ($re_word_str)" {
 			if {[string first $expect_out(1,string) "all_partitions"] != -1} {
 				set all_partitions 1
 			}
@@ -4053,12 +4041,12 @@ proc test_preempttype_qos { } {
 
 proc test_proctrack { } {
 
-	global scontrol alpha_numeric_under
+	global scontrol re_word_str
 	log_user 0
 	set proctype ""
 	spawn $scontrol show config
 	expect {
-		-re "ProctrackType *=* proctrack/($alpha_numeric_under)" {
+		-re "ProctrackType *=* proctrack/($re_word_str)" {
 			set proctype $expect_out(1,string)
 			exp_continue
 		}
@@ -4083,12 +4071,12 @@ proc test_proctrack { } {
 
 proc get_srun_ports { } {
 
-	global scontrol alpha_numeric_under bin_grep bin_bash number
+	global scontrol re_word_str bin_grep bin_bash number
 	log_user 0
 	set ports 0
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SrunPortRange"
 	expect {
-		-re "SrunPortRange *=* ($alpha_numeric_under)" {
+		-re "SrunPortRange *=* ($re_word_str)" {
 			set ports $expect_out(1,string)
 			exp_continue
 		}
@@ -4117,7 +4105,7 @@ proc get_srun_ports { } {
 
 proc available_nodes_hostnames { partition {also_power_save false} } {
 
-	global sinfo alpha_numeric_nodelist exit_code
+	global sinfo re_word_str exit_code
 
 	log_user 0
 	set idle_nodelist ""
@@ -4133,7 +4121,7 @@ proc available_nodes_hostnames { partition {also_power_save false} } {
 		spawn $sinfo -t$avail_states -h -o%N -p$partition
 	}
 	expect {
-		-re "($alpha_numeric_nodelist)" {
+		-re "($re_word_str)" {
 			append idle_nodelist $sep
 			append idle_nodelist $expect_out(1,string)
 			set sep ","
@@ -4164,12 +4152,12 @@ proc available_nodes_hostnames { partition {also_power_save false} } {
 
 proc test_accting_steps { } {
 
-	global scontrol alpha_numeric_comma
+	global scontrol re_word_str
 	log_user 0
 	set enforce_limits 1
 	spawn $scontrol show config
 	expect {
-		-re "AccountingStorageEnforce *= ($alpha_numeric_comma)" {
+		-re "AccountingStorageEnforce *= ($re_word_str)" {
 			if {[string first "nosteps" $expect_out(1,string)] != -1 } {
 				set enforce_limits 0
 			}
@@ -4212,7 +4200,7 @@ proc get_curr_line_num {frame_info} {
 
 proc get_partition_nodes {partition states} {
 
-	global sinfo alpha_numeric_under
+	global sinfo re_word_str
 	log_user 0
 	set node_list ""
 
@@ -4227,7 +4215,7 @@ proc get_partition_nodes {partition states} {
 	}
 
 	expect {
-		-re "($alpha_numeric_under)" {
+		-re "($re_word_str)" {
 			lappend node_list $expect_out(1,string)
 			exp_continue
 		}
@@ -4627,14 +4615,14 @@ proc get_part_total_cores {part states} {
 
 proc check_hosts_contiguous {part check_hosts_list} {
 
-	global sinfo alpha_numeric_under
+	global sinfo re_word_str
 
 	set part_hosts_list {}
 
 	log_user 0
 	set sinfo_pid [spawn $sinfo --noheader -p $part -N -o %N]
 	expect {
-		-re "($alpha_numeric_under)" {
+		-re "($re_word_str)" {
 			lappend part_hosts_list $expect_out(1,string)
 			exp_continue
 		}
@@ -4778,13 +4766,13 @@ proc get_requeue_exit_hold { } {
 #
 ################################################################
 proc get_prolog { } {
-	global scontrol alpha_numeric exit_code
+	global scontrol re_word_str exit_code
 
 	log_user 0
 	set prolog 0
 	set scon_pid [spawn -noecho $scontrol show config]
 	expect {
-		-re "^Prolog *= ($alpha_numeric)" {
+		-re "^Prolog *= ($re_word_str)" {
 			set re $expect_out(1,string)
 			exp_continue
 		}
@@ -5300,7 +5288,7 @@ proc _set_gpu_socket_range { sock_first_inx sock_last_inx } {
 #
 ################################################################
 proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
-	global alpha_numeric_under bin_rm number scontrol srun
+	global re_word_str bin_rm number scontrol srun
 	global gpu_sock_list
 	set sockets_with_gpus 1
 	set file_in "test_get_gpu_socket_count.input"
@@ -5318,25 +5306,25 @@ proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
 			_set_gpu_socket_range $expect_out(1,string) $expect_out(2,string)
 			exp_continue
 		}
-		-re "gpu:${alpha_numeric_under}:${number}.S:($number),($number),($number),($number)" {
+		-re "gpu:${re_word_str}:${number}.S:($number),($number),($number),($number)" {
 			_set_gpu_socket_inx $expect_out(1,string)
 			_set_gpu_socket_inx $expect_out(2,string)
 			_set_gpu_socket_inx $expect_out(3,string)
 			_set_gpu_socket_inx $expect_out(4,string)
 			exp_continue
 		}
-		-re "gpu:${alpha_numeric_under}:${number}.S:($number),($number),($number)" {
+		-re "gpu:${re_word_str}:${number}.S:($number),($number),($number)" {
 			_set_gpu_socket_inx $expect_out(1,string)
 			_set_gpu_socket_inx $expect_out(2,string)
 			_set_gpu_socket_inx $expect_out(3,string)
 			exp_continue
 		}
-		-re "gpu:${alpha_numeric_under}:${number}.S:($number),($number)" {
+		-re "gpu:${re_word_str}:${number}.S:($number),($number)" {
 			_set_gpu_socket_inx $expect_out(1,string)
 			_set_gpu_socket_inx $expect_out(2,string)
 			exp_continue
 		}
-		-re "gpu:${alpha_numeric_under}:${number}.S:($number)" {
+		-re "gpu:${re_word_str}:${number}.S:($number)" {
 			_set_gpu_socket_inx $expect_out(1,string)
 			exp_continue
 		}
@@ -5397,16 +5385,15 @@ proc get_mps_count { node_count } {
 #
 ################################################################
 proc get_mps_node_count { } {
-	global number sinfo
+	global number sinfo re_word_str
 	set fini 0
 	set node_inx 0
 	set def_part [default_partition]
-	set alpha_numeric_colon_paren "\[a-zA-Z0-9_\\(\\),\:\-\]+"
 
 	log_user 0
 	spawn $sinfo -N -p$def_part -oGRES=%G -h
 	expect {
-		-re "GRES=($alpha_numeric_colon_paren)" {
+		-re "GRES=($re_word_str)" {
 			set mps_count 0
 			set parts [split $expect_out(1,string) ",/"]
 			while 1 {
@@ -5514,13 +5501,13 @@ proc cuda_count { cuda_string } {
 #
 ################################################################
 proc get_acct_store_tres { } {
-	global scontrol alpha_numeric_special
+	global scontrol re_word_str
 
 	log_user 0
 	set store_tres ""
 	spawn $scontrol show config
 	expect {
-		-re "AccountingStorageTRES *= ($alpha_numeric_special)" {
+		-re "AccountingStorageTRES *= ($re_word_str)" {
 			set store_tres $expect_out(1,string)
 			exp_continue
 		}
@@ -5539,14 +5526,14 @@ proc get_acct_store_tres { } {
 #
 ################################################################
 proc get_conf_path { } {
-	global scontrol alpha exit_code
+	global scontrol re_word_str exit_code
 
 	set config_path ""
 	set got_config 0
 	log_user 0
 	spawn $scontrol show config
 	expect {
-		-re "SLURM_CONF.*= (/.*)/($alpha).*SLURM_VERSION" {
+		-re "SLURM_CONF.*= (/.*)/($re_word_str).*SLURM_VERSION" {
 			set config_path $expect_out(1,string)
 			set got_config 1
 			exp_continue
@@ -5888,7 +5875,7 @@ proc have_lua { } {
 #
 ################################################################
 proc create_part { part_name num_nodes_in } {
-	global scontrol srun bin_printenv number alpha_numeric_nodelist
+	global scontrol srun bin_printenv number re_word_str
 
 	set nodes ""
 	set num_nodes_out 0
@@ -5934,7 +5921,7 @@ proc create_part { part_name num_nodes_in } {
 			set num_nodes_out $expect_out(1,string)
 			exp_continue
 		}
-		-re "SLURM_NODELIST=($alpha_numeric_nodelist)" {
+		-re "SLURM_NODELIST=($re_word_str)" {
 			set nodes $expect_out(1,string)
 			exp_continue
 		}

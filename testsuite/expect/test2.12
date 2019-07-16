@@ -58,7 +58,7 @@ if {$topology_tree == 0} {
 set matches     0
 spawn $scontrol show topology
 expect {
-	-re "SwitchName=($alpha_numeric_under)" {
+	-re "SwitchName=($re_word_str)" {
 		if {$matches == 0} {
 			set switch_name $expect_out(1,string)
 		}

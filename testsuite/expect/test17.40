@@ -207,7 +207,7 @@ set thread_cnt 1
 
 spawn $bin_cat $file_out
 expect {
-	-re "NodeName=($alpha_numeric_under)" {
+	-re "NodeName=($re_word_str)" {
 		set first_node $expect_out(1,string)
 		exp_continue
 	}

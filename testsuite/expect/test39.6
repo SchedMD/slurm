@@ -162,7 +162,7 @@ expect {
 		set multi_socket [multi_socket_gres $expect_out(1,string)]
 		exp_continue
 	}
-	-re "CPU_IDs=($controlmachine_regex)" {
+	-re "CPU_IDs=($re_word_str)" {
 		if {$multi_socket != 0 && [string first , $expect_out(1,string)] == -1} {
 			log_warn "Allocated CPUs do not appear to span multiple sockets. This is fine if every GPU is bound to ALL sockets"
 		}

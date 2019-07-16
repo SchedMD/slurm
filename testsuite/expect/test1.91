@@ -77,7 +77,7 @@ set timeout $max_job_delay
 set node_name ""
 set srun_pid [spawn $srun -N1 --exclusive --verbose $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "on host ($alpha_numeric_under)" {
+	-re "on host ($re_word_str)" {
 		set node_name $expect_out(1,string)
 		exp_continue
 	}

@@ -75,7 +75,7 @@ expect {
 		incr matches -10
 		exp_continue
 	}
-	-re "($end_of_line)($alpha_numeric_under)(\\*) *up" {
+	-re "($end_of_line)($re_word_str)(\\*) *up" {
 		if (![string compare $expect_out(3,string) "*"]) {
 			set def_part 1
 			set def_part_name $expect_out(2,string)

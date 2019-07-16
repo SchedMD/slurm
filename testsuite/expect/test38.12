@@ -96,7 +96,7 @@ expect {
 	-re "--noheader" {
 		exp_continue
 	}
-	-re "NAME=($alpha_numeric_under)" {
+	-re "NAME=($re_word_str)" {
 		set component($index) $expect_out(1,string)
 		incr index
 		exp_continue

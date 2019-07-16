@@ -127,7 +127,7 @@ if {$gpu_cnt > $cpus_per_node} {
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$map_gpu -J "test$test_id" -l -t1 ./$file_in]
 }
 expect {
-	-re "($number): HOST:($controlmachine_regex) CUDA_VISIBLE_DEVICES:($number)" {
+	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number)" {
 		if       {$expect_out(1,string) == 0 && $expect_out(3,string) == 1} {
 			incr matches
 		} elseif {$expect_out(1,string) == 1 && $expect_out(3,string) == 0} {
@@ -174,7 +174,7 @@ if {$gpu_cnt > $cpus_per_node} {
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --ntasks=$tasks_per_node -N1 -l --gpu-bind=$mask_gpu -J "test$test_id" -l -t1 ./$file_in]
 }
 expect {
-	-re "($number): HOST:($controlmachine_regex) CUDA_VISIBLE_DEVICES:($number_commas)" {
+	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number_commas)" {
 		if       {$expect_out(1,string) == 0 && $expect_out(3,string) eq "0,1"} {
 			incr matches
 		} elseif {$expect_out(1,string) == 1 && $expect_out(3,string) eq "0"} {

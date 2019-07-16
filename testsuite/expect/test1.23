@@ -47,7 +47,7 @@ expect {
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
@@ -77,12 +77,12 @@ set this_date	""
 set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --mincpus=1 -t1 $bin_date]
 expect {
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	#needed for cray systems that don't have a prefix
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
@@ -114,7 +114,7 @@ expect {
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
@@ -154,12 +154,12 @@ expect {
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	#needed for cray systems that don't have a prefix
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
@@ -191,7 +191,7 @@ expect {
 		set err_msg 1
 		exp_continue
 	}
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
@@ -221,12 +221,12 @@ set this_date	""
 set timeout	$max_job_delay
 set srun_pid [spawn $srun -N1 -l --tmp=0 -t1 $bin_date]
 expect {
-	-re "0: *($alpha_numeric_under)" {
+	-re "0: *($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}
 	#needed for cray systems that don't have a prefix
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set this_date $expect_out(1,string)
 		exp_continue
 	}

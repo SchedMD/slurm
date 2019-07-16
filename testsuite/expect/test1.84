@@ -74,11 +74,11 @@ set part_exclusive 0
 set part_oversubscribe_force 0
 spawn $scontrol show part $def_part
 expect {
-	-re " Nodes=($alpha_numeric_nodelist)"  {
+	-re " Nodes=($re_word_str)"  {
 		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
-	-re " BasePartitions=($alpha_numeric_nodelist)" {
+	-re " BasePartitions=($re_word_str)" {
 		set def_hostlist $expect_out(1,string)
 		exp_continue
 	}
@@ -184,7 +184,7 @@ expect {
 	-re "Invalid node name specified" {
 		skip "Appears you are using multiple slurmd testing. This test won't work in that fashion"
 	}
-	-re "$number: *($alpha_numeric_under)" {
+	-re "$number: *($re_word_str)" {
 		incr task_cnt
 		exp_continue
 	}

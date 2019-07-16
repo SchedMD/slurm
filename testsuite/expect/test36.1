@@ -44,11 +44,11 @@ set control_machine_ok 0
 
 spawn $lsid
 expect {
-	-re "My cluster name is ($alpha_numeric_under)" {
+	-re "My cluster name is ($re_word_str)" {
 		set lsid_cluster_name $expect_out(1,string)
 		exp_continue
 	}
-	-re "My master name is ($controlmachine_regex)" {
+	-re "My master name is ($re_word_str)" {
 		set lsid_control_machine $expect_out(1,string)
 		exp_continue
 	}

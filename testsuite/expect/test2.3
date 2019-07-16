@@ -41,7 +41,7 @@ print_header $test_id
 
 spawn $scontrol ping
 expect {
-	-re "Slurmctld.primary. at $controlmachine_regex is ($alpha_cap)" {
+	-re "Slurmctld.primary. at $re_word_str is ($re_word_str)" {
 		set status $expect_out(1,string)
 		if {![string compare $status "DOWN"] || ![string compare $status "UP"]} {
 			incr matches

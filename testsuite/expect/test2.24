@@ -54,14 +54,14 @@ expect {
 		# break here since other config files are listed here
 		# scontrol write config only prints out the normal slurm.conf
 	}
-	-re "($alpha_numeric_under) *= ($format_time)" {
+	-re "($re_word_str) *= ($format_time)" {
 		set option $expect_out(1,string)
 		set val $expect_out(2,string)
 		set conf_val($option) $val
 		incr opt_cnt
 		exp_continue
 	}
-	-re "($alpha_numeric_under) *= ($alpha_numeric_under)" {
+	-re "($re_word_str) *= ($re_word_str)" {
 		set option $expect_out(1,string)
 		set val $expect_out(2,string)
 
@@ -94,7 +94,7 @@ log_user 1
 #
 spawn $scontrol write config
 expect {
-	-re "(/.*)/*($alpha_numeric_under)*\r\n" {
+	-re "(/.*)/*($re_word_str)*\r\n" {
 		set new_conf $expect_out(1,string)
 		exp_continue
 	}

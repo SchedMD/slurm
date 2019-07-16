@@ -60,7 +60,7 @@ expect {
 		slow_kill $srun_pid
 		skip "Partition too small for test"
 	}
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -135,7 +135,7 @@ expect {
 		skip "Appears you are using multiple slurmd testing. This test won't work in that fashion"
 	}
 
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -191,7 +191,7 @@ set host_1      ""
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -l --nodelist=$include_node -t1 $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "($number): *($alpha_numeric_under)" {
+	-re "($number): *($re_word_str)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}

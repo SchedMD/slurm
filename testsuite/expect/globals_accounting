@@ -1514,7 +1514,7 @@ proc remove_clus_res {name} {
 #
 ################################################################
 proc check_assoc_limit { assoc type name assoc_val } {
-	global sacctmgr number alpha_numeric_under exit_code
+	global sacctmgr number exit_code
 	array set assoc_arr $assoc_val
 	set format_str ""
 	set exp "$name"

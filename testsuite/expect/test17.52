@@ -50,12 +50,11 @@ log_info "---Checking sbatch uses mcs-label only for some jobs (ondemand mode)--
 #
 # Change the slurm.conf MCSparameters and MCSPlugin
 #
-set alpha_numeric_pipe        "\[a-zA-Z0-9|\]+"
 set groups_name 0
 log_debug "groups=$groups_name"
 spawn $bin_bash -c "exec groups \| sed \"s/ /\|/g\""
 expect {
-	-re "($alpha_numeric_pipe)" {
+	-re "($re_word_str)" {
 		set groups_name $expect_out(1,string)
 	}
 	eof {
@@ -146,8 +145,13 @@ if {$job_id == 0} {
 
  spawn $bin_bash -c "exec groups \| sed \"s/ /\|/g\""
  expect {
-	 -re "($alpha_numeric_under)" {
-		set group1 $expect_out(1,string)
+	 -re "($re_word_str)" {
+		set pipe_idx [expr [string first "|" $expect_out(1,string)] -1]
+		if {$pipe_idx < 0} {
+			set group1 $expect_out(1,string)
+		} else {
+			set group1 [string range $expect_out(1,string) 0 $pipe_idx]
+		}
 	}
 	eof {
 		wait
@@ -235,7 +239,7 @@ set found 0
 set node 0
 spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set node $expect_out(1,string)
 		log_debug "Node for this job : $node"
 		set found 1
@@ -351,7 +355,7 @@ set found 0
 set node 0
 spawn $squeue --jobs=$job_id --noheader -O "nodelist"
 expect {
-	-re "($alpha_numeric_under)" {
+	-re "($re_word_str)" {
 		set node $expect_out(1,string)
 		log_debug "Node for this job : $node"
 		set found 1

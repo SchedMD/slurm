@@ -60,7 +60,7 @@ set user_gid [get_my_gid]
 
 set s_pid [spawn $sacctmgr show user $user_name]
 expect {
-	-re "$user_name *($alpha_numeric_under)" {
+	-re "$user_name *($re_word_str)" {
 		set acct_name $expect_out(1,string)
 		exp_continue
 	}

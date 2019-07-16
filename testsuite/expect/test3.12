@@ -44,12 +44,12 @@ set matches     0
 set node_name   ""
 spawn $scontrol show FrontendName
 expect {
-	-re "FrontendName=($alpha_numeric_under) State=ALLOCATED " {
+	-re "FrontendName=($re_word_str) State=ALLOCATED " {
 		set node_name $expect_out(1,string)
 		incr matches
 		exp_continue
 	}
-	-re "FrontendName=($alpha_numeric_under) State=IDLE " {
+	-re "FrontendName=($re_word_str) State=IDLE " {
 		set node_name $expect_out(1,string)
 		incr matches
 		exp_continue
@@ -72,7 +72,7 @@ if {$matches < 1} {
 #
 spawn $scontrol update FrontendName=$node_name State=DRAIN Reason=TESTING
 expect {
-	-re "slurm_update error: ($alpha_numeric_under) ($alpha_numeric_under)" {
+	-re "slurm_update error: ($re_word_str) ($re_word_str)" {
 		set access_err 0
 		set err_msg1 $expect_out(1,string)
 		set err_msg2 $expect_out(2,string)
@@ -105,11 +105,11 @@ set read_state  0
 set reason_code ""
 spawn $scontrol show FrontendName $node_name
 expect {
-	-re "State=($alpha_cap).DRAIN" {
+	-re "State=($re_word_str).DRAIN" {
 		set read_state 1
 		exp_continue
 	}
-	-re "Reason=($alpha_cap)" {
+	-re "Reason=($re_word_str)" {
 		set reason_code $expect_out(1,string)
 		exp_continue
 	}
@@ -166,7 +166,7 @@ expect {
 set read_state 0
 spawn  $scontrol show FrontendName $node_name
 expect {
-	-re "State=($alpha_cap).DRAIN" {
+	-re "State=($re_word_str).DRAIN" {
 		set read_state 1
 		exp_continue
 	}

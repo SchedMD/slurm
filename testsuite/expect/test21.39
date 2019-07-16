@@ -147,7 +147,7 @@ proc test_salloc { qos account num_nodes } {
 }
 
 proc check_job_reason { job_id state why } {
-	global scontrol alpha_numeric alpha
+	global scontrol re_word_str re_word_str
 
 	set found_why ""
 	set state_found ""
@@ -155,11 +155,11 @@ proc check_job_reason { job_id state why } {
 	log_user 0
 	spawn $scontrol show job $job_id
 	expect {
-		-re "State=($alpha)" {
+		-re "State=($re_word_str)" {
 			set state_found $expect_out(1,string)
 			exp_continue
 		}
-		-re "Reason=($alpha_numeric)" {
+		-re "Reason=($re_word_str)" {
 			set found_why $expect_out(1,string)
 			exp_continue
 		}

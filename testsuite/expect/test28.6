@@ -90,7 +90,7 @@ if {[string compare $def_part ""] == 0} {
 set node_list ""
 spawn $sinfo -h -o "%N" -p $def_part
 expect {
-	-re "($alpha_numeric_nodelist)" {
+	-re "($re_word_str)" {
 		set node_list $expect_out(1,string)
 		exp_continue
 	}

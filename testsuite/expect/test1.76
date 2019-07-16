@@ -255,7 +255,7 @@ if {[test_fast_schedule] != 0} {
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "CpuFreqGovernors *= ($alpha_numeric_comma)" {
+	-re "CpuFreqGovernors *= ($re_word_str)" {
 		if {[string first "OnDemand" $expect_out(1,string)] == -1} {
 			set have_on_demand 0
 		}
@@ -274,7 +274,7 @@ set timeout $max_job_delay
 set test_node 0
 spawn $srun --exclusive -n1 -t1 env
 expect {
-	-re "SLURMD_NODENAME=($alpha_numeric_nodelist)" {
+	-re "SLURMD_NODENAME=($re_word_str)" {
 		set test_node $expect_out(1,string)
 		exp_continue
 	}

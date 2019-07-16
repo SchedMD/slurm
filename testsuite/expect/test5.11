@@ -132,7 +132,7 @@ proc test_and_check { job_id part exp_nodes } {
 ################## Test with existing default partition ##################
 spawn $bin_bash -c "$scontrol show partition $default_part | $bin_grep -w Nodes"
 expect {
-	-re "Nodes=($alpha_numeric_nodelist)" {
+	-re "Nodes=($re_word_str)" {
 		set node_list $expect_out(1,string)
 		exp_continue
 	}
@@ -199,7 +199,7 @@ set tmp_name ""
 set node_name ""
 spawn $sinfo -h -o%n=%c
 expect {
-	-re "($alpha_numeric_under)=($number)" {
+	-re "($re_word_str)=($number)" {
 		if { $expect_out(2,string) < $tmp_cnt } {
 			set tmp_cnt $expect_out(2,string)
 			set node_name $expect_out(1,string)
@@ -226,7 +226,7 @@ set cpu_h_cnt $tmp_cnt
 # Get highest node of different
 spawn $sinfo -h -o%n=%c
 expect {
-	-re "($alpha_numeric_under)=($number)" {
+	-re "($re_word_str)=($number)" {
 		if { $expect_out(2,string) > $cpu_l_cnt &&
 		     $expect_out(2,string) > $cpu_h_cnt } {
 			set cpu_h_cnt $expect_out(2,string)
@@ -246,7 +246,7 @@ expect {
 # Get node between highest and lowest
 spawn $sinfo -h -o%n=%c
 expect {
-	-re "($alpha_numeric_under)=($number)" {
+	-re "($re_word_str)=($number)" {
 		if { $expect_out(2,string) > $cpu_l_cnt &&
 		     $expect_out(2,string) < $cpu_h_cnt } {
 			set cpu_m_cnt $expect_out(2,string)
