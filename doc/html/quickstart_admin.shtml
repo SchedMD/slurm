@@ -142,7 +142,7 @@ required software to build these plugins.</p>
 
 <p>To build RPMs directly, copy the distributed tarball into a directory
 and execute (substituting the appropriate Slurm version
-number):<br><code>rpmbuild -ta slurm-17.02.0.tar.bz2</code></p>
+number):<br><code>rpmbuild -ta slurm-19.05.1.tar.bz2</code></p>
 The rpm files will be installed under the <code>$(HOME)/rpmbuild</code>
 directory of the user building them.
 
@@ -607,16 +607,16 @@ that represent both the major Slurm release and maintenance release level.
 The first two parts combine together to represent the major release, and match
 the year and month of that major release. The third number in the version
 designates a specific maintenance level:
-year.month.maintenance-release (e.g. 17.11.5 is major Slurm release 17.11, and
-maintenance version 5).
-Thus version 17.11.x was initially released in November 2017.
+year.month.maintenance-release (e.g. 19.05.2 is major Slurm release 19.05, and
+maintenance version 2).
+Thus version 19.05.x was initially released in February 2019.
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes, which typically happens about every nine
 months. A list of most recent major Slurm releases is shown below.</p>
 <ul>
-<li>16.05.x  (Released May 2016)</li>
-<li>17.02.x  (Released February 2017)</li>
-<li>17.11.x  (Released November 2017)</li>
+<li>17.11.x (Released November 2017)</li>
+<li>18.08.x (Released August 2018)</li>
+<li>19.05.x (Released May 2019)</li>
 </ul>
 
 <p>Slurm's MPI libraries may also change if the major release number change,
@@ -624,8 +624,8 @@ requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 17.11.x SlurmDBD will support slurmctld daemons and
-commands with a version of 17.11.x, 17.02.x or 16.05.x).
+releases (e.g. a version 19.05.x SlurmDBD will support slurmctld daemons and
+commands with a version of 19.05.x, 18.08.x or 17.11.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the mainenance release number generally represent only bug fixes,
@@ -634,7 +634,7 @@ but may also include minor enhancements.</p>
 <p>If the SlurmDBD daemon is used, it must be at the same or higher major
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
-from 16.05.x to 17.02.x) <b>always upgrade the SlurmDBD daemon first</b>.
+from 18.08.x to 19.05.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
 adding new fields to existing tables.
 If the database contains a large number of entries, <b>the SlurmDBD daemon
@@ -648,14 +648,14 @@ although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
 Also see the note above about reverse compatibility.</p>
 
-<p>Almost every new major release of Slurm (e.g. 16.05.x to 17.02.x)
+<p>Almost every new major release of Slurm (e.g. 18.08.x to 19.05.x)
 involves changes to the state files with new data structures, new options, etc.
-Slurm permits upgrades between any two versions whose major release numbers
-differ by two or less (e.g. 16.05.x or 17.02.x to 17.11.x) without loss of
+Slurm permits upgrades to a new major release from the past two major releases,
+which happen every nine months (e.g. 17.11.x or 18.08.x to 19.05.x) without loss of
 jobs or other state information.
 State information from older versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
-State files are <b>not</b> recognized when downgrading (e.g. from 17.02.x to 16.05.x)
+State files are <b>not</b> recognized when downgrading (e.g. from 19.05.x to 18.08.x)
 and will be discarded, resulting in loss of all running and pending jobs.
 For this reason, creating backup copies of state files (as described below)
 can be of value.
@@ -667,7 +667,7 @@ recover the jobs.
 Jobs submitted under the new version will not be in those state files,
 but it can let you recover most jobs.
 An exception to this is that jobs may be lost when installing new pre-release
-versions (e.g. 17.11.0-pre1 to 17.11.0-pre2).
+versions (e.g. 20.02.0-pre1 to 20.02.0-pre2).
 Developers will try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
