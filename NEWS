@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Do not build cgroup plugins on FreeBSD or NetBSD, and use proctrack/pgid
     by default instead.
  -- Do not build switch/cray_aries plugin on FreeBSD, NetBSD, or macOS.
+ -- Fix build on FreeBSD.
 
 * Changes in Slurm 19.05.1-2
 ============================
