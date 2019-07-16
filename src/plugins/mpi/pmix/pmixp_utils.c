@@ -60,6 +60,18 @@
 /* must come after the above pmixp includes */
 #include "src/common/forward.h"
 
+extern int pmixp_count_digits_base10(uint32_t val)
+{
+	int digit_count = 0;
+
+	while (val) {
+		digit_count++;
+		val /= 10;
+	}
+
+	return digit_count;
+}
+
 void pmixp_xfree_xmalloced(void *x)
 {
 	xfree(x);
