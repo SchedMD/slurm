@@ -35,6 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <sys/socket.h>
+
 #include "src/common/eio.h"
 #include "src/common/half_duplex.h"
 #include "src/common/list.h"
