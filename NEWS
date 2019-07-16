@@ -4,6 +4,8 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 19.05.3
 ==========================
  -- Fix missing check from conversion of cray -> cray_aries.
+ -- Improve job state reason string when required nodes are not available by
+    not including those that don't belong to the job partition.
 
 * Changes in Slurm 19.05.2
 ==========================
