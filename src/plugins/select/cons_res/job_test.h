@@ -59,11 +59,11 @@
 #include "../cons_common/cons_common.h"
 
 /*
- * _can_job_run_on_node - Given the job requirements, determine which
- *                        resources from the given node (if any) can be
- *                        allocated to this job. Returns the number of
- *                        cpus that can be used by this node and a bitmap
- *                        of available resources for allocation.
+ * can_job_run_on_node - Given the job requirements, determine which
+ *                       resources from the given node (if any) can be
+ *                       allocated to this job. Returns the number of
+ *                       cpus that can be used by this node and a bitmap
+ *                       of available resources for allocation.
  *       NOTE: This process does NOT support overcommitting resources
  *
  * IN job_ptr       - pointer to job requirements
@@ -85,32 +85,6 @@ extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
 					uint16_t cr_type,
 					bool test_only,
 					bitstr_t **part_core_map);
-
-/*
- * Determine which of these nodes are usable by this job
- *
- * Remove nodes from node_bitmap that don't have enough memory or gres to
- * support the job.
- *
- * Return SLURM_ERROR if a required node can't be used.
- *
- * if node_state = NODE_CR_RESERVED, clear node_bitmap (if node is required
- *                                   then should we return NODE_BUSY!?!)
- *
- * if node_state = NODE_CR_ONE_ROW, then this node can only be used by
- *                                  another NODE_CR_ONE_ROW job
- *
- * if node_state = NODE_CR_AVAILABLE AND:
- *  - job_node_req = NODE_CR_RESERVED, then we need idle nodes
- *  - job_node_req = NODE_CR_ONE_ROW, then we need idle or non-sharing nodes
- */
-extern int verify_node_state(struct part_res_record *cr_part_ptr,
-			     struct job_record *job_ptr,
-			     bitstr_t *node_bitmap,
-			     uint16_t cr_type,
-			     struct node_use_record *node_usage,
-			     enum node_cr_state job_node_req,
-			     bitstr_t **exc_cores, bool qos_preemptor);
 
 /* this is an intermediary step between _select_nodes and _eval_nodes
  * to tackle the knapsack problem. This code incrementally removes nodes

@@ -84,33 +84,6 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 extern int can_job_fit_in_row(struct job_resources *job,
 			      struct part_row_data *r_ptr);
 
-/*
- * Determine which of these nodes are usable by this job
- *
- * Remove nodes from node_bitmap that don't have enough memory or other
- * resources to support this job.
- *
- * Return SLURM_ERROR if a required node can't be used.
- *
- * if node_state = NODE_CR_RESERVED, clear node_bitmap (if node is required
- *                                   then should we return NODE_BUSY!?!)
- *
- * if node_state = NODE_CR_ONE_ROW, then this node can only be used by
- *                                  another NODE_CR_ONE_ROW job
- *
- * if node_state = NODE_CR_AVAILABLE AND:
- *  - job_node_req = NODE_CR_RESERVED, then we need idle nodes
- *  - job_node_req = NODE_CR_ONE_ROW, then we need idle or non-sharing nodes
- */
-extern int verify_node_state(struct part_res_record *cr_part_ptr,
-			     struct job_record *job_ptr,
-			     bitstr_t *node_bitmap,
-			     uint16_t cr_type,
-			     struct node_use_record *node_usage,
-			     enum node_cr_state job_node_req,
-			     bitstr_t **exc_cores, bool qos_preemptor);
-
-
 extern void add_job_to_res(job_resources_t *job_resrcs_ptr,
 			   struct part_row_data *r_ptr,
 			   const uint16_t *bits_per_node);

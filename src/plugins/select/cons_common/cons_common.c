@@ -1280,6 +1280,250 @@ static gres_mc_data_t *_build_gres_mc_data(struct job_record *job_ptr)
 }
 
 /*
+ * Test to see if a node already has running jobs for _other_ partitions.
+ * If (sharing_only) then only check sharing partitions. This is because
+ * the job was submitted to a single-row partition which does not share
+ * allocated CPUs with multi-row partitions.
+ */
+static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
+			 int sharing_only, struct part_record *my_part_ptr,
+			 bool qos_preemptor)
+{
+	uint32_t r, c, core_begin, core_end;
+	uint16_t num_rows;
+	bitstr_t *use_row_bitmap = NULL;
+
+	for (; p_ptr; p_ptr = p_ptr->next) {
+		num_rows = p_ptr->num_rows;
+		if (preempt_by_qos && !qos_preemptor)
+			num_rows--;	/* Don't use extra row */
+		if (sharing_only &&
+		    ((num_rows < 2) || (p_ptr->part_ptr == my_part_ptr)))
+			continue;
+		if (!p_ptr->row)
+			continue;
+
+		for (r = 0; r < num_rows; r++) {
+			if (is_cons_tres) {
+				if (!p_ptr->row[r].row_bitmap ||
+				    !p_ptr->row[r].row_bitmap[node_i])
+					continue;
+				use_row_bitmap =
+					p_ptr->row[r].row_bitmap[node_i];
+				core_begin = 0;
+				core_end = bit_size(
+					p_ptr->row[r].row_bitmap[node_i]);
+			} else {
+				if (!p_ptr->row[r].first_row_bitmap)
+					continue;
+				use_row_bitmap = p_ptr->row[r].first_row_bitmap;
+				core_begin = cr_get_coremap_offset(node_i);
+				core_end = cr_get_coremap_offset(node_i+1);
+			}
+
+			for (c = core_begin; c < core_end; c++)
+				if (bit_test(use_row_bitmap, c))
+					return 1;
+		}
+	}
+	return 0;
+}
+
+/*
+ * Determine which of these nodes are usable by this job
+ *
+ * Remove nodes from node_bitmap that don't have enough memory or other
+ * resources to support this job.
+ *
+ * Return SLURM_ERROR if a required node can't be used.
+ *
+ * if node_state = NODE_CR_RESERVED, clear node_bitmap (if node is required
+ *                                   then should we return NODE_BUSY!?!)
+ *
+ * if node_state = NODE_CR_ONE_ROW, then this node can only be used by
+ *                                  another NODE_CR_ONE_ROW job
+ *
+ * if node_state = NODE_CR_AVAILABLE AND:
+ *  - job_node_req = NODE_CR_RESERVED, then we need idle nodes
+ *  - job_node_req = NODE_CR_ONE_ROW, then we need idle or non-sharing nodes
+ */
+static int _verify_node_state(struct part_res_record *cr_part_ptr,
+			      struct job_record *job_ptr,
+			      bitstr_t *node_bitmap,
+			      uint16_t cr_type,
+			      struct node_use_record *node_usage,
+			      enum node_cr_state job_node_req,
+			      bitstr_t **exc_cores, bool qos_preemptor)
+{
+	struct node_record *node_ptr;
+	uint32_t gres_cpus, gres_cores;
+	uint64_t free_mem, min_mem, avail_mem;
+	List gres_list;
+	int i, i_first, i_last;
+
+	if (is_cons_tres && !(job_ptr->bit_flags & JOB_MEM_SET) &&
+	    (min_mem = gres_plugin_job_mem_max(job_ptr->gres_list))) {
+		/*
+		 * Clear default partition or system per-node memory limit.
+		 * Rely exclusively upon the per-GRES memory limit.
+		 */
+		job_ptr->details->pn_min_memory = 0;
+	} else if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
+		uint16_t min_cpus;
+		min_mem = job_ptr->details->pn_min_memory & (~MEM_PER_CPU);
+		min_cpus = MAX(job_ptr->details->ntasks_per_node,
+			       job_ptr->details->pn_min_cpus);
+		min_cpus = MAX(min_cpus, job_ptr->details->cpus_per_task);
+		if (min_cpus > 0)
+			min_mem *= min_cpus;
+	} else {
+		min_mem = job_ptr->details->pn_min_memory;
+	}
+
+	i_first = bit_ffs(node_bitmap);
+	if (i_first == -1)
+		i_last = -2;
+	else
+		i_last  = bit_fls(node_bitmap);
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(node_bitmap, i))
+			continue;
+		node_ptr = select_node_record[i].node_ptr;
+		/* node-level memory check */
+		if ((job_ptr->details->pn_min_memory) &&
+		    (cr_type & CR_MEMORY)) {
+			avail_mem = select_node_record[i].real_memory -
+				    select_node_record[i].mem_spec_limit;
+			if (avail_mem > node_usage[i].alloc_memory) {
+				free_mem = avail_mem -
+					   node_usage[i].alloc_memory;
+			} else
+				free_mem = 0;
+			if (free_mem < min_mem) {
+				debug3("%s: %s: node %s no mem (%"PRIu64" < %"PRIu64")",
+					plugin_type, __func__,
+					node_ptr->name,
+					free_mem, min_mem);
+				goto clear_bit;
+			}
+		} else if (cr_type & CR_MEMORY) {   /* --mem=0 for all memory */
+			if (node_usage[i].alloc_memory) {
+				debug3("%s: %s: node %s mem in use %"PRIu64,
+					plugin_type, __func__,
+					node_ptr->name,
+					node_usage[i].alloc_memory);
+				goto clear_bit;
+			}
+		}
+
+		/* Exclude nodes with reserved cores */
+		if ((job_ptr->details->whole_node == 1) && exc_cores) {
+			if (is_cons_tres) {
+				if (exc_cores[i] &&
+				    (bit_ffs(exc_cores[i]) != -1)) {
+					debug3("%s: %s: node %s exclusive",
+					       plugin_type,
+					       __func__,
+					       node_ptr->name);
+					goto clear_bit;
+				}
+			} else if (*exc_cores) {
+				for (int j = cr_get_coremap_offset(i);
+				     j < cr_get_coremap_offset(i+1);
+				     j++) {
+					if (bit_test(*exc_cores, j))
+						continue;
+					debug3("%s: %s: _vns: node %s exc",
+					       plugin_type, __func__,
+					       node_ptr->name);
+					goto clear_bit;
+				}
+			}
+		}
+
+		/* node-level GRES check, assumes all cores usable */
+		if (node_usage[i].gres_list)
+			gres_list = node_usage[i].gres_list;
+		else
+			gres_list = node_ptr->gres_list;
+		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
+						  gres_list, true,
+						  NULL, 0, 0, job_ptr->job_id,
+						  node_ptr->name);
+		gres_cpus = gres_cores;
+		if (gres_cpus != NO_VAL)
+			gres_cpus *= select_node_record[i].vpus;
+		if (gres_cpus == 0) {
+			debug3("%s: %s: node %s lacks GRES",
+			       plugin_type, __func__, node_ptr->name);
+			goto clear_bit;
+		}
+
+		/* exclusive node check */
+		if (node_usage[i].node_state >= NODE_CR_RESERVED) {
+			debug3("%s: %s: node %s in exclusive use",
+			       plugin_type, __func__, node_ptr->name);
+			goto clear_bit;
+
+		/* non-resource-sharing node check */
+		} else if (node_usage[i].node_state >= NODE_CR_ONE_ROW) {
+			if ((job_node_req == NODE_CR_RESERVED) ||
+			    (job_node_req == NODE_CR_AVAILABLE)) {
+				debug3("%s: %s: node %s non-sharing",
+				       plugin_type, __func__, node_ptr->name);
+				goto clear_bit;
+			}
+			/*
+			 * cannot use this node if it is running jobs
+			 * in sharing partitions
+			 */
+			if (_is_node_busy(cr_part_ptr, i, 1,
+					  job_ptr->part_ptr, qos_preemptor)) {
+				debug3("%s: %s: node %s sharing?",
+				       plugin_type, __func__, node_ptr->name);
+				goto clear_bit;
+			}
+
+		/* node is NODE_CR_AVAILABLE - check job request */
+		} else {
+			if (job_node_req == NODE_CR_RESERVED) {
+				if (_is_node_busy(cr_part_ptr, i, 0,
+						  job_ptr->part_ptr,
+						  qos_preemptor)) {
+					debug3("%s: %s: node %s busy",
+					       plugin_type, __func__,
+					       node_ptr->name);
+					goto clear_bit;
+				}
+			} else if (job_node_req == NODE_CR_ONE_ROW) {
+				/*
+				 * cannot use this node if it is running jobs
+				 * in sharing partitions
+				 */
+				if (_is_node_busy(cr_part_ptr, i, 1,
+						  job_ptr->part_ptr,
+						  qos_preemptor)) {
+					debug3("%s: %s: node %s vbusy",
+					       plugin_type, __func__,
+					       node_ptr->name);
+					goto clear_bit;
+				}
+			}
+		}
+		continue;	/* node is usable, test next node */
+
+clear_bit:	/* This node is not usable by this job */
+		bit_clear(node_bitmap, i);
+		if (job_ptr->details->req_node_bitmap &&
+		    bit_test(job_ptr->details->req_node_bitmap, i))
+			return SLURM_ERROR;
+
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * _job_test - does most of the real work for select_p_job_test(), which
  *	includes contiguous selection, load-leveling and max_share logic
  *
@@ -1326,7 +1570,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	char *nodename = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
 
-	xassert(*cons_common_callbacks.verify_node_state);
 	xassert(*cons_common_callbacks.mark_avail_cores);
 	free_job_resources(&job_ptr->job_resrcs);
 
@@ -1337,7 +1580,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 
 	/* check node_state and update the node_bitmap as necessary */
 	if (!test_only) {
-		error_code = (*cons_common_callbacks.verify_node_state)(
+		error_code = _verify_node_state(
 			cr_part_ptr, job_ptr, node_bitmap, cr_type,
 			node_usage, job_node_req, exc_cores, qos_preemptor);
 		if (error_code != SLURM_SUCCESS) {
@@ -1559,7 +1802,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		/*
 		 * This job CANNOT share CPUs regardless of priority,
 		 * so we fail here. Note that Shared=EXCLUSIVE was already
-		 * addressed in cons_common_callbacks.verify_node_state() and
+		 * addressed in _verify_node_state() and
 		 * job preemption removes jobs from simulated resource
 		 * allocation map before this point.
 		 */

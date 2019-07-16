@@ -141,13 +141,6 @@ typedef struct {
 			    avail_res_t **avail_res_array, uint16_t cr_type,
 			    bool prefer_alloc_nodes,
 			    gres_mc_data_t *tres_mc_ptr);
-	int (*verify_node_state)(struct part_res_record *cr_part_ptr,
-				 struct job_record *job_ptr,
-				 bitstr_t *node_bitmap,
-				 uint16_t cr_type,
-				 struct node_use_record *node_usage,
-				 enum node_cr_state job_node_req,
-				 bitstr_t **exc_cores, bool qos_preemptor);
 	bitstr_t **(*mark_avail_cores)(bitstr_t *node_map, uint16_t core_spec);
 	void (*build_row_bitmaps)(struct part_res_record *p_ptr,
 				  struct job_record *job_ptr);
