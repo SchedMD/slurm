@@ -237,32 +237,6 @@ extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
 extern void common_init(void);
 extern void common_fini(void);
 
-/* Determine if a job can ever run */
-extern int common_test_only(struct job_record *job_ptr, bitstr_t *node_bitmap,
-			    uint32_t min_nodes, uint32_t max_nodes,
-			    uint32_t req_nodes, uint16_t job_node_req);
-
-/*
- * Determine where and when the job at job_ptr can begin execution by updating
- * a scratch cr_record structure to reflect each job terminating at the
- * end of its time limit and use this to show where and when the job at job_ptr
- * will begin execution. Used by Slurm's sched/backfill plugin.
- */
-extern int common_will_run_test(struct job_record *job_ptr,
-				bitstr_t *node_bitmap,
-				uint32_t min_nodes, uint32_t max_nodes,
-				uint32_t req_nodes, uint16_t job_node_req,
-				List preemptee_candidates,
-				List *preemptee_job_list,
-				bitstr_t **exc_core_bitmap);
-
-/* Allocate resources for a job now, if possible */
-extern int common_run_now(struct job_record *job_ptr, bitstr_t *node_bitmap,
-			  uint32_t min_nodes, uint32_t max_nodes,
-			  uint32_t req_nodes, uint16_t job_node_req,
-			  List preemptee_candidates, List *preemptee_job_list,
-			  bitstr_t **exc_cores);
-
 /*
  * common_allocate_cores - Given the job requirements, determine which cores
  *                   from the given node can be allocated (if any) to this

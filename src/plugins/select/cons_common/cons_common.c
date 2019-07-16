@@ -2521,6 +2521,270 @@ alloc_job:
 	return error_code;
 }
 
+/* Determine if a job can ever run */
+static int _test_only(struct job_record *job_ptr, bitstr_t *node_bitmap,
+		      uint32_t min_nodes, uint32_t max_nodes,
+		      uint32_t req_nodes, uint16_t job_node_req)
+{
+	int rc;
+	uint16_t tmp_cr_type = cr_type;
+
+	if (job_ptr->part_ptr->cr_type) {
+		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
+			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
+			tmp_cr_type |= job_ptr->part_ptr->cr_type;
+		} else {
+			info("%s: Can't use Partition SelectType unless "
+			     "using CR_Socket or CR_Core", plugin_type);
+		}
+	}
+
+	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
+		       SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
+		       select_part_record, select_node_usage, NULL, false,
+		       false, false);
+	return rc;
+}
+
+/*
+ * Determine where and when the job at job_ptr can begin execution by updating
+ * a scratch cr_record structure to reflect each job terminating at the
+ * end of its time limit and use this to show where and when the job at job_ptr
+ * will begin execution. Used by Slurm's sched/backfill plugin.
+ */
+static int _will_run_test(struct job_record *job_ptr,
+			  bitstr_t *node_bitmap,
+			  uint32_t min_nodes, uint32_t max_nodes,
+			  uint32_t req_nodes, uint16_t job_node_req,
+			  List preemptee_candidates,
+			  List *preemptee_job_list,
+			  bitstr_t **exc_core_bitmap)
+{
+	struct part_res_record *future_part;
+	struct node_use_record *future_usage;
+	struct job_record *tmp_job_ptr;
+	List cr_job_list;
+	ListIterator job_iterator, preemptee_iterator;
+	bitstr_t *orig_map;
+	int action, rc = SLURM_ERROR;
+	time_t now = time(NULL);
+	uint16_t tmp_cr_type = cr_type;
+	bool qos_preemptor = false;
+
+	orig_map = bit_copy(node_bitmap);
+
+	if (job_ptr->part_ptr->cr_type) {
+		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
+			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
+			tmp_cr_type |= job_ptr->part_ptr->cr_type;
+		} else {
+			info("%s: Can't use Partition SelectType unless "
+			     "using CR_Socket or CR_Core", plugin_type);
+		}
+	}
+
+	/* Try to run with currently available nodes */
+	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
+		       SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
+		       select_part_record, select_node_usage, exc_core_bitmap,
+		       false, false, false);
+	if (rc == SLURM_SUCCESS) {
+		FREE_NULL_BITMAP(orig_map);
+		job_ptr->start_time = now;
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * Job is still pending. Simulate termination of jobs one at a time
+	 * to determine when and where the job can start.
+	 */
+	future_part = _dup_part_data(select_part_record);
+	if (future_part == NULL) {
+		FREE_NULL_BITMAP(orig_map);
+		return SLURM_ERROR;
+	}
+	future_usage = _dup_node_usage(select_node_usage);
+	if (future_usage == NULL) {
+		_destroy_part_data(future_part);
+		FREE_NULL_BITMAP(orig_map);
+		return SLURM_ERROR;
+	}
+
+	/* Build list of running and suspended jobs */
+	cr_job_list = list_create(NULL);
+	job_iterator = list_iterator_create(job_list);
+	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bool cleaning = _job_cleaning(tmp_job_ptr);
+		if (!cleaning && IS_JOB_COMPLETING(tmp_job_ptr))
+			cleaning = true;
+		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
+		    !IS_JOB_SUSPENDED(tmp_job_ptr) &&
+		    !cleaning)
+			continue;
+		if (tmp_job_ptr->end_time == 0) {
+			if (!cleaning) {
+				error("%s: %s: Active %pJ has zero end_time",
+				      plugin_type, __func__, tmp_job_ptr);
+			}
+			continue;
+		}
+		if (tmp_job_ptr->node_bitmap == NULL) {
+			/*
+			 * This should indicate a requeued job was cancelled
+			 * while NHC was running
+			 */
+			if (!cleaning) {
+				error("%s: %s: %pJ has NULL node_bitmap",
+				      plugin_type, __func__, tmp_job_ptr);
+			}
+			continue;
+		}
+		if (cleaning ||
+		    !_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+			/* Queue job for later removal from data structures */
+			list_append(cr_job_list, tmp_job_ptr);
+		} else {
+			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
+			if (mode == PREEMPT_MODE_OFF)
+				continue;
+			if (mode == PREEMPT_MODE_SUSPEND) {
+				action = 2;	/* remove cores, keep memory */
+				if (preempt_by_qos)
+					qos_preemptor = true;
+			} else
+				action = 0;	/* remove cores and memory */
+			/* Remove preemptable job now */
+			(void) common_rm_job_res(future_part, future_usage,
+						 tmp_job_ptr, action, false);
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	/* Test with all preemptable jobs gone */
+	if (preemptee_candidates) {
+		bit_or(node_bitmap, orig_map);
+		rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
+			       req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
+			       job_node_req, future_part,
+			       future_usage, exc_core_bitmap, false,
+			       qos_preemptor, true);
+		if (rc == SLURM_SUCCESS) {
+			/*
+			 * Actual start time will actually be later than "now",
+			 * but return "now" for backfill scheduler to
+			 * initiate preemption.
+			 */
+			job_ptr->start_time = now;
+		}
+	}
+
+	/*
+	 * Remove the running jobs from exp_node_cr and try scheduling the
+	 * pending job after each one (or a few jobs that end close in time).
+	 */
+	if ((rc != SLURM_SUCCESS) &&
+	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
+		int time_window = 30;
+		bool more_jobs = true;
+		DEF_TIMERS;
+		list_sort(cr_job_list, _cr_job_list_sort);
+		START_TIMER;
+		job_iterator = list_iterator_create(cr_job_list);
+		while (more_jobs) {
+			struct job_record *first_job_ptr = NULL;
+			struct job_record *last_job_ptr = NULL;
+			struct job_record *next_job_ptr = NULL;
+			int overlap, rm_job_cnt = 0;
+
+			while (true) {
+				tmp_job_ptr = list_next(job_iterator);
+				if (!tmp_job_ptr) {
+					more_jobs = false;
+					break;
+				}
+				bit_or(node_bitmap, orig_map);
+				overlap = bit_overlap(node_bitmap,
+						      tmp_job_ptr->node_bitmap);
+				if (overlap == 0)  /* job has no usable nodes */
+					continue;  /* skip it */
+				debug2("%s: %s, %pJ: overlap=%d",
+				       plugin_type, __func__,
+				       tmp_job_ptr, overlap);
+				if (!first_job_ptr)
+					first_job_ptr = tmp_job_ptr;
+				last_job_ptr = tmp_job_ptr;
+				(void) common_rm_job_res(
+					future_part, future_usage,
+					tmp_job_ptr, 0, false);
+				if (rm_job_cnt++ > 200)
+					break;
+				next_job_ptr = list_peek_next(job_iterator);
+				if (!next_job_ptr) {
+					more_jobs = false;
+					break;
+				} else if (next_job_ptr->end_time >
+					   (first_job_ptr->end_time +
+					    time_window)) {
+					break;
+				}
+			}
+			if (!last_job_ptr)	/* Should never happen */
+				break;
+			if (bf_window_scale)
+				time_window += bf_window_scale;
+			else
+				time_window *= 2;
+			rc = _job_test(job_ptr, node_bitmap, min_nodes,
+				       max_nodes, req_nodes,
+				       SELECT_MODE_WILL_RUN, tmp_cr_type,
+				       job_node_req, future_part, future_usage,
+				       exc_core_bitmap, backfill_busy_nodes,
+				       qos_preemptor, true);
+			if (rc == SLURM_SUCCESS) {
+				if (last_job_ptr->end_time <= now) {
+					job_ptr->start_time =
+						_guess_job_end(last_job_ptr,
+							       now);
+				} else {
+					job_ptr->start_time =
+						last_job_ptr->end_time;
+				}
+				break;
+			}
+			END_TIMER;
+			if (DELTA_TIMER >= 2000000)
+				break;	/* Quit after 2 seconds wall time */
+		}
+		list_iterator_destroy(job_iterator);
+	}
+
+	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
+	    preemptee_candidates) {
+		/*
+		 * Build list of preemptee jobs whose resources are
+		 * actually used. List returned even if not killed
+		 * in selected plugin, but by Moab or something else.
+		 */
+		if (*preemptee_job_list == NULL) {
+			*preemptee_job_list = list_create(NULL);
+		}
+		preemptee_iterator =list_iterator_create(preemptee_candidates);
+		while ((tmp_job_ptr = list_next(preemptee_iterator))) {
+			if (!bit_overlap(node_bitmap, tmp_job_ptr->node_bitmap))
+				continue;
+			list_append(*preemptee_job_list, tmp_job_ptr);
+		}
+		list_iterator_destroy(preemptee_iterator);
+	}
+
+	FREE_NULL_LIST(cr_job_list);
+	_destroy_part_data(future_part);
+	_destroy_node_data(future_usage, NULL);
+	FREE_NULL_BITMAP(orig_map);
+
+	return rc;
+}
+
 /* Delete the given partition row data */
 extern void common_destroy_row_data(
 	struct part_row_data *row, uint16_t num_rows)
@@ -3326,276 +3590,12 @@ extern int select_p_reconfigure(void)
 	return SLURM_SUCCESS;
 }
 
-/* Determine if a job can ever run */
-extern int common_test_only(struct job_record *job_ptr, bitstr_t *node_bitmap,
-			    uint32_t min_nodes, uint32_t max_nodes,
-			    uint32_t req_nodes, uint16_t job_node_req)
-{
-	int rc;
-	uint16_t tmp_cr_type = cr_type;
-
-	if (job_ptr->part_ptr->cr_type) {
-		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
-			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
-			tmp_cr_type |= job_ptr->part_ptr->cr_type;
-		} else {
-			info("%s: Can't use Partition SelectType unless "
-			     "using CR_Socket or CR_Core", plugin_type);
-		}
-	}
-
-	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
-		       SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage, NULL, false,
-		       false, false);
-	return rc;
-}
-
-/*
- * Determine where and when the job at job_ptr can begin execution by updating
- * a scratch cr_record structure to reflect each job terminating at the
- * end of its time limit and use this to show where and when the job at job_ptr
- * will begin execution. Used by Slurm's sched/backfill plugin.
- */
-extern int common_will_run_test(struct job_record *job_ptr,
-				bitstr_t *node_bitmap,
-				uint32_t min_nodes, uint32_t max_nodes,
-				uint32_t req_nodes, uint16_t job_node_req,
-				List preemptee_candidates,
-				List *preemptee_job_list,
-				bitstr_t **exc_core_bitmap)
-{
-	struct part_res_record *future_part;
-	struct node_use_record *future_usage;
-	struct job_record *tmp_job_ptr;
-	List cr_job_list;
-	ListIterator job_iterator, preemptee_iterator;
-	bitstr_t *orig_map;
-	int action, rc = SLURM_ERROR;
-	time_t now = time(NULL);
-	uint16_t tmp_cr_type = cr_type;
-	bool qos_preemptor = false;
-
-	orig_map = bit_copy(node_bitmap);
-
-	if (job_ptr->part_ptr->cr_type) {
-		if ((cr_type & CR_SOCKET) || (cr_type & CR_CORE)) {
-			tmp_cr_type &= ~(CR_SOCKET | CR_CORE | CR_MEMORY);
-			tmp_cr_type |= job_ptr->part_ptr->cr_type;
-		} else {
-			info("%s: Can't use Partition SelectType unless "
-			     "using CR_Socket or CR_Core", plugin_type);
-		}
-	}
-
-	/* Try to run with currently available nodes */
-	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
-		       SELECT_MODE_WILL_RUN, tmp_cr_type, job_node_req,
-		       select_part_record, select_node_usage, exc_core_bitmap,
-		       false, false, false);
-	if (rc == SLURM_SUCCESS) {
-		FREE_NULL_BITMAP(orig_map);
-		job_ptr->start_time = now;
-		return SLURM_SUCCESS;
-	}
-
-	/*
-	 * Job is still pending. Simulate termination of jobs one at a time
-	 * to determine when and where the job can start.
-	 */
-	future_part = _dup_part_data(select_part_record);
-	if (future_part == NULL) {
-		FREE_NULL_BITMAP(orig_map);
-		return SLURM_ERROR;
-	}
-	future_usage = _dup_node_usage(select_node_usage);
-	if (future_usage == NULL) {
-		_destroy_part_data(future_part);
-		FREE_NULL_BITMAP(orig_map);
-		return SLURM_ERROR;
-	}
-
-	/* Build list of running and suspended jobs */
-	cr_job_list = list_create(NULL);
-	job_iterator = list_iterator_create(job_list);
-	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
-		bool cleaning = _job_cleaning(tmp_job_ptr);
-		if (!cleaning && IS_JOB_COMPLETING(tmp_job_ptr))
-			cleaning = true;
-		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
-		    !IS_JOB_SUSPENDED(tmp_job_ptr) &&
-		    !cleaning)
-			continue;
-		if (tmp_job_ptr->end_time == 0) {
-			if (!cleaning) {
-				error("%s: %s: Active %pJ has zero end_time",
-				      plugin_type, __func__, tmp_job_ptr);
-			}
-			continue;
-		}
-		if (tmp_job_ptr->node_bitmap == NULL) {
-			/*
-			 * This should indicate a requeued job was cancelled
-			 * while NHC was running
-			 */
-			if (!cleaning) {
-				error("%s: %s: %pJ has NULL node_bitmap",
-				      plugin_type, __func__, tmp_job_ptr);
-			}
-			continue;
-		}
-		if (cleaning ||
-		    !_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
-			/* Queue job for later removal from data structures */
-			list_append(cr_job_list, tmp_job_ptr);
-		} else {
-			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
-			if (mode == PREEMPT_MODE_OFF)
-				continue;
-			if (mode == PREEMPT_MODE_SUSPEND) {
-				action = 2;	/* remove cores, keep memory */
-				if (preempt_by_qos)
-					qos_preemptor = true;
-			} else
-				action = 0;	/* remove cores and memory */
-			/* Remove preemptable job now */
-			(void) common_rm_job_res(future_part, future_usage,
-						 tmp_job_ptr, action, false);
-		}
-	}
-	list_iterator_destroy(job_iterator);
-
-	/* Test with all preemptable jobs gone */
-	if (preemptee_candidates) {
-		bit_or(node_bitmap, orig_map);
-		rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes,
-			       req_nodes, SELECT_MODE_WILL_RUN, tmp_cr_type,
-			       job_node_req, future_part,
-			       future_usage, exc_core_bitmap, false,
-			       qos_preemptor, true);
-		if (rc == SLURM_SUCCESS) {
-			/*
-			 * Actual start time will actually be later than "now",
-			 * but return "now" for backfill scheduler to
-			 * initiate preemption.
-			 */
-			job_ptr->start_time = now;
-		}
-	}
-
-	/*
-	 * Remove the running jobs from exp_node_cr and try scheduling the
-	 * pending job after each one (or a few jobs that end close in time).
-	 */
-	if ((rc != SLURM_SUCCESS) &&
-	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
-		int time_window = 30;
-		bool more_jobs = true;
-		DEF_TIMERS;
-		list_sort(cr_job_list, _cr_job_list_sort);
-		START_TIMER;
-		job_iterator = list_iterator_create(cr_job_list);
-		while (more_jobs) {
-			struct job_record *first_job_ptr = NULL;
-			struct job_record *last_job_ptr = NULL;
-			struct job_record *next_job_ptr = NULL;
-			int overlap, rm_job_cnt = 0;
-
-			while (true) {
-				tmp_job_ptr = list_next(job_iterator);
-				if (!tmp_job_ptr) {
-					more_jobs = false;
-					break;
-				}
-				bit_or(node_bitmap, orig_map);
-				overlap = bit_overlap(node_bitmap,
-						      tmp_job_ptr->node_bitmap);
-				if (overlap == 0)  /* job has no usable nodes */
-					continue;  /* skip it */
-				debug2("%s: %s, %pJ: overlap=%d",
-				       plugin_type, __func__,
-				       tmp_job_ptr, overlap);
-				if (!first_job_ptr)
-					first_job_ptr = tmp_job_ptr;
-				last_job_ptr = tmp_job_ptr;
-				(void) common_rm_job_res(
-					future_part, future_usage,
-					tmp_job_ptr, 0, false);
-				if (rm_job_cnt++ > 200)
-					break;
-				next_job_ptr = list_peek_next(job_iterator);
-				if (!next_job_ptr) {
-					more_jobs = false;
-					break;
-				} else if (next_job_ptr->end_time >
-					   (first_job_ptr->end_time +
-					    time_window)) {
-					break;
-				}
-			}
-			if (!last_job_ptr)	/* Should never happen */
-				break;
-			if (bf_window_scale)
-				time_window += bf_window_scale;
-			else
-				time_window *= 2;
-			rc = _job_test(job_ptr, node_bitmap, min_nodes,
-				       max_nodes, req_nodes,
-				       SELECT_MODE_WILL_RUN, tmp_cr_type,
-				       job_node_req, future_part, future_usage,
-				       exc_core_bitmap, backfill_busy_nodes,
-				       qos_preemptor, true);
-			if (rc == SLURM_SUCCESS) {
-				if (last_job_ptr->end_time <= now) {
-					job_ptr->start_time =
-						_guess_job_end(last_job_ptr,
-							       now);
-				} else {
-					job_ptr->start_time =
-						last_job_ptr->end_time;
-				}
-				break;
-			}
-			END_TIMER;
-			if (DELTA_TIMER >= 2000000)
-				break;	/* Quit after 2 seconds wall time */
-		}
-		list_iterator_destroy(job_iterator);
-	}
-
-	if ((rc == SLURM_SUCCESS) && preemptee_job_list &&
-	    preemptee_candidates) {
-		/*
-		 * Build list of preemptee jobs whose resources are
-		 * actually used. List returned even if not killed
-		 * in selected plugin, but by Moab or something else.
-		 */
-		if (*preemptee_job_list == NULL) {
-			*preemptee_job_list = list_create(NULL);
-		}
-		preemptee_iterator =list_iterator_create(preemptee_candidates);
-		while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-			if (!bit_overlap(node_bitmap, tmp_job_ptr->node_bitmap))
-				continue;
-			list_append(*preemptee_job_list, tmp_job_ptr);
-		}
-		list_iterator_destroy(preemptee_iterator);
-	}
-
-	FREE_NULL_LIST(cr_job_list);
-	_destroy_part_data(future_part);
-	_destroy_node_data(future_usage, NULL);
-	FREE_NULL_BITMAP(orig_map);
-
-	return rc;
-}
-
 /* Allocate resources for a job now, if possible */
-extern int common_run_now(struct job_record *job_ptr, bitstr_t *node_bitmap,
-			  uint32_t min_nodes, uint32_t max_nodes,
-			  uint32_t req_nodes, uint16_t job_node_req,
-			  List preemptee_candidates, List *preemptee_job_list,
-			  bitstr_t **exc_cores)
+static int _run_now(struct job_record *job_ptr, bitstr_t *node_bitmap,
+		    uint32_t min_nodes, uint32_t max_nodes,
+		    uint32_t req_nodes, uint16_t job_node_req,
+		    List preemptee_candidates, List *preemptee_job_list,
+		    bitstr_t **exc_cores)
 {
 	int rc;
 	bitstr_t *orig_node_map = NULL, *save_node_map;
@@ -3937,20 +3937,20 @@ extern int common_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	}
 
 	if (mode == SELECT_MODE_WILL_RUN) {
-		rc = common_will_run_test(job_ptr, node_bitmap, min_nodes,
-					  max_nodes,
-					  req_nodes, job_node_req,
-					  preemptee_candidates,
-					  preemptee_job_list,
-					  exc_cores);
-	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		rc = common_test_only(job_ptr, node_bitmap, min_nodes,
-				      max_nodes, req_nodes, job_node_req);
-	} else if (mode == SELECT_MODE_RUN_NOW) {
-		rc = common_run_now(job_ptr, node_bitmap, min_nodes, max_nodes,
+		rc = _will_run_test(job_ptr, node_bitmap, min_nodes,
+				    max_nodes,
 				    req_nodes, job_node_req,
 				    preemptee_candidates,
-				    preemptee_job_list, exc_cores);
+				    preemptee_job_list,
+				    exc_cores);
+	} else if (mode == SELECT_MODE_TEST_ONLY) {
+		rc = _test_only(job_ptr, node_bitmap, min_nodes,
+				max_nodes, req_nodes, job_node_req);
+	} else if (mode == SELECT_MODE_RUN_NOW) {
+		rc = _run_now(job_ptr, node_bitmap, min_nodes, max_nodes,
+			      req_nodes, job_node_req,
+			      preemptee_candidates,
+			      preemptee_job_list, exc_cores);
 	} else {
 		/* Should never get here */
 		error("%s: %s: Mode %d is invalid",
