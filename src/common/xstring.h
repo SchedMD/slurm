@@ -49,6 +49,8 @@
 #define xiso8601timecat(__p, __msec)            _xiso8601timecat(&(__p), __msec)
 #define xrfc5424timecat(__p, __msec)            _xrfc5424timecat(&(__p), __msec)
 #define xstrfmtcat(__p, __fmt, args...)	_xstrfmtcat(&(__p), __fmt, ## args)
+#define xstrfmtcatat(__p, __q, __fmt, args...) \
+	_xstrfmtcatat(&(__p), __q, __fmt, ## args)
 #define xmemcat(__p, __s, __e)          _xmemcat(&(__p), __s, __e)
 #define xstrsubstitute(__p, __pat, __rep) _xstrsubstitute(&(__p), __pat, __rep)
 #define xstrsubstituteall(__p, __pat, __rep)			\
@@ -103,6 +105,13 @@ void _xrfc5424timecat(char **str, bool);
 */
 int _xstrfmtcat(char **str, const char *fmt, ...)
   __attribute__ ((format (printf, 2, 3)));
+
+/*
+ * Concatenate printf-style formatted string onto str at position pos.
+ * Return value is result from vsnprintf(3).
+ */
+int _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
+	__attribute__ ((format (printf, 3, 4)));
 
 /*
 ** concatenate range of memory from start to end (not including end)
