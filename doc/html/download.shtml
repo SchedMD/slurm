@@ -7,7 +7,8 @@ https://www.schedmd.com/downloads.php</a>.<br>
 Slurm has also been packaged for
 <a href="https://packages.debian.org/search?keywords=slurm-wlm">Debian</a> and
 <a href="http://packages.ubuntu.com/search?keywords=slurm-wlm">Ubuntu</a>
-(named <i>slurm-wlm</i> or <i>slurm-llnl</i> depending upon the version) and
+(named <i>slurm-wlm</i> or <i>slurm-llnl</i> depending upon the version),
+<a href="https://apps.fedoraproject.org/packages/slurm">Fedora</a>, and
 <a href="http://www.pkgsrc.org">NetBSD</a> (in pkgsrc) and
 <a href="http://www.freshports.org/sysutils/slurm-wlm/">FreeBSD</a>.</p>
 
@@ -391,6 +392,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 7 March 2019</p>
+<p style="text-align:center;">Last modified 15 July 2019</p>
 
 <!--#include virtual="footer.txt"-->
