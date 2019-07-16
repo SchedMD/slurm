@@ -609,7 +609,7 @@ the year and month of that major release. The third number in the version
 designates a specific maintenance level:
 year.month.maintenance-release (e.g. 19.05.2 is major Slurm release 19.05, and
 maintenance version 2).
-Thus version 19.05.x was initially released in February 2019.
+Thus version 19.05.x was initially released in May 2019.
 Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes, which typically happens about every nine
 months. A list of most recent major Slurm releases is shown below.</p>
