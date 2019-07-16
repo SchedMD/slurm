@@ -1061,8 +1061,8 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 	} else {
 		/* create pipe and eio object */
 		int pout[2];
-		struct termios tio;
 #if HAVE_PTY_H
+		struct termios tio;
 		if (!(job->flags & LAUNCH_BUFFERED_IO)) {
 #if HAVE_SETRESUID
 			if (setresuid(geteuid(), geteuid(), 0) < 0)
