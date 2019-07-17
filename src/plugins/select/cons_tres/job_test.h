@@ -69,18 +69,6 @@ extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
 
 
 /*
- * build_row_bitmaps: A job has been removed from the given partition,
- *                    so the row_bitmap(s) need to be reconstructed.
- *                    Optimize the jobs into the least number of rows,
- *                    and make the lower rows as dense as possible.
- *
- * IN p_ptr - the partition that has jobs to be optimized
- * IN job_ptr - pointer to single job removed, pass NULL to completely rebuild
- */
-extern void build_row_bitmaps(struct part_res_record *p_ptr,
-			      struct job_record *job_ptr);
-
-/*
  * Bit a core bitmap array of available cores
  * node_bitmap IN - Nodes available for use
  * core_spec IN - Specialized core specification, NO_VAL16 if none

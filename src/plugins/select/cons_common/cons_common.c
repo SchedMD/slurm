@@ -109,6 +109,11 @@ typedef enum {
 	HANDLE_JOB_RES_TEST
 } handle_job_res_t;
 
+struct sort_support {
+	int jstart;
+	struct job_resources *tmpjobs;
+};
+
 struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
@@ -3143,6 +3148,222 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 	return 1;
 }
 
+/* Sort jobs by start time, then size (CPU count) */
+static int _compare_support(const void *v1, const void *v2)
+{
+	struct sort_support *s1, *s2;
+
+	s1 = (struct sort_support *) v1;
+	s2 = (struct sort_support *) v2;
+
+	if ((s1->jstart > s2->jstart) ||
+	    ((s1->jstart == s2->jstart) &&
+	     (s1->tmpjobs->ncpus > s2->tmpjobs->ncpus)))
+		return 1;
+
+	return 0;
+}
+
+/*
+ * _build_row_bitmaps: A job has been removed from the given partition,
+ *                     so the row_bitmap(s) need to be reconstructed.
+ *                     Optimize the jobs into the least number of rows,
+ *                     and make the lower rows as dense as possible.
+ *
+ * IN p_ptr - the partition that has jobs to be optimized
+ * IN job_ptr - pointer to single job removed, pass NULL to completely rebuild
+ */
+static void _build_row_bitmaps(struct part_res_record *p_ptr,
+			       struct job_record *job_ptr)
+{
+	uint32_t i, j, num_jobs;
+	int x;
+	struct part_row_data *this_row, *orig_row;
+	struct sort_support *ss;
+
+	if (!p_ptr->row)
+		return;
+
+	if (p_ptr->num_rows == 1) {
+		this_row = p_ptr->row;
+		if (this_row->num_jobs == 0) {
+			clear_core_array(this_row->row_bitmap);
+		} else {
+			if (job_ptr) { /* just remove the job */
+				xassert(job_ptr->job_resrcs);
+				common_rm_job_cores(job_ptr->job_resrcs,
+						    &this_row->row_bitmap);
+			} else { /* totally rebuild the bitmap */
+				clear_core_array(this_row->row_bitmap);
+				for (j = 0; j < this_row->num_jobs; j++) {
+					common_add_job_cores(
+						this_row->job_list[j],
+						&this_row->row_bitmap);
+				}
+			}
+		}
+		return;
+	}
+
+	/* gather data */
+	num_jobs = 0;
+	for (i = 0; i < p_ptr->num_rows; i++) {
+		num_jobs += p_ptr->row[i].num_jobs;
+	}
+	if (num_jobs == 0) {
+		for (i = 0; i < p_ptr->num_rows; i++)
+			clear_core_array(p_ptr->row[i].row_bitmap);
+		return;
+	}
+
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		info("DEBUG: %s (before):", __func__);
+		common_dump_parts(p_ptr);
+	}
+	debug3("%s: %s reshuffling %u jobs", plugin_type, __func__, num_jobs);
+
+	/* make a copy, in case we cannot do better than this */
+	orig_row = common_dup_row_data(p_ptr->row, p_ptr->num_rows);
+	if (orig_row == NULL)
+		return;
+
+	/* create a master job list and clear out ALL row data */
+	ss = xcalloc(num_jobs, sizeof(struct sort_support));
+	x = 0;
+	for (i = 0; i < p_ptr->num_rows; i++) {
+		for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
+			ss[x].tmpjobs = p_ptr->row[i].job_list[j];
+			p_ptr->row[i].job_list[j] = NULL;
+			ss[x].jstart = bit_ffs(ss[x].tmpjobs->node_bitmap);
+			ss[x].jstart = cr_get_coremap_offset(ss[x].jstart);
+			ss[x].jstart += bit_ffs(ss[x].tmpjobs->core_bitmap);
+			x++;
+		}
+		p_ptr->row[i].num_jobs = 0;
+		clear_core_array(p_ptr->row[i].row_bitmap);
+	}
+
+	/*
+	 * VERY difficult: Optimal placement of jobs in the matrix
+	 * - how to order jobs to be added to the matrix?
+	 *   - "by size" does not guarantee optimal placement
+	 *
+	 *   - for now, try sorting jobs by first bit set
+	 *     - if job allocations stay "in blocks", then this should work OK
+	 *     - may still get scenarios where jobs should switch rows
+	 */
+	qsort(ss, num_jobs, sizeof(struct sort_support), _compare_support);
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		for (i = 0; i < num_jobs; i++) {
+			char cstr[64], nstr[64];
+			if (ss[i].tmpjobs->core_bitmap) {
+				bit_fmt(cstr, (sizeof(cstr) - 1) ,
+					ss[i].tmpjobs->core_bitmap);
+			} else
+				sprintf(cstr, "[no core_bitmap]");
+			if (ss[i].tmpjobs->node_bitmap) {
+				bit_fmt(nstr, (sizeof(nstr) - 1),
+					ss[i].tmpjobs->node_bitmap);
+			} else
+				sprintf(nstr, "[no node_bitmap]");
+			info("DEBUG:  jstart %d job nb %s cb %s",
+			     ss[i].jstart, nstr, cstr);
+		}
+	}
+
+	/* add jobs to the rows */
+	for (j = 0; j < num_jobs; j++) {
+		for (i = 0; i < p_ptr->num_rows; i++) {
+			if (common_job_fit_in_row(ss[j].tmpjobs,
+						  &(p_ptr->row[i]))) {
+				/* job fits in row, so add it */
+				common_add_job_to_row(
+					ss[j].tmpjobs, &(p_ptr->row[i]));
+				ss[j].tmpjobs = NULL;
+				break;
+			}
+		}
+		/* job should have been added, so shuffle the rows */
+		common_sort_part_rows(p_ptr);
+	}
+
+	/* test for dangling jobs */
+	for (j = 0; j < num_jobs; j++) {
+		if (ss[j].tmpjobs)
+			break;
+	}
+	if (j < num_jobs) {
+		/*
+		 * we found a dangling job, which means our packing
+		 * algorithm couldn't improve apon the existing layout.
+		 * Thus, we'll restore the original layout here
+		 */
+		debug3("%s: %s: dangling job found", plugin_type, __func__);
+
+		if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+			info("DEBUG: %s (post-algorithm):", __func__);
+			common_dump_parts(p_ptr);
+		}
+
+		common_destroy_row_data(p_ptr->row, p_ptr->num_rows);
+		p_ptr->row = orig_row;
+		orig_row = NULL;
+
+		/* still need to rebuild row_bitmaps */
+		for (i = 0; i < p_ptr->num_rows; i++) {
+			clear_core_array(p_ptr->row[i].row_bitmap);
+			if (p_ptr->row[i].num_jobs == 0)
+				continue;
+			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
+				common_add_job_cores(p_ptr->row[i].job_list[j],
+						     &p_ptr->row[i].row_bitmap);
+			}
+		}
+	}
+
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		info("DEBUG: %s (after):", __func__);
+		common_dump_parts(p_ptr);
+	}
+
+	if (orig_row)
+		common_destroy_row_data(orig_row, p_ptr->num_rows);
+	xfree(ss);
+
+	return;
+
+	/* LEFTOVER DESIGN THOUGHTS, PRESERVED HERE */
+
+	/*
+	 * 1. sort jobs by size
+	 * 2. only load core bitmaps with largest jobs that conflict
+	 * 3. sort rows by set count
+	 * 4. add remaining jobs, starting with fullest rows
+	 * 5. compute  set count: if disparity between rows got closer, then
+	 *    switch non-conflicting jobs that were added
+	 */
+
+	/*
+	 *  Step 1: remove empty rows between non-empty rows
+	 *  Step 2: try to collapse rows
+	 *  Step 3: sort rows by size
+	 *  Step 4: try to swap jobs from different rows to pack rows
+	 */
+
+	/*
+	 * WORK IN PROGRESS - more optimization should go here, such as:
+	 *
+	 * - try collapsing jobs from higher rows to lower rows
+	 *
+	 * - produce a load array to identify cores with less load. Test
+	 * to see if those cores are in the lower row. If not, try to swap
+	 * those jobs with jobs in the lower row. If the job can be swapped
+	 * AND the lower row set_count increases, then SUCCESS! else swap
+	 * back. The goal is to pack the lower rows and "bubble up" clear
+	 * bits to the higher rows.
+	 */
+}
+
 /* Delete the given partition row data */
 extern void common_destroy_row_data(
 	struct part_row_data *row, uint16_t num_rows)
@@ -3413,8 +3634,6 @@ extern int common_rm_job_res(struct part_res_record *part_record_ptr,
 	List gres_list;
 	bool old_job = false;
 
-	xassert(*cons_common_callbacks.build_row_bitmaps);
-
 	if (select_state_initializing) {
 		/*
 		 * Ignore job removal until select/cons_tres data structures
@@ -3540,8 +3759,7 @@ extern int common_rm_job_res(struct part_res_record *part_record_ptr,
 		}
 		if (n) {
 			/* job was found and removed, so refresh the bitmaps */
-			(*cons_common_callbacks.build_row_bitmaps)(
-				p_ptr, job_ptr);
+			_build_row_bitmaps(p_ptr, job_ptr);
 			/*
 			 * Adjust the node_state of all nodes affected by
 			 * the removal of this job. If all cores are now
@@ -4511,7 +4729,6 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
-	xassert(*cons_common_callbacks.build_row_bitmaps);
 
 	if (!job || !job->core_bitmap) {
 		error("%s: %s: %pJ has no job_resrcs info",
@@ -4618,7 +4835,7 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 
 
 	/* some node of job removed from core-bitmap, so rebuild core bitmaps */
-	(*cons_common_callbacks.build_row_bitmaps)(p_ptr, NULL);
+	_build_row_bitmaps(p_ptr, NULL);
 
 	/*
 	 * Adjust the node_state of the node removed from this job.

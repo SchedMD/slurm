@@ -537,7 +537,6 @@ extern int init(void)
 	cons_common_callbacks.can_job_run_on_node = can_job_run_on_node;
 	cons_common_callbacks.choose_nodes = choose_nodes;
 	cons_common_callbacks.mark_avail_cores = mark_avail_cores;
-	cons_common_callbacks.build_row_bitmaps = build_row_bitmaps;
 	cons_common_callbacks.dist_tasks_compute_c_b = dist_tasks_compute_c_b;
 
 	return SLURM_SUCCESS;

@@ -133,8 +133,6 @@ typedef struct {
 			    bool prefer_alloc_nodes,
 			    gres_mc_data_t *tres_mc_ptr);
 	bitstr_t **(*mark_avail_cores)(bitstr_t *node_map, uint16_t core_spec);
-	void (*build_row_bitmaps)(struct part_res_record *p_ptr,
-				  struct job_record *job_ptr);
 	int (*dist_tasks_compute_c_b)(struct job_record *job_ptr,
 				      uint32_t *gres_task_limit);
 } cons_common_callbacks_t;
@@ -172,6 +170,18 @@ extern void common_destroy_row_data(
 
 extern void common_free_avail_res(avail_res_t *avail_res);
 extern void common_free_avail_res_array(avail_res_t **avail_res_array);
+
+/*
+ * common_build_row_bitmaps: A job has been removed from the given partition,
+ *                           so the row_bitmap(s) need to be reconstructed.
+ *                           Optimize the jobs into the least number of rows,
+ *                           and make the lower rows as dense as possible.
+ *
+ * IN p_ptr - the partition that has jobs to be optimized
+ * IN job_ptr - pointer to single job removed, pass NULL to completely rebuild
+ */
+extern void common_build_row_bitmaps(struct part_res_record *p_ptr,
+				     struct job_record *job_ptr);
 
 /* Determine how many cpus per core we can use */
 extern int common_cpus_per_core(struct job_details *details, int node_inx);
