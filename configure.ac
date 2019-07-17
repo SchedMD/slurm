@@ -176,6 +176,7 @@ AC_CHECK_FUNCS( \
    eaccess \
    statvfs \
    statfs \
+   memfd_create \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])

@@ -142,6 +142,9 @@
 /* Define to 1 if you have the <mcheck.h> header file. */
 #undef HAVE_MCHECK_H
 
+/* Define to 1 if you have the `memfd_create' function. */
+#undef HAVE_MEMFD_CREATE
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
