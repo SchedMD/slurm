@@ -784,6 +784,7 @@ int main(int argc, char **argv)
 		bb_g_fini();
 		power_g_fini();
 		slurm_mcs_fini();
+		fed_mgr_fini();
 
 		if (running_cache) {
 			/* break out and end the association cache
@@ -878,7 +879,6 @@ int main(int argc, char **argv)
 	purge_front_end_state();
 	resv_fini();
 	trigger_fini();
-	fed_mgr_fini();
 	assoc_mgr_fini(1);
 	reserve_port_config(NULL);
 	free_rpc_stats();
