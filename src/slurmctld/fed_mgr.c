@@ -2807,6 +2807,8 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 	slurmdb_federation_rec_t *ret_fed = NULL;
 	List tmp_list = NULL;
 
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+
 	state_file = xstrdup_printf("%s/%s", state_save_location,
 				    FED_MGR_STATE_FILE);
 	if (!(buffer = create_mmap_buf(state_file))) {
@@ -2866,12 +2868,14 @@ static slurmdb_federation_rec_t *_state_load(char *state_save_location)
 
 		slurm_mutex_lock(&fed_job_list_mutex);
 		if (fed_job_list) {
+			lock_slurmctld(job_read_lock);
 			while ((tmp_info = list_pop(tmp_list))) {
 				if (find_job_record(tmp_info->job_id))
 					list_append(fed_job_list, tmp_info);
 				else
 					_destroy_fed_job_info(tmp_info);
 			}
+			unlock_slurmctld(job_read_lock);
 		}
 		slurm_mutex_unlock(&fed_job_list_mutex);
 

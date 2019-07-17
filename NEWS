@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     an inconsistent state.
  -- Remove stray __USE_GNU macro definitions from source.
  -- Fix loading fed state by backup on subsequent takeovers.
+ -- Add missing job read lock when loading fed job state.
 
 * Changes in Slurm 19.05.1-2
 ============================
