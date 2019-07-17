@@ -19,7 +19,7 @@ page_title_regex = re.compile(page_title_pat)
 url_pat = r'(\s+href\s*=\s*")([^"#]+)(#[^"]+)?(")'
 url_regex = re.compile(url_pat)
 
-first_header_pat = r'(<[h|H]1>\s*[<a name="top">]*\s*([a-zA-Z0-9_ ()\'/-]+)[:]*.*\s*[</a>]*\s*</[h|H]1>)'
+first_header_pat = r'<[hH]1>\s*(<a name="top">)?\s*(?P<title>[a-zA-Z0-9_ ()\'/-]+)[:]*.*\s*[</a>]?\s*</[hH]1>'
 first_header_regex = re.compile(first_header_pat)
 
 version_pat = r'(@SLURM_VERSION@)'
@@ -94,7 +94,7 @@ for filename in files:
     for line in shtml.readlines():
         result = first_header_regex.match(line)
         if result:
-            title = result.group(2)
+            title = result.group('title')
             break
 
     shtml.seek(0)
