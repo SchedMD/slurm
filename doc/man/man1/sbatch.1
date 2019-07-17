@@ -590,6 +590,9 @@ Regardless of this setting, the appropriate \fISLURM_*\fR
 task environment variables are always exported to the environment.
 This option is particularly important for jobs that are submitted on one cluster
 and execute on a different cluster (e.g. with different paths).
+To avoid steps inheriting environment export settings (e.g. \fINONE\fR) from
+sbatch command, the environment variable SLURM_EXPORT_ENV should be set to
+\fIALL\fR in the job script.
 
 .TP
 \fB\-\-export\-file\fR=<\fIfilename\fR | \fIfd\fR>
@@ -2100,6 +2103,9 @@ Only set if the \fB\-\-cpus\-per\-task\fR option is specified.
 .TP
 \fBSLURM_DISTRIBUTION\fR
 Same as \fB\-m, \-\-distribution\fR
+.TP
+\fBSLURM_EXPORT_ENV\fR
+Same as \fB\-e, \-\-export\fR.
 .TP
 \fBSLURM_GPUS\fR
 Number of GPUs requested.
