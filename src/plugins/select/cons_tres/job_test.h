@@ -80,14 +80,6 @@ extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
 extern void build_row_bitmaps(struct part_res_record *p_ptr,
 			      struct job_record *job_ptr);
 
-/* test for conflicting core bitmap elements */
-extern int can_job_fit_in_row(struct job_resources *job,
-			      struct part_row_data *r_ptr);
-
-extern void add_job_to_res(job_resources_t *job_resrcs_ptr,
-			   struct part_row_data *r_ptr,
-			   const uint16_t *bits_per_node);
-
 /*
  * Bit a core bitmap array of available cores
  * node_bitmap IN - Nodes available for use

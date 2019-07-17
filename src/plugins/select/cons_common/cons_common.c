@@ -103,6 +103,12 @@ int      select_node_cnt      = 0;
 bool     spec_cores_first     = false;
 bool     topo_optional        = false;
 
+typedef enum {
+	HANDLE_JOB_RES_ADD,
+	HANDLE_JOB_RES_REM,
+	HANDLE_JOB_RES_TEST
+} handle_job_res_t;
+
 struct part_res_record *select_part_record = NULL;
 struct node_res_record *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
@@ -1385,9 +1391,9 @@ static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
 				core_end = bit_size(
 					p_ptr->row[r].row_bitmap[node_i]);
 			} else {
-				if (!p_ptr->row[r].first_row_bitmap)
+				if (!*p_ptr->row[r].row_bitmap)
 					continue;
-				use_row_bitmap = p_ptr->row[r].first_row_bitmap;
+				use_row_bitmap = *p_ptr->row[r].row_bitmap;
 				core_begin = cr_get_coremap_offset(node_i);
 				core_end = cr_get_coremap_offset(node_i+1);
 			}
@@ -2996,6 +3002,147 @@ top:	orig_node_map = bit_copy(save_node_map);
 	return rc;
 }
 
+static bitstr_t *_create_core_bitmap(int node_inx)
+{
+	xassert(node_inx < select_node_cnt);
+
+	if (is_cons_tres)
+		return bit_alloc(select_node_record[node_inx].tot_cores);
+	else {
+		/*
+		 * For cons_res we need the whole system size instead of per
+		 * node.
+		 */
+		static uint32_t sys_core_size = NO_VAL;
+
+		xassert(!node_inx);
+
+		if (sys_core_size == NO_VAL) {
+			sys_core_size = 0;
+			for (int i = 0; i < select_node_cnt; i++)
+				sys_core_size +=
+					select_node_record[i].tot_cores;
+		}
+		return bit_alloc(sys_core_size);
+	}
+}
+
+/*
+ * Handle job resource allocation to record of resources allocated to all nodes
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT sys_resrcs_ptr - bitmap of available CPUs, allocate as needed
+ * IN type - add/rem/test
+ * RET 1 on success, 0 otherwise
+ */
+static int _handle_job_res(job_resources_t *job_resrcs_ptr,
+			   bitstr_t ***sys_resrcs_ptr,
+			   handle_job_res_t type)
+{
+	int i, i_first, i_last;
+	int c, c_off = 0, full_offset;
+	bitstr_t **core_array;
+	bitstr_t *use_core_array;
+	uint32_t core_begin;
+	uint32_t core_end;
+	uint16_t cores_per_node;
+
+	if (!job_resrcs_ptr->core_bitmap)
+		return 1;
+
+	/* create row_bitmap data structure as needed */
+	if (*sys_resrcs_ptr == NULL) {
+		if (type == HANDLE_JOB_RES_TEST)
+			return 1;
+		core_array = build_core_array();
+		*sys_resrcs_ptr = core_array;
+		for (int i = 0; i < core_array_size; i++)
+			core_array[i] = _create_core_bitmap(i);
+	} else
+		core_array = *sys_resrcs_ptr;
+
+	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
+	if (i_first != -1)
+		i_last = bit_fls(job_resrcs_ptr->node_bitmap);
+	else
+		i_last = -2;
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
+			continue;
+
+		cores_per_node = select_node_record[i].tot_cores;
+
+		if (is_cons_tres) {
+			core_begin = 0;
+			core_end = select_node_record[i].tot_cores;
+			use_core_array = core_array[i];
+			full_offset = 0;
+		} else {
+			core_begin = cr_get_coremap_offset(i);
+			core_end = cr_get_coremap_offset(i+1);
+			use_core_array = core_array[0];
+			full_offset = cr_node_cores_offset[i];
+		}
+
+		if (job_resrcs_ptr->whole_node) {
+			if (!use_core_array) {
+				if (type != HANDLE_JOB_RES_TEST)
+					error("%s: %s: core_array for node %d is NULL %d",
+					      plugin_type, __func__, i, type);
+				continue;	/* Move to next node */
+			}
+
+			switch (type) {
+			case HANDLE_JOB_RES_ADD:
+				bit_nset(use_core_array,
+					 core_begin, core_end-1);
+				break;
+			case HANDLE_JOB_RES_REM:
+				bit_nclear(use_core_array,
+					   core_begin, core_end-1);
+				break;
+			case HANDLE_JOB_RES_TEST:
+				if (is_cons_tres) {
+					if (bit_ffs(use_core_array) != -1)
+						return 0;
+				} else {
+					for (c = 0; c < cores_per_node; c++)
+						if (bit_test(job_resrcs_ptr->core_bitmap,
+							     c_off + c))
+							return 0;
+				}
+				break;
+			}
+			continue;	/* Move to next node */
+		}
+
+		for (c = 0; c < cores_per_node; c++) {
+			if (!bit_test(job_resrcs_ptr->core_bitmap, c_off + c))
+				continue;
+			if (!use_core_array) {
+				if (type != HANDLE_JOB_RES_TEST)
+					error("%s: %s: core_array for node %d is NULL %d",
+					      plugin_type, __func__, i, type);
+				continue;	/* Move to next node */
+			}
+			switch (type) {
+			case HANDLE_JOB_RES_ADD:
+				bit_set(use_core_array, full_offset + c);
+				break;
+			case HANDLE_JOB_RES_REM:
+				bit_clear(use_core_array, full_offset + c);
+				break;
+			case HANDLE_JOB_RES_TEST:
+				if (bit_test(use_core_array, full_offset + c))
+					return 0;    /* Core conflict on node */
+				break;
+			}
+		}
+		c_off += cores_per_node;
+	}
+
+	return 1;
+}
+
 /* Delete the given partition row data */
 extern void common_destroy_row_data(
 	struct part_row_data *row, uint16_t num_rows)
@@ -3074,15 +3221,13 @@ extern int common_cpus_per_core(struct job_details *details, int node_inx)
 extern void common_add_job_to_row(struct job_resources *job,
 				  struct part_row_data *r_ptr)
 {
-	xassert(*cons_common_callbacks.add_job_to_res);
-
 	/* add the job to the row_bitmap */
 	if (r_ptr->row_bitmap && (r_ptr->num_jobs == 0)) {
 		/* if no jobs, clear the existing row_bitmap first */
 		clear_core_array(r_ptr->row_bitmap);
 	}
 
-	(*cons_common_callbacks.add_job_to_res)(job, r_ptr, cr_node_num_cores);
+	common_add_job_cores(job, &r_ptr->row_bitmap);
 
 	/*  add the job to the job_list */
 	if (r_ptr->num_jobs >= r_ptr->job_list_size) {
@@ -3113,8 +3258,6 @@ extern int common_add_job_to_res(struct job_record *job_ptr, int action)
 	List node_gres_list;
 	int i, i_first, i_last, n;
 	bitstr_t *core_bitmap;
-
-	xassert(*cons_common_callbacks.can_job_fit_in_row);
 
 	if (!job || !job->core_bitmap) {
 		error("%s: %s: %pJ has no job_resrcs info",
@@ -3207,8 +3350,7 @@ extern int common_add_job_to_res(struct job_record *job_ptr, int action)
 
 		/* find a row to add this job */
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (!(*cons_common_callbacks.can_job_fit_in_row)(
-				    job, &(p_ptr->row[i])))
+			if (!common_job_fit_in_row(job, &(p_ptr->row[i])))
 				continue;
 			debug3("%s: %s: adding %pJ to part %s row %u",
 			       plugin_type, __func__, job_ptr,
@@ -3436,6 +3578,50 @@ extern int common_rm_job_res(struct part_res_record *part_record_ptr,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Add job resource allocation to record of resources allocated to all nodes
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT sys_resrcs_ptr - bitmap array (one per node) of available cores,
+ *			   allocated as needed
+ * NOTE: Patterned after add_job_to_cores() in src/common/job_resources.c
+ */
+extern void common_add_job_cores(job_resources_t *job_resrcs_ptr,
+				 bitstr_t ***sys_resrcs_ptr)
+{
+	(void)_handle_job_res(job_resrcs_ptr, sys_resrcs_ptr,
+			      HANDLE_JOB_RES_ADD);
+}
+
+
+/*
+ * Remove job resource allocation to record of resources allocated to all nodes
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
+ */
+extern void common_rm_job_cores(job_resources_t *job_resrcs_ptr,
+				bitstr_t ***sys_resrcs_ptr)
+{
+	(void)_handle_job_res(job_resrcs_ptr, sys_resrcs_ptr,
+			      HANDLE_JOB_RES_REM);
+}
+
+/*
+ * Test if job can fit into the given set of core_bitmaps
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN r_ptr - row we are trying to fit
+ * RET 1 on success, 0 otherwise
+ * NOTE: Patterned after job_fits_into_cores() in src/common/job_resources.c
+ */
+extern int common_job_fit_in_row(job_resources_t *job_resrcs_ptr,
+				 struct part_row_data *r_ptr)
+{
+	if ((r_ptr->num_jobs == 0) || !r_ptr->row_bitmap)
+		return 1;
+
+	return _handle_job_res(job_resrcs_ptr, &r_ptr->row_bitmap,
+			       HANDLE_JOB_RES_TEST);
+}
+
 /* Log contents of partition structure */
 extern void common_dump_parts(struct part_res_record *p_ptr)
 {
@@ -3532,7 +3718,6 @@ extern struct part_row_data *common_dup_row_data(struct part_row_data *orig_row,
 				new_row[i].row_bitmap[n] =
 					bit_copy(orig_row[i].row_bitmap[n]);
 			}
-			new_row[i].first_row_bitmap = new_row[i].row_bitmap[0];
 		}
 		if (new_row[i].job_list_size == 0)
 			continue;

@@ -58,12 +58,6 @@ struct node_record *node_record_table_ptr;
 List job_list;
 #endif
 
-typedef enum {
-	HANDLE_JOB_RES_ADD,
-	HANDLE_JOB_RES_REM,
-	HANDLE_JOB_RES_TEST
-} handle_job_res_t;
-
 struct sort_support {
 	int jstart;
 	struct job_resources *tmpjobs;
@@ -81,8 +75,6 @@ typedef struct topo_weight_info {
 } topo_weight_info_t;
 
 /* Local functions */
-static void _add_job_res(job_resources_t *job_resrcs_ptr,
-			 bitstr_t ***sys_resrcs_ptr);
 static List _build_node_weight_list(bitstr_t *node_bitmap);
 static int  _compare_support(const void *v, const void *v1);
 static void _cpus_to_use(uint16_t *avail_cpus, int64_t rem_cpus, int rem_nodes,
@@ -133,16 +125,9 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			    uint32_t max_nodes, uint32_t req_nodes,
 			    avail_res_t **avail_res_array, uint16_t cr_type,
 			    bool prefer_alloc_nodes, bool first_pass);
-static int _handle_job_res(job_resources_t *job_resrcs_ptr,
-			   bitstr_t ***sys_resrcs_ptr,
-			   handle_job_res_t type);
-static int _job_fit_test(job_resources_t *job_resrcs_ptr,
-			 bitstr_t **sys_resrcs_ptr);
 static int _node_weight_find(void *x, void *key);
 static void _node_weight_free(void *x);
 static int _node_weight_sort(void *x, void *y);
-static void _rm_job_res(job_resources_t *job_resrcs_ptr,
-		bitstr_t ***sys_resrcs_ptr);
 
 /* Find node_weight_type element from list with same weight as node config */
 static int _node_weight_find(void *x, void *key)
@@ -271,13 +256,14 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 		} else {
 			if (job_ptr) { /* just remove the job */
 				xassert(job_ptr->job_resrcs);
-				_rm_job_res(job_ptr->job_resrcs,
-					    &this_row->row_bitmap);
+				common_rm_job_cores(job_ptr->job_resrcs,
+						    &this_row->row_bitmap);
 			} else { /* totally rebuild the bitmap */
 				clear_core_array(this_row->row_bitmap);
 				for (j = 0; j < this_row->num_jobs; j++) {
-					_add_job_res(this_row->job_list[j],
-						     &this_row->row_bitmap);
+					common_add_job_cores(
+						this_row->job_list[j],
+						&this_row->row_bitmap);
 				}
 			}
 		}
@@ -353,8 +339,8 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 	/* add jobs to the rows */
 	for (j = 0; j < num_jobs; j++) {
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (can_job_fit_in_row(ss[j].tmpjobs,
-					       &(p_ptr->row[i]))) {
+			if (common_job_fit_in_row(ss[j].tmpjobs,
+						  &(p_ptr->row[i]))) {
 				/* job fits in row, so add it */
 				common_add_job_to_row(
 					ss[j].tmpjobs, &(p_ptr->row[i]));
@@ -394,8 +380,8 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 			if (p_ptr->row[i].num_jobs == 0)
 				continue;
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
-				_add_job_res(p_ptr->row[i].job_list[j],
-					     &p_ptr->row[i].row_bitmap);
+				common_add_job_cores(p_ptr->row[i].job_list[j],
+						     &p_ptr->row[i].row_bitmap);
 			}
 		}
 	}
@@ -443,16 +429,6 @@ extern void build_row_bitmaps(struct part_res_record *p_ptr,
 	 */
 }
 
-/* test for conflicting core bitmap elements */
-extern int can_job_fit_in_row(struct job_resources *job,
-			      struct part_row_data *r_ptr)
-{
-	if ((r_ptr->num_jobs == 0) || !r_ptr->row_bitmap)
-		return 1;
-
-	return _job_fit_test(job, r_ptr->row_bitmap);
-}
-
 /* Sort jobs by start time, then size (CPU count) */
 static int _compare_support(const void *v1, const void *v2)
 {
@@ -467,155 +443,6 @@ static int _compare_support(const void *v1, const void *v2)
 		return 1;
 
 	return 0;
-}
-
-/*
- * Test if job can fit into the given set of core_bitmaps
- * IN job_resrcs_ptr - resources allocated to a job
- * IN sys_resrcs_ptr - bitmap array (one per node) of available cores
- * RET 1 on success, 0 otherwise
- * NOTE: Patterned after job_fits_into_cores() in src/common/job_resources.c
- */
-static int _job_fit_test(job_resources_t *job_resrcs_ptr,
-			 bitstr_t **sys_resrcs_ptr)
-{
-	if (!sys_resrcs_ptr)
-		return 1;			/* Success */
-
-	return _handle_job_res(job_resrcs_ptr, &sys_resrcs_ptr,
-			       HANDLE_JOB_RES_TEST);
-}
-
-/*
- * Handle job resource allocation to record of resources allocated to all nodes
- * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT sys_resrcs_ptr - bitmap of available CPUs, allocate as needed
- * IN type - add/rem/test
- * RET 1 on success, 0 otherwise
- */
-static int _handle_job_res(job_resources_t *job_resrcs_ptr,
-			   bitstr_t ***sys_resrcs_ptr,
-			   handle_job_res_t type)
-{
-	int i, i_first, i_last;
-	int c, c_job, c_off = 0, c_max;
-	int rep_inx = 0, rep_offset = 0;
-	bitstr_t **core_array;
-
-	if (!job_resrcs_ptr->core_bitmap)
-		return 1;
-
-	/* create row_bitmap data structure as needed */
-	if (*sys_resrcs_ptr == NULL) {
-		if (type == HANDLE_JOB_RES_TEST)
-			return 1;
-		core_array = xmalloc(sizeof(bitstr_t *) * select_node_cnt);
-		*sys_resrcs_ptr = core_array;
-		for (i = 0; i < select_node_cnt; i++) {
-			core_array[i] =
-				bit_alloc(select_node_record[i].tot_cores);
-		}
-	} else
-		core_array = *sys_resrcs_ptr;
-
-	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
-	if (i_first != -1)
-		i_last = bit_fls(job_resrcs_ptr->node_bitmap);
-	else
-		i_last = -2;
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
-			continue;
-		if (job_resrcs_ptr->whole_node) {
-			if (!core_array[i]) {
-				if (type != HANDLE_JOB_RES_TEST)
-					error("%s: %s: core_array[%d] is NULL %d",
-					      plugin_type, __func__, i, type);
-				continue;	/* Move to next node */
-			}
-
-			switch (type) {
-			case HANDLE_JOB_RES_ADD:
-				bit_set_all(core_array[i]);
-				break;
-			case HANDLE_JOB_RES_REM:
-				bit_clear_all(core_array[i]);
-				break;
-			case HANDLE_JOB_RES_TEST:
-				if (bit_ffs(core_array[i]) != -1)
-					return 0; /* Whole node conflict */
-				break;
-			}
-			continue;	/* Move to next node */
-		}
-		if (rep_offset >= job_resrcs_ptr->sock_core_rep_count[rep_inx]){
-			rep_offset = 1;
-			rep_inx++;
-		} else {
-			rep_offset++;
-		}
-		c_job = job_resrcs_ptr->sockets_per_node[rep_inx] *
-			job_resrcs_ptr->cores_per_socket[rep_inx];
-		c_max = MIN(select_node_record[i].tot_cores, c_job);
-		for (c = 0; c < c_max; c++) {
-			if (!bit_test(job_resrcs_ptr->core_bitmap, c_off + c))
-				continue;
-			if (!core_array[i]) {
-				if (type != HANDLE_JOB_RES_TEST)
-					error("%s: %s: core_array[%d] is NULL %d",
-					      plugin_type, __func__, i, type);
-				continue;	/* Move to next node */
-			}
-			switch (type) {
-			case HANDLE_JOB_RES_ADD:
-				bit_set(core_array[i], c);
-				break;
-			case HANDLE_JOB_RES_REM:
-				bit_clear(core_array[i], c);
-				break;
-			case HANDLE_JOB_RES_TEST:
-				if (bit_test(core_array[i], c))
-					return 0;    /* Core conflict on node */
-				break;
-			}
-		}
-		c_off += c_job;
-	}
-	return 1;
-}
-
-/*
- * Add job resource allocation to record of resources allocated to all nodes
- * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT sys_resrcs_ptr - bitmap array (one per node) of available cores,
- *			   allocated as needed
- * NOTE: Patterned after add_job_to_cores() in src/common/job_resources.c
- */
-static void _add_job_res(job_resources_t *job_resrcs_ptr,
-			 bitstr_t ***sys_resrcs_ptr)
-{
-	(void)_handle_job_res(job_resrcs_ptr, sys_resrcs_ptr,
-			      HANDLE_JOB_RES_ADD);
-}
-
-
-/*
- * Remove job resource allocation to record of resources allocated to all nodes
- * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
- */
-static void _rm_job_res(job_resources_t *job_resrcs_ptr,
-			bitstr_t ***sys_resrcs_ptr)
-{
-	(void)_handle_job_res(job_resrcs_ptr, sys_resrcs_ptr,
-			      HANDLE_JOB_RES_REM);
-}
-
-extern void add_job_to_res(job_resources_t *job_resrcs_ptr,
-			   struct part_row_data *r_ptr,
-			   const uint16_t *bits_per_node)
-{
-	_add_job_res(job_resrcs_ptr, &r_ptr->row_bitmap);
 }
 
 /*

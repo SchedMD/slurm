@@ -43,8 +43,6 @@
 
 /* a partition's per-row core allocation bitmap arrays (1 bitmap per node) */
 struct part_row_data {
-	bitstr_t *first_row_bitmap;	/* Pointer to first element in
-					 * row_bitmap */
 	struct job_resources **job_list;/* List of jobs in this row */
 	uint32_t job_list_size;		/* Size of job_list array */
 	uint32_t num_jobs;		/* Number of occupied entries in
@@ -120,13 +118,6 @@ struct select_nodeinfo {
 };
 
 typedef struct {
-	void (*add_job_to_res)(job_resources_t *job_resrcs_ptr,
-			       struct part_row_data *r_ptr,
-			       const uint16_t *bits_per_node);
-	/* can_job_fit_row - function to test for conflicting core bitmap
-	 * elements */
-	int (*can_job_fit_in_row)(struct job_resources *job,
-				  struct part_row_data *r_ptr);
 	avail_res_t *(*can_job_run_on_node)(struct job_record *job_ptr,
 					    bitstr_t **core_map,
 					    const uint32_t node_i,
@@ -223,6 +214,35 @@ extern int common_rm_job_res(struct part_res_record *part_record_ptr,
 			     struct node_use_record *node_usage,
 			     struct job_record *job_ptr, int action,
 			     bool job_fini);
+
+/*
+ * Add job resource allocation to record of resources allocated to all nodes
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT sys_resrcs_ptr - bitmap array (one per node) of available cores,
+ *			   allocated as needed
+ * NOTE: Patterned after add_job_to_cores() in src/common/job_resources.c
+ */
+extern void common_add_job_cores(job_resources_t *job_resrcs_ptr,
+				 bitstr_t ***sys_resrcs_ptr);
+
+/*
+ * Remove job resource allocation to record of resources allocated to all nodes
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
+ * NOTE: Patterned after remove_job_from_cores() in src/common/job_resources.c
+ */
+extern void common_rm_job_cores(job_resources_t *job_resrcs_ptr,
+				bitstr_t ***sys_resrcs_ptr);
+
+/*
+ * Test if job can fit into the given set of core_bitmaps
+ * IN job_resrcs_ptr - resources allocated to a job
+ * IN r_ptr - row we are trying to fit
+ * RET 1 on success, 0 otherwise
+ * NOTE: Patterned after job_fits_into_cores() in src/common/job_resources.c
+ */
+extern int common_job_fit_in_row(job_resources_t *job_resrcs_ptr,
+				 struct part_row_data *r_ptr);
 
 /* Log contents of partition structure */
 extern void common_dump_parts(struct part_res_record *p_ptr);

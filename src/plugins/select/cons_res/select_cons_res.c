@@ -151,31 +151,9 @@ struct sort_support {
 };
 static int _compare_support(const void *, const void *);
 
-static void _add_job_to_cores(job_resources_t *job_resrcs_ptr,
-			      struct part_row_data *r_ptr,
-			      const uint16_t *bits_per_node)
-{
-	if (!r_ptr->row_bitmap)
-		r_ptr->row_bitmap = build_core_array();
-
-	add_job_to_cores(job_resrcs_ptr, &r_ptr->row_bitmap[0], bits_per_node);
-	r_ptr->first_row_bitmap = r_ptr->row_bitmap[0];
-}
-
-/* test for conflicting core_bitmap bits */
-static int _can_job_fit_in_row(struct job_resources *job,
-			       struct part_row_data *r_ptr)
-{
-	if ((r_ptr->num_jobs == 0) || !r_ptr->first_row_bitmap)
-		return 1;
-
-	return job_fits_into_cores(job, r_ptr->first_row_bitmap,
-				   cr_node_num_cores);
-}
-
 /*
  * _build_row_bitmaps: A job has been removed from the given partition,
- *                     so the first_row_bitmap(s) need to be reconstructed.
+ *                     so the row_bitmap(s) need to be reconstructed.
  *                     Optimize the jobs into the least number of rows,
  *                     and make the lower rows as dense as possible.
  *
@@ -194,24 +172,24 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 
 	if (p_ptr->num_rows == 1) {
 		this_row = &(p_ptr->row[0]);
+		xassert(this_row->row_bitmap);
 		if (this_row->num_jobs == 0) {
-			if (this_row->first_row_bitmap) {
-				size = bit_size(this_row->first_row_bitmap);
-				bit_nclear(this_row->first_row_bitmap, 0, size-1);
+			if (*this_row->row_bitmap) {
+				size = bit_size(*this_row->row_bitmap);
+				bit_nclear(*this_row->row_bitmap, 0, size-1);
 			}
 		} else {
 			if (job_ptr) { /* just remove the job */
 				xassert(job_ptr->job_resrcs);
-				remove_job_from_cores(job_ptr->job_resrcs,
-						      &(this_row->first_row_bitmap),
-						      cr_node_num_cores);
+				common_rm_job_cores(job_ptr->job_resrcs,
+						    &this_row->row_bitmap);
 			} else { /* totally rebuild the bitmap */
-				size = bit_size(this_row->first_row_bitmap);
-				bit_nclear(this_row->first_row_bitmap, 0, size-1);
+				size = bit_size(*this_row->row_bitmap);
+				bit_nclear(*this_row->row_bitmap, 0, size-1);
 				for (j = 0; j < this_row->num_jobs; j++) {
-					_add_job_to_cores(this_row->job_list[j],
-							  this_row,
-							  cr_node_num_cores);
+					common_add_job_cores(
+						this_row->job_list[j],
+						&this_row->row_bitmap);
 				}
 			}
 		}
@@ -224,10 +202,10 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 		num_jobs += p_ptr->row[i].num_jobs;
 	}
 	if (num_jobs == 0) {
-		size = bit_size(p_ptr->row[0].first_row_bitmap);
+		size = bit_size(*p_ptr->row[0].row_bitmap);
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (p_ptr->row[i].first_row_bitmap) {
-				bit_nclear(p_ptr->row[i].first_row_bitmap, 0,
+			if (*p_ptr->row[i].row_bitmap) {
+				bit_nclear(*p_ptr->row[i].row_bitmap, 0,
 					   size-1);
 			}
 		}
@@ -247,7 +225,7 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 
 	/* get row_bitmap size from first row (we can safely assume that the
 	 * first row_bitmap exists because there exists at least one job. */
-	size = bit_size(p_ptr->row[0].first_row_bitmap);
+	size = bit_size(*p_ptr->row[0].row_bitmap);
 
 	/* create a master job list and clear out ALL row data */
 	ss = xcalloc(num_jobs, sizeof(struct sort_support));
@@ -262,8 +240,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 			x++;
 		}
 		p_ptr->row[i].num_jobs = 0;
-		if (p_ptr->row[i].first_row_bitmap) {
-			bit_nclear(p_ptr->row[i].first_row_bitmap, 0, size-1);
+		if (*p_ptr->row[i].row_bitmap) {
+			bit_nclear(*p_ptr->row[i].row_bitmap, 0, size-1);
 		}
 	}
 
@@ -298,8 +276,8 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 	/* add jobs to the rows */
 	for (j = 0; j < num_jobs; j++) {
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (_can_job_fit_in_row(ss[j].tmpjobs,
-						&(p_ptr->row[i]))) {
+			if (common_job_fit_in_row(ss[j].tmpjobs,
+						  &(p_ptr->row[i]))) {
 				/* job fits in row, so add it */
 				common_add_job_to_row(ss[j].tmpjobs,
 						      &(p_ptr->row[i]));
@@ -333,15 +311,14 @@ static void _build_row_bitmaps(struct part_res_record *p_ptr,
 
 		/* still need to rebuild row_bitmaps */
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			if (p_ptr->row[i].first_row_bitmap)
-				bit_nclear(p_ptr->row[i].first_row_bitmap, 0,
+			if (*p_ptr->row[i].row_bitmap)
+				bit_nclear(*p_ptr->row[i].row_bitmap, 0,
 					   size-1);
 			if (p_ptr->row[i].num_jobs == 0)
 				continue;
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
-				_add_job_to_cores(p_ptr->row[i].job_list[j],
-						  &p_ptr->row[i],
-						  cr_node_num_cores);
+				common_add_job_cores(p_ptr->row[i].job_list[j],
+						     &p_ptr->row[i].row_bitmap);
 			}
 		}
 	}
@@ -411,8 +388,6 @@ extern int init(void)
 {
 	common_init();
 
-	cons_common_callbacks.add_job_to_res = _add_job_to_cores;
-	cons_common_callbacks.can_job_fit_in_row = _can_job_fit_in_row;
 	cons_common_callbacks.can_job_run_on_node = can_job_run_on_node;
 	cons_common_callbacks.choose_nodes = choose_nodes;
 	cons_common_callbacks.mark_avail_cores = make_core_bitmap;
