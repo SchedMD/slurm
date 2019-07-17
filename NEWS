@@ -347,6 +347,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 18.08.9
 ==========================
+ -- Wrap END_TIMER{,2,3} macro definition in "do {} while (0)" block.
 
 * Changes in Slurm 18.08.8
 ==========================
