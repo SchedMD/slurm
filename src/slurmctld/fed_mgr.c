@@ -2388,6 +2388,32 @@ static void _spawn_threads(void)
 	slurm_mutex_unlock(&job_update_mutex);
 }
 
+static void _add_missing_fed_job_info()
+{
+	struct job_record *job_ptr;
+	ListIterator job_itr;
+
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+
+	/* Sanity check and add any missing job_info structs */
+	lock_slurmctld(job_read_lock);
+	job_itr = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_itr))) {
+		uint32_t origin_id;
+
+		if (!_is_fed_job(job_ptr, &origin_id))
+			continue;
+
+		if (!_find_fed_job_info(job_ptr->job_id)) {
+			info("adding missing fed_job_info for job %pJ",
+			     job_ptr);
+			add_fed_job_info(job_ptr);
+		}
+	}
+	list_iterator_destroy(job_itr);
+	unlock_slurmctld(job_read_lock);
+}
+
 extern int fed_mgr_init(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
@@ -2500,6 +2526,9 @@ extern int fed_mgr_init(void *db_conn)
 	slurmdb_destroy_federation_rec(state_fed);
 
 end_it:
+	/* Call whether state file existed or not. */
+	_add_missing_fed_job_info();
+
 	inited = true;
 	slurm_mutex_unlock(&init_mutex);
 
