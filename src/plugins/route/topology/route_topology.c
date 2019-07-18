@@ -94,6 +94,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 /* Global data */
 static uint64_t debug_flags = 0;
 static pthread_mutex_t route_lock = PTHREAD_MUTEX_INITIALIZER;
+static bool run_in_slurmctld = false;
 
 /*****************************************************************************\
  *  Functions required of all plugins
@@ -111,6 +112,7 @@ extern int init(void)
 	}
 	xfree(topotype);
 	debug_flags = slurm_get_debug_flags();
+	run_in_slurmctld = run_in_daemon("slurmctld");
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -121,20 +123,6 @@ extern int init(void)
 extern int fini(void)
 {
 	return SLURM_SUCCESS;
-}
-
-/* Only run when in the slurmctld */
-static bool _run_in_slurmctld(void)
-{
-	static bool set = false;
-	static bool run = false;
-
-	if (!set) {
-		set = 1;
-		run = run_in_daemon("slurmctld");
-	}
-
-	return run;
 }
 
 /*****************************************************************************\
@@ -167,7 +155,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	msg_count = hostlist_count(hl);
 	slurm_mutex_lock(&route_lock);
 	if (switch_record_cnt == 0) {
-		if (_run_in_slurmctld())
+		if (run_in_slurmctld)
 			fatal_abort("%s: Somehow we have 0 for switch_record_cnt and we are here in the slurmctld.  This should never happen.", __func__);
 		/* configs have not already been processed */
 		slurm_conf_init(NULL);
@@ -186,14 +174,14 @@ extern int route_p_split_hostlist(hostlist_t hl,
 	slurm_mutex_unlock(&route_lock);
 	*sp_hl = (hostlist_t*) xmalloc(switch_record_cnt * sizeof(hostlist_t));
 	/* Only acquire the slurmctld lock if running as the slurmctld. */
-	if (_run_in_slurmctld())
+	if (run_in_slurmctld)
 		lock_slurmctld(node_read_lock);
 	/* create bitmap of nodes to send message too */
 	if (hostlist2bitmap (hl, false, &nodes_bitmap) != SLURM_SUCCESS) {
 		buf = hostlist_ranged_string_xmalloc(hl);
 		fatal("ROUTE: Failed to make bitmap from hostlist=%s.", buf);
 	}
-	if (_run_in_slurmctld())
+	if (run_in_slurmctld)
 		unlock_slurmctld(node_read_lock);
 
 	/* Find lowest level switch containing all the nodes in the list */

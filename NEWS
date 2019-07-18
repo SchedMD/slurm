@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     by default instead.
  -- Do not build switch/cray_aries plugin on FreeBSD, NetBSD, or macOS.
  -- Fix build on FreeBSD.
+ -- Fix race condition in route/topology plugin.
 
 * Changes in Slurm 19.05.1-2
 ============================
