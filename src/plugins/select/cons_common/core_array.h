@@ -80,4 +80,10 @@ extern void free_core_array(bitstr_t ***core_array);
 /* Enable detailed logging of cr_dist() node and per-node core bitmaps */
 extern void core_array_log(char *loc, bitstr_t *node_map, bitstr_t **core_map);
 
+/* Translate per-node core bitmap array to system-wide core bitmap */
+extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array);
+
+/* Translate system-wide core bitmap to per-node core bitmap array */
+extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap);
+
 #endif /* _CORE_ARRAY_H */

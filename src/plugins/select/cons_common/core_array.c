@@ -192,3 +192,111 @@ extern void core_array_log(char *loc, bitstr_t *node_map, bitstr_t **core_map)
 		}
 	}
 }
+
+/* Translate per-node core bitmap array to system-wide core bitmap */
+extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
+{
+	bitstr_t *core_bitmap = NULL;
+	int i;
+	int c, core_offset;
+#if _DEBUG
+	char tmp[128];
+#endif
+
+	xassert(is_cons_tres);
+
+	if (!core_array)
+		return core_bitmap;
+
+#if _DEBUG
+	for (i = 0; i < core_array_size; i++) {
+		if (!core_array[i])
+			continue;
+		bit_fmt(tmp, sizeof(tmp), core_array[i]);
+		error("%s: %s: OUT core bitmap[%d] %s", plugin_type, __func__,
+		      i, tmp);
+	}
+#endif
+
+	core_bitmap =
+		bit_alloc(select_node_record[select_node_cnt-1].cume_cores);
+	for (i = 0; i < core_array_size; i++) {
+		if (!core_array[i])
+			continue;
+		core_offset = select_node_record[i].cume_cores -
+			      select_node_record[i].tot_cores;
+		for (c = 0; c < select_node_record[i].tot_cores; c++) {
+			if (bit_test(core_array[i], c))
+				bit_set(core_bitmap, core_offset + c);
+		}
+	}
+
+#if _DEBUG
+	bit_fmt(tmp, sizeof(tmp), core_bitmap);
+	error("%s: %s: IN core bitmap %s", plugin_type, __func__, tmp);
+#endif
+
+	return core_bitmap;
+}
+
+/* Translate system-wide core bitmap to per-node core bitmap array */
+extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
+{
+	bitstr_t **core_array = NULL;
+	int i, i_first, i_last, j, c;
+	int node_inx, last_node_inx = 0, core_offset;
+	char tmp[128];
+
+	xassert(is_cons_tres);
+
+	if (!core_bitmap)
+		return core_array;
+
+#if _DEBUG
+	bit_fmt(tmp, sizeof(tmp), core_bitmap);
+	error("%s: %s: IN core bitmap %s", plugin_type, __func__, tmp);
+#endif
+
+	i_first = bit_ffs(core_bitmap);
+	if (i_first == -1)
+		return core_array;
+	i_last = bit_fls(core_bitmap);
+	core_array = build_core_array();
+	for (i = i_first; i <= i_last; i++) {
+		if (!bit_test(core_bitmap, i))
+			continue;
+		for (j = last_node_inx; j < select_node_cnt; j++) {
+			if (i < select_node_record[j].cume_cores) {
+				node_inx = j;
+				break;
+			}
+		}
+		if (j >= select_node_cnt) {
+			bit_fmt(tmp, sizeof(tmp), core_bitmap);
+			error("%s: %s: error translating core bitmap %s",
+			      plugin_type, __func__, tmp);
+			break;
+		}
+		/* Copy all core bitmaps for this node here */
+		core_array[node_inx] =
+			bit_alloc(select_node_record[node_inx].tot_cores);
+		core_offset = select_node_record[node_inx].cume_cores -
+			      select_node_record[node_inx].tot_cores;
+		for (c = 0; c < select_node_record[node_inx].tot_cores; c++) {
+			if (bit_test(core_bitmap, core_offset + c))
+				bit_set(core_array[node_inx], c);
+		}
+	}
+
+#if _DEBUG
+	for (i = 0; i < core_array_size; i++) {
+		if (!core_array[i])
+			continue;
+		bit_fmt(tmp, sizeof(tmp), core_array[i]);
+		error("%s: %s: OUT core bitmap[%d] %s", plugin_type, __func__,
+		      i, tmp);
+	}
+#endif
+
+	return core_array;
+}

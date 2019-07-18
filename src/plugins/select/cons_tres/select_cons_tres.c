@@ -93,8 +93,6 @@ extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
 extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
 
 /* Local functions */
-static bitstr_t *_array_to_core_bitmap(bitstr_t **core_res);
-static bitstr_t **_core_bitmap_to_array(bitstr_t *core_bitmap);
 static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 				   uint32_t node_cnt, uint32_t *core_cnt,
 				   bitstr_t ***exc_cores);
@@ -102,110 +100,6 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 				  uint32_t node_cnt, uint32_t *core_cnt,
 				  bitstr_t ***exc_cores);
 static void _spec_core_filter(bitstr_t **avail_cores);
-
-/* Translate system-wide core bitmap to per-node core bitmap array */
-static bitstr_t **_core_bitmap_to_array(bitstr_t *core_bitmap)
-{
-	bitstr_t **core_array = NULL;
-	int i, i_first, i_last, j, c;
-	int node_inx, last_node_inx = 0, core_offset;
-	char tmp[128];
-
-	if (!core_bitmap)
-		return core_array;
-
-#if _DEBUG
-	bit_fmt(tmp, sizeof(tmp), core_bitmap);
-	error("%s: %s: IN core bitmap %s", plugin_type, __func__, tmp);
-#endif
-
-	i_first = bit_ffs(core_bitmap);
-	if (i_first == -1)
-		return core_array;
-	i_last = bit_fls(core_bitmap);
-	core_array = build_core_array();
-	for (i = i_first; i <= i_last; i++) {
-		if (!bit_test(core_bitmap, i))
-			continue;
-		for (j = last_node_inx; j < select_node_cnt; j++) {
-			if (i < select_node_record[j].cume_cores) {
-				node_inx = j;
-				break;
-			}
-		}
-		if (j >= select_node_cnt) {
-			bit_fmt(tmp, sizeof(tmp), core_bitmap);
-			error("%s: %s: error translating core bitmap %s",
-			      plugin_type, __func__, tmp);
-			break;
-		}
-		/* Copy all core bitmaps for this node here */
-		core_array[node_inx] =
-			bit_alloc(select_node_record[node_inx].tot_cores);
-		core_offset = select_node_record[node_inx].cume_cores -
-			      select_node_record[node_inx].tot_cores;
-		for (c = 0; c < select_node_record[node_inx].tot_cores; c++) {
-			if (bit_test(core_bitmap, core_offset + c))
-				bit_set(core_array[node_inx], c);
-		}
-	}
-
-#if _DEBUG
-	for (i = 0; i < select_node_cnt; i++) {
-		if (!core_array[i])
-			continue;
-		bit_fmt(tmp, sizeof(tmp), core_array[i]);
-		error("%s: %s: OUT core bitmap[%d] %s", plugin_type, __func__,
-		      i, tmp);
-	}
-#endif
-
-	return core_array;
-}
-
-/* Translate per-node core bitmap array to system-wide core bitmap */
-static bitstr_t *_array_to_core_bitmap(bitstr_t **core_array)
-{
-	bitstr_t *core_bitmap = NULL;
-	int i;
-	int c, core_offset;
-#if _DEBUG
-	char tmp[128];
-#endif
-
-	if (!core_array)
-		return core_bitmap;
-
-#if _DEBUG
-	for (i = 0; i < select_node_cnt; i++) {
-		if (!core_array[i])
-			continue;
-		bit_fmt(tmp, sizeof(tmp), core_array[i]);
-		error("%s: %s: OUT core bitmap[%d] %s", plugin_type, __func__,
-		      i, tmp);
-	}
-#endif
-
-	core_bitmap =
-		bit_alloc(select_node_record[select_node_cnt-1].cume_cores);
-	for (i = 0; i < select_node_cnt; i++) {
-		if (!core_array[i])
-			continue;
-		core_offset = select_node_record[i].cume_cores -
-			      select_node_record[i].tot_cores;
-		for (c = 0; c < select_node_record[i].tot_cores; c++) {
-			if (bit_test(core_array[i], c))
-				bit_set(core_bitmap, core_offset + c);
-		}
-	}
-
-#if _DEBUG
-	bit_fmt(tmp, sizeof(tmp), core_bitmap);
-	error("%s: %s: IN core bitmap %s", plugin_type, __func__, tmp);
-#endif
-
-	return core_bitmap;
-}
 
 /*
  * Select resources for advanced reservation
@@ -242,7 +136,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		c = select_node_record[select_node_cnt-1].cume_cores;
 		tmp_core_bitmap = bit_alloc(c);
 		bit_not(tmp_core_bitmap);
-		avail_cores = _core_bitmap_to_array(tmp_core_bitmap);
+		avail_cores = core_bitmap_to_array(tmp_core_bitmap);
 		local_cores = avail_cores;
 		FREE_NULL_BITMAP(tmp_core_bitmap);
 	} else {
@@ -264,7 +158,7 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		c = select_node_record[select_node_cnt-1].cume_cores;
 		tmp_core_bitmap = bit_alloc(c);
 		bit_not(tmp_core_bitmap);
-		avail_cores = _core_bitmap_to_array(tmp_core_bitmap);
+		avail_cores = core_bitmap_to_array(tmp_core_bitmap);
 		FREE_NULL_BITMAP(tmp_core_bitmap);
 		core_array_and_not(avail_cores, *exc_cores);
 	}
@@ -392,7 +286,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			c = select_node_record[select_node_cnt-1].cume_cores;
 			tmp_core_bitmap = bit_alloc(c);
 			bit_not(tmp_core_bitmap);
-			avail_cores = _core_bitmap_to_array(tmp_core_bitmap);
+			avail_cores = core_bitmap_to_array(tmp_core_bitmap);
 			local_cores = avail_cores;
 			FREE_NULL_BITMAP(tmp_core_bitmap);
 		} else {
@@ -414,7 +308,7 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 			c = select_node_record[select_node_cnt-1].cume_cores;
 			tmp_core_bitmap = bit_alloc(c);
 			bit_not(tmp_core_bitmap);
-			avail_cores = _core_bitmap_to_array(tmp_core_bitmap);
+			avail_cores = core_bitmap_to_array(tmp_core_bitmap);
 			FREE_NULL_BITMAP(tmp_core_bitmap);
 			core_array_and_not(avail_cores, *exc_cores);
 		}
@@ -603,7 +497,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	 * FIXME: exc_core_bitmap is a full-system core bitmap to be replaced
 	 * with a set of per-node bitmaps in a future release of Slurm
 	 */
-	exc_cores = _core_bitmap_to_array(exc_core_bitmap);
+	exc_cores = core_bitmap_to_array(exc_core_bitmap);
 #if _DEBUG
 	if (exc_cores) {
 		int i;
@@ -758,7 +652,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	 * with a set of per-node bitmaps in a future release of Slurm
 	 */
 	if (core_bitmap)
-		exc_core_bitmap = _core_bitmap_to_array(*core_bitmap);
+		exc_core_bitmap = core_bitmap_to_array(*core_bitmap);
 
 	core_cnt = resv_desc_ptr->core_cnt;
 	flags = resv_desc_ptr->flags;
@@ -770,7 +664,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 						       &exc_core_bitmap);
 		if (avail_nodes_bitmap && core_bitmap && exc_core_bitmap) {
 			FREE_NULL_BITMAP(*core_bitmap);
-			*core_bitmap = _array_to_core_bitmap(exc_core_bitmap);
+			*core_bitmap = core_array_to_bitmap(exc_core_bitmap);
 		}
 		free_core_array(&exc_core_bitmap);
 		return avail_nodes_bitmap;
@@ -784,7 +678,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 						      &exc_core_bitmap);
 		if (avail_nodes_bitmap && core_bitmap && exc_core_bitmap) {
 			FREE_NULL_BITMAP(*core_bitmap);
-			*core_bitmap = _array_to_core_bitmap(exc_core_bitmap);
+			*core_bitmap = core_array_to_bitmap(exc_core_bitmap);
 		}
 		free_core_array(&exc_core_bitmap);
 		return avail_nodes_bitmap;
@@ -1092,7 +986,7 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 			picked_node_bitmap = NULL;
 		} else {
 			*core_bitmap =
-				_array_to_core_bitmap(picked_core_bitmap);
+				core_array_to_bitmap(picked_core_bitmap);
 		}
 		free_core_array(&picked_core_bitmap);
 		return picked_node_bitmap;
