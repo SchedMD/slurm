@@ -38,6 +38,7 @@ documents those changes that are of interest to users and administrators.
     access.
  -- Fix jobs being killed after being requeued by preemption.
  -- Make register nodes verify correctly when using cons_tres.
+ -- Fix srun --mem-per-cpu being ignored.
 
 * Changes in Slurm 19.05.1-2
 ============================
