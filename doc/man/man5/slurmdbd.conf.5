@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "May 2019" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "July 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -575,18 +575,18 @@ with to store the job accounting data.
 Time permitted for TCP connection to be established. Default value is 2 seconds.
 
 .TP
+\fBTrackSlurmctldDown\fR
+Boolean yes or no.  If set the slurmdbd will mark all idle resources on the
+cluster as down when a slurmctld disconnects or is no longer reachable.  The
+default is no.
+
+.TP
 \fBTrackWCKey\fR
 Boolean yes or no.  Used to set display and track of the Workload
 Characterization Key. Must be set to track wckey usage.  This must be set to
 generate rolled up usage tables from WCKeys.
 NOTE: If TrackWCKey is set here and not in your various slurm.conf files all
 jobs will be attributed to their default WCKey.
-
-.TP
-\fBTrackSlurmctldDown\fR
-Boolean yes or no.  If set the slurmdbd will mark all idle resources on the
-cluster as down when a slurmctld disconnects or is no longer reachable.  The
-default is no.
 
 .SH "EXAMPLE"
 .LP
