@@ -297,41 +297,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 /* select_p_reconfigure() in cons_common */
 
-/* given an "avail" node_bitmap, return a corresponding "avail" core_bitmap */
-/* DUPLICATE CODE: see job_test.c */
-/* Adding a filter for setting cores based on avail bitmap */
-bitstr_t *_make_core_bitmap_filtered(bitstr_t *node_map, int filter)
-{
-	uint32_t c, size;
-	uint32_t coff;
-	int n, n_first, n_last, nodes;
-
-	nodes = bit_size(node_map);
-	size = cr_get_coremap_offset(nodes);
-	bitstr_t *core_map = bit_alloc(size);
-	if (!core_map)
-		return NULL;
-
-	if (!filter)
-		return core_map;
-
-	n_first = bit_ffs(node_map);
-	if (n_first == -1)
-		n_last = -2;
-	else
-		n_last = bit_fls(node_map);
-	for (n = n_first; n <= n_last; n++) {
-		if (bit_test(node_map, n)) {
-			c = cr_get_coremap_offset(n);
-			coff = cr_get_coremap_offset(n + 1);
-			while (c < coff) {
-				bit_set(core_map, c++);
-			}
-		}
-	}
-	return core_map;
-}
-
 /* Once here, if core_cnt is NULL, avail_bitmap has nodes not used by any job or
  * reservation */
 bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
@@ -624,7 +589,7 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 				     bitstr_t **core_bitmap)
 {
 	bitstr_t **switches_bitmap;		/* nodes on this switch */
-	bitstr_t **switches_core_bitmap;	/* cores on this switch */
+	bitstr_t ***switches_core_bitmap;	/* cores on this switch */
 	int       *switches_cpu_cnt;		/* total CPUs on switch */
 	int       *switches_node_cnt;		/* total nodes on switch */
 	int       *switches_required;		/* set if has required node */
@@ -687,28 +652,28 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 	/* Construct a set of switch array entries,
 	 * use the same indexes as switch_record_table in slurmctld */
 	switches_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
-	switches_core_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
+	switches_core_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t **));
 	switches_cpu_cnt = xcalloc(switch_record_cnt, sizeof(int));
 	switches_node_cnt = xcalloc(switch_record_cnt, sizeof(int));
 	switches_required = xcalloc(switch_record_cnt, sizeof(int));
 
 	for (i = 0; i < switch_record_cnt; i++) {
-		char str[100];
 		switches_bitmap[i] = bit_copy(switch_record_table[i].
 					      node_bitmap);
 		bit_and(switches_bitmap[i], avail_bitmap);
 		switches_node_cnt[i] = bit_set_count(switches_bitmap[i]);
 
-		switches_core_bitmap[i] =
-			_make_core_bitmap_filtered(switches_bitmap[i], 1);
+		switches_core_bitmap[i] = common_mark_avail_cores(
+			switches_bitmap[i], NO_VAL16);
 
-		if (*core_bitmap) {
-			bit_and_not(switches_core_bitmap[i], *core_bitmap);
-		}
-		bit_fmt(str, sizeof(str), switches_core_bitmap[i]);
-		switches_cpu_cnt[i] = bit_set_count(switches_core_bitmap[i]);
-		debug2("switch:%d nodes:%d cores:%d:%s",
-		       i, switches_node_cnt[i], switches_cpu_cnt[i], str);
+		if (core_bitmap)
+			core_array_and_not(switches_core_bitmap[i],
+					   core_bitmap);
+
+		switches_cpu_cnt[i] =
+			count_core_array_set(switches_core_bitmap[i]);
+		debug2("switch:%d nodes:%d cores:%d",
+		       i, switches_node_cnt[i], switches_cpu_cnt[i]);
 	}
 
 	/* Remove nodes with less available cores than needed */
@@ -873,7 +838,7 @@ extern bitstr_t * select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 
 fini:	for (i = 0; i < switch_record_cnt; i++) {
 		FREE_NULL_BITMAP(switches_bitmap[i]);
-		FREE_NULL_BITMAP(switches_core_bitmap[i]);
+		free_core_array(&switches_core_bitmap[i]);
 	}
 
 	xfree(switches_bitmap);
