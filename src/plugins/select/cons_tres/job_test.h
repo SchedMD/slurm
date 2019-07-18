@@ -67,15 +67,6 @@ extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
 					uint16_t cr_type, bool test_only,
 					bitstr_t **part_core_map);
 
-
-/*
- * Bit a core bitmap array of available cores
- * node_bitmap IN - Nodes available for use
- * core_spec IN - Specialized core specification, NO_VAL16 if none
- * RET core bitmap array, one per node. Use free_core_array() to release memory
- */
-extern bitstr_t **mark_avail_cores(bitstr_t *node_bitmap, uint16_t core_spec);
-
 /*
  * This is an intermediary step between _select_nodes() and _eval_nodes()
  * to tackle the knapsack problem. This code incrementally removes nodes

@@ -268,6 +268,15 @@ extern void common_init(void);
 extern void common_fini(void);
 
 /*
+ * Bit a core bitmap array of available cores
+ * node_bitmap IN - Nodes available for use
+ * core_spec IN - Specialized core specification, NO_VAL16 if none
+ * RET core bitmap array, one per node. Use free_core_array() to release memory
+ */
+extern bitstr_t **common_mark_avail_cores(
+	bitstr_t *node_bitmap, uint16_t core_spec);
+
+/*
  * common_allocate_cores - Given the job requirements, determine which cores
  *                   from the given node can be allocated (if any) to this
  *                   job. Returns the number of cpus that can be used by

@@ -95,15 +95,4 @@ extern int choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
 			avail_res_t **avail_res_array, uint16_t cr_type,
 			bool prefer_alloc_nodes, gres_mc_data_t *tres_mc_ptr);
 
-/*
- * Given an available node_bitmap, return a corresponding available core_bitmap,
- *	excluding all specialized cores.
- *
- * node_map IN - Bitmap of available nodes
- * core_spec IN - Count of specialized cores requested by the job or NO_VAL
- * RET bitmap of cores available for use by this job or reservation
- * NOTE: Call bit_free() on return value to avoid memory leak.
- */
-extern bitstr_t **make_core_bitmap(bitstr_t *node_map, uint16_t core_spec);
-
 #endif /* !_CR_JOB_TEST_H */

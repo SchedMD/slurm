@@ -536,7 +536,6 @@ extern int init(void)
 
 	cons_common_callbacks.can_job_run_on_node = can_job_run_on_node;
 	cons_common_callbacks.choose_nodes = choose_nodes;
-	cons_common_callbacks.mark_avail_cores = mark_avail_cores;
 	cons_common_callbacks.dist_tasks_compute_c_b = dist_tasks_compute_c_b;
 
 	return SLURM_SUCCESS;
@@ -837,8 +836,8 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 			bit_copy(switch_record_table[i].node_bitmap);
 		bit_and(switches_bitmap[i], avail_node_bitmap);
 		switches_node_cnt[i] = bit_set_count(switches_bitmap[i]);
-		switches_core_bitmap[i] = mark_avail_cores(switches_bitmap[i],
-							   NO_VAL16);
+		switches_core_bitmap[i] = common_mark_avail_cores(
+			switches_bitmap[i], NO_VAL16);
 		if (exc_core_bitmap) {
 			core_array_and_not(switches_core_bitmap[i],
 					   exc_core_bitmap);

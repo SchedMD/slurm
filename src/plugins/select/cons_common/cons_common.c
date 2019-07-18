@@ -1652,7 +1652,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	char *nodename = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
 
-	xassert(*cons_common_callbacks.mark_avail_cores);
 	free_job_resources(&job_ptr->job_resrcs);
 
 	if (mode == SELECT_MODE_TEST_ONLY)
@@ -1713,7 +1712,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		job_ptr->bit_flags |= NODE_MEM_CALC;	/* To be calculated */
 
 	orig_node_map = bit_copy(node_bitmap);
-	avail_cores = (*cons_common_callbacks.mark_avail_cores)(
+	avail_cores = common_mark_avail_cores(
 		node_bitmap, job_ptr->details->core_spec);
 
 	/*
@@ -3992,6 +3991,142 @@ extern void common_fini(void)
 	select_part_record = NULL;
 	cr_fini_global_core_data();
 }
+
+/*
+ * Bit a core bitmap array of available cores
+ * node_bitmap IN - Nodes available for use
+ * core_spec IN - Specialized core specification, NO_VAL16 if none
+ * RET core bitmap array, one per node. Use free_core_array() to release memory
+ */
+extern bitstr_t **common_mark_avail_cores(
+	bitstr_t *node_bitmap, uint16_t core_spec)
+{
+	bitstr_t **avail_cores;
+	int from_core, to_core, incr_core, from_sock, to_sock, incr_sock;
+	int res_core, res_sock, res_off;
+	int n, n_first, n_last;
+	int c;
+	int rem_core_spec, node_core_spec, thread_spec = 0;
+	struct node_record *node_ptr;
+	bitstr_t *core_map = NULL;
+	uint16_t use_spec_cores = slurm_get_use_spec_resources();
+	struct node_res_record *node_res_ptr = NULL;
+	uint32_t coff;
+
+	if (is_cons_tres) {
+		avail_cores = build_core_array();
+	} else {
+		core_map = bit_alloc(
+			cr_get_coremap_offset(bit_size(node_bitmap)));
+		avail_cores = build_core_array();
+		*avail_cores = core_map;
+	}
+
+	if ((core_spec != NO_VAL16) &&
+	    (core_spec & CORE_SPEC_THREAD)) {	/* Reserving threads */
+		thread_spec = core_spec & (~CORE_SPEC_THREAD);
+		core_spec = NO_VAL16;		/* Don't remove cores */
+	}
+
+	n_first = bit_ffs(node_bitmap);
+	if (n_first != -1)
+		n_last = bit_fls(node_bitmap);
+	else
+		n_last = -2;
+	for (n = n_first; n <= n_last; n++) {
+		if (!bit_test(node_bitmap, n))
+			continue;
+
+		node_res_ptr = &select_node_record[n];
+		node_ptr = node_res_ptr->node_ptr;
+
+		if (is_cons_tres) {
+			c    = 0;
+			coff = node_res_ptr->tot_cores;
+			avail_cores[n] = bit_alloc(node_res_ptr->tot_cores);
+			core_map = avail_cores[n];
+		} else {
+			c    = cr_get_coremap_offset(n);
+			coff = cr_get_coremap_offset(n+1);
+		}
+
+		if ((core_spec != NO_VAL16) &&
+		    (core_spec >= node_res_ptr->tot_cores)) {
+			bit_clear(node_bitmap, n);
+			continue;
+		}
+
+		bit_nset(core_map, c, coff - 1);
+
+		/* Job can't over-ride system defaults */
+		if (use_spec_cores && (core_spec == 0))
+			continue;
+
+		if (thread_spec &&
+		    (node_res_ptr->cpus == node_res_ptr->tot_cores))
+			/* Each core has one thead, reserve cores here */
+			node_core_spec = thread_spec;
+		else
+			node_core_spec = core_spec;
+
+		/*
+		 * remove node's specialized cores accounting toward the
+		 * requested limit if allowed by configuration
+		 */
+		rem_core_spec = node_core_spec;
+		if (node_ptr->node_spec_bitmap) {
+			for (int i = 0; i < node_res_ptr->tot_cores; i++) {
+				if (!bit_test(node_ptr->node_spec_bitmap, 1)) {
+					bit_clear(core_map, c + i);
+					if (!use_spec_cores)
+						continue;
+					rem_core_spec--;
+					if (!rem_core_spec)
+						break;
+				}
+			}
+		}
+
+		if (!use_spec_cores || !rem_core_spec ||
+		    (node_core_spec == NO_VAL16))
+			continue;
+
+		/* if more cores need to be specialized, look for
+		 * them in the non-specialized cores */
+		if (spec_cores_first) {
+			from_core = 0;
+			to_core   = node_res_ptr->cores;
+			incr_core = 1;
+			from_sock = 0;
+			to_sock   = node_res_ptr->tot_sockets;
+			incr_sock = 1;
+		} else {
+			from_core = node_res_ptr->cores - 1;
+			to_core   = -1;
+			incr_core = -1;
+			from_sock = node_res_ptr->tot_sockets - 1;
+			to_sock   = -1;
+			incr_sock = -1;
+		}
+		for (res_core = from_core;
+		     ((rem_core_spec > 0) && (res_core != to_core));
+		     res_core += incr_core) {
+			for (res_sock = from_sock;
+			     ((rem_core_spec > 0) && (res_sock != to_sock));
+			     res_sock += incr_sock) {
+				res_off = c + res_core +
+					(res_sock * node_res_ptr->cores);
+				if (!bit_test(core_map, res_off))
+					continue;
+				bit_clear(core_map, res_off);
+				rem_core_spec--;
+			}
+		}
+	}
+
+	return avail_cores;
+}
+
 
 /* This is Part 1 of a 4-part procedure which can be found in
  * src/slurmctld/read_config.c. The whole story goes like this:

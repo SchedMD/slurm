@@ -155,7 +155,6 @@ extern int init(void)
 
 	cons_common_callbacks.can_job_run_on_node = can_job_run_on_node;
 	cons_common_callbacks.choose_nodes = choose_nodes;
-	cons_common_callbacks.mark_avail_cores = make_core_bitmap;
 	cons_common_callbacks.dist_tasks_compute_c_b = dist_tasks_compute_c_b;
 
 	return SLURM_SUCCESS;
@@ -601,7 +600,8 @@ static int _get_avail_core_in_node(bitstr_t *core_bitmap, int node,
  * core_bitmap IN/OUT - Cores currently NOT available for use */
 static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **core_bitmap)
 {
-	bitstr_t **p_spec_core_map = make_core_bitmap(node_bitmap, NO_VAL16);
+	bitstr_t **p_spec_core_map =
+		common_mark_avail_cores(node_bitmap, NO_VAL16);
 	bitstr_t *spec_core_map = *p_spec_core_map;
 
 	*p_spec_core_map = NULL;
