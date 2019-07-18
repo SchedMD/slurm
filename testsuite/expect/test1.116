@@ -1,0 +1,96 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#          Confirm that memory per cpu properly set on an srun job that
+#          does not have a preexisting allocation.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+############################################################################
+# Copyright (C) 2019 SchedMD LLC
+# Written by Chad Vizino <chad@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set test_id		"1.116"
+set timeout		$max_job_delay
+set job_id		0
+set mem_spec		"100M"
+set job_min_memory_cpu 	0
+
+print_header $test_id
+
+#
+# submit srun job with a specific mem-per-cpu request
+#
+set srun_pid [spawn $srun --mem-per-cpu=$mem_spec $bin_bash -c "echo SLURM_JOB_ID=\$SLURM_JOB_ID"]
+expect {
+	-re {SLURM_JOB_ID=([0-9]+)} {
+		set job_id $expect_out(1,string)
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# check to make sure a job id was set
+#
+if {$job_id == 0} {
+	send_user "\nFAILURE: Did not get job id\n"
+	exit 1
+}
+
+#
+# get job memory info
+#
+spawn $scontrol show job $job_id
+expect {
+	-re {MinMemoryCPU=([0-9]+.?)} {
+		set job_min_memory_cpu $expect_out(1,string)
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+#
+# check that the memory reported matches the requested value
+#
+if {[string compare $job_min_memory_cpu $mem_spec] != 0} {
+	send_user "\nFAILURE: job MinMemoryCPU $job_min_memory_cpu != $mem_spec\n"
+	exit 1
+}
+
+print_success $test_id
+exit 0
+
+
