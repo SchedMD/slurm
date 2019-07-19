@@ -1947,7 +1947,6 @@ static void _convert_job_mem(slurm_msg_t *msg)
 			       msg->protocol_version);
 	if (rc < 0) {
 		error("%s: slurm_cred_verify failed: %m", __func__);
-		req->nnodes = 1;	/* best guess */
 		return;
 	}
 
