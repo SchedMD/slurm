@@ -2011,11 +2011,12 @@ static void _convert_job_mem(slurm_msg_t *msg)
 fini:	slurm_cred_free_args(&arg);
 }
 
-static void _make_prolog_mem_container(slurm_msg_t *msg)
+static int _make_prolog_mem_container(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	job_mem_limits_t *job_limits_ptr;
 	step_loc_t step_info;
+	int rc = SLURM_SUCCESS;
 
 	_convert_job_mem(msg);	/* Convert per-CPU mem limit */
 	if (req->job_mem_limit) {
@@ -2044,6 +2045,8 @@ static void _make_prolog_mem_container(slurm_msg_t *msg)
 		}
 		slurm_mutex_unlock(&job_limits_mutex);
 	}
+
+	return rc;
 }
 
 static int _spawn_prolog_stepd(slurm_msg_t *msg)
