@@ -2222,8 +2222,13 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		/* It is always 0 for front end systems */
 		node_id = nodelist_find(req->nodes, conf->node_name);
 #endif
-		if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
-			_make_prolog_mem_container(msg);
+		if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN &&
+		    ((rc = _make_prolog_mem_container(msg)) != SLURM_SUCCESS)) {
+			error("%s: aborting prolog due to _make_prolog_mem_container failure: %s. Consider increasing cred_expire window if job prologs take large amount of time.",
+			      __func__, slurm_strerror(rc));
+			slurm_mutex_unlock(&prolog_mutex);
+			goto notify_result;
+		}
 
 		slurm_cred_insert_jobid(conf->vctx, req->job_id);
 		_add_job_running_prolog(req->job_id);
@@ -2287,6 +2292,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	} else
 		slurm_mutex_unlock(&prolog_mutex);
 
+notify_result:
 	/*
 	 * We need the slurmctld to know we are done or we can get into a
 	 * situation where nothing from the job will ever launch because the
