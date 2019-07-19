@@ -1935,7 +1935,7 @@ static int _notify_slurmctld_prolog_fini(
 }
 
 /* Convert memory limits from per-CPU to per-node */
-static void _convert_job_mem(slurm_msg_t *msg)
+static int _convert_job_mem(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	slurm_cred_arg_t arg;
@@ -1947,7 +1947,7 @@ static void _convert_job_mem(slurm_msg_t *msg)
 			       msg->protocol_version);
 	if (rc < 0) {
 		error("%s: slurm_cred_verify failed: %m", __func__);
-		return;
+		return errno;
 	}
 
 	req->nnodes = arg.job_nhosts;
@@ -2009,6 +2009,7 @@ static void _convert_job_mem(slurm_msg_t *msg)
 	req->job_mem_limit *= job_cpus;
 
 fini:	slurm_cred_free_args(&arg);
+	return SLURM_SUCCESS;
 }
 
 static int _make_prolog_mem_container(slurm_msg_t *msg)
