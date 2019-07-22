@@ -373,7 +373,7 @@ static void _pack_init_msg(dbd_init_msg_t *msg,
 	pack16(msg->version, buffer);
 
 	/* Adding anything to this needs to happen after the version
-	   since this is where the reciever gets the version from. */
+	   since this is where the receiver gets the version from. */
 	packstr(msg->cluster_name, buffer);
 }
 

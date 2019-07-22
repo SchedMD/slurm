@@ -3651,7 +3651,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		return ESLURM_INVALID_JOB_ID;
 	}
 	if (step_ptr->batch_step) {
-		error("%s: batch step recieved for %pJ.  This should never happen.",
+		error("%s: batch step received for %pJ. This should never happen.",
 		      __func__, job_ptr);
 		return ESLURM_INVALID_JOB_ID;
 	}

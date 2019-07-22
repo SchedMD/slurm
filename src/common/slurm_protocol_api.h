@@ -1048,7 +1048,8 @@ extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t * slurm_address);
  * receive message functions
 \**********************************************************************/
 
-/* unpack a complete recieved message
+/*
+ * unpack a complete received message
  * OUT msg - a slurm_msg struct to be filled in by the function
  * IN  fd - file descriptor the message came from
  * IN  buffer - Buf we will fill in the message with
