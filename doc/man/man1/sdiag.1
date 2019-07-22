@@ -33,12 +33,13 @@ bottleneck.
 \fBAgent queue size\fR
 Slurm design has scalability in mind and sending messages to thousands of nodes
 is not a trivial task. The agent mechanism helps to control communication
-between the slurm daemons and the controller for a best effort. If this values
-is close to MAX_AGENT_CNT there could be some delays affecting jobs management.
+between slurmctld and the slurmd daemons for a best effort. This value denotes
+the count of enqueued outgoing RPC requests in an internal retry list.
 
 .TP
 \fBAgent count\fR
-Number of active agent threads.
+Number of agent threads. Each of these agent threads can create in turn a group
+of up to 2 + AGENT_THREAD_COUNT active threads at a time.
 
 .TP
 \fBDBD Agent queue size\fR
