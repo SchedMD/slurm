@@ -4152,6 +4152,196 @@ extern bitstr_t **common_mark_avail_cores(
 	return avail_cores;
 }
 
+/*
+ * common_allocate_cores - Given the job requirements, determine which cores
+ *                   from the given node can be allocated (if any) to this
+ *                   job. Returns the number of cpus that can be used by
+ *                   this node AND a bitmap of the selected cores.
+ *
+ * IN job_ptr       - pointer to job requirements
+ * IN/OUT core_map  - core_bitmap of available cores on this node
+ * IN part_core_map - bitmap of cores already allocated on this partition/node
+ * IN node_i        - index of node to be evaluated
+ * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
+ * IN cpu_type      - if true, allocate CPUs rather than cores
+ * IN req_sock_map - OPTIONAL bitmap of required sockets
+ * RET resource availability structure, call common_free_avail_res() to free
+ */
+extern avail_res_t *common_allocate_cores(struct job_record *job_ptr,
+					  bitstr_t *core_map,
+					  bitstr_t *part_core_map,
+					  const uint32_t node_i,
+					  int *cpu_alloc_size,
+					  bool cpu_type,
+					  bitstr_t *req_sock_map)
+{
+	return _allocate_sc(job_ptr, core_map, part_core_map, node_i,
+			    cpu_alloc_size, false, req_sock_map);
+}
+
+/*
+ * common_allocate_sockets - Given the job requirements, determine which sockets
+ *                     from the given node can be allocated (if any) to this
+ *                     job. Returns the number of cpus that can be used by
+ *                     this node AND a core-level bitmap of the selected
+ *                     sockets.
+ *
+ * IN job_ptr       - pointer to job requirements
+ * IN/OUT core_map  - core_bitmap of available cores on this node
+ * IN part_core_map - bitmap of cores already allocated on this partition/node
+ * IN node_i        - index of node to be evaluated
+ * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
+ * IN req_sock_map - OPTIONAL bitmap of required sockets
+ * RET resource availability structure, call common_free_avail_res() to free
+ */
+extern avail_res_t *common_allocate_sockets(struct job_record *job_ptr,
+					    bitstr_t *core_map,
+					    bitstr_t *part_core_map,
+					    const uint32_t node_i,
+					    int *cpu_alloc_size,
+					    bitstr_t *req_sock_map)
+{
+	return _allocate_sc(job_ptr, core_map, part_core_map, node_i,
+			    cpu_alloc_size, true, req_sock_map);
+}
+
+/*
+ * common_job_test - Given a specification of scheduling requirements,
+ *	identify the nodes which "best" satisfy the request.
+ * 	"best" is defined as either a minimal number of consecutive nodes
+ *	or if sharing resources then sharing them with a job of similar size.
+ * IN/OUT job_ptr - pointer to job being considered for initiation,
+ *                  set's start_time when job expected to start
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to
+ *	satisfy the request are cleared, other left set
+ * IN min_nodes - minimum count of nodes
+ * IN req_nodes - requested (or desired) count of nodes
+ * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN mode - SELECT_MODE_RUN_NOW   (0): try to schedule job now
+ *           SELECT_MODE_TEST_ONLY (1): test if job can ever run
+ *           SELECT_MODE_WILL_RUN  (2): determine when and where job can run
+ * IN preemptee_candidates - List of pointers to jobs which can be preempted.
+ * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
+ *		jobs to be preempted to initiate the pending job. Not set
+ *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
+ * IN exc_cores - Cores to be excluded for use (in advanced reservation)
+ * RET zero on success, EINVAL otherwise
+ * globals (passed via select_p_node_init):
+ *	node_record_count - count of nodes configured
+ *	node_record_table_ptr - pointer to global node table
+ * NOTE: the job information that is considered for scheduling includes:
+ *	req_node_bitmap: bitmap of specific nodes required by the job
+ *	contiguous: allocated nodes must be sequentially located
+ *	num_cpus: minimum number of processors required by the job
+ * NOTE: bitmap must be a superset of req_nodes at the time that
+ *	select_p_job_test is called
+ */
+extern int common_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
+			   uint32_t min_nodes, uint32_t max_nodes,
+			   uint32_t req_nodes, uint16_t mode,
+			   List preemptee_candidates,
+			   List *preemptee_job_list,
+			   bitstr_t **exc_cores)
+{
+	int i, rc = EINVAL;
+	uint16_t job_node_req;
+	char tmp[128];
+
+	if (slurm_get_use_spec_resources() == 0)
+		job_ptr->details->core_spec = NO_VAL16;
+	if ((job_ptr->details->core_spec != NO_VAL16) &&
+	    (job_ptr->details->whole_node != 1)) {
+		info("%s: %s: Setting Exclusive mode for %pJ with CoreSpec=%u",
+		      plugin_type, __func__, job_ptr,
+		      job_ptr->details->core_spec);
+		job_ptr->details->whole_node = 1;
+	}
+
+	if (!job_ptr->details->mc_ptr)
+		job_ptr->details->mc_ptr = _create_default_mc();
+	job_node_req = _get_job_node_req(job_ptr);
+
+	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
+		char *node_mode = "Unknown", *alloc_mode = "Unknown";
+		char *core_list = NULL, *node_list, *sep = "";
+		if (job_node_req == NODE_CR_RESERVED)
+			node_mode = "Exclusive";
+		else if (job_node_req == NODE_CR_AVAILABLE)
+			node_mode = "OverCommit";
+		else if (job_node_req == NODE_CR_ONE_ROW)
+			node_mode = "Normal";
+		if (mode == SELECT_MODE_WILL_RUN)
+			alloc_mode = "Will_Run";
+		else if (mode == SELECT_MODE_TEST_ONLY)
+			alloc_mode = "Test_Only";
+		else if (mode == SELECT_MODE_RUN_NOW)
+			alloc_mode = "Run_Now";
+		info("%s: %s: %pJ node_mode:%s alloc_mode:%s",
+		     plugin_type, __func__, job_ptr, node_mode, alloc_mode);
+		if (exc_cores) {
+			for (i = 0; i < core_array_size; i++) {
+				if (!exc_cores[i])
+					continue;
+				bit_fmt(tmp, sizeof(tmp), exc_cores[i]);
+				xstrfmtcat(core_list, "%snode[%d]:%s", sep, i,
+					   tmp);
+				sep = ",";
+			}
+		} else {
+			core_list = xstrdup("NONE");
+		}
+		node_list = bitmap2node_name(node_bitmap);
+		info("%s: %s: node_list:%s exc_cores:%s", plugin_type, __func__,
+		     node_list, core_list);
+		xfree(node_list);
+		xfree(core_list);
+		info("%s: %s: nodes: min:%u max:%u requested:%u avail:%u",
+		     plugin_type, __func__, min_nodes, max_nodes, req_nodes,
+		     bit_set_count(node_bitmap));
+		_dump_nodes();
+	}
+
+	if (mode == SELECT_MODE_WILL_RUN) {
+		rc = _will_run_test(job_ptr, node_bitmap, min_nodes,
+				    max_nodes,
+				    req_nodes, job_node_req,
+				    preemptee_candidates,
+				    preemptee_job_list,
+				    exc_cores);
+	} else if (mode == SELECT_MODE_TEST_ONLY) {
+		rc = _test_only(job_ptr, node_bitmap, min_nodes,
+				max_nodes, req_nodes, job_node_req);
+	} else if (mode == SELECT_MODE_RUN_NOW) {
+		rc = _run_now(job_ptr, node_bitmap, min_nodes, max_nodes,
+			      req_nodes, job_node_req,
+			      preemptee_candidates,
+			      preemptee_job_list, exc_cores);
+	} else {
+		/* Should never get here */
+		error("%s: %s: Mode %d is invalid",
+		      plugin_type, __func__, mode);
+		return EINVAL;
+	}
+
+	if ((select_debug_flags & DEBUG_FLAG_CPU_BIND) ||
+	    (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
+		if (job_ptr->job_resrcs) {
+			if (rc != SLURM_SUCCESS) {
+				info("%s: %s: error:%s", plugin_type, __func__,
+				     slurm_strerror(rc));
+			}
+			log_job_resources(job_ptr);
+			if (is_cons_tres)
+				gres_plugin_job_state_log(job_ptr->gres_list,
+							  job_ptr->job_id);
+		} else {
+			info("%s: %s: no job_resources info for %pJ rc=%d",
+			     plugin_type, __func__, job_ptr, rc);
+		}
+	}
+
+	return rc;
+}
 
 /* This is Part 1 of a 4-part procedure which can be found in
  * src/slurmctld/read_config.c. The whole story goes like this:
@@ -4362,197 +4552,6 @@ extern int select_p_reconfigure(void)
 	}
 
 	return SLURM_SUCCESS;
-}
-
-/*
- * common_allocate_cores - Given the job requirements, determine which cores
- *                   from the given node can be allocated (if any) to this
- *                   job. Returns the number of cpus that can be used by
- *                   this node AND a bitmap of the selected cores.
- *
- * IN job_ptr       - pointer to job requirements
- * IN/OUT core_map  - core_bitmap of available cores on this node
- * IN part_core_map - bitmap of cores already allocated on this partition/node
- * IN node_i        - index of node to be evaluated
- * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
- * IN cpu_type      - if true, allocate CPUs rather than cores
- * IN req_sock_map - OPTIONAL bitmap of required sockets
- * RET resource availability structure, call common_free_avail_res() to free
- */
-extern avail_res_t *common_allocate_cores(struct job_record *job_ptr,
-					  bitstr_t *core_map,
-					  bitstr_t *part_core_map,
-					  const uint32_t node_i,
-					  int *cpu_alloc_size,
-					  bool cpu_type,
-					  bitstr_t *req_sock_map)
-{
-	return _allocate_sc(job_ptr, core_map, part_core_map, node_i,
-			    cpu_alloc_size, false, req_sock_map);
-}
-
-/*
- * common_allocate_sockets - Given the job requirements, determine which sockets
- *                     from the given node can be allocated (if any) to this
- *                     job. Returns the number of cpus that can be used by
- *                     this node AND a core-level bitmap of the selected
- *                     sockets.
- *
- * IN job_ptr       - pointer to job requirements
- * IN/OUT core_map  - core_bitmap of available cores on this node
- * IN part_core_map - bitmap of cores already allocated on this partition/node
- * IN node_i        - index of node to be evaluated
- * IN/OUT cpu_alloc_size - minimum allocation size, in CPUs
- * IN req_sock_map - OPTIONAL bitmap of required sockets
- * RET resource availability structure, call common_free_avail_res() to free
- */
-extern avail_res_t *common_allocate_sockets(struct job_record *job_ptr,
-					    bitstr_t *core_map,
-					    bitstr_t *part_core_map,
-					    const uint32_t node_i,
-					    int *cpu_alloc_size,
-					    bitstr_t *req_sock_map)
-{
-	return _allocate_sc(job_ptr, core_map, part_core_map, node_i,
-			    cpu_alloc_size, true, req_sock_map);
-}
-
-/*
- * common_job_test - Given a specification of scheduling requirements,
- *	identify the nodes which "best" satisfy the request.
- * 	"best" is defined as either a minimal number of consecutive nodes
- *	or if sharing resources then sharing them with a job of similar size.
- * IN/OUT job_ptr - pointer to job being considered for initiation,
- *                  set's start_time when job expected to start
- * IN/OUT bitmap - usable nodes are set on input, nodes not required to
- *	satisfy the request are cleared, other left set
- * IN min_nodes - minimum count of nodes
- * IN req_nodes - requested (or desired) count of nodes
- * IN max_nodes - maximum count of nodes (0==don't care)
- * IN mode - SELECT_MODE_RUN_NOW   (0): try to schedule job now
- *           SELECT_MODE_TEST_ONLY (1): test if job can ever run
- *           SELECT_MODE_WILL_RUN  (2): determine when and where job can run
- * IN preemptee_candidates - List of pointers to jobs which can be preempted.
- * IN/OUT preemptee_job_list - Pointer to list of job pointers. These are the
- *		jobs to be preempted to initiate the pending job. Not set
- *		if mode=SELECT_MODE_TEST_ONLY or input pointer is NULL.
- * IN exc_cores - Cores to be excluded for use (in advanced reservation)
- * RET zero on success, EINVAL otherwise
- * globals (passed via select_p_node_init):
- *	node_record_count - count of nodes configured
- *	node_record_table_ptr - pointer to global node table
- * NOTE: the job information that is considered for scheduling includes:
- *	req_node_bitmap: bitmap of specific nodes required by the job
- *	contiguous: allocated nodes must be sequentially located
- *	num_cpus: minimum number of processors required by the job
- * NOTE: bitmap must be a superset of req_nodes at the time that
- *	select_p_job_test is called
- */
-extern int common_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
-			   uint32_t min_nodes, uint32_t max_nodes,
-			   uint32_t req_nodes, uint16_t mode,
-			   List preemptee_candidates,
-			   List *preemptee_job_list,
-			   bitstr_t **exc_cores)
-{
-	int i, rc = EINVAL;
-	uint16_t job_node_req;
-	char tmp[128];
-
-	if (slurm_get_use_spec_resources() == 0)
-		job_ptr->details->core_spec = NO_VAL16;
-	if ((job_ptr->details->core_spec != NO_VAL16) &&
-	    (job_ptr->details->whole_node != 1)) {
-		info("%s: %s: Setting Exclusive mode for %pJ with CoreSpec=%u",
-		      plugin_type, __func__, job_ptr,
-		      job_ptr->details->core_spec);
-		job_ptr->details->whole_node = 1;
-	}
-
-	if (!job_ptr->details->mc_ptr)
-		job_ptr->details->mc_ptr = _create_default_mc();
-	job_node_req = _get_job_node_req(job_ptr);
-
-	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
-		char *node_mode = "Unknown", *alloc_mode = "Unknown";
-		char *core_list = NULL, *node_list, *sep = "";
-		if (job_node_req == NODE_CR_RESERVED)
-			node_mode = "Exclusive";
-		else if (job_node_req == NODE_CR_AVAILABLE)
-			node_mode = "OverCommit";
-		else if (job_node_req == NODE_CR_ONE_ROW)
-			node_mode = "Normal";
-		if (mode == SELECT_MODE_WILL_RUN)
-			alloc_mode = "Will_Run";
-		else if (mode == SELECT_MODE_TEST_ONLY)
-			alloc_mode = "Test_Only";
-		else if (mode == SELECT_MODE_RUN_NOW)
-			alloc_mode = "Run_Now";
-		info("%s: %s: %pJ node_mode:%s alloc_mode:%s",
-		     plugin_type, __func__, job_ptr, node_mode, alloc_mode);
-		if (exc_cores) {
-			for (i = 0; i < core_array_size; i++) {
-				if (!exc_cores[i])
-					continue;
-				bit_fmt(tmp, sizeof(tmp), exc_cores[i]);
-				xstrfmtcat(core_list, "%snode[%d]:%s", sep, i,
-					   tmp);
-				sep = ",";
-			}
-		} else {
-			core_list = xstrdup("NONE");
-		}
-		node_list = bitmap2node_name(node_bitmap);
-		info("%s: %s: node_list:%s exc_cores:%s", plugin_type, __func__,
-		     node_list, core_list);
-		xfree(node_list);
-		xfree(core_list);
-		info("%s: %s: nodes: min:%u max:%u requested:%u avail:%u",
-		     plugin_type, __func__, min_nodes, max_nodes, req_nodes,
-		     bit_set_count(node_bitmap));
-		_dump_nodes();
-	}
-
-	if (mode == SELECT_MODE_WILL_RUN) {
-		rc = _will_run_test(job_ptr, node_bitmap, min_nodes,
-				    max_nodes,
-				    req_nodes, job_node_req,
-				    preemptee_candidates,
-				    preemptee_job_list,
-				    exc_cores);
-	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		rc = _test_only(job_ptr, node_bitmap, min_nodes,
-				max_nodes, req_nodes, job_node_req);
-	} else if (mode == SELECT_MODE_RUN_NOW) {
-		rc = _run_now(job_ptr, node_bitmap, min_nodes, max_nodes,
-			      req_nodes, job_node_req,
-			      preemptee_candidates,
-			      preemptee_job_list, exc_cores);
-	} else {
-		/* Should never get here */
-		error("%s: %s: Mode %d is invalid",
-		      plugin_type, __func__, mode);
-		return EINVAL;
-	}
-
-	if ((select_debug_flags & DEBUG_FLAG_CPU_BIND) ||
-	    (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)) {
-		if (job_ptr->job_resrcs) {
-			if (rc != SLURM_SUCCESS) {
-				info("%s: %s: error:%s", plugin_type, __func__,
-				     slurm_strerror(rc));
-			}
-			log_job_resources(job_ptr);
-			if (is_cons_tres)
-				gres_plugin_job_state_log(job_ptr->gres_list,
-							  job_ptr->job_id);
-		} else {
-			info("%s: %s: no job_resources info for %pJ rc=%d",
-			     plugin_type, __func__, job_ptr, rc);
-		}
-	}
-
-	return rc;
 }
 
 extern int select_p_update_node_config(int index)
