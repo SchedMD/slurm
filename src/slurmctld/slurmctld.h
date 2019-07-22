@@ -600,7 +600,7 @@ typedef struct job_array_struct {
 	uint32_t task_cnt;		/* count of remaining task IDs */
 	bitstr_t *task_id_bitmap;	/* bitmap of remaining task IDs */
 	char *task_id_str;		/* string describing remaining task IDs,
-					 * needs to be recalcuated if NULL */
+					 * needs to be recalculated if NULL */
 	uint32_t array_flags;		/* Flags to control behavior (FUTURE) */
 	uint32_t max_run_tasks;		/* Maximum number of running tasks */
 	uint32_t tot_run_tasks;		/* Current running task count */

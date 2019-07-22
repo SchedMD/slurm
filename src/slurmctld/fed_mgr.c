@@ -3095,7 +3095,7 @@ extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
  * IN msg - contains the original job_desc buffer to send to the siblings.
  * IN alloc_only - true if just an allocation. false if a batch job.
  * IN dest_sibs - bitmap of viable siblings to submit to.
- * RET returns SLURM_SUCCESS if all siblings recieved the job sucessfully or
+ * RET returns SLURM_SUCCESS if all siblings received the job sucessfully or
  * 	SLURM_ERROR if any siblings failed to receive the job. If a sibling
  * 	fails, then the sucessful siblings will be updated with the correct
  * 	sibling bitmap.

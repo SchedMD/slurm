@@ -52,7 +52,7 @@ of this particular plugin:
 Constrain the job cgroup kernel memory to this amount of the allocated memory,
 specified in bytes. The \fBAllowedKmemSpace\fR must be between the upper and
 lower memory limits, specified by \fBMaxKmemPercent\fR and \fBMinKmemSpace\fR,
-respectivley. If \fBAllowedKmemSpace\fR goes beyond the upper or lower limit,
+respectively. If \fBAllowedKmemSpace\fR goes beyond the upper or lower limit,
 it will be reset to that upper or lower limit, whichever has been exceeded.
 
 .TP
@@ -67,7 +67,7 @@ events (including oom-kill) which will be logged to kernel log ringbuffer
 Memory (OOM) events as it allows job/step to allocate more memory than
 configured to the nodes.  Reducing configured node available memory to avoid
 system OOM events is suggested.  Setting AllowedRAMSpace below 100 will result
-in jobs recieving less memory than allocated and soft memory limit will set to
+in jobs receiving less memory than allocated and soft memory limit will set to
 the same value as the hard limit.
 Also see \fBConstrainRAMSpace\fR.
 The default value is 100.
@@ -116,7 +116,7 @@ which case the job's RAM limit will be set to its swap space limit if
 \fBConstrainSwapSpace\fR is set to "yes".
 Also see \fBAllowedSwapSpace\fR, \fBAllowedRAMSpace\fR and
 \fBConstrainSwapSpace\fR.
-NOTE: When enabled, ConstrainRAMSpace can lead to a noticiable decline in
+NOTE: When enabled, ConstrainRAMSpace can lead to a noticeable decline in
 per-node job throughout. Sites with high-throughput requirements should
 carefully weigh the tradeoff between per-node throughput, versus potential
 problems that can arise from unconstrained memory usage on the node. See

@@ -149,7 +149,7 @@ Then "gres/gpu:tesla" and "gres/gpu:volta" will track jobs that explicitly
 request those GPU types.
 If a job requests GPUs, but does not explicitly specify the GPU type, then
 it's resource allocation will be accounted for as either "gres/gpu:tesla" or
-"gres/gpu:volta", although the accounting may not match the actualy GPU type
+"gres/gpu:volta", although the accounting may not match the actual GPU type
 allocated to the job and the GPUs allocated to the job could be heterogeneous.
 In an environment containing various GPU types, use of a job_submit plugin
 may be desired in order to force jobs to explicitly specify some GPU type.
@@ -4618,7 +4618,7 @@ The default value is 0.
 \fBTRESWeights\fR TRESWeights are used to calculate a value that represents how
 busy a node is. Currently only used in federation configurations. TRESWeights
 are different from TRESBillingWeights \-\- which is used for fairshare
-calcuations.
+calculations.
 
 TRES weights are specified as a comma\-separated list of
 \fI<TRES Type>\fR=\fI<TRES Weight>\fR pairs.

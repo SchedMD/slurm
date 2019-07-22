@@ -26,8 +26,8 @@ Current TRES Types are:
 <p>
   The Billing TRES is calculated from a partition's TRESBillingWeights. Though
   TRES weights on a partition may be defined as doubles, the Billing TRES values
-  for a job are stored as integers. This is not the case when calcuating a job's
-  fairshare where the value is treated as a double.
+  for a job are stored as integers. This is not the case when calculating a
+  job's fairshare where the value is treated as a double.
 </p>
 
 <p>
