@@ -965,7 +965,7 @@ enum ctx_keys {
 						    * priority to pending jobs
 						    * ignoring dependencies or
 						    * holds */
-#define PRIORITY_FLAGS_MAX_TRES 	0x00000002 /* Calcuate billed_tres as
+#define PRIORITY_FLAGS_MAX_TRES 	0x00000002 /* Calculate billed_tres as
 						    * the MAX of TRES on a node
 						    * rather than the sum or
 						    * TRES. */
