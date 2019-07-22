@@ -45,6 +45,7 @@
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_selecttype_info.h"
+#include "src/common/slurm_topology.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/powercapping.h"
@@ -194,6 +195,30 @@ static job_resources_t *_create_job_resources(int node_cnt)
 	job_resrcs_ptr->memory_used = xcalloc(node_cnt, sizeof(uint64_t));
 	job_resrcs_ptr->nhosts = node_cnt;
 	return job_resrcs_ptr;
+}
+
+static int _get_avail_cores_on_node(int node_inx, bitstr_t **exc_bitmap)
+{
+	int exc_cnt = 0, tot_cores;
+
+	xassert(node_inx <= select_node_cnt);
+
+	tot_cores = select_node_record[node_inx].tot_cores;
+
+	if (!exc_bitmap)
+		return tot_cores;
+
+	if (is_cons_tres) {
+		if (exc_bitmap[node_inx])
+			exc_cnt += bit_set_count(exc_bitmap[node_inx]);
+	} else if (*exc_bitmap) {
+		int coff = cr_get_coremap_offset(node_inx);
+		for (int i = 0; i < tot_cores; i++) {
+			if (bit_test(*exc_bitmap, coff + i))
+				exc_cnt++;
+		}
+	}
+	return tot_cores - exc_cnt;
 }
 
 /* helper script for common_sort_part_rows() */
@@ -5509,4 +5534,406 @@ extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
 extern int select_p_update_node_state(struct node_record *node_ptr)
 {
 	return SLURM_SUCCESS;
+}
+
+extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
+				    uint32_t node_cnt,
+				    bitstr_t *avail_node_bitmap,
+				    bitstr_t **core_bitmap)
+{
+	bitstr_t **switches_bitmap;		/* nodes on this switch */
+	bitstr_t ***switches_core_bitmap;	/* cores on this switch */
+	int       *switches_core_cnt;		/* total cores on switch */
+	int       *switches_node_cnt;		/* total nodes on switch */
+	int       *switches_required;		/* set if has required node */
+
+	bitstr_t *avail_nodes_bitmap = NULL;	/* nodes on any switch */
+	bitstr_t *picked_node_bitmap;
+	uint32_t *core_cnt, flags;
+	bitstr_t **exc_core_bitmap = NULL, **picked_core_bitmap;
+	int32_t prev_rem_cores, rem_cores = 0, rem_cores_save, rem_nodes;
+	uint32_t cores_per_node = 1;	/* Minimum cores per node to consider */
+	bool aggr_core_cnt = false, clear_core, sufficient;
+	int c, i, i_first, i_last, j, k, n;
+	int best_fit_inx, best_fit_nodes;
+	int best_fit_location = 0, best_fit_sufficient;
+
+	xassert(avail_node_bitmap);
+	xassert(resv_desc_ptr);
+
+	/*
+	 * FIXME: core_bitmap is a full-system core bitmap to be
+	 * replaced with a set of per-node bitmaps in a future release
+	 * of Slurm.
+	 */
+	if (core_bitmap)
+		exc_core_bitmap = core_bitmap_to_array(*core_bitmap);
+
+	core_cnt = resv_desc_ptr->core_cnt;
+	flags = resv_desc_ptr->flags;
+
+	if (core_cnt) {
+		/*
+		 * Run this now to set up exc_core_bitmap if needed for
+		 * pick_first_cores and sequential_pick.
+		 */
+		if (!exc_core_bitmap)
+			exc_core_bitmap = build_core_array();
+		(*cons_common_callbacks.spec_core_filter)(
+			avail_node_bitmap, exc_core_bitmap);
+	}
+
+	if ((flags & RESERVE_FLAG_FIRST_CORES) && core_cnt) {
+		/* Reservation request with "Flags=first_cores CoreCnt=#" */
+		avail_nodes_bitmap = (*cons_common_callbacks.pick_first_cores)(
+			avail_node_bitmap,
+			node_cnt, core_cnt,
+			&exc_core_bitmap);
+		if (avail_nodes_bitmap && core_bitmap && exc_core_bitmap) {
+			FREE_NULL_BITMAP(*core_bitmap);
+			*core_bitmap = core_array_to_bitmap(exc_core_bitmap);
+		}
+		free_core_array(&exc_core_bitmap);
+		return avail_nodes_bitmap;
+	}
+
+	/* When reservation includes a nodelist we use _sequential_pick code */
+	if (!switch_record_cnt || !switch_record_table || !node_cnt)  {
+		/* Reservation request with "Nodes=* [CoreCnt=#]" */
+		avail_nodes_bitmap = (*cons_common_callbacks.sequential_pick)(
+			avail_node_bitmap,
+			node_cnt, core_cnt,
+			&exc_core_bitmap);
+		if (avail_nodes_bitmap && core_bitmap && exc_core_bitmap) {
+			FREE_NULL_BITMAP(*core_bitmap);
+			*core_bitmap = core_array_to_bitmap(exc_core_bitmap);
+		}
+		free_core_array(&exc_core_bitmap);
+		return avail_nodes_bitmap;
+	}
+
+	/* Use topology state information */
+	if (bit_set_count(avail_node_bitmap) < node_cnt) {
+		free_core_array(&exc_core_bitmap);
+		return NULL;
+	}
+
+	rem_nodes = node_cnt;
+	if (core_cnt && core_cnt[1]) {	/* Array of core counts */
+		for (j = 0; core_cnt[j]; j++) {
+			rem_cores += core_cnt[j];
+			if (j == 0)
+				cores_per_node = core_cnt[j];
+			else if (cores_per_node > core_cnt[j])
+				cores_per_node = core_cnt[j];
+		}
+	} else if (core_cnt) {		/* Aggregate core count */
+		rem_cores = core_cnt[0];
+		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
+		aggr_core_cnt = true;
+	} else if (cr_node_num_cores)
+		cores_per_node = cr_node_num_cores[0];
+	else
+		cores_per_node = 1;
+	rem_cores_save = rem_cores;
+
+	/*
+	 * Construct a set of switch array entries,
+	 * use the same indexes as switch_record_table in slurmctld
+	 */
+	switches_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t *));
+	switches_core_bitmap = xcalloc(switch_record_cnt, sizeof(bitstr_t **));
+	switches_core_cnt = xcalloc(switch_record_cnt, sizeof(int));
+	switches_node_cnt = xcalloc(switch_record_cnt, sizeof(int));
+	switches_required = xcalloc(switch_record_cnt, sizeof(int));
+
+	for (i = 0; i < switch_record_cnt; i++) {
+		switches_bitmap[i] =
+			bit_copy(switch_record_table[i].node_bitmap);
+		bit_and(switches_bitmap[i], avail_node_bitmap);
+		switches_node_cnt[i] = bit_set_count(switches_bitmap[i]);
+		switches_core_bitmap[i] = common_mark_avail_cores(
+			switches_bitmap[i], NO_VAL16);
+		if (exc_core_bitmap) {
+			core_array_and_not(switches_core_bitmap[i],
+					   exc_core_bitmap);
+		}
+		switches_core_cnt[i] =
+			count_core_array_set(switches_core_bitmap[i]);
+		debug2("switch:%d nodes:%d cores:%d",
+		       i, switches_node_cnt[i], switches_core_cnt[i]);
+	}
+
+	/* Remove nodes with fewer available cores than needed */
+	if (core_cnt) {
+		n = 0;
+
+		for (j = 0; j < switch_record_cnt; j++) {
+			i_first = bit_ffs(switches_bitmap[j]);
+			if (i_first >= 0)
+				i_last = bit_fls(switches_bitmap[j]);
+			else
+				i_last = i_first - 1;
+			for (i = i_first; i <= i_last; i++) {
+				if (!bit_test(switches_bitmap[j], i))
+					continue;
+
+				c = _get_avail_cores_on_node(
+					i, exc_core_bitmap);
+
+				clear_core = false;
+				if (aggr_core_cnt && (c < cores_per_node)) {
+					clear_core = true;
+				} else if (aggr_core_cnt) {
+					;
+				} else if (c < core_cnt[n]) {
+					clear_core = true;
+				} else if (core_cnt[n]) {
+					n++;
+				}
+				if (!clear_core)
+					continue;
+				for (k = 0; k < switch_record_cnt; k++) {
+					if (!switches_bitmap[k] ||
+					    !bit_test(switches_bitmap[k], i))
+						continue;
+					bit_clear(switches_bitmap[k], i);
+					switches_node_cnt[k]--;
+					switches_core_cnt[k] -= c;
+				}
+			}
+		}
+	}
+
+#if SELECT_DEBUG
+	/* Don't compile this, it slows things down too much */
+	for (i = 0; i < switch_record_cnt; i++) {
+		char *node_names = NULL;
+		if (switches_node_cnt[i])
+			node_names = bitmap2node_name(switches_bitmap[i]);
+		info("switch=%s nodes=%u:%s cores:%d required:%u speed=%u",
+		     switch_record_table[i].name,
+		     switches_node_cnt[i], node_names,
+		     switches_core_cnt[i], switches_required[i],
+		     switch_record_table[i].link_speed);
+		xfree(node_names);
+	}
+#endif
+
+	/* Determine lowest level switch satisfying request with best fit */
+	best_fit_inx = -1;
+	for (j = 0; j < switch_record_cnt; j++) {
+		if ((switches_node_cnt[j] < rem_nodes) ||
+		    (core_cnt && (switches_core_cnt[j] < rem_cores)))
+			continue;
+		if ((best_fit_inx == -1) ||
+		    (switch_record_table[j].level <
+		     switch_record_table[best_fit_inx].level) ||
+		    ((switch_record_table[j].level ==
+		      switch_record_table[best_fit_inx].level) &&
+		     (switches_node_cnt[j] < switches_node_cnt[best_fit_inx])))
+			/* We should use core count by switch here as well */
+			best_fit_inx = j;
+	}
+	if (best_fit_inx == -1) {
+		debug("%s: could not find resources for reservation", __func__);
+		goto fini;
+	}
+
+	/* Identify usable leafs (within higher switch having best fit) */
+	for (j = 0; j < switch_record_cnt; j++) {
+		if ((switch_record_table[j].level != 0) ||
+		    (!bit_super_set(switches_bitmap[j],
+				    switches_bitmap[best_fit_inx]))) {
+			switches_node_cnt[j] = 0;
+		}
+	}
+
+	/* Select resources from these leafs on a best-fit basis */
+	avail_nodes_bitmap = bit_alloc(node_record_count);
+	while (rem_nodes > 0) {
+		best_fit_nodes = best_fit_sufficient = 0;
+		for (j = 0; j < switch_record_cnt; j++) {
+			if (switches_node_cnt[j] == 0)
+				continue;
+			if (core_cnt) {
+				sufficient =
+					(switches_node_cnt[j] >= rem_nodes) &&
+					(switches_core_cnt[j] >= rem_cores);
+			} else
+				sufficient = switches_node_cnt[j] >= rem_nodes;
+			/*
+			 * If first possibility OR
+			 * first set large enough for request OR
+			 * tightest fit (less resource waste) OR
+			 * nothing yet large enough, but this is biggest
+			 */
+			if ((best_fit_nodes == 0) ||
+			    (sufficient && (best_fit_sufficient == 0)) ||
+			    (sufficient &&
+			     (switches_node_cnt[j] < best_fit_nodes)) ||
+			    ((sufficient == 0) &&
+			     (switches_node_cnt[j] > best_fit_nodes))) {
+				best_fit_nodes = switches_node_cnt[j];
+				best_fit_location = j;
+				best_fit_sufficient = sufficient;
+			}
+		}
+		if (best_fit_nodes == 0)
+			break;
+		/* Use select nodes from this leaf */
+		i_first = bit_ffs(switches_bitmap[best_fit_location]);
+		if (i_first >= 0)
+			i_last = bit_fls(switches_bitmap[best_fit_location]);
+		else
+			i_last = i_first - 1;
+
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(switches_bitmap[best_fit_location], i))
+				continue;
+			bit_clear(switches_bitmap[best_fit_location], i);
+			switches_node_cnt[best_fit_location]--;
+
+			if (bit_test(avail_nodes_bitmap, i)) {
+				/*
+				 * node on multiple leaf switches
+				 * and already selected
+				 */
+				continue;
+			}
+
+			c = _get_avail_cores_on_node(i, exc_core_bitmap);
+
+			if (c < cores_per_node)
+				continue;
+			debug2("Using node %d with %d cores available", i, c);
+			bit_set(avail_nodes_bitmap, i);
+			rem_cores -= c;
+			if (--rem_nodes <= 0)
+				break;
+		}
+		switches_node_cnt[best_fit_location] = 0;
+	}
+
+	if ((rem_nodes > 0) || (rem_cores > 0))	/* insufficient resources */
+		FREE_NULL_BITMAP(avail_nodes_bitmap);
+
+fini:	for (i = 0; i < switch_record_cnt; i++) {
+		FREE_NULL_BITMAP(switches_bitmap[i]);
+		free_core_array(&switches_core_bitmap[i]);
+	}
+	xfree(switches_bitmap);
+	xfree(switches_core_bitmap);
+	xfree(switches_core_cnt);
+	xfree(switches_node_cnt);
+	xfree(switches_required);
+
+	if (avail_nodes_bitmap && core_cnt) {
+		/* Reservation is using partial nodes */
+		picked_node_bitmap = bit_alloc(bit_size(avail_node_bitmap));
+		picked_core_bitmap = build_core_array();
+
+		rem_cores = rem_cores_save;
+		n = 0;
+		prev_rem_cores = -1;
+
+		while (rem_cores) {
+			int avail_cores_in_node, inx, coff;
+			bitstr_t *use_exc_bitmap = NULL,
+				*use_picked_bitmap = NULL;
+
+			inx = bit_ffs(avail_nodes_bitmap);
+			if ((inx < 0) && aggr_core_cnt && (rem_cores > 0) &&
+			    (rem_cores != prev_rem_cores)) {
+				/*
+				 * Make another pass over nodes to reach
+				 * requested aggregate core count
+				 */
+				bit_or(avail_nodes_bitmap, picked_node_bitmap);
+				inx = bit_ffs(avail_nodes_bitmap);
+				prev_rem_cores = rem_cores;
+				cores_per_node = 1;
+			}
+			if (inx < 0)
+				break;
+
+			debug2("Using node inx:%d cores_per_node:%d rem_cores:%u",
+			       inx, cores_per_node, rem_cores);
+
+			/* Clear this node from the initial available bitmap */
+			bit_clear(avail_nodes_bitmap, inx);
+
+			if (select_node_record[inx].tot_cores < cores_per_node)
+				continue;
+			avail_cores_in_node =
+				_get_avail_cores_on_node(inx, exc_core_bitmap);
+
+			debug2("Node inx:%d has %d available cores", inx,
+			       avail_cores_in_node);
+			if (avail_cores_in_node < cores_per_node)
+				continue;
+
+			xassert(exc_core_bitmap);
+
+			avail_cores_in_node = 0;
+
+			if (!is_cons_tres) {
+				use_exc_bitmap = *exc_core_bitmap;
+				coff = cr_get_coremap_offset(inx);
+				if (!*picked_core_bitmap)
+					*picked_core_bitmap = bit_alloc(
+						bit_size(use_exc_bitmap));
+				use_picked_bitmap = *picked_core_bitmap;
+			} else {
+				use_exc_bitmap = exc_core_bitmap[inx];
+				coff = 0;
+				if (!picked_core_bitmap[inx]) {
+					picked_core_bitmap[inx] = bit_alloc(
+						select_node_record[inx].
+						tot_cores);
+				}
+				use_picked_bitmap = picked_core_bitmap[inx];
+			}
+
+			for (int i = 0;
+			     i < select_node_record[inx].tot_cores;
+			     i++) {
+				int set = coff + i;
+				if (!bit_test(use_exc_bitmap, set) &&
+				    !bit_test(use_picked_bitmap, set)) {
+					bit_set(use_picked_bitmap, set);
+					rem_cores--;
+					avail_cores_in_node++;
+				}
+				if (rem_cores == 0)
+					break;
+				if (aggr_core_cnt &&
+				    (avail_cores_in_node >= cores_per_node))
+					break;
+				if (!aggr_core_cnt &&
+				    (avail_cores_in_node >= core_cnt[n]))
+					break;
+			}
+
+			/* Add this node to the final node bitmap */
+			if (avail_cores_in_node)
+				bit_set(picked_node_bitmap, inx);
+			n++;
+		}
+		FREE_NULL_BITMAP(avail_nodes_bitmap);
+		free_core_array(&exc_core_bitmap);
+
+		if (rem_cores) {
+			info("reservation request can not be satisfied");
+			FREE_NULL_BITMAP(picked_node_bitmap);
+			picked_node_bitmap = NULL;
+		} else {
+			*core_bitmap = core_array_to_bitmap(picked_core_bitmap);
+		}
+		free_core_array(&picked_core_bitmap);
+		return picked_node_bitmap;
+	}
+	free_core_array(&exc_core_bitmap);
+
+	return avail_nodes_bitmap;
 }

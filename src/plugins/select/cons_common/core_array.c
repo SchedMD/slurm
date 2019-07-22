@@ -203,8 +203,6 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 	char tmp[128];
 #endif
 
-	xassert(is_cons_tres);
-
 	if (!core_array)
 		return core_bitmap;
 
@@ -217,6 +215,12 @@ extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
 		      i, tmp);
 	}
 #endif
+
+	if (!is_cons_tres) {
+		core_bitmap = *core_array;
+		*core_array = NULL;
+		return core_bitmap;
+	}
 
 	core_bitmap =
 		bit_alloc(select_node_record[select_node_cnt-1].cume_cores);
@@ -247,8 +251,6 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 	int node_inx, last_node_inx = 0, core_offset;
 	char tmp[128];
 
-	xassert(is_cons_tres);
-
 	if (!core_bitmap)
 		return core_array;
 
@@ -260,8 +262,16 @@ extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 	i_first = bit_ffs(core_bitmap);
 	if (i_first == -1)
 		return core_array;
-	i_last = bit_fls(core_bitmap);
+
 	core_array = build_core_array();
+
+	if (!is_cons_tres) {
+		*core_array = bit_copy(core_bitmap);
+		return core_array;
+	}
+
+	i_last = bit_fls(core_bitmap);
+
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(core_bitmap, i))
 			continue;

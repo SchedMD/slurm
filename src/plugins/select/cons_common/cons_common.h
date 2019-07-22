@@ -135,6 +135,15 @@ typedef struct {
 	bitstr_t **(*mark_avail_cores)(bitstr_t *node_map, uint16_t core_spec);
 	int (*dist_tasks_compute_c_b)(struct job_record *job_ptr,
 				      uint32_t *gres_task_limit);
+	bitstr_t *(*pick_first_cores)(bitstr_t *avail_node_bitmap,
+				      uint32_t node_cnt,
+				      uint32_t *core_cnt,
+				      bitstr_t ***exc_cores);
+	bitstr_t *(*sequential_pick)(bitstr_t *avail_node_bitmap,
+				     uint32_t node_cnt,
+				     uint32_t *core_cnt,
+				     bitstr_t ***exc_cores);
+	void (*spec_core_filter)(bitstr_t *node_bitmap, bitstr_t **avail_cores);
 } cons_common_callbacks_t;
 
 /* Global common variables */
