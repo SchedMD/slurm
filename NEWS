@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Add support for additional job submit environment variables:
     SALLOC_MEM_PER_CPU, SALLOC_MEM_PER_NODE, SBATCH_MEM_PER_CPU and
     SBATCH_MEM_PER_NODE.
+ -- Add 'Agent thread count' stat to sdiag.
 
 * Changes in Slurm 19.05.2
 ==========================
