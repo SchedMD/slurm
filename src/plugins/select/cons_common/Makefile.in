@@ -148,7 +148,8 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libcons_common_la_LIBADD =
 am_libcons_common_la_OBJECTS = cons_common.lo core_array.lo \
-	dist_tasks.lo
+	dist_tasks.lo job_resources.lo job_test.lo node_data.lo \
+	part_data.lo
 libcons_common_la_OBJECTS = $(am_libcons_common_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -170,7 +171,9 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cons_common.Plo \
-	./$(DEPDIR)/core_array.Plo ./$(DEPDIR)/dist_tasks.Plo
+	./$(DEPDIR)/core_array.Plo ./$(DEPDIR)/dist_tasks.Plo \
+	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/job_test.Plo \
+	./$(DEPDIR)/node_data.Plo ./$(DEPDIR)/part_data.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -471,7 +474,11 @@ noinst_LTLIBRARIES = libcons_common.la
 libcons_common_la_SOURCES = \
 	cons_common.c cons_common.h \
 	core_array.c core_array.h \
-	dist_tasks.c dist_tasks.h
+	dist_tasks.c dist_tasks.h \
+	job_resources.c job_resources.h \
+	job_test.c job_test.h \
+	node_data.c node_data.h \
+	part_data.c part_data.h
 
 all: all-am
 
@@ -530,6 +537,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cons_common.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core_array.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_test.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_data.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/part_data.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -693,6 +704,10 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/cons_common.Plo
 	-rm -f ./$(DEPDIR)/core_array.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
+	-rm -f ./$(DEPDIR)/job_resources.Plo
+	-rm -f ./$(DEPDIR)/job_test.Plo
+	-rm -f ./$(DEPDIR)/node_data.Plo
+	-rm -f ./$(DEPDIR)/part_data.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -741,6 +756,10 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/cons_common.Plo
 	-rm -f ./$(DEPDIR)/core_array.Plo
 	-rm -f ./$(DEPDIR)/dist_tasks.Plo
+	-rm -f ./$(DEPDIR)/job_resources.Plo
+	-rm -f ./$(DEPDIR)/job_test.Plo
+	-rm -f ./$(DEPDIR)/node_data.Plo
+	-rm -f ./$(DEPDIR)/part_data.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
