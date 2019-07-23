@@ -147,21 +147,21 @@ extern void parse_command_line(int argc, char **argv)
 
 static void _usage( void )
 {
-	printf("\nUsage: sdiag [-ar] \n");
+	printf("Usage: sdiag [-M cluster] [-aritT] \n");
 }
 
 static void _help( void )
 {
 	printf ("\
 Usage: sdiag [OPTIONS]\n\
-  -a              all statistics\n\
-  -r              reset statistics\n\
+  -a, --all           all statistics\n\
+  -r, --reset         reset statistics\n\
+  -M, --cluster       direct the request to a specific cluster\n\
+  -i, --sort-by-id    sort RPCs by id\n\
+  -t, --sort-by-time  sort RPCs by total run time\n\
+  -T, --sort-by-time2 sort RPCs by average run time\n\
+  -V, --version       display current version number\n\
 \nHelp options:\n\
-  --cluster       direct the request to a specific cluster\n\
   --help          show this help message\n\
-  --sort-by-id    sort RPCs by id\n\
-  --sort-by-time  sort RPCs by total run time\n\
-  --sort-by-time2 sort RPCs by average run time\n\
-  --usage         display brief usage message\n\
-  --version       display current version number\n");
+  --usage         display brief usage message\n");
 }
