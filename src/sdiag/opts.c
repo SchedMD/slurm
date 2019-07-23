@@ -93,6 +93,11 @@ extern void parse_command_line(int argc, char **argv)
 	while ((opt_char = getopt_long(argc, argv, "ahiM:rtTV", long_options,
 				       &option_index)) != -1) {
 		switch (opt_char) {
+			case (int)'?':
+				fprintf(stderr,
+					"Try \"sdiag --help\" for more information\n");
+				exit(1);
+				break;
 			case (int)'a':
 				params.mode = STAT_COMMAND_GET;
 				break;
