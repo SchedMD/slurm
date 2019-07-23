@@ -2030,7 +2030,7 @@ static int   _modify_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2081,7 +2081,7 @@ static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2128,7 +2128,7 @@ static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2176,7 +2176,7 @@ static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2222,7 +2222,7 @@ static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2277,7 +2277,7 @@ static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_QOS_PREEMPTION_LOOP) {
 			comment = "QOS Preemption loop detected";
@@ -2327,7 +2327,7 @@ static int   _modify_res(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2433,7 +2433,7 @@ is_same_user:
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2478,7 +2478,7 @@ static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2841,7 +2841,7 @@ static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2893,7 +2893,7 @@ static int   _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2944,7 +2944,7 @@ static int   _remove_assocs(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -2991,7 +2991,7 @@ static int   _remove_clusters(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -3038,7 +3038,7 @@ static int _remove_federations(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -3084,7 +3084,7 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -3130,7 +3130,7 @@ static int _remove_res(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -3174,7 +3174,7 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
@@ -3219,7 +3219,7 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Something was wrong with your query";
 			rc = SLURM_ERROR;
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			comment = "Request didn't affect anything";
+			comment = "Request didn't affect anything or your user doesn't have privilege to perform this action";
 			rc = SLURM_SUCCESS;
 		} else if (errno == ESLURM_DB_CONNECTION) {
 			comment = slurm_strerror(errno);
