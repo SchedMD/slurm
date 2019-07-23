@@ -88,18 +88,15 @@ const uint16_t nodeinfo_magic = 0x8a5d;
 /* Global variables */
 bitstr_t **spec_core_res	= NULL;
 
-/* Global functions */
-extern select_nodeinfo_t *select_p_select_nodeinfo_alloc(void);
-extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo);
+/* Clear from avail_cores all specialized cores */
+static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **avail_cores)
+{
+	if (!spec_core_res)
+		return;	/* No specialized cores */
 
-/* Local functions */
-static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
-				   uint32_t node_cnt, uint32_t *core_cnt,
-				   bitstr_t ***exc_cores);
-static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
-				  uint32_t node_cnt, uint32_t *core_cnt,
-				  bitstr_t ***exc_cores);
-static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **avail_cores);
+	xassert(avail_cores);
+	core_array_and_not(avail_cores, spec_core_res);
+}
 
 /*
  * Select resources for advanced reservation
@@ -408,16 +405,6 @@ static bitstr_t *_sequential_pick(bitstr_t *avail_node_bitmap,
 	}
 
 	return picked_node_bitmap;
-}
-
-/* Clear from avail_cores all specialized cores */
-static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **avail_cores)
-{
-	if (!spec_core_res)
-		return;	/* No specialized cores */
-
-	xassert(avail_cores);
-	core_array_and_not(avail_cores, spec_core_res);
 }
 
 /*
