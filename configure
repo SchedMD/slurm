@@ -667,6 +667,8 @@ SLURMCTLD_PORT_COUNT
 SLURMDBD_PORT
 SLURMD_PORT
 SLURMCTLD_PORT
+WITH_SWITCH_CRAY_ARIES_FALSE
+WITH_SWITCH_CRAY_ARIES_TRUE
 DATAWARP_LDFLAGS
 DATAWARP_CPPFLAGS
 CRAY_TASK_LDFLAGS
@@ -21795,8 +21797,8 @@ fi
 
 
 
-  case "$host" in
-  *-darwin*)
+  case ${host_os} in
+  darwin* | freebsd* | netbsd* )
     with_cgroup=no
     ;;
   *)
@@ -21811,6 +21813,11 @@ else
   WITH_CGROUP_FALSE=
 fi
 
+  if test x$with_cgroup = xyes; then
+
+$as_echo "#define WITH_CGROUP 1" >>confdefs.h
+
+  fi
 
 
 #
@@ -23052,6 +23059,23 @@ $as_echo "#define HAVE_DATAWARP 1" >>confdefs.h
   fi
 
 
+
+
+  case ${host_os} in
+  darwin* | freebsd* | netbsd* )
+    with_switch_cray_aries=no
+    ;;
+  *)
+    with_switch_cray_aries=yes
+    ;;
+  esac
+   if test x$with_switch_cray_aries = xyes; then
+  WITH_SWITCH_CRAY_ARIES_TRUE=
+  WITH_SWITCH_CRAY_ARIES_FALSE='#'
+else
+  WITH_SWITCH_CRAY_ARIES_TRUE='#'
+  WITH_SWITCH_CRAY_ARIES_FALSE=
+fi
 
 
 
@@ -24858,6 +24882,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_CRAY_NETWORK_TRUE}" && test -z "${HAVE_CRAY_NETWORK_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_CRAY_NETWORK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_SWITCH_CRAY_ARIES_TRUE}" && test -z "${WITH_SWITCH_CRAY_ARIES_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_SWITCH_CRAY_ARIES\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_NETLOC_TRUE}" && test -z "${HAVE_NETLOC_FALSE}"; then

@@ -294,7 +294,9 @@
  * The header file used only for #define values. */
 
 /* strlcpy.[ch] functions */
+#ifndef HAVE_STRLCPY
 #define	strlcpy			slurm_strlcpy
+#endif
 
 /* switch.[ch] functions
  * None exported today.

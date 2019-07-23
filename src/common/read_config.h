@@ -129,7 +129,11 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_MSG_TIMEOUT         10
 #define DEFAULT_POWER_PLUGIN        ""
 #define DEFAULT_CHECKPOINT_TYPE     "checkpoint/none"
-#define DEFAULT_PROCTRACK_TYPE      "proctrack/cgroup"
+#if defined WITH_CGROUP
+#  define DEFAULT_PROCTRACK_TYPE      "proctrack/cgroup"
+#else
+#  define DEFAULT_PROCTRACK_TYPE      "proctrack/pgid"
+#endif
 #define DEFAULT_PREEMPT_TYPE        "preempt/none"
 #define DEFAULT_PRIORITY_DECAY      604800 /* 7 days */
 #define DEFAULT_PRIORITY_CALC_PERIOD 300 /* in seconds */

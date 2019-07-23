@@ -36,6 +36,7 @@
 
 #include <signal.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
@@ -48,7 +49,7 @@ static void _track_script_rec_destroy(void *arg)
 {
 	track_script_rec_t *r = (track_script_rec_t *)arg;
 	debug3("destroying job %u script thread, tid %lu",
-	       r->job_id, r->tid);
+	       r->job_id, (unsigned long) r->tid);
 	slurm_cond_destroy(&r->timer_cond);
 	slurm_mutex_destroy(&r->timer_mutex);
 	xfree(r);
@@ -213,7 +214,8 @@ extern bool track_script_broadcast(track_script_rec_t *track_script_rec,
 extern void track_script_remove(pthread_t tid)
 {
 	if (!list_delete_all(track_script_thd_list, _match_tid, &tid))
-		error("%s: thread %lu not found", __func__, tid);
+		error("%s: thread %lu not found",
+		      __func__, (unsigned long) tid);
 	else
 		debug2("%s: thread running script from job removed",
 		       __func__);
