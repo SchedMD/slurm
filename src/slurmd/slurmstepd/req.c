@@ -1503,6 +1503,7 @@ static int _handle_getgr(int fd, stepd_step_rec_t *job, pid_t remote_pid)
 				break;
 			if (!xstrcmp(name, job->gr_names[offset]))
 				break;
+			offset++;
 		}
 		if (offset < job->ngids)
 			found = 1;

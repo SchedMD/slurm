@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition in route/topology plugin.
  -- In munge decode set the alloc_node field to the text representation of an
     IP address if the reverse lookup fails.
+ -- Fix infinite loop in slurmstepd handling for nss_slurm REQUEST_GETGR RPC.
 
 * Changes in Slurm 19.05.1-2
 ============================
