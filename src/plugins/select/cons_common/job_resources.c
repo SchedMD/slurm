@@ -190,10 +190,10 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 }
 
 static void _log_tres_state(struct node_use_record *node_usage,
-			    struct part_res_record *part_record_ptr)
+			    part_res_record_t *part_record_ptr)
 {
 #if _DEBUG
-	struct part_res_record *p_ptr;
+	part_res_record_t *p_ptr;
 	part_row_data_t *row;
 	char *core_str;
 	int i;
@@ -267,7 +267,7 @@ extern int job_res_fit_in_row(job_resources_t *job_resrcs_ptr,
 
 /*
  * allocate resources to the given job
- * - add 'struct job_resources' resources to 'struct part_res_record'
+ * - add 'struct job_resources' resources to 'part_res_record_t'
  * - add job's memory requirements to 'struct node_res_record'
  *
  * if action = 0 then add cores, memory + GRES (starting new job)
@@ -280,7 +280,7 @@ extern int job_res_add_job(struct job_record *job_ptr, int action)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
 	struct node_record *node_ptr;
-	struct part_res_record *p_ptr;
+	part_res_record_t *p_ptr;
 	List node_gres_list;
 	int i, i_first, i_last, n;
 	bitstr_t *core_bitmap;
@@ -415,7 +415,7 @@ extern int job_res_add_job(struct job_record *job_ptr, int action)
 
 /*
  * Deallocate resources previously allocated to the given job
- * - subtract 'struct job_resources' resources from 'struct part_res_record'
+ * - subtract 'struct job_resources' resources from 'part_res_record_t'
  * - subtract job's memory requirements from 'struct node_res_record'
  *
  * if action = 0 then subtract cores, memory + GRES (running job was terminated)
@@ -427,7 +427,7 @@ extern int job_res_add_job(struct job_record *job_ptr, int action)
  *
  * See also: job_res_add_job()
  */
-extern int job_res_rm_job(struct part_res_record *part_record_ptr,
+extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			  struct node_use_record *node_usage,
 			  struct job_record *job_ptr, int action,
 			  bool job_fini)
@@ -518,7 +518,7 @@ extern int job_res_rm_job(struct part_res_record *part_record_ptr,
 	/* subtract cores */
 	if (action != 1) {
 		/* reconstruct rows with remaining jobs */
-		struct part_res_record *p_ptr;
+		part_res_record_t *p_ptr;
 
 		if (!job_ptr->part_ptr) {
 			error("%s: %s: removed %pJ does not have a partition assigned",

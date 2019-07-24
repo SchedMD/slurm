@@ -366,7 +366,7 @@ static time_t _guess_job_end(struct job_record * job_ptr, time_t now)
  * the job was submitted to a single-row partition which does not share
  * allocated CPUs with multi-row partitions.
  */
-static int _is_node_busy(struct part_res_record *p_ptr, uint32_t node_i,
+static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 			 int sharing_only, struct part_record *my_part_ptr,
 			 bool qos_preemptor)
 {
@@ -579,7 +579,7 @@ static int _sort_usable_nodes_dec(void *j1, void *j2)
  *  - job_node_req = NODE_CR_RESERVED, then we need idle nodes
  *  - job_node_req = NODE_CR_ONE_ROW, then we need idle or non-sharing nodes
  */
-static int _verify_node_state(struct part_res_record *cr_part_ptr,
+static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			      struct job_record *job_ptr,
 			      bitstr_t *node_bitmap,
 			      uint16_t cr_type,
@@ -775,7 +775,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes,
 		     uint32_t req_nodes, int mode, uint16_t cr_type,
 		     enum node_cr_state job_node_req,
-		     struct part_res_record *cr_part_ptr,
+		     part_res_record_t *cr_part_ptr,
 		     struct node_use_record *node_usage,
 		     bitstr_t **exc_cores, bool prefer_alloc_nodes,
 		     bool qos_preemptor, bool preempt_mode)
@@ -792,7 +792,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	int32_t build_cnt;
 	job_resources_t *job_res;
 	struct job_details *details_ptr = job_ptr->details;
-	struct part_res_record *p_ptr, *jp_ptr;
+	part_res_record_t *p_ptr, *jp_ptr;
 	uint16_t *cpu_count;
 	int i, i_first, i_last;
 	avail_res_t **avail_res_array, **avail_res_array_tmp;
@@ -1734,7 +1734,7 @@ static int _will_run_test(struct job_record *job_ptr,
 			  List *preemptee_job_list,
 			  bitstr_t **exc_core_bitmap)
 {
-	struct part_res_record *future_part;
+	part_res_record_t *future_part;
 	struct node_use_record *future_usage;
 	struct job_record *tmp_job_ptr;
 	List cr_job_list;
@@ -1970,7 +1970,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	bitstr_t *orig_node_map = NULL, *save_node_map;
 	struct job_record *tmp_job_ptr = NULL;
 	ListIterator job_iterator, preemptee_iterator;
-	struct part_res_record *future_part;
+	part_res_record_t *future_part;
 	struct node_use_record *future_usage;
 	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;

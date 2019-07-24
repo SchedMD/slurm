@@ -39,7 +39,7 @@
 
 #include "src/common/xstring.h"
 
-struct part_res_record *select_part_record = NULL;
+part_res_record_t *select_part_record = NULL;
 
 struct sort_support {
 	int jstart;
@@ -64,8 +64,8 @@ static int _compare_support(const void *v1, const void *v2)
 
 static int _sort_part_prio(void *x, void *y)
 {
-	struct part_res_record *part1 = *(struct part_res_record **) x;
-	struct part_res_record *part2 = *(struct part_res_record **) y;
+	part_res_record_t *part1 = *(part_res_record_t **) x;
+	part_res_record_t *part2 = *(part_res_record_t **) y;
 
 	if (part1->part_ptr->priority_tier > part2->part_ptr->priority_tier)
 		return -1;
@@ -116,7 +116,7 @@ extern void part_data_add_job_to_row(struct job_resources *job,
  * IN p_ptr - the partition that has jobs to be optimized
  * IN job_ptr - pointer to single job removed, pass NULL to completely rebuild
  */
-extern void part_data_build_row_bitmaps(struct part_res_record *p_ptr,
+extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 					struct job_record *job_ptr)
 {
 	uint32_t i, j, num_jobs;
@@ -313,7 +313,7 @@ extern void part_data_create_array(void)
 	List part_rec_list = NULL;
 	ListIterator part_iterator;
 	struct part_record *p_ptr;
-	struct part_res_record *this_ptr, *last_ptr = NULL;
+	part_res_record_t *this_ptr, *last_ptr = NULL;
 	int num_parts;
 
 	part_data_destroy_res(select_part_record);
@@ -327,7 +327,7 @@ extern void part_data_create_array(void)
 	part_rec_list = list_create(NULL);
 	part_iterator = list_iterator_create(part_list);
 	while ((p_ptr = list_next(part_iterator))) {
-		this_ptr = xmalloc(sizeof(struct part_res_record));
+		this_ptr = xmalloc(sizeof(part_res_record_t));
 		this_ptr->part_ptr = p_ptr;
 		this_ptr->num_rows = p_ptr->max_share;
 		if (this_ptr->num_rows & SHARED_FORCE)
@@ -358,10 +358,10 @@ extern void part_data_create_array(void)
 }
 
 /* Delete the given list of partition data */
-extern void part_data_destroy_res(struct part_res_record *this_ptr)
+extern void part_data_destroy_res(part_res_record_t *this_ptr)
 {
 	while (this_ptr) {
-		struct part_res_record *tmp = this_ptr;
+		part_res_record_t *tmp = this_ptr;
 		this_ptr = this_ptr->next;
 		tmp->part_ptr = NULL;
 
@@ -387,7 +387,7 @@ extern void part_data_destroy_row(part_row_data_t *row, uint16_t num_rows)
 }
 
 /* Log contents of partition structure */
-extern void part_data_dump_res(struct part_res_record *p_ptr)
+extern void part_data_dump_res(part_res_record_t *p_ptr)
 {
 	uint32_t n, r;
 	struct node_record *node_ptr;
@@ -426,15 +426,15 @@ extern void part_data_dump_res(struct part_res_record *p_ptr)
 }
 
 /* Create a duplicate part_res_record list */
-extern struct part_res_record *part_data_dup_res(
-	struct part_res_record *orig_ptr)
+extern part_res_record_t *part_data_dup_res(
+	part_res_record_t *orig_ptr)
 {
-	struct part_res_record *new_part_ptr, *new_ptr;
+	part_res_record_t *new_part_ptr, *new_ptr;
 
 	if (orig_ptr == NULL)
 		return NULL;
 
-	new_part_ptr = xmalloc(sizeof(struct part_res_record));
+	new_part_ptr = xmalloc(sizeof(part_res_record_t));
 	new_ptr = new_part_ptr;
 
 	while (orig_ptr) {
@@ -443,7 +443,7 @@ extern struct part_res_record *part_data_dup_res(
 		new_ptr->row = part_data_dup_row(orig_ptr->row,
 						 orig_ptr->num_rows);
 		if (orig_ptr->next) {
-			new_ptr->next = xmalloc(sizeof(struct part_res_record));
+			new_ptr->next = xmalloc(sizeof(part_res_record_t));
 			new_ptr = new_ptr->next;
 		}
 		orig_ptr = orig_ptr->next;
@@ -452,7 +452,7 @@ extern struct part_res_record *part_data_dup_res(
 }
 
 /* sort the rows of a partition from "most allocated" to "least allocated" */
-extern void part_data_sort_res(struct part_res_record *p_ptr)
+extern void part_data_sort_res(part_res_record_t *p_ptr)
 {
 	uint32_t i, j, b, n, r;
 	uint32_t *a;

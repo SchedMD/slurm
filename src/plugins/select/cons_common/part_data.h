@@ -52,14 +52,14 @@ typedef struct {
 } part_row_data_t;
 
 /* partition core allocation bitmap arrays (1 bitmap per node) */
-struct part_res_record {
+typedef struct part_res_record {
 	struct part_res_record *next; /* Ptr to next part_res_record */
 	uint16_t num_rows;	      /* Number of elements in "row" array */
 	struct part_record *part_ptr; /* controller part record pointer */
 	part_row_data_t *row;    /* array of rows containing jobs */
-};
+} part_res_record_t;
 
-extern struct part_res_record *select_part_record;
+extern part_res_record_t *select_part_record;
 
 /*
  * Add job resource use to the partition data structure
@@ -76,27 +76,27 @@ extern void part_data_add_job_to_row(struct job_resources *job,
  * IN p_ptr - the partition that has jobs to be optimized
  * IN job_ptr - pointer to single job removed, pass NULL to completely rebuild
  */
-extern void part_data_build_row_bitmaps(struct part_res_record *p_ptr,
+extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 					struct job_record *job_ptr);
 
 /* (re)create the global select_part_record array */
 extern void part_data_create_array(void);
 
 /* Delete the given list of partition data */
-extern void part_data_destroy_res(struct part_res_record *this_ptr);
+extern void part_data_destroy_res(part_res_record_t *this_ptr);
 
 /* Delete the given partition row data */
 extern void part_data_destroy_row(part_row_data_t *row, uint16_t num_rows);
 
 /* Log contents of partition structure */
-extern void part_data_dump_res(struct part_res_record *p_ptr);
+extern void part_data_dump_res(part_res_record_t *p_ptr);
 
 /* Create a duplicate part_res_record list */
-extern struct part_res_record *part_data_dup_res(
-	struct part_res_record *orig_ptr);
+extern part_res_record_t *part_data_dup_res(
+	part_res_record_t *orig_ptr);
 
 /* sort the rows of a partition from "most allocated" to "least allocated" */
-extern void part_data_sort_res(struct part_res_record *p_ptr);
+extern void part_data_sort_res(part_res_record_t *p_ptr);
 
 /* Create a duplicate part_row_data struct */
 extern part_row_data_t *part_data_dup_row(part_row_data_t *orig_row,

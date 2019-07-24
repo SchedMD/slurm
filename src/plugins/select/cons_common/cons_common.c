@@ -1401,10 +1401,10 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
 {
-	struct part_res_record *part_record_ptr = select_part_record;
+	part_res_record_t *part_record_ptr = select_part_record;
 	struct node_use_record *node_usage = select_node_usage;
 	struct job_resources *job = job_ptr->job_resrcs;
-	struct part_res_record *p_ptr;
+	part_res_record_t *p_ptr;
 	int i, i_first, i_last, node_inx, n;
 	List gres_list;
 	bool old_job = false;
@@ -1734,7 +1734,7 @@ unpack_error:
 extern int select_p_select_nodeinfo_set_all(void)
 {
 	static time_t last_set_all = 0;
-	struct part_res_record *p_ptr;
+	part_res_record_t *p_ptr;
 	struct node_record *node_ptr = NULL;
 	int i, n;
 	uint32_t alloc_cpus, alloc_cores, node_cores, node_cpus, node_threads;
