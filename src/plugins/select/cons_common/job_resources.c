@@ -268,7 +268,7 @@ extern int job_res_fit_in_row(job_resources_t *job_resrcs_ptr,
 /*
  * allocate resources to the given job
  * - add 'struct job_resources' resources to 'part_res_record_t'
- * - add job's memory requirements to 'struct node_res_record'
+ * - add job's memory requirements to 'node_res_record_t'
  *
  * if action = 0 then add cores, memory + GRES (starting new job)
  * if action = 1 then add memory + GRES (adding suspended job at restart)
@@ -416,7 +416,7 @@ extern int job_res_add_job(struct job_record *job_ptr, int action)
 /*
  * Deallocate resources previously allocated to the given job
  * - subtract 'struct job_resources' resources from 'part_res_record_t'
- * - subtract job's memory requirements from 'struct node_res_record'
+ * - subtract job's memory requirements from 'node_res_record_t'
  *
  * if action = 0 then subtract cores, memory + GRES (running job was terminated)
  * if action = 1 then subtract memory + GRES (suspended job was terminated)

@@ -797,7 +797,7 @@ extern bitstr_t **common_mark_avail_cores(
 	struct node_record *node_ptr;
 	bitstr_t *core_map = NULL;
 	uint16_t use_spec_cores = slurm_get_use_spec_resources();
-	struct node_res_record *node_res_ptr = NULL;
+	node_res_record_t *node_res_ptr = NULL;
 	uint32_t coff;
 
 	if (is_cons_tres) {
@@ -1092,7 +1092,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		core_array_size = select_node_cnt;
 
 	select_node_record = xcalloc(select_node_cnt,
-				     sizeof(struct node_res_record));
+				     sizeof(node_res_record_t));
 	select_node_usage  = xcalloc(select_node_cnt,
 				     sizeof(struct node_use_record));
 

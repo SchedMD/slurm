@@ -39,7 +39,7 @@
 #define _CONS_COMMON_NODE_DATA_H
 
 /* per-node resource data */
-struct node_res_record {
+typedef struct {
 	uint16_t boards; 	      /* count of boards configured */
 	uint16_t cores;		      /* count of cores per socket configured */
 	uint16_t cpus;		      /* count of logical processors
@@ -57,7 +57,7 @@ struct node_res_record {
 				       * count or could be the core count if
 				       * the node's cpu count matches the
 				       * core count */
-};
+} node_res_record_t;
 
 /* per-node resource usage record */
 struct node_use_record {
@@ -70,12 +70,12 @@ struct node_use_record {
 	uint16_t node_state;	      /* see node_cr_state comments */
 };
 
-extern struct node_res_record *select_node_record;
+extern node_res_record_t *select_node_record;
 extern struct node_use_record *select_node_usage;
 
 /* Delete the given select_node_record and select_node_usage arrays */
 extern void node_data_destroy(struct node_use_record *node_usage,
-			      struct node_res_record *node_data);
+			      node_res_record_t *node_data);
 
 extern void node_data_dump(void);
 

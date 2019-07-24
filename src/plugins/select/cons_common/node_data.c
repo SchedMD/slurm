@@ -37,12 +37,12 @@
 
 #include "cons_common.h"
 
-struct node_res_record *select_node_record = NULL;
+node_res_record_t *select_node_record = NULL;
 struct node_use_record *select_node_usage  = NULL;
 
 /* Delete the given select_node_record and select_node_usage arrays */
 extern void node_data_destroy(struct node_use_record *node_usage,
-			      struct node_res_record *node_data)
+			      node_res_record_t *node_data)
 {
 	int i;
 
