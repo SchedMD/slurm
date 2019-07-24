@@ -41,18 +41,18 @@
 
 part_res_record_t *select_part_record = NULL;
 
-struct sort_support {
+typedef struct {
 	int jstart;
 	struct job_resources *tmpjobs;
-};
+} sort_support_t;
 
 /* Sort jobs by start time, then size (CPU count) */
 static int _compare_support(const void *v1, const void *v2)
 {
-	struct sort_support *s1, *s2;
+	sort_support_t *s1, *s2;
 
-	s1 = (struct sort_support *) v1;
-	s2 = (struct sort_support *) v2;
+	s1 = (sort_support_t *) v1;
+	s2 = (sort_support_t *) v2;
 
 	if ((s1->jstart > s2->jstart) ||
 	    ((s1->jstart == s2->jstart) &&
@@ -122,7 +122,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 	uint32_t i, j, num_jobs;
 	int x;
 	part_row_data_t *this_row, *orig_row;
-	struct sort_support *ss;
+	sort_support_t *ss;
 
 	if (!p_ptr->row)
 		return;
@@ -171,7 +171,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 		return;
 
 	/* create a master job list and clear out ALL row data */
-	ss = xcalloc(num_jobs, sizeof(struct sort_support));
+	ss = xcalloc(num_jobs, sizeof(sort_support_t));
 	x = 0;
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
@@ -195,7 +195,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 	 *     - if job allocations stay "in blocks", then this should work OK
 	 *     - may still get scenarios where jobs should switch rows
 	 */
-	qsort(ss, num_jobs, sizeof(struct sort_support), _compare_support);
+	qsort(ss, num_jobs, sizeof(sort_support_t), _compare_support);
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		for (i = 0; i < num_jobs; i++) {
 			char cstr[64], nstr[64];
