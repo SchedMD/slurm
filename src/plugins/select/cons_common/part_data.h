@@ -39,7 +39,7 @@
 #define _CONS_COMMON_PART_DATA_H
 
 /* a partition's per-row core allocation bitmap arrays (1 bitmap per node) */
-struct part_row_data {
+typedef struct {
 	struct job_resources **job_list;/* List of jobs in this row */
 	uint32_t job_list_size;		/* Size of job_list array */
 	uint32_t num_jobs;		/* Number of occupied entries in
@@ -49,14 +49,14 @@ struct part_row_data {
 					 * In cons_res only the first ptr is
 					 * used.
 					 */
-};
+} part_row_data_t;
 
 /* partition core allocation bitmap arrays (1 bitmap per node) */
 struct part_res_record {
 	struct part_res_record *next; /* Ptr to next part_res_record */
 	uint16_t num_rows;	      /* Number of elements in "row" array */
 	struct part_record *part_ptr; /* controller part record pointer */
-	struct part_row_data *row;    /* array of rows containing jobs */
+	part_row_data_t *row;    /* array of rows containing jobs */
 };
 
 extern struct part_res_record *select_part_record;
@@ -65,7 +65,7 @@ extern struct part_res_record *select_part_record;
  * Add job resource use to the partition data structure
  */
 extern void part_data_add_job_to_row(struct job_resources *job,
-				     struct part_row_data *r_ptr);
+				     part_row_data_t *r_ptr);
 
 /*
  * part_data_build_row_bitmaps: A job has been removed from the given partition,
@@ -86,7 +86,7 @@ extern void part_data_create_array(void);
 extern void part_data_destroy_res(struct part_res_record *this_ptr);
 
 /* Delete the given partition row data */
-extern void part_data_destroy_row(struct part_row_data *row, uint16_t num_rows);
+extern void part_data_destroy_row(part_row_data_t *row, uint16_t num_rows);
 
 /* Log contents of partition structure */
 extern void part_data_dump_res(struct part_res_record *p_ptr);
@@ -99,7 +99,7 @@ extern struct part_res_record *part_data_dup_res(
 extern void part_data_sort_res(struct part_res_record *p_ptr);
 
 /* Create a duplicate part_row_data struct */
-extern struct part_row_data *part_data_dup_row(struct part_row_data *orig_row,
+extern part_row_data_t *part_data_dup_row(part_row_data_t *orig_row,
 					       uint16_t num_rows);
 
 

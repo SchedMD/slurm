@@ -194,7 +194,7 @@ static void _log_tres_state(struct node_use_record *node_usage,
 {
 #if _DEBUG
 	struct part_res_record *p_ptr;
-	struct part_row_data *row;
+	part_row_data_t *row;
 	char *core_str;
 	int i;
 
@@ -255,7 +255,7 @@ extern void job_res_rm_cores(job_resources_t *job_resrcs_ptr,
  * NOTE: Patterned after job_fits_into_cores() in src/common/job_resources.c
  */
 extern int job_res_fit_in_row(job_resources_t *job_resrcs_ptr,
-			      struct part_row_data *r_ptr)
+			      part_row_data_t *r_ptr)
 {
 	if ((r_ptr->num_jobs == 0) || !r_ptr->row_bitmap)
 		return 1;
@@ -371,7 +371,7 @@ extern int job_res_add_job(struct job_record *job_ptr, int action)
 		}
 		if (!p_ptr->row) {
 			p_ptr->row = xcalloc(p_ptr->num_rows,
-					     sizeof(struct part_row_data));
+					     sizeof(part_row_data_t));
 		}
 
 		/* find a row to add this job */

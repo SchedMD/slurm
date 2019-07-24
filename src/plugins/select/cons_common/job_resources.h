@@ -72,7 +72,7 @@ extern void job_res_rm_cores(job_resources_t *job_resrcs_ptr,
  * NOTE: Patterned after job_fits_into_cores() in src/common/job_resources.c
  */
 extern int job_res_fit_in_row(job_resources_t *job_resrcs_ptr,
-			      struct part_row_data *r_ptr);
+			      part_row_data_t *r_ptr);
 
 
 /*

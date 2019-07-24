@@ -75,20 +75,20 @@ static int _sort_part_prio(void *x, void *y)
 }
 
 /* helper script for part_data_sort_rescommon_sort_part_rows() */
-static void _swap_rows(struct part_row_data *a, struct part_row_data *b)
+static void _swap_rows(part_row_data_t *a, part_row_data_t *b)
 {
-	struct part_row_data tmprow;
+	part_row_data_t tmprow;
 
-	memcpy(&tmprow, a, sizeof(struct part_row_data));
-	memcpy(a, b, sizeof(struct part_row_data));
-	memcpy(b, &tmprow, sizeof(struct part_row_data));
+	memcpy(&tmprow, a, sizeof(part_row_data_t));
+	memcpy(a, b, sizeof(part_row_data_t));
+	memcpy(b, &tmprow, sizeof(part_row_data_t));
 }
 
 /*
  * Add job resource use to the partition data structure
  */
 extern void part_data_add_job_to_row(struct job_resources *job,
-				     struct part_row_data *r_ptr)
+				     part_row_data_t *r_ptr)
 {
 	/* add the job to the row_bitmap */
 	if (r_ptr->row_bitmap && (r_ptr->num_jobs == 0)) {
@@ -121,7 +121,7 @@ extern void part_data_build_row_bitmaps(struct part_res_record *p_ptr,
 {
 	uint32_t i, j, num_jobs;
 	int x;
-	struct part_row_data *this_row, *orig_row;
+	part_row_data_t *this_row, *orig_row;
 	struct sort_support *ss;
 
 	if (!p_ptr->row)
@@ -374,7 +374,7 @@ extern void part_data_destroy_res(struct part_res_record *this_ptr)
 }
 
 /* Delete the given partition row data */
-extern void part_data_destroy_row(struct part_row_data *row, uint16_t num_rows)
+extern void part_data_destroy_row(part_row_data_t *row, uint16_t num_rows)
 {
 	uint32_t r;
 
@@ -487,16 +487,16 @@ extern void part_data_sort_res(struct part_res_record *p_ptr)
 }
 
 /* Create a duplicate part_row_data struct */
-extern struct part_row_data *part_data_dup_row(struct part_row_data *orig_row,
+extern part_row_data_t *part_data_dup_row(part_row_data_t *orig_row,
 					       uint16_t num_rows)
 {
-	struct part_row_data *new_row;
+	part_row_data_t *new_row;
 	int i, n;
 
 	if (num_rows == 0 || !orig_row)
 		return NULL;
 
-	new_row = xcalloc(num_rows, sizeof(struct part_row_data));
+	new_row = xcalloc(num_rows, sizeof(part_row_data_t));
 	for (i = 0; i < num_rows; i++) {
 		new_row[i].num_jobs = orig_row[i].num_jobs;
 		new_row[i].job_list_size = orig_row[i].job_list_size;
