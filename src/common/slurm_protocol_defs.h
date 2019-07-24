@@ -882,7 +882,7 @@ typedef struct launch_tasks_request_msg {
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	dynamic_plugin_data_t *select_jobinfo; /* select context, opaque data */
-	char *alias_list;	/* node name/address/hostnamne aliases */
+	char *alias_list;	/* node name/address/hostname aliases */
 	char *partition;	/* partition that job is running in */
 
 	/* only filled out if step is SLURM_EXTERN_CONT */
@@ -1009,7 +1009,7 @@ typedef struct reattach_tasks_response_msg {
 } reattach_tasks_response_msg_t;
 
 typedef struct prolog_launch_msg {
-	char *alias_list;		/* node name/address/hostnamne aliases */
+	char *alias_list;		/* node name/address/hostname aliases */
 	slurm_cred_t *cred;
 	uint32_t gid;
 	List job_gres_info;		/* Used to set Prolog env vars */
@@ -1038,7 +1038,7 @@ typedef struct prolog_launch_msg {
 typedef struct batch_job_launch_msg {
 	char *account;          /* account under which the job is running */
 	char *acctg_freq;	/* accounting polling intervals	*/
-	char *alias_list;	/* node name/address/hostnamne aliases */
+	char *alias_list;	/* node name/address/hostname aliases */
 	uint32_t array_job_id;	/* job array master job ID */
 	uint32_t array_task_id;	/* job array ID or NO_VAL */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
