@@ -189,7 +189,7 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 	return 1;
 }
 
-static void _log_tres_state(struct node_use_record *node_usage,
+static void _log_tres_state(node_use_record_t *node_usage,
 			    part_res_record_t *part_record_ptr)
 {
 #if _DEBUG
@@ -428,7 +428,7 @@ extern int job_res_add_job(struct job_record *job_ptr, int action)
  * See also: job_res_add_job()
  */
 extern int job_res_rm_job(part_res_record_t *part_record_ptr,
-			  struct node_use_record *node_usage,
+			  node_use_record_t *node_usage,
 			  struct job_record *job_ptr, int action,
 			  bool job_fini)
 {

@@ -103,7 +103,7 @@ extern int job_res_add_job(struct job_record *job_ptr, int action);
  * See also: job_res_add_job()
  */
 extern int job_res_rm_job(part_res_record_t *part_record_ptr,
-			  struct node_use_record *node_usage,
+			  node_use_record_t *node_usage,
 			  struct job_record *job_ptr, int action,
 			  bool job_fini);
 

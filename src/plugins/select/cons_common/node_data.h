@@ -60,7 +60,7 @@ typedef struct {
 } node_res_record_t;
 
 /* per-node resource usage record */
-struct node_use_record {
+typedef struct {
 	uint64_t alloc_memory;	      /* real memory reserved by already
 				       * scheduled jobs */
 	List gres_list;		      /* list of gres_node_state_t records as
@@ -68,18 +68,17 @@ struct node_use_record {
 				       * Local data used only in state copy
 				       * to emulate future node state */
 	uint16_t node_state;	      /* see node_cr_state comments */
-};
+} node_use_record_t;
 
 extern node_res_record_t *select_node_record;
-extern struct node_use_record *select_node_usage;
+extern node_use_record_t *select_node_usage;
 
 /* Delete the given select_node_record and select_node_usage arrays */
-extern void node_data_destroy(struct node_use_record *node_usage,
+extern void node_data_destroy(node_use_record_t *node_usage,
 			      node_res_record_t *node_data);
 
 extern void node_data_dump(void);
 
-extern struct node_use_record *node_data_dup_use(
-	struct node_use_record *orig_ptr);
+extern node_use_record_t *node_data_dup_use(node_use_record_t *orig_ptr);
 
 #endif /*_CONS_COMMON_NODE_DATA_H */

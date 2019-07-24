@@ -3239,7 +3239,7 @@ extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
 					bitstr_t **core_map,
 					const uint32_t node_i,
 					uint32_t s_p_n,
-					struct node_use_record *node_usage,
+					node_use_record_t *node_usage,
 					uint16_t cr_type, bool test_only,
 					bitstr_t **part_core_map)
 {

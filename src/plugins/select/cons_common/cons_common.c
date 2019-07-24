@@ -1094,7 +1094,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_node_record = xcalloc(select_node_cnt,
 				     sizeof(node_res_record_t));
 	select_node_usage  = xcalloc(select_node_cnt,
-				     sizeof(struct node_use_record));
+				     sizeof(node_use_record_t));
 
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_record[i].node_ptr = &node_ptr[i];
@@ -1402,7 +1402,7 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 				struct node_record *node_ptr)
 {
 	part_res_record_t *part_record_ptr = select_part_record;
-	struct node_use_record *node_usage = select_node_usage;
+	node_use_record_t *node_usage = select_node_usage;
 	struct job_resources *job = job_ptr->job_resrcs;
 	part_res_record_t *p_ptr;
 	int i, i_first, i_last, node_inx, n;

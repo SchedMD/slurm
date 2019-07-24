@@ -296,7 +296,7 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
  */
 static avail_res_t **_get_res_avail(struct job_record *job_ptr,
 				    bitstr_t *node_map, bitstr_t **core_map,
-				    struct node_use_record *node_usage,
+				    node_use_record_t *node_usage,
 				    uint16_t cr_type, bool test_only,
 				    bitstr_t **part_core_map)
 {
@@ -441,7 +441,7 @@ static avail_res_t **_select_nodes(struct job_record *job_ptr,
 				   uint32_t min_nodes, uint32_t max_nodes,
 				   uint32_t req_nodes,
 				   bitstr_t *node_bitmap, bitstr_t **avail_core,
-				   struct node_use_record *node_usage,
+				   node_use_record_t *node_usage,
 				   uint16_t cr_type, bool test_only,
 				   bitstr_t **part_core_map,
 				   bool prefer_alloc_nodes,
@@ -583,7 +583,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			      struct job_record *job_ptr,
 			      bitstr_t *node_bitmap,
 			      uint16_t cr_type,
-			      struct node_use_record *node_usage,
+			      node_use_record_t *node_usage,
 			      enum node_cr_state job_node_req,
 			      bitstr_t **exc_cores, bool qos_preemptor)
 {
@@ -776,7 +776,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		     uint32_t req_nodes, int mode, uint16_t cr_type,
 		     enum node_cr_state job_node_req,
 		     part_res_record_t *cr_part_ptr,
-		     struct node_use_record *node_usage,
+		     node_use_record_t *node_usage,
 		     bitstr_t **exc_cores, bool prefer_alloc_nodes,
 		     bool qos_preemptor, bool preempt_mode)
 {
@@ -1735,7 +1735,7 @@ static int _will_run_test(struct job_record *job_ptr,
 			  bitstr_t **exc_core_bitmap)
 {
 	part_res_record_t *future_part;
-	struct node_use_record *future_usage;
+	node_use_record_t *future_usage;
 	struct job_record *tmp_job_ptr;
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
@@ -1971,7 +1971,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	struct job_record *tmp_job_ptr = NULL;
 	ListIterator job_iterator, preemptee_iterator;
 	part_res_record_t *future_part;
-	struct node_use_record *future_usage;
+	node_use_record_t *future_usage;
 	bool remove_some_jobs = false;
 	uint16_t pass_count = 0;
 	uint16_t mode = NO_VAL16;

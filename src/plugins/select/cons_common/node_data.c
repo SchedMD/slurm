@@ -38,10 +38,10 @@
 #include "cons_common.h"
 
 node_res_record_t *select_node_record = NULL;
-struct node_use_record *select_node_usage  = NULL;
+node_use_record_t *select_node_usage  = NULL;
 
 /* Delete the given select_node_record and select_node_usage arrays */
-extern void node_data_destroy(struct node_use_record *node_usage,
+extern void node_data_destroy(node_use_record_t *node_usage,
 			      node_res_record_t *node_data)
 {
 	int i;
@@ -91,17 +91,17 @@ extern void node_data_dump(void)
 }
 
 /* Create a duplicate node_use_record list */
-extern struct node_use_record *node_data_dup_use(
-	struct node_use_record *orig_ptr)
+extern node_use_record_t *node_data_dup_use(
+	node_use_record_t *orig_ptr)
 {
-	struct node_use_record *new_use_ptr, *new_ptr;
+	node_use_record_t *new_use_ptr, *new_ptr;
 	List gres_list;
 	uint32_t i;
 
 	if (orig_ptr == NULL)
 		return NULL;
 
-	new_use_ptr = xcalloc(select_node_cnt, sizeof(struct node_use_record));
+	new_use_ptr = xcalloc(select_node_cnt, sizeof(node_use_record_t));
 	new_ptr = new_use_ptr;
 
 	for (i = 0; i < select_node_cnt; i++) {
