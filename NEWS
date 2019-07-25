@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- In munge decode set the alloc_node field to the text representation of an
     IP address if the reverse lookup fails.
  -- Fix infinite loop in slurmstepd handling for nss_slurm REQUEST_GETGR RPC.
+ -- Fix slurmstepd early assertion fail which prevented batch job launch or
+    tasks launch on non-Linux systems.
 
 * Changes in Slurm 19.05.1-2
 ============================

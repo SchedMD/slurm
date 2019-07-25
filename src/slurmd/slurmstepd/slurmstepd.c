@@ -104,6 +104,7 @@ extern char  ** environ;
 int
 main (int argc, char **argv)
 {
+	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	slurm_addr_t *cli;
 	slurm_addr_t *self;
 	slurm_msg_t *msg;
@@ -119,6 +120,9 @@ main (int argc, char **argv)
 	conf->argv = &argv;
 	conf->argc = &argc;
 	init_setproctitle(argc, argv);
+
+	log_init(argv[0], lopts, LOG_DAEMON, NULL);
+
 	if (slurm_select_init(1) != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
@@ -482,12 +486,9 @@ _init_from_slurmd(int sock, char **argv,
 	slurm_msg_t *msg = NULL;
 	uint16_t port;
 	char buf[16];
-	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	uint32_t jobid = 0, stepid = 0;
 	List tmp_list = NULL;
 	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
-
-	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
 	/* receive conf from slurmd */
 	if (!(conf = read_slurmd_conf_lite(sock)))
