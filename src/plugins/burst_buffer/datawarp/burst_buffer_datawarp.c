@@ -1574,8 +1574,7 @@ static void *_start_stage_in(void *x)
 	bb_job_t *bb_job;
 	bool get_real_size = false;
 	DEF_TIMERS;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(stage_args->job_id, 0, pthread_self());
+	track_script_rec_add(stage_args->job_id, 0, pthread_self());
 
 	setup_argv   = stage_args->args1;
 	data_in_argv = stage_args->args2;
@@ -1904,8 +1903,7 @@ static void *_start_stage_out(void *x)
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
 	DEF_TIMERS
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(stage_args->job_id, 0, pthread_self());
+	track_script_rec_add(stage_args->job_id, 0, pthread_self());
 
 	data_out_argv = stage_args->args1;
 	post_run_argv = stage_args->args2;
@@ -2165,9 +2163,7 @@ static void *_start_teardown(void *x)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
 	bool hurry;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(teardown_args->job_id, 0,
-				      pthread_self());
+	track_script_rec_add(teardown_args->job_id, 0, pthread_self());
 
 	teardown_argv = teardown_args->args1;
 
@@ -4185,8 +4181,7 @@ static void *_start_pre_run(void *x)
 	uint32_t timeout;
 	bool hold_job = false, nodes_ready = false;
 	DEF_TIMERS;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(pre_run_args->job_id, 0, pthread_self());
+	track_script_rec_add(pre_run_args->job_id, 0, pthread_self());
 
 	/* Wait for node boot to complete */
 	while (!nodes_ready) {
@@ -4770,8 +4765,7 @@ static void *_create_persistent(void *x)
 	int i, status = 0;
 	uint32_t timeout;
 	DEF_TIMERS;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(create_args->job_id, 0, pthread_self());
+	track_script_rec_add(create_args->job_id, 0, pthread_self());
 
 	script_argv = xcalloc(20, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -4940,8 +4934,7 @@ static void *_destroy_persistent(void *x)
 	int status = 0;
 	uint32_t timeout;
 	DEF_TIMERS;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(destroy_args->job_id, 0, pthread_self());
+	track_script_rec_add(destroy_args->job_id, 0, pthread_self());
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_alloc = bb_find_name_rec(destroy_args->name, destroy_args->user_id,

@@ -38,6 +38,8 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
@@ -47,6 +49,14 @@ static List track_script_thd_list = NULL;
 static pthread_mutex_t flush_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
 static int flush_cnt = 0;
+
+typedef struct {
+	uint32_t job_id;
+	pid_t cpid;
+	pthread_t tid;
+	pthread_mutex_t timer_mutex;
+	pthread_cond_t timer_cond;
+} track_script_rec_t;
 
 typedef struct {
 	pthread_t tid;
@@ -225,8 +235,7 @@ extern void track_script_fini(void)
 	FREE_NULL_LIST(track_script_thd_list);
 }
 
-extern track_script_rec_t *track_script_rec_add(
-	uint32_t job_id, pid_t cpid, pthread_t tid)
+extern void track_script_rec_add(uint32_t job_id, pid_t cpid, pthread_t tid)
 {
 	track_script_rec_t *track_script_rec =
 		xmalloc(sizeof(track_script_rec_t));
@@ -237,8 +246,6 @@ extern track_script_rec_t *track_script_rec_add(
 	slurm_mutex_init(&track_script_rec->timer_mutex);
 	slurm_cond_init(&track_script_rec->timer_cond, NULL);
 	list_append(track_script_thd_list, track_script_rec);
-
-	return track_script_rec;
 }
 
 static int _script_broadcast(void *object, void *key)

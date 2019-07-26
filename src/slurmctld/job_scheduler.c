@@ -3824,7 +3824,6 @@ static void *_run_epilog(void *arg)
 	int i, status, wait_rc;
 	char *argv[2];
 	uint16_t tm;
-	track_script_rec_t *track_script_rec;
 
 	argv[0] = epilog_arg->epilog_slurmctld;
 	argv[1] = NULL;
@@ -3842,8 +3841,7 @@ static void *_run_epilog(void *arg)
 	}
 
 	/* Start tracking this new process */
-	track_script_rec = track_script_rec_add(epilog_arg->job_id, cpid,
-						pthread_self());
+	track_script_rec_add(epilog_arg->job_id, cpid, pthread_self());
 
 	/* Prolog and epilog use the same timeout
 	 */
@@ -4276,7 +4274,6 @@ static void *_run_prolog(void *arg)
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
 	uint16_t tm;
-	track_script_rec_t *track_script_rec;
 
 	lock_slurmctld(config_read_lock);
 	job_id = job_ptr->job_id;
@@ -4310,8 +4307,7 @@ static void *_run_prolog(void *arg)
 	}
 
 	/* Start tracking this new process */
-	track_script_rec = track_script_rec_add(job_ptr->job_id,
-						cpid, pthread_self());
+	track_script_rec_add(job_ptr->job_id, cpid, pthread_self());
 
 	tm = slurm_get_prolog_timeout();
 	while (1) {
