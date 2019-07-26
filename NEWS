@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
     different features.
  -- Fix talking to batch host on it's protocol version when using --batch.
  -- gres/mic plugin - add missing fini() function to clean up plugin state.
+ -- Move _validate_node_choice() before prolog/epilog check.
 
 * Changes in Slurm 19.05.2
 ==========================

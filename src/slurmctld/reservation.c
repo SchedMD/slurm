@@ -5513,14 +5513,14 @@ extern void job_resv_check(void)
 			last_resv_update = now;
 			schedule_resv_save();
 		}
-		if (!resv_ptr->run_prolog || !resv_ptr->run_epilog)
-			continue;
 		if ((resv_ptr->end_time >= now) ||
 		    (resv_ptr->duration && (resv_ptr->duration != NO_VAL) &&
 		     (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT))) {
 			_validate_node_choice(resv_ptr);
 			continue;
 		}
+		if (!resv_ptr->run_prolog || !resv_ptr->run_epilog)
+			continue;
 		_advance_resv_time(resv_ptr);
 		if ((!resv_ptr->job_run_cnt ||
 		     (resv_ptr->flags & RESERVE_FLAG_FLEX)) &&
