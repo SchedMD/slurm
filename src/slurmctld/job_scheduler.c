@@ -3860,7 +3860,7 @@ static void *_run_epilog(void *arg)
 		}
 	}
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		info("epilog_slurmctld JobId=%u epilog killed by signal %u",
 		     epilog_arg->job_id, WTERMSIG(status));
 
@@ -4326,7 +4326,7 @@ static void *_run_prolog(void *arg)
 		}
 	}
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		info("prolog_slurmctld JobId=%u prolog killed by signal %u",
 		     job_id, WTERMSIG(status));
 

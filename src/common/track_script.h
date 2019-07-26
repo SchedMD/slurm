@@ -75,8 +75,7 @@ extern track_script_rec_t *track_script_rec_add(
 /*
  * Signal script thread to end
  */
-extern bool track_script_broadcast(track_script_rec_t *track_script_rec,
-				   int status);
+extern bool track_script_broadcast(pthread_t tid, int status);
 
 /* Remove this thread from the track_script system */
 extern void track_script_remove(pthread_t tid);

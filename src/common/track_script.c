@@ -48,6 +48,12 @@ static pthread_mutex_t flush_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
 static int flush_cnt = 0;
 
+typedef struct {
+	pthread_t tid;
+	int status;
+	bool rc;
+} foreach_broadcast_rec_t;
+
 static void _track_script_rec_destroy(void *arg)
 {
 	track_script_rec_t *r = (track_script_rec_t *)arg;
@@ -161,9 +167,7 @@ static int _reset_cpid(void *object, void *key)
 	((track_script_rec_t *)object)->cpid =
 		((track_script_rec_t *)key)->cpid;
 
-	/*
-	 * When we find the one we care about we can break out of the for_each
-	 */
+	/* Exit for_each after we found the one we care about. */
 	return -1;
 }
 
@@ -237,21 +241,45 @@ extern track_script_rec_t *track_script_rec_add(
 	return track_script_rec;
 }
 
-extern bool track_script_broadcast(track_script_rec_t *track_script_rec,
-				   int status)
+static int _script_broadcast(void *object, void *key)
 {
+	track_script_rec_t *track_script_rec = (track_script_rec_t *)object;
+	foreach_broadcast_rec_t *tmp_rec = (foreach_broadcast_rec_t *)key;
+
+	if (!_match_tid(object, &tmp_rec->tid))
+		return 0;
+
 	bool rc = false;
 
 	/* I was killed by slurmtrack, bail out right now */
 	slurm_mutex_lock(&track_script_rec->timer_mutex);
-	if (WIFSIGNALED(status) && (WTERMSIG(status) == SIGKILL)
-	    && track_script_rec->cpid == -1) {
+	if (WIFSIGNALED(tmp_rec->status) &&
+	    (WTERMSIG(tmp_rec->status) == SIGKILL) &&
+	    (track_script_rec->cpid == -1)) {
 		slurm_cond_broadcast(&track_script_rec->timer_cond);
 		rc = true;
 	}
 	slurm_mutex_unlock(&track_script_rec->timer_mutex);
 
-	return rc;
+	tmp_rec->rc = rc;
+
+	/* Exit for_each after we found the one we care about. */
+	return -1;
+}
+
+extern bool track_script_broadcast(pthread_t tid, int status)
+{
+	foreach_broadcast_rec_t tmp_rec;
+
+	memset(&tmp_rec, 0, sizeof(tmp_rec));
+	tmp_rec.tid = tid;
+	tmp_rec.status = status;
+
+	if (list_for_each(track_script_thd_list, _script_broadcast, &tmp_rec))
+		return tmp_rec.rc;
+
+	debug("%s: didn't find track_script for tid %ld", __func__, tid);
+	return true;
 }
 
 /* Remove this job from the list of jobs currently running a script */
