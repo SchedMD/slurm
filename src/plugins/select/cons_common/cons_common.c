@@ -1132,6 +1132,24 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		if (select_node_record[i].tot_cores >=
 		    select_node_record[i].cpus)
 			select_node_record[i].vpus = 1;
+
+		if ((select_node_record[i].cpus !=
+		     select_node_record[i].tot_cores) &&
+		    (select_node_record[i].cpus !=
+		     select_node_record[i].tot_cores *
+		     select_node_record[i].threads))
+			fatal("NodeName=%s CPUs=%u doesn't match neither Sockets(%u)*CoresPerSocket(%u)=(%u) nor Sockets(%u)*CoresPerSocket(%u)*ThreadsPerCore(%u)=(%u).  Please fix your slurm.conf.",
+			      node_ptr[i].name,
+			      select_node_record[i].cpus,
+			      select_node_record[i].tot_sockets,
+			      select_node_record[i].cores,
+			      select_node_record[i].tot_cores,
+			      select_node_record[i].tot_sockets,
+			      select_node_record[i].cores,
+			      select_node_record[i].threads,
+			      select_node_record[i].tot_cores *
+			      select_node_record[i].threads);
+
 		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
 		gres_plugin_node_state_dealloc_all(
 			select_node_record[i].node_ptr->gres_list);

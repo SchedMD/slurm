@@ -4415,11 +4415,10 @@ bound to allocated resources. Supported values for \fBCpuBind\fR are "none",
 \fBCPUs\fR
 Number of logical processors on the node (e.g. "2").
 CPUs and Boards are mutually exclusive. It can be set to the total
-number of sockets, cores or threads. This can be useful when you
-want to schedule only the cores on a hyper-threaded node.
-If \fBCPUs\fR is omitted, it will be set equal to the product of
-\fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
-The default value is 1.
+number of sockets(supported only by select/linear), cores or threads.
+This can be useful when you want to schedule only the cores on a hyper-threaded 
+node. If \fBCPUs\fR is omitted, it's default will be set equal to the product of
+\fBBoards\fR, \fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
 
 .TP
 \fBCpuSpecList\fR

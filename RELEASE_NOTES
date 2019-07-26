@@ -18,6 +18,8 @@ of Slurm will result in loss of state information.
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
+NOTE: Slurmctld is now set to fatal in case of computing node configured with
+      CPUs == #Sockets. CPUs has to be either total number of cores or threads.
 
 HIGHLIGHTS
 ==========
