@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix infinite loop in slurmstepd handling for nss_slurm REQUEST_GETGR RPC.
  -- Fix slurmstepd early assertion fail which prevented batch job launch or
     tasks launch on non-Linux systems.
+ -- Fix regression with SLURM_STEP_GPUS env var being renamed SLURM_STEP_GRES.
 
 * Changes in Slurm 19.05.1-2
 ============================
