@@ -53,9 +53,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		     List format_list)
 {
 	int i;
-	int u_set = 0;
-	int a_set = 0;
-	int w_set = 0;
+	int cond_set = 0;
 	int end = 0;
 	slurmdb_assoc_cond_t *assoc_cond = NULL;
 	int command_len = 0;
@@ -125,14 +123,14 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list_with_case(assoc_cond->user_list,
 							    argv[i]+end,
 							    user_case_norm))
-				u_set = 1;
+				cond_set |= SA_SET_USER;
 			else
 				exit_code=1;
 		} else if (!xstrncasecmp(argv[i], "AdminLevel",
 					 MAX(command_len, 2))) {
 			user_cond->admin_level =
 				str_2_slurmdb_admin_level(argv[i]+end);
-			u_set = 1;
+			cond_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 1))) {
 			if (!assoc_cond->cluster_list)
@@ -140,11 +138,12 @@ static int _set_cond(int *start, int argc, char **argv,
 					list_create(slurm_destroy_char);
 			if (slurm_addto_char_list(assoc_cond->cluster_list,
 						  argv[i]+end)) {
-				u_set = 1;
-				/* Don't set a_set here, it is only
-				   needed for deleting user and it is
-				   handled there later.
-				*/
+				/*
+				 *  Don't set SA_SET_ASSOC here, it is only
+				 *  needed for deleting user and it is
+				 *  handled there later.
+				 */
+				cond_set |= SA_SET_USER;
 			}
 		} else if (!xstrncasecmp(argv[i], "DefaultAccount",
 					 MAX(command_len, 8))) {
@@ -154,7 +153,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 			if (slurm_addto_char_list(user_cond->def_acct_list,
 						 argv[i]+end))
-				u_set = 1;
+				cond_set |= SA_SET_USER;
 			else
 				exit_code=1;
 		} else if (!xstrncasecmp(argv[i], "DefaultWCKey",
@@ -165,7 +164,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 			if (slurm_addto_char_list(user_cond->def_wckey_list,
 						 argv[i]+end))
-				u_set = 1;
+				cond_set |= SA_SET_USER;
 			else
 				exit_code=1;
 		} else if (!xstrncasecmp(argv[i], "Format",
@@ -191,12 +190,14 @@ static int _set_cond(int *start, int argc, char **argv,
 
 			if (slurm_addto_char_list(wckey_cond->name_list,
 						  argv[i]+end))
-				w_set = 1;
+				cond_set |= SA_SET_WCKEY;
 			else
 				exit_code = 1;
-		} else if (!(a_set = sacctmgr_set_assoc_cond(
-				    assoc_cond, argv[i], argv[i]+end,
-				    command_len, option))) {
+		} else if (sacctmgr_set_assoc_cond(
+				   assoc_cond, argv[i], argv[i]+end,
+				   command_len, option)) {
+			cond_set |= SA_SET_ASSOC;
+		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
 				" Use keyword 'set' to modify value\n",
@@ -206,24 +207,13 @@ static int _set_cond(int *start, int argc, char **argv,
 
 	(*start) = i;
 
-	if (a_set && w_set) {
+	if ((cond_set & SA_SET_ASSOC) && (cond_set & SA_SET_WCKEY)) {
 		fprintf(stderr," Mixing Account and WCKeys is not allowed\n");
 		exit_code = 1;
 		return -1;
 	}
 
-	if (u_set && w_set)
-		return 5;
-	else if (w_set)
-		return 4;
-	else if (u_set && a_set)
-		return 3;
-	else if (a_set) {
-		return 2;
-	} else if (u_set)
-		return 1;
-
-	return 0;
+	return cond_set;
 }
 
 static int _set_rec(int *start, int argc, char **argv,
@@ -231,11 +221,13 @@ static int _set_rec(int *start, int argc, char **argv,
 		    slurmdb_assoc_rec_t *assoc)
 {
 	int i;
-	int u_set = 0;
-	int a_set = 0;
+	int rec_set = 0;
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+
+	xassert(user);
+	xassert(assoc);
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -264,42 +256,43 @@ static int _set_rec(int *start, int argc, char **argv,
 					 MAX(command_len, 2))) {
 			user->admin_level =
 				str_2_slurmdb_admin_level(argv[i]+end);
-			u_set = 1;
+			rec_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "DefaultAccount",
 					 MAX(command_len, 8))) {
 			if (user->default_acct)
 				xfree(user->default_acct);
 			user->default_acct = strip_quotes(argv[i]+end, NULL, 1);
-			u_set = 1;
+			rec_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "DefaultWCKey",
 					 MAX(command_len, 8))) {
 			if (user->default_wckey)
 				xfree(user->default_wckey);
 			user->default_wckey =
 				strip_quotes(argv[i]+end, NULL, 1);
-			u_set = 1;
+			rec_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "NewName",
 					 MAX(command_len, 1))) {
 			if (user->name)
 				xfree(user->name);
 			user->name = strip_quotes(argv[i]+end, NULL,
 						  user_case_norm);
-			u_set = 1;
+			rec_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "RawUsage",
 					 MAX(command_len, 7))) {
 			uint32_t usage;
-			if (!assoc)
-				continue;
-			assoc->usage = xmalloc(sizeof(slurmdb_assoc_usage_t));
+			if (!assoc->usage)
+				assoc->usage =
+					xmalloc(sizeof(slurmdb_assoc_usage_t));
 			if (get_uint(argv[i]+end, &usage,
 				     "RawUsage") == SLURM_SUCCESS) {
 				assoc->usage->usage_raw = usage;
-				a_set = 1;
+				rec_set |= SA_SET_ASSOC;
 			}
-		} else if (!assoc ||
-			  (assoc && !(a_set = sacctmgr_set_assoc_rec(
-					      assoc, argv[i], argv[i]+end,
-					      command_len, option)))) {
+		} else if (sacctmgr_set_assoc_rec(
+				   assoc, argv[i], argv[i]+end,
+				   command_len, option)) {
+			rec_set |= SA_SET_ASSOC;
+		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n"
 				" Use keyword 'where' to modify condition\n",
@@ -309,13 +302,7 @@ static int _set_rec(int *start, int argc, char **argv,
 
 	(*start) = i;
 
-	if (u_set && a_set)
-		return 3;
-	else if (u_set)
-		return 1;
-	else if (a_set)
-		return 2;
-	return 0;
+	return rec_set;
 }
 
 static int _check_and_set_cluster_list(List cluster_list)
@@ -1469,7 +1456,7 @@ extern int sacctmgr_list_user(int argc, char **argv)
 		user_cond->with_wckeys = 1;
 	}
 
-	if (!user_cond->with_assocs && cond_set > 1) {
+	if (!user_cond->with_assocs && (cond_set & SA_SET_ASSOC)) {
 		if (!commit_check("You requested options that are only valid "
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
@@ -1779,8 +1766,8 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 	_check_and_set_cluster_list(user_cond->assoc_cond->cluster_list);
 
 	notice_thread_init();
-	if (rec_set & 1) { // process the account changes
-		if (cond_set == 2) {
+	if (rec_set & SA_SET_USER) { // process the account changes
+		if (cond_set == SA_SET_ASSOC) {
 			rc = SLURM_ERROR;
 			exit_code=1;
 			fprintf(stderr,
@@ -1853,9 +1840,9 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 	}
 
 assoc_start:
-	if (rec_set & 2) { // process the assoc changes
-		if (cond_set == 1
-		   && !list_count(user_cond->assoc_cond->user_list)) {
+	if (rec_set & SA_SET_ASSOC) { // process the assoc changes
+		if ((cond_set == SA_SET_USER) &&
+		    !list_count(user_cond->assoc_cond->user_list)) {
 			rc = SLURM_ERROR;
 			exit_code=1;
 			fprintf(stderr,
@@ -1944,7 +1931,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	*/
 	if (user_cond->assoc_cond && user_cond->assoc_cond->cluster_list
 	    && list_count(user_cond->assoc_cond->cluster_list)) {
-		if (cond_set & 4) {
+		if (cond_set & SA_SET_WCKEY) {
 			wckey_cond->cluster_list =
 				user_cond->assoc_cond->cluster_list;
 			user_cond->assoc_cond->cluster_list = NULL;
@@ -1952,7 +1939,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 				user_cond->assoc_cond->user_list;
 			user_cond->assoc_cond->user_list = NULL;
 		} else
-			cond_set |= 2;
+			cond_set |= SA_SET_ASSOC;
 	}
 
 	if (!cond_set) {
@@ -1971,13 +1958,13 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	}
 
 	notice_thread_init();
-	if (cond_set == 1) {
+	if (cond_set == SA_SET_USER) {
 		ret_list = slurmdb_users_remove(
 			db_conn, user_cond);
-	} else if (cond_set & 2) {
+	} else if (cond_set & SA_SET_ASSOC) {
 		ret_list = slurmdb_associations_remove(
 			db_conn, user_cond->assoc_cond);
-	} else if (cond_set & 4) {
+	} else if (cond_set & SA_SET_WCKEY) {
 		ret_list = slurmdb_wckeys_remove(db_conn, wckey_cond);
 	}
 
@@ -2005,16 +1992,16 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 			slurmdb_connection_commit(db_conn, 0);
 			return rc;
 		}
-		if (cond_set == 1) {
+		if (cond_set == SA_SET_USER) {
 			printf(" Deleting users...\n");
-		} else if (cond_set & 2) {
+		} else if (cond_set & SA_SET_ASSOC) {
 			printf(" Deleting user associations...\n");
-		} else if (cond_set & 4) {
+		} else if (cond_set & SA_SET_WCKEY) {
 			printf(" Deleting user WCKeys...\n");
 		}
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);
-			if (cond_set & 2) {
+			if (cond_set & SA_SET_ASSOC) {
 				char *tmp = strstr(object, "U = ")+4;
 				int i = 0;
 
@@ -2046,7 +2033,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 		list_iterator_destroy(itr);
 
 		/* Remove user if no associations left. */
-		if (cond_set & 2 && del_user_list) {
+		if ((cond_set & SA_SET_ASSOC) && del_user_list) {
 			List user_list = NULL;
 			slurmdb_user_cond_t del_user_cond;
 			slurmdb_assoc_cond_t del_user_assoc_cond;

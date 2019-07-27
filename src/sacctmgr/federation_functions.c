@@ -42,7 +42,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		     List format_list)
 {
 	int i;
-	int a_set = 0;
+	int set = 0;
 	int end = 0;
 	int command_len = 0;
 
@@ -80,7 +80,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(
 					federation_cond->federation_list,
 					argv[i]+end))
-				a_set = 1;
+				set = 1;
 		} else if (!end || !xstrncasecmp(argv[i], "Clusters",
 						 MAX(command_len, 3))) {
 			if (!federation_cond->cluster_list)
@@ -89,7 +89,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(
 						  federation_cond->cluster_list,
 						  argv[i]+end))
-				a_set = 1;
+				set = 1;
 		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
 			if (format_list)
@@ -104,7 +104,7 @@ static int _set_cond(int *start, int argc, char **argv,
 	}
 	(*start) = i;
 
-	return a_set;
+	return set;
 }
 
 static int _set_rec(int *start, int argc, char **argv,
@@ -115,6 +115,8 @@ static int _set_rec(int *start, int argc, char **argv,
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+
+	xassert(fed);
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -139,8 +141,6 @@ static int _set_rec(int *start, int argc, char **argv,
 					   MAX(command_len, 1))) {
 			if (name_list)
 				slurm_addto_char_list(name_list, argv[i]+end);
-		} else if (!fed) {
-			continue;
 		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 2))) {
 			char *name = NULL;

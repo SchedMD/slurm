@@ -46,8 +46,7 @@ static int _set_cond(int *start, int argc, char **argv,
 		     List format_list)
 {
 	int i;
-	int a_set = 0;
-	int u_set = 0;
+	int cond_set = 0;
 	int end = 0;
 	slurmdb_assoc_cond_t *assoc_cond = NULL;
 	int command_len = 0;
@@ -118,7 +117,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			if (slurm_addto_char_list(
 				   assoc_cond->acct_list,
 				   argv[i]+end))
-				u_set = 1;
+				cond_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "Descriptions",
 					 MAX(command_len, 1))) {
 			if (!acct_cond->description_list) {
@@ -127,7 +126,7 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 			if (slurm_addto_char_list(acct_cond->description_list,
 						 argv[i]+end))
-				u_set = 1;
+				cond_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 1))) {
 			if (format_list)
@@ -140,10 +139,12 @@ static int _set_cond(int *start, int argc, char **argv,
 			}
 			if (slurm_addto_char_list(acct_cond->organization_list,
 						 argv[i]+end))
-				u_set = 1;
-		} else if (!(a_set = sacctmgr_set_assoc_cond(
+				cond_set |= SA_SET_USER;
+		} else if (sacctmgr_set_assoc_cond(
 				    assoc_cond, argv[i], argv[i]+end,
-				    command_len, option))) {
+				    command_len, option)) {
+			cond_set |= SA_SET_ASSOC;
+		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n"
 				" Use keyword 'set' to modify value\n",
@@ -153,14 +154,7 @@ static int _set_cond(int *start, int argc, char **argv,
 
 	(*start) = i;
 
-	if (u_set && a_set)
-		return 3;
-	else if (a_set)
-		return 2;
-	else if (u_set)
-		return 1;
-
-	return 0;
+	return cond_set;
 }
 
 static int _set_rec(int *start, int argc, char **argv,
@@ -170,11 +164,13 @@ static int _set_rec(int *start, int argc, char **argv,
 		    slurmdb_assoc_rec_t *assoc)
 {
 	int i;
-	int u_set = 0;
-	int a_set = 0;
+	int rec_set = 0;
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+
+	xassert(acct);
+	xassert(assoc);
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -223,11 +219,13 @@ static int _set_rec(int *start, int argc, char **argv,
 		} else if (!xstrncasecmp(argv[i], "Description",
 					 MAX(command_len, 1))) {
 			acct->description =  strip_quotes(argv[i]+end, NULL, 1);
-			u_set = 1;
+			rec_set |= SA_SET_USER;
+
 		} else if (!xstrncasecmp(argv[i], "Organization",
 					 MAX(command_len, 1))) {
 			acct->organization = strip_quotes(argv[i]+end, NULL, 1);
-			u_set = 1;
+			rec_set |= SA_SET_USER;
+
 		} else if (!xstrncasecmp(argv[i], "RawUsage",
 					 MAX(command_len, 7))) {
 			uint32_t usage;
@@ -237,12 +235,13 @@ static int _set_rec(int *start, int argc, char **argv,
 			if (get_uint(argv[i]+end, &usage,
 				     "RawUsage") == SLURM_SUCCESS) {
 				assoc->usage->usage_raw = usage;
-				a_set = 1;
+				rec_set |= SA_SET_ASSOC;
 			}
-		} else if (!assoc ||
-			  (assoc && !(a_set = sacctmgr_set_assoc_rec(
+		} else if (sacctmgr_set_assoc_rec(
 					      assoc, argv[i], argv[i]+end,
-					      command_len, option)))) {
+					      command_len, option)) {
+			rec_set |= SA_SET_ASSOC;
+		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n"
 				" Use keyword 'where' to modify condition\n",
@@ -251,15 +250,7 @@ static int _set_rec(int *start, int argc, char **argv,
 	}
 
 	(*start) = i;
-
-	if (u_set && a_set)
-		return 3;
-	else if (a_set)
-		return 2;
-	else if (u_set)
-		return 1;
-
-	return 0;
+	return rec_set;
 }
 
 static int _isdefault_old(List acct_list)
@@ -323,7 +314,7 @@ static int _isdefault(int cond_set, List acct_list, List assoc_list)
 			/* The pgsql plugin doesn't have the idea of
 			   only_defs, so thre query could return all
 			   the associations, even without defaults. */
-			if (cond_set == 1) {
+			if (cond_set == SA_SET_USER) {
 				if (xstrcasecmp(acct, assoc->acct))
 					continue;
 			} else {
@@ -720,7 +711,7 @@ extern int sacctmgr_list_account(int argc, char **argv)
 
 	}
 
-	if (!acct_cond->with_assocs && cond_set > 1) {
+	if (!acct_cond->with_assocs && (cond_set & SA_SET_ASSOC)) {
 		if (!commit_check("You requested options that are only valid "
 				 "when querying with the withassoc option.\n"
 				 "Are you sure you want to continue?")) {
@@ -936,8 +927,8 @@ extern int sacctmgr_modify_account(int argc, char **argv)
 	}
 
 	notice_thread_init();
-	if (rec_set & 1) { // process the account changes
-		if (cond_set == 2) {
+	if (rec_set & SA_SET_USER) { // process the account changes
+		if (cond_set == SA_SET_ASSOC) {
 			exit_code=1;
 			fprintf(stderr,
 				" There was a problem with your "
@@ -971,8 +962,9 @@ extern int sacctmgr_modify_account(int argc, char **argv)
 	}
 
 assoc_start:
-	if (rec_set == 3 || rec_set == 2) { // process the association changes
-		if (cond_set == 1 && !acct_cond->assoc_cond->acct_list) {
+	if (rec_set & SA_SET_ASSOC) { // process the association changes
+		if ((cond_set == SA_SET_USER) &&
+		    !acct_cond->assoc_cond->acct_list) {
 			rc = SLURM_ERROR;
 			exit_code=1;
 			fprintf(stderr,
@@ -1117,10 +1109,10 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 	acct_cond->assoc_cond->only_defs = 0;
 
 	notice_thread_init();
-	if (cond_set == 1) {
+	if (cond_set == SA_SET_USER) {
 		ret_list = slurmdb_accounts_remove(
 			db_conn, acct_cond);
-	} else if (cond_set & 2) {
+	} else if (cond_set & SA_SET_ASSOC) {
 		ret_list = slurmdb_associations_remove(
 			db_conn, acct_cond->assoc_cond);
 	}
@@ -1162,9 +1154,9 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 			goto end_it;
 		}
 
-		if (cond_set == 1) {
+		if (cond_set == SA_SET_USER) {
 			printf(" Deleting accounts...\n");
-		} else if (cond_set & 2) {
+		} else if (cond_set & SA_SET_ASSOC) {
 			printf(" Deleting account associations...\n");
 		}
 		while((object = list_next(itr))) {

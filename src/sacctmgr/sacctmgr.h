@@ -69,6 +69,11 @@
 #define	MAX_INPUT_FIELDS 128
 #define FORMAT_STRING_SIZE 34
 
+#define SA_SET_USER  0x0001
+#define SA_SET_ASSOC 0x0002
+#define SA_SET_CLUST 0x0004
+#define SA_SET_WCKEY 0x0008
+
 typedef enum {
 	/* COMMON */
 	PRINT_ACCT,
