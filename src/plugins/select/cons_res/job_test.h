@@ -71,7 +71,8 @@
  * IN node_i        - index of node to be evaluated
  * IN s_p_n         - Expected sockets_per_node (NO_VAL if not known)
  * IN cr_type       - Consumable Resource setting
- * IN test_only     - ignore allocated memory check
+ * IN test_only     - Determine if job could ever run, ignore allocated memory
+ *		      check
  * IN will_run      - Determining when a pending job can start
  * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
  *                     partition or NULL if don't care

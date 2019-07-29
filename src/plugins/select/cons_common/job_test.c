@@ -288,7 +288,8 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
  * IN: node_map      - bitmap of available nodes
  * IN/OUT: core_map  - per-node bitmaps of available cores
  * IN: cr_type       - resource type
- * IN: test_only     - ignore allocated memory check
+ * IN: test_only     - Determine if job could ever run, ignore allocated memory
+ *		       check
  * IN: will_run      - Determining when a pending job can start
  * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
  *                     partition or NULL if don't care
@@ -432,7 +433,8 @@ static bool _is_preemptable(struct job_record *job_ptr,
  * IN/OUT: node_bitmap - bitmap of available nodes / bitmap of selected nodes
  * IN/OUT: avail_core - available/selected cores
  * IN: cr_type      - resource type
- * IN: test_only    - ignore allocated memory check
+ * IN: test_only    - Determine if job could ever run, ignore allocated memory
+ *		      check
  * IN: will_run     - Determining when a pending job can start
  * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
  *                     partition or NULL if don't care
