@@ -1790,18 +1790,12 @@ static int _will_run_test(struct job_record *job_ptr,
 	cr_job_list = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
-		bool cleaning = false;
-		if (IS_JOB_COMPLETING(tmp_job_ptr))
-			cleaning = true;
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
-		    !IS_JOB_SUSPENDED(tmp_job_ptr) &&
-		    !cleaning)
+		    !IS_JOB_SUSPENDED(tmp_job_ptr))
 			continue;
 		if (tmp_job_ptr->end_time == 0) {
-			if (!cleaning) {
-				error("%s: %s: Active %pJ has zero end_time",
-				      plugin_type, __func__, tmp_job_ptr);
-			}
+			error("%s: %s: Active %pJ has zero end_time",
+			      plugin_type, __func__, tmp_job_ptr);
 			continue;
 		}
 		if (tmp_job_ptr->node_bitmap == NULL) {
@@ -1809,14 +1803,11 @@ static int _will_run_test(struct job_record *job_ptr,
 			 * This should indicate a requeued job was cancelled
 			 * while NHC was running
 			 */
-			if (!cleaning) {
-				error("%s: %s: %pJ has NULL node_bitmap",
-				      plugin_type, __func__, tmp_job_ptr);
-			}
+			error("%s: %s: %pJ has NULL node_bitmap",
+			      plugin_type, __func__, tmp_job_ptr);
 			continue;
 		}
-		if (cleaning ||
-		    !_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
+		if (!_is_preemptable(tmp_job_ptr, preemptee_candidates)) {
 			/* Queue job for later removal from data structures */
 			list_append(cr_job_list, tmp_job_ptr);
 		} else {
