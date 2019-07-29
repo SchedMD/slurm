@@ -121,8 +121,6 @@ extern bool     spec_cores_first;
 extern bool     topo_optional;
 extern const char *plugin_type;
 
-extern bool common_job_cleaning(struct job_record *job_ptr);
-
 extern char *common_node_state_str(uint16_t node_state);
 
 /*

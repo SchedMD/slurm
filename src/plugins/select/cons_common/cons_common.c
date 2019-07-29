@@ -138,24 +138,6 @@ static int _get_avail_cores_on_node(int node_inx, bitstr_t **exc_bitmap)
 	return tot_cores - exc_cnt;
 }
 
-/*
- * Return true if job is in the processing of cleaning up.
- * This is used for Cray systems to indicate the Node Health Check (NHC)
- * is still running. Until NHC completes, the job's resource use persists
- * the select/cons_res plugin data structures.
- */
-extern bool common_job_cleaning(struct job_record *job_ptr)
-{
-	uint16_t cleaning = 0;
-
-	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
-				    SELECT_JOBDATA_CLEANING,
-				    &cleaning);
-	if (cleaning)
-		return true;
-	return false;
-}
-
 extern char *common_node_state_str(uint16_t node_state)
 {
 	if (node_state >= NODE_CR_RESERVED)
@@ -2113,8 +2095,7 @@ extern int select_p_reconfigure(void)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	int cleaning_job_cnt = 0, rc = SLURM_SUCCESS, run_time;
-	time_t now = time(NULL);
+	int rc = SLURM_SUCCESS;
 
 	info("%s: reconfigure", plugin_type);
 	select_debug_flags = slurm_get_debug_flags();
@@ -2146,33 +2127,10 @@ extern int select_p_reconfigure(void)
 				(void) job_res_add_job(job_ptr, 1);
 			else	/* Gang schedule suspend */
 				(void) job_res_add_job(job_ptr, 0);
-		} else if (common_job_cleaning(job_ptr)) {
-			cleaning_job_cnt++;
-			run_time = (int) difftime(now, job_ptr->end_time);
-			if (run_time >= 300) {
-				info("%pJ NHC hung for %d secs, releasing resources now, may underflow later",
-				     job_ptr, run_time);
-				/* If/when NHC completes, it will release
-				 * resources that are not marked as allocated
-				 * to this job without line below. */
-				//job_res_add_job(job_ptr, 0);
-				uint16_t released = 1;
-				select_g_select_jobinfo_set(
-					job_ptr->select_jobinfo,
-					SELECT_JOBDATA_RELEASED,
-					&released);
-			} else {
-				job_res_add_job(job_ptr, 0);
-			}
 		}
 	}
 	list_iterator_destroy(job_iterator);
 	select_state_initializing = false;
-
-	if (cleaning_job_cnt) {
-		info("%d jobs are in cleaning state (running Node Health Check)",
-		     cleaning_job_cnt);
-	}
 
 	return SLURM_SUCCESS;
 }
