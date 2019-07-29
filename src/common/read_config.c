@@ -618,7 +618,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 {
 	s_p_hashtbl_t *tbl, *dflt;
 	slurm_conf_node_t *n;
-	int computed_procs;
 	static s_p_options_t _nodename_options[] = {
 		{"Boards", S_P_UINT16},
 		{"CoreSpecCount", S_P_UINT16},
@@ -677,11 +676,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		bool no_cpus    = false;
 		bool no_boards  = false;
 		bool no_sockets = false;
-		bool no_cores   = false;
-		bool no_threads = false;
 		bool no_sockets_per_board = false;
 		uint16_t sockets_per_board = 0;
-		uint16_t calc_cpus;
 		char *cpu_bind = NULL;
 
 		n = xmalloc(sizeof(slurm_conf_node_t));
@@ -723,7 +719,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_uint16(&n->cores, "CoresPerSocket", tbl)
 		    && !s_p_get_uint16(&n->cores, "CoresPerSocket", dflt)) {
 			n->cores = 1;
-			no_cores = true;
 		}
 
 		if (!s_p_get_string(&n->cpu_spec_list, "CPUSpecList", tbl))
@@ -784,7 +779,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_uint16(&n->threads, "ThreadsPerCore", tbl)
 		    && !s_p_get_uint16(&n->threads, "ThreadsPerCore", dflt)) {
 			n->threads = 1;
-			no_threads = true;
 		}
 
 		if (!s_p_get_uint32(&n->tmp_disk, "TmpDisk", tbl)
@@ -846,26 +840,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			if (no_cpus) {		/* infer missing CPUs= */
 				n->cpus = n->sockets * n->cores * n->threads;
 			}
-			/* if only CPUs= and Sockets=
-			 * specified check for match */
-			if (!no_cpus    && !no_sockets &&
-			     no_cores   &&  no_threads &&
-			     (n->cpus != n->sockets)) {
-				n->sockets = n->cpus;
-				error("NodeNames=%s CPUs doesn't match "
-				      "Sockets, setting Sockets to %d",
-				      n->nodenames, n->sockets);
-			}
-			computed_procs = n->sockets * n->cores * n->threads;
-			if ((n->cpus != n->sockets) &&
-			    (n->cpus != n->sockets * n->cores) &&
-			    (n->cpus != computed_procs)) {
-				error("NodeNames=%s CPUs=%d doesn't match "
-				      "Sockets*CoresPerSocket*ThreadsPerCore "
-				      "(%d), resetting CPUs",
-				      n->nodenames, n->cpus, computed_procs);
-				n->cpus = computed_procs;
-			}
 		} else {
 			/* In this case Boards=# is used.
 			 * CPUs=# or Procs=# are ignored.
@@ -902,14 +876,14 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			} else {
 				n->sockets = n->boards;
 			}
-			/* Node boards factored into sockets */
-			calc_cpus = n->sockets * n->cores * n->threads;
-			if (!no_cpus && (n->cpus != calc_cpus)) {
-				error("NodeNames=%s CPUs=# or Procs=# "
-				      "with Boards=# is invalid and "
-				      "is ignored.", n->nodenames);
-			}
-			n->cpus = calc_cpus;
+		}
+		/* Node boards are factored into sockets */
+		if ((n->cpus != n->sockets) &&
+		    (n->cpus != n->sockets * n->cores) &&
+		    (n->cpus != n->sockets * n->cores * n->threads)) {
+			error("NodeNames=%s CPUs=%d match no Sockets, Sockets*CoresPerSocket or Sockets*CoresPerSocket*ThreadsPerCore. Resetting CPUs.",
+			      n->nodenames, n->cpus);
+			n->cpus = n->sockets * n->cores * n->threads;
 		}
 
 		if (n->core_spec_cnt >= (n->sockets * n->cores)) {
