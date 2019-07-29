@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
     tasks launch on non-Linux systems.
  -- Fix regression with SLURM_STEP_GPUS env var being renamed SLURM_STEP_GRES.
  -- Fix pmix v3 linking if no rpath is allowed on build.
+ -- Fix sacctmgr error handling when removing associations and users.
 
 * Changes in Slurm 19.05.1-2
 ============================

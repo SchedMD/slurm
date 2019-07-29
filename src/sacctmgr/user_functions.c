@@ -2068,8 +2068,18 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 
 				del_user_ret_list = slurmdb_users_remove(
 					db_conn, &del_user_cond);
+				rc = errno;
 				FREE_NULL_LIST(del_user_ret_list);
 				FREE_NULL_LIST(del_user_list);
+				if (rc) {
+					exit_code = 1;
+					fprintf(stderr,
+						" Error with request: %s.\n"
+						" Changes Discarded\n",
+						slurm_strerror(rc));
+					rc = SLURM_ERROR;
+					goto end_it;
+				}
 			}
 		}
 
@@ -2085,7 +2095,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
-			slurm_strerror(errno));
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 	}
 end_it:
