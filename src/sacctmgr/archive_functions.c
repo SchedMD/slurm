@@ -565,7 +565,6 @@ extern int sacctmgr_archive_load(int argc, char **argv)
 	slurmdb_archive_rec_t *arch_rec =
 		xmalloc(sizeof(slurmdb_archive_rec_t));
 	int i, command_len = 0;
-	struct stat st;
 
 	for (i = 0; i < argc; i++) {
 		int end = parse_option_end(argv[i]);
@@ -596,31 +595,6 @@ extern int sacctmgr_archive_load(int argc, char **argv)
 		return SLURM_ERROR;
 	}
 
-	if (arch_rec->archive_file) {
-		char *fullpath;
-		char cwd[MAXPATHLEN + 1];
-		int  mode = F_OK;
-
-		if ((getcwd(cwd, MAXPATHLEN)) == NULL)
-			fatal("getcwd failed: %m");
-
-		if ((fullpath = search_path(cwd, arch_rec->archive_file,
-					    true, mode, false))) {
-			xfree(arch_rec->archive_file);
-			arch_rec->archive_file = fullpath;
-		}
-
-		if (stat(arch_rec->archive_file, &st) < 0) {
-			exit_code = errno;
-			fprintf(stderr, " load: Failed to stat %s: %s\n "
-				"Note: For archive load, the file must be on "
-				"the calling host.\n",
-				arch_rec->archive_file, slurm_strerror(errno));
-			slurmdb_destroy_archive_rec(arch_rec);
-			return SLURM_ERROR;
-		}
-	}
-
 	rc = slurmdb_archive_load(db_conn, arch_rec);
 	if (rc == SLURM_SUCCESS) {
 		if (commit_check("Would you like to commit changes?")) {
@@ -633,6 +607,10 @@ extern int sacctmgr_archive_load(int argc, char **argv)
 		exit_code = 1;
 		fprintf(stderr, " Problem loading archive file: %s\n",
 			slurm_strerror(rc));
+
+		if (rc == EACCES || rc == EISDIR || rc == ENOENT)
+			fprintf(stderr, " Note: For archive load, the file must be accessible on the slurmdbd host.\n");
+
 		rc = SLURM_ERROR;
 	}
 
