@@ -6726,8 +6726,7 @@ extern int will_run_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	job_iterator = list_iterator_create(job_list);
 	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
 		bool cleaning = job_cleaning(tmp_job_ptr);
-		if (!cleaning && IS_JOB_COMPLETING(tmp_job_ptr))
-			cleaning = true;
+
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 		    !IS_JOB_SUSPENDED(tmp_job_ptr) &&
 		    !cleaning)

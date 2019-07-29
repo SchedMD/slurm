@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix logic to better handle maintenance reservations.
  -- Add spank options to cache in remote callback.
  -- Enforce the use of spank_option_getopt().
+ -- Fix select plugins' will run test under-allocating nodes usage for
+    completing jobs.
 
 * Changes in Slurm 19.05.2
 ==========================
