@@ -5854,7 +5854,34 @@ extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
 	slurmdb_stats_rec_t *stats_ptr = (slurmdb_stats_rec_t *) object;
 	uint32_t i;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		/* Rollup statistics */
+		i = 3;
+		pack32(i, buffer);
+		pack16_array(stats_ptr->rollup_count, i, buffer);
+		pack64_array(stats_ptr->rollup_time, i, buffer);
+		pack64_array(stats_ptr->rollup_max_time, i, buffer);
+
+		/* RPC type statistics */
+		for (i = 0; i < stats_ptr->type_cnt; i++) {
+			if (stats_ptr->rpc_type_id[i] == 0)
+				break;
+		}
+		pack32(i, buffer);
+		pack16_array(stats_ptr->rpc_type_id, i, buffer);
+		pack32_array(stats_ptr->rpc_type_cnt, i, buffer);
+		pack64_array(stats_ptr->rpc_type_time, i, buffer);
+
+		/* RPC user statistics */
+		for (i = 1; i < stats_ptr->user_cnt; i++) {
+			if (stats_ptr->rpc_user_id[i] == 0)
+				break;
+		}
+		pack32(i, buffer);
+		pack32_array(stats_ptr->rpc_user_id, i, buffer);
+		pack32_array(stats_ptr->rpc_user_cnt, i, buffer);
+		pack64_array(stats_ptr->rpc_user_time, i, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* Rollup statistics */
 		i = 3;
 		pack32(i, buffer);
@@ -5895,7 +5922,54 @@ extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
 		xmalloc(sizeof(slurmdb_stats_rec_t));
 
 	*object = stats_ptr;
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		/* Rollup statistics */
+		safe_unpack32(&uint32_tmp, buffer);
+		if (uint32_tmp != 3)
+			goto unpack_error;
+		safe_unpack16_array(&stats_ptr->rollup_count, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != 3)
+			goto unpack_error;
+		safe_unpack64_array(&stats_ptr->rollup_time, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != 3)
+			goto unpack_error;
+		safe_unpack64_array(&stats_ptr->rollup_max_time, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != 3)
+			goto unpack_error;
+
+		/* RPC type statistics */
+		safe_unpack32(&stats_ptr->type_cnt, buffer);
+		safe_unpack16_array(&stats_ptr->rpc_type_id, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->type_cnt)
+			goto unpack_error;
+		safe_unpack32_array(&stats_ptr->rpc_type_cnt, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->type_cnt)
+			goto unpack_error;
+		safe_unpack64_array(&stats_ptr->rpc_type_time, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->type_cnt)
+			goto unpack_error;
+
+		/* RPC user statistics */
+		safe_unpack32(&stats_ptr->user_cnt, buffer);
+		safe_unpack32_array(&stats_ptr->rpc_user_id, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->user_cnt)
+			goto unpack_error;
+		safe_unpack32_array(&stats_ptr->rpc_user_cnt, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->user_cnt)
+			goto unpack_error;
+		safe_unpack64_array(&stats_ptr->rpc_user_time, &uint32_tmp,
+				    buffer);
+		if (uint32_tmp != stats_ptr->user_cnt)
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* Rollup statistics */
 		safe_unpack32(&uint32_tmp, buffer);
 		if (uint32_tmp != 3)
