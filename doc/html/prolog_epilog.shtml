@@ -384,8 +384,8 @@ Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 <li><b>SLURM_CLUSTER_NAME</b>
 Name of the cluster executing the job.</li>
 
-<li><b>SLURM_JOB_GRES</b>
-GRES IDs allocated to the job (if any).
+<li><b>SLURM_JOB_GPUS</b>
+GPU IDs allocated to the job (if any).
 Available in the Prolog only.</li>
 
 <li><b>SLURM_JOB_ACCOUNT</b>
