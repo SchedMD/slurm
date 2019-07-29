@@ -2056,6 +2056,10 @@ extern int choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
  * IN s_p_n         - Expected sockets_per_node (NO_VAL if not known)
  * IN cr_type       - Consumable Resource setting
  * IN test_only     - ignore allocated memory check
+ * IN will_run      - Determining when a pending job can start
+ * IN: part_core_map - per-node bitmap of cores allocated to jobs of this
+ *                     partition or NULL if don't care
+ * RET Available resources. Call _array() to release memory.
  *
  * NOTE: The returned cpu_count may be less than the number of set bits in
  *       core_map for the given node. The cr_dist functions will determine
@@ -2067,7 +2071,7 @@ extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
 					uint32_t s_p_n,
 					node_use_record_t *node_usage,
 					uint16_t cr_type,
-					bool test_only,
+					bool test_only, bool will_run,
 					bitstr_t **in_part_core_map)
 {
 	uint16_t cpus;
@@ -2087,7 +2091,7 @@ extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
 		part_core_map = *in_part_core_map;
 
 	if (((job_ptr->bit_flags & BACKFILL_TEST) == 0) &&
-	    !test_only && IS_NODE_COMPLETING(node_ptr)) {
+	    !test_only && !will_run && IS_NODE_COMPLETING(node_ptr)) {
 		/* Do not allocate more jobs to nodes with completing jobs,
 		 * backfill scheduler independently handles completing nodes */
 		cpus = 0;

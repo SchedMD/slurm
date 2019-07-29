@@ -76,7 +76,7 @@ typedef struct {
 					    uint32_t s_p_n,
 					    node_use_record_t *node_usage,
 					    uint16_t cr_type,
-					    bool test_only,
+					    bool test_only, bool will_run,
 					    bitstr_t **part_core_map);
 	int (*choose_nodes)(struct job_record *job_ptr, bitstr_t *node_map,
 			    bitstr_t **avail_core, uint32_t min_nodes,
