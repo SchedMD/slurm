@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacctmgr error handling when removing associations and users.
  -- Allow sacctmgr to add users to WCKeys without having TrackWCKey set in the
     slurm.conf.
+ -- Allow sacctmgr to delete WCKeys from users.
 
 * Changes in Slurm 19.05.1-2
 ============================
