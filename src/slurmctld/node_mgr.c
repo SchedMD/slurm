@@ -2116,6 +2116,13 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 	last_node_update = time (NULL);
 
 	hostlist_destroy (host_list);
+
+	/*
+	 * check all reservations since nodes may have been in a reservation with
+	 * floating count of nodes that needs to be updated
+	 */
+	validate_all_reservations(false);
+
 	return error_code;
 }
 /* Return true if admin request to change node state from old to new is valid */
@@ -3739,6 +3746,11 @@ static void _make_node_down(node_record_t *node_ptr, time_t event_time)
 	clusteracct_storage_g_node_down(acct_db_conn,
 					node_ptr, event_time, NULL,
 					node_ptr->reason_uid);
+	/*
+	 * check all reservations since node may have been in a reservation with
+	 * floating count of nodes that needs to be updated
+	 */
+	validate_all_reservations(false);
 }
 
 /*

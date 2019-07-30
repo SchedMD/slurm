@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
     for a job.
  -- accounting_storage/filetxt has been removed as an option.
  -- Update and validate reservations after loading from state save.
+ -- Update and validate reservations after setting node to down, drain or
+    updating node state.
 
 * Changes in Slurm 20.02.4
 ==========================
