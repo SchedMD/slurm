@@ -64,6 +64,7 @@ strong_alias(list_prepend,	slurm_list_prepend);
 strong_alias(list_find_first,	slurm_list_find_first);
 strong_alias(list_delete_all,	slurm_list_delete_all);
 strong_alias(list_for_each,	slurm_list_for_each);
+strong_alias(list_for_each_max,	slurm_list_for_each_max);
 strong_alias(list_flush,	slurm_list_flush);
 strong_alias(list_sort,		slurm_list_sort);
 strong_alias(list_push,		slurm_list_push);
@@ -417,22 +418,33 @@ list_delete_all (List l, ListFindF f, void *key)
 int
 list_for_each (List l, ListForF f, void *arg)
 {
+	int max = -1;	/* all values */
+	return list_for_each_max(l, &max, f, arg);
+}
+
+int list_for_each_max(List l, int *max, ListForF f, void *arg)
+{
 	ListNode p;
 	int n = 0;
+	bool failed = false;
 
 	xassert(l != NULL);
 	xassert(f != NULL);
 	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
 
-	for (p = l->head; p; p = p->next) {
+	for (p = l->head; (*max == -1 || n < *max) && p; p = p->next) {
 		n++;
 		if (f(p->data, arg) < 0) {
-			n = -n;
+			failed = true;
 			break;
 		}
 	}
+	*max = l->count - n;
 	slurm_mutex_unlock(&l->mutex);
+
+	if (failed)
+		n = -n;
 
 	return n;
 }
