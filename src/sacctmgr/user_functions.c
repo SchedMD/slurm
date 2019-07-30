@@ -887,6 +887,13 @@ extern int sacctmgr_add_user(int argc, char **argv)
 		}
 	}
 
+	/*
+	 * If we aren't tracking WCKeys but the user is adding them, make sure
+	 * we do.
+	 */
+	if (!track_wckey)
+		track_wckey = !list_is_empty(wckey_cond->name_list);
+
 	if (track_wckey || default_wckey) {
 		wckey_cond->cluster_list = assoc_cond->cluster_list;
 		wckey_cond->user_list = assoc_cond->user_list;
