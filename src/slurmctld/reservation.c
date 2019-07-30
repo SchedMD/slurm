@@ -176,6 +176,8 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 static bool _resv_overlap(time_t start_time, time_t end_time,
 			  uint32_t flags, bitstr_t *node_bitmap,
 			  slurmctld_resv_t *this_resv_ptr);
+static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
+			       slurmctld_resv_t *resv_ptr);
 static void _run_script(char *script, slurmctld_resv_t *resv_ptr);
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
@@ -1876,6 +1878,58 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	return rc;
 }
 
+static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
+			       slurmctld_resv_t *resv_ptr)
+{
+	bool rc = false;
+	int i, j;
+	time_t s_time1, s_time2, e_time1, e_time2;
+	time_t start_relative, end_relative;
+	time_t now = time(NULL);
+
+	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
+		start_relative = resv_ptr->start_time + now;
+		if (resv_ptr->duration == INFINITE)
+			end_relative = start_relative +
+				       YEAR_SECONDS;
+		else if (resv_ptr->duration &&
+			 (resv_ptr->duration != NO_VAL)) {
+			end_relative = start_relative +
+				       resv_ptr->duration * 60;
+		} else {
+			end_relative = resv_ptr->end_time;
+			if (start_relative > end_relative)
+				start_relative = end_relative;
+		}
+	} else {
+		start_relative = resv_ptr->start_time;
+		end_relative = resv_ptr->end_time;
+	}
+
+	for (i=0; ((i<7) && (!rc)); i++) {  /* look forward one week */
+		s_time1 = resv_desc_ptr->start_time;
+		e_time1 = resv_desc_ptr->end_time;
+		_advance_time(&s_time1, i);
+		_advance_time(&e_time1, i);
+		for (j=0; ((j<7) && (!rc)); j++) {
+			s_time2 = start_relative;
+			e_time2 = end_relative;
+			_advance_time(&s_time2, j);
+			_advance_time(&e_time2, j);
+			if ((s_time1 < e_time2) &&
+			    (e_time1 > s_time2)) {
+				rc = true;
+				break;
+			}
+			if (!(resv_ptr->flags & RESERVE_FLAG_DAILY))
+				break;
+		}
+		if (!(resv_desc_ptr->flags & RESERVE_FLAG_DAILY))
+			break;
+	}
+
+	return rc;
+}
 /* Set a reservation's TRES count. Requires that the reservation's
  *	node_bitmap be set.
  * This needs to be done after all other setup is done.
@@ -3704,7 +3758,6 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	bitstr_t *node_bitmap;
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS;
-	time_t start_relative, end_relative;
 	time_t now = time(NULL);
 	bool have_xand = false;
 
@@ -3735,27 +3788,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				_advance_resv_time(resv_ptr);
 			if (resv_ptr->node_bitmap == NULL)
 				continue;
-			if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
-				start_relative = resv_ptr->start_time + now;
-				if (resv_ptr->duration == INFINITE)
-					end_relative = start_relative +
-						       YEAR_SECONDS;
-				else if (resv_ptr->duration &&
-					 (resv_ptr->duration != NO_VAL)) {
-					end_relative = start_relative +
-						       resv_ptr->duration * 60;
-				} else {
-					end_relative = resv_ptr->end_time;
-					if (start_relative > end_relative)
-						start_relative = end_relative;
-				}
-			} else {
-				start_relative = resv_ptr->start_time_first;
-				end_relative = resv_ptr->end_time;
-			}
-
-			if ((start_relative >= resv_desc_ptr->end_time) ||
-			    (end_relative   <= resv_desc_ptr->start_time))
+			if (!_resv_time_overlap(resv_desc_ptr, resv_ptr))
 				continue;
 			if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
 				error("Reservation %s has no core_bitmap and "
