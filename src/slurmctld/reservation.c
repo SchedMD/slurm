@@ -3465,6 +3465,7 @@ static void _validate_all_reservations(void)
 		} else {
 			_set_assoc_list(resv_ptr);
 			top_suffix = MAX(top_suffix, resv_ptr->resv_id);
+			_validate_node_choice(resv_ptr);
 		}
 	}
 	list_iterator_destroy(iter);
