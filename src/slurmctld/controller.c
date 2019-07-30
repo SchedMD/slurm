@@ -2023,6 +2023,8 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(node_write_lock2);
 		}
 
+		validate_all_reservations(true);
+
 		if (difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) {
 			lock_slurmctld(job_write_lock);
 			now = time(NULL);

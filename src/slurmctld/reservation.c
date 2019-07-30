@@ -42,6 +42,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -3407,6 +3408,37 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	}
 
 	return true;
+}
+
+extern void validate_all_reservations(bool run_now)
+{
+	slurmctld_lock_t lock = {
+		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, READ_LOCK };
+	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	static uint32_t requests = 0;
+	bool run;
+
+	if (!run_now) {
+		slurm_mutex_lock(&mutex);
+		requests++;
+		log_flag(RESERVATION, "%s: requests %u",
+			 __func__, requests);
+		xassert(requests != UINT32_MAX);
+		slurm_mutex_unlock(&mutex);
+		return;
+	}
+
+	slurm_mutex_lock(&mutex);
+	run = (requests > 0);
+	/* reset requests counter */
+	requests = 0;
+	slurm_mutex_unlock(&mutex);
+
+	if (run) {
+		lock_slurmctld(lock);
+		_validate_all_reservations();
+		unlock_slurmctld(lock);
+	}
 }
 
 /*

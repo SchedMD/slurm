@@ -105,6 +105,15 @@ extern void update_part_nodes_in_resv(part_record_t *part_ptr);
 extern int load_all_resv_state(int recover);
 
 /*
+ * Request validation of all reservation records, reset bitmaps, etc.
+ * Will purge any invalid reservation.
+ *
+ * IN run_now - true: apply changes now if previously called
+ *              false: defer changes until called with run_now=true
+ */
+extern void validate_all_reservations(bool run_now);
+
+/*
  * Determine if a job request can use the specified reservations
  *
  * IN/OUT job_ptr - job to validate, set its resv_id and resv_type
