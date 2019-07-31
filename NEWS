@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- Make sview work with glib2 v2.62.
  -- Fix slurmctld abort when in developer mode and submitting to multiple
     partitions with a bad QOS and not enforcing QOS.
+ -- Enforce PART_NODES if only PartitionName is specified.
 
 * Changes in Slurm 19.05.3-2
 ============================
