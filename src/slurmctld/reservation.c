@@ -3374,6 +3374,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		resv_desc.start_time  = resv_ptr->start_time;
 		resv_desc.end_time    = resv_ptr->end_time;
 		resv_desc.features    = resv_ptr->features;
+		resv_desc.flags       = resv_ptr->flags;
 		if (!resv_ptr->full_nodes) {
 			resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 			resv_desc.core_cnt[0] = resv_ptr->core_cnt;
@@ -3460,6 +3461,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
+	resv_desc.flags      = resv_ptr->flags;
 	if (!resv_ptr->full_nodes) {
 		resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 		resv_desc.core_cnt[0] = resv_ptr->core_cnt;
