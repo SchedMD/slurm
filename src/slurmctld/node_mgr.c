@@ -2495,6 +2495,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 						  NULL, &cr_flag)) {
 			cr_flag = NO_VAL;	/* error */
 		}
+		if (cr_flag == SELECT_TYPE_CONS_TRES)
+			cr_flag = SELECT_TYPE_CONS_RES;
 		node_features_cnt = node_features_g_count();
 	}
 	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
