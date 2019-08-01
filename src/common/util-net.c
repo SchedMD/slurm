@@ -262,7 +262,7 @@ static int validate_hostent_copy(
 extern
 bool is_full_path(const char *path)
 {
-	if (path[0] == '/')
+	if (path && path[0] == '/')
 		return true;
 
 	return false;
