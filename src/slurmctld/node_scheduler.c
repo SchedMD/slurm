@@ -3497,12 +3497,21 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 		else
 			tmp_bitmap = job_feat_ptr->node_bitmap_avail;
 		if (tmp_bitmap) {
-			if (last_op == FEATURE_OP_AND) {
+			/*
+			 * Here we need to use the current feature for XOR/AND
+			 * not the last_op.  For instance fastio&[xeon|nehalem]
+			 * should ignore xeon (in valid_feature_count), but if
+			 * would be based on last_op it will see AND operation.
+			 * This should only be used when dealing with middle
+			 * options, not for the end as done in the last_paren
+			 * check below.
+			 */
+			if ((job_feat_ptr->op_code == FEATURE_OP_XOR) ||
+			    (job_feat_ptr->op_code == FEATURE_OP_XAND)) {
+				*has_xor = true;
+			} else if (last_op == FEATURE_OP_AND) {
 				bit_and(work_bitmap, tmp_bitmap);
 			} else if (last_op == FEATURE_OP_OR) {
-				bit_or(work_bitmap, tmp_bitmap);
-			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
-				*has_xor = true;
 				bit_or(work_bitmap, tmp_bitmap);
 			}
 		} else {	/* feature not found */
@@ -3520,7 +3529,6 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 				bit_or(feature_bitmap, work_bitmap);
 			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
 				*has_xor = true;
-				bit_or(feature_bitmap, work_bitmap);
 			}
 			FREE_NULL_BITMAP(paren_bitmap);
 			work_bitmap = feature_bitmap;
