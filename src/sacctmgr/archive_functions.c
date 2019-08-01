@@ -44,6 +44,7 @@
 #include <sys/param.h>		/* MAXPATHLEN */
 #include "src/common/proc_args.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 
 static char *_string_to_uid( char *name )
 {
@@ -581,6 +582,12 @@ extern int sacctmgr_archive_load(int argc, char **argv)
 		   || !xstrncasecmp(argv[i], "File", MAX(command_len, 1))) {
 			arch_rec->archive_file =
 				strip_quotes(argv[i]+end, NULL, 0);
+			if (!is_full_path(arch_rec->archive_file)) {
+				char *file = arch_rec->archive_file;
+				arch_rec->archive_file =
+					make_full_path(arch_rec->archive_file);
+				xfree(file);
+			}
 		} else if (!xstrncasecmp(argv[i], "Insert",
 					 MAX(command_len, 2))) {
 			arch_rec->insert = strip_quotes(argv[i]+end, NULL, 1);
