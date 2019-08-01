@@ -3528,6 +3528,19 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 
 		last_op = job_feat_ptr->op_code;
 		last_paren_cnt = job_feat_ptr->paren;
+#if _DEBUG
+{
+		char *tmp_f, *tmp_w, *tmp_t;
+		tmp_f = bitmap2node_name(feature_bitmap);
+		tmp_w = bitmap2node_name(work_bitmap);
+		tmp_t = bitmap2node_name(tmp_bitmap);
+		info("%s: feature:%s feature_bitmap:%s work_bitmap:%s tmp_bitmap:%s", __func__, job_feat_ptr->name, tmp_f, tmp_w, tmp_t);
+		xfree(tmp_f);
+		xfree(tmp_w);
+		xfree(tmp_t);
+}
+#endif
+
 	}
 	list_iterator_destroy(job_feat_iter);
 	if (!have_count)
@@ -3536,9 +3549,10 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 	FREE_NULL_BITMAP(paren_bitmap);
 #if _DEBUG
 {
-	char tmp[32];
-	bit_fmt(tmp, sizeof(tmp), node_bitmap);
-	info("%s: RC:%d NODE_BITMAP:%s", __func__, rc, tmp);
+	char * tmp;
+	tmp = bitmap2node_name(node_bitmap);
+	info("%s: RC:%d NODES:%s HAS_XOR:%d", __func__, rc, tmp, *has_xor);
+	xfree(tmp);
 }
 #endif
 	return rc;
