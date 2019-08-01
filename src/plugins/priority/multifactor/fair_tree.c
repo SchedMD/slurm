@@ -333,6 +333,12 @@ static void _calc_tree_fs(slurmdb_assoc_rec_t** siblings,
 	bool tied = false;
 	size_t i;
 
+	if (!siblings) {
+		error("%s: unable to calculate fairshare on empty tree",
+		      __func__);
+		return;
+	}
+
 	/* Calculate level_fs for each child */
 	for (i = 0; (assoc = siblings[i]); i++)
 		_calc_assoc_fs(assoc);
