@@ -2019,7 +2019,10 @@ static int _make_prolog_mem_container(slurm_msg_t *msg)
 	step_loc_t step_info;
 	int rc = SLURM_SUCCESS;
 
-	_convert_job_mem(msg);	/* Convert per-CPU mem limit */
+	/* Convert per-CPU mem limit */
+	if ((rc = _convert_job_mem(msg)) != SLURM_SUCCESS)
+		return rc;
+
 	if (req->job_mem_limit) {
 		slurm_mutex_lock(&job_limits_mutex);
 		if (!job_limits_list)
