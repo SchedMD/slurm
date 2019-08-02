@@ -131,7 +131,7 @@ cset partition ""
 #cset use_pmi	1
 # OR for other versions of MPICH, use this
 cset mpicc	"/usr/local/bin/mpicc"
-cset nvcc	"nvcc"
+cset nvcc	"/usr/bin/nvcc"
 cset use_pmi	0
 #cset upcc       "/usr/local/bin/upcc"
 cset upcc       "/usr/bin/xlupc"
