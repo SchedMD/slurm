@@ -51,7 +51,7 @@ Club.</a></p>
 <tr><td bgcolor="#F0F1C9">08:30 - 09:00</td><td colspan="3" bgcolor="#F0F1C9">Registration </td></tr>
 <tr><td nowrap>09:00 - 09:20</td><td>Welcome</td><td>Auble (SchedMD)</td><td>Welcome</td></tr>
 <tr><td nowrap>09:20 - 10:00</td><td>Technical</td><td>Christiansen (SchedMD)</td><td>TRES</td></tr>
-<tr><td nowrap>10:00 - 10:40</td><td>Technical</td><td>Auble (SchedMD)</td><td>GPUs and cons_tres</td></tr>
+<tr><td nowrap>10:00 - 10:40</td><td>Technical</td><td>Vizino (SchedMD)</td><td>GPUs and cons_tres</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:40 - 11:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>11:00 - 11:20</td><td>Site Report</td><td>Fullop</td><td>LANL</td></tr>
 <tr><td nowrap>11:20 - 12:00</td><td>Technical</td><td>Garey (SchedMD)</td><td>cgroups and pam_slurm_adopt</td></tr>
