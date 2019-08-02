@@ -96,14 +96,17 @@ strong_alias(xstrcasestr,       slurm_xstrcasestr);
 /*
  * Ensure that a string has enough space to add 'needed' characters.
  * If the string is uninitialized, it should be NULL.
+ * str (IN/OUT)		str
+ * str_len(IN)		current string length, if known. -1 otherwise
+ * needed (IN)		additional space needed
  */
-static void makespace(char **str, int needed)
+static void _makespace(char **str, int str_len, int needed)
 {
 	if (*str == NULL)
 		*str = xmalloc(needed + 1);
 	else {
 		int actual_size;
-		int used = strlen(*str) + 1;
+		int used = (str_len < 0) ? strlen(*str) + 1 : str_len + 1;
 		int min_new_size = used + needed;
 		int cur_size = xsize(*str);
 		if (min_new_size > cur_size) {
@@ -131,7 +134,7 @@ void _xstrcat(char **str1, const char *str2)
 	if (str2 == NULL)
 		str2 = "(null)";
 
-	makespace(str1, strlen(str2));
+	_makespace(str1, -1, strlen(str2));
 	strcat(*str1, str2);
 }
 
@@ -146,7 +149,7 @@ void _xstrncat(char **str1, const char *str2, size_t len)
 	if (str2 == NULL)
 		str2 = "(null)";
 
-	makespace(str1, len);
+	_makespace(str1, -1, len);
 	strncat(*str1, str2, len);
 }
 
@@ -168,7 +171,7 @@ static void strcatchar(char *str, char c)
  */
 void _xstrcatchar(char **str, char c)
 {
-	makespace(str, 1);
+	_makespace(str, -1, 1);
 	strcatchar(*str, c);
 }
 
@@ -431,7 +434,7 @@ bool _xstrsubstitute(char **str, const char *pattern, const char *replacement)
 
 	end_copy = xstrdup(ptr + pat_len);
 	if (rep_len != 0) {
-		makespace(str, rep_len-pat_len);
+		_makespace(str, -1, rep_len - pat_len);
 		strcpy((*str)+pat_offset, replacement);
 	}
 	strcpy((*str)+pat_offset+rep_len, end_copy);
