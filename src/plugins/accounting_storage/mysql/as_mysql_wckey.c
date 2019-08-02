@@ -275,8 +275,8 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 	MYSQL_ROW row;
 	char *assoc_char = NULL;
 	time_t now = time(NULL);
-	char *query = xstrdup_printf("select t1.id_wckey, t1.wckey_name "
-				     "from \"%s_%s\" as t1%s;",
+	char *query = xstrdup_printf("select t1.id_wckey, t1.wckey_name, "
+				     "t1.user from \"%s_%s\" as t1%s;",
 				     cluster_name, wckey_table, extra);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 		xfree(query);
@@ -291,8 +291,10 @@ static int _cluster_remove_wckeys(mysql_conn_t *mysql_conn,
 
 	while ((row = mysql_fetch_row(result))) {
 		slurmdb_wckey_rec_t *wckey_rec = NULL;
+		char *object = xstrdup_printf("C = %-10s W = %-20s U = %-9s",
+					      cluster_name, row[1], row[2]);
+		list_append(ret_list, object);
 
-		list_append(ret_list, xstrdup(row[1]));
 		if (!assoc_char)
 			xstrfmtcat(assoc_char, "id_wckey='%s'", row[0]);
 		else

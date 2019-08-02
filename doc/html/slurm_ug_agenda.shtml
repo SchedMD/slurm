@@ -51,7 +51,7 @@ Club.</a></p>
 <tr><td bgcolor="#F0F1C9">08:30 - 09:00</td><td colspan="3" bgcolor="#F0F1C9">Registration </td></tr>
 <tr><td nowrap>09:00 - 09:20</td><td>Welcome</td><td>Auble (SchedMD)</td><td>Welcome</td></tr>
 <tr><td nowrap>09:20 - 10:00</td><td>Technical</td><td>Christiansen (SchedMD)</td><td>TRES</td></tr>
-<tr><td nowrap>10:00 - 10:40</td><td>Technical</td><td>Jette (SchedMD)</td><td>GPUs and cons_tres</td></tr>
+<tr><td nowrap>10:00 - 10:40</td><td>Technical</td><td>Vizino (SchedMD)</td><td>GPUs and cons_tres</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:40 - 11:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>11:00 - 11:20</td><td>Site Report</td><td>Fullop</td><td>LANL</td></tr>
 <tr><td nowrap>11:20 - 12:00</td><td>Technical</td><td>Garey (SchedMD)</td><td>cgroups and pam_slurm_adopt</td></tr>
@@ -61,7 +61,7 @@ Club.</a></p>
 <tr><td nowrap>14:20 - 15:00</td><td>Technical</td><td>Hoopes (SchedMD)</td><td>Priority Scheduling and Fair Tree</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">15:00 - 15:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>15:20 - 15:40</td><td>Technical</td><td>Yeager</td><td>NVIDIA</td></tr>
-<tr><td nowrap>15:40 - 16:20</td><td>Technical</td><td>Gardner (SchedMD)</td><td>REST API</td></tr>
+<tr><td nowrap>15:40 - 16:20</td><td>Technical</td><td>Rini (SchedMD)</td><td>REST API</td></tr>
 <tr><td nowrap>16:20 - 16:40</td><td>Technical</td><td>Gaur</td><td>NERSC</td></tr>
 
 <tr>
@@ -84,7 +84,7 @@ Club.</a></p>
   </tr>
 
 <tr><td nowrap>09:00 - 09:20</td><td>Site Report</td><td>Diakhate</td><td>CEA</td></tr>
-<tr><td nowrap>09:20 - 09:40</td><td>Technical</td><td>(SchedMD)</td><td>High Throughput Computing</td></tr>
+<tr><td nowrap>09:20 - 09:40</td><td>Technical</td><td>Gardner (SchedMD)</td><td>High Throughput Computing</td></tr>
 <tr><td nowrap>09:40 - 10:00</td><td>Site Report</td><td>Cavalotti</td><td>Stanford</td></tr>
 <tr><td nowrap>10:00 - 10:40</td><td>Technical</td><td>TBD (Google), Christiansen (SchedMD)</td><td>Google Compute Platform</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">10:40 - 11:00</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
@@ -92,9 +92,9 @@ Club.</a></p>
 <tr><td nowrap>11:40 - 12:00</td><td>Technical</td><td>Dobson</td><td>LANL</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">12:00 - 13:00</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>13:00 - 13:20</td><td>Site Report</td><td>Samuel</td><td>NERSC</td></tr>
-<tr><td nowrap>13:20 - 14:00</td><td>Technical</td><td>Gil (SchedMD)</td><td>Troubleshooting</td></tr>
+<tr><td nowrap>13:20 - 14:00</td><td>Technical</td><td>Booth and Gil (SchedMD)</td><td>Troubleshooting</td></tr>
 <tr><td nowrap>14:00 - 14:20</td><td>Site Report</td><td>Nielsen</td><td>DTU</td></tr>
-<tr><td nowrap>14:20 - 14:40</td><td>Technical</td><td>Cadeau (Atos)</td><td></td></tr>
+<tr><td nowrap>14:20 - 14:40</td><td>Technical</td><td>Calegari (Atos)</td><td></td></tr>
 <tr><td nowrap>14:40 - 15:00</td><td>Technical</td><td>Wickberg (SchedMD)</td><td>Slurm 19.05 Release Review</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">15:00 - 15:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>15:20 - 15:40</td><td>Technical</td><td>Wickberg (SchedMD)</td><td>Slurm 20.02 Release and Roadmap</td></tr>

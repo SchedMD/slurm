@@ -49,11 +49,13 @@ typedef struct {
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_user_cond_t *user_cond,
+		     slurmdb_wckey_cond_t *wckey_cond,
 		     List format_list)
 {
 	int i;
 	int u_set = 0;
 	int a_set = 0;
+	int w_set = 0;
 	int end = 0;
 	slurmdb_assoc_cond_t *assoc_cond = NULL;
 	int command_len = 0;
@@ -176,6 +178,22 @@ static int _set_cond(int *start, int argc, char **argv,
 
 				slurm_addto_char_list(format_list, argv[i]+end);
 			}
+		} else if (!xstrncasecmp(argv[i], "WCKeys",
+					 MAX(command_len, 1))) {
+			if (!wckey_cond) {
+				exit_code = 1;
+				break;
+			}
+
+			if (!wckey_cond->name_list)
+				wckey_cond->name_list =
+					list_create(slurm_destroy_char);
+
+			if (slurm_addto_char_list(wckey_cond->name_list,
+						  argv[i]+end))
+				w_set = 1;
+			else
+				exit_code = 1;
 		} else if (!(a_set = sacctmgr_set_assoc_cond(
 				    assoc_cond, argv[i], argv[i]+end,
 				    command_len, option))) {
@@ -188,7 +206,17 @@ static int _set_cond(int *start, int argc, char **argv,
 
 	(*start) = i;
 
-	if (u_set && a_set)
+	if (a_set && w_set) {
+		fprintf(stderr," Mixing Account and WCKeys is not allowed\n");
+		exit_code = 1;
+		return -1;
+	}
+
+	if (u_set && w_set)
+		return 5;
+	else if (w_set)
+		return 4;
+	else if (u_set && a_set)
 		return 3;
 	else if (a_set) {
 		return 2;
@@ -887,6 +915,13 @@ extern int sacctmgr_add_user(int argc, char **argv)
 		}
 	}
 
+	/*
+	 * If we aren't tracking WCKeys but the user is adding them, make sure
+	 * we do.
+	 */
+	if (!track_wckey)
+		track_wckey = !list_is_empty(wckey_cond->name_list);
+
 	if (track_wckey || default_wckey) {
 		wckey_cond->cluster_list = assoc_cond->cluster_list;
 		wckey_cond->user_list = assoc_cond->user_list;
@@ -1316,7 +1351,7 @@ extern int sacctmgr_add_coord(int argc, char **argv)
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
 		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
-		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+		prev_set = _set_cond(&i, argc, argv, user_cond, NULL, NULL);
 		cond_set |= prev_set;
 	}
 
@@ -1401,7 +1436,8 @@ extern int sacctmgr_list_user(int argc, char **argv)
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
 		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
-		prev_set = _set_cond(&i, argc, argv, user_cond, format_list);
+		prev_set = _set_cond(&i, argc, argv, user_cond,
+				     NULL, format_list);
 		cond_set |= prev_set;
 	}
 
@@ -1684,14 +1720,16 @@ extern int sacctmgr_modify_user(int argc, char **argv)
 		int command_len = strlen(argv[i]);
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
-			prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+			prev_set = _set_cond(&i, argc, argv, user_cond,
+					     NULL, NULL);
 			cond_set |= prev_set;
 		} else if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i++;
 			prev_set = _set_rec(&i, argc, argv, user, assoc);
 			rec_set |= prev_set;
 		} else {
-			prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+			prev_set = _set_cond(&i, argc, argv, user_cond,
+					     NULL, NULL);
 			cond_set |= prev_set;
 		}
 	}
@@ -1885,6 +1923,8 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_user_cond_t *user_cond = xmalloc(sizeof(slurmdb_user_cond_t));
+	slurmdb_wckey_cond_t * wckey_cond =
+		xmalloc(sizeof(slurmdb_wckey_cond_t));
 	int i=0;
 	List ret_list = NULL;
 	int cond_set = 0, prev_set = 0;
@@ -1894,7 +1934,8 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
 		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
-		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+		prev_set = _set_cond(&i, argc, argv, user_cond,
+				     wckey_cond, NULL);
 		cond_set |= prev_set;
 	}
 
@@ -1902,19 +1943,30 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	   things to handle things correctly.
 	*/
 	if (user_cond->assoc_cond && user_cond->assoc_cond->cluster_list
-	    && list_count(user_cond->assoc_cond->cluster_list))
-		cond_set |= 2;
+	    && list_count(user_cond->assoc_cond->cluster_list)) {
+		if (cond_set & 4) {
+			wckey_cond->cluster_list =
+				user_cond->assoc_cond->cluster_list;
+			user_cond->assoc_cond->cluster_list = NULL;
+			wckey_cond->user_list =
+				user_cond->assoc_cond->user_list;
+			user_cond->assoc_cond->user_list = NULL;
+		} else
+			cond_set |= 2;
+	}
 
 	if (!cond_set) {
 		exit_code=1;
 		fprintf(stderr,
 			" No conditions given to remove, not executing.\n");
 		slurmdb_destroy_user_cond(user_cond);
+		slurmdb_destroy_wckey_cond(wckey_cond);
 		return SLURM_ERROR;
 	}
 
 	if (exit_code) {
 		slurmdb_destroy_user_cond(user_cond);
+		slurmdb_destroy_wckey_cond(wckey_cond);
 		return SLURM_ERROR;
 	}
 
@@ -1925,12 +1977,15 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	} else if (cond_set & 2) {
 		ret_list = slurmdb_associations_remove(
 			db_conn, user_cond->assoc_cond);
+	} else if (cond_set & 4) {
+		ret_list = slurmdb_wckeys_remove(db_conn, wckey_cond);
 	}
 
 	rc = errno;
 	notice_thread_fini();
 
 	slurmdb_destroy_user_cond(user_cond);
+	slurmdb_destroy_wckey_cond(wckey_cond);
 
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
@@ -1954,6 +2009,8 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 			printf(" Deleting users...\n");
 		} else if (cond_set & 2) {
 			printf(" Deleting user associations...\n");
+		} else if (cond_set & 4) {
+			printf(" Deleting user WCKeys...\n");
 		}
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);
@@ -2068,8 +2125,18 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 
 				del_user_ret_list = slurmdb_users_remove(
 					db_conn, &del_user_cond);
+				rc = errno;
 				FREE_NULL_LIST(del_user_ret_list);
 				FREE_NULL_LIST(del_user_list);
+				if (rc) {
+					exit_code = 1;
+					fprintf(stderr,
+						" Error with request: %s.\n"
+						" Changes Discarded\n",
+						slurm_strerror(rc));
+					rc = SLURM_ERROR;
+					goto end_it;
+				}
 			}
 		}
 
@@ -2085,7 +2152,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	} else {
 		exit_code=1;
 		fprintf(stderr, " Error with request: %s\n",
-			slurm_strerror(errno));
+			slurm_strerror(rc));
 		rc = SLURM_ERROR;
 	}
 end_it:
@@ -2111,7 +2178,7 @@ extern int sacctmgr_delete_coord(int argc, char **argv)
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
 		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
 			i++;
-		prev_set = _set_cond(&i, argc, argv, user_cond, NULL);
+		prev_set = _set_cond(&i, argc, argv, user_cond, NULL, NULL);
 		cond_set |= prev_set;
 	}
 

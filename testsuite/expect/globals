@@ -131,7 +131,7 @@ cset partition ""
 #cset use_pmi	1
 # OR for other versions of MPICH, use this
 cset mpicc	"/usr/local/bin/mpicc"
-cset nvcc	"nvcc"
+cset nvcc	"/usr/bin/nvcc"
 cset use_pmi	0
 #cset upcc       "/usr/local/bin/upcc"
 cset upcc       "/usr/bin/xlupc"
@@ -236,6 +236,7 @@ set alpha_comma_slash_under "\[a-zA-Z/,/_\]+"
 set alpha_numeric        "\[a-zA-Z0-9\]+"
 set alpha_numeric_special "\[a-zA-Z0-9_,=\\.\\(\\)\\\[\\\]\\\/\:\\-\|\]+"
 set alpha_numeric_colon  "\[a-zA-Z0-9_,\:\-\]+"
+set alpha_numeric_comma_eq  "\[a-zA-Z0-9_,=\-\]+"
 set alpha_numeric_comma  "\[a-zA-Z0-9_,\-\]+"
 set alpha_numeric_under  "\[a-zA-Z0-9_\-\]+"
 set alpha_under          "\[A-Z_\]+"
@@ -2351,14 +2352,14 @@ proc get_total_cpus { partition } {
 ################################################################
 
 proc test_scheduler_params { type } {
-	global scontrol bin_bash bin_grep alpha_numeric_comma
+	global scontrol bin_bash bin_grep alpha_numeric_comma_eq
 
 	log_user 0
 	set ret 0
 	set params ""
 	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SchedulerParameters"
 	expect {
-		-re "SchedulerParameters *= *($alpha_numeric_comma)" {
+		-re "SchedulerParameters *= *($alpha_numeric_comma_eq)" {
 			set params $expect_out(1,string)
 			exp_continue
 		}
@@ -2373,11 +2374,10 @@ proc test_scheduler_params { type } {
 	set params [string toupper $params]
 	set params [split $params ,]
 
-	foreach item $params {
-		if {![string compare $type $item]} {
-			set ret 1
-			break
-		}
+	# We have to search with the '*' since some options have an =value
+	# on them.
+	if { [lsearch $params "$type*"] != -1 } {
+		set ret 1
 	}
 	log_user 1
 

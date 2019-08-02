@@ -64,7 +64,7 @@ if {$nb_nodes < 2} {
     send_user "\nWARNING: not enough nodes currently available ($nb_nodes avail, 2 needed)\n"
     exit $exit_code
 }
-set gpu_cnt [get_gpu_count $nb_nodes]
+set gpu_cnt [get_gpu_count 2]
 if {$gpu_cnt < 0} {
 	send_user "\nFAILURE: Error getting GPU count\n"
 	exit 1

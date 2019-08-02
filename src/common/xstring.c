@@ -75,6 +75,7 @@ strong_alias(_xstrncat,		slurm_xstrncat);
 strong_alias(_xstrcatchar,	slurm_xstrcatchar);
 strong_alias(_xstrftimecat,	slurm_xstrftimecat);
 strong_alias(_xstrfmtcat,	slurm_xstrfmtcat);
+strong_alias(_xstrfmtcatat,	slurm_xstrfmtcatat);
 strong_alias(_xmemcat,		slurm_xmemcat);
 strong_alias(xstrdup,		slurm_xstrdup);
 strong_alias(xstrdup_printf,	slurm_xstrdup_printf);
@@ -96,14 +97,17 @@ strong_alias(xstrcasestr,       slurm_xstrcasestr);
 /*
  * Ensure that a string has enough space to add 'needed' characters.
  * If the string is uninitialized, it should be NULL.
+ * str (IN/OUT)		str
+ * str_len(IN)		current string length, if known. -1 otherwise
+ * needed (IN)		additional space needed
  */
-static void makespace(char **str, int needed)
+static void _makespace(char **str, int str_len, int needed)
 {
 	if (*str == NULL)
 		*str = xmalloc(needed + 1);
 	else {
 		int actual_size;
-		int used = strlen(*str) + 1;
+		int used = (str_len < 0) ? strlen(*str) + 1 : str_len + 1;
 		int min_new_size = used + needed;
 		int cur_size = xsize(*str);
 		if (min_new_size > cur_size) {
@@ -131,7 +135,7 @@ void _xstrcat(char **str1, const char *str2)
 	if (str2 == NULL)
 		str2 = "(null)";
 
-	makespace(str1, strlen(str2));
+	_makespace(str1, -1, strlen(str2));
 	strcat(*str1, str2);
 }
 
@@ -146,7 +150,7 @@ void _xstrncat(char **str1, const char *str2, size_t len)
 	if (str2 == NULL)
 		str2 = "(null)";
 
-	makespace(str1, len);
+	_makespace(str1, -1, len);
 	strncat(*str1, str2, len);
 }
 
@@ -168,7 +172,7 @@ static void strcatchar(char *str, char c)
  */
 void _xstrcatchar(char **str, char c)
 {
-	makespace(str, 1);
+	_makespace(str, -1, 1);
 	strcatchar(*str, c);
 }
 
@@ -281,6 +285,59 @@ int _xstrfmtcat(char **str, const char *fmt, ...)
 	xfree(p);
 
 	return n;
+}
+
+/*
+ * Append formatted string with printf-style args to str at pos,
+ * expanding buf as needed. pos is updated to the end of the appended
+ * string.
+ *
+ * Meant to be used in loops contructing longer strings that are performance
+ * sensitive, as xstrfmtcat() needs to re-seek to the end of str making the
+ * string construction worse by another O(log(strlen)) factor.
+ */
+int _xstrfmtcatat(char **str, char **pos, const char *fmt, ...)
+{
+	size_t orig_len, append_len;
+	char *p = NULL;
+	va_list ap;
+
+	va_start(ap, fmt);
+	p = _xstrdup_vprintf(fmt, ap);
+	va_end(ap);
+
+	if (!p)
+		return 0;
+
+	append_len = strlen(p);
+
+	/* No string yet to append to, so just return p. */
+	if (!*str) {
+		*str = p;
+		*pos = p + append_len;
+		return append_len;
+	}
+
+	if (!*pos) {
+		orig_len = strlen(*str);
+		*pos = *str + orig_len;
+	} else {
+		xassert(*pos >= *str);
+		orig_len = *pos - *str;
+	}
+
+	_makespace(str, orig_len, append_len);
+
+	memcpy(*str + orig_len, p, append_len);
+	xfree(p);
+
+	/*
+	 * Update *pos. Cannot happen earlier as _makespace() may have
+	 * changed *str to a different address.
+	 */
+	*pos = *str + orig_len + append_len;
+
+	return append_len;
 }
 
 /*
@@ -431,7 +488,7 @@ bool _xstrsubstitute(char **str, const char *pattern, const char *replacement)
 
 	end_copy = xstrdup(ptr + pat_len);
 	if (rep_len != 0) {
-		makespace(str, rep_len-pat_len);
+		_makespace(str, -1, rep_len - pat_len);
 		strcpy((*str)+pat_offset, replacement);
 	}
 	strcpy((*str)+pat_offset+rep_len, end_copy);

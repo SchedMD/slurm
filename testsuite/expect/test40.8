@@ -71,7 +71,7 @@ env | grep CUDA_VISIBLE_DEVICES
 env | grep CUDA_MPS_ACTIVE_THREAD_PERCENTAGE
 unset CUDA_VISIBLE_DEVICES
 ls $nvcc
-$nvcc ${file_prog}.cu -o $file_prog
+$nvcc ${file_prog}.cu -g -o $file_prog
 ./$file_prog &
 ./$file_prog &
 wait"
@@ -113,6 +113,11 @@ if {[wait_for_file $file_out] == 0} {
 	set run_time2 0
 	spawn $bin_cat $file_out
 	expect {
+		-re "Couldn't allocate memory" {
+			send_user "\nWARNING: This means the gpu selected doesn't support this test.\n"
+			exit 0
+			exp_continue
+		}
 		-re "No such file" {
 			incr no_nvcc
 			exp_continue
