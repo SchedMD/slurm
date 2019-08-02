@@ -114,7 +114,7 @@ if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
 		-re "Couldn't allocate memory" {
-			log_info "WARNING: This means the gpu selected doesn't support this test."
+			send_user "\nWARNING: This means the gpu selected doesn't support this test.\n"
 			exit 0
 			exp_continue
 		}
