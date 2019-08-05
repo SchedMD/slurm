@@ -1685,7 +1685,7 @@ proc reset_qos_usage { cluster qos } {
 
 ###############################################################
 #
-# Proc: check_wckey_tracking
+# Proc: check_wckey_tracking_slurmdbd
 #
 # Purpose: Check to see that wcky tracking is enabled in the
 # SlurmDBD
@@ -1694,7 +1694,7 @@ proc reset_qos_usage { cluster qos } {
 #
 #
 ###############################################################
-proc check_wckey_tracking { } {
+proc check_wckey_tracking_slurmdbd { } {
 	global sacctmgr
 
 	log_user 0
