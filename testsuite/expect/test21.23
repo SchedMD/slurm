@@ -48,8 +48,8 @@ if { [test_account_storage] == 0 } {
 	send_user "\nWARNING: This test can't be run without a usable AccountStorageType\n"
 	exit 0
 }
-if { [test_track_wckey] == 0} {
-	send_user "\nWARNING: This test can't be run without TrackWCKey being set\n"
+if { [test_track_wckey_slurmctld] == 0} {
+	send_user "\nWARNING: This test can't be run without TrackWCKey being set in slurm.conf.\n"
 	exit 0
 }
 
