@@ -193,6 +193,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, mail_prog, charp);
 
 	STORE_FIELD(hv, conf, max_array_sz, uint16_t);
+	STORE_FIELD(hv, conf, max_dbd_msgs, uint32_t);
 
 	STORE_FIELD(hv, conf, max_job_cnt, uint16_t);
 	STORE_FIELD(hv, conf, max_job_id, uint32_t);
@@ -520,6 +521,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, log_fmt, uint16_t, FALSE);
 	FETCH_FIELD(hv, conf, mail_prog, charp, FALSE);
 	FETCH_FIELD(hv, conf, max_array_sz, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, max_dbd_msgs, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, max_job_cnt, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, max_job_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, conf, max_mem_per_cpu, uint64_t, TRUE);

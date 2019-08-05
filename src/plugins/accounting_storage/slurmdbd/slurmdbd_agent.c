@@ -47,7 +47,6 @@
 #include "slurmdbd_agent.h"
 
 #define DBD_MAGIC		0xDEAD3219
-#define MAX_AGENT_QUEUE		10000
 #define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
 #define DEBUG_PRINT_MAX_MSG_TYPES 10
 
@@ -1146,25 +1145,26 @@ extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
 extern int send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 {
 	Buf buffer;
-	int cnt, rc = SLURM_SUCCESS;
+	uint32_t cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
-	static int max_agent_queue = 0;
+	static bool first = 1;
+
+	if (first) {
+		/*
+		 * This has to be done here since we reread the slurm.conf after
+		 * init() is called.
+		 */
+		first = 0;
+		slurmdbd_agent_config_setup();
+	}
+
+	xassert(slurmctld_conf.max_dbd_msgs);
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_PROTOCOL)
 		info("%s: msg_type:%s protocol_version:%hu agent_count:%d",
 		     __func__,
 		     slurmdbd_msg_type_2_str(req->msg_type, 1),
 		     rpc_version, list_count(agent_list));
-
-	/*
-	 * Whatever our max job count is multiplied by 2 plus node count
-	 * multiplied by 4 or MAX_AGENT_QUEUE which ever is bigger.
-	 */
-	if (!max_agent_queue)
-		max_agent_queue =
-			MAX(MAX_AGENT_QUEUE,
-			    ((slurmctld_conf.max_job_cnt * 2) +
-			     (node_record_count * 4)));
 
 	buffer = slurm_persist_msg_pack(
 		slurmdbd_conn, (persist_msg_t *)req);
@@ -1181,21 +1181,21 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		}
 	}
 	cnt = list_count(agent_list);
-	if ((cnt >= (max_agent_queue / 2)) &&
+	if ((cnt >= (slurmctld_conf.max_dbd_msgs / 2)) &&
 	    (difftime(time(NULL), syslog_time) > 120)) {
 		/* Record critical error every 120 seconds */
 		syslog_time = time(NULL);
-		error("slurmdbd: agent queue filling (%d), RESTART SLURMDBD NOW",
-		      cnt);
+		error("slurmdbd: agent queue filling (%u), MaxDBDMsgs=%u, RESTART SLURMDBD NOW",
+		      cnt, slurmctld_conf.max_dbd_msgs);
 		syslog(LOG_CRIT, "*** RESTART SLURMDBD NOW ***");
 		if (slurmdbd_conn->trigger_callbacks.dbd_fail)
 			(slurmdbd_conn->trigger_callbacks.dbd_fail)();
 	}
-	if (cnt == (max_agent_queue - 1))
+	if (cnt == (slurmctld_conf.max_dbd_msgs - 1))
 		cnt -= _purge_step_req();
-	if (cnt == (max_agent_queue - 1))
+	if (cnt == (slurmctld_conf.max_dbd_msgs - 1))
 		cnt -= _purge_job_start_req();
-	if (cnt < max_agent_queue) {
+	if (cnt < slurmctld_conf.max_dbd_msgs) {
 		if (list_enqueue(agent_list, buffer) == NULL)
 			fatal("list_enqueue: memory allocation failure");
 	} else {
@@ -1226,4 +1226,17 @@ extern bool slurmdbd_conn_active(void)
 extern int slurmdbd_agent_queue_count(void)
 {
 	return list_count(agent_list);
+}
+extern void slurmdbd_agent_config_setup(void)
+{
+	/*
+	 * Whatever our max job count is multiplied by 2 plus node count
+	 * multiplied by 4 or DEFAULT_MAX_DBD_MSGS which ever is bigger.
+	 */
+	if (!slurmctld_conf.max_dbd_msgs)
+		slurmctld_conf.max_dbd_msgs =
+			MAX(DEFAULT_MAX_DBD_MSGS,
+			    ((slurmctld_conf.max_job_cnt * 2) +
+			     (node_record_count * 4)));
+
 }

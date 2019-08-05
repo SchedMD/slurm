@@ -471,6 +471,8 @@ extern int init ( void )
 			      plugin_name);
 		xfree(cluster_name);
 
+		slurmdbd_agent_config_setup();
+
 		verbose("%s loaded", plugin_name);
 
 		if (job_list && !(slurm_get_accounting_storage_enforce() &
@@ -3019,8 +3021,10 @@ extern int acct_storage_p_reconfig(void *db_conn, bool dbd)
 	slurmdbd_msg_t msg;
 	int rc = SLURM_SUCCESS;
 
-	if (!dbd)
+	if (!dbd) {
+		slurmdbd_agent_config_setup();
 		return SLURM_SUCCESS;
+	}
 
 	memset(&msg, 0, sizeof(slurmdbd_msg_t));
 

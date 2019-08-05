@@ -114,6 +114,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_MAIL_PROG           "/bin/mail"
 #define DEFAULT_MAIL_PROG_ALT       "/usr/bin/mail"
 #define DEFAULT_MAX_ARRAY_SIZE      1001
+#define DEFAULT_MAX_DBD_MSGS        10000
 #define DEFAULT_MAX_JOB_COUNT       10000
 #define DEFAULT_MAX_JOB_ID          0x03ff0000
 #define DEFAULT_MAX_STEP_COUNT      40000

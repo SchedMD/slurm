@@ -1388,6 +1388,12 @@ The value of \fBMaxJobCount\fR should be much larger than \fBMaxArraySize\fR.
 The default value is 1001.
 
 .TP
+\fBMaxDBDMsgs\fR
+When communication to the SlurmDBD is not possible the slurmctld will queue messages meant to processed when the the SlurmDBD is available again.
+In order to avoid running out of memory the slurmctld will only queue so many messages.
+The default value is 10000, or \fBMaxJobCount\fR * 2 + Node Count * 4, whichever is greater.  The value can not be less than 10000.
+
+.TP
 \fBMaxJobCount\fR
 The maximum number of jobs Slurm can have in its active database
 at one time. Set the values of \fBMaxJobCount\fR and \fBMinJobAge\fR
