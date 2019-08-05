@@ -146,7 +146,7 @@ static void _print_slurm_config(void)
 	printf("SLURM_CONF             = %s\n", default_slurm_config_file);
 	printf("SLURM_VERSION          = %s\n", SLURM_VERSION_STRING);
 	printf("TCPTimeout             = %u sec\n", tcp_timeout);
-	printf("TrackWCKey             = %u\n", track_wckey);
+	printf("TrackWCKey             = %s\n", track_wckey ? "Yes" : "No");
 }
 
 extern int sacctmgr_list_config(bool have_db_conn)
