@@ -3867,6 +3867,7 @@ static void *_run_epilog(void *arg)
 			xfree(epilog_arg->my_env[i]);
 		xfree(epilog_arg->my_env);
 		xfree(epilog_arg);
+		track_script_remove(pthread_self());
 		return NULL;
 	} else if (status != 0) {
 		error("epilog_slurmctld JobId=%u epilog exit status %u:%u",
@@ -4331,6 +4332,7 @@ static void *_run_prolog(void *arg)
 			xfree(my_env[i]);
 		xfree(my_env);
 		FREE_NULL_BITMAP(node_bitmap);
+		track_script_remove(pthread_self());
 		return NULL;
 	} else if (status != 0) {
 		bool kill_job = false;

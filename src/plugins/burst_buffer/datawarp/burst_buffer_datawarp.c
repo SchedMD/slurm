@@ -1602,10 +1602,7 @@ static void *_start_stage_in(void *x)
 		xfree(resp_msg);
 		xfree(stage_args->pool);
 		xfree(stage_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	track_script_reset_cpid(pthread_self(), 0);
@@ -1934,10 +1931,7 @@ static void *_start_stage_out(void *x)
 		xfree(resp_msg);
 		xfree(stage_args->pool);
 		xfree(stage_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	track_script_reset_cpid(pthread_self(), 0);
@@ -1999,10 +1993,7 @@ static void *_start_stage_out(void *x)
 			xfree(resp_msg);
 			xfree(stage_args->pool);
 			xfree(stage_args);
-			/*
-			 * Don't need to free track_script_rec here,
-			 * it is handled elsewhere since it still being tracked.
-			 */
+			track_script_remove(pthread_self());
 			return NULL;
 		}
 		track_script_reset_cpid(pthread_self(), 0);
@@ -2191,10 +2182,7 @@ static void *_start_teardown(void *x)
 		xfree(resp_msg);
 		free_command_argv(teardown_argv);
 		xfree(teardown_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	/* track_script_reset_cpid(pthread_self(), 0); */
@@ -4218,10 +4206,7 @@ static void *_start_pre_run(void *x)
 		xfree(resp_msg);
 		free_command_argv(pre_run_args->args);
 		xfree(pre_run_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	/* track_script_reset_cpid(pthread_self(), 0); */
@@ -4815,10 +4800,7 @@ static void *_create_persistent(void *x)
 		     __func__, create_args->job_id);
 		xfree(resp_msg);
 		_free_create_args(create_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	/* track_script_reset_cpid(pthread_self(), 0); */
@@ -4977,10 +4959,8 @@ static void *_destroy_persistent(void *x)
 		     __func__, destroy_args->job_id);
 		xfree(resp_msg);
 		_free_create_args(destroy_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	/* track_script_reset_cpid(pthread_self(), 0); */
