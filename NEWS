@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
     on device name instead of brand name.
  -- cli_filter - fix logic error with option lookup functions.
  -- Fix bad testing of NodeFeatures debug flag in contribs/cray.
+ -- Cleanup track_script code to avoid race conditions and invalid memory
+    access.
 
 * Changes in Slurm 19.05.1-2
 ============================
