@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leaks in preemption when jobs request multiple features.
  -- Allow Operator users to show/fix runaways.
  -- Disallow coordinators to show/fix runaways.
+ -- mpi/pmi2 - increase array len to avoid buffer size exceeded error.
 
 * Changes in Slurm 19.05.2
 ==========================
