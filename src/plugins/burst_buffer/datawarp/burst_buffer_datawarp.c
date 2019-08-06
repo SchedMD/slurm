@@ -1574,8 +1574,7 @@ static void *_start_stage_in(void *x)
 	bb_job_t *bb_job;
 	bool get_real_size = false;
 	DEF_TIMERS;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(stage_args->job_id, 0, pthread_self());
+	track_script_rec_add(stage_args->job_id, 0, pthread_self());
 
 	setup_argv   = stage_args->args1;
 	data_in_argv = stage_args->args2;
@@ -1594,7 +1593,7 @@ static void *_start_stage_in(void *x)
 	info("%s: setup for job JobId=%u ran for %s",
 	     __func__, stage_args->job_id, TIME_STR);
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("%s: setup for JobId=%u terminated by slurmctld",
 		     __func__, stage_args->job_id);
@@ -1603,10 +1602,7 @@ static void *_start_stage_in(void *x)
 		xfree(resp_msg);
 		xfree(stage_args->pool);
 		xfree(stage_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	track_script_reset_cpid(pthread_self(), 0);
@@ -1675,7 +1671,7 @@ static void *_start_stage_in(void *x)
 		END_TIMER;
 		info("%s: dws_data_in for JobId=%u ran for %s",
 		     __func__, stage_args->job_id, TIME_STR);
-		if (track_script_broadcast(track_script_rec, status)) {
+		if (track_script_broadcast(pthread_self(), status)) {
 			/* I was killed by slurmtrack, bail out right now */
 			info("%s: dws_data_in for JobId=%u terminated by slurmctld",
 			     __func__, stage_args->job_id);
@@ -1733,7 +1729,7 @@ static void *_start_stage_in(void *x)
 		    bb_state.bb_config.debug_flag)
 			info("%s: real_size ran for %s", __func__, TIME_STR);
 
-		if (track_script_broadcast(track_script_rec, status)) {
+		if (track_script_broadcast(pthread_self(), status)) {
 			/* I was killed by slurmtrack, bail out right now */
 			info("%s: real_size for JobId=%u terminated by slurmctld",
 			     __func__, stage_args->job_id);
@@ -1904,8 +1900,7 @@ static void *_start_stage_out(void *x)
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
 	DEF_TIMERS
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(stage_args->job_id, 0, pthread_self());
+	track_script_rec_add(stage_args->job_id, 0, pthread_self());
 
 	data_out_argv = stage_args->args1;
 	post_run_argv = stage_args->args2;
@@ -1927,7 +1922,7 @@ static void *_start_stage_out(void *x)
 		     __func__, stage_args->job_id, TIME_STR);
 	}
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("%s: dws_post_run for JobId=%u terminated by slurmctld",
 		     __func__, stage_args->job_id);
@@ -1936,10 +1931,7 @@ static void *_start_stage_out(void *x)
 		xfree(resp_msg);
 		xfree(stage_args->pool);
 		xfree(stage_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	track_script_reset_cpid(pthread_self(), 0);
@@ -1992,7 +1984,7 @@ static void *_start_stage_out(void *x)
 			     __func__, stage_args->job_id, TIME_STR);
 		}
 
-		if (track_script_broadcast(track_script_rec, status)) {
+		if (track_script_broadcast(pthread_self(), status)) {
 			/* I was killed by slurmtrack, bail out right now */
 			info("%s: dws_data_out for JobId=%u terminated by slurmctld",
 			     __func__, stage_args->job_id);
@@ -2001,10 +1993,7 @@ static void *_start_stage_out(void *x)
 			xfree(resp_msg);
 			xfree(stage_args->pool);
 			xfree(stage_args);
-			/*
-			 * Don't need to free track_script_rec here,
-			 * it is handled elsewhere since it still being tracked.
-			 */
+			track_script_remove(pthread_self());
 			return NULL;
 		}
 		track_script_reset_cpid(pthread_self(), 0);
@@ -2165,9 +2154,7 @@ static void *_start_teardown(void *x)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
 	bool hurry;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(teardown_args->job_id, 0,
-				      pthread_self());
+	track_script_rec_add(teardown_args->job_id, 0, pthread_self());
 
 	teardown_argv = teardown_args->args1;
 
@@ -2188,17 +2175,14 @@ static void *_start_teardown(void *x)
 	info("%s: teardown for JobId=%u ran for %s",
 	     __func__, teardown_args->job_id, TIME_STR);
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("%s: teardown for JobId=%u terminated by slurmctld",
 		     __func__, teardown_args->job_id);
 		xfree(resp_msg);
 		free_command_argv(teardown_argv);
 		xfree(teardown_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	/* track_script_reset_cpid(pthread_self(), 0); */
@@ -4185,8 +4169,7 @@ static void *_start_pre_run(void *x)
 	uint32_t timeout;
 	bool hold_job = false, nodes_ready = false;
 	DEF_TIMERS;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(pre_run_args->job_id, 0, pthread_self());
+	track_script_rec_add(pre_run_args->job_id, 0, pthread_self());
 
 	/* Wait for node boot to complete */
 	while (!nodes_ready) {
@@ -4216,17 +4199,14 @@ static void *_start_pre_run(void *x)
 			       &status);
 	END_TIMER;
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("%s: dws_pre_run for JobId=%u terminated by slurmctld",
 		     __func__, pre_run_args->job_id);
 		xfree(resp_msg);
 		free_command_argv(pre_run_args->args);
 		xfree(pre_run_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	/* track_script_reset_cpid(pthread_self(), 0); */
@@ -4770,8 +4750,7 @@ static void *_create_persistent(void *x)
 	int i, status = 0;
 	uint32_t timeout;
 	DEF_TIMERS;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(create_args->job_id, 0, pthread_self());
+	track_script_rec_add(create_args->job_id, 0, pthread_self());
 
 	script_argv = xcalloc(20, sizeof(char *));	/* NULL terminated */
 	script_argv[0] = xstrdup("dw_wlm_cli");
@@ -4815,16 +4794,13 @@ static void *_create_persistent(void *x)
 	info("create_persistent of %s ran for %s",
 	     create_args->name, TIME_STR);
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("%s: create_persistent for JobId=%u terminated by slurmctld",
 		     __func__, create_args->job_id);
 		xfree(resp_msg);
 		_free_create_args(create_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	/* track_script_reset_cpid(pthread_self(), 0); */
@@ -4940,8 +4916,7 @@ static void *_destroy_persistent(void *x)
 	int status = 0;
 	uint32_t timeout;
 	DEF_TIMERS;
-	track_script_rec_t *track_script_rec =
-		track_script_rec_add(destroy_args->job_id, 0, pthread_self());
+	track_script_rec_add(destroy_args->job_id, 0, pthread_self());
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_alloc = bb_find_name_rec(destroy_args->name, destroy_args->user_id,
@@ -4978,16 +4953,14 @@ static void *_destroy_persistent(void *x)
 	info("destroy_persistent of %s ran for %s",
 	     destroy_args->name, TIME_STR);
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		/* I was killed by slurmtrack, bail out right now */
 		info("%s: destroy_persistent for JobId=%u terminated by slurmctld",
 		     __func__, destroy_args->job_id);
 		xfree(resp_msg);
 		_free_create_args(destroy_args);
-		/*
-		 * Don't need to free track_script_rec here,
-		 * it is handled elsewhere since it still being tracked.
-		 */
+
+		track_script_remove(pthread_self());
 		return NULL;
 	}
 	/* track_script_reset_cpid(pthread_self(), 0); */

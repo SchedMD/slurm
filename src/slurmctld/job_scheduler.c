@@ -3824,7 +3824,6 @@ static void *_run_epilog(void *arg)
 	int i, status, wait_rc;
 	char *argv[2];
 	uint16_t tm;
-	track_script_rec_t *track_script_rec;
 
 	argv[0] = epilog_arg->epilog_slurmctld;
 	argv[1] = NULL;
@@ -3842,8 +3841,7 @@ static void *_run_epilog(void *arg)
 	}
 
 	/* Start tracking this new process */
-	track_script_rec = track_script_rec_add(epilog_arg->job_id, cpid,
-						pthread_self());
+	track_script_rec_add(epilog_arg->job_id, cpid, pthread_self());
 
 	/* Prolog and epilog use the same timeout
 	 */
@@ -3860,7 +3858,7 @@ static void *_run_epilog(void *arg)
 		}
 	}
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		info("epilog_slurmctld JobId=%u epilog killed by signal %u",
 		     epilog_arg->job_id, WTERMSIG(status));
 
@@ -3869,6 +3867,7 @@ static void *_run_epilog(void *arg)
 			xfree(epilog_arg->my_env[i]);
 		xfree(epilog_arg->my_env);
 		xfree(epilog_arg);
+		track_script_remove(pthread_self());
 		return NULL;
 	} else if (status != 0) {
 		error("epilog_slurmctld JobId=%u epilog exit status %u:%u",
@@ -4276,7 +4275,6 @@ static void *_run_prolog(void *arg)
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurm_get_resume_timeout();
 	uint16_t tm;
-	track_script_rec_t *track_script_rec;
 
 	lock_slurmctld(config_read_lock);
 	job_id = job_ptr->job_id;
@@ -4310,8 +4308,7 @@ static void *_run_prolog(void *arg)
 	}
 
 	/* Start tracking this new process */
-	track_script_rec = track_script_rec_add(job_ptr->job_id,
-						cpid, pthread_self());
+	track_script_rec_add(job_ptr->job_id, cpid, pthread_self());
 
 	tm = slurm_get_prolog_timeout();
 	while (1) {
@@ -4326,7 +4323,7 @@ static void *_run_prolog(void *arg)
 		}
 	}
 
-	if (track_script_broadcast(track_script_rec, status)) {
+	if (track_script_broadcast(pthread_self(), status)) {
 		info("prolog_slurmctld JobId=%u prolog killed by signal %u",
 		     job_id, WTERMSIG(status));
 
@@ -4335,6 +4332,7 @@ static void *_run_prolog(void *arg)
 			xfree(my_env[i]);
 		xfree(my_env);
 		FREE_NULL_BITMAP(node_bitmap);
+		track_script_remove(pthread_self());
 		return NULL;
 	} else if (status != 0) {
 		bool kill_job = false;
