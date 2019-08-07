@@ -522,10 +522,11 @@ The batch script can only be retrieved by an admin or operator, or by the
 owner of the job.
 
 .TP
-\fBwrite config\fP
+\fBwrite config\fP \fIoptional_filename\fP
 Write the current configuration to a file with the naming convention of
 "slurm.conf.<datetime>" in the same directory as the original slurm.conf
-file.
+file.  If a filename is given that file location with a .<datetime> suffix is
+created.
 
 .TP
 \fBINTERACTIVE COMMANDS\fR
@@ -1976,6 +1977,10 @@ Same as \fB\-\-clusters\fR
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
+.TP
+\fBSLURM_CONF_OUT\fR
+When running 'write config', the location of the Slurm configuration file to be
+written.
 .TP
 \fBSLURM_TIME_FORMAT\fR
 Specify the format used to report time stamps. A value of \fIstandard\fR, the

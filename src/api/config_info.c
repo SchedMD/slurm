@@ -130,8 +130,9 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 
 	/* open new slurm.conf.<datetime> file for write. This file will
 	 * contain the currently running slurm configuration. */
-
-	base_path = getenv("SLURM_CONF");
+	base_path = getenv("SLURM_CONF_OUT");
+	if (!base_path)
+		base_path = getenv("SLURM_CONF");
 	if (base_path == NULL)
 		base_path = default_slurm_config_file;
 

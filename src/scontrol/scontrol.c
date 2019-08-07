@@ -92,7 +92,7 @@ static int	_process_command(int argc, char **argv);
 static void	_update_it(int argc, char **argv);
 static int	_update_slurmctld_debug(char *val);
 static void	_usage(void);
-static void	_write_config(void);
+static void	_write_config(char *file_name);
 
 int main(int argc, char **argv)
 {
@@ -389,7 +389,7 @@ static int _get_command (int *argc, char **argv)
 /*
  * _write_config - write the configuration parameters and values to a file.
  */
-static void _write_config(void)
+static void _write_config(char *file_name)
 {
 	int error_code;
 	node_info_msg_t *node_info_ptr = NULL;
@@ -428,6 +428,9 @@ static void _write_config(void)
 	if (error_code == SLURM_SUCCESS) {
 		int save_all_flag = all_flag;
 		all_flag = 1;
+
+		if (file_name)
+			setenv("SLURM_CONF_OUT", file_name, 1);
 
 		/* now gather node info */
 		error_code = scontrol_load_nodes(&node_info_ptr, SHOW_ALL);
@@ -1349,13 +1352,13 @@ static int _process_command (int argc, char **argv)
 		} else if (!xstrncasecmp(argv[1], "config",
 					 MAX(strlen(argv[1]), 6))) {
 			/* write config */
-			if (argc > 2) {
+			if (argc > 3) {
 				exit_code = 1;
 				fprintf(stderr,
 					"too many arguments for keyword:%s\n",
 					tag);
 			} else {
-				_write_config();
+				_write_config(argv[2]);
 			}
 		} else {
 			exit_code = 1;
@@ -1961,7 +1964,13 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               Write the batch script for a given job to a  \n\
                               local file. Default is slurm-<job_id>.sh if  \n\
                               the (optional) filename is not given.        \n\
-     write config             Write config to slurm.conf.<datetime>        \n\
+     write config <optional filename>                                      \n\
+                              Write the current configuration to a file    \n\
+                              with the naming convention of                \n\
+                              slurm.conf.<datetime> in the same directory  \n\
+                              as the original slurm.conf.                  \n\
+                              If a filename is given that file location    \n\
+                              with a .<datetime> suffix is created.        \n\
      !!                       Repeat the last command entered.             \n\
 									   \n\
   <ENTITY> may be \"aliases\", \"assoc_mgr\", \"bbstat\", \"burstBuffer\", \n\

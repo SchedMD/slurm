@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Add sdiag -M, --clusters option.
  -- NodeName configurations with CPUs != Sockets*Cores or
     Sockets*Cores*Threads will be rejected with fatal.
+ -- Add scontrol write config <filename> option.
 
 * Changes in Slurm 19.05.2
 ==========================
