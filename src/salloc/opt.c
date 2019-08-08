@@ -472,14 +472,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if ((opt.pn_min_memory != NO_VAL64) && (opt.mem_per_cpu != NO_VAL64)) {
-		if (opt.pn_min_memory < opt.mem_per_cpu) {
-			info("mem < mem-per-cpu - resizing mem to be equal "
-			     "to mem-per-cpu");
-			opt.pn_min_memory = opt.mem_per_cpu;
-		}
-		error("--mem and --mem-per-cpu are mutually exclusive.");
-	}
+	validate_memory_options(&opt);
 
         /* Check to see if user has specified enough resources to
 	 * satisfy the plane distribution with the specified
