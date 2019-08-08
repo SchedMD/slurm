@@ -15160,6 +15160,7 @@ void batch_requeue_fini(struct job_record  *job_ptr)
 	job_ptr->end_time_exp = job_ptr->end_time = 0;
 	job_ptr->total_cpus = 0;
 	job_ptr->pre_sus_time = 0;
+	job_ptr->preempt_time = 0;
 	job_ptr->suspend_time = 0;
 	job_ptr->tot_sus_time = 0;
 	/* Current code (<= 2.1) has it so we start the new job with the next

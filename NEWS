@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix bad testing of NodeFeatures debug flag in contribs/cray.
  -- Cleanup track_script code to avoid race conditions and invalid memory
     access.
+ -- Fix jobs being killed after being requeued by preemption.
 
 * Changes in Slurm 19.05.1-2
 ============================
