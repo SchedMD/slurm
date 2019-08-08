@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- Make register nodes verify correctly when using cons_tres.
  -- Fix srun --mem-per-cpu being ignored.
  -- Fix segfault in _update_job() under certain conditions.
+ -- job_submit/lua - restore slurm.FAILURE as a synonym for slurm.ERROR.
 
 * Changes in Slurm 19.05.1-2
 ============================
