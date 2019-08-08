@@ -55,7 +55,7 @@ typedef struct {
 	int *rolledup;
 	pthread_mutex_t *rolledup_lock;
 	pthread_cond_t *rolledup_cond;
-	rollup_stats_t *rollup_stats;
+	slurmdb_rollup_stats_t *rollup_stats;
 	time_t sent_end;
 	time_t sent_start;
 } local_rollup_t;
@@ -927,7 +927,7 @@ is_user:
 
 extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 			       time_t sent_end, uint16_t archive_data,
-			       rollup_stats_t *rollup_stats)
+			       slurmdb_rollup_stats_t *rollup_stats)
 {
 	int rc = SLURM_SUCCESS;
 	int rolledup = 0;

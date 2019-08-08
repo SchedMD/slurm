@@ -684,7 +684,7 @@ static void *_rollup_handler(void *db_conn)
 	time_t next_time;
 /* 	int sigarray[] = {SIGUSR1, 0}; */
 	struct tm tm;
-	rollup_stats_t rollup_stats;
+	slurmdb_rollup_stats_t rollup_stats;
 	int i;
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -700,7 +700,7 @@ static void *_rollup_handler(void *db_conn)
 		if (!db_conn)
 			break;
 		/* run the roll up */
-		memset(&rollup_stats, 0, sizeof(rollup_stats_t));
+		memset(&rollup_stats, 0, sizeof(slurmdb_rollup_stats_t));
 		slurm_mutex_lock(&rollup_lock);
 		running_rollup = 1;
 		debug2("running rollup at %s", slurm_ctime2(&start_time));

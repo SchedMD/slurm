@@ -3206,7 +3206,7 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 	dbd_roll_usage_msg_t *get_msg = msg->data;
 	int i, rc = SLURM_SUCCESS;
 	char *comment = NULL;
-	rollup_stats_t rollup_stats;
+	slurmdb_rollup_stats_t rollup_stats;
 
 	info("DBD_ROLL_USAGE: called");
 
@@ -3217,7 +3217,7 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	memset(&rollup_stats, 0, sizeof(rollup_stats_t));
+	memset(&rollup_stats, 0, sizeof(slurmdb_rollup_stats_t));
 	rc = acct_storage_g_roll_usage(slurmdbd_conn->db_conn,
 				       get_msg->start, get_msg->end,
 				       get_msg->archive_data, &rollup_stats);

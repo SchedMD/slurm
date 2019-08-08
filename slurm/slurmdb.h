@@ -1302,10 +1302,10 @@ typedef struct {
 #define ROLLUP_DAY	1
 #define ROLLUP_MONTH	2
 #define ROLLUP_COUNT	3
-typedef struct rollup_stats {
+typedef struct {
 	uint32_t rollup_time[ROLLUP_COUNT];
 	uint64_t rollup_timestamp[ROLLUP_COUNT];
-} rollup_stats_t;
+} slurmdb_rollup_stats_t;
 
 typedef struct {
 	uint16_t *rollup_count;		/* Length should be ROLLUP_COUNT */
@@ -1984,7 +1984,7 @@ extern int slurmdb_usage_roll(void *db_conn,
 			      time_t sent_start,
 			      time_t sent_end,
 			      uint16_t archive_data,
-			      rollup_stats_t *rollup_stats);
+			      slurmdb_rollup_stats_t *rollup_stats);
 
 /************** user functions **************/
 

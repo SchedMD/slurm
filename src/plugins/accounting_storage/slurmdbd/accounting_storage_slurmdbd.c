@@ -2383,7 +2383,7 @@ extern int acct_storage_p_get_usage(void *db_conn, uid_t uid,
 extern int acct_storage_p_roll_usage(void *db_conn,
 				     time_t sent_start, time_t sent_end,
 				     uint16_t archive_data,
-				     rollup_stats_t *rollup_stats)
+				     slurmdb_rollup_stats_t *rollup_stats)
 {
 	slurmdbd_msg_t req;
 	dbd_roll_usage_msg_t get_msg;
