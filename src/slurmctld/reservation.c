@@ -3154,6 +3154,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			_set_tres_cnt(resv_ptr, &old_resv_ptr);
 			xfree(old_resv_ptr.tres_str);
 			last_resv_update = time(NULL);
+			schedule_resv_save();
 		}
 	}
 
