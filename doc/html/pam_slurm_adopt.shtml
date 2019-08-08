@@ -160,6 +160,8 @@ can ssh in but may be adopted into a job that exits earlier than the
 job they intended to check on. The ssh connection will at least be
 subject to appropriate limits and the user can be informed of better
 ways to accomplish their objectives if this becomes a problem.
+NOTE: If the module fails to retrieve the cgroup mtime, then the picked
+job may not be the newest one.
 </dd>
 <dt><b>allow</b></dt>
 <dd>Let the connection through without adoption.</dd>

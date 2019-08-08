@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Optimize getting wckey and associations usage.
  -- Keep SLURM_MPI_TYPE variable in srun when not set to 'none'.
  -- Remove slurm.spec-legacy packaging file.
+ -- pam_slurm_adopt - with action_unknown=newest configured, pick a user job
+    even when failing to get cgroup mtime.
 
 * Changes in Slurm 19.05.3
 ==========================
