@@ -686,14 +686,7 @@ static void _opt_args(int argc, char **argv, int pack_offset)
 	sropt.pack_grp_bits = bit_alloc(MAX_PACK_COUNT);
 	bit_set(sropt.pack_grp_bits, pack_offset);
 
-	if ((opt.pn_min_memory != NO_VAL64) && (opt.mem_per_cpu != NO_VAL64)) {
-		if (opt.pn_min_memory < opt.mem_per_cpu) {
-			info("mem < mem-per-cpu - resizing mem to be equal "
-			     "to mem-per-cpu");
-			opt.pn_min_memory = opt.mem_per_cpu;
-		}
-		error("--mem and --mem-per-cpu are mutually exclusive.");
-	}
+	validate_memory_options(&opt);
 
 #ifdef HAVE_NATIVE_CRAY
 	/* only fatal on the allocation */
