@@ -464,4 +464,16 @@ extern bool slurm_option_reset(slurm_opt_t *opt, const char *name);
 extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 				      char **value, size_t *state);
 
+/*
+ * Validate that the three memory options (--mem, --mem-per-cpu, --mem-per-gpu)
+ * and their associated environment variables are set mutually exclusively.
+ *
+ * This will fatal() if multiple CLI options are specified simultaneously.
+ * If any of the CLI options are specified, the other options are reset to
+ * clear anything that may have been set through the environment.
+ * Otherwise, if multiple environment variables are set simultaneously,
+ * this will fatal().
+ */
+extern void validate_memory_options(slurm_opt_t *opt);
+
 #endif	/* _SLURM_OPT_H_ */
