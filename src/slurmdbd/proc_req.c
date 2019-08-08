@@ -3222,7 +3222,7 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 				       get_msg->start, get_msg->end,
 				       get_msg->archive_data, &rollup_stats);
 	slurm_mutex_lock(&rpc_mutex);
-	for (i = 0; i < ROLLUP_COUNT; i++) {
+	for (i = 0; i < DBD_ROLLUP_COUNT; i++) {
 		if (rollup_stats.rollup_time[i] == 0)
 			continue;
 		rpc_stats.rollup_count[i]++;
@@ -3534,7 +3534,7 @@ static int  _clear_stats(slurmdbd_conn_t *slurmdbd_conn,
 
 	info("Clear stats request received from UID %u", *uid);
 	slurm_mutex_lock(&rpc_mutex);
-	for (i = 0; i < ROLLUP_COUNT; i++) {
+	for (i = 0; i < DBD_ROLLUP_COUNT; i++) {
 		rpc_stats.rollup_count[i] = 0;
 		rpc_stats.rollup_time[i] = 0;
 		rpc_stats.rollup_max_time[i] = 0;

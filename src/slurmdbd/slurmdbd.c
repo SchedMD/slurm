@@ -350,12 +350,12 @@ static void _init_dbd_stats(void)
 {
 	slurm_mutex_lock(&rpc_mutex);
 	rpc_stats.rollup_count    =
-		xmalloc(sizeof(uint16_t) * ROLLUP_COUNT);
+		xmalloc(sizeof(uint16_t) * DBD_ROLLUP_COUNT);
 	rpc_stats.rollup_time     =
-		xmalloc(sizeof(uint64_t) * ROLLUP_COUNT);
+		xmalloc(sizeof(uint64_t) * DBD_ROLLUP_COUNT);
 	rpc_stats.rollup_max_time =
-		xmalloc(sizeof(uint64_t) * ROLLUP_COUNT);
-	rpc_stats.rollup_timestamp = xcalloc(sizeof(uint64_t), ROLLUP_COUNT);
+		xmalloc(sizeof(uint64_t) * DBD_ROLLUP_COUNT);
+	rpc_stats.rollup_timestamp = xcalloc(sizeof(uint64_t), DBD_ROLLUP_COUNT);
 
 	rpc_stats.type_cnt = 200;  /* Capture info for first 200 RPC types */
 	rpc_stats.rpc_type_id   =
@@ -710,7 +710,7 @@ static void *_rollup_handler(void *db_conn)
 		slurm_mutex_unlock(&rollup_lock);
 
 		slurm_mutex_lock(&rpc_mutex);
-		for (i = 0; i < ROLLUP_COUNT; i++) {
+		for (i = 0; i < DBD_ROLLUP_COUNT; i++) {
 			if (rollup_stats.rollup_time[i] == 0)
 				continue;
 			rpc_stats.rollup_count[i]++;

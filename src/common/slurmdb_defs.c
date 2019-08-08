@@ -2324,11 +2324,11 @@ extern int set_qos_bitstr_from_list(bitstr_t *valid_qos, List qos_list)
 extern const char *rollup_interval_to_string(int interval)
 {
 	switch (interval) {
-	case ROLLUP_HOUR:
+	case DBD_ROLLUP_HOUR:
 		return "Hour";
-	case ROLLUP_DAY:
+	case DBD_ROLLUP_DAY:
 		return "Day";
-	case ROLLUP_MONTH:
+	case DBD_ROLLUP_MONTH:
 		return "Month";
 	default:
 		return "Unknown";

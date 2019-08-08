@@ -1298,13 +1298,18 @@ typedef struct {
 	List tres_list;	/* list of slurmdb_tres_rec_t *'s */
 } slurmdb_report_cluster_grouping_t;
 
-#define ROLLUP_HOUR	0
-#define ROLLUP_DAY	1
-#define ROLLUP_MONTH	2
-#define ROLLUP_COUNT	3
+enum {
+	DBD_ROLLUP_HOUR,
+	DBD_ROLLUP_DAY,
+	DBD_ROLLUP_MONTH,
+	DBD_ROLLUP_COUNT
+};
+
 typedef struct {
-	uint32_t rollup_time[ROLLUP_COUNT];
-	uint64_t rollup_timestamp[ROLLUP_COUNT];
+	uint32_t rollup_time[DBD_ROLLUP_COUNT]; /* Time it took to do each
+						 * rollup */
+	uint64_t rollup_timestamp[DBD_ROLLUP_COUNT]; /* Timestamps of last
+						    * rollup. */
 } slurmdb_rollup_stats_t;
 
 typedef struct {

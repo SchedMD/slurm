@@ -3194,13 +3194,13 @@ static char *_load_usage(uint16_t rpc_version, Buf buffer,
 	switch (type) {
 	case DBD_GOT_ASSOC_USAGE:
 		switch (period) {
-		case ROLLUP_HOUR:
+		case DBD_ROLLUP_HOUR:
 			my_usage_table = assoc_hour_table;
 			break;
-		case ROLLUP_DAY:
+		case DBD_ROLLUP_DAY:
 			my_usage_table = assoc_day_table;
 			break;
-		case ROLLUP_MONTH:
+		case DBD_ROLLUP_MONTH:
 			my_usage_table = assoc_month_table;
 			break;
 		default:
@@ -3211,13 +3211,13 @@ static char *_load_usage(uint16_t rpc_version, Buf buffer,
 		break;
 	case DBD_GOT_WCKEY_USAGE:
 		switch (period) {
-		case ROLLUP_HOUR:
+		case DBD_ROLLUP_HOUR:
 			my_usage_table = wckey_hour_table;
 			break;
-		case ROLLUP_DAY:
+		case DBD_ROLLUP_DAY:
 			my_usage_table = wckey_day_table;
 			break;
-		case ROLLUP_MONTH:
+		case DBD_ROLLUP_MONTH:
 			my_usage_table = wckey_month_table;
 			break;
 		default:
@@ -3319,13 +3319,13 @@ static char *_load_cluster_usage(uint16_t rpc_version, Buf buffer,
 	int i = 0;
 
 	switch (period) {
-	case ROLLUP_HOUR:
+	case DBD_ROLLUP_HOUR:
 		my_usage_table = cluster_hour_table;
 		break;
-	case ROLLUP_DAY:
+	case DBD_ROLLUP_DAY:
 		my_usage_table = cluster_day_table;
 		break;
-	case ROLLUP_MONTH:
+	case DBD_ROLLUP_MONTH:
 		my_usage_table = cluster_month_table;
 		break;
 	default:
@@ -3623,13 +3623,13 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		switch (type) {
 		case DBD_GOT_ASSOC_USAGE:
 			switch (period) {
-			case ROLLUP_HOUR:
+			case DBD_ROLLUP_HOUR:
 				sql_table = assoc_hour_table;
 				break;
-			case ROLLUP_DAY:
+			case DBD_ROLLUP_DAY:
 				sql_table = assoc_day_table;
 				break;
-			case ROLLUP_MONTH:
+			case DBD_ROLLUP_MONTH:
 				sql_table = assoc_month_table;
 				break;
 			default:
@@ -3640,13 +3640,13 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 			break;
 		case DBD_GOT_WCKEY_USAGE:
 			switch (period) {
-			case ROLLUP_HOUR:
+			case DBD_ROLLUP_HOUR:
 				sql_table = wckey_hour_table;
 				break;
-			case ROLLUP_DAY:
+			case DBD_ROLLUP_DAY:
 				sql_table = wckey_day_table;
 				break;
-			case ROLLUP_MONTH:
+			case DBD_ROLLUP_MONTH:
 				sql_table = wckey_month_table;
 				break;
 			default:
@@ -3668,13 +3668,13 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		period = usage_info >> 16;
 
 		switch (period) {
-		case ROLLUP_HOUR:
+		case DBD_ROLLUP_HOUR:
 			sql_table = cluster_hour_table;
 			break;
-		case ROLLUP_DAY:
+		case DBD_ROLLUP_DAY:
 			sql_table = cluster_day_table;
 			break;
-		case ROLLUP_MONTH:
+		case DBD_ROLLUP_MONTH:
 			sql_table = cluster_month_table;
 			break;
 		default:
@@ -3852,7 +3852,7 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 
 	if (arch_cond->purge_usage != NO_VAL) {
 		int i;
-		for (i = 0; i < ROLLUP_COUNT; i++) {
+		for (i = 0; i < DBD_ROLLUP_COUNT; i++) {
 			uint32_t usage_info = i << 16;
 			if ((rc = _archive_purge_table(
 				     PURGE_USAGE,
