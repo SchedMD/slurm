@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.11.0pre1
 ==============================
+ -- Fix corner case issue with interrupted resource allocation requests.
 
 * Changes in Slurm 20.02.0
 ==========================

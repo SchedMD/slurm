@@ -483,6 +483,8 @@ int main(int argc, char **argv)
 	if (saopt.no_shell)
 		exit(0);
 	if (allocation_interrupted) {
+		if (alloc)
+			my_job_id = alloc->job_id;
 		/* salloc process received a signal after
 		 * slurm_allocate_resources_blocking returned with the
 		 * allocation, but before the new signal handlers were

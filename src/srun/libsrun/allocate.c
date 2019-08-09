@@ -469,7 +469,7 @@ extern resource_allocation_response_msg_t *
 
 relinquish:
 	if (resp) {
-		if (!destroy_job)
+		if (destroy_job)
 			slurm_complete_job(resp->job_id, 1);
 		slurm_free_resource_allocation_response_msg(resp);
 	}
@@ -631,8 +631,15 @@ List allocate_het_job_nodes(bool handle_signals)
 
 relinquish:
 	if (job_resp_list) {
-		if (!destroy_job && my_job_id)
+		if (my_job_id == 0) {
+			resp = (resource_allocation_response_msg_t *)
+			       list_peek(job_resp_list);
+			my_job_id = resp->job_id;
+		}
+
+		if (destroy_job && my_job_id) {
 			slurm_complete_job(my_job_id, 1);
+		}
 		list_destroy(job_resp_list);
 	}
 	exit(error_exit);
