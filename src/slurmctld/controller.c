@@ -308,6 +308,7 @@ int main(int argc, char **argv)
 
 	update_logging();
 
+	memset(&slurmctld_diag_stats, 0, sizeof(slurmctld_diag_stats));
 	/*
 	 * Calculate speed of gettimeofday() for sdiag.
 	 * Large delays indicate the Linux vDSO is not in use, which
