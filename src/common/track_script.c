@@ -38,12 +38,31 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/track_script.h"
 
 static List track_script_thd_list = NULL;
+static pthread_mutex_t flush_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
+static int flush_cnt = 0;
+
+typedef struct {
+	uint32_t job_id;
+	pid_t cpid;
+	pthread_t tid;
+	pthread_mutex_t timer_mutex;
+	pthread_cond_t timer_cond;
+} track_script_rec_t;
+
+typedef struct {
+	pthread_t tid;
+	int status;
+	bool rc;
+} foreach_broadcast_rec_t;
 
 static void _track_script_rec_destroy(void *arg)
 {
@@ -72,11 +91,12 @@ static void _kill_script(track_script_rec_t *r)
  * this will make the caller thread to finalize, so wait also for it to
  * avoid any zombies.
  */
-static void _track_script_rec_cleanup(track_script_rec_t *r)
+static void *_track_script_rec_cleanup(void *arg)
 {
 	int rc = 1;
 	struct timeval tvnow;
 	struct timespec abs;
+	track_script_rec_t *r = (track_script_rec_t *)arg;
 
 	debug("script for jobid=%u found running, tid=%lu, force ending.",
 	      r->job_id, (unsigned long)r->tid);
@@ -105,6 +125,18 @@ static void _track_script_rec_cleanup(track_script_rec_t *r)
 		pthread_cancel(r->tid);
 
 	pthread_join(r->tid, NULL);
+
+	slurm_mutex_lock(&flush_mutex);
+	flush_cnt++;
+	slurm_cond_signal(&flush_cond);
+	slurm_mutex_unlock(&flush_mutex);
+
+	return NULL;
+}
+
+static void _make_cleanup_thread(track_script_rec_t *r)
+{
+	slurm_thread_create_detached(NULL, _track_script_rec_cleanup, r);
 }
 
 static int _flush_job(void *r, void *x)
@@ -145,9 +177,7 @@ static int _reset_cpid(void *object, void *key)
 	((track_script_rec_t *)object)->cpid =
 		((track_script_rec_t *)key)->cpid;
 
-	/*
-	 * When we find the one we care about we can break out of the for_each
-	 */
+	/* Exit for_each after we found the one we care about. */
 	return -1;
 }
 
@@ -159,10 +189,38 @@ extern void track_script_init(void)
 
 extern void track_script_flush(void)
 {
+	int count;
+	List tmp_list = list_create(_track_script_rec_destroy);
+
+	/*
+	 * Transfer list within mutex and work off of copy to prevent race
+	 * condition of track_script_remove() removing track_script_rec_t while
+	 * in cleanup thread.
+	 */
+	slurm_mutex_lock(&flush_mutex);
+
+	list_transfer(tmp_list, track_script_thd_list);
+
+	count = list_count(tmp_list);
+	if (!count) {
+		slurm_mutex_unlock(&flush_mutex);
+		return;
+	}
+
+	flush_cnt = 0;
 	/* kill all scripts we are tracking */
-	(void) list_for_each(track_script_thd_list,
-			     (ListForF)_track_script_rec_cleanup, NULL);
-	(void) list_flush(track_script_thd_list);
+	(void) list_for_each(tmp_list,
+			     (ListForF)_make_cleanup_thread, NULL);
+
+	while (flush_cnt < count) {
+		slurm_cond_wait(&flush_cond, &flush_mutex);
+		debug("%s: got %d scripts out of %d flushed",
+		      __func__, flush_cnt, count);
+	}
+
+	FREE_NULL_LIST(tmp_list);
+	slurm_mutex_unlock(&flush_mutex);
+
 }
 
 extern void track_script_flush_job(uint32_t job_id)
@@ -177,8 +235,7 @@ extern void track_script_fini(void)
 	FREE_NULL_LIST(track_script_thd_list);
 }
 
-extern track_script_rec_t *track_script_rec_add(
-	uint32_t job_id, pid_t cpid, pthread_t tid)
+extern void track_script_rec_add(uint32_t job_id, pid_t cpid, pthread_t tid)
 {
 	track_script_rec_t *track_script_rec =
 		xmalloc(sizeof(track_script_rec_t));
@@ -189,25 +246,47 @@ extern track_script_rec_t *track_script_rec_add(
 	slurm_mutex_init(&track_script_rec->timer_mutex);
 	slurm_cond_init(&track_script_rec->timer_cond, NULL);
 	list_append(track_script_thd_list, track_script_rec);
-
-	return track_script_rec;
 }
 
-extern bool track_script_broadcast(track_script_rec_t *track_script_rec,
-				   int status)
+static int _script_broadcast(void *object, void *key)
 {
+	track_script_rec_t *track_script_rec = (track_script_rec_t *)object;
+	foreach_broadcast_rec_t *tmp_rec = (foreach_broadcast_rec_t *)key;
+
+	if (!_match_tid(object, &tmp_rec->tid))
+		return 0;
+
 	bool rc = false;
 
 	/* I was killed by slurmtrack, bail out right now */
 	slurm_mutex_lock(&track_script_rec->timer_mutex);
-	if (WIFSIGNALED(status) && (WTERMSIG(status) == SIGKILL)
-	    && track_script_rec->cpid == -1) {
+	if (WIFSIGNALED(tmp_rec->status) &&
+	    (WTERMSIG(tmp_rec->status) == SIGKILL) &&
+	    (track_script_rec->cpid == -1)) {
 		slurm_cond_broadcast(&track_script_rec->timer_cond);
 		rc = true;
 	}
 	slurm_mutex_unlock(&track_script_rec->timer_mutex);
 
-	return rc;
+	tmp_rec->rc = rc;
+
+	/* Exit for_each after we found the one we care about. */
+	return -1;
+}
+
+extern bool track_script_broadcast(pthread_t tid, int status)
+{
+	foreach_broadcast_rec_t tmp_rec;
+
+	memset(&tmp_rec, 0, sizeof(tmp_rec));
+	tmp_rec.tid = tid;
+	tmp_rec.status = status;
+
+	if (list_for_each(track_script_thd_list, _script_broadcast, &tmp_rec))
+		return tmp_rec.rc;
+
+	debug("%s: didn't find track_script for tid %ld", __func__, tid);
+	return true;
 }
 
 /* Remove this job from the list of jobs currently running a script */

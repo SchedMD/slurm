@@ -11,7 +11,7 @@ may also prove useful.</p>
 <li><a href="#resp">Slurm is not responding</a></li>
 <li><a href="#sched">Jobs are not getting scheduled</a></li>
 <li><a href="#completing">Jobs and nodes are stuck in COMPLETING state</a></li>
-<li><a href="#nodes">Notes are getting set to a DOWN state</a></li>
+<li><a href="#nodes">Nodes are getting set to a DOWN state</a></li>
 <li><a href="#network">Networking and configuration problems</a></li>
 </ul>
 
@@ -109,7 +109,7 @@ see the <i>slurm.conf</i> documentation.</li>
 </ol>
 
 
-<h2><a name="nodes">Notes are getting set to a DOWN state</a></h2>
+<h2><a name="nodes">Nodes are getting set to a DOWN state</a></h2>
 
 <ol>
 <li>Check the reason why the node is down using the command

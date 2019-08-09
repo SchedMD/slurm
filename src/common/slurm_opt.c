@@ -3953,7 +3953,7 @@ extern bool slurm_option_set_by_env(int optval)
 static int _find_option_idx(const char *name)
 {
 	for (int i = 0; common_options[i]; i++)
-		if (xstrcmp(name, common_options[i]->name))
+		if (!xstrcmp(name, common_options[i]->name))
 			return i;
 	return -1;
 }
