@@ -4461,6 +4461,16 @@ extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks)
 	return ret_tres_str;
 }
 
+extern void slurmdb_destroy_rpc_obj(void *object)
+{
+	slurmdb_rpc_obj_t *rpc_obj = (slurmdb_rpc_obj_t *)object;
+
+	if (!rpc_obj)
+		return;
+
+	xfree(rpc_obj);
+}
+
 extern void slurmdb_destroy_rollup_stats(void *object)
 {
 	slurmdb_rollup_stats_t *rollup_stats = (slurmdb_rollup_stats_t *)object;
@@ -4482,14 +4492,8 @@ extern void slurmdb_free_stats_rec_members(void *object)
 	slurmdb_destroy_rollup_stats(rpc_stats->dbd_rollup_stats);
 
 	FREE_NULL_LIST(rpc_stats->rollup_stats);
-
-	xfree(rpc_stats->rpc_type_id);
-	xfree(rpc_stats->rpc_type_cnt);
-	xfree(rpc_stats->rpc_type_time);
-
-	xfree(rpc_stats->rpc_user_id);
-	xfree(rpc_stats->rpc_user_cnt);
-	xfree(rpc_stats->rpc_user_time);
+	FREE_NULL_LIST(rpc_stats->rpc_list);
+	FREE_NULL_LIST(rpc_stats->user_list);
 }
 
 extern void slurmdb_destroy_stats_rec(void *object)

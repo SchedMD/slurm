@@ -416,23 +416,12 @@ extern void init_dbd_stats(void)
 
 	rpc_stats.rollup_stats = list_create(slurmdb_destroy_rollup_stats);
 
+	rpc_stats.rpc_list = list_create(slurmdb_destroy_rpc_obj);
+
 	rpc_stats.time_start = time(NULL);
 
-	rpc_stats.type_cnt = 200;  /* Capture info for first 200 RPC types */
-	rpc_stats.rpc_type_id   =
-		xmalloc(sizeof(uint16_t) * rpc_stats.type_cnt);
-	rpc_stats.rpc_type_cnt  =
-		xmalloc(sizeof(uint32_t) * rpc_stats.type_cnt);
-	rpc_stats.rpc_type_time =
-		xmalloc(sizeof(uint64_t) * rpc_stats.type_cnt);
+	rpc_stats.user_list = list_create(slurmdb_destroy_rpc_obj);
 
-	rpc_stats.user_cnt = 200;  /* Capture info for first 200 RPC users */
-	rpc_stats.rpc_user_id   =
-		xmalloc(sizeof(uint32_t) * rpc_stats.user_cnt);
-	rpc_stats.rpc_user_cnt  =
-		xmalloc(sizeof(uint32_t) * rpc_stats.user_cnt);
-	rpc_stats.rpc_user_time =
-		xmalloc(sizeof(uint64_t) * rpc_stats.user_cnt);
 	slurm_mutex_unlock(&rpc_mutex);
 }
 

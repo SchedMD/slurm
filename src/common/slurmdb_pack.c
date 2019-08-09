@@ -5848,6 +5848,50 @@ unpack_error:
 
 }
 
+extern void slurmdb_pack_rpc_obj(void *in, uint16_t protocol_version,
+				 Buf buffer)
+{
+	slurmdb_rpc_obj_t *object = (slurmdb_rpc_obj_t *)in;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack32(object->cnt, buffer);
+		pack32(object->id, buffer);
+		pack64(object->time, buffer);
+		/* pack64(object->time_ave, buffer); NO need to pack */
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+extern int slurmdb_unpack_rpc_obj(void **object, uint16_t protocol_version,
+				  Buf buffer)
+{
+	slurmdb_rpc_obj_t *object_ptr = xmalloc(sizeof(slurmdb_rpc_obj_t));
+
+	*object = object_ptr;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpack32(&object_ptr->cnt, buffer);
+		safe_unpack32(&object_ptr->id, buffer);
+		safe_unpack64(&object_ptr->time, buffer);
+		if (object_ptr->cnt)
+			object_ptr->time_ave =
+				object_ptr->time / object_ptr->cnt;
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdb_destroy_rollup_stats(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
 extern void slurmdb_pack_rollup_stats(void *in, uint16_t protocol_version,
 				      Buf buffer)
 {
@@ -5932,28 +5976,19 @@ extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
 				slurmdb_pack_rollup_stats,
 				buffer, protocol_version);
 
+		slurm_pack_list(stats_ptr->rpc_list,
+				slurmdb_pack_rpc_obj,
+				buffer, protocol_version);
+
 		pack_time(stats_ptr->time_start, buffer);
 
-		/* RPC type statistics */
-		for (i = 0; i < stats_ptr->type_cnt; i++) {
-			if (stats_ptr->rpc_type_id[i] == 0)
-				break;
-		}
-		pack32(i, buffer);
-		pack16_array(stats_ptr->rpc_type_id, i, buffer);
-		pack32_array(stats_ptr->rpc_type_cnt, i, buffer);
-		pack64_array(stats_ptr->rpc_type_time, i, buffer);
-
-		/* RPC user statistics */
-		for (i = 1; i < stats_ptr->user_cnt; i++) {
-			if (stats_ptr->rpc_user_id[i] == 0)
-				break;
-		}
-		pack32(i, buffer);
-		pack32_array(stats_ptr->rpc_user_id, i, buffer);
-		pack32_array(stats_ptr->rpc_user_cnt, i, buffer);
-		pack64_array(stats_ptr->rpc_user_time, i, buffer);
+		slurm_pack_list(stats_ptr->user_list,
+				slurmdb_pack_rpc_obj,
+				buffer, protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		ListIterator itr;
+		slurmdb_rpc_obj_t *rpc_obj;
+
 		/* Rollup statistics */
 		i = 3;
 		pack32(i, buffer);
@@ -5963,25 +5998,39 @@ extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
 			     i, buffer);
 		pack64_array(stats_ptr->dbd_rollup_stats->time_max, i, buffer);
 
-		/* RPC type statistics */
-		for (i = 0; i < stats_ptr->type_cnt; i++) {
-			if (stats_ptr->rpc_type_id[i] == 0)
-				break;
-		}
-		pack32(i, buffer);
-		pack16_array(stats_ptr->rpc_type_id,   i, buffer);
-		pack32_array(stats_ptr->rpc_type_cnt,  i, buffer);
-		pack64_array(stats_ptr->rpc_type_time, i, buffer);
+		pack32(list_count(stats_ptr->rpc_list), buffer);
 
-		/* RPC user statistics */
-		for (i = 1; i < stats_ptr->user_cnt; i++) {
-			if (stats_ptr->rpc_user_id[i] == 0)
-				break;
-		}
-		pack32(i, buffer);
-		pack32_array(stats_ptr->rpc_user_id,   i, buffer);
-		pack32_array(stats_ptr->rpc_user_cnt,  i, buffer);
-		pack64_array(stats_ptr->rpc_user_time, i, buffer);
+		itr = list_iterator_create(stats_ptr->rpc_list);
+		pack32(list_count(stats_ptr->rpc_list), buffer);
+		while ((rpc_obj = list_next(itr)))
+			pack16(rpc_obj->id, buffer);
+
+		list_iterator_reset(itr);
+		pack32(list_count(stats_ptr->rpc_list), buffer);
+		while ((rpc_obj = list_next(itr)))
+			pack32(rpc_obj->cnt, buffer);
+
+		list_iterator_reset(itr);
+		pack32(list_count(stats_ptr->rpc_list), buffer);
+		while ((rpc_obj = list_next(itr)))
+			pack64(rpc_obj->time, buffer);
+		list_iterator_destroy(itr);
+
+		itr = list_iterator_create(stats_ptr->user_list);
+		pack32(list_count(stats_ptr->rpc_list), buffer);
+		while ((rpc_obj = list_next(itr)))
+			pack32(rpc_obj->id, buffer);
+
+		list_iterator_reset(itr);
+		pack32(list_count(stats_ptr->rpc_list), buffer);
+		while ((rpc_obj = list_next(itr)))
+			pack32(rpc_obj->cnt, buffer);
+
+		list_iterator_reset(itr);
+		pack32(list_count(stats_ptr->rpc_list), buffer);
+		while ((rpc_obj = list_next(itr)))
+			pack64(rpc_obj->time, buffer);
+		list_iterator_destroy(itr);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -6010,40 +6059,27 @@ extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 
+		if (slurm_unpack_list(&stats_ptr->rpc_list,
+				      slurmdb_unpack_rpc_obj,
+				      slurmdb_destroy_rpc_obj,
+				      buffer, protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+
 		safe_unpack_time(&stats_ptr->time_start, buffer);
 
-		/* RPC type statistics */
-		safe_unpack32(&stats_ptr->type_cnt, buffer);
-		safe_unpack16_array(&stats_ptr->rpc_type_id, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->type_cnt)
-			goto unpack_error;
-		safe_unpack32_array(&stats_ptr->rpc_type_cnt, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->type_cnt)
-			goto unpack_error;
-		safe_unpack64_array(&stats_ptr->rpc_type_time, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->type_cnt)
-			goto unpack_error;
-
-		/* RPC user statistics */
-		safe_unpack32(&stats_ptr->user_cnt, buffer);
-		safe_unpack32_array(&stats_ptr->rpc_user_id, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->user_cnt)
-			goto unpack_error;
-		safe_unpack32_array(&stats_ptr->rpc_user_cnt, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->user_cnt)
-			goto unpack_error;
-		safe_unpack64_array(&stats_ptr->rpc_user_time, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->user_cnt)
+		if (slurm_unpack_list(&stats_ptr->user_list,
+				      slurmdb_unpack_rpc_obj,
+				      slurmdb_destroy_rpc_obj,
+				      buffer, protocol_version)
+		    != SLURM_SUCCESS)
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint16_t *tmp16;
+		uint32_t *tmp32, *tmp32_2;
 		uint64_t *tmp64;
+		slurmdb_rpc_obj_t *rpc_obj;
+		uint32_t cnt;
 
 		/* Rollup statistics */
 		safe_unpack32(&uint32_tmp, buffer);
@@ -6070,35 +6106,47 @@ extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
 		if (uint32_tmp != 3)
 			goto unpack_error;
 
+		stats_ptr->rpc_list = list_create(slurmdb_destroy_rpc_obj);
+
 		/* RPC type statistics */
-		safe_unpack32(&stats_ptr->type_cnt, buffer);
-		safe_unpack16_array(&stats_ptr->rpc_type_id, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->type_cnt)
+		safe_unpack32(&cnt, buffer);
+		safe_unpack16_array(&tmp16, &uint32_tmp, buffer);
+		if (uint32_tmp != cnt)
 			goto unpack_error;
-		safe_unpack32_array(&stats_ptr->rpc_type_cnt, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->type_cnt)
+		safe_unpack32_array(&tmp32, &uint32_tmp, buffer);
+		if (uint32_tmp != cnt)
 			goto unpack_error;
-		safe_unpack64_array(&stats_ptr->rpc_type_time, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->type_cnt)
+		safe_unpack64_array(&tmp64, &uint32_tmp, buffer);
+		if (uint32_tmp != cnt)
 			goto unpack_error;
 
+		for (int i = 0; i < cnt; i++) {
+			rpc_obj = xmalloc(sizeof(slurmdb_rpc_obj_t));
+			list_append(stats_ptr->rpc_list, rpc_obj);
+			rpc_obj->id = tmp16[i];
+			rpc_obj->cnt = tmp32[i];
+			rpc_obj->time = tmp64[i];
+		}
+
 		/* RPC user statistics */
-		safe_unpack32(&stats_ptr->user_cnt, buffer);
-		safe_unpack32_array(&stats_ptr->rpc_user_id, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->user_cnt)
+		safe_unpack32(&cnt, buffer);
+		safe_unpack32_array(&tmp32, &uint32_tmp, buffer);
+		if (uint32_tmp != cnt)
 			goto unpack_error;
-		safe_unpack32_array(&stats_ptr->rpc_user_cnt, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->user_cnt)
+		safe_unpack32_array(&tmp32_2, &uint32_tmp, buffer);
+		if (uint32_tmp != cnt)
 			goto unpack_error;
-		safe_unpack64_array(&stats_ptr->rpc_user_time, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != stats_ptr->user_cnt)
+		safe_unpack64_array(&tmp64, &uint32_tmp, buffer);
+		if (uint32_tmp != cnt)
 			goto unpack_error;
+
+		for (int i = 0; i < cnt; i++) {
+			rpc_obj = xmalloc(sizeof(slurmdb_rpc_obj_t));
+			list_append(stats_ptr->user_list, rpc_obj);
+			rpc_obj->id = tmp32[i];
+			rpc_obj->cnt = tmp32_2[i];
+			rpc_obj->time = tmp64[i];
+		}
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

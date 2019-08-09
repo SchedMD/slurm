@@ -143,6 +143,7 @@ static int   _get_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 static int   _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 			       persist_msg_t *msg, Buf *out_buffer,
 			       uint32_t *uid);
+static int   _find_rpc_obj_in_list(void *x, void *key);
 static int   _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid);
 static int   _fini_conn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
@@ -261,7 +262,7 @@ proc_req(void *conn, persist_msg_t *msg,
 	slurmdbd_conn_t *slurmdbd_conn = conn;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
-	int i, rpc_type_index = -1, rpc_user_index = -1;
+	slurmdb_rpc_obj_t *rpc_obj;
 
 	DEF_TIMERS;
 	START_TIMER;
@@ -568,32 +569,27 @@ proc_req(void *conn, persist_msg_t *msg,
 	END_TIMER;
 
 	slurm_mutex_lock(&rpc_mutex);
-	for (i = 0; i < rpc_stats.type_cnt; i++) {
-		if (rpc_stats.rpc_type_id[i] == 0)
-			rpc_stats.rpc_type_id[i] = msg->msg_type;
-		else if (rpc_stats.rpc_type_id[i] != msg->msg_type)
-			continue;
-		rpc_type_index = i;
-		break;
-	}
 
-	for (i = 0; i < rpc_stats.user_cnt; i++) {
-		if ((rpc_stats.rpc_user_id[i] == 0) && (i != 0))
-			rpc_stats.rpc_user_id[i] = *uid;
-		else if (rpc_stats.rpc_user_id[i] != *uid)
-			continue;
-		rpc_user_index = i;
-		break;
+	if (!(rpc_obj = list_find_first(rpc_stats.rpc_list,
+					_find_rpc_obj_in_list,
+					&msg->msg_type))) {
+		rpc_obj = xmalloc(sizeof(slurmdb_rpc_obj_t));
+		rpc_obj->id = msg->msg_type;
+		list_append(rpc_stats.rpc_list, rpc_obj);
 	}
+	rpc_obj->cnt++;
+	rpc_obj->time += DELTA_TIMER;
 
-	if (rpc_type_index >= 0) {
-		rpc_stats.rpc_type_cnt[rpc_type_index]++;
-		rpc_stats.rpc_type_time[rpc_type_index] += DELTA_TIMER;
+	if (!(rpc_obj = list_find_first(rpc_stats.user_list,
+					_find_rpc_obj_in_list,
+					uid))) {
+		rpc_obj = xmalloc(sizeof(slurmdb_rpc_obj_t));
+		rpc_obj->id = *uid;
+		list_append(rpc_stats.user_list, rpc_obj);
 	}
-	if (rpc_user_index >= 0) {
-		rpc_stats.rpc_user_cnt[rpc_user_index]++;
-		rpc_stats.rpc_user_time[rpc_user_index] += DELTA_TIMER;
-	}
+	rpc_obj->cnt++;
+	rpc_obj->time += DELTA_TIMER;
+
 	slurm_mutex_unlock(&rpc_mutex);
 
 	return rc;
@@ -1775,6 +1771,15 @@ static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
 	FREE_NULL_LIST(list_msg.my_list);
 
 	return rc;
+}
+
+static int _find_rpc_obj_in_list(void *x, void *key)
+{
+	slurmdb_rpc_obj_t *obj = (slurmdb_rpc_obj_t *)x;
+
+	if (obj->id == *(int *)key)
+		return 1;
+	return 0;
 }
 
 static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,

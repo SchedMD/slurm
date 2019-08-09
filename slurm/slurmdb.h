@@ -1318,17 +1318,18 @@ typedef struct {
 } slurmdb_rollup_stats_t;
 
 typedef struct {
+	uint32_t cnt;	   /* count of object processed */
+	uint32_t id;	   /* ID of object */
+	uint64_t time;	   /* total usecs this object */
+	uint64_t time_ave; /* ave usecs this object (DON'T PACK) */
+} slurmdb_rpc_obj_t;
+
+typedef struct {
 	slurmdb_rollup_stats_t *dbd_rollup_stats;
 	List rollup_stats;              /* List of Clusters rollup stats */
+	List rpc_list;                  /* list of RPCs sent to the dbd. */
 	time_t time_start;              /* When we started collecting data */
-	uint32_t type_cnt;		/* Length of rpc_type arrays */
-	uint16_t *rpc_type_id;		/* RPC type */
-	uint32_t *rpc_type_cnt;		/* count of RPCs processed */
-	uint64_t *rpc_type_time;	/* total usecs this type RPC */
-	uint32_t user_cnt;		/* Length of rpc_user arrays */
-	uint32_t *rpc_user_id;		/* User ID issuing RPC */
-	uint32_t *rpc_user_cnt;		/* count of RPCs processed */
-	uint64_t *rpc_user_time;	/* total usecs this user's RPCs */
+	List user_list;                 /* list of users issuing RPCs */
 } slurmdb_stats_rec_t;
 
 
@@ -1831,6 +1832,7 @@ extern void slurmdb_destroy_selected_step(void *object);
 extern void slurmdb_destroy_report_job_grouping(void *object);
 extern void slurmdb_destroy_report_acct_grouping(void *object);
 extern void slurmdb_destroy_report_cluster_grouping(void *object);
+extern void slurmdb_destroy_rpc_obj(void *object);
 extern void slurmdb_destroy_rollup_stats(void *object);
 extern void slurmdb_free_stats_rec_members(void *object);
 extern void slurmdb_destroy_stats_rec(void *object);
