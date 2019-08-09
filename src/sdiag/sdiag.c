@@ -161,8 +161,13 @@ static int _print_stats(void)
 	printf("\tTotal backfilled heterogeneous job components: %u\n",
 	       buf->bf_backfilled_het_jobs);
 	printf("\tTotal cycles: %u\n", buf->bf_cycle_counter);
-	printf("\tLast cycle when: %s (%ld)\n",
-	       slurm_ctime2(&buf->bf_when_last_cycle), buf->bf_when_last_cycle);
+	if (buf->bf_when_last_cycle > 0) {
+		printf("\tLast cycle when: %s (%ld)\n",
+		       slurm_ctime2(&buf->bf_when_last_cycle),
+		       buf->bf_when_last_cycle);
+	} else {
+		printf("\tLast cycle when: N/A\n");
+	}
 	printf("\tLast cycle: %u\n", buf->bf_cycle_last);
 	printf("\tMax cycle:  %u\n", buf->bf_cycle_max);
 	if (buf->bf_cycle_counter > 0) {
