@@ -5848,6 +5848,77 @@ unpack_error:
 
 }
 
+extern void slurmdb_pack_rollup_stats(void *in, uint16_t protocol_version,
+				      Buf buffer)
+{
+	slurmdb_rollup_stats_t *object = (slurmdb_rollup_stats_t *) in;
+	uint32_t i;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		packstr(object->cluster_name, buffer);
+		pack16(DBD_ROLLUP_COUNT, buffer);
+		for (i = 0; i < DBD_ROLLUP_COUNT; i++) {
+			pack16(object->count[i], buffer);
+			pack_time(object->timestamp[i], buffer);
+			pack64(object->time_last[i], buffer);
+			pack64(object->time_max[i], buffer);
+			pack64(object->time_total[i], buffer);
+		}
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+
+}
+
+extern int slurmdb_unpack_rollup_stats(void **object, uint16_t protocol_version,
+				       Buf buffer)
+{
+	uint32_t uint32_tmp;
+	uint16_t rollup_count;
+	int i;
+	slurmdb_rollup_stats_t *object_ptr =
+		xmalloc(sizeof(slurmdb_rollup_stats_t));
+
+	*object = object_ptr;
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object_ptr->cluster_name,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&rollup_count, buffer);
+		/*
+		 * If we got more than we can handle just overwrite the
+		 * last one.  This is more just to avoid potential
+		 * overflows.  It shouldn't happen in practice.
+		 */
+		if (rollup_count > DBD_ROLLUP_COUNT) {
+			error("%s: our DBD_ROLLUP_COUNT = %d, but we just got a count of %d.  We can't handle this.",
+			      __func__, DBD_ROLLUP_COUNT, rollup_count);
+			goto unpack_error;
+		}
+
+		for (i = 0; i < rollup_count; i++) {
+			safe_unpack16(&object_ptr->count[i], buffer);
+			safe_unpack_time(&object_ptr->timestamp[i], buffer);
+			safe_unpack64(&object_ptr->time_last[i], buffer);
+			safe_unpack64(&object_ptr->time_max[i], buffer);
+			safe_unpack64(&object_ptr->time_total[i], buffer);
+		}
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdb_destroy_rollup_stats(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+
+}
+
 extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
 				   Buf buffer)
 {
@@ -5855,13 +5926,13 @@ extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
 	uint32_t i;
 
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		/* Rollup statistics */
-		i = 3;
-		pack32(i, buffer);
-		pack16_array(stats_ptr->rollup_count, i, buffer);
-		pack64_array(stats_ptr->rollup_time, i, buffer);
-		pack64_array(stats_ptr->rollup_max_time, i, buffer);
-		pack64_array(stats_ptr->rollup_timestamp, i, buffer);
+		slurmdb_pack_rollup_stats(stats_ptr->dbd_rollup_stats,
+					  protocol_version, buffer);
+		slurm_pack_list(stats_ptr->rollup_stats,
+				slurmdb_pack_rollup_stats,
+				buffer, protocol_version);
+
+		pack_time(stats_ptr->time_start, buffer);
 
 		/* RPC type statistics */
 		for (i = 0; i < stats_ptr->type_cnt; i++) {
@@ -5886,9 +5957,11 @@ extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
 		/* Rollup statistics */
 		i = 3;
 		pack32(i, buffer);
-		pack16_array(stats_ptr->rollup_count,    i, buffer);
-		pack64_array(stats_ptr->rollup_time,     i, buffer);
-		pack64_array(stats_ptr->rollup_max_time, i, buffer);
+		pack16_array((uint16_t *)stats_ptr->dbd_rollup_stats->count,
+			     i, buffer);
+		pack64_array(stats_ptr->dbd_rollup_stats->time_total,
+			     i, buffer);
+		pack64_array(stats_ptr->dbd_rollup_stats->time_max, i, buffer);
 
 		/* RPC type statistics */
 		for (i = 0; i < stats_ptr->type_cnt; i++) {
@@ -5925,25 +5998,19 @@ extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
 	*object = stats_ptr;
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		/* Rollup statistics */
-		safe_unpack32(&uint32_tmp, buffer);
-		if (uint32_tmp != 3)
+		if (slurmdb_unpack_rollup_stats(
+			    (void **)&stats_ptr->dbd_rollup_stats,
+			    protocol_version, buffer)
+		    != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack16_array(&stats_ptr->rollup_count, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != 3)
+		if (slurm_unpack_list(&stats_ptr->rollup_stats,
+				      slurmdb_unpack_rollup_stats,
+				      slurmdb_destroy_rollup_stats,
+				      buffer, protocol_version)
+		    != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack64_array(&stats_ptr->rollup_time, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != 3)
-			goto unpack_error;
-		safe_unpack64_array(&stats_ptr->rollup_max_time, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != 3)
-			goto unpack_error;
-		safe_unpack64_array(&stats_ptr->rollup_timestamp, &uint32_tmp,
-				    buffer);
-		if (uint32_tmp != 3)
-			goto unpack_error;
+
+		safe_unpack_time(&stats_ptr->time_start, buffer);
 
 		/* RPC type statistics */
 		safe_unpack32(&stats_ptr->type_cnt, buffer);
@@ -5975,20 +6042,31 @@ extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
 		if (uint32_tmp != stats_ptr->user_cnt)
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t *tmp16;
+		uint64_t *tmp64;
+
 		/* Rollup statistics */
 		safe_unpack32(&uint32_tmp, buffer);
 		if (uint32_tmp != 3)
 			goto unpack_error;
-		safe_unpack16_array(&stats_ptr->rollup_count, &uint32_tmp,
+		safe_unpack16_array(&tmp16, &uint32_tmp,
 				    buffer);
+		stats_ptr->dbd_rollup_stats =
+			xmalloc(sizeof(slurmdb_rollup_stats_t));
+		stats_ptr->dbd_rollup_stats->count[0] = tmp16[0];
+		xfree(tmp16);
 		if (uint32_tmp != 3)
 			goto unpack_error;
-		safe_unpack64_array(&stats_ptr->rollup_time, &uint32_tmp,
+		safe_unpack64_array(&tmp64, &uint32_tmp,
 				    buffer);
+		stats_ptr->dbd_rollup_stats->time_total[0] = tmp64[0];
+		xfree(tmp64);
 		if (uint32_tmp != 3)
 			goto unpack_error;
-		safe_unpack64_array(&stats_ptr->rollup_max_time, &uint32_tmp,
+		safe_unpack64_array(&tmp64, &uint32_tmp,
 				    buffer);
+		stats_ptr->dbd_rollup_stats->time_max[0] = tmp64[0];
+		xfree(tmp64);
 		if (uint32_tmp != 3)
 			goto unpack_error;
 

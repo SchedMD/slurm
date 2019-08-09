@@ -4461,23 +4461,44 @@ extern char *slurmdb_ave_tres_usage(char *tres_string, int tasks)
 	return ret_tres_str;
 }
 
+extern void slurmdb_destroy_rollup_stats(void *object)
+{
+	slurmdb_rollup_stats_t *rollup_stats = (slurmdb_rollup_stats_t *)object;
+
+	if (!rollup_stats)
+		return;
+
+	xfree(rollup_stats->cluster_name);
+	xfree(rollup_stats);
+}
+
+extern void slurmdb_free_stats_rec_members(void *object)
+{
+	slurmdb_stats_rec_t *rpc_stats = (slurmdb_stats_rec_t *)object;
+
+	if (!rpc_stats)
+		return;
+
+	slurmdb_destroy_rollup_stats(rpc_stats->dbd_rollup_stats);
+
+	FREE_NULL_LIST(rpc_stats->rollup_stats);
+
+	xfree(rpc_stats->rpc_type_id);
+	xfree(rpc_stats->rpc_type_cnt);
+	xfree(rpc_stats->rpc_type_time);
+
+	xfree(rpc_stats->rpc_user_id);
+	xfree(rpc_stats->rpc_user_cnt);
+	xfree(rpc_stats->rpc_user_time);
+}
+
 extern void slurmdb_destroy_stats_rec(void *object)
 {
-	slurmdb_stats_rec_t *rpc_stats = (slurmdb_stats_rec_t *) object;
-	if (object) {
-		xfree(rpc_stats->rollup_count);
-		xfree(rpc_stats->rollup_time);
-		xfree(rpc_stats->rollup_max_time);
+	if (!object)
+		return;
 
-		xfree(rpc_stats->rpc_type_id);
-		xfree(rpc_stats->rpc_type_cnt);
-		xfree(rpc_stats->rpc_type_time);
-
-		xfree(rpc_stats->rpc_user_id);
-		xfree(rpc_stats->rpc_user_cnt);
-		xfree(rpc_stats->rpc_user_time);
-		xfree(object);
-	}
+	slurmdb_free_stats_rec_members(object);
+	xfree(object);
 }
 
 extern void slurmdb_free_slurmdb_stats_members(slurmdb_stats_t *stats)

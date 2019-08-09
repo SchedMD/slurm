@@ -3204,9 +3204,10 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_roll_usage_msg_t *get_msg = msg->data;
-	int i, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
-	slurmdb_rollup_stats_t rollup_stats;
+	List rollup_stats_list = NULL;
+	DEF_TIMERS;
 
 	info("DBD_ROLL_USAGE: called");
 
@@ -3217,24 +3218,13 @@ static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	memset(&rollup_stats, 0, sizeof(slurmdb_rollup_stats_t));
+	START_TIMER;
 	rc = acct_storage_g_roll_usage(slurmdbd_conn->db_conn,
 				       get_msg->start, get_msg->end,
-				       get_msg->archive_data, &rollup_stats);
-	slurm_mutex_lock(&rpc_mutex);
-	for (i = 0; i < DBD_ROLLUP_COUNT; i++) {
-		if (rollup_stats.rollup_time[i] == 0)
-			continue;
-		rpc_stats.rollup_count[i]++;
-		rpc_stats.rollup_time[i] += rollup_stats.rollup_time[i];
-		rpc_stats.rollup_max_time[i] =
-			MAX(rpc_stats.rollup_max_time[i],
-			    rollup_stats.rollup_time[i]);
-		if (rollup_stats.rollup_timestamp[i])
-			rpc_stats.rollup_timestamp[i] =
-				rollup_stats.rollup_timestamp[i];
-	}
-	slurm_mutex_unlock(&rpc_mutex);
+				       get_msg->archive_data,
+				       &rollup_stats_list);
+	END_TIMER;
+	handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 1);
 
 end_it:
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
@@ -3518,7 +3508,7 @@ static int  _get_stats(slurmdbd_conn_t *slurmdbd_conn,
 static int  _clear_stats(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
-	int i, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
 	if (!_validate_super_user(*uid, slurmdbd_conn)) {
@@ -3533,21 +3523,8 @@ static int  _clear_stats(slurmdbd_conn_t *slurmdbd_conn,
 	}
 
 	info("Clear stats request received from UID %u", *uid);
-	slurm_mutex_lock(&rpc_mutex);
-	for (i = 0; i < DBD_ROLLUP_COUNT; i++) {
-		rpc_stats.rollup_count[i] = 0;
-		rpc_stats.rollup_time[i] = 0;
-		rpc_stats.rollup_max_time[i] = 0;
-	}
-	for (i = 0; i < rpc_stats.type_cnt; i++) {
-		rpc_stats.rpc_type_cnt[i] = 0;
-		rpc_stats.rpc_type_time[i] = 0;
-	}
-	for (i = 0; i < rpc_stats.user_cnt; i++) {
-		rpc_stats.rpc_user_cnt[i] = 0;
-		rpc_stats.rpc_user_time[i] = 0;
-	}
-	slurm_mutex_unlock(&rpc_mutex);
+
+	init_dbd_stats();
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment, DBD_CLEAR_STATS);

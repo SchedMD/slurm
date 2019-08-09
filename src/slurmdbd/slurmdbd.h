@@ -51,4 +51,9 @@ extern void shutdown_threads();
 
 extern void reconfig();
 
+extern void handle_rollup_stats(List rollup_stats_list,
+				long delta_time, int type);
+
+extern void init_dbd_stats(void);
+
 #endif /* !_SLURM_DBD_H */

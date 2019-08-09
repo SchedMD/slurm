@@ -1306,18 +1306,21 @@ enum {
 };
 
 typedef struct {
-	uint32_t rollup_time[DBD_ROLLUP_COUNT]; /* Time it took to do each
+	char *cluster_name;                      /* Cluster name */
+	uint16_t count[DBD_ROLLUP_COUNT]; /* How many rollups have
+					   * happened in time period */
+	time_t timestamp[DBD_ROLLUP_COUNT]; /* Timestamps of last rollup. */
+	uint64_t time_last[DBD_ROLLUP_COUNT]; /* Last rollup time */
+	uint64_t time_max[DBD_ROLLUP_COUNT]; /* What was the longest time
+						     * for each rollup */
+	uint64_t time_total[DBD_ROLLUP_COUNT]; /* Time it took to do each
 						 * rollup */
-	uint64_t rollup_timestamp[DBD_ROLLUP_COUNT]; /* Timestamps of last
-						    * rollup. */
 } slurmdb_rollup_stats_t;
 
 typedef struct {
-	uint16_t *rollup_count;		/* Length should be ROLLUP_COUNT */
-	uint64_t *rollup_time;		/* Length should be ROLLUP_COUNT */
-	uint64_t *rollup_max_time;	/* Length should be ROLLUP_COUNT */
-	uint64_t *rollup_timestamp;	/* Unix timestamp of last rollup.
-					 * Length should be ROLLUP_COUNT. */
+	slurmdb_rollup_stats_t *dbd_rollup_stats;
+	List rollup_stats;              /* List of Clusters rollup stats */
+	time_t time_start;              /* When we started collecting data */
 	uint32_t type_cnt;		/* Length of rpc_type arrays */
 	uint16_t *rpc_type_id;		/* RPC type */
 	uint32_t *rpc_type_cnt;		/* count of RPCs processed */
@@ -1828,6 +1831,8 @@ extern void slurmdb_destroy_selected_step(void *object);
 extern void slurmdb_destroy_report_job_grouping(void *object);
 extern void slurmdb_destroy_report_acct_grouping(void *object);
 extern void slurmdb_destroy_report_cluster_grouping(void *object);
+extern void slurmdb_destroy_rollup_stats(void *object);
+extern void slurmdb_free_stats_rec_members(void *object);
 extern void slurmdb_destroy_stats_rec(void *object);
 
 extern void slurmdb_free_slurmdb_stats_members(slurmdb_stats_t *stats);
@@ -1982,14 +1987,14 @@ extern int slurmdb_usage_get(void *db_conn,
  * IN: sent_start (option time to do a re-roll or start from this point)
  * IN: sent_end (option time to do a re-roll or end at this point)
  * IN: archive_data (if 0 old data is not archived in a monthly rollup)
- * IN/OUT: rollup_stats data structure in which to save rollup statistics
+ * OUT: rollup_stats_list_in (list containing stats about each clusters rollup)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int slurmdb_usage_roll(void *db_conn,
 			      time_t sent_start,
 			      time_t sent_end,
 			      uint16_t archive_data,
-			      slurmdb_rollup_stats_t *rollup_stats);
+			      List *rollup_stats_list_in);
 
 /************** user functions **************/
 

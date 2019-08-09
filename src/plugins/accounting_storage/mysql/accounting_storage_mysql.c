@@ -3138,10 +3138,10 @@ extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn, uid_t uid,
 extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn,
 				     time_t sent_start, time_t sent_end,
 				     uint16_t archive_data,
-				     slurmdb_rollup_stats_t *rollup_stats)
+				     List *rollup_stats_list_in)
 {
 	return as_mysql_roll_usage(mysql_conn, sent_start, sent_end,
-				   archive_data, rollup_stats);
+				   archive_data, rollup_stats_list_in);
 }
 
 extern int acct_storage_p_fix_runaway_jobs(void *db_conn, uint32_t uid,

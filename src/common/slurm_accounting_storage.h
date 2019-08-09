@@ -511,12 +511,13 @@ extern int acct_storage_g_get_usage(
  * IN: sent_start (option time to do a re-roll or start from this point)
  * IN: sent_end (option time to do a re-roll or end at this point)
  * IN: archive_data (if 0 old data is not archived in a monthly rollup)
+ * OUT: rollup_stats_list_in (list containing stats about each clusters rollup)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_roll_usage(void *db_conn,
 				     time_t sent_start, time_t sent_end,
 				     uint16_t archive_data,
-				     slurmdb_rollup_stats_t *rollup_stats);
+				     List *rollup_stats_list_in);
 
 /*
  * Fix runaway jobs

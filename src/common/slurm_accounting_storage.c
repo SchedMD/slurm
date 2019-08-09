@@ -172,7 +172,7 @@ typedef struct slurm_acct_storage_ops {
 	int (*roll_usage)          (void *db_conn,
 				    time_t sent_start, time_t sent_end,
 				    uint16_t archive_data,
-				    slurmdb_rollup_stats_t *rollup_stats);
+				    List *rollup_stats_list_in);
 	int  (*fix_runaway_jobs)   (void *db_conn, uint32_t uid, List jobs);
 	int  (*node_down)          (void *db_conn,
 				    struct node_record *node_ptr,
@@ -781,12 +781,12 @@ extern int acct_storage_g_get_usage(void *db_conn,  uint32_t uid,
 extern int acct_storage_g_roll_usage(void *db_conn,
 				     time_t sent_start, time_t sent_end,
 				     uint16_t archive_data,
-				     slurmdb_rollup_stats_t *rollup_stats)
+				     List *rollup_stats_list_in)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(ops.roll_usage))(db_conn, sent_start, sent_end, archive_data,
-				   rollup_stats);
+				   rollup_stats_list_in);
 }
 
 extern int acct_storage_g_fix_runaway_jobs(void *db_conn,
