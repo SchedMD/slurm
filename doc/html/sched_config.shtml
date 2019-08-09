@@ -23,7 +23,7 @@ scheduling plugin.</P>
 <P>The <B>SchedulerType</B> configuration parameter specifies the scheduler
 plugin to use.
 Options are sched/backfill, which performs backfill scheduling, and
-sched/builtin, which attempts to schedule jobs in a string priority order within
+sched/builtin, which attempts to schedule jobs in a strict priority order within
 each partition/queue.</P>
 
 <P>There is also a <B>SchedulerParameters</B> configuration parameter which
@@ -136,6 +136,6 @@ the locks are relinquished in microseconds. The default value is 500,000
 microseconds (0.5 seconds).  </LI>
 </UL>
 
-<p style="text-align:center;">Last modified 5 December 2018</p>
+<p style="text-align:center;">Last modified 6 September 2019</p>
 
 <!--#include virtual="footer.txt"-->
