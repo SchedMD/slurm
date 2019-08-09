@@ -3499,7 +3499,7 @@ static int  _get_stats(slurmdbd_conn_t *slurmdbd_conn,
 		return ESLURM_ACCESS_DENIED;
 	}
 
-	info("Get stats request received from UID %u", *uid);
+	debug2("Get stats request received from UID %u", *uid);
 	*out_buffer = init_buf(32 * 1024);
 	pack16((uint16_t) DBD_GOT_STATS, *out_buffer);
 	slurm_mutex_lock(&rpc_mutex);
