@@ -50,11 +50,7 @@ set matches 0
 set rpc_rec_cnt 0
 set as_pid [spawn $sacctmgr show stats]
 expect {
-	-re "Rollup statistics" {
-		incr matches
-		exp_continue
-	}
-	-re "Month *count:$number" {
+	-re "sacctmgr show stats" {
 		incr matches
 		exp_continue
 	}
@@ -87,7 +83,7 @@ expect {
 if {$rpc_rec_cnt > 0} {
 	incr matches
 }
-if {$matches != 6} {
+if {$matches != 5} {
 	send_user "\nFAILURE: sacctmgr show stats response bad ($matches != 6).\n"
 	set exit_code 1
 }
