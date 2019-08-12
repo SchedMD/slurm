@@ -664,6 +664,16 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 	while ((slurmdbd_conn = list_next(itr))) {
 		if (db_conn == slurmdbd_conn)
 			break;
+
+		if (!xstrcmp(db_conn->conn->cluster_name,
+			     slurmdbd_conn->conn->cluster_name) &&
+		    (db_conn->conn->fd != slurmdbd_conn->conn->fd)) {
+			error("A new registration for cluster %s CONN:%d just came in, but I am already talking to that cluster (CONN:%d), closing other connection.",
+			      db_conn->conn->cluster_name, db_conn->conn->fd,
+			      slurmdbd_conn->conn->fd);
+			slurmdbd_conn->conn->rem_port = 0;
+			list_delete_item(itr);
+		}
 	}
 	list_iterator_destroy(itr);
 	if (!slurmdbd_conn)
