@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Nodes in COMPLETING state treated as being currently available for job
     will-run test.
  -- Cray - fix contribs slurm.conf.j2 with updated cray_aries plugin names.
+ -- job_submit/lua - fix problem where nil was expected for min_mem_per_cpu.
 
 * Changes in Slurm 19.05.2
 ==========================
