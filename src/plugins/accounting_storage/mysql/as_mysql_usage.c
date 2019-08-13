@@ -626,8 +626,6 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 	return rc;
 }
 
-
-
 /* checks should already be done before this to see if this is a valid
    user or not.  The assoc_mgr locks should be unlocked before coming here.
 */
@@ -644,8 +642,6 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	slurmdb_assoc_rec_t *assoc = NULL;
 	slurmdb_wckey_rec_t *wckey = NULL;
 	slurmdb_accounting_rec_t *accounting_rec = NULL;
-	hostlist_t hl = NULL;
-	char id[100];
 
 	if (!object_list) {
 		error("We need an object to set data for getting usage");
@@ -655,22 +651,16 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 	if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return ESLURM_DB_CONNECTION;
 
-	/* Previously this would just tack id's onto a long list.  It turns out
-	 * that isn't very efficient.  This attempts to combine id's into a
-	 * hostlist and then query id sets instead of against each id
-	 * separately.  This has proven to be much more efficient.
-	 */
 	switch (type) {
 	case DBD_GET_ASSOC_USAGE:
 		name_char = "t3.id_assoc";
 		itr = list_iterator_create(object_list);
 		while ((assoc = list_next(itr))) {
-			snprintf(id, sizeof(id), "%u", assoc->id);
-
-			if (hl)
-				hostlist_push_host_dims(hl, id, 1);
+			if (id_str)
+				xstrfmtcat(id_str, ",%u", assoc->id);
 			else
-				hl = hostlist_create_dims(id, 1);
+				xstrfmtcat(id_str, "%s in (%u",
+					   name_char, assoc->id);
 		}
 		list_iterator_destroy(itr);
 		my_usage_table = assoc_day_table;
@@ -679,15 +669,13 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		name_char = "id";
 		itr = list_iterator_create(object_list);
 		while ((wckey = list_next(itr))) {
-			snprintf(id, sizeof(id), "%u", wckey->id);
-
-			if (hl)
-				hostlist_push_host_dims(hl, id, 1);
+			if (id_str)
+				xstrfmtcat(id_str, ",%u", wckey->id);
 			else
-				hl = hostlist_create_dims(id, 1);
+				xstrfmtcat(id_str, "%s in (%u",
+					   name_char, wckey->id);
 		}
 		list_iterator_destroy(itr);
-
 		my_usage_table = wckey_day_table;
 		break;
 	default:
@@ -696,23 +684,8 @@ extern int get_usage_for_list(mysql_conn_t *mysql_conn,
 		break;
 	}
 
-	if (hl) {
-		unsigned long lo, hi;
-
-		xfree(id_str);
-
-		hostlist_sort(hl);
-		while (hostlist_pop_range_values(hl, &lo, &hi)) {
-			if (id_str)
-				xstrcat(id_str, " || ");
-			if (lo >= hi)
-				xstrfmtcat(id_str, "%s=%lu", name_char, lo);
-			else
-				xstrfmtcat(id_str, "%s between %lu and %lu",
-					   name_char, lo, hi);
-		}
-		hostlist_destroy(hl);
-	}
+	if (id_str)
+		xstrcat(id_str, ")");
 
 	if (set_usage_information(&my_usage_table, type, &start, &end)
 	    != SLURM_SUCCESS) {
