@@ -1508,6 +1508,8 @@ static void _register_lua_slurm_output_functions (void)
 	 */
 	lua_pushnumber (L, SLURM_ERROR);
 	lua_setfield (L, -2, "ERROR");
+	lua_pushnumber (L, SLURM_ERROR);
+	lua_setfield (L, -2, "FAILURE");
 	lua_pushnumber (L, SLURM_SUCCESS);
 	lua_setfield (L, -2, "SUCCESS");
 	lua_pushnumber (L, ESLURM_ACCESS_DENIED);

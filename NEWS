@@ -17,6 +17,9 @@ documents those changes that are of interest to users and administrators.
  -- Don't acquire unneeded locks in slurmctld _run_prolog thread.
  -- Fix sinfo/squeue sort by nodename/nodeaddr/hostname.
 
+* Changes in Slurm 19.05.3
+==========================
+
 * Changes in Slurm 19.05.2
 ==========================
  -- Wrap END_TIMER{,2,3} macro definition in "do {} while (0)" block.
@@ -54,6 +57,9 @@ documents those changes that are of interest to users and administrators.
     access.
  -- Fix jobs being killed after being requeued by preemption.
  -- Make register nodes verify correctly when using cons_tres.
+ -- Fix srun --mem-per-cpu being ignored.
+ -- Fix segfault in _update_job() under certain conditions.
+ -- job_submit/lua - restore slurm.FAILURE as a synonym for slurm.ERROR.
 
 * Changes in Slurm 19.05.1-2
 ============================

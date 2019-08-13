@@ -203,6 +203,7 @@ extern void track_script_flush(void)
 
 	count = list_count(tmp_list);
 	if (!count) {
+		FREE_NULL_LIST(tmp_list);
 		slurm_mutex_unlock(&flush_mutex);
 		return;
 	}

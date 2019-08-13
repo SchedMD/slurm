@@ -135,6 +135,7 @@ EXTRA_DIST = \
 	test1.115			\
 	test1.116			\
 	test1.116.prog.c		\
+	test1.117			\
 	test2.1				\
 	test2.2				\
 	test2.3				\
