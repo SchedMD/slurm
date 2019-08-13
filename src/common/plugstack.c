@@ -1587,7 +1587,12 @@ spank_option_getopt (spank_t sp, struct spank_option *opt, char **argp)
 		return (ESPANK_NOT_AVAIL);
 	}
 
-	if (sp->phase == SPANK_INIT)
+	if ((sp->phase == SPANK_INIT) ||
+	    (sp->phase == SPANK_SLURMD_INIT) ||
+	    (sp->phase == SPANK_INIT_POST_OPT) ||
+	    (sp->phase == STEP_TASK_POST_FORK) ||
+	    (sp->phase == SPANK_SLURMD_EXIT) ||
+	    (sp->phase == SPANK_EXIT))
 		return (ESPANK_NOT_AVAIL);
 
 	if (!opt || !opt->name)
