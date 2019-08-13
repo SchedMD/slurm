@@ -480,14 +480,12 @@ static int _sort_by_node_list(char *nodes1, char *nodes2)
 		ptr1 = val1;
 	else
 		ptr1 = "";
-	hostlist_destroy(hostlist1);
 
 	val2 = hostlist_shift(hostlist2);
 	if (val2)
 		ptr2 = val2;
 	else
 		ptr2 = "";
-	hostlist_destroy(hostlist2);
 
 	diff = xstrcmp(ptr1, ptr2);
 	if (val1)
@@ -501,6 +499,8 @@ static int _sort_by_node_list(char *nodes1, char *nodes2)
 	 */
 	diff = hostlist_cmp_first(hostlist1, hostlist2);
 #endif
+	hostlist_destroy(hostlist1);
+	hostlist_destroy(hostlist2);
 
 	if (reverse_order)
 		diff = -diff;
