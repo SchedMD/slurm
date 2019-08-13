@@ -385,9 +385,11 @@ static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 			continue;
 
 		for (r = 0; r < num_rows; r++) {
+			if (!!p_ptr->row[r].row_bitmap)
+				continue;
+
 			if (is_cons_tres) {
-				if (!p_ptr->row[r].row_bitmap ||
-				    !p_ptr->row[r].row_bitmap[node_i])
+				if (!p_ptr->row[r].row_bitmap[node_i])
 					continue;
 				use_row_bitmap =
 					p_ptr->row[r].row_bitmap[node_i];
