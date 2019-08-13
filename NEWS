@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Set a more appropriate ESLURM_RESERVATION_MAINT job state reason for jobs
     requesting feature(s) and required nodes are in a maintenance reservation.
  -- Fix logic to better handle maintenance reservations.
+ -- Add spank options to cache in remote callback.
 
 * Changes in Slurm 19.05.2
 ==========================
