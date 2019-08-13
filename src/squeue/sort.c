@@ -500,6 +500,8 @@ static int _sort_by_node_list(char *nodes1, char *nodes2)
 	 * each hostrange should only have one node name/host name
 	 */
 	diff = hostlist_cmp_first(hostlist1, hostlist2);
+	hostlist_destroy(hostlist1);
+	hostlist_destroy(hostlist2);
 #endif
 
 	if (reverse_order)
