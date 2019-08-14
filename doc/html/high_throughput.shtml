@@ -47,9 +47,9 @@ In other words, this tells the system how many times to try to establish a
 passive TCP connection that was started by another host.
 This variable takes an integer value, but should under no circumstances be
 larger than 255.
-Each retransmission will take aproximately 30 to 40 seconds.
+Each retransmission will take approximately 30 to 40 seconds.
 The default value of 5, which results in a timeout of passive TCP connections
-of aproximately 180 seconds and is generally satisfactory.
+of approximately 180 seconds and is generally satisfactory.
 <li><b>/proc/sys/net/core/somaxconn</b>:
 Limit of socket listen() backlog, known in userspace as SOMAXCONN. Defaults to
 128. The value should be raised substantially to support bursts of request.
