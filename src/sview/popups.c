@@ -530,22 +530,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			      GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL);
 	gtk_window_set_default_size(GTK_WINDOW(popup), 400, 600);
 
-	if (!xstrcmp(name, "batch_job")) {
-		sview_search_info.search_type = CREATE_BATCH_JOB;
-		label = gtk_label_new(
-			"Batch job submission specifications\n\n"
-			"Specify size (task and/or node count) plus the\n"
-			"script. All other fields are optional.\n\n"
-			"More fields will be made available later.");
-		job_msg = xmalloc(sizeof(job_desc_msg_t));
-		slurm_init_job_desc_msg(job_msg);
-		job_msg->group_id = getgid();
-		job_msg->user_id  = getuid();
-		job_msg->work_dir = xmalloc(1024);
-		if (!getcwd(job_msg->work_dir, 1024))
-			goto end_it;
-		entry = create_job_entry(job_msg, model, &iter);
-	} else if (!xstrcmp(name, "partition")) {
+	if (!xstrcmp(name, "partition")) {
 		sview_search_info.search_type = CREATE_PARTITION;
 		label = gtk_label_new(
 			"Partition creation specifications\n\n"
@@ -585,21 +570,6 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 			goto end_it;
 
 		switch(sview_search_info.search_type) {
-		case CREATE_BATCH_JOB:
-			response = slurm_submit_batch_job(job_msg,
-							  &slurm_alloc_msg);
-			if (response == SLURM_SUCCESS) {
-				temp = g_strdup_printf(
-					"Job %u submitted",
-					slurm_alloc_msg->job_id);
-			} else {
-				temp = g_strdup_printf(
-					"Problem submitting job: %s",
-					slurm_strerror(slurm_get_errno()));
-			}
-			display_edit_note(temp);
-			g_free(temp);
-			break;
 		case CREATE_PARTITION:
 			response = slurm_create_partition(part_msg);
 			if (response == SLURM_SUCCESS) {

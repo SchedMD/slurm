@@ -648,7 +648,6 @@ static char *_get_ui_description()
 		"  <menubar name='main'>"
 		"    <menu action='actions'>"
 		"      <menu action='create'>"
-		"        <menuitem action='batch_job'/>"
 		"        <menuitem action='partition'/>"
 		"        <menuitem action='reservation'/>"
 		"      </menu>"
@@ -762,8 +761,6 @@ static GtkWidget *_get_menubar_menu(GtkWidget *window, GtkWidget *notebook)
 		{"actions", NULL, "_Actions", "<alt>a"},
 		{"options", NULL, "_Options", "<alt>o"},
 		{"displays", NULL, "_Query", "<alt>q"},
-		{"batch_job", NULL, "Batch Job", "", "Submit batch job",
-		 G_CALLBACK(create_create_popup)},
 		{"partition", NULL, "Partition", "", "Create partition",
 		 G_CALLBACK(create_create_popup)},
 		{"reservation", NULL, "Reservation", "", "Create reservation",

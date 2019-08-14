@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
     listen on.
  -- slurmrestd - Log numerical service name when referencing host port pairs.
  -- slurmrestd - Log host port information in RFC3986 format.
+ -- sview - Remove (long-broken) batch job submission option.
 
 * Changes in Slurm 20.02.6
 ==========================
