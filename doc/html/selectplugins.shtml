@@ -609,7 +609,7 @@ the job step.</p>
 <span class="commandline"> step_ptr</span>&nbsp; &nbsp;&nbsp;(input)
 Pointer to the step which has completed execution.<br>
 <span class="commandline"> killing_step</span>&nbsp; &nbsp;&nbsp;(input)
-True if we are begining the termination of the step (for example, when SIGKILL is being sent);
+True if we are beginning the termination of the step (for example, when SIGKILL is being sent);
 False if the termination of the step has completed (all processes have exited).</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR.</p>
