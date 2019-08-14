@@ -131,7 +131,7 @@ For example, it is legal to remove the line "SwitchName=s4 Switches=s[0-3]"
 from the above topology.conf file.
 In that case, no job will span more than four compute nodes on any single leaf
 switch.
-This configuration can be useful if one wants to schedule multiple phyisical
+This configuration can be useful if one wants to schedule multiple physical
 clusters as a single logical cluster under the control of a single slurmctld
 daemon.</p>
 
