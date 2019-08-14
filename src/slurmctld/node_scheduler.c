@@ -1582,10 +1582,11 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				max_nodes, req_nodes, test_only,
 				preemptee_candidates, preemptee_job_list,
 				has_xand, exc_core_bitmap, resv_overlap);
-		if ((resv_rc == ESLURM_RESERVATION_MAINT) &&
-		    (error_code == ESLURM_NODE_NOT_AVAIL))
-			 error_code = ESLURM_RESERVATION_MAINT;
 	}
+
+	if ((resv_rc == ESLURM_RESERVATION_MAINT) &&
+	    (error_code == ESLURM_NODE_NOT_AVAIL))
+		error_code = ESLURM_RESERVATION_MAINT;
 #if 0
 {
 	char *tmp_str = bitmap2node_name(*select_bitmap);
@@ -2902,6 +2903,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			filter_by_node_owner(job_ptr, unavail_bitmap);
 			bit_not(unavail_bitmap);
 			bit_and_not(unavail_bitmap, future_node_bitmap);
+			bit_and(unavail_bitmap, part_ptr->node_bitmap);
 			if (job_ptr->details->req_node_bitmap &&
 			    bit_overlap(unavail_bitmap,
 					job_ptr->details->req_node_bitmap)) {

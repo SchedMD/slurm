@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for proctrack/cray plugin
+# Makefile for proctrack/cray_aries plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
