@@ -135,7 +135,7 @@ This option may improve system responsiveness when large numbers of jobs
 initiation time of individual jobs.</li>
 <li><b>sched_min_interval</b> is yet another configuration parameter to control
 how frequently the scheduling logic runs. It can still be triggered on each
-job submit, job terminiation, or other state change which could permit a new
+job submit, job termination, or other state change which could permit a new
 job to be started. However that triggering does not cause the scheduling logic
 to be started immediately, but only within the configured <b>sched_interval</b>.
 For example, if sched_min_interval=2000000 (microseconds) and 100 jobs are submitted

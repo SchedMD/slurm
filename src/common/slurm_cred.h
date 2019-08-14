@@ -255,7 +255,7 @@ void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t *cred);
 
 /*
  * Revoke all credentials for job id jobid
- * time IN - the time the job terminiation was requested by slurmctld
+ * time IN - the time the job termination was requested by slurmctld
  *           (local time from slurmctld server)
  * start_time IN - job start time, used to recongnize job requeue
  */
