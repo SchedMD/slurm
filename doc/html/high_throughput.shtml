@@ -56,7 +56,8 @@ Limit of socket listen() backlog, known in userspace as SOMAXCONN. Defaults to
 For example, to support a burst of 1024 requests, set somaxconn to 1024.</li>
 <li><b>/proc/sys/net/ipv4/ip_local_port_range</b>:
 Identify the ephermeral ports available, which are used for many Slurm
-communcations. The value may be raised to support a high volume of communcations.
+communications. The value may be raised to support a high volume of
+communications.
 For example, write the value "32768 65535" into the ip_local_port_range file
 in order to make that range of ports available.</li>
 </ul>
