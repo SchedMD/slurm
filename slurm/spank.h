@@ -304,8 +304,10 @@ spank_err_t spank_option_register (spank_t spank, struct spank_option *opt);
  *  Check whether spank plugin option [opt] has been activated.
  *   If the option takes an argument, then the option argument
  *   (if found) will be returned in *optarg.
- *  This function can only be invoked from slurm_spank_job_prolog() and
- *   slurm_spank_job_epilog().
+ *  This function can be invoked from the following functions:
+ *  slurm_spank_job_prolog, slurm_spank_local_user_init, slurm_spank_user_init,
+ *  slurm_spank_task_init_privileged, slurm_spank_task_init,
+ *  slurm_spank_task_exit, and slurm_spank_job_epilog.
  *
  *  Returns
  *   ESPANK_SUCCESS if the option was used by user. In this case

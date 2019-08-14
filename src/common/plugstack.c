@@ -1145,7 +1145,8 @@ void spank_option_table_destroy(struct option *optz)
 	optz_destroy(optz);
 }
 
-static int _do_option_cb(struct spank_plugin_opt *opt, const char *arg)
+static int _do_option_cb(struct spank_plugin_opt *opt, const char *arg,
+			 int remote)
 {
 	int rc = 0;
 
@@ -1156,7 +1157,7 @@ static int _do_option_cb(struct spank_plugin_opt *opt, const char *arg)
 	 *  Call plugin callback if such a one exists
 	 */
 	if (opt->opt->cb
-	    && (rc = ((*opt->opt->cb) (opt->opt->val, arg, 0))) < 0)
+	    && (rc = ((*opt->opt->cb) (opt->opt->val, arg, remote))))
 		return (rc);
 
 	/*
@@ -1190,7 +1191,7 @@ extern int spank_process_option(int optval, const char *arg)
 		return (-1);
 	}
 
-	if ((rc = _do_option_cb(opt, arg))) {
+	if ((rc = _do_option_cb(opt, arg, 0))) {
 		error("Invalid --%s argument: %s", opt->opt->name, arg);
 		return (rc);
 	}
@@ -1221,7 +1222,7 @@ extern int spank_process_env_options()
 			continue;
 		}
 
-		if ((rc = _do_option_cb(option, arg))) {
+		if ((rc = _do_option_cb(option, arg, 0))) {
 			error("Invalid argument (%s) for environment variable: %s",
 			      arg, env_name);
 			xfree(env_name);
@@ -1588,7 +1589,12 @@ spank_option_getopt (spank_t sp, struct spank_option *opt, char **argp)
 		return (ESPANK_NOT_AVAIL);
 	}
 
-	if (sp->phase == SPANK_INIT)
+	if ((sp->phase == SPANK_INIT) ||
+	    (sp->phase == SPANK_SLURMD_INIT) ||
+	    (sp->phase == SPANK_INIT_POST_OPT) ||
+	    (sp->phase == STEP_TASK_POST_FORK) ||
+	    (sp->phase == SPANK_SLURMD_EXIT) ||
+	    (sp->phase == SPANK_EXIT))
 		return (ESPANK_NOT_AVAIL);
 
 	if (!opt || !opt->name)
@@ -1668,14 +1674,12 @@ spank_stack_get_remote_options_env (struct spank_stack *stack, char **env)
 
 	i = list_iterator_create (option_cache);
 	while ((option = list_next (i))) {
-		struct spank_option *p = option->opt;
-
 		if (!(arg = getenvp (env, _opt_env_name (option, var, sizeof(var)))))
 			continue;
 
-		if (p->cb && (((*p->cb) (p->val, arg, 1)) < 0)) {
+		if (_do_option_cb(option, arg, 1)) {
 			error ("spank: failed to process option %s=%s",
-			       p->name, arg);
+			       option->opt->name, arg);
 		}
 
 		/*
@@ -1703,7 +1707,6 @@ spank_stack_get_remote_options(struct spank_stack *stack, job_options_t opts)
 	job_options_iterator_reset(opts);
 	while ((j = job_options_next(opts))) {
 		struct spank_plugin_opt *opt;
-		struct spank_option *p;
 
 		if (j->type != OPT_TYPE_SPANK)
 			continue;
@@ -1711,11 +1714,9 @@ spank_stack_get_remote_options(struct spank_stack *stack, job_options_t opts)
 		if (!(opt = spank_stack_find_option_by_name(stack, j->option)))
 			continue;
 
-		p = opt->opt;
-
-		if (p->cb && (((*p->cb) (p->val, j->optarg, 1)) < 0)) {
+		if (_do_option_cb(opt, j->optarg, 1)) {
 			error("spank: failed to process option %s=%s",
-			      p->name, j->optarg);
+			      opt->opt->name, j->optarg);
 		}
 	}
 

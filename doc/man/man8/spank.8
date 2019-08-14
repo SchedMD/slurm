@@ -376,7 +376,10 @@ struct spank_option \fIopt\fR has been used by the user. If \fIoptargp\fR
 is non-NULL then it is set to any option argument passed (if the option
 takes an argument). The use of this method is \fIrequired\fR to process
 options in \fBjob_script\fR context (\fBslurm_spank_job_prolog\fR and
-\fBslurm_spank_job_epilog\fR) and can not be used from other contexts.
+\fBslurm_spank_job_epilog\fR). This function is valid in the following contexts:
+slurm_spank_job_prolog, slurm_spank_local_user_init, slurm_spank_user_init,
+slurm_spank_task_init_privileged, slurm_spank_task_init, slurm_spank_task_exit,
+and slurm_spank_job_epilog.
 
 .SH "CONFIGURATION"
 .LP

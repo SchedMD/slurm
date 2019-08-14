@@ -262,7 +262,7 @@ Also appropriately set EnergyIPMIFrequency in acct_gather.conf.</p>
 <DD>Time of day at which the data sample was taken. This can be used to
 correlate activity with other sources such as logs.</DD></DT>
 <DT><B>Time</B>
-<DD>Elapsed time since the begining of the step.</DD></DT>
+<DD>Elapsed time since the beginning of the step.</DD></DT>
 <DT><B>Power</B>
 <DD>Power consumption during the interval.</DD></DT>
 <DT><B>CPU Frequency</B>
@@ -281,7 +281,7 @@ or in --acctg-freq on the command line.</p>
 <DD>Time of day at which the data sample was taken. This can be used to
 correlate activity with other sources such as logs.</DD></DT>
 <DT><B>Time</B>
-<DD>Elapsed time since the begining of the step.</DD></DT>
+<DD>Elapsed time since the beginning of the step.</DD></DT>
 <DT><B>Reads</B>
 <DD>Number of read operations.</DD></DT>
 <DT><B>Megabytes Read</B>
@@ -304,7 +304,7 @@ data items.</p>
 <DD>Time of day at which the data sample was taken. This can be used to
 correlate activity with other sources such as logs.</DD></DT>
 <DT><B>Time</B>
-<DD>Elapsed time since the begining of the step.</DD></DT>
+<DD>Elapsed time since the beginning of the step.</DD></DT>
 <DT><B>Packets In</B>
 <DD>Number of packets coming in.</DD></DT>
 <DT><B>Megabytes Read</B>
@@ -327,7 +327,7 @@ items.</p>
 <DD>Time of day at which the data sample was taken. This can be used to
 correlate activity with other sources such as logs.</DD></DT>
 <DT><B>Time</B>
-<DD>Elapsed time since the begining of the step.</DD></DT>
+<DD>Elapsed time since the beginning of the step.</DD></DT>
 <DT><B>CPU Frequency</B>
 <DD>CPU Frequency at time of sample.</DD></DT>
 <DT><B>CPU Time</B>
