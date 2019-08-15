@@ -7,14 +7,14 @@
 #
 ControlMachine={{ controlmachine }}
 AuthType=auth/munge
-CoreSpecPlugin=cray
+CoreSpecPlugin=cray_aries
 CredType=cred/munge
 GresTypes={{ grestypes|join(',') }}
 JobContainerType=job_container/cncu
-JobSubmitPlugins=cray
+JobSubmitPlugins=cray_aries
 KillOnBadExit=1
 MpiParams=ports=20000-32767
-ProctrackType=proctrack/cray
+ProctrackType=proctrack/cray_aries
 # Some programming models require unlimited virtual memory
 PropagateResourceLimitsExcept=AS
 # ReturnToService 2 will let rebooted nodes come back up immediately
@@ -24,8 +24,8 @@ SlurmdPidFile=/var/run/slurmd.pid
 SlurmdSpoolDir=/var/spool/slurmd
 SlurmUser=root
 StateSaveLocation=/var/spool/slurm
-SwitchType=switch/cray
-TaskPlugin=task/cray,task/affinity,task/cgroup
+SwitchType=switch/cray_aries
+TaskPlugin=task/cray_aries,task/affinity,task/cgroup
 #
 #
 # SCHEDULING
@@ -33,7 +33,7 @@ DefMemPerCPU={{ defmem }}
 FastSchedule=0
 MaxMemPerCPU={{ maxmem }}
 SchedulerType=sched/backfill
-SelectType=select/cray
+SelectType=select/cray_aries
 SelectTypeParameters=CR_CORE_Memory,other_cons_res
 #
 #
