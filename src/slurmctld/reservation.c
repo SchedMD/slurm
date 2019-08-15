@@ -5124,6 +5124,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 			    ((resv_ptr->flags  & RESERVE_FLAG_PART_NODES) &&
 			     job_ptr->part_ptr == resv_ptr->part_ptr) ||
 			    ((resv_ptr->flags & RESERVE_FLAG_MAINT) &&
+			     job_ptr->part_ptr &&
 			     (bit_super_set(job_ptr->part_ptr->node_bitmap,
 					    resv_ptr->node_bitmap)))) {
 				rc = ESLURM_RESERVATION_MAINT;
