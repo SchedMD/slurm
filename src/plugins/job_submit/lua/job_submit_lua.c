@@ -348,12 +348,14 @@ static int _job_rec_field(const struct job_record *job_ptr,
 			lua_pushnumber (L, 0);
 	} else if (!xstrcmp(name, "min_mem_per_node")) {
 		if (job_ptr->details &&
+		    (job_ptr->details->pn_min_memory != NO_VAL64) &&
 		    !(job_ptr->details->pn_min_memory & MEM_PER_CPU))
 			lua_pushnumber(L, job_ptr->details->pn_min_memory);
 		else
 			lua_pushnil(L);
 	} else if (!xstrcmp(name, "min_mem_per_cpu")) {
 		if (job_ptr->details &&
+		    (job_ptr->details->pn_min_memory != NO_VAL64) &&
 		    (job_ptr->details->pn_min_memory & MEM_PER_CPU))
 			lua_pushnumber(L, job_ptr->details->pn_min_memory &
 				       ~MEM_PER_CPU);
@@ -830,9 +832,11 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 	} else if (!xstrcmp(name, "min_cpus")) {
 		lua_pushnumber (L, job_desc->min_cpus);
 	} else if (!xstrcmp(name, "min_mem_per_node") &&
+		   (job_desc->pn_min_memory != NO_VAL64) &&
 		   !(job_desc->pn_min_memory & MEM_PER_CPU)) {
 		lua_pushnumber (L, job_desc->pn_min_memory);
 	} else if (!xstrcmp(name, "min_mem_per_cpu") &&
+		   (job_desc->pn_min_memory != NO_VAL64) &&
 		   (job_desc->pn_min_memory & MEM_PER_CPU)) {
 		lua_pushnumber (L, (job_desc->pn_min_memory & (~MEM_PER_CPU)));
 	} else if (!xstrcmp(name, "min_nodes")) {
@@ -1302,9 +1306,11 @@ static int _part_rec_field(const struct part_record *part_ptr,
 	} else if (!xstrcmp(name, "default_time")) {
 		lua_pushnumber (L, part_ptr->default_time);
 	} else if (!xstrcmp(name, "def_mem_per_cpu") &&
+		  (part_ptr->def_mem_per_cpu != NO_VAL64) &&
 		  (part_ptr->def_mem_per_cpu & MEM_PER_CPU)) {
 		lua_pushnumber (L, part_ptr->def_mem_per_cpu & (~MEM_PER_CPU));
 	} else if (!xstrcmp(name, "def_mem_per_node") &&
+		  (part_ptr->def_mem_per_cpu != NO_VAL64) &&
 		  !(part_ptr->def_mem_per_cpu & MEM_PER_CPU)) {
 		lua_pushnumber (L, part_ptr->def_mem_per_cpu);
 	} else if (!xstrcmp(name, "deny_accounts")) {
@@ -1321,9 +1327,11 @@ static int _part_rec_field(const struct part_record *part_ptr,
 	} else if (!xstrcmp(name, "max_cpus_per_node")) {
 		lua_pushnumber (L, part_ptr->max_cpus_per_node);
 	} else if (!xstrcmp(name, "max_mem_per_cpu") &&
+		  (part_ptr->max_mem_per_cpu != NO_VAL64) &&
 		  (part_ptr->max_mem_per_cpu & MEM_PER_CPU)) {
 		lua_pushnumber (L, part_ptr->max_mem_per_cpu & (~MEM_PER_CPU));
 	} else if (!xstrcmp(name, "max_mem_per_node") &&
+		  (part_ptr->max_mem_per_cpu != NO_VAL64) &&
 		  !(part_ptr->max_mem_per_cpu & MEM_PER_CPU)) {
 		lua_pushnumber (L, part_ptr->max_mem_per_cpu);
 	} else if (!xstrcmp(name, "max_nodes")) {
