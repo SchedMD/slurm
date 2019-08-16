@@ -25,6 +25,9 @@ HIGHLIGHTS
 ==========
  -- Drop slurm.spec-legacy from distribution.
  -- Removed the smap command.
+ -- Exclusive behavior of a node includes all GRES on a node as well
+    as the cpus.
+
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
