@@ -1028,58 +1028,6 @@ static void _nvml_get_device_name(nvmlDevice_t device, char *device_name,
 }
 
 /*
- * Allocates a string in device_brand containing the brand/type of the GPU
- * Returned string must be xfree()'d
- */
-static char *_nvml_get_device_brand(nvmlDevice_t device)
-{
-	nvmlBrandType_t brand = NVML_BRAND_UNKNOWN;
-	char *device_brand = NULL;
-	nvmlReturn_t nvml_rc = nvmlDeviceGetBrand(device, &brand);
-	if (nvml_rc == NVML_ERROR_INVALID_ARGUMENT) {
-		debug3("NVML: Device is invalid or brand type is null");
-		return NULL;
-	} else if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get brand/type of the GPU: %s",
-		      nvmlErrorString(nvml_rc));
-		return NULL;
-	}
-
-	switch (brand) {
-	case NVML_BRAND_TESLA:
-		device_brand = xstrdup("tesla");
-		break;
-	case NVML_BRAND_QUADRO:
-		device_brand = xstrdup("quadro");
-		break;
-	case NVML_BRAND_GEFORCE:
-		device_brand = xstrdup("geforce");
-		break;
-// TODO: How to determine NVML version or if NVML_BRAND_TITAN is defined enum?
-#ifdef HAVE_NVML_TITAN
-	case NVML_BRAND_TITAN:
-		device_brand = xstrdup("titan");
-		break;
-#endif
-	case NVML_BRAND_NVS:
-		device_brand = xstrdup("nvs");
-		break;
-	case NVML_BRAND_GRID:
-		device_brand = xstrdup("grid");
-		break;
-	case NVML_BRAND_COUNT:
-		device_brand = xstrdup("count");
-		break;
-	case NVML_BRAND_UNKNOWN:
-	default:
-		device_brand = xstrdup("unknown");
-		break;
-	}
-
-	return device_brand;
-}
-
-/*
  * Get the UUID of the device, since device index can fluctuate
  */
 static void _nvml_get_device_uuid(nvmlDevice_t device, char *uuid,
@@ -1322,7 +1270,6 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		char *device_file = NULL;
 		char *nvlinks = NULL;
 		char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
-		char *device_brand = NULL;
 
 		if (!_nvml_get_handle(i, &device)) {
 			error("Creating null GRES GPU record");
@@ -1359,12 +1306,10 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 		nvlinks = _nvml_get_nvlink_info(device, i, device_lut,
 						device_count);
-		device_brand = _nvml_get_device_brand(device);
 		xstrfmtcat(device_file, "/dev/nvidia%u", minor_number);
 
 		debug2("GPU index %u:", i);
 		debug2("    Name: %s", device_name);
-		debug2("    Brand/Type: %s", device_brand);
 		debug2("    UUID: %s", uuid);
 		debug2("    PCI Domain/Bus/Device: %u:%u:%u", pci_info.domain,
 		       pci_info.bus, pci_info.device);
@@ -1386,7 +1331,6 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		xfree(cpu_aff_mac_range);
 		xfree(cpu_aff_abs_range);
 		xfree(nvlinks);
-		xfree(device_brand);
 		xfree(device_file);
 	}
 
