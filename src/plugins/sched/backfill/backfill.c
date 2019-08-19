@@ -3307,9 +3307,16 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 		job_ptr = rec->job_ptr;
 		if (begun_jobs > fini_jobs) {
 			time_t end_time_exp = job_ptr->end_time_exp;
+			time_t end_time = job_ptr->end_time;
+			uint32_t job_state = job_ptr->job_state;
+			/* Simulate normal job completion */
 			job_ptr->end_time_exp = now;
+			job_ptr->end_time = job_ptr->start_time;
+			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
 			acct_policy_job_fini(job_ptr);
 			job_ptr->end_time_exp = end_time_exp;
+			job_ptr->end_time = end_time;
+			job_ptr->job_state = job_state;
 			xfree(job_ptr->tres_alloc_cnt);
 			job_ptr->tres_alloc_cnt = tres_alloc_save[fini_jobs++];
 		}

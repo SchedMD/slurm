@@ -200,26 +200,17 @@ available).</p>
 <p>In the case of an <i>sbatch</i> command, the batch program will start
 when node zero of the allocation is ready for use and pre-processing can
 be performed as needed before using <i>srun</i> to launch job steps.
-Waiting for all nodes to be booted can be accomplished by adding the 
-command "<i>scontrol wait_job $SLURM_JOB_ID</i>" within the script or by
-adding that command to the system <i>Prolog</i> or <i>PrologSlurmctld</i>
-as configured in <i>slurm.conf</i>, which would create the delay for all jobs
-on the system.
-Ensure that the <i>Prolog</i> code is zero to avoid draining the node
-(do not use the scontrol exit code to avoid draining the node on error,
-for example if the job is explicitly cancelled during startup).</p>
+The sbatch <i>--wait-all-nodes=&lt;value&gt;</i> command can be used to
+override this behavior on a per-job basis and a system-wide default can be set
+with the <i>SchedulerParameters=sbatch_wait_nodes</i> option.
+</p>
 
-<p>The <i>salloc</i> and <i>srun</i> commands, which create a resource
-allocation, automatically wait for the nodes to power up.</p>
-
-<p>Execution of the <i>salloc</i> command also triggers execution of the <i>Prolog</i>
-script if the <i>Alloc</i> flag is set in <i>PrologFlags</i>. In this case <i>salloc</i>
-waits for script termination before returning control to the user.
-  To not wait on the salloc side set the <i>NoHold</i> flag
-  in <i>PrologFlags</i>.  This will automatically set
-  the <i>Alloc</i> flag and use the slurmd to wait for the prolog to
-  finish instead of salloc.  This flag should be used when srun is
-  used to launch a step.</p>
+<p>In the case of the <i>salloc</i> command, once the allocation is made a new
+shell will be created on the login node. The salloc
+<i>--wait-all-nodes=&lt;value&gt;</i> command can be used to override this
+behavior on a per-job basis and a system-wide default can be set with the
+<i>SchedulerParameters=salloc_wait_nodes</i> option.
+</p>
 
 <h2>Fault Tolerance</h2>
 
@@ -260,6 +251,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 22 June 2016</p>
+<p style="text-align:center;">Last modified 19 August 2019</p>
 
 <!--#include virtual="footer.txt"-->

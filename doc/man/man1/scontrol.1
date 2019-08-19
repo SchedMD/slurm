@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "February 2019" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "August 2019" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -512,6 +512,9 @@ Wait until a job and all of its nodes are ready for use or the job has entered
 some termination state. This option is particularly useful in the Slurm Prolog
 or in the batch script itself if nodes are powered down and restarted
 automatically as needed.
+
+\fBNOTE:\fP Don't use scontrol wait_job in PrologCtld or Prolog with
+PrologFlags=Alloc as this will result in deadlock.
 
 .TP
 \fBwrite batch_script\fP \fIjob_id optional_filename\fP
