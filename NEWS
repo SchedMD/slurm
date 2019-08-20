@@ -30,6 +30,9 @@ documents those changes that are of interest to users and administrators.
  -- Don't update [min|max]_exit_code on job array task requeue.
  -- Don't assume the first node of a job is the batch host when testing if the
     job's allocated nodes are booted/ready.
+ -- Make --batch=<feature> requests wait for all nodes to be booted so that it
+    can choose the batch host after the nodes have been booted -- possibly with
+    different features.
 
 * Changes in Slurm 19.05.2
 ==========================
