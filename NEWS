@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - fix problem where nil was expected for min_mem_per_cpu.
  -- Fix extra, unaccounted TRESRunMins usage created by heterogeneous jobs when
     running with the priority/multifactor plugin.
+ -- Detach threads once they are done to avoid having to join them
+    in track scripts code.
 
 * Changes in Slurm 19.05.2
 ==========================

@@ -69,6 +69,7 @@ static void _track_script_rec_destroy(void *arg)
 	track_script_rec_t *r = (track_script_rec_t *)arg;
 	debug3("destroying job %u script thread, tid %lu",
 	       r->job_id, (unsigned long) r->tid);
+	pthread_detach(r->tid);
 	slurm_cond_destroy(&r->timer_cond);
 	slurm_mutex_destroy(&r->timer_mutex);
 	xfree(r);
