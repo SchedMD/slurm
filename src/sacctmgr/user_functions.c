@@ -2001,8 +2001,18 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);
 			if (cond_set & SA_SET_ASSOC) {
-				char *tmp = strstr(object, "U = ")+4;
-				int i = 0;
+				static const char *needle = "U = ";
+				int i = 4; /* strlen(needle) */
+				char *tmp;
+
+				if (!(tmp = strstr(object, needle))) {
+					error("Missing \"%s\" from \"%s\". Database is possibly corrupted.",
+					      needle, object);
+					list_iterator_destroy(itr);
+					FREE_NULL_LIST(del_user_list);
+					rc = SLURM_ERROR;
+					goto end_it;
+				}
 
 				/* If the association has a partition on
 				 * it we need to get only the name portion, so

@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect lock levels for select_g_reconfigure().
  -- Handle hidden nodes correctly in slurmrestd.
  -- Allow sacctmgr to use MaxSubmitP[U|A] as format options.
+ -- Fix segfault when trying to delete a corrupted association.
 
 * Changes in Slurm 20.02.1
 ==========================
