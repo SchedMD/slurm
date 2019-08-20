@@ -4515,6 +4515,9 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
  * Execute this AFTER any node feature changes are made by the node_features
  * plugin.
  *
+ * If changes are made here, see if changes need to be made in
+ * test_job_nodes_ready().
+ *
  * Return SLURM_SUCCESS or error code
  */
 extern int pick_batch_host(struct job_record *job_ptr)
