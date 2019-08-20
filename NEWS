@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
     running with the priority/multifactor plugin.
  -- Detach threads once they are done to avoid having to join them
     in track scripts code.
+ -- Handle situation where a slurmctld tries to communicate with slurmdbd more
+    than once at the same time.
 
 * Changes in Slurm 19.05.2
 ==========================
