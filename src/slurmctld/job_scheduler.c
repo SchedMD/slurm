@@ -2421,6 +2421,13 @@ extern void launch_job(struct job_record *job_ptr)
 	if (job_ptr->total_cpus == 0)
 		return;
 
+	launch_job_ptr = _pack_job_ready(job_ptr);
+	if (!launch_job_ptr)
+		return;
+
+	if (pick_batch_host(launch_job_ptr) != SLURM_SUCCESS)
+		return;
+
 #ifdef HAVE_FRONT_END
 	front_end_ptr = find_front_end_record(job_ptr->batch_host);
 	if (front_end_ptr)
@@ -2430,12 +2437,6 @@ extern void launch_job(struct job_record *job_ptr)
 	if (node_ptr)
 		protocol_version = node_ptr->protocol_version;
 #endif
-	launch_job_ptr = _pack_job_ready(job_ptr);
-	if (!launch_job_ptr)
-		return;
-
-	if (pick_batch_host(launch_job_ptr) != SLURM_SUCCESS)
-		return;
 
 	launch_msg_ptr = _build_launch_job_msg(launch_job_ptr,protocol_version);
 	if (launch_msg_ptr == NULL)

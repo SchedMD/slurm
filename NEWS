@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Make --batch=<feature> requests wait for all nodes to be booted so that it
     can choose the batch host after the nodes have been booted -- possibly with
     different features.
+ -- Fix talking to batch host on it's protocol version when using --batch.
 
 * Changes in Slurm 19.05.2
 ==========================
