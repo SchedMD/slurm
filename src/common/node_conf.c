@@ -487,24 +487,16 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 			goto cleanup;
 	}
 
-	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
+	if (!(address_list = hostlist_create(node_ptr->addresses)))
 		fatal("Unable to create NodeAddr list from %s",
 		      node_ptr->addresses);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
+
+	if (!(alias_list = hostlist_create(node_ptr->nodenames)))
 		fatal("Unable to create NodeName list from %s",
 		      node_ptr->nodenames);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
+	if (!(hostname_list = hostlist_create(node_ptr->hostnames)))
 		fatal("Unable to create NodeHostname list from %s",
 		      node_ptr->hostnames);
-		error_code = errno;
-		goto cleanup;
-	}
 	if (node_ptr->port_str && node_ptr->port_str[0] &&
 	    (node_ptr->port_str[0] != '[') &&
 	    (strchr(node_ptr->port_str, '-') ||
@@ -515,12 +507,9 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 	} else {
 		port_list = hostlist_create(node_ptr->port_str);
 	}
-	if (port_list == NULL) {
-		error("Unable to create Port list from %s",
+	if (!port_list)
+		fatal("Unable to create Port list from %s",
 		      node_ptr->port_str);
-		error_code = errno;
-		goto cleanup;
-	}
 
 	/* some sanity checks */
 	address_count  = hostlist_count(address_list);
@@ -528,40 +517,24 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 	hostname_count = hostlist_count(hostname_list);
 	port_count     = hostlist_count(port_list);
 #ifdef HAVE_FRONT_END
-	if ((hostname_count != alias_count) && (hostname_count != 1)) {
-		error("NodeHostname count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-	if ((address_count != alias_count) && (address_count != 1)) {
-		error("NodeAddr count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
+	if ((hostname_count != alias_count) && (hostname_count != 1))
+		fatal("NodeHostname count must equal that of NodeName records of there must be no more than one");
+	if ((address_count != alias_count) && (address_count != 1))
+		fatal("NodeAddr count must equal that of NodeName records of there must be no more than one");
 #else
 #ifdef MULTIPLE_SLURMD
-	if ((address_count != alias_count) && (address_count != 1)) {
-		error("NodeAddr count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
+	if ((address_count != alias_count) && (address_count != 1))
+		fatal("NodeAddr count must equal that of NodeName records of there must be no more than one");
 #else
-	if (address_count < alias_count) {
-		error("At least as many NodeAddr are required as NodeName");
-		goto cleanup;
-	}
-	if (hostname_count < alias_count) {
-		error("At least as many NodeHostname are required "
-		      "as NodeName");
-		goto cleanup;
-	}
+	if (address_count < alias_count)
+		fatal("At least as many NodeAddr are required as NodeName");
+	if (hostname_count < alias_count)
+		fatal("At least as many NodeHostname are required as NodeName");
 #endif	/* MULTIPLE_SLURMD */
 #endif	/* HAVE_FRONT_END */
-	if ((port_count != alias_count) && (port_count > 1)) {
-		error("Port count must equal that of NodeName records or there must be no more than one (%u != %u)",
+	if ((port_count != alias_count) && (port_count > 1))
+		fatal("Port count must equal that of NodeName records or there must be no more than one (%u != %u)",
 		      port_count, alias_count);
-		goto cleanup;
-	}
 
 	/* now build the individual node structures */
 	while ((alias = hostlist_shift(alias_list))) {
