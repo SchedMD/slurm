@@ -2093,170 +2093,6 @@ static void _push_to_hashtbls(char *alias, char *hostname,
 	}
 }
 
-/*
- * Register the given NodeName in the alias table.
- * If node_hostname is NULL, only node_name will be used and
- * no lookup table record is created.
- */
-static int _register_conf_node_aliases(slurm_conf_node_t *node_ptr)
-{
-	hostlist_t address_list = NULL;
-	hostlist_t alias_list = NULL;
-	hostlist_t hostname_list = NULL;
-	hostlist_t port_list = NULL;
-	char *address = NULL;
-	char *alias = NULL;
-	char *hostname = NULL;
-	char *port_str = NULL;
-	int error_code = SLURM_SUCCESS;
-	int address_count, alias_count, hostname_count, port_count, port_int;
-	uint16_t port = 0;
-
-	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
-		return -1;
-
-	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
-		error("Unable to create NodeAddr list from %s",
-		      node_ptr->addresses);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
-		error("Unable to create NodeName list from %s",
-		      node_ptr->nodenames);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
-		error("Unable to create NodeHostname list from %s",
-		      node_ptr->hostnames);
-		error_code = errno;
-		goto cleanup;
-	}
-
-	if (node_ptr->port_str && node_ptr->port_str[0] &&
-	    (node_ptr->port_str[0] != '[') &&
-	    (strchr(node_ptr->port_str, '-') ||
-	     strchr(node_ptr->port_str, ','))) {
-		xstrfmtcat(port_str, "[%s]", node_ptr->port_str);
-		port_list = hostlist_create(port_str);
-		xfree(port_str);
-	} else {
-		port_list = hostlist_create(node_ptr->port_str);
-	}
-	if (port_list == NULL) {
-		error("Unable to create Port list from %s",
-		      node_ptr->port_str);
-		error_code = errno;
-		goto cleanup;
-	}
-
-	if ((slurmdb_setup_cluster_name_dims() > 1)
-	    && conf_ptr->node_prefix == NULL)
-		_set_node_prefix(node_ptr->nodenames);
-
-	/* some sanity checks */
-	address_count  = hostlist_count(address_list);
-	alias_count    = hostlist_count(alias_list);
-	hostname_count = hostlist_count(hostname_list);
-	port_count     = hostlist_count(port_list);
-#ifdef HAVE_FRONT_END
-	if ((address_count != alias_count) && (address_count != 1)) {
-		error("NodeAddr count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-	if ((hostname_count != alias_count) && (hostname_count != 1)) {
-		error("NodeHostname count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-#else
-#ifdef MULTIPLE_SLURMD
-	if ((address_count != alias_count) && (address_count != 1)) {
-		error("NodeAddr count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-#else
-	if (address_count < alias_count) {
-		error("At least as many NodeAddr are required as NodeName");
-		goto cleanup;
-	}
-	if (hostname_count < alias_count) {
-		error("At least as many NodeHostname are required "
-		      "as NodeName");
-		goto cleanup;
-	}
-#endif	/* MULTIPLE_SLURMD */
-#endif	/* HAVE_FRONT_END */
-	if ((port_count != alias_count) && (port_count > 1)) {
-		error("Port count must equal that of NodeName "
-		      "records or there must be no more than one (%u != %u)",
-		      port_count, alias_count);
-		goto cleanup;
-	}
-
-	/* now build the individual node structures */
-	while ((alias = hostlist_shift(alias_list))) {
-		if (address_count > 0) {
-			address_count--;
-			if (address)
-				free(address);
-			address = hostlist_shift(address_list);
-		}
-		if (hostname_count > 0) {
-			hostname_count--;
-			if (hostname)
-				free(hostname);
-			hostname = hostlist_shift(hostname_list);
-		}
-		if (port_count > 0) {
-			port_count--;
-			if (port_str)
-				free(port_str);
-			port_str = hostlist_shift(port_list);
-			port_int = atoi(port_str);
-			if ((port_int <= 0) || (port_int > 0xffff)) {
-				if (local_test_config) {
-					error("Invalid Port %s",
-					      node_ptr->port_str);
-					local_test_config = 1;
-				} else {
-					fatal("Invalid Port %s",
-					      node_ptr->port_str);
-				}
-			}
-			port = port_int;
-		}
-		_push_to_hashtbls(alias, hostname, address, port,
-				  node_ptr->cpus, node_ptr->boards,
-				  node_ptr->sockets, node_ptr->cores,
-				  node_ptr->threads, 0, node_ptr->cpu_spec_list,
-				  node_ptr->core_spec_cnt,
-				  node_ptr->mem_spec_limit, NULL, false);
-		free(alias);
-	}
-	if (address)
-		free(address);
-	if (hostname)
-		free(hostname);
-	if (port_str)
-		free(port_str);
-
-	/* free allocated storage */
-cleanup:
-	if (address_list)
-		hostlist_destroy(address_list);
-	if (alias_list)
-		hostlist_destroy(alias_list);
-	if (hostname_list)
-		hostlist_destroy(hostname_list);
-	if (port_list)
-		hostlist_destroy(port_list);
-	return error_code;
-}
-
 static int _register_front_ends(slurm_conf_frontend_t *front_end_ptr)
 {
 	hostlist_t hostname_list = NULL;
@@ -2307,6 +2143,20 @@ cleanup:
 	return error_code;
 }
 
+static void _check_callback(char *alias, char *hostname,
+			    char *address, uint16_t port,
+			    int state_val,
+			    slurm_conf_node_t *node_ptr,
+			    struct config_record *config_ptr)
+{
+	_push_to_hashtbls(alias, hostname, address, port,
+			  node_ptr->cpus, node_ptr->boards,
+			  node_ptr->sockets, node_ptr->cores,
+			  node_ptr->threads, 0, node_ptr->cpu_spec_list,
+			  node_ptr->core_spec_cnt,
+			  node_ptr->mem_spec_limit, NULL, false);
+}
+
 static void _init_slurmd_nodehash(void)
 {
 	slurm_conf_node_t **ptr_array;
@@ -2331,8 +2181,15 @@ static void _init_slurmd_nodehash(void)
 	}
 
 	count = slurm_conf_nodename_array(&ptr_array);
-	for (i = 0; i < count; i++)
-		_register_conf_node_aliases(ptr_array[i]);
+	for (i = 0; i < count; i++) {
+		if ((check_nodeline_info(ptr_array[i],
+					 NULL,
+					 local_test_config,
+					 _check_callback) == SLURM_SUCCESS) &&
+		    (slurmdb_setup_cluster_name_dims() > 1) &&
+		    !conf_ptr->node_prefix)
+			_set_node_prefix(ptr_array[i]->nodenames);
+	}
 
 	count = slurm_conf_frontend_array(&ptr_front_end);
 	for (i = 0; i < count; i++)

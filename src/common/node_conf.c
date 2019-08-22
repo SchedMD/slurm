@@ -84,9 +84,7 @@ int node_record_count = 0;		/* count in node_record_table_ptr */
 uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
 
-/* Local function defiitions */
-static int	_build_single_nodeline_info(slurm_conf_node_t *node_ptr,
-					    struct config_record *config_ptr);
+/* Local function definitions */
 static int	_delete_config_record (void);
 #if _DEBUG
 static void	_dump_hash (void);
@@ -97,177 +95,6 @@ static void	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
 static void _node_record_hash_identity (void* item, const char** key,
 					uint32_t* key_len);
-
-/*
- * _build_single_nodeline_info - From the slurm.conf reader, build table,
- * 	and set values
- * RET 0 if no error, error code otherwise
- * Note: Operates on common variables
- *	default_node_record - default node configuration values
- */
-static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
-				       struct config_record *config_ptr)
-{
-	int error_code = SLURM_SUCCESS;
-	struct node_record *node_rec = NULL;
-	hostlist_t address_list = NULL;
-	hostlist_t alias_list = NULL;
-	hostlist_t hostname_list = NULL;
-	hostlist_t port_list = NULL;
-	char *address = NULL;
-	char *alias = NULL;
-	char *hostname = NULL;
-	char *port_str = NULL;
-	int state_val = NODE_STATE_UNKNOWN;
-	int address_count, alias_count, hostname_count, port_count;
-	uint16_t port = 0;
-
-	if (node_ptr->state != NULL) {
-		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
-		if (state_val == NO_VAL)
-			goto cleanup;
-	}
-
-	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
-		fatal("Unable to create NodeAddr list from %s",
-		      node_ptr->addresses);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
-		fatal("Unable to create NodeName list from %s",
-		      node_ptr->nodenames);
-		error_code = errno;
-		goto cleanup;
-	}
-	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
-		fatal("Unable to create NodeHostname list from %s",
-		      node_ptr->hostnames);
-		error_code = errno;
-		goto cleanup;
-	}
-	if (node_ptr->port_str && node_ptr->port_str[0] &&
-	    (node_ptr->port_str[0] != '[') &&
-	    (strchr(node_ptr->port_str, '-') ||
-	     strchr(node_ptr->port_str, ','))) {
-		xstrfmtcat(port_str, "[%s]", node_ptr->port_str);
-		port_list = hostlist_create(port_str);
-		xfree(port_str);
-	} else {
-		port_list = hostlist_create(node_ptr->port_str);
-	}
-	if (port_list == NULL) {
-		error("Unable to create Port list from %s",
-		      node_ptr->port_str);
-		error_code = errno;
-		goto cleanup;
-	}
-
-	/* some sanity checks */
-	address_count  = hostlist_count(address_list);
-	alias_count    = hostlist_count(alias_list);
-	hostname_count = hostlist_count(hostname_list);
-	port_count     = hostlist_count(port_list);
-#ifdef HAVE_FRONT_END
-	if ((hostname_count != alias_count) && (hostname_count != 1)) {
-		error("NodeHostname count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-	if ((address_count != alias_count) && (address_count != 1)) {
-		error("NodeAddr count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-#else
-#ifdef MULTIPLE_SLURMD
-	if ((address_count != alias_count) && (address_count != 1)) {
-		error("NodeAddr count must equal that of NodeName "
-		      "records of there must be no more than one");
-		goto cleanup;
-	}
-#else
-	if (address_count < alias_count) {
-		error("At least as many NodeAddr are required as NodeName");
-		goto cleanup;
-	}
-	if (hostname_count < alias_count) {
-		error("At least as many NodeHostname are required "
-		      "as NodeName");
-		goto cleanup;
-	}
-#endif	/* MULTIPLE_SLURMD */
-#endif	/* HAVE_FRONT_END */
-	if ((port_count != alias_count) && (port_count > 1)) {
-		error("Port count must equal that of NodeName records or there must be no more than one (%u != %u)",
-		      port_count, alias_count);
-		goto cleanup;
-	}
-
-	/* now build the individual node structures */
-	while ((alias = hostlist_shift(alias_list))) {
-		if (address_count > 0) {
-			address_count--;
-			if (address)
-				free(address);
-			address = hostlist_shift(address_list);
-		}
-		if (hostname_count > 0) {
-			hostname_count--;
-			if (hostname)
-				free(hostname);
-			hostname = hostlist_shift(hostname_list);
-		}
-		if (port_count > 0) {
-			int port_int;
-			port_count--;
-			if (port_str)
-				free(port_str);
-			port_str = hostlist_shift(port_list);
-			port_int = atoi(port_str);
-			if ((port_int <= 0) || (port_int > 0xffff))
-				fatal("Invalid Port %s", node_ptr->port_str);
-			port = port_int;
-		}
-
-		node_rec = find_node_record2(alias);
-		if (node_rec == NULL) {
-			node_rec = create_node_record(config_ptr, alias);
-			if ((state_val != NO_VAL) &&
-			    (state_val != NODE_STATE_UNKNOWN))
-				node_rec->node_state = state_val;
-			node_rec->last_response = (time_t) 0;
-			node_rec->comm_name = xstrdup(address);
-			node_rec->cpu_bind  = node_ptr->cpu_bind;
-			node_rec->node_hostname = xstrdup(hostname);
-			node_rec->port      = port;
-			node_rec->weight    = node_ptr->weight;
-			node_rec->features  = xstrdup(node_ptr->feature);
-			node_rec->reason    = xstrdup(node_ptr->reason);
-		} else {
-			/* FIXME - maybe should be fatal? */
-			error("Reconfiguration for node %s, ignoring!", alias);
-		}
-		free(alias);
-	}
-	/* free allocated storage */
-cleanup:
-	if (address)
-		free(address);
-	if (hostname)
-		free(hostname);
-	if (port_str)
-		free(port_str);
-	if (address_list)
-		hostlist_destroy(address_list);
-	if (alias_list)
-		hostlist_destroy(alias_list);
-	if (hostname_list)
-		hostlist_destroy(hostname_list);
-	if (port_list)
-		hostlist_destroy(port_list);
-	return error_code;
-}
 
 /*
  * _delete_config_record - delete all configuration records
@@ -519,6 +346,34 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 #endif
 }
 
+static void _check_callback(char *alias, char *hostname,
+			    char *address, uint16_t port,
+			    int state_val,
+			    slurm_conf_node_t *node_ptr,
+			    struct config_record *config_ptr)
+{
+	struct node_record *node_rec;
+
+	if ((node_rec = find_node_record2(alias))) {
+		/* FIXME - maybe should be fatal? */
+		error("Reconfiguration for node %s, ignoring!", alias);
+		return;
+	}
+
+	node_rec = create_node_record(config_ptr, alias);
+	if ((state_val != NO_VAL) &&
+	    (state_val != NODE_STATE_UNKNOWN))
+		node_rec->node_state = state_val;
+	node_rec->last_response = (time_t) 0;
+	node_rec->comm_name = xstrdup(address);
+	node_rec->cpu_bind  = node_ptr->cpu_bind;
+	node_rec->node_hostname = xstrdup(hostname);
+	node_rec->port      = port;
+	node_rec->weight    = node_ptr->weight;
+	node_rec->features  = xstrdup(node_ptr->feature);
+	node_rec->reason    = xstrdup(node_ptr->reason);
+}
+
 /*
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
@@ -575,7 +430,7 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 							       node->nodenames);
 		}
 
-		rc = _build_single_nodeline_info(node, config_ptr);
+		rc = check_nodeline_info(node, config_ptr, 0, _check_callback);
 		max_rc = MAX(max_rc, rc);
 	}
 
@@ -591,6 +446,177 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	}
 
 	return max_rc;
+}
+
+/*
+ * check_nodeline_info - From the slurm.conf reader, build table,
+ * 	and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ *	default_node_record - default node configuration values
+ */
+extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
+			       struct config_record *config_ptr,
+			       bool test_config,
+			       void (*_callback) (
+				       char *alias, char *hostname,
+				       char *address, uint16_t port,
+				       int state_val,
+				       slurm_conf_node_t *node_ptr,
+				       struct config_record *config_ptr))
+{
+	int error_code = SLURM_SUCCESS;
+	hostlist_t address_list = NULL;
+	hostlist_t alias_list = NULL;
+	hostlist_t hostname_list = NULL;
+	hostlist_t port_list = NULL;
+	char *address = NULL;
+	char *alias = NULL;
+	char *hostname = NULL;
+	char *port_str = NULL;
+	int state_val = NODE_STATE_UNKNOWN;
+	int address_count, alias_count, hostname_count, port_count;
+	uint16_t port = 0;
+
+	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
+		return -1;
+
+	if (node_ptr->state != NULL) {
+		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
+		if (state_val == NO_VAL)
+			goto cleanup;
+	}
+
+	if ((address_list = hostlist_create(node_ptr->addresses)) == NULL) {
+		fatal("Unable to create NodeAddr list from %s",
+		      node_ptr->addresses);
+		error_code = errno;
+		goto cleanup;
+	}
+	if ((alias_list = hostlist_create(node_ptr->nodenames)) == NULL) {
+		fatal("Unable to create NodeName list from %s",
+		      node_ptr->nodenames);
+		error_code = errno;
+		goto cleanup;
+	}
+	if ((hostname_list = hostlist_create(node_ptr->hostnames)) == NULL) {
+		fatal("Unable to create NodeHostname list from %s",
+		      node_ptr->hostnames);
+		error_code = errno;
+		goto cleanup;
+	}
+	if (node_ptr->port_str && node_ptr->port_str[0] &&
+	    (node_ptr->port_str[0] != '[') &&
+	    (strchr(node_ptr->port_str, '-') ||
+	     strchr(node_ptr->port_str, ','))) {
+		xstrfmtcat(port_str, "[%s]", node_ptr->port_str);
+		port_list = hostlist_create(port_str);
+		xfree(port_str);
+	} else {
+		port_list = hostlist_create(node_ptr->port_str);
+	}
+	if (port_list == NULL) {
+		error("Unable to create Port list from %s",
+		      node_ptr->port_str);
+		error_code = errno;
+		goto cleanup;
+	}
+
+	/* some sanity checks */
+	address_count  = hostlist_count(address_list);
+	alias_count    = hostlist_count(alias_list);
+	hostname_count = hostlist_count(hostname_list);
+	port_count     = hostlist_count(port_list);
+#ifdef HAVE_FRONT_END
+	if ((hostname_count != alias_count) && (hostname_count != 1)) {
+		error("NodeHostname count must equal that of NodeName "
+		      "records of there must be no more than one");
+		goto cleanup;
+	}
+	if ((address_count != alias_count) && (address_count != 1)) {
+		error("NodeAddr count must equal that of NodeName "
+		      "records of there must be no more than one");
+		goto cleanup;
+	}
+#else
+#ifdef MULTIPLE_SLURMD
+	if ((address_count != alias_count) && (address_count != 1)) {
+		error("NodeAddr count must equal that of NodeName "
+		      "records of there must be no more than one");
+		goto cleanup;
+	}
+#else
+	if (address_count < alias_count) {
+		error("At least as many NodeAddr are required as NodeName");
+		goto cleanup;
+	}
+	if (hostname_count < alias_count) {
+		error("At least as many NodeHostname are required "
+		      "as NodeName");
+		goto cleanup;
+	}
+#endif	/* MULTIPLE_SLURMD */
+#endif	/* HAVE_FRONT_END */
+	if ((port_count != alias_count) && (port_count > 1)) {
+		error("Port count must equal that of NodeName records or there must be no more than one (%u != %u)",
+		      port_count, alias_count);
+		goto cleanup;
+	}
+
+	/* now build the individual node structures */
+	while ((alias = hostlist_shift(alias_list))) {
+		if (address_count > 0) {
+			address_count--;
+			if (address)
+				free(address);
+			address = hostlist_shift(address_list);
+		}
+		if (hostname_count > 0) {
+			hostname_count--;
+			if (hostname)
+				free(hostname);
+			hostname = hostlist_shift(hostname_list);
+		}
+		if (port_count > 0) {
+			int port_int;
+			port_count--;
+			if (port_str)
+				free(port_str);
+			port_str = hostlist_shift(port_list);
+			port_int = atoi(port_str);
+			if ((port_int <= 0) || (port_int > 0xffff)) {
+				if (test_config)
+					error("Invalid Port %s",
+					      node_ptr->port_str);
+				else
+					fatal("Invalid Port %s",
+					      node_ptr->port_str);
+			}
+			port = port_int;
+		}
+
+		(*_callback)(alias, hostname, address,
+			     port, state_val, node_ptr, config_ptr);
+
+		free(alias);
+	}
+	/* free allocated storage */
+cleanup:
+	if (address)
+		free(address);
+	if (hostname)
+		free(hostname);
+	if (port_str)
+		free(port_str);
+	if (address_list)
+		hostlist_destroy(address_list);
+	if (alias_list)
+		hostlist_destroy(alias_list);
+	if (hostname_list)
+		hostlist_destroy(hostname_list);
+	if (port_list)
+		hostlist_destroy(port_list);
+	return error_code;
 }
 
 /*

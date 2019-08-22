@@ -50,6 +50,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xhash.h"
 
@@ -226,6 +227,23 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt);
  * RET 0 if no error, error code otherwise
  */
 extern int build_all_frontend_info (bool is_slurmd_context);
+
+/*
+ * check_nodeline_info - From the slurm.conf reader, build table,
+ * 	and set values
+ * RET 0 if no error, error code otherwise
+ * Note: Operates on common variables
+ *	default_node_record - default node configuration values
+ */
+extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
+			       struct config_record *config_ptr,
+			       bool test_config,
+			       void (*_callback) (
+				       char *alias, char *hostname,
+				       char *address, uint16_t port,
+				       int state_val,
+				       slurm_conf_node_t *node_ptr,
+				       struct config_record *config_ptr));
 
 /*
  * create_config_record - create a config_record entry and set is values to
