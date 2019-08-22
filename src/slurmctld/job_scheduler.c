@@ -2418,6 +2418,9 @@ extern void launch_job(struct job_record *job_ptr)
 	struct node_record *node_ptr;
 #endif
 
+	xassert(job_ptr);
+	xassert(job_ptr->batch_flag);
+
 	if (job_ptr->total_cpus == 0)
 		return;
 
@@ -2437,6 +2440,8 @@ extern void launch_job(struct job_record *job_ptr)
 	if (node_ptr)
 		protocol_version = node_ptr->protocol_version;
 #endif
+
+	(void)build_batch_step(job_ptr);
 
 	launch_msg_ptr = _build_launch_job_msg(launch_job_ptr,protocol_version);
 	if (launch_msg_ptr == NULL)

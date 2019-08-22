@@ -8604,8 +8604,6 @@ extern void job_config_fini(struct job_record *job_ptr)
 	 */
 	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
 		launch_prolog(job_ptr);
-	if (job_ptr->batch_flag)
-		(void)build_batch_step(job_ptr);
 }
 
 /*
