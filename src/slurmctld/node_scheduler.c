@@ -3496,12 +3496,21 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 		else
 			tmp_bitmap = job_feat_ptr->node_bitmap_avail;
 		if (tmp_bitmap) {
-			if (last_op == FEATURE_OP_AND) {
+			/*
+			 * Here we need to use the current feature for XOR/AND
+			 * not the last_op.  For instance fastio&[xeon|nehalem]
+			 * should ignore xeon (in valid_feature_count), but if
+			 * would be based on last_op it will see AND operation.
+			 * This should only be used when dealing with middle
+			 * options, not for the end as done in the last_paren
+			 * check below.
+			 */
+			if ((job_feat_ptr->op_code == FEATURE_OP_XOR) ||
+			    (job_feat_ptr->op_code == FEATURE_OP_XAND)) {
+				*has_xor = true;
+			} else if (last_op == FEATURE_OP_AND) {
 				bit_and(work_bitmap, tmp_bitmap);
 			} else if (last_op == FEATURE_OP_OR) {
-				bit_or(work_bitmap, tmp_bitmap);
-			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
-				*has_xor = true;
 				bit_or(work_bitmap, tmp_bitmap);
 			}
 		} else {	/* feature not found */
@@ -3519,7 +3528,6 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 				bit_or(feature_bitmap, work_bitmap);
 			} else {	/* FEATURE_OP_XOR or FEATURE_OP_XAND */
 				*has_xor = true;
-				bit_or(feature_bitmap, work_bitmap);
 			}
 			FREE_NULL_BITMAP(paren_bitmap);
 			work_bitmap = feature_bitmap;
@@ -3527,6 +3535,19 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 
 		last_op = job_feat_ptr->op_code;
 		last_paren_cnt = job_feat_ptr->paren;
+#if _DEBUG
+{
+		char *tmp_f, *tmp_w, *tmp_t;
+		tmp_f = bitmap2node_name(feature_bitmap);
+		tmp_w = bitmap2node_name(work_bitmap);
+		tmp_t = bitmap2node_name(tmp_bitmap);
+		info("%s: feature:%s feature_bitmap:%s work_bitmap:%s tmp_bitmap:%s", __func__, job_feat_ptr->name, tmp_f, tmp_w, tmp_t);
+		xfree(tmp_f);
+		xfree(tmp_w);
+		xfree(tmp_t);
+}
+#endif
+
 	}
 	list_iterator_destroy(job_feat_iter);
 	if (!have_count)
@@ -3535,9 +3556,10 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 	FREE_NULL_BITMAP(paren_bitmap);
 #if _DEBUG
 {
-	char tmp[32];
-	bit_fmt(tmp, sizeof(tmp), node_bitmap);
-	info("%s: RC:%d NODE_BITMAP:%s", __func__, rc, tmp);
+	char * tmp;
+	tmp = bitmap2node_name(node_bitmap);
+	info("%s: RC:%d NODES:%s HAS_XOR:%d", __func__, rc, tmp, *has_xor);
+	xfree(tmp);
 }
 #endif
 	return rc;
