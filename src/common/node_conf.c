@@ -494,9 +494,11 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 	if (!(alias_list = hostlist_create(node_ptr->nodenames)))
 		fatal("Unable to create NodeName list from %s",
 		      node_ptr->nodenames);
+
 	if (!(hostname_list = hostlist_create(node_ptr->hostnames)))
 		fatal("Unable to create NodeHostname list from %s",
 		      node_ptr->hostnames);
+
 	if (node_ptr->port_str && node_ptr->port_str[0] &&
 	    (node_ptr->port_str[0] != '[') &&
 	    (strchr(node_ptr->port_str, '-') ||
@@ -504,9 +506,9 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 		xstrfmtcat(port_str, "[%s]", node_ptr->port_str);
 		port_list = hostlist_create(port_str);
 		xfree(port_str);
-	} else {
+	} else
 		port_list = hostlist_create(node_ptr->port_str);
-	}
+
 	if (!port_list)
 		fatal("Unable to create Port list from %s",
 		      node_ptr->port_str);
@@ -519,6 +521,7 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 #ifdef HAVE_FRONT_END
 	if ((hostname_count != alias_count) && (hostname_count != 1))
 		fatal("NodeHostname count must equal that of NodeName records of there must be no more than one");
+
 	if ((address_count != alias_count) && (address_count != 1))
 		fatal("NodeAddr count must equal that of NodeName records of there must be no more than one");
 #else
@@ -528,6 +531,7 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 #else
 	if (address_count < alias_count)
 		fatal("At least as many NodeAddr are required as NodeName");
+
 	if (hostname_count < alias_count)
 		fatal("At least as many NodeHostname are required as NodeName");
 #endif	/* MULTIPLE_SLURMD */
