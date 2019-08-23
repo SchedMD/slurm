@@ -354,11 +354,8 @@ static void _check_callback(char *alias, char *hostname,
 {
 	struct node_record *node_rec;
 
-	if ((node_rec = find_node_record2(alias))) {
-		/* FIXME - maybe should be fatal? */
-		error("Reconfiguration for node %s, ignoring!", alias);
-		return;
-	}
+	if ((node_rec = find_node_record2(alias)))
+		fatal("Duplicated NodeHostName %s in config file", alias);
 
 	node_rec = create_node_record(config_ptr, alias);
 	if ((state_val != NO_VAL) &&
@@ -484,7 +481,8 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 	if (node_ptr->state != NULL) {
 		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
 		if (state_val == NO_VAL)
-			goto cleanup;
+			fatal("Invalid state %s from %s",
+			      node_ptr->state, node_ptr->nodenames);
 	}
 
 	if (!(address_list = hostlist_create(node_ptr->addresses)))
@@ -578,7 +576,6 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 		free(alias);
 	}
 	/* free allocated storage */
-cleanup:
 	if (address)
 		free(address);
 	if (hostname)
