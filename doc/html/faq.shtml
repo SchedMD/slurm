@@ -1871,7 +1871,7 @@ following procedure is recommended:
 <ol>
 <li>Stop the slurmctld daemon (e.g. "systemctl stop slurmctld" on the head node)</li>
 <li>Update the slurm.conf file on all nodes in the cluster</li>
-<li>Restart the slurmd daemons on all nodes (e.g. "systemctl start slurmd" on all nodes)</li>
+<li>Restart the slurmd daemons on all nodes (e.g. "systemctl restart slurmd" on all nodes)</li>
 <li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
 </ol>
 
