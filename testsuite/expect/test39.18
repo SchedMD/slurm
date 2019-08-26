@@ -45,6 +45,9 @@ set file_out		"test$test_id.out"
 # Assume unsigned long is 64 bits unless overwritten
 set ulong_bits  64
 
+set debug_mode 0
+# set debug_mode 1
+
 print_header $test_id
 
 if {[test_cray]} {
@@ -182,6 +185,7 @@ set failed_tests [list]
 proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} {slurm_conf_gres ""}} {
 	global cfgpath nodename test_prog alpha_numeric_special exit_code test_minor_in
 	global test_id failed_tests use_valgrind bin_sort file_in file_out
+	global bin_cat debug_mode
 
 	# Skip all tests not specified by the tester; force string comparison
 	if {$test_minor_in != "" && [string compare "$test_minor" "$test_minor_in"] != 0} {
@@ -194,15 +198,22 @@ proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {e
 	generate_file $gres_conf $cfgpath/gres.conf
 	generate_file $fake_gpus_conf $cfgpath/fake_gpus.conf
 
+	# We don't want to sort when debugging - we want to see output in order
+	if {$debug_mode} {
+		set output_method "$bin_cat $file_out"
+	} else {
+		set output_method "$bin_sort <./$file_out"
+	}
+
 	if {$use_valgrind} {
 		make_bash_script $file_in "
 valgrind --tool=memcheck --error-limit=no --leak-check=full --show-reachable=yes --max-stackframe=16777216 --num-callers=20 --child-silent-after-fork=yes --track-origins=yes ./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" >./$file_out 2>&1
-$bin_sort <./$file_out
+$output_method
 rm -rf ./$file_out"
 	} else {
 		make_bash_script $file_in "
 ./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" >./$file_out 2>&1
-$bin_sort <./$file_out
+$output_method
 rm -rf ./$file_out"
 	}
 
@@ -214,7 +225,9 @@ rm -rf ./$file_out"
 		set err_msgs "bogus"
 		set ignore_err_msgs 1
 	}
-	log_user 0
+	if {!$debug_mode} {
+		log_user 0
+	}
 	spawn ./$file_in
 
 

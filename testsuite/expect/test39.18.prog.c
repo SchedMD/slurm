@@ -88,6 +88,8 @@ int main(int argc, char *argv[])
 
 	// Only log info to avoid buffer truncation in expect regex
 	opts.stderr_level = LOG_LEVEL_INFO;
+	// opts.stderr_level = LOG_LEVEL_DEBUG2;
+	// opts.stderr_level = LOG_LEVEL_DEBUG3;
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 
 	// Override where Slurm looks for conf files
