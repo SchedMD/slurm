@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sinfo/squeue sort by nodename/nodeaddr/hostname.
  -- Optimize getting wckey and associations usage.
  -- Keep SLURM_MPI_TYPE variable in srun when not set to 'none'.
+ -- Remove slurm.spec-legacy packaging file.
 
 * Changes in Slurm 19.05.3
 ==========================

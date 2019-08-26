@@ -8,5 +8,4 @@ EXTRA_DIST = \
 	sjstat			\
 	spank_core.c		\
 	time_login.c		\
-	slurm.spec-legacy	\
 	README
