@@ -659,6 +659,12 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 	ListIterator itr;
 	slurmdbd_conn_t *slurmdbd_conn;
 
+	if (!db_conn->conn->rem_port) {
+		error("%s: trying to register a cluster (%s) with no remote port",
+		      __func__, db_conn->conn->cluster_name);
+		return;
+	}
+
 	slurm_mutex_lock(&registered_lock);
 	itr = list_iterator_create(registered_clusters);
 	while ((slurmdbd_conn = list_next(itr))) {
