@@ -944,11 +944,6 @@ static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
 	slurmctld_diag_stats.bf_table_size_sum += node_space_recs;
 }
 
-static int _list_find_all(void *x, void *key)
-{
-	return 1;
-}
-
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args)
 {
@@ -981,7 +976,7 @@ extern void *backfill_agent(void *args)
 		if (slurmctld_config.scheduling_disabled)
 			continue;
 
-		(void) list_delete_all(pack_job_list, _list_find_all, NULL);
+		list_flush(pack_job_list);
 		slurm_mutex_lock(&config_lock);
 		if (config_flag) {
 			config_flag = false;
@@ -3015,15 +3010,13 @@ static int _pack_find_map(void *x, void *key)
 
 /*
  * Return 1 if a pack_job_rec_t record with a specific job_id is found.
- * Always return 1 if "key" is zero.
  */
 static int _pack_find_rec(void *x, void *key)
 {
 	pack_job_rec_t *rec = (pack_job_rec_t *) x;
 	uint32_t *job_id = (uint32_t *) key;
 
-	if ((job_id == NULL) ||
-	    (rec->job_id == *job_id))
+	if (rec->job_id == *job_id)
 		return 1;
 	return 0;
 }
@@ -3045,8 +3038,7 @@ static void _pack_start_clear(void)
 			list_delete_item(iter);
 		} else {
 			map->prev_start = 0;
-			(void) list_delete_all(map->pack_job_list,
-					       _pack_find_rec, NULL);
+			list_flush(map->pack_job_list);
 		}
 	}
 	list_iterator_destroy(iter);
