@@ -929,23 +929,22 @@ extern void destroy_frontend(void *ptr)
 }
 
 /*
- * list_find_frontend - find an entry in the front_end list, see list.h for
+ * _list_find_frontend - find an entry in the front_end list, see list.h for
  *	documentation
- * IN key - is feature name or NULL for all features
+ * IN key - is frontend name
  * RET 1 if found, 0 otherwise
  */
-extern int list_find_frontend (void *front_end_entry, void *key)
+#ifdef HAVE_FRONT_END
+static int _list_find_frontend(void *front_end_entry, void *key)
 {
-	slurm_conf_frontend_t *front_end_ptr;
+	slurm_conf_frontend_t *front_end_ptr =
+		(slurm_conf_frontend_t *) front_end_entry;
 
-	if (key == NULL)
-		return 1;
-
-	front_end_ptr = (slurm_conf_frontend_t *) front_end_entry;
 	if (xstrcmp(front_end_ptr->frontends, (char *) key) == 0)
 		return 1;
 	return 0;
 }
+#endif
 
 static void _destroy_nodename(void *ptr)
 {
@@ -2251,7 +2250,7 @@ extern char *slurm_conf_get_nodename(const char *node_hostname)
 		debug("front_end_list is NULL");
 	} else {
 		front_end_ptr = list_find_first(front_end_list,
-						list_find_frontend,
+						_list_find_frontend,
 						(char *) node_hostname);
 		if (front_end_ptr) {
 			alias = xstrdup(front_end_ptr->frontends);
