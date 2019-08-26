@@ -92,7 +92,6 @@ static void	_dump_hash (void);
 static struct node_record *
 		_find_node_record (char *name,bool test_alias,bool log_missing);
 static void	_list_delete_config (void *config_entry);
-static int	_list_find_config (void *config_entry, void *key);
 static void _node_record_hash_identity (void* item, const char** key,
 					uint32_t* key_len);
 
@@ -104,7 +103,7 @@ static void _node_record_hash_identity (void* item, const char** key,
 static int _delete_config_record (void)
 {
 	last_node_update = time (NULL);
-	(void) list_delete_all(config_list,    &_list_find_config,  NULL);
+	list_flush(config_list);
 	(void) list_delete_all(front_end_list, &list_find_frontend, NULL);
 	return SLURM_SUCCESS;
 }
@@ -156,19 +155,6 @@ static void _list_delete_config (void *config_entry)
 	xfree(config_ptr->tres_weights);
 	xfree(config_ptr->tres_weights_str);
 	xfree (config_ptr);
-}
-
-/*
- * _list_find_config - find an entry in the config list, see list.h for
- *	documentation
- * IN key - is NULL for all config
- * RET 1 if key == NULL, 0 otherwise
- */
-static int _list_find_config (void *config_entry, void *key)
-{
-	if (key == NULL)
-		return 1;
-	return 0;
 }
 
 /*
