@@ -423,9 +423,7 @@ static void _validate_switches(void)
 		}
 	}
 	if (!have_root) {
-		info("TOPOLOGY: warning -- no switch can reach all nodes"
-				" through its descendants."
-				"Do not use route/topology");
+		info("TOPOLOGY: warning -- no switch can reach all nodes through its descendants. If this is not intentional, fix the topology.conf file.");
 	}
 	s_p_hashtbl_destroy(conf_hashtbl);
 	_log_switches();
