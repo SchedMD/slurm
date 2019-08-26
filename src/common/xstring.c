@@ -526,13 +526,12 @@ char *xshort_hostname(void)
  */
 bool xstring_is_whitespace(const char *str)
 {
-	int i, len;
+	int i = 0;
 
-	len = strlen(str);
-	for (i = 0; i < len; i++) {
-		if (!isspace((int)str[i])) {
+	while (str[i] != '\0') {
+		if (!isspace((int)str[i]))
 			return false;
-		}
+		i++;
 	}
 
 	return true;
