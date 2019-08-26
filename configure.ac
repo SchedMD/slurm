@@ -94,10 +94,6 @@ CFLAGS="$CFLAGS -Werror"
 AC_HEADER_MAJOR
 CFLAGS=$old_CFLAGS
 
-dnl Checks for structures.
-dnl
-X_AC__SYSTEM_CONFIGURATION
-
 dnl Check for dlfcn
 dnl
 X_AC_DLFCN

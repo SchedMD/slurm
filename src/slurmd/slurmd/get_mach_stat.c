@@ -129,9 +129,6 @@ get_mach_name(char *node_name)
  */
 extern int get_memory(uint64_t *real_memory)
 {
-#ifdef HAVE__SYSTEM_CONFIGURATION
-	*real_memory = _system_configuration.physmem / (1024 * 1024);
-#else
 #  ifdef _SC_PHYS_PAGES
 	long pages;
 
@@ -156,8 +153,6 @@ extern int get_memory(uint64_t *real_memory)
 	*real_memory = 1;
 #    endif /* HAVE_SYSCTLBYNAME */
 #  endif /* _SC_PHYS_PAGES */
-#endif /* HAVE__SYSTEM_CONFIGURATION */
-
 	return 0;
 }
 

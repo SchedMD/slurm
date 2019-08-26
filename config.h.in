@@ -340,10 +340,6 @@
 /* Define if you have __progname. */
 #undef HAVE__PROGNAME
 
-/* Define to 1 if you have the external variable, _system_configuration with a
-   member named physmem. */
-#undef HAVE__SYSTEM_CONFIGURATION
-
 /* Define to 1 if the system has the `__builtin_clzll' built-in function */
 #undef HAVE___BUILTIN_CLZLL
 

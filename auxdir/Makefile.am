@@ -9,7 +9,6 @@ EXTRA_DIST = \
     ax_pthread.m4 \
     slurm.m4 \
     test-driver \
-    x_ac__system_configuration.m4 \
     x_ac_affinity.m4 \
     x_ac_bluegene.m4 \
     x_ac_c99.m4 \

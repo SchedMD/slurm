@@ -18283,26 +18283,6 @@ fi
 CFLAGS=$old_CFLAGS
 
 
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <sys/systemcfg.h>
-int
-main ()
-{
-double x = _system_configuration.physmem;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-$as_echo "#define HAVE__SYSTEM_CONFIGURATION 1" >>confdefs.h
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
-
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking library containing dlopen" >&5
 $as_echo_n "checking library containing dlopen... " >&6; }
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -l" >&5
