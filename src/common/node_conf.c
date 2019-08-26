@@ -104,7 +104,8 @@ static int _delete_config_record (void)
 {
 	last_node_update = time (NULL);
 	list_flush(config_list);
-	(void) list_delete_all(front_end_list, &list_find_frontend, NULL);
+	list_flush(front_end_list);
+
 	return SLURM_SUCCESS;
 }
 
