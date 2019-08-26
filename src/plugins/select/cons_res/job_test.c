@@ -699,10 +699,15 @@ uint16_t _can_job_run_on_node(struct job_record *job_ptr, bitstr_t *core_map,
 			avail_mem -= node_usage[node_i].alloc_memory;
 		if (job_ptr->details->pn_min_memory & MEM_PER_CPU) {
 			/* memory is per-cpu */
-			if (!(cr_type & CR_CPU) &&
-			    job_ptr->details->mc_ptr &&
-			    job_ptr->details->mc_ptr->ntasks_per_core == 1 &&
-			    job_ptr->details->cpus_per_task == 1) {
+			if (((job_ptr->bit_flags & BF_WHOLE_NODE_TEST) == 0) &&
+			    ((req_mem * cpus) > avail_mem) &&
+			    (job_ptr->details->whole_node == 1)) {
+				cpus = 0;
+			} else if (!(cr_type & CR_CPU) &&
+				   job_ptr->details->mc_ptr &&
+				   (job_ptr->details->mc_ptr->
+				    ntasks_per_core == 1) &&
+				   job_ptr->details->cpus_per_task == 1) {
 				/*
 				 * In this scenario, CPUs represents cores and
 				 * the cpu/core count will be inflated later on
