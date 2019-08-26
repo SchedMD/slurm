@@ -9,7 +9,7 @@
 #    Determine if NVIDIA's NVML API library exists (comes with CUDA)
 ##*****************************************************************************
 
-# TODO: Check for the "CUDA_​DEVICE_​ORDER=PCI_BUS_ID" environmental var
+# TODO: Check for the "CUDA_DEVICE_ORDER=PCI_BUS_ID" environmental var
 # If that is not set, emit a warning and point to the documentation
 # saying that this needs to be set for CUDA device numbers to match Slurm/NVML
 # device numbers, and that after setting, a reboot is required?
