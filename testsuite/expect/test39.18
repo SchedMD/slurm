@@ -55,12 +55,17 @@ if {[test_cray]} {
 
 # Run the test under valgrind if any arguments are given
 set use_valgrind 0
+set test_minor_offset 0
 set test_minor_in ""
+
 if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	set use_valgrind 1
+	set test_minor_offset 1
 	send_user "Running tests under valgrind!\n"
-} elseif {[lindex $argv 0] != ""} {
-	set test_minor_in [lindex $argv 0]
+}
+
+if {[lindex $argv $test_minor_offset] != ""} {
+	set test_minor_in [lindex $argv $test_minor_offset]
 	send_user "Running test $test_id.$test_minor_in \n"
 }
 
