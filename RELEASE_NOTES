@@ -93,6 +93,8 @@ HIGHLIGHTS
  -- slurmrestd - add API to interface with slurmdbd.
  -- Add --ntasks-per-gpu option.
  -- Add --gpu-bind=single option.
+ -- Fix "scontrol takeover [backup]" hangs when specifying a backup > 1. All
+    slurmctlds below the "backup" will be shutdown.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

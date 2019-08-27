@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
     SLURM_JOB_DEPENDENCY, SLURM_PROFILE, SLURM_ACCTG_FREQ, SLURM_NETWORK and
     SLURM_CPU_FREQ_REQ to match sbatch.
  -- slurmrestd - Avoid defaulting open_mode to append for job submission.
+ -- Fix "scontrol takeover [backup]" hangs when specifying a backup > 1.
 
 * Changes in Slurm 20.11.0rc2
 ==============================

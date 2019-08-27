@@ -422,11 +422,11 @@ static int _background_process_msg(slurm_msg_t *msg)
 			super_user = true;
 
 		if (super_user && (msg->msg_type == REQUEST_SHUTDOWN)) {
-			info("Performing RPC: REQUEST_SHUTDOWN");
+			info("Performing background RPC: REQUEST_SHUTDOWN");
 			pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 		} else if (super_user &&
 			   (msg->msg_type == REQUEST_TAKEOVER)) {
-			info("Performing RPC: REQUEST_TAKEOVER");
+			info("Performing background RPC: REQUEST_TAKEOVER");
 			(void) _shutdown_primary_controller(SHUTDOWN_WAIT);
 			takeover = true;
 			error_code = SLURM_SUCCESS;
@@ -591,14 +591,25 @@ static void *_shutdown_controller(void *arg)
 {
 	int shutdown_inx, rc = SLURM_SUCCESS, rc2 = SLURM_SUCCESS;
 	slurm_msg_t req;
+	bool do_shutdown = false;
+	shutdown_arg_t *shutdown_arg;
+	shutdown_msg_t shutdown_msg;
 
-	shutdown_inx = *((int *) arg);
+	shutdown_arg = (shutdown_arg_t *)arg;
+	shutdown_inx = shutdown_arg->index;
+	do_shutdown = shutdown_arg->shutdown;
 	xfree(arg);
 
 	slurm_msg_t_init(&req);
 	slurm_set_addr(&req.address, slurm_conf.slurmctld_port,
 	               slurm_conf.control_addr[shutdown_inx]);
-	req.msg_type = REQUEST_CONTROL;
+	if (do_shutdown) {
+		req.msg_type = REQUEST_SHUTDOWN;
+		shutdown_msg.options = 2;
+		req.data = &shutdown_msg;
+	} else {
+		req.msg_type = REQUEST_CONTROL;
+	}
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc2, shutdown_timeout) < 0) {
 		error("%s: send/recv(%s): %m",
 		      __func__, slurm_conf.control_machine[shutdown_inx]);
@@ -633,7 +644,8 @@ static void *_shutdown_controller(void *arg)
  */
 static int _shutdown_primary_controller(int wait_time)
 {
-	int i, *arg;
+	int i;
+	shutdown_arg_t *shutdown_arg;
 
 	if (shutdown_timeout == 0) {
 		shutdown_timeout = slurm_conf.msg_timeout / 2;
@@ -653,9 +665,18 @@ static int _shutdown_primary_controller(int wait_time)
 		if (i == backup_inx)
 			continue;	/* No message to self */
 
-		arg = xmalloc(sizeof(int));
-		*arg = i;
-		slurm_thread_create_detached(NULL, _shutdown_controller, arg);
+		shutdown_arg = xmalloc(sizeof(*shutdown_arg));
+		shutdown_arg->index = i;
+		/*
+		 * need to send actual REQUEST_SHUTDOWN to non-primary ctlds
+		 * in order to have them properly shutdown and not contend
+		 * for primary position, otherwise "takeover" results in
+		 * contention among backups for primary position.
+		 */
+		if (i < backup_inx)
+			shutdown_arg->shutdown = true;
+		slurm_thread_create_detached(NULL, _shutdown_controller,
+					     shutdown_arg);
 		slurm_mutex_lock(&shutdown_mutex);
 		shutdown_thread_cnt++;
 		slurm_mutex_unlock(&shutdown_mutex);

@@ -403,13 +403,13 @@ The time a job is suspended will not count against a job's time limit.
 Only an operator, administrator, SlurmUser, or root can suspend jobs.
 
 .TP
-\fBtakeover\fP
-Instruct Slurm's backup controller (slurmctld) to take over system control.
-Slurm's backup controller requests control from the primary and waits for
-its termination. After that, it switches from backup mode to controller
-mode. If primary controller can not be contacted, it directly switches to
-controller mode. This can be used to speed up the Slurm controller
-fail\-over mechanism when the primary node is down.
+\fBtakeover\fP \fI[INDEX]\fP
+Instruct one of Slurm's backup controllers (slurmctld) to take over system
+control. By default the first backup controller (INDEX=1) requests control
+from the primary and waits for its termination. After that, it switches from
+backup mode to controller mode. If primary controller can not be contacted, it
+directly switches to controller mode. This can be used to speed up the Slurm
+controller fail\-over mechanism when the primary node is down.
 This can be used to minimize disruption if the computer executing the
 primary Slurm controller is scheduled down.
 (Note: Slurm's primary controller will take the control back at startup.)

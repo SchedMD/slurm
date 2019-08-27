@@ -2700,14 +2700,25 @@ static void *_shutdown_bu_thread(void *arg)
 {
 	int bu_inx, rc = SLURM_SUCCESS, rc2 = SLURM_SUCCESS;
 	slurm_msg_t req;
+	bool do_shutdown = false;
+	shutdown_arg_t *shutdown_arg;
+	shutdown_msg_t shutdown_msg;
 
-	bu_inx = *((int *) arg);
+	shutdown_arg = (shutdown_arg_t *)arg;
+	bu_inx = shutdown_arg->index;
+	do_shutdown = shutdown_arg->shutdown;
 	xfree(arg);
 
 	slurm_msg_t_init(&req);
 	slurm_set_addr(&req.address, slurm_conf.slurmctld_port,
 	               slurm_conf.control_addr[bu_inx]);
-	req.msg_type = REQUEST_CONTROL;
+	if (do_shutdown) {
+		req.msg_type = REQUEST_SHUTDOWN;
+		shutdown_msg.options = 2;
+		req.data = &shutdown_msg;
+	} else {
+		req.msg_type = REQUEST_CONTROL;
+	}
 	debug("Requesting control from backup controller %s",
 	      slurm_conf.control_machine[bu_inx]);
 	if (slurm_send_recv_rc_msg_only_one(&req, &rc2,
@@ -2745,17 +2756,28 @@ static void *_shutdown_bu_thread(void *arg)
  */
 static int _shutdown_backup_controller(void)
 {
-	int i, *arg;
+	int i;
+	shutdown_arg_t *shutdown_arg;
 
 	bu_rc = SLURM_SUCCESS;
+	debug("shutting down backup controllers (my index: %d)", backup_inx);
 	for (i = 1; i < slurm_conf.control_cnt; i++) {
 		if ((slurm_conf.control_addr[i] == NULL) ||
 		    (slurm_conf.control_addr[i][0] == '\0'))
 			continue;
 
-		arg = xmalloc(sizeof(int));
-		*arg = i;
-		slurm_thread_create_detached(NULL, _shutdown_bu_thread, arg);
+		shutdown_arg = xmalloc(sizeof(*shutdown_arg));
+		shutdown_arg->index = i;
+		/*
+		 * need to send actual REQUEST_SHUTDOWN to non-primary ctlds
+		 * in order to have them properly shutdown and not contend
+		 * for primary position, otherwise "takeover" results in
+		 * contention among backups for primary position.
+		 */
+		if (i < backup_inx)
+			shutdown_arg->shutdown = true;
+		slurm_thread_create_detached(NULL, _shutdown_bu_thread,
+					     shutdown_arg);
 		slurm_mutex_lock(&bu_mutex);
 		bu_thread_cnt++;
 		slurm_mutex_unlock(&bu_mutex);

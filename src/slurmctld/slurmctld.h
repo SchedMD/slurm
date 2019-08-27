@@ -197,6 +197,11 @@ typedef struct diag_stats {
 	uint32_t latency;
 } diag_stats_t;
 
+typedef struct {
+	int index;
+	bool shutdown;
+} shutdown_arg_t;
+
 /* This is used to point out constants that exist in the
  * curr_tres_array in tres_info_t  This should be the same order as
  * the tres_types_t enum that is defined in src/common/slurmdb_defs.h
