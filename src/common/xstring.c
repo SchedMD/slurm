@@ -155,25 +155,17 @@ void _xstrncat(char **str1, const char *str2, size_t len)
 }
 
 /*
- * append one char to str and null terminate
- */
-static void strcatchar(char *str, char c)
-{
-	int len = strlen(str);
-
-	str[len++] = c;
-	str[len] = '\0';
-}
-
-/*
  * Add a character to str, expanding str1 as needed.
  *   str1 (IN/OUT)	target string (pointer to in case of expansion)
  *   c (IN)		character to add
  */
 void _xstrcatchar(char **str, char c)
 {
-	_makespace(str, -1, 1);
-	strcatchar(*str, c);
+	int len = strlen(*str);
+
+	_makespace(str, len, 1);
+	*str[len++] = c;
+	*str[len] = '\0';
 }
 
 /*
