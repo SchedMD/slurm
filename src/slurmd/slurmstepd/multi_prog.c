@@ -135,8 +135,6 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 	int prog_argc = 0;
 	char **prog_argv = NULL;
 	char *local_data = NULL;
-	size_t tmp_buf_len = 256;
-	char tmp_buf[tmp_buf_len];
 	char *arg_buf = NULL;
 	bool last_line_break = false, line_break = false;
 	int line_len;
@@ -224,14 +222,10 @@ extern int multi_prog_get_argv(char *config_data, char **prog_env,
 				args_spec++;
 				if (*args_spec == 't') {
 					/* task rank */
-					snprintf(tmp_buf, tmp_buf_len, "%d",
-						 task_rank);
-					xstrcat(arg_buf, tmp_buf);
+					xstrfmtcat(arg_buf, "%d", task_rank);
 				} else if (*args_spec == 'o') {
 					/* task offset */
-					snprintf(tmp_buf, tmp_buf_len, "%d",
-						 task_offset);
-					xstrcat(arg_buf, tmp_buf);
+					xstrfmtcat(arg_buf, "%d", task_offset);
 				}
 				args_spec++;
 				goto CONT;
