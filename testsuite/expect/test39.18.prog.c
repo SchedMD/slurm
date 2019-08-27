@@ -36,6 +36,7 @@
 
 #include <sys/stat.h>
 #include "src/common/gres.h"
+#include "src/common/node_select.h"
 #include "src/common/xstring.h"
 
 int main(int argc, char *argv[])
@@ -116,6 +117,7 @@ int main(int argc, char *argv[])
 	// Clean up for valgrind
 	slurm_conf_destroy();
 	gres_plugin_fini();
+	slurm_select_fini();
 	log_fini();
 	xfree(slurm_conf);
 	xfree(gres_conf);
