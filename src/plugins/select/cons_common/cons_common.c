@@ -615,6 +615,39 @@ fini:
 }
 
 /*
+ * Check if there are no allocatable sockets with the given configuration due to
+ * core specialization.
+ * NOTE: this assumes the caller already checked CR_SOCKET is configured and
+ *	 AllowSpecResourceUsage=NO.
+ */
+static void _check_allocatable_sockets(node_res_record_t *node_res)
+{
+	if (node_res->node_ptr->cpu_spec_list != NULL) {
+		bool socket_without_spec_cores = false;
+		bitstr_t *cpu_spec_bitmap = bit_alloc(node_res->cpus);
+		bit_unfmt(cpu_spec_bitmap, node_res->node_ptr->cpu_spec_list);
+		for (int i = 0; i < node_res->tot_sockets; i++) {
+			int cpu_socket = node_res->cores * node_res->threads;
+			if (!bit_set_count_range(cpu_spec_bitmap,
+						 i * cpu_socket,
+						 (i + 1) * cpu_socket)) {
+				socket_without_spec_cores = true;
+				break;
+			}
+		}
+		FREE_NULL_BITMAP(cpu_spec_bitmap);
+		if (!socket_without_spec_cores)
+			fatal("NodeName=%s configuration doesn't allow to run jobs. SelectTypeParameteres=CR_Socket and CPUSpecList=%s uses cores from all sockets while AllowSpecResourcesUsage=NO, which makes the node non-usable. Please fix your slurm.conf",
+			      node_res->node_ptr->name,
+			      node_res->node_ptr->cpu_spec_list);
+	} else if (node_res->node_ptr->core_spec_cnt >
+		   ((node_res->tot_sockets - 1) * node_res->cores))
+		fatal("NodeName=%s configuration doesn't allow to run jobs. SelectTypeParameteres=CR_Socket and CoreSpecCount=%d uses cores from all sockets while AllowSpecResourcesUsage=NO, which makes the node non-usable. Please fix your slurm.conf",
+		      node_res->node_ptr->name,
+		      node_res->node_ptr->core_spec_cnt);
+}
+
+/*
  * Get configured DefCpuPerGPU information from a list
  * (either global or per partition list)
  * Returns NO_VAL64 if configuration parameter not set
@@ -1113,6 +1146,10 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 			      select_node_record[i].threads,
 			      select_node_record[i].tot_cores *
 			      select_node_record[i].threads);
+
+		if ((cr_type & CR_SOCKET) &&
+		    (slurm_conf.conf_flags & CTL_CONF_ASRU) == 0)
+			_check_allocatable_sockets(&select_node_record[i]);
 
 		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
 		gres_plugin_node_state_dealloc_all(

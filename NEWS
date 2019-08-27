@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
     instead of daemonizing itself.
  -- Add --gpu-bind=mask_gpu reusability functionality if tasks > elements.
  -- Add separate unversion libslurm_pmi.so library to use with libpmi.so.
+ -- Configurations including CR_Socket and AllowSpecResourcesUsage=NO will now
+    fatal if there are no allocatable sockets due to core specialization.
 
 * Changes in Slurm 20.02.2
 ==========================
