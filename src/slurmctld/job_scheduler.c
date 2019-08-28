@@ -2040,6 +2040,7 @@ static void _split_env(batch_job_launch_msg_t *launch_msg_ptr)
 static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version)
 {
+	char *fail_why = NULL;
 	batch_job_launch_msg_t *launch_msg_ptr;
 
 	/* Initialization of data structures */
@@ -2054,17 +2055,9 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->gid = job_ptr->group_id;
 
 	if (!(launch_msg_ptr->script_buf = get_job_script(job_ptr))) {
-		error("Can not find batch script, aborting batch %pJ",
-		      job_ptr);
-		/* FIXME: This is a kludge, but this event indicates a missing
-		 * batch script and should never happen. We are too deep into
-		 * the job launch to gracefully clean up here. */
-		slurm_free_job_launch_msg(launch_msg_ptr);
-		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
-			     true, false, 0);
-		return NULL;
+		fail_why = "Unable to load job batch script";
+		goto job_failed;
 	}
-
 
 	launch_msg_ptr->ntasks = job_ptr->details->num_tasks;
 	launch_msg_ptr->alias_list = xstrdup(job_ptr->alias_list);
@@ -2111,13 +2104,10 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->environment = get_job_env(job_ptr,
 						  &launch_msg_ptr->envc);
 	if (launch_msg_ptr->environment == NULL) {
-		error("%s: environment missing or corrupted aborting %pJ",
-		      __func__, job_ptr);
-		slurm_free_job_launch_msg(launch_msg_ptr);
-		job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id,
-			     false, true, 0);
-		return NULL;
+		fail_why = "Unable to load job environment";
+		goto job_failed;
 	}
+
 	_split_env(launch_msg_ptr);
 	launch_msg_ptr->job_mem = job_ptr->details->pn_min_memory;
 	launch_msg_ptr->num_cpu_groups = job_ptr->job_resrcs->cpu_array_cnt;
@@ -2146,7 +2136,26 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->account = xstrdup(job_ptr->account);
 	launch_msg_ptr->resv_name = xstrdup(job_ptr->resv_name);
 
+	xassert(!fail_why);
 	return launch_msg_ptr;
+
+job_failed:
+	/* fatal or kill the job as it can never be recovered */
+	if (!ignore_state_errors)
+		fatal("%s: %s for %pJ. Check file system serving StateSaveLocation as that directory may be missing or corrupted. Start with '-i' to ignore this error and kill the afflicted jobs.",
+		      __func__, fail_why, job_ptr);
+
+	error("%s: %s for %pJ. %pJ will be killed due to system error.",
+	      __func__, fail_why, job_ptr, job_ptr);
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = xstrdup(fail_why);
+	job_ptr->state_reason_prev = job_ptr->state_reason;
+	job_ptr->state_reason = FAIL_SYSTEM;
+	slurm_free_job_launch_msg(launch_msg_ptr);
+	/* ignore the return as job is in an unknown state anyway */
+	job_complete(job_ptr->job_id, slurmctld_conf.slurm_user_id, false,
+		     false, 1);
+	return NULL;
 }
 
 /* Validate the job is ready for launch
