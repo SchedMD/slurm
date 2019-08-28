@@ -102,9 +102,20 @@ int main(int argc, char *argv[])
 
 	setenv("SLURM_CONFIG_DIR", config_dir, 1);
 
+	/*
+	 * Logic normally executed by slurmctld daemon
+	 */
+	orig_config = "gpu:8";
+	rc = gres_plugin_init_node_config(node_name, orig_config,
+					  &node_gres_list);
+	if (rc != SLURM_SUCCESS) {
+		slurm_perror("failure: gres_plugin_init_node_config");
+		exit(1);
+	}
+
 	cpu_count = strtol(argv[4], NULL, 10);
 	node_name = "test_node";
-	rc = gres_plugin_node_config_load(cpu_count, node_name, NULL, NULL,
+	rc = gres_plugin_node_config_load(cpu_count, node_name, node_gres_list, NULL,
 					  NULL);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("failure: gres_plugin_node_config_load");
@@ -118,16 +129,6 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	/*
-	 * Logic normally executed by slurmctld daemon
-	 */
-	orig_config = "gpu:8";
-	rc = gres_plugin_init_node_config(node_name, orig_config,
-					  &node_gres_list);
-	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_init_node_config");
-		exit(1);
-	}
 
 	set_buf_offset(buffer, 0);
 	rc = gres_plugin_node_config_unpack(buffer, node_name);
