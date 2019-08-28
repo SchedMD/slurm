@@ -15292,7 +15292,10 @@ static void _job_array_comp(struct job_record *job_ptr, bool was_running,
 		}
 		base_job_ptr = find_job_record(job_ptr->array_job_id);
 		if (base_job_ptr && base_job_ptr->array_recs) {
-			if (base_job_ptr->array_recs->tot_comp_tasks == 0) {
+			if (requeue) {
+				base_job_ptr->array_recs->array_flags |=
+					ARRAY_TASK_REQUEUED;
+			} else if (!base_job_ptr->array_recs->tot_comp_tasks) {
 				base_job_ptr->array_recs->min_exit_code =
 					status;
 				base_job_ptr->array_recs->max_exit_code =
@@ -15309,11 +15312,6 @@ static void _job_array_comp(struct job_record *job_ptr, bool was_running,
 			    base_job_ptr->array_recs->tot_run_tasks)
 				base_job_ptr->array_recs->tot_run_tasks--;
 			base_job_ptr->array_recs->tot_comp_tasks++;
-
-			if (requeue) {
-				base_job_ptr->array_recs->array_flags |=
-					ARRAY_TASK_REQUEUED;
-			}
 		}
 	}
 }
