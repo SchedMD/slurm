@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
     than once at the same time.
  -- Fix XOR/XAND features like cpu&fastio&[knl|westmere] to be resolved
     correctly.
+ -- Don't update [min|max]_exit_code on job array task requeue.
 
 * Changes in Slurm 19.05.2
 ==========================
