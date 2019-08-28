@@ -316,7 +316,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
 	}
 #endif
 
-	job_indepen = job_independent(job_ptr, 0);
+	job_indepen = job_independent(job_ptr);
 	if (sched_plugin)
 		job_ptr->start_time = (time_t) 0;
 	if (job_ptr->priority == 0)	{ /* held */
@@ -684,7 +684,7 @@ extern void set_job_elig_time(void)
 		     (job_ptr->details->min_nodes > part_ptr->max_nodes)))
 			continue;
 		/* Job's eligible time is set in job_independent() */
-		if (!job_independent(job_ptr, 0))
+		if (!job_independent(job_ptr))
 			continue;
 	}
 	list_iterator_destroy(job_iterator);

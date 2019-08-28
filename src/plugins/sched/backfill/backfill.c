@@ -1887,7 +1887,7 @@ next_task:
 			continue;
 		}
 
-		if ((!job_independent(job_ptr, 0)) ||
+		if ((!job_independent(job_ptr)) ||
 		    (license_job_test(job_ptr, time(NULL), true) !=
 		     SLURM_SUCCESS)) {
 			if (debug_flags & DEBUG_FLAG_BACKFILL)
@@ -2027,7 +2027,7 @@ next_task:
 				continue;
 			if (!avail_front_end(job_ptr))
 				continue;	/* No available frontend */
-			if (!job_independent(job_ptr, 0)) {
+			if (!job_independent(job_ptr)) {
 				/* No longer independent
 				 * (e.g. another singleton started) */
 				continue;

@@ -4685,7 +4685,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if (job_specs->array_bitmap)
 		independent = false;
 	else
-		independent = job_independent(job_ptr, will_run);
+		independent = job_independent(job_ptr);
 	/*
 	 * priority needs to be calculated after this since we set a
 	 * begin time in job_independent and that lets us know if the
@@ -10847,7 +10847,7 @@ static bool _top_priority(struct job_record *job_ptr, uint32_t pack_job_offset)
 			if (!acct_policy_job_runnable_state(job_ptr2) ||
 			    !misc_policy_job_runnable_state(job_ptr2) ||
 			    !part_policy_job_runnable_state(job_ptr2) ||
-			    !job_independent(job_ptr2, 0))
+			    !job_independent(job_ptr2))
 				continue;
 			if ((job_ptr2->resv_name && (!job_ptr->resv_name)) ||
 			    ((!job_ptr2->resv_name) && job_ptr->resv_name))
@@ -12939,7 +12939,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 					   __func__,
 					   job_ptr->details->dependency,
 					   job_ptr);
-				job_independent(job_ptr, 0);
+				job_independent(job_ptr);
 			}
 		}
 	}
@@ -14950,7 +14950,7 @@ extern void job_completion_logger(struct job_record *job_ptr, bool requeue)
  * IN job_ptr - pointer to job being tested
  * RET - true if job no longer must be deferred for another job
  */
-extern bool job_independent(struct job_record *job_ptr, int will_run)
+extern bool job_independent(struct job_record *job_ptr)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	time_t now = time(NULL);
