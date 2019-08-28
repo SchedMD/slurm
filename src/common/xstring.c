@@ -161,7 +161,7 @@ void _xstrncat(char **str1, const char *str2, size_t len)
  */
 void _xstrcatchar(char **str, char c)
 {
-	int len = (*str) ? strlen(*str) : -1;
+	int len = (*str) ? strlen(*str) : 0;
 
 	_makespace(str, len, 1);
 	*str[len++] = c;
