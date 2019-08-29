@@ -1252,7 +1252,7 @@ job_manager(stepd_step_rec_t *job)
 
 	if (!job->batch && (job->accel_bind_type || job->tres_bind ||
 	    job->tres_freq)) {
-		info("Running gres_plugin_node_config_load()!");
+		debug2("Running gres_plugin_node_config_load()!");
 		(void) gres_plugin_node_config_load(conf->cpus, conf->node_name,
 						NULL,
 						(void *)&xcpuinfo_abs_to_mac,
