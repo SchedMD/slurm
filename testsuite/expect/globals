@@ -5224,6 +5224,43 @@ proc delete_part { part_name } {
 
 ################################################################
 #
+# Proc: have_lua
+#
+# Returns 1 if HAVE_LUA is set in config.h. Else, returns 0.
+#
+################################################################
+proc have_lua { } {
+	global bin_grep number exit_code config_h
+
+	set grep_fail 0
+	set have_lua 0
+	log_user 0
+	spawn $bin_grep "HAVE_LUA" $config_h
+	expect {
+		-re "HAVE_LUA ($number)" {
+			set have_lua $expect_out(1,string)
+			exp_continue
+		}
+		timeout {
+			set grep_fail 1
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+
+	if {$grep_fail == 1} {
+		send_user "\nFAILURE: Could not grep $config_h for HAVE_LUA\n"
+		set have_lua 0
+	}
+
+	return $have_lua
+}
+
+################################################################
+#
 # Proc: create_part
 #
 # Create partition on system

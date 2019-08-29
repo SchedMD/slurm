@@ -126,6 +126,21 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	}
 }
 
+extern int init(void)
+{
+	debug("%s: %s loaded", __func__, plugin_name);
+
+	return SLURM_SUCCESS;
+}
+
+extern int fini(void)
+{
+	debug("%s: unloading %s", __func__, plugin_name);
+	FREE_NULL_LIST(gres_devices);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf.

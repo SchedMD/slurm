@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
     can choose the batch host after the nodes have been booted -- possibly with
     different features.
  -- Fix talking to batch host on it's protocol version when using --batch.
+ -- gres/mic plugin - add missing fini() function to clean up plugin state.
 
 * Changes in Slurm 19.05.2
 ==========================
