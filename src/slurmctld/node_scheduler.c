@@ -3137,14 +3137,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	 * a reboot first.  Job state could be changed above so we need to
 	 * recheck its state to see if it's currently configuring.
 	 * PROLOG_FLAG_CONTAIN also turns on PROLOG_FLAG_ALLOC.
-	 *
-	 * We also need to add the batch step here.
 	 */
 	if (!IS_JOB_CONFIGURING(job_ptr)) {
 		if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
 			launch_prolog(job_ptr);
-		if (job_ptr->batch_flag)
-			(void)build_batch_step(job_ptr);
 	}
 
 cleanup:
@@ -4477,6 +4473,9 @@ extern void build_node_details(struct job_record *job_ptr, bool new_alloc)
  * node satisfies the batch_features specification then pick first node).
  * Execute this AFTER any node feature changes are made by the node_features
  * plugin.
+ *
+ * If changes are made here, see if changes need to be made in
+ * test_job_nodes_ready().
  *
  * Return SLURM_SUCCESS or error code
  */
