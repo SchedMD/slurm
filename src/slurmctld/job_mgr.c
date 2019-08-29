@@ -8604,8 +8604,6 @@ extern void job_config_fini(struct job_record *job_ptr)
 	 */
 	if (slurmctld_conf.prolog_flags & PROLOG_FLAG_ALLOC)
 		launch_prolog(job_ptr);
-	if (job_ptr->batch_flag)
-		(void)build_batch_step(job_ptr);
 }
 
 /*
@@ -8622,17 +8620,18 @@ extern bool test_job_nodes_ready(struct job_record *job_ptr)
 		return false;
 
 	if (!job_ptr->batch_flag ||
+	    job_ptr->batch_features ||
 	    job_ptr->wait_all_nodes || job_ptr->burst_buffer) {
 		/* Make sure all nodes ready to start job */
 		if ((select_g_job_ready(job_ptr) & READY_NODE_STATE) == 0)
 			return false;
 	} else if (job_ptr->batch_flag) {
 		/* Make sure first node is ready to start batch job */
-		int i_first = bit_ffs(job_ptr->node_bitmap);
-		struct node_record *node_ptr = node_record_table_ptr + i_first;
-		if ((i_first != -1) &&
-		    (IS_NODE_POWER_SAVE(node_ptr) ||
-		     IS_NODE_POWER_UP(node_ptr))) {
+		struct node_record *node_ptr =
+			find_node_record(job_ptr->batch_host);
+		if (!node_ptr ||
+		    IS_NODE_POWER_SAVE(node_ptr) ||
+		    IS_NODE_POWER_UP(node_ptr)) {
 			return false;
 		}
 	}
