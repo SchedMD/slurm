@@ -31,7 +31,15 @@ set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 set freq_parse_nvml "GpuFreq=memory_freq:($number),graphics_freq:($number)"
 set freq_parse_generic "GpuFreq=control_disabled"
+set freq_parse_not_supported "Failed to get .* Not Supported"
 set generic_msg "The gpu/generic plugin is loaded, so Slurm can't really test GPU frequency operations. Please set `Autodetect=nvml` in gres.conf to load the gpu/nvml plugin instead."
+set not_supported_msg "This test requires a GPU that supports frequency scaling."
+
+# cleanup function automatically called by the testsuite
+proc cleanup {} {
+	global bin_rm file_in
+	exec $bin_rm -f $file_in
+}
 
 if {[have_nvml] == 0} {
 	skip "NVML must be installed and enabled to test GPU frequency operations"
@@ -56,6 +64,9 @@ if {$gpu_cnt < 1} {
 }
 log_debug "GPU count is $gpu_cnt"
 
+# Test will be also skip if frequency scaling is disabled or not supported by
+# the GPU on TEST 1.
+
 #
 # Build input script file
 #
@@ -72,13 +83,15 @@ set timeout $max_job_delay
 set match 0
 set srun_pid [spawn $srun --gpus-per-node=1 --gpu-freq=low,verbose -J "test$test_id" -t1 ./$file_in]
 expect {
+	-re $freq_parse_not_supported {
+		skip $not_supported_msg
+	}
+	-re $freq_parse_generic {
+		skip $generic_msg
+	}
 	-re $freq_parse_nvml {
 		incr match
 		exp_continue
-	}
-	-re $freq_parse_generic {
-		# Emit warning once and exit
-		skip $generic_msg
 	}
 	timeout {
 		log_error "srun not responding"
@@ -254,8 +267,6 @@ if {$match != 1} {
 }
 
 print_time
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
