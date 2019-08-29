@@ -721,7 +721,7 @@ typedef struct {
 	uint16_t event_type;    /* type of events (slurmdb_event_type_t),
 				 * default is all */
 	List format_list; 	/* list of char * */
-	List node_list;	        /* list of char * */
+	char *node_list;        /* node list string */
 	time_t period_end;      /* period end of events */
 	time_t period_start;    /* period start of events */
 	List reason_list;       /* list of char * */

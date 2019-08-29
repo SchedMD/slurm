@@ -372,12 +372,9 @@ static int _set_cond(int *start, int argc, char **argv,
 				set = 1;
 		} else if (!xstrncasecmp(argv[i], "Nodes",
 					 MAX(command_len, 1))) {
-			if (!event_cond->node_list)
-				event_cond->node_list =
-					list_create(slurm_destroy_char);
-			if (slurm_addto_char_list(event_cond->node_list,
-						 argv[i]+end))
-				set = 1;
+			xfree(event_cond->node_list);
+			event_cond->node_list = xstrdup(argv[i]+end);
+			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Reason",
 					 MAX(command_len, 1))) {
 			if (!event_cond->reason_list)
