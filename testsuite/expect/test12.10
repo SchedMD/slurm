@@ -198,7 +198,7 @@ if { [test_account_storage] == 0 } {
 
 ############################################################################
 
-global srun squeue sacct
+global squeue sacct
 global bin_sleep bin_date
 global number
 
@@ -223,7 +223,7 @@ exec $bin_sleep 2
 # Test job will depend on it to test non-eligible
 #
 set def_node [get_idle_node_in_part [default_partition]]
-set pid_queue [spawn $sbatch -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+set pid_queue [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set jobid_dependent $expect_out(1,string)
@@ -250,7 +250,7 @@ wait_for_job $jobid_dependent "RUNNING"
 # Test job will wait until this job, to test eligible
 #
 set def_node [get_idle_node_in_part [default_partition]]
-set pid_queue [spawn $sbatch -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+set pid_queue [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set jobid_queue $expect_out(1,string)
@@ -273,7 +273,7 @@ if {$jobid_queue == 0} {
 #
 # Start main job used for testing
 #
-set pid_batch [spawn $sbatch --dependency=afterany:$jobid_dependent -w $def_node -J $jobname-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+set pid_batch [spawn $sbatch -t5 --dependency=afterany:$jobid_dependent -w $def_node -J $jobname-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set jobid $expect_out(1,string)
