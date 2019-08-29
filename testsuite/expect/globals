@@ -1855,7 +1855,7 @@ proc get_default_acct { user } {
 		set user [get_my_user_name]
 	}
 
-	spawn $sacctmgr -n list user $user format="DefaultAccount"
+	spawn $sacctmgr -n list -P user $user format="DefaultAccount"
 	expect {
 		-re "($alpha_numeric_under)" {
 			set def_acct $expect_out(1,string)
