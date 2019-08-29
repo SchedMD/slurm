@@ -3664,7 +3664,38 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 {
 	slurmdb_event_cond_t *object = (slurmdb_event_cond_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack16(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack_time(0, buffer);
+			pack_time(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			return;
+		}
+
+		_pack_list_of_str(object->cluster_list, buffer);
+
+		pack32(object->cpus_max, buffer);
+		pack32(object->cpus_min, buffer);
+		pack16(object->event_type, buffer);
+
+		_pack_list_of_str(object->format_list, buffer);
+		_pack_list_of_str(object->node_list, buffer);
+
+		pack_time(object->period_end, buffer);
+		pack_time(object->period_start, buffer);
+
+		_pack_list_of_str(object->reason_list, buffer);
+		_pack_list_of_str(object->reason_uid_list, buffer);
+		_pack_list_of_str(object->state_list, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -3710,7 +3741,91 @@ extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			object_ptr->cluster_list = list_create(
+				slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->cluster_list, tmp_info);
+			}
+		}
+		safe_unpack32(&object_ptr->cpus_max, buffer);
+		safe_unpack32(&object_ptr->cpus_min, buffer);
+		safe_unpack16(&object_ptr->event_type, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count && (count != NO_VAL)) {
+			object_ptr->format_list =
+				list_create(slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->format_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			object_ptr->node_list = list_create(slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->node_list, tmp_info);
+			}
+		}
+
+		safe_unpack_time(&object_ptr->period_end, buffer);
+		safe_unpack_time(&object_ptr->period_start, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			object_ptr->reason_list = list_create(
+				slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->reason_list, tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			object_ptr->reason_uid_list = list_create(
+				slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->reason_uid_list,
+					    tmp_info);
+			}
+		}
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			object_ptr->state_list = list_create(
+				slurm_destroy_char);
+			for (i = 0; i < count; i++) {
+				safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp,
+						       buffer);
+				list_append(object_ptr->state_list, tmp_info);
+			}
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
 			goto unpack_error;
