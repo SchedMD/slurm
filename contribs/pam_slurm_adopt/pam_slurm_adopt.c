@@ -217,7 +217,7 @@ static time_t _cgroup_creation_time(char *uidcg, uint32_t job_id)
 	}
 
 	if (stat(path, &statbuf) != 0) {
-		info("Couldn't stat path '%s'", path);
+		info("Couldn't stat path '%s': %m", path);
 		return 0;
 	}
 
