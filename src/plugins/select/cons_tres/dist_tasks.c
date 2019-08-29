@@ -802,8 +802,14 @@ static int _compute_c_b_task_dist(struct job_record *job_ptr,
 			tid++;
 			job_res->tasks_per_node[n]++;
 		}
-		if (!more_tres_tasks)
-			test_tres_tasks = false;
+		if (!more_tres_tasks) {
+			if (!test_tres_tasks) {
+				error("%s: failed to find additional placement for task %u for %pJ",
+				      __func__, tid, job_ptr);
+				return SLURM_ERROR;
+			} else
+				test_tres_tasks = false;
+		}
 	}
 
 	return SLURM_SUCCESS;
