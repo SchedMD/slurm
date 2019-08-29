@@ -210,7 +210,7 @@ extern int _find_type_in_gres_list(void *x, void *key)
  * NOTE: Both lists will be sorted in descending order by type_name
  * length. gres_list_conf_single is assumed to only have records of count == 1.
  */
-static void _sync_gres_types(List gres_list_system, List gres_list_conf_single)
+static void _normalize_sys_gres_types(List gres_list_system, List gres_list_conf_single)
 {
 	gres_slurmd_conf_t *sys_gres, *conf_gres;
 	ListIterator itr;
@@ -466,10 +466,9 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	list_iterator_destroy(itr);
 
 	/*
-	 * If conf GRES type matches a substring in sys GRES type, then
-	 * overwrite sys GRES type with conf GRES type
+	 * Truncate the full system device types to match types in conf records
 	 */
-	_sync_gres_types(gres_list_system, gres_list_conf_single);
+	_normalize_sys_gres_types(gres_list_system, gres_list_conf_single);
 
 	/* Sort so null files are last for _match_gres() */
 	list_sort(gres_list_conf_single, _sort_gpu_by_file_desc);
