@@ -603,7 +603,7 @@ static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 	} else {
 		all = false;
 		tmp_env = xstrdup(srun_opt->export_env);
-		tok = strtok_r(tmp_env, ",", &save_ptr);
+		tok = find_quote_token(tmp_env, ",", &save_ptr);
 		while (tok) {
 			if (xstrcasecmp(tok, "ALL") == 0)
 				all = true;
@@ -622,7 +622,7 @@ static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 							    value);
 				}
 			}
-			tok = strtok_r(NULL, ",", &save_ptr);
+			tok = find_quote_token(NULL, ",", &save_ptr);
 		}
 		xfree(tmp_env);
 	}

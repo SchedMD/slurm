@@ -361,4 +361,13 @@ char *uint32_compressed_to_str(uint32_t array_len,
  */
 extern void set_env_from_opts(slurm_opt_t *opt, char ***dest, int pack_offset);
 
+/*
+ * Parse token's skipping nested commas.
+ *
+ * Similar to strtok_r but handles nested commas.
+ *
+ * e.g. FOO='a,b,c',BAR='d,e,f'
+ */
+extern char *find_quote_token(char *tmp, char *sep, char **last);
+
 #endif

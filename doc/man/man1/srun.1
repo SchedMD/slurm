@@ -790,6 +790,8 @@ See \fBEXAMPLE\fR below.
 Identify which environment variables are propagated to the launched application.
 By default, \fIall\fR are propagated.
 Multiple environment variable names should be comma separated.
+Values with nested commas should be enclosed within quotes (e.g.
+FOO='a,b,c',BAR='d,e,f').
 Environment variable names may be specified to propagate the current
 value (e.g. "\-\-export=EDITOR") or specific values
 may be exported (e.g. "\-\-export=EDITOR=/bin/emacs"). In these two examples,

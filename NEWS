@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove slurm.spec-legacy packaging file.
  -- pam_slurm_adopt - with action_unknown=newest configured, pick a user job
     even when failing to get cgroup mtime.
+ -- Fix "srun --export=" parsing to handle nested commas.
 
 * Changes in Slurm 19.05.3
 ==========================
