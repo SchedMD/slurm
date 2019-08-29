@@ -20,6 +20,8 @@ documents those changes that are of interest to users and administrators.
  -- Add Autodetect option to NodeName line in gres.conf to override the global
     Autodetect option.
  -- Add NetworkRaw debugflag.
+ -- Make REQUEST_LAUNCH_PROLOG handler fail if PrologFlags includes Contain and
+    the credential has already expired when setting the memory limits.
 
 * Changes in Slurm 20.02.3
 ==========================
