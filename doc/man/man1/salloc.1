@@ -947,7 +947,9 @@ This parameter would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR).
 Also see \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR.
 The \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR and \fB\-\-mem\-per\-gpu\fR
-options are mutually exclusive.
+options are mutually exclusive. If \fB\-\-mem\fR, \fB\-\-mem\-per\-cpu\fR or
+\fB\-\-mem\-per\-gpu\fR are specified as command line arguments, then they will
+take precedence over the environment.
 
 NOTE: A memory size specification of zero is treated as a special case and
 grants the job access to all of the memory on each node.
