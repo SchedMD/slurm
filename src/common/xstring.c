@@ -164,8 +164,8 @@ void _xstrcatchar(char **str, char c)
 	int len = (*str) ? strlen(*str) : 0;
 
 	_makespace(str, len, 1);
-	*str[len++] = c;
-	*str[len] = '\0';
+	(*str)[len++] = c;
+	(*str)[len] = '\0';
 }
 
 /*
