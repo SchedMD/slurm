@@ -97,13 +97,13 @@ make_bash_script $file_in "
 #!/usr/bin/env bash
 sleep_time=`expr 3 - \$SLURM_PROCID`
 sleep \$sleep_time
-env | grep SLURMD
+env | grep SLURMD_NODENAME
 "
 
 set matches 0
 send "$srun --label --mpi=none --pack-group=0-2 $file_in\r"
 expect {
-	-re "($number): SLURMD" {
+	-re "($number): SLURMD_NODENAME" {
 		incr matches
 		exp_continue
 	}
@@ -128,13 +128,13 @@ make_bash_script $file_in "
 #!/usr/bin/env bash
 sleep_time=`expr \$SLURM_PROCID`
 sleep \$sleep_time
-env | grep SLURMD
+env | grep SLURMD_NODENAME
 "
 
 set matches 0
 send "$srun --label --mpi=none --pack-group=0-2 $file_in\r"
 expect {
-	-re "($number): SLURMD" {
+	-re "($number): SLURMD_NODENAME" {
 		incr matches
 		exp_continue
 	}
