@@ -728,8 +728,6 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 	int rc = -1;
 	int retcode;
 	int i;
-	uint16_t port = 0;
-	char ip_buf[16];
 	static bool acct_sent = false;
 
 	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
@@ -823,17 +821,14 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 	while (slurm_send_recv_controller_rc_msg(&req, &rc,
 						 working_cluster_rec) < 0) {
 		if (i++ == 1) {
-			slurm_get_ip_str(&step_complete.parent_addr, &port,
-					 ip_buf, sizeof(ip_buf));
-			error("Rank %d failed sending step completion message "
-			      "directly to slurmctld (%s:%u), retrying",
-			      step_complete.rank, ip_buf, port);
+			error("Rank %d failed sending step completion message directly to slurmctld, retrying",
+			      step_complete.rank);
 		}
 		sleep(60);
 	}
 	if (i > 1) {
-		info("Rank %d sent step completion message directly to "
-		     "slurmctld (%s:%u)", step_complete.rank, ip_buf, port);
+		info("Rank %d sent step completion message directly to slurmctld",
+		     step_complete.rank);
 	}
 
 finished:
