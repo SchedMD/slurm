@@ -1553,10 +1553,8 @@ static int _attempt_backfill(void)
 			debug("backfill: no jobs to backfill");
 		FREE_NULL_LIST(job_queue);
 		return 0;
-	} else {
+	} else
 		debug("backfill: %u jobs to backfill", job_test_count);
-		job_test_count = 0;
-	}
 
 	if (backfill_continue)
 		list_for_each(job_list, _clear_job_start_times, NULL);
@@ -1569,6 +1567,8 @@ static int _attempt_backfill(void)
 	slurmctld_diag_stats.bf_queue_len = job_test_count;
 	slurmctld_diag_stats.bf_queue_len_sum += slurmctld_diag_stats.
 						 bf_queue_len;
+	job_test_count = 0;
+
 	slurmctld_diag_stats.bf_last_depth = 0;
 	slurmctld_diag_stats.bf_last_depth_try = 0;
 	slurmctld_diag_stats.bf_when_last_cycle = now;
