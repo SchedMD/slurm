@@ -173,9 +173,11 @@ static int  _post_resv_update(slurmctld_resv_t *resv_ptr,
 static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt);
 static void _restore_resv(slurmctld_resv_t *dest_resv,
 			  slurmctld_resv_t *src_resv);
-static bool _resv_overlap(time_t start_time, time_t end_time,
-			  uint32_t flags, bitstr_t *node_bitmap,
+static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
+			  bitstr_t *node_bitmap,
 			  slurmctld_resv_t *this_resv_ptr);
+static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
+			       slurmctld_resv_t *resv_ptr);
 static void _run_script(char *script, slurmctld_resv_t *resv_ptr);
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  struct part_record **part_ptr,
@@ -1689,7 +1691,6 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
 		return overlap;
 	if (flags & RESERVE_FLAG_TIME_FLOAT)
 		start_time += time(NULL);
-
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)		&&
@@ -1711,18 +1712,16 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
  *	reservation
  * RET true if overlap
  */
-static bool _resv_overlap(time_t start_time, time_t end_time,
-			  uint32_t flags, bitstr_t *node_bitmap,
+static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
+			  bitstr_t *node_bitmap,
 			  slurmctld_resv_t *this_resv_ptr)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
 	bool rc = false;
-	int i, j;
-	time_t s_time1, s_time2, e_time1, e_time2;
 
-	if ((flags & RESERVE_FLAG_MAINT)   ||
-	    (flags & RESERVE_FLAG_OVERLAP) ||
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_MAINT)   ||
+	    (resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) ||
 	    (!node_bitmap))
 		return rc;
 
@@ -1740,29 +1739,9 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 			continue;	/* no overlap */
 		if (!resv_ptr->full_nodes)
 			continue;
-
-		for (i=0; ((i<7) && (!rc)); i++) {  /* look forward one week */
-			s_time1 = start_time;
-			e_time1 = end_time;
-			_advance_time(&s_time1, i);
-			_advance_time(&e_time1, i);
-			for (j=0; ((j<7) && (!rc)); j++) {
-				s_time2 = resv_ptr->start_time;
-				e_time2 = resv_ptr->end_time;
-				_advance_time(&s_time2, j);
-				_advance_time(&e_time2, j);
-				if ((s_time1 < e_time2) &&
-				    (e_time1 > s_time2)) {
-					verbose("Reservation overlap with %s",
-						resv_ptr->name);
-					rc = true;
-					break;
-				}
-				if (!(resv_ptr->flags & RESERVE_FLAG_DAILY))
-					break;
-			}
-			if ((flags & RESERVE_FLAG_DAILY) == 0)
-				break;
+		if (_resv_time_overlap(resv_desc_ptr, resv_ptr)) {
+			rc = true;
+			break;
 		}
 	}
 	list_iterator_destroy(iter);
@@ -1770,6 +1749,58 @@ static bool _resv_overlap(time_t start_time, time_t end_time,
 	return rc;
 }
 
+static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
+			       slurmctld_resv_t *resv_ptr)
+{
+	bool rc = false;
+	int i, j;
+	time_t s_time1, s_time2, e_time1, e_time2;
+	time_t start_relative, end_relative;
+	time_t now = time(NULL);
+
+	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
+		start_relative = resv_ptr->start_time + now;
+		if (resv_ptr->duration == INFINITE)
+			end_relative = start_relative +
+				       YEAR_SECONDS;
+		else if (resv_ptr->duration &&
+			 (resv_ptr->duration != NO_VAL)) {
+			end_relative = start_relative +
+				       resv_ptr->duration * 60;
+		} else {
+			end_relative = resv_ptr->end_time;
+			if (start_relative > end_relative)
+				start_relative = end_relative;
+		}
+	} else {
+		start_relative = resv_ptr->start_time;
+		end_relative = resv_ptr->end_time;
+	}
+
+	for (i=0; ((i<7) && (!rc)); i++) {  /* look forward one week */
+		s_time1 = resv_desc_ptr->start_time;
+		e_time1 = resv_desc_ptr->end_time;
+		_advance_time(&s_time1, i);
+		_advance_time(&e_time1, i);
+		for (j=0; ((j<7) && (!rc)); j++) {
+			s_time2 = start_relative;
+			e_time2 = end_relative;
+			_advance_time(&s_time2, j);
+			_advance_time(&e_time2, j);
+			if ((s_time1 < e_time2) &&
+			    (e_time1 > s_time2)) {
+				rc = true;
+				break;
+			}
+			if (!(resv_ptr->flags & RESERVE_FLAG_DAILY))
+				break;
+		}
+		if (!(resv_desc_ptr->flags & RESERVE_FLAG_DAILY))
+			break;
+	}
+
+	return rc;
+}
 /* Set a reservation's TRES count. Requires that the reservation's
  *	node_bitmap be set.
  * This needs to be done after all other setup is done.
@@ -2099,10 +2130,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 		}
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP) &&
-		    _resv_overlap(resv_desc_ptr->start_time,
-				  resv_desc_ptr->end_time,
-				  resv_desc_ptr->flags, node_bitmap,
-				  NULL)) {
+		    _resv_overlap(resv_desc_ptr, node_bitmap, NULL)) {
 			info("Reservation request overlaps another");
 			rc = ESLURM_RESERVATION_OVERLAP;
 			goto bad_parse;
@@ -2110,7 +2138,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		total_node_cnt = bit_set_count(node_bitmap);
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
 		    !resv_desc_ptr->core_cnt &&
-		    _job_overlap(resv_desc_ptr->start_time,
+		    _job_overlap(resv_desc_ptr->start_time - now,
 				 resv_desc_ptr->flags, node_bitmap, NULL)) {
 			info("Reservation request overlaps jobs");
 			rc = ESLURM_NODES_BUSY;
@@ -2287,6 +2315,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 {
 	time_t now = time(NULL);
 	slurmctld_resv_t *resv_backup, *resv_ptr;
+	resv_desc_msg_t resv_desc;
 	int error_code = SLURM_SUCCESS, i, rc;
 
 	if (!resv_list)
@@ -2632,8 +2661,11 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 	}
-	if (_resv_overlap(resv_ptr->start_time, resv_ptr->end_time,
-			  resv_ptr->flags, resv_ptr->node_bitmap, resv_ptr)) {
+	memset(&resv_desc, 0, sizeof(resv_desc_msg_t));
+	resv_desc.start_time  = resv_ptr->start_time;
+	resv_desc.end_time    = resv_ptr->end_time;
+	resv_desc.flags       = resv_ptr->flags;
+	if (_resv_overlap(&resv_desc, resv_ptr->node_bitmap, resv_ptr)) {
 		info("Reservation %s request overlaps another",
 		     resv_desc_ptr->name);
 		error_code = ESLURM_RESERVATION_OVERLAP;
@@ -3214,6 +3246,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		resv_desc.start_time  = resv_ptr->start_time;
 		resv_desc.end_time    = resv_ptr->end_time;
 		resv_desc.features    = resv_ptr->features;
+		resv_desc.flags       = resv_ptr->flags;
 		if (!resv_ptr->full_nodes) {
 			resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 			resv_desc.core_cnt[0] = resv_ptr->core_cnt;
@@ -3300,6 +3333,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.start_time = resv_ptr->start_time;
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
+	resv_desc.flags      = resv_ptr->flags;
 	if (!resv_ptr->full_nodes) {
 		resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 		resv_desc.core_cnt[0] = resv_ptr->core_cnt;
@@ -3598,7 +3632,6 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	bitstr_t *node_bitmap;
 	ListIterator iter;
 	int i, rc = SLURM_SUCCESS;
-	time_t start_relative, end_relative;
 	time_t now = time(NULL);
 	bool have_xand = false;
 
@@ -3629,27 +3662,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				_advance_resv_time(resv_ptr);
 			if (resv_ptr->node_bitmap == NULL)
 				continue;
-			if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
-				start_relative = resv_ptr->start_time + now;
-				if (resv_ptr->duration == INFINITE)
-					end_relative = start_relative +
-						       YEAR_SECONDS;
-				else if (resv_ptr->duration &&
-					 (resv_ptr->duration != NO_VAL)) {
-					end_relative = start_relative +
-						       resv_ptr->duration * 60;
-				} else {
-					end_relative = resv_ptr->end_time;
-					if (start_relative > end_relative)
-						start_relative = end_relative;
-				}
-			} else {
-				start_relative = resv_ptr->start_time_first;
-				end_relative = resv_ptr->end_time;
-			}
-
-			if ((start_relative >= resv_desc_ptr->end_time) ||
-			    (end_relative   <= resv_desc_ptr->start_time))
+			if (!_resv_time_overlap(resv_desc_ptr, resv_ptr))
 				continue;
 			if (!resv_ptr->core_bitmap && !resv_ptr->full_nodes) {
 				error("Reservation %s has no core_bitmap and "
@@ -5407,14 +5420,14 @@ extern void job_resv_check(void)
 			last_resv_update = now;
 			schedule_resv_save();
 		}
-		if (!resv_ptr->run_prolog || !resv_ptr->run_epilog)
-			continue;
 		if ((resv_ptr->end_time >= now) ||
 		    (resv_ptr->duration && (resv_ptr->duration != NO_VAL) &&
 		     (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT))) {
 			_validate_node_choice(resv_ptr);
 			continue;
 		}
+		if (!resv_ptr->run_prolog || !resv_ptr->run_epilog)
+			continue;
 		_advance_resv_time(resv_ptr);
 		if ((!resv_ptr->job_run_cnt ||
 		     (resv_ptr->flags & RESERVE_FLAG_FLEX)) &&

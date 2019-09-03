@@ -41,6 +41,7 @@ source ./inc3.11.6
 source ./inc3.11.7
 source ./inc3.11.8
 source ./inc3.11.9
+source ./inc3.11.10
 
 set test_id		"3.11"
 set file_in		"test$test_id.input"
@@ -438,6 +439,7 @@ if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclus
 	inc3_11_9
 }
 
+inc3_11_10
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"

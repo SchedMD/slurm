@@ -591,6 +591,8 @@ EXTRA_DIST = \
 	inc3.11.6			\
 	inc3.11.7			\
 	inc3.11.8			\
+	inc3.11.9			\
+	inc3.11.10			\
 	test3.12			\
 	test3.13			\
 	test3.14			\
@@ -935,6 +937,7 @@ EXTRA_DIST = \
 	inc22.1.3                       \
 	inc22.1.4                       \
 	inc22.1.5                       \
+	inc22.1.fed                     \
 	test22.2			\
 	test23.1			\
 	test23.2			\

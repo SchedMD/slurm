@@ -56,6 +56,10 @@ documents those changes that are of interest to users and administrators.
     different features.
  -- Fix talking to batch host on it's protocol version when using --batch.
  -- gres/mic plugin - add missing fini() function to clean up plugin state.
+ -- Move _validate_node_choice() before prolog/epilog check.
+ -- Look forward one week while create new reservation.
+ -- Set mising resv_desc.flags before call _select_nodes().
+ -- Use correct start_time for TIME_FLOAT reservation in _job_overlap().
 
 * Changes in Slurm 19.05.2
 ==========================

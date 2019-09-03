@@ -135,6 +135,49 @@ if {![string compare $node_list_orig $node_list_new]} {
 }
 
 #
+# Drain a node from the reservation, so it gets replaced
+#
+spawn $scontrol update NodeName=$node_list_new State=DRAIN Reason=TESTING
+expect {
+	-re "Error|error" {
+		send_user "\nFAILURE: error updating node\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+#
+#Wait PERIODIC_TIMEOUT
+#
+sleep 32
+#
+# Check that advanced reservation's allocated nodes has been updated
+#
+spawn $scontrol show ReservationName=$resv_name
+expect {
+	-re "Nodes=($alpha_numeric_nodelist)" {
+		set node_list_orig $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {![string compare $node_list_orig $node_list_new]} {
+	send_user "\nFAILURE: reservation failed to replace drain node\n"
+	set exit_code 1
+}
+
+#
 # Delete the advanced reservation
 #
 spawn $scontrol delete ReservationName=$resv_name
@@ -151,6 +194,21 @@ expect {
 		wait
 	}
 }
+spawn $scontrol update NodeName=$node_list_new State=RESUME
+expect {
+	-re "Error|error" {
+		send_user "\nFAILURE: error updating node\n"
+		set exit_code 1
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
