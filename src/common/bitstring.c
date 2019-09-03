@@ -39,6 +39,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -1028,8 +1030,8 @@ bit_pick_cnt(bitstr_t *b, bitoff_t nbits)
  */
 char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 {
-	int32_t count = 0, ret, size, word;
-	bitoff_t start, bit;
+	int32_t count = 0, word;
+	bitoff_t bit;
 
 	_assert_bitstr_valid(b);
 	assert(len > 0);
@@ -1042,12 +1044,16 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 		}
 
 		if (bit_test(b, bit)) {
+#ifndef NDEBUG
+			int32_t ret, size;
+			bitoff_t start = bit;
+#endif
 			count++;
-			start = bit;
 			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1)) {
 				bit++;
 				count++;
 			}
+#ifndef NDEBUG
 			size = strlen(str);
 			if (bit == start) {	/* add single bit position */
 				ret = snprintf(str + size, len - size,
@@ -1058,6 +1064,7 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 					       start, bit);
 			}
 			assert(ret != -1);
+#endif
 		}
 		bit++;
 	}
@@ -1533,11 +1540,15 @@ bit_get_pos_num(bitstr_t *b, bitoff_t pos)
 {
 	bitoff_t bit;
 	int32_t cnt = -1;
+#ifndef NDEBUG
 	bitoff_t bit_cnt;
+#endif
 
 	_assert_bitstr_valid(b);
+#ifndef NDEBUG
 	bit_cnt = _bitstr_bits(b);
 	assert(pos <= bit_cnt);
+#endif
 
 	if (!bit_test(b, pos)) {
 		error("bit %"BITSTR_FMT" not set", pos);
