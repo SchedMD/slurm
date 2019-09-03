@@ -1516,7 +1516,6 @@ static int _attempt_backfill(void)
 	time_t qos_blocked_until = 0, qos_part_blocked_until = 0;
 	time_t tmp_preempt_start_time = 0;
 	bool tmp_preempt_in_progress = false;
-	bitstr_t *tmp_bitmap = NULL;
 	/* QOS Read lock */
 	assoc_mgr_lock_t qos_read_lock =
 		{ NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
@@ -2067,23 +2066,10 @@ next_task:
 		bit_and_not(avail_bitmap, bf_ignore_node_bitmap);
 		filter_by_node_owner(job_ptr, avail_bitmap);
 		filter_by_node_mcs(job_ptr, mcs_select, avail_bitmap);
-		tmp_bitmap = bit_copy(avail_bitmap);
 		for (j = 0; ; ) {
 			if ((node_space[j].end_time > start_res) &&
-			     node_space[j].next && (later_start == 0)) {
-				int tmp = node_space[j].next;
-				bitstr_t *next_bitmap = bit_copy(tmp_bitmap);
-				bitstr_t *current_bitmap =
-					bit_copy(avail_bitmap);
-				bit_and(next_bitmap,
-					node_space[tmp].avail_bitmap);
-				bit_and(current_bitmap,
-					node_space[j].avail_bitmap);
-				if (!bit_super_set(next_bitmap, current_bitmap))
-					later_start = node_space[j].end_time;
-				FREE_NULL_BITMAP(next_bitmap);
-				FREE_NULL_BITMAP(current_bitmap);
-			}
+			     node_space[j].next && (later_start == 0))
+				later_start = node_space[j].end_time;
 			if (node_space[j].end_time <= start_res)
 				;
 			else if (node_space[j].begin_time <= end_time) {
@@ -2094,7 +2080,6 @@ next_task:
 			if ((j = node_space[j].next) == 0)
 				break;
 		}
-		FREE_NULL_BITMAP(tmp_bitmap);
 		if (resv_end && (++resv_end < window_end) &&
 		    ((later_start == 0) || (resv_end < later_start))) {
 			later_start = resv_end;
