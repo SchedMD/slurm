@@ -52,7 +52,7 @@
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 
-#if NDEBUG
+#ifdef NDEBUG
 #  define xmalloc_assert(expr)  ((void) (0))
 #else
 static void malloc_assert_failed(char *, const char *, int,
