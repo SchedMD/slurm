@@ -2167,6 +2167,8 @@ next_task:
 				save_whole_node = job_ptr->details->whole_node;
 				job_ptr->details->share_res = 0;
 				job_ptr->details->whole_node = 1;
+				if (!save_whole_node)
+					job_ptr->bit_flags |= BF_WHOLE_NODE_TEST;
 				test_fini = 0;
 			}
 		}
@@ -2226,6 +2228,7 @@ next_task:
 			}
 		}
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
+		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
 		job_ptr->bit_flags &= ~TEST_NOW_ONLY;
 
 		now = time(NULL);

@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- Look forward one week while create new reservation.
  -- Set mising resv_desc.flags before call _select_nodes().
  -- Use correct start_time for TIME_FLOAT reservation in _job_overlap().
+ -- Properly enforce a job's mem-per-cpu option when allocate the node
+    exclusively to that job.
 
 * Changes in Slurm 19.05.2
 ==========================

@@ -1008,7 +1008,7 @@ enum ctx_keys {
 #define JOB_PACK_FLAG      0x00002000	/* Heterogeneous job management flag */
 #define JOB_NTASKS_SET     0x00004000	/* --ntasks explicitly set */
 #define JOB_CPUS_SET       0x00008000	/* --cpus-per-tasks explicitly set */
-/*                         0x00010000	   Free for reuse */
+#define BF_WHOLE_NODE_TEST 0x00010000	/* Backfill test in progress */
 #define TOP_PRIO_TMP       0x00020000	/* Temporary flag for top priority job
 					 * operation */
 #define JOB_ACCRUE_OVER    0x00040000	/* We have cleared the accrual count of
