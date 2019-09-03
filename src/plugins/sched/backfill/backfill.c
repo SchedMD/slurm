@@ -2621,8 +2621,12 @@ skip_start:
 
 		reject_array_job_id = 0;
 		reject_array_part   = NULL;
-		xfree(job_ptr->sched_nodes);
-		job_ptr->sched_nodes = bitmap2node_name(avail_bitmap);
+		if ((orig_start_time == 0) ||
+		    (job_ptr->start_time < orig_start_time)) {
+			/* Can't start earlier in different partition. */
+			xfree(job_ptr->sched_nodes);
+			job_ptr->sched_nodes = bitmap2node_name(avail_bitmap);
+		}
 		bit_not(avail_bitmap);
 		_add_reservation(start_time, end_reserve,
 				 avail_bitmap, node_space, &node_space_recs);
