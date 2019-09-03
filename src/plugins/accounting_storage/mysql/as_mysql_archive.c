@@ -857,7 +857,53 @@ static int _unpack_local_job(local_job_t *object,
 	 * and it unpacks in the expected order.
 	 */
 
-	if (rpc_version >= SLURM_19_05_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->associd, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->timelimit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->pack_job_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->pack_job_offset, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->partition, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->priority, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->qos, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpus, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_mem, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resvid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state_reason_prev, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->submit, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->system_comment, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->track_steps, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_req_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->uid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->wckey_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->work_dir, &tmp32, buffer);
+	} else if (rpc_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object->account, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->admin_comment, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->alloc_nodes, &tmp32, buffer);
@@ -1288,7 +1334,18 @@ static int _unpack_local_resv(local_resv_t *object,
 	uint32_t tmp32;
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_17_11_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object->assocs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->unused_wall, &tmp32, buffer);
+	} else if (rpc_version >= SLURM_17_11_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object->assocs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
@@ -1383,7 +1440,56 @@ static int _unpack_local_step(local_step_t *object,
 	uint32_t tmp32;
 	char *tmp_char;
 
-	if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
+	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->nodes, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_end, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->period_suspended, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->req_cpufreq_gov, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->state, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->stepid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->sys_usec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tasks, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->task_dist, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_alloc_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_ave, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_max_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_min_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_in_tot, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_ave, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_max_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_nodeid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_min_taskid, &tmp32,
+			      buffer);
+		safe_unpackstr_xmalloc(&object->tres_usage_out_tot, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_sec, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->user_usec, &tmp32, buffer);
+	} else if (rpc_version >= SLURM_18_08_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
@@ -1830,10 +1936,17 @@ static int _unpack_local_usage(local_usage_t *object,
 {
 	uint32_t tmp32;
 
-	safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
+	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
+	} else {
+		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
+	}
 
 	return SLURM_SUCCESS;
 
@@ -1862,14 +1975,25 @@ static int _unpack_local_cluster_usage(local_cluster_usage_t *object,
 {
 	uint32_t tmp32;
 
-	safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->tres_cnt, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->down_secs, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->idle_secs, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->resv_secs, &tmp32, buffer);
-	safe_unpackstr_xmalloc(&object->over_secs, &tmp32, buffer);
+	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_cnt, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->down_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->idle_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resv_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->over_secs, &tmp32, buffer);
+	} else {
+		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->tres_cnt, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->down_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->idle_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->resv_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->over_secs, &tmp32, buffer);
+	}
 
 	return SLURM_SUCCESS;
 
