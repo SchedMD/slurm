@@ -105,8 +105,11 @@ typedef struct {
 	char *array_jobid;
 	char *array_max_tasks;
 	char *array_taskid;
+	char *array_task_pending;
+	char *array_task_str;
 	char *blockid;
 	char *constraints;
+	char *deleted;
 	char *derived_ec;
 	char *derived_es;
 	char *exit_code;
@@ -114,10 +117,14 @@ typedef struct {
 	char *end;
 	char *flags;
 	char *gid;
+	char *gres_alloc;
+	char *gres_req;
+	char *gres_used;
 	char *job_db_inx;
 	char *jobid;
 	char *kill_requid;
 	char *mcs_label;
+	char *mod_time;
 	char *name;
 	char *nodelist;
 	char *node_inx;
@@ -155,17 +162,24 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->array_jobid);
 		xfree(object->array_max_tasks);
 		xfree(object->array_taskid);
+		xfree(object->array_task_pending);
+		xfree(object->array_task_str);
 		xfree(object->blockid);
+		xfree(object->deleted);
 		xfree(object->derived_ec);
 		xfree(object->derived_es);
 		xfree(object->exit_code);
 		xfree(object->eligible);
 		xfree(object->end);
 		xfree(object->gid);
+		xfree(object->gres_alloc);
+		xfree(object->gres_req);
+		xfree(object->gres_used);
 		xfree(object->job_db_inx);
 		xfree(object->jobid);
 		xfree(object->kill_requid);
 		xfree(object->mcs_label);
+		xfree(object->mod_time);
 		xfree(object->name);
 		xfree(object->nodelist);
 		xfree(object->node_inx);
@@ -195,6 +209,7 @@ static void _free_local_job_members(local_job_t *object)
 
 typedef struct {
 	char *assocs;
+	char *deleted;
 	char *flags;
 	char *id;
 	char *name;
@@ -210,6 +225,7 @@ static void _free_local_resv_members(local_resv_t *object)
 {
 	if (object) {
 		xfree(object->assocs);
+		xfree(object->deleted);
 		xfree(object->flags);
 		xfree(object->id);
 		xfree(object->name);
@@ -224,6 +240,7 @@ static void _free_local_resv_members(local_resv_t *object)
 
 typedef struct {
 	char *act_cpufreq;
+	char *deleted;
 	char *exit_code;
 	char *consumed_energy;
 	char *job_db_inx;
@@ -269,6 +286,7 @@ static void _free_local_step_members(local_step_t *object)
 {
 	if (object) {
 		xfree(object->act_cpufreq);
+		xfree(object->deleted);
 		xfree(object->exit_code);
 		xfree(object->consumed_energy);
 		xfree(object->job_db_inx);
@@ -356,6 +374,9 @@ typedef struct {
 	char *id;
 	char *time_start;
 	char *tres_id;
+	char *creation_time;
+	char *mod_time;
+	char *deleted;
 } local_usage_t;
 
 static void _free_local_usage_members(local_usage_t *object)
@@ -365,6 +386,9 @@ static void _free_local_usage_members(local_usage_t *object)
 		xfree(object->id);
 		xfree(object->time_start);
 		xfree(object->tres_id);
+		xfree(object->creation_time);
+		xfree(object->mod_time);
+		xfree(object->deleted);
 	}
 }
 
@@ -378,6 +402,9 @@ typedef struct {
 	char *resv_secs;
 	char *tres_id;
 	char *tres_cnt;
+	char *creation_time;
+	char *mod_time;
+	char *deleted;
 } local_cluster_usage_t;
 
 static void _free_local_cluster_members(local_cluster_usage_t *object)
@@ -392,6 +419,9 @@ static void _free_local_cluster_members(local_cluster_usage_t *object)
 		xfree(object->resv_secs);
 		xfree(object->tres_id);
 		xfree(object->tres_cnt);
+		xfree(object->creation_time);
+		xfree(object->mod_time);
+		xfree(object->deleted);
 	}
 }
 
@@ -422,13 +452,17 @@ enum {
 /* if this changes you will need to edit the corresponding enum below */
 static char *job_req_inx[] = {
 	"account",
+	"admin_comment",
 	"array_max_tasks",
+	"array_task_pending",
+	"array_task_str",
 	"nodes_alloc",
 	"id_assoc",
 	"id_array_job",
 	"id_array_task",
 	"id_block",
 	"constraints",
+	"deleted",
 	"derived_ec",
 	"derived_es",
 	"exit_code",
@@ -437,10 +471,14 @@ static char *job_req_inx[] = {
 	"time_eligible",
 	"time_end",
 	"id_group",
+	"gres_alloc",
+	"gres_req",
+	"gres_used",
 	"job_db_inx",
 	"id_job",
 	"kill_requid",
 	"mcs_label",
+	"mod_time",
 	"job_name",
 	"nodelist",
 	"node_inx",
@@ -455,6 +493,7 @@ static char *job_req_inx[] = {
 	"time_start",
 	"state",
 	"state_reason_prev",
+	"system_comment",
 	"time_submit",
 	"time_suspended",
 	"track_steps",
@@ -468,13 +507,17 @@ static char *job_req_inx[] = {
 
 enum {
 	JOB_REQ_ACCOUNT,
+	JOB_REQ_ADMIN_COMMENT,
 	JOB_REQ_ARRAY_MAX,
+	JOB_REQ_ARRAY_TASK_PENDING,
+	JOB_REQ_ARRAY_TASK_STR,
 	JOB_REQ_ALLOC_NODES,
 	JOB_REQ_ASSOCID,
 	JOB_REQ_ARRAYJOBID,
 	JOB_REQ_ARRAYTASKID,
 	JOB_REQ_BLOCKID,
 	JOB_REQ_CONSTRAINTS,
+	JOB_REQ_DELETED,
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
 	JOB_REQ_EXIT_CODE,
@@ -483,10 +526,14 @@ enum {
 	JOB_REQ_ELIGIBLE,
 	JOB_REQ_END,
 	JOB_REQ_GID,
+	JOB_REQ_GRES_ALLOC,
+	JOB_REQ_GRES_REQ,
+	JOB_REQ_GRES_USED,
 	JOB_REQ_DB_INX,
 	JOB_REQ_JOBID,
 	JOB_REQ_KILL_REQUID,
 	JOB_REQ_MCS_LABEL,
+	JOB_REQ_MOD_TIME,
 	JOB_REQ_NAME,
 	JOB_REQ_NODELIST,
 	JOB_REQ_NODE_INX,
@@ -501,6 +548,7 @@ enum {
 	JOB_REQ_START,
 	JOB_REQ_STATE,
 	JOB_REQ_STATE_REASON,
+	JOB_REQ_SYSTEM_COMMENT,
 	JOB_REQ_SUBMIT,
 	JOB_REQ_SUSPENDED,
 	JOB_REQ_TRACKSTEPS,
@@ -517,6 +565,7 @@ enum {
 char *resv_req_inx[] = {
 	"id_resv",
 	"assoclist",
+	"deleted",
 	"flags",
 	"tres",
 	"nodelist",
@@ -530,6 +579,7 @@ char *resv_req_inx[] = {
 enum {
 	RESV_REQ_ID,
 	RESV_REQ_ASSOCS,
+	RESV_REQ_DELETED,
 	RESV_REQ_FLAGS,
 	RESV_REQ_TRES,
 	RESV_REQ_NODES,
@@ -545,6 +595,7 @@ enum {
 static char *step_req_inx[] = {
 	"job_db_inx",
 	"id_step",
+	"deleted",
 	"time_start",
 	"time_end",
 	"time_suspended",
@@ -589,6 +640,7 @@ static char *step_req_inx[] = {
 enum {
 	STEP_REQ_DB_INX,
 	STEP_REQ_STEPID,
+	STEP_REQ_DELETED,
 	STEP_REQ_START,
 	STEP_REQ_END,
 	STEP_REQ_SUSPENDED,
@@ -674,6 +726,9 @@ char *usage_req_inx[] = {
 	"id_tres",
 	"time_start",
 	"alloc_secs",
+	"creation_time",
+	"mod_time",
+	"deleted"
 };
 
 enum {
@@ -681,6 +736,9 @@ enum {
 	USAGE_TRES,
 	USAGE_START,
 	USAGE_ALLOC,
+	USAGE_CREATION_TIME,
+	USAGE_MOD_TIME,
+	USAGE_DELETED,
 	USAGE_COUNT
 };
 
@@ -695,6 +753,9 @@ char *cluster_req_inx[] = {
 	"idle_secs",
 	"resv_secs",
 	"over_secs",
+	"creation_time",
+	"mod_time",
+	"deleted"
 };
 
 enum {
@@ -707,6 +768,9 @@ enum {
 	CLUSTER_ICPU,
 	CLUSTER_RCPU,
 	CLUSTER_OCPU,
+	CLUSTER_CREATION_TIME,
+	CLUSTER_MOD_TIME,
+	CLUSTER_DELETED,
 	CLUSTER_COUNT
 };
 
@@ -788,8 +852,11 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->array_jobid, buffer);
 	packstr(object->array_max_tasks, buffer);
 	packstr(object->array_taskid, buffer);
+	packstr(object->array_task_pending, buffer);
+	packstr(object->array_task_str, buffer);
 	packstr(object->blockid, buffer);
 	packstr(object->constraints, buffer);
+	packstr(object->deleted, buffer);
 	packstr(object->derived_ec, buffer);
 	packstr(object->derived_es, buffer);
 	packstr(object->exit_code, buffer);
@@ -798,10 +865,14 @@ static void _pack_local_job(local_job_t *object,
 	packstr(object->eligible, buffer);
 	packstr(object->end, buffer);
 	packstr(object->gid, buffer);
+	packstr(object->gres_alloc, buffer);
+	packstr(object->gres_req, buffer);
+	packstr(object->gres_used, buffer);
 	packstr(object->job_db_inx, buffer);
 	packstr(object->jobid, buffer);
 	packstr(object->kill_requid, buffer);
 	packstr(object->mcs_label, buffer);
+	packstr(object->mod_time, buffer);
 	packstr(object->name, buffer);
 	packstr(object->nodelist, buffer);
 	packstr(object->node_inx, buffer);
@@ -865,8 +936,11 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->array_jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->array_max_tasks, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_pending, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->array_task_str, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->derived_ec, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->derived_es, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
@@ -875,10 +949,14 @@ static int _unpack_local_job(local_job_t *object,
 		safe_unpackstr_xmalloc(&object->eligible, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->end, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->gid, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gres_alloc, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gres_req, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->gres_used, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->jobid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->kill_requid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->mcs_label, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->nodelist, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->node_inx, &tmp32, buffer);
@@ -1315,6 +1393,7 @@ static void _pack_local_resv(local_resv_t *object,
 			     uint16_t rpc_version, Buf buffer)
 {
 	packstr(object->assocs, buffer);
+	packstr(object->deleted, buffer);
 	packstr(object->flags, buffer);
 	packstr(object->id, buffer);
 	packstr(object->name, buffer);
@@ -1336,6 +1415,7 @@ static int _unpack_local_resv(local_resv_t *object,
 
 	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object->assocs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->name, &tmp32, buffer);
@@ -1391,6 +1471,7 @@ static void _pack_local_step(local_step_t *object,
 			     uint16_t rpc_version, Buf buffer)
 {
 	packstr(object->act_cpufreq, buffer);
+	packstr(object->deleted, buffer);
 	packstr(object->exit_code, buffer);
 	packstr(object->consumed_energy, buffer);
 	packstr(object->job_db_inx, buffer);
@@ -1442,6 +1523,7 @@ static int _unpack_local_step(local_step_t *object,
 
 	if (rpc_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object->act_cpufreq, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->exit_code, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->consumed_energy, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->job_db_inx, &tmp32, buffer);
@@ -1927,6 +2009,9 @@ static void _pack_local_usage(local_usage_t *object,
 	packstr(object->tres_id, buffer);
 	packstr(object->time_start, buffer);
 	packstr(object->alloc_secs, buffer);
+	packstr(object->creation_time, buffer);
+	packstr(object->mod_time, buffer);
+	packstr(object->deleted, buffer);
 }
 
 /* this needs to be allocated before calling, and since we aren't
@@ -1941,6 +2026,9 @@ static int _unpack_local_usage(local_usage_t *object,
 		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->creation_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 	} else {
 		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
@@ -1966,6 +2054,9 @@ static void _pack_local_cluster_usage(local_cluster_usage_t *object,
 	packstr(object->idle_secs, buffer);
 	packstr(object->resv_secs, buffer);
 	packstr(object->over_secs, buffer);
+	packstr(object->creation_time, buffer);
+	packstr(object->mod_time, buffer);
+	packstr(object->deleted, buffer);
 }
 
 /* this needs to be allocated before calling, and since we aren't
@@ -1984,6 +2075,9 @@ static int _unpack_local_cluster_usage(local_cluster_usage_t *object,
 		safe_unpackstr_xmalloc(&object->idle_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->resv_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->over_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->creation_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 	} else {
 		safe_unpackstr_xmalloc(&object->tres_id, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->time_start, &tmp32, buffer);
@@ -2732,13 +2826,17 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		memset(&job, 0, sizeof(local_job_t));
 
 		job.account = row[JOB_REQ_ACCOUNT];
+		job.admin_comment = row[JOB_REQ_ADMIN_COMMENT];
 		job.alloc_nodes = row[JOB_REQ_ALLOC_NODES];
 		job.associd = row[JOB_REQ_ASSOCID];
 		job.array_jobid = row[JOB_REQ_ARRAYJOBID];
 		job.array_max_tasks = row[JOB_REQ_ARRAY_MAX];
 		job.array_taskid = row[JOB_REQ_ARRAYTASKID];
+		job.array_task_pending = row[JOB_REQ_ARRAY_TASK_PENDING];
+		job.array_task_str = row[JOB_REQ_ARRAY_TASK_STR];
 		job.blockid = row[JOB_REQ_BLOCKID];
 		job.constraints = row[JOB_REQ_CONSTRAINTS];
+		job.deleted = row[JOB_REQ_DELETED];
 		job.derived_ec = row[JOB_REQ_DERIVED_EC];
 		job.derived_es = row[JOB_REQ_DERIVED_ES];
 		job.exit_code = row[JOB_REQ_EXIT_CODE];
@@ -2747,10 +2845,14 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.eligible = row[JOB_REQ_ELIGIBLE];
 		job.end = row[JOB_REQ_END];
 		job.gid = row[JOB_REQ_GID];
+		job.gres_alloc = row[JOB_REQ_GRES_ALLOC];
+		job.gres_req = row[JOB_REQ_GRES_REQ];
+		job.gres_used = row[JOB_REQ_GRES_USED];
 		job.job_db_inx = row[JOB_REQ_DB_INX];
 		job.jobid = row[JOB_REQ_JOBID];
 		job.kill_requid = row[JOB_REQ_KILL_REQUID];
 		job.mcs_label = row[JOB_REQ_MCS_LABEL];
+		job.mod_time = row[JOB_REQ_MOD_TIME];
 		job.name = row[JOB_REQ_NAME];
 		job.nodelist = row[JOB_REQ_NODELIST];
 		job.node_inx = row[JOB_REQ_NODE_INX];
@@ -2765,6 +2867,7 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.state_reason_prev = row[JOB_REQ_STATE_REASON];
 		job.submit = row[JOB_REQ_SUBMIT];
 		job.suspended = row[JOB_REQ_SUSPENDED];
+		job.system_comment = row[JOB_REQ_SYSTEM_COMMENT];
 		job.track_steps = row[JOB_REQ_TRACKSTEPS];
 		job.tres_alloc_str = row[JOB_REQ_TRESA];
 		job.tres_req_str = row[JOB_REQ_TRESR];
@@ -2811,13 +2914,17 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 
 		xstrfmtcat(insert, format,
 			   object.account,
+			   object.admin_comment,
 			   object.array_max_tasks,
+			   object.array_task_pending,
+			   object.array_task_str,
 			   object.alloc_nodes,
 			   object.associd,
 			   object.array_jobid,
 			   object.array_taskid,
 			   object.blockid,
 			   object.constraints,
+			   object.deleted,
 			   object.derived_ec,
 			   object.derived_es,
 			   object.exit_code,
@@ -2826,10 +2933,14 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.eligible,
 			   object.end,
 			   object.gid,
+			   object.gres_alloc,
+			   object.gres_req,
+			   object.gres_used,
 			   object.job_db_inx,
 			   object.jobid,
 			   object.kill_requid,
 			   object.mcs_label,
+			   object.mod_time,
 			   object.name,
 			   object.nodelist,
 			   object.node_inx,
@@ -2844,6 +2955,7 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 			   object.start,
 			   object.state,
 			   object.state_reason_prev,
+			   object.system_comment,
 			   object.submit,
 			   object.suspended,
 			   object.track_steps,
@@ -2885,6 +2997,7 @@ static Buf _pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 		memset(&resv, 0, sizeof(local_resv_t));
 
 		resv.assocs = row[RESV_REQ_ASSOCS];
+		resv.deleted = row[RESV_REQ_DELETED];
 		resv.flags = row[RESV_REQ_FLAGS];
 		resv.id = row[RESV_REQ_ID];
 		resv.name = row[RESV_REQ_NAME];
@@ -2933,6 +3046,7 @@ static char *_load_resvs(uint16_t rpc_version, Buf buffer,
 
 		xstrfmtcat(insert, format,
 			   object.id,
+			   object.deleted,
 			   object.assocs,
 			   object.flags,
 			   object.tres_str,
@@ -2974,6 +3088,7 @@ static Buf _pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 		memset(&step, 0, sizeof(local_step_t));
 
 		step.act_cpufreq = row[STEP_REQ_ACT_CPUFREQ];
+		step.deleted = row[STEP_REQ_DELETED];
 		step.consumed_energy = row[STEP_REQ_CONSUMED_ENERGY];
 		step.exit_code = row[STEP_REQ_EXIT_CODE];
 		step.job_db_inx = row[STEP_REQ_DB_INX];
@@ -3061,6 +3176,7 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 		xstrfmtcat(insert, format,
 			   object.job_db_inx,
 			   object.stepid,
+			   object.deleted,
 			   object.period_start,
 			   object.period_end,
 			   object.period_suspended,
@@ -3299,6 +3415,9 @@ static Buf _pack_archive_usage(MYSQL_RES *result, char *cluster_name,
 		usage.tres_id = row[USAGE_TRES];
 		usage.time_start = row[USAGE_START];
 		usage.alloc_secs = row[USAGE_ALLOC];
+		usage.creation_time = row[USAGE_CREATION_TIME];
+		usage.mod_time = row[USAGE_MOD_TIME];
+		usage.deleted = row[USAGE_DELETED];
 
 		_pack_local_usage(&usage, SLURM_PROTOCOL_VERSION, buffer);
 	}
@@ -3382,7 +3501,10 @@ static char *_load_usage(uint16_t rpc_version, Buf buffer,
 			   object.id,
 			   object.tres_id,
 			   object.time_start,
-			   object.alloc_secs);
+			   object.alloc_secs,
+			   object.creation_time,
+			   object.mod_time,
+			   object.deleted);
 
 		_free_local_usage_members(&object);
 	}
@@ -3425,6 +3547,9 @@ static Buf _pack_archive_cluster_usage(MYSQL_RES *result, char *cluster_name,
 		usage.idle_secs = row[CLUSTER_ICPU];
 		usage.resv_secs = row[CLUSTER_RCPU];
 		usage.over_secs = row[CLUSTER_OCPU];
+		usage.creation_time = row[CLUSTER_CREATION_TIME];
+		usage.mod_time = row[CLUSTER_MOD_TIME];
+		usage.deleted = row[CLUSTER_DELETED];
 
 		_pack_local_cluster_usage(
 			&usage, SLURM_PROTOCOL_VERSION, buffer);
@@ -3489,7 +3614,10 @@ static char *_load_cluster_usage(uint16_t rpc_version, Buf buffer,
 			   object.pdown_secs,
 			   object.idle_secs,
 			   object.resv_secs,
-			   object.over_secs);
+			   object.over_secs,
+			   object.creation_time,
+			   object.mod_time,
+			   object.deleted);
 
 		_free_local_cluster_members(&object);
 	}
