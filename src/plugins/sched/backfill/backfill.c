@@ -1020,14 +1020,18 @@ extern void *backfill_agent(void *args)
 	return NULL;
 }
 
-/* Clear the start_time for all pending jobs. This is used to ensure that a job which
- * can run in multiple partitions has its start_time set to the smallest
- * value in any of those partitions. */
+/*
+ * Clear the start_time and sched_nodes for all pending jobs. This is used to
+ * ensure that a job which can run in multiple partitions has its start_time and
+ * sched_nodes set to the partition offering the earliest start_time.
+ */
 static int _clear_job_start_times(void *x, void *arg)
 {
 	struct job_record *job_ptr = (struct job_record *) x;
-	if (IS_JOB_PENDING(job_ptr))
+	if (IS_JOB_PENDING(job_ptr)) {
 		job_ptr->start_time = 0;
+		xfree(job_ptr->sched_nodes);
+	}
 	return SLURM_SUCCESS;
 }
 
