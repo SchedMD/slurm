@@ -1559,8 +1559,7 @@ static int _attempt_backfill(void)
 		job_test_count = 0;
 	}
 
-	if (backfill_continue)
-		list_for_each(job_list, _clear_job_start_times, NULL);
+	list_for_each(job_list, _clear_job_start_times, NULL);
 
 	if (bf_hetjob_prio)
 		list_for_each(job_list, _set_hetjob_details, NULL);
