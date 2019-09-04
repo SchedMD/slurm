@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- Properly enforce a job's mem-per-cpu option when allocate the node
     exclusively to that job.
  -- sched/backfill - clear estimated sched_nodes as done for start_time.
+ -- Have safe_[read|write] handle EAGAIN and EINTR.
 
 * Changes in Slurm 19.05.2
 ==========================
