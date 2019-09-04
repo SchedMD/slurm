@@ -210,7 +210,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     int *node_space_recs);
 static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val);
 static int  _attempt_backfill(void);
-static int  _clear_job_start_times(void *x, void *arg);
+static int  _clear_job_estimates(void *x, void *arg);
 static int  _clear_qos_blocked_times(void *x, void *arg);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
 			   int node_space_recs);
@@ -1025,7 +1025,7 @@ extern void *backfill_agent(void *args)
  * ensure that a job which can run in multiple partitions has its start_time and
  * sched_nodes set to the partition offering the earliest start_time.
  */
-static int _clear_job_start_times(void *x, void *arg)
+static int _clear_job_estimates(void *x, void *arg)
 {
 	struct job_record *job_ptr = (struct job_record *) x;
 	if (IS_JOB_PENDING(job_ptr)) {
@@ -1559,7 +1559,7 @@ static int _attempt_backfill(void)
 		job_test_count = 0;
 	}
 
-	list_for_each(job_list, _clear_job_start_times, NULL);
+	list_for_each(job_list, _clear_job_estimates, NULL);
 
 	if (bf_hetjob_prio)
 		list_for_each(job_list, _set_hetjob_details, NULL);
