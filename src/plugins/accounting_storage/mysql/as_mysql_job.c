@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "as_mysql_job.h"
+#include "as_mysql_jobacct_process.h"
 #include "as_mysql_usage.h"
 #include "as_mysql_wckey.h"
 
@@ -724,28 +725,21 @@ no_rollup_change:
 }
 
 extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
-				slurmdb_job_modify_cond_t *job_cond,
+				slurmdb_job_cond_t *job_cond,
 				slurmdb_job_rec_t *job)
 {
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *vals = NULL, *query = NULL, *cond_char = NULL;
+	char *vals = NULL, *cond_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
+	List job_list = NULL;
+	slurmdb_job_rec_t *job_rec;
+	ListIterator itr;
 
 	if (!job_cond || !job) {
 		error("we need something to change");
-		return NULL;
-	} else if (job_cond->job_id == NO_VAL) {
-		errno = SLURM_NO_CHANGE_IN_DATA;
-		error("Job ID was not specified for job modification\n");
-		return NULL;
-	} else if (!job_cond->cluster) {
-		errno = SLURM_NO_CHANGE_IN_DATA;
-		error("Cluster was not specified for job modification\n");
 		return NULL;
 	} else if (check_connection(mysql_conn) != SLURM_SUCCESS)
 		return NULL;
@@ -760,77 +754,72 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(vals, ", system_comment='%s'",
 			   job->system_comment);
 
+		job_cond->flags |= JOBCOND_FLAG_USAGE_AS_SUBMIT;
 	if (!vals) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		error("No change specified for job modification");
 		return NULL;
 	}
+	job_cond->flags |= JOBCOND_FLAG_NO_STEP;
+	job_cond->flags |= JOBCOND_FLAG_DBD_UID;
+	job_cond->flags |= JOBCOND_FLAG_NO_DEFAULT_USAGE;
 
-	if (job_cond->submit_time)
-		xstrfmtcat(cond_char, "&& time_submit=%d ",
-			   (int)job_cond->submit_time);
+	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, uid, job_cond);
 
-	/* Here we want to get the last job submitted here */
-	query = xstrdup_printf("select job_db_inx, id_job, time_submit, "
-			       "id_user "
-			       "from \"%s_%s\" where deleted=0 "
-			       "&& id_job=%u %s"
-			       "order by time_submit desc limit 1;",
-			       job_cond->cluster, job_table,
-			       job_cond->job_id, cond_char ? cond_char : "");
-	xfree(cond_char);
-
-	if (debug_flags & DEBUG_FLAG_DB_JOB)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
+	if (!job_list) {
+		errno = SLURM_NO_CHANGE_IN_DATA;
+		if (debug_flags & DEBUG_FLAG_DB_JOB)
+			DB_DEBUG(mysql_conn->conn,
+				 "%s: Job(s) not found\n",
+				 __func__);
 		xfree(vals);
-		xfree(query);
 		return NULL;
 	}
 
-	if ((row = mysql_fetch_row(result))) {
-		char tmp_char[25];
-		time_t time_submit = atol(row[2]);
+	user_name = uid_to_string((uid_t) uid);
 
-		if ((uid != atoi(row[3])) &&
+	itr = list_iterator_create(job_list);
+	while ((job_rec = list_next(itr))) {
+		char tmp_char[25];
+		char *vals_mod = NULL;
+
+		if ((uid != job_rec->uid) &&
 		    !is_user_min_admin_level(mysql_conn, uid,
 					     SLURMDB_ADMIN_OPERATOR)) {
 			errno = ESLURM_ACCESS_DENIED;
-			xfree(vals);
-			xfree(query);
-			mysql_free_result(result);
-			return NULL;
+			rc = SLURM_ERROR;
+			break;
 		}
 
-		slurm_make_time_str(&time_submit, tmp_char, sizeof(tmp_char));
+		slurm_make_time_str(&job_rec->submit,
+				    tmp_char, sizeof(tmp_char));
 
-		xstrfmtcat(cond_char, "job_db_inx=%s", row[0]);
-		object = xstrdup_printf("%s submitted at %s", row[1], tmp_char);
+		xstrfmtcat(cond_char, "job_db_inx=%"PRIu64, job_rec->db_index);
+		object = xstrdup_printf("%u submitted at %s",
+					job_rec->jobid, tmp_char);
 
-		ret_list = list_create(slurm_destroy_char);
+		if (!ret_list)
+			ret_list = list_create(slurm_destroy_char);
 		list_append(ret_list, object);
-		mysql_free_result(result);
-	} else {
-		errno = ESLURM_INVALID_JOB_ID;
-		if (debug_flags & DEBUG_FLAG_DB_JOB)
-			DB_DEBUG(mysql_conn->conn,
-				 "as_mysql_modify_job: Job not found\n%s",
-				 query);
-		xfree(vals);
-		xfree(query);
-		mysql_free_result(result);
-		return NULL;
-	}
-	xfree(query);
 
-	user_name = uid_to_string((uid_t) uid);
-	rc = modify_common(mysql_conn, DBD_MODIFY_JOB, now, user_name,
-			   job_table, cond_char, vals, job_cond->cluster);
-	xfree(user_name);
-	xfree(cond_char);
+			vals_mod = vals;
+
+		rc = modify_common(mysql_conn, DBD_MODIFY_JOB, now, user_name,
+				   job_table, cond_char, vals_mod,
+				   job_rec->cluster);
+		xfree(cond_char);
+
+
+		if (rc != SLURM_SUCCESS)
+			break;
+	}
+	list_iterator_destroy(itr);
+
 	xfree(vals);
+	xfree(user_name);
+
 	if (rc == SLURM_ERROR) {
-		error("Couldn't modify job");
+		error("Couldn't modify job(s)");
 		FREE_NULL_LIST(ret_list);
 		ret_list = NULL;
 	}

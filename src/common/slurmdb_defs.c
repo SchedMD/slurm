@@ -353,7 +353,9 @@ extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 
 extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 {
-	if (!job_cond || (job_cond->flags & JOBCOND_FLAG_RUNAWAY))
+	if (!job_cond ||
+	    (job_cond->flags & JOBCOND_FLAG_RUNAWAY) ||
+	    (job_cond->flags & JOBCOND_FLAG_NO_DEFAULT_USAGE))
 		return;
 	/*
 	 * Defaults for start and end times...
@@ -1237,17 +1239,6 @@ extern void slurmdb_destroy_job_cond(void *object)
 		xfree(job_cond->used_nodes);
 		FREE_NULL_LIST(job_cond->userid_list);
 		FREE_NULL_LIST(job_cond->wckey_list);
-		xfree(job_cond);
-	}
-}
-
-extern void slurmdb_destroy_job_modify_cond(void *object)
-{
-	slurmdb_job_modify_cond_t *job_cond =
-		(slurmdb_job_modify_cond_t *)object;
-
-	if (job_cond) {
-		xfree(job_cond->cluster);
 		xfree(job_cond);
 	}
 }

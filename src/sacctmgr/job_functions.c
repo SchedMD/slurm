@@ -40,9 +40,8 @@
 #include "src/sacctmgr/sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char **argv,
-		     slurmdb_job_modify_cond_t *job_cond)
+		     slurmdb_job_cond_t *job_cond)
 {
-	char *next_str;
 	int i;
 	int set = 0;
 	int end = 0;
@@ -53,7 +52,8 @@ static int _set_cond(int *start, int argc, char **argv,
 		return -1;
 	}
 
-	job_cond->job_id = NO_VAL;
+	job_cond->flags |= JOBCOND_FLAG_NO_DEFAULT_USAGE;
+
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!end)
@@ -74,14 +74,21 @@ static int _set_cond(int *start, int argc, char **argv,
 			continue;
 		} else if (!xstrncasecmp(argv[i], "Cluster",
 					 MAX(command_len, 1))) {
-			job_cond->cluster = xstrdup(argv[i]+end);
+			if (!job_cond->cluster_list)
+				job_cond->cluster_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->cluster_list,
+					      argv[i]+end);
 		} else if (!xstrncasecmp(argv[i], "JobID",
 					 MAX(command_len, 1))) {
-			job_cond->job_id = (uint32_t) strtol(argv[i]+end,
-							     &next_str, 10);
-			if ((job_cond->job_id == 0) ||
-			    ((next_str[0] != '\0') && (next_str[0] != ' '))) {
-				fprintf(stderr, "Invalid job id %s specified\n",
+			if (!job_cond->step_list)
+				job_cond->step_list = list_create(
+					slurmdb_destroy_selected_step);
+			slurm_addto_step_list(job_cond->step_list, argv[i]+end);
+			if (!list_count(job_cond->step_list))
+				FREE_NULL_LIST(job_cond->step_list);
+			if (!list_count(job_cond->step_list)) {
+				fprintf(stderr, "Invalid job id(s) %s specified\n",
 					argv[i]+end);
 				exit_code = 1;
 			} else
@@ -94,8 +101,10 @@ static int _set_cond(int *start, int argc, char **argv,
 		}
 	}
 
-	if (!job_cond->cluster)
-		job_cond->cluster = slurm_get_cluster_name();
+	if (!job_cond->cluster_list) {
+		job_cond->cluster_list = list_create(slurm_destroy_char);
+		list_push(job_cond->cluster_list, slurm_get_cluster_name());
+	}
 
 	(*start) = i;
 
@@ -165,8 +174,7 @@ static int _set_rec(int *start, int argc, char **argv,
 extern int sacctmgr_modify_job(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
-	slurmdb_job_modify_cond_t *job_cond = xmalloc(sizeof(
-						   slurmdb_job_modify_cond_t));
+	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	slurmdb_job_rec_t *job = slurmdb_create_job_rec();
 	int i=0;
 	int cond_set = 0, rec_set = 0, set = 0;
@@ -187,20 +195,20 @@ extern int sacctmgr_modify_job(int argc, char **argv)
 	}
 
 	if (exit_code) {
-		slurmdb_destroy_job_modify_cond(job_cond);
+		slurmdb_destroy_job_cond(job_cond);
 		slurmdb_destroy_job_rec(job);
 		return SLURM_ERROR;
 	} else if (!rec_set) {
 		exit_code=1;
 		fprintf(stderr, " You didn't give me anything to set\n");
-		slurmdb_destroy_job_modify_cond(job_cond);
+		slurmdb_destroy_job_cond(job_cond);
 		slurmdb_destroy_job_rec(job);
 		return SLURM_ERROR;
 	} else if (!cond_set) {
 		if (!commit_check("You didn't set any conditions with 'WHERE'."
 				  "\nAre you sure you want to continue?")) {
 			printf("Aborted\n");
-			slurmdb_destroy_job_modify_cond(job_cond);
+			slurmdb_destroy_job_cond(job_cond);
 			slurmdb_destroy_job_rec(job);
 			return SLURM_SUCCESS;
 		}
@@ -241,7 +249,7 @@ extern int sacctmgr_modify_job(int argc, char **argv)
 		}
 	}
 
-	slurmdb_destroy_job_modify_cond(job_cond);
+	slurmdb_destroy_job_cond(job_cond);
 	slurmdb_destroy_job_rec(job);
 
 	return rc;

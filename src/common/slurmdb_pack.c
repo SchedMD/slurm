@@ -4516,21 +4516,36 @@ unpack_error:
 extern void slurmdb_pack_job_modify_cond(void *in, uint16_t protocol_version,
 					 Buf buffer)
 {
-	slurmdb_job_modify_cond_t *cond = (slurmdb_job_modify_cond_t *)in;
+	slurmdb_job_cond_t *cond = (slurmdb_job_cond_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!cond) {
-			packnull(buffer);
-			pack32(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack_time(0, buffer);
-			return;
-		}
-		packstr(cond->cluster, buffer);
-		pack32(cond->flags, buffer);
-		pack32(cond->job_id, buffer);
-		pack_time(cond->submit_time, buffer);
+	/* This is no longer valid for current Slurm */
+	xassert(protocol_version < SLURM_20_02_PROTOCOL_VERSION);
+
+	if (!cond) {
+		packnull(buffer);
+		pack32(0, buffer);
+		pack32(NO_VAL, buffer);
+		pack_time(0, buffer);
+		return;
 	}
+
+	if (!cond->cluster_list || !list_count(cond->cluster_list)) {
+		char *cluster = slurm_get_cluster_name();
+		packstr(cluster, buffer);
+		xfree(cluster);
+	} else
+		packstr(list_peek(cond->cluster_list), buffer);
+	pack32(cond->flags, buffer);
+
+	if (!cond->step_list || !list_count(cond->step_list))
+		pack32(NO_VAL, buffer);
+	else {
+		slurmdb_selected_step_t *selected_step =
+			list_peek(cond->step_list);
+		pack32(selected_step->jobid, buffer);
+	}
+
+	pack_time(cond->usage_start, buffer);
 }
 
 extern int slurmdb_unpack_job_modify_cond(void **object,
@@ -4538,23 +4553,40 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 					  Buf buffer)
 {
 	uint32_t uint32_tmp;
-	slurmdb_job_modify_cond_t *object_ptr =
-		xmalloc(sizeof(slurmdb_job_modify_cond_t));
+	char *cluster = NULL;
+	slurmdb_selected_step_t *selected_step = NULL;
+	slurmdb_job_cond_t *object_ptr = NULL;
 
+	/* This is no longer valid for current Slurm */
+	xassert(protocol_version < SLURM_20_02_PROTOCOL_VERSION);
+
+	object_ptr = xmalloc(sizeof(slurmdb_job_cond_t));
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
-				       buffer);
-		safe_unpack32(&object_ptr->flags, buffer);
-		safe_unpack32(&object_ptr->job_id, buffer);
-		safe_unpack_time(&object_ptr->submit_time, buffer);
-	}
+	safe_unpackstr_xmalloc(&cluster, &uint32_tmp, buffer);
+
+	object_ptr->cluster_list = list_create(slurm_destroy_char);
+	list_append(object_ptr->cluster_list, cluster);
+
+	safe_unpack32(&object_ptr->flags, buffer);
+
+	object_ptr->flags |= JOBCOND_FLAG_USAGE_AS_SUBMIT;
+
+	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
+	selected_step->array_task_id = NO_VAL;
+	safe_unpack32(&selected_step->jobid, buffer);
+	selected_step->pack_job_offset = NO_VAL;
+	selected_step->stepid = NO_VAL;
+
+	object_ptr->step_list = list_create(slurmdb_destroy_selected_step);
+	list_append(object_ptr->step_list, selected_step);
+
+	safe_unpack_time(&object_ptr->usage_start, buffer);
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurmdb_destroy_job_modify_cond(object_ptr);
+	slurmdb_destroy_job_cond(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }

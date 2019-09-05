@@ -1134,7 +1134,7 @@ extern void slurmdbd_free_modify_msg(dbd_modify_msg_t *msg,
 			destroy_rec = slurmdb_destroy_federation_rec;
 			break;
 		case DBD_MODIFY_JOB:
-			destroy_cond = slurmdb_destroy_job_modify_cond;
+			destroy_cond = slurmdb_destroy_job_cond;
 			destroy_rec = slurmdb_destroy_job_rec;
 			break;
 		case DBD_MODIFY_QOS:

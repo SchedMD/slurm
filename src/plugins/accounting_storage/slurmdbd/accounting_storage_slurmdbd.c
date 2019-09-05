@@ -1036,7 +1036,7 @@ extern List acct_storage_p_modify_federations(
 }
 
 extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
-				      slurmdb_job_modify_cond_t *job_cond,
+				      slurmdb_job_cond_t *job_cond,
 				      slurmdb_job_rec_t *job)
 {
 	slurmdbd_msg_t req, resp;
@@ -1056,7 +1056,7 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 	 * Just put it on the list and go, usually means we are coming from the
 	 * slurmctld.
 	 */
-	if (job_cond && (job_cond->flags & SLURMDB_MODIFY_NO_WAIT)) {
+	if (job_cond && (job_cond->flags & JOBCOND_FLAG_NO_WAIT)) {
 		send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req);
 		goto end_it;
 	}

@@ -104,7 +104,7 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_federation_cond_t *fed_cond,
 				    slurmdb_federation_rec_t *fed);
 	List (*modify_job)         (void *db_conn, uint32_t uid,
-				    slurmdb_job_modify_cond_t *job_cond,
+				    slurmdb_job_cond_t *job_cond,
 				    slurmdb_job_rec_t *job);
 	List (*modify_qos)         (void *db_conn, uint32_t uid,
 				    slurmdb_qos_cond_t *qos_cond,
@@ -523,7 +523,7 @@ extern List acct_storage_g_modify_federations(
 }
 
 extern List acct_storage_g_modify_job(void *db_conn, uint32_t uid,
-				      slurmdb_job_modify_cond_t *job_cond,
+				      slurmdb_job_cond_t *job_cond,
 				      slurmdb_job_rec_t *job)
 {
 	if (slurm_acct_storage_init(NULL) < 0)

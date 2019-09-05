@@ -356,7 +356,8 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 {
 	int base_state = state;
 
-	if (!job_cond->usage_start && !job_cond->usage_end) {
+	if ((!job_cond->usage_start && !job_cond->usage_end) ||
+	    (job_cond->flags & JOBCOND_FLAG_USAGE_AS_SUBMIT)) {
 		xstrfmtcat(*extra, "t1.state='%u'", state);
 		return;
 	}
@@ -678,7 +679,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			job->mcs_label = xstrdup("");
 		if (row[JOB_REQ_USER_NAME])
 			job->user = xstrdup(row[JOB_REQ_USER_NAME]);
-		else
+
+		if (!job->user || (job_cond->flags & JOBCOND_FLAG_DBD_UID))
 			job->uid = slurm_atoul(row[JOB_REQ_UID]);
 
 		if (row[JOB_REQ_LFT])
@@ -1611,7 +1613,11 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		}
 	}
 
-	if (!job_cond->state_list || !list_count(job_cond->state_list)) {
+	if (job_cond->flags & JOBCOND_FLAG_USAGE_AS_SUBMIT) {
+		xstrfmtcat(*extra, "%s (time_submit=%ld)",
+			   *extra ? "&&" : "where",
+			   job_cond->usage_start);
+	} else if (!job_cond->state_list || !list_count(job_cond->state_list)) {
 		/*
 		 * There's an explicit list of jobs, so don't hide
 		 * non-eligible ones. Assuming that

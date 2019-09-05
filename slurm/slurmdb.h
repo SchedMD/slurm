@@ -149,8 +149,6 @@ typedef enum {
 #define	FEDERATION_FLAG_ADD            0x20000000
 #define	FEDERATION_FLAG_REMOVE         0x40000000
 
-#define SLURMDB_MODIFY_NO_WAIT       0x00000001
-
 /* SLURM CLUSTER FEDERATION STATES */
 enum cluster_fed_states {
 	CLUSTER_FED_STATE_NA,
@@ -181,7 +179,10 @@ enum cluster_fed_states {
 					      * scheduler */
 #define SLURMDB_JOB_FLAG_BACKFILL 0x00000008 /* Job was started from backfill */
 
-/* Slurm job condition flags */
+/*
+ * Slurm job condition flags
+ * slurmdb_job_cond_t
+ */
 #define JOBCOND_FLAG_DUP      0x00000001 /* Report duplicate job entries */
 #define JOBCOND_FLAG_NO_STEP  0x00000002 /* Don't report job step info */
 #define JOBCOND_FLAG_NO_TRUNC 0x00000004 /* Report info. without truncating
@@ -194,6 +195,19 @@ enum cluster_fed_states {
 #define JOBCOND_FLAG_NO_WHOLE_HETJOB 0x00000020 /* Only report info about
 						 * requested hetjob components
 						 */
+#define JOBCOND_FLAG_NO_WAIT          0x00000040 /* Tell dbd plugin not to wait
+						  * around for result.
+						  */
+#define JOBCOND_FLAG_USAGE_AS_SUBMIT  0x00000080 /* Use usage_time as the
+						  * submit_time of the job.
+						  */
+#define JOBCOND_FLAG_NO_DEFAULT_USAGE 0x00000100 /* Use usage_time as the
+						  * submit_time of the job.
+						  */
+#define JOBCOND_FLAG_DBD_UID          0x00000200 /* give me the uid from the dbd
+						  * instead of filling it in
+						  * later.
+						  */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
@@ -759,14 +773,6 @@ typedef struct {
 } slurmdb_federation_rec_t;
 
 /* slurmdb_job_cond_t is defined above alphabetical */
-
-
-typedef struct {
-	char *cluster;
-	uint32_t flags;
-	uint32_t job_id;
-	time_t submit_time;
-} slurmdb_job_modify_cond_t;
 
 typedef struct {
 	char    *account;
@@ -1627,12 +1633,12 @@ extern List slurmdb_federations_get(void *db_conn,
 
 /*
  * modify existing job in the accounting system
- * IN:  slurmdb_job_modify_cond_t *job_cond
+ * IN:  slurmdb_job_cond_t *job_cond
  * IN:  slurmdb_job_rec_t *job
  * RET: List containing (char *'s) else NULL on error
  */
 extern List slurmdb_job_modify(void *db_conn,
-			       slurmdb_job_modify_cond_t *job_cond,
+			       slurmdb_job_cond_t *job_cond,
 			       slurmdb_job_rec_t *job);
 
 /*
@@ -1815,7 +1821,6 @@ extern void slurmdb_destroy_tres_cond(void *object);
 extern void slurmdb_destroy_assoc_cond(void *object);
 extern void slurmdb_destroy_event_cond(void *object);
 extern void slurmdb_destroy_job_cond(void *object);
-extern void slurmdb_destroy_job_modify_cond(void *object);
 extern void slurmdb_destroy_qos_cond(void *object);
 extern void slurmdb_destroy_reservation_cond(void *object);
 extern void slurmdb_destroy_res_cond(void *object);
