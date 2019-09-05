@@ -213,9 +213,8 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 				    (rank_id >= job->ntasks)) {
 					free(one_rank);
 					hostlist_destroy(hl);
-					error("mpi/cray_shasta: invalid rank "
-					      "id %s",
-					      one_rank);
+					error("%s: invalid rank id %s",
+					      plugin_type, one_rank);
 					goto fail;
 				}
 				free(one_rank);
@@ -234,7 +233,7 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 	// Make sure we've initialized all ranks
 	for (i = 0; i < job->ntasks; i++) {
 		if (offsets[i] == NO_VAL) {
-			error("mpi/cray_shasta: no command for task id %d", i);
+			error("%s: no command for task id %d", plugin_type, i);
 			goto fail;
 		}
 	}
@@ -266,9 +265,8 @@ static pals_pe_t *_setup_pals_pes(int ntasks, int nnodes, uint16_t *task_cnts,
 		for (localidx = 0; localidx < task_cnts[nodeidx]; localidx++) {
 			taskid = tids[nodeidx][localidx];
 			if (taskid >= ntasks) {
-				error("mpi/cray_shasta: task %d node %d >= "
-				      "ntasks %d; skipping",
-				      taskid, nodeidx, ntasks);
+				error("%s: task %d node %d >= ntasks %d; skipping",
+				      plugin_type, taskid, nodeidx, ntasks);
 				continue;
 			}
 			pes[taskid].nodeidx = nodeidx;
@@ -385,16 +383,16 @@ static int _open_apinfo(const stepd_step_rec_t *job)
 	// Create file
 	fd = creat(apinfo, 0600);
 	if (fd == -1) {
-		error("mpi/cray_shasta: Couldn't open apinfo file %s: %m",
-		      apinfo);
+		error("%s: Couldn't open apinfo file %s: %m",
+		      plugin_type, apinfo);
 		close(fd);
 		return -1;
 	}
 
 	// Change ownership of file to application user
 	if (fchown(fd, job->uid, job->gid) == -1 && getuid() == 0) {
-		error("mpi/cray_shasta: Couldn't chown %s to uid %d gid %d: %m",
-		      apinfo, job->uid, job->gid);
+		error("%s: Couldn't chown %s to uid %d gid %d: %m",
+		      plugin_type, apinfo, job->uid, job->gid);
 		close(fd);
 		return -1;
 	}
@@ -414,7 +412,7 @@ static int _write_pals_nodes(int fd, char *nodelist)
 	memset(&node, 0, sizeof(pals_node_t));
 	hl = hostlist_create(nodelist);
 	if (hl == NULL) {
-		error("mpi/cray: Couldn't create hostlist");
+		error("%s: Couldn't create hostlist", plugin_type);
 		return SLURM_ERROR;
 	}
 	while ((host = hostlist_shift(hl)) != NULL) {
@@ -474,27 +472,27 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 
 	// Make sure we've got everything
 	if (ntasks <= 0) {
-		error("mpi/cray_shasta: no tasks found");
+		error("%s: no tasks found", plugin_type);
 		goto rwfail;
 	}
 	if (ncmds <= 0) {
-		error("mpi/cray_shasta: no cmds found");
+		error("%s: no cmds found", plugin_type);
 		goto rwfail;
 	}
 	if (nnodes <= 0) {
-		error("mpi/cray_shasta: no nodes found");
+		error("%s: no nodes found", plugin_type);
 		goto rwfail;
 	}
 	if (task_cnts == NULL) {
-		error("mpi/cray_shasta: no per-node task counts");
+		error("%s: no per-node task counts", plugin_type);
 		goto rwfail;
 	}
 	if (tids == NULL) {
-		error("mpi/cray_shasta: no task IDs found");
+		error("%s: no task IDs found", plugin_type);
 		goto rwfail;
 	}
 	if (nodelist == NULL) {
-		error("mpi/cray_shasta: no nodelist found");
+		error("%s: no nodelist found", plugin_type);
 		goto rwfail;
 	}
 
@@ -522,11 +520,11 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 
 	// Flush changes to disk
 	if (fsync(fd) == -1) {
-		error("mpi/cray_shasta: Couldn't sync %s to disk: %m", apinfo);
+		error("%s: Couldn't sync %s to disk: %m", plugin_type, apinfo);
 		goto rwfail;
 	}
 
-	debug("mpi/cray_shasta: Wrote apinfo file %s", apinfo);
+	debug("%s: Wrote apinfo file %s", plugin_type, apinfo);
 
 	// Clean up and return
 	if (job->flags & LAUNCH_MULTI_PROG) {

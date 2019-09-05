@@ -42,6 +42,7 @@
 
 extern char *appdir;        // Application-specific spool directory
 extern char *apinfo;        // Application PMI file
+extern const char *plugin_type;
 
 extern int create_apinfo(const stepd_step_rec_t *job);
 

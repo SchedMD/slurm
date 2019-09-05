@@ -74,7 +74,7 @@
  * (major.minor.micro combined into a single number).
  */
 const char plugin_name[] = "mpi Cray Shasta plugin";
-const char plugin_type[] = "mpi/cray_shasta";
+const char *plugin_type = "mpi/cray_shasta";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /* Name of the directory to store Cray MPI data */
