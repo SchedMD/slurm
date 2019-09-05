@@ -89,7 +89,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_2)
-TESTS = $(am__EXEEXT_1)
+TESTS = bitstring-test$(EXEEXT) $(am__EXEEXT_1)
 #MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
 @HAVE_CHECK_TRUE@am__append_1 = bit_unfmt_hexmask-test
 subdir = testsuite/slurm_unit/common/bitstring
@@ -146,7 +146,7 @@ CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = bit_unfmt_hexmask-test$(EXEEXT)
-am__EXEEXT_2 = $(am__EXEEXT_1)
+am__EXEEXT_2 = bitstring-test$(EXEEXT) $(am__EXEEXT_1)
 bit_unfmt_hexmask_test_SOURCES = bit_unfmt_hexmask-test.c
 bit_unfmt_hexmask_test_OBJECTS =  \
 	bit_unfmt_hexmask_test-bit_unfmt_hexmask-test.$(OBJEXT)
@@ -163,6 +163,11 @@ bit_unfmt_hexmask_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(bit_unfmt_hexmask_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+bitstring_test_SOURCES = bitstring-test.c
+bitstring_test_OBJECTS = bitstring-test.$(OBJEXT)
+bitstring_test_LDADD = $(LDADD)
+bitstring_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -179,7 +184,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade =  \
-	./$(DEPDIR)/bit_unfmt_hexmask_test-bit_unfmt_hexmask-test.Po
+	./$(DEPDIR)/bit_unfmt_hexmask_test-bit_unfmt_hexmask-test.Po \
+	./$(DEPDIR)/bitstring-test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -199,8 +205,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = bit_unfmt_hexmask-test.c
-DIST_SOURCES = bit_unfmt_hexmask-test.c
+SOURCES = bit_unfmt_hexmask-test.c bitstring-test.c
+DIST_SOURCES = bit_unfmt_hexmask-test.c bitstring-test.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -731,6 +737,10 @@ bit_unfmt_hexmask-test$(EXEEXT): $(bit_unfmt_hexmask_test_OBJECTS) $(bit_unfmt_h
 	@rm -f bit_unfmt_hexmask-test$(EXEEXT)
 	$(AM_V_CCLD)$(bit_unfmt_hexmask_test_LINK) $(bit_unfmt_hexmask_test_OBJECTS) $(bit_unfmt_hexmask_test_LDADD) $(LIBS)
 
+bitstring-test$(EXEEXT): $(bitstring_test_OBJECTS) $(bitstring_test_DEPENDENCIES) $(EXTRA_bitstring_test_DEPENDENCIES) 
+	@rm -f bitstring-test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(bitstring_test_OBJECTS) $(bitstring_test_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -738,6 +748,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bit_unfmt_hexmask_test-bit_unfmt_hexmask-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring-test.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -979,6 +990,13 @@ recheck: all $(check_PROGRAMS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
+bitstring-test.log: bitstring-test$(EXEEXT)
+	@p='bitstring-test$(EXEEXT)'; \
+	b='bitstring-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 bit_unfmt_hexmask-test.log: bit_unfmt_hexmask-test$(EXEEXT)
 	@p='bit_unfmt_hexmask-test$(EXEEXT)'; \
 	b='bit_unfmt_hexmask-test'; \
@@ -1080,6 +1098,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/bit_unfmt_hexmask_test-bit_unfmt_hexmask-test.Po
+	-rm -f ./$(DEPDIR)/bitstring-test.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1126,6 +1145,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/bit_unfmt_hexmask_test-bit_unfmt_hexmask-test.Po
+	-rm -f ./$(DEPDIR)/bitstring-test.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

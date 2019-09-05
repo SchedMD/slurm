@@ -9,7 +9,6 @@ check_PROGRAMS = \
 	$(TESTS)
 
 TESTS = \
-	bitstring-test \
 	job-resources-test \
 	log-test \
 	pack-test

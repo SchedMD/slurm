@@ -89,8 +89,8 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_2)
-TESTS = bitstring-test$(EXEEXT) job-resources-test$(EXEEXT) \
-	log-test$(EXEEXT) pack-test$(EXEEXT) $(am__EXEEXT_1)
+TESTS = job-resources-test$(EXEEXT) log-test$(EXEEXT) \
+	pack-test$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@am__append_1 = xtree-test \
 @HAVE_CHECK_TRUE@	 xhash-test
 
@@ -149,23 +149,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xtree-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xhash-test$(EXEEXT)
-am__EXEEXT_2 = bitstring-test$(EXEEXT) job-resources-test$(EXEEXT) \
-	log-test$(EXEEXT) pack-test$(EXEEXT) $(am__EXEEXT_1)
-bitstring_test_SOURCES = bitstring-test.c
-bitstring_test_OBJECTS = bitstring-test.$(OBJEXT)
-bitstring_test_LDADD = $(LDADD)
+am__EXEEXT_2 = job-resources-test$(EXEEXT) log-test$(EXEEXT) \
+	pack-test$(EXEEXT) $(am__EXEEXT_1)
+job_resources_test_SOURCES = job-resources-test.c
+job_resources_test_OBJECTS = job-resources-test.$(OBJEXT)
+job_resources_test_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
-bitstring_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+job_resources_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-job_resources_test_SOURCES = job-resources-test.c
-job_resources_test_OBJECTS = job-resources-test.$(OBJEXT)
-job_resources_test_LDADD = $(LDADD)
-job_resources_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
 log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
@@ -205,9 +200,9 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/bitstring-test.Po \
-	./$(DEPDIR)/job-resources-test.Po ./$(DEPDIR)/log-test.Po \
-	./$(DEPDIR)/pack-test.Po ./$(DEPDIR)/xhash_test-xhash-test.Po \
+am__depfiles_remade = ./$(DEPDIR)/job-resources-test.Po \
+	./$(DEPDIR)/log-test.Po ./$(DEPDIR)/pack-test.Po \
+	./$(DEPDIR)/xhash_test-xhash-test.Po \
 	./$(DEPDIR)/xtree_test-xtree-test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -228,10 +223,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = bitstring-test.c job-resources-test.c log-test.c pack-test.c \
+SOURCES = job-resources-test.c log-test.c pack-test.c xhash-test.c \
+	xtree-test.c
+DIST_SOURCES = job-resources-test.c log-test.c pack-test.c \
 	xhash-test.c xtree-test.c
-DIST_SOURCES = bitstring-test.c job-resources-test.c log-test.c \
-	pack-test.c xhash-test.c xtree-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -804,10 +799,6 @@ clean-checkPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
-bitstring-test$(EXEEXT): $(bitstring_test_OBJECTS) $(bitstring_test_DEPENDENCIES) $(EXTRA_bitstring_test_DEPENDENCIES) 
-	@rm -f bitstring-test$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(bitstring_test_OBJECTS) $(bitstring_test_LDADD) $(LIBS)
-
 job-resources-test$(EXEEXT): $(job_resources_test_OBJECTS) $(job_resources_test_DEPENDENCIES) $(EXTRA_job_resources_test_DEPENDENCIES) 
 	@rm -f job-resources-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(job_resources_test_OBJECTS) $(job_resources_test_LDADD) $(LIBS)
@@ -834,7 +825,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job-resources-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack-test.Po@am__quote@ # am--include-marker
@@ -1142,13 +1132,6 @@ recheck: all $(check_PROGRAMS)
 	        am__force_recheck=am--force-recheck \
 	        TEST_LOGS="$$log_list"; \
 	exit $$?
-bitstring-test.log: bitstring-test$(EXEEXT)
-	@p='bitstring-test$(EXEEXT)'; \
-	b='bitstring-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 job-resources-test.log: job-resources-test$(EXEEXT)
 	@p='job-resources-test$(EXEEXT)'; \
 	b='job-resources-test'; \
@@ -1303,8 +1286,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 	mostlyclean-am
 
 distclean: distclean-recursive
-		-rm -f ./$(DEPDIR)/bitstring-test.Po
-	-rm -f ./$(DEPDIR)/job-resources-test.Po
+		-rm -f ./$(DEPDIR)/job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
 	-rm -f ./$(DEPDIR)/pack-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
@@ -1354,8 +1336,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-		-rm -f ./$(DEPDIR)/bitstring-test.Po
-	-rm -f ./$(DEPDIR)/job-resources-test.Po
+		-rm -f ./$(DEPDIR)/job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
 	-rm -f ./$(DEPDIR)/pack-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po

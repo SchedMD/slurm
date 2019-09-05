@@ -6,7 +6,8 @@ LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 check_PROGRAMS = \
 	$(TESTS)
 
-TESTS =
+TESTS = \
+	bitstring-test
 
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
