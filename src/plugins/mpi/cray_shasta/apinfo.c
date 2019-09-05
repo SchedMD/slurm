@@ -439,6 +439,7 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 	uint32_t **tids;
 	uint32_t *tid_offsets;
 	char *nodelist;
+	bool free_tid_offsets = false;
 
 	// Make sure the application spool directory has been created
 	if (!appdir) {
@@ -463,6 +464,7 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 
 		if (job->flags & LAUNCH_MULTI_PROG) {
 			_multi_prog_parse(job, &ncmds, &tid_offsets);
+			free_tid_offsets = true;
 		} else {
 			ncmds = 1;
 			tid_offsets = NULL;
@@ -526,18 +528,18 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 	debug("%s: Wrote apinfo file %s", plugin_type, apinfo);
 
 	// Clean up and return
-	if (job->flags & LAUNCH_MULTI_PROG) {
+	if (free_tid_offsets)
 		xfree(tid_offsets);
-	}
+
 	xfree(pes);
 	xfree(cmds);
 	close(fd);
 	return SLURM_SUCCESS;
 
 rwfail:
-	if (job->flags & LAUNCH_MULTI_PROG) {
+	if (free_tid_offsets)
 		xfree(tid_offsets);
-	}
+
 	xfree(pes);
 	xfree(cmds);
 	close(fd);
