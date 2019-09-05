@@ -786,6 +786,7 @@ typedef struct {
 	char	*blockid;
 	char    *cluster;
 	char    *constraints;
+	uint64_t db_index; /* index in the table */
 	uint32_t derived_ec;
 	char	*derived_es; /* aka "comment" */
 	uint32_t elapsed;

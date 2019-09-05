@@ -803,6 +803,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		if ((int)job->elapsed < 0)
 			job->elapsed = 0;
 
+		job->db_index = slurm_atoull(db_inx_char);
 		job->jobid = curr_id;
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->gid = slurm_atoul(row[JOB_REQ_GID]);
