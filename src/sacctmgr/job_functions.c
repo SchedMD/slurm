@@ -93,6 +93,14 @@ static int _set_cond(int *start, int argc, char **argv,
 				exit_code = 1;
 			} else
 				set = 1;
+		} else if (!xstrncasecmp(argv[i], "WCkeys",
+					 MAX(command_len, 1))) {
+			if (!job_cond->wckey_list)
+				job_cond->wckey_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->wckey_list,
+					      argv[i]+end);
+			set = 1;
 		} else {
 			exit_code = 1;
 			fprintf(stderr, " Unknown condition: %s\n"
@@ -158,6 +166,12 @@ static int _set_rec(int *start, int argc, char **argv,
 			if (job->derived_es)
 				xfree(job->derived_es);
 			job->derived_es = strip_quotes(argv[i]+end, NULL, 1);
+			set = 1;
+		} else if (!xstrncasecmp(argv[i], "NewWCKey",
+					 MAX(command_len, 1))) {
+			if (job->wckey)
+				xfree(job->wckey);
+			job->wckey = strip_quotes(argv[i]+end, NULL, 1);
 			set = 1;
 		} else {
 			printf(" Unknown option: %s\n"
