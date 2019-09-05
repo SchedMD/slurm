@@ -1394,11 +1394,18 @@ char * bit_fmt_hexmask(bitstr_t * bitmap)
  */
 int bit_unfmt_hexmask(bitstr_t * bitmap, const char* str)
 {
-	int32_t bit_index = 0, len = strlen(str);
+	int32_t bit_index = 0, len;
 	int rc = 0;
-	const char *curpos = str + len - 1;
+	const char *curpos;
 	int32_t current;
-	bitoff_t bitsize = bit_size(bitmap);
+	bitoff_t bitsize;
+
+	if (!bitmap || !str)
+		return -1;
+
+	len = strlen(str);
+	bitsize = bit_size(bitmap);
+	curpos = str + len - 1;
 
 	bit_nclear(bitmap, 0, bitsize - 1);
 	if (xstrncmp(str, "0x", 2) == 0) {	/* Bypass 0x */
