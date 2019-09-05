@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "April 2019" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "September 2019" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -61,9 +61,10 @@ The overall configuration parameters available include:
 
 .TP
 \fBAutoDetect\fR
-Comma separated list of the types of GRES to auto detect.  Valid options are
-.\" Escape `'` at the beginning of a line
-\'nvml'.  This is needed to use any outside system to configure GRES.
+The hardware detection mechanisms to enable for automatic GRES configuration.
+This should be on a line by itself.
+Currently, the only valid option is \fInvml\fR, which allows for automatically
+detecting NVIDIA GPUs.
 
 .TP
 \fBCount\fR
