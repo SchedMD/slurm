@@ -429,7 +429,6 @@ SlurmctldHost=mcrj(12.34.56.79)
 #
 AuthType=auth/munge
 Epilog=/usr/local/slurm/etc/epilog
-FastSchedule=1
 JobCompLoc=/var/tmp/jette/slurm.job.log
 JobCompType=jobcomp/filetxt
 JobCredentialPrivateKey=/usr/local/etc/slurm.key
