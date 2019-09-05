@@ -224,7 +224,7 @@ For more information see the
 <a href="prolog_epilog.html">Prolog and Epilog Guide</a>.</p>
 
 <p>When possible, Slurm automatically determines the GPUs on the system using
-NVIDIA's NVML library. The NVML library (which powers the
+NVML. NVML (which powers the
 <code class="commandline">nvidia-smi</code> tool) numbers GPUs in order by their
 PCI bus IDs. For this numbering to match the numbering reported by CUDA, the
 <code class="commandline">CUDA_DEVICE_ORDER</code> environmental variable must
@@ -352,7 +352,7 @@ It also records the GPU device ID in a local file.
 If a job is allocated gres/gpu resources then the Prolog will have the
 <code class="commandline">CUDA_VISIBLE_DEVICES</code> and
 <code class="commandline">SLURM_JOB_UID</code> environment variables set
-(no CUDA_MPS_ACTIVE_THREAD_PERCENTAGE).
+(no <code class="commandline">CUDA_MPS_ACTIVE_THREAD_PERCENTAGE</code>).
 The Prolog should then terminate any MPS server associated with that GPU.
 It may be necessary to modify this script as needed for the local environment.
 For more information see the
