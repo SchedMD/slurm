@@ -352,11 +352,11 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 }
 
 static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
-			       uint32_t start, uint32_t end)
+			       slurmdb_job_cond_t *job_cond)
 {
 	int base_state = state;
 
-	if (!start && !end) {
+	if (!job_cond->usage_start && !job_cond->usage_end) {
 		xstrfmtcat(*extra, "t1.state='%u'", state);
 		return;
 	}
@@ -375,24 +375,25 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 */
 		xstrfmtcat(*extra,
 			   "(t1.time_eligible && "
-			   "(( t1.time_start && (%d < t1.time_start)) || "
-			   " (!t1.time_start &&  t1.time_end && (%d < t1.time_end)) || "
+			   "(( t1.time_start && (%ld < t1.time_start)) || "
+			   " (!t1.time_start &&  t1.time_end && (%ld < t1.time_end)) || "
 			   " (!t1.time_start && !t1.time_end && (t1.state=%d))) && "
-			   "(%d > t1.time_eligible))",
-			   start,
-			   start,
+			   "(%ld > t1.time_eligible))",
+			   job_cond->usage_start,
+			   job_cond->usage_start,
 			   base_state,
-			   end);
+			   job_cond->usage_end);
 		break;
 	case JOB_SUSPENDED:
 		xstrfmtcat(*extra,
 			   "(select count(time_start) from "
 			   "\"%s_%s\" where "
-			   "(time_start <= %u && (time_end >= %u "
+			   "(time_start <= %ld && (time_end >= %ld "
 			   "|| time_end = 0)) && job_db_inx=t1.job_db_inx)",
 			   cluster_name, suspend_table,
-			   end ? end : start,
-			   start);
+			   job_cond->usage_end ?
+			   job_cond->usage_end : job_cond->usage_start,
+			   job_cond->usage_start);
 		break;
 	case JOB_RUNNING:
 		/*
@@ -405,10 +406,10 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 */
 		xstrfmtcat(*extra,
 			   "(t1.time_start && "
-			   "((%d < t1.time_end || (!t1.time_end && t1.state=%d))) && "
-			   "((%d > t1.time_start)))",
-			   start, base_state,
-			   end);
+			   "((%ld < t1.time_end || (!t1.time_end && t1.state=%d))) && "
+			   "((%ld > t1.time_start)))",
+			   job_cond->usage_start, base_state,
+			   job_cond->usage_end);
 		break;
 	case JOB_COMPLETE:
 	case JOB_CANCELLED:
@@ -430,8 +431,9 @@ static void _state_time_string(char **extra, char *cluster_name, uint32_t state,
 		 */
 		xstrfmtcat(*extra,
 		           "(t1.state='%u' && (t1.time_end && "
-		           "(t1.time_end between %d and %d)))",
-		           base_state, start, end);
+		           "(t1.time_end between %ld and %ld)))",
+		           base_state, job_cond->usage_start,
+			   job_cond->usage_end);
 		break;
 	default:
 		error("Unsupported state requested: %s",
@@ -1348,8 +1350,7 @@ no_resv:
 
 			_state_time_string(extra, cluster_name,
 					   (uint32_t)slurm_atoul(object),
-					   job_cond->usage_start,
-					   job_cond->usage_end);
+					   job_cond);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
