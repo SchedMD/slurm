@@ -99,21 +99,20 @@ static char *spooldir = NULL;
 static int _create_mpi_dir(void)
 {
 	char *mpidir = NULL;
+	int rc = SLURM_SUCCESS;
 
 	xassert(spooldir);
 
 	// TODO: pass in node_name parameter
 	mpidir = xstrdup_printf("%s/%s", spooldir, MPI_CRAY_DIR);
 	if (mkdir(mpidir, 0755) == -1 && errno != EEXIST) {
-		error("mpi/cray_shasta: Couldn't create Cray MPI directory %s: %m",
-		      mpidir);
-		xfree(mpidir);
-		xfree(spooldir);
-		return SLURM_ERROR;
+		error("%s: Couldn't create Cray MPI directory %s: %m",
+		      plugin_type, mpidir);
+		rc = SLURM_ERROR;
 	}
 	xfree(mpidir);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
