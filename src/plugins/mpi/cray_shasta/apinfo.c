@@ -146,7 +146,7 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 	hostlist_t hl;
 	uint32_t *offsets = NULL;
 
-	offsets = xmalloc(job->ntasks * sizeof(uint32_t));
+	offsets = xcalloc(job->ntasks, sizeof(uint32_t));
 	for (i = 0; i < job->ntasks; i++) {
 		offsets[i] = NO_VAL;
 	}
@@ -260,7 +260,7 @@ static pals_pe_t *_setup_pals_pes(int ntasks, int nnodes, uint16_t *task_cnts,
 	pals_pe_t *pes = NULL;
 	int nodeidx, localidx, taskid;
 
-	pes = xmalloc(ntasks * sizeof(pals_pe_t));
+	pes = xcalloc(ntasks, sizeof(pals_pe_t));
 	for (nodeidx = 0; nodeidx < nnodes; nodeidx++) {
 		for (localidx = 0; localidx < task_cnts[nodeidx]; localidx++) {
 			taskid = tids[nodeidx][localidx];
@@ -294,7 +294,7 @@ static pals_cmd_t *_setup_pals_cmds(int ncmds, int ntasks, int nnodes,
 
 	// Allocate and initialize arrays
 	cmds = xcalloc(ncmds, sizeof(pals_cmd_t));
-	cmd_ppn = xmalloc(ncmds * sizeof(int *));
+	cmd_ppn = xcalloc(ncmds, sizeof(int *));
 	for (cmdidx = 0; cmdidx < ncmds; cmdidx++) {
 		cmd_ppn[cmdidx] = xcalloc(nnodes, sizeof(int));
 	}
