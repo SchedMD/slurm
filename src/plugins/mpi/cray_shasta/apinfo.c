@@ -155,7 +155,7 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 	local_data = xstrdup(job->argv[1]);
 
 	// Replace escaped newlines with spaces
-	while ((p = xstrstr(local_data, "\\\n")) != NULL) {
+	while ((p = xstrstr(local_data, "\\\n"))) {
 		p[0] = ' ';
 		p[1] = ' ';
 	}
@@ -272,7 +272,7 @@ static pals_pe_t *_setup_pals_pes(int ntasks, int nnodes, uint16_t *task_cnts,
 			pes[taskid].nodeidx = nodeidx;
 			pes[taskid].localidx = localidx;
 
-			if (tid_offsets == NULL) {
+			if (!tid_offsets) {
 				pes[taskid].cmdidx = 0;
 			} else {
 				pes[taskid].cmdidx = tid_offsets[taskid];
@@ -390,7 +390,7 @@ static int _open_apinfo(const stepd_step_rec_t *job)
 	}
 
 	// Change ownership of file to application user
-	if (fchown(fd, job->uid, job->gid) == -1 && getuid() == 0) {
+	if ((fchown(fd, job->uid, job->gid) == -1) && (getuid() == 0)) {
 		error("%s: Couldn't chown %s to uid %d gid %d: %m",
 		      plugin_type, apinfo, job->uid, job->gid);
 		close(fd);
@@ -410,12 +410,11 @@ static int _write_pals_nodes(int fd, char *nodelist)
 	pals_node_t node;
 
 	memset(&node, 0, sizeof(pals_node_t));
-	hl = hostlist_create(nodelist);
-	if (hl == NULL) {
+	if (!(hl = hostlist_create(nodelist))) {
 		error("%s: Couldn't create hostlist", plugin_type);
 		return SLURM_ERROR;
 	}
-	while ((host = hostlist_shift(hl)) != NULL) {
+	while ((host = hostlist_shift(hl))) {
 		snprintf(node.hostname, sizeof(node.hostname), "%s", host);
 		node.nid = _get_nid(host);
 		free(host);
@@ -442,7 +441,7 @@ extern int create_apinfo(const stepd_step_rec_t *job)
 	char *nodelist;
 
 	// Make sure the application spool directory has been created
-	if (appdir == NULL) {
+	if (!appdir) {
 		return SLURM_ERROR;
 	}
 

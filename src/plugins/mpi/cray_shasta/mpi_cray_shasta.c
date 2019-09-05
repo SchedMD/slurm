@@ -105,7 +105,7 @@ static int _create_mpi_dir(void)
 
 	// TODO: pass in node_name parameter
 	mpidir = xstrdup_printf("%s/%s", spooldir, MPI_CRAY_DIR);
-	if (mkdir(mpidir, 0755) == -1 && errno != EEXIST) {
+	if ((mkdir(mpidir, 0755) == -1) && (errno != EEXIST)) {
 		error("%s: Couldn't create Cray MPI directory %s: %m",
 		      plugin_type, mpidir);
 		rc = SLURM_ERROR;
@@ -131,7 +131,7 @@ static int _create_app_dir(const stepd_step_rec_t *job)
 				job->stepid);
 
 	// Create the directory
-	if (mkdir(appdir, 0700) == -1 && errno != EEXIST) {
+	if ((mkdir(appdir, 0700) == -1) && (errno != EEXIST)) {
 		error("%s: Couldn't create directory %s: %m",
 		      plugin_type, appdir);
 		goto error;
@@ -163,15 +163,14 @@ static void _set_pmi_port(char ***env)
 	char *endp = NULL;
 	unsigned long pmi_port = 0;
 
-	resv_ports = getenvp(*env, "SLURM_STEP_RESV_PORTS");
-	if (resv_ports == NULL) {
+	if (!(resv_ports = getenvp(*env, "SLURM_STEP_RESV_PORTS")))
 		return;
-	}
 
 	// Get the first port from the range
 	errno = 0;
 	pmi_port = strtoul(resv_ports, &endp, 10);
-	if (errno != 0 || pmi_port > 65535 || (*endp != '-' && *endp != '\0')) {
+	if ((errno != 0) || (pmi_port > 65535) ||
+	    ((*endp != '-') && (*endp != '\0'))) {
 		error("%s: Couldn't parse reserved ports %s",
 		      plugin_type, resv_ports);
 		return;
@@ -186,10 +185,10 @@ static void _set_pmi_port(char ***env)
 static int _is_dir(char *path)
 {
 	struct stat stat_buf;
-	int rc;
-	if (0 > (rc = stat(path, &stat_buf))) {
+
+	if (stat(path, &stat_buf)) {
 		error("%s: Cannot stat %s: %m", plugin_type, path);
-		return rc;
+		return 1;
 	} else if (!S_ISDIR(stat_buf.st_mode)) {
 		return 0;
 	}
@@ -205,14 +204,14 @@ static int _rmdir_recursive(char *path)
 	DIR *dp;
 	struct dirent *ent;
 
-	if ((dp = opendir(path)) == NULL) {
+	if (!(dp = opendir(path))) {
 		error("%s: Can't open directory %s: %m", plugin_type, path);
 		return SLURM_ERROR;
 	}
 
-	while ((ent = readdir(dp)) != NULL) {
-		if (0 == xstrcmp(ent->d_name, ".") ||
-		    0 == xstrcmp(ent->d_name, "..")) {
+	while ((ent = readdir(dp))) {
+		if (!xstrcmp(ent->d_name, ".") ||
+		    !xstrcmp(ent->d_name, "..")) {
 			/* skip special dir's */
 			continue;
 		}
@@ -292,9 +291,8 @@ extern int init(void)
 extern int fini(void)
 {
 	// Remove application spool directory
-	if (appdir != NULL) {
+	if (appdir)
 		_rmdir_recursive(appdir);
-	}
 
 	// Free allocated storage
 	xfree(appdir);
