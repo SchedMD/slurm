@@ -202,7 +202,7 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 			}
 		} else {
 			// Parse rank list into individual ranks
-			xstrfmtcat(tmp_str, "[%s]", rank_spec);
+			tmp_str = xstrdup_printf("[%s]", rank_spec);
 			hl = hostlist_create(tmp_str);
 			xfree(tmp_str);
 			if (!hl)
@@ -378,8 +378,9 @@ static int _open_apinfo(const stepd_step_rec_t *job)
 {
 	int fd = -1;
 
+	xfree(apinfo);
 	// Create apinfo name - put in per-application spool directory
-	xstrfmtcat(apinfo, "%s/apinfo", appdir);
+	apinfo = xstrdup_printf("%s/apinfo", appdir);
 
 	// Create file
 	fd = creat(apinfo, 0600);

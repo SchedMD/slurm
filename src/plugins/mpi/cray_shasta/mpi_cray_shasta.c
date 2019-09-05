@@ -125,9 +125,11 @@ static int _create_app_dir(const stepd_step_rec_t *job)
 
 	xassert(spooldir);
 
+	xfree(appdir);
 	// Format the directory name
-	xstrfmtcat(appdir, "%s/%s/%u.%u", spooldir, MPI_CRAY_DIR, job->jobid,
-		   job->stepid);
+	appdir = xstrdup_printf("%s/%s/%u.%u",
+				spooldir, MPI_CRAY_DIR, job->jobid,
+				job->stepid);
 
 	// Create the directory
 	if (mkdir(appdir, 0700) == -1 && errno != EEXIST) {
