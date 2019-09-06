@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
     exclusively to that job.
  -- sched/backfill - clear estimated sched_nodes as done for start_time.
  -- Have safe_[read|write] handle EAGAIN and EINTR.
+ -- Fix checking for flag with logical AND.
 
 * Changes in Slurm 19.05.2
 ==========================
