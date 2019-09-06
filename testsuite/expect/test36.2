@@ -94,6 +94,11 @@ if { $job_id == 0 } {
         exit 1
 }
 
+if {[string length $job_id] > 7} {
+        log_warn "jobid is longer than 7 characters.\n"
+        exit 0
+}
+
 #
 # Test bjobs <jobid> wrapper
 #
