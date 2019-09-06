@@ -165,12 +165,14 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->array_task_pending);
 		xfree(object->array_task_str);
 		xfree(object->blockid);
+		xfree(object->constraints);
 		xfree(object->deleted);
 		xfree(object->derived_ec);
 		xfree(object->derived_es);
 		xfree(object->exit_code);
 		xfree(object->eligible);
 		xfree(object->end);
+		xfree(object->flags);
 		xfree(object->gid);
 		xfree(object->gres_alloc);
 		xfree(object->gres_req);
@@ -193,6 +195,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->resvid);
 		xfree(object->start);
 		xfree(object->state);
+		xfree(object->state_reason_prev);
 		xfree(object->submit);
 		xfree(object->suspended);
 		xfree(object->system_comment);
@@ -2051,6 +2054,7 @@ static void _pack_local_cluster_usage(local_cluster_usage_t *object,
 	packstr(object->tres_cnt, buffer);
 	packstr(object->alloc_secs, buffer);
 	packstr(object->down_secs, buffer);
+	packstr(object->pdown_secs, buffer);
 	packstr(object->idle_secs, buffer);
 	packstr(object->resv_secs, buffer);
 	packstr(object->over_secs, buffer);
@@ -2072,6 +2076,7 @@ static int _unpack_local_cluster_usage(local_cluster_usage_t *object,
 		safe_unpackstr_xmalloc(&object->tres_cnt, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->down_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->pdown_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->idle_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->resv_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->over_secs, &tmp32, buffer);
@@ -2856,6 +2861,8 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.name = row[JOB_REQ_NAME];
 		job.nodelist = row[JOB_REQ_NODELIST];
 		job.node_inx = row[JOB_REQ_NODE_INX];
+		job.pack_job_id = row[JOB_REQ_PACK_JOB_ID];
+		job.pack_job_offset = row[JOB_REQ_PACK_JOB_OFFSET];
 		job.partition = row[JOB_REQ_PARTITION];
 		job.priority = row[JOB_REQ_PRIORITY];
 		job.qos = row[JOB_REQ_QOS];
