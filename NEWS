@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
     been retained as the new SlurmdParameters=config_overrides option.
  -- Fix preemption issue when picking nodes for a feature job request.
  -- Fix race condition preventing held array job from getting a db_index.
+ -- Fix select/cons_tres gres code infinite loop leaving slurmctld unresponsive.
 
 * Changes in Slurm 19.05.2
 ==========================

@@ -7606,6 +7606,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 						if (!bit_test(avail_core, i))
 							continue;
 						bit_clear(avail_core, i);
+						avail_cores_per_sock[s]--;
 						*avail_cpus -= cpus_per_core;
 						if (--tot_core_cnt <=
 						    min_core_cnt)
