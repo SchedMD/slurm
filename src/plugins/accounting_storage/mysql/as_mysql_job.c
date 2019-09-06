@@ -51,6 +51,27 @@
 
 #define BUFFER_SIZE 4096
 
+typedef struct {
+	char *cluster;
+	uint32_t new;
+	uint32_t old;
+} id_switch_t;
+
+static void _destroy_id_switch(void *object)
+{
+	xfree(object);
+}
+
+static int _find_id_switch(void *x, void *key)
+{
+	id_switch_t *id_switch = (id_switch_t *)x;
+	uint32_t id = *(uint32_t *)key;
+
+	if (id_switch->old == id)
+		return 1;
+	return 0;
+}
+
 static char *_average_tres_usage(uint32_t *tres_ids, uint64_t *tres_cnts,
 				 int tres_cnt, int tasks)
 {
@@ -737,6 +758,8 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 	List job_list = NULL;
 	slurmdb_job_rec_t *job_rec;
 	ListIterator itr;
+	List id_switch_list = NULL;
+	id_switch_t *id_switch;
 
 	if (!job_cond || !job) {
 		error("we need something to change");
@@ -768,13 +791,14 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	job_list = as_mysql_jobacct_process_get_jobs(mysql_conn, uid, job_cond);
 
-	if (!job_list) {
+	if (!job_list || !list_count(job_list)) {
 		errno = SLURM_NO_CHANGE_IN_DATA;
 		if (debug_flags & DEBUG_FLAG_DB_JOB)
 			DB_DEBUG(mysql_conn->conn,
 				 "%s: Job(s) not found\n",
 				 __func__);
 		xfree(vals);
+		FREE_NULL_LIST(job_list);
 		return NULL;
 	}
 
@@ -819,6 +843,28 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 			vals_mod = xstrdup_printf("%s, id_wckey='%u'",
 						  vals, wckeyid);
+			/*
+			 * Here we can use slurm_destroy_char since we are only
+			 * doing an xfree.
+			 */
+			id_switch = NULL;
+			if (!id_switch_list)
+				id_switch_list =
+					list_create(_destroy_id_switch);
+			else {
+				id_switch = list_find_first(
+					id_switch_list,
+					_find_id_switch,
+					&job_rec->wckeyid);
+			}
+
+			if (!id_switch) {
+				id_switch = xmalloc(sizeof(id_switch_t));
+				id_switch->cluster = job_rec->cluster;
+				id_switch->old = job_rec->wckeyid;
+				id_switch->new = wckeyid;
+				list_append(id_switch_list, id_switch);
+			}
 		} else
 			vals_mod = vals;
 
@@ -842,8 +888,110 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 		error("Couldn't modify job(s)");
 		FREE_NULL_LIST(ret_list);
 		ret_list = NULL;
-	}
+	} else if (id_switch_list) {
+		struct tm hour_tm;
+		time_t usage_start, usage_end;
+		char *time_str = NULL;
+		char *query = NULL;
 
+		if (!job_cond->usage_end)
+			job_cond->usage_end = now;
+
+		if (!localtime_r(&job_cond->usage_end, &hour_tm)) {
+			error("Couldn't get localtime from end %ld",
+			      job_cond->usage_end);
+			FREE_NULL_LIST(ret_list);
+			ret_list = NULL;
+			goto endit;
+		}
+		hour_tm.tm_sec = 0;
+		hour_tm.tm_min = 0;
+
+		usage_end = slurm_mktime(&hour_tm);
+
+		if (!job_cond->usage_start)
+			usage_start = 0;
+		else {
+			if (!localtime_r(&job_cond->usage_start, &hour_tm)) {
+				error("Couldn't get localtime from start %ld",
+				      job_cond->usage_start);
+				FREE_NULL_LIST(ret_list);
+				ret_list = NULL;
+				goto endit;
+			}
+			hour_tm.tm_sec = 0;
+			hour_tm.tm_min = 0;
+
+			usage_start = slurm_mktime(&hour_tm);
+		}
+
+		time_str = xstrdup_printf(
+			"(time_start < %ld && time_start >= %ld)",
+			usage_end, usage_start);
+
+		itr = list_iterator_create(id_switch_list);
+		while ((id_switch = list_next(itr))) {
+			char *use_table = NULL;
+
+			for (int i = 0; i < 3; i++) {
+				switch (i) {
+				case 0:
+					use_table = wckey_hour_table;
+					break;
+				case 1:
+					use_table = wckey_day_table;
+					break;
+				case 2:
+					use_table = wckey_month_table;
+					break;
+				}
+
+				use_table = xstrdup_printf(
+					"%s_%s",
+					id_switch->cluster, use_table);
+				/*
+				 * Move any of the new id lines into the old id.
+				 */
+				query = xstrdup_printf(
+					"insert into \"%s\" (creation_time, mod_time, id, id_tres, time_start, alloc_secs) "
+					"select creation_time, %ld, %u, id_tres, time_start, @ASUM:=SUM(alloc_secs) from \"%s\" where (id=%u || id=%u) && %s group by id_tres, time_start on duplicate key update alloc_secs=@ASUM;",
+					use_table,
+					now, id_switch->old, use_table,
+					id_switch->new, id_switch->old,
+					time_str);
+
+				/* Delete all traces of the new id */
+				xstrfmtcat(query,
+					   "delete from \"%s\" where id=%u && %s;",
+					   use_table, id_switch->new, time_str);
+
+				/* Now we just need to switch the ids */
+				xstrfmtcat(query,
+					   "update \"%s\" set mod_time=%ld, id=%u where id=%u && %s;",
+					   use_table, now, id_switch->new, id_switch->old, time_str);
+
+
+				xfree(use_table);
+				if (debug_flags & DEBUG_FLAG_DB_JOB)
+					DB_DEBUG(mysql_conn->conn,
+						 "query\n%s", query);
+				rc = mysql_db_query(mysql_conn, query);
+				xfree(query);
+				if (rc != SLURM_SUCCESS)
+					break;
+			}
+			if (rc != SLURM_SUCCESS) {
+				FREE_NULL_LIST(ret_list);
+				ret_list = NULL;
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
+		xfree(time_str);
+	}
+endit:
+	FREE_NULL_LIST(job_list);
+	FREE_NULL_LIST(id_switch_list);
 	return ret_list;
 }
 

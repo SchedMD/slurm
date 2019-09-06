@@ -52,8 +52,6 @@ static int _set_cond(int *start, int argc, char **argv,
 		return -1;
 	}
 
-	job_cond->flags |= JOBCOND_FLAG_NO_DEFAULT_USAGE;
-
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
 		if (!end)
@@ -193,6 +191,9 @@ extern int sacctmgr_modify_job(int argc, char **argv)
 	int i=0;
 	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
+
+	job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
+	job_cond->flags = JOBCOND_FLAG_NO_DEFAULT_USAGE;
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
