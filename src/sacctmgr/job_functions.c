@@ -99,6 +99,14 @@ static int _set_cond(int *start, int argc, char **argv,
 			slurm_addto_char_list(job_cond->wckey_list,
 					      argv[i]+end);
 			set = 1;
+		} else if (!xstrncasecmp(argv[i], "Users",
+					 MAX(command_len, 1))) {
+			if (!job_cond->userid_list)
+				job_cond->userid_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_id_char_list(job_cond->userid_list,
+						 argv[i]+end, 0);
+			set = 1;
 		} else {
 			exit_code = 1;
 			fprintf(stderr, " Unknown condition: %s\n"
