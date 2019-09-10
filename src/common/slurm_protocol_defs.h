@@ -1325,6 +1325,7 @@ extern List slurm_copy_char_list(List char_list);
 extern int slurm_addto_char_list(List char_list, char *names);
 extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					   bool lower_case_normalization);
+extern int slurm_addto_id_char_list(List char_list, char *names, bool gid);
 extern int slurm_addto_mode_char_list(List char_list, char *names, int mode);
 extern int slurm_addto_step_list(List step_list, char *names);
 extern int slurm_char_list_copy(List dst, List src);
