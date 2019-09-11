@@ -2194,6 +2194,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				}
 				list_iterator_destroy(job_iterator);
 				bit_and(avail_bitmap, avail_node_bitmap);
+				bit_and(avail_bitmap, total_bitmap);
 				preemptee_cand = preemptee_candidates;
 			} else
 				preemptee_cand = preemptee_candidates;

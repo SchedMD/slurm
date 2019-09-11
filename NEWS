@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- Deprecate FastSchedule. FastSchedule will be removed in 20.02.
     The FastSchedule=2 functionality (used for testing and development) has
     been retained as the new SlurmdParameters=config_overrides option.
+ -- Fix preemption issue when picking nodes for a feature job request.
 
 * Changes in Slurm 19.05.2
 ==========================
