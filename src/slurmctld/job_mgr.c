@@ -3040,7 +3040,8 @@ extern void build_array_str(struct job_record *job_ptr)
 	 * starting at once) instead of just ever so often.
 	 */
 
-	job_ptr->job_state |= JOB_UPDATE_DB;
+	if (job_ptr->db_index)
+		job_ptr->job_state |= JOB_UPDATE_DB;
 }
 
 /* Return true if ALL tasks of specific array job ID are complete */
@@ -18110,7 +18111,8 @@ extern struct job_record *job_array_post_sched(struct job_record *job_ptr)
 		 * leaving the other orphaned.  Setting the job_state
 		 * sets things up so the db_index isn't lost but the
 		 * start message is still sent to get the desired behavior. */
-		job_ptr->job_state |= JOB_UPDATE_DB;
+		if (job_ptr->db_index)
+			job_ptr->job_state |= JOB_UPDATE_DB;
 
 		/* If job is requeued, it will already be in the hash table */
 		if (!find_job_array_rec(job_ptr->array_job_id,
