@@ -1081,12 +1081,6 @@ The index of the cluster in the federation.
 .SH "SPECIFICATIONS FOR JOB"
 
 .TP
-\fIDerivedExitCode\fP=<derived_exit_code>
-The derived exit code can be modified after a job completes based on
-the user's judgment of whether the job succeeded or failed. The user
-can only modify the derived exit code of their own job.
-
-.TP
 \fIComment\fP=<comment>
 The job's comment string when the AccountingStoreJobComment parameter
 in the slurm.conf file is set (or defaults) to YES.  The user can only
@@ -1095,6 +1089,12 @@ modify the comment string of their own job.
 .TP
 \fICluster\fP=<cluster_list>
 List of clusters to alter jobs on, defaults to local cluster.
+
+.TP
+\fIDerivedExitCode\fP=<derived_exit_code>
+The derived exit code can be modified after a job completes based on
+the user's judgment of whether the job succeeded or failed. The user
+can only modify the derived exit code of their own job.
 
 .TP
 \fIEndTime\fP
