@@ -1097,6 +1097,12 @@ modify the comment string of their own job.
 List of clusters to alter jobs on, defaults to local cluster.
 
 .TP
+\fIEndTime\fP
+Jobs must end before this time to be modified. Format output is,
+YYYY\-MM\-DDTHH:MM:SS, unless changed through the SLURM_TIME_FORMAT environment
+variable.
+
+.TP
 \fIJobID\fP=<jobid_list>
 The id of the job to change.  Not needed if altering multiple jobs using wckey
 specification.
@@ -1104,6 +1110,11 @@ specification.
 .TP
 \fINewWCKey\fP=<newwckey>
 Use to rename a wckey on job(s) in the accounting database
+
+.TP
+\fIStartTime\fP
+Jobs must start at or after this time to be modified in the same format as
+\f3EndTime\fP.
 
 .TP
 \fIUser\fP=<user_list>
