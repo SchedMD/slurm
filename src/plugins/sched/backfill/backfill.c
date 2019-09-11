@@ -2082,6 +2082,17 @@ next_task:
 					node_space[tmp].avail_bitmap);
 				bit_and(current_bitmap,
 					node_space[j].avail_bitmap);
+				/*
+				 * Normally later_start is set at the end of the
+				 * first backfill reservation when the select
+				 * plugin predicts start time after later_start.
+				 * Then it goes to TRY_LATER and tries again on
+				 * a new set of nodes to check if the job can
+				 * start earlier. But if the next set of nodes
+				 * is a subset of the currently tested ones then
+				 * calling _try_sched (expensive function) would
+				 * be useless and would impact performance.
+				 */
 				if (!bit_super_set(next_bitmap, current_bitmap))
 					later_start = node_space[j].end_time;
 				FREE_NULL_BITMAP(next_bitmap);
