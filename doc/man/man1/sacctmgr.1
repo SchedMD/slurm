@@ -228,8 +228,8 @@ A group of clusters that work together to schedule jobs.
 
 .TP
 \fIjob\fR
-Used to modify specific fields of a job: Derived Exit Code and
-the Comment String.
+Used to modify specific fields of a job: Derived Exit Code,
+the Comment String, or wckey.
 
 .TP
 \fIqos\fR
@@ -1081,20 +1081,41 @@ The index of the cluster in the federation.
 .SH "SPECIFICATIONS FOR JOB"
 
 .TP
-\fIDerivedExitCode\fP
+\fIDerivedExitCode\fP=<derived_exit_code>
 The derived exit code can be modified after a job completes based on
 the user's judgment of whether the job succeeded or failed. The user
 can only modify the derived exit code of their own job.
 
 .TP
-\f3Comment\fP
+\fIComment\fP=<comment>
 The job's comment string when the AccountingStoreJobComment parameter
 in the slurm.conf file is set (or defaults) to YES.  The user can only
 modify the comment string of their own job.
 
 .TP
-The \fIDerivedExitCode\fP and \f3Comment\fP fields are the only fields
-of a job record in the database that can be modified after job
+\fICluster\fP=<cluster_list>
+List of clusters to alter jobs on, defaults to local cluster.
+
+.TP
+\fIJobID\fP=<jobid_list>
+The id of the job to change.  Not needed if altering multiple jobs using wckey
+specification.
+
+.TP
+\fINewWCKey\fP=<newwckey>
+Use to rename a wckey on job(s) in the accounting database
+
+.TP
+\fIUser\fP=<user_list>
+Used to specify the jobs of users jobs to alter.
+
+.TP
+\fIWCKey\fP=<wckey_list>
+Used to specify the wckeys to alter.
+
+.TP
+The \fIDerivedExitCode\fP, \fIComment\fP and \fIWCKey\fP fields are the only
+fields of a job record in the database that can be modified after job
 completion.
 
 .SH "LIST/SHOW JOB FORMAT OPTIONS"
