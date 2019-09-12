@@ -2708,7 +2708,8 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 
 			if (!(tmp_info->auth_cred =
 			      g_slurm_auth_unpack(buffer, protocol_version))) {
-				error("%s: authentication: %m", __func__);
+				error("%s: g_slurm_auth_unpack: authentication: %m",
+				      __func__);
 				free_buf(buffer);
 				slurm_seterrno(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 				goto unpack_error;
@@ -2721,9 +2722,9 @@ _unpack_composite_msg(composite_msg_t **msg, Buf buffer,
 						 slurm_conf.authinfo);
 
 			if (rc != SLURM_SUCCESS) {
-				error("%s: %s has authentication error: %m",
-				      __func__, rpc_num2string(tmp_info->msg_type));
-
+				error("%s: g_slurm_auth_verify: %s has authentication error: %m",
+				      __func__,
+				      rpc_num2string(tmp_info->msg_type));
 				slurm_free_comp_msg_list(tmp_info);
 			} else
 				list_append(object_ptr->msg_list, tmp_info);
