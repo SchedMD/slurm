@@ -5873,10 +5873,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 	signal_tasks_msg->job_id      = job_ptr->job_id;
 	signal_tasks_msg->job_step_id = NO_VAL;
 
-	if (flags == KILL_FULL_JOB ||
-	    flags == KILL_JOB_BATCH ||
-	    flags == KILL_STEPS_ONLY)
-		signal_tasks_msg->flags = flags;
+	signal_tasks_msg->flags = flags;
 	signal_tasks_msg->signal = signal;
 
 	agent_args->msg_args = signal_tasks_msg;
@@ -15640,9 +15637,9 @@ static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags)
 	 * Here if we aren't signaling the full job we always only want to
 	 * signal all other steps.
 	 */
-	if (flags == KILL_FULL_JOB ||
-	    flags == KILL_JOB_BATCH ||
-	    flags == KILL_STEPS_ONLY)
+	if ((flags & KILL_FULL_JOB) ||
+	    (flags & KILL_JOB_BATCH) ||
+	    (flags & KILL_STEPS_ONLY))
 		signal_job_msg->flags = flags;
 	else
 		signal_job_msg->flags = KILL_STEPS_ONLY;

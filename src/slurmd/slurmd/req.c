@@ -3386,7 +3386,7 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	}
 
 	/* security is handled when communicating with the stepd */
-	if (req->flags & KILL_FULL_JOB) {
+	if ((req->flags & KILL_FULL_JOB) || (req->flags & KILL_JOB_BATCH)) {
 		debug("%s: sending signal %u to entire job %u flag %u",
 		      __func__, req->signal, req->job_id, req->flags);
 		_kill_all_active_steps(req->job_id, req->signal,
@@ -4579,6 +4579,7 @@ static uid_t _get_job_uid(uint32_t jobid)
  * _kill_all_active_steps - signals the container of all steps of a job
  * jobid IN - id of job to signal
  * sig   IN - signal to send
+ * flags IN - to decide if batch step must be signaled, if its childs too, etc
  * batch IN - if true signal batch script, otherwise skip it
  * RET count of signaled job steps (plus batch script, if applicable)
  */
@@ -4592,6 +4593,16 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, bool batch,
 	int step_cnt  = 0;
 	int rc = SLURM_SUCCESS;
 
+	bool sig_all_steps = true;
+	bool sig_batch_step = false;
+
+	if (flags & KILL_JOB_BATCH) {
+		sig_all_steps = false;
+		sig_batch_step = true;
+	} else if (batch || (flags & KILL_FULL_JOB))
+		sig_batch_step = true;
+
+
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((stepd = list_next(i))) {
@@ -4602,17 +4613,18 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, bool batch,
 			continue;
 		}
 
-		if ((stepd->stepid == SLURM_BATCH_SCRIPT) && !batch)
-			continue;
-
-		if (_signal_jobstep(stepd->jobid, stepd->stepid, sig, flags,
-				    req_uid)
-		    != SLURM_SUCCESS) {
-			rc = SLURM_ERROR;
-			continue;
+		if ((sig_all_steps && (stepd->stepid != SLURM_BATCH_SCRIPT)) ||
+		    (sig_batch_step && (stepd->stepid == SLURM_BATCH_SCRIPT))) {
+			if (_signal_jobstep(stepd->jobid, stepd->stepid, sig,
+			                    flags, req_uid) != SLURM_SUCCESS) {
+				rc = SLURM_ERROR;
+				continue;
+			}
+			step_cnt++;
+		} else {
+			debug3("%s: No signaling. Job: %u, Step: %u. Flags: %u",
+			       __func__, stepd->jobid, stepd->stepid, flags);
 		}
-
-		step_cnt++;
 	}
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
