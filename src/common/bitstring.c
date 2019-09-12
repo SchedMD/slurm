@@ -1043,16 +1043,14 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 		}
 
 		if (bit_test(b, bit)) {
-#ifndef NDEBUG
 			int32_t ret, size;
 			bitoff_t start = bit;
-#endif
+
 			count++;
 			while (bit+1 < _bitstr_bits(b) && bit_test(b, bit+1)) {
 				bit++;
 				count++;
 			}
-#ifndef NDEBUG
 			size = strlen(str);
 			if (bit == start) {	/* add single bit position */
 				ret = snprintf(str + size, len - size,
@@ -1062,8 +1060,10 @@ char *bit_fmt(char *str, int32_t len, bitstr_t *b)
 				               "%"BITSTR_FMT"-%"BITSTR_FMT",",
 					       start, bit);
 			}
+
 			xassert(ret != -1);
-#endif
+			if (ret == -1)
+				error("failed to write to string -- this should never happen");
 		}
 		bit++;
 	}
