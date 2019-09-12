@@ -5986,6 +5986,11 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 					node_ptr->reason_uid = uid;
 				}
 			}
+			if (!node_ptr->reason) {
+				node_ptr->reason = xstrdup("reboot issued");
+				node_ptr->reason_time = now;
+				node_ptr->reason_uid = uid;
+			}
 		}
 		want_nodes_reboot = true;
 	}
