@@ -185,7 +185,6 @@ function displayfile()
    "# <br>" +
    "# SCHEDULING <br>" +
    "#DefMemPerCPU=0 <br>" +
-   "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
    "#MaxMemPerCPU=0 <br>" +
    "#SchedulerTimeSlice=30 <br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
@@ -444,19 +443,6 @@ Select one value for <B>SchedulerType</B>:<BR>
 FIFO with backfill<BR>
 <input type="radio" name="sched_type" value="builtin">  <B>Builtin</B>: First-In
 First-Out (FIFO)<BR>
-<P>
-Define what node configuration (sockets, cores, memory, etc.) should be used.
-Using values defined in the configuration file will provide faster scheduling.<BR>
-Select one value for <B>FastSchedule</B>:<BR>
-<input type="radio" name="fast_schedule" value="0">
-<B>0</B>: Use node configuration values actually found on each node
-(if configured with with gang scheduling or allocation of individual
-processors to jobs rather than only whole node allocations, the processor
-count on the node should match the configured value to avoid having extra
-processors left idle).<BR>
-<input type="radio" name="fast_schedule" value="1" checked>
-<B>1</B>: Use node configuration values defined in configuration file.
-Mark node DOWN if registers with fewer resources.<BR>
 <P>
 
 <H2>Interconnect</H2>

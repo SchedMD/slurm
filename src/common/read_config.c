@@ -3583,6 +3583,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->fast_schedule, "FastSchedule", hashtbl))
 		conf->fast_schedule = DEFAULT_FAST_SCHEDULE;
+	else if (conf->fast_schedule == 0 && run_in_daemon("slurmctld,slurmd"))
+		error("FastSchedule will be removed in 20.02, as will the FastSchedule=0 functionality. Please consider removing this from your configuration now.");
+	else if (conf->fast_schedule == 2 && run_in_daemon("slurmctld,slurmd"))
+		error("FastSchedule will be removed in 20.02. The FastSchedule=2 functionality will be available through the new SlurmdParameters=config_overrides option. Please consider changing your configuration now.");
 
 	(void) s_p_get_string(&conf->fed_params, "FederationParameters",
 			      hashtbl);
@@ -4619,6 +4623,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	(void) s_p_get_string(&conf->slurmd_logfile, "SlurmdLogFile", hashtbl);
 
 	(void) s_p_get_string(&conf->slurmd_params, "SlurmdParameters", hashtbl);
+	if (xstrcasestr(conf->slurmd_params, "config_overrides"))
+		conf->fast_schedule = 2;
 
 	if (!s_p_get_string(&conf->slurmd_pidfile, "SlurmdPidFile", hashtbl))
 		conf->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);

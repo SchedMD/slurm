@@ -838,40 +838,6 @@ while a value of 5 will result in a significant difference in priority).
 The default value is 1.
 
 .TP
-\fBFastSchedule\fR
-Controls how a node's configuration specifications in slurm.conf are used.
-If the number of node configuration entries in the configuration file
-is significantly lower than the number of nodes, setting FastSchedule to
-1 will permit much faster scheduling decisions to be made.
-(The scheduler can just check the values in a few configuration records
-instead of possibly thousands of node records.)
-Note that on systems with hyper\-threading, the processor count
-reported by the node will be twice the actual processor count.
-Consider which value you want to be used for scheduling purposes.
-.RS
-.TP 5
-\fB0\fR
-Base scheduling decisions upon the actual configuration of each individual
-node except that the node's processor count in Slurm's configuration must
-match the actual hardware configuration if \fBPreemptMode=suspend,gang\fR,
-\fBSelectType=select/cons_res\fR or \fBSelectType=select/cons_tres\fR are
-configured (all of those plugins maintain resource allocation information using
-bitmaps for the cores in the system and must remain static, while the node's
-memory, disk space, and GRES counts can be established later).
-.TP
-\fB1\fR (default)
-Consider the configuration of each node to be that specified in the
-slurm.conf configuration file and any node with less than the
-configured resources will be set to DRAIN.
-.TP
-\fB2\fR
-Consider the configuration of each node to be that specified in the
-slurm.conf configuration file and any node with less than the
-configured resources will \fBnot\fR be set DRAIN.
-This option is generally only useful for testing purposes.
-.RE
-
-.TP
 \fBFederationParameters\fR
 Used to define federation options. Multiple options may be comma separated.
 
@@ -3389,6 +3355,14 @@ Parameters specific to the Slurmd.
 Multiple options may be comma separated.
 .RS
 .TP
+\fBconfig_overrides\fR
+If set, consider the configuration of each node to be that specified in the
+slurm.conf configuration file and any node with less than the
+configured resources will \fBnot\fR be set DRAIN.
+This option is generally only useful for testing purposes.
+Equivalent to the now deprecated FastSchedule=2 option.
+.RE
+.TP
 \fBshutdown_on_reboot\fR
 If set, the Slurmd will shut itself down when a reboot request is received.
 .RE
@@ -4273,11 +4247,6 @@ possibly avoid having to check job requirements
 against every individual node's configuration.
 The resources checked at node registration time are: CPUs,
 RealMemory and TmpDisk.
-While baseline values for each of these can be established
-in the configuration file, the actual values upon node
-registration are recorded and these actual values may be
-used for scheduling purposes (depending upon the value of
-\fBFastSchedule\fR in the configuration file.
 .LP
 Default values can be specified with a record in which
 \fBNodeName\fR is "DEFAULT".
@@ -5526,8 +5495,6 @@ AuthType=auth/munge
 Epilog=/usr/local/slurm/epilog
 .br
 Prolog=/usr/local/slurm/prolog
-.br
-FastSchedule=1
 .br
 FirstJobId=65536
 .br
