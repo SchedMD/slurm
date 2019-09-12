@@ -198,13 +198,10 @@ enum cluster_fed_states {
 #define JOBCOND_FLAG_NO_WAIT          0x00000040 /* Tell dbd plugin not to wait
 						  * around for result.
 						  */
-#define JOBCOND_FLAG_USAGE_AS_SUBMIT  0x00000080 /* Use usage_time as the
+#define JOBCOND_FLAG_NO_DEFAULT_USAGE 0x00000080 /* Use usage_time as the
 						  * submit_time of the job.
 						  */
-#define JOBCOND_FLAG_NO_DEFAULT_USAGE 0x00000100 /* Use usage_time as the
-						  * submit_time of the job.
-						  */
-#define JOBCOND_FLAG_DBD_UID          0x00000200 /* give me the uid from the dbd
+#define JOBCOND_FLAG_DBD_UID          0x00000100 /* give me the uid from the dbd
 						  * instead of filling it in
 						  * later.
 						  */

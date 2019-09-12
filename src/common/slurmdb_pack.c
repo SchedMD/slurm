@@ -4570,8 +4570,6 @@ extern int slurmdb_unpack_job_modify_cond(void **object,
 
 	safe_unpack32(&object_ptr->flags, buffer);
 
-	object_ptr->flags |= JOBCOND_FLAG_USAGE_AS_SUBMIT;
-
 	selected_step = xmalloc(sizeof(slurmdb_selected_step_t));
 	selected_step->array_task_id = NO_VAL;
 	safe_unpack32(&selected_step->jobid, buffer);
