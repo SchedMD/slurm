@@ -704,17 +704,13 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 {
 	struct part_record *part_ptr;
 
-	part_ptr = list_find_first(part_list, &list_find_part, part->name);
-	if (part_ptr == NULL) {
-		part_ptr = create_part_record();
-		xfree(part_ptr->name);
-		part_ptr->name = xstrdup(part->name);
-	} else {
-		/* FIXME - maybe should be fatal? */
-		error("_parse_part_spec: duplicate entry for partition %s, "
-		      "ignoring", part->name);
-		return EEXIST;
-	}
+	if (list_find_first(part_list, &list_find_part, part->name))
+		fatal("%s: duplicate entry for partition %s",
+		      __func__, part->name);
+
+	part_ptr = create_part_record();
+	xfree(part_ptr->name);
+	part_ptr->name = xstrdup(part->name);
 
 	if (part->default_flag) {
 		if (default_part_name &&
