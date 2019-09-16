@@ -141,7 +141,6 @@ static void _compute_start_times(void)
 	int j, rc = SLURM_SUCCESS, job_cnt = 0;
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
-	List preemptee_candidates = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *alloc_bitmap = NULL, *avail_bitmap = NULL;
@@ -203,7 +202,7 @@ static void _compute_start_times(void)
 		rc = select_g_job_test(job_ptr, avail_bitmap,
 				       min_nodes, max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
-				       preemptee_candidates, NULL,
+				       NULL, NULL,
 				       exc_core_bitmap);
 		if (rc == SLURM_SUCCESS) {
 			last_job_update = now;
