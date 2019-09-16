@@ -296,14 +296,14 @@ static void _unlink_free_nodes(bitstr_t *old_bitmap,
  * global: part_list - global partition list
  * NOTE: allocates memory that should be xfreed with _delete_part_record
  */
-struct part_record *create_part_record(void)
+struct part_record *create_part_record(const char *name)
 {
 	struct part_record *part_ptr = xmalloc(sizeof(*part_ptr));
 
 	last_part_update = time(NULL);
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
-	part_ptr->name              = xstrdup("DEFAULT");
+	part_ptr->name              = xstrdup(name);
 	part_ptr->alternate         = xstrdup(default_part.alternate);
 	part_ptr->cr_type	    = default_part.cr_type;
 	part_ptr->job_defaults_list =
@@ -723,9 +723,7 @@ int load_all_part_state(void)
 		if (part_ptr == NULL) {
 			info("%s: partition %s missing from configuration file",
 			     __func__, part_name);
-			part_ptr = create_part_record();
-			xfree(part_ptr->name);
-			part_ptr->name = xstrdup(part_name);
+			part_ptr = create_part_record(part_name);
 		}
 
 		part_ptr->cpu_bind       = cpu_bind;
@@ -1254,9 +1252,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		}
 		info("%s: partition %s being created", __func__,
 		     part_desc->name);
-		part_ptr = create_part_record();
-		xfree(part_ptr->name);
-		part_ptr->name = xstrdup(part_desc->name);
+		part_ptr = create_part_record(part_desc->name);
 	} else {
 		if (!part_ptr) {
 			verbose("%s: Update for partition not found (%s)",

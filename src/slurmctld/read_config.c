@@ -708,9 +708,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		fatal("%s: duplicate entry for partition %s",
 		      __func__, part->name);
 
-	part_ptr = create_part_record();
-	xfree(part_ptr->name);
-	part_ptr->name = xstrdup(part->name);
+	part_ptr = create_part_record(part->name);
 
 	if (part->default_flag) {
 		if (default_part_name &&
@@ -2349,8 +2347,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 			}
 			error("Partition %s missing from slurm.conf, "
 			      "restoring it", old_part_ptr->name);
-			part_ptr = create_part_record();
-			part_ptr->name = xstrdup(old_part_ptr->name);
+			part_ptr = create_part_record(old_part_ptr->name);
 
 			part_ptr->allow_accounts =
 				xstrdup(old_part_ptr->allow_accounts);
