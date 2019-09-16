@@ -440,6 +440,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 						       &preemptee_job_list,
 						       exc_core_bitmap);
 				FREE_NULL_LIST(preemptee_job_list);
+				FREE_NULL_LIST(preemptee_candidates);
 				if ((rc == SLURM_SUCCESS) &&
 				    ((high_start == 0) ||
 				     (high_start < job_ptr->start_time))) {
@@ -508,6 +509,7 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 						       &preemptee_job_list,
 						       exc_core_bitmap);
 				FREE_NULL_LIST(preemptee_job_list);
+				FREE_NULL_LIST(preemptee_candidates);
 				if ((rc == SLURM_SUCCESS) &&
 				    ((low_start == 0) ||
 				     (low_start > job_ptr->start_time))) {
