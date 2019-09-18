@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
  -- cons_tres: Prevent creating a job without CPUs.
  -- Prevent underflow when filtering cores with gres.
  -- proctrack/cray_aries: use current pid instead of thread if we're in a fork.
+ -- Fix missing check for prolog launch credential creation failure that can
+    lead to segfaults.
 
 * Changes in Slurm 19.05.2
 ==========================
