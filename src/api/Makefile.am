@@ -14,6 +14,10 @@ FULL_VERSION_SCRIPT = \
 	full_version.map
 FULL_OTHER_FLAGS = \
 	-Wl,--version-script=$(FULL_VERSION_SCRIPT)
+SLURM_PMI_VERSION_SCRIPT = \
+	slurm_pmi_version.map
+SLURM_PMI_OTHER_FLAGS = \
+	-Wl,--version-script=$(SLURM_PMI_VERSION_SCRIPT)
 endif
 
 # libslurm version information :
@@ -44,7 +48,7 @@ current = $(SLURM_API_CURRENT)
 age     = $(SLURM_API_AGE)
 rev     = $(SLURM_API_REVISION)
 
-lib_LTLIBRARIES = libslurm.la
+lib_LTLIBRARIES = libslurm.la libslurm_pmi.la
 
 # The ABI of libslurmfull can easily change from 1 micro version to another.
 # To avoid issue we will install this lib alongside the plugins to protect
@@ -53,7 +57,8 @@ pkglib_LTLIBRARIES = libslurmfull.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.
-BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) libslurm.la
+BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)\
+		$(SLURM_PMI_VERSION_SCRIPT) libslurm.la
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols used by the process, libcommon, libeio, etc.
@@ -158,6 +163,13 @@ libslurmfull_la_LDFLAGS        = \
 	-avoid-version \
         $(FULL_OTHER_FLAGS)
 
+libslurm_pmi_la_SOURCES =
+libslurm_pmi_la_LIBADD = $(convenience_libs)
+libslurm_pmi_la_LDFLAGS        = \
+        $(LIB_LDFLAGS) \
+	-avoid-version \
+        $(SLURM_PMI_OTHER_FLAGS)
+
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
 libslurm_o_SOURCES =
@@ -189,8 +201,15 @@ $(FULL_VERSION_SCRIPT) :
 	 echo "  local: *;"; \
 	 echo "};") > $(FULL_VERSION_SCRIPT)
 
+$(SLURM_PMI_VERSION_SCRIPT) :
+	(echo "{ global:";   \
+	 echo "   slurm_pmi_*;"; \
+	 echo "  local: *;"; \
+	 echo "};") > $(SLURM_PMI_VERSION_SCRIPT)
+
+
 CLEANFILES = \
-	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(SLURM_PMI_VERSION_SCRIPT)
 
 DISTCLEANFILES = \
-	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(SLURM_PMI_VERSION_SCRIPT)

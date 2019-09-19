@@ -191,6 +191,13 @@ am__v_lt_1 =
 libslurm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libslurm_la_LDFLAGS) $(LDFLAGS) -o $@
+libslurm_pmi_la_DEPENDENCIES = $(convenience_libs)
+am_libslurm_pmi_la_OBJECTS =
+libslurm_pmi_la_OBJECTS = $(am_libslurm_pmi_la_OBJECTS)
+libslurm_pmi_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libslurm_pmi_la_LDFLAGS) $(LDFLAGS) \
+	-o $@
 libslurmfull_la_DEPENDENCIES = $(convenience_libs)
 am_libslurmfull_la_OBJECTS =
 libslurmfull_la_OBJECTS = $(am_libslurmfull_la_OBJECTS)
@@ -293,10 +300,12 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libslurm_la_SOURCES) $(libslurmfull_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
-DIST_SOURCES = $(libslurm_la_SOURCES) $(libslurmfull_la_SOURCES) \
-	$(libslurmhelper_la_SOURCES) $(libslurm_o_SOURCES)
+SOURCES = $(libslurm_la_SOURCES) $(libslurm_pmi_la_SOURCES) \
+	$(libslurmfull_la_SOURCES) $(libslurmhelper_la_SOURCES) \
+	$(libslurm_o_SOURCES)
+DIST_SOURCES = $(libslurm_la_SOURCES) $(libslurm_pmi_la_SOURCES) \
+	$(libslurmfull_la_SOURCES) $(libslurmhelper_la_SOURCES) \
+	$(libslurm_o_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -592,6 +601,12 @@ AM_CPPFLAGS = -I$(top_srcdir)
 @WITH_GNU_LD_TRUE@FULL_OTHER_FLAGS = \
 @WITH_GNU_LD_TRUE@	-Wl,--version-script=$(FULL_VERSION_SCRIPT)
 
+@WITH_GNU_LD_TRUE@SLURM_PMI_VERSION_SCRIPT = \
+@WITH_GNU_LD_TRUE@	slurm_pmi_version.map
+
+@WITH_GNU_LD_TRUE@SLURM_PMI_OTHER_FLAGS = \
+@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(SLURM_PMI_VERSION_SCRIPT)
+
 
 # libslurm version information :
 #
@@ -620,7 +635,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 current = $(SLURM_API_CURRENT)
 age = $(SLURM_API_AGE)
 rev = $(SLURM_API_REVISION)
-lib_LTLIBRARIES = libslurm.la
+lib_LTLIBRARIES = libslurm.la libslurm_pmi.la
 
 # The ABI of libslurmfull can easily change from 1 micro version to another.
 # To avoid issue we will install this lib alongside the plugins to protect
@@ -629,7 +644,9 @@ pkglib_LTLIBRARIES = libslurmfull.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.
-BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) libslurm.la
+BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)\
+		$(SLURM_PMI_VERSION_SCRIPT) libslurm.la
+
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols used by the process, libcommon, libeio, etc.
@@ -731,6 +748,13 @@ libslurmfull_la_LDFLAGS = \
 	-avoid-version \
         $(FULL_OTHER_FLAGS)
 
+libslurm_pmi_la_SOURCES = 
+libslurm_pmi_la_LIBADD = $(convenience_libs)
+libslurm_pmi_la_LDFLAGS = \
+        $(LIB_LDFLAGS) \
+	-avoid-version \
+        $(SLURM_PMI_OTHER_FLAGS)
+
 
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
@@ -740,10 +764,10 @@ libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
 	$(top_builddir)/src/common/libcommon.o
 
 CLEANFILES = \
-	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(SLURM_PMI_VERSION_SCRIPT)
 
 DISTCLEANFILES = \
-	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(SLURM_PMI_VERSION_SCRIPT)
 
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -872,6 +896,9 @@ clean-pkglibLTLIBRARIES:
 
 libslurm.la: $(libslurm_la_OBJECTS) $(libslurm_la_DEPENDENCIES) $(EXTRA_libslurm_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libslurm_la_LINK) -rpath $(libdir) $(libslurm_la_OBJECTS) $(libslurm_la_LIBADD) $(LIBS)
+
+libslurm_pmi.la: $(libslurm_pmi_la_OBJECTS) $(libslurm_pmi_la_DEPENDENCIES) $(EXTRA_libslurm_pmi_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libslurm_pmi_la_LINK) -rpath $(libdir) $(libslurm_pmi_la_OBJECTS) $(libslurm_pmi_la_LIBADD) $(LIBS)
 
 libslurmfull.la: $(libslurmfull_la_OBJECTS) $(libslurmfull_la_DEPENDENCIES) $(EXTRA_libslurmfull_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libslurmfull_la_LINK) -rpath $(pkglibdir) $(libslurmfull_la_OBJECTS) $(libslurmfull_la_LIBADD) $(LIBS)
@@ -1313,6 +1340,12 @@ $(FULL_VERSION_SCRIPT) :
 	(echo "{ global: *;";   \
 	 echo "  local: *;"; \
 	 echo "};") > $(FULL_VERSION_SCRIPT)
+
+$(SLURM_PMI_VERSION_SCRIPT) :
+	(echo "{ global:";   \
+	 echo "   slurm_pmi_*;"; \
+	 echo "  local: *;"; \
+	 echo "};") > $(SLURM_PMI_VERSION_SCRIPT)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

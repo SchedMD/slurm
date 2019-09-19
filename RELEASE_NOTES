@@ -33,6 +33,12 @@ HIGHLIGHTS
  -- Log messages enabled by the various DebugFlags have been overhauled, and
     will all print at the verbose() level, and prepend the flag name that is
     associated with a given log message.
+ -- A separate unversioned libslurm_pmi.so will be installed, and the libpmi.so
+    that Slurm can (optionally) install will link to that rather than libslurm.
+    This should resolve long-standing issues when building static OpenMPI
+    libraries and later updating your Slurm release, thereby breaking the
+    embedded libslurm.so.<version> link in those OpenMPI libraries that were
+    inherited from libpmi.so.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
@@ -43,3 +49,5 @@ COMMAND CHANGES (see man pages for details)
 API CHANGES
 ===========
  -- slurm_ctl_conf_t has been renamed to slurm_conf_t.
+ -- slurm_free_kvs_comm_set() has been renamed to slurm_pmi_free_kvs_comm_set(),
+    slurm_get_kvs_comm_set() has been renamed to slurm_pmi_get_kvs_comm_set().

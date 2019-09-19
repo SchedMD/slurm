@@ -49,15 +49,27 @@
 #define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
 #define PMI_MAX_VAL_LEN     1024 /* Maximum size of a PMI value */
 
+/*
+ * The following functions MUST NOT change signature. They define the ABI for
+ * libslurm_pmi which is intentionally unversioned, and only use for PMI1
+ * support.
+ */
+
 /* Transmit PMI Keyval space data */
-int slurm_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
-		int pmi_rank, int pmi_size);
+extern int slurm_pmi_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
+				       int pmi_rank, int pmi_size);
 
 /* Wait for barrier and get full PMI Keyval space data */
-int  slurm_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
-		int pmi_rank, int pmi_size);
+extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
+				      int pmi_rank, int pmi_size);
+
+extern void slurm_pmi_free_kvs_comm_set(kvs_comm_set_t *msg);
 
 /* Finalization processing */
-void slurm_pmi_finalize(void);
+extern void slurm_pmi_finalize(void);
+
+/* Wrapper for slurm_kill_job_step(). */
+extern int slurm_pmi_kill_job_step(uint32_t job_id, uint32_t step_id,
+				   uint16_t signal);
 
 #endif

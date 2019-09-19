@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     operation, and the daemon will now run in the foreground within systemd
     instead of daemonizing itself.
  -- Add --gpu-bind=mask_gpu reusability functionality if tasks > elements.
+ -- Add separate unversion libslurm_pmi.so library to use with libpmi.so.
 
 * Changes in Slurm 20.02.2
 ==========================
