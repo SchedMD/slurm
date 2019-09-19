@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "July 2019" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "September 2019" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -2189,9 +2189,11 @@ completely understand what you are doing.  For slurmdbd options see
 Loading data into the database can be done from these files to either
 view old data or regenerate rolled up data.
 
-These are the options for both dump and load of archive information.
-
-archive dump
+.SS archive dump
+Dump accounting data to file. Depending on options and slurmdbd configuration
+data may remain in database or be purged. This operation cannot be rolled back
+once executed. If one of the following options is not specified when sacctmgr
+is called, the value configured in slurmdbd.comf is used.
 
 .TP
 \fIDirectory=\fP
@@ -2240,8 +2242,7 @@ all step data removed will be lost permanently.
 Archive Suspend Data.  If not specified and PurgeSuspendAfter is set
 all suspend data removed will be lost permanently.
 
-.TP
-\fIArchive Load\fP
+.SS archive load
 Load in to the database previously archived data. The archive file will not be
 loaded if the records already exist in the database - therefore, trying to load
 an archive file more than once will result in an error. When this data is again

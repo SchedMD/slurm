@@ -9,7 +9,7 @@ MPS_DEV_ID_FILE="/var/run/mps_dev_id"
 
 # Specify directory where MPS and Slurm commands are located (if not in search path)
 #MPS_CMD_DIR="/usr/bin/"
-#SLURM_CMD_DIR="/usr/bin"
+#SLURM_CMD_DIR="/usr/bin/"
 
 # Determine which GPU the MPS server is running on
 if [ -f ${MPS_DEV_ID_FILE} ]; then
@@ -42,7 +42,7 @@ if [ -n "${KILL_MPS_SERVER}" ]; then
 		# Reset GPU mode to default
 		${MPS_CMD_DIR}nvidia-smi -c ${CUDA_VISIBLE_DEVICES}
 		# Quit MPS server daemon
-		echo quit | nvidia-cuda-mps-control
+		echo quit | ${MPS_CMD_DIR}nvidia-cuda-mps-control
 		# Test for presence of MPS zombie process
 		ps aux | grep nvidia-cuda-mps | grep -v grep > /dev/null
 		if [ $? -eq 0 ]; then

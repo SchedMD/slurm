@@ -4681,7 +4681,6 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
  */
 extern int gres_plugin_job_revalidate(List gres_list)
 {
-	static uint32_t select_plugin_type = NO_VAL;
 	gres_state_t *gres_state;
 	gres_job_state_t *job_gres_data;
 	ListIterator iter;

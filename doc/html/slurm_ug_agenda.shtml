@@ -35,7 +35,7 @@ Salt Lake City at the
 <a href="https://www.universityguesthouse.com/Officers-Club">Officer's
 Club.</a></p>
 
-<a name="schedule"><h1>Preliminary Schedule</h1></a>
+<a name="schedule"><h1>Schedule</h1></a>
 
 <h2>Tuesday, 17 September 2019</h2>
 
@@ -57,7 +57,7 @@ Club.</a></p>
 <tr><td nowrap>11:20 - 12:00</td><td>Technical</td><td>Garey (SchedMD)</td><td>cgroups and pam_slurm_adopt</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">12:00 - 13:00</td><td colspan="3" bgcolor="#F0F1C9">Lunch</td></tr>
 <tr><td nowrap>13:00 - 13:20</td><td>Site Report</td><td>Byun</td><td>MIT</td></tr>
-<tr><td nowrap>13:20 - 14:20</td><td>Technical</td><td>Auble, Wickberg (SchedMD)</td><td>Community discussion: Kubernetes, containers, OCI, ...</td></tr>
+<tr><td nowrap>13:20 - 14:20</td><td>Panel</td><td>Auble, Wickberg (SchedMD)</td><td>Community discussion: Containers, OCI, Kubernetes, ...</td></tr>
 <tr><td nowrap>14:20 - 15:00</td><td>Technical</td><td>Hoopes (SchedMD)</td><td>Priority Scheduling and Fair Tree</td></tr>
 <tr><td nowrap bgcolor="#F0F1C9">15:00 - 15:20</td><td colspan="3" bgcolor="#F0F1C9">Break</td></tr>
 <tr><td nowrap>15:20 - 15:40</td><td>Technical</td><td>Yeager</td><td>NVIDIA</td></tr>
@@ -65,7 +65,7 @@ Club.</a></p>
 <tr><td nowrap>16:20 - 16:40</td><td>Technical</td><td>Gaur</td><td>NERSC</td></tr>
 
 <tr>
-  <td bgcolor="#F0F1C9">TBD</td>
+  <td bgcolor="#F0F1C9">18:00 - 20:00</td>
   <td bgcolor="#F0F1C9">Dinner</td>
   <td bgcolor="#F0F1C9"><a href="https://squatters.com/salt-lake-city/location.aspx">Squatters Pub (SLC)</a></td>
   <td bgcolor="#F0F1C9">147 West Broadway, Salt Lake City, UT 84101</td>
@@ -103,6 +103,6 @@ Club.</a></p>
 
 </table>
 
-<p style="text-align:center;">Last modified 19 July 2019</p>
+<p style="text-align:center;">Last modified 16 September 2019</p>
 
 <!--#include virtual="footer.txt"-->
