@@ -369,6 +369,14 @@ all GPUs repectively.</p>
 <a href="https://docs.nvidia.com/deploy/pdf/CUDA_Multi_Process_Service_Overview.pdf">
 NVIDIA Multi-Process Service documentation</a> for more information about MPS.</p>
 
+<p>
+Note that a vulnerability exists in previous versions of the NVIDIA driver that
+may affect users when sharing GPUs. More information can be found in
+<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-6260">
+CVE-2018-6260</a> and in the
+<a href="https://nvidia.custhelp.com/app/answers/detail/a_id/4772">
+Security Bulletin: NVIDIA GPU Display Driver - February 2019</a>.</p>
+
 <!-------------------------------------------------------------------------->
 <a id="MIC_Management"></a>
 <h2>MIC Management</h2>
