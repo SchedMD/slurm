@@ -879,6 +879,9 @@ static bool _opt_verify(void)
 	if (opt.ntasks_per_core != NO_VAL)
 		pack_env.ntasks_per_core = opt.ntasks_per_core;
 
+	if (opt.ntasks_per_node != NO_VAL)
+		pack_env.ntasks_per_node = opt.ntasks_per_node;
+
 	if (opt.ntasks_per_socket != NO_VAL)
 		pack_env.ntasks_per_socket = opt.ntasks_per_socket;
 
