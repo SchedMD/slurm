@@ -10743,6 +10743,17 @@ extern void gres_plugin_job_state_log(List gres_list, uint32_t job_id)
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
+static int _find_device(void *x, void *key)
+{
+	gres_device_t *device_x = (gres_device_t *)x;
+	gres_device_t *device_key = (gres_device_t *)key;
+
+	if (!xstrcmp(device_x->path, device_key->path))
+		return 1;
+
+	return 0;
+}
+
 extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 {
 	int i, j;
@@ -10757,8 +10768,8 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 	(void) gres_plugin_init();
 
 	/*
-	 * Set up every device we have so we know.  This way we have the full
-	 * deny list and alter the alloc variable later if it were allocated.
+	 * Create a unique device list of all possible GRES device files.
+	 * Initialize each device to deny.
 	 */
 	for (j = 0; j < gres_context_cnt; j++) {
 		if (!gres_context[j].ops.get_devices)
@@ -10771,7 +10782,13 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 			if (!device_list)
 				device_list = list_create(NULL);
 			gres_device->alloc = 0;
-			list_append(device_list, gres_device);
+			/*
+			 * Keep the list unique by not adding duplicates (in the
+			 * case of MPS and GPU)
+			 */
+			if (!list_find_first(device_list, _find_device,
+					     gres_device))
+				list_append(device_list, gres_device);
 		}
 		list_iterator_destroy(dev_itr);
 	}
@@ -10829,8 +10846,24 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 		dev_itr = list_iterator_create(gres_devices);
 		i = 0;
 		while ((gres_device = list_next(dev_itr))) {
-			if (bit_test(local_bit_alloc[0], i))
+			if (bit_test(local_bit_alloc[0], i)) {
+				gres_device_t *gres_device2;
+				/*
+				 * search for the device among the unique
+				 * devices list (since two plugins could have
+				 * device records that point to the same file,
+				 * like with GPU and MPS)
+				 */
+				gres_device2 = list_find_first(device_list,
+							       _find_device,
+							       gres_device);
+				/*
+				 * Set both, in case they point to different
+				 * records
+				 */
 				gres_device->alloc = 1;
+				gres_device2->alloc = 1;
+			}
 			//info("%d is %d", i, gres_device->alloc);
 			i++;
 		}
