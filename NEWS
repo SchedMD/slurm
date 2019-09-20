@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix preemption for jobs using complex feature requests
     (e.g. -C "[rack1*2&rack2*4]").
  -- Fix memory leaks in preemption when jobs request multiple features.
+ -- Allow Operator users to show/fix runaways.
 
 * Changes in Slurm 19.05.2
 ==========================
