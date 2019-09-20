@@ -670,7 +670,7 @@ static int arg_set_ckpt_interval(slurm_opt_t *opt, const char *arg)
 }
 static char *arg_get_ckpt_interval(slurm_opt_t *opt)
 {
-	int tmp;
+	int tmp = 0;
 	char time_str[32];
 
 	if (!opt->sbatch_opt && !opt->srun_opt)
@@ -3042,7 +3042,7 @@ static int arg_set_test_only(slurm_opt_t *opt, const char *arg)
 }
 static char *arg_get_test_only(slurm_opt_t *opt)
 {
-	bool tmp;
+	bool tmp = false;
 
 	if (!opt->sbatch_opt && !opt->srun_opt)
 		return xstrdup("invalid-context");
@@ -3434,7 +3434,7 @@ static int arg_set_wait_all_nodes(slurm_opt_t *opt, const char *arg)
 }
 static char *arg_get_wait_all_nodes(slurm_opt_t *opt)
 {
-	uint16_t tmp;
+	uint16_t tmp = NO_VAL16;
 
 	if (!opt->salloc_opt && !opt->sbatch_opt)
 		return xstrdup("invalid-context");
