@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "August 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "September 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4425,6 +4425,8 @@ The first field is the resource name, which matches the GresType configuration
 parameter name.
 The optional type field might be used to identify a model of that generic
 resource.
+It is forbidden to specify both an untyped GRES and a typed GRES with the same
+<name>.
 A generic resource can also be specified as non\-consumable (i.e. multiple
 jobs can use the same generic resource) with the optional field ":no_consume".
 The final field must specify a generic resources count.

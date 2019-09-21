@@ -290,6 +290,8 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 static void	_sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 				      gres_state_t *gpu_gres_ptr);
 static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
+static void	_validate_slurm_conf(List slurm_conf_list,
+				     slurm_gres_context_t *context_ptr);
 static void	_validate_gres_conf(List gres_conf_list,
 				    slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
@@ -1188,6 +1190,42 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 	return _parse_gres_config(dest, type, key, NULL, line, leftover);
 }
 
+static void _validate_slurm_conf(List slurm_conf_list,
+				 slurm_gres_context_t *context_ptr)
+{
+	ListIterator iter;
+	gres_state_t *gres_ptr;
+
+	if (!slurm_conf_list)
+		return;
+
+	iter = list_iterator_create(slurm_conf_list);
+	while ((gres_ptr = list_next(iter))) {
+		gres_node_state_t *slurm_gres;
+		uint64_t tmp_count = 0;
+
+		/* Only look at the GRES under the current plugin (same name) */
+		if (gres_ptr->plugin_id != context_ptr->plugin_id)
+			continue;
+
+		slurm_gres = (gres_node_state_t *)gres_ptr->gres_data;
+
+		/*
+		 * gres_cnt_config should equal the combined count from
+		 * type_cnt_avail if there are no untyped GRES
+		 */
+		for (uint16_t i = 0; i < slurm_gres->type_cnt; i++)
+			tmp_count += slurm_gres->type_cnt_avail[i];
+
+		/* Forbid mixing typed and untyped GRES under the same name */
+		if (slurm_gres->type_cnt &&
+		    slurm_gres->gres_cnt_config > tmp_count)
+			fatal("%s: Some %s GRES in slurm.conf have a type while others do not (slurm_gres->gres_cnt_config (%ld) > tmp_count (%ld))",
+			      __func__, context_ptr->gres_name,
+			      slurm_gres->gres_cnt_config, tmp_count);
+	}
+}
+
 static void _validate_gres_conf(List gres_conf_list,
 				slurm_gres_context_t *context_ptr)
 {
@@ -1686,7 +1724,9 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 	}
 	xfree(gres_conf_file);
 
+	/* Validate gres.conf and slurm.conf somewhat before merging */
 	for (i = 0; i < gres_context_cnt; i++) {
+		_validate_slurm_conf(gres_list, &gres_context[i]);
 		_validate_gres_conf(gres_conf_list, &gres_context[i]);
 		_check_conf_mismatch(gres_list, gres_conf_list,
 				     &gres_context[i]);
