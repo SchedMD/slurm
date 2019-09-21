@@ -426,7 +426,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name);
  * Validate a node's configuration and put a gres record onto a list
  * Called immediately after gres_plugin_node_config_unpack().
  * IN node_name - name of the node for which the gres information applies
- * IN orig_config - Gres information supplied from slurm.conf
+ * IN orig_config - Gres information supplied from merged slurm.conf/gres.conf
  * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
  * IN/OUT gres_list - List of Gres records for this node to track usage
  * IN threads_per_core - Count of CPUs (threads) per core on this node

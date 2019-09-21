@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
  -- Disallow coordinators to show/fix runaways.
  -- mpi/pmi2 - increase array len to avoid buffer size exceeded error.
  -- Preserve rebooting node's nextstate when updating state with scontrol.
+ -- Fully merge slurm.conf and gres.conf before node_config_load().
 
 * Changes in Slurm 19.05.2
 ==========================

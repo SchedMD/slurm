@@ -290,7 +290,8 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 static void	_sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 				      gres_state_t *gpu_gres_ptr);
 static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
-static void	_validate_config(slurm_gres_context_t *context_ptr);
+static void	_validate_gres_conf(List gres_conf_list,
+				    slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
 static void	_validate_links(gres_slurmd_conf_t *p);
 static void	_validate_gres_node_cores(gres_node_state_t *node_gres_ptr,
@@ -793,6 +794,38 @@ extern int gres_plugin_reconfig(void)
 	return rc;
 }
 
+
+
+/*
+ * Remove file-less GPUs from the final GRES list, since File is a requirement.
+ */
+static void _remove_fileless_gpus(List gres_conf_list,
+				  slurm_gres_context_t *context_ptr)
+{
+	gres_slurmd_conf_t *gres_conf;
+	ListIterator iter;
+
+	if (!gres_conf_list)
+		return;
+
+	/* Only work in the GPU plugin */
+	if (context_ptr->plugin_id != gres_plugin_build_id("gpu"))
+		return;
+
+	iter = list_iterator_create(gres_conf_list);
+	while ((gres_conf = list_next(iter))) {
+		if (gres_conf->plugin_id != context_ptr->plugin_id)
+			continue;
+
+		if (!gres_conf->file) {
+			debug("Removing file-less GPU %s:%s from final GRES list",
+			      gres_conf->name, gres_conf->type_name);
+			list_delete_item(iter);
+		}
+	}
+	list_iterator_destroy(iter);
+}
+
 /*
  * Log the contents of a gres_slurmd_conf_t record
  */
@@ -1155,7 +1188,8 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 	return _parse_gres_config(dest, type, key, NULL, line, leftover);
 }
 
-static void _validate_config(slurm_gres_context_t *context_ptr)
+static void _validate_gres_conf(List gres_conf_list,
+				slurm_gres_context_t *context_ptr)
 {
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
@@ -1205,59 +1239,216 @@ static void _validate_config(slurm_gres_context_t *context_ptr)
 	list_iterator_destroy(iter);
 }
 
-static int _find_gres_conf_by_plugin_id(void *x, void *key)
+/*
+ * Match the type of a GRES from slurm.conf to a GRES in the gres.conf list. If
+ * a match is found, pop it off the gres.conf list and return it.
+ *
+ * gres_conf_list - (in) The gres.conf list to search through.
+ * gres_context   - (in) Which GRES plugin we are currently working in.
+ * type_name      - (in) The type of the slurm.conf GRES record. If null, then
+ * 			 it's an untyped GRES.
+ *
+ * Returns the first gres.conf record from gres_conf_list with the same type
+ * name as the slurm.conf record.
+ */
+static gres_slurmd_conf_t *_match_type(List gres_conf_list,
+				       slurm_gres_context_t *gres_context,
+				       char *type_name)
 {
-	gres_slurmd_conf_t *gres_conf = (gres_slurmd_conf_t *) x;
-	slurm_gres_context_t *gres_context = (slurm_gres_context_t *) key;
-	if (gres_conf->plugin_id == gres_context->plugin_id)
-		return 1;
-	return 0;
+	ListIterator gres_conf_itr;
+	gres_slurmd_conf_t *gres_conf = NULL;
+
+	gres_conf_itr = list_iterator_create(gres_conf_list);
+	while ((gres_conf = list_next(gres_conf_itr))) {
+		if (gres_conf->plugin_id != gres_context->plugin_id)
+			continue;
+		if (xstrcasecmp(gres_conf->type_name, type_name))
+			continue;
+		/* We found a match, so remove from gres_conf_list and break */
+		list_remove(gres_conf_itr);
+		break;
+	}
+	list_iterator_destroy(gres_conf_itr);
+
+	return gres_conf;
 }
 
-static void _add_gres_config(List gres_conf_list, gres_state_t *gres_ptr,
-			     slurm_gres_context_t *gres_context,
-			     node_config_load_t *node_conf)
+/*
+ * Add a GRES conf record with count == 0 to gres_list.
+ *
+ * gres_list    - (in/out) The gres list to add to.
+ * gres_context - (in) The GRES plugin to add a GRES record for.
+ * cpu_cnt      - (in) The cpu count configured for the node.
+ */
+static void _add_gres_config_empty(List gres_list,
+				   slurm_gres_context_t *gres_context,
+				   uint32_t cpu_cnt)
 {
-	gres_slurmd_conf_t *gres_conf;
-	gres_node_state_t *node_gres_ptr;
-	int i;
+	gres_slurmd_conf_t *gres_conf = xmalloc(sizeof(*gres_conf));
+	gres_conf->cpu_cnt = cpu_cnt;
+	gres_conf->name = xstrdup(gres_context->gres_name);
+	gres_conf->plugin_id = gres_context->plugin_id;
+	list_append(gres_list, gres_conf);
+}
 
-	if (!gres_ptr) {
-		gres_conf = xmalloc(sizeof(gres_slurmd_conf_t));
-		gres_conf->cpu_cnt = node_conf->cpu_cnt;
-		gres_conf->name = xstrdup(gres_context->gres_name);
-		gres_conf->plugin_id = gres_context->plugin_id;
-		list_append(gres_conf_list, gres_conf);
+/*
+ * Truncate the File hostrange string of a GRES record to be to be at most
+ * new_count entries. The extra entries will be removed.
+ *
+ * gres_conf - (in/out) The GRES record to modify.
+ * count     - (in) The new number of entries in File
+ */
+static void _set_file_subset(gres_slurmd_conf_t *gres_conf, uint64_t new_count)
+{
+	/* Convert file to hostrange */
+	hostlist_t hl = hostlist_create(gres_conf->file);
+	unsigned long old_count = hostlist_count(hl);
+
+	if (new_count >= old_count)
+		/* Nothing to do */
 		return;
+
+	/* Remove all but the first entries */
+	for (int i = old_count; i > new_count; --i) {
+		free(hostlist_pop(hl));
 	}
 
-	node_gres_ptr = (gres_node_state_t *) gres_ptr->gres_data;
-	if (node_gres_ptr->type_cnt == 0) {
-		gres_conf = xmalloc(sizeof(gres_slurmd_conf_t));
-		gres_conf->count = node_gres_ptr->gres_cnt_config;
-		gres_conf->cpu_cnt = node_conf->cpu_cnt;
-		gres_conf->name = xstrdup(gres_context->gres_name);
-		gres_conf->plugin_id = gres_context->plugin_id;
-		list_append(gres_conf_list, gres_conf);
+	debug3("%s: Truncating %s:%s File from (%ld) %s", __func__,
+	       gres_conf->name, gres_conf->type_name, old_count,
+	       gres_conf->file);
+
+	/* Set file to the new subset */
+	xfree(gres_conf->file);
+	gres_conf->file = hostlist_ranged_string_xmalloc(hl);
+
+	debug3("%s: to (%ld) %s", __func__, new_count, gres_conf->file);
+	hostlist_destroy(hl);
+}
+
+/*
+ * A continuation of _merge_gres() depending on if the slurm.conf GRES is typed
+ * or not.
+ *
+ * gres_conf_list - (in) The gres.conf list.
+ * new_list       - (out) The new merged [slurm|gres].conf list.
+ * count          - (in) The count of the slurm.conf GRES record.
+ * type_name      - (in) The type of the slurm.conf GRES record, if it exists.
+ * gres_context   - (in) Which GRES plugin we are working in.
+ * cpu_cnt        - (in) A count of CPUs on the node.
+ */
+static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
+			 char *type_name, slurm_gres_context_t *gres_context,
+			 uint32_t cpu_count)
+{
+	gres_slurmd_conf_t *gres_conf, *match;
+
+	/* If slurm.conf count is initially 0, don't waste time on it */
+	if (count == 0)
 		return;
+
+	/*
+	 * There can be multiple gres.conf GRES lines contained within a
+	 * single slurm.conf GRES line, due to different values of Cores
+	 * and Links. Append them to the list where possible.
+	 */
+	while ((match = _match_type(gres_conf_list, gres_context, type_name))) {
+		list_append(new_list, match);
+
+		debug3("%s: From gres.conf, using %s:%s:%ld:%s", __func__,
+		       match->name, match->type_name, match->count,
+		       match->file);
+
+		/* See if we need to merge with any more gres.conf records. */
+		if (match->count > count) {
+			/*
+			 * Truncate excess count of gres.conf to match total
+			 * count of slurm.conf.
+			 */
+			match->count = count;
+			/*
+			 * Truncate excess file of gres.conf to match total
+			 * count of slurm.conf.
+			 */
+			if (match->file)
+				_set_file_subset(match, count);
+			/* Floor to 0 to break out of loop. */
+			count = 0;
+		} else
+			/*
+			 * Subtract this gres.conf line count from the
+			 * slurm.conf total.
+			 */
+			count -= match->count;
+
+		/*
+		 * All devices outlined by this slurm.conf record have now been
+		 * merged with gres.conf records and added to new_list, so exit.
+		 */
+		if (count == 0)
+			break;
 	}
 
-	for (i = 0; i < node_gres_ptr->type_cnt; i++) {
-		gres_conf = xmalloc(sizeof(gres_slurmd_conf_t));
+	if (count == 0)
+		return;
+
+	/*
+	 * There are leftover GRES specified in this slurm.conf record that are
+	 * not accounted for in gres.conf that still need to be added.
+	 */
+	gres_conf = xmalloc(sizeof(*gres_conf));
+	gres_conf->count = count;
+	gres_conf->cpu_cnt = cpu_count;
+	gres_conf->name = xstrdup(gres_context->gres_name);
+	gres_conf->plugin_id = gres_context->plugin_id;
+	if (type_name) {
 		gres_conf->config_flags = GRES_CONF_HAS_TYPE;
-		gres_conf->count = node_gres_ptr->type_cnt_avail[i];
-		gres_conf->cpu_cnt = node_conf->cpu_cnt;
-		gres_conf->name = xstrdup(gres_context->gres_name);
-		gres_conf->plugin_id = gres_context->plugin_id;
-		gres_conf->type_name = xstrdup(node_gres_ptr->type_name[i]);
-		list_append(gres_conf_list, gres_conf);
+		gres_conf->type_name = xstrdup(type_name);
+	}
+	list_append(new_list, gres_conf);
+}
+
+/*
+ * Merge a single slurm.conf GRES specification with any relevant gres.conf
+ * records and append the result to new_list.
+ *
+ * gres_conf_list - (in) The gres.conf list.
+ * new_list       - (out) The new merged [slurm|gres].conf list.
+ * ptr            - (in) A slurm.conf GRES record.
+ * gres_context   - (in) Which GRES plugin we are working in.
+ * cpu_cnt        - (in) A count of CPUs on the node.
+ */
+static void _merge_gres(List gres_conf_list, List new_list, gres_state_t *ptr,
+			slurm_gres_context_t *gres_context, uint32_t cpu_cnt)
+{
+	gres_node_state_t *slurm_gres = (gres_node_state_t *)ptr->gres_data;
+
+	/* If this GRES has no types, merge in the single untyped GRES */
+	if (slurm_gres->type_cnt == 0) {
+		_merge_gres2(gres_conf_list, new_list,
+			     slurm_gres->gres_cnt_config, NULL, gres_context,
+			     cpu_cnt);
+		return;
+	}
+
+	/* If this GRES has types, merge in each typed GRES */
+	for (int i = 0; i < slurm_gres->type_cnt; i++) {
+		_merge_gres2(gres_conf_list, new_list,
+			     slurm_gres->type_cnt_avail[i],
+			     slurm_gres->type_name[i], gres_context, cpu_cnt);
 	}
 }
 
 /*
- * Merge GRES configuration from slurm.conf into that from gres.conf.
- * Any configuration information from gres.conf takes precidence.
- * If no configuration found, build a record with zero count
+ * Merge slurm.conf and gres.conf GRES configuration.
+ * gres.conf can only work within what is outlined in slurm.conf. Every
+ * gres.conf device that does not match up to a device in slurm.conf is
+ * discarded with an error. If no gres conf found for what is specified in
+ * slurm.conf, create a zero-count conf record.
+ *
+ * node_conf       - (in) node configuration info (cpu count).
+ * gres_conf_list  - (in/out) GRES data from gres.conf. This becomes the new
+ * 		     merged slurm.conf/gres.conf list.
+ * slurm_conf_list - (in) GRES data from slurm.conf.
  */
 static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 			  List slurm_conf_list)
@@ -1267,15 +1458,10 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 	ListIterator iter;
 	bool found;
 
-	for (i = 0; i < gres_context_cnt; i++) {
-		/* Determine if configuration already gathered from gres.conf */
-		if (list_find_first(gres_conf_list,
-				    _find_gres_conf_by_plugin_id,
-				    &gres_context[i])) {
-			continue;
-		}
+	List new_gres_list = list_create(destroy_gres_slurmd_conf);
 
-		/* Copy GRES configuration from slurm.conf, if found */
+	for (i = 0; i < gres_context_cnt; i++) {
+		/* Copy GRES configuration from slurm.conf */
 		if (slurm_conf_list) {
 			found = false;
 			iter = list_iterator_create(slurm_conf_list);
@@ -1284,8 +1470,9 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 				    gres_context[i].plugin_id)
 					continue;
 				found = true;
-				_add_gres_config(gres_conf_list, gres_ptr,
-						 &gres_context[i], node_conf);
+				_merge_gres(gres_conf_list, new_gres_list,
+					    gres_ptr, &gres_context[i],
+					    node_conf->cpu_cnt);
 			}
 			list_iterator_destroy(iter);
 			if (found)
@@ -1293,9 +1480,13 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 		}
 
 		/* Add GRES record with zero count */
-		_add_gres_config(gres_conf_list, NULL, &gres_context[i],
-				 node_conf);
+		_add_gres_config_empty(new_gres_list, &gres_context[i],
+				       node_conf->cpu_cnt);
 	}
+	/* Set gres_conf_list to be the new merged list */
+	list_flush(gres_conf_list);
+	list_transfer(gres_conf_list, new_gres_list);
+	FREE_NULL_LIST(new_gres_list);
 }
 
 /*
@@ -1377,17 +1568,30 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 		s_p_hashtbl_destroy(tbl);
 	}
 	xfree(gres_conf_file);
+
+	for (i = 0; i < gres_context_cnt; i++) {
+		_validate_gres_conf(gres_conf_list, &gres_context[i]);
+	}
+
+	/* Merge slurm.conf and gres.conf together into gres_conf_list */
 	_merge_config(&node_conf, gres_conf_list, gres_list);
 
 	for (i = 0; i < gres_context_cnt; i++) {
-		_validate_config(&gres_context[i]);
 		if (gres_context[i].ops.node_config_load == NULL)
 			continue;	/* No plugin */
 		rc2 = (*(gres_context[i].ops.node_config_load))(gres_conf_list,
 								&node_conf);
 		if (rc == SLURM_SUCCESS)
 			rc = rc2;
+
 	}
+
+	/* Postprocess gres_conf_list after all plugins' node_config_load */
+	for (i = 0; i < gres_context_cnt; i++) {
+		/* Remove every GPU with an empty File */
+		_remove_fileless_gpus(gres_conf_list, &gres_context[i]);
+	}
+
 	list_for_each(gres_conf_list, _log_gres_slurmd_conf, NULL);
 	slurm_mutex_unlock(&gres_context_lock);
 
@@ -2506,7 +2710,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
  * Validate a node's configuration and put a gres record onto a list
  * Called immediately after gres_plugin_node_config_unpack().
  * IN node_name - name of the node for which the gres information applies
- * IN orig_config - Gres information supplied from slurm.conf
+ * IN orig_config - Gres information supplied from merged slurm.conf/gres.conf
  * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
  * IN/OUT gres_list - List of Gres records for this node to track usage
  * IN threads_per_core - Count of CPUs (threads) per core on this node
