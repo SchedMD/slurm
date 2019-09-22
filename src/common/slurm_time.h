@@ -30,7 +30,6 @@
 #include <time.h>
 
 extern char *slurm_ctime(const time_t *timep);
-extern char *slurm_ctime_r(const time_t *timep, char *buf);
 
 extern struct tm *slurm_gmtime(const time_t *timep);
 extern struct tm *slurm_gmtime_r(const time_t *timep, struct tm *result);
