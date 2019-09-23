@@ -10940,7 +10940,8 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 				 * records
 				 */
 				gres_device->alloc = 1;
-				gres_device2->alloc = 1;
+				if (gres_device2)
+					gres_device2->alloc = 1;
 			}
 			//info("%d is %d", i, gres_device->alloc);
 			i++;
