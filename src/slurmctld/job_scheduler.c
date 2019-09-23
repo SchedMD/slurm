@@ -791,7 +791,7 @@ extern int schedule(uint32_t job_limit)
 		sched_job_limit += job_limit;	/* test more jobs */
 
 	if (delta_t >= sched_min_interval) {
-		/* Temporariy set time in the future until we get the real
+		/* Temporarily set time in the future until we get the real
 		 * scheduler completion time */
 		sched_last.tv_sec  = now.tv_sec;
 		sched_last.tv_usec = now.tv_usec;

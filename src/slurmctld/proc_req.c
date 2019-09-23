@@ -2285,7 +2285,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 		return;
 	}
 
-	/* Only throttle on none composite messages, the lock should
+	/* Only throttle on non-composite messages, the lock should
 	 * already be set earlier. */
 	if (!running_composite) {
 		if (config_update != slurmctld_conf.last_update) {

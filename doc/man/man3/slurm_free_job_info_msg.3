@@ -1,7 +1,7 @@
 .TH "Slurm API" "3" "Slurm job information reporting functions" "April 2015" "Slurm job information reporting functions"
 
 .SH "NAME"
-slurm_get_end_time, slurm_get_rem_time, slurm_get_select_jobinfo,
+slurm_get_end_time, slurm_get_rem_time,
 slurm_job_cpus_allocated_on_node, slurm_job_cpus_allocated_on_node_id,
 slurm_job_cpus_allocated_str_on_node, slurm_job_cpus_allocated_str_on_node_id,
 slurm_load_jobs, slurm_load_job_user, slurm_pid2jobid,
@@ -107,15 +107,6 @@ void \fBslurm_print_job_info_msg\fR (
 .br
 );
 .LP
-int \fBslurm_get_select_jobinfo\fR (
-.br
-	select_jobinfo_t \fIjobinfo\fP,
-.br
-	enum select_data_type \fIdata_type\fP,
-.br
-	void *\fIdata\fP
-);
-.LP
 int \fBslurm_job_cpus_allocated_on_node_id\fR (
 .br
 	job_resources_t *\fIjob_resrcs_ptr\fP,
@@ -185,10 +176,8 @@ data are associated with different computer types and different configurations.
 .TP
 \fIdata\fP
 The data value identified with \fIdata_type\fP is returned in the location specified
-by \fIdata\fP. If a type of data is requested that does not exist on a particular
-computer type or configuration, \fBslurm_get_select_jobinfo\fR returns an error.
-See the slurm.h header file for identification of the data types associated
-with each value of \fIdata_type\fP.
+by \fIdata\fP. See the slurm.h header file for identification of the data types
+associated with each value of \fIdata_type\fP.
 .TP
 \fIend_time_ptr\fP
 Specified a pointer to a storage location into which the expected termination
@@ -415,26 +404,6 @@ int main (int argc, char *argv[])
 			job_buffer_ptr\->job_array[i].job_id,
 .br
 			job_buffer_ptr\->job_array[i].user_id);
-.br
-	}
-.LP
-	if (job_buffer_ptr\->record_count >= 1) {
-.br
-		uint16_t nodes;
-.br
-		if (slurm_get_select_jobinfo(
-.br
-			job_buffer_ptr\->job_array[0].select_jobinfo,
-.br
-			SELECT_JOBDATA_NODE_CNT,
-.br
-			&nodes) == SLURM_SUCCESS)
-.br
-			printf("JobId=%u Nodes=%u\\n",
-.br
-				job_buffer_ptr\->job_array[0].job_id,
-.br
-				nodes);
 .br
 	}
 .LP
