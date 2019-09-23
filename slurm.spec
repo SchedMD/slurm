@@ -20,8 +20,9 @@ Source:		%{slurm_source_dir}.tar.bz2
 # build options		.rpmmacros options	change to default action
 # ====================  ====================	========================
 # --prefix		%_prefix path		install path for commands, libraries, etc.
-# --with cray		%_with_cray 1		build for a Native-Slurm Cray system
+# --with cray		%_with_cray 1		build for a Cray Aries system
 # --with cray_network	%_with_cray_network 1	build for a non-Cray system with a Cray network
+# --with cray_shasta	%_with_cray_shasta 1	build for a Cray Shasta system
 # --with slurmrestd	%_with_slurmrestd 1	build slurmrestd
 # --with slurmsmwd      %_with_slurmsmwd 1      build slurmsmwd
 # --without debug	%_without_debug 1	don't compile with debugging symbols
@@ -38,6 +39,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 #  Options that are off by default (enable with --with <opt>)
 %bcond_with cray
 %bcond_with cray_network
+%bcond_with cray_shasta
 %bcond_with slurmrestd
 %bcond_with slurmsmwd
 %bcond_with multiple_slurmd
@@ -375,9 +377,12 @@ install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
 # Do not package Slurm's version of libpmi on Cray systems in the usual location.
 # Cray's version of libpmi should be used. Move it elsewhere if the site still
 # wants to use it with other MPI stacks.
-%if %{with cray}
+%if %{with cray} || %{with cray_shasta}
    mkdir %{buildroot}/%{_libdir}/slurmpmi
    mv %{buildroot}/%{_libdir}/libpmi* %{buildroot}/%{_libdir}/slurmpmi
+%endif
+
+%if %{with cray}
    install -D -m644 contribs/cray/plugstack.conf.template %{buildroot}/%{_sysconfdir}/plugstack.conf.template
    install -D -m644 contribs/cray/slurm.conf.template %{buildroot}/%{_sysconfdir}/slurm.conf.template
    mkdir -p %{buildroot}/opt/modulefiles/slurm
@@ -585,7 +590,7 @@ rm -rf %{buildroot}
 
 %files libpmi
 %defattr(-,root,root)
-%if %{with cray}
+%if %{with cray} || %{with cray_shasta}
 %{_libdir}/slurmpmi/*
 %else
 %{_libdir}/libpmi*
