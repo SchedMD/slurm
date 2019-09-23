@@ -2462,6 +2462,13 @@ static void _set_het_job_env(job_record_t *het_job_leader,
 					het_job_offset,"%s", tmp_str);
 				xfree(tmp_str);
 			}
+		} else if (IS_JOB_RUNNING(het_job)) {
+			if (!het_job->details)
+				error("%s: %pJ has null details member",
+				      __func__, het_job);
+			if (!het_job->job_resrcs)
+				error("%s: %pJ has null job_resrcs member",
+				      __func__, het_job);
 		}
 		het_job_offset++;
 	}
