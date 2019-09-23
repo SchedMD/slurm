@@ -48,10 +48,6 @@ all jobs.</li>
 <li><b>slurm_print_job_info</b> &mdash; Print information about
 a specific job.</li>
 
-<li><b>slurm_get_select_jobinfo</b> &mdash; Get <i>select</i> plugin
-specific information associated with the job. The information
-available is will vary by select plugin type configured.</li>
-
 <li><b>slurm_free_job_info_msg</b> &mdash; Free storage allocated by
 <i>slurm_load_jobs</i>.</li>
 

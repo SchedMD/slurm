@@ -47,7 +47,6 @@ man3_MANS = slurm_hostlist_create.3 \
 	slurm_get_errno.3 \
 	slurm_get_job_steps.3 \
 	slurm_get_rem_time.3 \
-	slurm_get_select_jobinfo.3 \
 	slurm_get_triggers.3 \
 	slurm_init_update_front_end_msg.3 \
 	slurm_init_job_desc_msg.3 \

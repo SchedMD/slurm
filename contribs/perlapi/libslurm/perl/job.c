@@ -255,12 +255,6 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	STORE_FIELD(hv, job_info, ntasks_per_core, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_node, uint16_t);
 	STORE_FIELD(hv, job_info, ntasks_per_socket, uint16_t);
-#ifdef HAVE_BG
-	slurm_get_select_jobinfo(job_info->select_jobinfo,
-				 SELECT_JOBDATA_NODE_CNT,
-				 &job_info->num_nodes);
-
-#endif
 	STORE_FIELD(hv, job_info, num_nodes, uint32_t);
 	STORE_FIELD(hv, job_info, num_cpus, uint32_t);
 	STORE_FIELD(hv, job_info, pn_min_memory, uint64_t);
