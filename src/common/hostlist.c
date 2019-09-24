@@ -1852,7 +1852,28 @@ error:
 	seterrno_ret(err, NULL);
 }
 
+/*
+ * destroy hostlist iterator
+ * requires hostlist mutex to be locked
+ */
+static void _hostlist_iterator_destroy(hostlist_iterator_t i)
+{
+	if (!i)
+		return;
 
+	xassert(i->magic == HOSTLIST_ITR_MAGIC);
+
+	for (hostlist_iterator_t *pi = &i->hl->ilist; *pi; pi = &(*pi)->next) {
+		xassert((*pi)->magic == HOSTLIST_ITR_MAGIC);
+		if (*pi == i) {
+			*pi = (*pi)->next;
+			break;
+		}
+	}
+
+	xassert(i->magic = ~HOSTLIST_ITR_MAGIC);
+	free(i);
+}
 
 hostlist_t hostlist_create_dims(const char *str, int dims)
 {
@@ -3277,21 +3298,14 @@ void hostlist_iterator_reset(hostlist_iterator_t i)
 
 void hostlist_iterator_destroy(hostlist_iterator_t i)
 {
-	hostlist_iterator_t *pi;
+	hostlist_t hl;
 	if (i == NULL)
 		return;
-	xassert(i->magic == HOSTLIST_ITR_MAGIC);
-	LOCK_HOSTLIST(i->hl);
-	for (pi = &i->hl->ilist; *pi; pi = &(*pi)->next) {
-		xassert((*pi)->magic == HOSTLIST_ITR_MAGIC);
-		if (*pi == i) {
-			*pi = (*pi)->next;
-			break;
-		}
-	}
-	UNLOCK_HOSTLIST(i->hl);
-	i->magic = ~HOSTLIST_ITR_MAGIC;
-	free(i);
+	/* _hostlist_iterator_destroy free's 'i' so grab the hl now */
+	hl = i->hl;
+	LOCK_HOSTLIST(hl);
+	_hostlist_iterator_destroy(i);
+	UNLOCK_HOSTLIST(hl);
 }
 
 static void _iterator_advance(hostlist_iterator_t i)
