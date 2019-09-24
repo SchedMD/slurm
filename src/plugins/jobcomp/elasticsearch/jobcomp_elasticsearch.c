@@ -551,7 +551,7 @@ static void _make_time_str(time_t * time, char *string, int size)
 {
 	struct tm time_tm;
 
-	slurm_gmtime_r(time, &time_tm);
+	gmtime_r(time, &time_tm);
 	if (*time == (time_t) 0) {
 		snprintf(string, size, "Unknown");
 	} else {
