@@ -448,10 +448,11 @@ extern time_t parse_time(const char *time_str, int past)
 		}
 		if (xstrncasecmp(time_str+pos, "tomorrow", 8) == 0) {
 			time_t later = time_now + (24 * 60 * 60);
-			struct tm *later_tm = slurm_localtime(&later);
-			month = later_tm->tm_mon;
-			mday  = later_tm->tm_mday;
-			year  = later_tm->tm_year;
+			struct tm later_tm;
+			localtime_r(&later, &later_tm);
+			month = later_tm.tm_mon;
+			mday = later_tm.tm_mday;
+			year = later_tm.tm_year;
 			pos += 7;
 			continue;
 		}
@@ -487,7 +488,7 @@ extern time_t parse_time(const char *time_str, int past)
 			int i;
 			long delta = 0;
 			time_t later;
-			struct tm *later_tm;
+			struct tm later_tm;
 			for (i=(pos+3); ; i++) {
 				if (time_str[i] == '+') {
 					pos += i;
@@ -506,13 +507,13 @@ extern time_t parse_time(const char *time_str, int past)
 				goto prob;
 			}
 			later    = time_now + delta;
-			later_tm = slurm_localtime(&later);
-			month    = later_tm->tm_mon;
-			mday     = later_tm->tm_mday;
-			year     = later_tm->tm_year;
-			hour     = later_tm->tm_hour;
-			minute   = later_tm->tm_min;
-			second   = later_tm->tm_sec;
+			localtime_r(&later, &later_tm);
+			month = later_tm.tm_mon;
+			mday = later_tm.tm_mday;
+			year = later_tm.tm_year;
+			hour = later_tm.tm_hour;
+			minute = later_tm.tm_min;
+			second = later_tm.tm_sec;
 			continue;
 		}
 
@@ -550,10 +551,11 @@ extern time_t parse_time(const char *time_str, int past)
 			year  = time_now_tm->tm_year;
 		} else {/* tomorrow */
 			time_t later = time_now + (24 * 60 * 60);
-			struct tm *later_tm = slurm_localtime(&later);
-			month = later_tm->tm_mon;
-			mday  = later_tm->tm_mday;
-			year  = later_tm->tm_year;
+			struct tm later_tm;
+			localtime_r(&later, &later_tm);
+			month = later_tm.tm_mon;
+			mday = later_tm.tm_mday;
+			year = later_tm.tm_year;
 		}
 	}
 	if (year == -1) {
