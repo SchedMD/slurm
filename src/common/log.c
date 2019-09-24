@@ -691,14 +691,15 @@ void log_set_timefmt(unsigned fmtflag)
 	}
 }
 
-/* set_idbuf()
+/*
+ * _set_idbuf()
  * Write in the input buffer the current time and milliseconds
  * the process id and the current thread id.
  */
-static void
-set_idbuf(char *idbuf)
+static void _set_idbuf(char *idbuf, size_t size)
 {
 	struct timeval now;
+	char time[25];
 	char thread_name[NAMELEN];
 	int max_len = 12; /* handles current longest thread name */
 
@@ -714,10 +715,11 @@ set_idbuf(char *idbuf)
 	max_len = 0;
 	thread_name[0] = '\0';
 #endif
+	slurm_ctime2_r(&now.tv_sec, time);
 
-	sprintf(idbuf, "%.15s.%-6d %5d %-*s %p", slurm_ctime(&now.tv_sec) + 4,
-		(int)now.tv_usec, (int)getpid(), max_len, thread_name,
-		(void *)pthread_self());
+	snprintf(idbuf, size, "%.15s.%-6d %5d %-*s %p",
+		 time + 4, (int) now.tv_usec, (int) getpid(), max_len,
+		 thread_name, (void *) pthread_self());
 }
 
 /*
@@ -989,7 +991,8 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					xstrftimecat(substitute, "%b %d %T");
 					break;
 				case LOG_FMT_THREAD_ID:
-					set_idbuf(substitute_on_stack);
+					_set_idbuf(substitute_on_stack,
+						   sizeof(substitute_on_stack));
 					substitute = substitute_on_stack;
 					should_xfree = 0;
 					break;
@@ -1239,7 +1242,7 @@ static void _log_msg(log_level_t level, bool sched, const char *fmt, va_list arg
 		fflush(stdout);
 		if (log->fmt == LOG_FMT_THREAD_ID) {
 			char tmp[64];
-			set_idbuf(tmp);
+			_set_idbuf(tmp, sizeof(tmp));
 			_log_printf(log, log->buf, stderr, "%s: %s%s\n",
 			            tmp, pfx, buf);
 		} else {
