@@ -1240,6 +1240,123 @@ static void _validate_gres_conf(List gres_conf_list,
 }
 
 /*
+ * Keep track of which gres.conf lines have a count greater than expected
+ * according to the current slurm.conf GRES. Modify the count of throw-away
+ * records in gres_conf_list_tmp to keep track of this. Any gres.conf records
+ * with a count > 0 means that slurm.conf did not account for it completely.
+ *
+ * gres_conf_list_tmp - (in/out) The temporary gres.conf list.
+ * count              - (in) The count of the current slurm.conf GRES record.
+ * type_name          - (in) The type of the current slurm.conf GRES record.
+ */
+static void _compare_conf_counts(List gres_conf_list_tmp, uint64_t count,
+				 char *type_name)
+{
+	gres_slurmd_conf_t *gres_conf;
+	ListIterator iter = list_iterator_create(gres_conf_list_tmp);
+	while ((gres_conf = list_next(iter))) {
+		/* Note: plugin type filter already applied */
+		/* Check that type is the same */
+		if (xstrcasecmp(gres_conf->type_name, type_name))
+			continue;
+		/* Keep track of counts */
+		if (gres_conf->count > count) {
+			gres_conf->count -= count;
+			/* This slurm.conf GRES specification is now used up */
+			list_iterator_destroy(iter);
+			return;
+		} else {
+			count -= gres_conf->count;
+			gres_conf->count = 0;
+		}
+	}
+	list_iterator_destroy(iter);
+}
+
+/*
+ * Loop through each entry in gres.conf and see if there is a corresponding
+ * entry in slurm.conf. If so, see if the counts line up. If there are more
+ * devices specified in gres.conf than in slurm.conf, emit errors.
+ *
+ * slurm_conf_list - (in) The slurm.conf GRES list.
+ * gres_conf_list  - (in) The gres.conf GRES list.
+ * context_ptr     - (in) Which GRES plugin we are currently working in.
+ */
+static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
+				 slurm_gres_context_t *context_ptr)
+{
+	ListIterator iter;
+	gres_slurmd_conf_t *gres_conf;
+	gres_state_t *slurm_conf;
+	List gres_conf_list_tmp = list_create(destroy_gres_slurmd_conf);
+
+	/* E.g. slurm_conf_list will be NULL in the case of --gpu-bind */
+	if (!slurm_conf_list || !gres_conf_list)
+		return;
+
+	/*
+	 * Duplicate the gres.conf list with records relevant to this GRES plugin
+	 * only so we can mangle records. Only add records under the current plugin.
+	 */
+	iter = list_iterator_create(gres_conf_list);
+	while ((gres_conf = list_next(iter))) {
+		gres_slurmd_conf_t *gres_conf_tmp;
+		if (gres_conf->plugin_id != context_ptr->plugin_id)
+			continue;
+
+		gres_conf_tmp = xmalloc(sizeof(*gres_conf_tmp));
+		gres_conf_tmp->name = xstrdup(gres_conf->name);
+		gres_conf_tmp->type_name = xstrdup(gres_conf->type_name);
+		gres_conf_tmp->count = gres_conf->count;
+		list_append(gres_conf_list_tmp, gres_conf_tmp);
+	}
+	list_iterator_destroy(iter);
+
+	/*
+	 * Loop through the slurm.conf list and see if there are more gres.conf
+	 * GRES than expected.
+	 */
+	iter = list_iterator_create(slurm_conf_list);
+	while ((slurm_conf = list_next(iter))) {
+		gres_node_state_t *slurm_gres;
+
+		if (slurm_conf->plugin_id != context_ptr->plugin_id)
+			continue;
+
+		/* Determine if typed or untyped, and act accordingly */
+		slurm_gres = (gres_node_state_t *)slurm_conf->gres_data;
+		if (!slurm_gres->type_name) {
+			_compare_conf_counts(gres_conf_list_tmp,
+					     slurm_gres->gres_cnt_config, NULL);
+			continue;
+		}
+
+		for (int i = 0; i < slurm_gres->type_cnt; ++i) {
+			_compare_conf_counts(gres_conf_list_tmp,
+					     slurm_gres->type_cnt_avail[i],
+					     slurm_gres->type_name[i]);
+		}
+	}
+	list_iterator_destroy(iter);
+
+	/*
+	 * Loop through gres_conf_list_tmp to print errors for gres.conf
+	 * records that were not completely accounted for in slurm.conf.
+	 */
+	iter = list_iterator_create(gres_conf_list_tmp);
+	while ((gres_conf = list_next(iter)))
+		if (gres_conf->count > 0)
+			info("WARNING: A line in gres.conf for GRES %s%s%s has %ld more configured than expected in slurm.conf. Ignoring extra GRES.",
+			     gres_conf->name,
+			     (gres_conf->type_name) ? ":" : "",
+			     (gres_conf->type_name) ? gres_conf->type_name : "",
+			     gres_conf->count);
+	list_iterator_destroy(iter);
+
+	FREE_NULL_LIST(gres_conf_list_tmp);
+}
+
+/*
  * Match the type of a GRES from slurm.conf to a GRES in the gres.conf list. If
  * a match is found, pop it off the gres.conf list and return it.
  *
@@ -1571,6 +1688,8 @@ extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
 
 	for (i = 0; i < gres_context_cnt; i++) {
 		_validate_gres_conf(gres_conf_list, &gres_context[i]);
+		_check_conf_mismatch(gres_list, gres_conf_list,
+				     &gres_context[i]);
 	}
 
 	/* Merge slurm.conf and gres.conf together into gres_conf_list */
