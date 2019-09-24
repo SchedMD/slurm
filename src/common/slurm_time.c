@@ -85,14 +85,9 @@ extern struct tm *slurm_localtime_r(const time_t *timep, struct tm *result)
 
 extern time_t slurm_mktime(struct tm *tp)
 {
-	time_t rc;
-	slurm_mutex_lock(&time_lock);
-	_init();
 	/* Force tm_isdt to -1. */
 	tp->tm_isdst = -1;
-	rc = mktime(tp);
-	slurm_mutex_unlock(&time_lock);
-	return rc;
+	return mktime(tp);
 }
 
 /* Slurm variants of ctime and ctime_r without a trailing new-line */
