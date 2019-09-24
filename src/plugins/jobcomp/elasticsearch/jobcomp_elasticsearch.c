@@ -62,7 +62,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-#define USE_ISO8601 1
 #define MAX_STR_LEN 10240	/* 10 KB */
 #define MAX_JOBS 1000000
 
@@ -556,7 +555,6 @@ static void _make_time_str(time_t * time, char *string, int size)
 	if (*time == (time_t) 0) {
 		snprintf(string, size, "Unknown");
 	} else {
-#if USE_ISO8601
 		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format,
 		 * NOTE: This is expected to break Maui, Moab and LSF
 		 * schedulers management of Slurm. */
@@ -565,14 +563,6 @@ static void _make_time_str(time_t * time, char *string, int size)
 			 (time_tm.tm_year + 1900), (time_tm.tm_mon + 1),
 			 time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
 			 time_tm.tm_sec);
-#else
-		/* Format MM/DD-HH:MM:SS */
-		snprintf(string, size,
-			 "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u",
-			 (time_tm.tm_mon + 1), time_tm.tm_mday,
-			 time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
-
-#endif
 	}
 }
 
