@@ -37,4 +37,7 @@ extern time_t slurm_mktime(struct tm *tp);
 extern char *slurm_ctime2(const time_t *timep);
 extern char *slurm_ctime2_r(const time_t *timep, char *time_str);
 
+/* Print the current date + time as formatted by slurm_ctime2_r */
+extern void print_date(void);
+
 #endif /* _HAVE_SLURM_TIME_H */

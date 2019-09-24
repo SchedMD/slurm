@@ -49,7 +49,6 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/parse_time.h"
-#include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -81,14 +80,6 @@ static char *_str_tolower(char *upper_str);
 /*****************************************************************************
  * Global Print Functions
  *****************************************************************************/
-void print_date(void)
-{
-	time_t now;
-
-	now = time(NULL);
-	printf("%s", slurm_ctime(&now));
-}
-
 int print_sinfo_list(List sinfo_list)
 {
 	ListIterator i = list_iterator_create(sinfo_list);

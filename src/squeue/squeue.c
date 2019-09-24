@@ -63,7 +63,6 @@ int max_line_size;
  *************/
 static int  _get_info(bool clear_old, bool log_cluster_name);
 static int  _get_window_width( void );
-static void _print_date( void );
 static int  _multi_cluster(List clusters);
 static int  _print_job(bool clear_old, bool log_cluster_name);
 static int  _print_job_steps( bool clear_old );
@@ -89,7 +88,7 @@ main (int argc, char **argv)
 	while (1) {
 		if ((!params.no_header) &&
 		    (params.iterate || params.verbose || params.long_list))
-			_print_date ();
+			print_date();
 
 		if (!params.clusters) {
 			if (_get_info(false, false))
@@ -323,14 +322,4 @@ _print_job_steps( bool clear_old )
 			   new_step_ptr->job_step_count,
 			   params.format_list );
 	return SLURM_SUCCESS;
-}
-
-
-static void
-_print_date( void )
-{
-	time_t now;
-
-	now = time( NULL );
-	printf("%s", slurm_ctime( &now ));
 }

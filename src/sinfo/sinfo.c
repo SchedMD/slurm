@@ -42,6 +42,7 @@
 #include "src/common/xstring.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/slurm_time.h"
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
 

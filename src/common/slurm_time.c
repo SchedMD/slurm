@@ -91,3 +91,11 @@ extern char *slurm_ctime2_r(const time_t *timep, char *time_str)
 
 	return time_str;
 }
+
+extern void print_date(void)
+{
+	time_t now = time(NULL);
+	char time_str[25];
+
+	printf("%s\n", slurm_ctime2_r(&now, time_str));
+}
