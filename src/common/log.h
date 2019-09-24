@@ -262,8 +262,10 @@ void	log_var(const log_level_t, const char *, ...)
 			__attribute__ ((format (printf, 2, 3)));
 void	sched_log_var(const log_level_t, const char *, ...)
 			__attribute__ ((format (printf, 2, 3)));
-void	fatal_abort(const char *, ...) __attribute__ ((format (printf, 1, 2)));
-void	fatal(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+extern void fatal_abort(const char *, ...)
+	__attribute__((format (printf, 1, 2))) __attribute__((noreturn));
+extern void fatal(const char *, ...)
+	__attribute__((format (printf, 1, 2))) __attribute__((noreturn));
 int	error(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	info(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	verbose(const char *, ...) __attribute__ ((format (printf, 1, 2)));
