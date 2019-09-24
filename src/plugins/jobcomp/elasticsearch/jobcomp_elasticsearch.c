@@ -551,18 +551,12 @@ static void _make_time_str(time_t * time, char *string, int size)
 {
 	struct tm time_tm;
 
-	gmtime_r(time, &time_tm);
 	if (*time == (time_t) 0) {
 		snprintf(string, size, "Unknown");
 	} else {
-		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format,
-		 * NOTE: This is expected to break Maui, Moab and LSF
-		 * schedulers management of Slurm. */
-		snprintf(string, size,
-			 "%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
-			 (time_tm.tm_year + 1900), (time_tm.tm_mon + 1),
-			 time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
-			 time_tm.tm_sec);
+		/* Format YYYY-MM-DDTHH:MM:SS, ISO8601 standard format */
+		gmtime_r(time, &time_tm);
+		strftime(string, size, "%FT%T", &time_tm);
 	}
 }
 
