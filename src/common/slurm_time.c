@@ -63,26 +63,6 @@ extern char *slurm_ctime(const time_t *timep)
 	return rc;
 }
 
-extern struct tm *slurm_gmtime(const time_t *timep)
-{
-	struct tm *rc;
-	slurm_mutex_lock(&time_lock);
-	_init();
-	rc = gmtime(timep);
-	slurm_mutex_unlock(&time_lock);
-	return rc;
-}
-
-extern struct tm *slurm_gmtime_r(const time_t *timep, struct tm *result)
-{
-	struct tm *rc;
-	slurm_mutex_lock(&time_lock);
-	_init();
-	rc = gmtime_r(timep, result);
-	slurm_mutex_unlock(&time_lock);
-	return rc;
-}
-
 extern struct tm *slurm_localtime(const time_t *timep)
 {
 	struct tm *rc;
