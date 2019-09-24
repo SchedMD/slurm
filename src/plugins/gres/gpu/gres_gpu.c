@@ -182,7 +182,7 @@ static int _sort_gpu_by_type_name(void *x, void *y)
  * Find the first conf_gres record (x) with a GRES type that is a substring
  * of the GRES type of sys_gres (key).
  */
-extern int _find_type_in_gres_list(void *x, void *key)
+static int _find_type_in_gres_list(void *x, void *key)
 {
 	gres_slurmd_conf_t *conf_gres = (gres_slurmd_conf_t *)x;
 	char *sys_gres_type = (char *)key;
