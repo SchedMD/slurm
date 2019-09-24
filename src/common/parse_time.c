@@ -68,9 +68,6 @@ strong_alias(secs2time_str, slurm_secs2time_str);
 strong_alias(mins2time_str, slurm_mins2time_str);
 strong_alias(mon_abbr, slurm_mon_abbr);
 
-time_t     time_now;
-struct tm *time_now_tm;
-
 typedef struct unit_names {
 	char *name;
 	int name_len;
@@ -416,6 +413,8 @@ static int _get_date(const char *time_str, int *pos, int *month, int *mday,
  */
 extern time_t parse_time(const char *time_str, int past)
 {
+	time_t time_now;
+	struct tm time_now_tm;
 	int    hour = -1, minute = -1, second = 0;
 	int    month = -1, mday = -1, year = -1;
 	int    pos = 0;
@@ -432,7 +431,7 @@ extern time_t parse_time(const char *time_str, int past)
 	}
 
 	time_now = time(NULL);
-	time_now_tm = slurm_localtime(&time_now);
+	localtime_r(&time_now, &time_now_tm);
 
 	for (pos=0; ((time_str[pos] != '\0') && (time_str[pos] != '\n'));
 	     pos++) {
@@ -440,9 +439,9 @@ extern time_t parse_time(const char *time_str, int past)
 		    (time_str[pos] == '-') || (time_str[pos] == 'T'))
 			continue;
 		if (xstrncasecmp(time_str+pos, "today", 5) == 0) {
-			month = time_now_tm->tm_mon;
-			mday  = time_now_tm->tm_mday;
-			year  = time_now_tm->tm_year;
+			month = time_now_tm.tm_mon;
+			mday = time_now_tm.tm_mday;
+			year = time_now_tm.tm_year;
 			pos += 4;
 			continue;
 		}
@@ -542,13 +541,13 @@ extern time_t parse_time(const char *time_str, int past)
 	}
 	else if ((hour != -1) && (month == -1)) {
 		/* time, no date implies soonest day */
-		if (past || (hour >  time_now_tm->tm_hour)
-		    ||  ((hour == time_now_tm->tm_hour)
-			 && (minute > time_now_tm->tm_min))) {
+		if (past || (hour >  time_now_tm.tm_hour)
+		    ||  ((hour == time_now_tm.tm_hour)
+			 && (minute > time_now_tm.tm_min))) {
 			/* today */
-			month = time_now_tm->tm_mon;
-			mday  = time_now_tm->tm_mday;
-			year  = time_now_tm->tm_year;
+			month = time_now_tm.tm_mon;
+			mday = time_now_tm.tm_mday;
+			year = time_now_tm.tm_year;
 		} else {/* tomorrow */
 			time_t later = time_now + (24 * 60 * 60);
 			struct tm later_tm;
@@ -560,28 +559,28 @@ extern time_t parse_time(const char *time_str, int past)
 	}
 	if (year == -1) {
 		if (past) {
-			if (month > time_now_tm->tm_mon) {
+			if (month > time_now_tm.tm_mon) {
 				/* last year */
-				year = time_now_tm->tm_year - 1;
+				year = time_now_tm.tm_year - 1;
 			} else  {
 				/* this year */
-				year = time_now_tm->tm_year;
+				year = time_now_tm.tm_year;
 			}
-		} else if ((month  >  time_now_tm->tm_mon)
-			   ||  ((month == time_now_tm->tm_mon)
-				&& (mday >  time_now_tm->tm_mday))
-			   ||  ((month == time_now_tm->tm_mon)
-				&& (mday == time_now_tm->tm_mday)
-				&& (hour >  time_now_tm->tm_hour))
-			   ||  ((month == time_now_tm->tm_mon)
-				&& (mday == time_now_tm->tm_mday)
-				&& (hour == time_now_tm->tm_hour)
-				&& (minute > time_now_tm->tm_min))) {
+		} else if ((month  >  time_now_tm.tm_mon)
+			   ||  ((month == time_now_tm.tm_mon)
+				&& (mday > time_now_tm.tm_mday))
+			   ||  ((month == time_now_tm.tm_mon)
+				&& (mday == time_now_tm.tm_mday)
+				&& (hour >  time_now_tm.tm_hour))
+			   ||  ((month == time_now_tm.tm_mon)
+				&& (mday == time_now_tm.tm_mday)
+				&& (hour == time_now_tm.tm_hour)
+				&& (minute > time_now_tm.tm_min))) {
 			/* this year */
-			year = time_now_tm->tm_year;
+			year = time_now_tm.tm_year;
 		} else {
 			/* next year */
-			year = time_now_tm->tm_year + 1;
+			year = time_now_tm.tm_year + 1;
 		}
 	}
 
