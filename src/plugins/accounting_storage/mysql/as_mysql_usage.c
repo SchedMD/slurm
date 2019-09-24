@@ -218,13 +218,13 @@ static void *_cluster_rollup_usage(void *arg)
 //	last_day = 1197033199;
 //	last_month = 1204358399;
 
-	if (!slurm_localtime_r(&last_hour, &start_tm)) {
+	if (!localtime_r(&last_hour, &start_tm)) {
 		error("Couldn't get localtime from hour start %ld", last_hour);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 
-	if (!slurm_localtime_r(&my_time, &end_tm)) {
+	if (!localtime_r(&my_time, &end_tm)) {
 		error("Couldn't get localtime from hour end %ld", my_time);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -256,7 +256,7 @@ static void *_cluster_rollup_usage(void *arg)
 	slurm_mutex_unlock(&rollup_lock);
 
 	/* set up the day period */
-	if (!slurm_localtime_r(&last_day, &start_tm)) {
+	if (!localtime_r(&last_day, &start_tm)) {
 		error("Couldn't get localtime from day %ld", last_day);
 		rc = SLURM_ERROR;
 		goto end_it;
@@ -275,7 +275,7 @@ static void *_cluster_rollup_usage(void *arg)
 /* 	info("diff is %d", day_end-day_start); */
 
 	/* set up the month period */
-	if (!slurm_localtime_r(&last_month, &start_tm)) {
+	if (!localtime_r(&last_month, &start_tm)) {
 		error("Couldn't get localtime from month %ld", last_month);
 		rc = SLURM_ERROR;
 		goto end_it;

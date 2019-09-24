@@ -1729,7 +1729,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 	char *unit_name;
 
 	while (curr_start < end) {
-		if (!slurm_localtime_r(&curr_start, &start_tm)) {
+		if (!localtime_r(&curr_start, &start_tm)) {
 			error("Couldn't get localtime from start %ld",
 			      curr_start);
 			return SLURM_ERROR;

@@ -162,8 +162,7 @@ int sacctmgr_list_reservation(int argc, char **argv)
                 struct tm start_tm;
 		reservation_cond->time_start = time(NULL);
 
-                if (!slurm_localtime_r(&reservation_cond->time_start,
-				       &start_tm)) {
+                if (!localtime_r(&reservation_cond->time_start, &start_tm)) {
                         fprintf(stderr,
                                 " Couldn't get localtime from %ld",
                                 (long)reservation_cond->time_start);

@@ -622,7 +622,7 @@ static char *_relative_date_fmt(const struct tm *when)
 		time_t now = time(NULL);
 		struct tm tm;
 
-		slurm_localtime_r(&now, &tm);
+		localtime_r(&now, &tm);
 		todays_date = 1000 * (tm.tm_year + 1900) + tm.tm_yday;
 	}
 
@@ -657,7 +657,7 @@ slurm_make_time_str (time_t *time, char *string, int size)
 {
 	struct tm time_tm;
 
-	slurm_localtime_r(time, &time_tm);
+	localtime_r(time, &time_tm);
 	if ((*time == (time_t) 0) || (*time == (time_t) INFINITE)) {
 		snprintf(string, size, "Unknown");
 	} else {

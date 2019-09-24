@@ -214,7 +214,7 @@ static void _advance_time(time_t *res_time, int day_cnt)
 	time_t save_time = *res_time;
 	struct tm time_tm;
 
-	slurm_localtime_r(res_time, &time_tm);
+	localtime_r(res_time, &time_tm);
 	time_tm.tm_mday += day_cnt;
 	*res_time = slurm_mktime(&time_tm);
 	if (*res_time == (time_t)(-1)) {
@@ -5240,7 +5240,7 @@ static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 		day_cnt = 1;
 	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKDAY) {
 		now = time(NULL);
-		(void) slurm_localtime_r(&now, &tm);
+		localtime_r(&now, &tm);
 		if (tm.tm_wday == 5)		/* Friday */
 			day_cnt = 3;
 		else if (tm.tm_wday == 6)	/* Saturday */
@@ -5249,7 +5249,7 @@ static void _advance_resv_time(slurmctld_resv_t *resv_ptr)
 			day_cnt = 1;
 	} else if (resv_ptr->flags & RESERVE_FLAG_WEEKEND) {
 		now = time(NULL);
-		(void) slurm_localtime_r(&now, &tm);
+		localtime_r(&now, &tm);
 		if (tm.tm_wday == 0)		/* Sunday */
 			day_cnt = 6;
 		else if (tm.tm_wday == 6)	/* Saturday */

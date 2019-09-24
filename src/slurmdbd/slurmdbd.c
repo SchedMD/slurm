@@ -730,7 +730,7 @@ static void *_rollup_handler(void *db_conn)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	if (!slurm_localtime_r(&start_time, &tm)) {
+	if (!localtime_r(&start_time, &tm)) {
 		fatal("Couldn't get localtime for rollup handler %ld",
 		      (long)start_time);
 		return NULL;
@@ -756,7 +756,7 @@ static void *_rollup_handler(void *db_conn)
 		/* get the time now we have rolled usage */
 		start_time = time(NULL);
 
-		if (!slurm_localtime_r(&start_time, &tm)) {
+		if (!localtime_r(&start_time, &tm)) {
 			fatal("Couldn't get localtime for rollup handler %ld",
 			      (long)start_time);
 			return NULL;

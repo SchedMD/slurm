@@ -32,7 +32,6 @@
 extern char *slurm_ctime(const time_t *timep);
 
 extern struct tm *slurm_localtime(const time_t *timep);
-extern struct tm *slurm_localtime_r(const time_t *timep, struct tm *result);
 
 extern time_t slurm_mktime(struct tm *tp);
 

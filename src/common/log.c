@@ -189,7 +189,7 @@ static size_t _make_timestamp(char *timestamp_buf, size_t max,
 {
 	time_t timestamp_t = time(NULL);
 	struct tm timestamp_tm;
-	if (!slurm_localtime_r(&timestamp_t, &timestamp_tm)) {
+	if (!localtime_r(&timestamp_t, &timestamp_tm)) {
 		fprintf(stderr, "localtime_r() failed\n");
 		return 0;
 	}

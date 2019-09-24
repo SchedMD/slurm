@@ -73,16 +73,6 @@ extern struct tm *slurm_localtime(const time_t *timep)
 	return rc;
 }
 
-extern struct tm *slurm_localtime_r(const time_t *timep, struct tm *result)
-{
-	struct tm *rc;
-	slurm_mutex_lock(&time_lock);
-	_init();
-	rc = localtime_r(timep, result);
-	slurm_mutex_unlock(&time_lock);
-	return rc;
-}
-
 extern time_t slurm_mktime(struct tm *tp)
 {
 	/* Force tm_isdt to -1. */
@@ -104,7 +94,7 @@ extern char *slurm_ctime2(const time_t *timep)
 extern char *slurm_ctime2_r(const time_t *timep, char *time_str)
 {
 	struct tm newtime;
-	slurm_localtime_r(timep, &newtime);
+	localtime_r(timep, &newtime);
 
 	strftime(time_str, 25, "%a %b %d %T %Y", &newtime);
 

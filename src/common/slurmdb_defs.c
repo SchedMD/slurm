@@ -381,8 +381,7 @@ extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 		if (!job_cond->usage_start) {
 			struct tm start_tm;
 			job_cond->usage_start = time(NULL);
-			if (!slurm_localtime_r(&job_cond->usage_start,
-					       &start_tm)) {
+			if (!localtime_r(&job_cond->usage_start, &start_tm)) {
 				error("Couldn't get localtime from %ld",
 				      (long)job_cond->usage_start);
 			} else {
@@ -2695,7 +2694,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 //	info("now got %d and %d sent", (*start), (*end));
 	/* Default is going to be the last day */
 	if (!sent_end) {
-		if (!slurm_localtime_r(&my_time, &end_tm)) {
+		if (!localtime_r(&my_time, &end_tm)) {
 			error("Couldn't get localtime from end %ld",
 			      (long)my_time);
 			return SLURM_ERROR;
@@ -2704,7 +2703,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 		//(*end) = slurm_mktime(&end_tm);
 	} else {
 		temp_time = sent_end;
-		if (!slurm_localtime_r(&temp_time, &end_tm)) {
+		if (!localtime_r(&temp_time, &end_tm)) {
 			error("Couldn't get localtime from user end %ld",
 			      (long)my_time);
 			return SLURM_ERROR;
@@ -2720,7 +2719,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 	(*end) = slurm_mktime(&end_tm);
 
 	if (!sent_start) {
-		if (!slurm_localtime_r(&my_time, &start_tm)) {
+		if (!localtime_r(&my_time, &start_tm)) {
 			error("Couldn't get localtime from start %ld",
 			      (long)my_time);
 			return SLURM_ERROR;
@@ -2730,7 +2729,7 @@ extern int slurmdb_report_set_start_end_time(time_t *start, time_t *end)
 		//(*start) = slurm_mktime(&start_tm);
 	} else {
 		temp_time = sent_start;
-		if (!slurm_localtime_r(&temp_time, &start_tm)) {
+		if (!localtime_r(&temp_time, &start_tm)) {
 			error("Couldn't get localtime from user start %ld",
 			      (long)my_time);
 			return SLURM_ERROR;

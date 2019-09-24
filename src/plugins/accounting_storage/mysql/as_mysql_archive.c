@@ -3751,7 +3751,7 @@ uint32_t _get_begin_next_month(time_t start)
 {
 	struct tm parts;
 
-	slurm_localtime_r(&start, &parts);
+	localtime_r(&start, &parts);
 
 	parts.tm_mon++;
 	parts.tm_mday  = 1;

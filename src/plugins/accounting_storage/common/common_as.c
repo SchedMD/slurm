@@ -420,14 +420,14 @@ extern int set_usage_information(char **usage_table,
 
 	/* Default is going to be the last day */
 	if (!end) {
-		if (!slurm_localtime_r(&my_time, &end_tm)) {
+		if (!localtime_r(&my_time, &end_tm)) {
 			error("Couldn't get localtime from end %ld",
 			      my_time);
 			return SLURM_ERROR;
 		}
 		end_tm.tm_hour = 0;
 	} else {
-		if (!slurm_localtime_r(&end, &end_tm)) {
+		if (!localtime_r(&end, &end_tm)) {
 			error("Couldn't get localtime from user end %ld",
 			      end);
 			return SLURM_ERROR;
@@ -438,7 +438,7 @@ extern int set_usage_information(char **usage_table,
 	end = slurm_mktime(&end_tm);
 
 	if (!start) {
-		if (!slurm_localtime_r(&my_time, &start_tm)) {
+		if (!localtime_r(&my_time, &start_tm)) {
 			error("Couldn't get localtime from start %ld",
 			      my_time);
 			return SLURM_ERROR;
@@ -446,7 +446,7 @@ extern int set_usage_information(char **usage_table,
 		start_tm.tm_hour = 0;
 		start_tm.tm_mday--;
 	} else {
-		if (!slurm_localtime_r(&start, &start_tm)) {
+		if (!localtime_r(&start, &start_tm)) {
 			error("Couldn't get localtime from user start %ld",
 			      start);
 			return SLURM_ERROR;
@@ -458,7 +458,7 @@ extern int set_usage_information(char **usage_table,
 
 	if (end-start < 3600) {
 		end = start + 3600;
-		if (!slurm_localtime_r(&end, &end_tm)) {
+		if (!localtime_r(&end, &end_tm)) {
 			error("2 Couldn't get localtime from user end %ld",
 			      end);
 			return SLURM_ERROR;
@@ -654,8 +654,7 @@ extern time_t archive_setup_end_time(time_t last_submit, uint32_t purge)
 		return 0;
 	}
 
-	/* use slurm_localtime to avoid any daylight savings issues */
-	if (!slurm_localtime_r(&last_submit, &time_tm)) {
+	if (!localtime_r(&last_submit, &time_tm)) {
 		error("Couldn't get localtime from first "
 		      "suspend start %ld", (long)last_submit);
 		return 0;
@@ -835,7 +834,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 	struct tm time_tm;
 	uint32_t num = 2;
 
-	slurm_localtime_r((time_t *)&period_start, &time_tm);
+	localtime_r(&period_start, &time_tm);
 	time_tm.tm_sec = 0;
 	time_tm.tm_min = 0;
 
@@ -857,7 +856,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 		   time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min,
 		   time_tm.tm_sec);
 
-	slurm_localtime_r((time_t *)&period_end, &time_tm);
+	localtime_r(&period_end, &time_tm);
 	/* Add end time to file name. */
 	xstrfmtcat(name, "%4.4u-%2.2u-%2.2uT%2.2u:%2.2u:%2.2u",
 		   (time_tm.tm_year + 1900), (time_tm.tm_mon + 1),

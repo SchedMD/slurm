@@ -428,8 +428,8 @@ static int _set_cond(int *start, int argc, char **argv,
 		if (!event_cond->state_list) {
 			struct tm start_tm;
 
-			if (!slurm_localtime_r(&event_cond->period_start,
-					       &start_tm)) {
+			if (!localtime_r(&event_cond->period_start,
+					 &start_tm)) {
 				fprintf(stderr,
 					" Couldn't get localtime from %ld",
 					(long)event_cond->period_start);
@@ -472,8 +472,7 @@ extern int sacctmgr_list_event(int argc, char **argv)
 		struct tm start_tm;
 		event_cond->period_start = time(NULL);
 
-		if (!slurm_localtime_r(&event_cond->period_start,
-				       &start_tm)) {
+		if (!localtime_r(&event_cond->period_start, &start_tm)) {
 			fprintf(stderr,
 				" Couldn't get localtime from %ld",
 				(long)event_cond->period_start);

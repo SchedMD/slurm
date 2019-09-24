@@ -186,7 +186,7 @@ void _xstrftimecat(char **buf, const char *fmt)
 	if (time(&t) == (time_t) -1)
 		fprintf(stderr, "time() failed\n");
 
-	if (!slurm_localtime_r(&t, &tm))
+	if (!localtime_r(&t, &tm))
 		fprintf(stderr, "localtime_r() failed\n");
 
 	strftime(p, sizeof(p), fmt, &tm);
@@ -207,7 +207,7 @@ void _xiso8601timecat(char **buf, bool msec)
 	if (gettimeofday(&tv, NULL) == -1)
 		fprintf(stderr, "gettimeofday() failed\n");
 
-	if (!slurm_localtime_r(&tv.tv_sec, &tm))
+	if (!localtime_r(&tv.tv_sec, &tm))
 		fprintf(stderr, "localtime_r() failed\n");
 
 	if (strftime(p, sizeof(p), "%Y-%m-%dT%T", &tm) == 0)
@@ -233,7 +233,7 @@ void _xrfc5424timecat(char **buf, bool msec)
 	if (gettimeofday(&tv, NULL) == -1)
 		fprintf(stderr, "gettimeofday() failed\n");
 
-	if (!slurm_localtime_r(&tv.tv_sec, &tm))
+	if (!localtime_r(&tv.tv_sec, &tm))
 		fprintf(stderr, "localtime_r() failed\n");
 
 	if (strftime(p, sizeof(p), "%Y-%m-%dT%T", &tm) == 0)

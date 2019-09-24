@@ -744,7 +744,7 @@ static time_t _next_reset(uint16_t reset_period, time_t last_reset)
 	struct tm last_tm;
 	time_t tmp_time, now = time(NULL);
 
-	if (slurm_localtime_r(&last_reset, &last_tm) == NULL)
+	if (localtime_r(&last_reset, &last_tm) == NULL)
 		return (time_t) 0;
 
 	last_tm.tm_sec   = 0;
