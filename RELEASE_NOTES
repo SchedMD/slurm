@@ -24,6 +24,7 @@ NOTE: Slurmctld is now set to fatal in case of computing node configured with
 HIGHLIGHTS
 ==========
  -- Drop slurm.spec-legacy from distribution.
+ -- Removed the smap command.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

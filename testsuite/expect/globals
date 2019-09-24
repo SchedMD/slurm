@@ -47,7 +47,7 @@
 ############################################################################
 
 global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo
-global smap smd squeue sreport srun sstat strigger
+global smd squeue sreport srun sstat strigger
 
 ################################################################
 #
@@ -97,7 +97,6 @@ cset sdiag       "${slurm_dir}/bin/sdiag"
 cset sgather     "${slurm_dir}/bin/sgather"
 cset sh5util     "${slurm_dir}/bin/sh5util"
 cset sinfo       "${slurm_dir}/bin/sinfo"
-cset smap        "${slurm_dir}/bin/smap"
 cset smd         "${slurm_dir}/bin/smd"
 cset sprio       "${slurm_dir}/bin/sprio"
 cset squeue      "${slurm_dir}/bin/squeue"
@@ -3246,79 +3245,6 @@ proc print_success { test_id } {
 
 	send_user "\n"
 	send_user "SUCCESS: test$test_id\n"
-}
-
-###############################################################
-#
-#Proc: change_subbp_state
-#
-#Purpose: Set sub mid plane state
-#
-#Returns SUCCESS if state of mid plane is changed
-#
-#
-###############################################################
-
-proc change_subbp_state { node ionodes state } {
-	global scontrol smap
-
-	set return_code 0
-
-	set my_pid [spawn $scontrol update subbpname=$node\[$ionodes\] state=$state]
-	expect {
-		-re "slurm_update error:" {
-			set return_code 1
-			exp_continue
-		}
-		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			slow_kill $my_pid
-			set return_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $return_code } {
-		return $return_code
-	}
-
-	set match 0
-	set my_pid [spawn $smap -Db -c -h -n $node -I $ionodes]
-	expect {
-		-nocase -re "$state" {
-			incr match
-			exp_continue
-		}
-		-re "$node" {
-			incr match
-			exp_continue
-		}
-		-re "Unable to contact" {
-			send_user "\nFAILURE: slurm appears to be down\n"
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: smap not responding\n"
-			slow_kill $my_pid
-			set return_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$match != 2} {
-		send_user "\nFAILURE: Subbp did not go into $state state. $match\n"
-		set return_code 1
-	}
-
-	return $return_code
 }
 
 ################################################################

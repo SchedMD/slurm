@@ -122,7 +122,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
-	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
@@ -309,7 +308,6 @@ H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HDF5_CC = @HDF5_CC@
 HDF5_CFLAGS = @HDF5_CFLAGS@
 HDF5_CPPFLAGS = @HDF5_CPPFLAGS@
@@ -356,7 +354,6 @@ MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
 MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
-NCURSES = @NCURSES@
 NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
 NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
 NETLOC_LIBS = @NETLOC_LIBS@

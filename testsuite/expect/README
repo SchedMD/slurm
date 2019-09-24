@@ -388,24 +388,6 @@ test9.7    Stress test multiple simultaneous commands via multiple threads.
 test9.8    Stress test with maximum slurmctld message concurrency.
 test9.9    Throughput test for 5000 jobs for timing
 
-
-test10.#   Testing of smap options.
-===================================
-test10.1   Confirm smap usage option works (--usage option).
-test10.2   Confirm smap help option works (--help option).
-test10.3   Test slurm partition information (-Ds option).
-test10.4   Test slurm partition information, in command mode (-Ds -c option).
-test10.5   Test bg partition information (-Db option).
-test10.6   Test bg partition information, in command mode (-Db -c option).
-test10.7   (removed)
-test10.8   (removed)
-test10.9   Test smap iteration (--iterate option).
-test10.10  Check smap output without header (--noheader option).
-test10.11  Confirm that smap reports a proper version number
-	   (--version option).
-test10.12  (removed)
-test10.13  (removed)
-
 test12.#   Testing of sacct command and options
 ===============================================
 test12.1   Test sacct --help option.

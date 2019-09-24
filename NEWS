@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Add default "reboot issued" reason to nodes when rebooting with scontrol.
  -- Duplicate PartitionName entries in slurm.conf will now fatal() instead of
     printing an error message and ignoring the successive records.
+ -- Remove the smap command.
 
 * Changes in Slurm 19.05.3
 ==========================

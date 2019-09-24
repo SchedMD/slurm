@@ -76,7 +76,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
 		 stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
 		 stdlib.h dirent.h pthread.h sys/prctl.h \
 		 sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
-		 sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
+		 sys/systemcfg.h sys/dr.h sys/vfs.h \
 		 pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
 		 pty.h utmp.h \
 		 sys/syslog.h linux/sched.h \
@@ -212,10 +212,6 @@ X_AC_FREEIPMI
 X_AC_RRDTOOL
 X_AC_UCX
 X_AC_X11
-
-X_AC_NCURSES
-AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
-AC_SUBST(HAVE_SOME_CURSES)
 
 X_AC_CGROUP
 
@@ -360,15 +356,6 @@ dnl Check for compilation of Slurm with CURL support:
 dnl
 LIBCURL_CHECK_CONFIG
 
-dnl
-dnl Set some configuration based upon multiple configuration parameters
-dnl
-ac_build_smap="no"
-if test "x$ac_have_some_curses" = "xyes" ; then
-   ac_build_smap="yes"
-fi
-AM_CONDITIONAL(BUILD_SMAP, test "x$ac_build_smap" = "xyes")
-
 dnl Check word size so we can deprecate 32-bit systems
 AC_CHECK_SIZEOF([void *], 8)
 
@@ -436,7 +423,6 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmd/slurmd/Makefile
 		 src/slurmd/slurmstepd/Makefile
 		 src/slurmdbd/Makefile
-		 src/smap/Makefile
 		 src/sprio/Makefile
 		 src/squeue/Makefile
 		 src/srun/Makefile

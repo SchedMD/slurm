@@ -299,15 +299,6 @@ EXTRA_DIST = \
 	test9.9				\
 	test9.9.bash			\
 	test9.9.prog.c			\
-	test10.1			\
-	test10.2			\
-	test10.3			\
-	test10.4			\
-	test10.7			\
-	test10.8			\
-	test10.9			\
-	test10.10			\
-	test10.11			\
 	test11.1			\
 	test11.2			\
 	test11.3			\

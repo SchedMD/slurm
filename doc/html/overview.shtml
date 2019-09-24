@@ -37,7 +37,7 @@ User tools include <b>srun</b> to initiate jobs,
 <b>sinfo</b> to report system status,
 <b>squeue</b> to report the status of jobs, and
 <b>sacct</b> to get information about jobs and job steps that are running or have completed.
-The <b>smap</b> and <b>sview</b> commands graphically reports system and
+The <b>sview</b> commands graphically reports system and
 job status including network topology.
 There is an administrative tool <b>scontrol</b> available to monitor
 and/or modify configuration and state information on the cluster.
@@ -237,6 +237,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 24 April 2019</p>
+<p style="text-align:center;">Last modified 23 September 2019</p>
 
 <!--#include virtual="footer.txt"-->

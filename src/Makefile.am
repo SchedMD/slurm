@@ -18,7 +18,6 @@ SUBDIRS =		\
 	slurmctld	\
 	slurmd		\
 	slurmdbd	\
-	smap		\
 	sprio		\
 	squeue		\
 	sreport		\

@@ -125,7 +125,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \
 	$(top_srcdir)/auxdir/x_ac_man2html.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
-	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_netloc.m4 \
 	$(top_srcdir)/auxdir/x_ac_nvml.m4 \
 	$(top_srcdir)/auxdir/x_ac_ofed.m4 \
@@ -260,7 +259,6 @@ H5CC = @H5CC@
 H5FC = @H5FC@
 HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVE_MAN2HTML = @HAVE_MAN2HTML@
-HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 HDF5_CC = @HDF5_CC@
 HDF5_CFLAGS = @HDF5_CFLAGS@
 HDF5_CPPFLAGS = @HDF5_CPPFLAGS@
@@ -307,7 +305,6 @@ MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
 MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
-NCURSES = @NCURSES@
 NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
 NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
 NETLOC_LIBS = @NETLOC_LIBS@
@@ -448,17 +445,17 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 man1_MANS = sacct.1 sacctmgr.1 salloc.1 sattach.1 sbatch.1 sbcast.1 \
-	scancel.1 scontrol.1 sdiag.1 sinfo.1 slurm.1 smap.1 sprio.1 \
-	squeue.1 sreport.1 srun.1 sshare.1 sstat.1 strigger.1 \
-	$(am__append_1) $(am__append_2)
+	scancel.1 scontrol.1 sdiag.1 sinfo.1 slurm.1 sprio.1 squeue.1 \
+	sreport.1 srun.1 sshare.1 sstat.1 strigger.1 $(am__append_1) \
+	$(am__append_2)
 EXTRA_DIST = $(man1_MANS) $(am__append_5)
 @HAVE_MAN2HTML_TRUE@html_DATA = sacct.html sacctmgr.html salloc.html \
 @HAVE_MAN2HTML_TRUE@	sattach.html sbatch.html sbcast.html \
 @HAVE_MAN2HTML_TRUE@	scancel.html scontrol.html sdiag.html \
-@HAVE_MAN2HTML_TRUE@	sinfo.html smap.html sprio.html \
-@HAVE_MAN2HTML_TRUE@	squeue.html sreport.html srun.html \
-@HAVE_MAN2HTML_TRUE@	sshare.html sstat.html strigger.html \
-@HAVE_MAN2HTML_TRUE@	$(am__append_3) $(am__append_4)
+@HAVE_MAN2HTML_TRUE@	sinfo.html sprio.html squeue.html \
+@HAVE_MAN2HTML_TRUE@	sreport.html srun.html sshare.html \
+@HAVE_MAN2HTML_TRUE@	sstat.html strigger.html $(am__append_3) \
+@HAVE_MAN2HTML_TRUE@	$(am__append_4)
 @HAVE_MAN2HTML_TRUE@MOSTLYCLEANFILES = ${html_DATA}
 @HAVE_MAN2HTML_TRUE@SUFFIXES = .html
 all: all-am

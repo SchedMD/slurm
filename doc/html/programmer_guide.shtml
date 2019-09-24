@@ -142,9 +142,6 @@ with an existing Slurm job.<br>
 the execution of user applications.<br>
 <b>slurmdbd</b> &mdash; Slurm database daemon managing access to the accounting
 storage database.<br>
-<b>smap</b> &mdash; User command to view layout of nodes, partitions, and jobs.
-This is particularly valuable on systems like Cray XT/XE, which has a three
-dimension torus topography.<br>
 <b>sprio</b> &mdash; User command to see the breakdown of a job's priority
 calculation when the Multifactor Job Priority plugin is installed.<br>
 <b>squeue</b> &mdash; User command to get information on Slurm jobs and job steps.<br>
@@ -325,6 +322,6 @@ systemctl start/stop/restart slurmd@nodeXYZ
 
 </p>
 
-<p style="text-align:center;">Last modified 27 Februrary 2019</p>
+<p style="text-align:center;">Last modified 23 September 2019</p>
 
 <!--#include virtual="footer.txt"-->

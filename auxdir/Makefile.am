@@ -26,7 +26,6 @@ EXTRA_DIST = \
     x_ac_lua.m4 \
     x_ac_man2html.m4 \
     x_ac_munge.m4 \
-    x_ac_ncurses.m4 \
     x_ac_netloc.m4 \
     x_ac_nvml.m4 \
     x_ac_pam.m4 \

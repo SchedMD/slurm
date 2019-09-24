@@ -261,7 +261,7 @@ value of 0, the next a value of 1, etc.</li>
 </table>
 <p>Table 1: Example job IDs</p>
 
-<p>The <i>smap</i>, <i>smap</i>, <i>squeue</i> and <i>sview</i> report the
+<p>The <i>squeue</i> and <i>sview</i> commands report the
 components of a heterogeneous job using the format
 "&lt;pack_job_id&gt;+&lt;pack_job_offset&gt;".
 For example "123+4" would represent heterogeneous job id 123 and it's fifth
@@ -711,6 +711,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 18 October 2018</p>
+<p style="text-align:center;">Last modified 23 September 2019</p>
 
 <!--#include virtual="footer.txt"-->

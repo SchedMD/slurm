@@ -20,7 +20,7 @@ each compute node and a central <b>slurmctld</b> daemon running on a management 
 The <b>slurmd</b> daemons provide fault-tolerant hierarchical communications.
 The user commands include: <b>sacct</b>, <b>salloc</b>, <b>sattach</b>,
 <b>sbatch</b>, <b>sbcast</b>, <b>scancel</b>, <b>scontrol</b>,
-<b>sinfo</b>, <b>smap</b>, <b>squeue</b>, <b>srun</b>, <b>strigger</b>
+<b>sinfo</b>, <b>squeue</b>, <b>srun</b>, <b>strigger</b>
 and <b>sview</b>.
 All of the commands can run anywhere in the cluster.</p>
 
@@ -86,10 +86,6 @@ commands can only be executed as user root.</p>
 <p><span class="commandline"><b>sinfo</b></span> reports the state of partitions
 and nodes managed by Slurm. It has a wide variety of filtering, sorting, and formatting
 options.</p>
-
-<p><span class="commandline"><b>smap</b></span> reports state information for
-jobs, partitions, and nodes managed by Slurm, but graphically displays the
-information to reflect network topology.</p>
 
 <p><span class="commandline"><b>squeue</b></span> reports the state of jobs or
 job steps. It has a wide variety of filtering, sorting, and formatting options.
@@ -384,6 +380,6 @@ with Slurm are provided below.
 <li><a href="mpi_guide.html#open_mpi">Open MPI</a></li>
 </ul></p>
 
-<p style="text-align:center;">Last modified 14 September 2017</p>
+<p style="text-align:center;">Last modified 23 September 2019</p>
 
 <!--#include virtual="footer.txt"-->
