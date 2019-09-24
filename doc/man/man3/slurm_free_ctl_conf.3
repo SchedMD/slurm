@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "Slurm informational functions" "April 2015" "Slurm informational functions"
+.TH "Slurm API" "3" "Slurm informational functions" "September 2019" "Slurm informational functions"
 
 .SH "NAME"
 slurm_free_ctl_conf, slurm_load_ctl_conf,
@@ -130,7 +130,7 @@ int main (int argc, char *argv[])
 .br
 	printf ("control_machine = %s\\n",
 .br
-	        conf_info_msg_ptr\->control_machine);
+	        conf_info_msg_ptr\->control_machine[0]);
 .br
 	printf ("first_job_id = %u\\n",
 .br
