@@ -156,8 +156,8 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 		}
 		if ((ufds.revents & POLLHUP) &&
 		    ((ufds.revents & POLLIN) == 0)) {
-			debug2("%s: persistent connection for fd %d closed",
-			       __func__, persist_conn->fd);
+			log_flag(NET, "%s: persistent connection for fd %d closed",
+				 __func__, persist_conn->fd);
 			return false;
 		}
 		if (ufds.revents & POLLNVAL) {
@@ -223,8 +223,8 @@ static int _process_service_connection(
 	xassert(persist_conn->callback_proc);
 	xassert(persist_conn->shutdown);
 
-	debug2("Opened connection %d from %s", persist_conn->fd,
-	       persist_conn->rem_host);
+	log_flag(NET, "%s: Opened connection %d from %s",
+		 __func__, persist_conn->fd, persist_conn->rem_host);
 
 	if (persist_conn->flags & PERSIST_FLAG_ALREADY_INITED)
 		first = false;
@@ -304,17 +304,18 @@ static int _process_service_connection(
 				 * deal as the slurmctld will just send the
 				 * message again. */
 				if (persist_conn->rem_port)
-					debug("Problem sending response to "
-					      "connection %d(%s) uid(%d)",
-					      persist_conn->fd,
-					      persist_conn->rem_host, uid);
+					log_flag(NET, "%s: Problem sending response to connection host:%s fd:%d uid:%d",
+						 __func__,
+						 persist_conn->rem_host,
+						 persist_conn->fd, uid);
 				fini = true;
 			}
 			free_buf(buffer);
 		}
 	}
 
-	debug2("Closed connection %d uid(%d)", persist_conn->fd, uid);
+	log_flag(NET, "%s: Closed connection host:%s fd:%d uid:%d",
+		 __func__, persist_conn->rem_host, persist_conn->fd, uid);
 
 	return rc;
 }
@@ -342,8 +343,8 @@ static void *_service_connection(void *arg)
 	if (service_conn->conn->callback_fini)
 		(service_conn->conn->callback_fini)(service_conn->arg);
 	else
-		debug("Persist connection from cluster %s has disconnected",
-		      service_conn->conn->cluster_name);
+		log_flag(NET, "%s: Persist connection from cluster %s has disconnected",
+			 __func__, service_conn->conn->cluster_name);
 
 	/* service_conn is freed inside here */
 	slurm_persist_conn_free_thread_loc(service_conn->thread_loc);
@@ -556,15 +557,14 @@ extern int slurm_persist_conn_open_without_init(
 			    persist_conn->rem_host);
 	if ((persist_conn->fd = slurm_open_msg_conn(&addr)) < 0) {
 		if (_comm_fail_log(persist_conn)) {
-			char *s = xstrdup_printf("%s: failed to open persistent connection to %s:%d: %m",
-						 __func__,
-						 persist_conn->rem_host,
-						 persist_conn->rem_port);
 			if (persist_conn->flags & PERSIST_FLAG_SUPPRESS_ERR)
-				debug2("%s", s);
+				log_flag(NET, "%s: failed to open persistent connection (with error suppression active) to host:%s:%d: %m",
+					 __func__, persist_conn->rem_host,
+					 persist_conn->rem_port);
 			else
-				error("%s", s);
-			xfree(s);
+				error("%s: failed to open persistent connection to host:%s:%d: %m",
+				      __func__, persist_conn->rem_host,
+				      persist_conn->rem_port);
 		}
 		return SLURM_ERROR;
 	}
@@ -798,8 +798,8 @@ extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
 		 */
 		if (ufds.revents & POLLHUP ||
 		    (recv(persist_conn->fd, &temp, 1, 0) == 0)) {
-			debug2("%s: persistent connection %d is closed for writes",
-			       __func__, persist_conn->fd);
+			log_flag(NET, "%s: persistent connection %d is closed for writes",
+				 __func__, persist_conn->fd);
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
 			return -1;
