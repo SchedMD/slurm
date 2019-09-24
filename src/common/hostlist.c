@@ -1941,9 +1941,9 @@ int hostlist_push(hostlist_t hl, const char *hosts)
 	new = hostlist_create(hosts);
 	if (!new)
 		return 0;
-	slurm_mutex_lock(&new->mutex);
+	LOCK_HOSTLIST(new);
 	retval = new->nhosts;
-	slurm_mutex_unlock(&new->mutex);
+	UNLOCK_HOSTLIST(new);
 	hostlist_push_list(hl, new);
 	hostlist_destroy(new);
 	return retval;
