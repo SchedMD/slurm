@@ -126,21 +126,6 @@ strong_alias(hostset_within,		slurm_hostset_within);
 strong_alias(hostset_nth,		slurm_hostset_nth);
 
 /*
- * lsd_fatal_error : fatal error macro
- */
-#ifdef WITH_LSD_FATAL_ERROR_FUNC
-#  undef lsd_fatal_error
-extern void lsd_fatal_error(char *file, int line, char *mesg);
-#else /* !WITH_LSD_FATAL_ERROR_FUNC */
-#  ifndef lsd_fatal_error
-	static void lsd_fatal_error(char *file, int line, char *mesg)
-	{
-		log_fatal(file, line, mesg, strerror(errno));
-	}
-#  endif /* !lsd_fatal_error */
-#endif /* !WITH_LSD_FATAL_ERROR_FUNC */
-
-/*
  * lsd_nonmem_error
  */
 #ifdef WITH_LSD_NOMEM_ERROR_FUNC
@@ -327,8 +312,6 @@ static bool _test_box(int *start, int *end, int dims);
 
 /* ------[ static function prototypes ]------ */
 
-static void _error(char *file, int line, char *mesg, ...)
-  __attribute__ ((format (printf, 3, 4)));
 static char * _next_tok(char *, char **);
 static int    _zero_padded(unsigned long, int);
 static int    _width_equiv(unsigned long, int *, unsigned long, int *);
@@ -407,27 +390,6 @@ static int hostset_find_host(hostset_t, const char *);
 /* ------[ Function Definitions ]------ */
 
 /* ----[ general utility functions ]---- */
-
-
-/*
- *  Varargs capable error reporting via lsd_fatal_error()
- */
-static void _error(char *file, int line, char *msg, ...)
-{
-	va_list ap;
-	char    buf[1024];
-	int     len = 0;
-	va_start(ap, msg);
-
-	len = vsnprintf(buf, 1024, msg, ap);
-	if ((len < 0) || (len > 1024))
-		buf[1023] = '\0';
-
-	lsd_fatal_error(file, line, buf);
-
-	va_end(ap);
-	return;
-}
 
 /*
  * Helper function for host list string parsing routines
@@ -1620,23 +1582,16 @@ static int _grow_ranges(struct _range * *ranges,	/* in/out */
 {
 	int new_capacity;
 
-	if ((*capacity) >= max_capacity) {
-		errno = EINVAL;
-		_error(__FILE__, __LINE__,
-		       "Can't grow ranges -- already at max");
-		return 0;
-	}
+	if ((*capacity) >= max_capacity)
+		fatal("%s: Can't grow ranges -- already at max", __func__);
+
 	new_capacity = (*capacity) * 2 + 10;
 	if (new_capacity > max_capacity)
 		new_capacity = max_capacity;
+
 	xrealloc_nz((*ranges), (sizeof(struct _range) * new_capacity));
-	if ((*ranges) == NULL) {
-		errno = ENOMEM;
-		_error(__FILE__, __LINE__,
-		       "Can't grow ranges -- xrealloc() failed");
-		return 0;
-	}
 	*capacity = new_capacity;
+
 	return 1;
 }
 
@@ -1702,13 +1657,14 @@ static int _parse_single_range(const char *str, struct _range *range, int dims)
 	if (!orig)
 		seterrno_ret(ENOMEM, 0);
 
+	/* do NOT allow boxes here */
 	if ((p = strchr(str, 'x')))
-		goto error; /* do NOT allow boxes here */
+		fatal("%s: Invalid range: `%s'", __func__, orig);
 
 	if ((p = strchr(str, '-'))) {
 		*p++ = '\0';
 		if (*p == '-')     /* do NOT allow negative numbers */
-			goto error;
+			fatal("%s: Invalid range: `%s'", __func__, orig);
 	}
 
 	range->width = strlen(str);
@@ -1724,31 +1680,21 @@ static int _parse_single_range(const char *str, struct _range *range, int dims)
 	range->lo = strtoul(str, &q, hostlist_base);
 
 	if (q == str)
-		goto error;
+		fatal("%s: Invalid range: `%s'", __func__, orig);
 
 	range->hi = (p && *p) ? strtoul(p, &q, hostlist_base) : range->lo;
 
 	if (q == p || *q != '\0')
-		goto error;
+		fatal("%s: Invalid range: `%s'", __func__, orig);
 
 	if (range->lo > range->hi)
-		goto error;
+		fatal("%s: Invalid range: `%s'", __func__, orig);
 
-	if (range->hi - range->lo + 1 > MAX_RANGE ) {
-		_error(__FILE__, __LINE__, "Too many hosts in range `%s'\n",
-		       orig);
-		free(orig);
-		seterrno_ret(ERANGE, 0);
-	}
+	if (range->hi - range->lo + 1 > MAX_RANGE)
+		fatal("%s: Too many hosts in range `%s'", __func__, orig);
 
 	free(orig);
 	return 1;
-
-error:
-	errno = EINVAL;
-	_error(__FILE__, __LINE__, "Invalid range: `%s'", orig);
-	free(orig);
-	return 0;
 }
 
 /*
@@ -1765,13 +1711,9 @@ static int _parse_range_list(char *str,
 	int count = 0;
 
 	while (str) {
-		if (count == max_capacity) {
-			errno = EINVAL;
-			_error(__FILE__, __LINE__,
-			       "Too many ranges, can't process "
-			       "entire list");
-			return -1;
-		}
+		if (count == max_capacity)
+			fatal("%s: Too many ranges, can't process entire list",
+			      __func__);
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
 /* 		info("looking at %s", str); */
@@ -3015,13 +2957,9 @@ static int _add_box_ranges(int dim,  int curr,
 			char new_str[(dims*2)+2];
 			memset(new_str, 0, sizeof(new_str));
 
-			if ((*count) == max_capacity) {
-				errno = EINVAL;
-				_error(__FILE__, __LINE__,
-				       "Too many ranges, can't process "
-				       "entire list");
-				return 0;
-			}
+			if ((*count) == max_capacity)
+				fatal("%s: Too many ranges, can't process entire list",
+				      __func__);
 			if ((*count) >= (*capacity)) {
 				if (!_grow_ranges(ranges,
 						  capacity, max_capacity)) {

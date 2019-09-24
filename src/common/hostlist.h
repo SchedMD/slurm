@@ -69,15 +69,6 @@
 
 /* Notes:
  *
- * If WITH_LSD_FATAL_ERROR_FUNC is defined, the linker will expect to
- * find and external lsd_fatal_error(file,line,mesg) function. By default,
- * lsd_fatal_error(file,line,mesg) is a macro definition that outputs an
- * error message to stderr. This macro may be redefined to invoke another
- * routine instead. e.g.:
- *
- *    #define lsd_fatal_error(file,line,mesg)  \
- *              error("%s:%s %s\n",file,line,mesg);
- *
  * If WITH_LSD_NOMEM_ERROR_FUNC is defined, the linker will expect to
  * find an external lsd_nomem_error(file,line,mesg) function. By default,
  * lsd_nomem_error(file,line,mesg) is a macro definition that returns NULL.
