@@ -2022,12 +2022,14 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 			fd = slurm_open_msg_conn(addr);
 			if (fd >= 0)
 				goto end_it;
-			debug("Failed to contact controller: %m");
+			log_flag(NET, "%s: Failed to contact controller: %m",
+				 __func__);
 		} else if (proto_conf->vip_addr_set) {
 			fd = slurm_open_msg_conn(&proto_conf->vip_addr);
 			if (fd >= 0)
 				goto end_it;
-			debug("Failed to contact controller: %m");
+			log_flag(NET, "%s: Failed to contact controller: %m",
+				 __func__);
 		} else {
 			if (!*use_backup) {
 				fd = slurm_open_msg_conn(
@@ -2036,21 +2038,23 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 					*use_backup = false;
 					goto end_it;
 				}
-				debug("Failed to contact primary controller: %m");
+				log_flag(NET,"%s: Failed to contact primary controller: %m",
+					 __func__);
 			}
 			if ((proto_conf->control_cnt > 1) || *use_backup) {
 				for (i = 1; i < proto_conf->control_cnt; i++) {
 					fd = slurm_open_msg_conn(
 						&proto_conf->controller_addr[i]);
 					if (fd >= 0) {
-						debug("Contacted backup controller %d",
-						      (i - 1));
+						log_flag(NET, "%s: Contacted backup controller attempt:%d",
+							 __func__, (i - 1));
 						*use_backup = true;
 						goto end_it;
 					}
 				}
 				*use_backup = false;
-				debug("Failed to contact backup controller: %m");
+				log_flag(NET, "%s: Failed to contact backup controller: %m",
+					 __func__);
 			}
 		}
 	}
@@ -2270,9 +2274,8 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 
 	else if (timeout > (slurm_conf.msg_timeout * MSEC_IN_SEC * 10)) {
 		/* consider 10x the timeout to be very long */
-		debug("%s: You are receiving a message with very long "
-		      "timeout of %d seconds", __func__,
-		      (timeout / MSEC_IN_SEC));
+		log_flag(NET, "%s: You are receiving a message with very long timeout of %d seconds",
+			 __func__, (timeout / MSEC_IN_SEC));
 	} else if (timeout < MSEC_IN_SEC) {
 		/* consider a less than 1 second to be very short */
 		error("%s: You are receiving a message with a very short "
@@ -2348,22 +2351,18 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		steps--;
 	}
 
-	debug4("orig_timeout was %d we have %d steps and a timeout of %d",
-	       orig_timeout, steps, timeout);
+	log_flag(NET, "%s: orig_timeout was %d we have %d steps and a timeout of %d",
+		 __func__, orig_timeout, steps, timeout);
 	/* we compare to the orig_timeout here because that is really
 	 *  what we are going to wait for each step
 	 */
 	if (orig_timeout >= (slurm_conf.msg_timeout * 10000)) {
-		debug("slurm_receive_msgs: "
-		      "You are sending a message with timeout's greater "
-		      "than %d seconds, your's is %d seconds",
-		      (slurm_conf.msg_timeout * 10),
-		      (timeout/1000));
+		log_flag(NET, "%s: Sending a message with timeout's greater than %d seconds, requested timeout is %d seconds",
+			 __func__, (slurm_conf.msg_timeout * 10),
+			 (timeout/1000));
 	} else if (orig_timeout < 1000) {
-		debug("slurm_receive_msgs: "
-		      "You are sending a message with a very short timeout of "
-		      "%d milliseconds each step in the tree has %d "
-		      "milliseconds", timeout, orig_timeout);
+		log_flag(NET, "%s: Sending a message with a very short timeout of %d milliseconds each step in the tree has %d milliseconds",
+			 __func__, timeout, orig_timeout);
 	}
 
 
@@ -2551,17 +2550,17 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	msg->ret_list = list_create(destroy_data_info);
 
 	if (timeout <= 0) {
+		log_flag(NET, "%s: Overriding timeout of %d milliseconds to %d seconds",
+			 __func__, timeout, slurm_conf.msg_timeout);
 		/* convert secs to msec */
 		timeout = slurm_conf.msg_timeout * 1000;
 	} else if (timeout < 1000) {
-		debug("%s: You are sending a message with a very short timeout of %d milliseconds",
-		      __func__, timeout);
+		log_flag(NET, "%s: Sending a message with a very short timeout of %d milliseconds",
+			 __func__, timeout);
 	} else if (timeout >= (slurm_conf.msg_timeout * 10000)) {
-		debug("slurm_receive_msg_and_forward: "
-		      "You are sending a message with timeout's greater "
-		      "than %d seconds, your's is %d seconds",
-		      (slurm_conf.msg_timeout * 10),
-		      (timeout/1000));
+		log_flag(NET, "%s: Sending a message with timeout's greater than %d seconds, requested timeout is %d seconds",
+			 __func__, (slurm_conf.msg_timeout * 10),
+			 (timeout/1000));
 	}
 
 	/*
@@ -2627,7 +2626,8 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 	/* Forward message to other nodes */
 	if (header.forward.cnt > 0) {
-		debug2("forwarding to %u", header.forward.cnt);
+		log_flag(NET, "%s: forwarding to %u nodes",
+			 __func__, header.forward.cnt);
 		msg->forward_struct = xmalloc(sizeof(forward_struct_t));
 		slurm_mutex_init(&msg->forward_struct->forward_mutex);
 		slurm_cond_init(&msg->forward_struct->notify, NULL);
@@ -2646,12 +2646,12 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 			msg->forward_struct->timeout = message_timeout;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
-		debug3("forwarding messages to %u nodes with timeout of %d",
-		       msg->forward_struct->fwd_cnt,
-		       msg->forward_struct->timeout);
+		log_flag(NET, "%s: forwarding messages to %u nodes with timeout of %d",
+			 __func__, msg->forward_struct->fwd_cnt,
+			 msg->forward_struct->timeout);
 
 		if (forward_msg(msg->forward_struct, &header) == SLURM_ERROR) {
-			error("problem with forward msg");
+			error("%s: problem with forward msg", __func__);
 		}
 	}
 
@@ -2776,8 +2776,8 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 		free_buf(buffer);
 
 		if ((rc < 0) && (errno == ENOTCONN)) {
-			debug3("slurm_persist_send_msg: persistent connection has disappeared for msg_type=%u",
-			       msg->msg_type);
+			log_flag(NET, "%s: persistent connection has disappeared for msg_type=%u",
+				 __func__, msg->msg_type);
 		} else if (rc < 0) {
 			slurm_addr_t peer_addr;
 			char addr_str[32];
@@ -2870,8 +2870,8 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 			      get_buf_offset(buffer));
 
 	if ((rc < 0) && (errno == ENOTCONN)) {
-		debug3("slurm_msg_sendto: peer has disappeared for msg_type=%u",
-		       msg->msg_type);
+		log_flag(NET, "%s: peer has disappeared for msg_type=%u",
+			 __func__, msg->msg_type);
 	} else if (rc < 0) {
 		slurm_addr_t peer_addr;
 		char addr_str[32];
@@ -2881,11 +2881,10 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 			error("slurm_msg_sendto: address:port=%s "
 			      "msg_type=%u: %m",
 			      addr_str, msg->msg_type);
-		} else if (errno == ENOTCONN)
-			debug3("slurm_msg_sendto: peer has disappeared "
-			       "for msg_type=%u",
-			       msg->msg_type);
-		else
+		} else if (errno == ENOTCONN) {
+			log_flag(NET, "%s: peer has disappeared for msg_type=%u",
+				 __func__, msg->msg_type);
+		} else
 			error("slurm_msg_sendto: msg_type=%u: %m",
 			      msg->msg_type);
 	}
@@ -3379,9 +3378,8 @@ tryagain:
 		    && (have_backup)
 		    && (difftime(time(NULL), start_time)
 			< (slurmctld_timeout + (slurmctld_timeout / 2)))) {
-
-			debug("Primary not responding, backup not in control. "
-			      "sleep and retry");
+			log_flag(NET, "%s: Primary not responding, backup not in control. Sleeping and retry.",
+				 __func__);
 			slurm_free_return_code_msg(response_msg->data);
 			sleep(slurmctld_timeout / 2);
 			use_backup = false;
@@ -3474,7 +3472,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 	if ((rc = slurm_send_node_msg(fd, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
-		debug3("slurm_send_only_controller_msg: sent %d", rc);
+		log_flag(NET, "%s: sent %d", __func__, rc);
 		rc = SLURM_SUCCESS;
 	}
 
@@ -3527,7 +3525,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	if ((rc = slurm_send_node_msg(fd, req)) < 0) {
 		rc = SLURM_ERROR;
 	} else {
-		debug3("%s: sent %d", __func__, rc);
+		log_flag(NET, "%s: sent %d", __func__, rc);
 		rc = SLURM_SUCCESS;
 	}
 
@@ -3545,7 +3543,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	 * this function.
 	 */
 	if (shutdown(fd, SHUT_WR))
-		debug("%s: shutdown call failed: %m", __func__);
+		log_flag(NET, "%s: shutdown call failed: %m", __func__);
 
 again:
 	pfd.fd = fd;
@@ -3554,32 +3552,31 @@ again:
 	if (pollrc == -1) {
 		if (errno == EINTR)
 			goto again;
-		debug("%s: poll error: %m", __func__);
+		log_flag(NET, "%s: poll error: %m", __func__);
 		(void) close(fd);
 		return SLURM_ERROR;
 	}
 
 	if (pollrc == 0) {
 		if (ioctl(fd, TIOCOUTQ, &value))
-			debug("%s: TIOCOUTQ ioctl failed", __func__);
-		debug("%s: poll timed out with %d outstanding: %m", __func__, value);
+			log_flag(NET, "%s: TIOCOUTQ ioctl failed",
+				 __func__);
+		log_flag(NET, "%s: poll timed out with %d outstanding: %m",
+			 __func__, value);
 		(void) close(fd);
 		return SLURM_ERROR;
 	}
 
 	if (pfd.revents & POLLERR) {
-		int err;
-		socklen_t errlen = sizeof(err);
 		int value = -1;
 
 		if (ioctl(fd, TIOCOUTQ, &value))
-			debug("%s: TIOCOUTQ ioctl failed", __func__);
-		if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen))
-			debug("%s: getsockopt error with %d outstanding: %m",
-			      __func__, value);
-		else
-			debug("%s: poll error with %d outstanding: %s",
-			      __func__, value, strerror(err));
+			log_flag(NET, "%s: TIOCOUTQ ioctl failed",
+				 __func__);
+		fd_get_socket_error(fd, &errno);
+		log_flag(NET, "%s: poll error with %d outstanding: %m",
+			 __func__, value);
+
 		(void) close(fd);
 		return SLURM_ERROR;
 	}
@@ -3673,7 +3670,8 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 		if ((fd >= 0) || (errno != ECONNREFUSED))
 			break;
 		if (i == 0)
-			debug3("connect refused, retrying");
+			log_flag(NET, "%s: connect refused, retrying",
+				 __func__);
 	}
 	if (fd < 0) {
 		mark_as_failed_forward(&ret_list, name,
@@ -4034,8 +4032,8 @@ extern int slurm_forward_data(
 	bool redo_nodelist = false;
 	slurm_msg_t_init(&msg);
 
-	debug2("slurm_forward_data: nodelist=%s, address=%s, len=%u",
-	       *nodelist, address, len);
+	log_flag(NET, "%s: nodelist=%s, address=%s, len=%u",
+		 __func__, *nodelist, address, len);
 	req.address = address;
 	req.len = len;
 	req.data = (char *)data;
@@ -4180,8 +4178,8 @@ static bool _is_port_ok(int s, uint16_t port, bool local)
 		sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
 	if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-		debug("%s: bind() failed port %d sock %d %m",
-		      __func__, port, s);
+		log_flag(NET, "%s: bind() failed on port:%d fd:%d: %m",
+			 __func__, port, s);
 		return false;
 	}
 
