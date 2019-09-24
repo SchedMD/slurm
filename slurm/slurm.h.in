@@ -2545,7 +2545,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_STEPS	0x0000000000000002 /* slurmctld steps */
 #define DEBUG_FLAG_TRIGGERS	0x0000000000000004 /* slurmctld triggers */
 #define DEBUG_FLAG_CPU_BIND	0x0000000000000008 /* CPU binding */
-#define DEBUG_FLAG_WIKI		0x0000000000000010 /* unused, was wiki plugin */
+#define DEBUG_FLAG_NET_RAW	0x0000000000000010 /* Raw Network dumps */
 #define DEBUG_FLAG_NO_CONF_HASH	0x0000000000000020 /* no warning about
 						    * slurm.conf files checksum
 						    * mismatch */

@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
     boot loop failures in slurmdbd.
  -- Add Autodetect option to NodeName line in gres.conf to override the global
     Autodetect option.
+ -- Add NetworkRaw debugflag.
 
 * Changes in Slurm 20.02.2
 ==========================
