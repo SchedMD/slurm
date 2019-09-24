@@ -400,6 +400,13 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	memset(&job, 0, sizeof(stepd_step_rec_t));
 	job.jmgr_pid = pid;
 	job.uid = uid;
+
+	/*
+	 * container_g_join() is called only from forked processes, set the
+	 * proctrack_forked global bool to inform proctrack/cray_aries we are
+	 * forked.
+	 */
+	proctrack_forked = true;
 	if (proctrack_g_create(&job) != SLURM_SUCCESS) {
 		error("%s: proctrack_g_create job(%u)", plugin_type,job_id);
 		return SLURM_ERROR;

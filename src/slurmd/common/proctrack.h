@@ -44,6 +44,8 @@
 #include "slurm/slurm.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+extern bool proctrack_forked;
+
 /*
  * Initialize the process tracking plugin.
  *
