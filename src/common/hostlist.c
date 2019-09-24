@@ -1920,11 +1920,8 @@ void hostlist_destroy(hostlist_t hl)
 	if (!hl)
 		return;
 	LOCK_HOSTLIST(hl);
-	while (hl->ilist) {
-		slurm_mutex_unlock(&hl->mutex);
-		hostlist_iterator_destroy(hl->ilist);
-		slurm_mutex_lock(&hl->mutex);
-	}
+	while (hl->ilist)
+		_hostlist_iterator_destroy(hl->ilist);
 	for (i = 0; i < hl->nranges; i++)
 		hostrange_destroy(hl->hr[i]);
 	free(hl->hr);
