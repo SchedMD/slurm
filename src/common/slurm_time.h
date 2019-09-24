@@ -1,10 +1,5 @@
 /*****************************************************************************\
- *  time.h - Slurm versions of glibc time functions. Unlike the glibc
- *  functions, these are re-entrant. If a process is forked while glibc is
- *  in a lock, the child process will deadlock if it tries to use another
- *  glibc function.
- *
- *  Based upon glibc version 2.21 and the fork handler logic from Slurm.
+ *  slurm_time.h - assorted time functions
  *****************************************************************************
  *  Convert `time_t' to `struct tm' in local time zone.
  *  Copyright (C) 1991-2015 Free Software Foundation, Inc.
@@ -28,8 +23,6 @@
 #define _HAVE_SLURM_TIME_H
 
 #include <time.h>
-
-extern char *slurm_ctime(const time_t *timep);
 
 extern time_t slurm_mktime(struct tm *tp);
 
