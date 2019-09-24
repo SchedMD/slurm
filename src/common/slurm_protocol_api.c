@@ -85,7 +85,12 @@ strong_alias(get_unit_type, slurm_get_unit_type);
 /* EXTERNAL VARIABLES */
 
 /* #DEFINES */
-#define _DEBUG	0
+#define _log_hex(data, len)						\
+	do {								\
+		if (slurm_conf.debug_flags & DEBUG_FLAG_NET_RAW)	\
+			_print_data(__func__, data, len);		\
+	} while (0)
+
 
 /* STATIC VARIABLES */
 static int message_timeout = -1;
@@ -95,10 +100,7 @@ static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
 static int   _unpack_msg_uid(Buf buffer, uint16_t protocol_version);
 static bool  _is_port_ok(int, uint16_t, bool);
-
-#if _DEBUG
-static void _print_data(char *data, int len);
-#endif
+static void _print_data(const char *tag, const char *data, int len);
 
 /* define slurmdbd_conf here so we can treat its existence as a flag */
 slurmdbd_conf_t *slurmdbd_conf = NULL;
@@ -2292,9 +2294,7 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 		goto endit;
 	}
 
-#if	_DEBUG
-	_print_data (buf, buflen);
-#endif
+	_log_hex(buf, buflen);
 	buffer = create_buf(buf, buflen);
 
 	rc = slurm_unpack_received_msg(msg, fd, buffer);
@@ -2377,9 +2377,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		goto total_return;
 	}
 
-#if	_DEBUG
-	_print_data (buf, buflen);
-#endif
+	_log_hex(buf, buflen);
 	buffer = create_buf(buf, buflen);
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
@@ -2574,9 +2572,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		goto total_return;
 	}
 
-#if	_DEBUG
-	_print_data (buf, buflen);
-#endif
+	_log_hex(buf, buflen);
 	buffer = create_buf(buf, buflen);
 
 	if (unpack_header(&header, buffer) == SLURM_ERROR) {
@@ -2859,10 +2855,8 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 * Pack message into buffer
 	 */
 	_pack_msg(msg, &header, buffer);
+	_log_hex(get_buf_data(buffer), get_buf_offset(buffer));
 
-#if	_DEBUG
-	_print_data (get_buf_data(buffer),get_buf_offset(buffer));
-#endif
 	/*
 	 * Send message
 	 */
@@ -3994,22 +3988,38 @@ extern int get_unit_type(char unit)
 	return tmp_char - units;
 }
 
-#if _DEBUG
-
-static void _print_data(char *data, int len)
+static void _print_data(const char *tag, const char *data, int len)
 {
-	int i;
-	for (i = 0; i < len; i++) {
-		if ((i % 10 == 0) && (i != 0))
-			printf("\n");
-		printf("%2.2x ", ((int) data[i] & 0xff));
-		if (i >= 200)
-			break;
-	}
-	printf("\n\n");
-}
+	char *hex = NULL;
+	char *str = NULL;
+	int start = 0;
 
-#endif
+	if (len <= 0)
+		return;
+
+	/* print up to len or 16 lines worth */
+	for (int i = 0; (i < len) && (i < (16 * 16)); i++) {
+		if (i && !(i % 16)) {
+			log_flag(NET_RAW, "%s: [%04u/%04u] 0x%s \"%s\"",
+				 tag, start, len, hex, str);
+			xfree(hex);
+			xfree(str);
+			start = i;
+		}
+		/* convert each char into equiv hex */
+		xstrfmtcat(hex, "%02x ", (data[i] & 0xff));
+		/* create safe string to print in quotes */
+		if (isalnum(data[i]) || ispunct(data[i]) || (data[i] == ' '))
+			xstrfmtcat(str, "%c", data[i]);
+		else
+			xstrfmtcat(str, "%c", '.');
+	}
+
+	log_flag(NET_RAW, "%s: [%04u/%04u] 0x%s \"%s\"",
+		 tag, start, len, hex, str);
+	xfree(hex);
+	xfree(str);
+}
 
 /*
  * slurm_forward_data - forward arbitrary data to unix domain sockets on nodes
