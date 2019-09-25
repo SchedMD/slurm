@@ -562,6 +562,12 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 			sys_record->count = 1;
 	list_iterator_destroy(itr2);
 
+	/* Print out all the leftover system GPUs that are not being used */
+	if (gres_list_system && list_count(gres_list_system)) {
+		info("WARNING: The following autodetected GPUs are being ignored:");
+		print_gres_list(gres_list_system, LOG_LEVEL_INFO);
+	}
+
 	/* Add GPUs + non-GPUs to gres_list_conf */
 	list_flush(gres_list_conf);
 	if (gres_list_gpu) {
