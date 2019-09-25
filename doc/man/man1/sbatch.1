@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "May 2019" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "September 2019" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -16,6 +16,8 @@ sbatch submits a batch script to Slurm.  The batch script may be given to
 sbatch through a file name on the command line, or if no file name is specified,
 sbatch will read in a script from standard input. The batch script may contain
 options preceded with "#SBATCH" before any executable commands in the script.
+sbatch will stop processing further #SBATCH directives once the first
+non-comment non-whitespace line has been reached in the script.
 
 sbatch exits immediately after the script is successfully transferred to the
 Slurm controller and assigned a Slurm job ID.  The batch script is not
