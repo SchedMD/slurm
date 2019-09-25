@@ -569,13 +569,13 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 
 	/* Add GPUs + non-GPUs to gres_list_conf */
 	list_flush(gres_list_conf);
-	if (gres_list_gpu) {
+	if (gres_list_gpu && list_count(gres_list_gpu)) {
 		list_sort(gres_list_gpu, _sort_gpu_by_file_asc);
 		debug2("gres_list_gpu");
 		print_gres_list(gres_list_gpu, LOG_LEVEL_DEBUG2);
 		list_transfer(gres_list_conf, gres_list_gpu);
 	}
-	if (gres_list_non_gpu)
+	if (gres_list_non_gpu && list_count(gres_list_non_gpu))
 		list_transfer(gres_list_conf, gres_list_non_gpu);
 	FREE_NULL_LIST(gres_list_gpu);
 	FREE_NULL_LIST(gres_list_conf_single);
@@ -767,9 +767,14 @@ extern int node_config_load(List gres_conf_list,
 		_normalize_gres_conf(gres_conf_list, gres_list_system);
 		FREE_NULL_LIST(gres_list_system);
 
-		log_var(log_lvl, "%s: Final normalized gres.conf list:",
-			plugin_name);
-		print_gres_list(gres_conf_list, log_lvl);
+		if (!gres_conf_list || list_is_empty(gres_conf_list))
+			log_var(log_lvl, "%s: Final normalized gres.conf list is empty",
+				plugin_name);
+		else {
+			log_var(log_lvl, "%s: Final normalized gres.conf list:",
+				plugin_name);
+			print_gres_list(gres_conf_list, log_lvl);
+		}
 	}
 
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
