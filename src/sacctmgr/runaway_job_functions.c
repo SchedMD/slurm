@@ -236,7 +236,8 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 	db_jobs_list = slurmdb_jobs_get(db_conn, job_cond);
 
 	if (!db_jobs_list) {
-		error("No job list returned");
+		if (errno != ESLURM_ACCESS_DENIED)
+			error("No job list returned");
 		goto cleanup;
 	} else if (!list_count(db_jobs_list))
 		return db_jobs_list; /* Just return now since we don't
