@@ -125,33 +125,11 @@ strong_alias(hostset_shift_range,	slurm_hostset_shift_range);
 strong_alias(hostset_within,		slurm_hostset_within);
 strong_alias(hostset_nth,		slurm_hostset_nth);
 
-/*
- * lsd_nonmem_error
- */
-#ifdef WITH_LSD_NOMEM_ERROR_FUNC
-#  undef lsd_nomem_error
-extern void * lsd_nomem_error(char *file, int line, char *mesg);
-#else /* !WITH_LSD_NOMEM_ERROR_FUNC */
-#  ifndef lsd_nomem_error
-	static void * lsd_nomem_error(char *file, int line, char *mesg)
-	{
-		log_oom(file, line, mesg);
-		abort();
-		return NULL;
-	}
-#  endif /* !lsd_nomem_error */
-#endif /* !WITH_LSD_NOMEM_ERROR_FUNC */
-
-/*
- * OOM helper function
- *  Automatically call lsd_nomem_error with appropriate args
- *  and set errno to ENOMEM
- */
-#define out_of_memory(mesg)						\
-	do {								\
-		errno = ENOMEM;						\
-		return(lsd_nomem_error(__FILE__, __LINE__, mesg));	\
-	} while (0)
+#define out_of_memory(mesg)			\
+do {						\
+	log_oom(__FILE__, __LINE__, __func__);	\
+	abort();				\
+} while (0)
 
 /*
  * Some constants and tunables:
