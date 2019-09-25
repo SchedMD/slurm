@@ -105,7 +105,6 @@ strong_alias(log_alter,		slurm_log_alter);
 strong_alias(log_alter_with_fp, slurm_log_alter_with_fp);
 strong_alias(log_set_fpfx,	slurm_log_set_fpfx);
 strong_alias(log_fp,		slurm_log_fp);
-strong_alias(log_fatal,		slurm_log_fatal);
 strong_alias(log_oom,		slurm_log_oom);
 strong_alias(log_has_data,	slurm_log_has_data);
 strong_alias(log_flush,		slurm_log_flush);
@@ -636,7 +635,7 @@ int sched_log_alter(log_options_t opt, log_facility_t fac, char *logfile)
 }
 
 /* Return the FILE * of the current logfile (or stderr if not logging to
- * a file, but NOT both). Also see log_fatal() and log_oom() below. */
+ * a file, but NOT both). Also see log_oom() below. */
 FILE *log_fp(void)
 {
 	FILE *fp;
@@ -647,21 +646,6 @@ FILE *log_fp(void)
 		fp = stderr;
 	slurm_mutex_unlock(&log_lock);
 	return fp;
-}
-
-/* Log fatal error without message buffering */
-void log_fatal(const char *file, int line, const char *msg, const char *err_str)
-{
-	if (log && log->logfp) {
-		fprintf(log->logfp, "ERROR: [%s:%d] %s: %s\n",
-			file, line, msg, err_str);
-		fflush(log->logfp);
-	}
-	if (!log || log->opt.stderr_level) {
-		fprintf(stderr, "ERROR: [%s:%d] %s: %s\n",
-			file, line, msg, err_str);
-		fflush(stderr);
-	}
 }
 
 /* Log out of memory without message buffering */
