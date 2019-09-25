@@ -142,18 +142,13 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 	 */
 	mysql_conn->cluster_name = first_job->cluster;
 
+	/*
+	 * Double check if we are at least an operator, this check should had
+	 * already happened in the slurmdbd.
+	 */
 	if (!is_user_min_admin_level(mysql_conn, uid, SLURMDB_ADMIN_OPERATOR)) {
-		slurmdb_user_rec_t user;
-
-		memset(&user, 0, sizeof(slurmdb_user_rec_t));
-		user.uid = uid;
-
-		if (!is_user_any_coord(mysql_conn, &user)) {
-			error("Only admins/operators/coordinators "
-			      "can fix runaway jobs");
-			rc = ESLURM_ACCESS_DENIED;
-			goto bail;
-		}
+		rc = ESLURM_ACCESS_DENIED;
+		goto bail;
 	}
 
 	iter = list_iterator_create(runaway_jobs);
