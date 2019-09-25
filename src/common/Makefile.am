@@ -41,7 +41,7 @@ libcommon_la_SOURCES = 			\
 	log.c log.h			\
 	cbuf.c cbuf.h			\
 	bitstring.c bitstring.h 	\
-	mpi.c slurm_mpi.h               \
+	slurm_mpi.c slurm_mpi.h         \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
 	parse_value.c parse_value.h	\

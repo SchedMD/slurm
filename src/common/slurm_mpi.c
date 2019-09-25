@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * src/common/mpi.c - Generic mpi selector for slurm
+ *  slurm_mpi.c - Generic mpi selector for slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
