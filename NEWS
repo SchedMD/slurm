@@ -67,6 +67,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove FastSchedule dependence from gres.conf's AutoDetect=nvml.
  -- Forbid mix of typed and untyped GRES of same name in slurm.conf.
  -- cons_tres: Prevent creating a job without CPUs.
+ -- Prevent underflow when filtering cores with gres.
 
 * Changes in Slurm 19.05.2
 ==========================
