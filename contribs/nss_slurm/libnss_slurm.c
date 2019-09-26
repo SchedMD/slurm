@@ -147,8 +147,9 @@ static struct passwd *_pw_internal(int mode, uid_t uid, const char *name)
 		if (fd < 0)
 			continue;
 
-		if ((pwd = stepd_getpw(fd, stepd->protocol_version,
-				       mode, uid, name)))
+		pwd = stepd_getpw(fd, stepd->protocol_version, mode, uid, name);
+		close(fd);
+		if (pwd)
 			break;
 	}
 	list_iterator_destroy(itr);
@@ -278,8 +279,10 @@ static struct group **_gr_internal(int mode, gid_t uid, const char *name)
 		if (fd < 0)
 			continue;
 
-		if ((grps = stepd_getgr(fd, stepd->protocol_version,
-				        mode, uid, name)))
+		grps = stepd_getgr(fd, stepd->protocol_version, mode, uid,
+				   name);
+		close(fd);
+		if (grps)
 			break;
 	}
 	list_iterator_destroy(itr);
