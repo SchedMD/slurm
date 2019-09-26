@@ -217,36 +217,16 @@ $output_method
 rm -rf ./$file_out"
 	}
 
+	##
+	### Parse the `GRES_PARSABLE` output
+	##
 	set sorted_actual ""
-	set errs_actual 0
-	set ignore_err_msgs 0
-	# Doing a regex on an empty string stalls expect. So don't do it.
-	if {$err_msgs == ""} {
-		set err_msgs "bogus"
-		set ignore_err_msgs 1
-	}
+
 	if {!$debug_mode} {
 		log_user 0
 	}
 	spawn ./$file_in
-
-
-	# Note that $err_msgs is checked before GRES_PARSABLE. This is to
-	# prevent expect from throwing away $err_msgs if it comes before
-	# GRES_PARSABLE in the same stdout chunk that expect is processing.
-	# When expect matches something in a chunk, if exp_continue is called,
-	# it throws away everything before the match and then continues
-	# searching in the chunk.
-	# So we are making the brittle assumption that all $err_msgs will come
-	# before any GRES_PARSABLE lines.
 	expect {
-		-re "($err_msgs)" {
-			send_user "Found '$err_msgs'\n"
-			if {$ignore_err_msgs == 0} {
-				incr errs_actual
-			}
-			exp_continue
-		}
 		-re "(GRES_PARSABLE$alpha_numeric_special)" {
 			if {$sorted_actual == ""} {
 				set sorted_actual "\n"
@@ -261,6 +241,40 @@ rm -rf ./$file_out"
 		}
 		eof {
 			wait
+		}
+	}
+
+	##
+	### Run through output again to parse the errors (if needed)
+	##
+	# Do this in a separate expect loop to prevent the two unrelated regexes
+	# colliding with each other.
+	# When expect matches something in a chunk of text, if exp_continue is
+	# called, it throws away everything up to and including that text and
+	# then continues searching. This means multiple regexes in the same
+	# expect loop can skip each other. So avoid this.
+	set errs_actual 0
+	set ignore_err_msgs 0
+	# Doing a regex on an empty string stalls expect. So don't do it.
+	if {$err_msgs != ""} {
+		# We for sure don't want to print this out
+		log_user 0
+		spawn ./$file_in
+		expect {
+			-re "($err_msgs)" {
+				send_user "Found '$err_msgs'\n"
+				if {$ignore_err_msgs == 0} {
+					incr errs_actual
+				}
+				exp_continue
+			}
+			timeout {
+				send_user "FAILURE: No response from $test_prog\n"
+				set failed 1
+			}
+			eof {
+				wait
+			}
 		}
 	}
 
