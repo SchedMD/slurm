@@ -251,7 +251,7 @@ int _nss_slurm_endpwent(void)
 	return NSS_STATUS_SUCCESS;
 }
 
-static struct group **_gr_internal(int mode, gid_t uid, const char *name)
+static struct group **_gr_internal(int mode, gid_t gid, const char *name)
 {
 	List steps = NULL;
 	ListIterator itr = NULL;
@@ -279,7 +279,7 @@ static struct group **_gr_internal(int mode, gid_t uid, const char *name)
 		if (fd < 0)
 			continue;
 
-		grps = stepd_getgr(fd, stepd->protocol_version, mode, uid,
+		grps = stepd_getgr(fd, stepd->protocol_version, mode, gid,
 				   name);
 		close(fd);
 		if (grps)
