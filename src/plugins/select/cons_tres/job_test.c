@@ -5213,15 +5213,17 @@ fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list && orig_core_array) {
 			if (!bit_test(node_map, i)||
 			    !orig_core_array[i] || !avail_core[i])
 				continue;
-			count = bit_set_count(orig_core_array[i]) -
-				bit_set_count(avail_core[i]);
+			count = bit_set_count(avail_core[i]);
 			count *= select_node_record[i].vpus;
-			if (count > avail_res_array[i]->avail_cpus) {
+			avail_res_array[i]->avail_cpus = MIN(count, avail_res_array[i]->avail_cpus);
+			if (avail_res_array[i]->avail_cpus == 0) {
 				error("%s: %s: avail_cpus underflow for %pJ",
 				      plugin_type, __func__, job_ptr);
-				avail_res_array[i]->avail_cpus = 0;
-			} else {
-				avail_res_array[i]->avail_cpus -= count;
+				if (req_node_map && bit_test(req_node_map, i)) {
+					/* can't clear a required node! */
+					ec = SLURM_ERROR;
+				}
+				bit_clear(node_map, i);
 			}
 		}
 	}
