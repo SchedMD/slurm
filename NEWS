@@ -78,6 +78,9 @@ documents those changes that are of interest to users and administrators.
  -- Remove redefinition of global variable in gres.c
  -- Fix issue where GPU devices are denied access when MPS is enabled.
  -- Fix uninitialized errors when compiling with CFLAGS="--coverage".
+ -- Fix scancel --full for proctrack/cgroups.
+ -- Fix sdiag backfill last and mean queue length stats.
+ -- Do not remove batch host when resizing/shrinking a batch job.
 
 * Changes in Slurm 19.05.2
 ==========================

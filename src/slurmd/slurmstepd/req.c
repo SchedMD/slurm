@@ -841,15 +841,18 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 		sig = SIGKILL;
 	}
 
-	if (flag & KILL_JOB_BATCH
-	    && job->stepid == SLURM_BATCH_SCRIPT) {
-		/* We should only signal the batch script
-		 * and nothing else, the job pgid is the
-		 * equal to the pid of the batch script.
-		 */
-		if (kill(job->pgid, sig) < 0) {
-			error("%s: failed signal %d container pid"
-			      "%u job %u.%u %m",
+	/*
+	 * Specific handle for the batch container and some related flags.
+	 */
+	if (job->stepid == SLURM_BATCH_SCRIPT &&
+	    ((flag & KILL_JOB_BATCH) || (flag & KILL_FULL_JOB))) {
+
+		if (flag & KILL_FULL_JOB)
+			rc = killpg(job->pgid, sig);
+		else
+			rc = kill(job->pgid, sig);
+		if (rc < 0) {
+			error("%s: failed signal %d pid %u job %u.%u %m",
 			      __func__, sig, job->pgid,
 			      job->jobid, job->stepid);
 			rc = SLURM_ERROR;
@@ -857,11 +860,12 @@ _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid)
 			slurm_mutex_unlock(&suspend_mutex);
 			goto done;
 		}
-		rc = SLURM_SUCCESS;
-		errnum = 0;
-		verbose("%s: sent signal %d to container pid %u job %u.%u",
+
+		verbose("%s: sent signal %d to pid %u job %u.%u",
 			__func__, sig, job->pgid,
 			job->jobid, job->stepid);
+		rc = SLURM_SUCCESS;
+		errnum = 0;
 		slurm_mutex_unlock(&suspend_mutex);
 		goto done;
 	}

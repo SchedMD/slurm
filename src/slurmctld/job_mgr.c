@@ -5573,10 +5573,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal, uint16_t flags)
 	signal_tasks_msg->job_id      = job_ptr->job_id;
 	signal_tasks_msg->job_step_id = NO_VAL;
 
-	if (flags == KILL_FULL_JOB ||
-	    flags == KILL_JOB_BATCH ||
-	    flags == KILL_STEPS_ONLY)
-		signal_tasks_msg->flags = flags;
+	signal_tasks_msg->flags = flags;
 	signal_tasks_msg->signal = signal;
 
 	agent_args->msg_args = signal_tasks_msg;
@@ -11462,6 +11459,31 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			int i, i_first, i_last;
 			struct node_record *node_ptr;
 			bitstr_t *rem_nodes;
+
+			/*
+			 * They requested a new list of nodes for the job. If
+			 * the batch host isn't in this list, then deny this
+			 * request.
+			 */
+			if (job_ptr->batch_flag) {
+				bitstr_t *batch_host_bitmap;
+				if (node_name2bitmap(job_ptr->batch_host, false,
+						     &batch_host_bitmap))
+					error("%s: Invalid batch host %s for %pJ; this should never happen",
+					      __func__, job_ptr->batch_host,
+					      job_ptr);
+				else if (!bit_overlap(batch_host_bitmap,
+						      new_req_bitmap)) {
+					error("%s: Batch host %s for %pJ is not in the requested node list %s. You cannot remove the batch host from a job when resizing.",
+					      __func__, job_ptr->batch_host,
+					      job_ptr, job_specs->req_nodes);
+					error_code = ESLURM_INVALID_NODE_NAME;
+					bit_free(batch_host_bitmap);
+					goto fini;
+				} else
+					bit_free(batch_host_bitmap);
+			}
+
 			sched_info("%s: setting nodes to %s for %pJ",
 				   __func__, job_specs->req_nodes, job_ptr);
 			job_pre_resize_acctg(job_ptr);
@@ -12843,20 +12865,49 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 			error_code = ESLURM_NOT_SUPPORTED;
 			goto fini;
 		} else {
-			int i, i_first, i_last, total;
+			int i, i_first, i_last, total = 0;
 			struct node_record *node_ptr;
-			bitstr_t *rem_nodes;
+			bitstr_t *rem_nodes, *tmp_nodes;
 			sched_info("%s: set node count to %u for %pJ", __func__,
 				   job_specs->min_nodes, job_ptr);
 			job_pre_resize_acctg(job_ptr);
-			i_first = bit_ffs(job_ptr->node_bitmap);
+
+			/*
+			 * Don't remove the batch host from the job. The batch
+			 * host isn't guaranteed to be the first bit set in
+			 * job_ptr->node_bitmap because the batch host can be
+			 * selected with the --batch and --constraint sbatch
+			 * flags.
+			 */
+			tmp_nodes = bit_copy(job_ptr->node_bitmap);
+			if (job_ptr->batch_host) {
+				bitstr_t *batch_host_bitmap;
+				if (node_name2bitmap(job_ptr->batch_host, false,
+						     &batch_host_bitmap))
+					error("%s: Invalid batch host %s for %pJ; this should never happen",
+					      __func__, job_ptr->batch_host,
+					      job_ptr);
+				else {
+					bit_and_not(tmp_nodes,
+						    batch_host_bitmap);
+					bit_free(batch_host_bitmap);
+					/*
+					 * Set total to 1 since we're
+					 * guaranteeing that we won't remove the
+					 * batch host.
+					 */
+					total = 1;
+				}
+			}
+
+			i_first = bit_ffs(tmp_nodes);
 			if (i_first >= 0)
-				i_last  = bit_fls(job_ptr->node_bitmap);
+				i_last  = bit_fls(tmp_nodes);
 			else
 				i_last = -2;
-			rem_nodes = bit_alloc(bit_size(job_ptr->node_bitmap));
-			for (i = i_first, total = 0; i <= i_last; i++) {
-				if (!bit_test(job_ptr->node_bitmap, i))
+			rem_nodes = bit_alloc(bit_size(tmp_nodes));
+			for (i = i_first; i <= i_last; i++) {
+				if (!bit_test(tmp_nodes, i))
 					continue;
 				if (++total <= job_specs->min_nodes)
 					continue;
@@ -12873,6 +12924,7 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 				excise_node_from_job(job_ptr, node_ptr);
 			}
 			bit_free(rem_nodes);
+			bit_free(tmp_nodes);
 			(void) gs_job_start(job_ptr);
 			job_post_resize_acctg(job_ptr);
 			sched_info("%s: set nodes to %s for %pJ",
@@ -15143,9 +15195,9 @@ static void _signal_job(struct job_record *job_ptr, int signal, uint16_t flags)
 	 * Here if we aren't signaling the full job we always only want to
 	 * signal all other steps.
 	 */
-	if (flags == KILL_FULL_JOB ||
-	    flags == KILL_JOB_BATCH ||
-	    flags == KILL_STEPS_ONLY)
+	if ((flags & KILL_FULL_JOB) ||
+	    (flags & KILL_JOB_BATCH) ||
+	    (flags & KILL_STEPS_ONLY))
 		signal_job_msg->flags = flags;
 	else
 		signal_job_msg->flags = KILL_STEPS_ONLY;
