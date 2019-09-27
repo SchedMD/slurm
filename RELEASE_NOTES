@@ -39,6 +39,8 @@ HIGHLIGHTS
     mail_type to be set to NONE with scontrol.
  -- Add new slurm_spank_log() function to print messages back to the user from
     within a SPANK plugin without prepending "error: " from slurm_error().
+ -- Enforce having partition name and nodelist=ALL when creating reservations
+    with flags=PART_NODES.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

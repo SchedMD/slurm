@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
     within a SPANK plugin. (This can be done with slurm_error() instead, but
     that will always prepend "error: " to every message which may lead to
     confusion.)
+ -- Enforce specification of partition and ALL nodes with PART_NODES flag.
 
 * Changes in Slurm 19.05.6
 ==========================

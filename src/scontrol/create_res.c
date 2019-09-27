@@ -443,15 +443,15 @@ scontrol_create_res(int argc, char **argv)
 	}
 
 	/*
-	 * If "ALL" is specified for the nodes and RESERVE_FLAG_PART_NODES
-	 * flag is set make sure a partition name is specified.
+	 * If RESERVE_FLAG_PART_NODES is specified for the reservation,
+	 * make sure a partition name is specified and nodes=ALL.
 	 */
-	if ((resv_msg.partition == NULL) && (resv_msg.node_list != NULL) &&
-	    (xstrcasecmp(resv_msg.node_list, "ALL") == 0) &&
-	    (resv_msg.flags != NO_VAL64) &&
-	    (resv_msg.flags & RESERVE_FLAG_PART_NODES)) {
+	if ((resv_msg.flags != NO_VAL64) &&
+            (resv_msg.flags & RESERVE_FLAG_PART_NODES) &&
+	    (!resv_msg.partition ||
+	     (xstrcasecmp(resv_msg.node_list, "ALL")))) {
 		exit_code = 1;
-		error("Part_Nodes flag requires specifying a Partition.  No reservation created.");
+		error("PART_NODES flag requires specifying a Partition and ALL nodes.  No reservation created.");
 		goto SCONTROL_CREATE_RES_CLEANUP;
 	}
 
