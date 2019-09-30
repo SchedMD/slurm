@@ -381,13 +381,11 @@ rwfail:
  *
  * Must be xfree'd by the caller.
  */
-slurmstepd_info_t *
-stepd_get_info(int fd)
+slurmstepd_info_t *stepd_get_info(int fd)
 {
 	int req = REQUEST_INFO;
-	slurmstepd_info_t *step_info;
+	slurmstepd_info_t *step_info = xmalloc(sizeof(*step_info));
 
-	step_info = xmalloc(sizeof(slurmstepd_info_t));
 	safe_write(fd, &req, sizeof(int));
 
 	safe_read(fd, &step_info->uid, sizeof(uid_t));
@@ -400,10 +398,11 @@ stepd_get_info(int fd)
 		safe_read(fd, &step_info->job_mem_limit, sizeof(uint64_t));
 		safe_read(fd, &step_info->step_mem_limit, sizeof(uint64_t));
 	} else {
-		error("stepd_get_info: protocol_version "
-		      "%hu not supported", step_info->protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, step_info->protocol_version);
 		goto rwfail;
 	}
+
 	return step_info;
 
 rwfail:
