@@ -394,7 +394,6 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 	struct job_details *detail_ptr = job_ptr->details;
 	List feature_cache = detail_ptr->feature_list;
 	List preemptee_candidates = NULL;
-	List preemptee_job_list = NULL;
 	ListIterator feat_iter;
 	job_feature_t *feat_ptr;
 	job_feature_t *feature_base;
@@ -438,9 +437,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 						       req_nodes,
 						       SELECT_MODE_WILL_RUN,
 						       preemptee_candidates,
-						       &preemptee_job_list,
+						       NULL,
 						       exc_core_bitmap);
-				FREE_NULL_LIST(preemptee_job_list);
 				FREE_NULL_LIST(preemptee_candidates);
 				if ((rc == SLURM_SUCCESS) &&
 				    ((high_start == 0) ||
@@ -507,9 +505,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 						       req_nodes,
 						       SELECT_MODE_WILL_RUN,
 						       preemptee_candidates,
-						       &preemptee_job_list,
+						       NULL,
 						       exc_core_bitmap);
-				FREE_NULL_LIST(preemptee_job_list);
 				FREE_NULL_LIST(preemptee_candidates);
 				if ((rc == SLURM_SUCCESS) &&
 				    ((low_start == 0) ||
@@ -549,9 +546,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 					       min_nodes, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
-					       &preemptee_job_list,
+					       NULL,
 					       exc_core_bitmap);
-			FREE_NULL_LIST(preemptee_job_list);
 		}
 	} else {
 		/* Try to schedule the job. First on dedicated nodes
@@ -574,9 +570,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 				       max_nodes, req_nodes,
 				       SELECT_MODE_WILL_RUN,
 				       preemptee_candidates,
-				       &preemptee_job_list,
+				       NULL,
 				       exc_core_bitmap);
-		FREE_NULL_LIST(preemptee_job_list);
 
 		job_ptr->details->share_res = orig_shared;
 
@@ -588,9 +583,8 @@ static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
 					       min_nodes, max_nodes, req_nodes,
 					       SELECT_MODE_WILL_RUN,
 					       preemptee_candidates,
-					       &preemptee_job_list,
+					       NULL,
 					       exc_core_bitmap);
-			FREE_NULL_LIST(preemptee_job_list);
 		} else
 			FREE_NULL_BITMAP(tmp_bitmap);
 	}

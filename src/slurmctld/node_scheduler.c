@@ -1366,8 +1366,6 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 				tmp_node_set_ptr[tmp_node_set_size].
 					real_memory =
 					node_set_ptr[i].real_memory;
-				tmp_node_set_ptr[tmp_node_set_size].node_cnt =
-					node_set_ptr[i].node_cnt;
 				tmp_node_set_ptr[tmp_node_set_size].node_weight =
 					node_set_ptr[i].node_weight;
 				tmp_node_set_ptr[tmp_node_set_size].flags =
@@ -1388,6 +1386,9 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 						tmp_node_set_size].my_bitmap,
 						accumulate_bitmap);
 				}
+				tmp_node_set_ptr[tmp_node_set_size].node_cnt =
+					bit_set_count(tmp_node_set_ptr
+					[tmp_node_set_size].my_bitmap);
 				prev_node_set_ptr = tmp_node_set_ptr +
 						    tmp_node_set_size;
 				tmp_node_set_size++;
