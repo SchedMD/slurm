@@ -50,6 +50,7 @@ set no_name_err		"error: Invalid GRES data, no type name"
 set parse_err		"error: Parse error in file"
 set links_err		"error: gres.conf: Ignoring invalid Link"
 set conf_mismatch_err	"WARNING: A line in gres.conf for GRES $alpha_numeric_colon has $number more configured than expected in slurm.conf"
+set slurm_conf_type_err	"GRES in slurm.conf have a type while others do not"
 
 set debug_mode 0
 # set debug_mode 1
@@ -1199,6 +1200,20 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0|(null)|${dev}4|
 "
 
 check_configuration 1.8 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+# ##############################################################################
+# # Test 1.10 - Test that slurm.conf doesn't allow a mix of Type and no Type
+# ##############################################################################
+
+set slurm_conf_gres "gpu:tesla:1,gpu:1"
+set gres_conf ""
+set fake_gpus_conf ""
+set expected_output ""
+set err_msgs $slurm_conf_type_err
+set expected_errs 1
+
+check_configuration 1.10 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+
 
 # ##############################################################################
 # ------------------------------------------------------------------------------
