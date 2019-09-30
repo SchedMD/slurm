@@ -135,6 +135,8 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 			env_ptr, "CUDA_VISIBLE_DEVICES", local_list);
 		env_array_overwrite(
 			env_ptr, "GPU_DEVICE_ORDINAL", local_list);
+		env_array_overwrite(
+			env_ptr, "ROCR_VISIBLE_DEVICES", local_list);
 		xfree(local_list);
 		*already_seen = true;
 	}
