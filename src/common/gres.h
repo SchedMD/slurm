@@ -979,6 +979,30 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
 					List job_gres_list);
 
 /*
+ * Select and allocate all GRES on a node to a job and update node and job GRES
+ * information
+ * IN/OUT job_gres_list - job's gres_list built by
+ *                        gres_plugin_job_state_validate().  This list will be
+ * destroyed and remade with all GRES on node.
+ * IN node_gres_list - node's gres_list built by
+ *		       gres_plugin_node_config_validate()
+ * IN node_cnt    - total number of nodes originally allocated to the job
+ * IN node_index  - zero-origin global node index
+ * IN node_offset - zero-origin index in job allocation to the node of interest
+ * IN job_id      - job's ID (for logging)
+ * IN node_name   - name of the node (for logging)
+ * IN core_bitmap - cores allocated to this job on this node (NULL if not
+ *                  available)
+ * IN user_id     - job's user ID
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_job_alloc_whole_node(
+	List *job_gres_list, List node_gres_list,
+	int node_cnt, int node_index, int node_offset,
+	uint32_t job_id, char *node_name,
+	bitstr_t *core_bitmap, uint32_t user_id);
+
+/*
  * Select and allocate GRES to a job and update node and job GRES information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by

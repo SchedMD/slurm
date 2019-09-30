@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
  -- Duplicate PartitionName entries in slurm.conf will now fatal() instead of
     printing an error message and ignoring the successive records.
  -- Remove the smap command.
+ -- Change exclusive behavior of a node to include all GRES on a node as well
+    as the cpus.
 
 * Changes in Slurm 19.05.3
 ==========================

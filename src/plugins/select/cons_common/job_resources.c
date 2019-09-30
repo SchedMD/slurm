@@ -302,6 +302,12 @@ extern int job_res_add_job(struct job_record *job_ptr, int action)
 		i_last = bit_fls(job->node_bitmap);
 	else
 		i_last = -2;
+
+	if (job->whole_node && (action != 2)) {
+		if (job_ptr->gres_list)
+			list_flush(job_ptr->gres_list);
+	}
+
 	for (i = i_first, n = -1; i <= i_last; i++) {
 		if (!bit_test(job->node_bitmap, i))
 			continue;
@@ -316,11 +322,20 @@ extern int job_res_add_job(struct job_record *job_ptr, int action)
 			else
 				node_gres_list = node_ptr->gres_list;
 			core_bitmap = copy_job_resources_node(job, n);
-			gres_plugin_job_alloc(job_ptr->gres_list,
-					      node_gres_list, job->nhosts,
-					      i, n, job_ptr->job_id,
-					      node_ptr->name, core_bitmap,
-					      job_ptr->user_id);
+			if (job->whole_node) {
+				gres_plugin_job_alloc_whole_node(
+					&job_ptr->gres_list,
+					node_gres_list, job->nhosts,
+					i, n, job_ptr->job_id,
+					node_ptr->name, core_bitmap,
+					job_ptr->user_id);
+			} else
+				gres_plugin_job_alloc(
+					job_ptr->gres_list,
+					node_gres_list, job->nhosts,
+					i, n, job_ptr->job_id,
+					node_ptr->name, core_bitmap,
+					job_ptr->user_id);
 			gres_plugin_node_state_log(node_gres_list,
 						   node_ptr->name);
 			FREE_NULL_BITMAP(core_bitmap);
