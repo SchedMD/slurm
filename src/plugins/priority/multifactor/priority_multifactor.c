@@ -906,17 +906,17 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
 }
 
 /*
- * Remove previously used time from qos and assocs grp_used_cpu_run_secs.
+ * Remove previously used time from qos and assocs grp_used_tres_run_secs.
  *
  * When restarting slurmctld acct_policy_job_begin() is called for all
- * running jobs. There every jobs total requested cputime (total_cpus *
- * time_limit) is added to grp_used_cpu_run_secs of assocs and qos.
+ * running jobs. There every jobs total requested trestime (tres_alloc *
+ * time_limit) is added to grp_used_tres_run_secs of assocs and qos.
  *
- * This function will subtract all cputime that was used until the
+ * This function will subtract all trestime that was used until the
  * decay thread last ran. This kludge is necessary as the decay thread
  * last_ran variable can't be accessed from acct_policy_job_begin().
  */
-static void _init_grp_used_cpu_run_secs(time_t last_ran)
+static void _init_grp_used_tres_run_secs(time_t last_ran)
 {
 	struct job_record *job_ptr = NULL;
 	ListIterator itr;
@@ -928,7 +928,7 @@ static void _init_grp_used_cpu_run_secs(time_t last_ran)
 	int i;
 
 	if (priority_debug)
-		info("Initializing grp_used_cpu_run_secs");
+		info("Initializing grp_used_tres_run_secs");
 
 	if (!(enforce & ACCOUNTING_ENFORCE_LIMITS))
 		return;
@@ -1282,7 +1282,7 @@ static void *_decay_thread(void *no_data)
 	slurm_cond_signal(&decay_init_cond);
 	slurm_mutex_unlock(&decay_init_mutex);
 
-	_init_grp_used_cpu_run_secs(g_last_ran);
+	_init_grp_used_tres_run_secs(g_last_ran);
 
 	while (!plugin_shutdown) {
 		now = start_time;
@@ -1883,7 +1883,7 @@ extern void priority_p_reconfig(bool assoc_clear)
 	 * since it is based off the g_last_ran time.
 	 */
 	if (assoc_clear)
-		_init_grp_used_cpu_run_secs(g_last_ran);
+		_init_grp_used_tres_run_secs(g_last_ran);
 
 	site_factor_g_reconfig();
 
