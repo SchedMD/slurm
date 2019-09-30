@@ -82,6 +82,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix sdiag backfill last and mean queue length stats.
  -- Do not remove batch host when resizing/shrinking a batch job.
  -- nss_slurm - fix file descriptor leaks.
+ -- Fix preemption for jobs using complex feature requests
+    (e.g. -C "[rack1*2&rack2*4]").
+ -- Fix memory leaks in preemption when jobs request multiple features.
 
 * Changes in Slurm 19.05.2
 ==========================
