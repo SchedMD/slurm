@@ -369,12 +369,12 @@
 #ifndef strong_alias
 #  if USE_ALIAS
 #    define strong_alias(name, aliasname) \
-     extern __typeof (name) aliasname __attribute ((alias (#name)))
+     extern __typeof__(name) aliasname __attribute__((alias(#name)))
 #  else
 #    define strong_alias(name, aliasname) \
      __asm__(".global _" #aliasname); \
      __asm__(".set _" #aliasname ", _" #name); \
-     extern __typeof (name) aliasname
+     extern __typeof__(name) aliasname
 #  endif
 #endif
 
