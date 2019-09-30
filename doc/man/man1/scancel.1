@@ -39,9 +39,9 @@ This is useful when the shell script has to trap the signal and take some
 application defined action.
 Note that most shells cannot handle signals while a command is running (child
 process of the batch step), the shell use to wait wait until the command ends to
-then handle the signal. Children of the batch step are not signaled with only
-this option, use also the \fB\-f\fR, \fB\-\-full\fR option if you also want to
-signal the children of the batch step.
+then handle the signal. Children of the batch step are not signaled with this
+option, use \fB\-f\fR, \fB\-\-full\fR instead.
+NOTE: If used with \fB\-f\fR, \fB\-\-full\fR, this option ignored.
 NOTE: This option is not applicable if \fIstep_id\fR is specified.
 NOTE: The shell itself may exit upon receipt of many signals.
 You may avoid this by explicitly trap signals within the shell
@@ -59,9 +59,13 @@ Cray ALPS computers) or when the \fB\-\-clusters\fR option is used.
 \fB\-f\fR, \fB\-\-full\fR
 By default, signals other than SIGKILL are not sent to the batch step (the shell
 script). With this option \fBscancel\fR signals also the batch script and its
-childs processes.
-If used with the \fB\-b\fR, \fB\-\-batch\fR option then only the batch step
-and its children are signaled, not any other step.
+children processes.
+Most shells cannot handle signals while a command is running (child process of
+the batch step), the shell use to wait until the command ends to then
+handle the signal. Unlike \fB\-b\fR, \fB\-\-batch\fR, children of the batch step
+are also signaled with this option.
+NOTE: srun steps are also children of the batch step, so steps are also signaled
+with this option.
 
 .TP
 \fB\-\-help\fR
