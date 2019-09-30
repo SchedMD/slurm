@@ -1005,7 +1005,7 @@ static int _apply_new_usage(struct job_record *job_ptr,
 
 	/* Even if job_ptr->qos_ptr->usage_factor is 0 we need to
 	 * handle other non-usage variables here
-	 * (grp_used_cpu_run_secs), so don't return.
+	 * (grp_used_tres_run_secs), so don't return.
 	 */
 
 	if (job_ptr->start_time > start_period)
@@ -1023,14 +1023,14 @@ static int _apply_new_usage(struct job_record *job_ptr,
 
 	/* Even if run_delta is 0 we need to
 	 * handle other non-usage variables here
-	 * (grp_used_cpu_run_secs), so don't return.
+	 * (grp_used_tres_run_secs), so don't return.
 	 */
 	if (run_delta < 0)
 		run_delta = 0;
 
-	/* cpu_run_delta will is used to
+	/* tres_run_delta will is used to
 	 * decrease qos and assocs
-	 * grp_used_cpu_run_secs values. When
+	 * grp_used_tres_run_secs values. When
 	 * a job is started only seconds until
 	 * start_time+time_limit is added, so
 	 * for jobs running over their
