@@ -532,13 +532,13 @@ stepd_attach(int fd, uint16_t protocol_version,
 		resp->ntasks = ntasks;
 		len = ntasks * sizeof(uint32_t);
 
-		resp->local_pids = xmalloc(len);
+		resp->local_pids = xcalloc(ntasks, sizeof(uint32_t));
 		safe_read(fd, resp->local_pids, len);
 
-		resp->gtids = xmalloc(len);
+		resp->gtids = xcalloc(ntasks, sizeof(uint32_t));
 		safe_read(fd, resp->gtids, len);
 
-		resp->executable_names = xmalloc(sizeof(char *) * ntasks);
+		resp->executable_names = xcalloc(ntasks, sizeof(char *));
 		for (i = 0; i < ntasks; i++) {
 			safe_read(fd, &len, sizeof(int));
 			resp->executable_names[i] = xmalloc(len);
@@ -1232,7 +1232,7 @@ stepd_task_info(int fd, uint16_t protocol_version,
 	safe_write(fd, &req, sizeof(int));
 
 	safe_read(fd, &ntasks, sizeof(uint32_t));
-	task = xmalloc(ntasks * sizeof(slurmstepd_task_info_t));
+	task = xcalloc(ntasks, sizeof(slurmstepd_task_info_t));
 	for (i = 0; i < ntasks; i++) {
 		safe_read(fd, &(task[i].id), sizeof(int));
 		safe_read(fd, &(task[i].gtid), sizeof(uint32_t));
@@ -1278,7 +1278,7 @@ stepd_list_pids(int fd, uint16_t protocol_version,
 
 	/* read the pid list */
 	safe_read(fd, &npids, sizeof(uint32_t));
-	pids = xmalloc(npids * sizeof(uint32_t));
+	pids = xcalloc(npids, sizeof(uint32_t));
 	for (i = 0; i < npids; i++) {
 		safe_read(fd, &pids[i], sizeof(uint32_t));
 	}
