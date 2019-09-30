@@ -32,7 +32,6 @@ source ./globals
 
 set test_id		"39.18"
 set exit_code		0
-set fs1_err		"error: This GPU record was in gres.conf, but not found on the system."
 set test_prog		"test$test_id.prog"
 set cfgdir		"test${test_id}_configs"
 set cfgpath		"[pwd]/$cfgdir"
@@ -44,6 +43,9 @@ set file_in		"test$test_id.bash"
 set file_out		"test$test_id.out"
 # Assume unsigned long is 64 bits unless overwritten
 set ulong_bits  64
+set fs1_err		"error: This GPU record was in gres.conf, but not found on the system."
+set dup_err		"error: gpu duplicate device file name"
+set cpu_set_err		"fatal: _set_cpu_set_bitstr: cpu_set_bitstr is empty"
 
 set debug_mode 0
 # set debug_mode 1
@@ -525,7 +527,7 @@ set fake_gpus_conf "
 tesla|0|~zero|(null)|${dev}1
 "
 set expected_output ""
-set err_msgs "fatal:"
+set err_msgs $cpu_set_err
 set expected_errs 1
 check_configuration 0.14 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
@@ -1378,7 +1380,7 @@ Name=gpu Type=tesla File=${dev}\[3-4\] Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-set err_msgs "gpu duplicate device file name"
+set err_msgs $dup_err
 set expected_errs 1
 check_configuration 2.30 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
@@ -1396,7 +1398,7 @@ Name=gpu Type=tesla File=${dev}\[1-4\] Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-set err_msgs "gpu duplicate device file name"
+set err_msgs $dup_err
 set expected_errs 1
 check_configuration 2.32 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
@@ -1414,7 +1416,7 @@ Name=gpu Type=tesla File=${dev}\[1-4\] Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-set err_msgs "gpu duplicate device file name"
+set err_msgs $dup_err
 set expected_errs 1
 check_configuration 2.34 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
@@ -1432,7 +1434,7 @@ Name=gpu Type=tesla File=${dev}1 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-set err_msgs "gpu duplicate device file name"
+set err_msgs $dup_err
 set expected_errs 1
 check_configuration 2.36 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
