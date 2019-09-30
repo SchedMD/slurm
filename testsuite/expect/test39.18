@@ -46,6 +46,9 @@ set ulong_bits  64
 set fs1_err		"error: This GPU record was in gres.conf, but not found on the system."
 set dup_err		"error: gpu duplicate device file name"
 set cpu_set_err		"fatal: _set_cpu_set_bitstr: cpu_set_bitstr is empty"
+set no_name_err		"error: Invalid GRES data, no type name"
+set parse_err		"error: Parse error in file"
+set links_err		"error: gres.conf: Ignoring invalid Link"
 
 set debug_mode 0
 # set debug_mode 1
@@ -1262,7 +1265,10 @@ set fake_gpus_conf ""
 set expected_output "
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
 "
-check_configuration 2.18 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+set err_msgs $no_name_err
+set expected_errs 1
+check_configuration 2.18 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 2.20 - Test that empty Name does not parse and produces error
@@ -1275,7 +1281,9 @@ Type=tesla File=${dev}1 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-check_configuration 2.20 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+set err_msgs $parse_err
+set expected_errs 1
+check_configuration 2.20 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 2.22 - Ensure no malloc error for large count with ignored non-GPU GRES
@@ -1479,7 +1487,9 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0|${dev}4|
 "
-check_configuration 2.40 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+set err_msgs $links_err
+set expected_errs 1
+check_configuration 2.40 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 2.42 - Show link ranges do NOT work - only commas
