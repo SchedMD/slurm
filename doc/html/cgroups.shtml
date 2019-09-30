@@ -68,9 +68,9 @@ parameters.</li>
 
 <h3>proctrack/cgroup plugin</h3>
 <p>The proctrack/cgroup plugin is an alternative to other proctrack
-plugins such as proctrack/linux for process tracking and
+plugins such as proctrack/linuxproc for process tracking and
 suspend/resume capability. proctrack/cgroup uses the freezer subsystem
-which is more reliable for tracking and control than proctrack/linux.</p>
+which is more reliable for tracking and control than proctrack/linuxproc.</p>
 <p>To enable this plugin, configure the following option in slurm.conf:
 <pre>ProctrackType=proctrack/cgroup</pre>
 </p>
