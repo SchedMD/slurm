@@ -473,6 +473,8 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 
 	/* Sort so null files are last for _match_gres() */
 	list_sort(gres_list_conf_single, _sort_gpu_by_file_desc);
+	/* Sort system devices in the same way for convenience */
+	list_sort(gres_list_system, _sort_gpu_by_file_desc);
 
 	itr = list_iterator_create(gres_list_conf_single);
 	itr2 = list_iterator_create(gres_list_system);
