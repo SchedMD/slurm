@@ -1332,7 +1332,7 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_conf;
 	gres_state_t *slurm_conf;
-	List gres_conf_list_tmp = list_create(destroy_gres_slurmd_conf);
+	List gres_conf_list_tmp;
 
 	/* E.g. slurm_conf_list will be NULL in the case of --gpu-bind */
 	if (!slurm_conf_list || !gres_conf_list)
@@ -1342,6 +1342,7 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 	 * Duplicate the gres.conf list with records relevant to this GRES plugin
 	 * only so we can mangle records. Only add records under the current plugin.
 	 */
+	gres_conf_list_tmp = list_create(destroy_gres_slurmd_conf);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_conf = list_next(iter))) {
 		gres_slurmd_conf_t *gres_conf_tmp;
@@ -1423,8 +1424,17 @@ static gres_slurmd_conf_t *_match_type(List gres_conf_list,
 	while ((gres_conf = list_next(gres_conf_itr))) {
 		if (gres_conf->plugin_id != gres_context->plugin_id)
 			continue;
-		if (xstrcasecmp(gres_conf->type_name, type_name))
+
+		/*
+		 * If type_name is NULL we will take the first matching
+		 * gres_conf that we find.  This means we also will remove the
+		 * type from the gres_conf to match 18.08 stylings.
+		 */
+		if (!type_name)
+			xfree(gres_conf->type_name);
+		else if (xstrcasecmp(gres_conf->type_name, type_name))
 			continue;
+
 		/* We found a match, so remove from gres_conf_list and break */
 		list_remove(gres_conf_itr);
 		break;
@@ -1465,9 +1475,11 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_conf, uint64_t new_count)
 	hostlist_t hl = hostlist_create(gres_conf->file);
 	unsigned long old_count = hostlist_count(hl);
 
-	if (new_count >= old_count)
+	if (new_count >= old_count) {
+		hostlist_destroy(hl);
 		/* Nothing to do */
 		return;
+	}
 
 	/* Remove all but the first entries */
 	for (int i = old_count; i > new_count; --i) {
@@ -7890,8 +7902,14 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 						if (!bit_test(avail_core, i))
 							continue;
 						bit_clear(avail_core, i);
+
 						avail_cores_per_sock[s]--;
-						*avail_cpus -= cpus_per_core;
+						if (bit_set_count(avail_core) *
+						    cpus_per_core <
+						    *avail_cpus) {
+							*avail_cpus -=
+								cpus_per_core;
+						}
 						if (--tot_core_cnt <=
 						    min_core_cnt)
 							break;
@@ -7999,7 +8017,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					if (!bit_test(avail_core, i))
 						continue;
 					bit_clear(avail_core, i);
-					*avail_cpus -= cpus_per_core;
+					if (bit_set_count(avail_core) *
+					    cpus_per_core < *avail_cpus) {
+						*avail_cpus -= cpus_per_core;
+					}
 					if (--avail_cores_tot == req_cores)
 						break;
 				}
@@ -8033,7 +8054,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				if (!bit_test(avail_core, i))
 					continue;
 				bit_clear(avail_core, i);
-				*avail_cpus -= cpus_per_core;
+				if (bit_set_count(avail_core) * cpus_per_core <
+				    *avail_cpus) {
+					*avail_cpus -= cpus_per_core;
+				}
 				avail_cores_per_sock[s]--;
 				avail_cores_tot--;
 				break;
