@@ -1326,7 +1326,7 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_conf;
 	gres_state_t *slurm_conf;
-	List gres_conf_list_tmp = list_create(destroy_gres_slurmd_conf);
+	List gres_conf_list_tmp;
 
 	/* E.g. slurm_conf_list will be NULL in the case of --gpu-bind */
 	if (!slurm_conf_list || !gres_conf_list)
@@ -1336,6 +1336,7 @@ static void _check_conf_mismatch(List slurm_conf_list, List gres_conf_list,
 	 * Duplicate the gres.conf list with records relevant to this GRES plugin
 	 * only so we can mangle records. Only add records under the current plugin.
 	 */
+	gres_conf_list_tmp = list_create(destroy_gres_slurmd_conf);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_conf = list_next(iter))) {
 		gres_slurmd_conf_t *gres_conf_tmp;
@@ -1468,9 +1469,11 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_conf, uint64_t new_count)
 	hostlist_t hl = hostlist_create(gres_conf->file);
 	unsigned long old_count = hostlist_count(hl);
 
-	if (new_count >= old_count)
+	if (new_count >= old_count) {
+		hostlist_destroy(hl);
 		/* Nothing to do */
 		return;
+	}
 
 	/* Remove all but the first entries */
 	for (int i = old_count; i > new_count; --i) {
