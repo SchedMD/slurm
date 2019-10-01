@@ -3864,10 +3864,8 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			 part_record_t **part_ptr, bitstr_t **resv_bitmap,
 			 bitstr_t **core_bitmap)
 {
-	slurmctld_resv_t *resv_ptr;
 	bitstr_t *node_bitmap;
-	ListIterator iter;
-	int i, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
 	bool have_xand = false;
 
@@ -3890,7 +3888,8 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	/* Don't use nodes already reserved */
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
 	    !(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
-		iter = list_iterator_create(resv_list);
+		slurmctld_resv_t *resv_ptr;
+		ListIterator iter = list_iterator_create(resv_list);
 		while ((resv_ptr = list_next(iter))) {
 			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
 			    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))
@@ -3948,7 +3947,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			find_feature_nodes(job_ptr->details->feature_list,
 					   true);
 			if (resv_desc_ptr->node_cnt) {
-				for (i = 0; resv_desc_ptr->node_cnt[i]; i++)
+				for (int i = 0; resv_desc_ptr->node_cnt[i]; i++)
 					total_node_cnt +=
 						resv_desc_ptr->node_cnt[i];
 			}
