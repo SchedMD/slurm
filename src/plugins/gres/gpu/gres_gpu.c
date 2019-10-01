@@ -732,7 +732,8 @@ extern int fini(void)
 
 /*
  * We could load gres state or validate it using various mechanisms here.
- * This only validates that the configuration was specified in gres.conf.
+ * This only validates that the configuration was specified in gres.conf or
+ * slurm.conf.
  * In the general case, no code would need to be changed.
  */
 extern int node_config_load(List gres_conf_list,
@@ -744,7 +745,7 @@ extern int node_config_load(List gres_conf_list,
 
 	/* Assume this state is caused by an scontrol reconfigure */
 	if (gres_devices) {
-		debug("Resetting gres_devices");
+		debug("%s: Resetting gres_devices", plugin_name);
 		FREE_NULL_LIST(gres_devices);
 	}
 
@@ -762,7 +763,7 @@ extern int node_config_load(List gres_conf_list,
 			log_var(log_lvl,
 				"There were 0 GPUs detected on the system");
 		log_var(log_lvl,
-			"%s: Normalizing gres.conf with system devices",
+			"%s: Normalizing gres.conf with system GPUs",
 			plugin_name);
 		_normalize_gres_conf(gres_conf_list, gres_list_system);
 		FREE_NULL_LIST(gres_list_system);
