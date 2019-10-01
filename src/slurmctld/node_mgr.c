@@ -1707,7 +1707,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 						 NODE_STATE_FLAGS);
 				select_g_update_node_state(node_ptr);
 
-				node_ptr->next_state = NO_VAL;
+				if (!IS_NODE_REBOOT(node_ptr))
+					node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_inx);
 
 				info ("update_node: node %s state set to %s",
