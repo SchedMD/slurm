@@ -91,6 +91,9 @@ documents those changes that are of interest to users and administrators.
  -- Disallow coordinators to show/fix runaways.
  -- mpi/pmi2 - increase array len to avoid buffer size exceeded error.
  -- Preserve rebooting node's nextstate when updating state with scontrol.
+ -- Fully merge slurm.conf and gres.conf before node_config_load().
+ -- Remove FastSchedule dependence from gres.conf's AutoDetect=nvml.
+ -- Forbid mix of typed and untyped GRES of same name in slurm.conf.
 
 * Changes in Slurm 19.05.2
 ==========================

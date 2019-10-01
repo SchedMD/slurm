@@ -36,6 +36,7 @@
 
 #include <sys/stat.h>
 #include "src/common/gres.h"
+#include "src/common/node_select.h"
 #include "src/common/xstring.h"
 
 int main(int argc, char *argv[])
@@ -87,6 +88,8 @@ int main(int argc, char *argv[])
 
 	// Only log info to avoid buffer truncation in expect regex
 	opts.stderr_level = LOG_LEVEL_INFO;
+	// opts.stderr_level = LOG_LEVEL_DEBUG2;
+	// opts.stderr_level = LOG_LEVEL_DEBUG3;
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 
 	// Override where Slurm looks for conf files
@@ -116,6 +119,7 @@ int main(int argc, char *argv[])
 	// Clean up for valgrind
 	slurm_conf_destroy();
 	gres_plugin_fini();
+	slurm_select_fini();
 	log_fini();
 	xfree(slurm_conf);
 	xfree(gres_conf);

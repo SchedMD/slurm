@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "April 2019" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "September 2019" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -31,29 +31,12 @@ Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
-CUDA Multi\-Process Service (MPS) provides a mechanism where GPUs can be
-shared by multiple jobs, where each job is allocated some percentage of the
-GPU's resources.
-GPUs to be made available for MPS must be identified in the \fBslurm.conf\fP
-and \fBgres.conf\fP configuration files with each device \fBFile\fR being
-explicitly named and its \fBCount\fR specified (typically a multiple of 100).
-If the GPU sharing that \fBFile\fR name contains \fBCore\fR or \fBType\fR
-parameters, that information will be automatically copied to the corresponding
-MPS GRES (details about those configuration parameters below).
-Note that the same GPU can be allocated either as a GPU type GRES or as an
-MPS type GRES, but not both.
-In other words, once a GPU has been allocated as a gres/gpu resource it will
-not be available as a gres/mps.
-Likewise, once a GPU has been allocated as a gres/mps resource it will
-not be available as a gres/gpu.
-
-
-.LP
 \fBNOTE:\fP Slurm support for gres/mps requires the use of the select/cons_tres
-plugin.
+plugin. For more information on how to configure MPS, see
+\fIhttps://slurm.schedmd.com/gres.html#MPS_Management\fR.
 
 .LP
-For more information on GRES scheduling, see
+For more information on GRES scheduling in general, see
 \fIhttps://slurm.schedmd.com/gres.html\fR.
 
 .LP
@@ -61,9 +44,10 @@ The overall configuration parameters available include:
 
 .TP
 \fBAutoDetect\fR
-Comma separated list of the types of GRES to auto detect.  Valid options are
-.\" Escape `'` at the beginning of a line
-\'nvml'.  This is needed to use any outside system to configure GRES.
+The hardware detection mechanisms to enable for automatic GRES configuration.
+This should be on a line by itself.
+Currently, the only valid option is \fInvml\fR, which allows for automatically
+detecting NVIDIA GPUs.
 
 .TP
 \fBCount\fR
@@ -178,6 +162,7 @@ Note that for GPUs, the minor number assigned by the OS and used in the device
 file (i.e. the X in \fI/dev/nvidiaX\fR) is not necessarily the same as the
 device number/index. The device number is created by sorting the GPUs by PCI bus
 ID and then numbering them starting from the smallest bus ID.
+See \fIhttps://slurm.schedmd.com/gres.html#GPU_Management\fR
 
 .TP
 \fBName\fR

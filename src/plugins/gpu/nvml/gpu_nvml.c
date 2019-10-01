@@ -178,7 +178,7 @@ static void _nvml_init(void)
 		error("Failed to initialize NVML: %s",
 		      nvmlErrorString(nvml_rc));
 	else
-		info("Successfully initialized NVML");
+		debug2("Successfully initialized NVML");
 }
 
 /*
@@ -195,7 +195,7 @@ static void _nvml_shutdown(void)
 	if (nvml_rc != NVML_SUCCESS)
 		error("Failed to shut down NVML: %s", nvmlErrorString(nvml_rc));
 	else
-		info("Successfully shut down NVML");
+		debug2("Successfully shut down NVML");
 }
 
 static unsigned int _xlate_freq_value(char *gpu_freq)
@@ -1288,9 +1288,6 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 	_nvml_get_device_count(&device_count);
 
-	debug2("MAX_CPUS: %d", MAX_CPUS);
-	debug2("CPU_SET_SIZE (# of ulongs needed to hold MAX_CPUS bits): %lu",
-	       CPU_SET_SIZE);
 	debug2("Total CPU count: %d", node_config->cpu_cnt);
 	debug2("Device count: %d", device_count);
 

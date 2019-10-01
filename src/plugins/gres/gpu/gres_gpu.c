@@ -182,13 +182,19 @@ static int _sort_gpu_by_type_name(void *x, void *y)
  * Find the first conf_gres record (x) with a GRES type that is a substring
  * of the GRES type of sys_gres (key).
  */
-extern int _find_type_in_gres_list(void *x, void *key)
+static int _find_type_in_gres_list(void *x, void *key)
 {
 	gres_slurmd_conf_t *conf_gres = (gres_slurmd_conf_t *)x;
 	char *sys_gres_type = (char *)key;
 
 	if (!conf_gres)
 		return 0;
+
+	/* If count is 0, then we already accounted for it */
+	if (conf_gres->count == 0)
+		return 0;
+
+	xassert(conf_gres->count == 1);
 
 	if (xstrcasestr(sys_gres_type, conf_gres->type_name))
 		return 1;
@@ -198,56 +204,67 @@ extern int _find_type_in_gres_list(void *x, void *key)
 
 /*
  * Sync the GRES type of each device detected on the system (gres_list_system)
- * to its corresponding GRES type specified in gres.conf (or slurm.conf, if not
- * specified in gres.conf). In effect, the sys GRES type will be overwritten to
- * match the corresponding conf GRES type.
+ * to its corresponding GRES type specified in [gres|slurm].conf. In effect, the
+ * sys GRES type will be cut down to match the corresponding conf GRES type.
  *
- * NOTE: gres_list_system will be sorted in descending order by type_name
- * length, and gres_list_conf will have its items mangled (count).
+ * NOTE: Both lists will be sorted in descending order by type_name
+ * length. gres_list_conf_single is assumed to only have records of count == 1.
  */
-static void _sync_gres_types(List gres_list_system, List gres_list_conf)
+static void _normalize_sys_gres_types(List gres_list_system, List gres_list_conf_single)
 {
 	gres_slurmd_conf_t *sys_gres, *conf_gres;
 	ListIterator itr;
+
+	/* No need to sync anything if configured GRES list is empty */
+	if (!gres_list_conf_single || list_count(gres_list_conf_single) == 0)
+		return;
 
 	/*
 	 * Sort conf and sys gres lists by longest GRES type to shortest, so we
 	 * can avoid issues if e.g. `k20m` and `k20m1` are both specified.
 	 */
-	list_sort(gres_list_conf, _sort_gpu_by_type_name);
+	list_sort(gres_list_conf_single, _sort_gpu_by_type_name);
 	list_sort(gres_list_system, _sort_gpu_by_type_name);
 
 	/* Only match devices if the conf gres count isn't exceeded */
 	itr = list_iterator_create(gres_list_system);
 	while ((sys_gres = list_next(itr))) {
-		conf_gres = list_find_first(gres_list_conf,
+		conf_gres = list_find_first(gres_list_conf_single,
 					    _find_type_in_gres_list,
 					    sys_gres->type_name);
 		if (!conf_gres) {
-			debug("Could not find a configuration record with a GRES type substring that matches system device `%s`. Setting system GRES type to NULL",
-			      sys_gres->type_name);
+			info("Could not find an unused configuration record with a GRES type that is a substring of system device `%s`. Setting system GRES type to NULL",
+			     sys_gres->type_name);
 			xfree(sys_gres->type_name);
 			continue;
-		} else if (conf_gres->count <= 0) {
-			debug("System device `%s` exceeds the configured count for GRES type `%s`. Setting GRES type to NULL",
-			      sys_gres->type_name, conf_gres->type_name);
-			xfree(sys_gres->type_name);
-			continue;
-		} else {
-			/* Overwrite sys_gres type name to match conf_gres */
-			xfree(sys_gres->type_name);
-			sys_gres->type_name = xstrdup(conf_gres->type_name);
-			/* Avoid matching more system devices than configured */
-			conf_gres->count--;
 		}
+
+		xassert(conf_gres->count == 1);
+
+		/* Temporarily set count to 0 to account for it */
+		conf_gres->count = 0;
+
+		/* Overwrite sys_gres type to match conf_gres type */
+		xfree(sys_gres->type_name);
+		sys_gres->type_name = xstrdup(conf_gres->type_name);
 	}
+	list_iterator_destroy(itr);
+
+	/* Reset counts back to 1 */
+	itr = list_iterator_create(gres_list_conf_single);
+	while ((conf_gres = list_next(itr)))
+		conf_gres->count = 1;
 	list_iterator_destroy(itr);
 }
 
-/* Check a gres.conf gres to one we found on the system */
+/* See if the conf GRES matches the system GRES */
 static int _match_gres(gres_slurmd_conf_t *conf_gres,
 		       gres_slurmd_conf_t *sys_gres)
 {
+	/* This record has already been "taken" (matched another conf GRES) */
+	if (sys_gres->count == 0)
+		return 0;
+
 	/*
 	 * If the config gres has a type check it with what is found on the
 	 * system.
@@ -263,6 +280,17 @@ static int _match_gres(gres_slurmd_conf_t *conf_gres,
 	if (conf_gres->file && xstrcmp(conf_gres->file, sys_gres->file))
 		return 0;
 
+	/* If all checks out above or nothing was defined return */
+	return 1;
+}
+
+/*
+ * Check that a gres.conf GRES has the same CPUs and Links as a system GRES, if
+ * specified
+ */
+static int _validate_cpus_links(gres_slurmd_conf_t *conf_gres,
+			        gres_slurmd_conf_t *sys_gres)
+{
 	/*
 	 * If the config gres has cpus defined check it with what is found on
 	 * the system.
@@ -271,7 +299,15 @@ static int _match_gres(gres_slurmd_conf_t *conf_gres,
 	    !bit_equal(conf_gres->cpus_bitmap, sys_gres->cpus_bitmap))
 		return 0;
 
-	/* If all checks out above or nothing was defined return */
+	/*
+	 * If the config gres has links defined check it with what is found on
+	 * the system.
+	 */
+	if (conf_gres->links && sys_gres->links &&
+	    xstrcmp(conf_gres->links, sys_gres->links))
+		return 0;
+
+	/* If all checks out above, return */
 	return 1;
 }
 
@@ -297,7 +333,7 @@ static int _file_inx(char *fname)
 }
 
 /* Sort gres/gpu records by "File" value */
-static int _sort_gpu_by_file(void *x, void *y)
+static int _sort_gpu_by_file(void *x, void *y, bool asc)
 {
 	gres_slurmd_conf_t *gres_record1 = *(gres_slurmd_conf_t **) x;
 	gres_slurmd_conf_t *gres_record2 = *(gres_slurmd_conf_t **) y;
@@ -306,34 +342,50 @@ static int _sort_gpu_by_file(void *x, void *y)
 	val1 = _file_inx(gres_record1->file);
 	val2 = _file_inx(gres_record2->file);
 
-	return (val1 - val2);
+	if (asc)
+		return (val1 - val2);
+	else
+		return -(val1 - val2);
+}
+
+/* Sort gres/gpu records by "File" value in ascending order (nulls first) */
+static int _sort_gpu_by_file_desc(void *x, void *y)
+{
+	return _sort_gpu_by_file(x, y, false);
+}
+
+/* Sort gres/gpu records by "File" value in descending order */
+static int _sort_gpu_by_file_asc(void *x, void *y)
+{
+	return _sort_gpu_by_file(x, y, true);
 }
 
 /*
- * Takes the gres.conf records and gpu devices detected on the node and either
- * merges them together or warns where they are different.
- * This function handles duplicate information specified in gres.conf
+ * Takes the merged [slurm|gres].conf records in gres_list_conf and the GPU
+ * devices detected on the node in gres_list_system and returns a final merged
+ * list in gres_list_conf.
  *
- * gres_list_conf: (in/out) The GRES records as parsed from gres.conf
- * gres_list_system: (in) The gpu devices detected by the system. Note: This
- * 		          list may get mangled, so don't use afterwards.
+ * If a conf GPU corresponds to a system GPU, CPUs and Links are checked to see
+ * if they are the same. If not, an error is emitted and that device is excluded
+ * from the final list.
+ *
+ * gres_list_conf   - (in/out) The GRES records as parsed from [slurm|gres].conf
+ * gres_list_system - (in) The gpu devices detected by the system. Each record
+ * 		      should only have a count of 1.
  *
  * NOTES:
  * gres_list_conf_single: Same as gres_list_conf, except broken down so each
  * 			  GRES record has only one device file.
  *
- * Remember, this code is run for each node on the cluster
- * The records need to be unique, keyed off of:
+ * A conf GPU and system GPU will correspond if the following fields are equal:
  * 	*type
- * 	*cores/cpus
- * 	*links
+ * 	*file
  */
 static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 {
-	ListIterator itr;
-	gres_slurmd_conf_t *gres_record;
+	ListIterator itr, itr2;
+	gres_slurmd_conf_t *gres_record, *sys_record;
 	List gres_list_conf_single, gres_list_gpu = NULL, gres_list_non_gpu;
-	uint16_t fast_schedule = slurm_get_fast_schedule();
 
 	if (gres_list_conf == NULL) {
 		error("%s: gres_list_conf is NULL. This shouldn't happen",
@@ -343,6 +395,7 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 
 	gres_list_conf_single = list_create(destroy_gres_slurmd_conf);
 	gres_list_non_gpu = list_create(destroy_gres_slurmd_conf);
+	gres_list_gpu = list_create(destroy_gres_slurmd_conf);
 
 	debug2("gres_list_conf:");
 	print_gres_list(gres_list_conf, LOG_LEVEL_DEBUG2);
@@ -413,67 +466,118 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	list_iterator_destroy(itr);
 
 	/*
-	 * If conf GRES type matches matches a substring in sys GRES type, then
-	 * overwrite sys GRES type with conf GRES type
+	 * Truncate the full system device types to match types in conf records
 	 */
-	_sync_gres_types(gres_list_system, gres_list_conf);
+	_normalize_sys_gres_types(gres_list_system, gres_list_conf_single);
 
-	if (fast_schedule == 0) {
-		debug2("FastSchedule == 0, we are only delivering GPUs found on the system, ignoring those defined in gres.conf");
-		gres_list_gpu = gres_list_system;
-	} else if (fast_schedule == 1) {
-		List tmp_list = NULL;
-		gres_slurmd_conf_t *sys_record;
+	/* Sort so null files are last for _match_gres() */
+	list_sort(gres_list_conf_single, _sort_gpu_by_file_desc);
+	/* Sort system devices in the same way for convenience */
+	list_sort(gres_list_system, _sort_gpu_by_file_desc);
 
-		debug2("FastSchedule == 1, we are checking the GPUs found on the system against those defined in gres.conf");
-		if (!gres_list_system)
-			return;
+	itr = list_iterator_create(gres_list_conf_single);
+	itr2 = list_iterator_create(gres_list_system);
+	while ((gres_record = list_next(itr))) {
+		list_iterator_reset(itr2);
+		while ((sys_record = list_next(itr2))) {
+			if (!_match_gres(gres_record, sys_record)) {
+				continue;
+			}
 
-		itr = list_iterator_create(gres_list_system);
-		while ((gres_record = list_pop(gres_list_conf_single))) {
-			list_iterator_reset(itr);
-			while ((sys_record = list_next(itr))) {
-				if (!_match_gres(gres_record, sys_record))
-					continue;
-				list_remove(itr);
-				if (!tmp_list)
-					tmp_list = list_create(
-						destroy_gres_slurmd_conf);
-				list_append(tmp_list, sys_record);
+			/*
+			 * We have a match, so if CPUs and Links are specified,
+			 * see if they too match. If a value is specified and
+			 * does not match the system, emit error. If null, just
+			 * use the system-detected value.
+			 */
+			if (!_validate_cpus_links(gres_record, sys_record)) {
+				/* What was specified differs from system */
+				error("This GPU specified in [slurm|gres].conf has mismatching Cores or Links from the device found on the system. Ignoring it.");
+				error("[slurm|gres].conf:");
+				print_gres_conf(gres_record, LOG_LEVEL_ERROR);
+				error("system:");
+				print_gres_conf(sys_record, LOG_LEVEL_ERROR);
+
+				xassert(sys_record->count == 1);
+
+				/*
+				 * Temporarily set the sys record count to 0 to
+				 * mark it as already "used up"
+				 */
+				sys_record->count = 0;
 				break;
 			}
 
-			if (!sys_record) {
-				error("This GPU record was in gres.conf, but not found on the system.");
-				print_gres_conf(gres_record, LOG_LEVEL_ERROR);
-			}
-			destroy_gres_slurmd_conf(gres_record);
+			/* We found a match! */
+			break;
 		}
 
-		if (list_count(gres_list_system) > 0) {
-			error("These GPUs were found on the system, but are being ignored because they were not configured in gres.conf:");
-			print_gres_list(gres_list_system, LOG_LEVEL_ERROR);
+		if (sys_record) {
+			/*
+			 * Completely ignore this conf record if Cores and/or
+			 * Links do not match the corresponding system GPU
+			 */
+			if (sys_record->count == 0)
+				continue;
 
+			/*
+			 * Since the system GPU matches up completely with a
+			 * configured GPU, add the system GPU to the final list
+			 */
+			debug("Including the following GPU matched between system and configuration:");
+			print_gres_conf(sys_record, LOG_LEVEL_DEBUG);
+			list_remove(itr2);
+			list_append(gres_list_gpu, sys_record);
+			continue;
 		}
 
-		list_iterator_destroy(itr);
-		FREE_NULL_LIST(gres_list_conf_single);
-		gres_list_conf_single = tmp_list;
-		tmp_list = NULL;
-		gres_list_gpu = gres_list_conf_single;
-	} else if (fast_schedule >= 2) {
-		debug2("FastSchedule == 2, we are believing whatever is in the gres.conf");
-		gres_list_gpu = gres_list_conf_single;
+		/* Else, config-only GPU */
+		if (gres_record->file) {
+			/*
+			 * Add the "extra" configured GPU to the final list, but
+			 * only if file is specified
+			 */
+			debug("Including the following config-only GPU:");
+			print_gres_conf(gres_record, LOG_LEVEL_DEBUG);
+			list_remove(itr);
+			list_append(gres_list_gpu, gres_record);
+		} else {
+			/*
+			 * Either the conf GPU was specified in slurm.conf only,
+			 * or File (a required parameter for GPUs) was not
+			 * specified in gres.conf. Either way, ignore it.
+			 */
+			error("Discarding the following config-only GPU due to lack of File specification:");
+			print_gres_conf(gres_record, LOG_LEVEL_ERROR);
+		}
+
+	}
+	list_iterator_destroy(itr);
+
+	/* Reset the system GPU counts, in case system list is used after */
+	list_iterator_reset(itr2);
+	while ((sys_record = list_next(itr2)))
+		if (sys_record->count == 0)
+			sys_record->count = 1;
+	list_iterator_destroy(itr2);
+
+	/* Print out all the leftover system GPUs that are not being used */
+	if (gres_list_system && list_count(gres_list_system)) {
+		info("WARNING: The following autodetected GPUs are being ignored:");
+		print_gres_list(gres_list_system, LOG_LEVEL_INFO);
 	}
 
+	/* Add GPUs + non-GPUs to gres_list_conf */
 	list_flush(gres_list_conf);
-	if (gres_list_gpu) {
-		list_sort(gres_list_gpu, _sort_gpu_by_file);
+	if (gres_list_gpu && list_count(gres_list_gpu)) {
+		list_sort(gres_list_gpu, _sort_gpu_by_file_asc);
+		debug2("gres_list_gpu");
+		print_gres_list(gres_list_gpu, LOG_LEVEL_DEBUG2);
 		list_transfer(gres_list_conf, gres_list_gpu);
-		gres_list_gpu = NULL;
 	}
-	if (gres_list_non_gpu)
+	if (gres_list_non_gpu && list_count(gres_list_non_gpu))
 		list_transfer(gres_list_conf, gres_list_non_gpu);
+	FREE_NULL_LIST(gres_list_gpu);
 	FREE_NULL_LIST(gres_list_conf_single);
 	FREE_NULL_LIST(gres_list_non_gpu);
 }
@@ -628,7 +732,8 @@ extern int fini(void)
 
 /*
  * We could load gres state or validate it using various mechanisms here.
- * This only validates that the configuration was specified in gres.conf.
+ * This only validates that the configuration was specified in gres.conf or
+ * slurm.conf.
  * In the general case, no code would need to be changed.
  */
 extern int node_config_load(List gres_conf_list,
@@ -640,7 +745,7 @@ extern int node_config_load(List gres_conf_list,
 
 	/* Assume this state is caused by an scontrol reconfigure */
 	if (gres_devices) {
-		debug("Resetting gres_devices");
+		debug("%s: Resetting gres_devices", plugin_name);
 		FREE_NULL_LIST(gres_devices);
 	}
 
@@ -658,14 +763,19 @@ extern int node_config_load(List gres_conf_list,
 			log_var(log_lvl,
 				"There were 0 GPUs detected on the system");
 		log_var(log_lvl,
-			"%s: Normalizing gres.conf with system devices",
+			"%s: Normalizing gres.conf with system GPUs",
 			plugin_name);
 		_normalize_gres_conf(gres_conf_list, gres_list_system);
 		FREE_NULL_LIST(gres_list_system);
 
-		log_var(log_lvl, "%s: Final normalized gres.conf list:",
-			plugin_name);
-		print_gres_list(gres_conf_list, log_lvl);
+		if (!gres_conf_list || list_is_empty(gres_conf_list))
+			log_var(log_lvl, "%s: Final normalized gres.conf list is empty",
+				plugin_name);
+		else {
+			log_var(log_lvl, "%s: Final normalized gres.conf list:",
+				plugin_name);
+			print_gres_list(gres_conf_list, log_lvl);
+		}
 	}
 
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);

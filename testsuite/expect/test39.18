@@ -32,7 +32,6 @@ source ./globals
 
 set test_id		"39.18"
 set exit_code		0
-set fs1_err		"error: This GPU record was in gres.conf, but not found on the system."
 set test_prog		"test$test_id.prog"
 set cfgdir		"test${test_id}_configs"
 set cfgpath		"[pwd]/$cfgdir"
@@ -44,6 +43,19 @@ set file_in		"test$test_id.bash"
 set file_out		"test$test_id.out"
 # Assume unsigned long is 64 bits unless overwritten
 set ulong_bits  64
+set dup_err		"error: gpu duplicate device file name"
+set cpu_set_err		"fatal: _set_cpu_set_bitstr: cpu_set_bitstr is empty"
+set mismatch_err	"error: This GPU specified in \\\[slurm\\\|gres\\\].conf has mismatching Cores or Links"
+set no_name_err		"error: Invalid GRES data, no type name"
+set parse_err		"error: Parse error in file"
+set links_err		"error: gres.conf: Ignoring invalid Link"
+set conf_mismatch_err	"WARNING: A line in gres.conf for GRES $alpha_numeric_colon has $number more configured than expected in slurm.conf"
+set slurm_conf_type_err	"GRES in slurm.conf have a type while others do not"
+set gres_conf_type_err	"fatal: gres.conf for $alpha_under_slash, some records have \"Type=\" specification while others do not"
+set gres_conf_file_err	"fatal: gres.conf for $alpha_under_slash, some records have \"File\" specification while others do not"
+
+set debug_mode 0
+# set debug_mode 1
 
 print_header $test_id
 
@@ -55,12 +67,17 @@ if {[test_cray]} {
 
 # Run the test under valgrind if any arguments are given
 set use_valgrind 0
+set test_minor_offset 0
 set test_minor_in ""
+
 if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	set use_valgrind 1
+	set test_minor_offset 1
 	send_user "Running tests under valgrind!\n"
-} elseif {[lindex $argv 0] != ""} {
-	set test_minor_in [lindex $argv 0]
+}
+
+if {[lindex $argv $test_minor_offset] != ""} {
+	set test_minor_in [lindex $argv $test_minor_offset]
 	send_user "Running test $test_id.$test_minor_in \n"
 }
 
@@ -77,7 +94,7 @@ proc generate_file {text filepath} {
 }
 
 # Create or overwrite the slurm.conf file used by the test runner program
-proc create_slurm_conf {fast_schedule} {
+proc create_slurm_conf {} {
 	global test_id cfgpath
 	# Contain slurm.conf data to this file
 	# This is all we need to trigger loading the GRES GPU plugin
@@ -86,7 +103,6 @@ proc create_slurm_conf {fast_schedule} {
 	ControlMachine=test_machine
 	ClusterName=test_cluster
 	GresTypes=gpu,mps,nic,mic,tmpdisk
-	FastSchedule=$fast_schedule
 	"
 
 	# NOTE: There are no node definitions - node name and node gres info
@@ -96,6 +112,7 @@ proc create_slurm_conf {fast_schedule} {
 }
 
 mkdir $cfgpath
+create_slurm_conf
 # Set up dummy device files for testing. They just need to exist
 set dev "$cfgpath/nvidia"
 set dev0 "${dev}0"
@@ -156,6 +173,10 @@ send_user "sizeof(unsigned long) = $ulong_bits\n"
 #
 # test_minor -		The minor test number (39.18.X). If global variable
 # 			"$test_minor_in" is set, then run only that test.
+# slurm_conf_gres -     This is the `Gres=` value that would be in
+# 			slurm.conf for this node (it's easier to pass it into
+# 			the program directly than to regenerate a slurm.conf
+# 			file with different node definitions).
 # gres_conf -		The gres.conf to use.
 # fake_gpus_conf -	The fake_gpus.conf to use. This file tells Slurm to
 # 			pretend to have devices detected by system, in effect
@@ -168,15 +189,12 @@ send_user "sizeof(unsigned long) = $ulong_bits\n"
 # errs_expected (optional) - The number of times you expect to see $err_msgs in
 # 			the output. Defaults to 0. If this number isn't hit,
 # 			then the test will fail.
-# slurm_conf_gres (optional) - This is the `Gres=` value that would be in
-# 			slurm.conf for this node (it's easier to pass it into
-# 			the program directly than to regenerate a slurm.conf
-# 			file with different node definitions).
 #
 set failed_tests [list]
-proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} {slurm_conf_gres ""}} {
+proc check_configuration {test_minor slurm_conf_gres gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} } {
 	global cfgpath nodename test_prog alpha_numeric_special exit_code test_minor_in
 	global test_id failed_tests use_valgrind bin_sort file_in file_out
+	global bin_cat debug_mode
 
 	# Skip all tests not specified by the tester; force string comparison
 	if {$test_minor_in != "" && [string compare "$test_minor" "$test_minor_in"] != 0} {
@@ -189,46 +207,35 @@ proc check_configuration {test_minor gres_conf fake_gpus_conf output_expected {e
 	generate_file $gres_conf $cfgpath/gres.conf
 	generate_file $fake_gpus_conf $cfgpath/fake_gpus.conf
 
+	# We don't want to sort when debugging - we want to see output in order
+	if {$debug_mode} {
+		set output_method "$bin_cat $file_out"
+	} else {
+		set output_method "$bin_sort <./$file_out"
+	}
+
 	if {$use_valgrind} {
 		make_bash_script $file_in "
 valgrind --tool=memcheck --error-limit=no --leak-check=full --show-reachable=yes --max-stackframe=16777216 --num-callers=20 --child-silent-after-fork=yes --track-origins=yes ./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" >./$file_out 2>&1
-$bin_sort <./$file_out
+$output_method
 rm -rf ./$file_out"
 	} else {
 		make_bash_script $file_in "
 ./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" >./$file_out 2>&1
-$bin_sort <./$file_out
+$output_method
 rm -rf ./$file_out"
 	}
 
+	##
+	### Parse the `GRES_PARSABLE` output
+	##
 	set sorted_actual ""
-	set errs_actual 0
-	set ignore_err_msgs 0
-	# Doing a regex on an empty string stalls expect. So don't do it.
-	if {$err_msgs == ""} {
-		set err_msgs "bogus"
-		set ignore_err_msgs 1
+
+	if {!$debug_mode} {
+		log_user 0
 	}
-	log_user 0
 	spawn ./$file_in
-
-
-	# Note that $err_msgs is checked before GRES_PARSABLE. This is to
-	# prevent expect from throwing away $err_msgs if it comes before
-	# GRES_PARSABLE in the same stdout chunk that expect is processing.
-	# When expect matches something in a chunk, if exp_continue is called,
-	# it throws away everything before the match and then continues
-	# searching in the chunk.
-	# So we are making the brittle assumption that all $err_msgs will come
-	# before any GRES_PARSABLE lines.
 	expect {
-		-re "($err_msgs)" {
-			send_user "Found '$err_msgs'\n"
-			if {$ignore_err_msgs == 0} {
-				incr errs_actual
-			}
-			exp_continue
-		}
 		-re "(GRES_PARSABLE$alpha_numeric_special)" {
 			if {$sorted_actual == ""} {
 				set sorted_actual "\n"
@@ -243,6 +250,40 @@ rm -rf ./$file_out"
 		}
 		eof {
 			wait
+		}
+	}
+
+	##
+	### Run through output again to parse the errors (if needed)
+	##
+	# Do this in a separate expect loop to prevent the two unrelated regexes
+	# colliding with each other.
+	# When expect matches something in a chunk of text, if exp_continue is
+	# called, it throws away everything up to and including that text and
+	# then continues searching. This means multiple regexes in the same
+	# expect loop can skip each other. So avoid this.
+	set errs_actual 0
+	set ignore_err_msgs 0
+	# Doing a regex on an empty string stalls expect. So don't do it.
+	if {$err_msgs != ""} {
+		# We for sure don't want to print this out
+		log_user 0
+		spawn ./$file_in
+		expect {
+			-re "($err_msgs)" {
+				send_user "Found '$err_msgs'\n"
+				if {$ignore_err_msgs == 0} {
+					incr errs_actual
+				}
+				exp_continue
+			}
+			timeout {
+				send_user "FAILURE: No response from $test_prog\n"
+				set failed 1
+			}
+			eof {
+				wait
+			}
 		}
 	}
 
@@ -327,16 +368,15 @@ rm -rf ./$file_out"
 
 # ##############################################################################
 # ------------------------------------------------------------------------------
-# Tests for FastSchedule = 0
 # ------------------------------------------------------------------------------
 # ##############################################################################
-create_slurm_conf 0
 
 # ##############################################################################
-# # Test 0.2 - Empty gres.conf
+# # Test 0.2 - Type-less gpu specification in slurm.conf and empty gres.conf
 # # NOTE the device numbers being out of order
 # ##############################################################################
 
+set slurm_conf_gres "gpu:4"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -351,14 +391,13 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):(null)|4|2-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):(null)|4|2-3|(null)|${dev}4|
 "
-check_configuration 0.2 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 0.2 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.4 - Test empty and null identifiers in fake_gpus.conf
-# 	       Also test that GPU and MPS are sorted by filename
-# 	       Note: MPS ignores lines with empty files and nulls out links
 # ##############################################################################
 
+set slurm_conf_gres "gpu:8"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -381,7 +420,7 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):(null)|4|(null)|0-1|${dev}3|
 GRES_PARSABLE\[gpu\](1):(null)|4|0-1|0-1|${dev}4|
 "
-check_configuration 0.4 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 0.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 
@@ -409,6 +448,7 @@ set cpu_array [string repeat "X" $arr_len]
 set cpus_count [expr $arr_len*$ulong_bits]
 set cpus_count_m1 [expr $cpus_count-1]
 
+set slurm_conf_gres "gpu:1"
 set gres_conf "AutoDetect=nvml"
 set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|$cpus_count|~$cpu_array|(null)|${dev}1
@@ -416,7 +456,7 @@ tesla|$cpus_count|~$cpu_array|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
-check_configuration 0.6 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 0.6 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.8 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
@@ -428,6 +468,7 @@ set cpu_array [string repeat "X" $arr_len]
 set cpus_count [expr $arr_len*$ulong_bits]
 set cpus_count_m1 [expr $cpus_count-1]
 
+set slurm_conf_gres "gpu:1"
 set gres_conf "AutoDetect=nvml"
 set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|$cpus_count|~$cpu_array|(null)|${dev}1
@@ -435,7 +476,7 @@ tesla|$cpus_count|~$cpu_array|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
-check_configuration 0.8 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 0.8 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.10 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
@@ -447,6 +488,7 @@ set cpu_array [string repeat "X" $arr_len]
 set cpus_count [expr $arr_len*$ulong_bits]
 set cpus_count_m1 [expr $cpus_count-1]
 
+set slurm_conf_gres "gpu:1"
 set gres_conf "AutoDetect=nvml"
 set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|$cpus_count|~$cpu_array|(null)|${dev}1
@@ -454,7 +496,7 @@ tesla|$cpus_count|~$cpu_array|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
-check_configuration 0.10 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 0.10 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.12 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
@@ -466,6 +508,7 @@ set arr_len [expr int($max_cpus/$ulong_bits)]
 set cpus_count [expr $arr_len*$ulong_bits]
 set cpus_count_m1 [expr $cpus_count-1]
 
+set slurm_conf_gres "gpu:1"
 set gres_conf "AutoDetect=nvml"
 set fake_gpus_conf "# This file was autogenerated by test$test_id
 tesla|$cpus_count|~max|(null)|${dev}1
@@ -473,28 +516,30 @@ tesla|$cpus_count|~max|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|$cpus_count|0-$cpus_count_m1|(null)|${dev}1|
 "
-check_configuration 0.12 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 0.12 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.14 - Test conversion of NVML-style CPU affinity array to Slurm bitstr
 # 		Convert device CPU affinity for all zeros (expect this to fatal)
 # ##############################################################################
 
+set slurm_conf_gres "gpu:1"
 set gres_conf "AutoDetect=nvml"
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
 tesla|0|~zero|(null)|${dev}1
 "
 set expected_output ""
-set err_msgs "fatal:"
+set err_msgs $cpu_set_err
 set expected_errs 1
-check_configuration 0.14 $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+check_configuration 0.14 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 0.16 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 		Convert device CPU affinity for CPU 0 set out of 16 total CPUs
 # ##############################################################################
 
+set slurm_conf_gres "gpu:1"
 set gres_conf "AutoDetect=nvml"
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -503,13 +548,14 @@ tesla|16|~one|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|16|0|(null)|${dev}1|
 "
-check_configuration 0.16 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 0.16 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.18 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 		Convert device CPU affinity for CPUs 0-1 set out of 4 total CPUs
 # ##############################################################################
 
+set slurm_conf_gres "gpu:1"
 set gres_conf "AutoDetect=nvml"
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -518,13 +564,14 @@ tesla|4|~three|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}1|
 "
-check_configuration 0.18 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 0.18 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.20 - Test conversion of NVML-style cpu affinity array to Slurm bitstr
 # 		Convert device CPU affinity for CPUs 8-15 set out of 16 CPUs
 # ##############################################################################
 
+set slurm_conf_gres "gpu:1"
 set gres_conf "AutoDetect=nvml"
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -533,7 +580,7 @@ tesla|16|~half|(null)|${dev}1
 set expected_output "
 GRES_PARSABLE\[gpu\](1):(null)|16|8-15|(null)|${dev}1|
 "
-check_configuration 0.20 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 0.20 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # End NVML-specific tests
@@ -549,6 +596,7 @@ check_configuration 0.20 $gres_conf $fake_gpus_conf $expected_output
 #               is set to NULL.
 # ##############################################################################
 
+set slurm_conf_gres "gpu:4"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -563,13 +611,14 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):(null)|4|2-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):(null)|4|2-3|(null)|${dev}4|
 "
-check_configuration 0.22 $gres_conf $fake_gpus_conf $expected_output "" 0 "gpu:4"
+check_configuration 0.22 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.24 - Test that the GRES type specified in slurm.conf overrides the
 #               GRES type specified in the system, if it's a substring.
 # ##############################################################################
 
+set slurm_conf_gres "gpu:v100:4"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -584,7 +633,7 @@ GRES_PARSABLE\[gpu\](1):v100|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):v100|4|2-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):v100|4|2-3|(null)|${dev}4|
 "
-check_configuration 0.24 $gres_conf $fake_gpus_conf $expected_output "" 0 "gpu:v100:4"
+check_configuration 0.24 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
@@ -593,6 +642,7 @@ check_configuration 0.24 $gres_conf $fake_gpus_conf $expected_output "" 0 "gpu:v
 #               can also match the first part.
 # ##############################################################################
 
+set slurm_conf_gres "gpu:TESLA_V100:4"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -607,7 +657,7 @@ GRES_PARSABLE\[gpu\](1):TESLA_V100|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):TESLA_V100|4|2-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):TESLA_V100|4|2-3|(null)|${dev}4|
 "
-check_configuration 0.26 $gres_conf $fake_gpus_conf $expected_output "" 0 "gpu:TESLA_V100:4"
+check_configuration 0.26 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
@@ -615,6 +665,7 @@ check_configuration 0.26 $gres_conf $fake_gpus_conf $expected_output "" 0 "gpu:T
 #               last part of the system-detected GRES type
 # ##############################################################################
 
+set slurm_conf_gres "gpu:pcie-16gb:4"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -629,13 +680,14 @@ GRES_PARSABLE\[gpu\](1):pcie-16gb|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):pcie-16gb|4|2-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):pcie-16gb|4|2-3|(null)|${dev}4|
 "
-check_configuration 0.28 $gres_conf $fake_gpus_conf $expected_output "" 0 "gpu:pcie-16gb:4"
+check_configuration 0.28 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.30 - Test that the GRES type specified in slurm.conf can match the
 #               full system-detected GRES type
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla_v100-pcie-16gb:4"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -650,13 +702,14 @@ GRES_PARSABLE\[gpu\](1):tesla_v100-pcie-16gb|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):tesla_v100-pcie-16gb|4|2-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla_v100-pcie-16gb|4|2-3|(null)|${dev}4|
 "
-check_configuration 0.30 $gres_conf $fake_gpus_conf $expected_output "" 0 "gpu:tesla_v100-pcie-16gb:4"
+check_configuration 0.30 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.32 - Test that GRES types work as expected when one GRES type is a
 #               substring of another GRES type (e.g. k20m + k20m1). See bug 7345
 # ##############################################################################
 
+set slurm_conf_gres "gpu:k20m:1,gpu:k20m1:1,gpu:v100:1"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -669,39 +722,35 @@ GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):k20m1|4|0-1|(null)|${dev}1|
 GRES_PARSABLE\[gpu\](1):v100|4|0-1|(null)|${dev}3|
 "
-check_configuration 0.32 $gres_conf $fake_gpus_conf $expected_output "" 0 "gpu:k20m:1,gpu:k20m1:1,gpu:v100:1"
+check_configuration 0.32 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.34 - Test that only the first system device that matches a conf gres
-#               type of count 1 has gres type synced (rather than any that *can*
-#               match).
+#               is used, and that the gres type is truncated.
 # ##############################################################################
 
+set slurm_conf_gres "gpu:p100:1"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
-p100|4|0-1|(null)|${dev}2
-p100|4|0-1|(null)|${dev}6
-p100|4|0-1|(null)|${dev}3
-p100|4|0-1|(null)|${dev}4
-p100|4|0-1|(null)|${dev}1
-p100|4|0-1|(null)|${dev}5
+nvidia-p100|4|0-1|(null)|${dev}2
+nvidia-p100|4|0-1|(null)|${dev}6
+nvidia-p100|4|0-1|(null)|${dev}3
+nvidia-p100|4|0-1|(null)|${dev}4
+nvidia-p100|4|0-1|(null)|${dev}1
+nvidia-p100|4|0-1|(null)|${dev}5
 "
 set expected_output "
 GRES_PARSABLE\[gpu\](1):p100|4|0-1|(null)|${dev}1|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}2|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}3|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}4|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}5|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}6|
 "
-check_configuration 0.34 $gres_conf $fake_gpus_conf $expected_output "" 0 "gpu:p100:1"
+check_configuration 0.34 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.36 - Test that the shorter GRES types don't match against the longer
 #               GRES types.
 # ##############################################################################
 
+set slurm_conf_gres "gpu:aaaa:1,gpu:a:1,gpu:aa:1,gpu:aaa:1"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -716,15 +765,15 @@ GRES_PARSABLE\[gpu\](1):aa|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):a|4|0-1|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):aaaa|4|0-1|(null)|${dev}4|
 "
-set slurm_conf_gres "gpu:aaaa:1,gpu:a:1,gpu:aa:1,gpu:aaa:1"
 
-check_configuration 0.36 $gres_conf $fake_gpus_conf $expected_output "" 0 $slurm_conf_gres
+check_configuration 0.36 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 0.38 - Test that the shorter GRES types don't match against the longer
-#               GRES types.
+#               GRES types prematurely.
 # ##############################################################################
 
+set slurm_conf_gres "gpu:k20:2,gpu:k20m:4"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -742,21 +791,45 @@ GRES_PARSABLE\[gpu\](1):k20|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}1|
 GRES_PARSABLE\[gpu\](1):k20|4|0-1|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}4|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}5|
 GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}7|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}6|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}8|
+GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}8|
 "
-set slurm_conf_gres "gpu:k20:2,gpu:k20m:3"
 
-check_configuration 0.38 $gres_conf $fake_gpus_conf $expected_output "" 0 $slurm_conf_gres
-
+check_configuration 0.38 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 0.40 - Test that GRES types that are the same length get sorted
-#               properly
+# # Test 0.39 - Show that shorter types will match against longer types if the
+# 		longer types aren't used up, and that the longer type will be
+# 		truncated accordingly.
 # ##############################################################################
 
+set slurm_conf_gres "gpu:k20:2,gpu:k20m:2"
+set gres_conf ""
+set fake_gpus_conf "
+# This file was autogenerated by test$test_id
+k20m|4|0-1|(null)|${dev}1
+k20m|4|0-1|(null)|${dev}2
+k20m|4|0-1|(null)|${dev}3
+k20|4|0-1|(null)|${dev}4
+k20|4|0-1|(null)|${dev}5
+"
+set expected_output "
+GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}2|
+GRES_PARSABLE\[gpu\](1):k20|4|0-1|(null)|${dev}3|
+GRES_PARSABLE\[gpu\](1):k20|4|0-1|(null)|${dev}4|
+"
+
+check_configuration 0.39 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+# ##############################################################################
+# # Test 0.40 - Test GRES types that are the same length
+# 		Note: In a real system, the controller would set the node to
+# 		drain, since the node reports one less aaa GPU than the
+# 		controller is expecting.
+# ##############################################################################
+
+set slurm_conf_gres "gpu:aaa:3,gpu:bbb:2,gpu:ccc:1"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -773,17 +846,16 @@ GRES_PARSABLE\[gpu\](1):aaa|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):bbb|4|0-1|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):bbb|4|0-1|(null)|${dev}4|
 GRES_PARSABLE\[gpu\](1):ccc|4|0-1|(null)|${dev}5|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}6|
 "
-set slurm_conf_gres "gpu:aaa:3,gpu:bbb:2,gpu:ccc:1"
 
-check_configuration 0.40 $gres_conf $fake_gpus_conf $expected_output "" 0 $slurm_conf_gres
+check_configuration 0.40 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
 # # Test 0.42 - Test multiple identical GRES type specifications
 # ##############################################################################
 
+set slurm_conf_gres "gpu:aaa:1,gpu:aaa:1,gpu:aaa:1"
 set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
@@ -796,33 +868,244 @@ set expected_output "
 GRES_PARSABLE\[gpu\](1):aaa|4|0-1|(null)|${dev}1|
 GRES_PARSABLE\[gpu\](1):aaa|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):aaa|4|0-1|(null)|${dev}3|
-GRES_PARSABLE\[gpu\](1):(null)|4|0-1|(null)|${dev}4|
 "
-set slurm_conf_gres "gpu:aaa:1,gpu:aaa:1,gpu:aaa:1"
 
-check_configuration 0.42 $gres_conf $fake_gpus_conf $expected_output "" 0 $slurm_conf_gres
+check_configuration 0.42 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+
+# ##############################################################################
+# Test 0.52 - Test slurm.conf, gres.conf, and detected device interaction
+#
+# The node returns a list of only 3 GPUs, not 4 (since gpu:special is not
+# detected on the system). So the controller should set the node to drain.
+# ##############################################################################
+
+set slurm_conf_gres "gpu:tesla:3,gpu:special:1"
+set gres_conf ""
+set fake_gpus_conf "
+# This file was autogenerated by test$test_id
+tesla|4|0-1|-1|${dev}0
+tesla|4|0-1|-1|${dev}1
+tesla|4|0-1|-1|${dev}2
+"
+set expected_output "
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}0|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}2|
+"
+
+check_configuration 0.52 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# ------------------------------------------------------------------------------
-# Tests for FastSchedule = 1
-# ------------------------------------------------------------------------------
-# ##############################################################################
-create_slurm_conf 1
-
-# ##############################################################################
-# # Test 1.2 - Test that all GPUs found on the system match gres.conf
+# Test 0.53 - Test slurm.conf, gres.conf, and detected device interaction
+#
+# gpu:special is added on via gres.conf. The final GPU list count matches what
+# is expected in slurm.conf. No errors.
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:3,gpu:special:1"
 set gres_conf "
 # This file was autogenerated by test$test_id
-Name=gpu Type=gtx560 File=${dev}0 COREs=0,1
-Name=gpu Type=tesla File=${dev}1 CPUs=0,1
-Name=gpu Type=1080ti File=${dev}2 COREs=0,1
-Name=mps Count=100 File=${dev}1
-Name=mps Count=100 File=${dev}0
+Name=gpu Type=special File=${dev}5
+"
+set fake_gpus_conf "
+# This file was autogenerated by test$test_id
+tesla|4|0-1|-1|${dev}0
+tesla|4|0-1|-1|${dev}1
+tesla|4|0-1|-1|${dev}2
+"
+set expected_output "
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}0|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}2|
+GRES_PARSABLE\[gpu\](1):special|4|(null)|(null)|${dev}5|
 "
 
+check_configuration 0.53 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+# ##############################################################################
+# Test 0.54 - Test slurm.conf, gres.conf, and detected device interaction
+#
+# The gres conf record for nvidia1 *does* match a system GPU with the same Type
+# and File. However, Cores is mismatched, so an error is printed in slurmd and
+# the system device is omitted from the final GPU list. The total GPU count is 3
+# instead of 4, so the controller sets the node to drain.
+# ##############################################################################
+
+set slurm_conf_gres "gpu:tesla:3,gpu:special:1"
+set gres_conf "
+# This file was autogenerated by test$test_id
+Name=gpu Type=tesla File=${dev}1 Cores=0
+Name=gpu Type=special File=${dev}5
+"
+set fake_gpus_conf "
+# This file was autogenerated by test$test_id
+tesla|4|0-1|-1|${dev}0
+tesla|4|0-1|-1|${dev}1
+tesla|4|0-1|-1|${dev}2
+"
+set expected_output "
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}0|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}2|
+GRES_PARSABLE\[gpu\](1):special|4|(null)|(null)|${dev}5|
+"
+
+check_configuration 0.54 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+# ##############################################################################
+# Test 0.55 - Test slurm.conf, gres.conf, and detected device interaction
+#
+# nvidia[0-2] matches exactly what is found on the system, so no problem there.
+# tesla + nvidia3 does not match any type and file combo found in the system
+# GPUs, so this is assumed to be an “extra” GPU. However, it is not added, since
+# there are already 3 teslas found as outlined in slurm.conf.
+# The total GPU count is 5 instead of 4, which is fine (i.e. won't set node to
+# drain).
+# ##############################################################################
+
+set slurm_conf_gres "gpu:tesla:3,gpu:special:1"
+set gres_conf "
+# This file was autogenerated by test$test_id
+Name=gpu Type=tesla File=${dev}\[0-2\] Cores=0-1
+Name=gpu Type=tesla File=${dev}3 Cores=0
+Name=gpu Type=special File=${dev}5
+"
+set fake_gpus_conf "
+# This file was autogenerated by test$test_id
+tesla|4|0-1|-1|${dev}0
+tesla|4|0-1|-1|${dev}1
+tesla|4|0-1|-1|${dev}2
+"
+set expected_output "
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}0|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}2|
+GRES_PARSABLE\[gpu\](1):special|4|(null)|(null)|${dev}5|
+"
+set err_msgs $conf_mismatch_err
+set expected_errs 1
+
+check_configuration 0.55 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+
+# ##############################################################################
+# Test 0.56 - Test slurm.conf, gres.conf, and detected device interaction
+#
+# nvidia[0-2] are found on the system, but nvidia3 is not. However, nvidia3 is
+# assumed to be an extra GPU (like gpu:special), so it’s ok.
+# The total GPU count is 5, so there are no errors or warnings.
+# ##############################################################################
+
+set slurm_conf_gres "gpu:tesla:4,gpu:special:1"
+set gres_conf "
+# This file was autogenerated by test$test_id
+Name=gpu Type=tesla File=${dev}\[0-3\] Cores=0-1
+Name=gpu Type=special File=${dev}5
+"
+set fake_gpus_conf "
+# This file was autogenerated by test$test_id
+tesla|4|0-1|-1|${dev}0
+tesla|4|0-1|-1|${dev}1
+tesla|4|0-1|-1|${dev}2
+"
+set expected_output "
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}0|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}2|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}3|
+GRES_PARSABLE\[gpu\](1):special|4|(null)|(null)|${dev}5|
+"
+
+check_configuration 0.56 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+# ##############################################################################
+# # Test 0.57 - Test that an empty slurm.conf yields no devices
+# ##############################################################################
+
+set slurm_conf_gres ""
+set gres_conf "
+# This file was autogenerated by test$test_id
+Name=gpu Type=tesla File=${dev}\[0-3\] Cores=0-1
+Name=gpu Type=special File=${dev}5
+"
+set fake_gpus_conf "
+# This file was autogenerated by test$test_id
+tesla|4|0-1|-1|${dev}0
+tesla|4|0-1|-1|${dev}1
+tesla|4|0-1|-1|${dev}2
+"
+set expected_output ""
+
+set err_msgs $conf_mismatch_err
+set expected_errs 2
+
+check_configuration 0.57 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+
+# ##############################################################################
+# Test 0.58 - Test that a non-GPU GRES doesn't need an explicit entry in
+# gres.conf. Also test that GPUs are rejected unless they have a File
+# specification in gres.conf when AutoDetect is turned off.
+# ##############################################################################
+
+set slurm_conf_gres "gpu:tesla:3,gpu:special:1,tmpdisk:100"
+# Nothing in gres.conf
+set gres_conf ""
+# Effectively "turn off" AutoDetect
+set fake_gpus_conf ""
+set expected_output "
+GRES_PARSABLE\[tmpdisk\](100):(null)|4|(null)|(null)|(null)|
+"
+check_configuration 0.58 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+# ##############################################################################
+# Test 0.59 - Test over-specified gres.conf compared to slurm.conf
+#
+# This tests that a larger gres.conf line is truncated down to match what
+# slurm.conf specifies. This also tests that user errors are printed whenever
+# more GRES are found in gres.conf than specified in slurm.conf.
+# ##############################################################################
+
+set slurm_conf_gres "gpu:tesla:2,gpu:gtx:1"
+set gres_conf "
+# This file was autogenerated by test$test_id
+Name=gpu Type=tesla File=${dev}\[0-4\]
+Name=gpu Type=tesla File=${dev}5
+Name=gpu Type=special File=${dev}6
+Name=gpu Type=gtx File=${dev}7
+Name=nic Count=100
+Name=tmpdisk Count=10G
+"
+set fake_gpus_conf "
+# This file was autogenerated by test$test_id
+tesla|4|0-1|-1|${dev}0
+tesla|4|0-1|-1|${dev}1
+tesla|4|0-1|-1|${dev}2
+"
+set expected_output "
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}0|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|-1|${dev}1|
+GRES_PARSABLE\[gpu\](1):gtx|4|(null)|(null)|${dev}7|
+"
+
+set err_msgs $conf_mismatch_err
+set expected_errs 5
+
+check_configuration 0.59 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+
+
+# ##############################################################################
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# ##############################################################################
+
+
+
+# ##############################################################################
+# # Test 1.2 - Test that all MPS is distributed across multiple GPU types
+# ##############################################################################
+
+set slurm_conf_gres "gpu:tesla:1,gpu:1080:1,gpu:gtx560:1,mps:300"
+set gres_conf ""
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
 tesla|4|0-1|(null)|${dev}1
@@ -832,186 +1115,147 @@ gtx560|4|0-1|(null)|${dev}0
 set expected_output "
 GRES_PARSABLE\[gpu\](1):gtx560|4|0-1|(null)|${dev}0|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}1|
-GRES_PARSABLE\[gpu\](1):1080ti|4|0-1|(null)|${dev}2|
-GRES_PARSABLE\[mps\](100):gtx560|4|0-1|(null)|${dev}0|
+GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[mps\](100):tesla|4|0-1|(null)|${dev}1|
-GRES_PARSABLE\[mps\](0):1080ti|4|0-1|(null)|${dev}2|
+GRES_PARSABLE\[mps\](100):1080|4|0-1|(null)|${dev}2|
+GRES_PARSABLE\[mps\](100):gtx560|4|0-1|(null)|${dev}0|
 "
 
-check_configuration 1.2 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 1.2 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 1.4 - Test that errors are emitted when devices specified in
-# 	       gres.conf are not found on the system
+# # Test 1.4 - Test that errors are emitted and configured devices omitted when
+#	       Cores or Links mismatch with the corresponding system devices
 # ##############################################################################
 
+set slurm_conf_gres "gpu:ti:3,gpu:gtx:3"
 set gres_conf "
 # This file was autogenerated by test$test_id
-Name=gpu Type=1080ti File=${dev}\[0-2\] COREs=0,1
+Name=gpu Type=ti File=${dev}0 COREs=0
+Name=gpu Type=ti File=${dev}\[1-2\] COREs=0-1
+Name=gpu Type=gtx File=${dev}\[3-5\] COREs=0-1 Links=0,0,0,0,0,0
 "
 
 set fake_gpus_conf "
 # This file was autogenerated by test$test_id
+1080ti|4|0-1|(null)|${dev}0
 1080ti|4|0-1|(null)|${dev}1
 1080ti|4|0-1|(null)|${dev}2
+gtx560|4|0-1|0,0,0,1,0,0|${dev}3
+gtx560|4|0-1|0,0,0,0,1,0|${dev}4
+gtx560|4|0-1|0,0,0,0,0,0|${dev}5
 "
-# We're missing 2 of the 3 devices. See if that is detected
 
 set expected_output "
-GRES_PARSABLE\[gpu\](1):1080ti|4|0-1|(null)|${dev}1|
-GRES_PARSABLE\[gpu\](1):1080ti|4|0-1|(null)|${dev}2|
+GRES_PARSABLE\[gpu\](1):ti|4|0-1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):ti|4|0-1|(null)|${dev}2|
+GRES_PARSABLE\[gpu\](1):gtx|4|0-1|0,0,0,0,0,0|${dev}5|
 "
 
-set err_msgs $fs1_err
-set expected_errs 1
-check_configuration 1.4 $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
-
-
-# ##############################################################################
-# # Test 1.6 - Test that errors are emitted when there are no devices on system
-# ##############################################################################
-
-set gres_conf "
-# This file was autogenerated by test$test_id
-Name=gpu Type=1080ti File=${dev}\[0-2\] COREs=0,1
-"
-
-set fake_gpus_conf ""
-set expected_output ""
-
-set err_msgs $fs1_err
+set err_msgs $mismatch_err
 set expected_errs 3
-check_configuration 1.6 $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+check_configuration 1.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 
 # ##############################################################################
-# # Test 1.8 - Test that the correct number of errors is emitted when no devices
-# 	       are found on the system
+# # Test 1.6 - Test that "extra" GPUs are still used when not found on system
 # ##############################################################################
 
+set slurm_conf_gres "gpu:1080:3"
 set gres_conf "
 # This file was autogenerated by test$test_id
-Name=gpu Type=gtx560 File=${dev}\[0-1\] COREs=0,1
-Name=gpu Type=tesla File=${dev}\[2-3\] CPUs=0,1 Links=0,1
-Name=gpu Type=1080ti File=${dev}2 COREs=0,1
+Name=gpu Type=1080 File=${dev}\[0-2\] COREs=0-1
 "
 
 set fake_gpus_conf ""
+set expected_output "
+GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}0|
+GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}2|
+"
+
+check_configuration 1.6 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+
+# ##############################################################################
+# # Test 1.8 - Test that separate "extra" GPUs in gres.conf with different Cores
+# 	       and Links are properly accounted under the typeless slurm.conf
+# 	       gres specification.
+# ##############################################################################
+
+set slurm_conf_gres "gpu:5"
+set gres_conf "
+# This file was autogenerated by test$test_id
+Name=gpu File=${dev}\[0-1\] Cores=0,1
+Name=gpu File=${dev}\[2-3\] Cores=0,1 Links=-1
+Name=gpu File=${dev}4 Cores=0
+"
+
+set fake_gpus_conf ""
+set expected_output "
+GRES_PARSABLE\[gpu\](1):(null)|4|0,1|(null)|${dev}0|
+GRES_PARSABLE\[gpu\](1):(null)|4|0,1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):(null)|4|0,1|-1|${dev}2|
+GRES_PARSABLE\[gpu\](1):(null)|4|0,1|-1|${dev}3|
+GRES_PARSABLE\[gpu\](1):(null)|4|0|(null)|${dev}4|
+"
+
+check_configuration 1.8 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+# ##############################################################################
+# # Test 1.10 - Test that slurm.conf doesn't allow a mix of Type and no Type
+# ##############################################################################
+
+set slurm_conf_gres "gpu:tesla:1,gpu:1"
+set gres_conf ""
+set fake_gpus_conf ""
 set expected_output ""
+set err_msgs $slurm_conf_type_err
+set expected_errs 1
 
-set err_msgs $fs1_err
-set expected_errs 5
-
-check_configuration 1.8 $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+check_configuration 1.10 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 1.9 - Test basic auto-fill of a single record
+# # Test 1.12 - Test that gres.conf doesn't allow a mix of Type and no Type
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:2,gpu:v100:2"
 set gres_conf "
 # This file was autogenerated by test$test_id
-Name=gpu
+Name=gpu            File=${dev}\[0-1\]
+Name=gpu Type=v100  File=${dev}\[2-3\]
 "
+set fake_gpus_conf ""
+set expected_output ""
+set err_msgs $gres_conf_type_err
+set expected_errs 1
 
-set fake_gpus_conf "
-# This file was autogenerated by test$test_id
-tesla|4|2-3|(null)|${dev}2
-"
-
-set expected_output "
-GRES_PARSABLE\[gpu\](1):(null)|4|2-3|(null)|${dev}2|
-"
-
-check_configuration 1.9 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 1.12 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 1.10 - Test basic auto-fill of a single record with Type specified
+# # Test 1.14 - Test that gres.conf doesn't allow a mix of File and no File
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:2,gpu:v100:2"
 set gres_conf "
 # This file was autogenerated by test$test_id
-Name=gpu Type=tesla
+Name=gpu Type=tesla  File=${dev}\[0-1\]
+Name=gpu Type=v100
 "
+set fake_gpus_conf ""
+set expected_output ""
+set err_msgs $gres_conf_file_err
+set expected_errs 1
 
-set fake_gpus_conf "
-# This file was autogenerated by test$test_id
-tesla|4|2-3|(null)|${dev}2
-"
+check_configuration 1.14 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
-set expected_output "
-GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}2|
-"
-
-check_configuration 1.10 $gres_conf $fake_gpus_conf $expected_output
-
-
-# TODO: We need to create tests and modify behavior to do the following:
-# 	* If Count only is specified, have Slurm grab the first GPUs it can find
-# 	and fill in the rest of the info.
-# 	* If there is a mix and match of Type, File, Links, or none of these,
-# 	have it properly autofill
-
-
-
-# # ##############################################################################
-# # # Test 1.12 - Test that count automatically takes the first GPUs it finds
-# # TODO: This functionality has not been coded yet
-# # ##############################################################################
-
-# set gres_conf "
-# # This file was autogenerated by test$test_id
-# Name=gpu Count=3
-# "
-
-# set fake_gpus_conf "
-# # This file was autogenerated by test$test_id
-# tesla|4|2-3|(null)|${dev}2
-# "
-
-# set expected_output "
-# GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}2|
-# "
-
-# check_configuration 1.12 $gres_conf $fake_gpus_conf $expected_output
-
-
-# # ##############################################################################
-# # # Test 1.14 - Test advanced auto-fill of multiple records with diff fields
-# # TODO: This functionality has not been coded yet
-# # ##############################################################################
-
-# set gres_conf "
-# # This file was autogenerated by test$test_id
-# Name=gpu
-# Name=gpu            File=${dev}3
-# Name=gpu            File=${dev}4 CPUs=0,1
-# Name=gpu Type=tesla
-# Name=gpu Type=tesla              CPUs=0,1
-# Name=gpu Type=tesla File=${dev}7
-# Name=gpu Type=tesla File=${dev}8 CPUs=0,1
-# "
-
-# set fake_gpus_conf "
-# # This file was autogenerated by test$test_id
-# tesla|4|2-3|(null)|${dev}2
-# "
-
-# set expected_output "
-# GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}2|
-# "
-
-# check_configuration 1.14 $gres_conf $fake_gpus_conf $expected_output
- 
 
 # ##############################################################################
 # ------------------------------------------------------------------------------
-# Tests for FastSchedule = 2
+# Test gres.conf parsing
 # ------------------------------------------------------------------------------
 # ##############################################################################
-create_slurm_conf 2
-
-
 
 
 # ##############################################################################
@@ -1019,6 +1263,7 @@ create_slurm_conf 2
 # # NOTE the device numbers being out of order
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:1,gpu:gtx560:1,mps:200"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=gtx560 File=${dev}0 COREs=0,1
@@ -1033,13 +1278,14 @@ GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 GRES_PARSABLE\[mps\](100):gtx560|4|0,1|(null)|${dev}0|
 GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|
 "
-check_configuration 2.2 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.2 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.4 - Test gres/mps with count and no file names
 # # NOTE the device numbers being out of order
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:1,gpu:gtx560:1,mps:210"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}1 COREs=2,3
@@ -1053,13 +1299,13 @@ GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 GRES_PARSABLE\[mps\](105):gtx560|4|0,1|(null)|${dev}0|
 GRES_PARSABLE\[mps\](105):tesla|4|2,3|(null)|${dev}1|
 "
-check_configuration 2.4 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.6 - Explicit device specification overrules system detected
-# # NOTE the device numbers being out of order
+# # Test 2.6 - Test using only a subset of the system devices found
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:3"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}\[3-4\] Cores=2-3
@@ -1077,12 +1323,13 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}1|
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}4|
 "
-check_configuration 2.6 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.6 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
-# # Test 2.8 - Different system devices detected; single devices merged
+# # Test 2.8 - Test disjoint sets of conf and system devices
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:6"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}1 Cores=2-3
@@ -1100,8 +1347,10 @@ GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}1|
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}4|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}5|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}6|
 "
-check_configuration 2.8 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.8 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.10 - Different links, different records
@@ -1110,6 +1359,7 @@ check_configuration 2.8 $gres_conf $fake_gpus_conf $expected_output
 # Devices 0-2 are all doubly linked to each other
 # Device 5 is singly linked to 3-4
 # Devices 7-8 are doubly linked to each other
+set slurm_conf_gres "gpu:tesla:8"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}0 Cores=0-3 Links=-1,2,2,0,0,0,0,0
@@ -1132,21 +1382,23 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,0,0,1,1,-1,0,0|${dev}5|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,0,0,0,0,0,-1,2|${dev}6|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,0,0,0,0,0,2,-1|${dev}7|
 "
-check_configuration 2.10 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.10 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.12 - Empty everything
 # ##############################################################################
 
+set slurm_conf_gres ""
 set gres_conf ""
 set fake_gpus_conf ""
 set expected_output ""
-check_configuration 2.12 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.12 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.14 - Empty system devices
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:4"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}\[1-4\] Cores=2-3
@@ -1158,33 +1410,56 @@ GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}4|
 "
-check_configuration 2.14 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.14 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
-# # Test 2.16 - Test that non-GPU GRESs are excluded
+# # Test 2.16 - Test non-GPU GRESs with types
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:1,tmpdisk:disky:1,nic:nikki:1,mic:mickey:1"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu     Type=tesla File=${dev}1 Cores=0-3
-Name=tmpdisk Type=tesla File=${dev}2 Cores=0-3
-Name=nic     Type=tesla File=${dev}3 Cores=0-3
-Name=mic     Type=tesla File=${dev}4 Cores=0-3
+Name=tmpdisk Type=disky File=${dev}2 Cores=0-3
+Name=nic     Type=nikki File=${dev}3 Cores=0-3
+Name=mic     Type=mickey File=${dev}4 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output "
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
-GRES_PARSABLE\[tmpdisk\](1):tesla|4|0-3|(null)|${dev}2|
-GRES_PARSABLE\[nic\](1):tesla|4|0-3|(null)|${dev}3|
-GRES_PARSABLE\[mic\](1):tesla|4|0-3|(null)|${dev}4|
+GRES_PARSABLE\[tmpdisk\](1):disky|4|0-3|(null)|${dev}2|
+GRES_PARSABLE\[nic\](1):nikki|4|0-3|(null)|${dev}3|
+GRES_PARSABLE\[mic\](1):mickey|4|0-3|(null)|${dev}4|
 "
-check_configuration 2.16 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.16 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+# ##############################################################################
+# # Test 2.17 - Test non-GPU GRESs without types
+# ##############################################################################
+
+set slurm_conf_gres "gpu:1,tmpdisk:1,nic:1,mic:1"
+set gres_conf "
+# This file was autogenerated by test$test_id
+Name=gpu     File=${dev}1 Cores=0-3
+Name=tmpdisk File=${dev}2 Cores=0-3
+Name=nic     File=${dev}3 Cores=0-3
+Name=mic     File=${dev}4 Cores=0-3
+"
+set fake_gpus_conf ""
+set expected_output "
+GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}1|
+GRES_PARSABLE\[tmpdisk\](1):(null)|4|0-3|(null)|${dev}2|
+GRES_PARSABLE\[nic\](1):(null)|4|0-3|(null)|${dev}3|
+GRES_PARSABLE\[mic\](1):(null)|4|0-3|(null)|${dev}4|
+"
+check_configuration 2.17 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.18 - Test NodeName when Name isn't specified
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:2"
 set gres_conf "
 # This file was autogenerated by test$test_id
 NodeName=$nodename Name=gpu     Type=tesla File=${dev}1 Cores=0-3
@@ -1194,39 +1469,57 @@ set fake_gpus_conf ""
 set expected_output "
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
 "
-check_configuration 2.18 $gres_conf $fake_gpus_conf $expected_output
+
+set err_msgs $no_name_err
+set expected_errs 1
+check_configuration 2.18 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 2.20 - Test that empty Name does not parse and produces error
 # ##############################################################################
 
+set slurm_conf_gres ""
 set gres_conf "
 # This file was autogenerated by test$test_id
 Type=tesla File=${dev}1 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-check_configuration 2.20 $gres_conf $fake_gpus_conf $expected_output
+set err_msgs $parse_err
+set expected_errs 1
+check_configuration 2.20 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 2.22 - Ensure no malloc error for large count with ignored non-GPU GRES
-#             See bug 6014
+# # Test 2.22 - Ensure no malloc error for large count with non-GPU GRES
+#               See bug 6014
 # ##############################################################################
 
-set gres_conf "
-# This file was autogenerated by test$test_id
-NodeName=$nodename Name=tmpdisk Count=10g
-"
+set slurm_conf_gres "tmpdisk:10g"
+set gres_conf "Name=tmpdisk count=10g"
 set fake_gpus_conf ""
 set expected_output "
 GRES_PARSABLE\[tmpdisk\](10737418240):(null)|4|(null)|(null)|(null)|
 "
-check_configuration 2.22 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.22 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
+
+# ##############################################################################
+# # Test 2.23 - Ensure no errors for large count with non-GPU GRES *and* with
+# 		Type and Cores specified in gres.conf.
+# ##############################################################################
+
+set slurm_conf_gres "tmpdisk:tempy:10g"
+set gres_conf "Name=tmpdisk Type=tempy Count=10g Cores=0-1"
+set fake_gpus_conf ""
+set expected_output "
+GRES_PARSABLE\[tmpdisk\](10737418240):tempy|4|0-1|(null)|(null)|
+"
+check_configuration 2.23 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.24 - Different types, different records
 # ##############################################################################
 
+set slurm_conf_gres "gpu:a:2,gpu:b:2"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=a File=${dev}1 Cores=0-3
@@ -1241,35 +1534,13 @@ GRES_PARSABLE\[gpu\](1):a|4|0-3|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):b|4|0-3|(null)|${dev}5|
 GRES_PARSABLE\[gpu\](1):b|4|0-3|(null)|${dev}6|
 "
-check_configuration 2.24 $gres_conf $fake_gpus_conf $expected_output
-
-# ##############################################################################
-# # Test 2.26 - Same gres.conf and system devices is fine
-# ##############################################################################
-
-set gres_conf "
-# This file was autogenerated by test$test_id
-Name=gpu Type=tesla File=${dev}\[1-4\] Cores=0-3
-"
-set fake_gpus_conf "
-# This file was autogenerated by test$test_id
-tesla|4|0-3|(null)|${dev}1
-tesla|4|0-3|(null)|${dev}2
-tesla|4|0-3|(null)|${dev}3
-tesla|4|0-3|(null)|${dev}4
-"
-set expected_output "
-GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
-GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}2|
-GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}3|
-GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}4|
-"
-check_configuration 2.26 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.24 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.28 - Test alternating device/cpu ranges
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla_a:4,gpu:tesla_b:4"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla_a File=${dev}\[1-2\] Cores=0-3
@@ -1290,12 +1561,13 @@ GRES_PARSABLE\[gpu\](1):tesla_b|4|0-3|(null)|${dev}6|
 GRES_PARSABLE\[gpu\](1):tesla_a|4|0-3|(null)|${dev}7|
 GRES_PARSABLE\[gpu\](1):tesla_b|4|0-3|(null)|${dev}8|
 "
-check_configuration 2.28 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.28 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.30 - Test duplicate devices in gres.conf
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:6"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}3       Cores=0-3
@@ -1306,14 +1578,15 @@ Name=gpu Type=tesla File=${dev}\[3-4\] Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-set err_msgs "gpu duplicate device file name"
+set err_msgs $dup_err
 set expected_errs 1
-check_configuration 2.30 $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+check_configuration 2.30 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 2.32 - Test increasing duplicate devices in gres.conf
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:10"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}1       Cores=0-3
@@ -1323,14 +1596,15 @@ Name=gpu Type=tesla File=${dev}\[1-4\] Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-set err_msgs "gpu duplicate device file name"
+set err_msgs $dup_err
 set expected_errs 1
-check_configuration 2.32 $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+check_configuration 2.32 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 2.34 - Test decreasing duplicate devices in gres.conf
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:10"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}4       Cores=0-3
@@ -1340,14 +1614,15 @@ Name=gpu Type=tesla File=${dev}\[1-4\] Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-set err_msgs "gpu duplicate device file name"
+set err_msgs $dup_err
 set expected_errs 1
-check_configuration 2.34 $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+check_configuration 2.34 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 2.36 - Test duplicate devices
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:4"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}1 Cores=0
@@ -1357,14 +1632,15 @@ Name=gpu Type=tesla File=${dev}1 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-set err_msgs "gpu duplicate device file name"
+set err_msgs $dup_err
 set expected_errs 1
-check_configuration 2.36 $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
+check_configuration 2.36 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
-# # Test 2.38 - Test overlapping cpu ranges
+# # Test 2.38 - Test overlapping Core ranges
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:4"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}1 Cores=0
@@ -1379,13 +1655,14 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-2|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}4|
 "
-check_configuration 2.38 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.38 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # ##############################################################################
 # # Test 2.40 - Work with null links
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:4"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}1 Cores=0-3
@@ -1400,12 +1677,15 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0|${dev}4|
 "
-check_configuration 2.40 $gres_conf $fake_gpus_conf $expected_output
+set err_msgs $links_err
+set expected_errs 1
+check_configuration 2.40 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
 # # Test 2.42 - Show link ranges do NOT work - only commas
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:4"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}1 Cores=0-3 Links=0-1
@@ -1420,31 +1700,13 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,-1|${dev}2|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,-1,2|${dev}4|
 "
-check_configuration 2.42 $gres_conf $fake_gpus_conf $expected_output
-
-# ##############################################################################
-# # Test 2.44 - What does 0, "", and "null" Type do
-# ##############################################################################
-
-set gres_conf "
-# This file was autogenerated by test$test_id
-# Name=gpu File=${dev}1 Cores=0-3
-Name=gpu File=${dev}2 Cores=0-3 Type=\"\"
-Name=gpu File=${dev}3 Cores=0-3 Type=null
-Name=gpu File=${dev}4 Cores=0-3 Type=0
-"
-set fake_gpus_conf ""
-set expected_output "
-GRES_PARSABLE\[gpu\](1):|4|0-3|(null)|${dev}2|
-GRES_PARSABLE\[gpu\](1):null|4|0-3|(null)|${dev}3|
-GRES_PARSABLE\[gpu\](1):0|4|0-3|(null)|${dev}4|
-"
-check_configuration 2.44 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.42 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.46 - Type not specified
 # ##############################################################################
 
+set slurm_conf_gres "gpu:4"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu File=${dev}1 Cores=0-3
@@ -1460,12 +1722,13 @@ GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}4|
 "
-check_configuration 2.46 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.46 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.48 - Cores not specified or null
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:5"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}1
@@ -1482,7 +1745,7 @@ GRES_PARSABLE\[gpu\](1):tesla|4||(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla|4|null|(null)|${dev}4|
 GRES_PARSABLE\[gpu\](1):tesla|4|0|(null)|${dev}5|
 "
-check_configuration 2.48 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.48 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 
 # TODO: What other tests should we add?
@@ -1495,6 +1758,7 @@ check_configuration 2.48 $gres_conf $fake_gpus_conf $expected_output
 # # Test 2.50 - Test examples in gres.conf docs
 # ##############################################################################
 
+set slurm_conf_gres "gpu:gtx560:1,gpu:tesla:1,mps:200"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=gtx560 File=${dev}0 COREs=0,1
@@ -1509,12 +1773,13 @@ GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 GRES_PARSABLE\[mps\](100):gtx560|4|0,1|(null)|${dev}0|
 GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|
 "
-check_configuration 2.50 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.50 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.52 - Test examples in gres.conf docs
 # ##############################################################################
 
+set slurm_conf_gres "gpu:tesla:3"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}\[0-1\] COREs=0,1
@@ -1528,14 +1793,15 @@ GRES_PARSABLE\[gpu\](1):tesla|4|0,1|(null)|${dev}0|
 GRES_PARSABLE\[gpu\](1):tesla|4|0,1|(null)|${dev}1|
 GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}3|
 "
-check_configuration 2.52 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.52 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.54 - Test examples in gres.conf docs
-# #	      Note: ${nodename_base}0 == $nodename, so only that node 0's GRES
-# #	      definitions will apply
+# #		Note: ${nodename_base}0 == $nodename, so only node 0's GRES
+# #		definitions will apply to this test
 # ##############################################################################
 
+set slurm_conf_gres "gpu:4"
 set gres_conf "
 # This file was autogenerated by test$test_id
 ## Explicitly specify devices on nodes ${nodename_base}0-${nodename_base}15
@@ -1552,7 +1818,7 @@ GRES_PARSABLE\[gpu\](1):(null)|4|(null)|(null)|${dev}1|
 GRES_PARSABLE\[gpu\](1):(null)|4|(null)|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):(null)|4|(null)|(null)|${dev}3|
 "
-check_configuration 2.54 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.54 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Test 2.56 - Test gres/mps with count on only some devices
@@ -1560,6 +1826,7 @@ check_configuration 2.54 $gres_conf $fake_gpus_conf $expected_output
 # #      a gres/mps with a device file not valid for any configured GPU
 # ##############################################################################
 
+set slurm_conf_gres "gpu:gtx560:1,gpu:tesla:2,mps:900"
 set gres_conf "
 # This file was autogenerated by test$test_id
 Name=gpu Type=tesla File=${dev}1 COREs=2,3
@@ -1578,7 +1845,7 @@ GRES_PARSABLE\[mps\](0):gtx560|4|0,1|(null)|${dev}0|
 GRES_PARSABLE\[mps\](200):tesla|4|2,3|(null)|${dev}1|
 GRES_PARSABLE\[mps\](300):tesla|4|2,3|(null)|${dev}3|
 "
-check_configuration 2.56 $gres_conf $fake_gpus_conf $expected_output
+check_configuration 2.56 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
 # ##############################################################################
 # # Tests for expected failures
