@@ -1854,7 +1854,7 @@ static void _queue_reboot_msg(void)
 		node_ptr->boot_req_time = now;
 		node_ptr->last_response = now + slurm_get_resume_timeout();
 
-		if ((node_ptr->next_state != NO_VAL) && node_ptr->reason &&
+		if (node_ptr->reason &&
 		    !xstrstr(node_ptr->reason, "reboot issued"))
 			xstrcat(node_ptr->reason, " : reboot issued");
 

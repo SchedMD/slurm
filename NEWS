@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- Remove the smap command.
  -- Change exclusive behavior of a node to include all GRES on a node as well
     as the cpus.
+ -- Append ": reboot issued" to node reason when reboot is issued from
+    controller. Previously only happened when nextstate was specified.
 
 * Changes in Slurm 19.05.3
 ==========================
