@@ -22,12 +22,14 @@ documents those changes that are of interest to users and administrators.
  -- pam_slurm_adopt - with action_unknown=newest configured, pick a user job
     even when failing to get cgroup mtime.
  -- Fix "srun --export=" parsing to handle nested commas.
- -- Add default "reboot issued" reason to nodes when rebooting with scontrol.
+ -- Add default "reboot requested" reason to nodes when rebooting with scontrol.
  -- Duplicate PartitionName entries in slurm.conf will now fatal() instead of
     printing an error message and ignoring the successive records.
  -- Remove the smap command.
  -- Change exclusive behavior of a node to include all GRES on a node as well
     as the cpus.
+ -- Append ": reboot issued" to node reason when reboot is issued from
+    controller. Previously only happened when nextstate was specified.
 
 * Changes in Slurm 19.05.3
 ==========================
