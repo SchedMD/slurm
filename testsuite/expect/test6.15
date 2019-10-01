@@ -1,17 +1,17 @@
 #!/usr/bin/env expect
 ############################################################################
-# Purpose: Test of Slurm functionality
-#          Test scancel signal of full job including batch script (--full option).
+# Purpose: Test scancel with --full and/or --batch.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 #
 # Note:    This script generates and then deletes files in the working directory
-#          named test6.12.input, test6.12.output, and test6.12.error
+#          named test6.15.input, test6.15.output, and test6.15.error
 ############################################################################
-# Copyright (C) 2015 SchedMD LLC.
+# Copyright (C) 2015-2019 SchedMD LLC.
 # Written by Morris Jette <jette@schedmd.com>
+# Rewritten by Albert Gil <albert.gil@schedmd.com>
 #
 # This file is part of Slurm, a resource management program.
 # For details, see <https://slurm.schedmd.com/>.
@@ -34,127 +34,249 @@
 source ./globals
 
 set test_id     "6.15"
-set file_in1    "test$test_id.input1"
-set file_in2    "test$test_id.input2"
+set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
+set file_prog   "test$test_id.prog"
 
 set exit_code   0
-set job_id      0
-set step_id	0
 
 print_header $test_id
 
 #
 # Delete vestigial files
 #
-file delete $file_out
+file delete $file_out $file_prog
+
+# Build prog
+exec $bin_cc -o $file_prog $file_prog.c
 
 #
 # Build input script files
 #
-make_bash_script $file_in1 "
-$bin_sleep 5
-$bin_sleep 5
-$bin_sleep 5
-$bin_sleep 5
-"
+make_bash_script $file_in "
+catch()
+{
+	echo 'Signaled: script'
+	exit 0
+}
 
-make_bash_script $file_in2 "
-time ./$file_in1 &
-time $srun $file_in1 &
+trap catch USR1
+
+./test6.15.prog &
+$srun ./test6.15.prog step
 wait
+exit 0
 "
 
-#
-# Spawn a sbatch job
-#
-set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch --output=$file_out -t2 $file_in2]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: sbatch not responding\n"
-		slow_kill $sbatch_pid
-		exit 1
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
+set proctracktype [test_proctrack]
+send_user "Proctrack: $proctracktype\n"
+if {$proctracktype != "cgroup" && $proctracktype != "linuxproc" && $proctracktype != "pgid"} {
+	log_warn "This test only works for proctracktype/cgroup, proctracktype/linuxproc or proctracktype/pgid."
+	exit 0
 }
 
 #
-# Wait for job to start running, then STOP it for a while and CONTINUE
+# Main test function
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: waiting for job to start running\n"
-	exit 1
-}
-exec $bin_sleep 2
-
-send_user "\nStop the full job\n"
-spawn $scancel --full -s STOP $job_id
-expect {
-	eof {
-		wait
-	}
-}
-send_user "\nWait a while\n"
-exec $bin_sleep 20
-send_user "\nNow resume the job\n"
-spawn $scancel --full -s CONT $job_id
-expect {
-	eof {
-		wait
-	}
-}
-
+# It submits a batch script that runs a background command and a step.
+# Both command and step are the same app that creates parent and child process.
+# All three, the script, the command and the step have a signal handler
+# for SIGUSR1 to print that the signal is received.
 #
-# Wait for completion and confirm run times
+# The function uses scancel to signal the job, and finally check the stdout
+# to verify that the signals are received as expected.
+# The scancel can be used with $params to checck them.
 #
-if {[wait_for_job $job_id DONE] != 0} {
-	send_user "\nFAILURE: error completing job $job_id\n"
-	cancel_job $job_id
-	exit 1
-}
+proc test_signaling { batch full } {
+	global wait_for_file wait_for_job cancel_job slow_kill
+	global max_job_delay proctracktype
+	global bin_sleep bin_cat
+	global sbatch scancel file_out file_in
+	global number alpha_numeric_under
 
-# Now make sure that both the script and the step processes are stopped.
-# Both should run for at least 35 seconds (20 seconds between SIGSTOP and
-# SIGCONT) plus 15 to 20 seconds for $file_in1.
-if {[wait_for_file $file_out] == 0} {
-	set matches 0
-	set real_time 0
-	spawn cat $file_out
+	set job_id      0
+	set rc          0
+
+	#
+	# Submit sbatch job
+	#
+	send_user "\nSubmit the job\n"
+	set timeout $max_job_delay
+	set sbatch_pid [spawn $sbatch --output=$file_out -t2 $file_in]
 	expect {
-		-re "real($whitespace)0m($number)" {
-			set real_time $expect_out(2,string)
-			if {$real_time < 35} {
-				send_user "\nFAILURE: Job not stopped\n"
-				set exit_code 1
-			}
-			incr matches
+		-re "Submitted batch job ($number)" {
+			set job_id $expect_out(1,string)
 			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: sbatch not responding\n"
+			slow_kill $sbatch_pid
+			return 1
 		}
 		eof {
 			wait
 		}
 	}
-	if {$matches < 2} {
-		send_user "\nFAILURE: Missing run time messages ($matches < 2)\n"
-		set exit_code 1
+	if {$job_id == 0} {
+		send_user "\nFAILURE: batch submit failure\n"
+		return 1
 	}
-} else {
-	set exit_code 1
+
+	#
+	# Wait for job to start running
+	#
+	if {[wait_for_job $job_id "RUNNING"] != 0} {
+		send_user "\nFAILURE: waiting for job to start running\n"
+		return 1
+	}
+
+	#
+	# Signal the job
+	#
+	set params ""
+	if { $batch } {
+		set params [concat $params " --batch"]
+	}
+	if { $full } {
+		set params [concat $params " --full"]
+	}
+
+	exec $bin_sleep 2
+	send_user "\nSignal the job\n"
+	set cmd_str "$scancel -s SIGUSR1 $params $job_id"
+	spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]
+	expect {
+		eof {
+			wait
+		}
+	}
+
+	#
+	# Wait for completion
+	#
+	if {[wait_for_job $job_id DONE] != 0} {
+		send_user "\nFAILURE: error completing job $job_id\n"
+		cancel_job $job_id
+		return 1
+	}
+
+	set expected_script_signaled 0
+	set expected_parent_step_signaled 0
+	set expected_parent_command_signaled 0
+	set expected_child_step_signaled 0
+	set expected_child_command_signaled 0
+
+	if {$batch && !$full} {
+		set expected_script_signaled 1
+	} elseif {!$batch && !$full} {
+		set expected_parent_step_signaled 1
+		if {$proctracktype == "linuxproc" || $proctracktype == "pgid"} {
+			set expected_child_step_signaled 1
+		}
+	} else {
+		set expected_script_signaled 1
+		set expected_parent_step_signaled 1
+		set expected_parent_command_signaled 1
+		set expected_child_command_signaled 1
+		if {$proctracktype == "linuxproc" || $proctracktype == "pgid"} {
+			set expected_child_step_signaled 1
+		}
+	}
+
+	#
+	# Grep the output file for the signaled process
+	#
+	set script_signaled          0
+	set parent_step_signaled     0
+	set parent_command_signaled  0
+	set child_step_signaled      0
+	set child_command_signaled   0
+
+	if {[wait_for_file $file_out] == 0} {
+
+		spawn $bin_cat $file_out
+		expect {
+			-re "Signaled: ($alpha_numeric_under)" {
+				set signaled $expect_out(1,string)
+				if {$signaled == "script"} {
+					incr script_signaled
+				} elseif {$signaled == "parent_step"} {
+					incr parent_step_signaled
+				} elseif {$signaled == "parent_command"} {
+					incr parent_command_signaled
+				} elseif {$signaled == "child_step"} {
+					incr child_step_signaled
+				} elseif {$signaled == "child_command"} {
+					incr child_command_signaled
+				}
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+		if {$script_signaled != $expected_script_signaled} {
+			send_user "\nFAILURE: Script signaled mismatch with expected ($script_signaled != $expected_script_signaled)\n"
+			incr rc
+		}
+		if {$parent_step_signaled != $expected_parent_step_signaled} {
+			send_user "\nFAILURE: Parent step signaled mismatch with expected ($parent_step_signaled != $expected_parent_step_signaled)\n"
+			incr rc
+		}
+		if {$parent_command_signaled != $expected_parent_command_signaled} {
+			send_user "\nFAILURE: Parent command signaled mismatch with expected ($parent_command_signaled != $expected_parent_command_signaled)\n"
+			incr rc
+		}
+		if {$child_step_signaled != $expected_child_step_signaled} {
+			send_user "\nFAILURE: Child step signaled mismatch with expected ($child_step_signaled != $expected_child_step_signaled)\n"
+			incr rc
+		}
+		if {$child_command_signaled != $expected_child_command_signaled} {
+			send_user "\nFAILURE: Child command signaled mismatch with expected ($child_command_signaled != $expected_child_command_signaled)\n"
+			incr rc
+		}
+	} else {
+		send_user "\nERROR reading output file\n"
+		set rc 1
+	}
+
+	return $rc
 }
 
-if {$exit_code == 0} {
-	send_user "\nSUCCESS\n"
-	exec $bin_rm -f $file_in1 $file_in2 $file_out
+#
+# Run the tests
+#
+if {[test_signaling 0 0]} { # No options
+	log_error "TestCase: "
+	incr exit_code
+}
+
+if {[test_signaling 1 0]} { # batch only
+	log_error "TestCase: --batch"
+	incr exit_code
+}
+
+if {[test_signaling 0 1]} { # full only
+	log_error "TestCase: --full"
+	incr exit_code
+}
+
+if {[test_signaling 1 1]  != 0} { # both
+	log_error "TestCase: --full --batch"
+	incr exit_code
+}
+
+#
+# Cleaning
+#
+exec $bin_rm -f $file_in $file_out $file_prog
+
+#
+# Final results
+#
+if {!$exit_code} {
+	print_success $test_id
+} else {
+	print_failure $test_id
 }
 exit $exit_code

@@ -4590,12 +4590,11 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, bool batch,
 	bool sig_all_steps = true;
 	bool sig_batch_step = false;
 
-	if (flags & KILL_JOB_BATCH) {
+	if ((flags & KILL_JOB_BATCH) || (flags & KILL_FULL_JOB)) {
 		sig_all_steps = false;
 		sig_batch_step = true;
-	} else if (batch || (flags & KILL_FULL_JOB))
+	} else if (batch)
 		sig_batch_step = true;
-
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);

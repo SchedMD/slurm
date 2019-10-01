@@ -793,8 +793,16 @@ static int _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_list_msg_t *get_msg = msg->data;
 	char *comment = NULL;
 
-	rc = acct_storage_g_fix_runaway_jobs(slurmdbd_conn->db_conn, *uid,
-					     get_msg->my_list);
+	if (!_validate_operator(*uid, slurmdbd_conn))
+		rc = ESLURM_ACCESS_DENIED;
+	else
+		rc = acct_storage_g_fix_runaway_jobs(
+			slurmdbd_conn->db_conn, *uid, get_msg->my_list);
+
+	if (rc == ESLURM_ACCESS_DENIED) {
+		comment = "You must have an AdminLevel>=Operator to fix runaway jobs";
+		error("CONN:%u %s", slurmdbd_conn->conn->fd, comment);
+	}
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment,
@@ -1429,8 +1437,19 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 
 	debug2("DBD_GET_JOBS_COND: called");
 
+	/* fail early if requesting runaways and not super user */
+	if ((job_cond->flags & JOBCOND_FLAG_RUNAWAY) &&
+	    !_validate_operator(*uid, slurmdbd_conn)) {
+		debug("Rejecting query of runaways from uid %u", *uid);
+		*out_buffer = slurm_persist_make_rc_msg(
+			slurmdbd_conn->conn,
+			ESLURM_ACCESS_DENIED,
+			"You must have an AdminLevel>=Operator to fix runaway jobs",
+			DBD_GET_JOBS_COND);
+		return SLURM_ERROR;
+	}
 	/* fail early if too wide a query */
-	if (!job_cond->step_list && !_validate_slurm_user(*uid)
+	if (!job_cond->step_list && !_validate_operator(*uid, slurmdbd_conn)
 	    && (slurmdbd_conf->max_time_range != INFINITE)) {
 		time_t start, end;
 
