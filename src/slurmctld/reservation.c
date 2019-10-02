@@ -3826,7 +3826,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			;
 		} else if (list_find_first(job_ptr->details->feature_list,
 					   _have_xand_feature, &dummy)) {
-			/* Accumulate resoures by feature type/count */
+			/* Accumulate resources by feature type/count */
 			have_xand = true;
 			*resv_bitmap = _pick_idle_xand_nodes(node_bitmap,
 						resv_desc_ptr, core_bitmap,
