@@ -1,4 +1,4 @@
-.TH sdiag "1" "Slurm Commands" "May 2019" "Slurm Commands"
+.TH sdiag "1" "Slurm Commands" "October 2019" "Slurm Commands"
 
 .SH "NAME"
 .LP
@@ -241,6 +241,8 @@ microseconds.
 The fifth block reports the RPCs issued by user ID, the total number of RPCs
 they have issued, the total time consumed by all of those RPCs plus the average
 time consumed by each RPC in microseconds.
+RPCs statistics are collected for the life of the slurmctld process unless
+explicitly \fB\-\-reset\fR.
 
 .LP
 The sixth block of information, labeled Pending RPC Statistics, shows
