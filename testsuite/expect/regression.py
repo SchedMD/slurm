@@ -161,7 +161,7 @@ def main(argv=None):
             if first:
                 first = False
             else:
-                sys.stdout.write(', ')
+                sys.stdout.write(',')
             sys.stdout.write('%d.%d'%(test[0], test[1]))
         sys.stdout.write('\n')
         sys.stdout.flush()
