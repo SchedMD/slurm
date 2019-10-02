@@ -7,7 +7,7 @@ Slurm supports timesliced gang scheduling in which two or more jobs are
 allocated to the same resources and these jobs are alternately suspended to
 let one job at a time have dedicated access to the resources for a configured
 period of time.
-Slurm also supports preemptive priority job scheduling in which a a higher
+Slurm also supports preemptive priority job scheduling in which a higher
 priority job can preempt a lower priority one until the higher priority job
 completes.
 See the <a href="preempt.html">Preemption</a> document for more information.
