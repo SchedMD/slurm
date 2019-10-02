@@ -3725,7 +3725,7 @@ static int _have_xor_feature(void *x, void *key)
 /*
  * Given a reservation create request, select appropriate nodes for use
  * resv_desc_ptr IN - Reservation request, node_list field set on exit
- * part_ptr IN/OUT - Desired partion, if points to NULL then set to default part
+ * part_ptr IN/OUT - Desired partition, if NULL then set to default part
  * resv_bitmap IN/OUT - nodes to use, if points to NULL then used nodes in
  *		specified partition. Set to selected nodes on output.
  * core_bitmap OUT - cores allocated to reservation
