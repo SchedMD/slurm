@@ -173,7 +173,7 @@ extern void launch_prolog(struct job_record *job_ptr);
  * IN use_active - if set, then only consider nodes with the identified features
  *	active, otherwise use available features
  * IN/OUT node_bitmap - nodes available for use, clear if unusable
- * OUT has_xor - set if XOR/XAND found in feature expresion
+ * OUT has_xor - set if XOR/XAND found in feature expression
  * RET true if valid, false otherwise
  */
 extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
