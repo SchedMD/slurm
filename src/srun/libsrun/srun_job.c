@@ -1560,10 +1560,10 @@ _normalize_hostlist(const char *hostlist)
 
 static int _become_user (void)
 {
-	char *user = uid_to_string(opt.uid);
+	char *user;
 	gid_t gid = gid_from_uid(opt.uid);
 
-	if (xstrcmp(user, "nobody") == 0) {
+	if (!(user = uid_to_string_or_null(opt.uid))) {
 		xfree(user);
 		return (error ("Invalid user id %u: %m", opt.uid));
 	}
