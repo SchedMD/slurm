@@ -3521,15 +3521,23 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 			xfree(resv_ptr->node_list);
 			resv_ptr->node_list = bitmap2node_name(resv_ptr->
 							       node_bitmap);
-			info("modified reservation %s with replacement "
-				"nodes, new nodes: %s",
-				resv_ptr->name, resv_ptr->node_list);
+
+			if (log_it ||
+			    (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION)) {
+				char *kept = bitmap2node_name(preserve_bitmap);
+				verbose("%s: modified reservation %s with added:%s kept:%s",
+					__func__, resv_ptr->name,
+					resv_ptr->node_list,
+					(kept ? kept : "NONE"));
+				xfree(kept);
+			}
 			break;
 		}
 		add_nodes /= 2;	/* Try to get idle nodes as possible */
-		if (log_it) {
-			info("unable to replace all allocated nodes in "
-			     "reservation %s at this time", resv_ptr->name);
+		if (log_it ||
+		    (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION)) {
+			verbose("%s: unable to replace all allocated nodes in reservation %s at this time",
+				__func__, resv_ptr->name);
 			log_it = false;
 		}
 	}
@@ -4237,7 +4245,9 @@ static bitstr_t *_pick_node_cnt(bitstr_t *avail_bitmap,
 
 	total_node_cnt = bit_set_count(avail_bitmap);
 	if (total_node_cnt < node_cnt) {
-		verbose("reservation requests more nodes than are available");
+		verbose("%s: reservation %s requests %d of %d nodes",
+			__func__, resv_desc_ptr->name, node_cnt,
+			total_node_cnt);
 		return NULL;
 	} else if ((total_node_cnt == node_cnt) &&
 		   (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS)) {
@@ -4367,8 +4377,8 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 	}
 
 	if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
-		verbose("%pJ attempting to use reservation %s with floating start time",
-			job_ptr, resv_ptr->name);
+		verbose("%s: %pJ attempting to use reservation %s with floating start time",
+			__func__, job_ptr, resv_ptr->name);
 		return ESLURM_RESERVATION_ACCESS;
 	}
 
