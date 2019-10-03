@@ -156,6 +156,15 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 
 	if (!job->cont_id) {
 		/*
+		 * If we are forked then we can just use the pid from the fork
+		 * instead of using the thread method below.
+		 */
+		if (proctrack_forked) {
+			job->cont_id = (uint64_t)job_create(0, job->uid, 0);
+			goto endit;
+		}
+
+		/*
 		 * Since the cray job lib will create the container off the
 		 * process calling job_create we don't want to call it from
 		 * the main process since it will include all the threads
@@ -191,7 +200,7 @@ extern int proctrack_p_create(stepd_step_rec_t *job)
 			      job->cont_id, threadid);
 	} else
 		error("proctrack_p_create: already have a cont_id");
-
+endit:
 	END_TIMER;
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
@@ -219,8 +228,12 @@ int proctrack_p_add(stepd_step_rec_t *job, pid_t pid)
 	START_TIMER;
 
 try_again:
-	// Attach to the job container
-	if (job_attachpid(pid, job->cont_id) == (jid_t) -1) {
+	/*
+	 * If we aren't forked (pid was added in the job_create() call) this is
+	 * the time to add the pid to the job container.
+	 */
+	if (!proctrack_forked &&
+	    job_attachpid(pid, job->cont_id) == (jid_t) -1) {
 		if (errno == EINVAL && (count < 1)) {
 			jid_t jid;
 			if (proctrack_p_has_pid(job->cont_id, pid)) {

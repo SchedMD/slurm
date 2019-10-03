@@ -65,6 +65,8 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+bool proctrack_forked = false;
+
 typedef struct slurm_proctrack_ops {
 	int              (*create)    (stepd_step_rec_t * job);
 	int              (*add)       (stepd_step_rec_t * job, pid_t pid);

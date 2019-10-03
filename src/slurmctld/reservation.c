@@ -3619,7 +3619,7 @@ static int _have_xor_feature(void *x, void *key)
 /*
  * Given a reservation create request, select appropriate nodes for use
  * resv_desc_ptr IN - Reservation request, node_list field set on exit
- * part_ptr IN/OUT - Desired partion, if points to NULL then set to default part
+ * part_ptr IN/OUT - Desired partition, if NULL then set to default part
  * resv_bitmap IN/OUT - nodes to use, if points to NULL then used nodes in
  *		specified partition. Set to selected nodes on output.
  * core_bitmap OUT - cores allocated to reservation
@@ -3720,7 +3720,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			;
 		} else if (list_find_first(job_ptr->details->feature_list,
 					   _have_xand_feature, &dummy)) {
-			/* Accumulate resoures by feature type/count */
+			/* Accumulate resources by feature type/count */
 			have_xand = true;
 			*resv_bitmap = _pick_idle_xand_nodes(node_bitmap,
 						resv_desc_ptr, core_bitmap,

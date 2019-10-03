@@ -3735,12 +3735,12 @@ static bool _job_pack_deadlock_test(struct job_record *job_ptr)
 	 */
 	part_iter = list_iterator_create(deadlock_global_list);
 	while ((dl_part_ptr2 = (deadlock_part_struct_t *)list_next(part_iter))){
-		if (dl_part_ptr2 == dl_part_ptr)  /* Current partion, skip it */
+		if (dl_part_ptr2 == dl_part_ptr) /* Current partition, skip it */
 			continue;
 		dl_job_ptr2 = list_find_first(dl_part_ptr2->deadlock_job_list,
 					      _deadlock_part_list_srch,
 					      job_ptr);
-		if (!dl_job_ptr2)   /* Pack job not in this partion, no check */
+		if (!dl_job_ptr2) /* Pack job not in this partition, no check */
 			continue;
 		job_iter = list_iterator_create(dl_part_ptr->deadlock_job_list);
 		while ((dl_job_ptr2 = (deadlock_job_struct_t *)
