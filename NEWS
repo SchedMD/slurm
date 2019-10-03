@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.7
 ==========================
+ -- Fix handling of -m/--distribution options for across socket/2nd level by
+    task/affinity plugin.
 
 * Changes in Slurm 19.05.6
 ==========================
