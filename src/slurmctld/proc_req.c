@@ -3574,6 +3574,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 			_update_cred_key();
 			set_slurmctld_state_loc();
 			msg_to_slurmd(REQUEST_RECONFIGURE);
+			node_features_updated = true;
 		}
 		in_progress = false;
 		gs_reconfig();
