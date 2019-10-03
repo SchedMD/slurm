@@ -2890,6 +2890,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc.start_time  = resv_ptr->start_time;
 	resv_desc.end_time    = resv_ptr->end_time;
 	resv_desc.flags       = resv_ptr->flags;
+	resv_desc.name        = resv_ptr->name;
 	if (_resv_overlap(&resv_desc, resv_ptr->node_bitmap, resv_ptr)) {
 		info("Reservation %s request overlaps another",
 		     resv_desc_ptr->name);
@@ -3485,6 +3486,7 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 		resv_desc.end_time    = resv_ptr->end_time;
 		resv_desc.features    = resv_ptr->features;
 		resv_desc.flags       = resv_ptr->flags;
+		resv_desc.name        = resv_ptr->name;
 		if (!resv_ptr->full_nodes) {
 			resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 			resv_desc.core_cnt[0] = resv_ptr->core_cnt;
@@ -3572,6 +3574,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	resv_desc.end_time   = resv_ptr->end_time;
 	resv_desc.features   = resv_ptr->features;
 	resv_desc.flags      = resv_ptr->flags;
+	resv_desc.name       = resv_ptr->name;
 	if (!resv_ptr->full_nodes) {
 		resv_desc.core_cnt = xcalloc(2, sizeof(uint32_t));
 		resv_desc.core_cnt[0] = resv_ptr->core_cnt;
@@ -3809,6 +3812,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	resv_desc.flags      = resv_ptr->flags;
 	resv_desc.node_cnt   = xcalloc(2, sizeof(uint32_t));
 	resv_desc.node_cnt[0]= 0 - delta_node_cnt;
+	resv_desc.name       = resv_ptr->name;
 
 	/* Exclude self reserved nodes only if reservation contains any nodes */
 	if (resv_ptr->node_bitmap) {
