@@ -1181,6 +1181,16 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	}
 	list_append(ret_list, key_pair);
 
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PrEpParameters");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->prep_params);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("PrEpPlugins");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->prep_plugins);
+	list_append(ret_list, key_pair);
+
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PriorityParameters");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->priority_params);

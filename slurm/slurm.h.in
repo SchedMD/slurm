@@ -2758,6 +2758,8 @@ typedef struct slurm_ctl_conf {
 	uint32_t preempt_exempt_time; /* Time before jobs are preemptable */
 	uint16_t preempt_mode;	/* See PREEMPT_MODE_* in slurm/slurm.h */
 	char *preempt_type;	/* job preemption selection plugin */
+	char *prep_params;	/* PrEp parameters */
+	char *prep_plugins;	/* PrEp plugins */
 	uint32_t priority_decay_hl; /* priority decay half life in
 				     * seconds */
 	uint32_t priority_calc_period; /* seconds between priority decay

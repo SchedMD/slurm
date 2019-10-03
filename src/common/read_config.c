@@ -303,6 +303,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"PreemptMode", S_P_STRING},
 	{"PreemptType", S_P_STRING},
 	{"PreemptExemptTime", S_P_STRING},
+	{"PrEpParameters", S_P_STRING},
+	{"PrEpPlugins", S_P_STRING},
 	{"PriorityDecayHalfLife", S_P_STRING},
 	{"PriorityCalcPeriod", S_P_STRING},
 	{"PriorityFavorSmall", S_P_BOOLEAN},
@@ -4140,6 +4142,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			return SLURM_ERROR;
 		}
 	}
+
+	(void) s_p_get_string(&conf->prep_params, "PrEpParameters", hashtbl);
+	if (!s_p_get_string(&conf->prep_plugins, "PrEpPlugins", hashtbl))
+		conf->prep_plugins = xstrdup(DEFAULT_PREP_PLUGINS);
 
 	if (s_p_get_string(&temp_str, "PriorityDecayHalfLife", hashtbl)) {
 		int max_time = time_str2mins(temp_str);

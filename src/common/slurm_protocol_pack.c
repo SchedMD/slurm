@@ -5847,6 +5847,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->preempt_mode, buffer);
 		packstr(build_ptr->preempt_type, buffer);
 		pack32(build_ptr->preempt_exempt_time, buffer);
+		packstr(build_ptr->prep_params, buffer);
+		packstr(build_ptr->prep_plugins, buffer);
 
 		pack32(build_ptr->priority_decay_hl, buffer);
 		pack32(build_ptr->priority_calc_period, buffer);
@@ -6794,6 +6796,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->preempt_type,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&build_ptr->preempt_exempt_time, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->prep_params,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->prep_plugins,
+				       &uint32_tmp, buffer);
 
 		safe_unpack32(&build_ptr->priority_decay_hl, buffer);
 		safe_unpack32(&build_ptr->priority_calc_period, buffer);
