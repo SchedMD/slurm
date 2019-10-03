@@ -31,6 +31,9 @@ documents those changes that are of interest to users and administrators.
  -- Append ": reboot issued" to node reason when reboot is issued from
     controller. Previously only happened when nextstate was specified.
 
+* Changes in Slurm 19.05.4
+==========================
+
 * Changes in Slurm 19.05.3
 ==========================
  -- Fix missing check from conversion of cray -> cray_aries.
