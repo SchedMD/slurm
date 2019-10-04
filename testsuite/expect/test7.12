@@ -100,7 +100,7 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	exit 1
 }
 # wait for job step to start
-sleep 2
+sleep 5
 set debug 0
 if {$debug} {
 	spawn $sstat -j $job_id
