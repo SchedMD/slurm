@@ -4040,16 +4040,14 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 					   core_bitmap);
 	}
 	FREE_NULL_BITMAP(node_bitmap);
-	if (*resv_bitmap == NULL) {
-		if (rc == SLURM_SUCCESS)
-			rc = ESLURM_NODES_BUSY;
-		return rc;
-	}
+	/* No idle nodes found */
+	if ((*resv_bitmap == NULL) && (rc == SLURM_SUCCESS))
+		rc = ESLURM_NODES_BUSY;
 
 	if (!resv_desc_ptr->node_list)
 		resv_desc_ptr->node_list = bitmap2node_name(*resv_bitmap);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static bitstr_t *_pick_idle_xand_nodes(bitstr_t *avail_bitmap,
