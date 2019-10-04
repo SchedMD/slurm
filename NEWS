@@ -1,8 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 19.05.4
-==========================
+* Changes in Slurm 19.05.3-2
+============================
+ -- Fix missing include for Cray Aries systems.
 
 * Changes in Slurm 19.05.3
 ==========================
