@@ -57,6 +57,7 @@
 #include "src/common/macros.h"
 #include "src/common/timers.h"
 
+#include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 
