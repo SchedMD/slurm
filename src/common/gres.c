@@ -14416,7 +14416,8 @@ extern char *gres_flags2str(uint8_t config_flags)
  */
 extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 			     int cpu_cnt, char *cpu_aff_abs_range,
-			     char *device_file, char *type, char *links)
+			     bitstr_t *cpu_aff_mac_bitstr, char *device_file,
+			     char *type, char *links)
 {
 	gres_slurmd_conf_t *gpu_record;
 	bool use_empty_first_record = false;
@@ -14433,20 +14434,8 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 	else
 		gpu_record = xmalloc(sizeof(gres_slurmd_conf_t));
 	gpu_record->cpu_cnt = cpu_cnt;
-	gpu_record->cpus_bitmap = bit_alloc(gpu_record->cpu_cnt);
-	if (bit_unfmt(gpu_record->cpus_bitmap, cpu_aff_abs_range)) {
-		error("%s: bit_unfmt(dst_bitmap, src_str) failed", __func__);
-		error("    Is the CPU range larger than the CPU count allows?");
-		error("    src_str: %s", cpu_aff_abs_range);
-		error("    dst_bitmap_size: %"BITSTR_FMT,
-		      bit_size(gpu_record->cpus_bitmap));
-		error("    cpu_cnt: %d", gpu_record->cpu_cnt);
-		bit_free(gpu_record->cpus_bitmap);
-		if (!use_empty_first_record)
-			xfree(gpu_record);
-		list_iterator_destroy(itr);
-		return;
-	}
+	if (cpu_aff_mac_bitstr)
+		gpu_record->cpus_bitmap = bit_copy(cpu_aff_mac_bitstr);
 	if (device_file)
 		gpu_record->config_flags |= GRES_CONF_HAS_FILE;
 	if (type)
