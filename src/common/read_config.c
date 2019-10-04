@@ -2718,6 +2718,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->power_parameters);
 	xfree (ctl_conf_ptr->power_plugin);
 	xfree (ctl_conf_ptr->preempt_type);
+	xfree(ctl_conf_ptr->prep_params);
+	xfree(ctl_conf_ptr->prep_plugins);
 	xfree (ctl_conf_ptr->priority_params);
 	xfree (ctl_conf_ptr->priority_type);
 	xfree (ctl_conf_ptr->priority_weight_tres);
