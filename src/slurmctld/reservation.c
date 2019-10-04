@@ -2302,7 +2302,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	if (rc != SLURM_SUCCESS)
 		goto bad_parse;
 
-	if (resv_desc_ptr->name) {
+	/* If name == NULL or empty string, then generate a name. */
+	if (resv_desc_ptr->name && (resv_desc_ptr->name[0] != '\0')) {
 		resv_ptr = (slurmctld_resv_t *) list_find_first (resv_list,
 				_find_resv_name, resv_desc_ptr->name);
 		if (resv_ptr) {
@@ -2312,6 +2313,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 		}
 	} else {
+		xfree(resv_desc_ptr->name);
 		while (1) {
 			_generate_resv_name(resv_desc_ptr);
 			resv_ptr = (slurmctld_resv_t *)

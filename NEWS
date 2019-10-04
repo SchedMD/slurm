@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.4
 ==========================
+ -- Don't allow empty string as a reservation name; generate a name if empty
+    string is provided.
 
 * Changes in Slurm 19.05.3-2
 ============================
