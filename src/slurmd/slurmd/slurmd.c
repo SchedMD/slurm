@@ -1087,7 +1087,7 @@ _read_config(void)
 		fatal("Unable to establish controller port");
 	conf->slurmd_timeout = cf->slurmd_timeout;
 	conf->kill_wait = cf->kill_wait;
-	conf->use_pam = cf->use_pam;
+	conf->use_pam = cf->conf_flags & CTL_CONF_PAM;
 	conf->task_plugin_param = cf->task_plugin_param;
 	conf->health_check_interval = cf->health_check_interval;
 

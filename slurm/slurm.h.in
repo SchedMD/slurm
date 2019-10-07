@@ -2616,6 +2616,7 @@ typedef struct reservation_name_msg {
 #define CTL_CONF_SJC            0x00000002 /* AccountingStoreJobComment */
 #define CTL_CONF_DRJ            0x00000004 /* DisableRootJobs */
 #define CTL_CONF_ASRU           0x00000008 /* AllowSpecResourcesUsage */
+#define CTL_CONF_PAM            0x00000010 /* UsePam */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
@@ -2884,7 +2885,6 @@ typedef struct slurm_ctl_conf {
 	uint16_t unkillable_timeout; /* time in seconds, after processes in a
 				      * job step have been signaled, before
 				      * they are considered "unkillable". */
-	uint16_t use_pam;	/* enable/disable PAM support */
 	char *version;		/* version of slurmctld */
 	uint16_t vsize_factor;	/* virtual memory limit size factor */
 	uint16_t wait_time;	/* default job --wait time */

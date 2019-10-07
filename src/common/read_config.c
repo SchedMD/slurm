@@ -2968,7 +2968,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->tree_width       		= NO_VAL16;
 	xfree (ctl_conf_ptr->unkillable_program);
 	ctl_conf_ptr->unkillable_timeout        = NO_VAL16;
-	ctl_conf_ptr->use_pam			= 0;
 	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= NO_VAL16;
 	xfree (ctl_conf_ptr->x11_params);
@@ -4855,11 +4854,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->tree_width = DEFAULT_TREE_WIDTH;
 	}
 
-	if (s_p_get_boolean(&truth, "UsePAM", hashtbl) && truth) {
-		conf->use_pam = 1;
-	} else {
-		conf->use_pam = 0;
-	}
+	if (s_p_get_boolean(&truth, "UsePAM", hashtbl) && truth)
+		conf->conf_flags |= CTL_CONF_PAM;
 
 	s_p_get_string(&conf->unkillable_program,
 		       "UnkillableStepProgram", hashtbl);

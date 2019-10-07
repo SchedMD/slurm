@@ -389,7 +389,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if (conf->unkillable_program)
 		STORE_FIELD(hv, conf, unkillable_program, charp);
 	STORE_FIELD(hv, conf, unkillable_timeout, uint16_t);
-	STORE_FIELD(hv, conf, use_pam, uint16_t);
 	if (conf->version)
 		STORE_FIELD(hv, conf, version, charp);
 	STORE_FIELD(hv, conf, vsize_factor, uint16_t);
@@ -629,7 +628,6 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, tree_width, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, unkillable_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, unkillable_timeout, uint16_t, TRUE);
-	FETCH_FIELD(hv, conf, use_pam, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, version, charp, FALSE);
 	FETCH_FIELD(hv, conf, vsize_factor, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, wait_time, uint16_t, TRUE);
