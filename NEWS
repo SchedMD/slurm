@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't allow empty string as a reservation name; generate a name if empty
     string is provided.
  -- Fix salloc segfault when using --no-shell option.
+ -- Fix divide by zero when normalizing partition priorities.
 
 * Changes in Slurm 19.05.3-2
 ============================
