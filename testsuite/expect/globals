@@ -1015,20 +1015,24 @@ proc wait_for_all_jobs { job_name incr_sleep } {
 
 ################################################################
 #
-# Proc: test_fast_schedule
+# Proc: test_config_overrides
 #
-# Returns value of FastSchedule from slurm.conf
+# Returns if SlurmdParameters=config_overrides in slurm.conf
 #
 ################################################################
-proc test_fast_schedule { } {
-	global scontrol number
+proc test_config_overrides { } {
+	global scontrol alpha_numeric_comma
 
 	log_user 0
-	set fast_schedule -1
+	set config_overrides 0
 	spawn $scontrol show config
 	expect {
-		-re "FastSchedule *= ($number)" {
-			set fast_schedule $expect_out(1,string)
+		-re "SlurmdParameters *= *($alpha_numeric_comma)" {
+			if { [string first "config_overrides" $expect_out(1,string)] != -1} {
+				set config_overrides 1
+			} else {
+				set config_overrides 0
+			}
 			exp_continue
 		}
 		eof {
@@ -1037,7 +1041,7 @@ proc test_fast_schedule { } {
 	}
 
 	log_user 1
-	return $fast_schedule
+	return $config_overrides
 }
 
 ################################################################

@@ -37,7 +37,6 @@ source ./globals
 # - the first node selected has frequency scaling, wih ondemand and userspace
 # - all cpus on a node have the same scaling options.
 # - task affinity either cgroups or cpusets
-# - fastschedule=0
 
 set test_id	"1.76"
 set nerr	0
@@ -255,8 +254,8 @@ if {[test_cpu_affinity_or_cgroup] == 0} {
 	send_user "\nWARNING: This test requires some form of task affinity\n"
 	exit 0
 }
-if {[test_fast_schedule] != 0} {
-	send_user "\nWARNING: FastSchedule=0 is recommended.\n"
+if {[test_config_overrides]} {
+	send_user "\nWARNING: SlurmdParameters=config_overrides is discouraged.\n"
 	send_user "         Proceeding assuming that the number of CPUs declared is accurate.\n"
 }
 log_user 0
