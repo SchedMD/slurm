@@ -94,7 +94,6 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_ACCT_GATHER_FILESYSTEM_TYPE "acct_gather_filesystem/none"
 #define ACCOUNTING_STORAGE_TYPE_NONE "accounting_storage/none"
 #define DEFAULT_CORE_SPEC_PLUGIN    "core_spec/none"
-#define DEFAULT_DISABLE_ROOT_JOBS   0
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #define DEFAULT_JOB_CKPT_DIR        "/var/slurm/checkpoint"
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"

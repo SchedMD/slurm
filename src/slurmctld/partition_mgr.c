@@ -896,7 +896,7 @@ int init_part_conf(void)
 	xfree(default_part.name);	/* needed for reconfig */
 	default_part.name           = xstrdup("DEFAULT");
 	default_part.flags          = 0;
-	if (slurmctld_conf.disable_root_jobs)
+	if (slurmctld_conf.conf_flags & CTL_CONF_DRJ)
 		default_part.flags |= PART_FLAG_NO_ROOT;
 	default_part.max_time       = INFINITE;
 	default_part.default_time   = NO_VAL;

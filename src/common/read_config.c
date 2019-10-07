@@ -2823,7 +2823,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->cred_type);
 	ctl_conf_ptr->def_mem_per_cpu           = 0;
 	ctl_conf_ptr->debug_flags		= 0;
-	ctl_conf_ptr->disable_root_jobs         = 0;
 	ctl_conf_ptr->acct_gather_node_freq	= 0;
 	xfree (ctl_conf_ptr->acct_gather_energy_type);
 	xfree (ctl_conf_ptr->acct_gather_profile_type);
@@ -3546,9 +3545,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else	/* Default: no DebugFlags */
 		conf->debug_flags = 0;
 
-	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs,
-			     "DisableRootJobs", hashtbl))
-		conf->disable_root_jobs = DEFAULT_DISABLE_ROOT_JOBS;
+	if (s_p_get_boolean(&truth, "DisableRootJobs", hashtbl) && truth)
+		conf->conf_flags |= CTL_CONF_DRJ;
 
 	if (s_p_get_string(&temp_str,
 			   "EnforcePartLimits", hashtbl)) {
