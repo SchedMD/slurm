@@ -2969,7 +2969,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->unkillable_program);
 	ctl_conf_ptr->unkillable_timeout        = NO_VAL16;
 	ctl_conf_ptr->use_pam			= 0;
-	ctl_conf_ptr->use_spec_resources	= 0;
 	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= NO_VAL16;
 	xfree (ctl_conf_ptr->x11_params);
@@ -3426,10 +3425,11 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "AcctGatherNodeFreq", hashtbl))
 		conf->acct_gather_node_freq = 0;
 
-	if (s_p_get_boolean(&truth, "AllowSpecResourcesUsage", hashtbl))
-		conf->use_spec_resources = truth;
-	else
-		conf->use_spec_resources = DEFAULT_ALLOW_SPEC_RESOURCE_USAGE;
+	if (s_p_get_boolean(&truth, "AllowSpecResourcesUsage", hashtbl)) {
+		if (truth)
+			conf->conf_flags |= CTL_CONF_ASRU;
+	} else if (DEFAULT_ALLOW_SPEC_RESOURCE_USAGE)
+		conf->conf_flags |= CTL_CONF_ASRU;
 
 	(void) s_p_get_string(&default_storage_type, "DefaultStorageType",
 			      hashtbl);

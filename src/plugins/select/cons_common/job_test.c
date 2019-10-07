@@ -2200,7 +2200,7 @@ extern int common_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 	uint16_t job_node_req;
 	char tmp[128];
 
-	if (slurm_get_use_spec_resources() == 0)
+	if (!(slurmctld_conf.conf_flags & CTL_CONF_ASRU))
 		job_ptr->details->core_spec = NO_VAL16;
 	if ((job_ptr->details->core_spec != NO_VAL16) &&
 	    (job_ptr->details->whole_node != 1)) {

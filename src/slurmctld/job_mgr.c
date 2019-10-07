@@ -7893,7 +7893,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	}
 	if (job_desc->contiguous != NO_VAL16)
 		detail_ptr->contiguous = job_desc->contiguous;
-	if (slurm_get_use_spec_resources())
+	if (slurmctld_conf.conf_flags & CTL_CONF_ASRU)
 		detail_ptr->core_spec = job_desc->core_spec;
 	else
 		detail_ptr->core_spec = NO_VAL16;
@@ -12568,7 +12568,8 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 	if (job_specs->core_spec != NO_VAL16) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (operator && slurm_get_use_spec_resources()) {
+		else if (operator &&
+			 (slurmctld_conf.conf_flags & CTL_CONF_ASRU)) {
 			if (job_specs->core_spec == INFINITE16)
 				detail_ptr->core_spec = NO_VAL16;
 			else

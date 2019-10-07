@@ -1460,23 +1460,6 @@ extern uint16_t slurm_get_track_wckey(void)
 	return track_wckey;
 }
 
-/* slurm_get_use_spec_resources
- * returns the value of use_spec_resources in slurmctld_conf object
- */
-extern uint16_t slurm_get_use_spec_resources(void)
-{
-	uint16_t use_spec_val = 0;
-	slurm_ctl_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		use_spec_val = conf->use_spec_resources;
-		slurm_conf_unlock();
-	}
-	return use_spec_val;
-}
-
 /* slurm_set_tree_width
  * sets the value of tree_width in slurmctld_conf object
  * RET 0 or error code

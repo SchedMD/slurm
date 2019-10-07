@@ -5959,7 +5959,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->tree_width, buffer);
 
 		pack16(build_ptr->use_pam, buffer);
-		pack16(build_ptr->use_spec_resources, buffer);
 		packstr(build_ptr->unkillable_program, buffer);
 		pack16(build_ptr->unkillable_timeout, buffer);
 		packstr(build_ptr->version, buffer);
@@ -6255,7 +6254,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->tree_width, buffer);
 
 		pack16(build_ptr->use_pam, buffer);
-		pack16(build_ptr->use_spec_resources, buffer);
+		pack16((build_ptr->conf_flags & CTL_CONF_ASRU) ? 1 : 0, buffer);
 		packstr(build_ptr->unkillable_program, buffer);
 		pack16(build_ptr->unkillable_timeout, buffer);
 		packstr(build_ptr->version, buffer);
@@ -6548,7 +6547,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->tree_width, buffer);
 
 		pack16(build_ptr->use_pam, buffer);
-		pack16(build_ptr->use_spec_resources, buffer);
+		pack16((build_ptr->conf_flags & CTL_CONF_ASRU) ? 1 : 0, buffer);
 		packstr(build_ptr->unkillable_program, buffer);
 		pack16(build_ptr->unkillable_timeout, buffer);
 		packstr(build_ptr->version, buffer);
@@ -6966,7 +6965,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->tree_width, buffer);
 
 		safe_unpack16(&build_ptr->use_pam, buffer);
-		safe_unpack16(&build_ptr->use_spec_resources, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->unkillable_program,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->unkillable_timeout, buffer);
@@ -7370,7 +7368,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->tree_width, buffer);
 
 		safe_unpack16(&build_ptr->use_pam, buffer);
-		safe_unpack16(&build_ptr->use_spec_resources, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp == 1)
+			build_ptr->conf_flags |= CTL_CONF_ASRU;
 		safe_unpackstr_xmalloc(&build_ptr->unkillable_program,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->unkillable_timeout, buffer);
@@ -7769,7 +7769,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->tree_width, buffer);
 
 		safe_unpack16(&build_ptr->use_pam, buffer);
-		safe_unpack16(&build_ptr->use_spec_resources, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp == 1)
+			build_ptr->conf_flags |= CTL_CONF_ASRU;
 		safe_unpackstr_xmalloc(&build_ptr->unkillable_program,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->unkillable_timeout, buffer);

@@ -518,11 +518,6 @@ extern char *slurm_get_comm_parameters(void);
  */
 extern char *slurm_get_cred_type(void);
 
-/* slurm_get_use_spec_resources
- * returns the value of use_spec_resources in slurmctld_conf object
- */
-extern uint16_t slurm_get_use_spec_resources(void);
-
 /* slurm_get_power_parameters
  * returns the PowerParameters from slurmctld_conf object
  * RET char *    - PowerParameters, MUST be xfreed by caller

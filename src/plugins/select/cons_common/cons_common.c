@@ -777,7 +777,7 @@ extern bitstr_t **common_mark_avail_cores(
 	int rem_core_spec, node_core_spec, thread_spec = 0;
 	struct node_record *node_ptr;
 	bitstr_t *core_map = NULL;
-	uint16_t use_spec_cores = slurm_get_use_spec_resources();
+	uint16_t use_spec_cores = slurmctld_conf.conf_flags & CTL_CONF_ASRU;
 	node_res_record_t *node_res_ptr = NULL;
 	uint32_t coff;
 
