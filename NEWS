@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     string is provided.
  -- Fix salloc segfault when using --no-shell option.
  -- Fix divide by zero when normalizing partition priorities.
+ -- Restore ability to set JobPriorityFactor to 0 on a partition.
 
 * Changes in Slurm 19.05.3-2
 ============================
