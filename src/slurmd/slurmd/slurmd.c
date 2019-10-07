@@ -861,16 +861,14 @@ _read_config(void)
 	slurm_ctl_conf_t *cf = NULL;
 	int cc;
 	bool cgroup_mem_confinement = false;
-	bool config_overrides = false;
 
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
+	bool config_overrides = false;
 #endif
 
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
-
-	config_overrides = cf->conf_flags & CTL_CONF_OR;
 
 	xfree(conf->auth_info);
 	conf->auth_info = xstrdup(cf->authinfo);
@@ -987,6 +985,7 @@ _read_config(void)
 	 * configuration file because the slurmctld creates bitmaps
 	 * for scheduling before these nodes check in.
 	 */
+	config_overrides = cf->conf_flags & CTL_CONF_OR;
 	if (!config_overrides && (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
 		conf->boards  = conf->actual_boards;
