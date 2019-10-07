@@ -2612,6 +2612,8 @@ typedef struct reservation_name_msg {
 #define PROLOG_FLAG_SERIAL 	0x0008 /* serially execute prolog/epilog */
 #define PROLOG_FLAG_X11		0x0010 /* enable slurm x11 forwarding support */
 
+#define CTL_CONF_OR             0x00000001 /*SlurmdParameters=config_overrides*/
+
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
 #define LOG_FMT_RFC5424_MS      2
@@ -2656,6 +2658,8 @@ typedef struct slurm_ctl_conf {
 	char *comm_params;     /* Communication parameters */
 	uint16_t complete_wait;	/* seconds to wait for job completion before
 				 * scheduling another job */
+	uint32_t conf_flags;   	/* various CTL_CONF_* flags to determine
+				 * settings */
 	char **control_addr;	/* comm path of slurmctld
 				 * primary server and backups */
 	uint32_t control_cnt;	/* Length of control_addr & control_machine */
@@ -2677,8 +2681,6 @@ typedef struct slurm_ctl_conf {
 	char *ext_sensors_type; /* external sensors plugin type */
 	uint16_t ext_sensors_freq; /* secs between ext sensors sampling */
 	void *ext_sensors_conf; /* external sensors config file*/
-	uint16_t fast_schedule;	/* 1 to *not* check configurations by node
-				 * (only check configuration file, faster) */
 	char *fed_params;       /* Federation parameters */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint16_t fs_dampening_factor; /* dampening for Fairshare factor */

@@ -1782,7 +1782,7 @@ static void _gres_reconfig(bool reconfig)
 				node_ptr->config_ptr->threads,
 				node_ptr->config_ptr->cores,
 				node_ptr->config_ptr->sockets,
-				slurmctld_conf.fast_schedule, NULL);
+				slurmctld_conf.conf_flags & CTL_CONF_OR, NULL);
 		}
 	}
 }

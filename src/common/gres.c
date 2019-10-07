@@ -254,7 +254,7 @@ static int	_node_config_init(char *node_name, char *orig_config,
 				  gres_state_t *gres_ptr);
 static char *	_node_gres_used(void *gres_data, char *gres_name);
 static int	_node_reconfig(char *node_name, char *new_gres, char **gres_str,
-			       gres_state_t *gres_ptr, uint16_t fast_schedule,
+			       gres_state_t *gres_ptr, bool config_overrides,
 			       slurm_gres_context_t *context_ptr,
 			       bool *updated_gpu_cnt);
 static int	_node_reconfig_test(char *node_name, char *new_gres,
@@ -303,7 +303,7 @@ static void	_validate_links(gres_slurmd_conf_t *p);
 static void	_validate_gres_node_cores(gres_node_state_t *node_gres_ptr,
 					  int cpus_ctld, char *node_name);
 static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
-				 uint16_t fast_schedule, char **reason_down);
+				 bool config_overrides, char **reason_down);
 
 extern uint32_t gres_plugin_build_id(char *name)
 {
@@ -2152,7 +2152,7 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 }
 
 static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
-			    uint16_t fast_schedule, char **reason_down)
+			    bool config_overrides, char **reason_down)
 {
 	int i, j;
 	uint64_t model_cnt;
@@ -2177,7 +2177,7 @@ static int _valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 					      gres_data->topo_gres_cnt_avail[j];
 			}
 		}
-		if (fast_schedule >= 2) {
+		if (config_overrides) {
 			gres_data->type_cnt_avail[i] = model_cnt;
 		} else if (model_cnt < gres_data->type_cnt_avail[i]) {
 			if (reason_down) {
@@ -2476,7 +2476,7 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_data,
 static int _node_config_validate(char *node_name, char *orig_config,
 				 gres_state_t *gres_ptr,
 				 int cpu_cnt, int core_cnt, int sock_cnt,
-				 uint16_t fast_schedule, char **reason_down,
+				 bool config_overrides, char **reason_down,
 				 slurm_gres_context_t *context_ptr)
 {
 	int cpus_config = 0, i, j, gres_inx, rc = SLURM_SUCCESS;
@@ -2498,7 +2498,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 
 	gres_cnt = _get_tot_gres_cnt(context_ptr->plugin_id, &topo_cnt,
 				     &config_type_cnt);
-	if ((gres_data->gres_cnt_config > gres_cnt) && (fast_schedule == 1)) {
+	if ((gres_data->gres_cnt_config > gres_cnt) && !config_overrides) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
 				   "%s count reported lower than configured "
@@ -2508,7 +2508,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		}
 		rc = EINVAL;
 	}
-	if ((gres_cnt > gres_data->gres_cnt_config) && (fast_schedule != 0)) {
+	if ((gres_cnt > gres_data->gres_cnt_config)) {
 		debug("%s: %s: Ignoring excess count on node %s (%"
 		      PRIu64" > %"PRIu64")",
 		      __func__, context_ptr->gres_type, node_name, gres_cnt,
@@ -2551,7 +2551,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 	}
 	if (!updated_config)
 		return rc;
-	if ((gres_cnt > gres_data->gres_cnt_config) && (fast_schedule == 2)) {
+	if ((gres_cnt > gres_data->gres_cnt_config) && config_overrides) {
 		info("%s: %s: count on node %s inconsistent with slurmctld count (%"PRIu64" != %"PRIu64")",
 		     __func__, context_ptr->gres_type, node_name,
 		     gres_cnt, gres_data->gres_cnt_config);
@@ -2804,12 +2804,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			      context_ptr->gres_name_colon_len);
 	}
 
-	if (fast_schedule > 0)
-		gres_data->gres_cnt_avail = gres_data->gres_cnt_config;
-	else if (gres_data->gres_cnt_found != NO_VAL64)
-		gres_data->gres_cnt_avail = gres_data->gres_cnt_found;
-	else if (gres_data->gres_cnt_avail == NO_VAL64)
-		gres_data->gres_cnt_avail = 0;
+	gres_data->gres_cnt_avail = gres_data->gres_cnt_config;
 
 	if (has_file) {
 		uint64_t gres_bits;
@@ -2831,10 +2826,10 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		_gres_bit_alloc_resize(gres_data, gres_bits);
 	}
 
-	if ((config_type_cnt > 1) && (fast_schedule > 0) &&
+	if ((config_type_cnt > 1) &&
 	    !_valid_gres_types(context_ptr->gres_type, gres_data, reason_down)){
 		rc = EINVAL;
-	} else if ((fast_schedule == 1) &&
+	} else if (!config_overrides &&
 		   (gres_data->gres_cnt_found < gres_data->gres_cnt_config)) {
 		if (reason_down && (*reason_down == NULL)) {
 			xstrfmtcat(*reason_down,
@@ -2845,9 +2840,9 @@ static int _node_config_validate(char *node_name, char *orig_config,
 		}
 		rc = EINVAL;
 	} else if (_valid_gres_type(context_ptr->gres_type, gres_data,
-				    fast_schedule, reason_down)) {
+				    config_overrides, reason_down)) {
 		rc = EINVAL;
-	} else if ((fast_schedule == 2) && gres_data->topo_cnt &&
+	} else if (config_overrides && gres_data->topo_cnt &&
 		   (gres_data->gres_cnt_found != gres_data->gres_cnt_config)) {
 		error("%s on node %s configured for %"PRIu64" resources but "
 		      "%"PRIu64" found, ignoring topology support",
@@ -2883,14 +2878,15 @@ static int _node_config_validate(char *node_name, char *orig_config,
  * Called immediately after gres_plugin_node_config_unpack().
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from merged slurm.conf/gres.conf
- * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
+ * IN/OUT new_config - Updated gres info from slurm.conf
  * IN/OUT gres_list - List of Gres records for this node to track usage
  * IN threads_per_core - Count of CPUs (threads) per core on this node
  * IN cores_per_sock - Count of cores per socket on this node
  * IN sock_cnt - Count of sockets on this node
- * IN fast_schedule - 0: Validate and use actual hardware configuration
- *		      1: Validate hardware config, but use slurm.conf config
- *		      2: Don't validate hardware, use slurm.conf configuration
+ * IN config_overrides - true: Don't validate hardware, use slurm.conf
+ *                             configuration
+ *		         false: Validate hardware config, but use slurm.conf
+ *                              config
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
 extern int gres_plugin_node_config_validate(char *node_name,
@@ -2899,7 +2895,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    List *gres_list,
 					    int threads_per_core,
 					    int cores_per_sock, int sock_cnt,
-					    uint16_t fast_schedule,
+					    bool config_overrides,
 					    char **reason_down)
 {
 	int i, rc, rc2;
@@ -2928,7 +2924,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 		}
 		rc2 = _node_config_validate(node_name, orig_config,
 					    gres_ptr, cpu_cnt, core_cnt,
-					    sock_cnt, fast_schedule,
+					    sock_cnt, config_overrides,
 					    reason_down, &gres_context[i]);
 		rc = MAX(rc, rc2);
 		if (gres_ptr->plugin_id == gpu_plugin_id)
@@ -3087,7 +3083,7 @@ static int _node_reconfig_test(char *node_name, char *new_gres,
 }
 
 static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
-			  gres_state_t *gres_ptr, uint16_t fast_schedule,
+			  gres_state_t *gres_ptr, bool config_overrides,
 			  slurm_gres_context_t *context_ptr,
 			  bool *updated_gpu_cnt)
 {
@@ -3115,7 +3111,7 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 	context_ptr->total_cnt -= orig_cnt;
 	context_ptr->total_cnt += gres_data->gres_cnt_config;
 
-	if ((gres_data->gres_cnt_config == 0) || (fast_schedule > 0))
+	if (!gres_data->gres_cnt_config)
 		gres_data->gres_cnt_avail = gres_data->gres_cnt_config;
 	else if (gres_data->gres_cnt_found != NO_VAL64)
 		gres_data->gres_cnt_avail = gres_data->gres_cnt_found;
@@ -3451,9 +3447,10 @@ static void _build_node_gres_str(List *gres_list, char **gres_str,
  * IN new_gres - Updated GRES information supplied from slurm.conf or scontrol
  * IN/OUT gres_str - Node's current GRES string, updated as needed
  * IN/OUT gres_list - List of Gres records for this node to track usage
- * IN fast_schedule - 0: Validate and use actual hardware configuration
- *		      1: Validate hardware config, but use slurm.conf config
- *		      2: Don't validate hardware, use slurm.conf configuration
+ * IN config_overrides - true: Don't validate hardware, use slurm.conf
+ *                             configuration
+ *		         false: Validate hardware config, but use slurm.conf
+ *                              config
  * IN cores_per_sock - Number of cores per socket on this node
  * IN sock_per_node - Total count of sockets on this node (on any board)
  */
@@ -3461,7 +3458,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 				     char *new_gres,
 				     char **gres_str,
 				     List *gres_list,
-				     uint16_t fast_schedule,
+				     bool config_overrides,
 				     int cores_per_sock,
 				     int sock_per_node)
 {
@@ -3498,7 +3495,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 		if (gres_ptr_array[i] == NULL)
 			continue;
 		rc = _node_reconfig(node_name, new_gres, gres_str,
-				    gres_ptr_array[i], fast_schedule,
+				    gres_ptr_array[i], config_overrides,
 				    &gres_context[i], &updated_gpu_cnt);
 		if (updated_gpu_cnt)
 			gpu_gres_ptr = gres_ptr;

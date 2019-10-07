@@ -2811,6 +2811,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->comm_params);
 	ctl_conf_ptr->complete_wait		= NO_VAL16;
+	ctl_conf_ptr->conf_flags                = 0;
 	for (i = 0; i < ctl_conf_ptr->control_cnt; i++) {
 		xfree(ctl_conf_ptr->control_addr[i]);
 		xfree(ctl_conf_ptr->control_machine[i]);
@@ -2833,7 +2834,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->enforce_part_limits       = 0;
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->epilog_msg_time		= NO_VAL;
-	ctl_conf_ptr->fast_schedule		= NO_VAL16;
 	xfree(ctl_conf_ptr->fed_params);
 	ctl_conf_ptr->first_job_id		= NO_VAL;
 	ctl_conf_ptr->get_env_timeout		= 0;
@@ -3585,12 +3585,9 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "FairShareDampeningFactor", hashtbl))
 		conf->fs_dampening_factor = 1;
 
-	if (!s_p_get_uint16(&conf->fast_schedule, "FastSchedule", hashtbl))
-		conf->fast_schedule = DEFAULT_FAST_SCHEDULE;
-	else if (conf->fast_schedule == 0 && run_in_daemon("slurmctld,slurmd"))
-		error("FastSchedule will be removed in 20.02, as will the FastSchedule=0 functionality. Please consider removing this from your configuration now.");
-	else if (conf->fast_schedule == 2 && run_in_daemon("slurmctld,slurmd"))
-		error("FastSchedule will be removed in 20.02. The FastSchedule=2 functionality will be available through the new SlurmdParameters=config_overrides option. Please consider changing your configuration now.");
+	if (s_p_get_uint16(&uint16_tmp, "FastSchedule", hashtbl) &&
+	    run_in_daemon("slurmctld"))
+		fatal("FastSchedule has been deprecated, as well as the FastSchedule=0 functionality. FastSchedule=2 functionality is available through the SlurmdParameters=config_overrides option. If using FastSchedule=1 just remove the option. Please update your configuration to continue.");
 
 	(void) s_p_get_string(&conf->fed_params, "FederationParameters",
 			      hashtbl);
@@ -4632,7 +4629,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	(void) s_p_get_string(&conf->slurmd_params, "SlurmdParameters", hashtbl);
 	if (xstrcasestr(conf->slurmd_params, "config_overrides"))
-		conf->fast_schedule = 2;
+		conf->conf_flags |= CTL_CONF_OR;
 
 	if (!s_p_get_string(&conf->slurmd_pidfile, "SlurmdPidFile", hashtbl))
 		conf->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);

@@ -1423,23 +1423,6 @@ extern uint16_t slurm_get_propagate_prio_process(void)
 	return propagate_prio;
 }
 
-/* slurm_get_fast_schedule
- * returns the value of fast_schedule in slurmctld_conf object
- */
-extern uint16_t slurm_get_fast_schedule(void)
-{
-	uint16_t fast_val = 0;
-	slurm_ctl_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		fast_val = conf->fast_schedule;
-		slurm_conf_unlock();
-	}
-	return fast_val;
-}
-
 /* slurm_get_route_plugin
  * returns the value of route_plugin in slurmctld_conf object
  * RET char *    - route type, MUST be xfreed by caller

@@ -738,6 +738,7 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->cluster_name        = xstrdup(conf->cluster_name);
 	conf_ptr->comm_params         = xstrdup(conf->comm_params);
 	conf_ptr->complete_wait       = conf->complete_wait;
+	conf_ptr->conf_flags          = conf->conf_flags;
 	conf_ptr->control_cnt         = conf->control_cnt;
 	conf_ptr->control_addr    = xmalloc(sizeof(char *) * conf->control_cnt);
 	conf_ptr->control_machine = xmalloc(sizeof(char *) * conf->control_cnt);
@@ -764,7 +765,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->ext_sensors_type    = xstrdup(conf->ext_sensors_type);
 	conf_ptr->ext_sensors_freq    = conf->ext_sensors_freq;
 
-	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->fed_params          = xstrdup(conf->fed_params);
 	conf_ptr->first_job_id        = conf->first_job_id;
 	conf_ptr->fs_dampening_factor = conf->fs_dampening_factor;

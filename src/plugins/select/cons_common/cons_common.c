@@ -92,7 +92,6 @@ bool     preempt_by_part      = false;
 bool     preempt_by_qos       = false;
 uint16_t priority_flags       = 0;
 uint64_t select_debug_flags   = 0;
-uint16_t select_fast_schedule = 0;
 int      select_node_cnt      = 0;
 bool     spec_cores_first     = false;
 bool     topo_optional        = false;
@@ -1064,7 +1063,6 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	/* initial global core data structures */
 	select_state_initializing = true;
-	select_fast_schedule = slurm_get_fast_schedule();
 	cr_init_global_core_data(node_ptr, node_cnt);
 
 	node_data_destroy(select_node_usage, select_node_record);
@@ -2037,7 +2035,7 @@ extern int select_p_update_node_config(int index)
 	 * Socket and core count can be changed when KNL node reboots in a
 	 * different NUMA configuration
 	 */
-	if ((select_fast_schedule == 1) &&
+	if (!(slurmctld_conf.conf_flags & CTL_CONF_OR) &&
 	    (select_node_record[index].sockets !=
 	     select_node_record[index].node_ptr->config_ptr->sockets) &&
 	    (select_node_record[index].cores !=

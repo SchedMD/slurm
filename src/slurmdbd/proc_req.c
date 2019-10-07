@@ -2554,8 +2554,6 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 	node_ptr.reason_time = node_state_msg->event_time;
 	node_ptr.reason_uid = node_state_msg->reason_uid;
 
-	slurmctld_conf.fast_schedule = 0;
-
 	if (!node_ptr.tres_str)
 		node_state_msg->new_state = DBD_NODE_STATE_UP;
 

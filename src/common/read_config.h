@@ -77,7 +77,6 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_CRED_TYPE           "cred/munge"
 #define DEFAULT_EPILOG_MSG_TIME     2000
 #define DEFAULT_EXT_SENSORS_TYPE    "ext_sensors/none"
-#define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_GET_ENV_TIMEOUT     2
 #define DEFAULT_GROUP_TIME          600

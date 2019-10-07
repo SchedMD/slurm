@@ -1600,14 +1600,14 @@ extern void restore_node_features(int recover)
 		 * We lose the GRES information updated manually and always
 		 * use the information from slurm.conf
 		 */
-		(void) gres_plugin_node_reconfig(node_ptr->name,
-						 node_ptr->config_ptr->gres,
-						 &node_ptr->gres,
-						 &node_ptr->gres_list,
-						 slurmctld_conf.fast_schedule,
-						 node_ptr->cores,
-						 (node_ptr->boards *
-						  node_ptr->sockets));
+		(void) gres_plugin_node_reconfig(
+			node_ptr->name,
+			node_ptr->config_ptr->gres,
+			&node_ptr->gres,
+			&node_ptr->gres_list,
+			slurmctld_conf.conf_flags & CTL_CONF_OR,
+			node_ptr->cores,
+			(node_ptr->boards * node_ptr->sockets));
 		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
 	_update_node_avail_features(NULL, NULL, FEATURE_MODE_PEND);
@@ -1927,13 +1927,13 @@ static int _update_node_gres(char *node_names, char *gres)
 			if (!bit_test(tmp_bitmap, i))
 				continue;	/* Not this node */
 			node_ptr = node_record_table_ptr + i;
-			rc2 = gres_plugin_node_reconfig(node_ptr->name,
-						gres, &node_ptr->gres,
-						&node_ptr->gres_list,
-						slurmctld_conf.fast_schedule,
-						node_ptr->cores,
-						(node_ptr->boards *
-						 node_ptr->sockets));
+			rc2 = gres_plugin_node_reconfig(
+				node_ptr->name,
+				gres, &node_ptr->gres,
+				&node_ptr->gres_list,
+				slurmctld_conf.conf_flags & CTL_CONF_OR,
+				node_ptr->cores,
+				(node_ptr->boards * node_ptr->sockets));
 			if (rc2 != SLURM_SUCCESS) {
 				bit_clear(tmp_bitmap, i);
 				overlap1--;
@@ -2349,7 +2349,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				node_ptr->name, config_ptr->gres,
 				&node_ptr->gres, &node_ptr->gres_list,
 				reg_msg->threads, reg_msg->cores,
-				reg_msg->sockets, slurmctld_conf.fast_schedule,
+				reg_msg->sockets,
+				slurmctld_conf.conf_flags & CTL_CONF_OR,
 				&reason_down)
 		   != SLURM_SUCCESS) {
 		error_code = EINVAL;
@@ -2357,7 +2358,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	}
 	gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
-	if (slurmctld_conf.fast_schedule != 2) {
+	if (!(slurmctld_conf.conf_flags & CTL_CONF_OR)) {
 		/* sockets1, cores1, and threads1 are set above */
 		sockets2 = config_ptr->sockets;
 		cores2   = sockets2 * config_ptr->cores;
@@ -2408,16 +2409,9 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		node_ptr->threads = reg_msg->threads;
 		node_ptr->cpus    = reg_msg->cpus;
 	}
-
-	if (reg_msg->real_memory < config_ptr->real_memory) {
-		if (slurmctld_conf.fast_schedule == 0) {
-			debug("Node %s has low real_memory size "
-			      "(%"PRIu64" < %"PRIu64")",
-			      reg_msg->node_name, reg_msg->real_memory,
-			      config_ptr->real_memory);
-		} else if (slurmctld_conf.fast_schedule == 1) {
-			error("Node %s has low real_memory size "
-			      "(%"PRIu64" < %"PRIu64")",
+	if (!(slurmctld_conf.conf_flags & CTL_CONF_OR)) {
+		if (reg_msg->real_memory < config_ptr->real_memory) {
+			error("Node %s has low real_memory size (%"PRIu64" < %"PRIu64")",
 			      reg_msg->node_name, reg_msg->real_memory,
 			      config_ptr->real_memory);
 			error_code  = EINVAL;
@@ -2425,15 +2419,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 				xstrcat(reason_down, ", ");
 			xstrcat(reason_down, "Low RealMemory");
 		}
-	}
-	node_ptr->real_memory = reg_msg->real_memory;
 
-	if (reg_msg->tmp_disk < config_ptr->tmp_disk) {
-		if (slurmctld_conf.fast_schedule == 0) {
-			debug("Node %s has low tmp_disk size (%u < %u)",
-			      reg_msg->node_name, reg_msg->tmp_disk,
-			      config_ptr->tmp_disk);
-		} else if (slurmctld_conf.fast_schedule == 1) {
+		if (reg_msg->tmp_disk < config_ptr->tmp_disk) {
 			error("Node %s has low tmp_disk size (%u < %u)",
 			      reg_msg->node_name, reg_msg->tmp_disk,
 			      config_ptr->tmp_disk);
@@ -2443,6 +2430,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			xstrcat(reason_down, "Low TmpDisk");
 		}
 	}
+
+	node_ptr->real_memory = reg_msg->real_memory;
 	node_ptr->tmp_disk = reg_msg->tmp_disk;
 
 	if (reg_msg->cpu_spec_list != NULL) {
@@ -2930,15 +2919,16 @@ extern int validate_nodes_via_front_end(
 		config_ptr = node_ptr->config_ptr;
 		node_ptr->last_response = MAX(now, node_ptr->last_response);
 
-		rc = gres_plugin_node_config_validate(node_ptr->name,
-						config_ptr->gres,
-						&node_ptr->gres,
-						&node_ptr->gres_list,
-						reg_msg->threads,
-						reg_msg->cores,
-						reg_msg->sockets,
-						slurmctld_conf.fast_schedule,
-						&reason_down);
+		rc = gres_plugin_node_config_validate(
+			node_ptr->name,
+			config_ptr->gres,
+			&node_ptr->gres,
+			&node_ptr->gres_list,
+			reg_msg->threads,
+			reg_msg->cores,
+			reg_msg->sockets,
+			slurmctld_conf.conf_flags & CTL_CONF_OR,
+			&reason_down);
 		if (rc) {
 			if (!IS_NODE_DOWN(node_ptr)) {
 				error("Setting node %s state to DOWN",

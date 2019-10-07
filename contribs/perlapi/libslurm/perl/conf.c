@@ -112,7 +112,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if (conf->ext_sensors_type)
 		STORE_FIELD(hv, conf, ext_sensors_type, charp);
 
-	STORE_FIELD(hv, conf, fast_schedule, uint16_t);
+	STORE_FIELD(hv, conf, conf_flags, uint32_t);
 
 	STORE_FIELD(hv, conf, first_job_id, uint32_t);
 	STORE_FIELD(hv, conf, fs_dampening_factor, uint16_t);
@@ -488,7 +488,7 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, ext_sensors_freq, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, ext_sensors_type, charp, FALSE);
 
-	FETCH_FIELD(hv, conf, fast_schedule, uint16_t, TRUE);
+	FETCH_FIELD(hv, conf, conf_flags, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, first_job_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, fs_dampening_factor, uint16_t, FALSE);
 	FETCH_FIELD(hv, conf, get_env_timeout, uint16_t, TRUE);

@@ -5735,6 +5735,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->cluster_name, buffer);
 		packstr(build_ptr->comm_params, buffer);
 		pack16(build_ptr->complete_wait, buffer);
+		pack32(build_ptr->conf_flags, buffer);
 		packstr_array(build_ptr->control_addr,
 			      build_ptr->control_cnt, buffer);
 		packstr_array(build_ptr->control_machine,
@@ -5760,7 +5761,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
 
-		pack16(build_ptr->fast_schedule, buffer);
 		packstr(build_ptr->fed_params, buffer);
 		pack32(build_ptr->first_job_id, buffer);
 		pack16(build_ptr->fs_dampening_factor, buffer);
@@ -6058,7 +6058,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
 
-		pack16(build_ptr->fast_schedule, buffer);
+		pack16((build_ptr->conf_flags & CTL_CONF_OR) ? 2 : 1, buffer);
 		packstr(build_ptr->fed_params, buffer);
 		pack32(build_ptr->first_job_id, buffer);
 		pack16(build_ptr->fs_dampening_factor, buffer);
@@ -6353,7 +6353,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->ext_sensors_type, buffer);
 		pack16(build_ptr->ext_sensors_freq, buffer);
 
-		pack16(build_ptr->fast_schedule, buffer);
+		pack16((build_ptr->conf_flags & CTL_CONF_OR) ? 2 : 1, buffer);
 		packstr(build_ptr->fed_params, buffer);
 		pack32(build_ptr->first_job_id, buffer);
 		pack16(build_ptr->fs_dampening_factor, buffer);
@@ -6569,6 +6569,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 			   Buf buffer, uint16_t protocol_version)
 {
 	uint32_t uint32_tmp = 0;
+	uint16_t uint16_tmp = 0;
 	slurm_ctl_conf_info_msg_t *build_ptr;
 
 	/* alloc memory for structure */
@@ -6638,6 +6639,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->comm_params,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->complete_wait, buffer);
+		safe_unpack32(&build_ptr->conf_flags, buffer);
 		safe_unpackstr_array(&build_ptr->control_addr,
 				     &build_ptr->control_cnt, buffer);
 		safe_unpackstr_array(&build_ptr->control_machine,
@@ -6670,7 +6672,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->ext_sensors_freq, buffer);
 
-		safe_unpack16(&build_ptr->fast_schedule, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->fed_params, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&build_ptr->first_job_id, buffer);
@@ -7071,7 +7072,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->ext_sensors_freq, buffer);
 
-		safe_unpack16(&build_ptr->fast_schedule, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp == 2)
+			build_ptr->conf_flags |= CTL_CONF_OR;
+
 		safe_unpackstr_xmalloc(&build_ptr->fed_params, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&build_ptr->first_job_id, buffer);
@@ -7466,7 +7470,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->ext_sensors_freq, buffer);
 
-		safe_unpack16(&build_ptr->fast_schedule, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp == 2)
+			build_ptr->conf_flags |= CTL_CONF_OR;
+
 		safe_unpackstr_xmalloc(&build_ptr->fed_params, &uint32_tmp,
 				       buffer);
 		safe_unpack32(&build_ptr->first_job_id, buffer);

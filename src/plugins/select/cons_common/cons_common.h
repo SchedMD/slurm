@@ -115,7 +115,6 @@ extern bool     preempt_by_part;
 extern bool     preempt_by_qos;
 extern uint16_t priority_flags;
 extern uint64_t select_debug_flags;
-extern uint16_t select_fast_schedule;
 extern int      select_node_cnt;
 extern bool     spec_cores_first;
 extern bool     topo_optional;

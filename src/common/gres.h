@@ -432,9 +432,10 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name);
  * IN threads_per_core - Count of CPUs (threads) per core on this node
  * IN cores_per_sock - Count of cores per socket on this node
  * IN sock_cnt - Count of sockets on this node
- * IN fast_schedule - 0: Validate and use actual hardware configuration
- *		      1: Validate hardware config, but use slurm.conf config
- *		      2: Don't validate hardware, use slurm.conf configuration
+ * IN config_overrides - true: Don't validate hardware, use slurm.conf
+ *                             configuration
+ *		         false: Validate hardware config, but use slurm.conf
+ *                              config
  * OUT reason_down - set to an explanation of failure, if any, don't set if NULL
  */
 extern int gres_plugin_node_config_validate(char *node_name,
@@ -443,7 +444,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 					    List *gres_list,
 					    int threads_per_core,
 					    int cores_per_sock, int sock_cnt,
-					    uint16_t fast_schedule,
+					    bool config_overrides,
 					    char **reason_down);
 
 /*
@@ -464,9 +465,10 @@ extern void gres_plugin_node_feature(char *node_name,
  * IN new_gres - Updated GRES information supplied from slurm.conf or scontrol
  * IN/OUT gres_str - Node's current GRES string, updated as needed
  * IN/OUT gres_list - List of Gres records for this node to track usage
- * IN fast_schedule - 0: Validate and use actual hardware configuration
- *		      1: Validate hardware config, but use slurm.conf config
- *		      2: Don't validate hardware, use slurm.conf configuration
+ * IN config_overrides - true: Don't validate hardware, use slurm.conf
+ *                             configuration
+ *		         false: Validate hardware config, but use slurm.conf
+ *                              config
  * IN cores_per_sock - Number of cores per socket on this node
  * IN sock_per_node - Total count of sockets on this node (on any board)
  */
@@ -474,7 +476,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 				     char *new_gres,
 				     char **gres_str,
 				     List *gres_list,
-				     uint16_t fast_schedule,
+				     bool config_overrides,
 				     int cores_per_sock,
 				     int sock_per_node);
 

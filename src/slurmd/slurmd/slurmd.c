@@ -861,12 +861,16 @@ _read_config(void)
 	slurm_ctl_conf_t *cf = NULL;
 	int cc;
 	bool cgroup_mem_confinement = false;
+	bool config_overrides = false;
+
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
 #endif
 
 	slurm_mutex_lock(&conf->config_mutex);
 	cf = slurm_conf_lock();
+
+	config_overrides = cf->conf_flags & CTL_CONF_OR;
 
 	xfree(conf->auth_info);
 	conf->auth_info = xstrdup(cf->authinfo);
@@ -983,15 +987,13 @@ _read_config(void)
 	 * configuration file because the slurmctld creates bitmaps
 	 * for scheduling before these nodes check in.
 	 */
-	if (((cf->fast_schedule == 0) && !cr_flag && !gang_flag) ||
-	    ((cf->fast_schedule == 1) &&
-	     (conf->actual_cpus < conf->conf_cpus))) {
+	if (!config_overrides && (conf->actual_cpus < conf->conf_cpus)) {
 		conf->cpus    = conf->actual_cpus;
 		conf->boards  = conf->actual_boards;
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
 		conf->threads = conf->actual_threads;
-	} else if ((cf->fast_schedule == 1) && (cr_flag || gang_flag) &&
+	} else if (!config_overrides && (cr_flag || gang_flag) &&
 		   (conf->actual_sockets != conf->conf_sockets) &&
 		   (conf->actual_cores != conf->conf_cores) &&
 		   ((conf->actual_sockets * conf->actual_cores) ==
