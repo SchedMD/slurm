@@ -2633,7 +2633,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 
 	req.admin_comment = job_ptr->admin_comment;
 
-	if (slurmctld_conf.acctng_store_job_comment)
+	if (slurmctld_conf.conf_flags & CTL_CONF_SJC)
 		req.comment = job_ptr->comment;
 
 	req.db_index    = job_ptr->db_index;

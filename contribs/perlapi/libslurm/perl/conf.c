@@ -32,7 +32,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	STORE_FIELD(hv, conf, acct_gather_node_freq, uint16_t);
 	if (conf->acct_gather_profile_type)
 		STORE_FIELD(hv, conf, acct_gather_profile_type, charp);
-	STORE_FIELD(hv, conf, acctng_store_job_comment, uint16_t);
 
 	if (conf->accounting_storage_backup_host)
 		STORE_FIELD(hv, conf, accounting_storage_backup_host, charp);
@@ -422,7 +421,6 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, acct_gather_interconnect_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_node_freq, uint16_t, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_profile_type, charp, FALSE);
-	FETCH_FIELD(hv, conf, acctng_store_job_comment, uint16_t, FALSE);
 	FETCH_FIELD(hv, conf, accounting_storage_enforce, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, accounting_storage_backup_host, charp, FALSE);
 	FETCH_FIELD(hv, conf, accounting_storage_host, charp, FALSE);

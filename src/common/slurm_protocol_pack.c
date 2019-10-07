@@ -5682,7 +5682,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_tres, buffer);
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
-		pack16(build_ptr->acctng_store_job_comment, buffer);
 
 		if (build_ptr->acct_gather_conf)
 			count = list_count(build_ptr->acct_gather_conf);
@@ -5980,7 +5979,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_tres, buffer);
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
-		pack16(build_ptr->acctng_store_job_comment, buffer);
+		pack16((build_ptr->conf_flags & CTL_CONF_SJC) ? 1 : 0, buffer);
 
 		if (build_ptr->acct_gather_conf)
 			count = list_count(build_ptr->acct_gather_conf);
@@ -6276,7 +6275,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->accounting_storage_tres, buffer);
 		packstr(build_ptr->accounting_storage_type, buffer);
 		packstr(build_ptr->accounting_storage_user, buffer);
-		pack16(build_ptr->acctng_store_job_comment, buffer);
+		pack16((build_ptr->conf_flags & CTL_CONF_SJC) ? 1 : 0, buffer);
 
 		if (build_ptr->acct_gather_conf)
 			count = list_count(build_ptr->acct_gather_conf);
@@ -6599,7 +6598,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_user,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
 
 		if (unpack_key_pair_list(&build_ptr->acct_gather_conf,
 					 protocol_version, buffer)
@@ -7000,7 +6998,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_user,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp == 1)
+			build_ptr->conf_flags |= CTL_CONF_SJC;
 
 		if (unpack_key_pair_list(&build_ptr->acct_gather_conf,
 					 protocol_version, buffer)
@@ -7400,7 +7400,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->accounting_storage_user,
 				       &uint32_tmp, buffer);
-		safe_unpack16(&build_ptr->acctng_store_job_comment, buffer);
+		safe_unpack16(&uint16_tmp, buffer);
+		if (uint16_tmp == 1)
+			build_ptr->conf_flags |= CTL_CONF_SJC;
 
 		if (unpack_key_pair_list(&build_ptr->acct_gather_conf,
 					 protocol_version, buffer)

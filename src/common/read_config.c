@@ -4047,10 +4047,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				xstrdup(default_storage_pass);
 	}
 	if (s_p_get_boolean(&truth, "AccountingStoreJobComment", hashtbl)
-	    && !truth)
-		conf->acctng_store_job_comment = 0;
-	else
-		conf->acctng_store_job_comment = 1;
+	    && truth)
+		conf->conf_flags |= CTL_CONF_SJC;
 
 	if (!s_p_get_uint32(&conf->accounting_storage_port,
 			    "AccountingStoragePort", hashtbl)) {

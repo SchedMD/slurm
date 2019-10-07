@@ -2613,6 +2613,7 @@ typedef struct reservation_name_msg {
 #define PROLOG_FLAG_X11		0x0010 /* enable slurm x11 forwarding support */
 
 #define CTL_CONF_OR             0x00000001 /*SlurmdParameters=config_overrides*/
+#define CTL_CONF_SJC            0x00000002 /* AccountingStoreJobComment */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
@@ -2637,7 +2638,6 @@ typedef struct slurm_ctl_conf {
 	uint32_t accounting_storage_port;/* node accountinging storage port */
 	char *accounting_storage_type; /* accounting storage type */
 	char *accounting_storage_user; /* accounting storage user */
-	uint16_t acctng_store_job_comment; /* send job comment to accounting */
 	void *acct_gather_conf; /* account gather config */
 	char *acct_gather_energy_type; /* energy accounting type */
 	char *acct_gather_profile_type; /* profile accounting type */
