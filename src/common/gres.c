@@ -2474,7 +2474,7 @@ static void _gres_bit_alloc_resize(gres_node_state_t *gres_data,
 }
 
 static int _node_config_validate(char *node_name, char *orig_config,
-				 char **new_config, gres_state_t *gres_ptr,
+				 gres_state_t *gres_ptr,
 				 int cpu_cnt, int core_cnt, int sock_cnt,
 				 uint16_t fast_schedule, char **reason_down,
 				 slurm_gres_context_t *context_ptr)
@@ -2926,7 +2926,7 @@ extern int gres_plugin_node_config_validate(char *node_name,
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			list_append(*gres_list, gres_ptr);
 		}
-		rc2 = _node_config_validate(node_name, orig_config, new_config,
+		rc2 = _node_config_validate(node_name, orig_config,
 					    gres_ptr, cpu_cnt, core_cnt,
 					    sock_cnt, fast_schedule,
 					    reason_down, &gres_context[i]);
