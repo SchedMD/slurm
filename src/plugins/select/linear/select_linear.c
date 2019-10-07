@@ -224,7 +224,6 @@ const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
 static struct node_record *select_node_ptr = NULL;
 static int select_node_cnt = 0;
-static uint16_t select_fast_schedule;
 static uint16_t cr_type;
 static bool have_dragonfly = false;
 static bool topo_optional = false;
@@ -397,19 +396,11 @@ static int _get_avail_cpus(struct job_record *job_ptr, int index)
 		ntasks_per_core   = 0;
 
 	node_ptr = select_node_ptr + index;
-	if (select_fast_schedule) { /* don't bother checking each node */
-		cpus_per_node     = node_ptr->config_ptr->cpus;
-		boards_per_node   = node_ptr->config_ptr->boards;
-		sockets_per_board = node_ptr->config_ptr->sockets;
-		cores_per_socket  = node_ptr->config_ptr->cores;
-		thread_per_core   = node_ptr->config_ptr->threads;
-	} else {
-		cpus_per_node     = node_ptr->cpus;
-		boards_per_node   = node_ptr->boards;
-		sockets_per_board = node_ptr->sockets;
-		cores_per_socket  = node_ptr->cores;
-		thread_per_core   = node_ptr->threads;
-	}
+	cpus_per_node     = node_ptr->config_ptr->cpus;
+	boards_per_node   = node_ptr->config_ptr->boards;
+	sockets_per_board = node_ptr->config_ptr->sockets;
+	cores_per_socket  = node_ptr->config_ptr->cores;
+	thread_per_core   = node_ptr->config_ptr->threads;
 
 #if SELECT_DEBUG
 	info("host:%s HW_ cpus_per_node:%u boards_per_node:%u "
@@ -455,10 +446,7 @@ static int _get_avail_cpus(struct job_record *job_ptr, int index)
 static uint16_t _get_total_cpus(int index)
 {
 	struct node_record *node_ptr = &(select_node_ptr[index]);
-	if (select_fast_schedule)
-		return node_ptr->config_ptr->cpus;
-	else
-		return node_ptr->cpus;
+	return node_ptr->config_ptr->cpus;
 }
 
 static job_resources_t *_create_job_resources(int node_cnt)
@@ -502,8 +490,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
 	job_resrcs_ptr->node_bitmap = bit_copy(bitmap);
 	job_resrcs_ptr->nodes = bitmap2node_name(bitmap);
 	job_resrcs_ptr->ncpus = job_ptr->total_cpus;
-	if (build_job_resources(job_resrcs_ptr, (void *)select_node_ptr,
-				select_fast_schedule))
+	if (build_job_resources(job_resrcs_ptr, (void *)select_node_ptr))
 		error("_build_select_struct: build_job_resources: %m");
 
 	first_bit = bit_ffs(bitmap);
@@ -590,10 +577,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 		}
 
 		node_ptr = node_record_table_ptr + i;
-		if (select_fast_schedule)
-			cpu_cnt = node_ptr->config_ptr->cpus;
-		else
-			cpu_cnt = node_ptr->cpus;
+		cpu_cnt = node_ptr->config_ptr->cpus;
 
 		if (cr_ptr->nodes[i].gres_list)
 			gres_list = cr_ptr->nodes[i].gres_list;
@@ -627,19 +611,11 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 
 		if (job_memory_cpu || job_memory_node) {
 			alloc_mem = cr_ptr->nodes[i].alloc_memory;
-			if (select_fast_schedule) {
-				avail_mem = node_ptr->config_ptr->real_memory;
-				if (job_memory_cpu)
-					job_mem = job_memory_cpu * cpu_cnt;
-				else
-					job_mem = job_memory_node;
-			} else {
-				avail_mem = node_ptr->real_memory;
-				if (job_memory_cpu)
-					job_mem = job_memory_cpu * cpu_cnt;
-				else
-					job_mem = job_memory_node;
-			}
+			avail_mem = node_ptr->config_ptr->real_memory;
+			if (job_memory_cpu)
+				job_mem = job_memory_cpu * cpu_cnt;
+			else
+				job_mem = job_memory_node;
 			avail_mem -= node_ptr->mem_spec_limit;
 			if ((alloc_mem + job_mem) > avail_mem) {
 				bit_clear(jobmap, i);
@@ -2324,10 +2300,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			continue;
 
 		node_ptr = node_record_table_ptr + i;
-		if (select_fast_schedule)
-			cpu_cnt = node_ptr->config_ptr->cpus;
-		else
-			cpu_cnt = node_ptr->cpus;
+		cpu_cnt = node_ptr->config_ptr->cpus;
 		if (job_memory_cpu)
 			job_memory = job_memory_cpu * cpu_cnt;
 		else
@@ -2335,19 +2308,8 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 		if (cr_ptr->nodes[i].alloc_memory >= job_memory)
 			cr_ptr->nodes[i].alloc_memory -= job_memory;
 		else {
-			/* This can be the result of FastSchedule=0 and
-			 * the node being configured with fewer CPUs than
-			 * actually exist. The job allocation set when
-			 * slurmctld restarts may be based upon a lower CPU
-			 * count than when the job gets deallocated. */
-			if (select_fast_schedule ||
-			    (node_ptr->config_ptr->cpus == node_ptr->cpus)) {
-				error("%s: memory underflow for node %s",
-				      pre_err, node_ptr->name);
-			} else {
-				debug("%s: memory underflow for node %s",
-				      pre_err, node_ptr->name);
-			}
+			debug("%s: memory underflow for node %s",
+			      pre_err, node_ptr->name);
 			cr_ptr->nodes[i].alloc_memory = 0;
 		}
 
@@ -2501,8 +2463,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 	new_job_resrcs_ptr->node_bitmap = tmp_bitmap;
 	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
 						     node_bitmap);
-	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr,
-			    select_fast_schedule);
+	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr);
 	xfree(to_job_ptr->node_addr);
 	to_job_ptr->node_addr = xcalloc(node_cnt, sizeof(slurm_addr_t));
 	to_job_ptr->total_cpus = 0;
@@ -2740,10 +2701,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
 
 	if (job_ptr->start_time < slurmctld_config.boot_time)
 		old_job = true;
-	if (select_fast_schedule)
-		cpu_cnt = node_ptr->config_ptr->cpus;
-	else
-		cpu_cnt = node_ptr->cpus;
+	cpu_cnt = node_ptr->config_ptr->cpus;
 	if (job_memory_cpu)
 		job_memory = job_memory_cpu * cpu_cnt;
 	else
@@ -2824,10 +2782,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 			continue;
 
 		node_ptr = node_record_table_ptr + i;
-		if (select_fast_schedule)
-			cpu_cnt = node_ptr->config_ptr->cpus;
-		else
-			cpu_cnt = node_ptr->cpus;
+		cpu_cnt = node_ptr->config_ptr->cpus;
 
 		if (job_memory_cpu) {
 			cr_ptr->nodes[i].alloc_memory += job_memory_cpu *
@@ -3097,15 +3052,11 @@ static void _init_node_cr(void)
 			if (job_memory_cpu == 0) {
 				cr_ptr->nodes[i].alloc_memory +=
 					job_memory_node;
-			} else if (select_fast_schedule) {
+			} else {
 				cr_ptr->nodes[i].alloc_memory +=
 					job_memory_cpu *
 					node_record_table_ptr[i].
 					config_ptr->cpus;
-			} else {
-				cr_ptr->nodes[i].alloc_memory +=
-					job_memory_cpu *
-					node_record_table_ptr[i].cpus;
 			}
 
 			if (bit_test(job_ptr->node_bitmap, i)) {
@@ -3594,8 +3545,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	select_node_ptr = node_ptr;
 	select_node_cnt = node_cnt;
-	select_fast_schedule = slurm_get_fast_schedule();
-	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
+	cr_init_global_core_data(node_ptr, node_cnt);
 	slurm_mutex_unlock(&cr_mutex);
 
 	return SLURM_SUCCESS;
@@ -3984,11 +3934,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 		xfree(nodeinfo->tres_alloc_fmt_str);
 		if (IS_NODE_COMPLETING(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
-			if (slurmctld_conf.fast_schedule)
-				nodeinfo->alloc_cpus =
-					node_ptr->config_ptr->cpus;
-			else
-				nodeinfo->alloc_cpus = node_ptr->cpus;
+			nodeinfo->alloc_cpus = node_ptr->config_ptr->cpus;
 
 			nodeinfo->tres_alloc_fmt_str =
 				assoc_mgr_make_tres_str_from_array(

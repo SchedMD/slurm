@@ -1065,7 +1065,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	/* initial global core data structures */
 	select_state_initializing = true;
 	select_fast_schedule = slurm_get_fast_schedule();
-	cr_init_global_core_data(node_ptr, node_cnt, select_fast_schedule);
+	cr_init_global_core_data(node_ptr, node_cnt);
 
 	node_data_destroy(select_node_usage, select_node_record);
 	select_node_cnt = node_cnt;
@@ -1079,30 +1079,20 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 				     sizeof(node_use_record_t));
 
 	for (i = 0; i < select_node_cnt; i++) {
+		struct config_record *config_ptr;
 		select_node_record[i].node_ptr = &node_ptr[i];
 		select_node_record[i].mem_spec_limit =
 			node_ptr[i].mem_spec_limit;
-		if (select_fast_schedule) {
-			struct config_record *config_ptr;
-			config_ptr = node_ptr[i].config_ptr;
-			select_node_record[i].cpus    = config_ptr->cpus;
-			select_node_record[i].boards  = config_ptr->boards;
-			select_node_record[i].sockets = config_ptr->sockets;
-			select_node_record[i].cores   = config_ptr->cores;
-			select_node_record[i].threads = config_ptr->threads;
-			select_node_record[i].vpus    = config_ptr->threads;
-			select_node_record[i].real_memory =
-				config_ptr->real_memory;
-		} else {
-			select_node_record[i].cpus    = node_ptr[i].cpus;
-			select_node_record[i].boards  = node_ptr[i].boards;
-			select_node_record[i].sockets = node_ptr[i].sockets;
-			select_node_record[i].cores   = node_ptr[i].cores;
-			select_node_record[i].threads = node_ptr[i].threads;
-			select_node_record[i].vpus    = node_ptr[i].threads;
-			select_node_record[i].real_memory =
-				node_ptr[i].real_memory;
-		}
+
+		config_ptr = node_ptr[i].config_ptr;
+		select_node_record[i].cpus    = config_ptr->cpus;
+		select_node_record[i].boards  = config_ptr->boards;
+		select_node_record[i].sockets = config_ptr->sockets;
+		select_node_record[i].cores   = config_ptr->cores;
+		select_node_record[i].threads = config_ptr->threads;
+		select_node_record[i].vpus    = config_ptr->threads;
+		select_node_record[i].real_memory = config_ptr->real_memory;
+
 		select_node_record[i].tot_sockets =
 			select_node_record[i].boards *
 			select_node_record[i].sockets;
@@ -1259,8 +1249,7 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
 						     node_bitmap);
 	new_job_resrcs_ptr->whole_node = to_job_resrcs_ptr->whole_node;
-	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr,
-			    select_fast_schedule);
+	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr);
 	xfree(to_job_ptr->node_addr);
 	to_job_ptr->node_addr = xcalloc(node_cnt, sizeof(slurm_addr_t));
 	to_job_ptr->total_cpus = 0;
@@ -1548,8 +1537,7 @@ extern int select_p_job_mem_confirm(struct job_record *job_ptr)
 
 	xassert(job_ptr);
 
-	if (((job_ptr->bit_flags & NODE_MEM_CALC) == 0) ||
-	    (select_fast_schedule != 0))
+	if (!(job_ptr->bit_flags & NODE_MEM_CALC))
 		return SLURM_SUCCESS;
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->job_resrcs == NULL) ||
@@ -1791,19 +1779,11 @@ extern int select_p_select_nodeinfo_set_all(void)
 			continue;
 		}
 
-		if (slurmctld_conf.fast_schedule) {
-			node_boards  = node_ptr->config_ptr->boards;
-			node_sockets = node_ptr->config_ptr->sockets;
-			node_cores   = node_ptr->config_ptr->cores;
-			node_cpus    = node_ptr->config_ptr->cpus;
-			node_threads = node_ptr->config_ptr->threads;
-		} else {
-			node_boards  = node_ptr->boards;
-			node_sockets = node_ptr->sockets;
-			node_cores   = node_ptr->cores;
-			node_cpus    = node_ptr->cpus;
-			node_threads = node_ptr->threads;
-		}
+		node_boards  = node_ptr->config_ptr->boards;
+		node_sockets = node_ptr->config_ptr->sockets;
+		node_cores   = node_ptr->config_ptr->cores;
+		node_cpus    = node_ptr->config_ptr->cpus;
+		node_threads = node_ptr->config_ptr->threads;
 
 		if (is_cons_tres) {
 			if (alloc_core_bitmap && alloc_core_bitmap[n])
@@ -2073,14 +2053,6 @@ extern int select_p_update_node_config(int index)
 		/* tot_sockets should be the same */
 		/* tot_cores should be the same */
 	}
-
-	if (select_fast_schedule)
-		return SLURM_SUCCESS;
-
-	select_node_record[index].real_memory =
-		select_node_record[index].node_ptr->real_memory;
-	select_node_record[index].mem_spec_limit =
-		select_node_record[index].node_ptr->mem_spec_limit;
 
 	return SLURM_SUCCESS;
 }

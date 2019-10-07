@@ -535,26 +535,6 @@ extern int load_all_node_state ( bool state_only )
 			    IS_NODE_REBOOT(node_ptr))
 				node_ptr->boot_req_time = boot_req_time;
 
-			if (!slurmctld_conf.fast_schedule) {
-				/* Accounting will need to know the
-				 * last state here otherwise we will
-				 * report incorrect information
-				 * waiting for the node to register. */
-				node_ptr->cpus          = cpus;
-				node_ptr->boards        = boards;
-				node_ptr->sockets       = sockets;
-				node_ptr->cores         = cores;
-				node_ptr->core_spec_cnt =
-					core_spec_cnt;
-				xfree(node_ptr->cpu_spec_list);
-				node_ptr->cpu_spec_list =
-					cpu_spec_list;
-				cpu_spec_list = NULL; /* Nothing to free */
-				node_ptr->threads       = threads;
-				node_ptr->real_memory   = real_memory;
-				node_ptr->tmp_disk      = tmp_disk;
-			}
-
 			xfree(node_ptr->features_act);
 			node_ptr->features_act	= features_act;
 			features_act		= NULL;	/* Nothing to free */
@@ -953,25 +933,16 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 		pack32(dump_node_ptr->next_state, buffer);
 		pack32(dump_node_ptr->node_state, buffer);
 		packstr (dump_node_ptr->version, buffer);
-		if (slurmctld_conf.fast_schedule) {
-			/* Only data from config_record used for scheduling */
-			pack16(dump_node_ptr->config_ptr->cpus, buffer);
-			pack16(dump_node_ptr->config_ptr->boards, buffer);
-			pack16(dump_node_ptr->config_ptr->sockets, buffer);
-			pack16(dump_node_ptr->config_ptr->cores, buffer);
-			pack16(dump_node_ptr->config_ptr->threads, buffer);
-			pack64(dump_node_ptr->config_ptr->real_memory, buffer);
-			pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
-		} else {
-			/* Individual node data used for scheduling */
-			pack16(dump_node_ptr->cpus, buffer);
-			pack16(dump_node_ptr->boards, buffer);
-			pack16(dump_node_ptr->sockets, buffer);
-			pack16(dump_node_ptr->cores, buffer);
-			pack16(dump_node_ptr->threads, buffer);
-			pack64(dump_node_ptr->real_memory, buffer);
-			pack32(dump_node_ptr->tmp_disk, buffer);
-		}
+
+		/* Only data from config_record used for scheduling */
+		pack16(dump_node_ptr->config_ptr->cpus, buffer);
+		pack16(dump_node_ptr->config_ptr->boards, buffer);
+		pack16(dump_node_ptr->config_ptr->sockets, buffer);
+		pack16(dump_node_ptr->config_ptr->cores, buffer);
+		pack16(dump_node_ptr->config_ptr->threads, buffer);
+		pack64(dump_node_ptr->config_ptr->real_memory, buffer);
+		pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
+
 		packstr(dump_node_ptr->mcs_label, buffer);
 		pack32(dump_node_ptr->owner, buffer);
 		pack16(dump_node_ptr->core_spec_cnt, buffer);
@@ -2280,7 +2251,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	char *orig_features = NULL, *orig_features_act = NULL;
 	uint32_t node_flags;
 	time_t now = time(NULL);
-	bool gang_flag = false;
 	bool orig_node_avail;
 	static uint32_t cr_flag = NO_VAL;
 	static int node_features_cnt = 0;
@@ -2322,8 +2292,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			cr_flag = SELECT_TYPE_CONS_RES;
 		node_features_cnt = node_features_g_count();
 	}
-	if (slurm_get_preempt_mode() != PREEMPT_MODE_OFF)
-		gang_flag = true;
 
 	if (reg_msg->features_avail || reg_msg->features_active) {
 		char *sep = "";
@@ -2390,18 +2358,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 	if (slurmctld_conf.fast_schedule != 2) {
-		char *node_features_plugin = slurm_get_node_features_plugins();
-		bool validate_socket_cnt = true;
-
-		if (node_features_plugin &&
-		    xstrcasestr(node_features_plugin, "knl")) {
-			/* KNL reboots can change the NUMA count (treated like
-			 * a socket count) without changing the total core
-			 * count, which Slurm will support. */
-			validate_socket_cnt = false;
-		}
-		xfree(node_features_plugin);
-
 		/* sockets1, cores1, and threads1 are set above */
 		sockets2 = config_ptr->sockets;
 		cores2   = sockets2 * config_ptr->cores;
@@ -2415,34 +2371,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			if (reason_down)
 				xstrcat(reason_down, ", ");
 			xstrcat(reason_down, "Low socket*core*thread count");
-		} else if ((slurmctld_conf.fast_schedule == 0) &&
-			   ((cr_flag == SELECT_TYPE_CONS_RES) || gang_flag) &&
-			    (cores1 < cores2)) {
-			error("Node %s has low socket*core count (%d < %d)",
-			      reg_msg->node_name, cores1, cores2);
-			error_code = EINVAL;
-			if (reason_down)
-				xstrcat(reason_down, ", ");
-			xstrcat(reason_down, "Low socket*core count");
-		} else if ((slurmctld_conf.fast_schedule == 0) &&
-			   ((cr_flag == SELECT_TYPE_CONS_RES) || gang_flag) &&
-			   ((validate_socket_cnt && (sockets1 > sockets2)) ||
-			    (cores1 > cores2) || (threads1 > threads2))) {
-			error("Node %s has high socket,core,thread count "
-			      "(%d,%d,%d > %d,%d,%d), extra resources ignored",
-			      reg_msg->node_name, reg_msg->sockets,
-			      reg_msg->cores, reg_msg->threads,
-			      config_ptr->sockets, config_ptr->cores,
-			      config_ptr->threads);
-			/*
-			 * Preserve configured values as we can't change the
-			 * total core count on the node without the core_bitmaps
-			 * in select/cons_res or gang scheduler being rebuilt
-			 */
-			reg_msg->boards  = config_ptr->boards;
-			reg_msg->sockets = config_ptr->sockets;
-			reg_msg->cores   = config_ptr->cores;
-			reg_msg->threads = config_ptr->threads;
 		}
 
 		if (reg_msg->cpus < config_ptr->cpus) {
@@ -2453,15 +2381,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			if (reason_down)
 				xstrcat(reason_down, ", ");
 			xstrcat(reason_down, "Low CPUs");
-		} else if ((slurmctld_conf.fast_schedule == 0) &&
-			   ((cr_flag == SELECT_TYPE_CONS_RES) || gang_flag) &&
-			   (reg_msg->cpus > config_ptr->cpus)) {
-			error("Node %s has high CPU count (%u > %u), "
-			      "extra resources ignored",
-			      reg_msg->node_name, reg_msg->cpus,
-			      config_ptr->cpus);
-			reg_msg->cpus    = config_ptr->cpus;
 		}
+
 		if ((error_code == SLURM_SUCCESS) &&
 		    (cr_flag == SELECT_TYPE_CONS_RES) &&
 		    (node_features_cnt > 0) &&
@@ -2479,13 +2400,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	}
 
 	/* reset partition and node config (in that order) */
-	if ((node_ptr->cpus != reg_msg->cpus) &&
-	    (slurmctld_conf.fast_schedule == 0)) {
-		for (i=0; i<node_ptr->part_cnt; i++) {
-			node_ptr->part_pptr[i]->total_cpus +=
-				(reg_msg->cpus - node_ptr->cpus);
-		}
-	}
+
 	if (error_code == SLURM_SUCCESS) {
 		node_ptr->boards  = reg_msg->boards;
 		node_ptr->sockets = reg_msg->sockets;

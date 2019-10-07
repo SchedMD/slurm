@@ -470,11 +470,7 @@ extern void run_health_check(void)
 			continue;
 		if (node_states != HEALTH_CHECK_NODE_ANY) {
 			uint16_t cpus_total, cpus_used = 0;
-			if (slurmctld_conf.fast_schedule) {
-				cpus_total = node_ptr->config_ptr->cpus;
-			} else {
-				cpus_total = node_ptr->cpus;
-			}
+			cpus_total = node_ptr->config_ptr->cpus;
 			if (!IS_NODE_IDLE(node_ptr)) {
 				select_g_select_nodeinfo_get(
 						node_ptr->select_nodeinfo,

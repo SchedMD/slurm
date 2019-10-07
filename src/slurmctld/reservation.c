@@ -1471,8 +1471,7 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
 	resv_ptr->core_resrcs->nodes = xstrdup(resv_ptr->node_list);
 	resv_ptr->core_resrcs->node_bitmap = bit_copy(resv_ptr->node_bitmap);
 	resv_ptr->core_resrcs->nhosts = bit_set_count(resv_ptr->node_bitmap);
-	rc = build_job_resources(resv_ptr->core_resrcs, node_record_table_ptr,
-				 slurmctld_conf.fast_schedule);
+	rc = build_job_resources(resv_ptr->core_resrcs, node_record_table_ptr);
 	if (rc != SLURM_SUCCESS) {
 		free_job_resources(&resv_ptr->core_resrcs);
 		return;
@@ -1821,16 +1820,10 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		for (i=0; i<node_record_count; i++, node_ptr++) {
 			if (!bit_test(resv_ptr->node_bitmap, i))
 				continue;
-			if (slurmctld_conf.fast_schedule) {
-				resv_ptr->core_cnt +=
-					(node_ptr->config_ptr->cores *
-					 node_ptr->config_ptr->sockets);
-				cpu_cnt += node_ptr->config_ptr->cpus;
-			} else {
-				resv_ptr->core_cnt += (node_ptr->cores *
-						       node_ptr->sockets);
-				cpu_cnt += node_ptr->cpus;
-			}
+			resv_ptr->core_cnt +=
+				(node_ptr->config_ptr->cores *
+				 node_ptr->config_ptr->sockets);
+			cpu_cnt += node_ptr->config_ptr->cpus;
 		}
 	} else if (resv_ptr->core_bitmap) {
 		resv_ptr->core_cnt =
@@ -1843,15 +1836,10 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 				if (!bit_test(resv_ptr->node_bitmap, i))
 					continue;
 
-				if (slurmctld_conf.fast_schedule) {
-					cores = (node_ptr->config_ptr->cores *
-						 node_ptr->config_ptr->sockets);
-					threads = node_ptr->config_ptr->threads;
-				} else {
-					cores = (node_ptr->cores *
-						 node_ptr->sockets);
-					threads = node_ptr->threads;
-				}
+				cores = (node_ptr->config_ptr->cores *
+					 node_ptr->config_ptr->sockets);
+				threads = node_ptr->config_ptr->threads;
+
 				offset = cr_get_coremap_offset(i);
 
 				for (core = 0; core < cores; core++) {

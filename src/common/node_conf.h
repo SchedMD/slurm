@@ -338,7 +338,7 @@ extern int state_str2int(const char *state_str, char *node_name);
 
 /* (re)set cr_node_num_cores arrays */
 extern void cr_init_global_core_data(struct node_record *node_ptr,
-				     int node_cnt, uint16_t fast_schedule);
+				     int node_cnt);
 
 extern void cr_fini_global_core_data(void);
 

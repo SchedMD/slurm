@@ -1019,32 +1019,12 @@ _read_config(void)
 	    (conf->sockets != conf->actual_sockets) ||
 	    (conf->cores   != conf->actual_cores)   ||
 	    (conf->threads != conf->actual_threads)) {
-		if (cf->fast_schedule) {
-			error("Node configuration differs from hardware: "
-			      "Procs=%u:%u(hw) Boards=%u:%u(hw) "
-			      "SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw) "
-			      "ThreadsPerCore=%u:%u(hw)",
-			      conf->cpus,    conf->actual_cpus,
-			      conf->boards,  conf->actual_boards,
-			      conf->sockets, conf->actual_sockets,
-			      conf->cores,   conf->actual_cores,
-			      conf->threads, conf->actual_threads);
-		} else if ((cf->fast_schedule == 0) && (cr_flag || gang_flag)) {
-			error("You are using cons_res or gang scheduling with "
-			      "Fastschedule=0 and node configuration differs "
-			      "from hardware.  The node configuration used "
-			      "will be what is in the slurm.conf because of "
-			      "the bitmaps the slurmctld must create before "
-			      "the slurmd registers.\n"
-			      "   CPUs=%u:%u(hw) Boards=%u:%u(hw) "
-			      "SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw) "
-			      "ThreadsPerCore=%u:%u(hw)",
-			      conf->cpus,    conf->actual_cpus,
-			      conf->boards,  conf->actual_boards,
-			      conf->sockets, conf->actual_sockets,
-			      conf->cores,   conf->actual_cores,
-			      conf->threads, conf->actual_threads);
-		}
+		error("Node configuration differs from hardware: CPUs=%u:%u(hw) Boards=%u:%u(hw) SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw) ThreadsPerCore=%u:%u(hw)",
+		      conf->cpus,    conf->actual_cpus,
+		      conf->boards,  conf->actual_boards,
+		      conf->sockets, conf->actual_sockets,
+		      conf->cores,   conf->actual_cores,
+		      conf->threads, conf->actual_threads);
 	}
 #endif
 

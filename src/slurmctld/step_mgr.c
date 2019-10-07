@@ -1824,10 +1824,7 @@ static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
 		     i < node_record_count; i++, node_ptr++) {
 			if (!bit_test(bitmap, i))
 				continue;
-			if (slurmctld_conf.fast_schedule)
-				sum += node_ptr->config_ptr->cpus;
-			else
-				sum += node_ptr->cpus;
+			sum += node_ptr->config_ptr->cpus;
 		}
 	}
 
@@ -2920,10 +2917,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				&& (job_ptr->details->cpu_bind_type
 				    & CPU_BIND_ONE_THREAD_PER_CORE))) {
 				uint16_t threads;
-				if (slurmctld_conf.fast_schedule)
-					threads = node_ptr->config_ptr->threads;
-				else
-					threads = node_ptr->threads;
+				threads = node_ptr->config_ptr->threads;
 
 				cpus /= threads;
 				cpus_used /= threads;
@@ -2941,20 +2935,12 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				 * array.
 				 */
 				uint16_t threads_per_core;
-				if (slurmctld_conf.fast_schedule)
-					threads_per_core =
-						node_ptr->config_ptr->threads;
-				else
-					threads_per_core = node_ptr->threads;
+				threads_per_core =
+					node_ptr->config_ptr->threads;
 				if (ntasks_per_socket == 1) {
 					uint16_t threads_per_socket;
-					if (slurmctld_conf.fast_schedule)
-						threads_per_socket =
-							node_ptr->config_ptr->
-							cores;
-					else
-						threads_per_socket =
-							node_ptr->cores;
+					threads_per_socket =
+						node_ptr->config_ptr->cores;
 					threads_per_socket *= threads_per_core;
 
 					if (cpus_per_task < threads_per_socket)
@@ -4600,13 +4586,9 @@ static int _get_node_cores(int node_inx)
 	int socks, cores;
 
 	node_ptr = node_record_table_ptr + node_inx;
-	if (slurmctld_conf.fast_schedule) {
-		socks = node_ptr->config_ptr->sockets;
-		cores = node_ptr->config_ptr->cores;
-	} else {
-		socks = node_ptr->sockets;
-		cores = node_ptr->cores;
-	}
+	socks = node_ptr->config_ptr->sockets;
+	cores = node_ptr->config_ptr->cores;
+
 	return socks * cores;
 }
 

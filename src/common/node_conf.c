@@ -984,8 +984,7 @@ extern int state_str2int(const char *state_str, char *node_name)
 }
 
 /* (re)set cr_node_num_cores arrays */
-extern void cr_init_global_core_data(struct node_record *node_ptr, int node_cnt,
-				     uint16_t fast_schedule)
+extern void cr_init_global_core_data(struct node_record *node_ptr, int node_cnt)
 {
 	uint32_t n;
 
@@ -995,14 +994,8 @@ extern void cr_init_global_core_data(struct node_record *node_ptr, int node_cnt,
 	cr_node_cores_offset = xmalloc((node_cnt+1) * sizeof(uint32_t));
 
 	for (n = 0; n < node_cnt; n++) {
-		uint16_t cores;
-		if (fast_schedule) {
-			cores  = node_ptr[n].config_ptr->cores;
-			cores *= node_ptr[n].config_ptr->sockets;
-		} else {
-			cores  = node_ptr[n].cores;
-			cores *= node_ptr[n].sockets;
-		}
+		uint16_t cores = node_ptr[n].config_ptr->cores;
+		cores *= node_ptr[n].config_ptr->sockets;
 
 		cr_node_num_cores[n] = cores;
 		if (n > 0) {

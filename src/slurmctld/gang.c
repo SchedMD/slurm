@@ -146,7 +146,6 @@ struct gs_part {
 /* global variables */
 static uint32_t timeslicer_seconds = 0;
 static uint16_t gr_type = GS_NODE;
-static uint16_t gs_fast_schedule = 0;
 static List gs_part_list = NULL;
 static uint32_t default_job_list_size = 64;
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -263,18 +262,10 @@ static void _load_phys_res_cnt(void)
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (gr_type == GS_CPU) {
-			if (gs_fast_schedule)
-				bit = node_ptr->config_ptr->cpus;
-			else
-				bit = node_ptr->cpus;
+			bit = node_ptr->config_ptr->cpus;
 		} else {
-			if (gs_fast_schedule) {
-				sock = node_ptr->config_ptr->sockets;
-				bit  = node_ptr->config_ptr->cores * sock;
-			} else {
-				sock = node_ptr->sockets;
-				bit  = node_ptr->cores * sock;
-			}
+			sock = node_ptr->config_ptr->sockets;
+			bit  = node_ptr->config_ptr->cores * sock;
 		}
 
 		gs_bits_per_node[bit_index++] = bit;
@@ -292,26 +283,17 @@ static uint16_t _get_phys_bit_cnt(int node_index)
 {
 	struct node_record *node_ptr = node_record_table_ptr + node_index;
 
-	if (gs_fast_schedule) {
-		if (gr_type == GS_CPU)
-			return node_ptr->config_ptr->cpus;
-		return node_ptr->config_ptr->cores *
-		       node_ptr->config_ptr->sockets;
-	} else {
-		if (gr_type == GS_CPU)
-			return node_ptr->cpus;
-		return node_ptr->cores * node_ptr->sockets;
-	}
+	if (gr_type == GS_CPU)
+		return node_ptr->config_ptr->cpus;
+	return node_ptr->config_ptr->cores *
+		node_ptr->config_ptr->sockets;
 }
 
 static uint16_t _get_socket_cnt(int node_index)
 {
 	struct node_record *node_ptr = node_record_table_ptr + node_index;
 
-	if (gs_fast_schedule)
-		return node_ptr->config_ptr->sockets;
-	else
-		return node_ptr->sockets;
+	return node_ptr->config_ptr->sockets;
 }
 
 static void _destroy_parts(void *x)
@@ -1174,7 +1156,6 @@ extern void gs_init(void)
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: entering gs_init");
 	timeslicer_seconds = slurmctld_conf.sched_time_slice;
-	gs_fast_schedule = slurm_get_fast_schedule();
 	gr_type = _get_gr_type();
 	preempt_job_list = list_create(_preempt_job_list_del);
 
@@ -1374,7 +1355,6 @@ extern void gs_reconfig(void)
 	gs_part_list = NULL;
 
 	/* reset global data */
-	gs_fast_schedule = slurm_get_fast_schedule();
 	gr_type = _get_gr_type();
 	_load_phys_res_cnt();
 	_build_parts();

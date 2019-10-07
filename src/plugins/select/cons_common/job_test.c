@@ -863,11 +863,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
 		     bit_set_count(node_bitmap));
 	}
 
-	if ((details_ptr->pn_min_memory == 0) &&
-	    (select_fast_schedule == 0) &&
-	    (!is_cons_tres || !gres_plugin_job_mem_max(job_ptr->gres_list)))
-		job_ptr->bit_flags |= NODE_MEM_CALC;	/* To be calculated */
-
 	orig_node_map = bit_copy(node_bitmap);
 	avail_cores = common_mark_avail_cores(
 		node_bitmap, job_ptr->details->core_spec);
@@ -1441,8 +1436,7 @@ alloc_job:
 	job_res->whole_node       = job_ptr->details->whole_node;
 
 	/* store the hardware data for the selected nodes */
-	error_code = build_job_resources(job_res, node_record_table_ptr,
-					 select_fast_schedule);
+	error_code = build_job_resources(job_res, node_record_table_ptr);
 	if (error_code != SLURM_SUCCESS) {
 		xfree(tres_mc_ptr);
 		_free_avail_res_array(avail_res_array);

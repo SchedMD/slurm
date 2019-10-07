@@ -219,19 +219,12 @@ extern int build_part_bitmap(struct part_record *part_ptr)
 			return ESLURM_INVALID_NODE_NAME;
 		}
 		part_ptr->total_nodes++;
-		if (slurmctld_conf.fast_schedule) {
-			part_ptr->total_cpus += node_ptr->config_ptr->cpus;
-			part_ptr->max_cpu_cnt = MAX(part_ptr->max_cpu_cnt,
-					node_ptr->config_ptr->cpus);
-			part_ptr->max_core_cnt = MAX(part_ptr->max_core_cnt,
-					node_ptr->config_ptr->cores);
-		} else {
-			part_ptr->total_cpus += node_ptr->cpus;
-			part_ptr->max_cpu_cnt  = MAX(part_ptr->max_cpu_cnt,
-					node_ptr->cpus);
-			part_ptr->max_core_cnt = MAX(part_ptr->max_core_cnt,
-					node_ptr->cores);
-		}
+		part_ptr->total_cpus += node_ptr->config_ptr->cpus;
+		part_ptr->max_cpu_cnt = MAX(part_ptr->max_cpu_cnt,
+					    node_ptr->config_ptr->cpus);
+		part_ptr->max_core_cnt = MAX(part_ptr->max_core_cnt,
+					     node_ptr->config_ptr->cores);
+
 		for (i = 0; i < node_ptr->part_cnt; i++) {
 			if (node_ptr->part_pptr[i] == part_ptr)
 				break;

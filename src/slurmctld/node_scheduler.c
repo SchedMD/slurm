@@ -1974,12 +1974,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			i = bit_ffs(job_ptr->details->req_node_bitmap);
 			if (i >= 0) {
 				node_ptr = node_record_table_ptr + i;
-				if (slurmctld_conf.fast_schedule) {
-					j = node_ptr->config_ptr->sockets *
-					    node_ptr->config_ptr->cores;
-				} else {
-					j = node_ptr->sockets * node_ptr->cores;
-				}
+				j = node_ptr->config_ptr->sockets *
+					node_ptr->config_ptr->cores;
 			}
 			if ((i >= 0) && (job_ptr->details->core_spec >= j)) {
 				if (part_ptr->name) {
@@ -3601,52 +3597,27 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 			continue;
 		node_ptr = node_record_table_ptr + i;
 		config_ptr = node_ptr->config_ptr;
-		if (slurmctld_conf.fast_schedule) {
-			if ((detail_ptr->pn_min_cpus  > config_ptr->cpus)   ||
-			    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
-			      config_ptr->real_memory) 			    ||
-			    ((detail_ptr->pn_min_memory & (MEM_PER_CPU)) &&
-			     ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) *
-			      detail_ptr->pn_min_cpus) >
-			      config_ptr->real_memory) 			    ||
-			    (detail_ptr->pn_min_tmp_disk >
-			     config_ptr->tmp_disk)) {
-				bit_clear(avail_bitmap, i);
-				continue;
-			}
-			if (mc_ptr &&
-			    (((mc_ptr->sockets_per_node > config_ptr->sockets) &&
-			      (mc_ptr->sockets_per_node != NO_VAL16)) ||
-			     ((mc_ptr->cores_per_socket > config_ptr->cores)   &&
-			      (mc_ptr->cores_per_socket != NO_VAL16)) ||
-			     ((mc_ptr->threads_per_core > config_ptr->threads) &&
-			      (mc_ptr->threads_per_core != NO_VAL16)))) {
-				bit_clear(avail_bitmap, i);
-				continue;
-			}
-		} else {
-			if ((detail_ptr->pn_min_cpus > node_ptr->cpus)     ||
-			    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
-			     node_ptr->real_memory)			   ||
-			    ((detail_ptr->pn_min_memory & (MEM_PER_CPU)) &&
-			     ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) *
-			      detail_ptr->pn_min_cpus) >
-			      node_ptr->real_memory) 			   ||
-			    (detail_ptr->pn_min_tmp_disk >
-			     node_ptr->tmp_disk)) {
-				bit_clear(avail_bitmap, i);
-				continue;
-			}
-			if (mc_ptr &&
-			    (((mc_ptr->sockets_per_node > node_ptr->sockets)   &&
-			      (mc_ptr->sockets_per_node != NO_VAL16)) ||
-			     ((mc_ptr->cores_per_socket > node_ptr->cores)     &&
-			      (mc_ptr->cores_per_socket != NO_VAL16)) ||
-			     ((mc_ptr->threads_per_core > node_ptr->threads)   &&
-			      (mc_ptr->threads_per_core != NO_VAL16)))) {
-				bit_clear(avail_bitmap, i);
-				continue;
-			}
+		if ((detail_ptr->pn_min_cpus  > config_ptr->cpus)   ||
+		    ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) >
+		     config_ptr->real_memory) 			    ||
+		    ((detail_ptr->pn_min_memory & (MEM_PER_CPU)) &&
+		     ((detail_ptr->pn_min_memory & (~MEM_PER_CPU)) *
+		      detail_ptr->pn_min_cpus) >
+		     config_ptr->real_memory) 			    ||
+		    (detail_ptr->pn_min_tmp_disk >
+		     config_ptr->tmp_disk)) {
+			bit_clear(avail_bitmap, i);
+			continue;
+		}
+		if (mc_ptr &&
+		    (((mc_ptr->sockets_per_node > config_ptr->sockets) &&
+		      (mc_ptr->sockets_per_node != NO_VAL16)) ||
+		     ((mc_ptr->cores_per_socket > config_ptr->cores)   &&
+		      (mc_ptr->cores_per_socket != NO_VAL16)) ||
+		     ((mc_ptr->threads_per_core > config_ptr->threads) &&
+		      (mc_ptr->threads_per_core != NO_VAL16)))) {
+			bit_clear(avail_bitmap, i);
+			continue;
 		}
 	}
 

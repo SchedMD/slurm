@@ -8008,10 +8008,7 @@ static uint16_t _cpus_per_node_part(struct part_record *part_ptr)
 		node_inx = bit_ffs(part_ptr->node_bitmap);
 	if (node_inx >= 0) {
 		node_ptr = node_record_table_ptr + node_inx;
-		if (slurmctld_conf.fast_schedule)
-			return node_ptr->config_ptr->cpus;
-		else
-			return node_ptr->cpus;
+		return node_ptr->config_ptr->cpus;
 	}
 	return 0;
 }
@@ -8759,10 +8756,7 @@ extern int job_update_tres_cnt(struct job_record *job_ptr, int node_inx)
 		 */
 		struct node_record *node_ptr =
 			node_record_table_ptr + node_inx;
-		if (slurmctld_conf.fast_schedule)
-			cpu_cnt = node_ptr->config_ptr->cpus;
-		else
-			cpu_cnt = node_ptr->cpus;
+		cpu_cnt = node_ptr->config_ptr->cpus;
 	} else {
 		if ((offset = job_resources_node_inx_to_cpu_inx(
 				job_ptr->job_resrcs, node_inx)) < 0) {
@@ -10027,17 +10021,9 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 		return;
 
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (slurmctld_conf.fast_schedule) {
-			/* Only data from config_record used for scheduling */
-			max_cpu_cnt = MAX(max_cpu_cnt,
-					  node_ptr->config_ptr->cpus);
-			max_core_cnt =  MAX(max_core_cnt,
-					    node_ptr->config_ptr->cores);
-		} else {
-			/* Individual node data used for scheduling */
-			max_cpu_cnt = MAX(max_cpu_cnt, node_ptr->cpus);
-			max_core_cnt =  MAX(max_core_cnt, node_ptr->cores);
-		}
+		/* Only data from config_record used for scheduling */
+		max_cpu_cnt = MAX(max_cpu_cnt, node_ptr->config_ptr->cpus);
+		max_core_cnt = MAX(max_core_cnt, node_ptr->config_ptr->cores);
 	}
 }
 
@@ -10515,8 +10501,7 @@ void reset_job_bitmaps(void)
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) &&
 		    job_ptr->job_resrcs && (cr_flag || gang_flag) &&
 		    valid_job_resources(job_ptr->job_resrcs,
-					node_record_table_ptr,
-					slurmctld_conf.fast_schedule)) {
+					node_record_table_ptr)) {
 			error("Aborting %pJ due to change in socket/core configuration of allocated nodes",
 			      job_ptr);
 			job_fail = true;
