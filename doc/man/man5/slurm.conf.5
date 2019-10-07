@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "September 2019" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "October 2019" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -388,9 +388,14 @@ This configuration parameter is also applied to launch tasks and avoid aborting
 
 .TP
 \fBBurstBufferType\fR
-The plugin used to manage burst buffers.
-Acceptable values at present include "burst_buffer/none".
-More information later...
+The plugin used to manage burst buffers. Acceptable values at present are:
+.RS
+.TP
+\fBburst_buffer/datawrap\fR
+Use Cray DataWarp API to provide burst buffer functionality.
+.TP
+\fBburst_buffer/none\fR
+.RE
 
 .TP
 \fBCheckpointType\fR

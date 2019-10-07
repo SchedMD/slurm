@@ -718,7 +718,7 @@ static void _match_job_name(job_desc_msg_t *desc_last, List job_req_list)
 	if (!desc_last)
 		return;
 
-	if (!desc_last->name && command_argv)
+	if (!desc_last->name && command_argv[0])
 		desc_last->name = xstrdup(xbasename(command_argv[0]));
 	name = desc_last->name;
 
