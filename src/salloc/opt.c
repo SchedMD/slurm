@@ -659,6 +659,9 @@ static bool _opt_verify(void)
 		opt.x11_magic_cookie = x11_get_xauth();
 	}
 
+	if (saopt.no_shell && !opt.job_name)
+		opt.job_name = xstrdup("no-shell");
+
 	return verified;
 }
 

@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
     as the cpus.
  -- Append ": reboot issued" to node reason when reboot is issued from
     controller. Previously only happened when nextstate was specified.
+ -- Add default jobname of "no-shell" for salloc --no-shell.
 
 * Changes in Slurm 19.05.4
 ==========================
