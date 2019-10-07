@@ -8340,25 +8340,6 @@ extern bool test_job_nodes_ready(struct job_record *job_ptr)
 }
 
 /*
- * Modify a job's memory limit if allocated all memory on a node and the node
- * reboots, possibly with a different memory size (e.g. KNL MCDRAM mode changed)
- */
-extern void job_validate_mem(struct job_record *job_ptr)
-{
-	if ((job_ptr->bit_flags & NODE_MEM_CALC) &&
-	    (slurmctld_conf.fast_schedule == 0)) {
-		select_g_job_mem_confirm(job_ptr);
-		job_ptr->tres_alloc_cnt[TRES_ARRAY_MEM] =
-			job_get_tres_mem(job_ptr->job_resrcs,
-				job_ptr->details->pn_min_memory,
-				job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU],
-				job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE]);
-		set_job_tres_alloc_str(job_ptr, false);
-		jobacct_storage_job_start_direct(acct_db_conn, job_ptr);
-	}
-}
-
-/*
  * For non-pack job, return true if this job is configuring.
  * For pack job, return true if any component of the job is configuring.
  */
@@ -8446,7 +8427,6 @@ void job_time_limit(void)
 			job_config_fini(job_ptr);
 			if (job_ptr->bit_flags & NODE_REBOOT) {
 				job_ptr->bit_flags &= (~NODE_REBOOT);
-				job_validate_mem(job_ptr);
 				if (job_ptr->batch_flag)
 					launch_job(job_ptr);
 			}

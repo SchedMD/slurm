@@ -1071,8 +1071,6 @@ _pick_step_nodes (struct job_record *job_ptr,
 			info("%s: Configuration for %pJ is complete",
 			      __func__, job_ptr);
 			job_config_fini(job_ptr);
-			if (job_ptr->bit_flags & NODE_REBOOT)
-				job_validate_mem(job_ptr);
 		}
 	}
 

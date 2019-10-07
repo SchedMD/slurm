@@ -125,9 +125,6 @@ static int  _build_node_list(struct job_record *job_ptr,
 			     int *node_set_size, char **err_msg,
 			     bool test_only, bool can_reboot);
 static int  _fill_in_gres_fields(struct job_record *job_ptr);
-static void _filter_nodes_in_set(struct node_set *node_set_ptr,
-				 struct job_details *detail_ptr);
-
 static bitstr_t *_find_grp_node_bitmap(struct job_record *job_ptr);
 static bool _first_array_task(struct job_record *job_ptr);
 static void _log_node_set(struct job_record *job_ptr,
@@ -3659,25 +3656,6 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 	return SLURM_SUCCESS;
 }
 
-/* Return the count of nodes which have never registered for service,
- * so we don't know their memory size, etc. */
-static int _no_reg_nodes(void)
-{
-	static int node_count = -1;
-	struct node_record *node_ptr;
-	int inx;
-
-	if (node_count == 0)	/* No need to keep testing */
-		return node_count;
-	node_count = 0;
-	for (inx = 0, node_ptr = node_record_table_ptr; inx < node_record_count;
-	     inx++, node_ptr++) {
-		if (node_ptr->last_response == 0)
-			node_count++;
-	}
-	return node_count;
-}
-
 /*
  * Split the node set record in two
  * IN node_set_ptr - array of node_set records
@@ -3749,7 +3727,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
-	int check_node_config, total_cores;
+	int total_cores;
 	struct job_details *detail_ptr = job_ptr->details;
 	bitstr_t *usable_node_mask = NULL;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
@@ -3865,17 +3843,11 @@ static int _build_node_list(struct job_record *job_ptr,
 		 * in the configuration, we want to use those higher values
 		 * for scheduling, but only as needed (slower)
 		 */
-		if (slurmctld_conf.fast_schedule) {
-			if (config_filter) {
-				_set_err_msg(cpus_ok, mem_ok, disk_ok,
-					     job_mc_ok, err_msg);
-				continue;
-			}
-			check_node_config = 0;
-		} else if (config_filter) {
-			check_node_config = 1;
-		} else
-			check_node_config = 0;
+		if (config_filter) {
+			_set_err_msg(cpus_ok, mem_ok, disk_ok,
+				     job_mc_ok, err_msg);
+			continue;
+		}
 
 		node_set_ptr[node_set_inx].my_bitmap =
 			bit_copy(config_ptr->node_bitmap);
@@ -3887,11 +3859,6 @@ static int _build_node_list(struct job_record *job_ptr,
 		}
 		node_set_ptr[node_set_inx].node_cnt =
 			bit_set_count(node_set_ptr[node_set_inx].my_bitmap);
-		if (check_node_config &&
-		    (node_set_ptr[node_set_inx].node_cnt != 0)) {
-			_filter_nodes_in_set(&node_set_ptr[node_set_inx],
-					     detail_ptr);
-		}
 		if (node_set_ptr[node_set_inx].node_cnt == 0) {
 			FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
 			continue;
@@ -4117,9 +4084,6 @@ end_node_set:
 		if (job_ptr->resv_name) {
 			job_ptr->state_reason = WAIT_RESERVATION;
 			rc = ESLURM_NODES_BUSY;
-		} else if ((slurmctld_conf.fast_schedule == 0) &&
-			   (_no_reg_nodes() > 0)) {
-			rc = ESLURM_NODES_BUSY;
 		} else {
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			debug2("%s: setting %pJ to \"%s\" (%s)",
@@ -4318,56 +4282,6 @@ static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,
 		*err_msg = xstrdup("Socket, core and/or thread specification "
 				   "can not be satisfied");
 		return;
-	}
-}
-
-/*
- * Remove from the node set any nodes which lack sufficient resources
- * to satisfy the job's request. Only used with FastSchedule=0.
- */
-static void _filter_nodes_in_set(struct node_set *node_set_ptr,
-				 struct job_details *job_con)
-{
-	int adj_cpus, total_cores;
-	multi_core_data_t *mc_ptr = job_con->mc_ptr;
-	struct node_record *node_ptr = NULL;
-
-	xassert(!slurmctld_conf.fast_schedule);
-
-	for (int i = 0; i < node_record_count; i++) {
-		int job_ok = 0, job_mc_ptr_ok = 0;
-
-		if (bit_test(node_set_ptr->my_bitmap, i) == 0)
-			continue;
-
-		node_ptr = &node_record_table_ptr[i];
-		total_cores = node_ptr->boards * node_ptr->sockets *
-			      node_ptr->cores;
-		adj_cpus = adjust_cpus_nppcu(_get_ntasks_per_core(job_con),
-					     job_con->cpus_per_task,
-					     total_cores, node_ptr->cpus);
-
-		if ((job_con->pn_min_cpus <= adj_cpus) &&
-		    ((job_con->pn_min_memory & (~MEM_PER_CPU)) <=
-		      node_ptr->real_memory) &&
-		    (job_con->pn_min_tmp_disk <= node_ptr->tmp_disk))
-			job_ok = 1;
-
-		if (mc_ptr &&
-		    (((mc_ptr->sockets_per_node <= node_ptr->sockets)  ||
-		      (mc_ptr->sockets_per_node == NO_VAL16)) &&
-		     ((mc_ptr->cores_per_socket <= node_ptr->cores)    ||
-		      (mc_ptr->cores_per_socket == NO_VAL16)) &&
-		     ((mc_ptr->threads_per_core <= node_ptr->threads)  ||
-		      (mc_ptr->threads_per_core == NO_VAL16))))
-			job_mc_ptr_ok = 1;
-
-		if (job_ok && (!mc_ptr || job_mc_ptr_ok))
-			continue;
-
-		bit_clear(node_set_ptr->my_bitmap, i);
-		if ((--(node_set_ptr->node_cnt)) == 0)
-			break;
 	}
 }
 

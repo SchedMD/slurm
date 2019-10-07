@@ -4230,7 +4230,6 @@ static void *_wait_boot(void *arg)
 	if (job_timeout)
 		(void) job_requeue(getuid(), job_ptr->job_id, NULL, false, 0);
 	prolog_running_decr(job_ptr);
-	job_validate_mem(job_ptr);
 	unlock_slurmctld(node_write_lock);
 
 	FREE_NULL_BITMAP(wait_boot_arg->node_bitmap);
