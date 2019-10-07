@@ -424,7 +424,7 @@ int main(int argc, char **argv)
 
 	if (accounting_enforce && !association_based_accounting) {
 		accounting_enforce = 0;
-		slurmctld_conf.track_wckey = false;
+		slurmctld_conf.conf_flags &= (~CTL_CONF_WCKEY);
 		slurmctld_conf.accounting_storage_enforce = 0;
 
 		error("You can not have AccountingStorageEnforce "
@@ -2321,7 +2321,7 @@ extern void ctld_assoc_mgr_init(slurm_trigger_callbacks_t *callbacks)
 				     ASSOC_MGR_CACHE_QOS   |
 				     ASSOC_MGR_CACHE_RES   |
                          	     ASSOC_MGR_CACHE_TRES;
-	if (slurmctld_conf.track_wckey)
+	if (slurmctld_conf.conf_flags & CTL_CONF_WCKEY)
 		assoc_init_arg.cache_level |= ASSOC_MGR_CACHE_WCKEY;
 	assoc_init_arg.state_save_location =
 		&slurmctld_conf.state_save_location;

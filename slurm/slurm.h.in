@@ -2617,6 +2617,7 @@ typedef struct reservation_name_msg {
 #define CTL_CONF_DRJ            0x00000004 /* DisableRootJobs */
 #define CTL_CONF_ASRU           0x00000008 /* AllowSpecResourcesUsage */
 #define CTL_CONF_PAM            0x00000010 /* UsePam */
+#define CTL_CONF_WCKEY          0x00000020 /* TrackWCKey */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
@@ -2878,7 +2879,6 @@ typedef struct slurm_ctl_conf {
 	char *tmp_fs;		/* pathname of temporary file system */
 	char *topology_param;	/* network topology parameters */
 	char *topology_plugin;	/* network topology plugin */
-	uint16_t track_wckey;    /* see if we are using wckey or not */
 	uint16_t tree_width;    /* number of threads per node to span */
 	char *unkillable_program; /* program run by the slurmstepd when
 				   * processes in a job step are unkillable */

@@ -962,7 +962,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->tmp_fs              = xstrdup(conf->tmp_fs);
 	conf_ptr->topology_param      = xstrdup(conf->topology_param);
 	conf_ptr->topology_plugin     = xstrdup(conf->topology_plugin);
-	conf_ptr->track_wckey         = conf->track_wckey;
 	conf_ptr->tree_width          = conf->tree_width;
 
 	conf_ptr->wait_time           = conf->wait_time;

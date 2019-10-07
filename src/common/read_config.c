@@ -3895,9 +3895,8 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	(void) s_p_get_string(&conf->msg_aggr_params, "MsgAggregationParams",
 			      hashtbl);
 
-	if (!s_p_get_boolean((bool *)&conf->track_wckey,
-			    "TrackWCKey", hashtbl))
-		conf->track_wckey = false;
+	if (s_p_get_boolean((bool *)&truth, "TrackWCKey", hashtbl) && truth)
+		conf->conf_flags |= CTL_CONF_WCKEY;
 
 	if (!s_p_get_string(&conf->accounting_storage_type,
 			    "AccountingStorageType", hashtbl)) {
@@ -3962,7 +3961,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				|= ACCOUNTING_ENFORCE_ASSOCS;
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_WCKEYS;
-			conf->track_wckey = true;
+			conf->conf_flags |= CTL_CONF_WCKEY;
 		}
 
 		if (xstrcasestr(temp_str, "qos")) {
@@ -3974,7 +3973,7 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 		if (xstrcasestr(temp_str, "all")) {
 			conf->accounting_storage_enforce = 0xffff;
-			conf->track_wckey = true;
+			conf->conf_flags |= CTL_CONF_WCKEY;
 			/* If all is used, nojobs and nosteps aren't
 			   part of it.  They must be requested as well.
 			*/

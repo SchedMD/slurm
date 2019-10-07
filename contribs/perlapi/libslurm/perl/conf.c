@@ -384,7 +384,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 		STORE_FIELD(hv, conf, tmp_fs, charp);
 	if (conf->topology_plugin)
 		STORE_FIELD(hv, conf, topology_plugin, charp);
-	STORE_FIELD(hv, conf, track_wckey, uint16_t);
 	STORE_FIELD(hv, conf, tree_width, uint16_t);
 	if (conf->unkillable_program)
 		STORE_FIELD(hv, conf, unkillable_program, charp);
@@ -624,7 +623,6 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, task_prolog, charp, FALSE);
 	FETCH_FIELD(hv, conf, tmp_fs, charp, FALSE);
 	FETCH_FIELD(hv, conf, topology_plugin, charp, FALSE);
-	FETCH_FIELD(hv, conf, track_wckey, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, tree_width, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, unkillable_program, charp, FALSE);
 	FETCH_FIELD(hv, conf, unkillable_timeout, uint16_t, TRUE);

@@ -1771,7 +1771,8 @@ extern void *slurm_ctl_conf_2_key_pairs (slurm_ctl_conf_t* slurm_ctl_conf_ptr)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("TrackWCKey");
 	key_pair->value = xstrdup(
-		slurm_ctl_conf_ptr->track_wckey ? "Yes" : "No");
+		(slurm_ctl_conf_ptr->conf_flags & CTL_CONF_WCKEY) ?
+		"Yes" : "No");
 	list_append(ret_list, key_pair);
 
 	snprintf(tmp_str, sizeof(tmp_str), "%u",
