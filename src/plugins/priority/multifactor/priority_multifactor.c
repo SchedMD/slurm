@@ -84,7 +84,6 @@ extern void *acct_db_conn  __attribute__((weak_import));
 extern uint32_t cluster_cpus __attribute__((weak_import));
 extern List job_list  __attribute__((weak_import));
 extern time_t last_job_update __attribute__((weak_import));
-extern uint16_t part_max_priority __attribute__((weak_import));
 extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 extern int slurmctld_tres_cnt __attribute__((weak_import));
 extern int accounting_enforce __attribute__((weak_import));
@@ -93,7 +92,6 @@ void *acct_db_conn = NULL;
 uint32_t cluster_cpus = NO_VAL;
 List job_list = NULL;
 time_t last_job_update = (time_t) 0;
-uint16_t part_max_priority = 0;
 slurm_ctl_conf_t slurmctld_conf;
 int slurmctld_tres_cnt = 0;
 int accounting_enforce = 0;
@@ -627,8 +625,10 @@ static uint32_t _get_priority_internal(time_t start_time,
 							part_tres_factors);
 			}
 
-			priority_part = part_ptr->priority_job_factor /
-				(double)part_max_priority *
+			priority_part =
+				((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
+				 part_ptr->priority_job_factor :
+				 part_ptr->norm_priority) *
 				(double)weight_part;
 			priority_part +=
 				 (job_ptr->prio_factors->priority_age
@@ -1516,9 +1516,11 @@ static void _filter_job(struct job_record *job_ptr,
 			obj = xmalloc(sizeof(priority_factors_object_t));
 			slurm_copy_priority_factors_object(obj,
 						job_ptr->prio_factors);
-			obj->priority_part = job_part_ptr->priority_job_factor /
-					     (double)part_max_priority *
-					     (double)weight_part;
+			obj->priority_part =
+				((flags & PRIORITY_FLAGS_NO_NORMAL_PART) ?
+				 job_part_ptr->priority_job_factor :
+				 job_part_ptr->norm_priority) *
+				(double)weight_part;
 			obj->job_id = job_ptr->job_id;
 			obj->partition = job_part_ptr->name;
 			obj->user_id = job_ptr->user_id;
