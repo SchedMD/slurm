@@ -936,7 +936,7 @@ static int _reset_part_prio(void *x, void *arg)
 static void _sync_part_prio(void)
 {
 	/* reset global value from part list */
-	part_max_priority = 0;
+	part_max_priority = DEF_PART_MAX_PRIORITY;
 	list_for_each(part_list, _set_max_part_prio, NULL);
 	/* renormalize values after finding new max */
 	list_for_each(part_list, _reset_part_prio, NULL);
