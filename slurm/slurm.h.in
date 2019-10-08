@@ -1717,6 +1717,7 @@ typedef struct priority_factors_object {
 	double	 priority_js;
 	double	 priority_part;
 	double	 priority_qos;
+	double   direct_prio;   /* manually set priority */
 	uint32_t priority_site;
 
 	double   *priority_tres;/* tres priorities with weights applied. */

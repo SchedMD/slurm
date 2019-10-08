@@ -2787,6 +2787,7 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 		packdouble(object->priority_js, buffer);
 		packdouble(object->priority_part, buffer);
 		packdouble(object->priority_qos, buffer);
+		packdouble(object->direct_prio, buffer);
 		pack32(object->priority_site, buffer);
 
 		packdouble_array(object->priority_tres, object->tres_cnt,
@@ -2895,6 +2896,7 @@ static int _unpack_priority_factors_object(void **object, Buf buffer,
 		safe_unpackdouble(&object_ptr->priority_js, buffer);
 		safe_unpackdouble(&object_ptr->priority_part, buffer);
 		safe_unpackdouble(&object_ptr->priority_qos, buffer);
+		safe_unpackdouble(&object_ptr->direct_prio, buffer);
 		safe_unpack32(&object_ptr->priority_site, buffer);
 
 		safe_unpackdouble_array(&object_ptr->priority_tres, &tmp32,
