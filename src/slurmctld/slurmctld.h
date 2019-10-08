@@ -404,6 +404,8 @@ extern time_t last_part_update;		/* time of last part_list update */
 extern struct part_record default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
+
+#define DEF_PART_MAX_PRIORITY   1
 extern uint16_t part_max_priority;      /* max priority_job_factor in all parts */
 
 /*****************************************************************************\
