@@ -1159,7 +1159,11 @@ _pack_acct_gather_energy_req(acct_gather_energy_req_msg_t *msg,
 			     Buf buffer, uint16_t protocol_version)
 {
 	xassert(msg);
-	pack16(msg->delta, buffer);
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		pack16(msg->delta, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack16(msg->delta, buffer);
+	}
 }
 
 static int
@@ -1173,7 +1177,15 @@ _unpack_acct_gather_energy_req(acct_gather_energy_req_msg_t **msg,
 	msg_ptr = xmalloc(sizeof(acct_gather_energy_req_msg_t));
 	*msg = msg_ptr;
 
-	safe_unpack16(&msg_ptr->delta, buffer);
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpack16(&msg_ptr->delta, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&msg_ptr->delta, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
 
 	return SLURM_SUCCESS;
 
