@@ -125,7 +125,7 @@ typedef struct gres_node_state {
 
 	/*
 	 * Total resources available for allocation to jobs.
-	 * gres_cnt_found or gres_cnt_config, depending upon FastSchedule
+	 * gres_cnt_found or gres_cnt_config, depending upon config_overrides
 	 */
 	uint64_t gres_cnt_avail;
 
@@ -430,7 +430,7 @@ extern int gres_plugin_node_config_unpack(Buf buffer, char *node_name);
  * Called immediately after gres_plugin_node_config_unpack().
  * IN node_name - name of the node for which the gres information applies
  * IN orig_config - Gres information supplied from merged slurm.conf/gres.conf
- * IN/OUT new_config - Updated gres info from slurm.conf if FastSchedule=0
+ * IN/OUT new_config - Updated gres info from slurm.conf
  * IN/OUT gres_list - List of Gres records for this node to track usage
  * IN threads_per_core - Count of CPUs (threads) per core on this node
  * IN cores_per_sock - Count of cores per socket on this node
