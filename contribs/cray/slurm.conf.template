@@ -99,7 +99,6 @@ Waittime=0
 #
 # SCHEDULING
 DefMemPerCPU={defmem}
-FastSchedule=0
 MaxMemPerCPU={maxmem}
 #SchedulerTimeSlice=30
 SchedulerType=sched/backfill

@@ -149,8 +149,7 @@ def rli_compress(nidlist):
 #######################################
 def scale_mem(mem):
 	""" Since the SDB memory value differs from /proc/meminfo on the
-	    compute nodes, we must scale all memory values for
-	    FastSchedule 1 to work """
+	    compute nodes, we must scale all memory values """
 	return mem * 98 / 100
 
 #######################################
@@ -177,7 +176,7 @@ def format_nodes(class_reps, class_nodes):
 		    gres += ",gpu:{0}".format(gpu)
 
 		nodestr += "NodeName={0} Sockets={1} CoresPerSocket={2} \
-ThreadsPerCore={3} Gres={5} # RealMemory={4} (set by FastSchedule 0)\n".format(
+ThreadsPerCore={3} Gres={5} # RealMemory={4} \n".format(
 			rli_compress(class_nodes[i]), sockets,
 			cu/sockets, cores/cu,
 			memory, gres)
