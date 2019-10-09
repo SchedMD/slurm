@@ -3010,6 +3010,11 @@ If used, any job started on node that fails to load the env from a node will
 fail instead of using the cached env.  This will also implicitly imply the
 requeue_setup_env_fail option as well.
 .TP
+\fBnohold_on_prolog_fail\fR
+By default, if the Prolog exits with a non-zero value the job is requeued in
+a held state. By specifying this parameter the job will be requeued but not
+held so that the scheduler can dispatch it to another host.
+.TP
 \fBpack_serial_at_end\fR
 If used with the select/cons_res or select/cons_tres plugin,
 then put serial jobs at the end of
@@ -3049,11 +3054,6 @@ select/cons_tres plugins.
 If set, then the preemption sorting algorithm will be changed to sort by the
 job start times to favor preempting younger jobs over older. (Requires
 preempt/partition_prio or preempt/qos plugins.)
-.TP
-\fBnohold_on_prolog_fail\fR
-By default if the Prolog exits with a non-zero value the job is requeued in
-held state. By specifying this parameter the job will be requeued but not
-held so that the scheduler can dispatch it to another host.
 .TP
 \fBreduce_completing_frag\fR
 This option is used to control how scheduling of resources is performed when
