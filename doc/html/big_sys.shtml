@@ -121,7 +121,6 @@ the available parameters (<i>RealMemory</i>, <i>CPUs</i>, and
 <i>TmpDisk</i>).
 If the node is found to contain less resources than configured,
 it will be marked DOWN and not used.
-Also set the <i>FastSchedule</i> parameter.
 While Slurm can easily handle a heterogeneous cluster, configuring
 the nodes using the minimal number of lines in <i>slurm.conf</i>
 will both make for easier administration and better performance.</p>
@@ -191,6 +190,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 17 June 2019</p>
+<p style="text-align:center;">Last modified 9 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

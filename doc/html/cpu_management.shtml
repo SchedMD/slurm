@@ -109,10 +109,10 @@ Step 1 is performed by slurmctld and the select plugin.
 		<tr>
 			<td height="18" width="20%">
 				<p align="LEFT"><font face="Courier New, monospace"><font style="font-size: 8pt" size="1">
-				<a href="slurm.conf.html#OPT_FastSchedule">FastSchedule</a></font></font></p>
+				<a href="slurm.conf.html#OPT_SlurmdParameters">SlurmdParameters</a></font></font></p>
 			</td>
 			<td height="18" width="20%">
-				<p align="LEFT"><font style="font-size: 8pt" size="1"><font face="Courier New, monospace">0 | 1 | 2</font></font></p>
+				<p align="LEFT"><font style="font-size: 8pt" size="1"><font face="Courier New, monospace">config_overrides</font></font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Controls
@@ -546,10 +546,10 @@ Step 2 is performed by slurmctld and the select plugin.
 		<tr>
 			<td height="18" width="20%">
 				<p align="LEFT"><font face="Courier New, monospace"><font style="font-size: 8pt" size="1">
-				<a href="slurm.conf.html#OPT_FastSchedule">FastSchedule</a></font></font></p>
+				<a href="slurm.conf.html#OPT_SlurmdParameters">SlurmdParameters</a></font></font></p>
 			</td>
 			<td height="18" width="20%">
-				<p align="LEFT"><font style="font-size: 8pt" size="1"><font face="Courier New, monospace">0 | 1 | 2</font></font></p>
+				<p align="LEFT"><font style="font-size: 8pt" size="1"><font face="Courier New, monospace">config_overrides</font></font></p>
 			</td>
 			<td width="60%">
 				<p align="LEFT"><font style="font-size: 8pt" size="1">Controls
@@ -3533,6 +3533,6 @@ and binding for this job. For example, task id 2 is bound to CPU id 2.
 </center>
 
 
-<p style="text-align:center;">Last modified 20 December 2017</p>
+<p style="text-align:center;">Last modified 9 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

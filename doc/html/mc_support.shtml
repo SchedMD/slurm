@@ -909,19 +909,15 @@ TaskPlugin=task/affinity          # enable task affinity
 # TaskPlugin=task/affinity                    # default is task/none
 </PRE>
 
-<p>Slurm will automatically detect the architecture of the nodes used
-by examining /proc/cpuinfo.  If, for some reason, the administrator
-wishes to override the automatically selected architecture, the
-NodeName parameter can be used in combination with FastSchedule:
+<p>Declare the node hardware configuration in slurm.conf:
 
 <PRE>
-FastSchedule=1
-NodeName=dualcore[01-16] CPUs=4 CoresPerSocket=2 ThreadsPerCore=1
+NodeName=dualcore[01-16] CoresPerSocket=2 ThreadsPerCore=1
 </PRE>
 
 <p>For a more complete description of the various node configuration options
 see the slurm.conf man page.</p>
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 27 October 2017</p>
+<p style="text-align:center;">Last modified 9 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

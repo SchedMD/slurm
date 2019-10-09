@@ -70,9 +70,6 @@
 <h2>For Administrators</h2>
 <ol>
 <li><a href="#suspend">How is job suspend/resume useful?</a></li>
-<li><a href="#fast_schedule">How can I configure Slurm to use the resources
-  actually found on a node rather than what is defined in
-  <i>slurm.conf</i>?</a></li>
 <li><a href="#return_to_service">Why is a node shown in state DOWN when the node
   has registered for service?</a></li>
 <li><a href="#down_node">What happens when a node crashes?</a></li>
@@ -1012,19 +1009,6 @@ Suspending and resuming a job makes use of the SIGSTOP and SIGCONT
 signals respectively, so swap and disk space should be sufficient to
 accommodate all jobs allocated to a node, either running or suspended.
 
-<p><a name="fast_schedule"><b>2. How can I configure Slurm to use
-the resources actually found on a node rather than what is defined
-in <i>slurm.conf</i>?</b></a><br>
-Slurm can either base its scheduling decisions upon the node
-configuration defined in <i>slurm.conf</i> or what each node
-actually returns as available resources.
-This is controlled using the configuration parameter <i>FastSchedule</i>.
-Set its value to zero in order to use the resources actually
-found on each node, but with a higher overhead for scheduling.
-A value of one is the default and results in the node configuration
-defined in <i>slurm.conf</i> being used. See &quot;man slurm.conf&quot;
-for more details.</p>
-
 <p><a name="return_to_service"><b>3. Why is a node shown in state
 DOWN when the node has registered for service?</b></a><br>
 The configuration parameter <i>ReturnToService</i> in <i>slurm.conf</i>
@@ -1312,7 +1296,8 @@ $ squeue
 
 <p><a name="extra_procs"><b>15. Can Slurm emulate nodes with more
 resources than physically exist on the node?</b></a><br>
-Yes. In the slurm.conf file, configure <i>FastSchedule=2</i> and specify
+Yes. In the slurm.conf file, configure <i>SlurmdParameters=config_overrides</i>
+and specify
 any desired node resource specifications (<i>CPUs</i>, <i>Sockets</i>,
 <i>CoresPerSocket</i>, <i>ThreadsPerCore</i>, and/or <i>TmpDisk</i>).
 Slurm will use the resource specification for each node that is
