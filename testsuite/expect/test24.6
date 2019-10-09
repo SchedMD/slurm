@@ -39,11 +39,14 @@ set ta1         "test$test_id-account.1"
 set tq1         "test$test_id-qos.1"
 
 set p1          "test$test_id-part.1"
+set p2          "test$test_id-part.2"
 
 set config_path  ""
 
 set jobid1 0
 set jobid2 0
+set jobid3 0
+set jobid4 0
 
 set cwd "[$bin_pwd]"
 
@@ -78,13 +81,19 @@ proc clean_assocs {} {
 }
 
 proc end_it { exit_code } {
-	global test_id jobid1 jobid2 bin_cp config_path cwd ta1 tq1
+	global test_id jobid1 jobid2 jobid3 jobid4 bin_cp config_path cwd ta1 tq1
 
 	if {$jobid1} {
 		cancel_job $jobid1
 	}
 	if {$jobid2} {
 		cancel_job $jobid2
+	}
+	if {$jobid3} {
+		cancel_job $jobid3
+	}
+	if {$jobid4} {
+		cancel_job $jobid4
 	}
 
 	clean_assocs
@@ -313,6 +322,7 @@ if {$idle_node == ""} {
 }
 log_info "idle: $idle_node"
 create_part $p1 $idle_node 10
+create_part $p2 $idle_node 20
 
 
 clean_assocs
@@ -339,7 +349,12 @@ if {[add_user [get_my_user_name] [array get user_req]]} {
 set cpu_cnt [part_cpu_cnt $p1]
 set jobid1 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" RUNNING]
 set jobid2 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" PENDING]
+set jobid3 [sub_job "-n$cpu_cnt -p$p2 -A$ta1 --qos=$tq1" PENDING]
+set jobid4 [sub_job "-n$cpu_cnt -p$p1,$p2 -A$ta1 --qos=$tq1" PENDING]
 
 sprio_args "-j $jobid2 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid2\\s+100\\s+10\\s+200\\s+cpu=$cpu_cnt" 1
+sprio_args "-j $jobid3 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid3\\s+100\\s+20\\s+200\\s+cpu=$cpu_cnt" 1
+sprio_args "-j $jobid4 -p$p1 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid4\\s+100\\s+10\\s+200\\s+cpu=$cpu_cnt" 1
+sprio_args "-j $jobid4 -p$p2 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid4\\s+100\\s+20\\s+200\\s+cpu=$cpu_cnt" 1
 
 end_it 0
