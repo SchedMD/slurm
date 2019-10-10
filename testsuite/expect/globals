@@ -4716,11 +4716,16 @@ proc get_craynetwork_count {} {
 #
 ################################################################
 proc get_gpu_count { node_count } {
-	global number sinfo
+	global sinfo
 	set fini 0
 	set node_inx 0
 	set def_part [default_partition]
-	set alpha_numeric_colon_paren "\[a-zA-Z0-9_\\(\\),\:\-\]+"
+	# Any characters except (,:
+	set not_delim "\[^(,:\]"
+	# The first optional group matches type, the second group matches count.
+	# Test out the regex here (note the single-line regex flag, since in
+	# expect, . matches newlines): https://regex101.com/r/FlNYKM/5
+	set regex "gpu:($not_delim*)?:?($not_delim*)"
 
 	if {$node_count <= 0} {
 		return 0
@@ -4729,21 +4734,14 @@ proc get_gpu_count { node_count } {
 	log_user 0
 	spawn $sinfo -N -p$def_part -oGRES=%G -h
 	expect {
-		-re "GRES=($alpha_numeric_colon_paren)" {
+		-re $regex {
 			set count 0
-			set parts [split $expect_out(1,string) ",/"]
-			while 1 {
-				set gpu_found [lsearch $parts "gpu*"]
-				if { $gpu_found == -1 } break
-				set parts2 [split [lindex $parts $gpu_found] ":(/"]
-
-				set col [lsearch -regexp $parts2 ^$number$]
-				if { $col == -1 } {
-					incr count
-				} else {
-					set count [expr $count + [lindex $parts2 $col]]
-				}
-				set parts [lreplace $parts $gpu_found $gpu_found]
+			# Start with format gpu:1080:5
+			set type $expect_out(1,string)
+			set count $expect_out(2,string)
+			if {$count == ""} {
+				# Now assume format gpu:5
+				set count $type
 			}
 			if { $count } {
 				incr node_inx
