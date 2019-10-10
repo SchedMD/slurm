@@ -59,10 +59,7 @@ send_user "\nGPU count is $gpu_cnt\n"
 send_user "Sockets per node is $sockets_per_node\n"
 send_user "CPUs per socket is $cpus_per_socket\n"
 send_user "CPUs per node is $cpus_per_node\n\n"
-if {$sockets_per_node < 2} {
-	send_user "\nWARNING: This test requires 2 or more sockets per node in the default partition\n"
-	exit 0
-}
+
 if {$cpus_per_node < 2} {
 	send_user "\nWARNING: This test requires 2 or more CPUs per node in the default partition\n"
 	exit 0
@@ -79,31 +76,37 @@ fi
 exit 0"
 
 set timeout $max_job_delay
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J "test$test_id" -t1 ./$file_in]
-expect {
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
 
-#
-# Test of --gpu-bind=closest
-#
-send_user "\n\nTEST 1\n"
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J "test$test_id" -t1 ./$file_in]
-expect {
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
+if {$sockets_per_node < 2} {
+	send_user "\nWARNING: Tests ${test_id}.0 and ${test_id}.1 require 2 or more sockets per node in the default partition\n"
+} else {
+	send_user "\n\nTEST ${test_id}.0\n"
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J "test$test_id" -t1 ./$file_in]
+	expect {
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
-	eof {
-		wait
+
+	#
+	# Test of --gpu-bind=closest
+	#
+	send_user "\n\nTEST ${test_id}.1\n"
+	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J "test$test_id" -t1 ./$file_in]
+	expect {
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			slow_kill $srun_pid
+			set exit_code 1
+		}
+		eof {
+			wait
+		}
 	}
 }
 
@@ -111,7 +114,7 @@ expect {
 # Test of --gpu-bind=map_gpu
 # Note that if the task count exceeds the provided map_gpu, the map will be cycled over for additional tasks
 #
-send_user "\n\nTEST 2\n"
+send_user "\n\nTEST ${test_id}.2\n"
 if {$gpu_cnt < 4} {
 	set map_gpu "map_gpu:1,0"
 	set match_goal 2
@@ -162,7 +165,7 @@ if {$matches != $match_goal} {
 # Test of --gpu-bind=mask_gpu
 # Note that if the task count exceeds the provided mask_gpu, the mask will be cycled over for additional tasks
 #
-send_user "\n\nTEST 3\n"
+send_user "\n\nTEST ${test_id}.3\n"
 if {$gpu_cnt < 4} {
 	set mask_gpu "mask_gpu:0x3,0x1"
 } else {
