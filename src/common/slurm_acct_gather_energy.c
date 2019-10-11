@@ -304,7 +304,56 @@ extern int acct_gather_energy_g_update_node_energy(void)
 	return retval;
 }
 
-extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
+extern int acct_gather_energy_g_get_sum(enum acct_energy_type data_type,
+					acct_gather_energy_t *energy)
+{
+	int retval = SLURM_ERROR;
+	static acct_gather_energy_t *e, *energy_array;
+
+	if (slurm_acct_gather_energy_init() < 0)
+		return retval;
+
+	slurm_mutex_lock(&g_context_lock);
+
+	if (g_context_num == 1) {
+		retval = (*(ops[0].get_data))(data_type, energy);
+		slurm_mutex_unlock(&g_context_lock);
+		return retval;
+	}
+
+	energy_array = acct_gather_energy_alloc(g_context_num);
+	for (int i = 0; i < g_context_num; i++) {
+		if (!g_context[i])
+			continue;
+
+		e = &energy_array[i];
+
+		retval = (*(ops[i].get_data))(data_type, e);
+		if (retval != SLURM_SUCCESS || (e->consumed_energy == NO_VAL64))
+			continue;
+
+		energy->base_consumed_energy += e->base_consumed_energy;
+		energy->ave_watts += e->ave_watts;
+		energy->consumed_energy += e->consumed_energy;
+		energy->current_watts += e->current_watts;
+		energy->previous_consumed_energy += e->previous_consumed_energy;
+
+		/*
+		 * node poll_time is computed as the oldest poll_time of
+		 * the sensors
+		 */
+		if (!energy->poll_time || (energy->poll_time > e->poll_time))
+			energy->poll_time = e->poll_time;
+
+	}
+	slurm_mutex_unlock(&g_context_lock);
+	acct_gather_energy_destroy(energy_array);
+
+	return retval;
+}
+
+extern int acct_gather_energy_g_get_data(int context_id,
+					 enum acct_energy_type data_type,
 					 void *data)
 {
 	int retval = SLURM_ERROR;
@@ -313,15 +362,12 @@ extern int acct_gather_energy_g_get_data(enum acct_energy_type data_type,
 		return retval;
 
 	slurm_mutex_lock(&g_context_lock);
-	for (int i = 0; i < g_context_num; i++) {
-		if (!g_context[i])
-			continue;
-		/*
-		 * FIXME: this is not stackable at the moment.  Each plugin will
-		 * mess with other plugins data.
-		 */
-		retval = (*(ops[i].get_data))(data_type, data);
-	}
+
+	xassert((context_id < g_context_num) && (context_id >= 0));
+	xassert(g_context[context_id]);
+
+	retval = (*(ops[context_id].get_data))(data_type, data);
+
 	slurm_mutex_unlock(&g_context_lock);
 
 	return retval;
@@ -339,10 +385,6 @@ extern int acct_gather_energy_g_set_data(enum acct_energy_type data_type,
 	for (int i = 0; i < g_context_num; i++) {
 		if (!g_context[i])
 			continue;
-		/*
-		 * FIXME: this is not stackable at the moment.  Each plugin will
-		 * mess with other plugins data.
-		 */
 		retval = (*(ops[i].set_data))(data_type, data);
 	}
 	slurm_mutex_unlock(&g_context_lock);
