@@ -3486,6 +3486,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	}
 
 	avail_res->avail_cpus = cpus;
+	avail_res->avail_res_cnt = cpus + avail_res->avail_gpus;
 	_avail_res_log(avail_res, node_ptr->name);
 
 	return avail_res;
