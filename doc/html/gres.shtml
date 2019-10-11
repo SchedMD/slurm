@@ -104,13 +104,13 @@ requested at job submit time using the options:</P>
 <DL>
 <DT><I>--gres</I></DT>
 <DD>Generic resources required per node</DD>
-<DT><I>--gpu</I></DT>
+<DT><I>--gpus</I></DT>
 <DD>GPUs required per job</DD>
-<DT><I>--gpu-per-node</I></DT>
+<DT><I>--gpus-per-node</I></DT>
 <DD>GPUs required per node. Equivalent to the <I>--gres</I> option for GPUs.</DD>
-<DT><I>--gpu-per-socket</I></DT>
+<DT><I>--gpus-per-socket</I></DT>
 <DD>GPUs required per socket. Requires the job to specify a task socket.</DD>
-<DT><I>--gpu-per-task</I></DT>
+<DT><I>--gpus-per-task</I></DT>
 <DD>GPUs required per task. Requires the job to specify a task count.</DD>
 </DL>
 
