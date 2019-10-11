@@ -133,6 +133,7 @@ char *sensor_config_file = NULL;
 static time_t last_update_time = 0;
 static time_t previous_update_time = 0;
 static stepd_step_rec_t *job = NULL;
+static int context_id = -1;
 
 /* array of struct to track the status of multiple sensors */
 typedef struct sensor_status {
@@ -805,7 +806,10 @@ static int _get_joules_task(uint16_t delta)
 	acct_gather_energy_t *energies = NULL;
 	uint16_t sensor_cnt = 0;
 
-	if (slurm_get_node_energy(NULL, delta, &sensor_cnt, &energies)) {
+	xassert(context_id != -1);
+
+	if (slurm_get_node_energy(
+		    NULL, context_id, delta, &sensor_cnt, &energies)) {
 		error("_get_joules_task: can't get info from slurmd");
 		return SLURM_ERROR;
 	}
@@ -1205,7 +1209,8 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 	transfer_s_p_options(full_options, options, full_options_cnt);
 }
 
-extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
+extern void acct_gather_energy_p_conf_set(int context_id_in,
+					  s_p_hashtbl_t *tbl)
 {
 	char *tmp_char;
 
@@ -1313,6 +1318,7 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 		}
 	}
 
+	context_id = context_id_in;
 	if (!running_in_slurmdstepd())
 		return;
 

@@ -240,6 +240,7 @@ static pthread_cond_t launch_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t thread_ipmi_id_launcher = 0;
 static pthread_t thread_ipmi_id_run = 0;
 static stepd_step_rec_t *job = NULL;
+static int context_id = -1;
 
 /* Thread scope global vars */
 __thread ipmi_ctx_t ipmi_ctx = NULL;
@@ -776,11 +777,13 @@ static int _get_joules_task(uint16_t delta)
 	static bool first = true;
 	static uint64_t first_consumed_energy = 0;
 
+	xassert(context_id != -1);
+
         /*
 	 * 'delta' parameter means "use cache" if data is newer than delta
 	 * seconds ago, otherwise just inquiry ipmi again.
 	 */
-	if (slurm_get_node_energy(NULL, delta, &sensor_cnt, &new)) {
+	if (slurm_get_node_energy(NULL, context_id, delta, &sensor_cnt, &new)) {
 		error("%s: can't get info from slurmd", __func__);
 		return SLURM_ERROR;
 	}
@@ -984,7 +987,8 @@ extern void acct_gather_energy_p_conf_options(s_p_options_t **full_options,
 	transfer_s_p_options(full_options, options, full_options_cnt);
 }
 
-extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
+extern void acct_gather_energy_p_conf_set(int context_id_in,
+					  s_p_hashtbl_t *tbl)
 {
 	bool tmp_bool;
 
@@ -1043,6 +1047,8 @@ extern void acct_gather_energy_p_conf_set(s_p_hashtbl_t *tbl)
 			cmd_rq_len = 4;
 		}
 	}
+
+	context_id = context_id_in;
 
 	if (!running_in_slurmdstepd())
 		return;

@@ -69,7 +69,8 @@ typedef struct slurm_acct_gather_energy_ops {
 	int (*set_data)           (enum acct_energy_type data_type, void *data);
 	void (*conf_options)      (s_p_options_t **full_options,
 				   int *full_options_cnt);
-	void (*conf_set)          (s_p_hashtbl_t *tbl);
+	void (*conf_set)          (int context_id_in,
+				   s_p_hashtbl_t *tbl);
 	void (*conf_values)        (List *data);
 } slurm_acct_gather_energy_ops_t;
 /*
@@ -403,7 +404,7 @@ extern int acct_gather_energy_g_conf_set(s_p_hashtbl_t *tbl)
 	for (int i = 0; i < g_context_num; i++) {
 		if (!g_context[i])
 			continue;
-		(*(ops[i].conf_set))(tbl);
+		(*(ops[i].conf_set))(i, tbl);
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	return SLURM_SUCCESS;
