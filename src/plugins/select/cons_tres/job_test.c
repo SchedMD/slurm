@@ -6029,6 +6029,7 @@ static avail_res_t *_can_job_run_on_node(struct job_record *job_ptr,
 	}
 
 	avail_res->avail_cpus = cpus;
+	avail_res->avail_res_cnt = cpus + avail_res->avail_gpus;
 	_avail_res_log(avail_res, node_ptr->name);
 
 	return avail_res;
