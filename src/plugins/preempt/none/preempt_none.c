@@ -73,6 +73,11 @@ extern uint16_t job_preempt_mode(job_record_t *job_ptr)
 	return (uint16_t) PREEMPT_MODE_OFF;
 }
 
+extern uint32_t job_get_grace_time(struct job_record *job_ptr)
+{
+	return 0;
+}
+
 extern bool preemption_enabled(void)
 {
 	return false;

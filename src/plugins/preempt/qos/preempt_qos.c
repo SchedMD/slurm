@@ -233,3 +233,12 @@ extern bool job_preempt_check(job_queue_rec_t *preemptor,
 {
 	return _qos_preemptable(preemptee->job_ptr, preemptor->job_ptr);
 }
+
+/* Return grace_time for job */
+extern uint32_t job_get_grace_time(struct job_record *job_ptr)
+{
+	if (!job_ptr->qos_ptr)
+		return 0;
+
+        return job_ptr->qos_ptr->grace_time;
+}

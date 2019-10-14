@@ -40,6 +40,7 @@
 #include <pthread.h>
 #include <signal.h>
 
+#include "preempt.h"
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
@@ -54,6 +55,7 @@ typedef struct slurm_preempt_ops {
 	bool		(*preemption_enabled) (void);
 	bool		(*job_preempt_check)  (job_queue_rec_t *preemptor,
 					       job_queue_rec_t *preemptee);
+	uint32_t	(*job_get_grace_time) (struct job_record *job_ptr);
 } slurm_preempt_ops_t;
 
 /*
@@ -64,6 +66,7 @@ static const char *syms[] = {
 	"job_preempt_mode",
 	"preemption_enabled",
 	"job_preempt_check",
+	"job_get_grace_time",
 };
 
 static slurm_preempt_ops_t ops;
@@ -92,11 +95,9 @@ static void _preempt_signal(job_record_t *job_ptr, uint32_t grace_time)
 extern int slurm_job_check_grace(job_record_t *job_ptr,
 				 job_record_t *preemptor_ptr)
 {
-	/* Preempt modes: -1 (unset), 0 (none), 1 (partition), 2 (QOS) */
-	static int preempt_mode = 0;
-	static time_t last_update_time = (time_t) 0;
 	int rc = SLURM_SUCCESS;
-	uint32_t grace_time = 0;
+	static time_t last_update_time = (time_t)0;
+	static uint32_t grace_time = 0;
 
 	if (job_ptr->preempt_time) {
 		if (time(NULL) >= job_ptr->end_time)
@@ -105,27 +106,9 @@ extern int slurm_job_check_grace(job_record_t *job_ptr,
 	}
 
 	if (last_update_time != slurmctld_conf.last_update) {
-		char *preempt_type = slurm_get_preempt_type();
-		if (!xstrcmp(preempt_type, "preempt/partition_prio"))
-			preempt_mode = 1;
-		else if (!xstrcmp(preempt_type, "preempt/qos"))
-			preempt_mode = 2;
-		else
-			preempt_mode = 0;
-		xfree(preempt_type);
+		grace_time = slurm_job_get_grace_time(job_ptr);
 		last_update_time = slurmctld_conf.last_update;
 	}
-
-	if (preempt_mode == 1)
-		grace_time = job_ptr->part_ptr->grace_time;
-	else if (preempt_mode == 2) {
-		if (!job_ptr->qos_ptr)
-			error("%s: %pJ has no QOS ptr!  This should never happen",
-			      __func__, job_ptr);
-		else
-			grace_time = job_ptr->qos_ptr->grace_time;
-	}
-
 	if (grace_time) {
 		debug("setting %u sec preemption grace time for %pJ to reclaim resources for %pJ",
 		      grace_time, job_ptr, preemptor_ptr);
@@ -224,4 +207,15 @@ extern bool slurm_job_preempt_check(job_queue_rec_t *preemptor,
 
 	return (*(ops.job_preempt_check))
 		(preemptor, preemptee);
+}
+
+/*
+ * Return the grace time for job
+ */
+extern uint32_t slurm_job_get_grace_time(struct job_record *job_ptr)
+{
+	if (slurm_preempt_init() < 0)
+		return 0;
+
+	return (*(ops.job_get_grace_time))(job_ptr);
 }

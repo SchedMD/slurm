@@ -94,4 +94,7 @@ extern bool slurm_job_preempt_check(job_queue_rec_t *preemptor,
 extern int slurm_job_check_grace(job_record_t *job_ptr,
 				 job_record_t *preemptor_ptr);
 
+/* Returns 0 if grace time isn't found */
+extern uint32_t slurm_job_get_grace_time(struct job_record *job_ptr);
+
 #endif /*__SLURM_CONTROLLER_PREEMPT_H__*/

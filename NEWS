@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Make slurmctld fatal if unable to load a script or a job environment when
     building the launch job message.
  -- Removed the checkpoint plugin interface and all associated API calls.
+ -- Add job_get_grace_time() functions to preempt plugins and refactor
+    slurm_job_check_grace() to use them.
 
 * Changes in Slurm 19.05.5
 ==========================
