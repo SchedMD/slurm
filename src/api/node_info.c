@@ -184,11 +184,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	uint64_t alloc_memory;
 	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
-	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
-
-	if (slurm_load_ctl_conf((time_t) NULL, &slurm_ctl_conf_ptr)
-	    != SLURM_SUCCESS)
-		fatal("Cannot load slurmctld conf file");
 
 	if (my_state & NODE_STATE_CLOUD) {
 		my_state &= (~NODE_STATE_CLOUD);
@@ -296,8 +291,7 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 			line_used = true;
 		}
 
-		if (node_ptr->version &&
-		    xstrcmp(node_ptr->version, slurm_ctl_conf_ptr->version)) {
+		if (node_ptr->version) {
 			xstrfmtcat(out, "Version=%s", node_ptr->version);
 			line_used = true;
 		}
@@ -482,7 +476,6 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	else
 		xstrcat(out, "\n\n");
 
-	slurm_free_ctl_conf(slurm_ctl_conf_ptr);
 	return out;
 }
 
