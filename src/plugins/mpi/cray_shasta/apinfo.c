@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  apinfo.h - Cray Shasta PMI apinfo file creation
+ *  apinfo.c - Cray Shasta PMI apinfo file creation
  *****************************************************************************
  *  Copyright 2019 Cray Inc. All Rights Reserved.
  *  Written by David Gloe <dgloe@cray.com>
