@@ -84,6 +84,7 @@ documents those changes that are of interest to users and administrators.
  -- Stricter escaping of strings sent to Elasticsearch.
  -- Allow clusters to be added automatically to db at startup of ctld.
  -- Add AccountingStorageExternalHost slurm.conf parameter.
+ -- Add support for srun -M<cluster> --jobid=# for existing remote allocations.
 
 * Changes in Slurm 19.05.6
 ==========================

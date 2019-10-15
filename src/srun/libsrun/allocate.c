@@ -660,6 +660,19 @@ extern List existing_allocation(void)
 	if (sropt.jobid == NO_VAL)
 		return NULL;
 
+	if (opt.clusters) {
+		List clusters = NULL;
+		if (!(clusters = slurmdb_get_info_cluster(opt.clusters))) {
+			print_db_notok(opt.clusters, 0);
+			exit(1);
+		}
+		working_cluster_rec = list_peek(clusters);
+		debug2("Looking for job %d on cluster %s (addr: %s)",
+		       sropt.jobid,
+		       working_cluster_rec->name,
+		       working_cluster_rec->control_host);
+	}
+
 	old_job_id = (uint32_t) sropt.jobid;
 	if (slurm_het_job_lookup(old_job_id, &job_resp_list) < 0) {
 		if (sropt.parallel_debug)
