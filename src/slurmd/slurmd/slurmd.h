@@ -179,6 +179,7 @@ extern uint32_t *fini_job_id;
 extern pthread_mutex_t fini_job_mutex;
 extern pthread_mutex_t tres_mutex;
 extern pthread_cond_t  tres_cond;
+extern bool tres_packed;
 
 /* Send node registration message with status to controller
  * IN status - same values slurm error codes (for node shutdown)

@@ -137,6 +137,7 @@ uint32_t *fini_job_id = NULL;
 pthread_mutex_t fini_job_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t tres_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  tres_cond      = PTHREAD_COND_INITIALIZER;
+bool tres_packed = false;
 
 /*
  * count of active threads
@@ -1109,6 +1110,16 @@ static void _build_conf_buf(void)
 	FREE_NULL_BUFFER(conf->buf);
 	conf->buf = init_buf(0);
 	pack_slurmd_conf_lite(conf, conf->buf);
+	if (!tres_packed && assoc_mgr_tres_list) {
+		assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+		assoc_mgr_lock(&locks);
+		slurm_pack_list(assoc_mgr_tres_list,
+				slurmdb_pack_tres_rec, conf->buf,
+				SLURM_PROTOCOL_VERSION);
+		assoc_mgr_unlock(&locks);
+		tres_packed = true;
+	}
+
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 

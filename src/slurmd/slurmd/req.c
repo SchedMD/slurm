@@ -462,9 +462,33 @@ static int _send_slurmd_conf_lite (int fd, slurmd_conf_t *cf)
 {
 	int len;
 
+	/*
+	 * Wait for the registration to come back from the slurmctld so we have
+	 * a TRES list to work with.
+	 */
+	if (!assoc_mgr_tres_list) {
+		slurm_mutex_lock(&tres_mutex);
+		slurm_cond_wait(&tres_cond, &tres_mutex);
+		slurm_mutex_unlock(&tres_mutex);
+	}
+
 	slurm_mutex_lock(&cf->config_mutex);
 
 	xassert(cf->buf);
+	if (!tres_packed) {
+		assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+		assoc_mgr_lock(&locks);
+		if (assoc_mgr_tres_list) {
+			slurm_pack_list(assoc_mgr_tres_list,
+					slurmdb_pack_tres_rec, cf->buf,
+					SLURM_PROTOCOL_VERSION);
+		} else {
+			fatal("%s: assoc_mgr_tres_list is NULL when trying to start a slurmstepd. This should never happen.",
+			      __func__);
+		}
+		assoc_mgr_unlock(&locks);
+		tres_packed = true;
+	}
 
 	len = get_buf_offset(cf->buf);
 	safe_write(fd, &len, sizeof(int));
@@ -492,45 +516,12 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	int parent_rank, children, depth, max_depth;
 	char *parent_alias = NULL;
 	slurm_addr_t parent_addr = {0};
-	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	slurm_msg_t_init(&msg);
 
 	/* send conf over to slurmstepd */
 	if (_send_slurmd_conf_lite(fd, conf) < 0)
 		goto rwfail;
-
-	/*
-	 * Wait for the registration to come back from the slurmctld so we have
-	 * a TRES list to work with.
-	 */
-	if (!assoc_mgr_tres_list) {
-		slurm_mutex_lock(&tres_mutex);
-		slurm_cond_wait(&tres_cond, &tres_mutex);
-		slurm_mutex_unlock(&tres_mutex);
-	}
-
-	/*
-	 * Send over right after the slurmd_conf_lite! We don't care about the
-	 * assoc/qos locks assoc_mgr_post_tres_list is requesting as those lists
-	 * don't exist here.
-	 */
-	assoc_mgr_lock(&locks);
-	if (assoc_mgr_tres_list) {
-		buffer = init_buf(0);
-		slurm_pack_list(assoc_mgr_tres_list,
-				slurmdb_pack_tres_rec, buffer,
-				SLURM_PROTOCOL_VERSION);
-		len = get_buf_offset(buffer);
-		safe_write(fd, &len, sizeof(int));
-		safe_write(fd, get_buf_data(buffer), len);
-		free_buf(buffer);
-		buffer = NULL;
-	} else {
-		fatal("%s: assoc_mgr_tres_list is NULL when trying to start a slurmstepd. This should never happen.",
-		      __func__);
-	}
-	assoc_mgr_unlock(&locks);
 
 	/* send cgroup conf over to slurmstepd */
 	if (xcgroup_write_conf(fd) < 0)

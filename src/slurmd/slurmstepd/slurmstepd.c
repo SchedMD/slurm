@@ -253,6 +253,8 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	Buf buffer = NULL;
 	slurmd_conf_t *confl, *local_conf = NULL;
 	int tmp_int = 0;
+	List tmp_list = NULL;
+	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 
 	/*  First check to see if we've already initialized the
 	 *   global slurmd_conf_t in 'conf'. Allocate memory if not.
@@ -272,6 +274,11 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	rc = unpack_slurmd_conf_lite_no_alloc(confl, buffer);
 	if (rc == SLURM_ERROR)
 		fatal("slurmstepd: problem with unpack of slurmd_conf");
+
+	slurm_unpack_list(&tmp_list,
+			  slurmdb_unpack_tres_rec,
+			  slurmdb_destroy_tres_rec,
+			  buffer, SLURM_PROTOCOL_VERSION);
 
 	free_buf(buffer);
 
@@ -307,6 +314,14 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	if (tmp_int != -1)
 		confl->acct_freq_task = tmp_int;
 
+	xassert(tmp_list);
+
+	assoc_mgr_lock(&locks);
+	assoc_mgr_post_tres_list(tmp_list);
+	debug2("%s: slurmd sent %u TRES.", __func__, g_tres_count);
+	/* assoc_mgr_post_tres_list destroys tmp_list */
+	tmp_list = NULL;
+	assoc_mgr_unlock(&locks);
 
 	return (confl);
 
@@ -493,37 +508,10 @@ _init_from_slurmd(int sock, char **argv,
 	uint16_t port;
 	char buf[16];
 	uint32_t jobid = 0, stepid = 0;
-	List tmp_list = NULL;
-	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
 
 	/* receive conf from slurmd */
 	if (!(conf = read_slurmd_conf_lite(sock)))
 		fatal("Failed to read conf from slurmd");
-
-	/* Receive TRES information for slurmd */
-	safe_read(sock, &len, sizeof(int));
-	if (len > 0) {
-		incoming_buffer = xmalloc(len);
-		safe_read(sock, incoming_buffer, len);
-		buffer = create_buf(incoming_buffer, len);
-		slurm_unpack_list(&tmp_list,
-				  slurmdb_unpack_tres_rec,
-				  slurmdb_destroy_tres_rec,
-				  buffer, SLURM_PROTOCOL_VERSION);
-		free_buf(buffer);
-	} else {
-		fatal("%s: We didn't get any tres from slurmd. This should never happen.",
-		      __func__);
-	}
-
-	xassert(tmp_list);
-
-	assoc_mgr_lock(&locks);
-	assoc_mgr_post_tres_list(tmp_list);
-	debug2("%s: slurmd sent %u TRES.", __func__, g_tres_count);
-	/* assoc_mgr_post_tres_list destroys tmp_list */
-	tmp_list = NULL;
-	assoc_mgr_unlock(&locks);
 
 	/* receive cgroup conf from slurmd */
 	if (xcgroup_read_conf(sock) != SLURM_SUCCESS)
