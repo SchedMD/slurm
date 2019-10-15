@@ -12390,8 +12390,7 @@ extern void gres_plugin_step_hardware_init(List step_gres_list,
 			info("devices: %s", dev_str);
 			xfree(dev_str);
 		}
-		(*(gres_context[i].ops.step_hardware_init))(devices,
-								 settings);
+		(*(gres_context[i].ops.step_hardware_init))(devices, settings);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }
