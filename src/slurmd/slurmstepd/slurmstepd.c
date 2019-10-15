@@ -293,6 +293,14 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	} else
 		confl->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 
+	/*
+	 * LOGGING BEFORE THIS WILL NOT WORK!  Only afterwards will it show
+	 * up in the log.
+	 */
+	log_alter(confl->log_opts, 0, confl->logfile);
+	log_set_timefmt(confl->log_fmt);
+	debug2("debug level is %d.", confl->debug_level);
+
 	confl->acct_freq_task = NO_VAL16;
 	tmp_int = acct_gather_parse_freq(PROFILE_TASK,
 				       confl->job_acct_gather_freq);
@@ -358,8 +366,7 @@ static int _handle_spank_mode (int argc, char **argv)
 	 *   This could happen if slurmstepd is run standalone for
 	 *   testing.
 	 */
-	if ((conf = read_slurmd_conf_lite (STDIN_FILENO)))
-		log_alter (conf->log_opts, 0, conf->logfile);
+	conf = read_slurmd_conf_lite (STDIN_FILENO);
 	close (STDIN_FILENO);
 
 	slurm_conf_init(NULL);
@@ -492,15 +499,6 @@ _init_from_slurmd(int sock, char **argv,
 	/* receive conf from slurmd */
 	if (!(conf = read_slurmd_conf_lite(sock)))
 		fatal("Failed to read conf from slurmd");
-
-	/*
-	 * LOGGING BEFORE THIS WILL NOT WORK!  Only afterwards will it show
-	 * up in the log.
-	 */
-	log_alter(conf->log_opts, 0, conf->logfile);
-	log_set_timefmt(conf->log_fmt);
-
-	debug2("debug level is %d.", conf->debug_level);
 
 	/* Receive TRES information for slurmd */
 	safe_read(sock, &len, sizeof(int));
