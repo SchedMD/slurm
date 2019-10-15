@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Adjust precedence between --mem-per-cpu and --mem-per-node to enforce
     them as mutually exclusive. Specifying either on the command line will
     now explicitly override any value inherited through the environment.
+ -- Always print node's version, if it exists, in scontrol show nodes.
 
 * Changes in Slurm 19.05.3-2
 ============================
