@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Always print node's version, if it exists, in scontrol show nodes.
  -- sbatch - ensure SLURM_NTASKS_PER_NODE is exported when --ntasks-per-node
     is set.
+ -- slurmctld - fix memory leak when using DebugFlags=Reservation.
 
 * Changes in Slurm 19.05.3-2
 ============================
