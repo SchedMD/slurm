@@ -640,6 +640,22 @@ If the database contains a large number of entries, <b>the SlurmDBD daemon
 may require tens of minutes to update the database and be unresponsive
 during this time interval</b>.</p>
 
+<p>Before upgrading SlurmDBD <b>it is strongly recommended to make a backup of
+the database</b>. When using mysqldump, the default behavior is to lock the
+tables, which can cause issues if SlurmDBD is still trying to send updates to
+the database. To avoid locking the tables we recommend you use the
+<b>--single-transaction</b> flag with mysqldump. This will dump a consistent
+state of the database without blocking any applications. Note that in order for
+this flag to have the desired effect you must be using the InnoDB storage
+engine (specified by default when Slurm automatically creates any table).
+The <b>--single-transaction</b> flag permits a live logical backup (and is thus
+useful for periodic backups while in production). When upgrading Slurm, it is
+recommended to first stop the SlurmDBD daemon and then dump the database using
+mysqldump before proceeding with the upgrade, as stated in the upgrade guide a
+few paragraphs below. Note that requests intended for SlurmDBD from Slurmctld
+will be queued while SlurmDBD is down, but the queue size is limited and you
+should monitor the DBD Agent Queue size with the <b>sdiag</b> command.</p>
+
 <p>The slurmctld daemon must also be upgraded before or at the same time as
 the slurmd daemons on the compute nodes.
 Generally, upgrading Slurm on all of the login and compute nodes is recommended,

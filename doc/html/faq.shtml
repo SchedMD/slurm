@@ -2230,7 +2230,7 @@ slurmdbd: debug:  Table "cray_job_table" has changed.  Updating...
 slurmdbd: error: mysql_query failed: 1062 Duplicate entry '2711-1478734628' for key 'id_job'
 ...
 
-$ mysqldump -u&lt;user&gt; -p&lt;user&gt; slurm_acct_db &gt;/tmp/slurm_db_backup.sql
+$ mysqldump --single-transaction -u&lt;user&gt; -p&lt;user&gt; slurm_acct_db &gt;/tmp/slurm_db_backup.sql
 
 $ mysql
 mysql> use slurm_acct_db;
