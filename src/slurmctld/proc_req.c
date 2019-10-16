@@ -3660,7 +3660,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	if (error_code)
 		;
 	else if (options == 1)
-		info("performing immeditate shutdown without state save");
+		info("performing immediate shutdown without state save");
 	else if (slurmctld_config.shutdown_time)
 		debug2("shutdown RPC issued when already in progress");
 	else {
