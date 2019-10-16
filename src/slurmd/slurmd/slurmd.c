@@ -881,6 +881,8 @@ _read_config(void)
 
 	conf->cr_type = cf->select_type_param;
 
+	xfree(conf->gres);
+
 	path_pubkey = xstrdup(cf->job_credential_public_certificate);
 
 	if (!conf->logfile)
@@ -1192,6 +1194,9 @@ _reconfigure(void)
 		(void) gres_plugin_init_node_config(conf->node_name,
 						    node_rec->config_ptr->gres,
 						    &gres_list);
+
+		/* Send the slurm.conf GRES to the stepd */
+		conf->gres = xstrdup(node_rec->config_ptr->gres);
 	}
 	(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name, gres_list,
 					    NULL, (void *)&xcpuinfo_mac_to_abs);
@@ -1360,6 +1365,7 @@ _destroy_conf(void)
 		xfree(conf->task_epilog);
 		xfree(conf->tmpfs);
 		xfree(conf->x11_params);
+		xfree(conf->gres);
 		slurm_mutex_destroy(&conf->config_mutex);
 		FREE_NULL_LIST(conf->starting_steps);
 		slurm_cond_destroy(&conf->starting_steps_cond);
@@ -1643,6 +1649,8 @@ _slurmd_init(void)
 		(void) gres_plugin_init_node_config(conf->node_name,
 						    node_rec->config_ptr->gres,
 						    &gres_list);
+		/* Send the slurm.conf GRES to the stepd */
+		conf->gres = xstrdup(node_rec->config_ptr->gres);
 	}
 	rc = gres_plugin_node_config_load(cpu_cnt, conf->node_name, gres_list,
 					  NULL, (void *)&xcpuinfo_mac_to_abs);
