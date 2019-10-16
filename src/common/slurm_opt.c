@@ -4070,7 +4070,7 @@ extern void validate_memory_options(slurm_opt_t *opt)
 	} else if (slurm_option_set_by_cli(LONG_OPT_MEM_PER_CPU)) {
 		slurm_option_reset(opt, "mem");
 		slurm_option_reset(opt, "mem-per-gpu");
-	} else if (slurm_option_set_by_cli(LONG_OPT_MEM_PER_CPU)) {
+	} else if (slurm_option_set_by_cli(LONG_OPT_MEM_PER_GPU)) {
 		slurm_option_reset(opt, "mem");
 		slurm_option_reset(opt, "mem-per-cpu");
 	} else if ((slurm_option_set_by_env(LONG_OPT_MEM) +

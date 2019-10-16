@@ -552,6 +552,7 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 
 	xfree(flag_str);
 	xfree(node_cnt_str);
+	xfree(core_cnt_str);
 }
 
 static int _generate_resv_id(void)

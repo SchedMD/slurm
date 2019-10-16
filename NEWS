@@ -44,6 +44,10 @@ documents those changes that are of interest to users and administrators.
     them as mutually exclusive. Specifying either on the command line will
     now explicitly override any value inherited through the environment.
  -- Always print node's version, if it exists, in scontrol show nodes.
+ -- sbatch - ensure SLURM_NTASKS_PER_NODE is exported when --ntasks-per-node
+    is set.
+ -- slurmctld - fix memory leak when using DebugFlags=Reservation.
+ -- Reset --mem and --mem-per-cpu options correctly when using --mem-per-gpu.
 
 * Changes in Slurm 19.05.3-2
 ============================

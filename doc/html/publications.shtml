@@ -4,6 +4,84 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from Slurm User Group Meeting, September 2019</h2>
+<ul>
+
+<!-- Tuesday -->
+
+<li><a href="SLUG19/Welcome.pdf">Welcome</a>,
+Danny Auble, SchedMD</li>
+
+<li>Tutorial: <a href="SLUG19/TRES.pdf">TRES</a> and <a href="SLUG19/Banking.pdf">Banking</a>,
+Brian Christiansen, SchedMD</li>
+
+<li>Technical: <a href="SLUG19/GPU_Scheduling_and_Cons_Tres.pdf">GPU Scheduling and the cons_tres plugin</a>,
+Chad Vizino and Morris Jette, SchedMD</li>
+
+<li>Site Report: <a href="SLUG19/LANL_Site_Report.pdf">LANL</a>,
+Joseph 'Joshi' Fullop, LANL</li>
+
+<li>Tutorial: <a href="SLUG19/cgroups_and_pam_slurm_adopt.pdf">Cgroups and pam_slurm_adopt</a>,
+Marshall Garey, SchedMD</li>
+
+<li>Site Report: <a href="SLUG19/MIT_Scaling_Diverse_Work_Loads.pdf">Enabling and Scaling Diverse Work Loads Efficiently With Slurm</a>,
+Chansup Byun et al., MIT Lincoln Laboratory</li>
+
+<li>Tutorial: <a href="SLUG19/Priority_and_Fair_Trees.pdf">Priority and Fair Trees</a>,
+Shawn Hoopes, SchedMD</li>
+
+<li>Technical: <a href="SLUG19/NVIDIA_Containers.pdf">Slurm: Seamless Integration With Unprivileged Containers</a>,
+Luke Yeager et al., NVIDIA</li>
+
+<li>Technical: <a href="SLUG19/REST_API.pdf">REST API</a>,
+Nathan Rini, SchedMD</li>
+
+<li>Technical: <a href="SLUG19/NERSC_job_container.pdf">Job Container plugin for managing node local namespaces</a>,
+Aditi Gaur, NERSC</li>
+
+<!-- Wednesday -->
+
+<li>Technical: <a href="SLUG19/CEA.pdf">VMs and containers for a Slurm-based development cluster</a>,
+Fran&ccedil;ois Daikhat&eacute;, CEA</li>
+
+<li>Technical: <a href="SLUG19/High_Throughput_Computing.pdf">High Throughput Computing</a>,
+Broderick Gardner, SchedMD</li>
+
+<li>Site Report: <a href="SLUG19/Slurm_on_Sherlock.pdf">Slurm on Sherlock</a>,
+Kilian Cavalotti, Stanford Research Computing Center</li>
+
+<li>Technical: <a href="SLUG19/Slurm_+_GCP.pdf">Slurm + GCP</a>,
+Brian Christiansen (SchedMD) and Keith Binder (Google)</li>
+
+<li>Site Report: <a href="SLUG19/ORNL_Site_Report.pdf">ORNL</a>,
+Matt Ezell, ORNL</li>
+
+<li>Technical: <a href="SLUG19/LANL_Splunk.pdf">Monitoring Slurm with a Splunk App</a>,
+Nicole Dobson, LANL</li>
+
+<li>Site Report: <a href="SLUG19/NERSC_Site_Report.pdf">NERSC</a>,
+Chris Samuel, NERSC</li>
+
+<li>Tutorial: <a href="SLUG19/Troubleshooting.pdf">Troubleshooting</a>,
+Albert Gil and Jason Booth, SchedMD</li>
+
+<li>Technical: <a href="SLUG19/DTU_Slurm_Account_Sync.pdf">Slurm Account Synchronization with UNIX Groups and Users</a>,
+Ole Nielsen, Technical University of Denmark (DTU)</li>
+
+<li>Technical: <a href="SLUG19/Atos.pdf">A fully configurable HPC web portal for managing Slurm jobs</a>,
+Patrice Calegari, Atos</li>
+
+<li>Technical: <a href="SLUG19/Slurm_19.05.pdf">Slurm 19.05</a>,
+Tim Wickberg, SchedMD</li>
+
+<li>Technical: <a href="SLUG19/Slurm_20.02_and_Beyond.pdf">Slurm 20.02 and Beyond</a>,
+Tim Wickberg, SchedMD</li>
+
+<li>Technical: <a href="SLUG19/Field_Notes_3.pdf">Field Notes From A MadMan</a>,
+Tim Wickberg, SchedMD</li>
+
+</ul>
+
 <h2>Presentations from Slurm User Group Meeting, September 2018</h2>
 <ul>
 
@@ -962,6 +1040,6 @@ Danny Auble of LLNL about Slurm.</p>
 Learning Chef: Compute Cluter with Slurm</a>
 A Slurm Cookbook by Adam DeConinck</p>
 
-<p style="text-align:center;">Last modified 11 November 2018</p>
+<p style="text-align:center;">Last modified 15 October 2019</p>
 
 <!--#include virtual="footer.txt"-->
