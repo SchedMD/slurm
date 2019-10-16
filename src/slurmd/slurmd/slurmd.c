@@ -1110,7 +1110,7 @@ static void _build_conf_buf(void)
 	FREE_NULL_BUFFER(conf->buf);
 	conf->buf = init_buf(0);
 	pack_slurmd_conf_lite(conf, conf->buf);
-	if (!tres_packed && assoc_mgr_tres_list) {
+	if (assoc_mgr_tres_list) {
 		assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 		assoc_mgr_lock(&locks);
 		slurm_pack_list(assoc_mgr_tres_list,
@@ -1118,7 +1118,8 @@ static void _build_conf_buf(void)
 				SLURM_PROTOCOL_VERSION);
 		assoc_mgr_unlock(&locks);
 		tres_packed = true;
-	}
+	} else
+		tres_packed = false;
 
 	slurm_mutex_unlock(&conf->config_mutex);
 }
