@@ -3580,8 +3580,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->fs_dampening_factor = 1;
 
 	if (s_p_get_uint16(&uint16_tmp, "FastSchedule", hashtbl) &&
-	    run_in_daemon("slurmctld"))
-		fatal("FastSchedule has been deprecated, as well as the FastSchedule=0 functionality. FastSchedule=2 functionality is available through the SlurmdParameters=config_overrides option. If using FastSchedule=1 just remove the option. Please update your configuration to continue.");
+	    run_in_daemon("slurmctld")) {
+		if (uint16_tmp == 1)
+			error("Ignoring obsolete FastSchedule=1 option. Please remove from your configuration.");
+		else if (uint16_tmp == 2)
+			fatal("The FastSchedule option has been removed. The FastSchedule=2 functionality is available through the SlurmdParameters=config_overrides option.");
+		else
+			fatal("The FastSchedule option has been removed. Please update your configuration.");
+	}
 
 	(void) s_p_get_string(&conf->fed_params, "FederationParameters",
 			      hashtbl);
