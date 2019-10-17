@@ -2029,9 +2029,15 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		 * cause problems in an active slurm.conf */
 		if (!xstrcmp(key_pair->name, "BOOT_TIME") ||
 		    !xstrcmp(key_pair->name, "HASH_VAL") ||
+		    !xstrcmp(key_pair->name, "MULTIPLE_SLURMD") ||
 		    !xstrcmp(key_pair->name, "NEXT_JOB_ID") ||
 		    !xstrcmp(key_pair->name, "SLURM_CONF") ||
 		    !xstrcmp(key_pair->name, "SLURM_VERSION")) {
+			debug("Ignoring %s (not written)", key_pair->name);
+			continue;
+		}
+
+		if (!xstrcmp(key_pair->name, "LicensesUsed")) {
 			debug("Ignoring %s (not written)", key_pair->name);
 			continue;
 		}
@@ -2048,7 +2054,12 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		     !xstrcasecmp(key_pair->value, "SYSTEM_DEFAULT")) ||
 		    !xstrcasecmp(key_pair->name, "DynAllocPort") ||
 		    (!xstrcasecmp(key_pair->name, "DefMemPerNode") &&
-		     !xstrcasecmp(key_pair->value, "UNLIMITED"))) {
+		     !xstrcasecmp(key_pair->value, "UNLIMITED")) ||
+		    ((!xstrcasecmp(key_pair->name, "SlurmctldSyslogDebug") ||
+		      !xstrcasecmp(key_pair->name, "SlurmdSyslogDebug")) &&
+		     !xstrcasecmp(key_pair->value, "unknown")) ||
+		    (!xstrcasecmp(key_pair->name, "CpuFreqDef") &&
+		     !xstrcasecmp(key_pair->value, "Unknown"))) {
 			temp = xstrdup_printf("#%s=", key_pair->name);
 			debug("Commenting out %s=%s",
 			      key_pair->name,
@@ -2084,8 +2095,13 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 				 */
 				temp = strtok(key_pair->value, " (");
 			}
-			temp = xstrdup_printf("%s=%s",
-					      key_pair->name, temp);
+			strtok(key_pair->name, "[");
+			if (strchr(temp, ' '))
+				temp = xstrdup_printf("%s=\"%s\"",
+						      key_pair->name, temp);
+			else
+				temp = xstrdup_printf("%s=%s",
+						      key_pair->name, temp);
 		}
 
 		if (!xstrcasecmp(key_pair->name, "ControlMachine") ||
@@ -2093,6 +2109,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcasecmp(key_pair->name, "ClusterName") ||
 		    !xstrcasecmp(key_pair->name, "SlurmUser") ||
 		    !xstrcasecmp(key_pair->name, "SlurmdUser") ||
+		    !xstrcasecmp(key_pair->name, "SlurmctldHost") ||
 		    !xstrcasecmp(key_pair->name, "SlurmctldPort") ||
 		    !xstrcasecmp(key_pair->name, "SlurmdPort") ||
 		    !xstrcasecmp(key_pair->name, "BackupAddr") ||
