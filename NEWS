@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
     is set.
  -- slurmctld - fix memory leak when using DebugFlags=Reservation.
  -- Reset --mem and --mem-per-cpu options correctly when using --mem-per-gpu.
+ -- Use correct function signature for step_set_env() in gres plugin interface.
 
 * Changes in Slurm 19.05.3-2
 ============================
