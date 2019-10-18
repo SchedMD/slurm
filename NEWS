@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
     the coordinator is over.
  -- Fix regression on update from older versions with DefMemPerCPU.
  -- Fix issues with --gpu-bind while using cgroups.
+ -- Suspend nodes after being down for SuspendTime.
 
 * Changes in Slurm 19.05.3-2
 ============================
