@@ -12582,7 +12582,7 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 		if (!found) { /* No data fond */
 			if (accel_bind_type || tres_bind) {
 				(*(gres_context[i].ops.step_reset_env))
-					(job_env_ptr, NULL, NULL); /* Fixme */
+					(job_env_ptr, NULL, NULL);
 			} else {
 				(*(gres_context[i].ops.step_set_env))
 					(job_env_ptr, NULL);
