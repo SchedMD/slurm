@@ -56,7 +56,7 @@ enum check_opts {
 				 * job terminates afterwards */
 	CHECK_RESTART,		/* restart a previously checkpointed job */
 	CHECK_ERROR,		/* get error info */
-	CHECK_REQUEUE		/* CHECK_VACATTE + CHECK_RESTART */
+	CHECK_REQUEUE		/* CHECK_VACATE + CHECK_RESTART */
 };
 
 /* Identification number for each checkpoint
