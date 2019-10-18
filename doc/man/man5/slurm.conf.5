@@ -1296,6 +1296,11 @@ This should only be set on clusters providing exclusive access to each
 node to a single job at once, and not using parallel steps within the job,
 otherwise resources on the node can be oversubscribed.
 .TP 24
+\fBenable_nss_slurm\fR
+Permits passwd and group resolution for a job to be serviced by slurmstepd rather
+than requiring a lookup from a network based service. See
+https://slurm.schedmd.com/nss_slurm.html for more information.
+.TP 24
 \fBlustre_no_flush\fR
 If set on a Cray Native cluster, then do not flush the Lustre cache on job step
 completion. This setting will only take effect after reconfiguring, and will
@@ -5223,7 +5228,7 @@ See also the related "Alternate" keyword.
 .RS
 .TP 10
 \fBUP\fP
-Designates that new jobs may queued on the partition, and that
+Designates that new jobs may be queued on the partition, and that
 jobs may be allocated nodes and run from the partition.
 .TP
 \fBDOWN\fP
