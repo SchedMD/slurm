@@ -10443,10 +10443,12 @@ extern int gres_plugin_job_alloc_whole_node(
 		 */
 		if (!job_state_ptr->gres_per_node ||
 		    (job_state_ptr->gres_per_node >
-		     node_state_ptr->gres_cnt_config))
+		     node_state_ptr->gres_cnt_config)) {
 			job_state_ptr->gres_per_node =
 				node_state_ptr->gres_cnt_config;
-		job_state_ptr->total_gres += node_state_ptr->gres_cnt_config;
+			job_state_ptr->total_gres +=
+				node_state_ptr->gres_cnt_config;
+		}
 		rc2 = _job_alloc(job_gres_ptr->gres_data,
 				 node_gres_ptr->gres_data, node_cnt, node_index,
 				 node_offset, gres_context[i].gres_name,
