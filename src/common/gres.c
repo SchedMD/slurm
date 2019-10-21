@@ -118,7 +118,9 @@ typedef struct slurm_gres_ops {
 	void		(*job_set_env)		( char ***job_env_ptr,
 						  void *gres_ptr, int node_inx );
 	void		(*step_set_env)		( char ***job_env_ptr,
-						  void *gres_ptr );
+						  void *gres_ptr,
+						  char *tres_freq,
+						  int local_proc_id );
 	void		(*step_reset_env)	( char ***job_env_ptr,
 						  void *gres_ptr,
 						  bitstr_t *usable_gres );
@@ -12574,7 +12576,9 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 				} else {
 					(*(gres_context[i].ops.step_set_env))
 						(job_env_ptr,
-						 gres_ptr->gres_data);
+						 gres_ptr->gres_data,
+						 tres_freq,
+						 local_proc_id);
 				}
 				found = true;
 			}
@@ -12586,7 +12590,10 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 					(job_env_ptr, NULL, NULL); /* Fixme */
 			} else {
 				(*(gres_context[i].ops.step_set_env))
-					(job_env_ptr, NULL);
+					(job_env_ptr,
+					 NULL,
+					 NULL, /* Fixme */
+					 0); /* Fixme */
 			}
 		}
 		FREE_NULL_BITMAP(usable_gres);
