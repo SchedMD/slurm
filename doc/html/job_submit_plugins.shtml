@@ -192,6 +192,18 @@ be modified.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <a href="#job_modify_returns">Returns from job_modify() are the same as the returns from job_submit().</a>
 
+<h2>Lua Job Attributes</h2>
+<p>The available job attributes change occasionally with different versions of
+Slurm. To find the job attributes that are available for the version of Slurm
+you're using, go to the <a href="https://github.com/SchedMD/slurm"> SchedMD
+github page</a>, and navigate to
+<b>src/plugins/job_submit/lua/job_submit_lua.c</b>.
+<b>_job_rec_field()</b> contains the list of attributes available for the
+job_record (e.g. current record in Slurm). <b>_get_job_req_field()</b> contains
+the list of attributes available for the job_descriptor (e.g. submission or
+modification request).
+</p>
+
 <h2>Building</h2>
 <p>Generally using a LUA interface for a job submit plugin is best:
 It is simple to write and maintain with minimal dependencies upon the Slurm
@@ -274,6 +286,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 29 September 2017</p>
+<p style="text-align:center;">Last modified 18 December 2019</p>
 
 <!--#include virtual="footer.txt"-->
