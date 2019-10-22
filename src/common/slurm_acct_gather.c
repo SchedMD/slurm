@@ -115,6 +115,8 @@ extern int acct_gather_conf_init(void)
 	xrealloc(full_options,
 		 ((full_options_cnt + 1) * sizeof(s_p_options_t)));
 
+	tbl = s_p_hashtbl_create(full_options);
+
 	/**************************************************/
 
 	/* Get the acct_gather.conf path and validate the file */
@@ -124,7 +126,6 @@ extern int acct_gather_conf_init(void)
 	} else {
 		debug2("Reading acct_gather.conf file %s", conf_path);
 
-		tbl = s_p_hashtbl_create(full_options);
 		if (s_p_parse_file(tbl, NULL, conf_path, false) ==
 		    SLURM_ERROR) {
 			fatal("Could not open/read/parse acct_gather.conf file "
