@@ -318,9 +318,13 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 	he = get_host_by_addr((char *)&cred->addr.s_addr,
 			      sizeof(cred->addr.s_addr),
 			      AF_INET, (void *)&h_buf, sizeof(h_buf), &h_err);
-	if (he)
+	if (he && he->h_name) {
+		/* Truncate the hostname to a short name */
+		char *sep = strchr(he->h_name, '.');
+		if (sep)
+			*sep = '\0';
 		hostname = xstrdup(he->h_name);
-	else {
+	} else {
 		slurm_addr_t addr = { .sin_addr.s_addr = cred->addr.s_addr };
 		uint16_t port;
 		error("%s: Lookup failed: %s", __func__, host_strerror(h_err));

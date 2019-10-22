@@ -50,6 +50,10 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - fix memory leak when using DebugFlags=Reservation.
  -- Reset --mem and --mem-per-cpu options correctly when using --mem-per-gpu.
  -- Use correct function signature for step_set_env() in gres plugin interface.
+ -- Restore pre-19.05 hostname handling behavior for AllocNodes by always
+    truncating to just the host portion and dropping any domain name portion
+    returned by gethostbyaddr().
+ -- Fix abort initializing a configuration without acct_gather.conf.
 
 * Changes in Slurm 19.05.3-2
 ============================
