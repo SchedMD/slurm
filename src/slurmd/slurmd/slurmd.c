@@ -1151,7 +1151,6 @@ _reconfigure(void)
 	 */
 	slurm_topo_build_config();
 	_set_topo_info();
-	_build_conf_buf();
 	route_g_reconfigure();
 	cpu_freq_reconfig();
 
@@ -1201,6 +1200,8 @@ _reconfigure(void)
 	(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name, gres_list,
 					    NULL, (void *)&xcpuinfo_mac_to_abs);
 	FREE_NULL_LIST(gres_list);
+
+	_build_conf_buf();
 
 	send_registration_msg(SLURM_SUCCESS, false);
 
