@@ -2153,6 +2153,8 @@ extern Buf s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
 	s_p_values_t *p;
 	int i;
 
+	xassert(hashtbl);
+
 	pack32(cnt, buffer);
 
 	for (i = 0; i < cnt; i++) {
