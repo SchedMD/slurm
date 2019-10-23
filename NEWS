@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 19.05.5
 ==========================
+ -- Fix both socket-[un]constrained GRES issues that would lead to incorrect
+    GRES allocations and GRES underflow errors at deallocation time.
 
 * Changes in Slurm 19.05.4
 ==========================
