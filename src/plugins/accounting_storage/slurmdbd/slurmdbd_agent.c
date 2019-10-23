@@ -46,9 +46,15 @@
 
 #include "slurmdbd_agent.h"
 
+enum {
+	MAX_DBD_ACTION_DISCARD,
+	MAX_DBD_ACTION_EXIT
+};
+
 #define DBD_MAGIC		0xDEAD3219
 #define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
 #define DEBUG_PRINT_MAX_MSG_TYPES 10
+#define MAX_DBD_DEFAULT_ACTION MAX_DBD_ACTION_DISCARD
 
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
@@ -63,6 +69,7 @@ static slurm_persist_conn_t *slurmdbd_conn = NULL;
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 
+static int max_dbd_msg_action = MAX_DBD_DEFAULT_ACTION;
 
 static int _send_fini_msg(void)
 {
@@ -548,6 +555,24 @@ static int _purge_job_start_req(void)
 	return purged;
 }
 
+static void _max_dbd_msg_action(uint32_t *msg_cnt)
+{
+	if (max_dbd_msg_action == MAX_DBD_ACTION_EXIT) {
+		if (*msg_cnt < slurmctld_conf.max_dbd_msgs)
+			return;
+
+		_save_dbd_state();
+		fatal("slurmdbd: agent queue is full (%u), not continuing until slurmdbd is able to process messages.",
+		      *msg_cnt);
+	}
+
+	/* MAX_DBD_ACTION_DISCARD */
+	if (*msg_cnt >= (slurmctld_conf.max_dbd_msgs - 1))
+		*msg_cnt -= _purge_step_req();
+	if (*msg_cnt >= (slurmctld_conf.max_dbd_msgs - 1))
+		*msg_cnt -= _purge_job_start_req();
+}
+
 /* Open a connection to the Slurm DBD and set slurmdbd_conn */
 static void _open_slurmdbd_conn(bool need_db)
 {
@@ -696,7 +721,8 @@ static void _print_agent_list_msg_types(void)
 
 static void *_agent(void *x)
 {
-	int cnt, rc;
+	int rc;
+	uint32_t cnt;
 	Buf buffer;
 	struct timespec abs_time;
 	static time_t fail_time = 0;
@@ -748,6 +774,7 @@ static void *_agent(void *x)
 		if ((cnt == 0) || (slurmdbd_conn->fd < 0) ||
 		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
 			slurm_mutex_unlock(&slurmdbd_lock);
+			_max_dbd_msg_action(&cnt);
 			END_TIMER2("slurmdbd agent: sleep");
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_AGENT)
 				info("%s: slurmdbd agent sleeping with agent_count=%d",
@@ -1191,10 +1218,10 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 		if (slurmdbd_conn->trigger_callbacks.dbd_fail)
 			(slurmdbd_conn->trigger_callbacks.dbd_fail)();
 	}
-	if (cnt == (slurmctld_conf.max_dbd_msgs - 1))
-		cnt -= _purge_step_req();
-	if (cnt == (slurmctld_conf.max_dbd_msgs - 1))
-		cnt -= _purge_job_start_req();
+
+	/* Handle action */
+	_max_dbd_msg_action(&cnt);
+
 	if (cnt < slurmctld_conf.max_dbd_msgs) {
 		if (list_enqueue(agent_list, buffer) == NULL)
 			fatal("list_enqueue: memory allocation failure");
@@ -1227,8 +1254,10 @@ extern int slurmdbd_agent_queue_count(void)
 {
 	return list_count(agent_list);
 }
+
 extern void slurmdbd_agent_config_setup(void)
 {
+	char *tmp_ptr;
 	/*
 	 * Whatever our max job count is multiplied by 2 plus node count
 	 * multiplied by 4 or DEFAULT_MAX_DBD_MSGS which ever is bigger.
@@ -1239,4 +1268,20 @@ extern void slurmdbd_agent_config_setup(void)
 			    ((slurmctld_conf.max_job_cnt * 2) +
 			     (node_record_count * 4)));
 
+	if ((tmp_ptr = xstrcasestr(slurmctld_conf.slurmctld_params,
+				   "max_dbd_msg_action="))) {
+		char *type = xstrdup(tmp_ptr + 19);
+		tmp_ptr = strchr(type, ',');
+		if (tmp_ptr)
+			tmp_ptr[0] = '\0';
+		if (!xstrcasecmp(type, "discard"))
+			max_dbd_msg_action = MAX_DBD_ACTION_DISCARD;
+		else if (!xstrcasecmp(type, "exit"))
+			max_dbd_msg_action = MAX_DBD_ACTION_EXIT;
+		else
+			fatal("Unknown SlurmctldParameters option for max_dbd_msg_action '%s'",
+			      type);
+		xfree(tmp_ptr);
+	} else
+		max_dbd_msg_action = MAX_DBD_DEFAULT_ACTION;
 }
