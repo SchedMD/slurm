@@ -29,6 +29,9 @@ HIGHLIGHTS
     as the cpus.
 
 
+- Added slurm.conf option MaxDBDMsgs to control how many messages will be
+  stored in the slurmctld before throwing them away when the slurmdbd is down.
+
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
 

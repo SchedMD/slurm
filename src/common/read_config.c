@@ -280,6 +280,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MailDomain", S_P_STRING},
 	{"MailProg", S_P_STRING},
 	{"MaxArraySize", S_P_UINT32},
+	{"MaxDBDMsgs", S_P_UINT32},
 	{"MaxJobCount", S_P_UINT32},
 	{"MaxJobId", S_P_UINT32},
 	{"MaxMemPerCPU", S_P_UINT64},
@@ -2866,6 +2867,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->mail_domain);
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_array_sz		= NO_VAL;
+	ctl_conf_ptr->max_dbd_msgs		= 0;
 	ctl_conf_ptr->max_job_cnt		= NO_VAL;
 	ctl_conf_ptr->max_job_id		= NO_VAL;
 	ctl_conf_ptr->max_mem_per_cpu           = 0;
@@ -3785,6 +3787,14 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	else if (conf->max_array_sz > 4000001) {
 		error("MaxArraySize value (%u) is greater than 4000001",
 		      conf->max_array_sz);
+	}
+
+	if (!s_p_get_uint32(&conf->max_dbd_msgs, "MaxDBDMsgs", hashtbl))
+		conf->max_dbd_msgs = 0;
+	else if (conf->max_dbd_msgs < DEFAULT_MAX_DBD_MSGS) {
+		error("MaxDBDMsgs value (%u) needs to be greater than %d",
+		      conf->max_dbd_msgs, DEFAULT_MAX_DBD_MSGS);
+		return SLURM_ERROR;
 	}
 
 	if (!s_p_get_uint32(&conf->max_job_cnt, "MaxJobCount", hashtbl))

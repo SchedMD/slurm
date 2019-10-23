@@ -78,4 +78,7 @@ extern bool slurmdbd_conn_active(void);
 /* Return the number of messages waiting to be sent to the DBD */
 extern int slurmdbd_agent_queue_count(void);
 
+/* set up local variables based on slurm.conf params */
+extern void slurmdbd_agent_config_setup(void);
+
 #endif

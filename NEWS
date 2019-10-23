@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
     controller. Previously only happened when nextstate was specified.
  -- Add default jobname of "no-shell" for salloc --no-shell.
  -- Save reservation state when automatically shrinking nodes.
+ -- Add slurm.conf option MaxDBDMsgs to control how many messages will be
+    stored in the slurmctld before throwing them away when the slurmdbd is down.
 
 * Changes in Slurm 19.05.4
 ==========================

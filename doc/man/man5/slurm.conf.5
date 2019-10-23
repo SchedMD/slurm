@@ -1388,6 +1388,12 @@ The value of \fBMaxJobCount\fR should be much larger than \fBMaxArraySize\fR.
 The default value is 1001.
 
 .TP
+\fBMaxDBDMsgs\fR
+When communication to the SlurmDBD is not possible the slurmctld will queue messages meant to processed when the the SlurmDBD is available again.
+In order to avoid running out of memory the slurmctld will only queue so many messages.
+The default value is 10000, or \fBMaxJobCount\fR * 2 + Node Count * 4, whichever is greater.  The value can not be less than 10000.
+
+.TP
 \fBMaxJobCount\fR
 The maximum number of jobs Slurm can have in its active database
 at one time. Set the values of \fBMaxJobCount\fR and \fBMinJobAge\fR
@@ -3483,6 +3489,22 @@ DNS, this step can be avoided by configuring this option.
 \fBidle_on_node_suspend\fR Mark nodes as idle, regardless of current state,
 when suspending nodes with \fISuspendProgram\fB so that nodes will be eligible
 to be resumed at a later time.
+.TP
+\fBmax_dbd_msg_action\fR
+Action used once MaxDBDMsgs is reached, options are 'discard' (default) and 'exit'.
+
+When 'discard' is specified and MaxDBDMsgs is reached we start by purging
+pending messages of types Step start and complete, and it reaches MaxDBDMsgs
+again Job start messages are purged. Job completes and node state changes
+continue to consume the empty space created from the purgings until MaxDBDMsgs
+is reached again at which no new message is tracked creating data loss and
+potentially runaway jobs.
+
+When 'exit' is specified and MaxDBDMsgs is reached the slurmctld will exit
+instead of discarding any messages. It will be impossible to start the
+slurmctld with this option where the slurmdbd is down and the slurmctld is
+tracking more than MaxDBDMsgs.
+
 .TP
 \fBpreempt_send_user_signal\fR Send the user signal (e.g. --signal=<sig_num>)
 at preemption time even if the signal time hasn't been reached. In the case of
