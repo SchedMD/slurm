@@ -332,7 +332,7 @@ static void _build_parts(void)
 
 	gs_part_list = list_create(_destroy_parts);
 	part_iterator = list_iterator_create(part_list);
-	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
+	while ((p_ptr = list_next(part_iterator))) {
 		gs_part_ptr = xmalloc(sizeof(struct gs_part));
 		gs_part_ptr->part_name = xstrdup(p_ptr->name);
 		gs_part_ptr->priority = p_ptr->priority_tier;
@@ -706,7 +706,7 @@ static void _cast_shadow(struct gs_job *j_ptr, uint16_t priority)
 	int i;
 
 	part_iterator = list_iterator_create(gs_part_list);
-	while ((p_ptr = (struct gs_part *) list_next(part_iterator))) {
+	while ((p_ptr = list_next(part_iterator))) {
 		if (p_ptr->priority >= priority)
 			continue;
 
@@ -746,7 +746,7 @@ static void _clear_shadow(struct gs_job *j_ptr)
 	int i;
 
 	part_iterator = list_iterator_create(gs_part_list);
-	while ((p_ptr = (struct gs_part *) list_next(part_iterator))) {
+	while ((p_ptr = list_next(part_iterator))) {
 		if (!p_ptr->shadow)
 			continue;
 
@@ -884,7 +884,7 @@ static void _update_all_active_rows(void)
 	list_sort(gs_part_list, _sort_partitions);
 
 	part_iterator = list_iterator_create(gs_part_list);
-	while ((p_ptr = (struct gs_part *) list_next(part_iterator)))
+	while ((p_ptr = list_next(part_iterator)))
 		_update_active_row(p_ptr, 1);
 	list_iterator_destroy(part_iterator);
 }
@@ -1061,7 +1061,7 @@ static void _scan_slurm_job_list(void)
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 		info("gang: _scan_slurm_job_list: job_list exists...");
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG) {
 			info("gang: %s: checking %pJ",
 			     __func__, job_ptr);
@@ -1264,7 +1264,7 @@ extern void gs_wake_jobs(void)
 		return;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_SUSPENDED(job_ptr) && (job_ptr->priority != 0)) {
 			info("gang waking preempted %pJ", job_ptr);
 			_resume_job(job_ptr);
@@ -1361,7 +1361,7 @@ extern void gs_reconfig(void)
 
 	/* scan the old part list and add existing jobs to the new list */
 	part_iterator = list_iterator_create(old_part_list);
-	while ((p_ptr = (struct gs_part *) list_next(part_iterator))) {
+	while ((p_ptr = list_next(part_iterator))) {
 		newp_ptr = (struct gs_part *) list_find_first(gs_part_list,
 							      _find_gs_part,
 							      p_ptr->part_name);
@@ -1582,7 +1582,7 @@ static void *_timeslicer_thread(void *arg)
 		if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG)
 			info("gang: _timeslicer_thread: scanning partitions");
 		part_iterator = list_iterator_create(gs_part_list);
-		while ((p_ptr = (struct gs_part *) list_next(part_iterator))) {
+		while ((p_ptr = list_next(part_iterator))) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_GANG) {
 				info("gang: _timeslicer_thread: part %s: "
 				     "run %u total %u", p_ptr->part_name,

@@ -830,7 +830,7 @@ extern List part_list_copy(List part_list_src)
 
 	part_list_dest = list_create(NULL);
 	iter = list_iterator_create(part_list_src);
-	while ((part_ptr = (struct part_record *) list_next(iter))) {
+	while ((part_ptr = list_next(iter))) {
 		list_append(part_list_dest, part_ptr);
 	}
 	list_iterator_destroy(iter);
@@ -1098,7 +1098,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 
 	/* write individual partition records */
 	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+	while ((part_ptr = list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
 		if (((show_flags & SHOW_ALL) == 0) &&
 		    !part_is_visible(part_ptr, uid))

@@ -306,7 +306,7 @@ static void _build_bitmaps_pre_select(void)
 
 	/* scan partition table and identify nodes in each */
 	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+	while ((part_ptr = list_next(part_iterator))) {
 		if (build_part_bitmap(part_ptr) == ESLURM_INVALID_NODE_NAME)
 			fatal("Invalid node names in partition %s",
 					part_ptr->name);
@@ -1008,7 +1008,7 @@ static void _validate_pack_jobs(void)
 	list_for_each(job_list, _mark_pack_unused, NULL);
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		/* Checking for corrupted job pack components */
 		if (job_ptr->pack_job_offset != 0) {
 			pack_job_ptr = find_job_record(job_ptr->pack_job_id);
@@ -1531,7 +1531,7 @@ static void _add_config_feature(List feature_list, char *feature,
 
 	/* If feature already in avail_feature_list, just update the bitmap */
 	feature_iter = list_iterator_create(feature_list);
-	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
+	while ((feature_ptr = list_next(feature_iter))) {
 		if (xstrcmp(feature, feature_ptr->name))
 			continue;
 		bit_or(feature_ptr->node_bitmap, node_bitmap);
@@ -1563,7 +1563,7 @@ static void _add_config_feature_inx(List feature_list, char *feature,
 
 	/* If feature already in avail_feature_list, just update the bitmap */
 	feature_iter = list_iterator_create(feature_list);
-	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
+	while ((feature_ptr = list_next(feature_iter))) {
 		if (xstrcmp(feature, feature_ptr->name))
 			continue;
 		bit_set(feature_ptr->node_bitmap, node_inx);
@@ -1613,8 +1613,7 @@ extern void build_feature_list_eq(void)
 	avail_feature_list = list_create(_list_delete_feature);
 
 	config_iterator = list_iterator_create(config_list);
-	while ((config_ptr = (struct config_record *)
-			list_next(config_iterator))) {
+	while ((config_ptr = list_next(config_iterator))) {
 		if (config_ptr->feature) {
 			tmp_str = xstrdup(config_ptr->feature);
 			token = strtok_r(tmp_str, ",", &last);
@@ -1630,7 +1629,7 @@ extern void build_feature_list_eq(void)
 
 	/* Copy avail_feature_list to active_feature_list */
 	feature_iter = list_iterator_create(avail_feature_list);
-	while ((avail_feature_ptr = (node_feature_t *)list_next(feature_iter))){
+	while ((avail_feature_ptr = list_next(feature_iter))) {
 		active_feature_ptr = xmalloc(sizeof(node_feature_t));
 		active_feature_ptr->magic = FEATURE_MAGIC;
 		active_feature_ptr->name = xstrdup(avail_feature_ptr->name);
@@ -1651,7 +1650,7 @@ extern void log_feature_lists(void)
 	ListIterator feature_iter;
 
 	feature_iter = list_iterator_create(avail_feature_list);
-	while ((feature_ptr = (node_feature_t *)list_next(feature_iter))) {
+	while ((feature_ptr = list_next(feature_iter))) {
 		node_str = bitmap2node_name(feature_ptr->node_bitmap);
 		info("AVAIL FEATURE:%s NODES:%s", feature_ptr->name, node_str);
 		xfree(node_str);
@@ -1659,7 +1658,7 @@ extern void log_feature_lists(void)
 	list_iterator_destroy(feature_iter);
 
 	feature_iter = list_iterator_create(active_feature_list);
-	while ((feature_ptr = (node_feature_t *)list_next(feature_iter))) {
+	while ((feature_ptr = list_next(feature_iter))) {
 		node_str = bitmap2node_name(feature_ptr->node_bitmap);
 		info("ACTIVE FEATURE:%s NODES:%s", feature_ptr->name, node_str);
 		xfree(node_str);
@@ -1730,7 +1729,7 @@ extern void update_feature_list(List feature_list, char *new_features,
 	 * then restore as needed
 	 */
 	feature_iter = list_iterator_create(feature_list);
-	while ((feature_ptr = (node_feature_t *) list_next(feature_iter))) {
+	while ((feature_ptr = list_next(feature_iter))) {
 		bit_and_not(feature_ptr->node_bitmap, node_bitmap);
 	}
 	list_iterator_destroy(feature_iter);
@@ -2081,8 +2080,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 
 	/* For each part in list, find and update recs */
 	part_iterator = list_iterator_create(old_part_list);
-	while ((old_part_ptr = (struct part_record *)
-			       list_next(part_iterator))) {
+	while ((old_part_ptr = list_next(part_iterator))) {
 		xassert(old_part_ptr->magic == PART_MAGIC);
 		part_ptr = find_part_record(old_part_ptr->name);
 		if (part_ptr) {
@@ -2570,7 +2568,7 @@ static int _sync_nodes_to_jobs(bool reconfig)
 	int update_cnt = 0;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!reconfig &&
 		    job_ptr->details && job_ptr->details->prolog_running) {
 			job_ptr->details->prolog_running = 0;
@@ -2607,7 +2605,7 @@ static int _sync_nodes_to_comp_job(void)
 	int update_cnt = 0;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if ((job_ptr->node_bitmap) && IS_JOB_COMPLETING(job_ptr)) {
 
 			/* If the controller is reconfiguring
@@ -2756,13 +2754,13 @@ static int _restore_job_dependencies(void)
 	assoc_mgr_clear_used_info();
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (job_ptr->array_recs)
 			job_ptr->array_recs->tot_run_tasks = 0;
 	}
 
 	list_iterator_reset(job_iterator);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		(void) build_feature_list(job_ptr);
 
 		if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
@@ -2825,7 +2823,7 @@ static void _acct_restore_active_jobs(void)
 	acct_storage_g_flush_jobs_on_cluster(acct_db_conn,
 					     time(NULL));
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_SUSPENDED(job_ptr))
 			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
@@ -2836,8 +2834,7 @@ static void _acct_restore_active_jobs(void)
 				job_ptr->db_index = 0;
 			step_iterator = list_iterator_create(
 				job_ptr->step_list);
-			while ((step_ptr = (struct step_record *)
-					   list_next(step_iterator))) {
+			while ((step_ptr = list_next(step_iterator))) {
 				jobacct_storage_g_step_start(acct_db_conn,
 							     step_ptr);
 			}

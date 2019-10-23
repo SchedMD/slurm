@@ -269,7 +269,7 @@ static List _get_sync_jobid_list(uint32_t sib_id, time_t sync_time)
 	 * 3. if the sibling is in the job's viable list.
 	 */
 	job_itr = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
+	while ((job_ptr = list_next(job_itr))) {
 		uint32_t cluster_id = fed_mgr_get_cluster_id(job_ptr->job_id);
 		if (job_ptr->fed_details &&
 		    (job_ptr->details &&
@@ -1403,7 +1403,7 @@ static void _cleanup_removed_origin_jobs(void)
 	sibling_bit = FED_SIBLING_BIT(sibling_id);
 
 	job_itr = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
+	while ((job_ptr = list_next(job_itr))) {
 		bool running_remotely = false;
 		uint64_t siblings_viable;
 
@@ -1475,7 +1475,7 @@ static void _cleanup_removed_cluster_jobs(slurmdb_cluster_rec_t *cluster)
 	sibling_bit = FED_SIBLING_BIT(sibling_id);
 
 	job_itr = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_itr))) {
+	while ((job_ptr = list_next(job_itr))) {
 		uint64_t siblings_viable;
 
 		if (IS_JOB_COMPLETED(job_ptr))

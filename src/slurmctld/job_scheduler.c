@@ -219,7 +219,7 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 
 	job_queue = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_ptr->user_id != user_id)
 			continue;
@@ -262,7 +262,7 @@ static uint16_t _is_step_cleaning(struct job_record *job_ptr)
 	uint16_t cleaning = 0;
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		/* Only check if not a pending step */
 		if (step_ptr->step_id != SLURM_PENDING_STEP) {
 			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
@@ -422,7 +422,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	/* Create individual job records for job arrays that need burst buffer
 	 * staging */
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_ptr) ||
 		    !job_ptr->burst_buffer || !job_ptr->array_recs ||
 		    !job_ptr->array_recs->task_id_bitmap ||
@@ -461,7 +461,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	/* Create individual job records for job arrays with
 	 * depend_type == SLURM_DEPEND_AFTER_CORRESPOND */
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_ptr) ||
 		    !job_ptr->array_recs ||
 		    !job_ptr->array_recs->task_id_bitmap ||
@@ -512,7 +512,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	list_iterator_destroy(job_iterator);
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_PENDING(job_ptr))
 			acct_policy_handle_accrue_time(job_ptr, false);
 
@@ -555,8 +555,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 			int inx = -1;
 			part_iterator = list_iterator_create(
 				job_ptr->part_ptr_list);
-			while ((part_ptr = (struct part_record *)
-				list_next(part_iterator))) {
+			while ((part_ptr = list_next(part_iterator))) {
 				job_ptr->part_ptr = part_ptr;
 				reason = job_limits_check(&job_ptr, backfill);
 				if ((reason != WAIT_NO_REASON) &&
@@ -631,7 +630,7 @@ extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
 
 	recent = time(NULL) - complete_wait;
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_COMPLETING(job_ptr) &&
 		    (job_ptr->end_time >= recent)) {
 			completing = true;
@@ -665,7 +664,7 @@ extern void set_job_elig_time(void)
 
 	lock_slurmctld(job_write_lock);
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		part_ptr = job_ptr->part_ptr;
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
@@ -727,7 +726,7 @@ static bool _all_partition_priorities_same(void)
 	bool result = true;
 
 	iter = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(iter))) {
+	while ((part_ptr = list_next(iter))) {
 		if (!part_priority_set) {
 			part_priority = part_ptr->priority_tier;
 			part_priority_set = true;
@@ -1185,8 +1184,7 @@ static int _schedule(uint32_t job_limit)
 	START_TIMER;
 	if (!avail_front_end(NULL)) {
 		ListIterator job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = (struct job_record *)
-			list_next(job_iterator))) {
+		while ((job_ptr = list_next(job_iterator))) {
 			if (!IS_JOB_PENDING(job_ptr))
 				continue;
 			if ((job_ptr->state_reason != WAIT_NO_REASON) &&
@@ -1260,8 +1258,7 @@ static int _schedule(uint32_t job_limit)
 		sched_part_jobs = xmalloc(sizeof(int) * part_cnt);
 		part_iterator = list_iterator_create(part_list);
 		i = 0;
-		while ((part_ptr = (struct part_record *)
-			list_next(part_iterator))) {
+		while ((part_ptr = list_next(part_iterator))) {
 			sched_part_ptr[i++] = part_ptr;
 		}
 		list_iterator_destroy(part_iterator);
@@ -1290,7 +1287,7 @@ static int _schedule(uint32_t job_limit)
 			if (job_ptr && part_iterator &&
 			    IS_JOB_PENDING(job_ptr)) /* test job in next part */
 				goto next_part;
-			job_ptr = (struct job_record *) list_next(job_iterator);
+			job_ptr = list_next(job_iterator);
 			if (!job_ptr)
 				break;
 
@@ -1309,8 +1306,8 @@ static int _schedule(uint32_t job_limit)
 			if (job_ptr->part_ptr_list) {
 				part_iterator = list_iterator_create(
 					job_ptr->part_ptr_list);
-next_part:			part_ptr = (struct part_record *)
-					list_next(part_iterator);
+next_part:
+				part_ptr = list_next(part_iterator);
 
 				if (!_job_runnable_test3(job_ptr, part_ptr))
 					continue;
@@ -2180,7 +2177,7 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
 	}
 
 	iter = list_iterator_create(pack_leader->pack_job_list);
-	while ((pack_job = (struct job_record *) list_next(iter))) {
+	while ((pack_job = list_next(iter))) {
 		uint8_t prolog = 0;
 		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
 			error("%s: Bad pack_job_list for %pJ",
@@ -2241,7 +2238,7 @@ static void _set_pack_env(struct job_record *pack_leader,
 	xrealloc(launch_msg_ptr->environment,
 		 sizeof(char *) * (launch_msg_ptr->envc + 1));
 	iter = list_iterator_create(pack_leader->pack_job_list);
-	while ((pack_job = (struct job_record *) list_next(iter))) {
+	while ((pack_job = list_next(iter))) {
 		uint16_t cpus_per_task = 1;
 		uint32_t num_cpus = 0;
 		uint64_t tmp_mem = 0;
@@ -2545,7 +2542,7 @@ extern List depended_list_copy(List depend_list_src)
 
 	depend_list_dest = list_create(_depend_list_del);
 	iter = list_iterator_create(depend_list_src);
-	while ((dep_src = (struct depend_spec *) list_next(iter))) {
+	while ((dep_src = list_next(iter))) {
 		dep_dest = xmalloc(sizeof(struct depend_spec));
 		memcpy(dep_dest, dep_src, sizeof(struct depend_spec));
 		list_append(depend_list_dest, dep_dest);
@@ -2706,8 +2703,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 							 job_ptr->name);
 			run_now = true;
 			job_iterator = list_iterator_create(job_queue);
-			while ((qjob_ptr = (struct job_record *)
-				list_next(job_iterator))) {
+			while ((qjob_ptr = list_next(job_iterator))) {
 				/* already running/suspended job or previously
 				 * submitted pending job */
 				if (IS_JOB_RUNNING(qjob_ptr) ||
@@ -3340,7 +3336,7 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 
 	xassert(job_id);
 	iter = list_iterator_create(dependency_list);
-	while (!rc && (dep_ptr = (struct depend_spec *) list_next(iter))) {
+	while (!rc && (dep_ptr = list_next(iter))) {
 		if (dep_ptr->job_id == 0)	/* Singleton */
 			continue;
 		if (dep_ptr->job_id == job_id)
@@ -3390,7 +3386,7 @@ static void _delayed_job_start_time(struct job_record *job_ptr)
 		part_cpus_per_node = 1;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_q_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_q_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_q_ptr) || !job_q_ptr->details ||
 		    (job_q_ptr->part_ptr != job_ptr->part_ptr) ||
 		    (job_q_ptr->priority < job_ptr->priority) ||
@@ -3620,8 +3616,7 @@ next_part:
 			resp_data->preemptee_job_id=list_create(_pre_list_del);
 			preemptee_iterator = list_iterator_create(
 				preemptee_job_list);
-			while ((tmp_job_ptr = (struct job_record *)
-				list_next(preemptee_iterator))) {
+			while ((tmp_job_ptr = list_next(preemptee_iterator))) {
 				preemptee_jid = xmalloc(sizeof(uint32_t));
 				(*preemptee_jid) = tmp_job_ptr->job_id;
 				list_append(resp_data->preemptee_job_id,
@@ -3757,8 +3752,7 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 			hostset_t hs = NULL;
 			int hs_len = 0;
 			iter = list_iterator_create(job_ptr->pack_job_list);
-			while ((pack_job = (struct job_record *)
-				list_next(iter))) {
+			while ((pack_job = list_next(iter))) {
 				if (job_ptr->pack_job_id !=
 				    pack_job->pack_job_id) {
 					error("%s: Bad pack_job_list for %pJ",
@@ -4458,7 +4452,7 @@ extern List feature_list_copy(List feature_list_src)
 
 	feature_list_dest = list_create(feature_list_delete);
 	iter = list_iterator_create(feature_list_src);
-	while ((feat_src = (job_feature_t *) list_next(iter))) {
+	while ((feat_src = list_next(iter))) {
 		feat_dest = xmalloc(sizeof(job_feature_t));
 		memcpy(feat_dest, feat_src, sizeof(job_feature_t));
 		if (feat_src->node_bitmap_active)
@@ -4737,7 +4731,7 @@ static int _valid_feature_list(struct job_record *job_ptr, bool can_reboot)
 	}
 
 	feat_iter = list_iterator_create(feature_list);
-	while ((feat_ptr = (job_feature_t *)list_next(feat_iter))) {
+	while ((feat_ptr = list_next(feat_iter))) {
 		if ((feat_ptr->op_code == FEATURE_OP_XOR) ||
 		    (feat_ptr->op_code == FEATURE_OP_XAND)) {
 			if (bracket == 0)
@@ -4801,7 +4795,7 @@ static int _valid_node_feature(char *feature, bool can_reboot)
 		feature_iter = list_iterator_create(avail_feature_list);
 	else
 		feature_iter = list_iterator_create(active_feature_list);
-	while ((feature_ptr = (node_feature_t *)list_next(feature_iter))) {
+	while ((feature_ptr = list_next(feature_iter))) {
 		if (xstrcmp(feature_ptr->name, feature))
 			continue;
 		rc = SLURM_SUCCESS;
@@ -4834,7 +4828,7 @@ extern void rebuild_job_part_list(struct job_record *job_ptr)
 	job_ptr->partition = xstrdup(job_ptr->part_ptr->name);
 
 	part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+	while ((part_ptr = list_next(part_iterator))) {
 		if (part_ptr == job_ptr->part_ptr)
 			continue;
 		xstrcat(job_ptr->partition, ",");

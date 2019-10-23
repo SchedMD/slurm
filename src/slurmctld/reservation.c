@@ -243,7 +243,7 @@ static List _list_dup(List license_list)
 
 	lic_list = list_create(license_free_rec);
 	iter = list_iterator_create(license_list);
-	while ((license_src = (licenses_t *) list_next(iter))) {
+	while ((license_src = list_next(iter))) {
 		license_dest = xmalloc(sizeof(licenses_t));
 		license_dest->name = xstrdup(license_src->name);
 		license_dest->used = license_src->used;
@@ -1692,7 +1692,7 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
 	if (flags & RESERVE_FLAG_TIME_FLOAT)
 		start_time += time(NULL);
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)		&&
 		    (job_ptr->end_time > start_time)	&&
 		    (bit_overlap(job_ptr->node_bitmap, node_bitmap) > 0) &&
@@ -1727,7 +1727,7 @@ static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
 
 	iter = list_iterator_create(resv_list);
 
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr == this_resv_ptr)
 			continue;	/* skip self */
 		if (resv_ptr->node_bitmap == NULL)
@@ -1928,7 +1928,7 @@ static List _license_validate2(resv_desc_msg_t *resv_desc_ptr, bool *valid)
 
 	merged_licenses = xstrdup(resv_desc_ptr->licenses);
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if ((resv_ptr->licenses   == NULL) ||
 		    (resv_ptr->end_time   <= resv_desc_ptr->start_time) ||
 		    (resv_ptr->start_time >= resv_desc_ptr->end_time))
@@ -2697,7 +2697,7 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
 	bool match = false;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if ((!IS_JOB_FINISHED(job_ptr)) &&
 		    (job_ptr->resv_id == resv_ptr->resv_id)) {
 			match = true;
@@ -2716,7 +2716,7 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 	struct job_record *job_ptr;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (job_ptr->resv_ptr != resv_ptr)
 			continue;
 		if (!IS_JOB_FINISHED(job_ptr)) {
@@ -2783,7 +2783,7 @@ extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 		info("delete_resv: Name=%s", resv_desc_ptr->name);
 
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if (xstrcmp(resv_ptr->name, resv_desc_ptr->name))
 			continue;
 		if (_is_resv_used(resv_ptr)) {
@@ -2878,7 +2878,7 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 
 	/* write individual reservation records */
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if (check_permissions) {
 			/* Determine if we have access */
 			if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)
@@ -2970,7 +2970,7 @@ extern int dump_all_resv_state(void)
 	/* write reservation records to buffer */
 	lock_slurmctld(resv_read_lock);
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter)))
+	while ((resv_ptr = list_next(iter)))
 		_pack_resv(resv_ptr, buffer, true, SLURM_PROTOCOL_VERSION);
 	list_iterator_destroy(iter);
 
@@ -3172,7 +3172,7 @@ static void _validate_all_reservations(void)
 	struct job_record *job_ptr;
 
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if (!_validate_one_reservation(resv_ptr)) {
 			error("Purging invalid reservation record %s",
 			      resv_ptr->name);
@@ -3188,7 +3188,7 @@ static void _validate_all_reservations(void)
 
 	/* Validate all job reservation pointers */
 	iter = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(iter))) {
+	while ((job_ptr = list_next(iter))) {
 		if (job_ptr->resv_name == NULL)
 			continue;
 
@@ -3646,7 +3646,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_MAINT) &&
 	    !(resv_desc_ptr->flags & RESERVE_FLAG_OVERLAP)) {
 		iter = list_iterator_create(resv_list);
-		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		while ((resv_ptr = list_next(iter))) {
 			if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
 			    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))
 				continue;
@@ -3780,7 +3780,7 @@ TRY_AVAIL:
 	 * and require a reboot to satisfy the request
 	 */
 	feat_iter = list_iterator_create(feature_list);
-	while ((feat_ptr = (job_feature_t *)list_next(feat_iter))) {
+	while ((feat_ptr = list_next(feat_iter))) {
 		if (feat_ptr->paren > paren) {	/* Start parenthesis */
 			paren = feat_ptr->paren;
 			if (test_active)
@@ -4011,7 +4011,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 
 	orig_bitmap = bit_copy(avail_bitmap);
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
 		if (job_ptr->end_time < resv_desc_ptr->start_time)
@@ -4063,8 +4063,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 	 * the unsorted job list. */
 	if (resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) {
 		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = (struct job_record *)
-			list_next(job_iterator))) {
+		while ((job_ptr = list_next(job_iterator))) {
 			if (!IS_JOB_RUNNING(job_ptr) &&
 			    !IS_JOB_SUSPENDED(job_ptr))
 				continue;
@@ -4308,7 +4307,7 @@ extern void job_time_adj_resv(struct job_record *job_ptr)
 	int32_t resv_begin_time;
 
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
 		if (job_ptr->resv_ptr == resv_ptr)
@@ -4513,7 +4512,7 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
 	job_start_time = when;
 	job_end_time   = when + _get_job_duration(job_ptr, reboot);
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
 
@@ -4561,7 +4560,7 @@ extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
 	job_start_time = when;
 	job_end_time   = when + _get_job_duration(job_ptr, reboot);
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
 
@@ -4635,7 +4634,7 @@ static void _update_constraint_planning(constraint_planning_t* sched,
 	/* iterate on the current slot list to identify
 	 * the modifications and do them live */
 	iter = list_iterator_create(sched->slot_list);
-	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
+	while ((cur_slot = list_next(iter))) {
 		/* cur_slot is posterior or contiguous, insert cstr,
 		 * mark the state as done and break */
 		if (cstr_slot->end <= cur_slot->start) {
@@ -4722,7 +4721,7 @@ static uint32_t _max_constraint_planning(constraint_planning_t* sched,
 	uint32_t max = 0;
 
 	iter = list_iterator_create(sched->slot_list);
-	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
+	while ((cur_slot = list_next(iter))) {
 		if (cur_slot->value > max) {
 			max = cur_slot->value;
 			*start = cur_slot->start;
@@ -4742,7 +4741,7 @@ static void _print_constraint_planning(constraint_planning_t* sched)
 	uint32_t i = 0;
 
 	iter = list_iterator_create(sched->slot_list);
-	while ((cur_slot = (constraint_slot_t *) list_next(iter))) {
+	while ((cur_slot = list_next(iter))) {
 		slurm_make_time_str(&cur_slot->start,
 				    start_str, sizeof(start_str));
 		slurm_make_time_str(&cur_slot->end,
@@ -4780,7 +4779,7 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
 	job_start_time = when;
 	job_end_time   = when + _get_job_duration(job_ptr, reboot);
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->end_time <= now)
 			_advance_resv_time(resv_ptr);
 		if (resv_ptr->resv_watts == NO_VAL ||
@@ -4930,7 +4929,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		 * prevent the job from using those nodes (e.g. MAINT nodes)
 		 */
 		iter = list_iterator_create(resv_list);
-		while ((res2_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		while ((res2_ptr = list_next(iter))) {
 			if (reboot)
 				job_end_time_use =
 					job_end_time + res2_ptr->boot_time;
@@ -4986,7 +4985,7 @@ extern int job_test_resv(struct job_record *job_ptr, time_t *when,
 		lic_resv_time = (time_t) 0;
 
 		iter = list_iterator_create(resv_list);
-		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		while ((resv_ptr = list_next(iter))) {
 			if (resv_ptr->flags & RESERVE_FLAG_TIME_FLOAT) {
 				start_relative = resv_ptr->start_time + now;
 				if (resv_ptr->duration == INFINITE)
@@ -5138,7 +5137,7 @@ extern time_t find_resv_end(time_t start_time)
 		return end_time;
 
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if (start_time > resv_ptr->end_time)
 			continue;
 		if ((end_time == 0) || (resv_ptr->end_time < end_time))
@@ -5359,7 +5358,7 @@ static int _resv_job_count(slurmctld_resv_t *resv_ptr)
 	struct job_record *job_ptr;
 
 	iter = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(iter))) {
+	while ((job_ptr = list_next(iter))) {
 		if (!IS_JOB_FINISHED(job_ptr) &&
 		    !xstrcmp(job_ptr->resv_name, resv_ptr->name))
 			cnt++;
@@ -5398,7 +5397,7 @@ extern void job_resv_check(void)
 	list_for_each(job_list, _job_resv_check, NULL);
 
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if ((resv_ptr->start_time <= (now - 300)) &&
 		    (resv_ptr->end_time > now) &&
 		    (resv_ptr->flags & RESERVE_FLAG_PURGE_COMP) &&
@@ -5513,7 +5512,7 @@ extern int set_node_maint_mode(bool reset_all)
 		/* NODE_STATE_RES already cleared above, 
 		 * clear RESERVE_FLAG_MAINT for expired reservations */
 		iter = list_iterator_create(resv_list);
-		while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+		while ((resv_ptr = list_next(iter))) {
 			if ((resv_ptr->flags_set_node) &&
 			    (resv_ptr->flags & RESERVE_FLAG_MAINT) &&
 			    ((now <  resv_ptr->start_time) ||
@@ -5531,7 +5530,7 @@ extern int set_node_maint_mode(bool reset_all)
 	/* Set NODE_STATE_RES and possibly NODE_STATE_MAINT for nodes in all
 	 * currently active reservations */
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if ((now >= resv_ptr->start_time) &&
 		    (now <  resv_ptr->end_time  )) {
 			flags = NODE_STATE_RES;
@@ -5572,7 +5571,7 @@ extern bool is_node_in_maint_reservation(int nodenum)
 
 	t = time(NULL);
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) == 0)
 			continue;
 		if (! (t >= resv_ptr->start_time
@@ -5617,7 +5616,7 @@ extern void update_part_nodes_in_resv(struct part_record *part_ptr)
 	xassert(part_ptr);
 
 	iter = list_iterator_create(resv_list);
-	while ((resv_ptr = (slurmctld_resv_t *) list_next(iter))) {
+	while ((resv_ptr = list_next(iter))) {
 		if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
 		    (resv_ptr->partition != NULL) &&
 		    (xstrcmp(resv_ptr->partition, part_ptr->name) == 0)) {

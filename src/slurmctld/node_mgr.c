@@ -1662,8 +1662,7 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 	 * update it (if all nodes updated) or split it into
 	 * a new entry */
 	config_iterator = list_iterator_create(config_list);
-	while ((config_ptr = (struct config_record *)
-			list_next(config_iterator))) {
+	while ((config_ptr = list_next(config_iterator))) {
 		if (config_ptr == first_new)
 			break;	/* done with all original records */
 
@@ -1819,8 +1818,7 @@ static int _update_node_avail_features(char *node_names, char *avail_features,
 		 * (if all nodes updated) or split it into a new entry
 		 */
 		config_iterator = list_iterator_create(config_list);
-		while ((config_ptr = (struct config_record *)
-				list_next(config_iterator))) {
+		while ((config_ptr = list_next(config_iterator))) {
 			if (config_ptr == first_new)
 				break;	/* done with all original records */
 
@@ -1906,8 +1904,7 @@ static int _update_node_gres(char *node_names, char *gres)
 	 * update it (if all nodes updated) or split it into a new entry
 	 */
 	config_iterator = list_iterator_create(config_list);
-	while ((config_ptr = (struct config_record *)
-			list_next(config_iterator))) {
+	while ((config_ptr = list_next(config_iterator))) {
 		if (config_ptr == first_new)
 			break;	/* done with all original records */
 
@@ -2895,7 +2892,7 @@ extern int validate_nodes_via_front_end(
 
 	/* purge orphan batch jobs */
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) ||
 		    IS_JOB_CONFIGURING(job_ptr) ||
 		    (job_ptr->batch_flag == 0))

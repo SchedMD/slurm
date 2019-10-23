@@ -93,7 +93,7 @@ static bool _pending_pack_jobs(struct job_record *job_ptr)
 	}
 
 	iter = list_iterator_create(pack_leader->pack_job_list);
-	while ((pack_job = (struct job_record *) list_next(iter))) {
+	while ((pack_job = list_next(iter))) {
 		if (pack_leader->pack_job_id != pack_job->pack_job_id) {
 			error("%s: Bad pack_job_list for %pJ",
 			      __func__, pack_leader);
@@ -154,7 +154,7 @@ extern void srun_allocate(struct job_record *job_ptr)
 			       pack_leader->resp_host);
 		job_resp_list = list_create(_free_srun_alloc);
 		iter = list_iterator_create(pack_leader->pack_job_list);
-		while ((pack_job = (struct job_record *) list_next(iter))) {
+		while ((pack_job = list_next(iter))) {
 			if (pack_leader->pack_job_id != pack_job->pack_job_id) {
 				error("%s: Bad pack_job_list for %pJ",
 				      __func__, pack_leader);
@@ -228,7 +228,7 @@ extern void srun_node_fail(struct job_record *job_ptr, char *node_name)
 #endif
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->step_node_bitmap == NULL)   /* pending step */
 			continue;
 		if ((bit_position >= 0) &&
@@ -277,7 +277,7 @@ extern void srun_ping (void)
 		return;		/* No limit, don't bother pinging */
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 
 		if (!IS_JOB_RUNNING(job_ptr))
@@ -354,7 +354,7 @@ extern void srun_timeout (struct job_record *job_ptr)
 
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next(step_iterator)))
+	while ((step_ptr = list_next(step_iterator)))
 		srun_step_timeout(step_ptr, job_ptr->end_time);
 	list_iterator_destroy(step_iterator);
 }
@@ -449,7 +449,7 @@ extern void srun_job_complete (struct job_record *job_ptr)
 	}
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->batch_step)	/* batch script itself */
 			continue;
 		srun_step_complete(step_ptr);

@@ -557,7 +557,7 @@ extern int bb_g_job_try_stage_in(void)
 	START_TIMER;
 	job_queue = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_PENDING(job_ptr))
 			continue;
 		if ((job_ptr->burst_buffer == NULL) ||

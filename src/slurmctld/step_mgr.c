@@ -207,7 +207,7 @@ static int _purge_duplicate_steps(struct job_record *job_ptr,
 	xassert(job_ptr);
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if ((step_ptr->step_id  == SLURM_PENDING_STEP)   &&
 		    (step_ptr->state    == JOB_PENDING)          &&
 		    (step_ptr->srun_pid	== step_specs->srun_pid) &&
@@ -318,7 +318,7 @@ extern void delete_step_records (struct job_record *job_ptr)
 
 	last_job_update = time(NULL);
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		/* Only check if not a pending step */
 		if (step_ptr->step_id != SLURM_PENDING_STEP) {
 			uint16_t cleaning = 0;
@@ -354,7 +354,7 @@ extern void step_list_purge(struct job_record *job_ptr)
 		return;
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		list_remove (step_iterator);
 		_free_step_rec(step_ptr);
 	}
@@ -431,7 +431,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 
 	last_job_update = time(NULL);
 	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->step_id != step_id)
 			continue;
 
@@ -768,7 +768,7 @@ static void _wake_pending_steps(struct job_record *job_ptr)
 	 * Try to start a bit more based upon step sizes. Effectiveness
 	 * varies with step sizes, constraints and order. */
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if ((step_ptr->state == JOB_PENDING) &&
 		    ((start_count < config_start_count) ||
 		     (step_ptr->time_last_active <= max_age))) {
@@ -1515,8 +1515,7 @@ _pick_step_nodes (struct job_record *job_ptr,
 	} else {
 		nodes_idle = bit_alloc (bit_size (nodes_avail) );
 		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = (struct step_record *)
-			list_next(step_iterator))) {
+		while ((step_ptr = list_next(step_iterator))) {
 			if (step_ptr->state < JOB_RUNNING)
 				continue;
 
@@ -3272,7 +3271,7 @@ extern int kill_step_on_node(struct job_record  *job_ptr,
 
 	bit_position = node_ptr - node_record_table_ptr;
 	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;
 		if (!bit_test(step_ptr->step_node_bitmap, bit_position))
@@ -3786,7 +3785,7 @@ extern int step_epilog_complete(struct job_record  *job_ptr,
 	node_inx = node_ptr - node_record_table_ptr;
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;
 		if ((!step_ptr->switch_job)
@@ -3837,7 +3836,7 @@ suspend_job_step(struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;
 		_suspend_job_step(job_ptr, step_ptr, now);
@@ -3868,7 +3867,7 @@ resume_job_step(struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;
 		_resume_job_step(job_ptr, step_ptr, now);
@@ -4243,7 +4242,7 @@ extern void step_checkpoint(void)
 		return;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 		if (job_ptr->batch_flag &&
@@ -4274,8 +4273,7 @@ extern void step_checkpoint(void)
 			continue; /* ignore periodic step ckpt */
 		}
 		step_iterator = list_iterator_create (job_ptr->step_list);
-		while ((step_ptr = (struct step_record *)
-				list_next (step_iterator))) {
+		while ((step_ptr = list_next(step_iterator))) {
 			char *image_dir = NULL;
 			if (step_ptr->state != JOB_RUNNING)
 				continue;
@@ -4413,7 +4411,7 @@ check_job_step_time_limit (struct job_record *job_ptr, time_t now)
 		return;
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->state != JOB_RUNNING)
 			continue;
 		if (step_ptr->time_limit == INFINITE ||
@@ -4519,8 +4517,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	 */
 	if (req->step_id == NO_VAL) {
 		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step2_ptr = (struct step_record *)
-				   list_next (step_iterator))) {
+		while ((step2_ptr = list_next(step_iterator))) {
 			if (step2_ptr->state != JOB_RUNNING)
 				continue;
 			step2_ptr->time_limit = req->time_limit;
@@ -4611,8 +4608,7 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
 		return;
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = (struct step_record *)
-			   list_next (step_iterator))) {
+	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->state < JOB_RUNNING)
 			continue;
 		gres_plugin_step_state_rebase(step_ptr->gres_list,

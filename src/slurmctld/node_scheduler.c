@@ -652,7 +652,7 @@ extern void find_feature_nodes(List feature_list, bool can_reboot)
 	if (!feature_list)
 		return;
 	feat_iter = list_iterator_create(feature_list);
-	while ((job_feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+	while ((job_feat_ptr = list_next(feat_iter))) {
 		FREE_NULL_BITMAP(job_feat_ptr->node_bitmap_active);
 		FREE_NULL_BITMAP(job_feat_ptr->node_bitmap_avail);
 		node_feat_ptr = list_find_first(active_feature_list,
@@ -734,7 +734,7 @@ static int _match_feature(List feature_list, bitstr_t **inactive_bitmap)
 	bit_set_all(feature_bitmap);
 	work_bitmap = feature_bitmap;
 	job_feat_iter = list_iterator_create(feature_list);
-	while ((job_feat_ptr = (job_feature_t *) list_next(job_feat_iter))) {
+	while ((job_feat_ptr = list_next(job_feat_iter))) {
 		if (last_paren_cnt < job_feat_ptr->paren) {
 			/* Start of expression in parenthesis */
 			last_paren_op = last_op;
@@ -989,8 +989,7 @@ extern void filter_by_node_owner(struct job_record *job_ptr,
 		/* Need to remove all nodes allocated to any active job from
 		 * any other user */
 		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr2 = (struct job_record *)
-				   list_next(job_iterator))) {
+		while ((job_ptr2 = list_next(job_iterator))) {
 			if (IS_JOB_PENDING(job_ptr2) ||
 			    IS_JOB_COMPLETED(job_ptr2) ||
 			    (job_ptr->user_id == job_ptr2->user_id) ||
@@ -1308,7 +1307,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 
 		feat_iter = list_iterator_create(
 				job_ptr->details->feature_list);
-		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+		while ((feat_ptr = list_next(feat_iter))) {
 			bool sort_again = false;
 			if (last_paren_cnt < feat_ptr->paren) {
 				/* Start of expression in parenthesis */
@@ -2176,8 +2175,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				struct job_record *tmp_job_ptr = NULL;
 				ListIterator job_iterator;
 				job_iterator = list_iterator_create(preemptee_candidates);
-				while ((tmp_job_ptr = (struct job_record *)
-					list_next(job_iterator))) {
+				while ((tmp_job_ptr = list_next(job_iterator))) {
 					if (!IS_JOB_RUNNING(tmp_job_ptr) ||
 					    tmp_job_ptr->details->share_res ||
 					    !tmp_job_ptr->job_resrcs)
@@ -2436,7 +2434,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 	}
 
 	iter = list_iterator_create(preemptee_job_list);
-	while ((job_ptr = (struct job_record *) list_next(iter))) {
+	while ((job_ptr = list_next(iter))) {
 		rc = SLURM_SUCCESS;
 		mode = slurm_job_preempt_mode(job_ptr);
 		if (mode == PREEMPT_MODE_CANCEL) {
@@ -3471,7 +3469,7 @@ extern bool valid_feature_counts(struct job_record *job_ptr, bool use_active,
 	feature_bitmap = bit_copy(node_bitmap);
 	work_bitmap = feature_bitmap;
 	job_feat_iter = list_iterator_create(detail_ptr->feature_list);
-	while ((job_feat_ptr = (job_feature_t *) list_next(job_feat_iter))) {
+	while ((job_feat_ptr = list_next(job_feat_iter))) {
 		if (last_paren_cnt < job_feat_ptr->paren) {
 			/* Start of expression in parenthesis */
 			last_paren_op = last_op;
@@ -3781,8 +3779,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	node_set_len = list_count(config_list) * 16 + 1;
 	node_set_ptr = xcalloc(node_set_len, sizeof(struct node_set));
 	config_iterator = list_iterator_create(config_list);
-	while ((config_ptr = (struct config_record *)
-			list_next(config_iterator))) {
+	while ((config_ptr = list_next(config_iterator))) {
 		bool cpus_ok = false, mem_ok = false, disk_ok = false;
 		bool job_mc_ok = false, config_filter = false;
 		total_cores = config_ptr->boards * config_ptr->sockets *
@@ -4419,8 +4416,7 @@ extern int pick_batch_host(struct job_record *job_ptr)
 		tmp[i] = '\0';
 
 		feature_iter = list_iterator_create(active_feature_list);
-		while ((feature_ptr = (node_feature_t *)
-				      list_next(feature_iter))) {
+		while ((feature_ptr = list_next(feature_iter))) {
 			if (xstrcmp(feature_ptr->name, tok))
 				continue;
 			if (last_sep == '&') {
@@ -4490,7 +4486,7 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 	}
 
 	feat_iter = list_iterator_create(details_ptr->feature_list);
-	while ((job_feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+	while ((job_feat_ptr = list_next(feat_iter))) {
 		if (job_feat_ptr->paren > last_paren) {
 			/* Combine features within parenthesis */
 			paren_node_bitmap =
@@ -4499,8 +4495,7 @@ static bitstr_t *_valid_features(struct job_record *job_ptr,
 				active_node_bitmap = bit_copy(paren_node_bitmap);
 			last_paren = job_feat_ptr->paren;
 			paren_op = job_feat_ptr->op_code;
-			while ((job_feat_ptr = (job_feature_t *)
-					       list_next(feat_iter))) {
+			while ((job_feat_ptr = list_next(feat_iter))) {
 				if ((paren_op == FEATURE_OP_AND) &&
 				     can_reboot) {
 					bit_and(paren_node_bitmap,

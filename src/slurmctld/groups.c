@@ -255,7 +255,7 @@ static uid_t *_get_group_cache(char *group_name)
 	}
 
 	iter = list_iterator_create(group_cache_list);
-	while ((cache_rec = (struct group_cache_rec *) list_next(iter))) {
+	while ((cache_rec = list_next(iter))) {
 		if (xstrcmp(group_name, cache_rec->group_name))
 			continue;
 		sz = sizeof(uid_t) * (cache_rec->uid_cnt + 1);

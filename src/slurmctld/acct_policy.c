@@ -3293,7 +3293,7 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 	pack_limit_list = list_create(_pack_list_del);
 	iter1 = list_iterator_create(submit_job_list);
 	assoc_mgr_lock(&locks);
-	while ((job_ptr1 = (struct job_record *) list_next(iter1))) {
+	while ((job_ptr1 = list_next(iter1))) {
 		qos_ptr_1 = NULL;
 		qos_ptr_2 = NULL;
 		acct_policy_set_qos_order(job_ptr1, &qos_ptr_1, &qos_ptr_2);
@@ -3308,7 +3308,7 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 	list_iterator_destroy(iter1);
 
 	iter1 = list_iterator_create(pack_limit_list);
-	while ((job_limit1 = (pack_limits_t *) list_next(iter1))) {
+	while ((job_limit1 = list_next(iter1))) {
 		job_ptr1 = job_limit1->job_ptr;
 		if (build_job_desc) {
 			build_job_desc = false;
@@ -3321,8 +3321,7 @@ extern bool acct_policy_validate_pack(List submit_job_list)
 			memcpy(job_desc.tres_req_cnt, job_ptr1->tres_req_cnt,
 			       tres_req_size);
 			iter2 = list_iterator_create(pack_limit_list);
-			while ((job_limit2 = (pack_limits_t *)
-					     list_next(iter2))) {
+			while ((job_limit2 = list_next(iter2))) {
 				if ((job_limit2 == job_limit1) ||
 				    (job_limit2->assoc_ptr !=
 				     job_limit1->assoc_ptr))

@@ -503,8 +503,7 @@ extern void restore_front_end_state(int recover)
 		return;		/* No front ends in slurm.conf */
 
 	iter = list_iterator_create(front_end_list);
-	while ((slurm_conf_fe_ptr = (slurm_conf_frontend_t *)
-				    list_next(iter))) {
+	while ((slurm_conf_fe_ptr = list_next(iter))) {
 		if (slurm_conf_fe_ptr->frontends == NULL) {
 			fatal("FrontendName is NULL");
 			return;	/* Prevent CLANG false positive */
@@ -949,7 +948,7 @@ extern void sync_front_end_state(void)
 	}
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (job_ptr->batch_host) {
 			job_ptr->front_end_ptr =
 				find_front_end_record(job_ptr->batch_host);

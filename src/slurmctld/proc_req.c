@@ -1266,14 +1266,14 @@ static void _exclude_pack_nodes(List job_req_list)
 	pack_cnt = list_count(job_req_list);
 	req_nodes = xmalloc(sizeof(char *) * pack_cnt);
 	iter = list_iterator_create(job_req_list);
-	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+	while ((job_desc_msg = list_next(iter))) {
 		if (!job_desc_msg->req_nodes || !job_desc_msg->req_nodes[0])
 			continue;
 		req_nodes[req_cnt++] = job_desc_msg->req_nodes;
 	}
 	if (req_cnt) {
 		list_iterator_reset(iter);
-		while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+		while ((job_desc_msg = list_next(iter))) {
 			for (i = 0; i < req_cnt; i++) {
 				if (req_nodes[i] == job_desc_msg->req_nodes)
 					continue;     /* required by this job */
@@ -1389,7 +1389,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	lock_slurmctld(job_write_lock);
 	inx = 0;
 	iter = list_iterator_create(job_req_list);
-	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+	while ((job_desc_msg = list_next(iter))) {
 		if (job_uid == NO_VAL)
 			job_uid = job_desc_msg->user_id;
 
@@ -1504,7 +1504,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	if (first_job_ptr)
 		first_job_ptr->pack_job_list = submit_job_list;
 	iter = list_iterator_create(submit_job_list);
-	while ((job_ptr = (struct job_record *) list_next(iter))) {
+	while ((job_ptr = list_next(iter))) {
 		job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
 	}
 	list_iterator_destroy(iter);
@@ -1519,7 +1519,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 		ListIterator iter;
 		inx = 0;
 		iter = list_iterator_create(submit_job_list);
-		while ((job_ptr = (struct job_record *) list_next(iter))) {
+		while ((job_ptr = list_next(iter))) {
 			if (!resp)
 				resp = list_create(_del_alloc_pack_msg);
 			list_append(resp,
@@ -3269,7 +3269,7 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 	} else {
 		resp = list_create(_pack_alloc_list_del);
 		iter = list_iterator_create(job_ptr->pack_job_list);
-		while ((pack_job = (struct job_record *) list_next(iter))) {
+		while ((pack_job = list_next(iter))) {
 			if (job_ptr->pack_job_id != pack_job->pack_job_id) {
 				error("%s: Bad pack_job_list for %pJ",
 				      __func__, job_ptr);
@@ -3383,8 +3383,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		if (job_ptr && job_ptr->pack_job_list) {  /* Do full pack job */
 			job_info_msg->step_id = NO_VAL;
 			iter = list_iterator_create(job_ptr->pack_job_list);
-			while ((job_pack_ptr =
-			        (struct job_record *) list_next(iter))) {
+			while ((job_pack_ptr = list_next(iter))) {
 				error_code = job_alloc_info_ptr(uid,
 							        job_pack_ptr);
 				if (error_code)
@@ -4130,7 +4129,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	/* Validate the individual request */
 	lock_slurmctld(job_read_lock);     /* Locks for job_submit plugin use */
 	iter = list_iterator_create(job_req_list);
-	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+	while ((job_desc_msg = list_next(iter))) {
 		if (job_uid == NO_VAL)
 			job_uid = job_desc_msg->user_id;
 
@@ -4206,7 +4205,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	lock_slurmctld(job_write_lock);
 	START_TIMER;	/* Restart after we have locks */
 	iter = list_iterator_create(job_req_list);
-	while ((job_desc_msg = (job_desc_msg_t *) list_next(iter))) {
+	while ((job_desc_msg = list_next(iter))) {
 		if (!script)
 			script = xstrdup(job_desc_msg->script);
 		if (pack_job_offset && job_desc_msg->script) {
@@ -4289,7 +4288,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 		first_job_ptr->pack_job_list = submit_job_list;
 
 	iter = list_iterator_create(submit_job_list);
-	while ((job_ptr = (struct job_record *) list_next(iter))) {
+	while ((job_ptr = list_next(iter))) {
 		job_ptr->pack_job_id_set = xstrdup(pack_job_id_set);
 		if ((error_code == SLURM_SUCCESS) &&
 		    (slurmctld_conf.debug_flags & DEBUG_FLAG_HETERO_JOBS)) {

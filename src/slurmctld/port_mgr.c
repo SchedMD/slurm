@@ -142,10 +142,9 @@ static void _make_all_resv(void)
 	ListIterator job_iterator, step_iterator;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = (struct step_record *)
-				   list_next(step_iterator))) {
+		while ((step_ptr = list_next(step_iterator))) {
 			if (step_ptr->state < JOB_RUNNING)
 				continue;
 			_make_step_resv(step_ptr);
