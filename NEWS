@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
     truncating to just the host portion and dropping any domain name portion
     returned by gethostbyaddr().
  -- Fix abort initializing a configuration without acct_gather.conf.
+ -- Fix GRES binding and CLOUD nodes GRES setup regressions.
 
 * Changes in Slurm 19.05.3-2
 ============================
