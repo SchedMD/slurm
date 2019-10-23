@@ -1797,6 +1797,11 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		return SLURM_SUCCESS;
 	}
 
+	if (!preemptee_candidates && (job_ptr->bit_flags & TEST_NOW_ONLY)) {
+		FREE_NULL_BITMAP(orig_map);
+		return SLURM_ERROR;
+	}
+
 	/*
 	 * Job is still pending. Simulate termination of jobs one at a time
 	 * to determine when and where the job can start.
