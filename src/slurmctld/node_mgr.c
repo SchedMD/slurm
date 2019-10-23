@@ -3894,6 +3894,7 @@ extern void check_reboot_nodes()
 			 */
 			node_ptr->node_state &= (~NODE_STATE_REBOOT);
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
+			node_ptr->boot_req_time = 0;
 			set_node_down_ptr(node_ptr, NULL);
 
 			bit_clear(rs_node_bitmap, i);
