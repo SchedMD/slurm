@@ -2755,4 +2755,13 @@ extern void check_reboot_nodes();
  */
 extern void send_job_warn_signal(job_record_t *job_ptr, bool ignore_time);
 
+/*
+ * Check if waiting for the node to still boot.
+ *
+ * IN node_ptr - node to check if still waiting for boot.
+ *
+ * RET return true if still expecting the node to boot, false otherwise.
+ */
+extern bool waiting_for_node_boot(struct node_record *node_ptr);
+
 #endif /* !_HAVE_SLURMCTLD_H */

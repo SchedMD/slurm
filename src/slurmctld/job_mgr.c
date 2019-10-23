@@ -13791,11 +13791,9 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		error("Node up_time is invalid: %u>%u", reg_msg->up_time,
 		      (uint32_t) now);
 	}
-	if (IS_NODE_POWER_UP(node_ptr) &&
-	    (node_ptr->boot_time < node_ptr->boot_req_time)) {
-		debug("Still waiting for boot of node %s", node_ptr->name);
+
+	if (waiting_for_node_boot(node_ptr))
 		return;
-	}
 
 	node_inx = node_ptr - node_record_table_ptr;
 

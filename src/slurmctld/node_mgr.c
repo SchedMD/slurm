@@ -2258,11 +2258,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 	node_ptr->version = reg_msg->version;
 	reg_msg->version = NULL;
 
-	if (IS_NODE_POWER_UP(node_ptr) &&
-	    (node_ptr->boot_time < node_ptr->boot_req_time)) {
-		debug("Still waiting for boot of node %s", node_ptr->name);
+	if (waiting_for_node_boot(node_ptr))
 		return SLURM_SUCCESS;
-	}
 	bit_clear(booting_node_bitmap, node_inx);
 
 	if (cr_flag == NO_VAL) {
@@ -3118,15 +3115,8 @@ static void _node_did_resp(node_record_t *node_ptr)
 	time_t now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
-	if (IS_NODE_POWER_UP(node_ptr) ||
-	    (IS_NODE_DOWN(node_ptr) &&
-	    (node_ptr->boot_req_time != 0))) {
-		if (node_ptr->boot_time < node_ptr->boot_req_time) {
-			debug("Still waiting for boot of node %s",
-			      node_ptr->name);
-			return;
-		}
-	}
+	if (waiting_for_node_boot(node_ptr))
+		return;
 	node_ptr->last_response = MAX(now, node_ptr->last_response);
 	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
@@ -3909,4 +3899,18 @@ extern void check_reboot_nodes()
 			bit_clear(rs_node_bitmap, i);
 		}
 	}
+}
+
+extern bool waiting_for_node_boot(struct node_record *node_ptr)
+{
+	xassert(node_ptr);
+
+	if ((IS_NODE_POWER_UP(node_ptr) ||
+	     (IS_NODE_DOWN(node_ptr) && IS_NODE_REBOOT(node_ptr))) &&
+	    (node_ptr->boot_time < node_ptr->boot_req_time)) {
+		debug("Still waiting for boot of node %s", node_ptr->name);
+		return true;
+	}
+
+	return false;
 }
