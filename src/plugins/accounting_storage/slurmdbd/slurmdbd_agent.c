@@ -491,6 +491,63 @@ end_it:
 	xfree(dbd_fname);
 }
 
+/* Purge queued step records from the agent queue
+ * RET number of records purged */
+static int _purge_step_req(void)
+{
+	int purged = 0;
+	ListIterator iter;
+	uint16_t msg_type;
+	uint32_t offset;
+	Buf buffer;
+
+	iter = list_iterator_create(agent_list);
+	while ((buffer = list_next(iter))) {
+		offset = get_buf_offset(buffer);
+		if (offset < 2)
+			continue;
+		set_buf_offset(buffer, 0);
+		(void) unpack16(&msg_type, buffer);	/* checked by offset */
+		set_buf_offset(buffer, offset);
+		if ((msg_type == DBD_STEP_START) ||
+		    (msg_type == DBD_STEP_COMPLETE)) {
+			list_remove(iter);
+			purged++;
+		}
+	}
+	list_iterator_destroy(iter);
+	info("slurmdbd: purge %d step records", purged);
+	return purged;
+}
+
+/* Purge queued job start records from the agent queue
+ * RET number of records purged */
+static int _purge_job_start_req(void)
+{
+	int purged = 0;
+	ListIterator iter;
+	uint16_t msg_type;
+	uint32_t offset;
+	Buf buffer;
+
+	iter = list_iterator_create(agent_list);
+	while ((buffer = list_next(iter))) {
+		offset = get_buf_offset(buffer);
+		if (offset < 2)
+			continue;
+		set_buf_offset(buffer, 0);
+		(void) unpack16(&msg_type, buffer);	/* checked by offset */
+		set_buf_offset(buffer, offset);
+		if (msg_type == DBD_JOB_START) {
+			list_remove(iter);
+			purged++;
+		}
+	}
+	list_iterator_destroy(iter);
+	info("slurmdbd: purge %d job start records", purged);
+	return purged;
+}
+
 /* Open a connection to the Slurm DBD and set slurmdbd_conn */
 static void _open_slurmdbd_conn(bool need_db)
 {
@@ -836,63 +893,6 @@ static void _create_agent(void)
 	if (agent_tid == 0) {
 		slurm_thread_create(&agent_tid, _agent, NULL);
 	}
-}
-
-/* Purge queued step records from the agent queue
- * RET number of records purged */
-static int _purge_step_req(void)
-{
-	int purged = 0;
-	ListIterator iter;
-	uint16_t msg_type;
-	uint32_t offset;
-	Buf buffer;
-
-	iter = list_iterator_create(agent_list);
-	while ((buffer = list_next(iter))) {
-		offset = get_buf_offset(buffer);
-		if (offset < 2)
-			continue;
-		set_buf_offset(buffer, 0);
-		(void) unpack16(&msg_type, buffer);	/* checked by offset */
-		set_buf_offset(buffer, offset);
-		if ((msg_type == DBD_STEP_START) ||
-		    (msg_type == DBD_STEP_COMPLETE)) {
-			list_remove(iter);
-			purged++;
-		}
-	}
-	list_iterator_destroy(iter);
-	info("slurmdbd: purge %d step records", purged);
-	return purged;
-}
-
-/* Purge queued job start records from the agent queue
- * RET number of records purged */
-static int _purge_job_start_req(void)
-{
-	int purged = 0;
-	ListIterator iter;
-	uint16_t msg_type;
-	uint32_t offset;
-	Buf buffer;
-
-	iter = list_iterator_create(agent_list);
-	while ((buffer = list_next(iter))) {
-		offset = get_buf_offset(buffer);
-		if (offset < 2)
-			continue;
-		set_buf_offset(buffer, 0);
-		(void) unpack16(&msg_type, buffer);	/* checked by offset */
-		set_buf_offset(buffer, offset);
-		if (msg_type == DBD_JOB_START) {
-			list_remove(iter);
-			purged++;
-		}
-	}
-	list_iterator_destroy(iter);
-	info("slurmdbd: purge %d job start records", purged);
-	return purged;
 }
 
 static void _shutdown_agent(void)
