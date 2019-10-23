@@ -646,7 +646,7 @@ typedef struct {
  * NOTE: When adding fields to the job_record, or any underlying structures,
  * be sure to sync with job_array_split.
  */
-struct job_record {
+typedef struct job_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 					/* DO NOT ALPHABETIZE */
 	char    *account;		/* account number to charge */
@@ -879,7 +879,7 @@ struct job_record {
 	uint32_t wait4switch; /* Maximum time to wait for minimum switches */
 	bool     best_switch; /* true=min number of switches met           */
 	time_t wait4switch_start; /* Time started waiting for switch       */
-};
+} job_record_t;
 
 /* Job dependency specification, used in "depend_list" within job_record */
 #define SLURM_DEPEND_AFTER		1	/* After job begins */
