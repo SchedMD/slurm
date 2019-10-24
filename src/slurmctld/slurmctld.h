@@ -646,7 +646,8 @@ typedef struct {
  * NOTE: When adding fields to the job_record, or any underlying structures,
  * be sure to sync with job_array_split.
  */
-typedef struct job_record {
+typedef struct job_record job_record_t;
+struct job_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 					/* DO NOT ALPHABETIZE */
 	char    *account;		/* account number to charge */
@@ -726,9 +727,9 @@ typedef struct job_record {
 					 * to be passed to slurmdbd */
 	uint32_t group_id;		/* group submitted under */
 	uint32_t job_id;		/* job ID */
-	struct job_record *job_next;	/* next entry with same hash index */
-	struct job_record *job_array_next_j; /* job array linked list by job_id */
-	struct job_record *job_array_next_t; /* job array linked list by task_id */
+	job_record_t *job_next;		/* next entry with same hash index */
+	job_record_t *job_array_next_j;	/* job array linked list by job_id */
+	job_record_t *job_array_next_t;	/* job array linked list by task_id */
 	job_resources_t *job_resrcs;	/* details of allocated cores */
 	uint32_t job_state;		/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on
@@ -879,7 +880,7 @@ typedef struct job_record {
 	uint32_t wait4switch; /* Maximum time to wait for minimum switches */
 	bool     best_switch; /* true=min number of switches met           */
 	time_t wait4switch_start; /* Time started waiting for switch       */
-} job_record_t;
+};
 
 /* Job dependency specification, used in "depend_list" within job_record */
 #define SLURM_DEPEND_AFTER		1	/* After job begins */
