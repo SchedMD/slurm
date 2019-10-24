@@ -100,8 +100,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 	return SLURM_SUCCESS;
 }
 
-extern int job_modify(struct job_descriptor *job_desc,
-		      struct job_record *job_ptr, uint32_t submit_uid)
+extern int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
+		      uint32_t submit_uid)
 {
 	/* Log select fields from a job modify request. See slurm/slurm.h
 	 * for information about additional fields in struct job_descriptor.

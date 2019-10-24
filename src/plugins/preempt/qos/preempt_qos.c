@@ -56,9 +56,9 @@ const char	plugin_name[]	= "Preempt by Quality Of Service (QOS)";
 const char	plugin_type[]	= "preempt/qos";
 const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
 
-static uint32_t _gen_job_prio(struct job_record *job_ptr);
-static bool _qos_preemptable(struct job_record *preemptee,
-			     struct job_record *preemptor);
+static uint32_t _gen_job_prio(job_record_t *job_ptr);
+static bool _qos_preemptable(job_record_t *preemptee,
+			     job_record_t *preemptor);
 static int _sort_by_prio (void *x, void *y);
 static int _sort_by_youngest(void *x, void *y);
 
@@ -80,10 +80,10 @@ extern void fini(void)
 	/* Empty. */
 }
 
-extern List find_preemptable_jobs(struct job_record *job_ptr)
+extern List find_preemptable_jobs(job_record_t *job_ptr)
 {
 	ListIterator job_iterator;
-	struct job_record *job_p;
+	job_record_t *job_p;
 	List preemptee_job_list = NULL;
 
 	/* Validate the preemptor job */
@@ -107,7 +107,7 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 
 	/* Build an array of pointers to preemption candidates */
 	job_iterator = list_iterator_create(job_list);
-	while ((job_p = (struct job_record *) list_next(job_iterator))) {
+	while ((job_p = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_p) && !IS_JOB_SUSPENDED(job_p))
 			continue;
 		if (!_qos_preemptable(job_p, job_ptr))
@@ -138,8 +138,7 @@ extern List find_preemptable_jobs(struct job_record *job_ptr)
 	return preemptee_job_list;
 }
 
-static bool _qos_preemptable(struct job_record *preemptee,
-			     struct job_record *preemptor)
+static bool _qos_preemptable(job_record_t *preemptee, job_record_t *preemptor)
 {
 	slurmdb_qos_rec_t *qos_ee = preemptee->qos_ptr;
 	slurmdb_qos_rec_t *qos_or = preemptor->qos_ptr;
@@ -157,7 +156,7 @@ static bool _qos_preemptable(struct job_record *preemptee,
  * and partly based upon the job size. We want to put smaller jobs at the top
  * of the preemption queue and use a sort algorithm to minimize the number of
  * job's preempted. */
-static uint32_t _gen_job_prio(struct job_record *job_ptr)
+static uint32_t _gen_job_prio(job_record_t *job_ptr)
 {
 	uint32_t job_prio = 0;
 	slurmdb_qos_rec_t *qos_ptr = job_ptr->qos_ptr;
@@ -183,8 +182,8 @@ static int _sort_by_prio(void *x, void *y)
 {
 	int rc;
 	uint32_t job_prio1, job_prio2;
-	struct job_record *j1 = *(struct job_record **)x;
-	struct job_record *j2 = *(struct job_record **)y;
+	job_record_t *j1 = *(job_record_t **)x;
+	job_record_t *j2 = *(job_record_t **)y;
 
 	job_prio1 = _gen_job_prio(j1);
 	job_prio2 = _gen_job_prio(j2);
@@ -202,8 +201,8 @@ static int _sort_by_prio(void *x, void *y)
 static int _sort_by_youngest(void *x, void *y)
 {
 	int rc;
-	struct job_record *j1 = *(struct job_record **) x;
-	struct job_record *j2 = *(struct job_record **) y;
+	job_record_t *j1 = *(job_record_t **) x;
+	job_record_t *j2 = *(job_record_t **) y;
 
 	if (j1->start_time < j2->start_time)
 		rc = 1;
@@ -215,7 +214,7 @@ static int _sort_by_youngest(void *x, void *y)
 	return rc;
 }
 
-extern uint16_t job_preempt_mode(struct job_record *job_ptr)
+extern uint16_t job_preempt_mode(job_record_t *job_ptr)
 {
 	if (job_ptr->qos_ptr && job_ptr->qos_ptr->preempt_mode)
 		return job_ptr->qos_ptr->preempt_mode;

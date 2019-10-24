@@ -141,7 +141,7 @@ static void _compute_start_times(void)
 	int j, rc = SLURM_SUCCESS, job_cnt = 0;
 	List job_queue;
 	job_queue_rec_t *job_queue_rec;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *alloc_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL;

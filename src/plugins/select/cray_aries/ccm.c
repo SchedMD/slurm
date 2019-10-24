@@ -503,7 +503,7 @@ extern void ccm_get_config(void)
  * Check if this batch job is being started from a CCM partition.
  * Returns 1 if so, otherwise 0.
  */
-extern int ccm_check_partitions(struct job_record *job_ptr)
+extern int ccm_check_partitions(job_record_t *job_ptr)
 {
 	int i, ccm_partition;
 	char *partition = NULL;
@@ -533,7 +533,7 @@ extern void *ccm_begin(void *args)
 	size_t copysz;
 	ccm_info_t ccm_info;
 	char err_str_buf[128], srun_msg_buf[256];
-	struct job_record *job_ptr = (struct job_record *)args;
+	job_record_t *job_ptr = (job_record_t *) args;
 	slurmctld_lock_t job_read_lock =
 		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	slurmctld_lock_t job_write_lock =
@@ -665,7 +665,7 @@ extern void *ccm_fini(void *args)
 	int rc;
 	ccm_info_t ccm_info;
 	time_t delay;
-	struct job_record *job_ptr = (struct job_record *)args;
+	job_record_t *job_ptr = (job_record_t *) args;
 	slurmctld_lock_t job_read_lock =
 		{NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 

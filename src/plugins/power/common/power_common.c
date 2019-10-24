@@ -123,7 +123,7 @@ extern List get_job_power(List job_list,
 			  struct node_record *node_record_table_ptr)
 {
 	struct node_record *node_ptr;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	power_by_job_t *power_ptr;
 	int i, i_first, i_last;
@@ -132,7 +132,7 @@ extern List get_job_power(List job_list,
 	time_t now = time(NULL);
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr))
 			continue;
 		power_ptr = xmalloc(sizeof(power_by_job_t));
@@ -386,7 +386,7 @@ extern char *power_run_script(char *script_name, char *script_path,
 
 /* For a newly starting job, set "new_job_time" in each of it's nodes
  * NOTE: The job and node data structures must be locked on function entry */
-extern void set_node_new_job(struct job_record *job_ptr,
+extern void set_node_new_job(job_record_t *job_ptr,
 			     struct node_record *node_record_table_ptr)
 {
 	int i, i_first, i_last;

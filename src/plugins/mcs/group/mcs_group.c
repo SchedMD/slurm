@@ -82,7 +82,7 @@ static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 			    gid_t *groups, int max_groups, int *ngroups);
 static int _check_and_load_params();
 static int _find_mcs_label(gid_t *groups, int ngroups, char **result);
-static int _check_mcs_label (struct job_record *job_ptr, char *label);
+static int _check_mcs_label(job_record_t *job_ptr, char *label);
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -278,7 +278,7 @@ static int _find_mcs_label(gid_t *groups, int ngroups, char **result)
 /*
  * _check_mcs_label() is called to check a mcs_label of a job
  */
-static int _check_mcs_label (struct job_record *job_ptr, char *label)
+static int _check_mcs_label(job_record_t *job_ptr, char *label)
 {
 	int rc = SLURM_ERROR;
 	int i = 0;
@@ -326,7 +326,7 @@ static int _check_mcs_label (struct job_record *job_ptr, char *label)
  * mcs_p_set_mcs_label() is called to obtain/check mcs_label.
  * Return job_ptr->mcs_label value must be xfreed
  */
-extern int mcs_p_set_mcs_label (struct job_record *job_ptr, char *label)
+extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 {
 	char *result = NULL;
 	gid_t groups[MAX_GROUPS];

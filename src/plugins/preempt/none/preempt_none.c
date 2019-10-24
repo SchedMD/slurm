@@ -63,12 +63,12 @@ extern void fini(void)
 	/* Empty. */
 }
 
-extern List find_preemptable_jobs(struct job_record *job_ptr)
+extern List find_preemptable_jobs(job_record_t *job_ptr)
 {
 	return (List) NULL;
 }
 
-extern uint16_t job_preempt_mode(struct job_record *job_ptr)
+extern uint16_t job_preempt_mode(job_record_t *job_ptr)
 {
 	return (uint16_t) PREEMPT_MODE_OFF;
 }

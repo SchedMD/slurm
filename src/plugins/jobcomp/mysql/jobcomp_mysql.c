@@ -235,7 +235,7 @@ extern int slurm_jobcomp_set_location(char *location)
 	return rc;
 }
 
-extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
+extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32], *jname = NULL;

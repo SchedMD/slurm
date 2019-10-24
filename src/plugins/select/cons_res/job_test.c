@@ -112,30 +112,30 @@ bitstr_t *idle_node_bitmap;
 /* Enables module specific debugging */
 #define _DEBUG 0
 
-static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, avail_res_t **avail_res_array,
 		       uint16_t cr_type,
 		       bool prefer_alloc_nodes);
-static int _eval_nodes_busy(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_busy(job_record_t *job_ptr, bitstr_t *node_map,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, avail_res_t **avail_res_array);
-static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_dfly(job_record_t *job_ptr, bitstr_t *node_map,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, avail_res_t **avail_res_array,
 			    uint16_t cr_type);
-static int _eval_nodes_lln(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes, avail_res_t **avail_res_array);
-static int _eval_nodes_serial(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_serial(job_record_t *job_ptr, bitstr_t *node_map,
 			      uint32_t min_nodes, uint32_t max_nodes,
 			      uint32_t req_nodes,
 			      avail_res_t **avail_res_array);
-static int _eval_nodes_spread(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 			      uint32_t min_nodes, uint32_t max_nodes,
 			      uint32_t req_nodes,
 			      avail_res_t **avail_res_array);
-static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_topo(job_record_t *job_ptr, bitstr_t *node_map,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, avail_res_t **avail_res_array,
 			    uint16_t cr_type);
@@ -278,7 +278,7 @@ static void _cpus_to_use(int *avail_cpus, int rem_cpus, int rem_nodes,
 }
 
 /* this is the heart of the selection process */
-static int _eval_nodes(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, avail_res_t **avail_res_array,
 		       uint16_t cr_type,
@@ -702,7 +702,7 @@ fini:	xfree(consec_cpus);
  * A variation of _eval_nodes() to select resources using as many nodes as
  * possible. Based upon _eval_nodes_busy().
  */
-static int _eval_nodes_spread(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_spread(job_record_t *job_ptr, bitstr_t *node_map,
 			      uint32_t min_nodes, uint32_t max_nodes,
 			      uint32_t req_nodes, avail_res_t **avail_res_array)
 {
@@ -781,7 +781,7 @@ static int _eval_nodes_spread(struct job_record *job_ptr, bitstr_t *node_map,
  * A variation of _eval_nodes() to select resources starting with allocated
  * nodes. Based upon _eval_nodes_lln().
  */
-static int _eval_nodes_busy(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_busy(job_record_t *job_ptr, bitstr_t *node_map,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, avail_res_t **avail_res_array)
 {
@@ -882,7 +882,7 @@ static int _eval_nodes_busy(struct job_record *job_ptr, bitstr_t *node_map,
 
 /*
  * A variation of _eval_nodes() to select resources on the least loaded nodes */
-static int _eval_nodes_lln(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes, avail_res_t **avail_res_array)
 {
@@ -980,7 +980,7 @@ fini:	return error_code;
 /*
  * A variation of _eval_nodes() to select resources at the end of the node
  * list to reduce fragmentation */
-static int _eval_nodes_serial(struct job_record *job_ptr, bitstr_t *node_map,
+static int _eval_nodes_serial(job_record_t *job_ptr, bitstr_t *node_map,
 			      uint32_t min_nodes, uint32_t max_nodes,
 			      uint32_t req_nodes, avail_res_t **avail_res_array)
 {
@@ -1071,7 +1071,7 @@ fini:	return error_code;
  * NOTE: The logic here is almost identical to that of _job_test_topo()
  *       in select_linear.c. Any bug found here is probably also there.
  */
-static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _eval_nodes_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, avail_res_t **avail_res_array,
 			    uint16_t cr_type)
@@ -1523,7 +1523,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr, bitstr_t *bitmap,
  * NOTE: The logic here is almost identical to that of _job_test_topo()
  *       in select_linear.c. Any bug found here is probably also there.
  */
-static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _eval_nodes_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, avail_res_t **avail_res_array,
 			    uint16_t cr_type)
@@ -1937,7 +1937,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
 /* this is an intermediary step between _select_nodes and _eval_nodes
  * to tackle the knapsack problem. This code incrementally removes nodes
  * with low cpu counts for the job and re-evaluates each result */
-extern int choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
+extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 			bitstr_t **avail_core, uint32_t min_nodes,
 			uint32_t max_nodes, uint32_t req_nodes,
 			avail_res_t **avail_res_array, uint16_t cr_type,
@@ -2066,7 +2066,7 @@ extern int choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
  *       core_map for the given node. The cr_dist functions will determine
  *       which bits to deselect from the core_map to match the cpu_count.
  */
-extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
+extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					bitstr_t **in_core_map,
 					const uint32_t node_i,
 					uint32_t s_p_n,

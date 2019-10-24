@@ -70,7 +70,7 @@ struct select_nodeinfo {
 };
 
 typedef struct {
-	avail_res_t *(*can_job_run_on_node)(struct job_record *job_ptr,
+	avail_res_t *(*can_job_run_on_node)(job_record_t *job_ptr,
 					    bitstr_t **core_map,
 					    const uint32_t node_i,
 					    uint32_t s_p_n,
@@ -78,13 +78,13 @@ typedef struct {
 					    uint16_t cr_type,
 					    bool test_only, bool will_run,
 					    bitstr_t **part_core_map);
-	int (*choose_nodes)(struct job_record *job_ptr, bitstr_t *node_map,
+	int (*choose_nodes)(job_record_t *job_ptr, bitstr_t *node_map,
 			    bitstr_t **avail_core, uint32_t min_nodes,
 			    uint32_t max_nodes, uint32_t req_nodes,
 			    avail_res_t **avail_res_array, uint16_t cr_type,
 			    bool prefer_alloc_nodes,
 			    gres_mc_data_t *tres_mc_ptr);
-	int (*dist_tasks_compute_c_b)(struct job_record *job_ptr,
+	int (*dist_tasks_compute_c_b)(job_record_t *job_ptr,
 				      uint32_t *gres_task_limit);
 	bitstr_t **(*mark_avail_cores)(bitstr_t *node_map, uint16_t core_spec);
 	bitstr_t *(*pick_first_cores)(bitstr_t *avail_node_bitmap,
@@ -167,7 +167,7 @@ extern bitstr_t **common_mark_avail_cores(
  * IN req_sock_map - OPTIONAL bitmap of required sockets
  * RET resource availability structure, call _free_avail_res() to free
  */
-extern avail_res_t *common_allocate_cores(struct job_record *job_ptr,
+extern avail_res_t *common_allocate_cores(job_record_t *job_ptr,
 					  bitstr_t *core_map,
 					  bitstr_t *part_core_map,
 					  const uint32_t node_i,
@@ -190,7 +190,7 @@ extern avail_res_t *common_allocate_cores(struct job_record *job_ptr,
  * IN req_sock_map - OPTIONAL bitmap of required sockets
  * RET resource availability structure, call _free_avail_res() to free
  */
-extern avail_res_t *common_allocate_sockets(struct job_record *job_ptr,
+extern avail_res_t *common_allocate_sockets(job_record_t *job_ptr,
 					    bitstr_t *core_map,
 					    bitstr_t *part_core_map,
 					    const uint32_t node_i,

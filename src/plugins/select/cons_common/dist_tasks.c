@@ -125,7 +125,7 @@ static int _cmp_sock(const void *a, const void *b)
 }
 
 /* Enable detailed logging of cr_dist() node and core bitmaps */
-static inline void _log_select_maps(char *loc, struct job_record *job_ptr)
+static inline void _log_select_maps(char *loc, job_record_t *job_ptr)
 {
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	char tmp[100];
@@ -158,7 +158,7 @@ static inline void _log_select_maps(char *loc, struct job_record *job_ptr)
 }
 
 /* Remove any specialized cores from those allocated to the job */
-static void _clear_spec_cores(struct job_record *job_ptr,
+static void _clear_spec_cores(job_record_t *job_ptr,
 			      bitstr_t **core_array)
 {
 	int i, i_first, i_last;
@@ -211,7 +211,7 @@ static void _clear_spec_cores(struct job_record *job_ptr,
 }
 
 /* CPUs already selected for jobs, just distribute the tasks */
-static int _set_task_dist(struct job_record *job_ptr)
+static int _set_task_dist(job_record_t *job_ptr)
 {
 	uint32_t n, i, tid = 0, maxtasks;
 	uint16_t *avail_cpus;
@@ -335,7 +335,7 @@ static int _set_task_dist(struct job_record *job_ptr)
 }
 
 /* distribute blocks (planes) of tasks cyclically */
-static int _compute_plane_dist(struct job_record *job_ptr,
+static int _compute_plane_dist(job_record_t *job_ptr,
 			       uint32_t *gres_task_limit)
 {
 	bool over_subscribe = false;
@@ -432,7 +432,7 @@ static int _compute_plane_dist(struct job_record *job_ptr,
  *
  * The job_resources_t struct can include threads based upon configuration
  */
-static void _block_sync_core_bitmap(struct job_record *job_ptr,
+static void _block_sync_core_bitmap(job_record_t *job_ptr,
 				    const uint16_t cr_type)
 {
 	uint32_t c, s, i, j, n, b, z, size, csize, core_cnt;
@@ -852,7 +852,7 @@ static void _block_sync_core_bitmap(struct job_record *job_ptr,
  * The CPU array contains the distribution of CPUs, which can include
  * virtual CPUs (hyperthreads)
  */
-static int _cyclic_sync_core_bitmap(struct job_record *job_ptr,
+static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 				    const uint16_t cr_type, bool preempt_mode)
 {
 	uint32_t c, i, j, k, s, n;
@@ -1158,7 +1158,7 @@ fini:	xfree(sock_avoid);
  * IN gres_task_limit - array of task limits based upon job GRES specification,
  *		offset based upon bits set in job_ptr->job_resrcs->node_bitmap
  */
-extern int dist_tasks(struct job_record *job_ptr, const uint16_t cr_type,
+extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 		      bool preempt_mode, bitstr_t **core_array,
 		      uint32_t *gres_task_limit)
 {

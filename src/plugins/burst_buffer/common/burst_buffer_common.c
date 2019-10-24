@@ -238,7 +238,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 /* Find a per-job burst buffer record for a specific job.
  * If not found, return NULL. */
 extern bb_alloc_t *bb_find_alloc_rec(bb_state_t *state_ptr,
-				     struct job_record *job_ptr)
+				     job_record_t *job_ptr)
 {
 	bb_alloc_t *bb_alloc = NULL;
 
@@ -809,8 +809,8 @@ extern int bb_job_queue_sort(void *x, void *y)
 {
 	bb_job_queue_rec_t *job_rec1 = *(bb_job_queue_rec_t **) x;
 	bb_job_queue_rec_t *job_rec2 = *(bb_job_queue_rec_t **) y;
-	struct job_record *job_ptr1 = job_rec1->job_ptr;
-	struct job_record *job_ptr2 = job_rec2->job_ptr;
+	job_record_t *job_ptr1 = job_rec1->job_ptr;
+	job_record_t *job_ptr2 = job_rec2->job_ptr;
 
 	if (job_ptr1->start_time > job_ptr2->start_time)
 		return 1;
@@ -836,7 +836,7 @@ extern int bb_preempt_queue_sort(void *x, void *y)
  * use is expected to begin (i.e. each job's expected start time) */
 extern void bb_set_use_time(bb_state_t *state_ptr)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	time_t now = time(NULL);
 	int i;
@@ -937,7 +937,7 @@ extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
  * Return a pointer to that record.
  * Use bb_free_alloc_rec() to purge the returned record. */
 extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
-				    struct job_record *job_ptr,
+				    job_record_t *job_ptr,
 				    bb_job_t *bb_job)
 {
 	bb_alloc_t *bb_alloc = NULL;
@@ -972,8 +972,8 @@ extern bb_alloc_t *bb_alloc_job_rec(bb_state_t *state_ptr,
 /* Allocate a burst buffer record for a job and increase the job priority
  * if so configured.
  * Use bb_free_alloc_rec() to purge the returned record. */
-extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr,
-				struct job_record *job_ptr, bb_job_t *bb_job)
+extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr, job_record_t *job_ptr,
+				bb_job_t *bb_job)
 {
 	bb_alloc_t *bb_alloc;
 
@@ -1256,8 +1256,8 @@ extern void bb_limit_rem(uint32_t user_id, uint64_t bb_size, char *pool,
  * state_ptr IN - Pointer to burst_buffer plugin state info
  * NOTE: assoc_mgr association and qos read lock should be set before this.
  */
-extern int bb_post_persist_create(struct job_record *job_ptr,
-				  bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
+extern int bb_post_persist_create(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
+				  bb_state_t *state_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_reservation_rec_t resv;

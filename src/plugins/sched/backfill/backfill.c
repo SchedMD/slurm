@@ -138,7 +138,7 @@ typedef struct node_space_map {
  */
 typedef struct pack_job_rec {
 	uint32_t job_id;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	time_t latest_start;		/* Time when expected to start */
 	struct part_record *part_ptr;
 } pack_job_rec_t;
@@ -214,41 +214,41 @@ static int  _clear_job_estimates(void *x, void *arg);
 static int  _clear_qos_blocked_times(void *x, void *arg);
 static void _do_diag_stats(struct timeval *tv1, struct timeval *tv2,
 			   int node_space_recs);
-static uint32_t _get_job_max_tl(struct job_record *job_ptr, time_t now,
+static uint32_t _get_job_max_tl(job_record_t *job_ptr, time_t now,
 				node_space_map_t *node_space);
-static bool _hetjob_any_resv(struct job_record *het_leader);
-static uint32_t _hetjob_calc_prio(struct job_record *het_leader);
-static uint32_t _hetjob_calc_prio_tier(struct job_record *het_leader);
+static bool _hetjob_any_resv(job_record_t *het_leader);
+static uint32_t _hetjob_calc_prio(job_record_t *het_leader);
+static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader);
 static void _job_pack_deadlock_fini(void);
-static bool _job_pack_deadlock_test(struct job_record *job_ptr);
-static bool _job_part_valid(struct job_record *job_ptr,
+static bool _job_pack_deadlock_test(job_record_t *job_ptr);
+static bool _job_part_valid(job_record_t *job_ptr,
 			    struct part_record *part_ptr);
 static void _load_config(void);
 static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
 static uint32_t _my_sleep(int64_t usec);
-static int  _num_feature_count(struct job_record *job_ptr, bool *has_xand,
+static int  _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 			       bool *has_xor);
 static int  _pack_find_map(void *x, void *key);
 static void _pack_map_del(void *x);
 static void _pack_rec_del(void *x);
 static void _pack_start_clear(void);
-static time_t _pack_start_find(struct job_record *job_ptr, time_t now);
-static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
+static time_t _pack_start_find(job_record_t *job_ptr, time_t now);
+static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 			    uint32_t comp_time_limit);
 static void _pack_start_test_single(node_space_map_t *node_space,
 				    pack_job_map_t *map, bool single);
 static int  _pack_start_test_list(void *map, void *node_space);
 static void _pack_start_test(node_space_map_t *node_space,
 			     uint32_t pack_job_id);
-static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
+static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 				  node_space_map_t *node_space);
 static int  _set_hetjob_details(void *x, void *arg);
-static int  _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
+static int  _start_job(job_record_t *job_ptr, bitstr_t *avail_bitmap);
 static bool _test_resv_overlap(node_space_map_t *node_space,
 			       bitstr_t *use_bitmap, uint32_t start_time,
 			       uint32_t end_reserve);
-static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
+static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, bitstr_t *exc_core_bitmap);
 static int  _yield_locks(int64_t usec);
@@ -256,7 +256,7 @@ static void _bf_map_key_id(void *item, const char **key, uint32_t *key_len);
 static void _bf_map_free(void *item);
 
 /* Log resources to be allocated to a pending job */
-static void _dump_job_sched(struct job_record *job_ptr, time_t end_time,
+static void _dump_job_sched(job_record_t *job_ptr, time_t end_time,
 			    bitstr_t *avail_bitmap)
 {
 	char begin_buf[32], end_buf[32], *node_list;
@@ -269,7 +269,7 @@ static void _dump_job_sched(struct job_record *job_ptr, time_t end_time,
 	xfree(node_list);
 }
 
-static void _dump_job_test(struct job_record *job_ptr, bitstr_t *avail_bitmap,
+static void _dump_job_test(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 			   time_t start_time)
 {
 	char begin_buf[32], *node_list;
@@ -305,7 +305,7 @@ static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 	info("=========================================");
 }
 
-static void _set_job_time_limit(struct job_record *job_ptr, uint32_t new_limit)
+static void _set_job_time_limit(job_record_t *job_ptr, uint32_t new_limit)
 {
 	job_ptr->time_limit = new_limit;
 	/* reset flag if we have a NO_VAL time_limit */
@@ -341,7 +341,7 @@ static bool _many_pending_rpcs(void)
  * OUT has_xor - true if features are XORed together
  * RET Total count for ALL job features, even counts with XAND separator
  */
-static int _num_feature_count(struct job_record *job_ptr, bool *has_xand,
+static int _num_feature_count(job_record_t *job_ptr, bool *has_xand,
 			      bool *has_xor)
 {
 	struct job_details *detail_ptr = job_ptr->details;
@@ -383,7 +383,7 @@ static int _clear_qos_blocked_times(void *x, void *arg)
  * IN exc_core_bitmap - cores which can not be used
  * RET SLURM_SUCCESS on success, otherwise an error code
  */
-static int  _try_sched(struct job_record *job_ptr, bitstr_t **avail_bitmap,
+static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		       uint32_t min_nodes, uint32_t max_nodes,
 		       uint32_t req_nodes, bitstr_t *exc_core_bitmap)
 {
@@ -1023,7 +1023,7 @@ extern void *backfill_agent(void *args)
  */
 static int _clear_job_estimates(void *x, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
+	job_record_t *job_ptr = (job_record_t *) x;
 	if (IS_JOB_PENDING(job_ptr)) {
 		job_ptr->start_time = 0;
 		xfree(job_ptr->sched_nodes);
@@ -1078,7 +1078,7 @@ static int _yield_locks(int64_t usec)
 
 /* Test if this job still has access to the specified partition. The job's
  * available partitions may have changed when locks were released */
-static bool _job_part_valid(struct job_record *job_ptr,
+static bool _job_part_valid(job_record_t *job_ptr,
 			    struct part_record *part_ptr)
 {
 	struct part_record *avail_part_ptr;
@@ -1104,7 +1104,7 @@ static bool _job_part_valid(struct job_record *job_ptr,
 
 /* Determine if job in the backfill queue is still runnable.
  * Job state could change when lock are periodically released */
-static bool _job_runnable_now(struct job_record *job_ptr)
+static bool _job_runnable_now(job_record_t *job_ptr)
 {
 	uint16_t cleaning = 0;
 
@@ -1134,7 +1134,7 @@ static bool _job_runnable_now(struct job_record *job_ptr)
 	return true;
 }
 
-static void _restore_preempt_state(struct job_record *job_ptr,
+static void _restore_preempt_state(job_record_t *job_ptr,
 				   time_t *tmp_preempt_start_time,
 				   bool *tmp_preempt_in_progress)
 {
@@ -1168,9 +1168,9 @@ static void _adjust_hetjob_prio(uint32_t *prio, uint32_t val)
  * IN: job_record pointer of a hetjob leader (caller responsible)
  * RET: [min|max|avg] Priority of all components from same hetjob
  */
-static uint32_t _hetjob_calc_prio(struct job_record *het_leader)
+static uint32_t _hetjob_calc_prio(job_record_t *het_leader)
 {
-	struct job_record *het_comp = NULL;
+	job_record_t *het_comp = NULL;
 	uint32_t prio = 0, tmp = 0, cnt = 0, i = 0, nparts = 0;
 	ListIterator iter = NULL;
 
@@ -1215,9 +1215,9 @@ static uint32_t _hetjob_calc_prio(struct job_record *het_leader)
  * IN: job_record pointer of a hetjob leader (caller responsible)
  * RET: [min|max|avg] PriorityTier of all components from same hetjob
  */
-static uint32_t _hetjob_calc_prio_tier(struct job_record *het_leader)
+static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader)
 {
-	struct job_record *het_comp = NULL;
+	job_record_t *het_comp = NULL;
 	struct part_record *part_ptr = NULL;
 	uint32_t prio_tier = 0, tmp = 0, cnt = 0;
 	ListIterator iter = NULL, iter2 = NULL;
@@ -1258,9 +1258,9 @@ static uint32_t _hetjob_calc_prio_tier(struct job_record *het_leader)
  * IN: job_record pointer of a hetjob leader (caller responsible)
  * RET: true if any component from same hetjob has a reservation
  */
-static bool _hetjob_any_resv(struct job_record *het_leader)
+static bool _hetjob_any_resv(job_record_t *het_leader)
 {
-	struct job_record *het_comp = NULL;
+	job_record_t *het_comp = NULL;
 	ListIterator iter = NULL;
 	bool any_resv = false;
 
@@ -1276,7 +1276,7 @@ static bool _hetjob_any_resv(struct job_record *het_leader)
 
 static int _set_hetjob_pack_details(void *x, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *)x;
+	job_record_t *job_ptr = (job_record_t *) x;
 	job_ptr->pack_details = (pack_details_t *)arg;
 
 	return SLURM_SUCCESS;
@@ -1284,7 +1284,7 @@ static int _set_hetjob_pack_details(void *x, void *arg)
 
 static int _set_hetjob_details(void *x, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
+	job_record_t *job_ptr = (job_record_t *) x;
 	pack_details_t *details = NULL;
 
 	if (IS_JOB_PENDING(job_ptr) && job_ptr->pack_job_id &&
@@ -1371,7 +1371,7 @@ static bool _check_bf_usage(
  * Check if job exceeds configured count limits
  * returns true if count exceeded
  */
-static bool _job_exceeds_max_bf_param(struct job_record *job_ptr,
+static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 				      time_t sched_start)
 {
 	slurmdb_bf_usage_t *part_usage = NULL, *user_usage = NULL,
@@ -1485,7 +1485,7 @@ static int _attempt_backfill(void)
 	job_queue_rec_t *job_queue_rec;
 	int bb, i, j, node_space_recs, mcs_select = 0;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct part_record *part_ptr;
 	uint32_t end_time, end_reserve, deadline_time_limit, boot_time;
 	uint32_t orig_end_time;
@@ -2720,7 +2720,7 @@ skip_start:
 }
 
 /* Try to start the job on any non-reserved nodes */
-static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
+static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 {
 	int rc;
 	bitstr_t *orig_exc_nodes = NULL;
@@ -2737,7 +2737,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
 	rc = select_nodes(job_ptr, false, NULL, NULL, false,
 			  SLURMDB_JOB_FLAG_BACKFILL);
 	if (is_job_array_head && job_ptr->details) {
-		struct job_record *base_job_ptr;
+		job_record_t *base_job_ptr;
 		base_job_ptr = find_job_record(job_ptr->array_job_id);
 		if (base_job_ptr && base_job_ptr != job_ptr
 				 && base_job_ptr->array_recs) {
@@ -2796,7 +2796,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *resv_bitmap)
  * planned for use by other jobs and that job's min/max time limit
  * Return NO_VAL if no restriction
  */
-static uint32_t _get_job_max_tl(struct job_record *job_ptr, time_t now,
+static uint32_t _get_job_max_tl(job_record_t *job_ptr, time_t now,
 				node_space_map_t *node_space)
 {
 	int32_t j;
@@ -2832,7 +2832,7 @@ static uint32_t _get_job_max_tl(struct job_record *job_ptr, time_t now,
  *	Avoid using resources reserved for pending jobs or in resource
  *	reservations
  */
-static void _reset_job_time_limit(struct job_record *job_ptr, time_t now,
+static void _reset_job_time_limit(job_record_t *job_ptr, time_t now,
 				  node_space_map_t *node_space)
 {
 	int32_t j, resv_delay;
@@ -3102,7 +3102,7 @@ static time_t _pack_start_compute(pack_job_map_t *map, uint32_t exclude_job_id)
  * If the job's state reason is BeginTime (the way all pack jobs start) and that
  * time is passed, then clear the reason field.
  */
-static time_t _pack_start_find(struct job_record *job_ptr, time_t now)
+static time_t _pack_start_find(job_record_t *job_ptr, time_t now)
 {
 	pack_job_map_t *map;
 	time_t latest_start = (time_t) 0;
@@ -3148,7 +3148,7 @@ static time_t _pack_start_find(struct job_record *job_ptr, time_t now)
  * started in multiple partitions, we only record the earliest start time
  * for the job in any partition.
  */
-static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
+static void _pack_start_set(job_record_t *job_ptr, time_t latest_start,
 			    uint32_t comp_time_limit)
 {
 	pack_job_map_t *map;
@@ -3219,7 +3219,7 @@ static void _pack_start_set(struct job_record *job_ptr, time_t latest_start,
  */
 static bool _pack_job_full(pack_job_map_t *map)
 {
-	struct job_record *pack_job_ptr, *job_ptr;
+	job_record_t *pack_job_ptr, *job_ptr;
 	ListIterator iter;
 	bool rc = true;
 
@@ -3231,7 +3231,7 @@ static bool _pack_job_full(pack_job_map_t *map)
 	}
 
 	iter = list_iterator_create(pack_job_ptr->pack_job_list);
-	while ((job_ptr = (struct job_record *) list_next(iter))) {
+	while ((job_ptr = list_next(iter))) {
 		if ((job_ptr->magic != JOB_MAGIC) ||
 		    (job_ptr->pack_job_id != map->pack_job_id)) {
 			rc = false;	/* bad job pointer */
@@ -3263,7 +3263,7 @@ static bool _pack_job_full(pack_job_map_t *map)
  */
 static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	pack_job_rec_t *rec;
 	ListIterator iter;
 	int begun_jobs = 0, fini_jobs = 0, slurmctld_tres_size;
@@ -3352,7 +3352,7 @@ static bool _pack_job_limit_check(pack_job_map_t *map, time_t now)
  */
 static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bitstr_t *avail_bitmap = NULL, *exc_core_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL, *used_bitmap = NULL;
 	pack_job_rec_t *rec;
@@ -3458,7 +3458,7 @@ static int _pack_start_now(pack_job_map_t *map, node_space_map_t *node_space)
  */
 static void _pack_kill_now(pack_job_map_t *map)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	pack_job_rec_t *rec;
 	ListIterator iter;
 	time_t now = time(NULL);
@@ -3612,7 +3612,7 @@ static void _deadlock_part_list_del(void *x)
 static int _deadlock_part_list_srch(void *x, void *key)
 {
 	deadlock_job_struct_t *dl_job = (deadlock_job_struct_t *) x;
-	struct job_record *job_ptr = (struct job_record *) key;
+	job_record_t *job_ptr = (job_record_t *) key;
 	if (dl_job->pack_job_id == job_ptr->pack_job_id)
 		return 1;
 	return 0;
@@ -3663,7 +3663,7 @@ static void _job_pack_deadlock_fini(void)
  * NOTE: If there are a large number of pack jobs this will be painfully slow
  *       as the algorithm must be order n^2
  */
-static bool _job_pack_deadlock_test(struct job_record *job_ptr)
+static bool _job_pack_deadlock_test(job_record_t *job_ptr)
 {
 	deadlock_job_struct_t  *dl_job_ptr  = NULL, *dl_job_ptr2 = NULL;
 	deadlock_job_struct_t  *dl_job_ptr3 = NULL;

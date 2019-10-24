@@ -207,7 +207,7 @@ struct bb_total_size {
 
 static void	_add_bb_to_script(char **script_body,
 				  const char *burst_buffer_file);
-static int	_alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
+static int	_alloc_job_bb(job_record_t *job_ptr, bb_job_t *bb_job,
 			      bool job_ready);
 static void	_apply_limits(void);
 static void *	_bb_agent(void *args);
@@ -223,13 +223,13 @@ static bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr,
 				 uint32_t timeout);
 static bb_sessions_t *_bb_get_sessions(int *num_ent, bb_state_t *state_ptr,
 				       uint32_t timeout);
-static int	_build_bb_script(struct job_record *job_ptr, char *script_file);
-static int	_create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
+static int	_build_bb_script(job_record_t *job_ptr, char *script_file);
+static int	_create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			     bool job_ready);
 static void *	_create_persistent(void *x);
 static void *	_destroy_persistent(void *x);
 static void	_free_create_args(create_buf_data_t *create_args);
-static bb_job_t *_get_bb_job(struct job_record *job_ptr);
+static bb_job_t *_get_bb_job(job_record_t *job_ptr);
 static bool	_have_dw_cmd_opts(bb_job_t *bb_job);
 static void	_job_queue_del(void *x);
 static bb_configs_t *_json_parse_configs_array(json_object *jobj, char *key,
@@ -259,11 +259,11 @@ static void	_parse_instance_capacity(json_object *instance,
 static void	_parse_instance_links(json_object *instance,
 				      bb_instances_t *ent);
 static void	_pick_alloc_account(bb_alloc_t *bb_alloc);
-static void	_purge_bb_files(uint32_t job_id, struct job_record *job_ptr);
+static void	_purge_bb_files(uint32_t job_id, job_record_t *job_ptr);
 static void	_purge_vestigial_bufs(void);
 static void	_python2json(char *buf);
 static void	_recover_bb_state(void);
-static int	_queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job);
+static int	_queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job);
 static int	_queue_stage_out(bb_job_t *bb_job);
 static void	_queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 static void	_reset_buf_state(uint32_t user_id, uint32_t job_id, char *name,
@@ -276,12 +276,12 @@ static void *	_start_stage_out(void *x);
 static void *	_start_teardown(void *x);
 static void	_test_config(void);
 static bool	_test_persistent_use_ready(bb_job_t *bb_job,
-					   struct job_record *job_ptr);
-static int	_test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job);
+					   job_record_t *job_ptr);
+static int	_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job);
 static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list,
-				struct job_record *job_ptr);
+				job_record_t *job_ptr);
 static int	_xlate_batch(struct job_descriptor *job_desc);
 static int	_xlate_interactive(struct job_descriptor *job_desc);
 
@@ -340,7 +340,7 @@ static void _job_queue_del(void *x)
 /* Purge files we have created for the job.
  * bb_state.bb_mutex is locked on function entry.
  * job_ptr may be NULL if not found */
-static void _purge_bb_files(uint32_t job_id, struct job_record *job_ptr)
+static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 
 {
 	char *hash_dir = NULL, *job_dir = NULL;
@@ -393,7 +393,7 @@ static void _test_config(void)
 }
 
 /* Allocate resources to a job and begin setup/stage-in */
-static int _alloc_job_bb(struct job_record *job_ptr, bb_job_t *bb_job,
+static int _alloc_job_bb(job_record_t *job_ptr, bb_job_t *bb_job,
 			 bool job_ready)
 {
 	int rc = SLURM_SUCCESS;
@@ -471,7 +471,7 @@ static uint64_t _set_granularity(uint64_t orig_size, char *bb_pool)
 /* Return the burst buffer size specification of a job
  * RET size data structure or NULL of none found
  * NOTE: delete return value using _del_bb_size() */
-static bb_job_t *_get_bb_job(struct job_record *job_ptr)
+static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 {
 	char *bb_specs, *bb_hurry, *bb_name, *bb_type, *bb_access, *bb_pool;
 	char *end_ptr = NULL, *save_ptr = NULL, *sub_tok, *tok;
@@ -890,7 +890,7 @@ static bool _is_complete_job(char *name)
 {
 	char *end_ptr = NULL;
 	uint32_t job_id = 0;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	if (name && (name[0] >='0') && (name[0] <='9')) {
 		job_id = strtol(name, &end_ptr, 10);
@@ -1143,7 +1143,7 @@ static void _load_state(bool init_config)
 	bb_pools_t *pools;
 	bb_sessions_t *sessions;
 	bb_alloc_t *bb_alloc;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	int num_configs = 0, num_instances = 0, num_pools = 0, num_sessions = 0;
 	int i, j, pools_inx;
 	char *end_ptr = NULL;
@@ -1334,7 +1334,7 @@ static void _load_state(bool init_config)
  * RET 0 or Slurm error code
  */
 static int _write_nid_file(char *file_name, char *node_list,
-			   struct job_record *job_ptr)
+			   job_record_t *job_ptr)
 {
 #if defined(HAVE_NATIVE_CRAY)
 	char *tmp, *sep, *buf = NULL;
@@ -1442,7 +1442,7 @@ static int _write_file(char *file_name, char *buf)
 	return SLURM_SUCCESS;
 }
 
-static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
+static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 {
 	char *hash_dir = NULL, *job_dir = NULL, *job_pool;
 	char *client_nodes_file_nid = NULL;
@@ -1519,7 +1519,7 @@ static int _queue_stage_in(struct job_record *job_ptr, bb_job_t *bb_job)
 	return rc;
 }
 
-static void _update_system_comment(struct job_record *job_ptr, char *operation,
+static void _update_system_comment(job_record_t *job_ptr, char *operation,
 				   char *resp_msg, bool update_database)
 {
 	char *sep = NULL;
@@ -1569,7 +1569,7 @@ static void *_start_stage_in(void *x)
 	int rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job;
 	bool get_real_size = false;
@@ -1896,7 +1896,7 @@ static void *_start_stage_out(void *x)
 	int rc = SLURM_SUCCESS, status = 0, timeout;
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
 	DEF_TIMERS
@@ -2146,7 +2146,7 @@ static void *_start_teardown(void *x)
 	stage_args_t *teardown_args = (stage_args_t *)x;
 	char **teardown_argv, *resp_msg = NULL;
 	int status = 0, timeout;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
 	/* Locks: write job */
@@ -2294,12 +2294,12 @@ static void _rm_active_job_bb(char *resv_name, char **pool_name,
 			      int64_t *resv_space, int ds_len)
 {
 	ListIterator job_iterator;
-	struct job_record  *job_ptr;
+	job_record_t *job_ptr;
 	bb_job_t *bb_job;
 	int i;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if ((job_ptr->burst_buffer == NULL) ||
 		    (job_ptr->burst_buffer[0] == '\0') ||
 		    (xstrcmp(job_ptr->resv_name, resv_name) == 0))
@@ -2329,7 +2329,7 @@ static void _rm_active_job_bb(char *resv_name, char **pool_name,
  *     2: Job needs more resources than currently available can not start,
  *        skip all remaining jobs
  */
-static int _test_size_limit(struct job_record *job_ptr, bb_job_t *bb_job)
+static int _test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job)
 {
 	int64_t *add_space = NULL, *avail_space = NULL, *granularity = NULL;
 	int64_t *preempt_space = NULL, *resv_space = NULL, *total_space = NULL;
@@ -2589,7 +2589,7 @@ fini:	xfree(add_space);
 static void _timeout_bb_rec(void)
 {
 	bb_alloc_t **bb_pptr, *bb_alloc = NULL;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	int i;
 
 	if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY)
@@ -3118,7 +3118,7 @@ static void  _add_bb_to_script(char **script_body,
 
 /* For interactive jobs, build a script containing the relevant DataWarp
  * commands, as needed by the Cray API */
-static int _build_bb_script(struct job_record *job_ptr, char *script_file)
+static int _build_bb_script(job_record_t *job_ptr, char *script_file)
 {
 	char *out_buf = NULL;
 	int rc;
@@ -3206,7 +3206,7 @@ static void _purge_vestigial_bufs(void)
 	for (i = 0; i < BB_HASH_SIZE; i++) {
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
-			struct job_record *job_ptr = NULL;
+			job_record_t *job_ptr = NULL;
 			if (bb_alloc->job_id)
 				job_ptr = find_job_record(bb_alloc->job_id);
 			if (bb_alloc->job_id == 0) {
@@ -3443,7 +3443,7 @@ fini:	slurm_mutex_unlock(&bb_state.bb_mutex);
 }
 
 /* Add key=value pairs from "resp_msg" to the job's environment */
-static void _update_job_env(struct job_record *job_ptr, char *file_path)
+static void _update_job_env(job_record_t *job_ptr, char *file_path)
 {
 	struct stat stat_buf;
 	char *data_buf = NULL, *start, *sep;
@@ -3550,7 +3550,7 @@ static bool _have_dw_cmd_opts(bb_job_t *bb_job)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_job_validate2(struct job_record *job_ptr, char **err_msg)
+extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 {
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
 	char *task_script_file = NULL;
@@ -3733,8 +3733,7 @@ static struct bb_total_size *_json_parse_real_size(json_object *j)
  * IN/OUT tres_cnt - fill in this already allocated array with tres_cnts
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
-extern void bb_p_job_set_tres_cnt(struct job_record *job_ptr,
-				  uint64_t *tres_cnt,
+extern void bb_p_job_set_tres_cnt(job_record_t *job_ptr, uint64_t *tres_cnt,
 				  bool locked)
 {
 	bb_job_t *bb_job;
@@ -3760,7 +3759,7 @@ extern void bb_p_job_set_tres_cnt(struct job_record *job_ptr,
 /*
  * For a given job, return our best guess if when it might be able to start
  */
-extern time_t bb_p_job_get_est_start(struct job_record *job_ptr)
+extern time_t bb_p_job_get_est_start(job_record_t *job_ptr)
 {
 	time_t est_start = time(NULL);
 	bb_job_t *bb_job;
@@ -3822,7 +3821,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	bb_job_queue_rec_t *job_rec;
 	List job_candidates;
 	ListIterator job_iter;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bb_job_t *bb_job;
 	int rc;
 
@@ -3897,7 +3896,7 @@ extern int bb_p_job_try_stage_in(List job_queue)
  *      1 - stage-in complete
  *     -1 - stage-in not started or burst buffer in some unexpected state
  */
-extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
+extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 {
 	bb_job_t *bb_job = NULL;
 	int rc = 1;
@@ -3949,7 +3948,7 @@ extern int bb_p_job_test_stage_in(struct job_record *job_ptr, bool test_only)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_job_begin(struct job_record *job_ptr)
+extern int bb_p_job_begin(job_record_t *job_ptr)
 {
 	char *client_nodes_file_nid = NULL, *exec_host_file = NULL;
 	pre_run_args_t *pre_run_args;
@@ -4133,7 +4132,7 @@ fini:
 }
 
 /* Kill job from CONFIGURING state */
-static void _kill_job(struct job_record *job_ptr, bool hold_job)
+static void _kill_job(job_record_t *job_ptr, bool hold_job)
 {
 	last_job_update = time(NULL);
 	job_ptr->end_time = last_job_update;
@@ -4164,7 +4163,7 @@ static void *_start_pre_run(void *x)
 	char *resp_msg = NULL;
 	bb_job_t *bb_job = NULL;
 	int status = 0;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bool run_kill_job = false;
 	uint32_t timeout;
 	bool hold_job = false, nodes_ready = false;
@@ -4273,7 +4272,7 @@ static void *_start_pre_run(void *x)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_job_revoke_alloc(struct job_record *job_ptr)
+extern int bb_p_job_revoke_alloc(job_record_t *job_ptr)
 {
 	bb_job_t *bb_job = NULL;
 	int rc = SLURM_SUCCESS;
@@ -4299,7 +4298,7 @@ extern int bb_p_job_revoke_alloc(struct job_record *job_ptr)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
+extern int bb_p_job_start_stage_out(job_record_t *job_ptr)
 {
 	bb_job_t *bb_job;
 
@@ -4345,7 +4344,7 @@ extern int bb_p_job_start_stage_out(struct job_record *job_ptr)
  *      1 - post_run complete
  *     -1 - fatal error
  */
-extern int bb_p_job_test_post_run(struct job_record *job_ptr)
+extern int bb_p_job_test_post_run(job_record_t *job_ptr)
 {
 	bb_job_t *bb_job;
 	int rc = -1;
@@ -4390,7 +4389,7 @@ extern int bb_p_job_test_post_run(struct job_record *job_ptr)
  *      1 - stage-out complete
  *     -1 - fatal error
  */
-extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
+extern int bb_p_job_test_stage_out(job_record_t *job_ptr)
 {
 	bb_job_t *bb_job;
 	int rc = -1;
@@ -4440,7 +4439,7 @@ extern int bb_p_job_test_stage_out(struct job_record *job_ptr)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_job_cancel(struct job_record *job_ptr)
+extern int bb_p_job_cancel(job_record_t *job_ptr)
 {
 	bb_job_t *bb_job;
 	bb_alloc_t *bb_alloc;
@@ -4499,7 +4498,7 @@ static void _free_create_args(create_buf_data_t *create_args)
  *                delete persistent buffers
  * Returns count of buffer create/destroy requests which are pending
  */
-static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
+static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			bool job_ready)
 {
 	create_buf_data_t *create_args;
@@ -4638,7 +4637,7 @@ static int _create_bufs(struct job_record *job_ptr, bb_job_t *bb_job,
 /* Test for the existence of persistent burst buffers to be used (but not
  * created) by this job. Return true of they are all ready */
 static bool _test_persistent_use_ready(bb_job_t *bb_job,
-				       struct job_record *job_ptr)
+				       job_record_t *job_ptr)
 {
 	int i, not_ready_cnt = 0;
 	bb_alloc_t *bb_alloc;
@@ -4744,7 +4743,7 @@ static void *_create_persistent(void *x)
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	create_buf_data_t *create_args = (create_buf_data_t *) x;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc;
 	char **script_argv, *resp_msg;
 	int i, status = 0;
@@ -4910,7 +4909,7 @@ static void *_destroy_persistent(void *x)
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	create_buf_data_t *destroy_args = (create_buf_data_t *) x;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc;
 	char **script_argv, *resp_msg;
 	int status = 0;

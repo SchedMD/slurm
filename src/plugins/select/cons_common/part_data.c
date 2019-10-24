@@ -117,7 +117,7 @@ extern void part_data_add_job_to_row(struct job_resources *job,
  * IN job_ptr - pointer to single job removed, pass NULL to completely rebuild
  */
 extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
-					struct job_record *job_ptr)
+					job_record_t *job_ptr)
 {
 	uint32_t i, j, num_jobs;
 	int x;

@@ -61,7 +61,7 @@
  *       core_map for the given node. The cr_dist functions will determine
  *       which bits to de-select from the core_map to match the cpu_count.
  */
-extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
+extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					bitstr_t **core_map,
 					const uint32_t node_i,
 					uint32_t s_p_n,
@@ -77,7 +77,7 @@ extern avail_res_t *can_job_run_on_node(struct job_record *job_ptr,
  *
  * RET SLURM_SUCCESS or an error code
  */
-extern int choose_nodes(struct job_record *job_ptr, bitstr_t *node_map,
+extern int choose_nodes(job_record_t *job_ptr, bitstr_t *node_map,
 			bitstr_t **avail_core, uint32_t min_nodes,
 			uint32_t max_nodes, uint32_t req_nodes,
 			avail_res_t **avail_res_array, uint16_t cr_type,

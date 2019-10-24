@@ -130,8 +130,7 @@ const char *_jobstep_format =
  * Print the record to the log file.
  */
 
-static int _print_record(struct job_record *job_ptr,
-			 time_t time, char *data)
+static int _print_record(job_record_t *job_ptr, time_t time, char *data)
 {
 	static int   rc=SLURM_SUCCESS;
 	if (!job_ptr->details) {
@@ -667,8 +666,7 @@ extern int clusteracct_storage_p_cluster_tres(void *db_conn,
 /*
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(void *db_conn,
-				       struct job_record *job_ptr)
+extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 {
 	int	rc = SLURM_SUCCESS;
 	char	buf[BUFFER_SIZE], *account, *nodes;
@@ -728,8 +726,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 /*
  * load into the storage the end of a job
  */
-extern int jobacct_storage_p_job_complete(void *db_conn,
-					  struct job_record *job_ptr)
+extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 {
 	char buf[BUFFER_SIZE];
 	uint32_t job_state;
@@ -1015,8 +1012,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 /*
  * load into the storage a suspension of a job
  */
-extern int jobacct_storage_p_suspend(void *db_conn,
-				     struct job_record *job_ptr)
+extern int jobacct_storage_p_suspend(void *db_conn, job_record_t *job_ptr)
 {
 	char buf[BUFFER_SIZE];
 	static time_t	now = 0;

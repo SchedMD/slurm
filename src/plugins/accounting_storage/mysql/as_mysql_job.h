@@ -42,15 +42,14 @@
 
 #include "accounting_storage_mysql.h"
 
-extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
-			   struct job_record *job_ptr);
+extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr);
 
 extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 				 slurmdb_job_modify_cond_t *job_cond,
 				 slurmdb_job_rec_t *job);
 
 extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
-			      struct job_record *job_ptr);
+			         job_record_t *job_ptr);
 
 extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 			       step_record_t *step_ptr);
@@ -59,7 +58,7 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			          step_record_t *step_ptr);
 
 extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint64_t old_db_inx,
-			    struct job_record *job_ptr);
+			    job_record_t *job_ptr);
 
 extern int as_mysql_flush_jobs_on_cluster(
 	mysql_conn_t *mysql_conn, time_t event_time);

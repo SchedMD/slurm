@@ -87,7 +87,7 @@ typedef struct {
 				 __FUNCTION__, ##__VA_ARGS__);
 
 extern void ccm_get_config(void);
-extern int ccm_check_partitions(struct job_record *job_ptr);
+extern int ccm_check_partitions(job_record_t *job_ptr);
 extern void *ccm_begin(void *args);
 extern void *ccm_fini(void *args);
 

@@ -468,7 +468,7 @@ extern int fini(void)
  * IN exc_core_bitmap - Cores to be excluded for use (in advanced reservation)
  * RET zero on success, EINVAL otherwise
  */
-extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
+extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,

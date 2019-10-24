@@ -100,7 +100,7 @@ static uint16_t _valid_uint16(uint16_t arg)
 	return arg;
 }
 
-static gres_mc_data_t *_build_gres_mc_data(struct job_record *job_ptr)
+static gres_mc_data_t *_build_gres_mc_data(job_record_t *job_ptr)
 {
 	gres_mc_data_t *tres_mc_ptr;
 
@@ -155,16 +155,16 @@ static struct multi_core_data *_create_default_mc(void)
 /* List sort function: sort by the job's expected end time */
 static int _cr_job_list_sort(void *x, void *y)
 {
-	struct job_record *job1_ptr = *(struct job_record **) x;
-	struct job_record *job2_ptr = *(struct job_record **) y;
+	job_record_t *job1_ptr = *(job_record_t **) x;
+	job_record_t *job2_ptr = *(job_record_t **) y;
 
 	return (int) SLURM_DIFFTIME(job1_ptr->end_time, job2_ptr->end_time);
 }
 
 static int _find_job (void *x, void *key)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
-	if (job_ptr == (struct job_record *) key)
+	job_record_t *job_ptr = (job_record_t *) x;
+	if (job_ptr == (job_record_t *) key)
 		return 1;
 	return 0;
 }
@@ -185,7 +185,7 @@ extern void _free_avail_res_array(avail_res_t **avail_res_array)
  * - can the job run on shared nodes?   (NODE_CR_ONE_ROW)
  * - can the job run on overcommitted resources? (NODE_CR_AVAILABLE)
  */
-static uint16_t _get_job_node_req(struct job_record *job_ptr)
+static uint16_t _get_job_node_req(job_record_t *job_ptr)
 {
 	int max_share = job_ptr->part_ptr->max_share;
 
@@ -203,7 +203,7 @@ static uint16_t _get_job_node_req(struct job_record *job_ptr)
 	return NODE_CR_ONE_ROW;
 }
 
-static void _set_gpu_defaults(struct job_record *job_ptr)
+static void _set_gpu_defaults(job_record_t *job_ptr)
 {
 	static struct part_record *last_part_ptr = NULL;
 	static uint64_t last_cpu_per_gpu = NO_VAL64;
@@ -239,7 +239,7 @@ static void _set_gpu_defaults(struct job_record *job_ptr)
 }
 
 /* Determine how many sockets per node this job requires for GRES */
-static uint32_t _socks_per_node(struct job_record *job_ptr)
+static uint32_t _socks_per_node(job_record_t *job_ptr)
 {
 	multi_core_data_t *mc_ptr;
 	uint32_t s_p_n = NO_VAL;
@@ -296,7 +296,7 @@ static uint32_t _socks_per_node(struct job_record *job_ptr)
  *
  * RET array of avail_res_t pointers, free using _free_avail_res_array()
  */
-static avail_res_t **_get_res_avail(struct job_record *job_ptr,
+static avail_res_t **_get_res_avail(job_record_t *job_ptr,
 				    bitstr_t *node_map, bitstr_t **core_map,
 				    node_use_record_t *node_usage,
 				    uint16_t cr_type, bool test_only,
@@ -331,7 +331,7 @@ static avail_res_t **_get_res_avail(struct job_record *job_ptr,
 
 /* For a given job already past it's end time, guess when it will actually end.
  * Used for backfill scheduling. */
-static time_t _guess_job_end(struct job_record * job_ptr, time_t now)
+static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
 {
 	time_t end_time;
 	uint16_t over_time_limit;
@@ -414,8 +414,7 @@ static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 	return 0;
 }
 
-static bool _is_preemptable(struct job_record *job_ptr,
-			    List preemptee_candidates)
+static bool _is_preemptable(job_record_t *job_ptr, List preemptee_candidates)
 {
 	if (!preemptee_candidates)
 		return false;
@@ -443,9 +442,8 @@ static bool _is_preemptable(struct job_record *job_ptr,
  * RET: array of avail_res_t pointers, free using _free_avail_res_array().
  *	NULL on error
  */
-static avail_res_t **_select_nodes(struct job_record *job_ptr,
-				   uint32_t min_nodes, uint32_t max_nodes,
-				   uint32_t req_nodes,
+static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
+				   uint32_t max_nodes, uint32_t req_nodes,
 				   bitstr_t *node_bitmap, bitstr_t **avail_core,
 				   node_use_record_t *node_usage,
 				   uint16_t cr_type, bool test_only,
@@ -557,8 +555,8 @@ fini:	if (rc != SLURM_SUCCESS) {
  */
 static int _sort_usable_nodes_dec(void *j1, void *j2)
 {
-	struct job_record *job_a = *(struct job_record **)j1;
-	struct job_record *job_b = *(struct job_record **)j2;
+	job_record_t *job_a = *(job_record_t **) j1;
+	job_record_t *job_b = *(job_record_t **) j2;
 
 	if (job_a->details->usable_nodes > job_b->details->usable_nodes)
 		return -1;
@@ -587,7 +585,7 @@ static int _sort_usable_nodes_dec(void *j1, void *j2)
  *  - job_node_req = NODE_CR_ONE_ROW, then we need idle or non-sharing nodes
  */
 static int _verify_node_state(part_res_record_t *cr_part_ptr,
-			      struct job_record *job_ptr,
+			      job_record_t *job_ptr,
 			      bitstr_t *node_bitmap,
 			      uint16_t cr_type,
 			      node_use_record_t *node_usage,
@@ -778,7 +776,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
  *         for this job, with the placement influenced by existing
  *         allocations
  */
-static int _job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
+static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes,
 		     uint32_t req_nodes, int mode, uint16_t cr_type,
 		     enum node_cr_state job_node_req,
@@ -1700,7 +1698,7 @@ alloc_job:
 }
 
 /* Determine if a job can ever run */
-static int _test_only(struct job_record *job_ptr, bitstr_t *node_bitmap,
+static int _test_only(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
 		      uint32_t req_nodes, uint16_t job_node_req)
 {
@@ -1730,8 +1728,7 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *node_bitmap,
  * end of its time limit and use this to show where and when the job at job_ptr
  * will begin execution. Used by Slurm's sched/backfill plugin.
  */
-static int _will_run_test(struct job_record *job_ptr,
-			  bitstr_t *node_bitmap,
+static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes, uint16_t job_node_req,
 			  List preemptee_candidates,
@@ -1740,7 +1737,7 @@ static int _will_run_test(struct job_record *job_ptr,
 {
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
-	struct job_record *tmp_job_ptr;
+	job_record_t *tmp_job_ptr;
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
 	bitstr_t *orig_map;
@@ -1791,7 +1788,7 @@ static int _will_run_test(struct job_record *job_ptr,
 	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
-	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((tmp_job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 		    !IS_JOB_SUSPENDED(tmp_job_ptr))
 			continue;
@@ -1860,9 +1857,9 @@ static int _will_run_test(struct job_record *job_ptr,
 		START_TIMER;
 		job_iterator = list_iterator_create(cr_job_list);
 		while (more_jobs) {
-			struct job_record *first_job_ptr = NULL;
-			struct job_record *last_job_ptr = NULL;
-			struct job_record *next_job_ptr = NULL;
+			job_record_t *first_job_ptr = NULL;
+			job_record_t *last_job_ptr = NULL;
+			job_record_t *next_job_ptr = NULL;
 			int overlap, rm_job_cnt = 0;
 
 			while (true) {
@@ -1955,7 +1952,7 @@ static int _will_run_test(struct job_record *job_ptr,
 }
 
 /* Allocate resources for a job now, if possible */
-static int _run_now(struct job_record *job_ptr, bitstr_t *node_bitmap,
+static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    uint32_t req_nodes, uint16_t job_node_req,
 		    List preemptee_candidates, List *preemptee_job_list,
@@ -1963,7 +1960,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *node_bitmap,
 {
 	int rc;
 	bitstr_t *orig_node_map = NULL, *save_node_map;
-	struct job_record *tmp_job_ptr = NULL;
+	job_record_t *tmp_job_ptr = NULL;
 	ListIterator job_iterator, preemptee_iterator;
 	part_res_record_t *future_part;
 	node_use_record_t *future_usage;
@@ -1994,8 +1991,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 	if ((rc != SLURM_SUCCESS) && preemptee_candidates && preempt_by_qos) {
 		/* Determine QOS preempt mode of first job */
 		job_iterator = list_iterator_create(preemptee_candidates);
-		if ((tmp_job_ptr = (struct job_record *)
-		     list_next(job_iterator))) {
+		if ((tmp_job_ptr = list_next(job_iterator))) {
 			mode = slurm_job_preempt_mode(tmp_job_ptr);
 		}
 		list_iterator_destroy(job_iterator);
@@ -2029,8 +2025,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 		}
 
 		job_iterator = list_iterator_create(preemptee_candidates);
-		while ((tmp_job_ptr = (struct job_record *)
-			list_next(job_iterator))) {
+		while ((tmp_job_ptr = list_next(job_iterator))) {
 			if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 			    !IS_JOB_SUSPENDED(tmp_job_ptr))
 				continue;
@@ -2061,8 +2056,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				 * for different node/feature sets --
 				 * _get_req_features().
 				 */
-				while ((tmp_job_ptr = (struct job_record *)
-					list_next(job_iterator))) {
+				while ((tmp_job_ptr = list_next(job_iterator))) {
 					tmp_job_ptr->details->usable_nodes = 1;
 				}
 				break;
@@ -2078,8 +2072,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				 * candidate list, preserving order of other
 				 * jobs.
 				 */
-				tmp_job_ptr = (struct job_record *)
-					list_remove(job_iterator);
+				tmp_job_ptr = list_remove(job_iterator);
 				list_prepend(preemptee_candidates, tmp_job_ptr);
 			} else {
 				/*
@@ -2091,8 +2084,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				 */
 				tmp_job_ptr->details->usable_nodes = 99999;
 				list_iterator_reset(job_iterator);
-				while ((tmp_job_ptr = (struct job_record *)
-					list_next(job_iterator))) {
+				while ((tmp_job_ptr = list_next(job_iterator))) {
 					if (tmp_job_ptr->details->usable_nodes
 					    == 99999)
 						break;
@@ -2101,8 +2093,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 							    tmp_job_ptr->
 							    node_bitmap);
 				}
-				while ((tmp_job_ptr = (struct job_record *)
-					list_next(job_iterator))) {
+				while ((tmp_job_ptr = list_next(job_iterator))) {
 					tmp_job_ptr->details->usable_nodes = 0;
 				}
 				list_sort(preemptee_candidates,
@@ -2127,8 +2118,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 			}
 			preemptee_iterator = list_iterator_create(
 				preemptee_candidates);
-			while ((tmp_job_ptr = (struct job_record *)
-				list_next(preemptee_iterator))) {
+			while ((tmp_job_ptr = list_next(preemptee_iterator))) {
 				mode = slurm_job_preempt_mode(tmp_job_ptr);
 				if ((mode != PREEMPT_MODE_REQUEUE)    &&
 				    (mode != PREEMPT_MODE_CHECKPOINT) &&
@@ -2189,7 +2179,7 @@ top:	orig_node_map = bit_copy(save_node_map);
  * NOTE: bitmap must be a superset of req_nodes at the time that
  *	select_p_job_test is called
  */
-extern int common_job_test(struct job_record *job_ptr, bitstr_t *node_bitmap,
+extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes, uint16_t mode,
 			   List preemptee_candidates,

@@ -118,7 +118,7 @@ static void _add_env2(struct job_descriptor *job_desc, char *key, char *val)
 	xfree(new_env);
 }
 
-static void _decr_depend_cnt(struct job_record *job_ptr)
+static void _decr_depend_cnt(job_record_t *job_ptr)
 {
 	char buf[16], *end_ptr = NULL, *tok = NULL;
 	int cnt, width;
@@ -148,7 +148,7 @@ static void *_dep_agent(void *args)
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 
-	struct job_record *job_ptr = (struct job_record *) args;
+	job_record_t *job_ptr = (job_record_t *) args;
 	char *end_ptr = NULL, *tok;
 	int cnt = 0;
 
@@ -174,7 +174,7 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 {
 	uint32_t job_id;
 	char *last_ptr = NULL, *new_dep = NULL, *tok, *type;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	tok = strtok_r(depend, ":", &last_ptr);
 	if (!xstrcmp(tok, "before"))
@@ -347,8 +347,8 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid)
 }
 
 /* Lua script hook called for "modify job" event. */
-extern int job_modify(struct job_descriptor *job_desc,
-		      struct job_record *job_ptr, uint32_t submit_uid)
+extern int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
+		      uint32_t submit_uid)
 {
 	/* Locks: Read config, write job, read node, read partition
 	 * HAVE BEEN SET ON ENTRY TO THIS FUNCTION */

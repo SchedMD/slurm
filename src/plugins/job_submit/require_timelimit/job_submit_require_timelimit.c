@@ -84,7 +84,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 	return SLURM_SUCCESS;
 }
 
-int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr,
+int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
 	       uint32_t submit_uid)
 {
 	if (job_desc->time_limit == INFINITE) {

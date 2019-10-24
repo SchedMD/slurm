@@ -174,7 +174,7 @@ static void _dump_job_res(struct job_resources *job)
  * IN req_sock_map - OPTIONAL bitmap of required sockets
  * RET resource availability structure, call common_free_avail_res() to free
  */
-static avail_res_t *_allocate_sc(struct job_record *job_ptr, bitstr_t *core_map,
+static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 				 bitstr_t *part_core_map, const uint32_t node_i,
 				 int *cpu_alloc_size, bool entire_sockets_only,
 				 bitstr_t *req_sock_map)
@@ -910,7 +910,7 @@ extern bitstr_t **common_mark_avail_cores(
  * IN req_sock_map - OPTIONAL bitmap of required sockets
  * RET resource availability structure, call common_free_avail_res() to free
  */
-extern avail_res_t *common_allocate_cores(struct job_record *job_ptr,
+extern avail_res_t *common_allocate_cores(job_record_t *job_ptr,
 					  bitstr_t *core_map,
 					  bitstr_t *part_core_map,
 					  const uint32_t node_i,
@@ -937,7 +937,7 @@ extern avail_res_t *common_allocate_cores(struct job_record *job_ptr,
  * IN req_sock_map - OPTIONAL bitmap of required sockets
  * RET resource availability structure, call common_free_avail_res() to free
  */
-extern avail_res_t *common_allocate_sockets(struct job_record *job_ptr,
+extern avail_res_t *common_allocate_sockets(job_record_t *job_ptr,
 					    bitstr_t *core_map,
 					    bitstr_t *part_core_map,
 					    const uint32_t node_i,
@@ -1135,12 +1135,12 @@ extern int select_p_block_init(List part_list)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_begin(struct job_record *job_ptr)
+extern int select_p_job_begin(job_record_t *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_ready(struct job_record *job_ptr)
+extern int select_p_job_ready(job_record_t *job_ptr)
 {
 	int i, i_first, i_last;
 	struct node_record *node_ptr;
@@ -1165,8 +1165,8 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	return READY_NODE_STATE;
 }
 
-extern int select_p_job_expand(struct job_record *from_job_ptr,
-			       struct job_record *to_job_ptr)
+extern int select_p_job_expand(job_record_t *from_job_ptr,
+			       job_record_t *to_job_ptr)
 {
 	job_resources_t *from_job_resrcs_ptr, *to_job_resrcs_ptr,
 		*new_job_resrcs_ptr;
@@ -1385,7 +1385,7 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_resized(struct job_record *job_ptr,
+extern int select_p_job_resized(job_record_t *job_ptr,
 				struct node_record *node_ptr)
 {
 	part_res_record_t *part_record_ptr = select_part_record;
@@ -1520,7 +1520,7 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_signal(struct job_record *job_ptr, int signal)
+extern int select_p_job_signal(job_record_t *job_ptr, int signal)
 {
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1528,7 +1528,7 @@ extern int select_p_job_signal(struct job_record *job_ptr, int signal)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_mem_confirm(struct job_record *job_ptr)
+extern int select_p_job_mem_confirm(job_record_t *job_ptr)
 {
 	int i_first, i_last, i, offset;
 	uint64_t avail_mem, lowest_mem = 0;
@@ -1563,7 +1563,7 @@ extern int select_p_job_mem_confirm(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_fini(struct job_record *job_ptr)
+extern int select_p_job_fini(job_record_t *job_ptr)
 {
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1580,7 +1580,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 /* NOTE: This function is not called with gang scheduling because it
  * needs to track how many jobs are running or suspended on each node.
  * This sum is compared with the partition's Shared parameter */
-extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
+extern int select_p_job_suspend(job_record_t *job_ptr, bool indf_susp)
 {
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1601,7 +1601,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 }
 
 /* See NOTE with select_p_job_suspend() above */
-extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
+extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 {
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1619,7 +1619,7 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 	return job_res_add_job(job_ptr, 2);
 }
 
-extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
+extern bitstr_t *select_p_step_pick_nodes(job_record_t *job_ptr,
 					  select_jobinfo_t *jobinfo,
 					  uint32_t node_count,
 					  bitstr_t **avail_nodes)
@@ -1858,7 +1858,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
+extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 {
 	int rc;
 
@@ -1997,7 +1997,7 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 }
 
 extern int select_p_get_info_from_plugin(enum select_plugindata_info info,
-					 struct job_record *job_ptr,
+					 job_record_t *job_ptr,
 					 void *data)
 {
 	int rc = SLURM_SUCCESS;
@@ -2064,7 +2064,7 @@ extern int select_p_update_node_state(struct node_record *node_ptr)
 extern int select_p_reconfigure(void)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	int rc = SLURM_SUCCESS;
 
 	info("%s: reconfigure", plugin_type);
@@ -2087,7 +2087,7 @@ extern int select_p_reconfigure(void)
 
 	/* reload job data */
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)) {
 			/* add the job */
 			job_res_add_job(job_ptr, 0);

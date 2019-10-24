@@ -183,7 +183,7 @@ static void _make_time_str (time_t *time, char *string, int size)
 	}
 }
 
-extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
+extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS, tmp_int, tmp_int2;
 	char job_rec[1024];

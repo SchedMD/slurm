@@ -264,8 +264,7 @@ no_wckeyid:
 
 /* extern functions */
 
-extern int as_mysql_job_start(mysql_conn_t *mysql_conn,
-			      struct job_record *job_ptr)
+extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	char *nodes = NULL, *jname = NULL;
@@ -840,7 +839,7 @@ extern List as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 }
 
 extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
-				 struct job_record *job_ptr)
+				 job_record_t *job_ptr)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS, job_state;
@@ -1399,9 +1398,8 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int as_mysql_suspend(mysql_conn_t *mysql_conn,
-			    uint64_t old_db_inx,
-			    struct job_record *job_ptr)
+extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint64_t old_db_inx,
+			    job_record_t *job_ptr)
 {
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;

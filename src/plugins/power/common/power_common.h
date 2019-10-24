@@ -88,7 +88,7 @@ extern char *power_run_script(char *script_name, char *script_path,
 
 /* For a newly starting job, set "new_job_time" in each of it's nodes
  * NOTE: The job and node data structures must be locked on function entry */
-extern void set_node_new_job(struct job_record *job_ptr,
+extern void set_node_new_job(job_record_t *job_ptr,
 			     struct node_record *node_record_table_ptr);
 
 #endif	/* __POWER_COMMON_H__ */

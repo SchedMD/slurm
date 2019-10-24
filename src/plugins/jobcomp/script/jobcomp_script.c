@@ -182,7 +182,7 @@ struct jobcomp_info {
 	char *std_err;
 };
 
-static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
+static struct jobcomp_info *_jobcomp_info_create(job_record_t *job)
 {
 	enum job_states state;
 	struct jobcomp_info *j = xmalloc(sizeof(struct jobcomp_info));
@@ -614,7 +614,7 @@ extern int slurm_jobcomp_set_location (char * location)
 	return SLURM_SUCCESS;
 }
 
-int slurm_jobcomp_log_record (struct job_record *record)
+int slurm_jobcomp_log_record(job_record_t *record)
 {
 	struct jobcomp_info * job;
 

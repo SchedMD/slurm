@@ -315,7 +315,7 @@ extern check_jobinfo_t slurm_ckpt_copy_job(check_jobinfo_t jobinfo)
 static int _ckpt_step(step_record_t *step_ptr, uint16_t wait, int vacate)
 {
 	struct check_job_info *check_ptr;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	char *argv[3];
 
 	xassert(step_ptr);

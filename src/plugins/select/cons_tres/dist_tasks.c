@@ -55,7 +55,7 @@
  *			offset based upon bits set in
  *			job_ptr->job_resrcs->node_bitmap
  */
-extern int dist_tasks_compute_c_b(struct job_record *job_ptr,
+extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 				  uint32_t *gres_task_limit)
 {
 	bool over_subscribe = false;

@@ -1354,14 +1354,14 @@ static void _set_node_caps(void)
 static void _level_power_by_job(void)
 {
 	int i, i_first, i_last;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	struct node_record *node_ptr;
 	uint32_t ave_watts, total_watts, total_nodes;
 	uint32_t max_watts, min_watts;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) || !job_ptr->node_bitmap)
 			continue;
 		if ((job_level == NO_VAL) &&
@@ -1766,13 +1766,13 @@ extern void power_p_reconfig(void)
 }
 
 /* Note that a suspended job has been resumed */
-extern void power_p_job_resume(struct job_record *job_ptr)
+extern void power_p_job_resume(job_record_t *job_ptr)
 {
 	set_node_new_job(job_ptr, node_record_table_ptr);
 }
 
 /* Note that a job has been allocated resources and is ready to start */
-extern void power_p_job_start(struct job_record *job_ptr)
+extern void power_p_job_start(job_record_t *job_ptr)
 {
 	set_node_new_job(job_ptr, node_record_table_ptr);
 }

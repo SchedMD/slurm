@@ -59,7 +59,7 @@
  * NULL gres_task_limit
  *
  */
-extern int dist_tasks_compute_c_b(struct job_record *job_ptr,
+extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 				  uint32_t *gres_task_limit);
 
 #endif /* !_CONS_RES_DIST_TASKS_H */

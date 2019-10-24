@@ -560,7 +560,7 @@ static void _make_time_str(time_t * time, char *string, int size)
 	}
 }
 
-extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
+extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 {
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], time_str[32];
 	char *json_str = NULL, *script_str = NULL, *state_string = NULL;

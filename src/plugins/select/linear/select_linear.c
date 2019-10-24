@@ -128,51 +128,49 @@ struct select_nodeinfo {
 
 static uint16_t priority_flags = 0;
 
-static int  _add_job_to_nodes(struct cr_record *cr_ptr,
-			      struct job_record *job_ptr, char *pre_err,
-			      int suspended);
+static int  _add_job_to_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
+			      char *pre_err, int suspended);
 static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id);
 static void _add_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
-static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap);
+static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap);
 static int  _cr_job_list_sort(void *x, void *y);
 static job_resources_t *_create_job_resources(int node_cnt);
-static int _decr_node_job_cnt(int node_inx, struct job_record *job_ptr,
+static int _decr_node_job_cnt(int node_inx, job_record_t *job_ptr,
 			      char *pre_err);
 static void _dump_node_cr(struct cr_record *cr_ptr);
 static struct cr_record *_dup_cr(struct cr_record *cr_ptr);
-static int  _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
+static int  _find_job_mate(job_record_t *job_ptr, bitstr_t *bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes);
 static void _free_cr(struct cr_record *cr_ptr);
-static int _get_avail_cpus(struct job_record *job_ptr, int index);
+static int _get_avail_cpus(job_record_t *job_ptr, int index);
 static uint16_t _get_total_cpus(int index);
 static void _init_node_cr(void);
 static int _job_count_bitmap(struct cr_record *cr_ptr,
-			     struct job_record *job_ptr,
+			     job_record_t *job_ptr,
 			     bitstr_t * bitmap, bitstr_t * jobmap,
 			     int run_job_cnt, int tot_job_cnt, uint16_t mode);
-static int _job_expand(struct job_record *from_job_ptr,
-		       struct job_record *to_job_ptr);
-static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr);
+static int _job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes,
 		     uint32_t req_nodes);
-static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _job_test_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes);
-static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _job_test_hypercube(job_record_t *job_ptr, bitstr_t *bitmap,
 			 uint32_t min_nodes, uint32_t max_nodes,
 			 uint32_t req_nodes);		     
-static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _job_test_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes);
 static bool _rem_run_job(struct cr_record *cr_ptr, uint32_t job_id);
 static bool _rem_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
 static int _rm_job_from_nodes(struct cr_record *cr_ptr,
-			      struct job_record *job_ptr, char *pre_err,
+			      job_record_t *job_ptr, char *pre_err,
 			      bool remove_all, bool job_fini);
-static int _rm_job_from_one_node(struct job_record *job_ptr,
+static int _rm_job_from_one_node(job_record_t *job_ptr,
 				 struct node_record *node_ptr, char *pre_err);
-static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _run_now(job_record_t *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    int max_share, uint32_t req_nodes,
 		    List preemptee_candidates,
@@ -180,10 +178,10 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 static int _sort_usable_nodes_dec(void *, void *);
 static bool _test_run_job(struct cr_record *cr_ptr, uint32_t job_id);
 static bool _test_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
-static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _test_only(job_record_t *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
 		      uint32_t req_nodes, int max_share);
-static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  int max_share, uint32_t req_nodes,
 			  List preemptee_candidates,
@@ -372,7 +370,7 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
  * IN job_ptr - pointer to job being scheduled
  * IN index - index of node's configuration information in select_node_ptr
  */
-static int _get_avail_cpus(struct job_record *job_ptr, int index)
+static int _get_avail_cpus(job_record_t *job_ptr, int index)
 {
 	struct node_record *node_ptr;
 	int avail_cpus;
@@ -466,7 +464,7 @@ static job_resources_t *_create_job_resources(int node_cnt)
 
 /* Build the full job_resources_t *structure for a job based upon the nodes
  *	allocated to it (the bitmap) and the job's memory requirement */
-static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
+static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 {
 	int i, j, k;
 	int first_bit, last_bit;
@@ -535,7 +533,7 @@ static void _build_select_struct(struct job_record *job_ptr, bitstr_t *bitmap)
  * that are running 'run_job_cnt' jobs or less, and clear the rest.
  */
 static int _job_count_bitmap(struct cr_record *cr_ptr,
-			     struct job_record *job_ptr,
+			     job_record_t *job_ptr,
 			     bitstr_t * bitmap, bitstr_t * jobmap,
 			     int run_job_cnt, int tot_job_cnt, uint16_t mode)
 {
@@ -655,16 +653,16 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
  *	a pretty simple algorithm now, but could try to match the job
  *	with multiple jobs that add up to the proper size or a single
  *	job plus a few idle nodes. */
-static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _find_job_mate(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes)
 {
 	ListIterator job_iterator;
-	struct job_record *job_scan_ptr;
+	job_record_t *job_scan_ptr;
 	int rc = EINVAL;
 
 	job_iterator = list_iterator_create(job_list);
-	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_scan_ptr = list_next(job_iterator))) {
 		if ((!IS_JOB_RUNNING(job_scan_ptr))			||
 		    (job_scan_ptr->node_cnt   != req_nodes)		||
 		    (job_scan_ptr->total_cpus <
@@ -697,7 +695,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 
 /* _job_test - does most of the real work for select_p_job_test(), which
  *	pretty much just handles load-leveling and max_share logic */
-static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes,
 		     uint32_t req_nodes)
 {
@@ -1073,17 +1071,17 @@ _hypercube_update_variance(
  * switch with its nodes if we don't already have enough. As an experiment we
  * try adding switches to the left, but we otherwise add to the right.
  */
-static void
-_hypercube_add_nodes(
-	struct job_record * job_ptr, bitstr_t * avail_bitmap,
-	int dim, int32_t start_index, int32_t * end_index, int node_count,
-	int32_t max_nodes, int32_t rem_nodes, int32_t rem_cpus,
-	int leftover_nodes, bitstr_t * bitmap,
-	int64_t * distance_offset, int64_t summed_squares, int64_t squared_sums,
-	int * min_curve, int * min_direction,
-	int * min_start_index, int32_t * min_neighbors,
-	int32_t * min_extra_nodes,
-	int64_t * min_variance)
+static void _hypercube_add_nodes(job_record_t *job_ptr, bitstr_t *avail_bitmap,
+				 int dim, int32_t start_index,
+				 int32_t *end_index, int node_count,
+				 int32_t max_nodes, int32_t rem_nodes,
+				 int32_t rem_cpus, int leftover_nodes,
+				 bitstr_t *bitmap, int64_t *distance_offset,
+				 int64_t summed_squares, int64_t squared_sums,
+				 int *min_curve, int *min_direction,
+				 int *min_start_index, int32_t *min_neighbors,
+				 int32_t *min_extra_nodes,
+				 int64_t *min_variance)
 {
 	bitstr_t * tmp_bitmap;
 	int32_t l_start_index = *end_index;
@@ -1237,14 +1235,13 @@ _hypercube_add_nodes(
  * a cluster is described by its necesary characteristics including: 
  * start_index, end_index, summed_squares, squared_sums, and rem_nodes ***
  */
-static void
-_explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
-		    const int64_t * req_summed_squares,
-		    const int64_t * req_squared_sums,
-		    const int max_nodes,
-		    const int rem_nodes, const int rem_cpus, const int node_count,
-		    int * min_start_index,
-		    int * min_direction, int * min_curve)
+static void _explore_hypercube(job_record_t *job_ptr, bitstr_t *avail_bitmap,
+			       const int64_t *req_summed_squares,
+			       const int64_t *req_squared_sums,
+			       const int max_nodes, const int rem_nodes,
+			       const int rem_cpus, const int node_count,
+			       int *min_start_index, int *min_direction,
+			       int *min_curve)
 {
 	bitstr_t * tmp_bitmap = bit_alloc(bit_size(avail_bitmap));
 	int64_t min_variance = INT64_MAX;
@@ -1421,7 +1418,7 @@ _explore_hypercube(struct job_record * job_ptr, bitstr_t * avail_bitmap,
 /* a hypercube topology version of _job_test - 
  * does most of the real work for select_p_job_test(), which
  *	pretty much just handles load-leveling and max_share logic */
-static int _job_test_hypercube(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _job_test_hypercube(job_record_t *job_ptr, bitstr_t *bitmap,
 			       uint32_t min_nodes, uint32_t max_nodes,
 			       uint32_t req_nodes)
 {
@@ -1613,7 +1610,7 @@ fini:
  * NOTE: The logic here is almost identical to that of _eval_nodes_dfly() in
  *       select/cons_res/job_test.c. Any bug found here is probably also there.
  */
-static int _job_test_dfly(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _job_test_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes)
 {
@@ -1912,7 +1909,7 @@ fini:	if (rc == SLURM_SUCCESS) {
  * NOTE: The logic here is almost identical to that of _eval_nodes_topo() in
  *       select/cons_res/job_test.c. Any bug found here is probably also there.
  */
-static int _job_test_topo(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _job_test_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes)
 {
@@ -2243,9 +2240,8 @@ fini:	if (rc == SLURM_SUCCESS) {
  * if remove_all = false: the job has been suspended, so just deallocate CPUs
  * if remove_all = true: deallocate all resources
  */
-static int _rm_job_from_nodes(struct cr_record *cr_ptr,
-			      struct job_record *job_ptr, char *pre_err,
-			      bool remove_all, bool job_fini)
+static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
+			      char *pre_err, bool remove_all, bool job_fini)
 {
 	int i, i_first, i_last, node_offset, rc = SLURM_SUCCESS;
 	struct part_cr_record *part_cr_ptr;
@@ -2387,8 +2383,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 }
 
 /* Move all resources from one job to another */
-static int _job_expand(struct job_record *from_job_ptr,
-		       struct job_record *to_job_ptr)
+static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 {
 	int i, node_cnt, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr;
@@ -2581,7 +2576,7 @@ static int _job_expand(struct job_record *from_job_ptr,
 
 /* Decrement a partitions running and total job counts as needed to enforce the
  * limit of jobs per node per partition (the partition's Shared=# parameter) */
-static int _decr_node_job_cnt(int node_inx, struct job_record *job_ptr,
+static int _decr_node_job_cnt(int node_inx, job_record_t *job_ptr,
 			      char *pre_err)
 {
 	struct node_record *node_ptr = node_record_table_ptr + node_inx;
@@ -2642,7 +2637,7 @@ static int _decr_node_job_cnt(int node_inx, struct job_record *job_ptr,
 /*
  * deallocate resources that were assigned to this job on one node
  */
-static int _rm_job_from_one_node(struct job_record *job_ptr,
+static int _rm_job_from_one_node(job_record_t *job_ptr,
 				 struct node_record *node_ptr, char *pre_err)
 {
 	int i, node_inx, node_offset;
@@ -2733,7 +2728,7 @@ static int _rm_job_from_one_node(struct job_record *job_ptr,
  * if alloc_all = 1: allocate all resources (CPUs and memory)
  */
 static int _add_job_to_nodes(struct cr_record *cr_ptr,
-			     struct job_record *job_ptr, char *pre_err,
+			     job_record_t *job_ptr, char *pre_err,
 			     int alloc_all)
 {
 	int i, i_first, i_last, node_cnt, node_offset, rc = SLURM_SUCCESS;
@@ -2961,7 +2956,7 @@ static void _init_node_cr(void)
 	job_resources_t *job_resrcs_ptr;
 	struct node_record *node_ptr;
 	ListIterator part_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	uint64_t job_memory_cpu, job_memory_node;
 	int exclusive, i, i_first, i_last, node_offset;
@@ -2998,7 +2993,7 @@ static void _init_node_cr(void)
 
 	/* record running and suspended jobs in node_cr_records */
 	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
 		if ((job_resrcs_ptr = job_ptr->job_resrcs) == NULL) {
@@ -3099,14 +3094,13 @@ static void _init_node_cr(void)
 
 static int _find_job (void *x, void *key)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
-	if (job_ptr == (struct job_record *) key)
+	job_record_t *job_ptr = (job_record_t *) x;
+	if (job_ptr == (job_record_t *) key)
 		return 1;
 	return 0;
 }
 
-static bool _is_preemptable(struct job_record *job_ptr,
-			    List preemptee_candidates)
+static bool _is_preemptable(job_record_t *job_ptr, List preemptee_candidates)
 {
 	if (!preemptee_candidates)
 		return false;
@@ -3116,7 +3110,7 @@ static bool _is_preemptable(struct job_record *job_ptr,
 }
 
 /* Determine if a job can ever run */
-static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _test_only(job_record_t *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
 		      uint32_t req_nodes, int max_share)
 {
@@ -3148,8 +3142,8 @@ static int _test_only(struct job_record *job_ptr, bitstr_t *bitmap,
  */
 static int _sort_usable_nodes_dec(void *j1, void *j2)
 {
-	struct job_record *job_a = *(struct job_record **)j1;
-	struct job_record *job_b = *(struct job_record **)j2;
+	job_record_t *job_a = *(job_record_t **)j1;
+	job_record_t *job_b = *(job_record_t **)j2;
 
 	if (job_a->details->usable_nodes > job_b->details->usable_nodes)
 		return -1;
@@ -3160,7 +3154,7 @@ static int _sort_usable_nodes_dec(void *j1, void *j2)
 }
 
 /* Allocate resources for a job now, if possible */
-static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _run_now(job_record_t *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    int max_share, uint32_t req_nodes,
 		    List preemptee_candidates,
@@ -3169,7 +3163,7 @@ static int _run_now(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	bitstr_t *orig_map;
 	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
-	struct job_record *tmp_job_ptr;
+	job_record_t *tmp_job_ptr;
 	ListIterator job_iterator, preemptee_iterator;
 	struct cr_record *exp_cr;
 	uint16_t pass_count = 0;
@@ -3218,8 +3212,7 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 	    (exp_cr = _dup_cr(cr_ptr))) {
 		/* Remove all preemptable jobs from simulated environment */
 		job_iterator = list_iterator_create(preemptee_candidates);
-		while ((tmp_job_ptr = (struct job_record *)
-			list_next(job_iterator))) {
+		while ((tmp_job_ptr = list_next(job_iterator))) {
 			bool remove_all = false;
 			uint16_t mode;
 
@@ -3255,8 +3248,7 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 				    (list_count(preemptee_candidates) == 1))
 					break;
 				tmp_job_ptr->details->usable_nodes = 9999;
-				while ((tmp_job_ptr = (struct job_record *)
-					list_next(job_iterator))) {
+				while ((tmp_job_ptr = list_next(job_iterator))) {
 					tmp_job_ptr->details->usable_nodes = 0;
 				}
 				list_sort(preemptee_candidates,
@@ -3278,8 +3270,7 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 			}
 			preemptee_iterator = list_iterator_create(
 				preemptee_candidates);
-			while ((tmp_job_ptr = (struct job_record *)
-				list_next(preemptee_iterator))) {
+			while ((tmp_job_ptr = list_next(preemptee_iterator))) {
 				if (bit_overlap(bitmap,
 						tmp_job_ptr->node_bitmap) == 0)
 					continue;
@@ -3305,14 +3296,14 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
  * end of its time limit and use this to show where and when the job at job_ptr
  * will begin execution. Used by Slurm's sched/backfill plugin.
  */
-static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  int max_share, uint32_t req_nodes,
 			  List preemptee_candidates,
 			  List *preemptee_job_list)
 {
 	struct cr_record *exp_cr;
-	struct job_record *tmp_job_ptr;
+	job_record_t *tmp_job_ptr;
 	List cr_job_list;
 	ListIterator job_iterator, preemptee_iterator;
 	bitstr_t *orig_map;
@@ -3347,7 +3338,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* Build list of running and suspended jobs */
 	cr_job_list = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
-	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((tmp_job_ptr = list_next(job_iterator))) {
 		if (!IS_JOB_RUNNING(tmp_job_ptr) &&
 		    !IS_JOB_SUSPENDED(tmp_job_ptr))
 			continue;
@@ -3401,8 +3392,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
-		while ((tmp_job_ptr = (struct job_record *)
-			list_next(job_iterator))) {
+		while ((tmp_job_ptr = list_next(job_iterator))) {
 			_rm_job_from_nodes(exp_cr, tmp_job_ptr,
 					   "_will_run_test", true, false);
 			i = _job_count_bitmap(exp_cr, job_ptr, orig_map,
@@ -3433,8 +3423,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			*preemptee_job_list = list_create(NULL);
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
-		while ((tmp_job_ptr = (struct job_record *)
-			list_next(preemptee_iterator))) {
+		while ((tmp_job_ptr = list_next(preemptee_iterator))) {
 			if (bit_overlap(bitmap, tmp_job_ptr->node_bitmap) == 0)
 				continue;
 
@@ -3451,8 +3440,8 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 static int  _cr_job_list_sort(void *x, void *y)
 {
-	struct job_record *job1_ptr = *(struct job_record **) x;
-	struct job_record *job2_ptr = *(struct job_record **) y;
+	job_record_t *job1_ptr = *(job_record_t **) x;
+	job_record_t *job2_ptr = *(job_record_t **) y;
 	return (int) SLURM_DIFFTIME(job1_ptr->end_time, job2_ptr->end_time);
 }
 
@@ -3588,7 +3577,7 @@ extern int select_p_block_init(List block_list)
  * NOTE: bitmap must be a superset of the job's required at the time that
  *	select_p_job_test is called
  */
-extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+extern int select_p_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes,
 			     uint32_t req_nodes, uint16_t mode,
 			     List preemptee_candidates,
@@ -3655,7 +3644,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
  * after select_p_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated
  */
-extern int select_p_job_begin(struct job_record *job_ptr)
+extern int select_p_job_begin(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -3675,7 +3664,7 @@ extern int select_p_job_begin(struct job_record *job_ptr)
  * IN job_ptr - pointer to job being tested
  * RET -1 on error, 1 if ready to execute, 0 otherwise
  */
-extern int select_p_job_ready(struct job_record *job_ptr)
+extern int select_p_job_ready(job_record_t *job_ptr)
 {
 	int i, i_first, i_last;
 	struct node_record *node_ptr;
@@ -3701,8 +3690,8 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 	return READY_NODE_STATE;
 }
 
-extern int select_p_job_expand(struct job_record *from_job_ptr,
-			       struct job_record *to_job_ptr)
+extern int select_p_job_expand(job_record_t *from_job_ptr,
+			       job_record_t *to_job_ptr)
 {
 	int rc;
 
@@ -3719,7 +3708,7 @@ extern int select_p_job_expand(struct job_record *from_job_ptr,
  *      Only support jobs shrinking now.
  * RET: 0 or an error code
  */
-extern int select_p_job_resized(struct job_record *job_ptr,
+extern int select_p_job_resized(job_record_t *job_ptr,
 				struct node_record *node_ptr)
 {
 	int rc = SLURM_SUCCESS;
@@ -3732,12 +3721,12 @@ extern int select_p_job_resized(struct job_record *job_ptr,
 	return rc;
 }
 
-extern int select_p_job_signal(struct job_record *job_ptr, int signal)
+extern int select_p_job_signal(job_record_t *job_ptr, int signal)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_mem_confirm(struct job_record *job_ptr)
+extern int select_p_job_mem_confirm(job_record_t *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -3746,7 +3735,7 @@ extern int select_p_job_mem_confirm(struct job_record *job_ptr)
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */
-extern int select_p_job_fini(struct job_record *job_ptr)
+extern int select_p_job_fini(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -3767,7 +3756,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
  *                or admin, otherwise suspended for gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
+extern int select_p_job_suspend(job_record_t *job_ptr, bool indf_susp)
 {
 	int rc;
 
@@ -3790,7 +3779,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
  *                or admin, otherwise resume from gang scheduling
  * RET SLURM_SUCCESS or error code
  */
-extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
+extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 {
 	int rc;
 
@@ -3805,7 +3794,7 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 	return rc;
 }
 
-extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
+extern bitstr_t *select_p_step_pick_nodes(job_record_t *job_ptr,
 					  select_jobinfo_t *jobinfo,
 					  uint32_t node_count,
 					  bitstr_t **avail_nodes)
@@ -3959,7 +3948,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_select_nodeinfo_set(struct job_record *job_ptr)
+extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 {
 	xassert(job_ptr);
 
@@ -4123,9 +4112,8 @@ extern char *select_p_select_jobinfo_xstrdup(select_jobinfo_t *jobinfo,
 	return NULL;
 }
 
-extern int select_p_get_info_from_plugin (enum select_plugindata_info dinfo,
-					  struct job_record *job_ptr,
-					  void *data)
+extern int select_p_get_info_from_plugin(enum select_plugindata_info dinfo,
+					 job_record_t *job_ptr, void *data)
 {
 	return SLURM_SUCCESS;
 }

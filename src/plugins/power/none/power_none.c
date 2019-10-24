@@ -102,14 +102,14 @@ extern void power_p_reconfig(void)
 }
 
 /* Note that a suspended job has been resumed */
-extern void power_p_job_resume(struct job_record *job_ptr)
+extern void power_p_job_resume(job_record_t *job_ptr)
 {
 	debug("%s: %s", plugin_name, __func__);
 	return;
 }
 
 /* Note that a job has been allocated resources and is ready to start */
-extern void power_p_job_start(struct job_record *job_ptr)
+extern void power_p_job_start(job_record_t *job_ptr)
 {
 	debug("%s: %s", plugin_name, __func__);
 	return;

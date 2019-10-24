@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  priority_multifactor.c - slurm multifactor priority plugin.
  *****************************************************************************
- *
  *  Copyright (C) 2012  Aalto University
  *  Written by Janne Blomqvist <janne.blomqvist@aalto.fi>
  *
@@ -53,12 +52,12 @@
 extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc);
 extern double priority_p_calc_fs_factor(
 		long double usage_efctv, long double shares_norm);
-extern bool decay_apply_new_usage(
-		struct job_record *job_ptr, time_t *start_time_ptr);
-extern int  decay_apply_weighted_factors(
-		struct job_record *job_ptr, time_t *start_time_ptr);
+extern bool decay_apply_new_usage(job_record_t *job_ptr,
+				  time_t *start_time_ptr);
+extern int decay_apply_weighted_factors(job_record_t *job_ptr,
+					time_t *start_time_ptr);
 extern void set_assoc_usage_norm(slurmdb_assoc_rec_t *assoc);
-extern void set_priority_factors(time_t start_time, struct job_record *job_ptr);
+extern void set_priority_factors(time_t start_time, job_record_t *job_ptr);
 
 extern bool priority_debug;
 

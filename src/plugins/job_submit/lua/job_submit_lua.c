@@ -284,8 +284,7 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
  * This is an incomplete list of job record fields. Add more as needed and
  * send patches to slurm-dev@schedmd.com.
  */
-static int _job_rec_field(const struct job_record *job_ptr,
-                          const char *name)
+static int _job_rec_field(const job_record_t *job_ptr, const char *name)
 {
 	int i;
 
@@ -466,7 +465,7 @@ static int _job_rec_field(const struct job_record *job_ptr,
 static int _job_rec_field_index(lua_State *L)
 {
 	const char *name = luaL_checkstring(L, 2);
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	lua_getmetatable(L, -2);
 	lua_getfield(L, -1, "_job_rec_ptr");
@@ -480,7 +479,7 @@ static void _update_jobs_global(void)
 {
 	char job_id_buf[11]; /* Big enough for a uint32_t */
 	ListIterator iter;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	if (last_lua_jobs_update >= last_job_update) {
 		return;
@@ -490,7 +489,7 @@ static void _update_jobs_global(void)
 	lua_newtable(L);
 
 	iter = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(iter))) {
+	while ((job_ptr = list_next(iter))) {
 		/* Create an empty table, with a metatable that looks up the
 		 * data for the individual job.
 		 */
@@ -1265,7 +1264,7 @@ static void _push_job_desc(struct job_descriptor *job_desc)
 	lua_setmetatable(L, -2);
 }
 
-static void _push_job_rec(struct job_record *job_ptr)
+static void _push_job_rec(job_record_t *job_ptr)
 {
 	lua_newtable(L);
 
@@ -1861,8 +1860,8 @@ out:	slurm_mutex_unlock (&lua_lock);
 }
 
 /* Lua script hook called for "modify job" event. */
-extern int job_modify(struct job_descriptor *job_desc,
-		      struct job_record *job_ptr, uint32_t submit_uid)
+extern int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
+		      uint32_t submit_uid)
 {
 	int rc = SLURM_ERROR;
 	slurm_mutex_lock (&lua_lock);

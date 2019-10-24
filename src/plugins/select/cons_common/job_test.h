@@ -75,7 +75,7 @@ extern int preempt_reorder_cnt;
  * NOTE: bitmap must be a superset of req_nodes at the time that
  *	select_p_job_test is called
  */
-extern int common_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
+extern int common_job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes, uint16_t mode,
 			   List preemptee_candidates,

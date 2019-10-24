@@ -411,7 +411,7 @@ static int _set_children_usage_efctv(List children_list)
 /* job_ptr should already have the partition priority and such added here
  * before had we will be adding to it
  */
-static double _get_fairshare_priority(struct job_record *job_ptr)
+static double _get_fairshare_priority(job_record_t *job_ptr)
 {
 	slurmdb_assoc_rec_t *job_assoc;
 	slurmdb_assoc_rec_t *fs_assoc = NULL;
@@ -467,7 +467,7 @@ static double _get_fairshare_priority(struct job_record *job_ptr)
 	return priority_fs;
 }
 
-static void _get_tres_factors(struct job_record *job_ptr,
+static void _get_tres_factors(job_record_t *job_ptr,
 			      struct part_record *part_ptr,
 			      double *tres_factors)
 {
@@ -515,7 +515,7 @@ static double _get_tres_prio_weighted(double *tres_factors)
 
 /* Returns the priority after applying the weight factors */
 static uint32_t _get_priority_internal(time_t start_time,
-				       struct job_record *job_ptr)
+				       job_record_t *job_ptr)
 {
 	double priority	= 0.0;
 	priority_factors_object_t pre_factors;
@@ -891,7 +891,7 @@ static void _handle_assoc_tres_run_secs(long double *tres_run_decay,
 }
 
 static void _handle_tres_run_secs(uint64_t *tres_run_delta,
-				  struct job_record *job_ptr)
+				  job_record_t *job_ptr)
 {
 
 	slurmdb_assoc_rec_t *assoc = job_ptr->assoc_ptr;
@@ -918,7 +918,7 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
  */
 static void _init_grp_used_tres_run_secs(time_t last_ran)
 {
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	ListIterator itr;
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
@@ -979,9 +979,8 @@ static void _init_grp_used_tres_run_secs(time_t last_ran)
  * Return 0 if we don't need to process the job any further, 1 if
  * futher processing is needed.
  */
-static int _apply_new_usage(struct job_record *job_ptr,
-			    time_t start_period, time_t end_period,
-			    bool adjust_for_end)
+static int _apply_new_usage(job_record_t *job_ptr, time_t start_period,
+			    time_t end_period, bool adjust_for_end)
 {
 	slurmdb_qos_rec_t *qos;
 	slurmdb_assoc_rec_t *assoc;
@@ -1191,9 +1190,8 @@ static int _apply_new_usage(struct job_record *job_ptr,
 }
 
 
-static int _decay_apply_new_usage_and_weighted_factors(
-	struct job_record *job_ptr,
-	time_t *start_time_ptr)
+static int _decay_apply_new_usage_and_weighted_factors(job_record_t *job_ptr,
+						       time_t *start_time_ptr)
 {
 	/* Always return SUCCESS so that list_for_each will
 	 * continue processing list of jobs. */
@@ -1414,7 +1412,7 @@ static void *_decay_thread(void *no_data)
 /* If the specified job record satisfies the filter specifications in req_msg
  * and part_ptr_list (partition name filters), then add its priority specs
  * to ret_list */
-static void _filter_job(struct job_record *job_ptr,
+static void _filter_job(job_record_t *job_ptr,
 			priority_factors_request_msg_t *req_msg,
 			List part_ptr_list, List ret_list)
 {
@@ -1842,7 +1840,7 @@ int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern uint32_t priority_p_set(uint32_t last_prio, struct job_record *job_ptr)
+extern uint32_t priority_p_set(uint32_t last_prio, job_record_t *job_ptr)
 {
 	uint32_t priority;
 
@@ -1951,7 +1949,7 @@ extern List priority_p_get_priority_factors_list(
 {
 	List ret_list = NULL, part_filter_list = NULL;
 	ListIterator itr;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	struct part_record *part_ptr;
 	time_t start_time = time(NULL);
 	char *part_str, *tok, *last = NULL;
@@ -2037,7 +2035,7 @@ extern List priority_p_get_priority_factors_list(
 
 /* at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
  * READ_LOCK, READ_LOCK, NO_LOCK }; should be locked before calling this */
-extern void priority_p_job_end(struct job_record *job_ptr)
+extern void priority_p_job_end(job_record_t *job_ptr)
 {
 	if (priority_debug)
 		info("priority_p_job_end: called for job %u", job_ptr->job_id);
@@ -2045,7 +2043,7 @@ extern void priority_p_job_end(struct job_record *job_ptr)
 	_apply_new_usage(job_ptr, g_last_ran, time(NULL), 1);
 }
 
-extern bool decay_apply_new_usage(struct job_record *job_ptr,
+extern bool decay_apply_new_usage(job_record_t *job_ptr,
 				  time_t *start_time_ptr)
 {
 
@@ -2065,8 +2063,8 @@ extern bool decay_apply_new_usage(struct job_record *job_ptr,
 }
 
 
-extern int decay_apply_weighted_factors(struct job_record *job_ptr,
-					 time_t *start_time_ptr)
+extern int decay_apply_weighted_factors(job_record_t *job_ptr,
+					time_t *start_time_ptr)
 {
 	uint32_t new_prio;
 
@@ -2097,7 +2095,7 @@ extern int decay_apply_weighted_factors(struct job_record *job_ptr,
 }
 
 
-extern void set_priority_factors(time_t start_time, struct job_record *job_ptr)
+extern void set_priority_factors(time_t start_time, job_record_t *job_ptr)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 

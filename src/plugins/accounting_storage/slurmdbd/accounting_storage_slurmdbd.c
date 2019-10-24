@@ -118,8 +118,7 @@ static bool running_db_inx = 0;
 static int first = 1;
 static time_t plugin_shutdown = 0;
 
-extern int jobacct_storage_p_job_start(void *db_conn,
-				       struct job_record *job_ptr);
+extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr);
 
 static void _partial_free_dbd_job_start(void *object)
 {
@@ -153,7 +152,7 @@ static void _partial_destroy_dbd_job_start(void *object)
 }
 
 static int _setup_job_start_msg(dbd_job_start_msg_t *req,
-				struct job_record *job_ptr)
+				job_record_t *job_ptr)
 {
 	if (!job_ptr->details || !job_ptr->details->submit_time) {
 		error("jobacct_storage_p_job_start: "
@@ -248,7 +247,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 
 static void *_set_db_inx_thread(void *no_data)
 {
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	ListIterator itr;
 	struct timeval tvnow;
 	struct timespec abs;
@@ -2552,8 +2551,7 @@ extern int clusteracct_storage_p_fini_ctld(void *db_conn,
 /*
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(void *db_conn,
-				       struct job_record *job_ptr)
+extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 {
 	slurmdbd_msg_t msg, msg_rc;
 	dbd_job_start_msg_t req;
@@ -2616,8 +2614,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 /*
  * load into the storage the end of a job
  */
-extern int jobacct_storage_p_job_complete(void *db_conn,
-					  struct job_record *job_ptr)
+extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 {
 	slurmdbd_msg_t msg;
 	dbd_job_comp_msg_t req;
@@ -2829,8 +2826,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 /*
  * load into the storage a suspension of a job
  */
-extern int jobacct_storage_p_suspend(void *db_conn,
-				     struct job_record *job_ptr)
+extern int jobacct_storage_p_suspend(void *db_conn, job_record_t *job_ptr)
 {
 	slurmdbd_msg_t msg;
 	dbd_job_suspend_msg_t req;
