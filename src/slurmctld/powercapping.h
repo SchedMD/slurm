@@ -109,8 +109,7 @@ uint32_t powercap_get_node_bitmap_maxwatts(bitstr_t* select_bitmap);
  * IN reboot - node reboot required
  * RET - The power cap this job is restricted to
  */
-uint32_t powercap_get_job_cap(struct job_record *job_ptr, time_t when,
-			      bool reboot);
+uint32_t powercap_get_job_cap(job_record_t *job_ptr, time_t when, bool reboot);
 
 /**
  * power_layout_ready

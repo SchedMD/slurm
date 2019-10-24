@@ -150,7 +150,7 @@ typedef struct {
 } reconcile_sib_t;
 
 /* Local Prototypes */
-static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id);
+static int _is_fed_job(job_record_t *job_ptr, uint32_t *origin_id);
 static uint64_t _get_all_sibling_bits();
 static int _validate_cluster_features(char *spec_features,
 				      uint64_t *cluster_bitmap);
@@ -258,7 +258,7 @@ static List _get_sync_jobid_list(uint32_t sib_id, time_t sync_time)
 {
 	List jobids = NULL;
 	ListIterator job_itr;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	jobids = list_create(slurm_destroy_uint32_ptr);
 
@@ -575,7 +575,7 @@ static void _remove_self_from_federation(void)
 
 static int _foreach_job_completed(void *object, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *)object;
+	job_record_t *job_ptr = (job_record_t *) object;
 
 	if (IS_JOB_COMPLETED(job_ptr))
 		return SLURM_SUCCESS;
@@ -585,7 +585,7 @@ static int _foreach_job_completed(void *object, void *arg)
 
 static int _foreach_job_no_requeue(void *object, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *)object;
+	job_record_t *job_ptr = (job_record_t *) object;
 
 	if (job_ptr->details)
 		job_ptr->details->requeue = 0;
@@ -1225,7 +1225,7 @@ static int _find_sibling_by_id(void *x, void *key)
 	return 0;
 }
 
-extern void add_fed_job_info(struct job_record *job_ptr)
+extern void add_fed_job_info(job_record_t *job_ptr)
 {
 	fed_job_info_t *job_info;
 
@@ -1361,7 +1361,7 @@ next_job:
 	}
 }
 
-static int _remove_sibling_bit(struct job_record *job_ptr,
+static int _remove_sibling_bit(job_record_t *job_ptr,
 			       slurmdb_cluster_rec_t *sibling)
 {
 	uint32_t origin_id;
@@ -1391,7 +1391,7 @@ static int _remove_sibling_bit(struct job_record *job_ptr,
 static void _cleanup_removed_origin_jobs(void)
 {
 	ListIterator job_itr;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	uint32_t origin_id, sibling_id;
 	uint64_t sibling_bit;
@@ -1463,7 +1463,7 @@ static void _cleanup_removed_origin_jobs(void)
 static void _cleanup_removed_cluster_jobs(slurmdb_cluster_rec_t *cluster)
 {
 	ListIterator job_itr;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	uint32_t origin_id, sibling_id;
 	uint64_t origin_bit, sibling_bit;
@@ -1621,7 +1621,7 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 				     bool interactive_job)
 {
 	int error_code = SLURM_SUCCESS;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	char *err_msg = NULL;
 	bool reject_job = false;
 	slurmdb_cluster_rec_t *sibling;
@@ -1682,7 +1682,7 @@ send_msg:
 	return SLURM_SUCCESS;
 }
 
-static void _do_fed_job_complete(struct job_record *job_ptr, uint32_t exit_code,
+static void _do_fed_job_complete(job_record_t *job_ptr, uint32_t exit_code,
 				 time_t start_time)
 {
 	if (job_ptr->job_state & JOB_REQUEUE_FED) {
@@ -1699,7 +1699,7 @@ static void _do_fed_job_complete(struct job_record *job_ptr, uint32_t exit_code,
 
 static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
@@ -1754,7 +1754,7 @@ static void
 _handle_fed_job_remove_active_sib_bit(fed_job_update_info_t *job_update_info)
 {
 	fed_job_info_t *job_info;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	slurmdb_cluster_rec_t *sibling;
 
 	slurmctld_lock_t job_write_lock = {
@@ -1819,7 +1819,7 @@ static void _handle_fed_job_requeue(fed_job_update_info_t *job_update_info)
  * Must have fed_job_list mutex locked and job write_lock set.
  */
 static void _fed_job_start_revoke(fed_job_info_t *job_info,
-				  struct job_record *job_ptr, time_t start_time)
+				  job_record_t *job_ptr, time_t start_time)
 {
 	uint32_t cluster_lock;
 	uint64_t old_active;
@@ -1850,7 +1850,7 @@ static void _fed_job_start_revoke(fed_job_info_t *job_info,
 static void _handle_fed_job_start(fed_job_update_info_t *job_update_info)
 {
 	fed_job_info_t *job_info;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
@@ -1906,7 +1906,7 @@ static int _list_find_jobid(void *x, void *key)
 
 static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bool interactive_job =
 		(job_update_info->type == FED_JOB_SUBMIT_INT) ?
 		true : false;
@@ -2390,7 +2390,7 @@ static void _spawn_threads(void)
 
 static void _add_missing_fed_job_info()
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_itr;
 
 	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
@@ -3217,8 +3217,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
  * IN job_ptr - job to submit to remote siblings.
  * IN dest_sibs - bitmap of viable siblings to submit to.
  */
-static int _prepare_submit_siblings(struct job_record *job_ptr,
-				    uint64_t dest_sibs)
+static int _prepare_submit_siblings(job_record_t *job_ptr, uint64_t dest_sibs)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t origin_id;
@@ -3344,7 +3343,7 @@ static uint64_t _get_viable_sibs(char *req_clusters, uint64_t feature_sibs,
 	return viable_sibs;
 }
 
-static void _add_remove_sibling_jobs(struct job_record *job_ptr)
+static void _add_remove_sibling_jobs(job_record_t *job_ptr)
 {
 	fed_job_info_t *job_info;
 	uint32_t origin_id = 0;
@@ -3546,7 +3545,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				char **err_msg)
 {
 	uint64_t feature_sibs = 0;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	bool job_held = false;
 
 	xassert(msg);
@@ -3652,7 +3651,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
  * kept around to facilitate communications for it's sibling jobs on other
  * clusters.
  */
-extern bool fed_mgr_is_tracker_only_job(struct job_record *job_ptr)
+extern bool fed_mgr_is_tracker_only_job(job_record_t *job_ptr)
 {
 	bool rc = false;
 	uint32_t origin_id;
@@ -3692,7 +3691,7 @@ extern char *fed_mgr_get_cluster_name(uint32_t id)
 	return name;
 }
 
-static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id)
+static int _is_fed_job(job_record_t *job_ptr, uint32_t *origin_id)
 {
 	xassert(job_ptr);
 	xassert(origin_id);
@@ -3709,7 +3708,7 @@ static int _is_fed_job(struct job_record *job_ptr, uint32_t *origin_id)
 	return true;
 }
 
-static int _job_unlock_spec_sibs(struct job_record *job_ptr, uint64_t spec_sibs)
+static int _job_unlock_spec_sibs(job_record_t *job_ptr, uint64_t spec_sibs)
 {
 	uint32_t cluster_id = fed_mgr_cluster_rec->fed.id;
 	slurmdb_cluster_rec_t *sibling;
@@ -3736,8 +3735,8 @@ next_unlock:
 /*
  * Return SLURM_SUCCESS if all siblings give lock to job; SLURM_ERROR otherwise.
  */
-static int _job_lock_all_sibs(struct job_record *job_ptr) {
-
+static int _job_lock_all_sibs(job_record_t *job_ptr)
+{
 	slurmdb_cluster_rec_t *sibling = NULL;
 	int sib_id = 1;
 	bool all_said_yes = true;
@@ -3817,7 +3816,7 @@ static int _slurmdbd_conn_active()
  * IN job - job to lock
  * RET returns SLURM_SUCCESS if the lock was granted, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_lock(struct job_record *job_ptr)
+extern int fed_mgr_job_lock(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t origin_id, cluster_id;
@@ -3907,7 +3906,7 @@ extern int fed_mgr_job_lock_set(uint32_t job_id, uint32_t cluster_id)
 	return rc;
 }
 
-extern bool fed_mgr_job_is_self_owned(struct job_record *job_ptr)
+extern bool fed_mgr_job_is_self_owned(job_record_t *job_ptr)
 {
 	if (!fed_mgr_cluster_rec || !job_ptr->fed_details ||
 	    (job_ptr->fed_details->cluster_lock == fed_mgr_cluster_rec->fed.id))
@@ -3916,7 +3915,7 @@ extern bool fed_mgr_job_is_self_owned(struct job_record *job_ptr)
 	return false;
 }
 
-extern bool fed_mgr_job_is_locked(struct job_record *job_ptr)
+extern bool fed_mgr_job_is_locked(job_record_t *job_ptr)
 {
 	if (!job_ptr->fed_details ||
 	    job_ptr->fed_details->cluster_lock)
@@ -3978,7 +3977,7 @@ extern int fed_mgr_job_lock_unset(uint32_t job_id, uint32_t cluster_id)
  * IN job        - job to unlock
  * RET returns SLURM_SUCCESS if the lock was released, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_unlock(struct job_record *job_ptr)
+extern int fed_mgr_job_unlock(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t origin_id, cluster_id;
@@ -4037,7 +4036,7 @@ extern int fed_mgr_job_unlock(struct job_record *job_ptr)
  * IN start_time - start_time of the job.
  * RET returns SLURM_SUCCESS if the lock was released, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_start(struct job_record *job_ptr, time_t start_time)
+extern int fed_mgr_job_start(job_record_t *job_ptr, time_t start_time)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t origin_id, cluster_id;
@@ -4127,8 +4126,8 @@ extern int fed_mgr_job_start(struct job_record *job_ptr, time_t start_time)
  * IN start_time  - start time of the job that actually ran.
  * RET returns SLURM_SUCCESS if fed job was completed, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_complete(struct job_record *job_ptr,
-				uint32_t return_code, time_t start_time)
+extern int fed_mgr_job_complete(job_record_t *job_ptr, uint32_t return_code,
+				time_t start_time)
 {
 	uint32_t origin_id;
 
@@ -4167,7 +4166,7 @@ extern int fed_mgr_job_complete(struct job_record *job_ptr,
  * IN job_ptr - job to revoke sibling jobs from.
  * RET SLURM_SUCCESS on success, SLURM_ERROR otherwise.
  */
-extern int fed_mgr_job_revoke_sibs(struct job_record *job_ptr)
+extern int fed_mgr_job_revoke_sibs(job_record_t *job_ptr)
 {
 	uint32_t origin_id;
 	time_t now = time(NULL);
@@ -4200,7 +4199,7 @@ extern int fed_mgr_job_revoke_sibs(struct job_record *job_ptr)
  * IN start_time   - start time of the job that actually ran.
  * RET returns SLURM_SUCCESS if fed job was completed, SLURM_ERROR otherwise
  */
-extern int fed_mgr_job_revoke(struct job_record *job_ptr, bool job_complete,
+extern int fed_mgr_job_revoke(job_record_t *job_ptr, bool job_complete,
 			      uint32_t exit_code, time_t start_time)
 {
 	uint32_t origin_id;
@@ -4307,7 +4306,7 @@ extern char *fed_mgr_cluster_ids_to_names(uint64_t cluster_ids)
  * RET returns SLURM_SUCCESS if siblings submitted successfully, SLURM_ERROR
  * 	otherwise.
  */
-extern int fed_mgr_job_requeue_test(struct job_record *job_ptr, uint32_t flags)
+extern int fed_mgr_job_requeue_test(job_record_t *job_ptr, uint32_t flags)
 {
 	uint32_t origin_id;
 
@@ -4376,7 +4375,7 @@ extern int fed_mgr_job_requeue_test(struct job_record *job_ptr, uint32_t flags)
  * RET returns SLURM_SUCCESS if siblings submitted successfully, SLURM_ERROR
  * 	otherwise.
  */
-extern int fed_mgr_job_requeue(struct job_record *job_ptr)
+extern int fed_mgr_job_requeue(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t origin_id;
@@ -4454,7 +4453,7 @@ extern int fed_mgr_job_requeue(struct job_record *job_ptr)
 }
 
 /* Cancel sibling jobs. Just send request to itself */
-static int _cancel_sibling_jobs(struct job_record *job_ptr, uint16_t signal,
+static int _cancel_sibling_jobs(job_record_t *job_ptr, uint16_t signal,
 				uint16_t flags, uid_t uid, bool kill_viable)
 {
 	int id = 1;
@@ -4505,7 +4504,7 @@ next_job:
  * IN uid     - uid making request
  * IN kill_viable - if true cancel viable_sibs, if false cancel active_sibs
  */
-extern int fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
+extern int fed_mgr_job_cancel(job_record_t *job_ptr, uint16_t signal,
 			      uint16_t flags, uid_t uid, bool kill_viable)
 {
 	uint32_t origin_id;
@@ -4523,7 +4522,7 @@ extern int fed_mgr_job_cancel(struct job_record *job_ptr, uint16_t signal,
 	return SLURM_SUCCESS;
 }
 
-extern int fed_mgr_is_origin_job(struct job_record *job_ptr)
+extern int fed_mgr_is_origin_job(job_record_t *job_ptr)
 {
 	uint32_t origin_id;
 
@@ -4547,7 +4546,7 @@ extern int fed_mgr_is_origin_job(struct job_record *job_ptr)
  * IN spec_clusters - comma-separated list of cluster names.
  * RET return SLURM_SUCCESS on sucess, error code otherwise.
  */
-extern int fed_mgr_update_job_clusters(struct job_record *job_ptr,
+extern int fed_mgr_update_job_clusters(job_record_t *job_ptr,
 				       char *spec_clusters)
 {
 	int rc = SLURM_SUCCESS;
@@ -4595,7 +4594,7 @@ extern int fed_mgr_update_job_clusters(struct job_record *job_ptr,
  * IN req_features - comma-separated list of feature names.
  * RET return SLURM_SUCCESS on sucess, error code otherwise.
  */
-extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
+extern int fed_mgr_update_job_cluster_features(job_record_t *job_ptr,
 					       char *req_features)
 {
 	int rc = SLURM_SUCCESS;
@@ -4634,8 +4633,7 @@ extern int fed_mgr_update_job_cluster_features(struct job_record *job_ptr,
 	return rc;
 }
 
-static int _reconcile_fed_job(struct job_record *job_ptr,
-			      reconcile_sib_t *rec_sib)
+static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 {
 	int i;
 	bool found_job = false;
@@ -4910,7 +4908,7 @@ static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
 	ListIterator itr;
 	reconcile_sib_t rec_sib = {0};
 	slurmdb_cluster_rec_t *sib;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	if (!(sib = fed_mgr_get_cluster_by_name((char *)sib_name))) {
 		error("Couldn't find sibling by name '%s'", sib_name);
@@ -4942,7 +4940,7 @@ static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
 extern int fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name)
 {
 	uint32_t origin_id;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	slurmdb_cluster_rec_t *sibling;
 
 	if (!(job_ptr = find_job_record(job_id)))

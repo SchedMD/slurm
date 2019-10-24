@@ -92,6 +92,6 @@ extern char **xduparray(uint32_t size, char ** array);
  * RET resource_allocation_response_msg_t filled in.
  */
 extern resource_allocation_response_msg_t *build_alloc_msg(
-	struct job_record *job_ptr, int error_code, char *job_submit_user_msg);
+	job_record_t *job_ptr, int error_code, char *job_submit_user_msg);
 
 #endif /* !_HAVE_PROC_REQ_H */

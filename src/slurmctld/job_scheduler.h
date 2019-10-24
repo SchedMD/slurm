@@ -47,7 +47,7 @@
 typedef struct job_queue_rec {
 	uint32_t array_task_id;		/* Job array, task ID */
 	uint32_t job_id;		/* Job ID */
-	struct job_record *job_ptr;	/* Pointer to job record */
+	job_record_t *job_ptr;		/* Pointer to job record */
 	struct part_record *part_ptr;	/* Pointer to partition record. Each
 					 * job may have multiple partitions. */
 	uint32_t priority;		/* Job priority in THIS partition */
@@ -59,7 +59,7 @@ typedef struct job_queue_rec {
  * OUT details->feature_list
  * RET error code
  */
-extern int build_feature_list(struct job_record *job_ptr);
+extern int build_feature_list(job_record_t *job_ptr);
 
 /*
  * build_job_queue - build (non-priority ordered) list of pending jobs
@@ -71,23 +71,22 @@ extern int build_feature_list(struct job_record *job_ptr);
 extern List build_job_queue(bool clear_start, bool backfill);
 
 /* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
-extern batch_job_launch_msg_t *build_launch_job_msg(
-					struct job_record *job_ptr,
-					uint16_t protocol_version);
+extern batch_job_launch_msg_t *build_launch_job_msg(job_record_t *job_ptr,
+						    uint16_t protocol_version);
 
 /* Determine if job's deadline specification is still valid, kill job if not
  * job_ptr IN - Job to test
  * func IN - function named used for logging, "sched" or "backfill"
  * RET - true of valid, false if invalid and job cancelled
  */
-extern bool deadline_ok(struct job_record *job_ptr, char *func);
+extern bool deadline_ok(job_record_t *job_ptr, char *func);
 
 /*
  * epilog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	terminated.
  * IN job_ptr - pointer to job that has been terminated
  */
-extern void epilog_slurmctld(struct job_record *job_ptr);
+extern void epilog_slurmctld(job_record_t *job_ptr);
 
 /*
  * Delete a record from a job's feature_list
@@ -118,7 +117,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
  * launch_job - send an RPC to a slurmd to initiate a batch job
  * IN job_ptr - pointer to job that will be initiated
  */
-extern void launch_job(struct job_record *job_ptr);
+extern void launch_job(job_record_t *job_ptr);
 
 /*
  * make_batch_job_cred - add a job credential to the batch_job_launch_msg
@@ -128,7 +127,7 @@ extern void launch_job(struct job_record *job_ptr);
  * RET 0 or error code
  */
 extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
-			       struct job_record *job_ptr,
+			       job_record_t *job_ptr,
 			       uint16_t protocol_version);
 
 /*
@@ -136,7 +135,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
  * IN job_ptr - pointer to job that will be initiated
  * RET bitmap of nodes requiring a reboot for NodeFeaturesPlugin or NULL if none
  */
-extern bitstr_t *node_features_reboot(struct job_record *job_ptr);
+extern bitstr_t *node_features_reboot(job_record_t *job_ptr);
 
 /*
  * Determine if node boot required for this job
@@ -144,32 +143,32 @@ extern bitstr_t *node_features_reboot(struct job_record *job_ptr);
  * IN node_bitmap - nodes to be allocated
  * RET - true if reboot required
  */
-extern bool node_features_reboot_test(struct job_record *job_ptr,
+extern bool node_features_reboot_test(job_record_t *job_ptr,
 				      bitstr_t *node_bitmap);
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
-extern void print_job_dependency(struct job_record *job_ptr);
+extern void print_job_dependency(job_record_t *job_ptr);
 
 /* Decrement a job's prolog_running counter and launch the job if zero */
-extern void prolog_running_decr(struct job_record *job_ptr);
+extern void prolog_running_decr(job_record_t *job_ptr);
 
 /*
  * prolog_slurmctld - execute the prolog_slurmctld for a job that has just
  *	been allocated resources.
  * IN job_ptr - pointer to job that will be initiated
  */
-extern void prolog_slurmctld(struct job_record *job_ptr);
+extern void prolog_slurmctld(job_record_t *job_ptr);
 
 /*
  * reboot_job_nodes - Reboot the compute nodes allocated to a job.
  * IN job_ptr - pointer to job that will be initiated
  * RET SLURM_SUCCESS(0) or error code
  */
-extern int reboot_job_nodes(struct job_record *job_ptr);
+extern int reboot_job_nodes(job_record_t *job_ptr);
 
 /* If a job can run in multiple partitions, make sure that the one 
  * actually used is first in the string. Needed for job state save/restore */
-extern void rebuild_job_part_list(struct job_record *job_ptr);
+extern void rebuild_job_part_list(job_record_t *job_ptr);
 
 /*
  * schedule - attempt to schedule all pending jobs
@@ -211,7 +210,7 @@ extern int sort_job_queue2(void *x, void *y);
  *      1 = dependencies remain
  *      2 = failure (job completion code not per dependency), delete the job
  */
-extern int test_job_dependency(struct job_record *job_ptr);
+extern int test_job_dependency(job_record_t *job_ptr);
 
 /*
  * Parse a job dependency string and use it to establish a "depend_spec"
@@ -221,6 +220,6 @@ extern int test_job_dependency(struct job_record *job_ptr);
  * IN new_depend - new dependency description
  * RET returns an error code from slurm_errno.h
  */
-extern int update_job_dependency(struct job_record *job_ptr, char *new_depend);
+extern int update_job_dependency(job_record_t *job_ptr, char *new_depend);
 
 #endif /* !_JOB_SCHEDULER_H */

@@ -51,7 +51,7 @@
 
 typedef struct slurm_sched_ops {
 	uint32_t	(*initial_priority)	( uint32_t,
-						  struct job_record * );
+						  job_record_t * );
 	int		(*reconfig)		( void );
 } slurm_sched_ops_t;
 
@@ -131,8 +131,8 @@ extern int slurm_sched_g_reconfig(void)
 	return (*(ops.reconfig))();
 }
 
-uint32_t slurm_sched_g_initial_priority(uint32_t last_prio,
-					struct job_record *job_ptr)
+extern uint32_t slurm_sched_g_initial_priority(uint32_t last_prio,
+					       job_record_t *job_ptr)
 {
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;

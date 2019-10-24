@@ -2144,7 +2144,7 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr)
  * blocked by a miscellaneous limit. This does not re-validate job state,
  * but relies upon schedule() in src/slurmctld/job_scheduler.c to do so.
  */
-extern bool misc_policy_job_runnable_state(struct job_record *job_ptr)
+extern bool misc_policy_job_runnable_state(job_record_t *job_ptr)
 {
 	if ((job_ptr->state_reason == FAIL_ACCOUNT) ||
 	    (job_ptr->state_reason == FAIL_QOS) ||
@@ -2160,7 +2160,7 @@ extern bool misc_policy_job_runnable_state(struct job_record *job_ptr)
  * blocked by a partition state or limit. These job states should match the
  * reason values returned by job_limits_check().
  */
-extern bool part_policy_job_runnable_state(struct job_record *job_ptr)
+extern bool part_policy_job_runnable_state(job_record_t *job_ptr)
 {
 	if ((job_ptr->state_reason == WAIT_PART_DOWN) ||
 	    (job_ptr->state_reason == WAIT_PART_INACTIVE) ||
@@ -2183,7 +2183,7 @@ extern bool part_policy_job_runnable_state(struct job_record *job_ptr)
  * RET SLURM_SUCCESS or error code
  */
 extern int part_policy_valid_acct(struct part_record *part_ptr, char *acct,
-				  struct job_record *job_ptr)
+				  job_record_t *job_ptr)
 {
 	char *tmp_err = NULL;
 	int i;
@@ -2276,7 +2276,7 @@ extern int part_policy_valid_acct(struct part_record *part_ptr, char *acct,
  */
 extern int part_policy_valid_qos(struct part_record *part_ptr,
 				 slurmdb_qos_rec_t *qos_ptr,
-				 struct job_record *job_ptr)
+				 job_record_t *job_ptr)
 {
 	char *tmp_err = NULL;
 

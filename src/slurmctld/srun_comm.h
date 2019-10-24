@@ -49,13 +49,13 @@
  * srun_allocate - notify srun of a resource allocation
  * IN job_ptr - job allocated resources
  */
-extern void srun_allocate(struct job_record *job_ptr);
+extern void srun_allocate(job_record_t *job_ptr);
 
 /*
  * srun_allocate_abort - notify srun of a resource allocation failure
  * IN job_ptr - job allocated resources
  */
-extern void srun_allocate_abort(struct job_record *job_ptr);
+extern void srun_allocate_abort(job_record_t *job_ptr);
 
 /*
  * srun_exec - request that srun execute a specific command
@@ -69,7 +69,7 @@ extern void srun_exec(struct step_record *step_ptr, char **argv);
  * srun_job_complete - notify srun of a job's termination
  * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_job_complete (struct job_record *job_ptr);
+extern void srun_job_complete(job_record_t *job_ptr);
 
 
 /*
@@ -78,7 +78,7 @@ extern void srun_job_complete (struct job_record *job_ptr);
  * IN op - SUSPEND_JOB or RESUME_JOB (enum suspend_opts from slurm.h)
  * RET - true if message send, otherwise false
  */
-extern bool srun_job_suspend (struct job_record *job_ptr, uint16_t op);
+extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op);
 
 /*
  * srun_step_complete - notify srun of a job step's termination
@@ -108,7 +108,7 @@ extern void srun_step_signal (struct step_record *step_ptr, uint16_t signal);
  * IN job_ptr - job to notify
  * IN node_name - name of failed node
  */
-extern void srun_node_fail(struct job_record *job_ptr, char *node_name);
+extern void srun_node_fail(job_record_t *job_ptr, char *node_name);
 
 /* srun_ping - ping all srun commands that have not been heard from recently */
 extern void srun_ping (void);
@@ -131,11 +131,11 @@ extern void srun_step_timeout(struct step_record *step_ptr, time_t timeout_val);
  * srun_timeout - notify srun of a job's timeout
  * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_timeout (struct job_record *job_ptr);
+extern void srun_timeout(job_record_t *job_ptr);
 
 /*
  * srun_user_message - Send arbitrary message to an srun job (no job steps)
  */
-extern int srun_user_message(struct job_record *job_ptr, char *msg);
+extern int srun_user_message(job_record_t *job_ptr, char *msg);
 
 #endif /* !_HAVE_SRUN_COMM_H */

@@ -137,7 +137,7 @@ static void _make_step_resv(struct step_record *step_ptr)
  * reservation into the local reservation table. */
 static void _make_all_resv(void)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct step_record *step_ptr;
 	ListIterator job_iterator, step_iterator;
 

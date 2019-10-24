@@ -136,8 +136,8 @@ static void _set_features(struct node_record *old_node_table_ptr,
 static void _stat_slurm_dirs(void);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(bool reconfig);
-static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
-static void _sync_nodes_to_suspended_job(struct job_record *job_ptr);
+static int  _sync_nodes_to_active_job(job_record_t *job_ptr);
+static void _sync_nodes_to_suspended_job(job_record_t *job_ptr);
 static void _sync_part_prio(void);
 static int  _update_preempt(uint16_t old_enable_preempt);
 
@@ -337,7 +337,7 @@ static int _reset_node_bitmaps(void *x, void *arg)
 
 static int _set_share_node_bitmap(void *x, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
+	job_record_t *job_ptr = (job_record_t *) x;
 
 	if (!IS_JOB_RUNNING(job_ptr) ||
 	    (job_ptr->node_bitmap == NULL)        ||
@@ -942,7 +942,7 @@ static void _sync_part_prio(void)
 	list_for_each(part_list, _reset_part_prio, NULL);
 }
 
-static void _abort_job(struct job_record *job_ptr, uint32_t job_state,
+static void _abort_job(job_record_t *job_ptr, uint32_t job_state,
 		       uint16_t state_reason, char *reason_string)
 {
 	time_t now = time(NULL);
@@ -962,21 +962,21 @@ static void _abort_job(struct job_record *job_ptr, uint32_t job_state,
 
 static int _mark_pack_unused(void *x, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
+	job_record_t *job_ptr = (job_record_t *) x;
 	job_ptr->bit_flags &= (~JOB_PACK_FLAG);
 	return 0;
 }
 
 static int _mark_pack_used(void *x, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
+	job_record_t *job_ptr = (job_record_t *) x;
 	job_ptr->bit_flags |= JOB_PACK_FLAG;
 	return 0;
 }
 
 static int _test_pack_used(void *x, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
+	job_record_t *job_ptr = (job_record_t *) x;
 
 	if ((job_ptr->pack_job_id == 0) || IS_JOB_FINISHED(job_ptr))
 		return 0;
@@ -999,7 +999,7 @@ static int _test_pack_used(void *x, void *arg)
 static void _validate_pack_jobs(void)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr, *pack_job_ptr;
+	job_record_t *job_ptr, *pack_job_ptr;
 	hostset_t hs;
 	char *job_id_str;
 	uint32_t job_id;
@@ -2563,7 +2563,7 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
  */
 static int _sync_nodes_to_jobs(bool reconfig)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	int update_cnt = 0;
 
@@ -2600,7 +2600,7 @@ static int _sync_nodes_to_jobs(bool reconfig)
  * issue the RPC to kill the job */
 static int _sync_nodes_to_comp_job(void)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	int update_cnt = 0;
 
@@ -2646,7 +2646,7 @@ static int _sync_nodes_to_comp_job(void)
 
 /* Synchronize states of nodes and active jobs (RUNNING or COMPLETING state)
  * RET count of jobs with state changes */
-static int _sync_nodes_to_active_job(struct job_record *job_ptr)
+static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 {
 	int i, cnt = 0;
 	uint32_t node_flags;
@@ -2724,7 +2724,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 }
 
 /* Synchronize states of nodes and suspended jobs */
-static void _sync_nodes_to_suspended_job(struct job_record *job_ptr)
+static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 {
 	int i;
 	struct node_record *node_ptr = node_record_table_ptr;
@@ -2745,7 +2745,7 @@ static void _sync_nodes_to_suspended_job(struct job_record *job_ptr)
 static int _restore_job_dependencies(void)
 {
 	int error_code = SLURM_SUCCESS, rc;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	char *new_depend;
 	bool valid = true;
@@ -2814,7 +2814,7 @@ static int _restore_job_dependencies(void)
  * suspended job, restore its state in the accounting system */
 static void _acct_restore_active_jobs(void)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	struct step_record *step_ptr;
 	ListIterator step_iterator;

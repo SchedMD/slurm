@@ -2765,7 +2765,7 @@ extern int validate_nodes_via_front_end(
 {
 	int error_code = 0, i, j, rc;
 	bool update_node_state = false;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	time_t now = time(NULL);
@@ -3510,7 +3510,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * IN job_ptr  - pointer to job that is starting
  */
 extern void make_node_alloc(struct node_record *node_ptr,
-			    struct job_record *job_ptr)
+			    job_record_t *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint32_t node_flags;
@@ -3563,7 +3563,7 @@ extern void make_node_avail(int node_inx)
  * IN suspended - true if job was previously suspended
  */
 extern void make_node_comp(struct node_record *node_ptr,
-			   struct job_record *job_ptr, bool suspended)
+			   job_record_t *job_ptr, bool suspended)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint32_t node_flags;
@@ -3657,8 +3657,7 @@ static void _make_node_down(struct node_record *node_ptr, time_t event_time)
  * IN node_ptr - pointer to node reporting job completion
  * IN job_ptr - pointer to job that just completed or NULL if not applicable
  */
-void make_node_idle(struct node_record *node_ptr,
-		    struct job_record *job_ptr)
+void make_node_idle(struct node_record *node_ptr, job_record_t *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint32_t node_flags;

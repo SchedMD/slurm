@@ -109,30 +109,26 @@ typedef struct epilog_arg {
 
 typedef struct wait_boot_arg {
 	uint32_t job_id;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bitstr_t *node_bitmap;
 } wait_boot_arg_t;
 
-static char **	_build_env(struct job_record *job_ptr, bool is_epilog);
-static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
+static char **_build_env(job_record_t *job_ptr, bool is_epilog);
+static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static void	_depend_list_del(void *dep_ptr);
-static void	_job_queue_append(List job_queue, struct job_record *job_ptr,
+static void	_job_queue_append(List job_queue, job_record_t *job_ptr,
 				  struct part_record *part_ptr, uint32_t priority);
 static void	_job_queue_rec_del(void *x);
-static bool	_job_runnable_test1(struct job_record *job_ptr,
-				    bool clear_start);
-static bool	_job_runnable_test2(struct job_record *job_ptr,
-				    bool check_min_time);
+static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
+static bool	_job_runnable_test2(job_record_t *job_ptr, bool check_min_time);
 static void *	_run_epilog(void *arg);
 static void *	_run_prolog(void *arg);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
 static void *	_sched_agent(void *args);
 static int	_schedule(uint32_t job_limit);
-static int	_valid_batch_features(struct job_record *job_ptr,
-				      bool can_reboot);
-static int	_valid_feature_list(struct job_record *job_ptr,
-				    bool can_reboot);
+static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
+static int	_valid_feature_list(job_record_t *job_ptr, bool can_reboot);
 static int	_valid_node_feature(char *feature, bool can_reboot);
 #ifndef HAVE_FRONT_END
 static void *	_wait_boot(void *arg);
@@ -215,7 +211,7 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 {
 	List job_queue;
 	ListIterator job_iterator;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 
 	job_queue = list_create(NULL);
 	job_iterator = list_iterator_create(job_list);
@@ -233,7 +229,7 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 	return job_queue;
 }
 
-static void _job_queue_append(List job_queue, struct job_record *job_ptr,
+static void _job_queue_append(List job_queue, job_record_t *job_ptr,
 			      struct part_record *part_ptr, uint32_t prio)
 {
 	job_queue_rec_t *job_queue_rec;
@@ -255,7 +251,7 @@ static void _job_queue_rec_del(void *x)
 /* Return true if the job has some step still in a cleaning state, which
  * can happen on a Cray if a job is requeued and the step NHC is still running
  * after the requeued job is eligible to run again */
-static uint16_t _is_step_cleaning(struct job_record *job_ptr)
+static uint16_t _is_step_cleaning(job_record_t *job_ptr)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -278,7 +274,7 @@ static uint16_t _is_step_cleaning(struct job_record *job_ptr)
 }
 
 /* Job test for ability to run now, excludes partition specific tests */
-static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
+static bool _job_runnable_test1(job_record_t *job_ptr, bool sched_plugin)
 {
 	bool job_indepen = false;
 	uint16_t cleaning = 0;
@@ -358,7 +354,7 @@ static bool _job_runnable_test1(struct job_record *job_ptr, bool sched_plugin)
  * IN check_min_time - If set, test job's minimum time limit
  *		otherwise test maximum time limit
  */
-static bool _job_runnable_test2(struct job_record *job_ptr, bool check_min_time)
+static bool _job_runnable_test2(job_record_t *job_ptr, bool check_min_time)
 {
 	int reason;
 
@@ -382,7 +378,7 @@ static bool _job_runnable_test2(struct job_record *job_ptr, bool check_min_time)
  * IN job_ptr - job to test
  * IN part_ptr - partition to test
  */
-static bool _job_runnable_test3(struct job_record *job_ptr,
+static bool _job_runnable_test3(job_record_t *job_ptr,
 				struct part_record *part_ptr)
 {
 	if (job_ptr->resv_ptr && job_ptr->resv_ptr->node_bitmap &&
@@ -406,7 +402,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	static time_t last_log_time = 0;
 	List job_queue;
 	ListIterator depend_iter, job_iterator, part_iterator;
-	struct job_record *job_ptr = NULL, *new_job_ptr;
+	job_record_t *job_ptr = NULL, *new_job_ptr;
 	struct part_record *part_ptr;
 	struct depend_spec *dep_ptr;
 	int i, pend_cnt, reason, dep_corr;
@@ -621,7 +617,7 @@ extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
 {
 	bool completing = false;
 	ListIterator job_iterator;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	uint16_t complete_wait = slurm_get_complete_wait();
 	time_t recent;
 
@@ -655,7 +651,7 @@ extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
  */
 extern void set_job_elig_time(void)
 {
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	struct part_record *part_ptr = NULL;
 	ListIterator job_iterator;
 	slurmctld_lock_t job_write_lock =
@@ -863,7 +859,7 @@ static void *_sched_agent(void *args)
  * func IN - function named used for logging, "sched" or "backfill"
  * RET - true of valid, false if invalid and job cancelled
  */
-extern bool deadline_ok(struct job_record *job_ptr, char *func)
+extern bool deadline_ok(job_record_t *job_ptr, char *func)
 {
 	time_t now;
 	char time_str_deadline[32];
@@ -918,7 +914,7 @@ static int _schedule(uint32_t job_limit)
 	int error_code, i, j, part_cnt, time_limit, pend_time;
 	uint32_t job_depth = 0, array_task_id;
 	job_queue_rec_t *job_queue_rec;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	struct part_record *part_ptr, **failed_parts = NULL;
 	struct part_record *skip_part_ptr = NULL;
 	struct slurmctld_resv **failed_resv = NULL;
@@ -2044,7 +2040,7 @@ static void _split_env(batch_job_launch_msg_t *launch_msg_ptr)
 }
 
 /* Given a scheduled job, return a pointer to it batch_job_launch_msg_t data */
-static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
+static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
@@ -2158,9 +2154,9 @@ static batch_job_launch_msg_t *_build_launch_job_msg(struct job_record *job_ptr,
 
 /* Validate the job is ready for launch
  * RET pointer to batch job to launch or NULL if not ready yet */
-static struct job_record *_pack_job_ready(struct job_record *job_ptr)
+static job_record_t *_pack_job_ready(job_record_t *job_ptr)
 {
-	struct job_record *pack_leader, *pack_job;
+	job_record_t *pack_leader, *pack_job;
 	ListIterator iter;
 
 	if (job_ptr->pack_job_id == 0)	/* Not a pack job */
@@ -2215,10 +2211,10 @@ static struct job_record *_pack_job_ready(struct job_record *job_ptr)
  * Set some pack job environment variables. This will include information
  * about multiple job components (i.e. different slurmctld job records).
  */
-static void _set_pack_env(struct job_record *pack_leader,
+static void _set_pack_env(job_record_t *pack_leader,
 			  batch_job_launch_msg_t *launch_msg_ptr)
 {
-	struct job_record *pack_job;
+	job_record_t *pack_job;
 	int i, pack_offset = 0;
 	ListIterator iter;
 
@@ -2403,12 +2399,12 @@ static void _set_pack_env(struct job_record *pack_leader,
  * launch_job - send an RPC to a slurmd to initiate a batch job
  * IN job_ptr - pointer to job that will be initiated
  */
-extern void launch_job(struct job_record *job_ptr)
+extern void launch_job(job_record_t *job_ptr)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
 	uint16_t protocol_version = NO_VAL16;
 	agent_arg_t *agent_arg_ptr;
-	struct job_record *launch_job_ptr;
+	job_record_t *launch_job_ptr;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #else
@@ -2467,7 +2463,7 @@ extern void launch_job(struct job_record *job_ptr)
  * RET 0 or error code
  */
 extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
-			       struct job_record *job_ptr,
+			       job_record_t *job_ptr,
 			       uint16_t protocol_version)
 {
 	slurm_cred_arg_t cred_arg;
@@ -2552,7 +2548,7 @@ extern List depended_list_copy(List depend_list_src)
 }
 
 /* Print a job's dependency information based upon job_ptr->depend_list */
-extern void print_job_dependency(struct job_record *job_ptr)
+extern void print_job_dependency(job_record_t *job_ptr)
 {
 	ListIterator depend_iter;
 	struct depend_spec *dep_ptr;
@@ -2604,7 +2600,7 @@ extern void print_job_dependency(struct job_record *job_ptr)
 	list_iterator_destroy(depend_iter);
 }
 
-static void _depend_list2str(struct job_record *job_ptr, bool set_or_flag)
+static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 {
 	ListIterator depend_iter;
 	struct depend_spec *dep_ptr;
@@ -2672,7 +2668,7 @@ static void _depend_list2str(struct job_record *job_ptr, bool set_or_flag)
  *      1 = dependencies remain
  *      2 = failure (job completion code not per dependency), delete the job
  */
-extern int test_job_dependency(struct job_record *job_ptr)
+extern int test_job_dependency(job_record_t *job_ptr)
 {
 	ListIterator depend_iter, job_iterator;
 	struct depend_spec *dep_ptr;
@@ -2681,7 +2677,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	List job_queue = NULL;
 	bool run_now;
 	int results = 0;
-	struct job_record *qjob_ptr, *djob_ptr, *dcjob_ptr;
+	job_record_t *qjob_ptr, *djob_ptr, *dcjob_ptr;
 
 	if ((job_ptr->details == NULL) ||
 	    (job_ptr->details->depend_list == NULL) ||
@@ -2966,8 +2962,7 @@ static char *_xlate_array_dep(char *new_depend)
 }
 
 /* Copy dependent job's TRES options into another job's options  */
-static void _copy_tres_opts(struct job_record *job_ptr,
-			    struct job_record *dep_job_ptr)
+static void _copy_tres_opts(job_record_t *job_ptr, job_record_t *dep_job_ptr)
 {
 	xfree(job_ptr->cpus_per_tres);
 	job_ptr->cpus_per_tres = xstrdup(dep_job_ptr->cpus_per_tres);
@@ -2991,7 +2986,7 @@ static void _copy_tres_opts(struct job_record *job_ptr,
  * IN new_depend - new dependency description
  * RET returns an error code from slurm_errno.h
  */
-extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
+extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 {
 	static int select_hetero = -1;
 	int rc = SLURM_SUCCESS;
@@ -3001,7 +2996,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	char *tok, *new_array_dep, *sep_ptr, *sep_ptr2 = NULL;
 	List new_depend_list = NULL;
 	struct depend_spec *dep_ptr;
-	struct job_record *dep_job_ptr;
+	job_record_t *dep_job_ptr;
 	int expand_cnt = 0;
 	bool or_flag = false;
 
@@ -3368,12 +3363,12 @@ static void _pre_list_del(void *x)
  * delay the job's expected initiation time as needed to run those jobs.
  * NOTE: This is only a rough estimate of the job's start time as it ignores
  * job dependencies, feature requirements, specific node requirements, etc. */
-static void _delayed_job_start_time(struct job_record *job_ptr)
+static void _delayed_job_start_time(job_record_t *job_ptr)
 {
 	uint32_t part_node_cnt, part_cpu_cnt, part_cpus_per_node;
 	uint32_t job_size_cpus, job_size_nodes, job_time;
 	uint64_t cume_space_time = 0;
-	struct job_record *job_q_ptr;
+	job_record_t *job_q_ptr;
 	ListIterator job_iterator;
 
 	if (job_ptr->part_ptr == NULL)
@@ -3439,7 +3434,7 @@ static int _part_weight_sort(void *x, void *y)
 extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			  will_run_response_msg_t **resp)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
@@ -3612,7 +3607,7 @@ next_part:
 		if (preemptee_job_list) {
 			ListIterator preemptee_iterator;
 			uint32_t *preemptee_jid;
-			struct job_record *tmp_job_ptr;
+			job_record_t *tmp_job_ptr;
 			resp_data->preemptee_job_id=list_create(_pre_list_del);
 			preemptee_iterator = list_iterator_create(
 				preemptee_job_list);
@@ -3651,7 +3646,7 @@ next_part:
  *	terminated.
  * IN job_ptr - pointer to job that has been terminated
  */
-extern void epilog_slurmctld(struct job_record *job_ptr)
+extern void epilog_slurmctld(job_record_t *job_ptr)
 {
 	epilog_arg_t *epilog_arg;
 	pthread_t tid;
@@ -3674,7 +3669,7 @@ extern void epilog_slurmctld(struct job_record *job_ptr)
 	slurm_thread_create(&tid, _run_epilog, epilog_arg);
 }
 
-static char **_build_env(struct job_record *job_ptr, bool is_epilog)
+static char **_build_env(job_record_t *job_ptr, bool is_epilog)
 {
 	char **my_env, *name, *eq, buf[32];
 	int exit_code, i, signal;
@@ -3747,7 +3742,7 @@ static char **_build_env(struct job_record *job_ptr, bool is_epilog)
 		setenvf(&my_env, "SLURM_PACK_JOB_OFFSET", "%u",
 			job_ptr->pack_job_offset);
 		if ((job_ptr->pack_job_offset == 0) && job_ptr->pack_job_list) {
-			struct job_record *pack_job = NULL;
+			job_record_t *pack_job = NULL;
 			ListIterator iter;
 			hostset_t hs = NULL;
 			int hs_len = 0;
@@ -3818,7 +3813,7 @@ static void *_run_epilog(void *arg)
 	/* Locks: Write job */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	epilog_arg_t *epilog_arg = (epilog_arg_t *) arg;
 	pid_t cpid;
 	int i, status, wait_rc;
@@ -3910,7 +3905,7 @@ fini:	lock_slurmctld(job_write_lock);
  * IN job_ptr - pointer to job that will be initiated
  * RET bitmap of nodes requiring a reboot for NodeFeaturesPlugin or NULL if none
  */
-extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
+extern bitstr_t *node_features_reboot(job_record_t *job_ptr)
 {
 	bitstr_t *active_bitmap = NULL, *boot_node_bitmap = NULL;
 	bitstr_t *feature_node_bitmap, *tmp_bitmap;
@@ -3958,7 +3953,7 @@ extern bitstr_t *node_features_reboot(struct job_record *job_ptr)
  * IN node_bitmap - nodes to be allocated
  * RET - true if reboot required
  */
-extern bool node_features_reboot_test(struct job_record *job_ptr,
+extern bool node_features_reboot_test(job_record_t *job_ptr,
 				      bitstr_t *node_bitmap)
 {
 	bitstr_t *active_bitmap = NULL, *boot_node_bitmap = NULL;
@@ -3993,13 +3988,13 @@ extern bool node_features_reboot_test(struct job_record *job_ptr,
  * RET SLURM_SUCCESS(0) or error code
  */
 #ifdef HAVE_FRONT_END
-extern int reboot_job_nodes(struct job_record *job_ptr)
+extern int reboot_job_nodes(job_record_t *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
 #else
 /* NOTE: See power_job_reboot() in power_save.c for similar logic */
-extern int reboot_job_nodes(struct job_record *job_ptr)
+extern int reboot_job_nodes(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	int i, i_first, i_last;
@@ -4154,7 +4149,7 @@ extern int reboot_job_nodes(struct job_record *job_ptr)
 static void *_wait_boot(void *arg)
 {
 	wait_boot_arg_t *wait_boot_arg = (wait_boot_arg_t *) arg;
-	struct job_record *job_ptr = wait_boot_arg->job_ptr;
+	job_record_t *job_ptr = wait_boot_arg->job_ptr;
 	bitstr_t *boot_node_bitmap = wait_boot_arg->node_bitmap;
 	/* Locks: Write jobs; read nodes */
 	slurmctld_lock_t job_write_lock = {
@@ -4238,7 +4233,7 @@ static void *_wait_boot(void *arg)
  *	been allocated resources.
  * IN job_ptr - pointer to job that will be initiated
  */
-extern void prolog_slurmctld(struct job_record *job_ptr)
+extern void prolog_slurmctld(job_record_t *job_ptr)
 {
 	pthread_t tid;
 
@@ -4261,7 +4256,7 @@ extern void prolog_slurmctld(struct job_record *job_ptr)
 
 static void *_run_prolog(void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) arg;
+	job_record_t *job_ptr = (job_record_t *) arg;
 	struct node_record *node_ptr;
 	uint32_t job_id;
 	pid_t cpid;
@@ -4408,7 +4403,7 @@ fini:	xfree(argv[0]);
 }
 
 /* Decrement a job's prolog_running counter and launch the job if zero */
-extern void prolog_running_decr(struct job_record *job_ptr)
+extern void prolog_running_decr(job_record_t *job_ptr)
 {
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
@@ -4475,7 +4470,7 @@ extern List feature_list_copy(List feature_list_src)
  * OUT details->feature_list
  * RET error code
  */
-extern int build_feature_list(struct job_record *job_ptr)
+extern int build_feature_list(job_record_t *job_ptr)
 {
 	struct job_details *detail_ptr = job_ptr->details;
 	char *tmp_requested, *str_ptr, *feature = NULL;
@@ -4674,7 +4669,7 @@ static int _match_job_feature(void *x, void *key)
 	return 0;
 }
 
-static int _valid_batch_features(struct job_record *job_ptr, bool can_reboot)
+static int _valid_batch_features(job_record_t *job_ptr, bool can_reboot)
 {
 	char *tmp, *tok, *save_ptr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -4713,7 +4708,7 @@ static int _valid_batch_features(struct job_record *job_ptr, bool can_reboot)
 	return rc;
 }
 
-static int _valid_feature_list(struct job_record *job_ptr, bool can_reboot)
+static int _valid_feature_list(job_record_t *job_ptr, bool can_reboot)
 {
 	List feature_list = job_ptr->details->feature_list;
 	ListIterator feat_iter;
@@ -4811,7 +4806,7 @@ static int _valid_node_feature(char *feature, bool can_reboot)
  * restarts, that will be used to set the job's part_ptr and that will be
  * reported to squeue. We leave all of the partitions in the list though,
  * so the job can be requeued and have access to them all. */
-extern void rebuild_job_part_list(struct job_record *job_ptr)
+extern void rebuild_job_part_list(job_record_t *job_ptr)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
@@ -4844,8 +4839,7 @@ extern void rebuild_job_part_list(struct job_record *job_ptr)
  * for it. This function assumes the caller has the
  * appropriate locks on the job_record.
  */
-void
-cleanup_completing(struct job_record *job_ptr)
+void cleanup_completing(job_record_t *job_ptr)
 {
 	time_t delay;
 

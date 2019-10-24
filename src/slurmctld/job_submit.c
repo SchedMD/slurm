@@ -60,7 +60,7 @@ typedef struct slurm_submit_ops {
 					  uint32_t submit_uid,
 					  char **err_msg );
 	int		(*modify)	( struct job_descriptor *job_desc,
-					  struct job_record *job_ptr,
+					  job_record_t *job_ptr,
 					  uint32_t submit_uid );
 } slurm_submit_ops_t;
 
@@ -249,7 +249,7 @@ extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
  * then stop and forward it's return value.
  */
 extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
-				    struct job_record *job_ptr,
+				    job_record_t *job_ptr,
 				    uint32_t submit_uid)
 {
 	DEF_TIMERS;

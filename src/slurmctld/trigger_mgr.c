@@ -106,7 +106,7 @@ typedef struct trig_mgr_info {
 	char *   res_id;	/* node name or job_id (string) */
 	bitstr_t *nodes_bitmap;	/* bitmap of requested nodes (if applicable) */
 	uint32_t job_id;	/* job ID (if applicable) */
-	struct job_record *job_ptr; /* pointer to job record (if applicable) */
+	job_record_t *job_ptr;	/* pointer to job record (if applicable) */
 	uint32_t trig_type;	/* TRIGGER_TYPE_* */
 	time_t   trig_time;	/* offset (pending) or time stamp (complete) */
 	uint32_t user_id;	/* user requesting trigger */
@@ -398,7 +398,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	uint32_t job_id;
 	bitstr_t *bitmap = NULL;
 	trig_mgr_info_t * trig_add;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	/* Read config and job info */
 	slurmctld_lock_t job_read_lock =
 		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -979,7 +979,7 @@ fini:	verbose("State of %d triggers recovered", trigger_cnt);
 }
 
 static bool _front_end_job_test(bitstr_t *front_end_bitmap,
-				struct job_record *job_ptr)
+				job_record_t *job_ptr)
 {
 #ifdef HAVE_FRONT_END
 	int i;

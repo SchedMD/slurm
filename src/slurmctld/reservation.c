@@ -145,7 +145,7 @@ static void _free_script_arg(resv_thread_args_t *args);
 static int  _generate_resv_id(void);
 static void _generate_resv_name(resv_desc_msg_t *resv_ptr);
 static int  _get_core_resrcs(slurmctld_resv_t *resv_ptr);
-static uint32_t _get_job_duration(struct job_record *job_ptr, bool reboot);
+static uint32_t _get_job_duration(job_record_t *job_ptr, bool reboot);
 static bool _is_account_valid(char *account);
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr);
 static bool _job_overlap(time_t start_time, uint32_t flags,
@@ -192,7 +192,7 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
 				 char *accounts);
 static int  _update_uid_list(slurmctld_resv_t *resv_ptr, char *users);
 static void _validate_all_reservations(void);
-static int  _valid_job_access_resv(struct job_record *job_ptr,
+static int  _valid_job_access_resv(job_record_t *job_ptr,
 				   slurmctld_resv_t *resv_ptr);
 static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr);
 static void _validate_node_choice(slurmctld_resv_t *resv_ptr);
@@ -1683,7 +1683,7 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
 			 bitstr_t *node_bitmap, char *resv_name)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bool overlap = false;
 
 	if (!node_bitmap ||			/* No nodes to test for */
@@ -2693,7 +2693,7 @@ update_failure:
 static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bool match = false;
 
 	job_iterator = list_iterator_create(job_list);
@@ -2713,7 +2713,7 @@ static bool _is_resv_used(slurmctld_resv_t *resv_ptr)
 static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
@@ -3169,7 +3169,7 @@ static void _validate_all_reservations(void)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
@@ -3473,7 +3473,7 @@ unpack_error:
  * IN/OUT job_ptr - job to validate, set its resv_id
  * RET SLURM_SUCCESS or error code (not found or access denied)
  */
-extern int validate_job_resv(struct job_record *job_ptr)
+extern int validate_job_resv(job_record_t *job_ptr)
 {
 	slurmctld_resv_t *resv_ptr = NULL;
 	int rc;
@@ -3679,7 +3679,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 
 	/* Satisfy feature specification */
 	if (resv_desc_ptr->features) {
-		struct job_record *job_ptr;
+		job_record_t *job_ptr;
 		bool dummy = false;
 		int total_node_cnt = 0;
 
@@ -3689,7 +3689,7 @@ static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 		 * relevant fields to directly the functions rather than a
 		 * job record was explored and found too cumbersome.
 		 */
-		job_ptr = xmalloc(sizeof(struct job_record));
+		job_ptr = xmalloc(sizeof(job_record_t));
 		job_ptr->details = xmalloc(sizeof(struct job_details));
 		job_ptr->details->features = resv_desc_ptr->features;
 		/* job_ptr->job_id = 0; */
@@ -3896,7 +3896,7 @@ static bitstr_t *_pick_idle_nodes(bitstr_t *avail_bitmap,
 	return ret_bitmap;
 }
 
-static void _check_job_compatibility(struct job_record *job_ptr,
+static void _check_job_compatibility(job_record_t *job_ptr,
 				     bitstr_t *avail_bitmap,
 				     bitstr_t **core_bitmap)
 {
@@ -3989,7 +3989,7 @@ static bitstr_t *_pick_idle_node_cnt(bitstr_t *avail_bitmap,
 				     uint32_t node_cnt, bitstr_t **core_bitmap)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	bitstr_t *orig_bitmap, *save_bitmap = NULL;
 	bitstr_t *ret_bitmap = NULL, *tmp_bitmap;
 	int total_node_cnt, requested_node_cnt;
@@ -4109,7 +4109,7 @@ fini:	FREE_NULL_BITMAP(orig_bitmap);
 
 /* Determine if a job has access to a reservation
  * RET SLURM_SUCCESS if true, some error code otherwise */
-static int _valid_job_access_resv(struct job_record *job_ptr,
+static int _valid_job_access_resv(job_record_t *job_ptr,
 				  slurmctld_resv_t *resv_ptr)
 {
 	bool account_good = false, user_good = false;
@@ -4233,7 +4233,7 @@ end_it:
  * IN job_ptr      - job to test
  * RET	SLURM_SUCCESS if runable now, otherwise an error code
  */
-extern int job_test_resv_now(struct job_record *job_ptr)
+extern int job_test_resv_now(job_record_t *job_ptr)
 {
 	slurmctld_resv_t * resv_ptr;
 	time_t now;
@@ -4276,7 +4276,7 @@ extern int job_test_resv_now(struct job_record *job_ptr)
  * the reservation. Additional nodes will be added to the reservation from
  * those currently available.
  */
-extern void job_claim_resv(struct job_record *job_ptr)
+extern void job_claim_resv(job_record_t *job_ptr)
 {
 	slurmctld_resv_t *resv_ptr;
 
@@ -4299,7 +4299,7 @@ extern void job_claim_resv(struct job_record *job_ptr)
  * Adjust a job's time_limit and end_time as needed to avoid using
  * reserved resources. Don't go below job's time_min value.
  */
-extern void job_time_adj_resv(struct job_record *job_ptr)
+extern void job_time_adj_resv(job_record_t *job_ptr)
 {
 	ListIterator iter;
 	slurmctld_resv_t * resv_ptr;
@@ -4358,7 +4358,7 @@ static int _license_cnt(List license_list, char *lic_name)
  * job_ptr IN - pointer to the job record
  * reboot IN - true if node reboot required
  */
-static uint32_t _get_job_duration(struct job_record *job_ptr, bool reboot)
+static uint32_t _get_job_duration(job_record_t *job_ptr, bool reboot)
 {
 	uint32_t duration;
 	uint16_t time_slices = 1;
@@ -4496,7 +4496,7 @@ static void _update_bb_resv(burst_buffer_info_msg_t **bb_resv, char *bb_spec)
  * RET burst buffer reservation structure, call
  *	 slurm_free_burst_buffer_info_msg() to free
  */
-extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
+extern burst_buffer_info_msg_t *job_test_bb_resv(job_record_t *job_ptr,
 						 time_t when, bool reboot)
 {
 	slurmctld_resv_t * resv_ptr;
@@ -4548,7 +4548,7 @@ extern burst_buffer_info_msg_t *job_test_bb_resv(struct job_record *job_ptr,
  * IN reboot    - true if node reboot required to start job
  * RET number of licenses of this type the job is prevented from using
  */
-extern int job_test_lic_resv(struct job_record *job_ptr, char *lic_name,
+extern int job_test_lic_resv(job_record_t *job_ptr, char *lic_name,
 			     time_t when, bool reboot)
 {
 	slurmctld_resv_t * resv_ptr;
@@ -4762,7 +4762,7 @@ static void _print_constraint_planning(constraint_planning_t* sched)
  * IN reboot    - true if node reboot required to start job
  * RET amount of watts the job is prevented from using
  */
-extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
+extern uint32_t job_test_watts_resv(job_record_t *job_ptr, time_t when,
 				    bool reboot)
 {
 	slurmctld_resv_t * resv_ptr;
@@ -4842,7 +4842,7 @@ extern uint32_t job_test_watts_resv(struct job_record *job_ptr, time_t when,
  *	ESLURM_RESERVATION_MAINT job has no reservation, but required nodes are
  *				 in maintenance reservation
  */
-extern int job_test_resv(struct job_record *job_ptr, time_t *when,
+extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
 			 bitstr_t **exc_core_bitmap, bool *resv_overlap,
 			 bool reboot)
@@ -5151,7 +5151,7 @@ extern time_t find_resv_end(time_t start_time)
  * and refill job_run_cnt/job_pend_cnt */
 static int _job_resv_check(void *x, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
+	job_record_t *job_ptr = (job_record_t *) x;
 
 	if (!job_ptr->resv_ptr)
 		return SLURM_SUCCESS;
@@ -5168,7 +5168,7 @@ static int _job_resv_check(void *x, void *arg)
 
 static int _set_job_resvid(void *object, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *)object;
+	job_record_t *job_ptr = (job_record_t *) object;
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *)arg;
 
 	if ((job_ptr->resv_ptr != resv_ptr) || !IS_JOB_PENDING(job_ptr))
@@ -5355,7 +5355,7 @@ static int _resv_job_count(slurmctld_resv_t *resv_ptr)
 {
 	int cnt = 0;
 	ListIterator iter;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	iter = list_iterator_create(job_list);
 	while ((job_ptr = list_next(iter))) {

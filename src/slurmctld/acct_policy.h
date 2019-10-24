@@ -45,26 +45,26 @@
  * acct_policy_add_job_submit - Note that a job has been submitted for
  *	accounting policy purposes.
  */
-extern void acct_policy_add_job_submit(struct job_record *job_ptr);
+extern void acct_policy_add_job_submit(job_record_t *job_ptr);
 
 /*
  * acct_policy_remove_job_submit - Note that a job has finished (might
  *      not had started or been allocated resources) for accounting
  *      policy purposes.
  */
-extern void acct_policy_remove_job_submit(struct job_record *job_ptr);
+extern void acct_policy_remove_job_submit(job_record_t *job_ptr);
 
 /*
  * acct_policy_job_begin - Note that a job is starting for accounting
  *	policy purposes.
  */
-extern void acct_policy_job_begin(struct job_record *job_ptr);
+extern void acct_policy_job_begin(job_record_t *job_ptr);
 
 /*
  * acct_policy_job_fini - Note that a job is completing for accounting
  *	policy purposes.
  */
-extern void acct_policy_job_fini(struct job_record *job_ptr);
+extern void acct_policy_job_fini(job_record_t *job_ptr);
 
 /*
  * acct_policy_alter_job - if resources change on a job this needs to
@@ -74,7 +74,7 @@ extern void acct_policy_job_fini(struct job_record *job_ptr);
  * At the time of writing this function any node or cpu size change
  * while running was already handled in the job_pre|post_resize_acctg functions.
  */
-extern void acct_policy_alter_job(struct job_record *job_ptr,
+extern void acct_policy_alter_job(job_record_t *job_ptr,
 				  uint32_t new_time_limit);
 
 /*
@@ -102,7 +102,7 @@ extern bool acct_policy_validate(job_desc_msg_t *job_desc,
  * acct_policy_validate_pack - validate that a pack job as a whole (all
  * components at once) can be satisfied without exceeding any association or
  * QOS limit.
- * submit_job_list IN - list of "struct job_record" entries (already created)
+ * submit_job_list IN - list of job_record_t entries (already created)
  * RET true if valid
  */
 extern bool acct_policy_validate_pack(List submit_job_list);
@@ -114,27 +114,27 @@ extern bool acct_policy_validate_pack(List submit_job_list);
  *	association limits prevent the job from ever running (lowered
  *	limits since job submission), then cancel the job.
  */
-extern bool acct_policy_job_runnable_pre_select(struct job_record *job_ptr,
+extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 						bool assoc_mgr_locked);
 
 /*
  * acct_policy_job_runnable_post_select - After nodes have been
  *	selected for the job verify the counts don't exceed aggregated limits.
  */
-extern bool acct_policy_job_runnable_post_select(
-	struct job_record *job_ptr, uint64_t *tres_req_cnt,
-	bool assoc_mgr_locked);
+extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
+						 uint64_t *tres_req_cnt,
+						 bool assoc_mgr_locked);
 
 /*
  * Determine of the specified job can execute right now or is currently
  * blocked by an association or QOS limit. Does not re-validate job state.
  */
-extern bool acct_policy_job_runnable_state(struct job_record *job_ptr);
+extern bool acct_policy_job_runnable_state(job_record_t *job_ptr);
 
 /*
  * Using the limits on the job get the max nodes possible.
  */
-extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
+extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
 					  uint32_t *wait_reason);
 
 /*
@@ -144,50 +144,50 @@ extern uint32_t acct_policy_get_max_nodes(struct job_record *job_ptr,
  *	the job from ever running (lowered limits since job submission),
  *	then cancel the job.
  */
-extern int acct_policy_update_pending_job(struct job_record *job_ptr);
+extern int acct_policy_update_pending_job(job_record_t *job_ptr);
 
 /*
  * acct_policy_job_runnable - Determine of the specified job has timed
  *	out based on it's QOS or association. Returns True if job is
  *	timed out and sets job_ptr->state_reason = FAIL_TIMEOUT;
  */
-extern bool acct_policy_job_time_out(struct job_record *job_ptr);
+extern bool acct_policy_job_time_out(job_record_t *job_ptr);
 
 /*
  * acct_policy_handle_accrue_time - Set accrue time if we are under a limit.  If
  * we are a task array we will also split off things to handle them
  * individually.
  */
-extern int acct_policy_handle_accrue_time(struct job_record *job_ptr,
+extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 					  bool assoc_mgr_locked);
 
 /*
  * acct_policy_add_accrue_time - Implicitly add job to the accrue_cnt of the
  * assoc and QOS of the job/part.
  */
-extern void acct_policy_add_accrue_time(struct job_record *job_ptr,
+extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 					bool assoc_mgr_locked);
 
-extern void acct_policy_remove_accrue_time(struct job_record *job_ptr,
+extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 					   bool assoc_mgr_locked);
 
-extern uint32_t acct_policy_get_prio_thresh(struct job_record *job_ptr,
+extern uint32_t acct_policy_get_prio_thresh(job_record_t *job_ptr,
 					    bool assoc_mgr_locked);
 
 /*
  * acct_policy_get_preemptable_time - get the time the job becomes preemptable
  * 	based on conf and qos PreemptExemptTime
  */
-extern time_t acct_policy_get_preemptable_time(struct job_record *job_ptr);
+extern time_t acct_policy_get_preemptable_time(job_record_t *job_ptr);
 
 /*
  * acct_policy_is_job_preemptable - Check if job is preemptable checking
  * 	global conf and qos options PreemptExemptTime
  * 	returns true if job is *exempt* from preemption
  */
-extern bool acct_policy_is_job_preempt_exempt(struct job_record *job_ptr);
+extern bool acct_policy_is_job_preempt_exempt(job_record_t *job_ptr);
 
-extern void acct_policy_set_qos_order(struct job_record *job_ptr,
+extern void acct_policy_set_qos_order(job_record_t *job_ptr,
 				      slurmdb_qos_rec_t **qos_ptr_1,
 				      slurmdb_qos_rec_t **qos_ptr_2);
 

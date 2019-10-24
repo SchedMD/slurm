@@ -505,7 +505,7 @@ static void _do_power_work(time_t now)
  * IN job_ptr - pointer to job that will be initiated
  * RET SLURM_SUCCESS(0) or error code
  */
-extern int power_job_reboot(struct job_record *job_ptr)
+extern int power_job_reboot(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	int i, i_first, i_last;

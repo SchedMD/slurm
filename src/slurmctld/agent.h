@@ -109,7 +109,7 @@ extern void agent_pack_pending_rpc_stats(Buf buffer);
  * IN job_ptr - job identification
  * IN state_type - job transition type, see MAIL_JOB in slurm.h
  */
-extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type);
+extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type);
 
 /* Return length of agent's retry_list */
 extern int retry_list_size(void);

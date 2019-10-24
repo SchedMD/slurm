@@ -72,9 +72,9 @@ static void _srun_agent_launch(slurm_addr_t *addr, char *host,
 	agent_queue_request(agent_args);
 }
 
-static bool _pending_pack_jobs(struct job_record *job_ptr)
+static bool _pending_pack_jobs(job_record_t *job_ptr)
 {
-	struct job_record *pack_leader, *pack_job;
+	job_record_t *pack_leader, *pack_job;
 	ListIterator iter;
 	bool pending_job = false;
 
@@ -123,9 +123,9 @@ static void _free_srun_alloc(void *x)
  * srun_allocate - notify srun of a resource allocation
  * IN job_ptr - job allocated resources
  */
-extern void srun_allocate(struct job_record *job_ptr)
+extern void srun_allocate(job_record_t *job_ptr)
 {
-	struct job_record *pack_job, *pack_leader;
+	job_record_t *pack_job, *pack_leader;
 	resource_allocation_response_msg_t *msg_arg = NULL;
 	slurm_addr_t *addr;
 	ListIterator iter;
@@ -179,7 +179,7 @@ extern void srun_allocate(struct job_record *job_ptr)
  * srun_allocate_abort - notify srun of a resource allocation failure
  * IN job_ptr - job allocated resources
  */
-extern void srun_allocate_abort(struct job_record *job_ptr)
+extern void srun_allocate_abort(job_record_t *job_ptr)
 {
 	if (job_ptr && job_ptr->alloc_resp_port && job_ptr->alloc_node &&
 	    job_ptr->resp_host) {
@@ -203,7 +203,7 @@ extern void srun_allocate_abort(struct job_record *job_ptr)
  * IN job_ptr - job to notify
  * IN node_name - name of failed node
  */
-extern void srun_node_fail(struct job_record *job_ptr, char *node_name)
+extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 {
 #ifndef HAVE_FRONT_END
 	struct node_record *node_ptr;
@@ -266,7 +266,7 @@ extern void srun_node_fail(struct job_record *job_ptr, char *node_name)
 extern void srun_ping (void)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	slurm_addr_t * addr;
 	time_t now = time(NULL);
 	time_t old = now - (slurmctld_conf.inactive_limit / 3) +
@@ -330,7 +330,7 @@ extern void srun_step_timeout(struct step_record *step_ptr, time_t timeout_val)
  * srun_timeout - notify srun of a job's imminent timeout
  * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_timeout (struct job_record *job_ptr)
+extern void srun_timeout(job_record_t *job_ptr)
 {
 	slurm_addr_t * addr;
 	srun_timeout_msg_t *msg_arg;
@@ -362,7 +362,7 @@ extern void srun_timeout (struct job_record *job_ptr)
 /*
  * srun_user_message - Send arbitrary message to an srun job (no job steps)
  */
-extern int srun_user_message(struct job_record *job_ptr, char *msg)
+extern int srun_user_message(job_record_t *job_ptr, char *msg)
 {
 	slurm_addr_t * addr;
 	srun_user_msg_t *msg_arg;
@@ -428,7 +428,7 @@ extern int srun_user_message(struct job_record *job_ptr, char *msg)
  * srun_job_complete - notify srun of a job's termination
  * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_job_complete (struct job_record *job_ptr)
+extern void srun_job_complete(job_record_t *job_ptr)
 {
 	slurm_addr_t * addr;
 	srun_job_complete_msg_t *msg_arg;
@@ -463,7 +463,7 @@ extern void srun_job_complete (struct job_record *job_ptr)
  * IN op - SUSPEND_JOB or RESUME_JOB (enum suspend_opts from slurm.h)
  * RET - true if message send, otherwise false
  */
-extern bool srun_job_suspend (struct job_record *job_ptr, uint16_t op)
+extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op)
 {
 	slurm_addr_t * addr;
 	suspend_msg_t *msg_arg;
@@ -596,7 +596,7 @@ extern void srun_exec(struct step_record *step_ptr, char **argv)
  */
 extern void srun_response(uint32_t job_id, uint32_t step_id)
 {
-	struct job_record  *job_ptr = find_job_record (job_id);
+	job_record_t *job_ptr = find_job_record(job_id);
 	time_t now = time(NULL);
 
 	if (job_ptr == NULL)

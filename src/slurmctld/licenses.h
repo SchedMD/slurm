@@ -86,7 +86,7 @@ extern List license_job_copy(List license_list_src);
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
  */
-extern int license_job_get(struct job_record *job_ptr);
+extern int license_job_get(job_record_t *job_ptr);
 
 /*
  * license_job_merge - The licenses from one job have just been merged into
@@ -94,14 +94,14 @@ extern int license_job_get(struct job_record *job_ptr);
  *	including duplicate names. Reconstruct this job's licenses and
  *	license_list fields to eliminate duplicates.
  */
-extern void license_job_merge(struct job_record *job_ptr);
+extern void license_job_merge(job_record_t *job_ptr);
 
 /*
  * license_job_return - Return the licenses allocated to a job
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
  */
-extern int license_job_return(struct job_record *job_ptr);
+extern int license_job_return(job_record_t *job_ptr);
 
 /*
  * license_job_test - Test if the licenses required for a job are available
@@ -110,7 +110,7 @@ extern int license_job_return(struct job_record *job_ptr);
  * IN reboot    - true if node reboot required to start job
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */
-extern int license_job_test(struct job_record *job_ptr, time_t when,
+extern int license_job_test(job_record_t *job_ptr, time_t when,
 			    bool reboot);
 
 /*

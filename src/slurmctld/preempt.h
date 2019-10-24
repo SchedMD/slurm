@@ -71,12 +71,12 @@ extern int slurm_preempt_fini(void);
  * NOTE: Returns NULL if no preemptable jobs are found.
  * NOTE: Caller must list_destroy() any list returned.
  */
-extern List slurm_find_preemptable_jobs(struct job_record *job_ptr);
+extern List slurm_find_preemptable_jobs(job_record_t *job_ptr);
 
 /*
  * Return the PreemptMode which should apply to stop this job
  */
-extern uint16_t slurm_job_preempt_mode(struct job_record *job_ptr);
+extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr);
 
 /*
  * Return true if any jobs can be preempted, otherwise false
@@ -91,7 +91,7 @@ extern bool slurm_job_preempt_check(job_queue_rec_t *preemptor,
 
 
 /* Returns a Slurm errno if preempt grace isn't allowed */
-extern int slurm_job_check_grace(struct job_record *job_ptr,
-				 struct job_record *preemptor_ptr);
+extern int slurm_job_check_grace(job_record_t *job_ptr,
+				 job_record_t *preemptor_ptr);
 
 #endif /*__SLURM_CONTROLLER_PREEMPT_H__*/

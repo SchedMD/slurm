@@ -1074,7 +1074,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 			   slurm_cred_t **slurm_cred, uint16_t protocol_version)
 {
 	slurm_cred_arg_t cred_arg;
-	struct job_record* job_ptr = step_ptr->job_ptr;
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
 	xassert(job_resrcs_ptr && job_resrcs_ptr->cpus);
@@ -1122,7 +1122,7 @@ static int _make_step_cred(struct step_record *step_ptr,
 
 static int _pack_job_cancel(void *x, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *) x;
+	job_record_t *job_ptr = (job_record_t *) x;
 	time_t now = time(NULL);
 
 	info("Cancelling aborted pack job submit: %pJ", job_ptr);
@@ -1144,7 +1144,7 @@ static int _pack_job_cancel(void *x, void *arg)
  * RET resource_allocation_response_msg_t filled in.
  */
 extern resource_allocation_response_msg_t *build_alloc_msg(
-	struct job_record *job_ptr, int error_code, char *job_submit_user_msg)
+	job_record_t *job_ptr, int error_code, char *job_submit_user_msg)
 {
 	int i;
 	resource_allocation_response_msg_t *alloc_msg =
@@ -1334,7 +1334,7 @@ static void _slurm_rpc_allocate_pack(slurm_msg_t * msg)
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
 	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
 	uint32_t job_uid = NO_VAL;
-	struct job_record *job_ptr, *first_job_ptr = NULL;
+	job_record_t *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
 	ListIterator iter;
 	List submit_job_list = NULL;
@@ -1622,7 +1622,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
 	bool reject_job = false;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
@@ -2273,7 +2273,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	epilog_complete_msg_t *epilog_msg =
 		(epilog_complete_msg_t *) msg->data;
-	struct job_record  *job_ptr;
+	job_record_t *job_ptr;
 
 	START_TIMER;
 	debug2("Processing RPC: MESSAGE_EPILOG_COMPLETE uid=%d", uid);
@@ -2378,7 +2378,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	/* init */
 	START_TIMER;
@@ -2476,7 +2476,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	bool job_requeue = false;
 	bool dump_job = false, dump_node = false;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	char *msg_title = "node(s)";
 	char *nodes = comp_msg->node_name;
 
@@ -2673,7 +2673,7 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 	DEF_TIMERS;
 	int rc = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	Buf script;
 	job_id_msg_t *job_id_msg = (job_id_msg_t *) msg->data;
 	/* Locks: Read config, job, and node info */
@@ -2912,7 +2912,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	/* init */
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
 	/* Locks: Read config, read job, read node, read partition */
 	slurmctld_lock_t job_read_lock = {
@@ -3161,7 +3161,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	DEF_TIMERS;
 	job_alloc_info_msg_t *job_info_msg = (job_alloc_info_msg_t *) msg->data;
 	resource_allocation_response_msg_t *job_info_resp_msg;
@@ -3225,7 +3225,7 @@ static void _slurm_rpc_job_pack_alloc_info(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
-	struct job_record *job_ptr, *pack_job;
+	job_record_t *job_ptr, *pack_job;
 	ListIterator iter;
 	void *working_cluster_rec = NULL;
 	List resp;
@@ -3350,7 +3350,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 #else
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
-	struct job_record *job_ptr = NULL, *job_pack_ptr;
+	job_record_t *job_ptr = NULL, *job_pack_ptr;
 	struct step_record *step_ptr;
 	char *local_node_list = NULL, *node_list = NULL;
 	struct node_record *node_ptr;
@@ -3825,7 +3825,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	struct step_record *step_ptr = NULL;
 
 	START_TIMER;
@@ -3906,7 +3906,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	uint32_t job_id = 0, priority = 0;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
@@ -4068,7 +4068,7 @@ static void _slurm_rpc_submit_batch_pack_job(slurm_msg_t *msg)
 	int error_code = SLURM_SUCCESS, alloc_only = 0;
 	DEF_TIMERS;
 	uint32_t pack_job_id = 0, pack_job_offset = 0;
-	struct job_record *job_ptr = NULL, *first_job_ptr = NULL;
+	job_record_t *job_ptr = NULL, *first_job_ptr = NULL;
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
 	job_desc_msg_t *job_desc_msg;
@@ -5065,9 +5065,10 @@ static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 }
 
 /* Check if prolog has already finished */
-static int _is_prolog_finished(uint32_t job_id) {
+static int _is_prolog_finished(uint32_t job_id)
+{
 	int is_running = 0;
-	struct job_record  *job_ptr;
+	job_record_t *job_ptr;
 
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -5134,7 +5135,7 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	char *op;
 
 	START_TIMER;
@@ -5624,7 +5625,7 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	job_notify_msg_t * notify_msg = (job_notify_msg_t *) msg->data;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -6071,7 +6072,7 @@ inline static void _slurm_rpc_dump_spank(slurm_msg_t * msg)
 
 	if (rc == SLURM_SUCCESS) {
 		/* do RPC call */
-		struct job_record *job_ptr;
+		job_record_t *job_ptr;
 		uint32_t i;
 
 		lock_slurmctld(job_read_lock);
@@ -6326,7 +6327,7 @@ _slurm_rpc_kill_job(slurm_msg_t *msg)
 	lock_slurmctld(fed_job_read_lock);
 	if (fed_mgr_fed_rec) {
 		uint32_t job_id, origin_id;
-		struct job_record *job_ptr;
+		job_record_t *job_ptr;
 		slurmdb_cluster_rec_t *origin;
 
 		job_id    = strtol(kill->sjob_id, NULL, 10);

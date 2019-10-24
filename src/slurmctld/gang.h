@@ -55,11 +55,11 @@ extern void gs_fini(void);
 
 /* Notify the gang scheduler that a job has been resumed or started.
  * In either case, add the job to gang scheduling. */
-extern void gs_job_start(struct job_record *job_ptr);
+extern void gs_job_start(job_record_t *job_ptr);
 
 /* Notify the gang scheduler that a job has been suspended or completed.
  * In either case, remove the job from gang scheduling. */
-extern void gs_job_fini(struct job_record *job_ptr);
+extern void gs_job_fini(job_record_t *job_ptr);
 
 /* Gang scheduling has been disabled by change in configuration,
  *	resume any suspended jobs */

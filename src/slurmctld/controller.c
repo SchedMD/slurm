@@ -1502,7 +1502,7 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 static void _update_assoc(slurmdb_assoc_rec_t *rec)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -1554,7 +1554,7 @@ static void _resize_qos(void)
 static void _update_qos(slurmdb_qos_rec_t *rec)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -1734,7 +1734,7 @@ static int _init_tres(void)
  * NOTE: the job_write_lock as well as the assoc_mgr TRES Read lock should be
  * locked before coming in here.
  */
-static void _update_job_tres(struct job_record *job_ptr)
+static void _update_job_tres(job_record_t *job_ptr)
 {
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
@@ -1757,7 +1757,7 @@ static void _update_job_tres(struct job_record *job_ptr)
 static void _update_cluster_tres(void)
 {
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	/* Write lock on jobs */
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -3028,7 +3028,7 @@ extern void set_slurmctld_state_loc(void)
 static void *_assoc_cache_mgr(void *no_data)
 {
 	ListIterator itr = NULL;
-	struct job_record *job_ptr = NULL;
+	job_record_t *job_ptr = NULL;
 	struct part_record *part_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t assoc_rec;
@@ -3415,7 +3415,7 @@ static void _get_fed_updates(void)
 
 static int _foreach_job_running(void *object, void *arg)
 {
-	struct job_record *job_ptr = (struct job_record *)object;
+	job_record_t *job_ptr = (job_record_t *)object;
 
 	if (IS_JOB_PENDING(job_ptr)) {
 		int job_cnt = (job_ptr->array_recs &&

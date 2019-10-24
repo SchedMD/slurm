@@ -77,12 +77,12 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
-static void _build_pending_step(struct job_record  *job_ptr,
+static void _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs);
-static int  _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
+static int  _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 			uint32_t *usable_cpu_cnt);
-static struct step_record * _create_step_record(struct job_record *job_ptr,
-						uint16_t protocol_verion);
+static struct step_record *_create_step_record(job_record_t *job_ptr,
+					       uint16_t protocol_version);
 static void _dump_step_layout(struct step_record *step_ptr);
 static void _free_step_rec(struct step_record *step_ptr);
 static bool _is_mem_resv(void);
@@ -92,16 +92,16 @@ static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 			  int nodes_avail, int nodes_picked_cnt);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer,
 				     uint16_t protocol_version);
-static bitstr_t * _pick_step_nodes(struct job_record *job_ptr,
-				   job_step_create_request_msg_t *step_spec,
-				   List step_gres_list, int cpus_per_task,
-				   uint32_t node_count,
-				   dynamic_plugin_data_t *select_jobinfo,
-				   int *return_code);
-static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
+static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
+				  job_step_create_request_msg_t *step_spec,
+				  List step_gres_list, int cpus_per_task,
+				  uint32_t node_count,
+				  dynamic_plugin_data_t *select_jobinfo,
+				  int *return_code);
+static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
-static int _purge_duplicate_steps(struct job_record *job_ptr,
+static int _purge_duplicate_steps(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_specs);
 static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 				uint32_t range_first, uint32_t range_last);
@@ -163,8 +163,8 @@ static int _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
  * RET a pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with delete_step_record
  */
-static struct step_record * _create_step_record(struct job_record *job_ptr,
-						uint16_t protocol_version)
+static struct step_record *_create_step_record(job_record_t *job_ptr,
+					       uint16_t protocol_version)
 {
 	struct step_record *step_ptr;
 
@@ -198,7 +198,7 @@ static struct step_record * _create_step_record(struct job_record *job_ptr,
 }
 
 /* Purge any duplicate job steps for this PID */
-static int _purge_duplicate_steps(struct job_record *job_ptr,
+static int _purge_duplicate_steps(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_specs)
 {
 	ListIterator step_iterator;
@@ -227,7 +227,7 @@ static int _purge_duplicate_steps(struct job_record *job_ptr,
 
 /* The step with a state of PENDING is used as a placeholder for a host and
  * port that can be used to wake a pending srun as soon another step ends */
-static void _build_pending_step(struct job_record *job_ptr,
+static void _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs)
 {
 	struct step_record *step_ptr;
@@ -251,7 +251,7 @@ static void _build_pending_step(struct job_record *job_ptr,
 
 }
 
-static void _internal_step_complete(struct job_record *job_ptr,
+static void _internal_step_complete(job_record_t *job_ptr,
 				    struct step_record *step_ptr)
 {
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
@@ -309,7 +309,7 @@ static void _internal_step_complete(struct job_record *job_ptr,
  * go DOWN.
  * IN job_ptr - pointer to job table entry to have step records removed
  */
-extern void delete_step_records (struct job_record *job_ptr)
+extern void delete_step_records(job_record_t *job_ptr)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -344,7 +344,7 @@ extern void delete_step_records (struct job_record *job_ptr)
  *	**ONLY CALL WHEN FREEING MEMORY AT END OF JOB**
  * IN job_ptr - pointer to job table entry to have step records removed
  */
-extern void step_list_purge(struct job_record *job_ptr)
+extern void step_list_purge(job_record_t *job_ptr)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -416,8 +416,7 @@ static void _free_step_rec(struct step_record *step_ptr)
  * IN step_id - id of the desired job step
  * RET 0 on success, errno otherwise
  */
-int
-delete_step_record (struct job_record *job_ptr, uint32_t step_id)
+int delete_step_record(job_record_t *job_ptr, uint32_t step_id)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -535,8 +534,7 @@ extern int _find_step_id(void *step_entry, void *key)
  * IN step_id - id of the desired job step
  * RET pointer to the job step's record, NULL on error
  */
-struct step_record *
-find_step_record(struct job_record *job_ptr, uint32_t step_id)
+struct step_record *find_step_record(job_record_t *job_ptr, uint32_t step_id)
 {
 	if (job_ptr == NULL)
 		return NULL;
@@ -559,7 +557,7 @@ find_step_record(struct job_record *job_ptr, uint32_t step_id)
 int job_step_signal(uint32_t job_id, uint32_t step_id,
 		    uint16_t signal, uint16_t flags, uid_t uid)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct step_record *step_ptr;
 	int rc = SLURM_SUCCESS;
 
@@ -727,7 +725,7 @@ void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
 }
 
 /* A step just completed, signal srun processes with pending steps to retry */
-static void _wake_pending_steps(struct job_record *job_ptr)
+static void _wake_pending_steps(job_record_t *job_ptr)
 {
 	static int config_start_count = -1, config_max_age = -1;
 	ListIterator step_iterator;
@@ -797,7 +795,7 @@ static void _wake_pending_steps(struct job_record *job_ptr)
 int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		      bool requeue, uint32_t job_return_code)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct step_record *step_ptr;
 	uint16_t cleaning = 0;
 
@@ -846,7 +844,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
  * IN cpu_cnt - step CPU count specification
  * IN usable_cpu_cnt - count of usable CPUs on each node in node_bitmap
  */
-static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
+static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt)
 {
@@ -960,11 +958,12 @@ static bitstr_t *_pick_step_nodes_cpus(struct job_record *job_ptr,
  * NOTE: returns all of a job's nodes if step_spec->node_count == INFINITE
  * NOTE: returned bitmap must be freed by the caller using FREE_NULL_BITMAP()
  */
-static bitstr_t *
-_pick_step_nodes (struct job_record *job_ptr,
-		  job_step_create_request_msg_t *step_spec,
-		  List step_gres_list, int cpus_per_task, uint32_t node_count,
-		  dynamic_plugin_data_t *select_jobinfo, int *return_code)
+static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
+				  job_step_create_request_msg_t *step_spec,
+				  List step_gres_list, int cpus_per_task,
+				  uint32_t node_count,
+				  dynamic_plugin_data_t *select_jobinfo,
+				  int *return_code)
 {
 	int node_inx, first_bit, last_bit;
 	struct node_record *node_ptr;
@@ -1793,7 +1792,7 @@ cleanup:
  *		NULL if not available
  * RET cpu count
  */
-static int _count_cpus(struct job_record *job_ptr, bitstr_t *bitmap,
+static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 		       uint32_t *usable_cpu_cnt)
 {
 	int i, sum = 0;
@@ -1921,7 +1920,7 @@ static void _pick_step_cores(struct step_record *step_ptr,
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 extern void step_alloc_lps(struct step_record *step_ptr)
 {
-	struct job_record  *job_ptr = step_ptr->job_ptr;
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int cpus_alloc;
 	int i_node, i_first, i_last;
@@ -2027,7 +2026,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
  * the _job_ allocation */
 static void _dump_step_layout(struct step_record *step_ptr)
 {
-	struct job_record* job_ptr = step_ptr->job_ptr;
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int i, bit_inx, core_inx, node_inx, rep, sock_inx;
 
@@ -2064,7 +2063,7 @@ static void _dump_step_layout(struct step_record *step_ptr)
 
 static void _step_dealloc_lps(struct step_record *step_ptr)
 {
-	struct job_record  *job_ptr = step_ptr->job_ptr;
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int cpus_alloc;
 	int i_node, i_first, i_last;
@@ -2180,7 +2179,7 @@ static int _test_strlen(char *test_str, char *str_name, int max_str_len)
 /* Calculate a step's cpus_per_task value. Set to zero if we can't distributed
  * the tasks evenly over the nodes (heterogeneous job allocation). */
 static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
-			       struct job_record  *job_ptr)
+			       job_record_t *job_ptr)
 {
 	int cpus_per_task = 0, i;
 	int num_tasks;
@@ -2217,7 +2216,7 @@ static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
  * Set a job's default cpu_bind_type based upon configuration of allocated nodes,
  * partition or global TaskPluginParams
  */
-static void _set_def_cpu_bind(struct job_record *job_ptr)
+static void _set_def_cpu_bind(job_record_t *job_ptr)
 {
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	struct node_record *node_ptr;
@@ -2317,7 +2316,7 @@ static void _clear_zero_tres(char **tres_spec)
  * then copy those values from the job record
  */
 static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
-				   struct job_record  *job_ptr)
+				   job_record_t *job_ptr)
 {
 	if (!xstrcasecmp(step_specs->tres_per_node, "NONE")) {
 		xfree(step_specs->tres_per_node);
@@ -2352,7 +2351,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    uint16_t protocol_version)
 {
 	struct step_record *step_ptr;
-	struct job_record  *job_ptr;
+	job_record_t *job_ptr;
 	bitstr_t *nodeset;
 	int cpus_per_task, ret_code, i;
 	uint32_t node_count = 0;
@@ -2557,7 +2556,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		job_ptr->next_step_id++;
 	} else if (job_ptr->pack_job_id &&
 		   (job_ptr->pack_job_id != job_ptr->job_id)) {
-		struct job_record *pack_job;
+		job_record_t *pack_job;
 		pack_job = find_job_record(job_ptr->pack_job_id);
 		if (pack_job)
 			step_ptr->step_id = pack_job->next_step_id++;
@@ -2726,7 +2725,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		 * with that node count.
 		 */
 		if (job_ptr->job_id == job_ptr->pack_job_id) {
-			struct job_record *het_job_ptr;
+			job_record_t *het_job_ptr;
 			hostlist_t hl = hostlist_create(NULL);
 			ListIterator itr = list_iterator_create(
 				job_ptr->pack_job_list);
@@ -2747,7 +2746,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		} else {
 			/* assume that job offset 0 has already run! */
 			struct step_record *het_step_ptr;
-			struct job_record *het_job_ptr =
+			job_record_t *het_job_ptr =
 				find_job_pack_record(job_ptr->pack_job_id, 0);
 			ListIterator itr =
 				list_iterator_create(het_job_ptr->step_list);
@@ -2825,7 +2824,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	slurm_step_layout_t *step_layout = NULL;
 	uint16_t cpus_per_node[node_count];
 	uint16_t cpus_per_task_array[node_count];
-	struct job_record *job_ptr = step_ptr->job_ptr;
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	slurm_step_layout_req_t step_layout_req;
 	uint64_t gres_cpus;
@@ -3180,7 +3179,7 @@ extern int pack_ctld_job_step_info_response_msg(
 	int error_code = 0;
 	uint32_t steps_packed = 0, tmp_offset;
 	struct step_record *step_ptr;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	int valid_job = 0;
 
@@ -3243,7 +3242,7 @@ extern int pack_ctld_job_step_info_response_msg(
  * IN node_fail - true of removed node has failed
  * RET count of killed job steps
  */
-extern int kill_step_on_node(struct job_record  *job_ptr,
+extern int kill_step_on_node(job_record_t *job_ptr,
 			     struct node_record *node_ptr, bool node_fail)
 {
 #ifdef HAVE_FRONT_END
@@ -3335,7 +3334,7 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 			       uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct step_record *step_ptr;
 	checkpoint_resp_msg_t resp_data;
 	slurm_msg_t resp_msg;
@@ -3414,7 +3413,7 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 				    uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct step_record *step_ptr;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
@@ -3472,7 +3471,7 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 					 uint16_t protocol_version)
 {
 	int rc = SLURM_SUCCESS;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct step_record *step_ptr;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
@@ -3530,7 +3529,7 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 			     int *rem, uint32_t *max_rc)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct step_record *step_ptr;
 	int nodes, rem_nodes;
 
@@ -3768,8 +3767,7 @@ static int _step_hostname_to_inx(struct step_record *step_ptr,
 	return node_offset;
 }
 
-extern int step_epilog_complete(struct job_record  *job_ptr,
-		char *node_name)
+extern int step_epilog_complete(job_record_t *job_ptr, char *node_name)
 {
 	int rc = 0, node_inx, step_offset;
 	ListIterator step_iterator;
@@ -3812,9 +3810,8 @@ extern int step_epilog_complete(struct job_record  *job_ptr,
 	return rc;
 }
 
-static void
-_suspend_job_step(struct job_record *job_ptr,
-		struct step_record *step_ptr, time_t now)
+static void _suspend_job_step(job_record_t *job_ptr,
+			      struct step_record *step_ptr, time_t now)
 {
 	if ((job_ptr->suspend_time)
 	&&  (job_ptr->suspend_time > step_ptr->start_time)) {
@@ -3828,8 +3825,7 @@ _suspend_job_step(struct job_record *job_ptr,
 }
 
 /* Update time stamps for job step suspend */
-extern void
-suspend_job_step(struct job_record *job_ptr)
+extern void suspend_job_step(job_record_t *job_ptr)
 {
 	time_t now = time(NULL);
 	ListIterator step_iterator;
@@ -3844,9 +3840,8 @@ suspend_job_step(struct job_record *job_ptr)
 	list_iterator_destroy (step_iterator);
 }
 
-static void
-_resume_job_step(struct job_record *job_ptr,
-		struct step_record *step_ptr, time_t now)
+static void _resume_job_step(job_record_t *job_ptr,
+			     struct step_record *step_ptr, time_t now)
 {
 	if ((job_ptr->suspend_time) &&
 	    (job_ptr->suspend_time < step_ptr->start_time)) {
@@ -3859,8 +3854,7 @@ _resume_job_step(struct job_record *job_ptr,
 }
 
 /* Update time stamps for job step resume */
-extern void
-resume_job_step(struct job_record *job_ptr)
+extern void resume_job_step(job_record_t *job_ptr)
 {
 	time_t now = time(NULL);
 	ListIterator step_iterator;
@@ -3964,7 +3958,7 @@ extern int dump_job_step_state(void *x, void *arg)
  * IN/OUT buffer - location to get data from, pointers advanced
  */
 /* NOTE: assoc_mgr tres and assoc read lock must be locked before calling */
-extern int load_step_state(struct job_record *job_ptr, Buf buffer,
+extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 			   uint16_t protocol_version)
 {
 	struct step_record *step_ptr = NULL;
@@ -4221,7 +4215,7 @@ extern void step_checkpoint(void)
 	static int ckpt_run = -1;
 	time_t now = time(NULL), ckpt_due;
 	ListIterator job_iterator;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
 	time_t event_time;
@@ -4310,7 +4304,7 @@ extern void step_checkpoint(void)
 	list_iterator_destroy(job_iterator);
 }
 
-static void _signal_step_timelimit(struct job_record *job_ptr,
+static void _signal_step_timelimit(job_record_t *job_ptr,
 				   struct step_record *step_ptr, time_t now)
 {
 #ifndef HAVE_FRONT_END
@@ -4398,8 +4392,7 @@ static void _signal_step_timelimit(struct job_record *job_ptr,
 	return;
 }
 
-extern void
-check_job_step_time_limit (struct job_record *job_ptr, time_t now)
+extern void check_job_step_time_limit(job_record_t *job_ptr, time_t now)
 {
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
@@ -4450,7 +4443,7 @@ static bool _is_mem_resv(void)
  */
 extern int update_step(step_update_request_msg_t *req, uid_t uid)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct step_record *step_ptr = NULL;
 	struct step_record *step2_ptr = NULL;
 	ListIterator step_iterator;
@@ -4594,7 +4587,7 @@ static int _get_node_cores(int node_inx)
  * job_ptr IN - job that was just re-sized
  * orig_job_node_bitmap IN - The job's original node bitmap
  */
-extern void rebuild_step_bitmaps(struct job_record *job_ptr,
+extern void rebuild_step_bitmaps(job_record_t *job_ptr,
 				 bitstr_t *orig_job_node_bitmap)
 {
 	struct step_record *step_ptr;
@@ -4660,7 +4653,7 @@ extern void rebuild_step_bitmaps(struct job_record *job_ptr,
  */
 extern int post_job_step(struct step_record *step_ptr)
 {
-	struct job_record *job_ptr = step_ptr->job_ptr;
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	int error_code;
 
 	_step_dealloc_lps(step_ptr);
@@ -4681,7 +4674,7 @@ extern int post_job_step(struct step_record *step_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern struct step_record *build_extern_step(struct job_record *job_ptr)
+extern struct step_record *build_extern_step(job_record_t *job_ptr)
 {
 	struct step_record *step_ptr = _create_step_record(job_ptr, 0);
 	char *node_list;
@@ -4716,7 +4709,7 @@ extern struct step_record *build_extern_step(struct job_record *job_ptr)
 	return step_ptr;
 }
 
-extern struct step_record *build_batch_step(struct job_record *job_ptr)
+extern struct step_record *build_batch_step(job_record_t *job_ptr)
 {
 	struct step_record *step_ptr = _create_step_record(job_ptr, 0);
 

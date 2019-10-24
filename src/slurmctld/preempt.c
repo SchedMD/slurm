@@ -49,8 +49,8 @@
 #include "src/slurmctld/job_scheduler.h"
 
 typedef struct slurm_preempt_ops {
-	List		(*find_jobs)	      (struct job_record *job_ptr);
-	uint16_t	(*job_preempt_mode)   (struct job_record *job_ptr);
+	List		(*find_jobs)	      (job_record_t *job_ptr);
+	uint16_t	(*job_preempt_mode)   (job_record_t *job_ptr);
 	bool		(*preemption_enabled) (void);
 	bool		(*job_preempt_check)  (job_queue_rec_t *preemptor,
 					       job_queue_rec_t *preemptee);
@@ -71,7 +71,7 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
-static void _preempt_signal(struct job_record *job_ptr, uint32_t grace_time)
+static void _preempt_signal(job_record_t *job_ptr, uint32_t grace_time)
 {
 	if (job_ptr->preempt_time)
 		return;
@@ -89,8 +89,8 @@ static void _preempt_signal(struct job_record *job_ptr, uint32_t grace_time)
 		job_signal(job_ptr, SIGTERM, 0, 0, 0);
 }
 
-extern int slurm_job_check_grace(struct job_record *job_ptr,
-				 struct job_record *preemptor_ptr)
+extern int slurm_job_check_grace(job_record_t *job_ptr,
+				 job_record_t *preemptor_ptr)
 {
 	/* Preempt modes: -1 (unset), 0 (none), 1 (partition), 2 (QOS) */
 	static int preempt_mode = 0;
@@ -183,7 +183,7 @@ extern int slurm_preempt_fini(void)
 	return rc;
 }
 
-extern List slurm_find_preemptable_jobs(struct job_record *job_ptr)
+extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 {
 	if (slurm_preempt_init() < 0)
 		return NULL;
@@ -194,7 +194,7 @@ extern List slurm_find_preemptable_jobs(struct job_record *job_ptr)
 /*
  * Return the PreemptMode which should apply to stop this job
  */
-extern uint16_t slurm_job_preempt_mode(struct job_record *job_ptr)
+extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr)
 {
 	if (slurm_preempt_init() < 0)
 		return (uint16_t) PREEMPT_MODE_OFF;

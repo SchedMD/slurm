@@ -61,7 +61,7 @@ static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void _pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version);
 
 /* Print all licenses on a list */
-static void _licenses_print(char *header, List licenses, struct job_record *job_ptr)
+static void _licenses_print(char *header, List licenses, job_record_t *job_ptr)
 {
 	ListIterator iter;
 	licenses_t *license_entry;
@@ -598,7 +598,7 @@ extern List license_validate(char *licenses, bool validate_configured,
  *	including duplicate names. Reconstruct this job's licenses and
  *	license_list fields to eliminate duplicates.
  */
-extern void license_job_merge(struct job_record *job_ptr)
+extern void license_job_merge(job_record_t *job_ptr)
 {
 	bool valid = true;
 
@@ -615,8 +615,7 @@ extern void license_job_merge(struct job_record *job_ptr)
  * IN reboot    - true if node reboot required to start job
  * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
  */
-extern int license_job_test(struct job_record *job_ptr, time_t when,
-			    bool reboot)
+extern int license_job_test(job_record_t *job_ptr, time_t when, bool reboot)
 {
 	ListIterator iter;
 	licenses_t *license_entry, *match;
@@ -693,7 +692,7 @@ extern List license_job_copy(List license_list_src)
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
  */
-extern int license_job_get(struct job_record *job_ptr)
+extern int license_job_get(job_record_t *job_ptr)
 {
 	ListIterator iter;
 	licenses_t *license_entry, *match;
@@ -729,7 +728,7 @@ extern int license_job_get(struct job_record *job_ptr)
  * IN job_ptr - job identification
  * RET SLURM_SUCCESS or failure code
  */
-extern int license_job_return(struct job_record *job_ptr)
+extern int license_job_return(job_record_t *job_ptr)
 {
 	ListIterator iter;
 	licenses_t *license_entry, *match;

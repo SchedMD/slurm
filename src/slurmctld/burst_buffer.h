@@ -119,7 +119,7 @@ extern int bb_g_job_validate(struct job_descriptor *job_desc,
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_validate2(struct job_record *job_ptr, char **err_msg);
+extern int bb_g_job_validate2(job_record_t *job_ptr, char **err_msg);
 
 /*
  * Convert a pack job batch script into a script containing only the portions
@@ -138,13 +138,13 @@ extern char *bb_g_build_pack_script(char *script, uint32_t pack_job_offset);
  * IN/OUT tres_cnt - fill in this already allocated array with tres_cnts
  * IN locked - if the assoc_mgr tres read locked is locked or not
  */
-extern void bb_g_job_set_tres_cnt(struct job_record *job_ptr,
-				  uint64_t *tres_cnt, bool locked);
+extern void bb_g_job_set_tres_cnt(job_record_t *job_ptr, uint64_t *tres_cnt,
+				  bool locked);
 
 /*
  * For a given job, return our best guess if when it might be able to start
  */
-extern time_t bb_g_job_get_est_start(struct job_record *job_ptr);
+extern time_t bb_g_job_get_est_start(job_record_t *job_ptr);
 
 /*
  * Allocate burst buffers to jobs expected to start soonest
@@ -163,7 +163,7 @@ extern int bb_g_job_try_stage_in(void);
  *      1 - stage-in complete
  *     -1 - stage-in not started or burst buffer in some unexpected state
  */
-extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only);
+extern int bb_g_job_test_stage_in(job_record_t *job_ptr, bool test_only);
 
 /* Attempt to claim burst buffer resources.
  * At this time, bb_g_job_test_stage_in() should have been run sucessfully AND
@@ -171,7 +171,7 @@ extern int bb_g_job_test_stage_in(struct job_record *job_ptr, bool test_only);
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_begin(struct job_record *job_ptr);
+extern int bb_g_job_begin(job_record_t *job_ptr);
 
 /* Revoke allocation, but do not release resources.
  * Executed after bb_g_job_begin() if there was an allocation failure.
@@ -179,14 +179,14 @@ extern int bb_g_job_begin(struct job_record *job_ptr);
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_revoke_alloc(struct job_record *job_ptr);
+extern int bb_g_job_revoke_alloc(job_record_t *job_ptr);
 
 /*
  * Trigger a job's burst buffer stage-out to begin
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_start_stage_out(struct job_record *job_ptr);
+extern int bb_g_job_start_stage_out(job_record_t *job_ptr);
 
 /*
  * Determine if a job's burst buffer post_run operation is complete
@@ -195,7 +195,7 @@ extern int bb_g_job_start_stage_out(struct job_record *job_ptr);
  *      1 - post_run complete
  *     -1 - fatal error
  */
-extern int bb_g_job_test_post_run(struct job_record *job_ptr);
+extern int bb_g_job_test_post_run(job_record_t *job_ptr);
 
 /*
  * Determine if a job's burst buffer stage-out is complete
@@ -204,14 +204,14 @@ extern int bb_g_job_test_post_run(struct job_record *job_ptr);
  *      1 - stage-out complete
  *     -1 - fatal error
  */
-extern int bb_g_job_test_stage_out(struct job_record *job_ptr);
+extern int bb_g_job_test_stage_out(job_record_t *job_ptr);
 
 /*
  * Terminate any file staging and completely release burst buffer resources
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_job_cancel(struct job_record *job_ptr);
+extern int bb_g_job_cancel(job_record_t *job_ptr);
 
 /*
  * Translate a burst buffer string to it's equivalent TRES string

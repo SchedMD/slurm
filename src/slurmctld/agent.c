@@ -1089,7 +1089,7 @@ static void *_thread_per_group_rpc(void *args)
 		}
 
 		if (msg_type == REQUEST_SIGNAL_TASKS) {
-			struct job_record *job_ptr;
+			job_record_t *job_ptr;
 			signal_tasks_msg_t *msg_ptr =
 				task_ptr->msg_args_ptr;
 
@@ -1193,7 +1193,7 @@ static void *_thread_per_group_rpc(void *args)
 cleanup:
 	xfree(args);
 	if (!ret_list && (msg_type == REQUEST_SIGNAL_TASKS)) {
-		struct job_record *job_ptr;
+		job_record_t *job_ptr;
 		signal_tasks_msg_t *msg_ptr =
 			task_ptr->msg_args_ptr;
 		if ((msg_ptr->signal == SIGCONT) ||
@@ -1941,7 +1941,7 @@ static char *_mail_type_str(uint16_t mail_type)
 	return "unknown";
 }
 
-static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
+static void _set_job_time(job_record_t *job_ptr, uint16_t mail_type,
 			  char *buf, int buf_len)
 {
 	time_t interval = NO_VAL;
@@ -1990,7 +1990,7 @@ static void _set_job_time(struct job_record *job_ptr, uint16_t mail_type,
 	}
 }
 
-static void _set_job_term_info(struct job_record *job_ptr, uint16_t mail_type,
+static void _set_job_term_info(job_record_t *job_ptr, uint16_t mail_type,
 			       char *buf, int buf_len)
 {
 	buf[0] = '\0';
@@ -2059,7 +2059,7 @@ static void _set_job_term_info(struct job_record *job_ptr, uint16_t mail_type,
  * IN job_ptr - job identification
  * IN state_type - job transition type, see MAIL_JOB in slurm.h
  */
-extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
+extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 {
 	char job_time[128], term_msg[128];
 	mail_info_t *mi;
@@ -2085,7 +2085,7 @@ extern void mail_job_info (struct job_record *job_ptr, uint16_t mail_type)
 	/* Use job array master record, if available */
 	if (!(job_ptr->mail_type & MAIL_ARRAY_TASKS) &&
 	    (job_ptr->array_task_id != NO_VAL) && !job_ptr->array_recs) {
-		struct job_record *master_job_ptr;
+		job_record_t *master_job_ptr;
 		master_job_ptr = find_job_record(job_ptr->array_job_id);
 		if (master_job_ptr && master_job_ptr->array_recs)
 			job_ptr = master_job_ptr;
@@ -2134,7 +2134,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	agent_arg_t *agent_arg_ptr;
 	batch_job_launch_msg_t *launch_msg_ptr;
 	time_t now = time(NULL);
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	int nodes_ready = 0, tmp = 0;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
@@ -2224,7 +2224,7 @@ static int _signal_defer(queued_request_t *queued_req_ptr)
 	agent_arg_t *agent_arg_ptr;
 	signal_tasks_msg_t *signal_msg_ptr;
 	time_t now = time(NULL);
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 	signal_msg_ptr = (signal_tasks_msg_t *)agent_arg_ptr->msg_args;

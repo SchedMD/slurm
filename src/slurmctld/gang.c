@@ -86,7 +86,7 @@ enum gs_flags {
 
 struct gs_job {
 	uint32_t job_id;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	uint16_t sig_state;
 	uint16_t row_state;
 };
@@ -364,7 +364,7 @@ static int _find_job_index(struct gs_part *p_ptr, uint32_t job_id)
 }
 
 /* Return 1 if job "cpu count" fits in this row, else return 0 */
-static int _can_cpus_fit(struct job_record *job_ptr, struct gs_part *p_ptr)
+static int _can_cpus_fit(job_record_t *job_ptr, struct gs_part *p_ptr)
 {
 	int i, j, size;
 	uint16_t *p_cpus, *j_cpus;
@@ -392,7 +392,7 @@ static int _can_cpus_fit(struct job_record *job_ptr, struct gs_part *p_ptr)
 
 
 /* Return 1 if job fits in this row, else return 0 */
-static int _job_fits_in_active_row(struct job_record *job_ptr,
+static int _job_fits_in_active_row(job_record_t *job_ptr,
 				   struct gs_part *p_ptr)
 {
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -473,8 +473,7 @@ static void _fill_sockets(bitstr_t *job_nodemap, struct gs_part *p_ptr)
 
 /* Add the given job to the "active" structures of
  * the given partition and increment the run count */
-static void _add_job_to_active(struct job_record *job_ptr,
-			       struct gs_part *p_ptr)
+static void _add_job_to_active(job_record_t *job_ptr, struct gs_part *p_ptr)
 {
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	uint16_t job_gr_type;
@@ -549,7 +548,7 @@ static void _add_job_to_active(struct job_record *job_ptr,
 	p_ptr->jobs_active += 1;
 }
 
-static int _suspend_job(struct job_record *job_ptr)
+static int _suspend_job(job_record_t *job_ptr)
 {
 	int rc;
 	suspend_msg_t msg;
@@ -571,7 +570,7 @@ static int _suspend_job(struct job_record *job_ptr)
 	return rc;
 }
 
-static void _resume_job(struct job_record *job_ptr)
+static void _resume_job(job_record_t *job_ptr)
 {
 	int rc;
 	suspend_msg_t msg;
@@ -605,7 +604,7 @@ static void _preempt_job_queue(uint32_t job_id)
 
 static void _preempt_job_dequeue(void)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	uint32_t job_id, *tmp_id;
 	uint16_t preempt_mode;
 
@@ -945,8 +944,7 @@ static void _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr,
  * then "cast it's shadow" over the active row of any partition with a
  * lower priority than the given partition. Return the sig state of the
  * job (GS_SUSPEND or GS_RESUME) */
-static uint16_t _add_job_to_part(struct gs_part *p_ptr,
-				 struct job_record *job_ptr)
+static uint16_t _add_job_to_part(struct gs_part *p_ptr, job_record_t *job_ptr)
 {
 	int i;
 	struct gs_job *j_ptr;
@@ -1047,7 +1045,7 @@ static uint16_t _add_job_to_part(struct gs_part *p_ptr,
  */
 static void _scan_slurm_job_list(void)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct gs_part *p_ptr;
 	int i;
 	ListIterator job_iterator;
@@ -1210,7 +1208,7 @@ extern void gs_fini(void)
 
 /* Notify the gang scheduler that a job has been resumed or started.
  * In either case, add the job to gang scheduling. */
-extern void gs_job_start(struct job_record *job_ptr)
+extern void gs_job_start(job_record_t *job_ptr)
 {
 	struct gs_part *p_ptr;
 	uint16_t job_sig_state;
@@ -1254,7 +1252,7 @@ extern void gs_job_start(struct job_record *job_ptr)
  *	resume any suspended jobs */
 extern void gs_wake_jobs(void)
 {
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	ListIterator job_iterator;
 
 	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
@@ -1275,7 +1273,7 @@ extern void gs_wake_jobs(void)
 
 /* Notify the gang scheduler that a job has been suspended or completed.
  * In either case, remove the job from gang scheduling. */
-extern void gs_job_fini(struct job_record *job_ptr)
+extern void gs_job_fini(job_record_t *job_ptr)
 {
 	struct gs_part *p_ptr;
 	char *part_name;
@@ -1335,7 +1333,7 @@ extern void gs_reconfig(void)
 	ListIterator part_iterator;
 	struct gs_part *p_ptr, *newp_ptr;
 	List old_part_list;
-	struct job_record *job_ptr;
+	job_record_t *job_ptr;
 	struct gs_job *j_ptr;
 
 	if (!(slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG))
