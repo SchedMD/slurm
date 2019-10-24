@@ -89,47 +89,6 @@ extern int pack_msg ( slurm_msg_t const * msg , Buf buffer );
  */
 extern int unpack_msg ( slurm_msg_t * msg , Buf buffer );
 
-/***************************************************************************/
-/* specific case statement Pack / Unpack methods for slurm protocol bodies */
-/***************************************************************************/
-
-/* pack_job_credential
- * packs a slurm job credential
- * IN cred - pointer to the credential
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-/* void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer ) ;*/
-
-/* unpack_job_credential
- * unpacks a slurm job credential
- * OUT cred - pointer to the credential pointer
- * IN/OUT buffer - source of the unpack, contains pointers that are
- *			automatically updated
- * RET 0 or error code
- */
-/* int unpack_job_credential( slurm_job_credential_t** cred , Buf buffer ) ;*/
-
-/* pack_job_step_info
- * packs a slurm job steps info
- * IN step - pointer to the job step info
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-/* void pack_job_step_info ( job_step_info_t* step, Buf buffer ); */
-
-/* pack_job_step_info_members
- * pack selected fields of the description of a job into a buffer
- * IN job_id, step_id, user_id, start_time, partition, nodes - job info
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-/* void pack_job_step_info_members( uint32_t job_id, uint32_t step_id,  */
-/* 		uint32_t user_id, uint32_t num_tasks, time_t start_time,  */
-/* 		char *partition, char *nodes, char *name, char *network, */
-/* 		Buf buffer ); */
-
-
 extern int slurm_pack_list(List send_list,
 			   void (*pack_function) (void *object,
 						  uint16_t rpc_version,
