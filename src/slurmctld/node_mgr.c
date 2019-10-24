@@ -118,7 +118,7 @@ static void 	_pack_node(node_record_t *dump_node_ptr, Buf buffer,
 			   uint16_t protocol_version, uint16_t show_flags);
 static void	_sync_bitmaps(node_record_t *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
-				struct config_record *config_ptr);
+				   config_record_t *config_ptr);
 static int	_update_node_active_features(char *node_names,
 				char *active_features, int mode);
 static int	_update_node_avail_features(char *node_names,
@@ -696,11 +696,8 @@ unpack_error:
 int list_compare_config (void *config_entry1, void *config_entry2)
 {
 	int weight1, weight2;
-	struct config_record *c1;
-	struct config_record *c2;
-
-	c1 = *(struct config_record **)config_entry1;
-	c2 = *(struct config_record **)config_entry2;
+	config_record_t *c1 = *(config_record_t **) config_entry1;
+	config_record_t *c2 = *(config_record_t **) config_entry2;
 
 	weight1 = c1->weight;
 	weight2 = c2->weight;
@@ -1611,9 +1608,9 @@ extern void restore_node_features(int recover)
 }
 
 /* Duplicate a configuration record except for the node names & bitmap */
-struct config_record * _dup_config(struct config_record *config_ptr)
+config_record_t *_dup_config(config_record_t *config_ptr)
 {
-	struct config_record *new_config_ptr;
+	config_record_t *new_config_ptr;
 
 	new_config_ptr = create_config_record();
 	new_config_ptr->magic       = config_ptr->magic;
@@ -1645,8 +1642,7 @@ static int _update_node_weight(char *node_names, uint32_t weight)
 {
 	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
 	ListIterator config_iterator;
-	struct config_record *config_ptr, *new_config_ptr;
-	struct config_record *first_new = NULL;
+	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	int rc, config_cnt, tmp_cnt;
 
 	rc = node_name2bitmap(node_names, false, &node_bitmap);
@@ -1798,8 +1794,7 @@ static int _update_node_avail_features(char *node_names, char *avail_features,
 	static bitstr_t *last_node_bitmap = NULL;
 	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
 	ListIterator config_iterator;
-	struct config_record *config_ptr, *new_config_ptr;
-	struct config_record *first_new = NULL;
+	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	int rc, config_cnt, tmp_cnt;
 
 	if (mode < FEATURE_MODE_PEND) {
@@ -1883,8 +1878,7 @@ static int _update_node_gres(char *node_names, char *gres)
 {
 	bitstr_t *changed_node_bitmap = NULL, *node_bitmap = NULL, *tmp_bitmap;
 	ListIterator config_iterator;
-	struct config_record *config_ptr, *new_config_ptr;
-	struct config_record *first_new = NULL;
+	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	node_record_t *node_ptr;
 	int rc, rc2, overlap1, overlap2;
 	int i, i_first, i_last;
@@ -1997,8 +1991,7 @@ static int _update_node_gres(char *node_names, char *gres)
 }
 
 /* Reset the config pointer for updated jobs */
-static void _update_config_ptr(bitstr_t *bitmap,
-		struct config_record *config_ptr)
+static void _update_config_ptr(bitstr_t *bitmap, config_record_t *config_ptr)
 {
 	int i;
 
@@ -2196,7 +2189,7 @@ extern int update_node_record_acct_gather_data(
 static void _split_node_config(node_record_t *node_ptr,
 			       slurm_node_registration_status_msg_t *reg_msg)
 {
-	struct config_record *config_ptr, *new_config_ptr;
+	config_record_t *config_ptr, *new_config_ptr;
 	int node_inx;
 
 	if (!node_ptr)
@@ -2209,7 +2202,7 @@ static void _split_node_config(node_record_t *node_ptr,
 	if ((bit_set_count(config_ptr->node_bitmap) > 1) &&
 	    bit_test(config_ptr->node_bitmap, node_inx)) {
 		new_config_ptr = create_config_record();
-		memcpy(new_config_ptr, config_ptr, sizeof(struct config_record));
+		memcpy(new_config_ptr, config_ptr, sizeof(config_record_t));
 		new_config_ptr->cpu_spec_list =
 			xstrdup(config_ptr->cpu_spec_list);
 		new_config_ptr->feature = xstrdup(config_ptr->feature);
@@ -2239,7 +2232,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 			       uint16_t protocol_version, bool *newly_up)
 {
 	int error_code, i, node_inx;
-	struct config_record *config_ptr;
+	config_record_t *config_ptr;
 	node_record_t *node_ptr;
 	char *reason_down = NULL;
 	char *orig_features = NULL, *orig_features_act = NULL;
@@ -2763,7 +2756,7 @@ extern int validate_nodes_via_front_end(
 	int error_code = 0, i, j, rc;
 	bool update_node_state = false;
 	job_record_t *job_ptr;
-	struct config_record *config_ptr;
+	config_record_t *config_ptr;
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	ListIterator job_iterator;

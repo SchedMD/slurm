@@ -2142,11 +2142,10 @@ cleanup:
 	return error_code;
 }
 
-static void _check_callback(char *alias, char *hostname,
-			    char *address, uint16_t port,
-			    int state_val,
+static void _check_callback(char *alias, char *hostname, char *address,
+			    uint16_t port, int state_val,
 			    slurm_conf_node_t *node_ptr,
-			    struct config_record *config_ptr)
+			    config_record_t *config_ptr)
 {
 	_push_to_hashtbls(alias, hostname, address, port,
 			  node_ptr->cpus, node_ptr->boards,

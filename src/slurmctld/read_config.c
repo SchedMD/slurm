@@ -326,7 +326,7 @@ static void _build_bitmaps_pre_select(void)
 
 static int _reset_node_bitmaps(void *x, void *arg)
 {
-	struct config_record *config_ptr = (struct config_record *) x;
+	config_record_t *config_ptr = (config_record_t *) x;
 
 	FREE_NULL_BITMAP(config_ptr->node_bitmap);
 	config_ptr->node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
@@ -1601,7 +1601,7 @@ static void _list_delete_feature(void *feature_entry)
 extern void build_feature_list_eq(void)
 {
 	ListIterator config_iterator;
-	struct config_record *config_ptr;
+	config_record_t *config_ptr;
 	node_feature_t *active_feature_ptr, *avail_feature_ptr;
 	ListIterator feature_iter;
 	char *tmp_str, *token, *last = NULL;

@@ -1077,7 +1077,7 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 				     sizeof(node_use_record_t));
 
 	for (i = 0; i < select_node_cnt; i++) {
-		struct config_record *config_ptr;
+		config_record_t *config_ptr;
 		select_node_record[i].node_ptr = &node_ptr[i];
 		select_node_record[i].mem_spec_limit =
 			node_ptr[i].mem_spec_limit;

@@ -57,7 +57,7 @@
 #define CONFIG_MAGIC	0xc065eded
 #define NODE_MAGIC	0x0de575ed
 
-struct config_record {
+typedef struct {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	uint16_t cpus;		/* count of processors running on the node */
 	char *cpu_spec_list;	/* arbitrary list of specialized cpus */
@@ -78,7 +78,7 @@ struct config_record {
 	char *gres;		/* arbitrary list of node's generic resources */
 	char *nodes;		/* name of nodes with this configuration */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
-};
+} config_record_t;
 extern List config_list;	/* list of config_record entries */
 
 extern List front_end_list;	/* list of slurm_conf_frontend_t entries */
@@ -112,7 +112,7 @@ struct node_record {
 	uint64_t mem_spec_limit;	/* MB memory limit for specialization */
 	uint32_t tmp_disk;		/* MB total disk in TMP_FS */
 	uint32_t up_time;		/* seconds since node boot */
-	struct config_record *config_ptr;  /* configuration spec ptr */
+	config_record_t *config_ptr;	/* configuration spec ptr */
 	uint16_t part_cnt;		/* number of associated partitions */
 	void **part_pptr;		/* array of pointers to partitions
 					 * associated with this node*/
@@ -237,14 +237,14 @@ extern int build_all_frontend_info (bool is_slurmd_context);
  *	default_node_record - default node configuration values
  */
 extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
-			       struct config_record *config_ptr,
+			       config_record_t *config_ptr,
 			       bool test_config,
 			       void (*_callback) (
 				       char *alias, char *hostname,
 				       char *address, uint16_t port,
 				       int state_val,
 				       slurm_conf_node_t *node_ptr,
-				       struct config_record *config_ptr));
+				       config_record_t *config_ptr));
 
 /*
  * create_config_record - create a config_record entry and set is values to
@@ -255,7 +255,7 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
  * NOTE: memory allocated will remain in existence until
  *	_delete_config_record() is called to delete all configuration records
  */
-extern struct config_record *create_config_record (void);
+extern config_record_t *create_config_record(void);
 
 /*
  * create_node_record - create a node record and set its values to defaults
@@ -265,7 +265,7 @@ extern struct config_record *create_config_record (void);
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
-extern node_record_t *create_node_record(struct config_record *config_ptr,
+extern node_record_t *create_node_record(config_record_t *config_ptr,
 					 char *node_name);
 
 /*

@@ -147,7 +147,7 @@ static void _set_err_msg(bool cpus_ok, bool mem_ok, bool disk_ok,
 static void _set_sched_weight(struct node_set *node_set_ptr);
 static int _sort_node_set(const void *x, const void *y);
 static bitstr_t *_valid_features(job_record_t *job_ptr,
-				 struct config_record *config_ptr,
+				 config_record_t *config_ptr,
 				 bool can_reboot, bitstr_t *reboot_bitmap);
 
 static uint32_t reboot_weight = 0;
@@ -3575,7 +3575,7 @@ extern int job_req_node_filter(job_record_t *job_ptr,
 	struct job_details *detail_ptr = job_ptr->details;
 	multi_core_data_t *mc_ptr;
 	node_record_t *node_ptr;
-	struct config_record *config_ptr;
+	config_record_t *config_ptr;
 	bool has_xor = false;
 
 	if (detail_ptr == NULL) {
@@ -3633,7 +3633,7 @@ extern int job_req_node_filter(job_record_t *job_ptr,
  *		    if NO_VAL then use original node_weight
  */
 static void _split_node_set(struct node_set *node_set_ptr,
-			    struct config_record *config_ptr,
+			    config_record_t *config_ptr,
 			    int nset_inx_base, int nset_inx,
 			    bitstr_t *nset_feature_bits,
 			    bitstr_t *nset_node_bitmap, uint32_t nset_flags,
@@ -3688,7 +3688,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	int adj_cpus, i, node_set_inx, node_set_len, node_set_inx_base;
 	int power_cnt, rc, qos_cnt;
 	struct node_set *node_set_ptr, *prev_node_set_ptr;
-	struct config_record *config_ptr;
+	config_record_t *config_ptr;
 	part_record_t *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
 	int total_cores;
@@ -4462,7 +4462,7 @@ extern int pick_batch_host(job_record_t *job_ptr)
  *	mutually exclusive feature list.
  */
 static bitstr_t *_valid_features(job_record_t *job_ptr,
-				 struct config_record *config_ptr,
+				 config_record_t *config_ptr,
 				 bool can_reboot, bitstr_t *reboot_bitmap)
 {
 	struct job_details *details_ptr = job_ptr->details;

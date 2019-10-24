@@ -127,7 +127,7 @@ static int _node_weight_sort(void *x, void *y);
 static int _node_weight_find(void *x, void *key)
 {
 	node_weight_type *nwt = (node_weight_type *) x;
-	struct config_record *config_ptr = (struct config_record *) key;
+	config_record_t *config_ptr = (config_record_t *) key;
 	if (nwt->weight == config_ptr->weight)
 		return 1;
 	return 0;

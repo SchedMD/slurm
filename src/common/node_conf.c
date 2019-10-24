@@ -143,8 +143,7 @@ static void _dump_hash (void)
  *	see list.h for documentation */
 static void _list_delete_config (void *config_entry)
 {
-	struct config_record *config_ptr = (struct config_record *)
-					   config_entry;
+	config_record_t *config_ptr = (config_record_t *) config_entry;
 
 	xassert(config_ptr);
 	xassert(config_ptr->magic == CONFIG_MAGIC);
@@ -337,7 +336,7 @@ static void _check_callback(char *alias, char *hostname,
 			    char *address, uint16_t port,
 			    int state_val,
 			    slurm_conf_node_t *node_ptr,
-			    struct config_record *config_ptr)
+			    config_record_t *config_ptr)
 {
 	node_record_t *node_rec;
 
@@ -369,7 +368,7 @@ static void _check_callback(char *alias, char *hostname,
 extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 {
 	slurm_conf_node_t *node, **ptr_array;
-	struct config_record *config_ptr = NULL;
+	config_record_t *config_ptr = NULL;
 	int count;
 	int i, rc, max_rc = SLURM_SUCCESS;
 	bool in_daemon;
@@ -421,8 +420,7 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 	if (set_bitmap) {
 		ListIterator config_iterator;
 		config_iterator = list_iterator_create(config_list);
-		while ((config_ptr = (struct config_record *)
-				list_next(config_iterator))) {
+		while ((config_ptr = list_next(config_iterator))) {
 			node_name2bitmap(config_ptr->nodes, true,
 					 &config_ptr->node_bitmap);
 		}
@@ -440,14 +438,14 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
  *	default_node_record - default node configuration values
  */
 extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
-			       struct config_record *config_ptr,
+			       config_record_t *config_ptr,
 			       bool test_config,
 			       void (*_callback) (
 				       char *alias, char *hostname,
 				       char *address, uint16_t port,
 				       int state_val,
 				       slurm_conf_node_t *node_ptr,
-				       struct config_record *config_ptr))
+				       config_record_t *config_ptr))
 {
 	int error_code = SLURM_SUCCESS;
 	hostlist_t address_list = NULL;
@@ -589,9 +587,9 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
  * NOTE: memory allocated will remain in existence until
  *	_delete_config_record() is called to delete all configuration records
  */
-extern struct config_record * create_config_record (void)
+extern config_record_t *create_config_record(void)
 {
-	struct config_record *config_ptr = xmalloc(sizeof(*config_ptr));
+	config_record_t *config_ptr = xmalloc(sizeof(*config_ptr));
 
 	last_node_update = time (NULL);
 
@@ -612,7 +610,7 @@ extern struct config_record * create_config_record (void)
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
-extern node_record_t *create_node_record(struct config_record *config_ptr,
+extern node_record_t *create_node_record(config_record_t *config_ptr,
 					 char *node_name)
 {
 	node_record_t *node_ptr;
