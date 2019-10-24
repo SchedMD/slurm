@@ -219,7 +219,7 @@ static int _get_gres_config(job_record_t *job_ptr)
 {
 	List                gres_list;
 	bitstr_t *	    node_bitmap = job_ptr->node_bitmap;
-	struct node_record* node_ptr;
+	node_record_t *node_ptr;
 	uint32_t            *gres_count_ids = NULL;
 	uint32_t            *gres_count_ids_loc = NULL;
 	uint64_t            *gres_count_vals = NULL;
@@ -392,7 +392,7 @@ static int _build_gres_alloc_string(job_record_t *job_ptr)
 extern void allocate_nodes(job_record_t *job_ptr)
 {
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	bool has_cloud = false, has_cloud_power_save = false;
 	static bool cloud_dns = false;
 	static time_t sched_update = 0;
@@ -440,7 +440,7 @@ extern void allocate_nodes(job_record_t *job_ptr)
 extern void set_job_alias_list(job_record_t *job_ptr)
 {
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	xfree(job_ptr->alias_list);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -483,7 +483,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
 	int down_node_cnt = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #endif
@@ -981,7 +981,7 @@ extern void filter_by_node_owner(job_record_t *job_ptr,
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr2;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i;
 
 	if ((job_ptr->details->whole_node == WHOLE_NODE_USER) ||
@@ -1019,7 +1019,7 @@ extern void filter_by_node_owner(job_record_t *job_ptr,
 extern void filter_by_node_mcs(job_record_t *job_ptr, int mcs_select,
 			       bitstr_t *usable_node_mask)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i;
 
 	/* Need to filter out any nodes allocated with other mcs */
@@ -1793,7 +1793,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 static void _sync_node_weight(struct node_set *node_set_ptr, int node_set_size)
 {
 	int i, i_first, i_last, s;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	for (s = 0; s < node_set_size; s++) {
 		if (!node_set_ptr[s].my_bitmap)
@@ -1866,7 +1866,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	static uint32_t cr_enabled = NO_VAL;
 	static uint32_t single_select_job_test = 0;
 
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, avail_nodes = 0;
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
@@ -2130,7 +2130,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (single_select_job_test && ((i+1) < node_set_size)) {
 				/*
 				 * Execute select_g_job_test() _once_ using
-				 * sched_weight in struct node_record as set
+				 * sched_weight in node_record_t as set
 				 * by _sync_node_weight()
 				 */
 				continue;
@@ -3578,7 +3578,7 @@ extern int job_req_node_filter(job_record_t *job_ptr,
 	int i;
 	struct job_details *detail_ptr = job_ptr->details;
 	multi_core_data_t *mc_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	struct config_record *config_ptr;
 	bool has_xor = false;
 
@@ -4292,7 +4292,7 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 {
 	hostlist_t host_list = NULL;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *this_node_name;
 	int node_inx = 0;
 
@@ -4374,7 +4374,7 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 extern int pick_batch_host(job_record_t *job_ptr)
 {
 	int i, i_first;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *tmp, *tok, sep, last_sep = '&';
 	node_feature_t *feature_ptr;
 	ListIterator feature_iter;
@@ -4591,7 +4591,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 	hostlist_t kill_hostlist;
 	char *host_str = NULL;
 	static uint32_t last_job_id = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	step_record_t *step_ptr;
 	ListIterator step_iterator;
 #ifdef HAVE_FRONT_END

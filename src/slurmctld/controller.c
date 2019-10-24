@@ -1415,7 +1415,7 @@ static int _accounting_mark_all_nodes_down(char *reason)
 {
 	char *state_file;
 	struct stat stat_buf;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i;
 	time_t event_time;
 	int rc = SLURM_ERROR;
@@ -1781,7 +1781,7 @@ static void _update_cluster_tres(void)
 static void _queue_reboot_msg(void)
 {
 	agent_arg_t *reboot_agent_args = NULL;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *host_str;
 	time_t now = time(NULL);
 	int i;
@@ -2409,7 +2409,7 @@ static int _add_node_gres_tres(void *x, void *arg)
 	uint64_t gres_cnt;
 	int tres_pos;
 	slurmdb_tres_rec_t *tres_rec_in = (slurmdb_tres_rec_t *)x;
-	struct node_record *node_ptr = (struct node_record *)arg;
+	node_record_t *node_ptr = (node_record_t *) arg;
 
 	xassert(tres_rec_in);
 
@@ -2428,8 +2428,7 @@ static int _add_node_gres_tres(void *x, void *arg)
  * Set the node's billing tres to the highest billing of all partitions that the
  * node is a part of.
  */
-static void _set_node_billing_tres(struct node_record *node_ptr,
-				   uint64_t cpu_count,
+static void _set_node_billing_tres(node_record_t *node_ptr, uint64_t cpu_count,
 				   bool assoc_mgr_locked)
 {
 	int i;
@@ -2460,7 +2459,7 @@ static void _set_node_billing_tres(struct node_record *node_ptr,
 
 extern void set_cluster_tres(bool assoc_mgr_locked)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	slurmdb_tres_rec_t *tres_rec, *cpu_tres = NULL, *mem_tres = NULL;
 	int i;
 	uint64_t cluster_billing = 0;

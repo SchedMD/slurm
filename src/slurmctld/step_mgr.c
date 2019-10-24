@@ -707,7 +707,7 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
 	if (!agent_args->hostlist)
 		fatal("Invalid batch_host: %s", step_ptr->job_ptr->batch_host);
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	if ((node_ptr = find_node_record(node_name)))
 		agent_args->protocol_version = node_ptr->protocol_version;
 	agent_args->node_count++;
@@ -966,7 +966,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  int *return_code)
 {
 	int node_inx, first_bit, last_bit;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *select_nodes_avail = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
@@ -1796,7 +1796,7 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 		       uint32_t *usable_cpu_cnt)
 {
 	int i, sum = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus &&
 	    job_ptr->job_resrcs->node_bitmap) {
@@ -2219,7 +2219,7 @@ static int _calc_cpus_per_task(job_step_create_request_msg_t *step_specs,
 static void _set_def_cpu_bind(job_record_t *job_ptr)
 {
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i, i_first, i_last;
 	uint32_t bind_bits, bind_to_bits, node_bind = NO_VAL;
 	bool node_fail = false;
@@ -2882,7 +2882,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			continue;
 		job_node_offset++;
 		if (bit_test(step_ptr->step_node_bitmap, i)) {
-			struct node_record *node_ptr =
+			node_record_t *node_ptr =
 				node_record_table_ptr + i;
 
 #ifndef HAVE_FRONT_END
@@ -3241,8 +3241,8 @@ extern int pack_ctld_job_step_info_response_msg(
  * IN node_fail - true of removed node has failed
  * RET count of killed job steps
  */
-extern int kill_step_on_node(job_record_t *job_ptr,
-			     struct node_record *node_ptr, bool node_fail)
+extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
+			     bool node_fail)
 {
 #ifdef HAVE_FRONT_END
 	static bool front_end = true;
@@ -3750,7 +3750,7 @@ static hostlist_t _step_range_to_hostlist(step_record_t *step_ptr,
  * nodes allocation. returns -1 on error */
 static int _step_hostname_to_inx(step_record_t *step_ptr, char *node_name)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i, node_inx, node_offset = 0;
 
 	node_ptr = find_node_record(node_name);
@@ -3770,7 +3770,7 @@ extern int step_epilog_complete(job_record_t *job_ptr, char *node_name)
 	int rc = 0, node_inx, step_offset;
 	ListIterator step_iterator;
 	step_record_t *step_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (!switch_g_part_comp()) {
 		/* don't bother with partitial completions */
@@ -4570,10 +4570,9 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 /* Return the total core count on a given node index */
 static int _get_node_cores(int node_inx)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr = node_record_table_ptr + node_inx;
 	int socks, cores;
 
-	node_ptr = node_record_table_ptr + node_inx;
 	socks = node_ptr->config_ptr->sockets;
 	cores = node_ptr->config_ptr->cores;
 

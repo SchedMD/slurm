@@ -78,11 +78,11 @@
  * overwritten when linking with the slurmctld.
  */
 #if defined (__APPLE__)
-extern struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern node_record_t *node_record_table_ptr __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
 #else
-struct node_record *node_record_table_ptr = NULL;
+node_record_t *node_record_table_ptr = NULL;
 List job_list = NULL;
 int node_record_count = 0;
 #endif
@@ -397,7 +397,7 @@ static void _get_capabilities(void)
 	int i, j, num_ent = 0, status = 0;
 	json_object *j_obj;
 	json_object_iter iter;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	hostlist_t hl = NULL;
 	DEF_TIMERS;
 
@@ -663,7 +663,7 @@ static void _build_full_nid_string(void)
 	/* Read nodes */
 	slurmctld_lock_t read_node_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	hostset_t hs = NULL;
 	char *sep, *tmp_str;
 	int i, num_ent = 0;
@@ -709,7 +709,7 @@ static void _get_caps(void)
 	int i, num_ent = 0, status = 0;
 	json_object *j_obj;
 	json_object_iter iter;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	DEF_TIMERS;
 
 	script_argv[0] = capmc_path;
@@ -925,7 +925,7 @@ static void _get_nodes_ready(void)
 	slurmctld_lock_t write_node_lock = {
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	char *cmd_resp, *script_argv[5];
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	power_config_nodes_t *ents = NULL;
 	int i, j, num_ent, status = 0;
 	json_object *j_obj;
@@ -1058,7 +1058,7 @@ static void _get_node_energy_counter(void)
 	uint64_t delta_joules, delta_time, usecs_day;
 	json_object *j_obj;
 	json_object_iter iter;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	DEF_TIMERS;
 
 	_build_full_nid_string();
@@ -1311,7 +1311,7 @@ extern void *_power_agent(void *args)
 /* Set power cap on all nodes to zero */
 static void _clear_node_caps(void)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i;
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -1329,7 +1329,7 @@ static void _clear_node_caps(void)
 /* Set power cap on all nodes to the same value "set_watts" */
 static void _set_node_caps(void)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i;
 
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -1356,7 +1356,7 @@ static void _level_power_by_job(void)
 	int i, i_first, i_last;
 	job_record_t *job_ptr;
 	ListIterator job_iterator;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t ave_watts, total_watts, total_nodes;
 	uint32_t max_watts, min_watts;
 
@@ -1420,7 +1420,7 @@ static void _level_power_by_job(void)
  * and any power leveling by job */
 static void _rebalance_node_power(void)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t alloc_power = 0, avail_power = 0, ave_power, new_cap, tmp_u32;
 	uint32_t node_power_raise_cnt = 0, node_power_needed = 0;
 	uint32_t node_power_same_cnt = 0, node_power_lower_cnt = 0;
@@ -1567,7 +1567,7 @@ static void _rebalance_node_power(void)
 
 static void _log_node_power(void)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t total_current_watts = 0, total_min_watts = 0;
 	uint32_t total_max_watts = 0, total_cap_watts = 0;
 	uint32_t total_new_cap_watts = 0, total_ready_cnt = 0;
@@ -1613,7 +1613,7 @@ static void _log_node_power(void)
 
 static void _set_power_caps(void)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *cmd_resp, *json = NULL, *script_argv[4];
 	int i, status = 0;
 	DEF_TIMERS;

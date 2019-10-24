@@ -202,7 +202,7 @@ _find_node(char *node_name)
 {
 	int i;
 	sw_gen_node_info_t *n;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (node_name == NULL) {
 		error("%s: _find_node node name is NULL", plugin_type);

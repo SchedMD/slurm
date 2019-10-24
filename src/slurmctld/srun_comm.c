@@ -206,7 +206,7 @@ extern void srun_allocate_abort(job_record_t *job_ptr)
 extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 {
 #ifndef HAVE_FRONT_END
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 #endif
 	int bit_position = -1;
 	slurm_addr_t * addr;
@@ -383,7 +383,7 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 		return SLURM_SUCCESS;
 	} else if (job_ptr->batch_flag && IS_JOB_RUNNING(job_ptr)) {
 #ifndef HAVE_FRONT_END
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 #endif
 		job_notify_msg_t *notify_msg_ptr;
 		agent_arg_t *agent_arg_ptr;

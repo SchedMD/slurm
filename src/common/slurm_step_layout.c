@@ -481,8 +481,8 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	hostlist_t step_alloc_hosts = NULL;
 
 	int step_inx = 0, step_hosts_cnt = 0;
-	struct node_record **step_hosts_ptrs = NULL;
-	struct node_record *host_ptr = NULL;
+	node_record_t **step_hosts_ptrs = NULL;
+	node_record_t *host_ptr = NULL;
 
 	debug2("job list is %s", step_layout->node_list);
 	if (!arbitrary_nodes) {
@@ -512,7 +512,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	 */
 	step_hosts_cnt  = hostlist_count(step_alloc_hosts);
 	step_hosts_ptrs = xcalloc(step_hosts_cnt,
-				  sizeof(struct node_record *));
+				  sizeof(node_record_t *));
 
 	step_inx = 0;
 	while((host = hostlist_next(itr_task))) {

@@ -592,7 +592,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			      enum node_cr_state job_node_req,
 			      bitstr_t **exc_cores, bool qos_preemptor)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t gres_cpus, gres_cores;
 	uint64_t free_mem, min_mem, avail_mem;
 	List gres_list;
@@ -1517,7 +1517,7 @@ alloc_job:
 		i_last = -2;
 	if (is_cons_tres &&
 	    job_ptr->gres_list && (error_code == SLURM_SUCCESS)) {
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 		bool have_gres_per_task, task_limit_set = false;
 
 		/*

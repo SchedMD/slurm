@@ -103,7 +103,7 @@ extern int node_features_g_node_update(char *active_features,
  * Return TRUE if the specified node update request is valid with respect
  * to features changes (i.e. don't permit a non-KNL node to set KNL features).
  *
- * node_ptr IN - Pointer to struct node_record record
+ * node_ptr IN - Pointer to node_record_t record
  * update_node_msg IN - Pointer to update request
  */
 extern bool node_features_g_node_update_valid(void *node_ptr,

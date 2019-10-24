@@ -54,7 +54,7 @@ extern void nodes_to_hilbert_curve(void)
 	static bool first_run = true;
 	int coord_inx, i, j, k, max_coord = 0;
 	int *coords;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	coord_t hilbert[3];
 	int dims = 3;
 #if 	(SYSTEM_DIMENSIONS != 3)

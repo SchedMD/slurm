@@ -87,7 +87,7 @@
  */
 #if defined (__APPLE__)
 extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
-extern struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern node_record_t *node_record_table_ptr __attribute__((weak_import));
 extern List part_list __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
@@ -103,7 +103,7 @@ extern struct hypercube_switch ***hypercube_switches __attribute__((weak_import)
 
 #else
 slurm_ctl_conf_t slurmctld_conf;
-struct node_record *node_record_table_ptr;
+node_record_t *node_record_table_ptr;
 List part_list;
 List job_list;
 int node_record_count;
@@ -168,8 +168,8 @@ static bool _rem_tot_job(struct cr_record *cr_ptr, uint32_t job_id);
 static int _rm_job_from_nodes(struct cr_record *cr_ptr,
 			      job_record_t *job_ptr, char *pre_err,
 			      bool remove_all, bool job_fini);
-static int _rm_job_from_one_node(job_record_t *job_ptr,
-				 struct node_record *node_ptr, char *pre_err);
+static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
+				 char *pre_err);
 static int _run_now(job_record_t *job_ptr, bitstr_t *bitmap,
 		    uint32_t min_nodes, uint32_t max_nodes,
 		    int max_share, uint32_t req_nodes,
@@ -220,7 +220,7 @@ const char plugin_type[]       	= "select/linear";
 const uint32_t plugin_id	= SELECT_PLUGIN_LINEAR;
 const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
 
-static struct node_record *select_node_ptr = NULL;
+static node_record_t *select_node_ptr = NULL;
 static int select_node_cnt = 0;
 static uint16_t cr_type;
 static bool have_dragonfly = false;
@@ -372,7 +372,7 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
  */
 static int _get_avail_cpus(job_record_t *job_ptr, int index)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int avail_cpus;
 	uint16_t boards_per_node, sockets_per_board;
 	uint16_t cores_per_socket, thread_per_core;
@@ -443,7 +443,7 @@ static int _get_avail_cpus(job_record_t *job_ptr, int index)
  */
 static uint16_t _get_total_cpus(int index)
 {
-	struct node_record *node_ptr = &(select_node_ptr[index]);
+	node_record_t *node_ptr = &(select_node_ptr[index]);
 	return node_ptr->config_ptr->cpus;
 }
 
@@ -540,7 +540,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 	int i, i_first, i_last;
 	int count = 0, total_jobs, total_run_jobs;
 	struct part_cr_record *part_cr_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint64_t job_memory_cpu = 0, job_memory_node = 0;
 	uint64_t alloc_mem = 0, job_mem = 0, avail_mem = 0;
 	uint32_t cpu_cnt, gres_cpus, gres_cores;
@@ -2249,7 +2249,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 	uint64_t job_memory, job_memory_cpu = 0, job_memory_node = 0;
 	bool exclusive, is_job_running;
 	uint16_t cpu_cnt;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	List gres_list;
 	bool old_job = false;
 
@@ -2386,7 +2386,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 {
 	int i, node_cnt, rc = SLURM_SUCCESS;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	job_resources_t *from_job_resrcs_ptr, *to_job_resrcs_ptr,
 		        *new_job_resrcs_ptr;
 	bool from_node_used, to_node_used;
@@ -2579,7 +2579,7 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 static int _decr_node_job_cnt(int node_inx, job_record_t *job_ptr,
 			      char *pre_err)
 {
-	struct node_record *node_ptr = node_record_table_ptr + node_inx;
+	node_record_t *node_ptr = node_record_table_ptr + node_inx;
 	struct part_cr_record *part_cr_ptr;
 	bool exclusive = false, is_job_running;
 
@@ -2637,8 +2637,8 @@ static int _decr_node_job_cnt(int node_inx, job_record_t *job_ptr,
 /*
  * deallocate resources that were assigned to this job on one node
  */
-static int _rm_job_from_one_node(job_record_t *job_ptr,
-				 struct node_record *node_ptr, char *pre_err)
+static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
+				 char *pre_err)
 {
 	int i, node_inx, node_offset;
 	job_resources_t *job_resrcs_ptr;
@@ -2737,7 +2737,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	job_resources_t *job_resrcs_ptr;
 	uint64_t job_memory_cpu = 0, job_memory_node = 0;
 	uint16_t cpu_cnt;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	List gres_list;
 
 	if (cr_ptr == NULL) {
@@ -2856,7 +2856,7 @@ static void _dump_node_cr(struct cr_record *cr_ptr)
 #if SELECT_DEBUG
 	int i;
 	struct part_cr_record *part_cr_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	List gres_list;
 
 	if ((cr_ptr == NULL) || (cr_ptr->nodes == NULL))
@@ -2901,7 +2901,7 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 	int i;
 	struct cr_record *new_cr_ptr;
 	struct part_cr_record *part_cr_ptr, *new_part_cr_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	List gres_list;
 
 	if (cr_ptr == NULL)
@@ -2954,7 +2954,7 @@ static void _init_node_cr(void)
 	struct part_record *part_ptr;
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	ListIterator part_iterator;
 	job_record_t *job_ptr;
 	ListIterator job_iterator;
@@ -3508,12 +3508,12 @@ extern int select_p_job_init(List job_list_arg)
 	return SLURM_SUCCESS;
 }
 
-extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
+extern bool select_p_node_ranking(node_record_t *node_ptr, int node_cnt)
 {
 	return false;
 }
 
-extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
+extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 {
 	if (node_ptr == NULL) {
 		error("select_p_node_init: node_ptr == NULL");
@@ -3667,7 +3667,7 @@ extern int select_p_job_begin(job_record_t *job_ptr)
 extern int select_p_job_ready(job_record_t *job_ptr)
 {
 	int i, i_first, i_last;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
 		/* Gang scheduling might suspend job immediately */
@@ -3708,8 +3708,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
  *      Only support jobs shrinking now.
  * RET: 0 or an error code
  */
-extern int select_p_job_resized(job_record_t *job_ptr,
-				struct node_record *node_ptr)
+extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -3893,7 +3892,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 
 extern int select_p_select_nodeinfo_set_all(void)
 {
-	struct node_record *node_ptr = NULL;
+	node_record_t *node_ptr = NULL;
 	int n;
 	static time_t last_set_all = 0;
 
@@ -4123,7 +4122,7 @@ extern int select_p_update_node_config (int index)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_update_node_state (struct node_record *node_ptr)
+extern int select_p_update_node_state(node_record_t *node_ptr)
 {
 	return SLURM_SUCCESS;
 }

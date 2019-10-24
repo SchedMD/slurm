@@ -47,7 +47,7 @@ typedef struct slurm_nonstop_ops {
 	void		(*job_begin)	(job_record_t *job_ptr);
 	void		(*job_fini)	(job_record_t *job_ptr);
 	void		(*node_fail)	(job_record_t *job_ptr,
-					 struct node_record *node_ptr);
+					 node_record_t *node_ptr);
 } slurm_nonstop_ops_t;
 extern slurm_nonstop_ops_t nonstop_ops;
 

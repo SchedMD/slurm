@@ -105,7 +105,7 @@ struct switch_data_struct {
 	int sw_conn_cnt; /* number of switches connected to this switch */
 	char *switches;   /* name of direct descendant switches */
 	
-	struct node_record **node_conns; /* pointers to connected nodes */
+	node_record_t **node_conns; /* pointers to connected nodes */
 	int *node_index; /* index of connected nodes in node_record_table */
 	int node_conn_cnt; /* number of nodes connected to this switch */
 	char *nodes;			/* name of direct descendant nodes */
@@ -460,7 +460,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 	}
 
 	while ( (this_node_name = hostlist_shift(host_list)) ) {
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 		node_ptr = find_node_record(this_node_name);
 		if (node_ptr) {
 			bit_set(my_bitmap, 
@@ -484,11 +484,11 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 static int _parse_connected_nodes(switch_data *sw_record)
 {
 	int max_nodes = 256; 
-	sw_record->node_conns = xmalloc(max_nodes * sizeof(struct node_record*));
+	sw_record->node_conns = xmalloc(max_nodes * sizeof(node_record_t *));
 	sw_record->node_index = xmalloc(max_nodes * sizeof(int));
 	char * node_name = strtok(sw_record->nodes," ,");
 	int i, conn_count = 0;
-	struct node_record **tmp_node_conns;
+	node_record_t **tmp_node_conns;
 	int *tmp_node_index;
 
 	// loops through all of the node names in the node name string
@@ -499,7 +499,7 @@ static int _parse_connected_nodes(switch_data *sw_record)
 		}
 
 		// look up node struct and add pointer to it in switch's struct
-		struct node_record *node_ptr = find_node_record(node_name);
+		node_record_t *node_ptr = find_node_record(node_name);
 		if (node_ptr) {
 			sw_record->node_conns[conn_count] = node_ptr;
 			sw_record->node_index[conn_count] = (int) 
@@ -530,7 +530,7 @@ static int _parse_connected_nodes(switch_data *sw_record)
 		}
 
 		if (min_idx != i) {
-			struct node_record * trec = sw_record->node_conns[i];
+			node_record_t *trec = sw_record->node_conns[i];
 			int tidx = sw_record->node_index[i];
 
 			sw_record->node_conns[i] = sw_record->node_conns[min_idx];
@@ -542,7 +542,7 @@ static int _parse_connected_nodes(switch_data *sw_record)
 	}
 
 	tmp_node_conns = xrealloc(sw_record->node_conns, 
-				  conn_count * sizeof(struct node_record *));
+				  conn_count * sizeof(node_record_t *));
 	tmp_node_index = xrealloc(sw_record->node_index,
 				  conn_count * sizeof(int));
 

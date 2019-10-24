@@ -584,12 +584,11 @@ extern int acct_storage_g_shutdown(void *db_conn);
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
 extern int clusteracct_storage_g_node_down(void *db_conn,
-					   struct node_record *node_ptr,
+					   node_record_t *node_ptr,
 					   time_t event_time,
 					   char *reason, uint32_t reason_uid);
 
-extern int clusteracct_storage_g_node_up(void *db_conn,
-					 struct node_record *node_ptr,
+extern int clusteracct_storage_g_node_up(void *db_conn, node_record_t *node_ptr,
 					 time_t event_time);
 
 extern int clusteracct_storage_g_cluster_tres(void *db_conn,

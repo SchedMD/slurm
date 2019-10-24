@@ -107,9 +107,9 @@ static void _add_config_feature_inx(List feature_list, char *feature,
 				    int node_inx);
 static int  _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
-static int  _compare_hostnames(struct node_record *old_node_table,
-			       int old_node_count,
-			       struct node_record *node_table, int node_count);
+static int  _compare_hostnames(node_record_t *old_node_table,
+			       int old_node_count, node_record_t *node_table,
+			       int node_count);
 static void _gres_reconfig(bool reconfig);
 static int  _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
@@ -120,18 +120,17 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 			      char *old_cred_type, char *old_sched_type,
 			      char *old_select_type, char *old_switch_type,
 			      char *old_bb_type);
-static void _purge_old_node_state(struct node_record *old_node_table_ptr,
-				int old_node_record_count);
+static void _purge_old_node_state(node_record_t *old_node_table_ptr,
+				  int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
 static int  _reset_node_bitmaps(void *x, void *arg);
 static int  _restore_job_dependencies(void);
 
-static int  _restore_node_state(int recover,
-				struct node_record *old_node_table_ptr,
+static int  _restore_node_state(int recover, node_record_t *old_node_table_ptr,
 				int old_node_record_count);
 static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 				uint16_t flags);
-static void _set_features(struct node_record *old_node_table_ptr,
+static void _set_features(node_record_t *old_node_table_ptr,
 			  int old_node_record_count, int recover);
 static void _stat_slurm_dirs(void);
 static int  _sync_nodes_to_comp_job(void);
@@ -214,7 +213,7 @@ static void _stat_slurm_dirs(void)
  */
 static void _reorder_nodes_by_name(void)
 {
-	struct node_record *node_ptr, *node_ptr2;
+	node_record_t *node_ptr, *node_ptr2;
 	int i, j, min_inx;
 
 	/* Now we need to sort the node records */
@@ -227,9 +226,9 @@ static void _reorder_nodes_by_name(void)
 		}
 
 		if (min_inx != i) {	/* swap records */
-			struct node_record node_record_tmp;
+			node_record_t node_record_tmp;
 
-			j = sizeof(struct node_record);
+			j = sizeof(node_record_t);
 			node_ptr  = node_record_table_ptr + i;
 			node_ptr2 = node_record_table_ptr + min_inx;
 
@@ -255,7 +254,7 @@ static void _reorder_nodes_by_name(void)
  */
 static void _reorder_nodes_by_rank(void)
 {
-	struct node_record *node_ptr, *node_ptr2;
+	node_record_t *node_ptr, *node_ptr2;
 	int i, j, min_inx;
 	uint32_t min_val;
 
@@ -271,9 +270,9 @@ static void _reorder_nodes_by_rank(void)
 		}
 
 		if (min_inx != i) {	/* swap records */
-			struct node_record node_record_tmp;
+			node_record_t node_record_tmp;
 
-			j = sizeof(struct node_record);
+			j = sizeof(node_record_t);
 			node_ptr  = node_record_table_ptr + i;
 			node_ptr2 = node_record_table_ptr + min_inx;
 
@@ -300,7 +299,7 @@ static void _reorder_nodes_by_rank(void)
 static void _build_bitmaps_pre_select(void)
 {
 	struct part_record   *part_ptr;
-	struct node_record   *node_ptr;
+	node_record_t *node_ptr;
 	ListIterator part_iterator;
 	int i;
 
@@ -358,7 +357,7 @@ static void _set_slurmd_addr(void)
 {
 #ifndef HAVE_FRONT_END
 	int i;
-	struct node_record *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr = node_record_table_ptr;
 	DEF_TIMERS;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -413,7 +412,7 @@ static void _set_slurmd_addr(void)
 static int _build_bitmaps(void)
 {
 	int i, error_code = SLURM_SUCCESS;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	last_node_update = time(NULL);
 	last_part_update = time(NULL);
@@ -520,7 +519,7 @@ static int _init_all_slurm_conf(void)
 static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
 {
 	int error_code = 0;
-	struct node_record *node_rec = NULL;
+	node_record_t *node_rec = NULL;
 	hostlist_t alias_list = NULL;
 	char *alias = NULL;
 	int state_val = NODE_STATE_DOWN;
@@ -1109,7 +1108,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	DEF_TIMERS;
 	int error_code, i, rc, load_job_ret = SLURM_SUCCESS;
 	int old_node_record_count = 0;
-	struct node_record *old_node_table_ptr = NULL, *node_ptr;
+	node_record_t *old_node_table_ptr = NULL, *node_ptr;
 	bool do_reorder_nodes = false;
 	List old_part_list = NULL;
 	char *old_def_part_name = NULL;
@@ -1672,7 +1671,7 @@ extern void log_feature_lists(void)
  */
 extern void build_feature_list_ne(void)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *tmp_str, *token, *last = NULL;
 	int i;
 
@@ -1748,7 +1747,7 @@ extern void update_feature_list(List feature_list, char *new_features,
 
 static void _gres_reconfig(bool reconfig)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *gres_name;
 	int i;
 
@@ -1793,10 +1792,10 @@ static void _gres_reconfig(bool reconfig)
  *              0, 1 - use data from config record, built using slurm.conf
  *              2 = use data from node record, built from saved state
  */
-static void _set_features(struct node_record *old_node_table_ptr,
+static void _set_features(node_record_t *old_node_table_ptr,
 			  int old_node_record_count, int recover)
 {
-	struct node_record *node_ptr, *old_node_ptr;
+	node_record_t *node_ptr, *old_node_ptr;
 	char *tmp, *tok, *sep;
 	int i, node_features_cnt = node_features_g_count();
 
@@ -1884,10 +1883,10 @@ static void _set_features(struct node_record *old_node_table_ptr,
  * drained, we set those states. We only recover a node's Features if
  * recover==2. */
 static int _restore_node_state(int recover,
-			       struct node_record *old_node_table_ptr,
+			       node_record_t *old_node_table_ptr,
 			       int old_node_record_count)
 {
-	struct node_record *node_ptr, *old_node_ptr;
+	node_record_t *node_ptr, *old_node_ptr;
 	int i, rc = SLURM_SUCCESS;
 	hostset_t hs = NULL;
 	bool power_save_mode = false;
@@ -2053,11 +2052,11 @@ static int _restore_node_state(int recover,
 }
 
 /* Purge old node state information */
-static void _purge_old_node_state(struct node_record *old_node_table_ptr,
-				int old_node_record_count)
+static void _purge_old_node_state(node_record_t *old_node_table_ptr,
+				  int old_node_record_count)
 {
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = old_node_table_ptr;
 	if (old_node_table_ptr) {
@@ -2650,7 +2649,7 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 {
 	int i, cnt = 0;
 	uint32_t node_flags;
-	struct node_record *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr = node_record_table_ptr;
 
 	if (job_ptr->node_bitmap_cg) /* job completing */
 		job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap_cg);
@@ -2727,7 +2726,7 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 {
 	int i;
-	struct node_record *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr = node_record_table_ptr;
 
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
@@ -2846,11 +2845,9 @@ static void _acct_restore_active_jobs(void)
 
 /* _compare_hostnames()
  */
-static int
-_compare_hostnames(struct node_record *old_node_table,
-				   int old_node_count,
-				   struct node_record *node_table,
-				   int node_count)
+static int _compare_hostnames(node_record_t *old_node_table,
+			      int old_node_count, node_record_t *node_table,
+			      int node_count)
 {
 	int cc;
 	int set_size;

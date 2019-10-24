@@ -78,7 +78,7 @@
 List config_list  = NULL;	/* list of config_record entries */
 List front_end_list = NULL;	/* list of slurm_conf_frontend_t entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
-struct node_record *node_record_table_ptr = NULL;	/* node records */
+node_record_t *node_record_table_ptr = NULL;	/* node records */
 xhash_t* node_hash_table = NULL;
 int node_record_count = 0;		/* count in node_record_table_ptr */
 uint16_t *cr_node_num_cores = NULL;
@@ -89,8 +89,8 @@ static int	_delete_config_record (void);
 #if _DEBUG
 static void	_dump_hash (void);
 #endif
-static struct node_record *
-		_find_node_record (char *name,bool test_alias,bool log_missing);
+static node_record_t *_find_node_record(char *name, bool test_alias,
+					bool log_missing);
 static void	_list_delete_config (void *config_entry);
 static void _node_record_hash_identity (void* item, const char** key,
 					uint32_t* key_len);
@@ -118,8 +118,8 @@ static void xhash_walk_helper_cbk (void* item, void* arg)
 {
 	static int i = 0; /* sequential walk, so just update a static i */
 	int inx;
-	struct node_record *node_ptr;
-	node_ptr = (struct node_record *) item;
+	node_record_t *node_ptr = (node_record_t *) item;
+
 	inx = node_ptr -  node_record_table_ptr;
 	debug3("node_hash[%d]:%d(%s)", i++, inx, node_ptr->name);
 }
@@ -165,7 +165,7 @@ static void _list_delete_config (void *config_entry)
 static void _node_record_hash_identity (void* item, const char** key,
 					uint32_t* key_len)
 {
-	struct node_record *node_ptr = (struct node_record *) item;
+	node_record_t *node_ptr = (node_record_t *) item;
 	*key = node_ptr->name;
 	*key_len = strlen(node_ptr->name);
 }
@@ -339,7 +339,7 @@ static void _check_callback(char *alias, char *hostname,
 			    slurm_conf_node_t *node_ptr,
 			    struct config_record *config_ptr)
 {
-	struct node_record *node_rec;
+	node_record_t *node_rec;
 
 	if ((node_rec = find_node_record2(alias)))
 		fatal("Duplicated NodeHostName %s in config file", alias);
@@ -612,10 +612,10 @@ extern struct config_record * create_config_record (void)
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
-extern struct node_record *create_node_record (
-			struct config_record *config_ptr, char *node_name)
+extern node_record_t *create_node_record(struct config_record *config_ptr,
+					 char *node_name)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int old_buffer_size, new_buffer_size;
 
 	last_node_update = time (NULL);
@@ -623,11 +623,11 @@ extern struct node_record *create_node_record (
 	xassert(node_name);
 
 	/* round up the buffer size to reduce overhead of xrealloc */
-	old_buffer_size = (node_record_count) * sizeof (struct node_record);
+	old_buffer_size = (node_record_count) * sizeof(node_record_t);
 	old_buffer_size =
 		((int) ((old_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
 	new_buffer_size =
-		(node_record_count + 1) * sizeof (struct node_record);
+		(node_record_count + 1) * sizeof(node_record_t);
 	new_buffer_size =
 		((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
 	if (!node_record_table_ptr) {
@@ -678,7 +678,7 @@ extern struct node_record *create_node_record (
  * RET: pointer to node record or NULL if not found
  * NOTE: Logs an error if the node name is NOT found
  */
-extern struct node_record *find_node_record (char *name)
+extern node_record_t *find_node_record(char *name)
 {
 	return _find_node_record(name, true, true);
 }
@@ -689,7 +689,7 @@ extern struct node_record *find_node_record (char *name)
  * RET: pointer to node record or NULL if not found
  * NOTE: Does not log an error if the node name is NOT found
  */
-extern struct node_record *find_node_record2 (char *name)
+extern node_record_t *find_node_record2(char *name)
 {
 	return _find_node_record(name, true, false);
 }
@@ -701,7 +701,7 @@ extern struct node_record *find_node_record2 (char *name)
  * RET: pointer to node record or NULL if not found
  * NOTE: Logs an error if the node name is NOT found
  */
-extern struct node_record *find_node_record_no_alias (char *name)
+extern node_record_t *find_node_record_no_alias(char *name)
 {
 	return _find_node_record(name, false, true);
 }
@@ -713,10 +713,10 @@ extern struct node_record *find_node_record_no_alias (char *name)
  * IN: log_missing - if set, then print an error message if the node is not found
  * RET: pointer to node record or NULL if not found
  */
-static struct node_record *_find_node_record (char *name, bool test_alias,
-					      bool log_missing)
+static node_record_t *_find_node_record(char *name, bool test_alias,
+					bool log_missing)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if ((name == NULL) || (name[0] == '\0')) {
 		info("%s: passed NULL node name", __func__);
@@ -728,8 +728,7 @@ static struct node_record *_find_node_record (char *name, bool test_alias,
 		return NULL;
 
 	/* try to find via hash table, if it exists */
-	if ((node_ptr =
-	     (struct node_record*) xhash_get_str(node_hash_table, name))) {
+	if ((node_ptr = xhash_get_str(node_hash_table, name))) {
 		xassert(node_ptr->magic == NODE_MAGIC);
 		return node_ptr;
 	}
@@ -770,7 +769,7 @@ extern int init_node_conf (void)
 {
 	last_node_update = time (NULL);
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++)
@@ -795,7 +794,7 @@ extern int init_node_conf (void)
 extern void node_fini2 (void)
 {
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (config_list) {
 		FREE_NULL_LIST(config_list);
@@ -846,7 +845,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 	}
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 		node_ptr = _find_node_record(this_node_name, best_effort, true);
 		if (node_ptr) {
 			bit_set (my_bitmap, (bitoff_t) (node_ptr -
@@ -884,7 +883,7 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 
 	hi = hostlist_iterator_create(hl);
 	while ((name = hostlist_next(hi))) {
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 		node_ptr = _find_node_record(name, best_effort, true);
 		if (node_ptr) {
 			bit_set (my_bitmap, (bitoff_t) (node_ptr -
@@ -904,7 +903,7 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 }
 
 /* Purge the contents of a node record */
-extern void purge_node_rec (struct node_record *node_ptr)
+extern void purge_node_rec(node_record_t *node_ptr)
 {
 	xfree(node_ptr->arch);
 	xfree(node_ptr->comm_name);
@@ -936,7 +935,7 @@ extern void purge_node_rec (struct node_record *node_ptr)
 extern void rehash_node (void)
 {
 	int i;
-	struct node_record *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr = node_record_table_ptr;
 
 	xhash_free (node_hash_table);
 	node_hash_table = xhash_init(_node_record_hash_identity, NULL);
@@ -984,7 +983,7 @@ extern int state_str2int(const char *state_str, char *node_name)
 }
 
 /* (re)set cr_node_num_cores arrays */
-extern void cr_init_global_core_data(struct node_record *node_ptr, int node_cnt)
+extern void cr_init_global_core_data(node_record_t *node_ptr, int node_cnt)
 {
 	uint32_t n;
 

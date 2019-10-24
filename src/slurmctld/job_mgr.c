@@ -3346,7 +3346,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 #ifdef HAVE_FRONT_END
 	ListIterator job_iterator;
 	job_record_t *job_ptr, *pack_leader;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	int i, kill_job_cnt = 0;
 
@@ -3613,7 +3613,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int node_inx;
 	int kill_job_cnt = 0;
 	time_t now = time(NULL);
@@ -3783,7 +3783,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 
 /* Remove one node from a job's allocation */
 extern void excise_node_from_job(job_record_t *job_ptr,
-				 struct node_record *node_ptr)
+				 node_record_t *node_ptr)
 {
 	int i, i_first, i_last, orig_pos = -1, new_pos = -1;
 	bitstr_t *orig_bitmap;
@@ -5552,7 +5552,7 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 		agent_args->protocol_version =
 			job_ptr->front_end_ptr->protocol_version;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	if ((node_ptr = find_node_record(job_ptr->batch_host)))
 		agent_args->protocol_version = node_ptr->protocol_version;
 #endif
@@ -5603,7 +5603,7 @@ extern int prolog_complete(uint32_t job_id,
 static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 			 bool node_fail, uint32_t job_return_code)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	uint32_t job_comp_flag = 0;
 	bool suspended = false;
@@ -7988,7 +7988,7 @@ static char *_copy_nodelist_no_dup(char *node_list)
 static uint16_t _cpus_per_node_part(struct part_record *part_ptr)
 {
 	int node_inx = -1;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (part_ptr->node_bitmap)
 		node_inx = bit_ffs(part_ptr->node_bitmap);
@@ -8308,7 +8308,7 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 			return false;
 	} else if (job_ptr->batch_flag) {
 		/* Make sure first node is ready to start batch job */
-		struct node_record *node_ptr =
+		node_record_t *node_ptr =
 			find_node_record(job_ptr->batch_host);
 		if (!node_ptr ||
 		    IS_NODE_POWER_SAVE(node_ptr) ||
@@ -8736,7 +8736,7 @@ extern int job_update_tres_cnt(job_record_t *job_ptr, int node_inx)
 		 * the job_resrcs since it could be less because the
 		 * node could of only used 1 thread per core.
 		 */
-		struct node_record *node_ptr =
+		node_record_t *node_ptr =
 			node_record_table_ptr + node_inx;
 		cpu_cnt = node_ptr->config_ptr->cpus;
 	} else {
@@ -9992,7 +9992,7 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 {
 	static int max_cpu_cnt = -1, max_core_cnt = -1;
 	int i;
-	struct node_record *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr = node_record_table_ptr;
 
 	*cpu_cnt_ptr  = max_cpu_cnt;
 	*core_cnt_ptr = max_core_cnt;
@@ -11017,7 +11017,7 @@ static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
 static void _realloc_nodes(job_record_t *job_ptr, bitstr_t *orig_node_bitmap)
 {
 	int i, i_first, i_last;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	xassert(job_ptr);
 	xassert(orig_node_bitmap);
@@ -11403,7 +11403,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			goto fini;
 		} else if (new_req_bitmap) {
 			int i, i_first, i_last;
-			struct node_record *node_ptr;
+			node_record_t *node_ptr;
 			bitstr_t *rem_nodes;
 
 			/*
@@ -12812,7 +12812,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			goto fini;
 		} else {
 			int i, i_first, i_last, total = 0;
-			struct node_record *node_ptr;
+			node_record_t *node_ptr;
 			bitstr_t *rem_nodes, *tmp_nodes;
 			sched_info("%s: set node count to %u for %pJ", __func__,
 				   job_specs->min_nodes, job_ptr);
@@ -13599,7 +13599,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	front_end_record_t *front_end_ptr;
 #else
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 #endif
 
 	xassert(job_ptr);
@@ -13754,7 +13754,7 @@ extern void
 validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 {
 	int i, node_inx, jobs_on_node;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
 	char step_str[64];
@@ -13920,7 +13920,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
-	struct node_record *node_ptr = node_record_table_ptr + node_inx;
+	node_record_t *node_ptr = node_record_table_ptr + node_inx;
 	uint16_t batch_start_timeout	= slurm_get_batch_start_timeout();
 	uint16_t msg_timeout		= slurm_get_msg_timeout();
 	uint16_t resume_timeout		= slurm_get_resume_timeout();
@@ -14069,7 +14069,7 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 		      node_name);
 	}
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	if ((node_ptr = find_node_record(node_name)))
 		agent_info->protocol_version = node_ptr->protocol_version;
 	if (job_ptr)
@@ -14098,7 +14098,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 			       bitstr_t *node_bitmap)
 {
 	bitstr_t *full_node_bitmap, *tmp_node_bitmap;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i, i_first, i_last;
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
@@ -14159,7 +14159,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
  * IN node_ptr - pointer to the node on which the job resides
  */
 extern void kill_job_on_node(job_record_t *job_ptr,
-			     struct node_record *node_ptr)
+			     node_record_t *node_ptr)
 {
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
@@ -14544,7 +14544,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 	int i;
 #endif
 	job_record_t *job_ptr = find_job_record(job_id);
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (job_ptr == NULL)
 		return true;
@@ -15270,7 +15270,7 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp)
 static int _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp)
 {
 	int i, i_first, i_last, rc = SLURM_SUCCESS;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t node_flags;
 	time_t now = time(NULL);
 
@@ -15332,7 +15332,7 @@ static int _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp)
 static int _resume_job_nodes(job_record_t *job_ptr, bool indf_susp)
 {
 	int i, i_first, i_last, rc = SLURM_SUCCESS;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t node_flags;
 
 	if ((rc = select_g_job_resume(job_ptr, indf_susp)) != SLURM_SUCCESS)

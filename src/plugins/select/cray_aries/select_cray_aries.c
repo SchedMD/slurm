@@ -125,7 +125,7 @@ typedef enum {
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
 extern slurmdb_cluster_rec_t *working_cluster_rec  __attribute__((weak_import));
-extern struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern node_record_t *node_record_table_ptr __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
 extern time_t last_node_update __attribute__((weak_import));
 extern int slurmctld_primary __attribute__((weak_import));
@@ -135,7 +135,7 @@ extern bool ignore_state_errors __attribute__((weak_import));
 slurmctld_config_t slurmctld_config;
 slurm_ctl_conf_t slurmctld_conf;
 slurmdb_cluster_rec_t *working_cluster_rec = NULL;
-struct node_record *node_record_table_ptr;
+node_record_t *node_record_table_ptr;
 int node_record_count;
 time_t last_node_update;
 int slurmctld_primary;
@@ -1212,15 +1212,15 @@ extern int select_p_job_init(List job_list)
 /*
  * select_p_node_ranking - generate node ranking for Cray nodes
  */
-extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
+extern bool select_p_node_ranking(node_record_t *node_ptr, int node_cnt)
 {
 	return false;
 }
 
-extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
+extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 {
 	select_nodeinfo_t *nodeinfo = NULL;
-	struct node_record *node_rec;
+	node_record_t *node_rec;
 	int i, j;
 	uint64_t blade_id = 0;
 	DEF_TIMERS;
@@ -1525,8 +1525,7 @@ extern int select_p_job_ready(job_record_t *job_ptr)
 	return other_job_ready(job_ptr);
 }
 
-extern int select_p_job_resized(job_record_t *job_ptr,
-				struct node_record *node_ptr)
+extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	return other_job_resized(job_ptr, node_ptr);
 }
@@ -1813,7 +1812,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 	slurm_mutex_lock(&blade_mutex);
 	/* clear all marks */
 	for (i=0; i<node_record_count; i++) {
-		struct node_record *node_ptr = &(node_record_table_ptr[i]);
+		node_record_t *node_ptr = &(node_record_table_ptr[i]);
 		if (bit_test(blade_nodes_running_npc, i))
 			node_ptr->node_state |= NODE_STATE_NET;
 		else
@@ -2105,7 +2104,7 @@ extern int select_p_update_node_config(int index)
 	return other_update_node_config(index);
 }
 
-extern int select_p_update_node_state(struct node_record *node_ptr)
+extern int select_p_update_node_state(node_record_t *node_ptr)
 {
 	return other_update_node_state(node_ptr);
 }

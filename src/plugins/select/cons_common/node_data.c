@@ -57,7 +57,7 @@ extern void node_data_destroy(node_use_record_t *node_usage,
 
 extern void node_data_dump(void)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	List gres_list;
 	int i;
 

@@ -151,7 +151,7 @@ extern bool topo_generate_node_ranking(void)
  */
 extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int node_inx;
 	hostlist_t sl = NULL;
 
@@ -595,7 +595,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 	}
 
 	while ( (this_node_name = hostlist_shift(host_list)) ) {
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 		node_ptr = find_node_record(this_node_name);
 		if (node_ptr) {
 			bit_set(my_bitmap, 

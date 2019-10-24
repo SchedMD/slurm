@@ -1665,7 +1665,7 @@ extern int node_features_p_node_update(char *active_features,
 	int rc = SLURM_SUCCESS, numa_inx = -1;
 	int mcdram_inx = 0;
 	uint64_t mcdram_size;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *save_ptr = NULL, *tmp, *tok;
 
 	if (mcdram_per_node == NULL) {
@@ -1738,13 +1738,13 @@ extern int node_features_p_node_update(char *active_features,
  * Return TRUE if the specified node update request is valid with respect
  * to features changes (i.e. don't permit a non-KNL node to set KNL features).
  *
- * arg IN - Pointer to struct node_record record
+ * arg IN - Pointer to node_record_t record
  * update_node_msg IN - Pointer to update request
  */
 extern bool node_features_p_node_update_valid(void *arg,
 					update_node_msg_t *update_node_msg)
 {
-	struct node_record *node_ptr = (struct node_record *) arg;
+	node_record_t *node_ptr = (node_record_t *) arg;
 	char *tmp, *save_ptr = NULL, *tok;
 	bool is_knl = false, invalid_feature = false;
 

@@ -1520,7 +1520,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	int i_first, i_last, i;
 	int offset_start, offset_end;
 	uint32_t i_cnt;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	job_resources_t *core_resrcs;
 	char *core_str;
 
@@ -1810,7 +1810,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 {
 	int i;
 	uint64_t cpu_cnt = 0;
-	struct node_record *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr = node_record_table_ptr;
 	char start_time[32], end_time[32];
 	char *name1, *name2, *val1, *val2;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
@@ -5491,7 +5491,7 @@ extern int send_resvs_to_accounting(int db_rc)
 extern int set_node_maint_mode(bool reset_all)
 {
 	int i, res_start_cnt = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t flags;
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
@@ -5644,7 +5644,7 @@ static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,
 			     uint32_t flags, bool reset_all)
 {
 	int i, i_first, i_last;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t old_state;
 
 	if (!resv_ptr->node_bitmap) {

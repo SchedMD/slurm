@@ -206,8 +206,7 @@ static int _pick_exc_nodes(void *x, void *arg)
 	bitstr_t *exc_node_cnt_bitmap;
 	int i, i_first, i_last;
 	int avail_node_cnt, exc_node_cnt;
-	struct node_record *node_ptr;
-
+	node_record_t *node_ptr;
 
 	avail_node_cnt = bit_set_count(ext_part_struct->exc_node_cnt_bitmap);
 	if (ext_part_struct->exc_node_cnt >= avail_node_cnt) {
@@ -265,7 +264,7 @@ static void _do_power_work(time_t now)
 	uint32_t susp_state;
 	bitstr_t *avoid_node_bitmap = NULL, *failed_node_bitmap = NULL;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (last_work_scan == 0) {
 		if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
@@ -509,7 +508,7 @@ extern int power_job_reboot(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	int i, i_first, i_last;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	bitstr_t *boot_node_bitmap = NULL, *feature_node_bitmap = NULL;
 	time_t now = time(NULL);
 	char *nodes, *reboot_features = NULL;
@@ -629,7 +628,7 @@ extern int power_job_reboot(job_record_t *job_ptr)
  * job is not responding, they try running ResumeProgram again. */
 static void _re_wake(void)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	bitstr_t *wake_node_bitmap = NULL;
 	int i;
 

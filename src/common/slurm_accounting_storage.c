@@ -174,12 +174,10 @@ typedef struct slurm_acct_storage_ops {
 				    uint16_t archive_data,
 				    List *rollup_stats_list_in);
 	int  (*fix_runaway_jobs)   (void *db_conn, uint32_t uid, List jobs);
-	int  (*node_down)          (void *db_conn,
-				    struct node_record *node_ptr,
-				    time_t event_time,
-				    char *reason, uint32_t reason_uid);
-	int  (*node_up)            (void *db_conn,
-				    struct node_record *node_ptr,
+	int  (*node_down)          (void *db_conn, node_record_t *node_ptr,
+				    time_t event_time, char *reason,
+				    uint32_t reason_uid);
+	int  (*node_up)            (void *db_conn, node_record_t *node_ptr,
 				    time_t event_time);
 	int  (*cluster_tres)       (void *db_conn, char *cluster_nodes,
 				    char *tres_str_in, time_t event_time,
@@ -795,7 +793,7 @@ extern int acct_storage_g_fix_runaway_jobs(void *db_conn,
 }
 
 extern int clusteracct_storage_g_node_down(void *db_conn,
-					   struct node_record *node_ptr,
+					   node_record_t *node_ptr,
 					   time_t event_time,
 					   char *reason, uint32_t reason_uid)
 {
@@ -806,7 +804,7 @@ extern int clusteracct_storage_g_node_down(void *db_conn,
 }
 
 extern int clusteracct_storage_g_node_up(void *db_conn,
-					 struct node_record *node_ptr,
+					 node_record_t *node_ptr,
 					 time_t event_time)
 {
 	if (slurm_acct_storage_init(NULL) < 0)

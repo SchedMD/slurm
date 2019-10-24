@@ -100,7 +100,7 @@ static int _uid_cmp(const void *, const void *);
 static int _calc_part_tres(void *x, void *arg)
 {
 	int i, j;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint64_t *tres_cnt;
 	struct part_record *part_ptr = (struct part_record *) x;
 
@@ -171,7 +171,7 @@ extern int build_part_bitmap(struct part_record *part_ptr)
 {
 	char *this_node_name;
 	bitstr_t *old_bitmap;
-	struct node_record *node_ptr;	/* pointer to node_record */
+	node_record_t *node_ptr;
 	hostlist_t host_list;
 	int i;
 
@@ -256,7 +256,7 @@ static void _unlink_free_nodes(bitstr_t *old_bitmap,
 		struct part_record *part_ptr)
 {
 	int i, j, k, update_nodes = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (old_bitmap == NULL)
 		return;
@@ -975,7 +975,7 @@ static void _bf_data_free(bf_part_data_t **datap)
 static void _list_delete_part(void *part_entry)
 {
 	struct part_record *part_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i, j, k;
 
 	part_ptr = (struct part_record *) part_entry;

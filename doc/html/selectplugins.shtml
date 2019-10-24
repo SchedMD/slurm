@@ -147,7 +147,7 @@ the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
 <h3>State Initialization Functions</h3>
 
-<p class="commandline">int select_p_node_init (struct node_record *node_ptr, int node_cnt);</p>
+<p class="commandline">int select_p_node_init(node_record_t *node_ptr, int node_cnt);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the initialization of the
 node record data structure. This function is called by the slurmctld daemon
 when the node records are initially established and again when any nodes are
@@ -265,7 +265,7 @@ but actually registered with 2GB of memory.</p>
 of the node in reference to the entire system.<br>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
-<p class="commandline">bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)</p>
+<p class="commandline">bool select_p_node_ranking(node_record_t *node_ptr, int node_cnt)</p>
 <p style="margin-left:.2in"><b>Description</b>: This function is called by the slurmctld
 daemon at start time to set node rank information for recording the nodes to
 optimize application performance. </p>
@@ -277,7 +277,7 @@ of nodes configured on the system.</p>
 <p style="margin-left:.2in"><b>Returns</b>: true if node rank information has
 been set.</p>
 
-<p class="commandline">int select_p_update_node_state (struct node_record *node_ptr);</p>
+<p class="commandline">int select_p_update_node_state(node_record_t *node_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: push a node state change
 into the plugin. The index should be the index from the slurmctld of
 the entire system.</p>
@@ -568,7 +568,7 @@ to the job getting all of the resources previously either job.</p>
 failure, the plugin should return a Slurm error code.</p>
 
 <p class="commandline">int select_p_job_resized(job_record_t *job_ptr,
-struct node_record *node_ptr);</p>
+node_record_t *node_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Remove the specified node
 from the job's allocation.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>

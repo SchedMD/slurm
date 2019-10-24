@@ -46,7 +46,7 @@ typedef struct {
 				       * configured */
 	uint32_t cume_cores;	      /* total cores for all nodes through us */
 	uint64_t mem_spec_limit;      /* MB of specialized/system memory */
-	struct node_record *node_ptr; /* ptr to the actual node */
+	node_record_t *node_ptr;      /* ptr to the actual node */
 	uint64_t real_memory;	      /* MB of real memory configured */
 	uint16_t sockets;	      /* count of sockets per board configured*/
 	uint16_t threads;	      /* count of hyperthreads per core */

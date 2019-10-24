@@ -50,7 +50,7 @@
  */
 #if defined (__APPLE__)
 extern slurm_ctl_conf_t slurmctld_conf __attribute__((weak_import));
-extern struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern node_record_t *node_record_table_ptr __attribute__((weak_import));
 extern List part_list __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
 extern int node_record_count __attribute__((weak_import));
@@ -64,7 +64,7 @@ extern int slurmctld_tres_cnt __attribute__((weak_import));
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 #else
 slurm_ctl_conf_t slurmctld_conf;
-struct node_record *node_record_table_ptr;
+node_record_t *node_record_table_ptr;
 List part_list;
 List job_list;
 int node_record_count;
@@ -775,7 +775,7 @@ extern bitstr_t **common_mark_avail_cores(
 	int n, n_first, n_last;
 	int c;
 	int rem_core_spec, node_core_spec, thread_spec = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	bitstr_t *core_map = NULL;
 	uint16_t use_spec_cores = slurmctld_conf.conf_flags & CTL_CONF_ASRU;
 	node_res_record_t *node_res_ptr = NULL;
@@ -975,7 +975,7 @@ extern int select_p_job_init(List job_list)
 }
 
 /* This plugin does not generate a node ranking. */
-extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
+extern bool select_p_node_ranking(node_record_t *node_ptr, int node_cnt)
 {
 	return false;
 }
@@ -992,7 +992,7 @@ extern bool select_p_node_ranking(struct node_record *node_ptr, int node_cnt)
  *                                       job data to the 'select_part_record'
  *                                       global array
  */
-extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
+extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 {
 	char *preempt_type, *sched_params, *tmp_ptr;
 	uint32_t cume_cores = 0;
@@ -1143,7 +1143,7 @@ extern int select_p_job_begin(job_record_t *job_ptr)
 extern int select_p_job_ready(job_record_t *job_ptr)
 {
 	int i, i_first, i_last;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr)) {
 		/* Gang scheduling might suspend job immediately */
@@ -1170,7 +1170,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 {
 	job_resources_t *from_job_resrcs_ptr, *to_job_resrcs_ptr,
 		*new_job_resrcs_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int first_bit, last_bit, i, node_cnt;
 	bool from_node_used, to_node_used;
 	int from_node_offset, to_node_offset, new_node_offset;
@@ -1385,8 +1385,7 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_resized(job_record_t *job_ptr,
-				struct node_record *node_ptr)
+extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	part_res_record_t *part_record_ptr = select_part_record;
 	node_use_record_t *node_usage = select_node_usage;
@@ -1721,7 +1720,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 {
 	static time_t last_set_all = 0;
 	part_res_record_t *p_ptr;
-	struct node_record *node_ptr = NULL;
+	node_record_t *node_ptr = NULL;
 	int i, n;
 	uint32_t alloc_cpus, alloc_cores, node_cores, node_cpus, node_threads;
 	uint32_t node_boards, node_sockets, total_node_cores;
@@ -2056,7 +2055,7 @@ extern int select_p_update_node_config(int index)
 }
 
 /* Unused for this plugin */
-extern int select_p_update_node_state(struct node_record *node_ptr)
+extern int select_p_update_node_state(node_record_t *node_ptr)
 {
 	return SLURM_SUCCESS;
 }

@@ -201,7 +201,7 @@ static void	_build_node_gres_str(List *gres_list, char **gres_str,
 static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 					    uint8_t overcommit,
 					    gres_mc_data_t *tres_mc_ptr,
-					    struct node_record *node_table_ptr);
+					    node_record_t *node_table_ptr);
 static bitstr_t *_core_bitmap_rebuild(bitstr_t *old_core_bitmap, int new_size);
 static void	_epilog_list_del(void *x);
 static int	_find_job_by_sock_gres(void *x, void *key);
@@ -5203,7 +5203,7 @@ static bool _validate_node_gres_cnt(uint32_t job_id, List job_gres_list,
 extern int gres_plugin_job_revalidate2(uint32_t job_id, List job_gres_list,
 				       bitstr_t *node_bitmap)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int rc = SLURM_SUCCESS;
 	int i_first, i_last, i;
 	int node_inx = -1;
@@ -9115,7 +9115,7 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 static uint32_t **_build_tasks_per_node_sock(struct job_resources *job_res,
 					     uint8_t overcommit,
 					     gres_mc_data_t *tres_mc_ptr,
-					     struct node_record *node_table_ptr)
+					     node_record_t *node_table_ptr)
 {
 	uint32_t **tasks_per_node_socket;
 	int i, i_first, i_last, j, node_cnt, job_node_inx = 0;
@@ -9352,7 +9352,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					struct job_resources *job_res,
 					uint8_t overcommit,
 					gres_mc_data_t *tres_mc_ptr,
-					struct node_record *node_table_ptr)
+					node_record_t *node_table_ptr)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;

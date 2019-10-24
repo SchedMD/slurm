@@ -76,13 +76,13 @@ static void _job_power_del(void *x)
 /* For all nodes in a cluster
  * 1) set default values and
  * 2) return global power allocation/consumption information */
-extern void get_cluster_power(struct node_record *node_record_table_ptr,
+extern void get_cluster_power(node_record_t *node_record_table_ptr,
 			      int node_record_count,
 			      uint32_t *alloc_watts, uint32_t *used_watts)
 {
 	uint64_t debug_flag = slurm_get_debug_flags();
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	*alloc_watts = 0;
 	*used_watts  = 0;
@@ -119,10 +119,9 @@ extern void get_cluster_power(struct node_record *node_record_table_ptr,
  * NOTE: Job data structure must be locked on function entry
  * NOTE: Call list_delete() to free return value
  * NOTE: This function is currently unused. */
-extern List get_job_power(List job_list,
-			  struct node_record *node_record_table_ptr)
+extern List get_job_power(List job_list, node_record_t *node_record_table_ptr)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	job_record_t *job_ptr;
 	ListIterator job_iterator;
 	power_by_job_t *power_ptr;
@@ -387,10 +386,10 @@ extern char *power_run_script(char *script_name, char *script_path,
 /* For a newly starting job, set "new_job_time" in each of it's nodes
  * NOTE: The job and node data structures must be locked on function entry */
 extern void set_node_new_job(job_record_t *job_ptr,
-			     struct node_record *node_record_table_ptr)
+			     node_record_t *node_record_table_ptr)
 {
 	int i, i_first, i_last;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	time_t now = time(NULL);
 
 	if (!job_ptr || !job_ptr->node_bitmap) {

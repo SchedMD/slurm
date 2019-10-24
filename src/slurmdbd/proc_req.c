@@ -2534,7 +2534,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_node_state_msg_t *node_state_msg = msg->data;
-	struct node_record node_ptr;
+	node_record_t node_ptr;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
 
@@ -2546,7 +2546,7 @@ static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	memset(&node_ptr, 0, sizeof(struct node_record));
+	memset(&node_ptr, 0, sizeof(node_record_t));
 	node_ptr.name = node_state_msg->hostlist;
 	node_ptr.tres_str = node_state_msg->tres_str;
 	node_ptr.node_state = node_state_msg->state;

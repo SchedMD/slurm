@@ -1234,7 +1234,7 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 #ifdef HAVE_FRONT_END
 	front_end_record_t *node_ptr;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 #endif
 	ret_data_info_t *ret_data_info = NULL;
 	ListIterator itr;
@@ -1283,7 +1283,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *node_ptr;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 #endif
 	agent_arg_t *agent_arg_ptr;
 	queued_request_t *queued_req_ptr = NULL;
@@ -2172,7 +2172,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 #ifdef HAVE_FRONT_END
 		nodes_ready = 1;
 #else
-		struct node_record *node_ptr;
+		node_record_t *node_ptr;
 		char *hostname;
 
 		hostname = hostlist_deranged_string_xmalloc(

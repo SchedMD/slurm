@@ -217,7 +217,7 @@ extern int other_job_init(List job_list)
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int other_node_init(struct node_record *node_ptr, int node_cnt)
+extern int other_node_init(node_record_t *node_ptr, int node_cnt)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;
@@ -322,8 +322,7 @@ extern int other_job_expand(job_record_t *from_job_ptr,
  *	Only support jobs shrinking. Also see other_job_expand();
  * RET: 0 or an error code
  */
-extern int other_job_resized(job_record_t *job_ptr,
-			     struct node_record *node_ptr)
+extern int other_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	if (other_select_init() < 0)
 		return -1;
@@ -665,7 +664,7 @@ extern int other_update_node_config (int index)
  * IN state  - state to update to
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int other_update_node_state (struct node_record *node_ptr)
+extern int other_update_node_state(node_record_t *node_ptr)
 {
 	if (other_select_init() < 0)
 		return SLURM_ERROR;

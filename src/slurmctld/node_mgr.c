@@ -106,18 +106,17 @@ bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
 bitstr_t *rs_node_bitmap    = NULL; 	/* bitmap of resuming nodes */
 
-static void 	_dump_node_state (struct node_record *dump_node_ptr,
-				  Buf buffer);
+static void 	_dump_node_state(node_record_t *dump_node_ptr, Buf buffer);
 static front_end_record_t * _front_end_reg(
 				slurm_node_registration_status_msg_t *reg_msg);
-static bool	_is_cloud_hidden(struct node_record *node_ptr);
-static void 	_make_node_down(struct node_record *node_ptr,
+static bool	_is_cloud_hidden(node_record_t *node_ptr);
+static void 	_make_node_down(node_record_t *node_ptr,
 				time_t event_time);
-static bool	_node_is_hidden(struct node_record *node_ptr, uid_t uid);
+static bool	_node_is_hidden(node_record_t *node_ptr, uid_t uid);
 static Buf	_open_node_state_file(char **state_file);
-static void 	_pack_node(struct node_record *dump_node_ptr, Buf buffer,
+static void 	_pack_node(node_record_t *dump_node_ptr, Buf buffer,
 			   uint16_t protocol_version, uint16_t show_flags);
-static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
+static void	_sync_bitmaps(node_record_t *node_ptr, int job_count);
 static void	_update_config_ptr(bitstr_t *bitmap,
 				struct config_record *config_ptr);
 static int	_update_node_active_features(char *node_names,
@@ -135,7 +134,7 @@ int dump_all_node_state ( void )
 	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, inx, log_fd;
 	char *old_file, *new_file, *reg_file;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK,
 					    NO_LOCK, NO_LOCK };
@@ -218,8 +217,7 @@ int dump_all_node_state ( void )
  * IN dump_node_ptr - pointer to node for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-static void
-_dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
+static void _dump_node_state(node_record_t *dump_node_ptr, Buf buffer)
 {
 	packstr (dump_node_ptr->comm_name, buffer);
 	packstr (dump_node_ptr->name, buffer);
@@ -296,7 +294,7 @@ extern int load_all_node_state ( bool state_only )
 	uint32_t reason_uid = NO_VAL;
 	time_t boot_req_time = 0, reason_time = 0, last_response = 0;
 	List gres_list = NULL;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	time_t time_stamp, now = time(NULL);
 	Buf buffer;
 	char *ver_str = NULL;
@@ -712,7 +710,7 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 
 /* Return true if the node should be hidden by virtue of being powered down
  * and in the cloud. */
-static bool _is_cloud_hidden(struct node_record *node_ptr)
+static bool _is_cloud_hidden(node_record_t *node_ptr)
 {
 	if (((slurmctld_conf.private_data & PRIVATE_CLOUD_NODES) == 0) &&
 	    IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
@@ -720,7 +718,7 @@ static bool _is_cloud_hidden(struct node_record *node_ptr)
 	return false;
 }
 
-static bool _node_is_hidden(struct node_record *node_ptr, uid_t uid)
+static bool _node_is_hidden(node_record_t *node_ptr, uid_t uid)
 {
 	int i;
 
@@ -763,7 +761,7 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 	uint32_t nodes_packed, tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
-	struct node_record *node_ptr = node_record_table_ptr;
+	node_record_t *node_ptr = node_record_table_ptr;
 	bool hidden;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -850,7 +848,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	uint32_t nodes_packed, tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	bool hidden;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
@@ -917,8 +915,8 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
  * NOTE: if you make any changes here be sure to make the corresponding changes
  * 	to _unpack_node_info_members() in common/slurm_protocol_pack.c
  */
-static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
-			uint16_t protocol_version, uint16_t show_flags)
+static void _pack_node(node_record_t *dump_node_ptr, Buf buffer,
+		       uint16_t protocol_version, uint16_t show_flags)
 {
 	char *gres_drain = NULL, *gres_used = NULL;
 
@@ -1001,8 +999,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer,
 /* Return "true" if a node's state is already "new_state". This is more
  * complex than simply comparing the state values due to flags (e.g.
  * A node might be DOWN + NO_RESPOND or IDLE + DRAIN) */
-static bool
-_equivalent_node_state(struct node_record *node_ptr, uint32_t new_state)
+static bool _equivalent_node_state(node_record_t *node_ptr, uint32_t new_state)
 {
 	if (new_state == NO_VAL)	/* No change */
 		return true;
@@ -1060,7 +1057,7 @@ static bool _valid_features_act(char *features_act, char *features)
 int update_node ( update_node_msg_t * update_node_msg )
 {
 	int error_code = 0, node_cnt, node_inx;
-	struct node_record *node_ptr = NULL;
+	node_record_t *node_ptr = NULL;
 	char *this_node_name = NULL, *tmp_feature, *orig_features_act = NULL;
 	hostlist_t host_list, hostaddr_list = NULL, hostname_list = NULL;
 	uint32_t base_state = 0, node_flags, state_val;
@@ -1568,7 +1565,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 extern void restore_node_features(int recover)
 {
 	int i, node_features_plugin_cnt;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_features_plugin_cnt = node_features_g_count();
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
@@ -1888,7 +1885,7 @@ static int _update_node_gres(char *node_names, char *gres)
 	ListIterator config_iterator;
 	struct config_record *config_ptr, *new_config_ptr;
 	struct config_record *first_new = NULL;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int rc, rc2, overlap1, overlap2;
 	int i, i_first, i_last;
 	char *change_node_str;
@@ -2023,7 +2020,7 @@ static void _update_config_ptr(bitstr_t *bitmap,
 extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 {
 	int error_code = 0, node_inx;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char  *this_node_name ;
 	hostlist_t host_list;
 	time_t now = time(NULL);
@@ -2144,7 +2141,7 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 	return false;
 }
 
-static int _build_node_spec_bitmap(struct node_record *node_ptr)
+static int _build_node_spec_bitmap(node_record_t *node_ptr)
 {
 	uint32_t c, coff, size;
 	int *cpu_spec_array;
@@ -2182,7 +2179,7 @@ static int _build_node_spec_bitmap(struct node_record *node_ptr)
 extern int update_node_record_acct_gather_data(
 	acct_gather_node_resp_msg_t *msg)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = find_node_record(msg->node_name);
 	if (node_ptr == NULL)
@@ -2196,7 +2193,7 @@ extern int update_node_record_acct_gather_data(
 /* A node's socket/core configuration has changed could be due to KNL NUMA
  * mode change and reboot. Update this node's config record, splitting an
  * existing record if needed. */
-static void _split_node_config(struct node_record *node_ptr,
+static void _split_node_config(node_record_t *node_ptr,
 			       slurm_node_registration_status_msg_t *reg_msg)
 {
 	struct config_record *config_ptr, *new_config_ptr;
@@ -2243,7 +2240,7 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 {
 	int error_code, i, node_inx;
 	struct config_record *config_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *reason_down = NULL;
 	char *orig_features = NULL, *orig_features_act = NULL;
 	uint32_t node_flags;
@@ -2767,7 +2764,7 @@ extern int validate_nodes_via_front_end(
 	bool update_node_state = false;
 	job_record_t *job_ptr;
 	struct config_record *config_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	ListIterator job_iterator;
 	hostlist_t reg_hostlist = NULL;
@@ -3072,7 +3069,7 @@ extern int validate_nodes_via_front_end(
 }
 
 /* Sync idle, share, and avail_node_bitmaps for a given node */
-static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
+static void _sync_bitmaps(node_record_t *node_ptr, int job_count)
 {
 	int node_inx = node_ptr - node_record_table_ptr;
 
@@ -3128,7 +3125,7 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 	return;
 }
 #else
-static void _node_did_resp(struct node_record *node_ptr)
+static void _node_did_resp(node_record_t *node_ptr)
 {
 	int node_inx;
 	uint32_t node_flags;
@@ -3214,7 +3211,7 @@ void node_did_resp (char *name)
 	front_end_record_t *node_ptr;
 	node_ptr = find_front_end_record (name);
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	node_ptr = find_node_record (name);
 #endif
 
@@ -3240,7 +3237,7 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 
 	node_ptr = find_front_end_record (name);
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = find_node_record (name);
 #endif
@@ -3297,7 +3294,7 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 extern void node_no_resp_msg(void)
 {
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	char *host_str = NULL;
 	hostlist_t no_resp_hostlist = NULL;
 
@@ -3331,7 +3328,7 @@ extern void node_no_resp_msg(void)
  */
 void set_node_down (char *name, char *reason)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
@@ -3349,7 +3346,7 @@ void set_node_down (char *name, char *reason)
  * IN node_ptr - node_ptr to the node
  * IN reason - why the node is DOWN
  */
-void set_node_down_ptr (struct node_record *node_ptr, char *reason)
+void set_node_down_ptr(node_record_t *node_ptr, char *reason)
 {
 	time_t now = time(NULL);
 
@@ -3379,7 +3376,7 @@ void set_node_down_ptr (struct node_record *node_ptr, char *reason)
  */
 bool is_node_down (char *name)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
@@ -3404,7 +3401,7 @@ bool is_node_resp (char *name)
 
 	node_ptr = find_front_end_record (name);
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = find_node_record (name);
 #endif
@@ -3422,8 +3419,7 @@ bool is_node_resp (char *name)
  * find_first_node_record - find a record for first node in the bitmap
  * IN node_bitmap
  */
-struct node_record *
-find_first_node_record (bitstr_t *node_bitmap)
+node_record_t *find_first_node_record(bitstr_t *node_bitmap)
 {
 	int inx;
 
@@ -3451,7 +3447,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 #endif
 
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
@@ -3509,8 +3505,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * IN node_ptr - pointer to node being allocated
  * IN job_ptr  - pointer to job that is starting
  */
-extern void make_node_alloc(struct node_record *node_ptr,
-			    job_record_t *job_ptr)
+extern void make_node_alloc(node_record_t *node_ptr, job_record_t *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint32_t node_flags;
@@ -3562,8 +3557,8 @@ extern void make_node_avail(int node_inx)
  * IN job_ptr - pointer to job that is completing
  * IN suspended - true if job was previously suspended
  */
-extern void make_node_comp(struct node_record *node_ptr,
-			   job_record_t *job_ptr, bool suspended)
+extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
+			   bool suspended)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint32_t node_flags;
@@ -3628,7 +3623,7 @@ extern void make_node_comp(struct node_record *node_ptr,
 }
 
 /* _make_node_down - flag specified node as down */
-static void _make_node_down(struct node_record *node_ptr, time_t event_time)
+static void _make_node_down(node_record_t *node_ptr, time_t event_time)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint32_t node_flags;
@@ -3657,7 +3652,7 @@ static void _make_node_down(struct node_record *node_ptr, time_t event_time)
  * IN node_ptr - pointer to node reporting job completion
  * IN job_ptr - pointer to job that just completed or NULL if not applicable
  */
-void make_node_idle(struct node_record *node_ptr, job_record_t *job_ptr)
+void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint32_t node_flags;
@@ -3801,7 +3796,7 @@ fini:
 extern int send_nodes_to_accounting(time_t event_time)
 {
 	int rc = SLURM_SUCCESS, i = 0;
-	struct node_record *node_ptr = NULL;
+	node_record_t *node_ptr = NULL;
 	char *reason = NULL;
 	slurmctld_lock_t node_read_lock = {
 		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK, NO_LOCK };
@@ -3855,7 +3850,7 @@ extern void reset_node_load(char *node_name, uint32_t cpu_load)
 #ifdef HAVE_FRONT_END
 	return;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = find_node_record(node_name);
 	if (node_ptr) {
@@ -3874,7 +3869,7 @@ extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
 #ifdef HAVE_FRONT_END
 	return;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	node_ptr = find_node_record(node_name);
 	if (node_ptr) {
@@ -3896,7 +3891,7 @@ extern void reset_node_free_mem(char *node_name, uint64_t free_mem)
 extern void check_reboot_nodes()
 {
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	uint16_t resume_timeout = slurmctld_conf.resume_timeout;
 

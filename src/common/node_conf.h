@@ -265,8 +265,8 @@ extern struct config_record *create_config_record (void);
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when
  *	the global node table is no longer required
  */
-extern struct node_record *create_node_record (
-			struct config_record *config_ptr, char *node_name);
+extern node_record_t *create_node_record(struct config_record *config_ptr,
+					 char *node_name);
 
 /*
  * find_node_record - find a record for node with specified name
@@ -274,7 +274,7 @@ extern struct node_record *create_node_record (
  * RET: pointer to node record or NULL if not found
  * NOTE: Logs an error if the node name is NOT found
  */
-extern struct node_record *find_node_record (char *name);
+extern node_record_t *find_node_record(char *name);
 
 /*
  * find_node_record2 - find a record for node with specified name
@@ -282,7 +282,7 @@ extern struct node_record *find_node_record (char *name);
  * RET: pointer to node record or NULL if not found
  * NOTE: Does not log an error if the node name is NOT found
  */
-extern struct node_record *find_node_record2 (char *name);
+extern node_record_t *find_node_record2(char *name);
 
 /*
  * find_node_record_no_alias - find a record for node with specified name
@@ -291,7 +291,7 @@ extern struct node_record *find_node_record2 (char *name);
  * RET: pointer to node record or NULL if not found
  * NOTE: Does not log an error if the node name is NOT found
  */
-extern struct node_record *find_node_record_no_alias (char *name);
+extern node_record_t *find_node_record_no_alias(char *name);
 
 /*
  * hostlist2bitmap - given a hostlist, build a bitmap representation
@@ -326,7 +326,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 			     bitstr_t **bitmap);
 
 /* Purge the contents of a node record */
-extern void purge_node_rec (struct node_record *node_ptr);
+extern void purge_node_rec(node_record_t *node_ptr);
 
 /*
  * rehash_node - build a hash table of the node_record entries.
@@ -338,8 +338,7 @@ extern void rehash_node (void);
 extern int state_str2int(const char *state_str, char *node_name);
 
 /* (re)set cr_node_num_cores arrays */
-extern void cr_init_global_core_data(struct node_record *node_ptr,
-				     int node_cnt);
+extern void cr_init_global_core_data(node_record_t *node_ptr, int node_cnt);
 
 extern void cr_fini_global_core_data(void);
 

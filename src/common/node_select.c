@@ -476,7 +476,7 @@ extern int select_g_job_init(List job_list)
  * IN node_count - number of node entries
  * Return true if node ranking was performed, false if not.
  */
-extern bool select_g_node_ranking(struct node_record *node_ptr, int node_cnt)
+extern bool select_g_node_ranking(node_record_t *node_ptr, int node_cnt)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
@@ -490,7 +490,7 @@ extern bool select_g_node_ranking(struct node_record *node_ptr, int node_cnt)
  * IN node_ptr - current node data
  * IN node_count - number of node entries
  */
-extern int select_g_node_init(struct node_record *node_ptr, int node_cnt)
+extern int select_g_node_init(node_record_t *node_ptr, int node_cnt)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;
@@ -601,8 +601,7 @@ extern int select_g_job_expand(job_record_t *from_job_ptr,
  *	Only support jobs shrinking now.
  * RET: 0 or an error code
  */
-extern int select_g_job_resized(job_record_t *job_ptr,
-				struct node_record *node_ptr)
+extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	if (slurm_select_init(0) < 0)
 		return -1;
@@ -1179,7 +1178,7 @@ extern int select_g_update_node_config (int index)
  * IN state  - state to update to
  * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
  */
-extern int select_g_update_node_state (struct node_record *node_ptr)
+extern int select_g_update_node_state(node_record_t *node_ptr)
 {
 	if (slurm_select_init(0) < 0)
 		return SLURM_ERROR;

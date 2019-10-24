@@ -166,7 +166,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   Determine if this node update request is valid. For example, validate that a
    non-KNL node does not include any MCDRAM or NUMA modes that are KNL specific.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
-  <span class="commandline"> node_ptr:</span> Pointer to struct node_record record
+  <span class="commandline"> node_ptr:</span> Pointer to node_record_t record
   being updated.<br>
   <span class="commandline"> update_node_msg:</span> Node update request.</br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
@@ -234,6 +234,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   True if user can change node active features to other available features.</p>
 
 
-<p style="text-align:center;">Last modified 15 May 2018</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

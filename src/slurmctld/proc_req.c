@@ -3306,7 +3306,7 @@ static slurm_addr_t *_build_node_addr(char *node_list, uint32_t node_cnt,
 				      uint32_t pack_job_id)
 {
 	hostlist_t host_list = NULL;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	slurm_addr_t *node_addr;
 	char *this_node_name;
 	int error_code = SLURM_SUCCESS, node_inx = 0;
@@ -3353,7 +3353,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	job_record_t *job_ptr = NULL, *job_pack_ptr;
 	step_record_t *step_ptr;
 	char *local_node_list = NULL, *node_list = NULL;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	slurm_addr_t *node_addr = NULL;
 	hostlist_t host_list = NULL;
 	char *this_node_name;
@@ -5916,7 +5916,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 #ifndef HAVE_FRONT_END
 	int i;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	reboot_msg_t *reboot_msg = (reboot_msg_t *)msg->data;
 	char *nodelist = NULL;
 	bitstr_t *bitmap = NULL;

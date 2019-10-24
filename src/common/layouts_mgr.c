@@ -2355,7 +2355,7 @@ int layouts_fini(void)
 int layouts_load_config(int recover)
 {
 	int i, rc, inx;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	layout_t *layout;
 	uint32_t layouts_count;
 	entity_t *entity;

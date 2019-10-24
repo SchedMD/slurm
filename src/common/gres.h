@@ -933,7 +933,7 @@ extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
 					struct job_resources *job_res,
 					uint8_t overcommit,
 					gres_mc_data_t *tres_mc_ptr,
-					struct node_record *node_table_ptr);
+					node_record_t *node_table_ptr);
 
 /*
  * Determine if job GRES specification includes a tres-per-task specification

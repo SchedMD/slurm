@@ -171,7 +171,7 @@ static double _get_system_usage(void)
 		select_g_select_nodeinfo_set_all();
 
 		for (i = 0; i < node_record_count; i++) {
-			struct node_record *node_ptr =
+			node_record_t *node_ptr =
 				&node_record_table_ptr[i];
 			double node_alloc_tres = 0.0;
 			double node_tot_tres   = 0.0;
@@ -2408,7 +2408,7 @@ extern void launch_job(job_record_t *job_ptr)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 #endif
 
 	xassert(job_ptr);
@@ -4000,7 +4000,7 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 	int i, i_first, i_last;
 	agent_arg_t *reboot_agent_args = NULL;
 	reboot_msg_t *reboot_msg;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	time_t now = time(NULL);
 	bitstr_t *boot_node_bitmap = NULL, *feature_node_bitmap = NULL;
 	char *nodes, *reboot_features = NULL;
@@ -4158,7 +4158,7 @@ static void *_wait_boot(void *arg)
 	slurmctld_lock_t node_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 	uint16_t resume_timeout = slurm_get_resume_timeout();
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	time_t start_time = time(NULL);
 	int i, total_node_cnt, wait_node_cnt;
 	uint32_t save_job_id = job_ptr->job_id;
@@ -4257,7 +4257,7 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 static void *_run_prolog(void *arg)
 {
 	job_record_t *job_ptr = (job_record_t *) arg;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t job_id;
 	pid_t cpid;
 	int i, rc, status, wait_rc;

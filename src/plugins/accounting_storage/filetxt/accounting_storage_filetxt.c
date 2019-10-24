@@ -623,14 +623,14 @@ extern int acct_storage_p_fix_runaway_jobs(void *db_conn, uint32_t uid,
 }
 
 extern int clusteracct_storage_p_node_down(void *db_conn,
-					   struct node_record *node_ptr,
+					   node_record_t *node_ptr,
 					   time_t event_time, char *reason,
 					   uint32_t reason_uid)
 {
 	return SLURM_SUCCESS;
 }
 extern int clusteracct_storage_p_node_up(void *db_conn,
-					 struct node_record *node_ptr,
+					 node_record_t *node_ptr,
 					 time_t event_time)
 {
 	return SLURM_SUCCESS;

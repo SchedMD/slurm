@@ -1185,7 +1185,7 @@ extern void dump_step_desc(job_step_create_request_msg_t *step_spec);
 
 /* Remove one node from a job's allocation */
 extern void excise_node_from_job(job_record_t *job_ptr,
-				 struct node_record *node_ptr);
+				 node_record_t *node_ptr);
 
 /* make_node_avail - flag specified node as available */
 extern void make_node_avail(int node_inx);
@@ -1228,7 +1228,7 @@ extern job_record_t *find_job_record(uint32_t job_id);
  * find_first_node_record - find a record for first node in the bitmap
  * IN node_bitmap
  */
-extern struct node_record *find_first_node_record (bitstr_t *node_bitmap);
+extern node_record_t *find_first_node_record(bitstr_t *node_bitmap);
 
 /*
  * find_part_record - find a record for partition with specified name
@@ -1787,8 +1787,7 @@ extern int kill_job_by_part_name(char *part_name);
  * IN job_ptr - pointer to terminating job
  * IN node_ptr - pointer to the node on which the job resides
  */
-extern void kill_job_on_node(job_record_t *job_ptr,
-			     struct node_record *node_ptr);
+extern void kill_job_on_node(job_record_t *job_ptr, node_record_t *node_ptr);
 
 /*
  * kill_job_by_front_end_name - Given a front end node name, deallocate
@@ -1815,8 +1814,8 @@ extern int kill_running_job_by_node_name(char *node_name);
  * IN node_fail - true of removed node has failed
  * RET count of killed job steps
  */
-extern int kill_step_on_node(job_record_t *job_ptr,
-			     struct node_record *node_ptr, bool node_fail);
+extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
+			     bool node_fail);
 
 /* list_compare_config - compare two entry from the config list based upon
  *	weight, see common/list.h for documentation */
@@ -1894,24 +1893,22 @@ extern void log_feature_lists(void);
  * IN node_ptr - pointer to node being allocated
  * IN job_ptr  - pointer to job that is starting
  */
-extern void make_node_alloc(struct node_record *node_ptr,
-			    job_record_t *job_ptr);
+extern void make_node_alloc(node_record_t *node_ptr, job_record_t *job_ptr);
 
 /* make_node_comp - flag specified node as completing a job
  * IN node_ptr - pointer to node marked for completion of job
  * IN job_ptr  - pointer to job that is completing
  * IN suspended - true if job was previously suspended
  */
-extern void make_node_comp(struct node_record *node_ptr,
-			   job_record_t *job_ptr, bool suspended);
+extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
+			   bool suspended);
 
 /*
  * make_node_idle - flag specified node as having finished with a job
  * IN node_ptr - pointer to node reporting job completion
  * IN job_ptr - pointer to job that just completed or NULL if not applicable
  */
-extern void make_node_idle(struct node_record *node_ptr,
-			   job_record_t *job_ptr);
+extern void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr);
 
 /*
  * Determine of the specified job can execute right now or is currently
@@ -2313,7 +2310,7 @@ extern void set_node_down (char *name, char *reason);
  * IN node_ptr - node_ptr to the node
  * IN reason - why the node is DOWN
  */
-void set_node_down_ptr (struct node_record *node_ptr, char *reason);
+void set_node_down_ptr(node_record_t *node_ptr, char *reason);
 
 /*
  * set_slurmctld_state_loc - create state directory as needed and "cd" to it

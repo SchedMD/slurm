@@ -390,7 +390,7 @@ extern void part_data_destroy_row(part_row_data_t *row, uint16_t num_rows)
 extern void part_data_dump_res(part_res_record_t *p_ptr)
 {
 	uint32_t n, r;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 
 	info("part:%s rows:%u prio:%u ", p_ptr->part_ptr->name, p_ptr->num_rows,
 	     p_ptr->part_ptr->priority_tier);

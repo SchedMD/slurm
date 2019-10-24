@@ -1130,7 +1130,7 @@ static void
 _reconfigure(void)
 {
 	uint32_t cpu_cnt;
-	struct node_record *node_rec;
+	node_record_t *node_rec;
 	List gres_list = NULL;
 
 	_reconfig = 0;
@@ -1583,7 +1583,7 @@ _slurmd_init(void)
 	struct rlimit rlim;
 	struct stat stat_buf;
 	uint32_t cpu_cnt;
-	struct node_record *node_rec;
+	node_record_t *node_rec;
 	List gres_list = NULL;
 	int rc;
 

@@ -147,7 +147,7 @@ void ping_nodes (void)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr = NULL;
 #else
-	struct node_record *node_ptr = NULL;
+	node_record_t *node_ptr = NULL;
 	time_t old_cpu_load_time = now - slurmctld_conf.slurmd_timeout;
 	time_t old_free_mem_time = now - slurmctld_conf.slurmd_timeout;
 #endif
@@ -383,7 +383,7 @@ extern void run_health_check(void)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int node_test_cnt = 0, node_limit, node_states, run_cyclic;
 	static int base_node_loc = -1;
 	static time_t cycle_start_time = (time_t) 0;
@@ -531,7 +531,7 @@ extern void update_nodes_acct_gather_data(void)
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #else
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 #endif
 	int i;
 	char *host_str = NULL;

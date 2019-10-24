@@ -49,12 +49,12 @@
 #if defined (__APPLE__)
 extern slurmctld_config_t slurmctld_config __attribute__((weak_import));
 extern bitstr_t *idle_node_bitmap __attribute__((weak_import));
-extern struct node_record *node_record_table_ptr __attribute__((weak_import));
+extern node_record_t *node_record_table_ptr __attribute__((weak_import));
 extern List job_list __attribute__((weak_import));
 #else
 slurmctld_config_t slurmctld_config;
 bitstr_t *idle_node_bitmap;
-struct node_record *node_record_table_ptr;
+node_record_t *node_record_table_ptr;
 List job_list;
 #endif
 
@@ -157,7 +157,7 @@ static List _build_node_weight_list(bitstr_t *node_bitmap)
 {
 	int i, i_first, i_last;
 	List node_list;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	node_weight_type *nwt;
 
 	xassert(node_bitmap);
@@ -397,7 +397,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	int *consec_req;	/* are nodes from this set required
 				 * (in req_bitmap) */
 	uint64_t *consec_weight; /* node scheduling weight */
-	struct node_record *node_ptr = NULL;
+	node_record_t *node_ptr = NULL;
 	int consec_index, consec_size, sufficient;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
 	int min_rem_nodes;	/* remaining resources desired */
@@ -1058,7 +1058,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 	bitstr_t *orig_node_map = bit_copy(node_map);
 	bool all_done = false, gres_per_job;
 	uint16_t avail_cpus = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	ListIterator iter;
@@ -1242,7 +1242,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 	bitstr_t *orig_node_map = bit_copy(node_map);
 	bool all_done = false, gres_per_job;
 	uint16_t avail_cpus = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	ListIterator iter;
@@ -1480,7 +1480,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	List node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
 	ListIterator iter;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint16_t avail_cpus = 0;
 	int64_t rem_max_cpus;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
@@ -2118,7 +2118,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	List node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
 	ListIterator iter;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint16_t avail_cpus = 0;
 	int64_t rem_max_cpus;
 	int rem_cpus, rem_nodes; /* remaining resources desired */
@@ -2690,7 +2690,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 	bitstr_t *orig_node_map = bit_copy(node_map);
 	bool all_done = false, gres_per_job;
 	uint16_t avail_cpus = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	ListIterator iter;
@@ -2902,7 +2902,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 	bitstr_t *orig_node_map = bit_copy(node_map);
 	bool all_done = false, gres_per_job;
 	uint16_t avail_cpus = 0;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	ListIterator iter;
@@ -3252,7 +3252,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	uint16_t cpus = 0;
 	uint64_t avail_mem = NO_VAL64, req_mem;
 	int cpu_alloc_size, i, rc;
-	struct node_record *node_ptr = node_record_table_ptr + node_i;
+	node_record_t *node_ptr = node_record_table_ptr + node_i;
 	List node_gres_list;
 	bitstr_t *part_core_map_ptr = NULL, *req_sock_map = NULL;
 	avail_res_t *avail_res = NULL;

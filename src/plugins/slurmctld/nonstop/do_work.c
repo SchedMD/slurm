@@ -446,7 +446,7 @@ extern void term_job_db(void)
 
 static uint32_t _get_job_cpus(job_record_t *job_ptr, int node_inx)
 {
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	uint32_t cpus_alloc;
 	int i, j;
 
@@ -470,7 +470,7 @@ static uint32_t _get_job_cpus(job_record_t *job_ptr, int node_inx)
 
 /* Some node is failing, but we lack a specific job ID, so see what jobs
  * have registered and have this node in their job allocaiton */
-static void _failing_node(struct node_record *node_ptr)
+static void _failing_node(node_record_t *node_ptr)
 {
 	job_failures_t *job_fail_ptr;
 	ListIterator job_iterator;
@@ -503,8 +503,7 @@ static void _failing_node(struct node_record *node_ptr)
 	slurm_mutex_unlock(&job_fail_mutex);
 }
 
-extern void node_fail_callback(job_record_t *job_ptr,
-			       struct node_record *node_ptr)
+extern void node_fail_callback(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	job_failures_t *job_fail_ptr;
 	uint32_t event_flag = 0;
@@ -684,7 +683,7 @@ extern char *fail_nodes(char *cmd_ptr, uid_t cmd_uid,
 			uint32_t protocol_version)
 {
 	job_failures_t *job_fail_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	job_record_t *job_ptr;
 	uint32_t job_id;
 	char *sep1;
@@ -836,8 +835,7 @@ fini:	slurm_mutex_unlock(&job_fail_mutex);
  * and the node has the referenced feature, then the replacement node must have
  * the same feature(s).
  * Return value must be xfreed. */
-static char *_job_node_features(job_record_t *job_ptr,
-				struct node_record *node_ptr)
+static char *_job_node_features(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	node_feature_t *node_feat_ptr;
 	job_feature_t *job_feat_ptr;
@@ -890,7 +888,7 @@ extern char *drop_node(char *cmd_ptr, uid_t cmd_uid,
 	char *resp = NULL;
 	char *node_name;
 	int i, rc;
-	struct node_record *node_ptr = NULL;
+	node_record_t *node_ptr = NULL;
 	int failed_inx = -1, node_inx = -1;
 	hostlist_t hl = NULL;
 
@@ -1085,7 +1083,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 	char *resp = NULL;
 	char *node_name, *new_node_name = NULL;
 	int i, rc;
-	struct node_record *node_ptr = NULL;
+	node_record_t *node_ptr = NULL;
 	int failed_inx = -1, node_inx = -1;
 	hostlist_t hl = NULL;
 	will_run_response_msg_t *will_run = NULL;
@@ -1522,7 +1520,7 @@ extern char *show_config(char *cmd_ptr, uid_t cmd_uid,
 extern char *show_job(char *cmd_ptr, uid_t cmd_uid, uint32_t protocol_version)
 {
 	job_record_t *job_ptr;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	job_failures_t *job_fail_ptr;
 	uint32_t job_id;
 	char *sep1;

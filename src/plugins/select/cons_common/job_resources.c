@@ -279,7 +279,7 @@ extern int job_res_fit_in_row(job_resources_t *job_resrcs_ptr,
 extern int job_res_add_job(job_record_t *job_ptr, int action)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	part_res_record_t *p_ptr;
 	List node_gres_list;
 	int i, i_first, i_last, n;
@@ -447,7 +447,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			  job_record_t *job_ptr, int action, bool job_fini)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
-	struct node_record *node_ptr;
+	node_record_t *node_ptr;
 	int i_first, i_last;
 	int i, n;
 	List gres_list;
