@@ -1244,8 +1244,7 @@ extern struct part_record *find_part_record(char *name);
  * IN step_id - id of the desired job step
  * RET pointer to the job step's record, NULL on error
  */
-extern struct step_record *find_step_record(job_record_t *job_ptr,
-					    uint32_t step_id);
+extern step_record_t *find_step_record(job_record_t *job_ptr, uint32_t step_id);
 
 /*
  * get_job_env - return the environment variables and their count for a
@@ -2202,17 +2201,17 @@ extern void rebuild_step_bitmaps(job_record_t *job_ptr,
  * After a job has fully completed run this to release the resouces
  * and remove it from the system.
  */
-extern int post_job_step(struct step_record *step_ptr);
+extern int post_job_step(step_record_t *step_ptr);
 
 /*
  * Create the extern step and add it to the job.
  */
-extern struct step_record *build_extern_step(job_record_t *job_ptr);
+extern step_record_t *build_extern_step(job_record_t *job_ptr);
 
 /*
  * Create the batch step and add it to the job.
  */
-extern struct step_record *build_batch_step(job_record_t *job_ptr);
+extern step_record_t *build_batch_step(job_record_t *job_ptr);
 
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);
@@ -2327,7 +2326,7 @@ extern void set_slurmctld_state_loc(void);
  * IN signal - signal to send
  * IN msg_type - message type to send
  */
-void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
+void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 		       slurm_msg_type_t msg_type);
 
 /*
@@ -2338,7 +2337,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
  * IN signal - signal to send
  * IN msg_type - message type to send
  */
-void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
+void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
 			       uint16_t signal, slurm_msg_type_t msg_type);
 
 /*
@@ -2351,7 +2350,7 @@ extern int slurmctld_shutdown(void);
 extern void step_checkpoint(void);
 
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
-extern void step_alloc_lps(struct step_record *step_ptr);
+extern void step_alloc_lps(step_record_t *step_ptr);
 
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
@@ -2364,7 +2363,7 @@ extern void step_alloc_lps(struct step_record *step_ptr);
  * 	the job.
  */
 extern int step_create(job_step_create_request_msg_t *step_specs,
-		       struct step_record** new_step_record,
+		       step_record_t **new_step_record,
 		       uint16_t protocol_version);
 
 /*
@@ -2380,7 +2379,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
  * NOTE: you need to free the returned step_layout usually when the
  *       step is freed.
  */
-extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
+extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					       char *step_node_list,
 					       uint32_t node_count,
 					       uint32_t num_tasks,
@@ -2419,9 +2418,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
  * step_set_alloc_tres - set the tres up when allocating the step.
  * Only set when job is running.
  * NOTE: job write lock must be locked before calling this */
-extern void step_set_alloc_tres(
-	struct step_record *step_ptr, uint32_t node_count,
-	bool assoc_mgr_locked, bool make_formatted);
+extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
+				bool assoc_mgr_locked, bool make_formatted);
 
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(job_record_t *job_ptr);

@@ -10592,7 +10592,7 @@ static int _reset_detail_bitmaps(job_record_t *job_ptr)
 static void _reset_step_bitmaps(job_record_t *job_ptr)
 {
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
@@ -13756,7 +13756,7 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 	int i, node_inx, jobs_on_node;
 	struct node_record *node_ptr;
 	job_record_t *job_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	char step_str[64];
 	time_t now = time(NULL);
 
@@ -13976,7 +13976,7 @@ static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time)
 {
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	char *node_name = node_record_table_ptr[node_inx].name;
 
 	xassert(job_ptr);
@@ -15108,7 +15108,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 
 	if (notify_srun) {
 		ListIterator step_iterator;
-		struct step_record *step_ptr;
+		step_record_t *step_ptr;
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = list_next(step_iterator))) {
 			/* Since we have already checked the uid,
@@ -15185,7 +15185,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 static void *_switch_suspend_info(job_record_t *job_ptr)
 {
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	void *switch_suspend_info = NULL;
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
@@ -15381,7 +15381,7 @@ static int _job_suspend_switch_test(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
@@ -16745,7 +16745,7 @@ extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
 {
 	int rc = SLURM_SUCCESS;
 	job_record_t *job_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	checkpoint_resp_msg_t resp_data;
 	slurm_msg_t resp_msg;
 

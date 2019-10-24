@@ -124,7 +124,7 @@ static void         _create_pack_job_id_set(hostset_t jobid_hostset,
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int          _is_prolog_finished(uint32_t job_id);
-static int          _make_step_cred(struct step_record *step_rec,
+static int          _make_step_cred(step_record_t *step_rec,
 				    slurm_cred_t **slurm_cred,
 				    uint16_t protocol_version);
 inline static void  _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg);
@@ -1070,8 +1070,8 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 }
 
 /* create a credential for a given job step, return error code */
-static int _make_step_cred(struct step_record *step_ptr,
-			   slurm_cred_t **slurm_cred, uint16_t protocol_version)
+static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
+			   uint16_t protocol_version)
 {
 	slurm_cred_arg_t cred_arg;
 	job_record_t *job_ptr = step_ptr->job_ptr;
@@ -2538,7 +2538,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 	if (association_based_accounting && job_ptr &&
 	    (job_ptr->job_state != JOB_PENDING)) {
 		/* This logic was taken from _slurm_rpc_step_complete() */
-		struct step_record *step_ptr =
+		step_record_t *step_ptr =
 			find_step_record(job_ptr, SLURM_BATCH_SCRIPT);
 		if (!step_ptr) {
 			if (msg->protocol_version >=
@@ -2721,7 +2721,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	slurm_msg_t resp;
-	struct step_record *step_rec;
+	step_record_t *step_rec;
 	job_step_create_response_msg_t job_step_resp;
 	job_step_create_request_msg_t *req_step_msg =
 		(job_step_create_request_msg_t *) msg->data;
@@ -3351,7 +3351,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	job_record_t *job_ptr = NULL, *job_pack_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	char *local_node_list = NULL, *node_list = NULL;
 	struct node_record *node_ptr;
 	slurm_addr_t *node_addr = NULL;
@@ -3826,7 +3826,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	job_record_t *job_ptr = NULL;
-	struct step_record *step_ptr = NULL;
+	step_record_t *step_ptr = NULL;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_STEP_LAYOUT, from uid=%d", uid);

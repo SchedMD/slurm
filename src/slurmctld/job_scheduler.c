@@ -254,7 +254,7 @@ static void _job_queue_rec_del(void *x)
 static uint16_t _is_step_cleaning(job_record_t *job_ptr)
 {
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	uint16_t cleaning = 0;
 
 	step_iterator = list_iterator_create(job_ptr->step_list);

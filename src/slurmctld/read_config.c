@@ -2816,7 +2816,7 @@ static void _acct_restore_active_jobs(void)
 {
 	job_record_t *job_ptr;
 	ListIterator job_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	ListIterator step_iterator;
 
 	info("Reinitializing job accounting state");

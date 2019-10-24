@@ -212,7 +212,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 	slurm_addr_t * addr;
 	srun_node_fail_msg_t *msg_arg;
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	xassert(job_ptr);
 	xassert(node_name);
@@ -305,7 +305,7 @@ extern void srun_ping (void)
  * IN step_ptr - pointer to the slurmctld step record
  * IN timeout_val - when it is going to time out
  */
-extern void srun_step_timeout(struct step_record *step_ptr, time_t timeout_val)
+extern void srun_step_timeout(step_record_t *step_ptr, time_t timeout_val)
 {
 	slurm_addr_t *addr;
 	srun_timeout_msg_t *msg_arg;
@@ -335,7 +335,7 @@ extern void srun_timeout(job_record_t *job_ptr)
 	slurm_addr_t * addr;
 	srun_timeout_msg_t *msg_arg;
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	xassert(job_ptr);
 	if (!IS_JOB_RUNNING(job_ptr))
@@ -433,7 +433,7 @@ extern void srun_job_complete(job_record_t *job_ptr)
 	slurm_addr_t * addr;
 	srun_job_complete_msg_t *msg_arg;
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	xassert(job_ptr);
 
@@ -489,7 +489,7 @@ extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op)
  * srun_step_complete - notify srun of a job step's termination
  * IN step_ptr - pointer to the slurmctld job step record
  */
-extern void srun_step_complete (struct step_record *step_ptr)
+extern void srun_step_complete(step_record_t *step_ptr)
 {
 	slurm_addr_t * addr;
 	srun_job_complete_msg_t *msg_arg;
@@ -512,8 +512,7 @@ extern void srun_step_complete (struct step_record *step_ptr)
  * IN step_ptr  - pointer to the slurmctld job step record
  * IN node_list - name of nodes we did not find the step on
  */
-extern void srun_step_missing (struct step_record *step_ptr,
-			       char *node_list)
+extern void srun_step_missing(step_record_t *step_ptr, char *node_list)
 {
 	slurm_addr_t * addr;
 	srun_step_missing_msg_t *msg_arg;
@@ -537,7 +536,7 @@ extern void srun_step_missing (struct step_record *step_ptr,
  * IN step_ptr  - pointer to the slurmctld job step record
  * IN signal - signal number
  */
-extern void srun_step_signal (struct step_record *step_ptr, uint16_t signal)
+extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
 {
 	slurm_addr_t * addr;
 	job_step_kill_msg_t *msg_arg;
@@ -561,7 +560,7 @@ extern void srun_step_signal (struct step_record *step_ptr, uint16_t signal)
  * IN step_ptr - pointer to the slurmctld job step record
  * IN argv - command and arguments to execute
  */
-extern void srun_exec(struct step_record *step_ptr, char **argv)
+extern void srun_exec(step_record_t *step_ptr, char **argv)
 {
 	slurm_addr_t * addr;
 	srun_exec_msg_t *msg_arg;

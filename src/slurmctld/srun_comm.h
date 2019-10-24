@@ -63,7 +63,7 @@ extern void srun_allocate_abort(job_record_t *job_ptr);
  * IN step_ptr - pointer to the slurmctld job step record
  * IN argv - command and arguments to execute
  */
-extern void srun_exec(struct step_record *step_ptr, char **argv);
+extern void srun_exec(step_record_t *step_ptr, char **argv);
 
 /*
  * srun_job_complete - notify srun of a job's termination
@@ -84,7 +84,7 @@ extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op);
  * srun_step_complete - notify srun of a job step's termination
  * IN step_ptr - pointer to the slurmctld job step record
  */
-extern void srun_step_complete (struct step_record *step_ptr);
+extern void srun_step_complete(step_record_t *step_ptr);
 
 /*
  * srun_step_missing - notify srun that a job step is missing from
@@ -92,8 +92,7 @@ extern void srun_step_complete (struct step_record *step_ptr);
  * IN step_ptr  - pointer to the slurmctld job step record
  * IN node_list - name of nodes we did not find the step on
  */
-extern void srun_step_missing (struct step_record *step_ptr,
-			       char *node_list);
+extern void srun_step_missing(step_record_t *step_ptr, char *node_list);
 
 /*
  * srun_step_signal - notify srun that a job step should be signaled
@@ -101,7 +100,7 @@ extern void srun_step_missing (struct step_record *step_ptr,
  * IN step_ptr  - pointer to the slurmctld job step record
  * IN signal - signal number
  */
-extern void srun_step_signal (struct step_record *step_ptr, uint16_t signal);
+extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal);
 
 /*
  * srun_node_fail - notify srun of a node's failure
@@ -125,7 +124,7 @@ extern void srun_response(uint32_t job_id, uint32_t step_id);
  * IN step_ptr - pointer to the slurmctld step record
  * IN timeout_val - when it is going to time out
  */
-extern void srun_step_timeout(struct step_record *step_ptr, time_t timeout_val);
+extern void srun_step_timeout(step_record_t *step_ptr, time_t timeout_val);
 
 /*
  * srun_timeout - notify srun of a job's timeout

@@ -81,16 +81,16 @@ static void _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs);
 static int  _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 			uint32_t *usable_cpu_cnt);
-static struct step_record *_create_step_record(job_record_t *job_ptr,
-					       uint16_t protocol_version);
-static void _dump_step_layout(struct step_record *step_ptr);
-static void _free_step_rec(struct step_record *step_ptr);
+static step_record_t *_create_step_record(job_record_t *job_ptr,
+					  uint16_t protocol_version);
+static void _dump_step_layout(step_record_t *step_ptr);
+static void _free_step_rec(step_record_t *step_ptr);
 static bool _is_mem_resv(void);
 static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
 			 uint32_t *usable_cpu_cnt);
 static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 			  int nodes_avail, int nodes_picked_cnt);
-static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer,
+static void _pack_ctld_job_step_info(step_record_t *step, Buf buffer,
 				     uint16_t protocol_version);
 static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_spec,
@@ -103,11 +103,11 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
 static int _purge_duplicate_steps(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_specs);
-static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
-				uint32_t range_first, uint32_t range_last);
-static int _step_hostname_to_inx(struct step_record *step_ptr,
-				char *node_name);
-static void _step_dealloc_lps(struct step_record *step_ptr);
+static hostlist_t _step_range_to_hostlist(step_record_t *step_ptr,
+					  uint32_t range_first,
+					  uint32_t range_last);
+static int _step_hostname_to_inx(step_record_t *step_ptr, char *node_name);
+static void _step_dealloc_lps(step_record_t *step_ptr);
 
 /* Determine how many more CPUs are required for a job step */
 static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
@@ -163,10 +163,10 @@ static int _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
  * RET a pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with delete_step_record
  */
-static struct step_record *_create_step_record(job_record_t *job_ptr,
-					       uint16_t protocol_version)
+static step_record_t *_create_step_record(job_record_t *job_ptr,
+					  uint16_t protocol_version)
 {
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	xassert(job_ptr);
 	/* NOTE: Reserve highest step ID values for
@@ -178,7 +178,7 @@ static struct step_record *_create_step_record(job_record_t *job_ptr,
 		return NULL;
 	}
 
-	step_ptr = xmalloc(sizeof(struct step_record));
+	step_ptr = xmalloc(sizeof(*step_ptr));
 
 	last_job_update = time(NULL);
 	step_ptr->job_ptr    = job_ptr;
@@ -202,7 +202,7 @@ static int _purge_duplicate_steps(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_specs)
 {
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	int rc = SLURM_SUCCESS;
 	xassert(job_ptr);
 
@@ -230,7 +230,7 @@ static int _purge_duplicate_steps(job_record_t *job_ptr,
 static void _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs)
 {
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	if ((step_specs->host == NULL) || (step_specs->port == 0))
 		return;
@@ -252,7 +252,7 @@ static void _build_pending_step(job_record_t *job_ptr,
 }
 
 static void _internal_step_complete(job_record_t *job_ptr,
-				    struct step_record *step_ptr)
+				    step_record_t *step_ptr)
 {
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	bool add_energy = true;
@@ -312,7 +312,7 @@ static void _internal_step_complete(job_record_t *job_ptr,
 extern void delete_step_records(job_record_t *job_ptr)
 {
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	xassert(job_ptr);
 
@@ -347,7 +347,7 @@ extern void delete_step_records(job_record_t *job_ptr)
 extern void step_list_purge(job_record_t *job_ptr)
 {
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	xassert(job_ptr);
 	if (job_ptr->step_list == NULL)
@@ -363,7 +363,7 @@ extern void step_list_purge(job_record_t *job_ptr)
 }
 
 /* _free_step_rec - delete a step record's data structures */
-static void _free_step_rec(struct step_record *step_ptr)
+static void _free_step_rec(step_record_t *step_ptr)
 {
 	xassert(step_ptr);
 	xassert(step_ptr->magic == STEP_MAGIC);
@@ -419,7 +419,7 @@ static void _free_step_rec(struct step_record *step_ptr)
 int delete_step_record(job_record_t *job_ptr, uint32_t step_id)
 {
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	int error_code;
 	uint16_t cleaning = 0;
 
@@ -520,7 +520,7 @@ extern int _find_step_id(void *step_entry, void *key)
 {
 	uint32_t step_id = *(uint32_t *)key;
 
-	if (((struct step_record *)step_entry)->step_id == step_id)
+	if (((step_record_t *)step_entry)->step_id == step_id)
 		return 1;
 	else
 		return 0;
@@ -534,7 +534,7 @@ extern int _find_step_id(void *step_entry, void *key)
  * IN step_id - id of the desired job step
  * RET pointer to the job step's record, NULL on error
  */
-struct step_record *find_step_record(job_record_t *job_ptr, uint32_t step_id)
+step_record_t *find_step_record(job_record_t *job_ptr, uint32_t step_id)
 {
 	if (job_ptr == NULL)
 		return NULL;
@@ -558,7 +558,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		    uint16_t signal, uint16_t flags, uid_t uid)
 {
 	job_record_t *job_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	int rc = SLURM_SUCCESS;
 
 	job_ptr = find_job_record(job_id);
@@ -621,7 +621,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
  * IN signal - signal to send
  * IN msg_type - message type to send
  */
-void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
+void signal_step_tasks(step_record_t *step_ptr, uint16_t signal,
 		       slurm_msg_type_t msg_type)
 {
 #ifndef HAVE_FRONT_END
@@ -687,7 +687,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal,
  * IN signal - signal to send
  * IN msg_type - message type to send
  */
-void signal_step_tasks_on_node(char* node_name, struct step_record *step_ptr,
+void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
 			       uint16_t signal, slurm_msg_type_t msg_type)
 {
 	signal_tasks_msg_t *signal_tasks_msg;
@@ -729,7 +729,7 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 {
 	static int config_start_count = -1, config_max_age = -1;
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	int start_count = 0;
 	time_t max_age;
 
@@ -796,7 +796,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 		      bool requeue, uint32_t job_return_code)
 {
 	job_record_t *job_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	uint16_t cleaning = 0;
 
 	job_ptr = find_job_record(job_id);
@@ -974,7 +974,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	int cpu_cnt, i, task_cnt, max_rem_nodes;
 	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
 	uint64_t gres_cpus;
@@ -1832,7 +1832,7 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 /* Update the step's core bitmaps, create as needed.
  *	Add the specified task count for a specific node in the job's
  *	and step's allocation */
-static void _pick_step_cores(struct step_record *step_ptr,
+static void _pick_step_cores(step_record_t *step_ptr,
 			     job_resources_t *job_resrcs_ptr,
 			     int job_node_inx, uint16_t task_cnt)
 {
@@ -1918,7 +1918,7 @@ static void _pick_step_cores(struct step_record *step_ptr,
 }
 
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
-extern void step_alloc_lps(struct step_record *step_ptr)
+extern void step_alloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -2024,7 +2024,7 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 /* Dump a job step's CPU binding information.
  * NOTE: The core_bitmap_job and node index are based upon
  * the _job_ allocation */
-static void _dump_step_layout(struct step_record *step_ptr)
+static void _dump_step_layout(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -2061,7 +2061,7 @@ static void _dump_step_layout(struct step_record *step_ptr)
 	info("====================");
 }
 
-static void _step_dealloc_lps(struct step_record *step_ptr)
+static void _step_dealloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -2345,12 +2345,11 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
-extern int
-step_create(job_step_create_request_msg_t *step_specs,
-	    struct step_record** new_step_record,
-	    uint16_t protocol_version)
+extern int step_create(job_step_create_request_msg_t *step_specs,
+		       step_record_t** new_step_record,
+		       uint16_t protocol_version)
 {
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	job_record_t *job_ptr;
 	bitstr_t *nodeset;
 	int cpus_per_task, ret_code, i;
@@ -2745,7 +2744,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 			tmp_step_layout_used = true;
 		} else {
 			/* assume that job offset 0 has already run! */
-			struct step_record *het_step_ptr;
+			step_record_t *het_step_ptr;
 			job_record_t *het_job_ptr =
 				find_job_pack_record(job_ptr->pack_job_id, 0);
 			ListIterator itr =
@@ -2813,7 +2812,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	return SLURM_SUCCESS;
 }
 
-extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
+extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					       char *step_node_list,
 					       uint32_t node_count,
 					       uint32_t num_tasks,
@@ -3064,7 +3063,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
  * IN/OUT buffer - location to store data, pointers automatically advanced
  * IN protocol_version - slurm protocol version of client
  */
-static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer,
+static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 				     uint16_t protocol_version)
 {
 	uint32_t task_cnt, cpu_cnt;
@@ -3178,7 +3177,7 @@ extern int pack_ctld_job_step_info_response_msg(
 	ListIterator step_iterator;
 	int error_code = 0;
 	uint32_t steps_packed = 0, tmp_offset;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	int valid_job = 0;
@@ -3252,7 +3251,7 @@ extern int kill_step_on_node(job_record_t *job_ptr,
 #endif
 	static int launch_slurm = -1;
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	int i, i_first, i_last;
 	uint32_t step_rc = 0;
 	int bit_position, found = 0, rem = 0, step_node_inx;
@@ -3335,7 +3334,7 @@ extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
 {
 	int rc = SLURM_SUCCESS;
 	job_record_t *job_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	checkpoint_resp_msg_t resp_data;
 	slurm_msg_t resp_msg;
 
@@ -3414,7 +3413,7 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 {
 	int rc = SLURM_SUCCESS;
 	job_record_t *job_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 
@@ -3472,7 +3471,7 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 {
 	int rc = SLURM_SUCCESS;
 	job_record_t *job_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 
@@ -3530,7 +3529,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 			     int *rem, uint32_t *max_rc)
 {
 	job_record_t *job_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	int nodes, rem_nodes;
 
 	/* find the job, step, and validate input */
@@ -3651,9 +3650,8 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
  * step_set_alloc_tres - set the tres up when allocating the step.
  * Only set when job is running.
  */
-extern void step_set_alloc_tres(
-	struct step_record *step_ptr, uint32_t node_count,
-	bool assoc_mgr_locked, bool make_formatted)
+extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
+				bool assoc_mgr_locked, bool make_formatted)
 {
 	uint64_t cpu_count = 1, mem_count = 1;
 	char *tmp_tres_str = NULL;
@@ -3727,8 +3725,9 @@ extern void step_set_alloc_tres(
 
 /* convert a range of nodes allocated to a step to a hostlist with
  * names of those nodes */
-static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
-		uint32_t range_first, uint32_t range_last)
+static hostlist_t _step_range_to_hostlist(step_record_t *step_ptr,
+					  uint32_t range_first,
+					  uint32_t range_last)
 {
 	int i, node_inx = -1;
 	hostlist_t hl = hostlist_create(NULL);
@@ -3749,8 +3748,7 @@ static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 
 /* convert a single node name to it's offset within a step's
  * nodes allocation. returns -1 on error */
-static int _step_hostname_to_inx(struct step_record *step_ptr,
-		char *node_name)
+static int _step_hostname_to_inx(step_record_t *step_ptr, char *node_name)
 {
 	struct node_record *node_ptr;
 	int i, node_inx, node_offset = 0;
@@ -3771,7 +3769,7 @@ extern int step_epilog_complete(job_record_t *job_ptr, char *node_name)
 {
 	int rc = 0, node_inx, step_offset;
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	struct node_record *node_ptr;
 
 	if (!switch_g_part_comp()) {
@@ -3810,8 +3808,8 @@ extern int step_epilog_complete(job_record_t *job_ptr, char *node_name)
 	return rc;
 }
 
-static void _suspend_job_step(job_record_t *job_ptr,
-			      struct step_record *step_ptr, time_t now)
+static void _suspend_job_step(job_record_t *job_ptr, step_record_t *step_ptr,
+			      time_t now)
 {
 	if ((job_ptr->suspend_time)
 	&&  (job_ptr->suspend_time > step_ptr->start_time)) {
@@ -3829,7 +3827,7 @@ extern void suspend_job_step(job_record_t *job_ptr)
 {
 	time_t now = time(NULL);
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
@@ -3840,8 +3838,8 @@ extern void suspend_job_step(job_record_t *job_ptr)
 	list_iterator_destroy (step_iterator);
 }
 
-static void _resume_job_step(job_record_t *job_ptr,
-			     struct step_record *step_ptr, time_t now)
+static void _resume_job_step(job_record_t *job_ptr, step_record_t *step_ptr,
+			     time_t now)
 {
 	if ((job_ptr->suspend_time) &&
 	    (job_ptr->suspend_time < step_ptr->start_time)) {
@@ -3858,7 +3856,7 @@ extern void resume_job_step(job_record_t *job_ptr)
 {
 	time_t now = time(NULL);
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
@@ -3878,7 +3876,7 @@ extern void resume_job_step(job_record_t *job_ptr)
  */
 extern int dump_job_step_state(void *x, void *arg)
 {
-	struct step_record *step_ptr = (struct step_record *) x;
+	step_record_t *step_ptr = (step_record_t *) x;
 	Buf buffer = (Buf) arg;
 
 	if (step_ptr->state < JOB_RUNNING)
@@ -3961,7 +3959,7 @@ extern int dump_job_step_state(void *x, void *arg)
 extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 			   uint16_t protocol_version)
 {
-	struct step_record *step_ptr = NULL;
+	step_record_t *step_ptr = NULL;
 	bitstr_t *exit_node_bitmap = NULL, *core_bitmap_job = NULL;
 	uint8_t no_kill;
 	uint16_t cyclic_alloc, port, batch_step;
@@ -4217,7 +4215,7 @@ extern void step_checkpoint(void)
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	time_t event_time;
 	uint32_t error_code;
 	char *error_msg;
@@ -4304,8 +4302,8 @@ extern void step_checkpoint(void)
 	list_iterator_destroy(job_iterator);
 }
 
-static void _signal_step_timelimit(job_record_t *job_ptr,
-				   struct step_record *step_ptr, time_t now)
+static void _signal_step_timelimit(job_record_t *job_ptr, step_record_t *step_ptr,
+				   time_t now)
 {
 #ifndef HAVE_FRONT_END
 	int i;
@@ -4395,7 +4393,7 @@ static void _signal_step_timelimit(job_record_t *job_ptr,
 extern void check_job_step_time_limit(job_record_t *job_ptr, time_t now)
 {
 	ListIterator step_iterator;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	uint32_t job_run_mins = 0;
 
 	xassert(job_ptr);
@@ -4444,8 +4442,8 @@ static bool _is_mem_resv(void)
 extern int update_step(step_update_request_msg_t *req, uid_t uid)
 {
 	job_record_t *job_ptr;
-	struct step_record *step_ptr = NULL;
-	struct step_record *step2_ptr = NULL;
+	step_record_t *step_ptr = NULL;
+	step_record_t *step2_ptr = NULL;
 	ListIterator step_iterator;
 	int mod_cnt = 0;
 	bool new_step = false;
@@ -4468,7 +4466,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		 * the job's step_list.
 		 */
 		if (req->step_id == NO_VAL) {
-			step_ptr = xmalloc(sizeof(struct step_record));
+			step_ptr = xmalloc(sizeof(*step_ptr));
 			step_ptr->job_ptr    = job_ptr;
 			step_ptr->exit_code  = NO_VAL;
 			step_ptr->time_limit = INFINITE;
@@ -4489,7 +4487,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 				 * remake the step so we can send the updated
 				 * parts to accounting.
 				 */
-				step_ptr = xmalloc(sizeof(struct step_record));
+				step_ptr = xmalloc(sizeof(*step_ptr));
 				step_ptr->job_ptr    = job_ptr;
 				step_ptr->jobacct    = jobacctinfo_create(NULL);
 				step_ptr->requid     = -1;
@@ -4590,7 +4588,7 @@ static int _get_node_cores(int node_inx)
 extern void rebuild_step_bitmaps(job_record_t *job_ptr,
 				 bitstr_t *orig_job_node_bitmap)
 {
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	ListIterator step_iterator;
 	bitstr_t *orig_step_core_bitmap;
 	int i, j, i_first, i_last, i_size;
@@ -4651,7 +4649,7 @@ extern void rebuild_step_bitmaps(job_record_t *job_ptr,
  * the job_ptr->step_list so make sure you don't call this if you are
  * already holding a lock on that list (list_for_each).
  */
-extern int post_job_step(struct step_record *step_ptr)
+extern int post_job_step(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	int error_code;
@@ -4674,9 +4672,9 @@ extern int post_job_step(struct step_record *step_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern struct step_record *build_extern_step(job_record_t *job_ptr)
+extern step_record_t *build_extern_step(job_record_t *job_ptr)
 {
-	struct step_record *step_ptr = _create_step_record(job_ptr, 0);
+	step_record_t *step_ptr = _create_step_record(job_ptr, 0);
 	char *node_list;
 	uint32_t node_cnt;
 
@@ -4709,9 +4707,9 @@ extern struct step_record *build_extern_step(job_record_t *job_ptr)
 	return step_ptr;
 }
 
-extern struct step_record *build_batch_step(job_record_t *job_ptr)
+extern step_record_t *build_batch_step(job_record_t *job_ptr)
 {
-	struct step_record *step_ptr = _create_step_record(job_ptr, 0);
+	step_record_t *step_ptr = _create_step_record(job_ptr, 0);
 
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		job_ptr->batch_host, NULL, NULL, 1, 1);

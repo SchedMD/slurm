@@ -56,8 +56,8 @@ int        port_resv_max   = 0;
 
 static void _dump_resv_port_info(void);
 static void _make_all_resv(void);
-static void _make_step_resv(struct step_record *step_ptr);
-static void _rebuild_port_array(struct step_record *step_ptr);
+static void _make_step_resv(step_record_t *step_ptr);
+static void _rebuild_port_array(step_record_t *step_ptr);
 
 static void _dump_resv_port_info(void)
 {
@@ -77,7 +77,7 @@ static void _dump_resv_port_info(void)
 }
 
 /* Builds the job step's resv_port_array based upon resv_ports (a string) */
-static void _rebuild_port_array(struct step_record *step_ptr)
+static void _rebuild_port_array(step_record_t *step_ptr)
 {
 	int i;
 	char *tmp_char;
@@ -112,7 +112,7 @@ static void _rebuild_port_array(struct step_record *step_ptr)
 
 /* Update the local reservation table for one job step.
  * Builds the job step's resv_port_array based upon resv_ports (a string) */
-static void _make_step_resv(struct step_record *step_ptr)
+static void _make_step_resv(step_record_t *step_ptr)
 {
 	int i, j;
 
@@ -138,7 +138,7 @@ static void _make_step_resv(struct step_record *step_ptr)
 static void _make_all_resv(void)
 {
 	job_record_t *job_ptr;
-	struct step_record *step_ptr;
+	step_record_t *step_ptr;
 	ListIterator job_iterator, step_iterator;
 
 	job_iterator = list_iterator_create(job_list);
@@ -214,7 +214,7 @@ extern int reserve_port_config(char *mpi_params)
  *       set of available ports. This helps avoid re-using busy ports when
  *       restarting job steps.
  * RET SLURM_SUCCESS or an error code */
-extern int resv_port_alloc(struct step_record *step_ptr)
+extern int resv_port_alloc(step_record_t *step_ptr)
 {
 	int i, port_inx;
 	int *port_array = NULL;
@@ -275,7 +275,7 @@ extern int resv_port_alloc(struct step_record *step_ptr)
 
 /* Release reserved ports for a job step
  * RET SLURM_SUCCESS or an error code */
-extern void resv_port_free(struct step_record *step_ptr)
+extern void resv_port_free(step_record_t *step_ptr)
 {
 	int i, j;
 
