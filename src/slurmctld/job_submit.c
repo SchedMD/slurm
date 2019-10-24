@@ -56,12 +56,10 @@
 #include "src/slurmctld/locks.h"
 
 typedef struct slurm_submit_ops {
-	int		(*submit)	( struct job_descriptor *job_desc,
-					  uint32_t submit_uid,
-					  char **err_msg );
-	int		(*modify)	( struct job_descriptor *job_desc,
-					  job_record_t *job_ptr,
-					  uint32_t submit_uid );
+	int (*submit)(job_desc_msg_t *job_desc, uint32_t submit_uid,
+		      char **err_msg);
+	int (*modify)(job_desc_msg_t *job_desc, job_record_t *job_ptr,
+		      uint32_t submit_uid);
 } slurm_submit_ops_t;
 
 /*
@@ -213,7 +211,7 @@ extern int job_submit_plugin_reconfig(void)
  * IN submit_uid - User issuing job submit request
  * OUT err_msg - Custom error message to the user, caller to xfree results
  */
-extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
+extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
 				    uint32_t submit_uid, char **err_msg)
 {
 	DEF_TIMERS;
@@ -248,7 +246,7 @@ extern int job_submit_plugin_submit(struct job_descriptor *job_desc,
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
  */
-extern int job_submit_plugin_modify(struct job_descriptor *job_desc,
+extern int job_submit_plugin_modify(job_desc_msg_t *job_desc,
 				    job_record_t *job_ptr,
 				    uint32_t submit_uid)
 {

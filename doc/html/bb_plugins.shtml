@@ -105,7 +105,7 @@ space of all burst buffer plugins.
 The size of the burst buffer in MB.
 
 <p class="commandline">
-int bb_p_job_validate(struct job_descriptor *job_desc, uid_t submit_uid)
+int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Validation of a job submit request with respect to burst buffer option.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>

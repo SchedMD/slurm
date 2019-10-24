@@ -109,8 +109,7 @@ static bool _user_access(uid_t run_uid, uint32_t submit_uid,
 	return false;		/* User not in AllowGroups */
 }
 
-static bool _valid_memory(part_record_t *part_ptr,
-			  struct job_descriptor *job_desc)
+static bool _valid_memory(part_record_t *part_ptr, job_desc_msg_t *job_desc)
 {
 	uint64_t job_limit, part_limit;
 
@@ -152,7 +151,7 @@ static bool _valid_memory(part_record_t *part_ptr,
 /* This example code will set a job's default partition to the partition with
  * highest priority_tier is available to this user. This is only an example
  * and tremendous flexibility is available. */
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
 	ListIterator part_iterator;
@@ -190,7 +189,7 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 	return SLURM_SUCCESS;
 }
 
-extern int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
+extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		      uint32_t submit_uid)
 {
 	return SLURM_SUCCESS;

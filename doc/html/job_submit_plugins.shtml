@@ -100,8 +100,7 @@ propagated to the caller, no matter the return code.<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
-uint32_t modify_uid)
+int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr, uint32_t modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters
 supplied by the scontrol or sview command. It can be used to log and/or
@@ -134,7 +133,7 @@ if (job_desc.environment.LANGUAGE == "en_US") then<br>
 
 
 <p class="commandline">
-int job_submit(struct job_descriptor *job_desc, List part_list, uint32_t submit_uid)
+int job_submit(job_desc_msg_t *job_desc, List part_list, uint32_t submit_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job submission parameters
 supplied by the salloc, sbatch or srun command. It can be used to log and/or
@@ -171,7 +170,7 @@ Job submission rejected due to missing size specification.<br>
 Job submission rejected due to missing time limit.<br>
 
 <p class="commandline">
-int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
+int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 List part_list, int modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters

@@ -251,8 +251,8 @@ static struct bb_total_size *_json_parse_real_size(json_object *j);
 static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(bool init_config);
 static int	_open_part_state_file(char **state_file);
-static int	_parse_bb_opts(struct job_descriptor *job_desc,
-			       uint64_t *bb_size, uid_t submit_uid);
+static int	_parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
+			       uid_t submit_uid);
 static void	_parse_config_links(json_object *instance, bb_configs_t *ent);
 static void	_parse_instance_capacity(json_object *instance,
 					 bb_instances_t *ent);
@@ -282,8 +282,8 @@ static void	_timeout_bb_rec(void);
 static int	_write_file(char *file_name, char *buf);
 static int	_write_nid_file(char *file_name, char *node_list,
 				job_record_t *job_ptr);
-static int	_xlate_batch(struct job_descriptor *job_desc);
-static int	_xlate_interactive(struct job_descriptor *job_desc);
+static int	_xlate_batch(job_desc_msg_t *job_desc);
+static int	_xlate_interactive(job_desc_msg_t *job_desc);
 
 /* Convert a Python string to real JSON format. Specifically replace single
  * quotes with double quotes and strip leading "u" before the single quotes.
@@ -2649,7 +2649,7 @@ static void _timeout_bb_rec(void)
 }
 
 /* Perform basic burst_buffer option validation */
-static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
+static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 			  uid_t submit_uid)
 {
 	char *bb_script, *save_ptr = NULL;
@@ -2834,7 +2834,7 @@ static int _parse_bb_opts(struct job_descriptor *job_desc, uint64_t *bb_size,
 
 /* Copy a batch job's burst_buffer options into a separate buffer.
  * merge continued lines into a single line */
-static int _xlate_batch(struct job_descriptor *job_desc)
+static int _xlate_batch(job_desc_msg_t *job_desc)
 {
 	char *script, *save_ptr = NULL, *tok;
 	int line_type, prev_type = LINE_OTHER;
@@ -2905,7 +2905,7 @@ static int _xlate_batch(struct job_descriptor *job_desc)
 
 /* Parse simple interactive burst_buffer options into an format identical to
  * burst_buffer options in a batch script file */
-static int _xlate_interactive(struct job_descriptor *job_desc)
+static int _xlate_interactive(job_desc_msg_t *job_desc)
 {
 	char *access = NULL, *bb_copy = NULL, *capacity = NULL, *pool = NULL;
 	char *swap = NULL, *type = NULL;
@@ -3373,8 +3373,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_job_validate(struct job_descriptor *job_desc,
-			     uid_t submit_uid)
+extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
 {
 	uint64_t bb_size = 0;
 	int i, rc;

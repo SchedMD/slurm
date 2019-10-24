@@ -161,8 +161,7 @@ extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_job_validate(struct job_descriptor *job_desc,
-			     uid_t submit_uid)
+extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
 {
 	return SLURM_SUCCESS;
 }

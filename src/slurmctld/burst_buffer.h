@@ -110,8 +110,7 @@ extern uint64_t bb_g_get_system_size(char *name);
  * submit_uid IN - ID of the user submitting the job.
  * Returns a Slurm errno.
  */
-extern int bb_g_job_validate(struct job_descriptor *job_desc,
-			     uid_t submit_uid);
+extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid);
 
 /*
  * Secondary validation of a job submit request with respect to burst buffer

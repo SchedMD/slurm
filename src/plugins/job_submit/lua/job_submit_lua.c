@@ -614,7 +614,7 @@ static void _update_resvs_global(void)
 static int _set_job_env_field(lua_State *L)
 {
 	const char *name, *value_str;
-	struct job_descriptor *job_desc;
+	job_desc_msg_t *job_desc;
 	char *name_eq = NULL;
 	int i, j, name_len;
 
@@ -657,8 +657,7 @@ static int _set_job_env_field(lua_State *L)
 	return 0;
 }
 
-static int _job_env_field(const struct job_descriptor *job_desc,
-			  const char *name)
+static int _job_env_field(const job_desc_msg_t *job_desc, const char *name)
 {
 	char *name_eq = "";
 	int i, name_len;
@@ -692,7 +691,7 @@ static int _job_env_field(const struct job_descriptor *job_desc,
 /* Get fields in the job request record on job submit or modify */
 static int _get_job_env_field_name(lua_State *L)
 {
-	const struct job_descriptor *job_desc = lua_touserdata(L, 1);
+	const job_desc_msg_t *job_desc = lua_touserdata(L, 1);
 	const char *name = luaL_checkstring(L, 2);
 	return _job_env_field(job_desc, name);
 }
@@ -701,7 +700,7 @@ static int _get_job_env_field_name(lua_State *L)
 static int _job_env_field_index(lua_State *L)
 {
 	const char *name;
-	struct job_descriptor *job_desc;
+	job_desc_msg_t *job_desc;
 
 	name = luaL_checkstring(L, 2);
 	lua_getmetatable(L, -2);
@@ -710,7 +709,7 @@ static int _job_env_field_index(lua_State *L)
 	return _job_env_field(job_desc, name);
 }
 
-static void _push_job_env(struct job_descriptor *job_desc)
+static void _push_job_env(job_desc_msg_t *job_desc)
 {
 	lua_newtable(L);
 
@@ -727,8 +726,7 @@ static void _push_job_env(struct job_descriptor *job_desc)
 	lua_setmetatable(L, -2);
 }
 
-static int _get_job_req_field(const struct job_descriptor *job_desc,
-			      const char *name)
+static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 {
 	int i;
 
@@ -802,7 +800,7 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 	} else if (!xstrcmp(name, "end_time")) {
 		lua_pushnumber (L, job_desc->end_time);
 	} else if (!xstrcmp(name, "environment")) {
-		_push_job_env ((struct job_descriptor *)job_desc); // No const
+		_push_job_env((job_desc_msg_t *) job_desc); // No const
 	} else if (!xstrcmp(name, "extra")) {
 		lua_pushstring (L, job_desc->extra);
 	} else if (!xstrcmp(name, "exc_nodes")) {
@@ -962,7 +960,7 @@ static int _get_job_req_field(const struct job_descriptor *job_desc,
 /* Get fields in the job request record on job submit or modify */
 static int _get_job_req_field_name(lua_State *L)
 {
-	const struct job_descriptor *job_desc = lua_touserdata(L, 1);
+	const job_desc_msg_t *job_desc = lua_touserdata(L, 1);
 	const char *name = luaL_checkstring(L, 2);
 
 	return _get_job_req_field(job_desc, name);
@@ -972,7 +970,7 @@ static int _get_job_req_field_name(lua_State *L)
 static int _get_job_req_field_index(lua_State *L)
 {
 	const char *name;
-	struct job_descriptor *job_desc;
+	job_desc_msg_t *job_desc;
 
 	name = luaL_checkstring(L, 2);
 	lua_getmetatable(L, -2);
@@ -986,7 +984,7 @@ static int _get_job_req_field_index(lua_State *L)
 static int _set_job_req_field(lua_State *L)
 {
 	const char *name, *value_str;
-	struct job_descriptor *job_desc;
+	job_desc_msg_t *job_desc;
 
 	name = luaL_checkstring(L, 2);
 	lua_getmetatable(L, -3);
@@ -1247,7 +1245,7 @@ static int _set_job_req_field(lua_State *L)
 	return 0;
 }
 
-static void _push_job_desc(struct job_descriptor *job_desc)
+static void _push_job_desc(job_desc_msg_t *job_desc)
 {
 	lua_newtable(L);
 
@@ -1811,7 +1809,7 @@ int fini(void)
 
 
 /* Lua script hook called for "submit job" event. */
-extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
+extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
 	int rc = SLURM_ERROR;
@@ -1859,7 +1857,7 @@ out:	slurm_mutex_unlock (&lua_lock);
 }
 
 /* Lua script hook called for "modify job" event. */
-extern int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
+extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 		      uint32_t submit_uid)
 {
 	int rc = SLURM_ERROR;

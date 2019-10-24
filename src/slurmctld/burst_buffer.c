@@ -63,7 +63,7 @@ typedef struct slurm_bb_ops {
 	int		(*state_pack)	(uid_t uid, Buf buffer,
 					 uint16_t protocol_version);
 	int		(*reconfig)	(void);
-	int		(*job_validate)	(struct job_descriptor *job_desc,
+	int		(*job_validate)	(job_desc_msg_t *job_desc,
 					 uid_t submit_uid);
 	int		(*job_validate2) (job_record_t *job_ptr,
 					  char **err_msg);
@@ -360,8 +360,7 @@ extern uint64_t bb_g_get_system_size(char *name)
  * submit_uid IN - ID of the user submitting the job.
  * Returns a Slurm errno.
  */
-extern int bb_g_job_validate(struct job_descriptor *job_desc,
-			     uid_t submit_uid)
+extern int bb_g_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;
