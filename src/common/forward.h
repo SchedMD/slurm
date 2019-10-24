@@ -43,7 +43,7 @@
 #include "src/common/slurm_protocol_api.h"
 
 /*
- * forward_init    - initilize forward structure
+ * forward_init    - initialize forward structure
  * IN: forward     - forward_t *   - struct to store forward info
  * IN: from        - forward_t *   - (OPTIONAL) can be NULL, can be used to
  *                                   init the forward to this state
