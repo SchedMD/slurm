@@ -105,8 +105,8 @@ typedef struct slurm_select_ops {
 						 select_jobinfo_t *step_jobinfo,
 						 uint32_t node_count,
 						 bitstr_t **avail_nodes);
-	int             (*step_start)           (struct step_record *step_ptr);
-	int             (*step_finish)          (struct step_record *step_ptr,
+	int             (*step_start)           (step_record_t *step_ptr);
+	int             (*step_finish)          (step_record_t *step_ptr,
 						 bool killing_step);
 	int		(*nodeinfo_pack)	(select_nodeinfo_t *nodeinfo,
 						 Buf buffer,
@@ -571,7 +571,7 @@ extern bitstr_t * select_g_step_pick_nodes(struct job_record *job_ptr,
  * Post pick_nodes operations for the step.
  * IN/OUT step_ptr - step pointer to operate on.
  */
-extern int select_g_step_start(struct step_record *step_ptr);
+extern int select_g_step_start(step_record_t *step_ptr);
 
 /*
  * clear what happened in select_g_step_pick_nodes and/or select_g_step_start
@@ -579,7 +579,7 @@ extern int select_g_step_start(struct step_record *step_ptr);
  * IN killing_step - if true then we are just starting to kill the step
  *                   if false, the step is completely terminated
  */
-extern int select_g_step_finish(struct step_record *step_ptr, bool killing_step);
+extern int select_g_step_finish(step_record_t *step_ptr, bool killing_step);
 
 /*********************************\
  * ADVANCE RESERVATION FUNCTIONS *

@@ -58,8 +58,8 @@
 
 typedef struct slurm_ext_sensors_ops {
 	int (*update_component_data) (void);
-	int (*get_stepstartdata)     (struct step_record *step_rec);
-	int (*get_stependdata)       (struct step_record *step_rec);
+	int (*get_stepstartdata)     (step_record_t *step_rec);
+	int (*get_stependdata)       (step_record_t *step_rec);
 	List (*get_config)           (void);
 } slurm_ext_sensors_ops_t;
 /*
@@ -195,7 +195,7 @@ extern int ext_sensors_g_update_component_data(void)
 	return retval;
 }
 
-extern int ext_sensors_g_get_stepstartdata(struct step_record *step_rec)
+extern int ext_sensors_g_get_stepstartdata(step_record_t *step_rec)
 {
 	int retval = SLURM_ERROR;
 
@@ -207,7 +207,7 @@ extern int ext_sensors_g_get_stepstartdata(struct step_record *step_rec)
 	return retval;
 }
 
-extern int ext_sensors_g_get_stependdata(struct step_record *step_rec)
+extern int ext_sensors_g_get_stependdata(step_record_t *step_rec)
 {
 	int retval = SLURM_ERROR;
 

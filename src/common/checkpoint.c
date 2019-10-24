@@ -53,12 +53,12 @@
 
 typedef struct slurm_checkpoint_ops {
 	int     (*ckpt_op) (uint32_t job_id, uint32_t step_id,
-			    struct step_record *step_ptr, uint16_t op,
+			    step_record_t *step_ptr, uint16_t op,
 			    uint16_t data, char *image_dir, time_t *event_time,
 			    uint32_t *error_code, char **error_msg);
-	int	(*ckpt_comp) (struct step_record * step_ptr, time_t event_time,
+	int	(*ckpt_comp) (step_record_t *step_ptr, time_t event_time,
 			      uint32_t error_code, char *error_msg);
-	int	(*ckpt_task_comp) (struct step_record * step_ptr,
+	int	(*ckpt_task_comp) (step_record_t *step_ptr,
 				   uint32_t task_id,
 				   time_t event_time, uint32_t error_code,
 				   char *error_msg);
@@ -160,7 +160,7 @@ checkpoint_op(uint32_t job_id, uint32_t step_id,
 	if ( g_context ) {
 		retval = (*(ops.ckpt_op))(
 			job_id, step_id,
-			(struct step_record *) step_ptr,
+			(step_record_t *) step_ptr,
 			op, data, image_dir,
 			event_time, error_code, error_msg);
 	} else {
@@ -180,7 +180,7 @@ checkpoint_comp(void * step_ptr, time_t event_time, uint32_t error_code,
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		retval = (*(ops.ckpt_comp))(
-			(struct step_record *) step_ptr,
+			(step_record_t *) step_ptr,
 			event_time, error_code, error_msg);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
@@ -199,7 +199,7 @@ checkpoint_task_comp(void * step_ptr, uint32_t task_id, time_t event_time,
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
 		retval = (*(ops.ckpt_task_comp))(
-			(struct step_record *) step_ptr, task_id,
+			(step_record_t *) step_ptr, task_id,
 			event_time, error_code, error_msg);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");

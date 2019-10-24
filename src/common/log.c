@@ -749,7 +749,7 @@ static char *_jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
  * Note that the "%.0s" trick is already included by jobid2fmt above, and
  * should not be repeated here.
  */
-static char *_stepid2fmt(struct step_record *step_ptr, char *buf, int buf_size)
+static char *_stepid2fmt(step_record_t *step_ptr, char *buf, int buf_size)
 {
 	if (step_ptr == NULL)
 		return " StepId=Invalid";
@@ -891,7 +891,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				{
 					int i;
 					void *ptr = NULL;
-					struct step_record *step_ptr = NULL;
+					step_record_t *step_ptr = NULL;
 					struct job_record *job_ptr = NULL;
 					va_list	ap_copy;
 
