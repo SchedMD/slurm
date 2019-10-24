@@ -71,7 +71,7 @@ void power_p_reconfig(void)
 This function is called when updated configuration information should be read.
 
 <p class="commandline">
-void power_p_job_resume(struct job_record *job_ptr)
+void power_p_job_resume(job_record_t *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Note that a previously suspended job is being resumed.
 Called by the slurmctld daemon.
@@ -80,7 +80,7 @@ Called by the slurmctld daemon.
 (input) pointer to the job record being resumed.
 
 <p class="commandline">
-void power_p_job_start(struct job_record *job_ptr)
+void power_p_job_start(job_record_t *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Note that a job has been allocated resources and is about to begin execution.
 Called by the slurmctld daemon.
@@ -89,6 +89,6 @@ Called by the slurmctld daemon.
 (input) pointer to the job record being started.
 
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

@@ -100,7 +100,7 @@ propagated to the caller, no matter the return code.<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr,
+int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
 uint32_t modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters
@@ -171,7 +171,7 @@ Job submission rejected due to missing size specification.<br>
 Job submission rejected due to missing time limit.<br>
 
 <p class="commandline">
-int job_modify(struct job_descriptor *job_desc, struct job_record *job_ptr,
+int job_modify(struct job_descriptor *job_desc, job_record_t *job_ptr,
 List part_list, int modify_uid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the slurmctld daemon with job modification parameters
@@ -274,6 +274,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 29 September 2017</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

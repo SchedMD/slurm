@@ -842,7 +842,7 @@ nodes currently on the cluster.<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_job_start(void *db_conn, struct job_record *job_ptr)
+int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Note that a job is about to begin execution or has just changed size.
 The job's state will include the JOB_RESIZING flag if and only if it has
@@ -860,7 +860,7 @@ slurmctld.
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_job_complete(void *db_conn, struct job_record *job_ptr)
+int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Note that a job is about to terminate or change size.
 The job's state will include the JOB_RESIZING flag if and only if it is about
@@ -908,7 +908,7 @@ slurmctld.
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_job_suspend(void *db_conn, struct job_record *job_ptr)
+int jobacct_storage_p_job_suspend(void *db_conn, job_record_t *job_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_storage_p_suspend() is called in the jobacct plugin when a
 job is suspended or resumed in the slurmctld, this updates the

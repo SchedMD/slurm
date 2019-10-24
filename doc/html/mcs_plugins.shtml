@@ -68,7 +68,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline">int mcs_p_set_mcs_label(struct job_record *job_ptr, char* label)
+<p class="commandline">int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 Verify and set or calculate MCS_label for a job.<br>
 Called by _job_create to get the mcs_label for a job.
@@ -101,7 +101,7 @@ MCS_label of user and MCS_label of jobs/nodes.<br>
 <dd>If MCSPlugin!=mcs/none, specifies options
 
 
-<p style="text-align:center;">Last modified 12 October 2015</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->
 

@@ -71,7 +71,7 @@ this string is at the discretion of the plugin implementation.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_jobcomp_log_record (struct job_record *job_ptr);</p>
+<p class="commandline">int slurm_jobcomp_log_record(job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note that a job is about to
 terminate or change size. The job's state will include the JOB_RESIZING flag
 if and only if it is about to change size. Otherwise the job is terminating.
@@ -110,6 +110,6 @@ void slurm_jobcomp_archive(List selected_parts, void *params)
 <p style="margin-left:.2in"><b>Returns</b>: None</p>
 
 
-<p style="text-align:center;">Last modified 7 March 2019</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->
