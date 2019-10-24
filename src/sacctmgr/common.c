@@ -566,7 +566,9 @@ static print_field_t *_get_print_field(char *object)
 		   !xstrncasecmp("MaxSubmitJobsPerAcct", object,
 				 MAX(command_len, 17)) ||
 		   !xstrncasecmp("MaxSubmitJobsPA", object,
-				 MAX(command_len, 15))) {
+				 MAX(command_len, 15)) ||
+		   !xstrncasecmp("MaxSubmitPA", object,
+				 MAX(command_len, 11))) {
 		field->type = PRINT_MAXSA;
 		field->name = xstrdup("MaxSubmitPA");
 		field->len = 11;
@@ -574,7 +576,9 @@ static print_field_t *_get_print_field(char *object)
 	} else if (!xstrncasecmp("MaxSubmitJobsPerUser", object,
 				 MAX(command_len, 10)) ||
 		   !xstrncasecmp("MaxSubmitJobsPU", object,
-				 MAX(command_len, 10))) {
+				 MAX(command_len, 10)) ||
+		   !xstrncasecmp("MaxSubmitPU", object,
+				 MAX(command_len, 6))) {
 		field->type = PRINT_MAXS; /* used same as MaxSubmitJobs */
 		field->name = xstrdup("MaxSubmitPU");
 		field->len = 11;
