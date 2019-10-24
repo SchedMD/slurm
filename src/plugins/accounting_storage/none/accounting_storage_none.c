@@ -469,8 +469,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn,
 /*
  * load into the storage the start of a job step
  */
-extern int jobacct_storage_p_step_start(void *db_conn,
-					struct step_record *step_ptr)
+extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -479,7 +478,7 @@ extern int jobacct_storage_p_step_start(void *db_conn,
  * load into the storage the end of a job step
  */
 extern int jobacct_storage_p_step_complete(void *db_conn,
-					   struct step_record *step_ptr)
+					   step_record_t *step_ptr)
 {
 	return SLURM_SUCCESS;
 }

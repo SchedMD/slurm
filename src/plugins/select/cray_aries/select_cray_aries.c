@@ -185,15 +185,13 @@ static void _handle_aeld_error(const char *funcname, char *errmsg, int rv,
 static void _clear_event_list(alpsc_ev_app_t *list, int32_t *size);
 static void _start_session(alpsc_ev_session_t **session, int *sessionfd);
 static void *_aeld_event_loop(void *args);
-static void _initialize_event(alpsc_ev_app_t *event,
-			      struct step_record *step_ptr,
+static void _initialize_event(alpsc_ev_app_t *event, step_record_t *step_ptr,
 			      alpsc_ev_app_state_e state);
 static void _copy_event(alpsc_ev_app_t *dest, alpsc_ev_app_t *src);
 static void _free_event(alpsc_ev_app_t *event);
 static void _add_to_app_list(alpsc_ev_app_t **list, int32_t *size,
 			     size_t *capacity, alpsc_ev_app_t *app);
-static void _update_app(struct step_record *step_ptr,
-			alpsc_ev_app_state_e state);
+static void _update_app(step_record_t *step_ptr, alpsc_ev_app_state_e state);
 #endif
 
 static uint64_t debug_flags = 0;
@@ -428,8 +426,7 @@ static void *_aeld_event_loop(void *args)
 /*
  * Initialize an alpsc_ev_app_t
  */
-static void _initialize_event(alpsc_ev_app_t *event,
-			      struct step_record *step_ptr,
+static void _initialize_event(alpsc_ev_app_t *event, step_record_t *step_ptr,
 			      alpsc_ev_app_state_e state)
 {
 	struct job_record *job_ptr = step_ptr->job_ptr;
@@ -559,8 +556,7 @@ static void _add_to_app_list(alpsc_ev_app_t **list, int32_t *size,
  * app list. For suspend/resume apps, edits the app list. Always adds to the
  * event list.
  */
-static void _update_app(struct step_record *step_ptr,
-			alpsc_ev_app_state_e state)
+static void _update_app(step_record_t *step_ptr, alpsc_ev_app_state_e state)
 {
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	uint64_t apid;
@@ -1574,14 +1570,14 @@ extern int select_p_job_suspend(struct job_record *job_ptr, bool indf_susp)
 {
 #ifdef HAVE_NATIVE_CRAY
 	ListIterator i;
-	struct step_record *step_ptr = NULL;
+	step_record_t *step_ptr = NULL;
 	DEF_TIMERS;
 
 	// Make an event for each job step
 	if (aeld_running) {
 		START_TIMER;
 		i = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = (struct step_record *)list_next(i))) {
+		while ((step_ptr = list_next(i))) {
 			_update_app(step_ptr, ALPSC_EV_SUSPEND);
 		}
 		list_iterator_destroy(i);
@@ -1598,14 +1594,14 @@ extern int select_p_job_resume(struct job_record *job_ptr, bool indf_susp)
 {
 #ifdef HAVE_NATIVE_CRAY
 	ListIterator i;
-	struct step_record *step_ptr = NULL;
+	step_record_t *step_ptr = NULL;
 	DEF_TIMERS;
 
 	// Make an event for each job step
 	if (aeld_running) {
 		START_TIMER;
 		i = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = (struct step_record *)list_next(i))) {
+		while ((step_ptr = list_next(i))) {
 			_update_app(step_ptr, ALPSC_EV_RESUME);
 		}
 		list_iterator_destroy(i);
@@ -1657,7 +1653,7 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 	return other_step_pick_nodes(job_ptr, jobinfo, node_count, avail_nodes);
 }
 
-extern int select_p_step_start(struct step_record *step_ptr)
+extern int select_p_step_start(step_record_t *step_ptr)
 {
 	select_jobinfo_t *jobinfo;
 	DEF_TIMERS;
@@ -1704,7 +1700,7 @@ extern int select_p_step_start(struct step_record *step_ptr)
 	return other_step_start(step_ptr);
 }
 
-extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
+extern int select_p_step_finish(step_record_t *step_ptr, bool killing_step)
 {
 #ifdef HAVE_NATIVE_CRAY
 	if (aeld_running) {

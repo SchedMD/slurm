@@ -657,14 +657,14 @@ extern int ext_sensors_p_update_component_data(void)
 	return SLURM_ERROR;
 }
 
-extern int ext_sensors_p_get_stepstartdata(struct step_record *step_rec)
+extern int ext_sensors_p_get_stepstartdata(step_record_t *step_rec)
 {
 	/* Nothing to do here for ext_sensors/rrd plugin */
 	int rc = SLURM_SUCCESS;
 	return rc;
 }
 
-extern int ext_sensors_p_get_stependdata(struct step_record *step_rec)
+extern int ext_sensors_p_get_stependdata(step_record_t *step_rec)
 {
 	time_t step_endtime = time(NULL);
 	int rc = SLURM_SUCCESS;

@@ -990,7 +990,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
-			       struct step_record *step_ptr)
+			       step_record_t *step_ptr)
 {
 	int tasks = 0, nodes = 0, task_dist = 0;
 	int rc = SLURM_SUCCESS;
@@ -1137,7 +1137,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 }
 
 extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
-				  struct step_record *step_ptr)
+				  step_record_t *step_ptr)
 {
 	time_t now;
 	uint16_t comp_status;

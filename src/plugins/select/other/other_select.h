@@ -230,7 +230,7 @@ extern bitstr_t * other_step_pick_nodes(struct job_record *job_ptr,
 					uint32_t node_count,
 					bitstr_t **avail_nodes);
 
-extern int other_step_start(struct step_record *step_ptr);
+extern int other_step_start(step_record_t *step_ptr);
 
 /*
  * clear what happened in select_g_step_pick_nodes
@@ -238,7 +238,7 @@ extern int other_step_start(struct step_record *step_ptr);
  * IN killing_step - if true then we are just starting to kill the step
  *                   if false, the step is completely terminated
  */
-extern int other_step_finish(struct step_record *step_ptr, bool killing_step);
+extern int other_step_finish(step_record_t *step_ptr, bool killing_step);
 
 /* allocate storage for a select job credential
  * RET jobinfo - storage for a select job credential

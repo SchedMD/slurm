@@ -3281,7 +3281,7 @@ extern int jobacct_storage_p_job_complete(mysql_conn_t *mysql_conn,
  * load into the storage the start of a job step
  */
 extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
-					struct step_record *step_ptr)
+					step_record_t *step_ptr)
 {
 	return as_mysql_step_start(mysql_conn, step_ptr);
 }
@@ -3290,7 +3290,7 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
  * load into the storage the end of a job step
  */
 extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
-					   struct step_record *step_ptr)
+					   step_record_t *step_ptr)
 {
 	return as_mysql_step_complete(mysql_conn, step_ptr);
 }

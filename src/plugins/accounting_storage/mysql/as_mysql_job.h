@@ -53,10 +53,10 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 			      struct job_record *job_ptr);
 
 extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
-			    struct step_record *step_ptr);
+			       step_record_t *step_ptr);
 
 extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
-			       struct step_record *step_ptr);
+			          step_record_t *step_ptr);
 
 extern int as_mysql_suspend(mysql_conn_t *mysql_conn, uint64_t old_db_inx,
 			    struct job_record *job_ptr);

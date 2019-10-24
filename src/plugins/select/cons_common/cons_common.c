@@ -1628,13 +1628,13 @@ extern bitstr_t *select_p_step_pick_nodes(struct job_record *job_ptr,
 }
 
 /* Unused for this plugin */
-extern int select_p_step_start(struct step_record *step_ptr)
+extern int select_p_step_start(step_record_t *step_ptr)
 {
 	return SLURM_SUCCESS;
 }
 
 /* Unused for this plugin */
-extern int select_p_step_finish(struct step_record *step_ptr, bool killing_step)
+extern int select_p_step_finish(step_record_t *step_ptr, bool killing_step)
 {
 	return SLURM_SUCCESS;
 }

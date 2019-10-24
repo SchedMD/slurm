@@ -59,7 +59,7 @@ struct check_job_info {
 	char    *error_msg;
 };
 
-static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate);
+static int _ckpt_step(step_record_t *step_ptr, uint16_t wait, int vacate);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -111,10 +111,10 @@ extern int fini ( void )
  * The remainder of this file implements the standard Slurm checkpoint API.
  */
 
-extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
-			  struct step_record *step_ptr, uint16_t op,
-			  uint16_t data, char *image_dir, time_t * event_time,
-			  uint32_t *error_code, char **error_msg )
+extern int slurm_ckpt_op(uint32_t job_id, uint32_t step_id,
+			 step_record_t *step_ptr, uint16_t op,
+			 uint16_t data, char *image_dir, time_t *event_time,
+			 uint32_t *error_code, char **error_msg)
 {
 	int rc = SLURM_SUCCESS;
 	struct check_job_info *check_ptr;
@@ -178,8 +178,8 @@ extern int slurm_ckpt_op (uint32_t job_id, uint32_t step_id,
 	return rc;
 }
 
-extern int slurm_ckpt_comp (struct step_record * step_ptr, time_t event_time,
-		uint32_t error_code, char *error_msg)
+extern int slurm_ckpt_comp(step_record_t *step_ptr, time_t event_time,
+			   uint32_t error_code, char *error_msg)
 {
 /* FIXME: How do we tell when checkpoint completes?
  * Add another RPC from srun to slurmctld?
@@ -312,7 +312,7 @@ extern check_jobinfo_t slurm_ckpt_copy_job(check_jobinfo_t jobinfo)
 	return (check_jobinfo_t) jobinfo_dest;
 }
 
-static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate)
+static int _ckpt_step(step_record_t *step_ptr, uint16_t wait, int vacate)
 {
 	struct check_job_info *check_ptr;
 	struct job_record *job_ptr;
@@ -344,9 +344,9 @@ static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate)
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_ckpt_task_comp ( struct step_record * step_ptr,
-				  uint32_t task_id, time_t event_time,
-				  uint32_t error_code, char *error_msg )
+extern int slurm_ckpt_task_comp(step_record_t *step_ptr, uint32_t task_id,
+				time_t event_time, uint32_t error_code,
+				char *error_msg)
 {
 	return SLURM_SUCCESS;
 }
