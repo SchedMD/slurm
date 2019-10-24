@@ -500,6 +500,8 @@ int dump_all_part_state(void)
  * IN part_ptr - pointer to partition for which information
  *	is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
+ *
+ * Note: read by load_all_part_state().
  */
 static int _dump_part_state(void *x, void *arg)
 {
@@ -573,6 +575,8 @@ static Buf _open_part_state_file(char **state_file)
  * load_all_part_state - load the partition state from file, recover on
  *	slurmctld restart. execute this after loading the configuration
  *	file data.
+ *
+ * Note: reads dump from _dump_part_state().
  */
 int load_all_part_state(void)
 {
