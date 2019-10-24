@@ -257,7 +257,7 @@ static void _validate_switches(void)
 {
 	slurm_conf_switches_t *ptr, **ptr_array;
 	int depth, i, j;
-	struct switch_record *switch_ptr, *prior_ptr;
+	switch_record_t *switch_ptr, *prior_ptr;
 	hostlist_t hl, invalid_hl = NULL;
 	char *child, *buf;
 	bool  have_root = false;
@@ -274,8 +274,8 @@ static void _validate_switches(void)
 		return;
 	}
 
-	switch_record_table = xmalloc(sizeof(struct switch_record) *
-				      switch_record_cnt);
+	switch_record_table = xcalloc(switch_record_cnt,
+				      sizeof(switch_record_t));
 	multi_homed_bitmap = bit_alloc(node_record_count);
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
@@ -432,7 +432,7 @@ static void _validate_switches(void)
 static void _log_switches(void)
 {
 	int i;
-	struct switch_record *switch_ptr;
+	switch_record_t *switch_ptr;
 
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
@@ -450,7 +450,7 @@ static void _log_switches(void)
 static int _get_switch_inx(const char *name)
 {
 	int i;
-	struct switch_record *switch_ptr;
+	switch_record_t *switch_ptr;
 
 	switch_ptr = switch_record_table;
 	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {

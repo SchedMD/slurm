@@ -1476,7 +1476,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	int i, i_first, i_last, j, rc = SLURM_SUCCESS;
 	int best_cpu_cnt = 0, best_node_cnt = 0, req_node_cnt = 0;
 	List best_gres = NULL;
-	struct switch_record *switch_ptr;
+	switch_record_t *switch_ptr;
 	List node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
 	ListIterator iter;
@@ -2114,7 +2114,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	int i, i_first, i_last, j, rc = SLURM_SUCCESS;
 	int best_cpu_cnt = 0, best_node_cnt = 0, req_node_cnt = 0;
 	List best_gres = NULL;
-	struct switch_record *switch_ptr;
+	switch_record_t *switch_ptr;
 	List node_weight_list = NULL;
 	topo_weight_info_t *nw = NULL;
 	ListIterator iter;

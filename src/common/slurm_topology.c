@@ -48,7 +48,7 @@
 #include "src/common/xstring.h"
 
 /* defined here but is really tree plugin related */
-struct switch_record *switch_record_table = NULL;
+switch_record_t *switch_record_table = NULL;
 int switch_record_cnt = 0;
 int switch_levels = 0;               /* number of switch levels     */
 
