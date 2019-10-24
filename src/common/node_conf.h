@@ -83,6 +83,7 @@ extern List config_list;	/* list of config_record entries */
 
 extern List front_end_list;	/* list of slurm_conf_frontend_t entries */
 
+typedef struct node_record node_record_t;
 struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
 	char *name;			/* name of the node. NULL==defunct */
@@ -146,7 +147,7 @@ struct node_record {
 					 * scheduling purposes. */
 	char *arch;			/* computer architecture */
 	char *os;			/* operating system now running */
-	struct node_record *node_next;	/* next entry with same hash index */
+	node_record_t *node_next;	/* next entry with same hash index */
 	uint32_t node_rank;		/* Hilbert number based on node name,
 					 * or other sequence number used to
 					 * order nodes by location,
@@ -171,7 +172,7 @@ struct node_record {
 	uint64_t *tres_cnt;		/* tres this node has. NO_PACK*/
 	char *mcs_label;		/* mcs_label if mcs plugin in use */
 };
-extern struct node_record *node_record_table_ptr;  /* ptr to node records */
+extern node_record_t *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */
 extern xhash_t* node_hash_table;	/* hash table for node records */
 extern time_t last_node_update;		/* time of last node record update */
