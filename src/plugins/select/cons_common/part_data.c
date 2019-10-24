@@ -312,7 +312,7 @@ extern void part_data_create_array(void)
 {
 	List part_rec_list = NULL;
 	ListIterator part_iterator;
-	struct part_record *p_ptr;
+	part_record_t *p_ptr;
 	part_res_record_t *this_ptr, *last_ptr = NULL;
 	int num_parts;
 

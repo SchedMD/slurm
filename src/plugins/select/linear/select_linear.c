@@ -2951,7 +2951,7 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 
 static void _init_node_cr(void)
 {
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	struct part_cr_record *part_cr_ptr;
 	job_resources_t *job_resrcs_ptr;
 	node_record_t *node_ptr;
@@ -2970,7 +2970,7 @@ static void _init_node_cr(void)
 
 	/* build partition records */
 	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+	while ((part_ptr = list_next(part_iterator))) {
 		for (i = 0; i < select_node_cnt; i++) {
 			if (part_ptr->node_bitmap == NULL)
 				break;

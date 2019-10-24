@@ -224,7 +224,7 @@ static uint16_t _get_gr_type(void)
 	return GS_NODE;
 }
 
-static uint16_t _get_part_gr_type(struct part_record *part_ptr)
+static uint16_t _get_part_gr_type(part_record_t *part_ptr)
 {
 	if (part_ptr) {
 		if (part_ptr->cr_type & CR_CORE)
@@ -316,7 +316,7 @@ static void _destroy_parts(void *x)
 static void _build_parts(void)
 {
 	ListIterator part_iterator;
-	struct part_record *p_ptr;
+	part_record_t *p_ptr;
 	struct gs_part *gs_part_ptr;
 	int num_parts;
 

@@ -197,7 +197,7 @@ static int _sort_by_youngest(void *x, void *y)
 
 extern uint16_t job_preempt_mode(job_record_t *job_ptr)
 {
-	struct part_record *part_ptr = job_ptr->part_ptr;
+	part_record_t *part_ptr = job_ptr->part_ptr;
 	if (part_ptr && (part_ptr->preempt_mode != NO_VAL16)) {
 		if (part_ptr->preempt_mode & PREEMPT_MODE_GANG)
 			verbose("Partition '%s' preempt mode 'gang' has no "

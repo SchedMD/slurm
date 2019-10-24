@@ -833,7 +833,7 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr)
 	    (IS_JOB_PENDING(job_ptr) || !job_ptr->tres_alloc_str)) {
 		bool job_first = false;
 		ListIterator part_itr;
-		struct part_record *part_ptr;
+		part_record_t *part_ptr;
 		List part_qos_list = NULL;
 
 		if (job_ptr->qos_ptr &&
@@ -882,7 +882,7 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr)
 		if ((type == ACCT_POLICY_JOB_BEGIN) &&
 		    job_ptr->part_ptr_list) {
 			ListIterator part_itr;
-			struct part_record *part_ptr;
+			part_record_t *part_ptr;
 			List part_qos_list = list_create(NULL);
 
 			if (job_ptr->qos_ptr)
@@ -1484,7 +1484,7 @@ static acct_policy_tres_usage_t _validate_tres_usage_limits_for_assoc(
 
 static int _qos_policy_validate(job_desc_msg_t *job_desc,
 				slurmdb_assoc_rec_t *assoc_ptr,
-				struct part_record *part_ptr,
+				part_record_t *part_ptr,
 				slurmdb_qos_rec_t *qos_ptr,
 				slurmdb_qos_rec_t *qos_out_ptr,
 				uint32_t *reason,
@@ -2869,7 +2869,7 @@ static void _remove_accrue_time_internal(slurmdb_assoc_rec_t *assoc_ptr,
 }
 
 static bool _acct_policy_validate(job_desc_msg_t *job_desc,
-				  struct part_record *part_ptr,
+				  part_record_t *part_ptr,
 				  slurmdb_assoc_rec_t *assoc_in,
 				  slurmdb_qos_rec_t *qos_ptr_1,
 				  slurmdb_qos_rec_t *qos_ptr_2,
@@ -3217,7 +3217,7 @@ end_it:
  * RET true if valid
  */
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
-				 struct part_record *part_ptr,
+				 part_record_t *part_ptr,
 				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *reason,

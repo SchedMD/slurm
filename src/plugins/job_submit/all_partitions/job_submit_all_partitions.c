@@ -83,13 +83,13 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 {
 	/* Locks: Read partition */
 	ListIterator part_iterator;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 
 	if (job_desc->partition)	/* job already specified partition */
 		return SLURM_SUCCESS;
 
 	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+	while ((part_ptr = list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
 			continue;	/* nobody can submit jobs here */
 		if (job_desc->partition)

@@ -49,7 +49,7 @@
 typedef struct spare_node_resv {
 	uint32_t node_cnt;	/* count of hot spare nodes		*/
 	char *partition;	/* name of partition to be used		*/
-	struct part_record *part_ptr;	/* pointer to partition used	*/
+	part_record_t *part_ptr;	/* pointer to partition used	*/
 } spare_node_resv_t;
 
 extern char *nonstop_control_addr;

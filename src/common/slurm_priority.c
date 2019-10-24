@@ -72,8 +72,8 @@ static bool init_run = false;
 
 extern int priority_sort_part_tier(void *x, void *y)
 {
-	struct part_record *parta = *(struct part_record **) x;
-	struct part_record *partb = *(struct part_record **) y;
+	part_record_t *parta = *(part_record_t **) x;
+	part_record_t *partb = *(part_record_t **) y;
 
 	if (parta->priority_tier > partb->priority_tier)
 		return -1;

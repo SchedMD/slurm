@@ -114,7 +114,7 @@ struct node_record {
 	uint32_t up_time;		/* seconds since node boot */
 	struct config_record *config_ptr;  /* configuration spec ptr */
 	uint16_t part_cnt;		/* number of associated partitions */
-	struct part_record **part_pptr;	/* array of pointers to partitions
+	void **part_pptr;		/* array of pointers to partitions
 					 * associated with this node*/
 	char *comm_name;		/* communications path name to node */
 	uint16_t port;			/* TCP port number of the slurmd */

@@ -337,7 +337,7 @@ typedef struct {
 	xhash_t *user_usage;
 } bf_part_data_t;
 
-struct part_record {
+typedef struct {
 	uint32_t magic;		/* magic cookie to test data integrity */
 				/* DO NOT ALPHABETIZE */
 	char *allow_accounts;	/* comma delimited list of accounts,
@@ -399,13 +399,13 @@ struct part_record {
 	uint64_t *tres_cnt;	/* array of total TRES in partition. NO_PACK */
 	char     *tres_fmt_str;	/* str of configured TRES in partition */
 	bf_part_data_t *bf_data;/* backfill data, NO PACK */
-};
+} part_record_t;
 
 extern List part_list;			/* list of part_record entries */
 extern time_t last_part_update;		/* time of last part_list update */
-extern struct part_record default_part;	/* default configuration values */
+extern part_record_t default_part;	/* default configuration values */
 extern char *default_part_name;		/* name of default partition */
-extern struct part_record *default_part_loc;	/* default partition ptr */
+extern part_record_t *default_part_loc;	/* default partition ptr */
 
 #define DEF_PART_MAX_PRIORITY   1
 extern uint16_t part_max_priority;      /* max priority_job_factor in all parts */
@@ -444,7 +444,7 @@ typedef struct slurmctld_resv {
 	uint32_t node_cnt;	/* count of nodes required		*/
 	char *node_list;	/* list of reserved nodes or ALL	*/
 	char *partition;	/* name of partition to be used		*/
-	struct part_record *part_ptr;	/* pointer to partition used	*/
+	part_record_t *part_ptr;/* pointer to partition used		*/
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	uint32_t resv_watts;	/* amount of power to reserve */
 	bool run_epilog;	/* set if epilog has been executed	*/
@@ -781,7 +781,7 @@ struct job_record {
 	List part_ptr_list;		/* list of pointers to partition recs */
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
-	struct part_record *part_ptr;	/* pointer to the partition record */
+	part_record_t *part_ptr;	/* pointer to the partition record */
 	uint8_t power_flags;		/* power management flags,
 					 * see SLURM_POWER_FLAGS_ */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
@@ -1090,7 +1090,7 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
  * NOTE: the record's values are initialized to those of default_part
  * NOTE: allocates memory that should be xfreed with delete_part_record
  */
-extern struct part_record *create_part_record(const char *name);
+extern part_record_t *create_part_record(const char *name);
 
 /*
  * build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap
@@ -1102,7 +1102,7 @@ extern struct part_record *create_part_record(const char *name);
  * NOTE: this does not report nodes defined in more than one partition. this
  *	is checked only upon reading the configuration file, not on an update
  */
-extern int build_part_bitmap(struct part_record *part_ptr);
+extern int build_part_bitmap(part_record_t *part_ptr);
 
 /*
  * job_limits_check - check the limits specified for the job.
@@ -1235,7 +1235,7 @@ extern node_record_t *find_first_node_record(bitstr_t *node_bitmap);
  * IN name - name of the desired partition
  * RET pointer to partition or NULL if not found
  */
-extern struct part_record *find_part_record(char *name);
+extern part_record_t *find_part_record(char *name);
 
 /*
  * find_step_record - return a pointer to the step record with the given
@@ -2056,8 +2056,8 @@ extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
  * NOTE: if you make any changes here be sure to make the corresponding
  *	changes to load_part_config in api/partition_info.c
  */
-extern void pack_part (struct part_record *part_ptr, Buf buffer,
-		       uint16_t protocol_version);
+extern void pack_part(part_record_t *part_ptr, Buf buffer,
+		      uint16_t protocol_version);
 
 /*
  * pack_one_job - dump information for one jobs in
@@ -2095,7 +2095,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			   uint16_t protocol_version);
 
 /* part_is_visible - should user be able to see this partition */
-extern bool part_is_visible(struct part_record *part_ptr, uid_t uid);
+extern bool part_is_visible(part_record_t *part_ptr, uid_t uid);
 
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
@@ -2123,7 +2123,7 @@ extern bool part_policy_job_runnable_state(job_record_t *job_ptr);
  *		job's state_desc and state_reason fields
  * RET SLURM_SUCCESS or error code
  */
-extern int part_policy_valid_acct(struct part_record *part_ptr, char *acct,
+extern int part_policy_valid_acct(part_record_t *part_ptr, char *acct,
 				  job_record_t *job_ptr);
 
 /*
@@ -2134,7 +2134,7 @@ extern int part_policy_valid_acct(struct part_record *part_ptr, char *acct,
  *		job's state_desc and state_reason fields
  * RET SLURM_SUCCESS or error code
  */
-extern int part_policy_valid_qos(struct part_record *part_ptr,
+extern int part_policy_valid_qos(part_record_t *part_ptr,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 job_record_t *job_ptr);
 
@@ -2526,8 +2526,7 @@ extern int update_node_record_acct_gather_data(
  * RET return SLURM_ERROR on error, SLURM_SUCESS otherwise.
  */
 extern int set_partition_billing_weights(char *billing_weights_str,
-					 struct part_record *part_ptr,
-					 bool fail);
+					 part_record_t *part_ptr, bool fail);
 
 /*
  * update_part - create or update a partition's configuration data
@@ -2550,7 +2549,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid);
  * IN alloc_node - allocting node of the request
  * RET 1 if permitted to run, 0 otherwise
  */
-extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node);
+extern int validate_alloc_node(part_record_t *part_ptr, char *alloc_node);
 
 /*
  * validate_group - validate that the submit uid is authorized to run in
@@ -2559,7 +2558,7 @@ extern int validate_alloc_node(struct part_record *part_ptr, char* alloc_node);
  * IN run_uid - user to run the job as
  * RET 1 if permitted to run, 0 otherwise
  */
-extern int validate_group (struct part_record *part_ptr, uid_t run_uid);
+extern int validate_group(part_record_t *part_ptr, uid_t run_uid);
 
 /* Perform some size checks on strings we store to prevent
  * malicious user filling slurmctld's memory

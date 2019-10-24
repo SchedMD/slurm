@@ -205,7 +205,7 @@ static uint16_t _get_job_node_req(job_record_t *job_ptr)
 
 static void _set_gpu_defaults(job_record_t *job_ptr)
 {
-	static struct part_record *last_part_ptr = NULL;
+	static part_record_t *last_part_ptr = NULL;
 	static uint64_t last_cpu_per_gpu = NO_VAL64;
 	static uint64_t last_mem_per_gpu = NO_VAL64;
 	uint64_t cpu_per_gpu, mem_per_gpu;
@@ -369,7 +369,7 @@ static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
  * allocated CPUs with multi-row partitions.
  */
 static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
-			 int sharing_only, struct part_record *my_part_ptr,
+			 int sharing_only, part_record_t *my_part_ptr,
 			 bool qos_preemptor)
 {
 	uint32_t r, c, core_begin, core_end;

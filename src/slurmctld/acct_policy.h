@@ -91,7 +91,7 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
  * RET true if valid
  */
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
-				 struct part_record *part_ptr,
+				 part_record_t *part_ptr,
 				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *state_reason,

@@ -136,8 +136,7 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 			  int node_set_size);
 static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    int node_set_size, bitstr_t ** select_bitmap,
-			    job_record_t *job_ptr,
-			    struct part_record *part_ptr,
+			    job_record_t *job_ptr, part_record_t *part_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes, bool test_only,
 			    List preemptee_candidates,
@@ -1183,13 +1182,12 @@ static bitstr_t *_find_grp_node_bitmap(job_record_t *job_ptr)
  * which were in effect upon calling this function.
  * Input and output are the same as _pick_best_nodes().
  */
-static int
-_get_req_features(struct node_set *node_set_ptr, int node_set_size,
-		  bitstr_t **select_bitmap, job_record_t *job_ptr,
-		  struct part_record *part_ptr,
-		  uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
-		  bool test_only, List *preemptee_job_list, bool can_reboot,
-		  bool submission)
+static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
+			     bitstr_t **select_bitmap, job_record_t *job_ptr,
+			     part_record_t *part_ptr, uint32_t min_nodes,
+			     uint32_t max_nodes, uint32_t req_nodes,
+			     bool test_only, List *preemptee_job_list,
+			     bool can_reboot, bool submission)
 {
 	uint32_t saved_min_nodes, saved_job_min_nodes, saved_job_num_tasks;
 	bitstr_t *saved_req_node_bitmap = NULL;
@@ -1854,14 +1852,13 @@ static void _sync_node_weight(struct node_set *node_set_ptr, int node_set_size)
  *	   DRAINED or ALLOCATED) to determine if the request can
  *         ever be satisfied.
  */
-static int
-_pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
-		 bitstr_t ** select_bitmap, job_record_t *job_ptr,
-		 struct part_record *part_ptr,
-		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
-		 bool test_only, List preemptee_candidates,
-		 List *preemptee_job_list, bool has_xand,
-		 bitstr_t *exc_core_bitmap, bool resv_overlap)
+static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
+			    bitstr_t **select_bitmap, job_record_t *job_ptr,
+			    part_record_t *part_ptr, uint32_t min_nodes,
+			    uint32_t max_nodes, uint32_t req_nodes,
+			    bool test_only, List preemptee_candidates,
+			    List *preemptee_job_list, bool has_xand,
+			    bitstr_t *exc_core_bitmap, bool resv_overlap)
 {
 	static uint32_t cr_enabled = NO_VAL;
 	static uint32_t single_select_job_test = 0;
@@ -2657,7 +2654,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	int bb, error_code = SLURM_SUCCESS, i, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
 	struct node_set *node_set_ptr = NULL;
-	struct part_record *part_ptr = NULL;
+	part_record_t *part_ptr = NULL;
 	uint32_t min_nodes = 0, max_nodes = 0, req_nodes = 0;
 	time_t now = time(NULL);
 	bool configuring = false;
@@ -3174,8 +3171,7 @@ cleanup:
  * RET SLURM_SUCCESS on success, ESLURM code from slurm_errno.h otherwise.
  */
 extern int get_node_cnts(job_record_t *job_ptr, uint32_t qos_flags,
-			 struct part_record *part_ptr,
-			 uint32_t *min_nodes,
+			 part_record_t *part_ptr, uint32_t *min_nodes,
 			 uint32_t *req_nodes, uint32_t *max_nodes)
 {
 	int error_code = SLURM_SUCCESS, i;
@@ -3693,7 +3689,7 @@ static int _build_node_list(job_record_t *job_ptr,
 	int power_cnt, rc, qos_cnt;
 	struct node_set *node_set_ptr, *prev_node_set_ptr;
 	struct config_record *config_ptr;
-	struct part_record *part_ptr = job_ptr->part_ptr;
+	part_record_t *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
 	int total_cores;
 	struct job_details *detail_ptr = job_ptr->details;

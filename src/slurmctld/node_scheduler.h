@@ -156,7 +156,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
  * RET SLURM_SUCCESS on success, ESLURM code from slurm_errno.h otherwise.
  */
 extern int get_node_cnts(job_record_t *job_ptr, uint32_t qos_flags,
-			 struct part_record *part_ptr, uint32_t *min_nodes,
+			 part_record_t *part_ptr, uint32_t *min_nodes,
 			 uint32_t *req_nodes, uint32_t *max_nodes);
 
 /* launch_prolog - launch job prolog script by slurmd on allocated nodes

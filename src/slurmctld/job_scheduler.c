@@ -118,7 +118,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						     uint16_t protocol_version);
 static void	_depend_list_del(void *dep_ptr);
 static void	_job_queue_append(List job_queue, job_record_t *job_ptr,
-				  struct part_record *part_ptr, uint32_t priority);
+				  part_record_t *part_ptr, uint32_t priority);
 static void	_job_queue_rec_del(void *x);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
 static bool	_job_runnable_test2(job_record_t *job_ptr, bool check_min_time);
@@ -230,7 +230,7 @@ static List _build_user_job_list(uint32_t user_id, char* job_name)
 }
 
 static void _job_queue_append(List job_queue, job_record_t *job_ptr,
-			      struct part_record *part_ptr, uint32_t prio)
+			      part_record_t *part_ptr, uint32_t prio)
 {
 	job_queue_rec_t *job_queue_rec;
 
@@ -378,8 +378,7 @@ static bool _job_runnable_test2(job_record_t *job_ptr, bool check_min_time)
  * IN job_ptr - job to test
  * IN part_ptr - partition to test
  */
-static bool _job_runnable_test3(job_record_t *job_ptr,
-				struct part_record *part_ptr)
+static bool _job_runnable_test3(job_record_t *job_ptr, part_record_t *part_ptr)
 {
 	if (job_ptr->resv_ptr && job_ptr->resv_ptr->node_bitmap &&
 	    part_ptr && part_ptr->node_bitmap &&
@@ -403,7 +402,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 	List job_queue;
 	ListIterator depend_iter, job_iterator, part_iterator;
 	job_record_t *job_ptr = NULL, *new_job_ptr;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	struct depend_spec *dep_ptr;
 	int i, pend_cnt, reason, dep_corr;
 	struct timeval start_tv = {0, 0};
@@ -652,7 +651,7 @@ extern bool job_is_completing(bitstr_t *eff_cg_bitmap)
 extern void set_job_elig_time(void)
 {
 	job_record_t *job_ptr = NULL;
-	struct part_record *part_ptr = NULL;
+	part_record_t *part_ptr = NULL;
 	ListIterator job_iterator;
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
@@ -689,8 +688,8 @@ extern void set_job_elig_time(void)
 /* Test of part_ptr can still run jobs or if its nodes have
  * already been reserved by higher priority jobs (those in
  * the failed_parts array) */
-static bool _failed_partition(struct part_record *part_ptr,
-			      struct part_record **failed_parts,
+static bool _failed_partition(part_record_t *part_ptr,
+			      part_record_t **failed_parts,
 			      int failed_part_cnt)
 {
 	int i;
@@ -715,7 +714,7 @@ static void _do_diag_stats(long delta_t)
 /* Return true of all partitions have the same priority, otherwise false. */
 static bool _all_partition_priorities_same(void)
 {
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	ListIterator iter;
 	bool part_priority_set = false;
 	uint32_t part_priority = 0;
@@ -915,11 +914,10 @@ static int _schedule(uint32_t job_limit)
 	uint32_t job_depth = 0, array_task_id;
 	job_queue_rec_t *job_queue_rec;
 	job_record_t *job_ptr = NULL;
-	struct part_record *part_ptr, **failed_parts = NULL;
-	struct part_record *skip_part_ptr = NULL;
+	part_record_t *part_ptr, **failed_parts = NULL, *skip_part_ptr = NULL;
 	struct slurmctld_resv **failed_resv = NULL;
 	bitstr_t *save_avail_node_bitmap;
-	struct part_record **sched_part_ptr = NULL;
+	part_record_t **sched_part_ptr = NULL;
 	int *sched_part_jobs = NULL, bb_wait_cnt = 0;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
@@ -938,7 +936,7 @@ static int _schedule(uint32_t job_limit)
 	static bool reduce_completing_frag = false;
 	time_t now, last_job_sched_start, sched_start;
 	uint32_t reject_array_job_id = 0;
-	struct part_record *reject_array_part = NULL;
+	part_record_t *reject_array_part = NULL;
 	uint16_t reject_state_reason = WAIT_NO_REASON;
 	bool fail_by_part;
 	uint32_t deadline_time_limit, save_time_limit = 0;
@@ -1206,7 +1204,7 @@ static int _schedule(uint32_t job_limit)
 	}
 
 	part_cnt = list_count(part_list);
-	failed_parts = xmalloc(sizeof(struct part_record *) * part_cnt);
+	failed_parts = xcalloc(part_cnt, sizeof(part_record_t *));
 	failed_resv = xmalloc(sizeof(struct slurmctld_resv*) * MAX_FAILED_RESV);
 	save_avail_node_bitmap = bit_copy(avail_node_bitmap);
 	bit_or(avail_node_bitmap, rs_node_bitmap);
@@ -1216,7 +1214,7 @@ static int _schedule(uint32_t job_limit)
 		bitstr_t *eff_cg_bitmap = bit_alloc(node_record_count);
 		if (job_is_completing(eff_cg_bitmap)) {
 			ListIterator part_iterator;
-			struct part_record *part_ptr = NULL;
+			part_record_t *part_ptr = NULL;
 			char *cg_part_str = NULL;
 
 			part_iterator = list_iterator_create(part_list);
@@ -1249,8 +1247,7 @@ static int _schedule(uint32_t job_limit)
 
 	if (max_jobs_per_part) {
 		ListIterator part_iterator;
-		sched_part_ptr  = xmalloc(sizeof(struct part_record *) *
-					  part_cnt);
+		sched_part_ptr  = xcalloc(part_cnt, sizeof(part_record_t *));
 		sched_part_jobs = xmalloc(sizeof(int) * part_cnt);
 		part_iterator = list_iterator_create(part_list);
 		i = 0;
@@ -3414,8 +3411,8 @@ static void _delayed_job_start_time(job_record_t *job_ptr)
 
 static int _part_weight_sort(void *x, void *y)
 {
-	struct part_record *parta = *(struct part_record **) x;
-	struct part_record *partb = *(struct part_record **) y;
+	part_record_t *parta = *(part_record_t **) x;
+	part_record_t *partb = *(part_record_t **) y;
 
 	if (parta->priority_tier > partb->priority_tier)
 		return -1;
@@ -3435,7 +3432,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			  will_run_response_msg_t **resp)
 {
 	job_record_t *job_ptr;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
 	bitstr_t *exc_core_bitmap = NULL;
@@ -4809,7 +4806,7 @@ static int _valid_node_feature(char *feature, bool can_reboot)
 extern void rebuild_job_part_list(job_record_t *job_ptr)
 {
 	ListIterator part_iterator;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 
 	if (!job_ptr->part_ptr_list)
 		return;

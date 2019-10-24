@@ -1469,7 +1469,7 @@ static void _remove_qos(slurmdb_qos_rec_t *rec)
 {
 	int cnt = 0;
 	ListIterator itr;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	slurmctld_lock_t part_write_lock =
 		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
@@ -1526,7 +1526,7 @@ static void _update_assoc(slurmdb_assoc_rec_t *rec)
 static void _resize_qos(void)
 {
 	ListIterator itr;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	slurmctld_lock_t part_write_lock =
 		{ NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
@@ -2432,7 +2432,7 @@ static void _set_node_billing_tres(node_record_t *node_ptr, uint64_t cpu_count,
 				   bool assoc_mgr_locked)
 {
 	int i;
-	struct part_record *part_ptr = NULL;
+	part_record_t *part_ptr = NULL;
 	double max_billing = 0;
 	xassert(node_ptr);
 
@@ -3028,7 +3028,7 @@ static void *_assoc_cache_mgr(void *no_data)
 {
 	ListIterator itr = NULL;
 	job_record_t *job_ptr = NULL;
-	struct part_record *part_ptr = NULL;
+	part_record_t *part_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t assoc_rec;
 	/* Write lock on jobs, nodes and partitions */

@@ -180,8 +180,8 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 			       slurmctld_resv_t *resv_ptr);
 static void _run_script(char *script, slurmctld_resv_t *resv_ptr);
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
-			  struct part_record **part_ptr,
-			  bitstr_t **resv_bitmap, bitstr_t **core_bitmap);
+			  part_record_t **part_ptr, bitstr_t **resv_bitmap,
+			  bitstr_t **core_bitmap);
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
 static void _set_core_resrcs(slurmctld_resv_t *resv_ptr);
 static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
@@ -1952,7 +1952,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 {
 	int i, j, rc = SLURM_SUCCESS;
 	time_t now = time(NULL);
-	struct part_record *part_ptr = NULL;
+	part_record_t *part_ptr = NULL;
 	bitstr_t *node_bitmap = NULL;
 	bitstr_t *core_bitmap = NULL;
 	slurmctld_resv_t *resv_ptr = NULL;
@@ -2422,7 +2422,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		resv_ptr->part_ptr = NULL;
 	}
 	if (resv_desc_ptr->partition) {
-		struct part_record *part_ptr = NULL;
+		part_record_t *part_ptr = NULL;
 		part_ptr = find_part_record(resv_desc_ptr->partition);
 		if (!part_ptr) {
 			info("Reservation %s request has invalid partition (%s)",
@@ -2598,7 +2598,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (xstrcasecmp(resv_desc_ptr->node_list, "ALL") == 0) {
 			if ((resv_ptr->partition) &&
 			    (resv_ptr->flags & RESERVE_FLAG_PART_NODES)) {
-				struct part_record *part_ptr = NULL;
+				part_record_t *part_ptr = NULL;
 				part_ptr = find_part_record(resv_ptr->
 							    partition);
 				node_bitmap = bit_copy(part_ptr->node_bitmap);
@@ -3043,7 +3043,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	if (_get_core_resrcs(resv_ptr) != SLURM_SUCCESS)
 		return false;
 	if (resv_ptr->partition) {
-		struct part_record *part_ptr = NULL;
+		part_record_t *part_ptr = NULL;
 		part_ptr = find_part_record(resv_ptr->partition);
 		if (!part_ptr) {
 			error("Reservation %s has invalid partition (%s)",
@@ -3616,9 +3616,9 @@ static int _have_xor_feature(void *x, void *key)
  *		specified partition. Set to selected nodes on output.
  * core_bitmap OUT - cores allocated to reservation
  */
-static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
-			  struct part_record **part_ptr,
-			  bitstr_t **resv_bitmap, bitstr_t **core_bitmap)
+static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
+			 part_record_t **part_ptr, bitstr_t **resv_bitmap,
+			 bitstr_t **core_bitmap)
 {
 	slurmctld_resv_t *resv_ptr;
 	bitstr_t *node_bitmap;
@@ -5609,7 +5609,7 @@ extern void update_assocs_in_resvs(void)
 	unlock_slurmctld(node_write_lock);
 }
 
-extern void update_part_nodes_in_resv(struct part_record *part_ptr)
+extern void update_part_nodes_in_resv(part_record_t *part_ptr)
 {
 	ListIterator iter = NULL;
 	slurmctld_resv_t *resv_ptr = NULL;

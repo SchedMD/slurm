@@ -1284,8 +1284,7 @@ static void _push_job_rec(job_record_t *job_ptr)
  * This is an incomplete list of partition record fields. Add more as needed
  * and send patches to slurm-dev@schedmd.com
  */
-static int _part_rec_field(const struct part_record *part_ptr,
-                           const char *name)
+static int _part_rec_field(const part_record_t *part_ptr, const char *name)
 {
 	if (part_ptr == NULL) {
 		error("_get_part_field: part_ptr is NULL");
@@ -1366,7 +1365,7 @@ static int _part_rec_field(const struct part_record *part_ptr,
 
 static int _get_part_rec_field (lua_State *L)
 {
-	const struct part_record *part_ptr = lua_touserdata(L, 1);
+	const part_record_t *part_ptr = lua_touserdata(L, 1);
 	const char *name = luaL_checkstring(L, 2);
 
 	return _part_rec_field(part_ptr, name);
@@ -1375,7 +1374,7 @@ static int _get_part_rec_field (lua_State *L)
 static int _part_rec_field_index(lua_State *L)
 {
 	const char *name = luaL_checkstring(L, 2);
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 
 	lua_getmetatable(L, -2);
 	lua_getfield(L, -1, "_part_rec_ptr");
@@ -1385,7 +1384,7 @@ static int _part_rec_field_index(lua_State *L)
 }
 
 static bool _user_can_use_part(uint32_t user_id, uint32_t submit_uid,
-			       struct part_record *part_ptr)
+			       part_record_t *part_ptr)
 {
 	int i;
 
@@ -1411,11 +1410,11 @@ static bool _user_can_use_part(uint32_t user_id, uint32_t submit_uid,
 static void _push_partition_list(uint32_t user_id, uint32_t submit_uid)
 {
 	ListIterator part_iterator;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 
 	lua_newtable(L);
 	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+	while ((part_ptr = list_next(part_iterator))) {
 		if (!_user_can_use_part(user_id, submit_uid, part_ptr))
 			continue;
 

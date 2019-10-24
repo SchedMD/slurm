@@ -298,7 +298,7 @@ static void _reorder_nodes_by_rank(void)
  */
 static void _build_bitmaps_pre_select(void)
 {
-	struct part_record   *part_ptr;
+	part_record_t *part_ptr;
 	node_record_t *node_ptr;
 	ListIterator part_iterator;
 	int i;
@@ -701,7 +701,7 @@ extern void qos_list_build(char *qos, bitstr_t **qos_bits)
  */
 static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 {
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 
 	if (list_find_first(part_list, &list_find_part, part->name))
 		fatal("%s: duplicate entry for partition %s",
@@ -907,7 +907,7 @@ static int _build_all_partitionline_info(void)
 
 static int _set_max_part_prio(void *x, void *arg)
 {
-	struct part_record *part_ptr = (struct part_record *) x;
+	part_record_t *part_ptr = (part_record_t *) x;
 
 	if (part_ptr->priority_job_factor > part_max_priority)
 		part_max_priority = part_ptr->priority_job_factor;
@@ -917,7 +917,7 @@ static int _set_max_part_prio(void *x, void *arg)
 
 static int _reset_part_prio(void *x, void *arg)
 {
-	struct part_record *part_ptr = (struct part_record *) x;
+	part_record_t *part_ptr = (part_record_t *) x;
 
 	/* protect against div0 if all partition priorities are zero */
 	if (part_max_priority == 0) {
@@ -2072,7 +2072,7 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator part_iterator;
-	struct part_record *old_part_ptr, *part_ptr;
+	part_record_t *old_part_ptr, *part_ptr;
 
 	if (!old_part_list)
 		return rc;

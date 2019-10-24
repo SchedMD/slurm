@@ -272,7 +272,7 @@ static void _do_power_work(time_t now)
 
 		if (exc_parts) {
 			char *tmp = NULL, *one_part = NULL, *part_list = NULL;
-			struct part_record *part_ptr = NULL;
+			part_record_t *part_ptr = NULL;
 
 			part_list = xstrdup(exc_parts);
 			one_part = strtok_r(part_list, ",", &tmp);

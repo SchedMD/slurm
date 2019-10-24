@@ -244,21 +244,20 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags);
 static void _suspend_job(job_record_t *job_ptr, uint16_t op, bool indf_susp);
 static int  _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp);
 static bool _top_priority(job_record_t *job_ptr, uint32_t pack_job_offset);
-static int  _valid_job_part(job_desc_msg_t * job_desc,
-			    uid_t submit_uid, bitstr_t *req_bitmap,
-			    struct part_record *part_ptr,
+static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
+			    bitstr_t *req_bitmap, part_record_t *part_ptr,
 			    List part_ptr_list,
 			    slurmdb_assoc_rec_t *assoc_ptr,
 			    slurmdb_qos_rec_t *qos_ptr);
-static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
-			       uid_t submit_uid, struct part_record *part_ptr,
+static int  _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
+			       uid_t submit_uid, part_record_t *part_ptr,
 			       List part_list);
 static void _validate_job_files(List batch_dirs);
 static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
-					struct part_record *part_ptr,
+					part_record_t *part_ptr,
 					List part_list);
 static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
-			      struct part_record *part_ptr);
+			      part_record_t *part_ptr);
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
@@ -289,7 +288,7 @@ static int _job_fail_account(job_record_t *job_ptr, const char *func_name)
 
 	/* This job is no longer eligible, so make it so. */
 	if (job_ptr->assoc_ptr) {
-		struct part_record *tmp_part = job_ptr->part_ptr;
+		part_record_t *tmp_part = job_ptr->part_ptr;
 		List tmp_part_list = job_ptr->part_ptr_list;
 		slurmdb_qos_rec_t *tmp_qos = job_ptr->qos_ptr;
 
@@ -931,7 +930,7 @@ static int _find_resv_part(void *x, void *key)
 {
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 
-	if (resv_ptr->part_ptr != (struct part_record *) key)
+	if (resv_ptr->part_ptr != (part_record_t *) key)
 		return 0;
 	else
 		return 1;	/* match */
@@ -1449,7 +1448,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	char **spank_job_env = (char **) NULL;
 	List gres_list = NULL, part_ptr_list = NULL;
 	job_record_t *job_ptr = NULL;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	int error_code, i, qos_error;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	job_resources_t *job_resources = NULL;
@@ -3047,7 +3046,7 @@ extern job_record_t *find_job_record(uint32_t job_id)
 static void _rebuild_part_name_list(job_record_t *job_ptr)
 {
 	bool job_active = false, job_pending = false;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	ListIterator part_iterator;
 
 	xfree(job_ptr->partition);
@@ -3245,7 +3244,7 @@ extern int kill_job_by_part_name(char *part_name)
 {
 	ListIterator job_iterator, part_iterator;
 	job_record_t *job_ptr;
-	struct part_record *part_ptr, *part2_ptr;
+	part_record_t *part_ptr, *part2_ptr;
 	int kill_job_cnt = 0;
 	time_t now = time(NULL);
 
@@ -3517,7 +3516,7 @@ extern bool partition_in_use(char *part_name)
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 
 	part_ptr = find_part_record (part_name);
 	if (part_ptr == NULL)	/* No such partition */
@@ -4423,7 +4422,7 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_specs)
 static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 			       bitstr_t **select_node_bitmap, char **err_msg)
 {
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	ListIterator iter;
 	int rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	int best_rc = -1, part_limits_rc = WAIT_NO_REASON;
@@ -5865,10 +5864,9 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	return rc;
 }
 
-static int _alt_part_test(struct part_record *part_ptr,
-			  struct part_record **part_ptr_new)
+static int _alt_part_test(part_record_t *part_ptr, part_record_t **part_ptr_new)
 {
-	struct part_record *alt_part_ptr = NULL;
+	part_record_t *alt_part_ptr = NULL;
 	char *alt_name;
 
 	*part_ptr_new = NULL;
@@ -5910,10 +5908,9 @@ static int _alt_part_test(struct part_record *part_ptr,
  * job_limits_check() if there is any new check added here you may also have to
  * add that parameter to the job_desc_msg_t in that function.
  */
-static int _part_access_check(struct part_record *part_ptr,
-			      job_desc_msg_t * job_desc, bitstr_t *req_bitmap,
-			      uid_t submit_uid, slurmdb_qos_rec_t *qos_ptr,
-			      char *acct)
+static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
+			      bitstr_t *req_bitmap, uid_t submit_uid,
+			      slurmdb_qos_rec_t *qos_ptr, char *acct)
 {
 	uint32_t total_nodes, min_nodes_tmp, max_nodes_tmp;
 	uint32_t job_min_nodes, job_max_nodes;
@@ -6048,12 +6045,10 @@ fini:
 	return rc;
 }
 
-static int _get_job_parts(job_desc_msg_t * job_desc,
-			  struct part_record **part_pptr,
-			  List *part_pptr_list,
-			  char **err_msg)
+static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
+			  List *part_pptr_list, char **err_msg)
 {
-	struct part_record *part_ptr = NULL, *part_ptr_new = NULL;
+	part_record_t *part_ptr = NULL, *part_ptr_new = NULL;
 	List part_ptr_list = NULL;
 	int rc = SLURM_SUCCESS;
 
@@ -6103,7 +6098,7 @@ static int _get_job_parts(job_desc_msg_t * job_desc,
 	/* Change partition pointer(s) to alternates as needed */
 	if (part_ptr_list) {
 		int fail_rc = SLURM_SUCCESS;
-		struct part_record *part_ptr_tmp;
+		part_record_t *part_ptr_tmp;
 		bool rebuild_name_list = false;
 		ListIterator iter = list_iterator_create(part_ptr_list);
 
@@ -6170,15 +6165,14 @@ fini:
 	return rc;
 }
 
-static int _valid_job_part(job_desc_msg_t * job_desc,
-			   uid_t submit_uid, bitstr_t *req_bitmap,
-			   struct part_record *part_ptr,
+static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
+			   bitstr_t *req_bitmap, part_record_t *part_ptr,
 			   List part_ptr_list,
 			   slurmdb_assoc_rec_t *assoc_ptr,
 			   slurmdb_qos_rec_t *qos_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	struct part_record *part_ptr_tmp;
+	part_record_t *part_ptr_tmp;
 	slurmdb_assoc_rec_t assoc_rec;
 	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
 	uint32_t max_time = 0;
@@ -6409,7 +6403,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 {
 	struct job_details *detail_ptr;
 	enum job_state_reason fail_reason;
-	struct part_record *part_ptr = NULL;
+	part_record_t *part_ptr = NULL;
 	job_record_t *job_ptr = NULL;
 	slurmdb_qos_rec_t  *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
@@ -6568,7 +6562,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		       char **err_msg, uint16_t protocol_version)
 {
 	int error_code = SLURM_SUCCESS, i, qos_error;
-	struct part_record *part_ptr = NULL;
+	part_record_t *part_ptr = NULL;
 	List part_ptr_list = NULL;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	job_record_t *job_ptr = NULL;
@@ -7985,7 +7979,7 @@ static char *_copy_nodelist_no_dup(char *node_list)
 }
 
 /* Return the number of CPUs on the first node in the identified partition */
-static uint16_t _cpus_per_node_part(struct part_record *part_ptr)
+static uint16_t _cpus_per_node_part(part_record_t *part_ptr)
 {
 	int node_inx = -1;
 	node_record_t *node_ptr;
@@ -8007,8 +8001,8 @@ static uint16_t _cpus_per_node_part(struct part_record *part_ptr)
  * job_limits_check(), if there is any new check added here you may also have to
  * add that parameter to the job_desc_msg_t in that function.
  */
-static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
-			      struct part_record *part_ptr)
+static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
+			      part_record_t *part_ptr)
 {
 	uint64_t job_mem_limit = job_desc_msg->pn_min_memory;
 	uint64_t sys_mem_limit;
@@ -8798,8 +8792,8 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted)
  * IN allocate - if clear job to be queued, if set allocate for user now
  * IN submit_uid - who request originated
  */
-static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
-			      uid_t submit_uid, struct part_record *part_ptr,
+static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
+			      uid_t submit_uid, part_record_t *part_ptr,
 			      List part_list)
 {
 	if ((job_desc_msg->min_cpus  == NO_VAL) &&
@@ -8908,12 +8902,11 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
  * Traverse the list of partitions and invoke the
  * function validating the job memory specification.
  */
-static bool
-_validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
-			    struct part_record *part_ptr, List part_list)
+static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
+					part_record_t *part_ptr, List part_list)
 {
 	ListIterator iter;
-	struct part_record *part;
+	part_record_t *part;
 	uint64_t tmp_pn_min_memory;
 	uint16_t tmp_cpus_per_task;
 	uint32_t tmp_min_cpus;
@@ -9211,7 +9204,7 @@ static bool _all_parts_hidden(job_record_t *job_ptr, uid_t uid)
 {
 	bool rc;
 	ListIterator part_iterator;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 
 	if (job_ptr->part_ptr_list) {
 		rc = true;
@@ -10404,7 +10397,7 @@ void reset_job_bitmaps(void)
 {
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	List part_ptr_list = NULL;
 	bool job_fail = false;
 	time_t now = time(NULL);
@@ -10966,7 +10959,7 @@ static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
 	memset(&assoc_rec, 0, sizeof(assoc_rec));
 
 	if (job_desc->partition) {
-		struct part_record *part_ptr = NULL;
+		part_record_t *part_ptr = NULL;
 		int error_code =
 			_get_job_parts(job_desc, &part_ptr, NULL, NULL);
 		/* We don't need this we only care about part_ptr */
@@ -11083,7 +11076,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
 	struct job_details *detail_ptr;
-	struct part_record *new_part_ptr = NULL, *use_part_ptr = NULL;
+	part_record_t *new_part_ptr = NULL, *use_part_ptr = NULL;
 	bitstr_t *exc_bitmap = NULL, *new_req_bitmap = NULL;
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
@@ -17909,7 +17902,7 @@ extern double calc_job_billable_tres(job_record_t *job_ptr, time_t start_time,
 {
 	xassert(job_ptr);
 
-	struct part_record *part_ptr = job_ptr->part_ptr;
+	part_record_t *part_ptr = job_ptr->part_ptr;
 
 	/* We don't have any resources allocated, just return 0. */
 	if (!job_ptr->tres_alloc_cnt)

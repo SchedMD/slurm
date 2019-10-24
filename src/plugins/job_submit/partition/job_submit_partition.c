@@ -86,7 +86,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 /* Test if this user can run jobs in the selected partition based upon
  * the partition's AllowGroups parameter. */
 static bool _user_access(uid_t run_uid, uint32_t submit_uid,
-			 struct part_record *part_ptr)
+			 part_record_t *part_ptr)
 {
 	int i;
 
@@ -109,7 +109,7 @@ static bool _user_access(uid_t run_uid, uint32_t submit_uid,
 	return false;		/* User not in AllowGroups */
 }
 
-static bool _valid_memory(struct part_record *part_ptr,
+static bool _valid_memory(part_record_t *part_ptr,
 			  struct job_descriptor *job_desc)
 {
 	uint64_t job_limit, part_limit;
@@ -156,14 +156,14 @@ extern int job_submit(struct job_descriptor *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
 	ListIterator part_iterator;
-	struct part_record *part_ptr;
-	struct part_record *top_prio_part = NULL;
+	part_record_t *part_ptr;
+	part_record_t *top_prio_part = NULL;
 
 	if (job_desc->partition)	/* job already specified partition */
 		return SLURM_SUCCESS;
 
 	part_iterator = list_iterator_create(part_list);
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+	while ((part_ptr = list_next(part_iterator))) {
 		if (!(part_ptr->state_up & PARTITION_SUBMIT))
 			continue;	/* nobody can submit jobs here */
 		if (!_user_access(job_desc->user_id, submit_uid, part_ptr))

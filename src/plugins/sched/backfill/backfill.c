@@ -140,7 +140,7 @@ typedef struct pack_job_rec {
 	uint32_t job_id;
 	job_record_t *job_ptr;
 	time_t latest_start;		/* Time when expected to start */
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 } pack_job_rec_t;
 
 typedef struct pack_job_map {
@@ -157,7 +157,7 @@ typedef struct deadlock_job_struct {
 
 typedef struct deadlock_part_struct {
 	List deadlock_job_list;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 } deadlock_part_struct_t;
 
 /* Diagnostic  statistics */
@@ -221,8 +221,7 @@ static uint32_t _hetjob_calc_prio(job_record_t *het_leader);
 static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader);
 static void _job_pack_deadlock_fini(void);
 static bool _job_pack_deadlock_test(job_record_t *job_ptr);
-static bool _job_part_valid(job_record_t *job_ptr,
-			    struct part_record *part_ptr);
+static bool _job_part_valid(job_record_t *job_ptr, part_record_t *part_ptr);
 static void _load_config(void);
 static bool _many_pending_rpcs(void);
 static bool _more_work(time_t last_backfill_time);
@@ -1078,17 +1077,15 @@ static int _yield_locks(int64_t usec)
 
 /* Test if this job still has access to the specified partition. The job's
  * available partitions may have changed when locks were released */
-static bool _job_part_valid(job_record_t *job_ptr,
-			    struct part_record *part_ptr)
+static bool _job_part_valid(job_record_t *job_ptr, part_record_t *part_ptr)
 {
-	struct part_record *avail_part_ptr;
+	part_record_t *avail_part_ptr;
 	ListIterator part_iterator;
 	bool rc = false;
 
 	if (job_ptr->part_ptr_list) {
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-		while ((avail_part_ptr = (struct part_record *)
-				list_next(part_iterator))) {
+		while ((avail_part_ptr = list_next(part_iterator))) {
 			if (avail_part_ptr == part_ptr) {
 				rc = true;
 				break;
@@ -1218,7 +1215,7 @@ static uint32_t _hetjob_calc_prio(job_record_t *het_leader)
 static uint32_t _hetjob_calc_prio_tier(job_record_t *het_leader)
 {
 	job_record_t *het_comp = NULL;
-	struct part_record *part_ptr = NULL;
+	part_record_t *part_ptr = NULL;
 	uint32_t prio_tier = 0, tmp = 0, cnt = 0;
 	ListIterator iter = NULL, iter2 = NULL;
 
@@ -1378,7 +1375,7 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 		*assoc_usage = NULL, *user_part_usage = NULL;
 
 	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
-	struct part_record *part_ptr = job_ptr->part_ptr;
+	part_record_t *part_ptr = job_ptr->part_ptr;
 
 	if (max_backfill_job_per_user_part) {
 		xassert(part_ptr->bf_data);
@@ -1486,7 +1483,7 @@ static int _attempt_backfill(void)
 	int bb, i, j, node_space_recs, mcs_select = 0;
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 	job_record_t *job_ptr;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	uint32_t end_time, end_reserve, deadline_time_limit, boot_time;
 	uint32_t orig_end_time;
 	uint32_t time_limit, comp_time_limit, orig_time_limit, part_time_limit;
@@ -1501,7 +1498,7 @@ static int _attempt_backfill(void)
 	int job_test_count = 0, test_time_count = 0, pend_time;
 	bool already_counted, many_rpcs = false;
 	uint32_t reject_array_job_id = 0;
-	struct part_record *reject_array_part = NULL;
+	part_record_t *reject_array_part = NULL;
 	uint32_t start_time;
 	time_t config_update = slurmctld_conf.last_update;
 	time_t part_update = last_part_update;
@@ -3630,7 +3627,7 @@ static int _deadlock_part_list_srch2(void *x, void *key)
 static int _deadlock_global_list_srch(void *x, void *key)
 {
 	deadlock_part_struct_t *dl_part = (deadlock_part_struct_t *) x;
-	if (dl_part->part_ptr == (struct part_record *) key)
+	if (dl_part->part_ptr == (part_record_t *) key)
 		return 1;
 	return 0;
 }

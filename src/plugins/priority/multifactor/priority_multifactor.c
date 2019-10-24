@@ -467,8 +467,7 @@ static double _get_fairshare_priority(job_record_t *job_ptr)
 	return priority_fs;
 }
 
-static void _get_tres_factors(job_record_t *job_ptr,
-			      struct part_record *part_ptr,
+static void _get_tres_factors(job_record_t *job_ptr, part_record_t *part_ptr,
 			      double *tres_factors)
 {
 	int i;
@@ -598,7 +597,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 	}
 
 	if (job_ptr->part_ptr_list) {
-		struct part_record *part_ptr;
+		part_record_t *part_ptr;
 		double priority_part;
 		ListIterator part_iterator;
 		int i = 0;
@@ -611,8 +610,7 @@ static uint32_t _get_priority_internal(time_t start_time,
 		i = 0;
 		list_sort(job_ptr->part_ptr_list, priority_sort_part_tier);
 		part_iterator = list_iterator_create(job_ptr->part_ptr_list);
-		while ((part_ptr = (struct part_record *)
-			list_next(part_iterator))) {
+		while ((part_ptr = list_next(part_iterator))) {
 			double part_tres = 0.0;
 
 			if (weight_tres) {
@@ -1417,7 +1415,7 @@ static void _filter_job(job_record_t *job_ptr,
 			List part_ptr_list, List ret_list)
 {
 	priority_factors_object_t *obj = NULL;
-	struct part_record *job_part_ptr = NULL, *filter_part_ptr = NULL;
+	part_record_t *job_part_ptr = NULL, *filter_part_ptr = NULL;
 	List req_job_list, req_user_list;
 	int filter = 0, inx;
 	ListIterator iterator, job_iter, filter_iter;
@@ -1950,7 +1948,7 @@ extern List priority_p_get_priority_factors_list(
 	List ret_list = NULL, part_filter_list = NULL;
 	ListIterator itr;
 	job_record_t *job_ptr = NULL;
-	struct part_record *part_ptr;
+	part_record_t *part_ptr;
 	time_t start_time = time(NULL);
 	char *part_str, *tok, *last = NULL;
 	/* Read lock on jobs, nodes, and partitions */
