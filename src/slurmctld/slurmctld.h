@@ -909,7 +909,7 @@ struct	depend_spec {
 #define STEP_FLAG 0xbbbb
 #define STEP_MAGIC 0xcafecafe
 
-struct 	step_record {
+typedef struct step_record {
 	uint32_t magic;			/* magic cookie to test data integrity */
 					/* DO NOT ALPHABETIZE */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
@@ -978,7 +978,7 @@ struct 	step_record {
 	char *tres_per_node;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_socket;		/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
-};
+} step_record_t;
 
 extern List job_list;			/* list of job_record entries */
 extern List purge_files_list;		/* list of job ids to purge files of */
