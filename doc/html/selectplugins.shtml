@@ -603,7 +603,7 @@ bitmap of the nodes allocated to the job step, otherwise return NULL and the
 logic within the slurmctld daemon will select the nodes to be allocated to
 the job step.</p>
 
-<p class="commandline">int select_p_step_finish(struct step_record *step_ptr, bool killing_step)</p>
+<p class="commandline">int select_p_step_finish(step_record_t *step_ptr, bool killing_step)</p>
 <p style="margin-left:.2in"><b>Description</b>: Note that a job step is completing execution</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> step_ptr</span>&nbsp; &nbsp;&nbsp;(input)
@@ -674,6 +674,6 @@ Only used by Cray ALPS at present.
 elements in each dimension of the system size.</p>
 
 
-<p style="text-align:center;">Last modified 14 June 2018</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

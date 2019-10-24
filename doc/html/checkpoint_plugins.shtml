@@ -123,7 +123,7 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Returns</b>: copy of jobinfo if successful. NULL on failure.</p>
 
 <p class="commandline">int slurm_ckpt_op ( uint32_t job_id, uint32_t step_id,
-struct step_record *step_ptr, uint16_t op, uint16_t data,
+step_record_t *step_ptr, uint16_t op, uint16_t data,
 char *image_dir, time_t *event_time,
 uint32_t *error_code, char **error_msg );</p>
 <p style="margin-left:.2in"><b>Description</b>: Perform some checkpoint operation on a
@@ -157,7 +157,7 @@ SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the error_code and error_msg
 to an appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
+<p class="commandline">int slurm_ckpt_comp(step_record_t *step_ptr, time_t event_time,
 uint32_t error_code, char *error_msg );</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the completion of a checkpoint operation.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -206,6 +206,6 @@ On failure, the plugin should return SLURM_ERROR and set the error_code
 and error_msg to an appropriate value to indicate the reason for failure.</p>
 
 
-<p style="text-align:center;">Last modified 27 March 2015</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->

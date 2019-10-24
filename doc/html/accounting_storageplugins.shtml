@@ -878,7 +878,7 @@ slurmctld.
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_step_start(void *db_conn, struct step_record *step_ptr)
+int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_storage_p_step_start() is called in the jobacct plugin at the
 allocation of a new step in the slurmctld, this inserts info about the
@@ -893,7 +893,7 @@ slurmctld.
 <span class="commandline">SLURM_ERROR</span> on failure.
 
 <p class="commandline">
-int jobacct_storage_p_step_complete(void *db_conn, struct step_record *step_ptr)
+int jobacct_storage_p_step_complete(void *db_conn, step_record_t *step_ptr)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 jobacct_storage_p_step_complete() is called in the jobacct plugin at
 the end of a step in the slurmctld, this updates the ending
@@ -1028,6 +1028,6 @@ database with.
 </dl>
 
 
-<p style="text-align:center;">Last modified 22 July 2016</p>
+<p style="text-align:center;">Last modified 23 October 2019</p>
 
 <!--#include virtual="footer.txt"-->
