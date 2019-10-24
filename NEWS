@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     returned by gethostbyaddr().
  -- Fix abort initializing a configuration without acct_gather.conf.
  -- Fix GRES binding and CLOUD nodes GRES setup regressions.
+ -- Make sview work with glib2 v2.62.
 
 * Changes in Slurm 19.05.3-2
 ============================
@@ -476,6 +477,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 18.08.9
 ==========================
  -- Wrap END_TIMER{,2,3} macro definition in "do {} while (0)" block.
+ -- Make sview work with glib2 v2.62.
 
 * Changes in Slurm 18.08.8
 ==========================

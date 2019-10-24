@@ -814,7 +814,7 @@ need_refresh:
 		treeview = create_treeview_2cols_attach_to_table(
 			popup_win->table);
 		spec_info->display_widget =
-			gtk_widget_ref(GTK_WIDGET(treeview));
+			g_object_ref(GTK_WIDGET(treeview));
 	} else {
 		treeview = GTK_TREE_VIEW(spec_info->display_widget);
 		update = 1;
@@ -1128,7 +1128,7 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 		label = gtk_label_new("Not available in a federated view");
 		gtk_table_attach_defaults(GTK_TABLE(table), label, 0, 1, 0, 1);
 		gtk_widget_show(label);
-		display_widget = gtk_widget_ref(label);
+		display_widget = g_object_ref(label);
 		goto end_it;
 	}
 
@@ -1151,7 +1151,7 @@ extern void get_info_resv(GtkTable *table, display_data_t *display_data)
 		label = gtk_label_new(error_char);
 		gtk_table_attach_defaults(table, label, 0, 1, 0, 1);
 		gtk_widget_show(label);
-		display_widget = gtk_widget_ref(GTK_WIDGET(label));
+		display_widget = g_object_ref(GTK_WIDGET(label));
 		goto end_it;
 	}
 
@@ -1207,7 +1207,7 @@ display_it:
 		gtk_tree_selection_set_mode(
 			gtk_tree_view_get_selection(tree_view),
 			GTK_SELECTION_MULTIPLE);
-		display_widget = gtk_widget_ref(GTK_WIDGET(tree_view));
+		display_widget = g_object_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(table,
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
@@ -1274,7 +1274,7 @@ extern void specific_info_resv(popup_info_t *popup_win)
 					  label,
 					  0, 1, 0, 1);
 		gtk_widget_show(label);
-		spec_info->display_widget = gtk_widget_ref(label);
+		spec_info->display_widget = g_object_ref(label);
 		goto end_it;
 	}
 
@@ -1296,7 +1296,7 @@ display_it:
 			gtk_tree_view_get_selection(tree_view),
 			GTK_SELECTION_MULTIPLE);
 		spec_info->display_widget =
-			gtk_widget_ref(GTK_WIDGET(tree_view));
+			g_object_ref(GTK_WIDGET(tree_view));
 		gtk_table_attach_defaults(popup_win->table,
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1);
