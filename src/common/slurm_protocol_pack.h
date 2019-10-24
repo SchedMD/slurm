@@ -49,45 +49,45 @@
 /* Message header functions */
 /****************************/
 
-/* pack_header
+/*
  * packs a slurm protocol header that precedes every slurm message
  * IN header - the header structure to pack
  * IN/OUT buffer - destination of the pack, contains pointers that are
  *			automatically updated
  */
-extern void pack_header ( header_t  * header , Buf buffer );
+extern void pack_header(header_t *header, Buf buffer);
 
-/* unpack_header
+/*
  * unpacks a slurm protocol header that precedes every slurm message
  * OUT header - the header structure to unpack
  * IN/OUT buffer - source of the unpack data, contains pointers that are
  *			automatically updated
  * RET 0 or error code
  */
-extern int unpack_header ( header_t * header , Buf buffer );
+extern int unpack_header(header_t *header, Buf buffer);
 
 
 /**************************************************************************/
 /* generic case statement Pack / Unpack methods for slurm protocol bodies */
 /**************************************************************************/
 
-/* pack_msg
+/*
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
  * IN/OUT buffer - destination of the pack, contains pointers that are
  *			automatically updated
  * RET 0 or error code
  */
-extern int pack_msg ( slurm_msg_t const * msg , Buf buffer );
+extern int pack_msg(slurm_msg_t const *msg, Buf buffer);
 
-/* unpack_msg
+/*
  * unpacks a generic slurm protocol message body
  * OUT msg - the body structure to unpack (note: includes message type)
  * IN/OUT buffer - source of the unpack, contains pointers that are
  *			automatically updated
  * RET 0 or error code
  */
-extern int unpack_msg ( slurm_msg_t * msg , Buf buffer );
+extern int unpack_msg(slurm_msg_t *msg, Buf buffer);
 
 extern int slurm_pack_list(List send_list,
 			   void (*pack_function) (void *object,
@@ -101,8 +101,8 @@ extern int slurm_unpack_list(List *recv_list,
 			     void (*destroy_function) (void *object),
 			     Buf buffer, uint16_t protocol_version);
 
-extern void pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer,
+extern void pack_multi_core_data(multi_core_data_t *multi_core, Buf buffer,
+				 uint16_t protocol_version);
+extern int unpack_multi_core_data(multi_core_data_t **multi_core, Buf buffer,
 				  uint16_t protocol_version);
-extern int unpack_multi_core_data (multi_core_data_t **multi_core, Buf buffer,
-				   uint16_t protocol_version);
 #endif
