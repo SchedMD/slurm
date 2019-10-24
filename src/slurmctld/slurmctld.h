@@ -909,7 +909,7 @@ struct	depend_spec {
 #define STEP_FLAG 0xbbbb
 #define STEP_MAGIC 0xcafecafe
 
-typedef struct step_record {
+typedef struct {
 	uint32_t magic;			/* magic cookie to test data integrity */
 					/* DO NOT ALPHABETIZE */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
