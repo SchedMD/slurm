@@ -287,7 +287,7 @@ extern bitstr_t *rs_node_bitmap;	/* next_state=resume nodes */
 \*****************************************************************************/
 #define FRONT_END_MAGIC 0xfe9b82fe
 
-typedef struct front_end_record {
+typedef struct {
 	uint32_t magic;			/* magic cookie to test data integrity */
 					/* DO NOT ALPHABETIZE */
 	gid_t *allow_gids;		/* zero terminated list of allowed groups */

@@ -118,7 +118,7 @@ static Buf _open_front_end_state_file(char **state_file)
  * NOTE: if you make any changes here be sure to make the corresponding
  *	changes to load_front_end_config in api/node_info.c
  */
-static void _pack_front_end(struct front_end_record *dump_front_end_ptr,
+static void _pack_front_end(front_end_record_t *dump_front_end_ptr,
 			    Buf buffer, uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
