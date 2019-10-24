@@ -863,7 +863,7 @@ unpack_header(header_t * header, Buf buffer)
 	uint32_t uint32_tmp = 0;
 
 	memset(header, 0, sizeof(header_t));
-	forward_init(&header->forward, NULL);
+	forward_init(&header->forward);
 	header->ret_list = NULL;
 	safe_unpack16(&header->version, buffer);
 

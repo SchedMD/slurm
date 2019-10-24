@@ -108,9 +108,7 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 	msg->flags = drop_priv_flag;
 #endif
 
-	forward_init(&msg->forward, NULL);
-
-	return;
+	forward_init(&msg->forward);
 }
 
 /*

@@ -561,7 +561,7 @@ static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
 			free(tmp_char);
 		}
 
-		forward_init(&fwd_msg->header.forward, NULL);
+		forward_init(&fwd_msg->header.forward);
 		fwd_msg->header.forward.nodelist = buf;
 		slurm_thread_create_detached(NULL, _forward_thread, fwd_msg);
 	}
@@ -570,18 +570,12 @@ static void _forward_msg_internal(hostlist_t hl, hostlist_t* sp_hl,
 /*
  * forward_init    - initialize forward structure
  * IN: forward     - forward_t *   - struct to store forward info
- * IN: from        - forward_t *   - (OPTIONAL) can be NULL, can be used to
- *                                   init the forward to this state
  * RET: VOID
  */
-extern void forward_init(forward_t *forward, forward_t *from)
+extern void forward_init(forward_t *forward)
 {
-	if (from && from->init == FORWARD_INIT) {
-		memcpy(forward, from, sizeof(forward_t));
-	} else {
-		memset(forward, 0, sizeof(forward_t));
-		forward->init = FORWARD_INIT;
-	}
+	memset(forward, 0, sizeof(forward_t));
+	forward->init = FORWARD_INIT;
 }
 
 /*

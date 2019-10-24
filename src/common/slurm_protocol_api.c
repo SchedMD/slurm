@@ -3621,7 +3621,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	 *  the message.
 	 */
 	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
-		forward_init(&header.forward, NULL);
+		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
 	}
@@ -3824,7 +3824,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	 *  the message.
 	 */
 	if (slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
-		forward_init(&header.forward, NULL);
+		forward_init(&header.forward);
 		rc = errno;
 		goto total_return;
 	}
@@ -4064,7 +4064,7 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	}
 
 	if (msg->forward.init != FORWARD_INIT) {
-		forward_init(&msg->forward, NULL);
+		forward_init(&msg->forward);
 		msg->ret_list = NULL;
 	}
 
@@ -4594,7 +4594,7 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	 * since we KNOW that we are only sending to one node (the controller),
 	 * we initialize some forwarding variables to disable forwarding.
 	 */
-	forward_init(&request_msg->forward, NULL);
+	forward_init(&request_msg->forward);
 	request_msg->ret_list = NULL;
 	request_msg->forward_struct = NULL;
 
@@ -4983,7 +4983,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 	 * since we KNOW that we are only sending to one node,
 	 * we initialize some forwarding variables to disable forwarding.
 	 */
-	forward_init(&req->forward, NULL);
+	forward_init(&req->forward);
 	req->ret_list = NULL;
 	req->forward_struct = NULL;
 
