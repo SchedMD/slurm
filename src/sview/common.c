@@ -1004,8 +1004,8 @@ extern GtkTreeView *create_treeview_2cols_attach_to_table(GtkTable *table)
 {
 	GtkTreeView *tree_view = GTK_TREE_VIEW(gtk_tree_view_new());
 	GtkTreeStore *treestore =
-		gtk_tree_store_new(3, GTK_TYPE_STRING,
-				   GTK_TYPE_STRING, GTK_TYPE_STRING);
+		gtk_tree_store_new(3, G_TYPE_STRING,
+				   G_TYPE_STRING, G_TYPE_STRING);
 	GtkTreeViewColumn *col = gtk_tree_view_column_new();
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
 

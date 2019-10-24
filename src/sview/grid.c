@@ -78,14 +78,12 @@ typedef struct {
 	bool force_row_break;
 } button_processor_t;
 
-GStaticMutex blinking_mutex = G_STATIC_MUTEX_INIT;
-
 static gboolean _mouseover_node(GtkWidget *widget, GdkEventButton *event,
 				grid_button_t *grid_button)
 {
 	gboolean rc = true;
 
-	grid_button->last_state = GTK_WIDGET_STATE(widget);
+	grid_button->last_state = gtk_widget_get_state(widget);
 #ifdef GTK2_USE_TOOLTIP
 	gtk_widget_set_tooltip_text(grid_button->button,
 				    grid_button->node_name);
@@ -392,7 +390,7 @@ static void _each_highlightd(GtkTreeModel *model,
 				     sview_colors[color_inx],
 				     color, 0, 0);
 
-		if (GTK_WIDGET_STATE(grid_button->button) != GTK_STATE_NORMAL)
+		if (gtk_widget_get_state(grid_button->button) != GTK_STATE_NORMAL)
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
 
@@ -432,7 +430,7 @@ static void _each_highlight_selected(GtkTreeModel *model,
 		 * (previously this assumed only one selected). */
 		if (grid_button->inx != node_inx)
 			continue;
-		else if (GTK_WIDGET_STATE(grid_button->button)
+		else if (gtk_widget_get_state(grid_button->button)
 			 != GTK_STATE_NORMAL) {
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
@@ -1055,7 +1053,7 @@ extern void highlight_grid(GtkTreeView *tree_view,
 	itr = list_iterator_create(button_list);
 	while ((grid_button = list_next(itr))) {
 		/* clear everyone */
-		if ((GTK_WIDGET_STATE(grid_button->button)
+		if ((gtk_widget_get_state(grid_button->button)
 		     != GTK_STATE_ACTIVE)) {
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_ACTIVE);
@@ -1096,7 +1094,7 @@ extern void highlight_grid_range(int start, int end, List button_list)
 			if ((grid_button->inx < start)
 			    || (grid_button->inx > end)) {
 				/* clear everyone else */
-				if ((GTK_WIDGET_STATE(grid_button->button)
+				if ((gtk_widget_get_state(grid_button->button)
 				     != GTK_STATE_ACTIVE))
 					gtk_widget_set_state(
 						grid_button->button,
@@ -1106,7 +1104,7 @@ extern void highlight_grid_range(int start, int end, List button_list)
 		/* highlight this one, if it is already hightlighted,
 		 * put it back to normal */
 		//g_print("highlighting %d\n", grid_button->inx);
-		if ((GTK_WIDGET_STATE(grid_button->button)
+		if ((gtk_widget_get_state(grid_button->button)
 		     != GTK_STATE_NORMAL))
 			gtk_widget_set_state(grid_button->button,
 					     GTK_STATE_NORMAL);
