@@ -608,19 +608,19 @@ extern int clusteracct_storage_g_fini_ctld(void *db_conn,
  * load into the storage the start of a job
  */
 extern int jobacct_storage_job_start_direct(void *db_conn,
-					    struct job_record *job_ptr);
+					    job_record_t *job_ptr);
 /*
  * load into the storage information about a job,
  * typically when it begins execution, but possibly earlier
  */
 extern int jobacct_storage_g_job_start(void *db_conn,
-				       struct job_record *job_ptr);
+				       job_record_t *job_ptr);
 
 /*
  * load into the storage the end of a job
  */
 extern int jobacct_storage_g_job_complete(void *db_conn,
-					  struct job_record *job_ptr);
+					  job_record_t *job_ptr);
 
 /*
  * load into the storage the start of a job step
@@ -638,7 +638,7 @@ extern int jobacct_storage_g_step_complete(void *db_conn,
  * load into the storage a suspension of a job
  */
 extern int jobacct_storage_g_job_suspend(void *db_conn,
-					 struct job_record *job_ptr);
+					 job_record_t *job_ptr);
 
 /*
  * get info from the storage

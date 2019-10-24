@@ -95,7 +95,7 @@ extern int g_slurm_jobcomp_init(char *jobcomp_loc);
 extern int g_slurm_jobcomp_fini(void);
 
 /* write record of a job's completion */
-extern int g_slurm_jobcomp_write(struct job_record *job_ptr);
+extern int g_slurm_jobcomp_write(job_record_t *job_ptr);
 
 /*
  * get info from the storage

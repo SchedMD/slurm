@@ -223,7 +223,7 @@ extern int build_job_resources_cpus_array(job_resources_t *job_resrcs_ptr)
  * the bitmap size or bit positions */
 extern int reset_node_bitmap(void *void_job_ptr)
 {
-	struct job_record *job_ptr = (struct job_record *) void_job_ptr;
+	job_record_t *job_ptr = (job_record_t *) void_job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int i;
 
@@ -435,7 +435,7 @@ extern void free_job_resources(job_resources_t **job_resrcs_pptr)
  */
 extern void log_job_resources(void *void_job_ptr)
 {
-	struct job_record *job_ptr = (struct job_record *) void_job_ptr;
+	job_record_t *job_ptr = (job_record_t *) void_job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int bit_inx = 0, bit_reps, i;
 	int array_size, node_inx;

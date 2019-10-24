@@ -51,7 +51,7 @@ extern int priority_sort_part_tier(void *x, void *y);
 
 extern int slurm_priority_init(void);
 extern int slurm_priority_fini(void);
-extern uint32_t priority_g_set(uint32_t last_prio, struct job_record *job_ptr);
+extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr);
 extern void priority_g_reconfig(bool assoc_clear);
 
 /* sets up the normalized usage and the effective usage of an
@@ -68,6 +68,6 @@ extern List priority_g_get_priority_factors_list(
  * at least slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
  * READ_LOCK, READ_LOCK }; should be locked before calling this
  */
-extern void priority_g_job_end(struct job_record *job_ptr);
+extern void priority_g_job_end(job_record_t *job_ptr);
 
 #endif /*_SLURM_PRIORIY_H */

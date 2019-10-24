@@ -40,7 +40,7 @@
 #include "src/common/xstring.h"
 
 typedef struct slurm_mcs_ops {
-	int (*set)		(struct job_record *job_ptr,char *label);
+	int (*set)		(job_record_t *job_ptr, char *label);
 	int (*check)		(uint32_t user_id, char *mcs_label);
 } slurm_mcs_ops_t;
 
@@ -216,7 +216,7 @@ extern int slurm_mcs_get_enforced(void)
 	return label_strict_enforced;
 }
 
-extern int slurm_mcs_get_select(struct job_record *job_ptr)
+extern int slurm_mcs_get_select(job_record_t *job_ptr)
 {
 	if ((select_value == MCS_SELECT_SELECT) ||
 	    ((select_value == MCS_SELECT_ONDEMANDSELECT) &&
@@ -232,7 +232,7 @@ extern int slurm_mcs_get_privatedata(void)
 	return private_data;
 }
 
-extern int mcs_g_set_mcs_label(struct job_record *job_ptr, char *label)
+extern int mcs_g_set_mcs_label(job_record_t *job_ptr, char *label)
 {
 	if (slurm_mcs_init() < 0)
 		return 0;

@@ -1869,7 +1869,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 			  persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_comp_msg_t *job_comp_msg = msg->data;
-	struct job_record job;
+	job_record_t job;
 	struct job_details details;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -1882,7 +1882,7 @@ static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
 		goto end_it;
 	}
 
-	memset(&job, 0, sizeof(struct job_record));
+	memset(&job, 0, sizeof(job_record_t));
 	memset(&details, 0, sizeof(struct job_details));
 
 	job.admin_comment = job_comp_msg->admin_comment;
@@ -1966,7 +1966,7 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_suspend_msg_t *job_suspend_msg = msg->data;
-	struct job_record job;
+	job_record_t job;
 	struct job_details details;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -1983,7 +1983,7 @@ static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
 	       job_suspend_msg->job_id,
 	       job_state_string(job_suspend_msg->job_state));
 
-	memset(&job, 0, sizeof(struct job_record));
+	memset(&job, 0, sizeof(job_record_t));
 	memset(&details, 0, sizeof(struct job_details));
 
 	job.assoc_id = job_suspend_msg->assoc_id;
@@ -2596,11 +2596,11 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 			       dbd_job_start_msg_t *job_start_msg,
 			       dbd_id_rc_msg_t *id_rc_msg)
 {
-	struct job_record job, *job_ptr;
+	job_record_t job, *job_ptr;
 	struct job_details details;
 	job_array_struct_t array_recs;
 
-	memset(&job, 0, sizeof(struct job_record));
+	memset(&job, 0, sizeof(job_record_t));
 	memset(&details, 0, sizeof(struct job_details));
 	memset(&array_recs, 0, sizeof(job_array_struct_t));
 	memset(id_rc_msg, 0, sizeof(dbd_id_rc_msg_t));
@@ -3378,7 +3378,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 {
 	dbd_step_comp_msg_t *step_comp_msg = msg->data;
 	step_record_t step;
-	struct job_record job;
+	job_record_t job;
 	struct job_details details;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -3395,7 +3395,7 @@ static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
 	       (unsigned long) step_comp_msg->job_submit_time);
 
 	memset(&step, 0, sizeof(step_record_t));
-	memset(&job, 0, sizeof(struct job_record));
+	memset(&job, 0, sizeof(job_record_t));
 	memset(&details, 0, sizeof(struct job_details));
 
 	job.assoc_id = step_comp_msg->assoc_id;
@@ -3445,7 +3445,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 {
 	dbd_step_start_msg_t *step_start_msg = msg->data;
 	step_record_t step;
-	struct job_record job;
+	job_record_t job;
 	struct job_details details;
 	slurm_step_layout_t layout;
 	int rc = SLURM_SUCCESS;
@@ -3464,7 +3464,7 @@ static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
 	       (unsigned long) step_start_msg->job_submit_time);
 
 	memset(&step, 0, sizeof(step_record_t));
-	memset(&job, 0, sizeof(struct job_record));
+	memset(&job, 0, sizeof(job_record_t));
 	memset(&details, 0, sizeof(struct job_details));
 	memset(&layout, 0, sizeof(slurm_step_layout_t));
 

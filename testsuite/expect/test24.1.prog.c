@@ -58,7 +58,7 @@ static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* this will leak memory, but we don't care really */
 static void _list_delete_job(void *job_entry)
 {
-	struct job_record *job_ptr = (struct job_record *) job_entry;
+	job_record_t *job_ptr = (job_record_t *) job_entry;
 
 	xfree(job_ptr);
 }

@@ -170,7 +170,7 @@ enum cluster_fed_states {
 /* when we come up with some */
 
 /*
- * Translation of db_flags in the struct job_record and flag
+ * Translation of db_flags in job_record_t and flag
  * slurmdb_job_[rec|cond]_t
  */
 #define SLURMDB_JOB_FLAG_NONE     0x00000000 /* No flags */

@@ -188,13 +188,11 @@ typedef struct slurm_acct_storage_ops {
 	int  (*register_disconn_ctld)(void *db_conn, char *control_host);
 	int  (*fini_ctld)          (void *db_conn,
 				    slurmdb_cluster_rec_t *cluster_rec);
-	int  (*job_start)          (void *db_conn, struct job_record *job_ptr);
-	int  (*job_complete)       (void *db_conn,
-				    struct job_record *job_ptr);
+	int  (*job_start)          (void *db_conn, job_record_t *job_ptr);
+	int  (*job_complete)       (void *db_conn, job_record_t *job_ptr);
 	int  (*step_start)         (void *db_conn, step_record_t *step_ptr);
 	int  (*step_complete)      (void *db_conn, step_record_t *step_ptr);
-	int  (*job_suspend)        (void *db_conn,
-				    struct job_record *job_ptr);
+	int  (*job_suspend)        (void *db_conn, job_record_t *job_ptr);
 	List (*get_jobs_cond)      (void *db_conn, uint32_t uid,
 				    slurmdb_job_cond_t *job_cond);
 	int (*archive_dump)        (void *db_conn,
@@ -304,7 +302,7 @@ static uint16_t enforce = 0;
  * go ahead.
  */
 extern int jobacct_storage_job_start_direct(void *db_conn,
-					    struct job_record *job_ptr)
+					    job_record_t *job_ptr)
 {
 	if (with_slurmdbd && !job_ptr->db_index)
 		return SLURM_SUCCESS;
@@ -863,7 +861,7 @@ extern int clusteracct_storage_g_fini_ctld(void *db_conn,
  * typically when it begins execution, but possibly earlier
  */
 extern int jobacct_storage_g_job_start(void *db_conn,
-				       struct job_record *job_ptr)
+				       job_record_t *job_ptr)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -894,7 +892,7 @@ extern int jobacct_storage_g_job_start(void *db_conn,
  * load into the storage the end of a job
  */
 extern int jobacct_storage_g_job_complete(void *db_conn,
-					  struct job_record *job_ptr)
+					  job_record_t *job_ptr)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -932,7 +930,7 @@ extern int jobacct_storage_g_step_complete(void *db_conn,
  * load into the storage a suspension of a job
  */
 extern int jobacct_storage_g_job_suspend(void *db_conn,
-					 struct job_record *job_ptr)
+					 job_record_t *job_ptr)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;

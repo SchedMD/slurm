@@ -54,7 +54,7 @@
 
 typedef struct slurm_jobcomp_ops {
 	int          (*set_loc)   ( char *loc );
-	int          (*job_write) ( struct job_record *job_ptr);
+	int          (*job_write) ( job_record_t *job_ptr);
 	List         (*get_jobs)  ( slurmdb_job_cond_t *params );
 	int          (*archive)   ( slurmdb_archive_cond_t *params );
 } slurm_jobcomp_ops_t;
@@ -162,8 +162,7 @@ done:
 	return SLURM_SUCCESS;
 }
 
-extern int
-g_slurm_jobcomp_write(struct job_record *job_ptr)
+extern int g_slurm_jobcomp_write(job_record_t *job_ptr)
 {
 	int retval = SLURM_SUCCESS;
 

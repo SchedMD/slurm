@@ -44,7 +44,7 @@
 /* Symbols provided by the plugin */
 typedef struct slurm_ops {
 	void	(*reconfig)	(void);
-	void	(*set)		(struct job_record *job_ptr);
+	void	(*set)		(job_record_t *job_ptr);
 	void	(*update)	(void);
 } slurm_ops_t;
 
@@ -132,7 +132,7 @@ extern void site_factor_g_reconfig(void)
 	END_TIMER3(__func__, SITE_FACTOR_TIMER_RECONFIG);
 }
 
-extern void site_factor_g_set(struct job_record *job_ptr)
+extern void site_factor_g_set(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	if (site_factor_plugin_init() < 0)

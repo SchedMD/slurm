@@ -711,7 +711,7 @@ static void _set_idbuf(char *idbuf, size_t size)
  * the job array or hetjob component information with the raw jobid in
  * parenthesis.
  */
-static char *_jobid2fmt(struct job_record *job_ptr, char *buf, int buf_size)
+static char *_jobid2fmt(job_record_t *job_ptr, char *buf, int buf_size)
 {
 	/*
 	 * NOTE: You will notice we put a %.0s in front of the string.
@@ -869,7 +869,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				{
 					int i;
 					void *ptr = NULL;
-					struct job_record *job_ptr;
+					job_record_t *job_ptr;
 					va_list	ap_copy;
 
 					va_copy(ap_copy, ap);
@@ -892,7 +892,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 					int i;
 					void *ptr = NULL;
 					step_record_t *step_ptr = NULL;
-					struct job_record *job_ptr = NULL;
+					job_record_t *job_ptr = NULL;
 					va_list	ap_copy;
 
 					va_copy(ap_copy, ap);
