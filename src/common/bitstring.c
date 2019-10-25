@@ -519,7 +519,7 @@ bit_fls(bitstr_t *b)
 
 	bit = _bitstr_bits(b) - 1;	/* zero origin */
 
-	while (bit >= 0 && 		/* test partitial words */
+	while (bit >= 0 && 		/* test partial words */
 		(_bit_word(bit) == _bit_word(bit + 1))) {
 		if (bit_test(b, bit)) {
 			value = bit;
