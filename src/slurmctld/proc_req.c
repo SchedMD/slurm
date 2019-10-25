@@ -3584,6 +3584,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		}
 		in_progress = false;
 		gs_reconfig();
+		acct_storage_g_reconfig(acct_db_conn, 0);
 		unlock_slurmctld(config_write_lock);
 		xcgroup_reconfig_slurm_cgroup_conf();
 		assoc_mgr_set_missing_uids();
@@ -3601,7 +3602,6 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		info("_slurm_rpc_reconfigure_controller: completed %s",
 		     TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		acct_storage_g_reconfig(acct_db_conn, 0);
 		priority_g_reconfig(false);	/* notify priority plugin too */
 		save_all_state();		/* has its own locks */
 		queue_job_scheduler();
