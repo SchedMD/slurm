@@ -3632,7 +3632,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid,
 		hl = _step_range_to_hostlist(step_ptr,
 			req->range_first, req->range_last);
 		node_list = hostlist_ranged_string_xmalloc(hl);
-		debug2("partitial switch release for %pS, nodes %s",
+		debug2("partial switch release for %pS, nodes %s",
 			step_ptr, node_list);
 		switch_g_job_step_part_comp(
 			step_ptr->switch_job, node_list);
@@ -3773,7 +3773,7 @@ extern int step_epilog_complete(job_record_t *job_ptr, char *node_name)
 	node_record_t *node_ptr;
 
 	if (!switch_g_part_comp()) {
-		/* don't bother with partitial completions */
+		/* don't bother with partial completions */
 		return 0;
 	}
 	if ((node_ptr = find_node_record(node_name)) == NULL)
@@ -3798,7 +3798,7 @@ extern int step_epilog_complete(job_record_t *job_ptr, char *node_name)
 				step_offset);
 		}
 		rc++;
-		debug2("partitial switch release for %pS, epilog on %s",
+		debug2("partial switch release for %pS, epilog on %s",
 			step_ptr, node_name);
 		switch_g_job_step_part_comp(
 			step_ptr->switch_job, node_name);
