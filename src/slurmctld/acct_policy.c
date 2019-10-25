@@ -854,6 +854,11 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				continue;
 			if (!part_qos_list)
 				part_qos_list = list_create(NULL);
+			/*
+			 * Don't adjust usage to this partition's qos if
+			 * it's the same as the qos of another partition
+			 * that we already handled.
+			 */
 			if (list_find_first(part_qos_list, _find_qos_part,
 					    part_ptr->qos_ptr))
 				continue;
@@ -864,9 +869,15 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 		}
 		list_iterator_destroy(part_itr);
 
-		if (!job_first && (!part_qos_list ||
-		    !list_find_first(part_qos_list, _find_qos_part,
-				     job_ptr->qos_ptr)))
+		/*
+		 * Don't adjust usage to this job's qos if
+		 * it's the same as the qos of a partition
+		 * that we already handled.
+		 */
+		if (!job_first && job_ptr->qos_ptr &&
+		    (!part_qos_list ||
+		     !list_find_first(part_qos_list, _find_qos_part,
+				      job_ptr->qos_ptr)))
 			_qos_adjust_limit_usage(type, job_ptr, job_ptr->qos_ptr,
 						used_tres_run_secs, job_cnt);
 
@@ -897,6 +908,11 @@ static void _adjust_limit_usage(int type, struct job_record *job_ptr)
 				if (!part_ptr->qos_ptr)
 					continue;
 
+				/*
+				 * Don't adjust usage to this partition's qos if
+				 * it's the same as the qos of another partition
+				 * that we already handled.
+				 */
 				if (list_find_first(part_qos_list,
 						    _find_qos_part,
 						    part_ptr->qos_ptr))
