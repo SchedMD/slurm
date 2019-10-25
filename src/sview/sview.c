@@ -259,7 +259,7 @@ void *_grid_init_thr(void *arg)
 }
 
 static void _page_switched(GtkNotebook     *notebook,
-			   GtkNotebookPage *page,
+			   GtkNotebookTab  *page,
 			   guint            page_num,
 			   gpointer         user_data)
 {
