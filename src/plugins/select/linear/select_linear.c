@@ -4122,11 +4122,6 @@ extern int select_p_update_node_config (int index)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_update_node_state(node_record_t *node_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_reconfigure(void)
 {
 	slurm_mutex_lock(&cr_mutex);

@@ -2104,11 +2104,6 @@ extern int select_p_update_node_config(int index)
 	return other_update_node_config(index);
 }
 
-extern int select_p_update_node_state(node_record_t *node_ptr)
-{
-	return other_update_node_state(node_ptr);
-}
-
 extern int select_p_reconfigure(void)
 {
 	debug_flags = slurm_get_debug_flags();

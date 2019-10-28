@@ -111,15 +111,6 @@ extern int other_get_info_from_plugin(enum select_plugindata_info dinfo,
 extern int other_update_node_config(int index);
 
 /*
- * Updated a node state in the plugin, this should happen when a node is
- * drained or put into a down state then changed back.
- * IN index  - index into the node record list
- * IN state  - state to update to
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int other_update_node_state(node_record_t *node_ptr);
-
-/*
  * Select the "best" nodes for given job from those available
  * IN/OUT job_ptr - pointer to job being considered for initiation,
  *                  set's start_time when job expected to start

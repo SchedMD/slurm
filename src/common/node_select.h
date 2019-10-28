@@ -150,7 +150,6 @@ typedef struct slurm_select_ops {
 						 job_record_t *job_ptr,
 						 void *data);
 	int		(*update_node_config)	(int index);
-	int		(*update_node_state)	(node_record_t *node_ptr);
 	int		(*reconfigure)		(void);
 	bitstr_t *      (*resv_test)            (resv_desc_msg_t *resv_desc_ptr,
 						 uint32_t node_cnt,
@@ -307,14 +306,6 @@ extern int select_g_update_node_config (int index);
  * Return true if node ranking was performed, false if not.
  */
 extern bool select_g_node_ranking(node_record_t *node_ptr, int node_cnt);
-
-/*
- * Updated a node state in the plugin, this should happen when a node is
- * drained or put into a down state then changed back.
- * IN node_ptr - Pointer to the node that has been updated
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int select_g_update_node_state(node_record_t *node_ptr);
 
 /******************************************************\
  * JOB SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *

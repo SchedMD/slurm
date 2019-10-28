@@ -102,7 +102,6 @@ const char *node_select_syms[] = {
 	"select_p_select_jobinfo_xstrdup",
 	"select_p_get_info_from_plugin",
 	"select_p_update_node_config",
-	"select_p_update_node_state",
 	"select_p_reconfigure",
 	"select_p_resv_test",
 };
@@ -1169,22 +1168,6 @@ extern int select_g_update_node_config (int index)
 
 	return (*(ops[select_context_default].
 		  update_node_config))(index);
-}
-
-/*
- * Updated a node state in the plugin, this should happen when a node is
- * drained or put into a down state then changed back.
- * IN index  - index into the node record list
- * IN state  - state to update to
- * RETURN SLURM_SUCCESS on success || SLURM_ERROR else wise
- */
-extern int select_g_update_node_state(node_record_t *node_ptr)
-{
-	if (slurm_select_init(0) < 0)
-		return SLURM_ERROR;
-
-	return (*(ops[select_context_default].update_node_state))
-		(node_ptr);
 }
 
 /*

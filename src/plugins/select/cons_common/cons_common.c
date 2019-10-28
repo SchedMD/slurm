@@ -2054,12 +2054,6 @@ extern int select_p_update_node_config(int index)
 	return SLURM_SUCCESS;
 }
 
-/* Unused for this plugin */
-extern int select_p_update_node_state(node_record_t *node_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_reconfigure(void)
 {
 	ListIterator job_iterator;
