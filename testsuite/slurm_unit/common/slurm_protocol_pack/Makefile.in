@@ -91,7 +91,9 @@ target_triplet = @target@
 check_PROGRAMS = $(am__EXEEXT_2)
 TESTS = $(am__EXEEXT_1)
 #MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
-@HAVE_CHECK_TRUE@am__append_1 = pack_job_alloc_info_msg-test
+@HAVE_CHECK_TRUE@am__append_1 = pack_job_alloc_info_msg-test \
+@HAVE_CHECK_TRUE@	 pack_priority_factors-test
+
 subdir = testsuite/slurm_unit/common/slurm_protocol_pack
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -144,7 +146,8 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@HAVE_CHECK_TRUE@am__EXEEXT_1 = pack_job_alloc_info_msg-test$(EXEEXT)
+@HAVE_CHECK_TRUE@am__EXEEXT_1 = pack_job_alloc_info_msg-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	pack_priority_factors-test$(EXEEXT)
 am__EXEEXT_2 = $(am__EXEEXT_1)
 pack_job_alloc_info_msg_test_SOURCES = pack_job_alloc_info_msg-test.c
 pack_job_alloc_info_msg_test_OBJECTS = pack_job_alloc_info_msg_test-pack_job_alloc_info_msg-test.$(OBJEXT)
@@ -161,6 +164,14 @@ pack_job_alloc_info_msg_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(pack_job_alloc_info_msg_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+pack_priority_factors_test_SOURCES = pack_priority_factors-test.c
+pack_priority_factors_test_OBJECTS = pack_priority_factors_test-pack_priority_factors-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@pack_priority_factors_test_DEPENDENCIES =  \
+@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
+pack_priority_factors_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(pack_priority_factors_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -176,7 +187,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/pack_job_alloc_info_msg_test-pack_job_alloc_info_msg-test.Po
+am__depfiles_remade = ./$(DEPDIR)/pack_job_alloc_info_msg_test-pack_job_alloc_info_msg-test.Po \
+	./$(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -196,8 +208,9 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = pack_job_alloc_info_msg-test.c
-DIST_SOURCES = pack_job_alloc_info_msg-test.c
+SOURCES = pack_job_alloc_info_msg-test.c pack_priority_factors-test.c
+DIST_SOURCES = pack_job_alloc_info_msg-test.c \
+	pack_priority_factors-test.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -679,6 +692,8 @@ LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
 @HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
 @HAVE_CHECK_TRUE@pack_job_alloc_info_msg_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@pack_job_alloc_info_msg_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@pack_priority_factors_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@pack_priority_factors_test_LDADD = $(LDADD) @CHECK_LIBS@
 all: all-am
 
 .SUFFIXES:
@@ -726,6 +741,10 @@ pack_job_alloc_info_msg-test$(EXEEXT): $(pack_job_alloc_info_msg_test_OBJECTS) $
 	@rm -f pack_job_alloc_info_msg-test$(EXEEXT)
 	$(AM_V_CCLD)$(pack_job_alloc_info_msg_test_LINK) $(pack_job_alloc_info_msg_test_OBJECTS) $(pack_job_alloc_info_msg_test_LDADD) $(LIBS)
 
+pack_priority_factors-test$(EXEEXT): $(pack_priority_factors_test_OBJECTS) $(pack_priority_factors_test_DEPENDENCIES) $(EXTRA_pack_priority_factors_test_DEPENDENCIES) 
+	@rm -f pack_priority_factors-test$(EXEEXT)
+	$(AM_V_CCLD)$(pack_priority_factors_test_LINK) $(pack_priority_factors_test_OBJECTS) $(pack_priority_factors_test_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -733,6 +752,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_job_alloc_info_msg_test-pack_job_alloc_info_msg-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -774,6 +794,20 @@ pack_job_alloc_info_msg_test-pack_job_alloc_info_msg-test.obj: pack_job_alloc_in
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_job_alloc_info_msg-test.c' object='pack_job_alloc_info_msg_test-pack_job_alloc_info_msg-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_job_alloc_info_msg_test_CFLAGS) $(CFLAGS) -c -o pack_job_alloc_info_msg_test-pack_job_alloc_info_msg-test.obj `if test -f 'pack_job_alloc_info_msg-test.c'; then $(CYGPATH_W) 'pack_job_alloc_info_msg-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_job_alloc_info_msg-test.c'; fi`
+
+pack_priority_factors_test-pack_priority_factors-test.o: pack_priority_factors-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_priority_factors_test_CFLAGS) $(CFLAGS) -MT pack_priority_factors_test-pack_priority_factors-test.o -MD -MP -MF $(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Tpo -c -o pack_priority_factors_test-pack_priority_factors-test.o `test -f 'pack_priority_factors-test.c' || echo '$(srcdir)/'`pack_priority_factors-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Tpo $(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_priority_factors-test.c' object='pack_priority_factors_test-pack_priority_factors-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_priority_factors_test_CFLAGS) $(CFLAGS) -c -o pack_priority_factors_test-pack_priority_factors-test.o `test -f 'pack_priority_factors-test.c' || echo '$(srcdir)/'`pack_priority_factors-test.c
+
+pack_priority_factors_test-pack_priority_factors-test.obj: pack_priority_factors-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_priority_factors_test_CFLAGS) $(CFLAGS) -MT pack_priority_factors_test-pack_priority_factors-test.obj -MD -MP -MF $(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Tpo -c -o pack_priority_factors_test-pack_priority_factors-test.obj `if test -f 'pack_priority_factors-test.c'; then $(CYGPATH_W) 'pack_priority_factors-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_priority_factors-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Tpo $(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pack_priority_factors-test.c' object='pack_priority_factors_test-pack_priority_factors-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pack_priority_factors_test_CFLAGS) $(CFLAGS) -c -o pack_priority_factors_test-pack_priority_factors-test.obj `if test -f 'pack_priority_factors-test.c'; then $(CYGPATH_W) 'pack_priority_factors-test.c'; else $(CYGPATH_W) '$(srcdir)/pack_priority_factors-test.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -981,6 +1015,13 @@ pack_job_alloc_info_msg-test.log: pack_job_alloc_info_msg-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pack_priority_factors-test.log: pack_priority_factors-test$(EXEEXT)
+	@p='pack_priority_factors-test$(EXEEXT)'; \
+	b='pack_priority_factors-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1075,6 +1116,7 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/pack_job_alloc_info_msg_test-pack_job_alloc_info_msg-test.Po
+	-rm -f ./$(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1121,6 +1163,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/pack_job_alloc_info_msg_test-pack_job_alloc_info_msg-test.Po
+	-rm -f ./$(DEPDIR)/pack_priority_factors_test-pack_priority_factors-test.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
