@@ -196,14 +196,15 @@ static int _purge_known_jobs(void *x, void *key)
 			if ((db_job->jobid == clus_job->job_id) &&
 			    (db_job->submit == clus_job->submit_time)) {
 				debug5("%s: matched known JobId=%u SubmitTime=%"PRIu64,
-				       __func__, db_job->jobid, db_job->submit);
+				       __func__, db_job->jobid,
+				       (uint64_t)db_job->submit);
 				return true;
 			}
 		}
 	}
 
 	debug5("%s: runaway job found JobId=%u SubmitTime=%"PRIu64,
-	       __func__, db_job->jobid, db_job->submit);
+	       __func__, db_job->jobid, (uint64_t)db_job->submit);
 
 	return false;
 }

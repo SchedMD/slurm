@@ -581,7 +581,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 				   g_job->jobid, g_job->stepid,
 				   table->name, g_job->node_name,
 				   ((union data_t*)data)[i].u,
-				   sample_time);
+				   (uint64_t)sample_time);
 			break;
 		case PROFILE_FIELD_DOUBLE:
 			xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
@@ -590,7 +590,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 				   g_job->jobid, g_job->stepid,
 				   table->name, g_job->node_name,
 				   ((union data_t*)data)[i].d,
-				   sample_time);
+				   (uint64_t)sample_time);
 			break;
 		case PROFILE_FIELD_NOT_SET:
 			break;

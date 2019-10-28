@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
     partitions with a bad QOS and not enforcing QOS.
  -- Enforce PART_NODES if only PartitionName is specified.
  -- Fix slurmd -G functionality.
+ -- Fix build on 32-bit systems.
 
 * Changes in Slurm 19.05.3-2
 ============================
