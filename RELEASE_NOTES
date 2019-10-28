@@ -55,6 +55,8 @@ HIGHLIGHTS
  -- Add AccountingStorageExternalHost slurm.conf parameter.
  -- The "ConditionPathExists" condition in slurmd.service has been disabled by
     default to permit simpler installation of a "configless" Slurm cluster.
+ -- In SchedulerParameters remove deprecated max_job_bf and replace with
+    bf_max_job_test.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================

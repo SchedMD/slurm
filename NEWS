@@ -92,6 +92,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SchedulerParameters option bf_running_job_reserve to add backfill
     reservations for jobs running on whole nodes
  -- salloc/sbatch/srun - error on invalid --profile option strings.
+ -- Remove max_job_bf option and replace with bf_max_job_test.
 
 * Changes in Slurm 19.05.6
 ==========================
