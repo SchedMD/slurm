@@ -36,6 +36,10 @@ HIGHLIGHTS
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
+ -- burst_buffer/datawarp - the OtherTimeout configuration option will now
+    apply to the stage-in "setup" and stage-out "dws_post_run" calls in to
+    dw_wlm_cli. (The StageInTimeout and StageOutTimeout were previously
+    used here by mistake.)
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

@@ -1574,7 +1574,7 @@ static void *_start_stage_in(void *x)
 	setup_argv   = stage_args->args1;
 	data_in_argv = stage_args->args2;
 
-	timeout = bb_state.bb_config.stage_in_timeout * 1000;
+	timeout = bb_state.bb_config.other_timeout * 1000;
 	op = "setup";
 	START_TIMER;
 	resp_msg = run_command("setup",
@@ -1893,7 +1893,7 @@ static void *_start_stage_out(void *x)
 	data_out_argv = stage_args->args1;
 	post_run_argv = stage_args->args2;
 
-	timeout = bb_state.bb_config.stage_out_timeout * 1000;
+	timeout = bb_state.bb_config.other_timeout * 1000;
 	op = "dws_post_run";
 	START_TIMER;
 	resp_msg = run_command("dws_post_run",
