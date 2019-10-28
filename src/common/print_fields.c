@@ -280,12 +280,11 @@ extern void print_fields_double(print_field_t *field, double value, int last)
 			printf("%f%s", value, fields_delimiter);
 		else {
 			int length, width = abs_len;
-			char *tmp = xmalloc(width + 10);
-			sprintf(tmp, "%*f", abs_len, value);
-			length = strlen(tmp);
+			char *tmp = NULL;
+			length = xstrfmtcat(tmp, "%*f", abs_len, value);
 			if (length > width) {
-				sprintf(tmp, "%*.*e", width, width, value);
-				length = strlen(tmp);
+				length = xstrfmtcat(tmp, "%*.*e", width,
+						     width, value);
 				if (length > width)
 					width -= length - width;
 				if (field->len == abs_len)
