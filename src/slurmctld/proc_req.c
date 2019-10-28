@@ -3584,7 +3584,6 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		}
 		in_progress = false;
 		gs_reconfig();
-		acct_storage_g_reconfig(acct_db_conn, 0);
 		unlock_slurmctld(config_write_lock);
 		xcgroup_reconfig_slurm_cgroup_conf();
 		assoc_mgr_set_missing_uids();
@@ -5718,7 +5717,6 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	log_set_debug_flags();
 	gs_reconfig();
 	gres_plugin_reconfig();
-	acct_storage_g_reconfig(acct_db_conn, 0);
 	priority_g_reconfig(false);
 	select_g_reconfigure();
 	(void) slurm_sched_g_reconfig();

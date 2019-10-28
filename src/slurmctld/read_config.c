@@ -597,6 +597,7 @@ static int _build_all_nodeline_info(void)
 
 	/* Load the node table here */
 	rc = build_all_nodeline_info(false, slurmctld_tres_cnt);
+	(void)acct_storage_g_reconfig(acct_db_conn, 0);
 	rc2 = build_all_frontend_info(false);
 	rc = MAX(rc, rc2);
 

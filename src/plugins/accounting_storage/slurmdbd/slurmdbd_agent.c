@@ -1174,16 +1174,6 @@ extern int send_slurmdbd_msg(uint16_t rpc_version, slurmdbd_msg_t *req)
 	Buf buffer;
 	uint32_t cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
-	static bool first = 1;
-
-	if (first) {
-		/*
-		 * This has to be done here since we reread the slurm.conf after
-		 * init() is called.
-		 */
-		first = 0;
-		slurmdbd_agent_config_setup();
-	}
 
 	xassert(slurmctld_conf.max_dbd_msgs);
 
