@@ -680,8 +680,13 @@ static void _load_config(void)
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_max_job_test=")))
 		max_backfill_job_cnt = atoi(tmp_ptr + 16);
+	else if ((tmp_ptr = xstrcasestr(sched_params, "max_job_bf="))) {
+		error("Invalid parameter max_job_bf. The option is no longer supported, please use bf_max_job_test instead.");
+		max_backfill_job_cnt = atoi(tmp_ptr + 11);
+	}
 	else
 		max_backfill_job_cnt = 100;
+
 	if (max_backfill_job_cnt < 1 ||
 	    max_backfill_job_cnt > MAX_BF_MAX_JOB_TEST) {
 		error("Invalid SchedulerParameters bf_max_job_test: %d",
