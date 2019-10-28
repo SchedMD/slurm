@@ -1221,7 +1221,7 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 {
 	select_nodeinfo_t *nodeinfo = NULL;
 	node_record_t *node_rec;
-	int i, j;
+	int i, j, rc;
 	uint64_t blade_id = 0;
 	DEF_TIMERS;
 
@@ -1355,16 +1355,18 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 	if (debug_flags & DEBUG_FLAG_TIME_CRAY)
 		INFO_LINE("call took: %s", TIME_STR);
 
-	return other_node_init(node_ptr, node_cnt);
-}
+	rc = other_node_init(node_ptr, node_cnt);
 
-extern int select_p_block_init(List part_list)
-{
 #ifdef HAVE_NATIVE_CRAY
 	if (!aeld_running)
 		_start_aeld_thread();
 #endif
 
+	return rc;
+}
+
+extern int select_p_block_init(List part_list)
+{
 	return other_block_init(part_list);
 }
 
