@@ -250,6 +250,14 @@ set slash                "/"
 set whitespace		 "\[ \t\n\r\f\v\]+"
 set alpha_numeric_nodelist "$alpha_numeric_under\\\[?\[$alpha_numeric_comma\]?\\\]?"
 set controlmachine_regex "\[a-zA-Z0-9,\-\.\]+"
+# Any characters except ( , : newline
+set no_delim             "\[^(,:\r\n\]"
+# The first group matches GRES name
+# The second **optional** group matches GRES type.
+# The third group matches GRES count.
+# Test out the regex here: https://regex101.com/r/FlNYKM/7
+set gres_regex "($no_delim*):($no_delim*)?:?($no_delim*)"
+
 #
 # Cache SlurmUser to check for SuperUser requests
 #
@@ -4646,49 +4654,86 @@ proc get_craynetwork_count {} {
 #
 ################################################################
 proc get_gpu_count { node_count } {
-	global sinfo
+	get_gres_count $node_count "gpu"
+}
+
+################################################################
+#
+# Proc: get_gres_count
+#
+# For a given node count and GRES name, returns number of GRES per node on
+# those "node_count" nodes with the highest GRES counts
+# For example: node1 has 1 GPU, node2 has 2 GPUs and node3 has 3 GPUs
+# [get_gres_count 1 "gpu"] returns 3 (i.e. 1 node 3 GPUs)
+# [get_gres_count 2 "gpu"] returns 2 (i.e. 2 nodes have at least 2 GPUs each)
+# [get_gres_count 3 "gpu"] returns 1 (i.e. 3 nodes have at least 1 GPU each)
+#
+################################################################
+proc get_gres_count { node_count gres_name } {
+	global sinfo gres_regex
 	set fini 0
 	set node_inx 0
 	set def_part [default_partition]
-	# Any characters except (,:
-	set not_delim "\[^(,:\]"
-	# The first optional group matches type, the second group matches count.
-	# Test out the regex here (note the single-line regex flag, since in
-	# expect, . matches newlines): https://regex101.com/r/FlNYKM/5
-	set regex "gpu:($not_delim*)?:?($not_delim*)"
+	# The first group lets us know if we started a new line (i.e. new node).
+	# The second, third, and fourth groups in $gres_regex match a GRES
+	# name, type, and count.
+	set regex "(GRES=|,)$gres_regex"
 
 	if {$node_count <= 0} {
 		return 0
 	}
+
+	set line_count 0
 
 	log_user 0
 	spawn $sinfo -N -p$def_part -oGRES=%G -h
 	expect {
 		-re $regex {
 			set count 0
-			# Start with format gpu:1080:5
-			set type $expect_out(1,string)
-			set count $expect_out(2,string)
+			set line $expect_out(1,string)
+			set name $expect_out(2,string)
+			# Assume typed GRES of format gpu:1080:5 to start out
+			set type $expect_out(3,string)
+			set count $expect_out(4,string)
+
+			if {$line == "GRES="} {
+				if {$node_inx > 0} {
+					lappend gres_count $line_count
+					set line_count 0
+				}
+				incr node_inx
+			}
+
+			# Skip all GRES of different names
+			if {$name != $gres_name} {
+				exp_continue
+			}
+
 			if {$count == ""} {
-				# Now assume format gpu:5
+				# Now assume GRES format gpu:5
 				set count $type
 			}
 			if { $count } {
-				incr node_inx
-				lappend gpu_count $count
+				incr line_count $count
 			}
+
 			exp_continue
 		}
 		eof {
 			wait
 		}
 	}
+
+	# Add the last node line's GRES
+	lappend gres_count $line_count
+
 	log_user 1
 
 	if {$node_inx < $node_count} {
 		return 0
 	}
-	set count [lindex [lsort -decreasing -integer $gpu_count] [expr $node_count - 1]]
+
+	set count [lindex [lsort -decreasing -integer $gres_count] [expr $node_count - 1]]
 	return $count
 }
 
@@ -4838,49 +4883,7 @@ proc get_gpu_socket_count { gpu_cnt sockets_per_node } {
 #
 ################################################################
 proc get_mps_count { node_count } {
-	global number sinfo
-	set fini 0
-	set node_inx 0
-	set def_part [default_partition]
-	set alpha_numeric_colon_paren "\[a-zA-Z0-9_\\(\\),\:\-\]+"
-
-	log_user 0
-	spawn $sinfo -N -p$def_part -oGRES=%G -h
-	expect {
-		-re "GRES=($alpha_numeric_colon_paren)" {
-			set mps_count 0
-			set parts [split $expect_out(1,string) ",/"]
-			while 1 {
-				set mps_found [lsearch $parts "mps*"]
-				if { $mps_found == -1 } break
-
-				set parts2 [split [lindex $parts $mps_found] ":(/"]
-				set col [lsearch -regexp $parts2 ^$number$]
-				if { $col == -1 } {
-					incr mps_count
-				} else {
-					set mps_count [expr $mps_count + [lindex $parts2 $col]]
-				}
-				set parts [lreplace $parts $mps_found $mps_found]
-			}
-
-			if {$mps_count > 0} {
-				lappend mps_per_node $mps_count
-				incr node_inx
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$node_inx < $node_count} {
-		return 0
-	}
-	set count [lindex [lsort -decreasing -integer $mps_per_node] [expr $node_count - 1]]
-	return $count
+	get_gres_count $node_count "mps"
 }
 
 ################################################################
