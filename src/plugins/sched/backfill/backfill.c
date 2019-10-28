@@ -514,8 +514,6 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		 * Cache the feature information and test the individual
 		 * features (or sets of features in parenthesis), one at a time
 		 */
-		job_feature_t *feature_base;
-		List feature_cache = detail_ptr->feature_list;
 		time_t low_start = 0;
 
 		tmp_bitmap = bit_copy(*avail_bitmap);
