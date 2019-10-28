@@ -2761,23 +2761,9 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 {
 	priority_factors_object_t *object = (priority_factors_object_t *)in;
 
+	xassert(object);
+
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		if (!object) {
-			pack32(0, buffer);
-			pack32(0, buffer);
-
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-
-			pack32(0, buffer);
-			packnull(buffer);
-
-			return;
-		}
-
 		pack32(object->job_id, buffer);
 		pack32(object->user_id, buffer);
 
@@ -2801,22 +2787,6 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 		pack32(object->nice, buffer);
 		packstr(object->partition, buffer);
 	} else if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
-		if (!object) {
-			pack32(0, buffer);
-			pack32(0, buffer);
-
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-
-			pack32(0, buffer);
-			packnull(buffer);
-
-			return;
-		}
-
 		pack32(object->job_id, buffer);
 		pack32(object->user_id, buffer);
 
@@ -2839,22 +2809,6 @@ static void _pack_priority_factors_object(void *in, Buf buffer,
 		pack32(object->nice, buffer);
 		packstr(object->partition, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!object) {
-			pack32(0, buffer);
-			pack32(0, buffer);
-
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-			packdouble(0, buffer);
-
-			pack32(0, buffer);
-			packnull(buffer);
-
-			return;
-		}
-
 		pack32(object->job_id, buffer);
 		pack32(object->user_id, buffer);
 
