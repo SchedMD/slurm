@@ -1156,10 +1156,7 @@ static void _load_state(bool init_config)
 	bitstr_t *pools_bitmap;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.other_timeout)
-		timeout = bb_state.bb_config.other_timeout * 1000;
-	else
-		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
+	timeout = bb_state.bb_config.other_timeout * 1000;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	/*
@@ -1579,10 +1576,7 @@ static void *_start_stage_in(void *x)
 	setup_argv   = stage_args->args1;
 	data_in_argv = stage_args->args2;
 
-	if (stage_args->timeout)
-		timeout = stage_args->timeout * 1000;
-	else
-		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
+	timeout = stage_args->timeout * 1000;
 	op = "setup";
 	START_TIMER;
 	resp_msg = run_command("setup",
@@ -1656,10 +1650,7 @@ static void *_start_stage_in(void *x)
 	unlock_slurmctld(job_write_lock);
 
 	if (rc == SLURM_SUCCESS) {
-		if (stage_args->timeout)
-			timeout = stage_args->timeout * 1000;
-		else
-			timeout = DEFAULT_STATE_IN_TIMEOUT * 1000;
+		timeout = stage_args->timeout * 1000;
 		xfree(resp_msg);
 
 		op = "dws_data_in";
@@ -1905,10 +1896,7 @@ static void *_start_stage_out(void *x)
 	data_out_argv = stage_args->args1;
 	post_run_argv = stage_args->args2;
 
-	if (stage_args->timeout)
-		timeout = stage_args->timeout * 1000;
-	else
-		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
+	timeout = stage_args->timeout * 1000;
 	op = "dws_post_run";
 	START_TIMER;
 	resp_msg = run_command("dws_post_run",
@@ -1966,10 +1954,7 @@ static void *_start_stage_out(void *x)
 	unlock_slurmctld(job_write_lock);
 
 	if (rc == SLURM_SUCCESS) {
-		if (stage_args->timeout)
-			timeout = stage_args->timeout * 1000;
-		else
-			timeout = DEFAULT_STATE_OUT_TIMEOUT * 1000;
+		timeout = stage_args->timeout * 1000;
 		op = "dws_data_out";
 		START_TIMER;
 		xfree(resp_msg);
@@ -2163,10 +2148,7 @@ static void *_start_teardown(void *x)
 	previous_job_id = teardown_args->job_id;
 
 	START_TIMER;
-	if (teardown_args->timeout)
-		timeout = teardown_args->timeout * 1000;
-	else
-		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
+	timeout = teardown_args->timeout * 1000;
 	resp_msg = run_command("teardown",
 			       bb_state.bb_config.get_sys_state,
 			       teardown_argv, timeout, pthread_self(),
@@ -3597,10 +3579,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	if (bb_state.bb_config.debug_flag)
 		info("%s: %s: %pJ", plugin_type, __func__, job_ptr);
 
-	if (bb_state.bb_config.validate_timeout)
-		timeout = bb_state.bb_config.validate_timeout * 1000;
-	else
-		timeout = DEFAULT_VALIDATE_TIMEOUT * 1000;
+	timeout = bb_state.bb_config.validate_timeout * 1000;
 	dw_cli_path = xstrdup(bb_state.bb_config.get_sys_state);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
@@ -4035,10 +4014,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	/* Run "paths" function, get DataWarp environment variables */
 	if (do_pre_run) {
 		/* Setup "paths" operation */
-		if (bb_state.bb_config.validate_timeout)
-			timeout = bb_state.bb_config.validate_timeout * 1000;
-		else
-			timeout = DEFAULT_VALIDATE_TIMEOUT * 1000;
+		timeout = bb_state.bb_config.validate_timeout * 1000;
 		script_argv = xcalloc(10, sizeof(char *)); /* NULL terminate */
 		script_argv[0] = xstrdup("dw_wlm_cli");
 		script_argv[1] = xstrdup("--function");
@@ -4185,10 +4161,7 @@ static void *_start_pre_run(void *x)
 			sleep(60);
 	}
 
-	if (pre_run_args->timeout)
-		timeout = pre_run_args->timeout * 1000;
-	else
-		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
+	timeout = pre_run_args->timeout * 1000;
 
 	START_TIMER;
 	resp_msg = run_command("dws_pre_run",
@@ -4764,10 +4737,7 @@ static void *_create_persistent(void *x)
 	xstrfmtcat(script_argv[10], "%s:%"PRIu64"",
 		   create_args->pool, create_args->size);
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	if (bb_state.bb_config.other_timeout)
-		timeout = bb_state.bb_config.other_timeout * 1000;
-	else
-		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
+	timeout = bb_state.bb_config.other_timeout * 1000;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 	i = 11;
 	if (create_args->access) {
@@ -4923,10 +4893,7 @@ static void *_destroy_persistent(void *x)
 		info("%s: destroy_persistent: No burst buffer with name '%s' found for JobId=%u",
 		     plugin_type, destroy_args->name, destroy_args->job_id);
 	}
-	if (bb_state.bb_config.other_timeout)
-		timeout = bb_state.bb_config.other_timeout * 1000;
-	else
-		timeout = DEFAULT_OTHER_TIMEOUT * 1000;
+	timeout = bb_state.bb_config.other_timeout * 1000;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	script_argv = xcalloc(10, sizeof(char *));	/* NULL terminated */
