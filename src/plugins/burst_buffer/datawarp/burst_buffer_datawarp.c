@@ -183,7 +183,6 @@ typedef struct {
 	uint64_t bb_size;
 	uint32_t job_id;
 	char    *pool;
-	uint32_t timeout;
 	uint32_t user_id;
 } stage_args_t;
 
@@ -1503,7 +1502,6 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_args->bb_size = bb_job->total_size;
 	stage_args->job_id  = job_ptr->job_id;
 	stage_args->pool    = xstrdup(job_pool);
-	stage_args->timeout = bb_state.bb_config.stage_in_timeout;
 	stage_args->user_id = job_ptr->user_id;
 	stage_args->args1   = setup_argv;
 	stage_args->args2   = data_in_argv;
@@ -1576,7 +1574,7 @@ static void *_start_stage_in(void *x)
 	setup_argv   = stage_args->args1;
 	data_in_argv = stage_args->args2;
 
-	timeout = stage_args->timeout * 1000;
+	timeout = bb_state.bb_config.stage_in_timeout * 1000;
 	op = "setup";
 	START_TIMER;
 	resp_msg = run_command("setup",
@@ -1650,7 +1648,7 @@ static void *_start_stage_in(void *x)
 	unlock_slurmctld(job_write_lock);
 
 	if (rc == SLURM_SUCCESS) {
-		timeout = stage_args->timeout * 1000;
+		timeout = bb_state.bb_config.stage_in_timeout * 1000;
 		xfree(resp_msg);
 
 		op = "dws_data_in";
@@ -1870,7 +1868,6 @@ static int _queue_stage_out(bb_job_t *bb_job)
 	stage_args->args1   = data_out_argv;
 	stage_args->args2   = post_run_argv;
 	stage_args->job_id  = bb_job->job_id;
-	stage_args->timeout = bb_state.bb_config.stage_out_timeout;
 	stage_args->user_id = bb_job->user_id;
 
 	slurm_thread_create(&tid, _start_stage_out, stage_args);
@@ -1896,7 +1893,7 @@ static void *_start_stage_out(void *x)
 	data_out_argv = stage_args->args1;
 	post_run_argv = stage_args->args2;
 
-	timeout = stage_args->timeout * 1000;
+	timeout = bb_state.bb_config.stage_out_timeout * 1000;
 	op = "dws_post_run";
 	START_TIMER;
 	resp_msg = run_command("dws_post_run",
@@ -1954,7 +1951,7 @@ static void *_start_stage_out(void *x)
 	unlock_slurmctld(job_write_lock);
 
 	if (rc == SLURM_SUCCESS) {
-		timeout = stage_args->timeout * 1000;
+		timeout = bb_state.bb_config.stage_out_timeout * 1000;
 		op = "dws_data_out";
 		START_TIMER;
 		xfree(resp_msg);
@@ -2116,7 +2113,6 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	teardown_args = xmalloc(sizeof(stage_args_t));
 	teardown_args->job_id  = job_id;
 	teardown_args->user_id = user_id;
-	teardown_args->timeout = bb_state.bb_config.other_timeout;
 	teardown_args->args1   = teardown_argv;
 
 	slurm_thread_create(&tid, _start_teardown, teardown_args);
@@ -2148,7 +2144,7 @@ static void *_start_teardown(void *x)
 	previous_job_id = teardown_args->job_id;
 
 	START_TIMER;
-	timeout = teardown_args->timeout * 1000;
+	timeout = bb_state.bb_config.other_timeout * 1000;
 	resp_msg = run_command("teardown",
 			       bb_state.bb_config.get_sys_state,
 			       teardown_argv, timeout, pthread_self(),
@@ -4089,7 +4085,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 		pre_run_args = xmalloc(sizeof(pre_run_args_t));
 		pre_run_args->args    = pre_run_argv;
 		pre_run_args->job_id  = job_ptr->job_id;
-		pre_run_args->timeout = bb_state.bb_config.other_timeout;
+		pre_run_args->timeout = bb_state.bb_config.other_timeout * 1000;
 		pre_run_args->user_id = job_ptr->user_id;
 		if (job_ptr->details) {	/* Defer launch until completion */
 			job_ptr->details->prolog_running++;
