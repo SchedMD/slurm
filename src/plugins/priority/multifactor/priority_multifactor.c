@@ -1481,8 +1481,12 @@ static void _filter_job(job_record_t *job_ptr,
 
 		if (filter == 0) {
 			obj = xmalloc(sizeof(priority_factors_object_t));
-			slurm_copy_priority_factors_object(obj,
-						job_ptr->prio_factors);
+			if (job_ptr->direct_set_prio) {
+				obj->direct_prio = job_ptr->priority;
+			} else {
+				slurm_copy_priority_factors_object(obj,
+							job_ptr->prio_factors);
+			}
 			obj->job_id = job_ptr->job_id;
 			obj->partition = job_part_ptr->name;
 			obj->user_id = job_ptr->user_id;
@@ -1999,12 +2003,6 @@ extern List priority_p_get_priority_factors_list(
 			 * 0 means the job is held
 			 */
 			if (job_ptr->priority == 0)
-				continue;
-
-			/*
-			 * Priority has been set elsewhere (e.g. by SlurmUser)
-			 */
-			if (job_ptr->direct_set_prio)
 				continue;
 
 			if ((slurmctld_conf.private_data & PRIVATE_DATA_JOBS) &&

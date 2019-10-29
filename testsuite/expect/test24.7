@@ -235,7 +235,7 @@ proc update_job { jobid prio {error ""} } {
 
 	set matches 0
 
-	spawn $scontrol update jobid=$jobid sitefactor=$prio
+	spawn $scontrol update jobid=$jobid priority=$prio
 	set tmp_re ".*"
 	if {$error != ""} {
 		set tmp_re $error
@@ -258,7 +258,6 @@ proc update_job { jobid prio {error ""} } {
 		end_it 1
 	}
 }
-
 
 proc create_part { name nodes prio } {
 	global scontrol
@@ -459,5 +458,13 @@ update_part $p1 "priorityjobfactor=$part_weight"
 set jobid5 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
 sprio_args "-j $jobid5 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid5\\s+$weight_half\\s+$part_weight_half\\s+$weight_half\\s+cpu=$weight_half" 1
 sprio_args "-n -j $jobid5 -o \"%.15i %10b %10p %10q %12t\"" "$jobid5\\s+0\\.50+\\s+0\\.50+\\s+0\\.50+\\s+cpu=0\\.5+" 1
+
+log_info "test4"
+# test setting priority directly on a job
+set jobid5 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
+update_job $jobid5 999
+
+sprio_args "-j $jobid5 -o \"%.15i %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T\"" "$jobid5\\s+999\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0" 1
+sprio_args "-n -j $jobid5 -o \"%.15i %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T\"" "$jobid5\\s+999\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0" 1
 
 end_it 0

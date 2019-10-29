@@ -90,6 +90,9 @@ double get_priority_from_factors(priority_factors_object_t *prio_factors)
 		+ (double)((int64_t)prio_factors->priority_site - NICE_OFFSET)
 		- (double)((int64_t)prio_factors->nice - NICE_OFFSET);
 
+	if (prio_factors->direct_prio > 0)
+		return prio_factors->direct_prio;
+
 	for (i = 0; i < prio_factors->tres_cnt; i++) {
 		if (!prio_factors->priority_tres[i])
 			continue;
@@ -336,7 +339,10 @@ int _print_job_priority_normalized(priority_factors_object_t * job, int width,
 		_print_str("PRIORITY", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
-	else {
+	else if (job->direct_prio > 0) {
+		sprintf(temp, "%16.14f", job->direct_prio);
+		_print_str(temp, width, right, true);
+	} else {
 		double priority = get_priority_from_factors(job);
 		double prio = priority / (double) ((uint32_t) 0xffffffff);
 
@@ -488,6 +494,8 @@ int _print_site_priority(priority_factors_object_t * job, int width,
 		_print_str("SITE", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_int(1, width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else
 		_print_int((int64_t)job->priority_site - NICE_OFFSET, width,
 			   right, true);
@@ -503,6 +511,8 @@ int _print_job_nice(priority_factors_object_t * job, int width,
 		_print_str("NICE", width, right, true);
 	else if (job == (priority_factors_object_t *) -1)
 		_print_str("", width, right, true);
+	else if (job->direct_prio > 0)
+		_print_int(0, width, right, true);
 	else
 		_print_int((int64_t)job->nice - NICE_OFFSET, width, right, true);
 	if (suffix)
