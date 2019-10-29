@@ -448,7 +448,7 @@ set user_name [get_my_user_name]
 
 set cons_res_actived 0
 if {$def_oversubscribe_force == 0} {
-	if {[test_cons_res]} {
+	if {[test_cons_res] || [test_cons_tres]} {
 		set cons_res_actived 1
 	}
 }
