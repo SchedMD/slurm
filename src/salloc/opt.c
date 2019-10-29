@@ -656,6 +656,11 @@ static bool _opt_verify(void)
 	if (saopt.no_shell && !opt.job_name)
 		opt.job_name = xstrdup("no-shell");
 
+	if (opt.gpus_per_socket && (opt.sockets_per_node == NO_VAL)) {
+		error("--gpus-per-socket option requires --sockets-per-node specification");
+		exit(error_exit);
+	}
+
 	return verified;
 }
 

@@ -71,6 +71,7 @@ documents those changes that are of interest to users and administrators.
  -- Perl API / seff - fix missing symbol issue with accounting_storage/slurmdbd.
  -- slurm.spec - add --with cray_shasta option.
  -- Downgrade "Node config differ.." error message if config_overrides enabled.
+ -- Add client error when using --gpus-per-socket without --sockets-per-node.
 
 * Changes in Slurm 20.02.1
 ==========================
