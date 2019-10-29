@@ -60,13 +60,13 @@
 #define MAX_PACK_ARRAY_LEN	(128 * 1024)
 #define MAX_PACK_MEM_LEN	(1024 * 1024 * 1024)
 
-struct slurm_buf {
+typedef struct slurm_buf {
 	uint32_t magic;
 	char *head;
 	uint32_t size;
 	uint32_t processed;
 	bool mmaped;
-};
+} buf_t;
 
 typedef struct slurm_buf * Buf;
 
