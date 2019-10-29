@@ -172,6 +172,7 @@ typedef struct slurmd_config {
 					 * on job termination */
 	char           *x11_params;	/* X11Parameters */
 	char		*gres;		/* The node's slurm.conf GRES */
+	bool		print_gres;	/* Print gres info (-G) and exit */
 } slurmd_conf_t;
 
 extern slurmd_conf_t * conf;
