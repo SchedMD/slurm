@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix OverMemoryKill.
  -- Fix memory leak in scontrol show config.
+ -- Remove PART_NODES reservation flag after ignoring it at creation.
 
 * Changes in Slurm 19.05.5
 ==========================
