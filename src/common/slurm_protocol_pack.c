@@ -906,1466 +906,6 @@ unpack_error:
 }
 
 
-/* pack_msg
- * packs a generic slurm protocol message body
- * IN msg - the body structure to pack (note: includes message type)
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- * RET 0 or error code
- */
-int
-pack_msg(slurm_msg_t const *msg, Buf buffer)
-{
-	if (msg->protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
-		error("%s: Invalid message version=%hu, type:%hu",
-		      __func__, msg->protocol_version, msg->msg_type);
-		return SLURM_ERROR;
-	}
-
-	switch (msg->msg_type) {
-	case REQUEST_NODE_INFO:
-		_pack_node_info_request_msg((node_info_request_msg_t *)
-					    msg->data, buffer,
-					    msg->protocol_version);
-		break;
-	case REQUEST_NODE_INFO_SINGLE:
-		_pack_node_info_single_msg((node_info_single_msg_t *)
-					   msg->data, buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_PARTITION_INFO:
-		_pack_part_info_request_msg((part_info_request_msg_t *)
-					    msg->data, buffer,
-					    msg->protocol_version);
-		break;
-	case REQUEST_RESERVATION_INFO:
-		_pack_resv_info_request_msg((resv_info_request_msg_t *)
-					    msg->data, buffer,
-					    msg->protocol_version);
-		break;
-	case REQUEST_LAYOUT_INFO:
-		_pack_layout_info_request_msg((layout_info_request_msg_t *)
-					      msg->data, buffer,
-					      msg->protocol_version);
-		break;
-	case REQUEST_BUILD_INFO:
-	case REQUEST_ACCTING_INFO:
-		_pack_last_update_msg((last_update_msg_t *)
-				      msg->data, buffer,
-				      msg->protocol_version);
-		break;
-	case RESPONSE_BUILD_INFO:
-		_pack_slurm_ctl_conf_msg((slurm_ctl_conf_info_msg_t *)
-					 msg->data, buffer,
-					 msg->protocol_version);
-		break;
-	case RESPONSE_JOB_INFO:
-		_pack_job_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case RESPONSE_BATCH_SCRIPT:
-		_pack_job_script_msg((Buf) msg->data, buffer,
-				     msg->protocol_version);
-		break;
-	case RESPONSE_PARTITION_INFO:
-		_pack_partition_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case RESPONSE_NODE_INFO:
-		_pack_node_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case MESSAGE_NODE_REGISTRATION_STATUS:
-		_pack_node_registration_status_msg(
-			(slurm_node_registration_status_msg_t *) msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_ACCT_GATHER_UPDATE:
-	case RESPONSE_ACCT_GATHER_ENERGY:
-		_pack_acct_gather_node_resp_msg(
-			(acct_gather_node_resp_msg_t *) msg->data,
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_RESOURCE_ALLOCATION:
-	case REQUEST_SUBMIT_BATCH_JOB:
-	case REQUEST_JOB_WILL_RUN:
-	case REQUEST_UPDATE_JOB:
-		_pack_job_desc_msg((job_desc_msg_t *) msg->data, buffer,
-				   msg->protocol_version);
-		break;
-	case REQUEST_JOB_PACK_ALLOCATION:
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
-		_pack_job_desc_list_msg((List) msg->data, buffer,
-					msg->protocol_version);
-		break;
-	case RESPONSE_JOB_PACK_ALLOCATION:
-		_pack_job_info_list_msg((List) msg->data, buffer,
-					msg->protocol_version);
-		break;
-	case REQUEST_SIB_JOB_LOCK:
-	case REQUEST_SIB_JOB_UNLOCK:
-	case REQUEST_SIB_MSG:
-		_pack_sib_msg((sib_msg_t *)msg->data, buffer,
-			      msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_JOB_STEP:
-		_pack_update_job_step_msg((step_update_request_msg_t *)
-					  msg->data, buffer,
-					  msg->protocol_version);
-		break;
-	case REQUEST_JOB_ALLOCATION_INFO:
-	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_PACK_ALLOC_INFO:
-		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
-					 buffer, msg->protocol_version);
-		break;
-	case REQUEST_JOB_SBCAST_CRED:
-		_pack_step_alloc_info_msg((step_alloc_info_msg_t *) msg->data,
-					  buffer, msg->protocol_version);
-		break;
-	case RESPONSE_NODE_REGISTRATION:
-		_pack_node_reg_resp(
-			(slurm_node_reg_resp_msg_t *)msg->data,
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_NODE_REGISTRATION_STATUS:
-	case REQUEST_RECONFIGURE:
-	case REQUEST_SHUTDOWN_IMMEDIATE:
-	case REQUEST_PING:
-	case REQUEST_CONTROL:
-	case REQUEST_CONTROL_STATUS:
-	case REQUEST_TAKEOVER:
-	case REQUEST_DAEMON_STATUS:
-	case REQUEST_HEALTH_CHECK:
-	case REQUEST_ACCT_GATHER_UPDATE:
-	case ACCOUNTING_FIRST_REG:
-	case ACCOUNTING_REGISTER_CTLD:
-	case REQUEST_TOPO_INFO:
-	case REQUEST_BURST_BUFFER_INFO:
-	case REQUEST_POWERCAP_INFO:
-	case REQUEST_FED_INFO:
-		/* Message contains no body/information */
-		break;
-	case REQUEST_ACCT_GATHER_ENERGY:
-		_pack_acct_gather_energy_req(
-			(acct_gather_energy_req_msg_t *)msg->data,
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_PERSIST_INIT:
-		slurm_persist_pack_init_req_msg(
-			(persist_init_req_msg_t *)msg->data,
-			buffer);
-		break;
-	case PERSIST_RC:
-		slurm_persist_pack_rc_msg(
-			(persist_rc_msg_t *)msg->data,
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_REBOOT_NODES:
-		_pack_reboot_msg((reboot_msg_t *)msg->data, buffer,
-				 msg->protocol_version);
-		break;
-	case REQUEST_SHUTDOWN:
-		_pack_shutdown_msg((shutdown_msg_t *) msg->data, buffer,
-				   msg->protocol_version);
-		break;
-	case RESPONSE_SUBMIT_BATCH_JOB:
-		_pack_submit_response_msg((submit_response_msg_t *)
-					  msg->data, buffer,
-					  msg->protocol_version);
-		break;
-	case RESPONSE_JOB_ALLOCATION_INFO:
-	case RESPONSE_RESOURCE_ALLOCATION:
-		_pack_resource_allocation_response_msg
-			((resource_allocation_response_msg_t *) msg->data,
-			 buffer,
-			 msg->protocol_version);
-		break;
-	case RESPONSE_JOB_WILL_RUN:
-		_pack_will_run_response_msg((will_run_response_msg_t *)
-					    msg->data, buffer,
-					    msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_FRONT_END:
-		_pack_update_front_end_msg((update_front_end_msg_t *) msg->data,
-					   buffer, msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_NODE:
-		_pack_update_node_msg((update_node_msg_t *) msg->data,
-				      buffer,
-				      msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_LAYOUT:
-		_pack_update_layout_msg((update_layout_msg_t *) msg->data,
-					buffer,
-					msg->protocol_version);
-		break;
-	case REQUEST_CREATE_PARTITION:
-	case REQUEST_UPDATE_PARTITION:
-		_pack_update_partition_msg((update_part_msg_t *) msg->
-					   data, buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_POWERCAP:
-		_pack_update_powercap_msg((update_powercap_msg_t *) msg->
-					  data, buffer,
-					  msg->protocol_version);
-		break;
-	case REQUEST_DELETE_PARTITION:
-		_pack_delete_partition_msg((delete_part_msg_t *) msg->
-					   data, buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_CREATE_RESERVATION:
-	case REQUEST_UPDATE_RESERVATION:
-		_pack_update_resv_msg((resv_desc_msg_t *) msg->
-				      data, buffer,
-				      msg->protocol_version);
-		break;
-	case RESPONSE_RESERVATION_INFO:
-		_pack_reserve_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case RESPONSE_LAYOUT_INFO:
-		_pack_layout_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case REQUEST_DELETE_RESERVATION:
-	case RESPONSE_CREATE_RESERVATION:
-		_pack_resv_name_msg((reservation_name_msg_t *) msg->
-				    data, buffer,
-				    msg->protocol_version);
-		break;
-	case REQUEST_REATTACH_TASKS:
-		_pack_reattach_tasks_request_msg(
-			(reattach_tasks_request_msg_t *) msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_REATTACH_TASKS:
-		_pack_reattach_tasks_response_msg(
-			(reattach_tasks_response_msg_t *) msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_LAUNCH_TASKS:
-		_pack_launch_tasks_request_msg(
-			(launch_tasks_request_msg_t *) msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_LAUNCH_TASKS:
-		_pack_launch_tasks_response_msg((launch_tasks_response_msg_t
-						 *) msg->data, buffer,
-						msg->protocol_version);
-		break;
-	case TASK_USER_MANAGED_IO_STREAM:
-		_pack_task_user_managed_io_stream_msg(
-			(task_user_managed_io_msg_t *) msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_SIGNAL_TASKS:
-	case REQUEST_TERMINATE_TASKS:
-		_pack_cancel_tasks_msg((signal_tasks_msg_t *) msg->data,
-				       buffer,
-				       msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_TASKS:
-		_pack_checkpoint_tasks_msg((checkpoint_tasks_msg_t *) msg->data,
-					   buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		_pack_job_step_info_req_msg((job_step_info_request_msg_t
-					     *) msg->data, buffer,
-					    msg->protocol_version);
-		break;
-	case REQUEST_JOB_INFO:
-		_pack_job_info_request_msg((job_info_request_msg_t *)
-					   msg->data, buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-	case REQUEST_KILL_JOB:
-	case SRUN_STEP_SIGNAL:
-		_pack_job_step_kill_msg((job_step_kill_msg_t *)
-					msg->data, buffer,
-					msg->protocol_version);
-		break;
-	case REQUEST_COMPLETE_JOB_ALLOCATION:
-		_pack_complete_job_allocation_msg(
-			(complete_job_allocation_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_COMPLETE_PROLOG:
-		_pack_complete_prolog_msg(
-			(complete_prolog_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_COMPLETE_BATCH_JOB:
-	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		_pack_complete_batch_script_msg(
-			(complete_batch_script_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_STEP_COMPLETE:
-	case REQUEST_STEP_COMPLETE_AGGR:
-		_pack_step_complete_msg((step_complete_msg_t *)msg->data,
-					buffer,
-					msg->protocol_version);
-		break;
-	case RESPONSE_JOB_STEP_STAT:
-		_pack_job_step_stat((job_step_stat_t *) msg->data,
-				    buffer,
-				    msg->protocol_version);
-		break;
-	case REQUEST_STEP_LAYOUT:
-	case REQUEST_JOB_STEP_STAT:
-	case REQUEST_JOB_STEP_PIDS:
-		_pack_job_step_id_msg((job_step_id_msg_t *)msg->data, buffer,
-				      msg->protocol_version);
-		break;
-	case RESPONSE_STEP_LAYOUT:
-		pack_slurm_step_layout((slurm_step_layout_t *)msg->data,
-				       buffer,
-				       msg->protocol_version);
-		break;
-	case RESPONSE_JOB_STEP_PIDS:
-		_pack_job_step_pids((job_step_pids_t *)msg->data,
-				    buffer,
-				    msg->protocol_version);
-		break;
-	case REQUEST_ABORT_JOB:
-	case REQUEST_KILL_PREEMPTED:
-	case REQUEST_KILL_TIMELIMIT:
-	case REQUEST_TERMINATE_JOB:
-		_pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer,
-				   msg->protocol_version);
-		break;
-	case MESSAGE_EPILOG_COMPLETE:
-		_pack_epilog_comp_msg((epilog_complete_msg_t *) msg->data,
-				      buffer,
-				      msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_JOB_TIME:
-		_pack_update_job_time_msg((job_time_msg_t *)
-					  msg->data, buffer,
-					  msg->protocol_version);
-		break;
-	case RESPONSE_RECONFIGURE:
-	case RESPONSE_SHUTDOWN:
-	case RESPONSE_CANCEL_JOB_STEP:
-		break;
-	case REQUEST_JOB_ATTACH:
-		break;
-	case RESPONSE_JOB_ATTACH:
-		break;
-	case RESPONSE_JOB_STEP_INFO:
-		_pack_job_step_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case REQUEST_JOB_RESOURCE:
-		break;
-	case RESPONSE_JOB_RESOURCE:
-		break;
-	case REQUEST_RUN_JOB_STEP:
-		break;
-	case RESPONSE_RUN_JOB_STEP:
-		break;
-	case MESSAGE_TASK_EXIT:
-		_pack_task_exit_msg((task_exit_msg_t *) msg->data, buffer,
-				    msg->protocol_version);
-		break;
-	case REQUEST_BATCH_JOB_LAUNCH:
-		_pack_batch_job_launch_msg((batch_job_launch_msg_t *)
-					   msg->data, buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_LAUNCH_PROLOG:
-		_pack_prolog_launch_msg((prolog_launch_msg_t *)
-					   msg->data, buffer, msg->protocol_version);
-		break;
-	case RESPONSE_PROLOG_EXECUTING:
-	case RESPONSE_JOB_READY:
-	case RESPONSE_SLURM_RC:
-		_pack_return_code_msg((return_code_msg_t *) msg->data,
-				      buffer,
-				      msg->protocol_version);
-		break;
-	case RESPONSE_SLURM_RC_MSG:
-		_pack_return_code2_msg((return_code2_msg_t *) msg->data,
-				       buffer,
-				       msg->protocol_version);
-		break;
-	case RESPONSE_SLURM_REROUTE_MSG:
-		_pack_reroute_msg((reroute_msg_t *)msg->data, buffer,
-				  msg->protocol_version);
-		break;
-	case RESPONSE_JOB_STEP_CREATE:
-		_pack_job_step_create_response_msg(
-			(job_step_create_response_msg_t *)
-			msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		_pack_job_step_create_request_msg(
-			(job_step_create_request_msg_t *)
-			msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_JOB_ID:
-		_pack_job_id_request_msg(
-			(job_id_request_msg_t *)msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_JOB_ID:
-		_pack_job_id_response_msg(
-			(job_id_response_msg_t *)msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case SRUN_EXEC:
-		_pack_srun_exec_msg((srun_exec_msg_t *)msg->data, buffer,
-				    msg->protocol_version);
-		break;
-	case SRUN_JOB_COMPLETE:
-	case SRUN_PING:
-		_pack_srun_ping_msg((srun_ping_msg_t *)msg->data, buffer,
-				    msg->protocol_version);
-		break;
-	case SRUN_NODE_FAIL:
-		_pack_srun_node_fail_msg((srun_node_fail_msg_t *)msg->data,
-					 buffer,
-					 msg->protocol_version);
-		break;
-	case SRUN_STEP_MISSING:
-		_pack_srun_step_missing_msg((srun_step_missing_msg_t *)
-					    msg->data, buffer,
-					    msg->protocol_version);
-		break;
-	case SRUN_TIMEOUT:
-		_pack_srun_timeout_msg((srun_timeout_msg_t *)msg->data, buffer,
-				       msg->protocol_version);
-		break;
-	case SRUN_USER_MSG:
-		_pack_srun_user_msg((srun_user_msg_t *)msg->data, buffer,
-				    msg->protocol_version);
-		break;
-	case SRUN_NET_FORWARD:
-		_pack_net_forward_msg((net_forward_msg_t *)msg->data,
-				      buffer, msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT:
-		_pack_checkpoint_msg((checkpoint_msg_t *)msg->data, buffer,
-				     msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_COMP:
-		_pack_checkpoint_comp((checkpoint_comp_msg_t *)msg->data,
-				      buffer,
-				      msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_TASK_COMP:
-		_pack_checkpoint_task_comp(
-			(checkpoint_task_comp_msg_t *)msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_CHECKPOINT:
-	case RESPONSE_CHECKPOINT_COMP:
-		_pack_checkpoint_resp_msg((checkpoint_resp_msg_t *)msg->data,
-					  buffer,
-					  msg->protocol_version);
-		break;
-	case REQUEST_SUSPEND:
-	case SRUN_REQUEST_SUSPEND:
-		_pack_suspend_msg((suspend_msg_t *)msg->data, buffer,
-				  msg->protocol_version);
-		break;
-	case REQUEST_SUSPEND_INT:
-		_pack_suspend_int_msg((suspend_int_msg_t *)msg->data, buffer,
-				      msg->protocol_version);
-		break;
-	case REQUEST_TOP_JOB:
-		_pack_top_job_msg((top_job_msg_t *)msg->data, buffer,
-				  msg->protocol_version);
-		break;
-	case REQUEST_BATCH_SCRIPT:
-	case REQUEST_JOB_READY:
-	case REQUEST_JOB_INFO_SINGLE:
-		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer,
-				    msg->protocol_version);
-		break;
-
-	case REQUEST_JOB_REQUEUE:
-		_pack_job_requeue_msg((requeue_msg_t *)msg->data,
-				      buffer,
-				      msg->protocol_version);
-		break;
-
-	case REQUEST_JOB_USER_INFO:
-		_pack_job_user_msg((job_user_id_msg_t *)msg->data, buffer,
-				   msg->protocol_version);
-		break;
-
-	case REQUEST_SHARE_INFO:
-		_pack_shares_request_msg((shares_request_msg_t *)msg->data,
-					 buffer,
-					 msg->protocol_version);
-		break;
-	case RESPONSE_SHARE_INFO:
-		_pack_shares_response_msg((shares_response_msg_t *)msg->data,
-					  buffer,
-					  msg->protocol_version);
-		break;
-	case REQUEST_PRIORITY_FACTORS:
-		_pack_priority_factors_request_msg(
-			(priority_factors_request_msg_t*)msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_PRIORITY_FACTORS:
-		_pack_priority_factors_response_msg(
-			(priority_factors_response_msg_t*)msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_BURST_BUFFER_INFO:
-		_pack_burst_buffer_info_resp_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case REQUEST_FILE_BCAST:
-		_pack_file_bcast((file_bcast_msg_t *) msg->data, buffer,
-				 msg->protocol_version);
-		break;
-	case PMI_KVS_PUT_REQ:
-	case PMI_KVS_GET_RESP:
-		_pack_kvs_data((kvs_comm_set_t *) msg->data, buffer,
-			       msg->protocol_version);
-		break;
-	case PMI_KVS_GET_REQ:
-		_pack_kvs_get((kvs_get_msg_t *) msg->data, buffer,
-			      msg->protocol_version);
-		break;
-	case PMI_KVS_PUT_RESP:
-		break;	/* no data in message */
-	case RESPONSE_FORWARD_FAILED:
-		break;
-	case REQUEST_TRIGGER_GET:
-	case RESPONSE_TRIGGER_GET:
-	case REQUEST_TRIGGER_SET:
-	case REQUEST_TRIGGER_CLEAR:
-	case REQUEST_TRIGGER_PULL:
-		_pack_trigger_msg((trigger_info_msg_t *) msg->data, buffer,
-				  msg->protocol_version);
-		break;
-	case RESPONSE_SLURMD_STATUS:
-		_pack_slurmd_status((slurmd_status_t *) msg->data, buffer,
-				    msg->protocol_version);
-		break;
-	case REQUEST_JOB_NOTIFY:
-		_pack_job_notify((job_notify_msg_t *) msg->data, buffer,
-				 msg->protocol_version);
-		break;
-	case REQUEST_SET_DEBUG_FLAGS:
-		_pack_set_debug_flags_msg(
-			(set_debug_flags_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_SET_DEBUG_LEVEL:
-	case REQUEST_SET_SCHEDLOG_LEVEL:
-		_pack_set_debug_level_msg(
-			(set_debug_level_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case ACCOUNTING_UPDATE_MSG:
-		_pack_accounting_update_msg(
-			(accounting_update_msg_t *)msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_TOPO_INFO:
-		_pack_topo_info_msg(
-			(topo_info_response_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_POWERCAP_INFO:
-		_pack_powercap_info_msg(
-			(powercap_info_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_JOB_SBCAST_CRED:
-		_pack_job_sbcast_cred_msg(
-			(job_sbcast_cred_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_FRONT_END_INFO:
-		_pack_front_end_info_request_msg(
-			(front_end_info_request_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_FED_INFO:
-		slurmdb_pack_federation_rec(
-			(slurmdb_federation_rec_t *)msg->data,
-			msg->protocol_version, buffer);
-		break;
-	case RESPONSE_FRONT_END_INFO:
-		_pack_front_end_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case REQUEST_SPANK_ENVIRONMENT:
-		_pack_spank_env_request_msg(
-			(spank_env_request_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONCE_SPANK_ENVIRONMENT:
-		_pack_spank_env_responce_msg(
-			(spank_env_responce_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-
-	case REQUEST_STATS_INFO:
-		_pack_stats_request_msg((stats_info_request_msg_t *)msg->data,
-					buffer, msg->protocol_version);
-		break;
-
-	case RESPONSE_STATS_INFO:
-		_pack_stats_response_msg((slurm_msg_t *)msg, buffer);
-		break;
-
-	case REQUEST_FORWARD_DATA:
-		_pack_forward_data_msg((forward_data_msg_t *)msg->data,
-				       buffer, msg->protocol_version);
-		break;
-
-	case RESPONSE_PING_SLURMD:
-		_pack_ping_slurmd_resp((ping_slurmd_resp_msg_t *)msg->data,
-				       buffer, msg->protocol_version);
-		break;
-	case REQUEST_LICENSE_INFO:
-		 _pack_license_info_request_msg((license_info_request_msg_t *)
-						msg->data,
-						buffer,
-						msg->protocol_version);
-			break;
-	case RESPONSE_LICENSE_INFO:
-		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case MESSAGE_COMPOSITE:
-	case RESPONSE_MESSAGE_COMPOSITE:
-		_pack_composite_msg((composite_msg_t *) msg->data, buffer,
-				     msg->protocol_version);
-		break;
-	case RESPONSE_JOB_ARRAY_ERRORS:
-		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
-					 buffer, msg->protocol_version);
-		break;
-	case REQUEST_ASSOC_MGR_INFO:
-		_pack_assoc_mgr_info_request_msg(
-			(assoc_mgr_info_request_msg_t *)msg->data,
-			buffer, msg->protocol_version);
-		break;
-	case RESPONSE_ASSOC_MGR_INFO:
-		_pack_assoc_mgr_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case REQUEST_NETWORK_CALLERID:
-		_pack_network_callerid_msg((network_callerid_msg_t *)
-						  msg->data, buffer,
-						  msg->protocol_version);
-		break;
-	case RESPONSE_NETWORK_CALLERID:
-		_pack_network_callerid_resp_msg((network_callerid_resp_t *)
-						  msg->data, buffer,
-						  msg->protocol_version);
-		break;
-	case REQUEST_EVENT_LOG:
-		_pack_event_log_msg((slurm_event_log_msg_t *) msg->data, buffer,
-				    msg->protocol_version);
-		break;
-	case REQUEST_CTLD_MULT_MSG:
-	case RESPONSE_CTLD_MULT_MSG:
-		_pack_buf_list_msg((ctld_list_msg_t *) msg->data, buffer,
-				   msg->protocol_version);
-		break;
-	case REQUEST_SET_FS_DAMPENING_FACTOR:
-		_pack_set_fs_dampening_factor_msg(
-			(set_fs_dampening_factor_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_CONTROL_STATUS:
-		_pack_control_status_msg((control_status_msg_t *)(msg->data),
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_BURST_BUFFER_STATUS:
-		_pack_bb_status_req_msg((bb_status_req_msg_t *)(msg->data),
-					buffer, msg->protocol_version);
-		break;
-	case RESPONSE_BURST_BUFFER_STATUS:
-		_pack_bb_status_resp_msg((bb_status_resp_msg_t *)(msg->data),
-					 buffer, msg->protocol_version);
-		break;
-	default:
-		debug("No pack method for msg type %u", msg->msg_type);
-		return EINVAL;
-		break;
-	}
-	return SLURM_SUCCESS;
-}
-
-/* unpack_msg
- * unpacks a generic slurm protocol message body
- * OUT msg - the body structure to unpack (note: includes message type)
- * IN/OUT buffer - source of the unpack, contains pointers that are
- *			automatically updated
- * RET 0 or error code
- */
-int
-unpack_msg(slurm_msg_t * msg, Buf buffer)
-{
-	int rc = SLURM_SUCCESS;
-	msg->data = NULL;	/* Initialize to no data for now */
-
-	switch (msg->msg_type) {
-	case REQUEST_NODE_INFO:
-		rc = _unpack_node_info_request_msg((node_info_request_msg_t **)
-						   & (msg->data), buffer,
-						   msg->protocol_version);
-		break;
-	case REQUEST_NODE_INFO_SINGLE:
-		rc = _unpack_node_info_single_msg((node_info_single_msg_t **)
-						  & (msg->data), buffer,
-						  msg->protocol_version);
-		break;
-	case REQUEST_PARTITION_INFO:
-		rc = _unpack_part_info_request_msg((part_info_request_msg_t **)
-						   & (msg->data), buffer,
-						   msg->protocol_version);
-		break;
-	case REQUEST_RESERVATION_INFO:
-		rc = _unpack_resv_info_request_msg((resv_info_request_msg_t **)
-						   & (msg->data), buffer,
-						   msg->protocol_version);
-		break;
-	case REQUEST_LAYOUT_INFO:
-		rc = _unpack_layout_info_request_msg((layout_info_request_msg_t **)
-						     & (msg->data), buffer,
-						     msg->protocol_version);
-		break;
-	case REQUEST_BUILD_INFO:
-	case REQUEST_ACCTING_INFO:
-		rc = _unpack_last_update_msg((last_update_msg_t **) &
-					     (msg->data), buffer,
-					     msg->protocol_version);
-		break;
-	case RESPONSE_BUILD_INFO:
-		rc = _unpack_slurm_ctl_conf_msg((slurm_ctl_conf_info_msg_t
-						 **)
-						& (msg->data), buffer,
-						msg->protocol_version);
-		break;
-	case RESPONSE_JOB_INFO:
-		rc = _unpack_job_info_msg((job_info_msg_t **) & (msg->data),
-					  buffer,
-					  msg->protocol_version);
-		break;
-	case RESPONSE_BATCH_SCRIPT:
-		rc = _unpack_job_script_msg((char **) &(msg->data),
-					    buffer,
-					    msg->protocol_version);
-		break;
-	case RESPONSE_PARTITION_INFO:
-		rc = _unpack_partition_info_msg((partition_info_msg_t **) &
-						(msg->data), buffer,
-						msg->protocol_version);
-		break;
-	case RESPONSE_NODE_INFO:
-		rc = _unpack_node_info_msg((node_info_msg_t **) &
-					   (msg->data), buffer,
-					   msg->protocol_version);
-		break;
-	case MESSAGE_NODE_REGISTRATION_STATUS:
-		rc = _unpack_node_registration_status_msg(
-			(slurm_node_registration_status_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_ACCT_GATHER_UPDATE:
-	case RESPONSE_ACCT_GATHER_ENERGY:
-		rc = _unpack_acct_gather_node_resp_msg(
-			(acct_gather_node_resp_msg_t **)&(msg->data),
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_RESOURCE_ALLOCATION:
-	case REQUEST_SUBMIT_BATCH_JOB:
-	case REQUEST_JOB_WILL_RUN:
-	case REQUEST_UPDATE_JOB:
-		rc = _unpack_job_desc_msg((job_desc_msg_t **) & (msg->data),
-					  buffer, msg->protocol_version);
-		break;
-	case REQUEST_JOB_PACK_ALLOCATION:
-	case REQUEST_SUBMIT_BATCH_JOB_PACK:
-		rc = _unpack_job_desc_list_msg((List *) &(msg->data),
-					       buffer, msg->protocol_version);
-		break;
-	case RESPONSE_JOB_PACK_ALLOCATION:
-		rc = _unpack_job_info_list_msg((List *) &(msg->data),
-					       buffer, msg->protocol_version);
-		break;
-	case REQUEST_SIB_JOB_LOCK:
-	case REQUEST_SIB_JOB_UNLOCK:
-	case REQUEST_SIB_MSG:
-		rc = _unpack_sib_msg((sib_msg_t **)&(msg->data), buffer,
-				     msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_JOB_STEP:
-		rc = _unpack_update_job_step_msg(
-			(step_update_request_msg_t **) & (msg->data),
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_JOB_ALLOCATION_INFO:
-	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_PACK_ALLOC_INFO:
-		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
-						(msg->data), buffer,
-						msg->protocol_version);
-		break;
-	case REQUEST_JOB_SBCAST_CRED:
-		rc = _unpack_step_alloc_info_msg((step_alloc_info_msg_t **) &
-						 (msg->data), buffer,
-						 msg->protocol_version);
-		break;
-	case RESPONSE_NODE_REGISTRATION:
-		rc = _unpack_node_reg_resp(
-			(slurm_node_reg_resp_msg_t **)&msg->data,
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_NODE_REGISTRATION_STATUS:
-	case REQUEST_RECONFIGURE:
-	case REQUEST_SHUTDOWN_IMMEDIATE:
-	case REQUEST_PING:
-	case REQUEST_CONTROL:
-	case REQUEST_CONTROL_STATUS:
-	case REQUEST_TAKEOVER:
-	case REQUEST_DAEMON_STATUS:
-	case REQUEST_HEALTH_CHECK:
-	case REQUEST_ACCT_GATHER_UPDATE:
-	case ACCOUNTING_FIRST_REG:
-	case ACCOUNTING_REGISTER_CTLD:
-	case REQUEST_TOPO_INFO:
-	case REQUEST_BURST_BUFFER_INFO:
-	case REQUEST_POWERCAP_INFO:
-	case REQUEST_FED_INFO:
-		/* Message contains no body/information */
-		break;
-	case REQUEST_ACCT_GATHER_ENERGY:
-		rc = _unpack_acct_gather_energy_req(
-			(acct_gather_energy_req_msg_t **) & (msg->data),
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_PERSIST_INIT:
-		/* the version is contained in the data so use that instead of
-		   what is in the message */
-		rc = slurm_persist_unpack_init_req_msg(
-			(persist_init_req_msg_t **)&msg->data, buffer);
-		break;
-	case PERSIST_RC:
-		rc = slurm_persist_unpack_rc_msg(
-			(persist_rc_msg_t **)&msg->data,
-			buffer, msg->protocol_version);
-		break;
-	case REQUEST_REBOOT_NODES:
-		rc = _unpack_reboot_msg((reboot_msg_t **) & (msg->data),
-					buffer, msg->protocol_version);
-		break;
-	case REQUEST_SHUTDOWN:
-		rc = _unpack_shutdown_msg((shutdown_msg_t **) & (msg->data),
-					  buffer,
-					  msg->protocol_version);
-		break;
-	case RESPONSE_SUBMIT_BATCH_JOB:
-		rc = _unpack_submit_response_msg((submit_response_msg_t **)
-						 & (msg->data), buffer,
-						 msg->protocol_version);
-		break;
-	case RESPONSE_JOB_ALLOCATION_INFO:
-	case RESPONSE_RESOURCE_ALLOCATION:
-		rc = _unpack_resource_allocation_response_msg(
-			(resource_allocation_response_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_JOB_WILL_RUN:
-		rc = _unpack_will_run_response_msg((will_run_response_msg_t **)
-						   &(msg->data), buffer,
-						   msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_FRONT_END:
-		rc = _unpack_update_front_end_msg((update_front_end_msg_t **) &
-						  (msg->data), buffer,
-						  msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_NODE:
-		rc = _unpack_update_node_msg((update_node_msg_t **) &
-					     (msg->data), buffer,
-					     msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_LAYOUT:
-		rc = _unpack_update_layout_msg((update_layout_msg_t **) &
-					       (msg->data), buffer,
-					       msg->protocol_version);
-		break;
-	case REQUEST_CREATE_PARTITION:
-	case REQUEST_UPDATE_PARTITION:
-		rc = _unpack_update_partition_msg((update_part_msg_t **) &
-						  (msg->data), buffer,
-						  msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_POWERCAP:
-		rc = _unpack_update_powercap_msg((update_powercap_msg_t **) &
-						 (msg->data), buffer,
-						 msg->protocol_version);
-		break;
-	case REQUEST_DELETE_PARTITION:
-		rc = _unpack_delete_partition_msg((delete_part_msg_t **) &
-						  (msg->data), buffer,
-						  msg->protocol_version);
-		break;
-	case REQUEST_CREATE_RESERVATION:
-	case REQUEST_UPDATE_RESERVATION:
-		rc = _unpack_update_resv_msg((resv_desc_msg_t **)
-					     &(msg->data), buffer,
-					     msg->protocol_version);
-		break;
-	case REQUEST_DELETE_RESERVATION:
-	case RESPONSE_CREATE_RESERVATION:
-		rc = _unpack_resv_name_msg((reservation_name_msg_t **)
-					   &(msg->data), buffer,
-					   msg->protocol_version);
-		break;
-	case RESPONSE_RESERVATION_INFO:
-		rc = _unpack_reserve_info_msg((reserve_info_msg_t **)
-					      &(msg->data), buffer,
-					      msg->protocol_version);
-		break;
-	case RESPONSE_LAYOUT_INFO:
-		rc = _unpack_layout_info_msg((layout_info_msg_t **)
-					     &(msg->data), buffer,
-					     msg->protocol_version);
-		break;
-	case REQUEST_LAUNCH_TASKS:
-		rc = _unpack_launch_tasks_request_msg(
-			(launch_tasks_request_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_LAUNCH_TASKS:
-		rc = _unpack_launch_tasks_response_msg(
-			(launch_tasks_response_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case TASK_USER_MANAGED_IO_STREAM:
-		rc = _unpack_task_user_managed_io_stream_msg(
-			(task_user_managed_io_msg_t **) &msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_REATTACH_TASKS:
-		rc = _unpack_reattach_tasks_request_msg(
-			(reattach_tasks_request_msg_t **) & msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_REATTACH_TASKS:
-		rc = _unpack_reattach_tasks_response_msg(
-			(reattach_tasks_response_msg_t **)
-			& msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_SIGNAL_TASKS:
-	case REQUEST_TERMINATE_TASKS:
-		rc = _unpack_cancel_tasks_msg((signal_tasks_msg_t **) &
-					      (msg->data), buffer,
-					      msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_TASKS:
-		rc = _unpack_checkpoint_tasks_msg((checkpoint_tasks_msg_t **) &
-						  (msg->data), buffer,
-						  msg->protocol_version);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		rc = _unpack_job_step_info_req_msg(
-			(job_step_info_request_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
-		break;
-		/********  job_step_id_t Messages  ********/
-	case REQUEST_JOB_INFO:
-		rc = _unpack_job_info_request_msg((job_info_request_msg_t**)
-						  & (msg->data), buffer,
-						  msg->protocol_version);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-	case REQUEST_KILL_JOB:
-	case SRUN_STEP_SIGNAL:
-		rc = _unpack_job_step_kill_msg((job_step_kill_msg_t **)
-					       & (msg->data), buffer,
-					       msg->protocol_version);
-		break;
-	case REQUEST_COMPLETE_JOB_ALLOCATION:
-		rc = _unpack_complete_job_allocation_msg(
-			(complete_job_allocation_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_COMPLETE_PROLOG:
-		rc = _unpack_complete_prolog_msg(
-			(complete_prolog_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_COMPLETE_BATCH_JOB:
-	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		rc = _unpack_complete_batch_script_msg(
-			(complete_batch_script_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_STEP_COMPLETE:
-	case REQUEST_STEP_COMPLETE_AGGR:
-		rc = _unpack_step_complete_msg((step_complete_msg_t
-						**) & (msg->data),
-					       buffer,
-					       msg->protocol_version);
-		break;
-	case RESPONSE_JOB_STEP_STAT:
-		rc = _unpack_job_step_stat(
-			(job_step_stat_t **) &(msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_STEP_LAYOUT:
-	case REQUEST_JOB_STEP_STAT:
-	case REQUEST_JOB_STEP_PIDS:
-		rc = _unpack_job_step_id_msg((job_step_id_msg_t **)&msg->data,
-					     buffer, msg->protocol_version);
-		break;
-	case RESPONSE_STEP_LAYOUT:
-		rc = unpack_slurm_step_layout(
-			(slurm_step_layout_t **)&msg->data,
-			buffer, msg->protocol_version);
-		break;
-	case RESPONSE_JOB_STEP_PIDS:
-		rc = _unpack_job_step_pids(
-			(job_step_pids_t **)&msg->data,
-			buffer,	msg->protocol_version);
-		break;
-	case REQUEST_ABORT_JOB:
-	case REQUEST_KILL_PREEMPTED:
-	case REQUEST_KILL_TIMELIMIT:
-	case REQUEST_TERMINATE_JOB:
-		rc = _unpack_kill_job_msg((kill_job_msg_t **) & (msg->data),
-					  buffer,
-					  msg->protocol_version);
-		break;
-	case MESSAGE_EPILOG_COMPLETE:
-		rc = _unpack_epilog_comp_msg((epilog_complete_msg_t **)
-					     & (msg->data), buffer,
-					     msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_JOB_TIME:
-		rc = _unpack_update_job_time_msg(
-			(job_time_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_RECONFIGURE:
-	case RESPONSE_SHUTDOWN:
-	case RESPONSE_CANCEL_JOB_STEP:
-		break;
-	case REQUEST_JOB_ATTACH:
-		break;
-	case RESPONSE_JOB_ATTACH:
-		break;
-	case RESPONSE_JOB_STEP_INFO:
-		rc = _unpack_job_step_info_response_msg(
-			(job_step_info_response_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_JOB_RESOURCE:
-		break;
-	case RESPONSE_JOB_RESOURCE:
-		break;
-	case REQUEST_RUN_JOB_STEP:
-		break;
-	case RESPONSE_RUN_JOB_STEP:
-		break;
-	case MESSAGE_TASK_EXIT:
-		rc = _unpack_task_exit_msg((task_exit_msg_t **)
-					   & (msg->data), buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_BATCH_JOB_LAUNCH:
-		rc = _unpack_batch_job_launch_msg((batch_job_launch_msg_t **)
-						  & (msg->data), buffer,
-						  msg->protocol_version);
-		break;
-	case REQUEST_LAUNCH_PROLOG:
-		rc = _unpack_prolog_launch_msg((prolog_launch_msg_t **)
-					       & (msg->data),
-					       buffer, msg->protocol_version);
-		break;
-	case RESPONSE_PROLOG_EXECUTING:
-	case RESPONSE_JOB_READY:
-	case RESPONSE_SLURM_RC:
-		rc = _unpack_return_code_msg((return_code_msg_t **)
-					     & (msg->data), buffer,
-					     msg->protocol_version);
-		break;
-	case RESPONSE_SLURM_RC_MSG:
-		/* Log error message, otherwise replicate RESPONSE_SLURM_RC */
-		msg->msg_type = RESPONSE_SLURM_RC;
-		rc = _unpack_return_code2_msg((return_code_msg_t **)
-					      & (msg->data), buffer,
-					      msg->protocol_version);
-		break;
-	case RESPONSE_SLURM_REROUTE_MSG:
-		rc = _unpack_reroute_msg((reroute_msg_t **)&(msg->data), buffer,
-					 msg->protocol_version);
-		break;
-	case RESPONSE_JOB_STEP_CREATE:
-		rc = _unpack_job_step_create_response_msg(
-			(job_step_create_response_msg_t **)
-			& msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		rc = _unpack_job_step_create_request_msg(
-			(job_step_create_request_msg_t **) & msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_JOB_ID:
-		rc = _unpack_job_id_request_msg(
-			(job_id_request_msg_t **) & msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_JOB_ID:
-		rc = _unpack_job_id_response_msg(
-			(job_id_response_msg_t **) & msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case SRUN_EXEC:
-		rc = _unpack_srun_exec_msg((srun_exec_msg_t **) & msg->data,
-					   buffer,
-					   msg->protocol_version);
-		break;
-	case SRUN_JOB_COMPLETE:
-	case SRUN_PING:
-		rc = _unpack_srun_ping_msg((srun_ping_msg_t **) & msg->data,
-					   buffer,
-					   msg->protocol_version);
-		break;
-	case SRUN_NET_FORWARD:
-		rc = _unpack_net_forward_msg((net_forward_msg_t **) &msg->data,
-					     buffer, msg->protocol_version);
-		break;
-	case SRUN_NODE_FAIL:
-		rc = _unpack_srun_node_fail_msg((srun_node_fail_msg_t **)
-						& msg->data, buffer,
-						msg->protocol_version);
-		break;
-	case SRUN_STEP_MISSING:
-		rc = _unpack_srun_step_missing_msg((srun_step_missing_msg_t **)
-						   & msg->data, buffer,
-						   msg->protocol_version);
-		break;
-	case SRUN_TIMEOUT:
-		rc = _unpack_srun_timeout_msg((srun_timeout_msg_t **)
-					      & msg->data, buffer,
-					      msg->protocol_version);
-		break;
-	case SRUN_USER_MSG:
-		rc = _unpack_srun_user_msg((srun_user_msg_t **)
-					   & msg->data, buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT:
-		rc = _unpack_checkpoint_msg((checkpoint_msg_t **)
-					    & msg->data, buffer,
-					    msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_COMP:
-		rc = _unpack_checkpoint_comp((checkpoint_comp_msg_t **)
-					     & msg->data, buffer,
-					     msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_TASK_COMP:
-		rc = _unpack_checkpoint_task_comp(
-			(checkpoint_task_comp_msg_t **)
-			& msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_CHECKPOINT:
-	case RESPONSE_CHECKPOINT_COMP:
-		rc = _unpack_checkpoint_resp_msg((checkpoint_resp_msg_t **)
-						 & msg->data, buffer,
-						 msg->protocol_version);
-		break;
-	case REQUEST_SUSPEND:
-	case SRUN_REQUEST_SUSPEND:
-		rc = _unpack_suspend_msg((suspend_msg_t **) &msg->data,
-					 buffer,
-					 msg->protocol_version);
-		break;
-	case REQUEST_SUSPEND_INT:
-		rc = _unpack_suspend_int_msg((suspend_int_msg_t **) &msg->data,
-					     buffer, msg->protocol_version);
-		break;
-	case REQUEST_TOP_JOB:
-		rc = _unpack_top_job_msg((top_job_msg_t **) &msg->data, buffer,
-					 msg->protocol_version);
-		break;
-	case REQUEST_BATCH_SCRIPT:
-	case REQUEST_JOB_READY:
-	case REQUEST_JOB_INFO_SINGLE:
-		rc = _unpack_job_ready_msg((job_id_msg_t **)
-					   & msg->data, buffer,
-					   msg->protocol_version);
-		break;
-
-	case REQUEST_JOB_REQUEUE:
-		rc = _unpack_job_requeue_msg((requeue_msg_t **)&msg->data,
-					     buffer,
-					     msg->protocol_version);
-		break;
-
-	case REQUEST_JOB_USER_INFO:
-		rc = _unpack_job_user_msg((job_user_id_msg_t **)
-					  &msg->data, buffer,
-					  msg->protocol_version);
-		break;
-
-	case REQUEST_SHARE_INFO:
-		rc = _unpack_shares_request_msg(
-			(shares_request_msg_t **)&msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_SHARE_INFO:
-		rc = _unpack_shares_response_msg(
-			(shares_response_msg_t **)&msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_PRIORITY_FACTORS:
-		rc = _unpack_priority_factors_request_msg(
-			(priority_factors_request_msg_t**)&msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_PRIORITY_FACTORS:
-		rc = _unpack_priority_factors_response_msg(
-			(priority_factors_response_msg_t**)&msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_BURST_BUFFER_INFO:
-		rc = _unpack_burst_buffer_info_msg(
-			(burst_buffer_info_msg_t **) &(msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_FILE_BCAST:
-		rc = _unpack_file_bcast( (file_bcast_msg_t **)
-					 & msg->data, buffer,
-					 msg->protocol_version);
-		break;
-	case PMI_KVS_PUT_REQ:
-	case PMI_KVS_GET_RESP:
-		rc = _unpack_kvs_data((kvs_comm_set_t **) &msg->data,
-				      buffer,
-				      msg->protocol_version);
-		break;
-	case PMI_KVS_GET_REQ:
-		rc = _unpack_kvs_get((kvs_get_msg_t **) &msg->data, buffer,
-				     msg->protocol_version);
-		break;
-	case PMI_KVS_PUT_RESP:
-		break;	/* no data */
-	case RESPONSE_FORWARD_FAILED:
-		break;
-	case REQUEST_TRIGGER_GET:
-	case RESPONSE_TRIGGER_GET:
-	case REQUEST_TRIGGER_SET:
-	case REQUEST_TRIGGER_CLEAR:
-	case REQUEST_TRIGGER_PULL:
-		rc = _unpack_trigger_msg((trigger_info_msg_t **)
-					 &msg->data, buffer,
-					 msg->protocol_version);
-		break;
-	case RESPONSE_SLURMD_STATUS:
-		rc = _unpack_slurmd_status((slurmd_status_t **)
-					   &msg->data, buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_JOB_NOTIFY:
-		rc =  _unpack_job_notify((job_notify_msg_t **)
-					 &msg->data, buffer,
-					 msg->protocol_version);
-		break;
-	case REQUEST_SET_DEBUG_FLAGS:
-		rc = _unpack_set_debug_flags_msg(
-			(set_debug_flags_msg_t **)&(msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_SET_DEBUG_LEVEL:
-	case REQUEST_SET_SCHEDLOG_LEVEL:
-		rc = _unpack_set_debug_level_msg(
-			(set_debug_level_msg_t **)&(msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case ACCOUNTING_UPDATE_MSG:
-		rc = _unpack_accounting_update_msg(
-			(accounting_update_msg_t **)&msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_TOPO_INFO:
-		rc = _unpack_topo_info_msg(
-			(topo_info_response_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_POWERCAP_INFO:
-		rc = _unpack_powercap_info_msg(
-			(powercap_info_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_JOB_SBCAST_CRED:
-		rc = _unpack_job_sbcast_cred_msg(
-			(job_sbcast_cred_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_FED_INFO:
-		rc = slurmdb_unpack_federation_rec(&msg->data,
-						   msg->protocol_version,
-						   buffer);
-		break;
-	case REQUEST_FRONT_END_INFO:
-		rc = _unpack_front_end_info_request_msg(
-			(front_end_info_request_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_FRONT_END_INFO:
-		rc = _unpack_front_end_info_msg(
-			(front_end_info_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_SPANK_ENVIRONMENT:
-		rc = _unpack_spank_env_request_msg(
-			(spank_env_request_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONCE_SPANK_ENVIRONMENT:
-		rc = _unpack_spank_env_responce_msg(
-			(spank_env_responce_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-
-	case REQUEST_STATS_INFO:
-		rc = _unpack_stats_request_msg((stats_info_request_msg_t **)
-					       &msg->data, buffer,
-					       msg->protocol_version);
-		break;
-
-	case RESPONSE_STATS_INFO:
-		rc = _unpack_stats_response_msg((stats_info_response_msg_t **)
-						&msg->data, buffer,
-						msg->protocol_version);
-		break;
-
-	case REQUEST_FORWARD_DATA:
-		rc = _unpack_forward_data_msg((forward_data_msg_t **)&msg->data,
-					      buffer, msg->protocol_version);
-		break;
-
-	case RESPONSE_PING_SLURMD:
-		rc = _unpack_ping_slurmd_resp((ping_slurmd_resp_msg_t **)
-					      &msg->data, buffer,
-					      msg->protocol_version);
-		break;
-	case RESPONSE_LICENSE_INFO:
-		rc = _unpack_license_info_msg((license_info_msg_t **)&(msg->data),
-					      buffer,
-					      msg->protocol_version);
-		break;
-	case REQUEST_LICENSE_INFO:
-		rc = _unpack_license_info_request_msg((license_info_request_msg_t **)
-						      &(msg->data),
-						      buffer,
-						      msg->protocol_version);
-		break;
-	case MESSAGE_COMPOSITE:
-	case RESPONSE_MESSAGE_COMPOSITE:
-		rc = _unpack_composite_msg((composite_msg_t **) &(msg->data),
-					   buffer, msg->protocol_version);
-		break;
-	case RESPONSE_JOB_ARRAY_ERRORS:
-		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
-						&(msg->data), buffer,
-						msg->protocol_version);
-		break;
-	case REQUEST_ASSOC_MGR_INFO:
-		rc = _unpack_assoc_mgr_info_request_msg(
-			(assoc_mgr_info_request_msg_t **)&(msg->data),
-			buffer, msg->protocol_version);
-		break;
-	case RESPONSE_ASSOC_MGR_INFO:
-		rc = assoc_mgr_info_unpack_msg((assoc_mgr_info_msg_t **)
-					       &(msg->data),
-					       buffer,
-					       msg->protocol_version);
-		break;
-	case REQUEST_NETWORK_CALLERID:
-		rc = _unpack_network_callerid_msg((network_callerid_msg_t **)
-						  &(msg->data), buffer,
-						  msg->protocol_version);
-		break;
-	case RESPONSE_NETWORK_CALLERID:
-		rc = _unpack_network_callerid_resp_msg(
-			(network_callerid_resp_t **)&(msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_EVENT_LOG:
-		rc = _unpack_event_log_msg((slurm_event_log_msg_t **)
-					   &(msg->data), buffer,
-					   msg->protocol_version);
-		break;
-	case REQUEST_CTLD_MULT_MSG:
-	case RESPONSE_CTLD_MULT_MSG:
-		rc = _unpack_buf_list_msg((ctld_list_msg_t **) &(msg->data),
-					  buffer, msg->protocol_version);
-		break;
-	case REQUEST_SET_FS_DAMPENING_FACTOR:
-		rc = _unpack_set_fs_dampening_factor_msg(
-			(set_fs_dampening_factor_msg_t **)&(msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_CONTROL_STATUS:
-		rc = _unpack_control_status_msg(
-			(control_status_msg_t **)&(msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case REQUEST_BURST_BUFFER_STATUS:
-		rc = _unpack_bb_status_req_msg(
-			(bb_status_req_msg_t **)&(msg->data), buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_BURST_BUFFER_STATUS:
-		rc = _unpack_bb_status_resp_msg(
-			(bb_status_resp_msg_t **)&(msg->data), buffer,
-			msg->protocol_version);
-		break;
-	default:
-		debug("No unpack method for msg type %u", msg->msg_type);
-		return EINVAL;
-		break;
-	}
-
-	if (rc) {
-		error("Malformed RPC of type %s(%u) received",
-		      rpc_num2string(msg->msg_type), msg->msg_type);
-	}
-	return rc;
-}
-
 static void _pack_assoc_shares_object(void *in, uint32_t tres_cnt, Buf buffer,
 				      uint16_t protocol_version)
 {
@@ -13546,4 +12086,1464 @@ unpack_error:
 	slurm_free_bb_status_resp_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
+}
+
+/* pack_msg
+ * packs a generic slurm protocol message body
+ * IN msg - the body structure to pack (note: includes message type)
+ * IN/OUT buffer - destination of the pack, contains pointers that are
+ *			automatically updated
+ * RET 0 or error code
+ */
+int
+pack_msg(slurm_msg_t const *msg, Buf buffer)
+{
+	if (msg->protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
+		error("%s: Invalid message version=%hu, type:%hu",
+		      __func__, msg->protocol_version, msg->msg_type);
+		return SLURM_ERROR;
+	}
+
+	switch (msg->msg_type) {
+	case REQUEST_NODE_INFO:
+		_pack_node_info_request_msg((node_info_request_msg_t *)
+					    msg->data, buffer,
+					    msg->protocol_version);
+		break;
+	case REQUEST_NODE_INFO_SINGLE:
+		_pack_node_info_single_msg((node_info_single_msg_t *)
+					   msg->data, buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_PARTITION_INFO:
+		_pack_part_info_request_msg((part_info_request_msg_t *)
+					    msg->data, buffer,
+					    msg->protocol_version);
+		break;
+	case REQUEST_RESERVATION_INFO:
+		_pack_resv_info_request_msg((resv_info_request_msg_t *)
+					    msg->data, buffer,
+					    msg->protocol_version);
+		break;
+	case REQUEST_LAYOUT_INFO:
+		_pack_layout_info_request_msg((layout_info_request_msg_t *)
+					      msg->data, buffer,
+					      msg->protocol_version);
+		break;
+	case REQUEST_BUILD_INFO:
+	case REQUEST_ACCTING_INFO:
+		_pack_last_update_msg((last_update_msg_t *)
+				      msg->data, buffer,
+				      msg->protocol_version);
+		break;
+	case RESPONSE_BUILD_INFO:
+		_pack_slurm_ctl_conf_msg((slurm_ctl_conf_info_msg_t *)
+					 msg->data, buffer,
+					 msg->protocol_version);
+		break;
+	case RESPONSE_JOB_INFO:
+		_pack_job_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case RESPONSE_BATCH_SCRIPT:
+		_pack_job_script_msg((Buf) msg->data, buffer,
+				     msg->protocol_version);
+		break;
+	case RESPONSE_PARTITION_INFO:
+		_pack_partition_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case RESPONSE_NODE_INFO:
+		_pack_node_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case MESSAGE_NODE_REGISTRATION_STATUS:
+		_pack_node_registration_status_msg(
+			(slurm_node_registration_status_msg_t *) msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_ACCT_GATHER_UPDATE:
+	case RESPONSE_ACCT_GATHER_ENERGY:
+		_pack_acct_gather_node_resp_msg(
+			(acct_gather_node_resp_msg_t *) msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_RESOURCE_ALLOCATION:
+	case REQUEST_SUBMIT_BATCH_JOB:
+	case REQUEST_JOB_WILL_RUN:
+	case REQUEST_UPDATE_JOB:
+		_pack_job_desc_msg((job_desc_msg_t *) msg->data, buffer,
+				   msg->protocol_version);
+		break;
+	case REQUEST_JOB_PACK_ALLOCATION:
+	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+		_pack_job_desc_list_msg((List) msg->data, buffer,
+					msg->protocol_version);
+		break;
+	case RESPONSE_JOB_PACK_ALLOCATION:
+		_pack_job_info_list_msg((List) msg->data, buffer,
+					msg->protocol_version);
+		break;
+	case REQUEST_SIB_JOB_LOCK:
+	case REQUEST_SIB_JOB_UNLOCK:
+	case REQUEST_SIB_MSG:
+		_pack_sib_msg((sib_msg_t *)msg->data, buffer,
+			      msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		_pack_update_job_step_msg((step_update_request_msg_t *)
+					  msg->data, buffer,
+					  msg->protocol_version);
+		break;
+	case REQUEST_JOB_ALLOCATION_INFO:
+	case REQUEST_JOB_END_TIME:
+	case REQUEST_JOB_PACK_ALLOC_INFO:
+		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
+					 buffer, msg->protocol_version);
+		break;
+	case REQUEST_JOB_SBCAST_CRED:
+		_pack_step_alloc_info_msg((step_alloc_info_msg_t *) msg->data,
+					  buffer, msg->protocol_version);
+		break;
+	case RESPONSE_NODE_REGISTRATION:
+		_pack_node_reg_resp(
+			(slurm_node_reg_resp_msg_t *)msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_NODE_REGISTRATION_STATUS:
+	case REQUEST_RECONFIGURE:
+	case REQUEST_SHUTDOWN_IMMEDIATE:
+	case REQUEST_PING:
+	case REQUEST_CONTROL:
+	case REQUEST_CONTROL_STATUS:
+	case REQUEST_TAKEOVER:
+	case REQUEST_DAEMON_STATUS:
+	case REQUEST_HEALTH_CHECK:
+	case REQUEST_ACCT_GATHER_UPDATE:
+	case ACCOUNTING_FIRST_REG:
+	case ACCOUNTING_REGISTER_CTLD:
+	case REQUEST_TOPO_INFO:
+	case REQUEST_BURST_BUFFER_INFO:
+	case REQUEST_POWERCAP_INFO:
+	case REQUEST_FED_INFO:
+		/* Message contains no body/information */
+		break;
+	case REQUEST_ACCT_GATHER_ENERGY:
+		_pack_acct_gather_energy_req(
+			(acct_gather_energy_req_msg_t *)msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_PERSIST_INIT:
+		slurm_persist_pack_init_req_msg(
+			(persist_init_req_msg_t *)msg->data,
+			buffer);
+		break;
+	case PERSIST_RC:
+		slurm_persist_pack_rc_msg(
+			(persist_rc_msg_t *)msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_REBOOT_NODES:
+		_pack_reboot_msg((reboot_msg_t *)msg->data, buffer,
+				 msg->protocol_version);
+		break;
+	case REQUEST_SHUTDOWN:
+		_pack_shutdown_msg((shutdown_msg_t *) msg->data, buffer,
+				   msg->protocol_version);
+		break;
+	case RESPONSE_SUBMIT_BATCH_JOB:
+		_pack_submit_response_msg((submit_response_msg_t *)
+					  msg->data, buffer,
+					  msg->protocol_version);
+		break;
+	case RESPONSE_JOB_ALLOCATION_INFO:
+	case RESPONSE_RESOURCE_ALLOCATION:
+		_pack_resource_allocation_response_msg
+			((resource_allocation_response_msg_t *) msg->data,
+			 buffer,
+			 msg->protocol_version);
+		break;
+	case RESPONSE_JOB_WILL_RUN:
+		_pack_will_run_response_msg((will_run_response_msg_t *)
+					    msg->data, buffer,
+					    msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_FRONT_END:
+		_pack_update_front_end_msg((update_front_end_msg_t *) msg->data,
+					   buffer, msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_NODE:
+		_pack_update_node_msg((update_node_msg_t *) msg->data,
+				      buffer,
+				      msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_LAYOUT:
+		_pack_update_layout_msg((update_layout_msg_t *) msg->data,
+					buffer,
+					msg->protocol_version);
+		break;
+	case REQUEST_CREATE_PARTITION:
+	case REQUEST_UPDATE_PARTITION:
+		_pack_update_partition_msg((update_part_msg_t *) msg->
+					   data, buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_POWERCAP:
+		_pack_update_powercap_msg((update_powercap_msg_t *) msg->
+					  data, buffer,
+					  msg->protocol_version);
+		break;
+	case REQUEST_DELETE_PARTITION:
+		_pack_delete_partition_msg((delete_part_msg_t *) msg->
+					   data, buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_CREATE_RESERVATION:
+	case REQUEST_UPDATE_RESERVATION:
+		_pack_update_resv_msg((resv_desc_msg_t *) msg->
+				      data, buffer,
+				      msg->protocol_version);
+		break;
+	case RESPONSE_RESERVATION_INFO:
+		_pack_reserve_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case RESPONSE_LAYOUT_INFO:
+		_pack_layout_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case REQUEST_DELETE_RESERVATION:
+	case RESPONSE_CREATE_RESERVATION:
+		_pack_resv_name_msg((reservation_name_msg_t *) msg->
+				    data, buffer,
+				    msg->protocol_version);
+		break;
+	case REQUEST_REATTACH_TASKS:
+		_pack_reattach_tasks_request_msg(
+			(reattach_tasks_request_msg_t *) msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_REATTACH_TASKS:
+		_pack_reattach_tasks_response_msg(
+			(reattach_tasks_response_msg_t *) msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_LAUNCH_TASKS:
+		_pack_launch_tasks_request_msg(
+			(launch_tasks_request_msg_t *) msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_LAUNCH_TASKS:
+		_pack_launch_tasks_response_msg((launch_tasks_response_msg_t
+						 *) msg->data, buffer,
+						msg->protocol_version);
+		break;
+	case TASK_USER_MANAGED_IO_STREAM:
+		_pack_task_user_managed_io_stream_msg(
+			(task_user_managed_io_msg_t *) msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_SIGNAL_TASKS:
+	case REQUEST_TERMINATE_TASKS:
+		_pack_cancel_tasks_msg((signal_tasks_msg_t *) msg->data,
+				       buffer,
+				       msg->protocol_version);
+		break;
+	case REQUEST_CHECKPOINT_TASKS:
+		_pack_checkpoint_tasks_msg((checkpoint_tasks_msg_t *) msg->data,
+					   buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_JOB_STEP_INFO:
+		_pack_job_step_info_req_msg((job_step_info_request_msg_t
+					     *) msg->data, buffer,
+					    msg->protocol_version);
+		break;
+	case REQUEST_JOB_INFO:
+		_pack_job_info_request_msg((job_info_request_msg_t *)
+					   msg->data, buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_CANCEL_JOB_STEP:
+	case REQUEST_KILL_JOB:
+	case SRUN_STEP_SIGNAL:
+		_pack_job_step_kill_msg((job_step_kill_msg_t *)
+					msg->data, buffer,
+					msg->protocol_version);
+		break;
+	case REQUEST_COMPLETE_JOB_ALLOCATION:
+		_pack_complete_job_allocation_msg(
+			(complete_job_allocation_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_COMPLETE_PROLOG:
+		_pack_complete_prolog_msg(
+			(complete_prolog_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_COMPLETE_BATCH_JOB:
+	case REQUEST_COMPLETE_BATCH_SCRIPT:
+		_pack_complete_batch_script_msg(
+			(complete_batch_script_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_STEP_COMPLETE:
+	case REQUEST_STEP_COMPLETE_AGGR:
+		_pack_step_complete_msg((step_complete_msg_t *)msg->data,
+					buffer,
+					msg->protocol_version);
+		break;
+	case RESPONSE_JOB_STEP_STAT:
+		_pack_job_step_stat((job_step_stat_t *) msg->data,
+				    buffer,
+				    msg->protocol_version);
+		break;
+	case REQUEST_STEP_LAYOUT:
+	case REQUEST_JOB_STEP_STAT:
+	case REQUEST_JOB_STEP_PIDS:
+		_pack_job_step_id_msg((job_step_id_msg_t *)msg->data, buffer,
+				      msg->protocol_version);
+		break;
+	case RESPONSE_STEP_LAYOUT:
+		pack_slurm_step_layout((slurm_step_layout_t *)msg->data,
+				       buffer,
+				       msg->protocol_version);
+		break;
+	case RESPONSE_JOB_STEP_PIDS:
+		_pack_job_step_pids((job_step_pids_t *)msg->data,
+				    buffer,
+				    msg->protocol_version);
+		break;
+	case REQUEST_ABORT_JOB:
+	case REQUEST_KILL_PREEMPTED:
+	case REQUEST_KILL_TIMELIMIT:
+	case REQUEST_TERMINATE_JOB:
+		_pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer,
+				   msg->protocol_version);
+		break;
+	case MESSAGE_EPILOG_COMPLETE:
+		_pack_epilog_comp_msg((epilog_complete_msg_t *) msg->data,
+				      buffer,
+				      msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_JOB_TIME:
+		_pack_update_job_time_msg((job_time_msg_t *)
+					  msg->data, buffer,
+					  msg->protocol_version);
+		break;
+	case RESPONSE_RECONFIGURE:
+	case RESPONSE_SHUTDOWN:
+	case RESPONSE_CANCEL_JOB_STEP:
+		break;
+	case REQUEST_JOB_ATTACH:
+		break;
+	case RESPONSE_JOB_ATTACH:
+		break;
+	case RESPONSE_JOB_STEP_INFO:
+		_pack_job_step_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case REQUEST_JOB_RESOURCE:
+		break;
+	case RESPONSE_JOB_RESOURCE:
+		break;
+	case REQUEST_RUN_JOB_STEP:
+		break;
+	case RESPONSE_RUN_JOB_STEP:
+		break;
+	case MESSAGE_TASK_EXIT:
+		_pack_task_exit_msg((task_exit_msg_t *) msg->data, buffer,
+				    msg->protocol_version);
+		break;
+	case REQUEST_BATCH_JOB_LAUNCH:
+		_pack_batch_job_launch_msg((batch_job_launch_msg_t *)
+					   msg->data, buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_LAUNCH_PROLOG:
+		_pack_prolog_launch_msg((prolog_launch_msg_t *)
+					   msg->data, buffer, msg->protocol_version);
+		break;
+	case RESPONSE_PROLOG_EXECUTING:
+	case RESPONSE_JOB_READY:
+	case RESPONSE_SLURM_RC:
+		_pack_return_code_msg((return_code_msg_t *) msg->data,
+				      buffer,
+				      msg->protocol_version);
+		break;
+	case RESPONSE_SLURM_RC_MSG:
+		_pack_return_code2_msg((return_code2_msg_t *) msg->data,
+				       buffer,
+				       msg->protocol_version);
+		break;
+	case RESPONSE_SLURM_REROUTE_MSG:
+		_pack_reroute_msg((reroute_msg_t *)msg->data, buffer,
+				  msg->protocol_version);
+		break;
+	case RESPONSE_JOB_STEP_CREATE:
+		_pack_job_step_create_response_msg(
+			(job_step_create_response_msg_t *)
+			msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_JOB_STEP_CREATE:
+		_pack_job_step_create_request_msg(
+			(job_step_create_request_msg_t *)
+			msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_JOB_ID:
+		_pack_job_id_request_msg(
+			(job_id_request_msg_t *)msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_JOB_ID:
+		_pack_job_id_response_msg(
+			(job_id_response_msg_t *)msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case SRUN_EXEC:
+		_pack_srun_exec_msg((srun_exec_msg_t *)msg->data, buffer,
+				    msg->protocol_version);
+		break;
+	case SRUN_JOB_COMPLETE:
+	case SRUN_PING:
+		_pack_srun_ping_msg((srun_ping_msg_t *)msg->data, buffer,
+				    msg->protocol_version);
+		break;
+	case SRUN_NODE_FAIL:
+		_pack_srun_node_fail_msg((srun_node_fail_msg_t *)msg->data,
+					 buffer,
+					 msg->protocol_version);
+		break;
+	case SRUN_STEP_MISSING:
+		_pack_srun_step_missing_msg((srun_step_missing_msg_t *)
+					    msg->data, buffer,
+					    msg->protocol_version);
+		break;
+	case SRUN_TIMEOUT:
+		_pack_srun_timeout_msg((srun_timeout_msg_t *)msg->data, buffer,
+				       msg->protocol_version);
+		break;
+	case SRUN_USER_MSG:
+		_pack_srun_user_msg((srun_user_msg_t *)msg->data, buffer,
+				    msg->protocol_version);
+		break;
+	case SRUN_NET_FORWARD:
+		_pack_net_forward_msg((net_forward_msg_t *)msg->data,
+				      buffer, msg->protocol_version);
+		break;
+	case REQUEST_CHECKPOINT:
+		_pack_checkpoint_msg((checkpoint_msg_t *)msg->data, buffer,
+				     msg->protocol_version);
+		break;
+	case REQUEST_CHECKPOINT_COMP:
+		_pack_checkpoint_comp((checkpoint_comp_msg_t *)msg->data,
+				      buffer,
+				      msg->protocol_version);
+		break;
+	case REQUEST_CHECKPOINT_TASK_COMP:
+		_pack_checkpoint_task_comp(
+			(checkpoint_task_comp_msg_t *)msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_CHECKPOINT:
+	case RESPONSE_CHECKPOINT_COMP:
+		_pack_checkpoint_resp_msg((checkpoint_resp_msg_t *)msg->data,
+					  buffer,
+					  msg->protocol_version);
+		break;
+	case REQUEST_SUSPEND:
+	case SRUN_REQUEST_SUSPEND:
+		_pack_suspend_msg((suspend_msg_t *)msg->data, buffer,
+				  msg->protocol_version);
+		break;
+	case REQUEST_SUSPEND_INT:
+		_pack_suspend_int_msg((suspend_int_msg_t *)msg->data, buffer,
+				      msg->protocol_version);
+		break;
+	case REQUEST_TOP_JOB:
+		_pack_top_job_msg((top_job_msg_t *)msg->data, buffer,
+				  msg->protocol_version);
+		break;
+	case REQUEST_BATCH_SCRIPT:
+	case REQUEST_JOB_READY:
+	case REQUEST_JOB_INFO_SINGLE:
+		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer,
+				    msg->protocol_version);
+		break;
+
+	case REQUEST_JOB_REQUEUE:
+		_pack_job_requeue_msg((requeue_msg_t *)msg->data,
+				      buffer,
+				      msg->protocol_version);
+		break;
+
+	case REQUEST_JOB_USER_INFO:
+		_pack_job_user_msg((job_user_id_msg_t *)msg->data, buffer,
+				   msg->protocol_version);
+		break;
+
+	case REQUEST_SHARE_INFO:
+		_pack_shares_request_msg((shares_request_msg_t *)msg->data,
+					 buffer,
+					 msg->protocol_version);
+		break;
+	case RESPONSE_SHARE_INFO:
+		_pack_shares_response_msg((shares_response_msg_t *)msg->data,
+					  buffer,
+					  msg->protocol_version);
+		break;
+	case REQUEST_PRIORITY_FACTORS:
+		_pack_priority_factors_request_msg(
+			(priority_factors_request_msg_t*)msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_PRIORITY_FACTORS:
+		_pack_priority_factors_response_msg(
+			(priority_factors_response_msg_t*)msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_BURST_BUFFER_INFO:
+		_pack_burst_buffer_info_resp_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case REQUEST_FILE_BCAST:
+		_pack_file_bcast((file_bcast_msg_t *) msg->data, buffer,
+				 msg->protocol_version);
+		break;
+	case PMI_KVS_PUT_REQ:
+	case PMI_KVS_GET_RESP:
+		_pack_kvs_data((kvs_comm_set_t *) msg->data, buffer,
+			       msg->protocol_version);
+		break;
+	case PMI_KVS_GET_REQ:
+		_pack_kvs_get((kvs_get_msg_t *) msg->data, buffer,
+			      msg->protocol_version);
+		break;
+	case PMI_KVS_PUT_RESP:
+		break;	/* no data in message */
+	case RESPONSE_FORWARD_FAILED:
+		break;
+	case REQUEST_TRIGGER_GET:
+	case RESPONSE_TRIGGER_GET:
+	case REQUEST_TRIGGER_SET:
+	case REQUEST_TRIGGER_CLEAR:
+	case REQUEST_TRIGGER_PULL:
+		_pack_trigger_msg((trigger_info_msg_t *) msg->data, buffer,
+				  msg->protocol_version);
+		break;
+	case RESPONSE_SLURMD_STATUS:
+		_pack_slurmd_status((slurmd_status_t *) msg->data, buffer,
+				    msg->protocol_version);
+		break;
+	case REQUEST_JOB_NOTIFY:
+		_pack_job_notify((job_notify_msg_t *) msg->data, buffer,
+				 msg->protocol_version);
+		break;
+	case REQUEST_SET_DEBUG_FLAGS:
+		_pack_set_debug_flags_msg(
+			(set_debug_flags_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_SET_DEBUG_LEVEL:
+	case REQUEST_SET_SCHEDLOG_LEVEL:
+		_pack_set_debug_level_msg(
+			(set_debug_level_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case ACCOUNTING_UPDATE_MSG:
+		_pack_accounting_update_msg(
+			(accounting_update_msg_t *)msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_TOPO_INFO:
+		_pack_topo_info_msg(
+			(topo_info_response_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_POWERCAP_INFO:
+		_pack_powercap_info_msg(
+			(powercap_info_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_JOB_SBCAST_CRED:
+		_pack_job_sbcast_cred_msg(
+			(job_sbcast_cred_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_FRONT_END_INFO:
+		_pack_front_end_info_request_msg(
+			(front_end_info_request_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_FED_INFO:
+		slurmdb_pack_federation_rec(
+			(slurmdb_federation_rec_t *)msg->data,
+			msg->protocol_version, buffer);
+		break;
+	case RESPONSE_FRONT_END_INFO:
+		_pack_front_end_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case REQUEST_SPANK_ENVIRONMENT:
+		_pack_spank_env_request_msg(
+			(spank_env_request_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONCE_SPANK_ENVIRONMENT:
+		_pack_spank_env_responce_msg(
+			(spank_env_responce_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+
+	case REQUEST_STATS_INFO:
+		_pack_stats_request_msg((stats_info_request_msg_t *)msg->data,
+					buffer, msg->protocol_version);
+		break;
+
+	case RESPONSE_STATS_INFO:
+		_pack_stats_response_msg((slurm_msg_t *)msg, buffer);
+		break;
+
+	case REQUEST_FORWARD_DATA:
+		_pack_forward_data_msg((forward_data_msg_t *)msg->data,
+				       buffer, msg->protocol_version);
+		break;
+
+	case RESPONSE_PING_SLURMD:
+		_pack_ping_slurmd_resp((ping_slurmd_resp_msg_t *)msg->data,
+				       buffer, msg->protocol_version);
+		break;
+	case REQUEST_LICENSE_INFO:
+		 _pack_license_info_request_msg((license_info_request_msg_t *)
+						msg->data,
+						buffer,
+						msg->protocol_version);
+			break;
+	case RESPONSE_LICENSE_INFO:
+		_pack_license_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case MESSAGE_COMPOSITE:
+	case RESPONSE_MESSAGE_COMPOSITE:
+		_pack_composite_msg((composite_msg_t *) msg->data, buffer,
+				     msg->protocol_version);
+		break;
+	case RESPONSE_JOB_ARRAY_ERRORS:
+		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
+					 buffer, msg->protocol_version);
+		break;
+	case REQUEST_ASSOC_MGR_INFO:
+		_pack_assoc_mgr_info_request_msg(
+			(assoc_mgr_info_request_msg_t *)msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case RESPONSE_ASSOC_MGR_INFO:
+		_pack_assoc_mgr_info_msg((slurm_msg_t *) msg, buffer);
+		break;
+	case REQUEST_NETWORK_CALLERID:
+		_pack_network_callerid_msg((network_callerid_msg_t *)
+						  msg->data, buffer,
+						  msg->protocol_version);
+		break;
+	case RESPONSE_NETWORK_CALLERID:
+		_pack_network_callerid_resp_msg((network_callerid_resp_t *)
+						  msg->data, buffer,
+						  msg->protocol_version);
+		break;
+	case REQUEST_EVENT_LOG:
+		_pack_event_log_msg((slurm_event_log_msg_t *) msg->data, buffer,
+				    msg->protocol_version);
+		break;
+	case REQUEST_CTLD_MULT_MSG:
+	case RESPONSE_CTLD_MULT_MSG:
+		_pack_buf_list_msg((ctld_list_msg_t *) msg->data, buffer,
+				   msg->protocol_version);
+		break;
+	case REQUEST_SET_FS_DAMPENING_FACTOR:
+		_pack_set_fs_dampening_factor_msg(
+			(set_fs_dampening_factor_msg_t *)msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_CONTROL_STATUS:
+		_pack_control_status_msg((control_status_msg_t *)(msg->data),
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_BURST_BUFFER_STATUS:
+		_pack_bb_status_req_msg((bb_status_req_msg_t *)(msg->data),
+					buffer, msg->protocol_version);
+		break;
+	case RESPONSE_BURST_BUFFER_STATUS:
+		_pack_bb_status_resp_msg((bb_status_resp_msg_t *)(msg->data),
+					 buffer, msg->protocol_version);
+		break;
+	default:
+		debug("No pack method for msg type %u", msg->msg_type);
+		return EINVAL;
+		break;
+	}
+	return SLURM_SUCCESS;
+}
+
+/* unpack_msg
+ * unpacks a generic slurm protocol message body
+ * OUT msg - the body structure to unpack (note: includes message type)
+ * IN/OUT buffer - source of the unpack, contains pointers that are
+ *			automatically updated
+ * RET 0 or error code
+ */
+int
+unpack_msg(slurm_msg_t * msg, Buf buffer)
+{
+	int rc = SLURM_SUCCESS;
+	msg->data = NULL;	/* Initialize to no data for now */
+
+	switch (msg->msg_type) {
+	case REQUEST_NODE_INFO:
+		rc = _unpack_node_info_request_msg((node_info_request_msg_t **)
+						   & (msg->data), buffer,
+						   msg->protocol_version);
+		break;
+	case REQUEST_NODE_INFO_SINGLE:
+		rc = _unpack_node_info_single_msg((node_info_single_msg_t **)
+						  & (msg->data), buffer,
+						  msg->protocol_version);
+		break;
+	case REQUEST_PARTITION_INFO:
+		rc = _unpack_part_info_request_msg((part_info_request_msg_t **)
+						   & (msg->data), buffer,
+						   msg->protocol_version);
+		break;
+	case REQUEST_RESERVATION_INFO:
+		rc = _unpack_resv_info_request_msg((resv_info_request_msg_t **)
+						   & (msg->data), buffer,
+						   msg->protocol_version);
+		break;
+	case REQUEST_LAYOUT_INFO:
+		rc = _unpack_layout_info_request_msg((layout_info_request_msg_t **)
+						     & (msg->data), buffer,
+						     msg->protocol_version);
+		break;
+	case REQUEST_BUILD_INFO:
+	case REQUEST_ACCTING_INFO:
+		rc = _unpack_last_update_msg((last_update_msg_t **) &
+					     (msg->data), buffer,
+					     msg->protocol_version);
+		break;
+	case RESPONSE_BUILD_INFO:
+		rc = _unpack_slurm_ctl_conf_msg((slurm_ctl_conf_info_msg_t
+						 **)
+						& (msg->data), buffer,
+						msg->protocol_version);
+		break;
+	case RESPONSE_JOB_INFO:
+		rc = _unpack_job_info_msg((job_info_msg_t **) & (msg->data),
+					  buffer,
+					  msg->protocol_version);
+		break;
+	case RESPONSE_BATCH_SCRIPT:
+		rc = _unpack_job_script_msg((char **) &(msg->data),
+					    buffer,
+					    msg->protocol_version);
+		break;
+	case RESPONSE_PARTITION_INFO:
+		rc = _unpack_partition_info_msg((partition_info_msg_t **) &
+						(msg->data), buffer,
+						msg->protocol_version);
+		break;
+	case RESPONSE_NODE_INFO:
+		rc = _unpack_node_info_msg((node_info_msg_t **) &
+					   (msg->data), buffer,
+					   msg->protocol_version);
+		break;
+	case MESSAGE_NODE_REGISTRATION_STATUS:
+		rc = _unpack_node_registration_status_msg(
+			(slurm_node_registration_status_msg_t **)
+			& (msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_ACCT_GATHER_UPDATE:
+	case RESPONSE_ACCT_GATHER_ENERGY:
+		rc = _unpack_acct_gather_node_resp_msg(
+			(acct_gather_node_resp_msg_t **)&(msg->data),
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_RESOURCE_ALLOCATION:
+	case REQUEST_SUBMIT_BATCH_JOB:
+	case REQUEST_JOB_WILL_RUN:
+	case REQUEST_UPDATE_JOB:
+		rc = _unpack_job_desc_msg((job_desc_msg_t **) & (msg->data),
+					  buffer, msg->protocol_version);
+		break;
+	case REQUEST_JOB_PACK_ALLOCATION:
+	case REQUEST_SUBMIT_BATCH_JOB_PACK:
+		rc = _unpack_job_desc_list_msg((List *) &(msg->data),
+					       buffer, msg->protocol_version);
+		break;
+	case RESPONSE_JOB_PACK_ALLOCATION:
+		rc = _unpack_job_info_list_msg((List *) &(msg->data),
+					       buffer, msg->protocol_version);
+		break;
+	case REQUEST_SIB_JOB_LOCK:
+	case REQUEST_SIB_JOB_UNLOCK:
+	case REQUEST_SIB_MSG:
+		rc = _unpack_sib_msg((sib_msg_t **)&(msg->data), buffer,
+				     msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		rc = _unpack_update_job_step_msg(
+			(step_update_request_msg_t **) & (msg->data),
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_JOB_ALLOCATION_INFO:
+	case REQUEST_JOB_END_TIME:
+	case REQUEST_JOB_PACK_ALLOC_INFO:
+		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
+						(msg->data), buffer,
+						msg->protocol_version);
+		break;
+	case REQUEST_JOB_SBCAST_CRED:
+		rc = _unpack_step_alloc_info_msg((step_alloc_info_msg_t **) &
+						 (msg->data), buffer,
+						 msg->protocol_version);
+		break;
+	case RESPONSE_NODE_REGISTRATION:
+		rc = _unpack_node_reg_resp(
+			(slurm_node_reg_resp_msg_t **)&msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_NODE_REGISTRATION_STATUS:
+	case REQUEST_RECONFIGURE:
+	case REQUEST_SHUTDOWN_IMMEDIATE:
+	case REQUEST_PING:
+	case REQUEST_CONTROL:
+	case REQUEST_CONTROL_STATUS:
+	case REQUEST_TAKEOVER:
+	case REQUEST_DAEMON_STATUS:
+	case REQUEST_HEALTH_CHECK:
+	case REQUEST_ACCT_GATHER_UPDATE:
+	case ACCOUNTING_FIRST_REG:
+	case ACCOUNTING_REGISTER_CTLD:
+	case REQUEST_TOPO_INFO:
+	case REQUEST_BURST_BUFFER_INFO:
+	case REQUEST_POWERCAP_INFO:
+	case REQUEST_FED_INFO:
+		/* Message contains no body/information */
+		break;
+	case REQUEST_ACCT_GATHER_ENERGY:
+		rc = _unpack_acct_gather_energy_req(
+			(acct_gather_energy_req_msg_t **) & (msg->data),
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_PERSIST_INIT:
+		/* the version is contained in the data so use that instead of
+		   what is in the message */
+		rc = slurm_persist_unpack_init_req_msg(
+			(persist_init_req_msg_t **)&msg->data, buffer);
+		break;
+	case PERSIST_RC:
+		rc = slurm_persist_unpack_rc_msg(
+			(persist_rc_msg_t **)&msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case REQUEST_REBOOT_NODES:
+		rc = _unpack_reboot_msg((reboot_msg_t **) & (msg->data),
+					buffer, msg->protocol_version);
+		break;
+	case REQUEST_SHUTDOWN:
+		rc = _unpack_shutdown_msg((shutdown_msg_t **) & (msg->data),
+					  buffer,
+					  msg->protocol_version);
+		break;
+	case RESPONSE_SUBMIT_BATCH_JOB:
+		rc = _unpack_submit_response_msg((submit_response_msg_t **)
+						 & (msg->data), buffer,
+						 msg->protocol_version);
+		break;
+	case RESPONSE_JOB_ALLOCATION_INFO:
+	case RESPONSE_RESOURCE_ALLOCATION:
+		rc = _unpack_resource_allocation_response_msg(
+			(resource_allocation_response_msg_t **)
+			& (msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_JOB_WILL_RUN:
+		rc = _unpack_will_run_response_msg((will_run_response_msg_t **)
+						   &(msg->data), buffer,
+						   msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_FRONT_END:
+		rc = _unpack_update_front_end_msg((update_front_end_msg_t **) &
+						  (msg->data), buffer,
+						  msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_NODE:
+		rc = _unpack_update_node_msg((update_node_msg_t **) &
+					     (msg->data), buffer,
+					     msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_LAYOUT:
+		rc = _unpack_update_layout_msg((update_layout_msg_t **) &
+					       (msg->data), buffer,
+					       msg->protocol_version);
+		break;
+	case REQUEST_CREATE_PARTITION:
+	case REQUEST_UPDATE_PARTITION:
+		rc = _unpack_update_partition_msg((update_part_msg_t **) &
+						  (msg->data), buffer,
+						  msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_POWERCAP:
+		rc = _unpack_update_powercap_msg((update_powercap_msg_t **) &
+						 (msg->data), buffer,
+						 msg->protocol_version);
+		break;
+	case REQUEST_DELETE_PARTITION:
+		rc = _unpack_delete_partition_msg((delete_part_msg_t **) &
+						  (msg->data), buffer,
+						  msg->protocol_version);
+		break;
+	case REQUEST_CREATE_RESERVATION:
+	case REQUEST_UPDATE_RESERVATION:
+		rc = _unpack_update_resv_msg((resv_desc_msg_t **)
+					     &(msg->data), buffer,
+					     msg->protocol_version);
+		break;
+	case REQUEST_DELETE_RESERVATION:
+	case RESPONSE_CREATE_RESERVATION:
+		rc = _unpack_resv_name_msg((reservation_name_msg_t **)
+					   &(msg->data), buffer,
+					   msg->protocol_version);
+		break;
+	case RESPONSE_RESERVATION_INFO:
+		rc = _unpack_reserve_info_msg((reserve_info_msg_t **)
+					      &(msg->data), buffer,
+					      msg->protocol_version);
+		break;
+	case RESPONSE_LAYOUT_INFO:
+		rc = _unpack_layout_info_msg((layout_info_msg_t **)
+					     &(msg->data), buffer,
+					     msg->protocol_version);
+		break;
+	case REQUEST_LAUNCH_TASKS:
+		rc = _unpack_launch_tasks_request_msg(
+			(launch_tasks_request_msg_t **)
+			& (msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_LAUNCH_TASKS:
+		rc = _unpack_launch_tasks_response_msg(
+			(launch_tasks_response_msg_t **)
+			& (msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case TASK_USER_MANAGED_IO_STREAM:
+		rc = _unpack_task_user_managed_io_stream_msg(
+			(task_user_managed_io_msg_t **) &msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_REATTACH_TASKS:
+		rc = _unpack_reattach_tasks_request_msg(
+			(reattach_tasks_request_msg_t **) & msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_REATTACH_TASKS:
+		rc = _unpack_reattach_tasks_response_msg(
+			(reattach_tasks_response_msg_t **)
+			& msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_SIGNAL_TASKS:
+	case REQUEST_TERMINATE_TASKS:
+		rc = _unpack_cancel_tasks_msg((signal_tasks_msg_t **) &
+					      (msg->data), buffer,
+					      msg->protocol_version);
+		break;
+	case REQUEST_CHECKPOINT_TASKS:
+		rc = _unpack_checkpoint_tasks_msg((checkpoint_tasks_msg_t **) &
+						  (msg->data), buffer,
+						  msg->protocol_version);
+		break;
+	case REQUEST_JOB_STEP_INFO:
+		rc = _unpack_job_step_info_req_msg(
+			(job_step_info_request_msg_t **)
+			& (msg->data), buffer,
+			msg->protocol_version);
+		break;
+		/********  job_step_id_t Messages  ********/
+	case REQUEST_JOB_INFO:
+		rc = _unpack_job_info_request_msg((job_info_request_msg_t**)
+						  & (msg->data), buffer,
+						  msg->protocol_version);
+		break;
+	case REQUEST_CANCEL_JOB_STEP:
+	case REQUEST_KILL_JOB:
+	case SRUN_STEP_SIGNAL:
+		rc = _unpack_job_step_kill_msg((job_step_kill_msg_t **)
+					       & (msg->data), buffer,
+					       msg->protocol_version);
+		break;
+	case REQUEST_COMPLETE_JOB_ALLOCATION:
+		rc = _unpack_complete_job_allocation_msg(
+			(complete_job_allocation_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_COMPLETE_PROLOG:
+		rc = _unpack_complete_prolog_msg(
+			(complete_prolog_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_COMPLETE_BATCH_JOB:
+	case REQUEST_COMPLETE_BATCH_SCRIPT:
+		rc = _unpack_complete_batch_script_msg(
+			(complete_batch_script_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_STEP_COMPLETE:
+	case REQUEST_STEP_COMPLETE_AGGR:
+		rc = _unpack_step_complete_msg((step_complete_msg_t
+						**) & (msg->data),
+					       buffer,
+					       msg->protocol_version);
+		break;
+	case RESPONSE_JOB_STEP_STAT:
+		rc = _unpack_job_step_stat(
+			(job_step_stat_t **) &(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_STEP_LAYOUT:
+	case REQUEST_JOB_STEP_STAT:
+	case REQUEST_JOB_STEP_PIDS:
+		rc = _unpack_job_step_id_msg((job_step_id_msg_t **)&msg->data,
+					     buffer, msg->protocol_version);
+		break;
+	case RESPONSE_STEP_LAYOUT:
+		rc = unpack_slurm_step_layout(
+			(slurm_step_layout_t **)&msg->data,
+			buffer, msg->protocol_version);
+		break;
+	case RESPONSE_JOB_STEP_PIDS:
+		rc = _unpack_job_step_pids(
+			(job_step_pids_t **)&msg->data,
+			buffer,	msg->protocol_version);
+		break;
+	case REQUEST_ABORT_JOB:
+	case REQUEST_KILL_PREEMPTED:
+	case REQUEST_KILL_TIMELIMIT:
+	case REQUEST_TERMINATE_JOB:
+		rc = _unpack_kill_job_msg((kill_job_msg_t **) & (msg->data),
+					  buffer,
+					  msg->protocol_version);
+		break;
+	case MESSAGE_EPILOG_COMPLETE:
+		rc = _unpack_epilog_comp_msg((epilog_complete_msg_t **)
+					     & (msg->data), buffer,
+					     msg->protocol_version);
+		break;
+	case REQUEST_UPDATE_JOB_TIME:
+		rc = _unpack_update_job_time_msg(
+			(job_time_msg_t **)
+			& (msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_RECONFIGURE:
+	case RESPONSE_SHUTDOWN:
+	case RESPONSE_CANCEL_JOB_STEP:
+		break;
+	case REQUEST_JOB_ATTACH:
+		break;
+	case RESPONSE_JOB_ATTACH:
+		break;
+	case RESPONSE_JOB_STEP_INFO:
+		rc = _unpack_job_step_info_response_msg(
+			(job_step_info_response_msg_t **)
+			& (msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_JOB_RESOURCE:
+		break;
+	case RESPONSE_JOB_RESOURCE:
+		break;
+	case REQUEST_RUN_JOB_STEP:
+		break;
+	case RESPONSE_RUN_JOB_STEP:
+		break;
+	case MESSAGE_TASK_EXIT:
+		rc = _unpack_task_exit_msg((task_exit_msg_t **)
+					   & (msg->data), buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_BATCH_JOB_LAUNCH:
+		rc = _unpack_batch_job_launch_msg((batch_job_launch_msg_t **)
+						  & (msg->data), buffer,
+						  msg->protocol_version);
+		break;
+	case REQUEST_LAUNCH_PROLOG:
+		rc = _unpack_prolog_launch_msg((prolog_launch_msg_t **)
+					       & (msg->data),
+					       buffer, msg->protocol_version);
+		break;
+	case RESPONSE_PROLOG_EXECUTING:
+	case RESPONSE_JOB_READY:
+	case RESPONSE_SLURM_RC:
+		rc = _unpack_return_code_msg((return_code_msg_t **)
+					     & (msg->data), buffer,
+					     msg->protocol_version);
+		break;
+	case RESPONSE_SLURM_RC_MSG:
+		/* Log error message, otherwise replicate RESPONSE_SLURM_RC */
+		msg->msg_type = RESPONSE_SLURM_RC;
+		rc = _unpack_return_code2_msg((return_code_msg_t **)
+					      & (msg->data), buffer,
+					      msg->protocol_version);
+		break;
+	case RESPONSE_SLURM_REROUTE_MSG:
+		rc = _unpack_reroute_msg((reroute_msg_t **)&(msg->data), buffer,
+					 msg->protocol_version);
+		break;
+	case RESPONSE_JOB_STEP_CREATE:
+		rc = _unpack_job_step_create_response_msg(
+			(job_step_create_response_msg_t **)
+			& msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_JOB_STEP_CREATE:
+		rc = _unpack_job_step_create_request_msg(
+			(job_step_create_request_msg_t **) & msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_JOB_ID:
+		rc = _unpack_job_id_request_msg(
+			(job_id_request_msg_t **) & msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_JOB_ID:
+		rc = _unpack_job_id_response_msg(
+			(job_id_response_msg_t **) & msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case SRUN_EXEC:
+		rc = _unpack_srun_exec_msg((srun_exec_msg_t **) & msg->data,
+					   buffer,
+					   msg->protocol_version);
+		break;
+	case SRUN_JOB_COMPLETE:
+	case SRUN_PING:
+		rc = _unpack_srun_ping_msg((srun_ping_msg_t **) & msg->data,
+					   buffer,
+					   msg->protocol_version);
+		break;
+	case SRUN_NET_FORWARD:
+		rc = _unpack_net_forward_msg((net_forward_msg_t **) &msg->data,
+					     buffer, msg->protocol_version);
+		break;
+	case SRUN_NODE_FAIL:
+		rc = _unpack_srun_node_fail_msg((srun_node_fail_msg_t **)
+						& msg->data, buffer,
+						msg->protocol_version);
+		break;
+	case SRUN_STEP_MISSING:
+		rc = _unpack_srun_step_missing_msg((srun_step_missing_msg_t **)
+						   & msg->data, buffer,
+						   msg->protocol_version);
+		break;
+	case SRUN_TIMEOUT:
+		rc = _unpack_srun_timeout_msg((srun_timeout_msg_t **)
+					      & msg->data, buffer,
+					      msg->protocol_version);
+		break;
+	case SRUN_USER_MSG:
+		rc = _unpack_srun_user_msg((srun_user_msg_t **)
+					   & msg->data, buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_CHECKPOINT:
+		rc = _unpack_checkpoint_msg((checkpoint_msg_t **)
+					    & msg->data, buffer,
+					    msg->protocol_version);
+		break;
+	case REQUEST_CHECKPOINT_COMP:
+		rc = _unpack_checkpoint_comp((checkpoint_comp_msg_t **)
+					     & msg->data, buffer,
+					     msg->protocol_version);
+		break;
+	case REQUEST_CHECKPOINT_TASK_COMP:
+		rc = _unpack_checkpoint_task_comp(
+			(checkpoint_task_comp_msg_t **)
+			& msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_CHECKPOINT:
+	case RESPONSE_CHECKPOINT_COMP:
+		rc = _unpack_checkpoint_resp_msg((checkpoint_resp_msg_t **)
+						 & msg->data, buffer,
+						 msg->protocol_version);
+		break;
+	case REQUEST_SUSPEND:
+	case SRUN_REQUEST_SUSPEND:
+		rc = _unpack_suspend_msg((suspend_msg_t **) &msg->data,
+					 buffer,
+					 msg->protocol_version);
+		break;
+	case REQUEST_SUSPEND_INT:
+		rc = _unpack_suspend_int_msg((suspend_int_msg_t **) &msg->data,
+					     buffer, msg->protocol_version);
+		break;
+	case REQUEST_TOP_JOB:
+		rc = _unpack_top_job_msg((top_job_msg_t **) &msg->data, buffer,
+					 msg->protocol_version);
+		break;
+	case REQUEST_BATCH_SCRIPT:
+	case REQUEST_JOB_READY:
+	case REQUEST_JOB_INFO_SINGLE:
+		rc = _unpack_job_ready_msg((job_id_msg_t **)
+					   & msg->data, buffer,
+					   msg->protocol_version);
+		break;
+
+	case REQUEST_JOB_REQUEUE:
+		rc = _unpack_job_requeue_msg((requeue_msg_t **)&msg->data,
+					     buffer,
+					     msg->protocol_version);
+		break;
+
+	case REQUEST_JOB_USER_INFO:
+		rc = _unpack_job_user_msg((job_user_id_msg_t **)
+					  &msg->data, buffer,
+					  msg->protocol_version);
+		break;
+
+	case REQUEST_SHARE_INFO:
+		rc = _unpack_shares_request_msg(
+			(shares_request_msg_t **)&msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_SHARE_INFO:
+		rc = _unpack_shares_response_msg(
+			(shares_response_msg_t **)&msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_PRIORITY_FACTORS:
+		rc = _unpack_priority_factors_request_msg(
+			(priority_factors_request_msg_t**)&msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_PRIORITY_FACTORS:
+		rc = _unpack_priority_factors_response_msg(
+			(priority_factors_response_msg_t**)&msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_BURST_BUFFER_INFO:
+		rc = _unpack_burst_buffer_info_msg(
+			(burst_buffer_info_msg_t **) &(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_FILE_BCAST:
+		rc = _unpack_file_bcast( (file_bcast_msg_t **)
+					 & msg->data, buffer,
+					 msg->protocol_version);
+		break;
+	case PMI_KVS_PUT_REQ:
+	case PMI_KVS_GET_RESP:
+		rc = _unpack_kvs_data((kvs_comm_set_t **) &msg->data,
+				      buffer,
+				      msg->protocol_version);
+		break;
+	case PMI_KVS_GET_REQ:
+		rc = _unpack_kvs_get((kvs_get_msg_t **) &msg->data, buffer,
+				     msg->protocol_version);
+		break;
+	case PMI_KVS_PUT_RESP:
+		break;	/* no data */
+	case RESPONSE_FORWARD_FAILED:
+		break;
+	case REQUEST_TRIGGER_GET:
+	case RESPONSE_TRIGGER_GET:
+	case REQUEST_TRIGGER_SET:
+	case REQUEST_TRIGGER_CLEAR:
+	case REQUEST_TRIGGER_PULL:
+		rc = _unpack_trigger_msg((trigger_info_msg_t **)
+					 &msg->data, buffer,
+					 msg->protocol_version);
+		break;
+	case RESPONSE_SLURMD_STATUS:
+		rc = _unpack_slurmd_status((slurmd_status_t **)
+					   &msg->data, buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_JOB_NOTIFY:
+		rc =  _unpack_job_notify((job_notify_msg_t **)
+					 &msg->data, buffer,
+					 msg->protocol_version);
+		break;
+	case REQUEST_SET_DEBUG_FLAGS:
+		rc = _unpack_set_debug_flags_msg(
+			(set_debug_flags_msg_t **)&(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_SET_DEBUG_LEVEL:
+	case REQUEST_SET_SCHEDLOG_LEVEL:
+		rc = _unpack_set_debug_level_msg(
+			(set_debug_level_msg_t **)&(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case ACCOUNTING_UPDATE_MSG:
+		rc = _unpack_accounting_update_msg(
+			(accounting_update_msg_t **)&msg->data,
+			buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_TOPO_INFO:
+		rc = _unpack_topo_info_msg(
+			(topo_info_response_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_POWERCAP_INFO:
+		rc = _unpack_powercap_info_msg(
+			(powercap_info_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_JOB_SBCAST_CRED:
+		rc = _unpack_job_sbcast_cred_msg(
+			(job_sbcast_cred_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_FED_INFO:
+		rc = slurmdb_unpack_federation_rec(&msg->data,
+						   msg->protocol_version,
+						   buffer);
+		break;
+	case REQUEST_FRONT_END_INFO:
+		rc = _unpack_front_end_info_request_msg(
+			(front_end_info_request_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_FRONT_END_INFO:
+		rc = _unpack_front_end_info_msg(
+			(front_end_info_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_SPANK_ENVIRONMENT:
+		rc = _unpack_spank_env_request_msg(
+			(spank_env_request_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+	case RESPONCE_SPANK_ENVIRONMENT:
+		rc = _unpack_spank_env_responce_msg(
+			(spank_env_responce_msg_t **)&msg->data, buffer,
+			msg->protocol_version);
+		break;
+
+	case REQUEST_STATS_INFO:
+		rc = _unpack_stats_request_msg((stats_info_request_msg_t **)
+					       &msg->data, buffer,
+					       msg->protocol_version);
+		break;
+
+	case RESPONSE_STATS_INFO:
+		rc = _unpack_stats_response_msg((stats_info_response_msg_t **)
+						&msg->data, buffer,
+						msg->protocol_version);
+		break;
+
+	case REQUEST_FORWARD_DATA:
+		rc = _unpack_forward_data_msg((forward_data_msg_t **)&msg->data,
+					      buffer, msg->protocol_version);
+		break;
+
+	case RESPONSE_PING_SLURMD:
+		rc = _unpack_ping_slurmd_resp((ping_slurmd_resp_msg_t **)
+					      &msg->data, buffer,
+					      msg->protocol_version);
+		break;
+	case RESPONSE_LICENSE_INFO:
+		rc = _unpack_license_info_msg((license_info_msg_t **)&(msg->data),
+					      buffer,
+					      msg->protocol_version);
+		break;
+	case REQUEST_LICENSE_INFO:
+		rc = _unpack_license_info_request_msg((license_info_request_msg_t **)
+						      &(msg->data),
+						      buffer,
+						      msg->protocol_version);
+		break;
+	case MESSAGE_COMPOSITE:
+	case RESPONSE_MESSAGE_COMPOSITE:
+		rc = _unpack_composite_msg((composite_msg_t **) &(msg->data),
+					   buffer, msg->protocol_version);
+		break;
+	case RESPONSE_JOB_ARRAY_ERRORS:
+		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
+						&(msg->data), buffer,
+						msg->protocol_version);
+		break;
+	case REQUEST_ASSOC_MGR_INFO:
+		rc = _unpack_assoc_mgr_info_request_msg(
+			(assoc_mgr_info_request_msg_t **)&(msg->data),
+			buffer, msg->protocol_version);
+		break;
+	case RESPONSE_ASSOC_MGR_INFO:
+		rc = assoc_mgr_info_unpack_msg((assoc_mgr_info_msg_t **)
+					       &(msg->data),
+					       buffer,
+					       msg->protocol_version);
+		break;
+	case REQUEST_NETWORK_CALLERID:
+		rc = _unpack_network_callerid_msg((network_callerid_msg_t **)
+						  &(msg->data), buffer,
+						  msg->protocol_version);
+		break;
+	case RESPONSE_NETWORK_CALLERID:
+		rc = _unpack_network_callerid_resp_msg(
+			(network_callerid_resp_t **)&(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_EVENT_LOG:
+		rc = _unpack_event_log_msg((slurm_event_log_msg_t **)
+					   &(msg->data), buffer,
+					   msg->protocol_version);
+		break;
+	case REQUEST_CTLD_MULT_MSG:
+	case RESPONSE_CTLD_MULT_MSG:
+		rc = _unpack_buf_list_msg((ctld_list_msg_t **) &(msg->data),
+					  buffer, msg->protocol_version);
+		break;
+	case REQUEST_SET_FS_DAMPENING_FACTOR:
+		rc = _unpack_set_fs_dampening_factor_msg(
+			(set_fs_dampening_factor_msg_t **)&(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_CONTROL_STATUS:
+		rc = _unpack_control_status_msg(
+			(control_status_msg_t **)&(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case REQUEST_BURST_BUFFER_STATUS:
+		rc = _unpack_bb_status_req_msg(
+			(bb_status_req_msg_t **)&(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	case RESPONSE_BURST_BUFFER_STATUS:
+		rc = _unpack_bb_status_resp_msg(
+			(bb_status_resp_msg_t **)&(msg->data), buffer,
+			msg->protocol_version);
+		break;
+	default:
+		debug("No unpack method for msg type %u", msg->msg_type);
+		return EINVAL;
+		break;
+	}
+
+	if (rc) {
+		error("Malformed RPC of type %s(%u) received",
+		      rpc_num2string(msg->msg_type), msg->msg_type);
+	}
+	return rc;
 }
