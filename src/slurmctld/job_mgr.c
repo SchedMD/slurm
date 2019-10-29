@@ -12434,10 +12434,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				   __func__, entity,
 				   (job_specs->pn_min_memory & (~MEM_PER_CPU)),
 				   job_ptr);
-			sched_info("%s: setting min_memory_%s to %"PRIu64
-				   " for job_id %u", __func__, entity,
-				   (job_specs->pn_min_memory & (~MEM_PER_CPU)),
-				   job_ptr->job_id);
 			/*
 			 * Always use the acct_policy_limit_set.*
 			 * since if set by a super user it be set correctly
