@@ -3462,7 +3462,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 	bool gres_per_job, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
 	int64_t time_waiting = 0;
-	int leaf_switch_count = 0, req_leaf_switch_count = 0;
+	int leaf_switch_count = 0;
 	int top_switch_inx = -1;
 	int prev_rem_nodes;
 
@@ -3619,7 +3619,6 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 			switch_required[i] = 1;
 			if (switch_record_table[i].level == 0) {
 				leaf_switch_count++;
-				req_leaf_switch_count++;
 			}
 			if ((top_switch_inx == -1) ||
 			    (switch_record_table[i].level >
@@ -3793,20 +3792,10 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 				switch_required[i] = 1;
 				if (switch_record_table[i].level == 0) {
 					leaf_switch_count++;
-					req_leaf_switch_count++;
 				}
 			}
 		}
 		bit_or(node_map, req2_nodes_bitmap);
-		if ((job_ptr->req_switch > 0) &&
-		    (req_leaf_switch_count > job_ptr->req_switch) &&
-		    (time_waiting < job_ptr->wait4switch)) {
-			info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
-			     plugin_type, __func__, job_ptr, leaf_switch_count,
-			     job_ptr->req_switch);
-			rc = SLURM_ERROR;
-			goto fini;
-		}
 		if (max_nodes <= 0) {
 			rc = SLURM_ERROR;
 			info("%s: %s: %pJ reached maximum node limit",
@@ -3855,20 +3844,22 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 		}
 	}
 
+	/* count up leaf switches */
+	if (!req_nodes_bitmap) {
+		for (i = 0, switch_ptr = switch_record_table;
+		     i < switch_record_cnt; i++, switch_ptr++) {
+			if (switch_record_table[i].level != 0)
+				continue;
+			if (bit_overlap(switch_node_bitmap[i],
+					best_nodes_bitmap))
+				leaf_switch_count++;
+		}
+	}
+
 	if (req_nodes_bitmap &&
 	    (!bit_super_set(req_nodes_bitmap, avail_nodes_bitmap))) {
 		info("%s: %s: %pJ requires nodes not available on any switch",
 		     plugin_type, __func__, job_ptr);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
-	if ((req_nodes_bitmap || req2_nodes_bitmap) &&
-	    (job_ptr->req_switch > 0) &&
-	    (req_leaf_switch_count > job_ptr->req_switch) &&
-	    (time_waiting < job_ptr->wait4switch)) {
-		info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
-		     plugin_type, __func__, job_ptr, leaf_switch_count,
-		     job_ptr->req_switch);
 		rc = SLURM_ERROR;
 		goto fini;
 	}
@@ -3877,7 +3868,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 	 * If no resources have yet been  selected,
 	 * then pick one leaf switch with the most available nodes.
 	 */
-	if (req_leaf_switch_count == 0) {
+	if (leaf_switch_count == 0) {
 		int best_switch_inx = -1;
 		for (i = 0; i < switch_record_cnt; i++) {
 			if (switch_record_table[i].level != 0)
@@ -3888,7 +3879,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 				best_switch_inx = i;
 		}
 		if (best_switch_inx != -1) {
-			req_leaf_switch_count = 1;
+			leaf_switch_count = 1;
 			switch_required[best_switch_inx] = 1;
 		}
 	}
@@ -3897,7 +3888,7 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 	 * All required resources currently on one leaf switch. Determine if
 	 * the entire job request can be satisfied using just that one switch.
 	 */
-	if (req_leaf_switch_count == 1) {
+	if (leaf_switch_count == 1) {
 		best_cpu_cnt = 0;
 		best_node_cnt = 0;
 		FREE_NULL_LIST(best_gres);
@@ -3973,6 +3964,25 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 		}
 	}
 
+	if (job_ptr->req_switch > 0) {
+		if (time_waiting >= job_ptr->wait4switch) {
+			job_ptr->best_switch = true;
+			debug3("%pJ waited %ld sec for switches use=%d",
+				job_ptr, time_waiting, leaf_switch_count);
+		} else if (leaf_switch_count > job_ptr->req_switch) {
+			/*
+			 * Allocation is for more than requested number of
+			 * switches.
+			 */
+			job_ptr->best_switch = false;
+			debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
+				job_ptr, time_waiting, job_ptr->req_switch,
+				leaf_switch_count, job_ptr->wait4switch);
+		} else {
+			job_ptr->best_switch = true;
+		}
+	}
+
 	/*
 	 * Add additional resources as required from additional leaf switches
 	 * on a round-robin basis
@@ -3982,15 +3992,6 @@ static int _eval_nodes_dfly(struct job_record *job_ptr,
 		if (prev_rem_nodes == rem_nodes)
 			break;	/* Stalled */
 		prev_rem_nodes = rem_nodes;
-		if ((job_ptr->req_switch > 0) &&
-		    (req_leaf_switch_count >= job_ptr->req_switch) &&
-		    (time_waiting < job_ptr->wait4switch)) {
-			info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
-			     plugin_type, __func__, job_ptr, leaf_switch_count,
-			     job_ptr->req_switch);
-			rc = SLURM_ERROR;
-			goto fini;
-		}
 		for (i = 0; i < switch_record_cnt; i++) {
 			if (!switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
@@ -4100,7 +4101,7 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 	bool gres_per_job, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
 	int64_t time_waiting = 0;
-	int leaf_switch_count = 0, req_leaf_switch_count = 0;
+	int leaf_switch_count = 0;
 	int top_switch_inx = -1;
 	int prev_rem_nodes;
 
@@ -4251,7 +4252,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			switch_required[i] = 1;
 			if (switch_record_table[i].level == 0) {
 				leaf_switch_count++;
-				req_leaf_switch_count++;
 			}
 			if ((top_switch_inx == -1) ||
 			    (switch_record_table[i].level >
@@ -4432,20 +4432,10 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 				switch_required[i] = 1;
 				if (switch_record_table[i].level == 0) {
 					leaf_switch_count++;
-					req_leaf_switch_count++;
 				}
 			}
 		}
 		bit_or(node_map, req2_nodes_bitmap);
-		if ((job_ptr->req_switch > 0) &&
-		    (req_leaf_switch_count > job_ptr->req_switch) &&
-		    (time_waiting < job_ptr->wait4switch)) {
-			info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
-			     plugin_type, __func__, job_ptr, leaf_switch_count,
-			     job_ptr->req_switch);
-			rc = SLURM_ERROR;
-			goto fini;
-		}
 
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    (!gres_per_job ||
@@ -4495,6 +4485,18 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 		}
 	}
 
+	/* Count up leaf switches. */
+	if (!req_nodes_bitmap) {
+		for (i = 0, switch_ptr = switch_record_table;
+		     i < switch_record_cnt; i++, switch_ptr++) {
+			if (switch_record_table[i].level != 0)
+				continue;
+			if (bit_overlap(switch_node_bitmap[i],
+					best_nodes_bitmap))
+				leaf_switch_count++;
+		}
+	}
+
 	if (req_nodes_bitmap &&
 	    (!bit_super_set(req_nodes_bitmap, avail_nodes_bitmap))) {
 		info("%s: %s: %pJ requires nodes not available on any switch",
@@ -4502,19 +4504,9 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 		rc = SLURM_ERROR;
 		goto fini;
 	}
-	if ((req_nodes_bitmap || req2_nodes_bitmap) &&
-	    (job_ptr->req_switch > 0) &&
-	    (req_leaf_switch_count > job_ptr->req_switch) &&
-	    (time_waiting < job_ptr->wait4switch)) {
-		info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
-		     plugin_type, __func__, job_ptr, leaf_switch_count,
-		     job_ptr->req_switch);
-		rc = SLURM_ERROR;
-		goto fini;
-	}
 
 	/* Add additional resources for already required leaf switches */
-	if (req_leaf_switch_count) {
+	if (leaf_switch_count) {
 		for (i = 0; i < switch_record_cnt; i++) {
 			if (!switch_required[i] || !switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
@@ -4556,6 +4548,25 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 		}
 	}
 
+	if (job_ptr->req_switch > 0) {
+		if (time_waiting >= job_ptr->wait4switch) {
+			job_ptr->best_switch = true;
+			debug3("%pJ waited %ld sec for switches use=%d",
+				job_ptr, time_waiting, leaf_switch_count);
+		} else if (leaf_switch_count > job_ptr->req_switch) {
+			/*
+			 * Allocation is for more than requested number of
+			 * switches.
+			 */
+			job_ptr->best_switch = false;
+			debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
+				job_ptr, time_waiting, job_ptr->req_switch,
+				leaf_switch_count, job_ptr->wait4switch);
+		} else {
+			job_ptr->best_switch = true;
+		}
+	}
+
 	/* Add additional resources as required from additional leaf switches */
 	prev_rem_nodes = rem_nodes + 1;
 	while (1) {
@@ -4563,15 +4574,6 @@ static int _eval_nodes_topo(struct job_record *job_ptr,
 			break; 	/* Stalled */
 		prev_rem_nodes = rem_nodes;
 
-		if ((job_ptr->req_switch > 0) &&
-		    (req_leaf_switch_count >= job_ptr->req_switch) &&
-		    (time_waiting < job_ptr->wait4switch)) {
-			info("%s: %s: %pJ requires %d leaf switches but is limited to %d",
-			     plugin_type, __func__, job_ptr, leaf_switch_count,
-			     job_ptr->req_switch);
-			rc = SLURM_ERROR;
-			goto fini;
-		}
 		top_switch_inx = -1;
 		for (i = 0; i < switch_record_cnt; i++) {
 			if (switch_required[i] || !switch_node_bitmap[i] ||
