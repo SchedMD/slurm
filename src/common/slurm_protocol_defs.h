@@ -456,7 +456,7 @@ typedef struct forward_struct {
 	pthread_mutex_t forward_mutex;
 	pthread_cond_t notify;
 	List ret_list;
-	int timeout;
+	uint32_t timeout;
 } forward_struct_t;
 
 typedef struct forward_message {

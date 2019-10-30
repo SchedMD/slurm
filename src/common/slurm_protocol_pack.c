@@ -837,7 +837,7 @@ void pack_header(header_t *header, Buf buffer)
 		pack16(header->forward.cnt, buffer);
 		if (header->forward.cnt > 0) {
 			packstr(header->forward.nodelist, buffer);
-			pack32((uint32_t)header->forward.timeout, buffer);
+			pack32(header->forward.timeout, buffer);
 			pack16(header->forward.tree_width, buffer);
 		}
 		pack16(header->ret_cnt, buffer);

@@ -3896,7 +3896,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		msg->forward_struct->ret_list = msg->ret_list;
 		/* take out the amount of timeout from this hop */
 		msg->forward_struct->timeout = header.forward.timeout;
-		if (msg->forward_struct->timeout <= 0)
+		if (!msg->forward_struct->timeout)
 			msg->forward_struct->timeout = message_timeout;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
