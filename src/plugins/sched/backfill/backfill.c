@@ -188,6 +188,7 @@ static uint32_t bf_min_prio_reserve = 0;
 static List deadlock_global_list;
 static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
+static bool bf_one_resv_per_job = false;
 static uint32_t job_start_cnt = 0;
 static int max_backfill_job_cnt = 100;
 static int max_backfill_job_per_assoc = 0;
@@ -884,6 +885,11 @@ static void _load_config(void)
 		bf_hetjob_prio |= HETJOB_PRIO_MIN;
 		info("bf_hetjob_immediate automatically sets bf_hetjob_prio=min");
 	}
+
+	if (xstrcasestr(sched_params, "bf_one_resv_per_job"))
+		bf_one_resv_per_job = true;
+	else
+		bf_one_resv_per_job = false;
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "max_rpc_cnt=")))
 		max_rpc_cnt = atoi(tmp_ptr + 12);
@@ -1795,6 +1801,13 @@ static int _attempt_backfill(void)
 				job_no_reserve = TEST_NOW_ONLY;
 		}
 
+		if (bf_one_resv_per_job && job_ptr->start_time) {
+			if (debug_flags & DEBUG_FLAG_BACKFILL)
+				info("backfill: %pJ already added a backfill reservation. Test immediate start only for partition %s",
+				     job_ptr, job_ptr->part_ptr->name);
+			job_no_reserve = TEST_NOW_ONLY;
+		}
+
 		/* If partition data is needed and not yet initialized, do so */
 		if (!job_ptr->part_ptr->bf_data &&
 		    (bf_job_part_count_reserve ||
@@ -2653,8 +2666,10 @@ skip_start:
 			job_ptr->sched_nodes = bitmap2node_name(avail_bitmap);
 		}
 		bit_not(avail_bitmap);
-		_add_reservation(start_time, end_reserve,
-				 avail_bitmap, node_space, &node_space_recs);
+		if (!bf_one_resv_per_job || !orig_start_time) {
+			_add_reservation(start_time, end_reserve, avail_bitmap,
+					 node_space, &node_space_recs);
+		}
 		if (debug_flags & DEBUG_FLAG_BACKFILL_MAP)
 			_dump_node_space_table(node_space);
 		if ((orig_start_time != 0) &&
