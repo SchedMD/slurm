@@ -410,27 +410,31 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 		 */
 		time_t high_start = 0;
 		uint32_t feat_min_node;
+		uint32_t feat_node_cnt;
 
 		tmp_bitmap = bit_copy(*avail_bitmap);
 		feat_iter = list_iterator_create(feature_cache);
-		while ((feat_ptr = (job_feature_t *) list_next(feat_iter))) {
+		while ((feat_ptr = (job_feature_t *) list_next(feat_iter)) &&
+		       (rc == SLURM_SUCCESS)) {
 			detail_ptr->feature_list =
 				list_create(feature_list_delete);
 			feature_base = xmalloc(sizeof(job_feature_t));
 			feature_base->name = xstrdup(feat_ptr->name);
 			feature_base->op_code = feat_ptr->op_code;
 			list_append(detail_ptr->feature_list, feature_base);
+			feat_min_node = feat_ptr->count;
 			while ((feat_ptr->paren > 0) &&
 			       ((feat_ptr = (job_feature_t *)
 					    list_next(feat_iter)))) {
 				feature_base = xmalloc(sizeof(job_feature_t));
 				feature_base->name = xstrdup(feat_ptr->name);
 				feature_base->op_code = feat_ptr->op_code;
+				feat_min_node = feat_ptr->count;
 				list_append(detail_ptr->feature_list,
 					    feature_base);
 			}
 			feature_base->op_code = FEATURE_OP_END;
-			feat_min_node = MAX(1, feature_base->count);
+			feat_min_node = MAX(1, feat_min_node);
 
 			if ((job_req_node_filter(job_ptr, *avail_bitmap, true)
 			     == SLURM_SUCCESS) &&
@@ -439,33 +443,68 @@ static int  _try_sched(job_record_t *job_ptr, bitstr_t **avail_bitmap,
 					slurm_find_preemptable_jobs(job_ptr);
 				rc = select_g_job_test(job_ptr, *avail_bitmap,
 						       feat_min_node, max_nodes,
-						       req_nodes,
+						       feat_min_node,
 						       SELECT_MODE_WILL_RUN,
 						       preemptee_candidates,
 						       NULL,
 						       exc_core_bitmap);
 				FREE_NULL_LIST(preemptee_candidates);
-				if ((rc == SLURM_SUCCESS) &&
-				    ((high_start == 0) ||
-				     (high_start < job_ptr->start_time))) {
-					high_start = job_ptr->start_time;
-					low_bitmap = *avail_bitmap;
-					*avail_bitmap = NULL;
+				if (rc == SLURM_SUCCESS) {
+					if ((high_start == 0) ||
+					    (high_start < job_ptr->start_time))
+						high_start =
+							job_ptr->start_time;
+
+					if (low_bitmap) {
+						bit_or(low_bitmap,
+							*avail_bitmap);
+					} else {
+						low_bitmap = *avail_bitmap;
+						*avail_bitmap = NULL;
+					}
 				}
+			} else {
+				rc = ESLURM_NODES_BUSY;
 			}
 			FREE_NULL_BITMAP(*avail_bitmap);
 			*avail_bitmap = bit_copy(tmp_bitmap);
+			if (low_bitmap)
+				bit_and_not(*avail_bitmap, low_bitmap);
 			list_destroy(detail_ptr->feature_list);
 		}
 		list_iterator_destroy(feat_iter);
+
+		if (low_bitmap)
+			feat_node_cnt = bit_set_count(low_bitmap);
+		else
+			feat_node_cnt = 0;
+		if (feat_node_cnt < req_nodes) {
+			detail_ptr->feature_list = NULL;
+			rc = select_g_job_test(job_ptr, *avail_bitmap,
+					       min_nodes - feat_node_cnt,
+					       max_nodes - feat_node_cnt,
+					       req_nodes - feat_node_cnt,
+					       SELECT_MODE_WILL_RUN,
+					       preemptee_candidates,
+					       NULL,
+					       exc_core_bitmap);
+
+			if (low_bitmap) {
+				bit_or(low_bitmap, *avail_bitmap);
+			} else {
+				low_bitmap = *avail_bitmap;
+				*avail_bitmap = NULL;
+			}
+		}
 		FREE_NULL_BITMAP(tmp_bitmap);
-		if (high_start) {
+		if (high_start && rc == SLURM_SUCCESS) {
 			job_ptr->start_time = high_start;
-			rc = SLURM_SUCCESS;
 			FREE_NULL_BITMAP(*avail_bitmap);
 			*avail_bitmap = low_bitmap;
 		} else {
 			rc = ESLURM_NODES_BUSY;
+			job_ptr->start_time = 0;
+			FREE_NULL_BITMAP(*avail_bitmap);
 			FREE_NULL_BITMAP(low_bitmap);
 		}
 
