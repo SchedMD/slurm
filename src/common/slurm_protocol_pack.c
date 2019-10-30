@@ -11419,7 +11419,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					      msg->protocol_version);
 		break;
 	case REQUEST_BUILD_INFO:
-	case REQUEST_ACCTING_INFO:
 		_pack_last_update_msg((last_update_msg_t *)
 				      msg->data, buffer,
 				      msg->protocol_version);
@@ -11711,24 +11710,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					  msg->data, buffer,
 					  msg->protocol_version);
 		break;
-	case RESPONSE_RECONFIGURE:
-	case RESPONSE_SHUTDOWN:
-	case RESPONSE_CANCEL_JOB_STEP:
-		break;
-	case REQUEST_JOB_ATTACH:
-		break;
-	case RESPONSE_JOB_ATTACH:
-		break;
 	case RESPONSE_JOB_STEP_INFO:
 		_pack_job_step_info_msg((slurm_msg_t *) msg, buffer);
-		break;
-	case REQUEST_JOB_RESOURCE:
-		break;
-	case RESPONSE_JOB_RESOURCE:
-		break;
-	case REQUEST_RUN_JOB_STEP:
-		break;
-	case RESPONSE_RUN_JOB_STEP:
 		break;
 	case MESSAGE_TASK_EXIT:
 		_pack_task_exit_msg((task_exit_msg_t *) msg->data, buffer,
@@ -11830,7 +11813,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_CHECKPOINT:
-	case RESPONSE_CHECKPOINT_COMP:
 		_pack_checkpoint_resp_msg((checkpoint_resp_msg_t *)msg->data,
 					  buffer,
 					  msg->protocol_version);
@@ -11904,8 +11886,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_kvs_get((kvs_get_msg_t *) msg->data, buffer,
 			      msg->protocol_version);
 		break;
-	case PMI_KVS_PUT_RESP:
-		break;	/* no data in message */
 	case RESPONSE_FORWARD_FAILED:
 		break;
 	case REQUEST_TRIGGER_GET:
@@ -12109,7 +12089,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						     msg->protocol_version);
 		break;
 	case REQUEST_BUILD_INFO:
-	case REQUEST_ACCTING_INFO:
 		rc = _unpack_last_update_msg((last_update_msg_t **) &
 					     (msg->data), buffer,
 					     msg->protocol_version);
@@ -12426,27 +12405,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			& (msg->data), buffer,
 			msg->protocol_version);
 		break;
-	case RESPONSE_RECONFIGURE:
-	case RESPONSE_SHUTDOWN:
-	case RESPONSE_CANCEL_JOB_STEP:
-		break;
-	case REQUEST_JOB_ATTACH:
-		break;
-	case RESPONSE_JOB_ATTACH:
-		break;
 	case RESPONSE_JOB_STEP_INFO:
 		rc = _unpack_job_step_info_response_msg(
 			(job_step_info_response_msg_t **)
 			& (msg->data), buffer,
 			msg->protocol_version);
-		break;
-	case REQUEST_JOB_RESOURCE:
-		break;
-	case RESPONSE_JOB_RESOURCE:
-		break;
-	case REQUEST_RUN_JOB_STEP:
-		break;
-	case RESPONSE_RUN_JOB_STEP:
 		break;
 	case MESSAGE_TASK_EXIT:
 		rc = _unpack_task_exit_msg((task_exit_msg_t **)
@@ -12556,7 +12519,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_CHECKPOINT:
-	case RESPONSE_CHECKPOINT_COMP:
 		rc = _unpack_checkpoint_resp_msg((checkpoint_resp_msg_t **)
 						 & msg->data, buffer,
 						 msg->protocol_version);
@@ -12639,8 +12601,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_kvs_get((kvs_get_msg_t **) &msg->data, buffer,
 				     msg->protocol_version);
 		break;
-	case PMI_KVS_PUT_RESP:
-		break;	/* no data */
 	case RESPONSE_FORWARD_FAILED:
 		break;
 	case REQUEST_TRIGGER_GET:

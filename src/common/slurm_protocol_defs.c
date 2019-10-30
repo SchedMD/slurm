@@ -4995,9 +4995,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case PMI_KVS_PUT_REQ:
 		slurm_free_kvs_comm_set(data);
 		break;
-	case PMI_KVS_PUT_RESP:
-		/* No body */
-		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
 		slurm_free_resource_allocation_response_msg(data);
 		break;
@@ -5159,15 +5156,13 @@ rpc_num2string(uint16_t opcode)
 		return "MESSAGE_NODE_REGISTRATION_STATUS";
 	case REQUEST_RECONFIGURE:
 		return "REQUEST_RECONFIGURE";
-	case RESPONSE_RECONFIGURE:
-		return "RESPONSE_RECONFIGURE";
-	case REQUEST_SHUTDOWN:
+
+	case REQUEST_SHUTDOWN:					/* 1005 */
 		return "REQUEST_SHUTDOWN";
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 		return "REQUEST_SHUTDOWN_IMMEDIATE";
-	case RESPONSE_SHUTDOWN:
-		return "RESPONSE_SHUTDOWN";
-	case REQUEST_PING:
+
+	case REQUEST_PING:					/* 1008 */
 		return "REQUEST_PING";
 	case REQUEST_CONTROL:
 		return "REQUEST_CONTROL";
@@ -5220,14 +5215,12 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_PARTITION_INFO";
 	case RESPONSE_PARTITION_INFO:
 		return "RESPONSE_PARTITION_INFO";		/* 2010 */
-	case REQUEST_ACCTING_INFO:
-		return "REQUEST_ACCTING_INFO";
-	case RESPONSE_ACCOUNTING_INFO:
-		return "RESPONSE_ACCOUNTING_INFO";
-	case REQUEST_JOB_ID:
+
+	case REQUEST_JOB_ID:					/* 2013 */
 		return "REQUEST_JOB_ID";
 	case RESPONSE_JOB_ID:
 		return "RESPONSE_JOB_ID";
+
 	case REQUEST_TRIGGER_SET:				/* 2017 */
 		return "REQUEST_TRIGGER_SET";
 	case REQUEST_TRIGGER_GET:
@@ -5344,17 +5337,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_BATCH_JOB_LAUNCH";
 	case REQUEST_CANCEL_JOB:
 		return "REQUEST_CANCEL_JOB";
-	case RESPONSE_CANCEL_JOB:
-		return "RESPONSE_CANCEL_JOB";
-	case REQUEST_JOB_RESOURCE:
-		return "REQUEST_JOB_RESOURCE";
-	case RESPONSE_JOB_RESOURCE:
-		return "RESPONSE_JOB_RESOURCE";
-	case REQUEST_JOB_ATTACH:				/* 4010 */
-		return "REQUEST_JOB_ATTACH";
-	case RESPONSE_JOB_ATTACH:
-		return "RESPONSE_JOB_ATTACH";
-	case REQUEST_JOB_WILL_RUN:
+
+	case REQUEST_JOB_WILL_RUN:				/* 4012 */
 		return "REQUEST_JOB_WILL_RUN";
 	case RESPONSE_JOB_WILL_RUN:
 		return "RESPONSE_JOB_WILL_RUN";
@@ -5400,15 +5384,11 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_JOB_STEP_CREATE";
 	case RESPONSE_JOB_STEP_CREATE:
 		return "RESPONSE_JOB_STEP_CREATE";
-	case REQUEST_RUN_JOB_STEP:
-		return "REQUEST_RUN_JOB_STEP";
-	case RESPONSE_RUN_JOB_STEP:
-		return "RESPONSE_RUN_JOB_STEP";
-	case REQUEST_CANCEL_JOB_STEP:
+
+	case REQUEST_CANCEL_JOB_STEP:				/* 5005 */
 		return "REQUEST_CANCEL_JOB_STEP";
-	case RESPONSE_CANCEL_JOB_STEP:
-		return "RESPONSE_CANCEL_JOB_STEP";
-	case REQUEST_UPDATE_JOB_STEP:
+
+	case REQUEST_UPDATE_JOB_STEP:				/* 5007 */
 		return "REQUEST_UPDATE_JOB_STEP";
 	case REQUEST_CHECKPOINT:
 		return "REQUEST_CHECKPOINT";
@@ -5418,12 +5398,9 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_CHECKPOINT_COMP";
 	case REQUEST_CHECKPOINT_TASK_COMP:
 		return "REQUEST_CHECKPOINT_TASK_COMP";
-	case RESPONSE_CHECKPOINT_COMP:
-		return "RESPONSE_CHECKPOINT_COMP";
-	case REQUEST_SUSPEND:
+
+	case REQUEST_SUSPEND:					/* 5014 */
 		return "REQUEST_SUSPEND";
-	case RESPONSE_SUSPEND:
-		return "RESPONSE_SUSPEND";
 	case REQUEST_STEP_COMPLETE:
 		return "REQUEST_STEP_COMPLETE";
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
@@ -5444,9 +5421,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_DAEMON_STATUS";
 	case RESPONSE_SLURMD_STATUS:
 		return "RESPONSE_SLURMD_STATUS";
-	case RESPONSE_SLURMCTLD_STATUS:
-		return "RESPONSE_SLURMCTLD_STATUS";
-	case REQUEST_JOB_STEP_PIDS:
+
+	case REQUEST_JOB_STEP_PIDS:				/* 5027 */
 		return "REQUEST_JOB_STEP_PIDS";
 	case RESPONSE_JOB_STEP_PIDS:
 		return "RESPONSE_JOB_STEP_PIDS";
@@ -5458,9 +5434,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_SUSPEND_INT";
 	case REQUEST_KILL_JOB:
 		return "REQUEST_KILL_JOB";
-	case REQUEST_KILL_JOBSTEP:
-		return "REQUEST_KILL_JOBSTEP";
-	case RESPONSE_JOB_ARRAY_ERRORS:
+
+	case RESPONSE_JOB_ARRAY_ERRORS:				/* 5034 */
 		return "RESPONSE_JOB_ARRAY_ERRORS";
 	case REQUEST_NETWORK_CALLERID:
 		return "REQUEST_NETWORK_CALLERID";
@@ -5532,9 +5507,8 @@ rpc_num2string(uint16_t opcode)
 
 	case PMI_KVS_PUT_REQ:					/* 7201 */
 		return "PMI_KVS_PUT_REQ";
-	case PMI_KVS_PUT_RESP:
-		return "PMI_KVS_PUT_RESP";
-	case PMI_KVS_GET_REQ:
+
+	case PMI_KVS_GET_REQ:					/* 7203 */
 		return "PMI_KVS_GET_REQ";
 	case PMI_KVS_GET_RESP:
 		return "PMI_KVS_GET_RESP";

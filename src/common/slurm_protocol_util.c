@@ -75,9 +75,7 @@ int check_header_version(header_t * header)
 	} else if (header->version != check_version) {
 		switch (header->msg_type) {
 		case REQUEST_LAUNCH_TASKS:
-		case REQUEST_RUN_JOB_STEP:
 		case RESPONSE_LAUNCH_TASKS:
-		case RESPONSE_RUN_JOB_STEP:
 			if (working_cluster_rec) {
 				/* Disable job step creation/launch
 				 * between major releases. Other RPCs
