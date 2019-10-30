@@ -818,29 +818,29 @@ static int _unpack_job_step_create_request_msg(
  * IN/OUT buffer - destination of the pack, contains pointers that are
  *			automatically updated
  */
-void
-pack_header(header_t * header, Buf buffer)
+void pack_header(header_t *header, Buf buffer)
 {
-	/* The DBD always unpacks the message type first.  DO NOT UNPACK THIS ON
-	 * THE UNPACK SIDE.
+	/*
+	 * The DBD always unpacks the message type first.
+	 * DO NOT UNPACK THIS ON THE UNPACK SIDE.
 	 */
 	if (header->flags & SLURMDBD_CONNECTION)
 		pack16(header->msg_type, buffer);
 
-	pack16((uint16_t)header->version, buffer);
+	pack16(header->version, buffer);
 
 	if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack16((uint16_t)header->flags, buffer);
-		pack16((uint16_t)header->msg_index, buffer);
-		pack16((uint16_t)header->msg_type, buffer);
-		pack32((uint32_t)header->body_length, buffer);
-		pack16((uint16_t)header->forward.cnt, buffer);
+		pack16(header->flags, buffer);
+		pack16(header->msg_index, buffer);
+		pack16(header->msg_type, buffer);
+		pack32(header->body_length, buffer);
+		pack16(header->forward.cnt, buffer);
 		if (header->forward.cnt > 0) {
 			packstr(header->forward.nodelist, buffer);
 			pack32((uint32_t)header->forward.timeout, buffer);
 			pack16(header->forward.tree_width, buffer);
 		}
-		pack16((uint16_t)header->ret_cnt, buffer);
+		pack16(header->ret_cnt, buffer);
 		if (header->ret_cnt > 0) {
 			_pack_ret_list(header->ret_list,
 				       header->ret_cnt, buffer,
