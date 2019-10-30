@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix FIRST_CORES for reservations when using cons_tres.
  -- Fix sbcast -C argument parsing.
  -- Replace/deprecate max_job_bf with bf_max_job_test and print error message.
+ -- sched/backfill - fix options parsing when bf_hetjob_prio enabled.
 
 * Changes in Slurm 19.05.5
 ==========================
