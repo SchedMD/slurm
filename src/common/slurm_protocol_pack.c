@@ -113,11 +113,6 @@ static void _pack_ret_list(List ret_list, uint16_t size_val, Buf buffer,
 static int _unpack_ret_list(List *ret_list, uint16_t size_val, Buf buffer,
 			    uint16_t protocol_version);
 
-static void _pack_powercap_info_msg(powercap_info_msg_t *msg, Buf buffer,
-				    uint16_t protocol_version);
-static int  _unpack_powercap_info_msg(powercap_info_msg_t **msg,
-				      Buf buffer, uint16_t protocol_version);
-
 static void _priority_factors_resp_list_del(void *x);
 
 
@@ -1829,22 +1824,6 @@ unpack_error:
 	slurm_free_update_part_msg(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
-}
-
-static void
-_pack_update_powercap_msg(update_powercap_msg_t * msg, Buf buffer,
-			  uint16_t protocol_version)
-{
-	_pack_powercap_info_msg((powercap_info_msg_t *) msg,
-				buffer, protocol_version);
-}
-
-static int
-_unpack_update_powercap_msg(update_powercap_msg_t ** msg, Buf buffer,
-			    uint16_t protocol_version)
-{
-	return _unpack_powercap_info_msg((powercap_info_msg_t **) msg,
-					 buffer, protocol_version);
 }
 
 static void
@@ -11595,11 +11574,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					   data, buffer,
 					   msg->protocol_version);
 		break;
-	case REQUEST_UPDATE_POWERCAP:
-		_pack_update_powercap_msg((update_powercap_msg_t *) msg->
-					  data, buffer,
-					  msg->protocol_version);
-		break;
 	case REQUEST_DELETE_PARTITION:
 		_pack_delete_partition_msg((delete_part_msg_t *) msg->
 					   data, buffer,
@@ -11972,6 +11946,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(topo_info_response_msg_t *)msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_UPDATE_POWERCAP:
 	case RESPONSE_POWERCAP_INFO:
 		_pack_powercap_info_msg(
 			(powercap_info_msg_t *)msg->data, buffer,
@@ -12301,11 +12276,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_update_partition_msg((update_part_msg_t **) &
 						  (msg->data), buffer,
 						  msg->protocol_version);
-		break;
-	case REQUEST_UPDATE_POWERCAP:
-		rc = _unpack_update_powercap_msg((update_powercap_msg_t **) &
-						 (msg->data), buffer,
-						 msg->protocol_version);
 		break;
 	case REQUEST_DELETE_PARTITION:
 		rc = _unpack_delete_partition_msg((delete_part_msg_t **) &
@@ -12714,6 +12684,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(topo_info_response_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
 		break;
+	case REQUEST_UPDATE_POWERCAP:
 	case RESPONSE_POWERCAP_INFO:
 		rc = _unpack_powercap_info_msg(
 			(powercap_info_msg_t **)&msg->data, buffer,
