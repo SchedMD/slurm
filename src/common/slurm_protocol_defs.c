@@ -4920,12 +4920,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_UPDATE_JOB_STEP:
 		slurm_free_update_step_msg(data);
 		break;
-	case REQUEST_SPANK_ENVIRONMENT:
-		slurm_free_spank_env_request_msg(data);
-		break;
-	case RESPONCE_SPANK_ENVIRONMENT:
-		slurm_free_spank_env_responce_msg(data);
-		break;
 	case RESPONSE_PING_SLURMD:
 		slurm_free_ping_slurmd_resp(data);
 		break;
@@ -5253,11 +5247,8 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_FRONT_END_INFO";
 	case RESPONSE_FRONT_END_INFO:
 		return "RESPONSE_FRONT_END_INFO";
-	case REQUEST_SPANK_ENVIRONMENT:
-		return "REQUEST_SPANK_ENVIRONMENT";
-	case RESPONCE_SPANK_ENVIRONMENT:
-		return "RESPONCE_SPANK_ENVIRONMENT";
-	case REQUEST_STATS_INFO:
+
+	case REQUEST_STATS_INFO:				/* 2035 */
 		return "REQUEST_STATS_INFO";
 	case RESPONSE_STATS_INFO:
 		return "RESPONSE_STATS_INFO";

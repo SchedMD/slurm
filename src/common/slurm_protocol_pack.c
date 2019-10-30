@@ -10638,59 +10638,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_spank_env_request_msg(spank_env_request_msg_t * msg,
-					Buf buffer, uint16_t protocol_version)
-{
-	xassert(msg);
-
-	pack32(msg->job_id, buffer);
-}
-
-static int _unpack_spank_env_request_msg(spank_env_request_msg_t ** msg_ptr,
-					 Buf buffer, uint16_t protocol_version)
-{
-	spank_env_request_msg_t *msg;
-
-	xassert(msg_ptr);
-	msg = xmalloc(sizeof(spank_env_request_msg_t));
-	*msg_ptr = msg;
-
-	safe_unpack32(&msg->job_id, buffer);
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_spank_env_request_msg(msg);
-	*msg_ptr = NULL;
-	return SLURM_ERROR;
-}
-
-static void _pack_spank_env_responce_msg(spank_env_responce_msg_t * msg,
-					 Buf buffer, uint16_t protocol_version)
-{
-	xassert(msg);
-
-	packstr_array(msg->spank_job_env, msg->spank_job_env_size, buffer);
-}
-
-static int _unpack_spank_env_responce_msg(spank_env_responce_msg_t ** msg_ptr,
-					  Buf buffer, uint16_t protocol_version)
-{
-	spank_env_responce_msg_t *msg;
-
-	xassert(msg_ptr);
-	msg = xmalloc(sizeof(spank_env_responce_msg_t));
-	*msg_ptr = msg;
-
-	safe_unpackstr_array(&msg->spank_job_env, &msg->spank_job_env_size,
-			     buffer);
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_spank_env_responce_msg(msg);
-	*msg_ptr = NULL;
-	return SLURM_ERROR;
-}
-
 static void _pack_stats_request_msg(stats_info_request_msg_t *msg, Buf buffer,
 				    uint16_t protocol_version)
 {
@@ -11950,17 +11897,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_FRONT_END_INFO:
 		_pack_front_end_info_msg((slurm_msg_t *) msg, buffer);
 		break;
-	case REQUEST_SPANK_ENVIRONMENT:
-		_pack_spank_env_request_msg(
-			(spank_env_request_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONCE_SPANK_ENVIRONMENT:
-		_pack_spank_env_responce_msg(
-			(spank_env_responce_msg_t *)msg->data, buffer,
-			msg->protocol_version);
-		break;
-
 	case REQUEST_STATS_INFO:
 		_pack_stats_request_msg((stats_info_request_msg_t *)msg->data,
 					buffer, msg->protocol_version);
@@ -12670,17 +12606,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 			(front_end_info_msg_t **)&msg->data, buffer,
 			msg->protocol_version);
 		break;
-	case REQUEST_SPANK_ENVIRONMENT:
-		rc = _unpack_spank_env_request_msg(
-			(spank_env_request_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONCE_SPANK_ENVIRONMENT:
-		rc = _unpack_spank_env_responce_msg(
-			(spank_env_responce_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
-		break;
-
 	case REQUEST_STATS_INFO:
 		rc = _unpack_stats_request_msg((stats_info_request_msg_t **)
 					       &msg->data, buffer,
