@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     task/affinity plugin.
  -- Fix grp_node_bitmap error when slurmctld started before slurmdbd.
  -- Fix compilation issues in GCC10.
+ -- Fix distributing job steps across idle nodes within a job.
 
 * Changes in Slurm 19.05.6
 ==========================

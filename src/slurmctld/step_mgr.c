@@ -1543,6 +1543,14 @@ _pick_step_nodes (struct job_record *job_ptr,
 			if (step_ptr->state < JOB_RUNNING)
 				continue;
 
+			/*
+			 * Don't consider the batch and extern steps when
+			 * looking for "idle" nodes.
+			 */
+			if ((step_ptr->step_id == SLURM_BATCH_SCRIPT) ||
+			    (step_ptr->step_id == SLURM_EXTERN_CONT))
+				continue;
+
 			if (!step_ptr->step_node_bitmap) {
 				error("%s: %pS has no step_node_bitmap",
 				      __func__, step_ptr);
