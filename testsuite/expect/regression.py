@@ -26,6 +26,7 @@
 
 """This script makes it easier to run the Slurm expect test scripts."""
 
+from __future__ import print_function
 import os
 import re
 import sys
@@ -64,15 +65,15 @@ def main(argv=None):
 
     # Sanity check
     if not os.path.isfile('globals'):
-        print >>sys.stderr, 'ERROR: "globals" not here as needed'
+        print('ERROR: "globals" not here as needed', file=sys.stderr)
         return -1
 
-	# Clear any environment variables that could break the tests.
-	# Cray sets some squeue format options that break tests
-	del os.environ['SQUEUE_ALL']
-	del os.environ['SQUEUE_SORT']
-	del os.environ['SQUEUE_FORMAT']
-	del os.environ['SQUEUE_FORMAT2']
+        # Clear any environment variables that could break the tests.
+        # Cray sets some squeue format options that break tests
+        del os.environ['SQUEUE_ALL']
+        del os.environ['SQUEUE_SORT']
+        del os.environ['SQUEUE_FORMAT']
+        del os.environ['SQUEUE_FORMAT2']
 
     # Read the current working directory and build a sorted list
     # of the available tests.
@@ -87,13 +88,14 @@ def main(argv=None):
                         or test_in_list(major, minor, options.include_tests)):
                 tests.append((major, minor, filename))
     if not tests:
-        print >>sys.stderr, 'ERROR: no test files found in current working directory'
+        print('ERROR: no test files found in current working directory', file=sys.stderr)
         return -1
-    tests.sort(test_cmp)
+    # sory by major, minor
+    tests.sort(key=lambda t: (t[0],t[1]))
 
     # Now run the tests
     start_time = time.time()
-    print >>sys.stdout, 'Started:', time.asctime(time.localtime(start_time))
+    print('Started:', time.asctime(time.localtime(start_time)), file=sys.stdout)
     sys.stdout.flush()
     for test in tests:
         sys.stdout.write('Running test %d.%d ' % (test[0],test[1]))
@@ -103,7 +105,7 @@ def main(argv=None):
             os.remove(testlog_name+'.failed')
         except:
             pass
-        testlog = file(testlog_name, 'w+')
+        testlog = open(testlog_name, 'w+')
 
         if options.time_individual:
             t1 = time.time()
@@ -125,8 +127,8 @@ def main(argv=None):
                 try:
                     os.remove(testlog_name)
                 except IOError as e:
-                    print >> sys.stderr, 'ERROR failed to close %s %s' \
-                        % (testlog_name, e)
+                    print('ERROR failed to close %s %s' % (testlog_name, e),
+                            file=sys.stederr);
         else:
             failed_tests.append(test)
             os.rename(testlog_name, testlog_name+'.failed')
@@ -136,14 +138,13 @@ def main(argv=None):
         sys.stdout.flush()
 
     end_time = time.time()
-    print >>sys.stdout, 'Ended:', time.asctime(time.localtime(end_time))
-    print >>sys.stdout, '\nTestsuite ran for %d minutes %d seconds'\
-          %((end_time-start_time)/60,(end_time-start_time)%60)
-    print >>sys.stdout
-    print >>sys.stdout, 'Completions  :', len(passed_tests)
-    print >>sys.stdout, 'Failures     :', len(failed_tests)
+    print('Ended:', time.asctime(time.localtime(end_time)), file=sys.stdout)
+    print('\nTestsuite ran for %d minutes %d seconds'\
+          %((end_time-start_time)/60,(end_time-start_time)%60), file=sys.stdout)
+    print('Completions  :', len(passed_tests), file=sys.stdout)
+    print('Failures     :', len(failed_tests), file=sys.stdout)
     if len(failed_tests) > 0:
-        print >>sys.stdout, 'Failed tests : ',
+        print('Failed tests : ', file=sys.stdout)
         first = True
         for test in failed_tests:
             if first:
@@ -154,12 +155,6 @@ def main(argv=None):
         sys.stdout.write('\n')
         sys.stdout.flush()
         return 1
-
-def test_cmp(testA, testB):
-    rc = cmp(testA[0], testB[0])
-    if rc != 0:
-        return rc
-    return cmp(testA[1], testB[1])
 
 def test_in_list(major, minor, test_list):
     '''Test for whether a test numbered major.minor is in test_list.
