@@ -67,6 +67,7 @@ documents those changes that are of interest to users and administrators.
  -- sched/backfill - fix the estimated sched_nodes for multi-part jobs.
  -- slurm.spec - fix pmix_version global context macro.
  -- Fix cons_tres topology logic incorrectly evaluating insufficient resoruces.
+ -- Fix job "--switches=count@time" option handling in cons_tres topology.
 
 * Changes in Slurm 19.05.3-2
 ============================
