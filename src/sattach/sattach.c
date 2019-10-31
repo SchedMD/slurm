@@ -413,7 +413,7 @@ static int _attach_to_tasks(uint32_t jobid,
 		hosts = layout->front_end;
 	else
 		hosts = layout->node_list;
-	nodes_resp = slurm_send_recv_msgs(hosts, &msg, timeout, false);
+	nodes_resp = slurm_send_recv_msgs(hosts, &msg, timeout);
 	if (nodes_resp == NULL) {
 		error("slurm_send_recv_msgs failed: %m");
 		return SLURM_ERROR;

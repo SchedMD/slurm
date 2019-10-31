@@ -914,7 +914,7 @@ RESEND:	slurm_msg_t_init(&req);
 	debug2("sending signal %d to step %u.%u on hosts %s",
 	       signo, ctx->job_id, ctx->step_resp->job_step_id, name);
 
-	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0, false))) {
+	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0))) {
 		error("fwd_signal: slurm_send_recv_msgs really failed badly");
 		xfree(name);
 		return;
@@ -1737,12 +1737,10 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 #ifdef HAVE_FRONT_END
 	slurm_cred_get_args(ctx->step_resp->cred, &cred_args);
 	//info("hostlist=%s", cred_args.step_hostlist);
-	ret_list = slurm_send_recv_msgs(cred_args.step_hostlist, &msg, timeout,
-					false);
+	ret_list = slurm_send_recv_msgs(cred_args.step_hostlist, &msg, timeout);
 	slurm_cred_free_args(&cred_args);
 #else
-	ret_list = slurm_send_recv_msgs(nodelist,
-					&msg, timeout, false);
+	ret_list = slurm_send_recv_msgs(nodelist, &msg, timeout);
 #endif
 	if (ret_list == NULL) {
 		error("slurm_send_recv_msgs failed miserably: %m");

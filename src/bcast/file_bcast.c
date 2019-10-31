@@ -193,8 +193,8 @@ static int _file_bcast(struct bcast_parameters *params,
 	msg.data = bcast_msg;
 	msg.msg_type = REQUEST_FILE_BCAST;
 
-	ret_list = slurm_send_recv_msgs(
-		sbcast_cred->node_list, &msg, params->timeout, true);
+	ret_list = slurm_send_recv_msgs(sbcast_cred->node_list, &msg,
+					params->timeout);
 	if (ret_list == NULL) {
 		error("slurm_send_recv_msgs: %m");
 		exit(1);

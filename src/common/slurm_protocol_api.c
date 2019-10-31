@@ -4875,13 +4875,11 @@ void slurm_send_msg_maybe(slurm_msg_t *req)
  * IN nodelist	  - list of nodes to send to.
  * IN msg	  - a slurm_msg struct to be sent by the function
  * IN timeout	  - how long to wait in milliseconds
- * IN quiet       - if set, reduce logging details
  * RET List	  - List containing the responses of the children
  *		    (if any) we forwarded the message to. List
  *		    containing type (ret_data_info_t).
  */
-List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
-			  int timeout, bool quiet)
+List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
 {
 	List ret_list = NULL;
 	hostlist_t hl = NULL;
@@ -5306,7 +5304,7 @@ extern int slurm_forward_data(
 	msg.msg_type = REQUEST_FORWARD_DATA;
 	msg.data = &req;
 
-	if ((ret_list = slurm_send_recv_msgs(*nodelist, &msg, 0, false))) {
+	if ((ret_list = slurm_send_recv_msgs(*nodelist, &msg, 0))) {
 		if (list_count(ret_list) > 1)
 			redo_nodelist = true;
 

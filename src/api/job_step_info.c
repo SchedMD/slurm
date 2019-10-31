@@ -610,7 +610,7 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	req_msg.msg_type = REQUEST_JOB_STEP_STAT;
         req_msg.data = &req;
 
-        if (!(ret_list = slurm_send_recv_msgs(node_list, &req_msg, 0, false))) {
+	if (!(ret_list = slurm_send_recv_msgs(node_list, &req_msg, 0))) {
                 error("slurm_job_step_stat: got an error no list returned");
 		rc = SLURM_ERROR;
 		if (created) {
@@ -725,8 +725,7 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
 	req_msg.msg_type = REQUEST_JOB_STEP_PIDS;
         req_msg.data = &req;
 
-        if (!(ret_list = slurm_send_recv_msgs(node_list,
-					     &req_msg, 0, false))) {
+	if (!(ret_list = slurm_send_recv_msgs(node_list, &req_msg, 0))) {
                 error("slurm_job_step_get_pids: got an error no list returned");
                 rc = SLURM_ERROR;
 		if (created) {

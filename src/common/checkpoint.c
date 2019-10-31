@@ -354,8 +354,8 @@ extern int checkpoint_tasks (uint32_t job_id, uint32_t step_id,
 	req_msg.msg_type	= REQUEST_CHECKPOINT_TASKS;
 	req_msg.data		= &ckpt_req;
 
-	if ((ret_list = slurm_send_recv_msgs(nodelist, &req_msg, (wait*1000),
-					     false))) {
+	if ((ret_list = slurm_send_recv_msgs(nodelist, &req_msg,
+					     (wait * 1000)))) {
 		while ((ret_data_info = list_pop(ret_list))) {
                         temp_rc = slurm_get_return_code(ret_data_info->type,
                                                         ret_data_info->data);

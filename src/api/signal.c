@@ -62,7 +62,7 @@ static int _local_send_recv_rc_msgs(const char *nodelist,
 	msg->msg_type = type;
 	msg->data = data;
 
-	if ((ret_list = slurm_send_recv_msgs(nodelist, msg, 0, false))) {
+	if ((ret_list = slurm_send_recv_msgs(nodelist, msg, 0))) {
 		while ((ret_data_info = list_pop(ret_list))) {
 			temp_rc = slurm_get_return_code(ret_data_info->type,
 							ret_data_info->data);
