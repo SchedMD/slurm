@@ -4683,7 +4683,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_COMPLETE_PROLOG:
 		slurm_free_complete_prolog_msg(data);
 		break;
-	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		slurm_free_complete_batch_script_msg(data);
 		break;
@@ -5419,9 +5418,8 @@ rpc_num2string(uint16_t opcode)
 		return "RESPONSE_JOB_STEP_PIDS";
 	case REQUEST_FORWARD_DATA:
 		return "REQUEST_FORWARD_DATA";
-	case REQUEST_COMPLETE_BATCH_JOB:			/* 5030 */
-		return "REQUEST_COMPLETE_BATCH_JOB";
-	case REQUEST_SUSPEND_INT:
+
+	case REQUEST_SUSPEND_INT:				/* 5031 */
 		return "REQUEST_SUSPEND_INT";
 	case REQUEST_KILL_JOB:
 		return "REQUEST_KILL_JOB";

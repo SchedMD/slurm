@@ -384,7 +384,6 @@ void slurmctld_req(slurm_msg_t *msg, connection_arg_t *arg)
 	case REQUEST_COMPLETE_PROLOG:
 		_slurm_rpc_complete_prolog(msg);
 		break;
-	case REQUEST_COMPLETE_BATCH_JOB:
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		i = 0;
 		_slurm_rpc_complete_batch_script(msg, (bool *)&i, 0);
@@ -2621,8 +2620,6 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 	}
 
 	/* Mark job allocation complete */
-	if (msg->msg_type == REQUEST_COMPLETE_BATCH_JOB)
-		job_epilog_complete(comp_msg->job_id, comp_msg->node_name, 0);
 	i = job_complete(comp_msg->job_id, uid, job_requeue, false,
 			 comp_msg->job_rc);
 	error_code = MAX(error_code, i);
@@ -6520,7 +6517,6 @@ static void  _slurm_rpc_comp_msg_list(composite_msg_t * comp_msg,
 				slurm_free_composite_msg(comp_resp_msg);
 			break;
 		case REQUEST_COMPLETE_BATCH_SCRIPT:
-		case REQUEST_COMPLETE_BATCH_JOB:
 			_slurm_rpc_complete_batch_script(next_msg,
 							 run_scheduler, 1);
 			break;
