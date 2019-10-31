@@ -159,7 +159,6 @@ def include_virtual(matchobj):
         filename = matchobj.group(2)
 
     if os.access(filename, os.F_OK):
-        #print 'Including file', filename
         lines = open(filename, 'r').read()
         return lines
     else:
@@ -186,7 +185,6 @@ def url_rewrite(matchobj):
             newname = location[:-6] + '.html'
         else:
             newname = location[:-6] + '.html' + matchobj.group(3)
-        #print 'Rewriting', location, 'to', newname
         return matchobj.group(1) + newname + matchobj.group(4)
     else:
         return matchobj.group(0)
