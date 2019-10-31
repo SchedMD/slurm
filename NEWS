@@ -65,6 +65,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix build on 32-bit systems.
  -- Remove duplicate log entry on update job.
  -- sched/backfill - fix the estimated sched_nodes for multi-part jobs.
+ -- slurm.spec - fix pmix_version global context macro.
 
 * Changes in Slurm 19.05.3-2
 ============================
