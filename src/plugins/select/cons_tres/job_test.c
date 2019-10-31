@@ -2252,8 +2252,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			     plugin_type, __func__, job_ptr);
 			goto fini;
 		}
-	} else {
-		bit_clear_all(node_map);
 	}
 
 	list_sort(node_weight_list, _topo_weight_sort);
@@ -2275,6 +2273,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	for (i = 0, switch_ptr = switch_record_table; i < switch_record_cnt;
 	     i++, switch_ptr++) {
 		switch_node_bitmap[i] = bit_copy(switch_ptr->node_bitmap);
+		bit_and(switch_node_bitmap[i], node_map);
+		switch_node_cnt[i] = bit_set_count(switch_node_bitmap[i]);
 		if (req_nodes_bitmap &&
 		    bit_overlap(req_nodes_bitmap, switch_node_bitmap[i])) {
 			switch_required[i] = 1;
@@ -2288,6 +2288,9 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				top_switch_inx = i;
 			}
 		}
+		if (!_enough_nodes(switch_node_cnt[i], rem_nodes,
+				   min_nodes, req_nodes))
+			continue;
 		if (!req_nodes_bitmap &&
 		    bit_overlap(nw->node_bitmap, switch_node_bitmap[i])) {
 			if ((top_switch_inx == -1) ||
@@ -2296,6 +2299,10 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				top_switch_inx = i;
 			}
 		}
+	}
+
+	if (!req_nodes_bitmap) {
+		bit_clear_all(node_map);
 	}
 
 	/*
