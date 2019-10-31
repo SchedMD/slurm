@@ -596,9 +596,8 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 	} else
 		resp_out = *resp;
 
-        debug("slurm_job_step_stat: "
-	      "getting pid information of job %u.%u on nodes %s",
-              job_id, step_id, node_list);
+	debug("%s: getting pid information of job %u.%u on nodes %s",
+	      __func__, job_id, step_id, node_list);
 
 	slurm_msg_t_init(&req_msg);
 
@@ -608,17 +607,17 @@ extern int slurm_job_step_stat(uint32_t job_id, uint32_t step_id,
 
 	req_msg.protocol_version = use_protocol_ver;
 	req_msg.msg_type = REQUEST_JOB_STEP_STAT;
-        req_msg.data = &req;
+	req_msg.data = &req;
 
 	if (!(ret_list = slurm_send_recv_msgs(node_list, &req_msg, 0))) {
-                error("slurm_job_step_stat: got an error no list returned");
+		error("%s: got an error no list returned", __func__);
 		rc = SLURM_ERROR;
 		if (created) {
 			slurm_job_step_stat_response_msg_free(resp_out);
 			*resp = NULL;
 		}
 		goto cleanup;
-        }
+	}
 
 	itr = list_iterator_create(ret_list);
 	while ((ret_data_info = list_next(itr))) {
@@ -681,12 +680,12 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
 				   char *node_list,
 				   job_step_pids_response_msg_t **resp)
 {
-        int rc = SLURM_SUCCESS;
-        slurm_msg_t req_msg;
-        job_step_id_msg_t req;
-        ListIterator itr;
-        List ret_list = NULL;
-        ret_data_info_t *ret_data_info = NULL;
+	int rc = SLURM_SUCCESS;
+	slurm_msg_t req_msg;
+	job_step_id_msg_t req;
+	ListIterator itr;
+	List ret_list = NULL;
+	ret_data_info_t *ret_data_info = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	job_step_pids_response_msg_t *resp_out;
 	bool created = 0;
@@ -712,66 +711,63 @@ extern int slurm_job_step_get_pids(uint32_t job_id, uint32_t step_id,
 	} else
 		resp_out = *resp;
 
-        debug("slurm_job_step_get_pids: "
-	      "getting pid information of job %u.%u on nodes %s",
-              job_id, step_id, node_list);
+	debug("%s: getting pid information of job %u.%u on nodes %s",
+	      __func__, job_id, step_id, node_list);
 
 	slurm_msg_t_init(&req_msg);
 
 	memset(&req, 0, sizeof(req));
-        resp_out->job_id = req.job_id = job_id;
+	resp_out->job_id = req.job_id = job_id;
 	resp_out->step_id = req.step_id = step_id;
 
 	req_msg.msg_type = REQUEST_JOB_STEP_PIDS;
-        req_msg.data = &req;
+	req_msg.data = &req;
 
 	if (!(ret_list = slurm_send_recv_msgs(node_list, &req_msg, 0))) {
-                error("slurm_job_step_get_pids: got an error no list returned");
-                rc = SLURM_ERROR;
+		error("%s: got an error no list returned", __func__);
+		rc = SLURM_ERROR;
 		if (created) {
 			slurm_job_step_pids_response_msg_free(resp_out);
 			*resp = NULL;
 		}
 		goto cleanup;
-        }
+	}
 
-        itr = list_iterator_create(ret_list);
-        while((ret_data_info = list_next(itr))) {
-                switch (ret_data_info->type) {
-			case RESPONSE_JOB_STEP_PIDS:
-				if (!resp_out->pid_list)
-					resp_out->pid_list = list_create(
-						slurm_free_job_step_pids);
-				list_push(resp_out->pid_list,
-					  ret_data_info->data);
-				ret_data_info->data = NULL;
-                              break;
-                      case RESPONSE_SLURM_RC:
-                              rc = slurm_get_return_code(ret_data_info->type,
-                                                         ret_data_info->data);
-                              error("slurm_job_step_get_pids: "
-				    "there was an error with the "
-				    "list pid request rc = %s",
-                                    slurm_strerror(rc));
-                              break;
-                      default:
-                              rc = slurm_get_return_code(ret_data_info->type,
-                                                         ret_data_info->data);
-                              error("slurm_job_step_get_pids: "
-				    "unknown return given %d rc = %s",
-                                    ret_data_info->type, slurm_strerror(rc));
-                              break;
-                }
-        }
-        list_iterator_destroy(itr);
-        FREE_NULL_LIST(ret_list);
+	itr = list_iterator_create(ret_list);
+	while((ret_data_info = list_next(itr))) {
+		switch (ret_data_info->type) {
+		case RESPONSE_JOB_STEP_PIDS:
+			if (!resp_out->pid_list)
+				resp_out->pid_list = list_create(
+					slurm_free_job_step_pids);
+			list_push(resp_out->pid_list,
+				  ret_data_info->data);
+			ret_data_info->data = NULL;
+			break;
+		case RESPONSE_SLURM_RC:
+			rc = slurm_get_return_code(ret_data_info->type,
+						   ret_data_info->data);
+			error("%s: there was an error with the list pid request rc = %s",
+			      __func__, slurm_strerror(rc));
+			break;
+		default:
+			rc = slurm_get_return_code(ret_data_info->type,
+						   ret_data_info->data);
+			error("%s: unknown return given %d rc = %s",
+			      __func__, ret_data_info->type,
+			      slurm_strerror(rc));
+			break;
+		}
+	}
+	list_iterator_destroy(itr);
+	FREE_NULL_LIST(ret_list);
 
  	if (resp_out->pid_list)
 		list_sort(resp_out->pid_list, (ListCmpF)_sort_pids_by_name);
 cleanup:
 	slurm_step_layout_destroy(step_layout);
 
-        return rc;
+	return rc;
 }
 
 extern void slurm_job_step_layout_free(slurm_step_layout_t *layout)
