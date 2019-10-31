@@ -1365,11 +1365,6 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 	return rc;
 }
 
-extern int select_p_block_init(List part_list)
-{
-	return other_block_init(part_list);
-}
-
 /*
  * select_p_job_test - Given a specification of scheduling requirements,
  *	identify the nodes which "best" satisfy the request.

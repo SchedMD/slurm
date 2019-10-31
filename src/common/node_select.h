@@ -77,7 +77,6 @@ typedef struct slurm_select_ops {
 						 int node_cnt);
 	int		(*node_init)		(node_record_t *node_ptr,
 						 int node_cnt);
-	int		(*block_init)		(List block_list);
 	int		(*job_test)		(job_record_t *job_ptr,
 						 bitstr_t *bitmap,
 						 uint32_t min_nodes,
@@ -215,12 +214,6 @@ extern int select_g_state_restore(char *dir_name);
  * IN node_count - number of node entries
  */
 extern int select_g_node_init(node_record_t *node_ptr, int node_cnt);
-
-/*
- * Note re/initialization of partition record data structure
- * IN part_list - list of partition records
- */
-extern int select_g_block_init(List part_list);
 
 /*
  * Note the initialization of job records, issued upon restart of

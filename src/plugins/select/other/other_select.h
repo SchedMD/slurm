@@ -86,12 +86,6 @@ extern int other_job_init(List job_list);
 extern int other_node_init(node_record_t *node_ptr, int node_cnt);
 
 /*
- * Note re/initialization of partition record data structure
- * IN part_list - list of partition records
- */
-extern int other_block_init(List part_list);
-
-/*
  * Get select data from a plugin
  * IN node_pts  - current node record
  * IN dinfo   - type of data to get from the node record

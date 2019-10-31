@@ -1360,7 +1360,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	_build_bitmaps_pre_select();
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
 	     != SLURM_SUCCESS)						||
-	    (select_g_block_init(part_list) != SLURM_SUCCESS)		||
 	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS)	||
 	    (select_g_job_init(job_list) != SLURM_SUCCESS)) {
 		if (test_config) {

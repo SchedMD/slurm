@@ -3540,11 +3540,6 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_block_init(List block_list)
-{
-	return SLURM_SUCCESS;
-}
-
 /*
  * select_p_job_test - Given a specification of scheduling requirements,
  *	identify the nodes which "best" satisfy the request.

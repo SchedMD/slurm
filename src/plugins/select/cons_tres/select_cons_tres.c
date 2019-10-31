@@ -444,8 +444,6 @@ extern int fini(void)
 
 /* select_p_node_init() in cons_common */
 
-/* select_p_block_init() in cons_common */
-
 /*
  * select_p_job_test - Given a specification of scheduling requirements,
  *	identify the nodes which "best" satisfy the request.

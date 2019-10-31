@@ -67,7 +67,6 @@ const char *node_select_syms[] = {
 	"select_p_job_init",
 	"select_p_node_ranking",
 	"select_p_node_init",
-	"select_p_block_init",
 	"select_p_job_test",
 	"select_p_job_begin",
 	"select_p_job_ready",
@@ -222,19 +221,6 @@ extern int other_node_init(node_record_t *node_ptr, int node_cnt)
 		return SLURM_ERROR;
 
 	return (*(ops.node_init))(node_ptr, node_cnt);
-}
-
-
-/*
- * Note re/initialization of block record data structure
- * IN block_list - list of partition records
- */
-extern int other_block_init(List block_list)
-{
-	if (other_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.block_init))(block_list);
 }
 
 /*
