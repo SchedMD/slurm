@@ -27,6 +27,8 @@ HIGHLIGHTS
  -- Removed the smap command.
  -- Exclusive behavior of a node includes all GRES on a node as well
     as the cpus.
+ -- Use python3 instead of python for internal build/test scripts.
+    The slurm.spec file has been updated to depend on python3 as well.
 
 
 - Added slurm.conf option MaxDBDMsgs to control how many messages will be
