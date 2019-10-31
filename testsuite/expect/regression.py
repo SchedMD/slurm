@@ -32,13 +32,9 @@ import sys
 import time
 from optparse import OptionParser
 from optparse import OptionValueError
+from subprocess import Popen
 
 def main(argv=None):
-    try:
-        from subprocess import Popen
-    except:
-        Popen = poor_Popen_substitute
-
     # "tests" is a list containing tuples of length 3 of the form
     # (test major number, test minor number, test filename)
     tests = []
@@ -227,41 +223,6 @@ def test_parser(option, opt_str, value, parser):
         if minor != '*':
             minor = int(minor)
         l.append((major, minor))
-
-class poor_Popen_substitute:
-    '''subprocess.Popen work-alike function.
-
-    The subprocess module and its subprocess.Popen class were
-    added in Python 2.4.  This function is provided to supply the
-    subset of Popen functionality need by this program if run under
-    older python interpreters.
-    '''
-    def __init__(self, args, shell=False, stdout=None, stderr=None):
-        if shell is not False:
-            raise Exception("This substitute Popen only supports shell=True")
-        self.stdin = None
-        self.stdout = None
-        self.stderr = None
-        self.pid = None
-        self.returncode = None
-
-        pid = os.fork()
-        if pid > 0:
-            self.pid = pid
-            return
-        elif pid == 0:
-            if sys.stdout is not None:
-                os.dup2(stdout.fileno(), sys.stdout.fileno())
-                if sys.stdout == 'STDOUT':
-                    os.dup2(stdout.fileno(), sys.stderr.fileno())
-            if sys.stderr is not None:
-                os.dup2(stderr.fileno(), sys.stderr.fileno())
-
-            os.execvp(args[0], args)
-
-    def wait(self):
-        (pid, rc) = os.waitpid(self.pid, 0)
-        return rc
 
 if __name__ == "__main__":
     sys.exit(main())
