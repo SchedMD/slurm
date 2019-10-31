@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
  -- slurm.spec - add --with cray_shasta option.
  -- Downgrade "Node config differ.." error message if config_overrides enabled.
  -- Add client error when using --gpus-per-socket without --sockets-per-node.
+ -- Fix nvml/rsmi debug statements making it to stderr.
 
 * Changes in Slurm 20.02.1
 ==========================

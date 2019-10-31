@@ -98,7 +98,7 @@ static bitstr_t	*saved_gpus = NULL;
 const char	*plugin_name		= "GPU NVML plugin";
 const char	*plugin_type		= "gpu/nvml";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
-static log_level_t log_lvl              = LOG_LEVEL_QUIET;
+static log_level_t log_lvl              = LOG_LEVEL_DEBUG5;
 
 
 /*
@@ -1368,7 +1368,7 @@ extern int gpu_p_reconfig(void)
 	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
 		log_lvl = LOG_LEVEL_INFO;
 	else
-		log_lvl = LOG_LEVEL_QUIET;
+		log_lvl = LOG_LEVEL_DEBUG5;
 
 	return SLURM_SUCCESS;
 }

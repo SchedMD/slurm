@@ -112,7 +112,7 @@ typedef struct rsmiPciInfo_st {
 const char	*plugin_name		= "GPU RSMI plugin";
 const char	*plugin_type		= "gpu/rsmi";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
-static log_level_t log_lvl              = LOG_LEVEL_QUIET;
+static log_level_t log_lvl              = LOG_LEVEL_DEBUG5;
 
 extern int init(void)
 {
@@ -1124,7 +1124,7 @@ extern int gpu_p_reconfig(void)
 	if (slurm_get_debug_flags() & DEBUG_FLAG_GRES)
 		log_lvl = LOG_LEVEL_INFO;
 	else
-		log_lvl = LOG_LEVEL_QUIET;
+		log_lvl = LOG_LEVEL_DEBUG5;
 
 	return SLURM_SUCCESS;
 }
