@@ -6085,6 +6085,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&object_ptr->cpus_max, buffer);
 		safe_unpack32(&object_ptr->cpus_min, buffer);
+		object_ptr->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 		safe_unpack32(&uint32_tmp, buffer);
 		object_ptr->exitcode = (int32_t)uint32_tmp;
 		safe_unpack32(&object_ptr->flags, buffer);
@@ -6297,6 +6298,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 
 		safe_unpack32(&object_ptr->cpus_max, buffer);
 		safe_unpack32(&object_ptr->cpus_min, buffer);
+		object_ptr->db_flags = SLURMDB_JOB_FLAG_NOTSET;
 
 		safe_unpack16(&uint16_tmp, buffer);
 		if (uint16_tmp)

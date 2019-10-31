@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix rebooting nodes from skipping nextstate states on boot.
  -- Fix regression in reservation creation logic from 19.05.3 which would
     incorrectly deny certain valid reservations from being created.
+ -- slurmdbd - process sacct/sacctmgr job queries from older clients correctly.
 
 * Changes in Slurm 19.05.3-2
 ============================
