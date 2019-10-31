@@ -975,6 +975,12 @@ Either a user name or numeric ID (UID), may be specified.
 Set the job's workload characterization key to the specified value.
 
 .TP
+\fIWorkDir\fP=<directory_name>
+Set the job's working directory to the specified value. Note that this may
+only be set for jobs in the PENDING state, and that jobs may fail to launch
+if they rely on relative paths to the originally submitted WorkDir.
+
+.TP
 \fBSPECIFICATIONS FOR SHOW COMMAND, JOBS\fR
 .LP
 

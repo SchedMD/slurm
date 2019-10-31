@@ -13232,6 +13232,23 @@ static int _update_job(struct job_record *job_ptr, job_desc_msg_t * job_specs,
 		}
 	}
 
+	if (job_specs->work_dir && detail_ptr &&
+	    !xstrcmp(job_specs->work_dir, detail_ptr->work_dir)) {
+		sched_debug("%s: new work_dir identical to old work_dir %s",
+			    __func__, job_specs->work_dir);
+	} else if (job_specs->work_dir) {
+		if (!IS_JOB_PENDING(job_ptr)) {
+			error_code = ESLURM_JOB_NOT_PENDING;
+			goto fini;
+		} else if (detail_ptr) {
+			xfree(detail_ptr->work_dir);
+			detail_ptr->work_dir = xstrdup(job_specs->work_dir);
+			sched_info("%s: setting work_dir to %s for %pJ",
+				   __func__, detail_ptr->work_dir, job_ptr);
+			update_accounting = true;
+		}
+	}
+
 	if (job_specs->std_out && detail_ptr &&
 	    !xstrcmp(job_specs->std_out, detail_ptr->std_out)) {
 		sched_debug("%s: new std_out identical to old std_out %s",
