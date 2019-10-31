@@ -288,11 +288,11 @@ the Open MPI version 1.5.</p>
 the OMPI jobs can be launched directly using the srun command. This is
 the preferred mode of operation. If the pmi2 support is enabled, the option
 '--mpi=pmi2' or '--mpi=pmi2_v2' must be specified on the srun command line.
-Alternately configure 'DefaultMpi=pmi' or 'DefaultMpi=pmi_v2' in slurm.conf.</p>
+Alternately configure 'MpiDefault=pmi' or 'MpiDefault=pmi_v2' in slurm.conf.</p>
 
 <p>Starting with Open MPI version 3.1, PMIx version 2 is natively supported.
 To launch Open MPI application using PMIx version 2 the '--mpi=pmix_v2' option
-must be specified on the srun command line or 'DefaultMpi=pmi_v2' configured
+must be specified on the srun command line or 'MpiDefault=pmi_v2' configured
 in slurm.conf. Open MPI version 4.0, adds support for PMIx version 3 and is
 invoked in the same way, with '--mpi=pmix_v3'.</p>
 
