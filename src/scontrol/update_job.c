@@ -1268,6 +1268,9 @@ extern int scontrol_update_job(int argc, char **argv)
 			if ((job_msg.deadline = parse_time(val, 0))) {
 				update_cnt++;
 			}
+		} else if (!xstrncasecmp(tag, "WorkDir", MAX(taglen, 2))) {
+			job_msg.work_dir = val;
+			update_cnt++;
 		}
 		else {
 			exit_code = 1;
