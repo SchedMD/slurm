@@ -135,6 +135,10 @@ HIGHLIGHTS
  -- Allocate nodes that are booting. Previously, nodes that were being booted
     were off limits for allocation. This caused more nodes to be booted than
     needed in a cloud environment.
+ -- Overhauled the salloc, sbatch, and srun command-line argument processing
+    code in support of the new cli_filter API. As part of this cleanup, some
+    older deprecated option forms have been removed, such as --mem_bind,
+    --share, and --workdir.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
