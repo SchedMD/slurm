@@ -343,8 +343,7 @@ static uint64_t swap_limit_in_bytes (uint64_t mem)
 static uint64_t kmem_limit_in_bytes (uint64_t mlb)
 {
 	uint64_t totalKmem = percent_in_bytes(mlb, max_kmem_percent);
-	if ( ! constrain_kmem_space )
-		return totalKmem;
+
 	if ( allowed_kmem_space < 0 ) {	/* Initial value */
 		if ( mlb > totalKmem )
 			return totalKmem;
