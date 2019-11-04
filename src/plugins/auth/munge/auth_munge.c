@@ -502,3 +502,14 @@ static void _print_cred(munge_ctx_t ctx)
 	else
 		info("DECODED: %s", slurm_ctime2_r(&decoded, buf));
 }
+
+int slurm_auth_thread_config(const char *token, const char *username)
+{
+	/* not supported */
+	return SLURM_ERROR;
+}
+
+void slurm_auth_thread_clear(void)
+{
+	/* no op */
+}

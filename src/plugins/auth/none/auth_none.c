@@ -305,3 +305,14 @@ unpack_error:
 	slurm_seterrno(ESLURM_AUTH_UNPACK);
 	return NULL;
 }
+
+int slurm_auth_thread_config(const char *token, const char *username)
+{
+	/* No auth -> everything works */
+	return SLURM_SUCCESS;
+}
+
+void slurm_auth_thread_clear(void)
+{
+	/* no op */
+}

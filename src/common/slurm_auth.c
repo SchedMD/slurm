@@ -71,6 +71,8 @@ typedef struct {
 	int		(*pack)		(void *cred, Buf buf,
 					 uint16_t protocol_version);
 	void *		(*unpack)	(Buf buf, uint16_t protocol_version);
+	int		(*thread_config) (const char *token, const char *username);
+	void		(*thread_clear) (void);
 } slurm_auth_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -87,6 +89,8 @@ static const char *syms[] = {
 	"slurm_auth_get_host",
 	"slurm_auth_pack",
 	"slurm_auth_unpack",
+	"slurm_auth_thread_config",
+	"slurm_auth_thread_clear",
 };
 
 /*
@@ -360,4 +364,20 @@ void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 
 unpack_error:
 	return NULL;
+}
+
+int g_slurm_auth_thread_config(const char *token, const char *username)
+{
+	if (slurm_auth_init(NULL) < 0)
+		return SLURM_ERROR;
+
+	return (*(ops[0].thread_config))(token, username);
+}
+
+void g_slurm_auth_thread_clear(void)
+{
+	if (slurm_auth_init(NULL) < 0)
+		return;
+
+	(*(ops[0].thread_clear))();
 }
