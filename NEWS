@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- scontrol - allow changes to the WorkDir for pending jobs.
  -- Enable coordinators to delete users if they only belong to accounts that
     the coordinator is over.
+ -- Fix regression on update from older versions with DefMemPerCPU.
 
 * Changes in Slurm 19.05.3-2
 ============================
