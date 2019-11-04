@@ -677,3 +677,59 @@ static char *_xstrdup_vprintf(const char *fmt, va_list ap)
 	}
 	/* NOTREACHED */
 }
+
+extern void trim_string(char *string)
+{
+	char *start, *end, *ptr = string;
+	size_t spaces = 0;
+
+	if (!string || !(*string))
+		return;
+
+	/* walk start to the right until we find NULL or a real character */
+	while (*ptr && isspace(*ptr)) {
+		xassert((++spaces));
+		++ptr;
+	}
+
+	if (!(*ptr)) {
+		/* string is all whitespace */
+		string[0] = '\0';
+		return;
+	}
+
+	/* save start of non-space string */
+	start = ptr;
+
+	/* find the end of the string */
+	while (*ptr)
+		++ptr;
+
+	/* save real end of string as it will be overwritten later */
+	end = ptr;
+	xassert(strlen(string) == (end - string));
+
+	/* walk to the left to find start of ending whitespace */
+	do {
+		char *sptr = ptr - 1;
+		/* we should never walk past start */
+		xassert(*sptr);
+
+		if (!*sptr || sptr <= start || !isspace(*sptr))
+			break;
+
+		ptr = sptr;
+		*ptr = '\0';
+		xassert((++spaces));
+	} while (true);
+
+	xassert(*ptr == '\0');
+	xassert(end >= ptr);
+	xassert(start >= string);
+	xassert(start <= end);
+	xassert(((end - string) - spaces) == (ptr - start));
+
+	/* shift it over if necessary */
+	if (end != start)
+		memcpy(string, start, (ptr - start + 1));
+}

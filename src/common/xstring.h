@@ -212,4 +212,10 @@ char *xstrstr(const char *haystack, const char *needle);
 /* safe case insensitive version of strstr(). */
 char *xstrcasestr(const char *haystack, const char *needle);
 
+/*
+ * Trims white space before and after string in place.
+ * Will left shift the string values to remove white space.
+ */
+void trim_string(char *string);
+
 #endif /* !_XSTRING_H */
