@@ -72,6 +72,7 @@
 #include "src/common/parse_time.h"
 #include "src/common/power.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_mcs.h"
 #include "src/common/slurm_priority.h"
@@ -13896,11 +13897,17 @@ fini:
 extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 {
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
+	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
 	struct job_record *job_ptr;
 	int rc;
 
 	xfree(job_specs->job_id_str);
 	xstrfmtcat(job_specs->job_id_str, "%u", job_specs->job_id);
+
+	if (hostname) {
+		xfree(job_specs->alloc_node);
+		job_specs->alloc_node = hostname;
+	}
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
@@ -13930,6 +13937,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 
 	slurm_msg_t resp_msg;
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
+	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
 	struct job_record *job_ptr, *new_job_ptr, *pack_job;
 	ListIterator iter;
 	long int long_id;
@@ -13945,6 +13953,12 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	return_code_msg_t rc_msg;
 
 	job_id_str = job_specs->job_id_str;
+
+	if (hostname) {
+		xfree(job_specs->alloc_node);
+		job_specs->alloc_node = hostname;
+
+	}
 
 	if (max_array_size == NO_VAL)
 		max_array_size = slurmctld_conf.max_array_sz;
