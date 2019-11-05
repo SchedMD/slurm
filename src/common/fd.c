@@ -50,6 +50,8 @@
 #include "src/common/macros.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
@@ -247,4 +249,38 @@ extern int fsync_and_close(int fd, const char *file_type)
 		rc = retval;
 
 	return rc;
+}
+
+extern char *fd_resolve_path(int fd)
+{
+	char *resolved = NULL;
+	char *path = NULL;
+
+#if defined(__linux__)
+	struct stat sb = {0};
+
+	path = xstrdup_printf("/proc/self/fd/%u", fd);
+	if (lstat(path, &sb) == -1) {
+		debug("%s: unable to lstat(%s): %m", __func__, path);
+	} else {
+		size_t name_len = sb.st_size + 1;
+		resolved = xmalloc(name_len);
+		if (readlink(path, resolved, name_len) <= 0) {
+			debug("%s: unable to readlink(%s): %m",
+			      __func__, path);
+			xfree(resolved);
+		}
+	}
+#endif
+
+	// TODO: use fcntl(fd, F_GETPATH, filePath) on macOS
+
+	xfree(path);
+	return resolved;
+}
+
+extern void fd_set_oob(int fd, int value)
+{
+	if (setsockopt(fd, SOL_SOCKET, SO_OOBINLINE, &value, sizeof(value)))
+		fatal("Unable disable inline OOB messages on socket: %m");
 }

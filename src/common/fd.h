@@ -125,4 +125,16 @@ extern int fsync_and_close(int fd, const char *file_type);
  * */
 int fd_get_socket_error(int fd, int *err);
 
+/*
+ * Attempt to resolve file descriptor path
+ * IN fd - open file descriptor to resolve
+ * RET ptr to string (must xfree()) or NULL on failure
+ */
+extern char *fd_resolve_path(int fd);
+
+/*
+ * Set inline Out of Band (OOB) data on socket fd
+ */
+extern void fd_set_oob(int fd, int value);
+
 #endif /* !_FD_H */
