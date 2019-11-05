@@ -869,9 +869,9 @@ static bool _opt_verify(void)
 	 * We will override it with what the user specified in the hostlist.
 	 */
 	if (((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_ARBITRARY)) {
-		if (slurm_option_set_by_env('n'))
+		if (slurm_option_set_by_env(&opt, 'n'))
 			opt.ntasks_set = false;
-		if (slurm_option_set_by_env('N'))
+		if (slurm_option_set_by_env(&opt, 'N'))
 			opt.nodes_set = false;
 	}
 

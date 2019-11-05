@@ -1101,7 +1101,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 					merge_nodelist = false;
 					list_append(used_resp_list, resp);
 				}
-				if (slurm_option_set_by_env('N') &&
+				if (slurm_option_set_by_env(opt_local, 'N') &&
 				    (opt_local->min_nodes > resp->node_cnt)) {
 					/*
 					 * This signifies the job used the
@@ -1224,9 +1224,9 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			exit(error_exit);
 		}
 #endif
-		if (slurm_option_set_by_cli('J'))
+		if (slurm_option_set_by_cli(&opt, 'J'))
 			setenvfs("SLURM_JOB_NAME=%s", opt.job_name);
-		else if (!slurm_option_set_by_env('J') && sropt.argc)
+		else if (!slurm_option_set_by_env(&opt, 'J') && sropt.argc)
 			setenvfs("SLURM_JOB_NAME=%s", sropt.argv[0]);
 
 		if (opt_list) {
@@ -2195,7 +2195,7 @@ static int _validate_relative(resource_allocation_response_msg_t *resp,
 	if ((srun_opt->relative != NO_VAL) &&
 	    ((srun_opt->relative + opt_local->min_nodes)
 	     > resp->node_cnt)) {
-		if (slurm_option_set_by_cli('N')) {
+		if (slurm_option_set_by_cli(opt_local, 'N')) {
 			/* -N command line option used */
 			error("--relative and --nodes option incompatible "
 			      "with count of allocated nodes (%d+%d>%d)",

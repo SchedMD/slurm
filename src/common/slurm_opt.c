@@ -3906,9 +3906,14 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass)
 /*
  * Was the option set by a cli argument?
  */
-extern bool slurm_option_set_by_cli(int optval)
+extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
 {
 	int i;
+
+	if (!opt) {
+		debug3("%s: opt=NULL optval=%u", __func__, optval);
+		return false;
+	}
 
 	for (i = 0; common_options[i]; i++) {
 		if (common_options[i]->val == optval)
@@ -3931,9 +3936,14 @@ extern bool slurm_option_set_by_cli(int optval)
 /*
  * Was the option set by an env var?
  */
-extern bool slurm_option_set_by_env(int optval)
+extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval)
 {
 	int i;
+
+	if (!opt) {
+		debug3("%s: opt=NULL optval=%u", __func__, optval);
+		return false;
+	}
 
 	for (i = 0; common_options[i]; i++) {
 		if (common_options[i]->val == optval)
@@ -4060,22 +4070,22 @@ extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 
 extern void validate_memory_options(slurm_opt_t *opt)
 {
-	if ((slurm_option_set_by_cli(LONG_OPT_MEM) +
-	     slurm_option_set_by_cli(LONG_OPT_MEM_PER_CPU) +
-	     slurm_option_set_by_cli(LONG_OPT_MEM_PER_GPU)) > 1) {
+	if ((slurm_option_set_by_cli(opt, LONG_OPT_MEM) +
+	     slurm_option_set_by_cli(opt, LONG_OPT_MEM_PER_CPU) +
+	     slurm_option_set_by_cli(opt, LONG_OPT_MEM_PER_GPU)) > 1) {
 		fatal("--mem, --mem-per-cpu, and --mem-per-gpu are mutually exclusive.");
-	} else if (slurm_option_set_by_cli(LONG_OPT_MEM)) {
+	} else if (slurm_option_set_by_cli(opt, LONG_OPT_MEM)) {
 		slurm_option_reset(opt, "mem-per-cpu");
 		slurm_option_reset(opt, "mem-per-gpu");
-	} else if (slurm_option_set_by_cli(LONG_OPT_MEM_PER_CPU)) {
+	} else if (slurm_option_set_by_cli(opt, LONG_OPT_MEM_PER_CPU)) {
 		slurm_option_reset(opt, "mem");
 		slurm_option_reset(opt, "mem-per-gpu");
-	} else if (slurm_option_set_by_cli(LONG_OPT_MEM_PER_GPU)) {
+	} else if (slurm_option_set_by_cli(opt, LONG_OPT_MEM_PER_GPU)) {
 		slurm_option_reset(opt, "mem");
 		slurm_option_reset(opt, "mem-per-cpu");
-	} else if ((slurm_option_set_by_env(LONG_OPT_MEM) +
-		    slurm_option_set_by_env(LONG_OPT_MEM_PER_CPU) +
-		    slurm_option_set_by_env(LONG_OPT_MEM_PER_GPU)) > 1) {
+	} else if ((slurm_option_set_by_env(opt, LONG_OPT_MEM) +
+		    slurm_option_set_by_env(opt, LONG_OPT_MEM_PER_CPU) +
+		    slurm_option_set_by_env(opt, LONG_OPT_MEM_PER_GPU)) > 1) {
 		fatal("SLURM_MEM_PER_CPU, SLURM_MEM_PER_GPU, and SLURM_MEM_PER_NODE are mutually exclusive.");
 	}
 }

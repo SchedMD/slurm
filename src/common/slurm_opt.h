@@ -418,12 +418,12 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass);
 /*
  * Was the option set by a cli argument?
  */
-extern bool slurm_option_set_by_cli(int optval);
+extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval);
 
 /*
  * Was the option set by an env var?
  */
-extern bool slurm_option_set_by_env(int optval);
+extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval);
 
 /*
  * Get option value by common option name.
