@@ -495,13 +495,13 @@ static void _copy_args(List missing_argc_list, slurm_opt_t *opt_master)
 static void _pack_grp_test(List opt_list)
 {
 	ListIterator iter;
-	slurm_opt_t *opt_local;
 	int pack_offset;
 	bitstr_t *master_map = NULL;
 	List missing_argv_list = NULL;
 	bool multi_pack = false, multi_prog = false;
 
 	if (opt_list) {
+		slurm_opt_t *opt_local;
 		missing_argv_list = list_create(NULL);
 		iter = list_iterator_create(opt_list);
 		while ((opt_local = list_next(iter))) {
