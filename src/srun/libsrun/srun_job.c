@@ -1022,7 +1022,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	ListIterator opt_iter, resp_iter;
 	srun_job_t *job = NULL;
 	int i, max_list_offset, max_pack_offset, pack_offset = -1;
-	slurm_opt_t *opt_local;
 	uint32_t my_job_id = 0, pack_jobid = 0;
 	char *pack_nodelist = NULL;
 	bool begin_error_logged = false;
@@ -1058,6 +1057,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		if (create_job_step(job, false, &opt) < 0)
 			exit(error_exit);
 	} else if ((job_resp_list = existing_allocation())) {
+		slurm_opt_t *opt_local;
+
 		max_list_offset = 0;
 		max_pack_offset = list_count(job_resp_list) - 1;
 		if (opt_list) {
@@ -1236,6 +1237,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 			opt_iter  = list_iterator_create(opt_list);
 			resp_iter = list_iterator_create(job_resp_list);
 			while ((resp = list_next(resp_iter))) {
+				slurm_opt_t *opt_local;
+
 				if (my_job_id == 0) {
 					my_job_id = resp->job_id;
 					*got_alloc = true;
