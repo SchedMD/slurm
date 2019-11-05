@@ -402,10 +402,10 @@ AC_CONFIG_FILES([Makefile
 		 src/api/Makefile
 		 src/bcast/Makefile
 		 src/common/Makefile
+		 src/database/Makefile
 		 src/layouts/Makefile
 		 src/layouts/power/Makefile
 		 src/layouts/unit/Makefile
-		 src/database/Makefile
 		 src/sacct/Makefile
 		 src/sacctmgr/Makefile
 		 src/sreport/Makefile
