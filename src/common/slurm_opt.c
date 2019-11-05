@@ -3514,7 +3514,7 @@ static slurm_cli_opt_t slurm_opt_x11 = {
 	.reset_func = arg_reset_x11,
 };
 
-static slurm_cli_opt_t *common_options[] = {
+static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt__unknown_,
 	&slurm_opt_accel_bind,
 	&slurm_opt_account,
