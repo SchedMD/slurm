@@ -1580,26 +1580,29 @@ done:
  * IN jobid - (optional) job id
  * IN uid - User ID to use for file access check
  * IN gid - Group ID to use for file access check
- * RET -1 on error, file descriptor otherwise
- */
+ * OUT fd - File descriptor
+ * RET error or SLURM_SUCCESS
+ * */
 static int _open_as_other(char *path_name, int flags, int mode,
 			  uint32_t jobid, uid_t uid, gid_t gid,
-			  int ngids, gid_t *gids)
+			  int ngids, gid_t *gids, int *fd)
 {
 	pid_t child;
 	int pipe[2];
-	int fd = -1, rc = 0;
+	int rc = 0;
+
+	*fd = -1;
 
 	if ((rc = container_g_create(jobid))) {
 		error("%s: container_g_create(%u): %m", __func__, jobid);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	/* child process will setuid to the user, register the process
 	 * with the container, and open the file for us. */
 	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pipe) != 0) {
 		error("%s: Failed to open pipe: %m", __func__);
-		return -1;
+		return SLURM_ERROR;
 	}
 
 	child = fork();
@@ -1607,14 +1610,16 @@ static int _open_as_other(char *path_name, int flags, int mode,
 		error("%s: fork failure", __func__);
 		close(pipe[0]);
 		close(pipe[1]);
-		return -1;
+		return SLURM_ERROR;
 	} else if (child > 0) {
+		int exit_status = -1;
 		close(pipe[0]);
 		(void) waitpid(child, &rc, 0);
 		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0))
-			fd = receive_fd_over_pipe(pipe[1]);
+			*fd = receive_fd_over_pipe(pipe[1]);
+		exit_status = WEXITSTATUS(rc);
 		close(pipe[1]);
-		return fd;
+		return exit_status;
 	}
 
 	/* child process below here */
@@ -1659,14 +1664,14 @@ static int _open_as_other(char *path_name, int flags, int mode,
 		exit(errno);
 	}
 
-	fd = open(path_name, flags, mode);
-	if (fd == -1) {
-		 error("%s: uid:%u can't open `%s`: %m",
-			__func__, uid, path_name);
+	*fd = open(path_name, flags, mode);
+	if (*fd == -1) {
+		 error("%s: uid:%u can't open `%s`: %m code %d",
+			__func__, uid, path_name, errno);
 		 exit(errno);
 	}
-	send_fd_over_pipe(pipe[0], fd);
-	close(fd);
+	send_fd_over_pipe(pipe[0], *fd);
+	close(*fd);
 	exit(SLURM_SUCCESS);
 }
 
@@ -1675,7 +1680,7 @@ static void
 _prolog_error(batch_job_launch_msg_t *req, int rc)
 {
 	char *err_name = NULL, *path_name = NULL;
-	int fd;
+	int fd, rc2;
 	int flags = (O_CREAT|O_APPEND|O_WRONLY);
 	uint32_t jobid;
 
@@ -1689,10 +1694,10 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 #endif
 
 	path_name = fname_create2(req);
-	if ((fd = _open_as_other(path_name, flags, 0644,
-				 jobid, req->uid, req->gid,
-				 req->ngids, req->gids)) == -1) {
-		error("Unable to open %s: Permission denied", path_name);
+	rc2 = _open_as_other(path_name, flags, 0644, jobid, req->uid, req->gid,
+			     req->ngids, req->gids, &fd);
+	if (rc2 != SLURM_SUCCESS) {
+		error("Unable to open %s: %s", path_name, strerror(rc2));
 		xfree(path_name);
 		return;
 	}
@@ -2442,6 +2447,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 				exit_status = WEXITSTATUS(rc);
 			error("[job %u] prolog failed status=%d:%d",
 			      req->job_id, exit_status, term_sig);
+
 			_prolog_error(req, rc);
 			rc = ESLURMD_PROLOG_FAILED;
 			goto done;
@@ -4172,7 +4178,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 				     file_bcast_info_t *key)
 {
 	file_bcast_msg_t *req = msg->data;
-	int fd, flags;
+	int fd, flags, rc;
 	file_bcast_info_t *file_info;
 
 	/* may still be unset in credential */
@@ -4187,11 +4193,11 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	else
 		flags |= O_EXCL;
 
-	if ((fd = _open_as_other(req->fname, flags, 0700,
-				 key->job_id, key->uid, key->gid,
-				 cred_arg->ngids, cred_arg->gids)) == -1) {
-		error("Unable to open %s: Permission denied", req->fname);
-		return SLURM_ERROR;
+	rc = _open_as_other(req->fname, flags, 0700, key->job_id, key->uid,
+			    key->gid, cred_arg->ngids, cred_arg->gids, &fd);
+	if (rc != SLURM_SUCCESS) {
+		error("Unable to open %s: %s", req->fname, strerror(rc));
+		return rc;
 	}
 
 	file_info = xmalloc(sizeof(file_bcast_info_t));

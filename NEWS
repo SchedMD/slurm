@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
     reservation.
  -- Add ability for reservations to be accessed by Linux Groups.
  -- Let users submit to multiple reservations as they can partitions.
+ -- Report a wider range of error codes for sbcast when opening a file.
 
 * Changes in Slurm 20.02.5
 ==========================
