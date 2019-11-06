@@ -638,19 +638,23 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 		tmp_int = WEXITSTATUS(job_ptr->exit_code);
 	xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
 
-	json_str = xstrdup_printf(JOBCOMP_DATA_FORMAT,
-				job_ptr->job_id, usr_str,
-				job_ptr->user_id, grp_str,
-				job_ptr->group_id, start_str,
-				end_str, elapsed_time,
-				job_ptr->partition, job_ptr->alloc_node,
-				job_ptr->nodes, job_ptr->total_cpus,
-				job_ptr->total_nodes,
-				derived_ec_str,
-				exit_code_str, state_string,
-				((float) elapsed_time *
-				 (float) job_ptr->total_cpus) /
-				 (float) 3600);
+	{
+		char *alloc_node = _json_escape(job_ptr->alloc_node);
+		char *part = _json_escape(job_ptr->partition);
+
+		json_str = xstrdup_printf(
+			JOBCOMP_DATA_FORMAT, job_ptr->job_id, usr_str,
+			job_ptr->user_id, grp_str, job_ptr->group_id, start_str,
+			end_str, elapsed_time, part, job_ptr->alloc_node,
+			job_ptr->nodes, job_ptr->total_cpus,
+			job_ptr->total_nodes, derived_ec_str, exit_code_str,
+			state_string,
+			((float) elapsed_time * (float) job_ptr->total_cpus) /
+				(float) 3600);
+
+		xfree(alloc_node);
+		xfree(part);
+	}
 
 	if (job_ptr->array_task_id != NO_VAL) {
 		xstrfmtcat(json_str, ",\"array_job_id\":%lu",
@@ -692,35 +696,42 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 
 	if (job_ptr->details
 	    && (job_ptr->details->work_dir && job_ptr->details->work_dir[0])) {
-		xstrfmtcat(json_str, ",\"work_dir\":\"%s\"",
-			   job_ptr->details->work_dir);
+		char *str = _json_escape(job_ptr->details->work_dir);
+		xstrfmtcat(json_str, ",\"work_dir\":\"%s\"", str);
+		xfree(str);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->std_err && job_ptr->details->std_err[0])) {
-		xstrfmtcat(json_str, ",\"std_err\":\"%s\"",
-			   job_ptr->details->std_err);
+		char *str = _json_escape(job_ptr->details->std_err);
+		xstrfmtcat(json_str, ",\"std_err\":\"%s\"", str);
+		xfree(str);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->std_in && job_ptr->details->std_in[0])) {
-		xstrfmtcat(json_str, ",\"std_in\":\"%s\"",
-			   job_ptr->details->std_in);
+		char *str = _json_escape(job_ptr->details->std_in);
+		xstrfmtcat(json_str, ",\"std_in\":\"%s\"", str);
+		xfree(str);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->std_out && job_ptr->details->std_out[0])) {
-		xstrfmtcat(json_str, ",\"std_out\":\"%s\"",
-			   job_ptr->details->std_out);
+		char *str = _json_escape(job_ptr->details->std_out);
+		xstrfmtcat(json_str, ",\"std_out\":\"%s\"", str);
+		xfree(str);
 	}
 
 	if (job_ptr->assoc_ptr != NULL) {
-		xstrfmtcat(json_str, ",\"cluster\":\"%s\"",
-			   job_ptr->assoc_ptr->cluster);
+		char *str = _json_escape(job_ptr->assoc_ptr->cluster);
+		xstrfmtcat(json_str, ",\"cluster\":\"%s\"", str);
+		xfree(str);
 	}
 
 	if (job_ptr->qos_ptr != NULL) {
-		xstrfmtcat(json_str, ",\"qos\":\"%s\"", job_ptr->qos_ptr->name);
+		char *str = _json_escape(job_ptr->qos_ptr->name);
+		xstrfmtcat(json_str, ",\"qos\":\"%s\"", str);
+		xfree(str);
 	}
 
 	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL)) {
@@ -744,8 +755,9 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 	if (job_ptr->details
 	    && (job_ptr->details->orig_dependency
 		&& job_ptr->details->orig_dependency[0])) {
-		xstrfmtcat(json_str, ",\"orig_dependency\":\"%s\"",
-			   job_ptr->details->orig_dependency);
+		char *str = _json_escape(job_ptr->details->orig_dependency);
+		xstrfmtcat(json_str, ",\"orig_dependency\":\"%s\"", str);
+		xfree(str);
 	}
 
 	if (job_ptr->details
@@ -760,28 +772,40 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 			   (unsigned long) time_limit * 60);
 	}
 
-	if (job_ptr->name && job_ptr->name[0])
-		xstrfmtcat(json_str, ",\"job_name\":\"%s\"", job_ptr->name);
-
-	if (job_ptr->resv_name && job_ptr->resv_name[0]) {
-		xstrfmtcat(json_str, ",\"reservation_name\":\"%s\"",
-			   job_ptr->resv_name);
+	if (job_ptr->name && job_ptr->name[0]) {
+		char *str = _json_escape(job_ptr->name);
+		xstrfmtcat(json_str, ",\"job_name\":\"%s\"", str);
+		xfree(str);
 	}
 
-	if (job_ptr->wckey && job_ptr->wckey[0])
-		xstrfmtcat(json_str, ",\"wc_key\":\"%s\"", job_ptr->wckey);
+	if (job_ptr->resv_name && job_ptr->resv_name[0]) {
+		char *str = _json_escape(job_ptr->resv_name);
+		xstrfmtcat(json_str, ",\"reservation_name\":\"%s\"", str);
+		xfree(str);
+	}
+
+	if (job_ptr->wckey && job_ptr->wckey[0]) {
+		char *str = _json_escape(job_ptr->wckey);
+		xstrfmtcat(json_str, ",\"wc_key\":\"%s\"", str);
+		xfree(str);
+	}
 
 	if (job_ptr->gres_req && job_ptr->gres_req[0]) {
-		xstrfmtcat(json_str, ",\"gres_req\":\"%s\"", job_ptr->gres_req);
+		char *str = _json_escape(job_ptr->gres_req);
+		xstrfmtcat(json_str, ",\"gres_req\":\"%s\"", str);
+		xfree(str);
 	}
 
 	if (job_ptr->gres_alloc && job_ptr->gres_alloc[0]) {
-		xstrfmtcat(json_str, ",\"gres_alloc\":\"%s\"",
-			   job_ptr->gres_alloc);
+		char *str = _json_escape(job_ptr->gres_alloc);
+		xstrfmtcat(json_str, ",\"gres_alloc\":\"%s\"", str);
+		xfree(str);
 	}
 
 	if (job_ptr->account && job_ptr->account[0]) {
-		xstrfmtcat(json_str, ",\"account\":\"%s\"", job_ptr->account);
+		char *str = _json_escape(job_ptr->account);
+		xstrfmtcat(json_str, ",\"account\":\"%s\"", str);
+		xfree(str);
 	}
 
 	script = get_job_script(job_ptr);
@@ -799,6 +823,7 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 		char *parent_accounts = NULL;
 		char **acc_aux = NULL;
 		int nparents = 0;
+		char *escaped_str = NULL;
 
 		assoc_mgr_lock(&locks);
 
@@ -821,8 +846,10 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 			xstrfmtcat(parent_accounts, "/%s", acc_aux[i]);
 		xfree(acc_aux);
 
+		escaped_str = _json_escape(parent_accounts);
 		xstrfmtcat(json_str, ",\"parent_accounts\":\"%s\"",
-			   parent_accounts);
+			   escaped_str);
+		xfree(escaped_str);
 
 		xfree(parent_accounts);
 
