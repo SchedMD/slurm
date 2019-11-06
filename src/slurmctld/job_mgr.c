@@ -13928,6 +13928,10 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 		     __func__, job_specs->job_id);
 		rc = ESLURM_INVALID_JOB_ID;
 	} else {
+		if (job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap)
+			job_specs->array_bitmap =
+				bit_copy(job_ptr->array_recs->task_id_bitmap);
+
 		rc = _update_job(job_ptr, job_specs, uid);
 	}
 	if (send_msg && rc != ESLURM_JOB_SETTING_DB_INX)
@@ -14015,6 +14019,9 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
+			if (job_ptr->array_recs->task_id_bitmap)
+				job_specs->array_bitmap = bit_copy(
+					job_ptr->array_recs->task_id_bitmap);
 			rc2 = _update_job(job_ptr, job_specs, uid);
 			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
 				rc = rc2;
@@ -14101,17 +14108,15 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 		} else if (bit_super_set(job_ptr->array_recs->task_id_bitmap,
 					 array_bitmap)) {
 			/* Update the record with all pending tasks */
-			tmp_bitmap =
+			job_specs->array_bitmap =
 				bit_copy(job_ptr->array_recs->task_id_bitmap);
 			rc2 = _update_job(job_ptr, job_specs, uid);
 			if (rc2 == ESLURM_JOB_SETTING_DB_INX) {
-				FREE_NULL_BITMAP(tmp_bitmap);
 				rc = rc2;
 				goto reply;
 			}
 			_resp_array_add(&resp_array, job_ptr, rc2);
-			bit_and_not(array_bitmap, tmp_bitmap);
-			FREE_NULL_BITMAP(tmp_bitmap);
+			bit_and_not(array_bitmap, job_specs->array_bitmap);
 		} else {
 			/* Need to split out tasks to separate job records */
 			tmp_bitmap = bit_copy(job_ptr->array_recs->
