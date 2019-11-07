@@ -391,7 +391,17 @@ cleanup_global_init:
 	return rc;
 }
 
-/* Escape characters according to RFC7159 */
+static char _convert_dec_hex(char x)
+{
+	if (x <= 9)
+		x += '0';
+	else
+		x += 'A' - 10;
+
+	return x;
+}
+
+/* Escape characters according to RFC7159 and ECMA-262 11.8.4.2 */
 static char *_json_escape(const char *str)
 {
 	char *ret = NULL;
@@ -435,20 +445,24 @@ static char *_json_escape(const char *str)
 			ret[o++] = '\\';
 			ret[o++] = 't';
 			break;
-		case '<':
-			ret[o++] = '\\';
-			ret[o++] = 'u';
-			ret[o++] = '0';
-			ret[o++] = '0';
-			ret[o++] = '3';
-			ret[o++] = 'C';
 			break;
 		case '/':
 			ret[o++] = '\\';
 			ret[o++] = '/';
 			break;
 		default:
-			ret[o++] = str[i];
+			/* use hex for all other control characters */
+			if (str[i] <= 0x1f || str[i] == '\'' || str[i] == '<' ||
+			    str[i] == 0x5C) {
+				ret[o++] = '\\';
+				ret[o++] = 'u';
+				ret[o++] = '0';
+				ret[o++] = '0';
+				ret[o++] =
+					_convert_dec_hex((0xf0 & str[i]) >> 4);
+				ret[o++] = _convert_dec_hex(0x0f & str[i]);
+			} else /* normal character */
+				ret[o++] = str[i];
 		}
 	}
 	return ret;
