@@ -260,7 +260,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			if (i >= len) {
 				/*
 				 * This can happen if GRES count in slurm.conf
-				 * and gres.conf differ and FastSchedule!= 0
+				 * and gres.conf differ
 				 */
 				error("%s: gres_list size different from count of gres_devices",
 				      __func__);

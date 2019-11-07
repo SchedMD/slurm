@@ -89,11 +89,7 @@
 #define MAX_FEATURES  32	/* max exclusive features "[fs1|fs2]"=2 */
 
 struct node_set {		/* set of nodes with same configuration */
-	uint16_t cpus_per_node;	/* NOTE: This is the minimum count,
-				 * if FastSchedule==0 then individual
-				 * nodes within the same configuration
-				 * line (in slurm.conf) can actually
-				 * have different CPU counts */
+	uint16_t cpus_per_node;	/* NOTE: This is the minimum count */
 	char     *features;		/* Node features */
 	bitstr_t *feature_bits;		/* XORed feature's position */
 	uint32_t flags;			/* See NODE_SET_* below */

@@ -974,7 +974,7 @@ _read_config(void)
 	 * When running with multiple frontends, the slurmd S:C:T values are not
 	 * relevant, hence ignored by both _register_front_ends (sets all to 1)
 	 * and validate_nodes_via_front_end (uses slurm.conf values).
-	 * Report actual hardware configuration, irrespective of FastSchedule.
+	 * Report actual hardware configuration.
 	 */
 	conf->cpus    = conf->actual_cpus;
 	conf->boards  = conf->actual_boards;
