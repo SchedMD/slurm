@@ -678,7 +678,7 @@ static char *_xstrdup_vprintf(const char *fmt, va_list ap)
 	/* NOTREACHED */
 }
 
-extern void trim_string(char *string)
+extern void xstrtrim(char *string)
 {
 	char *start, *end, *ptr = string;
 	size_t spaces = 0;
