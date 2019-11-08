@@ -53,10 +53,12 @@
 #include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
+#include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
@@ -339,6 +341,14 @@ int main(int argc, char **argv)
 
 	if (sbopt.wait)
 		rc = _job_wait(resp->job_id);
+
+#ifdef MEMORY_LEAK_DEBUG
+	slurm_select_fini();
+	slurm_reset_all_options(&opt, false);
+	slurm_auth_fini();
+	slurm_conf_destroy();
+	log_fini();
+#endif /* MEMORY_LEAK_DEBUG */
 
 	return rc;
 }

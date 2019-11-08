@@ -204,6 +204,15 @@ int srun(int ac, char **av)
 	if ((global_rc & 0xff) == SIG_OOM)
 		global_rc = 1;	/* Exit code 1 */
 
+#ifdef MEMORY_LEAK_DEBUG
+	slurm_select_fini();
+	switch_fini();
+	slurm_reset_all_options(&opt, false);
+	slurm_auth_fini();
+	slurm_conf_destroy();
+	log_fini();
+#endif /* MEMORY_LEAK_DEBUG */
+
 	return (int)global_rc;
 }
 
