@@ -69,6 +69,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix cons_tres topology logic incorrectly evaluating insufficient resoruces.
  -- Fix job "--switches=count@time" option handling in cons_tres topology.
  -- scontrol - allow changes to the WorkDir for pending jobs.
+ -- Enable coordinators to delete users if they only belong to accounts that
+    the coordinator is over.
+ -- Fix regression on update from older versions with DefMemPerCPU.
 
 * Changes in Slurm 19.05.3-2
 ============================
