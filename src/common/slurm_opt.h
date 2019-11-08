@@ -223,10 +223,6 @@ typedef struct srun_opt {
 	int argc;			/* length of argv array		*/
 	char **argv;			/* left over on command line	*/
 
-	char *ifname;			/* input file name		*/
-	char *ofname;			/* output file name		*/
-	char *efname;			/* error file name		*/
-
 	uint16_t accel_bind_type;	/* --accel-bind			*/
 	char *alloc_nodelist;		/* grabbed from the environment	*/
 	char *bcast_file;		/* --bcast, copy executable to compute nodes */
