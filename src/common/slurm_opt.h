@@ -181,7 +181,7 @@ enum {
 /*
  * options only processed by salloc
  */
-typedef struct salloc_opt {
+typedef struct {
 	bell_flag_t bell;		/* --bell, --no-bell		*/
 	int kill_command_signal;	/* --kill-command		*/
 	bool no_shell;			/* --no-shell			*/
@@ -191,7 +191,7 @@ typedef struct salloc_opt {
 /*
  * options only processed by sbatch
  */
-typedef struct sbatch_opt {
+typedef struct {
 	/* batch script argv and argc, if provided on the command line */
 	int script_argc;
 	char **script_argv;
@@ -219,7 +219,7 @@ typedef struct sbatch_opt {
 /*
  * options only processed by srun
  */
-typedef struct srun_opt {
+typedef struct {
 	int argc;			/* length of argv array		*/
 	char **argv;			/* left over on command line	*/
 
@@ -269,7 +269,7 @@ typedef struct srun_opt {
 	bool unbuffered;		/* --unbuffered			*/
 } srun_opt_t;
 
-typedef struct slurm_options {
+typedef struct {
 	salloc_opt_t *salloc_opt;
 	sbatch_opt_t *sbatch_opt;
 	srun_opt_t *srun_opt;
