@@ -304,6 +304,7 @@ extern char *process_options_first_pass(int argc, char **argv)
 		slurm_process_option(&opt, opt_char, optarg, true, true);
 	}
 	slurm_option_table_destroy(optz);
+	xfree(opt_string);
 
 	if ((local_argc > optind) && (sbopt.wrap != NULL)) {
 		error("Script arguments not permitted with --wrap option");
@@ -622,6 +623,7 @@ static int _set_options(int argc, char **argv)
 	}
 
 	slurm_option_table_destroy(optz);
+	xfree(opt_string);
 	return optind;
 }
 

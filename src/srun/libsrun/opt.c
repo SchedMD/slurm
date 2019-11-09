@@ -620,6 +620,7 @@ static bitstr_t *_get_pack_group(const int argc, char **argv,
 		slurm_process_option(&opt, opt_char, optarg, false, true);
 	}
 	slurm_option_table_destroy(optz);
+	xfree(opt_string);
 
 	*opt_found = (sropt.pack_group);
 
@@ -672,6 +673,7 @@ static void _set_options(const int argc, char **argv)
 	}
 
 	slurm_option_table_destroy(optz);
+	xfree(opt_string);
 }
 
 /*

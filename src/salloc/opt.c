@@ -266,6 +266,7 @@ static void _set_options(int argc, char **argv)
 	}
 
 	slurm_option_table_destroy(optz);
+	xfree(opt_string);
 }
 
 /*
