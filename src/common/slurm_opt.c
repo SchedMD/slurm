@@ -291,8 +291,6 @@ typedef struct {
 	/*
 	 * Add new members below here:
 	 */
-	bool set;		/* Has the option been set */
-	bool set_by_env;	/* Has the option been set by env var */
 	bool reset_each_pass;	/* Reset on all HetJob passes or only first */
 	bool sbatch_early_pass;	/* For sbatch - run in the early pass. */
 				/* For salloc/srun - this is ignored, and will
@@ -3829,33 +3827,33 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 
 	if (!set) {
 		(common_options[i]->reset_func)(opt);
-		common_options[i]->set = false;
-		common_options[i]->set_by_env = false;
+		opt->state[i].set = false;
+		opt->state[i].set_by_env = false;
 		return SLURM_SUCCESS;
 	}
 
 	if (common_options[i]->set_func) {
 		if (!(common_options[i]->set_func)(opt, setarg)) {
-			common_options[i]->set = true;
-			common_options[i]->set_by_env = set_by_env;
+			opt->state[i].set = true;
+			opt->state[i].set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	} else if (opt->salloc_opt && common_options[i]->set_func_salloc) {
 		if (!(common_options[i]->set_func_salloc)(opt, setarg)) {
-			common_options[i]->set = true;
-			common_options[i]->set_by_env = set_by_env;
+			opt->state[i].set = true;
+			opt->state[i].set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	} else if (opt->sbatch_opt && common_options[i]->set_func_sbatch) {
 		if (!(common_options[i]->set_func_sbatch)(opt, setarg)) {
-			common_options[i]->set = true;
-			common_options[i]->set_by_env = set_by_env;
+			opt->state[i].set = true;
+			opt->state[i].set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	} else if (opt->srun_opt && common_options[i]->set_func_srun) {
 		if (!(common_options[i]->set_func_srun)(opt, setarg)) {
-			common_options[i]->set = true;
-			common_options[i]->set_by_env = set_by_env;
+			opt->state[i].set = true;
+			opt->state[i].set_by_env = set_by_env;
 			return SLURM_SUCCESS;
 		}
 	}
@@ -3879,7 +3877,7 @@ void slurm_print_set_options(slurm_opt_t *opt)
 	for (int i = 0; common_options[i]; i++) {
 		char *val = NULL;
 
-		if (!common_options[i]->set)
+		if (!opt->state[i].set)
 			continue;
 
 		if (common_options[i]->get_func)
@@ -3898,7 +3896,8 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass)
 			continue;
 		if (common_options[i]->reset_func) {
 			(common_options[i]->reset_func)(opt);
-			common_options[i]->set = false;
+			if (opt->state)
+				opt->state[i].set = false;
 		}
 	}
 }
@@ -3930,7 +3929,7 @@ extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
 	 * cli, and we must return false.
 	 */
 
-	return (common_options[i]->set && !common_options[i]->set_by_env);
+	return (opt->state[i].set && !opt->state[i].set_by_env);
 }
 
 /*
@@ -3954,7 +3953,7 @@ extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval)
 	if (!common_options[i])
 		return false;
 
-	return common_options[i]->set_by_env;
+	return opt->state[i].set_by_env;
 }
 
 /*
@@ -3987,7 +3986,7 @@ extern bool slurm_option_isset(slurm_opt_t *opt, const char *name)
 	int i = _find_option_idx(name);
 	if (i < 0)
 		return false;
-	return common_options[i]->set;
+	return opt->state[i].set;
 }
 
 /*
@@ -4019,7 +4018,7 @@ extern int slurm_option_set(slurm_opt_t *opt, const char *name,
 
 	/* Ensure that the option shows up as "set". */
 	if (rc == SLURM_SUCCESS)
-		common_options[i]->set = true;
+		opt->state[i].set = true;
 
 	return rc;
 }
@@ -4033,7 +4032,7 @@ extern bool slurm_option_reset(slurm_opt_t *opt, const char *name)
 	if (i < 0)
 		return false;
 	common_options[i]->reset_func(opt);
-	common_options[i]->set = false;
+	opt->state[i].set = false;
 	return true;
 }
 
@@ -4056,7 +4055,7 @@ extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 		return false;
 
 	while (common_options[*state] && (*state < limit) &&
-	       (!common_options[*state]->set || !common_options[*state]->name))
+	       (!opt->state[*state].set || !common_options[*state]->name))
 		(*state)++;
 
 	if (*state < limit && common_options[*state]) {

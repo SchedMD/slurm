@@ -270,9 +270,16 @@ typedef struct {
 } srun_opt_t;
 
 typedef struct {
+	bool set;			/* Has the option been set */
+	bool set_by_env;		/* Has the option been set by env var */
+} slurm_opt_state_t;
+
+typedef struct {
 	salloc_opt_t *salloc_opt;
 	sbatch_opt_t *sbatch_opt;
 	srun_opt_t *srun_opt;
+
+	slurm_opt_state_t *state;
 
 	void (*help_func)(void);	/* Print --help info		*/
 	void (*usage_func)(void);	/* Print --usage info		*/
