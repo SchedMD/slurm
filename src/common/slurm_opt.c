@@ -3731,6 +3731,15 @@ void slurm_option_table_destroy(struct option *optz)
 	optz_destroy(optz);
 }
 
+static void _init_state(slurm_opt_t *opt)
+{
+	if (opt->state)
+		return;
+
+	opt->state = xcalloc(sizeof(common_options),
+			     sizeof(slurm_opt_state_t));
+}
+
 int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 			 bool set_by_env, bool early_pass)
 {
@@ -3825,6 +3834,8 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 		}
 	}
 
+	_init_state(opt);
+
 	if (!set) {
 		(common_options[i]->reset_func)(opt);
 		opt->state[i].set = false;
@@ -3877,7 +3888,7 @@ void slurm_print_set_options(slurm_opt_t *opt)
 	for (int i = 0; common_options[i]; i++) {
 		char *val = NULL;
 
-		if (!opt->state[i].set)
+		if (!opt->state || !opt->state[i].set)
 			continue;
 
 		if (common_options[i]->get_func)
@@ -3923,6 +3934,9 @@ extern bool slurm_option_set_by_cli(slurm_opt_t *opt, int optval)
 	if (!common_options[i])
 		return false;
 
+	if (!opt->state)
+		return false;
+
 	/*
 	 * set is true if the option is set at all. If both set and set_by_env
 	 * are true, then the argument was set through the environment not the
@@ -3951,6 +3965,9 @@ extern bool slurm_option_set_by_env(slurm_opt_t *opt, int optval)
 
 	/* This should not happen... */
 	if (!common_options[i])
+		return false;
+
+	if (!opt->state)
 		return false;
 
 	return opt->state[i].set_by_env;
@@ -3984,7 +4001,7 @@ extern char *slurm_option_get(slurm_opt_t *opt, const char *name)
 extern bool slurm_option_isset(slurm_opt_t *opt, const char *name)
 {
 	int i = _find_option_idx(name);
-	if (i < 0)
+	if (i < 0 || !opt->state)
 		return false;
 	return opt->state[i].set;
 }
@@ -4017,8 +4034,10 @@ extern int slurm_option_set(slurm_opt_t *opt, const char *name,
 		rc = common_options[i]->set_func_srun(opt, value);
 
 	/* Ensure that the option shows up as "set". */
-	if (rc == SLURM_SUCCESS)
+	if (rc == SLURM_SUCCESS) {
+		_init_state(opt);
 		opt->state[i].set = true;
+	}
 
 	return rc;
 }
@@ -4032,7 +4051,8 @@ extern bool slurm_option_reset(slurm_opt_t *opt, const char *name)
 	if (i < 0)
 		return false;
 	common_options[i]->reset_func(opt);
-	opt->state[i].set = false;
+	if (opt->state)
+		opt->state[i].set = false;
 	return true;
 }
 
@@ -4055,7 +4075,8 @@ extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 		return false;
 
 	while (common_options[*state] && (*state < limit) &&
-	       (!opt->state[*state].set || !common_options[*state]->name))
+	       (!(opt->state && opt->state[*state].set) ||
+		!common_options[*state]->name))
 		(*state)++;
 
 	if (*state < limit && common_options[*state]) {
