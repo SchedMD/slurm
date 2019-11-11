@@ -3588,6 +3588,7 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 
 	if ((node_ptr->run_job_cnt  == 0) &&
 	    (node_ptr->comp_job_cnt == 0)) {
+		node_ptr->last_idle = now;
 		bit_set(idle_node_bitmap, inx);
 		if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
 			trigger_node_drained(node_ptr);

@@ -193,7 +193,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				char **local_list, char **global_list,
 				bool reset, bool is_job, int *global_id)
 {
-	int i, len;
+	int i, len, first_inx = -1;
 	bitstr_t *bit_alloc = NULL;
 	bool use_local_dev_index = common_use_local_device_index();
 	bool alloc_cnt = false, set_global_id = false;
@@ -252,6 +252,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		return;
 
 	if (bit_alloc) {
+		int index;
 		len = bit_size(bit_alloc);
 		i = -1;
 		itr = list_iterator_create(gres_devices);
@@ -268,19 +269,28 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			}
 			if (!bit_test(bit_alloc, i))
 				continue;
+
+			index = use_local_dev_index ?
+				(*local_inx)++ : gres_device->dev_num;
+
 			if (reset) {
-				if (!first_device)
+				if (!first_device) {
+					first_inx = index;
 					first_device = gres_device;
-				if (!bit_test(usable_gres, i))
+				}
+
+				if (!bit_test(usable_gres,
+					      use_local_dev_index ? index : i))
 					continue;
 			}
+
 			if (global_id && !set_global_id) {
 				*global_id = gres_device->dev_num;
 				set_global_id = true;
 			}
+
 			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
-				   prefix, use_local_dev_index ?
-				   (*local_inx)++ : gres_device->dev_num);
+				   prefix, index);
 			local_prefix = ",";
 			//info("looking at %d and %d", i, gres_device->dev_num);
 			xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
@@ -288,10 +298,15 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			global_prefix = ",";
 		}
 		list_iterator_destroy(itr);
+
+		/*
+		 * Handle binding to out-of-bounds and non-allocated devices by
+		 * instead binding to the first allocated device
+		 */
 		if (reset && !new_global_list && first_device) {
 			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
-				   prefix, use_local_dev_index ?
-				   (*local_inx)++ : first_device->dev_num);
+				   prefix, first_inx);
+			(*local_inx) = first_inx;
 			xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
 				   prefix, first_device->dev_num);
 		}

@@ -31,7 +31,7 @@ The following configuration parameters are available:
 <ul>
 
 <li><b>SuspendTime</b>:
-Nodes becomes eligible for power saving mode after being idle
+Nodes becomes eligible for power saving mode after being idle or down
 for this number of seconds.
 For efficient system utilization, it is recommended that the value of SuspendTime
 be at least as large as the sum of SuspendTimeout plus ResumeTimeout.
@@ -251,6 +251,6 @@ and perform the following actions:
 <li>Boot the appropriate image for each node</li>
 </ol>
 
-<p style="text-align:center;">Last modified 19 August 2019</p>
+<p style="text-align:center;">Last modified 11 November 2019</p>
 
 <!--#include virtual="footer.txt"-->

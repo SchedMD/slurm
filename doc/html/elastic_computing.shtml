@@ -76,8 +76,8 @@ provisioned from cloud.
 <dd>The program executed when a node is no longer required and can be
 relinquished to the cloud.
 <dt><b>SuspendTime</b>
-<dd>The time interval that a node will be left idle before a request is made to
-relinquish it. Units are seconds.
+<dd>The time interval that a node will be left idle or down before a request is
+made to relinquish it. Units are in seconds.
 <dt><b>TCPTimeout</b>
 <dd>Time permitted for TCP connections to be established. This value may need
 to be increased from the default (2 seconds) to account for latency between
@@ -188,6 +188,6 @@ expands (adds resources).</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 29 May 2019</p>
+<p style="text-align:center;">Last modified 11 November 2019</p>
 
 <!--#include virtual="footer.txt"-->
