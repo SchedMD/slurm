@@ -2472,7 +2472,6 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg,
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
-		node_ptr->node_state &= (~NODE_STATE_REBOOT);
 		node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
 		if (!is_node_in_maint_reservation(node_inx))
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
@@ -3133,7 +3132,6 @@ static void _node_did_resp(node_record_t *node_ptr)
 		info("Node %s now responding", node_ptr->name);
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
-		node_ptr->node_state &= (~NODE_STATE_REBOOT);
 		if (!is_node_in_maint_reservation(node_inx))
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
 		last_node_update = now;
