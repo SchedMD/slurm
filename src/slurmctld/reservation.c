@@ -1798,6 +1798,7 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
 		return overlap;
 	if (flags & RESERVE_FLAG_TIME_FLOAT)
 		start_time += time(NULL);
+
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)		&&
@@ -2245,7 +2246,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		total_node_cnt = bit_set_count(node_bitmap);
 		if (!(resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
 		    !resv_desc_ptr->core_cnt &&
-		    _job_overlap(resv_desc_ptr->start_time - now,
+		    _job_overlap(resv_desc_ptr->start_time,
 				 resv_desc_ptr->flags, node_bitmap, NULL)) {
 			info("Reservation request overlaps jobs");
 			rc = ESLURM_NODES_BUSY;
