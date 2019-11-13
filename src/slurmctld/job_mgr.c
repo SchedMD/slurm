@@ -4937,9 +4937,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		else
 			defer_sched = 0;
 		if ((tmp_ptr = xstrcasestr(sched_params, "delay_boot="))) {
+			char *tmp_comma;
+			if ((tmp_comma = xstrstr(tmp_ptr, ",")))
+				*tmp_comma = '\0';
 			i = time_str2secs(tmp_ptr + 11);
 			if (i != NO_VAL)
 				delay_boot = i;
+			if (tmp_comma)
+				*tmp_comma = ',';
 		}
 		bf_min_age_reserve = 0;
 		if ((tmp_ptr = xstrcasestr(sched_params,
