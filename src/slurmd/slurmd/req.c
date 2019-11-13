@@ -580,6 +580,11 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		reverse_tree_info(rank, count, REVERSE_TREE_WIDTH,
 				  &parent_rank, &children,
 				  &depth, &max_depth);
+
+		if (children == -1) {
+			error("reverse_tree_info: Sanity check fail, can't start job");
+			goto rwfail;
+		}
 		if (rank > 0) { /* rank 0 talks directly to the slurmctld */
 			int rc;
 			/* Find the slurm_addr_t of this node's parent slurmd
