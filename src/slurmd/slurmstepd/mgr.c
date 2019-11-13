@@ -2636,29 +2636,18 @@ _slurmd_job_log_init(stepd_step_rec_t *job)
 	log_alter(conf->log_opts, 0, NULL);
 	log_set_argv0(argv0);
 
-	/*  Connect slurmd stderr to stderr of job, unless we are using
-	 *   user_managed_io or a pty.
-	 *
-	 *  user_managed_io directly connects the client (e.g. poe) to the tasks
-	 *   over a TCP connection, and we fully leave it up to the client
-	 *   to manage the stream with no buffering on slurm's part.
-	 *   We also promise that we will not insert any foreign data into
-	 *   the stream, so here we need to avoid connecting slurmstepd's
-	 *   STDERR_FILENO to the tasks's stderr.
-	 *
-	 *  When pty terminal emulation is used, the pts can potentially
-	 *   cause IO to block, so we need to avoid connecting slurmstepd's
-	 *   STDERR_FILENO to the task's pts on stderr to avoid hangs in
-	 *   the slurmstepd.
+	/*
+	 *  Connect slurmd stderr to stderr of job
 	 */
-	if (((job->flags & LAUNCH_USER_MANAGED_IO) == 0) &&
-	    ((job->flags & LAUNCH_PTY) == 0) &&
-	    (job->task != NULL)) {
+	if ((job->flags & LAUNCH_USER_MANAGED_IO) || (job->flags & LAUNCH_PTY))
+		fd_set_nonblocking(STDERR_FILENO);
+	if (job->task != NULL) {
 		if (dup2(job->task[0]->stderr_fd, STDERR_FILENO) < 0) {
 			error("job_log_init: dup2(stderr): %m");
 			return ESLURMD_IO_ERROR;
 		}
 	}
+
 	verbose("debug level = %d", conf->log_opts.stderr_level);
 	return SLURM_SUCCESS;
 }
