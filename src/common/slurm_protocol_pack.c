@@ -1833,7 +1833,40 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, Buf buffer,
 	uint32_t array_len;
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		packstr(msg->name,         buffer);
+		pack_time(msg->start_time, buffer);
+		pack_time(msg->end_time,   buffer);
+		pack32(msg->duration,      buffer);
+		pack64(msg->flags,         buffer);
+		if (msg->node_cnt) {
+			for (array_len = 0; msg->node_cnt[array_len];
+			     array_len++) {
+				/* determine array length */
+			}
+			array_len++;	/* Include trailing zero */
+		} else
+			array_len = 0;
+		pack32_array(msg->node_cnt, array_len, buffer);
+		if (msg->core_cnt) {
+			for (array_len = 0; msg->core_cnt[array_len];
+			     array_len++) {
+				/* determine array length */
+			}
+			array_len++;	/* Include trailing zero */
+		} else
+			array_len = 0;
+		pack32_array(msg->core_cnt, array_len, buffer);
+		packstr(msg->node_list,    buffer);
+		packstr(msg->features,     buffer);
+		packstr(msg->licenses,     buffer);
+		packstr(msg->partition,    buffer);
+
+		pack32(msg->resv_watts,    buffer);
+		packstr(msg->users,        buffer);
+		packstr(msg->accounts,     buffer);
+		packstr(msg->burst_buffer, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name,         buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time,   buffer);
@@ -1885,7 +1918,51 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, Buf buffer,
 	tmp_ptr = xmalloc(sizeof(resv_desc_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
+		safe_unpack_time(&tmp_ptr->start_time, buffer);
+		safe_unpack_time(&tmp_ptr->end_time,   buffer);
+		safe_unpack32(&tmp_ptr->duration,      buffer);
+		safe_unpack64(&tmp_ptr->flags,         buffer);
+		safe_unpack32_array(&tmp_ptr->node_cnt, &uint32_tmp, buffer);
+		if (uint32_tmp > NO_VAL)
+			goto unpack_error;
+		if (uint32_tmp > 0) {
+			/* Must be zero terminated */
+			if (tmp_ptr->node_cnt[uint32_tmp-1] != 0)
+				goto unpack_error;
+		} else {
+			/* This avoids a pointer to a zero length buffer */
+			xfree(tmp_ptr->node_cnt);
+		}
+		safe_unpack32_array(&tmp_ptr->core_cnt, &uint32_tmp, buffer);
+		if (uint32_tmp > NO_VAL)
+			goto unpack_error;
+		if (uint32_tmp > 0) {
+			/* Must be zero terminated */
+			if (tmp_ptr->core_cnt[uint32_tmp-1] != 0)
+				goto unpack_error;
+		} else {
+			/* This avoids a pointer to a zero length buffer */
+			xfree(tmp_ptr->core_cnt);
+		}
+		safe_unpackstr_xmalloc(&tmp_ptr->node_list,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->features,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->licenses,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->partition,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&tmp_ptr->resv_watts, buffer);
+
+		safe_unpackstr_xmalloc(&tmp_ptr->users,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->accounts,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->burst_buffer,
+				       &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
 		safe_unpack_time(&tmp_ptr->start_time, buffer);
 		safe_unpack_time(&tmp_ptr->end_time,   buffer);
