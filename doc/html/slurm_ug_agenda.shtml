@@ -1,19 +1,33 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Slurm User Group Meeting 2019</h1>
+<h1>Slurm User Group Meeting 2020</h1>
 
-<a name="registration"><h1>Registration</h1></a>
+<p>The Slurm User Group Meeting 2020 will be held on 15 and 16 September 2020
+in Cambridge, Massachusetts, at the
+<a href="https://commonspaces.harvard.edu/smith-campus-center/about">
+Richard A. and Susan F. Smith Campus Center</a>
+</a> and is hosted by
+<a href="https://www.rc.fas.harvard.edu/">Harvard University</a> and
+<a href="https://www.schedmd.com/">SchedMD</a>.
+</p>
 
-<p>The conference cost is:
+<a name="registration"><h2>Registration</h2></a>
+
+<p>The meeting cost is:
 <ul>
-<li>$300 per person for early registration by 14 July 2019</li>
-<li>$375 per person for standard registration by 15 August 2019</li>
-<li>$600 per person for late registration by 31 August 2019</li>
+<li>$325 per person for early registration by 1 July 2020</li>
+<li>$400 per person for standard registration by 15 August 2020</li>
+<li>$700 per person for late registration by 31 August 2020</li>
 </ul></p>
 <p>This includes presentations, tutorials, lunch and snacks on both days,
-plus dinner on Tuesday evening.<br>
-<a href="https://slug19.eventbrite.com/">Register here.</a></p>
+plus dinner on Tuesday evening.</p>
+<p>This year, there is an additional option of attending a one-day Slurm
+Boot Camp on 14 September. This boot camp is designed for system administrators
+who are relatively new to Slurm or those who want to review the basics of Slurm,
+and include registration for the Slurm User Group Meeting as well.
+<p><a href="https://slug20.eventbrite.com/">Register here.</a></p>
 
+<!--
 <a name="hotel"><h1>Hotel Accomodations</h1></a>
 
 <p>A block of rooms have been reserved a the University Guest House for those
@@ -25,17 +39,10 @@ Online reservations can be made
 <a href="https://www.universityguesthouse.com/University-Guest-House">here.</a>
 </p>
 
-<a name="agenda"><h1>Agenda</h1></a>
+<!--
+<a name="agenda"><h2>Agenda</h2></a>
 
-<p>Hosted by the
-<a href="https://www.utah.edu/">University of Utah</a> and
-<a href="https://www.schedmd.com/">SchedMD</a>.
-<p>The Slurm User Group Meeting 2019 will be held on 17 and 18 September in
-Salt Lake City at the
-<a href="https://www.universityguesthouse.com/Officers-Club">Officer's
-Club.</a></p>
-
-<a name="schedule"><h1>Schedule</h1></a>
+<a name="schedule"><h2>Schedule</h2></a>
 
 <h2>Tuesday, 17 September 2019</h2>
 
@@ -102,7 +109,8 @@ Club.</a></p>
 <tr><td nowrap>16:20 - 16:40</td><td>Closing</td><td>Auble (SchedMD)</td><td>Closing Remarks</td></tr>
 
 </table>
+-->
 
-<p style="text-align:center;">Last modified 16 September 2019</p>
+<p style="text-align:center;">Last modified 14 November 2019</p>
 
 <!--#include virtual="footer.txt"-->
