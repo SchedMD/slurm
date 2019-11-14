@@ -35,6 +35,9 @@ documents those changes that are of interest to users and administrators.
  -- Add slurm.conf option MaxDBDMsgs to control how many messages will be
     stored in the slurmctld before throwing them away when the slurmdbd is down.
 
+* Changes in Slurm 19.05.5
+==========================
+
 * Changes in Slurm 19.05.4
 ==========================
  -- Don't allow empty string as a reservation name; generate a name if empty

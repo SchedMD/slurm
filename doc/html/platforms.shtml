@@ -2,6 +2,7 @@
 
 <h1>Platforms</h1>
 <h2>Operating Systems</h2>
+<p>
 <ul>
 <li><b>FreeBSD</b> &mdash; Limited support, not actively tested.</li>
 <li><b>Linux</b> &mdash; Slurm has been thoroughly tested on most popular Linux
@@ -9,12 +10,13 @@ distributions using arm64 (aarch64), ppc64, and x86_64 architectures. Some
 features are limited to recent releases and newer Linux kernel versions.
 Currently supported distributions include:
 <ul>
-<li>Cray Linux Environment 5.2 (deprecated, and will be removed in a future release)</li>
 <li>Cray Linux Environment 6</li>
+<li>Cray Linux Environment 7</li>
 <li>Debian (jessie, stretch, buster, and newer)</li>
 <li>RedHat Enterprise Linux 6 (RHEL6), CentOS 6, Scientific Linux 6 (deprecated, and will be removed in a future release)</li>
-<li>RedHat Enterprise Linux 7 (RHEL7), CentOS 7, Scientific Linux 7 (and newer)</li>
-<li>SUSE Linux Enterprise Server(SLES) 12 (and newer)</li>
+<li>RedHat Enterprise Linux 7 (RHEL7), CentOS 7, Scientific Linux 7</li>
+<li>RedHat Enterprise Linux 8 (RHEL7), CentOS 8 (and newer)</li>
+<li>SUSE Linux Enterprise Server (SLES) 12 (and newer)</li>
 <li>Ubuntu (16.04, 18.04, and newer)</li>
 </ul>
 </li>
@@ -23,7 +25,18 @@ Currently supported distributions include:
 currently. It should be possible to fix this with some adjustments to linker
 and compiler flags, and any patches would be appreciated.
 </ul>
+</p>
 
-<p style="text-align:center;">Last modified 4 December 2018</p>
+<h2>Accelerators</h2>
+
+<p>Slurm has optional support for managing a variety of accelerator cards.
+Specific plugins have been developed for:
+<ul>
+<li>gres/gpu with AutoDetect=nvml &mdash; autodetection of NVIDIA GPUs through their proprietary NVML library (tested on x86_64 and arm64)</li>
+<li>gres/mps &mdash; NVIDIA CUDA Multi-Process Service provides ways to share GPUs between multiple compute processes</li>
+</ul>
+</p>
+
+<p style="text-align:center;">Last modified 14 November 2019</p>
 
 <!--#include virtual="footer.txt"-->
