@@ -897,6 +897,7 @@ typedef enum {
 					* elements completes */
 	SLURM_DEPEND_BURST_BUFFER, /* After job burst buffer
 				    * stage-out completes */
+	SLURM_DEPEND_REMOTE
 } slurm_depend_types_t;
 
 #define SLURM_FLAGS_OR		0x0001	/* OR job dependencies */
