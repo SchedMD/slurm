@@ -70,6 +70,15 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else if (!end && !xstrncasecmp(argv[i], "where",
 						 MAX(command_len, 5))) {
 			continue;
+		} else if (!xstrncasecmp(argv[i], "Accounts",
+					 MAX(command_len, 1)) ||
+			   !xstrncasecmp(argv[i], "Accts",
+					 MAX(command_len, 1))) {
+			if (!job_cond->acct_list)
+				job_cond->acct_list =
+					list_create(slurm_destroy_char);
+			slurm_addto_char_list(job_cond->acct_list, argv[i]+end);
+			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Cluster",
 					 MAX(command_len, 1))) {
 			if (!job_cond->cluster_list)
