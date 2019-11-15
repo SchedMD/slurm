@@ -3816,20 +3816,18 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 	msg->ret_list = list_create(destroy_data_info);
 
-	if (timeout <= 0)
+	if (timeout <= 0) {
 		/* convert secs to msec */
 		timeout  = slurm_get_msg_timeout() * 1000;
-
-	if (timeout >= (slurm_get_msg_timeout() * 10000)) {
+	} else if (timeout < 1000) {
+		debug("%s: You are sending a message with a very short timeout of %d milliseconds",
+		      __func__, timeout);
+	} else if (timeout >= (slurm_get_msg_timeout() * 10000)) {
 		debug("slurm_receive_msg_and_forward: "
 		      "You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds",
 		      (slurm_get_msg_timeout() * 10),
 		      (timeout/1000));
-	} else if (timeout < 1000) {
-		debug("slurm_receive_msg_and_forward: "
-		      "You are sending a message with a very short timeout of "
-		      "%d milliseconds", timeout);
 	}
 
 	/*
