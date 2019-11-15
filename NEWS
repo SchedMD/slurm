@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Save reservation state when automatically shrinking nodes.
  -- Add slurm.conf option MaxDBDMsgs to control how many messages will be
     stored in the slurmctld before throwing them away when the slurmdbd is down.
+ -- Change default SLURM_PMIX_TMPDIR to include user id to avoid potential
+    conflicts on development systems running multiple Slurm instances.
 
 * Changes in Slurm 19.05.5
 ==========================

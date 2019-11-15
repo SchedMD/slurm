@@ -402,11 +402,11 @@ static int _env_set(char ***env)
 	}
 
 	_pmixp_job_info.cli_tmpdir =
-			xstrdup_printf("%s/spmix_appdir_%d.%d",
+			xstrdup_printf("%s/spmix_appdir_%u_%d.%d",
 				       _pmixp_job_info.cli_tmpdir_base,
+				       pmixp_info_jobuid(),
 				       pmixp_info_jobid(),
 				       pmixp_info_stepid());
-
 
 	/* ----------- Timeout setting ------------- */
 	/* TODO: also would be nice to have a cluster-wide setting in Slurm */
