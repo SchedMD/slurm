@@ -68,6 +68,7 @@
 #include "src/sbatch/opt.h"
 
 #define MAX_RETRIES 15
+#define MAX_WAIT_SLEEP_TIME 32
 
 static void  _add_bb_to_script(char **script_body, char *burst_buffer_file);
 static void  _env_merge_filter(job_desc_msg_t *desc);
@@ -412,7 +413,14 @@ static int _job_wait(uint32_t job_id)
 	while (!complete) {
 		complete = true;
 		sleep(sleep_time);
-		sleep_time = MIN(sleep_time + 2, 10);
+		/*
+		 * min_job_age is factored into this to ensure the job can't
+		 * run, complete quickly, and be purged from slurmctld before
+		 * we've woken up and queried the job again.
+		 */
+		if ((sleep_time < (slurmctld_conf.min_job_age / 2)) &&
+		    (sleep_time < MAX_WAIT_SLEEP_TIME))
+			sleep_time *= 4;
 
 		rc = slurm_load_job(&resp, job_id, SHOW_ALL);
 		if (rc == SLURM_SUCCESS) {

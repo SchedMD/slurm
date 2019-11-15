@@ -81,3 +81,6 @@ COMMAND CHANGES (see man pages for details)
  -- squeue - added "--me" option, equivalent to --user=$USER.
  -- The LicensesUsed line has been removed from 'scontrol show config'.
     Please see the 'scontrol show licenses' command as an alternative.
+ -- sbatch - adjusted backoff times for "--wait" option to reduce load on
+    slurmctld. This results in a steady-state delay of 32s between queries,
+    instead of the prior 10s delay.

@@ -86,6 +86,9 @@ documents those changes that are of interest to users and administrators.
  -- Add AccountingStorageExternalHost slurm.conf parameter.
  -- Add support for srun -M<cluster> --jobid=# for existing remote allocations.
  -- Remove LicensesUsed from 'scontrol show config'.
+ -- sbatch - adjusted backoff times for "--wait" option to reduce load on
+    slurmctld. This results in a steady-state delay of 32s between queries,
+    instead of the prior 10s delay.
 
 * Changes in Slurm 19.05.6
 ==========================
