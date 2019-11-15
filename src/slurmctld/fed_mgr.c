@@ -4529,6 +4529,25 @@ extern int fed_mgr_is_origin_job(job_record_t *job_ptr)
 }
 
 /*
+ * Use this instead of fed_mgr_is_origin_job if job_ptr is not available.
+ */
+extern bool fed_mgr_is_origin_job_id(uint32_t job_id)
+{
+	uint32_t origin_id = fed_mgr_get_cluster_id(job_id);
+
+	if (!fed_mgr_cluster_rec || !origin_id) {
+		debug2("%s: job %u is not a federated job", __func__, job_id);
+		return true;
+	}
+
+	info("origin_id == %u, fed_mgr_cluster_rec->fed.id == %u",
+	     origin_id, fed_mgr_cluster_rec->fed.id);
+	if (fed_mgr_cluster_rec->fed.id == origin_id)
+		return true;
+	return false;
+}
+
+/*
  * Update a job's required clusters.
  *
  * Results in siblings being removed and added.
