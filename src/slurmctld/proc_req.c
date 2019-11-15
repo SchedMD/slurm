@@ -6381,14 +6381,16 @@ static void  _slurm_rpc_composite_msg(slurm_msg_t *msg)
 		config_update = slurmctld_conf.last_update;
 	}
 
-	_throttle_start(&active_rpc_cnt);
-	lock_slurmctld(job_write_lock);
-	gettimeofday(&start_tv, NULL);
-	_slurm_rpc_comp_msg_list(comp_msg, &run_scheduler,
-				 comp_resp_msg.msg_list, &start_tv,
-				 sched_timeout);
-	unlock_slurmctld(job_write_lock);
-	_throttle_fini(&active_rpc_cnt);
+	if (list_count(comp_msg->msg_list)) {
+		_throttle_start(&active_rpc_cnt);
+		lock_slurmctld(job_write_lock);
+		gettimeofday(&start_tv, NULL);
+		_slurm_rpc_comp_msg_list(comp_msg, &run_scheduler,
+					 comp_resp_msg.msg_list, &start_tv,
+					 sched_timeout);
+		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
+	}
 
 	if (list_count(comp_resp_msg.msg_list)) {
 		slurm_msg_t resp_msg;
