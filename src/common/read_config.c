@@ -167,6 +167,10 @@ static int _parse_downnodes(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
 static void _destroy_downnodes(void *ptr);
+static int _parse_nodeset(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value,
+			  const char *line, char **leftover);
+static void _destroy_nodeset(void *ptr);
 
 static int _load_slurmctld_host(slurm_ctl_conf_t *conf);
 static int _parse_slurmctld_host(void **dest, slurm_parser_enum_t type,
@@ -409,6 +413,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
 	{"FrontendName", S_P_ARRAY, _parse_frontend, destroy_frontend},
 	{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
+	{"NodeSet", S_P_ARRAY, _parse_nodeset, _destroy_nodeset},
 	{"PartitionName", S_P_ARRAY, _parse_partitionname,
 	 _destroy_partitionname},
 	{"SlurmctldHost", S_P_ARRAY, _parse_slurmctld_host,
@@ -1939,6 +1944,58 @@ extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[])
 	slurm_conf_downnodes_t **ptr;
 
 	if (s_p_get_array((void ***)&ptr, &count, "DownNodes", conf_hashtbl)) {
+		*ptr_array = ptr;
+		return count;
+	} else {
+		*ptr_array = NULL;
+		return 0;
+	}
+}
+
+static int _parse_nodeset(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value,
+			  const char *line, char **leftover)
+{
+	s_p_hashtbl_t *tbl;
+	slurm_conf_nodeset_t *n;
+	static s_p_options_t _nodeset_options[] = {
+		{"Feature", S_P_STRING},
+		{"Nodes", S_P_STRING},
+		{NULL}
+	};
+
+	tbl = s_p_hashtbl_create(_nodeset_options);
+	s_p_parse_line(tbl, *leftover, leftover);
+	/* s_p_dump_values(tbl, _nodeset_options); */
+
+	n = xmalloc(sizeof(slurm_conf_nodeset_t));
+	n->name = xstrdup(value);
+
+	s_p_get_string(&n->feature, "Feature", tbl);
+	s_p_get_string(&n->nodes, "Nodes", tbl);
+
+	s_p_hashtbl_destroy(tbl);
+
+	*dest = (void *)n;
+
+	return 1;
+}
+
+static void _destroy_nodeset(void *ptr)
+{
+	slurm_conf_nodeset_t *n = (slurm_conf_nodeset_t *)ptr;
+	xfree(n->feature);
+	xfree(n->name);
+	xfree(n->nodes);
+	xfree(ptr);
+}
+
+extern int slurm_conf_nodeset_array(slurm_conf_nodeset_t **ptr_array[])
+{
+	int count = 0;
+	slurm_conf_nodeset_t **ptr;
+
+	if (s_p_get_array((void ***)&ptr, &count, "NodeSet", conf_hashtbl)) {
 		*ptr_array = ptr;
 		return count;
 	} else {

@@ -286,6 +286,12 @@ typedef struct slurm_conf_downnodes {
 } slurm_conf_downnodes_t;
 
 typedef struct {
+	char *feature;
+	char *name;
+	char *nodes;
+} slurm_conf_nodeset_t;
+
+typedef struct {
 	char *name;
 	char *value;
 } config_key_pair_t;
@@ -423,6 +429,14 @@ extern int slurm_conf_partition_array(slurm_conf_partition_t **ptr_array[]);
  * Return value is the length of the array.
  */
 extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
+
+/*
+ * Set "ptr_array" with the pointer to an array of pointers to
+ * slurm_conf_nodeset_t structures.
+ *
+ * Return value is the length of the array.
+ */
+extern int slurm_conf_nodeset_array(slurm_conf_nodeset_t **ptr_array[]);
 
 /*
  * slurm_reset_alias - Reset the address and hostname of a specific node name
