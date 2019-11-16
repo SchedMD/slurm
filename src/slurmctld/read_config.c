@@ -291,6 +291,57 @@ static void _reorder_nodes_by_rank(void)
 #endif
 }
 
+/*
+ * Unfortunately the global feature bitmaps have not been set up at this point,
+ * so we'll have to scan through the node_record_table directly to locate
+ * the appropriate records.
+ */
+static void _add_nodes_with_feature(hostlist_t hl, char *feature)
+{
+	for (int i = 0; i < node_record_count; i++) {
+		char *features, *tmp, *tok, *last = NULL;
+
+		features = tmp = xstrdup(node_record_table_ptr[i].features);
+
+		while ((tok = strtok_r(tmp, ",", &last))) {
+			if (!xstrcmp(tok, feature)) {
+				hostlist_push_host(hl, node_record_table_ptr[i].name);
+				break;
+			}
+			tmp = NULL;
+		}
+		xfree(features);
+	}
+}
+
+static void _handle_nodesets(char **nodeline)
+{
+	int count;
+	slurm_conf_nodeset_t *ptr, **ptr_array;
+	hostlist_t hl;
+
+	count = slurm_conf_nodeset_array(&ptr_array);
+
+	hl = hostlist_create(*nodeline);
+
+	for (int i = 0; i < count; i++) {
+		ptr = ptr_array[i];
+
+		/* swap the nodeset entry with the applicable nodes */
+		if (hostlist_delete_host(hl, ptr->name)) {
+			if (ptr->feature) {
+				_add_nodes_with_feature(hl, ptr->feature);
+			}
+
+			if (ptr->nodes)
+				hostlist_push_host(hl, ptr->nodes);
+		}
+	}
+
+	xfree(*nodeline);
+	*nodeline = hostlist_ranged_string_xmalloc(hl);
+	hostlist_destroy(hl);
+}
 
 /*
  * _build_bitmaps_pre_select - recover some state for jobs and nodes prior to
@@ -306,6 +357,7 @@ static void _build_bitmaps_pre_select(void)
 	/* scan partition table and identify nodes in each */
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = list_next(part_iterator))) {
+		_handle_nodesets(&part_ptr->nodes);
 		if (build_part_bitmap(part_ptr) == ESLURM_INVALID_NODE_NAME)
 			fatal("Invalid node names in partition %s",
 					part_ptr->name);
