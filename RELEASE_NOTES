@@ -29,7 +29,8 @@ HIGHLIGHTS
     as the cpus.
  -- Use python3 instead of python for internal build/test scripts.
     The slurm.spec file has been updated to depend on python3 as well.
-
+ -- Added new NodeSet configuration option to help simplify partition
+    configuration sections for heterogeneous / condo-style clusters.
 
 - Added slurm.conf option MaxDBDMsgs to control how many messages will be
   stored in the slurmctld before throwing them away when the slurmdbd is down.

@@ -4823,6 +4823,25 @@ State=UNKNOWN" is used to define four front end nodes for running slurmd
 daemons.
 
 .LP
+The nodeset configuration allows you to define a name for a specific set of
+nodes which can be used to simplify the partition configuration section,
+especially for heterogenous or condo-style systems. Each nodeset may be defined
+by an explicit list of nodes, and/or by filtering the nodes by a particular
+configured feature. If both \fBFeature=\fR and \fBNodes=\fR are used the
+nodeset shall be the union of the two subsets.
+Note that the nodesets are only used to simplify the partition definitions
+at present, and are not usable outside of the partition configuration.
+.TP
+\fBFeature\fR
+All nodes with this single feature will be included as part of this nodeset.
+.TP
+\fBNodes\fR
+List of nodes in this set.
+.TP
+\fBNodeSet\fR
+Unique name for a set of nodes. Must not overlap with any NodeName definitions.
+
+.LP
 The partition configuration permits you to establish different job
 limits or access controls for various groups (or partitions) of nodes.
 Nodes may be in more than one partition, making partitions serve
@@ -5081,7 +5100,8 @@ This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP
 \fBNodes\fR
-Comma separated list of nodes which are associated with this partition.
+Comma separated list of nodes or nodesets which are associated with this
+partition.
 Node names may be specified using the node range expression syntax
 described above. A blank list of nodes
 (i.e. "Nodes= ") can be used if one wants a partition to exist,
