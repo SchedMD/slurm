@@ -778,45 +778,40 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->grace_time     = part->grace_time;
 	part_ptr->cr_type        = part->cr_type;
 
+	part_ptr->allow_alloc_nodes = xstrdup(part->allow_alloc_nodes);
+	part_ptr->allow_groups = xstrdup(part->allow_groups);
+	part_ptr->alternate = xstrdup(part->alternate);
+	part_ptr->nodes = xstrdup(part->nodes);
+
 	if (part->billing_weights_str) {
 		set_partition_billing_weights(part->billing_weights_str,
 					      part_ptr, true);
 	}
 
 	if (part->allow_accounts) {
-		xfree(part_ptr->allow_accounts);
 		part_ptr->allow_accounts = xstrdup(part->allow_accounts);
 		accounts_list_build(part_ptr->allow_accounts,
 				    &part_ptr->allow_account_array);
 	}
 
-	if (part->allow_groups) {
-		xfree(part_ptr->allow_groups);
-		part_ptr->allow_groups = xstrdup(part->allow_groups);
-	}
-
 	if (part->allow_qos) {
-		xfree(part_ptr->allow_qos);
 		part_ptr->allow_qos = xstrdup(part->allow_qos);
 		qos_list_build(part_ptr->allow_qos,&part_ptr->allow_qos_bitstr);
 	}
 
 	if (part->deny_accounts) {
-		xfree(part_ptr->deny_accounts);
 		part_ptr->deny_accounts = xstrdup(part->deny_accounts);
 		accounts_list_build(part_ptr->deny_accounts,
 				    &part_ptr->deny_account_array);
 	}
 
 	if (part->deny_qos) {
-		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos = xstrdup(part->deny_qos);
 		qos_list_build(part_ptr->deny_qos, &part_ptr->deny_qos_bitstr);
 	}
 
 	if (part->qos_char) {
 		slurmdb_qos_rec_t qos_rec;
-		xfree(part_ptr->qos_char);
 		part_ptr->qos_char = xstrdup(part->qos_char);
 
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
@@ -828,54 +823,6 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 			fatal("Partition %s has an invalid qos (%s), "
 			      "please check your configuration",
 			      part_ptr->name, qos_rec.name);
-		}
-	}
-
- 	if (part->allow_alloc_nodes) {
- 		if (part_ptr->allow_alloc_nodes) {
- 			int cnt_tot, cnt_uniq;
- 			hostlist_t hl = hostlist_create(part_ptr->
-							allow_alloc_nodes);
-
- 			hostlist_push(hl, part->allow_alloc_nodes);
- 			cnt_tot = hostlist_count(hl);
- 			hostlist_uniq(hl);
- 			cnt_uniq = hostlist_count(hl);
- 			if (cnt_tot != cnt_uniq) {
- 				fatal("Duplicate Allowed Allocating Nodes for "
-				      "Partition %s", part->name);
- 			}
- 			xfree(part_ptr->allow_alloc_nodes);
- 			part_ptr->allow_alloc_nodes =
-				hostlist_ranged_string_xmalloc(hl);
- 			hostlist_destroy(hl);
- 		} else {
- 			part_ptr->allow_alloc_nodes =
-					xstrdup(part->allow_alloc_nodes);
- 		}
- 	}
-	if (part->alternate) {
-		xfree(part_ptr->alternate);
-		part_ptr->alternate = xstrdup(part->alternate);
-	}
-	if (part->nodes) {
-		if (part_ptr->nodes) {
-			int cnt_tot, cnt_uniq;
-			hostlist_t hl = hostlist_create(part_ptr->nodes);
-
-			hostlist_push(hl, part->nodes);
-			cnt_tot = hostlist_count(hl);
-			hostlist_uniq(hl);
-			cnt_uniq = hostlist_count(hl);
-			if (cnt_tot != cnt_uniq) {
-				fatal("Duplicate Nodes for Partition %s",
-				      part->name);
-			}
-			xfree(part_ptr->nodes);
-			part_ptr->nodes = hostlist_ranged_string_xmalloc(hl);
-			hostlist_destroy(hl);
-		} else {
-			part_ptr->nodes = xstrdup(part->nodes);
 		}
 	}
 
