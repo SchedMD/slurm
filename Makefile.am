@@ -4,7 +4,6 @@ ACLOCAL_AMFLAGS = -I auxdir
 SUBDIRS    = auxdir src testsuite doc etc
 
 EXTRA_DIST =			\
-	etc/bluegene.conf.example \
 	etc/cgroup.conf.example \
 	etc/cgroup_allowed_devices_file.conf.example \
 	etc/init.d.slurm.in	\
