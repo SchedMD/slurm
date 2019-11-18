@@ -343,7 +343,7 @@ static void _filter_job_records(void)
 		}
 
 		if ((opt.state != JOB_END) &&
-		    (job_ptr->job_state != opt.state)) {
+		    (job_base_state != opt.state)) {
 			job_ptr->job_id = 0;
 			continue;
 		}

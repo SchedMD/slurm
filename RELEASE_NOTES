@@ -90,3 +90,4 @@ COMMAND CHANGES (see man pages for details)
  -- sbatch - adjusted backoff times for "--wait" option to reduce load on
     slurmctld. This results in a steady-state delay of 32s between queries,
     instead of the prior 10s delay.
+ -- Change 'scancel -t' to filter based only on job base state.
