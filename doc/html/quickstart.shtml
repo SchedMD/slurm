@@ -132,7 +132,7 @@ The <i>*</i> following the state <i>down</i> indicate the nodes are
 not responding. Note the use of a concise expression for node
 name specification with a common prefix <i>adev</i> and numeric
 ranges or specific numbers identified. This format allows for
-very clusters to be easily managed.
+very large clusters to be easily managed.
 The <span class="commandline">sinfo</span> command
 has many options to easily let you view the information of interest
 to you in whatever format you prefer.
@@ -384,6 +384,6 @@ with Slurm are provided below.
 <li><a href="mpi_guide.html#open_mpi">Open MPI</a></li>
 </ul></p>
 
-<p style="text-align:center;">Last modified 14 September 2017</p>
+<p style="text-align:center;">Last modified 19 November 2019</p>
 
 <!--#include virtual="footer.txt"-->
