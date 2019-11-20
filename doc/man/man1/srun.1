@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "August 2020" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "September 2020" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -1062,6 +1062,12 @@ Display help information and exit.
 .TP
 \fB\-\-hint\fR=<\fItype\fR>
 Bind tasks according to application hints.
+.br
+\fBNOTE\fR: This option cannot be used in conjunction with any of
+\fB\-\-ntasks\-per\-core\fR, \fB\-\-threads\-per\-core\fR or \fB\-\-cpu\-bind\fR
+(other than \fB\-\-cpu\-bind=verbose\fR). If \fB\-\-hint\fR is
+specified as a command line argument, it will take precedence over the
+environment.
 .RS
 .TP
 .B compute_bound
