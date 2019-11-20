@@ -1661,6 +1661,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 		return "ReqNodeNotAvail";
 	case WAIT_FRONT_END:
 		return "FrontEndDown";
+	case FAIL_DEFER:
+		return "SchedDefer";
 	case FAIL_DOWN_PARTITION:
 		return "PartitionDown";
 	case FAIL_DOWN_NODE:

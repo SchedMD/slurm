@@ -372,6 +372,9 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid --nice value"				},
 	{ ESLURM_INVALID_TIME_MIN_LIMIT,
 	  "Invalid time-min specification (exceeds job's time or other limits)"},
+	{ ESLURM_DEFER,
+	  "Immediate execution impossible. "
+	  "Individual job submission scheduling attempts deferred"},
 
 	/* slurmd error codes */
 	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,
