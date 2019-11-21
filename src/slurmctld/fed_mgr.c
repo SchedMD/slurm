@@ -3559,7 +3559,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 		return SLURM_ERROR;
 	}
 
-	if (job_desc->priority == 0)
+	/* If the job has a dependency, don't start it right away */
+	if ((job_desc->priority == 0) || (job_desc->dependency))
 		job_held = true;
 
 	/* get job_id now. Can't submit job to get job_id as job_allocate will

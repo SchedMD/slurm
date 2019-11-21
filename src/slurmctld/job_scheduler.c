@@ -2680,6 +2680,8 @@ extern void print_job_dependency(job_record_t *job_ptr)
 			dep_str = "expand";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
 			dep_str = "afterburstbuffer";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_REMOTE)
+			dep_str = "remote";
 		else
 			dep_str = "unknown";
 
@@ -2746,6 +2748,8 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 			dep_str = "expand";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
 			dep_str = "afterburstbuffer";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_REMOTE)
+			dep_str = "remote";
 		else
 			dep_str = "unknown";
 
@@ -2922,8 +2926,16 @@ extern int test_job_dependency(job_record_t *job_ptr)
 			   (djob_ptr->magic != JOB_MAGIC) ||
 			   ((djob_ptr->job_id != dep_ptr->job_id) &&
 			    (djob_ptr->array_job_id != dep_ptr->job_id))) {
-			/* job is gone, dependency lifted */
-			clear_dep = true;
+			if (dep_ptr->depend_type == SLURM_DEPEND_REMOTE) {
+				/*
+				 * Job is on a remote cluster. Don't clear the
+				 * dependency.
+				 */
+				depends = true;
+			} else {
+				/* job is gone, dependency lifted */
+				clear_dep = true;
+			}
 		} else {
 			/* Special case, apply test to job array as a whole */
 			if (dep_ptr->array_task_id == INFINITE) {
@@ -3118,105 +3130,119 @@ static void _parse_dependency_jobid_new(struct job_record *job_ptr,
 			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
-		if (array_task_id == NO_VAL) {
-			dep_job_ptr = find_job_record(job_id);
-			if (!dep_job_ptr) {
-				dep_job_ptr = find_job_array_rec(job_id,
-								 INFINITE);
-			}
-			if (dep_job_ptr &&
-			    (dep_job_ptr->array_job_id == job_id) &&
-			    ((dep_job_ptr->array_task_id != NO_VAL) ||
-			     (dep_job_ptr->array_recs != NULL))) {
-				array_task_id = INFINITE;
-			}
+		/*
+		 * If it's a federated job id in a different cluster,
+		 * then set SLURM_DEPEND_REMOTE.
+		 */
+		if (job_ptr->fed_details &&
+		    !fed_mgr_is_origin_job_id(job_id)) {
+			dep_ptr = xmalloc(sizeof(struct depend_spec));
+			dep_ptr->depend_type = SLURM_DEPEND_REMOTE;
+			dep_ptr->array_task_id = array_task_id;
+			dep_ptr->job_id = job_id;
+			dep_ptr->job_ptr = NULL;
+			(void) list_append(new_depend_list, dep_ptr);
 		} else {
-			dep_job_ptr = find_job_array_rec(job_id,
-							 array_task_id);
-		}
-		if ((depend_type == SLURM_DEPEND_EXPAND) &&
-		    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
-		     (!IS_JOB_RUNNING(dep_job_ptr))		||
-		     (dep_job_ptr->qos_id != job_ptr->qos_id)	||
-		     (dep_job_ptr->part_ptr == NULL)		||
-		     (job_ptr->part_ptr     == NULL)		||
-		     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
-			/*
-			 * Expand only jobs in the same QOS and
-			 * and partition
-			 */
-			*rc = ESLURM_DEPENDENCY;
-			break;
-		}
-
-		if ((sep_ptr = strchr(tmp, '+'))) {
-			sep_ptr++; /* skip over "+" */
-			depend_time = strtol(sep_ptr, &tmp, 10);
-
-			if (depend_time <= 0) {
+			if (array_task_id == NO_VAL) {
+				dep_job_ptr = find_job_record(job_id);
+				if (!dep_job_ptr) {
+					dep_job_ptr =
+						find_job_array_rec(job_id,
+								   INFINITE);
+				}
+				if (dep_job_ptr &&
+				    (dep_job_ptr->array_job_id == job_id) &&
+				    ((dep_job_ptr->array_task_id != NO_VAL) ||
+				     (dep_job_ptr->array_recs != NULL))) {
+					array_task_id = INFINITE;
+				}
+			} else {
+				dep_job_ptr = find_job_array_rec(job_id,
+								 array_task_id);
+			}
+			if ((depend_type == SLURM_DEPEND_EXPAND) &&
+			    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
+			     (!IS_JOB_RUNNING(dep_job_ptr))		||
+			     (dep_job_ptr->qos_id != job_ptr->qos_id)	||
+			     (dep_job_ptr->part_ptr == NULL)		||
+			     (job_ptr->part_ptr     == NULL)		||
+			     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
+				/*
+				 * Expand only jobs in the same QOS and
+				 * and partition
+				 */
 				*rc = ESLURM_DEPENDENCY;
 				break;
 			}
-			depend_time *= 60;
+
+			if ((sep_ptr = strchr(tmp, '+'))) {
+				sep_ptr++; /* skip over "+" */
+				depend_time = strtol(sep_ptr, &tmp, 10);
+
+				if (depend_time <= 0) {
+					*rc = ESLURM_DEPENDENCY;
+					break;
+				}
+				depend_time *= 60;
+			}
+
+			if (depend_type == SLURM_DEPEND_EXPAND) {
+				assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+				uint16_t sockets_per_node = NO_VAL16;
+				multi_core_data_t *mc_ptr;
+
+				if ((mc_ptr = job_ptr->details->mc_ptr)) {
+					sockets_per_node =
+						mc_ptr->sockets_per_node;
+				}
+				job_ptr->details->expanding_jobid = job_id;
+				if (select_hetero == 0) {
+					/*
+					 * GRES per node of this job must match
+					 * the job being expanded. Other options
+					 * are ignored.
+					 */
+					_copy_tres_opts(job_ptr, dep_job_ptr);
+				}
+				FREE_NULL_LIST(job_ptr->gres_list);
+				(void) gres_plugin_job_state_validate(
+					job_ptr->cpus_per_tres,
+					job_ptr->tres_freq,
+					job_ptr->tres_per_job,
+					job_ptr->tres_per_node,
+					job_ptr->tres_per_socket,
+					job_ptr->tres_per_task,
+					job_ptr->mem_per_tres,
+					&job_ptr->details->num_tasks,
+					&job_ptr->details->min_nodes,
+					&job_ptr->details->max_nodes,
+					&job_ptr->details->
+					ntasks_per_node,
+					&job_ptr->details->mc_ptr->
+					ntasks_per_socket,
+					&sockets_per_node,
+					&job_ptr->details->
+					cpus_per_task,
+					&job_ptr->gres_list);
+				if (mc_ptr && (sockets_per_node != NO_VAL16)) {
+					mc_ptr->sockets_per_node =
+						sockets_per_node;
+				}
+				assoc_mgr_lock(&locks);
+				gres_set_job_tres_cnt(job_ptr->gres_list,
+						      job_ptr->details ?
+						      job_ptr->details->
+						      min_nodes : 0,
+						      job_ptr->tres_req_cnt,
+						      true);
+				xfree(job_ptr->tres_req_str);
+				job_ptr->tres_req_str =
+					assoc_mgr_make_tres_str_from_array(
+						job_ptr->tres_req_cnt,
+						TRES_STR_FLAG_SIMPLE, true);
+				assoc_mgr_unlock(&locks);
+			}
 		}
-
-		if (depend_type == SLURM_DEPEND_EXPAND) {
-			assoc_mgr_lock_t locks = { .tres = READ_LOCK };
-			uint16_t sockets_per_node = NO_VAL16;
-			multi_core_data_t *mc_ptr;
-
-			if ((mc_ptr = job_ptr->details->mc_ptr)) {
-				sockets_per_node =
-					mc_ptr->sockets_per_node;
-			}
-			job_ptr->details->expanding_jobid = job_id;
-			if (select_hetero == 0) {
-				/*
-				 * GRES per node of this job must match
-				 * the job being expanded. Other options
-				 * are ignored.
-				 */
-				_copy_tres_opts(job_ptr, dep_job_ptr);
-			}
-			FREE_NULL_LIST(job_ptr->gres_list);
-			(void) gres_plugin_job_state_validate(
-				job_ptr->cpus_per_tres,
-				job_ptr->tres_freq,
-				job_ptr->tres_per_job,
-				job_ptr->tres_per_node,
-				job_ptr->tres_per_socket,
-				job_ptr->tres_per_task,
-				job_ptr->mem_per_tres,
-				&job_ptr->details->num_tasks,
-				&job_ptr->details->min_nodes,
-				&job_ptr->details->max_nodes,
-				&job_ptr->details->
-				ntasks_per_node,
-				&job_ptr->details->mc_ptr->
-				ntasks_per_socket,
-				&sockets_per_node,
-				&job_ptr->details->
-				cpus_per_task,
-				&job_ptr->gres_list);
-			if (mc_ptr && (sockets_per_node != NO_VAL16)) {
-				mc_ptr->sockets_per_node =
-					sockets_per_node;
-			}
-			assoc_mgr_lock(&locks);
-			gres_set_job_tres_cnt(job_ptr->gres_list,
-					      job_ptr->details ?
-					      job_ptr->details->
-					      min_nodes : 0,
-					      job_ptr->tres_req_cnt,
-					      true);
-			xfree(job_ptr->tres_req_str);
-			job_ptr->tres_req_str =
-				assoc_mgr_make_tres_str_from_array(
-					job_ptr->tres_req_cnt,
-					TRES_STR_FLAG_SIMPLE, true);
-			assoc_mgr_unlock(&locks);
-		}
-
 		if (dep_job_ptr) {	/* job still active */
 			dep_ptr = xmalloc(sizeof(struct depend_spec));
 			dep_ptr->array_task_id = array_task_id;
@@ -3272,6 +3298,21 @@ static void _parse_dependency_jobid_old(struct job_record *job_ptr,
 		*rc = ESLURM_DEPENDENCY;
 		return;
 	}
+	/*
+	 * If it's a federated job id in a different cluster,
+	 * then set SLURM_DEPEND_REMOTE.
+	 */
+	if (job_ptr->fed_details &&
+	    !fed_mgr_is_origin_job_id(job_id)) {
+		dep_ptr = xmalloc(sizeof(struct depend_spec));
+		dep_ptr->depend_type = SLURM_DEPEND_REMOTE;
+		dep_ptr->array_task_id = array_task_id;
+		dep_ptr->job_id = job_id;
+		dep_ptr->job_ptr = NULL;
+		(void) list_append(new_depend_list, dep_ptr);
+		return;
+	}
+	/* Find the job_ptr */
 	if (array_task_id == NO_VAL) {
 		dep_job_ptr = find_job_record(job_id);
 		if (!dep_job_ptr) {
@@ -3490,6 +3531,14 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 	iter = list_iterator_create(dependency_list);
 	while (!rc && (dep_ptr = list_next(iter))) {
 		if (dep_ptr->job_id == 0)	/* Singleton */
+			continue;
+		/*
+		 * We can't test remote dependencies for circular dependencies
+		 * because we may not have the job_ptr of a job from another
+		 * cluster. For example, if that job is running or held, we
+		 * won't have the job_ptr.
+		 */
+		if (dep_ptr->depend_type == SLURM_DEPEND_REMOTE)
 			continue;
 		if (dep_ptr->job_id == job_id)
 			rc = true;
