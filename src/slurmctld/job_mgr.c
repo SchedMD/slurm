@@ -4706,16 +4706,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	else
 		too_fragmented = false;
 
-	if (defer_sched == 1)
-		too_fragmented = true;
-
-	if (independent && (!too_fragmented))
+	if (independent && (!too_fragmented) && !defer_sched)
 		top_prio = _top_priority(job_ptr, job_specs->pack_job_offset);
 	else
 		top_prio = true;	/* don't bother testing,
 					 * it is not runable anyway */
 
-	if (immediate && (too_fragmented || (!top_prio) || (!independent))) {
+	if (immediate &&
+	    (too_fragmented || (!top_prio) || (!independent) || defer_sched)) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
@@ -4736,12 +4734,18 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			       slurm_strerror(ESLURM_FRAGMENTATION));
 			return ESLURM_FRAGMENTATION;
 		}
-		else {
+		else if (!top_prio) {
 			debug2("%s: setting %pJ to \"%s\" because it's not top priority (%s)",
 			       __func__, job_ptr,
 			       job_reason_string(job_ptr->state_reason),
 			       slurm_strerror(ESLURM_NOT_TOP_PRIORITY));
 			return ESLURM_NOT_TOP_PRIORITY;
+		} else {
+			debug2("%s: setting %pJ to \"%s\" due to SchedulerParameters=defer (%s)",
+			       __func__, job_ptr,
+			       job_reason_string(job_ptr->state_reason),
+			       slurm_strerror(ESLURM_CAN_NOT_START_IMMEDIATELY));
+			return ESLURM_CAN_NOT_START_IMMEDIATELY;
 		}
 	}
 
@@ -4767,7 +4771,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		   (!top_prio) || (!independent) || !avail_front_end(job_ptr) ||
-		   (job_specs->pack_job_offset != NO_VAL);
+		   (job_specs->pack_job_offset != NO_VAL) || defer_sched;
 
 	no_alloc = no_alloc || (bb_g_job_test_stage_in(job_ptr, no_alloc) != 1);
 
