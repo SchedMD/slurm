@@ -3076,6 +3076,231 @@ static void _copy_tres_opts(job_record_t *job_ptr, job_record_t *dep_job_ptr)
 }
 
 /*
+ * The new dependency format is:
+ *
+ * <type:job_id[:job_id][,type:job_id[:job_id]]> or
+ * <type:job_id[:job_id][?type:job_id[:job_id]]>
+ *
+ * This function parses the all job id's within a single dependency type.
+ * One char past the end of valid job id's is returned in (*sep_ptr2).
+ * Set (*rc) to ESLURM_DEPENDENCY for invalid job id's.
+ */
+static void _parse_dependency_jobid_new(struct job_record *job_ptr,
+					List new_depend_list, char *sep_ptr,
+					char **sep_ptr2, char *tok,
+					uint16_t depend_type, int select_hetero,
+					int *rc)
+{
+	struct depend_spec *dep_ptr;
+	job_record_t *dep_job_ptr = NULL;
+	int expand_cnt = 0;
+	uint32_t job_id, array_task_id;
+	char *tmp = NULL;
+	int depend_time = 0;
+
+	while (!(*rc)) {
+		job_id = strtol(sep_ptr, &tmp, 10);
+		if ((tmp != NULL) && (tmp[0] == '_')) {
+			if (tmp[1] == '*') {
+				array_task_id = INFINITE;
+				tmp += 2;	/* Past "_*" */
+			} else {
+				array_task_id = strtol(tmp+1,
+						       &tmp, 10);
+			}
+		} else
+			array_task_id = NO_VAL;
+		if ((tmp == NULL) ||
+		    (job_id == 0) || (job_id == job_ptr->job_id) ||
+		    ((tmp[0] != '\0') && (tmp[0] != ',') &&
+		     (tmp[0] != '?')  && (tmp[0] != ':') &&
+		     (tmp[0] != '+'))) {
+			*rc = ESLURM_DEPENDENCY;
+			break;
+		}
+		if (array_task_id == NO_VAL) {
+			dep_job_ptr = find_job_record(job_id);
+			if (!dep_job_ptr) {
+				dep_job_ptr = find_job_array_rec(job_id,
+								 INFINITE);
+			}
+			if (dep_job_ptr &&
+			    (dep_job_ptr->array_job_id == job_id) &&
+			    ((dep_job_ptr->array_task_id != NO_VAL) ||
+			     (dep_job_ptr->array_recs != NULL))) {
+				array_task_id = INFINITE;
+			}
+		} else {
+			dep_job_ptr = find_job_array_rec(job_id,
+							 array_task_id);
+		}
+		if ((depend_type == SLURM_DEPEND_EXPAND) &&
+		    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
+		     (!IS_JOB_RUNNING(dep_job_ptr))		||
+		     (dep_job_ptr->qos_id != job_ptr->qos_id)	||
+		     (dep_job_ptr->part_ptr == NULL)		||
+		     (job_ptr->part_ptr     == NULL)		||
+		     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
+			/*
+			 * Expand only jobs in the same QOS and
+			 * and partition
+			 */
+			*rc = ESLURM_DEPENDENCY;
+			break;
+		}
+
+		if ((sep_ptr = strchr(tmp, '+'))) {
+			sep_ptr++; /* skip over "+" */
+			depend_time = strtol(sep_ptr, &tmp, 10);
+
+			if (depend_time <= 0) {
+				*rc = ESLURM_DEPENDENCY;
+				break;
+			}
+			depend_time *= 60;
+		}
+
+		if (depend_type == SLURM_DEPEND_EXPAND) {
+			assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+			uint16_t sockets_per_node = NO_VAL16;
+			multi_core_data_t *mc_ptr;
+
+			if ((mc_ptr = job_ptr->details->mc_ptr)) {
+				sockets_per_node =
+					mc_ptr->sockets_per_node;
+			}
+			job_ptr->details->expanding_jobid = job_id;
+			if (select_hetero == 0) {
+				/*
+				 * GRES per node of this job must match
+				 * the job being expanded. Other options
+				 * are ignored.
+				 */
+				_copy_tres_opts(job_ptr, dep_job_ptr);
+			}
+			FREE_NULL_LIST(job_ptr->gres_list);
+			(void) gres_plugin_job_state_validate(
+				job_ptr->cpus_per_tres,
+				job_ptr->tres_freq,
+				job_ptr->tres_per_job,
+				job_ptr->tres_per_node,
+				job_ptr->tres_per_socket,
+				job_ptr->tres_per_task,
+				job_ptr->mem_per_tres,
+				&job_ptr->details->num_tasks,
+				&job_ptr->details->min_nodes,
+				&job_ptr->details->max_nodes,
+				&job_ptr->details->
+				ntasks_per_node,
+				&job_ptr->details->mc_ptr->
+				ntasks_per_socket,
+				&sockets_per_node,
+				&job_ptr->details->
+				cpus_per_task,
+				&job_ptr->gres_list);
+			if (mc_ptr && (sockets_per_node != NO_VAL16)) {
+				mc_ptr->sockets_per_node =
+					sockets_per_node;
+			}
+			assoc_mgr_lock(&locks);
+			gres_set_job_tres_cnt(job_ptr->gres_list,
+					      job_ptr->details ?
+					      job_ptr->details->
+					      min_nodes : 0,
+					      job_ptr->tres_req_cnt,
+					      true);
+			xfree(job_ptr->tres_req_str);
+			job_ptr->tres_req_str =
+				assoc_mgr_make_tres_str_from_array(
+					job_ptr->tres_req_cnt,
+					TRES_STR_FLAG_SIMPLE, true);
+			assoc_mgr_unlock(&locks);
+		}
+
+		if (dep_job_ptr) {	/* job still active */
+			dep_ptr = xmalloc(sizeof(struct depend_spec));
+			dep_ptr->array_task_id = array_task_id;
+			dep_ptr->depend_type = depend_type;
+			if (array_task_id == NO_VAL)
+				dep_ptr->job_id  = dep_job_ptr->job_id;
+			else {
+				dep_ptr->job_id  =
+					dep_job_ptr->array_job_id;
+			}
+			dep_ptr->job_ptr = dep_job_ptr;
+			dep_ptr->depend_time = depend_time;
+			(void) list_append(new_depend_list, dep_ptr);
+		}
+		if (tmp[0] != ':')
+			break;
+		sep_ptr = tmp + 1;	/* skip over ":" */
+
+	}
+	*sep_ptr2 = tmp;
+}
+
+/*
+ * The old dependency format is a comma-separated list of job id's.
+ * Parse a single jobid.
+ * One char past the end of a valid job id will be returned in (*sep_ptr).
+ * For an invalid job id, (*rc) will be set to ESLURM_DEPENDENCY.
+ */
+static void _parse_dependency_jobid_old(struct job_record *job_ptr,
+					List new_depend_list, char **sep_ptr,
+					char *tok, int *rc)
+{
+	struct depend_spec *dep_ptr;
+	struct job_record *dep_job_ptr = NULL;
+	uint32_t job_id, array_task_id;
+	char *tmp = NULL;
+
+	job_id = strtol(tok, &tmp, 10);
+	if ((tmp != NULL) && (tmp[0] == '_')) {
+		if (tmp[1] == '*') {
+			array_task_id = INFINITE;
+			tmp += 2;	/* Past "_*" */
+		} else {
+			array_task_id = strtol(tmp+1, &tmp, 10);
+		}
+	} else {
+		array_task_id = NO_VAL;
+	}
+	*sep_ptr = tmp;
+	if ((tmp == NULL) ||
+	    (job_id == 0) || (job_id == job_ptr->job_id) ||
+	    ((tmp[0] != '\0') && (tmp[0] != ','))) {
+		*rc = ESLURM_DEPENDENCY;
+		return;
+	}
+	if (array_task_id == NO_VAL) {
+		dep_job_ptr = find_job_record(job_id);
+		if (!dep_job_ptr) {
+			dep_job_ptr = find_job_array_rec(job_id, INFINITE);
+		}
+		if (dep_job_ptr &&
+		    (dep_job_ptr->array_job_id == job_id) &&
+		    ((dep_job_ptr->array_task_id != NO_VAL) ||
+		     (dep_job_ptr->array_recs != NULL))) {
+			array_task_id = INFINITE;
+		}
+	} else {
+		dep_job_ptr = find_job_array_rec(job_id, array_task_id);
+	}
+	if (dep_job_ptr) {
+		dep_ptr = xmalloc(sizeof(struct depend_spec));
+		dep_ptr->array_task_id = array_task_id;
+		dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
+		if (array_task_id == NO_VAL) {
+			dep_ptr->job_id = dep_job_ptr->job_id;
+		} else {
+			dep_ptr->job_id = dep_job_ptr->array_job_id;
+		}
+		dep_ptr->job_ptr = dep_job_ptr;
+		(void) list_append(new_depend_list, dep_ptr);
+	}
+}
+
+/*
  * Parse a job dependency string and use it to establish a "depend_spec"
  * list of dependencies. We accept both old format (a single job ID) and
  * new format (e.g. "afterok:123:124,after:128").
@@ -3088,15 +3313,10 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	static int select_hetero = -1;
 	int rc = SLURM_SUCCESS;
 	uint16_t depend_type = 0;
-	uint32_t job_id = 0;
-	uint32_t array_task_id;
 	char *tok, *new_array_dep, *sep_ptr, *sep_ptr2 = NULL;
 	List new_depend_list = NULL;
 	struct depend_spec *dep_ptr;
-	job_record_t *dep_job_ptr;
-	int expand_cnt = 0;
 	bool or_flag = false;
-	int depend_time = 0;
 
 	if (job_ptr->details == NULL)
 		return EINVAL;
@@ -3154,53 +3374,10 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 		/* Test for old format, just a job ID */
 		sep_ptr = strchr(tok, ':');
 		if ((sep_ptr == NULL) && (tok[0] >= '0') && (tok[0] <= '9')) {
-			job_id = strtol(tok, &sep_ptr, 10);
-			if ((sep_ptr != NULL) && (sep_ptr[0] == '_')) {
-				if (sep_ptr[1] == '*') {
-					array_task_id = INFINITE;
-					sep_ptr += 2;	/* Past "_*" */
-				} else {
-					array_task_id = strtol(sep_ptr+1,
-							       &sep_ptr, 10);
-				}
-			} else {
-				array_task_id = NO_VAL;
-			}
-			if ((sep_ptr == NULL) ||
-			    (job_id == 0) || (job_id == job_ptr->job_id) ||
-			    ((sep_ptr[0] != '\0') && (sep_ptr[0] != ','))) {
-				rc = ESLURM_DEPENDENCY;
+			_parse_dependency_jobid_old(job_ptr, new_depend_list,
+					      &sep_ptr, tok, &rc);
+			if (rc)
 				break;
-			}
-			if (array_task_id == NO_VAL) {
-				dep_job_ptr = find_job_record(job_id);
-				if (!dep_job_ptr) {
-					dep_job_ptr = find_job_array_rec(job_id,
-									 INFINITE);
-				}
-				if (dep_job_ptr &&
-				    (dep_job_ptr->array_job_id == job_id) &&
-				    ((dep_job_ptr->array_task_id != NO_VAL) ||
-				     (dep_job_ptr->array_recs != NULL))) {
-					array_task_id = INFINITE;
-				}
-			} else {
-				dep_job_ptr = find_job_array_rec(job_id,
-								 array_task_id);
-			}
-			if (dep_job_ptr) {
-				dep_ptr = xmalloc(sizeof(struct depend_spec));
-				dep_ptr->array_task_id = array_task_id;
-				dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
-				if (array_task_id == NO_VAL) {
-					dep_ptr->job_id = dep_job_ptr->job_id;
-				} else {
-					dep_ptr->job_id =
-						dep_job_ptr->array_job_id;
-				}
-				dep_ptr->job_ptr = dep_job_ptr;
-				(void) list_append(new_depend_list, dep_ptr);
-			}
 			if (sep_ptr && (sep_ptr[0] == ',')) {
 				tok = sep_ptr + 1;
 				continue;
@@ -3236,144 +3413,10 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 			break;
 		}
 		sep_ptr++;	/* skip over ":" */
-		while (rc == SLURM_SUCCESS) {
-			job_id = strtol(sep_ptr, &sep_ptr2, 10);
-			if ((sep_ptr2 != NULL) && (sep_ptr2[0] == '_')) {
-				if (sep_ptr2[1] == '*') {
-					array_task_id = INFINITE;
-					sep_ptr2 += 2;	/* Past "_*" */
-				} else {
-					array_task_id = strtol(sep_ptr2+1,
-							       &sep_ptr2, 10);
-				}
-			} else
-				array_task_id = NO_VAL;
+		_parse_dependency_jobid_new(job_ptr, new_depend_list, sep_ptr,
+				      &sep_ptr2, tok, depend_type,
+				      select_hetero, &rc);
 
-			if ((sep_ptr2 == NULL) ||
-			    (job_id == 0) || (job_id == job_ptr->job_id) ||
-			    ((sep_ptr2[0] != '\0') && (sep_ptr2[0] != ',') &&
-			     (sep_ptr2[0] != '?')  && (sep_ptr2[0] != ':') &&
-			     (sep_ptr2[0] != '+'))) {
-				rc = ESLURM_DEPENDENCY;
-				break;
-			}
-			if (array_task_id == NO_VAL) {
-				dep_job_ptr = find_job_record(job_id);
-				if (!dep_job_ptr) {
-					dep_job_ptr = find_job_array_rec(job_id,
-									 INFINITE);
-				}
-				if (dep_job_ptr &&
-				    (dep_job_ptr->array_job_id == job_id) &&
-				    ((dep_job_ptr->array_task_id != NO_VAL) ||
-				     (dep_job_ptr->array_recs != NULL))) {
-					array_task_id = INFINITE;
-				}
-			} else {
-				dep_job_ptr = find_job_array_rec(job_id,
-								 array_task_id);
-			}
-			if ((depend_type == SLURM_DEPEND_EXPAND) &&
-			    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
-			     (!IS_JOB_RUNNING(dep_job_ptr))		||
-			     (dep_job_ptr->qos_id != job_ptr->qos_id)	||
-			     (dep_job_ptr->part_ptr == NULL)		||
-			     (job_ptr->part_ptr     == NULL)		||
-			     (dep_job_ptr->part_ptr != job_ptr->part_ptr))) {
-				/*
-				 * Expand only jobs in the same QOS and
-				 * and partition
-				 */
-				rc = ESLURM_DEPENDENCY;
-				break;
-			}
-
-			if ((sep_ptr = strchr(sep_ptr2, '+'))) {
-				sep_ptr++; /* skip over "+" */
-				depend_time = strtol(sep_ptr, &sep_ptr2, 10);
-
-				if (depend_time <= 0) {
-					rc = ESLURM_DEPENDENCY;
-					break;
-				}
-				depend_time *= 60;
-			}
-
-			if (depend_type == SLURM_DEPEND_EXPAND) {
-				assoc_mgr_lock_t locks = { .tres = READ_LOCK };
-				uint16_t sockets_per_node = NO_VAL16;
-				multi_core_data_t *mc_ptr;
-
-				if ((mc_ptr = job_ptr->details->mc_ptr)) {
-					sockets_per_node =
-						mc_ptr->sockets_per_node;
-				}
-				job_ptr->details->expanding_jobid = job_id;
-				if (select_hetero == 0) {
-					/*
-					 * GRES per node of this job must match
-					 * the job being expanded. Other options
-					 * are ignored.
-					 */
-					_copy_tres_opts(job_ptr, dep_job_ptr);
-				}
-				FREE_NULL_LIST(job_ptr->gres_list);
-				(void) gres_plugin_job_state_validate(
-					job_ptr->cpus_per_tres,
-					job_ptr->tres_freq,
-					job_ptr->tres_per_job,
-					job_ptr->tres_per_node,
-					job_ptr->tres_per_socket,
-					job_ptr->tres_per_task,
-					job_ptr->mem_per_tres,
-					&job_ptr->details->num_tasks,
-					&job_ptr->details->min_nodes,
-					&job_ptr->details->max_nodes,
-					&job_ptr->details->
-					ntasks_per_node,
-					&job_ptr->details->mc_ptr->
-					ntasks_per_socket,
-					&sockets_per_node,
-					&job_ptr->details->
-					cpus_per_task,
-					&job_ptr->gres_list);
-				if (mc_ptr && (sockets_per_node != NO_VAL16)) {
-					mc_ptr->sockets_per_node =
-						sockets_per_node;
-				}
-				assoc_mgr_lock(&locks);
-				gres_set_job_tres_cnt(job_ptr->gres_list,
-						      job_ptr->details ?
-						      job_ptr->details->
-						      min_nodes : 0,
-						      job_ptr->tres_req_cnt,
-						      true);
-				xfree(job_ptr->tres_req_str);
-				job_ptr->tres_req_str =
-					assoc_mgr_make_tres_str_from_array(
-						job_ptr->tres_req_cnt,
-						TRES_STR_FLAG_SIMPLE, true);
-				assoc_mgr_unlock(&locks);
-			}
-
-			if (dep_job_ptr) {	/* job still active */
-				dep_ptr = xmalloc(sizeof(struct depend_spec));
-				dep_ptr->array_task_id = array_task_id;
-				dep_ptr->depend_type = depend_type;
-				if (array_task_id == NO_VAL)
-					dep_ptr->job_id  = dep_job_ptr->job_id;
-				else {
-					dep_ptr->job_id  =
-						dep_job_ptr->array_job_id;
-				}
-				dep_ptr->job_ptr = dep_job_ptr;
-				dep_ptr->depend_time = depend_time;
-				(void) list_append(new_depend_list, dep_ptr);
-			}
-			if (sep_ptr2[0] != ':')
-				break;
-			sep_ptr = sep_ptr2 + 1;	/* skip over ":" */
-		}
 		if (sep_ptr2 && (sep_ptr2[0] == ',')) {
 			tok = sep_ptr2 + 1;
 		} else if (sep_ptr2 && (sep_ptr2[0] == '?')) {
