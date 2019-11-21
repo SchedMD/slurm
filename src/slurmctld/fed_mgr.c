@@ -4541,8 +4541,6 @@ extern bool fed_mgr_is_origin_job_id(uint32_t job_id)
 		return true;
 	}
 
-	info("origin_id == %u, fed_mgr_cluster_rec->fed.id == %u",
-	     origin_id, fed_mgr_cluster_rec->fed.id);
 	if (fed_mgr_cluster_rec->fed.id == origin_id)
 		return true;
 	return false;
