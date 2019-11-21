@@ -752,8 +752,10 @@ show this help message
 \fB\-I\fR, \fB\-\-immediate\fR[=<\fIseconds\fR>]
 exit if resources are not available within the
 time period specified.
-If no argument is given, resources must be available immediately
-for the request to succeed.
+If no argument is given (seconds defaults to 1), resources must be available
+immediately for the request to succeed. If \fBdefer\fR is configured in
+\fBSchedulerParameters\fR and seconds=1 the allocation request will fail
+immediately; \fBdefer\fR conflicts and takes precedence over this option.
 By default, \fB\-\-immediate\fR is off, and the command
 will block until resources become available. Since this option's
 argument is optional, for proper parsing the single letter option must
