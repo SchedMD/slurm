@@ -4741,11 +4741,12 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			       slurm_strerror(ESLURM_NOT_TOP_PRIORITY));
 			return ESLURM_NOT_TOP_PRIORITY;
 		} else {
+			job_ptr->state_reason = FAIL_DEFER;
 			debug2("%s: setting %pJ to \"%s\" due to SchedulerParameters=defer (%s)",
 			       __func__, job_ptr,
 			       job_reason_string(job_ptr->state_reason),
-			       slurm_strerror(ESLURM_CAN_NOT_START_IMMEDIATELY));
-			return ESLURM_CAN_NOT_START_IMMEDIATELY;
+			       slurm_strerror(ESLURM_DEFER));
+			return ESLURM_DEFER;
 		}
 	}
 
