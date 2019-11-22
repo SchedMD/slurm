@@ -123,7 +123,6 @@ static void _purge_old_node_state(node_record_t *old_node_table_ptr,
 				  int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
 static int  _reset_node_bitmaps(void *x, void *arg);
-static int  _restore_job_dependencies(void);
 
 static int  _restore_node_state(int recover, node_record_t *old_node_table_ptr,
 				int old_node_record_count);
@@ -1392,7 +1391,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	init_requeue_policy();
 
-	/* NOTE: Run restore_node_features before _restore_job_dependencies */
+	/* NOTE: Run restore_node_features before restore_job_dependencies */
 	restore_node_features(recover);
 
 	if ((node_features_g_count() > 0) &&
@@ -1425,6 +1424,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
 
+	/* NOTE: Run load_all_resv_state() before restore_job_dependencies */
 	if (reconfig) {
 		load_all_resv_state(0);
 	} else {
@@ -1436,9 +1436,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 	 if (test_config)
 		return error_code;
-
-	/* NOTE: Run load_all_resv_state() before _restore_job_dependencies */
-	_restore_job_dependencies();
 
 	/* sort config_list by weight for scheduling */
 	list_sort(config_list, &list_compare_config);
@@ -2671,7 +2668,7 @@ static int _sync_nodes_to_active_job(job_record_t *job_ptr)
 			info("Removing failed node %s from %pJ",
 			     node_ptr->name, job_ptr);
 			/* Disable accounting here. Accounting reset for all
-			 * jobs in _restore_job_dependencies() */
+			 * jobs in restore_job_dependencies() */
 			save_accounting_enforce = accounting_enforce;
 			accounting_enforce &= (~ACCOUNTING_ENFORCE_LIMITS);
 			job_pre_resize_acctg(job_ptr);
@@ -2715,11 +2712,7 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 	return;
 }
 
-/*
- * _restore_job_dependencies - Build depend_list and license_list for every job
- *	also reset the running job count for scheduling policy
- */
-static int _restore_job_dependencies(void)
+extern int restore_job_dependencies(void)
 {
 	int error_code = SLURM_SUCCESS, rc;
 	job_record_t *job_ptr;

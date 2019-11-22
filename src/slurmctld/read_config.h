@@ -69,6 +69,12 @@ extern void cluster_rec_free(void);
  */
 extern int read_slurm_conf(int recover, bool reconfig);
 
+/*
+ * restore_job_dependencies - Build depend_list and license_list for every job
+ *	also reset the running job count for scheduling policy
+ */
+extern int restore_job_dependencies(void);
+
 extern int dump_config_state_lite(void);
 extern int load_config_state_lite(void);
 

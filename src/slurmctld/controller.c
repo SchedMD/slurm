@@ -706,6 +706,14 @@ int main(int argc, char **argv)
 		 */
 		fed_mgr_init(acct_db_conn);
 
+		/*
+		 * For cross-cluster job dependencies to work, we need to have
+		 * initialized federation first. So rather than calling this
+		 * from read_slurm_conf() we call it here immediately after
+		 * fed_mgr_init().
+		 */
+		restore_job_dependencies();
+
 		if (slurm_priority_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
 		if (slurm_sched_init() != SLURM_SUCCESS)
