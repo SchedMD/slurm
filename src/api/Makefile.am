@@ -65,8 +65,6 @@ BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) libslurm.la
 # Also, libslurmhelper, libslurm.o are for convenience, they are not installed.
 noinst_LTLIBRARIES = libslurmhelper.la
 noinst_PROGRAMS = libslurm.o
-# This is needed if compiling on windows
-EXEEXT=
 
 slurmdbapi_src =	\
 	account_functions.c \
