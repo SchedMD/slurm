@@ -71,10 +71,6 @@ building block approach. These plugins presently include:
   Provides authentication mechanism between various components of Slurm.
 </li>
 
-<li><a href="checkpoint_plugins.html">Checkpoint</a>:
-  Interface to various checkpoint mechanisms.
-</li>
-
 <li><a href="containers.html">Containers</a>:
   HPC workload container support and implementations.
 </li>
