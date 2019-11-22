@@ -908,6 +908,7 @@ struct	depend_spec {
 	uint16_t	depend_flags;	/* SLURM_FLAGS_* type */
 	uint32_t        depend_time;    /* time to wait (mins) */
 	uint32_t	job_id;		/* Slurm job_id */
+	bool 		depend_remote;	/* Is a remote dependency */
 	job_record_t   *job_ptr;	/* pointer to this job */
 };
 

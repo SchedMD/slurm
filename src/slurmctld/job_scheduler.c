@@ -2894,6 +2894,10 @@ extern int test_job_dependency(job_record_t *job_ptr)
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
+		if (dep_ptr->depend_remote) {
+			depends = true;
+			continue;
+		}
 		dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
 						      dep_ptr->array_task_id);
 		djob_ptr = dep_ptr->job_ptr;
@@ -2926,16 +2930,8 @@ extern int test_job_dependency(job_record_t *job_ptr)
 			   (djob_ptr->magic != JOB_MAGIC) ||
 			   ((djob_ptr->job_id != dep_ptr->job_id) &&
 			    (djob_ptr->array_job_id != dep_ptr->job_id))) {
-			if (dep_ptr->depend_type == SLURM_DEPEND_REMOTE) {
-				/*
-				 * Job is on a remote cluster. Don't clear the
-				 * dependency.
-				 */
-				depends = true;
-			} else {
-				/* job is gone, dependency lifted */
-				clear_dep = true;
-			}
+			/* job is gone, dependency lifted */
+			clear_dep = true;
 		} else {
 			/* Special case, apply test to job array as a whole */
 			if (dep_ptr->array_task_id == INFINITE) {
@@ -3132,12 +3128,14 @@ static void _parse_dependency_jobid_new(struct job_record *job_ptr,
 		}
 		/*
 		 * If it's a federated job id in a different cluster,
-		 * then set SLURM_DEPEND_REMOTE.
+		 * then set it as a remote dependency and don't look for
+		 * job_ptr since it probably doesn't exist on this cluster.
 		 */
 		if (job_ptr->fed_details &&
 		    !fed_mgr_is_origin_job_id(job_id)) {
 			dep_ptr = xmalloc(sizeof(struct depend_spec));
-			dep_ptr->depend_type = SLURM_DEPEND_REMOTE;
+			dep_ptr->depend_remote = true;
+			dep_ptr->depend_type = depend_type;
 			dep_ptr->array_task_id = array_task_id;
 			dep_ptr->job_id = job_id;
 			dep_ptr->job_ptr = NULL;
@@ -3300,12 +3298,14 @@ static void _parse_dependency_jobid_old(struct job_record *job_ptr,
 	}
 	/*
 	 * If it's a federated job id in a different cluster,
-	 * then set SLURM_DEPEND_REMOTE.
+	 * then set it as a remote dependency and don't look for
+	 * job_ptr since it probably doesn't exist on this cluster.
 	 */
 	if (job_ptr->fed_details &&
 	    !fed_mgr_is_origin_job_id(job_id)) {
 		dep_ptr = xmalloc(sizeof(struct depend_spec));
-		dep_ptr->depend_type = SLURM_DEPEND_REMOTE;
+		dep_ptr->depend_remote = true;
+		dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
 		dep_ptr->array_task_id = array_task_id;
 		dep_ptr->job_id = job_id;
 		dep_ptr->job_ptr = NULL;
@@ -3538,7 +3538,7 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 		 * cluster. For example, if that job is running or held, we
 		 * won't have the job_ptr.
 		 */
-		if (dep_ptr->depend_type == SLURM_DEPEND_REMOTE)
+		if (dep_ptr->depend_remote)
 			continue;
 		if (dep_ptr->job_id == job_id)
 			rc = true;
