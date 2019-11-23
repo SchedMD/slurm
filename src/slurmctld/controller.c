@@ -521,7 +521,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize preempt plugin");
 		}
 	}
-	if (checkpoint_init(slurmctld_conf.checkpoint_type) != SLURM_SUCCESS) {
+	if (checkpoint_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize checkpoint plugin");
 			test_config_rc = 1;

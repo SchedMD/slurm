@@ -100,11 +100,11 @@ static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
 /* initialize checkpoint plugin */
-extern int
-checkpoint_init(char *type)
+extern int checkpoint_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "checkpoint";
+	char *type = "checkpoint/none";
 
 	if (init_run && g_context)
 		return retval;

@@ -1227,24 +1227,6 @@ extern char *slurm_get_bb_type(void)
 	return bb_type;
 }
 
-/* slurm_get_checkpoint_type
- * returns the checkpoint_type from slurmctld_conf object
- * RET char *    - checkpoint type, MUST be xfreed by caller
- */
-extern char *slurm_get_checkpoint_type(void)
-{
-	char *checkpoint_type = NULL;
-	slurm_ctl_conf_t *conf;
-
-	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		checkpoint_type = xstrdup(conf->checkpoint_type);
-		slurm_conf_unlock();
-	}
-	return checkpoint_type;
-}
-
 /* slurm_get_cluster_name
  * returns the cluster name from slurmctld_conf object
  * RET char *    - cluster name,  MUST be xfreed by caller

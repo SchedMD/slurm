@@ -488,12 +488,6 @@ extern char *slurm_get_bb_params(void);
  */
 extern char *slurm_get_bb_type(void);
 
-/* slurm_get_checkpoint_type
- * returns the checkpoint_type from slurmctld_conf object
- * RET char *    - checkpoint type, MUST be xfreed by caller
- */
-extern char *slurm_get_checkpoint_type(void);
-
 /* slurm_get_cluster_name
  * returns the cluster name from slurmctld_conf object
  * RET char *    - cluster name,  MUST be xfreed by caller

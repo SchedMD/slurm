@@ -78,7 +78,7 @@ enum checkpoint_plugin {
 typedef struct slurm_checkpoint_context * slurm_checkpoint_context_t;
 
 /* initialize checkpoint plugin */
-extern int checkpoint_init(char *checkpoint_type);
+extern int checkpoint_init(void);
 
 /* shutdown checkpoint plugin */
 extern int checkpoint_fini(void);

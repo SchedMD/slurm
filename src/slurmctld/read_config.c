@@ -115,11 +115,10 @@ static int  _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr,
 					uint16_t old_select_type_p);
-static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
-			      char *old_auth_type, char *old_checkpoint_type,
-			      char *old_cred_type, char *old_sched_type,
-			      char *old_select_type, char *old_switch_type,
-			      char *old_bb_type);
+static int _preserve_plugins(slurm_ctl_conf_t *ctl_conf_ptr,
+			     char *old_auth_type, char *old_cred_type,
+			     char *old_sched_type, char *old_select_type,
+			     char *old_switch_type, char *old_bb_type);
 static void _purge_old_node_state(node_record_t *old_node_table_ptr,
 				  int old_node_record_count);
 static void _purge_old_part_state(List old_part_list, char *old_def_part_name);
@@ -1114,7 +1113,6 @@ int read_slurm_conf(int recover, bool reconfig)
 	char *old_def_part_name = NULL;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
 	char *old_bb_type         = xstrdup(slurmctld_conf.bb_type);
-	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
 	char *old_cred_type       = xstrdup(slurmctld_conf.cred_type);
 	uint16_t old_preempt_mode = slurmctld_conf.preempt_mode;
 	char *old_preempt_type    = xstrdup(slurmctld_conf.preempt_type);
@@ -1456,8 +1454,7 @@ int read_slurm_conf(int recover, bool reconfig)
 
 	/* Update plugins as possible */
 	rc = _preserve_plugins(&slurmctld_conf,
-			       old_auth_type, old_checkpoint_type,
-			       old_cred_type, old_sched_type,
+			       old_auth_type, old_cred_type, old_sched_type,
 			       old_select_type, old_switch_type, old_bb_type);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
@@ -2479,11 +2476,10 @@ static int _update_preempt(uint16_t old_preempt_mode)
  *	plugin value changes to take effect.
  * RET zero or error code
  */
-static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
-		char *old_auth_type, char *old_checkpoint_type,
-		char *old_cred_type, char *old_sched_type,
-		char *old_select_type, char *old_switch_type,
-		char *old_bb_type)
+static int _preserve_plugins(slurm_ctl_conf_t *ctl_conf_ptr,
+			     char *old_auth_type, char *old_cred_type,
+			     char *old_sched_type, char *old_select_type,
+			     char *old_switch_type, char *old_bb_type)
 {
 	int rc = SLURM_SUCCESS;
 

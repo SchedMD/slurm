@@ -2716,7 +2716,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->authtype);
 	xfree (ctl_conf_ptr->bb_type);
 	FREE_NULL_LIST(ctl_conf_ptr->cgroup_conf);
-	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
 	for (i = 0; i < ctl_conf_ptr->control_cnt; i++) {
@@ -2859,7 +2858,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->authtype);
 	ctl_conf_ptr->batch_start_timeout	= 0;
 	xfree (ctl_conf_ptr->bb_type);
-	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->comm_params);
@@ -3521,8 +3519,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			xstrdup(DEFAULT_CORE_SPEC_PLUGIN);
 	}
 
-	if (!s_p_get_string(&conf->checkpoint_type, "CheckpointType", hashtbl))
-		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);
+	if (s_p_get_string(&temp_str, "CheckpointType", hashtbl)) {
+		xfree(temp_str);
+		debug("Ignoring obsolete CheckpointType option.");
+	}
 
 	(void) s_p_get_string(&conf->cli_filter_plugins, "CliFilterPlugins",
 			      hashtbl);

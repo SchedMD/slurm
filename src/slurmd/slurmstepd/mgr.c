@@ -1187,7 +1187,6 @@ job_manager(stepd_step_rec_t *job)
 {
 	int  rc = SLURM_SUCCESS;
 	bool io_initialized = false;
-	char *ckpt_type = slurm_get_checkpoint_type();
 	char *err_msg = NULL;
 
 	debug3("Entered job_manager for %u.%u pid=%d",
@@ -1209,7 +1208,7 @@ job_manager(stepd_step_rec_t *job)
 	    (switch_init(1) != SLURM_SUCCESS)			||
 	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
 	    (slurmd_task_init() != SLURM_SUCCESS)		||
-	    (checkpoint_init(ckpt_type) != SLURM_SUCCESS)	||
+	    (checkpoint_init() != SLURM_SUCCESS)		||
 	    (jobacct_gather_init() != SLURM_SUCCESS)		||
 	    (acct_gather_profile_init() != SLURM_SUCCESS)	||
 	    (slurm_cred_init() != SLURM_SUCCESS)		||
@@ -1469,7 +1468,6 @@ fail1:
 	if (!job->batch && core_spec_g_clear(job->cont_id))
 		error("core_spec_g_clear: %m");
 
-	xfree(ckpt_type);
 	return(rc);
 }
 
