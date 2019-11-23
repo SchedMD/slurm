@@ -1553,44 +1553,6 @@ extern int pack_job_signal(job_record_t *pack_leader, uint16_t signal,
 			   uint16_t flags, uid_t uid, bool preempt);
 
 /*
- * job_step_checkpoint - perform some checkpoint operation
- * IN ckpt_ptr - checkpoint request message
- * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply
- * IN protocol_version - slurm protocol version of client
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_step_checkpoint(checkpoint_msg_t *ckpt_ptr,
-			       uid_t uid,
-			       int conn_fd,
-			       uint16_t protocol_version);
-
-/*
- * job_step_checkpoint_comp - note job step checkpoint completion
- * IN ckpt_ptr - checkpoint complete status message
- * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply
- * IN protocol_version - slurm protocol version of client
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
-				    uid_t uid,
-				    int conn_fd,
-				    uint16_t protocol_version);
-/*
- * job_step_checkpoint_task_comp - note task checkpoint completion
- * IN ckpt_ptr - checkpoint task complete status message
- * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply
- * IN protocol_version - slurm protocol version of client
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
-					 uid_t uid,
-					 int conn_fd,
-					 uint16_t protocol_version);
-
-/*
  * job_str_signal - signal the specified job
  * IN job_id_str - id of the job to be signaled, valid formats include "#"
  *	"#_#" and "#_[expr]"
