@@ -2305,9 +2305,6 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
  */
 extern int slurmctld_shutdown(void);
 
-/* Perform periodic job step checkpoints (per user request) */
-extern void step_checkpoint(void);
-
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 extern void step_alloc_lps(step_record_t *step_ptr);
 

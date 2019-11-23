@@ -2055,7 +2055,6 @@ static void *_slurmctld_background(void *no_data)
 			debug2("Testing job time limits and checkpoints");
 			job_time_limit();
 			job_resv_check();
-			step_checkpoint();
 			unlock_slurmctld(job_write_lock);
 
 			lock_slurmctld(node_write_lock);
