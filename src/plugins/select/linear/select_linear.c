@@ -3221,7 +3221,6 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 				continue;
 			mode = slurm_job_preempt_mode(tmp_job_ptr);
 			if ((mode == PREEMPT_MODE_REQUEUE)    ||
-			    (mode == PREEMPT_MODE_CHECKPOINT) ||
 			    (mode == PREEMPT_MODE_CANCEL))
 				remove_all = true;
 			/* Remove preemptable job now */
@@ -3359,7 +3358,6 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 			uint16_t mode = slurm_job_preempt_mode(tmp_job_ptr);
 			bool remove_all = false;
 			if ((mode == PREEMPT_MODE_REQUEUE)    ||
-			    (mode == PREEMPT_MODE_CHECKPOINT) ||
 			    (mode == PREEMPT_MODE_CANCEL))
 				remove_all = true;
 			/* Remove preemptable job now */

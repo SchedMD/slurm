@@ -629,24 +629,6 @@ static void _preempt_job_dequeue(void)
 			if (rc == SLURM_SUCCESS) {
 				info("preempted %pJ has been killed", job_ptr);
 			}
-		} else if (preempt_mode == PREEMPT_MODE_CHECKPOINT) {
-			checkpoint_msg_t ckpt_msg;
-			memset(&ckpt_msg, 0, sizeof(ckpt_msg));
-			ckpt_msg.op	   = CHECK_REQUEUE;
-			ckpt_msg.job_id    = job_ptr->job_id;
-			rc = job_checkpoint(&ckpt_msg, 0, -1, NO_VAL16);
-			if (rc == ESLURM_NOT_SUPPORTED) {
-				memset(&ckpt_msg, 0, sizeof(ckpt_msg));
-				ckpt_msg.op	   = CHECK_VACATE;
-				ckpt_msg.job_id    = job_ptr->job_id;
-				rc = job_checkpoint(&ckpt_msg, 0, -1, NO_VAL16);
-			}
-			if (rc == SLURM_SUCCESS) {
-				info("preempted %pJ has been checkpointed",
-				     job_ptr);
-			} else
-				error("preempted %pJ could not be checkpointed: %s",
-				      job_ptr, slurm_strerror(rc));
 		} else if ((preempt_mode == PREEMPT_MODE_REQUEUE) &&
 			   job_ptr->batch_flag && job_ptr->details &&
 			   (job_ptr->details->requeue > 0)) {

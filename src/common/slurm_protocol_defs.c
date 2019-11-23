@@ -2534,8 +2534,6 @@ extern const char *preempt_mode_string(uint16_t preempt_mode)
 		preempt_mode &= (~PREEMPT_MODE_GANG);
 		if (preempt_mode == PREEMPT_MODE_CANCEL)
 			return "GANG,CANCEL";
-		else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
-			return "GANG,CHECKPOINT";
 		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
 			return "GANG,REQUEUE";
 		else if (preempt_mode == PREEMPT_MODE_SUSPEND)
@@ -2544,8 +2542,6 @@ extern const char *preempt_mode_string(uint16_t preempt_mode)
 	} else {
 		if (preempt_mode == PREEMPT_MODE_CANCEL)
 			return "CANCEL";
-		else if (preempt_mode == PREEMPT_MODE_CHECKPOINT)
-			return "CHECKPOINT";
 		else if (preempt_mode == PREEMPT_MODE_REQUEUE)
 			return "REQUEUE";
 		else if (preempt_mode == PREEMPT_MODE_SUSPEND)
@@ -2575,9 +2571,6 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 			preempt_modes++;
 		} else if (xstrcasecmp(tok, "cancel") == 0) {
 			mode_num += PREEMPT_MODE_CANCEL;
-			preempt_modes++;
-		} else if (xstrcasecmp(tok, "checkpoint") == 0) {
-			mode_num += PREEMPT_MODE_CHECKPOINT;
 			preempt_modes++;
 		} else if (xstrcasecmp(tok, "requeue") == 0) {
 			mode_num += PREEMPT_MODE_REQUEUE;

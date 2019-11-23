@@ -2031,7 +2031,6 @@ top:	orig_node_map = bit_copy(save_node_map);
 				continue;
 			mode = slurm_job_preempt_mode(tmp_job_ptr);
 			if ((mode != PREEMPT_MODE_REQUEUE)    &&
-			    (mode != PREEMPT_MODE_CHECKPOINT) &&
 			    (mode != PREEMPT_MODE_CANCEL))
 				continue;	/* can't remove job */
 			/* Remove preemptable job now */
@@ -2121,7 +2120,6 @@ top:	orig_node_map = bit_copy(save_node_map);
 			while ((tmp_job_ptr = list_next(preemptee_iterator))) {
 				mode = slurm_job_preempt_mode(tmp_job_ptr);
 				if ((mode != PREEMPT_MODE_REQUEUE)    &&
-				    (mode != PREEMPT_MODE_CHECKPOINT) &&
 				    (mode != PREEMPT_MODE_CANCEL))
 					continue;
 				if (bit_overlap(node_bitmap,

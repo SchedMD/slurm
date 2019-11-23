@@ -559,8 +559,6 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 	case SORTID_PREEMPT_MODE:
 		if (!xstrcasecmp(new_text, "cancel"))
 			part_msg->preempt_mode = PREEMPT_MODE_CANCEL;
-		else if (!xstrcasecmp(new_text, "checkpoint"))
-			part_msg->preempt_mode = PREEMPT_MODE_CHECKPOINT;
 		else if (!xstrcasecmp(new_text, "off"))
 			part_msg->preempt_mode = PREEMPT_MODE_OFF;
 		else if (!xstrcasecmp(new_text, "requeue"))

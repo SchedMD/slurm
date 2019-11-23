@@ -398,8 +398,6 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * PREEMPT_MODE_REQUEUE     0x0002
 
-=item * PREEMPT_MODE_CHECKPOINT  0x0004
-
 =item * PREEMPT_MODE_CANCEL      0x0008
 
 =item * PREEMPT_MODE_GANG        0x8000

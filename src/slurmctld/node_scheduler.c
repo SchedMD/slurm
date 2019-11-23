@@ -2412,7 +2412,6 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 	job_record_t *job_ptr;
 	uint16_t mode;
 	int job_cnt = 0, rc;
-	checkpoint_msg_t ckpt_msg;
 	static time_t sched_update = 0;
 
 	if (sched_update != slurmctld_conf.last_update) {
@@ -2442,26 +2441,6 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("preempted %pJ has been killed to reclaim resources for %pJ",
-				     job_ptr, preemptor_ptr);
-			}
-		} else if (mode == PREEMPT_MODE_CHECKPOINT) {
-			job_cnt++;
-			if (!kill_pending)
-				continue;
-			memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
-			ckpt_msg.op	   = CHECK_REQUEUE;
-			ckpt_msg.job_id    = job_ptr->job_id;
-			rc = job_checkpoint(&ckpt_msg, 0, -1,
-					    NO_VAL16);
-			if (rc == ESLURM_NOT_SUPPORTED) {
-				memset(&ckpt_msg, 0, sizeof(checkpoint_msg_t));
-				ckpt_msg.op	   = CHECK_VACATE;
-				ckpt_msg.job_id    = job_ptr->job_id;
-				rc = job_checkpoint(&ckpt_msg, 0, -1,
-						    NO_VAL16);
-			}
-			if (rc == SLURM_SUCCESS) {
-				info("preempted %pJ has been checkpointed to reclaim resources for %pJ",
 				     job_ptr, preemptor_ptr);
 			}
 		} else if (mode == PREEMPT_MODE_REQUEUE) {
