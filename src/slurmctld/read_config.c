@@ -2503,14 +2503,6 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 		xfree(old_bb_type);
 	}
 
-	if (xstrcmp(old_checkpoint_type, ctl_conf_ptr->checkpoint_type)) {
-		xfree(ctl_conf_ptr->checkpoint_type);
-		ctl_conf_ptr->checkpoint_type = old_checkpoint_type;
-		rc =  ESLURM_INVALID_CHECKPOINT_TYPE_CHANGE;
-	} else {	/* free duplicate value */
-		xfree(old_checkpoint_type);
-	}
-
 	if (xstrcmp(old_cred_type, ctl_conf_ptr->cred_type)) {
 		xfree(ctl_conf_ptr->cred_type);
 		ctl_conf_ptr->cred_type = old_cred_type;

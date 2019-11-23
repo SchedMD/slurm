@@ -177,9 +177,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_AUTHTYPE_CHANGE,
 	  "AuthType change requires restart of all Slurm daemons and "
 	  "commands to take effect"},
-	{ ESLURM_INVALID_CHECKPOINT_TYPE_CHANGE,
-	  "CheckpointType change requires restart of all Slurm daemons "
-	  "to take effect"					},
+
 	{ ESLURM_INVALID_CRED_TYPE_CHANGE,
 	  "CredType change requires restart of all Slurm daemons "
 	  "to take effect"					},
