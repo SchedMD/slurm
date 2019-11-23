@@ -140,9 +140,6 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t *conf, HV *hv)
 	if (conf->job_acct_gather_type)
 		STORE_FIELD(hv, conf, job_acct_gather_type, charp);
 
-	if (conf->job_ckpt_dir)
-		STORE_FIELD(hv, conf, job_ckpt_dir, charp);
-
 	if (conf->job_comp_host)
 		STORE_FIELD(hv, conf, job_comp_host, charp);
 	if (conf->job_comp_loc)
@@ -497,7 +494,6 @@ hv_to_slurm_ctl_conf(HV *hv, slurm_ctl_conf_t *conf)
 	FETCH_FIELD(hv, conf, job_acct_gather_params, charp, FALSE);
 	FETCH_FIELD(hv, conf, job_acct_gather_type, charp, FALSE);
 
-	FETCH_FIELD(hv, conf, job_ckpt_dir, charp, FALSE);
 	FETCH_FIELD(hv, conf, job_comp_host, charp, FALSE);
 	FETCH_FIELD(hv, conf, job_comp_loc, charp, FALSE);
 	FETCH_FIELD(hv, conf, job_comp_pass, charp, FALSE);

@@ -25,7 +25,6 @@ EnforcePartLimits=any
 GresTypes={grestypes}
 #GroupUpdateForce=0
 #GroupUpdateTime=600
-#JobCheckpointDir=/var/slurm/checkpoint
 JobContainerType=job_container/cncu
 #JobCredentialPrivateKey=
 #JobCredentialPublicCertificate=

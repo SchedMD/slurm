@@ -3640,8 +3640,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->job_acct_gather_type, buffer);
 		packstr(build_ptr->job_acct_gather_params, buffer);
 
-		packstr(build_ptr->job_ckpt_dir, buffer);
-
 		packstr(build_ptr->job_comp_host, buffer);
 		packstr(build_ptr->job_comp_loc, buffer);
 		pack32((uint32_t)build_ptr->job_comp_port, buffer);
@@ -3936,7 +3934,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->job_acct_gather_type, buffer);
 		packstr(build_ptr->job_acct_gather_params, buffer);
 
-		packstr(build_ptr->job_ckpt_dir, buffer);
+		packnull(buffer); /* was job_ckpt_dir */
 
 		packstr(build_ptr->job_comp_host, buffer);
 		packstr(build_ptr->job_comp_loc, buffer);
@@ -4231,7 +4229,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->job_acct_gather_type, buffer);
 		packstr(build_ptr->job_acct_gather_params, buffer);
 
-		packstr(build_ptr->job_ckpt_dir, buffer);
+		packnull(buffer); /* was job_ckpt_dir */
 
 		packstr(build_ptr->job_comp_host, buffer);
 		packstr(build_ptr->job_comp_loc, buffer);
@@ -4556,9 +4554,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_params,
 				       &uint32_tmp, buffer);
 
-		safe_unpackstr_xmalloc(&build_ptr->job_ckpt_dir,
-				       &uint32_tmp, buffer);
-
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_host,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_loc,
@@ -4835,6 +4830,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->x11_params,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		char *temp_str = NULL;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -4962,8 +4958,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_params,
 				       &uint32_tmp, buffer);
 
-		safe_unpackstr_xmalloc(&build_ptr->job_ckpt_dir,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was job_ckpt_dir */
 
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_host,
 				       &uint32_tmp, buffer);
@@ -5245,6 +5241,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->x11_params,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *temp_str = NULL;
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
 
@@ -5368,8 +5365,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_params,
 				       &uint32_tmp, buffer);
 
-		safe_unpackstr_xmalloc(&build_ptr->job_ckpt_dir,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was job_ckpt_dir */
 
 		safe_unpackstr_xmalloc(&build_ptr->job_comp_host,
 				       &uint32_tmp, buffer);

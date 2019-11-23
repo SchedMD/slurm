@@ -1104,16 +1104,6 @@ has a lower resolution (JobAcctGatherFreq) and OOMs could happen at some point.
 .RE
 
 .TP
-\fBJobCheckpointDir\fR
-Specifies the default directory for storing or reading job checkpoint
-information. The data stored here is only a few thousand bytes per job
-and includes information needed to resubmit the job request, not job's
-memory image. The directory must be readable and writable by
-\fBSlurmUser\fR, but not writable by regular users. The job memory images
-may be in a different location as specified by \fB\-\-checkpoint\-dir\fR
-option at job submit time or scontrol's \fBImageDir\fR option.
-
-.TP
 \fBJobCompHost\fR
 The name of the machine hosting the job completion database.
 Only used for database type storage plugins, ignored otherwise.
@@ -5668,10 +5658,6 @@ The file must be accessible by the primary and backup control machines.
 Must be executable by user root.
 It is recommended that the file be readable by all users.
 The file must exist on every compute node.
-.TP
-\fBJobCheckpointDir\fR
-Must be writable by user \fBSlurmUser\fR and no other users.
-The file must be accessible by the primary and backup control machines.
 .TP
 \fBJobCompLoc\fR
 If this specifies a file, it must be writable by user \fBSlurmUser\fR.

@@ -767,7 +767,6 @@ static void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->job_acct_gather_params= xstrdup(conf->job_acct_gather_params);
 	conf_ptr->job_acct_oom_kill    = conf->job_acct_oom_kill;
 
-	conf_ptr->job_ckpt_dir        = xstrdup(conf->job_ckpt_dir);
 	conf_ptr->job_comp_host       = xstrdup(conf->job_comp_host);
 	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
 	conf_ptr->job_comp_port       = conf->job_comp_port;

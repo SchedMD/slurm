@@ -2740,7 +2740,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_acct_gather_freq);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_params);
-	xfree (ctl_conf_ptr->job_ckpt_dir);
 	xfree (ctl_conf_ptr->job_comp_host);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
@@ -2900,7 +2899,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_acct_gather_freq);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_params);
-	xfree (ctl_conf_ptr->job_ckpt_dir);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
 	ctl_conf_ptr->job_comp_port             = 0;
@@ -3696,8 +3694,10 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(tmp);
 	}
 
-	if (!s_p_get_string(&conf->job_ckpt_dir, "JobCheckpointDir", hashtbl))
-		conf->job_ckpt_dir = xstrdup(DEFAULT_JOB_CKPT_DIR);
+	if (s_p_get_string(&temp_str, "JobCheckpointDir", hashtbl)) {
+		xfree(temp_str);
+		debug("Ignoring obsolete JobCheckpointDir option.");
+	}
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
 		if (default_storage_type) {

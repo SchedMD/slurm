@@ -2707,7 +2707,6 @@ typedef struct slurm_ctl_conf {
 	char *job_acct_gather_type; /* job accounting gather type */
 	char *job_acct_gather_params; /* job accounting gather parameters */
 	uint16_t job_acct_oom_kill; /* Enforce mem limit at runtime y|n */
-	char *job_ckpt_dir;	/* directory saving job record checkpoint */
 	char *job_comp_host;	/* job completion logging host */
 	char *job_comp_loc;	/* job completion logging location */
 	char *job_comp_pass;	/* job completion storage password */
