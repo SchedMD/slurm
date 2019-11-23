@@ -1427,10 +1427,6 @@ extern int job_hold_by_assoc_id(uint32_t assoc_id);
  */
 extern int job_hold_by_qos_id(uint32_t qos_id);
 
-/* Perform checkpoint operation on a job */
-extern int job_checkpoint(checkpoint_msg_t *ckpt_ptr, uid_t uid,
-			  int conn_fd, uint16_t protocol_version);
-
 /* log the completion of the specified job */
 extern void job_completion_logger(job_record_t *job_ptr, bool requeue);
 
