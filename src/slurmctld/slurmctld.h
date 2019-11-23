@@ -1498,22 +1498,6 @@ extern void job_pre_resize_acctg(job_record_t *job_ptr);
 extern void job_post_resize_acctg(job_record_t *job_ptr);
 
 /*
- * job_restart - Restart a batch job from checkpointed state
- *
- * Restart a job is similar to submit a new job, except that
- * the job requirements is load from the checkpoint file and
- * the job id is restored.
- *
- * IN ckpt_ptr - checkpoint request message
- * IN uid - user id of the user issuing the RPC
- * IN conn_fd - file descriptor on which to send reply
- * IN protocol_version - slurm protocol version of client
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_restart(checkpoint_msg_t *ckpt_ptr, uid_t uid,
-		       int conn_fd, uint16_t protocol_version);
-
-/*
  * job_signal - signal the specified job, access checks already done
  * IN job_ptr - job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
