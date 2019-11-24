@@ -2873,7 +2873,63 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 {
 	uint32_t uint32_tmp = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		char *temp_str;
+		uint16_t uint16_tmp;
+		safe_unpack32(&step->array_job_id, buffer);
+		safe_unpack32(&step->array_task_id, buffer);
+		safe_unpack32(&step->job_id, buffer);
+		safe_unpack32(&step->step_id, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
+		safe_unpack32(&step->user_id, buffer);
+		safe_unpack32(&step->num_cpus, buffer);
+		safe_unpack32(&step->cpu_freq_min, buffer);
+		safe_unpack32(&step->cpu_freq_max, buffer);
+		safe_unpack32(&step->cpu_freq_gov, buffer);
+		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->task_dist, buffer);
+		safe_unpack32(&step->time_limit, buffer);
+		safe_unpack32(&step->state, buffer);
+		safe_unpack32(&step->srun_pid, buffer);
+
+		safe_unpack_time(&step->start_time, buffer);
+		safe_unpack_time(&step->run_time, buffer);
+
+		safe_unpackstr_xmalloc(&step->cluster, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->partition, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->srun_host, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->resv_ports, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
+		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was ckpt_dir */
+
+		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&step->tres_alloc_str,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&step->start_protocol_ver, buffer);
+
+		safe_unpackstr_xmalloc(&step->cpus_per_tres,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->mem_per_tres,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_bind,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_freq,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_step,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_node,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_socket,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_task,
+				       &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		char *temp_str;
 		uint16_t uint16_tmp;
 		safe_unpack32(&step->array_job_id, buffer);
