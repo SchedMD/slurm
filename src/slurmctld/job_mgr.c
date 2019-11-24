@@ -1356,7 +1356,7 @@ static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer)
 			   SLURM_PROTOCOL_VERSION);
 
 	pack16(0, buffer); /* was ckpt_interval */
-	checkpoint_pack_jobinfo(dump_job_ptr->check_job, buffer,
+	checkpoint_pack_jobinfo(NULL, buffer,
 				SLURM_PROTOCOL_VERSION);
 	packstr_array(dump_job_ptr->spank_job_env,
 		      dump_job_ptr->spank_job_env_size, buffer);
@@ -1447,7 +1447,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	int error_code, i, qos_error;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	job_resources_t *job_resources = NULL;
-	check_jobinfo_t check_job = NULL;
 	slurmdb_assoc_rec_t assoc_rec;
 	slurmdb_qos_rec_t qos_rec;
 	bool job_finished = false;
@@ -1626,9 +1625,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			goto unpack_error;
 
 		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
-		if (checkpoint_alloc_jobinfo(&check_job) ||
-		    checkpoint_unpack_jobinfo(check_job, buffer,
-					      protocol_version))
+		if (checkpoint_unpack_jobinfo(NULL, buffer, protocol_version))
 			goto unpack_error;
 
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
@@ -1856,9 +1853,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			goto unpack_error;
 
 		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
-		if (checkpoint_alloc_jobinfo(&check_job) ||
-		    checkpoint_unpack_jobinfo(check_job, buffer,
-					      protocol_version))
+		if (checkpoint_unpack_jobinfo(NULL, buffer, protocol_version))
 			goto unpack_error;
 
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
@@ -2096,7 +2091,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->job_resrcs   = job_resources;
 	job_ptr->spank_job_env = spank_job_env;
 	job_ptr->spank_job_env_size = spank_job_env_size;
-	job_ptr->check_job    = check_job;
 	job_ptr->start_time   = start_time;
 	job_ptr->state_reason = state_reason;
 	job_ptr->state_reason_prev_db = state_reason_prev_db;
@@ -2305,7 +2299,6 @@ unpack_error:
 	xfree(user_name);
 	xfree(wckey);
 	select_g_select_jobinfo_free(select_jobinfo);
-	checkpoint_free_jobinfo(check_job);
 	if (job_ptr) {
 		if (job_ptr->job_id == 0)
 			job_ptr->job_id = NO_VAL;
@@ -4153,10 +4146,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->array_task_id = NO_VAL;
 
 	job_ptr_pend->batch_host = NULL;
-	if (job_ptr->check_job) {
-		job_ptr_pend->check_job =
-			checkpoint_copy_jobinfo(job_ptr->check_job);
-	}
 	job_ptr_pend->burst_buffer = xstrdup(job_ptr->burst_buffer);
 	job_ptr_pend->burst_buffer_state = xstrdup(job_ptr->burst_buffer_state);
 	job_ptr_pend->clusters = xstrdup(job_ptr->clusters);
@@ -6817,10 +6806,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_ptr->last_sched_eval = time(NULL);
 
 	part_ptr_list = NULL;
-	if ((error_code = checkpoint_alloc_jobinfo(&(job_ptr->check_job)))) {
-		error("Failed to allocate checkpoint info for job");
-		goto cleanup_fail;
-	}
 
 	memcpy(&job_ptr->limit_set, &acct_policy_limit_set,
 	       sizeof(acct_policy_limit_set_t));
@@ -8984,7 +8969,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->batch_features);
 	xfree(job_ptr->batch_host);
 	xfree(job_ptr->burst_buffer);
-	checkpoint_free_jobinfo(job_ptr->check_job);
 	xfree(job_ptr->comment);
 	xfree(job_ptr->clusters);
 	xfree(job_ptr->cpus_per_tres);

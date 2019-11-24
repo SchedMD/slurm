@@ -380,7 +380,6 @@ static void _free_step_rec(step_record_t *step_ptr)
 		switch_g_free_jobinfo (step_ptr->switch_job);
 	}
 	resv_port_free(step_ptr);
-	checkpoint_free_jobinfo (step_ptr->check_job);
 
 	xfree(step_ptr->host);
 	xfree(step_ptr->name);
@@ -2790,8 +2789,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 
 	step_alloc_lps(step_ptr);
 
-	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
-		fatal("%s: checkpoint_alloc_jobinfo error", __func__);
 	*new_step_record = step_ptr;
 
 	if (!with_slurmdbd && !job_ptr->db_index)
@@ -3728,7 +3725,7 @@ extern int dump_job_step_state(void *x, void *arg)
 		switch_g_pack_jobinfo(step_ptr->switch_job, buffer,
 				      SLURM_PROTOCOL_VERSION);
 	}
-	checkpoint_pack_jobinfo(step_ptr->check_job, buffer,
+	checkpoint_pack_jobinfo(NULL, buffer,
 				SLURM_PROTOCOL_VERSION);
 	select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 				     SLURM_PROTOCOL_VERSION);
@@ -3773,7 +3770,6 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 	char *tres_freq = NULL, *tres_per_step = NULL, *tres_per_node = NULL;
 	char *tres_per_socket = NULL, *tres_per_task = NULL;
 	dynamic_plugin_data_t *switch_tmp = NULL;
-	check_jobinfo_t check_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
 	List gres_list = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
@@ -3835,8 +3831,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 						    protocol_version))
 				goto unpack_error;
 		}
-		checkpoint_alloc_jobinfo(&check_tmp);
-		if (checkpoint_unpack_jobinfo(check_tmp, buffer,
+		if (checkpoint_unpack_jobinfo(NULL, buffer,
 					      protocol_version))
 			goto unpack_error;
 
@@ -3947,7 +3942,6 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 	step_ptr->tres_fmt_alloc_str = tres_fmt_alloc_str;
 	tres_fmt_alloc_str = NULL;
 
-	step_ptr->check_job    = check_tmp;
 	step_ptr->cpu_freq_min = cpu_freq_min;
 	step_ptr->cpu_freq_max = cpu_freq_max;
 	step_ptr->cpu_freq_gov = cpu_freq_gov;
@@ -4391,7 +4385,6 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		node_list, NULL, NULL, node_cnt, node_cnt);
 
-	checkpoint_alloc_jobinfo(&step_ptr->check_job);
 	step_ptr->ext_sensors = ext_sensors_alloc();
 	step_ptr->name = xstrdup("extern");
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
@@ -4415,7 +4408,6 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr)
 
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		job_ptr->batch_host, NULL, NULL, 1, 1);
-	checkpoint_alloc_jobinfo(&step_ptr->check_job);
 	step_ptr->ext_sensors = ext_sensors_alloc();
 	step_ptr->name = xstrdup("batch");
 	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
