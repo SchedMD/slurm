@@ -53,7 +53,6 @@
 #include "slurm/slurm.h"
 
 #include "src/common/bitstring.h"
-#include "src/common/checkpoint.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"

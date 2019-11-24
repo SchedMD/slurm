@@ -59,7 +59,6 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
-#include "src/common/checkpoint.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/gres.h"
@@ -521,14 +520,6 @@ int main(int argc, char **argv)
 			fatal("failed to initialize preempt plugin");
 		}
 	}
-	if (checkpoint_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize checkpoint plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize checkpoint plugin");
-		}
-	}
 	if (acct_gather_conf_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize acct_gather plugins");
@@ -893,7 +884,6 @@ int main(int argc, char **argv)
 	acct_gather_conf_destroy();
 	slurm_select_fini();
 	slurm_topo_fini();
-	checkpoint_fini();
 	slurm_auth_fini();
 	switch_fini();
 	route_fini();
