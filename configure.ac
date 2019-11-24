@@ -463,8 +463,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/burst_buffer/common/Makefile
 		 src/plugins/burst_buffer/datawarp/Makefile
 		 src/plugins/burst_buffer/generic/Makefile
-		 src/plugins/checkpoint/Makefile
-		 src/plugins/checkpoint/none/Makefile
 		 src/plugins/cli_filter/Makefile
 		 src/plugins/cli_filter/none/Makefile
 		 src/plugins/core_spec/Makefile

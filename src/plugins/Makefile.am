@@ -6,7 +6,6 @@ SUBDIRS = \
 	acct_gather_filesystem  \
 	auth			\
 	burst_buffer		\
-	checkpoint		\
 	cli_filter		\
 	core_spec		\
 	cred			\
