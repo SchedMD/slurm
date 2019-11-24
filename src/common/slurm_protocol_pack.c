@@ -7765,49 +7765,6 @@ unpack_error:
 }
 
 static void
-_pack_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg, Buf buffer,
-			   uint16_t protocol_version)
-{
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
-		pack32(msg->job_step_id, buffer);
-		pack_time(msg->timestamp, buffer);
-		packstr(msg->image_dir, buffer);
-	} else {
-		error("_pack_checkpoint_tasks_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-	}
-}
-
-static int
-_unpack_checkpoint_tasks_msg(checkpoint_tasks_msg_t ** msg_ptr, Buf buffer,
-			     uint16_t protocol_version)
-{
-	checkpoint_tasks_msg_t *msg;
-	uint32_t uint32_tmp;
-
-	msg = xmalloc(sizeof(checkpoint_tasks_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
-		safe_unpack32(&msg->job_step_id, buffer);
-		safe_unpack_time(&msg->timestamp, buffer);
-		safe_unpackstr_xmalloc(&msg->image_dir, &uint32_tmp, buffer);
-	} else {
-		error("_unpack_checkpoint_tasks_msg: protocol_version "
-		      "%hu not supported", protocol_version);
-		goto unpack_error;
-	}
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_free_checkpoint_tasks_msg(msg);
-	*msg_ptr = NULL;
-	return SLURM_ERROR;
-}
-
-static void
 _pack_reboot_msg(reboot_msg_t * msg, Buf buffer,
 		 uint16_t protocol_version)
 {
@@ -11587,11 +11544,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				       buffer,
 				       msg->protocol_version);
 		break;
-	case REQUEST_CHECKPOINT_TASKS:
-		_pack_checkpoint_tasks_msg((checkpoint_tasks_msg_t *) msg->data,
-					   buffer,
-					   msg->protocol_version);
-		break;
 	case REQUEST_JOB_STEP_INFO:
 		_pack_job_step_info_req_msg((job_step_info_request_msg_t
 					     *) msg->data, buffer,
@@ -12264,11 +12216,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_cancel_tasks_msg((signal_tasks_msg_t **) &
 					      (msg->data), buffer,
 					      msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_TASKS:
-		rc = _unpack_checkpoint_tasks_msg((checkpoint_tasks_msg_t **) &
-						  (msg->data), buffer,
-						  msg->protocol_version);
 		break;
 	case REQUEST_JOB_STEP_INFO:
 		rc = _unpack_job_step_info_req_msg(

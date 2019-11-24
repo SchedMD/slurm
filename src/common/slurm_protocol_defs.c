@@ -4830,9 +4830,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_TERMINATE_TASKS:
 		slurm_free_signal_tasks_msg(data);
 		break;
-	case REQUEST_CHECKPOINT_TASKS:
-		slurm_free_checkpoint_tasks_msg(data);
-		break;
 	case REQUEST_KILL_PREEMPTED:
 	case REQUEST_KILL_TIMELIMIT:
 		slurm_free_timelimit_msg(data);
@@ -5431,9 +5428,8 @@ rpc_num2string(uint16_t opcode)
 		return "MESSAGE_TASK_EXIT";
 	case REQUEST_SIGNAL_TASKS:
 		return "REQUEST_SIGNAL_TASKS";
-	case REQUEST_CHECKPOINT_TASKS:
-		return "REQUEST_CHECKPOINT_TASKS";
-	case REQUEST_TERMINATE_TASKS:
+
+	case REQUEST_TERMINATE_TASKS:				/* 6006 */
 		return "REQUEST_TERMINATE_TASKS";
 	case REQUEST_REATTACH_TASKS:
 		return "REQUEST_REATTACH_TASKS";

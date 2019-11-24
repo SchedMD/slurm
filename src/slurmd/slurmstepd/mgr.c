@@ -925,15 +925,6 @@ extern void stepd_send_step_complete_msgs(stepd_step_rec_t *job)
 	slurm_mutex_unlock(&step_complete.lock);
 }
 
-/* This dummy function is provided so that the checkpoint functions can
- * 	resolve this symbol name (as needed for some of the checkpoint
- *	functions used by slurmctld). */
-extern void agent_queue_request(void *dummy)
-{
-	fatal("Invalid agent_queue_request function call, likely from "
-	      "checkpoint plugin");
-}
-
 static void _set_job_state(stepd_step_rec_t *job, slurmstepd_state_t new_state)
 {
 	slurm_mutex_lock(&job->state_mutex);
@@ -1208,7 +1199,6 @@ job_manager(stepd_step_rec_t *job)
 	    (switch_init(1) != SLURM_SUCCESS)			||
 	    (slurm_proctrack_init() != SLURM_SUCCESS)		||
 	    (slurmd_task_init() != SLURM_SUCCESS)		||
-	    (checkpoint_init() != SLURM_SUCCESS)		||
 	    (jobacct_gather_init() != SLURM_SUCCESS)		||
 	    (acct_gather_profile_init() != SLURM_SUCCESS)	||
 	    (slurm_cred_init() != SLURM_SUCCESS)		||
@@ -1266,19 +1256,6 @@ job_manager(stepd_step_rec_t *job)
 		/* error("switch_g_job_init: %m"); already logged */
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail2;
-	}
-
-	/* fork necessary threads for checkpoint */
-	if (checkpoint_stepd_prefork(job) != SLURM_SUCCESS) {
-		error("Failed checkpoint_stepd_prefork");
-		rc = SLURM_ERROR;
-		xstrfmtcat(err_msg,
-			   "checkpoint_stepd_prefork failure for job %u.%u on %s",
-			   job->jobid, job->stepid, conf->hostname);
-		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
-		xfree(err_msg);
-		io_close_task_fds(job);
-		goto fail3;
 	}
 
 	/* fork necessary threads for MPI */

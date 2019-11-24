@@ -63,7 +63,6 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/checkpoint.h"
 #include "src/common/env.h"
 #include "src/common/gres.h"
 #include "src/common/fd.h"

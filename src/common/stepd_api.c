@@ -437,34 +437,6 @@ stepd_notify_job(int fd, uint16_t protocol_version, char *message)
 }
 
 /*
- * Send a checkpoint request to all tasks of a job step.
- */
-int
-stepd_checkpoint(int fd, uint16_t protocol_version,
-		 time_t timestamp, char *image_dir)
-{
-	int req = REQUEST_CHECKPOINT_TASKS;
-	int rc;
-
-	safe_write(fd, &req, sizeof(int));
-	safe_write(fd, &timestamp, sizeof(time_t));
-	if (image_dir) {
-		rc = strlen(image_dir) + 1;
-		safe_write(fd, &rc, sizeof(int));
-		safe_write(fd, image_dir, rc);
-	} else {
-		rc = 0;
-		safe_write(fd, &rc, sizeof(int));
-	}
-
-	/* Receive the return code */
-	safe_read(fd, &rc, sizeof(int));
-	return rc;
- rwfail:
-	return -1;
-}
-
-/*
  * Send a signal to the proctrack container of a job step.
  */
 int

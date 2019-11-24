@@ -48,7 +48,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "src/common/checkpoint.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/fd.h"
 #include "src/common/eio.h"
@@ -87,7 +86,6 @@ static int _handle_mem_limits(int fd, stepd_step_rec_t *job);
 static int _handle_uid(int fd, stepd_step_rec_t *job);
 static int _handle_nodeid(int fd, stepd_step_rec_t *job);
 static int _handle_signal_container(int fd, stepd_step_rec_t *job, uid_t uid);
-static int _handle_checkpoint_tasks(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_pid_in_container(int fd, stepd_step_rec_t *job);
 static void *_wait_extern_pid(void *args);
@@ -539,10 +537,6 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, pid_t remote_pid)
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
 		rc = _handle_signal_container(fd, job, uid);
 		break;
-	case REQUEST_CHECKPOINT_TASKS:
-		debug("Handling REQUEST_CHECKPOINT_TASKS");
-		rc = _handle_checkpoint_tasks(fd, job, uid);
-		break;
 	case REQUEST_STATE:
 		debug("Handling REQUEST_STATE");
 		rc = _handle_state(fd, job);
@@ -890,85 +884,6 @@ done:
 	safe_write(fd, &errnum, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
-	return SLURM_ERROR;
-}
-
-static int
-_handle_checkpoint_tasks(int fd, stepd_step_rec_t *job, uid_t uid)
-{
-	int rc = SLURM_SUCCESS;
-	time_t timestamp;
-	int len;
-	char *image_dir = NULL;
-
-	debug3("_handle_checkpoint_tasks for job %u.%u",
-	       job->jobid, job->stepid);
-
-	safe_read(fd, &timestamp, sizeof(time_t));
-	safe_read(fd, &len, sizeof(int));
-	if (len) {
-		image_dir = xmalloc (len);
-		safe_read(fd, image_dir, len); /* '\0' terminated */
-	}
-
-	debug3("  uid = %d", uid);
-	if (uid != job->uid && !_slurm_authorized_user(uid)) {
-		debug("checkpoint req from uid %ld for job %u.%u "
-		      "owned by uid %ld",
-		      (long)uid, job->jobid, job->stepid, (long)job->uid);
-		rc = EPERM;
-		goto done;
-	}
-
-	if (job->ckpt_timestamp &&
-	    timestamp == job->ckpt_timestamp) {
-		debug("duplicate checkpoint req for job %u.%u, "
-		      "timestamp %ld. discarded.",
-		      job->jobid, job->stepid, (long)timestamp);
-		rc = ESLURM_ALREADY_DONE; /* EINPROGRESS? */
-		goto done;
-	}
-
-	/*
-	 * Sanity checks
-	 */
-	if (job->pgid <= (pid_t)1) {
-		debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]",
-		       job->jobid, job->stepid, job->jmgr_pid, job->pgid);
-		rc = ESLURMD_JOB_NOTRUNNING;
-		goto done;
-	}
-
-	slurm_mutex_lock(&suspend_mutex);
-	if (suspended) {
-		rc = ESLURMD_STEP_SUSPENDED;
-		slurm_mutex_unlock(&suspend_mutex);
-		goto done;
-	}
-
-	/* set timestamp in case another request comes */
-	job->ckpt_timestamp = timestamp;
-
-	/* call the plugin to send the request */
-	if (checkpoint_signal_tasks(job, image_dir) != SLURM_SUCCESS) {
-		rc = -1;
-		verbose("Error sending checkpoint request to %u.%u: %s",
-			job->jobid, job->stepid, slurm_strerror(rc));
-	} else {
-		verbose("Sent checkpoint request to %u.%u",
-			job->jobid, job->stepid);
-	}
-
-	slurm_mutex_unlock(&suspend_mutex);
-
-done:
-	/* Send the return code */
-	safe_write(fd, &rc, sizeof(int));
-	xfree(image_dir);
-	return SLURM_SUCCESS;
-
-rwfail:
-	xfree(image_dir);
 	return SLURM_ERROR;
 }
 
