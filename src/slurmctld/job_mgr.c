@@ -1355,11 +1355,6 @@ static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer)
 	pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 			   SLURM_PROTOCOL_VERSION);
 
-	pack16(0, buffer); /* was ckpt_interval */
-	/* fake out the former checkpoint plugin info */
-	pack16(0, buffer); /* CHECK_NONE */
-	pack32(0, buffer);
-
 	packstr_array(dump_job_ptr->spank_job_env,
 		      dump_job_ptr->spank_job_env_size, buffer);
 
@@ -1467,7 +1462,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	limit_set.tres = xcalloc(slurmctld_tres_cnt, sizeof(uint16_t));
 
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		uint16_t uint16_tmp;
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
 
@@ -1625,18 +1619,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		if (unpack_job_resources(&job_resources, buffer,
 					 protocol_version))
 			goto unpack_error;
-
-		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
-		/* fake out the former checkpoint plugin */
-		{
-			uint16_t id;
-			uint32_t size;
-			safe_unpack16(&id, buffer);
-			safe_unpack32(&size, buffer);
-			/* skip past any checkpoint plugin info */
-			size += get_buf_offset(buffer);
-			set_buf_offset(buffer, size);
-		}
 
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
 				     buffer);
