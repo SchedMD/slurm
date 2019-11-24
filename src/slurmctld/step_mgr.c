@@ -55,7 +55,6 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
-#include "src/common/checkpoint.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
@@ -3725,8 +3724,11 @@ extern int dump_job_step_state(void *x, void *arg)
 		switch_g_pack_jobinfo(step_ptr->switch_job, buffer,
 				      SLURM_PROTOCOL_VERSION);
 	}
-	checkpoint_pack_jobinfo(NULL, buffer,
-				SLURM_PROTOCOL_VERSION);
+
+	/* fake out the former checkpoint plugin info */
+	pack16(0, buffer); /* CHECK_NONE */
+	pack32(0, buffer);
+
 	select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 				     SLURM_PROTOCOL_VERSION);
 	packstr(step_ptr->tres_alloc_str, buffer);
@@ -3831,9 +3833,17 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 						    protocol_version))
 				goto unpack_error;
 		}
-		if (checkpoint_unpack_jobinfo(NULL, buffer,
-					      protocol_version))
-			goto unpack_error;
+
+		/* fake out the former checkpoint plugin */
+		{
+			uint16_t id;
+			uint32_t size;
+			safe_unpack16(&id, buffer);
+			safe_unpack32(&size, buffer);
+			/* skip past any checkpoint plugin info */
+			size += get_buf_offset(buffer);
+			set_buf_offset(buffer, size);
+		}
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))
