@@ -1825,11 +1825,9 @@ static void
 _exec_prog(slurm_msg_t *msg)
 {
 	pid_t child;
-	int pfd[2], status, exit_code = 0, i;
+	int pfd[2], status;
 	ssize_t len;
-	char *argv[4], buf[256] = "";
-	time_t now = time(NULL);
-	bool checkpoint = false;
+	char buf[256] = "";
 	srun_exec_msg_t *exec_msg = msg->data;
 
 	if ((exec_msg->argc < 1) || (exec_msg->argv == NULL) ||
@@ -1846,31 +1844,10 @@ _exec_prog(slurm_msg_t *msg)
 			exec_msg->job_id, exec_msg->step_id);
 	}
 
-	if (xstrcmp(exec_msg->argv[0], "ompi-checkpoint") == 0) {
-		if (srun_ppid)
-			checkpoint = true;
-		else {
-			error("Can not create checkpoint, no srun_ppid set");
-			exit_code = EINVAL;
-			goto fini;
-		}
-	}
-	if (checkpoint) {
-		/* OpenMPI specific checkpoint support */
-		info("Checkpoint started at %s", slurm_ctime2(&now));
-		for (i=0; (exec_msg->argv[i] && (i<2)); i++) {
-			argv[i] = exec_msg->argv[i];
-		}
-		snprintf(buf, sizeof(buf), "%ld", (long) srun_ppid);
-		argv[i] = buf;
-		argv[i+1] = NULL;
-	}
-
 	if (pipe(pfd) == -1) {
 		snprintf(buf, sizeof(buf), "pipe: %s", strerror(errno));
 		error("%s", buf);
-		exit_code = errno;
-		goto fini;
+		return;
 	}
 
 	child = fork();
@@ -1885,38 +1862,18 @@ _exec_prog(slurm_msg_t *msg)
 		dup2(pfd[1], 2);	/* stderr to pipe */
 		close(pfd[0]);
 		close(pfd[1]);
-		if (checkpoint)
-			execvp(exec_msg->argv[0], argv);
-		else
-			execvp(exec_msg->argv[0], exec_msg->argv);
+		execvp(exec_msg->argv[0], exec_msg->argv);
 		error("execvp(%s): %m", exec_msg->argv[0]);
 	} else if (child < 0) {
 		snprintf(buf, sizeof(buf), "fork: %s", strerror(errno));
 		error("%s", buf);
-		exit_code = errno;
-		goto fini;
+		return;
 	} else {
 		close(pfd[1]);
 		len = read(pfd[0], buf, sizeof(buf));
 		if (len >= 1)
 			close(pfd[0]);
 		waitpid(child, &status, 0);
-		exit_code = WEXITSTATUS(status);
-	}
-
-fini:	if (checkpoint) {
-		now = time(NULL);
-		if (exit_code) {
-			info("Checkpoint completion code %d at %s",
-			     exit_code, slurm_ctime2(&now));
-		} else {
-			info("Checkpoint completed successfully at %s",
-			     slurm_ctime2(&now));
-		}
-		if (buf[0])
-			info("Checkpoint location: %s", buf);
-		slurm_checkpoint_complete(exec_msg->job_id, exec_msg->step_id,
-			time(NULL), (uint32_t) exit_code, buf);
 	}
 }
 
