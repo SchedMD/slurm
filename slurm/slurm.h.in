@@ -1995,7 +1995,6 @@ typedef struct {
 	uint8_t open_mode;
 	char *acctg_freq;
 	bool pty;
-	char *restart_dir;
 	char **spank_job_env;	/* environment variables for job prolog/epilog
 				 * scripts as set by SPANK plugins */
 	uint32_t spank_job_env_size;	/* element count in spank_env */

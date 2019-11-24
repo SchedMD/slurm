@@ -7260,7 +7260,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
 		packnull(buffer); /* was ckpt_dir */
-		packstr(msg->restart_dir, buffer);
+		packnull(buffer); /* was restart_dir */
 
 		select_g_select_jobinfo_pack(msg->select_jobinfo,
 					     buffer, protocol_version);
@@ -7352,7 +7352,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
 		packnull(buffer); /* was ckpt_dir */
-		packstr(msg->restart_dir, buffer);
+		packnull(buffer); /* was restart_dir */
 
 		select_g_select_jobinfo_pack(msg->select_jobinfo,
 					     buffer, protocol_version);
@@ -7527,7 +7527,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		xfree(temp_str); /* was ckpt_dir */
-		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was restart_dir */
 		if (select_g_select_jobinfo_unpack(&msg->select_jobinfo,
 						   buffer, protocol_version)) {
 			goto unpack_error;
@@ -7664,7 +7665,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		xfree(temp_str); /* was ckpt_dir */
-		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was restart_dir */
 		if (select_g_select_jobinfo_unpack(&msg->select_jobinfo,
 						   buffer, protocol_version)) {
 			goto unpack_error;
@@ -9018,7 +9020,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		packstr(msg->script,   buffer);
 		packstr(msg->work_dir, buffer);
 		packnull(buffer); /* was ckpt_dir */
-		packstr(msg->restart_dir, buffer);
+		packnull(buffer); /* was restart_dir */
 
 		packstr(msg->std_err, buffer);
 		packstr(msg->std_in, buffer);
@@ -9120,8 +9122,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		xfree(temp_str); /* was ckpt_dir */
-		safe_unpackstr_xmalloc(&launch_msg_ptr->restart_dir,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was restart_dir */
 
 		safe_unpackstr_xmalloc(&launch_msg_ptr->std_err, &uint32_tmp,
 				       buffer);

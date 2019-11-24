@@ -574,8 +574,6 @@ struct job_details {
 					 * this job */
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
-	char *restart_dir;		/* restart execution from ckpt images
-					 * in this dir */
 	uint8_t share_res;		/* set if job can share resources with
 					 * other jobs */
 	char *std_err;			/* pathname of job's stderr file */

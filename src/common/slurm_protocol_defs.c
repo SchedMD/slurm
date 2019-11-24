@@ -966,7 +966,6 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		xfree(msg->nodes);
 		xfree(msg->partition);
 		xfree(msg->qos);
-		xfree(msg->restart_dir);
 		xfree(msg->resv_name);
 		xfree(msg->script);
 		free_buf(msg->script_buf);
@@ -1354,7 +1353,6 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->task_epilog);
 	xfree(msg->complete_nodelist);
 
-	xfree(msg->restart_dir);
 	xfree(msg->partition);
 
 	if (msg->switch_job)

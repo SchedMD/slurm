@@ -655,7 +655,6 @@ static void _delete_job_details(job_record_t *job_entry)
 	xfree(job_entry->details->std_out);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
 	xfree(job_entry->details->req_nodes);
-	xfree(job_entry->details->restart_dir);
 	xfree(job_entry->details->work_dir);
 	xfree(job_entry->details->x11_magic_cookie);
 	xfree(job_entry->details->x11_target);
@@ -2390,7 +2389,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->std_out,       buffer);
 	packstr(detail_ptr->work_dir,  buffer);
 	packnull(buffer); /* was ckpt_dir */
-	packstr(detail_ptr->restart_dir, buffer);
+	packnull(buffer); /* was restart_dir */
 
 	pack_multi_core_data(detail_ptr->mc_ptr, buffer,
 			     SLURM_PROTOCOL_VERSION);
@@ -2406,7 +2405,6 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	char *features = NULL, *cpu_bind = NULL, *dependency = NULL;
 	char *orig_dependency = NULL, *mem_bind, *cluster_features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
-	char *restart_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
@@ -2480,7 +2478,8 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
 		safe_unpackstr_xmalloc(&temp_str, &name_len, buffer);
 		xfree(temp_str); /* was ckpt_dir */
-		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &name_len, buffer);
+		xfree(temp_str); /* was restart_dir */
 
 		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
@@ -2529,7 +2528,6 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	xfree(job_ptr->details->std_out);
 	xfree(job_ptr->details->req_nodes);
 	xfree(job_ptr->details->work_dir);
-	xfree(job_ptr->details->restart_dir);
 
 	/* now put the details into the job record */
 	job_ptr->details->acctg_freq = acctg_freq;
@@ -2584,7 +2582,6 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	job_ptr->details->task_dist = task_dist;
 	job_ptr->details->whole_node = whole_node;
 	job_ptr->details->work_dir = work_dir;
-	job_ptr->details->restart_dir = restart_dir;
 
 	return SLURM_SUCCESS;
 
@@ -2609,7 +2606,6 @@ unpack_error:
 	xfree(out);
 	xfree(req_nodes);
 	xfree(work_dir);
-	xfree(restart_dir);
 	return SLURM_ERROR;
 }
 
@@ -4308,7 +4304,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 			bit_copy(job_details->req_node_bitmap);
 	}
 	details_new->req_nodes = xstrdup(job_details->req_nodes);
-	details_new->restart_dir = xstrdup(job_details->restart_dir);
 	details_new->std_err = xstrdup(job_details->std_err);
 	details_new->std_in = xstrdup(job_details->std_in);
 	details_new->std_out = xstrdup(job_details->std_out);

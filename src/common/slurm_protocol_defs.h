@@ -881,7 +881,6 @@ typedef struct launch_tasks_request_msg {
 	dynamic_plugin_data_t *switch_job; /* switch credential for the job */
 	job_options_t options;  /* Arbitrary job options */
 	char *complete_nodelist;
-	char *restart_dir;	/* restart from checkpoint if set */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	dynamic_plugin_data_t *select_jobinfo; /* select context, opaque data */
@@ -1080,7 +1079,7 @@ typedef struct batch_job_launch_msg {
 	char *qos;              /* qos the job is running under */
 	char *std_out;		/* pathname of stdout */
 	char *work_dir;		/* full pathname of working directory */
-	char *restart_dir;	/* retart execution from image in this dir */
+
 	uint32_t argc;
 	char **argv;
 	uint32_t envc;		/* element count in environment */

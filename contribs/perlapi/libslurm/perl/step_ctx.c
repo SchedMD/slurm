@@ -211,7 +211,6 @@ hv_to_slurm_step_launch_params(HV *hv, slurm_step_launch_params_t *params)
 	FETCH_FIELD(hv, params, open_mode, uint8_t, FALSE);
 	FETCH_FIELD(hv, params, acctg_freq, charp, FALSE);
 	FETCH_FIELD(hv, params, pty, bool, FALSE);
-	FETCH_FIELD(hv, params, restart_dir, charp, FALSE);
 	
 	if((svp = hv_fetch(hv, "spank_job_env", 13, FALSE))) {
 		if(SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {

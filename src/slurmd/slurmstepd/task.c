@@ -501,14 +501,6 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		job->env[0] = (char *)NULL;
 	}
 
-	if (job->restart_dir) {
-		info("restart from %s", job->restart_dir);
-		/* no return on success */
-		checkpoint_restart_task(job, job->restart_dir, task->gtid);
-		error("Restart task failed: %m");
-		exit(errno);
-	}
-
 	if (task->argv[0] == NULL) {
 		error("No executable program specified for this task");
 		exit(2);
