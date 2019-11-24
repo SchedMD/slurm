@@ -4736,7 +4736,7 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 
 #if 0
 /* Don't submit new sibling jobs if they're not found on the cluster. They could
- * have been removed while the cluster was donw. */
+ * have been removed while the cluster was down. */
 		} else if (!job_ptr->fed_details->cluster_lock) {
 			/* If the origin job isn't locked, then submit a sibling
 			 * to this cluster. */
