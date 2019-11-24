@@ -337,7 +337,6 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->cpu_freq_min = msg->cpu_freq_min;
 	job->cpu_freq_max = msg->cpu_freq_max;
 	job->cpu_freq_gov = msg->cpu_freq_gov;
-	job->ckpt_dir = xstrdup(msg->ckpt_dir);
 	job->restart_dir = xstrdup(msg->restart_dir);
 	job->cpus_per_task = msg->cpus_per_task;
 
@@ -571,7 +570,6 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	job->cwd     = xstrdup(msg->work_dir);
 
-	job->ckpt_dir = xstrdup(msg->ckpt_dir);
 	job->restart_dir = xstrdup(msg->restart_dir);
 
 	job->env     = _array_copy(msg->envc, msg->environment);
@@ -662,7 +660,6 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	FREE_NULL_LIST(job->outgoing_cache);
 	FREE_NULL_LIST(job->job_gres_list);
 	FREE_NULL_LIST(job->step_gres_list);
-	xfree(job->ckpt_dir);
 	xfree(job->cpu_bind);
 	xfree(job->cwd);
 	xfree(job->envtp);

@@ -2564,33 +2564,6 @@ int _print_step_array_task_id(job_step_info_t * step, int width, bool right,
 
 }
 
-int _print_step_chpt_dir(job_step_info_t * step, int width, bool right,
-			 char* suffix)
-{
-	if (step == NULL)
-		_print_str("CHECKPOINT_DIR", width, right, true);
-	else
-		_print_str(step->ckpt_dir, width, right, true);
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-
-}
-
-int _print_step_chpt_interval(job_step_info_t * step, int width, bool right,
-			      char* suffix)
-{
-	if (step == NULL)
-		_print_str("CHECKPOINT_INTERVAL", width, right, true);
-	else
-		_print_secs((step->ckpt_interval*60), width, width, right);
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
 int _print_step_job_id(job_step_info_t * step, int width, bool right,
 		       char* suffix)
 {

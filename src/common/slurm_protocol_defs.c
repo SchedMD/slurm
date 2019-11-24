@@ -832,7 +832,6 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->array_inx);
 		xfree(msg->batch_features);
 		xfree(msg->burst_buffer);
-		xfree(msg->ckpt_dir);
 		xfree(msg->clusters);
 		xfree(msg->comment);
 		xfree(msg->cpu_bind);
@@ -954,7 +953,6 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 				xfree(msg->argv[i]);
 			xfree(msg->argv);
 		}
-		xfree(msg->ckpt_dir);
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
@@ -1219,7 +1217,6 @@ extern void slurm_free_job_step_create_request_msg(
 		job_step_create_request_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->ckpt_dir);
 		xfree(msg->cpus_per_tres);
 		xfree(msg->features);
 		xfree(msg->host);
@@ -1357,7 +1354,6 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->task_epilog);
 	xfree(msg->complete_nodelist);
 
-	xfree(msg->ckpt_dir);
 	xfree(msg->restart_dir);
 	xfree(msg->partition);
 
@@ -4064,7 +4060,6 @@ static void _free_all_step_info (job_step_info_response_msg_t *msg)
 extern void slurm_free_job_step_info_members(job_step_info_t * msg)
 {
 	if (msg) {
-		xfree(msg->ckpt_dir);
 		xfree(msg->cluster);
 		xfree(msg->tres_per_node);
 		xfree(msg->mem_per_tres);

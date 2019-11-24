@@ -949,12 +949,6 @@ _handle_checkpoint_tasks(int fd, stepd_step_rec_t *job, uid_t uid)
 	/* set timestamp in case another request comes */
 	job->ckpt_timestamp = timestamp;
 
-	/* TODO: do we need job->ckpt_dir any more,
-	 *	except for checkpoint/xlch? */
-/*	if (! image_dir) { */
-/*		image_dir = xstrdup(job->ckpt_dir); */
-/*	} */
-
 	/* call the plugin to send the request */
 	if (checkpoint_signal_tasks(job, image_dir) != SLURM_SUCCESS) {
 		rc = -1;

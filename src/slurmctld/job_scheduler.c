@@ -2093,7 +2093,6 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->std_in = xstrdup(job_ptr->details->std_in);
 	launch_msg_ptr->std_out = xstrdup(job_ptr->details->std_out);
 	launch_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
-	launch_msg_ptr->ckpt_dir = xstrdup(job_ptr->details->ckpt_dir);
 	launch_msg_ptr->restart_dir = xstrdup(job_ptr->details->restart_dir);
 	launch_msg_ptr->argc = job_ptr->details->argc;
 	launch_msg_ptr->argv = xduparray(job_ptr->details->argc,

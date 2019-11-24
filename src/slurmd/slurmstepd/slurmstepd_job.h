@@ -226,7 +226,6 @@ typedef struct {
 	jobacctinfo_t *jobacct;
 	uint8_t        open_mode;	/* stdout/err append or truncate */
 	job_options_t  options;
-	char          *ckpt_dir;
 	time_t         ckpt_timestamp;
 	char          *restart_dir;	/* restart from context */
 	uint32_t       resv_id;		/* Cray/BASIL reservation ID	*/

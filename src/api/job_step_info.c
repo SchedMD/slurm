@@ -225,9 +225,7 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 
 	/****** Line 5 ******/
 	xstrcat(out, line_end);
-	xstrfmtcat(out, "ResvPorts=%s Checkpoint=%u CheckpointDir=%s",
-		   job_step_ptr->resv_ports, job_step_ptr->ckpt_interval,
-		   job_step_ptr->ckpt_dir);
+	xstrfmtcat(out, "ResvPorts=%s", job_step_ptr->resv_ports);
 
 	/****** Line 6 ******/
 	xstrcat(out, line_end);

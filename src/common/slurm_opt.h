@@ -198,7 +198,6 @@ typedef struct {
 
 	char *array_inx;		/* --array			*/
 	char *batch_features;		/* --batch			*/
-	int ckpt_interval;		/* --checkpoint (int minutes)	*/
 	char *export_env;		/* --export			*/
 	char *export_file;		/* --export-file=file		*/
 	bool ignore_pbs;		/* --ignore-pbs			*/
@@ -227,7 +226,6 @@ typedef struct {
 	char *alloc_nodelist;		/* grabbed from the environment	*/
 	char *bcast_file;		/* --bcast, copy executable to compute nodes */
 	bool bcast_flag;		/* --bcast, copy executable to compute nodes */
-	int ckpt_interval;		/* --checkpoint, in minutes	*/
 	char *cmd_name;			/* name of command to execute	*/
 	uint16_t compress;		/* --compress (for --bcast option) */
 	bool core_spec_set;		/* core_spec explicitly set	*/

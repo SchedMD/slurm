@@ -1037,17 +1037,6 @@ extern int parse_long_format( char* format_long )
 					field_size,
 					right_justify,
 					suffix );
-			else if (!xstrcasecmp(token, "chptdir"))
-				step_format_add_chpt_dir( params.format_list,
-							  field_size,
-							  right_justify,
-							  suffix );
-			else if ( !xstrcasecmp(token, "chptinter"))
-				step_format_add_chpt_interval(
-					params.format_list,
-					field_size,
-					right_justify,
-					suffix );
 			else if ( !xstrcasecmp(token, "jobid"))
 				step_format_add_job_id( params.format_list,
 							field_size,

@@ -59,8 +59,6 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	}
 	FETCH_FIELD(hv, job_desc, array_inx, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, begin_time, time_t, FALSE);
-	FETCH_FIELD(hv, job_desc, ckpt_interval, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc, ckpt_dir, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, comment, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, contiguous, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, cpu_bind, charp, FALSE);

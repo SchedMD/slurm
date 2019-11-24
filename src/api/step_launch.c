@@ -326,7 +326,6 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.partition	= params->partition;
 	if (params->pty)
 		launch.flags |= LAUNCH_PTY;
-	launch.ckpt_dir         = params->ckpt_dir;
 	launch.restart_dir      = params->restart_dir;
 	launch.acctg_freq	= params->acctg_freq;
 	launch.open_mode        = params->open_mode;
@@ -520,7 +519,6 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.partition	= params->partition;
 	if (params->pty)
 		launch.flags |= LAUNCH_PTY;
-	launch.ckpt_dir         = params->ckpt_dir;
 	launch.restart_dir      = params->restart_dir;
 	launch.acctg_freq	= params->acctg_freq;
 	launch.open_mode        = params->open_mode;

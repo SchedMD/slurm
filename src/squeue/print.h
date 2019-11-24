@@ -613,11 +613,6 @@ int step_format_add_function(List list, int width, bool right_justify,
 #define step_format_add_array_task_id(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix, \
 				 _print_step_array_task_id)
-#define step_format_add_chpt_dir(list,wid,right,suffix) \
-	step_format_add_function(list,wid,right,suffix,_print_step_chpt_dir)
-#define step_format_add_chpt_interval(list,wid,right,suffix) \
-	step_format_add_function(list,wid,right,suffix, \
-				 _print_step_chpt_interval)
 #define step_format_add_job_id(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_job_id)
 #define step_format_add_network(list,wid,right,suffix) \
@@ -681,10 +676,6 @@ int _print_step_num_tasks(job_step_info_t * step, int width,
 int _print_step_array_job_id(job_step_info_t * step, int width, bool right,
 			     char* suffix);
 int _print_step_array_task_id(job_step_info_t * step, int width, bool right,
-			      char* suffix);
-int _print_step_chpt_dir(job_step_info_t * step, int width, bool right,
-			 char* suffix);
-int _print_step_chpt_interval(job_step_info_t * step, int width, bool right,
 			      char* suffix);
 int _print_step_job_id(job_step_info_t * step, int width, bool right,
 		       char* suffix);

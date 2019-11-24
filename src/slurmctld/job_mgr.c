@@ -635,7 +635,6 @@ static void _delete_job_details(job_record_t *job_entry)
 	for (i=0; i<job_entry->details->argc; i++)
 		xfree(job_entry->details->argv[i]);
 	xfree(job_entry->details->argv);
-	xfree(job_entry->details->ckpt_dir);
 	xfree(job_entry->details->cpu_bind);
 	FREE_NULL_LIST(job_entry->details->depend_list);
 	xfree(job_entry->details->dependency);
@@ -1357,7 +1356,7 @@ static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer)
 	pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 			   SLURM_PROTOCOL_VERSION);
 
-	pack16(dump_job_ptr->ckpt_interval, buffer);
+	pack16(0, buffer); /* was ckpt_interval */
 	checkpoint_pack_jobinfo(dump_job_ptr->check_job, buffer,
 				SLURM_PROTOCOL_VERSION);
 	packstr_array(dump_job_ptr->spank_job_env,
@@ -1427,7 +1426,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	uint16_t details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, direct_set_prio;
 	uint16_t alloc_resp_port, other_port, mail_type, tmp16;
-	uint16_t restart_cnt, ckpt_interval;
+	uint16_t restart_cnt;
 	uint16_t wait_all_nodes, warn_flags = 0, warn_signal, warn_time;
 	acct_policy_limit_set_t limit_set;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
@@ -1468,6 +1467,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	limit_set.tres = xcalloc(slurmctld_tres_cnt, sizeof(uint16_t));
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp;
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
 
@@ -1626,7 +1626,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 					 protocol_version))
 			goto unpack_error;
 
-		safe_unpack16(&ckpt_interval, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
 		if (checkpoint_alloc_jobinfo(&check_job) ||
 		    checkpoint_unpack_jobinfo(check_job, buffer,
 					      protocol_version))
@@ -1699,6 +1699,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&job_ptr->tres_per_task, &name_len,
 				       buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint16_t uint16_tmp;
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
 
@@ -1855,7 +1856,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 					 protocol_version))
 			goto unpack_error;
 
-		safe_unpack16(&ckpt_interval, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
 		if (checkpoint_alloc_jobinfo(&check_job) ||
 		    checkpoint_unpack_jobinfo(check_job, buffer,
 					      protocol_version))
@@ -2096,7 +2097,6 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	job_ptr->job_resrcs   = job_resources;
 	job_ptr->spank_job_env = spank_job_env;
 	job_ptr->spank_job_env_size = spank_job_env_size;
-	job_ptr->ckpt_interval = ckpt_interval;
 	job_ptr->check_job    = check_job;
 	job_ptr->start_time   = start_time;
 	job_ptr->state_reason = state_reason;
@@ -2389,7 +2389,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->std_in,        buffer);
 	packstr(detail_ptr->std_out,       buffer);
 	packstr(detail_ptr->work_dir,  buffer);
-	packstr(detail_ptr->ckpt_dir,  buffer);
+	packnull(buffer); /* was ckpt_dir */
 	packstr(detail_ptr->restart_dir, buffer);
 
 	pack_multi_core_data(detail_ptr->mc_ptr, buffer,
@@ -2406,7 +2406,7 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	char *features = NULL, *cpu_bind = NULL, *dependency = NULL;
 	char *orig_dependency = NULL, *mem_bind, *cluster_features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
-	char *ckpt_dir = NULL, *restart_dir = NULL;
+	char *restart_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
@@ -2427,6 +2427,8 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 
 	/* unpack the job's details from the buffer */
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *temp_str;
+
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -2476,7 +2478,8 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
 		safe_unpackstr_xmalloc(&out, &name_len, buffer);
 		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
-		safe_unpackstr_xmalloc(&ckpt_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &name_len, buffer);
+		xfree(temp_str); /* was ckpt_dir */
 		safe_unpackstr_xmalloc(&restart_dir, &name_len, buffer);
 
 		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
@@ -2526,7 +2529,6 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	xfree(job_ptr->details->std_out);
 	xfree(job_ptr->details->req_nodes);
 	xfree(job_ptr->details->work_dir);
-	xfree(job_ptr->details->ckpt_dir);
 	xfree(job_ptr->details->restart_dir);
 
 	/* now put the details into the job record */
@@ -2582,7 +2584,6 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	job_ptr->details->task_dist = task_dist;
 	job_ptr->details->whole_node = whole_node;
 	job_ptr->details->work_dir = work_dir;
-	job_ptr->details->ckpt_dir = ckpt_dir;
 	job_ptr->details->restart_dir = restart_dir;
 
 	return SLURM_SUCCESS;
@@ -2608,7 +2609,6 @@ unpack_error:
 	xfree(out);
 	xfree(req_nodes);
 	xfree(work_dir);
-	xfree(ckpt_dir);
 	xfree(restart_dir);
 	return SLURM_ERROR;
 }
@@ -3446,18 +3446,6 @@ extern int kill_job_by_front_end_name(char *node_name)
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
 
-				/* restart from periodic checkpoint */
-				if (job_ptr->ckpt_interval &&
-				    job_ptr->ckpt_time &&
-				    job_ptr->details->ckpt_dir) {
-					xfree(job_ptr->details->restart_dir);
-					job_ptr->details->restart_dir =
-						xstrdup (job_ptr->details->
-							 ckpt_dir);
-					xstrfmtcat(job_ptr->details->
-						   restart_dir,
-						   "/%u", job_ptr->job_id);
-				}
 				job_ptr->restart_cnt++;
 
 				/* clear signal sent flag on requeue */
@@ -3720,18 +3708,6 @@ extern int kill_running_job_by_node_name(char *node_name)
 				if (job_ptr->node_cnt)
 					job_ptr->job_state |= JOB_COMPLETING;
 
-				/* restart from periodic checkpoint */
-				if (job_ptr->ckpt_interval &&
-				    job_ptr->ckpt_time &&
-				    job_ptr->details->ckpt_dir) {
-					xfree(job_ptr->details->restart_dir);
-					job_ptr->details->restart_dir =
-						xstrdup (job_ptr->details->
-							 ckpt_dir);
-					xstrfmtcat(job_ptr->details->
-						   restart_dir,
-						   "/%u", job_ptr->job_id);
-				}
 				job_ptr->restart_cnt++;
 
 				/* clear signal sent flag on requeue */
@@ -4295,7 +4271,6 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 			details_new->argv[i] = xstrdup(job_details->argv[i]);
 		}
 	}
-	details_new->ckpt_dir = xstrdup(job_details->ckpt_dir);
 	details_new->cpu_bind = xstrdup(job_details->cpu_bind);
 	details_new->cpu_bind_type = job_details->cpu_bind_type;
 	details_new->cpu_freq_min = job_details->cpu_freq_min;
@@ -7114,7 +7089,6 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->alloc_node, "alloc_node", 1024)	||
 	    _test_strlen(job_desc->array_inx, "array_inx", 1024 * 4)	||
 	    _test_strlen(job_desc->burst_buffer, "burst_buffer",1024*8) ||
-	    _test_strlen(job_desc->ckpt_dir, "ckpt_dir", 1024)		||
 	    _test_strlen(job_desc->comment, "comment", 1024)		||
 	    _test_strlen(job_desc->cpu_bind, "cpu-bind", 1024 * 128)	||
 	    _test_strlen(job_desc->cpus_per_tres, "cpus_per_tres", 1024)||
@@ -7794,7 +7768,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->bit_flags = job_desc->bitflags;
 	job_ptr->bit_flags &= ~BACKFILL_TEST;
 	job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
-	job_ptr->ckpt_interval = job_desc->ckpt_interval;
 	job_ptr->spank_job_env = job_desc->spank_job_env;
 	job_ptr->spank_job_env_size = job_desc->spank_job_env_size;
 	job_desc->spank_job_env = (char **) NULL; /* nothing left to free */
@@ -7940,11 +7913,6 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	select_g_select_jobinfo_set(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_NETWORK,
 				    job_ptr->network);
-
-	if (job_desc->ckpt_dir)
-		detail_ptr->ckpt_dir = xstrdup(job_desc->ckpt_dir);
-	else
-		detail_ptr->ckpt_dir = xstrdup(detail_ptr->work_dir);
 
 	job_ptr->clusters = xstrdup(job_desc->clusters);
 
@@ -16781,8 +16749,6 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 		job_desc->argv[i]   = xstrdup(details->argv[i]);
 	job_desc->begin_time        = details->begin_time;
 	job_desc->bitflags 	    = job_ptr->bit_flags;
-	job_desc->ckpt_interval     = job_ptr->ckpt_interval;
-	job_desc->ckpt_dir          = xstrdup(details->ckpt_dir);
 	job_desc->clusters          = xstrdup(job_ptr->clusters);
 	job_desc->comment           = xstrdup(job_ptr->comment);
 	job_desc->contiguous        = details->contiguous;

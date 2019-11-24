@@ -736,8 +736,6 @@ typedef struct set_debug_level_msg {
 } set_debug_level_msg_t;
 
 typedef struct job_step_specs {
-	uint16_t ckpt_interval;	/* checkpoint creation interval (minutes) */
-	char *ckpt_dir; 	/* path to store checkpoint image files */
 	uint32_t cpu_count;	/* count of required processors */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
@@ -883,7 +881,6 @@ typedef struct launch_tasks_request_msg {
 	dynamic_plugin_data_t *switch_job; /* switch credential for the job */
 	job_options_t options;  /* Arbitrary job options */
 	char *complete_nodelist;
-	char *ckpt_dir;		/* checkpoint path */
 	char *restart_dir;	/* restart from checkpoint if set */
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
@@ -1083,7 +1080,6 @@ typedef struct batch_job_launch_msg {
 	char *qos;              /* qos the job is running under */
 	char *std_out;		/* pathname of stdout */
 	char *work_dir;		/* full pathname of working directory */
-	char *ckpt_dir;		/* location to store checkpoint image */
 	char *restart_dir;	/* retart execution from image in this dir */
 	uint32_t argc;
 	char **argv;

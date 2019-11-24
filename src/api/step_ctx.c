@@ -120,8 +120,6 @@ static job_step_create_request_msg_t *_create_step_request(
 {
 	job_step_create_request_msg_t *step_req =
 		xmalloc(sizeof(job_step_create_request_msg_t));
-	step_req->ckpt_dir = xstrdup(step_params->ckpt_dir);
-	step_req->ckpt_interval = step_params->ckpt_interval;
 	step_req->cpu_count = step_params->cpu_count;
 	step_req->cpu_freq_min = step_params->cpu_freq_min;
 	step_req->cpu_freq_max = step_params->cpu_freq_max;

@@ -2131,7 +2131,7 @@ extern void _pack_job_step_create_request_msg(
 		pack32(msg->task_dist, buffer);
 		pack16(msg->plane_size, buffer);
 		pack16(msg->port, buffer);
-		pack16(msg->ckpt_interval, buffer);
+		pack16(0, buffer); /* was ckpt_interval */
 		pack16(msg->exclusive, buffer);
 		pack16(msg->immediate, buffer);
 		pack16(msg->resv_port_cnt, buffer);
@@ -2141,7 +2141,7 @@ extern void _pack_job_step_create_request_msg(
 		packstr(msg->name, buffer);
 		packstr(msg->network, buffer);
 		packstr(msg->node_list, buffer);
-		packstr(msg->ckpt_dir, buffer);
+		packnull(buffer); /* was ckpt_dir */
 		packstr(msg->features, buffer);
 
 		pack8(msg->no_kill, buffer);
@@ -2175,6 +2175,8 @@ extern int _unpack_job_step_create_request_msg(
 	*msg = tmp_ptr;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *temp_str;
+		uint16_t uint16_tmp;
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->step_id, buffer);
 		safe_unpack32(&tmp_ptr->user_id, buffer);
@@ -2192,7 +2194,7 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack32(&tmp_ptr->task_dist, buffer);
 		safe_unpack16(&tmp_ptr->plane_size, buffer);
 		safe_unpack16(&tmp_ptr->port, buffer);
-		safe_unpack16(&tmp_ptr->ckpt_interval, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
 		safe_unpack16(&tmp_ptr->exclusive, buffer);
 		safe_unpack16(&tmp_ptr->immediate, buffer);
 		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
@@ -2204,8 +2206,8 @@ extern int _unpack_job_step_create_request_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->ckpt_dir, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was ckpt_dir */
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp,
 				       buffer);
 
@@ -2872,11 +2874,13 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 	uint32_t uint32_tmp = 0;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *temp_str;
+		uint16_t uint16_tmp;
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
 		safe_unpack32(&step->job_id, buffer);
 		safe_unpack32(&step->step_id, buffer);
-		safe_unpack16(&step->ckpt_interval, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
 		safe_unpack32(&step->user_id, buffer);
 		safe_unpack32(&step->num_cpus, buffer);
 		safe_unpack32(&step->cpu_freq_min, buffer);
@@ -2899,7 +2903,8 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 		safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
 		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
-		safe_unpackstr_xmalloc(&step->ckpt_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was ckpt_dir */
 
 		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
 						   buffer, protocol_version))
@@ -5885,7 +5890,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack8(job_desc_ptr->overcommit,  buffer);
 		packstr(job_desc_ptr->acctg_freq, buffer);
 		pack32(job_desc_ptr->num_tasks,  buffer);
-		pack16(job_desc_ptr->ckpt_interval, buffer);
+		pack16(0, buffer); /* was ckpt_interval */
 
 		packstr(job_desc_ptr->req_nodes, buffer);
 		packstr(job_desc_ptr->exc_nodes, buffer);
@@ -5900,7 +5905,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->std_in, buffer);
 		packstr(job_desc_ptr->std_out, buffer);
 		packstr(job_desc_ptr->work_dir, buffer);
-		packstr(job_desc_ptr->ckpt_dir, buffer);
+		packnull(buffer); /* was ckpt_dir */
 
 		pack16(job_desc_ptr->immediate, buffer);
 		pack16(job_desc_ptr->reboot, buffer);
@@ -6024,7 +6029,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack8(job_desc_ptr->overcommit,  buffer);
 		packstr(job_desc_ptr->acctg_freq, buffer);
 		pack32(job_desc_ptr->num_tasks,  buffer);
-		pack16(job_desc_ptr->ckpt_interval, buffer);
+		pack16(0, buffer); /* was ckpt_interval */
 
 		packstr(job_desc_ptr->req_nodes, buffer);
 		packstr(job_desc_ptr->exc_nodes, buffer);
@@ -6039,7 +6044,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->std_in, buffer);
 		packstr(job_desc_ptr->std_out, buffer);
 		packstr(job_desc_ptr->work_dir, buffer);
-		packstr(job_desc_ptr->ckpt_dir, buffer);
+		packnull(buffer); /* was ckpt_dir */
 
 		pack16(job_desc_ptr->immediate, buffer);
 		pack16(job_desc_ptr->reboot, buffer);
@@ -6143,6 +6148,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 
 	/* alloc memory for structure */
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		char *temp_str;
+		uint16_t uint16_tmp;
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;
 
@@ -6210,7 +6217,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->acctg_freq,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&job_desc_ptr->num_tasks,  buffer);
-		safe_unpack16(&job_desc_ptr->ckpt_interval, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
 
 		safe_unpackstr_xmalloc(&job_desc_ptr->req_nodes,
 				       &uint32_tmp, buffer);
@@ -6234,8 +6241,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->work_dir,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->ckpt_dir,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was ckpt_dir */
 
 		safe_unpack16(&job_desc_ptr->immediate, buffer);
 		safe_unpack16(&job_desc_ptr->reboot, buffer);
@@ -6329,6 +6336,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_task,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *temp_str;
+		uint16_t uint16_tmp;
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
 		*job_desc_buffer_ptr = job_desc_ptr;
 
@@ -6395,7 +6404,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->acctg_freq,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&job_desc_ptr->num_tasks,  buffer);
-		safe_unpack16(&job_desc_ptr->ckpt_interval, buffer);
+		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
 
 		safe_unpackstr_xmalloc(&job_desc_ptr->req_nodes,
 				       &uint32_tmp, buffer);
@@ -6419,8 +6428,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->work_dir,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->ckpt_dir,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was ckpt_dir */
 
 		safe_unpack16(&job_desc_ptr->immediate, buffer);
 		safe_unpack16(&job_desc_ptr->reboot, buffer);
@@ -7250,7 +7259,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
-		packstr(msg->ckpt_dir, buffer);
+		packnull(buffer); /* was ckpt_dir */
 		packstr(msg->restart_dir, buffer);
 
 		select_g_select_jobinfo_pack(msg->select_jobinfo,
@@ -7342,7 +7351,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
-		packstr(msg->ckpt_dir, buffer);
+		packnull(buffer); /* was ckpt_dir */
 		packstr(msg->restart_dir, buffer);
 
 		select_g_select_jobinfo_pack(msg->select_jobinfo,
@@ -7373,6 +7382,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
+		char *temp_str;
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
 
@@ -7515,7 +7525,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->cpu_freq_min, buffer);
 		safe_unpack32(&msg->cpu_freq_max, buffer);
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
-		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was ckpt_dir */
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
 		if (select_g_select_jobinfo_unpack(&msg->select_jobinfo,
 						   buffer, protocol_version)) {
@@ -7533,6 +7544,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 				       buffer);
 		safe_unpack16(&msg->x11_target_port, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *temp_str;
+
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_step_id, buffer);
 
@@ -7649,7 +7662,8 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->cpu_freq_min, buffer);
 		safe_unpack32(&msg->cpu_freq_max, buffer);
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
-		safe_unpackstr_xmalloc(&msg->ckpt_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was ckpt_dir */
 		safe_unpackstr_xmalloc(&msg->restart_dir, &uint32_tmp, buffer);
 		if (select_g_select_jobinfo_unpack(&msg->select_jobinfo,
 						   buffer, protocol_version)) {
@@ -9003,7 +9017,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 		packstr(msg->nodes,    buffer);
 		packstr(msg->script,   buffer);
 		packstr(msg->work_dir, buffer);
-		packstr(msg->ckpt_dir, buffer);
+		packnull(buffer); /* was ckpt_dir */
 		packstr(msg->restart_dir, buffer);
 
 		packstr(msg->std_err, buffer);
@@ -9052,6 +9066,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 	*msg = launch_msg_ptr;
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *temp_str;
+
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->pack_jobid, buffer);
 		safe_unpack32(&launch_msg_ptr->step_id, buffer);
@@ -9102,8 +9118,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&launch_msg_ptr->ckpt_dir, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		xfree(temp_str); /* was ckpt_dir */
 		safe_unpackstr_xmalloc(&launch_msg_ptr->restart_dir,
 				       &uint32_tmp, buffer);
 

@@ -22,9 +22,6 @@ job_step_info_to_hv(job_step_info_t *step_info, HV *hv)
 
 	STORE_FIELD(hv, step_info, array_job_id, uint32_t);
 	STORE_FIELD(hv, step_info, array_task_id, uint32_t);
-	if(step_info->ckpt_dir)
-		STORE_FIELD(hv, step_info, ckpt_dir, charp);
-	STORE_FIELD(hv, step_info, ckpt_interval, uint16_t);
 	if (step_info->tres_per_node)
 		STORE_FIELD(hv, step_info, tres_per_node, charp);
 	STORE_FIELD(hv, step_info, job_id, uint32_t);
@@ -72,8 +69,6 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 
 	FETCH_FIELD(hv, step_info, array_job_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, array_task_id, uint32_t, TRUE);
-	FETCH_FIELD(hv, step_info, ckpt_dir, charp, FALSE);
-	FETCH_FIELD(hv, step_info, ckpt_interval, uint16_t, TRUE);
 	FETCH_FIELD(hv, step_info, tres_per_node, charp, FALSE);
 	FETCH_FIELD(hv, step_info, job_id, uint16_t, TRUE);
 	FETCH_FIELD(hv, step_info, name, charp, FALSE);
