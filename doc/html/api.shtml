@@ -225,38 +225,6 @@ job step.</li>
 </ul>
 
 
-<h3>Checkpoint</h3>
-<ul>
-
-<li><b>slurm_checkpoint_able</b> &mdash; Note that a specific job or
-job step is eligible for checkpoint.</li>
-
-<li><b>slurm_checkpoint_complete</b> &mdash; Note that a requested
-checkpoint has completed.</li>
-
-<li><b>slurm_checkpoint_create</b> &mdash; Request a checkpoint for
-a specific job step. Continue execution upon completion of the
-checkpoint.</li>
-
-<li><b>slurm_checkpoint_vacate</b> &mdash; Request a checkpoint for
-a specific job step. Terminate execution upon completion of the
-checkpoint.</li>
-
-<li><b>slurm_checkpoint_disable</b> &mdash; Make the identified job step
-non-checkpointable.</li>
-
-<li><b>slurm_checkpoint_enable</b> &mdash; Make the identified job
-step checkpointable.</li>
-
-<li><b>slurm_checkpoint_error</b> &mdash; Get error information for
-the last checkpoint operation on a given job step.</li>
-
-<li><b>slurm_checkpoint_restart</b> &mdash; Request that a previously
-checkpointed job resume execution.</li>
-
-</ul>
-
-
 <h3>Administrative Functions</h3>
 <p>Most of these functions can only be executed by user <i>root</i>.</p>
 <ul>
@@ -309,6 +277,6 @@ allocated by <i>slurm_hostlist_create</i>.
 
 </ul>
 
-<p style="text-align:center;">Last modified 13 November 2005</p>
+<p style="text-align:center;">Last modified 23 November 2019</p>
 
 <!--#include virtual="footer.txt"-->

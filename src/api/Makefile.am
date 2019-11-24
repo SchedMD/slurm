@@ -93,7 +93,6 @@ slurmapi_src =           \
 	burst_buffer_info.c \
 	assoc_mgr_info.c    \
 	cancel.c         \
-	checkpoint.c     \
 	complete.c       \
 	config_info.c    \
 	federation_info.c \
