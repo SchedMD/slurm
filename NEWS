@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
     FAIL_DEFER for immediate alloc requests if defer in SchedulerParameters.
  -- Make slurmctld fatal if unable to load a script or a job environment when
     building the launch job message.
+ -- Removed the checkpoint plugin interface and all associated API calls.
 
 * Changes in Slurm 19.05.5
 ==========================

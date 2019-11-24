@@ -33,6 +33,8 @@ HIGHLIGHTS
     configuration sections for heterogeneous / condo-style clusters.
  -- Added slurm.conf option MaxDBDMsgs to control how many messages will be
     stored in the slurmctld before throwing them away when the slurmdbd is down.
+ -- The checkpoint plugin interface and all associated API calls have been
+    removed.
 
 SPECIAL NOTES FOR CRAY SYSTEMS
 ==============================
