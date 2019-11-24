@@ -2655,7 +2655,68 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	multi_core_data_t *mc_ptr;
 
 	/* unpack the job's details from the buffer */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		char *temp_str;
+
+		safe_unpack32(&min_cpus, buffer);
+		safe_unpack32(&max_cpus, buffer);
+		safe_unpack32(&min_nodes, buffer);
+		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&num_tasks, buffer);
+
+		safe_unpackstr_xmalloc(&acctg_freq, &name_len, buffer);
+		safe_unpack16(&contiguous, buffer);
+		safe_unpack16(&core_spec, buffer);
+		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack32(&nice, buffer);
+		safe_unpack16(&ntasks_per_node, buffer);
+		safe_unpack16(&requeue, buffer);
+		safe_unpack32(&task_dist, buffer);
+
+		safe_unpack8(&share_res, buffer);
+		safe_unpack8(&whole_node, buffer);
+
+		safe_unpackstr_xmalloc(&cpu_bind, &name_len, buffer);
+		safe_unpack16(&cpu_bind_type, buffer);
+		safe_unpackstr_xmalloc(&mem_bind, &name_len, buffer);
+		safe_unpack16(&mem_bind_type, buffer);
+		safe_unpack16(&plane_size, buffer);
+
+		safe_unpack8(&open_mode, buffer);
+		safe_unpack8(&overcommit, buffer);
+		safe_unpack8(&prolog_running, buffer);
+
+		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack32(&pn_min_tmp_disk, buffer);
+		safe_unpack32(&cpu_freq_min, buffer);
+		safe_unpack32(&cpu_freq_max, buffer);
+		safe_unpack32(&cpu_freq_gov, buffer);
+		safe_unpack_time(&begin_time, buffer);
+		safe_unpack_time(&accrue_time, buffer);
+		safe_unpack_time(&submit_time, buffer);
+
+		safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&features,   &name_len, buffer);
+		safe_unpackstr_xmalloc(&cluster_features, &name_len, buffer);
+		safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
+		safe_unpackstr_xmalloc(&orig_dependency, &name_len, buffer);
+
+		safe_unpackstr_xmalloc(&err, &name_len, buffer);
+		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
+		safe_unpackstr_xmalloc(&out, &name_len, buffer);
+		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+		safe_unpackstr_xmalloc(&temp_str, &name_len, buffer);
+		xfree(temp_str); /* was ckpt_dir */
+		safe_unpackstr_xmalloc(&temp_str, &name_len, buffer);
+		xfree(temp_str); /* was restart_dir */
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&argv, &argc, buffer);
+		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		char *temp_str;
 
 		safe_unpack32(&min_cpus, buffer);
