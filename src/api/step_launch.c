@@ -99,7 +99,6 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 /**********************************************************************
  * Message handler declarations
  **********************************************************************/
-static pid_t  srun_ppid = (pid_t) 0;
 static uid_t  slurm_uid;
 static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
@@ -1812,11 +1811,6 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 
 	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
 		(long) msg->gid, msg->cwd, nodeid);
-}
-
-void record_ppid(void)
-{
-	srun_ppid = getppid();
 }
 
 /* This is used to initiate an OpenMPI checkpoint program,

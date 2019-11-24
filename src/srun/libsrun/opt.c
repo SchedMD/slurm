@@ -479,7 +479,6 @@ env_vars_t env_vars[] = {
   { "SLURM_BCAST", LONG_OPT_BCAST },
   { "SLURM_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
   { "SLURM_CLUSTERS", 'M' },
-  { "SLURM_CHECKPOINT", LONG_OPT_CHECKPOINT },
   { "SLURM_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SLURM_COMPRESS", LONG_OPT_COMPRESS },
   { "SLURM_CONSTRAINT", 'C' },
@@ -1342,9 +1341,9 @@ static void _usage(void)
 "            [-D path] [--immediate[=secs]] [--overcommit] [--no-kill]\n"
 "            [--oversubscribe] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#] [--gres=list]\n"
-"            [-T threads] [-W sec] [--checkpoint=time] [--gres-flags=opts]\n"
+"            [-T threads] [-W sec] [--gres-flags=opts]\n"
 "            [--licenses=names] [--clusters=cluster_names]\n"
-"            [--restart-dir=dir] [--qos=qos] [--time-min=minutes]\n"
+"            [--qos=qos] [--time-min=minutes]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
@@ -1389,7 +1388,6 @@ static void _help(void)
 "      --bcast=<dest_path>     Copy executable file to compute nodes\n"
 "  -b, --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
-"      --checkpoint=time       job step checkpoint interval\n"
 "      --comment=name          arbitrary comment\n"
 "      --compress[=library]    data compression library used with --bcast\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
@@ -1453,8 +1451,6 @@ static void _help(void)
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "      --reboot                reboot block before starting job\n"
 "  -r, --relative=n            run job step relative to node n of allocation\n"
-"      --restart-dir=dir       directory of checkpoint image files to restart\n"
-"                              from\n"
 "  -s, --oversubscribe         over-subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --signal=[B:]num[@time] send signal when time limit within time seconds\n"

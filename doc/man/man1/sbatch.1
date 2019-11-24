@@ -246,14 +246,6 @@ already passed for that year, in which case the next year is used.
 .RE
 
 .TP
-\fB\-\-checkpoint\fR=<\fItime\fR>
-Specifies the interval between creating checkpoints of the job step.
-By default, the job step will have no checkpoints created.
-Acceptable time formats include "minutes", "minutes:seconds",
-"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
-"days\-hours:minutes:seconds".
-
-.TP
 \fB\-\-cluster\-constraint\fR=[!]<\fIlist\fR>
 Specifies features that a federated cluster must have to have a sibling job
 submitted to it. Slurm will attempt to submit a sibling job to a cluster if it
@@ -1901,9 +1893,6 @@ Same as \fB\-a, \-\-array\fR
 .TP
 \fBSBATCH_BATCH\fR
 Same as \fB\-\-batch\fR
-.TP
-\fBSBATCH_CHECKPOINT\fR
-Same as \fB\-\-checkpoint\fR
 .TP
 \fBSBATCH_CLUSTERS\fR or \fBSLURM_CLUSTERS\fR
 Same as \fB\-\-clusters\fR

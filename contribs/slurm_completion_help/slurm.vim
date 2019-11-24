@@ -79,8 +79,6 @@ syn match 	shSlurmOption	contained	'--socket-per-node=' nextgroup=shSlurmNumber
 syn match 	shSlurmOption	contained	'--cores-per-socket=' nextgroup=shSlurmNumber
 syn match 	shSlurmOption	contained	'--threads-per-core=' nextgroup=shSlurmNumber
 syn match 	shSlurmOption	contained	'--begin=' nextgroup=shSlurmString
-syn match    	shSlurmOption	contained	'--checkpoint=' nextgroup=shSlurmString
-syn match    	shSlurmOption	contained	'--checkpoint-dir=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--comment=' nextgroup=shSlurmIdentifier
 syn match    	shSlurmOption	contained	'--constraint=' nextgroup=shSlurmString
 syn match    	shSlurmOption	contained	'--contiguous'

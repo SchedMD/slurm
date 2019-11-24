@@ -343,14 +343,14 @@ typedef enum {
 	REQUEST_CANCEL_JOB_STEP,
 	DEFUNCT_RPC_5006,
 	REQUEST_UPDATE_JOB_STEP,
-	DEFUNCT_RPC_5008, /* free for reuse */
-	REQUEST_CHECKPOINT,
-	RESPONSE_CHECKPOINT,		/* 5010 */
-	REQUEST_CHECKPOINT_COMP,
-	REQUEST_CHECKPOINT_TASK_COMP,
+	DEFUNCT_RPC_5008,
+	DEFUNCT_RPC_5009,
+	DEFUNCT_RPC_5010,		/* 5010 */
+	DEFUNCT_RPC_5011,
 	DEFUNCT_RPC_5012,
+	DEFUNCT_RPC_5013,
 	REQUEST_SUSPEND,
-	DEFUNCT_RPC_5014,
+	DEFUNCT_RPC_5015,
 	REQUEST_STEP_COMPLETE,
 	REQUEST_COMPLETE_JOB_ALLOCATION,
 	REQUEST_COMPLETE_BATCH_SCRIPT,
@@ -695,13 +695,6 @@ typedef struct signal_tasks_msg {
 	uint32_t job_step_id;
 	uint16_t signal;
 } signal_tasks_msg_t;
-
-typedef struct checkpoint_tasks_msg {
-	uint32_t job_id;
-	uint32_t job_step_id;
-	time_t timestamp;
-	char *image_dir;
-} checkpoint_tasks_msg_t;
 
 typedef struct epilog_complete_msg {
 	uint32_t job_id;
@@ -1119,38 +1112,6 @@ typedef struct srun_exec_msg {
 	char **  argv;		/* program arguments */
 } srun_exec_msg_t;
 
-typedef struct checkpoint_msg {
-	uint16_t op;		/* checkpoint operation, see enum check_opts */
-	uint16_t data;		/* operation specific data */
-	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* slurm step_id */
-	char *image_dir;	/* locate to store the context images.
-				 * NULL for default */
-} checkpoint_msg_t;
-
-typedef struct checkpoint_comp_msg {
-	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* slurm step_id */
-	time_t   begin_time;	/* time checkpoint began */
-	uint32_t error_code;	/* error code on failure */
-	char *   error_msg;	/* error message on failure */
-} checkpoint_comp_msg_t;
-
-typedef struct checkpoint_task_comp_msg {
-	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* slurm step_id */
-	uint32_t task_id;	/* task id */
-	time_t   begin_time;	/* time checkpoint began */
-	uint32_t error_code;	/* error code on failure */
-	char *   error_msg;	/* error message on failure */
-} checkpoint_task_comp_msg_t;
-
-typedef struct checkpoint_resp_msg {
-	time_t   event_time;	/* time of checkpoint start/finish */
-	uint32_t error_code;	/* error code on failure */
-	char   * error_msg;	/* error message on failure */
-} checkpoint_resp_msg_t;
-
 typedef struct kvs_get_msg {
 	uint32_t task_id;	/* job step's task id */
 	uint32_t size;		/* count of tasks in job */
@@ -1371,7 +1332,6 @@ extern int slurm_sort_char_list_asc(void *, void *);
 extern int slurm_sort_char_list_desc(void *, void *);
 
 /* free message functions */
-extern void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg);
 extern void slurm_free_last_update_msg(last_update_msg_t * msg);
 extern void slurm_free_return_code_msg(return_code_msg_t * msg);
 extern void slurm_free_reroute_msg(reroute_msg_t *msg);
@@ -1477,10 +1437,6 @@ extern void slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 extern void slurm_free_srun_step_missing_msg(srun_step_missing_msg_t * msg);
 extern void slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 extern void slurm_free_srun_user_msg(srun_user_msg_t * msg);
-extern void slurm_free_checkpoint_msg(checkpoint_msg_t *msg);
-extern void slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
-extern void slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg);
-extern void slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 extern void slurm_free_suspend_msg(suspend_msg_t *msg);
 extern void slurm_free_suspend_int_msg(suspend_int_msg_t *msg);
 extern void slurm_free_top_job_msg(top_job_msg_t *msg);

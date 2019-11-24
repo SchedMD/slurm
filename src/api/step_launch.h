@@ -124,12 +124,6 @@ void step_launch_state_alter(slurm_step_ctx_t *ctx);
 void step_launch_state_destroy(struct step_launch_state *sls);
 
 /*
- * Record the parent process ID of the program which spawned this.
- * Needed to locate the mpirun program for OpenMPI checkpoint
- */
-void record_ppid(void);
-
-/*
  * Notify the step_launch_state that an I/O connection went bad.
  * If the node is suspected to be down, abort the job.
  */

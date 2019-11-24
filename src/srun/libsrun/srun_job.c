@@ -671,7 +671,6 @@ extern void init_srun(int argc, char **argv,
 		}
 	}
 	_post_opts(opt_list);
-	record_ppid();
 
 	/*
 	 * reinit log with new verbosity (if changed by command line)

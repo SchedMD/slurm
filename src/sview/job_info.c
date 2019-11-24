@@ -679,8 +679,6 @@ static void _set_active_combo_job(GtkComboBox *combo,
 			action = 2;
 		else if (!xstrcasecmp(temp_char, "Resume"))
 			action = 3;
-		else if (!xstrcasecmp(temp_char, "Checkpoint"))
-			action = 4;
 		else if (!xstrcasecmp(temp_char, "Requeue"))
 			action = 5;
 		else
@@ -3615,11 +3613,6 @@ extern GtkListStore *create_model_job(int type)
 		gtk_list_store_set(model, &iter,
 				   1, SORTID_ACTION,
 				   0, "Suspend/Resume",
-				   -1);
-		gtk_list_store_append(model, &iter);
-		gtk_list_store_set(model, &iter,
-				   1, SORTID_ACTION,
-				   0, "Checkpoint",
 				   -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,

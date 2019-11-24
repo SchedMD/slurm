@@ -168,12 +168,6 @@ slurmstepd_info_t *stepd_get_info(int fd);
 int stepd_notify_job(int fd, uint16_t protocol_version, char *message);
 
 /*
- * Send a checkpoint request to all tasks of a job step.
- */
-int stepd_checkpoint(int fd, uint16_t protocol_version,
-		     time_t timestamp, char *image_dir);
-
-/*
  * Send a signal to the proctrack container of a job step.
  */
 int stepd_signal_container(int fd, uint16_t protocol_version, int signal,

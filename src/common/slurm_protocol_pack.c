@@ -9702,152 +9702,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer,
-		     uint16_t protocol_version)
-{
-	xassert(msg);
-
-	pack16(msg->op,      buffer ) ;
-	pack16(msg->data,    buffer ) ;
-	pack32(msg->job_id,  buffer ) ;
-	pack32(msg->step_id, buffer ) ;
-	packstr((char *)msg->image_dir, buffer ) ;
-}
-
-static int
-_unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer,
-		       uint16_t protocol_version)
-{
-	checkpoint_msg_t * msg;
-	uint32_t uint32_tmp;
-	xassert(msg_ptr);
-
-	msg = xmalloc ( sizeof (checkpoint_msg_t) ) ;
-	*msg_ptr = msg ;
-
-	safe_unpack16(&msg->op, buffer ) ;
-	safe_unpack16(&msg->data, buffer ) ;
-	safe_unpack32(&msg->job_id, buffer ) ;
-	safe_unpack32(&msg->step_id, buffer ) ;
-	safe_unpackstr_xmalloc(&msg->image_dir, &uint32_tmp, buffer ) ;
-	return SLURM_SUCCESS;
-
-unpack_error:
-	*msg_ptr = NULL;
-	slurm_free_checkpoint_msg(msg);
-	return SLURM_ERROR;
-}
-
-static void
-_pack_checkpoint_comp(checkpoint_comp_msg_t *msg, Buf buffer,
-		      uint16_t protocol_version)
-{
-	xassert(msg);
-
-	pack32((uint32_t)msg -> job_id,  buffer ) ;
-	pack32((uint32_t)msg -> step_id, buffer ) ;
-	pack32((uint32_t)msg -> error_code, buffer ) ;
-	packstr ( msg -> error_msg, buffer ) ;
-	pack_time ( msg -> begin_time, buffer ) ;
-}
-
-static int
-_unpack_checkpoint_comp(checkpoint_comp_msg_t **msg_ptr, Buf buffer,
-			uint16_t protocol_version)
-{
-	uint32_t uint32_tmp;
-	checkpoint_comp_msg_t * msg;
-	xassert(msg_ptr);
-
-	msg = xmalloc ( sizeof (checkpoint_comp_msg_t) );
-	*msg_ptr = msg ;
-
-	safe_unpack32(& msg -> job_id  , buffer ) ;
-	safe_unpack32(& msg -> step_id , buffer ) ;
-	safe_unpack32(& msg -> error_code , buffer ) ;
-	safe_unpackstr_xmalloc ( & msg -> error_msg, & uint32_tmp , buffer ) ;
-	safe_unpack_time ( & msg -> begin_time , buffer ) ;
-	return SLURM_SUCCESS;
-
-unpack_error:
-	*msg_ptr = NULL;
-	slurm_free_checkpoint_comp_msg(msg);
-	return SLURM_ERROR;
-}
-
-static void
-_pack_checkpoint_task_comp(checkpoint_task_comp_msg_t *msg, Buf buffer,
-			   uint16_t protocol_version)
-{
-	xassert(msg);
-
-	pack32((uint32_t)msg -> job_id,  buffer ) ;
-	pack32((uint32_t)msg -> step_id, buffer ) ;
-	pack32((uint32_t)msg -> task_id, buffer ) ;
-	pack32((uint32_t)msg -> error_code, buffer ) ;
-	packstr ( msg -> error_msg, buffer ) ;
-	pack_time ( msg -> begin_time, buffer ) ;
-}
-
-static int
-_unpack_checkpoint_task_comp(checkpoint_task_comp_msg_t **msg_ptr, Buf buffer,
-			     uint16_t protocol_version)
-{
-	uint32_t uint32_tmp;
-	checkpoint_task_comp_msg_t * msg;
-	xassert(msg_ptr);
-
-	msg = xmalloc ( sizeof (checkpoint_task_comp_msg_t) );
-	*msg_ptr = msg ;
-
-	safe_unpack32(& msg -> job_id  , buffer ) ;
-	safe_unpack32(& msg -> step_id , buffer ) ;
-	safe_unpack32(& msg -> task_id , buffer ) ;
-	safe_unpack32(& msg -> error_code , buffer ) ;
-	safe_unpackstr_xmalloc ( & msg -> error_msg, & uint32_tmp , buffer ) ;
-	safe_unpack_time ( & msg -> begin_time , buffer ) ;
-	return SLURM_SUCCESS;
-
-unpack_error:
-	*msg_ptr = NULL;
-	slurm_free_checkpoint_task_comp_msg(msg);
-	return SLURM_ERROR;
-}
-
-static void
-_pack_checkpoint_resp_msg(checkpoint_resp_msg_t *msg, Buf buffer,
-			  uint16_t protocol_version)
-{
-	xassert(msg);
-
-	pack_time ( msg -> event_time, buffer ) ;
-	pack32((uint32_t)msg -> error_code,  buffer ) ;
-	packstr ( msg -> error_msg, buffer ) ;
-}
-
-static int
-_unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer,
-			    uint16_t protocol_version)
-{
-	checkpoint_resp_msg_t * msg;
-	uint32_t uint32_tmp;
-	xassert(msg_ptr);
-
-	msg = xmalloc ( sizeof (checkpoint_resp_msg_t) ) ;
-	*msg_ptr = msg ;
-
-	safe_unpack_time ( & msg -> event_time, buffer ) ;
-	safe_unpack32(& msg -> error_code , buffer ) ;
-	safe_unpackstr_xmalloc ( & msg -> error_msg, & uint32_tmp , buffer ) ;
-	return SLURM_SUCCESS;
-
-unpack_error:
-	*msg_ptr = NULL;
-	slurm_free_checkpoint_resp_msg(msg);
-	return SLURM_ERROR;
-}
-
 static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer,
 			     uint16_t protocol_version)
 {
@@ -11707,26 +11561,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_net_forward_msg((net_forward_msg_t *)msg->data,
 				      buffer, msg->protocol_version);
 		break;
-	case REQUEST_CHECKPOINT:
-		_pack_checkpoint_msg((checkpoint_msg_t *)msg->data, buffer,
-				     msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_COMP:
-		_pack_checkpoint_comp((checkpoint_comp_msg_t *)msg->data,
-				      buffer,
-				      msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_TASK_COMP:
-		_pack_checkpoint_task_comp(
-			(checkpoint_task_comp_msg_t *)msg->data,
-			buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_CHECKPOINT:
-		_pack_checkpoint_resp_msg((checkpoint_resp_msg_t *)msg->data,
-					  buffer,
-					  msg->protocol_version);
-		break;
 	case REQUEST_SUSPEND:
 	case SRUN_REQUEST_SUSPEND:
 		_pack_suspend_msg((suspend_msg_t *)msg->data, buffer,
@@ -12394,27 +12228,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_srun_user_msg((srun_user_msg_t **)
 					   & msg->data, buffer,
 					   msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT:
-		rc = _unpack_checkpoint_msg((checkpoint_msg_t **)
-					    & msg->data, buffer,
-					    msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_COMP:
-		rc = _unpack_checkpoint_comp((checkpoint_comp_msg_t **)
-					     & msg->data, buffer,
-					     msg->protocol_version);
-		break;
-	case REQUEST_CHECKPOINT_TASK_COMP:
-		rc = _unpack_checkpoint_task_comp(
-			(checkpoint_task_comp_msg_t **)
-			& msg->data, buffer,
-			msg->protocol_version);
-		break;
-	case RESPONSE_CHECKPOINT:
-		rc = _unpack_checkpoint_resp_msg((checkpoint_resp_msg_t **)
-						 & msg->data, buffer,
-						 msg->protocol_version);
 		break;
 	case REQUEST_SUSPEND:
 	case SRUN_REQUEST_SUSPEND:

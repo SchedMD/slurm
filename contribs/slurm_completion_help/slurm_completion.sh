@@ -271,7 +271,7 @@ _sacctmgr()
     local qosflags="DenyOneLimit EnforceUsageThreshold NoReserve\
 		    PartitionMaxNodes PartitionMinNodes PartitionQos\
 		    PartitionTimeLimit"
-    local qospreempt="cluster cancel checkpoint requeue suspend"
+    local qospreempt="cluster cancel requeue suspend"
 
     local clusflags="frontend multipleslurmd"
 
@@ -474,7 +474,7 @@ _sacctmgr()
 		    preemptmode= priority= rawusage= usagefactor=\
 		   usagethreshold= withdeleted"
 	    if param "preemptmode" ; then  offer_list "cluster cancel\
-							 checkpoint requeue\
+							 requeue\
 							 suspend" ;
 	    elif param "flags" ; then  offer_list "$qosflags" ;
 	    elif param "preempt" ; then  offer_list "$(_qos)" ;
@@ -728,7 +728,7 @@ _scontrol()
     local cur=${COMP_WORDS[COMP_CWORD]}
     local prev=${COMP_WORDS[COMP_CWORD-1]}
 
-    local commands="abort checkpoint cluster create completing delete details\
+    local commands="abort cluster create completing delete details\
 		    errnumstr help hold notify oneliner\
 		    pidinfo listpids ping quit reboot_nodes reconfigure release\
 		    requeue requeuehold schedloglevel resume schedloglevel\
@@ -763,20 +763,6 @@ _scontrol()
     uhold | suspend | release | requeue | resume | hold )
 	offer "$(_jobs)"
 	;; #TODO notify
-    checkpoint) # scontrol checkpoint create jobid [parameter1=value1,...]
-	# This one has unsusual ordering: object is before command.
-	# command subcommand argument #TODO add support for additional options cfr manpage
-	objects="able create disable enable error restart requeue vacate"
-
-	if [[ $prev == checkpoint ]]; then
-	    offer "$objects";
-	elif [[ $objects == *$prev* ]]; then
-	    offer "$(_jobs)";
-	else
-	    echo todo
-	    #TODO
-	fi
-	;;
     show) # scontrol show object [id]
 	objects="aliases config block daemons frontend hostlist hostlistsorted\
 		 hostnames job nodes partitions reservations slurmd steps\
@@ -894,7 +880,7 @@ _scontrol()
 			      maxmempercpu=<MB> maxmempercnode=<MB>\
 			      maxnodes=<count> maxtime=d-h:m:s|unlimited\
 			      minnodes=<count> nodes=<name>\
-			      preemptmode=off|cancel|checkpoint|requeue|suspend\
+			      preemptmode=off|cancel|requeue|suspend\
 			      priority=count rootonly=yes|no reqresv=<yes|no>\
 			      shared=yes|no|exclusive|force\
 			      state=up|down|drain|inactive"
@@ -909,7 +895,7 @@ _scontrol()
 	    elif param "nodes"       ; then offer_many "$(_nodes)"
 	    elif param "alternate"   ; then offer_many "$(_partitions)"
 	    elif param "default"     ; then offer_many  "yes no"
-	    elif param "preemptmode" ; then offer_many "off cancel checkpoint\
+	    elif param "preemptmode" ; then offer_many "off cancel\
 							requeue suspend"
 	    elif param "shared"      ; then offer_many "yes no exclusive force"
 	    elif param "state"       ; then offer_many "up down drain inactive"
@@ -981,7 +967,7 @@ _scontrol()
 			      maxmempercpu=<MB> maxmempercnode=<MB>\
 			      maxnodes=<count> maxtime=d-h:m:s|unlimited\
 			      minnodes=<count> nodes=<name>\
-			      preemptmode=off|cancel|checkpoint|requeue|suspend\
+			      preemptmode=off|cancel|requeue|suspend\
 			      priority=count rootonly=yes|no reqresv=<yes|no>\
 			      shared=yes|no|exclusive|force\
 			      state=up|down|drain|inactive"
@@ -993,7 +979,7 @@ _scontrol()
 	    elif param "nodes"       ; then offer_many "$(_nodes)"
 	    elif param "alternate"   ; then offer_many "$(_partitions)"
 	    elif param "default"     ; then offer_many  "yes no"
-	    elif param "preemptmode" ; then offer_many "off cancel checkpoint\
+	    elif param "preemptmode" ; then offer_many "off cancel\
 							requeue suspend"
 	    elif param "shared"      ; then offer_many "yes no exclusive force"
 	    elif param "state"       ; then offer_many "up down drain inactive"
@@ -1370,8 +1356,7 @@ _sbatch()
     local longoptions="--array<indexes> --account<account>\
 		       --acctg-freq<seconds>\
 		       --extra-node-info<sockets[:cores[:threads]]>\
-		       --bb<spec> --begin=<time> --checkpoint<time>\
-		       --checkpoint-dir<directory> --comment<string>\
+		       --bb<spec> --begin=<time> --comment<string>\
 		       --constraint<list> --contiguous\
 		       --cores-per-sopcket<number> --cpus-per-task<number>\
 		       --dependency<deplist> --workdir<directory>\
@@ -1459,8 +1444,7 @@ _srun()
 			-q -Q -r -s -S -t -T -u -V -v -W -w -x"
     local longoptions=" --account<account> --acctg-freq\
 			--extra-node-info<spec>\
-			--bb<spec> --begin<time> --checkpoint<time>\
-			--checkpoint-dir<directory> --comment<string>\
+			--bb<spec> --begin<time> --comment<string>\
 			--constraint<list> --contiguous\
 			--cores-per-socket<cores> --cpu-bind=<type>\
 			--cpu-freq<freq> --cpus-per-task<ncpus>\
@@ -1485,7 +1469,7 @@ _srun()
 			--priority<value> --profile<type> --prolog<executable>\
 			--propagate<limits> --pty --quiet --quit-on-interrupt\
 			--qos<qos> --relative<n> --reboot --resv-ports\
-			--reservation<name> --restart-dir<directory> --share\
+			--reservation<name> --share\
 			--core-spec<num> --sicp --signal=<num>\
 			--slurmd-debug<level> --sockets-per-node<sockets>\
 			--switches<type> --threads<nthreads> --time<time>\
@@ -1508,7 +1492,7 @@ _srun()
     case $prev in
     --account|-A) offer_list "$(_accounts)" ;;
     --begin) offer $(date -dtomorrow +"%Y-%m-%d");;
-    --chdir|--restart-dir|--checkpoint-dir) _filedir ;;
+    --chdir) _filedir ;;
     --clusters) offer_list "$(_clusters)" ;;
     --constraint|-C) offer_list "$(_features)" ;;
     --cpu-bind) offer "none rank map_cpu: mask_cpu: sockets \

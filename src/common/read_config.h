@@ -95,7 +95,6 @@ extern uint16_t drop_priv_flag;
 #define ACCOUNTING_STORAGE_TYPE_NONE "accounting_storage/none"
 #define DEFAULT_CORE_SPEC_PLUGIN    "core_spec/none"
 #define DEFAULT_ENFORCE_PART_LIMITS 0
-#define DEFAULT_JOB_CKPT_DIR        "/var/slurm/checkpoint"
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_JOB_COMP_LOC        "/var/log/slurm_jobcomp.log"
 #define DEFAULT_JOB_COMP_DB         "slurm_jobcomp_db"
@@ -127,7 +126,6 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_MSG_AGGR_WINDOW_TIME 100
 #define DEFAULT_MSG_TIMEOUT         10
 #define DEFAULT_POWER_PLUGIN        ""
-#define DEFAULT_CHECKPOINT_TYPE     "checkpoint/none"
 #if defined WITH_CGROUP
 #  define DEFAULT_PROCTRACK_TYPE      "proctrack/cgroup"
 #else

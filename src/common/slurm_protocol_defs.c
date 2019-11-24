@@ -1414,14 +1414,6 @@ extern void slurm_free_signal_tasks_msg(signal_tasks_msg_t *msg)
 	xfree(msg);
 }
 
-extern void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg)
-{
-	if (msg) {
-		xfree(msg->image_dir);
-		xfree(msg);
-	}
-}
-
 extern void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 {
 	if (msg) {
@@ -1489,38 +1481,6 @@ extern void slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
 	if (user_msg) {
 		xfree(user_msg->msg);
 		xfree(user_msg);
-	}
-}
-
-extern void slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
-{
-	if (msg) {
-		xfree(msg->image_dir);
-		xfree(msg);
-	}
-}
-
-extern void slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
-{
-	if (msg) {
-		xfree(msg->error_msg);
-		xfree(msg);
-	}
-}
-
-extern void slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg)
-{
-	if (msg) {
-		xfree(msg->error_msg);
-		xfree(msg);
-	}
-}
-
-extern void slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
-{
-	if (msg) {
-		xfree(msg->error_msg);
-		xfree(msg);
 	}
 }
 
@@ -4757,15 +4717,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_LAYOUT_INFO:
 		slurm_free_layout_info_request_msg(data);
 		break;
-	case REQUEST_CHECKPOINT:
-		slurm_free_checkpoint_msg(data);
-		break;
-	case REQUEST_CHECKPOINT_COMP:
-		slurm_free_checkpoint_comp_msg(data);
-		break;
-	case REQUEST_CHECKPOINT_TASK_COMP:
-		slurm_free_checkpoint_task_comp_msg(data);
-		break;
 	case REQUEST_FRONT_END_INFO:
 		slurm_free_front_end_info_request_msg(data);
 		break;
@@ -5365,14 +5316,6 @@ rpc_num2string(uint16_t opcode)
 
 	case REQUEST_UPDATE_JOB_STEP:				/* 5007 */
 		return "REQUEST_UPDATE_JOB_STEP";
-	case REQUEST_CHECKPOINT:
-		return "REQUEST_CHECKPOINT";
-	case RESPONSE_CHECKPOINT:				/* 5010 */
-		return "RESPONSE_CHECKPOINT";
-	case REQUEST_CHECKPOINT_COMP:
-		return "REQUEST_CHECKPOINT_COMP";
-	case REQUEST_CHECKPOINT_TASK_COMP:
-		return "REQUEST_CHECKPOINT_TASK_COMP";
 
 	case REQUEST_SUSPEND:					/* 5014 */
 		return "REQUEST_SUSPEND";

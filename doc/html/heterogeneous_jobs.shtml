@@ -46,7 +46,6 @@ A list of propagated options follows.</p>
 <li>--account</li>
 <li>--acctg-freq</li>
 <li>--begin</li>
-<li>--checkpoint</li>
 <li>--cluster-constraint</li>
 <li>--clusters</li>
 <li>--comment</li>
