@@ -672,8 +672,6 @@ struct job_record {
 	char *burst_buffer;		/* burst buffer specification */
 	char *burst_buffer_state;	/* burst buffer state */
 	check_jobinfo_t check_job;      /* checkpoint context, opaque */
-	time_t ckpt_time;		/* last time job was periodically
-					 * checkpointed */
 	char *clusters;			/* clusters job is submitted to with -M
 					   option */
 	char *comment;			/* arbitrary comment */
@@ -909,7 +907,6 @@ typedef struct {
 					/* DO NOT ALPHABETIZE */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
-	time_t ckpt_time;		/* time of last checkpoint */
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes,
 					 * see src/common/job_resources.h */

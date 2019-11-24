@@ -2614,7 +2614,6 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	}
 	step_ptr->cpus_per_task = (uint16_t)cpus_per_task;
 	step_ptr->pn_min_memory = step_specs->pn_min_memory;
-	step_ptr->ckpt_time = now;
 	step_ptr->cpu_count = orig_cpu_count;
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->exclusive = step_specs->exclusive;
@@ -3709,7 +3708,7 @@ extern int dump_job_step_state(void *x, void *arg)
 	pack_time(step_ptr->start_time, buffer);
 	pack_time(step_ptr->pre_sus_time, buffer);
 	pack_time(step_ptr->tot_sus_time, buffer);
-	pack_time(step_ptr->ckpt_time, buffer);
+	pack_time(0, buffer); /* was ckpt_time */
 
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->resv_ports, buffer);
@@ -3766,7 +3765,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 	uint32_t cpu_count, exit_code, name_len, srun_pid = 0;
 	uint32_t step_id, time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
 	uint64_t pn_min_memory;
-	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
+	time_t start_time, pre_sus_time, tot_sus_time;
 	char *host = NULL, *core_job = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
@@ -3781,6 +3780,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		char *temp_str;
+		time_t time_tmp;
 
 		uint16_t uint16_tmp;
 		safe_unpack32(&step_id, buffer);
@@ -3811,7 +3811,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&pre_sus_time, buffer);
 		safe_unpack_time(&tot_sus_time, buffer);
-		safe_unpack_time(&ckpt_time, buffer);
+		safe_unpack_time(&time_tmp, buffer); /* was ckpt_time */
 
 		safe_unpackstr_xmalloc(&host, &name_len, buffer);
 		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
@@ -3899,7 +3899,6 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 	step_ptr->time_limit   = time_limit;
 	step_ptr->pre_sus_time = pre_sus_time;
 	step_ptr->tot_sus_time = tot_sus_time;
-	step_ptr->ckpt_time    = ckpt_time;
 
 	if (!select_jobinfo)
 		select_jobinfo = select_g_select_jobinfo_alloc();
