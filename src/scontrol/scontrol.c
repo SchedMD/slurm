@@ -992,32 +992,6 @@ static int _process_command (int argc, char **argv)
 				slurm_perror ("slurm_reconfigure error");
 		}
 	}
-	else if (xstrncasecmp(tag, "checkpoint", MAX(tag_len, 2)) == 0) {
-		if (argc > 5) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					tag);
-		}
-		else if (argc < 3) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					tag);
-		}
-		else {
-			error_code = scontrol_checkpoint(argv[1], argv[2],
-							 argc - 3, &argv[3]);
-			if (error_code) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					slurm_perror(
-						"scontrol_checkpoint error");
-			}
-		}
-	}
 	else if (xstrncasecmp(tag, "requeue", MAX(tag_len, 3)) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
@@ -1905,8 +1879,6 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
 			      current cluster.  cluster with no name will  \n\
 			      reset to default.                            \n\
                               NOTE: SlurmDBD must be up.                   \n\
-     checkpoint <CH_OP><ID>   perform a checkpoint operation on identified \n\
-			      job or job step \n\
      completing               display jobs in completing state along with  \n\
 			      their completing or down nodes               \n\
      create <SPECIFICATIONS>  create a new partition or reservation        \n\
@@ -2004,11 +1976,6 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   <SPECIFICATIONS> are specified in the same format as the configuration   \n\
   file. You may wish to use the \"show\" keyword then use its output as    \n\
   input for the update keyword, editing as needed.                         \n\
-									   \n\
-  <CH_OP> identify checkpoint operations and may be \"able\", \"disable\", \n\
-  \"enable\", \"create\", \"vacate\", \"requeue\", \"restart\", or \"error\"\n\
-  Additional options include \"ImageDir=<dir>\", \"MaxWait=<seconds>\" and \n\
-  \"StickToNodes\"   \n\
 									   \n\
   All commands and options are case-insensitive, although node names and   \n\
   partition names tests are case-sensitive (node names \"LX\" and \"lx\"   \n\

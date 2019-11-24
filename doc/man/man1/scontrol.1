@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "October 2019" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "November 2019" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -91,59 +91,6 @@ written.
 .TP
 \fBcancel_reboot \fI<NodeList>\fP
 Cancel pending reboots on nodes.
-
-.TP
-\fBcheckpoint\fP \fICKPT_OP\fP \fIID\fP
-Perform a checkpoint activity on the job step(s) with the specified identification.
-\fIID\fP can be used to identify a specific job (e.g. "<job_id>",
-which applies to all of its existing steps)
-or a specific job step (e.g. "<job_id>.<step_id>").
-Acceptable values for \fICKPT_OP\fP include:
-.RS
-.TP 12
-\fIable\fP
-Test if presently not disabled, report start time if checkpoint in progress
-.TP
-\fIcreate\fP
-Create a checkpoint and continue the job or job step
-.TP
-\fIdisable\fP
-Disable future checkpoints
-.TP
-\fIenable\fP
-Enable future checkpoints
-.TP
-\fIerror\fP
-Report the result for the last checkpoint request, error code and message
-.TP
-\fIrestart\fP
-Restart execution of the previously checkpointed job or job step
-.TP
-\fIrequeue\fP
-Create a checkpoint and requeue the batch job, combines vacate
-and restart operations
-.TP
-\fIvacate\fP
-Create a checkpoint and terminate the job or job step
-.RE
-Acceptable values for \fICKPT_OP\fP include:
-.RS
-.TP 20
-\fIMaxWait=<seconds>\fP
-Maximum time for checkpoint to be written.
-Default value is 10 seconds.
-Valid with \fIcreate\fP and \fIvacate\fP options only.
-.TP
-\fIImageDir=<directory_name>\fP
-Location of checkpoint file.
-Valid with \fIcreate\fP, \fIvacate\fP and \fIrestart\fP options only.
-This value takes precedent over any \-\-checkpoint\-dir value specified
-at job submission time.
-.TP
-\fIStickToNodes\fP
-If set, resume job on the same nodes are previously used.
-Valid with the \fIrestart\fP option only.
-.RE
 
 .TP
 \fBcluster\fR \fICLUSTER_NAME\fP
@@ -2161,7 +2108,6 @@ details.
 /etc/slurm.conf
 .SH "SEE ALSO"
 \fBscancel\fR(1), \fBsinfo\fR(1), \fBsqueue\fR(1),
-\fBslurm_checkpoint\fR (3),
 \fBslurm_create_partition\fR (3),
 \fBslurm_delete_partition\fR (3),
 \fBslurm_load_ctl_conf\fR (3),
