@@ -3091,7 +3091,6 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 		pack32(step_ptr->job_ptr->job_id, buffer);
 		pack32(step_ptr->step_id, buffer);
-		pack16(0, buffer); /* was ckpt_interval */
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
 		pack32(step_ptr->cpu_freq_min, buffer);
@@ -3128,7 +3127,6 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 		packstr(step_ptr->name, buffer);
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
-		packnull(buffer); /* was ckpt_dir */
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);

@@ -2874,13 +2874,10 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 	uint32_t uint32_tmp = 0;
 
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		char *temp_str;
-		uint16_t uint16_tmp;
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
 		safe_unpack32(&step->job_id, buffer);
 		safe_unpack32(&step->step_id, buffer);
-		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
 		safe_unpack32(&step->user_id, buffer);
 		safe_unpack32(&step->num_cpus, buffer);
 		safe_unpack32(&step->cpu_freq_min, buffer);
@@ -2903,8 +2900,6 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer,
 		safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
 		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
-		xfree(temp_str); /* was ckpt_dir */
 
 		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
 						   buffer, protocol_version))
