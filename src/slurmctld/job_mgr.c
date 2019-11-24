@@ -2619,8 +2619,6 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->std_in,        buffer);
 	packstr(detail_ptr->std_out,       buffer);
 	packstr(detail_ptr->work_dir,  buffer);
-	packnull(buffer); /* was ckpt_dir */
-	packnull(buffer); /* was restart_dir */
 
 	pack_multi_core_data(detail_ptr->mc_ptr, buffer,
 			     SLURM_PROTOCOL_VERSION);
@@ -2656,8 +2654,6 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 
 	/* unpack the job's details from the buffer */
 	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		char *temp_str;
-
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
@@ -2707,10 +2703,6 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
 		safe_unpackstr_xmalloc(&out, &name_len, buffer);
 		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
-		safe_unpackstr_xmalloc(&temp_str, &name_len, buffer);
-		xfree(temp_str); /* was ckpt_dir */
-		safe_unpackstr_xmalloc(&temp_str, &name_len, buffer);
-		xfree(temp_str); /* was restart_dir */
 
 		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
 			goto unpack_error;
