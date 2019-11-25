@@ -315,7 +315,7 @@ A request to modify a job by specifying the pack_job_id will modify all
 components of a heterogeneous job.
 For example:</p>
 <pre>
-# Change the account of compnent 2 of heterogeneous job 123:
+# Change the account of component 2 of heterogeneous job 123:
 $ scontrol update jobid=123+2 account=abc
 
 # Change the time limit of all components of heterogeneous job 123:
