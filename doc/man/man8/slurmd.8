@@ -60,6 +60,9 @@ marked DOWN during periods of heavy swap activity. If the mlockall (2)
 system call is not available, an error will be printed to the log
 and slurmd will continue as normal.
 
+It is suggested to set \fBLaunchParameters=slurmstepd_memlock\fR in
+\fBslurm.conf\fR(5) when setting \fB\-M\fR.
+
 .TP
 \fB\-n <value>\fR
 Set the daemon's nice value to the specified value, typically a negative number.
