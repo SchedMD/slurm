@@ -78,7 +78,7 @@ proc _submit_jobs { job_name test_file } {
 	}
 }
 
-set time_took [string trim [time {_submit_jobs "hostname" "/dev/null"}] " per iteration microseconds"]
+set time_took [string trim [time {_submit_jobs "test$test_id" "/dev/null"}] " per iteration microseconds"]
 set jobs_per_sec [expr $job_cnt * 1000000 / $time_took]
 send_user "Ran $job_cnt jobs in $time_took microseconds or $jobs_per_sec jobs per second\n"
 
