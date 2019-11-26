@@ -44,6 +44,15 @@
 #include <inttypes.h>
 #include <sys/wait.h>
 
+#ifdef HAVE_SYSCTLBYNAME
+#if defined(__FreeBSD__)
+#include <sys/types.h>
+#else
+#include <sys/param.h>
+#endif
+# include <sys/sysctl.h>
+#endif
+
 #include "slurm/slurm.h"
 #include "slurm/slurmdb.h"
 #include "src/common/bitstring.h"
