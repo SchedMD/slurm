@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Reject unrunnable jobs submitted to reservations.
  -- Fix misleading error returned for immediate allocation requests when defer
     in SchedulerParameters by decoupling defer from too fragmented logic.
+ -- Fix printf format string error on FreeBSD.
 
 * Changes in Slurm 19.05.4
 ==========================
