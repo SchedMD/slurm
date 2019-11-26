@@ -49,13 +49,6 @@
 # include <sys/dr.h>
 #endif
 
-#ifdef HAVE_SYS_SYSCTL_H
-#if defined(__FreeBSD__)
-#include <sys/types.h>
-#endif
-# include <sys/sysctl.h>
-#endif
-
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>

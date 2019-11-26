@@ -228,19 +228,13 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job)
 	return false;
 }
 
-/* For sysctl() functions */
-#if defined(__FreeBSD__) || defined(__NetBSD__)
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#endif
-
 #define	BUFFLEN	127
 
 /* Return true if Power7 processor */
 static bool _is_power_cpu(void)
 {
 	if (is_power == -1) {
-#if defined(__FreeBSD__) || defined(__NetBSD__)
+#ifdef HAVE_SYSCTLBYNAME
 
 		char    buffer[BUFFLEN+1];
 		size_t  len = BUFFLEN;

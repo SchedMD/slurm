@@ -546,6 +546,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Wrap END_TIMER{,2,3} macro definition in "do {} while (0)" block.
  -- Make sview work with glib2 v2.62.
+ -- Make Slurm compile on linux after sys/sysctl.h was deprecated.
 
 * Changes in Slurm 18.08.8
 ==========================
