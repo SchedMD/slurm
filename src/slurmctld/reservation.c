@@ -863,6 +863,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 			     slurmctld_resv_t *old_resv_ptr)
 {
 	int rc = SLURM_SUCCESS;
+	bool change = false;
 	slurmdb_reservation_rec_t resv;
 	char temp_bit[BUF_SIZE];
 	time_t now = time(NULL);
@@ -879,22 +880,27 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
 
-	if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list))
+	if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list)) {
+		change = true;
 		resv.assocs = resv_ptr->assoc_list;
-	else if (resv_ptr->assoc_list)
+	} else if (resv_ptr->assoc_list)
 		resv.assocs = resv_ptr->assoc_list;
 
-	if (xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str))
+	if (xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str)) {
+		change = true;
 		resv.tres_str = resv_ptr->tres_str;
+	}
 
-	if (old_resv_ptr->flags != resv_ptr->flags)
+	if (old_resv_ptr->flags != resv_ptr->flags) {
+		change = true;
 		resv.flags = resv_ptr->flags;
-	else
+	} else
 		resv.flags = NO_VAL64;
 
-	if (xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list))
+	if (xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list)) {
+		change = true;
 		resv.nodes = resv_ptr->node_list;
-	else if (resv_ptr->node_list)
+	} else if (resv_ptr->node_list)
 		resv.nodes = resv_ptr->node_list;
 
 	/* Here if the reservation has started already we need
@@ -902,11 +908,7 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	 * variables are needed in accounting.  Right now if
 	 * the assocs, nodes, flags or cpu count changes we need a
 	 * new start time of now. */
-	if ((resv_ptr->start_time < now)
-	    && (resv.assocs
-		|| resv.nodes
-		|| (resv.flags != NO_VAL64)
-		|| resv.tres_str)) {
+	if ((resv_ptr->start_time < now) && change) {
 		resv_ptr->start_time_prev = resv_ptr->start_time;
 		resv_ptr->start_time = now;
 	}
