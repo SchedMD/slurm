@@ -884,16 +884,10 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.flags = resv_ptr->flags;
 	resv.nodes = resv_ptr->node_list;
 
-	if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list))
-		change = true;
-
-	if (xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str))
-		change = true;
-
-	if (old_resv_ptr->flags != resv_ptr->flags)
-		change = true;
-
-	if (xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list))
+	if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list) ||
+	    xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str)	||
+	    (old_resv_ptr->flags != resv_ptr->flags) ||
+	    xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list))
 		change = true;
 
 	/* Here if the reservation has started already we need
