@@ -6243,6 +6243,49 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_dep_msg(dep_msg_t *dep_msg, Buf buffer,
+			  uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		packstr(dep_msg->dependency, buffer);
+		pack32(dep_msg->job_id, buffer);
+		packstr(dep_msg->job_name, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+	}
+}
+
+static int _unpack_dep_msg(dep_msg_t **dep_msg_buffer_ptr, Buf buffer,
+			   uint16_t protocol_version)
+{
+	dep_msg_t *dep_msg_ptr = NULL;
+	uint32_t tmp_uint32;
+
+	xassert(dep_msg_buffer_ptr);
+
+	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		dep_msg_ptr = xmalloc(sizeof(*dep_msg_ptr));
+		*dep_msg_buffer_ptr = dep_msg_ptr;
+		safe_unpackstr_xmalloc(&dep_msg_ptr->dependency, &tmp_uint32,
+				       buffer);
+		safe_unpack32(&dep_msg_ptr->job_id, buffer);
+		safe_unpackstr_xmalloc(&dep_msg_ptr->job_name, &tmp_uint32,
+				       buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_dep_msg(dep_msg_ptr);
+	*dep_msg_buffer_ptr = NULL;
+	return SLURM_ERROR;
+}
+
 /* _pack_job_desc_msg
  * packs a job_desc struct
  * IN job_desc_ptr - pointer to the job descriptor to pack
@@ -11840,6 +11883,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_sib_msg((sib_msg_t *)msg->data, buffer,
 			      msg->protocol_version);
 		break;
+	case REQUEST_SEND_DEP:
+		_pack_dep_msg((dep_msg_t *)msg->data, buffer,
+			      msg->protocol_version);
+		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		_pack_update_job_step_msg((step_update_request_msg_t *)
 					  msg->data, buffer,
@@ -12497,6 +12544,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_SIB_JOB_UNLOCK:
 	case REQUEST_SIB_MSG:
 		rc = _unpack_sib_msg((sib_msg_t **)&(msg->data), buffer,
+				     msg->protocol_version);
+		break;
+	case REQUEST_SEND_DEP:
+		rc = _unpack_dep_msg((dep_msg_t **)&(msg->data), buffer,
 				     msg->protocol_version);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:

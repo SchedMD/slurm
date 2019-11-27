@@ -6695,6 +6695,23 @@ static void _slurm_rpc_sib_msg(uint32_t uid, slurm_msg_t *msg) {
 	fed_mgr_q_sib_msg(msg, uid);
 }
 
+#if 0
+static void _slurm_rpc_dependency_msg(uint32_t uid, slurm_msg_t *msg)
+{
+	if (!msg->conn || !validate_slurm_user(uid)) {
+		error("Security violation, REQUEST_SEND_DEP RPC from uid=%d",
+		      uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
+	/*
+	 * TODO: Make this a function. We'll need the job read lock to properly
+	 * handle this RPC. For now at least unpack the msg and print.
+	 */
+}
+#endif
+
 static Buf _build_rc_buf(int rc, uint16_t rpc_version)
 {
 	Buf buf = NULL;
@@ -6767,6 +6784,13 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			break;
 		case REQUEST_SIB_MSG:
 			_slurm_rpc_sib_msg(rpc_uid, &sub_msg);
+			ret_buf = _build_rc_buf(SLURM_SUCCESS,
+						msg->protocol_version);
+			break;
+		/* TODO: Add a case for new message */
+		case REQUEST_SEND_DEP:
+			info("XXX%sXXX: Got REQUEST_SEND_DEP", __func__);
+			/* _slurm_rpc_dependency_msg(rpc_uid, &sub_msg); */
 			ret_buf = _build_rc_buf(SLURM_SUCCESS,
 						msg->protocol_version);
 			break;

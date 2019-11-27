@@ -3516,6 +3516,80 @@ end_features:
 	return rc;
 }
 
+/*
+ * TODO: Send dependencies of job_ptr to siblings.
+ */
+static int _submit_remote_dependencies(struct job_record *job_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	ListIterator sib_itr;
+	slurm_msg_t req_msg;
+	dep_msg_t dep_msg = { 0 };
+	slurmdb_cluster_rec_t *sibling;
+
+	xassert(job_ptr->details);
+	xassert(job_ptr->details->dependency); /* char* */
+	xassert(job_ptr->details->depend_list); /* List of struct depend_spec */
+
+	memset(&dep_msg, 0, sizeof(dep_msg));
+	dep_msg.dependency = job_ptr->details->dependency;
+	dep_msg.job_id = job_ptr->job_id;
+	dep_msg.job_name = job_ptr->name;
+
+	slurm_msg_t_init(&req_msg);
+	req_msg.msg_type = REQUEST_SEND_DEP;
+	req_msg.data = &dep_msg;
+
+	/*
+	 * TODO: Send the dependency to every sibling.
+	 * I probably don't want to send the dependency to siblings that aren't
+	 * affected.
+	 */
+	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
+	while ((sibling = list_next(sib_itr))) {
+		if (sibling == fed_mgr_cluster_rec)
+			continue;
+
+		req_msg.protocol_version = sibling->rpc_version;
+		rc |= _queue_rpc(sibling, &req_msg, 0, false);
+	}
+	list_iterator_destroy(sib_itr);
+	return rc;
+
+#if 0
+	struct depend_spec *dep_ptr;
+	/*
+	 * Old idea:
+	 * Iterate through each dependency. If it's a remote dependency, mark
+	 * that we need to send it to that sibling.
+	 *
+	 * Then, send the whole dependency to each sibling that is affected.
+	 *
+	 * To "send" we need to queue up an RPC on cluster->send_rpc. See
+	 * _submit_sibling_jobs() -> _queue_rpc(). I will want to call
+	 * _queue_rpc()
+	 */
+	dep_itr = list_iterator_create(job_ptr->details->depend_list);
+	while (dep_ptr = list_next(itr)) {
+		/* Not a remote dependency */
+		if (!dep_ptr->depend_remote)
+			continue;
+
+		/* Which cluster? queue the rpc on that cluster. */
+		uint32_t sib_id = fed_mgr_get_cluster_id(dep_ptr->job_id);
+		sibling = list_find_first(fed_mgr_fed_rec->cluster_list,
+					  _find_sibling_by_id, sib_id);
+		if (!sibling) {
+			error("XXX%sXXX: unable to find sibling id %u for %u",
+			      __func__, sib_id, dep_ptr->job_id);
+			return;
+		}
+
+		/* Send message to sibling */
+	}
+#endif
+}
+
 /* submit a federated job.
  *
  * IN msg - msg that contains packed job_desc msg to send to siblings.
@@ -3628,6 +3702,16 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				job_desc, msg, alloc_only,
 				job_ptr->fed_details->siblings_viable))
 		info("failed to submit sibling job to one or more siblings");
+	/*
+	 * TODO: Send dependencies to siblings
+	 * TODO: Only send dependencies if there are remote dependencies? Or
+	 *       maybe only send remote dependencies to the siblings whose
+	 *       cluster_id matches the job_id's cluster id?
+	 */
+	if (job_desc->dependency)
+		if (_submit_remote_dependencies(job_ptr))
+			error("XXX%sXXX: _submit_remote_dependencies() returned error",
+			      __func__);
 
 	job_ptr->fed_details->siblings_active = job_desc->fed_siblings_active;
 	update_job_fed_details(job_ptr);
