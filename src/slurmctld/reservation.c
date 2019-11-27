@@ -879,29 +879,22 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.cluster = slurmctld_conf.cluster_name;
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
+	resv.assocs = resv_ptr->assoc_list;
+	resv.tres_str = resv_ptr->tres_str;
+	resv.flags = resv_ptr->flags;
+	resv.nodes = resv_ptr->node_list;
 
-	if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list)) {
+	if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list))
 		change = true;
-		resv.assocs = resv_ptr->assoc_list;
-	} else if (resv_ptr->assoc_list)
-		resv.assocs = resv_ptr->assoc_list;
 
-	if (xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str)) {
+	if (xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str))
 		change = true;
-		resv.tres_str = resv_ptr->tres_str;
-	}
 
-	if (old_resv_ptr->flags != resv_ptr->flags) {
+	if (old_resv_ptr->flags != resv_ptr->flags)
 		change = true;
-		resv.flags = resv_ptr->flags;
-	} else
-		resv.flags = NO_VAL64;
 
-	if (xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list)) {
+	if (xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list))
 		change = true;
-		resv.nodes = resv_ptr->node_list;
-	} else if (resv_ptr->node_list)
-		resv.nodes = resv_ptr->node_list;
 
 	/* Here if the reservation has started already we need
 	 * to mark a new start time for it if certain
