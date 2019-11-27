@@ -377,30 +377,14 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		// reservation accounting wise
 		resv->name = xstrdup(row[RESV_NAME]);
 
-	if (resv->assocs)
+	if (xstrcmp(resv->assocs, row[RESV_ASSOCS]) ||
+	    (resv->flags != slurm_atoul(row[RESV_FLAGS])) ||
+	    xstrcmp(resv->nodes, row[RESV_NODE_INX]) ||
+	    xstrcmp(resv->tres_str, row[RESV_TRES]))
 		set = 1;
-	else if (row[RESV_ASSOCS] && row[RESV_ASSOCS][0])
-		resv->assocs = xstrdup(row[RESV_ASSOCS]);
-
-	if (resv->flags != NO_VAL64)
-		set = 1;
-	else
-		resv->flags = slurm_atoull(row[RESV_FLAGS]);
-
-	if (resv->nodes)
-		set = 1;
-	else if (row[RESV_NODES] && row[RESV_NODES][0]) {
-		resv->nodes = xstrdup(row[RESV_NODES]);
-		resv->node_inx = xstrdup(row[RESV_NODE_INX]);
-	}
 
 	if (!resv->time_end)
 		resv->time_end = slurm_atoul(row[RESV_END]);
-
-	if (resv->tres_str)
-		set = 1;
-	else if (row[RESV_TRES] && row[RESV_TRES][0])
-		resv->tres_str = xstrdup(row[RESV_TRES]);
 
 	mysql_free_result(result);
 
