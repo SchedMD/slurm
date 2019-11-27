@@ -3236,7 +3236,10 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 	if ((resv_ptr->flags & RESERVE_FLAG_PART_NODES) &&
 	    resv_ptr->part_ptr && resv_ptr->part_ptr->node_bitmap) {
 		memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
-		xfree(resv_ptr->node_list);
+		old_resv_ptr.assoc_list = resv_ptr->assoc_list;
+		old_resv_ptr.flags = resv_ptr->flags;
+		old_resv_ptr.node_list = resv_ptr->node_list;
+		resv_ptr->node_list = NULL;
 		resv_ptr->node_list = xstrdup(resv_ptr->part_ptr->nodes);
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		resv_ptr->node_bitmap = bit_copy(resv_ptr->part_ptr->
@@ -3245,20 +3248,27 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		old_resv_ptr.tres_str = resv_ptr->tres_str;
 		resv_ptr->tres_str = NULL;
 		_set_tres_cnt(resv_ptr, &old_resv_ptr);
+		old_resv_ptr.assoc_list = NULL;
 		xfree(old_resv_ptr.tres_str);
+		xfree(old_resv_ptr.node_list);
 		last_resv_update = time(NULL);
 	} else if (resv_ptr->flags & RESERVE_FLAG_ALL_NODES) {
 		memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
+		old_resv_ptr.assoc_list = resv_ptr->assoc_list;
+		old_resv_ptr.flags = resv_ptr->flags;
+		old_resv_ptr.node_list = resv_ptr->node_list;
+		resv_ptr->node_list = NULL;
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		resv_ptr->node_bitmap = bit_alloc(node_record_count);
 		bit_nset(resv_ptr->node_bitmap, 0, (node_record_count - 1));
-		xfree(resv_ptr->node_list);
 		resv_ptr->node_list = bitmap2node_name(resv_ptr->node_bitmap);
 		resv_ptr->node_cnt = bit_set_count(resv_ptr->node_bitmap);
 		old_resv_ptr.tres_str = resv_ptr->tres_str;
 		resv_ptr->tres_str = NULL;
 		_set_tres_cnt(resv_ptr, &old_resv_ptr);
+		old_resv_ptr.assoc_list = NULL;
 		xfree(old_resv_ptr.tres_str);
+		xfree(old_resv_ptr.node_list);
 		last_resv_update = time(NULL);
 	} else if (resv_ptr->node_list) {	/* Change bitmap last */
 		/*
@@ -3276,18 +3286,23 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 				      resv_ptr->name);
 				return false;
 			}
+			memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
+			old_resv_ptr.assoc_list = resv_ptr->assoc_list;
+			old_resv_ptr.flags = resv_ptr->flags;
+			old_resv_ptr.node_list = resv_ptr->node_list;
+			resv_ptr->node_list = NULL;
 			new_node_list = bitmap2node_name(resv_ptr->node_bitmap);
 			info("Reservation %s has invalid nodes (%s), shrinking to (%s)",
 			     resv_ptr->name, resv_ptr->node_list,
 			     new_node_list);
-			xfree(resv_ptr->node_list);
 			resv_ptr->node_list = new_node_list;
 			new_node_list = NULL;
-			memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
 			old_resv_ptr.tres_str = resv_ptr->tres_str;
 			resv_ptr->tres_str = NULL;
 			_set_tres_cnt(resv_ptr, &old_resv_ptr);
+			old_resv_ptr.assoc_list = NULL;
 			xfree(old_resv_ptr.tres_str);
+			xfree(old_resv_ptr.node_list);
 			last_resv_update = time(NULL);
 			schedule_resv_save();
 		}
@@ -5766,17 +5781,21 @@ extern void update_part_nodes_in_resv(part_record_t *part_ptr)
 		    (xstrcmp(resv_ptr->partition, part_ptr->name) == 0)) {
 			slurmctld_resv_t old_resv_ptr;
 			memset(&old_resv_ptr, 0, sizeof(slurmctld_resv_t));
-
+			old_resv_ptr.assoc_list = resv_ptr->assoc_list;
+			old_resv_ptr.flags = resv_ptr->flags;
+			old_resv_ptr.node_list = resv_ptr->node_list;
+			resv_ptr->node_list = NULL;
 			FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 			resv_ptr->node_bitmap = bit_copy(part_ptr->node_bitmap);
 			resv_ptr->node_cnt = bit_set_count(resv_ptr->
 							   node_bitmap);
-			xfree(resv_ptr->node_list);
 			resv_ptr->node_list = xstrdup(part_ptr->nodes);
 			old_resv_ptr.tres_str = resv_ptr->tres_str;
 			resv_ptr->tres_str = NULL;
 			_set_tres_cnt(resv_ptr, &old_resv_ptr);
+			old_resv_ptr.assoc_list = NULL;
 			xfree(old_resv_ptr.tres_str);
+			xfree(old_resv_ptr.node_list);
 			last_resv_update = time(NULL);
 			_set_boot_time(resv_ptr);
 		}
