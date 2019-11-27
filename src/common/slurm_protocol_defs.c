@@ -4822,6 +4822,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_SEND_DEP:
 		slurm_free_dep_msg(data);
+		break;
 	case RESPONSE_JOB_WILL_RUN:
 		slurm_free_will_run_response_msg(data);
 		break;
