@@ -879,10 +879,9 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.id = resv_ptr->resv_id;
 	resv.time_end = resv_ptr->end_time;
 
-	if (old_resv_ptr->assoc_list && resv_ptr->assoc_list) {
-		if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list))
-			resv.assocs = resv_ptr->assoc_list;
-	} else if (resv_ptr->assoc_list)
+	if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list))
+		resv.assocs = resv_ptr->assoc_list;
+	else if (resv_ptr->assoc_list)
 		resv.assocs = resv_ptr->assoc_list;
 
 	if (xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str))
@@ -893,10 +892,9 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	else
 		resv.flags = NO_VAL64;
 
-	if (old_resv_ptr->node_list && resv_ptr->node_list) {
-		if (xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list))
-			resv.nodes = resv_ptr->node_list;
-	} else if (resv_ptr->node_list)
+	if (xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list))
+		resv.nodes = resv_ptr->node_list;
+	else if (resv_ptr->node_list)
 		resv.nodes = resv_ptr->node_list;
 
 	/* Here if the reservation has started already we need
