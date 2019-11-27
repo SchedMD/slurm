@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sbcast -C argument parsing.
  -- Replace/deprecate max_job_bf with bf_max_job_test and print error message.
  -- sched/backfill - fix options parsing when bf_hetjob_prio enabled.
+ -- Fix for --gpu-bind when no gpus requested.
 
 * Changes in Slurm 19.05.5
 ==========================

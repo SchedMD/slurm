@@ -12241,6 +12241,9 @@ extern uint64_t gres_plugin_step_count(List step_gres_list, char *gres_name)
 	ListIterator gres_iter;
 	int i;
 
+	if (!step_gres_list)
+		return gres_cnt;
+
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
 		if (xstrcmp(gres_context[i].gres_name, gres_name))
