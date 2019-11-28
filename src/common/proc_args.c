@@ -870,7 +870,7 @@ bool verify_hint(const char *arg, int *min_sockets, int *min_cores,
 					(~CPU_BIND_ONE_THREAD_PER_CORE);
 			}
 			if (*ntasks_per_core == NO_VAL)
-				*ntasks_per_core = INFINITE;
+				*ntasks_per_core = INFINITE16;
 		} else if (xstrcasecmp(tok, "nomultithread") == 0) {
 			*min_threads = 1;
 			if (cpu_bind_type) {
