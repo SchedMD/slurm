@@ -1821,7 +1821,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				action = 0;	/* remove cores and memory */
 			/* Remove preemptable job now */
 			(void) job_res_rm_job(future_part, future_usage,
-					      tmp_job_ptr, action, false);
+					      tmp_job_ptr, action, false, NULL);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -1881,7 +1881,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				last_job_ptr = tmp_job_ptr;
 				(void) job_res_rm_job(
 					future_part, future_usage,
-					tmp_job_ptr, 0, false);
+					tmp_job_ptr, 0, false, NULL);
 				if (rm_job_cnt++ > 200)
 					break;
 				next_job_ptr = list_peek_next(job_iterator);
@@ -2036,7 +2036,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 				continue;	/* can't remove job */
 			/* Remove preemptable job now */
 			(void) job_res_rm_job(future_part, future_usage,
-					      tmp_job_ptr, 0, false);
+					      tmp_job_ptr, 0, false, NULL);
 			bit_or(node_bitmap, orig_node_map);
 			rc = _job_test(job_ptr, node_bitmap, min_nodes,
 				       max_nodes, req_nodes,

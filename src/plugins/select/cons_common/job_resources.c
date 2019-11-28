@@ -440,7 +440,8 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
  */
 extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 			  node_use_record_t *node_usage,
-			  job_record_t *job_ptr, int action, bool job_fini)
+			  job_record_t *job_ptr, int action, bool job_fini,
+			  bitstr_t *node_map)
 {
 	struct job_resources *job = job_ptr->job_resrcs;
 	node_record_t *node_ptr;
@@ -486,6 +487,9 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 		if (!bit_test(job->node_bitmap, i))
 			continue;
 		n++;
+
+		if (node_map && !bit_test(node_map, i))
+			continue;
 		if (job->cpus[n] == 0)
 			continue;  /* node lost by job resize */
 
@@ -586,6 +590,8 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 				n++;
 				if (job->cpus[n] == 0)
 					continue;  /* node lost by job resize */
+				if (node_map && !bit_test(node_map, i))
+					continue;
 				if (node_usage[i].node_state >=
 				    job->node_req) {
 					node_usage[i].node_state -=
