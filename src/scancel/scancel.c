@@ -756,7 +756,7 @@ _cancel_job_id (void *ci)
 		if ((error_code == 0) ||
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
-		verbose("Job is in transistional state, retrying");
+		verbose("Job is in transitional state, retrying");
 		sleep(5 + i);
 	}
 	if (error_code) {
@@ -850,7 +850,7 @@ _cancel_step_id (void *ci)
 		    ((errno != ESLURM_TRANSITION_STATE_NO_UPDATE) &&
 		     (errno != ESLURM_JOB_PENDING)))
 			break;
-		verbose("Job is in transistional state, retrying");
+		verbose("Job is in transitional state, retrying");
 		sleep(5 + i);
 	}
 	if (error_code) {
