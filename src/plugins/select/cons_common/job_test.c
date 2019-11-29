@@ -2034,6 +2034,9 @@ top:	orig_node_map = bit_copy(save_node_map);
 			if ((mode != PREEMPT_MODE_REQUEUE)    &&
 			    (mode != PREEMPT_MODE_CANCEL))
 				continue;	/* can't remove job */
+			if (!bit_overlap_any(orig_node_map,
+					 tmp_job_ptr->node_bitmap))
+				continue;
 			/* Remove preemptable job now */
 			(void) job_res_rm_job(future_part, future_usage,
 					      tmp_job_ptr, 0, false, NULL);
