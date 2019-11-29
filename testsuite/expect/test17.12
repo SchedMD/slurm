@@ -728,7 +728,7 @@ proc clean_up {} {
 #
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-  $bin_sleep 2
+  $bin_sleep 5
 "
 
 #
