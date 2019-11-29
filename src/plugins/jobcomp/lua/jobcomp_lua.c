@@ -84,10 +84,6 @@ static int _job_rec_field_index(lua_State *L);
 static void _push_job_rec(job_record_t *job_ptr);
 static int _set_job_rec_field_index(lua_State *L);
 
-static const struct luaL_Reg slurm_functions[] = {
-        { NULL, NULL }
-};
-
 /*
  *  Mutex for protecting multi-threaded access to this plugin.
  *   (Only 1 thread at a time should be in here)
@@ -112,7 +108,7 @@ static int _load_script(void)
 
 	/* local setup */
 	lua_getglobal(load, "slurm");
-	slurm_lua_table_register(load, NULL, slurm_functions);
+	slurm_lua_register_slurm_output_functions(load);
 	lua_pop(load, -1);
 
 	/* since complete finished error free, swap the states */
