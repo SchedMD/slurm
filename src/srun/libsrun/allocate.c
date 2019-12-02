@@ -874,6 +874,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	if (opt_local->shared != NO_VAL16)
 		j->shared = opt_local->shared;
 
+	if (opt_local->warn_flags)
+		j->warn_flags = opt_local->warn_flags;
 	if (opt_local->warn_signal)
 		j->warn_signal = opt_local->warn_signal;
 	if (opt_local->warn_time)

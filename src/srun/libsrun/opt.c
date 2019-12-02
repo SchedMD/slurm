@@ -1453,7 +1453,7 @@ static void _help(void)
 "  -r, --relative=n            run job step relative to node n of allocation\n"
 "  -s, --oversubscribe         over-subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
-"      --signal=[B:]num[@time] send signal when time limit within time seconds\n"
+"      --signal=[R:]num[@time] send signal when time limit within time seconds\n"
 "      --slurmd-debug=level    slurmd debug level\n"
 "      --spread-job            spread job across as many nodes as possible\n"
 "      --switches=max-switches{@max-time-to-wait}\n"

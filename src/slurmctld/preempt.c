@@ -46,6 +46,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/acct_policy.h"
@@ -90,7 +91,12 @@ static int _add_preemptable_job(void *x, void *arg)
 	if (!IS_JOB_RUNNING(candidate) && !IS_JOB_SUSPENDED(candidate))
 		return 0;
 
-	if (!(*(ops.preemptable))(candidate, preemptor))
+	if (job_borrow_from_resv_check(candidate, preemptor)) {
+		/*
+		 * This job is on borrowed time from the reservation!
+		 * Automatic preemption.
+		 */
+	} else if (!(*(ops.preemptable))(candidate, preemptor))
 		return 0;
 
 	if (!candidate->node_bitmap ||

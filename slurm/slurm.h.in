@@ -3388,6 +3388,8 @@ typedef struct job_step_kill_msg {
 #define KILL_HURRY	 0x0020	/* Skip burst buffer stage out */
 #define KILL_OOM	 0x0040	/* Kill due to Out-Of-Memory */
 #define KILL_NO_SIBS	 0x0080	/* Don't kill other sibling jobs */
+#define KILL_JOB_RESV	 0x0100	/* Job is willing to run on nodes in a
+				 * promiscuous reservation. */
 
 /* Use top bit of uint16_t in conjuction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */

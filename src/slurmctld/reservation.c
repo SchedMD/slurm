@@ -5149,6 +5149,16 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			    (end_relative   <= job_start_time))
 				continue;
 
+			/*
+			 * Check if we are able to use this reservation's
+			 * resources even though we didn't request it.
+			 */
+			if ((job_ptr->warn_time <= resv_ptr->max_start_delay) &&
+			    (job_ptr->warn_flags & KILL_JOB_RESV)) {
+				info("we have a start delay!!!");
+				continue;
+			}
+
 			if (resv_ptr->flags & RESERVE_FLAG_ALL_NODES ||
 			    ((resv_ptr->flags  & RESERVE_FLAG_PART_NODES) &&
 			     job_ptr->part_ptr == resv_ptr->part_ptr) ||
@@ -5769,6 +5779,24 @@ extern void update_part_nodes_in_resv(part_record_t *part_ptr)
 		}
 	}
 	list_iterator_destroy(iter);
+}
+
+extern bool job_borrow_from_resv_check(job_record_t *job_ptr,
+				       job_record_t *preemptor_ptr)
+{
+	/*
+	 * If this job is running in a reservation, but not belonging to the
+	 * reservation directly.
+	 */
+	if (preemptor_ptr->resv_ptr &&
+	    preemptor_ptr->resv_ptr->max_start_delay &&
+	    preemptor_ptr->resv_ptr->node_bitmap &&
+	    (job_ptr->warn_flags & KILL_JOB_RESV) &&
+	    job_ptr->node_bitmap &&
+	    bit_overlap(job_ptr->node_bitmap,
+			preemptor_ptr->resv_ptr->node_bitmap))
+		return true;
+	return false;
 }
 
 static void _set_nodes_flags(slurmctld_resv_t *resv_ptr, time_t now,

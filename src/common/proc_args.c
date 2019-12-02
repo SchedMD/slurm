@@ -1189,10 +1189,26 @@ int get_signal_opts(char *optarg, uint16_t *warn_signal, uint16_t *warn_time,
 	if (optarg == NULL)
 		return -1;
 
-	if (!xstrncasecmp(optarg, "B:", 2)) {
-		*warn_flags = KILL_JOB_BATCH;
-		optarg += 2;
+	if (!xstrncasecmp(optarg, "R", 1)) {
+		*warn_flags |= KILL_JOB_RESV;
+		optarg++;
 	}
+
+	if (run_in_daemon("sbatch")) {
+		if (!xstrncasecmp(optarg, "B", 1)) {
+			*warn_flags |= KILL_JOB_BATCH;
+			optarg++;
+		}
+
+		/* easiest way to handle BR and RB */
+		if (!xstrncasecmp(optarg, "R", 1)) {
+			*warn_flags |= KILL_JOB_RESV;
+			optarg++;
+		}
+	}
+
+	if (*optarg == ':')
+		optarg++;
 
 	endptr = strchr(optarg, '@');
 	if (endptr)
@@ -1223,8 +1239,13 @@ extern char *signal_opts_to_cmdline(uint16_t warn_signal, uint16_t warn_time,
 {
 	char *cmdline = NULL, *sig_name;
 
-	if (warn_flags == KILL_JOB_BATCH)
-		xstrcat(cmdline, "B:");
+	if (warn_flags & KILL_JOB_RESV)
+		xstrcat(cmdline, "R");
+	if (warn_flags & KILL_JOB_BATCH)
+		xstrcat(cmdline, "B");
+
+	if ((warn_flags & KILL_JOB_RESV) || (warn_flags & KILL_JOB_BATCH))
+		xstrcat(cmdline, ":");
 
 	sig_name = sig_num2name(warn_signal);
 	xstrcat(cmdline, sig_name);

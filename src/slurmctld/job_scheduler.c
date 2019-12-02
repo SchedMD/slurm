@@ -974,7 +974,7 @@ static int _schedule(uint32_t job_limit)
 	time_t now, last_job_sched_start, sched_start;
 	job_record_t *reject_array_job = NULL;
 	part_record_t *reject_array_part = NULL;
-	bool fail_by_part;
+	bool fail_by_part, wait_on_resv;
 	uint32_t deadline_time_limit, save_time_limit = 0;
 	uint32_t prio_reserve;
 #if HAVE_SYS_PRCTL_H
@@ -1314,6 +1314,7 @@ static int _schedule(uint32_t job_limit)
 	}
 
 	job_ptr = NULL;
+	wait_on_resv = false;
 	while (1) {
 		/* Run some final guaranteed logic after each job iteration */
 		if (job_ptr)
@@ -1477,6 +1478,16 @@ next_task:
 
 		if (job_ptr->resv_name) {
 			bool found_resv = false;
+
+			/*
+			 * If we have a MaxStartDelay we need to make sure we
+			 * don't schedule any jobs that could potentially run to
+			 * avoid starvation of this job.
+			 */
+			if (job_ptr->resv_ptr &&
+			    job_ptr->resv_ptr->max_start_delay)
+				wait_on_resv = true;
+
 			for (i = 0; i < failed_resv_cnt; i++) {
 				if (failed_resv[i] == job_ptr->resv_ptr) {
 					found_resv = true;
@@ -1501,6 +1512,12 @@ next_task:
 				    job_ptr, job_ptr->priority,
 				    job_ptr->partition);
 			continue;
+		} else if (wait_on_resv &&
+			   (job_ptr->warn_flags & KILL_JOB_RESV)) {
+			sched_debug("%pJ. State=PENDING. Reason=Priority, Priority=%u. May be able to backfill on MaxStartDelay reservations.",
+				    job_ptr, job_ptr->priority);
+			continue;
+
 		}
 
 		/* Test for valid account, QOS and required nodes on each pass */

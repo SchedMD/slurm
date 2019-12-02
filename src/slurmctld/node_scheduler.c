@@ -2434,7 +2434,13 @@ static int _job_check_grace(job_record_t *job_ptr, job_record_t *preemptor_ptr)
 		return rc;
 	}
 
-	grace_time = slurm_job_get_grace_time(job_ptr);
+	/*
+	 * If this job is running in parts of a reservation
+	 */
+	if (job_borrow_from_resv_check(job_ptr, preemptor_ptr))
+		grace_time = job_ptr->warn_time;
+	else
+		grace_time = slurm_job_get_grace_time(job_ptr);
 
 	if (grace_time) {
 		debug("setting %u sec preemption grace time for %pJ to reclaim resources for %pJ",
