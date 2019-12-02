@@ -879,6 +879,7 @@ spawn $scontrol create partition=$test_part \
     nodes=$nodes(0)\,$nodes(1)\,$nodes(2)\,$nodes(3)
 expect {
 	-re "Error" {
+		log_error "scontrol returned an error when creating a partition"
 		set exit_code 1
 	}
 	timeout {
