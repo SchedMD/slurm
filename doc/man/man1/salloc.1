@@ -1641,6 +1641,19 @@ Sets up X11 forwarding on all, first or last node(s) of the allocation. This
 option is only enabled if Slurm was compiled with X11 support and
 PrologFlags=x11 is defined in the slurm.conf. Default is \fIall\fR.
 
+.SH "PERFORMANCE"
+.PP
+Executing \fBsalloc\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsalloc\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsalloc\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmctld\fR from loops in shell scripts or other
+programs. Ensure that programs limit calls to \fBsalloc\fR to the minimum
+necessary for the information you are trying to gather.
+
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP
 Upon startup, salloc will read and handle the options set in the following

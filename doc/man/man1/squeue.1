@@ -1294,6 +1294,18 @@ released for other jobs.
 \fBTO  TIMEOUT\fR
 Job terminated upon reaching its time limit.
 
+.SH "PERFORMANCE"
+.PP
+Executing \fBsqueue\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsqueue\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsqueue\fR or other Slurm client commands that send remote
+procedure calls to \fBslurmctld\fR from loops in shell scripts or other
+programs. Ensure that programs limit calls to \fBsqueue\fR to the minimum
+necessary for the information you are trying to gather.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP

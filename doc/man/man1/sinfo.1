@@ -737,6 +737,19 @@ The node is in an advanced reservation and not generally available.
 The Slurm controller has just started and the node's state
 has not yet been determined.
 
+.SH "PERFORMANCE"
+.PP
+Executing \fBsinfo\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsinfo\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsinfo\fR or other Slurm client commands that send remote procedure
+calls to \fBslurmctld\fR from loops in shell scripts or other programs. Ensure
+that programs limit calls to \fBsinfo\fR to the minimum necessary for the
+information you are trying to gather.
+
 .SH "ENVIRONMENT VARIABLES"
 .PP
 Some \fBsinfo\fR options may

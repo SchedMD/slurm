@@ -2485,6 +2485,19 @@ job128\-00.out, job128\-01.out, ...
 .RS -10
 .PP
 
+.SH "PERFORMANCE"
+.PP
+Executing \fBsrun\fR sends a remote procedure call to \fBslurmctld\fR. If
+enough calls from \fBsrun\fR or other Slurm client commands that send remote
+procedure calls to the \fBslurmctld\fR daemon come in at once, it can result in
+a degradation of performance of the \fBslurmctld\fR daemon, possibly resulting
+in a denial of service.
+.PP
+Do not run \fBsrun\fR or other Slurm client commands that send remote procedure
+calls to \fBslurmctld\fR from loops in shell scripts or other programs. Ensure
+that programs limit calls to \fBsrun\fR to the minimum necessary for the
+information you are trying to gather.
+
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP
 Some srun options may be set via environment variables.
