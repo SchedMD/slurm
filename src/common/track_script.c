@@ -287,7 +287,8 @@ extern bool track_script_broadcast(pthread_t tid, int status)
 	if (list_for_each(track_script_thd_list, _script_broadcast, &tmp_rec))
 		return tmp_rec.rc;
 
-	debug("%s: didn't find track_script for tid %ld", __func__, tid);
+	debug("%s: didn't find track_script for tid %lu",
+	      __func__, (unsigned long) tid);
 	return true;
 }
 
