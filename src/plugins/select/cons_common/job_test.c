@@ -1778,7 +1778,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
-	future_usage = node_data_dup_use(select_node_usage);
+	future_usage = node_data_dup_use(select_node_usage, NULL);
 	if (future_usage == NULL) {
 		part_data_destroy_res(future_part);
 		FREE_NULL_BITMAP(orig_map);
@@ -2017,7 +2017,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 			FREE_NULL_BITMAP(save_node_map);
 			return SLURM_ERROR;
 		}
-		future_usage = node_data_dup_use(select_node_usage);
+		future_usage = node_data_dup_use(select_node_usage, NULL);
 		if (future_usage == NULL) {
 			part_data_destroy_res(future_part);
 			FREE_NULL_BITMAP(orig_node_map);

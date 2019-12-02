@@ -79,6 +79,7 @@ extern void node_data_destroy(node_use_record_t *node_usage,
 
 extern void node_data_dump(void);
 
-extern node_use_record_t *node_data_dup_use(node_use_record_t *orig_ptr);
+extern node_use_record_t *node_data_dup_use(node_use_record_t *orig_ptr,
+					    bitstr_t *node_map);
 
 #endif /*_CONS_COMMON_NODE_DATA_H */

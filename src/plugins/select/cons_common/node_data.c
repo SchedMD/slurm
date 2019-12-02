@@ -92,11 +92,11 @@ extern void node_data_dump(void)
 
 /* Create a duplicate node_use_record list */
 extern node_use_record_t *node_data_dup_use(
-	node_use_record_t *orig_ptr)
+	node_use_record_t *orig_ptr, bitstr_t *node_map)
 {
 	node_use_record_t *new_use_ptr, *new_ptr;
 	List gres_list;
-	uint32_t i;
+	int i, i_first, i_last;
 
 	if (orig_ptr == NULL)
 		return NULL;
@@ -104,7 +104,20 @@ extern node_use_record_t *node_data_dup_use(
 	new_use_ptr = xcalloc(select_node_cnt, sizeof(node_use_record_t));
 	new_ptr = new_use_ptr;
 
-	for (i = 0; i < select_node_cnt; i++) {
+	if (node_map) {
+		i_first = bit_ffs(node_map);
+		if (i_first != -1)
+			i_last = bit_fls(node_map) + 1;
+		else
+			i_last = -1;
+	} else {
+		i_first = 0;
+		i_last = select_node_cnt;
+	}
+
+	for (i = i_first; i < i_last; i++) {
+		if (node_map && !bit_test(node_map, i))
+			continue;
 		new_ptr[i].node_state   = orig_ptr[i].node_state;
 		new_ptr[i].alloc_memory = orig_ptr[i].alloc_memory;
 		if (orig_ptr[i].gres_list)
