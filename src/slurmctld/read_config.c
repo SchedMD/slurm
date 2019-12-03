@@ -105,7 +105,7 @@ static void _add_config_feature(List feature_list, char *feature,
 				bitstr_t *node_bitmap);
 static void _add_config_feature_inx(List feature_list, char *feature,
 				    int node_inx);
-static int  _build_bitmaps(void);
+static void _build_bitmaps(void);
 static void _build_bitmaps_pre_select(void);
 static int  _compare_hostnames(node_record_t *old_node_table,
 			       int old_node_count, node_record_t *node_table,
@@ -460,9 +460,9 @@ static void _set_slurmd_addr(void)
  *	node_record_table_ptr - pointer to global node table
  *	part_list - pointer to global partition list
  */
-static int _build_bitmaps(void)
+static void _build_bitmaps(void)
 {
-	int i, error_code = SLURM_SUCCESS;
+	int i;
 	node_record_t *node_ptr;
 
 	last_node_update = time(NULL);
@@ -535,8 +535,6 @@ static int _build_bitmaps(void)
 		    (node_ptr->next_state == NODE_RESUME))
 			bit_set(rs_node_bitmap, i);
 	}
-
-	return error_code;
 }
 
 
@@ -1407,14 +1405,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	 * _build_bitmaps() must follow node_features_g_get_node() and
 	 * preceed build_features_list_*()
 	 */
-	if ((rc = _build_bitmaps())) {
-		if (test_config) {
-			error("_build_bitmaps failure");
-			test_config_rc = 1;
-		} else {
-			fatal("_build_bitmaps failure");
-		}
-	}
+	_build_bitmaps();
 
 	/* Active and available features can be different on -R */
 	if ((node_features_g_count() == 0) && (recover != 2))
