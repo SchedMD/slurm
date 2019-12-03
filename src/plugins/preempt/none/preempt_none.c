@@ -71,6 +71,12 @@ extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
 	return false;
 }
 
+extern bool preempt_p_preemptable(
+	job_record_t *preemptee, job_record_t *preemptor)
+{
+	return false;
+}
+
 extern int preempt_p_get_data(job_record_t *job_ptr,
 			      slurm_preempt_data_type_t data_type,
 			      void *data)
@@ -84,8 +90,8 @@ extern int preempt_p_get_data(job_record_t *job_ptr,
 	case PREEMPT_DATA_MODE:
 		(*(uint16_t *)data) = PREEMPT_MODE_OFF;
 		break;
-	case PREEMPT_DATA_PREEMPTEE_LIST:
-		(*(List *)data) = NULL;
+	case PREEMPT_DATA_PRIO:
+		(*(uint32_t *)data) = 0;
 		break;
 	case PREEMPT_DATA_GRACE_TIME:
 		(*(uint32_t *)data) = 0;

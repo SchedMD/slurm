@@ -48,10 +48,15 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/acct_policy.h"
+
+static bool youngest_order = false;
 
 typedef struct slurm_preempt_ops {
 	bool		(*job_preempt_check)  (job_queue_rec_t *preemptor,
 					       job_queue_rec_t *preemptee);
+	bool		(*preemptable) (job_record_t *preemptor,
+					job_record_t *preemptee);
 	int		(*get_data) (job_record_t *job_ptr,
 				     slurm_preempt_data_type_t data_type,
 				     void *data);
@@ -62,6 +67,7 @@ typedef struct slurm_preempt_ops {
  */
 static const char *syms[] = {
 	"preempt_p_job_preempt_check",
+	"preempt_p_preemptable",
 	"preempt_p_get_data",
 };
 
@@ -70,11 +76,48 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
+static int _sort_by_prio(void *x, void *y)
+{
+	int rc;
+	uint32_t job_prio1, job_prio2;
+	job_record_t *j1 = *(job_record_t **)x;
+	job_record_t *j2 = *(job_record_t **)y;
+
+	(void)(*(ops.get_data))(j1, PREEMPT_DATA_PRIO, &job_prio1);
+	(void)(*(ops.get_data))(j2, PREEMPT_DATA_PRIO, &job_prio2);
+
+	if (job_prio1 > job_prio2)
+		rc = 1;
+	else if (job_prio1 < job_prio2)
+		rc = -1;
+	else
+		rc = 0;
+
+	return rc;
+}
+
+static int _sort_by_youngest(void *x, void *y)
+{
+	int rc;
+	job_record_t *j1 = *(job_record_t **) x;
+	job_record_t *j2 = *(job_record_t **) y;
+
+	if (j1->start_time < j2->start_time)
+		rc = 1;
+	else if (j1->start_time > j2->start_time)
+		rc = -1;
+	else
+		rc = 0;
+
+	return rc;
+}
+
 extern int slurm_preempt_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "preempt";
 	char *type = NULL;
+	char *sched_params;
 
 	/* This function is called frequently, so it should be as fast as
 	 * possible. The test below will be true almost all of the time and
@@ -98,6 +141,11 @@ extern int slurm_preempt_init(void)
 	}
 	init_run = true;
 
+	sched_params = slurm_get_sched_params();
+	if (xstrcasestr(sched_params, "preempt_youngest_first"))
+		youngest_order = true;
+	xfree(sched_params);
+
 done:
 	slurm_mutex_unlock(&g_context_lock);
 	xfree(type);
@@ -119,14 +167,60 @@ extern int slurm_preempt_fini(void)
 
 extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 {
-	List data = NULL;
+	ListIterator job_iterator;
+	job_record_t *job_p;
+	List preemptee_job_list = NULL;
 
-	if ((slurm_preempt_init() < 0) ||
-	    ((*(ops.get_data))(job_ptr, PREEMPT_DATA_PREEMPTEE_LIST, &data) !=
-	     SLURM_SUCCESS))
-		return data;
+	/* Validate the preemptor job */
+	if (job_ptr == NULL) {
+		error("%s: job_ptr is NULL", __func__);
+		return preemptee_job_list;
+	}
+	if (!IS_JOB_PENDING(job_ptr)) {
+		error("%s: %pJ not pending", __func__, job_ptr);
+		return preemptee_job_list;
+	}
+	if (job_ptr->part_ptr == NULL) {
+		error("%s: %pJ has NULL partition ptr", __func__, job_ptr);
+		return preemptee_job_list;
+	}
+	if (job_ptr->part_ptr->node_bitmap == NULL) {
+		error("find_preemptable_jobs: partition %s node_bitmap=NULL",
+		      job_ptr->part_ptr->name);
+		return preemptee_job_list;
+	}
 
-	return data;
+	/* Build an array of pointers to preemption candidates */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_p = list_next(job_iterator))) {
+		if (!IS_JOB_RUNNING(job_p) && !IS_JOB_SUSPENDED(job_p))
+			continue;
+		if (!(*(ops.preemptable))(job_p, job_ptr))
+			continue;
+		if (!job_p->node_bitmap ||
+		    !bit_overlap(job_p->node_bitmap,
+				 job_ptr->part_ptr->node_bitmap))
+			continue;
+		if (job_ptr->details &&
+		    (job_ptr->details->expanding_jobid == job_p->job_id))
+			continue;
+		if (acct_policy_is_job_preempt_exempt(job_p))
+			continue;
+
+		/* This job is a preemption candidate */
+		if (!preemptee_job_list)
+			preemptee_job_list = list_create(NULL);
+
+		list_append(preemptee_job_list, job_p);
+	}
+	list_iterator_destroy(job_iterator);
+
+	if (preemptee_job_list && youngest_order)
+		list_sort(preemptee_job_list, _sort_by_youngest);
+	else if (preemptee_job_list)
+		list_sort(preemptee_job_list, _sort_by_prio);
+
+	return preemptee_job_list;
 }
 
 /*
@@ -184,6 +278,15 @@ extern bool preempt_g_job_preempt_check(job_queue_rec_t *preemptor,
 		return false;
 
 	return (*(ops.job_preempt_check))(preemptor, preemptee);
+}
+
+extern bool preempt_g_preemptable(
+	job_record_t *preemptee, job_record_t *preemptor)
+{
+	if (slurm_preempt_init() < 0)
+		return false;
+
+	return (*(ops.preemptable))(preemptor, preemptee);
 }
 
 extern int preempt_g_get_data(job_record_t *job_ptr,
