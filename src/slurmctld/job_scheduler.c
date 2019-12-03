@@ -1889,9 +1889,9 @@ extern int sort_job_queue2(void *x, void *y)
 		config_update = slurmctld_conf.last_update;
 	}
 	if (preemption_enabled) {
-		if (slurm_job_preempt_check(job_rec1, job_rec2))
+		if (preempt_g_job_preempt_check(job_rec1, job_rec2))
 			return -1;
-		if (slurm_job_preempt_check(job_rec2, job_rec1))
+		if (preempt_g_job_preempt_check(job_rec2, job_rec1))
 			return 1;
 	}
 

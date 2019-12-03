@@ -50,74 +50,25 @@
 #include "src/slurmctld/job_scheduler.h"
 
 typedef struct slurm_preempt_ops {
-	List		(*find_jobs)	      (job_record_t *job_ptr);
-	uint16_t	(*job_preempt_mode)   (job_record_t *job_ptr);
-	bool		(*preemption_enabled) (void);
 	bool		(*job_preempt_check)  (job_queue_rec_t *preemptor,
 					       job_queue_rec_t *preemptee);
-	uint32_t	(*job_get_grace_time) (struct job_record *job_ptr);
+	int		(*get_data) (job_record_t *job_ptr,
+				     slurm_preempt_data_type_t data_type,
+				     void *data);
 } slurm_preempt_ops_t;
 
 /*
  * Must be synchronized with slurm_preempt_ops_t above.
  */
 static const char *syms[] = {
-	"find_preemptable_jobs",
-	"job_preempt_mode",
-	"preemption_enabled",
-	"job_preempt_check",
-	"job_get_grace_time",
+	"preempt_p_job_preempt_check",
+	"preempt_p_get_data",
 };
 
 static slurm_preempt_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
-
-static void _preempt_signal(job_record_t *job_ptr, uint32_t grace_time)
-{
-	if (job_ptr->preempt_time)
-		return;
-
-	job_ptr->preempt_time = time(NULL);
-	job_ptr->end_time = MIN(job_ptr->end_time,
-				(job_ptr->preempt_time + (time_t)grace_time));
-
-	/* Signal the job at the beginning of preemption GraceTime */
-	job_signal(job_ptr, SIGCONT, 0, 0, 0);
-	if (preempt_send_user_signal && job_ptr->warn_signal &&
-	    !(job_ptr->warn_flags & WARN_SENT))
-		send_job_warn_signal(job_ptr, true);
-	else
-		job_signal(job_ptr, SIGTERM, 0, 0, 0);
-}
-
-extern int slurm_job_check_grace(job_record_t *job_ptr,
-				 job_record_t *preemptor_ptr)
-{
-	int rc = SLURM_SUCCESS;
-	static time_t last_update_time = (time_t)0;
-	static uint32_t grace_time = 0;
-
-	if (job_ptr->preempt_time) {
-		if (time(NULL) >= job_ptr->end_time)
-			rc = SLURM_ERROR;
-		return rc;
-	}
-
-	if (last_update_time != slurmctld_conf.last_update) {
-		grace_time = slurm_job_get_grace_time(job_ptr);
-		last_update_time = slurmctld_conf.last_update;
-	}
-	if (grace_time) {
-		debug("setting %u sec preemption grace time for %pJ to reclaim resources for %pJ",
-		      grace_time, job_ptr, preemptor_ptr);
-		_preempt_signal(job_ptr, grace_time);
-	} else
-		rc = SLURM_ERROR;
-
-	return rc;
-}
 
 extern int slurm_preempt_init(void)
 {
@@ -168,10 +119,14 @@ extern int slurm_preempt_fini(void)
 
 extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 {
-	if (slurm_preempt_init() < 0)
-		return NULL;
+	List data = NULL;
 
-	return (*(ops.find_jobs))(job_ptr);
+	if ((slurm_preempt_init() < 0) ||
+	    ((*(ops.get_data))(job_ptr, PREEMPT_DATA_PREEMPTEE_LIST, &data) !=
+	     SLURM_SUCCESS))
+		return data;
+
+	return data;
 }
 
 /*
@@ -179,10 +134,14 @@ extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
  */
 extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr)
 {
-	if (slurm_preempt_init() < 0)
-		return (uint16_t) PREEMPT_MODE_OFF;
+	uint16_t data = (uint16_t)PREEMPT_MODE_OFF;
 
-	return (*(ops.job_preempt_mode))(job_ptr);
+	if ((slurm_preempt_init() < 0) ||
+	    ((*(ops.get_data))(job_ptr, PREEMPT_DATA_MODE, &data) !=
+	     SLURM_SUCCESS))
+		return data;
+
+	return data;
 }
 
 /*
@@ -190,23 +149,14 @@ extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr)
  */
 extern bool slurm_preemption_enabled(void)
 {
-	if (slurm_preempt_init() < 0)
-		return false;
+	bool data = false;
 
-	return (*(ops.preemption_enabled))();
-}
+	if ((slurm_preempt_init() < 0) ||
+	    ((*(ops.get_data))(NULL, PREEMPT_DATA_ENABLED, &data) !=
+	     SLURM_SUCCESS))
+		return data;
 
-/*
- * Return true if the preemptor can preempt the preemptee, otherwise false
- */
-extern bool slurm_job_preempt_check(job_queue_rec_t *preemptor,
-				    job_queue_rec_t *preemptee)
-{
-	if (slurm_preempt_init() < 0)
-		return false;
-
-	return (*(ops.job_preempt_check))
-		(preemptor, preemptee);
+	return data;
 }
 
 /*
@@ -214,8 +164,34 @@ extern bool slurm_job_preempt_check(job_queue_rec_t *preemptor,
  */
 extern uint32_t slurm_job_get_grace_time(struct job_record *job_ptr)
 {
-	if (slurm_preempt_init() < 0)
-		return 0;
+	uint32_t data = 0;
 
-	return (*(ops.job_get_grace_time))(job_ptr);
+	if ((slurm_preempt_init() < 0) ||
+	    ((*(ops.get_data))(job_ptr, PREEMPT_DATA_GRACE_TIME, &data) !=
+	     SLURM_SUCCESS))
+		return data;
+
+	return data;
+}
+
+/*
+ * Return true if the preemptor can preempt the preemptee, otherwise false
+ */
+extern bool preempt_g_job_preempt_check(job_queue_rec_t *preemptor,
+					job_queue_rec_t *preemptee)
+{
+	if (slurm_preempt_init() < 0)
+		return false;
+
+	return (*(ops.job_preempt_check))(preemptor, preemptee);
+}
+
+extern int preempt_g_get_data(job_record_t *job_ptr,
+			      slurm_preempt_data_type_t data_type,
+			      void *data)
+{
+	if (slurm_preempt_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(ops.get_data))(job_ptr, data_type, data);
 }

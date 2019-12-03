@@ -44,6 +44,13 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/job_scheduler.h"
 
+typedef enum {
+	PREEMPT_DATA_ENABLED,
+	PREEMPT_DATA_MODE,
+	PREEMPT_DATA_PREEMPTEE_LIST,
+	PREEMPT_DATA_GRACE_TIME,
+} slurm_preempt_data_type_t;
+
 /*
  * Initialize the preemption plugin.
  *
@@ -57,12 +64,6 @@ int slurm_preempt_init(void);
  * Returns a Slurm errno.
  */
 extern int slurm_preempt_fini(void);
-
-/*
- **************************************************************************
- *                          P L U G I N   C A L L S                       *
- **************************************************************************
- */
 
 /*
  * slurm_find_preemptable_jobs - Given a pointer to a pending job, return list
@@ -83,18 +84,35 @@ extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr);
  */
 extern bool slurm_preemption_enabled(void);
 
+/* Returns 0 if grace time isn't found */
+extern uint32_t slurm_job_get_grace_time(struct job_record *job_ptr);
+
+/*
+ **************************************************************************
+ *                          P L U G I N   C A L L S                       *
+ **************************************************************************
+ */
+
 /*
  * Return true if the preemptor can preempt the preemptee, otherwise false
  */
-extern bool slurm_job_preempt_check(job_queue_rec_t *preemptor,
-				    job_queue_rec_t *preemptee);
+extern bool preempt_g_job_preempt_check(job_queue_rec_t *preemptor,
+					job_queue_rec_t *preemptee);
 
-
-/* Returns a Slurm errno if preempt grace isn't allowed */
-extern int slurm_job_check_grace(job_record_t *job_ptr,
-				 job_record_t *preemptor_ptr);
-
-/* Returns 0 if grace time isn't found */
-extern uint32_t slurm_job_get_grace_time(struct job_record *job_ptr);
+/*
+ * Get various preemption variables from the plugin.
+ * job_ptr - Pointer to job to use.
+ * PREEMPT_ENABLED - Set 'data' to a boolean if preemption is enabled or not.
+ * PREEMPT_MODE - Set 'data' to uint16_t on which PreemptMode which should apply
+ *                to stop this job.
+ * PREEMPT_PREEMPTEE_LIST - Set 'data' to a list of pointers to preemptable
+ *                          jobs. The jobs will be sorted in order from most
+ *                          desirable to least desirable to preempt.
+ * PREEMPT_GRACE_TIME - Set 'data' to a uint32_t of what grace_time should be
+ *                      for the given job.
+ */
+extern int preempt_g_get_data(job_record_t *job_ptr,
+			      slurm_preempt_data_type_t data_type,
+			      void *data);
 
 #endif /*__SLURM_CONTROLLER_PREEMPT_H__*/

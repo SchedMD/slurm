@@ -2405,6 +2405,51 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	return error_code;
 }
 
+static void _preempt_signal(job_record_t *job_ptr, uint32_t grace_time)
+{
+	if (job_ptr->preempt_time)
+		return;
+
+	job_ptr->preempt_time = time(NULL);
+	job_ptr->end_time = MIN(job_ptr->end_time,
+				(job_ptr->preempt_time + (time_t)grace_time));
+
+	/* Signal the job at the beginning of preemption GraceTime */
+	job_signal(job_ptr, SIGCONT, 0, 0, 0);
+	if (preempt_send_user_signal && job_ptr->warn_signal &&
+	    !(job_ptr->warn_flags & WARN_SENT))
+		send_job_warn_signal(job_ptr, true);
+	else
+		job_signal(job_ptr, SIGTERM, 0, 0, 0);
+}
+
+static int _job_check_grace(job_record_t *job_ptr, job_record_t *preemptor_ptr)
+{
+	int rc = SLURM_SUCCESS;
+	static time_t last_update_time = (time_t)0;
+	static uint32_t grace_time = 0;
+
+	if (job_ptr->preempt_time) {
+		if (time(NULL) >= job_ptr->end_time)
+			rc = SLURM_ERROR;
+		return rc;
+	}
+
+	if (last_update_time != slurmctld_conf.last_update) {
+		grace_time = slurm_job_get_grace_time(job_ptr);
+		last_update_time = slurmctld_conf.last_update;
+	}
+
+	if (grace_time) {
+		debug("setting %u sec preemption grace time for %pJ to reclaim resources for %pJ",
+		      grace_time, job_ptr, preemptor_ptr);
+		_preempt_signal(job_ptr, grace_time);
+	} else
+		rc = SLURM_ERROR;
+
+	return rc;
+}
+
 static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			  int *error_code, job_record_t *preemptor_ptr)
 {
@@ -2433,7 +2478,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			job_cnt++;
 			if (!kill_pending)
 				continue;
-			if (slurm_job_check_grace(job_ptr, preemptor_ptr)
+			if (_job_check_grace(job_ptr, preemptor_ptr)
 			    == SLURM_SUCCESS)
 				continue;
 			if (preempt_send_user_signal)
@@ -2466,7 +2511,7 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 
 		if (rc != SLURM_SUCCESS) {
 			if ((mode != PREEMPT_MODE_CANCEL)
-			    && (slurm_job_check_grace(job_ptr, preemptor_ptr)
+			    && (_job_check_grace(job_ptr, preemptor_ptr)
 				== SLURM_SUCCESS))
 				continue;
 
