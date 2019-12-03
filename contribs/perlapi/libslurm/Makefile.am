@@ -45,7 +45,6 @@ test_sources = \
 	$(perl_dir)/t/16-reservation.t \
 	$(perl_dir)/t/17-ping.t \
 	$(perl_dir)/t/18-suspend.t \
-	$(perl_dir)/t/19-checkpoint.t \
 	$(perl_dir)/t/20-trigger.t \
 	$(perl_dir)/t/21-hostlist.t \
 	$(perl_dir)/t/22-list.t \
