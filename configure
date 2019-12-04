@@ -959,7 +959,6 @@ with_cpusetdir
 enable_pam
 with_pam_dir
 with_shared_libslurm
-enable_iso8601
 enable_load_env_no_login
 with_json
 with_dimensions
@@ -1672,7 +1671,6 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-pam            enable PAM (Pluggable Authentication Modules)
                           support
-  --disable-iso8601       disable ISO 8601 time format support
   --enable-load-env-no-login
                           enable --get-user-env option to load user
                           environment without .login
@@ -18779,37 +18777,6 @@ $as_echo "shared" >&6; };
 
 
 
-
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable ISO 8601 time format support" >&5
-$as_echo_n "checking whether to enable ISO 8601 time format support... " >&6; }
-  # Check whether --enable-iso8601 was given.
-if test "${enable_iso8601+set}" = set; then :
-  enableval=$enable_iso8601;  case "$enableval" in
-        yes) x_ac_iso8601=yes ;;
-         no) x_ac_iso8601=no ;;
-          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
-$as_echo "doh!" >&6; }
-             as_fn_error $? "bad value \"$enableval\" for --enable-iso8601" "$LINENO" 5 ;;
-      esac
-
-else
-  x_ac_iso8601=yes
-
-fi
-
-
-  if test "$x_ac_iso8601" = yes; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-$as_echo "#define USE_ISO_8601 /**/" >>confdefs.h
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-  fi
 
 
 

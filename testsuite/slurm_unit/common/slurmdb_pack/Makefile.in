@@ -130,7 +130,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_env.m4 \
 	$(top_srcdir)/auxdir/x_ac_freeipmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_hwloc.m4 \
-	$(top_srcdir)/auxdir/x_ac_iso.m4 \
 	$(top_srcdir)/auxdir/x_ac_json.m4 \
 	$(top_srcdir)/auxdir/x_ac_lua.m4 \
 	$(top_srcdir)/auxdir/x_ac_lz4.m4 \

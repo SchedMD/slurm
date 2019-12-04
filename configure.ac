@@ -119,10 +119,6 @@ dnl Check to see how we link to libslurm
 X_AC_LIBSLURM
 
 dnl
-dnl Check for ISO compliance
-X_AC_ISO
-
-dnl
 dnl Check if we want to load .login with sbatch --get-user-env option
 X_AC_ENV_LOGIC
 

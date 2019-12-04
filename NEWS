@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Removed the checkpoint plugin interface and all associated API calls.
  -- Add job_get_grace_time() functions to preempt plugins and refactor
     slurm_job_check_grace() to use them.
+ -- Remove --disable-iso8601 configure option.
 
 * Changes in Slurm 19.05.5
 ==========================
