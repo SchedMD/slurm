@@ -154,7 +154,7 @@ Table 1: srun flags to support the multi-core/multi-threaded environment
 </center>
 
 <p>It is important to note that many of these flags are only meaningful if the
-processes' have some affinity to specific CPUs and (optionally) memory.
+processes have some affinity to specific CPUs and (optionally) memory.
 Inconsistent options generally result in errors.
 Task affinity is configured using the TaskPlugin parameter in the slurm.conf file.
 Several options exist for the TaskPlugin depending upon system architecture
