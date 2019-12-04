@@ -84,7 +84,7 @@ each association in the database.  By setting this option, the
 'associations' option is also set.
 </li>
 <li>safe - This will ensure a job will only be launched when using an
-  association or qos that has a GrpCPUMins limit set if the job will be
+  association or qos that has a GrpTRESMins limit set if the job will be
   able to run to completion. Without this option set, jobs will be
   launched as long as their usage hasn't reached the cpu-minutes limit
   which can lead to jobs being launched but then killed when the limit is
@@ -386,6 +386,6 @@ end
   See <a href="tres.html">Trackable Resources TRES</a> for details.
 </p>
 
-<p style="text-align: center;">Last modified 1 May 2018</p>
+<p style="text-align: center;">Last modified 4 December 2019</p>
 
 </ul></body></html>
