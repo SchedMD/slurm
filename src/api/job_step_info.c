@@ -177,6 +177,10 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 			xstrfmtcat(out, "StepId=%u_%u.TBD ",
 				   job_step_ptr->array_job_id,
 				   job_step_ptr->array_task_id);
+		} else if (job_step_ptr->step_id == SLURM_BATCH_SCRIPT) {
+			xstrfmtcat(out, "StepId=%u_%u.batch ",
+				   job_step_ptr->array_job_id,
+				   job_step_ptr->array_task_id);
 		} else if (job_step_ptr->step_id == SLURM_EXTERN_CONT) {
 			xstrfmtcat(out, "StepId=%u_%u.extern ",
 				   job_step_ptr->array_job_id,
@@ -190,6 +194,9 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 	} else {
 		if (job_step_ptr->step_id == SLURM_PENDING_STEP) {
 			xstrfmtcat(out, "StepId=%u.TBD ",
+				   job_step_ptr->job_id);
+		} else if (job_step_ptr->step_id == SLURM_BATCH_SCRIPT) {
+			xstrfmtcat(out, "StepId=%u.batch ",
 				   job_step_ptr->job_id);
 		} else if (job_step_ptr->step_id == SLURM_EXTERN_CONT) {
 			xstrfmtcat(out, "StepId=%u.extern ",

@@ -44,6 +44,8 @@ documents those changes that are of interest to users and administrators.
  -- Add job_get_grace_time() functions to preempt plugins and refactor
     slurm_job_check_grace() to use them.
  -- Remove --disable-iso8601 configure option.
+ -- Display StepId=<jobid>.batch instead of StepId=<jobid>.4294967294 in output
+    of "scontrol show step". (slurm_sprint_job_step_info())
 
 * Changes in Slurm 19.05.5
 ==========================

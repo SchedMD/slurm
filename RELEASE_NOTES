@@ -48,3 +48,5 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- Display StepId=<jobid>.batch instead of StepId=<jobid>.4294967294 in output
+    of "scontrol show step". (slurm_sprint_job_step_info())
