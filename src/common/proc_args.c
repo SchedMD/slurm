@@ -38,10 +38,6 @@
 
 #include "config.h"
 
-#ifndef __USE_ISOC99
-#define __USE_ISOC99
-#endif
-
 #define _GNU_SOURCE
 
 #include <ctype.h>		/* isdigit    */
