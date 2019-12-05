@@ -14974,6 +14974,30 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		/* clear the accrue flag */
 		job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
 		job_ptr->details->accrue_time = 0;
+
+		if ((job_ptr->details->whole_node == 1) && job_ptr->gres_list) {
+			/*
+			 * We need to reset the gres_list to what was requested
+			 * instead of what was given exclusively.
+			 */
+			FREE_NULL_LIST(job_ptr->gres_list);
+			(void)gres_plugin_job_state_validate(
+				job_ptr->cpus_per_tres,
+				job_ptr->tres_freq,
+				job_ptr->tres_per_job,
+				job_ptr->tres_per_node,
+				job_ptr->tres_per_socket,
+				job_ptr->tres_per_task,
+				job_ptr->mem_per_tres,
+				&job_ptr->details->num_tasks,
+				&job_ptr->details->min_nodes,
+				&job_ptr->details->max_nodes,
+				&job_ptr->details->ntasks_per_node,
+				&job_ptr->details->mc_ptr->ntasks_per_socket,
+				&job_ptr->details->mc_ptr->sockets_per_node,
+				&job_ptr->details->cpus_per_task,
+				&job_ptr->gres_list);
+		}
 	}
 
 	/*

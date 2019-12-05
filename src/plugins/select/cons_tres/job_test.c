@@ -3391,6 +3391,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					select_node_record[node_i].vpus,
 					s_p_n,
 					job_ptr->details->ntasks_per_node,
+					(job_ptr->details->whole_node == 1),
 					&avail_res->avail_gpus, &near_gpu_cnt);
 		if (rc != 0) {
 #if _DEBUG

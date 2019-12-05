@@ -264,7 +264,6 @@ extern int job_res_fit_in_row(job_resources_t *job_resrcs_ptr,
 			       HANDLE_JOB_RES_TEST);
 }
 
-
 /*
  * allocate resources to the given job
  * - add 'struct job_resources' resources to 'part_res_record_t'
@@ -303,11 +302,6 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 	else
 		i_last = -2;
 
-	if (job->whole_node && (action != 2)) {
-		if (job_ptr->gres_list)
-			list_flush(job_ptr->gres_list);
-	}
-
 	for (i = i_first, n = -1; i <= i_last; i++) {
 		if (!bit_test(job->node_bitmap, i))
 			continue;
@@ -322,20 +316,22 @@ extern int job_res_add_job(job_record_t *job_ptr, int action)
 			else
 				node_gres_list = node_ptr->gres_list;
 			core_bitmap = copy_job_resources_node(job, n);
-			if (job->whole_node) {
+			if (job_ptr->details &&
+			    (job_ptr->details->whole_node == 1))
 				gres_plugin_job_alloc_whole_node(
-					&job_ptr->gres_list,
+					job_ptr->gres_list,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
 					node_ptr->name, core_bitmap,
 					job_ptr->user_id);
-			} else
+			else
 				gres_plugin_job_alloc(
 					job_ptr->gres_list,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
 					node_ptr->name, core_bitmap,
 					job_ptr->user_id);
+
 			gres_plugin_node_state_log(node_gres_list,
 						   node_ptr->name);
 			FREE_NULL_BITMAP(core_bitmap);

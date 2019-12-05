@@ -7576,6 +7576,7 @@ fini:	return avail_cores_by_sock;
  * IN cpus_per_core   - Count of CPUs per core on this node
  * IN sock_per_node   - sockets requested by job per node or NO_VAL
  * IN task_per_node   - tasks requested by job per node or NO_VAL16
+ * IN whole_node      - we are requesting the whole node or not
  * OUT avail_gpus     - Count of available GPUs on this node
  * OUT near_gpus      - Count of GPUs available on sockets with available CPUs
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
@@ -7589,6 +7590,7 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					uint16_t cpus_per_core,
 					uint32_t sock_per_node,
 					uint16_t task_per_node,
+					bool whole_node,
 					uint16_t *avail_gpus,
 					uint16_t *near_gpus)
 {
@@ -7610,7 +7612,9 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 		uint64_t min_gres = 1, tmp_u64;
 		if (sock_gres->job_specs) {
 			gres_job_state_t *job_gres_ptr = sock_gres->job_specs;
-			if (job_gres_ptr->gres_per_node)
+			if (whole_node)
+				min_gres = sock_gres->total_cnt;
+			else if (job_gres_ptr->gres_per_node)
 				min_gres = job_gres_ptr-> gres_per_node;
 			if (job_gres_ptr->gres_per_socket) {
 				tmp_u64 = job_gres_ptr->gres_per_socket;
@@ -7688,7 +7692,7 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 		} else {
 			near_gres_cnt = sock_gres->total_cnt;
 		}
-		if (sock_gres->job_specs &&
+		if (sock_gres->job_specs && !whole_node &&
 		    sock_gres->job_specs->gres_per_node) {
 			if ((sock_gres->max_node_gres == 0) ||
 			    (sock_gres->max_node_gres >
@@ -9614,7 +9618,21 @@ extern bool gres_plugin_job_mem_set(List job_gres_list,
 			if (!bit_test(job_res->node_bitmap, i))
 				continue;
 			node_off++;
-			gres_cnt = job_data_ptr->gres_cnt_node_select[i];
+			if (job_res->whole_node == 1) {
+				gres_state_t *node_gres_ptr;
+				gres_node_state_t *node_state_ptr;
+
+				node_gres_ptr = list_find_first(
+					node_record_table_ptr[i].gres_list,
+					_gres_find_id,
+					&job_gres_ptr->plugin_id);
+				if (!node_gres_ptr)
+					continue;
+				node_state_ptr = node_gres_ptr->gres_data;
+				gres_cnt = node_state_ptr->gres_cnt_avail;
+			} else
+				gres_cnt =
+					job_data_ptr->gres_cnt_node_select[i];
 			mem_size = mem_per_gres * gres_cnt;
 			if (first_set) {
 				job_res->memory_allocated[node_off] = mem_size;
@@ -10265,6 +10283,84 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	return SLURM_SUCCESS;
 }
 
+static void _job_select_whole_node_internal(
+	gres_key_t *job_search_key, gres_node_state_t *node_state_ptr,
+	int type_inx, int context_inx, List job_gres_list)
+{
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_state_ptr;
+
+	if (!(job_gres_ptr = list_find_first(job_gres_list,
+					     _gres_find_job_by_key,
+					     job_search_key))) {
+		job_state_ptr = xmalloc(sizeof(gres_job_state_t));
+
+		job_gres_ptr = xmalloc(sizeof(gres_state_t));
+		job_gres_ptr->plugin_id = job_search_key->plugin_id;
+		job_gres_ptr->gres_data = job_state_ptr;
+		job_state_ptr->gres_name =
+			xstrdup(gres_context[context_inx].gres_name);
+		if (type_inx != -1)
+			job_state_ptr->type_name =
+				xstrdup(node_state_ptr->type_name[type_inx]);
+		job_state_ptr->type_id = job_search_key->type_id;
+
+		list_append(job_gres_list, job_gres_ptr);
+	} else
+		job_state_ptr = job_gres_ptr->gres_data;
+
+	/*
+	 * Add the total_gres here but no count, that will be done after
+	 * allocation.
+	 */
+	if (type_inx != -1)
+		job_state_ptr->total_gres +=
+			node_state_ptr->type_cnt_avail[type_inx];
+	else
+		job_state_ptr->total_gres += node_state_ptr->gres_cnt_avail;
+}
+
+static int _job_alloc_whole_node_internal(
+	gres_key_t *job_search_key, gres_node_state_t *node_state_ptr,
+	List job_gres_list, int node_cnt, int node_index, int node_offset,
+	int type_index, uint32_t job_id, char *node_name,
+	bitstr_t *core_bitmap, uint32_t user_id)
+{
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_state_ptr;
+
+	if (!(job_gres_ptr = list_find_first(job_gres_list,
+					     _gres_find_job_by_key,
+					     job_search_key))) {
+		error("%s: This should never happen, we couldn't find the gres %u:%u",
+		      __func__,
+		      job_search_key->plugin_id,
+		      job_search_key->type_id);
+		return SLURM_ERROR;
+	}
+
+	job_state_ptr = (gres_job_state_t *)job_gres_ptr->gres_data;
+
+	/*
+	 * As the amount of gres on each node could
+	 * differ. We need to set the gres_per_node
+	 * correctly here to avoid heterogeneous node
+	 * issues.
+	 */
+	if (type_index != -1)
+		job_state_ptr->gres_per_node =
+			node_state_ptr->type_cnt_avail[type_index];
+	else
+		job_state_ptr->gres_per_node = node_state_ptr->gres_cnt_avail;
+
+	return _job_alloc(job_state_ptr, node_state_ptr,
+			  node_cnt, node_index, node_offset,
+			  job_state_ptr->gres_name,
+			  job_id, node_name, core_bitmap,
+			  job_gres_ptr->plugin_id,
+			  user_id);
+}
+
 /*
  * Select and allocate GRES to a job and update node and job GRES information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
@@ -10344,34 +10440,23 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 }
 
 /*
- * Select and allocate all GRES on a node to a job and update node and job GRES
- * information
- * IN/OUT job_gres_list - job's gres_list built by
- *                        gres_plugin_job_state_validate().  This list will be
- * destroyed and remade with all GRES on node.
+ * Fill in job_gres_list with the total amount of GRES on a node.
+ * OUT job_gres_list - This list will be destroyed and remade with all GRES on
+ *                     node.
  * IN node_gres_list - node's gres_list built by
  *		       gres_plugin_node_config_validate()
- * IN node_cnt    - total number of nodes originally allocated to the job
- * IN node_index  - zero-origin global node index
- * IN node_offset - zero-origin index in job allocation to the node of interest
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
- * IN core_bitmap - cores allocated to this job on this node (NULL if not
- *                  available)
- * IN user_id     - job's user ID
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_plugin_job_alloc_whole_node(
+extern int gres_plugin_job_select_whole_node(
 	List *job_gres_list, List node_gres_list,
-	int node_cnt, int node_index, int node_offset,
-	uint32_t job_id, char *node_name,
-	bitstr_t *core_bitmap, uint32_t user_id)
+	uint32_t job_id, char *node_name)
 {
-	int i, rc, rc2;
+	int i;
 	ListIterator node_gres_iter;
-	gres_state_t *job_gres_ptr, *node_gres_ptr;
+	gres_state_t *node_gres_ptr;
 	gres_node_state_t *node_state_ptr;
-	gres_job_state_t *job_state_ptr;
 
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -10384,11 +10469,13 @@ extern int gres_plugin_job_alloc_whole_node(
 	if (!*job_gres_list)
 		*job_gres_list = list_create(_gres_job_list_delete);
 
-	rc = gres_plugin_init();
+	if (gres_plugin_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	slurm_mutex_lock(&gres_context_lock);
 	node_gres_iter = list_iterator_create(node_gres_list);
 	while ((node_gres_ptr = list_next(node_gres_iter))) {
+		gres_key_t job_search_key;
 		node_state_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
 
 		if (node_state_ptr->no_consume ||
@@ -10408,55 +10495,113 @@ extern int gres_plugin_job_alloc_whole_node(
 			continue;
 		}
 
+		job_search_key.plugin_id = node_gres_ptr->plugin_id;
 
-		if (!(job_gres_ptr = list_find_first(
-			      *job_gres_list, _gres_find_id,
-			      &node_gres_ptr->plugin_id))) {
-			job_state_ptr = xmalloc(sizeof(gres_job_state_t));
+		if (!node_state_ptr->type_cnt) {
+			job_search_key.type_id = 0;
+			_job_select_whole_node_internal(
+				&job_search_key, node_state_ptr,
+				-1, i, *job_gres_list);
+		} else {
+			for (int j = 0; j < node_state_ptr->type_cnt; j++) {
+				job_search_key.type_id = gres_plugin_build_id(
+					node_state_ptr->type_name[j]);
+				_job_select_whole_node_internal(
+					&job_search_key, node_state_ptr,
+					j, i, *job_gres_list);
+			}
+		}
+	}
+	list_iterator_destroy(node_gres_iter);
+	slurm_mutex_unlock(&gres_context_lock);
 
-			job_gres_ptr = xmalloc(sizeof(gres_state_t));
-			job_gres_ptr->plugin_id = node_gres_ptr->plugin_id;
-			job_gres_ptr->gres_data = job_state_ptr;
-			job_state_ptr->gres_name =
-				xstrdup(gres_context[i].gres_name);
+	return SLURM_SUCCESS;
+}
 
-			job_state_ptr->node_cnt = node_cnt;
-			job_state_ptr->gres_bit_alloc =
-				xcalloc(node_cnt, sizeof(bitstr_t *));
-			job_state_ptr->gres_cnt_node_alloc =
-				xcalloc(node_cnt, sizeof(uint64_t));
-			job_state_ptr->gres_bit_step_alloc =
-				xcalloc(node_cnt, sizeof(bitstr_t *));
-			job_state_ptr->gres_cnt_step_alloc =
-				xcalloc(node_cnt, sizeof(uint64_t));
-			list_append(*job_gres_list, job_gres_ptr);
+/*
+ * Select and allocate all GRES on a node to a job and update node and job GRES
+ * information
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_whole_node().
+ * IN node_gres_list - node's gres_list built by
+ *		       gres_plugin_node_config_validate()
+ * IN node_cnt    - total number of nodes originally allocated to the job
+ * IN node_index  - zero-origin global node index
+ * IN node_offset - zero-origin index in job allocation to the node of interest
+ * IN job_id      - job's ID (for logging)
+ * IN node_name   - name of the node (for logging)
+ * IN core_bitmap - cores allocated to this job on this node (NULL if not
+ *                  available)
+ * IN user_id     - job's user ID
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_job_alloc_whole_node(
+	List job_gres_list, List node_gres_list,
+	int node_cnt, int node_index, int node_offset,
+	uint32_t job_id, char *node_name,
+	bitstr_t *core_bitmap, uint32_t user_id)
+{
+	int i, rc, rc2;
+	ListIterator node_gres_iter;
+	gres_state_t *node_gres_ptr;
+	gres_node_state_t *node_state_ptr;
+
+	if (job_gres_list == NULL)
+		return SLURM_SUCCESS;
+	if (node_gres_list == NULL) {
+		error("%s: job %u has gres specification while node %s has none",
+		      __func__, job_id, node_name);
+		return SLURM_ERROR;
+	}
+
+	rc = gres_plugin_init();
+
+	slurm_mutex_lock(&gres_context_lock);
+	node_gres_iter = list_iterator_create(node_gres_list);
+	while ((node_gres_ptr = list_next(node_gres_iter))) {
+		gres_key_t job_search_key;
+		node_state_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
+
+		if (node_state_ptr->no_consume ||
+		    !node_state_ptr->gres_cnt_config)
+			continue;
+
+		for (i = 0; i < gres_context_cnt; i++) {
+			if (node_gres_ptr->plugin_id ==
+			    gres_context[i].plugin_id)
+				break;
+		}
+		if (i >= gres_context_cnt) {
+			error("%s: no plugin configured for data type %u for job %u and node %s",
+			      __func__, node_gres_ptr->plugin_id, job_id,
+			      node_name);
+			/* A likely sign that GresPlugins has changed */
+			continue;
 		}
 
-		job_state_ptr = (gres_job_state_t *)job_gres_ptr->gres_data;
-		job_state_ptr->gres_per_node = node_state_ptr->gres_cnt_config;
-		job_state_ptr->total_gres += node_state_ptr->gres_cnt_config;
+		job_search_key.plugin_id = node_gres_ptr->plugin_id;
 
-		/*
-		 * If we get a heterogeneous allocation we will only allow the
-		 * smallest gres count to be allocated by a step within the job.
-		 * If they want a true heterogeneous job, they should do a
-		 * hetjob.
-		 */
-		if (!job_state_ptr->gres_per_node ||
-		    (job_state_ptr->gres_per_node >
-		     node_state_ptr->gres_cnt_config)) {
-			job_state_ptr->gres_per_node =
-				node_state_ptr->gres_cnt_config;
-			job_state_ptr->total_gres +=
-				node_state_ptr->gres_cnt_config;
+		if (!node_state_ptr->type_cnt) {
+			job_search_key.type_id = 0;
+			rc2 = _job_alloc_whole_node_internal(
+				&job_search_key, node_state_ptr,
+				job_gres_list, node_cnt, node_index,
+				node_offset, -1, job_id, node_name,
+				core_bitmap, user_id);
+			if (rc2 != SLURM_SUCCESS)
+				rc = rc2;
+		} else {
+			for (int j = 0; j < node_state_ptr->type_cnt; j++) {
+				job_search_key.type_id = gres_plugin_build_id(
+					node_state_ptr->type_name[j]);
+				rc2 = _job_alloc_whole_node_internal(
+					&job_search_key, node_state_ptr,
+					job_gres_list, node_cnt, node_index,
+					node_offset, j, job_id, node_name,
+					core_bitmap, user_id);
+				if (rc2 != SLURM_SUCCESS)
+					rc = rc2;
+			}
 		}
-		rc2 = _job_alloc(job_gres_ptr->gres_data,
-				 node_gres_ptr->gres_data, node_cnt, node_index,
-				 node_offset, gres_context[i].gres_name,
-				 job_id, node_name, core_bitmap,
-				 job_gres_ptr->plugin_id, user_id);
-		if (rc2 != SLURM_SUCCESS)
-			rc = rc2;
 	}
 	list_iterator_destroy(node_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -13550,7 +13695,8 @@ extern void gres_build_job_details(List job_gres_list,
 						   "%s%s%s%s(IDX:%s)", sep1,
 						   gres_context[i].gres_name,
 						   sep2, type, tmp_str);
-				} else {
+				} else if (job_gres_data->
+					   gres_cnt_node_alloc[j]) {
 					xstrfmtcat(my_gres_details[j],
 						   "%s%s%s%s(CNT:%"PRIu64")",
 						   sep1,

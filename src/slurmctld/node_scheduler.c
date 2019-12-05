@@ -2639,6 +2639,41 @@ static char *_build_tres_str(job_record_t *job_ptr)
 	return tres_str;
 }
 
+static List _handle_exclusive_gres(job_record_t *job_ptr,
+				   bitstr_t *select_bitmap, bool test_only)
+{
+	int i_first, i_last;
+	List post_list = NULL;
+
+	if (test_only)
+		return NULL;
+
+	xassert(job_ptr);
+	xassert(select_bitmap);
+
+	if (!job_ptr->details ||
+	    !(job_ptr->details->whole_node == 1))
+		return NULL;
+
+	i_first = bit_ffs(select_bitmap);
+	if (i_first != -1)
+		i_last = bit_fls(select_bitmap);
+	else
+		i_last = -2;
+
+	for (int i = i_first; i <= i_last; i++) {
+		if (!bit_test(select_bitmap, i))
+			continue;
+		gres_plugin_job_select_whole_node(
+			&post_list,
+			node_record_table_ptr[i].gres_list,
+			job_ptr->job_id,
+			node_record_table_ptr[i].name);
+	}
+
+	return post_list;
+}
+
 /*
  * select_nodes - select and allocate nodes to a specific job
  * IN job_ptr - pointer to the job record
@@ -2683,6 +2718,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 		{ .assoc = READ_LOCK, .qos = READ_LOCK };
 	assoc_mgr_lock_t job_read_locks =
 		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
+	List gres_list_pre = NULL;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -2815,8 +2851,17 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	 * could run on nodes.
 	 */
 	if (select_bitmap) {
+		List gres_list_whole_node = _handle_exclusive_gres(
+			job_ptr, select_bitmap, test_only);
+
 		selected_node_cnt = bit_set_count(select_bitmap);
 		job_ptr->node_cnt_wag = selected_node_cnt;
+
+		if (gres_list_whole_node) {
+			gres_list_pre = job_ptr->gres_list;
+			job_ptr->gres_list = gres_list_whole_node;
+		}
+
 	} else
 		selected_node_cnt = req_nodes;
 
@@ -3169,8 +3214,14 @@ cleanup:
 		xfree(node_set_ptr);
 	}
 
-	if (error_code != SLURM_SUCCESS)
+	if (error_code != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
+		if (job_ptr->gres_list != gres_list_pre) {
+			FREE_NULL_LIST(job_ptr->gres_list);
+			job_ptr->gres_list = gres_list_pre;
+		}
+	} else
+		FREE_NULL_LIST(gres_list_pre);
 
 	return error_code;
 }

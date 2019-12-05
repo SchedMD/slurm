@@ -620,6 +620,7 @@ extern List gres_plugin_epilog_build_env(List job_gres_list, char *node_list);
 extern void gres_plugin_epilog_set_env(char ***epilog_env_ptr,
 				       List epilog_gres_list, int node_inx);
 
+
 /*
  * Given a job's requested GRES configuration, validate it and build a GRES list
  * Note: This function can be used for a new request with gres_list==NULL or
@@ -865,6 +866,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
  * IN cpus_per_core   - Count of CPUs per core on this node
  * IN sock_per_node   - sockets requested by job per node or NO_VAL
  * IN task_per_node   - tasks requested by job per node or NO_VAL16
+ * IN whole_node      - we are requesting the whole node or not
  * OUT avail_gpus     - Count of available GPUs on this node
  * OUT near_gpus      - Count of GPUs available on sockets with available CPUs
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
@@ -878,6 +880,7 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					uint16_t cpus_per_core,
 					uint32_t sock_per_node,
 					uint16_t task_per_node,
+					bool whole_node,
 					uint16_t *avail_gpus,
 					uint16_t *near_gpus);
 
@@ -981,11 +984,23 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
 					List job_gres_list);
 
 /*
+ * Fill in job_gres_list with the total amount of GRES on a node.
+ * OUT job_gres_list - This list will be destroyed and remade with all GRES on
+ *                     node.
+ * IN node_gres_list - node's gres_list built by
+ *		       gres_plugin_node_config_validate()
+ * IN job_id      - job's ID (for logging)
+ * IN node_name   - name of the node (for logging)
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_plugin_job_select_whole_node(
+	List *job_gres_list, List node_gres_list,
+	uint32_t job_id, char *node_name);
+
+/*
  * Select and allocate all GRES on a node to a job and update node and job GRES
  * information
- * IN/OUT job_gres_list - job's gres_list built by
- *                        gres_plugin_job_state_validate().  This list will be
- * destroyed and remade with all GRES on node.
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_whole_node().
  * IN node_gres_list - node's gres_list built by
  *		       gres_plugin_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
@@ -999,7 +1014,7 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_plugin_job_alloc_whole_node(
-	List *job_gres_list, List node_gres_list,
+	List job_gres_list, List node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
 	bitstr_t *core_bitmap, uint32_t user_id);
