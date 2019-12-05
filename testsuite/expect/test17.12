@@ -806,7 +806,7 @@ proc clean_up {} {
 #
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-  $bin_sleep 2
+  $bin_sleep 5
 "
 
 #
@@ -957,6 +957,7 @@ spawn $scontrol create partition=$test_part \
     nodes=$nodes(0)\,$nodes(1)\,$nodes(2)\,$nodes(3)
 expect {
 	-re "Error" {
+		log_error "scontrol returned an error when creating a partition"
 		set exit_code 1
 	}
 	timeout {
