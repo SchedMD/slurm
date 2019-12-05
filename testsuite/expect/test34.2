@@ -181,6 +181,9 @@ proc clean_up { rc } {
 	set cleanqos(1) $qos_2
 
 	set clean 0
+
+	wait_for_account_done $acct_1,$acct_2
+
 	for {set i 0} {$i<2} {incr i 1} {
 		spawn $sacctmgr delete -i account $cleanacct($i)
 		expect {
@@ -218,9 +221,6 @@ proc clean_up { rc } {
 		set exit_code 1
 	}
 
-	cancel_job $qos_1_id
-	cancel_job $qos_2_id
-
 	if {$rc != 0} {
 		exit $rc
 	}
@@ -232,6 +232,9 @@ set user [get_my_user_name]
 
 
 ###################### Test preempt cancel ######################
+log_info "**** Cleanup from previous run ****"
+clean_up 0
+
 send_user "\n*** TEST PREEMPT CANCEL ***\n"
 
 acct_setup $acct_1 $qos_1 "" cancel
@@ -252,8 +255,7 @@ if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
 sleep 2
 check_job_state $qos_1_id PREEMPTED
 
-cancel_job $qos_1_id
-cancel_job $qos_2_id
+wait_for_account_done $acct_1,$acct_2
 
 ###################### Test preempt requeue ######################
 send_user "\n*** TEST PREEMPT REQUEUE ***\n"
@@ -288,8 +290,7 @@ if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
 sleep 2
 check_job_state $qos_1_id "RUNNING"
 
-cancel_job $qos_1_id
-cancel_job $qos_2_id
+wait_for_account_done $acct_1,$acct_2
 
 clean_up 0
 

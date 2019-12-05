@@ -41,6 +41,7 @@ set feat0       "test$test_id\_zero"
 set feat1       "test$test_id\_one"
 set feat2       "test$test_id\_two"
 set feat3       "test$test_id\_three"
+set feat4       "test$test_id\_four"
 array set nodes {}
 array set def_active_node_feat {}
 array set def_avail_node_feat  {}
@@ -685,6 +686,75 @@ proc sub_job_xor {nnode fail_test} {
 	}
 }
 
+proc sub_job_and_xor {nnode fail_test} {
+	global sbatch scontrol number
+	global exit_code test_part file_in nodes
+	global feat0 feat1 feat2 feat3 feat4
+
+	set test_job 0
+	set fail_node_config 0
+
+	if {$fail_test} {
+		spawn $sbatch -C "$feat4&\[$feat1|$feat0\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				set fail_node_config 1
+				exp_continue
+			}
+			timeout {
+				log_error "sbatch is not responding"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		if {$fail_node_config == $fail_test} {
+			log_info "This error is expected, no worries"
+		}
+		if {$test_job != 0} {
+			log_error "Job should have been rejected, but was not"
+			cancel_job $test_job
+			set exit_code 1
+		}
+	} else {
+		spawn $sbatch -C "$feat4&\[$feat1|$feat0\]" -p$test_part -N$nnode -t1 -o /dev/null $file_in
+		expect {
+			-re "Submitted batch job ($number)" {
+				set test_job $expect_out(1,string)
+				exp_continue
+			}
+			-re "Requested node configuration is not available" {
+				log_error "Unexpected job submit failure"
+				set exit_code 1
+				exp_continue
+			}
+			timeout {
+				log_error "sbatch is not responding"
+				set exit_code 1
+			}
+			eof {
+				wait
+			}
+		}
+
+		# Check that nodes have the correct features
+		if {$test_job == 0} {
+			log_error "Job submit failure"
+			set exit_code 1
+		} else {
+			# Make sure nodes(1) not included in allocation
+			check_job_nodes $test_job $nodes(1) 0
+			check_job $nnode $test_job
+		}
+	}
+}
+
 proc set_node_feature {node_name new_feature} {
 	global scontrol exit_code
 
@@ -736,7 +806,7 @@ proc clean_up {} {
 #
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-  $bin_sleep 2
+  $bin_sleep 5
 "
 
 #
@@ -879,14 +949,15 @@ foreach option [array names nodes] {
 send_user "\n\n==========Set node features to test-specific values for testing==========\n"
 set_node_feature $nodes(0) $feat0
 set_node_feature $nodes(1) $feat1
-set_node_feature $nodes(2) $feat0,$feat2
-set_node_feature $nodes(3) $feat0,$feat2,$feat3
+set_node_feature $nodes(2) $feat0,$feat2,$feat4
+set_node_feature $nodes(3) $feat0,$feat2,$feat3,$feat4
 
 # Create a test partition
 spawn $scontrol create partition=$test_part \
     nodes=$nodes(0)\,$nodes(1)\,$nodes(2)\,$nodes(3)
 expect {
 	-re "Error" {
+		log_error "scontrol returned an error when creating a partition"
 		set exit_code 1
 	}
 	timeout {
@@ -945,6 +1016,14 @@ sub_job_or 4 0
 # Test OR within parenthesis
 send_user "\n\n==========Test OR within parenthesis==========\n"
 sub_job_or_paren 4 0
+
+# Test mixed AND and XOR with 2 nodes
+send_user "\n\n==========Test mix of AND and XOR==========\n"
+sub_job_and_xor 2 0
+
+# Test mixed AND and XOR with 3 nodes (This is expected to fail)
+send_user "\n\n==========Test mix of AND and XOR==========\n"
+sub_job_and_xor 3 1
 
 # Test batch host
 if {[test_front_end] == 0} {
