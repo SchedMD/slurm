@@ -93,7 +93,7 @@ extern void part_data_dump_res(part_res_record_t *p_ptr);
 
 /* Create a duplicate part_res_record list */
 extern part_res_record_t *part_data_dup_res(
-	part_res_record_t *orig_ptr);
+	part_res_record_t *orig_ptr, bitstr_t *node_map);
 
 /* sort the rows of a partition from "most allocated" to "least allocated" */
 extern void part_data_sort_res(part_res_record_t *p_ptr);

@@ -1773,7 +1773,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	 * Job is still pending. Simulate termination of jobs one at a time
 	 * to determine when and where the job can start.
 	 */
-	future_part = part_data_dup_res(select_part_record);
+	future_part = part_data_dup_res(select_part_record, NULL);
 	if (future_part == NULL) {
 		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
@@ -2011,7 +2011,7 @@ top:	orig_node_map = bit_copy(save_node_map);
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
 		preempt_mode = true;
-		future_part = part_data_dup_res(select_part_record);
+		future_part = part_data_dup_res(select_part_record, NULL);
 		if (future_part == NULL) {
 			FREE_NULL_BITMAP(orig_node_map);
 			FREE_NULL_BITMAP(save_node_map);

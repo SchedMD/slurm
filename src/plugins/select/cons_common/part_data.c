@@ -427,7 +427,7 @@ extern void part_data_dump_res(part_res_record_t *p_ptr)
 
 /* Create a duplicate part_res_record list */
 extern part_res_record_t *part_data_dup_res(
-	part_res_record_t *orig_ptr)
+	part_res_record_t *orig_ptr, bitstr_t *node_map)
 {
 	part_res_record_t *new_part_ptr, *new_ptr;
 
@@ -439,9 +439,13 @@ extern part_res_record_t *part_data_dup_res(
 
 	while (orig_ptr) {
 		new_ptr->part_ptr = orig_ptr->part_ptr;
-		new_ptr->num_rows = orig_ptr->num_rows;
-		new_ptr->row = part_data_dup_row(orig_ptr->row,
-						 orig_ptr->num_rows);
+		if (node_map && orig_ptr->part_ptr->node_bitmap &&
+		    bit_overlap_any(node_map,
+				    orig_ptr->part_ptr->node_bitmap)) {
+			new_ptr->num_rows = orig_ptr->num_rows;
+			new_ptr->row = part_data_dup_row(orig_ptr->row,
+							 orig_ptr->num_rows);
+		}
 		if (orig_ptr->next) {
 			new_ptr->next = xmalloc(sizeof(part_res_record_t));
 			new_ptr = new_ptr->next;
