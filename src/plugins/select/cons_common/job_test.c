@@ -1773,12 +1773,12 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	 * Job is still pending. Simulate termination of jobs one at a time
 	 * to determine when and where the job can start.
 	 */
-	future_part = part_data_dup_res(select_part_record, NULL);
+	future_part = part_data_dup_res(select_part_record, orig_map);
 	if (future_part == NULL) {
 		FREE_NULL_BITMAP(orig_map);
 		return SLURM_ERROR;
 	}
-	future_usage = node_data_dup_use(select_node_usage, NULL);
+	future_usage = node_data_dup_use(select_node_usage, orig_map);
 	if (future_usage == NULL) {
 		part_data_destroy_res(future_part);
 		FREE_NULL_BITMAP(orig_map);
@@ -1821,7 +1821,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				action = 0;	/* remove cores and memory */
 			/* Remove preemptable job now */
 			(void) job_res_rm_job(future_part, future_usage,
-					      tmp_job_ptr, action, false, NULL);
+					      tmp_job_ptr, action, false,
+					      orig_map);
 		}
 	}
 	list_iterator_destroy(job_iterator);
@@ -1881,7 +1882,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				last_job_ptr = tmp_job_ptr;
 				(void) job_res_rm_job(
 					future_part, future_usage,
-					tmp_job_ptr, 0, false, NULL);
+					tmp_job_ptr, 0, false, orig_map);
 				if (rm_job_cnt++ > 200)
 					break;
 				next_job_ptr = list_peek_next(job_iterator);
@@ -2011,13 +2012,15 @@ top:	orig_node_map = bit_copy(save_node_map);
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
 		preempt_mode = true;
-		future_part = part_data_dup_res(select_part_record, NULL);
+		future_part = part_data_dup_res(select_part_record,
+						orig_node_map);
 		if (future_part == NULL) {
 			FREE_NULL_BITMAP(orig_node_map);
 			FREE_NULL_BITMAP(save_node_map);
 			return SLURM_ERROR;
 		}
-		future_usage = node_data_dup_use(select_node_usage, NULL);
+		future_usage = node_data_dup_use(select_node_usage,
+						 orig_node_map);
 		if (future_usage == NULL) {
 			part_data_destroy_res(future_part);
 			FREE_NULL_BITMAP(orig_node_map);
@@ -2039,7 +2042,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 				continue;
 			/* Remove preemptable job now */
 			(void) job_res_rm_job(future_part, future_usage,
-					      tmp_job_ptr, 0, false, NULL);
+					      tmp_job_ptr, 0, false,
+					      orig_node_map);
 			bit_or(node_bitmap, orig_node_map);
 			rc = _job_test(job_ptr, node_bitmap, min_nodes,
 				       max_nodes, req_nodes,
