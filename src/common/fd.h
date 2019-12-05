@@ -137,4 +137,11 @@ extern char *fd_resolve_path(int fd);
  */
 extern void fd_set_oob(int fd, int value);
 
+/*
+ * Dump poll() revents flags to string
+ * IN revents - revents from poll fds array entry
+ * RET string with flags (must xfree())
+ */
+extern char *poll_revents_to_str(const short revents);
+
 #endif /* !_FD_H */

@@ -38,6 +38,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -283,4 +284,29 @@ extern void fd_set_oob(int fd, int value)
 {
 	if (setsockopt(fd, SOL_SOCKET, SO_OOBINLINE, &value, sizeof(value)))
 		fatal("Unable disable inline OOB messages on socket: %m");
+}
+
+extern char *poll_revents_to_str(const short revents)
+{
+	char *txt = NULL;
+
+	if (revents & POLLIN)
+		xstrfmtcat(txt, "POLLIN");
+	if (revents & POLLPRI)
+		xstrfmtcat(txt, "%sPOLLPRI", (txt ? "|" : ""));
+	if (revents & POLLOUT)
+		xstrfmtcat(txt, "%sPOLLOUT", (txt ? "|" : ""));
+	if (revents & POLLHUP)
+		xstrfmtcat(txt, "%sPOLLHUP", (txt ? "|" : ""));
+	if (revents & POLLNVAL)
+		xstrfmtcat(txt, "%sPOLLNVAL", (txt ? "|" : ""));
+	if (revents & POLLERR)
+		xstrfmtcat(txt, "%sPOLLERR", (txt ? "|" : ""));
+
+	if (!revents)
+		xstrfmtcat(txt, "0");
+	else
+		xstrfmtcat(txt, "(0x%04" PRIx16 ")", revents);
+
+	return txt;
 }
