@@ -20,6 +20,7 @@ EXTRA_DIST = \
     x_ac_dlfcn.m4 \
     x_ac_env.m4 \
     x_ac_gpl_licensed.m4 \
+    x_ac_http_parser.m4 \
     x_ac_hwloc.m4 \
     x_ac_json.m4 \
     x_ac_lua.m4 \
@@ -34,4 +35,5 @@ EXTRA_DIST = \
     x_ac_setproctitle.m4 \
     x_ac_slurm_ssl.m4 \
     x_ac_systemd.m4 \
-    x_ac_uid_gid_size.m4
+    x_ac_uid_gid_size.m4 \
+    x_ac_yaml.m4

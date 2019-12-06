@@ -766,6 +766,14 @@ PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
 ax_pthread_config
+WITH_YAML_FALSE
+WITH_YAML_TRUE
+YAML_LDFLAGS
+YAML_CPPFLAGS
+WITH_HTTP_PARSER_FALSE
+WITH_HTTP_PARSER_TRUE
+HTTP_PARSER_LDFLAGS
+HTTP_PARSER_CPPFLAGS
 WITH_JSON_PARSER_FALSE
 WITH_JSON_PARSER_TRUE
 JSON_LDFLAGS
@@ -961,6 +969,8 @@ with_pam_dir
 with_shared_libslurm
 enable_load_env_no_login
 with_json
+with_http_parser
+with_yaml
 with_dimensions
 with_ofed
 with_hdf5
@@ -1721,6 +1731,8 @@ Optional Packages:
                           libslurm lib - can dramatically increase the
                           footprint of Slurm.
   --with-json=PATH        Specify path to json-c installation
+  --with-http-parser=PATH Specify path to HTTP Parser installation
+  --with-yaml=PATH        Specify path to libyaml installation
   --with-dimensions=N     set system dimension count for generic computer
                           system
   --with-ofed=PATH        Specify path to ofed installation
@@ -19250,6 +19262,183 @@ fi
 
 
 
+
+
+	_x_ac_http_parser_dirs="/usr /usr/local"
+	_x_ac_http_parser_libs="lib64 lib"
+
+
+# Check whether --with-http_parser was given.
+if test "${with_http_parser+set}" = set; then :
+  withval=$with_http_parser; if test "x$with_http_parser" != xno; then :
+  _x_ac_http_parser_dirs="$with_http_parser $_x_ac_http_parser_dirs"
+fi
+fi
+
+
+	if test "x$with_http_parser" = xno; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for HTTP parser disabled" >&5
+$as_echo "$as_me: WARNING: support for HTTP parser disabled" >&2;}
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for http-parser installation" >&5
+$as_echo_n "checking for http-parser installation... " >&6; }
+if ${x_ac_cv_http_parser_dir+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+			for d in $_x_ac_http_parser_dirs; do
+			  test -d "$d" || continue
+			  test -d "$d/include" || continue
+			  test -f "$d/include/http_parser.h" || continue
+			  for bit in $_x_ac_http_parser_libs; do
+				_x_ac_http_parser_libs_save="$LIBS"
+				LIBS="-L$d/$bit -lhttp_parser $LIBS"
+				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char http_parser_init ();
+int
+main ()
+{
+return http_parser_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  x_ac_cv_http_parser_dir=$d
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+				LIBS="$_x_ac_http_parser_libs_save"
+				test -n "$x_ac_cv_http_parser_dir" && break
+			  done
+			  test -n "$x_ac_cv_http_parser_dir" && break
+			done
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_http_parser_dir" >&5
+$as_echo "$x_ac_cv_http_parser_dir" >&6; }
+
+	if test -z "$x_ac_cv_http_parser_dir"; then
+	  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate HTTP Parser library" >&5
+$as_echo "$as_me: WARNING: unable to locate HTTP Parser library" >&2;}
+	else
+
+$as_echo "#define HAVE_HTTP_PARSER 1" >>confdefs.h
+
+	  HTTP_PARSER_CPPFLAGS="-I$x_ac_cv_http_parser_dir/include"
+	  HTTP_PARSER_LDFLAGS="-L$x_ac_cv_http_parser_dir/$bit -lhttp_parser"
+	fi
+
+
+
+	fi
+
+	 if test -n "$x_ac_cv_http_parser_dir"; then
+  WITH_HTTP_PARSER_TRUE=
+  WITH_HTTP_PARSER_FALSE='#'
+else
+  WITH_HTTP_PARSER_TRUE='#'
+  WITH_HTTP_PARSER_FALSE=
+fi
+
+
+
+
+	_x_ac_yaml_dirs="/usr /usr/local"
+	_x_ac_yaml_libs="lib64 lib"
+
+
+# Check whether --with-yaml was given.
+if test "${with_yaml+set}" = set; then :
+  withval=$with_yaml; if test "x$with_yaml" != xno; then :
+  _x_ac_yaml_dirs="$with_yaml $_x_ac_yaml_dirs"
+fi
+fi
+
+
+	if test "x$with_yaml" = xno; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for libyaml disabled" >&5
+$as_echo "$as_me: WARNING: support for libyaml disabled" >&2;}
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libyaml installation" >&5
+$as_echo_n "checking for libyaml installation... " >&6; }
+if ${x_ac_cv_yaml_dir+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+			for d in $_x_ac_yaml_dirs; do
+			  test -d "$d" || continue
+			  test -d "$d/include" || continue
+			  test -f "$d/include/yaml.h" || continue
+			  for bit in $_x_ac_yaml_libs; do
+				_x_ac_yaml_libs_save="$LIBS"
+				LIBS="-L$d/$bit -lyaml $LIBS"
+				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char yaml_parser_load ();
+int
+main ()
+{
+return yaml_parser_load ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  x_ac_cv_yaml_dir=$d
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+				LIBS="$_x_ac_yaml_libs_save"
+				test -n "$x_ac_cv_yaml_dir" && break
+			  done
+			  test -n "$x_ac_cv_yaml_dir" && break
+			done
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_yaml_dir" >&5
+$as_echo "$x_ac_cv_yaml_dir" >&6; }
+
+		if test -z "$x_ac_cv_yaml_dir"; then
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libyaml parser library" >&5
+$as_echo "$as_me: WARNING: unable to locate libyaml parser library" >&2;}
+		else
+
+$as_echo "#define HAVE_YAML 1" >>confdefs.h
+
+			YAML_CPPFLAGS="-I$x_ac_cv_yaml_dir/include"
+			YAML_LDFLAGS="-L$x_ac_cv_yaml_dir/$bit -lyaml"
+		fi
+
+
+
+	fi
+
+	 if test -n "$x_ac_cv_yaml_dir"; then
+  WITH_YAML_TRUE=
+  WITH_YAML_FALSE='#'
+else
+  WITH_YAML_TRUE='#'
+  WITH_YAML_FALSE=
+fi
+
+
+
 if test $ac_cv_c_compiler_gnu = yes; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CC needs -traditional" >&5
 $as_echo_n "checking whether $CC needs -traditional... " >&6; }
@@ -24619,6 +24808,14 @@ fi
 
 if test -z "${WITH_JSON_PARSER_TRUE}" && test -z "${WITH_JSON_PARSER_FALSE}"; then
   as_fn_error $? "conditional \"WITH_JSON_PARSER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_HTTP_PARSER_TRUE}" && test -z "${WITH_HTTP_PARSER_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_HTTP_PARSER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_YAML_TRUE}" && test -z "${WITH_YAML_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_YAML\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_OFED_TRUE}" && test -z "${BUILD_OFED_FALSE}"; then

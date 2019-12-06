@@ -136,6 +136,12 @@ X_AC_UID_GID_SIZE_CHECK
 dnl Check for JSON parser
 X_AC_JSON
 
+dnl Check for HTTP parser
+X_AC_HTTP_PARSER
+
+dnl Check for yaml parser
+X_AC_YAML
+
 dnl Checks for compiler characteristics.
 dnl
 AC_PROG_GCC_TRADITIONAL([])

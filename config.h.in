@@ -88,6 +88,9 @@
 /* Define to 1 if you have the `hstrerror' function. */
 #undef HAVE_HSTRERROR
 
+/* Define if you are compiling with HTTP parser. */
+#undef HAVE_HTTP_PARSER
+
 /* Define to 1 if hwloc library found */
 #undef HAVE_HWLOC
 
@@ -330,6 +333,9 @@
 
 /* Define to 1 if you have the <values.h> header file. */
 #undef HAVE_VALUES_H
+
+/* Define if you are compiling with libyaml parser. */
+#undef HAVE_YAML
 
 /* Define if you have __progname. */
 #undef HAVE__PROGNAME
