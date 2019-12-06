@@ -140,6 +140,7 @@ bitoff_t bit_fls(bitstr_t *b);
 void	bit_fill_gaps(bitstr_t *b);
 int	bit_super_set(bitstr_t *b1, bitstr_t *b2);
 int     bit_overlap(bitstr_t *b1, bitstr_t *b2);
+int     bit_overlap_any(bitstr_t *b1, bitstr_t *b2);
 int     bit_equal(bitstr_t *b1, bitstr_t *b2);
 void    bit_copybits(bitstr_t *dest, bitstr_t *src);
 bitstr_t *bit_copy(bitstr_t *b);

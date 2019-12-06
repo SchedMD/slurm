@@ -145,6 +145,7 @@ strong_alias(bit_fls,		slurm_bit_fls);
 strong_alias(bit_fill_gaps,	slurm_bit_fill_gaps);
 strong_alias(bit_super_set,	slurm_bit_super_set);
 strong_alias(bit_overlap,	slurm_bit_overlap);
+strong_alias(bit_overlap_any,	slurm_bit_overlap_any);
 strong_alias(bit_equal,		slurm_bit_equal);
 strong_alias(bit_copy,		slurm_bit_copy);
 strong_alias(bit_pick_cnt,	slurm_bit_pick_cnt);
@@ -838,6 +839,31 @@ bit_overlap(bitstr_t *b1, bitstr_t *b2)
 	}
 
 	return count;
+}
+
+extern int32_t
+bit_overlap_any(bitstr_t *b1, bitstr_t *b2)
+{
+	bitoff_t bit, bit_cnt;
+	int32_t word_size = sizeof(bitstr_t) * 8;
+
+	_assert_bitstr_valid(b1);
+	_assert_bitstr_valid(b2);
+	xassert(_bitstr_bits(b1) == _bitstr_bits(b2));
+
+	bit_cnt = _bitstr_bits(b1);
+	for (bit = 0; bit < bit_cnt; bit += word_size) {
+		if ((bit + word_size - 1) >= bit_cnt)
+			break;
+		if (b1[_bit_word(bit)] & b2[_bit_word(bit)])
+			return 1;
+	}
+	for ( ; bit < bit_cnt; bit++) {
+		if (bit_test(b1, bit) && bit_test(b2, bit))
+			return 1;
+	}
+
+	return 0;
 }
 
 /*
