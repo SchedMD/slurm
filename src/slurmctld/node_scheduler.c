@@ -2426,8 +2426,7 @@ static void _preempt_signal(job_record_t *job_ptr, uint32_t grace_time)
 static int _job_check_grace(job_record_t *job_ptr, job_record_t *preemptor_ptr)
 {
 	int rc = SLURM_SUCCESS;
-	static time_t last_update_time = (time_t)0;
-	static uint32_t grace_time = 0;
+	uint32_t grace_time = 0;
 
 	if (job_ptr->preempt_time) {
 		if (time(NULL) >= job_ptr->end_time)
@@ -2435,10 +2434,7 @@ static int _job_check_grace(job_record_t *job_ptr, job_record_t *preemptor_ptr)
 		return rc;
 	}
 
-	if (last_update_time != slurmctld_conf.last_update) {
-		grace_time = slurm_job_get_grace_time(job_ptr);
-		last_update_time = slurmctld_conf.last_update;
-	}
+	grace_time = slurm_job_get_grace_time(job_ptr);
 
 	if (grace_time) {
 		debug("setting %u sec preemption grace time for %pJ to reclaim resources for %pJ",
