@@ -3494,6 +3494,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&job->tres_per_task, &uint32_tmp,
 				       buffer);
+
+		safe_unpack16(&job->mail_type, buffer);
+		safe_unpackstr_xmalloc(&job->mail_user, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);

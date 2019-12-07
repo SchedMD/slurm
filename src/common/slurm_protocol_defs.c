@@ -1025,6 +1025,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 			xfree(job->gres_detail_str);
 		}
 		xfree(job->licenses);
+		xfree(job->mail_user);
 		xfree(job->mcs_label);
 		xfree(job->mem_per_tres);
 		xfree(job->name);

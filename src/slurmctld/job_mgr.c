@@ -10019,6 +10019,9 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, Buf buffer,
 		packstr(dump_job_ptr->tres_per_node, buffer);
 		packstr(dump_job_ptr->tres_per_socket, buffer);
 		packstr(dump_job_ptr->tres_per_task, buffer);
+
+		pack16(dump_job_ptr->mail_type, buffer);
+		packstr(dump_job_ptr->mail_user, buffer);
 	} else if (protocol_version >= SLURM_19_05_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);
