@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     in SchedulerParameters by decoupling defer from too fragmented logic.
  -- Fix printf format string error on FreeBSD.
  -- Fix parsing of delay_boot in controller when additional arguments follow it.
+ -- Fix --ntasks-per-node in cons_tres.
 
 * Changes in Slurm 19.05.4
 ==========================
