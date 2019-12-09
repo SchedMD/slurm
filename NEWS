@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.02.1
 ==========================
+ -- Improve job state reason for jobs hitting partition_job_depth.
 
 * Changes in Slurm 20.02.0
 ==========================

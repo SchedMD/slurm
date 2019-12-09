@@ -1473,14 +1473,14 @@ next_task:
 				break;
 			}
 			if (skip_job) {
-				if (job_ptr->part_ptr == skip_part_ptr)
-					continue;
-				sched_debug2("reached partition %s job limit",
-					     job_ptr->part_ptr->name);
 				if (job_ptr->state_reason == WAIT_NO_REASON) {
 					xfree(job_ptr->state_desc);
 					job_ptr->state_reason = WAIT_PRIORITY;
 				}
+				if (job_ptr->part_ptr == skip_part_ptr)
+					continue;
+				sched_debug2("reached partition %s job limit",
+					     job_ptr->part_ptr->name);
 				skip_part_ptr = job_ptr->part_ptr;
 				continue;
 			}
