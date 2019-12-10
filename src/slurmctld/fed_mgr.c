@@ -89,6 +89,11 @@ static pthread_mutex_t fed_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  job_update_cond    = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t job_update_mutex   = PTHREAD_MUTEX_INITIALIZER;
 
+static List remote_dep_update_list = NULL;
+static pthread_t remote_dep_thread_id = (pthread_t) 0;
+static pthread_cond_t remote_dep_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t remote_dep_update_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 typedef struct {
 	Buf        buffer;
 	uint32_t   job_id;
@@ -1299,6 +1304,11 @@ static void _destroy_fed_job_update_info(void *object)
 	}
 }
 
+static void _destroy_dep_msg(void *object)
+{
+	slurm_free_dep_msg((dep_msg_t *)object);
+}
+
 extern slurmdb_cluster_rec_t *fed_mgr_get_cluster_by_id(uint32_t id)
 {
 	uint32_t key = id;
@@ -2156,6 +2166,59 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	return SLURM_SUCCESS;
 }
 
+static void *_remote_dep_update_thread(void *arg)
+{
+	struct timespec ts = {0, 0};
+	dep_msg_t *remote_dep_info;
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "fed_remote_dep", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__,
+		      "fed_remote_dep");
+	}
+#endif
+
+	while (!slurmctld_config.shutdown_time) {
+		slurm_mutex_lock(&remote_dep_update_mutex);
+		ts.tv_sec = time(NULL) + 2;
+		slurm_cond_timedwait(&remote_dep_cond,
+				     &remote_dep_update_mutex, &ts);
+		slurm_mutex_unlock(&remote_dep_update_mutex);
+
+		if (slurmctld_config.shutdown_time)
+			break;
+
+		while ((remote_dep_info = list_pop(remote_dep_update_list))) {
+			/*
+			 * TODO:
+			 * Acquire the correct locks.
+			 * - job read lock for reading the job list.
+			 * - everything requireed for update_job_dependency()
+			 * - any lock required for federation? (fed_job_lock?)
+			 * Create a dummy job_ptr out of this depedency.
+			 * Call update_job_dependency() to validate this
+			 * dependency.
+			 * - If the dependency doesn't have any jobs on this
+			 *   cluster,then free it and don't add it to our list.
+			 * - If the dependency has at least one job on this
+			 *   cluster, then add this job to our list of remote
+			 *   dependencies. We will have another thread test
+			 *   the dependencies.
+			 * - If there is a dependency that is not valid, then
+			 *   we need to tell the origin cluster that dependency
+			 *   isn't valid. I think this means the whole job will
+			 *   be destroyed.
+			 */
+			info("%s: Got Job %u name \"%s\" depedency \"%s\"",
+			     __func__, remote_dep_info->job_id,
+			     remote_dep_info->job_name,
+			     remote_dep_info->dependency);
+		}
+	}
+
+	return NULL;
+}
+
 /* Start a thread to manage queued sibling requests */
 static void *_fed_job_update_thread(void *arg)
 {
@@ -2377,6 +2440,11 @@ static void _spawn_threads(void)
 	slurm_thread_create(&fed_job_update_thread_id,
 			    _fed_job_update_thread, NULL);
 	slurm_mutex_unlock(&job_update_mutex);
+
+	slurm_mutex_lock(&remote_dep_update_mutex);
+	slurm_thread_create(&remote_dep_thread_id,
+			    _remote_dep_update_thread, NULL);
+	slurm_mutex_unlock(&remote_dep_update_mutex);
 }
 
 static void _add_missing_fed_job_info()
@@ -2435,6 +2503,14 @@ extern int fed_mgr_init(void *db_conn)
 	 */
 	if (!fed_job_update_list)
 		fed_job_update_list = list_create(_destroy_fed_job_update_info);
+
+	/*
+	 * remote_dep_update_list should only be appended to and popped from.
+	 * So rely on the list's lock. If there are ever changes to iterate the
+	 * list, then a lock will be needed around the list.
+	 */
+	if (!remote_dep_update_list)
+		remote_dep_update_list = list_create(_destroy_dep_msg);
 
 	slurm_persist_conn_recv_server_init();
 	_spawn_threads();
@@ -5272,6 +5348,7 @@ static int _q_sib_job_sync(slurm_msg_t *msg)
 
 extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 {
+	dep_msg_t *remote_dependency;
 	dep_msg_t *dep_msg = msg->data;
 
 	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
@@ -5279,6 +5356,16 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 		     __func__, rpc_num2string(msg->msg_type), dep_msg->job_id,
 		     dep_msg->job_name, dep_msg->dependency);
 
+	/* dep_msg will get free'd, so copy it */
+	remote_dependency = xmalloc(sizeof *remote_dependency);
+	remote_dependency->job_id = dep_msg->job_id;
+	remote_dependency->job_name = xstrdup(dep_msg->job_name);
+	remote_dependency->dependency = xstrdup(dep_msg->dependency);
+
+	list_append(remote_dep_update_list, remote_dependency);
+	slurm_mutex_lock(&remote_dep_update_mutex);
+	slurm_cond_broadcast(&remote_dep_cond);
+	slurm_mutex_unlock(&remote_dep_update_mutex);
 	return SLURM_SUCCESS;
 }
 
