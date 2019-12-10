@@ -38,7 +38,7 @@
 #include "../cons_common/dist_tasks.h"
 
 /* At tasks_per_node limit for given node */
-static bool _at_tpn_limit(const uint32_t n, const struct job_record *job_ptr,
+static bool _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
 			  const char *tag, bool log_error)
 {
 	const job_resources_t *job_res = job_ptr->job_resrcs;
