@@ -187,7 +187,7 @@ proc clean_up { rc } {
 	for {set i 0} {$i<2} {incr i 1} {
 		spawn $sacctmgr delete -i account $cleanacct($i)
 		expect {
-			-re "Deleting accounts"  {
+			-re "(Deleting accounts|Nothing deleted)"  {
 				incr clean 1
 				exp_continue
 			}
@@ -202,7 +202,7 @@ proc clean_up { rc } {
 
 		spawn $sacctmgr delete -i qos $cleanqos($i)
 		expect {
-			-re "Deleting QOS" {
+			-re "(Deleting QOS|Nothing deleted)" {
 				incr clean 1
 				exp_continue
 			}
