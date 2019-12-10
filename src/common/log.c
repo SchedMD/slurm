@@ -125,8 +125,8 @@ typedef struct {
 	char *argv0;
 	char *fpfx;              /* optional prefix for logfile entries */
 	FILE *logfp;             /* log file pointer                    */
-	dbuf_t *buf;              /* stderr data buffer                  */
-	dbuf_t *fbuf;             /* logfile data buffer                 */
+	cbuf_t *buf;              /* stderr data buffer                  */
+	cbuf_t *fbuf;             /* logfile data buffer                 */
 	log_facility_t facility;
 	log_options_t opt;
 	unsigned initialized:1;
@@ -1095,7 +1095,7 @@ static void xlogfmtcat(char **dst, const char *fmt, ...)
 
 }
 
-static void _log_printf(log_t *log, dbuf_t *cb, FILE *stream,
+static void _log_printf(log_t *log, cbuf_t *cb, FILE *stream,
 			const char *fmt, ...)
 {
 	va_list ap;

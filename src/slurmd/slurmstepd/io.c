@@ -177,7 +177,7 @@ struct task_read_info {
 	uint16_t         gtaskid;
 	uint16_t         ltaskid;
 	stepd_step_rec_t    *job;		 /* pointer back to job data   */
-	dbuf_t          *buf;
+	cbuf_t          *buf;
 	bool		 eof;
 	bool		 eof_msg_sent;
 };
@@ -202,7 +202,7 @@ static void *_io_thr(void *);
 static int _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
-					  stepd_step_rec_t *job, dbuf_t *cbuf);
+					  stepd_step_rec_t *job, cbuf_t *cbuf);
 static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *job);
@@ -1789,7 +1789,7 @@ _send_eof_msg(struct task_read_info *out)
 
 
 static struct io_buf *_task_build_message(struct task_read_info *out,
-					  stepd_step_rec_t *job, dbuf_t *cbuf)
+					  stepd_step_rec_t *job, cbuf_t *cbuf)
 {
 	struct io_buf *msg;
 	char *ptr;
