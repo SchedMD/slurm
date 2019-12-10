@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't clear the qos_id of an invalid QOS.
  -- Allow a job that was once FAIL_[QOS|ACCOUNT] to be eligible again if
     the qos|account limitation is remedied.
+ -- Fix core reservations using the FLEX flag to allow use of resources
+    outside of the reservation allocation.
 
 * Changes in Slurm 20.02.1
 ==========================
