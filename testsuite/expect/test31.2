@@ -96,7 +96,9 @@ if { $exit_code != 0 } {
 	exit $exit_code
 }
 
+# Ensure that Prolog and nohold_on_prolog_fail params are removed
 exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_dir/slurm.conf
+exec $bin_sed -i {s/nohold_on_prolog_fail//gI} $config_dir/slurm.conf
 
 # Append Prolog config to the slurm.conf
 exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_dir/slurm.conf

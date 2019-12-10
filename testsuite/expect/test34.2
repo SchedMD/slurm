@@ -187,7 +187,7 @@ proc clean_up { rc } {
 	for {set i 0} {$i<2} {incr i 1} {
 		spawn $sacctmgr delete -i account $cleanacct($i)
 		expect {
-			-re "Deleting accounts"  {
+			-re "(Deleting accounts|Nothing deleted)"  {
 				incr clean 1
 				exp_continue
 			}
@@ -202,7 +202,7 @@ proc clean_up { rc } {
 
 		spawn $sacctmgr delete -i qos $cleanqos($i)
 		expect {
-			-re "Deleting QOS" {
+			-re "(Deleting QOS|Nothing deleted)" {
 				incr clean 1
 				exp_continue
 			}
@@ -242,13 +242,13 @@ acct_setup $acct_2 $qos_2 $qos_1 cluster
 
 set qos_1_id [sub_job $acct_1]
 if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_id_1 failed to start\n"
+	send_user "\nFAILURE: job $qos_1_id failed to start\n"
 	clean_up 1
 }
 
 set qos_2_id [sub_job $acct_2]
 if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_id_2 failed to start\n"
+	send_user "\nFAILURE: job $qos_2_id failed to start\n"
 	clean_up 1
 }
 
@@ -264,13 +264,13 @@ mod_qos $qos_1 requeue
 
 set qos_1_id [sub_job $acct_1]
 if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_id_1 failed to start\n"
+	send_user "\nFAILURE: job $qos_1_id failed to start\n"
 	clean_up 1
 }
 
 set qos_2_id [sub_job $acct_2]
 if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
-	send_user "\nFAILURE: job $qos_id_2 failed to start\n"
+	send_user "\nFAILURE: job $qos_2_id failed to start\n"
 	clean_up 1
 }
 
