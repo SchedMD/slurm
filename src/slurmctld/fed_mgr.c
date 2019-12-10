@@ -5270,6 +5270,18 @@ static int _q_sib_job_sync(slurm_msg_t *msg)
 	return rc;
 }
 
+extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
+{
+	dep_msg_t *dep_msg = msg->data;
+
+	if (slurmctld_conf.debug_flags & DEBUG_FLAG_FEDR)
+		info("%s: Got %s: Job %u name \"%s\" dependency \"%s\"",
+		     __func__, rpc_num2string(msg->msg_type), dep_msg->job_id,
+		     dep_msg->job_name, dep_msg->dependency);
+
+	return SLURM_SUCCESS;
+}
+
 extern int fed_mgr_q_sib_msg(slurm_msg_t *msg, uint32_t rpc_uid)
 {
 	sib_msg_t *sib_msg = msg->data;
