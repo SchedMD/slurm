@@ -1605,7 +1605,9 @@ extern uint64_t suffix_mult(char *suffix);
 				      remaining, (int)size);		\
 				goto rwfail;				\
 			} else if (rc < 0) {				\
-				if ((errno == EAGAIN) || (errno == EINTR))\
+				if ((errno == EAGAIN) ||		\
+				    (errno == EINTR) ||			\
+				    (errno == EWOULDBLOCK))		\
 					continue;			\
 				debug("%s:%d: %s: safe_read (%d of %d) failed: %m", \
 				      __FILE__, __LINE__, __func__, \
