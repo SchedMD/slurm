@@ -45,6 +45,7 @@ def main(argv=None):
     tests = []
     failed_tests = []
     passed_tests = []
+    begin = (1,1)
 
     # Handle command line parameters
     if argv is None:
@@ -61,6 +62,10 @@ def main(argv=None):
                       help='comma or space separated string of tests to include')
     parser.add_option('-k', '--keep-logs', action='store_true', default=False)
     parser.add_option('-s', '--stop-on-first-fail', action='store_true', default=False)
+    parser.add_option('-b', '--begin-from-test', type='string',
+                      dest='begin_from_test', action='callback',
+                      callback=test_parser)
+
     (options, args) = parser.parse_args(args=argv)
 
     # Sanity check
@@ -93,11 +98,17 @@ def main(argv=None):
     # sory by major, minor
     tests.sort(key=lambda t: (t[0],t[1]))
 
+    # Set begin value
+    if options.begin_from_test is not None:
+        begin  = options.begin_from_test[0]
+
     # Now run the tests
     start_time = time.time()
     print('Started:', time.asctime(time.localtime(start_time)), file=sys.stdout)
     sys.stdout.flush()
     for test in tests:
+        if begin[0] > test[0] or (begin[0] == test[0] and begin[1] > test[1]):
+            continue
         sys.stdout.write('Running test %d.%d ' % (test[0],test[1]))
         sys.stdout.flush()
         testlog_name = 'test%d.%d.log' % (test[0],test[1])
