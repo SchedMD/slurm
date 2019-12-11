@@ -886,6 +886,8 @@ typedef enum {
 					* elements completes */
 	SLURM_DEPEND_BURST_BUFFER, /* After job burst buffer
 				    * stage-out completes */
+	SLURM_DEPEND_STAGING, /* Only start after a staging job has ran for a
+			       * specified time. */
 } slurm_depend_types_t;
 
 #define SLURM_FLAGS_OR		0x0001	/* OR job dependencies */
@@ -894,6 +896,7 @@ struct	depend_spec {
 	uint32_t	array_task_id;	/* INFINITE for all array tasks */
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
 	uint16_t	depend_flags;	/* SLURM_FLAGS_* type */
+	uint32_t        depend_time;    /* time to wait (mins) */
 	uint32_t	job_id;		/* Slurm job_id */
 	job_record_t   *job_ptr;	/* pointer to this job */
 };

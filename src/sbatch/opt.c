@@ -1078,7 +1078,7 @@ static void _usage(void)
 "              [--chdir=directory] [--oversubscibe] [-m dist] [-J jobname]\n"
 "              [--verbose] [--gid=group] [--uid=user]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
+"              [--account=name] [--dependency=type:jobid[:time]] [--comment=name]\n"
 "              [--mail-type=type] [--mail-user=user][--nice[=value]] [--wait]\n"
 "              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
@@ -1114,7 +1114,7 @@ static void _help(void)
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 
-"  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
+"  -d, --dependency=type:jobid[:time] defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"
 "                              this deadline (start > (deadline - time[-min]))\n"
 "      --delay-boot=mins       delay boot for desired node features\n"

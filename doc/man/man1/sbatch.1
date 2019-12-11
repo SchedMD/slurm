@@ -521,6 +521,10 @@ in some failed state (non-zero exit code, node failure, timed out, etc).
 This job can begin execution after the specified jobs have successfully
 executed (ran to completion with an exit code of zero).
 .TP
+\fBafterstaging:job_id:time[:jobid:time...]\fR
+After the specified jobs start and 'time' in minutes from job start happens this
+job can begin execution.
+.TP
 \fBexpand:job_id\fR
 Resources allocated to this job should be used to expand the specified job.
 The job to expand must share the same QOS (Quality of Service) and partition.
