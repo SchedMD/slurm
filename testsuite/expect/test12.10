@@ -59,7 +59,7 @@ proc sacct_query {jobname sacct_args expected_job {expected_err false}} {
 	set err_found false
 	set rc 0
 
-	set cmd_str "$sacct -v -X --format=job,jobname,eligible,start,end,state $sacct_args"
+	set cmd_str "$sacct -v -X -p --format=job,jobname,eligible,start,end,state $sacct_args"
 	spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]
 	expect {
 		-re "($jobname)" {
@@ -207,8 +207,9 @@ set failures 0
 #
 # Get Random name for the job, to avoid errors with old/duplicated jobs
 #
-set jobname [exec bash -c "cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 4 | head -n 1"]
-log_info "Random job name used to avoid false test error with old/duplicated jobs: $jobname-test$test_id."
+set current_timestamp [clock seconds]
+set jobname "test${test_id}-${current_timestamp}"
+log_info "Unique job name used to avoid false test errors with old/duplicated jobs: $jobname."
 
 #
 # Get query times before any job is run (QsS and QeS)
