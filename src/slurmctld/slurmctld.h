@@ -888,7 +888,7 @@ typedef enum {
 				    * stage-out completes */
 } slurm_depend_types_t;
 
-#define SLURM_FLAGS_OR			1	/* OR job dependencies */
+#define SLURM_FLAGS_OR		0x0001	/* OR job dependencies */
 
 struct	depend_spec {
 	uint32_t	array_task_id;	/* INFINITE for all array tasks */
