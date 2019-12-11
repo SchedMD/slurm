@@ -245,11 +245,11 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		return;
 
 	if (bit_alloc) {
-		int index;
 		len = bit_size(bit_alloc);
 		i = -1;
 		itr = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(itr))) {
+			int index;
 			i++;
 			if (i >= len) {
 				/*
