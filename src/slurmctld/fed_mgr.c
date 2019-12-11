@@ -2166,6 +2166,84 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	return SLURM_SUCCESS;
 }
 
+static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
+{
+	/*
+	 * update_job_dependency() will:
+	 * - read the job list (need job read lock)
+	 * - call fed_mgr_is_origin_job_id (need fed read lock)
+	 */
+	int rc;
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK, .fed = READ_LOCK };
+	job_record_t *job_ptr = xmalloc(sizeof *job_ptr);
+
+	job_ptr->magic = JOB_MAGIC;
+	job_ptr->details = xmalloc(sizeof *(job_ptr->details));
+	job_ptr->details->magic = DETAILS_MAGIC;
+	job_ptr->job_id = remote_dep_info->job_id;
+	job_ptr->name = xstrdup(remote_dep_info->job_name);
+	/* TODO: handle array jobs */
+	job_ptr->array_task_id = NO_VAL;
+	/*
+	 * We need to allocate space for fed_details so
+	 * other places know this is a fed job, but we don't
+	 * need to set anything specific in it.
+	 */
+	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
+
+	info("%s: Got Job %u name \"%s\" depedency \"%s\"",
+	     __func__, remote_dep_info->job_id,
+	     remote_dep_info->job_name,
+	     remote_dep_info->dependency);
+
+	/* Create and validate the dependency. */
+	lock_slurmctld(job_read_lock);
+	rc = update_job_dependency(job_ptr, remote_dep_info->dependency);
+	unlock_slurmctld(job_read_lock);
+	if (rc) {
+		error("%s: Invalid dependency %s for %pJ: %s",
+		      __func__, remote_dep_info->dependency, job_ptr,
+		      slurm_strerror(rc));
+		/*
+		 * TODO:
+		 * We need to tell the origin cluster that
+		 * dependency isn't valid. This probably should
+		 * have happened before we got here, but handle
+		 * this just in case.
+		 */
+	} else
+		print_job_dependency(job_ptr);
+	/*
+	 * Still TODO:
+	 * - If the dependency doesn't have any jobs on this
+	 *   cluster,then free it and don't add it to our list.
+	 * - If the dependency has at least one job on this
+	 *   cluster, then add this job to our list of remote
+	 *   dependencies. We will have another thread test
+	 *   the dependencies.
+	 * I can probably search job_ptr->details->depend_list
+	 * for a remote dependency with list_find_first()
+	 */
+	/*
+	 * TODO: On success, add the job_ptr to a list of
+	 * jobs with remote dependencies on this cluster.
+	 * For now, just free everything.
+	 */
+	/*
+	 * job_ptr->details should always be non-NULL here, but
+	 * do a sanity check anyway.
+	 */
+	if (job_ptr->details) {
+		FREE_NULL_LIST(job_ptr->details->depend_list);
+	}
+	xfree(job_ptr->fed_details);
+	xfree(job_ptr->name);
+	xfree(job_ptr->details);
+	xfree(job_ptr);
+	_destroy_dep_msg(remote_dep_info);
+
+}
+
 static void *_remote_dep_update_thread(void *arg)
 {
 	struct timespec ts = {0, 0};
@@ -2189,30 +2267,7 @@ static void *_remote_dep_update_thread(void *arg)
 			break;
 
 		while ((remote_dep_info = list_pop(remote_dep_update_list))) {
-			/*
-			 * TODO:
-			 * Acquire the correct locks.
-			 * - job read lock for reading the job list.
-			 * - everything requireed for update_job_dependency()
-			 * - any lock required for federation? (fed_job_lock?)
-			 * Create a dummy job_ptr out of this depedency.
-			 * Call update_job_dependency() to validate this
-			 * dependency.
-			 * - If the dependency doesn't have any jobs on this
-			 *   cluster,then free it and don't add it to our list.
-			 * - If the dependency has at least one job on this
-			 *   cluster, then add this job to our list of remote
-			 *   dependencies. We will have another thread test
-			 *   the dependencies.
-			 * - If there is a dependency that is not valid, then
-			 *   we need to tell the origin cluster that dependency
-			 *   isn't valid. I think this means the whole job will
-			 *   be destroyed.
-			 */
-			info("%s: Got Job %u name \"%s\" depedency \"%s\"",
-			     __func__, remote_dep_info->job_id,
-			     remote_dep_info->job_name,
-			     remote_dep_info->dependency);
+			_handle_recv_remote_dep(remote_dep_info);
 		}
 	}
 
