@@ -2690,21 +2690,24 @@ extern void print_job_dependency(job_record_t *job_ptr)
 				"+%u", dep_ptr->depend_time / 60);
 
 		if (dep_ptr->array_task_id == INFINITE)
-			info("  %s:%u_*%s %s",
+			info("  %s:%u_*%s %s%s",
 			     dep_str, dep_ptr->job_id,
 			     dep_time_sep ? dep_time_sep : "",
-			     dep_flags);
+			     dep_flags,
+			     dep_ptr->depend_remote ? " (remote)" : "");
 		else if (dep_ptr->array_task_id == NO_VAL)
-			info("  %s:%u%s %s",
+			info("  %s:%u%s %s%s",
 			     dep_str, dep_ptr->job_id,
 			     dep_time_sep ? dep_time_sep : "",
-			     dep_flags);
+			     dep_flags,
+			     dep_ptr->depend_remote ? " (remote)" : "");
 		else
-			info("  %s:%u_%u:%s %s",
+			info("  %s:%u_%u:%s %s%s",
 			     dep_str, dep_ptr->job_id,
 			     dep_ptr->array_task_id,
 			     dep_time_sep ? dep_time_sep : "",
-			     dep_flags);
+			     dep_flags,
+			     dep_ptr->depend_remote ? " (remote)" : "");
 		xfree(dep_time_sep);
 	}
 	list_iterator_destroy(depend_iter);
