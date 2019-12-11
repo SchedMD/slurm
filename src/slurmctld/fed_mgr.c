@@ -3694,12 +3694,25 @@ end_features:
 	return rc;
 }
 
+static int _add_to_send_list(void *object, void *arg)
+{
+	struct depend_spec *dependency = (struct depend_spec *)object;
+	uint64_t *send_sib_bits = (uint64_t *)arg;
+	uint32_t cluster_id = fed_mgr_get_cluster_id(dependency->job_id);
+	*send_sib_bits |= FED_SIBLING_BIT(cluster_id);
+	return SLURM_SUCCESS;
+}
+
 /*
- * TODO: Send dependencies of job_ptr to siblings.
+ * Send dependencies of job_ptr to siblings.
+ * Only send dependencies to siblings that own the remote jobs that job_ptr
+ * depends on. I.e., if a sibling doesn't own any jobs that job_ptr depends on,
+ * we won't send job_ptr's dependencies to that sibling.
  */
 static int _submit_remote_dependencies(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
+	uint64_t send_sib_bits;
 	ListIterator sib_itr;
 	slurm_msg_t req_msg;
 	dep_msg_t dep_msg = { 0 };
@@ -3718,14 +3731,19 @@ static int _submit_remote_dependencies(struct job_record *job_ptr)
 	req_msg.msg_type = REQUEST_SEND_DEP;
 	req_msg.data = &dep_msg;
 
-	/*
-	 * TODO: Send the dependency to every sibling.
-	 * I probably don't want to send the dependency to siblings that aren't
-	 * affected.
-	 */
+	send_sib_bits = 0;
+	list_for_each(job_ptr->details->depend_list, _add_to_send_list,
+		      &send_sib_bits);
+
 	sib_itr = list_iterator_create(fed_mgr_fed_rec->cluster_list);
 	while ((sibling = list_next(sib_itr))) {
 		if (sibling == fed_mgr_cluster_rec)
+			continue;
+		/*
+		 * If there isn't a dependency on this sibling, don't send
+		 * an RPC to this sibling.
+		 */
+		if (!(send_sib_bits & FED_SIBLING_BIT(sibling->fed.id)))
 			continue;
 
 		req_msg.protocol_version = sibling->rpc_version;
@@ -3880,12 +3898,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				job_desc, msg, alloc_only,
 				job_ptr->fed_details->siblings_viable))
 		info("failed to submit sibling job to one or more siblings");
-	/*
-	 * TODO: Send dependencies to siblings
-	 * TODO: Only send dependencies if there are remote dependencies? Or
-	 *       maybe only send remote dependencies to the siblings whose
-	 *       cluster_id matches the job_id's cluster id?
-	 */
+	/* Send remote dependencies to siblings */
 	if (job_ptr->details && job_ptr->details->dependency)
 		if (_submit_remote_dependencies(job_ptr))
 			error("XXX%sXXX: _submit_remote_dependencies() returned error",
