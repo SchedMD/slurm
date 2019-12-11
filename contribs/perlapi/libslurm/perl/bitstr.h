@@ -37,6 +37,7 @@ char    *slurm_bit_fmt(char *str, int len, bitstr_t *b);
 int     slurm_bit_unfmt(bitstr_t *b, char *str);
 int     *slurm_bitfmt2int (char *bit_str_ptr);
 char    *slurm_bit_fmt_hexmask(bitstr_t *b);
+char    *slurm_bit_fmt_hexmask_trim(bitstr_t *b);
 int     slurm_bit_unfmt_hexmask(bitstr_t *b, const char *str);
 char    *slurm_bit_fmt_binmask(bitstr_t *b);
 int     slurm_bit_unfmt_binmask(bitstr_t *b, const char *str);

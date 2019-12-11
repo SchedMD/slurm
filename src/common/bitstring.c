@@ -138,6 +138,7 @@ strong_alias(bit_fmt_full,	slurm_bit_fmt_full);
 strong_alias(bit_unfmt,		slurm_bit_unfmt);
 strong_alias(bitfmt2int,	slurm_bitfmt2int);
 strong_alias(bit_fmt_hexmask,	slurm_bit_fmt_hexmask);
+strong_alias(bit_fmt_hexmask_trim, slurm_bit_fmt_hexmask_trim);
 strong_alias(bit_unfmt_hexmask,	slurm_bit_unfmt_hexmask);
 strong_alias(bit_fmt_binmask,	slurm_bit_fmt_binmask);
 strong_alias(bit_unfmt_binmask,	slurm_bit_unfmt_binmask);
@@ -1362,22 +1363,17 @@ int32_t *bitstr2inx(bitstr_t *b)
 	return bit_inx;
 }
 
-/* bit_fmt_hexmask
- *
- * Given a bitstr_t, allocate and return a string in the form of:
- *                         "0x0123ABC\0"
- *                            ^     ^
- *                            |     |
- *                           MSB   LSB
- *   bitmap (IN)  bitmap to format
- *   RETURN       formatted string
- */
-char * bit_fmt_hexmask(bitstr_t * bitmap)
+/* If trim_output is true, strip off leading zeros from result. */
+static char *_bit_fmt_hexmask(bitstr_t *bitmap, bool trim_output)
 {
 	char *retstr, *ptr;
 	char current;
 	bitoff_t i;
-	bitoff_t bitsize = bit_size(bitmap);
+	bitoff_t bitsize;
+	if (trim_output)
+		bitsize = bit_fls(bitmap) + 1;
+	else
+		bitsize = bit_size(bitmap);
 
 	/* 4 bits per ASCII '0'-'F' */
 	bitoff_t charsize = (bitsize + 3) / 4;
@@ -1403,6 +1399,30 @@ char * bit_fmt_hexmask(bitstr_t * bitmap)
 	}
 
 	return retstr;
+}
+
+/* bit_fmt_hexmask
+ *
+ * Given a bitstr_t, allocate and return a string in the form of:
+ *                         "0x0123ABC\0"
+ *                            ^     ^
+ *                            |     |
+ *                           MSB   LSB
+ *   bitmap (IN)  bitmap to format
+ *   RETURN       formatted string
+ */
+char *bit_fmt_hexmask(bitstr_t *bitmap)
+{
+	return _bit_fmt_hexmask(bitmap, false);
+}
+
+/* bit_fmt_hexmask_trim
+ *
+ * Same as bit_fmt_hexmask() except leading zeros are stripped from the output.
+ */
+char *bit_fmt_hexmask_trim(bitstr_t *bitmap)
+{
+	return _bit_fmt_hexmask(bitmap, true);
 }
 
 /* bit_unfmt_hexmask

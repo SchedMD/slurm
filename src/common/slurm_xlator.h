@@ -97,6 +97,7 @@
 #define bit_unfmt		slurm_bit_unfmt
 #define	bitfmt2int		slurm_bitfmt2int
 #define	bit_fmt_hexmask		slurm_bit_fmt_hexmask
+#define	bit_fmt_hexmask_trim	slurm_bit_fmt_hexmask_trim
 #define bit_unfmt_hexmask	slurm_bit_unfmt_hexmask
 #define	bit_fmt_binmask		slurm_bit_fmt_binmask
 #define bit_unfmt_binmask	slurm_bit_unfmt_binmask
