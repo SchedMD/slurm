@@ -293,10 +293,17 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		list_iterator_destroy(itr);
 
 		/*
-		 * Handle binding to out-of-bounds and non-allocated devices by
-		 * instead binding to the first allocated device
+		 * Bind to the first allocated device as a fallback if the bind
+		 * request does not specify any devices within the allocation.
 		 */
 		if (reset && !new_global_list && first_device) {
+			char *usable_gres_str = bit_fmt_full(usable_gres);
+			char *usable_gres_str_hex =
+				bit_fmt_hexmask_trim(usable_gres);
+			error("Bind request %s (%s) does not specify any devices within the allocation. Binding to the first device in the allocation instead.",
+			      usable_gres_str, usable_gres_str_hex);
+			xfree(usable_gres_str);
+			xfree(usable_gres_str_hex);
 			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
 				   prefix, first_inx);
 			(*local_inx) = first_inx;
