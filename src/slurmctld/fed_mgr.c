@@ -3755,39 +3755,6 @@ static int _submit_remote_dependencies(struct job_record *job_ptr)
 	}
 	list_iterator_destroy(sib_itr);
 	return rc;
-
-#if 0
-	struct depend_spec *dep_ptr;
-	/*
-	 * Old idea:
-	 * Iterate through each dependency. If it's a remote dependency, mark
-	 * that we need to send it to that sibling.
-	 *
-	 * Then, send the whole dependency to each sibling that is affected.
-	 *
-	 * To "send" we need to queue up an RPC on cluster->send_rpc. See
-	 * _submit_sibling_jobs() -> _queue_rpc(). I will want to call
-	 * _queue_rpc()
-	 */
-	dep_itr = list_iterator_create(job_ptr->details->depend_list);
-	while (dep_ptr = list_next(itr)) {
-		/* Not a remote dependency */
-		if (!dep_ptr->depend_remote)
-			continue;
-
-		/* Which cluster? queue the rpc on that cluster. */
-		uint32_t sib_id = fed_mgr_get_cluster_id(dep_ptr->job_id);
-		sibling = list_find_first(fed_mgr_fed_rec->cluster_list,
-					  _find_sibling_by_id, sib_id);
-		if (!sibling) {
-			error("XXX%sXXX: unable to find sibling id %u for %u",
-			      __func__, sib_id, dep_ptr->job_id);
-			return;
-		}
-
-		/* Send message to sibling */
-	}
-#endif
 }
 
 /* submit a federated job.
