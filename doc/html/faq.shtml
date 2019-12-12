@@ -149,7 +149,7 @@
 <li><a href="#totalview">How can TotalView be configured to operate with
   Slurm?</a></li>
 <li><a href="#git_patch">How can a patch file be generated from a Slurm commit
-  in github?</a></li>
+  in GitHub?</a></li>
 <li><a href="#enforce_limits">Why are the resource limits set in the database
   not being enforced?</a></li>
 <li><a href="#restore_priority">After manually setting a job priority value,
@@ -560,7 +560,7 @@ where tux[0-1] my srun line would look like this:<br><br>
 If I wanted something similar but wanted the third task to be on tux 1
 I could run this:<br><br>
 <i>srun -n5 -m arbitrary -w tux[0,0,1,0,0] hostname</i><br><br>
-Here is a simple perl script named arbitrary.pl that can be ran to easily lay
+Here is a simple Perl script named arbitrary.pl that can be ran to easily lay
 out tasks on nodes as they are in SLURM_JOB_NODELIST.</p>
 <pre>
 #!/usr/bin/perl
@@ -1440,7 +1440,7 @@ errors generated?</b></a><br>
 This error is indicative of Slurm's job credential files being inconsistent across
 the cluster. All nodes in the cluster must have the matching public and private
 keys as defined by <b>JobCredPrivateKey</b> and <b>JobCredPublicKey</b> in the
-slurm configuration file <b>slurm.conf</b>.
+Slurm configuration file <b>slurm.conf</b>.
 
 <p><a name="cred_replay"><b>21. Why are
 &quot;Task launch failed on node ... Job credential replayed&quot;
@@ -1829,8 +1829,8 @@ dset TV::parallel_configs {
 !-->
 
 <p><a name="git_patch"><b>41. How can a patch file be generated from a Slurm
-commit in github?</b></a></br>
-<p>Find and open the commit in github then append ".patch" to the URL and save
+commit in GitHub?</b></a></br>
+<p>Find and open the commit in GitHub then append ".patch" to the URL and save
 the resulting file. For an example, see:
 <a href="https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch">
 https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch</a>
@@ -1899,7 +1899,7 @@ SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu-bi
 </pre>
 
 <p>
-For cray systems, add --gres=craynetwork:0 to the options.
+For Cray systems, add --gres=craynetwork:0 to the options.
 <pre>
 SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --gres=craynetwork:0 --pty --preserve-env --mpi=none $SHELL"
 </pre>
@@ -2156,7 +2156,7 @@ The problem with DVS caching is related to the fact that the dereferenced value
 of /opt/slurm/default symlink is cached in the DVS attribute cache, and that
 cache is not dropped when the rest of the VM caches are.</p>
 
-<p>The Cray Native Slurm installation manual indicates that slurm should
+<p>The Cray Native Slurm installation manual indicates that Slurm should
 have a "default" symlink run through /etc/alternatives.
 As an alternative to that:
 <ol>
@@ -2327,6 +2327,6 @@ cray_netroot_preload.settings.load.data.compute.size_limit: 0
 accessed files within jobs.</p>
 
 
-<p style="text-align:center;">Last modified 1 July 2019</p>
+<p style="text-align:center;">Last modified 13 December 2019</p>
 
 <!--#include virtual="footer.txt"-->
