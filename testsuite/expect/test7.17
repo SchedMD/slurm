@@ -71,7 +71,7 @@ expect {
 	}
 }
 if {$cpu_match != 1} {
-	send_user "\nFAILURE: number of CPUs is incorrect\n"
+	send_user "\nFAILURE: number of COREs is incorrect\n"
 	set exit_code 1
 }
 
