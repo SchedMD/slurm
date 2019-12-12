@@ -276,7 +276,7 @@ extern bool slurm_preemption_enabled(void)
 /*
  * Return the grace time for job
  */
-extern uint32_t slurm_job_get_grace_time(struct job_record *job_ptr)
+extern uint32_t slurm_job_get_grace_time(job_record_t *job_ptr)
 {
 	uint32_t data = 0;
 
