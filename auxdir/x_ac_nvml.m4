@@ -9,14 +9,6 @@
 #    Determine if NVIDIA's NVML API library exists (comes with CUDA)
 ##*****************************************************************************
 
-# TODO: Check for the "CUDA_DEVICE_ORDER=PCI_BUS_ID" environmental var
-# If that is not set, emit a warning and point to the documentation
-# saying that this needs to be set for CUDA device numbers to match Slurm/NVML
-# device numbers, and that after setting, a reboot is required?
-
-# TODO: Check to make sure that nvidia driver is at least r384.40, or else there
-# is weirdness with PCI bus id lookups. See https://docs.nvidia.com/deploy/nvml-api/group__nvmlDeviceQueries.html#group__nvmlDeviceQueries_1g9dc7be8cb41b6c77552c0fa0c36557c4
-
 AC_DEFUN([X_AC_NVML],
 [
   AC_ARG_WITH(
