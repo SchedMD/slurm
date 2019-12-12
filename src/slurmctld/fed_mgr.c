@@ -5557,6 +5557,7 @@ extern void fed_mgr_test_remote_dependencies(void)
 			info("XXX%sXXX: %pJ test_job_dependency() failed, dependency never satisfied",
 			     __func__, job_ptr);
 			/* TODO: tell origin cluster */
+			list_remove(itr);
 		} else { /* ((rc == REMOTE_DEPEND) || (rc == NO_DEPEND)) */
 			info("XXX%sXXX: %pJ has no more dependencies left on this cluster",
 			     __func__, job_ptr);
