@@ -2872,9 +2872,10 @@ static int _test_job_dependency_common(
 /*
  * Determine if a job's dependencies are met
  * RET: NO_DEPEND = no dependencies
- *      LOCAL_DEPEND = dependencies remain
+ *      LOCAL_DEPEND = local dependencies remain
  *      FAIL_DEPEND = failure (job completion code not per dependency),
  *                    delete the job
+ *      REMOTE_DEPEND = only remote dependencies remain
  */
 extern int test_job_dependency(job_record_t *job_ptr)
 {
@@ -2884,6 +2885,7 @@ extern int test_job_dependency(job_record_t *job_ptr)
 	bool or_satisfied = false;
 	List job_queue = NULL;
 	bool run_now;
+	bool has_local_depend = false;
 	int results = NO_DEPEND;
 	job_record_t *qjob_ptr, *djob_ptr;
 	bool is_complete, is_completed, is_pending;
@@ -2902,6 +2904,7 @@ extern int test_job_dependency(job_record_t *job_ptr)
 			depends = true;
 			continue;
 		}
+		has_local_depend = true;
 		dep_ptr->job_ptr = find_job_array_rec(dep_ptr->job_id,
 						      dep_ptr->array_task_id);
 		djob_ptr = dep_ptr->job_ptr;
@@ -2992,7 +2995,7 @@ extern int test_job_dependency(job_record_t *job_ptr)
 	if (failure)
 		results = FAIL_DEPEND;
 	else if (depends)
-		results = LOCAL_DEPEND;
+		results = has_local_depend ? LOCAL_DEPEND : REMOTE_DEPEND;
 
 	if (results != NO_DEPEND) {
 		job_ptr->bit_flags |= JOB_DEPENDENT;

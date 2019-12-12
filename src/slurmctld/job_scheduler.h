@@ -60,7 +60,8 @@ typedef struct job_queue_rec {
 enum {
 	NO_DEPEND = 0,
 	LOCAL_DEPEND,
-	FAIL_DEPEND
+	FAIL_DEPEND,
+	REMOTE_DEPEND
 };
 
 /*

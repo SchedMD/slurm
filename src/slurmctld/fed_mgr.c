@@ -5551,21 +5551,19 @@ extern void fed_mgr_test_remote_dependencies(void)
 	while ((job_ptr = list_next(itr))) {
 		rc = test_job_dependency(job_ptr);
 		if (rc == LOCAL_DEPEND) {
-			info("XXX%sXXX: %pJ has at least 1 dependency left",
+			info("XXX%sXXX: %pJ has at least 1 local dependency left",
 			     __func__, job_ptr);
-			/*
-			 * TODO: Test if there are any dependencies left on this
-			 * cluster; if not, then tell origin cluster that we've
-			 * cleared the dependencies on this cluster
-			 */
 		} else if (rc == FAIL_DEPEND) {
 			info("XXX%sXXX: %pJ test_job_dependency() failed, dependency never satisfied",
 			     __func__, job_ptr);
 			/* TODO: tell origin cluster */
-		} else {
-			/* TODO: We need to tell the origin cluster */
-			info("XXX%sXXX: %pJ has no dependencies left, removing job from list",
+		} else { /* ((rc == REMOTE_DEPEND) || (rc == NO_DEPEND)) */
+			info("XXX%sXXX: %pJ has no more dependencies left on this cluster",
 			     __func__, job_ptr);
+			/*
+			 * TODO: Tell the origin cluster that we've
+			 * cleared the dependencies on this cluster
+			 */
 			list_remove(itr);
 		}
 	}
