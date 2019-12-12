@@ -2715,6 +2715,12 @@ extern int fed_mgr_fini(void)
 	if (fed_job_update_thread_id)
 		pthread_join(fed_job_update_thread_id, NULL);
 
+	if (remote_dep_thread_id)
+		pthread_join(remote_dep_thread_id, NULL);
+
+	if (dep_job_thread_id)
+		pthread_join(dep_job_thread_id, NULL);
+
 	_remove_job_watch_thread();
 
 	slurm_mutex_lock(&fed_job_list_mutex);
