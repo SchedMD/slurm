@@ -1321,7 +1321,11 @@ static void _destroy_dep_job(void *object)
 	if (job_ptr) {
 		xfree(job_ptr->fed_details);
 		xfree(job_ptr->name);
-		xfree(job_ptr->details);
+		if (job_ptr->details) {
+			xfree(job_ptr->details->dependency);
+			FREE_NULL_LIST(job_ptr->details->depend_list);
+			xfree(job_ptr->details);
+		}
 		xfree(job_ptr);
 	}
 }
@@ -5557,7 +5561,7 @@ extern void fed_mgr_test_remote_dependencies(void)
 			info("XXX%sXXX: %pJ test_job_dependency() failed, dependency never satisfied",
 			     __func__, job_ptr);
 			/* TODO: tell origin cluster */
-			list_remove(itr);
+			list_delete_item(itr);
 		} else { /* ((rc == REMOTE_DEPEND) || (rc == NO_DEPEND)) */
 			info("XXX%sXXX: %pJ has no more dependencies left on this cluster",
 			     __func__, job_ptr);
@@ -5565,7 +5569,7 @@ extern void fed_mgr_test_remote_dependencies(void)
 			 * TODO: Tell the origin cluster that we've
 			 * cleared the dependencies on this cluster
 			 */
-			list_remove(itr);
+			list_delete_item(itr);
 		}
 	}
 	list_iterator_destroy(itr);
