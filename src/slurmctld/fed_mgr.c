@@ -1319,13 +1319,17 @@ static void _destroy_dep_job(void *object)
 	struct job_record *job_ptr = (struct job_record *)object;
 
 	if (job_ptr) {
+		xassert(job_ptr->magic == JOB_MAGIC);
 		xfree(job_ptr->fed_details);
 		xfree(job_ptr->name);
 		if (job_ptr->details) {
+			xassert(job_ptr->details->magic == DETAILS_MAGIC);
 			xfree(job_ptr->details->dependency);
 			FREE_NULL_LIST(job_ptr->details->depend_list);
 			xfree(job_ptr->details);
 		}
+		job_ptr->magic = 0;
+		job_ptr->job_id = 0;
 		xfree(job_ptr);
 	}
 }
