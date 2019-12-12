@@ -2871,9 +2871,10 @@ static int _test_job_dependency_common(
 
 /*
  * Determine if a job's dependencies are met
- * RET: 0 = no dependencies
- *      1 = dependencies remain
- *      2 = failure (job completion code not per dependency), delete the job
+ * RET: NO_DEPEND = no dependencies
+ *      LOCAL_DEPEND = dependencies remain
+ *      FAIL_DEPEND = failure (job completion code not per dependency),
+ *                    delete the job
  */
 extern int test_job_dependency(job_record_t *job_ptr)
 {
@@ -2883,7 +2884,7 @@ extern int test_job_dependency(job_record_t *job_ptr)
 	bool or_satisfied = false;
 	List job_queue = NULL;
 	bool run_now;
-	int results = 0;
+	int results = NO_DEPEND;
 	job_record_t *qjob_ptr, *djob_ptr;
 	bool is_complete, is_completed, is_pending;
 
@@ -2891,7 +2892,7 @@ extern int test_job_dependency(job_record_t *job_ptr)
 	    (job_ptr->details->depend_list == NULL) ||
 	    (list_count(job_ptr->details->depend_list) == 0)) {
 		job_ptr->bit_flags &= ~JOB_DEPENDENT;
-		return 0;
+		return NO_DEPEND;
 	}
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
@@ -2989,11 +2990,11 @@ extern int test_job_dependency(job_record_t *job_ptr)
 		_depend_list2str(job_ptr, false);
 
 	if (failure)
-		results = 2;
+		results = FAIL_DEPEND;
 	else if (depends)
-		results = 1;
+		results = LOCAL_DEPEND;
 
-	if (results) {
+	if (results != NO_DEPEND) {
 		job_ptr->bit_flags |= JOB_DEPENDENT;
 		acct_policy_remove_accrue_time(job_ptr, false);
 	} else {

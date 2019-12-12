@@ -56,6 +56,13 @@ typedef struct job_queue_rec {
 					 * in without requesting */
 } job_queue_rec_t;
 
+/* Use as return values for test_job_dependency. */
+enum {
+	NO_DEPEND = 0,
+	LOCAL_DEPEND,
+	FAIL_DEPEND
+};
+
 /*
  * build_feature_list - Translate a job's feature string into a feature_list
  * IN  details->features
@@ -215,9 +222,10 @@ extern int sort_job_queue2(void *x, void *y);
 
 /*
  * Determine if a job's dependencies are met
- * RET: 0 = no dependencies
- *      1 = dependencies remain
- *      2 = failure (job completion code not per dependency), delete the job
+ * RET: NO_DEPEND = no dependencies
+ *      LOCAL_DEPEND = dependencies remain
+ *      FAIL_DEPEND = failure (job completion code not per dependency),
+ *                    delete the job
  */
 extern int test_job_dependency(job_record_t *job_ptr);
 
