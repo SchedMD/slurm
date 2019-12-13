@@ -155,7 +155,7 @@
 <li><a href="#restore_priority">After manually setting a job priority value,
   how can its priority value be returned to being managed by the
   priority/multifactor plugin?</a></li>
-<li><a href="#health_check_example">Does any one have an example node health check
+<li><a href="#health_check_example">Does anyone have an example node health check
 script for Slurm?</a></li>
 <li><a href="#add_nodes">What process should I follow to add nodes to Slurm?</a></li>
 <li><a href="#licenses">Can Slurm be configured to manage licenses?</a></li>
@@ -300,7 +300,7 @@ reduce the effectiveness of backfill scheduling. See the <a href="#backfill">
 backfill</a> section for more details. For any scheduler, you can check priorities
 of jobs using the command <span class="commandline">scontrol show job</span>.
 Other reasons can include waiting for resources, memory, qos, reservations, etc.
-As a guide line, issue an <span class="commandline">scontrol show job &lt;jobid&gt;</span>
+As a guideline, issue an <span class="commandline">scontrol show job &lt;jobid&gt;</span>
 and look at the field <i>State</i> and <i>Reason</i> to investigate the cause.</p></p>
 
 <p><a name="sharing"><b>4. Why does the srun --overcommit option not permit multiple jobs
@@ -1511,8 +1511,8 @@ slurmdbd.
 <ol>
 <li>Added security.  Using the slurmdbd you can have an authenticated
 connection to the database.</li>
-<li>Off loading processing from the controller.  With the slurmdbd there is no
-slow down to the controller due to a slow or overloaded database.</li>
+<li>Offloading processing from the controller. With the slurmdbd there is no
+slowdown to the controller due to a slow or overloaded database.</li>
 <li>Keeping enterprise wide accounting from all Slurm clusters in one database.
 The slurmdbd is multi-threaded and designed to handle all the
 accounting for the entire enterprise.</li>
@@ -1852,7 +1852,7 @@ $ scontrol hold &lt;jobid&gt;
 $ scontrol release &lt;jobid&gt;
 </pre>
 
-<p><a name="health_check_example"><b>44. Does any one have an example node
+<p><a name="health_check_example"><b>44. Does anyone have an example node
 health check script for Slurm?</b></a></br>
 Probably the most comprehensive and lightweight health check tool out
 there is
@@ -2265,7 +2265,7 @@ One is to disable the flushing of caches, which can be accomplished by adding
 "LaunchParameters=lustre_no_flush" to your Slurm configuration file
 "slurm.conf".
 A second approach is to modify the Cray file system as described below in order to
-prevent Slurm specific files needing to be re-resolved over DFS.
+prevent Slurm-specific files needing to be re-resolved over DFS.
 This second approach does not address files used by applications, only those
 used directly by Slurm.</p>
 
