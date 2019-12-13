@@ -96,7 +96,8 @@ save_conf $config_file
 
 # Ensure that Prolog and nohold_on_prolog_fail params are removed
 exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
-exec $bin_sed -i {s/nohold_on_prolog_fail//gI} $config_file
+exec $bin_sed -i {s/nohold_on_prolog_fail//gI; \
+		  s/^SchedulerParameters=$//gI} $config_file
 
 # Append Prolog config to the slurm.conf
 exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_file
