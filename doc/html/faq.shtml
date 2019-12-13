@@ -9,7 +9,7 @@
 
 <h2>For Users</h2>
 <ol>
-<li><a href="#comp">Why is my job/node in COMPLETING state?</a></li>
+<li><a href="#comp">Why is my job/node in a COMPLETING state?</a></li>
 <li><a href="#rlimit">Why are my resource limits not propagated?</a></li>
 <li><a href="#pending">Why is my job not running?</a></li>
 <li><a href="#sharing">Why does the srun --overcommit option not permit
@@ -55,7 +55,7 @@
   jobid") sometimes not display a job's estimated start time?</a></li>
 <li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
 <li><a href="#mic">How can I run programs on an Intel Phi (MIC) processor?</a></li>
-<li><a href="#req">How can a job in complete or failed state be requeued?</a></li>
+<li><a href="#req">How can a job in a complete or failed state be requeued?</a></li>
 <li><a href="#cpu_count">Slurm documentation refers to CPUs, cores and threads.
   What exactly is considered a CPU?</a></li>
 <li><a href="#sbatch_srun">What is the difference between the sbatch
@@ -216,7 +216,7 @@ Customers switching from commercial workload mangers to Slurm typically
 report higher scalability, better performance and lower costs.</p>
 
 <h2>For Users</h2>
-<p><a name="comp"><b>1. Why is my job/node in COMPLETING state?</b></a><br>
+<p><a name="comp"><b>1. Why is my job/node in a COMPLETING state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the COMPLETING state.
 As the Slurm daemon on each node determines that all processes associated with
 the job have terminated, that node changes state to IDLE or some other appropriate
@@ -279,7 +279,7 @@ the resource limit should be propagated or the srun command is running
 with verbose logging of actions from the slurmd daemon (e.g. "srun -d6 ...").</p>
 
 <p><a name="pending"><b>3. Why is my job not running?</b></a><br>
-The answer to this question depends on a lot of factors. Main one relies upon
+The answer to this question depends on a lot of factors. The main one relies upon
 the scheduler used by Slurm. Executing the command</p>
 <blockquote>
 <p> <span class="commandline">scontrol show config | grep SchedulerType</span></p>
@@ -406,7 +406,7 @@ the processes).
 The environment variables in effect at the time the <i>srun</i> command
 is executed are propagated to the spawned processes.
 The <i>~/.profile</i> and <i>~/.bashrc</i> scripts are not executed
-as part of the process launch. You can also look at <i>--export</i> option of
+as part of the process launch. You can also look at the <i>--export</i> option of
 srun and sbatch. See man pages for details.</p>
 
 <p><a name="prompt"><b>12. How can I get shell prompts in interactive
@@ -835,7 +835,7 @@ Scheduling) parameter '--gres=mic:1'. For example:</p>
 <pre>
 $ srun --gres=mic:1 ./hello
 </pre>
-<p>If this is not set, the user will the following warning:</p>
+<p>If this is not set, the user will see the following warning:</p>
 <pre>
 offload warning: OFFLOAD_DEVICES device number -1 does not correspond to a physical device
 </pre>
@@ -851,14 +851,14 @@ $ icc -mmic -openmp hello.c -o hello.mic
 $ srun -p mic ./hello.mic
 </pre>
 
-<p><a name="req"><b>29. How can a job in complete or failed state be requeued?</b></a>
+<p><a name="req"><b>29. How can a job in a complete or failed state be requeued?</b></a>
 <br>
 <p>
-Slurm supports requeue jobs in done or failed state. Use the
+Slurm supports requeue jobs in a done or failed state. Use the
 command:</p>
 <p align=left><b>scontrol requeue job_id</b></p>
 </head>
-<p>The job will be requeued back in PENDING state and scheduled again.
+<p>The job will be requeued back in the PENDING state and scheduled again.
 See man(1) scontrol.
 </p>
 <p>Consider a simple job like this:</p>
@@ -885,7 +885,7 @@ $->squeue
     JOBID PARTITION   NAME     USER ST     TIME  NODES NODELIST(REASON)
       10      mira    zoppo    david  R    0:03    1      alanz1
 </pre>
-<p>Slurm supports requeuing jobs in hold state with the command:</p>
+<p>Slurm supports requeuing jobs in a hold state with the command:</p>
 <p align=left><b>'scontrol requeuehold job_id'</b></p>
 <p>The job can be in state RUNNING, SUSPENDED, COMPLETED or FAILED
 before being requeued.</p>
@@ -983,7 +983,7 @@ support so you must disable it compiling Slurm with <i>--disable-x11</i>. This
 plugin relies on openssh library and it provides features such as GSSAPI
 support.<br/> Update the Slurm installation path as needed:</p>
 <pre>
-# Maybe obvious, but don't forget the -X on ssh
+# It maybe obvious, but don't forget the -X on ssh
 $ ssh -X alex@testserver.com
 
 # Get the plugin
@@ -1649,7 +1649,7 @@ The solution is to either remove this line or configure a different NodeAddr
 that is known by your other nodes.</p>
 
 <p>The CommunicationParameters=NoInAddrAny configuration parameter is subject to
-this same problem, which can also be addressed by removing actual node
+this same problem, which can also be addressed by removing the actual node
 name from the "127.0.1.1" as well as the "127.0.0.1"
 addresses in the /etc/hosts file.  It is ok if they point to
 localhost, but not the actual name of the node.</p>
@@ -1697,8 +1697,8 @@ simple first-login script that configures the virtual cluster for me.</p>
 
 <p><a name="core_dump"><b>39. If a Slurm daemon core dumps, where can I find the
 core file?</b></a></br>
-<p>For <i>slurmctld</i>, if started with -D option then the core file will be 
-written to the current working directory. If <i>SlurmctldLogFile</i> is an 
+<p>For <i>slurmctld</i>, if started with the -D option then the core file will
+be written to the current working directory. If <i>SlurmctldLogFile</i> is an
 absolute path, the core file will be written to this directory. Otherwise the 
 core file will be written to the <i>StateSaveLocation</i>, or "/var/tmp/" as a 
 last resort.<br>
@@ -1707,7 +1707,7 @@ directories have write permission for SlurmUser, no core file will be produced.
 For testing purposes the command "scontrol abort" can be used to abort the 
 slurmctld daemon and generate a core file.
 
-<p>For <i>slurmd</i>, if started with -D option then the core file will be 
+<p>For <i>slurmd</i>, if started with the -D option then the core file will be
 written to the current working directory. If <i>SlurmdLogFile</i> is an 
 absolute path, the core file will be written to the this directory. 
 Otherwise the core file will be written to the <i>SlurmdSpoolDir</i>, or
@@ -1718,7 +1718,7 @@ If none of the above directories can be written, no core file will be produced.
 <p>For <i>slurmstepd</i>, the core file will depend upon when the failure
 occurs. If it is running in a privileged phase it will be on the same location 
 as that described above for the slurmd daemon. If it is running on an 
-unprivileged phase, it will be in spawned job's working directory.</p>
+unprivileged phase, it will be in the spawned job's working directory.</p>
 
 
 <p>Nevertheless, in some operating systems this can vary:
@@ -1947,7 +1947,7 @@ case_sensitive = False
 <p><a name="ha_db"><b>51. How critical is configuring high availability for my
 database?</b></a></br>
 <ul>
-<li>Consider if you really need mysql failover. Short outage of slurmdbd is not
+<li>Consider if you really need a mysql failover. A short outage of slurmdbd is not
 a problem, because slurmctld will store all data in memory and send it to
 slurmdbd when it's back operating. The slurmctld daemon will also cache all
 user limits and fair share information.</li>
@@ -2054,7 +2054,7 @@ exit 0
 Using the exitme script as an example we have it exit with value 8 at
 the first run, then when it gets requeued in hold with SpecialExit state
 we touch the file /tmp/myfile, then release the job which will finish
-in COMPLETE state.
+in a COMPLETE state.
 </p>
 
 <p><a name="user_account"><b>55. Can a user's account be changed in the database?</b></a></br>
@@ -2070,7 +2070,7 @@ sacctmgr delete user name=adam cluster=tux account=chemistry
 <p><a name="mpi_perf"><b>56. What might account for MPI performance being below
   the expected level?</b></a><br>
 Starting the slurmd daemons with limited locked memory can account for this.
-Adding the line "ulimit -l unlimited" to <i>/etc/sysconfig/slurm</i> file can
+Adding the line "ulimit -l unlimited" to the <i>/etc/sysconfig/slurm</i> file can
 fix this.</p>
 
 <p><a name="state_info"><b>57. How could some jobs submitted immediately before
@@ -2080,7 +2080,7 @@ disk can result in lost state.
 Slurmctld writes state frequently (every five seconds by default), but with
 large numbers of jobs, the formatting and writing of records can take seconds
 and recent changes might not be written to disk.
-Another example is if the state information written to file, but that
+Another example is if the state information is written to file, but that
 information is cached in memory rather than written to disk when the node fails.
 The interval between state saves being written to disk can be configured at
 build time by defining SAVE_MAX_WAIT to a different value than five.</p>
@@ -2129,7 +2129,7 @@ nodes (by default it is mounted on all regular nodes and all Xeon Phi "nodes"
 from the same place).
 Use the "slurmd -C" command to determine the Xeon Phi node configuration
 with respect to cores, threads per core, memory, etc.
-The Xeon Phi is by default placed on host's network and connected via the
+The Xeon Phi is by default placed on the host's network and connected via the
 bridge to the rest of the cluster, therefore from a Slurm user's perspective
 the Xeon Phi can look like one more compute node with a lot of CPUs.</p>
 
@@ -2138,14 +2138,14 @@ the Xeon Phi can look like one more compute node with a lot of CPUs.</p>
 mode), or both.
 Although, Slurm cannot handle the last case nicely since it does not recognize
 the Xeon Phi compute node and generic resource represent the same resources.
-So from administrator prospective, the process of MICs configuration can be:
+So from an administrator prospective, the process of MICs configuration can be:
 install the latest MPSS and Slurm packages from yum/zypper,
 add new MICs (via console utility or GUI),
 add MICs to Slurm queues if necessary, restart the host, use MICs via Slurm.</p>
 
 <p><a name="cluster_acct"><b>61. When adding a new cluster, how can the Slurm cluster
     configuration be copied from an existing cluster to the new cluster?</b></a><br>
-Accounts need to be configured the cluster. An easy way to copy information from
+Accounts need to be configured for the cluster. An easy way to copy information from
 an existing cluster is to use the sacctmgr command to dump that cluster's information,
 modify it using some editor, the load the new information using the sacctmgr
 command. See the sacctmgr man page for details, including an example.</p>
@@ -2265,7 +2265,7 @@ Failures are also more common when Lustre file systems are used.</p>
 One is to disable the flushing of caches, which can be accomplished by adding
 "LaunchParameters=lustre_no_flush" to your Slurm configuration file
 "slurm.conf".
-A second approach is to modify Cray file system as described below in order to
+A second approach is to modify the Cray file system as described below in order to
 prevent Slurm specific files needing to be re-resolved over DFS.
 This second approach does not address files used by applications, only those
 used directly by Slurm.</p>
