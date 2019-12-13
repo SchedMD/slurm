@@ -54,7 +54,7 @@
 <li><a href="#estimated_start_time">Why does squeue (and "scontrol show
   jobid") sometimes not display a job's estimated start time?</a></li>
 <li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
-<li><a href="#mic">How can I run programs with on an Intel Phi (MIC) processor?</a></li>
+<li><a href="#mic">How can I run programs on an Intel Phi (MIC) processor?</a></li>
 <li><a href="#req">How can a job in complete or failed state be requeued?</a></li>
 <li><a href="#cpu_count">Slurm documentation refers to CPUs, cores and threads.
   What exactly is considered a CPU?</a></li>
@@ -117,7 +117,7 @@
   &quot;Unable to accept new connection: Too many open files&quot;?</a></li>
 <li><a href="#slurmd_log">Why does the setting of <i>SlurmdDebug</i> fail
   to log job step information at the appropriate level?</a></li>
-<li><a href="#rpm">Why isn't the auth_none.so (or other file) in a
+<li><a href="#rpm">Why isn't auth_none.so (or other file) in a
   Slurm RPM?</a></li>
 <li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
   regular database plugins?</a></li>
@@ -799,7 +799,7 @@ exit 0
 $ srun -n <tasks> ./fluent-srun.sh
 </pre>
 
-<p><a name="mic"><b>28. How can I run programs with on an Intel Phi (MIC)
+<p><a name="mic"><b>28. How can I run programs on an Intel Phi (MIC)
 processor?</b></a><br>
 Two programming models are supported, offloading and native mode.
 System administrators should see the <a href="#mic_config">Intel Phi
@@ -1487,7 +1487,7 @@ an option of <i>--debug=#</i> will result in the desired level of
 detail being logged in the <i>SlurmdLogFile</i> plus the output
 of the program.
 
-<p><a name="rpm"><b>26. Why isn't the pam_slurm.so (or other component) in a
+<p><a name="rpm"><b>26. Why isn't pam_slurm.so (or other component) in a
 Slurm RPM?</b></a><br>
 It is possible that at build time the required dependencies for building the
 library are missing. If you want to build the library then install pam-devel
@@ -1673,7 +1673,7 @@ $ squeue -tpd -h -o "scontrol update jobid=%i priority=1000" >my.script
 
 <p><a name="amazon_ec2"><b>38. Can Slurm be used to run jobs on
 Amazon's EC2?</b></a></br>
-<p>Yes, here is a description of use Slurm use with
+<p>Yes, here is a description of Slurm use with
 <a href="http://aws.amazon.com/ec2/">Amazon's EC2</a> courtesy of
 Ashley Pittman:</p>
 <p>I do this regularly and have no problem with it, the approach I take is to
@@ -1754,7 +1754,7 @@ administrators are attempting to debug problems in a normal environment.</p>
 
 <pre>sysctl kernel.core_pattern=/tmp/core.%e.%p</pre>
 
-<p>We recommend reading your distribution's documentation on about the 
+<p>We recommend reading your distribution's documentation about the
 configuration of this parameters.</p>
 
 
@@ -1951,7 +1951,7 @@ database?</b></a></br>
 a problem, because slurmctld will store all data in memory and send it to
 slurmdbd when it's back operating. The slurmctld daemon will also cache all
 user limits and fair share information.</li>
-<li>You cannot use ndb, since slurmdbd/mysql uses a keys on BLOB values (and
+<li>You cannot use ndb, since slurmdbd/mysql uses keys on BLOB values (and
 maybe something more from the incompatibility list).</li>
 <li>You can set up "classical" Linux HA, with heartbeat/corosync to migrate
 IP between master/backup mysql servers and:</li>
@@ -1979,7 +1979,7 @@ This is indicative of the slurmctld daemon running on the cluster's head node
 as well as the slurmd daemon on the compute node when the compute node reboots.
 If you want to prevent this condition from setting the node into a DOWN state
 then configure ReturnToService to 2. See the slurm.conf man page for details.
-Otherwise use the scontrol or sview to manually return the node to service.</p>
+Otherwise use scontrol or sview to manually return the node to service.</p>
 
 <p><a name="reqspec"><b>54. How can a job which has exited with a specific exit
   code be requeued?</b></a></br>
@@ -2051,7 +2051,7 @@ echo "Done `date`" >> $LOG 2>&1
 exit 0
 </pre>
 <p>
-Using the exitme script as an example we have it to exit with value 8 at
+Using the exitme script as an example we have it exit with value 8 at
 the first run, then when it gets requeued in hold with SpecialExit state
 we touch the file /tmp/myfile, then release the job which will finish
 in COMPLETE state.
@@ -2133,7 +2133,7 @@ The Xeon Phi is by default placed on host's network and connected via the
 bridge to the rest of the cluster, therefore from a Slurm user's perspective
 the Xeon Phi can look like one more compute node with a lot of CPUs.</p>
 
-<p>Therefore an administrator can use configure the Xeon Phi as a regular node
+<p>Therefore an administrator can configure the Xeon Phi as a regular node
 (with the slurmd daemon running on it), as a generic resources (for offload
 mode), or both.
 Although, Slurm cannot handle the last case nicely since it does not recognize
