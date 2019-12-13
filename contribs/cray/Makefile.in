@@ -157,8 +157,7 @@ am__capmc_resume_SOURCES_DIST = capmc_resume.c
 @WITH_JSON_PARSER_TRUE@	capmc_resume.$(OBJEXT)
 capmc_resume_OBJECTS = $(am_capmc_resume_OBJECTS)
 am__DEPENDENCIES_1 =
-@WITH_JSON_PARSER_TRUE@am__DEPENDENCIES_2 =  \
-@WITH_JSON_PARSER_TRUE@	$(top_builddir)/src/api/libslurm.o \
+@WITH_JSON_PARSER_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
 @WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_1)
 @WITH_JSON_PARSER_TRUE@capmc_resume_DEPENDENCIES =  \
 @WITH_JSON_PARSER_TRUE@	$(am__DEPENDENCIES_2)
@@ -567,7 +566,7 @@ AUTOMAKE_OPTIONS = foreign
 @HAVE_NATIVE_CRAY_TRUE@sbin_SCRIPTS = slurmconfgen.py
 @HAVE_NATIVE_CRAY_TRUE@noinst_DATA = opt_modulefiles_slurm
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common $(JSON_CPPFLAGS)
-@WITH_JSON_PARSER_TRUE@convenience_libs = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+@WITH_JSON_PARSER_TRUE@convenience_libs = $(LIB_SLURM) $(DL_LIBS)
 @WITH_JSON_PARSER_TRUE@capmc_suspend_SOURCES = capmc_suspend.c
 @WITH_JSON_PARSER_TRUE@capmc_suspend_LDADD = $(convenience_libs)
 @WITH_JSON_PARSER_TRUE@capmc_suspend_LDFLAGS = -export-dynamic $(JSON_LDFLAGS)
