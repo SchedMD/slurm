@@ -419,11 +419,12 @@ to automatically launch a shell, e.g.:
 <pre>
 SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu-bind=no --mpi=none $SHELL"
 </pre>
-And then run <i>salloc</i> directly which will provide you an allocation with
-an interactive shell console.
+<p>And then run <i>salloc</i> directly which will provide you an allocation with
+an interactive shell console.</p>
+
 <p><a name="batch_out"><b>13. How can I get the task ID in the output
 or error file name for a batch job?</b></a><br>
-<p>If you want separate output by task, you will need to build a script
+If you want separate output by task, you will need to build a script
 containing this specification. For example:</p>
 <pre>
 $ cat test
@@ -476,8 +477,9 @@ In addition to that method you have the option to define the
 <i>SallocDefaultCommand</i> to run a task in pseudo terminal mode directly,
 so you get the prompt just invoking salloc:
 <pre>SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu-bind=no --mpi=none $SHELL"</pre>
-Finally you can make use of X11 feature and run a graphical terminal.
-(e.g. <i>srun xterm</i>).<br>
+<p>Finally you can make use of X11 feature and run a graphical terminal.
+(e.g. <i>srun xterm</i>).</p>
+
 <p><a name="force"><b>16. What does &quot;srun: Force Terminated job&quot;
 indicate?</b></a><br>
 The srun command normally terminates when the standard output and
@@ -796,7 +798,7 @@ exit 0
 
 <p>To run an interactive session, use srun like this:</p>
 <pre>
-$ srun -n <tasks> ./fluent-srun.sh
+$ srun -n &lt;tasks&gt; ./fluent-srun.sh
 </pre>
 
 <p><a name="mic"><b>28. How can I run programs on an Intel Phi (MIC)
@@ -950,7 +952,7 @@ add color. One such tool is ColorWrapper
 (<a href="https://github.com/rrthomas/cw">https://github.com/rrthomas/cw</a>).
 A sample ColorWrapper configuration file and output are shown below.</p>
 <pre>
-path /bin:/usr/bin:/sbin:/usr/sbin:<env>
+path /bin:/usr/bin:/sbin:/usr/sbin:&lt;env&gt;
 usepty
 base green+
 match red:default (Resources)
@@ -1032,7 +1034,7 @@ in some instances, while causing bad formatting in other cases.
 In any case, Slurm is not adding the carriage return character, but displaying
 the actual program's output.</p>
 
-<p><a name="sview_colors"<b>35. Why is sview not coloring/highlighting nodes
+<p><a name="sview_colors"><b>35. Why is sview not coloring/highlighting nodes
     properly?</b></a><br>
 sview color-coding is affected by the GTK theme. The node status grid
 is made up of button widgets and certain GTK themes don't show the color
@@ -1673,7 +1675,7 @@ $ squeue -tpd -h -o "scontrol update jobid=%i priority=1000" >my.script
 
 <p><a name="amazon_ec2"><b>38. Can Slurm be used to run jobs on
 Amazon's EC2?</b></a></br>
-<p>Yes, here is a description of Slurm use with
+Yes, here is a description of Slurm use with
 <a href="http://aws.amazon.com/ec2/">Amazon's EC2</a> courtesy of
 Ashley Pittman:</p>
 <p>I do this regularly and have no problem with it, the approach I take is to
@@ -1697,8 +1699,8 @@ simple first-login script that configures the virtual cluster for me.</p>
 
 <p><a name="core_dump"><b>39. If a Slurm daemon core dumps, where can I find the
 core file?</b></a></br>
-<p>For <i>slurmctld</i>, if started with the -D option then the core file will
-be written to the current working directory. If <i>SlurmctldLogFile</i> is an
+For <i>slurmctld</i>, if started with the -D option then the core file will be
+written to the current working directory. If <i>SlurmctldLogFile</i> is an
 absolute path, the core file will be written to this directory. Otherwise the 
 core file will be written to the <i>StateSaveLocation</i>, or "/var/tmp/" as a 
 last resort.<br>
@@ -1722,10 +1724,17 @@ unprivileged phase, it will be in the spawned job's working directory.</p>
 
 
 <p>Nevertheless, in some operating systems this can vary:
-<br>I.e. in RHEL the event 
+<ul>
+<li>
+I.e. in RHEL the event
 may be captured by abrt daemon and generated in the defined abrt configured 
-dump location (i.e. /var/spool/abrt).<br>In Cray XC ATP
+dump location (i.e. /var/spool/abrt).
+</li>
+<li>
+In Cray XC ATP
 (Abnormal Termination Processing) daemon acts the same way, if it is enabled.
+</li>
+</ul>
 </p>
 
 <p>Normally, distributions need some more tweaking in order to allow the core
@@ -1794,7 +1803,7 @@ system, get sure it is allowing to dump cores:</p>
 
 <p><a name="totalview"><b>40. How can TotalView be configured to operate with
   Slurm?</b></a></br>
-<p>The following lines should also be added to the global <i>.tvdrc</i> file
+The following lines should also be added to the global <i>.tvdrc</i> file
 for TotalView to operate with Slurm:
 <pre>
 # Enable debug server bulk launch: Checked
@@ -1829,7 +1838,7 @@ dset TV::parallel_configs {
 
 <p><a name="git_patch"><b>41. How can a patch file be generated from a Slurm
 commit in GitHub?</b></a></br>
-<p>Find and open the commit in GitHub then append ".patch" to the URL and save
+Find and open the commit in GitHub then append ".patch" to the URL and save
 the resulting file. For an example, see:
 <a href="https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch">
 https://github.com/SchedMD/slurm/commit/91e543d433bed11e0df13ce0499be641774c99a3.patch</a>
@@ -1874,7 +1883,7 @@ following procedure is recommended:
 <li>Restart the slurmctld daemon (e.g. "systemctl start slurmctld" on the head node)</li>
 </ol>
 
-NOTE: Jobs submitted with srun, and that are waiting for an allocation,
+<p>NOTE: Jobs submitted with srun, and that are waiting for an allocation,
 prior to new nodes being added to the slurm.conf can fail if the job is
 allocated one of the new nodes.
 
@@ -2250,7 +2259,7 @@ Bye
 $ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
 </pre>
 
-<p><a name="cray_sigbus"<b>68. Why are applications on my Cray system failing
+<p><a name="cray_sigbus"><b>68. Why are applications on my Cray system failing
     with SIGBUS (bus error)?</b></a><br>
 By default, Slurm flushes Lustre file system and kernel caches upon completion
 of each job step. If multiple applications are run simultaneously on compute
