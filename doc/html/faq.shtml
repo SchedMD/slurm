@@ -138,7 +138,7 @@
 <li><a href="#slurmd_oom">How can I prevent the <i>slurmd</i> and
   <i>slurmstepd</i> daemons from being killed when a node's memory
   is exhausted?</a></li>
-<li><a href="#ubuntu">I see my host of my calling node as 127.0.1.1
+<li><a href="#ubuntu">I see the host of my calling node as 127.0.1.1
   instead of the correct IP address.  Why is that?</a></li>
 <li><a href="#stop_sched">How can I stop Slurm from scheduling jobs?</a></li>
 <li><a href="#scontrol_multi_jobs">Can I update multiple jobs with a single
@@ -379,12 +379,12 @@ A Slurm job is just a resource allocation. You can execute many
 job steps within that allocation, either in parallel or sequentially.
 Some jobs actually launch thousands of job steps this way. The job
 steps will be allocated nodes that are not already allocated to
-other job steps. This essential provides a second level of resource
+other job steps. This essentially provides a second level of resource
 management within the job for the job steps.</p>
 
 <p><a name="multi_batch"><b>10. How can I run a job within an existing
 job allocation?</b></a><br>
-There is a srun option <i>--jobid</i> that can be used to specify
+There is an srun option <i>--jobid</i> that can be used to specify
 a job's ID.
 For a batch job or within an existing resource allocation, the
 environment variable <i>SLURM_JOB_ID</i> has already been defined,
@@ -692,7 +692,7 @@ limits configured for an individual job.</p>
 into that of the original job by executing:<br>
 <i>scontrol update jobid=&lt;jobid&gt; NumNodes=0</i><br>
 The <i>jobid</i> above is that of the job to relinquish it's resources.
-To provides more control over when the job expansion occurs, the resources are
+To provide more control over when the job expansion occurs, the resources are
 not merged into the original job until explicitly requested.
 These resources will be transferred to the original job and the scontrol
 command will generate a script to reset variables in the second
@@ -854,7 +854,7 @@ $ srun -p mic ./hello.mic
 <p><a name="req"><b>29. How can a job in a complete or failed state be requeued?</b></a>
 <br>
 <p>
-Slurm supports requeue jobs in a done or failed state. Use the
+Slurm supports requeueing jobs in a done or failed state. Use the
 command:</p>
 <p align=left><b>scontrol requeue job_id</b></p>
 </head>
@@ -983,7 +983,7 @@ support so you must disable it compiling Slurm with <i>--disable-x11</i>. This
 plugin relies on openssh library and it provides features such as GSSAPI
 support.<br/> Update the Slurm installation path as needed:</p>
 <pre>
-# It maybe obvious, but don't forget the -X on ssh
+# It may be obvious, but don't forget the -X on ssh
 $ ssh -X alex@testserver.com
 
 # Get the plugin
@@ -1330,7 +1330,7 @@ Up to 64k nodes can be configured in this virtual cluster.</li>
 <li>Start your <i>slurmctld</i> and one <i>slurmd</i> daemon.
 It is advisable to use the "-c" option to start the daemons without
 trying to preserve any state files from previous executions.
-Be sure to use the "-c" option when switch from this mode too.</li>
+Be sure to use the "-c" option when switching from this mode too.</li>
 <li>Create job allocations as desired, but do not run job steps
 with more than a couple of tasks.</li>
 </ol>
@@ -1530,7 +1530,7 @@ will in turn activate <i>--enable-debug</i>.
 <i>-ggdb3</i> and <i>-g -O1 -fno-strict-aliasing</i> flags that will produce
 extra debugging information. Another possible option to use is
 <i>--disable-optimizations</i> that will set <i>-O0</i>.
-See also <i>auxdir/x_ac_debug.m4</i> for more detail.
+See also <i>auxdir/x_ac_debug.m4</i> for more details.
 
 <p><a name="state_preserve"><b>28. How can I easily preserve drained node
 information between major Slurm updates?</b></a><br>
@@ -1636,7 +1636,7 @@ daemon with the <i>SLURMD_OOM_ADJ</i> and/or <i>SLURMSTEPD_OOM_ADJ</i>
 environment variables set to the desired values.
 A value of -17 typically will disable killing.</p>
 
-<p><a name="ubuntu"><b>35. I see my host of my calling node as 127.0.1.1
+<p><a name="ubuntu"><b>35. I see the host of my calling node as 127.0.1.1
     instead of the correct IB address.  Why is that?</b></a></br>
 Some systems by default will put your host in the /etc/hosts file as
 something like</p>
@@ -1716,8 +1716,8 @@ If none of the above directories can be written, no core file will be produced.
 </p>
 
 <p>For <i>slurmstepd</i>, the core file will depend upon when the failure
-occurs. If it is running in a privileged phase it will be on the same location 
-as that described above for the slurmd daemon. If it is running on an 
+occurs. If it is running in a privileged phase it will be in the same location
+as that described above for the slurmd daemon. If it is running in an
 unprivileged phase, it will be in the spawned job's working directory.</p>
 
 
@@ -1755,8 +1755,7 @@ administrators are attempting to debug problems in a normal environment.</p>
 <pre>sysctl kernel.core_pattern=/tmp/core.%e.%p</pre>
 
 <p>We recommend reading your distribution's documentation about the
-configuration of this parameters.</p>
-
+configuration of these parameters.</p>
 
 <p>It is also usually needed to configure the system core limits, since it can be 
 set to 0.</p>
@@ -2051,7 +2050,7 @@ echo "Done `date`" >> $LOG 2>&1
 exit 0
 </pre>
 <p>
-Using the exitme script as an example we have it exit with value 8 at
+Using the exitme script as an example we have it exit with value 8 on
 the first run, then when it gets requeued in hold with SpecialExit state
 we touch the file /tmp/myfile, then release the job which will finish
 in a COMPLETE state.
@@ -2134,7 +2133,7 @@ bridge to the rest of the cluster, therefore from a Slurm user's perspective
 the Xeon Phi can look like one more compute node with a lot of CPUs.</p>
 
 <p>Therefore an administrator can configure the Xeon Phi as a regular node
-(with the slurmd daemon running on it), as a generic resources (for offload
+(with the slurmd daemon running on it), as a generic resource (for offload
 mode), or both.
 Although, Slurm cannot handle the last case nicely since it does not recognize
 the Xeon Phi compute node and generic resource represent the same resources.
@@ -2271,7 +2270,7 @@ This second approach does not address files used by applications, only those
 used directly by Slurm.</p>
 
 <p>On Cray CLE6.0, by default, nodes get the operating system, including the
-Slurm installation and all of its plugin, via a DVS mount of "/".
+Slurm installation and all of its plugins, via a DVS mount of "/".
 Really "/" is an overlay filesystem where the lower portion is a loop-mounted
 squashfs layer and the upper layer is tmpfs.
 When buffer caches are flushed during a dlopen (used by Slurm to load its
