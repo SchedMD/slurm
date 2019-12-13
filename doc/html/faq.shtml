@@ -661,7 +661,7 @@ rm slurm_job_${SLURM_JOB_ID}_resize.*
 </pre>
 
 <p><b>Increasing a job's size</b><br>
-Directly increasing the size of a running job would adversely effect the
+Directly increasing the size of a running job would adversely affect the
 scheduling of pending jobs.
 For the sake of fairness in job scheduling, expanding a running job requires
 the user to submit a new job, but specify the option
@@ -710,7 +710,7 @@ Until the environment variables are modified (e.g. the job's node count,
 CPU count, hostlist, etc.), any srun command will only consider the resources
 in the original resource allocation.
 Note that the original job may have active job steps at the time of its
-expansion, but they will not be effected by the change.
+expansion, but they will not be affected by the change.
 An example of the procedure is shown below in which the original job
 allocation waits until the second resource allocation request can be
 satisfied. The job requesting additional resources could also use the sbatch
