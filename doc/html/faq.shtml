@@ -186,7 +186,7 @@ script for Slurm?</a></li>
 <li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
 <li><a href="#routing queue">How can a routing queue be configured?</a></li>
 <li><a href="#squeue_script">How can I suspend, resume, hold or release all
-    of the jobs belonging to a speciic user, partition, etc?</a></li>
+    of the jobs belonging to a specific user, partition, etc?</a></li>
 <li><a href="#changed_uid">I had to change a user's UID and now they cannot submit
     jobs. How do I get the new UID to take effect?</a></li>
 <li><a href="#mysql_duplicate">Slurmdbd is failing to start with a 'Duplicate entry'
@@ -936,7 +936,7 @@ typically at the user's terminal.
 The sbatch command is designed to submit a script for later execution and its
 output is written to a file.
 Command options used in the job allocation are almost identical.
-The most noticable difference in options is that the sbatch command supports
+The most noticeable difference in options is that the sbatch command supports
 the concept of <a href="job_array.html">job arrays</a>, while srun does not.
 Another significant difference is in fault tolerance.
 Failures involving sbatch jobs typically result in the job being requeued
@@ -1637,7 +1637,7 @@ environment variables set to the desired values.
 A value of -17 typically will disable killing.</p>
 
 <p><a name="ubuntu"><b>35. I see the host of my calling node as 127.0.1.1
-    instead of the correct IB address.  Why is that?</b></a></br>
+    instead of the correct IP address.  Why is that?</b></a></br>
 Some systems by default will put your host in the /etc/hosts file as
 something like</p>
 <pre>
@@ -1750,7 +1750,7 @@ but not access it directly. For security reasons core dumps in this mode will
 not overwrite one another or other files.<br> This mode is appropriate when
 administrators are attempting to debug problems in a normal environment.</p>
 
-<p>Then you must also set the core pattern to an asbolute pathname:</p>
+<p>Then you must also set the core pattern to an absolute pathname:</p>
 
 <pre>sysctl kernel.core_pattern=/tmp/core.%e.%p</pre>
 
@@ -2137,7 +2137,7 @@ the Xeon Phi can look like one more compute node with a lot of CPUs.</p>
 mode), or both.
 Although, Slurm cannot handle the last case nicely since it does not recognize
 the Xeon Phi compute node and generic resource represent the same resources.
-So from an administrator prospective, the process of MICs configuration can be:
+So from an administrator perspective, the process of MICs configuration can be:
 install the latest MPSS and Slurm packages from yum/zypper,
 add new MICs (via console utility or GUI),
 add MICs to Slurm queues if necessary, restart the host, use MICs via Slurm.</p>
@@ -2182,7 +2182,7 @@ If you see errors of this sort:</p>
 error: Can't find parent id 3358 for assoc 1504, this should never happen.
 </pre>
 <p>in the slurmctld log file, this is indicative that the database hierarchy
-information has been corrupted, typically due to a hardware failure of
+information has been corrupted, typically due to a hardware failure or
 administrator error in directly modifying the database. In order to rebuild
 the database information, start the slurmdbd daemon with the "-R" option
 followed by an optional comma separated list of cluster names to operate on.</p>
@@ -2198,7 +2198,7 @@ Also see the available job submit plugins distributed with Slurm for examples
 (look in the "src/plugins/job_submit" directory).</p>
 
 <p><a name="squeue_script"><b>65. How can I suspend, resume, hold or release all
-    of the jobs belonging to a speciic user, partition, etc?</b></a><br>
+    of the jobs belonging to a specific user, partition, etc?</b></a><br>
 There isn't any filtering by user, partition, etc. available in the scontrol
 command; however the squeue command can be used to perform the filtering and
 build a script which you can then execute. For example:
@@ -2255,8 +2255,8 @@ $ mysql -u&lt;user&gt; -p&lt;user&gt; &lt;/tmp/slurm_db_backup.sql
 By default, Slurm flushes Lustre file system and kernel caches upon completion
 of each job step. If multiple applications are run simultaneously on compute
 nodes (either multiple applications from a single Slurm job or multiple jobs)
-the result can be significant performance degredation and even bus errors.
-Failures occur more requently when more applications are executed at the same
+the result can be significant performance degradation and even bus errors.
+Failures occur more frequently when more applications are executed at the same
 time on individual compute nodes.
 Failures are also more common when Lustre file systems are used.</p>
 
