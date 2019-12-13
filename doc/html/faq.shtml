@@ -1223,7 +1223,7 @@ initiate a job step (or batch job), the <i>slurmctld</i> daemon generates
 a credential containing a time stamp. If the <i>slurmd</i> daemon
 receives a credential containing a time stamp later than the current
 time or more than a few minutes in the past, it will be rejected.
-If you check in the <i>SlurmdLog</i> on the nodes of interest, you
+If you check in the <i>SlurmdLogFile</i> on the nodes of interest, you
 will likely see messages of this sort: "<i>Invalid job credential from
 &lt;some IP address&gt;: Job credential expired</i>." Make the times
 consistent across all of the nodes and all should be well.
@@ -1283,7 +1283,7 @@ daemon per emulated node in the cluster as follows.
 file).</li>
 <li>Build and install Slurm in the usual manner.</li>
 <li>In <i>slurm.conf</i> define the desired node names (arbitrary
-names used only by Slurm. as <i>NodeName</i> along with the actual
+names used only by Slurm) as <i>NodeName</i> along with the actual
 address of the physical node in <i>NodeHostname</i>. Multiple
 <i>NodeName</i> values can be mapped to a single
 <i>NodeHostname</i>.  Note that each <i>NodeName</i> on a single
@@ -1323,7 +1323,7 @@ plus <i>--enable-front-end</i> (this will define HAVE_FRONT_END in
 the resulting <i>config.h</i> file.</li>
 <li>Build and install Slurm in the usual manner.</li>
 <li>In <i>slurm.conf</i> define the desired node names (arbitrary
-names used only by Slurm. as <i>NodeName</i> along with the actual
+names used only by Slurm) as <i>NodeName</i> along with the actual
 name and address of the <b>one</b> physical node in <i>NodeHostName</i>
 and <i>NodeAddr</i>.
 Up to 64k nodes can be configured in this virtual cluster.</li>
@@ -1549,7 +1549,7 @@ sinfo -t drain -h -o "scontrol update nodename='%N' state=drain reason='%E'"
 execute on DOWN nodes?</a></b><br>
 Hierarchical communications are used for sending this message. If there
 are DOWN nodes in the communications hierarchy, messages will need to
-be re-routed. This limit. Slurm's ability to tightly synchronize the
+be re-routed. This limits Slurm's ability to tightly synchronize the
 execution of the <i>HealthCheckProgram</i> across the cluster, which
 could adversely impact performance of parallel applications.
 The use of CRON or node startup scripts may be better suited to ensure
@@ -1683,7 +1683,7 @@ and the actual IP addresses that have been allocated.  The only other step
 then is to generate a slurm.conf based on how many node you've chosen to boot
 that day.  I run this wrapper script on my laptop and it generates the files
 and they rsyncs them to all the instances automatically.</p>
-<p>One thing I found is tha. Slurm refuses to start if any nodes specified in
+<p>One thing I found is that Slurm refuses to start if any nodes specified in
 the slurm.conf file aren't resolvable, I initially tried to specify cloud[0-15]
 in slurm.conf, but then if I configure less than 16 nodes in /etc/hosts this
 doesn't work so I dynamically generate the slurm.conf as well as the hosts
@@ -2137,7 +2137,7 @@ the Xeon Phi can look like one more compute node with a lot of CPUs.</p>
 mode), or both.
 Although, Slurm cannot handle the last case nicely since it does not recognize
 the Xeon Phi compute node and generic resource represent the same resources.
-So from an administrator perspective, the process of MICs configuration can be:
+So from an administrator's perspective, the process of MICs configuration can be:
 install the latest MPSS and Slurm packages from yum/zypper,
 add new MICs (via console utility or GUI),
 add MICs to Slurm queues if necessary, restart the host, use MICs via Slurm.</p>
