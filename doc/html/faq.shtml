@@ -877,11 +877,11 @@ a non zero value. We can requeue the job back to
 the PENDING state and the job will be dispatched again.
 </p>
 <pre>
-$->scontrol requeue 10
-$->squeue
+$ scontrol requeue 10
+$ squeue
      JOBID PARTITION  NAME     USER   ST   TIME  NODES NODELIST(REASON)
       10      mira    zoppo    david  PD   0:00    1   (NonZeroExitCode)
-$->squeue
+$ squeue
     JOBID PARTITION   NAME     USER ST     TIME  NODES NODELIST(REASON)
       10      mira    zoppo    david  R    0:03    1      alanz1
 </pre>
@@ -890,8 +890,8 @@ $->squeue
 <p>The job can be in state RUNNING, SUSPENDED, COMPLETED or FAILED
 before being requeued.</p>
 <pre>
-$->scontrol requeuehold 10
-$->squeue
+$ scontrol requeuehold 10
+$ squeue
     JOBID PARTITION  NAME     USER ST       TIME  NODES NODELIST(REASON)
     10      mira    zoppo    david PD       0:00      1 (JobHeldUser)
 </pre>
@@ -1760,7 +1760,7 @@ configuration of these parameters.</p>
 <p>It is also usually needed to configure the system core limits, since it can be 
 set to 0.</p>
 <pre>
-]$ grep core /etc/security/limits.conf
+$ grep core /etc/security/limits.conf
 #        - core - limits the core file size (KB)
 *               hard    core            unlimited
 *               soft    core            unlimited
@@ -1786,11 +1786,11 @@ rc.d/init.d/functions.</p>
 <p>On a SELinux enabled system, or on a distribution with similar security
 system, get sure it is allowing to dump cores:</p>
 
-<pre>]$ getsebool allow_daemons_dump_core</pre>
+<pre>$ getsebool allow_daemons_dump_core</pre>
 
 <p>coredumpctl can also give valuable information:</p>
 
-<pre>]$ coredumpctl info</pre>
+<pre>$ coredumpctl info</pre>
 
 <p><a name="totalview"><b>40. How can TotalView be configured to operate with
   Slurm?</b></a></br>
@@ -1991,8 +1991,8 @@ command:</p>
 with a specific error case. See man scontrol(1) for more details.</p>
 
 <pre>
-$->scontrol requeuehold State=SpecialExit 10
-$->squeue
+$ scontrol requeuehold State=SpecialExit 10
+$ squeue
    JOBID PARTITION  NAME     USER  ST       TIME  NODES NODELIST(REASON)
     10      mira    zoppo    david SE       0:00      1 (JobHeldUser)
 </pre>
@@ -2007,7 +2007,7 @@ of a file.
 </p>
 
 <pre>
-$->cat exitme
+$ cat exitme
 #!/bin/sh
 #
 echo "hi! `date`"
@@ -2029,7 +2029,7 @@ it was terminated by a signal.
 </p>
 
 <pre>
-$->cat slurmctldepilog
+$ cat slurmctldepilog
 #!/bin/sh
 
 export PATH=/bin:/home/slurm/linux/bin
