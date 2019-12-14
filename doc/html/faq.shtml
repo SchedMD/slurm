@@ -54,7 +54,6 @@
 <li><a href="#estimated_start_time">Why does squeue (and "scontrol show
   jobid") sometimes not display a job's estimated start time?</a></li>
 <li><a href="#ansys">How can I run an Ansys program with Slurm?</a></li>
-<li><a href="#mic">How can I run programs on an Intel Phi (MIC) processor?</a></li>
 <li><a href="#req">How can a job in a complete or failed state be requeued?</a></li>
 <li><a href="#cpu_count">Slurm documentation refers to CPUs, cores and threads.
   What exactly is considered a CPU?</a></li>
@@ -178,7 +177,6 @@ script for Slurm?</a></li>
    slurmctld daemon crashed be lost?</a></li>
 <li><a href="#delete_partition">How do I safely remove partitions?</a></li>
 <li><a href="#cpu_freq">Why is Slurm unable to set the CPU frequency for jobs?</a></li>
-<li><a href="#mic_config">How can Slurm be configured to support Intel Phi (MIC)?</a></li>
 <li><a href="#cluster_acct">When adding a new cluster, how can the Slurm cluster
     configuration be copied from an existing cluster to the new cluster?</a></li>
 <li><a href="#cray_dvs">How can I update Slurm on a Cray DVS file system without
@@ -799,58 +797,6 @@ exit 0
 <p>To run an interactive session, use srun like this:</p>
 <pre>
 $ srun -n &lt;tasks&gt; ./fluent-srun.sh
-</pre>
-
-<p><a name="mic"><b>28. How can I run programs on an Intel Phi (MIC)
-processor?</b></a><br>
-Two programming models are supported, offloading and native mode.
-System administrators should see the <a href="#mic_config">Intel Phi
-configuration</a> information below.
-Slurm configuration details for Intel Phi offload support are available
-in Slurm's <a href="gres.html">Generic Resource Guide</a>.
-For a good description of how to build and run applications, please see
-<a href="https://confluence.csc.fi/display/HPCproto/HPC+Prototypes#HPCPrototypes-Nativeprogrammingmodel">CSC MIC documentation</a>.
-Note that some of the information presented in this document is configuration
-dependent. The <i>mpirun-mic</i> is included in the Slurm distribution in the
-<i>contribs/mic</i> directory. Excerpts of the CSC documentation follow.</p>
-
-<p><b>Executable Auto-Offloading</b><br>
-The Phi nodes have Executable Auto-Offloading (EAO) enabled by default.
-This feature is developed at CSC and is not currently in the standard Xeon Phi
-distribution.
-With this feature, any executable in the K1OM (MIC) binary format that the user
-tries to run on the host, will transparently be executed on the Xeon Phi
-coprocessor card instead. The execution is performed using the /usr/bin/micrun
-script.</p>
-<p>By default all environment variables with the MIC_ prefix will be passed to
-the binary, with the prefix stripped away. For example
-(MIC_LD_LIBRARY_PATH -> LD_LIBRARY_PATH).</p>
-<p>EAO can be disabled by setting the environment variable MICRUN_DISABLE
-(i.e. export MICRUN_DISABLE=1).</p>
-
-<p><b>Offload programming model</b><br>
-The Intel compilers support offload compilation automatically. This means
-either offloading a code section using offload pragmas or calling an
-offload-enabled library. (e.g. MKL).</p>
-<p>In order to run offload jobs, one needs to set the GRES (Generic Resource
-Scheduling) parameter '--gres=mic:1'. For example:</p>
-<pre>
-$ srun --gres=mic:1 ./hello
-</pre>
-<p>If this is not set, the user will see the following warning:</p>
-<pre>
-offload warning: OFFLOAD_DEVICES device number -1 does not correspond to a physical device
-</pre>
-
-<p><b>Native OpenMP code</b><br>
-To compile OpenMP code natively, you can use the -mmicflag.</p>
-<pre>
-$ module load intel
-$ icc -mmic -openmp hello.c -o hello.mic
-</pre>
-<p>To run, use the srun command. You may need to explicitly specify a Slurm partition containing MIC processors, for example:</p>
-<pre>
-$ srun -p mic ./hello.mic
 </pre>
 
 <p><a name="req"><b>29. How can a job in a complete or failed state be requeued?</b></a>
@@ -2130,33 +2076,6 @@ from<br>
 https://bugzilla.kernel.org/show_bug.cgi?id=57141</a> and<br>
 <a href="http://unix.stackexchange.com/questions/121410/setting-cpu-governor-to-on-demand-or-conservative">
 http://unix.stackexchange.com/questions/121410/setting-cpu-governor-to-on-demand-or-conservative</a>.</p>
-
-<p><a name="mic_config"><b>60. How can Slurm be configured to support Intel
-   Xeon Phi (MIC)?</b></a><br>
-Users should see the <a href="#mic">Xeon Phi use information</a> above.
-Slurm configuration details for Xeon Phi offload support are available
-in Slurm's <a href="gres.html">Generic Resource Guide</a>.</p>
-
-<p>For native mode, slurmd (built for k1om) is started inside the card when the
-card is booted.
-The Slurm configuration file, slurm.conf, is the same as on regular compute
-nodes (by default it is mounted on all regular nodes and all Xeon Phi "nodes"
-from the same place).
-Use the "slurmd -C" command to determine the Xeon Phi node configuration
-with respect to cores, threads per core, memory, etc.
-The Xeon Phi is by default placed on the host's network and connected via the
-bridge to the rest of the cluster, therefore from a Slurm user's perspective
-the Xeon Phi can look like one more compute node with a lot of CPUs.</p>
-
-<p>Therefore an administrator can configure the Xeon Phi as a regular node
-(with the slurmd daemon running on it), as a generic resource (for offload
-mode), or both.
-Although, Slurm cannot handle the last case nicely since it does not recognize
-the Xeon Phi compute node and generic resource represent the same resources.
-So from an administrator's perspective, the process of MICs configuration can be:
-install the latest MPSS and Slurm packages from yum/zypper,
-add new MICs (via console utility or GUI),
-add MICs to Slurm queues if necessary, restart the host, use MICs via Slurm.</p>
 
 <p><a name="cluster_acct"><b>61. When adding a new cluster, how can the Slurm cluster
     configuration be copied from an existing cluster to the new cluster?</b></a><br>
