@@ -6326,7 +6326,8 @@ static int _match_jobid(void *listentry, void *key)
 static int _prolog_is_running (uint32_t jobid)
 {
 	int rc = 0;
-	if (list_find_first(conf->prolog_running_jobs,
+	if (conf->prolog_running_jobs &&
+	    list_find_first(conf->prolog_running_jobs,
 			    _match_jobid, &jobid))
 		rc = 1;
 	return (rc);
