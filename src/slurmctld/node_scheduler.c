@@ -2488,6 +2488,9 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			job_cnt++;
 			if (!kill_pending)
 				continue;
+			if (_job_check_grace(job_ptr, preemptor_ptr)
+			    == SLURM_SUCCESS)
+				continue;
 			if (preempt_send_user_signal)
 				send_job_warn_signal(job_ptr, true);
 			rc = job_requeue(0, job_ptr->job_id, NULL, true, 0);
@@ -2506,11 +2509,6 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 		}
 
 		if (rc != SLURM_SUCCESS) {
-			if ((mode != PREEMPT_MODE_CANCEL)
-			    && (_job_check_grace(job_ptr, preemptor_ptr)
-				== SLURM_SUCCESS))
-				continue;
-
 			if (preempt_send_user_signal)
 				send_job_warn_signal(job_ptr, true);
 			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);

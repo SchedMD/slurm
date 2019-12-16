@@ -8687,12 +8687,18 @@ void job_time_limit(void)
 			send_job_warn_signal(job_ptr, false);
 
 			if (job_ptr->end_time <= now) {
+				uint16_t mode = slurm_job_preempt_mode(job_ptr);
 				last_job_update = now;
 				info("%s: Preemption GraceTime reached %pJ",
 				     __func__, job_ptr);
 				job_ptr->job_state = JOB_PREEMPTED |
 						     JOB_COMPLETING;
-				_job_timed_out(job_ptr, true);
+
+				if ((mode != PREEMPT_MODE_REQUEUE) ||
+				    (job_requeue(0, job_ptr->job_id,
+						 NULL, true, 0) !=
+				     SLURM_SUCCESS))
+					_job_timed_out(job_ptr, true);
 				xfree(job_ptr->state_desc);
 			}
 			goto time_check;
