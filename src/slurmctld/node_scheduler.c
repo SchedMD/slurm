@@ -2470,47 +2470,49 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 	while ((job_ptr = list_next(iter))) {
 		rc = SLURM_SUCCESS;
 		mode = slurm_job_preempt_mode(job_ptr);
-		if (mode == PREEMPT_MODE_CANCEL) {
-			job_cnt++;
-			if (!kill_pending)
-				continue;
-			if (_job_check_grace(job_ptr, preemptor_ptr)
-			    == SLURM_SUCCESS)
-				continue;
-			if (preempt_send_user_signal)
-				send_job_warn_signal(job_ptr, true);
-			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
-			if (rc == SLURM_SUCCESS) {
-				info("preempted %pJ has been killed to reclaim resources for %pJ",
-				     job_ptr, preemptor_ptr);
-			}
-		} else if (mode == PREEMPT_MODE_REQUEUE) {
-			job_cnt++;
-			if (!kill_pending)
-				continue;
-			if (_job_check_grace(job_ptr, preemptor_ptr)
-			    == SLURM_SUCCESS)
-				continue;
-			if (preempt_send_user_signal)
-				send_job_warn_signal(job_ptr, true);
-			rc = job_requeue(0, job_ptr->job_id, NULL, true, 0);
-			if (rc == SLURM_SUCCESS) {
-				info("preempted %pJ has been requeued to reclaim resources for %pJ",
-				     job_ptr, preemptor_ptr);
-			}
-		} else if ((mode == PREEMPT_MODE_SUSPEND) &&
-			   (slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG)) {
-			debug("preempted %pJ suspended by gang scheduler to reclaim resources for %pJ",
-			      job_ptr, preemptor_ptr);
-		} else if (mode == PREEMPT_MODE_OFF) {
+
+		if (mode == PREEMPT_MODE_OFF) {
 			error("%s: Invalid preempt_mode %u for %pJ",
 			      __func__, mode, job_ptr);
 			continue;
 		}
 
+		if ((mode == PREEMPT_MODE_SUSPEND) &&
+		    (slurmctld_conf.preempt_mode & PREEMPT_MODE_GANG)) {
+			debug("preempted %pJ suspended by gang scheduler to reclaim resources for %pJ",
+			      job_ptr, preemptor_ptr);
+			job_ptr->preempt_time = time(NULL);
+			continue;
+		}
+
+		job_cnt++;
+		if (!kill_pending)
+			continue;
+
+		if (_job_check_grace(job_ptr, preemptor_ptr)
+		    == SLURM_SUCCESS)
+			continue;
+
+		if (preempt_send_user_signal)
+			send_job_warn_signal(job_ptr, true);
+
+		if (mode == PREEMPT_MODE_CANCEL) {
+			rc = job_signal(job_ptr, SIGKILL,
+					0, 0, true);
+			if (rc == SLURM_SUCCESS) {
+				info("preempted %pJ has been killed to reclaim resources for %pJ",
+				     job_ptr, preemptor_ptr);
+			}
+		} else if (mode == PREEMPT_MODE_REQUEUE) {
+			rc = job_requeue(0, job_ptr->job_id,
+					 NULL, true, 0);
+			if (rc == SLURM_SUCCESS) {
+				info("preempted %pJ has been requeued to reclaim resources for %pJ",
+				     job_ptr, preemptor_ptr);
+			}
+		}
+
 		if (rc != SLURM_SUCCESS) {
-			if (preempt_send_user_signal)
-				send_job_warn_signal(job_ptr, true);
 			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
 			if (rc == SLURM_SUCCESS) {
 				info("%s: preempted %pJ had to be killed",
