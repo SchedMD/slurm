@@ -1556,24 +1556,7 @@ execution of the <i>HealthCheckProgram</i> across the cluster, which
 could adversely impact performance of parallel applications.
 The use of CRON or node startup scripts may be better suited to ensure
 that <i>HealthCheckProgram</i> gets executed on nodes that are DOWN
-in Slurm. If you still want to have Slurm try to execute
-<i>HealthCheckProgram</i> on DOWN nodes, apply the following patch:
-<pre>
-Index: src/slurmctld/ping_nodes.c
-===================================================================
---- src/slurmctld/ping_nodes.c  (revision 15166)
-+++ src/slurmctld/ping_nodes.c  (working copy)
-@@ -283,9 +283,6 @@
-		node_ptr   = &node_record_table_ptr[i];
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-
--               if (base_state == NODE_STATE_DOWN)
--                       continue;
--
- #ifdef HAVE_FRONT_END          /* Operate only on front-end */
-		if (i > 0)
-			continue;
-</pre>
+in Slurm.
 
 <p><a name="batch_lost"><b>30. What is the meaning of the error
 &quot;Batch JobId=# missing from master node, killing it&quot;?</b></a><br>
