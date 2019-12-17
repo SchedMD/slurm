@@ -1256,7 +1256,8 @@ static int _schedule(uint32_t job_limit)
 			part_iterator = list_iterator_create(part_list);
 			while ((part_ptr = list_next(part_iterator))) {
 				if (bit_overlap(eff_cg_bitmap,
-						part_ptr->node_bitmap)) {
+						part_ptr->node_bitmap) &&
+				    (part_ptr->state_up & PARTITION_SCHED)) {
 					failed_parts[failed_part_cnt++] =
 						part_ptr;
 					bit_and_not(avail_node_bitmap,
