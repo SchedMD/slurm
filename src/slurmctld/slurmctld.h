@@ -902,10 +902,17 @@ typedef enum {
 
 #define SLURM_FLAGS_OR		0x0001	/* OR job dependencies */
 
+enum {
+	DEPEND_NOT_FULFILLED = 0,
+	DEPEND_FULFILLED,
+	DEPEND_FAILED
+};
+
 struct	depend_spec {
 	uint32_t	array_task_id;	/* INFINITE for all array tasks */
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
 	uint16_t	depend_flags;	/* SLURM_FLAGS_* type */
+	uint32_t        depend_state;   /* Status of the dependency */
 	uint32_t        depend_time;    /* time to wait (mins) */
 	uint32_t	job_id;		/* Slurm job_id */
 	bool 		depend_remote;	/* Is a remote dependency */

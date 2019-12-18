@@ -2656,6 +2656,12 @@ extern void print_job_dependency(job_record_t *job_ptr)
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
+		/*
+		 * Show non-fulfilled (including failed) dependencies, but don't
+		 * show fulfilled dependencies.
+		 */
+		if (dep_ptr->depend_state == DEPEND_FULFILLED)
+			continue;
 		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
 			info("  singleton");
 			continue;
@@ -2730,6 +2736,12 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
+		/*
+		 * Show non-fulfilled (including failed) dependencies, but don't
+		 * show fulfilled dependencies.
+		 */
+		if (dep_ptr->depend_state == DEPEND_FULFILLED)
+			continue;
 		if      (dep_ptr->depend_type == SLURM_DEPEND_SINGLETON) {
 			xstrfmtcat(job_ptr->details->dependency,
 				   "%ssingleton", sep);
@@ -2900,6 +2912,9 @@ extern int test_job_dependency(job_record_t *job_ptr)
 	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	while ((dep_ptr = list_next(depend_iter))) {
 		bool clear_dep = false;
+		/* Don't test if the dependency is fulfilled or failed */
+		if (dep_ptr->depend_state != DEPEND_NOT_FULFILLED)
+			continue;
 		if (dep_ptr->depend_remote) {
 			depends = true;
 			continue;
@@ -2963,6 +2978,7 @@ extern int test_job_dependency(job_record_t *job_ptr)
 		}
 
 		if (failure) {
+			dep_ptr->depend_state = DEPEND_FAILED;
 			job_ptr->bit_flags |= INVALID_DEPEND;
 			if ((dep_ptr->depend_flags & SLURM_FLAGS_OR) &&
 			    list_peek_next(depend_iter)) {
@@ -2971,6 +2987,8 @@ extern int test_job_dependency(job_record_t *job_ptr)
 			} else
 				break;
 		} else if (clear_dep) {
+			dep_ptr->depend_state = DEPEND_FULFILLED;
+			rebuild_str = true;
 			if (dep_ptr->depend_flags & SLURM_FLAGS_OR) {
 				or_satisfied = true;
 				depends = false;
@@ -2981,9 +2999,6 @@ extern int test_job_dependency(job_record_t *job_ptr)
 				}
 				break;
 			}
-			if (!(job_ptr->bit_flags & INVALID_DEPEND))
-				rebuild_str = true;
-			list_delete_item(depend_iter);
 		}
 	}
 	list_iterator_destroy(depend_iter);
