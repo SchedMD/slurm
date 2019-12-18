@@ -2792,6 +2792,13 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 	list_iterator_destroy(depend_iter);
 }
 
+static int _find_dep_by_state(void *arg, void *key)
+{
+	struct depend_spec *dep_ptr = (struct depend_spec *) arg;
+	int state = *((int *) key);
+	return dep_ptr->depend_state == state;
+}
+
 static int _test_job_dependency_common(
 	bool is_complete, bool is_completed, bool is_pending,
 	bool *clear_dep, bool *depends, bool *failure,
@@ -2978,9 +2985,16 @@ extern int test_job_dependency(job_record_t *job_ptr)
 		}
 
 		if (failure) {
+			int state = DEPEND_NOT_FULFILLED;
 			dep_ptr->depend_state = DEPEND_FAILED;
+			/*
+			 * If the job used OR dependencies and there's another
+			 * non-fulfilled dependency, don't fail yet. The other
+			 * dependencies might pass.
+			 */
 			if ((dep_ptr->depend_flags & SLURM_FLAGS_OR) &&
-			    list_peek_next(depend_iter)) {
+			    (list_find_first(job_ptr->details->depend_list,
+					     _find_dep_by_state, &state))) {
 				failure = false;
 				depends = true;
 			} else
