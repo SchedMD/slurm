@@ -1018,7 +1018,7 @@ enum ctx_keys {
 #define GRES_DISABLE_BIND  0x00080000	/* Disable CPU/GRES binding */
 #define JOB_WAS_RUNNING    0x00100000  /* Job was running */
 #define RESET_ACCRUE_TIME  0x00200000   /* Reset the job's accrue time */
-#define INVALID_DEPEND     0x00400000	/* Job has invalid dependency(ies). */
+/*                         0x00400000      Unused */
 #define JOB_MEM_SET        0x00800000	/* Memory limit explicity set by job */
 #define JOB_RESIZED        0x01000000	/* Running job added/removed nodes */
 #define USE_DEFAULT_ACCT   0x02000000	/* Job submitted to default account */

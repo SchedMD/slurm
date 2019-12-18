@@ -2979,7 +2979,6 @@ extern int test_job_dependency(job_record_t *job_ptr)
 
 		if (failure) {
 			dep_ptr->depend_state = DEPEND_FAILED;
-			job_ptr->bit_flags |= INVALID_DEPEND;
 			if ((dep_ptr->depend_flags & SLURM_FLAGS_OR) &&
 			    list_peek_next(depend_iter)) {
 				failure = false;
@@ -2992,7 +2991,6 @@ extern int test_job_dependency(job_record_t *job_ptr)
 			if (dep_ptr->depend_flags & SLURM_FLAGS_OR) {
 				or_satisfied = true;
 				depends = false;
-				job_ptr->bit_flags &= ~INVALID_DEPEND;
 				if (job_ptr->state_reason == WAIT_DEP_INVALID) {
 					job_ptr->state_reason = WAIT_NO_REASON;
 					xfree(job_ptr->state_desc);

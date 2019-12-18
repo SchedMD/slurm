@@ -13454,7 +13454,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
 			else {
-				job_ptr->bit_flags &= ~INVALID_DEPEND;
 				job_ptr->details->orig_dependency =
 					xstrdup(job_ptr->details->dependency);
 				sched_info("%s: setting dependency to %s for %pJ",
