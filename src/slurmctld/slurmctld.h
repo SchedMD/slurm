@@ -874,25 +874,29 @@ struct job_record {
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */
-#define SLURM_DEPEND_AFTER		1	/* After job begins */
-#define SLURM_DEPEND_AFTER_ANY		2	/* After job completes */
-#define SLURM_DEPEND_AFTER_NOT_OK	3	/* After job fails */
-#define SLURM_DEPEND_AFTER_OK		4	/* After job completes
-						 * successfully */
-#define SLURM_DEPEND_SINGLETON		5	/* Only one job for this
-						 * user/name at a time */
-#define SLURM_DEPEND_EXPAND		6	/* Expand running job */
-#define SLURM_DEPEND_AFTER_CORRESPOND	7	/* After corresponding job array
-						 * elements completes */
-#define SLURM_DEPEND_BURST_BUFFER	8	/* After job burst buffer
-						 * stage-out completes */
+typedef enum {
+	SLURM_DEPEND_AFTER = 1,	/* After job begins */
+	SLURM_DEPEND_AFTER_ANY,	/* After job completes */
+	SLURM_DEPEND_AFTER_NOT_OK, /* After job fails */
+	SLURM_DEPEND_AFTER_OK,	/* After job completes successfully */
+	SLURM_DEPEND_SINGLETON,	/* Only one job for this
+				 * user/name at a time */
+	SLURM_DEPEND_EXPAND,	/* Expand running job */
+	SLURM_DEPEND_AFTER_CORRESPOND, /* After corresponding job array
+					* elements completes */
+	SLURM_DEPEND_BURST_BUFFER, /* After job burst buffer
+				    * stage-out completes */
+	SLURM_DEPEND_STAGING, /* Only start after a staging job has ran for a
+			       * specified time. */
+} slurm_depend_types_t;
 
-#define SLURM_FLAGS_OR			1	/* OR job dependencies */
+#define SLURM_FLAGS_OR		0x0001	/* OR job dependencies */
 
 struct	depend_spec {
 	uint32_t	array_task_id;	/* INFINITE for all array tasks */
 	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
 	uint16_t	depend_flags;	/* SLURM_FLAGS_* type */
+	uint32_t        depend_time;    /* time to wait (mins) */
 	uint32_t	job_id;		/* Slurm job_id */
 	job_record_t   *job_ptr;	/* pointer to this job */
 };

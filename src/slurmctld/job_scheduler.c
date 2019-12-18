@@ -2591,7 +2591,7 @@ extern void print_job_dependency(job_record_t *job_ptr)
 {
 	ListIterator depend_iter;
 	struct depend_spec *dep_ptr;
-	char *dep_flags, *dep_str;
+	char *dep_flags, *dep_str, *dep_time_sep = NULL;
 
 	info("Dependency information for %pJ", job_ptr);
 	if ((job_ptr->details == NULL) ||
@@ -2622,19 +2622,32 @@ extern void print_job_dependency(job_record_t *job_ptr)
 			dep_str = "aftercorr";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_EXPAND)
 			dep_str = "expand";
-		else
+		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
+			dep_str = "afterburstbuffer";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_STAGING) {
+			dep_str = "afterstaging";
+			dep_time_sep = xstrdup_printf(
+				":%u", dep_ptr->depend_time / 60);
+		} else
 			dep_str = "unknown";
 
 		if (dep_ptr->array_task_id == INFINITE)
-			info("  %s:%u_* %s",
-			     dep_str, dep_ptr->job_id, dep_flags);
-		else if (dep_ptr->array_task_id == NO_VAL)
-			info("  %s:%u %s",
-			     dep_str, dep_ptr->job_id, dep_flags);
-		else
-			info("  %s:%u_%u %s",
+			info("  %s:%u_*%s %s",
 			     dep_str, dep_ptr->job_id,
-			     dep_ptr->array_task_id, dep_flags);
+			     dep_time_sep ? dep_time_sep : "",
+			     dep_flags);
+		else if (dep_ptr->array_task_id == NO_VAL)
+			info("  %s:%u%s %s",
+			     dep_str, dep_ptr->job_id,
+			     dep_time_sep ? dep_time_sep : "",
+			     dep_flags);
+		else
+			info("  %s:%u_%u:%s %s",
+			     dep_str, dep_ptr->job_id,
+			     dep_ptr->array_task_id,
+			     dep_time_sep ? dep_time_sep : "",
+			     dep_flags);
+		xfree(dep_time_sep);
 	}
 	list_iterator_destroy(depend_iter);
 }
@@ -2677,6 +2690,8 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 			dep_str = "expand";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
 			dep_str = "afterburstbuffer";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_STAGING)
+			dep_str = "afterstaging";
 		else
 			dep_str = "unknown";
 
@@ -2691,6 +2706,9 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 				   sep, dep_str, dep_ptr->job_id,
 				   dep_ptr->array_task_id);
 
+		if (dep_ptr->depend_type == SLURM_DEPEND_STAGING)
+			xstrfmtcat(job_ptr->details->dependency,
+				   ":%u", dep_ptr->depend_time / 60);
 		if (set_or_flag)
 			dep_ptr->depend_flags |= SLURM_FLAGS_OR;
 		if (dep_ptr->depend_flags & SLURM_FLAGS_OR)
@@ -2887,6 +2905,14 @@ extern int test_job_dependency(job_record_t *job_ptr)
 				clear_dep = true;
 			} else
 				depends = true;
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_STAGING) {
+			time_t now = time(NULL);
+			if (djob_ptr->start_time &&
+			    ((now - djob_ptr->start_time) >=
+			     dep_ptr->depend_time)) {
+				clear_dep = true;
+			} else
+				depends = true;
 		} else
 			failure = true;
 		if (failure) {
@@ -3038,6 +3064,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	job_record_t *dep_job_ptr;
 	int expand_cnt = 0;
 	bool or_flag = false;
+	int depend_time;
 
 	if (job_ptr->details == NULL)
 		return EINVAL;
@@ -3164,6 +3191,8 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 			depend_type = SLURM_DEPEND_AFTER_OK;
 		else if (xstrncasecmp(tok, "afterburstbuffer", 10) == 0)
 			depend_type = SLURM_DEPEND_BURST_BUFFER;
+		else if (xstrncasecmp(tok, "afterstaging", 9) == 0)
+			depend_type = SLURM_DEPEND_STAGING;
 		else if (xstrncasecmp(tok, "after", 5) == 0)
 			depend_type = SLURM_DEPEND_AFTER;
 		else if (xstrncasecmp(tok, "expand", 6) == 0) {
@@ -3281,7 +3310,23 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 						job_ptr->tres_req_cnt,
 						TRES_STR_FLAG_SIMPLE, true);
 				assoc_mgr_unlock(&locks);
+			} else if (depend_type == SLURM_DEPEND_STAGING) {
+				sep_ptr = strchr(sep_ptr2, ':');
+				if (!sep_ptr) {
+					rc = ESLURM_DEPENDENCY;
+					break;
+				}
+
+				sep_ptr++; /* skip over ":" */
+				depend_time = strtol(sep_ptr, &sep_ptr2, 10);
+
+				if (depend_time <= 0) {
+					rc = ESLURM_DEPENDENCY;
+					break;
+				}
+				depend_time *= 60;
 			}
+
 			if (dep_job_ptr) {	/* job still active */
 				dep_ptr = xmalloc(sizeof(struct depend_spec));
 				dep_ptr->array_task_id = array_task_id;
@@ -3293,6 +3338,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 						dep_job_ptr->array_job_id;
 				}
 				dep_ptr->job_ptr = dep_job_ptr;
+				dep_ptr->depend_time = depend_time;
 				(void) list_append(new_depend_list, dep_ptr);
 			}
 			if (sep_ptr2[0] != ':')
