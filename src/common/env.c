@@ -1155,8 +1155,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 
 	cluster_name = slurm_get_cluster_name();
 	if (cluster_name) {
-		env_array_append_fmt(dest, "SLURM_CLUSTER_NAME", "%s",
-				     cluster_name);
+		env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s",
+					cluster_name);
 		xfree(cluster_name);
 	}
 

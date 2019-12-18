@@ -63,6 +63,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix alloc_node validation when updating a job.
  -- Fix for requesting specific nodes when using cons_tres topology.
  -- Ensure x11 is setup before launching a job step.
+ -- Fix incorrect SLURM_CLUSTER_NAME env var in batch step.
 
 * Changes in Slurm 19.05.4
 ==========================
