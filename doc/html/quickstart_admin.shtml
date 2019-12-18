@@ -253,7 +253,8 @@ responsiveness, the transition back and forth should go undetected.</p>
 <p>Prior to 18.08, Slurm used the <a href="slurm.conf.html#OPT_BackupAddr">
 &quot;BackupAddr&quot;</a> and <a href="slurm.conf.html#OPT_BackupController">
 &quot;BackupController&quot;</a> parameters for High Availability. These
-parameters still work, but will be deprecated at some point in the future.
+parameters have been deprecated and are replaced by
+<a href="slurm.conf.html#OPT_SlurmctldHost">&quot;SlurmctldHost&quot;</a>.
 Also see <a href="slurm.conf.html#OPT_SlurmctldPrimaryOnProg">&quot;
 SlurmctldPrimaryOnProg&quot;</a> and
 <a href="slurm.conf.html#OPT_SlurmctldPrimaryOffProg">&quot;
