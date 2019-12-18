@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     request resulting in slurmctld hang.
  -- priority/multifactor - gracefully handle NULL list of associations or array
     of siblings when calculating FairTree fairshare.
+ -- Fix cons_tres --exclusive=user to allocate only requested number of CPUs.
 
 * Changes in Slurm 19.05.6
 ==========================

@@ -1042,7 +1042,7 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
-		if (job_resrcs_ptr->whole_node) {
+		if (job_resrcs_ptr->whole_node == 1) {
 			if (!core_array[i]) {
 				if (type != HANDLE_JOB_RES_TEST)
 					error("%s: %s: core_array[%d] is NULL %d",
