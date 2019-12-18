@@ -3064,7 +3064,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	job_record_t *dep_job_ptr;
 	int expand_cnt = 0;
 	bool or_flag = false;
-	int depend_time;
+	int depend_time = 0;
 
 	if (job_ptr->details == NULL)
 		return EINVAL;
