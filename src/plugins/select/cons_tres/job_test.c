@@ -2238,23 +2238,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		nw->node_cnt++;
 	}
 
-	if (req_nodes_bitmap) {
-		bit_and(node_map, req_nodes_bitmap);
-		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-		    gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
-			/* Required nodes completely satisfied the request */
-			rc = SLURM_SUCCESS;
-			goto fini;
-		}
-		if (max_nodes <= 0) {
-			rc = SLURM_ERROR;
-			info("%s: %s: %pJ requires nodes exceed maximum node limit",
-			     plugin_type, __func__, job_ptr);
-			goto fini;
-		}
-	}
-
 	list_sort(node_weight_list, _topo_weight_sort);
 	if (select_debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		(void) list_for_each(node_weight_list, _topo_weight_log, NULL);
@@ -2335,6 +2318,23 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		if (top_switch_inx != i) {
 			  bit_and(switch_node_bitmap[i],
 				  switch_node_bitmap[top_switch_inx]);
+		}
+	}
+
+	if (req_nodes_bitmap) {
+		bit_and(node_map, req_nodes_bitmap);
+		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
+		    gres_plugin_job_sched_test(job_ptr->gres_list,
+					       job_ptr->job_id)) {
+			/* Required nodes completely satisfied the request */
+			rc = SLURM_SUCCESS;
+			goto fini;
+		}
+		if (max_nodes <= 0) {
+			rc = SLURM_ERROR;
+			info("%s: %s: %pJ requires nodes exceed maximum node limit",
+			     plugin_type, __func__, job_ptr);
+			goto fini;
 		}
 	}
 

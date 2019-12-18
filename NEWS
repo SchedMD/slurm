@@ -61,6 +61,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix array tasks getting same reject reason.
  -- Ignore DOWN/DRAIN partitions in reduce_completing_frag logic.
  -- Fix alloc_node validation when updating a job.
+ -- Fix for requesting specific nodes when using cons_tres topology.
+ -- Ensure x11 is setup before launching a job step.
 
 * Changes in Slurm 19.05.4
 ==========================

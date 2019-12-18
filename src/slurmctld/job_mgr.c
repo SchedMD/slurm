@@ -13298,6 +13298,19 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	} else if ((job_ptr->state_reason != WAIT_HELD)
 		   && (job_ptr->state_reason != WAIT_HELD_USER)
 		   && (job_ptr->state_reason != WAIT_RESV_DELETED)
+		   /*
+		    * A job update can come while the prolog is running.
+		    * Don't change state_reason if the prolog is running.
+		    * _is_prolog_finished() relies on state_reason==WAIT_PROLOG
+		    * to know if the prolog is running. If we change it here,
+		    * then slurmctld will think that the prolog isn't running
+		    * anymore and _slurm_rpc_job_ready will tell srun that the
+		    * prolog is done even if it isn't. Then srun can launch a
+		    * job step before the prolog is done, which breaks the
+		    * behavior of PrologFlags=alloc and means that the job step
+		    * could launch before the extern step sets up x11.
+		    */
+		   && (job_ptr->state_reason != WAIT_PROLOG)
 		   && (job_ptr->state_reason != WAIT_MAX_REQUEUE)) {
 		job_ptr->state_reason = WAIT_NO_REASON;
 		xfree(job_ptr->state_desc);
