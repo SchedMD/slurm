@@ -193,7 +193,7 @@ MCSParameters=enforced,select,privatedata
 
 <h2>View MCS parameters</h2>
 
-<p>Configured MCS parameters can be viewed using the <it>scontrol</it> command.
+<p>Configured MCS parameters can be viewed using the <i>scontrol</i> command.
 <pre>
 scontrol show config |grep MCS
 MCSPlugin          = mcs/group
@@ -217,7 +217,7 @@ srun -n10 -t 1000 -A another_account_than_default ./job &
 
 <h2>View MCS parameters in usage</h2>
 
-<p>The <it>squeue</it> command can also display the MCS with mcslabel
+<p>The <i>squeue</i> command can also display the MCS with mcslabel
 format option
 <pre>
 squeue -O jobid,username,mcslabel
@@ -226,7 +226,7 @@ JOBID               USER                MCSLABEL
 3	            bar                 groupB
 </pre>
 
-<p>The <it>scontrol</it> command will now display the MCS_label
+<p>The <i>scontrol</i> command will now display the MCS_label
 <pre>
 scontrol show nodes
 NodeName=node0001 Arch=x86_64 CoresPerSocket=4
