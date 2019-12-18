@@ -560,7 +560,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/Makefile
 		 src/plugins/mpi/cray_shasta/Makefile
 		 src/plugins/mpi/none/Makefile
-		 src/plugins/mpi/openmpi/Makefile
 		 src/plugins/mpi/pmi2/Makefile
 		 src/plugins/mpi/pmix/Makefile
 		 src/plugins/task/Makefile

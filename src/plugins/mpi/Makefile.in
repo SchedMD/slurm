@@ -198,7 +198,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = cray_shasta none openmpi pmi2 pmix
+DIST_SUBDIRS = cray_shasta none pmi2 pmix
 am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
@@ -474,7 +474,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = cray_shasta none openmpi pmi2 $(am__append_1)
+SUBDIRS = cray_shasta none pmi2 $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

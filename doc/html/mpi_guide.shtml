@@ -169,7 +169,6 @@ user@testbox:~/t$ srun --mpi=list
 srun: MPI types are...
 srun: pmix_v1
 srun: pmi2
-srun: openmpi
 srun: none
 srun: pmix
 srun: pmix_v2
@@ -262,7 +261,6 @@ both components work properly:</p>
 user@testbox:~/t$ srun --mpi=list
 srun: MPI types are...
 srun: pmi2
-srun: openmpi
 srun: none
 srun: pmix
 srun: pmix_v2
@@ -592,6 +590,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 12 February 2019</p>
+<p style="text-align:center;">Last modified 18 December 2019</p>
 
 <!--#include virtual="footer.txt"-->
