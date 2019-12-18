@@ -680,8 +680,8 @@ static int _find_job_mate(job_record_t *job_ptr, bitstr_t *bitmap,
 			continue;	/* Required nodes missing from job */
 
 		if (job_ptr->details->exc_node_bitmap &&
-		    (bit_overlap(job_ptr->details->exc_node_bitmap,
-				 job_scan_ptr->node_bitmap) != 0))
+		    bit_overlap_any(job_ptr->details->exc_node_bitmap,
+				    job_scan_ptr->node_bitmap))
 			continue;	/* Excluded nodes in this job */
 
 		bit_and(bitmap, job_scan_ptr->node_bitmap);
@@ -1761,8 +1761,8 @@ static int _job_test_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 			if (alloc_nodes > max_nodes)
 				break;
 			if (switches_node_cnt[j] == 0 ||
-			    bit_overlap(req_nodes_bitmap,
-					switches_bitmap[j]) == 0)
+			    bit_overlap_any(req_nodes_bitmap,
+					    switches_bitmap[j]) == 0)
 				continue;
 
 			/* Use nodes from this leaf */
@@ -2054,8 +2054,8 @@ static int _job_test_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 			if (alloc_nodes > max_nodes)
 				break;
 			if (switches_node_cnt[j] == 0 ||
-			    bit_overlap(req_nodes_bitmap,
-					switches_bitmap[j]) == 0)
+			    bit_overlap_any(req_nodes_bitmap,
+					    switches_bitmap[j]) == 0)
 				continue;
 
 			/* Use nodes from this leaf */
@@ -3270,8 +3270,9 @@ top:	if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
 			preemptee_iterator = list_iterator_create(
 				preemptee_candidates);
 			while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-				if (bit_overlap(bitmap,
-						tmp_job_ptr->node_bitmap) == 0)
+				if (bit_overlap_any(bitmap,
+						    tmp_job_ptr->
+							node_bitmap) == 0)
 					continue;
 				if (tmp_job_ptr->details->usable_nodes == 0)
 					continue;
@@ -3422,7 +3423,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-			if (bit_overlap(bitmap, tmp_job_ptr->node_bitmap) == 0)
+			if (bit_overlap_any(bitmap,
+					    tmp_job_ptr->node_bitmap) == 0)
 				continue;
 
 			list_append(*preemptee_job_list, tmp_job_ptr);

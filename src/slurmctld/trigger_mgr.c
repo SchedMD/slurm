@@ -1058,8 +1058,8 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 
 	if (trig_in->trig_type & TRIGGER_TYPE_DOWN) {
 		if (trigger_down_nodes_bitmap &&
-		    bit_overlap(trig_in->job_ptr->node_bitmap,
-				trigger_down_nodes_bitmap)) {
+		    bit_overlap_any(trig_in->job_ptr->node_bitmap,
+				    trigger_down_nodes_bitmap)) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_TRIGGERS) {
 				info("trigger[%u] for job %u down",
 				     trig_in->trig_id, trig_in->job_id);
@@ -1073,8 +1073,8 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 
 	if (trig_in->trig_type & TRIGGER_TYPE_FAIL) {
 		if (trigger_fail_nodes_bitmap &&
-		    bit_overlap(trig_in->job_ptr->node_bitmap,
-				trigger_fail_nodes_bitmap)) {
+		    bit_overlap_any(trig_in->job_ptr->node_bitmap,
+				    trigger_fail_nodes_bitmap)) {
 			if (slurmctld_conf.debug_flags & DEBUG_FLAG_TRIGGERS) {
 				info("trigger[%u] for job %u node fail",
 				     trig_in->trig_id, trig_in->job_id);
@@ -1088,8 +1088,8 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 
 	if (trig_in->trig_type & TRIGGER_TYPE_UP) {
 		if (trigger_up_nodes_bitmap &&
-		    bit_overlap(trig_in->job_ptr->node_bitmap,
-				trigger_up_nodes_bitmap)) {
+		    bit_overlap_any(trig_in->job_ptr->node_bitmap,
+				    trigger_up_nodes_bitmap)) {
 			trig_in->state = 1;
 			trig_in->trig_time = now +
 					    (0x8000 - trig_in->trig_time);
@@ -1174,8 +1174,8 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->res_id = bitmap2node_name(
 					  trigger_down_nodes_bitmap);
 			trig_in->state = 1;
-		} else if (bit_overlap(trig_in->nodes_bitmap,
-				       trigger_down_nodes_bitmap)) {
+		} else if (bit_overlap_any(trig_in->nodes_bitmap,
+				           trigger_down_nodes_bitmap)) {
 			bit_and(trig_in->nodes_bitmap,
 				trigger_down_nodes_bitmap);
 			xfree(trig_in->res_id);
@@ -1202,8 +1202,8 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->res_id = bitmap2node_name(
 					  trigger_drained_nodes_bitmap);
 			trig_in->state = 1;
-		} else if (bit_overlap(trig_in->nodes_bitmap,
-				       trigger_drained_nodes_bitmap)) {
+		} else if (bit_overlap_any(trig_in->nodes_bitmap,
+				           trigger_drained_nodes_bitmap)) {
 			bit_and(trig_in->nodes_bitmap,
 				trigger_drained_nodes_bitmap);
 			xfree(trig_in->res_id);
@@ -1230,8 +1230,8 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->res_id = bitmap2node_name(
 					  trigger_fail_nodes_bitmap);
 			trig_in->state = 1;
-		} else if (bit_overlap(trig_in->nodes_bitmap,
-				       trigger_fail_nodes_bitmap)) {
+		} else if (bit_overlap_any(trig_in->nodes_bitmap,
+					   trigger_fail_nodes_bitmap)) {
 			bit_and(trig_in->nodes_bitmap,
 				trigger_fail_nodes_bitmap);
 			xfree(trig_in->res_id);
@@ -1270,8 +1270,8 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->res_id = bitmap2node_name(
 					  trigger_idle_node_bitmap);
 			trig_in->state = 1;
-		} else if (bit_overlap(trig_in->nodes_bitmap,
-				       trigger_idle_node_bitmap)) {
+		} else if (bit_overlap_any(trig_in->nodes_bitmap,
+					   trigger_idle_node_bitmap)) {
 			bit_and(trig_in->nodes_bitmap,
 				trigger_idle_node_bitmap);
 			xfree(trig_in->res_id);
@@ -1298,8 +1298,8 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->res_id = bitmap2node_name(
 					  trigger_up_nodes_bitmap);
 			trig_in->state = 1;
-		} else if (bit_overlap(trig_in->nodes_bitmap,
-				       trigger_up_nodes_bitmap)) {
+		} else if (bit_overlap_any(trig_in->nodes_bitmap,
+					   trigger_up_nodes_bitmap)) {
 			bit_and(trig_in->nodes_bitmap,
 				trigger_up_nodes_bitmap);
 			xfree(trig_in->res_id);

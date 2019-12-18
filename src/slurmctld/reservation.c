@@ -1696,7 +1696,7 @@ static bool _job_overlap(time_t start_time, uint32_t flags,
 	while ((job_ptr = list_next(job_iterator))) {
 		if (IS_JOB_RUNNING(job_ptr)		&&
 		    (job_ptr->end_time > start_time)	&&
-		    (bit_overlap(job_ptr->node_bitmap, node_bitmap) > 0) &&
+		    bit_overlap_any(job_ptr->node_bitmap, node_bitmap) &&
 		    ((resv_name == NULL) ||
 		     (xstrcmp(resv_name, job_ptr->resv_name) != 0))) {
 			overlap = true;
@@ -1736,7 +1736,7 @@ static bool _resv_overlap(resv_desc_msg_t *resv_desc_ptr,
 		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
 		    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))
 			continue;
-		if (!bit_overlap(resv_ptr->node_bitmap, node_bitmap))
+		if (!bit_overlap_any(resv_ptr->node_bitmap, node_bitmap))
 			continue;	/* no overlap */
 		if (!resv_ptr->full_nodes)
 			continue;
@@ -3526,7 +3526,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 		return SLURM_SUCCESS;
 
 	if (delta_node_cnt > 0) {	/* Must decrease node count */
-		if (bit_overlap(resv_ptr->node_bitmap, idle_node_bitmap)) {
+		if (bit_overlap_any(resv_ptr->node_bitmap, idle_node_bitmap)) {
 			/* Start by eliminating idle nodes from reservation */
 			tmp1_bitmap = bit_copy(resv_ptr->node_bitmap);
 			bit_and(tmp1_bitmap, idle_node_bitmap);
@@ -4331,8 +4331,8 @@ extern void job_time_adj_resv(job_record_t *job_ptr)
 		if (!license_list_overlap(job_ptr->license_list,
 					  resv_ptr->license_list) &&
 		    ((resv_ptr->node_bitmap == NULL) ||
-		     (bit_overlap(resv_ptr->node_bitmap,
-				  job_ptr->node_bitmap) == 0)))
+		     (bit_overlap_any(resv_ptr->node_bitmap,
+				      job_ptr->node_bitmap) == 0)))
 			continue;	/* disjoint resources */
 		resv_begin_time = difftime(resv_ptr->start_time, now) / 60;
 		job_ptr->time_limit = MIN(job_ptr->time_limit,resv_begin_time);
@@ -4957,7 +4957,7 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			    (res2_ptr->end_time   <= job_start_time) ||
 			    (!res2_ptr->full_nodes))
 				continue;
-			if (bit_overlap(*node_bitmap, res2_ptr->node_bitmap)) {
+			if (bit_overlap_any(*node_bitmap, res2_ptr->node_bitmap)) {
 				*resv_overlap = true;
 				bit_and_not(*node_bitmap,res2_ptr->node_bitmap);
 			}
@@ -5044,8 +5044,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			}
 
 			if (job_ptr->details->req_node_bitmap &&
-			    bit_overlap(job_ptr->details->req_node_bitmap,
-					resv_ptr->node_bitmap) &&
+			    bit_overlap_any(job_ptr->details->req_node_bitmap,
+					    resv_ptr->node_bitmap) &&
 			    (!resv_ptr->tres_str ||
 			     job_ptr->details->whole_node == 1)) {
 				if (move_time)
@@ -5092,8 +5092,8 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			}
 
 			if(!job_ptr->part_ptr ||
-			    bit_overlap(job_ptr->part_ptr->node_bitmap,
-					resv_ptr->node_bitmap)) {
+			    bit_overlap_any(job_ptr->part_ptr->node_bitmap,
+					    resv_ptr->node_bitmap)) {
 				*resv_overlap = true;
 				continue;
 			}

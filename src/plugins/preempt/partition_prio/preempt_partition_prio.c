@@ -114,8 +114,8 @@ extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
 					job_queue_rec_t *preemptee)
 {
 	if (preemptor->part_ptr && preemptee->part_ptr &&
-	    (bit_overlap(preemptor->part_ptr->node_bitmap,
-			 preemptee->part_ptr->node_bitmap)) &&
+	    (bit_overlap_any(preemptor->part_ptr->node_bitmap,
+			     preemptee->part_ptr->node_bitmap)) &&
 	    (preemptor->part_ptr->priority_tier >
 	     preemptee->part_ptr->priority_tier))
 			return true;

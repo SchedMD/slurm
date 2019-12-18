@@ -10030,8 +10030,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		}
 
 		if (!shared_gres &&
-		    bit_overlap(job_gres_ptr->gres_bit_select[node_index],
-				node_gres_ptr->gres_bit_alloc)) {
+		    bit_overlap_any(job_gres_ptr->gres_bit_select[node_index],
+				    node_gres_ptr->gres_bit_alloc)) {
 			error("gres/%s: job %u node %s gres bitmap overlap",
 			      gres_name, job_id, node_name);
 			bit_and_not(job_gres_ptr->gres_bit_select[node_index],

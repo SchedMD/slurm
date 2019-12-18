@@ -2263,8 +2263,8 @@ next_task:
 		 * selected for this job to be allocated
 		 */
 		if ((job_ptr->start_time <= now) &&
-		    (bit_overlap(avail_bitmap, cg_node_bitmap) ||
-		     bit_overlap(avail_bitmap, rs_node_bitmap))) {
+		    (bit_overlap_any(avail_bitmap, cg_node_bitmap) ||
+		     bit_overlap_any(avail_bitmap, rs_node_bitmap))) {
 			/* Need to wait for in-progress completion/epilog */
 			job_ptr->start_time = now + 1;
 			later_start = 0;

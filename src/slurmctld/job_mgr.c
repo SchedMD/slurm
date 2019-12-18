@@ -8539,7 +8539,7 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 		return false;
 	if (!job_ptr->node_bitmap)	/* Revoked allocation */
 		return true;
-	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
+	if (bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap))
 		return false;
 
 	if (!job_ptr->batch_flag ||
@@ -11061,8 +11061,8 @@ static bool _top_priority(job_record_t *job_ptr, uint32_t pack_job_offset)
 				top = false;
 				break;
 			}
-			if (bit_overlap(job_ptr->part_ptr->node_bitmap,
-					job_ptr2->part_ptr->node_bitmap) == 0)
+			if (bit_overlap_any(job_ptr->part_ptr->node_bitmap,
+					    job_ptr2->part_ptr->node_bitmap) == 0)
 				continue;   /* no node overlap in partitions */
 			if ((job_ptr2->part_ptr->priority_tier >
 			     job_ptr ->part_ptr->priority_tier) ||
@@ -11664,8 +11664,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 					error("%s: Invalid batch host %s for %pJ; this should never happen",
 					      __func__, job_ptr->batch_host,
 					      job_ptr);
-				else if (!bit_overlap(batch_host_bitmap,
-						      new_req_bitmap)) {
+				else if (!bit_overlap_any(batch_host_bitmap,
+							  new_req_bitmap)) {
 					error("%s: Batch host %s for %pJ is not in the requested node list %s. You cannot remove the batch host from a job when resizing.",
 					      __func__, job_ptr->batch_host,
 					      job_ptr, job_specs->req_nodes);
@@ -13778,8 +13778,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 			job_ptr->array_recs->task_id_bitmap = bit_realloc(
 				job_ptr->array_recs->task_id_bitmap, i_last);
 		}
-		if (!bit_overlap(job_ptr->array_recs->task_id_bitmap,
-				 array_bitmap)) {
+		if (!bit_overlap_any(job_ptr->array_recs->task_id_bitmap,
+				     array_bitmap)) {
 			/* Nothing to do with this job record */
 		} else if (bit_super_set(job_ptr->array_recs->task_id_bitmap,
 					 array_bitmap)) {
@@ -14539,7 +14539,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr)
 
 	if (job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD") &&
 	    (prolog == 0) && job_ptr->node_bitmap &&
-	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
+	    (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
 		last_job_update = time(NULL);
 		set_job_alias_list(job_ptr);
 	}
@@ -15373,7 +15373,7 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if ((rc == (READY_NODE_STATE | READY_JOB_STATE)) &&
 	    job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD") &&
 	    job_ptr->node_bitmap &&
-	    (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
+	    (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) == 0)) {
 		last_job_update = time(NULL);
 		set_job_alias_list(job_ptr);
 	}
@@ -15725,8 +15725,8 @@ static int _job_resume_test(job_record_t *job_ptr)
 		    (test_job_ptr->details->core_spec != NO_VAL16) &&
 		    IS_JOB_RUNNING(test_job_ptr) &&
 		    test_job_ptr->node_bitmap &&
-		    bit_overlap(test_job_ptr->node_bitmap,
-				job_ptr->node_bitmap)) {
+		    bit_overlap_any(test_job_ptr->node_bitmap,
+				    job_ptr->node_bitmap)) {
 			rc = ESLURM_NODES_BUSY;
 			break;
 		}

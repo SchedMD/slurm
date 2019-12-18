@@ -1347,8 +1347,8 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			 * purge it
 			 */
 			for (i = 0; i < node_set_size; i++) {
-				if (!bit_overlap(node_set_ptr[i].my_bitmap,
-						 work_bitmap))
+				if (!bit_overlap_any(node_set_ptr[i].my_bitmap,
+						     work_bitmap))
 					continue;
 				tmp_node_set_ptr[tmp_node_set_size].
 					cpus_per_node =
@@ -2371,8 +2371,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	} else if (!runable_avail && !nodes_busy) {
 		error_code = ESLURM_NODE_NOT_AVAIL;
 	} else if (job_ptr->details->req_node_bitmap &&
-		   bit_overlap(job_ptr->details->req_node_bitmap,
-			       rs_node_bitmap)) {
+		   bit_overlap_any(job_ptr->details->req_node_bitmap,
+				   rs_node_bitmap)) {
 		error_code = ESLURM_NODES_BUSY;
 	} else if (!preempt_flag && job_ptr->details->req_node_bitmap) {
 		/* specific nodes required */
@@ -2381,8 +2381,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					   share_node_bitmap)) {
 				error_code = ESLURM_NODES_BUSY;
 			}
-			if (bit_overlap(job_ptr->details->req_node_bitmap,
-					cg_node_bitmap)) {
+			if (bit_overlap_any(job_ptr->details->req_node_bitmap,
+					    cg_node_bitmap)) {
 				error_code = ESLURM_NODES_BUSY;
 			}
 		} else if (!bit_super_set(job_ptr->details->req_node_bitmap,
@@ -2391,8 +2391,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			/* Note: IDLE nodes are not COMPLETING */
 		}
 	} else if (job_ptr->details->req_node_bitmap &&
-		   bit_overlap(job_ptr->details->req_node_bitmap,
-			       cg_node_bitmap)) {
+		   bit_overlap_any(job_ptr->details->req_node_bitmap,
+				   cg_node_bitmap)) {
 		error_code = ESLURM_NODES_BUSY;
 	}
 
@@ -2956,8 +2956,9 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 			bit_and_not(unavail_bitmap, future_node_bitmap);
 			bit_and(unavail_bitmap, part_ptr->node_bitmap);
 			if (job_ptr->details->req_node_bitmap &&
-			    bit_overlap(unavail_bitmap,
-					job_ptr->details->req_node_bitmap)) {
+			    bit_overlap_any(unavail_bitmap,
+					    job_ptr->details->
+						req_node_bitmap)) {
 				bit_and(unavail_bitmap,
 					job_ptr->details->req_node_bitmap);
 			}
@@ -3174,7 +3175,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	gs_job_start(job_ptr);
 	power_g_job_start(job_ptr);
 
-	if (bit_overlap(job_ptr->node_bitmap, power_node_bitmap))
+	if (bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap))
 		job_ptr->job_state |= JOB_POWER_UP_NODE;
 	if (configuring || IS_JOB_POWER_UP_NODE(job_ptr) ||
 	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
@@ -3953,8 +3954,8 @@ static int _build_node_list(job_record_t *job_ptr,
 			}
 			/* No nodes in set require reboot */
 			if (node_maps[REBOOT] &&
-			    !bit_overlap(prev_node_set_ptr->my_bitmap,
-					 node_maps[REBOOT]))
+			    !bit_overlap_any(prev_node_set_ptr->my_bitmap,
+					     node_maps[REBOOT]))
 				FREE_NULL_BITMAP(node_maps[REBOOT]);
 		}
 
@@ -4597,8 +4598,8 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 		    ((job_feat_ptr->op_code == FEATURE_OP_END)  &&
 		     ((last_op == FEATURE_OP_XAND) ||
 		      (last_op == FEATURE_OP_XOR)))) {
-			if (bit_overlap(config_ptr->node_bitmap,
-					working_node_bitmap)) {
+			if (bit_overlap_any(config_ptr->node_bitmap,
+					    working_node_bitmap)) {
 				bit_set(result_node_bitmap, position);
 				if (can_reboot && reboot_bitmap &&
 				    active_node_bitmap) {

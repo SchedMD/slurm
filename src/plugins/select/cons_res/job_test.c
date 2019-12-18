@@ -1132,7 +1132,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 		bit_or(avail_nodes_bitmap, switches_bitmap[i]);
 		switches_node_cnt[i] = bit_set_count(switches_bitmap[i]);
 		if (req_nodes_bitmap &&
-		    bit_overlap(req_nodes_bitmap, switches_bitmap[i])) {
+		    bit_overlap_any(req_nodes_bitmap, switches_bitmap[i])) {
 			switches_required[i] = 1;
 		}
 	}

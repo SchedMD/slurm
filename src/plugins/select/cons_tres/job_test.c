@@ -1644,7 +1644,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	     i++, switch_ptr++) {
 		switch_node_bitmap[i] = bit_copy(switch_ptr->node_bitmap);
 		if (req_nodes_bitmap &&
-		    bit_overlap(req_nodes_bitmap, switch_node_bitmap[i])) {
+		    bit_overlap_any(req_nodes_bitmap, switch_node_bitmap[i])) {
 			switch_required[i] = 1;
 			if (switch_record_table[i].level == 0) {
 				leaf_switch_count++;
@@ -1656,7 +1656,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			}
 		}
 		if (!req_nodes_bitmap &&
-		    bit_overlap(nw->node_bitmap, switch_node_bitmap[i])) {
+		    bit_overlap_any(nw->node_bitmap, switch_node_bitmap[i])) {
 			if ((top_switch_inx == -1) ||
 			    (switch_record_table[i].level >
 			     switch_record_table[top_switch_inx].level)) {
@@ -1816,8 +1816,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		     i < switch_record_cnt; i++, switch_ptr++) {
 			if (switch_required[i])
 				continue;
-			if (bit_overlap(req2_nodes_bitmap,
-					switch_node_bitmap[i])) {
+			if (bit_overlap_any(req2_nodes_bitmap,
+					    switch_node_bitmap[i])) {
 				switch_required[i] = 1;
 				if (switch_record_table[i].level == 0) {
 					leaf_switch_count++;
@@ -1879,8 +1879,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		     i < switch_record_cnt; i++, switch_ptr++) {
 			if (switch_record_table[i].level != 0)
 				continue;
-			if (bit_overlap(switch_node_bitmap[i],
-					best_nodes_bitmap))
+			if (bit_overlap_any(switch_node_bitmap[i],
+					    best_nodes_bitmap))
 				leaf_switch_count++;
 		}
 	}
@@ -2260,7 +2260,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		bit_and(switch_node_bitmap[i], node_map);
 		switch_node_cnt[i] = bit_set_count(switch_node_bitmap[i]);
 		if (req_nodes_bitmap &&
-		    bit_overlap(req_nodes_bitmap, switch_node_bitmap[i])) {
+		    bit_overlap_any(req_nodes_bitmap, switch_node_bitmap[i])) {
 			switch_required[i] = 1;
 			if (switch_record_table[i].level == 0) {
 				leaf_switch_count++;
@@ -2275,7 +2275,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				   min_nodes, req_nodes))
 			continue;
 		if (!req_nodes_bitmap &&
-		    bit_overlap(nw->node_bitmap, switch_node_bitmap[i])) {
+		    bit_overlap_any(nw->node_bitmap, switch_node_bitmap[i])) {
 			if ((top_switch_inx == -1) ||
 			    (switch_record_table[i].level >
 			     switch_record_table[top_switch_inx].level)) {
@@ -2456,8 +2456,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		     i < switch_record_cnt; i++, switch_ptr++) {
 			if (switch_required[i])
 				continue;
-			if (bit_overlap(req2_nodes_bitmap,
-					switch_node_bitmap[i])) {
+			if (bit_overlap_any(req2_nodes_bitmap,
+					    switch_node_bitmap[i])) {
 				switch_required[i] = 1;
 				if (switch_record_table[i].level == 0) {
 					leaf_switch_count++;
@@ -2520,8 +2520,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		     i < switch_record_cnt; i++, switch_ptr++) {
 			if (switch_record_table[i].level != 0)
 				continue;
-			if (bit_overlap(switch_node_bitmap[i],
-					best_nodes_bitmap))
+			if (bit_overlap_any(switch_node_bitmap[i],
+					    best_nodes_bitmap))
 				leaf_switch_count++;
 		}
 	}

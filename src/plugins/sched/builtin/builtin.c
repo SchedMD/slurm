@@ -215,7 +215,7 @@ static void _compute_start_times(void)
 				time_limit = job_ptr->part_ptr->max_time * 60;
 			else
 				time_limit = 365 * 24 * 60 * 60;
-			if (bit_overlap(alloc_bitmap, avail_bitmap) &&
+			if (bit_overlap_any(alloc_bitmap, avail_bitmap) &&
 			    (job_ptr->start_time <= last_job_alloc)) {
 				job_ptr->start_time = last_job_alloc;
 			}

@@ -1936,7 +1936,8 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		}
 		preemptee_iterator =list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(preemptee_iterator))) {
-			if (!bit_overlap(node_bitmap, tmp_job_ptr->node_bitmap))
+			if (!bit_overlap_any(node_bitmap,
+					     tmp_job_ptr->node_bitmap))
 				continue;
 			list_append(*preemptee_job_list, tmp_job_ptr);
 		}
@@ -2122,8 +2123,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 				if ((mode != PREEMPT_MODE_REQUEUE)    &&
 				    (mode != PREEMPT_MODE_CANCEL))
 					continue;
-				if (bit_overlap(node_bitmap,
-						tmp_job_ptr->node_bitmap) == 0)
+				if (!bit_overlap_any(node_bitmap,
+						     tmp_job_ptr->node_bitmap))
 					continue;
 				if (tmp_job_ptr->details->usable_nodes)
 					break;

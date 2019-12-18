@@ -198,8 +198,8 @@ extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 		if (!(*(ops.preemptable))(job_p, job_ptr))
 			continue;
 		if (!job_p->node_bitmap ||
-		    !bit_overlap(job_p->node_bitmap,
-				 job_ptr->part_ptr->node_bitmap))
+		    !bit_overlap_any(job_p->node_bitmap,
+				     job_ptr->part_ptr->node_bitmap))
 			continue;
 		if (job_ptr->details &&
 		    (job_ptr->details->expanding_jobid == job_p->job_id))

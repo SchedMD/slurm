@@ -238,8 +238,8 @@ extern int resv_port_alloc(step_record_t *step_ptr)
 	for (i=0; i<port_resv_cnt; i++) {
 		if (++last_port_alloc >= port_resv_cnt)
 			last_port_alloc = 0;
-		if (bit_overlap(step_ptr->step_node_bitmap,
-				port_resv_table[last_port_alloc]))
+		if (bit_overlap_any(step_ptr->step_node_bitmap,
+				    port_resv_table[last_port_alloc]))
 			continue;
 		port_array[port_inx++] = last_port_alloc;
 		if (port_inx >= step_ptr->resv_port_cnt)

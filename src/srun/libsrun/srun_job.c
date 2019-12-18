@@ -524,8 +524,8 @@ static void _pack_grp_test(List opt_list)
 				master_map
 					= bit_copy(srun_opt->pack_grp_bits);
 			} else {
-				if (bit_overlap(master_map,
-						srun_opt->pack_grp_bits)) {
+				if (bit_overlap_any(master_map,
+						    srun_opt->pack_grp_bits)) {
 					fatal("Duplicate pack groups in single srun not supported");
 				}
 				bit_or(master_map, srun_opt->pack_grp_bits);

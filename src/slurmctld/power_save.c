@@ -524,8 +524,9 @@ extern int power_job_reboot(job_record_t *job_ptr)
 		boot_node_bitmap = node_features_reboot(job_ptr);
 	if (boot_node_bitmap == NULL) {
 		/* At minimum, the powered down nodes require reboot */
-		if (bit_overlap(power_node_bitmap, job_ptr->node_bitmap) ||
-		    bit_overlap(booting_node_bitmap, job_ptr->node_bitmap)) {
+		if (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) ||
+		    bit_overlap_any(booting_node_bitmap,
+				    job_ptr->node_bitmap)) {
 			job_ptr->job_state |= JOB_CONFIGURING;
 			job_ptr->bit_flags |= NODE_REBOOT;
 		}

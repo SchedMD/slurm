@@ -1288,7 +1288,7 @@ extern int good_nodes_from_inx(List local_cluster_list,
 		}
 		job_bitmap = bit_alloc(hostlist_count((*curr_cluster)->hl));
 		bit_unfmt(job_bitmap, node_inx);
-		if (!bit_overlap((*curr_cluster)->asked_bitmap, job_bitmap)) {
+		if (!bit_overlap_any((*curr_cluster)->asked_bitmap, job_bitmap)) {
 			FREE_NULL_BITMAP(job_bitmap);
 			return 0;
 		}
