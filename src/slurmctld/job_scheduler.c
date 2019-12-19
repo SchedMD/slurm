@@ -2686,8 +2686,6 @@ extern void print_job_dependency(job_record_t *job_ptr)
 			dep_str = "expand";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
 			dep_str = "afterburstbuffer";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_REMOTE)
-			dep_str = "remote";
 		else
 			dep_str = "unknown";
 
@@ -2766,8 +2764,6 @@ static void _depend_list2str(job_record_t *job_ptr, bool set_or_flag)
 			dep_str = "expand";
 		else if (dep_ptr->depend_type == SLURM_DEPEND_BURST_BUFFER)
 			dep_str = "afterburstbuffer";
-		else if (dep_ptr->depend_type == SLURM_DEPEND_REMOTE)
-			dep_str = "remote";
 		else
 			dep_str = "unknown";
 
