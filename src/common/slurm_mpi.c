@@ -173,6 +173,12 @@ int _mpi_init (char *mpi_type)
 	if (mpi_type == NULL) {
 		mpi_type = slurm_get_mpi_default();
 		got_default = 1;
+	} else if (!xstrcmp(mpi_type, "openmpi")) {
+		/*
+		 * The openmpi plugin has been equivalent to none for a while.
+		 * Translate so we can discard that duplicated no-op plugin.
+		 */
+		mpi_type = "none";
 	}
 	if (mpi_type == NULL) {
 		error("No MPI default set.");

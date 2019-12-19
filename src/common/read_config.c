@@ -3951,6 +3951,12 @@ _validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl))
 		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
+	else if (!xstrcmp(conf->mpi_default, "openmpi")) {
+		xfree(conf->mpi_default);
+		conf->mpi_default = xstrdup("none");
+		if (run_in_daemon("slurmctld"))
+			error("Translating obsolete 'MpiDefault=openmpi' option to 'MpiDefault=none'. Please update your configuration.");
+	}
 
 	(void) s_p_get_string(&conf->mpi_params, "MpiParams", hashtbl);
 #if defined(HAVE_NATIVE_CRAY)

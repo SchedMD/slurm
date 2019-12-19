@@ -47,6 +47,7 @@ documents those changes that are of interest to users and administrators.
  -- Display StepId=<jobid>.batch instead of StepId=<jobid>.4294967294 in output
     of "scontrol show step". (slurm_sprint_job_step_info())
  -- Make it so you can have a grace time when preempting by requeue.
+ -- Translate MpiDefault=openmpi to functionally-equivalent MpiDefault=none.
 
 * Changes in Slurm 19.05.5
 ==========================

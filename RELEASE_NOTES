@@ -45,6 +45,9 @@ SPECIAL NOTES FOR CRAY SYSTEMS
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- The mpi/openmpi plugin has been removed as it does nothing.
+    MpiDefault=openmpi will be translated to the functionally-equivalent
+    MpiDefault=none.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
