@@ -174,20 +174,20 @@ extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 	/* Validate the preemptor job */
 	if (job_ptr == NULL) {
 		error("%s: job_ptr is NULL", __func__);
-		return preemptee_job_list;
+		return NULL;
 	}
 	if (!IS_JOB_PENDING(job_ptr)) {
 		error("%s: %pJ not pending", __func__, job_ptr);
-		return preemptee_job_list;
+		return NULL;
 	}
 	if (job_ptr->part_ptr == NULL) {
 		error("%s: %pJ has NULL partition ptr", __func__, job_ptr);
-		return preemptee_job_list;
+		return NULL;
 	}
 	if (job_ptr->part_ptr->node_bitmap == NULL) {
 		error("find_preemptable_jobs: partition %s node_bitmap=NULL",
 		      job_ptr->part_ptr->name);
-		return preemptee_job_list;
+		return NULL;
 	}
 
 	/* Build an array of pointers to preemption candidates */
