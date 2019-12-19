@@ -82,33 +82,42 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
+static int _is_job_preempt_exempt(job_record_t *preemptee_ptr,
+				  job_record_t *preemptor_ptr)
+{
+	if (!IS_JOB_RUNNING(preemptee_ptr) && !IS_JOB_SUSPENDED(preemptee_ptr))
+		return 1;
+
+	if (job_borrow_from_resv_check(preemptee_ptr, preemptor_ptr)) {
+		/*
+		 * This job is on borrowed time from the reservation!
+		 * Automatic preemption.
+		 */
+	} else if (!(*(ops.preemptable))(preemptee_ptr, preemptor_ptr))
+		return 0;
+
+	if (!preemptee_ptr->node_bitmap ||
+	    !bit_overlap(preemptee_ptr->node_bitmap,
+			 preemptor_ptr->part_ptr->node_bitmap))
+		return 1;
+
+	if (preemptor_ptr->details &&
+	    (preemptor_ptr->details->expanding_jobid == preemptee_ptr->job_id))
+		return 1;
+
+	if (acct_policy_is_job_preempt_exempt(preemptee_ptr))
+		return 1;
+
+	return 0;
+}
+
 static int _add_preemptable_job(void *x, void *arg)
 {
 	job_record_t *candidate = (job_record_t *) x;
 	preempt_candidates_t *candidates = (preempt_candidates_t *) arg;
 	job_record_t *preemptor = candidates->preemptor;
 
-	if (!IS_JOB_RUNNING(candidate) && !IS_JOB_SUSPENDED(candidate))
-		return 0;
-
-	if (job_borrow_from_resv_check(candidate, preemptor)) {
-		/*
-		 * This job is on borrowed time from the reservation!
-		 * Automatic preemption.
-		 */
-	} else if (!(*(ops.preemptable))(candidate, preemptor))
-		return 0;
-
-	if (!candidate->node_bitmap ||
-	    !bit_overlap_any(candidate->node_bitmap,
-			     preemptor->part_ptr->node_bitmap))
-		return 0;
-
-	if (preemptor->details &&
-	    (preemptor->details->expanding_jobid == candidate->job_id))
-		return 0;
-
-	if (acct_policy_is_job_preempt_exempt(candidate))
+	if (_is_job_preempt_exempt(candidate, preemptor))
 		return 0;
 
 	/* This job is a preemption candidate */
