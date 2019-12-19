@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Make Slurm compile on linux after sys/sysctl.h was deprecated.
  -- Install slurmdbd.conf.example with 0600 permissions to encourage secure
     use. CVE-2019-19727.
+ -- srun - do not continue with job launch if --uid fails. CVE-2019-19728.
 
 * Changes in Slurm 18.08.8
 ==========================
