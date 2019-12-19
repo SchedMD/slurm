@@ -185,8 +185,8 @@ extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 		return NULL;
 	}
 	if (job_ptr->part_ptr->node_bitmap == NULL) {
-		error("find_preemptable_jobs: partition %s node_bitmap=NULL",
-		      job_ptr->part_ptr->name);
+		error("%s: partition %s node_bitmap=NULL",
+		      __func__, job_ptr->part_ptr->name);
 		return NULL;
 	}
 
