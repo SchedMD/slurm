@@ -1561,16 +1561,14 @@ _normalize_hostlist(const char *hostlist)
 static int _become_user (void)
 {
 	char *user;
-	gid_t gid = gid_from_uid(opt.uid);
+
+	/* Already the user, so there's nothing to change. Return early. */
+	if (opt.uid == getuid())
+		return 0;
 
 	if (!(user = uid_to_string_or_null(opt.uid))) {
 		xfree(user);
 		return (error ("Invalid user id %u: %m", opt.uid));
-	}
-
-	if (opt.uid == getuid ()) {
-		xfree(user);
-		return (0);
 	}
 
 	if ((opt.gid != getgid()) && (setgid(opt.gid) < 0)) {
@@ -1578,7 +1576,7 @@ static int _become_user (void)
 		return (error ("setgid: %m"));
 	}
 
-	if (initgroups(user, gid))
+	if (initgroups(user, gid_from_uid(opt.uid)))
 		return (error ("initgroups: %m"));
 
 	xfree(user);
