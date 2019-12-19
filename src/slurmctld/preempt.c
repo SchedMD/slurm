@@ -62,6 +62,11 @@ typedef struct slurm_preempt_ops {
 				     void *data);
 } slurm_preempt_ops_t;
 
+typedef struct {
+	job_record_t *preemptor;
+	List preemptee_job_list;
+} preempt_candidates_t;
+
 /*
  * Must be synchronized with slurm_preempt_ops_t above.
  */
@@ -75,6 +80,38 @@ static slurm_preempt_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
+
+static int _add_preemptable_job(void *x, void *arg)
+{
+	job_record_t *candidate = (job_record_t *) x;
+	preempt_candidates_t *candidates = (preempt_candidates_t *) arg;
+	job_record_t *preemptor = candidates->preemptor;
+
+	if (!IS_JOB_RUNNING(candidate) && !IS_JOB_SUSPENDED(candidate))
+		return 0;
+
+	if (!(*(ops.preemptable))(candidate, preemptor))
+		return 0;
+
+	if (!candidate->node_bitmap ||
+	    !bit_overlap_any(candidate->node_bitmap,
+			     preemptor->part_ptr->node_bitmap))
+		return 0;
+
+	if (preemptor->details &&
+	    (preemptor->details->expanding_jobid == candidate->job_id))
+		return 0;
+
+	if (acct_policy_is_job_preempt_exempt(candidate))
+		return 0;
+
+	/* This job is a preemption candidate */
+	if (!candidates->preemptee_job_list)
+		candidates->preemptee_job_list = list_create(NULL);
+	list_append(candidates->preemptee_job_list, candidate);
+
+	return 0;
+}
 
 static int _sort_by_prio(void *x, void *y)
 {
@@ -167,9 +204,8 @@ extern int slurm_preempt_fini(void)
 
 extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 {
-	ListIterator job_iterator;
-	job_record_t *job_p;
-	List preemptee_job_list = NULL;
+	preempt_candidates_t candidates
+		= { .preemptor = job_ptr, .preemptee_job_list = NULL };
 
 	/* Validate the preemptor job */
 	if (job_ptr == NULL) {
@@ -191,36 +227,14 @@ extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 	}
 
 	/* Build an array of pointers to preemption candidates */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_p = list_next(job_iterator))) {
-		if (!IS_JOB_RUNNING(job_p) && !IS_JOB_SUSPENDED(job_p))
-			continue;
-		if (!(*(ops.preemptable))(job_p, job_ptr))
-			continue;
-		if (!job_p->node_bitmap ||
-		    !bit_overlap_any(job_p->node_bitmap,
-				     job_ptr->part_ptr->node_bitmap))
-			continue;
-		if (job_ptr->details &&
-		    (job_ptr->details->expanding_jobid == job_p->job_id))
-			continue;
-		if (acct_policy_is_job_preempt_exempt(job_p))
-			continue;
+	list_for_each(job_list, _add_preemptable_job, &candidates);
 
-		/* This job is a preemption candidate */
-		if (!preemptee_job_list)
-			preemptee_job_list = list_create(NULL);
+	if (candidates.preemptee_job_list && youngest_order)
+		list_sort(candidates.preemptee_job_list, _sort_by_youngest);
+	else if (candidates.preemptee_job_list)
+		list_sort(candidates.preemptee_job_list, _sort_by_prio);
 
-		list_append(preemptee_job_list, job_p);
-	}
-	list_iterator_destroy(job_iterator);
-
-	if (preemptee_job_list && youngest_order)
-		list_sort(preemptee_job_list, _sort_by_youngest);
-	else if (preemptee_job_list)
-		list_sort(preemptee_job_list, _sort_by_prio);
-
-	return preemptee_job_list;
+	return candidates.preemptee_job_list;
 }
 
 /*
