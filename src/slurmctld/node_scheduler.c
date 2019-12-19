@@ -2405,60 +2405,13 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	return error_code;
 }
 
-static void _preempt_signal(job_record_t *job_ptr, uint32_t grace_time)
-{
-	if (job_ptr->preempt_time)
-		return;
-
-	job_ptr->preempt_time = time(NULL);
-	job_ptr->end_time = MIN(job_ptr->end_time,
-				(job_ptr->preempt_time + (time_t)grace_time));
-
-	/* Signal the job at the beginning of preemption GraceTime */
-	job_signal(job_ptr, SIGCONT, 0, 0, 0);
-	if (preempt_send_user_signal && job_ptr->warn_signal &&
-	    !(job_ptr->warn_flags & WARN_SENT))
-		send_job_warn_signal(job_ptr, true);
-	else
-		job_signal(job_ptr, SIGTERM, 0, 0, 0);
-}
-
-static int _job_check_grace(job_record_t *job_ptr, job_record_t *preemptor_ptr)
-{
-	int rc = SLURM_SUCCESS;
-	uint32_t grace_time = 0;
-
-	if (job_ptr->preempt_time) {
-		if (time(NULL) >= job_ptr->end_time)
-			rc = SLURM_ERROR;
-		return rc;
-	}
-
-	/*
-	 * If this job is running in parts of a reservation
-	 */
-	if (job_borrow_from_resv_check(job_ptr, preemptor_ptr))
-		grace_time = job_ptr->warn_time;
-	else
-		grace_time = slurm_job_get_grace_time(job_ptr);
-
-	if (grace_time) {
-		debug("setting %u sec preemption grace time for %pJ to reclaim resources for %pJ",
-		      grace_time, job_ptr, preemptor_ptr);
-		_preempt_signal(job_ptr, grace_time);
-	} else
-		rc = SLURM_ERROR;
-
-	return rc;
-}
-
 static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 			  int *error_code, job_record_t *preemptor_ptr)
 {
 	ListIterator iter;
 	job_record_t *job_ptr;
 	uint16_t mode;
-	int job_cnt = 0, rc;
+	int job_cnt = 0;
 	static time_t sched_update = 0;
 
 	if (sched_update != slurmctld_conf.last_update) {
@@ -2474,7 +2427,6 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 
 	iter = list_iterator_create(preemptee_job_list);
 	while ((job_ptr = list_next(iter))) {
-		rc = SLURM_SUCCESS;
 		mode = slurm_job_preempt_mode(job_ptr);
 
 		if (mode == PREEMPT_MODE_OFF) {
@@ -2495,42 +2447,9 @@ static void _preempt_jobs(List preemptee_job_list, bool kill_pending,
 		if (!kill_pending)
 			continue;
 
-		if (_job_check_grace(job_ptr, preemptor_ptr)
-		    == SLURM_SUCCESS)
+		if (slurm_job_preempt(job_ptr, preemptor_ptr, mode, true) !=
+		    SLURM_SUCCESS)
 			continue;
-
-		if (preempt_send_user_signal)
-			send_job_warn_signal(job_ptr, true);
-
-		if (mode == PREEMPT_MODE_CANCEL) {
-			rc = job_signal(job_ptr, SIGKILL,
-					0, 0, true);
-			if (rc == SLURM_SUCCESS) {
-				info("preempted %pJ has been killed to reclaim resources for %pJ",
-				     job_ptr, preemptor_ptr);
-			}
-		} else if (mode == PREEMPT_MODE_REQUEUE) {
-			rc = job_requeue(0, job_ptr->job_id,
-					 NULL, true, 0);
-			if (rc == SLURM_SUCCESS) {
-				info("preempted %pJ has been requeued to reclaim resources for %pJ",
-				     job_ptr, preemptor_ptr);
-			}
-		}
-
-		if (rc != SLURM_SUCCESS) {
-			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
-			if (rc == SLURM_SUCCESS) {
-				info("%s: preempted %pJ had to be killed",
-				     __func__, job_ptr);
-			} else {
-				info("%s: preempted %pJ kill failure %s",
-				     __func__, job_ptr, slurm_strerror(rc));
-			}
-		}
-
-		if (rc == SLURM_SUCCESS)
-			job_ptr->preempt_time = time(NULL);
 	}
 	list_iterator_destroy(iter);
 

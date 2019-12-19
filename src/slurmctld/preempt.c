@@ -82,11 +82,10 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t	    g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
-static int _is_job_preempt_exempt(job_record_t *preemptee_ptr,
-				  job_record_t *preemptor_ptr)
+static int _is_job_preempt_exempt_internal(void *x, void *key)
 {
-	if (!IS_JOB_RUNNING(preemptee_ptr) && !IS_JOB_SUSPENDED(preemptee_ptr))
-		return 1;
+	job_record_t *preemptee_ptr = (job_record_t *)x;
+	job_record_t *preemptor_ptr = (job_record_t *)key;
 
 	if (job_borrow_from_resv_check(preemptee_ptr, preemptor_ptr)) {
 		/*
@@ -94,11 +93,6 @@ static int _is_job_preempt_exempt(job_record_t *preemptee_ptr,
 		 * Automatic preemption.
 		 */
 	} else if (!(*(ops.preemptable))(preemptee_ptr, preemptor_ptr))
-		return 0;
-
-	if (!preemptee_ptr->node_bitmap ||
-	    !bit_overlap(preemptee_ptr->node_bitmap,
-			 preemptor_ptr->part_ptr->node_bitmap))
 		return 1;
 
 	if (preemptor_ptr->details &&
@@ -111,11 +105,70 @@ static int _is_job_preempt_exempt(job_record_t *preemptee_ptr,
 	return 0;
 }
 
+static bool _is_job_preempt_exempt(job_record_t *preemptee_ptr,
+				  job_record_t *preemptor_ptr)
+{
+	xassert(preemptee_ptr);
+	xassert(preemptor_ptr);
+
+	if (!preemptee_ptr->pack_job_list)
+		return _is_job_preempt_exempt_internal(
+			preemptee_ptr, preemptor_ptr);
+	/*
+	 * All components of a job must be preemptable otherwise it is
+	 * preempt exempt
+	 */
+        return list_find_first(preemptee_ptr->pack_job_list,
+			       _is_job_preempt_exempt_internal,
+			       preemptor_ptr) ? true : false;
+}
+
+/*
+ * Return the PreemptMode which should apply to stop this job
+ */
+static uint16_t _job_preempt_mode_internal(job_record_t *job_ptr)
+{
+	uint16_t data = (uint16_t)PREEMPT_MODE_OFF;
+
+	if ((slurm_preempt_init() < 0) ||
+	    ((*(ops.get_data))(job_ptr, PREEMPT_DATA_MODE, &data) !=
+	     SLURM_SUCCESS))
+		return data;
+
+	return data;
+}
+
+static int _find_job_by_preempt_mode(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *)x;
+	uint16_t preempt_mode = *(uint16_t *)arg;
+
+	if (_job_preempt_mode_internal(job_ptr) == preempt_mode)
+		return 1;
+
+	return 0;
+}
+
 static int _add_preemptable_job(void *x, void *arg)
 {
 	job_record_t *candidate = (job_record_t *) x;
 	preempt_candidates_t *candidates = (preempt_candidates_t *) arg;
 	job_record_t *preemptor = candidates->preemptor;
+
+	/*
+	 * We only want to look at the master component of a hetjob.  Since all
+	 * components have to be preemptable it should be here at some point.
+	 */
+	if (candidate->pack_job_id && !candidate->pack_job_list)
+		return 0;
+
+	/*
+	 * We have to check the entire bitmap space here before we can check
+	 * each part of a hetjob in _is_job_preempt_exempt()
+	 */
+	if (!job_overlap_and_running(preemptor->part_ptr->node_bitmap,
+				     candidate))
+		return 0;
 
 	if (_is_job_preempt_exempt(candidate, preemptor))
 		return 0;
@@ -123,6 +176,7 @@ static int _add_preemptable_job(void *x, void *arg)
 	/* This job is a preemption candidate */
 	if (!candidates->preemptee_job_list)
 		candidates->preemptee_job_list = list_create(NULL);
+
 	list_append(candidates->preemptee_job_list, candidate);
 
 	return 0;
@@ -219,11 +273,10 @@ extern int slurm_preempt_fini(void)
 
 extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 {
-	preempt_candidates_t candidates
-		= { .preemptor = job_ptr, .preemptee_job_list = NULL };
+	preempt_candidates_t candidates	= { .preemptor = job_ptr };
 
 	/* Validate the preemptor job */
-	if (job_ptr == NULL) {
+	if (!job_ptr) {
 		error("%s: job_ptr is NULL", __func__);
 		return NULL;
 	}
@@ -231,11 +284,11 @@ extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
 		error("%s: %pJ not pending", __func__, job_ptr);
 		return NULL;
 	}
-	if (job_ptr->part_ptr == NULL) {
+	if (!job_ptr->part_ptr) {
 		error("%s: %pJ has NULL partition ptr", __func__, job_ptr);
 		return NULL;
 	}
-	if (job_ptr->part_ptr->node_bitmap == NULL) {
+	if (!job_ptr->part_ptr->node_bitmap) {
 		error("%s: partition %s node_bitmap=NULL",
 		      __func__, job_ptr->part_ptr->name);
 		return NULL;
@@ -257,12 +310,43 @@ extern List slurm_find_preemptable_jobs(job_record_t *job_ptr)
  */
 extern uint16_t slurm_job_preempt_mode(job_record_t *job_ptr)
 {
-	uint16_t data = (uint16_t)PREEMPT_MODE_OFF;
+	uint16_t data;
 
-	if ((slurm_preempt_init() < 0) ||
-	    ((*(ops.get_data))(job_ptr, PREEMPT_DATA_MODE, &data) !=
-	     SLURM_SUCCESS))
-		return data;
+	if (job_ptr->pack_job_list && !job_ptr->job_preempt_comp) {
+		/*
+		 * Find the component job to use as the template for
+		 * setting the preempt mode for all other components.
+		 * The first component job found having a preempt mode
+		 * in the hierarchy (ordered highest to lowest:
+		 * SUSPEND->REQUEUE->CANCEL) will be used as
+		 * the template.
+		 *
+		 * NOTE: CANCEL is not on the list below since it is handled
+		 * as the default.
+		 */
+		static const uint16_t preempt_modes[] = {
+			PREEMPT_MODE_SUSPEND,
+			PREEMPT_MODE_REQUEUE
+		};
+		static const int preempt_modes_cnt = sizeof(preempt_modes) /
+			sizeof(preempt_modes[0]);
+
+		for (int pm_index = 0; pm_index < preempt_modes_cnt;
+		     pm_index++) {
+			data = preempt_modes[pm_index];
+			if ((job_ptr->job_preempt_comp = list_find_first(
+				     job_ptr->pack_job_list,
+				     _find_job_by_preempt_mode,
+				     &data)))
+				break;
+		}
+		/* if not found look up the mode (CANCEL expected) */
+		if (!job_ptr->job_preempt_comp)
+			data = _job_preempt_mode_internal(job_ptr);
+	} else
+		data = _job_preempt_mode_internal(job_ptr->job_preempt_comp ?
+						  job_ptr->job_preempt_comp :
+						  job_ptr);
 
 	return data;
 }
@@ -297,6 +381,137 @@ extern uint32_t slurm_job_get_grace_time(job_record_t *job_ptr)
 	return data;
 }
 
+/*
+ * Check to see if a job is in a grace time.
+ * If no grace_time active then return 1.
+ * If grace_time is currently active then return -1.
+ */
+static int _job_check_grace_internal(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *)x;
+	job_record_t *preemptor_ptr = (job_record_t *)arg;
+
+	int rc = -1;
+	uint32_t grace_time = 0;
+
+	if (job_ptr->preempt_time) {
+		if (time(NULL) >= job_ptr->end_time)
+			rc = 1;
+		return rc;
+	}
+
+	xassert(preemptor_ptr);
+
+	/*
+	 * If this job is running in parts of a reservation
+	 */
+	if (job_borrow_from_resv_check(job_ptr, preemptor_ptr))
+		grace_time = job_ptr->warn_time;
+	else
+		grace_time = slurm_job_get_grace_time(job_ptr);
+
+	job_ptr->preempt_time = time(NULL);
+	job_ptr->end_time = MIN(job_ptr->end_time,
+				(job_ptr->preempt_time + (time_t)grace_time));
+	if (grace_time) {
+		debug("setting %u sec preemption grace time for %pJ to reclaim resources for %pJ",
+		      grace_time, job_ptr, preemptor_ptr);
+		job_signal(job_ptr, SIGCONT, 0, 0, 0);
+		if (preempt_send_user_signal && job_ptr->warn_signal &&
+		    !(job_ptr->warn_flags & WARN_SENT))
+			send_job_warn_signal(job_ptr, true);
+		else
+			job_signal(job_ptr, SIGTERM, 0, 0, 0);
+	} else
+		rc = 1;
+
+	return rc;
+}
+
+/*
+ * Check to see if a job (or hetjob) is in a grace time.
+ * If no grace_time active then return 0.
+ * If grace_time is currently active then return 1.
+ */
+static int _job_check_grace(job_record_t *job_ptr, job_record_t *preemptor_ptr)
+{
+	if (job_ptr->pack_job_list)
+		return list_for_each_nobreak(job_ptr->pack_job_list,
+					     _job_check_grace_internal,
+					     preemptor_ptr) <= 0 ? 1 : 0;
+
+	return _job_check_grace_internal(job_ptr, preemptor_ptr) < 0 ? 1 : 0;
+}
+
+static int _job_warn_signal_wrapper(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *)x;
+	bool ignore_time = *(bool *)arg;
+
+	/* Ignore Time is always true */
+	send_job_warn_signal(job_ptr, ignore_time);
+
+	return 0;
+}
+
+extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
+				  job_record_t *preemptor_ptr,
+				  uint16_t mode, bool ignore_time)
+{
+	int rc = SLURM_ERROR;
+	/* If any job is in a grace period continue */
+	if (_job_check_grace(job_ptr, preemptor_ptr))
+		return SLURM_ERROR;
+
+	if (preempt_send_user_signal) {
+		if (job_ptr->pack_job_list)
+			(void)list_for_each(job_ptr->pack_job_list,
+					    _job_warn_signal_wrapper,
+					    &ignore_time);
+		else
+			send_job_warn_signal(job_ptr, ignore_time);
+	}
+
+	if (mode == PREEMPT_MODE_CANCEL) {
+		if (job_ptr->pack_job_list)
+			rc = pack_job_signal(job_ptr,
+					     SIGKILL, 0, 0, true);
+		else
+			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
+		if (rc == SLURM_SUCCESS) {
+			info("preempted %pJ has been killed to reclaim resources for %pJ",
+			     job_ptr, preemptor_ptr);
+		}
+	} else if (mode == PREEMPT_MODE_REQUEUE) {
+		/* job_requeue already handles het jobs */
+		rc = job_requeue(0, job_ptr->job_id,
+				 NULL, true, 0);
+		if (rc == SLURM_SUCCESS) {
+			info("preempted %pJ has been requeued to reclaim resources for %pJ",
+			     job_ptr, preemptor_ptr);
+		}
+	}
+
+	if (rc != SLURM_SUCCESS) {
+		if (job_ptr->pack_job_list)
+			rc = pack_job_signal(job_ptr,
+					     SIGKILL, 0, 0, true);
+		else
+			rc = job_signal(job_ptr, SIGKILL, 0, 0, true);
+		if (rc == SLURM_SUCCESS) {
+			info("%s: preempted %pJ had to be killed",
+			     __func__, job_ptr);
+		} else {
+			info("%s: preempted %pJ kill failure %s",
+			     __func__, job_ptr, slurm_strerror(rc));
+		}
+	}
+
+	if (rc == SLURM_SUCCESS)
+		job_ptr->preempt_time = time(NULL);
+
+	return rc;
+}
 /*
  * Return true if the preemptor can preempt the preemptee, otherwise false
  */

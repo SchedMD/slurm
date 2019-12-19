@@ -95,6 +95,12 @@ Configure to <I>CANCEL</I>, <I>CHECKPOINT</I>,
 priority jobs.
 The <I>GANG</I> option must also be specified if gang scheduling is desired
 or a PreemptMode of <I>SUSPEND</I> is used for any jobs.
+Note for a heterogeneous job to be considered for preemption all components must
+be eligible for preemption. When a heterogeneous job is be preempted the first
+identified component of the job with the highest order PreemptMode (SUSPEND
+(highest), REQUEUE, CANCEL (lowest)) will be used to set the PreemptMode. The
+GraceTime and user warning signal for each component of the heterogeneous job
+remain unique.
 <UL>
 <LI>A value of <I>CANCEL</I> will always cancel the job.</LI>
 <LI>A value of <I>CHECKPOINT</I> will checkpoint (if possible) or kill low

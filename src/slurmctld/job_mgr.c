@@ -16699,6 +16699,7 @@ extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
 	if (job_ptr == NULL) {
 		rc = ESLURM_INVALID_JOB_ID;
 	} else {
+		/* _job_requeue already handles het jobs */
 		rc = _job_requeue(uid, job_ptr, preempt, flags);
 	}
 
