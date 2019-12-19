@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix for requesting specific nodes when using cons_tres topology.
  -- Ensure x11 is setup before launching a job step.
  -- Fix incorrect SLURM_CLUSTER_NAME env var in batch step.
+ -- Perl API - Fix undefined symbol for slurmdbd_pack_fini_msg.
 
 * Changes in Slurm 19.05.4
 ==========================

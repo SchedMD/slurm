@@ -375,6 +375,7 @@
 /* slurmdbd_pack.[ch] functions */
 #define pack_slurmdbd_msg	slurm_pack_slurmdbd_msg
 #define unpack_slurmdbd_msg	slurm_unpack_slurmdbd_msg
+#define slurmdbd_pack_fini_msg	slurm_slurmdbd_pack_fini_msg
 
 /* plugin.[ch] functions */
 #define plugin_get_syms         slurm_plugin_get_syms

@@ -50,6 +50,7 @@
  */
 strong_alias(pack_slurmdbd_msg, slurm_pack_slurmdbd_msg);
 strong_alias(unpack_slurmdbd_msg, slurm_unpack_slurmdbd_msg);
+strong_alias(slurmdbd_pack_fini_msg, slurm_slurmdbd_pack_fini_msg);
 
 static int _unpack_config_name(char **object, uint16_t rpc_version, Buf buffer)
 {
