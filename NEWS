@@ -6,6 +6,8 @@ documents those changes that are of interest to users and administrators.
  -- Wrap END_TIMER{,2,3} macro definition in "do {} while (0)" block.
  -- Make sview work with glib2 v2.62.
  -- Make Slurm compile on linux after sys/sysctl.h was deprecated.
+ -- Install slurmdbd.conf.example with 0600 permissions to encourage secure
+    use. CVE-2019-19727.
 
 * Changes in Slurm 18.08.8
 ==========================
