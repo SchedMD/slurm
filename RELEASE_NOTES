@@ -42,6 +42,8 @@ SPECIAL NOTES FOR CRAY SYSTEMS
     apply to the stage-in "setup" and stage-out "dws_post_run" calls in to
     dw_wlm_cli. (The StageInTimeout and StageOutTimeout were previously
     used here by mistake.)
+ -- burst_buffer/datawarp - add a set of % symbols that will be replaced by
+    job details. E.g., %d will be filled in with the WorkDir for the job.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

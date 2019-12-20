@@ -261,6 +261,26 @@ srun --bb="capacity=1G access=striped type=scratch" a.out
 #DW jobdw capacity=1GiB access_mode=striped type=scratch
 </pre>
 
+<h2><a name="symbols">Symbol Replacement</a></h2>
+
+<p>Slurm supports a number of symbols that can be used to automatically
+fill in certain job details, e.g., to make stage_in or stage_out directory
+paths vary with each job submission.</p>
+
+<p>Supported symbols include:
+
+<table border=1 cellspacing=4 cellpadding=4>
+<tr><td>%%</td><td>%</td></tr>
+<tr><td>%A</td><td>Array Master Job Id</td></tr>
+<tr><td>%a</td><td>Array Task Id</td></tr>
+<tr><td>%d</td><td>Workdir</td></tr>
+<tr><td>%j</td><td>Job Id</td></tr>
+<tr><td>%u</td><td>User Name</td></tr>
+<tr><td>%x</td><td>Job Name</td></tr>
+<tr><td>\\</td><td>Stop further processing of the line</td></tr>
+</table>
+</p>
+
 <h2><a name="status">Status Commands</a></h2>
 
 <p>Slurm's current burst buffer state information is available using the 

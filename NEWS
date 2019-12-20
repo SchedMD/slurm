@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
  -- Make it so you can have a grace time when preempting by requeue.
  -- Translate MpiDefault=openmpi to functionally-equivalent MpiDefault=none,
     and remove the mpi/openmpi plugin.
+ -- burst_buffer/datawarp - add a set of % symbols that will be replaced by
+    job details. E.g., %d will be filled in with the WorkDir for the job.
 
 * Changes in Slurm 19.05.5
 ==========================
