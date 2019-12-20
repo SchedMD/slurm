@@ -273,7 +273,7 @@ proc get_clusterfed_info { fed_name } {
 # Add a single cluster to the given federation.
 # IN:  cname    - name of cluster to add to federation.
 # IN:  fed_name - name of federation to add cluster to.
-# RET: returns 0 on sucess, 1 on failure.
+# RET: returns 0 on success, 1 on failure.
 #
 proc add_cluster_to_fed {cname fed_name} {
 	global sacctmgr eol
@@ -319,7 +319,7 @@ proc add_cluster_to_fed {cname fed_name} {
 # Remove a single cluster from the given federation.
 # IN:  cname    - name of cluster to remove from the federation.
 # IN:  fed_name - name of federation to remove cluster from.
-# RET: returns 0 on sucess, 1 on failure.
+# RET: returns 0 on success, 1 on failure.
 #
 proc remove_cluster_from_fed {cname fed_name} {
 	global sacctmgr eol

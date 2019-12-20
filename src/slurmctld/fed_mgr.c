@@ -3128,9 +3128,9 @@ extern int fed_mgr_update_job(uint32_t job_id, job_desc_msg_t *job_specs,
  * IN msg - contains the original job_desc buffer to send to the siblings.
  * IN alloc_only - true if just an allocation. false if a batch job.
  * IN dest_sibs - bitmap of viable siblings to submit to.
- * RET returns SLURM_SUCCESS if all siblings received the job sucessfully or
+ * RET returns SLURM_SUCCESS if all siblings received the job successfully or
  * 	SLURM_ERROR if any siblings failed to receive the job. If a sibling
- * 	fails, then the sucessful siblings will be updated with the correct
+ * 	fails, then the successful siblings will be updated with the correct
  * 	sibling bitmap.
  */
 static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
@@ -4544,7 +4544,7 @@ extern int fed_mgr_is_origin_job(job_record_t *job_ptr)
  *
  * IN job_ptr       - job to update.
  * IN spec_clusters - comma-separated list of cluster names.
- * RET return SLURM_SUCCESS on sucess, error code otherwise.
+ * RET return SLURM_SUCCESS on success, error code otherwise.
  */
 extern int fed_mgr_update_job_clusters(job_record_t *job_ptr,
 				       char *spec_clusters)
@@ -4592,7 +4592,7 @@ extern int fed_mgr_update_job_clusters(job_record_t *job_ptr,
  *
  * IN job_ptr      - job to update cluster features.
  * IN req_features - comma-separated list of feature names.
- * RET return SLURM_SUCCESS on sucess, error code otherwise.
+ * RET return SLURM_SUCCESS on success, error code otherwise.
  */
 extern int fed_mgr_update_job_cluster_features(job_record_t *job_ptr,
 					       char *req_features)
@@ -4935,7 +4935,7 @@ static int _sync_jobs(const char *sib_name, job_info_msg_t *job_info_msg,
  *
  * IN job_id   - job_id of job to remove active sibling from.
  * IN sib_name - name of sibling job to remove from active siblings.
- * RET SLURM_SUCCESS on sucess, error code on error.
+ * RET SLURM_SUCCESS on success, error code on error.
  */
 extern int fed_mgr_remove_active_sibling(uint32_t job_id, char *sib_name)
 {

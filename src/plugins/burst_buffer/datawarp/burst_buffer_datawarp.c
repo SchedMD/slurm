@@ -3935,7 +3935,7 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 }
 
 /* Attempt to claim burst buffer resources.
- * At this time, bb_g_job_test_stage_in() should have been run sucessfully AND
+ * At this time, bb_g_job_test_stage_in() should have been run successfully AND
  * the compute nodes selected for the job.
  *
  * Returns a Slurm errno.

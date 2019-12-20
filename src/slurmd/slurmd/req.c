@@ -2531,7 +2531,7 @@ _rpc_batch_job(slurm_msg_t *msg, bool new_msg)
 		_launch_complete_rm(req->job_id);
 	if (revoked && _is_batch_job_finished(req->job_id)) {
 		/* If configured with select/serial and the batch job already
-		 * completed, consider the job sucessfully launched and do
+		 * completed, consider the job successfully launched and do
 		 * not repeat termination logic below, which in the worst case
 		 * just slows things down with another message. */
 		revoked = false;
