@@ -3116,6 +3116,27 @@ static void _copy_tres_opts(job_record_t *job_ptr, job_record_t *dep_job_ptr)
 	job_ptr->mem_per_tres = xstrdup(dep_job_ptr->mem_per_tres);
 }
 
+static int _find_dependency(void *arg, void *key)
+{
+	/* Does arg (dependency in the list) match key (new dependency)? */
+	struct depend_spec *dep_ptr = (struct depend_spec *)arg;
+	struct depend_spec *new_dep = (struct depend_spec *)key;
+	return (dep_ptr->job_id == new_dep->job_id) &&
+		(dep_ptr->depend_type == new_dep->depend_type);
+}
+
+/*
+ * Add a new dependency to the list, ensuring that the list is unique.
+ * Dependencies are uniquely identified by a combination of job_id and
+ * depend_type.
+ */
+static void _add_dependency_to_list(List depend_list,
+				    struct depend_spec *dep_ptr)
+{
+	if (!list_find_first(depend_list, _find_dependency, dep_ptr))
+		list_append(depend_list, dep_ptr);
+}
+
 /*
  * The new dependency format is:
  *
@@ -3172,7 +3193,7 @@ static void _parse_dependency_jobid_new(struct job_record *job_ptr,
 			dep_ptr->array_task_id = array_task_id;
 			dep_ptr->job_id = job_id;
 			dep_ptr->job_ptr = NULL;
-			(void) list_append(new_depend_list, dep_ptr);
+			_add_dependency_to_list(new_depend_list, dep_ptr);
 		} else {
 			if (array_task_id == NO_VAL) {
 				dep_job_ptr = find_job_record(job_id);
@@ -3286,7 +3307,7 @@ static void _parse_dependency_jobid_new(struct job_record *job_ptr,
 			}
 			dep_ptr->job_ptr = dep_job_ptr;
 			dep_ptr->depend_time = depend_time;
-			(void) list_append(new_depend_list, dep_ptr);
+			_add_dependency_to_list(new_depend_list, dep_ptr);
 		}
 		if (tmp[0] != ':')
 			break;
@@ -3342,7 +3363,7 @@ static void _parse_dependency_jobid_old(struct job_record *job_ptr,
 		dep_ptr->array_task_id = array_task_id;
 		dep_ptr->job_id = job_id;
 		dep_ptr->job_ptr = NULL;
-		(void) list_append(new_depend_list, dep_ptr);
+		_add_dependency_to_list(new_depend_list, dep_ptr);
 		return;
 	}
 	/* Find the job_ptr */
@@ -3370,7 +3391,7 @@ static void _parse_dependency_jobid_old(struct job_record *job_ptr,
 			dep_ptr->job_id = dep_job_ptr->array_job_id;
 		}
 		dep_ptr->job_ptr = dep_job_ptr;
-		(void) list_append(new_depend_list, dep_ptr);
+		_add_dependency_to_list(new_depend_list, dep_ptr);
 	}
 }
 
@@ -3435,7 +3456,7 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 			dep_ptr->depend_type = depend_type;
 			/* dep_ptr->job_id = 0;		set by xmalloc */
 			/* dep_ptr->job_ptr = NULL;	set by xmalloc */
-			(void) list_append(new_depend_list, dep_ptr);
+			_add_dependency_to_list(new_depend_list, dep_ptr);
 			if (tok[9] == ',') {
 				tok += 10;
 				continue;
