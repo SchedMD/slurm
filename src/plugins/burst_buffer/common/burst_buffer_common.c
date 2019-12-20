@@ -322,6 +322,7 @@ extern bb_user_t *bb_find_user_rec(uint32_t user_id, bb_state_t *state_ptr)
 	return user_ptr;
 }
 
+#ifdef HAVE_MEMFD_CREATE
 char *_handle_replacement(job_record_t *job_ptr)
 {
 	char *replaced = NULL, *p, *q;
@@ -389,6 +390,7 @@ char *_handle_replacement(job_record_t *job_ptr)
 
 	return replaced;
 }
+#endif
 
 char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job)
 {
@@ -402,6 +404,7 @@ char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job)
 	}
 
 	if (bb_job->need_symbol_replacement) {
+#ifdef HAVE_MEMFD_CREATE
 		/*
 		 * Create a memfd-backed temporary file to write out the
 		 * symbol-replaced BB script. memfd files will automatically be
@@ -430,6 +433,11 @@ char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job)
 		xfree(bb);
 		fatal("%s: could not write script file, likely out of memory",
 		      __func__);
+#else
+		error("%s: symbol replacement requested, but not available as memfd_create() could not be found at compile time. "
+		      "Falling back to the unreplaced job script.",
+		      __func__);
+#endif
 	}
 
 	xstrfmtcat(script, "%s/hash.%d/job.%u/script",
