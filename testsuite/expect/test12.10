@@ -53,13 +53,13 @@ print_header $test_id
 ############################################################################
 
 proc sacct_query {jobname sacct_args expected_job {expected_err false}} {
-	global sacct number ntest
+	global sacct ntest
 
 	set job_found false
 	set err_found false
 	set rc 0
 
-	set cmd_str "$sacct -v -X --format=job,jobname,eligible,start,end,state $sacct_args"
+	set cmd_str "$sacct -v -X -p --format=job,jobname,eligible,start,end,state $sacct_args"
 	spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]
 	expect {
 		-re "($jobname)" {
@@ -198,17 +198,14 @@ if { [test_account_storage] == 0 } {
 
 ############################################################################
 
-global squeue sacct
-global bin_sleep bin_date
-global number
-
 set failures 0
 
 #
 # Get Random name for the job, to avoid errors with old/duplicated jobs
 #
-set jobname [exec bash -c "cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 4 | head -n 1"]
-log_info "Random job name used to avoid false test error with old/duplicated jobs: $jobname-test$test_id."
+set current_timestamp [clock seconds]
+set jobname "test${test_id}-${current_timestamp}"
+log_info "Unique job name used to avoid false test errors with old/duplicated jobs: $jobname."
 
 #
 # Get query times before any job is run (QsS and QeS)
@@ -223,7 +220,7 @@ exec $bin_sleep 2
 # Test job will depend on it to test non-eligible
 #
 set def_node [get_idle_node_in_part [default_partition]]
-set pid_queue [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
+set pid_depend [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {
 		set jobid_dependent $expect_out(1,string)
@@ -231,7 +228,7 @@ expect {
 	}
 	timeout {
 		log_error "$sbatch not responding."
-		slow_kill $pid_batch
+		slow_kill $pid_depend
 		incr failures
 	}
 	eof {
@@ -258,7 +255,7 @@ expect {
 	}
 	timeout {
 		log_error "$sbatch not responding."
-		slow_kill $pid_batch
+		slow_kill $pid_queue
 		incr failures
 	}
 	eof {

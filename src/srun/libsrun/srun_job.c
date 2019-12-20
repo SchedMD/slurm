@@ -1282,7 +1282,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 		 *  Become --uid user
 		 */
 		if (_become_user () < 0)
-			info("Warning: Unable to assume uid=%u", opt.uid);
+			fatal("Unable to assume uid=%u", opt.uid);
 		if (_create_job_step(job, true, srun_job_list, pack_jobid,
 				     pack_nodelist) < 0) {
 			slurm_complete_job(my_job_id, 1);
@@ -1306,7 +1306,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 	 *  Become --uid user
 	 */
 	if (_become_user () < 0)
-		info("Warning: Unable to assume uid=%u", opt.uid);
+		fatal("Unable to assume uid=%u", opt.uid);
 
 	if (!slurm_started) {
 		/*
@@ -1578,7 +1578,9 @@ static int _become_user (void)
 		return (error ("setgid: %m"));
 	}
 
-	(void) initgroups(user, gid); /* Ignore errors */
+	if (initgroups(user, gid))
+		return (error ("initgroups: %m"));
+
 	xfree(user);
 
 	if (setuid (opt.uid) < 0)

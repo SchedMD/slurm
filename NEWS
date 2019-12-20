@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
  -- Ensure x11 is setup before launching a job step.
  -- Fix incorrect SLURM_CLUSTER_NAME env var in batch step.
  -- Perl API - Fix undefined symbol for slurmdbd_pack_fini_msg.
+ -- Install slurmdbd.conf.example with 0600 permissions to encourage secure
+    use. CVE-2019-19727.
+ -- srun - do not continue with job launch if --uid fails. CVE-2019-19728.
 
 * Changes in Slurm 19.05.4
 ==========================
@@ -512,11 +515,17 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we set the alloc_node in a resource allocation based on the auth
     plugin instead of the rpc call.
 
+* Changes in Slurm 18.08.10
+===========================
+
 * Changes in Slurm 18.08.9
 ==========================
  -- Wrap END_TIMER{,2,3} macro definition in "do {} while (0)" block.
  -- Make sview work with glib2 v2.62.
  -- Make Slurm compile on linux after sys/sysctl.h was deprecated.
+ -- Install slurmdbd.conf.example with 0600 permissions to encourage secure
+    use. CVE-2019-19727.
+ -- srun - do not continue with job launch if --uid fails. CVE-2019-19728.
 
 * Changes in Slurm 18.08.8
 ==========================
